@@ -1,0 +1,30 @@
+[
+  {
+    "id": "S1",
+    "original_filename": "ФСП спец. трек ТЗ.pdf",
+    "path": "sources/originals/fsp-specification.pdf",
+    "bytes": 551797,
+    "sha256": "a39ec8ccb300f4d06c7408b7ab13eff6f71610e86cc0e6d6650bc664f656eba1"
+  },
+  {
+    "id": "S2",
+    "original_filename": "Специальный трек от Федерации спортивного программирования - Московский инновационный кластер.pdf",
+    "path": "sources/originals/fsp-case-2026-09-30.pdf",
+    "bytes": 270800,
+    "sha256": "c35e7790be37f17c74cc330d3d9578f56a6e3fa6a198d54232334c4b1ff9e9c2"
+  },
+  {
+    "id": "S3",
+    "original_filename": "брендбук.rar",
+    "path": "sources/originals/fsp-brandbook.rar",
+    "bytes": 7177899,
+    "sha256": "e78bb6bc51ebd30cdf222b9d6ea8bc60978b1bc561afe09600af56003f5abd4b"
+  },
+  {
+    "id": "S4",
+    "original_filename": "ЛЦТ_2026_Шаблон презентации ФСП.pptx",
+    "path": "sources/originals/fsp-presentation-template.pptx",
+    "bytes": 34461021,
+    "sha256": "d2506c0aeb4fca12b6febb242e7d4e7fafc6c4c50434d3b671fc9d7251eb7345"
+  }
+]

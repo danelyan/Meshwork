@@ -1,0 +1,144 @@
+# platform — ФСП Карьера: карьерный консультант (E-01)
+
+Next.js 15 (App Router) + TypeScript strict + Prisma 6 / PostgreSQL 16 + Zod 4.
+Стек — `../docs/stack.md`. План, лейны и контракты — `fsp/docs/epics/E-01-plan.md`.
+
+## Быстрый старт (локально, без Docker)
+
+```bash
+npm install                              # один раз (лейны — симлинк, см. ниже)
+bash scripts/db-local.sh start           # кластер fsp/.pgdata, порт 54329, user postgres, trust
+bash scripts/db-local.sh create fsp_foundation
+bash scripts/db-local.sh create fsp_test_foundation
+cp .env.example .env                     # SESSION_SECRET: openssl rand -hex 32
+npx prisma migrate deploy                # или npm run db:migrate (dev, создаёт миграции)
+npm run db:seed                          # 3 демо-кандидата
+npm run dev                              # http://localhost:3000, GET /api/health → 200
+```
+
+`scripts/db-local.sh start | stop | status | create <db> | drop <db> | url <db>` —
+свой postgres из `/opt/homebrew/opt/postgresql@16`, без brew services и Docker.
+На macOS скрипт выставляет `LC_ALL` (без него postmaster падает при старте).
+
+## Скрипты
+
+| Скрипт | Что делает |
+|---|---|
+| `dev` / `build` / `start` | Next.js; `build` = `prisma generate && next build` (standalone) |
+| `typecheck` | `tsc --noEmit` |
+| `lint` | ESLint (flat config Next.js: core-web-vitals + typescript) |
+| `test` | все проекты Vitest |
+| `test:unit` | проекты `unit` (`tests/unit/**/*.test.ts`, Node) и `components` (`*.test.tsx`, jsdom) |
+| `test:integration` | `tests/integration/**`, реальная БД `TEST_DATABASE_URL`, файлы последовательно |
+| `e2e` | Playwright (`e2e/`), сам поднимает `next dev` на :3100 |
+| `db:migrate` / `db:deploy` / `db:seed` / `db:generate` | Prisma |
+
+Тесты своего модуля: `npx vitest run tests/unit/<module>`. Полный прогон,
+`next build`, Playwright — только оркестратор/интегратор, последовательно.
+
+Integration-тесты: перед прогоном `globalSetup` применяет миграции к
+`TEST_DATABASE_URL` (имя БД обязано содержать `test` — тесты её чистят
+`resetDb()` из `tests/helpers/db.ts`). Route handler'ы вызываются напрямую:
+`await POST(jsonRequest('/api/x', 'POST', body, cookie))` (`tests/helpers/requests.ts`).
+
+## Переменные окружения
+
+Схема и проверка — `src/server/env.ts` (`getEnv()` — лениво, при первом обращении;
+`parseEnv()` — чистая функция). Полный список с комментариями — `.env.example`.
+Обязательные: `DATABASE_URL`, `SESSION_SECRET` (≥ 32 символа). При
+`LLM_PROVIDER=yandex` — `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`; при
+`openai-chat` — `OPENAI_CHAT_BASE_URL`, `OPENAI_CHAT_API_KEY`, `OPENAI_CHAT_MODEL`.
+
+## Общие модули (foundation)
+
+- `src/server/db.ts` — `prisma`, один экземпляр на процесс.
+- `src/server/errors.ts` — `{ error: { code, message } }`; `AppError`, `errors.*`,
+  `withErrors(handler)` (AppError → свой статус, ZodError → 400 `validation_failed`,
+  прочее → 500 без текста).
+- `src/server/session.ts` — HMAC-кука `cid`; `requireCandidate(req)` → candidateId
+  или AppError 401 (синхронно, проверяет подпись и срок; владение объектом —
+  в сервисе, чужое → 404); `sessionCookie(id)` для `NextResponse.cookies.set`.
+- `/api/demo/login` — `GET` список демо-кандидатов, `POST {candidateId}` вход
+  (только `isDemo`), `DELETE` выход. Выключается `DEMO_LOGIN_ENABLED=false`.
+- `/api/health` — 200 `{ ok, db, llm }`; 503, если БД недоступна.
+- `src/styles/tokens.css` — токены тёмной темы прототипа, JetBrains Mono из `public/assets/fonts`.
+
+## LLM
+
+```ts
+import { getLlm } from '@/server/llm/client';
+const llm = getLlm({ candidateId, conversationId, onQueue: (position) => emit({ type: 'queue', position }) });
+const res = await llm.complete({ purpose: 'consultant', system, messages, tools });
+```
+
+`getLlm()` возвращает `LlmProvider` (контракт — `src/server/llm/types.ts`) поверх
+провайдера из `LLM_PROVIDER`: семафор `LLM_MAX_CONCURRENCY` (8) с FIFO-очередью и
+позицией, таймаут попытки `timeoutMs ?? LLM_TIMEOUT_MS`, ретраи `LLM_MAX_RETRIES`
+(2) только на 429/5xx (таймаут и отмена не ретраятся), запись `AgentRun` на
+каждый вызов (`ok`, токены, `attempts`, `queueWaitMs`, `jsonValid` — пришёл ли
+`kind: 'json'` на запрос со `schema`; семантику проверяет вызывающий Zod-ом).
+Провайдеры бросают `LlmError(code, message, status)`; ошибки SDK openai со
+`.status` распознаются так же. Для тестов — `createLlmClient({ provider, ... })`
+с моком `recordRun`. Провайдер без tools → «план В» (`llm/plan-b.ts`, лейн llm).
+
+### Заглушка `LLM_PROVIDER=stub` (`src/server/llm/providers/stub.ts`)
+
+Детерминированная, без сети. Решает по первому сработавшему правилу:
+
+1. **Фикстура**: `registerStubResponse(purpose, (req) => ({ json } | { text } | { toolCalls }) | undefined)`
+   — возвращает функцию «снять»; `clearStubResponses()` в `afterEach`.
+2. **Ошибка**: `[[error 429]]` или `[[error 503 текст]]` в последнем сообщении
+   user → `LlmError` с этим статусом (проверка ретраев и fallback).
+3. **Инструменты**: есть `tools`, `toolChoice !== 'none'`, последнее сообщение —
+   от user и содержит `[[tool:name {"json":"args"}]]` (можно несколько, JSON
+   вложенный) → `kind: 'tool_calls'`, id `call_<n>_<name>`. Имя не сверяется
+   со списком — так проверяется обработка неизвестного инструмента.
+   `toolChoice: { name }` без маркера → вызов этого инструмента с `{}`. После
+   сообщения `role: 'tool'` маркер повторно не срабатывает — ответ текстом.
+4. **JSON**: есть `schema` → `[[json {...}]]` из сообщения, иначе минимально
+   валидный объект по JSON Schema (`minimalFromSchema`: required-поля, `enum[0]`,
+   `const`, `default`, `minimum`, `minItems`, `minLength`, `$ref`/`$defs`,
+   `anyOf`). Схему из Zod: `z.toJSONSchema(Schema)`.
+5. **Текст**: `[[reply текст]]`, иначе ответ по ключевым словам (привет/тест/
+   вакансии) или эхо `Заглушка LLM: …`.
+
+`[[delay 300]]` — задержка ответа (уважает `AbortSignal`).
+`createStubProvider({ latencyMs })` — задержка на каждый ответ.
+
+## Контракты и заглушки лейнов
+
+Типы — в модулях-владельцах, функции-заглушки бросают `not implemented: <lane>`:
+
+| Модуль | Типы | Функции |
+|---|---|---|
+| `server/collector` | `types.ts`: `SourceKind`, `DocLine`, `ExtractedDoc`, `ProfileKind` | `extractFile`, `fetchUrl`, `fetchProfile` (`profiles.ts`), `maskContacts` |
+| `server/claims` | `types.ts`: `EvidenceLevel`, `CatalogEntry`, `ProposedClaim`, `VerifiedClaim`, `VerifyResult`, `ProfileView` | `getCatalog`, `maxLevelFor`, `extractClaims`, `verifyClaims`, `proposeClaims`, `confirmClaim`, `editClaim`, `rejectClaim`, `getProfile` |
+| `server/agent` | `types.ts`: `AgentEvent`, `ToolContext`, `AgentTool`, `TurnInput`, `MAX_TOOL_CALLS_PER_TURN` | `tools` (`tools/index.ts`), `encodeSse`, `runTurn` |
+| `server/recommend` | `types.ts`: `Gap`, `TestRecommendation`, `TaskRec`, `TargetRec`, `Coverage` | `gapMap`, `recommendTest`, `recommendTasks`, `recommendTargets`, `explainInvitation` (`matcher.ts`) |
+| `server/defense` | `types.ts`: `DefenseQuestion`, `DefenseVerdict` | `startDefense`, `answerDefense` |
+| `server/llm/providers` | `YandexResponsesConfig`, `OpenAiChatConfig` | `createYandexResponsesProvider`, `createOpenAiChatProvider`; `plan-b.ts` |
+
+Общие доменные типы — `src/server/types.ts` (`Specialization`, `Grade`, `FspState`).
+
+## Работа лейна в своём worktree
+
+```bash
+cd fsp/.wt/<lane>/platform
+ln -s ../../foundation/platform/node_modules node_modules   # не npm install
+bash scripts/db-local.sh start                               # если кластер не запущен
+bash scripts/db-local.sh create fsp_<lane>
+bash scripts/db-local.sh create fsp_test_<lane>
+cp .env.example .env   # DATABASE_URL=…/fsp_<lane>, TEST_DATABASE_URL=…/fsp_test_<lane>, SESSION_SECRET
+npx prisma migrate deploy
+npx vitest run tests/unit/<module>
+```
+
+Prisma Client сгенерирован в общий `node_modules` (`@prisma/client`). `prisma
+generate` в лейне перезапишет его для всех — схему меняет только интегратор
+(лейн описывает изменение в отчёте, правило 6 плана).
+
+## Стенд (Docker)
+
+`docker compose up --build`: `db` (Postgres 16), `migrate` (миграции + сид,
+одноразово), `app` (standalone, :3000), `mailpit` (веб-ящик :8025). Секреты —
+в `.env`. Локально Docker не нужен.

@@ -88,6 +88,12 @@ export function ProfilePage() {
     };
   }, []);
 
+  // ?print=1 (ссылка render_profile_pdf консультанта) — открыть печать, когда профиль загружен.
+  useEffect(() => {
+    if (!profile || recs === null) return;
+    if (new URLSearchParams(window.location.search).get('print') === '1') window.print();
+  }, [profile, recs]);
+
   if (error) {
     const unauth = error instanceof ApiError && error.status === 401;
     return (
@@ -183,7 +189,7 @@ export function ProfilePage() {
           <GapMap gaps={gaps} />
         )}
         {tasks.length > 0 && (
-          <div>
+          <div id="tasks">
             <h3 style={{ fontSize: 'var(--fs-md)', marginBottom: 8 }}>Задания, которые закроют пробелы</h3>
             <ul className={styles.list}>
               {tasks.map((t) => (

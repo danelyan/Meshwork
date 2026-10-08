@@ -35,6 +35,27 @@ describe('Chat', () => {
     expect(body).toMatchObject({ text: 'Собери профиль', uploadIds: [], urls: [] });
   });
 
+  it('событие conversation не рисуется, его id уходит в следующем ходе', async () => {
+    const first = frame({ type: 'conversation', id: 'conv-1' }) + frame({ type: 'message', text: 'Первый ответ' }) + frame({ type: 'done' });
+    const second = frame({ type: 'message', text: 'Второй ответ' }) + frame({ type: 'done' });
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () => new Response(streamOf([first]), { status: 200 }))
+      .mockImplementationOnce(async () => new Response(streamOf([second]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Chat />);
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'раз' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(screen.getByText('Первый ответ')).toBeDefined());
+    expect(screen.queryByText('conv-1')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'два' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(screen.getByText('Второй ответ')).toBeDefined());
+    const body = (i: number) => JSON.parse((fetchMock.mock.calls[i] as unknown as [string, RequestInit])[1].body as string);
+    expect(body(0).conversationId).toBeUndefined();
+    expect(body(1).conversationId).toBe('conv-1');
+  });
+
   it('невалидная ссылка не отправляется', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

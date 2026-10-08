@@ -32,6 +32,8 @@ export function Chat() {
   const [simplified, setSimplified] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Разговор создаёт сервер на первом ходе (событие conversation); дальше шлём его id.
+  const conversationRef = useRef<string | undefined>(undefined);
   const endRef = useRef<HTMLDivElement>(null);
   const textId = useId();
   const urlsId = useId();
@@ -42,6 +44,10 @@ export function Chat() {
   }, [items.length]);
 
   const pushEvent = useCallback((event: AgentEvent) => {
+    if (event.type === 'conversation') {
+      conversationRef.current = event.id;
+      return;
+    }
     setItems((p) => [...p, { id: nextId(), role: 'agent', event }]);
     if (event.type === 'error' && SIMPLIFIED_CODES.has(event.code)) setSimplified(true);
   }, []);
@@ -53,7 +59,7 @@ export function Chat() {
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       try {
-        const stream = await openConsultantStream({ text: message, uploadIds, urls }, ctrl.signal);
+        const stream = await openConsultantStream({ text: message, uploadIds, urls, conversationId: conversationRef.current }, ctrl.signal);
         const reader = stream.getReader();
         const decoder = new TextDecoder();
         const parser = createSseParser();

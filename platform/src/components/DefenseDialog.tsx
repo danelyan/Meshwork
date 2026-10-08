@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 
-import { answerDefenseApi, type DefenseStep, startDefenseApi } from '@/lib/api';
+import { answerDefenseApi, type DefenseStep, getDefenseSessionApi, startDefenseApi } from '@/lib/api';
 import type { DefenseVerdict } from '@/server/defense/types';
 
 import styles from './DefenseDialog.module.css';
@@ -78,9 +78,17 @@ export function DefenseDialog({ claimId }: { claimId: string }) {
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    startDefenseApi(claimId).then(
-      (s) => {
-        apply(s);
+    startDefenseApi(claimId)
+      .then(async (s) => {
+        if (!s.resumed) return apply({ sessionId: s.sessionId, question: s.question });
+        // Продолжение активной сессии: восстановить уже отвеченные вопросы.
+        setSessionId(s.sessionId);
+        const view = await getDefenseSessionApi(s.sessionId);
+        setTurns(view.turns.map((t) => ({ question: t.question, ...(t.answer !== null ? { answer: t.answer } : {}) })));
+        if (view.verdict) setVerdict(view.verdict);
+      })
+      .then(
+      () => {
         setLoading(false);
       },
       (e: unknown) => {

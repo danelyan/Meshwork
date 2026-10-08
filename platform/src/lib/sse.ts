@@ -11,6 +11,7 @@ const EVENT_TYPES = new Set<AgentEvent['type']>([
   'message',
   'error',
   'done',
+  'conversation',
 ]);
 
 /** Событие агента из JSON-строки или null, если это мусор. */

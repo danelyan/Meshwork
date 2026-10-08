@@ -1,8 +1,8 @@
 // Тонкий клиент к API платформы. Контракты других лейнов могут быть заглушками,
 // поэтому ответы разбираются терпимо, а ошибки приводятся к ApiError с понятным текстом.
 import type { ProfileView } from '@/server/claims/types';
-import type { DefenseVerdict } from '@/server/defense/types';
-import type { Gap, TaskRec } from '@/server/recommend/types';
+import type { AnswerResult, DefenseQuestion, DefenseSessionView, DefenseVerdict } from '@/server/defense/types';
+import type { Gap, TargetRec, TaskRec, TestRecommendation } from '@/server/recommend/types';
 
 export class ApiError extends Error {
   constructor(
@@ -60,11 +60,17 @@ export const demoLogout = () => request<{ ok: true }>('/api/demo/login', { metho
 
 export const getProfile = () => request<ProfileView>('/api/profile');
 
+/** GET /api/recommendations — target: `vacancy:<id>` | `category:<spec>:<grade>`; без него сервер берёт цель сам. */
 export interface RecommendationsView {
+  /** Цель, к которой посчитаны пробелы (переданная или выбранная сервером). */
+  target?: string;
+  test?: TestRecommendation;
   gaps?: Gap[];
   tasks?: TaskRec[];
+  targets?: TargetRec[];
 }
-export const getRecommendations = () => request<RecommendationsView>('/api/recommendations');
+export const getRecommendations = (target?: string) =>
+  request<RecommendationsView>(`/api/recommendations${target ? `?target=${encodeURIComponent(target)}` : ''}`);
 
 export type ClaimAction = 'confirm' | 'edit' | 'reject';
 export const claimAction = (claimId: string, action: ClaimAction, statement?: string) =>
@@ -82,16 +88,19 @@ export function validateUploadFile(file: { name: string; size: number }): string
   return null;
 }
 
-export async function uploadFile(file: File): Promise<{ id: string; filename: string }> {
+/** Ответ POST /api/uploads (collector): краткая сводка разбора, сам файл не хранится. */
+export interface UploadResponse {
+  uploadId: string;
+  deduplicated: boolean;
+  doc: { title: string; sourceKind: string; lines: number; pages: number | null; flags: Record<string, unknown>; preview: string };
+}
+
+export async function uploadFile(file: File): Promise<{ id: string; filename: string; deduplicated: boolean }> {
   const form = new FormData();
   form.append('file', file);
-  const data = await request<{ upload?: { id: string; filename?: string }; id?: string; filename?: string }>('/api/uploads', {
-    method: 'POST',
-    body: form,
-  });
-  const id = data.upload?.id ?? data.id;
-  if (!id) throw new ApiError('Сервер не вернул идентификатор файла.', 500);
-  return { id, filename: data.upload?.filename ?? data.filename ?? file.name };
+  const data = await request<UploadResponse>('/api/uploads', { method: 'POST', body: form });
+  if (!data.uploadId) throw new ApiError('Сервер не вернул идентификатор файла.', 500);
+  return { id: data.uploadId, filename: data.doc?.title || file.name, deduplicated: data.deduplicated };
 }
 
 /** Разбор поля ссылок: пробелы, запятые, переводы строк. Возвращает валидные http(s) и отброшенные. */
@@ -140,15 +149,25 @@ export async function openConsultantStream(input: SendMessageInput, signal: Abor
   return res.body;
 }
 
-// --- защита утверждения (лейн defense, волна 3): предполагаемая форма API ---
+// --- защита утверждения (лейн defense) ---
+/** Шаг защиты для UI: текущий вопрос или вердикт. */
 export interface DefenseStep {
   sessionId: string;
-  question?: { index: number; question: string };
+  question?: DefenseQuestion;
   total?: number;
   verdict?: DefenseVerdict;
-  /** уровень утверждения после защиты, если сервер вернул */
-  level?: string;
 }
-export const startDefenseApi = (claimId: string) => postJson<DefenseStep>('/api/defense', { claimId });
-export const answerDefenseApi = (sessionId: string, answer: string) =>
-  postJson<DefenseStep>(`/api/defense/${encodeURIComponent(sessionId)}/answer`, { answer });
+
+/** POST /api/defense {claimId} → {sessionId, question, resumed}; активная сессия продолжается. */
+export const startDefenseApi = (claimId: string) =>
+  postJson<{ sessionId: string; question: DefenseQuestion; resumed: boolean }>('/api/defense', { claimId });
+
+/** GET /api/defense/[sessionId] — вся сессия (для продолжения после перезагрузки). */
+export const getDefenseSessionApi = (sessionId: string) =>
+  request<DefenseSessionView>(`/api/defense/${encodeURIComponent(sessionId)}`);
+
+/** POST /api/defense/[sessionId] {answer} → {next?, verdict?}. */
+export async function answerDefenseApi(sessionId: string, answer: string): Promise<DefenseStep> {
+  const r = await postJson<AnswerResult>(`/api/defense/${encodeURIComponent(sessionId)}`, { answer });
+  return { sessionId, ...(r.next ? { question: r.next } : {}), ...(r.verdict ? { verdict: r.verdict } : {}) };
+}

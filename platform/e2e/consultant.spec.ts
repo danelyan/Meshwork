@@ -28,8 +28,8 @@ test('С1: вход → резюме и ссылка → шаги → карто
   // резюме + ссылка + сообщение
   await page.setInputFiles('input[type=file]', RESUME);
   await expect(page.getByText('загружен')).toBeVisible();
-  await page.getByLabel(/Ссылки/).fill('github.com/octocat');
-  await page.getByLabel('Сообщение').fill('Собери мне профиль');
+  await page.getByLabel(/Ссылки/).fill('github.com/demo-ryabinin');
+  await page.getByLabel('Сообщение', { exact: true }).fill('Собери мне профиль');
   await page.getByRole('button', { name: 'Отправить' }).click();
 
   // лента шагов появляется, затем карточки утверждений с цитатой, источником и уровнем

@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
+import { loadPlatformEnv } from '../scripts/load-env.mjs';
+
 import { seedClaims } from './seed/claims';
 import { seedRecommend } from './seed/recommend';
 
@@ -9,6 +11,8 @@ import { seedRecommend } from './seed/recommend';
  * отдельными файлами prisma/seed/<lane>.ts, интегратор подключит их сюда.
  * Идемпотентен: upsert по фиксированным id.
  */
+// До создания клиента: иначе общий Prisma Client возьмёт .env чужого каталога.
+loadPlatformEnv();
 const prisma = new PrismaClient();
 
 const DEMO_CANDIDATES = [

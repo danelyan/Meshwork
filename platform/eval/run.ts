@@ -13,6 +13,10 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { loadPlatformEnv } from '../scripts/load-env.mjs';
+
+// Предсказатели claims-stub / catalog-keywords трогают БД и env платформы: без .env не уйти в чужую БД.
+loadPlatformEnv();
 
 // ---- контракты (копия из E-01-plan «Контракты»; не импортируем, чтобы eval был автономным) ----
 export interface ProposedClaim {

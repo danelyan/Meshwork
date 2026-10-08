@@ -10,6 +10,9 @@ export default defineConfig({
   // Алиас @/* из tsconfig: встроенный resolve.tsconfigPaths Vite 8 вместо плагина vite-tsconfig-paths из доки Next.js.
   resolve: { tsconfigPaths: true },
   test: {
+    // Демо-флаги стенда из .env не должны протекать в тесты (docs: test.env
+    // перекрывает process.env воркеров; process.loadEnvFile не перезаписывает заданное).
+    env: { LLM_STUB_DEMO: 'false', COLLECTOR_FIXTURES: 'false' },
     globals: true,
     projects: [
       {

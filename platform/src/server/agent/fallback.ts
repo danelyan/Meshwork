@@ -1,3 +1,4 @@
+import { countOf, FORMS } from '@/lib/plural';
 import { recommendTargets, recommendTest } from '@/server/recommend';
 import { NO_CONFIRMED_REASON } from '@/server/recommend/types';
 import type { PipelineResult } from './pipeline';
@@ -35,7 +36,7 @@ export function pipelineParts(p: PipelineResult): string[] {
   if (p.injectionSuspect) parts.push('В присланных данных есть похожее на инструкции для модели — проигнорировано.');
   if (p.proposed.length) {
     parts.push(
-      `Нашёл ${p.proposed.length} утверждений${p.rejected ? `, ${p.rejected} отбросил (${p.rejectSummary || 'нет цитаты в источнике'})` : ''}. Посмотри карточки: «да» переводит утверждение в профиль, «поправить» меняет формулировку, «нет» убирает.`,
+      `Нашёл ${countOf(p.proposed.length, FORMS.claim)}${p.rejected ? `, ${p.rejected} отбросил (${p.rejectSummary || 'нет цитаты в источнике'})` : ''}${p.merged ? `, объединил ${countOf(p.merged, FORMS.repeat)} из разных источников` : ''}. Посмотри карточки: «да» переводит утверждение в профиль, «поправить» меняет формулировку, «нет» убирает.`,
     );
   } else if (p.docs.length) {
     parts.push('Утверждений из каталога с дословной цитатой не нашёл. Напиши, что делал, своими словами — подберу формулировки из каталога.');

@@ -20,7 +20,8 @@ export interface EventFeedProps {
   /** Актуальные поля утверждений, изменённые действиями (id → поля). */
   claimOverrides?: Record<string, Partial<CardClaim>>;
   onClaimAction?: (claim: CardClaim, action: ClaimAction, statement?: string) => Promise<void>;
-  onConfirmAll?: (claims: CardClaim[]) => Promise<void>;
+  /** Возвращает число подтверждённых (для итога под кнопкой). */
+  onConfirmAll?: (claims: CardClaim[]) => Promise<number | void>;
   /** Ответ на `ask` (клик по варианту). */
   onAnswer?: (text: string) => void;
   /** Нельзя отвечать: идёт ход агента. */
@@ -62,6 +63,26 @@ export function toBlocks(items: FeedItem[]): Block[] {
   return blocks;
 }
 
+const REASON_TEXT: Record<string, (n: number) => string> = {
+  no_quote: (n) => `${n} без цитаты в источнике — отброшено: утверждение без подтверждающей цитаты не предлагается.`,
+  unknown_catalog_id: (n) => `${n} вне каталога утверждений — отброшено.`,
+  hidden_text: (n) => `${n} из скрытого текста — отброшено.`,
+  quote_too_short: (n) => `${n} со слишком короткой цитатой — отброшено.`,
+};
+
+/** Плашки по реальным причинам: дубли — не отказ, а слияние повторов. */
+export function rejectNotesOf(event: Extract<AgentEvent, { type: 'claims' }>): string[] {
+  const by = event.rejectedByReason;
+  if (!by) return event.rejected > 0 ? [REASON_TEXT.no_quote!(event.rejected)] : [];
+  const out: string[] = [];
+  for (const [reason, n] of Object.entries(by)) {
+    if (!n || reason === 'duplicate') continue;
+    out.push(REASON_TEXT[reason]?.(n) ?? `${n} отброшено (${reason}).`);
+  }
+  if (by.duplicate) out.push(`Объединено повторов: ${by.duplicate} (одинаковые утверждения из разных источников показаны одной карточкой).`);
+  return out;
+}
+
 function ClaimsBlock({
   event,
   overrides,
@@ -74,6 +95,7 @@ function ClaimsBlock({
   onConfirmAll?: EventFeedProps['onConfirmAll'];
 }) {
   const [bulk, setBulk] = useState(false);
+  const [bulkDone, setBulkDone] = useState<number | null>(null);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const claims = event.proposed
     .map(normalizeClaim)
@@ -83,12 +105,15 @@ function ClaimsBlock({
   // «Со слов» — только self_reported: артефакты (код, README) кандидат подтверждает по одному.
   const bulkable = open.filter((c) => c.level === 'self_reported');
 
+  const rejectNotes = rejectNotesOf(event);
+
   async function confirmAll() {
     if (!onConfirmAll) return;
     setBulk(true);
     setBulkError(null);
     try {
-      await onConfirmAll(bulkable);
+      const n = await onConfirmAll(bulkable);
+      if (typeof n === 'number') setBulkDone(n);
     } catch (e) {
       setBulkError(e instanceof Error ? e.message : 'Не удалось подтвердить.');
     } finally {
@@ -113,11 +138,16 @@ function ClaimsBlock({
           В документе найден скрытый текст ({event.hiddenText}) — он проигнорирован и не попал в утверждения.
         </p>
       ) : null}
-      {event.rejected > 0 && (
-        <p className={ui.notice} role="note">
-          {event.rejected} без цитаты в источнике — отброшено: утверждение без подтверждающей цитаты не предлагается.
+      {bulkDone !== null && (
+        <p className={ui.notice} role="status">
+          Подтверждено: {bulkDone}.
         </p>
       )}
+      {rejectNotes.map((t) => (
+        <p key={t} className={ui.notice} role="note">
+          {t}
+        </p>
+      ))}
       {bulkError && (
         <p className={ui.notice + ' ' + ui.errorBox} role="alert">
           {bulkError}

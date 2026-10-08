@@ -24,6 +24,7 @@ describe('fallbackReply', () => {
         failed: [],
         proposed: [{ id: '1', catalogId: 'be.framework', statement: 's', level: 'self_reported', sourceRef: 'r' }],
         rejected: 2,
+        merged: 0,
         rejectSummary: '2 без цитаты в источнике',
         hiddenText: 1,
         injectionSuspect: false,
@@ -32,7 +33,7 @@ describe('fallbackReply', () => {
     });
     expect(text).toContain('Прочитал: резюме cv.pdf');
     expect(text).toContain('скрытый текст');
-    expect(text).toContain('Нашёл 1 утверждений, 2 отбросил');
+    expect(text).toContain('Нашёл 1 утверждение, 2 отбросил');
     expect(text).toContain('Backend, Junior');
     expect(text).toContain('Категорию даёт только тест');
   });

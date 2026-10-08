@@ -54,7 +54,7 @@ describe('демо-режим без модели (LLM_PROVIDER=stub, LLM_STUB_D
     ]);
     const { text, steps } = await turn('Вот моё резюме', [up.id]);
     expect(text).toContain('Прочитал: резюме');
-    expect(text).toContain('Нашёл 1 утверждений, 1 отбросил');
+    expect(text).toContain('Нашёл 1 утверждение, 1 отбросил');
     expect(text).toContain('скрытый текст');
     expect(text).toContain('Backend, Middle');
     expect(text).toContain('Подтверди карточки — покажу подходящие вакансии');

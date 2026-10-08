@@ -153,7 +153,7 @@ describe('runTurn (stub LLM, моки модулей)', () => {
 
     expect(collectorMock.fetchProfile).toHaveBeenCalledWith('github', 'demo-ryabinin', { candidateId: CAND });
     expect(collectorMock.fetchUrl).not.toHaveBeenCalled();
-    expect(steps[0]).toMatch(/^читаю резюме cv\.pdf \(4 строк\)/);
+    expect(steps[0]).toMatch(/^читаю резюме cv\.pdf \(4 строки\)/);
     expect(steps.some((s) => s.startsWith('читаю github:demo-ryabinin'))).toBe(true);
     expect(steps.at(-1)).toBe('нашёл 3, отбросил 2 — 1 без цитаты в источнике, 1 вне каталога');
 
@@ -206,7 +206,7 @@ describe('runTurn (stub LLM, моки модулей)', () => {
     const claims = events.find((e) => e.type === 'claims') as { proposed: { catalogId: string }[] };
     expect(claims.proposed.map((c) => c.catalogId).sort()).toEqual(['be.framework', 'be.idempotency']);
     const msg = lastMessage(events)?.text ?? '';
-    expect(msg).toContain('Нашёл 2 утверждений');
+    expect(msg).toContain('Нашёл 2 утверждения');
     expect(msg).toContain('Backend, Middle');
     expect(await prisma.agentRun.count({ where: { purpose: 'consultant' } })).toBe(0);
   });

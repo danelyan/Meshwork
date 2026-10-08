@@ -1,3 +1,4 @@
+import { countOf, FORMS } from '@/lib/plural';
 import { z } from 'zod';
 
 import { getCatalog, proposeClaims, verifyClaims } from '@/server/claims';
@@ -50,10 +51,10 @@ export const proposeClaimsTool: AgentTool<z.infer<typeof Input>, z.infer<typeof 
       quote: c.quote,
       sourceRef: c.sourceRef,
     }));
-    ctx.emit({ type: 'claims', proposed, rejected: rejected.length });
+    ctx.emit({ type: 'claims', proposed, rejected: rejected.length, rejectedByReason: countByReason(rejected.map((r) => r.reason)) });
     ctx.emit({
       type: 'step',
-      text: `предложил ${proposed.length}, отбросил ${rejected.length}${rejected.length ? ` — ${describeRejects(rejected.map((r) => r.reason))}` : ''}`,
+      text: claimsStepText(proposed.length, rejected.map((r) => r.reason)),
     });
     return {
       proposed,
@@ -63,13 +64,32 @@ export const proposeClaimsTool: AgentTool<z.infer<typeof Input>, z.infer<typeof 
   },
 };
 
+/** Подсчёт отказов по причинам (только ненулевые). */
+export function countByReason(reasons: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of reasons) out[r] = (out[r] ?? 0) + 1;
+  return out;
+}
+
+/** Причины отказа без дублей: дубль — не отказ, а слияние одинаковых утверждений. */
 export function describeRejects(reasons: string[]): string {
-  const n = (r: string) => reasons.filter((x) => x === r).length;
+  const c = countByReason(reasons);
   const parts: string[] = [];
-  if (n('no_quote')) parts.push(`${n('no_quote')} без цитаты в источнике`);
-  if (n('unknown_catalog_id')) parts.push(`${n('unknown_catalog_id')} вне каталога`);
-  if (n('duplicate')) parts.push(`${n('duplicate')} дублей`);
-  if (n('hidden_text')) parts.push(`${n('hidden_text')} из скрытого текста`);
-  if (n('quote_too_short')) parts.push(`${n('quote_too_short')} со слишком короткой цитатой`);
+  if (c.no_quote) parts.push(`${c.no_quote} без цитаты в источнике`);
+  if (c.unknown_catalog_id) parts.push(`${c.unknown_catalog_id} вне каталога`);
+  if (c.hidden_text) parts.push(`${c.hidden_text} из скрытого текста`);
+  if (c.quote_too_short) parts.push(`${c.quote_too_short} со слишком короткой цитатой`);
   return parts.join(', ');
+}
+
+/** Шаг ленты и сводка: «нашёл 2, отбросил 1 — …, объединил 3 повтора». */
+export function claimsStepText(found: number, reasons: string[]): string {
+  const c = countByReason(reasons);
+  const merged = c.duplicate ?? 0;
+  const rejected = reasons.length - merged;
+  const head = `нашёл ${found}`;
+  const tail: string[] = [];
+  if (rejected) tail.push(`отбросил ${rejected} — ${describeRejects(reasons)}`);
+  if (merged) tail.push(`объединил ${countOf(merged, FORMS.repeat)} одинаковых утверждений`);
+  return [head, ...tail].join(', ');
 }

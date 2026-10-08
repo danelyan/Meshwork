@@ -112,6 +112,43 @@ export async function confirmClaim(candidateId: string, claimId: string): Promis
   return c;
 }
 
+export type BatchSkipReason = 'not_found' | 'rejected' | 'already_confirmed' | 'not_self_reported';
+export interface ConfirmBatchResult {
+  confirmed: string[];
+  skipped: { id: string; reason: BatchSkipReason }[];
+}
+
+/**
+ * Пакетное «подтвердить со слов»: одна транзакция, только свои `proposed` уровня self_reported.
+ * Чужие и несуществующие id → not_found (не выдаём факт существования); артефакты пакетом не
+ * подтверждаются. Повтор идемпотентен: уже подтверждённые попадают в skipped.
+ */
+export async function confirmClaimsBatch(candidateId: string, ids: string[]): Promise<ConfirmBatchResult> {
+  const unique = [...new Set(ids)];
+  return prisma.$transaction(async (tx) => {
+    const rows = await tx.claim.findMany({ where: { id: { in: unique.filter((i) => CLAIM_ID_RE.test(i)) }, candidateId } });
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const result: ConfirmBatchResult = { confirmed: [], skipped: [] };
+    const toConfirm: string[] = [];
+    for (const id of unique) {
+      const c = byId.get(id);
+      if (!c) result.skipped.push({ id, reason: 'not_found' });
+      else if (c.status === 'rejected') result.skipped.push({ id, reason: 'rejected' });
+      else if (c.status !== 'proposed') result.skipped.push({ id, reason: 'already_confirmed' });
+      else if (c.level !== 'self_reported') result.skipped.push({ id, reason: 'not_self_reported' });
+      else toConfirm.push(id);
+    }
+    if (toConfirm.length) {
+      await tx.claim.updateMany({
+        where: { id: { in: toConfirm }, candidateId, status: 'proposed', level: 'self_reported' },
+        data: { status: 'confirmed', confirmedAt: new Date() },
+      });
+      result.confirmed = toConfirm;
+    }
+    return result;
+  });
+}
+
 /** Меняется только формулировка (и статус → edited); уровень, цитата и источник — нет. Правка = подтверждение. */
 export async function editClaim(candidateId: string, claimId: string, statement: string): Promise<Claim> {
   assertClaimId(claimId);

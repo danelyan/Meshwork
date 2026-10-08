@@ -8,6 +8,8 @@ export { verifyClaims, MIN_QUOTE_WORDS, type VerifyOptions } from './verifier';
 export {
   proposeClaims,
   confirmClaim,
+  confirmClaimsBatch,
+  type ConfirmBatchResult,
   editClaim,
   rejectClaim,
   getProfile,

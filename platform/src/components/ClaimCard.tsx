@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { stripLimitsPrefix } from '@/lib/plural';
 
 import type { CardClaim } from '@/lib/claims-view';
 import type { ClaimAction } from '@/lib/api';
@@ -58,7 +59,7 @@ export function ClaimCard({ claim, onAction, busy = false }: ClaimCardProps) {
         {claim.sourceRef && <span>Источник: {claim.sourceRef}</span>}
         {claim.limits && (
           <span className={styles.limits}>
-            <b>Не доказывает:</b> {claim.limits}
+            <b>Не доказывает:</b> {stripLimitsPrefix(claim.limits)}
           </span>
         )}
       </div>

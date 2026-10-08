@@ -1,3 +1,4 @@
+import { countOf, FORMS } from '@/lib/plural';
 import { extractByMarkers, extractClaims, getCatalog, proposeClaims, verifyClaims } from '@/server/claims';
 import type { CatalogEntry, ProposedClaim, RejectReason } from '@/server/claims/types';
 import { fetchProfile, fetchUrl, maskContacts } from '@/server/collector';
@@ -6,7 +7,7 @@ import { LlmError } from '@/server/llm/types';
 import { assertBudget, BudgetExceededError } from './budget';
 import { loadUpload, saveSource } from './docs';
 import { escapeExternal } from './external';
-import { describeRejects } from './tools/propose_claims';
+import { claimsStepText, countByReason, describeRejects } from './tools/propose_claims';
 import { shortUrl } from './tools/fetch_url';
 import type { ToolContext, TurnInput } from './types';
 
@@ -20,7 +21,10 @@ export interface PipelineResult {
   docs: { label: string; origin: string; sourceKind: string; lines: number }[];
   failed: string[];
   proposed: { id: string; catalogId: string; statement: string; level: string; sourceRef: string }[];
+  /** Настоящие отказы (без дублей). */
   rejected: number;
+  /** Объединено повторов (дубли — не отказ). */
+  merged: number;
   rejectSummary: string;
   hiddenText: number;
   injectionSuspect: boolean;
@@ -59,11 +63,14 @@ function maskDoc(doc: ExtractedDoc): ExtractedDoc {
   }
 }
 
-function docLabel(doc: ExtractedDoc): string {
+export function docLabel(doc: ExtractedDoc): string {
   const n = doc.lines.length;
   const kind = doc.sourceKind === 'resume' ? 'резюме' : doc.sourceKind === 'github' ? 'GitHub' : doc.sourceKind === 'codeforces' ? 'Codeforces' : doc.sourceKind === 'fsp' ? 'ФСП' : 'документ';
   const name = doc.sourceKind === 'url' ? shortUrl(doc.origin) : doc.title || doc.origin;
-  return `${kind} ${escapeExternal(name).slice(0, 80)}${n ? ` (${n} строк)` : ''}`;
+  const shown = escapeExternal(name).slice(0, 80);
+  // Название источника уже может начинаться с вида («github demo-x») — не дублируем.
+  const label = shown.toLowerCase().startsWith(kind.toLowerCase()) ? shown : `${kind} ${shown}`;
+  return `${label}${n ? ` (${countOf(n, FORMS.line)})` : ''}`;
 }
 
 export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: PipelineDeps): Promise<PipelineResult> {
@@ -73,6 +80,7 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
     failed: [],
     proposed: [],
     rejected: 0,
+    merged: 0,
     rejectSummary: '',
     hiddenText: 0,
     injectionSuspect: false,
@@ -137,17 +145,21 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
   const { accepted, rejected } = verifyClaims(proposals, docs, catalog);
   const created = accepted.length ? await proposeClaims(ctx.candidateId, accepted) : [];
   result.proposed = created.map((c) => ({ id: c.id, catalogId: c.catalogId, statement: c.statement, level: c.level, sourceRef: c.sourceRef }));
-  result.rejected = rejected.length;
-  result.rejectSummary = describeRejects(rejected.map((r: { reason: RejectReason }) => r.reason));
+  const reasons = rejected.map((r: { reason: RejectReason }) => r.reason);
+  const byReason = countByReason(reasons);
+  result.merged = byReason.duplicate ?? 0;
+  result.rejected = rejected.length - result.merged;
+  result.rejectSummary = describeRejects(reasons);
   ctx.emit({
     type: 'claims',
     proposed: created.map((c) => ({ id: c.id, catalogId: c.catalogId, statement: c.statement, level: c.level, quote: c.quote, sourceRef: c.sourceRef, limits: c.limits, status: c.status })),
     rejected: rejected.length,
+    rejectedByReason: byReason,
     ...(result.hiddenText ? { hiddenText: result.hiddenText } : {}),
   });
   ctx.emit({
     type: 'step',
-    text: `нашёл ${created.length}, отбросил ${rejected.length}${rejected.length ? ` — ${result.rejectSummary}` : ''}`,
+    text: claimsStepText(created.length, reasons),
   });
   return result;
 }

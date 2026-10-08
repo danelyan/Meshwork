@@ -1,0 +1,12 @@
+.card { display: grid; gap: 12px; }
+.head { display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.statement { font-size: var(--fs-lg); line-height: 1.5; font-weight: 500; margin: 0; }
+.quote { margin: 0; padding: 8px 12px; border-left: 2px solid var(--rail); color: var(--text-soft); font-size: var(--fs); line-height: 1.7; overflow-wrap: anywhere; }
+.meta { font-size: var(--fs-sm); color: var(--muted); display: grid; gap: 4px; overflow-wrap: anywhere; }
+.limits b { color: var(--text-dim); font-weight: 500; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.state { font-size: var(--fs); color: var(--accent-check); }
+.rejected { opacity: 0.6; }
+.editor { display: grid; gap: 8px; }
+.editor textarea { min-height: 70px; }
+.err { color: var(--error); font-size: var(--fs); }

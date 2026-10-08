@@ -1,0 +1,31 @@
+.page { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 28px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.top h1 { font-size: clamp(24px, 3vw, 34px); }
+.sub { color: var(--muted); font-size: var(--fs-md); margin-top: 6px; }
+.section { display: grid; gap: 12px; }
+.section h2 { font-size: var(--fs-lg); letter-spacing: 0; line-height: 1.5; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.count { font-size: var(--fs-sm); color: var(--muted); font-weight: 400; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.claim { display: grid; gap: 8px; break-inside: avoid; }
+.claim p { margin: 0; line-height: 1.6; }
+.statement { font-weight: 500; font-size: var(--fs-md); }
+.meta { font-size: var(--fs-sm); color: var(--muted); display: flex; gap: 6px 16px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.quote { font-size: var(--fs); color: var(--text-soft); border-left: 2px solid var(--rail); padding-left: 10px; overflow-wrap: anywhere; }
+.proof { font-size: var(--fs-sm); color: var(--text-soft); margin: 0; padding-left: 18px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.link { display: inline-flex; align-items: center; min-height: 34px; padding: 7px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: var(--fs-sm); font-weight: 500; }
+.link:hover { background: var(--surface-hover); }
+.gaps { width: 100%; border-collapse: collapse; font-size: var(--fs); }
+.gaps th, .gaps td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.gaps th { color: var(--muted); font-weight: 400; font-size: var(--fs-sm); }
+.tableWrap { overflow-x: auto; }
+.visibility { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px; display: grid; gap: 8px; }
+.visibility legend { padding: 0 6px; font-size: var(--fs); color: var(--text-soft); }
+.visibility label { display: flex; gap: 8px; align-items: center; font-size: var(--fs); }
+.printOnly { display: none; }
+@media print {
+  .page { --text: #000; --muted: #444; --panel: #fff; --line: #999; --bg: #fff; --text-soft: #222; --rail: #888; --border-soft: #888; --blue: #000; color: #000; background: #fff; max-width: none; padding: 0; }
+  .noPrint { display: none !important; }
+  .printOnly { display: block; }
+  .link { border: 0; padding: 0; text-decoration: underline; }
+}

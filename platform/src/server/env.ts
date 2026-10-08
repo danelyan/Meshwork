@@ -29,12 +29,20 @@ export const envSchema = z
     YANDEX_FOLDER_ID: optionalString,
     YANDEX_MODEL: optionalString,
     YANDEX_BASE_URL: z.url().default('https://ai.api.cloud.yandex.net/v1'),
+    /** false → client включает план В (вызовы инструментов через JSON в тексте). */
+    YANDEX_SUPPORTS_TOOLS: z.stringbool().default(true),
 
     OPENAI_CHAT_BASE_URL: optionalString.pipe(z.url().optional()),
     OPENAI_CHAT_API_KEY: optionalString,
     OPENAI_CHAT_MODEL: optionalString,
+    /** Имя в журнале AgentRun: cloudru, yandex-openai, vllm. */
+    OPENAI_CHAT_NAME: optionalString,
+    OPENAI_CHAT_SUPPORTS_TOOLS: z.stringbool().default(true),
+    OPENAI_CHAT_SUPPORTS_JSON_SCHEMA: z.stringbool().default(true),
 
     GITHUB_TOKEN: optionalString,
+    /** true → сборщик не ходит в сеть за профилями, только фикстуры (демо-стенд, тесты). */
+    COLLECTOR_FIXTURES: z.stringbool().default(false),
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: intFrom(1025, 1, 65535),
   })

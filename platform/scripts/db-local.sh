@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Локальный PostgreSQL 16 для разработки без Docker и без brew services.
-# Кластер общий для всех лейнов: fsp/.pgdata, порт 54329, пользователь postgres, trust.
+# Кластер общий для всех лейнов: fsp/.pgdata (рядом с основным клоном), порт 54329, пользователь postgres, trust.
+# Другое место — PGDATA_LOCAL=/путь (им же разрешается первичный initdb).
 #   db-local.sh start | stop | status | create <dbname> | drop <dbname> | url <dbname>
 set -euo pipefail
 # macOS: без валидной локали postmaster падает «became multithreaded during startup».
@@ -9,10 +10,19 @@ export LC_ALL="${LC_ALL:-en_US.UTF-8}" LANG="${LANG:-en_US.UTF-8}"
 PG_BIN="${PG_BIN:-/opt/homebrew/opt/postgresql@16/bin}"
 PORT="${PGPORT_LOCAL:-54329}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# platform/scripts -> platform -> worktree -> .wt -> fsp
-DEFAULT_PGDATA="$(cd "$SCRIPT_DIR/../../../.." && pwd)/.pgdata"
-# Если скрипт лежит в основном клоне, а не в .wt/<lane>, — задайте PGDATA_LOCAL явно.
-PGDATA="${PGDATA_LOCAL:-$DEFAULT_PGDATA}"
+# Корень кластера: fsp/.pgdata, где fsp/ — родитель основного клона (fsp/fsp-lct-2026).
+# `git rev-parse --git-common-dir` общий и для основного клона, и для его worktree'ов (.wt/<lane>),
+# поэтому путь не зависит от глубины, на которой лежит скрипт.
+default_pgdata() {
+  local common
+  common="$(git -C "$SCRIPT_DIR" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || return 1
+  echo "$(dirname "$(dirname "$common")")/.pgdata"
+}
+if [ -n "${PGDATA_LOCAL:-}" ]; then
+  PGDATA="$PGDATA_LOCAL"
+else
+  PGDATA="$(default_pgdata)" || { echo "Не удалось определить каталог кластера (скрипт вне git-репозитория). Задайте PGDATA_LOCAL=/путь/к/.pgdata" >&2; exit 3; }
+fi
 LOG="$PGDATA/server.log"
 
 psql_admin() { "$PG_BIN/psql" -h 127.0.0.1 -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -tA "$@"; }
@@ -23,6 +33,12 @@ cmd="${1:-status}"
 case "$cmd" in
   start)
     if [ ! -f "$PGDATA/PG_VERSION" ]; then
+      # Не создавать кластер молча в неожиданном месте: только по явному PGDATA_LOCAL.
+      if [ -z "${PGDATA_LOCAL:-}" ]; then
+        echo "Кластер PostgreSQL не найден: $PGDATA" >&2
+        echo "Чтобы создать его именно здесь, задайте PGDATA_LOCAL=$PGDATA; иначе укажите путь к существующему кластеру." >&2
+        exit 3
+      fi
       echo "initdb -> $PGDATA"
       "$PG_BIN/initdb" -D "$PGDATA" -U postgres --auth=trust -E UTF8 --locale=C >/dev/null
     fi

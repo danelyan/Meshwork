@@ -4,6 +4,7 @@ import { errors } from '@/server/errors';
 import { getLlm } from '@/server/llm/client';
 import { LlmError, type ChatMessage, type ToolCall } from '@/server/llm/types';
 import { assertBudget, BudgetExceededError } from './budget';
+import { demoReply, isDemoMode } from './demo-reply';
 import { dispatchToolCall } from './dispatch';
 import { EXTERNAL_NOTE } from './external';
 import { FALLBACK_STEP, fallbackReply, type FallbackReason } from './fallback';
@@ -38,6 +39,7 @@ export async function runTurn(
 
   const now = opts.now ?? (() => new Date());
   const budget = opts.dailyTokenBudget ?? getEnv().LLM_DAILY_TOKEN_BUDGET;
+  const demo = !opts.llm && isDemoMode();
   const llm =
     opts.llm ?? getLlm({ candidateId, conversationId, onQueue: (position) => emit({ type: 'queue', position }) });
   const registry = opts.tools ?? defaultTools;
@@ -57,6 +59,14 @@ export async function runTurn(
     }
   }
   if (signal?.aborted) return;
+
+  if (demo) {
+    // Демо без ключей: модели нет, ответ — шаблоны по данным платформы (не сбой, без «упрощённого режима»).
+    const text = await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
+    await saveMessage(conversationId, { role: 'assistant', content: text });
+    emit({ type: 'message', text });
+    return;
+  }
 
   const rows = await prisma.message.findMany({
     where: { conversationId },

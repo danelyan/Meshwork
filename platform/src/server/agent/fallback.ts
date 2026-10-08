@@ -25,43 +25,60 @@ export interface FallbackInput {
 const GRADE_RU: Record<string, string> = { junior: 'Junior', middle: 'Middle' };
 const SPEC_RU: Record<string, string> = { backend: 'Backend', frontend: 'Frontend' };
 
+/** Что прочитал / нашёл / отбросил — общая часть ответа после конвейера (план В и демо-режим). */
+export function pipelineParts(p: PipelineResult): string[] {
+  const parts: string[] = [];
+  if (p.docs.length) parts.push(`Прочитал: ${p.docs.map((d) => d.label).join(', ')}.`);
+  if (p.failed.length) parts.push(`Не удалось прочитать: ${p.failed.join(', ')}.`);
+  if (p.hiddenText > 0) parts.push('В документе найден скрытый текст — он проигнорирован.');
+  if (p.injectionSuspect) parts.push('В присланных данных есть похожее на инструкции для модели — проигнорировано.');
+  if (p.proposed.length) {
+    parts.push(
+      `Нашёл ${p.proposed.length} утверждений${p.rejected ? `, ${p.rejected} отбросил (${p.rejectSummary || 'нет цитаты в источнике'})` : ''}. Посмотри карточки: «да» переводит утверждение в профиль, «поправить» меняет формулировку, «нет» убирает.`,
+    );
+  } else if (p.docs.length) {
+    parts.push('Утверждений из каталога с дословной цитатой не нашёл. Напиши, что делал, своими словами — подберу формулировки из каталога.');
+  }
+  return parts;
+}
+
+/** Предложение теста по подтверждённым и предложенным утверждениям; undefined, если подбор недоступен. */
+export async function testPart(candidateId: string): Promise<string | undefined> {
+  const test = await safe(() => recommendTest(candidateId));
+  if (!test) return undefined;
+  return `По утверждениям похоже на ${SPEC_RU[test.specialization] ?? test.specialization}, ${GRADE_RU[test.grade] ?? test.grade}: ${test.reason}. Категорию даёт только тест — ${test.allowed ? 'пойдёшь на него?' : `смена грейда откроется ${test.nextAllowedAt ?? 'позже'}.`}`;
+}
+
+/** Строки по вакансиям из recommendTargets; undefined, если подбор недоступен. */
+export async function targetsParts(candidateId: string, limit = 3): Promise<string[] | undefined> {
+  const targets = await safe(() => recommendTargets(candidateId, limit));
+  if (!targets) return undefined;
+  return targets.map(
+    (v) =>
+      `— ${v.companyName}, ${v.title}: закрываешь ${v.covered} из ${v.total}${v.missing.length ? `, не хватает: ${v.missing.map((m) => m.statement).join('; ')}` : ''}.`,
+  );
+}
+
 /** Шаблонный ответ по сценарию. Рекомендации — только из кода (recommend_*), если модуль отвечает. */
 export async function fallbackReply(input: FallbackInput): Promise<string> {
-  const parts: string[] = [];
   const p = input.pipeline;
-  if (p) {
-    if (p.docs.length) parts.push(`Прочитал: ${p.docs.map((d) => d.label).join(', ')}.`);
-    if (p.failed.length) parts.push(`Не удалось прочитать: ${p.failed.join(', ')}.`);
-    if (p.hiddenText > 0) parts.push('В документе найден скрытый текст — он проигнорирован.');
-    if (p.injectionSuspect) parts.push('В присланных данных есть похожее на инструкции для модели — проигнорировано.');
-    if (p.proposed.length) {
-      parts.push(
-        `Нашёл ${p.proposed.length} утверждений${p.rejected ? `, ${p.rejected} отбросил (${p.rejectSummary || 'нет цитаты в источнике'})` : ''}. Посмотри карточки: «да» переводит утверждение в профиль, «поправить» меняет формулировку, «нет» убирает.`,
-      );
-    } else if (p.docs.length) {
-      parts.push('Утверждений из каталога с дословной цитатой не нашёл. Напиши, что делал, своими словами — подберу формулировки из каталога.');
-    }
-  }
+  const parts: string[] = p ? pipelineParts(p) : [];
   const t = input.text.toLowerCase();
   if (/ваканс|компани|куда|работ|финтех/.test(t) && !p) {
-    const targets = await safe(() => recommendTargets(input.candidateId, 3));
-    if (targets?.length) {
-      parts.push('По вакансиям платформы ближе всего:');
-      for (const v of targets) {
-        parts.push(`— ${v.companyName}, ${v.title}: закрываешь ${v.covered} из ${v.total}${v.missing.length ? `, не хватает: ${v.missing.map((m) => m.statement).join('; ')}` : ''}.`);
-      }
+    const lines = await targetsParts(input.candidateId);
+    if (lines?.length) {
+      parts.push('По вакансиям платформы ближе всего:', ...lines);
+    } else if (lines) {
+      parts.push('Пока подбирать не из чего: вакансии считаются по подтверждённым утверждениям. Подтверди карточки — покажу вакансии.');
     } else {
       parts.push('Подбор вакансий сейчас недоступен — попробуй через минуту.');
     }
   }
   if (/тест|грейд|категор/.test(t) || p?.proposed.length) {
-    const test = await safe(() => recommendTest(input.candidateId));
-    if (test) {
-      parts.push(
-        `По утверждениям похоже на ${SPEC_RU[test.specialization] ?? test.specialization}, ${GRADE_RU[test.grade] ?? test.grade}: ${test.reason}. Категорию даёт только тест — ${test.allowed ? 'пойдёшь на него?' : `смена грейда откроется ${test.nextAllowedAt ?? 'позже'}.`}`,
-      );
-    }
+    const test = await testPart(input.candidateId);
+    if (test) parts.push(test);
   }
+  if (p?.proposed.length) parts.push('Подтверди карточки — покажу подходящие вакансии.');
   if (!parts.length) {
     parts.push(
       'Сейчас отвечаю в упрощённом режиме. Пришли резюме или ссылки — соберу утверждения с цитатами; спроси про тест или вакансии — отвечу по данным платформы.',

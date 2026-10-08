@@ -52,6 +52,8 @@ export interface DemoCandidate {
   name: string;
   specialization: 'backend' | 'frontend' | null;
   fspState: string;
+  /** Какой файл загрузить и какую ссылку вставить; null — подсказки нет. */
+  demoResume?: { fileName: string; link: string } | null;
 }
 
 export const getDemoCandidates = async () => (await request<{ candidates: DemoCandidate[] }>('/api/demo/login')).candidates;
@@ -101,6 +103,18 @@ export async function uploadFile(file: File): Promise<{ id: string; filename: st
   const data = await request<UploadResponse>('/api/uploads', { method: 'POST', body: form });
   if (!data.uploadId) throw new ApiError('Сервер не вернул идентификатор файла.', 500);
   return { id: data.uploadId, filename: data.doc?.title || file.name, deduplicated: data.deduplicated };
+}
+
+/** Демо-резюме текущего демо-кандидата как File (GET /api/demo/resume) — для кнопки «Загрузить демо-резюме». */
+export async function fetchDemoResume(fileName: string): Promise<File> {
+  let res: Response;
+  try {
+    res = await fetch('/api/demo/resume', { credentials: 'same-origin' });
+  } catch {
+    throw new ApiError('Нет связи с сервером. Проверьте сеть и повторите.', 0, 'network');
+  }
+  if (!res.ok) throw await readError(res);
+  return new File([await res.blob()], fileName, { type: 'application/pdf' });
 }
 
 /** Разбор поля ссылок: пробелы, запятые, переводы строк. Возвращает валидные http(s) и отброшенные. */

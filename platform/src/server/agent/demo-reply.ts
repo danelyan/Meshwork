@@ -1,5 +1,5 @@
 import { prisma } from '@/server/db';
-import { getEnv } from '@/server/env';
+import { llmIsDemoStub } from '@/server/demo/mode';
 import { gapMap, recommendTargets, recommendTasks, recommendTest } from '@/server/recommend';
 import { pipelineParts, targetsParts, testPart } from './fallback';
 import type { PipelineResult } from './pipeline';
@@ -10,8 +10,7 @@ import type { PipelineResult } from './pipeline';
  * сбой, поэтому без пометки «упрощённый режим». Рекомендации — только из кода.
  */
 export function isDemoMode(): boolean {
-  const env = getEnv();
-  return env.LLM_PROVIDER === 'stub' && env.LLM_STUB_DEMO;
+  return llmIsDemoStub();
 }
 
 export interface DemoReplyInput {

@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import { type ClaimAction, claimAction, openConsultantStream, parseUrls } from '@/lib/api';
+import { type ClaimAction, claimAction, fetchDemoResume, openConsultantStream, parseUrls, uploadFile } from '@/lib/api';
 import type { CardClaim } from '@/lib/claims-view';
 import { createSseParser } from '@/lib/sse';
 import type { AgentEvent } from '@/server/agent/types';
+import type { ChatDemoContext } from '@/server/demo/context';
 
 import styles from './Chat.module.css';
 import { EventFeed, type FeedItem } from './EventFeed';
@@ -22,7 +23,7 @@ const SIMPLIFIED_CODES = new Set(['llm_unavailable', 'llm_rate_limited', 'rate_l
 let seq = 0;
 const nextId = () => `i${++seq}`;
 
-export function Chat() {
+export function Chat({ demo }: { demo?: ChatDemoContext }) {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [text, setText] = useState('');
@@ -109,6 +110,22 @@ export function Chat() {
     await send(message, uploadIds, urls, names);
   }
 
+  async function loadDemoResume() {
+    if (!demo?.resume) return;
+    const { fileName, link } = demo.resume;
+    const key = `demo-${fileName}`;
+    setFormError(null);
+    setFiles((p) => (p.some((f) => f.key === key) ? p : [...p, { key, name: fileName, status: 'uploading' }]));
+    setUrlsText((t) => (t.includes(link) ? t : t ? `${t}\n${link}` : link));
+    try {
+      const r = await uploadFile(await fetchDemoResume(fileName));
+      setFiles((p) => p.map((f) => (f.key === key ? { ...f, status: 'done', id: r.id } : f)));
+    } catch (e) {
+      const error = e instanceof Error ? e.message : 'Не удалось загрузить демо-резюме.';
+      setFiles((p) => p.map((f) => (f.key === key ? { ...f, status: 'error', error } : f)));
+    }
+  }
+
   const onClaimAction = useCallback(async (claim: CardClaim, action: ClaimAction, statement?: string) => {
     await claimAction(claim.id, action, statement);
     setOverrides((p) => ({
@@ -132,6 +149,11 @@ export function Chat() {
       <header className={styles.intro}>
         <h1>Карьерный консультант</h1>
         <p>{GREETING}</p>
+        {demo?.noLlm && (
+          <p className={styles.demoNote} role="note">
+            Демо-режим без языковой модели: ответы собираются по шаблонам из данных платформы, утверждения ищутся по словарю каталога.
+          </p>
+        )}
       </header>
 
       {simplified && (
@@ -163,6 +185,16 @@ export function Chat() {
         <details className={styles.details} open={items.length === 0}>
           <summary>Файлы и ссылки</summary>
           <div>
+            {demo?.resume && (
+              <div className={styles.demoResume}>
+                <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => void loadDemoResume()} disabled={busy}>
+                  Загрузить демо-резюме
+                </button>
+                <span className={ui.muted}>
+                  Подставит {demo.resume.fileName} и ссылку {demo.resume.link} — файлы искать не нужно.
+                </span>
+              </div>
+            )}
             <Uploader files={files} onChange={(u) => setFiles(u)} disabled={busy} />
             <div className={styles.row}>
               <label htmlFor={urlsId} className={ui.label}>

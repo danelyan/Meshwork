@@ -122,6 +122,8 @@ export function ProfilePage() {
   const claims = profile.claims.filter((c) => c.status !== 'rejected');
   const gaps = recs?.gaps ?? [];
   const tasks = recs?.tasks ?? [];
+  const targets = recs?.targets ?? [];
+  const confirmedCount = claims.filter((c) => c.status === 'confirmed' || c.status === 'edited').length;
 
   return (
     <div className={styles.page}>
@@ -176,6 +178,32 @@ export function ProfilePage() {
           );
         })
       )}
+
+      <section className={styles.section} aria-labelledby="targets-title">
+        <h2 id="targets-title">Подходящие вакансии</h2>
+        {recs === null ? (
+          <p className={ui.muted} role="status">
+            Загружаю…
+          </p>
+        ) : targets.length > 0 ? (
+          <ul className={styles.list}>
+            {targets.map((v) => (
+              <li key={v.vacancyId} className={`${ui.panel} ${styles.claim}`}>
+                <p className={styles.statement}>
+                  {v.companyName}, {v.title}
+                </p>
+                <p className={styles.quote}>{v.reason}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={ui.muted} data-testid="targets-empty">
+            {confirmedCount === 0
+              ? 'Вакансии подбираются по подтверждённым утверждениям, а пока подтверждённых нет. Подтвердите карточки в чате с консультантом — и здесь появятся вакансии.'
+              : 'По подтверждённым утверждениям подходящих вакансий пока нет. Добавьте источники или закройте пробелы из карты ниже.'}
+          </p>
+        )}
+      </section>
 
       <section className={styles.section} aria-labelledby="gap-title">
         <h2 id="gap-title">Карта пробелов к цели</h2>

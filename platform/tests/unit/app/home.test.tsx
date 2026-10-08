@@ -26,3 +26,12 @@ it('главная: ошибка загрузки видна', async () => {
   render(<HomePage />);
   expect((await screen.findByRole('alert')).textContent).toBe('Демо-вход выключен');
 });
+
+it('главная: у кнопки входа имя с именем кандидата и подсказка, какой файл и ссылку взять', async () => {
+  stubFetch({ candidates: [{ id: 'd1', name: 'Демо: Дмитрий Рябинин', specialization: 'backend', fspState: 'linked', demoResume: { fileName: 'demo-1.pdf', link: 'https://github.com/demo-ryabinin' } }] });
+  render(<HomePage />);
+  const btn = await screen.findByRole('button', { name: 'Войти как Демо: Дмитрий Рябинин' });
+  expect(btn.tagName).toBe('BUTTON');
+  expect(screen.getByText('eval/pdf/demo-1.pdf')).toBeDefined();
+  expect(screen.getByText('https://github.com/demo-ryabinin')).toBeDefined();
+});

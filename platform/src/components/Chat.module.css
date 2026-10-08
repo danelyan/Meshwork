@@ -13,3 +13,6 @@
 .simple { display: grid; gap: 8px; }
 .simple a { text-decoration: underline; text-underline-offset: 4px; }
 @media (max-width: 480px) { .send { flex-direction: column; align-items: stretch; } }
+
+.intro .demoNote { font-size: var(--fs-sm); color: var(--demo); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 4px 10px; width: fit-content; max-width: 100%; }
+.demoResume { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }

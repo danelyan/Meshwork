@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/*': ['./src/server/**/prompts/*.md'],
     '/api/**/*': ['./src/server/**/prompts/*.md'],
+    // Демо-резюме (PDF) читаются с диска через process.cwd() в /api/demo/resume.
+    '/api/demo/resume': ['./src/server/demo/pdf/*.pdf'],
   },
 };
 

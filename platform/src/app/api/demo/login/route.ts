@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/server/db';
+import { demoResumeFor } from '@/server/demo/resumes';
 import { getEnv } from '@/server/env';
 import { AppError, errors, withErrors } from '@/server/errors';
 import { clearedSessionCookie, sessionCookie } from '@/server/session';
@@ -20,7 +21,13 @@ export const GET = withErrors(async () => {
     select: { id: true, name: true, specialization: true, fspState: true },
     orderBy: { createdAt: 'asc' },
   });
-  return Response.json({ candidates });
+  // Подсказка для экрана входа: какой файл загрузить и какую ссылку вставить (eval/demo/demo-N).
+  return Response.json({
+    candidates: candidates.map((c) => {
+      const r = demoResumeFor(c.id);
+      return { ...c, demoResume: r ? { fileName: r.fileName, link: r.link } : null };
+    }),
+  });
 });
 
 const LoginBody = z.object({ candidateId: z.string().min(1).max(64) });

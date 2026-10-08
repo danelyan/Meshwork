@@ -85,3 +85,40 @@ describe('Chat', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe('Chat: демо', () => {
+  it('в демо без модели одна честная пометка в шапке; без demo — нет', () => {
+    const { unmount } = render(<Chat demo={{ noLlm: true, resume: null }} />);
+    expect(screen.getAllByText(/Демо-режим без языковой модели/)).toHaveLength(1);
+    unmount();
+    render(<Chat />);
+    expect(screen.queryByText(/Демо-режим без языковой модели/)).toBeNull();
+  });
+
+  it('«Загрузить демо-резюме»: тянет PDF с сервера, грузит как обычный файл и подставляет ссылку', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push(`${init?.method ?? 'GET'} ${url}`);
+        if (url === '/api/demo/resume') return new Response(new Blob(['%PDF-1.4 x'], { type: 'application/pdf' }), { status: 200 });
+        if (url === '/api/uploads') {
+          const file = (init?.body as FormData).get('file') as File;
+          expect(file.name).toBe('demo-1.pdf');
+          return new Response(JSON.stringify({ uploadId: 'up1', deduplicated: false, doc: { title: 'demo-1.pdf' } }), { status: 201, headers: { 'content-type': 'application/json' } });
+        }
+        throw new Error(`unexpected ${url}`);
+      }),
+    );
+    render(<Chat demo={{ noLlm: true, resume: { fileName: 'demo-1.pdf', link: 'https://github.com/demo-ryabinin' } }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Загрузить демо-резюме' }));
+    await waitFor(() => expect(screen.getByText(/загружен/)).toBeDefined());
+    expect(calls).toEqual(['GET /api/demo/resume', 'POST /api/uploads']);
+    expect((screen.getByLabelText(/Ссылки/) as HTMLTextAreaElement).value).toBe('https://github.com/demo-ryabinin');
+  });
+
+  it('нет demo.resume → кнопки нет', () => {
+    render(<Chat demo={{ noLlm: true, resume: null }} />);
+    expect(screen.queryByRole('button', { name: 'Загрузить демо-резюме' })).toBeNull();
+  });
+});

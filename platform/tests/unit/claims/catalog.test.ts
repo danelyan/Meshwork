@@ -26,6 +26,13 @@ describe('каталог из prisma/seed/claims-catalog.json', () => {
     }
   });
 
+  it('пользовательские тексты (statement, limits) не содержат технических ID', () => {
+    for (const c of cat) {
+      expect(c.statement).not.toMatch(/\b(be|fe|common)\.[a-z0-9-]+/);
+      expect(c.limits).not.toMatch(/\b(be|fe|common)\.[a-z0-9-]+/);
+    }
+  });
+
   it('веса J/M, stack и смежность — в meta; смежность симметрична', () => {
     expect(getCatalogMeta('be.idempotency')).toMatchObject({ weights: { junior: 1, middle: 3 }, stack: null });
     expect(getCatalogMeta('common.sql-queries')?.weights).toEqual({ backend: { junior: 3, middle: 2 }, frontend: { junior: 1, middle: 1 } });

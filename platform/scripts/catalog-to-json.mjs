@@ -168,6 +168,15 @@ for (const [a, b] of adjacency) {
   if (!byId.get(b).adjacent.includes(a)) byId.get(b).adjacent.push(a);
 }
 
+// Пользовательские тексты не показывают ID: «(см. be.x)» → «(см. «формулировка»)».
+for (const e of entries) {
+  e.limits = e.limits.replace(/\(см\. ((?:be|fe|common)\.[a-z0-9-]+)\)/g, (_, ref) => {
+    const t = byId.get(ref);
+    if (!t) fail(`${e.id}: ссылка «см. ${ref}» на несуществующий ID`);
+    return `(см. «${t.statement}»)`;
+  });
+}
+
 // Правки маркеров поверх личного каталога-Markdown (его не трогаем): scripts/catalog-marker-overrides.json.
 const OVERRIDES = join(here, 'catalog-marker-overrides.json');
 if (existsSync(OVERRIDES)) {

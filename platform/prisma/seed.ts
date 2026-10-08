@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
+import { seedRecommend } from './seed/recommend';
+
 /**
  * Базовый сид foundation: 3 демо-кандидата (вымышленные, isDemo = true).
  * Каталог, вакансии, задания и прочее сидят лейны (claims, recommend, eval) —
@@ -41,6 +43,7 @@ async function main() {
     });
   }
   console.log(`seed: ${DEMO_CANDIDATES.length} demo candidates`);
+  await seedRecommend(prisma);
 }
 
 main()

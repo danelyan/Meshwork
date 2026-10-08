@@ -26,5 +26,23 @@
     "path": "sources/originals/fsp-presentation-template.pptx",
     "bytes": 34461021,
     "sha256": "d2506c0aeb4fca12b6febb242e7d4e7fafc6c4c50434d3b671fc9d7251eb7345"
+  },
+  {
+    "id": "S7",
+    "original_filename": "Ответы на вопросы трек ФСП ЛЦТ__.xlsx",
+    "path": "sources/originals/fsp-organizer-answers.xlsx",
+    "bytes": 9581,
+    "sha256": "c7f6a492aa117470e672997dfab22fe9cd4a72b4facdd59bdb196891ad91c8a4",
+    "received_on": "2026-10-08"
+  },
+  {
+    "id": "S8",
+    "original_filename": "ФСП_Запись встречи.mp4",
+    "path": null,
+    "bytes": 1041578698,
+    "sha256": "e76a4fd6cc66a27038d1a0fea9d7a214bcec0db5094e31b52275753840b82cd2",
+    "duration_seconds": 3346.6433,
+    "received_on": "2026-10-08",
+    "note": "Видео хранится у команды вне Git; транскрипция и разбор — docs/meetings/2026-10-06/. Дата встречи соответствует анонсу организаторов, метаданных даты в видео нет."
   }
 ]

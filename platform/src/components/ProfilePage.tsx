@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
 
-import { ApiError, getProfile, getRecommendations, type RecommendationsView } from '@/lib/api';
+import { ApiError, claimAction, getProfile, getRecommendations, type RecommendationsView } from '@/lib/api';
 import { formatDate, LEVEL_HINT, LEVEL_ORDER } from '@/lib/labels';
 import type { ProfileClaim, ProfileView } from '@/server/claims/types';
 import type { Gap } from '@/server/recommend/types';
@@ -14,7 +15,20 @@ import ui from './ui.module.css';
 
 const STATUS_NOTE = { proposed: 'ждёт вашего подтверждения', edited: 'исправлено вами' } as const;
 
-function ClaimItem({ claim }: { claim: ProfileClaim }) {
+function ClaimItem({ claim, onDecide }: { claim: ProfileClaim; onDecide?: (id: string, action: 'confirm' | 'reject') => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function decide(action: 'confirm' | 'reject') {
+    if (!onDecide) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await onDecide(claim.id, action);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Не удалось сохранить.');
+      setBusy(false);
+    }
+  }
   const provable = claim.level === 'self_reported' || claim.level === 'artifact';
   return (
     <li className={`${ui.panel} ${styles.claim}`}>
@@ -27,7 +41,22 @@ function ClaimItem({ claim }: { claim: ProfileClaim }) {
       </div>
       {claim.limits && (
         <div className={styles.meta}>
-          <span>Не доказывает: {claim.limits}</span>
+          <span>Не доказывает: {stripLimitsPrefix(claim.limits)}</span>
+        </div>
+      )}
+      {claim.status === 'proposed' && onDecide && (
+        <div className={`${styles.actions} ${styles.noPrint}`} role="group" aria-label="Это про вас?">
+          <button type="button" className={`${ui.btn} ${ui.small}`} disabled={busy} onClick={() => void decide('confirm')}>
+            Да
+          </button>
+          <button type="button" className={`${ui.btn} ${ui.small}`} disabled={busy} onClick={() => void decide('reject')}>
+            Нет
+          </button>
+          {err && (
+            <span className={ui.muted} role="alert">
+              {err}
+            </span>
+          )}
         </div>
       )}
       {provable && (
@@ -41,7 +70,7 @@ function ClaimItem({ claim }: { claim: ProfileClaim }) {
   );
 }
 
-function GapMap({ gaps }: { gaps: Gap[] }) {
+function GapMap({ gaps, pending }: { gaps: Gap[]; pending: Set<string> }) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.gaps}>
@@ -57,7 +86,13 @@ function GapMap({ gaps }: { gaps: Gap[] }) {
           {gaps.map((g) => (
             <tr key={g.id}>
               <td>{g.statement}</td>
-              <td>{g.currentLevel ? <LevelBadge level={g.currentLevel} /> : <span className={ui.muted}>нет утверждения</span>}</td>
+              <td>{g.currentLevel ? (
+                  <LevelBadge level={g.currentLevel} />
+                ) : pending.has(g.catalogId) ? (
+                  <span className={ui.muted}>ждёт подтверждения</span>
+                ) : (
+                  <span className={ui.muted}>нет утверждения</span>
+                )}</td>
               <td>{g.suggestedProof.length ? g.suggestedProof.join('; ') : '—'}</td>
             </tr>
           ))}
@@ -87,6 +122,14 @@ export function ProfilePage() {
       alive = false;
     };
   }, []);
+
+  /** Да / Нет на черновике: действие на сервере, затем обновляем список и карту пробелов без перезагрузки. */
+  async function decide(id: string, action: 'confirm' | 'reject') {
+    await claimAction(id, action);
+    const [p, r] = await Promise.all([getProfile(), getRecommendations().catch(() => null)]);
+    setProfile(p);
+    if (r) setRecs(r);
+  }
 
   // ?print=1 (ссылка render_profile_pdf консультанта) — открыть печать, когда профиль загружен.
   useEffect(() => {
@@ -120,6 +163,7 @@ export function ProfilePage() {
   }
 
   const claims = profile.claims.filter((c) => c.status !== 'rejected');
+  const pending = new Set(claims.filter((c) => c.status === 'proposed').map((c) => c.catalogId));
   const gaps = recs?.gaps ?? [];
   const tasks = recs?.tasks ?? [];
   const targets = recs?.targets ?? [];
@@ -171,7 +215,7 @@ export function ProfilePage() {
               </h2>
               <ul className={styles.list}>
                 {list.map((c) => (
-                  <ClaimItem key={c.id} claim={c} />
+                  <ClaimItem key={c.id} claim={c} onDecide={decide} />
                 ))}
               </ul>
             </section>
@@ -214,7 +258,7 @@ export function ProfilePage() {
         ) : gaps.length === 0 ? (
           <p className={ui.muted}>Карта появится, когда будет выбрана цель: категория или вакансия. Попросите консультанта подобрать цель.</p>
         ) : (
-          <GapMap gaps={gaps} />
+          <GapMap gaps={gaps} pending={pending} />
         )}
         {tasks.length > 0 && (
           <div id="tasks">

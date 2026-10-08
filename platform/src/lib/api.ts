@@ -78,6 +78,12 @@ export type ClaimAction = 'confirm' | 'edit' | 'reject';
 export const claimAction = (claimId: string, action: ClaimAction, statement?: string) =>
   postJson<unknown>(`/api/claims/${encodeURIComponent(claimId)}/${action}`, statement === undefined ? {} : { statement });
 
+export interface ConfirmBatchResponse {
+  confirmed: string[];
+  skipped: { id: string; reason: string }[];
+}
+export const confirmClaimsBatchApi = (ids: string[]) => postJson<ConfirmBatchResponse>('/api/claims/confirm-batch', { ids });
+
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_EXT = ['.pdf', '.docx'];
 

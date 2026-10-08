@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import { type ClaimAction, claimAction, fetchDemoResume, openConsultantStream, parseUrls, uploadFile } from '@/lib/api';
+import { type ClaimAction, claimAction, confirmClaimsBatchApi, fetchDemoResume, openConsultantStream, parseUrls, uploadFile } from '@/lib/api';
 import type { CardClaim } from '@/lib/claims-view';
 import { createSseParser } from '@/lib/sse';
 import type { AgentEvent } from '@/server/agent/types';
@@ -139,9 +139,18 @@ export function Chat({ demo }: { demo?: ChatDemoContext }) {
 
   const onConfirmAll = useCallback(
     async (claims: CardClaim[]) => {
-      for (const c of claims) await onClaimAction(c, 'confirm');
+      const r = await confirmClaimsBatchApi(claims.map((c) => c.id));
+      const done = new Set(r.confirmed);
+      // уже подтверждённые ранее тоже отражаем как подтверждённые
+      for (const s of r.skipped) if (s.reason === 'already_confirmed') done.add(s.id);
+      setOverrides((p) => {
+        const next = { ...p };
+        for (const id of done) next[id] = { ...next[id], status: 'confirmed' };
+        return next;
+      });
+      return r.confirmed.length;
     },
-    [onClaimAction],
+    [],
   );
 
   return (

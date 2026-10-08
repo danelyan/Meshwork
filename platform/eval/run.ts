@@ -4,6 +4,8 @@
 //   node run.ts                       # по умолчанию: встроенный ключевой baseline
 //   node run.ts --predictor gullible  # заглушка, которая «ведётся» на инъекции (самопроверка метрик)
 //   node run.ts --predictor ./my-predictor.ts   # модуль с export default predict
+//   npx tsx eval/run.ts --predictor catalog-keywords   # план В: маркеры каталога + verifyClaims (лейн claims)
+//   npx tsx eval/run.ts --predictor claims-stub        # extractClaims на заглушке LLM + verifyClaims
 //   node run.ts --no-write            # не писать results/*.json
 //
 // Подключение настоящего извлекателя: модуль экспортирует default-функцию Predict:
@@ -66,7 +68,7 @@ const keywordBaseline: Predict = (text) => {
   for (const [catalogId, re] of Object.entries(KEYWORDS)) {
     const i = lines.findIndex((l) => re.test(l));
     if (i < 0) continue;
-    const quote = lines[i].replace(/^[\s\-*•\d.]+/, '').trim();
+    const quote = (lines[i] ?? '').replace(/^[\s\-*•\d.]+/, '').trim();
     claims.push({ catalogId, statement: catalogId, quote, sourceRef: `line:${i + 1}`, confidence: 'low' });
   }
   return claims;
@@ -88,6 +90,13 @@ async function loadPredictor(spec: string): Promise<{ name: string; fn: Predict 
   if (spec === 'keyword') return { name: 'keyword-baseline', fn: keywordBaseline };
   if (spec === 'gullible') return { name: 'gullible-stub', fn: gullible };
   if (spec === 'empty') return { name: 'empty', fn: emptyPredict };
+  // именованные предсказатели из predictors/ (импортируют src — запускать через tsx):
+  //   npx tsx eval/run.ts --predictor catalog-keywords | claims-stub
+  const named = join(root, 'predictors', `${spec}.ts`);
+  if (/^[a-z0-9-]+$/.test(spec) && existsSync(named)) {
+    const mod = await import(pathToFileURL(named).href);
+    return { name: spec, fn: mod.default as Predict };
+  }
   const mod = await import(pathToFileURL(resolve(spec)).href);
   return { name: spec, fn: mod.default as Predict };
 }
@@ -181,7 +190,7 @@ function mskStamp(): string {
 async function main() {
   const argv = process.argv.slice(2);
   const pi = argv.indexOf('--predictor');
-  const { name, fn } = await loadPredictor(pi >= 0 ? argv[pi + 1] : 'keyword');
+  const { name, fn } = await loadPredictor(pi >= 0 ? (argv[pi + 1] ?? 'keyword') : 'keyword');
   const r = await evaluate(fn);
   const o = r.overall;
   console.log(`Предсказатель: ${name}  (разметка: ${r.counts.labeled} документов, атак: ${r.counts.attacks})`);
@@ -202,4 +211,10 @@ async function main() {
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  // без top-level await: под tsx (package.json без "type": "module") файл собирается как CJS
+  main().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
+}

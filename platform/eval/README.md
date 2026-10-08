@@ -32,6 +32,8 @@
 node scripts/build-dataset.mjs && node scripts/build-attacks.mjs && node scripts/build-ssrf.mjs   # пересборка
 node run.ts                        # ключевой baseline (проверка, что метрики считаются)
 node run.ts --predictor gullible   # заглушка, поддающаяся инъекциям (самопроверка)
+npx tsx eval/run.ts --predictor catalog-keywords   # из platform/: план В лейна claims (маркеры каталога + verifyClaims)
+npx tsx eval/run.ts --predictor claims-stub        # extractClaims на заглушке LLM + verifyClaims (проверка конвейера)
 node run.ts --predictor ./my.ts    # свой предсказатель: export default (text, ctx) => ProposedClaim[] | {claims, grade?, flags?, actions?}
 node scripts/make-pdfs.mjs [--font FILE] [--out DIR]   # PDF в pdf/ (в git не хранится)
 ```

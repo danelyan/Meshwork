@@ -7,6 +7,7 @@ import { type ClaimAction, claimAction, confirmClaimsBatchApi, fetchDemoResume, 
 import type { CardClaim } from '@/lib/claims-view';
 import { createSseParser } from '@/lib/sse';
 import type { AgentEvent } from '@/server/agent/types';
+import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 
 import styles from './Chat.module.css';
@@ -23,8 +24,8 @@ const SIMPLIFIED_CODES = new Set(['llm_unavailable', 'llm_rate_limited', 'rate_l
 let seq = 0;
 const nextId = () => `i${++seq}`;
 
-export function Chat({ demo }: { demo?: ChatDemoContext }) {
-  const [items, setItems] = useState<FeedItem[]>([]);
+export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: RestoredChat }) {
+  const [items, setItems] = useState<FeedItem[]>(initial?.items ?? []);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [text, setText] = useState('');
   const [urlsText, setUrlsText] = useState('');
@@ -34,7 +35,7 @@ export function Chat({ demo }: { demo?: ChatDemoContext }) {
   const [formError, setFormError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // Разговор создаёт сервер на первом ходе (событие conversation); дальше шлём его id.
-  const conversationRef = useRef<string | undefined>(undefined);
+  const conversationRef = useRef<string | undefined>(initial?.conversationId ?? undefined);
   const endRef = useRef<HTMLDivElement>(null);
   const textId = useId();
   const urlsId = useId();

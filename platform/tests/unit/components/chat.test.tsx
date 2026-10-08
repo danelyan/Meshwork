@@ -56,6 +56,35 @@ describe('Chat', () => {
     expect(body(1).conversationId).toBe('conv-1');
   });
 
+  it('восстановленный разговор виден после загрузки, его id уходит в следующем ходе', async () => {
+    const fetchMock = vi.fn(async () => new Response(streamOf([frame({ type: 'done' })]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <Chat
+        initial={{
+          conversationId: 'conv-old',
+          items: [
+            { id: 'r1', role: 'user', text: 'старый вопрос' },
+            { id: 'r2', role: 'agent', event: { type: 'message', text: 'старый ответ' } },
+            {
+              id: 'r3',
+              role: 'agent',
+              event: { type: 'claims', rejected: 0, proposed: [{ id: 'cl1', statement: 'Кэш', quote: 'q', sourceRef: 'cv#1', level: 'self_reported', limits: '', status: 'proposed' }] },
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('старый вопрос')).toBeDefined();
+    expect(screen.getByText('старый ответ')).toBeDefined();
+    expect(screen.getByText('Кэш')).toBeDefined();
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'новое' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body.conversationId).toBe('conv-old');
+  });
+
   it('невалидная ссылка не отправляется', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

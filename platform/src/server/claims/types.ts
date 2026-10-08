@@ -33,7 +33,11 @@ export interface VerifiedClaim extends ProposedClaim {
   sourceKind: SourceKind;
 }
 
-export type RejectReason = 'no_quote' | 'unknown_catalog_id' | 'duplicate';
+/**
+ * no_quote — цитаты нет в источнике; unknown_catalog_id — ID вне каталога; duplicate — второй раз тот же ID;
+ * hidden_text — цитата только из строк, помеченных сборщиком скрытыми; quote_too_short — меньше 2 слов.
+ */
+export type RejectReason = 'no_quote' | 'unknown_catalog_id' | 'duplicate' | 'hidden_text' | 'quote_too_short';
 
 export interface VerifyResult {
   accepted: VerifiedClaim[];
@@ -60,5 +64,21 @@ export interface ProfileView {
   candidate: { id: string; name: string; specialization: Specialization | null; fspState: FspState };
   /** Категория — только из теста (R-M-01); null, пока теста не было. */
   category: { specialization: Specialization; grade: Grade; confirmedAt: string } | null;
+  /** Все не отклонённые утверждения: сначала выше уровень, затем новее. */
   claims: ProfileClaim[];
+  /** Те же утверждения по уровням доказанности (для экрана профиля). */
+  byLevel: Record<EvidenceLevel, ProfileClaim[]>;
+}
+
+/** Полная запись каталога из prisma/seed/claims-catalog.json — поля, которых нет в схеме ClaimCatalog. */
+export interface CatalogMeta {
+  id: string;
+  /** Вес по грейдам; у common — отдельно по специализациям. null — в грейде не ожидается. */
+  weights:
+    | { junior: number | null; middle: number | null }
+    | { backend: { junior: number | null; middle: number | null }; frontend: { junior: number | null; middle: number | null } };
+  /** Квалификатор stack (каталог § 2.2): кандидат указывает технологию. null — нет. */
+  stack: { kind: string | null } | null;
+  /** Смежные утверждения (половинный зачёт, каталог § 6), в обе стороны. */
+  adjacent: string[];
 }

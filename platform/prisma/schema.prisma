@@ -1,0 +1,392 @@
+// Схема E-01 «Карьерный консультант». Пишется foundation целиком; лейны меняют
+// только аддитивно и только в своей секции (`// lane: <name>`), миграции
+// собирает интегратор. План: fsp/docs/epics/E-01-plan.md § «Prisma-модели».
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// lane: foundation — кандидат, категория, журнал вызовов LLM
+// =============================================================================
+
+enum Specialization {
+  backend
+  frontend
+}
+
+enum Grade {
+  junior
+  middle
+}
+
+/// Состояние привязки ФСП (R-FSP-03: сценарий «нет истории ФСП» обязателен).
+enum FspState {
+  not_linked
+  no_achievements
+  unavailable
+  linked
+}
+
+/// Категорию даёт только тест (R-M-01). Другие источники не предусмотрены.
+enum CategorySource {
+  test
+}
+
+enum LlmPurpose {
+  consultant
+  extractor
+  evaluator
+  smoke
+}
+
+model Candidate {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  name           String
+  specialization Specialization?
+  consentAt      DateTime?
+  fspState       FspState        @default(not_linked)
+  /// Демо-кандидат из сида (вход через /api/demo/login).
+  isDemo         Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  categories      CandidateCategory[]
+  uploads         Upload[]
+  sources         Source[]
+  claims          Claim[]
+  conversations   Conversation[]
+  agentRuns       AgentRun[]
+  recommendations Recommendation[]
+  invitations     Invitation[]
+  defenseSessions DefenseSession[]
+}
+
+model CandidateCategory {
+  id             String         @id @default(cuid())
+  candidateId    String
+  candidate      Candidate      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  specialization Specialization
+  grade          Grade
+  source         CategorySource @default(test)
+  confirmedAt    DateTime       @default(now())
+
+  @@index([candidateId])
+}
+
+/// Журнал каждого вызова LLM (пишет llm/client.ts). Цифры для критерия валидации.
+model AgentRun {
+  id             String     @id @default(cuid())
+  purpose        LlmPurpose
+  provider       String
+  model          String
+  latencyMs      Int
+  inputTokens    Int        @default(0)
+  outputTokens   Int        @default(0)
+  ok             Boolean
+  /// null — запрос без schema; true/false — прошёл ли JSON валидацию.
+  jsonValid      Boolean?
+  error          String?
+  /// Сколько попыток ушло (1 + ретраи).
+  attempts       Int        @default(1)
+  queueWaitMs    Int        @default(0)
+  candidateId    String?
+  candidate      Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  conversationId String?
+  createdAt      DateTime   @default(now())
+
+  @@index([candidateId, createdAt])
+  @@index([purpose, createdAt])
+}
+
+// =============================================================================
+// lane: collector — загрузки и внешние источники
+// =============================================================================
+
+enum SourceKind {
+  resume
+  document
+  url
+  github
+  codeforces
+  stackoverflow
+  fsp
+  chat
+}
+
+model Upload {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  filename    String
+  mime        String
+  sha256      String
+  size        Int
+  /// ExtractedDoc (server/collector/types.ts)
+  extracted   Json?
+  /// ExtractedDoc.flags
+  flags       Json?
+  createdAt   DateTime  @default(now())
+
+  @@unique([candidateId, sha256])
+}
+
+model Source {
+  id                String     @id @default(cuid())
+  candidateId       String
+  candidate         Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  kind              SourceKind
+  /// URL или handle профиля
+  origin            String
+  /// ExtractedDoc — снимок на момент чтения (он же кэш GitHub/Codeforces)
+  snapshot          Json
+  /// Подтверждено ли владение аккаунтом (для third_party у codeforces/fsp)
+  ownershipVerified Boolean    @default(false)
+  fetchedAt         DateTime   @default(now())
+
+  claims Claim[]
+
+  @@index([candidateId, kind, origin])
+}
+
+// =============================================================================
+// lane: claims — каталог и утверждения профиля
+// =============================================================================
+
+enum CatalogSpecialization {
+  backend
+  frontend
+  common
+}
+
+enum EvidenceLevel {
+  self_reported
+  artifact
+  platform
+  third_party
+}
+
+enum ClaimStatus {
+  proposed
+  confirmed
+  edited
+  rejected
+}
+
+enum Confidence {
+  low
+  medium
+  high
+}
+
+/// Поля CatalogEntry (server/claims/types.ts).
+model ClaimCatalog {
+  /// ID вида "be.idempotency"
+  id             String                @id
+  specialization CatalogSpecialization
+  statement      String
+  grades         Grade[]
+  /// 1 | 2 | 3
+  weight         Int
+  proof          String[]
+  markers        String[]
+  limits         String
+
+  claims Claim[]
+}
+
+model Claim {
+  id             String        @id @default(cuid())
+  candidateId    String
+  candidate      Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  catalogId      String
+  catalog        ClaimCatalog  @relation(fields: [catalogId], references: [id])
+  statement      String
+  /// Ставит код по типу источника (ADR-0001), не LLM и не кандидат.
+  level          EvidenceLevel
+  quote          String
+  /// "cv.pdf#p2:l14", "github:user/repo#README:l3"
+  sourceRef      String
+  sourceKind     SourceKind
+  sourceId       String?
+  source         Source?       @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  confidence     Confidence?
+  limits         String
+  /// string[]
+  suggestedProof Json
+  status         ClaimStatus   @default(proposed)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  confirmedAt    DateTime?
+
+  defenseSessions DefenseSession[]
+
+  @@index([candidateId, status])
+  @@index([candidateId, catalogId])
+}
+
+// =============================================================================
+// lane: agent — диалог консультанта
+// =============================================================================
+
+enum MessageRole {
+  system
+  user
+  assistant
+  tool
+}
+
+model Conversation {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  title       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  messages Message[]
+
+  @@index([candidateId, updatedAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String
+  /// ToolCall[] (server/llm/types.ts) — у assistant
+  toolCalls      Json?
+  /// у tool
+  toolCallId     String?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// =============================================================================
+// lane: recommend — рекомендации, компании, вакансии, банк заданий, приглашения
+// =============================================================================
+
+enum RecommendationKind {
+  test
+  task
+  target
+}
+
+enum InvitationStatus {
+  sent
+  accepted
+  declined
+}
+
+model Recommendation {
+  id          String             @id @default(cuid())
+  candidateId String
+  candidate   Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  kind        RecommendationKind
+  payload     Json
+  reason      String
+  accepted    Boolean?
+  createdAt   DateTime           @default(now())
+
+  @@index([candidateId, kind])
+}
+
+model Company {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  isDemo      Boolean   @default(true)
+  vacancies   Vacancy[]
+}
+
+model Vacancy {
+  id             String         @id @default(cuid())
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title          String
+  specialization Specialization
+  grade          Grade
+  /// ₽, обязательные
+  salaryFrom     Int
+  salaryTo       Int
+  /// { catalogId: string; weight: number }[]
+  needs          Json
+  description    String?
+  createdAt      DateTime       @default(now())
+
+  invitations Invitation[]
+
+  @@index([specialization, grade])
+}
+
+/// Банк заданий: рекомендуются только отсюда.
+model Task {
+  /// slug вида "task:payment-retry"
+  id          String   @id
+  title       String
+  family      String
+  grade       Grade
+  catalogIds  String[]
+  description String?
+}
+
+model Invitation {
+  id          String           @id @default(cuid())
+  vacancyId   String
+  vacancy     Vacancy          @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  status      InvitationStatus @default(sent)
+  salaryOffer Int?
+  message     String?
+  createdAt   DateTime         @default(now())
+
+  @@index([candidateId, status])
+}
+
+// =============================================================================
+// lane: defense — защита утверждения
+// =============================================================================
+
+enum DefenseStatus {
+  active
+  completed
+  abandoned
+}
+
+model DefenseSession {
+  id          String        @id @default(cuid())
+  claimId     String
+  claim       Claim         @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  status      DefenseStatus @default(active)
+  /// Вердикт оценщика (рубрика A-02), null до завершения
+  verdict     Json?
+  createdAt   DateTime      @default(now())
+  completedAt DateTime?
+
+  turns DefenseTurn[]
+
+  @@index([candidateId, claimId])
+}
+
+model DefenseTurn {
+  id        String         @id @default(cuid())
+  sessionId String
+  session   DefenseSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  index     Int
+  question  String
+  answer    String?
+  createdAt DateTime       @default(now())
+
+  @@unique([sessionId, index])
+}

@@ -105,6 +105,30 @@ const res = await llm.complete({ purpose: 'consultant', system, messages, tools 
 `[[delay 300]]` — задержка ответа (уважает `AbortSignal`).
 `createStubProvider({ latencyMs })` — задержка на каждый ответ.
 
+## Консультант (лейн agent)
+
+`POST /api/consultant/messages` `{conversationId?, text, uploadIds?, urls?}` → SSE
+(`data: <AgentEvent>\n\n`): первый кадр `conversation` (id, он же в заголовке
+`X-Conversation-Id`), дальше `step` / `queue` / `claims` / `ask` /
+`recommendations` / `message` / `error`, последний — `done`. Один ход на
+разговор одновременно (`pg_try_advisory_xact_lock` на время хода), второй →
+409 `busy`. Разрыв соединения (`request.signal`) останавливает цикл.
+`GET /api/consultant/conversations[/id]` — список и история (только владелец).
+
+Цикл (`src/server/agent/loop.ts`): первый ход с вложениями — детерминированный
+конвейер `pipeline.ts` (сборщик → извлекатель → проверяющий → событие `claims`),
+затем модель с 14 инструментами `tools/` (ТЗ § 4.1; записи в профиль нет), не
+больше `MAX_TOOL_CALLS_PER_TURN` = 6 вызовов за ход, после лимита — ответ без
+инструментов. Внешний текст идёт в модель только в
+`<external_data … trust="untrusted">` (`external.ts`); невалидные аргументы и
+исключения инструментов возвращаются модели результатом `{ error }`. Бюджет
+`LLM_DAILY_TOKEN_BUDGET` — сумма токенов `AgentRun` за 24 ч (0 — без лимита).
+Падение провайдера / таймаут / бюджет → план В `fallback.ts` (извлечение по
+маркерам каталога + шаблонные ответы), событие `step` про упрощённый режим.
+Системный промпт — `prompts/consultant.md` (источник правды), константа
+`prompt.ts` генерируется из него (тест сверяет); версия пишется системной
+строкой `prompt:<версия>` в `Message` разговора.
+
 ## Контракты и заглушки лейнов
 
 Типы — в модулях-владельцах, функции-заглушки бросают `not implemented: <lane>`:

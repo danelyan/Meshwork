@@ -12,13 +12,17 @@ export type AgentEvent =
   | { type: 'recommendations'; items: unknown[] }
   | { type: 'message'; text: string }
   | { type: 'error'; code: string; message: string }
-  | { type: 'done' };
+  | { type: 'done' }
+  /** Первый кадр потока: id разговора (новый создаётся на первом ходе). Добавлено лейном agent. */
+  | { type: 'conversation'; id: string };
 
 export interface ToolContext {
   candidateId: string;
   conversationId: string;
   emit(e: AgentEvent): void;
   llm: LlmProvider;
+  /** Разрыв SSE: инструменты с сетью/LLM обязаны уважать. */
+  signal?: AbortSignal;
 }
 
 export interface AgentTool<I, O> {
@@ -27,6 +31,13 @@ export interface AgentTool<I, O> {
   input: ZodType<I>;
   output: ZodType<O>;
   handler(ctx: ToolContext, input: I): Promise<O>;
+  /**
+   * Результат содержит текст извне (документ, страница, README, ответ API):
+   * цикл оборачивает его в `<external_data … trust="untrusted">` целиком.
+   */
+  untrusted?: boolean;
+  /** После вызова ход заканчивается (ask_user: ждём ответа кандидата). */
+  terminal?: boolean;
 }
 
 /** Лимит вызовов инструментов за один ход. */
@@ -39,4 +50,14 @@ export interface TurnInput {
   /** Вложения первого хода: id из /api/uploads и ссылки. */
   uploadIds?: string[];
   urls?: string[];
+}
+
+/** Зависимости хода, подменяемые в тестах (по умолчанию — getLlm и реестр tools/index). */
+export interface TurnOptions {
+  llm?: LlmProvider;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tools?: AgentTool<any, any>[];
+  /** Суточный бюджет токенов; по умолчанию env LLM_DAILY_TOKEN_BUDGET. 0 — без лимита. */
+  dailyTokenBudget?: number;
+  now?: () => Date;
 }

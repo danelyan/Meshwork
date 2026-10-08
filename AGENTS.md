@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-The Git repository contains the FSP Career frontend prototype and product documentation. `src/app.js` owns screens, hash routing and local state; `src/domain.js` contains pure business rules; `src/data.js` contains synthetic fixtures; `src/styles.css` contains design tokens and responsive styles. `public/assets/` contains logos and local fonts. `scripts/` contains the HTTP server and static build; `tests/` uses `node:test`. Product sources and proposals live in `docs/`.
+The Git repository contains the FSP Career frontend prototype and product documentation. `src/app.js` owns screens, hash routing and local state; `src/domain.js` contains pure business rules; `src/data.js` contains synthetic fixtures; `src/styles.css` contains design tokens and responsive styles. `public/assets/` contains logos and local fonts. `scripts/` contains the HTTP server and static build; `tests/` uses `node:test`. Product sources and proposals live in `docs/`. The accepted target stack (Next.js + TypeScript, PostgreSQL) is in `docs/stack.md`; update this section when the code moves to it.
 
 Keep application code, tests, and static assets in clearly named locations appropriate to the chosen framework. For example, use `src/`, `tests/`, and `assets/` if the framework does not prescribe alternatives. Document the actual layout in `README.md`.
 
@@ -20,7 +20,7 @@ Use `node:test` in `tests/*.test.js` for behavior, failure paths and regressions
 
 ## Commit & Pull Request Guidelines
 
-Follow the existing Git history: use concise, imperative subjects such as `Add career platform prototype` or `Document validation results`.
+Follow the existing Git history: use concise, imperative English subjects such as `Add career platform prototype` or `Document validation results`. The full format (verbs, length, body, AI attribution) is in `.claude/skills/commit-message/SKILL.md`; every person and agent follows it.
 
 Pull requests should explain the change, include validation results, and link relevant issues. Include screenshots for visible interface changes and identify any checks that could not be run.
 

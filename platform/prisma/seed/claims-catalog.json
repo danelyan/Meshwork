@@ -1,0 +1,2137 @@
+{
+  "version": "claims-catalog-draft-2026-10-09",
+  "counts": {
+    "backend": 33,
+    "frontend": 28,
+    "common": 11
+  },
+  "entries": [
+    {
+      "id": "be.lang-core",
+      "specialization": "backend",
+      "statement": "Писал серверный код на основном языке: типы, коллекции, ошибки, модули",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 3
+      },
+      "proof": [
+        "task:code-output",
+        "task:find-bug"
+      ],
+      "markers": [
+        "Go",
+        "Java",
+        "Kotlin",
+        "Python",
+        "C#",
+        "Node.js",
+        "PHP",
+        "пишу на"
+      ],
+      "limits": "Не доказывает: знание фреймворков и экосистемы; другой язык не покрывается",
+      "stack": {
+        "kind": "язык"
+      },
+      "adjacent": []
+    },
+    {
+      "id": "be.framework",
+      "specialization": "backend",
+      "statement": "Делал сервис на веб-фреймворке: роутинг, middleware, внедрение зависимостей",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:code-output",
+        "interview:defend"
+      ],
+      "markers": [
+        "Spring",
+        "Spring Boot",
+        "Django",
+        "FastAPI",
+        "Flask",
+        "Express",
+        "NestJS",
+        "ASP.NET",
+        "Gin",
+        "Laravel"
+      ],
+      "limits": "Не доказывает: проектирование API и архитектуры сервиса",
+      "stack": {
+        "kind": "фреймворк"
+      },
+      "adjacent": []
+    },
+    {
+      "id": "be.rest-design",
+      "specialization": "backend",
+      "statement": "Проектировал REST API: ресурсы, методы, коды ошибок, пагинация, версионирование",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:http-semantics",
+        "interview:defend"
+      ],
+      "markers": [
+        "REST",
+        "RESTful",
+        "эндпоинты",
+        "API",
+        "пагинация",
+        "версионирование API"
+      ],
+      "limits": "Не доказывает: удобство API для потребителей на практике; gRPC/GraphQL",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.api-validation",
+      "specialization": "backend",
+      "statement": "Валидировал входные данные и возвращал понятные ошибки по схеме (DTO, схемы запросов)",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 1
+      },
+      "proof": [
+        "task:find-bug"
+      ],
+      "markers": [
+        "валидация",
+        "DTO",
+        "Pydantic",
+        "Bean Validation",
+        "class-validator",
+        "JSON Schema"
+      ],
+      "limits": "Не доказывает: защиту от атак (см. common.security-basics)",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.api-contract",
+      "specialization": "backend",
+      "statement": "Описывал контракт API в OpenAPI и генерировал из него клиент или сервер",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": 1,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "OpenAPI",
+        "Swagger",
+        "контракт API",
+        "кодогенерация"
+      ],
+      "limits": "Не доказывает: обратную совместимость при изменениях контракта",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.grpc",
+      "specialization": "backend",
+      "statement": "Делал сервисы на gRPC: protobuf-контракт, обратная совместимость схемы",
+      "grades": [
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": null,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "gRPC",
+        "protobuf",
+        "proto",
+        "RPC"
+      ],
+      "limits": "Не доказывает: REST-проектирование; работу с брокерами",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.realtime",
+      "specialization": "backend",
+      "statement": "Делал двустороннюю связь в реальном времени на сервере (WebSocket, SSE)",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": 1,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "WebSocket",
+        "SSE",
+        "Socket.IO",
+        "long polling",
+        "real-time"
+      ],
+      "limits": "Не доказывает: масштабирование соединений под нагрузкой",
+      "stack": null,
+      "adjacent": [
+        "fe.realtime-client"
+      ]
+    },
+    {
+      "id": "be.external-integration",
+      "specialization": "backend",
+      "statement": "Интегрировал сторонний API: аутентификация, лимиты, ошибки, вебхуки",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "интеграция",
+        "внешний API",
+        "вебхук",
+        "webhook",
+        "платёжный шлюз",
+        "API партнёра"
+      ],
+      "limits": "Не доказывает: отказоустойчивость интеграции (см. be.retries-timeouts)",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.file-handling",
+      "specialization": "backend",
+      "statement": "Принимал и отдавал файлы: потоковая передача, загрузка в объектное хранилище",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": 1,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "загрузка файлов",
+        "S3",
+        "MinIO",
+        "multipart",
+        "стриминг"
+      ],
+      "limits": "Не доказывает: обработку медиа и CDN",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.sql-schema",
+      "specialization": "backend",
+      "statement": "Проектировал схему реляционной БД: нормализация, ключи, ограничения целостности",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:schema-constraint",
+        "interview:defend"
+      ],
+      "markers": [
+        "схема БД",
+        "нормализация",
+        "внешний ключ",
+        "constraint",
+        "ER-диаграмма"
+      ],
+      "limits": "Не доказывает: производительность запросов",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.sql-indexes",
+      "specialization": "backend",
+      "statement": "Подбирал индексы и читал план запроса (EXPLAIN)",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:index-choice",
+        "interview:defend"
+      ],
+      "markers": [
+        "индекс",
+        "EXPLAIN",
+        "план запроса",
+        "оптимизация запросов",
+        "B-tree",
+        "медленные запросы"
+      ],
+      "limits": "Не доказывает: оптимизацию под реальную нагрузку и объём данных",
+      "stack": null,
+      "adjacent": [
+        "be.orm"
+      ]
+    },
+    {
+      "id": "be.transactions",
+      "specialization": "backend",
+      "statement": "Использовал транзакции, выбирал уровень изоляции и знаю его аномалии",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:isolation-anomaly"
+      ],
+      "markers": [
+        "транзакция",
+        "ACID",
+        "уровень изоляции",
+        "lost update",
+        "SELECT FOR UPDATE",
+        "блокировка строк"
+      ],
+      "limits": "Не доказывает: распределённые транзакции между сервисами",
+      "stack": null,
+      "adjacent": [
+        "be.distributed-consistency"
+      ]
+    },
+    {
+      "id": "be.migrations",
+      "specialization": "backend",
+      "statement": "Писал миграции схемы без простоя: новая колонка, перенос данных, обратная совместимость",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "миграции",
+        "Liquibase",
+        "Flyway",
+        "Alembic",
+        "Prisma migrate",
+        "zero-downtime"
+      ],
+      "limits": "Не доказывает: проектирование схемы",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.orm",
+      "specialization": "backend",
+      "statement": "Работал с БД через ORM и находил проблему N+1",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:n-plus-one"
+      ],
+      "markers": [
+        "ORM",
+        "Hibernate",
+        "JPA",
+        "SQLAlchemy",
+        "Django ORM",
+        "Prisma",
+        "TypeORM",
+        "GORM",
+        "N+1"
+      ],
+      "limits": "Не доказывает: ручной SQL и индексы",
+      "stack": null,
+      "adjacent": [
+        "be.sql-indexes"
+      ]
+    },
+    {
+      "id": "be.nosql",
+      "specialization": "backend",
+      "statement": "Выбирал нереляционное хранилище под модель доступа (документное, ключ-значение)",
+      "grades": [
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": null,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "MongoDB",
+        "NoSQL",
+        "Cassandra",
+        "DynamoDB",
+        "документная БД"
+      ],
+      "limits": "Не доказывает: реляционное проектирование",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.cache",
+      "specialization": "backend",
+      "statement": "Кэшировал данные: стратегия, TTL, инвалидация, защита от «лавины» промахов",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:cache-consistency",
+        "interview:defend"
+      ],
+      "markers": [
+        "кэш",
+        "Redis",
+        "Memcached",
+        "TTL",
+        "инвалидация",
+        "cache-aside"
+      ],
+      "limits": "Не доказывает: Redis как брокер или хранилище данных",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.idempotency",
+      "specialization": "backend",
+      "statement": "Делал обработку повторных запросов идемпотентной: ключ идемпотентности, уникальное ограничение",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:payment-retry",
+        "interview:defend"
+      ],
+      "markers": [
+        "идемпотентность",
+        "idempotency key",
+        "повторный запрос",
+        "дубли",
+        "дедупликация",
+        "exactly-once"
+      ],
+      "limits": "Не доказывает: работу с production-нагрузкой; брокеры сообщений",
+      "stack": null,
+      "adjacent": [
+        "be.message-queue",
+        "be.retries-timeouts"
+      ]
+    },
+    {
+      "id": "be.retries-timeouts",
+      "specialization": "backend",
+      "statement": "Настраивал таймауты, ретраи с backoff и circuit breaker при вызове внешних сервисов",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "task:retry-policy",
+        "interview:defend"
+      ],
+      "markers": [
+        "ретраи",
+        "retry",
+        "backoff",
+        "таймаут",
+        "circuit breaker",
+        "отказоустойчивость"
+      ],
+      "limits": "Не доказывает: идемпотентность принимающей стороны",
+      "stack": null,
+      "adjacent": [
+        "be.idempotency"
+      ]
+    },
+    {
+      "id": "be.message-queue",
+      "specialization": "backend",
+      "statement": "Обрабатывал сообщения из брокера: подтверждение, повторная доставка, порядок, DLQ",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": 3
+      },
+      "proof": [
+        "task:delivery-semantics",
+        "interview:defend"
+      ],
+      "markers": [
+        "Kafka",
+        "RabbitMQ",
+        "NATS",
+        "очередь",
+        "брокер сообщений",
+        "consumer",
+        "DLQ",
+        "at-least-once"
+      ],
+      "limits": "Не доказывает: эксплуатацию кластера брокера",
+      "stack": null,
+      "adjacent": [
+        "be.idempotency",
+        "be.background-jobs",
+        "be.distributed-consistency"
+      ]
+    },
+    {
+      "id": "be.concurrency",
+      "specialization": "backend",
+      "statement": "Писал конкурентный код без гонок: блокировки, атомарные операции, пулы потоков или горутин",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:find-bug",
+        "task:code-output"
+      ],
+      "markers": [
+        "многопоточность",
+        "конкурентность",
+        "goroutine",
+        "mutex",
+        "async",
+        "race condition",
+        "deadlock"
+      ],
+      "limits": "Не доказывает: поведение под production-нагрузкой",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.background-jobs",
+      "specialization": "backend",
+      "statement": "Выносил долгие операции в фоновые задачи и планировщик",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "фоновые задачи",
+        "cron",
+        "Celery",
+        "Sidekiq",
+        "worker",
+        "планировщик",
+        "очередь задач"
+      ],
+      "limits": "Не доказывает: гарантии доставки брокера",
+      "stack": null,
+      "adjacent": [
+        "be.message-queue"
+      ]
+    },
+    {
+      "id": "be.distributed-consistency",
+      "specialization": "backend",
+      "statement": "Согласовывал данные между сервисами: transactional outbox, saga, компенсации",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "outbox",
+        "saga",
+        "eventual consistency",
+        "распределённая транзакция",
+        "компенсация"
+      ],
+      "limits": "Не доказывает: транзакции в одной БД",
+      "stack": null,
+      "adjacent": [
+        "be.message-queue",
+        "be.transactions"
+      ]
+    },
+    {
+      "id": "be.authn-impl",
+      "specialization": "backend",
+      "statement": "Реализовывал аутентификацию на сервере: хранение паролей, сессии или JWT, обновление токенов",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:find-bug",
+        "interview:defend"
+      ],
+      "markers": [
+        "аутентификация",
+        "авторизация",
+        "JWT",
+        "OAuth",
+        "сессии",
+        "bcrypt",
+        "refresh token",
+        "SSO"
+      ],
+      "limits": "Не доказывает: аудит безопасности; соответствие стандартам",
+      "stack": null,
+      "adjacent": [
+        "common.auth-flow"
+      ]
+    },
+    {
+      "id": "be.authz",
+      "specialization": "backend",
+      "statement": "Проверял права доступа к объекту: роли, проверка владельца, защита от IDOR",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:find-bug"
+      ],
+      "markers": [
+        "права доступа",
+        "RBAC",
+        "роли",
+        "ACL",
+        "IDOR",
+        "разграничение доступа"
+      ],
+      "limits": "Не доказывает: аутентификацию",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.config-secrets",
+      "specialization": "backend",
+      "statement": "Выносил конфигурацию и секреты из кода в окружение и хранилище секретов",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 1
+      },
+      "proof": [
+        "task:find-bug"
+      ],
+      "markers": [
+        "конфигурация",
+        "переменные окружения",
+        ".env",
+        "секреты",
+        "Vault",
+        "12-factor"
+      ],
+      "limits": "Не доказывает: управление инфраструктурой",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.rate-limit",
+      "specialization": "backend",
+      "statement": "Ограничивал частоту запросов к сервису",
+      "grades": [
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": null,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "rate limit",
+        "троттлинг",
+        "ограничение запросов",
+        "token bucket"
+      ],
+      "limits": "Не доказывает: защиту от DDoS на уровне сети",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.layering",
+      "specialization": "backend",
+      "statement": "Разделял код сервиса на слои: обработчики, бизнес-логика, доступ к данным",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "слоистая архитектура",
+        "чистая архитектура",
+        "DDD",
+        "сервисный слой",
+        "репозиторий",
+        "SOLID"
+      ],
+      "limits": "Не доказывает: выбор границ между сервисами",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.error-handling",
+      "specialization": "backend",
+      "statement": "Обрабатывал ошибки без потерь: типизация, проброс, коды ответа, без «проглатывания»",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:find-bug",
+        "task:code-output"
+      ],
+      "markers": [
+        "обработка ошибок",
+        "исключения",
+        "error handling",
+        "panic",
+        "try/catch"
+      ],
+      "limits": "Не доказывает: наблюдаемость в проде",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.service-boundaries",
+      "specialization": "backend",
+      "statement": "Выделял модули или сервисы и обосновывал границы (монолит или микросервисы)",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "микросервисы",
+        "монолит",
+        "декомпозиция",
+        "bounded context",
+        "архитектура сервиса"
+      ],
+      "limits": "Не доказывает: опыт эксплуатации распределённой системы",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.integration-tests",
+      "specialization": "backend",
+      "statement": "Писал интеграционные тесты сервиса с реальной БД в контейнере и тесты API",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "интеграционные тесты",
+        "Testcontainers",
+        "тесты API",
+        "pytest",
+        "JUnit",
+        "supertest"
+      ],
+      "limits": "Не доказывает: нагрузочное тестирование",
+      "stack": null,
+      "adjacent": [
+        "common.unit-tests"
+      ]
+    },
+    {
+      "id": "be.observability",
+      "specialization": "backend",
+      "statement": "Добавлял структурированные логи, метрики и трассировку и находил по ним проблему",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "логирование",
+        "метрики",
+        "Prometheus",
+        "Grafana",
+        "трассировка",
+        "OpenTelemetry",
+        "ELK",
+        "Sentry"
+      ],
+      "limits": "Не доказывает: дежурства и SLO",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.performance",
+      "specialization": "backend",
+      "statement": "Находил узкое место сервиса профилировщиком или нагрузочным тестом и подтверждал улучшение замером",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "производительность",
+        "профилирование",
+        "нагрузочное тестирование",
+        "k6",
+        "JMeter",
+        "pprof",
+        "RPS",
+        "latency"
+      ],
+      "limits": "Не доказывает: масштабирование инфраструктуры",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "be.linux-shell",
+      "specialization": "backend",
+      "statement": "Работал в Linux-консоли: процессы, сеть, логи, права",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": 1,
+        "middle": 1
+      },
+      "proof": [
+        "task:shell-output"
+      ],
+      "markers": [
+        "Linux",
+        "bash",
+        "ssh",
+        "консоль",
+        "systemd",
+        "grep"
+      ],
+      "limits": "Не доказывает: администрирование серверов",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.html-semantic",
+      "specialization": "frontend",
+      "statement": "Верстал семантическим HTML: структура документа, формы, подходящие теги",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 1
+      },
+      "proof": [
+        "task:html-semantics"
+      ],
+      "markers": [
+        "HTML5",
+        "семантическая вёрстка",
+        "вёрстка",
+        "разметка"
+      ],
+      "limits": "Не доказывает: доступность (см. fe.a11y)",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.css-layout",
+      "specialization": "frontend",
+      "statement": "Строил раскладки на Flexbox и Grid",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:css-layout"
+      ],
+      "markers": [
+        "CSS",
+        "Flexbox",
+        "Grid",
+        "вёрстка",
+        "раскладка"
+      ],
+      "limits": "Не доказывает: адаптивность",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.css-cascade",
+      "specialization": "frontend",
+      "statement": "Разбирался в каскаде: специфичность, наследование, контекст наложения",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:css-specificity"
+      ],
+      "markers": [
+        "каскад",
+        "специфичность",
+        "z-index",
+        "наследование стилей"
+      ],
+      "limits": "Не доказывает: организацию стилей в проекте",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.responsive",
+      "specialization": "frontend",
+      "statement": "Делал адаптивную вёрстку: медиазапросы, mobile-first, относительные единицы, адаптивные изображения",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:css-layout",
+        "interview:defend"
+      ],
+      "markers": [
+        "адаптив",
+        "адаптивная вёрстка",
+        "responsive",
+        "медиазапросы",
+        "mobile-first"
+      ],
+      "limits": "Не доказывает: нативную мобильную разработку",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.css-architecture",
+      "specialization": "frontend",
+      "statement": "Организовывал стили масштабируемо: БЭМ, CSS Modules, CSS-in-JS или утилитарный CSS, дизайн-токены",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "БЭМ",
+        "BEM",
+        "CSS Modules",
+        "styled-components",
+        "Tailwind",
+        "SCSS",
+        "дизайн-токены"
+      ],
+      "limits": "Не доказывает: владение конкретной дизайн-системой",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.design-handoff",
+      "specialization": "frontend",
+      "statement": "Верстал по макету из Figma и использовал компоненты дизайн-системы",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "Figma",
+        "макет",
+        "pixel-perfect",
+        "дизайн-система",
+        "UI-kit"
+      ],
+      "limits": "Не доказывает: дизайн и UX-решения",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.cross-browser",
+      "specialization": "frontend",
+      "statement": "Обеспечивал кроссбраузерность: полифилы, browserslist, прогрессивное улучшение",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": 1,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "кроссбраузерность",
+        "полифилы",
+        "Babel",
+        "browserslist",
+        "Safari"
+      ],
+      "limits": "Не доказывает: поддержку конкретных устаревших браузеров",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.a11y",
+      "specialization": "frontend",
+      "statement": "Делал интерфейс доступным: клавиатура, ARIA, фокус, контраст, работа со скринридером",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:a11y-bug",
+        "interview:defend"
+      ],
+      "markers": [
+        "доступность",
+        "a11y",
+        "ARIA",
+        "WCAG",
+        "скринридер",
+        "клавиатурная навигация"
+      ],
+      "limits": "Не доказывает: формальное соответствие WCAG по аудиту",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.js-core",
+      "specialization": "frontend",
+      "statement": "Писал на JavaScript, понимая замыкания, this, прототипы, области видимости и приведение типов",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:code-output"
+      ],
+      "markers": [
+        "JavaScript",
+        "JS",
+        "ES6",
+        "ES2015+",
+        "замыкания",
+        "прототипы"
+      ],
+      "limits": "Не доказывает: владение фреймворком",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.event-loop",
+      "specialization": "frontend",
+      "statement": "Писал асинхронный код, понимая event loop: микро- и макрозадачи, промисы, async/await",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:code-output"
+      ],
+      "markers": [
+        "асинхронность",
+        "Promise",
+        "async/await",
+        "event loop",
+        "микрозадачи"
+      ],
+      "limits": "Не доказывает: конкурентность на сервере",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.dom-events",
+      "specialization": "frontend",
+      "statement": "Работал с DOM и событиями: всплытие, делегирование, отмена действия по умолчанию",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 1
+      },
+      "proof": [
+        "task:code-output"
+      ],
+      "markers": [
+        "DOM",
+        "события",
+        "addEventListener",
+        "делегирование",
+        "vanilla JS"
+      ],
+      "limits": "Не доказывает: работу во фреймворке",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.ts-typing",
+      "specialization": "frontend",
+      "statement": "Типизировал код на TypeScript: дженерики, объединения и сужение типов, утилитарные типы",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:ts-typecheck"
+      ],
+      "markers": [
+        "TypeScript",
+        "TS",
+        "типизация",
+        "дженерики",
+        "generics",
+        "strict"
+      ],
+      "limits": "Не доказывает: проектирование архитектуры типов в большом проекте",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.components",
+      "specialization": "frontend",
+      "statement": "Делил интерфейс на переиспользуемые компоненты: props, композиция, контролируемые компоненты",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:code-output",
+        "interview:defend"
+      ],
+      "markers": [
+        "React",
+        "Vue",
+        "Angular",
+        "Svelte",
+        "компоненты",
+        "JSX",
+        "SFC"
+      ],
+      "limits": "Не доказывает: архитектуру приложения",
+      "stack": {
+        "kind": "фреймворк"
+      },
+      "adjacent": []
+    },
+    {
+      "id": "fe.render-lifecycle",
+      "specialization": "frontend",
+      "statement": "Управлял перерисовками фреймворка: эффекты и хуки, ключи списков, мемоизация",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:render-count"
+      ],
+      "markers": [
+        "хуки",
+        "useEffect",
+        "useMemo",
+        "жизненный цикл",
+        "ре-рендер",
+        "реактивность",
+        "watch"
+      ],
+      "limits": "Не доказывает: профилирование производительности",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.state-mgmt",
+      "specialization": "frontend",
+      "statement": "Выбирал, где хранить состояние (локально, в глобальном сторе, на сервере), и избегал его дублирования",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "interview:defend",
+        "task:find-bug"
+      ],
+      "markers": [
+        "Redux",
+        "MobX",
+        "Zustand",
+        "Pinia",
+        "Vuex",
+        "NgRx",
+        "стейт-менеджмент",
+        "состояние"
+      ],
+      "limits": "Не доказывает: кэширование серверных данных",
+      "stack": null,
+      "adjacent": [
+        "fe.server-state"
+      ]
+    },
+    {
+      "id": "fe.forms",
+      "specialization": "frontend",
+      "statement": "Делал формы с валидацией, сообщениями об ошибках и состояниями отправки",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:find-bug",
+        "interview:defend"
+      ],
+      "markers": [
+        "формы",
+        "валидация",
+        "React Hook Form",
+        "Formik",
+        "VeeValidate",
+        "Yup",
+        "Zod"
+      ],
+      "limits": "Не доказывает: доступность форм",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.routing",
+      "specialization": "frontend",
+      "statement": "Настраивал клиентскую маршрутизацию: вложенные маршруты, защищённые страницы, ленивая загрузка",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "роутинг",
+        "React Router",
+        "Vue Router",
+        "SPA",
+        "маршрутизация"
+      ],
+      "limits": "Не доказывает: серверный рендеринг",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.ssr",
+      "specialization": "frontend",
+      "statement": "Делал серверный рендеринг или статическую генерацию: гидратация, разделение серверного и клиентского кода",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "SSR",
+        "SSG",
+        "Next.js",
+        "Nuxt",
+        "гидратация",
+        "SEO"
+      ],
+      "limits": "Не доказывает: эксплуатацию Node.js-сервера",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.architecture",
+      "specialization": "frontend",
+      "statement": "Структурировал фронтенд-приложение: слои или фичи, границы модулей, общий UI-kit",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "FSD",
+        "Feature-Sliced Design",
+        "архитектура фронтенда",
+        "микрофронтенды",
+        "монорепозиторий"
+      ],
+      "limits": "Не доказывает: проектирование бэкенда",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.api-client",
+      "specialization": "frontend",
+      "statement": "Получал данные с сервера: состояния загрузки и ошибки, отмена запросов, гонки ответов",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 3
+      },
+      "proof": [
+        "task:find-bug",
+        "interview:defend"
+      ],
+      "markers": [
+        "fetch",
+        "axios",
+        "REST",
+        "API",
+        "AbortController",
+        "интеграция с бэкендом"
+      ],
+      "limits": "Не доказывает: проектирование API",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.server-state",
+      "specialization": "frontend",
+      "statement": "Кэшировал серверные данные на клиенте: инвалидация, оптимистичные обновления",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "React Query",
+        "TanStack Query",
+        "SWR",
+        "RTK Query",
+        "Apollo",
+        "оптимистичные обновления"
+      ],
+      "limits": "Не доказывает: глобальное клиентское состояние",
+      "stack": null,
+      "adjacent": [
+        "fe.state-mgmt"
+      ]
+    },
+    {
+      "id": "fe.realtime-client",
+      "specialization": "frontend",
+      "statement": "Подключал обновления в реальном времени на клиенте (WebSocket, SSE) с переподключением",
+      "grades": [
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": null,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "WebSocket",
+        "SSE",
+        "Socket.IO",
+        "real-time",
+        "чат"
+      ],
+      "limits": "Не доказывает: серверную часть",
+      "stack": null,
+      "adjacent": [
+        "be.realtime"
+      ]
+    },
+    {
+      "id": "fe.browser-storage",
+      "specialization": "frontend",
+      "statement": "Использовал хранилища и кэш браузера: localStorage, IndexedDB, HTTP-кэш, Service Worker",
+      "grades": [
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "junior": null,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "localStorage",
+        "IndexedDB",
+        "Service Worker",
+        "PWA",
+        "offline"
+      ],
+      "limits": "Не доказывает: безопасность хранения токенов (см. common.auth-flow)",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.web-perf",
+      "specialization": "frontend",
+      "statement": "Измерял и ускорял загрузку страницы: Core Web Vitals, Lighthouse, разделение кода, ленивая загрузка",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:web-vitals",
+        "interview:defend"
+      ],
+      "markers": [
+        "производительность",
+        "Lighthouse",
+        "Core Web Vitals",
+        "LCP",
+        "code splitting",
+        "lazy loading",
+        "оптимизация бандла"
+      ],
+      "limits": "Не доказывает: производительность рендеринга",
+      "stack": null,
+      "adjacent": [
+        "fe.render-perf"
+      ]
+    },
+    {
+      "id": "fe.render-perf",
+      "specialization": "frontend",
+      "statement": "Находил лишние перерисовки и долгие задачи профилировщиком, виртуализировал длинные списки",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "DevTools Performance",
+        "React Profiler",
+        "виртуализация",
+        "лаги",
+        "FPS"
+      ],
+      "limits": "Не доказывает: скорость загрузки",
+      "stack": null,
+      "adjacent": [
+        "fe.web-perf"
+      ]
+    },
+    {
+      "id": "fe.bundler",
+      "specialization": "frontend",
+      "statement": "Настраивал сборку: окружения, алиасы, анализ размера бандла",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "Webpack",
+        "Vite",
+        "Rollup",
+        "esbuild",
+        "сборка",
+        "бандл"
+      ],
+      "limits": "Не доказывает: CI и деплой",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "fe.component-tests",
+      "specialization": "frontend",
+      "statement": "Тестировал компоненты через поведение пользователя, с моками сети",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:test-pick",
+        "interview:defend"
+      ],
+      "markers": [
+        "Testing Library",
+        "Jest",
+        "Vitest",
+        "тесты компонентов",
+        "Storybook",
+        "MSW"
+      ],
+      "limits": "Не доказывает: сквозные сценарии",
+      "stack": null,
+      "adjacent": [
+        "fe.e2e-tests",
+        "common.unit-tests"
+      ]
+    },
+    {
+      "id": "fe.e2e-tests",
+      "specialization": "frontend",
+      "statement": "Писал сквозные тесты ключевых сценариев в браузере",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "Playwright",
+        "Cypress",
+        "e2e",
+        "Selenium",
+        "сквозные тесты"
+      ],
+      "limits": "Не доказывает: тестирование на уровне компонентов",
+      "stack": null,
+      "adjacent": [
+        "fe.component-tests"
+      ]
+    },
+    {
+      "id": "common.git",
+      "specialization": "common",
+      "statement": "Работал в Git: ветки, merge и rebase, разрешение конфликтов, pull request",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": 2,
+          "middle": 1
+        },
+        "frontend": {
+          "junior": 2,
+          "middle": 1
+        }
+      },
+      "proof": [
+        "task:git-history"
+      ],
+      "markers": [
+        "Git",
+        "GitHub",
+        "GitLab",
+        "ветки",
+        "rebase",
+        "merge",
+        "pull request",
+        "merge request"
+      ],
+      "limits": "Не доказывает: культуру ревью в команде",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "common.http",
+      "specialization": "common",
+      "statement": "Разбирался в HTTP: методы, коды ответа, заголовки, кэширование, CORS, cookie",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "backend": {
+          "junior": 3,
+          "middle": 2
+        },
+        "frontend": {
+          "junior": 2,
+          "middle": 2
+        }
+      },
+      "proof": [
+        "task:http-semantics"
+      ],
+      "markers": [
+        "HTTP",
+        "HTTPS",
+        "REST",
+        "CORS",
+        "статус-коды",
+        "заголовки",
+        "cookie"
+      ],
+      "limits": "Не доказывает: проектирование API",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "common.sql-queries",
+      "specialization": "common",
+      "statement": "Писал SQL-запросы с JOIN, GROUP BY/HAVING, подзапросами, с учётом NULL",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "backend": {
+          "junior": 3,
+          "middle": 2
+        },
+        "frontend": {
+          "junior": 1,
+          "middle": 1
+        }
+      },
+      "proof": [
+        "task:sql-rowcount"
+      ],
+      "markers": [
+        "SQL",
+        "PostgreSQL",
+        "MySQL",
+        "запросы",
+        "JOIN",
+        "агрегаты"
+      ],
+      "limits": "Не доказывает: проектирование схемы и индексы",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "common.unit-tests",
+      "specialization": "common",
+      "statement": "Писал модульные тесты: изоляция, моки, граничные случаи",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": 2,
+          "middle": 2
+        },
+        "frontend": {
+          "junior": 2,
+          "middle": 2
+        }
+      },
+      "proof": [
+        "task:test-pick"
+      ],
+      "markers": [
+        "юнит-тесты",
+        "unit tests",
+        "TDD",
+        "моки",
+        "покрытие тестами"
+      ],
+      "limits": "Не доказывает: интеграционные и сквозные тесты",
+      "stack": null,
+      "adjacent": [
+        "fe.component-tests",
+        "be.integration-tests"
+      ]
+    },
+    {
+      "id": "common.debugging",
+      "specialization": "common",
+      "statement": "Находил причину ошибки по стектрейсу, логам и отладчику, сводя её к минимальному воспроизведению",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "backend": {
+          "junior": 3,
+          "middle": 2
+        },
+        "frontend": {
+          "junior": 3,
+          "middle": 2
+        }
+      },
+      "proof": [
+        "task:find-bug"
+      ],
+      "markers": [
+        "отладка",
+        "debug",
+        "дебаггер",
+        "DevTools",
+        "багфикс",
+        "стектрейс"
+      ],
+      "limits": "Не доказывает: наблюдаемость в проде",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "common.algo-complexity",
+      "specialization": "common",
+      "statement": "Оценивал сложность алгоритма и выбирал структуру данных под задачу",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "backend": {
+          "junior": 1,
+          "middle": 1
+        },
+        "frontend": {
+          "junior": 1,
+          "middle": 1
+        }
+      },
+      "proof": [
+        "task:complexity",
+        "registry:fsp-algo"
+      ],
+      "markers": [
+        "алгоритмы",
+        "структуры данных",
+        "O-нотация",
+        "Codeforces",
+        "олимпиады",
+        "спортивное программирование"
+      ],
+      "limits": "Не доказывает: прикладную разработку и стек",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "common.code-review",
+      "specialization": "common",
+      "statement": "Проводил ревью кода: находил дефекты и объяснял замечания",
+      "grades": [
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "backend": {
+          "junior": null,
+          "middle": 1
+        },
+        "frontend": {
+          "junior": null,
+          "middle": 1
+        }
+      },
+      "proof": [
+        "task:find-bug",
+        "interview:defend"
+      ],
+      "markers": [
+        "код-ревью",
+        "code review",
+        "ревью"
+      ],
+      "limits": "Не доказывает: наставничество",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "common.security-basics",
+      "specialization": "common",
+      "statement": "Находил и исправлял типовые уязвимости: инъекции, XSS, CSRF, секреты в коде",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": 2,
+          "middle": 2
+        },
+        "frontend": {
+          "junior": 2,
+          "middle": 2
+        }
+      },
+      "proof": [
+        "task:find-bug"
+      ],
+      "markers": [
+        "OWASP",
+        "XSS",
+        "SQL-инъекция",
+        "CSRF",
+        "CSP",
+        "безопасность"
+      ],
+      "limits": "Не доказывает: аудит и пентест",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "common.auth-flow",
+      "specialization": "common",
+      "statement": "Понимаю схемы входа: сессии и cookie против токенов, где хранить токен, как его обновлять",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": 1,
+          "middle": 1
+        },
+        "frontend": {
+          "junior": 2,
+          "middle": 2
+        }
+      },
+      "proof": [
+        "task:http-semantics",
+        "interview:defend"
+      ],
+      "markers": [
+        "авторизация",
+        "JWT",
+        "OAuth2",
+        "сессии",
+        "refresh token",
+        "httpOnly"
+      ],
+      "limits": "Не доказывает: серверную реализацию (см. be.authn-impl)",
+      "stack": null,
+      "adjacent": [
+        "be.authn-impl"
+      ]
+    },
+    {
+      "id": "common.docker-local",
+      "specialization": "common",
+      "statement": "Упаковывал приложение в Docker-образ и поднимал окружение через docker compose",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": 1,
+          "middle": 2
+        },
+        "frontend": {
+          "junior": 1,
+          "middle": 1
+        }
+      },
+      "proof": [
+        "task:dockerfile-bug",
+        "interview:defend"
+      ],
+      "markers": [
+        "Docker",
+        "docker-compose",
+        "контейнеры",
+        "Dockerfile"
+      ],
+      "limits": "Не доказывает: Kubernetes и эксплуатацию",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "common.ci-basics",
+      "specialization": "common",
+      "statement": "Настраивал CI: сборка, тесты и линтер на каждый pull request",
+      "grades": [
+        "middle"
+      ],
+      "weight": 1,
+      "weights": {
+        "backend": {
+          "junior": null,
+          "middle": 1
+        },
+        "frontend": {
+          "junior": null,
+          "middle": 1
+        }
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "CI/CD",
+        "GitHub Actions",
+        "GitLab CI",
+        "Jenkins",
+        "пайплайн",
+        "линтер"
+      ],
+      "limits": "Не доказывает: деплой и инфраструктуру",
+      "stack": null,
+      "adjacent": []
+    }
+  ]
+}

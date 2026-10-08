@@ -29,4 +29,11 @@ describe('демо-заглушка извлекателя (LLM_STUB_DEMO)', () 
     expect(out.map((c) => c.catalogId)).toContain('be.idempotency');
     expect(out.find((c) => c.catalogId === 'be.idempotency')?.sourceRef).toBe('cv.pdf#p1:l3');
   });
+
+  it('профиль GitHub из нескольких строк: kind из тега документа, шапку не ищет', async () => {
+    registerExtractorDemoStub();
+    const gh = { ...doc(['payments-idempotency: сервис платежей', 'README: ключ идемпотентности в заголовке Idempotency-Key']), sourceKind: 'github' as const, origin: 'github:demo' };
+    const out = await extractClaims(gh, catalogFromFile(), createStubProvider());
+    expect(out.map((c) => c.catalogId)).toContain('be.idempotency');
+  });
 });

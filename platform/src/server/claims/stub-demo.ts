@@ -1,6 +1,6 @@
 import type { StubFixture } from '../llm/providers/stub';
 import { registerStubResponse } from '../llm/providers/stub';
-import type { ExtractedDoc } from '../collector/types';
+import type { ExtractedDoc, SourceKind } from '../collector/types';
 import { catalogFromFile } from './catalog-file';
 import { extractByMarkers } from './markers';
 
@@ -13,12 +13,16 @@ import { extractByMarkers } from './markers';
 export const extractorDictionaryStub: StubFixture = (req) => {
   const user = req.messages.find((m) => m.role === 'user')?.content ?? '';
   const block = /<document[^>]*>\n([\s\S]*?)\n<\/document>/.exec(user)?.[1] ?? '';
+  // kind из тега: у резюме первые строки — шапка, у профиля GitHub — нет (как в extractByMarkers).
+  const kind = (/<document[^>]*\skind="([a-z]+)"/.exec(user)?.[1] ?? 'resume') as SourceKind;
+  // часть > 1 — продолжение документа, шапки в ней нет.
+  const part = Number(/<document[^>]*\spart="(\d+)\//.exec(user)?.[1] ?? '1');
   const rows = block
     .split('\n')
     .map((r) => /^L(\d+): ([\s\S]*)$/.exec(r))
     .filter((m): m is RegExpExecArray => m !== null);
   const doc: ExtractedDoc = {
-    sourceKind: 'resume',
+    sourceKind: part > 1 && (kind === 'resume' || kind === 'document') ? 'url' : kind,
     title: 'stub',
     origin: 'stub',
     flags: {},
@@ -35,11 +39,10 @@ export const extractorDictionaryStub: StubFixture = (req) => {
   return { json: { claims } };
 };
 
-let registered = false;
+let unregister: (() => void) | null = null;
 
-/** Один раз на процесс: включить словарный извлекатель на заглушке LLM. */
+/** Включить словарный извлекатель на заглушке LLM; повторный вызов не плодит дублей. */
 export function registerExtractorDemoStub(): void {
-  if (registered) return;
-  registered = true;
-  registerStubResponse('extractor', extractorDictionaryStub);
+  unregister?.();
+  unregister = registerStubResponse('extractor', extractorDictionaryStub);
 }

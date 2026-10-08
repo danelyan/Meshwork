@@ -15,6 +15,12 @@ export interface CatalogEntry {
   proof: string[];
   markers: string[];
   limits: string;
+  /** Веса по грейдам (каталог § 7); нет — используется `weight` для грейдов из `grades`. */
+  weights?: CatalogMeta['weights'];
+  /** Квалификатор stack (каталог § 2.2). */
+  stack?: CatalogMeta['stack'];
+  /** Смежные записи (каталог § 6), в обе стороны. */
+  adjacent?: string[];
 }
 
 export interface ProposedClaim {

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 import { seedClaims } from './seed/claims';
+import { seedRecommend } from './seed/recommend';
 
 /**
  * Базовый сид foundation: 3 демо-кандидата (вымышленные, isDemo = true).
@@ -43,7 +44,9 @@ async function main() {
     });
   }
   console.log(`seed: ${DEMO_CANDIDATES.length} demo candidates`);
+  // Порядок важен: recommend ссылается на каталог утверждений.
   await seedClaims(prisma);
+  await seedRecommend(prisma);
 }
 
 main()

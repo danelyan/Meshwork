@@ -96,8 +96,7 @@ export async function nextQuestion(
   try {
     const res = await llm.complete(
       {
-        // В LlmPurpose нет 'interviewer' (предложение в отчёте) — журналируем как consultant.
-        purpose: 'consultant',
+        purpose: 'interviewer',
         system: loadPrompt('interviewer'),
         messages: buildInterviewerMessages(ctx),
         schema: { name: 'defense_question', jsonSchema: INTERVIEWER_JSON_SCHEMA },

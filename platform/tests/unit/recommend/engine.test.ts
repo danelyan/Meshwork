@@ -1,4 +1,4 @@
-import { adjacentOf } from '@/server/recommend/adjacency';
+import { catalogFromFile } from '@/server/claims/catalog-file';
 import { buildIndex, creditFor, parseNeeds } from '@/server/recommend/evidence';
 import { computeGaps, reachFactor } from '@/server/recommend/gap-map';
 import { computeCoverage, describeCoverage } from '@/server/recommend/matcher';
@@ -27,26 +27,29 @@ describe('сид recommend', () => {
 });
 
 describe('смежность', () => {
-  it('рёбра двусторонние', () => {
-    expect(adjacentOf('be.idempotency')).toContain('be.message-queue');
-    expect(adjacentOf('be.message-queue')).toContain('be.idempotency');
-    expect(adjacentOf('fe.state-mgmt')).toEqual(['fe.server-state']);
-    expect(adjacentOf('be.no-such')).toEqual([]);
+  it('рёбра из каталога двусторонние', () => {
+    const file = new Map(catalogFromFile().map((e) => [e.id, e]));
+    expect(file.get('be.idempotency')!.adjacent).toContain('be.message-queue');
+    expect(file.get('be.message-queue')!.adjacent).toContain('be.idempotency');
+    expect(file.get('fe.state-mgmt')!.adjacent).toEqual(['fe.server-state']);
+    for (const e of file.values()) for (const a of e.adjacent ?? []) expect(file.get(a)?.adjacent).toContain(e.id);
+    const noAdj = buildIndex([{ catalogId: 'be.message-queue', level: 'platform' }]);
+    expect(creditFor('be.no-such', noAdj, catalog)).toEqual({ direct: null, adjacentVia: null, credit: 0 });
   });
 
   it('смежное даёт половину веса уровня и называет источник; прямое сильнее — берётся оно', () => {
     const idx = buildIndex([{ catalogId: 'be.message-queue', level: 'platform' }]);
-    expect(creditFor('be.idempotency', idx)).toEqual({ direct: null, adjacentVia: 'be.message-queue', credit: 0.5 });
+    expect(creditFor('be.idempotency', idx, catalog)).toEqual({ direct: null, adjacentVia: 'be.message-queue', credit: 0.5 });
     const both = buildIndex([
       { catalogId: 'be.message-queue', level: 'platform' },
       { catalogId: 'be.idempotency', level: 'artifact' },
     ]);
-    expect(creditFor('be.idempotency', both)).toEqual({ direct: 'artifact', adjacentVia: null, credit: 0.5 });
+    expect(creditFor('be.idempotency', both, catalog)).toEqual({ direct: 'artifact', adjacentVia: null, credit: 0.5 });
     const strongDirect = buildIndex([
       { catalogId: 'be.message-queue', level: 'self_reported' },
       { catalogId: 'be.idempotency', level: 'third_party' },
     ]);
-    expect(creditFor('be.idempotency', strongDirect).credit).toBe(0.75);
+    expect(creditFor('be.idempotency', strongDirect, catalog).credit).toBe(0.75);
   });
 
   it('несколько утверждений одного ID — берётся лучший уровень', () => {
@@ -165,6 +168,24 @@ describe('правило теста', () => {
     expect(middleSignature(c2, 'backend').map((e) => e.id)).not.toContain('be.cache');
     expect(middleSignature(c2, 'backend').map((e) => e.id)).not.toContain('be.authz');
     expect(entries.length).toBeGreaterThan(sig.length);
+  });
+
+  it('сигнатура по весам J/M реального каталога: M ≥ 2 и M > J', () => {
+    const real = new Map(catalogFromFile().map((e) => [e.id, e]));
+    for (const spec of ['backend', 'frontend'] as const) {
+      const s = middleSignature(real, spec);
+      expect(s.length).toBeGreaterThan(5);
+      for (const e of s) {
+        const w = 'junior' in e.weights! ? e.weights! : e.weights![spec];
+        expect(w.middle).toBeGreaterThanOrEqual(2);
+        expect(w.middle!).toBeGreaterThan(w.junior ?? 0);
+        expect(e.weight).toBe(w.middle);
+      }
+    }
+    const be = middleSignature(real, 'backend').map((e) => e.id);
+    expect(be).toContain('be.idempotency');
+    expect(be).not.toContain('be.lang-core'); // J = M = 3 — не отличает Middle
+    expect(be).not.toContain('common.git'); // M < J
   });
 
   it('пороги 0.6 / 0.3 из каталога', () => {

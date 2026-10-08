@@ -4,10 +4,10 @@ import type { CatalogEntry, CatalogMeta } from './types';
 /**
  * Каталог утверждений. Источник — prisma/seed/claims-catalog.json, сгенерированный
  * scripts/catalog-to-json.mjs из fsp/docs/product/claims-catalog.md (правит владелец).
- * В БД (ClaimCatalog) — поля CatalogEntry; веса по грейдам, stack и смежность пока
- * только в JSON (схема их не вмещает — см. отчёт лейна claims, diff схемы).
+ * В БД (ClaimCatalog) — все поля CatalogEntry, включая веса по грейдам, stack,
+ * смежность и версию каталога (миграция integrate_lanes).
  */
-interface FileEntry extends CatalogEntry, Omit<CatalogMeta, 'id'> {}
+interface FileEntry extends Omit<CatalogEntry, 'weights' | 'stack' | 'adjacent'>, Omit<CatalogMeta, 'id'> {}
 interface CatalogFile {
   version: string;
   entries: FileEntry[];
@@ -27,6 +27,9 @@ function toEntry(e: FileEntry): CatalogEntry {
     proof: [...e.proof],
     markers: [...e.markers],
     limits: e.limits,
+    weights: e.weights,
+    stack: e.stack,
+    adjacent: [...e.adjacent],
   };
 }
 
@@ -39,7 +42,7 @@ const META = new Map<string, CatalogMeta>(
   FILE.entries.map((e) => [e.id, { id: e.id, weights: e.weights, stack: e.stack, adjacent: [...e.adjacent] }]),
 );
 
-/** Веса по грейдам, stack, смежность — то, чего нет в схеме ClaimCatalog. */
+/** Веса по грейдам, stack, смежность записи из файла каталога. */
 export function getCatalogMeta(id: string): CatalogMeta | undefined {
   return META.get(id);
 }

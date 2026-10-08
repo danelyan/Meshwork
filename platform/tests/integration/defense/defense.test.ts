@@ -192,7 +192,7 @@ describe('answerDefense и вердикт', () => {
   it('интервьюер говорит enough после 3-го ответа → вердикт раньше максимума; до 3-х enough игнорируется', async () => {
     await seed();
     registerStubResponse('evaluator', () => ({ json: goodEval() }));
-    registerStubResponse('consultant', () => ({ json: { question: 'Почему именно так ты сделал?', enough: true } }));
+    registerStubResponse('interviewer', () => ({ json: { question: 'Почему именно так ты сделал?', enough: true } }));
     const s = await startDefense(A, 'claim-1', llm);
     expect((await answerDefense(A, s.sessionId, ANSWERS[0]!, llm)).next).toBeDefined();
     expect((await answerDefense(A, s.sessionId, ANSWERS[1]!, llm)).next).toBeDefined();

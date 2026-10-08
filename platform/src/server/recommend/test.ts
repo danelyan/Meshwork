@@ -4,18 +4,26 @@ import type { Grade, Specialization } from '../types';
 
 import { assertCandidate, loadCatalog } from './evidence';
 import type { TestRecommendation } from './types';
-import { GRADE_CHANGE_INTERVAL_DAYS, MIDDLE_IF_SURE_THRESHOLD, MIDDLE_THRESHOLD } from './weights';
+import { GRADE_CHANGE_INTERVAL_DAYS, gradeWeight, MIDDLE_IF_SURE_THRESHOLD, MIDDLE_THRESHOLD } from './weights';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Сигнатура Middle (claims-catalog § 7). В CatalogEntry один вес, а не J/M,
- * поэтому условие «w_M > w_J» заменено на «ожидается в Middle и вес ≥ 2» [упрощение].
+ * Сигнатура Middle (claims-catalog § 7): записи специализации и общие, у которых
+ * вес M ≥ 2 и вес M больше веса J (J нет — считается 0). В возвращаемых записях
+ * `weight` — вес M: по нему считается покрытие сигнатуры.
  */
 export function middleSignature(catalog: Map<string, CatalogEntry>, spec: Specialization): CatalogEntry[] {
-  return [...catalog.values()]
-    .filter((e) => (e.specialization === spec || e.specialization === 'common') && e.grades.includes('middle') && e.weight >= 2)
-    .sort((a, b) => a.id.localeCompare(b.id));
+  const out: CatalogEntry[] = [];
+  for (const e of catalog.values()) {
+    if (e.specialization !== spec && e.specialization !== 'common') continue;
+    const m = gradeWeight(e, spec, 'middle');
+    const j = gradeWeight(e, spec, 'junior') ?? 0;
+    if (m !== null && m >= 2 && (e.weights ? m > j : true)) {
+      out.push({ ...e, weight: Math.min(3, m) as 1 | 2 | 3 });
+    }
+  }
+  return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export function inferSpecialization(catalogIds: string[]): Specialization | null {

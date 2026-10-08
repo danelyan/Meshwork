@@ -42,6 +42,7 @@ enum LlmPurpose {
   consultant
   extractor
   evaluator
+  interviewer
   smoke
 }
 
@@ -197,6 +198,14 @@ model ClaimCatalog {
   proof          String[]
   markers        String[]
   limits         String
+  /// Веса по грейдам {"J":1,"M":2,"S":3} (каталог § 7: сигнатура Middle — M ≥ 2 и M > J)
+  weights        Json?
+  /// Стек/технологии записи (массив строк или объект — как в claims-catalog.json)
+  stack          Json?
+  /// ID смежных записей каталога
+  adjacent       String[]              @default([])
+  /// Версия каталога, из которой загружена запись
+  catalogVersion String?
 
   claims Claim[]
 }

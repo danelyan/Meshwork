@@ -1,5 +1,5 @@
-import type { EvidenceLevel } from '../claims/types';
-import type { Grade } from '../types';
+import type { CatalogEntry, EvidenceLevel } from '../claims/types';
+import type { Grade, Specialization } from '../types';
 
 /**
  * ПРЕДЛОЖЕНИЕ (не требование ТЗ): веса уровней доказанности в покрытии и
@@ -26,6 +26,20 @@ export const GRADE_INDEX: Record<Grade, number> = { junior: 0, middle: 1 };
 
 /** ПРЕДЛОЖЕНИЕ: «посильность» — цель не выше доказанного грейда + 1; иначе множитель 0,5. */
 export const REACH_PENALTY = 0.5;
+
+/**
+ * Вес записи каталога для грейда в специализации (каталог § 7). null — в этом грейде
+ * не ожидается. У common веса заданы отдельно по специализациям. Без `weights`
+ * (старые данные, фикстуры) — общий `weight` для грейдов из `grades`.
+ */
+export function gradeWeight(entry: CatalogEntry, spec: Specialization, grade: Grade): number | null {
+  const w = entry.weights;
+  if (w) {
+    const byGrade = 'junior' in w ? w : w[spec];
+    return byGrade?.[grade] ?? null;
+  }
+  return entry.grades.includes(grade) ? entry.weight : null;
+}
 
 export function levelWeight(level: EvidenceLevel | null | undefined): number {
   return level ? LEVEL_WEIGHT[level] : 0;

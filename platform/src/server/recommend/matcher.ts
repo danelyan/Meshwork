@@ -40,7 +40,7 @@ export function computeCoverage(needs: Need[], catalog: Map<string, CatalogEntry
     const entry = catalog.get(need.catalogId);
     if (!entry || seen.has(need.catalogId)) continue;
     seen.add(need.catalogId);
-    const c = creditFor(need.catalogId, index);
+    const c = creditFor(need.catalogId, index, catalog);
     items.push({
       catalogId: entry.id,
       statement: entry.statement,

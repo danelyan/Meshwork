@@ -14,7 +14,7 @@ import {
   type Need,
 } from './evidence';
 import type { Gap, GapTarget } from './types';
-import { GRADE_INDEX, REACH_PENALTY } from './weights';
+import { GRADE_INDEX, gradeWeight, REACH_PENALTY } from './weights';
 
 /**
  * Посильность [предложение]: грейд, с которого ожидается утверждение, не выше
@@ -42,7 +42,7 @@ export function computeGaps(
     seen.add(need.catalogId);
     const current = index.get(need.catalogId) ?? null;
     if (current === 'platform') continue; // не пробел
-    const { credit } = creditFor(need.catalogId, index); // смежность — половинный зачёт
+    const { credit } = creditFor(need.catalogId, index, catalog); // смежность — половинный зачёт
     const priority = need.weight * (1 - credit) * reachFactor(entry, provenGrade);
     gaps.push({
       id: entry.id,
@@ -63,10 +63,13 @@ export function categoryNeeds(catalog: Map<string, CatalogEntry>, id: string): N
   if ((spec !== 'backend' && spec !== 'frontend') || (grade !== 'junior' && grade !== 'middle')) {
     throw errors.badRequest('Категория задаётся как backend:junior … frontend:middle');
   }
-  return [...catalog.values()]
-    .filter((e) => (e.specialization === spec || e.specialization === 'common') && e.grades.includes(grade))
-    .sort((a, b) => a.id.localeCompare(b.id))
-    .map((e) => ({ catalogId: e.id, weight: e.weight }));
+  const out: Need[] = [];
+  for (const e of [...catalog.values()].sort((a, b) => a.id.localeCompare(b.id))) {
+    if (e.specialization !== spec && e.specialization !== 'common') continue;
+    const w = gradeWeight(e, spec, grade);
+    if (w !== null && w > 0) out.push({ catalogId: e.id, weight: w });
+  }
+  return out;
 }
 
 export async function gapMap(candidateId: string, target: GapTarget): Promise<Gap[]> {

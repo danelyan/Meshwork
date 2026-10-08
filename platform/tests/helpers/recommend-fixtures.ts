@@ -1,7 +1,11 @@
+import { getCatalogMeta } from '@/server/claims/catalog-file';
 import type { CatalogEntry } from '@/server/claims/types';
 import { DEMO_TASKS, DEMO_VACANCIES } from '../../prisma/seed/recommend';
 
-/** Каталог-фикстура: все catalogId из сида, формулировка «Утверждение <id>». */
+/**
+ * Каталог-фикстура: все catalogId из сида, формулировка «Утверждение <id>», один вес 2
+ * (без weights по грейдам), смежность — из файла каталога.
+ */
 export function fixtureEntries(overrides: Record<string, Partial<CatalogEntry>> = {}): CatalogEntry[] {
   const ids = new Set<string>([
     ...DEMO_VACANCIES.flatMap((v) => v.needs.map(([id]) => id)),
@@ -17,6 +21,7 @@ export function fixtureEntries(overrides: Record<string, Partial<CatalogEntry>> 
     proof: [`task:${id}`],
     markers: [],
     limits: '',
+    adjacent: getCatalogMeta(id)?.adjacent ?? [],
     ...overrides[id],
   })) as CatalogEntry[];
 }

@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 
 import { catalogFromFile, CATALOG_VERSION } from './catalog-file';
 
@@ -19,6 +19,10 @@ export async function syncClaimCatalog(client: PrismaClient): Promise<{ version:
         proof: e.proof,
         markers: e.markers,
         limits: e.limits,
+        weights: (e.weights ?? Prisma.DbNull) as Prisma.InputJsonValue | typeof Prisma.DbNull,
+        stack: (e.stack ?? Prisma.DbNull) as Prisma.InputJsonValue | typeof Prisma.DbNull,
+        adjacent: e.adjacent ?? [],
+        catalogVersion: CATALOG_VERSION,
       };
       return client.claimCatalog.upsert({ where: { id: e.id }, update: data, create: { id: e.id, ...data } });
     }),

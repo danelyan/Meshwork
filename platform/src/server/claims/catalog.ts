@@ -1,6 +1,6 @@
 import { prisma } from '../db';
-import { catalogFromFile } from './catalog-file';
-import type { CatalogEntry } from './types';
+import { catalogFromFile, getCatalogMeta } from './catalog-file';
+import type { CatalogEntry, CatalogMeta } from './types';
 
 export { CATALOG_VERSION, catalogFor, catalogFromFile, getCatalogMeta } from './catalog-file';
 
@@ -11,7 +11,10 @@ export { CATALOG_VERSION, catalogFor, catalogFromFile, getCatalogMeta } from './
 export async function getCatalog(): Promise<CatalogEntry[]> {
   const rows = await prisma.claimCatalog.findMany({ orderBy: { id: 'asc' } });
   if (rows.length === 0) return catalogFromFile();
-  return rows.map((r) => ({
+  return rows.map((r) => {
+    // Строка, загруженная до миграции integrate_lanes (weights = null), — мета из файла.
+    const fileMeta = r.weights === null ? getCatalogMeta(r.id) : undefined;
+    return {
     id: r.id,
     specialization: r.specialization,
     statement: r.statement,
@@ -20,5 +23,9 @@ export async function getCatalog(): Promise<CatalogEntry[]> {
     proof: r.proof,
     markers: r.markers,
     limits: r.limits,
-  }));
+    weights: (r.weights as CatalogMeta['weights'] | null) ?? fileMeta?.weights,
+    stack: (r.stack as CatalogMeta['stack'] | null) ?? fileMeta?.stack ?? null,
+    adjacent: r.adjacent.length > 0 ? r.adjacent : (fileMeta?.adjacent ?? []),
+    };
+  });
 }

@@ -2,7 +2,7 @@ import type { DocLine, ExtractedDoc } from '../collector/types';
 import { normalizeWithMap, type Normalized } from './normalize';
 
 /** Строка документа; `hidden` проставляет сборщик (белый текст, кегль 1 пт, display:none). */
-export type SourceLine = DocLine & { hidden?: boolean };
+export type SourceLine = DocLine;
 
 const WORD = /[\p{L}\p{N}]/u;
 

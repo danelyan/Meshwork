@@ -19,7 +19,7 @@ export interface DocLine {
    * `display:none`, HTML-комментарий…). Её нет в `ExtractedDoc.text`, и она не может
    * быть цитатой утверждения (claims/verifier обязан её пропускать).
    */
-  hidden?: true;
+  hidden?: boolean;
 }
 
 export interface ExtractedDoc {

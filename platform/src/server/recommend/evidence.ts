@@ -4,7 +4,6 @@ import { getCatalog } from '../claims/catalog';
 import { errors } from '../errors';
 import type { Grade } from '../types';
 
-import { adjacentOf } from './adjacency';
 import { ADJACENT_FACTOR, bestLevel, levelWeight } from './weights';
 
 /** Лучший прямой уровень по каждому catalogId. */
@@ -26,12 +25,15 @@ export interface Credit {
   credit: number;
 }
 
-/** Зачёт по утверждению: прямой уровень или половина лучшего смежного. Детерминированно. */
-export function creditFor(catalogId: string, index: EvidenceIndex): Credit {
+/**
+ * Зачёт по утверждению: прямой уровень или половина лучшего смежного. Смежность —
+ * из каталога (`adjacent`, каталог § 6). Детерминированно.
+ */
+export function creditFor(catalogId: string, index: EvidenceIndex, catalog: Map<string, CatalogEntry>): Credit {
   const direct = index.get(catalogId) ?? null;
   let adjCredit = 0;
   let via: string | null = null;
-  for (const adj of adjacentOf(catalogId)) {
+  for (const adj of [...(catalog.get(catalogId)?.adjacent ?? [])].sort()) {
     const w = levelWeight(index.get(adj)) * ADJACENT_FACTOR;
     if (w > adjCredit) {
       adjCredit = w;

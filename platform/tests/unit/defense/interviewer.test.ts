@@ -17,7 +17,7 @@ describe('интервьюер', () => {
 
   it('валидный вопрос модели используется; в контексте — утверждение, цитата, «не доказывает»', async () => {
     let seen: CompleteRequest | undefined;
-    registerStubResponse('consultant', (req) => {
+    registerStubResponse('interviewer', (req) => {
       seen = req;
       return { json: { question: 'Как именно ты хранил ключи идемпотентности?', enough: false } };
     });
@@ -37,7 +37,7 @@ describe('интервьюер', () => {
   });
 
   it('ошибка LLM → шаблон, защита не падает', async () => {
-    registerStubResponse('consultant', () => {
+    registerStubResponse('interviewer', () => {
       throw Object.assign(new Error('boom'), { status: 503 });
     });
     const q = await nextQuestion({ ...ctx, turns: [{ question: 'a', answer: 'b' }] }, llm);

@@ -155,7 +155,19 @@ describe('recommend (БД)', () => {
       expect(Array.isArray(body.tasks)).toBe(true);
       const other = await (await GET(jsonRequest('/api/recommendations', 'GET', undefined, cookie('c2')))).json();
       expect(other.targets).toEqual([]);
-      expect(other.gaps).toEqual([]);
+      // Без target и без вакансий в целях — цель по правилу теста; пробелы только из каталога, без чужих уровней.
+      expect(other.target).toBe(`category:${other.test.specialization}:${other.test.grade}`);
+      expect(other.gaps.length).toBeGreaterThan(0);
+      expect(other.gaps.every((g: { currentLevel: unknown }) => g.currentLevel === null)).toBe(true);
+    });
+
+    it('без target: категория из теста важнее лучшей вакансии', async () => {
+      await claim('c1', 'be.idempotency', 'platform');
+      const auto = await (await GET(jsonRequest('/api/recommendations', 'GET', undefined, cookie('c1')))).json();
+      expect(auto.target).toBe(`vacancy:${auto.targets[0].vacancyId}`);
+      await prisma.candidateCategory.create({ data: { candidateId: 'c1', specialization: 'frontend', grade: 'junior' } });
+      const withCat = await (await GET(jsonRequest('/api/recommendations', 'GET', undefined, cookie('c1')))).json();
+      expect(withCat.target).toBe('category:frontend:junior');
     });
 
     it('плохие параметры — 400, неизвестная вакансия — 404, кука несуществующего кандидата — 404', async () => {

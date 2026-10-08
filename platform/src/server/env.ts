@@ -20,6 +20,8 @@ export const envSchema = z
     APP_URL: z.url().default('http://localhost:3000'),
 
     LLM_PROVIDER: z.enum(['stub', 'yandex', 'openai-chat']).default('stub'),
+    /** Только для stub: извлекатель размечает документ словарём каталога — демо С1 без ключей. */
+    LLM_STUB_DEMO: z.stringbool().default(false),
     LLM_MAX_CONCURRENCY: intFrom(8, 1, 64),
     LLM_TIMEOUT_MS: intFrom(40_000, 1_000, 300_000),
     LLM_MAX_RETRIES: intFrom(2, 0, 5),

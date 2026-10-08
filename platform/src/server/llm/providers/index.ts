@@ -1,3 +1,4 @@
+import { registerExtractorDemoStub } from '../../claims/stub-demo';
 import type { Env } from '../../env';
 import type { LlmProvider } from '../types';
 import { createOpenAiChatProvider } from './openai-chat';
@@ -8,6 +9,7 @@ import { createYandexResponsesProvider, yandexAuthHeader, yandexModelUri } from 
 export function createProvider(env: Env): LlmProvider {
   switch (env.LLM_PROVIDER) {
     case 'stub':
+      if (env.LLM_STUB_DEMO) registerExtractorDemoStub();
       return createStubProvider();
     case 'yandex':
       return createYandexResponsesProvider({

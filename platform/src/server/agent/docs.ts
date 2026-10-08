@@ -49,15 +49,23 @@ export async function loadCandidateDocs(candidateId: string): Promise<ExtractedD
   return docs;
 }
 
-/** Снимок прочитанного источника (он же кэш): Source.snapshot. */
+/**
+ * Снимок прочитанного источника (он же кэш): Source.snapshot. Одна строка на
+ * (кандидат, kind, origin) — как в collector: fetchProfile с candidateId уже
+ * записал Source, здесь он только обновится, без дубля.
+ */
 export async function saveSource(candidateId: string, doc: ExtractedDoc): Promise<string> {
+  const snapshot = doc as unknown as Prisma.InputJsonValue;
+  const existing = await prisma.source.findFirst({
+    where: { candidateId, kind: doc.sourceKind, origin: doc.origin },
+    select: { id: true },
+  });
+  if (existing) {
+    await prisma.source.update({ where: { id: existing.id }, data: { snapshot } });
+    return existing.id;
+  }
   const row = await prisma.source.create({
-    data: {
-      candidateId,
-      kind: doc.sourceKind,
-      origin: doc.origin,
-      snapshot: doc as unknown as Prisma.InputJsonValue,
-    },
+    data: { candidateId, kind: doc.sourceKind, origin: doc.origin, snapshot },
     select: { id: true },
   });
   return row.id;

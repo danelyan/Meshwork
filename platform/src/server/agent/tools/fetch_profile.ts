@@ -24,7 +24,7 @@ export const fetchProfileTool: AgentTool<z.infer<typeof Input>, z.infer<typeof D
   untrusted: true,
   async handler(ctx, { kind, handle }) {
     ctx.emit({ type: 'step', text: `читаю ${kind}:${handle}…` });
-    const doc = await fetchProfile(kind, handle);
+    const doc = await fetchProfile(kind, handle, { candidateId: ctx.candidateId });
     const sourceId = await saveSource(ctx.candidateId, doc);
     return docToResult(doc, sourceId);
   },

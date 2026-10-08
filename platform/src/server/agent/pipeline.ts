@@ -1,4 +1,4 @@
-import { extractClaims, getCatalog, proposeClaims, verifyClaims } from '@/server/claims';
+import { extractByMarkers, extractClaims, getCatalog, proposeClaims, verifyClaims } from '@/server/claims';
 import type { CatalogEntry, ProposedClaim, RejectReason } from '@/server/claims/types';
 import { fetchProfile, fetchUrl, maskContacts } from '@/server/collector';
 import type { ExtractedDoc } from '@/server/collector/types';
@@ -6,7 +6,6 @@ import { LlmError } from '@/server/llm/types';
 import { assertBudget, BudgetExceededError } from './budget';
 import { loadUpload, saveSource } from './docs';
 import { escapeExternal } from './external';
-import { extractByMarkers } from './fallback';
 import { describeRejects } from './tools/propose_claims';
 import { shortUrl } from './tools/fetch_url';
 import type { ToolContext, TurnInput } from './types';
@@ -51,7 +50,8 @@ function maskDoc(doc: ExtractedDoc): ExtractedDoc {
     return {
       ...doc,
       text: maskContacts(doc.text).text,
-      lines: doc.lines.map((l) => ({ ref: l.ref, text: maskContacts(l.text).text })),
+      // `...l` — сохранить флаг hidden: скрытые строки извлекатель не должен видеть как обычные.
+      lines: doc.lines.map((l) => ({ ...l, text: maskContacts(l.text).text })),
     };
   } catch (err) {
     console.warn('[agent/pipeline] maskContacts unavailable', err instanceof Error ? err.message : err);
@@ -100,7 +100,7 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
     const profile = classifyUrl(url);
     ctx.emit({ type: 'step', text: `читаю ${profile ? `${profile.kind}:${profile.handle}` : shortUrl(url)}…` });
     try {
-      const doc = profile ? await fetchProfile(profile.kind, profile.handle) : await fetchUrl(url);
+      const doc = profile ? await fetchProfile(profile.kind, profile.handle, { candidateId: ctx.candidateId }) : await fetchUrl(url);
       await saveSource(ctx.candidateId, doc);
       docs.push(doc);
       ctx.emit({ type: 'step', text: `прочитал ${docLabel(doc)}` });

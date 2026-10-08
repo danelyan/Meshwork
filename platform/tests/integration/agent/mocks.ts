@@ -121,7 +121,7 @@ export const claimsMock = {
     const c = await prisma.candidate.findUniqueOrThrow({ where: { id: candidateId } });
     const cat = await prisma.candidateCategory.findFirst({ where: { candidateId } });
     const claims = await prisma.claim.findMany({ where: { candidateId }, orderBy: { createdAt: 'asc' } });
-    return {
+    const view: Omit<ProfileView, 'byLevel'> = {
       candidate: { id: c.id, name: c.name, specialization: c.specialization, fspState: c.fspState },
       category: cat ? { specialization: cat.specialization, grade: cat.grade, confirmedAt: cat.confirmedAt.toISOString() } : null,
       claims: claims.map((k) => ({
@@ -139,6 +139,9 @@ export const claimsMock = {
         confirmedAt: k.confirmedAt?.toISOString() ?? null,
       })),
     };
+    const byLevel: ProfileView['byLevel'] = { platform: [], third_party: [], artifact: [], self_reported: [] };
+    for (const cl of view.claims) byLevel[cl.level].push(cl);
+    return { ...view, byLevel };
   }),
 };
 

@@ -15,7 +15,7 @@ const Item = z.object({
 const Input = z.object({ items: z.array(Item).min(1).max(30) });
 const Output = z.object({
   proposed: z.array(z.object({ id: z.string(), catalogId: z.string(), statement: z.string(), level: z.string(), quote: z.string(), sourceRef: z.string() })),
-  rejected: z.array(z.object({ catalogId: z.string(), reason: z.enum(['no_quote', 'unknown_catalog_id', 'duplicate']) })),
+  rejected: z.array(z.object({ catalogId: z.string(), reason: z.enum(['no_quote', 'unknown_catalog_id', 'duplicate', 'hidden_text', 'quote_too_short']) })),
   note: z.string(),
 });
 
@@ -69,5 +69,7 @@ export function describeRejects(reasons: string[]): string {
   if (n('no_quote')) parts.push(`${n('no_quote')} без цитаты в источнике`);
   if (n('unknown_catalog_id')) parts.push(`${n('unknown_catalog_id')} вне каталога`);
   if (n('duplicate')) parts.push(`${n('duplicate')} дублей`);
+  if (n('hidden_text')) parts.push(`${n('hidden_text')} из скрытого текста`);
+  if (n('quote_too_short')) parts.push(`${n('quote_too_short')} со слишком короткой цитатой`);
   return parts.join(', ');
 }

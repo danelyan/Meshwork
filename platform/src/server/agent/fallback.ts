@@ -1,49 +1,11 @@
-import type { CatalogEntry, ProposedClaim } from '@/server/claims/types';
-import type { ExtractedDoc } from '@/server/collector/types';
 import { recommendTargets, recommendTest } from '@/server/recommend';
 import type { PipelineResult } from './pipeline';
 
 /**
  * План В: провайдер LLM упал / таймаут / бюджет исчерпан. Стенд отвечает
  * всегда (ТЗ фаза 3 «Деградация»): словарное извлечение по маркерам каталога
- * + шаблонные ответы по сценарию. Всё детерминированно, без модели.
+ * (extractByMarkers из claims) + шаблонные ответы по сценарию. Без модели.
  */
-
-const normalize = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
-
-/**
- * Извлечение без модели: строка документа содержит маркер каталога (≥ 3 символов)
- * → утверждение с цитатой-строкой, confidence low. Одно утверждение на catalogId.
- * Скрытые строки (flags.hiddenText.sample) не рассматриваются. Цитата дальше
- * проходит тот же verifyClaims, что и модельная.
- */
-export function extractByMarkers(doc: ExtractedDoc, catalog: CatalogEntry[]): ProposedClaim[] {
-  const hidden = new Set(doc.flags.hiddenText?.sample ?? []);
-  const lines = doc.lines.length ? doc.lines : doc.text.split('\n').map((text, i) => ({ ref: `${doc.origin}#l${i + 1}`, text }));
-  const out: ProposedClaim[] = [];
-  const taken = new Set<string>();
-  for (const line of lines) {
-    if (hidden.has(line.text) || line.text.trim().length < 3) continue;
-    const norm = normalize(line.text);
-    for (const entry of catalog) {
-      if (taken.has(entry.id)) continue;
-      const hit = entry.markers.some((m) => {
-        const nm = normalize(m);
-        return nm.length >= 3 && norm.includes(nm);
-      });
-      if (!hit) continue;
-      taken.add(entry.id);
-      out.push({
-        catalogId: entry.id,
-        statement: entry.statement,
-        quote: line.text.trim().slice(0, 300),
-        sourceRef: line.ref,
-        confidence: 'low',
-      });
-    }
-  }
-  return out;
-}
 
 export type FallbackReason = 'llm_unavailable' | 'budget_exceeded' | 'timeout';
 

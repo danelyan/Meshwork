@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-The Git repository contains the FSP Career frontend prototype and product documentation. `src/app.js` owns screens, hash routing and local state; `src/domain.js` contains pure business rules; `src/data.js` contains synthetic fixtures; `src/styles.css` contains design tokens and responsive styles. `public/assets/` contains logos and local fonts. `scripts/` contains the HTTP server and static build; `tests/` uses `node:test`. Product sources and proposals live in `docs/`. The accepted target stack (Next.js + TypeScript, PostgreSQL) is in `docs/stack.md`; update this section when the code moves to it.
+The Git repository contains the FSP Career frontend prototype and product documentation. `src/app.js` owns screens, hash routing and local state; `src/domain.js` contains pure business rules; `src/data.js` contains synthetic fixtures; `src/styles.css` contains design tokens and responsive styles. `public/assets/` contains logos and local fonts. `scripts/` contains the HTTP server and static build; `tests/` uses `node:test`. Product sources and proposals live in `docs/`. The accepted target stack (Next.js + TypeScript, PostgreSQL) is in `docs/stack.md`; update this section when the code moves to it. All development follows `.claude/skills/fullstack-dev/SKILL.md`: stay on the stack, verify library usage in official docs via Context7, ship every change with passing automated tests.
 
 Keep application code, tests, and static assets in clearly named locations appropriate to the chosen framework. For example, use `src/`, `tests/`, and `assets/` if the framework does not prescribe alternatives. Document the actual layout in `README.md`.
 

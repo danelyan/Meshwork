@@ -7,6 +7,30 @@ export type RestoredItem =
   | { id: string; role: 'user'; text: string }
   | { id: string; role: 'agent'; event: AgentEvent };
 
+const ATTACH_RE = /^\[вложения: (.+)\]$/;
+const LINKS_RE = /^\[ссылки: (.+)\]$/;
+
+/**
+ * Служебные строки хода («[вложения: файл <id>]», «[ссылки: …]») нужны модели
+ * (id — для read_upload), но не кандидату: при показе id заменяются именами файлов,
+ * скобки уходят. names — имена по id; неизвестный id показывается как «файл».
+ */
+export function humanizeUserText(content: string, names: Map<string, string>): string {
+  return content
+    .split('\n')
+    .map((line) => {
+      const a = ATTACH_RE.exec(line);
+      if (a) {
+        const files = a[1]!.split(', ').map((p) => names.get(p.replace(/^файл /, '').trim()) ?? 'файл');
+        return `Вложения: ${files.join(', ')}`;
+      }
+      const l = LINKS_RE.exec(line);
+      if (l) return `Ссылки: ${l[1]}`;
+      return line;
+    })
+    .join('\n');
+}
+
 export interface RestoredChat {
   conversationId: string | null;
   items: RestoredItem[];
@@ -26,8 +50,18 @@ export async function loadLastChat(candidateId: string): Promise<RestoredChat> {
       orderBy: { createdAt: 'asc' },
       select: { id: true, role: true, content: true },
     });
+    const ids = new Set<string>();
     for (const m of rows) {
-      if (m.role === 'user') items.push({ id: `r-${m.id}`, role: 'user', text: m.content });
+      if (m.role !== 'user') continue;
+      for (const line of m.content.split('\n')) {
+        const a = ATTACH_RE.exec(line);
+        if (a) for (const p of a[1]!.split(', ')) ids.add(p.replace(/^файл /, '').trim());
+      }
+    }
+    const uploads = ids.size ? await prisma.upload.findMany({ where: { id: { in: [...ids] }, candidateId }, select: { id: true, filename: true } }) : [];
+    const names = new Map(uploads.map((u) => [u.id, u.filename]));
+    for (const m of rows) {
+      if (m.role === 'user') items.push({ id: `r-${m.id}`, role: 'user', text: humanizeUserText(m.content, names) });
       else if (m.content.trim()) items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'message', text: m.content } });
     }
   }

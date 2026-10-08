@@ -1,0 +1,31 @@
+{
+  "id": "demo-2",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.components",
+      "quote": "Собирала интерфейсы на React из переиспользуемых компонентов: карточки, списки, модальные окна"
+    },
+    {
+      "catalogId": "fe.forms",
+      "quote": "Формы заявки с проверкой полей и показом ошибок"
+    },
+    {
+      "catalogId": "fe.api-client",
+      "quote": "Получала данные с API через fetch, показывала состояния загрузки и ошибки"
+    },
+    {
+      "catalogId": "fe.responsive",
+      "quote": "Адаптивная вёрстка mobile-first на Flex и Grid"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.component-tests",
+      "mention": "прошла урок по React Testing Library",
+      "why": "в проектах не писала"
+    }
+  ]
+}

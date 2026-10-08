@@ -1,0 +1,33 @@
+{
+  "id": "h06",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.components",
+      "quote": "Верстал компоненты на Реакт и подключал их к бэкенду"
+    },
+    {
+      "catalogId": "fe.forms",
+      "quote": "проверка email и телефона на клиенте перед отправкой"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.ts-typing",
+      "mention": "читал чужой код на TypeScript",
+      "why": "сам не писал"
+    },
+    {
+      "catalogId": "none.k8s",
+      "mention": "в общих чертах",
+      "why": "упомянуто без опыта"
+    },
+    {
+      "catalogId": "be.lang-core",
+      "mention": "Java",
+      "why": "по контексту (браузер, анимации, валидация формы) это JavaScript, а не JVM-Java"
+    }
+  ]
+}

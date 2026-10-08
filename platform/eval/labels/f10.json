@@ -1,0 +1,31 @@
+{
+  "id": "f10",
+  "specialization": "frontend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.e2e-tests",
+      "quote": "Покрыла e2e-тестами на Cypress основной пользовательский путь оформления заявки, тесты запускаются в CI и ловят регрессии до релиза"
+    },
+    {
+      "catalogId": "fe.css-architecture",
+      "quote": "Спроектировала дизайн-токены и систему тем (светлая/тёмная) на CSS-переменных"
+    },
+    {
+      "catalogId": "fe.render-perf",
+      "quote": "Нашла через React Profiler лишние рендеры в списке заявок, добавила мемоизацию и стабильные пропсы — отклик фильтра улучшился с ~600 до ~80 мс"
+    },
+    {
+      "catalogId": "fe.forms",
+      "quote": "Мастер заявки из 7 шагов с сохранением черновика и серверной валидацией по шагам"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "common.sql-queries",
+      "mention": "запросы SELECT пишу редко",
+      "why": "глубоких знаний SQL нет"
+    }
+  ]
+}

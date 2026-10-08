@@ -1,0 +1,8 @@
+{
+  "note": "Вымышленный профиль; сетевой фетч заменяется фикстурой.",
+  "links": [
+    { "kind": "github", "handle": "demo-lisitsyn", "url": "https://github.com/demo-lisitsyn", "fictional": true,
+      "fixture": { "sourceKind": "github", "origin": "github:demo-lisitsyn",
+        "text": "demo-lisitsyn/clinic-booking: Spring Boot, запись на приём, PostgreSQL. Тесты: несколько юнит-тестов." } }
+  ]
+}

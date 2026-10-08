@@ -1,0 +1,8 @@
+{
+  "note": "Вымышленный профиль; сетевой фетч заменяется фикстурой.",
+  "links": [
+    { "kind": "github", "handle": "demo-vlasova", "url": "https://github.com/demo-vlasova", "fictional": true,
+      "fixture": { "sourceKind": "github", "origin": "github:demo-vlasova",
+        "text": "demo-vlasova/movie-list: список фильмов на React + TypeScript. README: поиск, избранное в localStorage. Тестов нет." } }
+  ]
+}

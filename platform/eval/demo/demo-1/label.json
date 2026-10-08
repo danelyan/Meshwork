@@ -1,0 +1,60 @@
+{
+  "id": "demo-1",
+  "specialization": "backend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.idempotency",
+      "quote": "идемпотентный приём платёжных запросов: ключ идемпотентности и уникальное ограничение в PostgreSQL"
+    },
+    {
+      "catalogId": "be.transactions",
+      "quote": "транзакции с уровнем изоляции SERIALIZABLE и повтором при конфликте сериализации"
+    },
+    {
+      "catalogId": "be.distributed-consistency",
+      "quote": "transactional outbox для публикации событий о платеже в Kafka"
+    },
+    {
+      "catalogId": "be.message-queue",
+      "quote": "Настроил потребителей Kafka: ручное подтверждение, повторная доставка, DLQ для необрабатываемых сообщений"
+    },
+    {
+      "catalogId": "be.sql-indexes",
+      "quote": "Ускорил отчёт по операциям с 9 с до 0.7 с: прочитал EXPLAIN ANALYZE, добавил составной индекс"
+    },
+    {
+      "catalogId": "be.observability",
+      "quote": "структурные логи, метрики Prometheus и трассировку OpenTelemetry"
+    },
+    {
+      "catalogId": "be.integration-tests",
+      "quote": "Интеграционные тесты сервиса с PostgreSQL в Testcontainers"
+    },
+    {
+      "catalogId": "common.code-review",
+      "quote": "около 150 ревью pull request'ов"
+    },
+    {
+      "catalogId": "be.migrations",
+      "quote": "Миграции без простоя: добавление колонки в три шага с обратной совместимостью"
+    },
+    {
+      "catalogId": "be.cache",
+      "quote": "Кэш справочников в Redis с TTL и сбросом по событию"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "none.k8s",
+      "mention": "как пользователь готовых деплоев",
+      "why": "манифесты не писал"
+    }
+  ],
+  "fspAchievements": [
+    {
+      "quote": "Призёр всероссийских соревнований ФСП (демо) по спортивному программированию, алгоритмическое направление, 2023"
+    }
+  ]
+}

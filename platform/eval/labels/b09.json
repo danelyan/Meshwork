@@ -1,0 +1,39 @@
+{
+  "id": "b09",
+  "specialization": "backend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.message-queue",
+      "quote": "обработку заказов через Kafka: 12 партиций, ключ по ид заказа, группы потребителей"
+    },
+    {
+      "catalogId": "be.idempotency",
+      "quote": "дедупликацию событий в потребителе по идентификатору сообщения в таблице processed_events"
+    },
+    {
+      "catalogId": "be.observability",
+      "quote": "распределённую трассировку OpenTelemetry и структурные логи с correlation id"
+    },
+    {
+      "catalogId": "be.cache",
+      "quote": "Внедрил кэш-аside на Redis для карточек ресторанов, TTL и сброс при обновлении"
+    },
+    {
+      "catalogId": "common.ci-basics",
+      "quote": "GitHub Actions: тесты, сборка, выкладка на стейдж по тегу"
+    },
+    {
+      "catalogId": "common.docker-local",
+      "quote": "Оптимизировал Dockerfile: multi-stage, образ уменьшился с 1.1 ГБ до 180 МБ"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.nosql",
+      "mention": "схему проектировали до меня",
+      "why": "не проектировал"
+    }
+  ]
+}

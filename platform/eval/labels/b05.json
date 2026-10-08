@@ -1,0 +1,27 @@
+{
+  "id": "b05",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.rest-design",
+      "quote": "добавил фильтрацию и постраничный вывод в 6 списочных эндпоинтах"
+    },
+    {
+      "catalogId": "common.sql-queries",
+      "quote": "Писал и оптимизировал запросы к MS SQL, вынес тяжёлый отчёт в индексированное представление"
+    },
+    {
+      "catalogId": "be.integration-tests",
+      "quote": "Написал интеграционные тесты на WebApplicationFactory с тестовой БД"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.message-queue",
+      "mention": "только читаю про RabbitMQ",
+      "why": "опыта нет"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "f06",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.components",
+      "quote": "интерфейс админки интернет-магазина на React 18: списки заказов, карточка товара"
+    },
+    {
+      "catalogId": "fe.server-state",
+      "quote": "Подключила React Query для кэширования серверных данных вместо ручных useEffect"
+    },
+    {
+      "catalogId": "fe.api-client",
+      "quote": "Централизованный axios-клиент с интерцептором ошибок и повтором запросов"
+    },
+    {
+      "catalogId": "common.code-review",
+      "quote": "Участвую в code review, оставила около 40 комментариев по стилю и типам"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.ssr",
+      "mention": "прошла туториал",
+      "why": "в работе не использовала"
+    }
+  ]
+}

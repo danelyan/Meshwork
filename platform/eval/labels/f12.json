@@ -1,0 +1,40 @@
+{
+  "id": "f12",
+  "specialization": "frontend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.a11y",
+      "quote": "Провела аудит доступности веб-кабинета со скринридером NVDA, исправила 31 нарушение, добавила автотесты axe в CI"
+    },
+    {
+      "catalogId": "fe.components",
+      "quote": "Разработала библиотеку компонентов (кнопки, поля, селекты, таблица) с документацией в Storybook, ею пользуются 3 команды"
+    },
+    {
+      "catalogId": "fe.web-perf",
+      "quote": "Заменила тяжёлую библиотеку графиков на облегчённую, Total Blocking Time снизился на 40%"
+    },
+    {
+      "catalogId": "fe.component-tests",
+      "quote": "Тесты компонентов на React Testing Library, визуальные снимки в Storybook"
+    },
+    {
+      "catalogId": "fe.realtime-client",
+      "quote": "Клиент для WebSocket с переподключением и экспоненциальной задержкой"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.framework",
+      "mention": "ходила на ревью к бэкендерам",
+      "why": "сама API не писала"
+    }
+  ],
+  "fspAchievements": [
+    {
+      "quote": "участница полуфинала ФСП (демо) 2024"
+    }
+  ]
+}

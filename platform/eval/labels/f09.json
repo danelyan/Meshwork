@@ -1,0 +1,36 @@
+{
+  "id": "f09",
+  "specialization": "frontend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.components",
+      "quote": "Разделил монолитные компоненты на переиспользуемые, ввёл правила работы с эффектами и мемоизацией"
+    },
+    {
+      "catalogId": "fe.api-client",
+      "quote": "Слой API с типобезопасными запросами, отменой через AbortController и единой обработкой 401"
+    },
+    {
+      "catalogId": "common.security-basics",
+      "quote": "Закрыл XSS в поле комментария (санитизация HTML), настроил CSP-заголовки совместно с бэкендом"
+    },
+    {
+      "catalogId": "fe.bundler",
+      "quote": "настроил монорепозиторий на pnpm workspaces и Turborepo с общим UI-китом"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.ssr",
+      "mention": "не использовал в проде",
+      "why": "только знакомство"
+    }
+  ],
+  "fspAchievements": [
+    {
+      "quote": "победитель регионального этапа ФСП (демо) 2023 по спортивному программированию"
+    }
+  ]
+}

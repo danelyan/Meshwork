@@ -1,0 +1,27 @@
+{
+  "id": "b04",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "Разрабатывала CRUD-эндпоинты на NestJS для модуля складского учёта"
+    },
+    {
+      "catalogId": "be.sql-schema",
+      "quote": "Спроектировала таблицы для модуля возвратов: 4 таблицы, внешние ключи, индексы по частым фильтрам"
+    },
+    {
+      "catalogId": "be.orm",
+      "quote": "Нашла и убрала N+1 в списке накладных, заменив цикл запросов на один запрос с include"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "common.docker-local",
+      "mention": "запускала локально чужой compose",
+      "why": "сама не писала"
+    }
+  ]
+}

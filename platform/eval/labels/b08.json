@@ -1,0 +1,39 @@
+{
+  "id": "b08",
+  "specialization": "backend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.sql-indexes",
+      "quote": "разобрала план запроса через EXPLAIN ANALYZE, переписала подзапросы и добавила частичный индекс, время отчёта сократилось с 14 с до 1.3 с"
+    },
+    {
+      "catalogId": "be.service-boundaries",
+      "quote": "Выделила сервис лимитов из монолита, согласовав контракт REST и схему событий с соседними командами"
+    },
+    {
+      "catalogId": "be.concurrency",
+      "quote": "Устранила гонку при обновлении лимита с помощью оптимистичной блокировки (версия строки) и ретраев"
+    },
+    {
+      "catalogId": "common.auth-flow",
+      "quote": "Интегрировала OAuth2/OIDC через Keycloak для внутренних сервисов"
+    },
+    {
+      "catalogId": "be.migrations",
+      "quote": "Перевела проект на Flyway, описала правила обратно совместимых миграций"
+    },
+    {
+      "catalogId": "be.integration-tests",
+      "quote": "Покрыла сервис тарифов тестами с Testcontainers"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.message-queue",
+      "mention": "только чтение событий, без настройки партиций и ключей",
+      "why": "не проектировала топики"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "b01",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "REST-эндпоинты на Spring Boot для внутреннего сервиса заявок"
+    },
+    {
+      "catalogId": "common.unit-tests",
+      "quote": "юнит-тесты на JUnit 5 и Mockito"
+    },
+    {
+      "catalogId": "common.sql-queries",
+      "quote": "писал SQL-запросы с JOIN и GROUP BY"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "common.docker-local",
+      "mention": "контейнеры из готовых образов",
+      "why": "только запускал, не собирал образы и не писал compose"
+    },
+    {
+      "catalogId": "be.message-queue",
+      "mention": "прочитал документацию и прошёл вводный курс",
+      "why": "не делал, только курс"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "f05",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.forms",
+      "quote": "Писал реактивные формы с кастомными валидаторами"
+    },
+    {
+      "catalogId": "fe.api-client",
+      "quote": "Подключал сервисы к REST через HttpClient, перехватчики для токена"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.state-mgmt",
+      "mention": "использую в сервисах",
+      "why": "сложных потоков и NgRx не делал"
+    }
+  ],
+  "fspAchievements": [
+    {
+      "quote": "участник отборочных соревнований ФСП (демо) 2024"
+    }
+  ]
+}

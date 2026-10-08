@@ -1,0 +1,27 @@
+{
+  "id": "f04",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.design-handoff",
+      "quote": "Pixel-perfect вёрстка по макетам Figma, сетки на Grid, адаптив под 4 брейкпоинта"
+    },
+    {
+      "catalogId": "fe.a11y",
+      "quote": "Проверяю контраст, фокус и aria-атрибуты у интерактивных элементов, прогоняла страницы через Lighthouse"
+    },
+    {
+      "catalogId": "fe.web-perf",
+      "quote": "Оптимизировала изображения (WebP, lazy loading), Lighthouse Performance вырос с 52 до 88 на лендинге"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.components",
+      "mention": "не работала с ним",
+      "why": "только статьи"
+    }
+  ]
+}

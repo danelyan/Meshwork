@@ -1,0 +1,39 @@
+{
+  "id": "b07",
+  "specialization": "backend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.idempotency",
+      "quote": "идемпотентную обработку платёжных запросов через ключ идемпотентности и уникальный индекс"
+    },
+    {
+      "catalogId": "be.transactions",
+      "quote": "транзакции с уровнем изоляции REPEATABLE READ и блокировкой строки SELECT FOR UPDATE"
+    },
+    {
+      "catalogId": "be.message-queue",
+      "quote": "Внедрил RabbitMQ для асинхронной отправки чеков: очереди, dead-letter, повторы с backoff"
+    },
+    {
+      "catalogId": "be.observability",
+      "quote": "метрики Prometheus и дашборды Grafana, алерты на рост доли 5xx"
+    },
+    {
+      "catalogId": "be.rest-design",
+      "quote": "публичный REST API для партнёров с версионированием и документацией OpenAPI"
+    },
+    {
+      "catalogId": "be.cache",
+      "quote": "Добавил кэширование справочников в Redis с инвалидацией по событию"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "none.k8s",
+      "mention": "писать манифесты с нуля не приходилось",
+      "why": "нет собственных манифестов"
+    }
+  ]
+}

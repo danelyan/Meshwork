@@ -1,0 +1,11 @@
+{
+  "scenario": "Средний frontend Junior без ФСП (R-FSP-03)",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "expect": {
+    "claimsMinCount": 4,
+    "fsp": "истории ФСП нет: профиль строится без блока ФСП, консультант не требует её и не ставит штрафов (R-FSP-03); предлагает путь добавить достижение, если оно появится",
+    "gaps": ["fe.component-tests", "fe.ts-typing"],
+    "mustNot": ["упоминать несуществующие достижения ФСП", "присвоить Middle по одному резюме"]
+  }
+}

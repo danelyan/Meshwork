@@ -1,0 +1,40 @@
+{
+  "id": "b12",
+  "specialization": "backend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.distributed-consistency",
+      "quote": "Реализовала сагу для многошагового перевода между счетами: компенсирующие операции при сбое шага"
+    },
+    {
+      "catalogId": "be.idempotency",
+      "quote": "Сделала повторные запросы на перевод безопасными: ключ идемпотентности + хранение результата"
+    },
+    {
+      "catalogId": "be.sql-indexes",
+      "quote": "Уменьшила нагрузку на БД: убрала сканирование по таблице операций, добавив индекс покрытия и переписав запрос"
+    },
+    {
+      "catalogId": "be.authz",
+      "quote": "Внедрила ролевую модель доступа (RBAC) и аудит действий в API"
+    },
+    {
+      "catalogId": "be.integration-tests",
+      "quote": "Ввела контрактные тесты между сервисами (Pact)"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.message-queue",
+      "mention": "Топики Kafka создавала платформенная команда",
+      "why": "топики не проектировала"
+    }
+  ],
+  "fspAchievements": [
+    {
+      "quote": "занято 14-е место из 120"
+    }
+  ]
+}

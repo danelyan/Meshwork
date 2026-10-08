@@ -1,0 +1,3 @@
+pdf/
+results/*.json
+!results/.gitkeep

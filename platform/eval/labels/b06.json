@@ -1,0 +1,28 @@
+{
+  "id": "b06",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "Реализовала три REST-метода на Spring Boot для сервиса уведомлений"
+    },
+    {
+      "catalogId": "be.sql-indexes",
+      "quote": "Ускорила запрос выборки уведомлений с 1.2 с до 80 мс, добавив составной индекс"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.message-queue",
+      "mention": "сама не настраивала",
+      "why": "только видела чужой код"
+    }
+  ],
+  "fspAchievements": [
+    {
+      "quote": "решила 5 из 8 задач на региональном этапе"
+    }
+  ]
+}

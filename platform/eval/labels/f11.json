@@ -1,0 +1,35 @@
+{
+  "id": "f11",
+  "specialization": "frontend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.ssr",
+      "quote": "SSR-приложение для публичного портала на Nuxt с кэшированием страниц на уровне CDN"
+    },
+    {
+      "catalogId": "fe.state-mgmt",
+      "quote": "Вынес сложное состояние фильтров карты в URL и стор, чтобы ссылки на состояние можно было делиться"
+    },
+    {
+      "catalogId": "common.security-basics",
+      "quote": "Настроил безопасное хранение токенов (httpOnly cookie) и защиту от CSRF совместно с бэкендом"
+    },
+    {
+      "catalogId": "fe.bundler",
+      "quote": "Мигрировал сборку с Vue CLI на Vite, перенёс алиасы и окружения"
+    },
+    {
+      "catalogId": "fe.ts-typing",
+      "quote": "Перевёл проект на TypeScript, включил noImplicitAny"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.framework",
+      "mention": "несколько методов-прокси без собственной БД",
+      "why": "полноценный бэкенд не делал"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "h04",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "Сделал REST API для списка дел на Express: 4 эндпоинта"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.message-queue",
+      "mention": "Эксперт в Kafka",
+      "why": "в тексте нет ни одного конкретного проекта с Kafka"
+    },
+    {
+      "catalogId": "be.service-boundaries",
+      "mention": "микросервисы любой сложности",
+      "why": "нет описания реальных сервисов, команды, нагрузок"
+    },
+    {
+      "catalogId": "none.k8s",
+      "mention": "Kubernetes на уровне эксперта",
+      "why": "голословно, без артефактов"
+    },
+    {
+      "catalogId": "be.concurrency",
+      "mention": "многопоточность",
+      "why": "голословно"
+    }
+  ]
+}

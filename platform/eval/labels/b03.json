@@ -1,0 +1,31 @@
+{
+  "id": "b03",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "HTTP API на Go с chi: каталог, корзина, заказы"
+    },
+    {
+      "catalogId": "be.authn-impl",
+      "quote": "Реализовал JWT-аутентификацию с refresh-токенами"
+    },
+    {
+      "catalogId": "common.docker-local",
+      "quote": "написал Dockerfile и docker-compose с приложением и Postgres"
+    },
+    {
+      "catalogId": "be.concurrency",
+      "quote": "Ограничивал параллелизм через семафор на буферизованном канале"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.service-boundaries",
+      "mention": "разделение монолита на сервисы",
+      "why": "не участвовал в разделении, только слышал на митапе"
+    }
+  ]
+}

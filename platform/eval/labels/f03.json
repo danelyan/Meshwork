@@ -1,0 +1,31 @@
+{
+  "id": "f03",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.ts-typing",
+      "quote": "Мигрировал 14 компонентов с JS на TypeScript, описал типы ответов API"
+    },
+    {
+      "catalogId": "fe.components",
+      "quote": "Разрабатывал интерфейс личного кабинета на React: таблицы, фильтры, модальные окна"
+    },
+    {
+      "catalogId": "fe.component-tests",
+      "quote": "Писал тесты компонентов на Jest и React Testing Library"
+    },
+    {
+      "catalogId": "fe.bundler",
+      "quote": "Помог перейти со сборки на webpack на Vite, время холодного старта упало с 40 до 6 секунд"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.state-mgmt",
+      "mention": "использовал в чужом проекте, подключал готовые слайсы",
+      "why": "сам не проектировал хранилище"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "f01",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.components",
+      "quote": "Верстал и подключал к API страницы каталога на React: компоненты, хуки useState и useEffect"
+    },
+    {
+      "catalogId": "fe.responsive",
+      "quote": "Адаптивная вёрстка на CSS Grid и Flex, mobile-first"
+    },
+    {
+      "catalogId": "common.git",
+      "quote": "ветки и pull request'ы в GitHub"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.ts-typing",
+      "mention": "учу, пишу пока в основном на JS",
+      "why": "в проектах нет TypeScript"
+    },
+    {
+      "catalogId": "fe.ssr",
+      "mention": "смотрел обзорное видео",
+      "why": "не использовал"
+    }
+  ]
+}

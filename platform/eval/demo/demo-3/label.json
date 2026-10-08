@@ -1,0 +1,27 @@
+{
+  "id": "demo-3",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "Писал REST-методы на Spring Boot для сервиса записи на приём"
+    },
+    {
+      "catalogId": "common.sql-queries",
+      "quote": "Запросы к PostgreSQL с JOIN и GROUP BY для отчётов"
+    },
+    {
+      "catalogId": "common.git",
+      "quote": "Работал через ветки и pull request'ы, разрешал конфликты слияния"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.message-queue",
+      "mention": "знаю названия",
+      "why": "опыта нет"
+    }
+  ]
+}

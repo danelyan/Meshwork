@@ -1,0 +1,31 @@
+{
+  "id": "f02",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.forms",
+      "quote": "валидация полей на клиенте, сообщения об ошибках, блокировка повторной отправки"
+    },
+    {
+      "catalogId": "fe.api-client",
+      "quote": "Запросы к API через fetch, обработка ошибок и состояния загрузки"
+    },
+    {
+      "catalogId": "fe.a11y",
+      "quote": "Добавляла alt-тексты и семантические теги, проверяла страницы клавиатурой"
+    },
+    {
+      "catalogId": "fe.state-mgmt",
+      "quote": "Хранилище на Pinia для списка задач"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.components",
+      "mention": "прошла вводный урок",
+      "why": "в проектах не использовала"
+    }
+  ]
+}

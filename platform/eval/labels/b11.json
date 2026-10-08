@@ -1,0 +1,39 @@
+{
+  "id": "b11",
+  "specialization": "backend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.concurrency",
+      "quote": "Переписал обработку потока координат на пул воркеров с контекстами и корректным завершением, убрал утечки горутин"
+    },
+    {
+      "catalogId": "be.observability",
+      "quote": "Добавил pprof и метрики задержек (гистограммы), нашёл горячую точку в сериализации"
+    },
+    {
+      "catalogId": "be.cache",
+      "quote": "Ввёл двухуровневый кэш: локальный LRU и Redis"
+    },
+    {
+      "catalogId": "be.rest-design",
+      "quote": "Спроектировал REST API с единым форматом ошибок и идемпотентным созданием заявки по заголовку Idempotency-Key"
+    },
+    {
+      "catalogId": "be.idempotency",
+      "quote": "Хранение ключей идемпотентности в Redis с TTL 24 часа"
+    },
+    {
+      "catalogId": "common.docker-local",
+      "quote": "Собирал образы и описывал compose для локальной разработки"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "none.k8s",
+      "mention": "помогал коллегам читать логи подов",
+      "why": "не деплоил сам"
+    }
+  ]
+}

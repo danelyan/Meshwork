@@ -1,0 +1,274 @@
+{
+  "note": "blocked=true: fetchUrl обязан отказать (в том числе при следовании редиректам). requiresDns=true: проверка IP после резолва, в юнит-тесте нужен подставной резолвер. fixture.redirectChain: цепочка ответов 3xx для подставного HTTP-слоя.",
+  "limits": {
+    "maxRedirects": 5,
+    "allowedSchemes": [
+      "http",
+      "https"
+    ]
+  },
+  "urls": [
+    {
+      "url": "http://localhost/",
+      "blocked": true,
+      "category": "loopback",
+      "note": "имя localhost"
+    },
+    {
+      "url": "http://localhost:8080/admin",
+      "blocked": true,
+      "category": "loopback",
+      "note": "localhost с портом"
+    },
+    {
+      "url": "http://127.0.0.1/",
+      "blocked": true,
+      "category": "loopback",
+      "note": "IPv4 loopback"
+    },
+    {
+      "url": "http://127.1/",
+      "blocked": true,
+      "category": "loopback-encoded",
+      "note": "сокращённая запись"
+    },
+    {
+      "url": "http://0x7f000001/",
+      "blocked": true,
+      "category": "loopback-encoded",
+      "note": "шестнадцатеричная запись"
+    },
+    {
+      "url": "http://2130706433/",
+      "blocked": true,
+      "category": "loopback-encoded",
+      "note": "десятичная запись"
+    },
+    {
+      "url": "http://0177.0.0.1/",
+      "blocked": true,
+      "category": "loopback-encoded",
+      "note": "восьмеричная запись"
+    },
+    {
+      "url": "http://0x7f.0.0.1/",
+      "blocked": true,
+      "category": "loopback-encoded",
+      "note": "смешанная hex-запись"
+    },
+    {
+      "url": "http://[::1]/",
+      "blocked": true,
+      "category": "loopback-ipv6",
+      "note": "IPv6 loopback"
+    },
+    {
+      "url": "http://[::ffff:127.0.0.1]/",
+      "blocked": true,
+      "category": "loopback-ipv6",
+      "note": "IPv4-mapped IPv6"
+    },
+    {
+      "url": "http://[::ffff:7f00:1]/",
+      "blocked": true,
+      "category": "loopback-ipv6",
+      "note": "IPv4-mapped IPv6, hex"
+    },
+    {
+      "url": "http://169.254.169.254/latest/meta-data/",
+      "blocked": true,
+      "category": "metadata",
+      "note": "метаданные облака (link-local)"
+    },
+    {
+      "url": "http://metadata.google.internal/computeMetadata/v1/",
+      "blocked": true,
+      "category": "metadata",
+      "note": "метаданные GCP по имени"
+    },
+    {
+      "url": "http://169.254.169.254.nip.io/",
+      "blocked": true,
+      "category": "metadata",
+      "note": "домен, резолвящийся в metadata-адрес",
+      "requiresDns": true
+    },
+    {
+      "url": "http://10.0.0.1/",
+      "blocked": true,
+      "category": "private",
+      "note": "10.0.0.0/8"
+    },
+    {
+      "url": "http://172.16.0.1/",
+      "blocked": true,
+      "category": "private",
+      "note": "172.16.0.0/12"
+    },
+    {
+      "url": "http://172.31.255.254/",
+      "blocked": true,
+      "category": "private",
+      "note": "верхняя граница 172.16.0.0/12"
+    },
+    {
+      "url": "http://192.168.1.1/",
+      "blocked": true,
+      "category": "private",
+      "note": "192.168.0.0/16"
+    },
+    {
+      "url": "http://100.64.0.1/",
+      "blocked": true,
+      "category": "private",
+      "note": "CGNAT 100.64.0.0/10"
+    },
+    {
+      "url": "http://0.0.0.0/",
+      "blocked": true,
+      "category": "unspecified",
+      "note": "неопределённый адрес, часто ведёт на localhost"
+    },
+    {
+      "url": "file:///etc/passwd",
+      "blocked": true,
+      "category": "scheme",
+      "note": "схема file"
+    },
+    {
+      "url": "gopher://127.0.0.1:6379/_PING",
+      "blocked": true,
+      "category": "scheme",
+      "note": "схема gopher"
+    },
+    {
+      "url": "ftp://example.com/resume.pdf",
+      "blocked": true,
+      "category": "scheme",
+      "note": "схема ftp (разрешены только http/https)"
+    },
+    {
+      "url": "javascript:alert(1)",
+      "blocked": true,
+      "category": "scheme",
+      "note": "схема javascript"
+    },
+    {
+      "url": "data:text/html,hello",
+      "blocked": true,
+      "category": "scheme",
+      "note": "схема data"
+    },
+    {
+      "url": "http://example.com@127.0.0.1/",
+      "blocked": true,
+      "category": "userinfo-trick",
+      "note": "хост после @ — это 127.0.0.1"
+    },
+    {
+      "url": "http://127.0.0.1#@example.com/",
+      "blocked": true,
+      "category": "userinfo-trick",
+      "note": "фрагмент не должен менять хост"
+    },
+    {
+      "url": "https://user:pass@10.0.0.1/",
+      "blocked": true,
+      "category": "userinfo-trick",
+      "note": "учётные данные в URL и приватный адрес"
+    },
+    {
+      "url": "http://localtest.me/",
+      "blocked": true,
+      "category": "dns-rebinding",
+      "note": "домен, резолвящийся в 127.0.0.1; проверять IP после резолва",
+      "requiresDns": true
+    },
+    {
+      "url": "http://127.0.0.1.nip.io/",
+      "blocked": true,
+      "category": "dns-rebinding",
+      "note": "домен-обёртка loopback",
+      "requiresDns": true
+    },
+    {
+      "url": "https://redirect.test.invalid/to-localhost",
+      "blocked": true,
+      "category": "redirect",
+      "note": "ответ 302 на http://127.0.0.1/ — блокировать при следовании",
+      "fixture": {
+        "redirectChain": [
+          "http://127.0.0.1/"
+        ]
+      }
+    },
+    {
+      "url": "https://redirect.test.invalid/to-metadata",
+      "blocked": true,
+      "category": "redirect",
+      "note": "ответ 302 на http://169.254.169.254/",
+      "fixture": {
+        "redirectChain": [
+          "http://169.254.169.254/latest/meta-data/"
+        ]
+      }
+    },
+    {
+      "url": "https://redirect.test.invalid/loop",
+      "blocked": true,
+      "category": "redirect",
+      "note": "длинная цепочка из 11 редиректов; лимит — 5",
+      "fixture": {
+        "redirectChain": [
+          "https://redirect.test.invalid/hop-1",
+          "https://redirect.test.invalid/hop-2",
+          "https://redirect.test.invalid/hop-3",
+          "https://redirect.test.invalid/hop-4",
+          "https://redirect.test.invalid/hop-5",
+          "https://redirect.test.invalid/hop-6",
+          "https://redirect.test.invalid/hop-7",
+          "https://redirect.test.invalid/hop-8",
+          "https://redirect.test.invalid/hop-9",
+          "https://redirect.test.invalid/hop-10",
+          "https://redirect.test.invalid/hop-11"
+        ]
+      }
+    },
+    {
+      "url": "https://github.com/octocat",
+      "blocked": false,
+      "category": "public",
+      "note": "профиль GitHub"
+    },
+    {
+      "url": "https://github.com/octocat/Hello-World",
+      "blocked": false,
+      "category": "public",
+      "note": "репозиторий GitHub"
+    },
+    {
+      "url": "https://codeforces.com/profile/tourist",
+      "blocked": false,
+      "category": "public",
+      "note": "профиль Codeforces"
+    },
+    {
+      "url": "https://stackoverflow.com/users/22656/jon-skeet",
+      "blocked": false,
+      "category": "public",
+      "note": "профиль Stack Overflow"
+    },
+    {
+      "url": "https://example.com/",
+      "blocked": false,
+      "category": "public",
+      "note": "публичный сайт"
+    },
+    {
+      "url": "http://example.org/portfolio?ref=cv",
+      "blocked": false,
+      "category": "public",
+      "note": "http с query"
+    }
+  ]
+}

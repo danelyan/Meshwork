@@ -1,0 +1,35 @@
+{
+  "id": "f08",
+  "specialization": "frontend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.state-mgmt",
+      "quote": "Спроектировала модульное хранилище на Pinia с разделением на домены и персистентностью выбранных частей"
+    },
+    {
+      "catalogId": "fe.render-perf",
+      "quote": "Внедрила виртуализацию таблиц на 20 000 строк (vue-virtual-scroller), прокрутка стала плавной на слабых ноутбуках"
+    },
+    {
+      "catalogId": "fe.forms",
+      "quote": "Написала библиотеку форм поверх VeeValidate с единым форматом ошибок сервера"
+    },
+    {
+      "catalogId": "fe.a11y",
+      "quote": "Привела компоненты UI-кита к WCAG AA: управление фокусом в модальных окнах, роли и ARIA, навигация с клавиатуры"
+    },
+    {
+      "catalogId": "common.ci-basics",
+      "quote": "Настроила проверку линтера, тестов и сборки в GitLab CI на каждый merge request"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.components",
+      "mention": "трогала в чужом проекте при аудите",
+      "why": "коммерческого опыта нет"
+    }
+  ]
+}

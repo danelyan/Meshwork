@@ -1,0 +1,8 @@
+{
+  "note": "Все ссылки вымышленные. Сетевой фетч в демо заменяется фикстурой: collector отдаёт готовый ExtractedDoc по fixture, реальный запрос на github.com не идёт.",
+  "links": [
+    { "kind": "github", "handle": "demo-ryabinin", "url": "https://github.com/demo-ryabinin", "fictional": true,
+      "fixture": { "sourceKind": "github", "origin": "github:demo-ryabinin",
+        "text": "demo-ryabinin/payments-idempotency: Go-сервис приёма платежей. README: ключ идемпотентности в заголовке Idempotency-Key, уникальный индекс (key, client_id) в PostgreSQL, повтор запроса возвращает сохранённый результат. Тесты: интеграционные, Testcontainers. CI: GitHub Actions." } }
+  ]
+}

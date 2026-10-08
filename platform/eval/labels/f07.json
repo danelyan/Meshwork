@@ -1,0 +1,35 @@
+{
+  "id": "f07",
+  "specialization": "frontend",
+  "gradeExpected": "middle",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "fe.server-state",
+      "quote": "архитектуру состояния на Redux Toolkit + RTK Query: нормализованный кэш, оптимистичные обновления"
+    },
+    {
+      "catalogId": "fe.web-perf",
+      "quote": "Сократил размер основного бандла с 1.4 МБ до 520 КБ: code splitting по маршрутам, динамические импорты, удалил дубли зависимостей"
+    },
+    {
+      "catalogId": "fe.ssr",
+      "quote": "серверный рендеринг на Next.js для страниц каталога, LCP снизился с 3.8 до 1.9 с"
+    },
+    {
+      "catalogId": "fe.component-tests",
+      "quote": "тестовую пирамиду: Vitest для логики, RTL для компонентов, Playwright для 12 ключевых сценариев"
+    },
+    {
+      "catalogId": "fe.ts-typing",
+      "quote": "Настроил строгий режим TypeScript и общие типы API из OpenAPI-схемы через кодогенерацию"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.a11y",
+      "mention": "знаю базовые правила",
+      "why": "системно не занимался"
+    }
+  ]
+}

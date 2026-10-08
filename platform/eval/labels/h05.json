@@ -1,0 +1,36 @@
+{
+  "id": "h05",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "Built and maintained REST endpoints in Flask for an internal analytics service"
+    },
+    {
+      "catalogId": "common.sql-queries",
+      "quote": "Wrote SQL reports with window functions and CTEs for the BI team"
+    },
+    {
+      "catalogId": "common.ci-basics",
+      "quote": "Set up GitHub Actions to run tests and linters on every pull request"
+    },
+    {
+      "catalogId": "common.unit-tests",
+      "quote": "unit tests with pytest, fixtures and parametrization"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "common.docker-local",
+      "mention": "existing Dockerfiles, did not author them",
+      "why": "did not write Dockerfiles"
+    },
+    {
+      "catalogId": "be.cache",
+      "mention": "used as a library in one script",
+      "why": "no real caching design"
+    }
+  ]
+}

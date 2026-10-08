@@ -1,0 +1,31 @@
+{
+  "id": "b02",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "catalogVersion": "claims-catalog-draft-2026-10-09",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "добавила 9 эндпоинтов с валидацией через Pydantic"
+    },
+    {
+      "catalogId": "be.migrations",
+      "quote": "Писала миграции схемы на Alembic"
+    },
+    {
+      "catalogId": "common.ci-basics",
+      "quote": "пайплайн в GitLab CI: линтер, тесты, сборка образа"
+    },
+    {
+      "catalogId": "common.unit-tests",
+      "quote": "ключевые сценарии каталога, покрытие выросло с 31% до 58%"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.cache",
+      "mention": "кэширование ответов в Redis",
+      "why": "в проекте не применяла, только читала"
+    }
+  ]
+}

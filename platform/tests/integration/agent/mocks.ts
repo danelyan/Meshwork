@@ -11,6 +11,7 @@ import type { Prisma } from '@prisma/client';
 
 import type { CatalogEntry, ProfileView, ProposedClaim, VerifiedClaim, VerifyResult } from '@/server/claims/types';
 import type { ExtractedDoc, ProfileKind, SourceKind } from '@/server/collector/types';
+import { extractByMarkers as realExtractByMarkers } from '@/server/claims/markers';
 import { prisma } from '@/server/db';
 import { AppError } from '@/server/errors';
 import type { Gap, TargetRec, TaskRec, TestRecommendation } from '@/server/recommend/types';
@@ -44,7 +45,8 @@ export function makeDoc(args: { kind?: SourceKind; origin?: string; title?: stri
     sourceKind: args.kind ?? 'resume',
     title: args.title ?? origin,
     origin,
-    lines: args.lines.map((text, i) => ({ ref: `${origin}#p1:l${i + 1}`, text })),
+    // Как collector: скрытые строки помечены hidden (их нет в text для человека, но они в lines).
+    lines: args.lines.map((text, i) => ({ ref: `${origin}#p1:l${i + 1}`, text, ...(args.hidden?.includes(text) ? { hidden: true } : {}) })),
     text: args.lines.join('\n'),
     flags: {
       ...(args.hidden?.length ? { hiddenText: { count: args.hidden.length, sample: args.hidden } } : {}),
@@ -84,6 +86,8 @@ function verify(p: ProposedClaim[], docs: ExtractedDoc[], catalog: CatalogEntry[
 }
 
 export const claimsMock = {
+  // План В — настоящая реализация claims (чистая функция, без БД).
+  extractByMarkers: vi.fn(realExtractByMarkers),
   getCatalog: vi.fn(async () => CATALOG),
   maxLevelFor: vi.fn((kind: SourceKind) => LEVEL_BY_KIND[kind]),
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- сигнатура контракта нужна для типизации mockImplementation

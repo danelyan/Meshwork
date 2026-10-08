@@ -151,7 +151,7 @@ describe('runTurn (stub LLM, моки модулей)', () => {
     );
     const { events, steps } = await turn({ text: 'Собери профиль [[reply Прочитал резюме и GitHub, подтверди карточки.]]', uploadIds: [up.id], urls: ['https://github.com/demo-ryabinin'] });
 
-    expect(collectorMock.fetchProfile).toHaveBeenCalledWith('github', 'demo-ryabinin');
+    expect(collectorMock.fetchProfile).toHaveBeenCalledWith('github', 'demo-ryabinin', { candidateId: CAND });
     expect(collectorMock.fetchUrl).not.toHaveBeenCalled();
     expect(steps[0]).toMatch(/^читаю резюме cv\.pdf \(4 строк\)/);
     expect(steps.some((s) => s.startsWith('читаю github:demo-ryabinin'))).toBe(true);
@@ -196,14 +196,15 @@ describe('runTurn (stub LLM, моки модулей)', () => {
   });
 
   it('модель недоступна в конвейере → извлечение по маркерам, план В, стенд отвечает', async () => {
-    const doc = makeDoc({ lines: ['Писал эндпоинты на Flask', 'Собирал формы с валидацией'] });
+    // Шапка резюме (до заголовка раздела) план В claims пропускает — как в настоящем резюме.
+    const doc = makeDoc({ lines: ['Глеб Рябинин, разработчик', 'Опыт:', 'Писал эндпоинты на Flask', 'Добавил Idempotency-Key в платежи'] });
     const up = await seedUpload(CAND, doc);
     claimsMock.extractClaims.mockRejectedValue(new LlmError('unavailable', '[503] down', 503));
     const { events, steps } = await turn({ text: 'собери', uploadIds: [up.id] });
     expect(steps).toContain('извлекатель недоступен — ищу по словарю каталога');
     expect(steps).toContain('модель недоступна, работаю в упрощённом режиме');
     const claims = events.find((e) => e.type === 'claims') as { proposed: { catalogId: string }[] };
-    expect(claims.proposed.map((c) => c.catalogId).sort()).toEqual(['be.framework', 'fe.forms']);
+    expect(claims.proposed.map((c) => c.catalogId).sort()).toEqual(['be.framework', 'be.idempotency']);
     const msg = lastMessage(events)?.text ?? '';
     expect(msg).toContain('Нашёл 2 утверждений');
     expect(msg).toContain('Backend, Middle');
@@ -251,7 +252,7 @@ describe('runTurn (stub LLM, моки модулей)', () => {
     await turn({ text: `[[tool:start_verification {"claimId":"${mine.id}","kind":"interview"}]] [[tool:start_verification {"claimId":"${mine.id}","kind":"task"}]] [[tool:start_verification {"claimId":"${theirs.id}","kind":"task"}]]` });
     const rows = (await prisma.message.findMany({ where: { role: 'tool' }, orderBy: { createdAt: 'asc' } })).map((r) => JSON.parse(r.content));
     expect(rows[0].url).toBe(`/defense/${mine.id}`);
-    expect(rows[1].url).toBe(`/tasks/${encodeURIComponent('payment-retry')}?claim=${mine.id}`);
+    expect(rows[1].url).toBe(`/profile?claim=${mine.id}&task=payment-retry#tasks`);
     expect(rows[2].error.code).toBe('not_found');
     expect(await prisma.defenseSession.count()).toBe(0);
     expect((await prisma.claim.findUniqueOrThrow({ where: { id: mine.id } })).level).toBe('self_reported');

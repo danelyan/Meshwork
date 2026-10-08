@@ -38,6 +38,8 @@ export function pipelineParts(p: PipelineResult): string[] {
     parts.push(
       `Нашёл ${countOf(p.proposed.length, FORMS.claim)}${p.rejected ? `, ${p.rejected} отбросил (${p.rejectSummary || 'нет цитаты в источнике'})` : ''}${p.merged ? `, объединил ${countOf(p.merged, FORMS.repeat)} из разных источников` : ''}. Посмотри карточки: «да» переводит утверждение в профиль, «поправить» меняет формулировку, «нет» убирает.`,
     );
+  } else if (p.alreadyKnown > 0) {
+    parts.push(`Новых утверждений нет: ${p.alreadyKnown} уже в вашем профиле (/profile).`);
   } else if (p.docs.length) {
     parts.push('Утверждений из каталога с дословной цитатой не нашёл. Напиши, что делал, своими словами — подберу формулировки из каталога.');
   }

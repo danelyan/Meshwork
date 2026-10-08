@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import type { ClaimAction } from '@/lib/api';
@@ -125,7 +126,15 @@ function ClaimsBlock({
     <section className={styles.cards} aria-label="Найденные утверждения">
       <div className={styles.cardsHead}>
         <h3 className={styles.cardsTitle}>
-          {claims.length > 0 ? `Нашёл утверждений: ${claims.length}. Это про вас?` : 'Подтверждённых цитатами утверждений не нашёл.'}
+          {claims.length > 0 ? (
+            `Нашёл утверждений: ${claims.length}. Это про вас?`
+          ) : event.alreadyKnown ? (
+            <>
+              Новых утверждений нет: {event.alreadyKnown} уже в вашем профиле. <Link href="/profile">Открыть профиль</Link>
+            </>
+          ) : (
+            'Подтверждённых цитатами утверждений не нашёл.'
+          )}
         </h3>
         {bulkable.length > 1 && onConfirmAll && (
           <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => void confirmAll()} disabled={bulk}>

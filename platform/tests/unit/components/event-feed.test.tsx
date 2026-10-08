@@ -18,7 +18,16 @@ const claim = (id: string, statement = `Утверждение ${id}`, level = '
 let n = 0;
 const ag = (event: AgentEvent): FeedItem => ({ id: `a${++n}`, role: 'agent', event });
 
+vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
+
 describe('EventFeed: все типы AgentEvent', () => {
+  it('claims без новых, но alreadyKnown > 0: честный заголовок со ссылкой на профиль', () => {
+    render(<EventFeed items={[ag({ type: 'claims', proposed: [], rejected: 0, alreadyKnown: 4 })]} onClaimAction={async () => {}} />);
+    expect(screen.getByText(/Новых утверждений нет: 4 уже в вашем профиле/)).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Открыть профиль' }).getAttribute('href')).toBe('/profile');
+    expect(screen.queryByText(/не нашёл/)).toBeNull();
+  });
+
   it('step: подряд идущие шаги в одном списке с aria-live', () => {
     render(<EventFeed items={[ag({ type: 'step', text: 'читаю резюме' }), ag({ type: 'step', text: 'читаю github.com/x' })]} />);
     const list = screen.getByRole('list', { name: 'Шаги консультанта' });

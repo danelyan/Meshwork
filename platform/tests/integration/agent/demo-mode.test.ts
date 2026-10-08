@@ -65,6 +65,22 @@ describe('демо-режим без модели (LLM_PROVIDER=stub, LLM_STUB_D
     expect(await prisma.agentRun.count({ where: { purpose: 'consultant' } })).toBe(0);
   });
 
+  it('повторная загрузка: найденное уже в профиле → «Новых утверждений нет: N уже в профиле», событие несёт alreadyKnown', async () => {
+    await confirmClaim();
+    const doc = makeDoc({ lines: ['Писал эндпоинты на Flask'] });
+    const up = await seedUpload(CAND, doc, 'resume.pdf');
+    claimsMock.extractClaims.mockImplementation(async () => [
+      { catalogId: 'be.framework', statement: 'Писал HTTP-эндпоинты', quote: 'Писал эндпоинты на Flask', sourceRef: 'cv.pdf#p1:l1', confidence: 'high' },
+    ]);
+    claimsMock.proposeClaims.mockImplementationOnce(async () => []);
+    const { text, events } = await turn('Вот моё резюме', [up.id]);
+    expect(text).toContain('Новых утверждений нет: 1 уже в вашем профиле');
+    expect(text).not.toContain('не нашёл');
+    const ev = events.find((e) => e.type === 'claims') as { alreadyKnown?: number; proposed: unknown[] };
+    expect(ev.proposed).toEqual([]);
+    expect(ev.alreadyKnown).toBe(1);
+  });
+
   it('вакансии без подтверждённых утверждений → «подтверди карточки», recommendTargets не зовётся', async () => {
     const { text } = await turn('Какие есть вакансии?');
     expect(text).toContain('Подтверди карточки — покажу вакансии');

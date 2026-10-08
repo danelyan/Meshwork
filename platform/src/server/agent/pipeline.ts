@@ -1,6 +1,7 @@
 import { countOf, FORMS } from '@/lib/plural';
 import { extractByMarkers, extractClaims, getCatalog, proposeClaims, verifyClaims } from '@/server/claims';
 import type { CatalogEntry, ProposedClaim, RejectReason } from '@/server/claims/types';
+import { prisma } from '@/server/db';
 import { fetchProfile, fetchUrl, maskContacts } from '@/server/collector';
 import type { ExtractedDoc } from '@/server/collector/types';
 import { LlmError } from '@/server/llm/types';
@@ -25,6 +26,8 @@ export interface PipelineResult {
   rejected: number;
   /** Объединено повторов (дубли — не отказ). */
   merged: number;
+  /** Найдено, но отсечено как уже лежащее в профиле (не отказ и не дубль внутри запуска). */
+  alreadyKnown: number;
   rejectSummary: string;
   hiddenText: number;
   injectionSuspect: boolean;
@@ -81,6 +84,7 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
     proposed: [],
     rejected: 0,
     merged: 0,
+    alreadyKnown: 0,
     rejectSummary: '',
     hiddenText: 0,
     injectionSuspect: false,
@@ -145,6 +149,14 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
   const { accepted, rejected } = verifyClaims(proposals, docs, catalog);
   const created = accepted.length ? await proposeClaims(ctx.candidateId, accepted) : [];
   result.proposed = created.map((c) => ({ id: c.id, catalogId: c.catalogId, statement: c.statement, level: c.level, sourceRef: c.sourceRef }));
+  const createdIds = new Set(created.map((c) => c.catalogId));
+  const skipped = [...new Set(accepted.map((a) => a.catalogId))].filter((id) => !createdIds.has(id));
+  if (skipped.length) {
+    // отсечённое proposeClaims: уже есть в профиле (отклонённое кандидатом не считаем)
+    result.alreadyKnown = await prisma.claim.count({
+      where: { candidateId: ctx.candidateId, catalogId: { in: skipped }, status: { not: 'rejected' } },
+    });
+  }
   const reasons = rejected.map((r: { reason: RejectReason }) => r.reason);
   const byReason = countByReason(reasons);
   result.merged = byReason.duplicate ?? 0;
@@ -156,6 +168,7 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
     rejected: rejected.length,
     rejectedByReason: byReason,
     ...(result.hiddenText ? { hiddenText: result.hiddenText } : {}),
+    ...(result.alreadyKnown ? { alreadyKnown: result.alreadyKnown } : {}),
   });
   ctx.emit({
     type: 'step',

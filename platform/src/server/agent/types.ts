@@ -7,7 +7,7 @@ export type AgentEvent =
   /** «читаю резюме…» */
   | { type: 'step'; text: string }
   | { type: 'queue'; position: number }
-  | { type: 'claims'; proposed: unknown[]; rejected: number; rejectedByReason?: Record<string, number>; hiddenText?: number }
+  | { type: 'claims'; proposed: unknown[]; rejected: number; rejectedByReason?: Record<string, number>; hiddenText?: number; alreadyKnown?: number }
   | { type: 'ask'; question: string; options?: string[] }
   | { type: 'recommendations'; items: unknown[] }
   | { type: 'message'; text: string }

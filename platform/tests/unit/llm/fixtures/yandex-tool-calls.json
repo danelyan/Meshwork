@@ -1,0 +1,29 @@
+{
+  "id": "e1b2c3d4-0000-4000-8000-000000000001",
+  "object": "response",
+  "created_at": 1791500000,
+  "status": "completed",
+  "error": null,
+  "incomplete_details": null,
+  "model": "gpt://b1gtestfolder/aliceai-llm",
+  "output": [
+    {
+      "type": "function_call",
+      "id": "fc_1",
+      "call_id": "call_read_1",
+      "name": "read_document",
+      "arguments": "{\"uploadId\":\"up_1\"}",
+      "status": "completed"
+    },
+    {
+      "type": "function_call",
+      "id": "fc_2",
+      "call_id": "call_fetch_2",
+      "name": "fetch_url",
+      "arguments": "{\"url\":\"https://github.com/example-dev\"}",
+      "status": "completed"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "usage": { "input_tokens": 812, "output_tokens": 41, "total_tokens": 853 }
+}

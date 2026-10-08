@@ -1,0 +1,17 @@
+{
+  "id": "e1b2c3d4-0000-4000-8000-000000000003",
+  "object": "response",
+  "status": "completed",
+  "error": null,
+  "model": "gpt://b1gtestfolder/aliceai-llm",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_2",
+      "role": "assistant",
+      "status": "completed",
+      "content": [{ "type": "output_text", "text": "{\"claims\":[{\"catalogId\":\"be.cache\",\"quote\":\"Добавил кэширование справочников в Redis\"}]}", "annotations": [] }]
+    }
+  ],
+  "usage": { "input_tokens": 950, "output_tokens": 38, "total_tokens": 988 }
+}

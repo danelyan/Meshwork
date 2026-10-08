@@ -1,6 +1,6 @@
 import { prisma } from '../db';
 import { getEnv } from '../env';
-import { fromPlanBResult, toPlanBRequest } from './plan-b';
+import { runPlanB } from './plan-b';
 import { createProvider } from './providers';
 import { Semaphore } from './semaphore';
 import {
@@ -134,15 +134,16 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
     const startedAt = Date.now();
     const timeoutMs = req.timeoutMs ?? opts.timeoutMs;
     const planB = Boolean(req.tools?.length) && !provider.supportsTools;
-    const effectiveReq = planB ? toPlanBRequest(req) : req;
     let attempts = 0;
     let lastErr: unknown;
     try {
       while (attempts <= opts.maxRetries) {
         attempts++;
         try {
-          const raw = await attemptWithTimeout(provider, effectiveReq, timeoutMs, signal);
-          const result = planB ? fromPlanBResult(raw, req) : raw;
+          // План В: разбор JSON-действия и один ремонт — внутри попытки (у каждого вызова свой таймаут).
+          const result = planB
+            ? await runPlanB(req, (r) => attemptWithTimeout(provider, r, timeoutMs, signal))
+            : await attemptWithTimeout(provider, req, timeoutMs, signal);
           await record({
             purpose: req.purpose,
             provider: result.provider,

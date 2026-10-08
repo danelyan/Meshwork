@@ -1,0 +1,21 @@
+{
+  "id": "chatcmpl-1",
+  "object": "chat.completion",
+  "created": 1791500000,
+  "model": "GigaChat-3.5-Ultra",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          { "id": "call_a", "type": "function", "function": { "name": "search_catalog", "arguments": "{\"skill\":\"Redis\"}" } },
+          { "id": "call_b", "type": "function", "function": { "name": "search_catalog", "arguments": "{\"skill\":\"Kafka\"" } }
+        ]
+      }
+    }
+  ],
+  "usage": { "prompt_tokens": 700, "completion_tokens": 30, "total_tokens": 730 }
+}

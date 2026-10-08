@@ -1,0 +1,9 @@
+{
+  "id": "e1b2c3d4-0000-4000-8000-000000000004",
+  "object": "response",
+  "status": "failed",
+  "error": { "code": "server_error", "message": "model is overloaded" },
+  "model": "gpt://b1gtestfolder/aliceai-llm",
+  "output": [],
+  "usage": null
+}

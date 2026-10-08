@@ -1,0 +1,13 @@
+{
+  "id": "chatcmpl-3",
+  "object": "chat.completion",
+  "model": "GigaChat-3.5-Ultra",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": { "role": "assistant", "content": "Вот результат:\n```json\n{\"grade\":\"middle\",\"specialization\":\"backend\"}\n```" }
+    }
+  ],
+  "usage": { "prompt_tokens": 400, "completion_tokens": 20, "total_tokens": 420 }
+}

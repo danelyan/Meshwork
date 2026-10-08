@@ -108,9 +108,10 @@ export function extractByMarkers(doc: ExtractedDoc, catalog: CatalogEntry[], opt
   const compiled = compile(catalogFor(catalog, spec ?? null));
   const out = new Map<string, ProposedClaim>();
   let skipSection = false;
-  // шапка (имя, должность, контакты) — до первого заголовка раздела после первой строки, не больше 4 строк
+  // шапка (имя, должность, контакты) — до первого заголовка раздела после первой строки, не больше 4 строк.
+  // Только у резюме/документа: у профиля GitHub/Codeforces шапки нет, а строк бывает ≤ 4.
   let preamble = 0;
-  let inPreamble = true;
+  let inPreamble = doc.sourceKind === 'resume' || doc.sourceKind === 'document';
   for (const line of docLines(doc) as SourceLine[]) {
     const t = line.text.trim();
     if (!t) continue;

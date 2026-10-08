@@ -53,6 +53,13 @@ describe('extractByMarkers (план В)', () => {
     expect(markerRegExp('идемпотентность')?.test('идемпотентные ретраи')).toBe(true);
   });
 
+  it('короткий профиль GitHub без шапки: строки не считаются шапкой резюме', () => {
+    const gh = doc(['payments-idempotency: Go-сервис приёма платежей', 'README: ключ идемпотентности в заголовке Idempotency-Key'], { kind: 'github', origin: 'github:demo' });
+    expect(extractByMarkers(gh, catalog).map((c) => c.catalogId)).toContain('be.idempotency');
+    // то же как резюме — первые строки шапка, утверждений нет
+    expect(extractByMarkers(doc(gh.lines.map((l) => l.text)), catalog)).toEqual([]);
+  });
+
   it('пустой документ → пусто', () => {
     expect(extractByMarkers(doc([]), catalog)).toEqual([]);
   });

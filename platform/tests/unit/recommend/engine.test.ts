@@ -112,13 +112,15 @@ describe('matcher', () => {
     expect(r.total).toBe(3);
     expect(r.covered).toBe(1);
     expect(r.missing.map((m) => m.catalogId)).toEqual(['be.idempotency', 'be.cache']);
-    expect(r.adjacent).toEqual([{ catalogId: 'be.idempotency', statement: 'Утверждение be.idempotency', via: 'be.message-queue' }]);
+    expect(r.adjacent).toEqual([{ catalogId: 'be.idempotency', statement: 'Утверждение be.idempotency', via: 'be.message-queue', viaStatement: 'Утверждение be.message-queue' }]);
     // (3×0.5 + 1×1 + 0) / 6
     expect(r.score).toBeCloseTo(2.5 / 6, 5);
     const text = describeCoverage(r);
     expect(text).toMatch(/^Закрываешь 1 из 3, не хватает: /);
     expect(text).toContain('Смежное засчитано вдвое слабее');
     expect(text).not.toContain('be.ghost');
+    expect(text).toContain('Утверждение be.idempotency (через «Утверждение be.message-queue»)');
+    expect(text).not.toMatch(/\(через be\./);
   });
 
   it('объяснение содержит только ID из каталога', () => {

@@ -21,7 +21,7 @@ export interface CoverageResult {
   covered: number;
   total: number;
   missing: { catalogId: string; statement: string }[];
-  adjacent: { catalogId: string; statement: string; via: string }[];
+  adjacent: { catalogId: string; statement: string; via: string; viaStatement: string }[];
 }
 
 /**
@@ -54,7 +54,12 @@ export function computeCoverage(needs: Need[], catalog: Map<string, CatalogEntry
     if (c.direct) covered++;
     else {
       missing.push({ catalogId: entry.id, statement: entry.statement });
-      if (c.adjacentVia) adjacent.push({ catalogId: entry.id, statement: entry.statement, via: c.adjacentVia });
+      if (c.adjacentVia) adjacent.push({
+          catalogId: entry.id,
+          statement: entry.statement,
+          via: c.adjacentVia,
+          viaStatement: catalog.get(c.adjacentVia)?.statement ?? c.adjacentVia,
+        });
     }
   }
   return {
@@ -73,7 +78,7 @@ export function describeCoverage(r: CoverageResult, subject: 'candidate' | 'you'
   let text = `${verb[0]!.toUpperCase()}${verb.slice(1)} ${r.covered} из ${r.total}`;
   if (r.missing.length > 0) text += `, не хватает: ${r.missing.map((m) => m.statement).join('; ')}`;
   if (r.adjacent.length > 0) {
-    text += `. Смежное засчитано вдвое слабее: ${r.adjacent.map((a) => `${a.catalogId} (через ${a.via})`).join(', ')}`;
+    text += `. Смежное засчитано вдвое слабее: ${r.adjacent.map((a) => `${a.statement} (через «${a.viaStatement}»)`).join(', ')}`;
   }
   return text;
 }

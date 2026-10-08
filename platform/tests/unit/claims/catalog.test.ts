@@ -18,7 +18,8 @@ describe('каталог из prisma/seed/claims-catalog.json', () => {
       expect(c.proof.length).toBeGreaterThan(0);
       expect(c.proof.every((p) => /^(task|interview|registry):/.test(p))).toBe(true);
       expect(c.markers.length).toBeGreaterThan(0);
-      expect(c.limits).toMatch(/^Не доказывает: /);
+      expect(c.limits.length).toBeGreaterThan(3);
+      expect(c.limits).not.toMatch(/^Не доказывает/); // префикс добавляет UI
       expect([1, 2, 3]).toContain(c.weight);
       expect(c.grades.length).toBeGreaterThan(0);
       expect(c.statement).not.toMatch(/stack:|`/);

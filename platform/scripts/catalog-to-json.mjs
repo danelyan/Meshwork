@@ -81,7 +81,8 @@ function parseLimits(s) {
   const first = t[0];
   const second = t[1] ?? '';
   const keepCase = /[A-Za-z]/.test(first) || second === second.toUpperCase();
-  return `Не доказывает: ${keepCase ? t : first.toLowerCase() + t.slice(1)}`;
+  // Префикс «Не доказывает:» добавляет UI — в данных его нет.
+  return keepCase ? t : first.toLowerCase() + t.slice(1);
 }
 
 const lines = md.split('\n');
@@ -165,6 +166,16 @@ for (const [a, b] of adjacency) {
   // рёбра «в обе стороны» (каталог § 6)
   if (!byId.get(a).adjacent.includes(b)) byId.get(a).adjacent.push(b);
   if (!byId.get(b).adjacent.includes(a)) byId.get(b).adjacent.push(a);
+}
+
+// Правки маркеров поверх личного каталога-Markdown (его не трогаем): scripts/catalog-marker-overrides.json.
+const OVERRIDES = join(here, 'catalog-marker-overrides.json');
+if (existsSync(OVERRIDES)) {
+  for (const [id, markers] of Object.entries(JSON.parse(readFileSync(OVERRIDES, 'utf8')))) {
+    if (id.startsWith('_')) continue;
+    if (!byId.has(id)) fail(`override маркеров: ID ${id} нет в каталоге`);
+    byId.get(id).markers = markers;
+  }
 }
 
 const dateMatch = /(\d{2})\.(\d{2})\.(\d{4})/.exec(md.split('\n').find((l) => l.includes('Статус')) ?? '');

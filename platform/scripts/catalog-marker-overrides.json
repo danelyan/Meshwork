@@ -1,5 +1,29 @@
 {
   "_why": "Общие слова-технологии (PostgreSQL, pull request, GitHub) не доказывают умение: давали ложные карточки на демо. Владельцу — перенести в docs/product/claims-catalog.md.",
-  "common.sql-queries": ["SQL", "запросы SQL", "SQL-запросы", "JOIN", "GROUP BY", "агрегаты"],
-  "common.git": ["Git", "ветки", "rebase", "merge", "разрешение конфликтов", "git flow"]
+  "common.sql-queries": [
+    "SQL",
+    "запросы SQL",
+    "SQL-запросы",
+    "JOIN",
+    "GROUP BY",
+    "агрегаты"
+  ],
+  "common.git": [
+    "Git",
+    "ветки",
+    "rebase",
+    "merge",
+    "разрешение конфликтов",
+    "git flow"
+  ],
+  "be.retries-timeouts": [
+    "retry",
+    "backoff",
+    "таймаут",
+    "timeout",
+    "circuit breaker",
+    "ретраи с backoff",
+    "политика повторов",
+    "экспоненциальная задержка"
+  ]
 }

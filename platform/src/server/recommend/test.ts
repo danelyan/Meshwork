@@ -3,7 +3,7 @@ import { prisma } from '../db';
 import type { Grade, Specialization } from '../types';
 
 import { assertCandidate, loadCatalog } from './evidence';
-import type { TestRecommendation } from './types';
+import { NO_CONFIRMED_REASON, type TestRecommendation } from './types';
 import { GRADE_CHANGE_INTERVAL_DAYS, gradeWeight, MIDDLE_IF_SURE_THRESHOLD, MIDDLE_THRESHOLD } from './weights';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -64,12 +64,16 @@ export async function recommendTest(candidateId: string, now: Date = new Date())
   const candidate = await assertCandidate(candidateId);
   const [catalog, claims, last] = await Promise.all([
     loadCatalog(),
-    prisma.claim.findMany({ where: { candidateId, status: { not: 'rejected' } }, select: { catalogId: true } }),
+    prisma.claim.findMany({ where: { candidateId, status: { in: ['confirmed', 'edited'] } }, select: { catalogId: true } }),
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' } }),
   ]);
+  // В профиль пишет только кандидат: черновики proposed — ещё не его утверждения, в покрытие не идут.
   const claimed = new Set(claims.map((c) => c.catalogId));
   const specialization =
     candidate.specialization ?? last?.specialization ?? inferSpecialization([...claimed]) ?? 'backend';
+  if (claimed.size === 0 && !last) {
+    return { specialization, grade: 'junior', reason: NO_CONFIRMED_REASON, allowed: true };
+  }
   const decision = decideGrade(middleSignature(catalog, specialization), claimed);
 
   let grade = decision.grade;

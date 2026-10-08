@@ -5,12 +5,12 @@ import type { AgentEvent } from '@/server/agent/types';
 
 afterEach(cleanup);
 
-const claim = (id: string, statement = `Утверждение ${id}`) => ({
+const claim = (id: string, statement = `Утверждение ${id}`, level = 'self_reported') => ({
   id,
   statement,
   quote: `цитата ${id}`,
   sourceRef: 'cv.pdf#p1:l1',
-  level: 'artifact',
+  level,
   limits: 'не доказывает объём',
   status: 'proposed',
 });
@@ -39,7 +39,7 @@ describe('EventFeed: все типы AgentEvent', () => {
   });
 
   it('claims: карточки, отброшенные без цитаты и плашка скрытого текста', () => {
-    const items = [ag({ type: 'claims', proposed: [claim('1'), claim('2')], rejected: 2, hiddenText: 1 })];
+    const items = [ag({ type: 'claims', proposed: [claim('1', undefined, 'artifact'), claim('2', undefined, 'artifact')], rejected: 2, hiddenText: 1 })];
     render(<EventFeed items={items} onClaimAction={async () => {}} onConfirmAll={async () => {}} />);
     expect(screen.getByText('Утверждение 1')).toBeDefined();
     expect(screen.getByText('Утверждение 2')).toBeDefined();
@@ -77,6 +77,30 @@ describe('EventFeed: все типы AgentEvent', () => {
     );
     expect(screen.queryByRole('button', { name: /Подтвердить все/ })).toBeNull();
     expect(screen.getAllByText('Подтверждено').length).toBe(3);
+  });
+
+  it('«подтвердить все со слов» берёт только self_reported; артефакты — по одному', async () => {
+    const got: string[][] = [];
+    render(
+      <EventFeed
+        items={[ag({ type: 'claims', proposed: [claim('1'), claim('2'), claim('3', 'Код на GitHub', 'artifact')], rejected: 0 })]}
+        onClaimAction={async () => {}}
+        onConfirmAll={async (cs) => { got.push(cs.map((c) => c.id)); }}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Подтвердить все со слов \(2\)/ }));
+    await waitFor(() => expect(got).toEqual([['1', '2']]));
+  });
+
+  it('если со слов одно, а остальные артефакты — кнопки «все» нет', () => {
+    render(
+      <EventFeed
+        items={[ag({ type: 'claims', proposed: [claim('1'), claim('2', 'a', 'artifact'), claim('3', 'b', 'artifact')], rejected: 0 })]}
+        onClaimAction={async () => {}}
+        onConfirmAll={async () => {}}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /Подтвердить все/ })).toBeNull();
   });
 
   it('ask: кнопки-варианты отправляют ответ один раз', () => {

@@ -4,6 +4,7 @@ import { gapMap } from '@/server/recommend/gap-map';
 import { recommendTargets } from '@/server/recommend/targets';
 import { recommendTasks } from '@/server/recommend/tasks';
 import { recommendTest } from '@/server/recommend/test';
+import { NO_CONFIRMED_REASON } from '@/server/recommend/types';
 import { signSession } from '@/server/session';
 
 import { seedRecommend } from '../../../prisma/seed/recommend';
@@ -101,17 +102,22 @@ describe('recommend (БД)', () => {
     const NOW = new Date('2026-10-09T12:00:00Z');
     const strong = ['be.idempotency', 'be.transactions', 'be.message-queue', 'be.retries-timeouts', 'be.sql-indexes', 'be.rest-design', 'be.cache', 'be.authz', 'be.concurrency', 'be.integration-tests', 'be.observability', 'be.distributed-consistency', 'be.sql-schema', 'be.orm', 'be.framework', 'be.api-validation', 'be.authn-impl', 'be.config-secrets', 'be.lang-core', 'be.error-handling', 'be.background-jobs', 'common.sql-queries', 'common.http', 'common.debugging', 'common.git', 'common.security-basics', 'common.auth-flow', 'common.unit-tests'];
 
-    it('без утверждений — Junior, разрешён', async () => {
-      expect(await recommendTest('c1', NOW)).toMatchObject({ specialization: 'backend', grade: 'junior', allowed: true });
+    it('без утверждений — Junior, разрешён, причина: подтверди карточки', async () => {
+      expect(await recommendTest('c1', NOW)).toMatchObject({ specialization: 'backend', grade: 'junior', allowed: true, reason: NO_CONFIRMED_REASON });
     });
 
-    it('много заявленного (с отклонёнными не считая) — Middle', async () => {
+    it('черновики proposed в покрытие не идут: только confirmed/edited', async () => {
       for (const id of strong) await claim('c1', id, 'self_reported', 'proposed');
+      const draft = await recommendTest('c1', NOW);
+      expect(draft).toMatchObject({ grade: 'junior', reason: NO_CONFIRMED_REASON });
+      await prisma.claim.updateMany({ where: { candidateId: 'c1' }, data: { status: 'confirmed' } });
       const r = await recommendTest('c1', NOW);
       expect(r.grade).toBe('middle');
       expect(r.allowed).toBe(true);
+      await prisma.claim.updateMany({ where: { candidateId: 'c1' }, data: { status: 'edited' } });
+      expect((await recommendTest('c1', NOW)).grade).toBe('middle');
       await prisma.claim.updateMany({ where: { candidateId: 'c1' }, data: { status: 'rejected' } });
-      expect((await recommendTest('c1', NOW)).grade).toBe('junior');
+      expect((await recommendTest('c1', NOW)).reason).toBe(NO_CONFIRMED_REASON);
     });
 
     it('R-C-09: смена грейда раньше 30 дней запрещена, nextAllowedAt = +30 дней; после — разрешена', async () => {

@@ -1,4 +1,5 @@
 import { recommendTargets, recommendTest } from '@/server/recommend';
+import { NO_CONFIRMED_REASON } from '@/server/recommend/types';
 import type { PipelineResult } from './pipeline';
 
 /**
@@ -46,6 +47,7 @@ export function pipelineParts(p: PipelineResult): string[] {
 export async function testPart(candidateId: string): Promise<string | undefined> {
   const test = await safe(() => recommendTest(candidateId));
   if (!test) return undefined;
+  if (test.reason === NO_CONFIRMED_REASON) return 'Тест предложу, когда будут подтверждённые утверждения: подтверди карточки.';
   return `По утверждениям похоже на ${SPEC_RU[test.specialization] ?? test.specialization}, ${GRADE_RU[test.grade] ?? test.grade}: ${test.reason}. Категорию даёт только тест — ${test.allowed ? 'пойдёшь на него?' : `смена грейда откроется ${test.nextAllowedAt ?? 'позже'}.`}`;
 }
 

@@ -80,13 +80,15 @@ function ClaimsBlock({
     .filter((c): c is CardClaim => c !== null)
     .map((c) => ({ ...c, ...overrides[c.id] }));
   const open = claims.filter((c) => c.status === 'proposed');
+  // «Со слов» — только self_reported: артефакты (код, README) кандидат подтверждает по одному.
+  const bulkable = open.filter((c) => c.level === 'self_reported');
 
   async function confirmAll() {
     if (!onConfirmAll) return;
     setBulk(true);
     setBulkError(null);
     try {
-      await onConfirmAll(open);
+      await onConfirmAll(bulkable);
     } catch (e) {
       setBulkError(e instanceof Error ? e.message : 'Не удалось подтвердить.');
     } finally {
@@ -100,9 +102,9 @@ function ClaimsBlock({
         <h3 className={styles.cardsTitle}>
           {claims.length > 0 ? `Нашёл утверждений: ${claims.length}. Это про вас?` : 'Подтверждённых цитатами утверждений не нашёл.'}
         </h3>
-        {open.length > 1 && onConfirmAll && (
+        {bulkable.length > 1 && onConfirmAll && (
           <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => void confirmAll()} disabled={bulk}>
-            Подтвердить все со слов ({open.length})
+            Подтвердить все со слов ({bulkable.length})
           </button>
         )}
       </div>

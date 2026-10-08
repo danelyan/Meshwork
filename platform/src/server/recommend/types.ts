@@ -70,3 +70,6 @@ export interface Coverage {
   total: number;
   explanation: string;
 }
+
+/** Причина рекомендации теста, пока нет ни одного подтверждённого утверждения (черновики не считаются). */
+export const NO_CONFIRMED_REASON = 'подтверди карточки — тогда предложу тест';

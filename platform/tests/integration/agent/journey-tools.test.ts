@@ -85,14 +85,14 @@ describe('инструменты «ведёт по платформе»', () => 
     }
   });
 
-  it('get_test_status: категория из теста и рекомендация; экрана теста пока нет', async () => {
+  it('get_test_status: категория из теста и рекомендация; экран теста — /test', async () => {
     await prisma.candidateCategory.create({ data: { candidateId: CAND, specialization: 'backend', grade: 'junior' } });
     const r = await call('get_test_status');
     expect(r.json).toMatchObject({
       category: { specialization: 'backend', grade: 'junior' },
       recommended: { grade: TEST_REC.grade, allowed: true },
-      testAvailable: false,
-      testUrl: null,
+      testAvailable: true,
+      testUrl: '/test',
     });
     expect(events.some((e) => e.type === 'recommendations')).toBe(true);
   });

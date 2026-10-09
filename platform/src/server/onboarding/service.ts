@@ -36,7 +36,7 @@ import type { Answers, Facts, OnboardingView, StepContext, StepDef, StepView, Su
  */
 
 /** Роут теста на грейд (лейн test). null — роута ещё нет: ведём в профиль с пометкой. */
-export const GRADE_TEST_PATH: string | null = null;
+export const GRADE_TEST_PATH: string | null = '/test';
 
 const CABINET = { candidate: '/consultant', employer: '/employer' } as const;
 

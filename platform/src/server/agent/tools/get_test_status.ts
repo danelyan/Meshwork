@@ -10,7 +10,7 @@ import { EmptyInput } from './shared';
  * пока маршрута нет — null, и модель честно говорит, что тест ещё не открыт.
  * Интегратор после слияния лейна test ставит сюда путь экрана.
  */
-export const TEST_ROUTE: string | null = null;
+export const TEST_ROUTE: string | null = '/test';
 
 const Spec = z.enum(['backend', 'frontend']);
 const Grade = z.enum(['junior', 'middle']);

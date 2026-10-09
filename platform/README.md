@@ -29,7 +29,7 @@ npm run dev                              # http://localhost:3000, GET /api/healt
 LLM_PROVIDER=stub
 LLM_STUB_DEMO=true        # извлекатель размечает резюме словарём каталога; ответы консультанта — шаблонами
 COLLECTOR_FIXTURES=true   # GitHub/Codeforces из фикстур eval/demo/*/links.json, без сети
-DEMO_LOGIN=true           # страница /demo: демо-аккаунты, «Новый пользователь» (онбординг с нуля), «пройти онбординг заново»; блок на /auth; на проде выключить
+DEMO_LOGIN=true           # страница /demo со списком демо-аккаунтов; на проде выключить
 
 bash scripts/db-local.sh start
 npx prisma migrate deploy
@@ -149,7 +149,7 @@ const res = await llm.complete({ purpose: 'consultant', system, messages, tools 
 
 Цикл (`src/server/agent/loop.ts`): первый ход с вложениями — детерминированный
 конвейер `pipeline.ts` (сборщик → извлекатель → проверяющий → событие `claims`),
-затем модель с 14 инструментами `tools/` (ТЗ § 4.1; записи в профиль нет), не
+затем модель с 18 инструментами `tools/` (14 из ТЗ § 4.1 + 4 служебных на чтение; записи в профиль нет), не
 больше `MAX_TOOL_CALLS_PER_TURN` = 6 вызовов за ход, после лимита — ответ без
 инструментов. Внешний текст идёт в модель только в
 `<external_data … trust="untrusted">` (`external.ts`); невалидные аргументы и
@@ -160,6 +160,29 @@ const res = await llm.complete({ purpose: 'consultant', system, messages, tools 
 Системный промпт — `prompts/consultant.md` (источник правды), константа
 `prompt.ts` генерируется из него (тест сверяет); версия пишется системной
 строкой `prompt:<версия>` в `Message` разговора.
+
+### Инструменты по ролям
+
+| Роль | Реестр | Инструменты |
+|---|---|---|
+| Кандидат — консультант, 18 = 14 из ТЗ + 4 служебных | `server/agent/tools/index.ts` | ТЗ § 4.1: `read_upload`, `fetch_url`, `fetch_profile`, `catalog_search`, `propose_claims`, `get_profile`, `get_gap_map`, `recommend_test`, `recommend_tasks`, `recommend_targets`, `explain_invitation`, `start_verification`, `render_profile_pdf`, `ask_user`; служебные (чтение): `get_onboarding_status`, `get_test_status`, `get_invitations`, `explain_evidence` |
+| Работодатель — помощник по подбору, 7 | `server/agent/employer/tools/index.ts` | `get_employer_context`, `match_for_need`, `search_candidates`, `explain_candidate`, `draft_invitation`, `create_need_draft`, `ask_user` |
+
+Реестры не пересекаются (тест `employer-tools.test.ts`): кандидатский инструмент
+в ходе работодателя — `unknown_tool`, и наоборот. Подробно о помощнике —
+`docs/employer-assistant.md`.
+
+## Помощник работодателя (лейн emp-agent)
+
+`POST /api/employer/assistant/messages` `{conversationId?, text}` → SSE
+`EmployerAgentEvent` (`server/agent/employer/types.ts`): `conversation`, `step`,
+`queue`, `ask`, `candidates` (карточки выдачи), `invitation_draft`, `need_draft`,
+`message`, `error`, `done`. Только роль employer (401/403), один ход на разговор
+(409). Разговоры — свои таблицы `EmployerConversation` / `EmployerMessage`
+(миграция `202610091500_employer_agent`), purpose `employer_assistant` в `AgentRun`.
+Страница — `/employer/assistant`; после онбординга работодателя та же лента
+продолжается помощником. Демо без модели (`LLM_STUB_DEMO=true`) и план В —
+скриптовый ход на тех же инструментах (`employer/demo.ts`).
 
 ## Контракты и заглушки лейнов
 

@@ -127,7 +127,7 @@
 
 Где используются сейчас: `Button` - шапка («Выйти»), `ProfilePage` («К консультанту», «Печать / PDF», «На страницу входа»); `Notice` - `ProfilePage` (ошибка загрузки). Остальное - в списке «к переводу».
 
-Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг — лента помощника на весь экран, см. «Лента чата»); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `IncomingInvitations`, `PrivacyToggle`, `RefinementHistory`, стили `Employer.module.css`). `Header` принимает `links` — навигацию роли. Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
+Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг — лента помощника на весь экран, см. «Лента чата»); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `AssistantChat`, `AssistantCandidateCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `IncomingInvitations`, `PrivacyToggle`, `RefinementHistory`, стили `Employer.module.css`). `Header` принимает `links` — навигацию роли. Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
 
 ### К переводу на примитивы
 
@@ -141,7 +141,7 @@
 
 ### Лента чата
 
-Онбординг (`onboarding/OnboardingChat`) и карьерный консультант (`Chat`, `EventFeed`) — одна сущность «помощник ФСП Карьеры» и один вид ленты. Примитивы — `platform/src/components/chat/Thread.tsx` (импорт `@/components/chat/Thread`: на macOS путь `components/chat` без файла совпадает с `Chat.tsx` по регистру), стили — `chat/thread.module.css`, появление — `chat/motion.ts`, автоскролл — `chat/scroll.ts`.
+Онбординг (`onboarding/OnboardingChat`), карьерный консультант (`Chat`, `EventFeed`) и помощник работодателя (`employer/AssistantChat`; выдача в сообщении — компактная `employer/AssistantCandidateCard` внутри `MessageCard`, черновик приглашения — открытая `InviteForm`) — одна сущность «помощник ФСП Карьеры» и один вид ленты. Примитивы — `platform/src/components/chat/Thread.tsx` (импорт `@/components/chat/Thread`: на macOS путь `components/chat` без файла совпадает с `Chat.tsx` по регистру), стили — `chat/thread.module.css`, появление — `chat/motion.ts`, автоскролл — `chat/scroll.ts`.
 
 | Примитив | Назначение |
 |---|---|

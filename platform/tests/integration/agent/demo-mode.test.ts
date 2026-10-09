@@ -74,7 +74,7 @@ describe('демо-режим без модели (LLM_PROVIDER=stub, LLM_STUB_D
     ]);
     claimsMock.proposeClaims.mockImplementationOnce(async () => []);
     const { text, events } = await turn('Вот моё резюме', [up.id]);
-    expect(text).toContain('Новых утверждений нет: 1 уже в вашем профиле');
+    expect(text).toContain('Новых утверждений нет: 1 уже в твоём профиле');
     expect(text).not.toContain('не нашёл');
     const ev = events.find((e) => e.type === 'claims') as { alreadyKnown?: number; proposed: unknown[] };
     expect(ev.proposed).toEqual([]);

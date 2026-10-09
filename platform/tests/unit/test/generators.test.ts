@@ -2,6 +2,7 @@ import { createContext, runInContext, runInNewContext } from 'node:vm';
 
 import { checkAnswer, normalizeAnswer } from '@/server/test/answers';
 import { GENERATORS, generatorsFor } from '@/server/test/generators';
+import { cacheConsistency } from '@/server/test/generators/backend';
 import { domEvents, eventLoop, jsArrayOutput, jsClosure } from '@/server/test/generators/frontend';
 
 const SEEDS = Array.from({ length: 150 }, (_, i) => i * 7919 + 13);
@@ -114,5 +115,37 @@ describe('ключи code-output совпадают с исполнением в
       runInNewContext(js, ctx, { timeout: 1000 });
       expect(log.join(',')).toBe(inst.answerKey);
     }
+  });
+});
+
+describe('инвариант выводимости ответа из условия', () => {
+  it('у всех генераторов на 150 seed: условие/код непусты, number-ключ числовой', () => {
+    for (const g of GENERATORS) {
+      for (const seed of SEEDS) {
+        const inst = g.generate(seed);
+        expect(inst.prompt.trim().length, g.id).toBeGreaterThan(0);
+        expect(inst.answerKey.trim().length, g.id).toBeGreaterThan(0);
+        if (inst.code !== undefined) expect(inst.code.trim().length, g.id).toBeGreaterThan(0);
+        if (g.format === 'number')
+          for (const k of inst.answerKey.split('|')) expect(Number.isFinite(Number(k)), `${g.id} ${seed}`).toBe(true);
+      }
+    }
+  });
+
+  it('be.cache-consistency: есть начальная цена, запись и чтение до неё; ответ не всегда равен последней цене в БД', () => {
+    let stale = 0;
+    for (const seed of SEEDS) {
+      const inst = cacheConsistency.generate(seed);
+      const start = (inst.params as { start: number }).start;
+      expect(inst.prompt).toContain(`цена в БД = ${start}`);
+      const lines = inst.code!.split('\n');
+      expect(lines[0]).toContain(`${start}`);
+      const writeIdx = lines.findIndex((l) => l.includes('обновляет'));
+      expect(writeIdx).toBeGreaterThan(1);
+      expect(lines.slice(1, writeIdx).some((l) => l.includes('читает'))).toBe(true);
+      const dbValues = lines.flatMap((l) => (l.includes('обновляет') ? [Number(l.match(/→ (\d+)/)![1])] : []));
+      if (Number(inst.answerKey) !== dbValues[dbValues.length - 1]) stale++;
+    }
+    expect(stale).toBeGreaterThan(SEEDS.length * 0.3);
   });
 });

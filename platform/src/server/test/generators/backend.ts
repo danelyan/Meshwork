@@ -433,40 +433,56 @@ export const cacheConsistency: TaskGenerator = {
   generate(seed): TaskInstance {
     const rng = createRng(seed);
     const ttl = rng.pick([30, 60, 120]);
-    const invalidate = rng.int(0, 1) === 1;
-    let db = rng.int(10, 50) * 10;
-    let cache: { v: number; exp: number } | null = null;
-    const steps: string[] = [];
-    let t = 0;
-    const nSteps = rng.int(5, 7);
-    let lastRead = db;
-    for (let i = 0; i < nSteps; i++) {
-      t += rng.pick([5, 10, 20, 45, 70]);
-      const op = i === nSteps - 1 ? 'read' : rng.pick(['read', 'write', 'read'] as const);
-      if (op === 'write') {
-        db = db + rng.int(1, 9) * 10;
-        steps.push(`t=${t}с: сервис обновляет цену в БД → ${db}${invalidate ? ' и удаляет ключ из кэша' : ''}`);
-        if (invalidate) cache = null;
-      } else {
-        if (cache && cache.exp > t) lastRead = cache.v;
-        else {
-          lastRead = db;
-          cache = { v: db, exp: t + ttl };
+    const invalidate = rng.int(0, 3) === 0;
+    const start = rng.int(10, 50) * 10;
+    // Нужно рассуждение: без инвалидации хотим «протухший» ответ (≠ последняя цена в БД) в большинстве экземпляров.
+    const wantStale = !invalidate && rng.int(0, 3) > 0;
+    let db = start;
+    let lastRead = start;
+    let steps: string[] = [];
+    let nSteps = 5;
+    for (let attempt = 0; attempt < 300; attempt++) {
+      db = start;
+      let cache: { v: number; exp: number } | null = null;
+      steps = [];
+      let t = 0;
+      nSteps = rng.int(5, 7);
+      let reads = 0;
+      let writes = 0;
+      let readBeforeWrite = false;
+      for (let i = 0; i < nSteps; i++) {
+        t += rng.pick([5, 10, 20, 45, 70]);
+        const op = i === nSteps - 1 ? 'read' : i === 0 ? 'read' : rng.pick(['read', 'write', 'read'] as const);
+        if (op === 'write') {
+          writes++;
+          db = db + rng.int(1, 9) * 10;
+          steps.push(`t=${t}с: сервис обновляет цену в БД → ${db}${invalidate ? ' и удаляет ключ из кэша' : ''}`);
+          if (invalidate) cache = null;
+        } else {
+          if (writes === 0) readBeforeWrite = true;
+          reads++;
+          if (cache && cache.exp > t) lastRead = cache.v;
+          else {
+            lastRead = db;
+            cache = { v: db, exp: t + ttl };
+          }
+          steps.push(`t=${t}с: клиент читает цену${i === nSteps - 1 ? ' → ?' : ''}`);
         }
-        steps.push(`t=${t}с: клиент читает цену${i === nSteps - 1 ? ' → ?' : ''}`);
       }
+      if (writes >= 1 && reads >= 2 && readBeforeWrite && (!wantStale || lastRead !== db)) break;
     }
+    steps.unshift(`t=0с: в БД цена = ${start}, кэш пуст`);
     return {
       prompt: `Cache-aside: чтение сначала смотрит в кэш; при промахе берёт из БД и кладёт в кэш с TTL ${ttl} с. Запись ${
         invalidate ? 'обновляет БД и удаляет ключ из кэша' : 'обновляет только БД, кэш не трогает'
-      }. Кэш пуст в t=0. Какое значение получит клиент при последнем чтении?`,
+      }. В t=0 цена в БД = ${start}, кэш пуст. Какое значение получит клиент при последнем чтении?`,
       code: steps.join('\n'),
       answerHint: 'число',
       answerKey: String(lastRead),
       explanation: invalidate
         ? 'После удаления ключа следующее чтение идёт в БД и кладёт свежее значение; иначе значение живёт до истечения TTL с момента записи в кэш.'
         : 'Без инвалидации клиент читает из кэша старое значение, пока не истечёт TTL с момента, когда значение попало в кэш; новая цена видна только после промаха.',
-      params: { ttl, invalidate, nSteps },
+      params: { ttl, invalidate, nSteps, start },
     };
   },
 };

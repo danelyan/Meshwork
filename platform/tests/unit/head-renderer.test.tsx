@@ -6,7 +6,7 @@ vi.mock('@/components/head/model', () => ({
   parseHeadGlb: () => ({
     positions: new Float32Array([0, 0, 0]),
     normals: new Float32Array([0, 0, 1]),
-    indices: new Uint32Array([0, 0, 0]),
+    indices: new Uint32Array([0, 0, 0]), uv: new Float32Array([0, 0]), images: [new Blob(), new Blob(), new Blob()],
   }),
 }));
 
@@ -23,7 +23,7 @@ function stage() {
     createFramebuffer: vi.fn(() => ({})), bindFramebuffer: vi.fn(), framebufferTexture2D: vi.fn(), framebufferRenderbuffer: vi.fn(), deleteFramebuffer: vi.fn(),
     createRenderbuffer: vi.fn(() => ({})), bindRenderbuffer: vi.fn(), renderbufferStorage: vi.fn(), deleteRenderbuffer: vi.fn(),
     checkFramebufferStatus: vi.fn(() => 41), disable: vi.fn(), drawArrays: vi.fn(), uniform1i: vi.fn(),
-    depthMask: vi.fn(), clearDepth: vi.fn(), colorMask: vi.fn(),
+    polygonOffset: vi.fn(), generateMipmap: vi.fn(), depthMask: vi.fn(), clearDepth: vi.fn(), colorMask: vi.fn(),
     createShader: vi.fn(() => ({})), shaderSource: vi.fn(), compileShader: vi.fn(),
     getShaderParameter: vi.fn(() => true), createProgram: vi.fn(() => ({})),
     attachShader: vi.fn(), linkProgram: vi.fn(), getProgramParameter: vi.fn(() => true), useProgram: vi.fn(),
@@ -40,8 +40,8 @@ function stage() {
   let bounds = new DOMRect(720, 120, 400, 600);
   vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(() => bounds);
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
-  vi.stubGlobal('devicePixelRatio', 2);
-  const palette: Record<string, string> = { '--paper': '#f1f1f3', '--ink': '#111111', '--muted': '#6b6b70' };
+  vi.stubGlobal('devicePixelRatio', 2); vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ close: vi.fn() })));
+  const palette: Record<string, string> = { '--head-silver': '#bfc0c4', '--blue': '#4f42e9', '--paper': '#f1f1f3', '--ink': '#111111', '--muted': '#6b6b70' };
   vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: (name: string) => palette[name] ?? '' }));
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(0) })));
   const queued = new Map<number, FrameRequestCallback>();
@@ -64,79 +64,42 @@ function stage() {
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-describe('grid relief stage', () => {
-  it('pins the sheet to CSS page coordinates across high DPI and scroll', async () => {
+describe('separate wire portrait', () => {
+  it('renders the imported wire material on a transparent local canvas', async () => {
     const s = stage();
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, true, vi.fn());
     s.frame(40);
-    expect(s.canvas.width).toBe(600); // DPR capped to 1.5.
-    expect(s.canvas.height).toBe(900);
-    expect(s.gl.uniform2f).toHaveBeenCalledWith('uPageOffset', 0, 0);
-    expect(s.gl.drawArrays).toHaveBeenCalledOnce();
-    expect(s.gl.uniform1f).toHaveBeenCalledWith('uTime', 0);
-    // An unbound renderbuffer name cannot be attached; a color-only FBO can
-    // still report COMPLETE and would let back triangles overwrite the face.
-    expect(s.gl.bindRenderbuffer.mock.invocationCallOrder[0]).toBeLessThan(s.gl.framebufferRenderbuffer.mock.invocationCallOrder[0]!);
-    expect(s.gl.uniform4f).toHaveBeenLastCalledWith('uViewport', 720, 120, 400, 600);
-    expect(s.canvas.dataset.rendered).toBe('grid-relief');
-    expect(s.queued.size).toBe(0);
-    s.move(40);
-    document.dispatchEvent(new Event('scroll'));
-    s.frame(80);
-    expect(s.gl.uniform4f).toHaveBeenLastCalledWith('uViewport', 720, 40, 400, 600);
+    expect(s.canvas.width).toBe(600);
+    expect(s.gl.clearColor).toHaveBeenCalledWith(0, 0, 0, 0);
+    expect(s.gl.uniform1i).toHaveBeenCalledWith('uMode', 4);
+    expect(s.gl.drawElements).toHaveBeenCalledTimes(2);
+    expect(s.gl.drawArrays).not.toHaveBeenCalled();
+    expect(s.gl.createFramebuffer).not.toHaveBeenCalled();
+    expect(s.canvas.dataset.rendered).toBe('wire');
     renderer.dispose();
   });
-
-  it('cleans GPU resources and stops responding to page scroll after disposal', async () => {
+  it('cleans resources once and stops responding after disposal', async () => {
     const s = stage();
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
     renderer.dispose(); renderer.dispose();
-    expect(s.gl.deleteBuffer).toHaveBeenCalledTimes(3);
-    expect(s.gl.deleteShader).toHaveBeenCalledTimes(4);
-    expect(s.gl.deleteProgram).toHaveBeenCalledTimes(2);
-    expect(s.gl.deleteTexture).toHaveBeenCalledOnce();
-    expect(s.gl.deleteFramebuffer).toHaveBeenCalledOnce();
-    expect(s.gl.deleteRenderbuffer).toHaveBeenCalledOnce();
-    expect(s.gl.deleteVertexArray).toHaveBeenCalledTimes(2);
+    expect(s.gl.deleteBuffer).toHaveBeenCalledTimes(7);
+    expect(s.gl.deleteShader).toHaveBeenCalledTimes(2);
+    expect(s.gl.deleteTexture).toHaveBeenCalledTimes(2);
+    expect(s.gl.deleteProgram).toHaveBeenCalledOnce();
     expect(s.disconnect).toHaveBeenCalledTimes(2);
     expect(s.queued.size).toBe(0);
-    document.dispatchEvent(new Event('scroll'));
-    expect(s.queued.size).toBe(0);
   });
-
-  it('freezes motion and resumes without reloading the model', async () => {
+  it('pauses pointer tracking without refetching the model', async () => {
     const s = stage();
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
-    s.frame(50); s.frame(100);
-    expect(s.queued.size).toBe(1);
-    renderer.setPaused?.(true); s.frame(150);
+    s.frame(50);
+    renderer.setPaused?.(true);
+    const event = new Event('pointermove');
+    Object.assign(event, {clientX: 1200, clientY: 100, pointerType: 'mouse'});
+    document.dispatchEvent(event);
     expect(s.queued.size).toBe(0);
-    const pose = s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1);
-    const phase = s.gl.uniform1f.mock.calls.filter(call => call[0] === 'uTime').at(-1);
-    document.dispatchEvent(new Event('scroll')); s.frame(1000);
-    expect(s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1)).toEqual(pose);
-    expect(s.gl.uniform1f.mock.calls.filter(call => call[0] === 'uTime').at(-1)).toEqual(phase);
-    renderer.setPaused?.(false); s.frame(1050);
-    expect(s.queued.size).toBe(1);
+    renderer.setPaused?.(false); s.frame(100);
     expect(fetch).toHaveBeenCalledOnce();
-    renderer.dispose();
-  });
-
-  it('releases both rendering passes when the request is aborted', async () => {
-    const s = stage(), controller = new AbortController();
-    await createHeadRenderer(s.canvas, controller.signal, false, vi.fn());
-    controller.abort();
-    expect(s.gl.deleteFramebuffer).toHaveBeenCalledOnce();
-    expect(s.queued.size).toBe(0);
-  });
-
-  it('projects the right-column anchor relative to the full sheet', async () => {
-    const s = stage(), anchor = document.createElement('div');
-    vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(new DOMRect(900, 160, 200, 400));
-    const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, true, vi.fn(), anchor);
-    s.frame(40);
-    expect(s.gl.uniform4f).toHaveBeenCalledWith('uAnchor', 180, 40, 200, 400);
-    expect(s.gl.uniform2f).toHaveBeenCalledWith('uStage', 400, 600);
     renderer.dispose();
   });
 });

@@ -34,11 +34,10 @@ describe('decorative consultant portrait', () => {
     vi.mocked(createHeadRenderer).mockResolvedValue({ dispose });
     const { container, unmount } = render(<ConsultantHead />);
     await waitFor(() => expect(container.querySelector('[data-head-state]')?.getAttribute('data-head-state')).toBe('ready'));
-    expect(container.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('canvas')?.getAttribute('aria-hidden')).toBe('true');
     expect(container.querySelector('canvas')?.tabIndex).toBe(-1);
     const args = vi.mocked(createHeadRenderer).mock.calls[0]!;
     expect(args[2]).toBe(true);
-    expect(args[4]).toBe(container.querySelector('[data-head-state]'));
     expect(container.querySelector('button')).toBeNull();
     unmount();
     expect(args[1].aborted).toBe(true);

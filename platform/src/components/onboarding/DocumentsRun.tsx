@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 import { type ClaimAction, claimAction, confirmClaimsBatchApi, openConsultantStream } from '@/lib/api';
 import type { CardClaim } from '@/lib/claims-view';
@@ -39,13 +39,16 @@ interface Sent {
  * карточки утверждений с «Да / Нет / Поправить» — в ленте. Можно прислать ещё раз; итог шага —
  * все файлы, ссылки и число найденных утверждений.
  */
-export function useDocumentsRun() {
+export function useDocumentsRun(shared?: { conversation: MutableRefObject<string | undefined>; onConversation?: (id: string) => void }) {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [running, setRunning] = useState(false);
   const [totals, setTotals] = useState<DocumentsTotals>({ uploadIds: [], urls: [], claims: 0 });
   const abortRef = useRef<AbortController | null>(null);
-  const convRef = useRef<string | undefined>(undefined);
+  // Разговор общий с вопросами посреди онбординга и консультантом после итога (один чат).
+  const ownConv = useRef<string | undefined>(undefined);
+  const convRef = shared?.conversation ?? ownConv;
+  const onConversation = shared?.onConversation;
   const lastRef = useRef<Sent | null>(null);
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -53,11 +56,14 @@ export function useDocumentsRun() {
   const push = useCallback((event: AgentEvent) => {
     if (event.type === 'conversation') {
       convRef.current = event.id;
+      onConversation?.(event.id);
       return;
     }
     if (!SHOWN.has(event.type)) return;
     if (event.type === 'claims') setTotals((t) => ({ ...t, claims: t.claims + event.proposed.length }));
     setItems((p) => applyAgentEvent(p, event, nextId));
+    // convRef/onConversation стабильны на время жизни онбординга
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const send = useCallback(
@@ -95,7 +101,7 @@ export function useDocumentsRun() {
         setRunning(false);
       }
     },
-    [push],
+    [push, convRef],
   );
 
   const retry = useCallback(() => {

@@ -9,11 +9,14 @@ import { dispatchToolCall } from './dispatch';
 import { EXTERNAL_NOTE } from './external';
 import { FALLBACK_STEP, fallbackReply, type FallbackReason } from './fallback';
 import { buildHistory, fitHistory, HISTORY_TOTAL_MAX_CHARS } from './history';
+import { asideCannedReply, asideNote, ONBOARDING_RESUME_PATH, resumeLine, resumeNote } from './onboarding-aside';
 import { runPipeline, type PipelineResult } from './pipeline';
 import { createReplyStream } from './reply-stream';
 import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
 import { tools as defaultTools } from './tools';
+import { asideMark } from '@/server/onboarding/match';
+import { type OnboardingStepBrief, pendingOnboarding } from '@/server/onboarding/service';
 import { MAX_TOOL_CALLS_PER_TURN, type AgentEvent, type ToolContext, type TurnInput, type TurnOptions } from './types';
 
 /** Ответ модели за ход — не длиннее (токены). */
@@ -61,9 +64,20 @@ export async function runTurn(
   }
   if (signal?.aborted) return;
 
+  // Свободный вопрос посреди онбординга без модели (заглушка, демо): честная заготовка и возврат к шагу.
+  if (input.onboarding && !pipeline && (demo || (!opts.llm && getEnv().LLM_PROVIDER === 'stub'))) {
+    const text = asideCannedReply(input.onboarding);
+    await saveMessage(conversationId, { role: 'assistant', content: text });
+    await createReplyStream(emit, signal).finish(text);
+    return;
+  }
+  // Онбординг брошен («Настроить позже»): консультант напоминает и даёт ссылку на продолжение.
+  const resume = input.onboarding ? null : await pendingOnboarding(candidateId).catch(() => null);
+
   if (demo) {
     // Демо без ключей: модели нет, ответ — шаблоны по данным платформы (не сбой, без «упрощённого режима»).
-    const text = await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
+    let text = await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
+    if (resume && !(await remindedResume(conversationId))) text = `${text}\n${resumeLine()}`;
     await saveMessage(conversationId, { role: 'assistant', content: text });
     await createReplyStream(emit, signal).finish(text);
     return;
@@ -88,7 +102,7 @@ export async function runTurn(
       const canCall = calls < MAX_TOOL_CALLS_PER_TURN;
       const req = {
         purpose: 'consultant' as const,
-        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall }),
+        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume }),
         messages: fitHistory(messages, historyChars),
         tools: specs,
         toolChoice: canCall ? ('auto' as const) : ('none' as const),
@@ -145,7 +159,10 @@ export async function runTurn(
 
 async function degrade(ctx: ToolContext, input: TurnInput, pipeline: PipelineResult | undefined, reason: FallbackReason) {
   ctx.emit({ type: 'step', text: FALLBACK_STEP[reason] });
-  const text = await fallbackReply({ candidateId: ctx.candidateId, text: input.text, reason, ...(pipeline ? { pipeline } : {}) });
+  const text =
+    input.onboarding && !pipeline
+      ? asideCannedReply(input.onboarding)
+      : await fallbackReply({ candidateId: ctx.candidateId, text: input.text, reason, ...(pipeline ? { pipeline } : {}) });
   await saveMessage(ctx.conversationId, { role: 'assistant', content: text });
   await createReplyStream(ctx.emit, ctx.signal).finish(text);
 }
@@ -154,13 +171,24 @@ function userContent(input: TurnInput): string {
   const parts = [input.text.trim()];
   if (input.uploadIds?.length) parts.push(`[вложения: ${input.uploadIds.map((id) => `файл ${id}`).join(', ')}]`);
   if (input.urls?.length) parts.push(`[ссылки: ${input.urls.join(' ')}]`);
+  if (input.onboarding) parts.push(asideMark(input.onboarding.stepId));
   return parts.filter(Boolean).join('\n');
 }
 
 const MSK = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeZone: 'Europe/Moscow' });
 
-export function buildSystem(args: { now: Date; pipeline?: PipelineResult; toolsExhausted: boolean }): string {
+export function buildSystem(args: {
+  now: Date;
+  pipeline?: PipelineResult;
+  toolsExhausted: boolean;
+  /** Ход — свободный вопрос посреди шага онбординга. */
+  onboarding?: OnboardingStepBrief;
+  /** Онбординг брошен: напомнить и дать ссылку на продолжение. */
+  resume?: OnboardingStepBrief | null;
+}): string {
   const parts = [CONSULTANT_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК).`, EXTERNAL_NOTE];
+  if (args.onboarding) parts.push(asideNote(args.onboarding));
+  else if (args.resume) parts.push(resumeNote(args.resume));
   const p = args.pipeline;
   if (p) {
     const lines = [
@@ -180,6 +208,12 @@ export function buildSystem(args: { now: Date; pipeline?: PipelineResult; toolsE
   }
   if (args.toolsExhausted) parts.push('Лимит вызовов инструментов на этот ход исчерпан — ответь кандидату текстом по тому, что уже есть.');
   return parts.join('\n\n');
+}
+
+/** В разговоре уже было напоминание со ссылкой на онбординг (демо-ответы не повторяют его каждый ход). */
+async function remindedResume(conversationId: string): Promise<boolean> {
+  const n = await prisma.message.count({ where: { conversationId, role: 'assistant', content: { contains: ONBOARDING_RESUME_PATH } } });
+  return n > 0;
 }
 
 /** Версия промпта хранится системной строкой в разговоре (schema без колонки promptVersion). */

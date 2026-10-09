@@ -22,8 +22,9 @@ export default async function OnboardingPage() {
   const view = await getView(s.userId);
   const demo = await chatDemoContextFromCookies();
   let restored: RestoredChat | undefined;
-  // Вернулся к завершённому знакомству — показываем и последний разговор с консультантом.
-  if (s.candidateId && view.onboarded && view.current.kind === 'summary') {
+  // Кандидат: последний разговор с консультантом — в нём вопросы посреди шагов (под своим шагом)
+  // и, если знакомство уже завершено, продолжение ленты после итога. Один чат на всё.
+  if (s.candidateId) {
     try {
       restored = await loadLastChat(s.candidateId);
     } catch (err) {

@@ -6,7 +6,8 @@ import { runTurn } from '@/server/agent/loop';
 import type { AgentEvent } from '@/server/agent/types';
 import { prisma } from '@/server/db';
 import { AppError, errors, withErrors } from '@/server/errors';
-import { requireCandidate } from '@/server/session';
+import { asideContext, type OnboardingStepBrief } from '@/server/onboarding/service';
+import { getSession, requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,8 @@ const Body = z
     text: z.string().max(8_000).default(''),
     uploadIds: z.array(z.string().min(1).max(64)).max(10).optional(),
     urls: z.array(z.url().max(2_048)).max(10).optional(),
+    /** Свободный вопрос посреди онбординга: id шага, на котором человек (сервер сверяет со своим). */
+    onboardingStep: z.string().regex(/^[A-Za-z]{1,40}$/).optional(),
   })
   .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length, {
     message: 'Нужен текст, вложение или ссылка',
@@ -31,6 +34,17 @@ const Body = z
 export const POST = withErrors(async (req: Request) => {
   const candidateId = requireCandidate(req);
   const body = Body.parse(await req.json().catch(() => ({})));
+
+  // Граница доверия: из онбординга в модель — только после согласия и выбора роли «специалист».
+  // Шаг берём сервером (клиент мог отстать); человек уже на итоге — обычный ход консультанта.
+  let onboarding: OnboardingStepBrief | undefined;
+  if (body.onboardingStep) {
+    const userId = getSession(req)?.userId;
+    if (!userId) throw errors.forbidden('Вопросы посреди знакомства доступны после входа');
+    const aside = await asideContext(userId);
+    if (!aside.consent || aside.role !== 'candidate') throw errors.conflict('Сначала дай согласие и выбери роль');
+    onboarding = aside.step ?? undefined;
+  }
 
   let conversationId: string;
   if (body.conversationId) {
@@ -64,7 +78,7 @@ export const POST = withErrors(async (req: Request) => {
       try {
         emit({ type: 'conversation', id: conversationId });
         await runTurn(
-          { candidateId, conversationId, text: body.text, ...(body.uploadIds ? { uploadIds: body.uploadIds } : {}), ...(body.urls ? { urls: body.urls } : {}) },
+          { candidateId, conversationId, text: body.text, ...(body.uploadIds ? { uploadIds: body.uploadIds } : {}), ...(body.urls ? { urls: body.urls } : {}), ...(onboarding ? { onboarding } : {}) },
           emit,
           signal,
         );

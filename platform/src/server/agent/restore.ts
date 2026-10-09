@@ -1,11 +1,26 @@
 import { prisma } from '@/server/db';
 
+import { ASIDE_MARK_RE } from '@/server/onboarding/match';
+
 import type { AgentEvent } from './types';
 
-/** Элемент ленты в сериализуемом виде (совпадает с FeedItem компонента). */
+/**
+ * Элемент ленты в сериализуемом виде (совпадает с FeedItem компонента). `stepId` — реплика
+ * свободного вопроса посреди шага онбординга (маркер в тексте хода) и ответ на неё: лента
+ * онбординга показывает их под своим шагом, встроенный консультант — без них (без дублей).
+ */
 export type RestoredItem =
-  | { id: string; role: 'user'; text: string }
-  | { id: string; role: 'agent'; event: AgentEvent };
+  | { id: string; role: 'user'; text: string; stepId?: string }
+  | { id: string; role: 'agent'; event: AgentEvent; stepId?: string };
+
+/** Шаг онбординга из маркера в тексте хода кандидата; null — обычная реплика. */
+export function asideStepOf(content: string): string | null {
+  for (const line of content.split('\n')) {
+    const m = ASIDE_MARK_RE.exec(line.trim());
+    if (m) return m[1]!;
+  }
+  return null;
+}
 
 const ATTACH_RE = /^\[вложения: (.+)\]$/;
 const LINKS_RE = /^\[ссылки: (.+)\]$/;
@@ -28,6 +43,7 @@ export function humanizeUserText(content: string, names: Map<string, string>): s
       if (l) return `Ссылки: ${l[1]}`;
       return line;
     })
+    .filter((line) => !ASIDE_MARK_RE.test(line.trim()))
     .join('\n');
 }
 
@@ -60,9 +76,14 @@ export async function loadLastChat(candidateId: string): Promise<RestoredChat> {
     }
     const uploads = ids.size ? await prisma.upload.findMany({ where: { id: { in: [...ids] }, candidateId }, select: { id: true, filename: true } }) : [];
     const names = new Map(uploads.map((u) => [u.id, u.filename]));
+    let step: string | null = null;
     for (const m of rows) {
-      if (m.role === 'user') items.push({ id: `r-${m.id}`, role: 'user', text: humanizeUserText(m.content, names) });
-      else if (m.content.trim()) items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'message', text: m.content } });
+      if (m.role === 'user') {
+        step = asideStepOf(m.content);
+        items.push({ id: `r-${m.id}`, role: 'user', text: humanizeUserText(m.content, names), ...(step ? { stepId: step } : {}) });
+      } else if (m.content.trim()) {
+        items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'message', text: m.content }, ...(step ? { stepId: step } : {}) });
+      }
     }
   }
   const pending = await prisma.claim.findMany({ where: { candidateId, status: 'proposed' }, orderBy: { createdAt: 'asc' } });

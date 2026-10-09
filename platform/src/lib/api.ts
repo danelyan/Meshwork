@@ -198,6 +198,8 @@ export interface SendMessageInput {
   uploadIds?: string[];
   urls?: string[];
   conversationId?: string;
+  /** Свободный вопрос посреди онбординга: id текущего шага (консультант ответит коротко и вернёт к шагу). */
+  onboardingStep?: string;
 }
 
 /** Открывает SSE-поток ответа консультанта. Тело читает вызывающий (см. useConsultant). */

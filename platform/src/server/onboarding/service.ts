@@ -397,3 +397,46 @@ export async function gotoStep(userId: string, stepId: string): Promise<Mutation
 export async function finishLater(userId: string): Promise<{ next: string }> {
   return { next: laterTarget(await load(userId)) };
 }
+
+/** Текущий шаг онбординга для хода консультанта (свободный вопрос посреди шага, напоминание). */
+export interface OnboardingStepBrief {
+  stepId: string;
+  question: string;
+  /** Пояснение под вопросом (зачем спрашиваем). */
+  sub?: string;
+  /** Доступные варианты с пояснением из сценария: «Ищу работу (хочу приглашения от компаний)». */
+  options: string[];
+}
+
+function briefOf(step: StepDef, ctx: StepContext): OnboardingStepBrief | null {
+  if (step.kind === 'summary') return null;
+  return {
+    stepId: step.id,
+    question: step.question,
+    ...(step.sub ? { sub: step.sub } : {}),
+    options: optionsOf(step, ctx)
+      .filter((o) => !o.disabled)
+      .map((o) => (o.note ? `${o.label} (${o.note})` : o.label)),
+  };
+}
+
+/**
+ * Контекст свободного вопроса посреди онбординга: согласие и роль (граница доверия — до них
+ * текст в модель не уходит) и шаг, на котором человек сейчас. step = null — человек на итоге.
+ */
+export async function asideContext(userId: string): Promise<{ consent: boolean; role: Facts['role']; step: OnboardingStepBrief | null }> {
+  const l = await load(userId);
+  return { consent: l.ctx.facts.consent, role: l.ctx.facts.role, step: briefOf(currentStep(l.ctx, l.state), l.ctx) };
+}
+
+/**
+ * Онбординг кандидата не закончен («Настроить позже» или ушёл посреди) — шаг, с которого
+ * продолжить (/onboarding откроется на нём). null — закончен или аккаунта входа нет.
+ */
+export async function pendingOnboarding(candidateId: string): Promise<OnboardingStepBrief | null> {
+  const user = await prisma.user.findUnique({ where: { candidateId }, select: { id: true, onboardedAt: true } });
+  if (!user || user.onboardedAt) return null;
+  const l = await load(user.id);
+  const step = currentStep(l.ctx, l.state);
+  return briefOf(step, l.ctx) ?? { stepId: 'summary', question: 'Проверить сводку и завершить знакомство', options: [] };
+}

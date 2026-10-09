@@ -1,13 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { type OnboardingAction, completeOnboarding, onboardingAct, onboardingLater } from '@/lib/api';
 import type { EmployerRestoredChat } from '@/server/agent/employer/restore';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 import { checkInn } from '@/server/onboarding/inn';
+import { asideToModel, looksLikeQuestion, matchStepText } from '@/server/onboarding/match';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { Chat } from '../Chat';
@@ -22,6 +23,7 @@ import { Button, VisuallyHidden } from '../ui';
 import { useStickToBottom } from '../chat/scroll';
 
 import styles from './Onboarding.module.css';
+import { AsideRows, groupAsides, useAsides } from './Asides';
 import { DocumentsRows, useDocumentsRun } from './DocumentsRun';
 import { parseSalary, salaryText } from './salary';
 import { StepControls } from './StepControls';
@@ -30,11 +32,18 @@ export interface OnboardingChatProps {
   initial: OnboardingView;
   /** Абзацы текста согласия (server/onboarding/consent-text.ts). */
   consentText: string[];
-  /** После итога лента продолжается консультантом (только кандидат). */
+  /**
+   * Консультант кандидата: свободные вопросы посреди шагов и продолжение ленты после итога — один
+   * разговор. `restored` — последний разговор (реплики со stepId — вопросы посреди шагов).
+   */
   consultant?: { demo?: ChatDemoContext; restored?: RestoredChat };
   /** После итога работодателя лента продолжается помощником по подбору. */
   employerAssistant?: { demoNoLlm?: boolean; restored?: EmployerRestoredChat };
 }
+
+/** Заготовки без модели: до роли «специалист» свободный текст в модель не уходит (граница доверия). */
+export const PRE_ROLE_REPLY = 'Сначала выбери вариант кнопкой выше — после этого отвечу на любой вопрос.';
+export const EMPLOYER_ASIDE_REPLY = 'На свободные вопросы помощник по подбору ответит сразу после знакомства — в этой же ленте. Пока выбери вариант выше или напиши его.';
 
 /** Шаги, где отвечают полем ввода внизу ленты: текст, своё значение, документы (файлы и ссылки), зарплата числом. */
 const typesText = (s: StepView) => s.kind === 'text' || s.kind === 'files' || s.kind === 'range' || (s.allowCustom && (s.kind === 'one' || s.kind === 'chips'));
@@ -64,11 +73,21 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
   const endRef = useRef<HTMLDivElement>(null);
   const onboardedRef = useRef(initial.onboarded);
   const att = useAttachments();
-  const docs = useDocumentsRun();
+  // Один разговор с консультантом: вопросы посреди шагов, разбор документов и чат после итога.
+  const convRef = useRef<string | undefined>(consultant?.restored?.conversationId ?? undefined);
+  const [convId, setConvId] = useState(convRef.current);
+  const docs = useDocumentsRun({ conversation: convRef, onConversation: setConvId });
+  const asides = useAsides(groupAsides(consultant?.restored?.items ?? []), convRef, setConvId);
+  // Обычные реплики разговора — встроенному консультанту, только если человек вернулся к завершённому знакомству.
+  const [restoredRest] = useState(() => (initial.onboarded && initial.current.kind === 'summary' ? (consultant?.restored?.items ?? []).filter((it) => !it.stepId) : []));
 
   const cur = view.current;
   const isSummary = cur.kind === 'summary';
-  const canType = ready && !busy && !isSummary && typesText(cur);
+  const canType = ready && !busy && !asides.asking && !isSummary && typesText(cur);
+  // Свободный текст: на любом шаге, кроме согласия (его дают только кнопкой) и итога.
+  const canInput = ready && !busy && !asides.asking && !isSummary && cur.kind !== 'consent';
+  const toModel = asideToModel(view.role, cur.kind);
+  const curAsides = asides.byStep[cur.id];
 
   const feedRef = useRef<HTMLElement>(null);
   useStickToBottom(feedRef);
@@ -85,6 +104,9 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
   useEffect(() => {
     if (canType) inputRef.current?.focus({ preventScroll: true });
   }, [canType, turn]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
+  }, [curAsides?.length]);
 
   const act = useCallback(async (body: OnboardingAction, bubble?: { text: string; quiet?: boolean }) => {
     setBusy(true);
@@ -151,14 +173,36 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
   const answer = (value: unknown, text: string) => void act({ action: 'answer', stepId: cur.id, value }, { text });
   const skip = () => void act({ action: 'skip', stepId: cur.id }, { text: 'пропущу', quiet: true });
 
+  /** Текст не ответ на шаг: консультанту (после роли «специалист») или заготовка без модели. */
+  function aside(text: string) {
+    setError(null);
+    setDraft('');
+    if (toModel) return void asides.ask(cur.id, text);
+    asides.local(cur.id, text, view.role === 'employer' || view.scenario === 'employer' ? EMPLOYER_ASIDE_REPLY : PRE_ROLE_REPLY);
+  }
+
   function submitDraft() {
-    if (!canType) return;
-    if (cur.kind === 'files') return submitDocuments();
+    if (!canInput) return;
     const v = draft.trim();
+    if (cur.kind === 'files') {
+      // Ни файла, ни ссылки, но есть текст — это вопрос, а не материалы.
+      if (v && att.ready.length === 0 && !att.uploading && extractUrls(v).length === 0 && toModel) return aside(v);
+      return submitDocuments();
+    }
     if (!v) return;
+    // Текст совпал с вариантом шага — ответ тем же путём, что клик.
+    const m = matchStepText(cur, v);
+    if (m) {
+      setError(null);
+      setDraft('');
+      return answer(m.value, m.text);
+    }
+    if (!typesText(cur)) return aside(v);
+    if (looksLikeQuestion(v) && cur.id !== 'inn' && toModel) return aside(v);
     if (cur.kind === 'range') {
       const r = parseSalary(v, cur.range!);
-      if ('error' in r) return setError(r.error);
+      // Есть цифры — это попытка суммы (подсказка об ошибке), без цифр — вопрос консультанту.
+      if ('error' in r) return toModel && !/\d/.test(v) ? aside(v) : setError(r.error);
       setError(null);
       setDraft('');
       return answer(r, salaryText(r, cur.range!));
@@ -250,15 +294,19 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
   const inn = cur.id === 'inn' && draft.trim() ? checkInn(draft) : null;
   const composerHint = inn?.ok ? 'Контрольная сумма сходится · реестр ФНС — демо, не подключён' : cur.kind === 'chips' && canType ? 'Enter — добавить своё' : undefined;
   const placeholder =
-    !ready || busy
+    !ready || busy || asides.asking
       ? ''
+      : cur.kind === 'consent'
+        ? 'Выбери вариант выше'
       : cur.kind === 'files'
         ? 'Прикрепи резюме или вставь ссылку'
         : cur.kind === 'range'
           ? `Или напиши сумму: ${cur.range!.defaults.from}–${cur.range!.defaults.to}`
           : typesText(cur)
             ? (cur.placeholder ?? (cur.kind === 'text' ? 'Напиши ответ' : 'Или напиши своё'))
-            : 'Выбери вариант выше';
+            : toModel
+              ? 'Выбери вариант выше или задай вопрос'
+              : 'Выбери вариант выше или напиши его';
   const docsDone = cur.kind === 'files' && docs.started && !docs.running;
 
   return (
@@ -282,12 +330,31 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
         </VisuallyHidden>
         <Thread label="Переписка с помощником">
           {view.history.map((h) => (
-            <HistoryPair key={h.stepId} lead={h.lead} question={h.question} answer={h.answer} onEdit={h.editable && !busy ? () => void act({ action: 'goto', stepId: h.stepId }) : undefined} />
+            <HistoryPair
+              key={h.stepId}
+              lead={h.lead}
+              question={h.question}
+              answer={h.answer}
+              asides={<AsideRows items={asides.byStep[h.stepId]} locked />}
+              onEdit={h.editable && !busy && !asides.asking ? () => void act({ action: 'goto', stepId: h.stepId }) : undefined}
+            />
           ))}
 
           <AssistantRow testId="ob-current">
             <Reply key={`${cur.id}:${turn}`} lines={lines} animate onDone={() => setReady(true)} extra={consentExtra} />
           </AssistantRow>
+
+          <AsideRows items={curAsides} locked={asides.asking} />
+          {asides.asking && !replyingIn(curAsides) && (
+            <AssistantRow>
+              <Typing />
+            </AssistantRow>
+          )}
+          {curAsides?.length && !asides.asking && !isSummary ? (
+            <AssistantRow mark={false} testId="ob-return">
+              <Reply lines={[{ text: `Вернёмся к вопросу: ${cur.question}`, secondary: true }]} />
+            </AssistantRow>
+          ) : null}
 
           {cur.kind === 'files' && <DocumentsRows run={docs} />}
           {cur.kind === 'files' && docs.running && !docs.replying && (
@@ -316,7 +383,7 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
             </AssistantRow>
           )}
 
-          {ready && !busy && !isSummary && (
+          {ready && !busy && !asides.asking && !isSummary && (
             <AssistantRow mark={false} testId="ob-controls">
               <StepControls
                 step={cur}
@@ -340,7 +407,7 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
         {consultantMode && (
           <Chat
             demo={consultant.demo}
-            initial={consultant.restored}
+            initial={{ conversationId: convId ?? null, items: restoredRest }}
             embedded={{
               suggestions: nextSteps,
               onSuggestion: onNext,
@@ -377,11 +444,11 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
             value={draft}
             onChange={setDraft}
             onSubmit={submitDraft}
-            disabled={!canType}
-            sending={docs.running}
-            voice={canType && cur.id !== 'inn' && cur.kind !== 'chips'}
+            disabled={!canInput}
+            sending={docs.running || asides.asking}
+            voice={canInput && cur.id !== 'inn' && cur.kind !== 'chips'}
             multiline={(cur.maxLength ?? 0) > 200 || cur.kind === 'files'}
-            maxLength={cur.kind === 'text' ? cur.maxLength : cur.kind === 'files' ? 4000 : 60}
+            maxLength={cur.kind === 'text' ? cur.maxLength : cur.kind === 'files' ? 4000 : toModel ? 2000 : 200}
             attachments={cur.kind === 'files' && ready ? { files: att.files, onAdd: att.add, onRemove: att.remove } : undefined}
             inputMode={cur.id === 'inn' ? 'numeric' : undefined}
             placeholder={placeholder}
@@ -403,12 +470,20 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
   );
 }
 
-function HistoryPair({ lead, question, answer, onEdit }: { lead: string; question: string; answer: string | null; onEdit?: () => void }) {
+/** Ответ консультанта на свободный вопрос уже пошёл в ленту (дальше видно по стриму, «печатает» не нужно). */
+function replyingIn(items: { role: string; event?: { type: string } }[] | undefined): boolean {
+  if (!items) return false;
+  const lastUser = items.findLastIndex((it) => it.role === 'user');
+  return items.slice(lastUser + 1).some((it) => it.role === 'agent' && (it.event?.type === 'message' || it.event?.type === 'delta'));
+}
+
+function HistoryPair({ lead, question, answer, asides, onEdit }: { lead: string; question: string; answer: string | null; asides?: ReactNode; onEdit?: () => void }) {
   return (
     <>
       <AssistantRow>
         <Reply lines={[{ text: lead }, { text: question }]} />
       </AssistantRow>
+      {asides}
       <UserBubble quiet={answer === null} action={onEdit ? { label: answer === null ? 'ответить' : 'изменить', onClick: onEdit } : undefined}>
         {answer ?? 'пропущу'}
       </UserBubble>

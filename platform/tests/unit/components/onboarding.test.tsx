@@ -292,11 +292,6 @@ it('документы: файл скрепкой и ссылка текстом
   const { container } = render(<OnboardingChat initial={makeView({ id: 'documents', kind: 'files', question: 'Пришли резюме или ссылки' })} consentText={[]} />);
   expect(screen.queryByRole('button', { name: 'Разобрать' })).toBeNull();
   const box = screen.getByLabelText('Ответ');
-  // без файла и ссылки — подсказка репликой, не запрос
-  fireEvent.change(box, { target: { value: 'вот я' } });
-  fireEvent.keyDown(box, { key: 'Enter' });
-  expect(screen.getByRole('alert').textContent).toContain('Не вижу ни файла, ни ссылки');
-
   fireEvent.change(container.querySelector('input[type=file]') as HTMLInputElement, { target: { files: [new File(['%PDF'], 'cv.pdf', { type: 'application/pdf' })] } });
   await waitFor(() => expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toMatch(/КБ/));
   fireEvent.change(box, { target: { value: 'и код тут github.com/demo-ryabinin' } });
@@ -349,5 +344,91 @@ describe('появление реплики', () => {
     render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
     expect(screen.queryByTestId('typing')).toBeNull();
     expect(question()).toBe('В каком направлении работаешь?');
+  });
+});
+
+describe('свободный текст посреди онбординга', () => {
+  const enc = new TextEncoder();
+  const sse = (events: unknown[]) =>
+    new Response(new ReadableStream({ start: (c) => (c.enqueue(enc.encode(events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join(''))), c.close()) }), { status: 200 });
+
+  it('текст совпал с вариантом шага (без регистра) — ответ тем же путём, что клик', async () => {
+    const fetchFn = stubFetch(makeView({ id: 'grade', question: 'Грейд?' }));
+    render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
+    const box = screen.getByLabelText('Ответ') as HTMLTextAreaElement;
+    expect(box.disabled).toBe(false);
+    expect(box.placeholder).toBe('Выбери вариант выше или задай вопрос');
+    fireEvent.change(box, { target: { value: '  backend! ' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    await waitFor(() => expect(question()).toBe('Грейд?'));
+    expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'specialization', value: 'backend' });
+  });
+
+  it('не совпал — вопрос консультанту в ту же ленту (тот же разговор), под ответом фраза-возврат и снова кнопки шага', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        bodies.push({ url, ...JSON.parse(String(init?.body)) });
+        return sse([
+          { type: 'conversation', id: 'conv-1' },
+          { type: 'delta', id: 'm1', text: 'Fullstack — выбери, где сильнее.' },
+          { type: 'message', id: 'm1', text: 'Fullstack — выбери, где сильнее.' },
+          { type: 'done' },
+        ]);
+      }),
+    );
+    render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} consultant={{ restored: { conversationId: 'conv-1', items: [] } }} />);
+    const box = screen.getByLabelText('Ответ');
+    fireEvent.change(box, { target: { value: 'А если я fullstack?' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    await waitFor(() => expect(screen.getByText('Fullstack — выбери, где сильнее.')).toBeDefined());
+    expect(bodies[0]).toEqual({ url: '/api/consultant/messages', text: 'А если я fullstack?', onboardingStep: 'specialization', conversationId: 'conv-1' });
+    expect(screen.getByText('А если я fullstack?')).toBeDefined();
+    expect(screen.getByTestId('ob-return').textContent).toContain('Вернёмся к вопросу: В каком направлении работаешь?');
+    expect(screen.getByRole('button', { name: /Backend/ })).toBeDefined();
+    expect(question()).toBe('В каком направлении работаешь?');
+  });
+
+  it('граница доверия: на согласии поле выключено; на роли — совпадение отвечает, иначе заготовка без запроса', async () => {
+    const fetchFn = stubFetch(makeView({ id: 'goal', question: 'Зачем ты здесь?' }));
+    const { unmount } = render(<OnboardingChat initial={makeView({ id: 'consent', kind: 'consent', required: true, question: 'Согласие?' }, { role: 'pending', scenario: null })} consentText={[]} />);
+    expect((screen.getByLabelText('Ответ') as HTMLTextAreaElement).disabled).toBe(true);
+    unmount();
+
+    const ROLE = [
+      { value: 'candidate', label: 'Я специалист' },
+      { value: 'employer', label: 'Я работодатель' },
+    ];
+    render(<OnboardingChat initial={makeView({ id: 'role', kind: 'role', required: true, question: 'Ты здесь как кто?', options: ROLE }, { role: 'pending', scenario: null })} consentText={[]} />);
+    const box = screen.getByLabelText('Ответ');
+    fireEvent.change(box, { target: { value: 'а что вы делаете с данными?' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect(screen.getByText(/Сначала выбери вариант кнопкой выше/)).toBeDefined();
+    expect(fetchFn).not.toHaveBeenCalled();
+    fireEvent.change(box, { target: { value: 'я специалист' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    await waitFor(() => expect(question()).toBe('Зачем ты здесь?'));
+    expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'role', value: 'candidate' });
+  });
+
+  it('после перезагрузки вопросы стоят под своим шагом, а встроенный консультант их не дублирует', () => {
+    stubFetch();
+    const restored = {
+      conversationId: 'conv-1',
+      items: [
+        { id: 'r-1', role: 'user' as const, text: 'Зачем цель?', stepId: 'goal' },
+        { id: 'r-2', role: 'agent' as const, event: { type: 'message' as const, text: 'Чтобы подстроить шаги.' }, stepId: 'goal' },
+        { id: 'r-3', role: 'user' as const, text: 'Обычный вопрос консультанту' },
+      ],
+    };
+    render(<OnboardingChat initial={summaryView({ onboarded: true })} consentText={[]} consultant={{ restored }} />);
+    expect(screen.getAllByText('Зачем цель?')).toHaveLength(1);
+    expect(screen.getAllByText('Чтобы подстроить шаги.')).toHaveLength(1);
+    expect(screen.getAllByText('Обычный вопрос консультанту')).toHaveLength(1);
+    // Вопрос — между репликой шага «Зачем ты здесь?» и ответом «Ищу работу».
+    const text = document.body.textContent ?? '';
+    expect(text.indexOf('Зачем ты здесь?')).toBeLessThan(text.indexOf('Зачем цель?'));
+    expect(text.indexOf('Чтобы подстроить шаги.')).toBeLessThan(text.indexOf('Ищу работу'));
   });
 });

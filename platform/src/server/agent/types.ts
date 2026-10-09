@@ -2,6 +2,7 @@
 import type { ZodType } from 'zod';
 
 import type { LlmProvider } from '../llm/types';
+import type { OnboardingStepBrief } from '../onboarding/service';
 
 export type AgentEvent =
   /** «читаю резюме…» */
@@ -56,6 +57,8 @@ export interface TurnInput {
   /** Вложения первого хода: id из /api/uploads и ссылки. */
   uploadIds?: string[];
   urls?: string[];
+  /** Свободный вопрос посреди онбординга: шаг, к которому вернуть (server/onboarding/service.asideContext). */
+  onboarding?: OnboardingStepBrief;
 }
 
 /** Зависимости хода, подменяемые в тестах (по умолчанию — getLlm и реестр tools/index). */

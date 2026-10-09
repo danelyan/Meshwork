@@ -1,11 +1,8 @@
-import Link from 'next/link';
-
 import { Background } from './Background';
 import { Companies } from './Companies';
 import { COMPANY_FORMS, shortRub, VACANCY_FORMS } from './format';
 import { Hero } from './Hero';
 import { Start } from './Start';
-import { LandingHeader } from './LandingHeader';
 import styles from './Landing.module.css';
 import type { LandingData } from './types';
 import { plural } from '@/lib/plural';
@@ -18,7 +15,7 @@ const RULES = [
 ];
 
 /** Главная: витрина (site/index.html). Компании и числа — из `data` (showcase.ts), это иллюстрация, не данные сервиса. */
-export function Landing({ data, signedIn, demoEnabled = false }: { data: LandingData; signedIn: boolean; demoEnabled?: boolean }) {
+export function Landing({ data, signedIn }: { data: LandingData; signedIn: boolean }) {
   const { stats } = data;
   const tiles = [
     { value: String(stats.companies), label: `${plural(stats.companies, COMPANY_FORMS)} с открытыми вакансиями` },
@@ -30,7 +27,6 @@ export function Landing({ data, signedIn, demoEnabled = false }: { data: Landing
   return (
     <div className={styles.page}>
       <Background />
-      <LandingHeader signedIn={signedIn} />
       <main id="main" className={styles.main}>
         <Hero companies={data.companies} signedIn={signedIn} />
         <Companies companies={data.companies} total={stats.companies} />
@@ -64,16 +60,7 @@ export function Landing({ data, signedIn, demoEnabled = false }: { data: Landing
           </div>
         </section>
       </main>
-      <footer className={styles.footer}>
-        <span>© Федерация спортивного программирования, 2026</span>
-        <span>вилка всегда · контакты после «да» · ФСП в зачёт</span>
-        <span className={styles.illustration}>Данные на этой странице — иллюстрация</span>
-        {demoEnabled && (
-          <Link href="/demo" className={styles.demoLink}>
-            Демо для жюри
-          </Link>
-        )}
-      </footer>
+      <p className={styles.illustration}>Данные на этой странице — иллюстрация</p>
     </div>
   );
 }

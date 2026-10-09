@@ -3,6 +3,11 @@ import { Golos_Text } from 'next/font/google';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 
+import { ShellFrame } from '@/components/shell/ShellFrame';
+import { SiteFooter } from '@/components/shell/SiteFooter';
+import { SiteHeader } from '@/components/shell/SiteHeader';
+import { getEnv } from '@/server/env';
+
 import '@/styles/tokens.css';
 
 // Golos Text скачивается и самохостится при `next build`/`next dev` (нужна сеть к Google Fonts на сборке).
@@ -31,7 +36,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru" className={`${golos.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <ShellFrame header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
+          {children}
+        </ShellFrame>
+      </body>
     </html>
   );
 }

@@ -3,7 +3,6 @@
 
 .top { position: sticky; top: 0; z-index: 20; background: var(--glass); border-bottom: 1px solid var(--line); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); }
 .topRow { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 var(--page-pad); }
-.mark { height: 28px; width: auto; display: block; filter: grayscale(1) brightness(0); }
 .title { flex: 1; font: 600 var(--fs-sm) var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 
 .feed { flex: 1; width: min(720px, 100%); margin: 0 auto; padding: 24px var(--page-pad) 0; display: flex; flex-direction: column; gap: 14px; }
@@ -36,8 +35,7 @@
 
 @media (max-width: 640px) {
   .topRow { gap: 10px; min-height: 52px; }
-  .mark { height: 24px; }
-  .title { font-size: var(--fs-xs); }
+    .title { font-size: var(--fs-xs); }
   .feed { padding-top: 16px; }
   .summary div { flex-direction: column; gap: 4px; }
   .summary dd { text-align: left; }

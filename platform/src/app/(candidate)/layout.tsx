@@ -1,12 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { Header } from '@/components/Header';
-
+/** Кабинет кандидата: шапка и подвал — общая оболочка из app/layout.tsx. */
 export default function CandidateLayout({ children }: { children: ReactNode }) {
-  return (
-    <>
-      <Header />
-      <main id="main">{children}</main>
-    </>
-  );
+  return <main id="main">{children}</main>;
 }

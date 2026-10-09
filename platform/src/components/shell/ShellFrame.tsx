@@ -1,0 +1,46 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
+import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+
+import styles from './shell.module.css';
+
+const BARE_PATHS = ['/onboarding'];
+
+const BareContext = createContext<(on: boolean) => void>(() => undefined);
+
+/**
+ * Страница прячет шапку и подвал, пока `active` (тест в процессе: уйти случайно нельзя).
+ * Для целых маршрутов (онбординг) список — BARE_PATHS.
+ */
+export function useBareShell(active: boolean): void {
+  const set = useContext(BareContext);
+  useEffect(() => {
+    set(active);
+    return () => set(false);
+  }, [active, set]);
+}
+
+/**
+ * Каркас сайта: ссылка «К содержимому», шапка, страница, подвал. Шапка и подвал приходят готовыми серверными
+ * элементами; здесь только решается, показывать ли их. Лэйаут не знает путь на сервере (не перерисовывается
+ * при навигации), поэтому решение — на клиенте по `usePathname()`.
+ */
+export function ShellFrame({ header, footer, children }: { header: ReactNode; footer: ReactNode; children: ReactNode }) {
+  const pathname = usePathname();
+  const [bareByPage, setBareByPage] = useState(false);
+  const bare = bareByPage || BARE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const setter = useMemo(() => setBareByPage, []);
+  return (
+    <BareContext.Provider value={setter}>
+      <div className={styles.frame}>
+      <a className={styles.skip} href="#main">
+        К содержимому
+      </a>
+      {!bare && header}
+      <div className={styles.page}>{children}</div>
+      {!bare && footer}
+      </div>
+    </BareContext.Provider>
+  );
+}

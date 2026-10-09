@@ -22,7 +22,7 @@ test('С1: вход → резюме и ссылка → шаги → карто
   await page.getByRole('link', { name: /Приступим/ }).first().click();
   await page.waitForURL('**/auth');
   await expect(page.getByRole('button', { name: /^Войти как / })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Демо для жюри' }).click();
+  await page.getByRole('main').getByRole('link', { name: 'Демо для жюри' }).click(); // в подвале такая же ссылка
   await page.waitForURL('**/demo');
 
   // демо-вход за первого кандидата

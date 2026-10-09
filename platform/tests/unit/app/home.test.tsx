@@ -45,24 +45,21 @@ describe('главная (лендинг)', () => {
       'Тест вместо резюме', 'Вилка всегда', 'Контакты после «да»', 'ФСП в зачёт',
     ]);
     expect(screen.getByRole('heading', { level: 2, name: 'Начни с профиля.' })).toBeDefined();
-    expect(screen.getByRole('contentinfo').textContent).toContain('Федерация спортивного программирования');
+    expect(screen.getByText('Данные на этой странице — иллюстрация')).toBeDefined();
   });
 
-  it('обе кнопки «Приступим →» ведут на /auth, шапка гостя — «Войти» на /auth', () => {
+  it('обе кнопки «Приступим →» ведут на /auth (шапка и подвал — общая оболочка, tests/unit/components/shell.test.tsx)', () => {
     render(<Landing data={DATA} signedIn={false} />);
     const start = screen.getAllByRole('link', { name: /Приступим/ });
     expect(start).toHaveLength(2);
     for (const a of start) expect(a.getAttribute('href')).toBe('/auth');
-    const login = screen.getAllByRole('link', { name: 'Войти' });
-    expect(login.length).toBeGreaterThan(0);
-    for (const a of login) expect(a.getAttribute('href')).toBe('/auth');
-    expect(screen.queryByRole('link', { name: 'В кабинет' })).toBeNull();
+    expect(screen.getByRole('link', { name: /Уже есть аккаунт/ }).getAttribute('href')).toBe('/auth');
   });
 
-  it('с сессией шапка показывает «В кабинет» → /consultant', () => {
+  it('с сессией вход в hero ведёт в кабинет → /consultant', () => {
     render(<Landing data={DATA} signedIn />);
-    expect(screen.getByRole('link', { name: 'В кабинет' }).getAttribute('href')).toBe('/consultant');
-    expect(screen.queryByRole('link', { name: 'Войти' })).toBeNull();
+    expect(screen.getByRole('link', { name: /Ваш кабинет/ }).getAttribute('href')).toBe('/consultant');
+    expect(screen.queryByRole('link', { name: /Уже есть аккаунт/ })).toBeNull();
   });
 
   it('числа берутся из пропсов: компании, вакансии, категоризованные, потолок вилки', () => {
@@ -131,20 +128,20 @@ describe('страница /', () => {
     expect(screen.getByText(`${SHOWCASE.stats.companies} компаний на платформе`)).toBeDefined();
     expect(screen.getByText('Данные на этой странице — иллюстрация')).toBeDefined();
     expect(dbCalls.n).toBe(0);
-    expect(screen.getAllByRole('link', { name: 'Войти' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: /Уже есть аккаунт/ })).toBeDefined();
   });
 
-  it('с валидной кукой cid — «В кабинет»', async () => {
+  it('с валидной кукой cid — «Ваш кабинет»', async () => {
     cookieValue.value = signSession('cand1');
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
-    expect(screen.getByRole('link', { name: 'В кабинет' })).toBeDefined();
+    expect(screen.getByRole('link', { name: /Ваш кабинет/ })).toBeDefined();
   });
 
   it('с поддельной кукой — как гость', async () => {
     cookieValue.value = 'cand1.9999999999.forged';
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
-    expect(screen.queryByRole('link', { name: 'В кабинет' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Ваш кабинет/ })).toBeNull();
   });
 });

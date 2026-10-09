@@ -17,6 +17,7 @@ import {
 } from '@/lib/api';
 import { formatDate } from '@/lib/labels';
 
+import { useBareShell } from './shell/ShellFrame';
 import styles from './TestPage.module.css';
 import { Button, Chip, Field, Kicker, Notice, Panel, Tag } from './ui';
 import ui from './ui.module.css';
@@ -390,6 +391,8 @@ export function TestPage() {
   const [loading, setLoading] = useState(Boolean(attemptParam));
   const [error, setError] = useState<ApiError | Error | null>(null);
   const loadedRef = useRef<string | null>(null);
+  // Пока идёт попытка, шапка и подвал спрятаны: уйти со страницы случайно нельзя.
+  useBareShell(attempt?.status === 'active');
 
   useEffect(() => {
     if (!attemptParam || loadedRef.current === attemptParam) return;

@@ -11,33 +11,18 @@
 .demoNote { margin: 0; font: 500 var(--fs-sm) var(--mono); color: var(--demo); }
 .list { margin: 0; padding-left: 18px; color: var(--text-soft); line-height: 1.5; }
 
-.block { display: flex; flex-direction: column; gap: 14px; }
-.row { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .consent { margin-top: 10px; padding: 10px 12px; background: var(--surface-quote); border: 1px solid var(--border-faint); font-size: var(--fs-sm); line-height: 1.55; color: var(--text-soft); white-space: normal; }
 .consent summary { cursor: pointer; font-weight: 600; color: var(--ink); }
 .consent p { margin: 8px 0 0; }
 .consent a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
 
-.range { display: flex; flex-direction: column; gap: 16px; }
-.rangeRow { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: baseline; }
-.rangeRow input { grid-column: 1 / -1; width: 100%; accent-color: var(--blue); }
-.rangeLabel { font: 600 var(--fs-xs) var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-.rangeValue { font-size: 28px; font-weight: 700; letter-spacing: -0.04em; }
-.rangeValue small { margin-left: 6px; font: 500 var(--fs-sm) var(--mono); letter-spacing: 0; color: var(--muted); }
 
-.docsFeed { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
-.summary { margin: 0; display: flex; flex-direction: column; border-top: 1.5px solid var(--ink); }
-.summary div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.summary dt { font: 500 var(--fs-sm) var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding-top: 2px; }
-.summary dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 
 @media (max-width: 640px) {
   .topRow { gap: 10px; min-height: 52px; }
     .title { font-size: var(--fs-xs); }
   .feed { padding-top: 16px; }
-  .summary div { flex-direction: column; gap: 4px; }
-  .summary dd { text-align: left; }
-}
+    }
 .end { scroll-margin-bottom: 140px; }

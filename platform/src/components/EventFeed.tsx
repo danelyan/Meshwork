@@ -196,12 +196,21 @@ function AskBlock({ event, onAnswer, locked }: { event: Extract<AgentEvent, { ty
 }
 
 /** Лента консультанта на общих примитивах components/chat (тот же вид, что у онбординга). */
-export function EventFeed({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, lead, label = 'Переписка с консультантом', onRetry }: EventFeedProps) {
-  const blocks = toBlocks(items);
-  const lastBlock = blocks.at(-1);
+export function EventFeed({ lead, label = 'Переписка с консультантом', ...rest }: EventFeedProps) {
   return (
     <Thread label={label}>
       {lead}
+      <FeedRows {...rest} />
+    </Thread>
+  );
+}
+
+/** Строки ленты без обёртки `Thread` — для вставки в чужую ленту (документы в онбординге). */
+export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, onRetry }: Omit<EventFeedProps, 'lead' | 'label'>) {
+  const blocks = toBlocks(items);
+  const lastBlock = blocks.at(-1);
+  return (
+    <>
       {blocks.map((b) => {
         if (b.kind === 'user') {
           return (
@@ -251,6 +260,6 @@ export function EventFeed({ items, claimOverrides = {}, onClaimAction, onConfirm
           </AssistantRow>
         );
       })}
-    </Thread>
+    </>
   );
 }

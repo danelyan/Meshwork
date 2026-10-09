@@ -12,6 +12,9 @@ import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { Chat } from '../Chat';
 import { AssistantChat, EMPLOYER_SUGGESTIONS } from '../employer/AssistantChat';
+import { extractUrls } from '@/lib/links';
+
+import { useAttachments } from '../chat/attachments';
 import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, ReplySkeleton, type ReplyLine, Thread, UserBubble } from '../chat/Thread';
 import { Brand } from '../shell/Brand';
 import { Button, VisuallyHidden } from '../ui';
@@ -19,7 +22,9 @@ import { Button, VisuallyHidden } from '../ui';
 import { useStickToBottom } from '../chat/scroll';
 
 import styles from './Onboarding.module.css';
-import { StepControls, SummaryCard } from './StepControls';
+import { DocumentsRows, useDocumentsRun } from './DocumentsRun';
+import { parseSalary, salaryText } from './salary';
+import { StepControls } from './StepControls';
 
 export interface OnboardingChatProps {
   initial: OnboardingView;
@@ -31,8 +36,8 @@ export interface OnboardingChatProps {
   employerAssistant?: { demoNoLlm?: boolean; restored?: EmployerRestoredChat };
 }
 
-/** Шаги, где отвечают полем ввода внизу ленты. */
-const typesText = (s: StepView) => s.kind === 'text' || (s.allowCustom && (s.kind === 'one' || s.kind === 'chips'));
+/** Шаги, где отвечают полем ввода внизу ленты: текст, своё значение, документы (файлы и ссылки), зарплата числом. */
+const typesText = (s: StepView) => s.kind === 'text' || s.kind === 'files' || s.kind === 'range' || (s.allowCustom && (s.kind === 'one' || s.kind === 'chips'));
 
 const multiOf = (s: StepView) => (Array.isArray(s.value) ? (s.value as string[]) : []);
 const extraOf = (s: StepView) => (s.kind === 'chips' ? multiOf(s).filter((v) => !(s.options ?? []).some((o) => o.value === v)) : []);
@@ -58,6 +63,8 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const onboardedRef = useRef(initial.onboarded);
+  const att = useAttachments();
+  const docs = useDocumentsRun();
 
   const cur = view.current;
   const isSummary = cur.kind === 'summary';
@@ -91,12 +98,16 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
       setExtra(extraOf(v.current));
       setReady(false);
       setTurn((t) => t + 1);
+      if (v.current.kind === 'files') docs.reset();
+      att.clear();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не получилось. Повтори.');
     } finally {
       setPending(null);
       setBusy(false);
     }
+    // docs/att — стабильные колбэки хуков
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const go = useCallback(
@@ -141,8 +152,17 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
   const skip = () => void act({ action: 'skip', stepId: cur.id }, { text: 'пропущу', quiet: true });
 
   function submitDraft() {
+    if (!canType) return;
+    if (cur.kind === 'files') return submitDocuments();
     const v = draft.trim();
-    if (!v || !canType) return;
+    if (!v) return;
+    if (cur.kind === 'range') {
+      const r = parseSalary(v, cur.range!);
+      if ('error' in r) return setError(r.error);
+      setError(null);
+      setDraft('');
+      return answer(r, salaryText(r, cur.range!));
+    }
     if (cur.kind === 'chips') {
       const all = [...(cur.options ?? []).map((o) => o.value), ...extra];
       const existing = all.find((x) => x.toLowerCase() === v.toLowerCase());
@@ -163,11 +183,36 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
     answer(v, v);
   }
 
+  /** Документы: файлы из композера и ссылки из текста уходят в разбор консультанта прямо в ленте. */
+  function submitDocuments() {
+    if (docs.running) return;
+    if (att.uploading) return setError('Дождись окончания загрузки файлов.');
+    const text = draft.trim();
+    const urls = extractUrls(text);
+    const files = att.ready;
+    if (urls.length + files.length === 0) {
+      return setError('Не вижу ни файла, ни ссылки. Прикрепи резюме скрепкой, перетащи его в ленту или вставь ссылку на GitHub или портфолио — или пропусти шаг.');
+    }
+    setError(null);
+    setDraft('');
+    att.clear();
+    void docs.send({ text: text || 'Вот мои материалы.', uploadIds: files.map((f) => f.id), urls, fileNames: files.map((f) => f.name) });
+  }
+
+  const summaryLines: ReplyLine[] =
+    isSummary && view.summary
+      ? [
+          ...view.summary.items.map((it) => ({ text: `${it.label}: ${it.value}` })),
+          ...view.summary.warnings.map((w) => ({ text: w, secondary: true })),
+          ...(view.summary.skipped.length ? [{ text: `Пропущено: ${view.summary.skipped.map((it) => it.label).join(', ')} — можно ответить сейчас или позже. Любой ответ выше можно изменить.`, secondary: true }] : []),
+        ]
+      : [];
   const lines: ReplyLine[] = [
     { text: cur.lead },
     { text: cur.question, id: 'ob-q' },
     ...(cur.sub ? [{ text: cur.sub, secondary: true }] : []),
     ...(cur.hint ? [{ text: cur.hint, secondary: true }] : []),
+    ...summaryLines,
   ];
   const consentExtra =
     cur.kind === 'consent' ? (
@@ -204,7 +249,17 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
 
   const inn = cur.id === 'inn' && draft.trim() ? checkInn(draft) : null;
   const composerHint = inn?.ok ? 'Контрольная сумма сходится · реестр ФНС — демо, не подключён' : cur.kind === 'chips' && canType ? 'Enter — добавить своё' : undefined;
-  const placeholder = !ready || busy ? '' : typesText(cur) ? (cur.placeholder ?? (cur.kind === 'text' ? 'Напиши ответ' : 'Или напиши своё')) : cur.kind === 'range' || cur.kind === 'files' ? 'Ответь в карточке выше' : 'Выбери вариант выше';
+  const placeholder =
+    !ready || busy
+      ? ''
+      : cur.kind === 'files'
+        ? 'Прикрепи резюме или вставь ссылку'
+        : cur.kind === 'range'
+          ? `Или напиши сумму: ${cur.range!.defaults.from}–${cur.range!.defaults.to}`
+          : typesText(cur)
+            ? (cur.placeholder ?? (cur.kind === 'text' ? 'Напиши ответ' : 'Или напиши своё'))
+            : 'Выбери вариант выше';
+  const docsDone = cur.kind === 'files' && docs.started && !docs.running;
 
   return (
     <div className={styles.shell}>
@@ -234,6 +289,16 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
             <Reply key={`${cur.id}:${turn}`} lines={lines} animate onDone={() => setReady(true)} extra={consentExtra} />
           </AssistantRow>
 
+          {cur.kind === 'files' && <DocumentsRows run={docs} />}
+          {docsDone && !busy && (
+            <AssistantRow mark={false} testId="ob-docs-next">
+              <QuickReplies
+                label="Что дальше"
+                items={[{ value: 'next', label: 'Дальше', note: `материалов: ${docs.totals.uploadIds.length + docs.totals.urls.length}, утверждений: ${docs.totals.claims}` }]}
+                onPick={() => answer(docs.totals, `Материалы: ${docs.totals.uploadIds.length + docs.totals.urls.length}, утверждений найдено: ${docs.totals.claims}`)}
+              />
+            </AssistantRow>
+          )}
           {pending && <UserBubble quiet={pending.quiet}>{pending.text}</UserBubble>}
           {busy && pending && (
             <AssistantRow>
@@ -260,10 +325,9 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
             </AssistantRow>
           )}
 
-          {ready && isSummary && view.summary && (
+          {ready && isSummary && view.summary && (employer ? !employerAssistant : !consultant) && (
             <AssistantRow mark={false} testId="ob-summary">
-              <SummaryCard view={view} />
-              {(employer ? !employerAssistant : !consultant) && <QuickReplies label="Что дальше" items={nextSteps} disabled={busy} onPick={onNext} />}
+              <QuickReplies label="Что дальше" items={nextSteps} disabled={busy} onPick={onNext} />
             </AssistantRow>
           )}
         </Thread>
@@ -309,12 +373,15 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
             onChange={setDraft}
             onSubmit={submitDraft}
             disabled={!canType}
-            multiline={(cur.maxLength ?? 0) > 200}
-            maxLength={cur.kind === 'text' ? cur.maxLength : 60}
+            sending={docs.running}
+            multiline={(cur.maxLength ?? 0) > 200 || cur.kind === 'files'}
+            maxLength={cur.kind === 'text' ? cur.maxLength : cur.kind === 'files' ? 4000 : 60}
+            attachments={cur.kind === 'files' && ready ? { files: att.files, onAdd: att.add, onRemove: att.remove } : undefined}
             inputMode={cur.id === 'inn' ? 'numeric' : undefined}
             placeholder={placeholder}
             inputRef={inputRef}
             sendLabel={cur.kind === 'chips' ? 'Добавить' : 'Отправить'}
+            allowEmpty={cur.kind === 'files' && att.ready.length > 0}
             aside={
               !cur.required && ready ? (
                 <QuietAction onClick={skip} disabled={busy}>

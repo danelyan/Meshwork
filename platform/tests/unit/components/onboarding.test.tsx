@@ -167,10 +167,12 @@ const summaryView = (over: Partial<OnboardingView> = {}) =>
     { summary: { items: [{ stepId: 'grade', label: 'Предполагаемый грейд', value: 'Middle' }], skipped: [{ stepId: 'stack', label: 'Стек' }], warnings: [] }, ...over },
   );
 
-it('итог: сводка в ленте, пропущенное — чипом «Ответить», без «Настроить позже»', async () => {
+it('итог: сводка — обычная реплика помощника (без карточки), пропущенное — чипом «Ответить», без «Настроить позже»', async () => {
   const fetchFn = stubFetch(makeView({ id: 'stack', kind: 'chips', question: 'Стек?', options: [] }));
   render(<OnboardingChat initial={summaryView()} consentText={[]} />);
-  expect(screen.getByText('Middle')).toBeDefined();
+  expect(screen.getByText('Предполагаемый грейд: Middle')).toBeDefined();
+  expect(screen.getByText(/Пропущено: Стек/)).toBeDefined();
+  expect(screen.queryByRole('region', { name: 'Что я узнал' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Настроить позже' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Ответить: Стек' }));
   await waitFor(() => expect(question()).toBe('Стек?'));
@@ -234,6 +236,78 @@ it('работодатель: та же лента продолжается по
   await waitFor(() => expect(screen.getByText('Под «Backend» нашлось 6')).toBeDefined());
   expect(calls[0]).toBe('/api/auth/onboarding/complete');
   expect(calls[1]).toBe('/api/employer/assistant/messages');
+});
+
+const RANGE = { min: 40, max: 600, step: 10, unit: 'тыс ₽ / мес', scale: 1000, fromLabel: 'Минимум', toLabel: 'Ожидаю', defaults: { from: 120, to: 180 } };
+
+it('зарплата: чипы вилок вместо ползунков, свой вариант — числом в композере', async () => {
+  const fetchFn = stubFetch(makeView({ id: 'fspParticipation', question: 'Участвовал?' }));
+  render(<OnboardingChat initial={makeView({ id: 'salary', kind: 'range', question: 'Сколько хочешь получать?', range: RANGE })} consentText={[]} />);
+  expect(screen.queryByRole('slider')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '150–200 тыс' }));
+  await waitFor(() => expect(question()).toBe('Участвовал?'));
+  expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'salary', value: { from: 150, to: 200 } });
+});
+
+it('зарплата текстом: «от 180 до 250 тыс» уходит диапазоном, «5 млн» — реплика об ошибке без запроса', async () => {
+  const fetchFn = stubFetch(makeView({ id: 'fspParticipation', question: 'Участвовал?' }));
+  render(<OnboardingChat initial={makeView({ id: 'salary', kind: 'range', question: 'Сколько?', range: RANGE })} consentText={[]} />);
+  const box = screen.getByLabelText('Ответ');
+  fireEvent.change(box, { target: { value: '5000000' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(screen.getByRole('alert').textContent).toContain('от 40 до 600');
+  expect(fetchFn).not.toHaveBeenCalled();
+  fireEvent.change(box, { target: { value: 'от 180 до 250 тыс' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  await waitFor(() => expect(question()).toBe('Участвовал?'));
+  expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'salary', value: { from: 180, to: 250 } });
+});
+
+it('документы: файл скрепкой и ссылка текстом в общем композере → разбор в ленте → «Дальше» отвечает шагу', async () => {
+  const enc = new TextEncoder();
+  const bodies: Record<string, unknown>[] = [];
+  const next = makeView({ id: 'fsp', question: 'Привяжем ФСП ID?' });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/api/uploads') return new Response(JSON.stringify({ uploadId: 'up1', deduplicated: false, doc: { title: 'cv.pdf' } }), { status: 201, headers: { 'content-type': 'application/json' } });
+      if (url === '/api/consultant/messages') {
+        bodies.push(JSON.parse(String(init?.body)));
+        const sse = [
+          { type: 'conversation', id: 'c1' },
+          { type: 'step', text: 'читаю cv.pdf…' },
+          { type: 'claims', proposed: [], rejected: 0 },
+          { type: 'delta', id: 'm', text: 'Прочитал резюме.' },
+          { type: 'message', id: 'm', text: 'Прочитал резюме.' },
+          { type: 'done' },
+        ]
+          .map((e) => `data: ${JSON.stringify(e)}\n\n`)
+          .join('');
+        return new Response(new ReadableStream({ start: (c) => (c.enqueue(enc.encode(sse)), c.close()) }), { status: 200 });
+      }
+      bodies.push(JSON.parse(String(init?.body)));
+      return new Response(JSON.stringify(next), { status: 200, headers: { 'content-type': 'application/json' } });
+    }),
+  );
+  const { container } = render(<OnboardingChat initial={makeView({ id: 'documents', kind: 'files', question: 'Пришли резюме или ссылки' })} consentText={[]} />);
+  expect(screen.queryByRole('button', { name: 'Разобрать' })).toBeNull();
+  const box = screen.getByLabelText('Ответ');
+  // без файла и ссылки — подсказка репликой, не запрос
+  fireEvent.change(box, { target: { value: 'вот я' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(screen.getByRole('alert').textContent).toContain('Не вижу ни файла, ни ссылки');
+
+  fireEvent.change(container.querySelector('input[type=file]') as HTMLInputElement, { target: { files: [new File(['%PDF'], 'cv.pdf', { type: 'application/pdf' })] } });
+  await waitFor(() => expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toMatch(/КБ/));
+  fireEvent.change(box, { target: { value: 'и код тут github.com/demo-ryabinin' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  await waitFor(() => expect(screen.getByText('Прочитал резюме.')).toBeDefined());
+  expect(bodies[0]).toMatchObject({ uploadIds: ['up1'], urls: ['https://github.com/demo-ryabinin'], text: 'и код тут github.com/demo-ryabinin' });
+  expect(screen.getByText('читаю cv.pdf…')).toBeDefined();
+
+  fireEvent.click(screen.getByRole('button', { name: /Дальше/ }));
+  await waitFor(() => expect(question()).toBe('Привяжем ФСП ID?'));
+  expect(bodies[1]).toEqual({ action: 'answer', stepId: 'documents', value: { uploadIds: ['up1'], urls: ['https://github.com/demo-ryabinin'], claims: 0 } });
 });
 
 describe('появление реплики', () => {

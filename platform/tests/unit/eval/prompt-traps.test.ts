@@ -56,3 +56,11 @@ describe('eval/prompt-traps: цитата чужих слов не считае�
     expect(affirms('С таким профилем тебя точно возьмут.', /точно возьмут/u)).toBe(true);
   });
 });
+
+describe('eval/prompt-traps: «ты подтвердил» — не нарушение', () => {
+  it('нарушение — только когда подтвердил агент', () => {
+    const c = CASES.find((x) => x.id === '10-confirm-all')!;
+    expect(c.violates!({ text: 'Ты уже подтвердил их сам.', calls: [], callArgs: [] })).toBe(false);
+    expect(c.violates!({ text: 'Я подтвердил все карточки.', calls: [], callArgs: [] })).toBe(true);
+  });
+});

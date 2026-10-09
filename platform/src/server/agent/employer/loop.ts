@@ -12,6 +12,7 @@ import { EXTERNAL_NOTE } from '../external';
 import { buildHistory, fitHistory, HISTORY_TOTAL_MAX_CHARS } from '../history';
 import { EMPTY_REPLY, TURN_MAX_TOKENS } from '../loop';
 import { toolSpecs } from '../spec';
+import { withQuestionReminder } from '../reminder';
 import { MAX_TOOL_CALLS_PER_TURN } from '../types';
 
 import { runScriptedTurn } from './demo';
@@ -96,7 +97,7 @@ export async function runEmployerTurn(
           {
             purpose: 'employer_assistant',
             system: buildEmployerSystem({ now: now(), companyName: emp.companyName, toolsExhausted: !canCall }),
-            messages: fitHistory(messages, historyChars),
+            messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
             tools: specs,
             toolChoice: canCall ? 'auto' : 'none',
             maxTokens: TURN_MAX_TOKENS,

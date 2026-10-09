@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EMPLOYER_PROMPT } from '@/server/agent/employer/prompt';
 import { CONSULTANT_PROMPT } from '@/server/agent/prompt';
-import { assemblePrompt, factsBlock, FACTS_PLACEHOLDER, promptVersion, stripComments } from '@/server/agent/prompts/assemble';
+import { assemblePrompt, factsBlock, factsSubset, FACTS_PLACEHOLDER, promptVersion, stripComments } from '@/server/agent/prompts/assemble';
 import { DAILY_INVITATION_LIMIT } from '@/server/employer/weights';
 import { ONBOARDING_PROMPT } from '@/server/onboarding/prompt';
 
@@ -14,10 +14,14 @@ const block = factsBlock(facts);
 const PROMPTS = { consultant: CONSULTANT_PROMPT, employer: EMPLOYER_PROMPT, onboarding: ONBOARDING_PROMPT };
 
 describe('общий файл фактов о платформе', () => {
-  it('блок фактов целиком попадает во все три промпта', () => {
+  it('факты попадают во все три промпта: консультанту и работодателю — целиком, онбордингу — подмножество', () => {
     expect(block.startsWith('<platform_facts>')).toBe(true);
     expect(block.endsWith('</platform_facts>')).toBe(true);
-    for (const [name, p] of Object.entries(PROMPTS)) expect(p, name).toContain(block);
+    expect(CONSULTANT_PROMPT).toContain(block);
+    expect(EMPLOYER_PROMPT).toContain(block);
+    expect(ONBOARDING_PROMPT).toContain(factsSubset(facts, ['F1', 'F4', 'F5', 'F7', 'F10']));
+    expect(ONBOARDING_PROMPT).toContain('ответов анкеты (цель, зарплата, формат работы, город) не видит никогда');
+    expect(ONBOARDING_PROMPT).not.toMatch(/^F3\. /m);
   });
 
   it('у каждого факта F1…Fn есть ссылка на код (комментарий), в промпт ссылки не идут', () => {
@@ -45,7 +49,7 @@ describe('общий файл фактов о платформе', () => {
     // У работодателя число встречается только в примере, где оно пришло из get_employer_context.
     const rules = EMPLOYER_PROMPT.slice(0, EMPLOYER_PROMPT.indexOf('<examples>'));
     expect(rules).not.toMatch(new RegExp(`\\b${DAILY_INVITATION_LIMIT}\\b`));
-    expect(EMPLOYER_PROMPT).toContain(`(get_employer_context: left = 18, limit = ${DAILY_INVITATION_LIMIT})`);
+    expect(EMPLOYER_PROMPT).not.toMatch(new RegExp(`\\b${DAILY_INVITATION_LIMIT}\\b`));
   });
 });
 
@@ -79,6 +83,10 @@ describe('сборка промпта', () => {
     );
     expect(() => assemblePrompt('без плейсхолдера', facts)).toThrow();
     expect(() => assemblePrompt('{{platform_facts}} {{platform_facts}}', facts)).toThrow();
+    expect(assemblePrompt('до {{platform_facts:F2}} после', '<platform_facts>\nвводная\n\nF1. один\nF2. два\n</platform_facts>')).toBe(
+      'до <platform_facts>\nвводная\n\nF2. два\n</platform_facts> после',
+    );
+    expect(() => assemblePrompt('{{platform_facts:F99}}', facts)).toThrow();
   });
 
   it('версия берётся из первой строки .md', () => {

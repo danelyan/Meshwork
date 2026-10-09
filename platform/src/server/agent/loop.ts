@@ -11,6 +11,7 @@ import { FALLBACK_STEP, fallbackReply, type FallbackReason } from './fallback';
 import { buildHistory, fitHistory, HISTORY_TOTAL_MAX_CHARS } from './history';
 import { asideCannedReply, asideNote, IN_ONBOARDING_NOTE, ONBOARDING_RESUME_PATH, resumeLine, resumeNote } from './onboarding-aside';
 import { runPipeline, type PipelineResult } from './pipeline';
+import { withQuestionReminder } from './reminder';
 import { createReplyStream } from './reply-stream';
 import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
@@ -104,7 +105,7 @@ export async function runTurn(
       const req = {
         purpose: 'consultant' as const,
         system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume }),
-        messages: fitHistory(messages, historyChars),
+        messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
         tools: specs,
         toolChoice: canCall ? ('auto' as const) : ('none' as const),
         maxTokens: TURN_MAX_TOKENS,

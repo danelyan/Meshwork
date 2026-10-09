@@ -6,7 +6,7 @@
 
 ```bash
 cd platform
-# .env: LLM_PROVIDER=stub  LLM_STUB_DEMO=true  COLLECTOR_FIXTURES=true  DEMO_LOGIN_ENABLED=true
+# .env: LLM_PROVIDER=stub  LLM_STUB_DEMO=true  COLLECTOR_FIXTURES=true  DEMO_LOGIN=true
 npx prisma migrate deploy && npm run db:seed      # 3 демо-кандидата, каталог, вакансии, задания
 node eval/scripts/make-pdfs.mjs --out /tmp/fsp-demo   # demo-1.pdf, demo-2.pdf, demo-3.pdf
 npm run dev                                       # или docker compose up --build

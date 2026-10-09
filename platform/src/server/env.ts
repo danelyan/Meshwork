@@ -16,7 +16,8 @@ export const envSchema = z
       .min(1, 'DATABASE_URL обязателен')
       .refine((v) => /^postgres(ql)?:\/\//.test(v), 'DATABASE_URL должен быть postgresql://'),
     SESSION_SECRET: z.string().min(32, 'SESSION_SECRET — не короче 32 символов'),
-    DEMO_LOGIN_ENABLED: z.stringbool().default(true),
+    /** Страница /demo и /api/demo/login со списком демо-аккаунтов. Для стенда жюри true, на проде выключить. */
+    DEMO_LOGIN: z.stringbool().default(false),
     APP_URL: z.url().default('http://localhost:3000'),
 
     LLM_PROVIDER: z.enum(['stub', 'yandex', 'openai-chat']).default('stub'),

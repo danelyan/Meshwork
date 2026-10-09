@@ -29,7 +29,7 @@ npm run dev                              # http://localhost:3000, GET /api/healt
 LLM_PROVIDER=stub
 LLM_STUB_DEMO=true        # извлекатель размечает резюме словарём каталога; ответы консультанта — шаблонами
 COLLECTOR_FIXTURES=true   # GitHub/Codeforces из фикстур eval/demo/*/links.json, без сети
-DEMO_LOGIN_ENABLED=true
+DEMO_LOGIN=true           # страница /demo со списком демо-аккаунтов; на проде выключить
 
 bash scripts/db-local.sh start
 npx prisma migrate deploy
@@ -90,8 +90,8 @@ Integration-тесты: перед прогоном `globalSetup` применя
 - `src/server/session.ts` — HMAC-кука `cid`; `requireCandidate(req)` → candidateId
   или AppError 401 (синхронно, проверяет подпись и срок; владение объектом —
   в сервисе, чужое → 404); `sessionCookie(id)` для `NextResponse.cookies.set`.
-- `/api/demo/login` — `GET` список демо-кандидатов, `POST {candidateId}` вход
-  (только `isDemo`), `DELETE` выход. Выключается `DEMO_LOGIN_ENABLED=false`.
+- `/demo` и `/api/demo/login` — список демо-аккаунтов и вход за них (только `isDemo`);
+  без `DEMO_LOGIN=true` оба отдают 404. `DELETE /api/demo/login` — выход. На `/auth` демо-аккаунтов нет.
 - `/api/health` — 200 `{ ok, db, llm }`; 503, если БД недоступна.
 - `src/styles/tokens.css` — токены тёмной темы прототипа, JetBrains Mono из `public/assets/fonts`.
 

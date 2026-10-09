@@ -12,15 +12,15 @@ describe('env', () => {
       LLM_PROVIDER: 'stub',
       LLM_MAX_CONCURRENCY: 8,
       LLM_MAX_RETRIES: 2,
-      DEMO_LOGIN_ENABLED: true,
+      DEMO_LOGIN: false,
       YANDEX_BASE_URL: 'https://ai.api.cloud.yandex.net/v1',
     });
   });
 
   it('строки приводятся к числам и булевым, пустые строки — undefined', () => {
-    const env = parseEnv({ ...valid, LLM_MAX_CONCURRENCY: '3', DEMO_LOGIN_ENABLED: 'false', GITHUB_TOKEN: '' });
+    const env = parseEnv({ ...valid, LLM_MAX_CONCURRENCY: '3', DEMO_LOGIN: 'false', GITHUB_TOKEN: '' });
     expect(env.LLM_MAX_CONCURRENCY).toBe(3);
-    expect(env.DEMO_LOGIN_ENABLED).toBe(false);
+    expect(env.DEMO_LOGIN).toBe(false);
     expect(env.GITHUB_TOKEN).toBeUndefined();
   });
 

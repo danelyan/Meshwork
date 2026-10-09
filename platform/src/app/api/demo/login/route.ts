@@ -5,13 +5,13 @@ import { ensureDemoCandidateUser, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
 import { demoResumeFor } from '@/server/demo/resumes';
 import { getEnv } from '@/server/env';
-import { AppError, errors, withErrors } from '@/server/errors';
+import { errors, withErrors } from '@/server/errors';
 import { clearedSessionCookie, userSessionCookie } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
 function assertEnabled() {
-  if (!getEnv().DEMO_LOGIN_ENABLED) throw new AppError('forbidden', 'Демо-вход выключен', 403);
+  if (!getEnv().DEMO_LOGIN) throw errors.notFound();
 }
 
 /** Список демо-кандидатов и демо-работодателей для экрана выбора. */

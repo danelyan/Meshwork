@@ -11,7 +11,7 @@ const get = (path: string, id?: string) => jsonRequest(path, 'GET', undefined, i
 
 describe('api/demo/resume', () => {
   beforeEach(async () => {
-    process.env.DEMO_LOGIN_ENABLED = 'true';
+    process.env.DEMO_LOGIN = 'true';
     resetEnvCache();
     await resetDb();
     await prisma.candidate.createMany({
@@ -23,7 +23,7 @@ describe('api/demo/resume', () => {
     });
   });
   afterEach(() => {
-    delete process.env.DEMO_LOGIN_ENABLED;
+    delete process.env.DEMO_LOGIN;
     resetEnvCache();
   });
   afterAll(() => prisma.$disconnect());
@@ -48,8 +48,8 @@ describe('api/demo/resume', () => {
     expect((await resume(get('/api/demo/resume', 'demo-unknown'))).status).toBe(404);
   });
 
-  it('DEMO_LOGIN_ENABLED=false → 403', async () => {
-    process.env.DEMO_LOGIN_ENABLED = 'false';
+  it('DEMO_LOGIN=false → 403', async () => {
+    process.env.DEMO_LOGIN = 'false';
     resetEnvCache();
     expect((await resume(get('/api/demo/resume', 'demo-backend-strong'))).status).toBe(403);
   });

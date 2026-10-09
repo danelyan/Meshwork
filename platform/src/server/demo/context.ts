@@ -17,7 +17,7 @@ export interface ChatDemoContext {
 
 export async function resolveChatDemoContext(candidateId: string | null, env = getEnv()): Promise<ChatDemoContext> {
   const noLlm = llmIsDemoStub(env);
-  if (!candidateId || !env.DEMO_LOGIN_ENABLED) return { noLlm, resume: null };
+  if (!candidateId || !env.DEMO_LOGIN) return { noLlm, resume: null };
   const c = await prisma.candidate.findFirst({ where: { id: candidateId, isDemo: true }, select: { id: true } });
   const r = c ? demoResumeFor(c.id) : null;
   return { noLlm, resume: r ? { fileName: r.fileName, link: r.link } : null };

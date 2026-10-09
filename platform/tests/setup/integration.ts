@@ -4,4 +4,4 @@ import { resolveTestDatabaseUrl } from '../helpers/test-db-url';
 process.env.DATABASE_URL = resolveTestDatabaseUrl();
 process.env.SESSION_SECRET ??= 'integration-test-secret-integration-0000';
 process.env.LLM_PROVIDER = 'stub';
-process.env.DEMO_LOGIN_ENABLED ??= 'true';
+process.env.DEMO_LOGIN ??= 'true';

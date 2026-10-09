@@ -19,7 +19,7 @@ export default async function AuthPage({ searchParams }: { searchParams: Search 
     <main id="main">
       <AuthScreen
         yandexEnabled={yandexConfig() !== null}
-        demoEnabled={getEnv().DEMO_LOGIN_ENABLED}
+        demoEnabled={getEnv().DEMO_LOGIN}
         next={safeNext(one(sp.next))}
         error={error && /^[a-z_]{1,32}$/.test(error) ? error : null}
       />

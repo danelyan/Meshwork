@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { ensureConsent } from '@/server/auth/consent';
 import { safeNext } from '@/server/auth/redirect';
 import { homePathFor, sessionInputFor, upsertExternalUser } from '@/server/auth/users';
 import {
@@ -44,6 +45,8 @@ export async function GET(req: Request) {
     const token = await exchangeCode(cfg, code, saved.verifier);
     const profile = await fetchProfile(token);
     user = await upsertExternalUser(profile);
+    // Галка согласия была на /auth (версия в подписанной куке state) — пишем так же, как раньше шаг чата.
+    await ensureConsent(user.id, saved.consent);
   } catch (err) {
     if (err instanceof YandexAuthError) {
       console.warn(`[auth] yandex ${err.stage} failed: ${err.message}`);

@@ -54,6 +54,8 @@ export interface OAuthState {
   state: string;
   verifier: string;
   next: string | null;
+  /** Версия текста согласия с галки на /auth: callback пишет согласие вместе с входом. */
+  consent: string;
   exp: number;
 }
 
@@ -65,7 +67,7 @@ export function signOAuthState(s: OAuthState, secret: string = getEnv().SESSION_
   return `${payload}.${sign(payload, secret)}`;
 }
 
-const StateShape = z.object({ state: z.string().min(16), verifier: z.string().min(43).max(128), next: z.string().nullable(), exp: z.number() });
+const StateShape = z.object({ state: z.string().min(16), verifier: z.string().min(43).max(128), next: z.string().nullable(), consent: z.string().min(1).max(64), exp: z.number() });
 
 export function verifyOAuthState(
   token: string | undefined | null,

@@ -39,3 +39,11 @@
 }
 .restart:hover:not(:disabled) { color: var(--ink); }
 .restart:disabled { cursor: default; opacity: 0.6; }
+
+/* Галка согласия при регистрации (R-C-14, решение владельца 09.10). */
+.consent { display: grid; gap: 6px; font-size: var(--fs-sm); }
+.consentRow { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; line-height: 1.4; }
+.consentRow input { margin: 3px 0 0; width: 18px; height: 18px; flex: none; accent-color: var(--ink); }
+.consentText { display: grid; gap: 6px; color: var(--muted); }
+.consentText > summary { cursor: pointer; width: fit-content; text-decoration: underline; }
+.consentText p { margin: 0; }

@@ -75,7 +75,8 @@ export interface DemoEmployer {
 }
 
 export const getDemoAccounts = () => request<{ candidates: DemoCandidate[]; employers?: DemoEmployer[] }>('/api/demo/login');
-export const demoFreshLogin = () => postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', { fresh: true });
+/** Новый демо-гость; `consent` — версия текста согласия с галки (без неё сервер отвечает 409/400). */
+export const demoFreshLogin = (consent: string) => postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', { fresh: true, consent });
 export const demoRestartOnboarding = (key: { restartUserId: string } | { restartCandidateId: string }) =>
   postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', key);
 export const demoEmployerLogin = (employerUserId: string) =>

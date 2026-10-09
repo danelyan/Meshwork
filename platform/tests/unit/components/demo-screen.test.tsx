@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { DemoScreen } from '@/components/DemoScreen';
+import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
@@ -58,13 +59,18 @@ it('кандидаты пула работодателя свёрнуты в «�
   expect(screen.getByRole('button', { name: 'Войти как Анна' }).closest('details')).toBeNull();
 });
 
-it('«Новый пользователь» создаёт гостя и ведёт на /onboarding', async () => {
+it('«Новый пользователь»: без галки согласия кнопка неактивна; с галкой создаёт гостя с версией согласия и ведёт на /onboarding', async () => {
   const fetchFn = stubFetch({ user: { id: 'u', name: 'Демо-гость 1' }, next: '/onboarding' });
   render(<DemoScreen />);
   await screen.findByRole('button', { name: 'Войти как Анна' });
-  fireEvent.click(screen.getByRole('button', { name: 'Новый пользователь' }));
+  const btn = screen.getByRole('button', { name: 'Новый пользователь' }) as HTMLButtonElement;
+  expect(btn.disabled).toBe(true);
+  expect(screen.getByRole('link', { name: 'полный текст' }).getAttribute('href')).toBe('/consent');
+  fireEvent.click(screen.getByRole('checkbox', { name: /Согласен\(на\) на обработку персональных данных/ }));
+  expect(btn.disabled).toBe(false);
+  fireEvent.click(btn);
   await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
-  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ fresh: true });
+  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ fresh: true, consent: CONSENT_VERSION });
 });
 
 it('«пройти онбординг заново» у демо-кандидата шлёт restartCandidateId', async () => {

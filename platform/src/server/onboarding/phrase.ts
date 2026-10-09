@@ -32,7 +32,11 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
   const hi = name ? `${name}, ` : '';
   const skipped = prev !== null && prev.value === undefined && prev.step.kind !== 'consent' && prev.step.kind !== 'role';
   if (step.id === 'consent') {
-    return `Привет${name ? `, ${name}` : ''}! Я помощник ФСП Карьеры. Задам несколько коротких вопросов — любой можно пропустить или настроить позже.`;
+    return `Привет${name ? `, ${name}` : ''}! Прежде чем начнём, нужно согласие на работу с твоими данными.`;
+  }
+  // Первая реплика чата — приветствие и сразу к делу (согласие уже взято при регистрации).
+  if (step.id === 'role' && prev === null) {
+    return `Привет${name ? `, ${name}` : ''}! Я помощник ФСП Карьеры. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут — и настроим всё под тебя; любой вопрос можно пропустить.`;
   }
   if (step.kind === 'summary') {
     return ctx.answers.role === 'employer' || ctx.facts.role === 'employer'
@@ -44,10 +48,10 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'role':
       return 'Спасибо. Теперь познакомимся.';
     case 'goal':
-      return `${hi}ты со стороны специалиста — тогда скажи, чего ждёшь от платформы.`;
+      return `${hi}отлично. Скажи, чего ждёшь от платформы, — под это и соберём профиль.`;
     case 'documents': {
       const goal = prev?.step.id === 'goal' ? prev.value : ctx.answers.goal;
-      if (goal === 'job_search') return 'Тогда соберём профиль, по которому компании найдут тебя сами.';
+      if (goal === 'job_search') return 'Тогда соберём профиль, по которому компании найдут тебя сами: каждый навык — с подтверждением из твоих же материалов.';
       if (goal === 'market_watch') return 'Посмотрим, что о тебе уже можно сказать по документам.';
       if (goal === 'grade_confirm') return 'Перед тестом соберу, что ты уже умеешь, — так проще выбрать грейд.';
       return 'Соберём профиль из того, что у тебя уже есть.';
@@ -57,7 +61,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'specialization':
       if (prev?.step.id === 'fsp' && prev.value === 'linked') return 'Демо-профиль ФСП привязан.';
       if (prev?.step.id === 'fsp' && prev.value === 'not_linked') return 'Без истории ФСП — тоже нормально, решает тест.';
-      return 'Теперь про работу.';
+      return 'Теперь про работу: по направлению тебя и будут искать.';
     case 'grade': {
       const s = specLabel(ctx.answers.specialization);
       if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s} — понял. ` : ''}Раз хочешь подтвердить грейд, скажи, на какой претендуешь.`;
@@ -70,7 +74,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'city':
       return 'Офис или гибрид — понял.';
     case 'salary':
-      return 'Почти закончили.';
+      return 'Почти закончили. Компании приходят сразу с вилкой — укажи, на что рассчитываешь.';
     case 'fspParticipation':
       return 'Последний вопрос.';
     case 'companyName':
@@ -120,7 +124,8 @@ export async function leadFor(
   opts: { candidateId?: string | null; signal?: AbortSignal } = {},
 ): Promise<string> {
   const template = templateLead(step, ctx, prev);
-  if (!llmEnabled() || step.id === 'consent') return template;
+  // Первая реплика (приветствие) и согласие — всегда шаблон: тон и смысл первого экрана не отдаём модели.
+  if (!llmEnabled() || step.id === 'consent' || (step.id === 'role' && prev === null)) return template;
   try {
     const llm = getLlm({ candidateId: opts.candidateId ?? undefined });
     const input = {

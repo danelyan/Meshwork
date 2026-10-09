@@ -101,7 +101,7 @@ describe('движок: переходы, пропуски, восстановл
     expect(p0.done).toBe(0);
     expect(p0.total).toBe(visibleSteps(ctx({ role: 'candidate' })).length - 1);
     const p1 = progress(ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' }), ['documents']);
-    expect(p1.done).toBe(4);
+    expect(p1.done).toBe(3); // роль, цель, документы: согласие взято при регистрации и в чате не считается
   });
 
   it('роль из аккаунта: пока согласие не дано, шаг роли не в ленте и не в прогрессе', () => {
@@ -110,13 +110,24 @@ describe('движок: переходы, пропуски, восстановл
     expect(historyOf(c, { stepId: null, answers: c.answers, skipped: [] }, step('consent'))).toEqual([]);
     expect(progress(c, []).done).toBe(0);
     const c2 = ctx({}, { role: 'candidate', consent: true });
-    expect(progress(c2, []).done).toBe(2);
+    expect(progress(c2, []).done).toBe(1);
+  });
+
+  it('согласие взято при регистрации: шага согласия в чате нет, первый вопрос — роль с приветствием без модели', () => {
+    const c = ctx({}, { consent: true });
+    expect(ids(c)).toEqual(['role', 'summary']);
+    expect(currentStep(c, { stepId: null, answers: {}, skipped: [] }).id).toBe('role');
+    const lead = templateLead(step('role'), c, null);
+    expect(lead).toMatch(/^Привет, Иван! Я помощник ФСП Карьеры\./);
+    expect(lead).not.toMatch(/согласи|данн/i);
+    // Страховка: аккаунт без записанного согласия видит шаг согласия первым.
+    expect(ids(ctx())[0]).toBe('consent');
   });
 
   it('лента — закрытые шаги без текущего', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
     const h = historyOf(c, { stepId: 'goal', answers: c.answers, skipped: [] }, step('goal'));
-    expect(h.map((s) => s.id)).toEqual(['consent', 'role']);
+    expect(h.map((s) => s.id)).toEqual(['role']);
   });
 });
 

@@ -5,6 +5,7 @@ import { POST as newConversation } from '@/app/api/dev/new-conversation/route';
 import { POST as newUser } from '@/app/api/dev/new-user/route';
 import { POST as resetOnboarding } from '@/app/api/dev/reset-onboarding/route';
 import { POST as resetAttempts } from '@/app/api/dev/reset-test-attempts/route';
+import { CONSENT_VERSION } from '@/server/auth/consent';
 import { signUserSession } from '@/server/session';
 
 import { prisma, resetDb } from '../../helpers/db';
@@ -189,7 +190,10 @@ describe('api/dev/*', () => {
   });
 
   it('new-user, login-as, logout', async () => {
-    const res = await newUser(req('/api/dev/new-user'));
+    // Без согласия не создаёт (как галка на /demo).
+    expect((await newUser(req('/api/dev/new-user'))).status).toBe(409);
+    expect(await prisma.user.count()).toBe(0);
+    const res = await newUser(req('/api/dev/new-user', 'POST', { consent: CONSENT_VERSION }));
     expect((await res.json()).next).toBe('/onboarding');
     expect(cookieFrom(res)).toMatch(/^cid=u\./);
     expect(await prisma.user.count({ where: { isDemo: true } })).toBe(1);

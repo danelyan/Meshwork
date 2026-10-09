@@ -24,7 +24,7 @@ describe('PKCE', () => {
 });
 
 describe('подписанная кука state', () => {
-  const s = { state: randomToken(24), verifier: randomToken(48), next: '/profile', exp: NOW + 600 };
+  const s = { state: randomToken(24), verifier: randomToken(48), next: '/profile', consent: 'v1', exp: NOW + 600 };
 
   it('подпись проверяется, содержимое возвращается', () => {
     expect(verifyOAuthState(signOAuthState(s, SECRET), SECRET, NOW)).toEqual(s);

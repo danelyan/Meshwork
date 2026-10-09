@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { ensureConsent } from '@/server/auth/consent';
 import { ensureDemoCandidateUser, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
 import { listDemoAccounts } from '@/server/devtools/actions';
@@ -24,6 +25,7 @@ export const POST = devRoute(async (req) => {
       include: { employerProfile: { select: { id: true } } },
     });
     if (!user?.employerProfile) throw errors.notFound('Демо-работодатель не найден');
+    await ensureConsent(user.id); // готовые демо-аккаунты считаются согласившимися
     const res = NextResponse.json({ next: '/employer' });
     res.cookies.set(userSessionCookie(sessionInputFor(user)));
     return res;

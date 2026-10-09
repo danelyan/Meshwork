@@ -116,8 +116,8 @@ describe('API онбординга', () => {
     expect((await prisma.user.findUniqueOrThrow({ where: { id: 'u1' } })).onboardedAt).toBeNull();
     const v = await view(c);
     expect(v.current.id).toBe('documents');
-    expect(v.history.map((h) => h.stepId)).toEqual(['consent', 'role', 'goal']);
-    expect(v.history[2]).toMatchObject({ answer: 'Ищу работу', editable: true });
+    expect(v.history.map((h) => h.stepId)).toEqual(['role', 'goal']);
+    expect(v.history[1]).toMatchObject({ answer: 'Ищу работу', editable: true });
   });
 
   it('«настроить позже» до роли — на главную', async () => {

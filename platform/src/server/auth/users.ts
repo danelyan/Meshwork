@@ -4,7 +4,7 @@ import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
 import type { UserSessionInput } from '@/server/session';
 
-import { hasCurrentConsent } from './consent';
+import { assertConsentVersion, ensureConsent, hasCurrentConsent } from './consent';
 
 type UserWithProfiles = User & { employerProfile: { id: string } | null };
 
@@ -120,7 +120,7 @@ export async function markOnboarded(userId: string): Promise<UserWithProfiles> {
  * онбординг считается пройденным — жюри сразу попадает в кабинет.
  */
 export async function ensureDemoCandidateUser(candidate: { id: string; name: string; email: string }) {
-  return prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { candidateId: candidate.id },
     update: {},
     create: {
@@ -133,19 +133,26 @@ export async function ensureDemoCandidateUser(candidate: { id: string; name: str
     },
     include: withProfiles,
   });
+  // Готовые демо-кандидаты считаются согласившимися (сид ставит Candidate.consentAt) — пишем и Consent.
+  await ensureConsent(user.id);
+  return user;
 }
 
 /**
- * Новый демо-гость: pending без `onboardedAt`, чтобы пройти весь онбординг-чат с согласия
- * (только DEMO_LOGIN, решает вызывающий). Создаётся при каждом нажатии; сид их не трогает.
+ * Новый демо-гость: pending без `onboardedAt`, чтобы пройти весь онбординг-чат (только
+ * DEMO_LOGIN, решает вызывающий). Согласие — галкой «Новый пользователь» на /demo, версия
+ * приходит сюда и пишется вместе с аккаунтом. Создаётся при каждом нажатии; сид их не трогает.
  */
-export async function createFreshDemoUser() {
+export async function createFreshDemoUser(consentVersion: string | null | undefined) {
+  // Без галки согласия пользователь не создаётся (решение владельца 09.10: согласие — при регистрации).
+  const version = assertConsentVersion(consentVersion);
   const n = await prisma.authAccount.count({ where: { provider: 'demo' } });
   return prisma.user.create({
     data: {
       name: `Демо-гость ${n + 1}`,
       isDemo: true,
       accounts: { create: { provider: 'demo', providerAccountId: crypto.randomUUID() } },
+      consents: { create: { version } },
     },
     include: withProfiles,
   });
@@ -159,6 +166,7 @@ export async function resetDemoOnboarding(userId: string) {
   const user = await prisma.user.findFirst({ where: { id: userId, isDemo: true }, select: { id: true } });
   if (!user) throw errors.notFound('Демо-аккаунт не найден');
   await prisma.onboardingState.deleteMany({ where: { userId } });
+  await ensureConsent(userId); // демо-аккаунты считаются согласившимися: чат начинается с роли
   return prisma.user.update({ where: { id: userId }, data: { onboardedAt: null }, include: withProfiles });
 }
 

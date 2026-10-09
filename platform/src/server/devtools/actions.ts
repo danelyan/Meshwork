@@ -87,9 +87,9 @@ export async function resetTestAttempts(s: SessionPrincipal): Promise<number> {
   return r.count;
 }
 
-/** Новый демо-гость (как «Новый пользователь» на /demo); онбординг стартует с согласия. */
-export async function newFreshUser() {
-  const user = await createFreshDemoUser();
+/** Новый демо-гость (как «Новый пользователь» на /demo); без версии согласия не создаётся. */
+export async function newFreshUser(consent: string | null | undefined) {
+  const user = await createFreshDemoUser(consent);
   return { user, session: sessionInputFor(user), next: '/onboarding' };
 }
 

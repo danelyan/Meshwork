@@ -60,6 +60,10 @@ const consentStep: StepDef = {
   target: 'Consent (recordConsent), Candidate.consentAt',
   req: 'R-C-14',
   required: true,
+  // Согласие берётся при регистрации одной галкой (/auth, /demo — решение владельца 09.10), в чате
+  // его нет. Шаг остаётся страховкой для аккаунта без записанного согласия (старые аккаунты):
+  // без согласия дальше ни шагу и в модель ничего не уходит.
+  when: (ctx) => !ctx.facts.consent,
   doneBy: (ctx) => ctx.facts.consent,
 };
 
@@ -68,14 +72,14 @@ const roleStep: StepDef = {
   kind: 'role',
   eyebrow: 'Знакомство',
   question: 'Ты здесь как кто?',
-  sub: 'От этого зависят следующие вопросы. Роль выбирается один раз.',
+  sub: 'Роль выбирается один раз — дальше вопросы только под неё.',
   summaryLabel: 'Роль',
   target: 'User.role (chooseRole)',
   req: 'R-N-07',
   required: true,
   options: [
-    { value: 'candidate', label: 'Я специалист', note: 'кандидат: компании сами пишут тебе с вилкой' },
-    { value: 'employer', label: 'Я работодатель', note: 'подборка по категориям' },
+    { value: 'candidate', label: 'Я специалист', note: 'компании сами находят тебя по навыкам и пишут с вилкой' },
+    { value: 'employer', label: 'Я работодатель', note: 'кандидаты с проверенным грейдом по категориям' },
   ],
   doneBy: hasRole,
 };
@@ -86,7 +90,7 @@ export const CANDIDATE_STEPS: StepDef[] = [
     kind: 'one',
     eyebrow: 'Цель',
     question: 'Зачем ты здесь?',
-    sub: 'Подстрою дальнейшие шаги под цель.',
+    sub: 'Под цель подстрою дальнейшие шаги.',
     summaryLabel: 'Цель',
     target: 'CandidateProfile.goal',
     req: 'R-C-04',

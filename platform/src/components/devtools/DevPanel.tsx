@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button, Kicker } from '@/components/ui';
+import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
 import styles from './DevPanel.module.css';
 
@@ -245,7 +246,8 @@ export function DevPanel() {
                 </Button>
               </div>
               <div className={styles.group}>
-                <Button size="sm" className={styles.grow} disabled={busy !== null} loading={busy === 'new-user'} onClick={() => run('new-user', undefined, 'Новый пользователь')}>
+                <Button size="sm" className={styles.grow} disabled={busy !== null} loading={busy === 'new-user'} onClick={() => run('new-user', { consent: CONSENT_VERSION }, 'Новый пользователь')}
+                  title="Создаёт демо-гостя с согласием на текущую версию текста (как галка на /demo)">
                   Новый пользователь
                 </Button>
                 {accounts && (accounts.candidates.length > 0 || accounts.employers.length > 0) && (

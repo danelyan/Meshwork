@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { ensureConsent } from '@/server/auth/consent';
 import { createFreshDemoUser, ensureDemoCandidateUser, resetDemoOnboarding, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
 import { demoResumeFor } from '@/server/demo/resumes';
@@ -38,7 +39,8 @@ export const GET = withErrors(async () => {
 });
 
 const LoginBody = z.union([
-  z.object({ fresh: z.literal(true) }),
+  // Новый пользователь — только с галкой согласия (версия текста; решение владельца 09.10).
+  z.object({ fresh: z.literal(true), consent: z.string().min(1).max(64) }),
   z.object({ restartUserId: z.string().min(1).max(64) }),
   z.object({ restartCandidateId: z.string().min(1).max(64) }),
   z.object({ candidateId: z.string().min(1).max(64) }),
@@ -55,7 +57,7 @@ export const POST = withErrors(async (req: Request) => {
   const body = LoginBody.parse(await req.json().catch(() => ({})));
   if ('fresh' in body) {
     // Новый пользователь: роль и согласие спросит сам онбординг.
-    const user = await createFreshDemoUser();
+    const user = await createFreshDemoUser(body.consent);
     const res = NextResponse.json({ user: { id: user.id, name: user.name }, next: '/onboarding' });
     res.cookies.set(userSessionCookie(sessionInputFor(user)));
     return res;
@@ -83,6 +85,7 @@ export const POST = withErrors(async (req: Request) => {
       include: { employerProfile: { select: { id: true } } },
     });
     if (!user?.employerProfile) throw errors.notFound('Демо-работодатель не найден');
+    await ensureConsent(user.id); // готовые демо-аккаунты считаются согласившимися
     const res = NextResponse.json({ employer: { id: user.id, name: user.name }, next: '/employer' });
     res.cookies.set(userSessionCookie(sessionInputFor(user)));
     return res;

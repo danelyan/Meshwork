@@ -1,5 +1,6 @@
 import { POST as login } from '@/app/api/demo/login/route';
 import { GET as onboardingView } from '@/app/api/onboarding/route';
+import { CONSENT_VERSION } from '@/server/auth/consent';
 import { resetEnvCache } from '@/server/env';
 import { parseSession } from '@/server/session';
 
@@ -20,8 +21,14 @@ describe('api/demo/login: новый пользователь и сброс он
   });
   afterAll(() => prisma.$disconnect());
 
-  it('fresh: pending без onboardedAt, провайдер demo, онбординг стартует с согласия; можно многократно', async () => {
-    const res = await post({ fresh: true });
+  it('fresh без галки согласия или со старой версией — пользователь не создаётся', async () => {
+    expect((await post({ fresh: true })).status).toBe(400);
+    expect((await post({ fresh: true, consent: 'old-version' })).status).toBe(409);
+    expect(await prisma.user.count()).toBe(0);
+  });
+
+  it('fresh: pending без onboardedAt, провайдер demo, согласие записано, чат начинается с роли; можно многократно', async () => {
+    const res = await post({ fresh: true, consent: CONSENT_VERSION });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.next).toBe('/onboarding');
@@ -33,9 +40,11 @@ describe('api/demo/login: новый пользователь и сброс он
     expect(parseSession(cookie.slice(4))).toMatchObject({ userId: user.id, role: 'pending' });
 
     const view = await (await onboardingView(jsonRequest('/api/onboarding', 'GET', undefined, cookie))).json();
-    expect(view.current.id).toBe('consent');
+    expect(view.current.id).toBe('role');
+    expect(view.history).toEqual([]);
+    expect(await prisma.consent.findMany({ where: { userId: user.id } })).toEqual([expect.objectContaining({ version: CONSENT_VERSION })]);
 
-    const second = await (await post({ fresh: true })).json();
+    const second = await (await post({ fresh: true, consent: CONSENT_VERSION })).json();
     expect(second.user.id).not.toBe(user.id);
     expect(second.user.name).toBe('Демо-гость 2');
   });
@@ -55,6 +64,10 @@ describe('api/demo/login: новый пользователь и сброс он
     expect(after.candidateId).toBe('demo-x');
     expect(await prisma.onboardingState.count({ where: { userId: user.id } })).toBe(0);
     expect((await prisma.candidate.findUniqueOrThrow({ where: { id: 'demo-x' } })).consentAt).not.toBeNull();
+    // Готовый демо-кандидат считается согласившимся: перезапуск онбординга начинается не с согласия.
+    expect(await prisma.consent.count({ where: { userId: user.id, version: CONSENT_VERSION } })).toBe(1);
+    const view = await (await onboardingView(jsonRequest('/api/onboarding', 'GET', undefined, cookieFrom(res)!))).json();
+    expect(view.current.id).not.toBe('consent');
   });
 
   it('restartUserId: не-демо аккаунт → 404', async () => {

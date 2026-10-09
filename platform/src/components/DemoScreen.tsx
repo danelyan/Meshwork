@@ -5,6 +5,9 @@ import { useEffect, useState } from 'react';
 
 import { type DemoCandidate, type DemoEmployer, demoEmployerLogin, demoFreshLogin, demoLogin, demoRestartOnboarding, getDemoAccounts } from '@/lib/api';
 
+import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
+
+import { ConsentCheck } from './auth/ConsentCheck';
 import { Container } from './shell/Container';
 import { PageTitle } from './shell/PageTitle';
 import styles from './AuthScreen.module.css';
@@ -44,6 +47,7 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
   const [accounts, setAccounts] = useState<{ candidates: DemoCandidate[]; employers: DemoEmployer[] } | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -122,12 +126,13 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
         <h2 id="demo-fresh" className={styles.blockTitle}>
           Новый пользователь — пройти онбординг
         </h2>
-        <p className={ui.hint}>Создаёт чистый аккаунт без роли: онбординг-чат начнётся с согласия, роль (кандидат или работодатель) спросит сам чат.</p>
+        <p className={ui.hint}>Создаёт чистый аккаунт без роли: онбординг-чат сразу спросит, кто ты — специалист или работодатель.</p>
+        <ConsentCheck checked={agreed} onChange={setAgreed} />
         <button
           type="button"
           className={`${ui.btn} ${ui.cta}`}
-          disabled={pending !== null}
-          onClick={() => void enter('fresh', demoFreshLogin, '/onboarding')}
+          disabled={pending !== null || !agreed}
+          onClick={() => void enter('fresh', () => demoFreshLogin(CONSENT_VERSION), '/onboarding')}
         >
           {pending === 'fresh' ? 'Создаю…' : 'Новый пользователь'}
         </button>

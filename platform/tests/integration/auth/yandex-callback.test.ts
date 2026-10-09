@@ -1,5 +1,6 @@
 import { GET as callback } from '@/app/api/auth/yandex/callback/route';
 import { GET as start } from '@/app/api/auth/yandex/route';
+import { CONSENT_VERSION } from '@/server/auth/consent';
 import { OAUTH_COOKIE } from '@/server/auth/yandex';
 import { resetEnvCache } from '@/server/env';
 import { parseSession } from '@/server/session';
@@ -29,9 +30,10 @@ const info = (extra: Record<string, unknown> = {}): Reply => ({
   body: { id: '1000123', login: 'ivan.p', client_id: 'cid', psuid: 'x', real_name: 'Иван Петров', default_email: 'Ivan.P@yandex.ru', ...extra },
 });
 
-/** Старт → (state, кука) → запрос callback с этой кукой. */
+/** Старт (галка согласия отмечена) → (state, кука) → запрос callback с этой кукой. */
 async function begin(next?: string) {
-  const res = start(new Request(`http://localhost:3000/api/auth/yandex${next ? `?next=${encodeURIComponent(next)}` : ''}`));
+  const qs = new URLSearchParams({ consent: CONSENT_VERSION, ...(next ? { next } : {}) });
+  const res = start(new Request(`http://localhost:3000/api/auth/yandex?${qs.toString()}`));
   expect(res.status).toBe(303);
   const loc = new URL(res.headers.get('location')!);
   const cookie = cookieFrom(res, OAUTH_COOKIE)!;
@@ -85,9 +87,20 @@ describe('вход через Яндекс ID (callback, fetch замокан)',
     expect(tokenBody.get('grant_type')).toBe('authorization_code');
     expect(tokenBody.get('code_verifier')).toMatch(/^[A-Za-z0-9_-]{43,128}$/);
     expect(new Headers(calls[1]!.init!.headers).get('authorization')).toBe('OAuth y0_secret_token');
+    // Галка согласия с /auth записана так же, как раньше шаг чата: версия и время.
+    expect(await prisma.consent.findMany({ where: { userId: user.id } })).toEqual([expect.objectContaining({ version: CONSENT_VERSION })]);
     // Токен Яндекса нигде в БД не лежит.
     const dump = JSON.stringify(await prisma.authAccount.findMany()) + JSON.stringify(await prisma.user.findMany());
     expect(dump).not.toContain('y0_secret_token');
+  });
+
+  it('без галки согласия (или с устаревшей версией) в Яндекс не ведём: /auth?error=consent_required, куки state нет', async () => {
+    for (const q of ['', '?consent=old-version', '?next=%2Fprofile']) {
+      const res = start(new Request(`http://localhost:3000/api/auth/yandex${q}`));
+      expect(res.headers.get('location')).toBe('http://localhost:3000/auth?error=consent_required');
+      expect(cookieFrom(res, OAUTH_COOKIE)).toBeUndefined();
+    }
+    expect(await prisma.user.count()).toBe(0);
   });
 
   it('неверный state или нет куки → /auth?error=state, обмена нет', async () => {

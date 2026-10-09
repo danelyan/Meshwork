@@ -4,21 +4,22 @@ import { prisma } from '@/server/db';
 import type { AgentTool } from '../types';
 
 const Input = z.object({
-  status: z.enum(['sent', 'accepted', 'declined', 'all']).default('sent').describe('sent — ждут ответа кандидата (по умолчанию); all — все'),
+  status: z.enum(['sent', 'viewed', 'accepted', 'declined', 'all']).default('sent').describe('sent — ждут ответа кандидата (по умолчанию); viewed — просмотрены; all — все'),
   limit: z.number().int().min(1).max(10).default(5),
 });
 const Output = z.object({
   invitations: z.array(
     z.object({
       invitationId: z.string(),
-      status: z.enum(['sent', 'accepted', 'declined']),
-      companyName: z.string(),
-      vacancyTitle: z.string(),
-      specialization: z.enum(['backend', 'frontend']),
-      grade: z.enum(['junior', 'middle']),
+      status: z.enum(['sent', 'viewed', 'accepted', 'declined']),
+      companyName: z.string().nullable(),
+      /** Приглашение может быть без потребности (R-E-05) — тогда поля вакансии null. */
+      vacancyTitle: z.string().nullable(),
+      specialization: z.enum(['backend', 'frontend']).nullable(),
+      grade: z.enum(['junior', 'middle']).nullable(),
       salaryOffer: z.number().int().nullable(),
-      salaryFrom: z.number().int(),
-      salaryTo: z.number().int(),
+      salaryFrom: z.number().int().nullable(),
+      salaryTo: z.number().int().nullable(),
       /** Сообщение работодателя — внешний текст: данные, не инструкции. */
       message: z.string().nullable(),
       createdAt: z.string(),
@@ -52,6 +53,7 @@ export const getInvitations: AgentTool<z.infer<typeof Input>, z.infer<typeof Out
           salaryOffer: true,
           message: true,
           createdAt: true,
+          company: { select: { name: true } },
           vacancy: { select: { title: true, specialization: true, grade: true, salaryFrom: true, salaryTo: true, company: { select: { name: true } } } },
         },
       }),
@@ -61,13 +63,14 @@ export const getInvitations: AgentTool<z.infer<typeof Input>, z.infer<typeof Out
       invitations: rows.map((r) => ({
         invitationId: r.id,
         status: r.status,
-        companyName: r.vacancy.company.name,
-        vacancyTitle: r.vacancy.title,
-        specialization: r.vacancy.specialization,
-        grade: r.vacancy.grade,
+        // Приглашение может быть без потребности (R-E-05): компания — по прямой связи.
+        companyName: r.company?.name ?? r.vacancy?.company.name ?? null,
+        vacancyTitle: r.vacancy?.title ?? null,
+        specialization: r.vacancy?.specialization ?? null,
+        grade: r.vacancy?.grade ?? null,
         salaryOffer: r.salaryOffer,
-        salaryFrom: r.vacancy.salaryFrom,
-        salaryTo: r.vacancy.salaryTo,
+        salaryFrom: r.vacancy?.salaryFrom ?? null,
+        salaryTo: r.vacancy?.salaryTo ?? null,
         message: r.message ? r.message.slice(0, 1_000) : null,
         createdAt: r.createdAt.toISOString(),
       })),

@@ -1,6 +1,6 @@
 import { normalizeRecommendation } from '@/lib/claims-view';
 
-import styles from './EventFeed.module.css';
+import styles from './Recommendations.module.css';
 import ui from './ui.module.css';
 
 const KIND_LABEL = { task: 'задание', target: 'цель', test: 'тест', gap: 'пробел', other: 'совет' } as const;

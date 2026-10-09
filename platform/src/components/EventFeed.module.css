@@ -23,9 +23,3 @@
   .agent { margin-top: 48px; }
   .agent::before { left: 0; top: -48px; }
 }
-.recs { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); list-style: none; margin: 0; padding: 0; }
-.rec { display: grid; gap: 6px; align-content: start; }
-.recTitle { font-weight: 500; line-height: 1.5; margin: 0; }
-.recMeta { font-size: var(--fs-sm); color: var(--accent-soft); }
-.recReason { font-size: var(--fs); color: var(--text-soft); line-height: 1.7; margin: 0; }
-.missing { margin: 0; padding-left: 18px; font-size: var(--fs-sm); color: var(--muted); }

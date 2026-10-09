@@ -176,7 +176,7 @@ export function ProfilePage() {
     <div className={styles.page}>
       <aside className={styles.side} aria-label="Кандидат">
         <div className={styles.me}>
-          <span className={styles.avatar} aria-hidden="true">
+          <span className={`${ui.avatar} ${styles.avatarFrame}`} aria-hidden="true">
             <svg viewBox="0 0 44 44" width="100%" height="100%">
               <circle cx="22" cy="16" r="8" fill="currentColor" />
               <path d="M6 44c1.5-10 8-15 16-15s14.5 5 16 15z" fill="currentColor" />
@@ -275,12 +275,12 @@ export function ProfilePage() {
                 </p>
                 <p className={styles.quote}>{v.reason}</p>
                 <div
-                  className={styles.meter}
+                  className={ui.meter}
                   role="img"
                   aria-label={`Закрыто ${v.covered} из ${v.total} требований`}
                 >
                   {Array.from({ length: v.total }, (_, i) => (
-                    <i key={i} className={i < v.covered ? styles.meterOn : undefined} />
+                    <i key={i} className={i < v.covered ? ui.meterOn : undefined} />
                   ))}
                 </div>
               </li>

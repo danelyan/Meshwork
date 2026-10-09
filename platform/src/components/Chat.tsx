@@ -216,7 +216,7 @@ export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: Rest
         </details>
         <div className={styles.send}>
           <div className={styles.row} style={{ flex: 1 }}>
-            <label htmlFor={textId} className={ui.label}>
+            <label htmlFor={textId} className={`${ui.label} ${styles.msgLabel}`}>
               Сообщение
             </label>
             <textarea

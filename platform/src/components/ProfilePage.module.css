@@ -3,7 +3,7 @@
 .pageSingle { max-width: 760px; margin: 0 auto; padding: 24px var(--page-pad) 48px; display: grid; gap: 16px; }
 .side { position: sticky; top: 96px; max-height: calc(100svh - 96px); overflow: auto; display: flex; flex-direction: column; gap: 16px; padding: 24px 18px 20px; background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-right: 1px solid var(--glass-border); }
 .me { display: flex; gap: 12px; align-items: center; }
-.avatar { flex: none; width: 56px; height: 56px; background: var(--silhouette); color: var(--ink); border: 2px solid #fff; display: block; }
+.avatarFrame { border: 2px solid #fff; }
 .name { font-size: 20px; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 4px; overflow-wrap: anywhere; }
 .sub { color: var(--muted); font-size: var(--fs); line-height: 1.55; margin: 0; }
 .facts { display: grid; grid-template-columns: 1fr 1fr; margin: 0; border-top: 1.5px solid var(--ink); }
@@ -24,10 +24,6 @@
 .meta { font-size: var(--fs-sm); color: var(--muted); display: flex; gap: 6px 16px; flex-wrap: wrap; overflow-wrap: anywhere; }
 .quote { font-size: var(--fs); color: var(--text-soft); border-left: 1.5px solid var(--ink); padding-left: 12px; overflow-wrap: anywhere; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-/* покрытие вакансии: по квадрату на требование, закрытые синие (реальные covered/total) */
-.meter { display: flex; gap: 3px; flex-wrap: wrap; }
-.meter i { width: 14px; height: 6px; background: var(--line); display: block; }
-.meter i.meterOn { background: var(--blue); }
 .gaps { width: 100%; border-collapse: collapse; font-size: var(--fs); }
 .gaps th, .gaps td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .gaps th { color: var(--muted); font-family: var(--mono); font-weight: 600; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -52,6 +48,4 @@
   .main { padding: 0; max-width: none; }
   .noPrint { display: none !important; }
   .printOnly { display: block; }
-  .meter i { background: #ccc; }
-  .meter i.meterOn { background: #000; }
 }

@@ -8,3 +8,4 @@
 .styleBtn { padding: 8px 14px; border: 1px solid var(--line, #d9d9e3); background: transparent; cursor: pointer; font: inherit; }
 .styleBtn[aria-checked='true'] { background: var(--blue); color: #fff; border-color: var(--blue); }
 .hint { margin: 0; font-size: var(--fs-sm); opacity: 0.75; }
+.ctrl textarea { font: inherit; padding: 8px; max-width: 560px; }

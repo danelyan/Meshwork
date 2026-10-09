@@ -5,20 +5,35 @@ import { useRef, useState } from 'react';
 
 import { DEFAULT_HEAD_STYLE, HEAD_STYLES, type HeadStyle } from '@/components/avatar/head-styles';
 import { MarkFallback } from '@/components/avatar/MarkFallback';
-import type { VoiceStatus } from '@/components/avatar/voice';
+import { CompanionVoiceProvider, useCompanionVoice, type VoiceStatus } from '@/components/avatar/voice';
 
 import styles from './preview.module.css';
 
 const Head3D = dynamic(() => import('@/components/avatar/Head3D'), { ssr: false });
 
+const SAMPLE = 'Привет! Я компаньон платформы ФСП. Помогу пройти тест, собрать профиль и попасть в подборку работодателя.';
+
 export function AvatarPreview() {
+  return (
+    <CompanionVoiceProvider>
+      <Preview />
+    </CompanionVoiceProvider>
+  );
+}
+
+function Preview() {
+  const voice = useCompanionVoice();
+  const [text, setText] = useState(SAMPLE);
   const [mouth, setMouth] = useState(0);
   const [status, setStatus] = useState<VoiceStatus>('speaking');
   const [style, setStyle] = useState<HeadStyle>(DEFAULT_HEAD_STYLE);
   const info = HEAD_STYLES.find((s) => s.id === style);
   const level = useRef(0);
   level.current = mouth;
-  const getLevel = () => level.current;
+  // пока звучит озвучка — громкость и состояние берём у голоса, иначе — ручные ползунок и select
+  const live = voice?.status !== 'idle';
+  const getLevel = live ? voice!.getLevel : () => level.current;
+  const shown = live ? voice!.status : status;
   return (
     <main className={styles.page}>
       <h1>Аватар компаньона</h1>
@@ -39,11 +54,24 @@ export function AvatarPreview() {
       <p className={styles.hint}>{info?.hint}</p>
       <div className={styles.row}>
         <div className={styles.big}>
-          <Head3D status={status} getLevel={getLevel} style={style} />
+          <Head3D status={shown} getLevel={getLevel} style={style} />
         </div>
         <div className={styles.small}>
-          <MarkFallback status={status} getLevel={getLevel} />
+          <MarkFallback status={shown} getLevel={getLevel} />
         </div>
+      </div>
+      <label className={styles.ctrl}>
+        Текст для озвучки (SpeechKit, как в чате)
+        <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} />
+      </label>
+      <div className={styles.row}>
+        <button type="button" className={styles.styleBtn} onClick={() => voice?.replay(text)} disabled={!text.trim()}>
+          Проговорить
+        </button>
+        <button type="button" className={styles.styleBtn} onClick={() => voice?.stop()} disabled={!live}>
+          Остановить
+        </button>
+        <span className={styles.hint}>{voice?.notice ?? (live ? voice?.status : '')}</span>
       </div>
       <label className={styles.ctrl}>
         Громкость (RMS) {mouth.toFixed(2)}

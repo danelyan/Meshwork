@@ -116,6 +116,7 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
   metal: { color: new Color(SILVER), metalness: 0.55, roughness: 0.36 },
   grid: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
+  loops: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   chrome: { color: new Color('#8e939c'), metalness: 0.95, roughness: 0.24 },
   hologram: { color: new Color('#0b0b16'), metalness: 0, roughness: 1 },
   wire: { color: new Color('#6b717b'), metalness: 0.6, roughness: 0.35, wireframe: true },
@@ -188,7 +189,19 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
           return max(a.x, a.y) * (1.0 - smoothstep(0.3, 0.7, max(fw.x, fw.y)));
         }
         // тёмная основа + светлые нити, как на референсе брендбука (нити ловят свет как металл)
-        const vec3 FSP_DARK = vec3(0.025, 0.028, 0.04);`,
+        const vec3 FSP_DARK = vec3(0.025, 0.028, 0.04);
+        // кольца и спицы вокруг центра черты лица (глаз, рот): колец на единицу радиуса — как
+        // меридианов на обхват головы (≈ 1.57 ед.), спиц столько, чтобы клетка была квадратной на r ≈ 0.06
+        float fspLoop(vec2 q, float u) {
+          float r = length(q);
+          float ang = atan(q.y, q.x) / 6.2831853 + 0.5;
+          return fspLine(vec2(ang * u * 0.24, r * u * 0.64));
+        }
+        // вес зоны черты лица: 1 у центра, 0 на радиусе R — по расстоянию во фронтальной плоскости XY
+        // (глубина не учитывается: нос и скулы выступают, а нити должны огибать черту целиком)
+        float fspZone(vec2 p, vec2 c, float R) {
+          return smoothstep(R, R * 0.45, distance(p, c));
+        }`,
       )
       .replace(
         '#include <color_fragment>',
@@ -205,6 +218,23 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
           // клетка «широта-долгота» по положению вершины
           float line = fspLine(vGridUv * uGrid);
           diffuseColor.rgb = mix(FSP_DARK, diffuseColor.rgb, line);
+        }
+        #endif
+        #ifdef FSP_LOOPS
+        {
+          // как на оригинале: на черепе параллели и меридианы, у глаз и рта нити идут кольцами
+          // и спицами (петли квад-топологии); центры черт сняты с модели (public/avatar/README.md)
+          vec3 p = vModelPos;
+          float u = uGrid.x;
+          float base = fspLine(vGridUv * uGrid);
+          vec2 eyeL = vec2(-0.115, 0.63), eyeR = vec2(0.115, 0.63), mouth = vec2(0.0, 0.37);
+          float wl = fspZone(p.xy, eyeL, 0.16), wr = fspZone(p.xy, eyeR, 0.16), wm = fspZone(p.xy, mouth, 0.2);
+          float wsum = wl + wr + wm;
+          float loops = wsum > 0.001
+            ? (wl * fspLoop(p.xy - eyeL, u) + wr * fspLoop(p.xy - eyeR, u) + wm * fspLoop(p.xy - mouth, u)) / wsum
+            : 0.0;
+          float line = mix(base, loops, clamp(wsum, 0.0, 1.0) * smoothstep(0.0, 0.2, p.z));
+          diffuseColor.rgb = mix(FSP_DARK, diffuseColor.rgb, clamp(line, 0.0, 1.0));
         }
         #endif
         #ifdef FSP_WEAVE

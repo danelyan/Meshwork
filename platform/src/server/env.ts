@@ -55,6 +55,8 @@ export const envSchema = z
     TTS_SPEED: z.coerce.number().min(0.5).max(2).default(1.1),
     /** mp3 декодирует любой браузер; oggopus меньше, но Safari до 17 его не декодирует. */
     TTS_FORMAT: z.enum(['mp3', 'oggopus']).default('mp3'),
+    /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
+    WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
 
     /** Вход через Яндекс ID (oauth.yandex.ru). Не заданы → кнопка входа неактивна, работает демо-вход. */
     YANDEX_CLIENT_ID: optionalString,

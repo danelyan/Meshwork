@@ -81,6 +81,12 @@ Integration-тесты: перед прогоном `globalSetup` применя
 `LLM_PROVIDER=yandex` — `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`; при
 `openai-chat` — `OPENAI_CHAT_BASE_URL`, `OPENAI_CHAT_API_KEY`, `OPENAI_CHAT_MODEL`.
 
+## Дебаг-панель (только localhost)
+
+Плавающая кнопка `dev` справа внизу (`Ctrl+Shift+D`, Esc - закрыть): кто я, путь, быстрые действия - «Начать диалог заново», «Очистить онбординг» (с галкой «и ответы профиля»), «Очистить аккаунт» (с подтверждением), «Новый пользователь», «Сбросить попытки теста», «Войти как…», «Выйти». Действия - `POST /api/dev/<действие>` над пользователем из сессии (`src/app/api/dev/`, логика - `src/server/devtools/`).
+
+Гейт `isDevHost()` (`src/server/devtools/guard.ts`): включено, только если `NODE_ENV` не `production`, `Host` - `localhost`, `127.0.0.1` или `[::1]` (любой порт) и не задано `DEVTOOLS=false`. Иначе панель не монтируется (клиентский код не отдаётся), а все `/api/dev/*` отвечают 404. На стенде и проде панели нет независимо от хоста.
+
 ## Общие модули (foundation)
 
 - `src/server/db.ts` — `prisma`, один экземпляр на процесс.

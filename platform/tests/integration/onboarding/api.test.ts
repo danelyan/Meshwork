@@ -73,7 +73,7 @@ describe('API онбординга', () => {
     await act(c, { action: 'answer', stepId: 'specialization', value: 'frontend' });
     const g = await view(c);
     expect(g.current.id).toBe('grade');
-    expect(g.current.hint).toMatch(/Подтвердите утверждения/);
+    expect(g.current.hint).toMatch(/Подтверди утверждения/);
     await act(c, { action: 'answer', stepId: 'grade', value: 'middle' });
     const st = await act(c, { action: 'answer', stepId: 'stack', value: ['react', 'TypeScript', 'Svelte'] });
     expect(st.json.current.id).toBe('formats');

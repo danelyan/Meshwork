@@ -104,6 +104,15 @@ describe('движок: переходы, пропуски, восстановл
     expect(p1.done).toBe(4);
   });
 
+  it('роль из аккаунта: пока согласие не дано, шаг роли не в ленте и не в прогрессе', () => {
+    const c = ctx({}, { role: 'candidate' });
+    expect(currentStep(c, { stepId: null, answers: c.answers, skipped: [] }).id).toBe('consent');
+    expect(historyOf(c, { stepId: null, answers: c.answers, skipped: [] }, step('consent'))).toEqual([]);
+    expect(progress(c, []).done).toBe(0);
+    const c2 = ctx({}, { role: 'candidate', consent: true });
+    expect(progress(c2, []).done).toBe(2);
+  });
+
   it('лента — закрытые шаги без текущего', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
     const h = historyOf(c, { stepId: 'goal', answers: c.answers, skipped: [] }, step('goal'));

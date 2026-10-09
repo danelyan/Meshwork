@@ -67,18 +67,31 @@ export function currentStep(ctx: StepContext, state: EngineState): StepDef {
   return nextOpen(ctx, state.skipped, null);
 }
 
+/**
+ * Шаги, закрытые в порядке сценария. Шаг, закрытый только фактом из аккаунта
+ * (роль, компания), считается и показывается в ленте не раньше своей очереди —
+ * после первого реально открытого шага он «ещё не наступил».
+ */
+function passedSteps(ctx: StepContext, skipped: string[], layout: StepContext = ctx): StepDef[] {
+  const steps = visibleSteps(layout).filter((s) => s.kind !== 'summary');
+  const firstOpen = steps.findIndex((s) => !isClosed(s, ctx, skipped));
+  return steps.filter((s, i) => {
+    if (!isClosed(s, ctx, skipped)) return false;
+    const factOnly = !isAnswered(s, ctx.answers) && !skipped.includes(s.id);
+    return !factOnly || firstOpen === -1 || i < firstOpen;
+  });
+}
+
 export function progress(ctx: StepContext, skipped: string[]): { done: number; total: number } {
   // Пока роль не выбрана, длину считаем по сценарию кандидата: шкала не «прыгает» с 2 до 12.
   const probe = ctx.facts.role === 'pending' && !ctx.answers.role ? { ...ctx, answers: { ...ctx.answers, role: 'candidate' } } : ctx;
-  const steps = visibleSteps(probe).filter((s) => s.kind !== 'summary');
-  return { done: steps.filter((s) => isClosed(s, ctx, skipped)).length, total: steps.length };
+  const total = visibleSteps(probe).filter((s) => s.kind !== 'summary').length;
+  return { done: passedSteps(ctx, skipped, probe).length, total };
 }
 
 /** Видимые шаги, закрытые до текущего (лента чата). */
 export function historyOf(ctx: StepContext, state: EngineState, current: StepDef): StepDef[] {
-  const steps = visibleSteps(ctx).filter((s) => s.kind !== 'summary');
-  const closed = steps.filter((s) => isClosed(s, ctx, state.skipped));
-  return closed.filter((s) => s.id !== current.id);
+  return passedSteps(ctx, state.skipped).filter((s) => s.id !== current.id);
 }
 
 // --- проверка ответа ---
@@ -165,7 +178,7 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
         })
         .safeParse(value);
       if (!r.success) return fail('Некорректный список файлов и ссылок');
-      if (r.data.uploadIds.length + r.data.urls.length === 0) return fail('Приложите файл или ссылку — или пропустите шаг');
+      if (r.data.uploadIds.length + r.data.urls.length === 0) return fail('Приложи файл или ссылку — или пропустите шаг');
       return r.data;
     }
     case 'summary':

@@ -127,7 +127,7 @@
 
 Где используются сейчас: `Button` - шапка («Выйти»), `ProfilePage` («К консультанту», «Печать / PDF», «На страницу входа»); `Notice` - `ProfilePage` (ошибка загрузки). Остальное - в списке «к переводу».
 
-Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг — лента помощника на весь экран, см. «Лента чата»); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `AssistantChat`, `AssistantCandidateCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `IncomingInvitations`, `PrivacyToggle`, `RefinementHistory`, стили `Employer.module.css`). `Header` принимает `links` — навигацию роли. Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
+Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг — лента помощника на весь экран, см. «Лента чата»); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `IncomingInvitations`, `PrivacyToggle`, `RefinementHistory`, стили `Employer.module.css`). Шапка, подвал и колонка страницы — оболочка `components/shell` (см. «Оболочка»). Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
 
 ### К переводу на примитивы
 
@@ -141,7 +141,7 @@
 
 ### Лента чата
 
-Онбординг (`onboarding/OnboardingChat`), карьерный консультант (`Chat`, `EventFeed`) и помощник работодателя (`employer/AssistantChat`; выдача в сообщении — компактная `employer/AssistantCandidateCard` внутри `MessageCard`, черновик приглашения — открытая `InviteForm`) — одна сущность «помощник ФСП Карьеры» и один вид ленты. Примитивы — `platform/src/components/chat/Thread.tsx` (импорт `@/components/chat/Thread`: на macOS путь `components/chat` без файла совпадает с `Chat.tsx` по регистру), стили — `chat/thread.module.css`, появление — `chat/motion.ts`, автоскролл — `chat/scroll.ts`.
+Онбординг (`onboarding/OnboardingChat`) и карьерный консультант (`Chat`, `EventFeed`) — одна сущность «помощник ФСП Карьеры» и один вид ленты. Примитивы — `platform/src/components/chat/Thread.tsx` (импорт `@/components/chat/Thread`: на macOS путь `components/chat` без файла совпадает с `Chat.tsx` по регистру), стили — `chat/thread.module.css`, появление — `chat/motion.ts`, автоскролл — `chat/scroll.ts`.
 
 | Примитив | Назначение |
 |---|---|
@@ -158,6 +158,19 @@
 | `ProgressLine` | тонкая полоса прогресса под шапкой, без цифр на экране (`role="progressbar"`, число — в `aria-label`) |
 
 Состояния шага онбординга: реплика печатается → появляются интерактив (чипы / карточка / активное поле) → клик: интерактив исчезает, ответ сразу становится пузырём, под ним «печатает» до ответа сервера → следующая реплика. Ошибка сервера или проверки — реплика `Bubble tone="error"`, интерактив остаётся. Перезагрузка: история рисуется статично из `OnboardingView.history`, текущая реплика печатается заново, лента сразу прокручена к ней. Тап по пузырю — исключение из правила «интерактивное — только `<button>`»: это ускоритель, текст появляется и сам.
+
+### Оболочка
+
+Шапка, подвал и колонка страницы - один набор на весь сайт, `components/shell/`. Страница про них ничего не знает.
+
+- `app/layout.tsx` подключает `ShellFrame` один раз: ссылка «К содержимому», `SiteHeader`, страница, `SiteFooter`. Своих `Header` в `layout.tsx` групп нет.
+- `SiteHeader` (серверный) читает сессию и отдаёт клиентскому `HeaderBar` ссылки роли из `shell/nav.ts`: кандидат - Консультант / Профиль / Тест / Приглашения, работодатель - Потребности / Поиск по базе / Приглашения. Гость видит «Войти»; на главной (`/`) гостю добавляются якоря «Компании / Почему мы», всем - «№ 01 · осень 2026». Вошедший видит «Выйти» и плашку «Онбординг не завершён» (`OnboardingBanner`). Ссылки роли менять только в `nav.ts`.
+- Лэйаут не перерисовывается при клиентской навигации (Next.js 15), поэтому после входа и выхода нужен `router.refresh()`; экраны входа и `LogoutButton` его вызывают. Новый способ войти/выйти обязан делать то же.
+- Исключения: `/onboarding` без шапки и подвала (у чата своя полоса с `Brand` и «Настроить позже», список `BARE_PATHS` в `ShellFrame`); тест в процессе скрывает оболочку через `useBareShell(active)`. Другие страницы-исключения - добавить путь в `BARE_PATHS` или вызвать хук.
+- Клиентские файлы импортируют конкретные модули (`shell/Brand`, `shell/ShellFrame`), не `shell/index.ts`: иначе `SiteHeader` (`next/headers`) попадёт в клиентский бандл.
+- `Container size="text|default|wide"` - колонка 720 / 960 / 1120 px с полями `--page-pad`; `PageTitle` - кикер + h1 + лид. `Brand` - знак и «/карьера», везде один.
+
+Как добавить страницу: создать `app/<путь>/page.tsx` с корнем `<main id="main">`, внутри `Container` и `PageTitle`. Шапка и подвал появятся сами; ссылку в навигацию - в `shell/nav.ts`. Ошибку API и пустое состояние показывать через `Notice` (`tone="error"` / по умолчанию), а не сырым `ui.notice`.
 
 ## 6. Состояния
 

@@ -1,0 +1,44 @@
+import { z } from 'zod';
+
+import { TTS_MAX_CHARS, cleanForSpeech } from '@/lib/speech-text';
+import { getEnv } from '@/server/env';
+import { errors, withErrors } from '@/server/errors';
+import { getSession } from '@/server/session';
+import { TTS_CONTENT_TYPE, synthesizeYandex, ttsMode, ttsRateLimit } from '@/server/tts';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+/** Доступна ли озвучка аватару: yandex / off. */
+export const GET = withErrors(async () => Response.json({ mode: ttsMode(), maxChars: TTS_MAX_CHARS }));
+
+// Сырой текст до чистки может быть длиннее (markdown, ссылки) — режем после чистки.
+const Body = z.object({ text: z.string().min(1).max(TTS_MAX_CHARS * 4) });
+
+/**
+ * Текст ответа компаньона → аудио SpeechKit (mp3 по умолчанию). Только для вошедших, ≤ 1000 знаков
+ * после чистки markdown, лимит запросов на сессию. Аудио не хранится: ответ SpeechKit сразу уходит клиенту.
+ */
+export const POST = withErrors(async (req: Request) => {
+  const session = getSession(req);
+  if (!session) throw errors.unauthorized();
+  if (ttsMode() !== 'yandex') throw errors.badRequest('Озвучка выключена');
+  const parsed = Body.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) throw errors.badRequest('Нужен текст для озвучки');
+  const text = cleanForSpeech(parsed.data.text);
+  if (!text) throw errors.badRequest('Озвучивать нечего');
+  if (text.length > TTS_MAX_CHARS) throw errors.payloadTooLarge(`Для озвучки — не больше ${TTS_MAX_CHARS} знаков`);
+  const key = session.userId ?? session.candidateId ?? 'anon';
+  if (!ttsRateLimit(key, text.length)) throw errors.rateLimited('Слишком часто — озвучка передохнёт минуту');
+  const env = getEnv();
+  const audio = await synthesizeYandex(text, {
+    apiKey: env.YANDEX_API_KEY as string,
+    folderId: env.YANDEX_FOLDER_ID,
+    voice: env.TTS_VOICE,
+    emotion: env.TTS_EMOTION || undefined,
+    speed: env.TTS_SPEED,
+    format: env.TTS_FORMAT,
+    signal: req.signal,
+  });
+  return new Response(audio, { headers: { 'content-type': TTS_CONTENT_TYPE[env.TTS_FORMAT], 'cache-control': 'no-store' } });
+});

@@ -3,6 +3,7 @@ import { Golos_Text } from 'next/font/google';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 
+import { DevPanelGate } from '@/components/devtools/DevPanelGate';
 import { ShellFrame } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
 import { SiteHeader } from '@/components/shell/SiteHeader';
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ShellFrame header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
           {children}
         </ShellFrame>
+        <DevPanelGate />
       </body>
     </html>
   );

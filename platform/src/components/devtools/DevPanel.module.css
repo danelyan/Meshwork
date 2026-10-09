@@ -1,0 +1,31 @@
+/* Дебаг-панель (только localhost): плавающая кнопка и поповер. Токены - styles/tokens.css. */
+.root { position: fixed; right: 16px; bottom: 112px; z-index: 900; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-size: var(--fs); }
+.fab {
+  width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--ink); background: var(--ink); color: var(--on-ink); border-radius: 50%;
+  font-family: var(--mono); font-size: var(--fs-sm); font-weight: 700; cursor: pointer;
+  transition: background 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.fab:hover { background: var(--blue); border-color: var(--blue); }
+.fab:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.pop { width: min(320px, calc(100vw - 32px)); max-height: min(70vh, 560px); overflow-y: auto; display: grid; gap: 12px; padding: 14px; background: var(--glass-strong); border: 1px solid var(--border-strong); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); color: var(--ink); }
+.head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.who { display: grid; gap: 2px; font-size: var(--fs-sm); color: var(--text-soft); }
+.who strong { color: var(--ink); font-size: var(--fs); }
+.mono { font-family: var(--mono); font-size: var(--fs-xs); color: var(--muted); word-break: break-all; }
+.group { display: grid; gap: 6px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+.grow { flex: 1 1 100%; justify-content: flex-start; }
+.check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--text-soft); }
+.select { width: 100%; min-height: 36px; padding: 0 8px; background: var(--surface-input); border: 1px solid var(--border-input); color: var(--ink); font: inherit; }
+
+.confirm { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--danger-border); background: var(--surface-notice); }
+.confirmText { font-size: var(--fs); line-height: 1.5; }
+
+.toast { max-width: min(320px, calc(100vw - 32px)); padding: 8px 12px; background: var(--ink); color: var(--on-ink); font-size: var(--fs-sm); }
+.toastErr { background: var(--error); }
+
+@media (max-width: 640px) {
+  .root { bottom: 120px; }
+}

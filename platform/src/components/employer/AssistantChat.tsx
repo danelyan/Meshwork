@@ -36,6 +36,11 @@ export interface AssistantEmbedded {
   beforeSend?: () => Promise<void>;
 }
 
+/** Типы событий потока помощника (server/agent/employer/types.ts) — остальное парсер отбрасывает. */
+const EMPLOYER_EVENT_TYPES: ReadonlySet<EmployerAgentEvent['type']> = new Set([
+  'conversation', 'step', 'queue', 'ask', 'candidates', 'invitation_draft', 'need_draft', 'message', 'error', 'done',
+] as const);
+
 let seq = 0;
 const nextId = () => `e${++seq}`;
 
@@ -80,8 +85,8 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
         const stream = await openEmployerAssistantStream({ text: msg, conversationId: conversationRef.current }, ctrl.signal);
         const reader = stream.getReader();
         const decoder = new TextDecoder();
-        const parser = createSseParser();
-        const emit = (evs: unknown[]) => evs.forEach((e) => push(e as EmployerAgentEvent));
+        const parser = createSseParser<EmployerAgentEvent>(EMPLOYER_EVENT_TYPES);
+        const emit = (evs: EmployerAgentEvent[]) => evs.forEach(push);
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;

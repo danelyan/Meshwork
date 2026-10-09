@@ -15,7 +15,7 @@ const EVENT_TYPES = new Set<AgentEvent['type']>([
 ]);
 
 /** Событие агента из JSON-строки или null, если это мусор. */
-export function parseAgentEvent(json: string): AgentEvent | null {
+export function parseAgentEvent(json: string, types: ReadonlySet<string> = EVENT_TYPES): AgentEvent | null {
   let value: unknown;
   try {
     value = JSON.parse(json);
@@ -24,7 +24,7 @@ export function parseAgentEvent(json: string): AgentEvent | null {
   }
   if (!value || typeof value !== 'object') return null;
   const type = (value as { type?: unknown }).type;
-  if (typeof type !== 'string' || !EVENT_TYPES.has(type as AgentEvent['type'])) return null;
+  if (typeof type !== 'string' || !types.has(type)) return null;
   return value as AgentEvent;
 }
 
@@ -37,31 +37,32 @@ function frameData(frame: string): string | null {
   return parts.length ? parts.join('\n') : null;
 }
 
-export interface SseParser {
+export interface SseParser<E = AgentEvent> {
   /** Скормить очередной чанк; вернуть события из завершённых кадров. */
-  push(chunk: string): AgentEvent[];
+  push(chunk: string): E[];
   /** Конец потока: разобрать хвост без завершающей пустой строки. */
-  flush(): AgentEvent[];
+  flush(): E[];
 }
 
-export function createSseParser(): SseParser {
+/** `types` — допустимые типы событий (по умолчанию консультанта; помощник работодателя передаёт свои). */
+export function createSseParser<E = AgentEvent>(types: ReadonlySet<string> = EVENT_TYPES): SseParser<E> {
   let buffer = '';
 
-  function drain(final: boolean): AgentEvent[] {
-    const out: AgentEvent[] = [];
+  function drain(final: boolean): E[] {
+    const out: E[] = [];
     buffer = buffer.replace(/\r\n?/g, '\n');
     let idx: number;
     while ((idx = buffer.indexOf('\n\n')) !== -1) {
       const frame = buffer.slice(0, idx);
       buffer = buffer.slice(idx + 2);
       const data = frameData(frame);
-      const event = data === null ? null : parseAgentEvent(data);
-      if (event) out.push(event);
+      const event = data === null ? null : parseAgentEvent(data, types);
+      if (event) out.push(event as E);
     }
     if (final && buffer.trim()) {
       const data = frameData(buffer);
-      const event = data === null ? null : parseAgentEvent(data);
-      if (event) out.push(event);
+      const event = data === null ? null : parseAgentEvent(data, types);
+      if (event) out.push(event as E);
       buffer = '';
     }
     return out;

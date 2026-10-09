@@ -36,7 +36,7 @@ export function parseGrade(text: string): Grade | null {
 export function parseStack(text: string): string[] {
   const out: string[] = [];
   for (const w of STACK_WORDS) {
-    const esc = w.replace(/[.*+?^${}()|[\]\\#]/g, '\\$&');
+    const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     // «Go» — только отдельным словом латиницей, иначе ловит «Google», «good».
     if (new RegExp(`(^|[^\\p{L}\\d])${esc}($|[^\\p{L}\\d])`, 'iu').test(text)) out.push(w);
   }

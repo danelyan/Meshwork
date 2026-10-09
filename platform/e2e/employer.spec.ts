@@ -63,3 +63,24 @@ test('E-02: работодатель → подборка → приглашен
   await expect(page.getByText(POOL_TOP).first()).toBeVisible();
   await expect(page.getByText(/Приглашение принято. Контакты:/)).toBeVisible();
 });
+
+test('Помощник работодателя (демо без модели): подборка карточками → «Пригласить» → форма; имён нет', async ({ page }) => {
+  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/employer');
+  await page.getByRole('link', { name: 'Помощник' }).click();
+  await page.waitForURL('**/employer/assistant');
+  await page.getByLabel('Сообщение помощнику').fill('Подбери под мою потребность Backend Middle');
+  await page.getByRole('button', { name: 'Отправить' }).click();
+  const block = page.getByTestId('assistant-candidates').last();
+  await expect(block).toBeVisible();
+  const first = block.getByTestId('assistant-candidate').first();
+  await expect(first.getByRole('heading', { level: 3 })).toContainText(/Кандидат #[0-9A-F]{6}/);
+  // граница доверия: имени из пула нет ни в карточках, ни в ответе помощника
+  await expect(page.getByText(POOL_TOP)).toHaveCount(0);
+  await page.getByLabel('Сообщение помощнику').fill('Пригласи первого');
+  await page.getByRole('button', { name: 'Отправить' }).click();
+  const draft = page.getByTestId('assistant-invitation-draft').last();
+  await expect(draft).toBeVisible();
+  // открытое приглашение после основного сценария — тогда формы нет, есть пояснение
+  const blocked = await draft.getByText(/ещё не ответил|Лимит/).isVisible();
+  if (!blocked) await expect(draft.getByRole('button', { name: 'Отправить приглашение' })).toBeVisible();
+});

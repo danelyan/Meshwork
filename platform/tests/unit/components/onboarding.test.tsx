@@ -215,6 +215,27 @@ it('работодатель: консультант не подключаетс
   expect(screen.queryByLabelText('Сообщение')).toBeNull();
 });
 
+it('работодатель: та же лента продолжается помощником по подбору; «Открыть подборку» — переход, текст — ход помощника', async () => {
+  const enc = new TextEncoder();
+  const calls: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      calls.push(url);
+      if (url === '/api/auth/onboarding/complete') return new Response(JSON.stringify({ onboarded: true, next: '/employer' }), { status: 200, headers: { 'content-type': 'application/json' } });
+      const body = `data: ${JSON.stringify({ type: 'message', text: 'Под «Backend» нашлось 6' })}\n\ndata: {"type":"done"}\n\n`;
+      return new Response(new ReadableStream({ start: (c) => (c.enqueue(enc.encode(body)), c.close()) }), { status: 200 });
+    }),
+  );
+  render(<OnboardingChat initial={summaryView({ scenario: 'employer', role: 'employer' })} consentText={[]} consultant={{}} employerAssistant={{}} />);
+  expect(screen.getByText(/твой помощник по подбору/)).toBeDefined();
+  expect(screen.getByRole('button', { name: 'Открыть подборку' })).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: 'Подбери под потребность' }));
+  await waitFor(() => expect(screen.getByText('Под «Backend» нашлось 6')).toBeDefined());
+  expect(calls[0]).toBe('/api/auth/onboarding/complete');
+  expect(calls[1]).toBe('/api/employer/assistant/messages');
+});
+
 describe('появление реплики', () => {
   beforeEach(() => {
     vi.useFakeTimers();

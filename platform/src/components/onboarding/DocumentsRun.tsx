@@ -7,6 +7,7 @@ import type { CardClaim } from '@/lib/claims-view';
 import { createSseParser } from '@/lib/sse';
 import type { AgentEvent } from '@/server/agent/types';
 
+import { useCompanionVoice } from '../avatar/voice';
 import { applyAgentEvent } from '../chat/stream-items';
 
 import { FeedRows, type FeedItem } from '../EventFeed';
@@ -52,6 +53,9 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
   const lastRef = useRef<Sent | null>(null);
 
   useEffect(() => () => abortRef.current?.abort(), []);
+  const voice = useCompanionVoice();
+  const voiceRef = useRef(voice);
+  voiceRef.current = voice;
 
   const push = useCallback((event: AgentEvent) => {
     if (event.type === 'conversation') {
@@ -60,6 +64,7 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
       return;
     }
     if (!SHOWN.has(event.type)) return;
+    if (event.type === 'message') voiceRef.current?.speak(event.text);
     if (event.type === 'claims') setTotals((t) => ({ ...t, claims: t.claims + event.proposed.length }));
     setItems((p) => applyAgentEvent(p, event, nextId));
     // convRef/onConversation стабильны на время жизни онбординга

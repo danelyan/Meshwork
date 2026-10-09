@@ -21,6 +21,7 @@
 | Сетевой слой сборщика | `undici` 7 | Встроенный `fetch` не даёт указать, к какому IP подключаться. `undici` даёт свой `connect.lookup`: соединение идёт строго на адрес, прошедший проверку, поэтому подмена DNS между проверкой и запросом (DNS-rebinding) не сработает. Редиректы обрабатываются вручную, каждый хост проверяется заново |
 | PDF профиля | Печать из браузера; серверный PDF (Puppeteer) — при наличии времени | Без Chromium в контейнере по умолчанию |
 | Почта | Mailpit с веб-ящиком на демо | Письма подтверждения видны жюри без внешней доставки. Сервис поднят в Compose, но письма пока не отправляются: регистрации по email в платформе нет |
+| 3D-аватар и озвучка | three 0.186 + `@react-three/fiber` 9.8 (React 19); Yandex SpeechKit TTS v1 REST (`POST /api/tts`, голос `marina`, mp3) | Говорящая голова компаньона у ленты чата ([консультант](career-consultant.md#аватар-и-озвучка)). three/R3F грузятся лениво (`next/dynamic`, `ssr:false`) только при WebGL, без WebGL — SVG-знак. drei не нужен: голова процедурная, без загрузки GLB |
 | Тесты | Vitest 4 + Testing Library (модули, компоненты, API), Playwright 1.64 (сквозные сценарии) | Связка из официальной документации Next.js; async Server Components проверяются только сквозными тестами |
 | Запуск | Docker Compose: `app`, `db`, `mailpit`; на стенде — обратный прокси Caddy 2.11 с HTTPS (`docker-compose.prod.yml`) и автодеплой из GitHub Actions | Один `docker compose up`; Caddy сам получает и продлевает сертификат. [Развёртывание](deploy.md) |
 
@@ -60,12 +61,15 @@ Chat Completions: `LLM_PROVIDER=openai-chat`,
 
 Ресурсы Yandex Cloud: каталог `fsp-lct-2026` (`b1g8c7gaanu3tnh3475r`) в облаке
 `ai-sprints-cloud`; сервисный аккаунт `fsp-ai` с ролями
-`ai.languageModels.user`, `ai.speechkit-stt.user`, `ai.speechkit-tts.user` и `search-api.webSearch.user` (веб-поиск агента, Search API v2) на каталог; API-ключ
-`ajevat07l0fnmq9ts6oa` с областями `yc.ai.languageModels.execute`, `yc.ai.speechkitTts.execute` и
+`ai.languageModels.user`, `ai.speechkit-stt.user` и `search-api.webSearch.user` (веб-поиск агента, Search API v2) на каталог; API-ключ
+`aje12h96fjo6ucffir20` с областями `yc.ai.languageModels.execute` и
 `yc.ai.speechkitStt.execute`. Секрет — только в `platform/.env`. Тот же ключ
-включает голос через SpeechKit (`STT_PROVIDER=auto`).
+включает голос через SpeechKit (`STT_PROVIDER=auto`) и озвучку аватара
+(`TTS_PROVIDER=auto`; ключу нужна область `yc.ai.speechkitTts.execute`, роль
+`ai.speechkit-tts.user` — в ключе лейна проверено ответом 200).
 
 ## Не решено
 
+- Свой домен стенда: сервер и HTTPS есть ([развёртывание](deploy.md)), адрес пока служебный, вида `<IP>.sslip.io`.
 - Лицензия приложения — ТЗ требует открытую.
 - Голос и аватар интервью — отдельное решение после замера.

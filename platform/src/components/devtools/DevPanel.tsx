@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { COMPANION_SAY_EVENT } from '@/components/avatar/events';
 import { Button, Kicker } from '@/components/ui';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
@@ -234,6 +235,19 @@ export function DevPanel() {
                   onClick={() => run('reset-test-attempts')}
                 >
                   Сбросить попытки теста
+                </Button>
+                <Button
+                  size="sm"
+                  className={styles.grow}
+                  disabled={!signedIn}
+                  title="Аватар в чате произносит тестовую фразу (на странице консультанта или онбординга)"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent(COMPANION_SAY_EVENT, { detail: { text: 'Привет! Я компаньон ФСП Карьеры. Так звучит озвучка ответов: текст синтезирует SpeechKit, а рот двигается по громкости.' } }),
+                    )
+                  }
+                >
+                  Озвучить тест
                 </Button>
                 <Button
                   size="sm"

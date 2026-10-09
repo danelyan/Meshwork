@@ -7,6 +7,7 @@ import { createSseParser } from '@/lib/sse';
 import type { RestoredItem } from '@/server/agent/restore';
 import type { AgentEvent } from '@/server/agent/types';
 
+import { useCompanionVoice } from '../avatar/voice';
 import { applyAgentEvent } from '../chat/stream-items';
 import { FeedRows, type FeedItem } from '../EventFeed';
 
@@ -41,6 +42,9 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
   const [asking, setAsking] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortRef.current?.abort(), []);
+  const voice = useCompanionVoice();
+  const voiceRef = useRef(voice);
+  voiceRef.current = voice;
 
   const push = useCallback((stepId: string, item: FeedItem) => setByStep((p) => ({ ...p, [stepId]: [...(p[stepId] ?? []), item] })), []);
 
@@ -52,6 +56,7 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
         return;
       }
       if (!SHOWN.has(event.type)) return;
+      if (event.type === 'message') voiceRef.current?.speak(event.text);
       setByStep((p) => ({ ...p, [stepId]: applyAgentEvent(p[stepId] ?? [], event, nextId) as FeedItem[] }));
     },
     [conversation, onConversation],

@@ -85,9 +85,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: var(--paper);
-  background-image: var(--glow), linear-gradient(var(--landing-grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--landing-grid-line) 1px, transparent 1px);
-  background-size: auto, 48px 48px, 48px 48px;
+  background: var(--glow), var(--paper);
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font);
@@ -140,3 +138,11 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --landing-header-h: 96px;
 }
 @media (max-width: 640px) { :root { --landing-header-h: 68px; } }
+
+/* аватар компаньона: тёмная сцена серебристой головы-сетки (брендбук ФСП, docs/research/19) */
+:root {
+  --avatar-stage: #15171c;
+  --avatar-stage-glow: radial-gradient(120% 90% at 30% 20%, rgba(200, 210, 230, 0.16), transparent 60%);
+  --avatar-stage-line: rgba(255, 255, 255, 0.08);
+  --avatar-silver: #c4c9d2;
+}

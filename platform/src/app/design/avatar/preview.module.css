@@ -1,0 +1,6 @@
+.page { display: grid; gap: 16px; padding: 24px var(--page-pad); }
+.row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.big, .small { position: relative; background: var(--avatar-stage-glow), var(--avatar-stage); }
+.big { width: min(560px, 100%); aspect-ratio: 1; }
+.small { width: 168px; aspect-ratio: 1; }
+.ctrl { display: grid; gap: 6px; max-width: 320px; font-size: var(--fs-sm); }

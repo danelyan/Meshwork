@@ -26,3 +26,5 @@
   .feed { padding-top: 16px; }
     }
 .end { scroll-margin-bottom: 140px; }
+/* аватар компаньона: на широком экране закреплён слева под шапкой онбординга (60px) */
+.stage { --dock-top: 84px; }

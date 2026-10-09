@@ -1,0 +1,55 @@
+/* Аватар компаньона у ленты чата. Только токены (tokens.css, блок «аватар компаньона»). */
+.stage { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+.screen {
+  position: relative;
+  flex: none;
+  width: var(--avatar-size, 168px);
+  aspect-ratio: 1;
+  background: var(--avatar-stage-glow), var(--avatar-stage);
+  border: 1px solid var(--avatar-stage-line);
+  overflow: hidden;
+}
+.screen canvas { display: block; }
+
+.controls { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; background: var(--surface-ghost); border: 1px solid var(--border-soft); font-size: var(--fs-sm); font-weight: 600; }
+.toggle[aria-pressed='true'] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.toggle svg { width: 16px; height: 16px; flex: none; }
+.state { min-height: 1.4em; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.notice { margin: 0; font-size: var(--fs-sm); color: var(--muted); max-width: 32ch; }
+.stop { padding: 0; background: none; border: 0; font-size: var(--fs-sm); color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+/* запасной знак без WebGL */
+.mark { position: absolute; inset: 0; display: grid; place-items: center; --level: 0; }
+.mark img { width: 52%; filter: grayscale(1) invert(1) brightness(0.85); transform: scale(calc(1 + var(--level) * 0.14)); transition: transform 60ms linear; }
+.mark[data-status='thinking'] img, .mark[data-status='loading'] img { animation: breathe 1.6s var(--ease) infinite alternate; }
+@keyframes breathe { from { opacity: 0.55; transform: scale(0.96); } to { opacity: 1; transform: scale(1.03); } }
+
+/* «думает»: тонкая полоса сканирования поверх сцены */
+.screen[data-status='thinking']::after, .screen[data-status='loading']::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: var(--avatar-silver);
+  opacity: 0.5;
+  animation: scan 1.4s var(--ease) infinite;
+}
+@keyframes scan { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* кнопка «озвучить» у сообщения */
+.replay { display: flex; width: fit-content; align-items: center; gap: 6px; margin-top: 6px; padding: 2px 0; background: none; border: 0; font-size: var(--fs-xs); color: var(--muted); }
+.replay:hover { color: var(--ink); }
+.replay svg { width: 14px; height: 14px; }
+
+@media (max-width: 640px) {
+  .stage { gap: 10px; }
+  .screen { width: var(--avatar-size-sm, 96px); }
+}
+
+/* широкий экран: аватар закреплён слева от колонки ленты (720px) и не уезжает при прокрутке */
+@media (min-width: 1180px) {
+  .dock { position: fixed; z-index: 5; top: var(--dock-top, calc(var(--landing-header-h) + 24px)); left: calc(50% - 360px - 212px); width: 184px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .dock .screen { width: 184px; }
+}

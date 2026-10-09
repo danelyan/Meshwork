@@ -8,6 +8,8 @@ import type { EmployerAgentEvent, InvitationDraft, NeedDraft } from '@/server/ag
 import type { EmployerRestoredChat } from '@/server/agent/employer/restore';
 
 import chatStyles from '../Chat.module.css';
+import { type AgentItem, applyAgentEvent } from '../chat/stream-items';
+import { StreamingText } from '../chat/StreamingText';
 import { AssistantRow, Bubble, Composer, MessageCard, QuickReplies, type QuickReply, Reply, Thread, Typing, UserBubble } from '../chat/Thread';
 import { useStickToBottom } from '../chat/scroll';
 import { Button, Notice, VisuallyHidden } from '../ui';
@@ -17,7 +19,7 @@ import styles from './Employer.module.css';
 import { InviteForm } from './InviteForm';
 import { GRADE_LABEL, SPEC_LABEL } from './labels';
 
-type Item = { id: string; role: 'user'; text: string } | { id: string; role: 'agent'; event: EmployerAgentEvent };
+type Item = { id: string; role: 'user'; text: string } | AgentItem<EmployerAgentEvent>;
 
 const GREETING =
   'Я помощник работодателя. Подберу кандидатов под потребность и объясню, почему каждый на своём месте, найду по базе с фильтрами, подготовлю приглашение или черновик потребности. Отправляешь и сохраняешь ты — кнопками.';
@@ -38,7 +40,7 @@ export interface AssistantEmbedded {
 
 /** Типы событий потока помощника (server/agent/employer/types.ts) — остальное парсер отбрасывает. */
 const EMPLOYER_EVENT_TYPES: ReadonlySet<EmployerAgentEvent['type']> = new Set([
-  'conversation', 'step', 'queue', 'ask', 'candidates', 'invitation_draft', 'need_draft', 'message', 'error', 'done',
+  'conversation', 'step', 'queue', 'ask', 'candidates', 'invitation_draft', 'need_draft', 'message', 'delta', 'discard', 'error', 'done',
 ] as const);
 
 let seq = 0;
@@ -53,6 +55,7 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
   const [items, setItems] = useState<Item[]>(initial?.items ?? []);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const lastSent = useRef<string | null>(null);
   const conversationRef = useRef<string | undefined>(initial?.conversationId ?? undefined);
   const abortRef = useRef<AbortController | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -69,7 +72,7 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
       return;
     }
     if (event.type === 'done') return;
-    setItems((p) => [...p, { id: nextId(), role: 'agent', event }]);
+    setItems((p) => applyAgentEvent(p, event, nextId));
   }, []);
 
   const send = useCallback(
@@ -77,6 +80,7 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
       const msg = message.trim();
       if (!msg || busy) return;
       setBusy(true);
+      lastSent.current = msg;
       setItems((p) => [...p, { id: nextId(), role: 'user', text: msg }]);
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -107,6 +111,10 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
 
   const started = items.some((it) => it.role === 'user');
   const suggestions = embedded?.suggestions ?? EMPLOYER_SUGGESTIONS;
+  const lastUser = items.findLastIndex((it) => it.role === 'user');
+  const replying = items.slice(lastUser + 1).some((it) => it.role === 'agent' && it.event.type === 'message');
+  const lastItem = items.at(-1);
+  const failed = !busy && lastItem?.role === 'agent' && lastItem.event.type === 'error' && lastSent.current !== null;
   const lastAsk = (() => {
     const last = items.at(-1);
     return last?.role === 'agent' && last.event.type === 'ask' ? last.event : null;
@@ -139,10 +147,15 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
             />
           )}
         </AssistantRow>
-        {items.map((it) => (it.role === 'user' ? <UserBubble key={it.id}>{it.text}</UserBubble> : <EventRow key={it.id} event={it.event} />))}
-        {busy && (
+        {items.map((it) => (it.role === 'user' ? <UserBubble key={it.id}>{it.text}</UserBubble> : <EventRow key={it.id} item={it} />))}
+        {busy && !replying && (
           <AssistantRow>
             <Typing />
+          </AssistantRow>
+        )}
+        {failed && (
+          <AssistantRow mark={false}>
+            <QuickReplies label="Что сделать" items={[{ value: 'retry', label: 'Повторить' }]} onPick={() => void send(lastSent.current ?? '')} />
           </AssistantRow>
         )}
         {lastAsk?.options && !busy && (
@@ -165,7 +178,7 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
           void send(v);
         }}
         placeholder="Подбери под мою потребность Backend Middle"
-        disabled={busy}
+        sending={busy}
         multiline
         maxLength={4000}
         hint="Enter — отправить, Shift+Enter — новая строка"
@@ -174,12 +187,15 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
   );
 }
 
-function EventRow({ event }: { event: EmployerAgentEvent }) {
+function EventRow({ item }: { item: AgentItem<EmployerAgentEvent> }) {
+  const event = item.event;
   switch (event.type) {
     case 'message':
       return (
         <AssistantRow>
-          <Reply lines={event.text.split('\n').map((t) => ({ text: t }))} />
+          <Bubble>
+            <StreamingText text={event.text} streaming={item.streaming} animate={Boolean(item.live)} />
+          </Bubble>
         </AssistantRow>
       );
     case 'step':

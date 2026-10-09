@@ -5,18 +5,12 @@
 .intro h1 { margin: 0; font-size: clamp(24px, 3vw, 32px); line-height: 1.1; letter-spacing: -0.03em; }
 .working { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; }
 .working > :first-child { grid-column: 2; justify-self: start; }
-.row { display: grid; gap: 6px; }
-.details { border: 1px solid var(--line); border-radius: 0; padding: 8px 12px; background: var(--surface-ghost); }
-.details summary { cursor: pointer; font-family: var(--mono); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink); }
-.details > div { display: grid; gap: 12px; margin-top: 12px; }
 .warn { color: var(--error); font-size: var(--fs); margin: 0; }
 .simple { display: grid; gap: 8px; }
 .simple a { text-decoration: underline; text-underline-offset: 4px; }
 .demoNote { margin: 0; font-family: var(--mono); font-size: var(--fs-sm); color: var(--muted); border: 1px solid var(--border-faint); border-radius: 0; padding: 4px 10px; width: fit-content; max-width: 100%; }
-.demoResume { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
 @media (max-width: 640px) {
   .chat { padding-top: 16px; }
   .working { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; }
-  .details > div { margin-top: 8px; gap: 10px; max-height: 40svh; overflow-y: auto; overscroll-behavior: contain; }
-}
+  }
 .end { scroll-margin-bottom: 140px; }

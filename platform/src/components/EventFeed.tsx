@@ -7,6 +7,8 @@ import type { ClaimAction } from '@/lib/api';
 import { type CardClaim, normalizeClaim } from '@/lib/claims-view';
 import type { AgentEvent } from '@/server/agent/types';
 
+import type { AgentItem } from './chat/stream-items';
+import { StreamingText } from './chat/StreamingText';
 import { AssistantRow, Bubble, QuickReplies, Thread, UserBubble } from './chat/Thread';
 import { ClaimCard } from './ClaimCard';
 import styles from './EventFeed.module.css';
@@ -15,7 +17,7 @@ import ui from './ui.module.css';
 
 export type FeedItem =
   | { id: string; role: 'user'; text: string; files?: string[] }
-  | { id: string; role: 'agent'; event: AgentEvent };
+  | ({ role: 'agent' } & AgentItem<AgentEvent>);
 
 export interface EventFeedProps {
   items: FeedItem[];
@@ -31,12 +33,14 @@ export interface EventFeedProps {
   /** Строки в начале ленты (приветствие помощника). */
   lead?: ReactNode;
   label?: string;
+  /** «Повторить» под последней ошибкой (повтор последнего сообщения). */
+  onRetry?: () => void;
 }
 
 type Block =
   | { kind: 'user'; item: Extract<FeedItem, { role: 'user' }> }
   | { kind: 'steps'; id: string; texts: string[] }
-  | { kind: 'event'; id: string; event: AgentEvent };
+  | { kind: 'event'; id: string; event: AgentEvent; live?: boolean; streaming?: boolean };
 
 /** Подряд идущие `step` склеиваем в один список; `queue` оставляем только последний; `done` не рисуем. */
 export function toBlocks(items: FeedItem[]): Block[] {
@@ -55,7 +59,7 @@ export function toBlocks(items: FeedItem[]): Block[] {
       continue;
     }
     const ev = it.event;
-    if (ev.type === 'done') continue;
+    if (ev.type === 'done' || ev.type === 'delta' || ev.type === 'discard') continue;
     if (ev.type === 'queue' && it.id !== lastQueue) continue;
     if (ev.type === 'step') {
       const prev = blocks[blocks.length - 1];
@@ -63,7 +67,7 @@ export function toBlocks(items: FeedItem[]): Block[] {
       else blocks.push({ kind: 'steps', id: it.id, texts: [ev.text] });
       continue;
     }
-    blocks.push({ kind: 'event', id: it.id, event: ev });
+    blocks.push({ kind: 'event', id: it.id, event: ev, live: it.live, streaming: it.streaming });
   }
   return blocks;
 }
@@ -192,8 +196,9 @@ function AskBlock({ event, onAnswer, locked }: { event: Extract<AgentEvent, { ty
 }
 
 /** Лента консультанта на общих примитивах components/chat (тот же вид, что у онбординга). */
-export function EventFeed({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, lead, label = 'Переписка с консультантом' }: EventFeedProps) {
+export function EventFeed({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, lead, label = 'Переписка с консультантом', onRetry }: EventFeedProps) {
   const blocks = toBlocks(items);
+  const lastBlock = blocks.at(-1);
   return (
     <Thread label={label}>
       {lead}
@@ -226,7 +231,11 @@ export function EventFeed({ items, claimOverrides = {}, onClaimAction, onConfirm
                 {ev.position > 0 ? `Ты в очереди: ${ev.position}-й. Ответ придёт сам.` : 'Запрос обрабатывается.'}
               </p>
             )}
-            {ev.type === 'message' && <Bubble>{ev.text}</Bubble>}
+            {ev.type === 'message' && (
+              <Bubble>
+                <StreamingText text={ev.text} streaming={b.streaming} animate={Boolean(b.live)} />
+              </Bubble>
+            )}
             {ev.type === 'claims' && <ClaimsBlock event={ev} overrides={claimOverrides} onAction={onClaimAction} onConfirmAll={onConfirmAll} />}
             {ev.type === 'ask' && <AskBlock event={ev} onAnswer={onAnswer} locked={locked} />}
             {ev.type === 'recommendations' && <Recommendations items={ev.items} />}
@@ -235,6 +244,9 @@ export function EventFeed({ items, claimOverrides = {}, onClaimAction, onConfirm
                 {ev.message}
                 {ev.code ? <span className={ui.muted}> ({ev.code})</span> : null}
               </Bubble>
+            )}
+            {ev.type === 'error' && onRetry && b === lastBlock && (
+              <QuickReplies label="Что сделать" items={[{ value: 'retry', label: 'Повторить' }]} disabled={locked} onPick={onRetry} />
             )}
           </AssistantRow>
         );

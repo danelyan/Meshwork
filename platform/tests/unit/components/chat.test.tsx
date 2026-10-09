@@ -85,15 +85,78 @@ describe('Chat', () => {
     expect(body.conversationId).toBe('conv-old');
   });
 
-  it('невалидная ссылка не отправляется', () => {
+  it('ссылки распознаются прямо в тексте: отдельного поля нет, «Node.js» — не ссылка', async () => {
+    const fetchMock = vi.fn(async () => new Response(streamOf([frame({ type: 'done' })]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Chat />);
+    expect(screen.queryByLabelText(/Ссылки/)).toBeNull();
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'Пишу на Node.js, код — github.com/demo-ryabinin.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body.urls).toEqual(['https://github.com/demo-ryabinin']);
+    // композер очищается сразу, пузырь пользователя — в ленте
+    expect((screen.getByLabelText('Сообщение') as HTMLTextAreaElement).value).toBe('');
+    expect(screen.getByText('Пишу на Node.js, код — github.com/demo-ryabinin.')).toBeDefined();
+  });
+
+  it('дельты складываются в одну реплику, message с тем же id фиксирует текст, discard убирает показанное', async () => {
+    const full =
+      frame({ type: 'delta', id: 'x', text: 'черновик ' }) +
+      frame({ type: 'discard', id: 'x' }) +
+      frame({ type: 'delta', id: 'm1', text: 'Нашёл ' }) +
+      frame({ type: 'delta', id: 'm1', text: 'три навыка' }) +
+      frame({ type: 'message', id: 'm1', text: 'Нашёл три навыка.' }) +
+      frame({ type: 'done' });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(streamOf([full.slice(0, 50), full.slice(50)]), { status: 200 })));
+    render(<Chat />);
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'что нашёл?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(screen.getByText('Нашёл три навыка.')).toBeDefined());
+    expect(screen.queryByText(/черновик/)).toBeNull();
+    expect(screen.getAllByTestId('streaming-text')).toHaveLength(1);
+  });
+
+  it('ошибка — реплика помощника с «Повторить», повтор шлёт то же сообщение', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () => new Response(streamOf([frame({ type: 'error', code: 'internal', message: 'Сбой' }) + frame({ type: 'done' })]), { status: 200 }))
+      .mockImplementationOnce(async () => new Response(streamOf([frame({ type: 'message', text: 'Теперь получилось' }) + frame({ type: 'done' })]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Chat />);
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'привет' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(screen.getByText('Сбой')).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    await waitFor(() => expect(screen.getByText('Теперь получилось')).toBeDefined());
+    const body = (i: number) => JSON.parse((fetchMock.mock.calls[i] as unknown as [string, RequestInit])[1].body as string);
+    expect(body(1).text).toBe('привет');
+  });
+
+  it('файл скрепкой: чип с именем, отправка ждёт загрузку и уходит с uploadIds', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/uploads') return new Response(JSON.stringify({ uploadId: 'up1', deduplicated: false, doc: { title: 'cv.pdf' } }), { status: 201, headers: { 'content-type': 'application/json' } });
+      return new Response(streamOf([frame({ type: 'done' })]), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { container } = render(<Chat />);
+    const input = container.querySelector('input[type=file]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(['%PDF-1.4'], 'cv.pdf', { type: 'application/pdf' })] } });
+    expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toContain('cv.pdf');
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toMatch(/КБ/));
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const body = JSON.parse((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ uploadIds: ['up1'], text: 'Вот мои материалы.' });
+    expect(screen.getByRole('list', { name: 'Приложенные файлы' }).textContent).toContain('cv.pdf');
+  });
+
+  it('вставка файла из буфера и неверный тип — чип с ошибкой, без загрузки', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     render(<Chat />);
-    fireEvent.click(screen.getByText('Файлы и ссылки'));
-    fireEvent.change(screen.getByLabelText(/Ссылки/), { target: { value: 'слово' } });
-    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'привет' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
-    expect(screen.getByRole('alert').textContent).toContain('слово');
+    fireEvent.paste(screen.getByLabelText('Сообщение'), { clipboardData: { files: [new File(['x'], 'photo.png', { type: 'image/png' })] } });
+    expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toContain('только PDF и DOCX');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -105,12 +168,12 @@ describe('Chat', () => {
     await waitFor(() => expect(screen.getByText('Упрощённый режим.')).toBeDefined());
   });
 
-  it('пустое сообщение не отправляется', () => {
+  it('пустое сообщение не отправляется: кнопка неактивна', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     render(<Chat />);
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
-    expect(screen.getByRole('alert')).toBeDefined();
+    expect((screen.getByRole('button', { name: 'Отправить' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.keyDown(screen.getByLabelText('Сообщение'), { key: 'Enter' });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -172,14 +235,14 @@ describe('Chat: демо', () => {
       }),
     );
     render(<Chat demo={{ noLlm: true, resume: { fileName: 'demo-1.pdf', link: 'https://github.com/demo-ryabinin' } }} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Загрузить демо-резюме' }));
-    await waitFor(() => expect(screen.getByText(/загружен/)).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: /Загрузить демо-резюме/ }));
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toMatch(/demo-1\.pdf.*КБ/));
     expect(calls).toEqual(['GET /api/demo/resume', 'POST /api/uploads']);
-    expect((screen.getByLabelText(/Ссылки/) as HTMLTextAreaElement).value).toBe('https://github.com/demo-ryabinin');
+    expect((screen.getByLabelText('Сообщение') as HTMLTextAreaElement).value).toBe('https://github.com/demo-ryabinin');
   });
 
   it('нет demo.resume → кнопки нет', () => {
     render(<Chat demo={{ noLlm: true, resume: null }} />);
-    expect(screen.queryByRole('button', { name: 'Загрузить демо-резюме' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Загрузить демо-резюме/ })).toBeNull();
   });
 });

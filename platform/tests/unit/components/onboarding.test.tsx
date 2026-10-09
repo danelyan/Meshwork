@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-import { CHAR_MS, typingMs } from '@/components/chat/motion';
+import { typingMs } from '@/components/chat/motion';
 import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
@@ -238,19 +238,21 @@ it('работодатель: та же лента продолжается по
 
 describe('появление реплики', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    // Раскрытие идёт в requestAnimationFrame: подделываем и его, и performance.now.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance', 'Date'] });
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
   });
 
-  it('сначала «печатает», затем текст посимвольно; чипы — только после реплики', () => {
+  it('сначала «печатает», затем текст раскрывается по словам; чипы — только после реплики', () => {
     stubFetch();
     render(<OnboardingChat initial={makeView({ options: OPTS, lead: '', question: 'Кто ты?' })} consentText={[]} />);
     expect(screen.getAllByTestId('typing')).toHaveLength(1);
     expect(screen.queryByTestId('quick-replies')).toBeNull();
     act(() => vi.advanceTimersByTime(typingMs('Кто ты?'.length)));
     expect(screen.queryByTestId('typing')).toBeNull();
-    act(() => vi.advanceTimersByTime(CHAR_MS * 3));
-    expect(question()).toBe('Кто');
+    act(() => vi.advanceTimersByTime(32));
+    expect(question()?.trim()).toBe('Кто');
+    expect(screen.queryByTestId('quick-replies')).toBeNull();
     act(() => vi.advanceTimersByTime(1000));
     expect(question()).toBe('Кто ты?');
     expect(screen.getByTestId('quick-replies')).toBeDefined();
@@ -259,7 +261,9 @@ describe('появление реплики', () => {
   it('тап по реплике показывает её целиком', () => {
     stubFetch();
     render(<OnboardingChat initial={makeView({ options: OPTS, lead: '', question: 'Длинный вопрос про направление' })} consentText={[]} />);
-    act(() => vi.advanceTimersByTime(700 + CHAR_MS * 2));
+    act(() => vi.advanceTimersByTime(typingMs('Длинный вопрос про направление'.length)));
+    act(() => vi.advanceTimersByTime(80));
+    expect(screen.queryByTestId('quick-replies')).toBeNull();
     fireEvent.click(document.getElementById('ob-q')!);
     expect(question()).toBe('Длинный вопрос про направление');
     expect(screen.getByTestId('quick-replies')).toBeDefined();

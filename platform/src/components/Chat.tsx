@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { type ClaimAction, claimAction, confirmClaimsBatchApi, fetchDemoResume, openConsultantStream, parseUrls, uploadFile } from '@/lib/api';
+import { type ClaimAction, claimAction, confirmClaimsBatchApi, fetchDemoResume, openConsultantStream } from '@/lib/api';
+import { extractUrls } from '@/lib/links';
 import type { CardClaim } from '@/lib/claims-view';
 import { createSseParser } from '@/lib/sse';
 import type { AgentEvent } from '@/server/agent/types';
@@ -11,15 +12,17 @@ import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 
 import styles from './Chat.module.css';
-import { AssistantRow, Composer, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
+import { useAttachments } from './chat/attachments';
+import { Composer } from './chat/Composer';
+import { applyAgentEvent } from './chat/stream-items';
+import { AssistantRow, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
 import { useStickToBottom } from './chat/scroll';
 import { EventFeed, type FeedItem } from './EventFeed';
-import { type UploadedFile, Uploader } from './Uploader';
 import { VisuallyHidden } from './ui';
 import ui from './ui.module.css';
 
 const GREETING =
-  'Пришли резюме или ссылки — GitHub, Codeforces, статьи, портфолио. Можно всё сразу. Я найду в них утверждения о твоих навыках, покажу цитаты и спрошу, всё ли верно. Категорию (специализацию и грейд) даёт только тест.';
+  'Пришли резюме или ссылки — прикрепи файл скрепкой, перетащи его в ленту или просто вставь ссылку на GitHub, Codeforces, статьи, портфолио. Я найду в них утверждения о твоих навыках, покажу цитаты и спрошу, всё ли верно. Категорию (специализацию и грейд) даёт только тест.';
 
 /** Приветствие после онбординга: та же лента, помощник становится консультантом. */
 const CONTINUE_GREETING =
@@ -47,16 +50,15 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
   const [items, setItems] = useState<FeedItem[]>(initial?.items ?? []);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [text, setText] = useState('');
-  const [urlsText, setUrlsText] = useState('');
-  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const att = useAttachments();
   const [busy, setBusy] = useState(false);
+  const lastSent = useRef<{ message: string; uploadIds: string[]; urls: string[]; fileNames: string[] } | null>(null);
   const [simplified, setSimplified] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // Разговор создаёт сервер на первом ходе (событие conversation); дальше шлём его id.
   const conversationRef = useRef<string | undefined>(initial?.conversationId ?? undefined);
   const endRef = useRef<HTMLDivElement>(null);
-  const urlsId = useId();
 
   const rootRef = useRef<HTMLDivElement>(null);
   // Внутри онбординга лентой и автоскроллом управляет OnboardingChat.
@@ -71,14 +73,16 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
       conversationRef.current = event.id;
       return;
     }
-    setItems((p) => [...p, { id: nextId(), role: 'agent', event }]);
+    if (event.type === 'done') return;
+    setItems((p) => applyAgentEvent(p, event, nextId));
     if (event.type === 'error' && SIMPLIFIED_CODES.has(event.code)) setSimplified(true);
   }, []);
 
   const send = useCallback(
     async (message: string, uploadIds: string[], urls: string[], fileNames: string[]) => {
       setBusy(true);
-      setItems((p) => [...p, { id: nextId(), role: 'user', text: message, files: [...fileNames, ...urls] }]);
+      lastSent.current = { message, uploadIds, urls, fileNames };
+      setItems((p) => [...p, { id: nextId(), role: 'user', text: message, files: fileNames }]);
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       try {
@@ -109,44 +113,38 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
   async function onSubmit() {
     if (busy) return;
     setFormError(null);
-    const { urls, invalid } = parseUrls(urlsText);
-    if (invalid.length) {
-      setFormError(`Не похоже на ссылку: ${invalid.join(', ')}`);
-      return;
-    }
-    if (files.some((f) => f.status === 'uploading')) {
+    if (att.uploading) {
       setFormError('Дождись окончания загрузки файлов.');
       return;
     }
-    const done = files.filter((f) => f.status === 'done' && f.id);
-    const message = text.trim() || (done.length || urls.length ? 'Вот мои материалы.' : '');
+    const urls = extractUrls(text);
+    const done = att.ready;
+    const message = text.trim() || (done.length ? 'Вот мои материалы.' : '');
     if (!message) {
-      setFormError('Напиши сообщение или приложи резюме и ссылки.');
+      setFormError('Напиши сообщение или приложи резюме.');
       return;
     }
-    const uploadIds = done.map((f) => f.id as string);
-    const names = done.map((f) => f.name);
     setText('');
-    setUrlsText('');
-    setFiles([]);
-    await send(message, uploadIds, urls, names);
+    att.clear();
+    await send(message, done.map((f) => f.id), urls, done.map((f) => f.name));
   }
 
   async function loadDemoResume() {
     if (!demo?.resume) return;
     const { fileName, link } = demo.resume;
-    const key = `demo-${fileName}`;
     setFormError(null);
-    setFiles((p) => (p.some((f) => f.key === key) ? p : [...p, { key, name: fileName, status: 'uploading' }]));
-    setUrlsText((t) => (t.includes(link) ? t : t ? `${t}\n${link}` : link));
+    setText((t) => (t.includes(link) ? t : t ? `${t} ${link}` : link));
     try {
-      const r = await uploadFile(await fetchDemoResume(fileName));
-      setFiles((p) => p.map((f) => (f.key === key ? { ...f, status: 'done', id: r.id } : f)));
+      att.add([await fetchDemoResume(fileName)]);
     } catch (e) {
-      const error = e instanceof Error ? e.message : 'Не удалось загрузить демо-резюме.';
-      setFiles((p) => p.map((f) => (f.key === key ? { ...f, status: 'error', error } : f)));
+      setFormError(e instanceof Error ? e.message : 'Не удалось загрузить демо-резюме.');
     }
   }
+
+  const retry = () => {
+    const l = lastSent.current;
+    if (l && !busy) void send(l.message, l.uploadIds, l.urls, l.fileNames);
+  };
 
   const onClaimAction = useCallback(async (claim: CardClaim, action: ClaimAction, statement?: string) => {
     await claimAction(claim.id, action, statement);
@@ -175,14 +173,25 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
     [],
   );
 
+  const started = items.some((it) => it.role === 'user');
+  const demoChip: QuickReply[] = demo?.resume ? [{ value: 'demo-resume', label: 'Загрузить демо-резюме', note: `${demo.resume.fileName} и ссылка` }] : [];
+  const suggestions = [...(embedded?.suggestions ?? []), ...demoChip];
   const greeting = (
     <AssistantRow key="greeting" testId="chat-greeting">
       <Reply lines={[{ text: embedded ? CONTINUE_GREETING : GREETING }]} animate={Boolean(embedded) && items.length === 0} />
-      {embedded?.suggestions && embedded.suggestions.length > 0 && !items.some((it) => it.role === 'user') && (
-        <QuickReplies label="Что дальше" items={embedded.suggestions} disabled={busy} onPick={(v) => embedded.onSuggestion?.(v)} />
+      {suggestions.length > 0 && !started && (
+        <QuickReplies
+          label="Что дальше"
+          items={suggestions}
+          disabled={busy}
+          onPick={(v) => (v === 'demo-resume' ? void loadDemoResume() : embedded?.onSuggestion?.(v))}
+        />
       )}
     </AssistantRow>
   );
+  // «Печатает» — пока в этом ходе не началась реплика (дальше её видно по стриму).
+  const lastUser = items.findLastIndex((it) => it.role === 'user');
+  const replying = items.slice(lastUser + 1).some((it) => it.role === 'agent' && it.event.type === 'message');
 
   return (
     <div ref={rootRef} className={embedded ? styles.embedded : styles.chat}>
@@ -219,16 +228,17 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
         onClaimAction={onClaimAction}
         onConfirmAll={onConfirmAll}
         onAnswer={(t) => void send(t, [], [], [])}
+        onRetry={retry}
         locked={busy}
       />
-      {busy && (
+      {busy && !replying && (
         <div className={styles.working}>
           <Typing />
-          <VisuallyHidden role="status" aria-live="polite">
-            Консультант работает…
-          </VisuallyHidden>
         </div>
       )}
+      <VisuallyHidden role="status" aria-live="polite">
+        {busy ? 'Консультант работает…' : ''}
+      </VisuallyHidden>
       <div ref={endRef} className={styles.end} />
 
       <Composer
@@ -236,35 +246,14 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
         value={text}
         onChange={setText}
         onSubmit={() => void onSubmit()}
-        placeholder="Собери мне профиль"
-        disabled={busy}
+        placeholder="Напиши, прикрепи резюме или вставь ссылку"
+        sending={busy}
         multiline
-        allowEmpty
+        maxLength={8000}
+        attachments={{ files: att.files, onAdd: att.add, onRemove: att.remove }}
         hint="Enter — отправить, Shift+Enter — новая строка"
         top={
           <>
-            <details className={styles.details} open={items.length === 0 && !embedded}>
-              <summary>Файлы и ссылки</summary>
-              <div>
-                {demo?.resume && (
-                  <div className={styles.demoResume}>
-                    <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => void loadDemoResume()} disabled={busy}>
-                      Загрузить демо-резюме
-                    </button>
-                    <span className={ui.muted}>
-                      Подставит {demo.resume.fileName} и ссылку {demo.resume.link} — файлы искать не нужно.
-                    </span>
-                  </div>
-                )}
-                <Uploader files={files} onChange={(u) => setFiles(u)} disabled={busy} />
-                <div className={styles.row}>
-                  <label htmlFor={urlsId} className={ui.label}>
-                    Ссылки (GitHub, Codeforces, статьи, портфолио) — через пробел или с новой строки
-                  </label>
-                  <textarea id={urlsId} value={urlsText} onChange={(e) => setUrlsText(e.target.value)} rows={2} placeholder="github.com/name" disabled={busy} />
-                </div>
-              </div>
-            </details>
             {formError && (
               <p className={styles.warn} role="alert">
                 {formError}

@@ -1,10 +1,11 @@
 'use client';
 
-import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useId, useRef } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 
-import { Button, Chip, Skeleton, VisuallyHidden, cx } from '../ui';
+import { Chip, Skeleton, VisuallyHidden, cx } from '../ui';
 
-import { useTypewriter } from './motion';
+import { useReplyPhase } from './motion';
+import { renderReveal, useSmoothReveal } from './StreamingText';
 import styles from './thread.module.css';
 
 /**
@@ -69,9 +70,10 @@ export interface ReplyLine {
 }
 
 /**
- * Реплика помощника с появлением: «печатает» 400–700 мс → посимвольно (короткие) → целиком.
- * Тап по реплике показывает её сразу; prefers-reduced-motion — без анимации.
- * `extra` (детали в пузыре) и `onDone` — только когда текст показан целиком.
+ * Реплика помощника с появлением: «печатает» 400–700 мс → плавное раскрытие по словам
+ * (тот же движок, что у стрима, StreamingText) → целиком. Тап по реплике показывает её сразу;
+ * prefers-reduced-motion — без анимации. `extra` (детали в пузыре) и `onDone` — только когда
+ * текст показан целиком.
  */
 export function Reply({
   lines,
@@ -85,33 +87,63 @@ export function Reply({
   extra?: ReactNode;
 }) {
   const visible = lines.filter((l) => l.text);
-  const total = visible.reduce((n, l) => n + l.text.length, 0);
-  const { phase, shown, finish } = useTypewriter(total, animate);
+  const full = visible.map((l) => l.text).join('');
+  const { phase, finish } = useReplyPhase(full.length, animate);
+  if (phase === 'typing') return <Typing onClick={finish} />;
+  return <ReplyBubble lines={visible} full={full} animate={phase === 'writing'} onFinish={finish} onDone={onDone} extra={extra} />;
+}
+
+function ReplyBubble({
+  lines,
+  full,
+  animate,
+  onFinish,
+  onDone,
+  extra,
+}: {
+  lines: ReplyLine[];
+  full: string;
+  animate: boolean;
+  onFinish: () => void;
+  onDone?: () => void;
+  extra?: ReactNode;
+}) {
+  const reveal = useSmoothReveal(full, { animate, paced: true });
+  const writing = reveal.active;
   const doneCb = useRef(onDone);
   doneCb.current = onDone;
+  const fired = useRef(false);
   useEffect(() => {
-    if (phase === 'done') doneCb.current?.();
-  }, [phase]);
+    if (reveal.done && !fired.current) {
+      fired.current = true;
+      doneCb.current?.();
+    }
+  }, [reveal.done]);
 
-  if (phase === 'typing') return <Typing onClick={finish} />;
-
-  let left = shown;
-  const writing = phase === 'writing';
+  const now = typeof performance === 'undefined' ? 0 : performance.now();
+  let offset = 0;
   return (
-    <Bubble onClick={writing ? finish : undefined}>
-      {writing && <VisuallyHidden>{visible.map((l) => l.text).join(' ')}</VisuallyHidden>}
-      {visible.map((l, i) => {
-        const part = l.text.slice(0, Math.max(0, left));
-        left -= l.text.length;
-        if (writing && !part) return null;
-        const last = writing && left <= 0 && part.length > 0 && left > -l.text.length;
+    <Bubble onClick={writing ? onFinish : undefined}>
+      {writing && <VisuallyHidden>{lines.map((l) => l.text).join(' ')}</VisuallyHidden>}
+      {lines.map((l, i) => {
+        const from = offset;
+        offset += l.text.length;
+        if (!writing) {
+          return (
+            <p key={i} id={l.id} className={cx(l.secondary && styles.secondary)}>
+              {l.text}
+            </p>
+          );
+        }
+        if (reveal.shown <= from) return null;
+        const last = reveal.shown < offset || i === lines.length - 1;
         return (
-          <p key={i} id={l.id} className={cx(l.secondary && styles.secondary, last && styles.caret)} aria-hidden={writing || undefined}>
-            {part}
+          <p key={i} id={l.id} className={cx(l.secondary && styles.secondary, last && styles.caret)} aria-hidden>
+            {renderReveal(full, from, offset, reveal, now)}
           </p>
         );
       })}
-      {phase === 'done' && extra}
+      {reveal.done && extra}
     </Bubble>
   );
 }
@@ -253,89 +285,8 @@ export function DoneLink({ children = 'Готово', disabled, onClick }: { chi
   );
 }
 
-/**
- * Поле ввода внизу ленты: Enter отправляет (Shift+Enter — перенос в многострочном),
- * `aside` — тихие ссылки слева под полем («Пропустить»), `hint` — справа.
- */
-export function Composer({
-  value,
-  onChange,
-  onSubmit,
-  label,
-  placeholder,
-  disabled,
-  multiline,
-  maxLength,
-  inputMode,
-  sendLabel = 'Отправить',
-  aside,
-  hint,
-  top,
-  inputRef,
-  allowEmpty,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  onSubmit: () => void;
-  label: string;
-  placeholder?: string;
-  disabled?: boolean;
-  multiline?: boolean;
-  maxLength?: number;
-  inputMode?: 'numeric' | 'text';
-  sendLabel?: string;
-  aside?: ReactNode;
-  hint?: ReactNode;
-  /** Над полем: вложения, ошибки. */
-  top?: ReactNode;
-  inputRef?: React.Ref<HTMLTextAreaElement>;
-  /** Кнопка активна и при пустом поле (у консультанта можно отправить одни вложения). */
-  allowEmpty?: boolean;
-}) {
-  const id = useId();
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!disabled) onSubmit();
-  }
-  function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
-    if (multiline && e.shiftKey) return;
-    e.preventDefault();
-    if (!disabled) onSubmit();
-  }
-  return (
-    <form className={styles.composer} onSubmit={submit} aria-label="Новое сообщение" data-testid="composer">
-      {top}
-      <div className={styles.composerRow}>
-        <VisuallyHidden>
-          <label htmlFor={id}>{label}</label>
-        </VisuallyHidden>
-        <textarea
-          id={id}
-          ref={inputRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={onKey}
-          rows={multiline ? 2 : 1}
-          placeholder={placeholder}
-          disabled={disabled}
-          maxLength={maxLength}
-          inputMode={inputMode}
-          autoComplete="off"
-        />
-        <Button type="submit" variant="cta" disabled={disabled || (!allowEmpty && !value.trim())}>
-          {sendLabel}
-        </Button>
-      </div>
-      {(aside || hint) && (
-        <div className={styles.composerMeta}>
-          <span>{aside}</span>
-          {hint && <span className={styles.composerHint}>{hint}</span>}
-        </div>
-      )}
-    </form>
-  );
-}
+/** Композер — отдельный модуль (вложения, drag-n-drop, голос); реэкспорт для старых импортов. */
+export { Composer, type ComposerProps } from './Composer';
 
 /** Тихая ссылка-действие рядом с полем ввода («Пропустить»). */
 export function QuietAction({ children, onClick, disabled }: { children: ReactNode; onClick: () => void; disabled?: boolean }) {

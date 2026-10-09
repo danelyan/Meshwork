@@ -109,7 +109,9 @@ Route handlers (/api/*): проверка подписанной куки, Zod, 
 | `POST /api/demo/login` `{ restartUserId }` / `{ restartCandidateId }` | `/demo` → «пройти онбординг заново» | сбрасывает `OnboardingState` и `onboardedAt` демо-аккаунта (профиль, роль, согласие не трогает), логинит, ведёт на `/onboarding` |
 | `DELETE /api/demo/login` | шапка | сбрасывает куку |
 | `POST /api/uploads` (multipart `file`, `kind`) | чат | `{ uploadId, deduplicated, doc: { title, lines, pages, flags, preview } }`; ≤ 5 МБ (415, 413, 422 на ошибки) |
-| `POST /api/consultant/messages` `{ conversationId?, text, uploadIds?, urls? }` | чат | поток SSE: `conversation`, `step`, `queue`, `claims`, `ask`, `recommendations`, `message`, `error`, `done`; второй ход в том же разговоре — 409 `busy` |
+| `POST /api/consultant/messages` `{ conversationId?, text, uploadIds?, urls? }` | чат | поток SSE: `conversation`, `step`, `queue`, `claims`, `ask`, `recommendations`, `delta`, `discard`, `message`, `error`, `done` (см. «События SSE» ниже); второй ход в том же разговоре — 409 `busy` |
+| `GET /api/stt` | композер | `{ mode: 'yandex' \| 'browser' \| 'off', sampleRate, maxBytes }` — режим голосового ввода (env `STT_PROVIDER`); тот же режим — в `<body data-stt>` |
+| `POST /api/stt` (тело — LPCM 16 бит моно 16 кГц, `audio/l16`) | композер | `{ text }` через Yandex SpeechKit v1; только вошедшим; ≤ 1 МБ (≈ 30 с, иначе 413); аудио не хранится; режим не `yandex` — 400 |
 | `GET /api/consultant/conversations` | чат | список разговоров кандидата |
 | `GET /api/consultant/conversations/:id` | чат | история (только реплики пользователя и ассистента) |
 | `POST /api/claims/:id/confirm` · `/edit` `{ statement }` · `/reject` | карточка утверждения | утверждение; правка меняет только формулировку (3–300 символов); отклонённое не оживает (409) |
@@ -217,3 +219,15 @@ Route handlers (/api/*): проверка подписанной куки, Zod, 
 **Приватность** (R-E-07, R-C-16) решает сервер: до принятия приглашения этой компании — псевдоним «Кандидат #XXXXXX» (sha256 от id), специализация, категория, утверждения формулировкой каталога с уровнем, отметка ФСП; имя, почта, цитаты и `sourceRef` не уходят. После `accepted` — имя и почта (служебный `@users.invalid` — «почта не указана»). Кандидат видит только свои приглашения; чужое — 404.
 
 **Приглашения.** `sent → viewed` (кандидат открыл страницу) `→ accepted | declined`. Потребность необязательна (R-E-05), зарплата и описание — обязательны. Одно открытое приглашение компании кандидату; лимит — 20 за скользящие сутки на компанию (предложение), проверка под `pg_advisory_xact_lock` компании.
+
+## События SSE консультанта и помощника работодателя
+
+Один кадр — `data: <json>\n\n`. Реплика агента приходит **стримом** (решение владельца 09.10, «как в Кодзаводе»):
+
+| Событие | Смысл | Клиент |
+|---|---|---|
+| `delta { id, text }` | очередной кусок реплики `id` по мере генерации | дописывает реплику `id` (или заводит новую) и раскрывает плавно (`chat/StreamingText`) |
+| `discard { id }` | показанный текст `id` — не ответ: модель ушла в вызов инструментов | убирает реплику `id` |
+| `message { id?, text }` | итог реплики, **авторитетный** | заменяет накопленное по `id`; без `id` или без дельт — обычная реплика (старые клиенты и восстановление ленты работают как раньше) |
+
+Откуда дельты: `openai-chat` стримит (`stream: true`, `stream_options.include_usage`; выключить — `OPENAI_CHAT_STREAM=false`); Responses API Yandex, stub, демо-шаблоны и план В отдают текст целиком, и сервер нарезает его по 2–4 слова с паузой 20–40 мс (`server/agent/reply-stream.ts`). Клиент LLM снимает `onDelta` для JSON-схемы и плана В (там текст — служебный JSON), повтор после частично показанной попытки идёт без дельт — итог всё равно приходит `message`. Порядок в ходе: `… delta* → message → done`.

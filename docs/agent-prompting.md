@@ -43,7 +43,11 @@ Anthropic. Вживую ни один провайдер не проверен: 
 | Промпт: роль; цель коротко; смысловые блоки; выделять входные данные тегами; явный формат вывода; 1–2 образца; говорить, что делать, а не чего избегать; один термин — одно понятие; «нет данных» вместо выдумки; разбивать сложную задачу на шаги | [Y7], [A1] | все четыре промпта переписаны по этой схеме (ниже) |
 | XML-теги для разных частей промпта и для документов; длинные данные — в начале; примеры в `<example>` (3–5 — лучше всего); объяснять, **зачем** правило | [A1] | блоки `<role>`, `<why>`, `<rules>`, `<examples>` …; данные — `<document>`, `<external_data>`, `<candidate_answer>` |
 
+| Стриминг Chat Completions: `stream: true`, куски `chat.completion.chunk` с `choices[0].delta.content` и `delta.tool_calls[]` по `index`; `stream_options: { include_usage: true }` — последний кусок с `usage` и пустым `choices`, при обрыве его может не быть | [O-stream] developers.openai.com, «Streaming events», cookbook «How to stream completions» (сверено через Context7 09.10) | `llm/providers/openai-chat.ts`, `collectStream`; реплика уходит клиенту дельтами (`agent/reply-stream.ts`, docs/platform.md «События SSE») |
+
 ## Что остаётся инференсом (проверит смоук или замер)
+
+0. **Стрим у OpenAI-совместимого эндпоинта Yandex (DeepSeek, Qwen) и `stream_options.include_usage`.** Формат кусков взят из документации OpenAI; что Yandex отдаёт тот же формат и принимает `stream_options` — не проверено на живом ключе. Не принял — `OPENAI_CHAT_STREAM=false`, ответ придёт целиком и будет нарезан сервером.
 
 1. **Сохранность тегов `<external_data …>` на стороне Yandex.** В доке нет ни
    запрета, ни описания обработки XML-подобной разметки; [Y7] сам советует

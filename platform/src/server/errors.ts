@@ -38,6 +38,8 @@ export const errors = {
   badRequest: (message = 'Некорректный запрос', details?: unknown) =>
     new AppError('bad_request', message, 400, details),
   unauthorized: (message = 'Нужен вход') => new AppError('unauthorized', message, 401),
+  /** Кука подписана верно, но аккаунта в БД нет; клиент (`lib/api.ts`) ведёт на /auth. */
+  sessionStale: () => new AppError('session_stale', 'Сессия устарела. Войдите заново.', 401),
   forbidden: (message = 'Нет доступа') => new AppError('forbidden', message, 403),
   /** Для чужих объектов тоже 404 — не раскрываем, что объект существует. */
   notFound: (message = 'Не найдено') => new AppError('not_found', message, 404),
@@ -69,12 +71,24 @@ export function toErrorResponse(err: unknown): Response {
   return jsonError('internal', 'Внутренняя ошибка', 500);
 }
 
+/** Пути, где протухшая кука не должна давать 401: выход, проверка входа, сам вход. */
+const STALE_CHECK_SKIP = ['/api/auth/logout', '/api/auth/me', '/api/auth/stale', '/api/auth/yandex', '/api/demo/login', '/api/dev/'];
+
 /** Обёртка route handler'а: бросай AppError/ZodError — получишь правильный ответ. */
 export function withErrors<A extends unknown[]>(
   handler: (...args: A) => Promise<Response> | Response,
 ): (...args: A) => Promise<Response> {
   return async (...args: A) => {
     try {
+      const req = args[0];
+      if (req instanceof Request && !STALE_CHECK_SKIP.some((p) => new URL(req.url).pathname.startsWith(p))) {
+        const { isSessionStale } = await import('./auth/stale');
+        if (await isSessionStale(req)) {
+          const res = toErrorResponse(errors.sessionStale());
+          res.headers.append('set-cookie', 'cid=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax');
+          return res;
+        }
+      }
       return await handler(...args);
     } catch (err) {
       return toErrorResponse(err);

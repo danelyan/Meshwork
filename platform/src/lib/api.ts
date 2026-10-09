@@ -30,6 +30,11 @@ export async function readError(res: Response): Promise<ApiError> {
     /* тело не JSON */
   }
   if (res.status === 401) message = 'Сессия закончилась. Войдите заново.';
+  // Кука подписана верно, но аккаунта уже нет (пересид/очистка в другом окне): сервер её стёр — на вход.
+  if (code === 'session_stale' && typeof window !== 'undefined') {
+    const here = window.location.pathname + window.location.search;
+    window.location.assign(`/auth?next=${encodeURIComponent(here)}`);
+  }
   return new ApiError(message, res.status, code);
 }
 

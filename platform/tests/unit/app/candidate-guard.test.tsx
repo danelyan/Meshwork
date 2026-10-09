@@ -35,6 +35,7 @@ vi.mock('@/components/ProfilePage', () => ({ ProfilePage: () => null }));
 vi.mock('@/components/TestPage', () => ({ TestPage: () => null }));
 vi.mock('@/components/DefenseDialog', () => ({ DefenseDialog: () => null }));
 vi.mock('@/server/db', () => ({ prisma: {} }));
+vi.mock('@/server/auth/stale', () => ({ sessionExists: vi.fn(async () => true), isSessionStale: vi.fn(async () => false) }));
 
 const SESS = {
   guest: undefined,

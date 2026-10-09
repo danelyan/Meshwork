@@ -42,6 +42,9 @@ describe('кабинет работодателя (БД)', () => {
   beforeAll(async () => {
     await resetDb();
     await seedClaims(prisma);
+    // Сессии в тестах ссылаются на аккаунты: кука на несуществующего пользователя = гость (session_stale).
+    const ids = ['u-other', ...DEMO_POOL.map((c) => `u-${c.id}`)];
+    await prisma.user.createMany({ data: ids.map((id) => ({ id, name: id })), skipDuplicates: true });
   });
   beforeEach(async () => {
     await prisma.invitation.deleteMany();

@@ -51,6 +51,7 @@ describe('помощник работодателя (БД)', () => {
   beforeAll(async () => {
     await resetDb();
     await seedClaims(prisma);
+    await prisma.user.createMany({ data: [{ id: 'u-c', name: 'Кандидат' }], skipDuplicates: true });
   });
   beforeEach(async () => {
     process.env.LLM_PROVIDER = 'stub';

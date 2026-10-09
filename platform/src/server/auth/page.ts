@@ -1,20 +1,40 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 
+import { sessionExists } from '@/server/auth/stale';
 import { SESSION_COOKIE, type SessionPrincipal, parseSession } from '@/server/session';
 
 /** Сессия в Server Component (docs Next.js 15: `cookies()` асинхронная). */
-export async function getPageSession(): Promise<SessionPrincipal | null> {
-  const value = (await cookies()).get(SESSION_COOKIE)?.value;
-  return parseSession(value);
+const checkSession = cache(async (value: string | undefined): Promise<{ session: SessionPrincipal | null; stale: boolean }> => {
+  const p = parseSession(value);
+  if (!p) return { session: null, stale: false };
+  // Одна выборка по id на запрос (React cache). Нет субъекта в БД — гость.
+  return (await sessionExists(p)) ? { session: p, stale: false } : { session: null, stale: true };
+});
+
+/** Сессия страницы: подпись и срок + существование аккаунта в БД; протухшая кука = гость (`stale`). */
+export async function getCheckedPageSession() {
+  return checkSession((await cookies()).get(SESSION_COOKIE)?.value);
 }
 
-const toAuth = (next: string): never => redirect(`/auth?next=${encodeURIComponent(next)}`);
+/** Сессия в Server Component (docs Next.js 15: `cookies()` асинхронная). Протухшая кука → null. */
+export async function getPageSession(): Promise<SessionPrincipal | null> {
+  return (await getCheckedPageSession()).session;
+}
+
+/**
+ * Гость → /auth?next=…. Протухшая кука (в Server Component куки менять нельзя) → через route handler
+ * /api/auth/stale, который удаляет куку и ведёт на /auth.
+ */
+async function guestRedirect(next: string, stale: boolean): Promise<never> {
+  return redirect(stale ? `/api/auth/stale?next=${encodeURIComponent(next)}` : `/auth?next=${encodeURIComponent(next)}`);
+}
 
 /** Guard страницы: нужен аккаунт (любая роль). Иначе → /auth?next=… */
 export async function requirePageUser(next: string): Promise<SessionPrincipal & { userId: string }> {
-  const s = await getPageSession();
-  if (!s?.userId) return toAuth(next);
+  const { session: s, stale } = await getCheckedPageSession();
+  if (!s?.userId) return guestRedirect(next, stale);
   return s as SessionPrincipal & { userId: string };
 }
 
@@ -37,7 +57,8 @@ export function candidatePageRedirect(s: SessionPrincipal | null, next: string):
  * (docs Next.js: Authentication → Layouts and auth checks).
  */
 export async function requirePageCandidate(next: string): Promise<SessionPrincipal & { candidateId: string }> {
-  const s = await getPageSession();
+  const { session: s, stale } = await getCheckedPageSession();
+  if (!s && stale) return guestRedirect(next, true);
   const to = candidatePageRedirect(s, next);
   if (to) redirect(to);
   return s as SessionPrincipal & { candidateId: string };
@@ -45,8 +66,8 @@ export async function requirePageCandidate(next: string): Promise<SessionPrincip
 
 /** Guard кабинета работодателя: нет входа → /auth, роль не выбрана → /onboarding, кандидат → /consultant. */
 export async function requirePageEmployer(next: string): Promise<SessionPrincipal & { userId: string; employerProfileId: string }> {
-  const s = await getPageSession();
-  if (!s) return toAuth(next);
+  const { session: s, stale } = await getCheckedPageSession();
+  if (!s) return guestRedirect(next, stale);
   if (s.userId && s.role === 'pending') redirect('/onboarding');
   if (!s.userId || !s.employerProfileId) redirect('/consultant');
   return s as SessionPrincipal & { userId: string; employerProfileId: string };

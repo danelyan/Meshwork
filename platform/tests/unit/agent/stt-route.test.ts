@@ -3,7 +3,7 @@ import { parseEnv } from '@/server/env';
 const env = parseEnv({ DATABASE_URL: 'postgresql://x@localhost/db', SESSION_SECRET: 'x'.repeat(32), YANDEX_API_KEY: 'AQVNsecret', YANDEX_FOLDER_ID: 'b1g' });
 vi.mock('@/server/env', async (orig) => ({ ...(await orig<typeof import('@/server/env')>()), getEnv: () => env }));
 let session: object | null = { userId: 'u1', role: 'candidate' };
-vi.mock('@/server/session', () => ({ getSession: () => session }));
+vi.mock('@/server/session', () => ({ getSession: () => session, parseSession: () => null, readCookie: () => undefined, SESSION_COOKIE: 'cid' }));
 
 const { GET, POST } = await import('@/app/api/stt/route');
 

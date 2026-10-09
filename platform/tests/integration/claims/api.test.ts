@@ -50,8 +50,8 @@ describe('GET /api/profile', () => {
     expect(other.claims).toEqual([]);
   });
 
-  it('сессия на удалённого кандидата → 404', async () => {
-    expect((await profile(jsonRequest('/api/profile', 'GET', undefined, cookieOf('ghost')))).status).toBe(404);
+  it('сессия на удалённого кандидата → 401 session_stale', async () => {
+    expect((await profile(jsonRequest('/api/profile', 'GET', undefined, cookieOf('ghost')))).status).toBe(401);
   });
 });
 

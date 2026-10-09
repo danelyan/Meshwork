@@ -176,11 +176,11 @@ describe('recommend (БД)', () => {
       expect(withCat.target).toBe('category:frontend:junior');
     });
 
-    it('плохие параметры — 400, неизвестная вакансия — 404, кука несуществующего кандидата — 404', async () => {
+    it('плохие параметры — 400, неизвестная вакансия — 404, кука несуществующего кандидата — 401 session_stale', async () => {
       expect((await GET(jsonRequest('/api/recommendations?target=evil', 'GET', undefined, cookie('c1')))).status).toBe(400);
       expect((await GET(jsonRequest('/api/recommendations?limit=999', 'GET', undefined, cookie('c1')))).status).toBe(400);
       expect((await GET(jsonRequest('/api/recommendations?target=vacancy:nope', 'GET', undefined, cookie('c1')))).status).toBe(404);
-      expect((await GET(jsonRequest('/api/recommendations', 'GET', undefined, cookie('ghost')))).status).toBe(404);
+      expect((await GET(jsonRequest('/api/recommendations', 'GET', undefined, cookie('ghost')))).status).toBe(401);
     });
   });
 });

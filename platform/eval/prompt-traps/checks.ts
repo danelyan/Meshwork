@@ -38,7 +38,10 @@ export function affirmedMatch(text: string, re: RegExp): RegExpMatchArray | null
   const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
   for (const m of text.matchAll(g)) {
     const before = text.slice(Math.max(0, (m.index ?? 0) - 30), m.index ?? 0);
-    if (!NEG_BEFORE.test(before)) return m;
+    const after = text.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 25);
+    // Цитата чужих слов: «обещать „точно возьмут“ я не могу».
+    const quoted = /(«|"|обещать\s*«?)\s*$/u.test(before) || /^[»"]?\s*(я\s+)?(не могу|не обеща|нельзя|никто)/u.test(after);
+    if (!NEG_BEFORE.test(before) && !quoted) return m;
   }
   return null;
 }

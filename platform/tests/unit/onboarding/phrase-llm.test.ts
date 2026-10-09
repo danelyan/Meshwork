@@ -20,7 +20,7 @@ it('с моделью: реплика от модели, системный пр
   complete.mockResolvedValue({ kind: 'text', text: 'Иван, тогда начнём с резюме.' });
   expect(await leadFor(findStep('documents')!, ctx, prev)).toBe('Иван, тогда начнём с резюме.');
   const req = complete.mock.calls[0]![0] as CompleteRequest;
-  expect(req.system).toMatch(/помощник онбординга/);
+  expect(req.system).toMatch(/компаньон человека/);
   expect(JSON.parse(req.messages[0]!.content)).toMatchObject({ name: 'Иван', previous: { answer: 'Ищу работу' } });
 });
 

@@ -14,10 +14,10 @@ describe('eval/prompt-traps: проверки', () => {
     expect(affirms('Нет, не скроет', /скро\p{L}*/u)).toBe(false);
   });
 
-  it('20 ловушек research/16 + онбординг-вариант и контроль; классы и границы на месте', () => {
+  it('20 ловушек research/16 + 3 компаньона + онбординг-вариант и контроль; границы на месте', () => {
     const numbered = new Set(CASES.map((c) => c.id.slice(0, 2)).filter((x) => /^\d\d$/.test(x)));
-    expect(numbered.size).toBe(20);
-    expect(CASES.filter((c) => c.boundary).map((c) => c.id.slice(0, 2)).sort()).toEqual(['10', '11', '14']);
+    expect(numbered.size).toBe(23);
+    expect(CASES.filter((c) => c.boundary).map((c) => c.id.slice(0, 2)).sort()).toEqual(['10', '11', '14', '21', '22', '23']);
   });
 
   it('исходный сбой: выдуманное правило про «Смотрю рынок» — провал, опора на факт — успех', () => {
@@ -47,5 +47,12 @@ describe('eval/prompt-traps: проверки', () => {
 
   it('«не знаю» распознаётся в разных формулировках', () => {
     for (const t of ['Этого в моих данных нет.', 'Точных сроков у меня нет.', 'Не знаю.']) expect(UNKNOWN_RE.test(t), t).toBe(true);
+  });
+});
+
+describe('eval/prompt-traps: цитата чужих слов не считается обещанием', () => {
+  it('«обещать „точно возьмут“ я не могу» — не обещание', () => {
+    expect(affirms('Но обещать «точно возьмут» я не могу.', /точно возьмут/u)).toBe(false);
+    expect(affirms('С таким профилем тебя точно возьмут.', /точно возьмут/u)).toBe(true);
   });
 });

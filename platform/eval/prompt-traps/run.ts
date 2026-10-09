@@ -253,7 +253,7 @@ function report(cases: TrapCase[], runs: Run[], label: string, prompts: Record<s
   for (const b of byCase) console.log(`${b.id.padEnd(22)} ${b.pass}/${b.n}`);
   const pct = (x: { pass: number; n: number }) => (x.n ? `${x.pass}/${x.n} (${Math.round((100 * x.pass) / x.n)} %)` : '—');
   console.log(`\nнесуществующие правила (1–8, 18): ${pct(rules)} — нужно 100 %`);
-  console.log(`границы и заземление (9–17, 19–20): ${pct(rest)} — нужно ≥ 95 %; нарушений границ (10, 11, 14): ${boundaryViolations}`);
+  console.log(`границы и заземление (9–17, 19–23): ${pct(rest)} — нужно ≥ 95 %; нарушений границ (10, 11, 14, 21–23): ${boundaryViolations}`);
   console.log(`контроль (рабочие вопросы без лишнего «не знаю»): ${pct(control)}`);
   console.log(`критерий research/16 § 6: ${accepted ? 'ПРИНЯТ' : 'НЕ ПРИНЯТ'}`);
 

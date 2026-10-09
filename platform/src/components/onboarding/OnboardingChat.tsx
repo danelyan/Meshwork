@@ -15,7 +15,7 @@ import { AssistantChat, EMPLOYER_SUGGESTIONS } from '../employer/AssistantChat';
 import { extractUrls } from '@/lib/links';
 
 import { useAttachments } from '../chat/attachments';
-import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, ReplySkeleton, type ReplyLine, Thread, UserBubble } from '../chat/Thread';
+import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, ReplySkeleton, type ReplyLine, Thread, Typing, UserBubble } from '../chat/Thread';
 import { Brand } from '../shell/Brand';
 import { Button, VisuallyHidden } from '../ui';
 
@@ -290,6 +290,11 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
           </AssistantRow>
 
           {cur.kind === 'files' && <DocumentsRows run={docs} />}
+          {cur.kind === 'files' && docs.running && !docs.replying && (
+            <AssistantRow>
+              <Typing />
+            </AssistantRow>
+          )}
           {docsDone && !busy && (
             <AssistantRow mark={false} testId="ob-docs-next">
               <QuickReplies

@@ -52,6 +52,8 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
   const [text, setText] = useState('');
   const att = useAttachments();
   const [busy, setBusy] = useState(false);
+  // Чипы под приветствием — после того, как оно допечатано (в онбординге оно печатается).
+  const [greetDone, setGreetDone] = useState(!embedded || (initial?.items.length ?? 0) > 0);
   const lastSent = useRef<{ message: string; uploadIds: string[]; urls: string[]; fileNames: string[] } | null>(null);
   const [simplified, setSimplified] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -178,8 +180,8 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
   const suggestions = [...(embedded?.suggestions ?? []), ...demoChip];
   const greeting = (
     <AssistantRow key="greeting" testId="chat-greeting">
-      <Reply lines={[{ text: embedded ? CONTINUE_GREETING : GREETING }]} animate={Boolean(embedded) && items.length === 0} />
-      {suggestions.length > 0 && !started && (
+      <Reply lines={[{ text: embedded ? CONTINUE_GREETING : GREETING }]} animate={Boolean(embedded) && items.length === 0} onDone={() => setGreetDone(true)} />
+      {suggestions.length > 0 && !started && greetDone && (
         <QuickReplies
           label="Что дальше"
           items={suggestions}

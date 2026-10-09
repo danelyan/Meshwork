@@ -82,7 +82,8 @@ export function Composer({
     const el = areaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+    // Пустое поле — одна строка: длинный плейсхолдер на узком экране не раздувает высоту.
+    if (value) el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   }, [value]);
 
   function submit(e: FormEvent) {

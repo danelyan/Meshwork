@@ -54,7 +54,7 @@
 .composerBox:focus-within { border-color: var(--blue); }
 .composerOff { opacity: 0.85; }
 .composerBox textarea { flex: 1; min-width: 0; min-height: 40px; max-height: 180px; padding: 9px 8px; resize: none; border: 0; background: transparent; outline: none; font: inherit; line-height: 1.45; color: var(--ink); }
-.composerBox textarea::placeholder { color: var(--placeholder); }
+.composerBox textarea::placeholder { color: var(--placeholder); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .composerBox textarea:focus-visible { outline: none; }
 .iconBtn { flex: none; width: 40px; height: 40px; display: grid; place-items: center; background: none; border: 1px solid transparent; color: var(--muted); cursor: pointer; transition: color 0.16s var(--ease), border-color 0.16s var(--ease); }
 .iconBtn:hover:not(:disabled) { color: var(--ink); border-color: var(--border-soft); }
@@ -66,6 +66,7 @@
 .send[data-sending] { opacity: 1; }
 .send[data-sending] > span:first-child { visibility: hidden; }
 .sendSpin { position: absolute; inset: 0; display: grid; place-items: center; }
+.sendSpin > span { border-color: var(--on-ink-soft); border-top-color: var(--on-ink); }
 .hiddenInput { display: none; }
 .clipWrap { position: relative; display: flex; }
 .clipTip { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 6; width: max-content; max-width: 260px; padding: 6px 10px; background: var(--ink); color: var(--on-ink); font: 500 var(--fs-xs) var(--mono); opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity 0.16s var(--ease), transform 0.16s var(--ease); }

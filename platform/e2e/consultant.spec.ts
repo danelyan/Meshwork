@@ -30,11 +30,10 @@ test('С1: вход → резюме и ссылка → шаги → карто
   await page.waitForURL('**/consultant');
   await expect(page.getByRole('heading', { name: 'Карьерный консультант' })).toBeVisible();
 
-  // резюме + ссылка + сообщение
+  // резюме скрепкой (чип вложения) + ссылка прямо в тексте сообщения
   await page.setInputFiles('input[type=file]', RESUME);
-  await expect(page.getByText('загружен')).toBeVisible();
-  await page.getByLabel(/Ссылки/).fill('github.com/demo-ryabinin');
-  await page.getByLabel('Сообщение', { exact: true }).fill('Собери мне профиль');
+  await expect(page.getByRole('list', { name: 'Вложения' })).toContainText(/КБ|МБ/);
+  await page.getByLabel('Сообщение', { exact: true }).fill('Собери мне профиль, код — github.com/demo-ryabinin');
   await page.getByRole('button', { name: 'Отправить' }).click();
 
   // лента шагов появляется, затем карточки утверждений с цитатой, источником и уровнем

@@ -56,6 +56,7 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const lastSent = useRef<string | null>(null);
+  const [greetDone, setGreetDone] = useState(!embedded || (initial?.items.length ?? 0) > 0);
   const conversationRef = useRef<string | undefined>(initial?.conversationId ?? undefined);
   const abortRef = useRef<AbortController | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -134,8 +135,8 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
       )}
       <Thread label="Переписка с помощником работодателя">
         <AssistantRow testId="assistant-greeting">
-          <Reply lines={[{ text: embedded ? CONTINUE_GREETING : GREETING }]} animate={Boolean(embedded) && items.length === 0} />
-          {!started && (
+          <Reply lines={[{ text: embedded ? CONTINUE_GREETING : GREETING }]} animate={Boolean(embedded) && items.length === 0} onDone={() => setGreetDone(true)} />
+          {!started && greetDone && (
             <QuickReplies
               label="С чего начать"
               items={suggestions}

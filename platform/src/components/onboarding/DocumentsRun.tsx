@@ -128,7 +128,9 @@ export function useDocumentsRun() {
     setTotals({ uploadIds: [], urls: [], claims: 0 });
   }, []);
 
-  return { items, overrides, running, totals, send, retry, reset, onClaimAction, onConfirmAll, started: items.length > 0 };
+  const lastUser = items.findLastIndex((it) => it.role === 'user');
+  const replying = items.slice(lastUser + 1).some((it) => it.role === 'agent' && it.event.type === 'message');
+  return { items, overrides, running, replying, totals, send, retry, reset, onClaimAction, onConfirmAll, started: items.length > 0 };
 }
 
 export type DocumentsRun = ReturnType<typeof useDocumentsRun>;

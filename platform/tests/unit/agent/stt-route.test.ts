@@ -16,7 +16,7 @@ const post = (body: Uint8Array) => new Request('http://localhost/api/stt', { met
 
 describe('/api/stt', () => {
   it('GET отдаёт режим', async () => {
-    const res = await GET(new Request('http://localhost/api/stt'));
+    const res = await GET();
     expect(await res.json()).toMatchObject({ mode: 'yandex', sampleRate: 16000 });
   });
 

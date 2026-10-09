@@ -8,6 +8,7 @@ import type { DefenseVerdict } from '@/server/defense/types';
 
 import styles from './DefenseDialog.module.css';
 import ui from './ui.module.css';
+import { Notice } from './ui';
 
 const AXES: { key: keyof DefenseVerdict['scores']; label: string }[] = [
   { key: 'depth', label: 'Глубина деталей' },
@@ -180,11 +181,7 @@ export function DefenseDialog({ claimId }: { claimId: string }) {
         </form>
       )}
 
-      {error && (
-        <p className={`${ui.notice} ${ui.errorBox}`} role="alert">
-          {error}
-        </p>
-      )}
+      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }

@@ -1,2 +1,2 @@
-.page { max-width: 720px; margin: 0 auto; padding: 56px var(--page-pad); display: flex; flex-direction: column; gap: 14px; font-size: var(--fs-md); line-height: 1.55; }
+.page { display: flex; flex-direction: column; gap: 14px; font-size: var(--fs-md); line-height: 1.55; }
 .note { font: 500 var(--fs-sm) var(--mono); color: var(--demo); }

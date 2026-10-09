@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react';
 
 import { type DemoCandidate, type DemoEmployer, demoEmployerLogin, demoFreshLogin, demoLogin, demoRestartOnboarding, getDemoAccounts } from '@/lib/api';
 
+import { Container } from './shell/Container';
+import { PageTitle } from './shell/PageTitle';
 import styles from './AuthScreen.module.css';
+import { Notice } from './ui';
 import ui from './ui.module.css';
 
 const SPEC = { backend: 'Backend', frontend: 'Frontend' } as const;
@@ -99,18 +102,14 @@ export function DemoScreen() {
 
 
   return (
-    <div className={styles.wrap}>
-      <div className={styles.head}>
-        <p className={ui.kicker}>ФСП Карьера · демо для жюри</p>
-        <h1 className={styles.title}>Демо-аккаунты</h1>
-        <p className={styles.lead}>Готовые вымышленные пользователи с синтетическими данными. Настоящий вход — через Яндекс ID на странице входа.</p>
-      </div>
+    <Container size="wide" className={styles.wrap}>
+      <PageTitle
+        kicker="ФСП Карьера · демо для жюри"
+        title="Демо-аккаунты"
+        lead="Готовые вымышленные пользователи с синтетическими данными. Настоящий вход — через Яндекс ID на странице входа."
+      />
 
-      {failure && (
-        <p className={`${ui.notice} ${ui.errorBox}`} role="alert">
-          {failure}
-        </p>
-      )}
+      {failure && <Notice tone="error">{failure}</Notice>}
 
       <div className={styles.grid}>
       <section className={styles.block} aria-labelledby="demo-fresh">
@@ -185,6 +184,6 @@ export function DemoScreen() {
           )}
       </section>
       </div>
-    </div>
+    </Container>
   );
 }

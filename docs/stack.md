@@ -51,6 +51,20 @@ YandexGPT/Alice AI (Yandex AI Studio), GigaChat, а также открытые 
 инструментом. Если вызов инструментов не работает, модель отвечает строгим
 JSON по схеме Zod, а шаги выполняет код.
 
+**Стенд (9 октября): DeepSeek V4 Flash в Yandex Cloud** через OpenAI-совместимый
+Chat Completions: `LLM_PROVIDER=openai-chat`,
+`OPENAI_CHAT_BASE_URL=https://ai.api.cloud.yandex.net/v1`,
+`OPENAI_CHAT_MODEL=deepseek-v4-flash`, ключ — API-ключ сервисного аккаунта.
+Ответы стримятся. Alice AI LLM отклонена: в живом агенте не вызывает
+инструменты и чаще выполняет инъекции. Цифры — [validation-results](validation-results.md#языковая-модель-yandex-cloud-9-октября).
+
+Ресурсы Yandex Cloud: каталог `fsp-lct-2026` (`b1g8c7gaanu3tnh3475r`) в облаке
+`ai-sprints-cloud`; сервисный аккаунт `fsp-ai` с ролями
+`ai.languageModels.user` и `ai.speechkit-stt.user` на каталог; API-ключ
+`aje12h96fjo6ucffir20` с областями `yc.ai.languageModels.execute` и
+`yc.ai.speechkitStt.execute`. Секрет — только в `platform/.env`. Тот же ключ
+включает голос через SpeechKit (`STT_PROVIDER=auto`).
+
 ## Не решено
 
 - Сервер, домен и HTTPS стенда — до 11 октября.

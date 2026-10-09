@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 // Страж: цвета в модулях - только через токены (docs/design-system.md, «Запреты»).
 // Сырые #hex и rgb()/rgba()/hsl() разрешены в styles/tokens.css, в строках с пометкой `raw-ok`
@@ -23,7 +23,7 @@ function walk(dir: string): string[] {
 }
 
 describe('цвета в CSS-модулях только через токены', () => {
-  const files = walk(SRC).map((p) => relative(SRC, p));
+  const files = walk(SRC).map((p) => relative(SRC, p).split(sep).join('/'));
   it('модули найдены', () => expect(files.length).toBeGreaterThan(5));
 
   for (const f of files) {

@@ -7,7 +7,7 @@ export const FACTS_PLACEHOLDER = '{{platform_facts}}';
 
 /** Комментарии `<!-- … -->` (версия, ссылки на код) в промпт не идут. */
 export function stripComments(text: string): string {
-  return text.replace(/<!--[\s\S]*?-->[ \t]*\n?/g, '');
+  return text.replace(/\r\n?/g, '\n').replace(/<!--[\s\S]*?-->[ \t]*\n?/g, '');
 }
 
 /** Версия из первой строки `<!-- version: consultant-v4 -->`. */

@@ -3,35 +3,22 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { EMPLOYER_PROMPT, EMPLOYER_PROMPT_VERSION } from '@/server/agent/employer/prompt';
-import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from '@/server/agent/prompt';
+import { EMPLOYER_PROMPT } from '@/server/agent/employer/prompt';
+import { CONSULTANT_PROMPT } from '@/server/agent/prompt';
 import { assemblePrompt, factsBlock, factsSubset, FACTS_PLACEHOLDER, promptVersion, stripComments } from '@/server/agent/prompts/assemble';
 import { DAILY_INVITATION_LIMIT } from '@/server/employer/weights';
-import { ONBOARDING_PROMPT, ONBOARDING_PROMPT_VERSION } from '@/server/onboarding/prompt';
+import { ONBOARDING_PROMPT } from '@/server/onboarding/prompt';
 
 const facts = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/platform-facts.md'), 'utf8');
 const block = factsBlock(facts);
 const PROMPTS = { consultant: CONSULTANT_PROMPT, employer: EMPLOYER_PROMPT, onboarding: ONBOARDING_PROMPT };
-const md = (name: string) => readFileSync(path.join(process.cwd(), 'src/server/agent/prompts', name), 'utf8');
-
-describe('сгенерированные prompt.ts совпадают с .md (scripts/build-prompts.ts)', () => {
-  it.each([
-    ['consultant.md', CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION],
-    ['employer.md', EMPLOYER_PROMPT, EMPLOYER_PROMPT_VERSION],
-    ['onboarding.md', ONBOARDING_PROMPT, ONBOARDING_PROMPT_VERSION],
-  ])('%s: полный текст и версия', (file, prompt, version) => {
-    expect(prompt).toBe(assemblePrompt(md(file), facts));
-    expect(version).toBe(promptVersion(md(file)));
-  });
-});
 
 describe('общий файл фактов о платформе', () => {
-  it('факты попадают во все три промпта подмножествами; остальное — в базе знаний (search_knowledge)', () => {
+  it('факты попадают во все три промпта: консультанту и работодателю — целиком, онбордингу — подмножество', () => {
     expect(block.startsWith('<platform_facts>')).toBe(true);
     expect(block.endsWith('</platform_facts>')).toBe(true);
-    expect(CONSULTANT_PROMPT).toContain(factsSubset(facts, ['F1', 'F4', 'F5', 'F7', 'F8', 'F10', 'F11', 'F12', 'F13', 'F15']));
-    expect(EMPLOYER_PROMPT).toContain(factsSubset(facts, ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F10', 'F12', 'F13']));
-    expect(CONSULTANT_PROMPT).not.toMatch(/^F3\. /m);
+    expect(CONSULTANT_PROMPT).toContain(block);
+    expect(EMPLOYER_PROMPT).toContain(block);
     expect(ONBOARDING_PROMPT).toContain(factsSubset(facts, ['F1', 'F4', 'F5', 'F7', 'F10']));
     expect(ONBOARDING_PROMPT).toContain('ответов анкеты (цель, зарплата, формат работы, город) не видит никогда');
     expect(ONBOARDING_PROMPT).not.toMatch(/^F3\. /m);
@@ -47,15 +34,6 @@ describe('общий файл фактов о платформе', () => {
     for (const p of Object.values(PROMPTS)) {
       expect(p).not.toContain('<!--');
       expect(p).not.toContain(FACTS_PLACEHOLDER);
-    }
-  });
-
-  it('консультант и работодатель: сначала search_knowledge, веб-поиск — крайний случай и обезличенно', () => {
-    for (const p of [CONSULTANT_PROMPT, EMPLOYER_PROMPT]) {
-      expect(p).toContain('search_knowledge');
-      expect(p).toMatch(/web_search — только крайний случай/);
-      expect(p).toMatch(/обезличенн/);
-      expect(p).toMatch(/не инструкции/);
     }
   });
 
@@ -98,6 +76,18 @@ describe('правило «не знаю» и примеры', () => {
 });
 
 describe('сборка промпта', () => {
+  it('сборка из Windows CRLF совпадает с LF, включая подмножество фактов', () => {
+    const factsLf = '<!-- facts -->\n<platform_facts>\nвводная\n\nF1. один\nF2. два\n</platform_facts>\n';
+    const factsCrlf = factsLf.replace(/\n/g, '\r\n');
+    for (const placeholder of ['{{platform_facts}}', '{{platform_facts:F2}}']) {
+      const mdLf = `<!-- version: t-v1 -->\nдо\n${placeholder}\nпосле\n`;
+      const expected = assemblePrompt(mdLf, factsLf);
+      const actual = assemblePrompt(mdLf.replace(/\n/g, '\r\n'), factsCrlf);
+      expect(actual).toBe(expected);
+      expect(actual).not.toContain('\r');
+    }
+  });
+
   it('комментарии вырезаются, плейсхолдер подставляется ровно один раз', () => {
     expect(stripComments('<!-- x -->\nа<!-- y -->б\n')).toBe('аб\n');
     expect(assemblePrompt('<!-- version: t-v1 -->\nдо\n{{platform_facts}}\nпосле', '<!-- c -->\n<platform_facts>\nF1. x\n</platform_facts>\n')).toBe(

@@ -1,12 +1,15 @@
-.card { display: grid; gap: 12px; }
+.card { display: grid; gap: 12px; background: var(--glass-strong); }
 .head { display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
-.statement { font-size: var(--fs-lg); line-height: 1.5; font-weight: 500; margin: 0; }
-.quote { margin: 0; padding: 8px 12px; border-left: 2px solid var(--rail); color: var(--text-soft); font-size: var(--fs); line-height: 1.7; overflow-wrap: anywhere; }
-.meta { font-size: var(--fs-sm); color: var(--muted); display: grid; gap: 4px; overflow-wrap: anywhere; }
-.limits b { color: var(--text-dim); font-weight: 500; }
+.statement { font-size: var(--fs-lg); line-height: 1.4; font-weight: 600; letter-spacing: -0.01em; margin: 0; flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.quote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--ink); background: rgba(17, 17, 17, 0.04); color: var(--text-soft); font-size: var(--fs); line-height: 1.65; overflow-wrap: anywhere; }
+.meta { font-family: var(--mono); font-size: var(--fs-sm); color: var(--muted); display: grid; gap: 4px; overflow-wrap: anywhere; line-height: 1.5; }
+.limits b { color: var(--ink); font-weight: 600; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.state { font-size: var(--fs); color: var(--accent-check); }
+.state { font-family: var(--mono); font-size: var(--fs-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--blue); margin: 0; }
+.state::before { content: ''; display: inline-block; width: 8px; height: 8px; background: var(--blue); margin-right: 8px; }
 .rejected { opacity: 0.6; }
+.rejected .state { color: var(--muted); }
+.rejected .state::before { background: var(--muted); }
 .editor { display: grid; gap: 8px; }
 .editor textarea { min-height: 70px; }
 .err { color: var(--error); font-size: var(--fs); }

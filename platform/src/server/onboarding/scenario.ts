@@ -67,15 +67,15 @@ const roleStep: StepDef = {
   id: 'role',
   kind: 'role',
   eyebrow: 'Знакомство',
-  question: 'Кто ты на платформе?',
+  question: 'Ты здесь как кто?',
   sub: 'От этого зависят следующие вопросы. Роль выбирается один раз.',
   summaryLabel: 'Роль',
   target: 'User.role (chooseRole)',
   req: 'R-N-07',
   required: true,
   options: [
-    { value: 'candidate', label: 'Ищу работу', note: 'кандидат: компании сами пишут тебе с вилкой' },
-    { value: 'employer', label: 'Ищу специалистов', note: 'работодатель: подборка по категориям' },
+    { value: 'candidate', label: 'Я специалист', note: 'кандидат: компании сами пишут тебе с вилкой' },
+    { value: 'employer', label: 'Я работодатель', note: 'подборка по категориям' },
   ],
   doneBy: hasRole,
 };

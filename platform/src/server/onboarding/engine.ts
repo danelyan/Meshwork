@@ -225,7 +225,7 @@ export function answerLabel(step: StepDef, value: unknown, ctx: StepContext): st
 /** Ответ для шага, закрытого фактом (согласие, роль) без записи в состоянии. */
 export function factLabel(step: StepDef, ctx: StepContext): string {
   if (step.kind === 'consent') return 'Согласие дано';
-  if (step.kind === 'role') return ctx.facts.role === 'employer' ? 'Ищу специалистов' : 'Ищу работу';
+  if (step.kind === 'role') return ctx.facts.role === 'employer' ? 'Я работодатель' : 'Я специалист';
   if (step.id === 'companyName') return 'Компания создана';
   return '';
 }

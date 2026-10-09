@@ -44,7 +44,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'role':
       return 'Спасибо. Теперь познакомимся.';
     case 'goal':
-      return `${hi}начнём с главного.`;
+      return `${hi}ты со стороны специалиста — тогда скажи, чего ждёшь от платформы.`;
     case 'documents': {
       const goal = prev?.step.id === 'goal' ? prev.value : ctx.answers.goal;
       if (goal === 'job_search') return 'Тогда соберём профиль, по которому компании найдут тебя сами.';
@@ -60,6 +60,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
       return 'Теперь про работу.';
     case 'grade': {
       const s = specLabel(ctx.answers.specialization);
+      if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s}, ` : ''}хочешь подтвердить грейд — значит, начнём с твоей оценки.`;
       return s ? `${s} — понял.` : 'Понял.';
     }
     case 'stack':
@@ -73,7 +74,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'fspParticipation':
       return 'Последний вопрос.';
     case 'companyName':
-      return 'Отлично, найдём тебе людей. Сначала о компании.';
+      return 'Ты от лица компании — тогда сначала о ней.';
     case 'inn':
       return 'Записал.';
     case 'industry':

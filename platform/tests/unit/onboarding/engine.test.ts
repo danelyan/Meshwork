@@ -18,7 +18,7 @@ import { checkInn } from '@/server/onboarding/inn';
 import { MAX_NEEDS, computeNeeds } from '@/server/onboarding/needs';
 import { cleanLead, firstName, templateLead } from '@/server/onboarding/phrase';
 import { ONBOARDING_PROMPT } from '@/server/onboarding/prompt';
-import { CANDIDATE_STEPS, EMPLOYER_STEPS, findStep } from '@/server/onboarding/scenario';
+import { BASE_STEPS, CANDIDATE_STEPS, EMPLOYER_STEPS, findStep } from '@/server/onboarding/scenario';
 import type { Answers, Facts, StepContext } from '@/server/onboarding/types';
 
 const facts = (f: Partial<Facts> = {}): Facts => ({ role: 'pending', consent: false, name: 'Иван Петров', fspState: null, specialization: null, ...f });
@@ -201,6 +201,27 @@ describe('потребность → каталог', () => {
     const needs = computeNeeds(catalog, 'backend', 'junior', ['Kafka']);
     expect(needs.map((n) => n.catalogId)).not.toContain('be.message-queue');
     expect(needs.length).toBeGreaterThan(0);
+  });
+});
+
+describe('тексты вариантов', () => {
+  it('ни один label варианта не совпадает с label варианта соседнего шага', () => {
+    for (const steps of [[...BASE_STEPS, ...CANDIDATE_STEPS], [...BASE_STEPS, ...EMPLOYER_STEPS]]) {
+      for (let i = 0; i + 1 < steps.length; i++) {
+        const labels = (s: (typeof steps)[number]) => (Array.isArray(s.options) ? s.options.map((o) => o.label.toLowerCase()) : []);
+        const next = new Set(labels(steps[i + 1]!));
+        for (const l of labels(steps[i]!)) expect(next.has(l), `${steps[i]!.id} -> ${steps[i + 1]!.id}: «${l}»`).toBe(false);
+      }
+    }
+  });
+  it('роль и цель не повторяют друг друга', () => {
+    const role = BASE_STEPS.find((s) => s.id === 'role')!.options as { label: string }[];
+    const goal = CANDIDATE_STEPS.find((s) => s.id === 'goal')!.options as { label: string }[];
+    for (const r of role) expect(goal.map((g) => g.label)).not.toContain(r.label);
+  });
+  it('связка опирается на предыдущий ответ', () => {
+    const c = ctx({ goal: 'grade_confirm', specialization: 'backend' }, { role: 'candidate' });
+    expect(templateLead(step('grade'), c, { step: step('specialization'), value: 'backend', label: 'Backend' })).toMatch(/подтвердить грейд/);
   });
 });
 

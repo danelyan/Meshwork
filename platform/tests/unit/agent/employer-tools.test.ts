@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { describeBlock } from '@/server/agent/employer/demo';
 import { AssistantCandidateSchema, toAssistantCandidate } from '@/server/agent/employer/cards';
 import { parseNeedPrefill } from '@/server/agent/employer/prefill';
 import { EMPLOYER_PROMPT, EMPLOYER_PROMPT_VERSION } from '@/server/agent/employer/prompt';
@@ -124,6 +125,14 @@ describe('граница приватности: карточка помощни
     expect(
       AssistantCandidateSchema.safeParse({ ...card, coveredItems: [{ statement: 's', level: 'artifact', sourceType: null, quote: 'цитата' }] }).success,
     ).toBe(false);
+  });
+});
+
+describe('пустая подборка', () => {
+  it('под потребность: «никто не закрыл ни одного требования», совет расширить стек или снизить грейд', () => {
+    const text = describeBlock({ vacancy: { id: 'v', title: 'Backend платежей', salaryFrom: 1 }, total: 0, items: [] });
+    expect(text).toContain('никто не закрыл ни одного требования');
+    expect(text).toMatch(/Расширь стек или снизь грейд/);
   });
 });
 

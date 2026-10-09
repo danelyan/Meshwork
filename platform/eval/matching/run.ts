@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { DEMO_POOL, type DemoProfile } from '../../prisma/seed/employer';
 import { DEMO_VACANCIES } from '../../prisma/seed/recommend';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
-import { rankCandidates, type CandidateEvidence } from '../../src/server/employer/ranking';
+import { dropUncovered, rankCandidates, type CandidateEvidence } from '../../src/server/employer/ranking';
 
 import { EXTRA_PROFILES } from './extra-profiles';
 import { maxPrecisionAtK, ndcgAtK, precisionAtK } from './metrics';
@@ -48,12 +48,12 @@ interface Row { vacancy: string; p: number; pMax: number; ndcg: number; bP: numb
 const rows: Row[] = [];
 for (const v of DEMO_VACANCIES) {
   const rel = labels.relevance[v.id] ?? {};
-  const ranked = rankCandidates(evidence, {
+  const ranked = dropUncovered(rankCandidates(evidence, {
     specialization: v.specialization,
     grade: v.grade,
     needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })),
     stack: [],
-  }, catalog).map((r) => r.candidateId);
+  }, catalog)).map((r) => r.candidateId);
   const b = baseline(v.specialization);
   rows.push({
     vacancy: v.id,

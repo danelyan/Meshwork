@@ -2,6 +2,7 @@ import { catalogFromFile } from '@/server/claims/catalog-file';
 import { contactEmail, publicSourceType, pseudonym, toCandidateCard } from '@/server/employer/privacy';
 import {
   categoryNeeds,
+  dropUncovered,
   matchStack,
   passesFilters,
   rankCandidates,
@@ -121,6 +122,18 @@ describe('ранжирование работодателя', () => {
     const needs = categoryNeeds(real, 'frontend', 'junior');
     expect(needs.length).toBeGreaterThan(5);
     expect(needs.every((n) => n.catalogId.startsWith('fe.') || n.catalogId.startsWith('common.'))).toBe(true);
+  });
+});
+
+describe('подборка под потребность: нулевое покрытие (решение владельца 09.10)', () => {
+  it('кандидат со стеком, но без закрытых требований, получает балл > 0, но dropUncovered его убирает', () => {
+    const zero = cand('z', [['be.background-jobs', 'self_reported']], { category: { specialization: 'backend', grade: 'middle' } });
+    zero.claims[0]!.quote = 'Go, Kafka';
+    const one = cand('o', [['be.idempotency', 'self_reported']]);
+    const ranked = rankCandidates([zero, one], target, catalog);
+    expect(ranked.map((x) => x.candidateId)).toContain('z');
+    expect(ranked.find((x) => x.candidateId === 'z')!.covered).toBe(0);
+    expect(dropUncovered(ranked).map((x) => x.candidateId)).toEqual(['o']);
   });
 });
 

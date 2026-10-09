@@ -11,6 +11,7 @@ import { publicSourceType, toCandidateCard, type CandidateCard, type PublicClaim
 import {
   categoryNeeds,
   effectiveSpecialization,
+  dropUncovered,
   rankCandidates,
   type CandidateEvidence,
   type MatchFilters,
@@ -122,10 +123,12 @@ async function run(
   target: MatchTarget | ((c: CandidateEvidence) => MatchTarget | null),
   filters: MatchFilters,
   limit: number,
+  requireCoverage = false,
 ): Promise<{ total: number; items: MatchItem[] }> {
   const pool = await loadPool(catalog);
   const byId = new Map(pool.map((p) => [p.evidence.id, p]));
-  const ranked = rankCandidates(pool.map((p) => p.evidence), target, catalog, filters);
+  const all = rankCandidates(pool.map((p) => p.evidence), target, catalog, filters);
+  const ranked = requireCoverage ? dropUncovered(all) : all;
   const top = ranked.slice(0, limit);
   const ids = top.map((r) => r.candidateId);
   const [accepted, invites] = await Promise.all([acceptedCandidateIds(companyId, ids), lastInvitations(companyId, ids)]);
@@ -153,7 +156,7 @@ export async function matchForVacancy(companyId: string, vacancyId: string, filt
   const vacancy = await getVacancy(companyId, vacancyId);
   const catalog = await loadCatalog();
   const target: MatchTarget = { specialization: vacancy.specialization, grade: vacancy.grade, needs: vacancy.needs, stack: vacancy.stack };
-  const r = await run(companyId, catalog, target, filters, limit);
+  const r = await run(companyId, catalog, target, filters, limit, true);
   return { vacancy, filters, ...r };
 }
 

@@ -113,7 +113,11 @@ function candidateLine(c: AssistantCandidate): string {
 
 export function describeBlock(b: CandidatesBlock): string {
   const where = b.vacancy ? `Под «${b.vacancy.title}»` : 'По базе';
-  if (!b.items.length) return `${where} пока никого: ни один кандидат не закрывает требования. Попробуй поиск по всей базе или ослабь фильтры.`;
+  if (!b.items.length) {
+    return b.vacancy
+      ? `${where} пока никого: никто не закрыл ни одного требования. Расширь стек или снизь грейд — или попробуй поиск по всей базе.`
+      : `${where} пока никого: ничего не нашлось. Ослабь фильтры.`;
+  }
   const top = b.items[0]!;
   const lines = [`${where} нашлось ${b.total} — первые ${b.items.length} ниже карточками.`, `Первый: ${candidateLine(top)}.`];
   if (top.missing.length) lines.push(`Не хватает: ${top.missing.slice(0, 2).join('; ')}.`);

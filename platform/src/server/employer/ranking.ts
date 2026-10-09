@@ -15,6 +15,7 @@ import {
   SPEC_MISMATCH_PENALTY,
   STACK_BOOST_MAX,
   STACK_BOOST_PER_TAG,
+  MIN_COVERED_FOR_VACANCY,
 } from './weights';
 
 export interface EvidenceClaim {
@@ -223,4 +224,9 @@ export function rankCandidates(
       b.score - a.score || b.covered - a.covered || b.provenCount - a.provenCount || a.candidateId.localeCompare(b.candidateId),
   );
   return out;
+}
+
+/** Подборка под потребность: оставляет тех, кто закрыл не меньше MIN_COVERED_FOR_VACANCY требований. */
+export function dropUncovered<T extends { covered: number }>(ranked: T[]): T[] {
+  return ranked.filter((r) => r.covered >= MIN_COVERED_FOR_VACANCY);
 }

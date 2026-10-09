@@ -112,6 +112,26 @@ describe('кабинет работодателя (БД)', () => {
     for (const key of ['sourceRef', 'sourceKind', '"quote"', 'github:demo', 'codeforces:demo', 'cv-demo.pdf']) expect(raw).not.toContain(key);
   });
 
+  it('подборка скрывает кандидата с нулевым покрытием; поиск по банку — нет (решение владельца 09.10)', async () => {
+    await prisma.candidate.create({
+      data: { id: 'zero-cov', name: 'Нулевой', email: 'zero-cov@example.test', specialization: 'backend', fspState: 'not_linked', consentAt: new Date() },
+    });
+    await prisma.claim.create({
+      data: {
+        candidateId: 'zero-cov', catalogId: 'be.sql-indexes', statement: 'Индексы', level: 'self_reported', quote: 'Go, Kafka',
+        sourceRef: 'cv.pdf#p1:l1', sourceKind: 'resume', confidence: 'high', limits: '', suggestedProof: [], status: 'confirmed', confirmedAt: new Date(),
+      },
+    });
+    const created = await (await createVac(jsonRequest('/api/employer/vacancies', 'POST', VAC_BODY, EMP))).json();
+    const vacId = created.id ?? created.vacancy?.id;
+    const m = await (await matches(jsonRequest(`/x/${vacId}/matches`, 'GET', undefined, EMP), params({ id: vacId }))).json();
+    expect(m.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('zero-cov');
+    expect(m.items.every((i: { covered: number }) => i.covered >= 1)).toBe(true);
+    const bank = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go', 'GET', undefined, EMP))).json();
+    expect(bank.items.map((i: { candidateId: string }) => i.candidateId)).toContain('zero-cov');
+    await prisma.candidate.delete({ where: { id: 'zero-cov' } }); // не мешать соседним тестам
+  });
+
   it('фильтры — query (R-M-04): ФСП, стек, грейд категории; чужая потребность — 404', async () => {
     const url = (q: string) => jsonRequest(`/api/employer/vacancies/${PAY_VAC}/matches?${q}`, 'GET', undefined, EMP);
     const fsp = await (await matches(url('fsp=1'), params({ id: PAY_VAC }))).json();

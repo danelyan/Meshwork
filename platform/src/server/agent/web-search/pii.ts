@@ -40,6 +40,11 @@ const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g,
 function hasTerm(q: string, term: string): boolean {
   const t = norm(term);
   if (t.length < 3) return false;
+  // Слово из букв длиной ≥ 5 — по основе (падежи: «Петрову»); короче и всё остальное — целиком.
+  if (/^\p{L}{5,}$/u.test(t)) {
+    const stem = t.slice(0, Math.max(5, t.length - 2));
+    return new RegExp(`(?<![\\p{L}\\p{N}])${stem}\\p{L}{0,4}(?![\\p{L}\\p{N}])`, 'u').test(q);
+  }
   const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(?<![\\p{L}\\p{N}])${esc}(?![\\p{L}\\p{N}])`, 'u').test(q);
 }
@@ -51,6 +56,8 @@ function hasTerm(q: string, term: string): boolean {
  */
 export function checkQuery(query: string, profileTerms: string[] = []): PiiCheck {
   for (const r of RULES) if (r.re.test(query)) return { ok: false, reason: r.reason, message: r.message };
+  // Телефон, разбитый пробелами/скобками/дефисами: «(999) 123 45 67» → 10+ цифр подряд.
+  if (/\d{10,}/.test(query.replace(/[\s()-]+/g, ''))) return { ok: false, reason: 'phone', message: 'в запросе номер телефона' };
   const q = norm(query);
   for (const term of profileTerms) {
     if (hasTerm(q, term)) return { ok: false, reason: 'profile_term', message: 'в запросе данные из профиля человека (имя, ник, компания или ссылка)' };
@@ -79,5 +86,18 @@ export function companyTerms(text: string): string[] {
 /** Имя «Иван Петров» → полное имя и слова ≥ 3 букв (служебные «демо:», скобки — мимо). */
 export function nameTerms(name: string): string[] {
   const clean = name.replace(/^демо:\s*/i, '').replace(/\(.*?\)/g, '').trim();
-  return [clean, ...clean.split(/\s+/)].filter((w) => w.length >= 3);
+  const base = [clean, ...clean.split(/\s+/)].filter((w) => w.length >= 3);
+  const latin = base.map(translit).filter((w) => w.length >= 3 && !base.includes(w));
+  return [...base, ...new Set(latin)];
+}
+
+const TRANSLIT: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm',
+  н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch',
+  ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+};
+
+/** Простая паспортная транслитерация кириллицы в нижний регистр латиницы; прочее без изменений. */
+export function translit(s: string): string {
+  return [...s.toLowerCase()].map((ch) => TRANSLIT[ch] ?? ch).join('');
 }

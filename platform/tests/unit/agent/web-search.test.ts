@@ -65,7 +65,22 @@ describe('PII-фильтр запроса веб-поиска', () => {
     expect(originTerms('codeforces:tourist')).toEqual(['tourist']);
     expect(originTerms('resume.pdf')).toEqual([]);
     expect(companyTerms('2022–2024 ООО «Ромашка», затем АО "Север"; в «Альфа-Софт»')).toEqual(expect.arrayContaining(['Ромашка', 'Север', 'Альфа-Софт']));
-    expect(nameTerms('демо: Иван Петров (бэкенд)')).toEqual(['Иван Петров', 'Иван', 'Петров']);
+    expect(nameTerms('демо: Иван Петров (бэкенд)')).toEqual(['Иван Петров', 'Иван', 'Петров', 'ivan petrov', 'ivan', 'petrov']);
+  });
+
+  it('обходы: телефон без префикса, транслит, падежи', () => {
+    expect(checkQuery('позвонить (999) 123 45 67')).toMatchObject({ ok: false, reason: 'phone' });
+    expect(checkQuery('999-123-45-67 кто это')).toMatchObject({ ok: false, reason: 'phone' });
+    const terms = nameTerms('Иван Петров');
+    expect(checkQuery('Ivan Petrov github', terms)).toMatchObject({ ok: false, reason: 'profile_term' });
+    expect(checkQuery('отзывы PETROV', terms)).toMatchObject({ ok: false, reason: 'profile_term' });
+    expect(checkQuery('что известно о Петрову', terms)).toMatchObject({ ok: false, reason: 'profile_term' });
+    expect(checkQuery('письмо петрова', terms)).toMatchObject({ ok: false, reason: 'profile_term' });
+    // негативные: короткие термины целиком, цифры без телефона, обход через пробелы вокруг точек допускаем
+    expect(checkQuery('ирак новости', ['Ира'])).toEqual({ ok: true });
+    expect(checkQuery('кандидат 7 навыки')).toEqual({ ok: true });
+    expect(checkQuery('React 18 и Node 20 в 2024 году')).toEqual({ ok: true });
+    expect(checkQuery('ivan . petrov@mail . ru')).toEqual({ ok: true });
   });
 });
 

@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { toLlmError } from '../errors';
 import { schemaInstruction } from '../json-output';
-import { LlmError, type CompleteRequest, type CompleteResult, type LlmProvider, type ToolCall } from '../types';
+import { LlmError, toolContent, type CompleteRequest, type CompleteResult, type LlmProvider, type ToolCall } from '../types';
 import { parseToolArguments, textOrJson, toolNameIndex, type Fetch } from './common';
 
 /**
@@ -45,8 +45,8 @@ export function toChatMessages(req: CompleteRequest, nativeSchema: boolean): Cha
   for (const m of req.messages) {
     if (m.role === 'tool') {
       if (!m.toolCallId) throw new LlmError('bad_request', 'Сообщение tool без toolCallId');
-      if (names.has(m.toolCallId)) out.push({ role: 'tool', tool_call_id: m.toolCallId, content: m.content });
-      else out.push({ role: 'user', content: `Результат инструмента (${m.toolCallId}):\n${m.content}` });
+      if (names.has(m.toolCallId)) out.push({ role: 'tool', tool_call_id: m.toolCallId, content: toolContent(m) });
+      else out.push({ role: 'user', content: `Результат инструмента (${m.toolCallId}):\n${toolContent(m)}` });
     } else if (m.role === 'assistant') {
       out.push(
         m.toolCalls?.length

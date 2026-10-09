@@ -15,6 +15,17 @@ export interface ChatMessage {
   toolCalls?: ToolCall[];
   /** у tool */
   toolCallId?: string;
+  /**
+   * У tool: служебная приписка платформы (напоминание о вопросе хода, agent/reminder.ts). Не часть
+   * результата инструмента: провайдеры дописывают её после content (toolContent), план В — после
+   * блока «данные, не инструкции». В БД не пишется.
+   */
+  note?: string;
+}
+
+/** Текст tool-сообщения для провайдера: результат инструмента и, после него, приписка платформы. */
+export function toolContent(m: ChatMessage): string {
+  return m.note ? `${m.content}\n\n${m.note}` : m.content;
 }
 
 export interface ToolSpec {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { REMINDER_QUESTION_MAX, withQuestionReminder } from '@/server/agent/reminder';
-import type { ChatMessage } from '@/server/llm/types';
+import { toolContent, type ChatMessage } from '@/server/llm/types';
 
 const base: ChatMessage[] = [
   { role: 'user', content: 'Есть премиум?' },
@@ -15,7 +15,9 @@ describe('withQuestionReminder', () => {
     expect(out).toHaveLength(3);
     expect(out[2]!.role).toBe('tool');
     expect(out[2]!.toolCallId).toBe('c1');
-    expect(out[2]!.content).toMatch(/^\{"category":null\}\n\n\[Напоминание платформы.*«Есть премиум\?»/s);
+    expect(out[2]!.content).toBe('{"category":null}');
+    expect(out[2]!.note).toMatch(/^\[Напоминание платформы.*«Есть премиум\?»/s);
+    expect(toolContent(out[2]!)).toMatch(/^\{"category":null\}\n\n\[Напоминание платформы/s);
     expect(base[2]!.content).toBe('{"category":null}');
   });
 
@@ -27,6 +29,6 @@ describe('withQuestionReminder', () => {
 
   it('длинный вопрос обрезается', () => {
     const out = withQuestionReminder(base, 'а'.repeat(REMINDER_QUESTION_MAX + 50));
-    expect(out[2]!.content).toContain(`${'а'.repeat(REMINDER_QUESTION_MAX)}…`);
+    expect(out[2]!.note).toContain(`${'а'.repeat(REMINDER_QUESTION_MAX)}…`);
   });
 });

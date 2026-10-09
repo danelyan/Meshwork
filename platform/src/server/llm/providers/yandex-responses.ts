@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { toLlmError } from '../errors';
 import { schemaInstruction } from '../json-output';
-import { LlmError, type CompleteRequest, type CompleteResult, type LlmProvider, type ToolCall } from '../types';
+import { LlmError, toolContent, type CompleteRequest, type CompleteResult, type LlmProvider, type ToolCall } from '../types';
 import { parseToolArguments, textOrJson, toolNameIndex, type Fetch } from './common';
 
 /**
@@ -61,9 +61,9 @@ export function toResponsesInput(req: CompleteRequest): InputItem[] {
       if (!m.toolCallId) throw new LlmError('bad_request', 'Сообщение tool без toolCallId');
       // Результат без предшествующего вызова Responses API не примет — подстрахуемся текстом.
       if (!names.has(m.toolCallId)) {
-        items.push({ role: 'user', content: `Результат инструмента (${m.toolCallId}):\n${m.content}` });
+        items.push({ role: 'user', content: `Результат инструмента (${m.toolCallId}):\n${toolContent(m)}` });
       } else {
-        items.push({ type: 'function_call_output', call_id: m.toolCallId, output: m.content });
+        items.push({ type: 'function_call_output', call_id: m.toolCallId, output: toolContent(m) });
       }
       continue;
     }

@@ -82,3 +82,38 @@ it('«пройти онбординг заново» у демо-работод�
   await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
   expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ restartUserId: 'e1' });
 });
+
+describe('?next= от guard', () => {
+  it('кандидат: вход ведёт на исходную страницу кандидата', async () => {
+    stubFetch({ candidate: { id: 'd1', name: 'Анна' }, next: '/consultant' });
+    render(<DemoScreen next="/test?specialization=backend" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Войти как Анна' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/test?specialization=backend'));
+  });
+
+  it('кандидат с next на кабинет работодателя — в свой кабинет', async () => {
+    stubFetch({ candidate: { id: 'd1', name: 'Анна' }, next: '/consultant' });
+    render(<DemoScreen next="/employer/search" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Войти как Анна' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
+  });
+
+  it('работодатель: next /employer/… — туда, страница кандидата — в /employer', async () => {
+    stubFetch({ employer: { id: 'e1', name: 'Олег HR' }, next: '/employer' });
+    render(<DemoScreen next="/employer/search" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Войти как Олег HR' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/employer/search'));
+    cleanup();
+    push.mockReset();
+    render(<DemoScreen next="/profile" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Войти как Олег HR' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/employer'));
+  });
+
+  it('«пройти онбординг заново» next не использует', async () => {
+    stubFetch({ user: { id: 'u', name: 'x' }, next: '/onboarding' });
+    render(<DemoScreen next="/profile" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Анна' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
+  });
+});

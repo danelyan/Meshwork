@@ -32,8 +32,14 @@ function Avatar() {
   );
 }
 
-/** Страница /demo: список демо-аккаунтов для жюри (только при DEMO_LOGIN=true, решает серверная страница). */
-export function DemoScreen() {
+const isEmployerPath = (p: string) => p === '/employer' || p.startsWith('/employer/') || p.startsWith('/employer?');
+
+/**
+ * Страница /demo: список демо-аккаунтов для жюри (только при DEMO_LOGIN=true, решает серверная страница).
+ * `next` — уже проверенный safeNext путь, откуда прислал guard: после входа готовым аккаунтом ведём туда,
+ * если путь подходит роли (кандидат — не /employer, работодатель — /employer…). Онбординг-входы его не используют.
+ */
+export function DemoScreen({ next = null }: { next?: string | null } = {}) {
   const router = useRouter();
   const [accounts, setAccounts] = useState<{ candidates: DemoCandidate[]; employers: DemoEmployer[] } | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -54,12 +60,12 @@ export function DemoScreen() {
     };
   }, []);
 
-  async function enter(key: string, run: () => Promise<{ next?: string }>, fallback: string) {
+  async function enter(key: string, run: () => Promise<{ next?: string }>, fallback: string, back: string | null = null) {
     setPending(key);
     setFailure(null);
     try {
       const r = await run();
-      router.push(r.next ?? fallback);
+      router.push(back ?? r.next ?? fallback);
       router.refresh();
     } catch (e) {
       setFailure(e instanceof Error ? e.message : 'Не удалось войти.');
@@ -77,7 +83,7 @@ export function DemoScreen() {
         className={styles.item}
         aria-label={`Войти как ${c.name}`}
         disabled={pending !== null}
-        onClick={() => void enter(c.id, () => demoLogin(c.id), '/consultant')}
+        onClick={() => void enter(c.id, () => demoLogin(c.id), '/consultant', next && !isEmployerPath(next) ? next : null)}
       >
         <Avatar />
         <span className={styles.who}>
@@ -157,7 +163,7 @@ export function DemoScreen() {
                       className={styles.item}
                       aria-label={`Войти как ${e.name}`}
                       disabled={pending !== null}
-                      onClick={() => void enter(e.id, () => demoEmployerLogin(e.id), '/employer')}
+                      onClick={() => void enter(e.id, () => demoEmployerLogin(e.id), '/employer', next && isEmployerPath(next) ? next : null)}
                     >
                     <Avatar />
                     <span className={styles.who}>

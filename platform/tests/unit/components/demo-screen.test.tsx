@@ -53,7 +53,32 @@ it('кандидаты пула работодателя свёрнуты в «�
   const summary = screen.getByText('ещё 8 кандидатов для подборки');
   const details = summary.closest('details')!;
   expect(details.open).toBe(false);
-  expect(details.querySelectorAll('button')).toHaveLength(8);
-  expect(summary.closest('section')!.querySelectorAll('ul > li > button')).toHaveLength(10);
+  expect(details.querySelectorAll('button[aria-label^="Войти"]')).toHaveLength(8);
+  expect(summary.closest('section')!.querySelectorAll('ul > li > button[aria-label^="Войти"]')).toHaveLength(10);
   expect(screen.getByRole('button', { name: 'Войти как Анна' }).closest('details')).toBeNull();
+});
+
+it('«Новый пользователь» создаёт гостя и ведёт на /onboarding', async () => {
+  const fetchFn = stubFetch({ user: { id: 'u', name: 'Демо-гость 1' }, next: '/onboarding' });
+  render(<DemoScreen />);
+  await screen.findByRole('button', { name: 'Войти как Анна' });
+  fireEvent.click(screen.getByRole('button', { name: 'Новый пользователь' }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
+  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ fresh: true });
+});
+
+it('«пройти онбординг заново» у демо-кандидата шлёт restartCandidateId', async () => {
+  const fetchFn = stubFetch({ user: { id: 'u', name: 'x' }, next: '/onboarding' });
+  render(<DemoScreen />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Анна' }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
+  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ restartCandidateId: 'd1' });
+});
+
+it('«пройти онбординг заново» у демо-работодателя шлёт restartUserId', async () => {
+  const fetchFn = stubFetch({ user: { id: 'u', name: 'x' }, next: '/onboarding' });
+  render(<DemoScreen />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Олег HR' }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
+  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ restartUserId: 'e1' });
 });

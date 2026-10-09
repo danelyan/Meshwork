@@ -10,6 +10,7 @@ import type { ProfileClaim, ProfileView } from '@/server/claims/types';
 import type { Gap } from '@/server/recommend/types';
 
 import { LevelBadge } from './LevelBadge';
+import { Button, Notice } from './ui';
 import styles from './ProfilePage.module.css';
 import ui from './ui.module.css';
 
@@ -141,13 +142,11 @@ export function ProfilePage() {
     const unauth = error instanceof ApiError && error.status === 401;
     return (
       <div className={styles.pageSingle}>
-        <p className={`${ui.notice} ${ui.errorBox}`} role="alert">
-          {error.message}
-        </p>
+        <Notice tone="error">{error.message}</Notice>
         {unauth && (
-          <Link className={`${ui.btn} ${ui.small}`} href="/" style={{ justifySelf: 'start' }}>
+          <Button size="sm" href="/" style={{ justifySelf: 'start' }}>
             На страницу входа
-          </Link>
+          </Button>
         )}
       </div>
     );
@@ -218,12 +217,10 @@ export function ProfilePage() {
           </div>
         )}
         <div className={`${styles.sideActions} ${styles.noPrint}`}>
-          <Link className={`${ui.btn} ${ui.cta}`} href="/consultant">
+          <Button variant="cta" href="/consultant">
             К консультанту
-          </Link>
-          <button type="button" className={ui.btn} onClick={() => window.print()}>
-            Печать / PDF
-          </button>
+          </Button>
+          <Button onClick={() => window.print()}>Печать / PDF</Button>
         </div>
       </aside>
 

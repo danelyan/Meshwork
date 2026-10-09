@@ -101,8 +101,11 @@ reloads in development.
 
 **Frontend**
 - Server Components by default; client components only for interactivity.
-- Follow the dark design tokens and fonts from `docs/design.md`; no new
-  colors or fonts outside the brandbook.
+- **Design system is mandatory** (`docs/design-system.md`): new screens are
+  built from `platform/src/components/ui` primitives; colors only through
+  tokens from `styles/tokens.css` (no raw `#hex`/`rgb()` in `*.module.css` -
+  a test enforces it); a new token or component is first added to
+  `docs/design-system.md`, then to code. Visual source: `docs/design-spec.md`.
 - Accessible by default: semantic elements, labels on inputs, keyboard
   navigation, visible focus. Check narrow (mobile) layout and empty, loading
   and error states.

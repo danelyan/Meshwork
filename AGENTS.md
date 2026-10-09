@@ -4,6 +4,8 @@
 
 The Git repository contains the supplied final FSP Career design mockup in `site/` and product documentation in `docs/`. `site/index.html` owns the landing page and modal onboarding; `site/map.html`, `site/app.js` and `site/styles.css` own the map; `site/interview.html` contains the scripted interview; `site/onboarding*.html` contain alternate onboarding layouts. Assets live in `site/assets/`. `scripts/` contains the HTTP server, clean static build and syntax checker; `tests/site.test.js` uses `node:test`. The prior frontend was removed at the user's explicit request on 9 October. This import preserves the supplied static design; the accepted target application stack (Next.js + TypeScript, PostgreSQL) remains in `docs/stack.md`. Application development follows `.claude/skills/fullstack-dev/SKILL.md`.
 
+`platform/` is the working application (Next.js 15 App Router, TypeScript, Prisma/PostgreSQL, Vitest): `src/app` routes, `src/components` UI (primitives in `src/components/ui`), `src/styles/tokens.css` design tokens, `src/server` domain and agent code, `prisma/` schema, `tests/` unit and integration. `site/` stays as the static design reference. Run and layout details: `platform/README.md`.
+
 Keep application code, tests, and static assets in clearly named locations appropriate to the chosen framework. For example, use `src/`, `tests/`, and `assets/` if the framework does not prescribe alternatives. Document the actual layout in `README.md`.
 
 ## Build, Test, and Development Commands
@@ -13,6 +15,8 @@ Node.js 22+ is required. No npm runtime dependencies are used; Google Fonts rema
 ## Coding Style & Naming Conventions
 
 Tooling uses JavaScript ES modules and two-space indentation; follow `.editorconfig`. Preserve the supplied page scripts and their behavior during design import. Escape user-authored text before HTML interpolation. The current visual source is `docs/design-spec.md` (light square layout, Golos Text and JetBrains Mono), explicitly selected by the user to replace the former dark design. Use semantic accessible controls and keep unrelated cleanup separate.
+
+**Design system (mandatory for `platform/`):** `docs/design-system.md` is the code rule set (`docs/design-spec.md` stays the visual source). Build new screens from `platform/src/components/ui` primitives, take colors only from tokens in `platform/src/styles/tokens.css` (no raw `#hex`/`rgb()` in `*.module.css`; `tests/unit/design-tokens.test.ts` fails on them), and add any new token or component to `docs/design-system.md` first.
 
 ## Testing Guidelines
 

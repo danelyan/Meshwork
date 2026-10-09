@@ -291,3 +291,7 @@ same Chat panel as `/consultant`. To verify its layout without a database, start
 `npx playwright test --config playwright.design.config.ts`.
 If Playwright's browser is not installed, set `PLAYWRIGHT_CHANNEL=msedge` to use
 an installed Edge. This checks desktop, tablet and phone widths.
+
+Основной `/consultant` использует утверждённую сеточную голову v3 с сохранением
+параметров. Для обновления изолированного документа головы:
+`node platform/scripts/build-consultant-grid-head.mjs` (из корня репозитория).

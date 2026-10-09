@@ -1,94 +1,43 @@
-import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ConsultantHead } from '@/components/head/ConsultantHead';
 import { ConsultantScene } from '@/components/head/ConsultantScene';
-import { createHeadRenderer, type HeadRenderer } from '@/components/head/renderer';
-
-vi.mock('@/components/head/renderer', () => ({ createHeadRenderer: vi.fn() }));
-
-function media(desktop = true, reduced = false) {
-  const desktopQuery = { matches: desktop, addEventListener: vi.fn(), removeEventListener: vi.fn() };
-  const motionQuery = { matches: reduced, addEventListener: vi.fn(), removeEventListener: vi.fn() };
-  vi.stubGlobal('matchMedia', (query: string) => query.includes('min-width') ? desktopQuery : motionQuery);
-  return { desktopQuery, motionQuery };
-}
-
-beforeEach(() => { vi.clearAllMocks(); });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
-
-describe('decorative consultant portrait', () => {
-  it('keeps loading fallback static without initializing a second model', () => {
-    media();
-    const { container } = render(<ConsultantScene pending><p>Loading chat</p></ConsultantScene>);
-    expect(createHeadRenderer).not.toHaveBeenCalled();
-    expect(container.querySelector('canvas')).toBeNull();
-  });
-  it('does not initialize or fetch the heavy model on narrow screens', () => {
-    media(false);
-    render(<ConsultantHead />);
-    expect(createHeadRenderer).not.toHaveBeenCalled();
-  });
-
-  it('keeps the portrait unfocusable and passes the motion preference', async () => {
-    media(true, true);
-    const dispose = vi.fn();
-    vi.mocked(createHeadRenderer).mockResolvedValue({ dispose });
-    const { container, unmount } = render(<ConsultantHead />);
-    await waitFor(() => expect(container.querySelector('[data-head-state]')?.getAttribute('data-head-state')).toBe('ready'));
-    expect(container.querySelector('canvas')?.getAttribute('aria-hidden')).toBe('true');
-    expect(container.querySelector('canvas')?.tabIndex).toBe(-1);
-    const args = vi.mocked(createHeadRenderer).mock.calls[0]!;
-    expect(args[2]).toBe(true);
-    expect(container.querySelector('button')).toBeNull();
-    unmount();
-    expect(args[1].aborted).toBe(true);
-    expect(dispose).toHaveBeenCalledOnce();
-  });
-
-  it('provides an accessible pause control without reloading the model', async () => {
-    media();
-    const setPaused = vi.fn();
-    vi.mocked(createHeadRenderer).mockResolvedValue({ dispose: vi.fn(), setPaused });
-    const { getByRole } = render(<ConsultantHead />);
-    const pause = await waitFor(() => getByRole('button', { name: 'Остановить анимацию' }));
-    expect(pause.closest('[aria-hidden="true"]')).toBeNull();
-    fireEvent.click(pause);
-    expect(setPaused).toHaveBeenLastCalledWith(true);
-    fireEvent.click(getByRole('button', { name: 'Включить анимацию' }));
-    expect(setPaused).toHaveBeenLastCalledWith(false);
-    expect(createHeadRenderer).toHaveBeenCalledOnce();
-  });
-
-  it('disposes a late model initialization after unmount', async () => {
-    media();
-    let resolve!: (renderer: HeadRenderer) => void;
-    vi.mocked(createHeadRenderer).mockReturnValue(new Promise(value => { resolve = value; }));
-    const { unmount } = render(<ConsultantHead />);
-    unmount();
-    const dispose = vi.fn();
-    await act(async () => { resolve({ dispose }); });
-    expect(dispose).toHaveBeenCalledOnce();
-  });
-
-  it('keeps the static background without a separate portrait when WebGL cannot initialize', async () => {
-    media();
-    vi.mocked(createHeadRenderer).mockRejectedValue(new Error('WebGL unavailable'));
-    const { container } = render(<ConsultantHead />);
-    await waitFor(() => expect(container.querySelector('[data-head-state]')?.getAttribute('data-head-state')).toBe('fallback'));
-    expect(container.querySelector('img')).toBeNull();
-    expect(container.querySelector('canvas')).not.toBeNull();
-  });
-
-  it('releases the renderer and listeners when resized to mobile', async () => {
-    const { desktopQuery, motionQuery } = media();
-    const dispose = vi.fn();
-    vi.mocked(createHeadRenderer).mockResolvedValue({ dispose });
-    const { unmount } = render(<ConsultantHead />);
-    await act(async () => {});
-    desktopQuery.matches = false;
-    act(() => { desktopQuery.addEventListener.mock.calls[0]![1](); });
-    expect(dispose).toHaveBeenCalledOnce();
-    unmount();
-    expect(desktopQuery.removeEventListener).toHaveBeenCalledOnce();
-    expect(motionQuery.removeEventListener).toHaveBeenCalledOnce();
-  });
+import { GRID_V3_STORAGE_KEY } from '@/components/design/grid-preview-settings';
+beforeEach(() => localStorage.clear());
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+it('uses the approved grid in the main consultant while keeping the actual chat', () => {
+  const { container } = render(<ConsultantScene><p>Actual conversation</p></ConsultantScene>);
+  expect(screen.getByText('Actual conversation')).toBeTruthy();
+  expect(screen.getByTitle('Сеточная голова консультанта').getAttribute('src')).toBe('/design/consultant-grid-v3/head.html');
+  expect(container.querySelector('main')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Настройки сетки' }));
+  expect(screen.getByRole('slider', { name: /Шаг сетки/ }).getAttribute('value')).toBe('42');
+  expect(screen.queryByText(/Демо-чат из макета/)).toBeNull();
+});
+it('shares saved v3 controls and sends them only to its own ready frame', () => {
+  localStorage.setItem(GRID_V3_STORAGE_KEY, JSON.stringify({step:54,relief:1.4,angle:0.74}));
+  render(<ConsultantHead />);
+  const frame = screen.getByTitle('Сеточная голова консультанта') as HTMLIFrameElement;
+  const send = vi.spyOn(frame.contentWindow!, 'postMessage');
+  act(() => window.dispatchEvent(new MessageEvent('message', {
+    source: frame.contentWindow, origin: location.origin, data: {type:'fsp-grid-ready'},
+  })));
+  expect(send).toHaveBeenLastCalledWith({type:'fsp-grid-settings',settings:{step:54,relief:1.4,angle:0.74}},location.origin);
+  fireEvent.click(screen.getByRole('button', {name:'Настройки сетки'}));
+  fireEvent.change(screen.getByRole('slider',{name:/Шаг сетки/}),{target:{value:'56'}});
+  expect(JSON.parse(localStorage.getItem(GRID_V3_STORAGE_KEY)!).step).toBe(56);
+});
+it('keeps the loading scene free of a second renderer', () => {
+  render(<ConsultantScene pending><p>Loading chat</p></ConsultantScene>);
+  expect(screen.queryByTitle('Сеточная голова консультанта')).toBeNull();
+});
+it('forwards gaze from the actual conversation and releases the listener on unmount', () => {
+  const view = render(<ConsultantHead />);
+  const frame = screen.getByTitle('Сеточная голова консультанта') as HTMLIFrameElement;
+  const send = vi.spyOn(frame.contentWindow!, 'postMessage');
+  fireEvent.pointerMove(window, {clientX:10,clientY:20});
+  expect(send).toHaveBeenCalledWith(expect.objectContaining({type:'fsp-grid-pointer'}),location.origin);
+  send.mockClear();
+  view.unmount();
+  fireEvent.pointerMove(window, {clientX:10,clientY:20});
+  expect(send).not.toHaveBeenCalled();
 });

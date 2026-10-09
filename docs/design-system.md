@@ -299,3 +299,9 @@ the earlier glass material on the consultant page.
 
 ### Animated glass consultant, 9 October
 The glass portrait may blink and deform at the neck while its shoulder base stays fixed. Mouth movement uses Blender facial morphs. Speech controls use existing small Buttons, with a labelled demo recording started by the user, no autoplay or microphone. The static page grid and left chat layout remain unchanged; reduced-motion stops the decorative animation.
+# Основной консультант: утверждённая сеточная голова
+
+`ConsultantHead` использует тот же зеркальный WebGL2-рендерер и настройки
+42 / 1.25 / 0.18, что и v3. Режим portrait у `ConsultantGridPreview` встраивает
+только голову и контролы в правую колонку рабочего чата, без второго main и
+вымышленных сообщений. Настройки общие с v3 и сохраняются в браузере.

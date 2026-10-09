@@ -42,6 +42,11 @@ export const envSchema = z
     OPENAI_CHAT_NAME: optionalString,
     OPENAI_CHAT_SUPPORTS_TOOLS: z.stringbool().default(true),
     OPENAI_CHAT_SUPPORTS_JSON_SCHEMA: z.stringbool().default(true),
+    /** Стримить ответы чата (`stream: true`): реплики консультанта и помощника появляются по мере генерации. */
+    OPENAI_CHAT_STREAM: z.stringbool().default(true),
+
+    /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
+    STT_PROVIDER: z.enum(['auto', 'yandex', 'browser', 'off']).default('auto'),
 
     /** Вход через Яндекс ID (oauth.yandex.ru). Не заданы → кнопка входа неактивна, работает демо-вход. */
     YANDEX_CLIENT_ID: optionalString,

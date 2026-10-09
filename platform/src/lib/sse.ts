@@ -9,6 +9,8 @@ const EVENT_TYPES = new Set<AgentEvent['type']>([
   'ask',
   'recommendations',
   'message',
+  'delta',
+  'discard',
   'error',
   'done',
   'conversation',

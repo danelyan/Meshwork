@@ -37,6 +37,7 @@ export function createProvider(env: Env): LlmProvider {
         name: env.OPENAI_CHAT_NAME,
         supportsTools: env.OPENAI_CHAT_SUPPORTS_TOOLS,
         supportsJsonSchema: env.OPENAI_CHAT_SUPPORTS_JSON_SCHEMA,
+        stream: env.OPENAI_CHAT_STREAM,
         headers,
       });
     }

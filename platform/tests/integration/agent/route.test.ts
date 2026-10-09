@@ -58,7 +58,14 @@ describe('POST /api/consultant/messages (SSE)', () => {
     const events = await readAll(res);
     expect(events[0]).toEqual({ type: 'conversation', id: convId });
     expect(events.at(-1)).toEqual({ type: 'done' });
-    expect(events.find((e) => e.type === 'message')).toEqual({ type: 'message', text: 'Привет! Пришли резюме.' });
+    const msg = events.find((e) => e.type === 'message') as Extract<AgentEvent, { type: 'message' }>;
+    expect(msg).toEqual({ type: 'message', id: expect.any(String), text: 'Привет! Пришли резюме.' });
+    // стрим: перед итогом — дельты той же реплики, склейка = итоговый текст
+    const deltas = events.filter((e): e is Extract<AgentEvent, { type: 'delta' }> => e.type === 'delta');
+    expect(deltas.length).toBeGreaterThan(0);
+    expect(deltas.every((d) => d.id === msg.id)).toBe(true);
+    expect(deltas.map((d) => d.text).join('')).toBe(msg.text);
+    expect(events.indexOf(msg)).toBeGreaterThan(events.indexOf(deltas.at(-1)!));
     const conv = await prisma.conversation.findUniqueOrThrow({ where: { id: convId! } });
     expect(conv.candidateId).toBe(CAND);
     expect(conv.title).toContain('Привет');
@@ -85,7 +92,7 @@ describe('POST /api/consultant/messages (SSE)', () => {
     expect(busy.status).toBe(409);
     expect((await busy.json()).error.code).toBe('busy');
     const events = await readAll(slow);
-    expect(events.find((e) => e.type === 'message')).toEqual({ type: 'message', text: 'медленно' });
+    expect(events.find((e) => e.type === 'message')).toMatchObject({ type: 'message', text: 'медленно' });
     const after = await POST(jsonRequest('/api/consultant/messages', 'POST', { conversationId: conv.id, text: '[[reply ок]]' }, cookie(CAND)));
     expect(after.status).toBe(200);
     await readAll(after);

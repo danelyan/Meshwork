@@ -37,6 +37,12 @@ export interface CompleteRequest {
   maxTokens?: number;
   temperature?: number;
   timeoutMs?: number;
+  /**
+   * Дельты текста ответа по мере генерации. Провайдер, умеющий стримить (openai-chat), вызывает
+   * его на каждом куске content; остальные игнорируют. Клиент LLM снимает колбэк для плана В и
+   * JSON-схемы (там текст — служебный JSON, показывать его нельзя).
+   */
+  onDelta?: (text: string) => void;
 }
 
 export interface CompleteResult {

@@ -170,6 +170,22 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
     const startedAt = Date.now();
     const timeoutMs = req.timeoutMs ?? opts.timeoutMs;
     const planB = Boolean(req.tools?.length) && !provider.supportsTools;
+    // Дельты — только для свободного текста: в плане В и по JSON-схеме модель пишет служебный JSON.
+    // После неудачной попытки, успевшей что-то показать, повтор идёт без дельт: итог придёт событием message.
+    let streamed = false;
+    const userDelta = planB || req.schema ? undefined : req.onDelta;
+    const { onDelta: _drop, ...bare } = req;
+    void _drop;
+    const reqFor = (): CompleteRequest =>
+      userDelta && !streamed
+        ? {
+            ...bare,
+            onDelta: (t) => {
+              streamed = true;
+              userDelta(t);
+            },
+          }
+        : bare;
     let attempts = 0;
     let lastErr: unknown;
     try {
@@ -178,8 +194,8 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
         try {
           // План В: разбор JSON-действия и один ремонт — внутри попытки (у каждого вызова свой таймаут).
           const result = planB
-            ? await runPlanB(req, (r) => attemptWithTimeout(provider, r, timeoutMs, signal))
-            : await attemptWithTimeout(provider, req, timeoutMs, signal);
+            ? await runPlanB(bare, (r) => attemptWithTimeout(provider, r, timeoutMs, signal))
+            : await attemptWithTimeout(provider, reqFor(), timeoutMs, signal);
           await record({
             purpose: req.purpose,
             provider: result.provider,

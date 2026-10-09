@@ -19,6 +19,8 @@ export interface OpenAiChatConfig {
   name?: string;
   supportsTools?: boolean;
   supportsJsonSchema?: boolean;
+  /** Стримить, когда вызывающий передал onDelta (без JSON-схемы); по умолчанию true. */
+  stream?: boolean;
   /** `strict` в tools и json_schema; по умолчанию false. */
   strict?: boolean;
   /** Заголовки сверх Bearer (например, `OpenAI-Project`/`x-folder-id` для Yandex). */
@@ -141,12 +143,78 @@ export function createOpenAiChatProvider(cfg: OpenAiChatConfig): LlmProvider {
       const started = Date.now();
       let raw: ChatBody;
       try {
-        const body = toChatBody(req, cfg.model, cfg) as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
-        raw = (await client.chat.completions.create(body, { signal })) as unknown as ChatBody;
+        const body = toChatBody(req, cfg.model, cfg);
+        if (req.onDelta && !req.schema && (cfg.stream ?? true)) {
+          const params = { ...body, stream: true, stream_options: { include_usage: true } } as unknown as OpenAI.Chat.ChatCompletionCreateParamsStreaming;
+          raw = await collectStream(await client.chat.completions.create(params, { signal }), req.onDelta);
+        } else {
+          raw = (await client.chat.completions.create(body as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming, { signal })) as unknown as ChatBody;
+        }
       } catch (err) {
         throw toLlmError(err, name, signal);
       }
       return { ...fromChatBody(raw, req), latencyMs: Date.now() - started, provider: name, model: cfg.model };
     },
+  };
+}
+
+/** Кусок потока Chat Completions (`chat.completion.chunk`): дельта content и tool_calls по индексу. */
+interface ChatChunk {
+  choices?: {
+    delta?: {
+      content?: string | null;
+      refusal?: string | null;
+      tool_calls?: { index?: number; id?: string; function?: { name?: string; arguments?: string } }[] | null;
+    } | null;
+    finish_reason?: string | null;
+  }[];
+  usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
+}
+
+/**
+ * Собирает поток в обычный ChatBody (дальше — тот же fromChatBody): content копится и уходит в
+ * onDelta по мере прихода, аргументы tool_calls склеиваются по `index`, usage — из последнего
+ * чанка (`stream_options.include_usage`; при обрыве его может не быть — тогда 0).
+ */
+export async function collectStream(stream: AsyncIterable<unknown>, onDelta: (text: string) => void): Promise<ChatBody> {
+  let content = '';
+  let refusal = '';
+  const calls: { id?: string; name?: string; args: string }[] = [];
+  let usage: ChatBody['usage'] = null;
+  let finish: string | null = null;
+  for await (const raw of stream) {
+    const chunk = raw as ChatChunk;
+    if (chunk.usage) usage = chunk.usage;
+    const choice = chunk.choices?.[0];
+    if (!choice) continue;
+    if (choice.finish_reason) finish = choice.finish_reason;
+    const d = choice.delta;
+    if (!d) continue;
+    if (d.content) {
+      content += d.content;
+      // Пока модель не начала вызывать инструменты, текст — кандидат в ответ.
+      if (!calls.length) onDelta(d.content);
+    }
+    if (d.refusal) refusal += d.refusal;
+    for (const tc of d.tool_calls ?? []) {
+      const i = tc.index ?? calls.length;
+      const slot = (calls[i] ??= { args: '' });
+      if (tc.id) slot.id = tc.id;
+      if (tc.function?.name) slot.name = (slot.name ?? '') + tc.function.name;
+      if (tc.function?.arguments) slot.args += tc.function.arguments;
+    }
+  }
+  return {
+    choices: [
+      {
+        finish_reason: finish,
+        message: {
+          content: content || null,
+          refusal: refusal || null,
+          tool_calls: calls.filter(Boolean).map((c) => ({ id: c.id, type: 'function', function: { name: c.name, arguments: c.args } })),
+        },
+      },
+    ],
+    usage,
   };
 }

@@ -10,6 +10,7 @@ import { EXTERNAL_NOTE } from './external';
 import { FALLBACK_STEP, fallbackReply, type FallbackReason } from './fallback';
 import { buildHistory, fitHistory, HISTORY_TOTAL_MAX_CHARS } from './history';
 import { runPipeline, type PipelineResult } from './pipeline';
+import { createReplyStream } from './reply-stream';
 import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
 import { tools as defaultTools } from './tools';
@@ -64,7 +65,7 @@ export async function runTurn(
     // Демо без ключей: модели нет, ответ — шаблоны по данным платформы (не сбой, без «упрощённого режима»).
     const text = await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
     await saveMessage(conversationId, { role: 'assistant', content: text });
-    emit({ type: 'message', text });
+    await createReplyStream(emit, signal).finish(text);
     return;
   }
 
@@ -77,6 +78,8 @@ export async function runTurn(
   let calls = 0;
   // Бюджет истории; после ошибки «не влезло в контекст» — один повтор с втрое меньшим.
   let historyChars = HISTORY_TOTAL_MAX_CHARS;
+  // Реплика стримится дельтами (если провайдер умеет), итог — message с тем же id.
+  const reply = createReplyStream(emit, signal);
 
   try {
     for (;;) {
@@ -91,6 +94,7 @@ export async function runTurn(
         toolChoice: canCall ? ('auto' as const) : ('none' as const),
         maxTokens: TURN_MAX_TOKENS,
         temperature: 0.3,
+        onDelta: reply.onDelta,
       };
       let res;
       try {
@@ -105,6 +109,7 @@ export async function runTurn(
 
       const requested = res.kind === 'tool_calls' ? (res.toolCalls ?? []) : [];
       if (canCall && requested.length) {
+        reply.discard();
         // Жёсткий лимит: лишние вызовы отбрасываются вместе с их id, чтобы у каждого tool_call был результат.
         const batch: ToolCall[] = requested.slice(0, MAX_TOOL_CALLS_PER_TURN - calls);
         const assistant: ChatMessage = { role: 'assistant', content: res.text ?? '', toolCalls: batch };
@@ -126,10 +131,11 @@ export async function runTurn(
 
       const text = (res.text ?? '').trim() || EMPTY_REPLY;
       await saveMessage(conversationId, { role: 'assistant', content: text });
-      emit({ type: 'message', text });
+      await reply.finish(text);
       return;
     }
   } catch (err) {
+    reply.discard();
     if (signal?.aborted || (err instanceof LlmError && err.code === 'aborted')) return;
     if (err instanceof BudgetExceededError) return degrade(ctx, input, pipeline, 'budget_exceeded');
     if (err instanceof LlmError) return degrade(ctx, input, pipeline, err.code === 'timeout' ? 'timeout' : 'llm_unavailable');
@@ -141,7 +147,7 @@ async function degrade(ctx: ToolContext, input: TurnInput, pipeline: PipelineRes
   ctx.emit({ type: 'step', text: FALLBACK_STEP[reason] });
   const text = await fallbackReply({ candidateId: ctx.candidateId, text: input.text, reason, ...(pipeline ? { pipeline } : {}) });
   await saveMessage(ctx.conversationId, { role: 'assistant', content: text });
-  ctx.emit({ type: 'message', text });
+  await createReplyStream(ctx.emit, ctx.signal).finish(text);
 }
 
 function userContent(input: TurnInput): string {

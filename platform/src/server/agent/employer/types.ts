@@ -80,7 +80,9 @@ export type EmployerAgentEvent =
   | { type: 'candidates'; block: CandidatesBlockView }
   | { type: 'invitation_draft'; draft: InvitationDraft }
   | { type: 'need_draft'; draft: NeedDraft }
-  | { type: 'message'; text: string }
+  | { type: 'message'; text: string; id?: string }
+  | { type: 'delta'; id: string; text: string }
+  | { type: 'discard'; id: string }
   | { type: 'error'; code: string; message: string }
   | { type: 'done' };
 

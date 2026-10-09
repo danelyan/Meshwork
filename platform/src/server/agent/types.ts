@@ -10,7 +10,12 @@ export type AgentEvent =
   | { type: 'claims'; proposed: unknown[]; rejected: number; rejectedByReason?: Record<string, number>; hiddenText?: number; alreadyKnown?: number }
   | { type: 'ask'; question: string; options?: string[] }
   | { type: 'recommendations'; items: unknown[] }
-  | { type: 'message'; text: string }
+  /** Итог реплики; `id` связывает его с дельтами (reply-stream.ts), текст авторитетный. */
+  | { type: 'message'; text: string; id?: string }
+  /** Кусок текста реплики `id` по мере генерации (docs/platform.md, «События SSE»). */
+  | { type: 'delta'; id: string; text: string }
+  /** Показанный текст реплики `id` — не ответ (модель ушла в инструменты): убрать. */
+  | { type: 'discard'; id: string }
   | { type: 'error'; code: string; message: string }
   | { type: 'done' }
   /** Первый кадр потока: id разговора (новый создаётся на первом ходе). Добавлено лейном agent. */

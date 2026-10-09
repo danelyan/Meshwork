@@ -17,6 +17,7 @@ import { MAX_TOOL_CALLS_PER_TURN } from '../types';
 import { runScriptedTurn } from './demo';
 import { EMPLOYER_PROMPT } from './prompt';
 import { assertEmployerBudget, ensureEmployerPromptVersion, saveEmployerMessage } from './store';
+import { createReplyStream } from '../reply-stream';
 import { employerTools } from './tools';
 import type { EmployerTool } from './tools/shared';
 import type { EmployerAgentEvent, EmployerToolContext, EmployerTurnInput } from './types';
@@ -82,6 +83,7 @@ export async function runEmployerTurn(
   const specs = toolSpecs(registry);
   let calls = 0;
   let historyChars = HISTORY_TOTAL_MAX_CHARS;
+  const reply = createReplyStream(emit, signal);
 
   try {
     for (;;) {
@@ -99,6 +101,7 @@ export async function runEmployerTurn(
             toolChoice: canCall ? 'auto' : 'none',
             maxTokens: TURN_MAX_TOKENS,
             temperature: 0.3,
+            onDelta: reply.onDelta,
           },
           signal,
         );
@@ -112,6 +115,7 @@ export async function runEmployerTurn(
 
       const requested = res.kind === 'tool_calls' ? (res.toolCalls ?? []) : [];
       if (canCall && requested.length) {
+        reply.discard();
         const batch: ToolCall[] = requested.slice(0, MAX_TOOL_CALLS_PER_TURN - calls);
         const assistant: ChatMessage = { role: 'assistant', content: res.text ?? '', toolCalls: batch };
         messages.push(assistant);
@@ -132,10 +136,11 @@ export async function runEmployerTurn(
 
       const text = (res.text ?? '').trim() || EMPTY_REPLY;
       await saveEmployerMessage(conversationId, { role: 'assistant', content: text });
-      emit({ type: 'message', text });
+      await reply.finish(text);
       return;
     }
   } catch (err) {
+    reply.discard();
     if (signal?.aborted || (err instanceof LlmError && err.code === 'aborted')) return;
     if (err instanceof BudgetExceededError || err instanceof LlmError) {
       emit({ type: 'step', text: EMPLOYER_FALLBACK_STEP });
@@ -150,5 +155,5 @@ async function scripted(ctx: EmployerToolContext, registry: EmployerTool[], text
   const reply = await runScriptedTurn(ctx, registry, text);
   if (!reply) return;
   await saveEmployerMessage(ctx.conversationId, { role: 'assistant', content: reply });
-  ctx.emit({ type: 'message', text: reply });
+  await createReplyStream(ctx.emit, ctx.signal).finish(reply);
 }

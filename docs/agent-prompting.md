@@ -1,0 +1,93 @@
+# Промпты и вызов LLM: что сверено с документацией провайдеров
+
+Сверка 09.10.2026 для лейна agentq (E-02). Основной провайдер — Yandex AI Studio,
+Responses API (Alice AI LLM / YandexGPT); запасной — OpenAI-совместимый Chat
+Completions (Cloud.ru, vLLM с Qwen/DeepSeek). Мировая практика — гайды OpenAI и
+Anthropic. Вживую ни один провайдер не проверен: ключа Yandex на 09.10 нет,
+поэтому всё ниже — либо подтверждено документацией, либо помечено как инференс и
+закрывается смоуком `eval/llm-bench` (команда — в конце).
+
+## Источники
+
+| Код | Документ |
+|---|---|
+| [Y1] | Yandex AI Studio, быстрый старт: https://aistudio.yandex.ru/docs/ru/ai-studio/quickstart |
+| [Y2] | Структурированный вывод: https://aistudio.yandex.ru/docs/ru/ai-studio/concepts/generation/structured-output |
+| [Y3] | Вызов функций: https://aistudio.yandex.ru/docs/ru/ai-studio/concepts/generation/function-call |
+| [Y4] | Модели: https://aistudio.yandex.ru/docs/ru/ai-studio/concepts/generation/models |
+| [Y5] | Квоты и лимиты: https://aistudio.yandex.ru/docs/ru/ai-studio/concepts/limits |
+| [Y6] | Курс AI Studio (Responses API, tool calling, structured outputs): https://git.sourcecraft.dev/open-education-club-by-yandex/ai-studio-course (через Context7) |
+| [Y7] | Блог Yandex Cloud «Как писать промты»: https://yandex.cloud/ru/blog/gpt-prompting-guide |
+| [O1] | OpenAI, Function calling: https://developers.openai.com/api/docs/guides/function-calling |
+| [A1] | Anthropic, Prompting best practices: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices |
+| [Y8] | Тарифы AI Studio: https://aistudio.yandex.ru/docs/en/ai-studio/pricing.html |
+| [Z1] | Zod 4, JSON Schema: https://github.com/colinhacks/zod/blob/main/packages/docs/content/json-schema.mdx (через Context7) |
+
+## Что подтверждено документацией и как это отражено в коде
+
+| Факт | Источник | Где в коде |
+|---|---|---|
+| Responses API: `https://ai.api.cloud.yandex.net/v1/responses`, модель `gpt://<каталог>/aliceai-llm`, заголовок `Api-Key`, параметры `instructions`, `input`, `temperature`, `max_output_tokens` | [Y1], [Y6] | `llm/providers/yandex-responses.ts` (было, сверено) |
+| Вызов функций: `tools` с `type: function`, `name`, `description`, `parameters` (JSON Schema); ответ — элементы `function_call` с `call_id`; результат — `function_call_output` с тем же `call_id` | [Y3], [Y6] | там же (было, сверено) |
+| Наличие `tools` не гарантирует вызов: модель может ответить текстом | [Y3] | цикл принимает текст как финальный ответ (было) |
+| Описание функции — подробное, каждый параметр описан с ограничениями | [Y3], [O1] | описания всех 18 инструментов переписаны: что делает, **когда вызывать и когда нет**; тест проверяет наличие указания |
+| Структурированный вывод есть «у некоторых моделей»: свободный JSON или JSON по схеме; **не совмещать параметры формата ответа с `tools` в одном запросе** | [Y2] | **новое:** при `tools` + `schema` провайдер Yandex не шлёт `text.format`, схема уходит текстом в `instructions` |
+| Structured outputs в Responses API Yandex работают через `responses.parse(text_format=…)` (Pydantic) | [Y6] | `text.format = { type: 'json_schema', … }` (было) |
+| JSON Schema из Pydantic (без ключа `$schema`) принимается в `tools` | [Y6] | **новое:** `$schema` убран из схем инструментов (`agent/spec.ts` → `llm/schema.ts`) и ответов (`responseJsonSchema`) |
+| Контекст: Alice AI LLM — 131 072 токена, Alice Flash — 65 536, YandexGPT Pro/Lite 5 — 32 768, DeepSeek V4 Flash — 1M, Qwen3 — 262 144 | [Y4] | **новое:** бюджет истории `HISTORY_TOTAL_MAX_CHARS` под самую узкую модель (32k) |
+| Квота: 10 одновременных синхронных генераций на каталог; таймаут синхронного запроса 20 мин | [Y5] | `LLM_MAX_CONCURRENCY=8` ниже квоты; свой таймаут 40 с (было) |
+| Кэширование входных токенов включается автоматически, где возможно | [Y8] | системный промпт стабилен в начале запроса, переменный контекст хода — в конце (было; не ломать порядок) |
+| Zod 4: `z.object` в режиме `output` даёт `additionalProperties: false`, в режиме `input` — нет; поля с `.default()` в `input` необязательны | [Z1] | инструменты — `io: 'input'` (модель присылает вход); ответы модели — `output` |
+| Strict mode OpenAI: `additionalProperties: false`, все поля в `required`, необязательное — через `null` | [O1] | `strict` по умолчанию выключен: схемы инструментов с `.default()` не strict-совместимы; ответ всегда проверяет Zod с одним ремонтом |
+| `parallel_tool_calls: false` — ноль или один вызов за шаг; набор инструментов лучше держать меньше 20 | [O1] | 18 инструментов; параллельный вызов не выключаем (параметр Yandex не подтверждён) — цикл и так обрабатывает вызовы по одному |
+| Промпт: роль; цель коротко; смысловые блоки; выделять входные данные тегами; явный формат вывода; 1–2 образца; говорить, что делать, а не чего избегать; один термин — одно понятие; «нет данных» вместо выдумки; разбивать сложную задачу на шаги | [Y7], [A1] | все четыре промпта переписаны по этой схеме (ниже) |
+| XML-теги для разных частей промпта и для документов; длинные данные — в начале; примеры в `<example>` (3–5 — лучше всего); объяснять, **зачем** правило | [A1] | блоки `<role>`, `<why>`, `<rules>`, `<examples>` …; данные — `<document>`, `<external_data>`, `<candidate_answer>` |
+
+## Что остаётся инференсом (проверит смоук или замер)
+
+1. **Сохранность тегов `<external_data …>` на стороне Yandex.** В доке нет ни
+   запрета, ни описания обработки XML-подобной разметки; [Y7] сам советует
+   выделять фрагменты «кавычками или тегами». Экранирование закрывающего тега
+   делаем у себя (`agent/external.ts`), провайдер его не видит как разметку.
+2. **Повтор истории без серверного состояния.** Курс [Y6] передаёт
+   `function_call_output` вместе с `previous_response_id` и `store=True`. Мы шлём
+   полную историю (`function_call` + `function_call_output`) при `store: false`,
+   чтобы резюме не хранилось у провайдера. Что Yandex принимает это без
+   `previous_response_id`, документом не подтверждено — проверяет шаг
+   «round-trip» смоука. Не прошёл — нужен выбор владельца (см. отчёт лейна).
+3. **Текст ошибки «не влезло в контекст» у Yandex.** Распознаём по общим словам
+   (`llm/errors.ts`, `CONTEXT_LENGTH_RE`); точной формулировки в доке нет.
+4. **Какие модели Yandex поддерживают `json_schema`.** [Y2] пишет «некоторые»;
+   при отказе ответ всё равно проходит Zod и один ремонт, далее — план В.
+5. **Оценка «3–4 символа русского текста на токен»** для бюджета истории — не
+   замер токенизатором.
+
+## Что изменилось в промптах и почему
+
+| Промпт | Было | Стало | Основание |
+|---|---|---|---|
+| Консультант (`agent/prompts/consultant.md`, `consultant-v2`) | Одна простыня правил, без примеров | Блоки `role` / `why` / `path` / `tools` / `boundaries` / `honesty` / `untrusted_data` / `style` / `examples`. Проактивность: путь кандидата и `get_onboarding_status` → один следующий шаг в конце каждого ответа, один вопрос за ход. Правила честности уровней с формулировкой «по резюме ты писал…, а не ты умеешь…». Карта «какой инструмент когда». 4 примера: «что дальше», просьба «поставь Middle», скрытая инъекция, «почему со слов». Позитивные формулировки вместо запретов, где это не теряет смысл | [Y7], [A1], [O1] |
+| Извлекатель (`claims/prompts/extractor.md`) | Правила + формат | Добавлены цель с причиной («точность важнее полноты — работодатель увидит цитату»), 3 примера из eval (`b02`, `f03` и синтетическая инъекция) с объяснением отказов: «читала про Redis», «в чужом проекте», перечень навыков. `b02` и `f03` исключены из метрик `compare.ts` | [A1] few-shot, [Y7] образцы вывода |
+| Интервьюер защиты (`defense/prompts/interviewer.md`) | Хорошая основа | Явный критерий остановки `enough` (по каждому из 4 признаков есть материал), 2 примера вопроса (первый и после «не знаю») | [A1] явные критерии, примеры |
+| Оценщик защиты (`defense/prompts/evaluator.md`) | Рубрика + цитаты | Порядок в схеме ответа теперь **цитата → обоснование → балл** (модель сначала находит опору, потом ставит число — chain-of-thought там, где он нужен), процедура по шагам, пример фрагмента вывода | [A1] «ground responses in quotes», рассуждение до ответа |
+| «Проверяющий» | — | LLM-промпта нет и не нужно: проверку цитат и id делает код (`claims/verifier.ts`) | ADR-0001 |
+
+Защита от инъекций не ослаблена: данные по-прежнему в `<external_data … trust="untrusted">`,
+`<document>`, `<candidate_answer>` с экранированием; сообщение работодателя в
+`get_invitations` тоже помечено как недоверенное.
+
+## Надёжность вызова
+
+- Ретраи только на 429/5xx, экспонента с джиттером; `Retry-After` провайдера (секунды или дата) уважается, но не дольше 10 с (`llm/client.ts`).
+- Превышение контекста (`context_length`) не ретраится тем же телом: цикл консультанта повторяет ход один раз с историей втрое короче. История ужимается целыми ходами с начала, последний ход и системный промпт сохраняются всегда (`agent/history.ts`, `fitHistory`).
+- Текст ошибки в журнале `AgentRun` маскирует почты, телефоны и ключи; содержимое запросов и ответов в логи не пишется.
+- Суточный бюджет токенов на кандидата — скользящие 24 часа по `AgentRun` (было, проверено тестом).
+
+## Смоук и замер
+
+```bash
+cd platform
+set -a; . ./.env.bench; set +a     # YANDEX_API_KEY, YANDEX_FOLDER_ID (+ ключи Cloud.ru и модель DeepSeek — по README)
+npx tsx eval/llm-bench/run.ts --smoke --models alice      # tools, json_schema, round-trip — 1 минута
+bash eval/llm-bench/protocol.sh                            # весь протокол research/12 § 6.2, ~2 часа
+```

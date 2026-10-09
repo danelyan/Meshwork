@@ -8,7 +8,7 @@ import { demoReply, isDemoMode } from './demo-reply';
 import { dispatchToolCall } from './dispatch';
 import { EXTERNAL_NOTE } from './external';
 import { FALLBACK_STEP, fallbackReply, type FallbackReason } from './fallback';
-import { buildHistory } from './history';
+import { buildHistory, fitHistory, HISTORY_TOTAL_MAX_CHARS } from './history';
 import { runPipeline, type PipelineResult } from './pipeline';
 import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
@@ -75,24 +75,33 @@ export async function runTurn(
   });
   const messages: ChatMessage[] = buildHistory(rows);
   let calls = 0;
+  // Бюджет истории; после ошибки «не влезло в контекст» — один повтор с втрое меньшим.
+  let historyChars = HISTORY_TOTAL_MAX_CHARS;
 
   try {
     for (;;) {
       if (signal?.aborted) return;
       await assertBudget(candidateId, budget, now());
       const canCall = calls < MAX_TOOL_CALLS_PER_TURN;
-      const res = await llm.complete(
-        {
-          purpose: 'consultant',
-          system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall }),
-          messages,
-          tools: specs,
-          toolChoice: canCall ? 'auto' : 'none',
-          maxTokens: TURN_MAX_TOKENS,
-          temperature: 0.3,
-        },
-        signal,
-      );
+      const req = {
+        purpose: 'consultant' as const,
+        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall }),
+        messages: fitHistory(messages, historyChars),
+        tools: specs,
+        toolChoice: canCall ? ('auto' as const) : ('none' as const),
+        maxTokens: TURN_MAX_TOKENS,
+        temperature: 0.3,
+      };
+      let res;
+      try {
+        res = await llm.complete(req, signal);
+      } catch (err) {
+        if (err instanceof LlmError && err.code === 'context_length' && historyChars === HISTORY_TOTAL_MAX_CHARS) {
+          historyChars = Math.floor(HISTORY_TOTAL_MAX_CHARS / 3);
+          continue;
+        }
+        throw err;
+      }
 
       const requested = res.kind === 'tool_calls' ? (res.toolCalls ?? []) : [];
       if (canCall && requested.length) {

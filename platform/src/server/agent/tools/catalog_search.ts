@@ -48,7 +48,7 @@ export function scoreEntry(entry: CatalogEntry, query: string): number {
 export const catalogSearch: AgentTool<z.infer<typeof Input>, z.infer<typeof Output>> = {
   name: 'catalog_search',
   description:
-    'Найти в закрытом каталоге утверждения, подходящие под текст кандидата. Утверждения предлагаются только с id из каталога.',
+    'Найти в закрытом каталоге утверждения, подходящие под фразу кандидата. Вызывай перед propose_claims, если не уверен в id, и на вопрос «есть ли у вас утверждение про …». Не нужен, если конвейер хода уже предложил карточки. Утверждения предлагаются только с id из каталога.',
   input: Input,
   output: Output,
   async handler(_ctx, { query, specialization, limit }) {

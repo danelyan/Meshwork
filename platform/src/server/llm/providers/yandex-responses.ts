@@ -15,7 +15,9 @@ import { parseToolArguments, textOrJson, toolNameIndex, type Fetch } from './com
  *    и результатов `function_call_output` (без `previous_response_id`: держим
  *    историю у себя, `store: false` — ПДн из резюме не хранятся у провайдера);
  *  - tools плоские: `{ type: 'function', name, description, parameters, strict }`;
- *  - строгий JSON — `text.format = { type: 'json_schema', name, schema, strict }`.
+ *  - строгий JSON — `text.format = { type: 'json_schema', name, schema, strict }`
+ *    (курс AI Studio: `responses.parse(text_format=…)`); вместе с `tools` не шлём —
+ *    дока «Структурированный вывод» запрещает совмещать, схема уходит в instructions.
  * Авторизация: `Authorization: Api-Key <ключ>`; IAM-токен (`t1.…`) — `Bearer`.
  */
 export interface YandexResponsesConfig {
@@ -83,7 +85,9 @@ export function toResponsesBody(
   cfg: Pick<YandexResponsesConfig, 'strict' | 'store' | 'supportsJsonSchema'>,
 ) {
   const strict = cfg.strict ?? false;
-  const nativeSchema = cfg.supportsJsonSchema ?? true;
+  // Дока AI Studio «Структурированный вывод»: параметры формата ответа не совмещать с `tools`
+  // в одном запросе. Если вызывающий прислал и то и другое — схема уходит текстом в instructions.
+  const nativeSchema = (cfg.supportsJsonSchema ?? true) && !req.tools?.length;
   const body: Record<string, unknown> = {
     model,
     instructions: req.schema && !nativeSchema ? `${req.system}\n\n${schemaInstruction(req.schema)}` : req.system,

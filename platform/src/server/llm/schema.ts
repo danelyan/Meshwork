@@ -25,3 +25,14 @@ export function toolSpec(name: string, description: string, args: z.ZodType): To
 export function schemaSpec(name: string, schema: z.ZodType): NonNullable<CompleteRequest['schema']> {
   return { name: name.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 64), jsonSchema: zodToJsonSchema(schema) };
 }
+
+/**
+ * JSON Schema ответа модели (structured output): режим `output` — у объектов
+ * `additionalProperties: false` (дока Zod «Object schemas»; OpenAI strict этого
+ * требует), без `$schema`.
+ */
+export function responseJsonSchema(schema: z.ZodType): Record<string, unknown> {
+  const out = z.toJSONSchema(schema) as Record<string, unknown>;
+  delete out.$schema;
+  return out;
+}

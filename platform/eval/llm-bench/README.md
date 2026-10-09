@@ -15,6 +15,21 @@ npx tsx eval/llm-bench/run.ts              # смоук + 10 резюме × м�
 npx tsx eval/llm-bench/run.ts --models stub,stub:planb --repeats 1   # самопроверка без сети
 ```
 
+Весь двухчасовой протокол одной командой (смоук → диалоги → боевой извлекатель):
+
+```bash
+bash eval/llm-bench/protocol.sh                 # alice,giga,deepseek — у кого есть ключи в .env.bench
+bash eval/llm-bench/protocol.sh alice           # только Alice, как только появится ключ Yandex
+npx tsx eval/llm-bench/compare.ts --models alice,deepseek   # только шаг 3
+```
+
+`compare.ts` гоняет **боевой** извлекатель (`src/server/claims/prompts/extractor.md`, каталог
+`prisma/seed/claims-catalog.json`, `verifyClaims`) по `eval/labels` и `eval/attacks` и пишет
+таблицу `eval/results/llm-compare-<МСК>.md`: P/R/F1 по `catalogId`, попадания в ловушки,
+доля ответов, которым понадобился ремонт JSON, доля документов с отказом после ремонта, ошибки
+и 429, выполненные инъекции, p50/p95 вызова, токены и стоимость. Резюме `b02` и `f03` — источник
+few-shot примеров промпта извлекателя — из метрик исключены.
+
 Без ключа модель пропускается со строкой `ключ не задан: <ENV>`; если ключей нет
 ни у одной — скрипт печатает это и выходит с кодом 0.
 

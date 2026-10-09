@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { responseJsonSchema } from '../llm/schema';
 import { LlmError, type ChatMessage, type LlmProvider } from '../llm/types';
 import { loadPrompt, normalizeWs, tag } from './prompt-utils';
 import {
@@ -41,10 +42,12 @@ export function decidePassed(s: DefenseScores): boolean {
 // Схема вывода модели
 // ---------------------------------------------------------------------------
 const ScoreSchema = z.union([z.literal(0), z.literal(1), z.literal(2)]);
+// Порядок полей — цитата → обоснование → балл: модель сначала находит опору в ответе
+// и формулирует вывод, потом ставит число (structured output генерирует поля по порядку схемы).
 const CriterionSchema = z.object({
-  score: ScoreSchema,
   quote: z.string().max(600),
   rationale: z.string().max(600),
+  score: ScoreSchema,
 });
 export const EvaluatorOutput = z.object({
   depth: CriterionSchema,
@@ -55,7 +58,7 @@ export const EvaluatorOutput = z.object({
 });
 export type EvaluatorOutput = z.infer<typeof EvaluatorOutput>;
 
-const EVALUATOR_JSON_SCHEMA = z.toJSONSchema(EvaluatorOutput) as object;
+const EVALUATOR_JSON_SCHEMA = responseJsonSchema(EvaluatorOutput) as object;
 
 // ---------------------------------------------------------------------------
 // Проверка цитат

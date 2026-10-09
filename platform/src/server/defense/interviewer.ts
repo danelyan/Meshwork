@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { responseJsonSchema } from '../llm/schema';
 import type { ChatMessage, LlmProvider } from '../llm/types';
 import { loadPrompt, tag } from './prompt-utils';
 
@@ -16,7 +17,7 @@ export const InterviewerOutput = z.object({
 });
 export type InterviewerOutput = z.infer<typeof InterviewerOutput>;
 
-const INTERVIEWER_JSON_SCHEMA = z.toJSONSchema(InterviewerOutput) as object;
+const INTERVIEWER_JSON_SCHEMA = responseJsonSchema(InterviewerOutput) as object;
 
 export interface InterviewerContext {
   claimStatement: string;

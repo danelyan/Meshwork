@@ -9,7 +9,7 @@ const Output = z.object({ url: z.string(), claims: z.number().int(), note: z.str
 /** R-C-03: PDF профиля — страница профиля с print-стилями; `?print=1` открывает диалог печати. */
 export const renderProfilePdf: AgentTool<Record<string, never>, z.infer<typeof Output>> = {
   name: 'render_profile_pdf',
-  description: 'Ссылка на PDF-версию профиля (подтверждённые утверждения с уровнями и источниками). Содержимое — то, что видит работодатель.',
+  description: 'Ссылка на PDF-версию профиля (подтверждённые утверждения с уровнями и источниками) — то, что видит работодатель. Вызывай, когда кандидат просит PDF, выгрузку или «как меня видит работодатель». Не вызывай, если подтверждённых утверждений нет — сначала предложи подтвердить карточки.',
   input: EmptyInput,
   output: Output,
   async handler(ctx) {

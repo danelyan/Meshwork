@@ -25,11 +25,13 @@ const EXPECTED = [
   'render_profile_pdf',
   'ask_user',
 ];
+/** Сверх ТЗ § 4.1 — только чтение, для «ведёт по платформе» (E-02, лейн agentq). */
+const EXTRA = ['get_onboarding_status', 'get_test_status', 'get_invitations', 'explain_evidence'];
 
 describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
-  it('ровно 14 инструментов по ТЗ, без дублей', () => {
-    expect([...TOOL_NAMES].sort()).toEqual([...EXPECTED].sort());
-    expect(new Set(TOOL_NAMES).size).toBe(14);
+  it('14 инструментов по ТЗ + 4 на чтение, без дублей', () => {
+    expect([...TOOL_NAMES].sort()).toEqual([...EXPECTED, ...EXTRA].sort());
+    expect(new Set(TOOL_NAMES).size).toBe(18);
   });
 
   it('нет инструментов записи в профиль, отклика, писем, категории, произвольного HTTP', () => {
@@ -48,10 +50,14 @@ describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
 
   it('у каждого инструмента описание и JSON Schema объекта для провайдера', () => {
     const specs = toolSpecs(tools);
-    expect(specs).toHaveLength(14);
+    expect(specs).toHaveLength(18);
     for (const s of specs) {
       expect(s.description.length).toBeGreaterThan(20);
       expect((s.parameters as { type: string }).type).toBe('object');
+      // `$schema` часть OpenAI-совместимых бэкендов не принимает
+      expect(s.parameters).not.toHaveProperty('$schema');
+      // гайд function calling: описание говорит, когда вызывать
+      expect(s.description, s.name).toMatch(/Вызывай|вызывай|Задать|Когда|когда/);
     }
     const propose = specs.find((s) => s.name === 'propose_claims')!.parameters as { properties: { items: { items: { required: string[] } } } };
     expect(propose.properties.items.items.required).toEqual(expect.arrayContaining(['catalogId', 'quote', 'sourceRef']));
@@ -59,7 +65,7 @@ describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
 
   it('только ask_user завершает ход; untrusted — ровно читающие внешний текст', () => {
     expect(tools.filter((t) => t.terminal).map((t) => t.name)).toEqual(['ask_user']);
-    expect(tools.filter((t) => t.untrusted).map((t) => t.name).sort()).toEqual(['fetch_profile', 'fetch_url', 'read_upload']);
+    expect(tools.filter((t) => t.untrusted).map((t) => t.name).sort()).toEqual(['fetch_profile', 'fetch_url', 'get_invitations', 'read_upload']);
   });
 });
 

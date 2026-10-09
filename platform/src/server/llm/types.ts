@@ -71,6 +71,8 @@ export type LlmErrorCode =
   | 'bad_request'
   | 'auth'
   | 'invalid_output'
+  /** Запрос не влез в контекст модели (HTTP 400 с текстом о лимите токенов): ретраить тем же телом бессмысленно, вызывающий ужимает историю. */
+  | 'context_length'
   | 'unavailable';
 
 export class LlmError extends Error {

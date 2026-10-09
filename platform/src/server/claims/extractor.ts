@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { z } from 'zod';
 
+import { responseJsonSchema } from '../llm/schema';
 import type { ExtractedDoc } from '../collector/types';
 import { LlmError, type ChatMessage, type CompleteResult, type LlmProvider } from '../llm/types';
 import { catalogFor } from './catalog-file';
@@ -48,7 +49,7 @@ export function extractorJsonSchema(ids: string[]): object {
       )
       .max(EXTRACTOR_MAX_CLAIMS_PER_CHUNK),
   });
-  return z.toJSONSchema(schema);
+  return responseJsonSchema(schema);
 }
 
 let promptCache: string | null = null;

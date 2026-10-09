@@ -1,15 +1,18 @@
-import { z } from 'zod';
-
+import { zodToJsonSchema } from '@/server/llm/schema';
 import type { ToolSpec } from '@/server/llm/types';
 import type { AgentTool } from './types';
 
-/** JSON Schema инструментов для провайдера (Zod 4: z.toJSONSchema, draft-2020-12). */
+/**
+ * JSON Schema инструментов для провайдера: режим `input` (модель присылает вход —
+ * поля с `.default()` необязательны), без `$schema` (часть OpenAI-совместимых
+ * бэкендов его не принимает). Общий хелпер LLM-слоя — llm/schema.ts.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toolSpecs(tools: AgentTool<any, any>[]): ToolSpec[] {
   return tools.map((t) => ({
     name: t.name,
     description: t.description,
-    parameters: z.toJSONSchema(t.input, { unrepresentable: 'any' }),
+    parameters: zodToJsonSchema(t.input),
   }));
 }
 

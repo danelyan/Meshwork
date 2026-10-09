@@ -53,3 +53,68 @@ export function buildHistory(
   }
   return out;
 }
+
+/**
+ * Бюджет истории в символах на один вызов модели. Самые узкие модели основного
+ * провайдера — YandexGPT Pro/Lite 5 с контекстом 32 768 токенов (дока AI Studio
+ * «Модели»); минус системный промпт (~3–4k), описания инструментов (~3k) и ответ
+ * (TURN_MAX_TOKENS). Русский текст ≈ 3–4 символа на токен — 48k символов
+ * держат историю в ~14k токенов (оценка, не замер токенизатором).
+ */
+export const HISTORY_TOTAL_MAX_CHARS = 48_000;
+/** Результат инструмента в последнем ходе не режем короче этого. */
+const TAIL_TOOL_MIN_CHARS = 2_000;
+export const OMITTED_NOTE = '[Более ранняя часть диалога опущена: не влезла в контекст модели. Состояние профиля — через get_profile.]';
+
+function sizeOf(m: ChatMessage): number {
+  return m.content.length + (m.toolCalls?.length ? JSON.stringify(m.toolCalls).length : 0);
+}
+
+/**
+ * Ужать историю под бюджет символов, сохранив последний ход целиком по структуре:
+ *  1. последнее сообщение user и всё после него (вызовы и результаты инструментов
+ *     этого хода) остаются всегда — иначе у tool-результата пропадёт вызов, а у
+ *     модели — вопрос, на который она отвечает;
+ *  2. более ранние ходы выкидываются с начала целыми ходами (от user до user), на
+ *     их место встаёт одна пометка OMITTED_NOTE;
+ *  3. если и последний ход не влез — результаты инструментов в нём режутся поровну.
+ * Системный промпт сюда не входит: он уходит отдельным полем и не режется никогда.
+ */
+export function fitHistory(messages: ChatMessage[], maxChars: number = HISTORY_TOTAL_MAX_CHARS): ChatMessage[] {
+  const total = messages.reduce((s, m) => s + sizeOf(m), 0);
+  if (total <= maxChars) return messages;
+  const lastUser = messages.map((m) => m.role).lastIndexOf('user');
+  const tail = lastUser >= 0 ? messages.slice(lastUser) : messages.slice();
+  const prefix = lastUser >= 0 ? messages.slice(0, lastUser) : [];
+  const tailSize = tail.reduce((s, m) => s + sizeOf(m), 0);
+
+  // ходы префикса: границы — сообщения user
+  const turns: ChatMessage[][] = [];
+  for (const m of prefix) {
+    if (m.role === 'user' || turns.length === 0) turns.push([m]);
+    else (turns[turns.length - 1] as ChatMessage[]).push(m);
+  }
+  let budget = maxChars - tailSize - OMITTED_NOTE.length;
+  const kept: ChatMessage[][] = [];
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const t = turns[i] as ChatMessage[];
+    const size = t.reduce((s, m) => s + sizeOf(m), 0);
+    if (size > budget) break;
+    budget -= size;
+    kept.unshift(t);
+  }
+  const dropped = kept.length < turns.length;
+  let out: ChatMessage[] = [
+    ...(dropped ? [{ role: 'user' as const, content: OMITTED_NOTE }] : []),
+    ...kept.flat(),
+    ...tail,
+  ];
+  const outSize = out.reduce((s, m) => s + sizeOf(m), 0);
+  if (outSize > maxChars) {
+    const tools = tail.filter((m) => m.role === 'tool').length;
+    const fixed = out.reduce((s, m) => s + (m.role === 'tool' && tail.includes(m) ? 0 : sizeOf(m)), 0);
+    const per = Math.max(TAIL_TOOL_MIN_CHARS, Math.floor((maxChars - fixed) / Math.max(1, tools)));
+    out = out.map((m) => (m.role === 'tool' && tail.includes(m) ? { ...m, content: clip(m.content, per) } : m));
+  }
+  return out;
+}

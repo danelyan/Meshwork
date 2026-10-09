@@ -23,7 +23,7 @@ const GapInput = z.object({
 });
 export const getGapMap: AgentTool<z.infer<typeof GapInput>, { gaps: z.infer<typeof GapSchema>[] }> = {
   name: 'get_gap_map',
-  description: 'Карта пробелов к цели: утверждения, нужные категории или вакансии и не доказанные на уровне platform, по приоритету.',
+  description: 'Карта пробелов к цели: утверждения, нужные категории или вакансии и ещё не доказанные на уровне platform, по приоритету. Вызывай, когда цель известна (категория вида «backend:middle» или id вакансии из recommend_targets) и кандидат спрашивает, чего не хватает. Если цели нет — сначала спроси её через ask_user.',
   input: GapInput,
   output: z.object({ gaps: z.array(GapSchema) }),
   async handler(ctx, { target }) {
@@ -43,7 +43,7 @@ const TestOutput = z.object({
 export const recommendTestTool: AgentTool<Record<string, never>, z.infer<typeof TestOutput>> = {
   name: 'recommend_test',
   description:
-    'Какой тест предложить (специализация и грейд) и почему, по утверждениям профиля. Это выбор теста, не категория: категорию даёт только сам тест. allowed=false — смена грейда пока закрыта (лимит платформы), назови дату.',
+    'Какой тест предложить (специализация и грейд) и почему, по подтверждённым утверждениям. Вызывай, когда кандидат выбирает тест после подтверждения карточек; если нужен и статус теста — вызывай get_test_status (в нём эта рекомендация уже есть), не оба. Это выбор теста, не категория: категорию даёт только сам тест. allowed=false — смена грейда пока закрыта (лимит платформы), назови дату.',
   input: EmptyInput,
   output: TestOutput,
   async handler(ctx) {
@@ -67,7 +67,7 @@ const TasksInput = z.object({
 });
 export const recommendTasksTool: AgentTool<z.infer<typeof TasksInput>, { tasks: z.infer<typeof TaskSchema>[] }> = {
   name: 'recommend_tasks',
-  description: 'Задания из банка платформы на указанные пробелы (детерминированно). Других заданий не предлагай.',
+  description: 'Задания из банка платформы на указанные пробелы (детерминированно). Вызывай после get_gap_map с catalogId пробелов. Других заданий, курсов и ресурсов не предлагай.',
   input: TasksInput,
   output: z.object({ tasks: z.array(TaskSchema) }),
   async handler(ctx, { gapIds, limit }) {
@@ -95,7 +95,7 @@ const TargetsInput = z.object({ limit: z.number().int().min(1).max(5).default(3)
 export const recommendTargetsTool: AgentTool<z.infer<typeof TargetsInput>, { targets: z.infer<typeof TargetSchema>[]; note: string }> = {
   name: 'recommend_targets',
   description:
-    'Вакансии и компании платформы, где профиль кандидата ближе всего к потребности (тот же матчер, что у работодателя): «закрываешь k из n, не хватает …». Зарплаты — по вакансиям платформы, не рынок.',
+    'Вакансии и компании платформы, где профиль кандидата ближе всего к потребности (тот же матчер, что у работодателя): «закрываешь k из n, не хватает …». Вызывай, когда у кандидата есть подтверждённые утверждения и он спрашивает о вакансиях, цели или «что дальше». Без подтверждённых карточек сначала попроси их подтвердить. Зарплаты — по вакансиям платформы, не рынок.',
   input: TargetsInput,
   output: z.object({ targets: z.array(TargetSchema), note: z.string() }),
   async handler(ctx, { limit }) {
@@ -119,7 +119,7 @@ const InvitationInput = z.object({ invitationId: z.string().min(1).max(64) });
 export const explainInvitationTool: AgentTool<z.infer<typeof InvitationInput>, z.infer<typeof CoverageOutput>> = {
   name: 'explain_invitation',
   description:
-    'Объяснить приглашение работодателя: что из потребности закрыто доказательствами, что только со слов, чем это рискует на интервью. Принять или отклонить — кнопка кандидата, не твоя.',
+    'Объяснить одно приглашение работодателя: что из потребности закрыто доказательствами, что только со слов, чем это рискует на интервью. Вызывай с invitationId из get_invitations. Принять или отклонить — кнопка кандидата, не твоя.',
   input: InvitationInput,
   output: CoverageOutput,
   async handler(ctx, { invitationId }) {

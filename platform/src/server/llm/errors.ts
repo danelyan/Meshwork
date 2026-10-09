@@ -10,6 +10,19 @@ export function codeForStatus(status: number): LlmErrorCode {
   return 'unavailable';
 }
 
+/**
+ * Признак «не влезло в контекст» в тексте 400-й ошибки. OpenAI: код
+ * `context_length_exceeded` / «maximum context length»; vLLM: «maximum context
+ * length … tokens»; у Yandex точной формулировки в доке нет — ловим общие
+ * слова про лимит токенов (инференс, проверить на живом ключе).
+ */
+export const CONTEXT_LENGTH_RE =
+  /context[_ ]length|maximum context|context window|too many (input )?tokens|input tokens? (count )?(exceeds|is greater|must be (no more|less))|prompt is too long|token limit|превыш\S* (лимит|длин|максимальн)/i;
+
+export function isContextLengthMessage(text: string): boolean {
+  return CONTEXT_LENGTH_RE.test(text);
+}
+
 function short(text: string): string {
   return text.replace(/\s+/g, ' ').trim().slice(0, 300);
 }
@@ -35,6 +48,10 @@ export function toLlmError(err: unknown, provider: string, signal?: AbortSignal)
     return new LlmError('server_error', `${provider}: сеть недоступна (${short(err.message)})`, undefined, { cause: err });
   }
   if (err instanceof APIError && typeof err.status === 'number') {
+    const code = (err as { code?: unknown }).code;
+    if ((err.status === 400 || err.status === 413) && (code === 'context_length_exceeded' || isContextLengthMessage(err.message))) {
+      return new LlmError('context_length', `${provider}: запрос не влез в контекст модели (${short(err.message)})`, err.status, { cause: err });
+    }
     return new LlmError(codeForStatus(err.status), `${provider}: ${short(err.message)}`, err.status, { cause: err });
   }
   const msg = err instanceof Error ? err.message : String(err);

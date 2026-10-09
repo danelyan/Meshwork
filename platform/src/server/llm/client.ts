@@ -57,16 +57,50 @@ export function errorStatus(err: unknown): number | undefined {
 }
 
 export function isRetryable(err: unknown): boolean {
-  if (err instanceof LlmError && (err.code === 'timeout' || err.code === 'aborted')) return false;
+  if (err instanceof LlmError && (err.code === 'timeout' || err.code === 'aborted' || err.code === 'context_length')) return false;
   const status = errorStatus(err);
   if (status !== undefined) return status === 429 || status >= 500;
   return err instanceof LlmError && (err.code === 'rate_limited' || err.code === 'server_error');
 }
 
+/** Пауза ретрая не дольше этого, даже если провайдер просит больше (ход не должен висеть). */
+export const RETRY_AFTER_CAP_MS = 10_000;
+
+/**
+ * `Retry-After` из ответа 429/503 (секунды или HTTP-дата), если провайдер его
+ * прислал: заголовки лежат у APIError SDK openai — у самой ошибки или в `cause`
+ * LlmError. Нет заголовка — undefined, берётся экспоненциальная пауза.
+ */
+export function retryAfterMs(err: unknown, now = Date.now()): number | undefined {
+  for (let e: unknown = err, depth = 0; e && typeof e === 'object' && depth < 3; e = (e as { cause?: unknown }).cause, depth++) {
+    const h = (e as { headers?: unknown }).headers;
+    let raw: string | null | undefined;
+    if (h && typeof (h as Headers).get === 'function') raw = (h as Headers).get('retry-after');
+    else if (h && typeof h === 'object') raw = (h as Record<string, string | undefined>)['retry-after'];
+    if (!raw) continue;
+    const secs = Number(raw);
+    const ms = Number.isFinite(secs) ? secs * 1000 : Date.parse(raw) - now;
+    if (Number.isFinite(ms) && ms >= 0) return Math.min(ms, RETRY_AFTER_CAP_MS);
+  }
+  return undefined;
+}
+
+/**
+ * Текст ошибки для журнала AgentRun без ПДн: провайдер может процитировать
+ * кусок запроса (резюме) в 400-й ошибке — почты, телефоны и длинные числа
+ * маскируются, длина ограничена.
+ */
+export function redactPii(text: string): string {
+  return text
+    .replace(/\b(AQVN|t1\.)[\w.-]{10,}/g, '[key]')
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
+    .replace(/\+?\d[\d\s()-]{8,}\d/g, '[phone]');
+}
+
 function errorText(err: unknown): string {
   const status = errorStatus(err);
   const msg = err instanceof Error ? err.message : String(err);
-  return (status ? `[${status}] ` : '') + msg.slice(0, 500);
+  return redactPii((status ? `[${status}] ` : '') + msg).slice(0, 500);
 }
 
 const sleep = (ms: number, signal?: AbortSignal) =>
@@ -115,7 +149,9 @@ async function attemptWithTimeout(
 
 export function createLlmClient(opts: LlmClientOptions): LlmClient {
   const semaphore = new Semaphore(opts.maxConcurrency);
-  const backoff = opts.backoffMs ?? ((n: number) => 500 * 2 ** (n - 1));
+  // Экспонента с джиттером (рекомендация OpenAI «rate limits»: exponential backoff + random jitter),
+  // чтобы 10 одновременных диалогов после общего 429 не ударили провайдера синхронно.
+  const backoff = opts.backoffMs ?? ((n: number) => Math.round(500 * 2 ** (n - 1) * (0.75 + Math.random() * 0.5)));
   const { provider } = opts;
 
   async function record(run: AgentRunRecord) {
@@ -164,7 +200,9 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
         } catch (err) {
           lastErr = err;
           if (attempts > opts.maxRetries || !isRetryable(err) || signal?.aborted) break;
-          await sleep(backoff(attempts), signal);
+          // Retry-After провайдера важнее своей экспоненты (но не дольше RETRY_AFTER_CAP_MS).
+          const wait = opts.backoffMs ? backoff(attempts) : (retryAfterMs(err) ?? backoff(attempts));
+          await sleep(wait, signal);
         }
       }
       await record({

@@ -1,0 +1,95 @@
+// Модели замера: общие для run.ts (диалоги § 6.2) и compare.ts (извлечение боевым промптом).
+import { createOpenAiChatProvider } from '../../src/server/llm/providers/openai-chat';
+import { createStubProvider } from '../../src/server/llm/providers/stub';
+import { createYandexResponsesProvider, yandexAuthHeader } from '../../src/server/llm/providers/yandex-responses';
+import type { LlmProvider } from '../../src/server/llm/types';
+
+export interface ModelDef {
+  id: string;
+  title: string;
+  /** env, без которых модель пропускается */
+  requiredEnv: string[];
+  make(planB: boolean): LlmProvider;
+  /** $ за 1M токенов вход/выход (research/12 § 2), null — не известно */
+  price: { in: number; out: number } | null;
+}
+export const env = (k: string) => process.env[k]?.trim() || '';
+const envPrice = (prefix: string, def: { in: number; out: number } | null) =>
+  env(`${prefix}_PRICE_IN`) && env(`${prefix}_PRICE_OUT`)
+    ? {
+        in: Number(env(`${prefix}_PRICE_IN`)),
+        out: Number(env(`${prefix}_PRICE_OUT`)),
+      }
+    : def;
+const YANDEX_BASE = () =>
+  env('YANDEX_BASE_URL') || 'https://ai.api.cloud.yandex.net/v1';
+
+export function makeModels(TIMEOUT_MS: number): Record<string, ModelDef> {
+  return {
+    // Самопроверка скрипта без сети: заглушка проходит сценарий read_document → propose_claims → ответ.
+    stub: {
+      id: 'stub',
+      title: 'stub (самопроверка метрик, не модель)',
+      requiredEnv: [],
+      price: null,
+      make: (planB) => {
+        const p = createStubProvider();
+        return { ...p, supportsTools: !planB, complete: p.complete };
+      },
+    },
+    alice: {
+      id: 'alice',
+      title: 'Alice AI LLM (Yandex Responses API)',
+      requiredEnv: ['YANDEX_API_KEY', 'YANDEX_FOLDER_ID'],
+      price: envPrice('BENCH_ALICE', { in: 4.1, out: 9.84 }),
+      make: (planB) =>
+        createYandexResponsesProvider({
+          apiKey: env('YANDEX_API_KEY'),
+          folderId: env('YANDEX_FOLDER_ID'),
+          model: env('BENCH_ALICE_MODEL') || 'aliceai-llm',
+          baseUrl: YANDEX_BASE(),
+          supportsTools: !planB,
+          timeoutMs: TIMEOUT_MS,
+        }),
+    },
+    giga: {
+      id: 'giga',
+      title: 'GigaChat 3.5 Ultra (Cloud.ru, Chat Completions)',
+      requiredEnv: ['CLOUDRU_API_KEY', 'BENCH_GIGA_MODEL'],
+      price: envPrice('BENCH_GIGA', null),
+      make: (planB) =>
+        createOpenAiChatProvider({
+          name: 'cloudru',
+          baseUrl:
+            env('CLOUDRU_BASE_URL') ||
+            'https://foundation-models.api.cloud.ru/v1',
+          apiKey: env('CLOUDRU_API_KEY'),
+          model: env('BENCH_GIGA_MODEL'),
+          supportsTools: !planB,
+          timeoutMs: TIMEOUT_MS,
+        }),
+    },
+    deepseek: {
+      id: 'deepseek',
+      title: 'DeepSeek V4 Flash (Yandex, OpenAI-совместимый Chat Completions)',
+      requiredEnv: ['YANDEX_API_KEY', 'YANDEX_FOLDER_ID', 'BENCH_DEEPSEEK_MODEL'],
+      price: envPrice('BENCH_DEEPSEEK', { in: 2.46, out: 4.1 }),
+      make: (planB) => {
+        const folder = env('YANDEX_FOLDER_ID');
+        const model = env('BENCH_DEEPSEEK_MODEL');
+        return createOpenAiChatProvider({
+          name: 'yandex-openai',
+          baseUrl: YANDEX_BASE(),
+          apiKey: env('YANDEX_API_KEY'),
+          model: model.startsWith('gpt://') ? model : `gpt://${folder}/${model}`,
+          headers: {
+            Authorization: yandexAuthHeader(env('YANDEX_API_KEY')),
+            'OpenAI-Project': folder,
+          },
+          supportsTools: !planB,
+          timeoutMs: TIMEOUT_MS,
+        });
+      },
+    },
+  };
+}

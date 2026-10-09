@@ -29,7 +29,7 @@ export const VacancyInput = z
     stack: z.array(z.string().max(40)).max(15).default([]).transform(normalizeStack),
     needs: z
       .array(z.object({ catalogId: z.string().min(1).max(64), weight: z.number().int().min(1).max(3) }))
-      .min(1, 'Выберите хотя бы одно требование')
+      .min(1, 'Выбери хотя бы одно требование')
       .max(25),
   })
   .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Верхняя граница вилки меньше нижней', path: ['salaryTo'] });
@@ -41,8 +41,8 @@ export const VacancyPatch = z.object({ archived: z.boolean() });
 export const InvitationInput = z.object({
   candidateId: z.string().min(1).max(64),
   vacancyId: z.string().min(1).max(64).nullish(),
-  message: z.string().trim().min(10, 'Опишите задачу хотя бы в 10 символах').max(2000),
-  salaryOffer: z.number().int().min(1, 'Укажите зарплату').max(10_000_000),
+  message: z.string().trim().min(10, 'Опиши задачу хотя бы в 10 символах').max(2000),
+  salaryOffer: z.number().int().min(1, 'Укажи зарплату').max(10_000_000),
 });
 
 export const InvitationAction = z.object({ action: z.enum(['accept', 'decline']) });

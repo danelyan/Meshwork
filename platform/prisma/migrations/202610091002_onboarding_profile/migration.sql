@@ -12,9 +12,7 @@ ALTER TABLE "Company" ADD COLUMN     "contact" TEXT,
 ADD COLUMN     "industry" TEXT,
 ADD COLUMN     "inn" TEXT;
 
--- AlterTable
-ALTER TABLE "Vacancy" ADD COLUMN     "stack" TEXT[] DEFAULT ARRAY[]::TEXT[],
-ADD COLUMN     "teamDescription" TEXT;
+-- Vacancy.stack и Vacancy.teamDescription уже добавлены миграцией 202610091001_employer_cabinet.
 
 -- CreateTable
 CREATE TABLE "CandidateProfile" (

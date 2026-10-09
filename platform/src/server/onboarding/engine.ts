@@ -106,23 +106,23 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
     }
     case 'role': {
       const r = z.enum(['candidate', 'employer']).safeParse(value);
-      return r.success ? r.data : fail('Выберите роль');
+      return r.success ? r.data : fail('Выбери роль');
     }
     case 'one': {
-      if (typeof value !== 'string') return fail('Выберите вариант');
+      if (typeof value !== 'string') return fail('Выбери вариант');
       if (enabled.includes(value)) return value;
       if (optionsOf(step, ctx).some((o) => o.value === value)) return fail('Этот вариант пока недоступен');
       if (step.allowCustom) {
         const r = Custom.safeParse(value);
         return r.success ? r.data : fail('Свой вариант — до 60 символов');
       }
-      return fail('Выберите один из вариантов');
+      return fail('Выбери один из вариантов');
     }
     case 'many': {
       const r = z.array(z.string()).min(1).max(enabled.length || 1).safeParse(value);
-      if (!r.success) return fail('Выберите хотя бы один вариант');
+      if (!r.success) return fail('Выбери хотя бы один вариант');
       const uniq = [...new Set(r.data)];
-      if (uniq.some((v) => !enabled.includes(v))) return fail('Выберите из предложенных вариантов');
+      if (uniq.some((v) => !enabled.includes(v))) return fail('Выбери из предложенных вариантов');
       return uniq;
     }
     case 'chips': {
@@ -132,10 +132,10 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
       const out: string[] = [];
       for (const v of r.data) {
         const norm = known.get(v.toLowerCase()) ?? (step.allowCustom ? v : null);
-        if (norm === null) return fail('Выберите из предложенных вариантов');
+        if (norm === null) return fail('Выбери из предложенных вариантов');
         if (!out.some((x) => x.toLowerCase() === norm.toLowerCase())) out.push(norm);
       }
-      if (out.length === 0) return fail('Выберите хотя бы один пункт или пропустите шаг');
+      if (out.length === 0) return fail('Выбери хотя бы один пункт или пропустите шаг');
       return out;
     }
     case 'range': {

@@ -41,7 +41,7 @@ export function OnboardingChat({ initial, consentText }: OnboardingChatProps) {
     try {
       setView(await onboardingAct(body));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не получилось. Повторите.');
+      setError(e instanceof Error ? e.message : 'Не получилось. Повтори.');
     } finally {
       setBusy(false);
     }
@@ -61,7 +61,7 @@ export function OnboardingChat({ initial, consentText }: OnboardingChatProps) {
     try {
       go((await onboardingLater()).next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не получилось. Повторите.');
+      setError(e instanceof Error ? e.message : 'Не получилось. Повтори.');
       setBusy(false);
     }
   }
@@ -73,7 +73,7 @@ export function OnboardingChat({ initial, consentText }: OnboardingChatProps) {
       const r = await completeOnboarding();
       go(target ?? r.next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не получилось завершить. Повторите.');
+      setError(e instanceof Error ? e.message : 'Не получилось завершить. Повтори.');
       setBusy(false);
     }
   }
@@ -94,7 +94,7 @@ export function OnboardingChat({ initial, consentText }: OnboardingChatProps) {
           </span>
         </div>
         {!isSummary && (
-          <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены — продолжите с этого места">
+          <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены — продолжишь с этого места">
             Настроить позже
           </Button>
         )}

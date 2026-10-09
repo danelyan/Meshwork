@@ -58,19 +58,21 @@ model Candidate {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  categories      CandidateCategory[]
-  uploads         Upload[]
-  sources         Source[]
-  claims          Claim[]
-  conversations   Conversation[]
-  agentRuns       AgentRun[]
-  recommendations Recommendation[]
-  invitations     Invitation[]
-  defenseSessions DefenseSession[]
+  categories          CandidateCategory[]
+  uploads             Upload[]
+  sources             Source[]
+  claims              Claim[]
+  conversations       Conversation[]
+  agentRuns           AgentRun[]
+  recommendations     Recommendation[]
+  invitations         Invitation[]
+  defenseSessions     DefenseSession[]
   /// lane auth: аккаунт входа (null у старых демо-кандидатов до первого демо-входа)
-  user            User?
+  user                User?
+  /// lane employer: настройка приватности (R-C-13) — true: не показывать в подборке и поиске работодателей
+  hiddenFromEmployers Boolean             @default(false)
   /// lane onboarding: анкета онбординга (цель, грейд, стек, формат, зарплата)
-  profile         CandidateProfile?
+  profile             CandidateProfile?
 }
 
 model CandidateCategory {
@@ -295,6 +297,8 @@ enum RecommendationKind {
 
 enum InvitationStatus {
   sent
+  /// lane employer: кандидат открыл приглашение
+  viewed
   accepted
   declined
 }
@@ -313,13 +317,15 @@ model Recommendation {
 }
 
 model Company {
-  id          String    @id @default(cuid())
+  id          String            @id @default(cuid())
   name        String
   description String?
-  isDemo      Boolean   @default(true)
+  isDemo      Boolean           @default(true)
   vacancies   Vacancy[]
   /// lane auth: представители компании
   employers   EmployerProfile[]
+  /// lane employer
+  invitations Invitation[]
   /// lane onboarding: ИНН (проверен по контрольной сумме; реестр — демо), отрасль, контакт (R-E-01)
   inn         String?
   industry    String?
@@ -327,23 +333,26 @@ model Company {
 }
 
 model Vacancy {
-  id             String         @id @default(cuid())
-  companyId      String
-  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  title          String
-  specialization Specialization
-  grade          Grade
+  id              String         @id @default(cuid())
+  companyId       String
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title           String
+  specialization  Specialization
+  grade           Grade
   /// ₽, обязательные
-  salaryFrom     Int
-  salaryTo       Int
+  salaryFrom      Int
+  salaryTo        Int
   /// { catalogId: string; weight: number }[]
-  needs          Json
-  description    String?
-  /// lane onboarding: чем занимается команда (R-E-02)
+  needs           Json
+  description     String?
+  createdAt       DateTime       @default(now())
+  /// lane employer + onboarding: чем занимается команда (R-E-02)
   teamDescription String?
-  /// lane onboarding: стек потребности как его назвал работодатель (needs — его проекция на каталог)
-  stack          String[]       @default([])
-  createdAt      DateTime       @default(now())
+  /// lane employer + onboarding: стек свободными метками ("Go", "PostgreSQL"); needs — проекция на каталог
+  stack           String[]       @default([])
+  /// lane employer: потребность закрыта/в архиве — в кабинете отдельно, подборка не строится
+  archivedAt      DateTime?
+  updatedAt       DateTime?      @updatedAt
 
   invitations Invitation[]
 
@@ -362,17 +371,27 @@ model Task {
 }
 
 model Invitation {
-  id          String           @id @default(cuid())
-  vacancyId   String
-  vacancy     Vacancy          @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
-  candidateId String
-  candidate   Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  status      InvitationStatus @default(sent)
-  salaryOffer Int?
-  message     String?
-  createdAt   DateTime         @default(now())
+  id                String           @id @default(cuid())
+  /// lane employer: null — приглашение без привязки к потребности (R-E-05)
+  vacancyId         String?
+  vacancy           Vacancy?         @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  candidateId       String
+  candidate         Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  status            InvitationStatus @default(sent)
+  salaryOffer       Int?
+  message           String?
+  createdAt         DateTime         @default(now())
+  /// lane employer: компания-отправитель (null только у строк до миграции без вакансии)
+  companyId         String?
+  company           Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// lane employer: кто отправил
+  employerProfileId String?
+  employerProfile   EmployerProfile? @relation(fields: [employerProfileId], references: [id], onDelete: SetNull)
+  viewedAt          DateTime?
+  respondedAt       DateTime?
 
   @@index([candidateId, status])
+  @@index([companyId, createdAt])
 }
 
 // =============================================================================
@@ -428,18 +447,18 @@ enum UserRole {
 /// Аккаунт входа. Профиль роли — отдельной записью (Candidate или EmployerProfile),
 /// чтобы не трогать связи Candidate с остальными таблицами.
 model User {
-  id          String    @id @default(cuid())
-  role        UserRole  @default(pending)
+  id          String     @id @default(cuid())
+  role        UserRole   @default(pending)
   name        String
   /// Из Яндекса; null, если почту не отдали. Не уникален: аккаунты по почте не склеиваем.
   email       String?
-  isDemo      Boolean   @default(false)
+  isDemo      Boolean    @default(false)
   /// Онбординг завершён (ставит markOnboarded). null → после входа редирект на /onboarding.
   onboardedAt DateTime?
-  candidateId String?   @unique
+  candidateId String?    @unique
   candidate   Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   accounts        AuthAccount[]
   employerProfile EmployerProfile?
@@ -463,12 +482,14 @@ model AuthAccount {
 }
 
 model EmployerProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now())
+  id          String       @id @default(cuid())
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdAt   DateTime     @default(now())
+  /// lane employer
+  invitations Invitation[]
 
   @@index([companyId])
 }

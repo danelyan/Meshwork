@@ -45,8 +45,8 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
     e.preventDefault();
     const salaryOffer = Number(salary.replace(/\s/g, ''));
     const errs: typeof fieldErr = {};
-    if (message.trim().length < 10) errs.message = 'Опишите задачу и команду хотя бы в 10 символах';
-    if (!Number.isInteger(salaryOffer) || salaryOffer <= 0) errs.salary = 'Укажите зарплату в рублях';
+    if (message.trim().length < 10) errs.message = 'Опиши задачу и команду хотя бы в 10 символах';
+    if (!Number.isInteger(salaryOffer) || salaryOffer <= 0) errs.salary = 'Укажи зарплату в рублях';
     setFieldErr(errs);
     if (Object.keys(errs).length) return;
     setBusy(true);

@@ -19,7 +19,7 @@ function makeView(current: Partial<StepView>, over: Partial<OnboardingView> = {}
     scenario: 'candidate',
     consent: { version: 'v1', docUrl: '/consent' },
     progress: { done: 3, total: 10 },
-    history: [{ stepId: 'goal', lead: 'Начнём.', question: 'Зачем вы здесь?', answer: 'Ищу работу', editable: true }],
+    history: [{ stepId: 'goal', lead: 'Начнём.', question: 'Зачем ты здесь?', answer: 'Ищу работу', editable: true }],
     current: { id: 'specialization', kind: 'one', eyebrow: 'Направление', label: 'Направление', question: 'В каком направлении работаете?', lead: 'Теперь про работу.', allowCustom: false, required: false, ...current } as StepView,
     summary: null,
     laterTarget: '/consultant',

@@ -202,7 +202,7 @@ describe('реплики помощника', () => {
     expect(firstName('user_123')).toBe('');
   });
   it('шаблоны: приветствие по имени, связка от цели, пропуск', () => {
-    expect(templateLead(step('consent'), ctx(), null)).toMatch(/^Здравствуйте, Иван!/);
+    expect(templateLead(step('consent'), ctx(), null)).toMatch(/^Привет, Иван!/);
     const c = ctx({ goal: 'grade_confirm' }, { role: 'candidate' });
     expect(templateLead(step('documents'), c, { step: step('goal'), value: 'grade_confirm', label: 'x' })).toMatch(/тест/);
     expect(templateLead(step('fsp'), c, { step: step('documents'), value: undefined, label: null })).toMatch(/вернуться/);

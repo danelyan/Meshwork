@@ -32,12 +32,12 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
   const hi = name ? `${name}, ` : '';
   const skipped = prev !== null && prev.value === undefined && prev.step.kind !== 'consent' && prev.step.kind !== 'role';
   if (step.id === 'consent') {
-    return `Здравствуйте${name ? `, ${name}` : ''}! Я помощник ФСП Карьеры. Задам несколько коротких вопросов — любой можно пропустить или настроить позже.`;
+    return `Привет${name ? `, ${name}` : ''}! Я помощник ФСП Карьеры. Задам несколько коротких вопросов — любой можно пропустить или настроить позже.`;
   }
   if (step.kind === 'summary') {
     return ctx.answers.role === 'employer' || ctx.facts.role === 'employer'
-      ? `${hi}готово. Проверьте потребность — по ней соберётся подборка кандидатов.`
-      : `${hi}готово. Проверьте, всё ли я понял верно.`;
+      ? `${hi}готово. Проверь потребность — по ней соберётся подборка кандидатов.`
+      : `${hi}готово. Проверь, всё ли я понял верно.`;
   }
   if (skipped) return 'Хорошо, к этому можно вернуться позже.';
   switch (step.id) {
@@ -47,10 +47,10 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
       return `${hi}начнём с главного.`;
     case 'documents': {
       const goal = prev?.step.id === 'goal' ? prev.value : ctx.answers.goal;
-      if (goal === 'job_search') return 'Тогда соберём профиль, по которому компании найдут вас сами.';
-      if (goal === 'market_watch') return 'Посмотрим, что о вас уже можно сказать по документам.';
-      if (goal === 'grade_confirm') return 'Перед тестом соберу, что вы уже умеете, — так проще выбрать грейд.';
-      return 'Соберём профиль из того, что у вас уже есть.';
+      if (goal === 'job_search') return 'Тогда соберём профиль, по которому компании найдут тебя сами.';
+      if (goal === 'market_watch') return 'Посмотрим, что о тебе уже можно сказать по документам.';
+      if (goal === 'grade_confirm') return 'Перед тестом соберу, что ты уже умеешь, — так проще выбрать грейд.';
+      return 'Соберём профиль из того, что у тебя уже есть.';
     }
     case 'fsp':
       return 'Ещё один источник — соревнования ФСП.';
@@ -73,7 +73,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'fspParticipation':
       return 'Последний вопрос.';
     case 'companyName':
-      return 'Отлично, найдём вам людей. Сначала о компании.';
+      return 'Отлично, найдём тебе людей. Сначала о компании.';
     case 'inn':
       return 'Записал.';
     case 'industry':
@@ -83,7 +83,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'contact':
       return 'Спасибо.';
     case 'needSpecialization':
-      return 'Теперь о том, кого ищете.';
+      return 'Теперь о том, кого ищешь.';
     case 'needGrades': {
       const s = specLabel(ctx.answers.needSpecialization);
       return s ? `${s} — понял.` : 'Понял.';

@@ -76,12 +76,12 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
     const from = Number(salaryFrom.replace(/\s/g, ''));
     const to = Number(salaryTo.replace(/\s/g, ''));
     const next: Record<string, string> = {};
-    if (title.trim().length < 3) next.title = 'Назовите потребность (не короче 3 символов)';
-    if (!Number.isInteger(from) || from <= 0) next.salaryFrom = 'Укажите нижнюю границу в рублях';
-    if (!Number.isInteger(to) || to <= 0) next.salaryTo = 'Укажите верхнюю границу в рублях';
+    if (title.trim().length < 3) next.title = 'Назови потребность (не короче 3 символов)';
+    if (!Number.isInteger(from) || from <= 0) next.salaryFrom = 'Укажи нижнюю границу в рублях';
+    if (!Number.isInteger(to) || to <= 0) next.salaryTo = 'Укажи верхнюю границу в рублях';
     else if (to < from) next.salaryTo = 'Верхняя граница меньше нижней';
     const needs = options.filter((o) => picked.has(o.e.id)).map((o) => ({ catalogId: o.e.id, weight: Math.min(3, Math.max(1, o.w)) }));
-    if (needs.length === 0) next.needs = 'Выберите хотя бы одно требование';
+    if (needs.length === 0) next.needs = 'Выбери хотя бы одно требование';
     setErrs(next);
     if (Object.keys(next).length) return;
     const body: VacancyBody = {

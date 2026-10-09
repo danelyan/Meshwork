@@ -22,7 +22,7 @@ export default async function CandidateInvitationsPage() {
       <div>
         <Kicker>Работодатели</Kicker>
         <h1>Приглашения</h1>
-        <p className={styles.lead}>Компании сами находят вас по подтверждённым карточкам и пишут, сколько готовы платить.</p>
+        <p className={styles.lead}>Компании сами находят тебя по подтверждённым карточкам и пишут, сколько готовы платить.</p>
       </div>
       <IncomingInvitations invitations={invitations} />
       <PrivacyToggle hidden={privacy.hiddenFromEmployers} />

@@ -127,7 +127,7 @@
 
 Где используются сейчас: `Button` - шапка («Выйти»), `ProfilePage` («К консультанту», «Печать / PDF», «На страницу входа»); `Notice` - `ProfilePage` (ошибка загрузки). Остальное - в списке «к переводу».
 
-Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг-чат на весь экран: шапка со знаком, `Meter` шагов и «Настроить позже»; варианты-кнопки по мокапу `site/onboarding.html`). Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
+Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг-чат на весь экран: шапка со знаком, `Meter` шагов и «Настроить позже»); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `IncomingInvitations`, `PrivacyToggle`, `RefinementHistory`, стили `Employer.module.css`). `Header` принимает `links` — навигацию роли. Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
 
 ### К переводу на примитивы
 

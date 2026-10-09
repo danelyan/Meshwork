@@ -104,7 +104,7 @@ function prevOf(step: StepDef, l: Pick<Loaded, 'ctx' | 'state'>): PrevAnswer | n
 async function gradeHint(candidateId: string | null): Promise<string | undefined> {
   if (!candidateId) return undefined;
   const n = await prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } });
-  if (n === 0) return 'Подтвердите утверждения из документов — и я подскажу грейд по ним.';
+  if (n === 0) return 'Подтверди утверждения из документов — и я подскажу грейд по ним.';
   try {
     const rec = await recommendTest(candidateId);
     const g = GRADES.find((x) => x.value === rec.grade)?.label ?? rec.grade;
@@ -220,12 +220,12 @@ export interface MutationResult {
 
 async function companyIdOf(userId: string): Promise<string> {
   const p = await prisma.employerProfile.findUnique({ where: { userId }, select: { companyId: true } });
-  if (!p) throw errors.conflict('Сначала укажите компанию');
+  if (!p) throw errors.conflict('Сначала укажи компанию');
   return p.companyId;
 }
 
 function candidateIdOf(l: Loaded): string {
-  if (!l.user.candidateId) throw errors.conflict('Сначала выберите роль');
+  if (!l.user.candidateId) throw errors.conflict('Сначала выбери роль');
   return l.user.candidateId;
 }
 

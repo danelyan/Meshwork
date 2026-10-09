@@ -1,7 +1,7 @@
 /* Экран входа /auth (lane auth): Яндекс ID + демо-вход. Токены — styles/tokens.css. */
 .wrap { max-width: 1120px; margin: 0 auto; padding: 56px var(--page-pad) 72px; display: grid; gap: 40px; }
 .head { display: grid; gap: 14px; max-width: 640px; }
-.title { margin: 0; font-size: clamp(36px, 5vw, 64px); line-height: 0.98; letter-spacing: -0.05em; }
+.title { margin: 0; font-size: clamp(36px, 5vw, 64px); line-height: 1.06; letter-spacing: -0.01em; }
 .lead { margin: 0; font-size: 18px; line-height: 1.55; color: var(--text-soft); }
 .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 32px; align-items: start; }
 .block { display: grid; gap: 14px; align-content: start; }

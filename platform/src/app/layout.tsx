@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Golos_Text } from 'next/font/google';
+import { Golos_Text, Playfair_Display } from 'next/font/google';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 
@@ -11,6 +11,14 @@ const golos = Golos_Text({
   weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
   variable: '--font-golos',
+});
+
+// Заголовки: «газетная» антиква (решение владельца 09.10 по запросу Карины); альтернативы - /design/fonts.
+const playfair = Playfair_Display({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['600', '700', '800'],
+  display: 'swap',
+  variable: '--font-display',
 });
 
 const mono = localFont({
@@ -30,7 +38,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ru" className={`${golos.variable} ${mono.variable}`}>
+    <html lang="ru" className={`${golos.variable} ${playfair.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );

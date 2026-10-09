@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 
 import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
+import { type RestoredChat, loadLastChat } from '@/server/agent/restore';
 import { requirePageUser } from '@/server/auth/page';
+import { chatDemoContextFromCookies } from '@/server/demo/context';
 import { CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
 import { getView } from '@/server/onboarding/service';
 
@@ -9,12 +11,22 @@ export const metadata: Metadata = { title: 'Знакомство — ФСП Ка
 export const dynamic = 'force-dynamic';
 
 /**
- * Онбординг-чат на весь экран (E-02, решение владельца 09.10): помощник задаёт
- * вопросы по одному, любой можно пропустить, «Настроить позже» — в шапке.
- * Guard — нужен аккаунт (любая роль). API — app/api/onboarding/route.ts.
+ * Онбординг-чат на весь экран (E-02, решения владельца 09.10): лента помощника, вопросы по одному,
+ * любой можно пропустить, «Настроить позже» — в шапке. После итога та же лента продолжается
+ * карьерным консультантом (кандидат). Guard — нужен аккаунт (любая роль). API — app/api/onboarding/route.ts.
  */
 export default async function OnboardingPage() {
   const s = await requirePageUser('/onboarding');
   const view = await getView(s.userId);
-  return <OnboardingChat initial={view} consentText={[...CONSENT_PARAGRAPHS]} />;
+  const demo = await chatDemoContextFromCookies();
+  let restored: RestoredChat | undefined;
+  // Вернулся к завершённому знакомству — показываем и последний разговор с консультантом.
+  if (s.candidateId && view.onboarded && view.current.kind === 'summary') {
+    try {
+      restored = await loadLastChat(s.candidateId);
+    } catch (err) {
+      console.warn('[onboarding] restore chat failed', err instanceof Error ? err.message : err);
+    }
+  }
+  return <OnboardingChat initial={view} consentText={[...CONSENT_PARAGRAPHS]} consultant={{ demo, restored }} />;
 }

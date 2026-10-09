@@ -41,7 +41,7 @@ function stage() {
   vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(() => bounds);
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
   vi.stubGlobal('devicePixelRatio', 2); vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ close: vi.fn() })));
-  const palette: Record<string, string> = { '--head-silver': '#bfc0c4', '--blue': '#4f42e9', '--paper': '#f1f1f3', '--ink': '#111111', '--muted': '#6b6b70' };
+  const palette: Record<string, string> = { '--blue': '#4f42e9', '--paper': '#f1f1f3', '--ink': '#111111', '--muted': '#6b6b70' };
   vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: (name: string) => palette[name] ?? '' }));
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(0) })));
   const queued = new Map<number, FrameRequestCallback>();

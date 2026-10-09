@@ -74,7 +74,7 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     gl.uniform1i(uniform('Texture'), 0); gl.uniform1i(uniform('NormalMap'), 1);
     const css = getComputedStyle(canvas);
     gl.uniform3fv(uniform('Accent'), rgb(css.getPropertyValue('--blue')));
-    gl.uniform3fv(uniform('Silver'), rgb(css.getPropertyValue('--head-silver')));
+    gl.uniform3fv(uniform('Silver'), rgb(css.getPropertyValue('--paper')));
     gl.uniform1f(uniform('Strength'), 1); gl.uniform1f(uniform('Smooth'), 0);
     gl.uniform1f(uniform('Zoom'), 1); gl.uniform1f(uniform('Time'), 0); gl.uniform1f(uniform('Burst'), 0);
     gl.uniform1i(uniform('Mode'), 4); gl.uniform1i(uniform('Wire'), 0);

@@ -1,0 +1,228 @@
+// Приглашения (R-E-05, R-C-11, R-C-16, R-E-07). Статусы: sent → viewed → accepted | declined.
+// Контакты работодатель видит только после accepted — решает matching/privacy на сервере.
+import type { InvitationStatus } from '@prisma/client';
+import type { z } from 'zod';
+
+import { prisma } from '../db';
+import { AppError, errors } from '../errors';
+import { loadCatalog } from '../recommend/evidence';
+import type { Grade, Specialization } from '../types';
+
+import { loadPool } from './matching';
+import { toCandidateCard, type CandidateCard } from './privacy';
+import type { InvitationInput } from './schemas';
+import { DAILY_INVITATION_LIMIT } from './weights';
+
+const OPEN: InvitationStatus[] = ['sent', 'viewed'];
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export interface EmployerInvitationView {
+  id: string;
+  status: InvitationStatus;
+  salaryOffer: number | null;
+  message: string | null;
+  createdAt: string;
+  viewedAt: string | null;
+  respondedAt: string | null;
+  vacancy: { id: string; title: string } | null;
+  candidate: CandidateCard;
+}
+
+export interface CandidateInvitationView {
+  id: string;
+  status: InvitationStatus;
+  salaryOffer: number | null;
+  message: string | null;
+  createdAt: string;
+  respondedAt: string | null;
+  company: { name: string; description: string | null };
+  vacancy: {
+    title: string;
+    specialization: Specialization;
+    grade: Grade;
+    salaryFrom: number;
+    salaryTo: number;
+    teamDescription: string | null;
+    stack: string[];
+  } | null;
+}
+
+export async function invitationsSentToday(companyId: string, now = new Date()): Promise<number> {
+  return prisma.invitation.count({ where: { companyId, createdAt: { gt: new Date(now.getTime() - DAY_MS) } } });
+}
+
+/**
+ * Отправить приглашение. 404 — кандидата нет или он скрыт настройкой приватности;
+ * 404 — чужая или архивная потребность; 409 — уже есть открытое приглашение этой
+ * компании; 429 — лимит за сутки. Лимит и дубль проверяются под advisory-lock
+ * компании, чтобы параллельные запросы не обошли счётчик.
+ */
+export async function createInvitation(
+  ctx: { companyId: string; employerProfileId: string },
+  input: z.infer<typeof InvitationInput>,
+  limit = DAILY_INVITATION_LIMIT,
+): Promise<{ id: string; status: InvitationStatus }> {
+  const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false }, select: { id: true } });
+  if (!cand) throw errors.notFound('Кандидат не найден');
+  if (input.vacancyId) {
+    const v = await prisma.vacancy.findFirst({ where: { id: input.vacancyId, companyId: ctx.companyId, archivedAt: null }, select: { id: true } });
+    if (!v) throw errors.notFound('Потребность не найдена');
+  }
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${ctx.companyId}`}))`;
+    const open = await tx.invitation.findFirst({
+      where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: OPEN } },
+      select: { id: true },
+    });
+    if (open) throw errors.conflict('Кандидат ещё не ответил на прошлое приглашение компании');
+    const sent = await tx.invitation.count({ where: { companyId: ctx.companyId, createdAt: { gt: new Date(Date.now() - DAY_MS) } } });
+    if (sent >= limit) {
+      throw new AppError('rate_limited', `Лимит: не больше ${limit} приглашений от компании за сутки`, 429, { limit });
+    }
+    return tx.invitation.create({
+      data: {
+        companyId: ctx.companyId,
+        employerProfileId: ctx.employerProfileId,
+        candidateId: input.candidateId,
+        vacancyId: input.vacancyId ?? null,
+        message: input.message,
+        salaryOffer: input.salaryOffer,
+      },
+      select: { id: true, status: true },
+    });
+  });
+}
+
+/** Приглашения компании с карточкой кандидата: контакты — только у принятых. */
+export async function listCompanyInvitations(companyId: string): Promise<EmployerInvitationView[]> {
+  const rows = await prisma.invitation.findMany({
+    where: { companyId },
+    select: {
+      id: true,
+      status: true,
+      salaryOffer: true,
+      message: true,
+      createdAt: true,
+      viewedAt: true,
+      respondedAt: true,
+      candidateId: true,
+      vacancy: { select: { id: true, title: true } },
+      candidate: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          specialization: true,
+          fspState: true,
+          categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true } },
+        },
+      },
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+  });
+  if (rows.length === 0) return [];
+  const catalog = await loadCatalog();
+  const pool = new Map((await loadPool(catalog)).map((p) => [p.evidence.id, p.claimsPublic]));
+  const accepted = new Set(rows.filter((r) => r.status === 'accepted').map((r) => r.candidateId));
+  return rows.map((r) => ({
+    id: r.id,
+    status: r.status,
+    salaryOffer: r.salaryOffer,
+    message: r.message,
+    createdAt: r.createdAt.toISOString(),
+    viewedAt: r.viewedAt?.toISOString() ?? null,
+    respondedAt: r.respondedAt?.toISOString() ?? null,
+    vacancy: r.vacancy,
+    candidate: toCandidateCard(
+      {
+        id: r.candidate.id,
+        name: r.candidate.name,
+        email: r.candidate.email,
+        specialization: r.candidate.specialization,
+        fspState: r.candidate.fspState,
+        category: r.candidate.categories[0] ?? null,
+        claims: pool.get(r.candidate.id) ?? [],
+      },
+      accepted.has(r.candidateId),
+    ),
+  }));
+}
+
+/**
+ * Входящие приглашения кандидата (R-C-11, R-C-16: только свои). `markViewed` —
+ * открытие страницы переводит sent → viewed.
+ */
+export async function listCandidateInvitations(candidateId: string, markViewed = false): Promise<CandidateInvitationView[]> {
+  if (markViewed) {
+    await prisma.invitation.updateMany({ where: { candidateId, status: 'sent' }, data: { status: 'viewed', viewedAt: new Date() } });
+  }
+  const rows = await prisma.invitation.findMany({
+    where: { candidateId },
+    select: {
+      id: true,
+      status: true,
+      salaryOffer: true,
+      message: true,
+      createdAt: true,
+      respondedAt: true,
+      company: { select: { name: true, description: true } },
+      vacancy: {
+        select: {
+          title: true,
+          specialization: true,
+          grade: true,
+          salaryFrom: true,
+          salaryTo: true,
+          teamDescription: true,
+          stack: true,
+          company: { select: { name: true, description: true } },
+        },
+      },
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+  });
+  return rows.map((r) => {
+    const company = r.company ?? r.vacancy?.company ?? { name: 'Компания', description: null };
+    const v = r.vacancy;
+    const vacancy = v
+      ? { title: v.title, specialization: v.specialization, grade: v.grade, salaryFrom: v.salaryFrom, salaryTo: v.salaryTo, teamDescription: v.teamDescription, stack: v.stack }
+      : null;
+    return {
+      id: r.id,
+      status: r.status,
+      salaryOffer: r.salaryOffer,
+      message: r.message,
+      createdAt: r.createdAt.toISOString(),
+      respondedAt: r.respondedAt?.toISOString() ?? null,
+      company,
+      vacancy,
+    };
+  });
+}
+
+/** Ответ кандидата. Чужое — 404; уже отвеченное — 409. Условный update — без гонки двойного ответа. */
+export async function respondInvitation(candidateId: string, invitationId: string, action: 'accept' | 'decline') {
+  const inv = await prisma.invitation.findFirst({ where: { id: invitationId, candidateId }, select: { id: true } });
+  if (!inv) throw errors.notFound('Приглашение не найдено');
+  const status: InvitationStatus = action === 'accept' ? 'accepted' : 'declined';
+  const now = new Date();
+  const r = await prisma.invitation.updateMany({
+    where: { id: invitationId, candidateId, status: { in: OPEN } },
+    data: { status, respondedAt: now },
+  });
+  if (r.count === 0) throw errors.conflict('На приглашение уже ответили');
+  return { id: invitationId, status };
+}
+
+export async function getPrivacy(candidateId: string): Promise<{ hiddenFromEmployers: boolean }> {
+  const c = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { hiddenFromEmployers: true } });
+  if (!c) throw errors.notFound('Кандидат не найден');
+  return c;
+}
+
+/** Настройка приватности (R-C-13): скрыть себя из подборок и поиска работодателей. */
+export async function setPrivacy(candidateId: string, hiddenFromEmployers: boolean) {
+  const r = await prisma.candidate.updateMany({ where: { id: candidateId }, data: { hiddenFromEmployers } });
+  if (r.count === 0) throw errors.notFound('Кандидат не найден');
+  return { hiddenFromEmployers };
+}

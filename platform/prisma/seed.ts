@@ -4,6 +4,7 @@ import { loadPlatformEnv } from '../scripts/load-env.mjs';
 
 import { seedAuth } from './seed/auth';
 import { seedClaims } from './seed/claims';
+import { seedEmployer } from './seed/employer';
 import { seedRecommend } from './seed/recommend';
 
 /**
@@ -54,6 +55,8 @@ async function main() {
   await seedRecommend(prisma);
   // После recommend: демо-работодатель ссылается на засеянную компанию.
   await seedAuth(prisma);
+  // lane employer: пул демо-кандидатов с подтверждёнными утверждениями, детали потребностей.
+  await seedEmployer(prisma);
 }
 
 main()

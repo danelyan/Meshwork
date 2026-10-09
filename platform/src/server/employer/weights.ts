@@ -1,0 +1,29 @@
+// Константы подбора и лимитов стороны работодателя (lane employer).
+// Все числа — ПРЕДЛОЖЕНИЯ агента без калибровки на данных; калибруются eval/matching.
+import type { Grade } from '../types';
+
+/**
+ * ПРЕДЛОЖЕНИЕ: множитель покрытия за категорию из теста (R-M-01, R-M-02). Категория
+ * совпала со специализацией потребности: грейд равен — покрытие × 1,3; выше
+ * требуемого — × 1,2; ниже — × 1. Множитель, а не прибавка: категория без
+ * закрытых требований не поднимает кандидата над тем, кто их закрыл (первый
+ * прогон eval с прибавкой +0,15/+0,10 это показал — docs/validation-results.md).
+ * Контракт с лейном test: читаем последнюю CandidateCategory как есть.
+ */
+export const CATEGORY_MULT_EXACT = 0.3;
+export const CATEGORY_MULT_ABOVE = 0.2;
+/** ПРЕДЛОЖЕНИЕ: специализация кандидата (категория, иначе указанная) не совпала с потребностью. */
+export const SPEC_MISMATCH_PENALTY = 0.2;
+/** ПРЕДЛОЖЕНИЕ (R-M-02): есть подтверждённые достижения ФСП (fspState = linked). Отсутствие ФСП не штрафуется (R-FSP-03). */
+export const FSP_BOOST = 0.05;
+/** ПРЕДЛОЖЕНИЕ: стек потребности упомянут в подтверждённых цитатах — за каждую метку, не больше STACK_BOOST_MAX. */
+export const STACK_BOOST_PER_TAG = 0.02;
+export const STACK_BOOST_MAX = 0.06;
+
+/** ПРЕДЛОЖЕНИЕ: лимит приглашений компании за скользящие 24 часа (против спама). */
+export const DAILY_INVITATION_LIMIT = 20;
+/** Длина выдачи по умолчанию и максимум. */
+export const DEFAULT_RESULT_LIMIT = 20;
+export const MAX_RESULT_LIMIT = 50;
+
+export const GRADE_RANK: Record<Grade, number> = { junior: 0, middle: 1 };

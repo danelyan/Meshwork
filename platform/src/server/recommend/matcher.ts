@@ -90,10 +90,11 @@ export async function explainInvitation(candidateId: string, invitationId: strin
   // чужое приглашение — 404, не раскрываем существование
   if (!inv || inv.candidateId !== candidateId) throw errors.notFound('Приглашение не найдено');
   const [catalog, index] = await Promise.all([loadCatalog(), loadConfirmedIndex(candidateId)]);
-  const r = computeCoverage(parseNeeds(inv.vacancy.needs), catalog, index);
+  // Приглашение без потребности (R-E-05, lane employer): требований нет — покрытие пустое.
+  const r = computeCoverage(parseNeeds(inv.vacancy?.needs ?? []), catalog, index);
   return {
     invitationId: inv.id,
-    vacancyId: inv.vacancyId,
+    vacancyId: inv.vacancyId ?? '',
     items: r.items.map((i) => ({ catalogId: i.catalogId, statement: i.statement, weight: i.weight, level: i.level, credit: i.credit })),
     score: r.score,
     covered: r.covered,

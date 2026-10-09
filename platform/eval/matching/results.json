@@ -1,0 +1,136 @@
+{
+  "summary": {
+    "k": 5,
+    "profiles": 16,
+    "vacancies": 8,
+    "precisionAt5": 0.475,
+    "precisionAt5Ceiling": 0.475,
+    "ndcgAt5": 0.9965762189290548,
+    "baseline": {
+      "precisionAt5": 0.35000000000000003,
+      "ndcgAt5": 0.5799102452348597
+    }
+  },
+  "rows": [
+    {
+      "vacancy": "demo-vac-be-j-1",
+      "p": 0.6,
+      "pMax": 0.6,
+      "ndcg": 0.9726097514324383,
+      "bP": 0.4,
+      "bNdcg": 0.8472668887613066,
+      "top": [
+        "demo-pool-be-j-1",
+        "demo-pool-be-m-pay",
+        "eval-be-pay-partial",
+        "eval-nospec-algo",
+        "eval-be-weak-junior"
+      ]
+    },
+    {
+      "vacancy": "demo-vac-be-m-1",
+      "p": 0.6,
+      "pMax": 0.6,
+      "ndcg": 1,
+      "bP": 0.4,
+      "bNdcg": 0.349884394886329,
+      "top": [
+        "demo-pool-be-m-pay",
+        "eval-be-pay-partial",
+        "eval-be-self-only",
+        "demo-pool-be-j-1",
+        "eval-be-category-only"
+      ]
+    },
+    {
+      "vacancy": "demo-vac-be-j-2",
+      "p": 0.4,
+      "pMax": 0.4,
+      "ndcg": 1,
+      "bP": 0.4,
+      "bNdcg": 0.5296052411645183,
+      "top": [
+        "demo-pool-be-j-2",
+        "demo-pool-be-m-infra",
+        "demo-pool-be-j-1",
+        "demo-pool-be-m-pay",
+        "eval-be-category-only"
+      ]
+    },
+    {
+      "vacancy": "demo-vac-be-m-2",
+      "p": 0.4,
+      "pMax": 0.4,
+      "ndcg": 1,
+      "bP": 0.2,
+      "bNdcg": 0.52129602861432,
+      "top": [
+        "demo-pool-be-m-infra",
+        "eval-be-category-only",
+        "demo-pool-be-m-pay",
+        "eval-nospec-algo",
+        "demo-pool-be-j-1"
+      ]
+    },
+    {
+      "vacancy": "demo-vac-fe-j-1",
+      "p": 0.4,
+      "pMax": 0.4,
+      "ndcg": 1,
+      "bP": 0.4,
+      "bNdcg": 0.6240505200038378,
+      "top": [
+        "eval-fe-platform-junior",
+        "demo-pool-fe-j-1",
+        "demo-pool-fe-j-2",
+        "eval-fe-fullstackish",
+        "demo-pool-fe-m-1"
+      ]
+    },
+    {
+      "vacancy": "demo-vac-fe-m-1",
+      "p": 0.4,
+      "pMax": 0.4,
+      "ndcg": 1,
+      "bP": 0.2,
+      "bNdcg": 0.6131471927654584,
+      "top": [
+        "demo-pool-fe-m-1",
+        "eval-fe-perf-a11y",
+        "eval-nospec-algo",
+        "demo-pool-fe-m-2",
+        "demo-pool-fe-j-1"
+      ]
+    },
+    {
+      "vacancy": "demo-vac-fe-j-2",
+      "p": 0.6,
+      "pMax": 0.6,
+      "ndcg": 1,
+      "bP": 0.4,
+      "bNdcg": 0.4655028147426407,
+      "top": [
+        "demo-pool-fe-j-2",
+        "demo-pool-fe-j-1",
+        "eval-fe-fullstackish",
+        "demo-pool-fe-m-1",
+        "eval-nospec-algo"
+      ]
+    },
+    {
+      "vacancy": "demo-vac-fe-m-2",
+      "p": 0.4,
+      "pMax": 0.4,
+      "ndcg": 1,
+      "bP": 0.4,
+      "bNdcg": 0.6885288809404666,
+      "top": [
+        "demo-pool-fe-m-2",
+        "demo-pool-fe-m-1",
+        "demo-pool-fe-j-2",
+        "eval-fe-fullstackish",
+        "eval-fe-perf-a11y"
+      ]
+    }
+  ]
+}

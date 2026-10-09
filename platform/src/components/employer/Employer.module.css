@@ -1,0 +1,43 @@
+/* Кабинет работодателя и входящие приглашения (lane employer). Только токены. */
+.page { max-width: 1200px; margin: 0 auto; padding: 40px var(--page-pad) 64px; display: grid; gap: 24px; }
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.head h1 { margin: 6px 0 0; overflow-wrap: anywhere; }
+.sectionTitle { margin: 0; font-size: 19px; }
+.lead { margin: 8px 0 0; color: var(--text-soft); font-size: var(--fs-md); max-width: 720px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.card { display: grid; gap: 12px; min-width: 0; }
+.cardHead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cardHead h2, .cardHead h3 { margin: 0; font-size: 19px; overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: var(--fs-sm); }
+.text { margin: 0; color: var(--text-soft); font-size: var(--fs); overflow-wrap: anywhere; white-space: pre-line; }
+.rank { font-family: var(--mono); font-size: var(--fs-sm); color: var(--muted); }
+.score { font-family: var(--mono); font-size: var(--fs-sm); }
+.why { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--fs); color: var(--text-soft); }
+.why b { color: var(--ink); font-weight: 600; }
+.claims { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.more { cursor: pointer; min-height: 36px; display: flex; align-items: center; }
+.claim > [data-level] { flex: none; white-space: nowrap; }
+.claim { display: inline-flex; gap: 8px; align-items: flex-start; font-size: var(--fs-sm); max-width: 100%; overflow-wrap: anywhere; }
+.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.checks { display: flex; flex-wrap: wrap; gap: 16px; grid-column: 1 / -1; font-size: var(--fs); }
+.checks label { display: inline-flex; gap: 8px; align-items: center; min-height: 36px; }
+.history { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--fs-sm); }
+.history a { text-decoration: underline; text-underline-offset: 3px; }
+.form { display: grid; gap: 16px; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { max-width: 100%; text-align: left; white-space: normal; height: auto; min-height: 40px; }
+.status { font-family: var(--mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em; }
+.contacts { display: grid; gap: 4px; padding: 12px; background: var(--surface-quote); font-size: var(--fs); overflow-wrap: anywhere; }
+.inviteBox { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs); }
+.table th, .table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table th { font-family: var(--mono); font-size: var(--fs-xs); color: var(--muted); font-weight: 500; text-transform: uppercase; }
+
+@media (max-width: 640px) {
+  .page { padding-top: 24px; }
+  .grid, .row, .filters { grid-template-columns: minmax(0, 1fr); }
+}

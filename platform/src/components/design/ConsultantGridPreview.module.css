@@ -6,6 +6,7 @@
 .panel { display: grid; gap: 14px; padding: 18px; max-height: calc(100svh - 180px); overflow-y: auto; border: 1px solid var(--border-faint); border-top: 0; background: var(--glass-strong); backdrop-filter: var(--blur); }
 .panel input { width: 100%; min-height: 24px; accent-color: var(--blue); cursor: pointer; }
 .note { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--muted); }
+.versions { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (max-width: 640px) {
   .tools { left: 16px; bottom: 16px; }
 }

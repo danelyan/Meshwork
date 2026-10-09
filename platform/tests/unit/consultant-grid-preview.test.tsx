@@ -44,3 +44,18 @@ it('resets all parameters without replacing the iframe or losing the chat', () =
   expect(send).toHaveBeenLastCalledWith({ type: 'fsp-grid-settings', settings: { step: 46, relief: 1, angle: 0.5 } }, location.origin);
   expect(screen.getByTitle('Карьерный консультант — тестовый макет')).toBe(frame);
 });
+
+it('waits for each renderer after switching versions and reapplies the current settings', () => {
+  const view = render(<ConsultantGridPreview source="/design/consultant-grid-v1/index.html" />);
+  const frame = screen.getByTitle('Карьерный консультант — тестовый макет') as HTMLIFrameElement;
+  const ready = () => act(() => window.dispatchEvent(new MessageEvent('message', {
+    source: frame.contentWindow, origin: location.origin, data: { type: 'fsp-grid-ready' },
+  })));
+  ready();
+  fireEvent.change(screen.getByRole('slider', { name: /Шаг сетки/i }), { target: { value: '24' } });
+  view.rerender(<ConsultantGridPreview source="/design/consultant-grid-v2/index.html" />);
+  expect(screen.getByRole('status').textContent).toContain('Загружается');
+  const send = vi.spyOn(frame.contentWindow!, 'postMessage');
+  ready();
+  expect(send).toHaveBeenLastCalledWith({ type: 'fsp-grid-settings', settings: { step: 24, relief: 1, angle: 0.5 } }, location.origin);
+});

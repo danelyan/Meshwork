@@ -5,16 +5,20 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Field, Kicker, Notice } from '@/components/ui';
 
 import styles from './ConsultantGridPreview.module.css';
-import { DEFAULT_GRID_SETTINGS, GRID_PREVIEW_SOURCE, gridSettingsSchema } from './grid-preview-settings';
+import { DEFAULT_GRID_SETTINGS, GRID_PREVIEW_SOURCE, gridSettingsSchema, type GridSettings } from './grid-preview-settings';
 
-export function ConsultantGridPreview() {
+export function ConsultantGridPreview({ source = GRID_PREVIEW_SOURCE, initialSettings = DEFAULT_GRID_SETTINGS, version = 'preview' }: {
+  source?: string; initialSettings?: GridSettings; version?: 'preview' | 'v1' | 'v2';
+}) {
   const frame = useRef<HTMLIFrameElement>(null);
-  const [settings, setSettings] = useState(DEFAULT_GRID_SETTINGS);
+  const [settings, setSettings] = useState(initialSettings);
   const [open, setOpen] = useState(true);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    setReady(false);
+    setFailed(false);
     const timeout = window.setTimeout(() => setFailed(true), 20_000);
     function receive(event: MessageEvent) {
       if (event.origin !== window.location.origin || event.source !== frame.current?.contentWindow) return;
@@ -29,7 +33,7 @@ export function ConsultantGridPreview() {
       window.clearTimeout(timeout);
       window.removeEventListener('message', receive);
     };
-  }, []);
+  }, [source]);
 
   useEffect(() => {
     if (!ready) return;
@@ -41,17 +45,21 @@ export function ConsultantGridPreview() {
 
   return (
     <main id="main" className={styles.preview}>
-      <iframe ref={frame} src={GRID_PREVIEW_SOURCE} title="Карьерный консультант — тестовый макет" className={styles.frame}
+      <iframe ref={frame} src={source} title="Карьерный консультант — тестовый макет" className={styles.frame}
         onLoad={() => frame.current?.contentWindow?.postMessage({ type: 'fsp-grid-connect' }, window.location.origin)} />
       <section className={styles.tools} aria-label="Настройки тестового экрана">
         <div className={styles.toolbar}>
-          <span className={styles.demo}>Тестовый экран</span>
+          <span className={styles.demo}>{version === 'v2' ? 'Тест v2' : version === 'v1' ? 'Сохранённый v1' : 'Тестовый экран'}</span>
           <Button size="sm" aria-expanded={open} aria-controls="grid-settings" onClick={() => setOpen(!open)}>
             {open ? 'Свернуть настройки' : 'Настройки сетки'}
           </Button>
         </div>
         {open && <div id="grid-settings" className={styles.panel}>
           <Kicker>Сетка и рельеф</Kicker>
+          <div className={styles.versions}>
+            <Button href="/design/consultant-grid-v1" size="sm" aria-current={version === 'v1' ? 'page' : undefined}>Сохранённый v1</Button>
+            <Button href="/design/consultant-grid-v2" size="sm" aria-current={version === 'v2' ? 'page' : undefined}>Тест v2</Button>
+          </div>
           <Field label={`Шаг сетки · ${settings.step} px`} hint="Меньше шаг — плотнее сетка.">
             <input type="range" min="16" max="80" step="1" value={settings.step}
               onChange={(e) => setSettings({ ...settings, step: Number(e.target.value) })} />
@@ -65,9 +73,10 @@ export function ConsultantGridPreview() {
               onChange={(e) => setSettings({ ...settings, angle: Number(e.target.value) })} />
           </Field>
           <Button size="sm" onClick={() => setSettings({ ...DEFAULT_GRID_SETTINGS })}>Как в оригинале</Button>
+          {version !== 'preview' && <Button size="sm" onClick={() => setSettings({ ...initialSettings })}>Твой сохранённый вид</Button>}
           <p className={styles.note}>Демо-чат из макета. Данные профиля и ответы вымышлены.</p>
           {!ready && !failed && <p className={styles.note} role="status">Загружается анимация…</p>}
-          {failed && <Notice tone="error">Анимация не загрузилась. Обновите страницу.</Notice>}
+          {failed && <Notice tone="error">Анимация не загрузилась. Обновите страницу или откройте сохранённый v1.</Notice>}
         </div>}
       </section>
     </main>

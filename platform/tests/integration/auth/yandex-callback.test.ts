@@ -1,7 +1,7 @@
 import { GET as callback } from '@/app/api/auth/yandex/callback/route';
 import { GET as start } from '@/app/api/auth/yandex/route';
 import { CONSENT_VERSION } from '@/server/auth/consent';
-import { OAUTH_COOKIE } from '@/server/auth/yandex';
+import { OAUTH_COOKIE, signOAuthState } from '@/server/auth/yandex';
 import { resetEnvCache } from '@/server/env';
 import { parseSession } from '@/server/session';
 
@@ -101,6 +101,18 @@ describe('вход через Яндекс ID (callback, fetch замокан)',
       expect(cookieFrom(res, OAUTH_COOKIE)).toBeUndefined();
     }
     expect(await prisma.user.count()).toBe(0);
+  });
+
+  it('версия согласия сменилась между стартом и возвратом: /auth?error=consent_required, аккаунт и обмен не созданы', async () => {
+    const calls = mockYandex(OK_TOKEN, info());
+    const state = 'state-value-for-stale-consent';
+    const old = signOAuthState({ state, verifier: 'v'.repeat(64), next: null, consent: 'old-version', exp: Math.floor(Date.now() / 1000) + 600 });
+    const res = await cb(`code=1234567&state=${state}`, `${OAUTH_COOKIE}=${old}`);
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe('http://localhost:3000/auth?error=consent_required');
+    expect(calls).toHaveLength(0);
+    expect(await prisma.user.count()).toBe(0);
+    expect(await prisma.consent.count()).toBe(0);
   });
 
   it('неверный state или нет куки → /auth?error=state, обмена нет', async () => {

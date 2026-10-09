@@ -51,8 +51,11 @@ describe('API онбординга', () => {
     const c = pending('u1');
     expect((await act(c, { action: 'skip', stepId: 'consent' })).status).toBe(409);
     expect((await act(c, { action: 'answer', stepId: 'consent', value: { version: 'old' } })).status).toBe(409);
+    await view(c); // чат открыт: шаг согласия показан (реплика запомнена)
     const ok = await act(c, { action: 'answer', stepId: 'consent', value: { version: CONSENT_VERSION } });
     expect(ok.json.current.id).toBe('role');
+    // Приветствие уже было в шаге согласия: роль не здоровается второй раз.
+    expect(ok.json.current.lead).not.toMatch(/^Привет/);
     expect(await prisma.consent.count({ where: { userId: 'u1', version: CONSENT_VERSION } })).toBe(1);
     expect((await act(c, { action: 'skip', stepId: 'role' })).status).toBe(409);
     const r = await act(c, { action: 'answer', stepId: 'role', value: 'candidate' });

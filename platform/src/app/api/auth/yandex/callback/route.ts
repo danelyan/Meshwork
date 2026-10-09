@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { ensureConsent } from '@/server/auth/consent';
+import { CONSENT_VERSION, ensureConsent } from '@/server/auth/consent';
 import { safeNext } from '@/server/auth/redirect';
 import { homePathFor, sessionInputFor, upsertExternalUser } from '@/server/auth/users';
 import {
@@ -39,6 +39,10 @@ export async function GET(req: Request) {
   if (!saved || !stateMatches(saved.state, params.get('state'))) return back('state');
   const code = params.get('code');
   if (!code || code.length > 256) return back('exchange');
+
+  // Текст согласия мог смениться между стартом и возвратом: проверяем до создания аккаунта,
+  // иначе пользователь остался бы без Consent (тот же код, что на старте).
+  if (saved.consent !== CONSENT_VERSION) return back('consent_required');
 
   let user;
   try {

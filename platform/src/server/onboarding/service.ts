@@ -26,7 +26,7 @@ import {
 } from './engine';
 import { computeNeeds } from './needs';
 import { type PrevAnswer, leadFor, templateLead } from './phrase';
-import { GRADES, scenarioSteps } from './scenario';
+import { GRADES, findStep, scenarioSteps } from './scenario';
 import type { Answers, Facts, OnboardingView, StepContext, StepDef, StepView, SummaryView } from './types';
 
 /**
@@ -88,7 +88,7 @@ async function save(userId: string, data: { stepId: string; answers?: Answers; s
   await prisma.onboardingState.upsert({ where: { userId }, create: { userId, ...patch }, update: patch });
 }
 
-function prevOf(step: StepDef, l: Pick<Loaded, 'ctx' | 'state'>): PrevAnswer | null {
+function prevOf(step: StepDef, l: Pick<Loaded, 'ctx' | 'state' | 'lines'>): PrevAnswer | null {
   const steps = visibleSteps(l.ctx);
   const idx = steps.findIndex((s) => s.id === step.id);
   for (let i = idx - 1; i >= 0; i--) {
@@ -98,6 +98,10 @@ function prevOf(step: StepDef, l: Pick<Loaded, 'ctx' | 'state'>): PrevAnswer | n
     const value = answered ? l.ctx.answers[s.id] : s.doneBy?.(l.ctx) ? true : undefined;
     return { step: s, value, label: answered ? answerLabel(s, value, l.ctx) : null };
   }
+  // Шаг согласия (страховка) уже показан и после ответа скрылся из сценария: первый видимый шаг
+  // не должен здороваться второй раз.
+  const consent = findStep('consent');
+  if (consent && l.lines.consent) return { step: consent, value: true, label: null };
   return null;
 }
 

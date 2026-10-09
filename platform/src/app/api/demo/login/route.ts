@@ -56,7 +56,7 @@ export const POST = withErrors(async (req: Request) => {
   assertEnabled();
   const body = LoginBody.parse(await req.json().catch(() => ({})));
   if ('fresh' in body) {
-    // Новый пользователь: роль и согласие спросит сам онбординг.
+    // Новый пользователь: согласие уже взято галкой на /demo (в createFreshDemoUser), роль спросит онбординг.
     const user = await createFreshDemoUser(body.consent);
     const res = NextResponse.json({ user: { id: user.id, name: user.name }, next: '/onboarding' });
     res.cookies.set(userSessionCookie(sessionInputFor(user)));

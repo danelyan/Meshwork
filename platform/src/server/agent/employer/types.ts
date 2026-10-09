@@ -8,10 +8,11 @@ import type { LlmProvider } from '@/server/llm/types';
 import type { Grade, Specialization } from '@/server/types';
 
 /**
- * Кандидат глазами помощника — то, что уходит и в модель, и в ленту. Только публичная
- * часть (R-E-07): псевдоним, категория, ФСП, покрытие, утверждения формулировкой каталога
- * с уровнем и типом источника. Имени, почты и цитат нет НИКОГДА — даже после принятия
- * приглашения (контакты — в разделе «Приглашения», не в разговоре с моделью).
+ * Кандидат глазами помощника — то, что уходит в модель (результат инструмента, история).
+ * Только публичная часть (R-E-07): псевдоним, категория, ФСП, покрытие, утверждения
+ * формулировкой каталога с уровнем и типом источника. Имени, почты и цитат нет НИКОГДА,
+ * в том числе после принятия приглашения. Имя принявшего (решение владельца 09.10)
+ * добавляется только в ленту — см. AssistantCandidateView; контакты — в «Приглашениях».
  */
 export interface AssistantCandidate {
   candidateId: string;
@@ -30,12 +31,21 @@ export interface AssistantCandidate {
   invitation: InvitationStatus | null;
 }
 
+/**
+ * Карточка в ленте (SSE и восстановление чата): AssistantCandidate плюс `name` — только
+ * если у компании есть принятое приглашение этого кандидата. Добавляет серверный слой
+ * (employer/names.ts) уже после хода агента; в модель и в её историю поле не попадает.
+ */
+export type AssistantCandidateView = AssistantCandidate & { name?: string };
+
 export interface CandidatesBlock {
   /** null — поиск по всей базе. */
   vacancy: { id: string; title: string; salaryFrom: number } | null;
   total: number;
   items: AssistantCandidate[];
 }
+
+export type CandidatesBlockView = Omit<CandidatesBlock, 'items'> & { items: AssistantCandidateView[] };
 
 export interface InvitationDraft {
   candidateId: string;
@@ -67,7 +77,7 @@ export type EmployerAgentEvent =
   | { type: 'step'; text: string }
   | { type: 'queue'; position: number }
   | { type: 'ask'; question: string; options?: string[] }
-  | { type: 'candidates'; block: CandidatesBlock }
+  | { type: 'candidates'; block: CandidatesBlockView }
   | { type: 'invitation_draft'; draft: InvitationDraft }
   | { type: 'need_draft'; draft: NeedDraft }
   | { type: 'message'; text: string }

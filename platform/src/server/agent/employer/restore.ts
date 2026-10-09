@@ -2,6 +2,7 @@ import { prisma } from '@/server/db';
 import { loadEmployerContext } from '@/server/employer';
 import type { ToolCall } from '@/server/llm/types';
 
+import { withAcceptedNames } from './names';
 import type { CandidatesBlock, EmployerAgentEvent, InvitationDraft, NeedDraft } from './types';
 
 export type EmployerRestoredItem = { id: string; role: 'user'; text: string } | { id: string; role: 'agent'; event: EmployerAgentEvent };
@@ -21,7 +22,7 @@ function parse(content: string): unknown {
 
 /**
  * Последний разговор работодателя для перезагрузки: реплики и карточки из результатов
- * инструментов (выдача, черновики) — те же данные, что видела модель, без имён и контактов.
+ * инструментов (выдача, черновики) — те же данные, что видела модель, без имён и контактов (имя принявших добавляется отдельно, names.ts).
  * Статус приглашения в карточках — актуальный из БД (мог смениться после разговора).
  * Чужие разговоры не читаются: выборка по employerProfileId.
  */
@@ -64,7 +65,9 @@ export async function loadLastEmployerChat(employerProfileId: string): Promise<E
     for (const it of items) {
       if (it.role !== 'agent' || it.event.type !== 'candidates') continue;
       const block = it.event.block;
-      it.event = { type: 'candidates', block: { ...block, items: block.items.map((c) => ({ ...c, invitation: last.get(c.candidateId) ?? null })) } };
+      const fresh = { ...block, items: block.items.map((c) => ({ ...c, invitation: last.get(c.candidateId) ?? null })) };
+      // Имя принявших — только для ленты, не из истории модели (names.ts).
+      it.event = { type: 'candidates', block: await withAcceptedNames(companyId, fresh) };
     }
   }
   return { conversationId: conv.id, items };

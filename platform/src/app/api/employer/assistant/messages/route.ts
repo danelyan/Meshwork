@@ -4,7 +4,9 @@ import { runEmployerTurn } from '@/server/agent/employer/loop';
 import type { EmployerAgentEvent } from '@/server/agent/employer/types';
 import { encodeSse } from '@/server/agent/events';
 import { acquireConversationLock } from '@/server/agent/lock';
+import { enrichEvent } from '@/server/agent/employer/names';
 import { prisma } from '@/server/db';
+import { loadEmployerContext } from '@/server/employer';
 import { AppError, errors, withErrors } from '@/server/errors';
 import { requireEmployer } from '@/server/session';
 
@@ -35,6 +37,7 @@ export const POST = withErrors(async (req: Request) => {
     conversationId = conv.id;
   }
 
+  const { companyId } = await loadEmployerContext(employerProfileId);
   const lock = await acquireConversationLock(`emp:${conversationId}`);
   if (!lock) throw new AppError('busy', 'Помощник ещё отвечает в этом разговоре — дождись окончания', 409);
 
@@ -43,13 +46,25 @@ export const POST = withErrors(async (req: Request) => {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let closed = false;
-      const emit = (e: EmployerAgentEvent) => {
+      const send = (e: EmployerAgentEvent) => {
         if (closed) return;
         try {
           controller.enqueue(encoder.encode(encodeSse(e)));
         } catch {
           closed = true;
         }
+      };
+      // Имя принявшего добавляется к карточке только здесь, на пути к клиенту: инструменты
+      // и история модели его не видят. Очередь сохраняет порядок событий.
+      let chain: Promise<void> = Promise.resolve();
+      const emit = (e: EmployerAgentEvent) => {
+        chain = chain.then(async () => {
+          try {
+            send(await enrichEvent(companyId, e));
+          } catch {
+            send(e); // без имени: карточка с псевдонимом безопаснее потерянной
+          }
+        });
       };
       try {
         emit({ type: 'conversation', id: conversationId });
@@ -63,6 +78,7 @@ export const POST = withErrors(async (req: Request) => {
         }
       } finally {
         emit({ type: 'done' });
+        await chain;
         await lock.release();
         if (!closed) {
           try {

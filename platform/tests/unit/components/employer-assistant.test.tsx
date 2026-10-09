@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 import { AssistantChat } from '@/components/employer/AssistantChat';
-import type { AssistantCandidate, CandidatesBlock, InvitationDraft, NeedDraft } from '@/server/agent/employer/types';
+import type { AssistantCandidate, CandidatesBlock, CandidatesBlockView, InvitationDraft, NeedDraft } from '@/server/agent/employer/types';
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -66,6 +66,17 @@ const NEED: NeedDraft = {
 };
 
 describe('лента помощника работодателя', () => {
+  it('карточка принятого кандидата показывает имя (с псевдонимом), непринятого — только псевдоним; почты нет', () => {
+    const block: CandidatesBlockView = { ...BLOCK, items: [CAND, { ...CAND, candidateId: 'c2', alias: 'Кандидат #DEF456', rank: 2, invitation: 'accepted', name: 'Мария Секретова' }] };
+    render(<AssistantChat initial={{ conversationId: 'conv', items: [{ id: '2', role: 'agent', event: { type: 'candidates', block } }] }} />);
+    const cards = screen.getAllByTestId('assistant-candidate');
+    expect(within(cards[1]!).getByRole('heading').textContent).toContain('Мария Секретова');
+    expect(within(cards[1]!).getByRole('heading').textContent).toContain('Кандидат #DEF456');
+    expect(within(cards[0]!).getByRole('heading').textContent).toContain('Кандидат #ABC123');
+    expect(within(cards[0]!).getByRole('heading').textContent).not.toContain('Мария');
+    expect(document.body.textContent).not.toMatch(/@/);
+  });
+
   it('выдача карточками в сообщении: псевдоним, покрытие, «Пригласить»; у принявшего — ссылка на «Приглашения», без контактов', () => {
     render(
       <AssistantChat

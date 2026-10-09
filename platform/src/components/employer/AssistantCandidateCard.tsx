@@ -1,5 +1,5 @@
 import { LevelBadge } from '@/components/LevelBadge';
-import type { AssistantCandidate } from '@/server/agent/employer/types';
+import type { AssistantCandidateView } from '@/server/agent/employer/types';
 
 import { Meter, Tag } from '../ui';
 
@@ -9,10 +9,11 @@ import { INVITATION_STATUS_LABEL, SOURCE_TYPE_LABEL } from './labels';
 
 /**
  * Компактная карточка кандидата в ленте помощника: та же публичная часть, что
- * CandidateMatchCard (R-E-07, R-M-03), но из карточки помощника — без имени и
- * контактов даже после принятия (контакты — в «Приглашениях»).
+ * CandidateMatchCard (R-E-07, R-M-03), но из карточки помощника: имя показывается
+ * только если сервер прислал `name` (у компании есть принятое приглашение), иначе
+ * псевдоним. Контакты — по-прежнему только в «Приглашениях».
  */
-export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: AssistantCandidate; vacancyId: string | null; defaultSalary?: number }) {
+export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: AssistantCandidateView; vacancyId: string | null; defaultSalary?: number }) {
   const open = c.invitation === 'sent' || c.invitation === 'viewed';
   const proven = c.coveredItems.filter((i) => i.level !== 'self_reported').length;
   return (
@@ -20,7 +21,8 @@ export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: Ass
       <div className={styles.cardHead}>
         <h3 id={`acand-${c.candidateId}`}>
           <span className={styles.rank}>#{c.rank} </span>
-          {c.alias}
+          {c.name ?? c.alias}
+          {c.name && <span className={styles.meta}> · {c.alias}</span>}
         </h3>
         <span className={styles.score} title="Покрытие требований с учётом уровня доказанности, категории и ФСП">
           балл {c.score.toFixed(2)}

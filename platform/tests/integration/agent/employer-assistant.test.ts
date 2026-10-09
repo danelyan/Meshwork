@@ -206,6 +206,62 @@ describe('помощник работодателя (БД)', () => {
     expect((b.events.find((e) => e.type === 'candidates') as { block: CandidatesBlock }).block.vacancy?.id).toBe(PAY_VAC);
   });
 
+  it('имя принявшего: в ленте (SSE и восстановление) только у принявшего, в модель и её историю не уходит никогда', async () => {
+    const pay = DEMO_POOL[0]!;
+    const other = DEMO_POOL.find((p) => p.id !== pay.id && p.specialization === 'backend')!;
+    const modelSaw: string[] = [];
+    registerStubResponse('employer_assistant', (req) => {
+      modelSaw.push(JSON.stringify(req.messages));
+      const last = req.messages.at(-1);
+      if (last?.role === 'user') return { kind: 'tool_calls', toolCalls: [{ id: 't2', name: 'match_for_need', arguments: { vacancyId: PAY_VAC, limit: 10 } }] };
+      return { kind: 'text', text: 'Карточки ниже.' };
+    });
+    const emp = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: PROFILE })}`;
+    const run = async () => {
+      const res = await assistantPost(jsonRequest('/x', 'POST', { text: 'Подбери под Backend платежей' }, emp));
+      return res.text();
+    };
+    const sseNames = (body: string) =>
+      body
+        .split('\n\n')
+        .filter((f) => f.includes('"type":"candidates"'))
+        .flatMap((f) => (JSON.parse(f.replace(/^data: /, '')).block.items as { candidateId: string; name?: string }[]).map((i) => [i.candidateId, i.name] as const));
+
+    // до принятия: имени нет ни у кого
+    const before = await run();
+    expect(sseNames(before).length).toBeGreaterThan(0);
+    expect(sseNames(before).every(([, n]) => n === undefined)).toBe(true);
+    expect(before).not.toContain(pay.name);
+
+    // приглашение отправлено, но не принято — по-прежнему псевдоним
+    const inv = await prisma.invitation.create({
+      data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: pay.id, vacancyId: PAY_VAC, message: 'Платёжная команда', salaryOffer: 230000, status: 'sent' },
+    });
+    expect(await run()).not.toContain(pay.name);
+
+    // принято: имя только у принявшего
+    await prisma.invitation.update({ where: { id: inv.id }, data: { status: 'accepted' } });
+    const after = await run();
+    const names = new Map(sseNames(after));
+    expect(names.get(pay.id)).toBe(pay.name);
+    expect(names.has(other.id) ? names.get(other.id) : undefined).toBeUndefined();
+    expect(after).not.toContain(other.name);
+    expect(after).not.toContain(`${pay.id}@example.test`);
+
+    // восстановление ленты — то же правило
+    const restored = await loadLastEmployerChat(PROFILE);
+    const cards = restored.items.flatMap((i) => (i.role === 'agent' && i.event.type === 'candidates' ? i.event.block.items : []));
+    expect(cards.find((c) => c.candidateId === pay.id)?.name).toBe(pay.name);
+    expect(cards.filter((c) => c.candidateId !== pay.id).every((c) => c.name === undefined)).toBe(true);
+
+    // граница: ни запросы к модели, ни её история в БД имени не содержат
+    const history = JSON.stringify((await prisma.employerMessage.findMany({ select: { content: true, toolCalls: true } })));
+    for (const secret of await secrets()) {
+      expect(history, secret).not.toContain(secret);
+      expect(modelSaw.join('\n'), secret).not.toContain(secret);
+    }
+  });
+
   it('API: только работодатель (401/403), SSE c conversation и done', async () => {
     expect((await assistantPost(jsonRequest('/x', 'POST', { text: 'привет' }))).status).toBe(401);
     const cand = `cid=${signUserSession({ userId: 'u-c', role: 'candidate', candidateId: DEMO_POOL[0]!.id })}`;

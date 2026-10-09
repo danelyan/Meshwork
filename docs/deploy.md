@@ -37,7 +37,7 @@ Ubuntu 24.04, от 2 vCPU и 4 ГБ памяти (сборка Next.js), 30 ГБ
 DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-bootstrap.sh
 ```
 
-[`platform/scripts/stand-bootstrap.sh`](../platform/scripts/stand-bootstrap.sh) ставит Docker Engine, создаёт пользователя `deploy` (группа `docker`, без sudo) с переданным ключом, каталог `/opt/fsp/platform`, swap 2 ГБ, включает ufw и пишет стартовый `.env` демо-режима без ключей. Повторный запуск ничего не ломает и существующий `.env` не трогает.
+[`platform/scripts/stand-bootstrap.sh`](../platform/scripts/stand-bootstrap.sh) ставит Docker Engine, создаёт пользователя `deploy` (группа `docker`, без sudo) с переданным ключом, каталог `/opt/fsp/platform`, swap 2 ГБ, включает ufw, ставит очистку кеша сборки по расписанию и пишет стартовый `.env` демо-режима без ключей. Повторный запуск ничего не ломает и существующий `.env` не трогает.
 
 ## Файл `.env` на сервере
 
@@ -83,6 +83,7 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | Откат | Вернуть коммит в `main` (`git revert`) — деплой выложит прежнюю версию. Миграции назад не откатываются |
 | Почтовый ящик Mailpit | `ssh -L 8025:127.0.0.1:8025 <сервер>`, затем http://localhost:8025 |
 | Резервная копия базы | `dc exec db pg_dump -U fsp fsp > backup.sql` |
+| Место на диске | `df -h /` и `docker system df`. Кеш сборки урезается до 3 ГБ после каждого деплоя и раз в полчаса (`/etc/cron.d/fsp-docker-prune`) |
 
 ## Ограничения
 

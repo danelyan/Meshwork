@@ -36,6 +36,13 @@ if [ ! -f /etc/docker/daemon.json ]; then
   systemctl restart docker
 fi
 
+# Кеш сборки растёт примерно на 1 ГБ за деплой и при частых деплоях забивает диск вместе с базой.
+# Деплой урезает его сам; расписание — страховка на случай, когда деплой до очистки не дошёл.
+cat > /etc/cron.d/fsp-docker-prune <<'CRON'
+*/30 * * * * root /usr/bin/docker builder prune -f --max-used-space 3gb >/dev/null 2>&1
+CRON
+chmod 644 /etc/cron.d/fsp-docker-prune
+
 # Сборка Next.js на небольшом сервере упирается в память — подстраховка swap-файлом.
 if [ "$(swapon --noheadings | wc -l)" -eq 0 ]; then
   fallocate -l 2G /swapfile

@@ -52,13 +52,14 @@ jobs:
             --exclude='/.env' --exclude='/node_modules' --exclude='/.next' \
             platform/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
 
-      # Сборка падает — прежние контейнеры продолжают работать.
+      # Сборка падает — прежние контейнеры продолжают работать. Кеш сборки растёт примерно
+      # на 1 ГБ за деплой, поэтому после каждого урезается до 3 ГБ.
       - name: Build and restart
         run: |
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' \
             && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans \
             && docker image prune -f \
-            && docker builder prune -f --filter until=72h"
+            && docker builder prune -f --max-used-space 3gb"
 
       - name: Check health
         run: |

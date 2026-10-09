@@ -4,7 +4,10 @@ import { DemoScreen } from '@/components/DemoScreen';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
+// Вход и переходы — полная навигация (window.location.assign), см. DemoScreen.enter.
+beforeEach(() => {
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign: push } });
+});
 
 afterEach(() => {
   cleanup();

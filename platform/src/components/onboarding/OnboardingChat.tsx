@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { type OnboardingAction, completeOnboarding, onboardingAct, onboardingLater } from '@/lib/api';
@@ -59,7 +58,6 @@ const draftOf = (s: StepView) => (s.kind === 'text' && typeof s.value === 'strin
  * карьерным консультантом (Chat embedded). Логика шагов — на сервере; клиент показывает OnboardingView.
  */
 export function OnboardingChat({ initial, consentText, consultant, employerAssistant }: OnboardingChatProps) {
-  const router = useRouter();
   const [view, setView] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,13 +130,9 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const go = useCallback(
-    (path: string) => {
-      router.push(path);
-      router.refresh();
-    },
-    [router],
-  );
+  const go = useCallback((path: string) => {
+    window.location.assign(path);
+  }, []);
 
   async function later() {
     setBusy(true);

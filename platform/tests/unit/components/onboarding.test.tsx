@@ -5,7 +5,10 @@ import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
+// Вход и переходы — полная навигация (window.location.assign), см. DemoScreen.enter.
+beforeEach(() => {
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign: push } });
+});
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 
 afterEach(() => {

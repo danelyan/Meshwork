@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { type DemoCandidate, type DemoEmployer, demoEmployerLogin, demoFreshLogin, demoLogin, demoRestartOnboarding, getDemoAccounts } from '@/lib/api';
@@ -43,7 +42,6 @@ const isEmployerPath = (p: string) => p === '/employer' || p.startsWith('/employ
  * если путь подходит роли (кандидат — не /employer, работодатель — /employer…). Онбординг-входы его не используют.
  */
 export function DemoScreen({ next = null }: { next?: string | null } = {}) {
-  const router = useRouter();
   const [accounts, setAccounts] = useState<{ candidates: DemoCandidate[]; employers: DemoEmployer[] } | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
@@ -69,8 +67,8 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
     setFailure(null);
     try {
       const r = await run();
-      router.push(back ?? r.next ?? fallback);
-      router.refresh();
+      // Полная навигация: push+refresh подряд на холодном dev-сервере давали гонку (refresh /demo перебивал переход).
+      window.location.assign(back ?? r.next ?? fallback);
     } catch (e) {
       setFailure(e instanceof Error ? e.message : 'Не удалось войти.');
       setPending(null);

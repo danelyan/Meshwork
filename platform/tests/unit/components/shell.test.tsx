@@ -8,7 +8,6 @@ import type { SessionPrincipal } from '@/server/session';
 const nav = vi.hoisted(() => ({ pathname: '/profile' }));
 vi.mock('next/navigation', () => ({
   usePathname: () => nav.pathname,
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 const page = vi.hoisted(() => ({ session: null as unknown }));
 vi.mock('@/server/auth/page', () => ({ getPageSession: async () => page.session }));

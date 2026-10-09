@@ -8,10 +8,8 @@ const SRC = join(__dirname, '../../src');
 const RAW = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/;
 
 const ALLOWLIST: Record<string, number> = {
-  'components/Chat.module.css': 1,
   'components/ClaimCard.module.css': 1,
   'components/DefenseDialog.module.css': 3,
-  'components/EventFeed.module.css': 3,
   'components/LoginForm.module.css': 1,
   'components/ProfilePage.module.css': 3,
   'components/Uploader.module.css': 1,

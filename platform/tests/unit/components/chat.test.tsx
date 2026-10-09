@@ -115,6 +115,38 @@ describe('Chat', () => {
   });
 });
 
+describe('Chat: общая лента с онбордингом', () => {
+  it('приветствие — реплика помощника со знаком ФСП, ответ пользователя — пузырь; Enter отправляет', async () => {
+    const fetchMock = vi.fn(async () => new Response(streamOf([frame({ type: 'message', text: 'Принял' }) + frame({ type: 'done' })]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Chat />);
+    const greeting = screen.getByTestId('chat-greeting');
+    expect(greeting.textContent).toMatch(/Пришли резюме/);
+    expect(greeting.querySelector('img[src="/assets/fsp-mark.svg"]')).not.toBeNull();
+    const input = screen.getByLabelText('Сообщение');
+    fireEvent.change(input, { target: { value: 'привет' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(screen.getByText('Принял')).toBeDefined());
+    expect(screen.getByRole('list', { name: 'Переписка с консультантом' }).textContent).toContain('привет');
+  });
+
+  it('вопрос агента с вариантами — чипы, выбор уходит ответом', async () => {
+    const ask = frame({ type: 'ask', question: 'Какой стек?', options: ['Go', 'Java'] }) + frame({ type: 'done' });
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () => new Response(streamOf([ask]), { status: 200 }))
+      .mockImplementationOnce(async () => new Response(streamOf([frame({ type: 'done' })]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Chat />);
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'старт' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Go' })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Go' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(JSON.parse((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body as string).text).toBe('Go');
+  });
+});
+
 describe('Chat: демо', () => {
   it('в демо без модели одна честная пометка в шапке; без demo — нет', () => {
     const { unmount } = render(<Chat demo={{ noLlm: true, resume: null }} />);

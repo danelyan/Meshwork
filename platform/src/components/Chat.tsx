@@ -11,12 +11,27 @@ import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 
 import styles from './Chat.module.css';
+import { AssistantRow, Composer, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
+import { useStickToBottom } from './chat/scroll';
 import { EventFeed, type FeedItem } from './EventFeed';
 import { type UploadedFile, Uploader } from './Uploader';
+import { VisuallyHidden } from './ui';
 import ui from './ui.module.css';
 
 const GREETING =
-  'Пришлите резюме или ссылки — GitHub, Codeforces, статьи, портфолио. Можно всё сразу. Я найду в них утверждения о ваших навыках, покажу цитаты и спрошу, всё ли верно. Категорию (специализацию и грейд) даёт только тест.';
+  'Пришли резюме или ссылки — GitHub, Codeforces, статьи, портфолио. Можно всё сразу. Я найду в них утверждения о твоих навыках, покажу цитаты и спрошу, всё ли верно. Категорию (специализацию и грейд) даёт только тест.';
+
+/** Приветствие после онбординга: та же лента, помощник становится консультантом. */
+const CONTINUE_GREETING =
+  'Дальше я — твой карьерный консультант. Пришли резюме или ссылки, спроси, что подтянуть до следующего грейда, — или выбери шаг ниже.';
+
+export interface ChatEmbedded {
+  /** Подсказки следующих шагов — чипами под приветствием, пока не начат разговор. */
+  suggestions?: QuickReply[];
+  onSuggestion?: (value: string) => void;
+  /** Перед первой отправкой (онбординг: завершить знакомство). */
+  beforeSend?: () => Promise<void>;
+}
 
 /** Коды ошибок, при которых консультант недоступен и включается упрощённый режим. */
 const SIMPLIFIED_CODES = new Set(['llm_unavailable', 'llm_rate_limited', 'rate_limited', 'daily_limit', 'network', 'budget_exceeded']);
@@ -24,7 +39,11 @@ const SIMPLIFIED_CODES = new Set(['llm_unavailable', 'llm_rate_limited', 'rate_l
 let seq = 0;
 const nextId = () => `i${++seq}`;
 
-export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: RestoredChat }) {
+/**
+ * Карьерный консультант. Самостоятельно — страница /consultant; `embedded` — продолжение ленты
+ * онбординга (без заголовка страницы, приветствие с подсказками). Лента — примитивы components/chat.
+ */
+export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; initial?: RestoredChat; embedded?: ChatEmbedded }) {
   const [items, setItems] = useState<FeedItem[]>(initial?.items ?? []);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [text, setText] = useState('');
@@ -37,9 +56,11 @@ export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: Rest
   // Разговор создаёт сервер на первом ходе (событие conversation); дальше шлём его id.
   const conversationRef = useRef<string | undefined>(initial?.conversationId ?? undefined);
   const endRef = useRef<HTMLDivElement>(null);
-  const textId = useId();
   const urlsId = useId();
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Внутри онбординга лентой и автоскроллом управляет OnboardingChat.
+  useStickToBottom(rootRef, !embedded);
   useEffect(() => () => abortRef.current?.abort(), []);
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
@@ -61,6 +82,7 @@ export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: Rest
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       try {
+        await embedded?.beforeSend?.();
         const stream = await openConsultantStream({ text: message, uploadIds, urls, conversationId: conversationRef.current }, ctrl.signal);
         const reader = stream.getReader();
         const decoder = new TextDecoder();
@@ -81,11 +103,10 @@ export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: Rest
         setBusy(false);
       }
     },
-    [pushEvent],
+    [pushEvent, embedded],
   );
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSubmit() {
     if (busy) return;
     setFormError(null);
     const { urls, invalid } = parseUrls(urlsText);
@@ -94,13 +115,13 @@ export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: Rest
       return;
     }
     if (files.some((f) => f.status === 'uploading')) {
-      setFormError('Дождитесь окончания загрузки файлов.');
+      setFormError('Дождись окончания загрузки файлов.');
       return;
     }
     const done = files.filter((f) => f.status === 'done' && f.id);
     const message = text.trim() || (done.length || urls.length ? 'Вот мои материалы.' : '');
     if (!message) {
-      setFormError('Напишите сообщение или приложите резюме и ссылки.');
+      setFormError('Напиши сообщение или приложи резюме и ссылки.');
       return;
     }
     const uploadIds = done.map((f) => f.id as string);
@@ -154,30 +175,46 @@ export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: Rest
     [],
   );
 
+  const greeting = (
+    <AssistantRow key="greeting" testId="chat-greeting">
+      <Reply lines={[{ text: embedded ? CONTINUE_GREETING : GREETING }]} animate={Boolean(embedded) && items.length === 0} />
+      {embedded?.suggestions && embedded.suggestions.length > 0 && !items.some((it) => it.role === 'user') && (
+        <QuickReplies label="Что дальше" items={embedded.suggestions} disabled={busy} onPick={(v) => embedded.onSuggestion?.(v)} />
+      )}
+    </AssistantRow>
+  );
+
   return (
-    <div className={styles.chat}>
-      <header className={styles.intro}>
-        <h1>Карьерный консультант</h1>
-        <p>{GREETING}</p>
-        {demo?.noLlm && (
-          <p className={styles.demoNote} role="note">
-            Демо-режим без языковой модели: ответы собираются по шаблонам из данных платформы, утверждения ищутся по словарю каталога.
-          </p>
-        )}
-      </header>
+    <div ref={rootRef} className={embedded ? styles.embedded : styles.chat}>
+      {!embedded && (
+        <header className={styles.intro}>
+          <h1>Карьерный консультант</h1>
+          {demo?.noLlm && (
+            <p className={styles.demoNote} role="note">
+              Демо-режим без языковой модели: ответы собираются по шаблонам из данных платформы, утверждения ищутся по словарю каталога.
+            </p>
+          )}
+        </header>
+      )}
+      {embedded && demo?.noLlm && (
+        <p className={styles.demoNote} role="note">
+          Демо-режим без языковой модели: ответы собираются по шаблонам из данных платформы, утверждения ищутся по словарю каталога.
+        </p>
+      )}
 
       {simplified && (
         <div className={`${ui.notice} ${styles.simple}`} role="status">
           <strong>Упрощённый режим.</strong>
           <span>
-            Консультант сейчас недоступен, но платформа работает: посмотрите <Link href="/profile">профиль</Link>, уже подтверждённые
-            утверждения не потеряны. Попробуйте отправить сообщение ещё раз чуть позже.
+            Консультант сейчас недоступен, но платформа работает: посмотри <Link href="/profile">профиль</Link>, уже подтверждённые
+            утверждения не потеряны. Попробуй отправить сообщение ещё раз чуть позже.
           </span>
         </div>
       )}
 
       <EventFeed
         items={items}
+        lead={greeting}
         claimOverrides={overrides}
         onClaimAction={onClaimAction}
         onConfirmAll={onConfirmAll}
@@ -185,61 +222,57 @@ export function Chat({ demo, initial }: { demo?: ChatDemoContext; initial?: Rest
         locked={busy}
       />
       {busy && (
-        <p className={ui.muted} role="status" aria-live="polite">
-          <span className={ui.spinner} aria-hidden="true" /> Консультант работает…
-        </p>
-      )}
-      <div ref={endRef} />
-
-      <form className={styles.composer} onSubmit={onSubmit} aria-label="Новое сообщение">
-        <details className={styles.details} open={items.length === 0}>
-          <summary>Файлы и ссылки</summary>
-          <div>
-            {demo?.resume && (
-              <div className={styles.demoResume}>
-                <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => void loadDemoResume()} disabled={busy}>
-                  Загрузить демо-резюме
-                </button>
-                <span className={ui.muted}>
-                  Подставит {demo.resume.fileName} и ссылку {demo.resume.link} — файлы искать не нужно.
-                </span>
-              </div>
-            )}
-            <Uploader files={files} onChange={(u) => setFiles(u)} disabled={busy} />
-            <div className={styles.row}>
-              <label htmlFor={urlsId} className={ui.label}>
-                Ссылки (GitHub, Codeforces, статьи, портфолио) — через пробел или с новой строки
-              </label>
-              <textarea id={urlsId} value={urlsText} onChange={(e) => setUrlsText(e.target.value)} rows={2} placeholder="github.com/name" disabled={busy} />
-            </div>
-          </div>
-        </details>
-        <div className={styles.send}>
-          <div className={styles.row} style={{ flex: 1 }}>
-            <label htmlFor={textId} className={`${ui.label} ${styles.msgLabel}`}>
-              Сообщение
-            </label>
-            <textarea
-              id={textId}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Собери мне профиль"
-              disabled={busy}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
-              }}
-            />
-          </div>
-          <button type="submit" className={`${ui.btn} ${ui.primary} ${styles.sendBtn}`} disabled={busy}>
-            Отправить
-          </button>
+        <div className={styles.working}>
+          <Typing />
+          <VisuallyHidden role="status" aria-live="polite">
+            Консультант работает…
+          </VisuallyHidden>
         </div>
-        {formError && (
-          <p className={styles.warn} role="alert">
-            {formError}
-          </p>
-        )}
-      </form>
+      )}
+      <div ref={endRef} className={styles.end} />
+
+      <Composer
+        label="Сообщение"
+        value={text}
+        onChange={setText}
+        onSubmit={() => void onSubmit()}
+        placeholder="Собери мне профиль"
+        disabled={busy}
+        multiline
+        allowEmpty
+        hint="Enter — отправить, Shift+Enter — новая строка"
+        top={
+          <>
+            <details className={styles.details} open={items.length === 0 && !embedded}>
+              <summary>Файлы и ссылки</summary>
+              <div>
+                {demo?.resume && (
+                  <div className={styles.demoResume}>
+                    <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => void loadDemoResume()} disabled={busy}>
+                      Загрузить демо-резюме
+                    </button>
+                    <span className={ui.muted}>
+                      Подставит {demo.resume.fileName} и ссылку {demo.resume.link} — файлы искать не нужно.
+                    </span>
+                  </div>
+                )}
+                <Uploader files={files} onChange={(u) => setFiles(u)} disabled={busy} />
+                <div className={styles.row}>
+                  <label htmlFor={urlsId} className={ui.label}>
+                    Ссылки (GitHub, Codeforces, статьи, портфолио) — через пробел или с новой строки
+                  </label>
+                  <textarea id={urlsId} value={urlsText} onChange={(e) => setUrlsText(e.target.value)} rows={2} placeholder="github.com/name" disabled={busy} />
+                </div>
+              </div>
+            </details>
+            {formError && (
+              <p className={styles.warn} role="alert">
+                {formError}
+              </p>
+            )}
+          </>
+        }
+      />
     </div>
   );
 }

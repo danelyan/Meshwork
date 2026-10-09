@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import type { ClaimAction } from '@/lib/api';
 import { type CardClaim, normalizeClaim } from '@/lib/claims-view';
 import type { AgentEvent } from '@/server/agent/types';
 
+import { AssistantRow, Bubble, QuickReplies, Thread, UserBubble } from './chat/Thread';
 import { ClaimCard } from './ClaimCard';
 import styles from './EventFeed.module.css';
 import { Recommendations } from './Recommendations';
@@ -27,6 +28,9 @@ export interface EventFeedProps {
   onAnswer?: (text: string) => void;
   /** Нельзя отвечать: идёт ход агента. */
   locked?: boolean;
+  /** Строки в начале ленты (приветствие помощника). */
+  lead?: ReactNode;
+  label?: string;
 }
 
 type Block =
@@ -127,10 +131,10 @@ function ClaimsBlock({
       <div className={styles.cardsHead}>
         <h3 className={styles.cardsTitle}>
           {claims.length > 0 ? (
-            `Нашёл утверждений: ${claims.length}. Это про вас?`
+            `Нашёл утверждений: ${claims.length}. Это про тебя?`
           ) : event.alreadyKnown ? (
             <>
-              Новых утверждений нет: {event.alreadyKnown} уже в вашем профиле. <Link href="/profile">Открыть профиль</Link>
+              Новых утверждений нет: {event.alreadyKnown} уже в твоём профиле. <Link href="/profile">Открыть профиль</Link>
             </>
           ) : (
             'Подтверждённых цитатами утверждений не нашёл.'
@@ -171,85 +175,70 @@ function ClaimsBlock({
 function AskBlock({ event, onAnswer, locked }: { event: Extract<AgentEvent, { type: 'ask' }>; onAnswer?: (t: string) => void; locked?: boolean }) {
   const [picked, setPicked] = useState<string | null>(null);
   return (
-    <section className={`${ui.panel} ${styles.ask}`} aria-label="Вопрос консультанта">
-      <p className={styles.askQ}>{event.question}</p>
+    <>
+      <Bubble>{event.question}</Bubble>
       {event.options && event.options.length > 0 && (
-        <div className={styles.options} role="group" aria-label="Варианты ответа">
-          {event.options.map((o) => (
-            <button
-              key={o}
-              type="button"
-              className={`${ui.btn} ${ui.small} ${picked === o ? ui.primary : ''}`}
-              disabled={locked || picked !== null}
-              aria-pressed={picked === o}
-              onClick={() => {
-                setPicked(o);
-                onAnswer?.(o);
-              }}
-            >
-              {o}
-            </button>
-          ))}
-        </div>
+        <QuickReplies
+          items={event.options.map((o) => ({ value: o, label: o, pressed: picked === o }))}
+          disabled={locked || picked !== null}
+          onPick={(o) => {
+            setPicked(o);
+            onAnswer?.(o);
+          }}
+        />
       )}
-    </section>
+    </>
   );
 }
 
-export function EventFeed({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked }: EventFeedProps) {
+/** Лента консультанта на общих примитивах components/chat (тот же вид, что у онбординга). */
+export function EventFeed({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, lead, label = 'Переписка с консультантом' }: EventFeedProps) {
   const blocks = toBlocks(items);
   return (
-    <ol className={styles.feed} aria-label="Переписка с консультантом">
+    <Thread label={label}>
+      {lead}
       {blocks.map((b) => {
         if (b.kind === 'user') {
           return (
-            <li key={b.item.id} className={styles.row}>
-              <div className={styles.user}>
-                {b.item.text}
-                {b.item.files && b.item.files.length > 0 && (
-                  <ul className={styles.files} aria-label="Приложенные файлы">
-                    {b.item.files.map((f) => (
-                      <li key={f}>{f}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </li>
+            <UserBubble key={b.item.id} files={b.item.files}>
+              {b.item.text}
+            </UserBubble>
           );
         }
         if (b.kind === 'steps') {
           return (
-            <li key={b.id} className={styles.row}>
+            <AssistantRow key={b.id} mark={false}>
               <ul className={styles.steps} aria-live="polite" aria-label="Шаги консультанта">
                 {b.texts.map((t, i) => (
                   <li key={i}>{t}</li>
                 ))}
               </ul>
-            </li>
+            </AssistantRow>
           );
         }
         const ev = b.event;
+        const speaks = ev.type === 'message' || ev.type === 'ask';
         return (
-          <li key={b.id} className={styles.row}>
+          <AssistantRow key={b.id} mark={speaks}>
             {ev.type === 'queue' && (
               <p className={styles.queue} role="status">
                 <span className={ui.spinner} aria-hidden="true" />
-                {ev.position > 0 ? `Вы в очереди: ${ev.position}-й. Ответ придёт сам.` : 'Запрос обрабатывается.'}
+                {ev.position > 0 ? `Ты в очереди: ${ev.position}-й. Ответ придёт сам.` : 'Запрос обрабатывается.'}
               </p>
             )}
-            {ev.type === 'message' && <div className={styles.agent}>{ev.text}</div>}
+            {ev.type === 'message' && <Bubble>{ev.text}</Bubble>}
             {ev.type === 'claims' && <ClaimsBlock event={ev} overrides={claimOverrides} onAction={onClaimAction} onConfirmAll={onConfirmAll} />}
             {ev.type === 'ask' && <AskBlock event={ev} onAnswer={onAnswer} locked={locked} />}
             {ev.type === 'recommendations' && <Recommendations items={ev.items} />}
             {ev.type === 'error' && (
-              <p className={`${ui.notice} ${ui.errorBox}`} role="alert">
+              <Bubble tone="error">
                 {ev.message}
                 {ev.code ? <span className={ui.muted}> ({ev.code})</span> : null}
-              </p>
+              </Bubble>
             )}
-          </li>
+          </AssistantRow>
         );
       })}
-    </ol>
+    </Thread>
   );
 }

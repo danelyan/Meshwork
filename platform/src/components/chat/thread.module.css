@@ -1,0 +1,68 @@
+/* Лента чата помощника (онбординг и консультант): docs/design-system.md, «Лента чата». Только токены. */
+.thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* реплика помощника: знак ФСП слева, текст на стекле */
+.assistant { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: start; min-width: 0; animation: rise 0.3s var(--ease); }
+.mark { width: 32px; height: 32px; display: grid; place-items: center; background: var(--surface-ghost); border: 1px solid var(--border-faint); }
+.mark img { width: 20px; height: auto; display: block; }
+.markGap { width: 32px; }
+.body { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; min-width: 0; }
+.bubble { max-width: min(600px, 100%); padding: 12px 16px; background: var(--glass-strong); border: 1px solid var(--line); line-height: 1.55; overflow-wrap: anywhere; text-wrap: pretty; white-space: pre-wrap; cursor: default; }
+.bubble p { margin: 0; }
+.bubble p + p { margin-top: 6px; }
+.bubbleError { border-left: 3px solid var(--danger-border); color: var(--error); }
+.secondary { color: var(--muted); font-size: var(--fs-sm); white-space: normal; }
+.card { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); min-width: 0; }
+
+/* ответ пользователя: синий пузырь справа */
+.user { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; animation: rise 0.25s var(--ease); }
+.userBubble { max-width: min(520px, 85%); padding: 10px 14px; background: var(--blue); color: var(--on-ink); line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+.userBubble[data-quiet='true'] { background: var(--surface-ghost); color: var(--muted); border: 1px solid var(--border-faint); }
+.userAction { background: none; border: 0; padding: 2px 0; font: 500 var(--fs-xs) var(--mono); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.userAction:hover:not(:disabled) { color: var(--ink); }
+
+/* «печатает»: три точки */
+.typing { display: inline-flex; gap: 5px; align-items: center; padding: 14px 16px; background: var(--glass-strong); border: 1px solid var(--line); }
+.typing i { width: 6px; height: 6px; background: var(--muted); display: block; animation: blink 1s infinite ease-in-out; }
+.typing i:nth-child(2) { animation-delay: 0.15s; }
+.typing i:nth-child(3) { animation-delay: 0.3s; }
+.caret::after { content: ''; display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--blue); }
+
+/* быстрые ответы: чипы под последней репликой */
+.replies { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; animation: rise 0.25s var(--ease); }
+.replies small { font-size: var(--fs-xs); font-weight: 400; color: inherit; opacity: 0.7; }
+/* чип с пояснением: подпись и пояснение в столбик, по левому краю */
+.replies .chipNote { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; padding-top: 6px; padding-bottom: 6px; text-align: left; line-height: 1.3; }
+.done { background: none; border: 0; padding: 8px 4px; font: 600 var(--fs) var(--font); color: var(--blue); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.done:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+
+/* поле ввода внизу ленты */
+.composer { position: sticky; bottom: 0; z-index: 5; margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding: 10px 0 12px; background: var(--bg); box-shadow: 0 -1px 0 var(--line); }
+/* раскрытые вложения не прилипают к низу: иначе закрывают ленту */
+.composer:has(details[open]) { position: static; }
+.composerRow { display: flex; gap: 8px; align-items: stretch; }
+.composerRow textarea, .composerRow input { flex: 1; min-height: 48px; max-height: 180px; resize: none; }
+.composerMeta { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 20px; }
+.quiet { background: none; border: 0; padding: 4px 0; font: 500 var(--fs-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.quiet:hover:not(:disabled) { color: var(--ink); }
+.composerHint { font-size: var(--fs-xs); color: var(--muted); }
+
+/* тонкая полоса прогресса */
+.progress { height: 3px; width: 100%; background: var(--line); overflow: hidden; }
+.progress span { display: block; height: 100%; background: var(--blue); transition: width 0.4s var(--ease); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+
+@media (max-width: 640px) {
+  .assistant { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; }
+  .mark, .markGap { width: 28px; height: 28px; }
+  .mark img { width: 18px; }
+  .bubble { padding: 10px 12px; }
+  .card { padding: 12px; }
+  .userBubble { max-width: 92%; }
+  .composer { padding: 8px 0 10px; }
+  .composerRow > button { padding: 0 14px; }
+  .composerHint { display: none; }
+}
+.files { margin: 6px 0 0; padding: 0; list-style: none; font-family: var(--mono); font-size: var(--fs-sm); opacity: 0.85; }

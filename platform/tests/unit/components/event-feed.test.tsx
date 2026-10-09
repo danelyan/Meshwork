@@ -23,7 +23,7 @@ vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; chil
 describe('EventFeed: все типы AgentEvent', () => {
   it('claims без новых, но alreadyKnown > 0: честный заголовок со ссылкой на профиль', () => {
     render(<EventFeed items={[ag({ type: 'claims', proposed: [], rejected: 0, alreadyKnown: 4 })]} onClaimAction={async () => {}} />);
-    expect(screen.getByText(/Новых утверждений нет: 4 уже в вашем профиле/)).toBeDefined();
+    expect(screen.getByText(/Новых утверждений нет: 4 уже в твоём профиле/)).toBeDefined();
     expect(screen.getByRole('link', { name: 'Открыть профиль' }).getAttribute('href')).toBe('/profile');
     expect(screen.queryByText(/не нашёл/)).toBeNull();
   });

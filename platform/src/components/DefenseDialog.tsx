@@ -143,13 +143,18 @@ export function DefenseDialog({ claimId }: { claimId: string }) {
 
       <ol className={styles.thread} aria-label="Ход защиты" aria-live="polite">
         {turns.map((t, i) => (
-          <li key={i} style={{ display: 'grid', gap: 8 }}>
-            <div className={styles.q}>
-              <span className={styles.label}>
-                Вопрос {i + 1}
-                {total ? ` из ${total}` : ''}
+          <li key={i} className={styles.turn}>
+            <div className={styles.qRow}>
+              <span className={styles.mark} aria-hidden="true">
+                ИИ
               </span>
-              {t.question}
+              <div className={styles.q}>
+                <span className={styles.label}>
+                  Вопрос {i + 1}
+                  {total ? ` из ${total}` : ''}
+                </span>
+                {t.question}
+              </div>
             </div>
             {t.answer !== undefined && (
               <div className={styles.a}>

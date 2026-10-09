@@ -61,7 +61,7 @@ function ClaimItem({ claim, onDecide }: { claim: ProfileClaim; onDecide?: (id: s
       )}
       {provable && (
         <div className={`${styles.actions} ${styles.noPrint}`}>
-          <Link className={styles.link} href={`/defense/${encodeURIComponent(claim.id)}`}>
+          <Link className={`${ui.btn} ${ui.small}`} href={`/defense/${encodeURIComponent(claim.id)}`}>
             Доказать защитой
           </Link>
         </div>
@@ -140,12 +140,12 @@ export function ProfilePage() {
   if (error) {
     const unauth = error instanceof ApiError && error.status === 401;
     return (
-      <div className={styles.page}>
+      <div className={styles.pageSingle}>
         <p className={`${ui.notice} ${ui.errorBox}`} role="alert">
           {error.message}
         </p>
         {unauth && (
-          <Link className={styles.link} href="/" style={{ justifySelf: 'start' }}>
+          <Link className={`${ui.btn} ${ui.small}`} href="/" style={{ justifySelf: 'start' }}>
             На страницу входа
           </Link>
         )}
@@ -154,7 +154,7 @@ export function ProfilePage() {
   }
   if (!profile) {
     return (
-      <div className={styles.page} aria-busy="true">
+      <div className={styles.pageSingle} aria-busy="true">
         <p className={ui.muted} role="status">
           <span className={ui.spinner} aria-hidden="true" /> Загружаю профиль…
         </p>
@@ -169,28 +169,65 @@ export function ProfilePage() {
   const targets = recs?.targets ?? [];
   const confirmedCount = claims.filter((c) => c.status === 'confirmed' || c.status === 'edited').length;
 
+  const test = recs?.test;
+  const specLabel = (sp: string) => (sp === 'backend' ? 'Backend' : 'Frontend');
+
   return (
     <div className={styles.page}>
-      <div className={styles.top}>
-        <div>
-          <h1>{profile.candidate.name}</h1>
-          <p className={styles.sub}>
-            {profile.category
-              ? `Категория по тесту: ${profile.category.specialization === 'backend' ? 'Backend' : 'Frontend'}, ${profile.category.grade} (${formatDate(profile.category.confirmedAt)})`
-              : 'Категории пока нет: её даёт только тест. Ниже — утверждения со ссылками на источники.'}
-          </p>
-          <p className={styles.printOnly}>Распечатано {formatDate(new Date().toISOString())}</p>
+      <aside className={styles.side} aria-label="Кандидат">
+        <div className={styles.me}>
+          <span className={styles.avatar} aria-hidden="true">
+            <svg viewBox="0 0 44 44" width="100%" height="100%">
+              <circle cx="22" cy="16" r="8" fill="currentColor" />
+              <path d="M6 44c1.5-10 8-15 16-15s14.5 5 16 15z" fill="currentColor" />
+            </svg>
+          </span>
+          <div>
+            <h1 className={styles.name}>{profile.candidate.name}</h1>
+            {profile.category && (
+              <span className={ui.kicker}>
+                {specLabel(profile.category.specialization)} · {profile.category.grade}
+              </span>
+            )}
+          </div>
         </div>
-        <div className={`${styles.actions} ${styles.noPrint}`}>
-          <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => window.print()}>
-            Печать / PDF
-          </button>
-          <Link className={styles.link} href="/consultant">
+        <p className={styles.sub}>
+          {profile.category
+            ? `Категория по тесту: ${specLabel(profile.category.specialization)}, ${profile.category.grade} (${formatDate(profile.category.confirmedAt)})`
+            : 'Категории пока нет: её даёт только тест. Ниже — утверждения со ссылками на источники.'}
+        </p>
+        <p className={styles.printOnly}>Распечатано {formatDate(new Date().toISOString())}</p>
+        <dl className={styles.facts}>
+          <div>
+            <dt>Утверждений</dt>
+            <dd>{claims.length}</dd>
+          </div>
+          <div>
+            <dt>Подтверждено</dt>
+            <dd>{confirmedCount}</dd>
+          </div>
+        </dl>
+        {test && (
+          <div className={styles.testRec} data-testid="test-rec">
+            <span className={ui.kicker}>Рекомендация теста</span>
+            <b>
+              {specLabel(test.specialization)}, {test.grade}
+            </b>
+            <span className={styles.testReason}>{test.reason}</span>
+            {!test.allowed && test.nextAllowedAt && <span className={ui.muted}>Повторно можно с {formatDate(test.nextAllowedAt)}</span>}
+          </div>
+        )}
+        <div className={`${styles.sideActions} ${styles.noPrint}`}>
+          <Link className={`${ui.btn} ${ui.cta}`} href="/consultant">
             К консультанту
           </Link>
+          <button type="button" className={ui.btn} onClick={() => window.print()}>
+            Печать / PDF
+          </button>
         </div>
-      </div>
+      </aside>
 
+      <div className={styles.main}>
       {claims.length === 0 ? (
         <div className={`${ui.panel}`}>
           <p>Утверждений пока нет.</p>
@@ -237,6 +274,15 @@ export function ProfilePage() {
                   {v.companyName}, {v.title}
                 </p>
                 <p className={styles.quote}>{v.reason}</p>
+                <div
+                  className={styles.meter}
+                  role="img"
+                  aria-label={`Закрыто ${v.covered} из ${v.total} требований`}
+                >
+                  {Array.from({ length: v.total }, (_, i) => (
+                    <i key={i} className={i < v.covered ? styles.meterOn : undefined} />
+                  ))}
+                </div>
               </li>
             ))}
           </ul>
@@ -287,6 +333,7 @@ export function ProfilePage() {
           Настройка видимости пока недоступна: сейчас профиль виден только вам.
         </p>
       </fieldset>
+      </div>
     </div>
   );
 }

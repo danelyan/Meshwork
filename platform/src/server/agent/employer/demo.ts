@@ -84,6 +84,10 @@ export async function planDemoCall(ctx: EmployerToolContext, text: string): Prom
     };
   }
   if (/(подбер|подборк|потребност|кандидат|кого|покажи)/.test(t) || spec || grade) {
+    // Несколько потребностей и ни одной подсказки в реплике — спросить, а не брать первую.
+    if (!spec && !grade && active.length > 1) {
+      return { name: 'ask_user', arguments: { question: 'Под какую потребность подобрать?', options: active.slice(0, 4).map((v) => v.title.slice(0, 80)) } };
+    }
     const fit = (s: Specialization | null, g: Grade | null) => active.filter((v) => (!s || v.specialization === s) && (!g || v.grade === g));
     const pick = (fit(spec, grade).length ? fit(spec, grade)[0] : undefined) ?? (active.length === 1 ? active[0] : undefined);
     if (pick) return { name: 'match_for_need', arguments: { vacancyId: pick.id } };

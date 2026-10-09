@@ -64,7 +64,7 @@ export const draftInvitation: EmployerTool = {
       input.message ??
       [
         vacancy
-          ? `${emp.companyName} ищет: ${vacancy.title} (${categoryLabel(vacancy)}).`
+          ? `${emp.companyName} ищет: ${vacancy.title}${/junior|middle/i.test(vacancy.title) ? '' : ` (${categoryLabel(vacancy)})`}.`
           : `${emp.companyName} хочет познакомиться.`,
         vacancy?.teamDescription ?? emp.companyDescription ?? '',
         vacancy?.stack.length ? `Стек: ${vacancy.stack.join(', ')}.` : '',

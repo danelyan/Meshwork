@@ -193,6 +193,19 @@ describe('помощник работодателя (БД)', () => {
     expect(kinds).toEqual(['user', 'candidates', 'message', 'user', 'invitation_draft', 'message', 'user', 'message']);
   });
 
+  it('демо: несколько потребностей и нет подсказки — вопрос с вариантами, а не первая попавшаяся; ответ вариантом — подборка', async () => {
+    process.env.LLM_STUB_DEMO = 'true';
+    resetEnvCache();
+    const conv = await conversation();
+    const a = await turn('Подбери под мою потребность', conv);
+    const ask = a.events.find((e) => e.type === 'ask') as { options: string[] } | undefined;
+    expect(ask?.options).toHaveLength(3);
+    expect(a.events.some((e) => e.type === 'candidates')).toBe(false);
+    const pay = ask!.options.find((o) => /платеж/i.test(o))!;
+    const b = await turn(pay, conv);
+    expect((b.events.find((e) => e.type === 'candidates') as { block: CandidatesBlock }).block.vacancy?.id).toBe(PAY_VAC);
+  });
+
   it('API: только работодатель (401/403), SSE c conversation и done', async () => {
     expect((await assistantPost(jsonRequest('/x', 'POST', { text: 'привет' }))).status).toBe(401);
     const cand = `cid=${signUserSession({ userId: 'u-c', role: 'candidate', candidateId: DEMO_POOL[0]!.id })}`;

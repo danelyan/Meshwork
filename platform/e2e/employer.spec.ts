@@ -69,7 +69,7 @@ test('Помощник работодателя (демо без модели): 
   await page.getByRole('link', { name: 'Помощник' }).click();
   await page.waitForURL('**/employer/assistant');
   await page.getByLabel('Сообщение помощнику').fill('Подбери под мою потребность Backend Middle');
-  await page.getByRole('button', { name: 'Отправить' }).click();
+  await page.getByRole('button', { name: 'Отправить', exact: true }).click();
   const block = page.getByTestId('assistant-candidates').last();
   await expect(block).toBeVisible();
   const first = block.getByTestId('assistant-candidate').first();
@@ -77,7 +77,7 @@ test('Помощник работодателя (демо без модели): 
   // граница доверия: имени из пула нет ни в карточках, ни в ответе помощника
   await expect(page.getByText(POOL_TOP)).toHaveCount(0);
   await page.getByLabel('Сообщение помощнику').fill('Пригласи первого');
-  await page.getByRole('button', { name: 'Отправить' }).click();
+  await page.getByRole('button', { name: 'Отправить', exact: true }).click();
   const draft = page.getByTestId('assistant-invitation-draft').last();
   await expect(draft).toBeVisible();
   // открытое приглашение после основного сценария — тогда формы нет, есть пояснение

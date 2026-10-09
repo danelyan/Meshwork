@@ -1,5 +1,5 @@
 // Клиент кабинета работодателя и входящих приглашений кандидата (lane employer).
-import { postJson, request } from './api';
+import { ApiError, postJson, readError, request } from './api';
 
 export interface VacancyBody {
   title: string;
@@ -33,3 +33,23 @@ export const respondInvitationApi = (id: string, action: 'accept' | 'decline') =
   postJson<{ id: string; status: string }>(`/api/invitations/${encodeURIComponent(id)}`, { action });
 export const setPrivacyApi = (hiddenFromEmployers: boolean) =>
   postJson<{ hiddenFromEmployers: boolean }>('/api/profile/privacy', { hiddenFromEmployers });
+
+/** Ход помощника работодателя: SSE-поток EmployerAgentEvent (app/api/employer/assistant/messages). */
+export async function openEmployerAssistantStream(input: { text: string; conversationId?: string }, signal: AbortSignal): Promise<ReadableStream<Uint8Array>> {
+  let res: Response;
+  try {
+    res = await fetch('/api/employer/assistant/messages', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json', accept: 'text/event-stream' },
+      body: JSON.stringify(input),
+      signal,
+    });
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') throw e;
+    throw new ApiError('Нет связи с сервером. Проверьте сеть и повторите.', 0, 'network');
+  }
+  if (!res.ok) throw await readError(res);
+  if (!res.body) throw new ApiError('Сервер не отдал поток ответа.', 502);
+  return res.body;
+}

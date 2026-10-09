@@ -17,13 +17,16 @@ export interface InviteFormProps {
   vacancyId: string | null;
   /** Подстановка зарплаты — нижняя граница вилки потребности. */
   defaultSalary?: number;
+  /** Черновик помощника: текст предложения и форма сразу открыта. */
+  initialMessage?: string;
+  defaultOpen?: boolean;
 }
 
 /** Приглашение конкретному кандидату (R-E-05): описание и зарплата обязательны. */
-export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalary }: InviteFormProps) {
+export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalary, initialMessage, defaultOpen }: InviteFormProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState('');
+  const [open, setOpen] = useState(Boolean(defaultOpen));
+  const [message, setMessage] = useState(initialMessage ?? '');
   const [salary, setSalary] = useState(defaultSalary ? String(defaultSalary) : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

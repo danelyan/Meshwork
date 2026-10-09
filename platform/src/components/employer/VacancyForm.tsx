@@ -42,8 +42,8 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [spec, setSpec] = useState<Spec>(initial?.specialization ?? 'backend');
   const [grade, setGrade] = useState<Grade>(initial?.grade ?? 'junior');
-  const [salaryFrom, setSalaryFrom] = useState(initial ? String(initial.salaryFrom) : '');
-  const [salaryTo, setSalaryTo] = useState(initial ? String(initial.salaryTo) : '');
+  const [salaryFrom, setSalaryFrom] = useState(initial?.salaryFrom ? String(initial.salaryFrom) : '');
+  const [salaryTo, setSalaryTo] = useState(initial?.salaryTo ? String(initial.salaryTo) : '');
   const [team, setTeam] = useState(initial?.teamDescription ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [stack, setStack] = useState((initial?.stack ?? []).join(', '));

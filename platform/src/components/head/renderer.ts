@@ -1,7 +1,8 @@
-import { parseHeadGlb } from './model';
+import { parseHeadGlb, repairedNormals, softenForehead } from './model';
 import { headPointer } from './pointer';
-import { headMotion, headPose, mouthWeights } from './motion';
-import { backdropFragmentShader, backdropVertexShader, fragmentShader, vertexShader } from './shaders';
+import { smoothMetalSurface } from './surface';
+import { headMotion, headPose, mouthWeights, portraitZoom } from './motion';
+import { fragmentShader, vertexShader } from './shaders';
 
 export type HeadRenderer = { dispose(): void; setPaused?(paused: boolean): void; setSpeech?(mouth: number, lipRound?: number, lipWide?: number): void };
 
@@ -12,20 +13,17 @@ function rgb(value: string): [number, number, number] {
   return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
-/** Glass material from codex/interactive-head over the original static page grid. */
+/** Soft pearlescent portrait with a fading neck and facial animation. */
 export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: AbortSignal, reducedMotion: boolean, onContextLost: () => void): Promise<HeadRenderer> {
   const gl = canvas.getContext('webgl2', { antialias: true, alpha: true });
   if (!gl) throw new Error('WebGL 2 unavailable');
   const buffers: WebGLBuffer[] = [], textures: WebGLTexture[] = [], shaders: WebGLShader[] = [], bitmaps: ImageBitmap[] = [];
-  let program: WebGLProgram | null = null, backdropProgram: WebGLProgram | null = null;
-  let backdropFBO: WebGLFramebuffer | null = null, raf = 0, disposed = false;
+  let program: WebGLProgram | null = null, raf = 0, disposed = false;
   const release = () => {
     buffers.forEach(buffer => gl.deleteBuffer(buffer));
     textures.forEach(texture => gl.deleteTexture(texture));
     shaders.forEach(shader => gl.deleteShader(shader));
     if (program) gl.deleteProgram(program);
-    if (backdropProgram) gl.deleteProgram(backdropProgram);
-    if (backdropFBO) gl.deleteFramebuffer(backdropFBO);
     bitmaps.forEach(bitmap => bitmap.close());
   };
   try {
@@ -50,11 +48,6 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexShader));
     gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentShader)); gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('Shader link failed');
-    backdropProgram = gl.createProgram();
-    if (!backdropProgram) throw new Error('Backdrop program unavailable');
-    gl.attachShader(backdropProgram, compile(gl.VERTEX_SHADER, backdropVertexShader));
-    gl.attachShader(backdropProgram, compile(gl.FRAGMENT_SHADER, backdropFragmentShader)); gl.linkProgram(backdropProgram);
-    if (!gl.getProgramParameter(backdropProgram, gl.LINK_STATUS)) throw new Error('Backdrop link failed');
     gl.useProgram(program);
     const bind = (data: Float32Array | Uint32Array, target = gl.ARRAY_BUFFER as number) => {
       const buffer = gl.createBuffer();
@@ -62,7 +55,8 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
       buffers.push(buffer); gl.bindBuffer(target, buffer); gl.bufferData(target, data, gl.STATIC_DRAW);
       return buffer;
     };
-    [model.positions, model.normals, model.uv, model.positions, model.normals].forEach((data, index) => {
+    const softened = smoothMetalSurface(model, softenForehead(model));
+    [model.positions, model.normals, model.uv, softened, repairedNormals(model, softened)].forEach((data, index) => {
       bind(data); gl.enableVertexAttribArray(index); gl.vertexAttribPointer(index, index === 2 ? 2 : 3, gl.FLOAT, false, 0, 0);
     });
     bind(model.mouthParts); gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.FLOAT, false, 0, 0);
@@ -87,20 +81,9 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     const css = getComputedStyle(canvas);
     gl.uniform3fv(uniform('Accent'), rgb(css.getPropertyValue('--blue')));
     gl.uniform3fv(uniform('Silver'), rgb(css.getPropertyValue('--paper')));
-    const backdrop = gl.createTexture();
-    if (!backdrop) throw new Error('Backdrop texture unavailable');
-    textures.push(backdrop); gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, backdrop);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.uniform1i(uniform('Backdrop'), 2);
-    backdropFBO = gl.createFramebuffer();
-    if (!backdropFBO) throw new Error('Backdrop framebuffer unavailable');
-    const bgUniform = (name: string) => gl.getUniformLocation(backdropProgram!, `u${name}`);
-    const paper = rgb(css.getPropertyValue('--paper')), ink = rgb(css.getPropertyValue('--ink'));
-    let textureWidth = 0, textureHeight = 0;
-    gl.uniform1f(uniform('Strength'), 1); gl.uniform1f(uniform('Smooth'), 0);
+    gl.uniform1f(uniform('Strength'), 1); gl.uniform1f(uniform('Smooth'), 1);
     gl.uniform1f(uniform('Zoom'), 1); gl.uniform1f(uniform('Time'), 0); gl.uniform1f(uniform('Burst'), 0);
-    gl.uniform1i(uniform('Mode'), 5); gl.uniform1i(uniform('Wire'), 0);
+    gl.uniform1i(uniform('Mode'), 0); gl.uniform1i(uniform('Wire'), 0);
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
     let [targetX, targetY] = headPose(0, 0);
     let angleX = targetX, angleY = targetY;
@@ -112,7 +95,8 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     const blinkUniform = uniform('Blink'), breathUniform = uniform('Breath');
     const pointer = (event: PointerEvent) => {
       if (paused || event.pointerType === 'touch') return;
-      [pointerX, pointerY] = headPointer(event.clientX, event.clientY, innerWidth, innerHeight);
+      const bounds = canvas.getBoundingClientRect();
+      [pointerX, pointerY] = headPointer(event.clientX, event.clientY, innerWidth, innerHeight, bounds.left + bounds.width / 2, bounds.top + bounds.height * .4);
       [targetX, targetY] = headPose(pointerX, pointerY);
       schedule();
     };
@@ -135,33 +119,17 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
       const width = Math.max(1, Math.round(bounds.width * dpr)), height = Math.max(1, Math.round(bounds.height * dpr));
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
       gl!.viewport(0, 0, width, height); gl!.clearColor(0, 0, 0, 0); gl!.clear(gl!.COLOR_BUFFER_BIT | gl!.DEPTH_BUFFER_BIT);
-      gl!.activeTexture(gl!.TEXTURE2); gl!.bindTexture(gl!.TEXTURE_2D, backdrop);
-      if (textureWidth !== width || textureHeight !== height) {
-        gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA8, width, height, 0, gl!.RGBA, gl!.UNSIGNED_BYTE, null);
-        textureWidth = width; textureHeight = height;
-      }
-      gl!.bindFramebuffer(gl!.FRAMEBUFFER, backdropFBO);
-      gl!.framebufferTexture2D(gl!.FRAMEBUFFER, gl!.COLOR_ATTACHMENT0, gl!.TEXTURE_2D, backdrop, 0);
-      gl!.useProgram(backdropProgram); gl!.disable(gl!.DEPTH_TEST);
-      gl!.uniform3fv(bgUniform('Background'), paper); gl!.uniform3fv(bgUniform('Ink'), ink);
-      gl!.uniform2f(bgUniform('Resolution'), width, height); gl!.uniform2f(bgUniform('Origin'), bounds.left, bounds.top + scrollY);
-      gl!.uniform1f(bgUniform('Dpr'), dpr);
-      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-      gl!.bindFramebuffer(gl!.FRAMEBUFFER, null); gl!.useProgram(program); gl!.enable(gl!.DEPTH_TEST);
-      gl!.uniform2f(uniform('Resolution'), width, height);
+      gl!.uniform1f(uniform('Zoom'), portraitZoom(width / height));
       gl!.uniform2f(angleUniform, angleX + motion.yaw, angleY + motion.pitch);
       gl!.uniform2f(pointerUniform, pointerX, pointerY); gl!.uniform1f(aspectUniform, width / height);
       gl!.uniform1f(uniform('Time'), elapsed);
       gl!.uniform1f(blinkUniform, motion.blink); gl!.uniform1f(breathUniform, motion.breath);
       gl!.uniform1f(mouthUniform, speech[0]); gl!.uniform1f(roundUniform, speech[1]); gl!.uniform1f(wideUniform, speech[2]);
       gl!.bindBuffer(gl!.ELEMENT_ARRAY_BUFFER, triangleBuffer); gl!.uniform1i(uniform('Wire'), 0);
-      gl!.enable(gl!.BLEND); gl!.blendFuncSeparate(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA, gl!.ONE, gl!.ONE_MINUS_SRC_ALPHA);
-      gl!.enable(gl!.CULL_FACE); gl!.cullFace(gl!.FRONT); gl!.depthMask(false); gl!.uniform1f(uniform('Backface'), 1);
+      // Thin ear surfaces must remain visible from either side of a turn.
+      gl!.disable(gl!.CULL_FACE); gl!.depthMask(true); gl!.uniform1f(uniform('Backface'), 0);
       gl!.drawElements(gl!.TRIANGLES, triangles.length, gl!.UNSIGNED_INT, 0);
-      gl!.cullFace(gl!.BACK); gl!.depthMask(true); gl!.uniform1f(uniform('Backface'), 0);
-      gl!.drawElements(gl!.TRIANGLES, triangles.length, gl!.UNSIGNED_INT, 0);
-      gl!.disable(gl!.CULL_FACE); gl!.disable(gl!.BLEND);
-      canvas.dataset.rendered = 'glass';
+      canvas.dataset.rendered = 'pearlescent';
       if (!paused && !reducedMotion) schedule();
     }
     const lost = (event: Event) => { event.preventDefault(); cancelAnimationFrame(raf); raf = 0; onContextLost(); };

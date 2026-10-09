@@ -1,6 +1,11 @@
 import { headPointer } from '@/components/head/pointer';
 
 describe('consultant gaze follows the whole page', () => {
+  it('looks forward over the face rather than turning right over its column', () => {
+    expect(headPointer(980, 400, 1280, 800, 980, 400)).toEqual([0, 0]);
+    expect(headPointer(640, 400, 1280, 800, 980, 400)[0]).toBeLessThan(0);
+    expect(headPointer(1280, 400, 1280, 800, 980, 400)[0]).toBeLessThan(.5);
+  });
   it('turns toward either column and vertical edges', () => {
     expect(headPointer(0, 0, 1440, 900)).toEqual([-1, 1]);
     expect(headPointer(720, 450, 1440, 900)).toEqual([0, 0]);

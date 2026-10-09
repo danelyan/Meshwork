@@ -1,11 +1,14 @@
 .scene { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(32px, 5vw, 88px); padding: 28px var(--page-pad) 0; max-width: 1800px; margin: 0 auto; align-items: start; }
 .conversation { min-width: 0; }
-.portrait { position: sticky; top: calc(var(--landing-header-h) + 24px); min-width: 0; height: min(740px, calc(100svh - var(--landing-header-h) - 68px)); min-height: 400px; pointer-events: none; overflow: hidden; }
-.canvas { display: block; width: 100%; height: 100%; }
+.portrait { position: sticky; top: calc(var(--landing-header-h) + 24px); min-width: 0; height: min(740px, calc(100svh - var(--landing-header-h) - 68px)); min-height: 400px; pointer-events: none; }
+.canvas { display: block; width: calc(100% + 2 * var(--page-pad)); margin-left: calc(-1 * var(--page-pad)); height: 100%; }
 .fallback { position: absolute; inset: 0; display: grid; place-items: center; }
 .fallback img { width: min(90%, 440px); height: auto; }
 .caption { position: absolute; inset: auto 0 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; text-align: center; font: 11px var(--mono); color: var(--muted); }
 .motionToggle { pointer-events: auto; font: var(--fs-xs) var(--mono); }
+.portraitLabel { position: absolute; top: 0; left: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.portraitLabel span { padding: 6px 10px; border: 1px solid var(--ink); background: var(--surface-notice); }
+.portraitLabel small { padding: 6px 10px; background: var(--surface-notice); color: var(--muted); font: inherit; }
 @media (max-width: 1050px) {
   .scene { display: block; padding-top: 20px; }
   .portrait { display: none; }

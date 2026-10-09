@@ -5,7 +5,7 @@ import { type ReactNode, createContext, useContext, useEffect, useMemo, useState
 
 import styles from './shell.module.css';
 
-const BARE_PATHS = ['/onboarding'];
+const BARE_PATHS = ['/onboarding', '/design/consultant-grid-preview'];
 
 const BareContext = createContext<(on: boolean) => void>(() => undefined);
 

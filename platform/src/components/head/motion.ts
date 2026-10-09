@@ -3,7 +3,12 @@ export type HeadMotion = { yaw: number; pitch: number; blink: number; breath: nu
 /** The source mesh faces 31 degrees right; compensate before tracking. */
 export function headPose(pointerX: number, pointerY: number): [number, number] {
   const clamp = (value: number) => Number.isFinite(value) ? Math.max(-1, Math.min(1, value)) : 0;
-  return [-.54 + clamp(pointerX) * .52, .03 - clamp(pointerY) * .12];
+  return [-.54 + clamp(pointerX) * .24, .03 - clamp(pointerY) * .07];
+}
+
+/** Keep the ears clear of the canvas at wide yaw and narrow desktop columns. */
+export function portraitZoom(aspect: number): number {
+  return Math.min(1, Math.max(.1, aspect) / .9);
 }
 
 /** Animation time advances only while the renderer is visible and playing. */

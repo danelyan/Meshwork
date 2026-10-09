@@ -46,6 +46,10 @@ export function ConsultantHead() {
   }, []);
   return <div className={styles.portrait} data-head-state={state}>
     <canvas ref={canvas} className={styles.canvas} aria-hidden="true" />
+    <div className={styles.portraitLabel}>
+      <span>Консультант</span>
+      <small>{state === 'loading' ? 'Загрузка модели' : state === 'fallback' ? 'Чат работает без модели' : speech.speaking ? 'Демо речи' : paused || reducedMotion ? 'Анимация выключена' : 'Следит за курсором'}</small>
+    </div>
     <audio ref={speech.audio} src="/audio/avatar-demo.mp3" preload="none" hidden onEnded={speech.stop} onError={speech.fail} />
       <div className={styles.caption}>
         {state === 'ready' && !reducedMotion && <Button size="sm" className={styles.motionToggle} onClick={() => setPaused(value => !value)}>

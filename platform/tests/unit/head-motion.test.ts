@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { headMotion, headPose, mouthWeights, neckWeight } from '../../src/components/head/motion';
+import { headMotion, headPose, mouthWeights, neckWeight, portraitZoom } from '../../src/components/head/motion';
 
 describe('head motion', () => {
+  it('leaves camera space for the ears in both wide and narrow portrait columns', () => {
+    expect(portraitZoom(1)).toBe(1);
+    expect(portraitZoom(.6)).toBeCloseTo(2 / 3);
+    expect(portraitZoom(.6)).toBeLessThan(portraitZoom(1));
+  });
   it('starts with open eyes and no breath displacement', () => {
     expect(headMotion(0)).toEqual({ yaw: 0, pitch: 0, blink: 0, breath: 0 });
     expect(headMotion(Number.NaN)).toEqual(headMotion(0));
@@ -40,11 +45,11 @@ describe('head motion', () => {
     }
   });
 
-  it('centers the source face and limits tracking to thirty degrees each way', () => {
+  it('centers the source face and limits tracking to gentle fourteen degree turns', () => {
     const center = headPose(0, 0)[0];
     expect(center).toBe(-.54);
-    expect(headPose(-1, 0)[0] - center).toBeCloseTo(-.52);
-    expect(headPose(1, 0)[0] - center).toBeCloseTo(.52);
+    expect(headPose(-1, 0)[0] - center).toBeCloseTo(-.24);
+    expect(headPose(1, 0)[0] - center).toBeCloseTo(.24);
     expect(headPose(10, 0)).toEqual(headPose(1, 0));
     expect(headPose(Number.NaN, Number.NaN)).toEqual(headPose(0, 0));
   });

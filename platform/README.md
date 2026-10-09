@@ -234,6 +234,21 @@ generate` в лейне перезапишет его для всех — схе
 
 ## Дизайн
 
+Тестовый экран из экспорта `consultant-handoff`:
+`http://localhost:3000/design/consultant-grid-preview`.
+Панель регулирует шаг сетки, выпуклость и угол без перезапуска анимации или
+чата; «Как в оригинале» возвращает 46 px / 1 / 0.5. Настройки действуют до
+перезагрузки, панель сворачивается. Это сценарный дизайн-мокап с вымышленными
+данными, без подключения к агенту и профилю пользователя.
+
+Исходный самодостаточный HTML (Canvas 2D, модель, шрифты, фотографии и
+среда исполнения экспорта) сохранён в `public/design/consultant-grid/index.html`.
+Он изолирован от CSS платформы в iframe. Чтобы повторить импорт:
+`node scripts/import-consultant-grid.mjs "<путь к Карьерный консультант.html>"`.
+Скрипт распаковывает вложенные ресурсы локально и добавляет проверяемый канал
+настроек; модель и алгоритм анимации остаются исходными. Ссылки мокапа ведут
+в `/profile` и `/test` платформы; для них может потребоваться вход.
+
 Токены (`src/styles/tokens.css`) сведены из `docs/design-spec.md` и `site/styles.css`: светлая тема, `--ink`/`--paper`/`--muted`/`--blue`, стекло (`--glass*`, `--blur`), квадратная форма (все `--radius*` = 0), без теней. Старые имена (`--bg`, `--panel`, `--text`…) оставлены алиасами.
 Шрифты - `next/font` в `src/app/layout.tsx`: Golos Text (Google, самохостинг при сборке, нужна сеть) и JetBrains Mono (`src/app/fonts/`); в CSS - `var(--font)` и `var(--mono)`.
 Общие классы - `src/components/ui.module.css`: `btn` (призрак), `primary` (чёрная), `cta` (синяя), `small`, `chip`/`chipOn`, `tag`+`outline|solid|red`, `field`/`input`/`label`/`hint`, `panel`/`glass`, `notice`/`errorBox`, `kicker`, `muted`. Использовать: `import ui from './ui.module.css'` и `className={`${ui.btn} ${ui.cta}`}`.
@@ -249,3 +264,10 @@ not initialized on narrow screens, and reduced-motion disables animation.
 Authoring: run Blender in background with
 `--python scripts/rig-head-mouth.py -- --export-only` from the repository root.
 The editable rig is written to ignored `output/head-lab/head-mouth-rig.blend`.
+
+The consultant's local design preview at `/design/head-motion-preview` uses the
+same Chat panel as `/consultant`. To verify its layout without a database, start
+`npm run dev`, set `E2E_PORT=3000`, and run
+`npx playwright test --config playwright.design.config.ts`.
+If Playwright's browser is not installed, set `PLAYWRIGHT_CHANNEL=msedge` to use
+an installed Edge. This checks desktop, tablet and phone widths.

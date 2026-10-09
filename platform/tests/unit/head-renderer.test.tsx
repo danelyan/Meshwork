@@ -66,7 +66,7 @@ function stage() {
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-describe('separate glass portrait', () => {
+describe('animated metallic portrait', () => {
   it('turns visibly toward the left edge and back across the page', async () => {
     const s = stage();
     vi.stubGlobal('innerWidth', 1280); vi.stubGlobal('innerHeight', 800);
@@ -80,29 +80,29 @@ describe('separate glass portrait', () => {
     point(0);
     for (let i = 1; i <= 25; i++) s.frame(50 + i * 50);
     const left = s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1)!;
-    expect(left[1]).toBeLessThan(-.75);
+    expect(left[1]).toBeLessThan(-.7);
     expect(left[1]).toBeGreaterThan(-1.1);
     point(1280);
     for (let i = 1; i <= 25; i++) s.frame(1300 + i * 50);
     const right = s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1)!;
-    expect(right[1]).toBeGreaterThan(-.1);
-    expect(right[1]).toBeLessThan(.05);
+    expect(right[1]).toBeGreaterThan(-.45);
+    expect(right[1]).toBeLessThan(-.3);
     expect(fetch).toHaveBeenCalledOnce();
     renderer.dispose();
   });
-  it('renders both glass surfaces and refracts the static grid on a transparent local canvas', async () => {
+  it('renders the opaque reference material on a transparent local canvas with ear clearance', async () => {
     const s = stage();
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, true, vi.fn());
     s.frame(40);
     expect(s.canvas.width).toBe(600);
     expect(s.gl.clearColor).toHaveBeenCalledWith(0, 0, 0, 0);
-    expect(s.gl.uniform1i).toHaveBeenCalledWith('uMode', 5);
-    expect(s.gl.drawElements).toHaveBeenCalledTimes(2);
-    expect(s.gl.drawArrays).toHaveBeenCalledOnce();
-    expect(s.gl.createFramebuffer).toHaveBeenCalledOnce();
-    expect(s.gl.uniform1f).toHaveBeenCalledWith('uBackface', 1);
+    expect(s.gl.uniform1i).toHaveBeenCalledWith('uMode', 0);
+    expect(s.gl.drawElements).toHaveBeenCalledOnce();
+    expect(s.gl.drawArrays).not.toHaveBeenCalled();
+    expect(s.gl.createFramebuffer).not.toHaveBeenCalled();
+    expect(s.gl.uniform1f).toHaveBeenCalledWith('uZoom', 400 / 600 / .9);
     expect(s.gl.uniform1f).toHaveBeenCalledWith('uBackface', 0);
-    expect(s.canvas.dataset.rendered).toBe('glass');
+    expect(s.canvas.dataset.rendered).toBe('pearlescent');
     renderer.dispose();
   });
   it('cleans resources once and stops responding after disposal', async () => {
@@ -110,10 +110,9 @@ describe('separate glass portrait', () => {
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
     renderer.dispose(); renderer.dispose();
     expect(s.gl.deleteBuffer).toHaveBeenCalledTimes(13);
-    expect(s.gl.deleteShader).toHaveBeenCalledTimes(4);
-    expect(s.gl.deleteTexture).toHaveBeenCalledTimes(3);
-    expect(s.gl.deleteProgram).toHaveBeenCalledTimes(2);
-    expect(s.gl.deleteFramebuffer).toHaveBeenCalledOnce();
+    expect(s.gl.deleteShader).toHaveBeenCalledTimes(2);
+    expect(s.gl.deleteTexture).toHaveBeenCalledTimes(2);
+    expect(s.gl.deleteProgram).toHaveBeenCalledOnce();
     expect(s.disconnect).toHaveBeenCalledTimes(2);
     expect(s.queued.size).toBe(0);
   });

@@ -18,7 +18,7 @@ import { applyAgentEvent } from './chat/stream-items';
 import { AssistantRow, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
 import { useStickToBottom } from './chat/scroll';
 import { EventFeed, type FeedItem } from './EventFeed';
-import { VisuallyHidden } from './ui';
+import { Button, VisuallyHidden } from './ui';
 import ui from './ui.module.css';
 
 const GREETING =
@@ -63,12 +63,14 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
   const endRef = useRef<HTMLDivElement>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const feedRef = useRef<HTMLDivElement>(null);
+  const paneRef = useRef<HTMLDivElement>(null);
   // Внутри онбординга лентой и автоскроллом управляет OnboardingChat.
-  useStickToBottom(rootRef, !embedded);
+  useStickToBottom(feedRef, !embedded, paneRef);
   useEffect(() => () => abortRef.current?.abort(), []);
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
-  }, [items.length]);
+    if (embedded) endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
+  }, [items.length, embedded]);
 
   const pushEvent = useCallback((event: AgentEvent) => {
     if (event.type === 'conversation') {
@@ -199,7 +201,14 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
     <div ref={rootRef} className={embedded ? styles.embedded : styles.chat}>
       {!embedded && (
         <header className={styles.intro}>
-          <h1>Карьерный консультант</h1>
+          <div className={styles.title}>
+            <h1>Карьерный консультант</h1>
+            <span className={styles.subtitle}>Ведёт по платформе</span>
+          </div>
+          <nav className={styles.routes} aria-label="Следующий шаг">
+            <Button href="/profile" size="sm">Профиль</Button>
+            <Button href="/test" size="sm">Тест</Button>
+          </nav>
           {demo?.noLlm && (
             <p className={styles.demoNote} role="note">
               Демо-режим без языковой модели: ответы собираются по шаблонам из данных платформы, утверждения ищутся по словарю каталога.
@@ -213,6 +222,8 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
         </p>
       )}
 
+      <div ref={paneRef} className={embedded ? undefined : styles.feedPane} role={embedded ? undefined : 'region'} aria-label={embedded ? undefined : 'История разговора'} tabIndex={embedded ? undefined : 0}>
+      <div ref={feedRef} className={embedded ? undefined : styles.feedContent}>
       {simplified && (
         <div className={`${ui.notice} ${styles.simple}`} role="status">
           <strong>Упрощённый режим.</strong>
@@ -242,6 +253,8 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
         {busy ? 'Консультант работает…' : ''}
       </VisuallyHidden>
       <div ref={endRef} className={styles.end} />
+      </div>
+      </div>
 
       <Composer
         label="Сообщение"

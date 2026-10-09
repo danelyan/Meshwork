@@ -22,6 +22,14 @@ function streamOf(parts: string[]) {
 }
 
 describe('Chat', () => {
+  it('показывает навигацию консультанта только в отдельном экране', () => {
+    const { unmount } = render(<Chat />);
+    expect(screen.getByRole('link', { name: 'Профиль' }).getAttribute('href')).toBe('/profile');
+    expect(screen.getByRole('link', { name: 'Тест' }).getAttribute('href')).toBe('/test');
+    unmount();
+    render(<Chat embedded={{}} />);
+    expect(screen.queryByRole('navigation', { name: 'Следующий шаг' })).toBeNull();
+  });
   it('отправляет сообщение и рисует разрезанный по чанкам SSE-поток', async () => {
     const full = frame({ type: 'step', text: 'читаю резюме' }) + frame({ type: 'message', text: 'Готово, смотрите' }) + frame({ type: 'done' });
     const fetchMock = vi.fn(async () => new Response(streamOf([full.slice(0, 30), full.slice(30)]), { status: 200 }));

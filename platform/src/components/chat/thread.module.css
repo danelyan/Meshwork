@@ -2,12 +2,12 @@
 .thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
 /* реплика помощника: знак ФСП слева, текст на стекле */
-.assistant { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: start; min-width: 0; animation: rise 0.18s var(--ease) backwards; }
-.mark { width: 32px; height: 32px; display: grid; place-items: center; background: var(--surface-ghost); border: 1px solid var(--border-faint); }
-.mark img { width: 20px; height: auto; display: block; }
-.markGap { width: 32px; }
+.assistant { display: grid; grid-template-columns: var(--chat-avatar-size, 32px) minmax(0, 1fr); gap: 10px; align-items: start; min-width: 0; animation: rise 0.18s var(--ease) backwards; }
+.mark { width: var(--chat-avatar-size, 32px); height: var(--chat-avatar-size, 32px); display: grid; place-items: center; background: var(--chat-avatar-bg, var(--surface-ghost)); border: 1px solid var(--border-faint); }
+.mark img { filter: var(--chat-avatar-filter, none); width: 20px; height: auto; display: block; }
+.markGap { width: var(--chat-avatar-size, 32px); }
 .body { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; min-width: 0; }
-.bubble { max-width: min(600px, 100%); padding: 12px 16px; background: var(--glass-strong); border: 1px solid var(--line); line-height: 1.55; overflow-wrap: anywhere; text-wrap: pretty; white-space: pre-wrap; cursor: default; }
+.bubble { max-width: min(600px, 100%); padding: var(--chat-bubble-pad, 12px 16px); font-size: var(--chat-message-size, inherit); background: var(--glass-strong); border: 1px solid var(--line); line-height: 1.55; overflow-wrap: anywhere; text-wrap: pretty; white-space: pre-wrap; cursor: default; }
 .bubble p { margin: 0; }
 .bubble p + p { margin-top: 6px; }
 .bubbleError { border-left: 3px solid var(--danger-border); color: var(--error); }
@@ -18,7 +18,7 @@
 .user { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 /* отправленное: пузырь выезжает из композера (fade + сдвиг + scale 0,98 → 1, 200 мс) */
 .userBubble { animation: send 0.2s var(--ease) backwards; transform-origin: 100% 100%; }
-.userBubble { max-width: min(520px, 85%); padding: 10px 14px; background: var(--blue); color: var(--on-ink); line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+.userBubble { max-width: min(520px, 85%); padding: var(--chat-bubble-pad, 10px 14px); font-size: var(--chat-message-size, inherit); background: var(--blue); color: var(--on-ink); line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
 .userBubble[data-quiet='true'] { background: var(--surface-ghost); color: var(--muted); border: 1px solid var(--border-faint); }
 .userAction { background: none; border: 0; padding: 2px 0; font: 500 var(--fs-xs) var(--mono); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .userAction:hover:not(:disabled) { color: var(--ink); }
@@ -49,18 +49,18 @@
 .done:disabled { color: var(--muted); text-decoration: none; cursor: default; }
 
 /* композер внизу ленты (Composer.tsx): скрепка, поле, голос, «Отправить»; чипы вложений над полем */
-.composer { position: sticky; bottom: 0; z-index: 5; margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px 0 12px; background: var(--bg); box-shadow: 0 -1px 0 var(--line); }
+.composer { position: sticky; bottom: 0; z-index: 5; margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: var(--chat-composer-pad, 10px 0 12px); background: var(--chat-composer-bg, var(--bg)); box-shadow: 0 -1px 0 var(--line); }
 .composerBox { display: flex; gap: 6px; align-items: flex-end; padding: 4px; background: var(--surface-input); border: 1px solid var(--border-input); transition: border-color 0.16s var(--ease); }
 .composerBox:focus-within { border-color: var(--blue); }
 .composerOff { opacity: 0.85; }
 .composerBox textarea { flex: 1; min-width: 0; min-height: 40px; max-height: 180px; padding: 9px 8px; resize: none; border: 0; background: transparent; outline: none; font: inherit; line-height: 1.45; color: var(--ink); }
 .composerBox textarea::placeholder { color: var(--placeholder); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .composerBox textarea:focus-visible { outline: none; }
-.iconBtn { flex: none; width: 40px; height: 40px; display: grid; place-items: center; background: none; border: 1px solid transparent; color: var(--muted); cursor: pointer; transition: color 0.16s var(--ease), border-color 0.16s var(--ease); }
+.iconBtn { flex: none; width: var(--chat-control-size, 40px); height: var(--chat-control-size, 40px); display: grid; place-items: center; background: none; border: 1px solid transparent; color: var(--muted); cursor: pointer; transition: color 0.16s var(--ease), border-color 0.16s var(--ease); }
 .iconBtn:hover:not(:disabled) { color: var(--ink); border-color: var(--border-soft); }
 .iconBtn:disabled { opacity: 0.5; cursor: default; }
 .iconBtn[aria-pressed='true'] { color: var(--on-ink); background: var(--blue); }
-.send { position: relative; flex: none; height: 40px; padding: 0 18px; background: var(--blue); color: var(--on-ink); border: 0; font: 600 var(--fs) var(--font); cursor: pointer; transition: background 0.16s var(--ease), opacity 0.16s var(--ease); }
+.send { position: relative; flex: none; height: var(--chat-control-size, 40px); padding: 0 18px; background: var(--blue); color: var(--on-ink); border: 0; font: 600 var(--fs) var(--font); cursor: pointer; transition: background 0.16s var(--ease), opacity 0.16s var(--ease); }
 .send:hover:not(:disabled) { background: var(--ink); }
 .send:disabled { opacity: 0.5; cursor: default; }
 .send[data-sending] { opacity: 1; }
@@ -108,13 +108,13 @@
 @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
 
 @media (max-width: 640px) {
-  .assistant { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; }
-  .mark, .markGap { width: 28px; height: 28px; }
+  .assistant { grid-template-columns: var(--chat-avatar-size, 28px) minmax(0, 1fr); gap: 8px; }
+  .mark, .markGap { width: var(--chat-avatar-size, 28px); height: var(--chat-avatar-size, 28px); }
   .mark img { width: 18px; }
-  .bubble { padding: 10px 12px; }
+  .bubble { padding: var(--chat-bubble-pad, 10px 12px); }
   .card { padding: 12px; }
   .userBubble { max-width: 92%; }
-  .composer { padding: 8px 0 10px; }
+  .composer { padding: var(--chat-composer-pad, 8px 0 10px); }
   .send { padding: 0 14px; }
   .composerBox { gap: 2px; }
   .composerHint { display: none; }

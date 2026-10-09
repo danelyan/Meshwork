@@ -225,6 +225,28 @@
 
 ## 10. Как добавить
 
+### Тестовый экран сетчатого консультанта
+
+Эксперимент v2 доступен отдельной страницей `/design/consultant-grid-v2`;
+одобренный v1 сохранён в `design-baselines/consultant-grid-v1` и
+`public/design/consultant-grid-v1`. Кнопки на существующем `Button` переключают
+страницы «Сохранённый v1» и «Тест v2». Начальные настройки сохранённого вида:
+42 px / 1.25 / 0.18. В v2 WebGL рисует невидимую поверхность в буфер глубины,
+затем только линии и узлы сетки; нет заливки головы, материала или отдельного
+треугольного каркаса. Модель, поза и речевая анимация — из исходного экспорта.
+
+`/design/consultant-grid-preview` показывает предоставленный 10 октября экспорт
+`consultant-handoff` в отдельном документе iframe: его собственные шрифты,
+вёрстка и Canvas 2D остаются эталоном 1:1. Это изолированный дизайн-мокап,
+сценарный чат с вымышленным профилем, а не рабочий консультант.
+`ConsultantGridPreview` использует существующие `Button`, `Field`, `Kicker`,
+`Notice` и токены для сворачиваемой панели над макетом. Регулировки:
+шаг сетки 16–80 px (46 по умолчанию), выпуклость 0.3–1.6 (1), угол 0–0.9 (0.5).
+Сброс восстанавливает экспорт; изменения применяются без перезапуска чата.
+Исходная палитра внутри импортированного HTML сохраняется буквально.
+На 360 px адаптируются только шапка, бейджи и поле ввода, чтобы убрать
+переполнение исходного экспорта. Новые UI-примитивы и цвета не нужны.
+
 Новый токен: строка в таблице выше -> `tokens.css` -> использование. Новый компонент: строка в каталоге (назначение, пропсы, пример) -> файл в `components/ui` + экспорт в `index.ts` -> тест в `tests/unit/components/ui/`. Проверка: `npm run typecheck && npm run lint && npx vitest run --project components --project unit`.
 
 Восстановление от 9 октября: мобильный граф держит длинные счётчики вакансий отдельной строкой под названием компании; фон чата — общая статичная сетка. Блок статистики автоматически размещает все показатели, а последний нечётный на узком экране занимает всю строку.
@@ -240,6 +262,31 @@ The consultant uses the separate Neuron wire material (mode 4) from codex/intera
 
 ### Glass consultant portrait, 9 October
 The user selected the glass material (mode 5) from codex/interactive-head. The local transparent canvas renders back and front glass surfaces and refracts a texture of the existing static 48px grid, using only paper, ink and blue tokens. The surrounding background and layout remain the same.
+
+### Local liquid-metal portrait
+The latest local selection is soft pearlescent metal: diffuse light, broad satin
+reflections and a subtle blue pearl sheen derived from the existing tokens.
+Extend only the lower neck
+downwards; a smooth alpha fade dissolves its base into the existing page grid.
+No smoke particles or overlay are used. Face pose, scale and tracking stay fixed.
+Small shoulder hints extend the existing bust base on each side; their outer
+and lower silhouette remains translucent and fades out before the mesh edge.
+
+The consultant conversation adopts the supplied consultant-handoff styling:
+a square glass panel with a separately scrolling feed, 36px dark assistant
+mark, 16px messages, bordered quick actions and a fixed composer within the
+panel. The title includes the mono subtitle and links to the existing profile
+and test routes (the export's map/interview routes do not exist in the app).
+Existing tokens and chat/UI primitives are reused; embedded onboarding retains
+its current appearance. The accepted chrome portrait stays on the right.
+
+The user selected the face1.png reference in place of the curtain experiment.
+Use smooth geometry normals and silver studio
+reflections, without glass transmission or a projected page grid on the face.
+Normal-map relief and baked lattice markings are disabled in metallic mode. Forehead geometry repair keeps the broad shape smooth. The portrait camera
+leaves clearance at both yaw limits; thin ears render from both sides.
+The user requested publication on 10 October; the pearlescent variant replaces
+the earlier glass material on the consultant page.
 
 ### Animated glass consultant, 9 October
 The glass portrait may blink and deform at the neck while its shoulder base stays fixed. Mouth movement uses Blender facial morphs. Speech controls use existing small Buttons, with a labelled demo recording started by the user, no autoplay or microphone. The static page grid and left chat layout remain unchanged; reduced-motion stops the decorative animation.

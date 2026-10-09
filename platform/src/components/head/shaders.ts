@@ -30,6 +30,7 @@ uniform float uBlink;
 uniform float uBreath;
 out vec3 vPosition;
 out vec3 vNormal;
+out float vBaseHeight;
 out vec2 vUV;
 out float vWave;
 out vec2 vScaleUV;
@@ -48,14 +49,24 @@ void main() {
   // Upper and lower lids meet; the back and temples stay untouched.
   p.y=mix(p.y,.638,uBlink*eyeMask*.92);
   vPart=aPart;
+  vBaseHeight=aPosition.y;
   // The base is fixed, the neck gradually carries the full head rotation.
   float neck=smoothstep(.06,.30,aPosition.y);
-  mat3 r=rotation(uAngle*neck);
+  // The lower neck rests slightly toward the chat, instead of facing away
+  // while the face compensates for the original mesh orientation.
+  mat3 r=rotation(vec2(mix(-.66,uAngle.x,neck),uAngle.y*neck));
   vec3 n=normalize(r*(mix(aNormal,aSmoothNormal,uSmooth)+aJawNormal*uMouth+aRoundNormal*uLipRound+aWideNormal*uLipWide));
   vec3 pivot=vec3(0.,.22,0.);
   p=r*(p-pivot)+pivot;
   p.y+=uBreath*neck;
+  // Lengthen the base only; keep the accepted face position and neck pivot.
+  if(uMode==0) p.y-=.10*(1.-smoothstep(.02,.40,aPosition.y));
   p-=vec3(0.,.5,0.);
+  if(uMode==0) {
+    float shoulder=1.-smoothstep(.03,.16,aPosition.y);
+    p.x+=sign(p.x)*.065*shoulder;
+    p.y+=.035*smoothstep(.12,.25,abs(p.x))*shoulder;
+  }
   vScaleUV=aCorner.xy;
   float d=distance(p.xy,uPointer*vec2(.4,.48));
   vWave=sin(d*34.-uTime*4.)*exp(-d*3.5);
@@ -84,6 +95,7 @@ export const fragmentShader = `#version 300 es
 precision highp float;
 precision highp int;
 in vec3 vPosition;
+in float vBaseHeight;
 in vec3 vNormal;
 in vec2 vUV;
 in float vWave;
@@ -114,13 +126,14 @@ void main() {
   vec3 dp1=dFdx(vPosition), dp2=dFdy(vPosition);
   vec2 duv1=dFdx(vUV), duv2=dFdy(vUV);
   float uvArea=duv1.x*duv2.y-duv1.y*duv2.x;
-  if(abs(uvArea)>1e-9 && vPart<.5 && uMode!=2 && uMode!=5) {
-    vec3 tangent=normalize(dp1*duv2.y-dp2*duv1.y);
-    vec3 bitangent=normalize(-dp1*duv2.x+dp2*duv1.x);
+  if(abs(uvArea)>1e-9 && vPart<.5 && uMode!=0 && uMode!=2 && uMode!=5) {
+    vec3 tangent=normalize((dp1*duv2.y-dp2*duv1.y)/uvArea);
+    vec3 bitangent=normalize((-dp1*duv2.x+dp2*duv1.x)/uvArea);
     vec3 mapN=texture(uNormalMap,vUV).xyz*2.-1.;
-    mapN.xy*=mix(.5,.08,uSmooth);
+    // Original Tripo texture normals supply the woven relief on the metal.
+    mapN.xy*=uMode==0 ? .48 : mix(.5,.08,uSmooth);
     vec3 detail=normalize(mat3(tangent,bitangent,n)*normalize(mapN));
-    n=normalize(mix(n,detail,.55));
+    n=normalize(mix(n,detail,.52));
   }
   float facing=abs(n.z), rim=pow(1.-facing,2.5);
   vec3 l=normalize(vec3(uPointer.x*.8-.6,uPointer.y*.7+.9,1.2));
@@ -129,9 +142,24 @@ void main() {
   vec3 refl=reflect(vec3(0.,0.,-1.),n);
   float strip=pow(.5+.5*sin(refl.x*8.+refl.y*3.+uPointer.x*1.5),6.);
   float lattice=dot(texture(uTexture,vUV).rgb,vec3(.2126,.7152,.0722));
-  vec3 metal=uSilver*(.11+.58*diffuse+.8*strip*uStrength+.8*spec*uStrength)*(.5+.65*lattice);
-  metal+=uAccent*rim*.32;
-  if(uMode==0) { color=vec4(metal,1.); }
+  vec3 silver=vec3(dot(uSilver,vec3(.2126,.7152,.0722)));
+  // Smooth liquid metal uses geometry normals and clean studio reflections.
+  float key=exp(-pow((refl.x+.55+uPointer.x*.08)/.30,2.))*smoothstep(-.75,.65,refl.y);
+  float edgeLight=exp(-pow((refl.x-.78)/.13,2.))*(.35+.65*max(refl.y,0.));
+  float ceiling=exp(-pow((refl.y-.82)/.20,2.));
+  float darkPanel=exp(-pow((refl.x-.10)/.30,2.))*.035;
+  float studio=.48+.22*key+.12*edgeLight+.10*ceiling-darkPanel;
+  // The old albedo has baked shadows: reduce those while retaining normal relief.
+  float ribs=uMode==0 ? 1. : .85+.15*lattice;
+  vec3 metal=silver*(max(.44,studio)+.28*diffuse+.08*rim+.16*spec*uStrength)*ribs;
+  if(uMode==0) {
+    // Soft pearlescent metal: broad satin reflections, a subtle colored sheen.
+    float glaze=pow(max(dot(normalize(l+vec3(0.,0.,1.)),n),0.),12.);
+    float pearl=pow(1.-facing,1.8);
+    vec3 tint=mix(uSilver,uAccent,.025*pearl*(.5+.5*sin(refl.y*5.+refl.x*3.)));
+    vec3 pearlescent=tint*(.62+.23*diffuse+.09*key+.055*ceiling+.09*glaze+.055*rim);
+    color=vec4(pearlescent,smoothstep(-.66,-.24,vPosition.y)*smoothstep(0.,.045,vBaseHeight));
+  }
   if(uMode==1) {
     float scanY=sin(uTime*.65+uPointer.y*1.2)*.48;
     float scan=exp(-abs(vPosition.y-scanY)*65.);
@@ -171,6 +199,8 @@ void main() {
     color=vec4(oral,1.);
   }
   color.rgb=pow(max(color.rgb,vec3(0.)),vec3(.85));
+  // WebGL's default canvas compositing expects premultiplied alpha.
+  if(uMode==0) color.rgb*=color.a;
 }`;
 
 

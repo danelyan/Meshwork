@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { ShellFrame, useBareShell } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
 import { SiteHeader } from '@/components/shell/SiteHeader';
+import shellStyles from '@/components/shell/shell.module.css';
 import type { SessionPrincipal } from '@/server/session';
 
 const nav = vi.hoisted(() => ({ pathname: '/profile' }));
@@ -89,6 +90,16 @@ describe('ShellFrame', () => {
       {child}
     </ShellFrame>
   );
+
+  it('masks the page grid only for the consultant and restores it on navigation', () => {
+    nav.pathname = '/consultant';
+    const { container, rerender } = render(frame());
+    expect(container.firstElementChild!.classList.contains(shellStyles.consultant!)).toBe(true);
+    expect(screen.getByText('шапка')).toBeDefined();
+    nav.pathname = '/';
+    rerender(frame());
+    expect(container.firstElementChild!.classList.contains(shellStyles.consultant!)).toBe(false);
+  });
 
   it('обычная страница: шапка, содержимое, подвал и ссылка «К содержимому»', () => {
     nav.pathname = '/profile';

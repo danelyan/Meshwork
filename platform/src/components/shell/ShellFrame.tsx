@@ -33,7 +33,7 @@ export function ShellFrame({ header, footer, children }: { header: ReactNode; fo
   const setter = useMemo(() => setBareByPage, []);
   return (
     <BareContext.Provider value={setter}>
-      <div className={styles.frame}>
+      <div className={`${styles.frame}${pathname === '/consultant' ? ` ${styles.consultant}` : ''}`}>
       <a className={styles.skip} href="#main">
         К содержимому
       </a>

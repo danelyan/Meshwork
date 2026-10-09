@@ -1,5 +1,6 @@
 /* Оболочка сайта: шапка, подвал, колонка страницы. Токены — styles/tokens.css. */
 .frame { min-height: 100svh; display: flex; flex-direction: column; }
+.consultant { background: var(--paper); }
 .page { flex: 1 0 auto; min-width: 0; }
 
 .skip { position: fixed; left: 16px; top: -70px; z-index: 30; background: var(--ink); color: var(--landing-white); padding: 12px; }

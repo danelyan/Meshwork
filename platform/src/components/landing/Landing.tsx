@@ -28,7 +28,7 @@ export function Landing({ data, signedIn }: { data: LandingData; signedIn: boole
     <div className={styles.page}>
       <Background />
       <main id="main" className={styles.main}>
-        <Hero companies={data.companies} signedIn={signedIn} />
+        <Hero signedIn={signedIn} />
         <Companies companies={data.companies} total={stats.companies} />
         <section className={`${styles.section} ${styles.why}`} id="why" aria-labelledby="why-title">
           <div className={styles.sechead}>

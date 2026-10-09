@@ -1,8 +1,3 @@
-import { plural } from '@/lib/plural';
-
-import { VACANCY_FORMS } from './format';
-import type { LandingCompany } from './types';
-
 export type NodeKind = 'me' | 'co' | 'st';
 
 export interface GraphNode {
@@ -21,7 +16,7 @@ export interface GraphNode {
 export interface GraphEdge {
   a: string;
   b: string;
-  /** Подпись на «вашей» связи (число вакансий компании — реальное). */
+  /** Иллюстративный процент из исходного мокапа. */
   mine?: string;
 }
 
@@ -55,16 +50,21 @@ const LINKS: Array<[string, string]> = [
   ['x1', 'x7'], ['x2', 'x7'], ['x3', 'x8'], ['x5', 'x8'], ['x2', 'x9'], ['x3', 'x9'], ['x8', 'x11'], ['x9', 'x11'], ['x5', 'x10'], ['x4', 'x10'], ['x3', 'x5'],
 ];
 
-export function buildGraph(companies: LandingCompany[]): { nodes: GraphNode[]; edges: GraphEdge[] } {
-  const nodes: GraphNode[] = [{ id: 'me', kind: 'me', label: 'Вы', pos: [50, 50], mobile: [50, 52] }];
+export function buildGraph(): { nodes: GraphNode[]; edges: GraphEdge[] } {
+  const nodes: GraphNode[] = [{ id: 'me', kind: 'me', label: 'Вы', pos: scale([50, 50]), mobile: [50, 52] }];
   const edges: GraphEdge[] = [];
-  companies.slice(0, SLOTS.length).forEach((c, i) => {
+  const companies = [['North', '92%'], ['Vector', '84%'], ['Forma', '68%'], ['Orbit', '61%'], ['Atlas', '46%']];
+  companies.forEach(([name, percent], i) => {
     const slot = SLOTS[i]!;
-    nodes.push({ id: `c${i}`, kind: 'co', label: c.name, letter: c.name.charAt(0).toUpperCase(), pos: scale(slot.pos), mobile: slot.mobile });
-    edges.push({ a: 'me', b: `c${i}`, mine: `${c.vacancies} ${plural(c.vacancies, VACANCY_FORMS)}` });
+    nodes.push({ id: `c${i}`, kind: 'co', label: name, letter: name!.charAt(0), pos: scale(slot.pos), mobile: [slot.mobile[0], i === 2 || i === 4 ? 82 : slot.mobile[1]] });
+    edges.push({ a: 'me', b: `c${i}`, mine: percent });
   });
   for (const [id, label, p] of STRANGERS) nodes.push({ id, kind: 'st', label, pos: scale(p) });
-  for (const [id, p] of FAR) nodes.push({ id, kind: 'st', pos: p });
+  for (const [id, p] of FAR) {
+    const name = id === 'x2' ? 'Kernel' : id === 'x5' ? 'Tensor' : undefined;
+    const letter = name?.charAt(0) ?? (id === 'x11' ? 'M' : undefined);
+    nodes.push({ id, kind: letter ? 'co' : 'st', label: name, letter, pos: p });
+  }
   const ids = new Set(nodes.map((n) => n.id));
   for (const [a, b] of LINKS) if (ids.has(a) && ids.has(b)) edges.push({ a, b });
   return { nodes, edges };

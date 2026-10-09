@@ -80,10 +80,16 @@ describe('главная (лендинг)', () => {
     expect(section.getByText('до 280k')).toBeDefined();
   });
 
-  it('нет фальшивых цифр мокапа (6 940, 186, 68%, 3 / нед, 92%)', () => {
-    const { container } = render(<Landing data={DATA} signedIn={false} />);
-    const text = container.textContent ?? '';
+  it('карточки витрины не используют иллюстративные цифры графа', () => {
+    render(<Landing data={DATA} signedIn={false} />);
+    const text = screen.getByRole('region', { name: 'Сейчас нанимают' }).textContent ?? '';
     for (const fake of ['6 940', '186', '≈ 68', '3 / нед', '92%', '84%', 'ФСП ID']) expect(text).not.toContain(fake);
+  });
+  it('граф соответствует исходному макету и скрыт от скринридера', () => {
+    render(<Landing data={DATA} signedIn={false} />);
+    expect(screen.getByText('North').closest('[aria-hidden="true"]')).toBeTruthy();
+    expect(screen.getByText('92%')).toBeTruthy();
+    expect(screen.getByText('Kernel')).toBeTruthy();
   });
 
   it('без вакансий: пустое состояние и без плитки «до …k»', () => {

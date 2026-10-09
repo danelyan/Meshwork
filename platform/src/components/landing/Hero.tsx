@@ -3,9 +3,8 @@ import Link from 'next/link';
 import { HeroGraph } from './HeroGraph';
 import styles from './Hero.module.css';
 import { Start } from './Start';
-import type { LandingCompany } from './types';
 
-export function Hero({ companies, signedIn }: { companies: LandingCompany[]; signedIn: boolean }) {
+export function Hero({ signedIn }: { signedIn: boolean }) {
   return (
     <section className={styles.hero} aria-labelledby="hero-title">
       <div>
@@ -27,7 +26,7 @@ export function Hero({ companies, signedIn }: { companies: LandingCompany[]; sig
           <small>{signedIn ? 'Вы уже вошли' : 'Демо-стенд · готовые демо-профили'}</small>
         </Link>
       </div>
-      <HeroGraph companies={companies.slice(0, 5)} />
+      <HeroGraph />
     </section>
   );
 }

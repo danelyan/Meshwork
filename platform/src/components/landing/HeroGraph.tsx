@@ -1,10 +1,10 @@
 'use client';
 
-import { type CSSProperties, useEffect, useMemo, useRef } from 'react';
+import { type CSSProperties, useEffect, useRef } from 'react';
 
 import styles from './HeroGraph.module.css';
 import { buildGraph } from './graph-model';
-import type { LandingCompany } from './types';
+const { nodes, edges } = buildGraph();
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -17,9 +17,8 @@ function Silhouette() {
   );
 }
 
-/** Плавающий граф в hero (декор). Компании и число вакансий на связях — реальные, остальное — иллюстрация. */
-export function HeroGraph({ companies }: { companies: LandingCompany[] }) {
-  const { nodes, edges } = useMemo(() => buildGraph(companies), [companies]);
+/** Original mockup graph: decorative companies and illustrative percentages. */
+export function HeroGraph() {
   const demoRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const nodeEls = useRef<Record<string, HTMLDivElement | null>>({});
@@ -74,11 +73,8 @@ export function HeroGraph({ companies }: { companies: LandingCompany[] }) {
         const lbl = lbls.current[i];
         const dot = dots.current[i];
         if (lbl && dot) {
-          const company = nodeEls.current[e.b]!;
-          const nameHeight = company.querySelector('span')?.getBoundingClientRect().height ?? 0;
-          // Long vacancy labels need their own row below the company on phones.
-          lbl.style.left = `${compact.matches ? bx : ax + (bx - ax) * 0.55}px`;
-          lbl.style.top = `${compact.matches ? by + company.offsetHeight / 2 + nameHeight + 18 : ay + (by - ay) * 0.55}px`;
+          lbl.style.left = `${ax + (bx - ax) * 0.55}px`;
+          lbl.style.top = `${ay + (by - ay) * 0.55}px`;
           const q = (T * 0.22 + i * 0.17) % 1;
           dot.style.left = `${ax + (bx - ax) * q}px`;
           dot.style.top = `${ay + (by - ay) * q}px`;
@@ -105,7 +101,7 @@ export function HeroGraph({ companies }: { companies: LandingCompany[] }) {
       compact.removeEventListener('change', redrawStatic);
       lines.forEach((l) => l.remove());
     };
-  }, [nodes, edges]);
+  }, []);
 
   return (
     <div className={styles.demo} ref={demoRef} aria-hidden="true">

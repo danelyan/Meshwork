@@ -1,10 +1,12 @@
 // Пересобирает prompt.ts консультанта, помощника работодателя и онбординга из .md и общего
-// файла фактов (src/server/agent/prompts/platform-facts.md). Запуск из platform/:
+// файла фактов (src/server/agent/prompts/platform-facts.md), а также корпус базы знаний
+// src/server/agent/knowledge/corpus.ts (knowledge/docs/*.md + platform-facts.md). Запуск из platform/:
 //   npx tsx scripts/build-prompts.ts
 // Тесты сверяют, что сгенерированное совпадает с источником.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { buildCorpusSource } from '../src/server/agent/knowledge/build';
 import { assemblePrompt, promptVersion } from '../src/server/agent/prompts/assemble';
 
 const root = process.cwd();
@@ -32,3 +34,12 @@ for (const t of targets) {
   writeFileSync(join(root, t.out), src);
   console.log(`${t.out}: ${promptVersion(md)}, ${text.length} символов`);
 }
+
+const kdir = join(root, 'src/server/agent/knowledge/docs');
+const kdocs = readdirSync(kdir)
+  .filter((f) => f.endsWith('.md'))
+  .sort()
+  .map((f) => ({ docId: f.replace(/\.md$/, ''), md: readFileSync(join(kdir, f), 'utf8') }));
+const corpus = buildCorpusSource(facts, kdocs);
+writeFileSync(join(root, 'src/server/agent/knowledge/corpus.ts'), corpus.source);
+console.log(`src/server/agent/knowledge/corpus.ts: ${corpus.docs} документов, ${corpus.sections} секций`);

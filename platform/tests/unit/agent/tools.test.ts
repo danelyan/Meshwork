@@ -28,11 +28,13 @@ const EXPECTED = [
 ];
 /** Сверх ТЗ § 4.1 — только чтение, для «ведёт по платформе» (E-02, лейн agentq). */
 const EXTRA = ['get_onboarding_status', 'get_test_status', 'get_invitations', 'explain_evidence'];
+/** База знаний и веб-поиск (решения владельца 09.10): чтение, без записи. */
+const KNOWLEDGE = ['search_knowledge', 'web_search'];
 
 describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
-  it('14 инструментов по ТЗ + 4 на чтение, без дублей', () => {
-    expect([...TOOL_NAMES].sort()).toEqual([...EXPECTED, ...EXTRA].sort());
-    expect(new Set(TOOL_NAMES).size).toBe(18);
+  it('14 инструментов по ТЗ + 4 на чтение + база знаний и веб-поиск, без дублей', () => {
+    expect([...TOOL_NAMES].sort()).toEqual([...EXPECTED, ...EXTRA, ...KNOWLEDGE].sort());
+    expect(new Set(TOOL_NAMES).size).toBe(20);
   });
 
   it('нет инструментов записи в профиль, отклика, писем, категории, произвольного HTTP', () => {
@@ -51,7 +53,7 @@ describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
 
   it('у каждого инструмента описание и JSON Schema объекта для провайдера', () => {
     const specs = toolSpecs(tools);
-    expect(specs).toHaveLength(18);
+    expect(specs).toHaveLength(20);
     for (const s of specs) {
       expect(s.description.length).toBeGreaterThan(20);
       expect((s.parameters as { type: string }).type).toBe('object');
@@ -66,7 +68,7 @@ describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
 
   it('только ask_user завершает ход; untrusted — ровно читающие внешний текст', () => {
     expect(tools.filter((t) => t.terminal).map((t) => t.name)).toEqual(['ask_user']);
-    expect(tools.filter((t) => t.untrusted).map((t) => t.name).sort()).toEqual(['fetch_profile', 'fetch_url', 'get_invitations', 'read_upload']);
+    expect(tools.filter((t) => t.untrusted).map((t) => t.name).sort()).toEqual(['fetch_profile', 'fetch_url', 'get_invitations', 'read_upload', 'web_search']);
   });
 });
 

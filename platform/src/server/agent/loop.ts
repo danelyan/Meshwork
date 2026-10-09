@@ -15,6 +15,7 @@ import { withQuestionReminder } from './reminder';
 import { createReplyStream } from './reply-stream';
 import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
+import { withWebSearchGate } from './web-search/tool';
 import { tools as defaultTools } from './tools';
 import { asideMark } from '@/server/onboarding/match';
 import { type OnboardingStepBrief, pendingOnboarding } from '@/server/onboarding/service';
@@ -47,7 +48,7 @@ export async function runTurn(
   const demo = !opts.llm && isDemoMode();
   const llm =
     opts.llm ?? getLlm({ candidateId, conversationId, onQueue: (position) => emit({ type: 'queue', position }) });
-  const registry = opts.tools ?? defaultTools;
+  const registry = withWebSearchGate(opts.tools ?? defaultTools);
   const specs = toolSpecs(registry);
   const ctx: ToolContext = { candidateId, conversationId, emit, llm, ...(signal ? { signal } : {}) };
 

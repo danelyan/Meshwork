@@ -47,6 +47,8 @@ export const envSchema = z
 
     /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
     STT_PROVIDER: z.enum(['auto', 'yandex', 'browser', 'off']).default('auto'),
+    /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
+    WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
 
     /** Вход через Яндекс ID (oauth.yandex.ru). Не заданы → кнопка входа неактивна, работает демо-вход. */
     YANDEX_CLIENT_ID: optionalString,

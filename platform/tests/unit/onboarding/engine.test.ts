@@ -18,6 +18,7 @@ import { checkInn } from '@/server/onboarding/inn';
 import { MAX_NEEDS, computeNeeds } from '@/server/onboarding/needs';
 import { cleanLead, firstName, templateLead } from '@/server/onboarding/phrase';
 import { ONBOARDING_PROMPT } from '@/server/onboarding/prompt';
+import { assemblePrompt } from '@/server/agent/prompts/assemble';
 import { BASE_STEPS, CANDIDATE_STEPS, EMPLOYER_STEPS, findStep } from '@/server/onboarding/scenario';
 import type { Answers, Facts, StepContext } from '@/server/onboarding/types';
 
@@ -254,9 +255,10 @@ describe('реплики помощника', () => {
     expect(cleanLead('x'.repeat(300))).toBeNull();
     expect(cleanLead(undefined)).toBeNull();
   });
-  it('prompt.ts совпадает с prompts/onboarding.md', () => {
+  it('prompt.ts собран из prompts/onboarding.md и platform-facts.md', () => {
     const md = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/onboarding.md'), 'utf8');
-    expect(ONBOARDING_PROMPT).toBe(md);
+    const facts = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/platform-facts.md'), 'utf8');
+    expect(ONBOARDING_PROMPT).toBe(assemblePrompt(md, facts));
   });
   it('текст согласия совпадает с docs/consent.md', () => {
     const md = readFileSync(path.join(process.cwd(), '../docs/consent.md'), 'utf8').replace(/\s+/g, ' ');

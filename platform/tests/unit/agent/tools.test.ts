@@ -4,6 +4,7 @@ import path from 'node:path';
 import { z } from 'zod';
 
 import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from '@/server/agent/prompt';
+import { assemblePrompt, promptVersion } from '@/server/agent/prompts/assemble';
 import { FORBIDDEN_TOOL_NAME_RE, toolSpecs } from '@/server/agent/spec';
 import { scoreEntry } from '@/server/agent/tools/catalog_search';
 import { tools, TOOL_NAMES } from '@/server/agent/tools';
@@ -70,9 +71,11 @@ describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
 });
 
 describe('системный промпт', () => {
-  it('prompt.ts совпадает с prompts/consultant.md (источник правды — .md)', () => {
+  it('prompt.ts собран из prompts/consultant.md и platform-facts.md (источник правды — .md)', () => {
     const md = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/consultant.md'), 'utf8');
-    expect(CONSULTANT_PROMPT).toBe(md);
+    const facts = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/platform-facts.md'), 'utf8');
+    expect(CONSULTANT_PROMPT).toBe(assemblePrompt(md, facts));
+    expect(CONSULTANT_PROMPT_VERSION).toBe(promptVersion(md));
     expect(CONSULTANT_PROMPT_VERSION).toMatch(/^consultant-v\d+$/);
   });
 

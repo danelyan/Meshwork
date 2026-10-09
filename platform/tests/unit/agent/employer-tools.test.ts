@@ -5,6 +5,7 @@ import { describeBlock } from '@/server/agent/employer/demo';
 import { AssistantCandidateSchema, toAssistantCandidate } from '@/server/agent/employer/cards';
 import { parseNeedPrefill } from '@/server/agent/employer/prefill';
 import { EMPLOYER_PROMPT, EMPLOYER_PROMPT_VERSION } from '@/server/agent/employer/prompt';
+import { assemblePrompt, promptVersion } from '@/server/agent/prompts/assemble';
 import { employerTools, EMPLOYER_TOOL_NAMES } from '@/server/agent/employer/tools';
 import { needFormHref, parseGrade, parseSalary, parseSpecialization, parseStack } from '@/server/agent/employer/tools/create_need_draft';
 import type { EmployerToolContext } from '@/server/agent/employer/types';
@@ -58,14 +59,16 @@ describe('реестр помощника работодателя', () => {
 });
 
 describe('промпт помощника работодателя', () => {
-  it('prompt.ts совпадает с prompts/employer.md', () => {
+  it('prompt.ts собран из prompts/employer.md и platform-facts.md', () => {
     const md = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/employer.md'), 'utf8');
-    expect(EMPLOYER_PROMPT).toBe(md);
+    const facts = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/platform-facts.md'), 'utf8');
+    expect(EMPLOYER_PROMPT).toBe(assemblePrompt(md, facts));
+    expect(EMPLOYER_PROMPT_VERSION).toBe(promptVersion(md));
     expect(EMPLOYER_PROMPT_VERSION).toMatch(/^employer-v\d+$/);
   });
 
   it('границы: приватность, отправка кнопкой, лимит, недоверенные данные', () => {
-    for (const must of ['<privacy>', 'примет приглашение', 'Отправить приглашение', '20 приглашений', 'external_data', 'Кандидат #', '<examples>']) {
+    for (const must of ['<privacy>', 'примет приглашение', 'Отправить приглашение', 'get_employer_context этого хода', 'external_data', 'Кандидат #', '<examples>']) {
       expect(EMPLOYER_PROMPT, must).toContain(must);
     }
   });

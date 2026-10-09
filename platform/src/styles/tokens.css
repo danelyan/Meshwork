@@ -85,7 +85,9 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--glow), var(--paper);
+  background-color: var(--paper);
+  background-image: var(--glow), linear-gradient(var(--landing-grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--landing-grid-line) 1px, transparent 1px);
+  background-size: auto, 48px 48px, 48px 48px;
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font);

@@ -74,8 +74,11 @@ export function HeroGraph({ companies }: { companies: LandingCompany[] }) {
         const lbl = lbls.current[i];
         const dot = dots.current[i];
         if (lbl && dot) {
-          lbl.style.left = `${ax + (bx - ax) * 0.55}px`;
-          lbl.style.top = `${ay + (by - ay) * 0.55}px`;
+          const company = nodeEls.current[e.b]!;
+          const nameHeight = company.querySelector('span')?.getBoundingClientRect().height ?? 0;
+          // Long vacancy labels need their own row below the company on phones.
+          lbl.style.left = `${compact.matches ? bx : ax + (bx - ax) * 0.55}px`;
+          lbl.style.top = `${compact.matches ? by + company.offsetHeight / 2 + nameHeight + 18 : ay + (by - ay) * 0.55}px`;
           const q = (T * 0.22 + i * 0.17) % 1;
           dot.style.left = `${ax + (bx - ax) * q}px`;
           dot.style.top = `${ay + (by - ay) * q}px`;

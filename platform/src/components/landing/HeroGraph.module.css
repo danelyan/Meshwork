@@ -19,11 +19,12 @@
   .demo { min-height: 520px; margin: 0 calc(var(--page-pad) * -1); }
 }
 @media (max-width: 640px) {
-  .demo { min-height: 360px; height: 360px; margin: 0 calc(var(--page-pad) * -1); overflow: hidden; }
+  .demo { min-height: 400px; height: 400px; margin: 0 calc(var(--page-pad) * -1); overflow: hidden; }
   .n { left: var(--mx); top: var(--my); }
   .desktopOnly { display: none; }
   .n > span { font-size: 10px; }
   .co { width: 44px; height: 44px; font-size: 26px; }
+  .co > span { max-width: 30vw; white-space: normal; text-align: center; width: max-content; }
   .me { width: 68px; height: 68px; }
   .lbl { font-size: 11px; padding: 4px 6px; }
 }

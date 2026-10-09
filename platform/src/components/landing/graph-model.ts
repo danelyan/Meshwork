@@ -29,9 +29,9 @@ export interface GraphEdge {
 const SLOTS: Array<{ pos: [number, number]; mobile: [number, number] }> = [
   { pos: [50, 15], mobile: [50, 12] },
   { pos: [84, 33], mobile: [83, 34] },
-  { pos: [80, 77], mobile: [76, 82] },
+  { pos: [80, 77], mobile: [76, 78] },
   { pos: [16, 31], mobile: [17, 34] },
-  { pos: [22, 77], mobile: [24, 82] },
+  { pos: [22, 77], mobile: [24, 78] },
 ];
 
 const scale = (p: [number, number]): [number, number] => [6 + p[0] * 0.8, p[1]];

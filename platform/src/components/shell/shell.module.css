@@ -63,6 +63,7 @@
   .header { gap: 8px; }
   .brand img { height: 30px; }
   .brand span, .edition { display: none; }
+  .edition + .action { margin-left: auto; }
   .login { height: 44px; padding: 0 12px; font-size: 14px; }
   .footer { padding: 18px var(--page-pad); }
   .container { padding-top: 30px; padding-bottom: 40px; }

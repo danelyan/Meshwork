@@ -6,13 +6,13 @@
 
 | | |
 | --- | --- |
-| Адрес | https://90-156-158-121.sslip.io, проверка — `/api/health` |
+| Адрес | https://fsp-stars.ru, проверка — `/api/health` |
 | Сервер | Selectel, проект `fsp-lct-2026`, Москва (`ru-7a`): сервер `fsp-stand`, конфигурация `PRC50.2-4096` (2 vCPU с долей 50 %, 4 ГБ), сетевой диск 40 ГБ `basicssd`, Ubuntu 24.04 |
 | Сеть | Плавающий адрес 90.156.158.121; группа безопасности `fsp-stand` пропускает внутрь только 22, 80, 443 и ICMP |
 | Режим | Демо без ключей: `LLM_PROVIDER=stub`, `LLM_STUB_DEMO=true`, `COLLECTOR_FIXTURES=true`, `DEMO_LOGIN=true`. Языковая модель и вход через Яндекс ID не подключены |
 | Поднят | 9 октября 2026 года |
 
-Своего домена у проекта нет, поэтому адрес — служебный `sslip.io`: имя `90-156-158-121.sslip.io` разрешается в адрес сервера. При смене адреса сервера меняются `SITE_ADDRESS` и `APP_URL` в `.env`, переменные `DEPLOY_HOST`, `DEPLOY_KNOWN_HOSTS` и `APP_URL` в GitHub.
+Домен `fsp-stars.ru` (DNS у reg.ru) указывает A-записью на адрес сервера. `www.fsp-stars.ru` и прежний адрес `90-156-158-121.sslip.io` перенаправляются на основной (`SITE_REDIRECT_FROM`). При смене адреса сервера меняются A-записи домена и переменные `DEPLOY_HOST` и `DEPLOY_KNOWN_HOSTS` в GitHub; при смене домена — `SITE_ADDRESS` и `APP_URL` в `.env` и переменная `APP_URL` в GitHub.
 
 Сервер оплачивается почасово с баланса аккаунта Selectel; при нехватке средств облачные ресурсы блокируются.
 
@@ -47,6 +47,7 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | --- | --- |
 | `SITE_ADDRESS` | Домен стенда без схемы — адрес сайта для Caddy |
 | `APP_URL` | `https://<домен>` — от него зависят флаг `Secure` у куки и redirect URI Яндекс ID |
+| `SITE_REDIRECT_FROM` | Необязательно: имена через запятую (`www.<домен>`, прежний адрес), с которых Caddy перенаправляет на `SITE_ADDRESS`. Каждое должно указывать на сервер — для него тоже выпускается сертификат |
 | `SESSION_SECRET` | `openssl rand -hex 32` |
 | `DEMO_LOGIN` | `true`, пока стенд показывается жюри |
 

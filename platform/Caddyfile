@@ -4,3 +4,8 @@
 {$SITE_ADDRESS} {
 	reverse_proxy app:3000
 }
+
+# Прочие имена стенда (www, прежний адрес) ведут на основной: кука сессии и APP_URL привязаны к одному хосту.
+{$SITE_REDIRECT_FROM} {
+	redir https://{$SITE_ADDRESS}{uri} permanent
+}

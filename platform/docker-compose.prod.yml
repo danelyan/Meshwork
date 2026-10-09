@@ -27,6 +27,8 @@ services:
     image: caddy:2.11-alpine
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?в .env нужен SITE_ADDRESS — домен стенда}
+      # Имена, с которых Caddy перенаправляет на SITE_ADDRESS. Не заданы — служебное имя, на которое никто не придёт.
+      SITE_REDIRECT_FROM: ${SITE_REDIRECT_FROM:-http://redirect.invalid}
     ports:
       - "80:80"
       - "443:443"

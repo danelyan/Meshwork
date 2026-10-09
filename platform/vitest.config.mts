@@ -12,7 +12,7 @@ export default defineConfig({
   test: {
     // Демо-флаги стенда из .env не должны протекать в тесты (docs: test.env
     // перекрывает process.env воркеров; process.loadEnvFile не перезаписывает заданное).
-    env: { LLM_STUB_DEMO: 'false', COLLECTOR_FIXTURES: 'false' },
+    env: { LLM_STUB_DEMO: 'false', COLLECTOR_FIXTURES: 'false', TEST_DEMO_INTERVALS: 'false' },
     globals: true,
     projects: [
       {

@@ -1,7 +1,6 @@
 // Тонкий клиент к API платформы. Контракты других лейнов могут быть заглушками,
 // поэтому ответы разбираются терпимо, а ошибки приводятся к ApiError с понятным текстом.
 import type { ProfileView } from '@/server/claims/types';
-import type { OnboardingView } from '@/server/onboarding/types';
 import type { AnswerResult, DefenseQuestion, DefenseSessionView, DefenseVerdict } from '@/server/defense/types';
 import type { Gap, TargetRec, TaskRec, TestRecommendation } from '@/server/recommend/types';
 
@@ -33,7 +32,7 @@ async function readError(res: Response): Promise<ApiError> {
   return new ApiError(message, res.status, code);
 }
 
-export async function request<T>(url: string, init?: RequestInit): Promise<T> {
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(url, { credentials: 'same-origin', ...init });
@@ -44,7 +43,7 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export function postJson<T>(url: string, body: unknown): Promise<T> {
+function postJson<T>(url: string, body: unknown): Promise<T> {
   return request<T>(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 }
 
@@ -92,16 +91,6 @@ export const acceptConsent = (version: string) => postJson<{ version: string; ac
 export const chooseRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName: string }) =>
   postJson<{ role: MeView['role']; candidateId: string | null; employerProfileId: string | null }>('/api/auth/role', body);
 export const completeOnboarding = () => postJson<{ onboarded: true; next: string }>('/api/auth/onboarding/complete', {});
-
-// --- lane onboarding: онбординг-чат (app/api/onboarding/route.ts) ---
-export type OnboardingAction =
-  | { action: 'answer'; stepId: string; value: unknown }
-  | { action: 'skip'; stepId: string }
-  | { action: 'goto'; stepId: string };
-export const getOnboarding = () => request<OnboardingView>('/api/onboarding');
-export const onboardingAct = (body: OnboardingAction) => postJson<OnboardingView>('/api/onboarding', body);
-/** «Настроить позже»: онбординг не завершается, ответ — куда вести. */
-export const onboardingLater = () => postJson<{ next: string }>('/api/onboarding', { action: 'later' });
 
 export const getProfile = () => request<ProfileView>('/api/profile');
 
@@ -234,3 +223,21 @@ export async function answerDefenseApi(sessionId: string, answer: string): Promi
   const r = await postJson<AnswerResult>(`/api/defense/${encodeURIComponent(sessionId)}`, { answer });
   return { sessionId, ...(r.next ? { question: r.next } : {}), ...(r.verdict ? { verdict: r.verdict } : {}) };
 }
+
+// --- lane test: тест на грейд (docs/decisions/0002-grade-test.md) ---
+
+export type { AttemptSummary, AttemptView, EligibilityView, StartResult } from '@/server/test/types';
+
+export const startTestApi = (specialization: 'backend' | 'frontend', grade: 'junior' | 'middle') =>
+  postJson<import('@/server/test/types').StartResult>('/api/test/start', { specialization, grade });
+export const testEligibilityApi = (specialization: 'backend' | 'frontend', grade: 'junior' | 'middle') =>
+  request<import('@/server/test/types').EligibilityView & { rules: string }>(`/api/test/start?specialization=${specialization}&grade=${grade}`);
+export const getTestAttemptApi = (id: string) => request<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}`);
+export const answerTestApi = (id: string, answer: string) =>
+  postJson<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}/answer`, { answer });
+export const finishTestApi = (id: string) => postJson<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}/finish`, {});
+export const confirmJuniorApi = (id: string) => postJson<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}/confirm-junior`, {});
+export const listTestAttemptsApi = async () => {
+  const res = await request<{ attempts?: import('@/server/test/types').AttemptSummary[] }>('/api/test/attempts');
+  return Array.isArray(res.attempts) ? res.attempts : [];
+};

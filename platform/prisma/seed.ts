@@ -4,8 +4,8 @@ import { loadPlatformEnv } from '../scripts/load-env.mjs';
 
 import { seedAuth } from './seed/auth';
 import { seedClaims } from './seed/claims';
-import { seedEmployer } from './seed/employer';
 import { seedRecommend } from './seed/recommend';
+import { seedTest } from './seed/test';
 
 /**
  * Базовый сид foundation: 3 демо-кандидата (вымышленные, isDemo = true).
@@ -53,10 +53,9 @@ async function main() {
   // Порядок важен: recommend ссылается на каталог утверждений.
   await seedClaims(prisma);
   await seedRecommend(prisma);
+  await seedTest(prisma);
   // После recommend: демо-работодатель ссылается на засеянную компанию.
   await seedAuth(prisma);
-  // lane employer: пул демо-кандидатов с подтверждёнными утверждениями, детали потребностей.
-  await seedEmployer(prisma);
 }
 
 main()

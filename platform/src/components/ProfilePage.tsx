@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
 
-import { ApiError, claimAction, getProfile, getRecommendations, type RecommendationsView } from '@/lib/api';
+import { ApiError, type AttemptSummary, claimAction, getProfile, getRecommendations, listTestAttemptsApi, type RecommendationsView } from '@/lib/api';
 import { formatDate, LEVEL_HINT, LEVEL_ORDER } from '@/lib/labels';
 import type { ProfileClaim, ProfileView } from '@/server/claims/types';
 import type { Gap } from '@/server/recommend/types';
@@ -103,9 +103,38 @@ function GapMap({ gaps, pending }: { gaps: Gap[]; pending: Set<string> }) {
   );
 }
 
+const ATTEMPT_STATUS: Record<AttemptSummary['status'], string> = {
+  active: 'не завершена',
+  passed: 'подтверждён',
+  not_confirmed: 'не подтверждён',
+  abandoned: 'не засчитана',
+};
+
+/** История попыток теста (R-C-07, lane test). Данные — /api/test/attempts; недоступны → блок пустой. */
+function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
+  if (attempts.length === 0) return null;
+  return (
+    <div className={styles.testRec} data-testid="test-history">
+      <span className={ui.kicker}>История тестов</span>
+      <ul className={styles.history}>
+        {attempts.slice(0, 5).map((a) => (
+          <li key={a.id}>
+            <Link href={`/test?attempt=${encodeURIComponent(a.id)}`}>
+              {formatDate(a.startedAt)}: {a.specialization === 'backend' ? 'Backend' : 'Frontend'} · {a.grade} — {ATTEMPT_STATUS[a.status]}
+              {a.juniorConfirmedAt ? ', Junior подтверждён' : ''}
+              {a.status !== 'active' && a.status !== 'abandoned' ? ` (${a.correct} из ${a.answered})` : ''}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function ProfilePage() {
   const [profile, setProfile] = useState<ProfileView | null>(null);
   const [recs, setRecs] = useState<RecommendationsView | null>(null);
+  const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
   const [error, setError] = useState<ApiError | Error | null>(null);
 
   useEffect(() => {
@@ -118,6 +147,10 @@ export function ProfilePage() {
     getRecommendations().then(
       (r) => alive && setRecs(r),
       () => alive && setRecs({}),
+    );
+    listTestAttemptsApi().then(
+      (a) => alive && setAttempts(a),
+      () => undefined,
     );
     return () => {
       alive = false;
@@ -216,10 +249,16 @@ export function ProfilePage() {
             {!test.allowed && test.nextAllowedAt && <span className={ui.muted}>Повторно можно с {formatDate(test.nextAllowedAt)}</span>}
           </div>
         )}
+        <TestHistory attempts={attempts} />
         <div className={`${styles.sideActions} ${styles.noPrint}`}>
-          <Button variant="cta" href="/consultant">
-            К консультанту
+          <Button
+            variant="cta"
+            href={test ? `/test?specialization=${test.specialization}&grade=${test.grade}` : '/test'}
+            data-testid="go-test"
+          >
+            {profile.category ? 'Пересдать тест' : 'Пройти тест'}
           </Button>
+          <Button href="/consultant">К консультанту</Button>
           <Button onClick={() => window.print()}>Печать / PDF</Button>
         </div>
       </aside>

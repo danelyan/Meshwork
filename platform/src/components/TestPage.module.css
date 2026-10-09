@@ -1,0 +1,43 @@
+/* Тест на грейд: одна колонка, одно задание на экран, прогресс без подсказки о сложности (ADR-0002). */
+.page { max-width: 820px; margin: 0 auto; padding: 24px var(--page-pad) 48px; display: grid; gap: 20px; }
+.h1 { font-size: clamp(24px, 3vw, 34px); letter-spacing: -0.02em; margin: 6px 0 0; }
+.lead { font-size: var(--fs-md); line-height: 1.6; margin: 8px 0 0; }
+.choice { display: grid; gap: 16px; }
+.choiceRow { display: grid; gap: 8px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.hint { margin: 0; font-size: var(--fs); color: var(--text-soft); line-height: 1.6; border-left: 1.5px solid var(--ink); padding-left: 12px; }
+.rules { margin: 0; padding-left: 18px; font-size: var(--fs); color: var(--text-soft); line-height: 1.7; display: grid; gap: 4px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.progressRow { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.progressText { margin: 4px 0 0; font-weight: 600; font-size: var(--fs-md); }
+.progressBar { height: 4px; background: var(--line); }
+.progressBar i { display: block; height: 100%; background: var(--blue); transition: width 0.3s var(--ease); }
+.timer { font-family: var(--mono); font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.timerOver { color: var(--danger-text); }
+.task { display: grid; gap: 14px; }
+.taskTitle { font-size: var(--fs-lg); margin: 0; letter-spacing: 0; }
+.prompt { margin: 0; line-height: 1.7; font-size: var(--fs-md); white-space: pre-wrap; }
+.code { margin: 0; background: var(--surface-input); border: 1px solid var(--border-input); padding: 12px 14px; font-family: var(--mono); font-size: var(--fs-sm); line-height: 1.6; overflow-x: auto; white-space: pre; }
+.lines { list-style: none; margin: 0; padding: 0; }
+.lines li { display: grid; grid-template-columns: 2.5em 1fr; gap: 8px; }
+.ln { color: var(--muted); text-align: right; user-select: none; }
+.form { display: grid; gap: 12px; }
+.result { display: grid; gap: 14px; border-color: var(--blue); border-width: 1.5px; }
+.resultHead { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+.big { font-size: 36px; font-weight: 700; letter-spacing: -0.04em; }
+.explanation { margin: 0; line-height: 1.7; font-size: var(--fs-md); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 0; }
+.facts div { border: 1px solid var(--line); padding: 10px 12px; display: grid; gap: 4px; }
+.facts dt { font-family: var(--mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.facts dd { margin: 0; font-weight: 600; font-size: var(--fs-lg); }
+.offer { display: grid; gap: 10px; padding: 14px; background: var(--surface-notice); border: 1px solid var(--border-faint); border-left: 3px solid var(--blue); }
+.offer p { margin: 0; line-height: 1.6; }
+.review { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.reviewItem { display: grid; gap: 6px; }
+.reviewItem p { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+.reviewHead { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .page { padding-left: 16px; padding-right: 16px; }
+  .actions > * { flex: 1 1 auto; }
+  .big { font-size: 28px; }
+}

@@ -12,6 +12,8 @@
 .facts dd { margin: 2px 0 0; font-weight: 700; font-size: 22px; }
 .testRec { display: grid; gap: 4px; padding: 14px; background: var(--surface-input); border: 1px solid var(--line); font-size: var(--fs); line-height: 1.5; }
 .testReason { color: var(--text-soft); }
+.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: var(--fs-sm); line-height: 1.5; }
+.history a { text-decoration: underline; }
 .sideActions { display: grid; gap: 8px; margin-top: auto; }
 .main { min-width: 0; padding: 28px 32px 56px; display: grid; gap: 28px; max-width: 960px; }
 .section { display: grid; gap: 12px; }

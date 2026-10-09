@@ -1,0 +1,474 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useId, useRef, useState } from 'react';
+
+import {
+  answerTestApi,
+  ApiError,
+  type AttemptView,
+  confirmJuniorApi,
+  finishTestApi,
+  getRecommendations,
+  getTestAttemptApi,
+  startTestApi,
+  testEligibilityApi,
+} from '@/lib/api';
+import { formatDate } from '@/lib/labels';
+
+import styles from './TestPage.module.css';
+import { Button, Chip, Field, Kicker, Notice, Panel, Tag } from './ui';
+import ui from './ui.module.css';
+
+type Spec = 'backend' | 'frontend';
+type Grade = 'junior' | 'middle';
+
+const SPEC_LABEL: Record<Spec, string> = { backend: 'Backend', frontend: 'Frontend' };
+const GRADE_LABEL: Record<Grade, string> = { junior: 'Junior', middle: 'Middle' };
+
+function isSpec(v: string | null): v is Spec {
+  return v === 'backend' || v === 'frontend';
+}
+function isGrade(v: string | null): v is Grade {
+  return v === 'junior' || v === 'middle';
+}
+
+function errorText(e: unknown, fallback: string): string {
+  return e instanceof Error ? e.message : fallback;
+}
+
+/** Мягкий таймер задания: показывает прошедшее время, по истечении лимита — пометка, без блокировки. */
+function SoftTimer({ askedAt, limitSec }: { askedAt: string; limitSec: number }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [askedAt]);
+  const elapsed = Math.max(0, Math.floor((now - new Date(askedAt).getTime()) / 1000));
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const ss = String(elapsed % 60).padStart(2, '0');
+  const over = elapsed > limitSec;
+  return (
+    <span className={`${styles.timer} ${over ? styles.timerOver : ''}`} aria-live="off" data-testid="timer">
+      {mm}:{ss}
+      {over && <span className={ui.muted}> · лимит {Math.round(limitSec / 60)} мин превышен, ответить всё ещё можно</span>}
+    </span>
+  );
+}
+
+/** Код задания с номерами строк (ответ «номер строки» считается по ним). */
+function CodeBlock({ code, numbered }: { code: string; numbered: boolean }) {
+  const lines = code.split('\n');
+  return (
+    <pre className={styles.code} tabIndex={0}>
+      {numbered ? (
+        <ol className={styles.lines}>
+          {lines.map((l, i) => (
+            <li key={i}>
+              <span className={styles.ln} aria-hidden="true">
+                {i + 1}
+              </span>
+              <span>{l || ' '}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <code>{code}</code>
+      )}
+    </pre>
+  );
+}
+
+function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Promise<void>; initial: { spec: Spec | null; grade: Grade | null } }) {
+  const [spec, setSpec] = useState<Spec>(initial.spec ?? 'backend');
+  const [grade, setGrade] = useState<Grade>(initial.grade ?? 'junior');
+  const [hint, setHint] = useState<string | null>(null);
+  const [elig, setElig] = useState<{ allowed: boolean; reason?: string; rules: string } | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initial.spec && initial.grade) return;
+    getRecommendations().then(
+      (r) => {
+        if (!r.test) return;
+        if (!initial.spec) setSpec(r.test.specialization);
+        if (!initial.grade) setGrade(r.test.grade);
+        setHint(r.test.reason);
+      },
+      () => undefined,
+    );
+  }, [initial.spec, initial.grade]);
+
+  useEffect(() => {
+    let alive = true;
+    testEligibilityApi(spec, grade).then(
+      (e) => alive && setElig(e),
+      () => alive && setElig(null),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [spec, grade]);
+
+  async function start() {
+    setPending(true);
+    setError(null);
+    try {
+      await onStart(spec, grade);
+    } catch (e) {
+      setError(errorText(e, 'Не удалось начать тест.'));
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className={styles.page}>
+      <div>
+        <Kicker>Тест на грейд</Kicker>
+        <h1 className={styles.h1}>Подтвердим грейд</h1>
+        <p className={`${ui.muted} ${styles.lead}`}>
+          7–10 коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
+          даёт только этот тест; выбор грейда — за вами.
+        </p>
+      </div>
+
+      <Panel as="section" aria-label="Направление и грейд" className={styles.choice}>
+        <div className={styles.choiceRow}>
+          <span className={ui.label}>Направление</span>
+          <div className={styles.chips} role="group" aria-label="Направление">
+            {(['backend', 'frontend'] as Spec[]).map((s) => (
+              <Chip key={s} pressed={spec === s} onClick={() => setSpec(s)} disabled={pending}>
+                {SPEC_LABEL[s]}
+              </Chip>
+            ))}
+          </div>
+        </div>
+        <div className={styles.choiceRow}>
+          <span className={ui.label}>Грейд, который хотите подтвердить</span>
+          <div className={styles.chips} role="group" aria-label="Грейд">
+            {(['junior', 'middle'] as Grade[]).map((g) => (
+              <Chip key={g} pressed={grade === g} onClick={() => setGrade(g)} disabled={pending}>
+                {GRADE_LABEL[g]}
+              </Chip>
+            ))}
+          </div>
+        </div>
+        {hint && (
+          <p className={styles.hint} data-testid="rec-hint">
+            Рекомендация консультанта: {hint}
+          </p>
+        )}
+      </Panel>
+
+      <ul className={styles.rules} aria-label="Правила">
+        <li>Задание можно пропустить только ответом; назад вернуться нельзя.</li>
+        <li>Таймер мягкий: превышение лимита не блокирует ответ, но учитывается.</li>
+        <li>Неудачная попытка не снимает уже подтверждённую категорию.</li>
+        {elig?.rules && <li>{elig.rules}</li>}
+      </ul>
+
+      {elig && !elig.allowed && (
+        <Notice data-testid="not-allowed">{elig.reason}</Notice>
+      )}
+      {error && <Notice tone="error">{error}</Notice>}
+
+      <div className={styles.actions}>
+        <Button variant="cta" onClick={() => void start()} loading={pending} disabled={Boolean(elig && !elig.allowed)} data-testid="start">
+          Начать тест: {SPEC_LABEL[spec]} · {GRADE_LABEL[grade]}
+        </Button>
+        <Button href="/profile">В профиль</Button>
+      </div>
+    </div>
+  );
+}
+
+function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onAnswer: (a: string) => Promise<void>; onFinish: () => Promise<void> }) {
+  const item = attempt.current!;
+  const [answer, setAnswer] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fieldId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setAnswer('');
+    inputRef.current?.focus();
+  }, [item.index]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (pending || !answer.trim()) return;
+    setPending(true);
+    setError(null);
+    try {
+      await onAnswer(answer);
+      setAnswer('');
+    } catch (err) {
+      setError(errorText(err, 'Не удалось отправить ответ.'));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  const numbered = item.format === 'line';
+  return (
+    <div className={styles.page}>
+      <div className={styles.progressRow}>
+        <div>
+          <Kicker>
+            {SPEC_LABEL[attempt.specialization]} · {GRADE_LABEL[attempt.grade]}
+          </Kicker>
+          <p className={styles.progressText} data-testid="progress">
+            Задание {item.index + 1}
+            <span className={ui.muted}> · всего от {attempt.minItems} до {attempt.maxItems}</span>
+          </p>
+        </div>
+        <SoftTimer askedAt={item.askedAt} limitSec={item.timeLimitSec} />
+      </div>
+      <div className={styles.progressBar} role="progressbar" aria-valuemin={0} aria-valuemax={attempt.maxItems} aria-valuenow={item.index} aria-label="Ход теста">
+        <i style={{ width: `${Math.min(100, (item.index / attempt.maxItems) * 100)}%` }} />
+      </div>
+
+      <Panel as="section" variant="strong" className={styles.task} aria-labelledby={`${fieldId}-title`}>
+        <h2 id={`${fieldId}-title`} className={styles.taskTitle}>
+          {item.title}
+        </h2>
+        <p className={styles.prompt}>{item.prompt}</p>
+        {item.code && <CodeBlock code={item.code} numbered={numbered} />}
+        <form className={styles.form} onSubmit={submit}>
+          <Field label={`Ответ (${item.answerHint})`}>
+            <input
+              ref={inputRef}
+              id={fieldId}
+              className={ui.input}
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              maxLength={500}
+              autoComplete="off"
+              spellCheck={false}
+              disabled={pending}
+              data-testid="answer"
+            />
+          </Field>
+          <div className={styles.actions}>
+            <Button type="submit" variant="primary" loading={pending} disabled={!answer.trim()} data-testid="submit">
+              Ответить
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (window.confirm('Завершить тест сейчас? Итог будет посчитан по уже данным ответам.')) void onFinish();
+              }}
+            >
+              Завершить досрочно
+            </Button>
+          </div>
+        </form>
+        {error && <Notice tone="error">{error}</Notice>}
+      </Panel>
+    </div>
+  );
+}
+
+function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptView; onConfirmJunior: () => Promise<void>; onRetry: () => void }) {
+  const r = attempt.result!;
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showItems, setShowItems] = useState(false);
+  const grade = GRADE_LABEL[attempt.grade];
+  const title =
+    r.status === 'abandoned' ? 'Попытка не засчитана' : r.confirmed ? `${grade} подтверждён` : r.juniorConfirmedAt ? 'Junior подтверждён' : `${grade} не подтверждён`;
+
+  async function confirm() {
+    setPending(true);
+    setError(null);
+    try {
+      await onConfirmJunior();
+    } catch (e) {
+      setError(errorText(e, 'Не удалось подтвердить Junior.'));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className={styles.page}>
+      <div>
+        <Kicker>
+          Итог · {SPEC_LABEL[attempt.specialization]} · {grade}
+        </Kicker>
+        <h1 className={styles.h1} data-testid="result-title">
+          {title}
+        </h1>
+      </div>
+
+      <Panel as="section" variant="strong" className={styles.result} aria-label="Результат">
+        <div className={styles.resultHead}>
+          <Tag tone={r.confirmed || r.juniorConfirmedAt ? 'solid' : 'outline'}>{r.confirmed || r.juniorConfirmedAt ? 'категория записана' : 'категория не изменилась'}</Tag>
+          <span className={styles.big} data-testid="score">
+            {r.correct} из {r.answered}
+          </span>
+        </div>
+        <p className={styles.explanation} data-testid="explanation">
+          {r.explanation}
+        </p>
+        <dl className={styles.facts}>
+          <div>
+            <dt>Уверенность в {grade}</dt>
+            <dd>{Math.round(r.pPass * 100)}%</dd>
+          </div>
+          <div>
+            <dt>Уверенность в Junior</dt>
+            <dd>{Math.round(r.pJunior * 100)}%</dd>
+          </div>
+          <div>
+            <dt>Заданий</dt>
+            <dd>{r.answered}</dd>
+          </div>
+        </dl>
+        {r.confirmedCatalogIds.length > 0 && (
+          <p className={ui.muted} data-testid="confirmed-claims">
+            Решённые задания подтверждают утверждения: {r.confirmedCatalogIds.join(', ')} — их уровень в профиле поднят до «платформа».
+          </p>
+        )}
+        {r.juniorOffered && (
+          <div className={styles.offer} data-testid="junior-offer">
+            <p>Middle не подтверждён, но задания уровня Junior решены уверенно. Подтвердить Junior по этой же попытке? Решение за вами: без вашего согласия категория не меняется.</p>
+            <Button variant="cta" onClick={() => void confirm()} loading={pending} data-testid="confirm-junior">
+              Подтвердить Junior
+            </Button>
+          </div>
+        )}
+        {error && <Notice tone="error">{error}</Notice>}
+      </Panel>
+
+      <div className={styles.actions}>
+        <Button variant="primary" href="/profile">
+          В профиль
+        </Button>
+        <Button href="/profile#claims" title="Защита — подтверждающий слой: флаг к утверждению, категорию не меняет">
+          Защитить утверждение
+        </Button>
+        <Button onClick={onRetry}>Пройти ещё раз</Button>
+        <Button size="sm" onClick={() => setShowItems((v) => !v)} aria-expanded={showItems}>
+          {showItems ? 'Скрыть разбор' : 'Разбор заданий'}
+        </Button>
+      </div>
+
+      {showItems && (
+        <ol className={styles.review} aria-label="Разбор заданий">
+          {r.items.map((it) => (
+            <li key={it.index} className={`${ui.panel} ${styles.reviewItem}`}>
+              <div className={styles.reviewHead}>
+                <b>{it.title}</b>
+                <Tag tone={it.correct ? 'solid' : 'dashed'}>{it.correct ? 'верно' : 'неверно'}</Tag>
+              </div>
+              <p className={ui.muted}>
+                Ваш ответ: {it.answer || '—'} · верный: {it.answerKey}
+              </p>
+              <p>{it.explanation}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+      <p className={ui.muted} style={{ fontSize: 'var(--fs-sm)' }}>
+        Попытка от {formatDate(attempt.startedAt)}. Защита утверждения после теста — подтверждающий флаг, категорию она не меняет.
+      </p>
+    </div>
+  );
+}
+
+export function TestPage() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const attemptParam = params.get('attempt');
+  const initialSpec = params.get('specialization');
+  const initialGrade = params.get('grade');
+  const [attempt, setAttempt] = useState<AttemptView | null>(null);
+  const [loading, setLoading] = useState(Boolean(attemptParam));
+  const [error, setError] = useState<ApiError | Error | null>(null);
+  const loadedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!attemptParam || loadedRef.current === attemptParam) return;
+    loadedRef.current = attemptParam;
+    setLoading(true);
+    getTestAttemptApi(attemptParam).then(
+      (a) => {
+        setAttempt(a);
+        setLoading(false);
+      },
+      (e: Error) => {
+        setError(e);
+        setLoading(false);
+      },
+    );
+  }, [attemptParam]);
+
+  async function start(spec: Spec, grade: Grade) {
+    const s = await startTestApi(spec, grade);
+    const a = await getTestAttemptApi(s.attemptId);
+    loadedRef.current = s.attemptId;
+    setAttempt(a);
+    router.replace(`/test?attempt=${encodeURIComponent(s.attemptId)}`);
+  }
+
+  if (error) {
+    const unauth = error instanceof ApiError && error.status === 401;
+    return (
+      <div className={styles.page}>
+        <Notice tone="error">{error.message}</Notice>
+        {unauth ? (
+          <Button size="sm" href="/" style={{ justifySelf: 'start' }}>
+            На страницу входа
+          </Button>
+        ) : (
+          <Button size="sm" onClick={() => { setError(null); setAttempt(null); router.replace('/test'); }} style={{ justifySelf: 'start' }}>
+            Начать заново
+          </Button>
+        )}
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className={styles.page} aria-busy="true">
+        <p className={ui.muted} role="status">
+          <span className={ui.spinner} aria-hidden="true" /> Загружаю попытку…
+        </p>
+      </div>
+    );
+  }
+  if (!attempt) {
+    return <IntroScreen onStart={start} initial={{ spec: isSpec(initialSpec) ? initialSpec : null, grade: isGrade(initialGrade) ? initialGrade : null }} />;
+  }
+  if (attempt.status === 'active' && attempt.current) {
+    return (
+      <ItemScreen
+        attempt={attempt}
+        onAnswer={async (a) => setAttempt(await answerTestApi(attempt.id, a))}
+        onFinish={async () => setAttempt(await finishTestApi(attempt.id))}
+      />
+    );
+  }
+  if (attempt.result) {
+    return (
+      <ResultScreen
+        attempt={attempt}
+        onConfirmJunior={async () => setAttempt(await confirmJuniorApi(attempt.id))}
+        onRetry={() => {
+          setAttempt(null);
+          loadedRef.current = null;
+          router.replace(`/test?specialization=${attempt.specialization}&grade=${attempt.grade}`);
+        }}
+      />
+    );
+  }
+  return (
+    <div className={styles.page}>
+      <Notice>Попытка в неожиданном состоянии. <Link href="/test">Начать заново</Link></Notice>
+    </div>
+  );
+}

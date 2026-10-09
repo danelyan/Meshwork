@@ -49,6 +49,8 @@ export const envSchema = z
     GITHUB_TOKEN: optionalString,
     /** true → сборщик не ходит в сеть за профилями, только фикстуры (демо-стенд, тесты). */
     COLLECTOR_FIXTURES: z.stringbool().default(false),
+    /** lane test: интервалы теста на грейд в минутах вместо дней (стенд жюри, ADR-0002). */
+    TEST_DEMO_INTERVALS: z.stringbool().default(false),
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: intFrom(1025, 1, 65535),
   })

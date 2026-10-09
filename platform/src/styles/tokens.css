@@ -12,6 +12,8 @@
   /* базовые (spec §2) */
   --ink: #111111;
   --paper: #f1f1f3;
+  --auth-backdrop: rgba(17, 17, 17, 0.18);
+  --auth-shadow: 0 28px 90px rgba(17, 17, 17, 0.2);
   --muted: #6b6b70;
   --blue: #402fff;
   --line: rgba(17, 17, 17, 0.1);

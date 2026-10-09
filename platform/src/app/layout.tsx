@@ -4,6 +4,8 @@ import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 
 import { DevPanelGate } from '@/components/devtools/DevPanelGate';
+import { AuthEntry } from '@/components/auth/AuthEntry';
+import { yandexConfig } from '@/server/auth/yandex';
 import { ShellFrame } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
 import { SiteHeader } from '@/components/shell/SiteHeader';
@@ -40,9 +42,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="ru" className={`${golos.variable} ${mono.variable}`}>
       {/* data-stt — режим голосового ввода для композера чата (server/stt, env STT_PROVIDER) */}
       <body data-stt={sttMode()}>
+        <AuthEntry yandexEnabled={yandexConfig() !== null} demoEnabled={getEnv().DEMO_LOGIN}>
         <ShellFrame header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
           {children}
         </ShellFrame>
+        </AuthEntry>
         <DevPanelGate />
       </body>
     </html>

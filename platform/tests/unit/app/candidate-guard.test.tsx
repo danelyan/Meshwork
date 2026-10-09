@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup } from '@testing-library/react';
 import type { ReactElement } from 'react';
 
 import { candidatePageRedirect } from '@/server/auth/page';
@@ -146,20 +146,21 @@ describe('open redirect: /auth и /demo игнорируют чужой next', (
     return el.props.children.props.next;
   };
 
-  it.each(EVIL)('/auth?next=%s → демо-ссылка без next', async (raw) => {
+  it.each(EVIL)('/auth?next=%s → окно входа без next', async (raw) => {
     const AuthPage = (await import('@/app/auth/page')).default;
-    render((await AuthPage({ searchParams: Promise.resolve({ next: raw }) })) as ReactElement);
-    expect(screen.getByRole('link', { name: 'Демо для жюри' }).getAttribute('href')).toBe('/demo');
+    const page = (await AuthPage({searchParams:Promise.resolve({next:raw})})) as ReactElement<{next:string|null;initiallyOpen:boolean}>;
+    expect(page.props.next).toBeNull();
+    expect(page.props.initiallyOpen).toBe(true);
   });
 
   it.each(EVIL)('/demo?next=%s → next = null', async (raw) => {
     expect(await demoProps(raw)).toBeNull();
   });
 
-  it('свой путь проходит: /auth → /demo?next=…, /demo → DemoScreen next', async () => {
+  it('свой путь проходит: /auth → окно с next, /demo → DemoScreen next', async () => {
     const AuthPage = (await import('@/app/auth/page')).default;
-    render((await AuthPage({ searchParams: Promise.resolve({ next: '/profile' }) })) as ReactElement);
-    expect(screen.getByRole('link', { name: 'Демо для жюри' }).getAttribute('href')).toBe('/demo?next=%2Fprofile');
+    const page = (await AuthPage({searchParams:Promise.resolve({next:'/profile'})})) as ReactElement<{next:string|null}>;
+    expect(page.props.next).toBe('/profile');
     expect(await demoProps('/test?grade=middle')).toBe('/test?grade=middle');
   });
 });

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
-import { AuthScreen } from '@/components/AuthScreen';
+import { AuthEntry } from '@/components/auth/AuthEntry';
+import { Landing } from '@/components/landing/Landing';
+import { SHOWCASE } from '@/components/landing/showcase';
 import { safeNext } from '@/server/auth/redirect';
 import { yandexConfig } from '@/server/auth/yandex';
 import { getEnv } from '@/server/env';
@@ -16,13 +18,13 @@ export default async function AuthPage({ searchParams }: { searchParams: Search 
   const sp = await searchParams;
   const error = one(sp.error);
   return (
-    <main id="main">
-      <AuthScreen
+      <AuthEntry initiallyOpen
         yandexEnabled={yandexConfig() !== null}
         demoEnabled={getEnv().DEMO_LOGIN}
         next={safeNext(one(sp.next))}
         error={error && /^[a-z_]{1,32}$/.test(error) ? error : null}
-      />
-    </main>
+      >
+        <Landing data={SHOWCASE} signedIn={false} />
+      </AuthEntry>
   );
 }

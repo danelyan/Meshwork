@@ -110,7 +110,7 @@ export const explainEvidence: AgentTool<z.infer<typeof Input>, z.infer<typeof Ou
           ? 'Утверждение отклонено кандидатом — поднимать нечего.'
           : ways.length
             ? 'Уровень поднимает код по результату проверки, не ты и не кандидат.'
-            : `Для этого утверждения на платформе нет пути выше уровня «${LEVEL_LABEL[claim.level]}»${claim.level === top ? '' : PLATFORM_UPGRADABLE.has(claim.level) ? ' (нет задания, защиты или реестра в каталоге)' : ' (тест и защита поднимают только «со слов» и «артефакт»)'}.`,
+            : `Для этого утверждения на платформе нет пути выше уровня «${LEVEL_LABEL[claim.level]}»${claim.level === top ? '' : PLATFORM_UPGRADABLE.has(claim.level) ? ' (нет задания, защиты или реестра в каталоге)' : ' (выше платформы уровня нет)'}.`,
     };
   },
 };

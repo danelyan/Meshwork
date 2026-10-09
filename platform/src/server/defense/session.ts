@@ -68,7 +68,7 @@ function assertEligible(claim: Pick<ClaimRow, 'status' | 'level'>): void {
     );
   }
   if (!PLATFORM_UPGRADABLE.has(claim.level)) {
-    throw new AppError('claim_already_verified', 'Утверждение уже проверено платформой или третьей стороной.', 409);
+    throw new AppError('claim_already_verified', 'Утверждение уже проверено платформой.', 409);
   }
 }
 

@@ -17,10 +17,10 @@ export function levelRank(level: EvidenceLevel): number {
 }
 
 /**
- * Что тест и защита поднимают до `platform`. third_party сюда не входит, хотя он ниже:
- * поднимать ли его — отдельное решение (пока защита отвечает 409 claim_already_verified).
+ * Что тест и защита поднимают до `platform`: всё ниже платформы, включая third_party
+ * (решение 09.10: ФСП и референс тоже можно перепроверить на платформе). Только `platform` — финальный.
  */
-export const PLATFORM_UPGRADABLE: ReadonlySet<EvidenceLevel> = new Set(['self_reported', 'artifact']);
+export const PLATFORM_UPGRADABLE: ReadonlySet<EvidenceLevel> = new Set(['self_reported', 'artifact', 'third_party']);
 
 /**
  * Максимальный уровень доказанности по типу источника (ADR-0001 п. 2, E-01 § 4.2, план claims).

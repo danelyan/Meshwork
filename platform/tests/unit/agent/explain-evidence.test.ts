@@ -22,8 +22,11 @@ describe('explain_evidence: пути и объяснение уровня (ADR-0
     expect(waysUp('platform', ['registry:fsp-algo', 'task:complexity', 'interview:defend'])).toEqual([]);
   });
 
-  it('третья сторона: тест и защита её не поднимают (PLATFORM_UPGRADABLE) — путей нет', () => {
-    expect(waysUp('third_party', ['registry:fsp-algo', 'task:complexity', 'interview:defend'])).toEqual([]);
+  it('третья сторона: тест и защита поднимают до платформы (решение 09.10), реестр не предлагаем', () => {
+    expect(waysUp('third_party', ['registry:fsp-algo', 'task:complexity', 'interview:defend']).map((x) => `${x.toLevel}:${x.kind}`)).toEqual([
+      'platform:task',
+      'platform:interview',
+    ]);
   });
 
   it('объяснение по типу источника, ярлыки на русском', () => {

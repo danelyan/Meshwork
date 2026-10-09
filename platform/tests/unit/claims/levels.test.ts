@@ -46,6 +46,6 @@ describe('maxLevelFor (ADR-0001)', () => {
     expect(LEVEL_WEIGHT).toEqual({ self_reported: 0.25, artifact: 0.5, third_party: 0.75, platform: 1 });
     expect(bestLevel(['third_party', 'platform', 'artifact'])).toBe('platform');
     expect(bestLevel(['self_reported', 'third_party'])).toBe('third_party');
-    expect([...PLATFORM_UPGRADABLE].sort()).toEqual(['artifact', 'self_reported']);
+    expect([...PLATFORM_UPGRADABLE].sort()).toEqual(['artifact', 'self_reported', 'third_party']);
   });
 });

@@ -89,6 +89,26 @@ describe('API теста на грейд', () => {
     expect(hist.attempts.map((a) => a.status)).toEqual(['passed']);
   });
 
+  it('решённое задание поднимает до platform и утверждение уровня third_party (решение 09.10)', async () => {
+    const { attemptId } = await startAttempt(A, 'backend', 'middle');
+    const tpls = await prisma.taskTemplate.findMany({ where: { specialization: 'backend' } });
+    const ids = [...new Set(tpls.flatMap((t) => t.catalogIds))];
+    await prisma.claimCatalog.createMany({
+      data: ids.map((id) => ({ id, specialization: 'backend' as const, statement: id, grades: ['middle' as const], weight: 2, proof: [], markers: [], limits: '-' })),
+    });
+    await prisma.claim.createMany({
+      data: ids.map((catalogId, i) => ({
+        id: `cl-${i}`, candidateId: A, catalogId, statement: 'Утверждение', level: 'third_party' as const, quote: 'цитата',
+        sourceRef: 'fsp#1', sourceKind: 'fsp' as const, limits: '-', suggestedProof: [], status: 'confirmed' as const,
+      })),
+    });
+    await play(A, attemptId, (_g, key) => key);
+    const solved = new Set((await prisma.testItem.findMany({ where: { attemptId, correct: true }, include: { template: true } })).flatMap((i) => i.template.catalogIds));
+    expect(solved.size).toBeGreaterThan(0);
+    const after = await prisma.claim.findMany({ where: { candidateId: A } });
+    for (const c of after) expect(c.level).toBe(solved.has(c.catalogId) ? 'platform' : 'third_party');
+  });
+
   it('чужая попытка — 404; без сессии — 401', async () => {
     const { attemptId } = await startAttempt(A, 'backend', 'junior');
     const res = await getRoute(jsonRequest(`/api/test/attempt/${attemptId}`, 'GET', undefined, cookie(B)), ctx(attemptId));

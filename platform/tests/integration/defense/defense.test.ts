@@ -118,9 +118,14 @@ describe('startDefense', () => {
     await expect(startDefense(A, 'claim-1', llm)).rejects.toMatchObject({ status: 409, code: 'claim_not_eligible' });
   });
 
-  it.each(['platform', 'third_party'])('уровень %s → 409 claim_already_verified', async (lvl) => {
-    await seed({ level: lvl });
+  it('уровень platform → 409 claim_already_verified', async () => {
+    await seed({ level: 'platform' });
     await expect(startDefense(A, 'claim-1', llm)).rejects.toMatchObject({ status: 409, code: 'claim_already_verified' });
+  });
+
+  it('уровень third_party допустим: защита поднимет до платформы', async () => {
+    await seed({ level: 'third_party' });
+    await expect(startDefense(A, 'claim-1', llm)).resolves.toMatchObject({ resumed: false });
   });
 
   it('статус edited и уровень self_reported — допустимы', async () => {
@@ -287,6 +292,16 @@ describe('answerDefense и вердикт', () => {
     broken = false;
     const r = await answerDefense(A, s.sessionId, '', llm);
     expect(r.verdict?.passed).toBe(true);
+    expect(await level()).toBe('platform');
+  });
+
+  it('проход защиты поднимает third_party до platform', async () => {
+    await seed({ level: 'third_party' });
+    registerStubResponse('evaluator', () => ({ json: goodEval() }));
+    const s = await startDefense(A, 'claim-1', llm);
+    for (const a of ANSWERS.slice(0, 4)) await answerDefense(A, s.sessionId, a, llm);
+    const r = await answerDefense(A, s.sessionId, ANSWERS[4]!, llm);
+    expect(r.verdict).toMatchObject({ passed: true, levelBefore: 'third_party', levelAfter: 'platform' });
     expect(await level()).toBe('platform');
   });
 

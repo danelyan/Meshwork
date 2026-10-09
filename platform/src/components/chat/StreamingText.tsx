@@ -35,8 +35,13 @@ export interface Reveal {
  * целиком, без потери текста. Снятие `animate` на лету дописывает остаток мгновенно.
  */
 export function useSmoothReveal(text: string, { animate, streaming = false, paced = false }: { animate: boolean; streaming?: boolean; paced?: boolean }): Reveal {
-  const [live] = useState(() => animate && !prefersReducedMotion());
-  const on = live && animate;
+  // Решение о prefers-reduced-motion — в эффекте: в рендере оно расходится с сервером (гидрация).
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (prefersReducedMotion()) setReduced(true);
+  }, []);
+  const [live] = useState(animate);
+  const on = live && animate && !reduced;
   const posRef = useRef(0);
   const marksRef = useRef<Mark[]>([]);
   const stableRef = useRef(0);

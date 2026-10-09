@@ -18,10 +18,16 @@ export type ReplyPhase = 'typing' | 'writing' | 'done';
  * Таймер чистится в cleanup: StrictMode-повтор эффекта безопасен.
  */
 export function useReplyPhase(total: number, animate: boolean) {
-  const [phase, setPhase] = useState<ReplyPhase>(() => (animate && !prefersReducedMotion() ? 'typing' : 'done'));
+  const [phase, setPhase] = useState<ReplyPhase>(animate ? 'typing' : 'done');
   const doneRef = useRef(phase === 'done');
   useEffect(() => {
     if (phase !== 'typing') return;
+    // matchMedia нельзя читать в рендере: сервер и первый клиентский рендер должны совпасть (гидрация).
+    if (prefersReducedMotion()) {
+      doneRef.current = true;
+      setPhase('done');
+      return;
+    }
     const t = setTimeout(() => setPhase('writing'), typingMs(total));
     return () => clearTimeout(t);
   }, [phase, total]);

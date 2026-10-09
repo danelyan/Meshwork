@@ -18,6 +18,7 @@ export const EMPLOYER_LINKS: NavLink[] = [
   { href: '/employer', label: 'Потребности', exact: true },
   { href: '/employer/search', label: 'Поиск по базе' },
   { href: '/employer/invitations', label: 'Приглашения' },
+  { href: '/employer/assistant', label: 'Помощник' },
 ];
 
 /** Якоря главной: показываются гостю только на «/». */

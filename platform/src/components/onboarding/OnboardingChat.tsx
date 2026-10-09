@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type OnboardingAction, completeOnboarding, onboardingAct, onboardingLater } from '@/lib/api';
+import type { EmployerRestoredChat } from '@/server/agent/employer/restore';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 import { checkInn } from '@/server/onboarding/inn';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { Chat } from '../Chat';
+import { AssistantChat, EMPLOYER_SUGGESTIONS } from '../employer/AssistantChat';
 import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, type ReplyLine, Thread, Typing, UserBubble } from '../chat/Thread';
 import { Brand } from '../shell/Brand';
 import { Button, VisuallyHidden } from '../ui';
@@ -25,6 +27,8 @@ export interface OnboardingChatProps {
   consentText: string[];
   /** После итога лента продолжается консультантом (только кандидат). */
   consultant?: { demo?: ChatDemoContext; restored?: RestoredChat };
+  /** После итога работодателя лента продолжается помощником по подбору. */
+  employerAssistant?: { demoNoLlm?: boolean; restored?: EmployerRestoredChat };
 }
 
 /** Шаги, где отвечают полем ввода внизу ленты. */
@@ -40,7 +44,7 @@ const draftOf = (s: StepView) => (s.kind === 'text' && typeof s.value === 'strin
  * Без «Далее» и счётчика шагов: прогресс — тонкая полоса. После итога та же лента продолжается
  * карьерным консультантом (Chat embedded). Логика шагов — на сервере; клиент показывает OnboardingView.
  */
-export function OnboardingChat({ initial, consentText, consultant }: OnboardingChatProps) {
+export function OnboardingChat({ initial, consentText, consultant, employerAssistant }: OnboardingChatProps) {
   const router = useRouter();
   const [view, setView] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -196,6 +200,7 @@ export function OnboardingChat({ initial, consentText, consultant }: OnboardingC
     else void finish(v.slice(3));
   };
   const consultantMode = isSummary && ready && !employer && consultant !== undefined;
+  const assistantMode = isSummary && ready && employer && employerAssistant !== undefined;
 
   const inn = cur.id === 'inn' && draft.trim() ? checkInn(draft) : null;
   const composerHint = inn?.ok ? 'Контрольная сумма сходится · реестр ФНС — демо, не подключён' : cur.kind === 'chips' && canType ? 'Enter — добавить своё' : undefined;
@@ -258,7 +263,7 @@ export function OnboardingChat({ initial, consentText, consultant }: OnboardingC
           {ready && isSummary && view.summary && (
             <AssistantRow mark={false} testId="ob-summary">
               <SummaryCard view={view} />
-              {(employer || !consultant) && <QuickReplies label="Что дальше" items={nextSteps} disabled={busy} onPick={onNext} />}
+              {(employer ? !employerAssistant : !consultant) && <QuickReplies label="Что дальше" items={nextSteps} disabled={busy} onPick={onNext} />}
             </AssistantRow>
           )}
         </Thread>
@@ -270,6 +275,24 @@ export function OnboardingChat({ initial, consentText, consultant }: OnboardingC
             embedded={{
               suggestions: nextSteps,
               onSuggestion: onNext,
+              beforeSend: async () => {
+                await ensureOnboarded();
+              },
+            }}
+          />
+        )}
+
+        {assistantMode && (
+          <AssistantChat
+            demoNoLlm={employerAssistant.demoNoLlm}
+            initial={employerAssistant.restored}
+            embedded={{
+              suggestions: [...EMPLOYER_SUGGESTIONS, ...nextSteps],
+              onSuggestion: (v) => {
+                if (!v.startsWith('go:') && !v.startsWith('goto:')) return false;
+                onNext(v);
+                return true;
+              },
               beforeSend: async () => {
                 await ensureOnboarded();
               },

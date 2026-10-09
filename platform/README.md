@@ -29,7 +29,7 @@ npm run dev                              # http://localhost:3000, GET /api/healt
 LLM_PROVIDER=stub
 LLM_STUB_DEMO=true        # извлекатель размечает резюме словарём каталога; ответы консультанта — шаблонами
 COLLECTOR_FIXTURES=true   # GitHub/Codeforces из фикстур eval/demo/*/links.json, без сети
-DEMO_LOGIN=true           # страница /demo со списком демо-аккаунтов; на проде выключить
+DEMO_LOGIN=true           # страница /demo: демо-аккаунты, «Новый пользователь» (онбординг с нуля), «пройти онбординг заново»; блок на /auth; на проде выключить
 
 bash scripts/db-local.sh start
 npx prisma migrate deploy

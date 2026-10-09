@@ -1,3 +1,4 @@
+import { resetEnvCache } from '@/server/env';
 import { POST as consent } from '@/app/api/auth/consent/route';
 import { POST as logout } from '@/app/api/auth/logout/route';
 import { GET as me } from '@/app/api/auth/me/route';
@@ -100,6 +101,18 @@ describe('демо-вход: кандидаты и работодатель', ()
     await prisma.candidate.create({ data: { id: 'demo-a', email: 'demo-a@example.test', name: 'Демо А', isDemo: true } });
     await prisma.company.create({ data: { id: 'demo-co-northstream', name: 'Нордстрим (демо)' } });
     await seedAuth(prisma);
+  });
+
+  it('без DEMO_LOGIN список и вход отвечают 404', async () => {
+    process.env.DEMO_LOGIN = 'false';
+    resetEnvCache();
+    try {
+      expect((await listDemo()).status).toBe(404);
+      expect((await demoLogin(jsonRequest('/api/demo/login', 'POST', { candidateId: 'demo-a' }))).status).toBe(404);
+    } finally {
+      process.env.DEMO_LOGIN = 'true';
+      resetEnvCache();
+    }
   });
 
   it('GET отдаёт и кандидатов, и работодателей с компанией', async () => {

@@ -18,9 +18,12 @@ const RESUME: string | { name: string; mimeType: string; buffer: Buffer } = proc
 test('С1: вход → резюме и ссылка → шаги → карточки → подтверждение → профиль', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Твой код.');
-  // главная ведёт на /auth, где лежат кнопки «Войти как …» (контракт лейна auth)
+  // главная ведёт на /auth (только Яндекс ID); демо-аккаунты лежат на /demo (DEMO_LOGIN=true)
   await page.getByRole('link', { name: /Приступим/ }).first().click();
   await page.waitForURL('**/auth');
+  await expect(page.getByRole('button', { name: /^Войти как / })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Демо для жюри' }).click();
+  await page.waitForURL('**/demo');
 
   // демо-вход за первого кандидата
   await page.getByRole('button', { name: /^Войти как / }).first().click();
@@ -58,7 +61,7 @@ test('С1: вход → резюме и ссылка → шаги → карто
 });
 
 test('С1: файл больше 5 МБ отклоняется сообщением, до сервера не уходит', async ({ page }) => {
-  await page.goto('/auth');
+  await page.goto('/demo');
   await page.getByRole('button', { name: /^Войти как / }).first().click();
   await page.waitForURL('**/consultant');
   await page.setInputFiles('input[type=file]', {

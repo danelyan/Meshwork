@@ -34,9 +34,10 @@
 `state` и PKCE (S256) поверх подписанной HMAC-куки сессии `cid`, без
 Auth.js и без новых зависимостей. Аккаунт `User` с ролью `pending → candidate |
 employer` (роль выбирается в онбординге), внешний вход — `AuthAccount
-(provider, providerAccountId)`, токены Яндекса не хранятся. Демо-вход за
-готовых кандидатов и демо-работодателя остаётся. Без
-`YANDEX_CLIENT_ID`/`YANDEX_CLIENT_SECRET` кнопка Яндекса неактивна.
+(provider, providerAccountId)`, токены Яндекса не хранятся. На `/auth` только Яндекс ID. Демо-аккаунты (готовые
+кандидаты и работодатель) — отдельная страница `/demo` и `/api/demo/login`,
+они доступны только при `DEMO_LOGIN=true` (на проде выключить, иначе 404).
+Без `YANDEX_CLIENT_ID`/`YANDEX_CLIENT_SECRET` кнопка Яндекса неактивна.
 Решение и альтернативы — [ADR 0001](decisions/0001-auth-yandex-id.md).
 
 ## Языковая модель

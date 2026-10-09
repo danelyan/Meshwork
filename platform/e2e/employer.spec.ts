@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// R-E-03..R-E-07: вход работодателя через /auth → подборка по потребности → приглашение →
+// R-E-03..R-E-07: вход работодателя через /demo → подборка по потребности → приглашение →
 // кандидат из пула принимает → работодатель видит контакты. Нужен сид (db:seed: auth, employer, recommend, claims).
 // Запускает интегратор; сценарий переживает повторный прогон (если приглашение уже есть — шаг отправки пропускается).
 const EMPLOYER = /Анна Кравец/;
@@ -8,7 +8,7 @@ const POOL_TOP = 'Глеб Соколов'; // первый в подборке 
 const VACANCY_URL = '**/employer/needs/demo-vac-be-m-1';
 
 async function loginFromAuth(page: Page, name: RegExp | string, landing: string) {
-  await page.goto('/auth');
+  await page.goto('/demo');
   // кандидаты пула работодателя свёрнуты в <details>; открываем, если нужный лежит там
   const button = page.getByRole('button', { name: typeof name === 'string' ? `Войти как Демо: ${name}` : name });
   if (!(await button.isVisible())) await page.getByText(/ещё \d+ кандидат/).click();
@@ -16,8 +16,8 @@ async function loginFromAuth(page: Page, name: RegExp | string, landing: string)
   await page.waitForURL(landing);
 }
 
-test('E-02: на /auth основной список короткий, кандидаты для подборки свёрнуты', async ({ page }) => {
-  await page.goto('/auth');
+test('E-02: на /demo основной список короткий, кандидаты для подборки свёрнуты', async ({ page }) => {
+  await page.goto('/demo');
   const more = page.getByText(/ещё \d+ кандидат\S* для подборки/);
   await expect(more).toBeVisible();
   const details = page.locator('details', { has: more });

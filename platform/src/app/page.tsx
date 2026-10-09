@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 
 import { Landing } from '@/components/landing/Landing';
 import { SHOWCASE } from '@/components/landing/showcase';
+import { getEnv } from '@/server/env';
 import { SESSION_COOKIE, verifySession } from '@/server/session';
 
 export const metadata: Metadata = {
@@ -14,5 +15,5 @@ export default async function HomePage() {
   const jar = await cookies();
   const signedIn = verifySession(jar.get(SESSION_COOKIE)?.value) !== null;
   // Витрина: фикстуры, без обращения к БД. Страница динамична только из-за чтения куки сессии.
-  return <Landing data={SHOWCASE} signedIn={signedIn} />;
+  return <Landing data={SHOWCASE} signedIn={signedIn} demoEnabled={getEnv().DEMO_LOGIN} />;
 }

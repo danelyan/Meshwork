@@ -104,7 +104,7 @@ Route handlers (/api/*): проверка подписанной куки, Zod, 
 | --- | --- | --- |
 | `GET /api/health` | стенд, мониторинг | `{ ok, db, llm, time }`; 503, если БД недоступна |
 | `GET /api/demo/login` | экран входа | список демо-кандидатов |
-| `POST /api/demo/login` `{ candidateId }` | экран входа | ставит куку; только для демо-кандидатов; выключается `DEMO_LOGIN=false` |
+| `POST /api/demo/login` `{ candidateId }` | страница `/demo` | ставит куку; только для демо-кандидатов; без `DEMO_LOGIN=true` — 404 |
 | `DELETE /api/demo/login` | шапка | сбрасывает куку |
 | `POST /api/uploads` (multipart `file`, `kind`) | чат | `{ uploadId, deduplicated, doc: { title, lines, pages, flags, preview } }`; ≤ 5 МБ (415, 413, 422 на ошибки) |
 | `POST /api/consultant/messages` `{ conversationId?, text, uploadIds?, urls? }` | чат | поток SSE: `conversation`, `step`, `queue`, `claims`, `ask`, `recommendations`, `message`, `error`, `done`; второй ход в том же разговоре — 409 `busy` |

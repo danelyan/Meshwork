@@ -65,6 +65,28 @@ function stage() {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('separate glass portrait', () => {
+  it('turns visibly toward the left edge and back across the page', async () => {
+    const s = stage();
+    vi.stubGlobal('innerWidth', 1280); vi.stubGlobal('innerHeight', 800);
+    const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
+    s.frame(50);
+    const point = (x: number) => {
+      const event = new Event('pointermove');
+      Object.assign(event, { clientX: x, clientY: 400, pointerType: 'mouse' });
+      document.dispatchEvent(event);
+    };
+    point(0);
+    for (let i = 1; i <= 25; i++) s.frame(50 + i * 50);
+    const left = s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1)!;
+    expect(left[1]).toBeLessThan(-.75);
+    expect(left[1]).toBeGreaterThan(-1);
+    point(1280);
+    for (let i = 1; i <= 25; i++) s.frame(1300 + i * 50);
+    const right = s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1)!;
+    expect(right[1]).toBeGreaterThan(.45);
+    expect(fetch).toHaveBeenCalledOnce();
+    renderer.dispose();
+  });
   it('renders both glass surfaces and refracts the static grid on a transparent local canvas', async () => {
     const s = stage();
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, true, vi.fn());

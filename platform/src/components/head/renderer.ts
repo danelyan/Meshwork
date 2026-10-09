@@ -100,7 +100,7 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     const pointer = (event: PointerEvent) => {
       if (paused || event.pointerType === 'touch') return;
       [pointerX, pointerY] = headPointer(event.clientX, event.clientY, innerWidth, innerHeight);
-      targetX = -.15 + pointerX * .32; targetY = .03 - pointerY * .15;
+      targetX = -.15 + pointerX * .7; targetY = .03 - pointerY * .15;
       schedule();
     };
     const leave = () => { if (paused) return; pointerX = 0; pointerY = 0; targetX = -.15; targetY = .03; schedule(); };

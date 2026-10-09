@@ -49,7 +49,7 @@ export const HEAD_URL = '/avatar/head.glb';
  * профиль снят скриптом при подготовке файла): линия рта, низ подбородка, ось челюсти на уровне ушей.
  */
 export const HEAD_MODEL = {
-  mouthY: 0.4,
+  mouthY: 0.365,
   chinY: 0.27,
   jawPivotY: 0.55,
   /** Максимальный угол челюсти, рад (≈ 10°). */
@@ -96,17 +96,34 @@ interface HeadUniforms {
 
 type Mode = 'attribute' | 'model';
 
-/** Процедурная челюсть: ниже рта, выше шеи, перед ушами — поворот `transformed` вокруг оси X на уровне ушей. */
+/**
+ * Процедурный рот без морфов: раскрытие в зоне губ (линия рта `uJawRegion.x`), а не поворот всей
+ * челюсти. Нижняя губа опускается (вес максимален у линии рта, затухает к подбородку), верхняя
+ * чуть поднимается, уголки сходятся к центру (округление), подбородок подхватывает лёгким поворотом
+ * вокруг оси ушей. Всё — только спереди (z > 0) и в ширине рта (|x| < ~0.14 в координатах модели).
+ */
 const JAW_GLSL = `
   {
-    float below = smoothstep(uJawRegion.x + 0.05, uJawRegion.x - 0.06, position.y);
-    float aboveNeck = smoothstep(uJawRegion.y - 0.04, uJawRegion.y + 0.03, position.y);
-    float front = smoothstep(-0.12, 0.1, position.z);
-    float a = uJaw * uJawRegion.w * below * aboveNeck * front;
-    float c = cos(a), s = sin(a);
-    vec2 p = vec2(transformed.y - uJawRegion.z, transformed.z);
-    transformed.y = uJawRegion.z + p.x * c - p.y * s;
-    transformed.z = p.x * s + p.y * c;
+    float mouthY = uJawRegion.x;
+    float width = 1.0 - smoothstep(0.09, 0.17, abs(position.x));
+    float front = smoothstep(0.1, 0.3, position.z);
+    float open = uJaw * width * front;
+    // нижняя губа и подбородок: сильнее у линии рта, к низу подбородка — слабее
+    float lower = smoothstep(mouthY + 0.012, mouthY - 0.01, position.y) * smoothstep(uJawRegion.y - 0.05, mouthY - 0.03, position.y);
+    // верхняя губа: узкая полоса над линией рта
+    float upper = smoothstep(mouthY - 0.012, mouthY + 0.01, position.y) * (1.0 - smoothstep(mouthY + 0.02, mouthY + 0.06, position.y));
+    transformed.y -= open * (0.042 * lower - 0.008 * upper);
+    // растянутая полоса между губами — «полость рта», во фрагменте гасится до тёмного
+    vMouth = open * smoothstep(mouthY + 0.015, mouthY + 0.004, position.y) * smoothstep(mouthY - 0.03, mouthY - 0.012, position.y);
+    // уголки сходятся — рот округляется
+    transformed.x *= 1.0 - open * 0.14 * (lower + upper);
+    // подбородок слегка следует за нижней губой (поворот вокруг оси ушей, ~1/3 от прежней челюсти)
+    float chin = smoothstep(mouthY, uJawRegion.y - 0.02, position.y) * smoothstep(uJawRegion.y - 0.06, uJawRegion.y - 0.02, position.y);
+    float a = uJaw * uJawRegion.w * 0.35 * chin * smoothstep(-0.12, 0.1, position.z);
+    float c = cos(a), sn = sin(a);
+    vec2 pv = vec2(transformed.y - uJawRegion.z, transformed.z);
+    transformed.y = uJawRegion.z + pv.x * c - pv.y * sn;
+    transformed.z = pv.x * sn + pv.y * c;
   }`;
 
 const JAW_REGION = [HEAD_MODEL.mouthY, HEAD_MODEL.chinY, HEAD_MODEL.jawPivotY, HEAD_MODEL.jawAngle];
@@ -145,6 +162,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         varying vec2 vGridUv;
         varying vec3 vModelPos;
         varying vec3 vModelNormal;
+        varying float vMouth;
         uniform float uJaw;
         uniform vec4 uJawRegion;`,
       )
@@ -153,6 +171,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         `#include <uv_vertex>
         vModelPos = position;
         vModelNormal = normal;
+        vMouth = 0.0;
         #ifdef FSP_MODEL
           vGridUv = vec2(atan(position.x, position.z) / 6.2831853 + 0.5, position.y);
         #else
@@ -174,6 +193,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         varying vec2 vGridUv;
         varying vec3 vModelPos;
         varying vec3 vModelNormal;
+        varying float vMouth;
         uniform vec2 uGrid;
         uniform float uWidth;
         uniform float uTime;
@@ -206,6 +226,8 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
+        // полость открытого рта: темно, без нитей
+        float mouthDark = 1.0 - clamp(vMouth * 2.5, 0.0, 0.92);
         #ifdef FSP_METAL
         {
           // первый вариант: светлый металл, тёмная клетка (крупнее, чем у нитей)
@@ -248,6 +270,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
           diffuseColor.rgb = mix(FSP_DARK, diffuseColor.rgb, clamp(line, 0.0, 1.0));
         }
         #endif
+        diffuseColor.rgb *= mouthDark;
         #ifdef FSP_CHROME
         {
           // полосы отражений студийного света бегут по металлу (HeadLab «живой хром»)
@@ -257,6 +280,9 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         }
         #endif`,
       )
+      // в полости рта нет ни металла, ни бликов окружения
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(1.0, roughnessFactor, mouthDark);')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor *= mouthDark;')
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
@@ -307,6 +333,7 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
       uniform vec4 uJawRegion;
       varying float vFacing;
       varying float vSeed;
+      varying float vMouth;
       float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
       void main() {
         vec3 transformed = position;

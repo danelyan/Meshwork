@@ -60,7 +60,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
       return 'Теперь про работу.';
     case 'grade': {
       const s = specLabel(ctx.answers.specialization);
-      if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s}, ` : ''}хочешь подтвердить грейд — значит, начнём с твоей оценки.`;
+      if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s} — понял. ` : ''}Раз хочешь подтвердить грейд, скажи, на какой претендуешь.`;
       return s ? `${s} — понял.` : 'Понял.';
     }
     case 'stack':

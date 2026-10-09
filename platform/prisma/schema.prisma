@@ -44,6 +44,8 @@ enum LlmPurpose {
   evaluator
   interviewer
   smoke
+  /// Помощник работодателя (lane emp-agent)
+  employer_assistant
 }
 
 model Candidate {
@@ -492,6 +494,8 @@ model EmployerProfile {
   createdAt   DateTime     @default(now())
   /// lane employer
   invitations Invitation[]
+  /// lane emp-agent: разговоры с помощником работодателя
+  assistantConversations EmployerConversation[]
 
   @@index([companyId])
 }
@@ -659,4 +663,37 @@ model TestItem {
   answeredAt   DateTime?
 
   @@unique([attemptId, index])
+}
+
+// =============================================================================
+// Помощник работодателя (lane emp-agent). Отдельно от Conversation/Message кандидата:
+// кандидатский и работодательский контексты не смешиваются в одной таблице.
+// =============================================================================
+
+model EmployerConversation {
+  id                String          @id @default(cuid())
+  employerProfileId String
+  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+  title             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  messages EmployerMessage[]
+
+  @@index([employerProfileId, updatedAt])
+}
+
+model EmployerMessage {
+  id             String               @id @default(cuid())
+  conversationId String
+  conversation   EmployerConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String
+  /// ToolCall[] (server/llm/types.ts) — у assistant
+  toolCalls      Json?
+  /// у tool
+  toolCallId     String?
+  createdAt      DateTime             @default(now())
+
+  @@index([conversationId, createdAt])
 }

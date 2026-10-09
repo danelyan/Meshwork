@@ -8,7 +8,7 @@ import type { AgentTool } from './types';
  * бэкендов его не принимает). Общий хелпер LLM-слоя — llm/schema.ts.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function toolSpecs(tools: AgentTool<any, any>[]): ToolSpec[] {
+export function toolSpecs(tools: AgentTool<any, any, any>[]): ToolSpec[] {
   return tools.map((t) => ({
     name: t.name,
     description: t.description,

@@ -31,10 +31,10 @@ export function serializeToolResult(result: unknown, maxChars = TOOL_RESULT_MAX_
  * падает (ТЗ: невалидные аргументы → ошибка инструменту). Untrusted-результат
  * оборачивается в `<external_data>` целиком.
  */
-export async function dispatchToolCall(
+export async function dispatchToolCall<C extends { signal?: AbortSignal } = ToolContext>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tools: AgentTool<any, any>[],
-  ctx: ToolContext,
+  tools: AgentTool<any, any, C>[],
+  ctx: C,
   call: ToolCall,
 ): Promise<DispatchResult> {
   const tool = tools.find((t) => t.name === call.name);

@@ -25,12 +25,13 @@ export interface ToolContext {
   signal?: AbortSignal;
 }
 
-export interface AgentTool<I, O> {
+/** C — контекст роли: кандидат (ToolContext) или работодатель (employer/types.ts). */
+export interface AgentTool<I, O, C = ToolContext> {
   name: string;
   description: string;
   input: ZodType<I>;
   output: ZodType<O>;
-  handler(ctx: ToolContext, input: I): Promise<O>;
+  handler(ctx: C, input: I): Promise<O>;
   /**
    * Результат содержит текст извне (документ, страница, README, ответ API):
    * цикл оборачивает его в `<external_data … trust="untrusted">` целиком.

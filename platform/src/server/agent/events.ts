@@ -6,7 +6,7 @@ import type { AgentEvent } from './types';
  * U+2028/U+2029 тоже экранируем: в JSON они допустимы, но некоторые парсеры
  * строк считают их концом строки.
  */
-export function encodeSse(event: AgentEvent): string {
+export function encodeSse(event: AgentEvent | { type: string }): string {
   const json = JSON.stringify(event).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   return `data: ${json}\n\n`;
 }

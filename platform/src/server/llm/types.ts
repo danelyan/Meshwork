@@ -24,7 +24,7 @@ export interface ToolSpec {
   parameters: object;
 }
 
-export type LlmPurpose = 'consultant' | 'extractor' | 'evaluator' | 'interviewer' | 'smoke';
+export type LlmPurpose = 'consultant' | 'employer_assistant' | 'extractor' | 'evaluator' | 'interviewer' | 'smoke';
 
 export interface CompleteRequest {
   purpose: LlmPurpose;

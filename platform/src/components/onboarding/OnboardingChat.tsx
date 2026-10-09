@@ -374,6 +374,7 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
             onSubmit={submitDraft}
             disabled={!canType}
             sending={docs.running}
+            voice={canType && cur.id !== 'inn' && cur.kind !== 'chips'}
             multiline={(cur.maxLength ?? 0) > 200 || cur.kind === 'files'}
             maxLength={cur.kind === 'text' ? cur.maxLength : cur.kind === 'files' ? 4000 : 60}
             attachments={cur.kind === 'files' && ready ? { files: att.files, onAdd: att.add, onRemove: att.remove } : undefined}

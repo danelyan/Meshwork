@@ -119,3 +119,16 @@
   .composerHint { display: none; }
 }
 .files { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 0; list-style: none; font-family: var(--mono); font-size: var(--fs-sm); opacity: 0.85; }
+
+/* голосовой ввод (VoiceButton): кольцо уровня сигнала, статус записи, объяснение перед первым доступом к микрофону */
+.voiceWrap { position: relative; display: flex; }
+.recording { color: var(--on-ink); background: var(--blue); box-shadow: 0 0 0 calc(2px + var(--level, 0) * 8px) var(--line); transition: box-shadow 0.08s linear; }
+.recording:not([style]) { animation: pulse 1.2s var(--ease) infinite; }
+.voiceStatus { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 6; width: max-content; max-width: min(320px, 80vw); padding: 6px 10px; background: var(--ink); color: var(--on-ink); font: 500 var(--fs-xs) var(--mono); }
+.voiceError { background: var(--surface-notice); color: var(--error); border: 1px solid var(--danger-border); }
+.voicePop { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 7; width: min(320px, 86vw); display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; background: var(--glass-strong); border: 1px solid var(--line); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); font-size: var(--fs-sm); line-height: 1.45; animation: rise 0.16s var(--ease); }
+.voicePop small { color: var(--muted); font-size: var(--fs-xs); }
+.voiceActions { display: flex; gap: 14px; align-items: center; }
+.voiceGo { height: 36px; padding: 0 14px; background: var(--blue); color: var(--on-ink); border: 0; font: 600 var(--fs-sm) var(--font); cursor: pointer; }
+.voiceGo:hover { background: var(--ink); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 6px var(--line); } }

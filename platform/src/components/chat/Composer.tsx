@@ -7,6 +7,7 @@ import { Spinner, VisuallyHidden, cx } from '../ui';
 import { AttachmentChip, AttachmentLimitsHint } from './AttachmentChip';
 import { ATTACH_ACCEPT, ATTACH_LIMITS, type Attachment } from './attachments';
 import styles from './thread.module.css';
+import { VoiceButton } from './VoiceButton';
 
 export interface ComposerAttachments {
   files: Attachment[];
@@ -37,8 +38,8 @@ export interface ComposerProps {
   allowEmpty?: boolean;
   /** Вложения: скрепка, чипы, drag-n-drop на всю ленту, вставка файла. */
   attachments?: ComposerAttachments;
-  /** Слот у кнопки отправки (голосовой ввод). */
-  voice?: ReactNode;
+  /** Кнопка микрофона: надиктовать текст в поле (VoiceButton; режим — GET /api/stt). */
+  voice?: boolean;
 }
 
 /**
@@ -158,7 +159,7 @@ export function Composer({
           inputMode={inputMode}
           autoComplete="off"
         />
-        {voice}
+        {voice && <VoiceButton value={value} onChange={onChange} disabled={disabled} />}
         <button type="submit" className={styles.send} disabled={!canSend} aria-busy={sending || undefined} data-sending={sending || undefined}>
           <span>{sendLabel}</span>
           {sending && (

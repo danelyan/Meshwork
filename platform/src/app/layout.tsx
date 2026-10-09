@@ -7,6 +7,7 @@ import { ShellFrame } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
 import { SiteHeader } from '@/components/shell/SiteHeader';
 import { getEnv } from '@/server/env';
+import { sttMode } from '@/server/stt';
 
 import '@/styles/tokens.css';
 
@@ -36,7 +37,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru" className={`${golos.variable} ${mono.variable}`}>
-      <body>
+      {/* data-stt — режим голосового ввода для композера чата (server/stt, env STT_PROVIDER) */}
+      <body data-stt={sttMode()}>
         <ShellFrame header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
           {children}
         </ShellFrame>

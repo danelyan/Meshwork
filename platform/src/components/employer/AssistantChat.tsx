@@ -179,6 +179,7 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
         }}
         placeholder="Подбери под мою потребность Backend Middle"
         sending={busy}
+        voice
         multiline
         maxLength={4000}
         hint="Enter — отправить, Shift+Enter — новая строка"

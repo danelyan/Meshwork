@@ -249,6 +249,7 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
         placeholder="Напиши, прикрепи резюме или вставь ссылку"
         sending={busy}
         multiline
+        voice
         maxLength={8000}
         attachments={{ files: att.files, onAdd: att.add, onRemove: att.remove }}
         hint="Enter — отправить, Shift+Enter — новая строка"

@@ -1,0 +1,44 @@
+import { getEnv } from '@/server/env';
+import { errors, withErrors } from '@/server/errors';
+import { getSession } from '@/server/session';
+import { STT_MAX_BYTES, STT_SAMPLE_RATE, recognizeYandex, sttMode } from '@/server/stt';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+/** Какой распознаватель доступен композеру: yandex / browser / off. */
+export const GET = withErrors(async () => Response.json({ mode: sttMode(), sampleRate: STT_SAMPLE_RATE, maxBytes: STT_MAX_BYTES }));
+
+/**
+ * Голос → текст через Yandex SpeechKit. Тело — LPCM 16 бит моно 16 кГц (`audio/l16`), до 1 МБ (≈ 30 с).
+ * Только для вошедших. Аудио не сохраняется: читаем поток в память, отдаём SpeechKit, забываем.
+ */
+export const POST = withErrors(async (req: Request) => {
+  if (!getSession(req)) throw errors.unauthorized();
+  if (sttMode() !== 'yandex') throw errors.badRequest('Серверное распознавание выключено');
+  const declared = Number(req.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > STT_MAX_BYTES) throw errors.payloadTooLarge('Запись длиннее 30 секунд — скажи короче');
+  if (!req.body) throw errors.badRequest('Пустая запись');
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > STT_MAX_BYTES) {
+      await reader.cancel().catch(() => undefined);
+      throw errors.payloadTooLarge('Запись длиннее 30 секунд — скажи короче');
+    }
+    chunks.push(value);
+  }
+  const audio = new Uint8Array(size);
+  let off = 0;
+  for (const c of chunks) {
+    audio.set(c, off);
+    off += c.byteLength;
+  }
+  const env = getEnv();
+  const text = await recognizeYandex(audio, { apiKey: env.YANDEX_API_KEY as string, folderId: env.YANDEX_FOLDER_ID, signal: req.signal });
+  return Response.json({ text });
+});

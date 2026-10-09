@@ -1,38 +1,54 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui';
 import { createHeadRenderer, type HeadRenderer } from './renderer';
 import styles from './ConsultantScene.module.css';
 
-/** Decorative only: never captures focus, touch, scroll, or chat input. */
+/** Decorative surface; only the explicit motion toggle accepts input. */
 export function ConsultantHead() {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const anchor = useRef<HTMLDivElement>(null);
+  const current = useRef<HeadRenderer | undefined>(undefined);
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const [state, setState] = useState<'loading' | 'ready' | 'fallback'>('loading');
+  useEffect(() => {
+    pausedRef.current = paused;
+    current.current?.setPaused?.(paused);
+  }, [paused]);
   useEffect(() => {
     const desktop = matchMedia('(min-width: 1051px)');
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     let stop = () => {};
     const sync = () => {
       stop();
-      if (!desktop.matches || !canvas.current) return;
+      setReducedMotion(motion.matches);
+      if (!desktop.matches || !canvas.current || !anchor.current) return;
       const controller = new AbortController();
       let renderer: HeadRenderer | undefined;
       setState('loading');
-      stop = () => { controller.abort(); renderer?.dispose(); };
+      stop = () => { controller.abort(); renderer?.dispose(); current.current = undefined; };
       createHeadRenderer(canvas.current, controller.signal, motion.matches, () => {
         stop(); setState('fallback');
-      }).then(instance => {
+      }, anchor.current).then(instance => {
         if (controller.signal.aborted) { instance.dispose(); return; }
-        renderer = instance; setState('ready');
+        renderer = instance; current.current = instance;
+        instance.setPaused?.(pausedRef.current); setState('ready');
       }).catch(() => { if (!controller.signal.aborted) setState('fallback'); });
     };
     desktop.addEventListener('change', sync); motion.addEventListener('change', sync); sync();
     return () => { stop(); desktop.removeEventListener('change', sync); motion.removeEventListener('change', sync); };
   }, []);
-  return <div className={styles.portrait} aria-hidden="true" data-head-state={state}>
-    <canvas ref={canvas} className={styles.canvas} />
-    {state !== 'ready' && <div className={styles.fallback}><Image src="/models/head-reference.png" alt="" width={332} height={313} unoptimized /></div>}
-    <span className={styles.caption}>Карьерный консультант / ФСП</span>
-  </div>;
+  return <>
+    <canvas ref={canvas} className={styles.canvas} aria-hidden="true" />
+    <div ref={anchor} className={styles.portrait} data-head-state={state}>
+      <div className={styles.caption}>
+        {state === 'ready' && !reducedMotion && <Button size="sm" className={styles.motionToggle} onClick={() => setPaused(value => !value)}>
+          {paused ? 'Включить анимацию' : 'Остановить анимацию'}
+        </Button>}
+      </div>
+    </div>
+  </>;
 }

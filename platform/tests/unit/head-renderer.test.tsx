@@ -1,6 +1,8 @@
 import { createHeadRenderer } from '@/components/head/renderer';
 
 vi.mock('@/components/head/model', () => ({
+  softenForehead: (model: { positions: Float32Array }) => model.positions,
+  repairedNormals: (model: { normals: Float32Array }) => model.normals,
   parseHeadGlb: () => ({
     positions: new Float32Array([0, 0, 0]),
     normals: new Float32Array([0, 0, 1]),
@@ -14,6 +16,14 @@ function stage() {
     ARRAY_BUFFER: 1, ELEMENT_ARRAY_BUFFER: 2, FLOAT: 3, VERTEX_SHADER: 4,
     FRAGMENT_SHADER: 5, COMPILE_STATUS: 6, LINK_STATUS: 7, DEPTH_TEST: 8,
     LEQUAL: 9, COLOR_BUFFER_BIT: 16, DEPTH_BUFFER_BIT: 32, TRIANGLES: 10, UNSIGNED_INT: 11,
+    FRAMEBUFFER: 40, FRAMEBUFFER_COMPLETE: 41, TEXTURE_2D: 42, TEXTURE0: 43,
+    RGBA8: 44, RGBA: 45, UNSIGNED_BYTE: 46, DEPTH_COMPONENT16: 47,
+    createVertexArray: vi.fn(() => ({})), bindVertexArray: vi.fn(), deleteVertexArray: vi.fn(),
+    createTexture: vi.fn(() => ({})), bindTexture: vi.fn(), texParameteri: vi.fn(), texImage2D: vi.fn(), activeTexture: vi.fn(), deleteTexture: vi.fn(),
+    createFramebuffer: vi.fn(() => ({})), bindFramebuffer: vi.fn(), framebufferTexture2D: vi.fn(), framebufferRenderbuffer: vi.fn(), deleteFramebuffer: vi.fn(),
+    createRenderbuffer: vi.fn(() => ({})), bindRenderbuffer: vi.fn(), renderbufferStorage: vi.fn(), deleteRenderbuffer: vi.fn(),
+    checkFramebufferStatus: vi.fn(() => 41), disable: vi.fn(), drawArrays: vi.fn(), uniform1i: vi.fn(),
+    depthMask: vi.fn(), clearDepth: vi.fn(), colorMask: vi.fn(),
     createShader: vi.fn(() => ({})), shaderSource: vi.fn(), compileShader: vi.fn(),
     getShaderParameter: vi.fn(() => true), createProgram: vi.fn(() => ({})),
     attachShader: vi.fn(), linkProgram: vi.fn(), getProgramParameter: vi.fn(() => true), useProgram: vi.fn(),
@@ -61,7 +71,12 @@ describe('grid relief stage', () => {
     s.frame(40);
     expect(s.canvas.width).toBe(600); // DPR capped to 1.5.
     expect(s.canvas.height).toBe(900);
-    expect(s.gl.uniform1f).toHaveBeenCalledWith('uDpr', 1.5);
+    expect(s.gl.uniform2f).toHaveBeenCalledWith('uPageOffset', 0, 0);
+    expect(s.gl.drawArrays).toHaveBeenCalledOnce();
+    expect(s.gl.uniform1f).toHaveBeenCalledWith('uTime', 0);
+    // An unbound renderbuffer name cannot be attached; a color-only FBO can
+    // still report COMPLETE and would let back triangles overwrite the face.
+    expect(s.gl.bindRenderbuffer.mock.invocationCallOrder[0]).toBeLessThan(s.gl.framebufferRenderbuffer.mock.invocationCallOrder[0]!);
     expect(s.gl.uniform4f).toHaveBeenLastCalledWith('uViewport', 720, 120, 400, 600);
     expect(s.canvas.dataset.rendered).toBe('grid-relief');
     expect(s.queued.size).toBe(0);
@@ -77,11 +92,51 @@ describe('grid relief stage', () => {
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
     renderer.dispose(); renderer.dispose();
     expect(s.gl.deleteBuffer).toHaveBeenCalledTimes(3);
-    expect(s.gl.deleteShader).toHaveBeenCalledTimes(2);
-    expect(s.gl.deleteProgram).toHaveBeenCalledOnce();
+    expect(s.gl.deleteShader).toHaveBeenCalledTimes(4);
+    expect(s.gl.deleteProgram).toHaveBeenCalledTimes(2);
+    expect(s.gl.deleteTexture).toHaveBeenCalledOnce();
+    expect(s.gl.deleteFramebuffer).toHaveBeenCalledOnce();
+    expect(s.gl.deleteRenderbuffer).toHaveBeenCalledOnce();
+    expect(s.gl.deleteVertexArray).toHaveBeenCalledTimes(2);
     expect(s.disconnect).toHaveBeenCalledTimes(2);
     expect(s.queued.size).toBe(0);
     document.dispatchEvent(new Event('scroll'));
     expect(s.queued.size).toBe(0);
+  });
+
+  it('freezes motion and resumes without reloading the model', async () => {
+    const s = stage();
+    const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
+    s.frame(50); s.frame(100);
+    expect(s.queued.size).toBe(1);
+    renderer.setPaused?.(true); s.frame(150);
+    expect(s.queued.size).toBe(0);
+    const pose = s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1);
+    const phase = s.gl.uniform1f.mock.calls.filter(call => call[0] === 'uTime').at(-1);
+    document.dispatchEvent(new Event('scroll')); s.frame(1000);
+    expect(s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1)).toEqual(pose);
+    expect(s.gl.uniform1f.mock.calls.filter(call => call[0] === 'uTime').at(-1)).toEqual(phase);
+    renderer.setPaused?.(false); s.frame(1050);
+    expect(s.queued.size).toBe(1);
+    expect(fetch).toHaveBeenCalledOnce();
+    renderer.dispose();
+  });
+
+  it('releases both rendering passes when the request is aborted', async () => {
+    const s = stage(), controller = new AbortController();
+    await createHeadRenderer(s.canvas, controller.signal, false, vi.fn());
+    controller.abort();
+    expect(s.gl.deleteFramebuffer).toHaveBeenCalledOnce();
+    expect(s.queued.size).toBe(0);
+  });
+
+  it('projects the right-column anchor relative to the full sheet', async () => {
+    const s = stage(), anchor = document.createElement('div');
+    vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(new DOMRect(900, 160, 200, 400));
+    const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, true, vi.fn(), anchor);
+    s.frame(40);
+    expect(s.gl.uniform4f).toHaveBeenCalledWith('uAnchor', 180, 40, 200, 400);
+    expect(s.gl.uniform2f).toHaveBeenCalledWith('uStage', 400, 600);
+    renderer.dispose();
   });
 });

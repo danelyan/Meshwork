@@ -1,4 +1,4 @@
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { ConsultantHead } from '@/components/head/ConsultantHead';
 import { ConsultantScene } from '@/components/head/ConsultantScene';
 import { createHeadRenderer, type HeadRenderer } from '@/components/head/renderer';
@@ -38,9 +38,25 @@ describe('decorative consultant portrait', () => {
     expect(container.querySelector('canvas')?.tabIndex).toBe(-1);
     const args = vi.mocked(createHeadRenderer).mock.calls[0]!;
     expect(args[2]).toBe(true);
+    expect(args[4]).toBe(container.querySelector('[data-head-state]'));
+    expect(container.querySelector('button')).toBeNull();
     unmount();
     expect(args[1].aborted).toBe(true);
     expect(dispose).toHaveBeenCalledOnce();
+  });
+
+  it('provides an accessible pause control without reloading the model', async () => {
+    media();
+    const setPaused = vi.fn();
+    vi.mocked(createHeadRenderer).mockResolvedValue({ dispose: vi.fn(), setPaused });
+    const { getByRole } = render(<ConsultantHead />);
+    const pause = await waitFor(() => getByRole('button', { name: 'Остановить анимацию' }));
+    expect(pause.closest('[aria-hidden="true"]')).toBeNull();
+    fireEvent.click(pause);
+    expect(setPaused).toHaveBeenLastCalledWith(true);
+    fireEvent.click(getByRole('button', { name: 'Включить анимацию' }));
+    expect(setPaused).toHaveBeenLastCalledWith(false);
+    expect(createHeadRenderer).toHaveBeenCalledOnce();
   });
 
   it('disposes a late model initialization after unmount', async () => {
@@ -54,12 +70,13 @@ describe('decorative consultant portrait', () => {
     expect(dispose).toHaveBeenCalledOnce();
   });
 
-  it('shows the static portrait when WebGL cannot initialize', async () => {
+  it('keeps the static background without a separate portrait when WebGL cannot initialize', async () => {
     media();
     vi.mocked(createHeadRenderer).mockRejectedValue(new Error('WebGL unavailable'));
     const { container } = render(<ConsultantHead />);
     await waitFor(() => expect(container.querySelector('[data-head-state]')?.getAttribute('data-head-state')).toBe('fallback'));
-    expect(container.querySelector('img')?.getAttribute('src')).toBe('/models/head-reference.png');
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('canvas')).not.toBeNull();
   });
 
   it('releases the renderer and listeners when resized to mobile', async () => {

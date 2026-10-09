@@ -57,8 +57,40 @@ export interface DemoCandidate {
 }
 
 export const getDemoCandidates = async () => (await request<{ candidates: DemoCandidate[] }>('/api/demo/login')).candidates;
-export const demoLogin = (candidateId: string) => postJson<{ candidate: { id: string; name: string } }>('/api/demo/login', { candidateId });
+export const demoLogin = (candidateId: string) => postJson<{ candidate: { id: string; name: string }; next?: string }>('/api/demo/login', { candidateId });
 export const demoLogout = () => request<{ ok: true }>('/api/demo/login', { method: 'DELETE' });
+
+// --- lane auth: вход, роль, согласие (docs/decisions/0001-auth-yandex-id.md) ---
+
+export interface DemoEmployer {
+  id: string;
+  name: string;
+  company: { id: string; name: string } | null;
+}
+
+export const getDemoAccounts = () => request<{ candidates: DemoCandidate[]; employers?: DemoEmployer[] }>('/api/demo/login');
+export const demoEmployerLogin = (employerUserId: string) =>
+  postJson<{ employer: { id: string; name: string }; next: string }>('/api/demo/login', { employerUserId });
+export const logout = () => postJson<{ ok: true }>('/api/auth/logout', {});
+
+export interface MeView {
+  id: string;
+  role: 'pending' | 'candidate' | 'employer';
+  name: string;
+  email: string | null;
+  isDemo: boolean;
+  candidateId: string | null;
+  employerProfileId: string | null;
+  onboarded: boolean;
+  /** Есть согласие на текущую версию текста. */
+  consent: boolean;
+}
+export const getMe = async () => (await request<{ user: MeView | null }>('/api/auth/me')).user;
+export const getConsentVersion = async () => (await request<{ version: string }>('/api/auth/consent')).version;
+export const acceptConsent = (version: string) => postJson<{ version: string; acceptedAt: string }>('/api/auth/consent', { version });
+export const chooseRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName: string }) =>
+  postJson<{ role: MeView['role']; candidateId: string | null; employerProfileId: string | null }>('/api/auth/role', body);
+export const completeOnboarding = () => postJson<{ onboarded: true; next: string }>('/api/auth/onboarding/complete', {});
 
 export const getProfile = () => request<ProfileView>('/api/profile');
 

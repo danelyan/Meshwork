@@ -1,0 +1,27 @@
+/* Экран входа /auth (lane auth): Яндекс ID + демо-вход. Токены — styles/tokens.css. */
+.wrap { max-width: 1120px; margin: 0 auto; padding: 56px var(--page-pad) 72px; display: grid; gap: 40px; }
+.head { display: grid; gap: 14px; max-width: 640px; }
+.title { margin: 0; font-size: clamp(36px, 5vw, 64px); line-height: 0.98; letter-spacing: -0.05em; }
+.lead { margin: 0; font-size: 18px; line-height: 1.55; color: var(--text-soft); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 32px; align-items: start; }
+.block { display: grid; gap: 14px; align-content: start; }
+.blockTitle { margin: 0; font-size: clamp(22px, 2.2vw, 28px); letter-spacing: -0.04em; border-top: 1.5px solid var(--ink); padding-top: 14px; }
+.yandex { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 22px; font-weight: 600; text-decoration: none; }
+.yandex[aria-disabled='true'] { opacity: 0.5; pointer-events: none; }
+.ya { width: 22px; height: 22px; flex: none; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.item { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; padding: 12px 14px; background: var(--glass); border: 1px solid var(--glass-border); --avatar: 44px; }
+.item:hover:not(:disabled) { border-color: var(--ink); }
+.item:disabled { opacity: 0.6; }
+.who { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.name { font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.sub { font-family: var(--mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.group { margin: 6px 0 0; font-family: var(--mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 30px 16px 40px; gap: 28px; }
+  .lead { font-size: 16px; }
+}

@@ -42,6 +42,10 @@ export const envSchema = z
     OPENAI_CHAT_SUPPORTS_TOOLS: z.stringbool().default(true),
     OPENAI_CHAT_SUPPORTS_JSON_SCHEMA: z.stringbool().default(true),
 
+    /** Вход через Яндекс ID (oauth.yandex.ru). Не заданы → кнопка входа неактивна, работает демо-вход. */
+    YANDEX_CLIENT_ID: optionalString,
+    YANDEX_CLIENT_SECRET: optionalString,
+
     GITHUB_TOKEN: optionalString,
     /** true → сборщик не ходит в сеть за профилями, только фикстуры (демо-стенд, тесты). */
     COLLECTOR_FIXTURES: z.stringbool().default(false),

@@ -67,6 +67,8 @@ model Candidate {
   recommendations Recommendation[]
   invitations     Invitation[]
   defenseSessions DefenseSession[]
+  /// lane auth: аккаунт входа (null у старых демо-кандидатов до первого демо-входа)
+  user            User?
 }
 
 model CandidateCategory {
@@ -314,6 +316,8 @@ model Company {
   description String?
   isDemo      Boolean   @default(true)
   vacancies   Vacancy[]
+  /// lane auth: представители компании
+  employers   EmployerProfile[]
 }
 
 model Vacancy {
@@ -398,4 +402,72 @@ model DefenseTurn {
   createdAt DateTime       @default(now())
 
   @@unique([sessionId, index])
+}
+
+// =============================================================================
+// lane: auth — аккаунты, внешние входы, роль, согласие (docs/decisions/0001-auth-yandex-id.md)
+// =============================================================================
+
+/// pending — вошёл, роль ещё не выбрана в онбординге.
+enum UserRole {
+  pending
+  candidate
+  employer
+}
+
+/// Аккаунт входа. Профиль роли — отдельной записью (Candidate или EmployerProfile),
+/// чтобы не трогать связи Candidate с остальными таблицами.
+model User {
+  id          String    @id @default(cuid())
+  role        UserRole  @default(pending)
+  name        String
+  /// Из Яндекса; null, если почту не отдали. Не уникален: аккаунты по почте не склеиваем.
+  email       String?
+  isDemo      Boolean   @default(false)
+  /// Онбординг завершён (ставит markOnboarded). null → после входа редирект на /onboarding.
+  onboardedAt DateTime?
+  candidateId String?   @unique
+  candidate   Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  accounts        AuthAccount[]
+  employerProfile EmployerProfile?
+  consents        Consent[]
+}
+
+/// Внешний аккаунт (Яндекс ID). Токены провайдера не храним.
+model AuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  lastLoginAt       DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model EmployerProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+}
+
+/// Факт согласия на обработку ПДн (R-C-14, 152-ФЗ): версия текста + время. Записи не удаляются.
+model Consent {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version    String
+  acceptedAt DateTime @default(now())
+
+  @@index([userId, acceptedAt])
 }

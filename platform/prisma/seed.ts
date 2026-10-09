@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 import { loadPlatformEnv } from '../scripts/load-env.mjs';
 
+import { seedAuth } from './seed/auth';
 import { seedClaims } from './seed/claims';
 import { seedRecommend } from './seed/recommend';
 
@@ -51,6 +52,8 @@ async function main() {
   // Порядок важен: recommend ссылается на каталог утверждений.
   await seedClaims(prisma);
   await seedRecommend(prisma);
+  // После recommend: демо-работодатель ссылается на засеянную компанию.
+  await seedAuth(prisma);
 }
 
 main()

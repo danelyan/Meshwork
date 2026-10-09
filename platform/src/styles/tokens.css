@@ -51,6 +51,14 @@
   --tag-red-text: var(--ink);
   --backdrop: rgba(17, 17, 17, 0.42);
 
+  /* добавлено лейном ds: замена «сырых» цветов в модулях, см. docs/design-system.md */
+  --on-ink: #ffffff; /* текст/иконка на чёрном и синем фоне */
+  --on-ink-soft: rgba(255, 255, 255, 0.8); /* вторичный текст на синем/чёрном */
+  --surface-ghost: rgba(255, 255, 255, 0.6); /* фон кнопки-призрака и чипа */
+  --surface-quote: rgba(17, 17, 17, 0.04); /* подложка цитаты */
+  --meter-off: var(--line);
+  --meter-on: var(--blue);
+
   /* форма: квадратная эстетика, spec §4 */
   --radius-sm: 0;
   --radius: 0;

@@ -2,17 +2,17 @@
 
 ## Project Structure & Module Organization
 
-The Git repository contains the FSP Career frontend prototype and product documentation. `src/app.js` owns screens, hash routing and local state; `src/domain.js` contains pure business rules; `src/data.js` contains synthetic fixtures; `src/styles.css` contains design tokens and responsive styles. `public/assets/` contains logos and local fonts. `scripts/` contains the HTTP server and static build; `tests/` uses `node:test`. Product sources and proposals live in `docs/`. The accepted target stack (Next.js + TypeScript, PostgreSQL) is in `docs/stack.md`; update this section when the code moves to it. All development follows `.claude/skills/fullstack-dev/SKILL.md`: stay on the stack, verify library usage in official docs via Context7, ship every change with passing automated tests.
+The Git repository contains the supplied final FSP Career design mockup in `site/` and product documentation in `docs/`. `site/index.html` owns the landing page and modal onboarding; `site/map.html`, `site/app.js` and `site/styles.css` own the map; `site/interview.html` contains the scripted interview; `site/onboarding*.html` contain alternate onboarding layouts. Assets live in `site/assets/`. `scripts/` contains the HTTP server, clean static build and syntax checker; `tests/site.test.js` uses `node:test`. The prior frontend was removed at the user's explicit request on 9 October. This import preserves the supplied static design; the accepted target application stack (Next.js + TypeScript, PostgreSQL) remains in `docs/stack.md`. Application development follows `.claude/skills/fullstack-dev/SKILL.md`.
 
 Keep application code, tests, and static assets in clearly named locations appropriate to the chosen framework. For example, use `src/`, `tests/`, and `assets/` if the framework does not prescribe alternatives. Document the actual layout in `README.md`.
 
 ## Build, Test, and Development Commands
 
-Node.js 22+ is required. No external runtime dependencies are used. Run `npm ci`, then `npm run dev` for http://127.0.0.1:5173. `npm run check` checks JavaScript syntax; `npm test` runs all tests; `node --test tests/domain.test.js` runs the individual suite. `npm run build` writes ignored `dist/`; `npm start` serves that build. Stop dev first or set another PORT. Keep reproducible commands documented in README.md.
+Node.js 22+ is required. No npm runtime dependencies are used; Google Fonts remains an external resource from the supplied mockup. Run `npm ci`, then `npm run dev` for http://127.0.0.1:5173. `npm run check` checks external and inline JavaScript; `npm test` runs all tests; `node --test tests/site.test.js` runs the individual suite. `npm run build` creates a clean ignored `dist/`; `npm start` serves that build. Stop dev first or set another PORT. Keep commands documented in README.md.
 
 ## Coding Style & Naming Conventions
 
-Use JavaScript ES modules, descriptive camelCase names and two-space indentation; follow `.editorconfig`. Keep domain rules separate from rendering. Escape user-authored text before HTML interpolation. Follow the dark mockup tokens and use semantic accessible controls. Separate unrelated cleanup from functional changes.
+Tooling uses JavaScript ES modules and two-space indentation; follow `.editorconfig`. Preserve the supplied page scripts and their behavior during design import. Escape user-authored text before HTML interpolation. The current visual source is `docs/design-spec.md` (light square layout, Golos Text and JetBrains Mono), explicitly selected by the user to replace the former dark design. Use semantic accessible controls and keep unrelated cleanup separate.
 
 ## Testing Guidelines
 
@@ -28,4 +28,4 @@ Pull requests should explain the change, include validation results, and link re
 
 Use the local `scrt4` vault for available secrets, referencing them through `$env[NAME]` placeholders in `scrt4 run` commands. Never request, print, or write secret values to files. Configuration examples must contain placeholders only.
 
-The prototype uses synthetic data and browser-local storage. Do not present it as authenticated, connected to FSP ID, an official registry, a validated matching engine or an AI evaluator. Real authorization and contact privacy require server enforcement before real data is used. The local server must not expose `.git`, secrets or repository documents.
+The mockup uses synthetic data and in-memory state. FSP ID, PDF parsing, company lookup, voice input and interview scoring are simulations. Do not present it as authenticated, connected to FSP ID, an official registry, a validated matching engine or an AI evaluator. Real authorization and contact privacy require server enforcement before real data is used. The local server must not expose `.git`, secrets or repository documents.

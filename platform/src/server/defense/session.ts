@@ -1,5 +1,7 @@
 import type { Prisma } from '@prisma/client';
 
+import { PLATFORM_UPGRADABLE } from '../claims/levels';
+import type { EvidenceLevel } from '../claims/types';
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
@@ -32,13 +34,12 @@ export const DEFENSE_DISCLAIMER =
   'Защита проверяет, понимаешь ли ты то, что утверждаешь, сейчас. Она не доказывает, что история из резюме подлинная. Грамотность, стиль и акцент не оцениваются.';
 
 const ELIGIBLE_STATUSES = new Set(['confirmed', 'edited']);
-const UPGRADABLE_LEVELS = new Set(['self_reported', 'artifact']);
 
 type ClaimRow = {
   id: string;
   candidateId: string;
   statement: string;
-  level: string;
+  level: EvidenceLevel;
   status: string;
   quote: string;
   sourceRef: string;
@@ -66,7 +67,7 @@ function assertEligible(claim: Pick<ClaimRow, 'status' | 'level'>): void {
       409,
     );
   }
-  if (!UPGRADABLE_LEVELS.has(claim.level)) {
+  if (!PLATFORM_UPGRADABLE.has(claim.level)) {
     throw new AppError('claim_already_verified', 'Утверждение уже проверено платформой или третьей стороной.', 409);
   }
 }
@@ -285,7 +286,7 @@ async function finishWithVerdict(candidateId: string, sessionId: string, llm: Ll
     await lockClaim(tx, session.claimId);
     const claim = await tx.claim.findUnique({ where: { id: session.claimId }, select: { level: true, status: true } });
     if (!claim) throw errors.notFound('Утверждение не найдено');
-    const canUpgrade = passed && ELIGIBLE_STATUSES.has(claim.status) && UPGRADABLE_LEVELS.has(claim.level);
+    const canUpgrade = passed && ELIGIBLE_STATUSES.has(claim.status) && PLATFORM_UPGRADABLE.has(claim.level);
     const levelAfter = canUpgrade ? 'platform' : claim.level;
     const now = new Date();
     const verdict: DefenseVerdict = {

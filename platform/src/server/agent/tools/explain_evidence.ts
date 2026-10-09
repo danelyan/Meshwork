@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { LEVEL_ORDER, levelRank } from '@/server/claims/levels';
+import { LEVEL_ORDER, levelRank, PLATFORM_UPGRADABLE } from '@/server/claims/levels';
 import type { EvidenceLevel } from '@/server/claims/types';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
@@ -49,7 +49,8 @@ export function whyLevel(level: EvidenceLevel, sourceKind: string): string {
 
 /**
  * Как поднять уровень: только пути, которые реально есть у утверждения
- * (`suggestedProof` каталога: task:*, interview:defend, registry:*) и выше текущего.
+ * (`suggestedProof` каталога: task:*, interview:defend, registry:*) и выше текущего, по возрастанию
+ * уровня (LEVEL_ORDER). Тест и защита — только для PLATFORM_UPGRADABLE.
  * Уровень ставит код по результату проверки — инструмент ничего не меняет.
  */
 export function waysUp(level: EvidenceLevel, proof: string[]): z.infer<typeof Way>[] {
@@ -58,13 +59,13 @@ export function waysUp(level: EvidenceLevel, proof: string[]): z.infer<typeof Wa
   if (rank < levelRank('artifact')) {
     ways.push({ toLevel: 'artifact', kind: 'link_account', how: 'Прислать ссылку на репозиторий или страницу, где эта работа видна.' });
   }
-  if (rank < levelRank('platform')) {
+  if (rank < levelRank('third_party') && proof.some((p) => p.startsWith('registry:'))) {
+    ways.push({ toLevel: 'third_party', kind: 'link_account', how: 'Привязать аккаунт ФСП: результат из реестра — подтверждение третьей стороной.' });
+  }
+  if (PLATFORM_UPGRADABLE.has(level)) {
     const task = proof.find((p) => p.startsWith('task:'));
     if (task) ways.push({ toLevel: 'platform', kind: 'task', how: 'Решить задание из банка платформы на это утверждение.', taskId: task });
     if (proof.includes('interview:defend')) ways.push({ toLevel: 'platform', kind: 'interview', how: 'Пройти защиту утверждения: 3–5 вопросов в чате о том, как и почему это сделано.' });
-  }
-  if (rank < levelRank('third_party') && proof.some((p) => p.startsWith('registry:'))) {
-    ways.push({ toLevel: 'third_party', kind: 'link_account', how: 'Привязать аккаунт ФСП: результат из реестра — подтверждение третьей стороной.' });
   }
   return ways;
 }
@@ -109,7 +110,7 @@ export const explainEvidence: AgentTool<z.infer<typeof Input>, z.infer<typeof Ou
           ? 'Утверждение отклонено кандидатом — поднимать нечего.'
           : ways.length
             ? 'Уровень поднимает код по результату проверки, не ты и не кандидат.'
-            : `Для этого утверждения на платформе нет пути выше уровня «${LEVEL_LABEL[claim.level]}»${claim.level === top ? '' : ' (нет задания, защиты или реестра в каталоге)'}.`,
+            : `Для этого утверждения на платформе нет пути выше уровня «${LEVEL_LABEL[claim.level]}»${claim.level === top ? '' : PLATFORM_UPGRADABLE.has(claim.level) ? ' (нет задания, защиты или реестра в каталоге)' : ' (тест и защита поднимают только «со слов» и «артефакт»)'}.`,
     };
   },
 };

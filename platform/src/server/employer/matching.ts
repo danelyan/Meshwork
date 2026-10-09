@@ -7,7 +7,7 @@ import { prisma } from '../db';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
-import { publicSourceType, toCandidateCard, type CandidateCard, type PublicClaim } from './privacy';
+import { dedupeClaims, toCandidateCard, type CandidateCard, type PublicClaim } from './privacy';
 import {
   categoryNeeds,
   effectiveSpecialization,
@@ -78,21 +78,6 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       claims: r.claims,
     },
     claimsPublic: dedupeClaims(r.claims, catalog),
-  }));
-}
-
-function dedupeClaims(claims: (CandidateEvidence['claims'][number] & { sourceKind?: string })[], catalog: Map<string, CatalogEntry>): PublicClaim[] {
-  const best = new Map<string, { level: CandidateEvidence['claims'][number]['level']; sourceKind?: string }>();
-  const order = ['self_reported', 'artifact', 'third_party', 'platform'];
-  for (const c of claims) {
-    const prev = best.get(c.catalogId);
-    if (!prev || order.indexOf(c.level) > order.indexOf(prev.level)) best.set(c.catalogId, { level: c.level, sourceKind: c.sourceKind });
-  }
-  return [...best].map(([catalogId, { level, sourceKind }]) => ({
-    catalogId,
-    level,
-    statement: catalog.get(catalogId)?.statement ?? catalogId,
-    sourceType: publicSourceType(sourceKind, level),
   }));
 }
 

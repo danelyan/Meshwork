@@ -1,6 +1,6 @@
 import type { EvidenceLevel } from '@/server/claims/types';
 
-export const LEVEL_ORDER: EvidenceLevel[] = ['platform', 'third_party', 'artifact', 'self_reported'];
+export { LEVELS_TOP_DOWN } from '@/server/claims/levels';
 
 export const LEVEL_LABEL: Record<EvidenceLevel, string> = {
   self_reported: 'со слов',

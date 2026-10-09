@@ -1,5 +1,5 @@
 import { catalogFromFile } from '@/server/claims/catalog-file';
-import { contactEmail, publicSourceType, pseudonym, toCandidateCard } from '@/server/employer/privacy';
+import { contactEmail, dedupeClaims, publicSourceType, pseudonym, toCandidateCard } from '@/server/employer/privacy';
 import {
   categoryNeeds,
   dropUncovered,
@@ -148,6 +148,7 @@ describe('приватность карточки (R-E-07)', () => {
     claims: [
       { catalogId: 'b', statement: 'B', level: 'self_reported' as const, sourceType: null },
       { catalogId: 'a', statement: 'A', level: 'platform' as const, sourceType: null },
+      { catalogId: 'c', statement: 'C', level: 'third_party' as const, sourceType: 'fsp' as const },
     ],
   };
   it('до принятия: псевдоним, контактов нет; после — имя и почта', () => {
@@ -157,9 +158,24 @@ describe('приватность карточки (R-E-07)', () => {
     expect(hidden.contacts).toBeNull();
     expect(JSON.stringify(hidden)).not.toContain('ivan@');
     expect(JSON.stringify(hidden)).not.toContain('Петров');
-    expect(hidden.claims.map((c) => c.level)).toEqual(['platform', 'self_reported']);
+    expect(hidden.claims.map((c) => c.level)).toEqual(['platform', 'third_party', 'self_reported']);
     const open = toCandidateCard(src, true);
     expect(open.contacts).toEqual({ name: 'Иван Петров', email: 'ivan@example.test' });
+  });
+  it('дедупликация: по catalogId остаётся высший уровень, платформа выше третьей стороны (09.10)', () => {
+    const out = dedupeClaims(
+      [
+        { catalogId: 'x', level: 'third_party', sourceKind: 'fsp' },
+        { catalogId: 'x', level: 'platform', sourceKind: 'chat' },
+        { catalogId: 'y', level: 'artifact', sourceKind: 'github' },
+        { catalogId: 'y', level: 'third_party', sourceKind: 'codeforces' },
+      ],
+      new Map(),
+    );
+    expect(out).toEqual([
+      { catalogId: 'x', level: 'platform', statement: 'x', sourceType: null },
+      { catalogId: 'y', level: 'third_party', statement: 'y', sourceType: 'codeforces' },
+    ]);
   });
   it('служебный адрес онбординга — не контакт', () => {
     expect(contactEmail('user-x@users.invalid')).toBeNull();

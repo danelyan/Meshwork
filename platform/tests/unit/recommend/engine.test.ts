@@ -63,6 +63,14 @@ describe('смежность', () => {
     ]);
     expect(idx.get('a')).toBe('third_party');
   });
+
+  it('платформа выше третьей стороны (решение 09.10)', () => {
+    const idx = buildIndex([
+      { catalogId: 'a', level: 'platform' },
+      { catalogId: 'a', level: 'third_party' },
+    ]);
+    expect(idx.get('a')).toBe('platform');
+  });
 });
 
 describe('gap-map', () => {

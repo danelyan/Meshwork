@@ -2,7 +2,8 @@
 // до принятия приглашения — только публичная часть, контакты и имя скрыты.
 import { createHash } from 'node:crypto';
 
-import type { EvidenceLevel } from '../claims/types';
+import { levelRank } from '../claims/levels';
+import type { CatalogEntry, EvidenceLevel } from '../claims/types';
 import type { FspState, Grade, Specialization } from '../types';
 
 import { categoryLabel } from './ranking';
@@ -67,11 +68,9 @@ export function contactEmail(email: string): string | null {
   return email.endsWith('.invalid') ? null : email;
 }
 
-const LEVEL_ORDER: EvidenceLevel[] = ['platform', 'third_party', 'artifact', 'self_reported'];
-
 export function toCandidateCard(src: CardSource, contactsVisible: boolean): CandidateCard {
   const claims = [...src.claims].sort(
-    (a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level) || a.catalogId.localeCompare(b.catalogId),
+    (a, b) => levelRank(b.level) - levelRank(a.level) || a.catalogId.localeCompare(b.catalogId),
   );
   return {
     id: src.id,
@@ -82,4 +81,25 @@ export function toCandidateCard(src: CardSource, contactsVisible: boolean): Cand
     claims,
     contacts: contactsVisible ? { name: src.name, email: contactEmail(src.email) } : null,
   };
+}
+
+/**
+ * Одно утверждение каталога — один публичный пункт: из нескольких по одному catalogId
+ * остаётся самый высокий уровень по LEVEL_ORDER (платформа выше третьей стороны, решение 09.10).
+ */
+export function dedupeClaims(
+  claims: readonly { catalogId: string; level: EvidenceLevel; sourceKind?: string | null }[],
+  catalog: Map<string, CatalogEntry>,
+): PublicClaim[] {
+  const best = new Map<string, { level: EvidenceLevel; sourceKind?: string | null }>();
+  for (const c of claims) {
+    const prev = best.get(c.catalogId);
+    if (!prev || levelRank(c.level) > levelRank(prev.level)) best.set(c.catalogId, { level: c.level, sourceKind: c.sourceKind });
+  }
+  return [...best].map(([catalogId, { level, sourceKind }]) => ({
+    catalogId,
+    level,
+    statement: catalog.get(catalogId)?.statement ?? catalogId,
+    sourceType: publicSourceType(sourceKind, level),
+  }));
 }

@@ -1,4 +1,5 @@
-import { LEVEL_ORDER, levelRank, maxLevelFor } from '@/server/claims/levels';
+import { LEVEL_ORDER, LEVELS_TOP_DOWN, levelRank, maxLevelFor, PLATFORM_UPGRADABLE } from '@/server/claims/levels';
+import { bestLevel, LEVEL_WEIGHT } from '@/server/recommend/weights';
 import type { SourceKind } from '@/server/collector/types';
 
 describe('maxLevelFor (ADR-0001)', () => {
@@ -35,8 +36,16 @@ describe('maxLevelFor (ADR-0001)', () => {
     expect(maxLevelFor('telegram' as SourceKind, { ownershipVerified: true })).toBe('self_reported');
   });
 
-  it('порядок уровней', () => {
-    expect(LEVEL_ORDER).toEqual(['self_reported', 'artifact', 'platform', 'third_party']);
-    expect(levelRank('third_party')).toBeGreaterThan(levelRank('platform'));
+  it('порядок уровней (решение 09.10): платформа выше третьей стороны', () => {
+    expect(LEVEL_ORDER).toEqual(['self_reported', 'artifact', 'third_party', 'platform']);
+    expect(levelRank('platform')).toBeGreaterThan(levelRank('third_party'));
+    expect(LEVELS_TOP_DOWN).toEqual(['platform', 'third_party', 'artifact', 'self_reported']);
+  });
+
+  it('производные от порядка: веса покрытия, лучший уровень, кого поднимают тест и защита', () => {
+    expect(LEVEL_WEIGHT).toEqual({ self_reported: 0.25, artifact: 0.5, third_party: 0.75, platform: 1 });
+    expect(bestLevel(['third_party', 'platform', 'artifact'])).toBe('platform');
+    expect(bestLevel(['self_reported', 'third_party'])).toBe('third_party');
+    expect([...PLATFORM_UPGRADABLE].sort()).toEqual(['artifact', 'self_reported']);
   });
 });

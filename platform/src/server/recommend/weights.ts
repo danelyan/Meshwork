@@ -1,16 +1,15 @@
+import { LEVEL_ORDER, levelRank } from '../claims/levels';
 import type { CatalogEntry, EvidenceLevel } from '../claims/types';
 import type { Grade, Specialization } from '../types';
 
 /**
  * ПРЕДЛОЖЕНИЕ (не требование ТЗ): веса уровней доказанности в покрытии и
- * приоритете пробелов. Данных под числа нет — калибруем на eval.
+ * приоритете пробелов — равные шаги по LEVEL_ORDER: 0,25 / 0,5 / 0,75 / 1
+ * (со слов / артефакт / третья сторона / платформа). Данных под числа нет — калибруем на eval.
  */
-export const LEVEL_WEIGHT: Record<EvidenceLevel, number> = {
-  self_reported: 0.25,
-  artifact: 0.5,
-  third_party: 0.75,
-  platform: 1,
-};
+export const LEVEL_WEIGHT: Readonly<Record<EvidenceLevel, number>> = Object.fromEntries(
+  LEVEL_ORDER.map((l, i) => [l, (i + 1) / LEVEL_ORDER.length]),
+) as Record<EvidenceLevel, number>;
 
 /** ПРЕДЛОЖЕНИЕ: смежное утверждение даёт половину веса своего уровня (claims-catalog § 6). */
 export const ADJACENT_FACTOR = 0.5;
@@ -52,6 +51,6 @@ export function levelWeight(level: EvidenceLevel | null | undefined): number {
 
 export function bestLevel(levels: Iterable<EvidenceLevel>): EvidenceLevel | null {
   let best: EvidenceLevel | null = null;
-  for (const l of levels) if (best === null || LEVEL_WEIGHT[l] > LEVEL_WEIGHT[best]) best = l;
+  for (const l of levels) if (best === null || levelRank(l) > levelRank(best)) best = l;
   return best;
 }

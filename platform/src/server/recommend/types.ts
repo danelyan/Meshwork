@@ -41,7 +41,7 @@ export interface CoverageItem {
   statement: string;
   weight: number;
   level: EvidenceLevel | null;
-  /** вклад: вес уровня (self 0.25, artifact 0.5, third_party 0.75, platform 1) */
+  /** вклад: вес уровня из LEVEL_WEIGHT (self 0.25, artifact 0.5, third_party 0.75, platform 1) */
   credit: number;
 }
 

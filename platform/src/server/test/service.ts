@@ -2,6 +2,7 @@
 // Грейд считает только код (IRT + генераторы), LLM не участвует: те же ответы → тот же итог.
 import type { Prisma, TestAttempt, TestItem } from '@prisma/client';
 
+import { PLATFORM_UPGRADABLE } from '../claims/levels';
 import { prisma } from '../db';
 import { getEnv } from '../env';
 import { AppError, errors } from '../errors';
@@ -313,7 +314,7 @@ async function finalize(a: AttemptWithItems, now: Date): Promise<AttemptWithItem
     // Решённое на платформе задание — доказательство уровня «платформа» для утверждений кандидата (ADR-0001 уровни).
     ops.push(
       prisma.claim.updateMany({
-        where: { candidateId: a.candidateId, catalogId: { in: solvedCatalogIds }, status: { in: ['confirmed', 'edited'] }, level: { in: ['self_reported', 'artifact'] } },
+        where: { candidateId: a.candidateId, catalogId: { in: solvedCatalogIds }, status: { in: ['confirmed', 'edited'] }, level: { in: [...PLATFORM_UPGRADABLE] } },
         data: { level: 'platform' },
       }),
     );

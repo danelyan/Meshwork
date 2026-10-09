@@ -11,11 +11,19 @@ describe('explain_evidence: пути и объяснение уровня (ADR-0
     expect(waysUp('artifact', []).map((x) => x.toLevel)).toEqual([]);
   });
 
-  it('реестр ФСП — единственный путь к третьей стороне', () => {
-    expect(waysUp('platform', ['registry:fsp-algo', 'task:complexity'])).toEqual([
-      expect.objectContaining({ toLevel: 'third_party', kind: 'link_account' }),
+  it('реестр ФСП — единственный путь к третьей стороне; пути по возрастанию уровня', () => {
+    expect(waysUp('artifact', ['registry:fsp-algo', 'task:complexity']).map((x) => `${x.toLevel}:${x.kind}`)).toEqual([
+      'third_party:link_account',
+      'platform:task',
     ]);
-    expect(waysUp('third_party', ['registry:fsp-algo'])).toEqual([]);
+  });
+
+  it('платформа — верхний уровень (решение 09.10): с неё путей нет, третью сторону не предлагаем', () => {
+    expect(waysUp('platform', ['registry:fsp-algo', 'task:complexity', 'interview:defend'])).toEqual([]);
+  });
+
+  it('третья сторона: тест и защита её не поднимают (PLATFORM_UPGRADABLE) — путей нет', () => {
+    expect(waysUp('third_party', ['registry:fsp-algo', 'task:complexity', 'interview:defend'])).toEqual([]);
   });
 
   it('объяснение по типу источника, ярлыки на русском', () => {

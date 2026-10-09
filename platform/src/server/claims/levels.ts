@@ -2,14 +2,25 @@ import type { SourceKind } from '../collector/types';
 import type { EvidenceLevel } from './types';
 
 /**
- * Порядок уровней по устойчивости к подделке (ADR-0001, «Чего решение не утверждает»):
- * со слов < артефакт < платформа < третья сторона.
+ * Единственный источник порядка уровней доказанности, по возрастанию:
+ * со слов < артефакт < третья сторона < проверено платформой (решение владельца 09.10:
+ * тест и защита выше ФСП и референса). Ранги, веса покрытия, дедупликация и сортировки
+ * в UI выводятся отсюда, свои списки и числа не заводить.
  */
-export const LEVEL_ORDER: readonly EvidenceLevel[] = ['self_reported', 'artifact', 'platform', 'third_party'];
+export const LEVEL_ORDER: readonly EvidenceLevel[] = ['self_reported', 'artifact', 'third_party', 'platform'];
+
+/** Уровни сверху вниз — для показа (профиль, карточка кандидата). */
+export const LEVELS_TOP_DOWN: readonly EvidenceLevel[] = [...LEVEL_ORDER].reverse();
 
 export function levelRank(level: EvidenceLevel): number {
   return LEVEL_ORDER.indexOf(level);
 }
+
+/**
+ * Что тест и защита поднимают до `platform`. third_party сюда не входит, хотя он ниже:
+ * поднимать ли его — отдельное решение (пока защита отвечает 409 claim_already_verified).
+ */
+export const PLATFORM_UPGRADABLE: ReadonlySet<EvidenceLevel> = new Set(['self_reported', 'artifact']);
 
 /**
  * Максимальный уровень доказанности по типу источника (ADR-0001 п. 2, E-01 § 4.2, план claims).

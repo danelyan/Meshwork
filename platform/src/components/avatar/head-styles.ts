@@ -23,7 +23,7 @@ export const HEAD_STYLES: readonly HeadStyleInfo[] = [
   { id: 'wire', label: 'Нейросетка', hint: 'Треугольная сетка, загорается от речи' },
 ] as const;
 
-export const DEFAULT_HEAD_STYLE: HeadStyle = 'loops';
+export const DEFAULT_HEAD_STYLE: HeadStyle = 'weave';
 
 /** Числовой код стиля для шейдера (`uStyle`), порядок — как в `HEAD_STYLES`. */
 export function styleIndex(style: HeadStyle): number {

@@ -5,7 +5,7 @@ import { gridDensity, HEAD_MODEL, jawWeight, sphericalGrid } from '@/components/
 
 describe('head-styles', () => {
   it('стиль по умолчанию — сетка-металл по референсу, id уникальны', () => {
-    expect(DEFAULT_HEAD_STYLE).toBe('loops');
+    expect(DEFAULT_HEAD_STYLE).toBe('weave');
     expect(new Set(HEAD_STYLES.map((s) => s.id)).size).toBe(HEAD_STYLES.length);
     expect(styleIndex('metal')).toBe(0);
     expect(isHeadStyle('particles')).toBe(true);

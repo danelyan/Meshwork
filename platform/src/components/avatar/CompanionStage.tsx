@@ -67,7 +67,7 @@ function Stage({ voice, className }: { voice: CompanionVoice; className?: string
     <aside className={cx(styles.stage, className)} aria-label="Компаньон" data-testid="companion-stage">
       <div className={styles.screen} data-status={status} onContextMenu={openMenu} title={gl ? 'Правый клик — вид головы' : undefined}>
         {gl ? (
-          <Head3D status={status} getLevel={voice.getLevel} reducedMotion={reduced} style={style} />
+          <Head3D status={status} getLevel={voice.getLevel} getMouth={voice.getMouth} reducedMotion={reduced} style={style} />
         ) : (
           <MarkFallback status={status} getLevel={voice.getLevel} />
         )}

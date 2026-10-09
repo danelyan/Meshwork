@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { DEFAULT_HEAD_STYLE, HEAD_STYLES, type HeadStyle } from '@/components/avatar/head-styles';
 import { MarkFallback } from '@/components/avatar/MarkFallback';
@@ -34,6 +34,18 @@ function Preview() {
   const live = voice?.status !== 'idle';
   const getLevel = live ? voice!.getLevel : () => level.current;
   const shown = live ? voice!.status : status;
+  // текущая висема — для калибровки липсинка (обновляется ~20 раз в секунду, пока звучит)
+  const [viseme, setViseme] = useState('sil');
+  const bandsRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (voice?.status !== 'speaking') return;
+    const id = window.setInterval(() => {
+      setViseme(voice.getViseme());
+      const f = voice.getFeatures();
+      bandsRef.current?.setAttribute('data-bands', f ? [...f.bands, f.volume, f.centroid].map((v) => v.toFixed(3)).join(' ') : '');
+    }, 50);
+    return () => window.clearInterval(id);
+  }, [voice]);
   return (
     <main className={styles.page}>
       <h1>Аватар компаньона</h1>
@@ -54,7 +66,7 @@ function Preview() {
       <p className={styles.hint}>{info?.hint}</p>
       <div className={styles.row}>
         <div className={styles.big}>
-          <Head3D status={shown} getLevel={getLevel} style={style} />
+          <Head3D status={shown} getLevel={getLevel} getMouth={live ? voice?.getMouth : undefined} style={style} />
         </div>
         <div className={styles.small}>
           <MarkFallback status={shown} getLevel={getLevel} />
@@ -71,7 +83,9 @@ function Preview() {
         <button type="button" className={styles.styleBtn} onClick={() => voice?.stop()} disabled={!live}>
           Остановить
         </button>
-        <span className={styles.hint}>{voice?.notice ?? (live ? voice?.status : '')}</span>
+        <span className={styles.hint} data-testid="viseme" ref={bandsRef}>
+          {voice?.notice ?? (live ? `${voice?.status} · висема ${viseme}` : '')}
+        </span>
       </div>
       <label className={styles.ctrl}>
         Громкость (RMS) {mouth.toFixed(2)}

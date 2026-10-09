@@ -19,6 +19,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
 import { mouthOpen, smoothLevel } from './level';
+import { CLOSED, type MouthShape, smoothShape } from './lipsync';
 import type { VoiceStatus } from './voice';
 
 /**
@@ -33,6 +34,8 @@ import type { VoiceStatus } from './voice';
 export interface Head3DProps {
   status: VoiceStatus;
   getLevel: () => number;
+  /** Форма рта по висемам (voice.getMouth); без неё рот открывается по громкости. */
+  getMouth?: () => MouthShape;
   reducedMotion?: boolean;
   /** Вид головы (см. head-styles.ts); по умолчанию — сетка-металл по референсу. */
   style?: HeadStyle;
@@ -88,7 +91,12 @@ export function jawWeight(y: number, z: number, m = HEAD_MODEL): number {
 
 interface HeadUniforms {
   grid: { value: [number, number] };
+  /** Раскрытие рта 0…1 (для процедурной головы и частиц). */
   jaw: { value: number };
+  /** Рот: раскрытие, округление, растяжение, смыкание. */
+  mouth: { value: [number, number, number, number] };
+  /** Лицо: моргание 0…1, улыбка 0…1. */
+  face: { value: [number, number, number, number] };
   time: { value: number };
   /** Половина высоты холста в px — для размера точек в режиме «частицы» (как `scale` у PointsMaterial). */
   pointScale: { value: number };
@@ -107,7 +115,11 @@ const JAW_GLSL = `
     float mouthY = uJawRegion.x;
     float width = 1.0 - smoothstep(0.09, 0.17, abs(position.x));
     float front = smoothstep(0.1, 0.3, position.z);
-    float open = uJaw * width * front;
+    float lips = width * front;
+    float open = uMouth.x * lips;
+    // зона губ: узкая полоса вокруг линии рта; уголки — её края по X
+    float lipBand = smoothstep(mouthY - 0.05, mouthY - 0.015, position.y) * (1.0 - smoothstep(mouthY + 0.015, mouthY + 0.05, position.y));
+    float corner = smoothstep(0.06, 0.12, abs(position.x)) * width * front * (1.0 - smoothstep(0.04, 0.07, abs(position.y - mouthY)));
     // нижняя губа и подбородок: сильнее у линии рта, к низу подбородка — слабее
     float lower = smoothstep(mouthY + 0.012, mouthY - 0.01, position.y) * smoothstep(uJawRegion.y - 0.05, mouthY - 0.03, position.y);
     // верхняя губа: узкая полоса над линией рта
@@ -115,15 +127,30 @@ const JAW_GLSL = `
     transformed.y -= open * (0.042 * lower - 0.008 * upper);
     // растянутая полоса между губами — «полость рта», во фрагменте гасится до тёмного
     vMouth = open * smoothstep(mouthY + 0.015, mouthY + 0.004, position.y) * smoothstep(mouthY - 0.03, mouthY - 0.012, position.y);
-    // уголки сходятся — рот округляется
-    transformed.x *= 1.0 - open * 0.14 * (lower + upper);
-    // подбородок слегка следует за нижней губой (поворот вокруг оси ушей, ~1/3 от прежней челюсти)
+    // округление (о/у): уголки к центру, губы вперёд; растяжение (э/и): уголки врозь и чуть вверх
+    float roundW = uMouth.y * lips * lipBand;
+    float wideW = uMouth.z * lips * lipBand;
+    transformed.x *= 1.0 - roundW * 0.22 - open * 0.1 + wideW * 0.14;
+    transformed.z += roundW * 0.02;
+    transformed.y += wideW * 0.006 * corner;
+    // смыкание (п/б/м, ф/в): губы прижаты к линии рта и чуть втянуты
+    float pressW = uMouth.w * lips * lipBand;
+    transformed.y -= (position.y - mouthY) * pressW * 0.45;
+    transformed.z -= pressW * 0.012;
+    // улыбка: уголки вверх
+    transformed.y += uFace.y * 0.014 * corner;
+    // подбородок слегка следует за нижней губой (поворот вокруг оси ушей)
     float chin = smoothstep(mouthY, uJawRegion.y - 0.02, position.y) * smoothstep(uJawRegion.y - 0.06, uJawRegion.y - 0.02, position.y);
-    float a = uJaw * uJawRegion.w * 0.35 * chin * smoothstep(-0.12, 0.1, position.z);
+    float a = uMouth.x * uJawRegion.w * 0.35 * chin * smoothstep(-0.12, 0.1, position.z);
     float c = cos(a), sn = sin(a);
     vec2 pv = vec2(transformed.y - uJawRegion.z, transformed.z);
     transformed.y = uJawRegion.z + pv.x * c - pv.y * sn;
     transformed.z = pv.x * sn + pv.y * c;
+    // моргание: верхнее веко опускается к линии глаза (центры глаз — как в стиле «петли»)
+    float eyeY = 0.63;
+    float dEye = min(distance(position.xy, vec2(-0.115, eyeY)), distance(position.xy, vec2(0.115, eyeY)));
+    float lid = (1.0 - smoothstep(0.035, 0.06, dEye)) * smoothstep(eyeY - 0.005, eyeY + 0.01, position.y) * smoothstep(0.05, 0.2, position.z);
+    transformed.y -= uFace.x * lid * (position.y - eyeY) * 0.85;
   }`;
 
 const JAW_REGION = [HEAD_MODEL.mouthY, HEAD_MODEL.chinY, HEAD_MODEL.jawPivotY, HEAD_MODEL.jawAngle];
@@ -150,6 +177,8 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
     shader.uniforms.uGrid = u.grid;
     shader.uniforms.uWidth = { value: GRID.width };
     shader.uniforms.uJaw = u.jaw;
+    shader.uniforms.uMouth = u.mouth;
+    shader.uniforms.uFace = u.face;
     shader.uniforms.uTime = u.time;
     shader.uniforms.uJawRegion = { value: JAW_REGION };
     shader.uniforms.uAccent = { value: new Color(ACCENT) };
@@ -164,6 +193,8 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         varying vec3 vModelNormal;
         varying float vMouth;
         uniform float uJaw;
+        uniform vec4 uMouth;
+        uniform vec4 uFace;
         uniform vec4 uJawRegion;`,
       )
       .replace(
@@ -316,6 +347,8 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
   return new ShaderMaterial({
     uniforms: {
       uJaw: u.jaw,
+      uMouth: u.mouth,
+      uFace: u.face,
       uTime: u.time,
       uPointScale: u.pointScale,
       uJawRegion: { value: JAW_REGION },
@@ -328,6 +361,8 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
     blending: AdditiveBlending,
     vertexShader: `
       uniform float uJaw;
+      uniform vec4 uMouth;
+      uniform vec4 uFace;
       uniform float uTime;
       uniform float uPointScale;
       uniform vec4 uJawRegion;
@@ -372,7 +407,7 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
   const style = props.style ?? DEFAULT_HEAD_STYLE;
   const height = useThree((st) => st.size.height);
   const uniforms = useMemo<HeadUniforms>(
-    () => ({ grid: { value: gridDensity(160) }, jaw: { value: 0 }, time: { value: 0 }, pointScale: { value: 80 } }),
+    () => ({ grid: { value: gridDensity(160) }, jaw: { value: 0 }, mouth: { value: [0, 0, 0, 0] }, face: { value: [0, 0, 0, 0] }, time: { value: 0 }, pointScale: { value: 80 } }),
     [],
   );
   useEffect(() => {
@@ -384,15 +419,39 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
   useEffect(() => () => material.dispose(), [material]);
   const groupRef = useRef<Group>(null);
   const level = useRef(0);
+  const shape = useRef<MouthShape>(CLOSED);
+  const blink = useRef({ next: 2.5, start: -1 });
   const statusRef = useRef(props.status);
   statusRef.current = props.status;
 
   useFrame((state, dt) => {
     const t = state.clock.elapsedTime;
     const s = statusRef.current;
-    const raw = s === 'speaking' ? props.getLevel() : 0;
-    level.current = smoothLevel(level.current, raw, Math.min(dt, 0.1));
-    uniforms.jaw.value = mouthOpen(level.current);
+    const step = Math.min(dt, 0.1);
+    const speaking = s === 'speaking';
+    const raw = speaking ? props.getLevel() : 0;
+    level.current = smoothLevel(level.current, raw, step);
+    // рот: висемы из спектра, если голос их даёт; иначе — только раскрытие по громкости
+    const target = speaking && props.getMouth ? props.getMouth() : { ...CLOSED, open: mouthOpen(level.current) };
+    shape.current = smoothShape(shape.current, target, step);
+    const m = shape.current;
+    uniforms.jaw.value = m.open;
+    uniforms.mouth.value = [m.open, m.round, m.wide, m.press];
+    // моргание каждые 2.5–6 с по 0.18 с; улыбка — когда говорит, в покое — лёгкая
+    const b = blink.current;
+    if (b.start < 0 && t >= b.next) b.start = t;
+    let lid = 0;
+    if (b.start >= 0) {
+      const ph = (t - b.start) / 0.18;
+      lid = ph < 0.5 ? ph * 2 : Math.max(0, 2 - ph * 2);
+      if (ph >= 1) {
+        b.start = -1;
+        b.next = t + 2.5 + Math.random() * 3.5;
+      }
+    }
+    const thinkingNow = s === 'thinking' || s === 'loading';
+    const smile = props.reducedMotion ? 0 : speaking ? 0.35 : thinkingNow ? 0 : 0.15;
+    uniforms.face.value = [props.reducedMotion ? 0 : lid, smile, 0, 0];
     uniforms.time.value = props.reducedMotion ? 0 : t;
     const g = groupRef.current;
     if (!g) return;

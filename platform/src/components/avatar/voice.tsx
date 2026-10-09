@@ -6,6 +6,7 @@ import { speechText } from '@/lib/speech-text';
 
 import { COMPANION_SAY_EVENT } from './events';
 import { rms } from './level';
+import { CLOSED, LipSync, type MouthShape, type SpectrumFeatures, type Viseme } from './lipsync';
 
 /**
  * Голос компаньона: озвучка ответов через `/api/tts` (SpeechKit) и Web Audio. Аудио идёт через
@@ -33,6 +34,12 @@ export interface CompanionVoice {
   setThinking: (thinking: boolean) => void;
   /** Текущая громкость (RMS 0…1) звучащей реплики; 0 — тишина. */
   getLevel: () => number;
+  /** Форма рта по спектру звучащей реплики (lipsync.ts); в тишине — закрыт. Считать раз в кадр. */
+  getMouth: () => MouthShape;
+  /** Текущая висема — для отладки и демо-страницы. */
+  getViseme: () => Viseme;
+  /** Признаки спектра последнего кадра — для калибровки на демо-странице. */
+  getFeatures: () => SpectrumFeatures | null;
 }
 
 export { COMPANION_SAY_EVENT };
@@ -63,6 +70,9 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const bufRef = useRef<Float32Array<ArrayBuffer> | null>(null);
+  const freqRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const lipRef = useRef<LipSync | null>(null);
+  const lipAtRef = useRef(0);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const queueRef = useRef<Pending[]>([]);
   const runningRef = useRef(false);
@@ -83,6 +93,8 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
       ctxRef.current = ctx;
       analyserRef.current = analyser;
       bufRef.current = new Float32Array(analyser.fftSize);
+      freqRef.current = new Uint8Array(analyser.frequencyBinCount);
+      lipRef.current = new LipSync(ctx.sampleRate / analyser.fftSize);
     }
     if (ctxRef.current.state === 'suspended') void ctxRef.current.resume().catch(() => undefined);
     return true;
@@ -138,6 +150,7 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
             src.connect(analyser);
             src.onended = () => resolve();
             sourceRef.current = src;
+            lipRef.current?.reset();
             setPlaying('speaking');
             src.start();
           });
@@ -234,6 +247,25 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
     return rms(buf);
   }, []);
 
+  /** Обновляет липсинк не чаще раза на кадр: несколько потребителей за кадр получают одну висему. */
+  const tick = useCallback((): LipSync | null => {
+    const analyser = analyserRef.current;
+    const freq = freqRef.current;
+    const lip = lipRef.current;
+    if (!analyser || !freq || !lip || !sourceRef.current) return null;
+    const now = performance.now();
+    if (now - lipAtRef.current >= 8) {
+      const dt = lipAtRef.current ? Math.min((now - lipAtRef.current) / 1000, 0.1) : 1 / 60;
+      lipAtRef.current = now;
+      analyser.getByteFrequencyData(freq);
+      lip.update(freq, dt);
+    }
+    return lip;
+  }, []);
+  const getMouth = useCallback((): MouthShape => tick()?.shape ?? CLOSED, [tick]);
+  const getViseme = useCallback((): Viseme => tick()?.viseme ?? 'sil', [tick]);
+  const getFeatures = useCallback((): SpectrumFeatures | null => tick()?.last ?? null, [tick]);
+
   useEffect(() => {
     const onSay = (e: Event) => {
       const text = (e as CustomEvent<{ text?: string }>).detail?.text;
@@ -254,8 +286,8 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
 
   const status: VoiceStatus = playing ?? (thinking ? 'thinking' : 'idle');
   const value = useMemo<CompanionVoice>(
-    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel }),
-    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel],
+    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures }),
+    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel, getMouth, getViseme, getFeatures],
   );
   return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;
 }

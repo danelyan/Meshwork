@@ -1,0 +1,67 @@
+# Автодеплой стенда: push в master с изменениями platform/ выкладывает их на сервер и
+# пересобирает контейнеры там же. Настройка сервера и переменных — docs/deploy.md.
+# Переменные репозитория: DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, DEPLOY_KNOWN_HOSTS, APP_URL.
+# Секрет: DEPLOY_SSH_KEY (закрытый ключ пользователя деплоя). Файл .env живёт только на сервере.
+name: Deploy stand
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - platform/**
+      - .github/workflows/deploy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Деплои идут по одному и по порядку; начатый не прерывается.
+concurrency:
+  group: deploy-stand
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to stand
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # .env сервера в исключениях: rsync --delete его не трогает.
+      - name: Upload platform sources
+        run: |
+          rsync -az --delete \
+            --exclude='/.env' --exclude='/node_modules' --exclude='/.next' \
+            platform/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+      # Сборка падает — прежние контейнеры продолжают работать.
+      - name: Build and restart
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' \
+            && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans \
+            && docker image prune -f \
+            && docker builder prune -f --filter until=72h"
+
+      - name: Check health
+        run: |
+          curl --fail --silent --show-error --max-time 10 \
+            --retry 20 --retry-delay 6 --retry-all-errors \
+            "$APP_URL/api/health"

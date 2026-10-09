@@ -228,6 +228,10 @@ generate` в лейне перезапишет его для всех — схе
 одноразово), `app` (standalone, :3000), `mailpit` (веб-ящик :8025). Секреты —
 в `.env`. Локально Docker не нужен.
 
+Стенд с HTTPS: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`
+— добавляется `caddy` (80/443, сертификат Let's Encrypt для `SITE_ADDRESS` из `.env`),
+порты `app` и `mailpit` наружу закрыты. Сервер, `.env` и автодеплой — `../docs/deploy.md`.
+
 ## Дизайн
 
 Токены (`src/styles/tokens.css`) сведены из `docs/design-spec.md` и `site/styles.css`: светлая тема, `--ink`/`--paper`/`--muted`/`--blue`, стекло (`--glass*`, `--blur`), квадратная форма (все `--radius*` = 0), без теней. Старые имена (`--bg`, `--panel`, `--text`…) оставлены алиасами.

@@ -193,10 +193,10 @@ describe('правило теста', () => {
     expect(be).not.toContain('common.git'); // M < J
   });
 
-  it('пороги 0.4 (решение владельца 09.10) / 0.3', () => {
+  it('пороги 0.25 (решение владельца 09.10, research/13) / 0.15', () => {
     expect(decideGrade(sig, take(0.7)).grade).toBe('middle');
-    expect(decideGrade(sig, take(0.45)).grade).toBe('middle');
-    const mid = decideGrade(sig, take(0.33));
+    expect(decideGrade(sig, take(0.3)).grade).toBe('middle');
+    const mid = decideGrade(sig, take(0.2));
     expect(mid.grade).toBe('junior');
     expect(mid.reason).toContain('Middle — если уверены');
     const low = decideGrade(sig, take(0.1));
@@ -205,11 +205,14 @@ describe('правило теста', () => {
     expect(decideGrade(sig, new Set()).reason).toContain('Для Middle не хватает заявленных');
   });
 
-  it('точно на порогах: 0.4 → Middle, 0.3 → «если уверены», ниже → Junior; пустая сигнатура → Junior', () => {
-    const ten = 'abcdefghij'.split('').map((id) => ({ ...catalog.get('be.cache')!, id, weight: 2 as const }));
+  it('точно на порогах (20 записей): 0.25 → Middle, 0.15 → «если уверены», ниже → Junior; пустая сигнатура → Junior', () => {
+    const ten = 'abcdefghijklmnopqrst'.split('').map((id) => ({ ...catalog.get('be.cache')!, id, weight: 2 as const }));
     const has = (n: number) => new Set(ten.slice(0, n).map((e) => e.id));
-    expect(decideGrade(ten, has(4)).grade).toBe('middle');
+    expect(decideGrade(ten, has(5)).grade).toBe('middle');
+    expect(decideGrade(ten, has(5)).coverage).toBe(0.25);
+    expect(decideGrade(ten, has(4)).grade).toBe('junior');
     const sure = decideGrade(ten, has(3));
+    expect(sure.coverage).toBe(0.15);
     expect(sure.grade).toBe('junior');
     expect(sure.reason).toContain('Middle — если уверены');
     const under = decideGrade(ten, has(2));
@@ -224,7 +227,7 @@ describe('правило теста', () => {
       claims: { catalogId: string }[];
     };
     const d = decideGrade(middleSignature(real, 'backend'), new Set(label.claims.map((c) => c.catalogId)));
-    expect(d.coverage).toBeGreaterThanOrEqual(0.4);
+    expect(d.coverage).toBeGreaterThanOrEqual(0.25);
     expect(d.grade).toBe('middle');
     expect(decideGrade(middleSignature(real, 'backend'), new Set()).grade).toBe('junior');
   });

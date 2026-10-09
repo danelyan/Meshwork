@@ -1,5 +1,5 @@
 /**
- * Влияние порога Middle (0,6 → 0,4, решение владельца 09.10) на размеченные профили eval.
+ * Влияние порога Middle (0,4/0,3 → 0,25/0,15, решение владельца 09.10, research/13) на размеченные профили eval.
  * Без LLM: утверждения берутся из gold-разметки (eval/labels, eval/demo/*), покрытие
  * считается тем же decideGrade, что и в продукте. Запуск: npx tsx scripts/threshold-impact.ts
  */
@@ -9,8 +9,8 @@ import { join } from 'node:path';
 import { catalogFromFile } from '../src/server/claims/catalog-file';
 import { decideGrade, middleSignature } from '../src/server/recommend/test';
 
-const OLD = 0.6;
-const NEW = 0.4;
+const OLD = 0.4;
+const NEW = 0.25;
 const catalog = new Map(catalogFromFile().map((e) => [e.id, e]));
 const pick = (cov: number, t: number) => (cov >= t ? 'middle' : 'junior');
 
@@ -35,8 +35,8 @@ for (const f of files) {
   if (a !== b) { changed++; if (l.gradeExpected === 'junior') changedJunior++; if (l.gradeExpected === 'middle') changedMiddle++; }
   rows.push(`| ${l.id} | ${l.specialization} | ${Math.round(cov * 100)} % | ${a} | ${b} | ${l.gradeExpected} |${a !== b ? ' <- меняется' : ''}`);
 }
-console.log('| профиль | спец. | покрытие Middle | при 0,6 | при 0,4 | gold |\n|---|---|---|---|---|---|');
+console.log('| профиль | спец. | покрытие Middle | при 0,4 | при 0,25 | gold |\n|---|---|---|---|---|---|');
 console.log(rows.join('\n'));
 console.log(`\nразмечено junior/middle: ${graded} (junior ${goldJunior}, middle ${goldMiddle})`);
 console.log(`меняют рекомендацию: ${changed}; из них gold=junior ${changedJunior}, gold=middle ${changedMiddle}`);
-console.log(`совпадение с gold: при 0,6 ${okOld}/${graded}, при 0,4 ${okNew}/${graded}`);
+console.log(`совпадение с gold: при 0,4 ${okOld}/${graded}, при 0,25 ${okNew}/${graded}`);

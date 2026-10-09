@@ -148,7 +148,7 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
         if (norm === null) return fail('Выбери из предложенных вариантов');
         if (!out.some((x) => x.toLowerCase() === norm.toLowerCase())) out.push(norm);
       }
-      if (out.length === 0) return fail('Выбери хотя бы один пункт или пропустите шаг');
+      if (out.length === 0) return fail('Выбери хотя бы один пункт или пропусти шаг');
       return out;
     }
     case 'range': {
@@ -178,7 +178,7 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
         })
         .safeParse(value);
       if (!r.success) return fail('Некорректный список файлов и ссылок');
-      if (r.data.uploadIds.length + r.data.urls.length === 0) return fail('Приложи файл или ссылку — или пропустите шаг');
+      if (r.data.uploadIds.length + r.data.urls.length === 0) return fail('Приложи файл или ссылку — или пропусти шаг');
       return r.data;
     }
     case 'summary':

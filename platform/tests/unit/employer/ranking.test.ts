@@ -1,5 +1,5 @@
 import { catalogFromFile } from '@/server/claims/catalog-file';
-import { contactEmail, pseudonym, toCandidateCard } from '@/server/employer/privacy';
+import { contactEmail, publicSourceType, pseudonym, toCandidateCard } from '@/server/employer/privacy';
 import {
   categoryNeeds,
   matchStack,
@@ -133,8 +133,8 @@ describe('приватность карточки (R-E-07)', () => {
     fspState: 'linked' as const,
     category: null,
     claims: [
-      { catalogId: 'b', statement: 'B', level: 'self_reported' as const },
-      { catalogId: 'a', statement: 'A', level: 'platform' as const },
+      { catalogId: 'b', statement: 'B', level: 'self_reported' as const, sourceType: null },
+      { catalogId: 'a', statement: 'A', level: 'platform' as const, sourceType: null },
     ],
   };
   it('до принятия: псевдоним, контактов нет; после — имя и почта', () => {
@@ -183,5 +183,19 @@ describe('метрики eval подбора', () => {
     expect(ndcgAtK(['a', 'b'], rel, 5)).toBeCloseTo(1);
     expect(ndcgAtK(['b', 'a'], rel, 5)).toBeLessThan(1);
     expect(ndcgAtK(['x'], {}, 5)).toBe(0);
+  });
+});
+
+describe('тип источника для работодателя (R-E-07)', () => {
+  it('только у artifact/third_party; резюме, документ, чат и платформа — null', () => {
+    expect(publicSourceType('github', 'artifact')).toBe('github');
+    expect(publicSourceType('url', 'artifact')).toBe('article');
+    expect(publicSourceType('stackoverflow', 'artifact')).toBe('stackoverflow');
+    expect(publicSourceType('codeforces', 'third_party')).toBe('codeforces');
+    expect(publicSourceType('fsp', 'third_party')).toBe('fsp');
+    expect(publicSourceType('github', 'self_reported')).toBeNull();
+    expect(publicSourceType('resume', 'artifact')).toBeNull();
+    expect(publicSourceType('chat', 'platform')).toBeNull();
+    expect(publicSourceType(undefined, 'artifact')).toBeNull();
   });
 });

@@ -110,7 +110,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
   return (
     <form className={styles.form} onSubmit={submit} noValidate>
       <Panel className={styles.form}>
-        <Field label="Кого ищете" hint="Например: «Backend-разработчик платежей»" error={errs.title}>
+        <Field label="Кого ищешь" hint="Например: «Backend-разработчик платежей»" error={errs.title}>
           <input className={ui.input} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
         </Field>
         <div className={styles.row}>

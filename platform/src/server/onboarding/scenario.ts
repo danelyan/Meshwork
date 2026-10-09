@@ -250,7 +250,7 @@ export const EMPLOYER_STEPS: StepDef[] = [
     id: 'industry',
     kind: 'one',
     eyebrow: 'Компания',
-    question: 'В какой отрасли работаете?',
+    question: 'В какой отрасли работает компания?',
     summaryLabel: 'Отрасль',
     target: 'Company.industry',
     req: 'R-E-01',

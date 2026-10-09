@@ -1,6 +1,7 @@
 // Тонкий клиент к API платформы. Контракты других лейнов могут быть заглушками,
 // поэтому ответы разбираются терпимо, а ошибки приводятся к ApiError с понятным текстом.
 import type { ProfileView } from '@/server/claims/types';
+import type { OnboardingView } from '@/server/onboarding/types';
 import type { AnswerResult, DefenseQuestion, DefenseSessionView, DefenseVerdict } from '@/server/defense/types';
 import type { Gap, TargetRec, TaskRec, TestRecommendation } from '@/server/recommend/types';
 
@@ -32,7 +33,7 @@ async function readError(res: Response): Promise<ApiError> {
   return new ApiError(message, res.status, code);
 }
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
+export async function request<T>(url: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(url, { credentials: 'same-origin', ...init });
@@ -43,7 +44,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-function postJson<T>(url: string, body: unknown): Promise<T> {
+export function postJson<T>(url: string, body: unknown): Promise<T> {
   return request<T>(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 }
 
@@ -91,6 +92,16 @@ export const acceptConsent = (version: string) => postJson<{ version: string; ac
 export const chooseRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName: string }) =>
   postJson<{ role: MeView['role']; candidateId: string | null; employerProfileId: string | null }>('/api/auth/role', body);
 export const completeOnboarding = () => postJson<{ onboarded: true; next: string }>('/api/auth/onboarding/complete', {});
+
+// --- lane onboarding: онбординг-чат (app/api/onboarding/route.ts) ---
+export type OnboardingAction =
+  | { action: 'answer'; stepId: string; value: unknown }
+  | { action: 'skip'; stepId: string }
+  | { action: 'goto'; stepId: string };
+export const getOnboarding = () => request<OnboardingView>('/api/onboarding');
+export const onboardingAct = (body: OnboardingAction) => postJson<OnboardingView>('/api/onboarding', body);
+/** «Настроить позже»: онбординг не завершается, ответ — куда вести. */
+export const onboardingLater = () => postJson<{ next: string }>('/api/onboarding', { action: 'later' });
 
 export const getProfile = () => request<ProfileView>('/api/profile');
 

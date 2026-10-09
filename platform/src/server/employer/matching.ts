@@ -7,7 +7,7 @@ import { prisma } from '../db';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
-import { toCandidateCard, type CandidateCard } from './privacy';
+import { publicSourceType, toCandidateCard, type CandidateCard, type PublicClaim } from './privacy';
 import {
   categoryNeeds,
   effectiveSpecialization,
@@ -38,7 +38,7 @@ interface PoolRow {
   evidence: CandidateEvidence;
   name: string;
   email: string;
-  claimsPublic: { catalogId: string; statement: string; level: CandidateEvidence['claims'][number]['level'] }[];
+  claimsPublic: PublicClaim[];
 }
 
 /**
@@ -60,7 +60,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true } },
       claims: {
         where: { status: { in: ['confirmed', 'edited'] } },
-        select: { catalogId: true, level: true, statement: true, quote: true },
+        select: { catalogId: true, level: true, statement: true, quote: true, sourceKind: true },
         orderBy: { id: 'asc' },
       },
     },
@@ -80,14 +80,19 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
   }));
 }
 
-function dedupeClaims(claims: CandidateEvidence['claims'], catalog: Map<string, CatalogEntry>) {
-  const best = new Map<string, CandidateEvidence['claims'][number]['level']>();
+function dedupeClaims(claims: (CandidateEvidence['claims'][number] & { sourceKind?: string })[], catalog: Map<string, CatalogEntry>): PublicClaim[] {
+  const best = new Map<string, { level: CandidateEvidence['claims'][number]['level']; sourceKind?: string }>();
   const order = ['self_reported', 'artifact', 'third_party', 'platform'];
   for (const c of claims) {
     const prev = best.get(c.catalogId);
-    if (!prev || order.indexOf(c.level) > order.indexOf(prev)) best.set(c.catalogId, c.level);
+    if (!prev || order.indexOf(c.level) > order.indexOf(prev.level)) best.set(c.catalogId, { level: c.level, sourceKind: c.sourceKind });
   }
-  return [...best].map(([catalogId, level]) => ({ catalogId, level, statement: catalog.get(catalogId)?.statement ?? catalogId }));
+  return [...best].map(([catalogId, { level, sourceKind }]) => ({
+    catalogId,
+    level,
+    statement: catalog.get(catalogId)?.statement ?? catalogId,
+    sourceType: publicSourceType(sourceKind, level),
+  }));
 }
 
 /** Кандидаты, принявшие приглашение этой компании, — им открыты контакты (R-E-07). */

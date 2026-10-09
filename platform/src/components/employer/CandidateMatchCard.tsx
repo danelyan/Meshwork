@@ -1,11 +1,12 @@
 import { LevelBadge } from '@/components/LevelBadge';
 import type { MatchItem } from '@/server/employer/matching';
+import type { PublicSourceType } from '@/server/employer/privacy';
 
 import { Meter, Panel, Tag } from '../ui';
 
 import styles from './Employer.module.css';
 import { InviteForm } from './InviteForm';
-import { INVITATION_STATUS_LABEL } from './labels';
+import { INVITATION_STATUS_LABEL, SOURCE_TYPE_LABEL } from './labels';
 
 export interface CandidateMatchCardProps {
   item: MatchItem;
@@ -14,9 +15,14 @@ export interface CandidateMatchCardProps {
 }
 
 /** Карточка кандидата в подборке: публичная часть (R-E-07) + обоснование (R-M-03) + приглашение. */
+function SourceType({ type }: { type: PublicSourceType | null | undefined }) {
+  return type ? <span className={styles.meta}> · доказано: {SOURCE_TYPE_LABEL[type]}</span> : null;
+}
+
 export function CandidateMatchCard({ item, vacancyId, defaultSalary }: CandidateMatchCardProps) {
   const c = item.candidate;
   const ex = item.explanation;
+  const typeByStatement = new Map(c.claims.map((cl) => [cl.statement, cl.sourceType]));
   const open = item.invitation && (item.invitation.status === 'sent' || item.invitation.status === 'viewed');
   return (
     <Panel as="li" className={styles.card} aria-labelledby={`cand-${c.id}`}>
@@ -45,6 +51,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
           {ex.covered.map((i) => (
             <li key={i.statement} className={styles.claim}>
               <LevelBadge level={i.level} /> {i.statement}
+              <SourceType type={typeByStatement.get(i.statement)} />
             </li>
           ))}
         </ul>
@@ -64,6 +71,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
             {c.claims.map((cl) => (
               <span key={cl.catalogId} className={styles.claim}>
                 <LevelBadge level={cl.level} /> {cl.statement}
+                <SourceType type={cl.sourceType} />
               </span>
             ))}
           </div>

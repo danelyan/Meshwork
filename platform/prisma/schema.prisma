@@ -58,19 +58,23 @@ model Candidate {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  categories      CandidateCategory[]
-  uploads         Upload[]
-  sources         Source[]
-  claims          Claim[]
-  conversations   Conversation[]
-  agentRuns       AgentRun[]
-  recommendations Recommendation[]
-  invitations     Invitation[]
-  defenseSessions DefenseSession[]
+  categories          CandidateCategory[]
+  uploads             Upload[]
+  sources             Source[]
+  claims              Claim[]
+  conversations       Conversation[]
+  agentRuns           AgentRun[]
+  recommendations     Recommendation[]
+  invitations         Invitation[]
+  defenseSessions     DefenseSession[]
   /// lane auth: аккаунт входа (null у старых демо-кандидатов до первого демо-входа)
-  user            User?
+  user                User?
+  /// lane employer: настройка приватности (R-C-13) — true: не показывать в подборке и поиске работодателей
+  hiddenFromEmployers Boolean             @default(false)
+  /// lane onboarding: анкета онбординга (цель, грейд, стек, формат, зарплата)
+  profile             CandidateProfile?
   /// lane test: попытки теста на грейд
-  testAttempts    TestAttempt[]
+  testAttempts        TestAttempt[]
 }
 
 model CandidateCategory {
@@ -295,6 +299,8 @@ enum RecommendationKind {
 
 enum InvitationStatus {
   sent
+  /// lane employer: кандидат открыл приглашение
+  viewed
   accepted
   declined
 }
@@ -313,29 +319,42 @@ model Recommendation {
 }
 
 model Company {
-  id          String    @id @default(cuid())
+  id          String            @id @default(cuid())
   name        String
   description String?
-  isDemo      Boolean   @default(true)
+  isDemo      Boolean           @default(true)
   vacancies   Vacancy[]
   /// lane auth: представители компании
   employers   EmployerProfile[]
+  /// lane employer
+  invitations Invitation[]
+  /// lane onboarding: ИНН (проверен по контрольной сумме; реестр — демо), отрасль, контакт (R-E-01)
+  inn         String?
+  industry    String?
+  contact     String?
 }
 
 model Vacancy {
-  id             String         @id @default(cuid())
-  companyId      String
-  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  title          String
-  specialization Specialization
-  grade          Grade
+  id              String         @id @default(cuid())
+  companyId       String
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title           String
+  specialization  Specialization
+  grade           Grade
   /// ₽, обязательные
-  salaryFrom     Int
-  salaryTo       Int
+  salaryFrom      Int
+  salaryTo        Int
   /// { catalogId: string; weight: number }[]
-  needs          Json
-  description    String?
-  createdAt      DateTime       @default(now())
+  needs           Json
+  description     String?
+  createdAt       DateTime       @default(now())
+  /// lane employer + onboarding: чем занимается команда (R-E-02)
+  teamDescription String?
+  /// lane employer + onboarding: стек свободными метками ("Go", "PostgreSQL"); needs — проекция на каталог
+  stack           String[]       @default([])
+  /// lane employer: потребность закрыта/в архиве — в кабинете отдельно, подборка не строится
+  archivedAt      DateTime?
+  updatedAt       DateTime?      @updatedAt
 
   invitations Invitation[]
 
@@ -354,17 +373,27 @@ model Task {
 }
 
 model Invitation {
-  id          String           @id @default(cuid())
-  vacancyId   String
-  vacancy     Vacancy          @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
-  candidateId String
-  candidate   Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  status      InvitationStatus @default(sent)
-  salaryOffer Int?
-  message     String?
-  createdAt   DateTime         @default(now())
+  id                String           @id @default(cuid())
+  /// lane employer: null — приглашение без привязки к потребности (R-E-05)
+  vacancyId         String?
+  vacancy           Vacancy?         @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  candidateId       String
+  candidate         Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  status            InvitationStatus @default(sent)
+  salaryOffer       Int?
+  message           String?
+  createdAt         DateTime         @default(now())
+  /// lane employer: компания-отправитель (null только у строк до миграции без вакансии)
+  companyId         String?
+  company           Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// lane employer: кто отправил
+  employerProfileId String?
+  employerProfile   EmployerProfile? @relation(fields: [employerProfileId], references: [id], onDelete: SetNull)
+  viewedAt          DateTime?
+  respondedAt       DateTime?
 
   @@index([candidateId, status])
+  @@index([companyId, createdAt])
 }
 
 // =============================================================================
@@ -420,22 +449,24 @@ enum UserRole {
 /// Аккаунт входа. Профиль роли — отдельной записью (Candidate или EmployerProfile),
 /// чтобы не трогать связи Candidate с остальными таблицами.
 model User {
-  id          String    @id @default(cuid())
-  role        UserRole  @default(pending)
+  id          String     @id @default(cuid())
+  role        UserRole   @default(pending)
   name        String
   /// Из Яндекса; null, если почту не отдали. Не уникален: аккаунты по почте не склеиваем.
   email       String?
-  isDemo      Boolean   @default(false)
+  isDemo      Boolean    @default(false)
   /// Онбординг завершён (ставит markOnboarded). null → после входа редирект на /onboarding.
   onboardedAt DateTime?
-  candidateId String?   @unique
+  candidateId String?    @unique
   candidate   Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   accounts        AuthAccount[]
   employerProfile EmployerProfile?
   consents        Consent[]
+  /// lane onboarding: где человек остановился в онбординге
+  onboarding      OnboardingState?
 }
 
 /// Внешний аккаунт (Яндекс ID). Токены провайдера не храним.
@@ -453,12 +484,14 @@ model AuthAccount {
 }
 
 model EmployerProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now())
+  id          String       @id @default(cuid())
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdAt   DateTime     @default(now())
+  /// lane employer
+  invitations Invitation[]
 
   @@index([companyId])
 }
@@ -472,6 +505,66 @@ model Consent {
   acceptedAt DateTime @default(now())
 
   @@index([userId, acceptedAt])
+}
+
+// =============================================================================
+// lane: onboarding — анкета кандидата и состояние онбординг-чата (E-02)
+// =============================================================================
+
+/// Цель кандидата (R-C-04).
+enum CandidateGoal {
+  job_search
+  market_watch
+  grade_confirm
+}
+
+enum WorkFormat {
+  remote
+  hybrid
+  office
+  relocation
+}
+
+/// Участие в соревнованиях ФСП со слов кандидата (не подтверждение: подтверждает только привязка ФСП ID).
+enum FspParticipation {
+  prize
+  participant
+  none
+}
+
+/// Анкета онбординга, 1–1 с Candidate. Специализация — в Candidate.specialization.
+model CandidateProfile {
+  candidateId      String            @id
+  candidate        Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  goal             CandidateGoal?
+  /// Предполагаемый грейд (R-C-05); категорию даёт только тест.
+  claimedGrade     Grade?
+  stack            String[]          @default([])
+  workFormats      WorkFormat[]      @default([])
+  /// ₽ в месяц
+  salaryMin        Int?
+  salaryExpected   Int?
+  fspParticipation FspParticipation?
+  city             String?
+  updatedAt        DateTime          @updatedAt
+}
+
+/// Состояние онбординг-чата: текущий шаг, ответы, пропуски. «Настроить позже» и
+/// перезагрузка продолжают с места. Сценарий — server/onboarding/scenario.ts.
+model OnboardingState {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// id шага, на котором человек сейчас (null — первый незакрытый)
+  stepId    String?
+  /// { [stepId]: значение ответа }
+  answers   Json     @default("{}")
+  skipped   String[] @default([])
+  /// Сгенерированные реплики помощника { [stepId]: текст } — чтобы перезагрузка не звала LLM повторно
+  lines     Json     @default("{}")
+  /// Служебное: id созданных вакансий работодателя { [grade]: vacancyId }
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // =============================================================================
@@ -511,30 +604,30 @@ model TaskTemplate {
 }
 
 model TestAttempt {
-  id             String            @id @default(cuid())
-  candidateId    String
-  candidate      Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  specialization Specialization
+  id                String            @id @default(cuid())
+  candidateId       String
+  candidate         Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  specialization    Specialization
   /// Заявленный грейд (R-C-05, R-C-06)
-  grade          Grade
-  status         TestAttemptStatus @default(active)
+  grade             Grade
+  status            TestAttemptStatus @default(active)
   /// full | demo
-  mode           String            @default("full")
+  mode              String            @default("full")
   /// Seed попытки: порядок и параметры заданий воспроизводимы
-  seed           Int
-  theta          Float?
-  se             Float?
+  seed              Int
+  theta             Float?
+  se                Float?
   /// P(θ > порог заявленного грейда)
-  pPass          Float?
+  pPass             Float?
   /// P(θ > порог Junior)
-  pJunior        Float?
-  juniorOffered  Boolean           @default(false)
+  pJunior           Float?
+  juniorOffered     Boolean           @default(false)
   juniorConfirmedAt DateTime?
   /// Версия правил (пороги, остановка) на момент попытки
-  policyVersion  String
-  startedAt      DateTime          @default(now())
-  expiresAt      DateTime
-  finishedAt     DateTime?
+  policyVersion     String
+  startedAt         DateTime          @default(now())
+  expiresAt         DateTime
+  finishedAt        DateTime?
 
   items TestItem[]
 

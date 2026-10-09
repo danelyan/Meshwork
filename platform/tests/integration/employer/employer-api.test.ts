@@ -102,6 +102,14 @@ describe('кабинет работодателя (БД)', () => {
     }
     // цитаты резюме наружу не уходят
     expect(raw).not.toContain('Go, PostgreSQL, Kafka:');
+    // тип источника — да (R-E-07), но без ссылок, ссылок на репозитории и цитат
+    const claims = body.items[0].candidate.claims as { level: string; sourceType: string | null }[];
+    const artifact = claims.filter((c) => c.level === 'artifact');
+    expect(artifact.length).toBeGreaterThan(0);
+    expect(artifact.every((c) => c.sourceType === 'github')).toBe(true);
+    expect(claims.filter((c) => c.level === 'third_party').every((c) => c.sourceType === 'codeforces')).toBe(true);
+    expect(claims.filter((c) => c.level === 'self_reported').every((c) => c.sourceType === null)).toBe(true);
+    for (const key of ['sourceRef', 'sourceKind', '"quote"', 'github:demo', 'codeforces:demo', 'cv-demo.pdf']) expect(raw).not.toContain(key);
   });
 
   it('фильтры — query (R-M-04): ФСП, стек, грейд категории; чужая потребность — 404', async () => {

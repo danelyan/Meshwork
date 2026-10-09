@@ -7,11 +7,32 @@ import type { FspState, Grade, Specialization } from '../types';
 
 import { categoryLabel } from './ranking';
 
+/** Тип источника для работодателя (R-E-07): без ссылки, цитаты и имён. */
+export type PublicSourceType = 'github' | 'codeforces' | 'stackoverflow' | 'article' | 'fsp';
+
+/** Тип источника показывается только у утверждений выше «со слов»: резюме, документ и чат наружу не светим. */
+export function publicSourceType(kind: string | null | undefined, level: EvidenceLevel): PublicSourceType | null {
+  if (level !== 'artifact' && level !== 'third_party') return null;
+  switch (kind) {
+    case 'github':
+    case 'codeforces':
+    case 'stackoverflow':
+    case 'fsp':
+      return kind;
+    case 'url':
+      return 'article';
+    default:
+      return null;
+  }
+}
+
 export interface PublicClaim {
   catalogId: string;
   /** Формулировка каталога, не текст кандидата: в правке кандидат мог написать что угодно. */
   statement: string;
   level: EvidenceLevel;
+  /** null — тип не раскрывается (со слов, платформа). */
+  sourceType: PublicSourceType | null;
 }
 
 export interface CandidateCard {

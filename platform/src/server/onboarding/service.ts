@@ -209,7 +209,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
 
 function stepOr409(l: Loaded, stepId: string): StepDef {
   const step = visibleSteps(l.ctx).find((s) => s.id === stepId);
-  if (!step) throw errors.conflict('Этот вопрос сейчас недоступен — обновите страницу');
+  if (!step) throw errors.conflict('Этот вопрос сейчас недоступен — обнови страницу');
   return step;
 }
 

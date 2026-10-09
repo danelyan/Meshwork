@@ -64,7 +64,7 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
 
   return (
     <form className={styles.inviteBox} onSubmit={submit} noValidate aria-label={`Приглашение: ${candidateName}`}>
-      <Field label="Что предлагаете" hint="Задачи, команда, формат работы. Кандидат увидит это вместе с зарплатой." error={fieldErr.message}>
+      <Field label="Что предлагаешь" hint="Задачи, команда, формат работы. Кандидат увидит это вместе с зарплатой." error={fieldErr.message}>
         <textarea className={ui.input} rows={4} value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} />
       </Field>
       <Field label="Зарплата, ₽ в месяц" error={fieldErr.salary}>

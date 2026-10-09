@@ -52,7 +52,7 @@ const ITEM: MatchItem = {
     specialization: 'backend',
     category: { specialization: 'backend', grade: 'middle', label: 'Backend · Middle' },
     fsp: { state: 'linked', hasAchievements: true },
-    claims: [{ catalogId: 'be.idempotency', statement: 'Идемпотентность', level: 'artifact' }],
+    claims: [{ catalogId: 'be.idempotency', statement: 'Идемпотентность', level: 'artifact', sourceType: 'github' }],
     contacts: null,
   },
   invitation: null,
@@ -67,6 +67,7 @@ describe('кабинет работодателя: компоненты', () => 
     expect(covered.querySelectorAll('li')).toHaveLength(2);
     expect(covered.querySelector('[data-level="artifact"]')).not.toBeNull();
     expect(screen.getByText(/доказано артефактами и выше - 1/)).toBeDefined();
+    expect(screen.getAllByText(/доказано: GitHub/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Очереди/)).toBeDefined();
     expect(screen.getByText(/контакты откроются/)).toBeDefined();
     expect(screen.getByRole('button', { name: 'Пригласить: Кандидат #ABC123' })).toBeDefined();
@@ -88,9 +89,9 @@ describe('кабинет работодателя: компоненты', () => 
     fireEvent.click(screen.getByRole('button', { name: 'Пригласить: Кандидат #A' }));
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
     expect(await screen.findByText(/хотя бы в 10 символах/)).toBeDefined();
-    expect(screen.getByText('Укажите зарплату в рублях')).toBeDefined();
+    expect(screen.getByText('Укажи зарплату в рублях')).toBeDefined();
     expect(fetchFn).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText('Что предлагаете'), { target: { value: 'Платёжная команда, Go' } });
+    fireEvent.change(screen.getByLabelText('Что предлагаешь'), { target: { value: 'Платёжная команда, Go' } });
     fireEvent.change(screen.getByLabelText('Зарплата, ₽ в месяц'), { target: { value: '230 000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
     expect(await screen.findByText(/Приглашение отправлено/)).toBeDefined();
@@ -103,7 +104,7 @@ describe('кабинет работодателя: компоненты', () => 
     stubFetch({ error: { code: 'rate_limited', message: 'Лимит: не больше 20 приглашений от компании за сутки' } }, 429);
     render(<InviteForm candidateId="c1" candidateName="К" vacancyId={null} defaultSalary={100000} />);
     fireEvent.click(screen.getByRole('button', { name: 'Пригласить: К' }));
-    fireEvent.change(screen.getByLabelText('Что предлагаете'), { target: { value: 'Платёжная команда, Go' } });
+    fireEvent.change(screen.getByLabelText('Что предлагаешь'), { target: { value: 'Платёжная команда, Go' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Лимит: не больше 20 приглашений от компании за сутки');
   });
@@ -128,7 +129,7 @@ describe('кабинет работодателя: компоненты', () => 
     render(<VacancyForm catalog={catalog} />);
     expect(screen.getByRole('button', { name: 'ORM' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.queryByRole('button', { name: 'Доступность' })).toBeNull();
-    fireEvent.change(screen.getByLabelText('Кого ищете'), { target: { value: 'Backend' } });
+    fireEvent.change(screen.getByLabelText('Кого ищешь'), { target: { value: 'Backend' } });
     fireEvent.change(screen.getByLabelText('Зарплата от, ₽'), { target: { value: '200000' } });
     fireEvent.change(screen.getByLabelText('Зарплата до, ₽'), { target: { value: '100000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Создать и показать подборку' }));

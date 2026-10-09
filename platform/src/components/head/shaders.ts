@@ -7,6 +7,13 @@ layout(location=2) in vec2 aUV;
 layout(location=3) in vec3 aSmooth;
 layout(location=4) in vec3 aSmoothNormal;
 layout(location=5) in vec3 aCorner;
+layout(location=6) in float aPart;
+layout(location=7) in vec3 aJawOpen;
+layout(location=8) in vec3 aLipRound;
+layout(location=9) in vec3 aLipWide;
+layout(location=10) in vec3 aJawNormal;
+layout(location=11) in vec3 aRoundNormal;
+layout(location=12) in vec3 aWideNormal;
 uniform vec2 uAngle;
 uniform vec2 uPointer;
 uniform float uAspect;
@@ -16,26 +23,44 @@ uniform float uSmooth;
 uniform float uZoom;
 uniform float uBurst;
 uniform int uMode;
+uniform float uMouth;
+uniform float uLipRound;
+uniform float uLipWide;
+uniform float uBlink;
+uniform float uBreath;
 out vec3 vPosition;
 out vec3 vNormal;
 out vec2 vUV;
 out float vWave;
 out vec2 vScaleUV;
+flat out float vPart;
 float hash(vec3 p) { return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453); }
 mat3 rotation(vec2 a) {
   float cy=cos(a.x), sy=sin(a.x), cx=cos(a.y), sx=sin(a.y);
   return mat3(cy,0.,-sy, 0.,1.,0., sy,0.,cy)*mat3(1.,0.,0., 0.,cx,sx, 0.,-sx,cx);
 }
 void main() {
-  vec3 p=mix(aPosition,aSmooth,uSmooth)-vec3(0.,.5,0.);
-  mat3 r=rotation(uAngle);
-  vec3 n=normalize(r*mix(aNormal,aSmoothNormal,uSmooth));
-  p=r*p;
+  vec3 p=mix(aPosition,aSmooth,uSmooth)+aJawOpen*uMouth+aLipRound*uLipRound+aLipWide*uLipWide;
+  vec3 forward=vec3(.514,0.,.858), side=vec3(.858,0.,-.514);
+  float faceX=dot(p,side), depth=dot(p,forward);
+  float front=smoothstep(.20,.31,depth);
+  float eyeMask=exp(-pow((abs(faceX)-.103)/.039,4.))*exp(-pow((p.y-.638)/.028,4.))*front;
+  // Upper and lower lids meet; the back and temples stay untouched.
+  p.y=mix(p.y,.638,uBlink*eyeMask*.92);
+  vPart=aPart;
+  // The base is fixed, the neck gradually carries the full head rotation.
+  float neck=smoothstep(.06,.30,aPosition.y);
+  mat3 r=rotation(uAngle*neck);
+  vec3 n=normalize(r*(mix(aNormal,aSmoothNormal,uSmooth)+aJawNormal*uMouth+aRoundNormal*uLipRound+aWideNormal*uLipWide));
+  vec3 pivot=vec3(0.,.22,0.);
+  p=r*(p-pivot)+pivot;
+  p.y+=uBreath*neck;
+  p-=vec3(0.,.5,0.);
   vScaleUV=aCorner.xy;
   float d=distance(p.xy,uPointer*vec2(.4,.48));
   vWave=sin(d*34.-uTime*4.)*exp(-d*3.5);
   if(uMode==3) p+=n*vWave*.025*uStrength;
-  if(uMode==2) {
+  if(uMode==2 && aPart<.5) {
     float seed=hash(aPosition);
     vec3 up=abs(n.y)>.96 ? vec3(0.,0.,1.) : vec3(0.,1.,0.);
     vec3 tangent=normalize(cross(up,n));
@@ -63,6 +88,7 @@ in vec3 vNormal;
 in vec2 vUV;
 in float vWave;
 in vec2 vScaleUV;
+flat in float vPart;
 uniform sampler2D uTexture;
 uniform sampler2D uNormalMap;
 uniform sampler2D uBackdrop;
@@ -75,18 +101,27 @@ uniform float uTime;
 uniform float uStrength;
 uniform float uSmooth;
 uniform int uMode;
+uniform float uMouth;
+uniform float uLipRound;
+uniform float uLipWide;
+uniform float uBlink;
 uniform int uWire;
 out vec4 color;
 void main() {
+  // Glass must not reveal the artificial mouth cavity while the lips are closed.
+  if(vPart>.5 && (uMouth<.08 || uBackface>.5)) discard;
   vec3 n=normalize(vNormal);
   vec3 dp1=dFdx(vPosition), dp2=dFdy(vPosition);
   vec2 duv1=dFdx(vUV), duv2=dFdy(vUV);
-  vec3 tangent=normalize(dp1*duv2.y-dp2*duv1.y);
-  vec3 bitangent=normalize(-dp1*duv2.x+dp2*duv1.x);
-  vec3 mapN=texture(uNormalMap,vUV).xyz*2.-1.;
-  mapN.xy*=mix(.5,.08,uSmooth);
-  vec3 detail=normalize(mat3(tangent,bitangent,n)*normalize(mapN));
-  if(uMode!=2 && uMode!=5) n=normalize(mix(n,detail,.55));
+  float uvArea=duv1.x*duv2.y-duv1.y*duv2.x;
+  if(abs(uvArea)>1e-9 && vPart<.5 && uMode!=2 && uMode!=5) {
+    vec3 tangent=normalize(dp1*duv2.y-dp2*duv1.y);
+    vec3 bitangent=normalize(-dp1*duv2.x+dp2*duv1.x);
+    vec3 mapN=texture(uNormalMap,vUV).xyz*2.-1.;
+    mapN.xy*=mix(.5,.08,uSmooth);
+    vec3 detail=normalize(mat3(tangent,bitangent,n)*normalize(mapN));
+    n=normalize(mix(n,detail,.55));
+  }
   float facing=abs(n.z), rim=pow(1.-facing,2.5);
   vec3 l=normalize(vec3(uPointer.x*.8-.6,uPointer.y*.7+.9,1.2));
   float diffuse=max(dot(n,l),0.);
@@ -130,6 +165,10 @@ void main() {
     vec3 reflection=uSilver*(.12+softbox*.95+spec*.8)+uAccent*rim*.26;
     vec3 glass=mix(transmitted*mix(uSilver,vec3(1.),.92),reflection,fresnel)+uSilver*spec*.23;
     color=vec4(glass,uBackface>.5 ? .23 : .86);
+  }
+  if(vPart>.5) {
+    vec3 oral=vPart<1.5 ? uSilver*.007 : vPart<2.5 ? uSilver*(.48+.24*diffuse) : mix(uAccent,uSilver,.22)*(.08+.08*diffuse);
+    color=vec4(oral,1.);
   }
   color.rgb=pow(max(color.rgb,vec3(0.)),vec3(.85));
 }`;

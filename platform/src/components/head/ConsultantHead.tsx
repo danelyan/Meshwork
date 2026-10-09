@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui';
 import { createHeadRenderer, type HeadRenderer } from './renderer';
+import { useHeadSpeech } from './useHeadSpeech';
 import styles from './ConsultantScene.module.css';
 
 /** Separate decorative glass portrait over the unchanged page background. */
@@ -13,6 +14,8 @@ export function ConsultantHead() {
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [state, setState] = useState<'loading' | 'ready' | 'fallback'>('loading');
+  const [desktopActive, setDesktopActive] = useState(false);
+  const speech = useHeadSpeech(current, desktopActive && state === 'ready' && !reducedMotion && !paused);
   useEffect(() => {
     pausedRef.current = paused;
     current.current?.setPaused?.(paused);
@@ -23,6 +26,7 @@ export function ConsultantHead() {
     let stop = () => {};
     const sync = () => {
       stop();
+      setDesktopActive(desktop.matches);
       setReducedMotion(motion.matches);
       if (!desktop.matches || !canvas.current) return;
       const controller = new AbortController();
@@ -42,10 +46,15 @@ export function ConsultantHead() {
   }, []);
   return <div className={styles.portrait} data-head-state={state}>
     <canvas ref={canvas} className={styles.canvas} aria-hidden="true" />
+    <audio ref={speech.audio} src="/audio/avatar-demo.mp3" preload="none" hidden onEnded={speech.stop} onError={speech.fail} />
       <div className={styles.caption}>
         {state === 'ready' && !reducedMotion && <Button size="sm" className={styles.motionToggle} onClick={() => setPaused(value => !value)}>
           {paused ? 'Включить анимацию' : 'Остановить анимацию'}
         </Button>}
+        {state === 'ready' && !reducedMotion && <Button size="sm" className={styles.motionToggle} disabled={paused} onClick={() => { if (speech.speaking) speech.stop(); else void speech.play(); }}>
+          {speech.speaking ? 'Остановить речь' : 'Демо речи'}
+        </Button>}
+        {speech.error && <p role="alert">{speech.error}</p>}
       </div>
   </div>;
 }

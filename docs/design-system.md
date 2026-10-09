@@ -240,3 +240,6 @@ The consultant uses the separate Neuron wire material (mode 4) from codex/intera
 
 ### Glass consultant portrait, 9 October
 The user selected the glass material (mode 5) from codex/interactive-head. The local transparent canvas renders back and front glass surfaces and refracts a texture of the existing static 48px grid, using only paper, ink and blue tokens. The surrounding background and layout remain the same.
+
+### Animated glass consultant, 9 October
+The glass portrait may blink and deform at the neck while its shoulder base stays fixed. Mouth movement uses Blender facial morphs. Speech controls use existing small Buttons, with a labelled demo recording started by the user, no autoplay or microphone. The static page grid and left chat layout remain unchanged; reduced-motion stops the decorative animation.

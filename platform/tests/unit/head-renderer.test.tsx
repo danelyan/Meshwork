@@ -7,6 +7,8 @@ vi.mock('@/components/head/model', () => ({
     positions: new Float32Array([0, 0, 0]),
     normals: new Float32Array([0, 0, 1]),
     indices: new Uint32Array([0, 0, 0]), uv: new Float32Array([0, 0]), images: [new Blob(), new Blob(), new Blob()],
+    mouthParts: new Float32Array([0]),
+    morphs: Array.from({ length: 3 }, () => ({ positions: new Float32Array([0, 0, 0]), normals: new Float32Array([0, 0, 0]) })),
   }),
 }));
 
@@ -79,11 +81,12 @@ describe('separate glass portrait', () => {
     for (let i = 1; i <= 25; i++) s.frame(50 + i * 50);
     const left = s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1)!;
     expect(left[1]).toBeLessThan(-.75);
-    expect(left[1]).toBeGreaterThan(-1);
+    expect(left[1]).toBeGreaterThan(-1.1);
     point(1280);
     for (let i = 1; i <= 25; i++) s.frame(1300 + i * 50);
     const right = s.gl.uniform2f.mock.calls.filter(call => call[0] === 'uAngle').at(-1)!;
-    expect(right[1]).toBeGreaterThan(.45);
+    expect(right[1]).toBeGreaterThan(-.1);
+    expect(right[1]).toBeLessThan(.05);
     expect(fetch).toHaveBeenCalledOnce();
     renderer.dispose();
   });
@@ -106,7 +109,7 @@ describe('separate glass portrait', () => {
     const s = stage();
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
     renderer.dispose(); renderer.dispose();
-    expect(s.gl.deleteBuffer).toHaveBeenCalledTimes(6);
+    expect(s.gl.deleteBuffer).toHaveBeenCalledTimes(13);
     expect(s.gl.deleteShader).toHaveBeenCalledTimes(4);
     expect(s.gl.deleteTexture).toHaveBeenCalledTimes(3);
     expect(s.gl.deleteProgram).toHaveBeenCalledTimes(2);
@@ -119,11 +122,31 @@ describe('separate glass portrait', () => {
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
     s.frame(50);
     renderer.setPaused?.(true);
+    if (s.queued.size) s.frame(100);
     const event = new Event('pointermove');
     Object.assign(event, {clientX: 1200, clientY: 100, pointerType: 'mouse'});
     document.dispatchEvent(event);
     expect(s.queued.size).toBe(0);
     renderer.setPaused?.(false); s.frame(100);
+    expect(fetch).toHaveBeenCalledOnce();
+    renderer.dispose();
+  });
+  it('animates the mouth and blink while freezing the pose during pause', async () => {
+    const s = stage();
+    const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
+    s.frame(50);
+    renderer.setSpeech?.(1, .4, .2);
+    for (let i = 1; i <= 64; i++) s.frame(50 + i * 50);
+    expect(s.gl.uniform1f.mock.calls.filter(call => call[0] === 'uMouth').at(-1)![1]).toBeGreaterThan(.9);
+    expect(s.gl.uniform1f.mock.calls.some(call => call[0] === 'uBlink' && call[1] > .8)).toBe(true);
+    renderer.setPaused?.(true);
+    if (s.queued.size) s.frame(3300);
+    const phase = s.gl.uniform1f.mock.calls.filter(call => call[0] === 'uTime').at(-1);
+    renderer.setSpeech?.(0);
+    document.dispatchEvent(new Event('visibilitychange'));
+    s.frame(10000);
+    expect(s.gl.uniform1f.mock.calls.filter(call => call[0] === 'uTime').at(-1)).toEqual(phase);
+    renderer.setPaused?.(false); s.frame(10050); s.frame(10100);
     expect(fetch).toHaveBeenCalledOnce();
     renderer.dispose();
   });

@@ -4,7 +4,7 @@
 .canvas { display: block; width: 100%; height: 100%; }
 .fallback { position: absolute; inset: 0; display: grid; place-items: center; }
 .fallback img { width: min(90%, 440px); height: auto; }
-.caption { position: absolute; inset: auto 0 12px; text-align: center; font: 11px var(--mono); color: var(--muted); }
+.caption { position: absolute; inset: auto 0 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; text-align: center; font: 11px var(--mono); color: var(--muted); }
 .motionToggle { pointer-events: auto; font: var(--fs-xs) var(--mono); }
 @media (max-width: 1050px) {
   .scene { display: block; padding-top: 20px; }

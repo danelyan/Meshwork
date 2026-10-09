@@ -5,13 +5,13 @@ const schema = z.object({
   asset: z.object({ version: z.literal('2.0') }),
   bufferViews: z.array(z.object({ buffer: z.literal(0), byteOffset: index.default(0), byteLength: index, byteStride: index.optional() })),
   accessors: z.array(z.object({ bufferView: index, byteOffset: index.default(0), componentType: z.number(), count: index, type: z.string() })),
-  meshes: z.array(z.object({ primitives: z.array(z.object({ mode: z.literal(4).default(4), indices: index, attributes: z.object({ POSITION: index, NORMAL: index, TEXCOORD_0: index }) })) })),
+  meshes: z.array(z.object({ extras: z.object({ targetNames: z.array(z.string()) }).optional(), primitives: z.array(z.object({ mode: z.literal(4).default(4), indices: index, attributes: z.object({ POSITION: index, NORMAL: index, TEXCOORD_0: index, _MOUTH_PART: index.optional() }), targets: z.array(z.object({ POSITION: index, NORMAL: index })).optional() })) })),
   images: z.array(z.object({ bufferView: index, mimeType: z.enum(['image/png', 'image/jpeg']) })),
 });
 
-export type HeadModel = { positions: Float32Array; normals: Float32Array; uv: Float32Array; indices: Uint32Array; images: Blob[] };
+export type HeadModel = { positions: Float32Array; normals: Float32Array; uv: Float32Array; indices: Uint32Array; images: Blob[]; mouthParts: Float32Array; morphs: { positions: Float32Array; normals: Float32Array }[] };
 
-/** Reader for the supplied, uncompressed, single-mesh Tripo GLB; unsupported layouts fail explicitly. */
+/** Reader for the supplied head and Blender single-mesh facial morph export; unsupported layouts fail explicitly. */
 export function parseHeadGlb(buffer: ArrayBuffer): HeadModel {
   if (buffer.byteLength < 28) throw new Error('GLB слишком короткий');
   const view = new DataView(buffer);
@@ -28,10 +28,10 @@ export function parseHeadGlb(buffer: ArrayBuffer): HeadModel {
     if (!b || b.byteOffset + b.byteLength > binLength || b.byteStride) throw new Error('Неподдерживаемый bufferView');
     return buffer.slice(binStart + b.byteOffset, binStart + b.byteOffset + b.byteLength);
   };
-  const floats = (i: number, type: 'VEC2' | 'VEC3') => {
+  const floats = (i: number, type: 'SCALAR' | 'VEC2' | 'VEC3') => {
     const a = data.accessors[i];
     if (!a || a.type !== type || a.componentType !== 5126) throw new Error('Неподдерживаемый атрибут');
-    const b = bytes(a.bufferView), length = a.count * (type === 'VEC3' ? 3 : 2);
+    const b = bytes(a.bufferView), length = a.count * (type === 'VEC3' ? 3 : type === 'VEC2' ? 2 : 1);
     if (a.byteOffset % 4 || a.byteOffset + length * 4 > b.byteLength) throw new Error('Атрибут выходит за границы');
     const result = new Float32Array(b, a.byteOffset, length).slice();
     if (result.some(v => !Number.isFinite(v))) throw new Error('Неконечные координаты');
@@ -48,7 +48,11 @@ export function parseHeadGlb(buffer: ArrayBuffer): HeadModel {
   if (a.byteOffset % width || a.byteOffset + a.count * width > b.byteLength) throw new Error('Индексы выходят за границы');
   const indices = Uint32Array.from(width === 4 ? new Uint32Array(b, a.byteOffset, a.count) : new Uint16Array(b, a.byteOffset, a.count));
   if (positions.length !== normals.length || uv.length / 2 !== positions.length / 3 || indices.some(v => v >= positions.length / 3)) throw new Error('Несогласованные атрибуты');
-  return { positions, normals, uv, indices, images: data.images.map(image => new Blob([bytes(image.bufferView)], { type: image.mimeType })) };
+  const mouthParts = primitive.attributes._MOUTH_PART === undefined ? new Float32Array(positions.length / 3) : floats(primitive.attributes._MOUTH_PART, 'SCALAR');
+  const morphs = (primitive.targets ?? []).map(target => ({ positions: floats(target.POSITION, 'VEC3'), normals: floats(target.NORMAL, 'VEC3') }));
+  if (morphs.length && data.meshes[0]?.extras?.targetNames.join(',') !== 'JawOpen,LipRound,LipWide') throw new Error('Неподдерживаемые формы рта');
+  if (mouthParts.length !== positions.length / 3 || mouthParts.some(p => !Number.isInteger(p) || p < 0 || p > 3) || (morphs.length !== 0 && morphs.length !== 3) || morphs.some(m => m.positions.length !== positions.length || m.normals.length !== positions.length)) throw new Error('Некорректный риг рта');
+  return { positions, normals, uv, indices, mouthParts, morphs, images: data.images.map(image => new Blob([bytes(image.bufferView)], { type: image.mimeType })) };
 }
 
 /** Weld UV seams for adjacency, then soften only the front forehead. Original arrays are never mutated. */

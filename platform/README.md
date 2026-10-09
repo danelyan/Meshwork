@@ -238,3 +238,14 @@ generate` в лейне перезапишет его для всех — схе
 Шрифты - `next/font` в `src/app/layout.tsx`: Golos Text (Google, самохостинг при сборке, нужна сеть) и JetBrains Mono (`src/app/fonts/`); в CSS - `var(--font)` и `var(--mono)`.
 Общие классы - `src/components/ui.module.css`: `btn` (призрак), `primary` (чёрная), `cta` (синяя), `small`, `chip`/`chipOn`, `tag`+`outline|solid|red`, `field`/`input`/`label`/`hint`, `panel`/`glass`, `notice`/`errorBox`, `kicker`, `muted`. Использовать: `import ui from './ui.module.css'` и `className={`${ui.btn} ${ui.cta}`}`.
 Лайм `#D4FF3A` - только на карте; уровни доказательств - `LevelBadge` (текст + знак + форма).
+
+### Consultant head animation
+The glass consultant portrait uses `public/models/head-mouth.glb` with Blender
+mouth morphs and a fixed-base neck deformation. `Demo speech` plays the local
+synthetic recording and animates lips from its audio energy; chat replies are
+not currently voiced. Pause stops audio and decorative motion. The model is
+not initialized on narrow screens, and reduced-motion disables animation.
+
+Authoring: run Blender in background with
+`--python scripts/rig-head-mouth.py -- --export-only` from the repository root.
+The editable rig is written to ignored `output/head-lab/head-mouth-rig.blend`.

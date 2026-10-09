@@ -1,8 +1,9 @@
 import { parseHeadGlb } from './model';
 import { headPointer } from './pointer';
+import { headMotion, headPose, mouthWeights } from './motion';
 import { backdropFragmentShader, backdropVertexShader, fragmentShader, vertexShader } from './shaders';
 
-export type HeadRenderer = { dispose(): void; setPaused?(paused: boolean): void };
+export type HeadRenderer = { dispose(): void; setPaused?(paused: boolean): void; setSpeech?(mouth: number, lipRound?: number, lipWide?: number): void };
 
 function rgb(value: string): [number, number, number] {
   const match = value.trim().match(/^#([\da-f]{6})$/i);
@@ -28,7 +29,7 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     bitmaps.forEach(bitmap => bitmap.close());
   };
   try {
-    const response = await fetch('/models/head.glb', { signal });
+    const response = await fetch('/models/head-mouth.glb', { signal });
     if (!response.ok) throw new Error('Head model unavailable');
     const model = parseHeadGlb(await response.arrayBuffer());
     signal.throwIfAborted();
@@ -64,6 +65,12 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     [model.positions, model.normals, model.uv, model.positions, model.normals].forEach((data, index) => {
       bind(data); gl.enableVertexAttribArray(index); gl.vertexAttribPointer(index, index === 2 ? 2 : 3, gl.FLOAT, false, 0, 0);
     });
+    bind(model.mouthParts); gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.FLOAT, false, 0, 0);
+    model.morphs.forEach((morph, index) => {
+      for (const [location, data] of [[7 + index, morph.positions], [10 + index, morph.normals]] as const) {
+        bind(data); gl.enableVertexAttribArray(location); gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 0, 0);
+      }
+    });
     const triangles = model.indices;
     const triangleBuffer = bind(triangles, gl.ELEMENT_ARRAY_BUFFER);
     bitmaps.forEach((bitmap, index) => {
@@ -95,22 +102,35 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     gl.uniform1f(uniform('Zoom'), 1); gl.uniform1f(uniform('Time'), 0); gl.uniform1f(uniform('Burst'), 0);
     gl.uniform1i(uniform('Mode'), 5); gl.uniform1i(uniform('Wire'), 0);
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
-    let targetX = -.15, targetY = .03, angleX = targetX, angleY = targetY;
+    let [targetX, targetY] = headPose(0, 0);
+    let angleX = targetX, angleY = targetY;
     let pointerX = 0, pointerY = 0, lastDraw = 0, visible = true, paused = false;
+    let previousTime: number | null = null, elapsed = 0;
+    let speechTarget: [number, number, number] = [0, 0, 0];
+    const speech: [number, number, number] = [0, 0, 0];
+    const mouthUniform = uniform('Mouth'), roundUniform = uniform('LipRound'), wideUniform = uniform('LipWide');
+    const blinkUniform = uniform('Blink'), breathUniform = uniform('Breath');
     const pointer = (event: PointerEvent) => {
       if (paused || event.pointerType === 'touch') return;
       [pointerX, pointerY] = headPointer(event.clientX, event.clientY, innerWidth, innerHeight);
-      targetX = -.15 + pointerX * .7; targetY = .03 - pointerY * .15;
+      [targetX, targetY] = headPose(pointerX, pointerY);
       schedule();
     };
-    const leave = () => { if (paused) return; pointerX = 0; pointerY = 0; targetX = -.15; targetY = .03; schedule(); };
+    const leave = () => { if (paused) return; pointerX = 0; pointerY = 0; [targetX, targetY] = headPose(0, 0); schedule(); };
     const schedule = () => { if (!disposed && !raf) raf = requestAnimationFrame(frame); };
     function frame(now: number) {
       raf = 0;
-      if (disposed || !visible || document.hidden) return;
+      if (disposed || !visible || document.hidden) { previousTime = null; return; }
       if (!reducedMotion && now - lastDraw < 1000 / 30) { schedule(); return; }
       lastDraw = now;
-      if (!paused) { angleX += (targetX - angleX) * .16; angleY += (targetY - angleY) * .16; }
+      if (!paused && !reducedMotion) {
+        const dt = previousTime === null ? 0 : Math.max(0, Math.min(.1, (now - previousTime) / 1000));
+        elapsed += dt; previousTime = now;
+        const follow = 1 - Math.exp(-dt * 5.2), lips = 1 - Math.exp(-dt * 22);
+        angleX += (targetX - angleX) * follow; angleY += (targetY - angleY) * follow;
+        speech.forEach((value, index) => { speech[index] = value + (speechTarget[index]! - value) * lips; });
+      } else { previousTime = null; }
+      const motion = headMotion(reducedMotion ? 0 : elapsed);
       const bounds = canvas.getBoundingClientRect(), dpr = Math.min(devicePixelRatio, 1.5);
       const width = Math.max(1, Math.round(bounds.width * dpr)), height = Math.max(1, Math.round(bounds.height * dpr));
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
@@ -129,7 +149,11 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
       gl!.bindFramebuffer(gl!.FRAMEBUFFER, null); gl!.useProgram(program); gl!.enable(gl!.DEPTH_TEST);
       gl!.uniform2f(uniform('Resolution'), width, height);
-      gl!.uniform2f(angleUniform, angleX, angleY); gl!.uniform2f(pointerUniform, pointerX, pointerY); gl!.uniform1f(aspectUniform, width / height);
+      gl!.uniform2f(angleUniform, angleX + motion.yaw, angleY + motion.pitch);
+      gl!.uniform2f(pointerUniform, pointerX, pointerY); gl!.uniform1f(aspectUniform, width / height);
+      gl!.uniform1f(uniform('Time'), elapsed);
+      gl!.uniform1f(blinkUniform, motion.blink); gl!.uniform1f(breathUniform, motion.breath);
+      gl!.uniform1f(mouthUniform, speech[0]); gl!.uniform1f(roundUniform, speech[1]); gl!.uniform1f(wideUniform, speech[2]);
       gl!.bindBuffer(gl!.ELEMENT_ARRAY_BUFFER, triangleBuffer); gl!.uniform1i(uniform('Wire'), 0);
       gl!.enable(gl!.BLEND); gl!.blendFuncSeparate(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA, gl!.ONE, gl!.ONE_MINUS_SRC_ALPHA);
       gl!.enable(gl!.CULL_FACE); gl!.cullFace(gl!.FRONT); gl!.depthMask(false); gl!.uniform1f(uniform('Backface'), 1);
@@ -138,20 +162,25 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
       gl!.drawElements(gl!.TRIANGLES, triangles.length, gl!.UNSIGNED_INT, 0);
       gl!.disable(gl!.CULL_FACE); gl!.disable(gl!.BLEND);
       canvas.dataset.rendered = 'glass';
-      if (!paused && !reducedMotion && (Math.abs(targetX - angleX) > .0001 || Math.abs(targetY - angleY) > .0001)) schedule();
+      if (!paused && !reducedMotion) schedule();
     }
     const lost = (event: Event) => { event.preventDefault(); cancelAnimationFrame(raf); raf = 0; onContextLost(); };
-    const observer = new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? false; if (visible) schedule(); });
+    const observer = new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? false; previousTime = null; if (visible) schedule(); });
     const resize = new ResizeObserver(schedule);
     observer.observe(canvas); resize.observe(canvas);
     if (!reducedMotion) { document.addEventListener('pointermove', pointer, { passive: true }); document.addEventListener('pointerleave', leave); }
-    document.addEventListener('visibilitychange', schedule); canvas.addEventListener('webglcontextlost', lost);
+    const visibility = () => { previousTime = null; schedule(); };
+    document.addEventListener('visibilitychange', visibility); canvas.addEventListener('webglcontextlost', lost);
     schedule();
-    return { setPaused(value) { paused = value; if (!value) schedule(); }, dispose() {
+    return { setPaused(value) {
+      paused = value; previousTime = null;
+      if (value) { cancelAnimationFrame(raf); raf = 0; } else schedule();
+    },
+      setSpeech(mouth, round, wide) { speechTarget = mouthWeights(mouth, round, wide); if (!paused && !reducedMotion) schedule(); }, dispose() {
       if (disposed) return;
       disposed = true; cancelAnimationFrame(raf); observer.disconnect(); resize.disconnect();
       document.removeEventListener('pointermove', pointer); document.removeEventListener('pointerleave', leave);
-      document.removeEventListener('visibilitychange', schedule); canvas.removeEventListener('webglcontextlost', lost); release();
+      document.removeEventListener('visibilitychange', visibility); canvas.removeEventListener('webglcontextlost', lost); release();
     } };
   } catch (error) { release(); throw error; }
 }

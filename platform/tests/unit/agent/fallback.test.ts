@@ -46,7 +46,7 @@ describe('fallbackReply', () => {
       reason: 'llm_unavailable',
       pipeline: { docs: [{ label: 'резюме', origin: 'cv.pdf', sourceKind: 'resume', lines: 5 }], failed: [], proposed: [], rejected: 0, merged: 0, alreadyKnown: 3, rejectSummary: '', hiddenText: 0, injectionSuspect: false, degraded: false },
     });
-    expect(text).toContain('Новых утверждений нет: 3 уже в вашем профиле');
+    expect(text).toContain('Новых утверждений нет: 3 уже в твоём профиле');
     expect(text).not.toContain('/profile');
     expect(text).not.toContain('не нашёл');
   });

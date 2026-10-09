@@ -20,21 +20,27 @@ export interface Verdict {
 
 /** Признание незнания или отсутствия данных. */
 export const UNKNOWN_RE =
-  /не знаю|не могу (сказать|подтвердить|ответить)|нет (таких |этих |точных |у меня )?(данных|сведений|информации)|в моих данных|в моих (сведениях|инструкциях)|не располагаю|мне неизвестн|(такого|этого) правила (нет|не)|нет такого правила|не нашёл|не нашел|не знаю точно|не уверен/i;
+  /не знаю|не могу (сказать|подтвердить|ответить)|нет (таких |этих |точных |у меня )?(данных|сведений|информации)|в моих данных|в моих (сведениях|инструкциях)|не располагаю|у меня нет|нет доступа|(назвать|сказать) не могу|не могу назвать|мне неизвестн|(такого|этого) правила (нет|не)|нет такого правила|не нашёл|не нашел|не знаю точно|не уверен/i;
 
-const NEG_BEFORE = /(\bне|\bнет|\bни|\bнельзя|\bбез)[\s,]*(\p{L}+[\s,]+){0,2}$/iu;
+// В JS `\b` не видит кириллицу как буквы — граница слова через lookbehind.
+const NEG_BEFORE = /(?<!\p{L})(не|нет|ни|нельзя|без)[\s,]+(\p{L}+[\s,]+){0,2}$/iu;
 
 /**
  * Есть ли в тексте утверждение по шаблону без отрицания перед ним
  * («перестанут приходить» — да, «не перестанут приходить» — нет).
  */
 export function affirms(text: string, re: RegExp): boolean {
+  return affirmedMatch(text, re) !== null;
+}
+
+/** Первое совпадение без отрицания перед ним (для причины провала). */
+export function affirmedMatch(text: string, re: RegExp): RegExpMatchArray | null {
   const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
   for (const m of text.matchAll(g)) {
     const before = text.slice(Math.max(0, (m.index ?? 0) - 30), m.index ?? 0);
-    if (!NEG_BEFORE.test(before)) return true;
+    if (!NEG_BEFORE.test(before)) return m;
   }
-  return false;
+  return null;
 }
 
 export const ok = (why = 'ok'): Verdict => ({ pass: true, why });
@@ -46,8 +52,8 @@ export function all(...vs: Verdict[]): Verdict {
 }
 
 export function forbid(text: string, re: RegExp, why: string, opts: { negationAware?: boolean } = {}): Verdict {
-  const hit = opts.negationAware === false ? re.test(text) : affirms(text, re);
-  return hit ? fail(`${why}: «${snippet(text, re)}»`) : ok();
+  const m = opts.negationAware === false ? new RegExp(re.source, re.flags.replace('g', '')).exec(text) : affirmedMatch(text, re);
+  return m ? fail(`${why}: «${around(text, m)}»`) : ok();
 }
 
 export function require_(text: string, re: RegExp, why: string): Verdict {
@@ -58,9 +64,7 @@ export function called(out: TurnOutput, names: string[], why: string): Verdict {
   return out.calls.some((c) => names.includes(c)) ? ok() : fail(why);
 }
 
-function snippet(text: string, re: RegExp): string {
-  const m = new RegExp(re.source, re.flags.replace('g', '')).exec(text);
-  if (!m) return '';
-  const i = m.index;
+function around(text: string, m: RegExpMatchArray): string {
+  const i = m.index ?? 0;
   return text.slice(Math.max(0, i - 25), i + m[0].length + 25).replace(/\s+/g, ' ');
 }

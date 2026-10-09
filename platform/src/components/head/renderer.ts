@@ -11,28 +11,21 @@ function rgb(value: string): [number, number, number] {
   return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
-/** Chrome renderer from codex/interactive-head, with a transparent, decorative stage. */
+/** A soft face relief pressing through the page grid on a transparent stage. */
 export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: AbortSignal, reducedMotion: boolean, onContextLost: () => void): Promise<HeadRenderer> {
-  const gl = canvas.getContext('webgl2', { antialias: true, alpha: true });
+  const gl = canvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true });
   if (!gl) throw new Error('WebGL 2 unavailable');
-  const buffers: WebGLBuffer[] = [], textures: WebGLTexture[] = [], shaders: WebGLShader[] = [], bitmaps: ImageBitmap[] = [];
+  const buffers: WebGLBuffer[] = [], shaders: WebGLShader[] = [];
   let program: WebGLProgram | null = null, raf = 0, disposed = false;
   const release = () => {
     buffers.forEach(buffer => gl.deleteBuffer(buffer));
-    textures.forEach(texture => gl.deleteTexture(texture));
     shaders.forEach(shader => gl.deleteShader(shader));
     if (program) gl.deleteProgram(program);
-    bitmaps.forEach(bitmap => bitmap.close());
   };
   try {
     const response = await fetch('/models/head.glb', { signal });
     if (!response.ok) throw new Error('Head model unavailable');
     const model = parseHeadGlb(await response.arrayBuffer());
-    signal.throwIfAborted();
-    for (const image of [model.images[0], model.images[2]]) {
-      if (!image) throw new Error('Missing head texture');
-      bitmaps.push(await createImageBitmap(image));
-    }
     signal.throwIfAborted();
     const compile = (type: number, source: string) => {
       const shader = gl.createShader(type);
@@ -52,37 +45,27 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
       if (!buffer) throw new Error('Buffer unavailable');
       buffers.push(buffer); gl.bindBuffer(target, buffer); gl.bufferData(target, data, gl.STATIC_DRAW);
     };
-    [model.positions, model.normals, model.uv, model.positions, model.normals].forEach((data, index) => {
-      bind(data); gl.enableVertexAttribArray(index); gl.vertexAttribPointer(index, index === 2 ? 2 : 3, gl.FLOAT, false, 0, 0);
+    [model.positions, model.normals].forEach((data, index) => {
+      bind(data); gl.enableVertexAttribArray(index); gl.vertexAttribPointer(index, 3, gl.FLOAT, false, 0, 0);
     });
     bind(model.indices, gl.ELEMENT_ARRAY_BUFFER);
-    bitmaps.forEach((bitmap, index) => {
-      const texture = gl.createTexture();
-      if (!texture) throw new Error('Texture unavailable');
-      textures.push(texture); gl.activeTexture(gl.TEXTURE0 + index); gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.generateMipmap(gl.TEXTURE_2D);
-    });
     const uniform = (name: string) => gl.getUniformLocation(program!, `u${name}`);
-    const angleUniform = uniform('Angle'), pointerUniform = uniform('Pointer'), aspectUniform = uniform('Aspect');
-    gl.uniform1i(uniform('Texture'), 0); gl.uniform1i(uniform('NormalMap'), 1);
+    const angleUniform = uniform('Angle'), aspectUniform = uniform('Aspect');
+    const viewportUniform = uniform('Viewport'), dprUniform = uniform('Dpr');
     const css = getComputedStyle(canvas);
-    gl.uniform3fv(uniform('Accent'), rgb(css.getPropertyValue('--blue')));
-    gl.uniform3fv(uniform('Silver'), rgb(css.getPropertyValue('--head-silver')));
-    gl.uniform1f(uniform('Strength'), 1); gl.uniform1f(uniform('Smooth'), 0);
-    gl.uniform1f(uniform('Zoom'), 1); gl.uniform1f(uniform('Time'), 0); gl.uniform1f(uniform('Burst'), 0);
-    gl.uniform1i(uniform('Mode'), 0); gl.uniform1i(uniform('Wire'), 0);
+    gl.uniform3fv(uniform('Paper'), rgb(css.getPropertyValue('--paper')));
+    gl.uniform3fv(uniform('Ink'), rgb(css.getPropertyValue('--ink')));
+    gl.uniform3fv(uniform('Muted'), rgb(css.getPropertyValue('--muted')));
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
     let targetX = -.15, targetY = .03, angleX = targetX, angleY = targetY;
-    let pointerX = 0, pointerY = 0, lastDraw = 0, visible = true;
+    let lastDraw = 0, visible = true;
     const pointer = (event: PointerEvent) => {
       if (event.pointerType === 'touch') return;
-      [pointerX, pointerY] = headPointer(event.clientX, event.clientY, innerWidth, innerHeight);
+      const [pointerX, pointerY] = headPointer(event.clientX, event.clientY, innerWidth, innerHeight);
       targetX = -.15 + pointerX * .32; targetY = .03 - pointerY * .15;
       schedule();
     };
-    const leave = () => { pointerX = 0; pointerY = 0; targetX = -.15; targetY = .03; schedule(); };
+    const leave = () => { targetX = -.15; targetY = .03; schedule(); };
     const schedule = () => { if (!disposed && !raf) raf = requestAnimationFrame(frame); };
     function frame(now: number) {
       raf = 0;
@@ -94,9 +77,11 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
       const width = Math.max(1, Math.round(bounds.width * dpr)), height = Math.max(1, Math.round(bounds.height * dpr));
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
       gl!.viewport(0, 0, width, height); gl!.clearColor(0, 0, 0, 0); gl!.clear(gl!.COLOR_BUFFER_BIT | gl!.DEPTH_BUFFER_BIT);
-      gl!.uniform2f(angleUniform, angleX, angleY); gl!.uniform2f(pointerUniform, pointerX, pointerY); gl!.uniform1f(aspectUniform, width / height);
+      gl!.uniform2f(angleUniform, angleX, angleY); gl!.uniform1f(aspectUniform, width / height);
+      gl!.uniform4f(viewportUniform, bounds.left, bounds.top, bounds.width, bounds.height);
+      gl!.uniform1f(dprUniform, dpr);
       gl!.drawElements(gl!.TRIANGLES, model.indices.length, gl!.UNSIGNED_INT, 0);
-      canvas.dataset.rendered = 'chrome';
+      canvas.dataset.rendered = 'grid-relief';
       if (!reducedMotion && (Math.abs(targetX - angleX) > .0001 || Math.abs(targetY - angleY) > .0001)) schedule();
     }
     const lost = (event: Event) => { event.preventDefault(); cancelAnimationFrame(raf); raf = 0; onContextLost(); };
@@ -104,13 +89,13 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     const resize = new ResizeObserver(schedule);
     observer.observe(canvas); resize.observe(canvas);
     if (!reducedMotion) { document.addEventListener('pointermove', pointer, { passive: true }); document.addEventListener('pointerleave', leave); }
-    document.addEventListener('visibilitychange', schedule); canvas.addEventListener('webglcontextlost', lost);
+    document.addEventListener('visibilitychange', schedule); document.addEventListener('scroll', schedule, { passive: true }); canvas.addEventListener('webglcontextlost', lost);
     schedule();
     return { dispose() {
       if (disposed) return;
       disposed = true; cancelAnimationFrame(raf); observer.disconnect(); resize.disconnect();
       document.removeEventListener('pointermove', pointer); document.removeEventListener('pointerleave', leave);
-      document.removeEventListener('visibilitychange', schedule); canvas.removeEventListener('webglcontextlost', lost); release();
+      document.removeEventListener('visibilitychange', schedule); document.removeEventListener('scroll', schedule); canvas.removeEventListener('webglcontextlost', lost); release();
     } };
   } catch (error) { release(); throw error; }
 }

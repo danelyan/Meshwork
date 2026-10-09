@@ -1,0 +1,29 @@
+.demo { position: relative; min-height: 600px; margin-right: calc(var(--page-pad) * -1); }
+.edges { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.edges line { stroke: var(--ink); opacity: 0.18; stroke-width: 1.1; }
+.edges line.mine, .mine { stroke: var(--blue); opacity: 1; stroke-width: 1.8; }
+
+.n { position: absolute; z-index: 3; left: var(--x); top: var(--y); transform: translate(-50%, -50%); display: grid; place-items: center; }
+.n > span { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); white-space: nowrap; font: 500 11px var(--mono); background: var(--landing-label-bg); padding: 2px 6px; }
+.co { width: 58px; height: 58px; background: var(--landing-white); border: 1px solid var(--border-faint); box-shadow: var(--landing-shadow-sm); font: 800 36px/1 var(--font); }
+.co > span { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.me { width: 96px; height: 96px; padding: 0; background: var(--landing-white); border: 1.5px solid var(--ink); box-shadow: var(--landing-shadow-md); display: block; overflow: visible; }
+.me img { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: cover; object-position: center 30%; filter: grayscale(1); display: block; }
+.me > span { font: 700 13px var(--font); background: none; }
+.st { width: 34px; height: 34px; background: var(--silhouette); border: 2px solid var(--landing-white); box-shadow: 0 0 0 1px var(--border-faint); }
+.st svg { width: 100%; height: 100%; fill: var(--ink); display: block; }
+.lbl { position: absolute; z-index: 4; transform: translate(-50%, -50%); background: var(--ink); color: var(--landing-white); font: 700 13px var(--mono); padding: 5px 9px; pointer-events: none; white-space: nowrap; }
+.dot { position: absolute; z-index: 2; width: 6px; height: 6px; background: var(--blue); transform: translate(-50%, -50%); pointer-events: none; }
+
+@media (max-width: 1150px) {
+  .demo { min-height: 520px; margin: 0 calc(var(--page-pad) * -1); }
+}
+@media (max-width: 640px) {
+  .demo { min-height: 360px; height: 360px; margin: 0 calc(var(--page-pad) * -1); overflow: hidden; }
+  .n { left: var(--mx); top: var(--my); }
+  .desktopOnly { display: none; }
+  .n > span { font-size: 10px; }
+  .co { width: 44px; height: 44px; font-size: 26px; }
+  .me { width: 68px; height: 68px; }
+  .lbl { font-size: 11px; padding: 4px 6px; }
+}

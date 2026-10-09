@@ -51,14 +51,6 @@
   --tag-red-text: var(--ink);
   --backdrop: rgba(17, 17, 17, 0.42);
 
-  /* добавлено лейном ds: замена «сырых» цветов в модулях, см. docs/design-system.md */
-  --on-ink: #ffffff; /* текст/иконка на чёрном и синем фоне */
-  --on-ink-soft: rgba(255, 255, 255, 0.8); /* вторичный текст на синем/чёрном */
-  --surface-ghost: rgba(255, 255, 255, 0.6); /* фон кнопки-призрака и чипа */
-  --surface-quote: rgba(17, 17, 17, 0.04); /* подложка цитаты */
-  --meter-off: var(--line);
-  --meter-on: var(--blue);
-
   /* форма: квадратная эстетика, spec §4 */
   --radius-sm: 0;
   --radius: 0;
@@ -127,3 +119,14 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
 @media print {
   body { background: white; color: black; }
 }
+
+/* landing: главная (site/index.html). Только то, чего нет выше. */
+:root {
+  --landing-white: #fff;
+  --landing-label-bg: rgba(241, 241, 243, 0.85);
+  --landing-shadow-sm: 0 8px 24px rgba(17, 17, 17, 0.08);
+  --landing-shadow-md: 0 14px 34px rgba(17, 17, 17, 0.12);
+  --landing-grid-line: rgba(17, 17, 17, 0.035);
+  --landing-header-h: 96px;
+}
+@media (max-width: 640px) { :root { --landing-header-h: 68px; } }

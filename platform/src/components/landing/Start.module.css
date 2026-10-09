@@ -1,0 +1,13 @@
+.start {
+  height: 84px; padding: 0 40px; display: inline-flex; align-items: center; gap: 28px;
+  background: var(--blue); color: var(--landing-white); font-size: 28px; font-weight: 700; letter-spacing: -0.03em;
+  transition: background 0.15s, gap 0.2s;
+}
+.start span { font-weight: 400; }
+.start:hover { background: var(--ink); color: var(--landing-white); gap: 40px; }
+.inverted { background: var(--landing-white); color: var(--ink); }
+.inverted:hover { background: var(--blue); color: var(--landing-white); }
+@media (max-width: 640px) {
+  .start { height: 68px; font-size: 22px; padding: 0 24px; width: 100%; justify-content: space-between; }
+}
+@media (prefers-reduced-motion: reduce) { .start:hover { gap: 28px; } }

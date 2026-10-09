@@ -1,37 +1,126 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 
-import HomePage from '@/app/page';
+import { Landing } from '@/components/landing/Landing';
+import type { LandingData } from '@/components/landing/types';
+import { signSession } from '@/server/session';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+const cookieValue = vi.hoisted(() => ({ value: undefined as string | undefined }));
+vi.mock('next/headers', () => ({
+  cookies: async () => ({ get: (name: string) => (name === 'cid' && cookieValue.value ? { name, value: cookieValue.value } : undefined) }),
+}));
+vi.mock('@/components/landing/data', async () => ({ loadLandingData: async () => DATA }));
+
+const DATA: LandingData = {
+  companies: [
+    { id: 'co1', name: 'Нордстрим', focus: 'Backend, Frontend · Junior, Middle', description: 'Платежи', vacancies: 3, maxSalary: 280000 },
+    { id: 'co2', name: 'Гранит', focus: 'Backend · Middle', description: null, vacancies: 1, maxSalary: 300000 },
+  ],
+  stats: { companies: 2, vacancies: 4, categorized: 7, maxSalary: 300000 },
+};
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
+  cookieValue.value = undefined;
 });
 
-function stubFetch(body: unknown, ok = true) {
-  vi.stubGlobal('fetch', vi.fn(async () => ({ ok, status: ok ? 200 : 403, json: async () => body })));
-}
+beforeEach(() => {
+  // jsdom: нет matchMedia/rAF-ритма; граф и фон работают в режиме reduced-motion (один статичный кадр)
+  vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('reduce'), addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  HTMLCanvasElement.prototype.getContext = (() => null) as never;
+});
+afterAll(() => vi.unstubAllGlobals());
 
-it('главная: заголовок, пометка демо и список кандидатов', async () => {
-  stubFetch({ candidates: [{ id: 'd1', name: 'Анна', specialization: 'backend', fspState: 'linked' }] });
-  render(<HomePage />);
-  expect(screen.getByRole('heading', { level: 1, name: 'ФСП Карьера' })).toBeDefined();
-  expect(screen.getByText('демо-стенд')).toBeDefined();
-  await waitFor(() => expect(screen.getByRole('button', { name: /Анна/ })).toBeDefined());
+describe('главная (лендинг)', () => {
+  it('секции: hero с единственным h1, «Сейчас нанимают», 4 правила, финальный блок, футер', () => {
+    render(<Landing data={DATA} signedIn={false} />);
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Твой код.Твоя карьера.');
+    expect(screen.getByRole('heading', { level: 2, name: 'Сейчас нанимают' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 2, name: 'Почему это работает' })).toBeDefined();
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Тест вместо резюме', 'Вилка всегда', 'Контакты после «да»', 'ФСП в зачёт',
+    ]);
+    expect(screen.getByRole('heading', { level: 2, name: 'Начни с профиля.' })).toBeDefined();
+    expect(screen.getByRole('contentinfo').textContent).toContain('Федерация спортивного программирования');
+  });
+
+  it('обе кнопки «Приступим →» ведут на /auth, шапка гостя — «Войти» на /auth', () => {
+    render(<Landing data={DATA} signedIn={false} />);
+    const start = screen.getAllByRole('link', { name: /Приступим/ });
+    expect(start).toHaveLength(2);
+    for (const a of start) expect(a.getAttribute('href')).toBe('/auth');
+    const login = screen.getAllByRole('link', { name: 'Войти' });
+    expect(login.length).toBeGreaterThan(0);
+    for (const a of login) expect(a.getAttribute('href')).toBe('/auth');
+    expect(screen.queryByRole('link', { name: 'В кабинет' })).toBeNull();
+  });
+
+  it('с сессией шапка показывает «В кабинет» → /consultant', () => {
+    render(<Landing data={DATA} signedIn />);
+    expect(screen.getByRole('link', { name: 'В кабинет' }).getAttribute('href')).toBe('/consultant');
+    expect(screen.queryByRole('link', { name: 'Войти' })).toBeNull();
+  });
+
+  it('числа берутся из пропсов: компании, вакансии, категоризованные, потолок вилки', () => {
+    render(<Landing data={DATA} signedIn={false} />);
+    const stats = within(screen.getByRole('list', { name: 'Платформа в цифрах' }));
+    expect(stats.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      '2компании с открытыми вакансиями',
+      '4вакансии, у каждой указана зарплатная вилка',
+      '7кандидатов с категорией, подтверждённой тестом',
+      'до 300kверхняя граница вилки среди вакансий, ₽ в месяц',
+    ]);
+    expect(screen.getByText('2 компании на платформе')).toBeDefined();
+    // карточки компаний — реальные имена и вакансии
+    const section = within(screen.getByRole('region', { name: 'Сейчас нанимают' }));
+    expect(section.getByText('Нордстрим')).toBeDefined();
+    expect(section.getByText(/3 вакансии/)).toBeDefined();
+    expect(section.getByText('до 280k')).toBeDefined();
+  });
+
+  it('нет фальшивых цифр мокапа (6 940, 186, 68%, 3 / нед, 92%)', () => {
+    const { container } = render(<Landing data={DATA} signedIn={false} />);
+    const text = container.textContent ?? '';
+    for (const fake of ['6 940', '186', '≈ 68', '3 / нед', '92%', '84%', 'ФСП ID']) expect(text).not.toContain(fake);
+  });
+
+  it('без вакансий: пустое состояние и без плитки «до …k»', () => {
+    const empty: LandingData = { companies: [], stats: { companies: 0, vacancies: 0, categorized: 0, maxSalary: 0 } };
+    render(<Landing data={empty} signedIn={false} />);
+    expect(screen.getByText('Вакансий пока нет.')).toBeDefined();
+    expect(screen.queryByText(/верхняя граница вилки/)).toBeNull();
+  });
+
+  it('5+ компаний: лента дублируется для бесконечной прокрутки, дубли скрыты от ассистивных технологий', () => {
+    const many: LandingData = {
+      ...DATA,
+      companies: Array.from({ length: 5 }, (_, i) => ({ id: `c${i}`, name: `Компания ${i}`, focus: 'Backend · Middle', description: null, vacancies: 1, maxSalary: 200000 })),
+    };
+    const { container } = render(<Landing data={many} signedIn={false} />);
+    expect(container.querySelectorAll('[data-tile]')).toHaveLength(10);
+    expect(container.querySelectorAll('[data-tile][aria-hidden="true"]')).toHaveLength(5);
+  });
 });
 
-it('главная: ошибка загрузки видна', async () => {
-  stubFetch({ error: { code: 'forbidden', message: 'Демо-вход выключен' } }, false);
-  render(<HomePage />);
-  expect((await screen.findByRole('alert')).textContent).toBe('Демо-вход выключен');
-});
+describe('страница /', () => {
+  it('гость: серверный компонент грузит данные и рисует лендинг', async () => {
+    const { default: HomePage } = await import('@/app/page');
+    render(await HomePage());
+    expect(screen.getByRole('heading', { level: 1 })).toBeDefined();
+    expect(screen.getAllByRole('link', { name: 'Войти' }).length).toBeGreaterThan(0);
+  });
 
-it('главная: у кнопки входа имя с именем кандидата и подсказка, какой файл и ссылку взять', async () => {
-  stubFetch({ candidates: [{ id: 'd1', name: 'Демо: Дмитрий Рябинин', specialization: 'backend', fspState: 'linked', demoResume: { fileName: 'demo-1.pdf', link: 'https://github.com/demo-ryabinin' } }] });
-  render(<HomePage />);
-  const btn = await screen.findByRole('button', { name: 'Войти как Демо: Дмитрий Рябинин' });
-  expect(btn.tagName).toBe('BUTTON');
-  expect(screen.getByText('eval/pdf/demo-1.pdf')).toBeDefined();
-  expect(screen.getByText('https://github.com/demo-ryabinin')).toBeDefined();
+  it('с валидной кукой cid — «В кабинет»', async () => {
+    cookieValue.value = signSession('cand1');
+    const { default: HomePage } = await import('@/app/page');
+    render(await HomePage());
+    expect(screen.getByRole('link', { name: 'В кабинет' })).toBeDefined();
+  });
+
+  it('с поддельной кукой — как гость', async () => {
+    cookieValue.value = 'cand1.9999999999.forged';
+    const { default: HomePage } = await import('@/app/page');
+    render(await HomePage());
+    expect(screen.queryByRole('link', { name: 'В кабинет' })).toBeNull();
+  });
 });

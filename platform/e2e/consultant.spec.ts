@@ -17,11 +17,13 @@ const RESUME: string | { name: string; mimeType: string; buffer: Buffer } = proc
 
 test('С1: вход → резюме и ссылка → шаги → карточки → подтверждение → профиль', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1, name: 'ФСП Карьера' })).toBeVisible();
-  await expect(page.getByText('демо-стенд')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Твой код.');
+  // главная ведёт на /auth, где лежат кнопки «Войти как …» (контракт лейна auth)
+  await page.getByRole('link', { name: /Приступим/ }).first().click();
+  await page.waitForURL('**/auth');
 
   // демо-вход за первого кандидата
-  await page.getByRole('list').getByRole('button').first().click();
+  await page.getByRole('button', { name: /^Войти как / }).first().click();
   await page.waitForURL('**/consultant');
   await expect(page.getByRole('heading', { name: 'Карьерный консультант' })).toBeVisible();
 
@@ -56,8 +58,8 @@ test('С1: вход → резюме и ссылка → шаги → карто
 });
 
 test('С1: файл больше 5 МБ отклоняется сообщением, до сервера не уходит', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('list').getByRole('button').first().click();
+  await page.goto('/auth');
+  await page.getByRole('button', { name: /^Войти как / }).first().click();
   await page.waitForURL('**/consultant');
   await page.setInputFiles('input[type=file]', {
     name: 'big.pdf',

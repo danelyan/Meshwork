@@ -18,6 +18,31 @@ export async function requirePageUser(next: string): Promise<SessionPrincipal & 
   return s as SessionPrincipal & { userId: string };
 }
 
+/**
+ * Куда отправить с страницы кандидата; null — пускать. Чистая функция (тесты без Next).
+ * Нет сессии → /auth?next=…; роль не выбрана → /onboarding; работодатель → /employer.
+ * Кандидат с незавершённым онбордингом («Настроить позже») пускается — ему плашка OnboardingBanner.
+ * Старая кука демо-кандидата без аккаунта (userId = null) — кандидат, как и в API (requireCandidate).
+ */
+export function candidatePageRedirect(s: SessionPrincipal | null, next: string): string | null {
+  if (!s) return `/auth?next=${encodeURIComponent(next)}`;
+  if (s.candidateId) return null;
+  if (s.employerProfileId) return '/employer';
+  return '/onboarding';
+}
+
+/**
+ * Guard страниц кандидата — вызывать в каждой page.tsx группы (candidate), не в layout:
+ * layout не перерисовывается при клиентской навигации между дочерними страницами
+ * (docs Next.js: Authentication → Layouts and auth checks).
+ */
+export async function requirePageCandidate(next: string): Promise<SessionPrincipal & { candidateId: string }> {
+  const s = await getPageSession();
+  const to = candidatePageRedirect(s, next);
+  if (to) redirect(to);
+  return s as SessionPrincipal & { candidateId: string };
+}
+
 /** Guard кабинета работодателя: нет входа → /auth, роль не выбрана → /onboarding, кандидат → /consultant. */
 export async function requirePageEmployer(next: string): Promise<SessionPrincipal & { userId: string; employerProfileId: string }> {
   const s = await getPageSession();

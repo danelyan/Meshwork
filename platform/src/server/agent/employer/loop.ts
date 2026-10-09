@@ -12,7 +12,6 @@ import { EXTERNAL_NOTE } from '../external';
 import { buildHistory, fitHistory, HISTORY_TOTAL_MAX_CHARS } from '../history';
 import { EMPTY_REPLY, TURN_MAX_TOKENS } from '../loop';
 import { toolSpecs } from '../spec';
-import { withWebSearchGate } from '../web-search/tool';
 import { withQuestionReminder } from '../reminder';
 import { MAX_TOOL_CALLS_PER_TURN } from '../types';
 
@@ -32,7 +31,7 @@ export interface EmployerTurnOptions {
 }
 
 /** Помощник недоступен (модель, бюджет) — шаг в ленте перед ответом по данным платформы. */
-export const EMPLOYER_FALLBACK_STEP = 'Помощник сейчас без языковой модели — отвечаю по данным платформы.';
+export const EMPLOYER_FALLBACK_STEP = 'Помощник сейчас без языковой модели - отвечаю по данным платформы.';
 
 const MSK = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeZone: 'Europe/Moscow' });
 
@@ -64,7 +63,7 @@ export async function runEmployerTurn(
   const budget = opts.dailyTokenBudget ?? getEnv().LLM_DAILY_TOKEN_BUDGET;
   const demo = !opts.llm && isDemoMode();
   const llm = opts.llm ?? getLlm({ conversationId, onQueue: (position) => emit({ type: 'queue', position }) });
-  const registry = withWebSearchGate(opts.tools ?? employerTools);
+  const registry = opts.tools ?? employerTools;
   const ctx: EmployerToolContext = { employerProfileId, companyId: emp.companyId, conversationId, emit, llm, ...(signal ? { signal } : {}) };
 
   await ensureEmployerPromptVersion(conversationId);

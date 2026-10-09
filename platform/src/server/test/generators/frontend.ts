@@ -43,7 +43,7 @@ export const jsClosure: TaskGenerator = {
       answerKey: out.join(','),
       explanation: useLet
         ? `«done» печатается первым: колбэки setTimeout выполняются после синхронного кода. let создаёт новую привязку i на каждую итерацию, поэтому выводятся ${out.slice(1).join(', ')}.`
-        : `«done» печатается первым: колбэки setTimeout выполняются после синхронного кода. var — одна переменная на всю функцию; к моменту вызова колбэков i = ${start + n}, поэтому ${n} раза печатается ${(start + n) * k}.`,
+        : `«done» печатается первым: колбэки setTimeout выполняются после синхронного кода. var - одна переменная на всю функцию; к моменту вызова колбэков i = ${start + n}, поэтому ${n} раза печатается ${(start + n) * k}.`,
       params: { useLet, n, k, start },
     };
   },
@@ -77,7 +77,7 @@ export const jsArrayOutput: TaskGenerator = {
       code,
       answerHint: 'число',
       answerKey: String(value),
-      explanation: kind === 0 ? `map умножает каждый элемент на ${mul}, filter оставляет значения больше ${thr}, reduce складывает оставшиеся.` : 'filter по индексу оставляет элементы на чётных позициях (0, 2, 4…), map не меняет длину, .length — их число.',
+      explanation: kind === 0 ? `map умножает каждый элемент на ${mul}, filter оставляет значения больше ${thr}, reduce складывает оставшиеся.` : 'filter по индексу оставляет элементы на чётных позициях (0, 2, 4…), map не меняет длину, .length - их число.',
       params: { arr: arr.join(','), mul, thr, kind },
     };
   },
@@ -126,7 +126,7 @@ export const cssSpecificity: TaskGenerator = {
       code: `${css}\n\n${html}`,
       answerHint: 'название цвета',
       answerKey: best.color,
-      explanation: `Побеждает ${best.sel}${best.important ? ' — у него !important' : `: специфичность (${best.spec.join(',')}) выше остальных${rules.some((r) => r !== best && r.spec.join() === best.spec.join()) ? ', а при равной специфичности побеждает правило ниже по тексту' : ''}`}.`,
+      explanation: `Побеждает ${best.sel}${best.important ? ' - у него !important' : `: специфичность (${best.spec.join(',')}) выше остальных${rules.some((r) => r !== best && r.spec.join() === best.spec.join()) ? ', а при равной специфичности побеждает правило ниже по тексту' : ''}`}.`,
       params: { rules: rules.map((r) => r.sel).join('|'), withImportant },
     };
   },
@@ -186,7 +186,7 @@ export const htmlSemantics: TaskGenerator = {
   generate(seed): TaskInstance {
     const rng = createRng(seed);
     const bugs = [
-      { good: '<img src="/logo.svg" alt="Логотип компании">', bad: '<img src="/logo.svg">', why: 'у изображения нет alt — скринридер прочитает имя файла или ничего' },
+      { good: '<img src="/logo.svg" alt="Логотип компании">', bad: '<img src="/logo.svg">', why: 'у изображения нет alt - скринридер прочитает имя файла или ничего' },
       { good: '<button type="button" onclick="open()">Открыть</button>', bad: '<div onclick="open()">Открыть</div>', why: 'кликабельный div без роли и фокуса недоступен с клавиатуры; нужна кнопка' },
       { good: '<label for="email">Почта</label>\n  <input id="email" type="email">', bad: '<span>Почта</span>\n  <input id="email" type="email">', why: 'поле без связанного label: у поля нет доступного имени' },
       { good: '<a href="/pricing">Тарифы</a>', bad: '<a onclick="go(\'/pricing\')">Тарифы</a>', why: 'ссылка без href не фокусируется и не является ссылкой для вспомогательных технологий' },
@@ -327,11 +327,11 @@ export const tsTypecheck: TaskGenerator = {
     const opt = rng.pick(['email', 'phone', 'note']);
     type Line = { ok: string; bad: string; why: string };
     const pool: Line[] = [
-      { ok: `const len = item.${opt}?.length ?? 0;`, bad: `const len = item.${opt}.length;`, why: `${opt} необязательное (string | undefined): обращение без проверки — ошибка «possibly undefined»` },
+      { ok: `const len = item.${opt}?.length ?? 0;`, bad: `const len = item.${opt}.length;`, why: `${opt} необязательное (string | undefined): обращение без проверки - ошибка «possibly undefined»` },
       { ok: `const label: string = String(item.id);`, bad: `const label: string = item.id;`, why: 'number не присваивается string' },
       { ok: `const next: ${ent} = { ...item, id: item.id + 1 };`, bad: `const next: ${ent} = { ...item, id: String(item.id + 1) };`, why: 'id должен быть number' },
       { ok: `const tags: string[] = item.tags.filter((t) => t.length > 0);`, bad: `const tags: string[] = item.tags.map((t) => t.length);`, why: 'map вернёт number[], а не string[]' },
-      { ok: `const first = item.tags[0] ?? 'none';`, bad: `const first: string = item.tags[0];`, why: 'с noUncheckedIndexedAccess элемент массива — string | undefined' },
+      { ok: `const first = item.tags[0] ?? 'none';`, bad: `const first: string = item.tags[0];`, why: 'с noUncheckedIndexedAccess элемент массива - string | undefined' },
     ];
     const chosen = rng.sample(pool, 4);
     const bugIdx = rng.int(0, chosen.length - 1);
@@ -395,7 +395,7 @@ export const apiClientRace: TaskGenerator = {
       answerKey: shown,
       explanation: guarded
         ? 'Счётчик latest отбрасывает ответы на устаревшие запросы: отрисовывается только ответ последнего запроса, независимо от порядка прихода.'
-        : `Без защиты от гонки каждый ответ перерисовывает список; на экране остаётся последний пришедший — «${shown}», хотя пользователь ввёл «${queries[queries.length - 1]}».`,
+        : `Без защиты от гонки каждый ответ перерисовывает список; на экране остаётся последний пришедший - «${shown}», хотя пользователь ввёл «${queries[queries.length - 1]}».`,
       params: { guarded, arrival: arrival.join(',') },
     };
   },
@@ -417,7 +417,7 @@ export const stateBug: TaskGenerator = {
     const rng = createRng(seed);
     type L = { ok: string[]; bad: string[]; why: string };
     const pool: L[] = [
-      { ok: ['  const add = (item) => setItems((prev) => [...prev, item]);'], bad: ['  const add = (item) => { items.push(item); setItems(items); };'], why: 'мутация массива состояния и setState той же ссылкой — React не увидит изменения' },
+      { ok: ['  const add = (item) => setItems((prev) => [...prev, item]);'], bad: ['  const add = (item) => { items.push(item); setItems(items); };'], why: 'мутация массива состояния и setState той же ссылкой - React не увидит изменения' },
       {
         ok: ['  useEffect(() => {', '    const id = setInterval(() => setCount((c) => c + 1), 1000);', '    return () => clearInterval(id);', '  }, []);'],
         bad: ['  useEffect(() => {', '    const id = setInterval(() => setCount(count + 1), 1000);', '    return () => clearInterval(id);', '  }, []);'],
@@ -437,7 +437,7 @@ export const stateBug: TaskGenerator = {
     });
     lines.push('  return <List items={items} count={count} />;', '}');
     return {
-      prompt: 'Компонент React. Ровно в одной строке — ошибка, из-за которой интерфейс не обновится или покажет устаревшее значение. Укажите номер этой строки.',
+      prompt: 'Компонент React. Ровно в одной строке - ошибка, из-за которой интерфейс не обновится или покажет устаревшее значение. Укажите номер этой строки.',
       code: lines.join('\n'),
       answerHint: 'номер строки',
       answerKey: String(bugLine),
@@ -472,7 +472,7 @@ export const webVitals: TaskGenerator = {
       prompt: `Окно высотой ${vh}px (ширина не важна: элемент на всю ширину). Над блоком высотой ${h}px, видимым целиком, вставился баннер, и блок сдвинулся вниз на ${d}px, оставаясь в окне. Чему равна оценка этого сдвига (layout shift score = impact fraction × distance fraction)? Ответ округлите до трёх знаков.`,
       answerHint: 'десятичное число',
       answerKey: [...new Set(alt)].join('|'),
-      explanation: `Impact fraction — доля окна, занятая блоком до и после сдвига: (${h} + ${d}) / ${vh} = ${impact}. Distance fraction — сдвиг относительно высоты окна: ${d} / ${vh} = ${distance}. Произведение ${score}.`,
+      explanation: `Impact fraction - доля окна, занятая блоком до и после сдвига: (${h} + ${d}) / ${vh} = ${impact}. Distance fraction - сдвиг относительно высоты окна: ${d} / ${vh} = ${distance}. Произведение ${score}.`,
       params: { vh, h, d },
     };
   },
@@ -498,12 +498,12 @@ export const complexity: TaskGenerator = {
       {
         code: [`function ${fn}(arr) {`, '  let c = 0;', '  for (let i = 0; i < arr.length; i++)', '    for (let j = i + 1; j < arr.length; j++)', '      if (arr[i] === arr[j]) c++;', '  return c;', '}'],
         key: 'n^2|n²|o(n^2)|o(n²)|квадратичная',
-        why: 'вложенные циклы по тому же массиву: n(n−1)/2 сравнений — O(n²)',
+        why: 'вложенные циклы по тому же массиву: n(n−1)/2 сравнений - O(n²)',
       },
       {
         code: [`function ${fn}(arr) {`, '  const seen = new Set();', '  for (const x of arr) {', '    if (seen.has(x)) return x;', '    seen.add(x);', '  }', '  return null;', '}'],
         key: 'n|o(n)|линейная',
-        why: 'один проход, операции с Set в среднем O(1) — O(n)',
+        why: 'один проход, операции с Set в среднем O(1) - O(n)',
       },
       {
         code: [`function ${fn}(arr) {`, '  const sorted = [...arr].sort((a, b) => a - b);', '  for (let i = 1; i < sorted.length; i++)', '    if (sorted[i] === sorted[i - 1]) return sorted[i];', '  return null;', '}'],
@@ -513,7 +513,7 @@ export const complexity: TaskGenerator = {
       {
         code: [`function ${fn}(sorted, x) {`, '  let lo = 0, hi = sorted.length - 1;', '  while (lo <= hi) {', '    const mid = (lo + hi) >> 1;', '    if (sorted[mid] === x) return mid;', '    if (sorted[mid] < x) lo = mid + 1; else hi = mid - 1;', '  }', '  return -1;', '}'],
         key: 'log n|o(log n)|logn|log(n)|o(logn)|o(log(n))|логарифмическая',
-        why: 'бинарный поиск: интервал делится пополам — O(log n)',
+        why: 'бинарный поиск: интервал делится пополам - O(log n)',
       },
     ];
     const v = rng.pick(variants);

@@ -45,10 +45,10 @@ describe('главная (лендинг)', () => {
       'Тест вместо резюме', 'Вилка всегда', 'Контакты после «да»', 'ФСП в зачёт',
     ]);
     expect(screen.getByRole('heading', { level: 2, name: 'Начни с профиля.' })).toBeDefined();
-    expect(screen.getByText('Данные на этой странице — иллюстрация')).toBeDefined();
+    expect(screen.getByText('Данные на этой странице - иллюстрация')).toBeDefined();
   });
 
-  it('обе кнопки «Приступим →» ведут на /auth (шапка и подвал — общая оболочка, tests/unit/components/shell.test.tsx)', () => {
+  it('обе кнопки «Приступим →» ведут на /auth (шапка и подвал - общая оболочка, tests/unit/components/shell.test.tsx)', () => {
     render(<Landing data={DATA} signedIn={false} />);
     const start = screen.getAllByRole('link', { name: /Приступим/ });
     expect(start).toHaveLength(2);
@@ -73,7 +73,7 @@ describe('главная (лендинг)', () => {
       '91%приглашений получают ответ за сутки',
     ]);
     expect(screen.getByText('2 компании на платформе')).toBeDefined();
-    // карточки компаний — реальные имена и вакансии
+    // карточки компаний - реальные имена и вакансии
     const section = within(screen.getByRole('region', { name: 'Сейчас нанимают' }));
     expect(section.getByText('Нордстрим')).toBeDefined();
     expect(section.getByText(/3 вакансии/)).toBeDefined();
@@ -126,19 +126,19 @@ describe('страница /', () => {
     const section = within(screen.getByRole('region', { name: 'Сейчас нанимают' }));
     for (const c of SHOWCASE.companies) expect(section.getAllByText(c.name).length).toBeGreaterThan(0);
     expect(screen.getByText(`${SHOWCASE.stats.companies} компаний на платформе`)).toBeDefined();
-    expect(screen.getByText('Данные на этой странице — иллюстрация')).toBeDefined();
+    expect(screen.getByText('Данные на этой странице - иллюстрация')).toBeDefined();
     expect(dbCalls.n).toBe(0);
     expect(screen.getByRole('link', { name: /Уже есть аккаунт/ })).toBeDefined();
   });
 
-  it('с валидной кукой cid — «Ваш кабинет»', async () => {
+  it('с валидной кукой cid - «Ваш кабинет»', async () => {
     cookieValue.value = signSession('cand1');
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
     expect(screen.getByRole('link', { name: /Ваш кабинет/ })).toBeDefined();
   });
 
-  it('с поддельной кукой — как гость', async () => {
+  it('с поддельной кукой - как гость', async () => {
     cookieValue.value = 'cand1.9999999999.forged';
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());

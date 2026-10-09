@@ -141,7 +141,7 @@ describe('Свободный вопрос посреди онбординга', 
     resetEnvCache();
     try {
       const first = await ask(cookie, { text: 'привет' });
-      expect(textOf(first.events)).toContain('Знакомство ещё не закончено — продолжить можно здесь: /onboarding');
+      expect(textOf(first.events)).toContain('Знакомство ещё не закончено - продолжить можно здесь: /onboarding');
       const second = await ask(cookie, { text: 'а ещё?', conversationId: first.conversationId });
       expect(textOf(second.events)).not.toContain('/onboarding');
       const aside = await ask(cookie, { text: 'вопрос', onboardingStep: 'goal' });

@@ -19,7 +19,7 @@ export interface DemoReplyInput {
   pipeline?: PipelineResult;
 }
 
-const NEED_CONFIRM = 'Вакансии подбираются по подтверждённым утверждениям, а пока подтверждённых нет. Подтверди карточки — покажу вакансии.';
+const NEED_CONFIRM = 'Вакансии подбираются по подтверждённым утверждениям, а пока подтверждённых нет. Подтверди карточки - покажу вакансии.';
 
 export async function demoReply(input: DemoReplyInput): Promise<string> {
   const { candidateId, pipeline: p } = input;
@@ -28,7 +28,7 @@ export async function demoReply(input: DemoReplyInput): Promise<string> {
     if (p.proposed.length) {
       const test = await testPart(candidateId);
       if (test) parts.push(test);
-      parts.push('Подтверди карточки — покажу подходящие вакансии и что подтянуть.');
+      parts.push('Подтверди карточки - покажу подходящие вакансии и что подтянуть.');
     }
     return parts.join('\n');
   }
@@ -37,7 +37,7 @@ export async function demoReply(input: DemoReplyInput): Promise<string> {
   const confirmed = await prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } });
 
   if (/тест|грейд|категор/.test(t)) {
-    return (await testPart(candidateId)) ?? 'Подбор теста сейчас недоступен — попробуй через минуту.';
+    return (await testPart(candidateId)) ?? 'Подбор теста сейчас недоступен - попробуй через минуту.';
   }
   if (/что дальше|дальше|план|подтян|пробел|не хватает|задани|чему учиться|как вырасти|как расти/.test(t)) {
     return planReply(candidateId, confirmed);
@@ -48,20 +48,20 @@ export async function demoReply(input: DemoReplyInput): Promise<string> {
   return [
     'Я работаю без языковой модели: собираю утверждения из резюме и ссылок по словарю каталога и отвечаю по данным платформы.',
     confirmed === 0
-      ? 'Пришли резюме или ссылки — покажу карточки; подтверди их — подберу вакансии.'
-      : 'Спроси про вакансии, тест или «что дальше» — отвечу.',
+      ? 'Пришли резюме или ссылки - покажу карточки; подтверди их - подберу вакансии.'
+      : 'Спроси про вакансии, тест или «что дальше» - отвечу.',
   ].join('\n');
 }
 
 async function vacanciesReply(candidateId: string, confirmed: number): Promise<string> {
   if (confirmed === 0) return NEED_CONFIRM;
   const lines = await targetsParts(candidateId, 3);
-  if (!lines) return 'Подбор вакансий сейчас недоступен — попробуй через минуту.';
-  if (!lines.length) return 'Подходящих вакансий по подтверждённым утверждениям пока нет. Добавь источники или спроси «что дальше» — подскажу, что подтянуть.';
+  if (!lines) return 'Подбор вакансий сейчас недоступен - попробуй через минуту.';
+  if (!lines.length) return 'Подходящих вакансий по подтверждённым утверждениям пока нет. Добавь источники или спроси «что дальше» - подскажу, что подтянуть.';
   const parts = ['По вакансиям платформы ближе всего:', ...lines];
   const test = await testPart(candidateId);
   if (test) parts.push(test);
-  parts.push('Спроси «что дальше» — составлю план из пробелов и заданий.');
+  parts.push('Спроси «что дальше» - составлю план из пробелов и заданий.');
   return parts.join('\n');
 }
 
@@ -73,18 +73,18 @@ async function planReply(candidateId: string, confirmed: number): Promise<string
       ? ({ kind: 'vacancy', id: top.vacancyId } as const)
       : ({ kind: 'category', id: `${test.specialization}:${test.grade}` } as const);
     const gaps = await gapMap(candidateId, target);
-    if (!gaps.length) return 'По выбранной цели пробелов не вижу — всё уже подтверждено на платформе.';
+    if (!gaps.length) return 'По выбранной цели пробелов не вижу - всё уже подтверждено на платформе.';
     const top3 = gaps.slice(0, 3);
     const tasks = await recommendTasks(candidateId, top3.map((g) => g.id), 3);
     const parts = [
       `План${top ? ` к вакансии «${top.companyName}, ${top.title}»` : ` к категории ${test.specialization} ${test.grade}`}. Сначала закрыть пробелы:`,
-      ...top3.map((g) => `— ${g.statement}${g.currentLevel ? ' (пока слабее, чем нужно)' : ' (утверждения нет)'}; чем подтвердить: ${g.suggestedProof.join(', ') || 'задание на платформе'}.`),
+      ...top3.map((g) => `- ${g.statement}${g.currentLevel ? ' (пока слабее, чем нужно)' : ' (утверждения нет)'}; чем подтвердить: ${g.suggestedProof.join(', ') || 'задание на платформе'}.`),
     ];
-    if (tasks.length) parts.push('Задания, которые это закроют:', ...tasks.map((x) => `— ${x.title}: ${x.reason}`));
-    parts.push(confirmed === 0 ? 'Подтверждённых утверждений пока нет: подтверди карточки — план станет точнее и появятся вакансии.' : 'Категорию даёт только тест — пройдёшь его?');
+    if (tasks.length) parts.push('Задания, которые это закроют:', ...tasks.map((x) => `- ${x.title}: ${x.reason}`));
+    parts.push(confirmed === 0 ? 'Подтверждённых утверждений пока нет: подтверди карточки - план станет точнее и появятся вакансии.' : 'Категорию даёт только тест - пройдёшь его?');
     return parts.join('\n');
   } catch (err) {
     console.warn('[agent/demo-reply] plan unavailable', err instanceof Error ? err.message : err);
-    return 'План сейчас недоступен — попробуй через минуту.';
+    return 'План сейчас недоступен - попробуй через минуту.';
   }
 }

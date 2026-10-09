@@ -69,7 +69,7 @@ export const draftInvitation: EmployerTool = {
         vacancy?.teamDescription ?? emp.companyDescription ?? '',
         vacancy?.stack.length ? `Стек: ${vacancy.stack.join(', ')}.` : '',
         salary ? `Предлагаем ${fmtRub(salary)} в месяц.` : '',
-        'Если интересно — прими приглашение, и мы свяжемся, чтобы обсудить детали.',
+        'Если интересно - прими приглашение, и мы свяжемся, чтобы обсудить детали.',
       ]
         .filter(Boolean)
         .join(' ');

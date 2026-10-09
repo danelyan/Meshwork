@@ -115,13 +115,13 @@ export function describeBlock(b: CandidatesBlock): string {
   const where = b.vacancy ? `Под «${b.vacancy.title}»` : 'По базе';
   if (!b.items.length) {
     return b.vacancy
-      ? `${where} пока никого: никто не закрыл ни одного требования. Расширь стек или снизь грейд — или попробуй поиск по всей базе.`
+      ? `${where} пока никого: никто не закрыл ни одного требования. Расширь стек или снизь грейд - или попробуй поиск по всей базе.`
       : `${where} пока никого: ничего не нашлось. Ослабь фильтры.`;
   }
   const top = b.items[0]!;
-  const lines = [`${where} нашлось ${b.total} — первые ${b.items.length} ниже карточками.`, `Первый: ${candidateLine(top)}.`];
+  const lines = [`${where} нашлось ${b.total} - первые ${b.items.length} ниже карточками.`, `Первый: ${candidateLine(top)}.`];
   if (top.missing.length) lines.push(`Не хватает: ${top.missing.slice(0, 2).join('; ')}.`);
-  lines.push(`Нажми «Пригласить» в карточке — или спроси «почему ${top.alias.replace('Кандидат ', '')} первый».`);
+  lines.push(`Нажми «Пригласить» в карточке - или спроси «почему ${top.alias.replace('Кандидат ', '')} первый».`);
   return lines.join('\n');
 }
 
@@ -140,7 +140,7 @@ export function describeExplain(o: ExplainOut): string {
   if (!o.inSelection || !o.candidate) return `${o.alias}: ${o.reason}`;
   const c = o.candidate;
   const b = o.breakdown!;
-  const lines = [`${c.alias} — ${c.rank}-й из ${o.total} (${o.target}), балл ${c.score.toFixed(2)}.`];
+  const lines = [`${c.alias} - ${c.rank}-й из ${o.total} (${o.target}), балл ${c.score.toFixed(2)}.`];
   if (c.coveredItems.length) lines.push(`Закрыто: ${c.coveredItems.map((i) => `${i.statement} (${LEVEL_TEXT[i.level]})`).join('; ')}.`);
   if (c.missing.length) lines.push(`Не хватает: ${c.missing.join('; ')}.`);
   const parts = [`покрытие ${b.coverage.toFixed(2)}`];
@@ -155,15 +155,15 @@ export function describeExplain(o: ExplainOut): string {
 }
 
 export function describeDraft(d: InvitationDraft): string {
-  if (d.blocked === 'open_invitation') return `${d.alias} ещё не ответил на прошлое приглашение компании — новое можно будет отправить после его ответа.`;
-  if (d.blocked === 'daily_limit') return `Лимит исчерпан: ${d.limit.sent} из ${d.limit.limit} приглашений за сутки. Черновик сохранится в ленте — отправишь, когда освободится место.`;
-  return `Черновик приглашения для ${d.alias} ниже: проверь текст и зарплату и нажми «Отправить приглашение» — отправляешь ты, не я. Осталось ${d.limit.left} из ${d.limit.limit} на сутки.`;
+  if (d.blocked === 'open_invitation') return `${d.alias} ещё не ответил на прошлое приглашение компании - новое можно будет отправить после его ответа.`;
+  if (d.blocked === 'daily_limit') return `Лимит исчерпан: ${d.limit.sent} из ${d.limit.limit} приглашений за сутки. Черновик сохранится в ленте - отправишь, когда освободится место.`;
+  return `Черновик приглашения для ${d.alias} ниже: проверь текст и зарплату и нажми «Отправить приглашение» - отправляешь ты, не я. Осталось ${d.limit.left} из ${d.limit.limit} на сутки.`;
 }
 
 export function describeNeed(d: NeedDraft): string {
   const lines = [
     `Собрал черновик: ${categoryLabel(d)}${d.stack.length ? `, стек ${d.stack.join(', ')}` : ''}${d.salaryFrom ? `, от ${d.salaryFrom.toLocaleString('ru-RU')} ₽` : ''}; ${d.needs.length} требований из каталога.`,
-    'Открой форму, поправь и сохрани — после этого подберу кандидатов.',
+    'Открой форму, поправь и сохрани - после этого подберу кандидатов.',
   ];
   return lines.join('\n');
 }
@@ -177,7 +177,7 @@ interface ContextOut {
 function describeContext(o: ContextOut): string {
   const needs = o.needs.length
     ? `Потребности ${o.company.name}: ${o.needs.map((n) => `«${n.title}» (${categoryLabel(n)})`).join(', ')}.`
-    : `У ${o.company.name} пока нет потребностей — опиши словами, кто нужен, и я соберу черновик.`;
+    : `У ${o.company.name} пока нет потребностей - опиши словами, кто нужен, и я соберу черновик.`;
   return [needs, `Приглашений на сутки осталось ${o.invitations.left} из ${o.invitations.limit}.`, 'Скажи «подбери под потребность», «найди по базе Frontend с ФСП» или «создай потребность: …».'].join('\n');
 }
 

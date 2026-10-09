@@ -33,10 +33,10 @@ export function resumeNote(step: OnboardingStepBrief): string {
 
 /** Ответ без модели (заглушка LLM, демо-режим, сбой): честно и с возвратом к шагу. */
 export function asideCannedReply(step: OnboardingStepBrief): string {
-  return `Сейчас я отвечаю без языковой модели, поэтому на свободные вопросы отвечу подробнее после знакомства — в этом же чате. Вернёмся к вопросу «${step.question}».`;
+  return `Сейчас я отвечаю без языковой модели, поэтому на свободные вопросы отвечу подробнее после знакомства - в этом же чате. Вернёмся к вопросу «${step.question}».`;
 }
 
 /** Строка-напоминание для ответов без модели (демо, план В). */
 export function resumeLine(): string {
-  return `Знакомство ещё не закончено — продолжить можно здесь: ${ONBOARDING_RESUME_PATH}.`;
+  return `Знакомство ещё не закончено - продолжить можно здесь: ${ONBOARDING_RESUME_PATH}.`;
 }

@@ -100,7 +100,7 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
     }
     if (!u.doc) {
       result.failed.push(`файл ${u.filename} (не разобран)`);
-      ctx.emit({ type: 'step', text: `файл ${escapeExternal(u.filename)} ещё не разобран — пропускаю` });
+      ctx.emit({ type: 'step', text: `файл ${escapeExternal(u.filename)} ещё не разобран - пропускаю` });
       continue;
     }
     docs.push(u.doc);
@@ -128,11 +128,11 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
     const hidden = doc.flags.hiddenText?.count ?? 0;
     if (hidden > 0) {
       result.hiddenText += hidden;
-      ctx.emit({ type: 'step', text: `в «${escapeExternal(doc.title || doc.origin).slice(0, 60)}» скрытый текст (${hidden}) — проигнорирован` });
+      ctx.emit({ type: 'step', text: `в «${escapeExternal(doc.title || doc.origin).slice(0, 60)}» скрытый текст (${hidden}) - проигнорирован` });
     }
     if (doc.flags.injectionSuspect) {
       result.injectionSuspect = true;
-      ctx.emit({ type: 'step', text: `в «${escapeExternal(doc.title || doc.origin).slice(0, 60)}» похоже на инструкции для модели — проигнорированы` });
+      ctx.emit({ type: 'step', text: `в «${escapeExternal(doc.title || doc.origin).slice(0, 60)}» похоже на инструкции для модели - проигнорированы` });
     }
   }
 
@@ -193,7 +193,7 @@ async function extractOne(
     if (err instanceof BudgetExceededError || err instanceof LlmError) {
       result.degraded = true;
       result.degradedReason = err instanceof BudgetExceededError ? 'budget_exceeded' : err.code === 'timeout' ? 'timeout' : 'llm_unavailable';
-      ctx.emit({ type: 'step', text: 'извлекатель недоступен — ищу по словарю каталога' });
+      ctx.emit({ type: 'step', text: 'извлекатель недоступен - ищу по словарю каталога' });
       return extractByMarkers(doc, catalog);
     }
     throw err;

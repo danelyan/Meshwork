@@ -206,7 +206,7 @@ describe('правило теста', () => {
     expect(decideGrade(sig, take(0.3)).grade).toBe('middle');
     const mid = decideGrade(sig, take(0.2));
     expect(mid.grade).toBe('junior');
-    expect(mid.reason).toContain('Middle — если уверены');
+    expect(mid.reason).toContain('Middle - если уверены');
     const low = decideGrade(sig, take(0.1));
     expect(low.grade).toBe('junior');
     expect(low.reason).not.toContain('если уверены');
@@ -222,7 +222,7 @@ describe('правило теста', () => {
     const sure = decideGrade(ten, has(3));
     expect(sure.coverage).toBe(0.15);
     expect(sure.grade).toBe('junior');
-    expect(sure.reason).toContain('Middle — если уверены');
+    expect(sure.reason).toContain('Middle - если уверены');
     const under = decideGrade(ten, has(2));
     expect(under.grade).toBe('junior');
     expect(under.reason).not.toContain('если уверены');

@@ -15,7 +15,7 @@ export function Hero({ companies, signedIn }: { companies: LandingCompany[]; sig
           <br />
           Твоя карьера<i>.</i>
         </h1>
-        <p className={styles.slogan}>Покажи навыки и достижения — получай предложения от ИТ-компаний с открытой зарплатной вилкой.</p>
+        <p className={styles.slogan}>Покажи навыки и достижения - получай предложения от ИТ-компаний с открытой зарплатной вилкой.</p>
         <Start />
         <ul className={styles.note}>
           <li>можно загрузить резюме PDF</li>

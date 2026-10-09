@@ -10,8 +10,6 @@ import { checkInn } from '@/server/onboarding/inn';
 import { asideToModel, looksLikeQuestion, matchStepText } from '@/server/onboarding/match';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
-import { CompanionStage } from '../avatar/CompanionStage';
-import { CompanionVoiceProvider, useCompanionVoice } from '../avatar/voice';
 import { Chat } from '../Chat';
 import { AssistantChat, EMPLOYER_SUGGESTIONS } from '../employer/AssistantChat';
 import { extractUrls } from '@/lib/links';
@@ -43,8 +41,8 @@ export interface OnboardingChatProps {
 }
 
 /** Заготовки без модели: до роли «специалист» свободный текст в модель не уходит (граница доверия). */
-export const PRE_ROLE_REPLY = 'Сначала выбери вариант кнопкой выше — после этого отвечу на любой вопрос.';
-export const EMPLOYER_ASIDE_REPLY = 'На свободные вопросы помощник по подбору ответит сразу после знакомства — в этой же ленте. Пока выбери вариант выше или напиши его.';
+export const PRE_ROLE_REPLY = 'Сначала выбери вариант кнопкой выше - после этого отвечу на любой вопрос.';
+export const EMPLOYER_ASIDE_REPLY = 'На свободные вопросы помощник по подбору ответит сразу после знакомства - в этой же ленте. Пока выбери вариант выше или напиши его.';
 
 /** Шаги, где отвечают полем ввода внизу ленты: текст, своё значение, документы (файлы и ссылки), зарплата числом. */
 const typesText = (s: StepView) => s.kind === 'text' || s.kind === 'files' || s.kind === 'range' || (s.allowCustom && (s.kind === 'one' || s.kind === 'chips'));
@@ -59,15 +57,7 @@ const draftOf = (s: StepView) => (s.kind === 'text' && typeof s.value === 'strin
  * Без «Далее» и счётчика шагов: прогресс — тонкая полоса. После итога та же лента продолжается
  * карьерным консультантом (Chat embedded). Логика шагов — на сервере; клиент показывает OnboardingView.
  */
-export function OnboardingChat(props: OnboardingChatProps) {
-  return (
-    <CompanionVoiceProvider>
-      <OnboardingChatBody {...props} />
-    </CompanionVoiceProvider>
-  );
-}
-
-function OnboardingChatBody({ initial, consentText, consultant, employerAssistant }: OnboardingChatProps) {
+export function OnboardingChat({ initial, consentText, consultant, employerAssistant }: OnboardingChatProps) {
   const [view, setView] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,10 +71,6 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const endRef = useRef<HTMLDivElement>(null);
   const onboardedRef = useRef(initial.onboarded);
   const att = useAttachments();
-  // Голос компаньона: реплика нового шага и ответы консультанта озвучиваются, если включено.
-  const voice = useCompanionVoice();
-  const voiceRef = useRef(voice);
-  voiceRef.current = voice;
   // Один разговор с консультантом: вопросы посреди шагов, разбор документов и чат после итога.
   const convRef = useRef<string | undefined>(consultant?.restored?.conversationId ?? undefined);
   const [convId, setConvId] = useState(convRef.current);
@@ -126,7 +112,6 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setPending(bubble ?? null);
     try {
       const v = await onboardingAct(body);
-      voiceRef.current?.speak(`${v.current.lead} ${v.current.question}`);
       setView(v);
       setDraft(draftOf(v.current));
       setSel(multiOf(v.current));
@@ -244,7 +229,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     const urls = extractUrls(text);
     const files = att.ready;
     if (urls.length + files.length === 0) {
-      return setError('Не вижу ни файла, ни ссылки. Прикрепи резюме скрепкой, перетащи его в ленту или вставь ссылку на GitHub или портфолио — или пропусти шаг.');
+      return setError('Не вижу ни файла, ни ссылки. Прикрепи резюме скрепкой, перетащи его в ленту или вставь ссылку на GitHub или портфолио - или пропусти шаг.');
     }
     setError(null);
     setDraft('');
@@ -257,7 +242,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
       ? [
           ...view.summary.items.map((it) => ({ text: `${it.label}: ${it.value}` })),
           ...view.summary.warnings.map((w) => ({ text: w, secondary: true })),
-          ...(view.summary.skipped.length ? [{ text: `Пропущено: ${view.summary.skipped.map((it) => it.label).join(', ')} — можно ответить сейчас или позже. Любой ответ выше можно изменить.`, secondary: true }] : []),
+          ...(view.summary.skipped.length ? [{ text: `Пропущено: ${view.summary.skipped.map((it) => it.label).join(', ')} - можно ответить сейчас или позже. Любой ответ выше можно изменить.`, secondary: true }] : []),
         ]
       : [];
   const lines: ReplyLine[] = [
@@ -275,7 +260,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           <p key={p}>{p}</p>
         ))}
         <p className={styles.demoNote}>
-          Черновик, версия {view.consent.version}. Полный текст —{' '}
+          Черновик, версия {view.consent.version}. Полный текст -{' '}
           <a href={view.consent.docUrl} target="_blank" rel="noopener">
             на странице согласия
           </a>
@@ -289,7 +274,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const nextSteps = employer
     ? [{ value: 'go:/employer', label: 'Открыть подборку' }, ...skippedReplies]
     : [
-        { value: `go:${view.test.href}`, label: view.test.ready ? 'Пройти тест на грейд' : 'Тест на грейд (скоро) — в профиль' },
+        { value: `go:${view.test.href}`, label: view.test.ready ? 'Пройти тест на грейд' : 'Тест на грейд (скоро) - в профиль' },
         { value: 'go:/profile', label: 'Открыть профиль' },
         ...skippedReplies,
       ];
@@ -301,7 +286,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const assistantMode = isSummary && ready && employer && employerAssistant !== undefined;
 
   const inn = cur.id === 'inn' && draft.trim() ? checkInn(draft) : null;
-  const composerHint = inn?.ok ? 'Контрольная сумма сходится · реестр ФНС — демо, не подключён' : cur.kind === 'chips' && canType ? 'Enter — добавить своё' : undefined;
+  const composerHint = inn?.ok ? 'Контрольная сумма сходится · реестр ФНС - демо, не подключён' : cur.kind === 'chips' && canType ? 'Enter - добавить своё' : undefined;
   const placeholder =
     !ready || busy || asides.asking
       ? ''
@@ -317,11 +302,6 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
               ? 'Выбери вариант выше или задай вопрос'
               : 'Выбери вариант выше или напиши его';
   const docsDone = cur.kind === 'files' && docs.started && !docs.running;
-  const setThinking = voice?.setThinking;
-  const thinking = busy || asides.asking || docs.running;
-  useEffect(() => {
-    setThinking?.(thinking);
-  }, [thinking, setThinking]);
 
   return (
     <div className={styles.shell}>
@@ -330,7 +310,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           <Brand />
           <span className={styles.title}>Знакомство</span>
           {!isSummary && (
-            <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены — продолжишь с этого места">
+            <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
               Настроить позже
             </Button>
           )}
@@ -342,7 +322,6 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         <VisuallyHidden>
           <h1>Знакомство с помощником ФСП Карьеры</h1>
         </VisuallyHidden>
-        <CompanionStage className={styles.stage} />
         <Thread label="Переписка с помощником">
           {view.history.map((h) => (
             <HistoryPair

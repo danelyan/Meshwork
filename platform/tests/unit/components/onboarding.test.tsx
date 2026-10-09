@@ -146,7 +146,7 @@ it('текстовый шаг: Enter отправляет; ИНН с опеча�
   expect(screen.getByRole('alert').textContent).toMatch(/контрольн/i);
   expect(fetchFn).not.toHaveBeenCalled();
   fireEvent.change(input, { target: { value: '7707083893' } });
-  expect(screen.getByText(/реестр ФНС — демо/)).toBeDefined();
+  expect(screen.getByText(/реестр ФНС - демо/)).toBeDefined();
   fireEvent.keyDown(input, { key: 'Enter' });
   await waitFor(() => expect(question()).toBe('Компания?'));
   expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'inn', value: '7707083893' });

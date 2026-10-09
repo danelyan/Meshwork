@@ -171,7 +171,7 @@ const tokens = (text: string) => Math.ceil(text.length / 4);
 
 function keywordReply(text: string): string {
   const t = text.toLowerCase();
-  if (/привет|здравств/.test(t)) return 'Привет! Я консультант (заглушка). Пришли резюме или ссылку — соберу профиль.';
+  if (/привет|здравств/.test(t)) return 'Привет! Я консультант (заглушка). Пришли резюме или ссылку - соберу профиль.';
   if (/тест/.test(t)) return 'Категорию даёт только тест. Могу подсказать, какой тест пройти (заглушка).';
   if (/ваканс|компани/.test(t)) return 'Подберу вакансии платформы по твоему профилю (заглушка).';
   return `Заглушка LLM: ${text.trim().slice(0, 200) || 'пустое сообщение'}`;
@@ -252,7 +252,7 @@ export function createStubProvider(opts: StubOptions = {}): LlmProvider {
     if (last?.role === 'tool') {
       const names = new Set<string>();
       for (const m of req.messages) for (const c of m.toolCalls ?? []) names.add(c.name);
-      return { kind: 'text', text: `Заглушка LLM: получил результаты инструментов (${[...names].join(', ') || '—'}).` };
+      return { kind: 'text', text: `Заглушка LLM: получил результаты инструментов (${[...names].join(', ') || '-'}).` };
     }
     return { kind: 'text', text: keywordReply(userText) };
   }

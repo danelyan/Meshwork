@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { TestPage } from '@/components/TestPage';
 import { requirePageCandidate } from '@/server/auth/page';
 
-export const metadata: Metadata = { title: 'Тест на грейд — ФСП Карьера' };
+export const metadata: Metadata = { title: 'Тест на грейд - ФСП Карьера' };
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 

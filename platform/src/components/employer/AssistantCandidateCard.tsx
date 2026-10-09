@@ -58,7 +58,7 @@ export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: Ass
       )}
       {c.invitation === 'accepted' ? (
         <p className={styles.meta}>
-          Приглашение принято — контакты в разделе <a href="/employer/invitations">«Приглашения»</a>.
+          Приглашение принято - контакты в разделе <a href="/employer/invitations">«Приглашения»</a>.
         </p>
       ) : open ? (
         <p className={styles.meta}>

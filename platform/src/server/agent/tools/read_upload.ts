@@ -18,7 +18,7 @@ export const readUpload: AgentTool<z.infer<typeof Input>, z.infer<typeof Output>
   async handler(ctx, { uploadId }) {
     const u = await loadUpload(ctx.candidateId, uploadId);
     if (!u) throw errors.notFound('Файл не найден');
-    if (!u.doc) throw errors.conflict('Файл ещё не разобран — попробуй через несколько секунд');
+    if (!u.doc) throw errors.conflict('Файл ещё не разобран - попробуй через несколько секунд');
     ctx.emit({ type: 'step', text: `читаю ${u.filename}${u.doc.lines.length ? ` (${u.doc.lines.length} строк)` : ''}…` });
     return { uploadId: u.id, filename: u.filename, ...docToResult(u.doc) };
   },

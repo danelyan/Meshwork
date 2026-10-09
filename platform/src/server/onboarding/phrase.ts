@@ -36,11 +36,11 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
   }
   // Первая реплика чата — приветствие и сразу к делу (согласие уже взято при регистрации).
   if (step.id === 'role' && prev === null) {
-    return `Привет${name ? `, ${name}` : ''}! Я помощник ФСП Карьеры. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут — и настроим всё под тебя; любой вопрос можно пропустить.`;
+    return `Привет${name ? `, ${name}` : ''}! Я помощник ФСП Карьеры. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут - и настроим всё под тебя; любой вопрос можно пропустить.`;
   }
   if (step.kind === 'summary') {
     return ctx.answers.role === 'employer' || ctx.facts.role === 'employer'
-      ? `${hi}готово. Проверь потребность — по ней соберётся подборка кандидатов.`
+      ? `${hi}готово. Проверь потребность - по ней соберётся подборка кандидатов.`
       : `${hi}готово. Проверь, всё ли я понял верно.`;
   }
   if (skipped) return 'Хорошо, к этому можно вернуться позже.';
@@ -48,37 +48,37 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'role':
       return 'Спасибо. Теперь познакомимся.';
     case 'goal':
-      return `${hi}отлично. Скажи, чего ждёшь от платформы, — под это и соберём профиль.`;
+      return `${hi}отлично. Скажи, чего ждёшь от платформы, - под это и соберём профиль.`;
     case 'documents': {
       const goal = prev?.step.id === 'goal' ? prev.value : ctx.answers.goal;
-      if (goal === 'job_search') return 'Тогда соберём профиль, по которому компании найдут тебя сами: каждый навык — с подтверждением из твоих же материалов.';
+      if (goal === 'job_search') return 'Тогда соберём профиль, по которому компании найдут тебя сами: каждый навык - с подтверждением из твоих же материалов.';
       if (goal === 'market_watch') return 'Посмотрим, что о тебе уже можно сказать по документам.';
-      if (goal === 'grade_confirm') return 'Перед тестом соберу, что ты уже умеешь, — так проще выбрать грейд.';
+      if (goal === 'grade_confirm') return 'Перед тестом соберу, что ты уже умеешь, - так проще выбрать грейд.';
       return 'Соберём профиль из того, что у тебя уже есть.';
     }
     case 'fsp':
-      return 'Ещё один источник — соревнования ФСП.';
+      return 'Ещё один источник - соревнования ФСП.';
     case 'specialization':
       if (prev?.step.id === 'fsp' && prev.value === 'linked') return 'Демо-профиль ФСП привязан.';
-      if (prev?.step.id === 'fsp' && prev.value === 'not_linked') return 'Без истории ФСП — тоже нормально, решает тест.';
+      if (prev?.step.id === 'fsp' && prev.value === 'not_linked') return 'Без истории ФСП - тоже нормально, решает тест.';
       return 'Теперь про работу: по направлению тебя и будут искать.';
     case 'grade': {
       const s = specLabel(ctx.answers.specialization);
-      if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s} — понял. ` : ''}Раз хочешь подтвердить грейд, скажи, на какой претендуешь.`;
-      return s ? `${s} — понял.` : 'Понял.';
+      if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s} - понял. ` : ''}Раз хочешь подтвердить грейд, скажи, на какой претендуешь.`;
+      return s ? `${s} - понял.` : 'Понял.';
     }
     case 'stack':
       return 'Принято. Уточним инструменты.';
     case 'formats':
       return 'Хороший набор.';
     case 'city':
-      return 'Офис или гибрид — понял.';
+      return 'Офис или гибрид - понял.';
     case 'salary':
-      return 'Почти закончили. Компании приходят сразу с вилкой — укажи, на что рассчитываешь.';
+      return 'Почти закончили. Компании приходят сразу с вилкой - укажи, на что рассчитываешь.';
     case 'fspParticipation':
       return 'Последний вопрос.';
     case 'companyName':
-      return 'Ты от лица компании — тогда сначала о ней.';
+      return 'Ты от лица компании - тогда сначала о ней.';
     case 'inn':
       return 'Записал.';
     case 'industry':
@@ -91,14 +91,14 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
       return 'Теперь о том, кого ищешь.';
     case 'needGrades': {
       const s = specLabel(ctx.answers.needSpecialization);
-      return s ? `${s} — понял.` : 'Понял.';
+      return s ? `${s} - понял.` : 'Понял.';
     }
     case 'needStack':
-      return 'Уточним стек — по нему подберу утверждения каталога.';
+      return 'Уточним стек - по нему подберу утверждения каталога.';
     case 'needTeam':
       return 'Кандидатам важно понимать, чем предстоит заниматься.';
     case 'needSalary':
-      return 'И главное для кандидатов — вилка.';
+      return 'И главное для кандидатов - вилка.';
     default:
       return '';
   }

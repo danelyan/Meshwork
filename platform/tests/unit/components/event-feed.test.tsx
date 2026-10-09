@@ -140,7 +140,7 @@ describe('EventFeed: все типы AgentEvent', () => {
     ];
     render(<EventFeed items={items} />);
     expect(screen.getByText('REST API с тестами')).toBeDefined();
-    expect(screen.getByText('Backend — Контур')).toBeDefined();
+    expect(screen.getByText('Backend - Контур')).toBeDefined();
     expect(screen.getByText('закрываешь 3 из 5')).toBeDefined();
     expect(screen.getByText('Docker')).toBeDefined();
     expect(screen.getByText('Тест: Backend, middle')).toBeDefined();

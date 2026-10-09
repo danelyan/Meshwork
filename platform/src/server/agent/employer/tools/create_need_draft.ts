@@ -108,7 +108,7 @@ export const createNeedDraft: EmployerTool = {
   output: Output,
   async handler(ctx, input: z.infer<typeof Input>) {
     const spec = input.specialization ?? parseSpecialization(input.description);
-    if (!spec) throw errors.badRequest('Не понял специализацию — уточни у работодателя: Backend или Frontend');
+    if (!spec) throw errors.badRequest('Не понял специализацию - уточни у работодателя: Backend или Frontend');
     const grade = input.grade ?? parseGrade(input.description) ?? 'junior';
     const stack = normalizeStack(input.stack?.length ? input.stack : parseStack(input.description)).slice(0, 15);
     const sal = parseSalary(input.description);

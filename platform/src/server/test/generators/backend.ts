@@ -92,13 +92,13 @@ export const sqlRowcount: TaskGenerator = {
 };
 
 const HTTP_CASES: { text: string; key: string; why: string }[] = [
-  { text: 'GET существующего {ent}а — ответ с телом', key: '200', why: '200 OK: ресурс найден и возвращён.' },
+  { text: 'GET существующего {ent}а - ответ с телом', key: '200', why: '200 OK: ресурс найден и возвращён.' },
   { text: 'POST создал новый {ent} и вернул его представление', key: '201', why: '201 Created: ресурс создан, в ответе Location/представление.' },
   { text: 'DELETE удалил {ent}, тело ответа пустое', key: '204', why: '204 No Content: успех без тела.' },
   { text: 'GET {ent}а с несуществующим id', key: '404', why: '404 Not Found: такого ресурса нет.' },
   { text: 'запрос без токена к защищённому {ent}у', key: '401', why: '401 Unauthorized: клиент не аутентифицирован.' },
   { text: 'токен верный, но {ent} чужой и прав на него нет', key: '403', why: '403 Forbidden: аутентифицирован, но доступ запрещён.' },
-  { text: 'тело POST не проходит валидацию (нет обязательного поля)', key: '400|422', why: '400 Bad Request (или 422 Unprocessable Content) — ошибка в запросе клиента.' },
+  { text: 'тело POST не проходит валидацию (нет обязательного поля)', key: '400|422', why: '400 Bad Request (или 422 Unprocessable Content) - ошибка в запросе клиента.' },
   { text: 'PUT с устаревшей версией (If-Match не совпал)', key: '412|409', why: '412 Precondition Failed при If-Match; 409 Conflict тоже встречается для конфликта версий.' },
   { text: 'PATCH к коллекции, которая поддерживает только GET и POST', key: '405', why: '405 Method Not Allowed: метод не поддерживается ресурсом.' },
   { text: 'клиент превысил лимит запросов в минуту', key: '429', why: '429 Too Many Requests.' },
@@ -350,7 +350,7 @@ export const paymentRetry: TaskGenerator = {
     const reached = events.filter((e) => e.outcome !== 'not_sent');
     const charges = idempotent ? new Set(reached.map((e) => e.key)).size : reached.length;
     const describe = (e: Ev, i: number) =>
-      `${i + 1}. POST /charges, Idempotency-Key: ${e.key} — ${
+      `${i + 1}. POST /charges, Idempotency-Key: ${e.key} - ${
         e.outcome === 'ok' ? 'ответ 201 получен' : e.outcome === 'lost_response' ? 'сервер обработал, но ответ потерян (таймаут у клиента)' : 'соединение не установилось, запрос до сервера не дошёл'
       }`;
     return {
@@ -362,7 +362,7 @@ export const paymentRetry: TaskGenerator = {
       answerKey: String(charges),
       explanation: idempotent
         ? `До сервера дошло ${reached.length} запросов с ${charges} разными ключами; повторы с тем же ключом сервер отдал из сохранённого результата. Запросы, не дошедшие до сервера, ничего не списывают.`
-        : `Сервер игнорирует ключ, поэтому каждый дошедший запрос — отдельное списание: ${reached.length}. Потерянный ответ не отменяет обработку; не дошедший запрос не списывает.`,
+        : `Сервер игнорирует ключ, поэтому каждый дошедший запрос - отдельное списание: ${reached.length}. Потерянный ответ не отменяет обработку; не дошедший запрос не списывает.`,
       params: { idempotent, n, outcomes: events.map((e) => `${e.key}:${e.outcome}`).join(',') },
     };
   },
@@ -540,9 +540,9 @@ export const deliverySemantics: TaskGenerator = {
       answerKey: String(handled.get(ids[target - 1]!) ?? 0),
       explanation:
         crashWhen === 'after_handle_before_ack'
-          ? 'Обработка прошла, ack не дошёл — брокер доставляет сообщение повторно, и неидемпотентный обработчик пишет его второй раз. Защита: ключ идемпотентности или дедупликация по id сообщения.'
+          ? 'Обработка прошла, ack не дошёл - брокер доставляет сообщение повторно, и неидемпотентный обработчик пишет его второй раз. Защита: ключ идемпотентности или дедупликация по id сообщения.'
           : crashWhen === 'before_handle'
-            ? 'Падение до обработки — сообщение просто доставлено заново, записей одна.'
+            ? 'Падение до обработки - сообщение просто доставлено заново, записей одна.'
             : 'После ack брокер сообщение уже не повторяет; повторно приходят только неподтверждённые.',
       params: { n, crashAt, crashWhen, target },
     };
@@ -574,7 +574,7 @@ export const indexChoice: TaskGenerator = {
       { sql: `WHERE ${c2} = ${vals[c2]}`, uses: false, why: 'нет первого столбца индекса' },
       { sql: `WHERE ${c2} = ${vals[c2]} AND ${c3} = ${vals[c3]}`, uses: false, why: 'нет первого столбца' },
       { sql: `WHERE ${c1} = ${vals[c1]} AND ${c3} = ${vals[c3]}`, uses: true, why: 'по первому столбцу, третий фильтруется в индексе/после' },
-      { sql: `WHERE upper(${c1}::text) = '${vals[c1]!.replace(/'/g, '')}'`, uses: false, why: 'функция над столбцом — обычный индекс не применим' },
+      { sql: `WHERE upper(${c1}::text) = '${vals[c1]!.replace(/'/g, '')}'`, uses: false, why: 'функция над столбцом - обычный индекс не применим' },
       { sql: `WHERE ${c3} = ${vals[c3]}`, uses: false, why: 'только третий столбец' },
       { sql: `WHERE ${c3} = ${vals[c3]} AND ${c1} = ${vals[c1]}`, uses: true, why: 'порядок условий в WHERE не важен: есть первый столбец' },
     ];

@@ -20,8 +20,8 @@ export function checkInn(raw: string): InnCheck {
   if (inn.length !== 10 && inn.length !== 12) return { ok: false, reason: 'В ИНН 10 цифр (организация) или 12 (ИП)' };
   const d = [...inn].map(Number);
   if (inn.length === 10) {
-    return control(d, W10) === d[9] ? { ok: true, kind: 'legal' } : { ok: false, reason: 'Не сходится контрольная цифра ИНН — проверь опечатку' };
+    return control(d, W10) === d[9] ? { ok: true, kind: 'legal' } : { ok: false, reason: 'Не сходится контрольная цифра ИНН - проверь опечатку' };
   }
   const ok = control(d, W11) === d[10] && control(d, W12) === d[11];
-  return ok ? { ok: true, kind: 'individual' } : { ok: false, reason: 'Не сходится контрольная цифра ИНН — проверь опечатку' };
+  return ok ? { ok: true, kind: 'individual' } : { ok: false, reason: 'Не сходится контрольная цифра ИНН - проверь опечатку' };
 }

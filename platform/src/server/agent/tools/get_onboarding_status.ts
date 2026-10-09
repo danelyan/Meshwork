@@ -89,7 +89,7 @@ export const getOnboardingStatus: AgentTool<Record<string, never>, z.infer<typeo
       counts: journey.counts,
       nextStep: journey.nextStep,
       hint: STEP_HINT[journey.nextStep],
-      note: 'Анкета — со слов кандидата. Категорию даёт только тест; предлагай один следующий шаг, не все сразу.',
+      note: 'Анкета - со слов кандидата. Категорию даёт только тест; предлагай один следующий шаг, не все сразу.',
     };
   },
 };

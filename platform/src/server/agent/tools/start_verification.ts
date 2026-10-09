@@ -34,7 +34,7 @@ export const startVerification: AgentTool<z.infer<typeof Input>, z.infer<typeof 
       select: { id: true, statement: true, level: true, status: true, suggestedProof: true },
     });
     if (!claim) throw errors.notFound('Утверждение не найдено');
-    if (claim.status === 'rejected') throw errors.conflict('Утверждение отклонено кандидатом — проверять нечего');
+    if (claim.status === 'rejected') throw errors.conflict('Утверждение отклонено кандидатом - проверять нечего');
     const proof = Array.isArray(claim.suggestedProof) ? (claim.suggestedProof as unknown[]).map(String) : [];
     const taskId = proof.find((p) => p.startsWith('task:'))?.slice('task:'.length);
     // Ссылки — только на существующие экраны UI. Отдельного экрана задания и
@@ -49,8 +49,8 @@ export const startVerification: AgentTool<z.infer<typeof Input>, z.infer<typeof 
       kind === 'interview'
         ? 'Защита проверяет понимание сейчас, не подлинность истории; уровень поднимает код по вердикту оценщика.'
         : kind === 'task'
-          ? 'Задание из банка платформы — в списке заданий профиля; уровень ставит код по результату проверки.'
-          : 'Пришли ссылку на профиль (GitHub, Codeforces, ФСП) в чат. Уровень «артефакт» или «третья сторона» — только после проверки владения.';
+          ? 'Задание из банка платформы - в списке заданий профиля; уровень ставит код по результату проверки.'
+          : 'Пришли ссылку на профиль (GitHub, Codeforces, ФСП) в чат. Уровень «артефакт» или «третья сторона» - только после проверки владения.';
     return { claimId: claim.id, kind, url, statement: claim.statement, currentLevel: claim.level, note };
   },
 };

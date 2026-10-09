@@ -108,7 +108,7 @@ function prevOf(step: StepDef, l: Pick<Loaded, 'ctx' | 'state' | 'lines'>): Prev
 async function gradeHint(candidateId: string | null): Promise<string | undefined> {
   if (!candidateId) return undefined;
   const n = await prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } });
-  if (n === 0) return 'Подтверди утверждения из документов — и я подскажу грейд по ним.';
+  if (n === 0) return 'Подтверди утверждения из документов - и я подскажу грейд по ним.';
   try {
     const rec = await recommendTest(candidateId);
     const g = GRADES.find((x) => x.value === rec.grade)?.label ?? rec.grade;
@@ -213,7 +213,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
 
 function stepOr409(l: Loaded, stepId: string): StepDef {
   const step = visibleSteps(l.ctx).find((s) => s.id === stepId);
-  if (!step) throw errors.conflict('Этот вопрос сейчас недоступен — обнови страницу');
+  if (!step) throw errors.conflict('Этот вопрос сейчас недоступен - обнови страницу');
   return step;
 }
 

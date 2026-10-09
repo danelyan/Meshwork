@@ -7,7 +7,7 @@ import { Kicker } from '@/components/ui';
 import { requirePageCandidate } from '@/server/auth/page';
 import { getPrivacy, listCandidateInvitations } from '@/server/employer';
 
-export const metadata: Metadata = { title: 'Приглашения — ФСП Карьера' };
+export const metadata: Metadata = { title: 'Приглашения - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
 
 /** Входящие приглашения кандидата (R-C-11, R-C-16) и настройка приватности (R-C-13). Открытие отмечает их просмотренными. */

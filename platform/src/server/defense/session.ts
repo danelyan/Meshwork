@@ -274,7 +274,7 @@ async function finishWithVerdict(candidateId: string, sessionId: string, llm: Ll
     console.warn('[defense] evaluator failed:', err instanceof Error ? err.message : err);
     throw new AppError(
       'llm_unavailable',
-      'Оценщик сейчас недоступен. Ответы сохранены — повтори запрос, чтобы получить вердикт.',
+      'Оценщик сейчас недоступен. Ответы сохранены - повтори запрос, чтобы получить вердикт.',
       503,
     );
   }

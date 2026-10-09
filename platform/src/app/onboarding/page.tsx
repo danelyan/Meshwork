@@ -9,7 +9,7 @@ import { llmIsDemoStub } from '@/server/demo/mode';
 import { CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
 import { getView } from '@/server/onboarding/service';
 
-export const metadata: Metadata = { title: 'Знакомство — ФСП Карьера' };
+export const metadata: Metadata = { title: 'Знакомство - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
 
 /**

@@ -7,7 +7,6 @@ import type { ClaimAction } from '@/lib/api';
 import { type CardClaim, normalizeClaim } from '@/lib/claims-view';
 import type { AgentEvent } from '@/server/agent/types';
 
-import { ReplayButton } from './avatar/CompanionStage';
 import type { AgentItem } from './chat/stream-items';
 import { StreamingText } from './chat/StreamingText';
 import { AssistantRow, Bubble, QuickReplies, Thread, UserBubble } from './chat/Thread';
@@ -74,10 +73,10 @@ export function toBlocks(items: FeedItem[]): Block[] {
 }
 
 const REASON_TEXT: Record<string, (n: number) => string> = {
-  no_quote: (n) => `${n} без цитаты в источнике — отброшено: утверждение без подтверждающей цитаты не предлагается.`,
-  unknown_catalog_id: (n) => `${n} вне каталога утверждений — отброшено.`,
-  hidden_text: (n) => `${n} из скрытого текста — отброшено.`,
-  quote_too_short: (n) => `${n} со слишком короткой цитатой — отброшено.`,
+  no_quote: (n) => `${n} без цитаты в источнике - отброшено: утверждение без подтверждающей цитаты не предлагается.`,
+  unknown_catalog_id: (n) => `${n} вне каталога утверждений - отброшено.`,
+  hidden_text: (n) => `${n} из скрытого текста - отброшено.`,
+  quote_too_short: (n) => `${n} со слишком короткой цитатой - отброшено.`,
 };
 
 /** Плашки по реальным причинам: дубли — не отказ, а слияние повторов. */
@@ -153,7 +152,7 @@ function ClaimsBlock({
       </div>
       {event.hiddenText ? (
         <p className={ui.notice} role="note">
-          В документе найден скрытый текст ({event.hiddenText}) — он проигнорирован и не попал в утверждения.
+          В документе найден скрытый текст ({event.hiddenText}) - он проигнорирован и не попал в утверждения.
         </p>
       ) : null}
       {bulkDone !== null && (
@@ -244,7 +243,6 @@ export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmA
             {ev.type === 'message' && (
               <Bubble>
                 <StreamingText text={ev.text} streaming={b.streaming} animate={Boolean(b.live)} />
-                {!b.streaming && <ReplayButton text={ev.text} />}
               </Bubble>
             )}
             {ev.type === 'claims' && <ClaimsBlock event={ev} overrides={claimOverrides} onAction={onClaimAction} onConfirmAll={onConfirmAll} />}

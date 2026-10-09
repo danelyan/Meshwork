@@ -8,7 +8,7 @@ const playfair = Playfair_Display({ subsets: ['latin', 'cyrillic'], weight: ['70
 const oswald = Oswald({ subsets: ['latin', 'cyrillic'], weight: ['500', '600', '700'], display: 'swap' });
 const ptserif = PT_Serif({ subsets: ['latin', 'cyrillic'], weight: ['400', '700'], display: 'swap' });
 
-export const metadata: Metadata = { title: 'Шрифты заголовков — превью', robots: { index: false } };
+export const metadata: Metadata = { title: 'Шрифты заголовков - превью', robots: { index: false } };
 
 const VARIANTS = {
   mono: { label: 'JetBrains Mono', note: 'как в мокапе Карины; текущий выбор', font: null, weight: 700, tracking: '-0.045em' },
@@ -50,7 +50,7 @@ export default async function FontsPreview({ searchParams }: { searchParams: Pro
               <h2 className={v.font ? v.font.className : styles.monoHead} style={{ fontWeight: v.weight }}>
                 Сейчас нанимают
               </h2>
-              <p className={styles.slogan}>Покажи навыки и достижения — получай предложения от ИТ-компаний с открытой зарплатной вилкой.</p>
+              <p className={styles.slogan}>Покажи навыки и достижения - получай предложения от ИТ-компаний с открытой зарплатной вилкой.</p>
             </section>
           );
         })}

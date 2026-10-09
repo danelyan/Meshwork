@@ -55,8 +55,8 @@ export function intervals(demo: boolean = getEnv().TEST_DEMO_INTERVALS): Interva
 
 export function describeIntervals(iv: Intervals = intervals()): string {
   return iv.demo
-    ? `Демо-режим: смена грейда — через ${DEMO_GRADE_CHANGE_MIN} мин, пересдача того же грейда — через ${DEMO_RETAKE_MIN} мин (на проде — ${GRADE_CHANGE_INTERVAL_DAYS} и ${RETAKE_SAME_GRADE_DAYS} дней).`
-    : `Смена грейда — не чаще раза в ${GRADE_CHANGE_INTERVAL_DAYS} дней, пересдача того же грейда — через ${RETAKE_SAME_GRADE_DAYS} дней.`;
+    ? `Демо-режим: смена грейда - через ${DEMO_GRADE_CHANGE_MIN} мин, пересдача того же грейда - через ${DEMO_RETAKE_MIN} мин (на проде - ${GRADE_CHANGE_INTERVAL_DAYS} и ${RETAKE_SAME_GRADE_DAYS} дней).`
+    : `Смена грейда - не чаще раза в ${GRADE_CHANGE_INTERVAL_DAYS} дней, пересдача того же грейда - через ${RETAKE_SAME_GRADE_DAYS} дней.`;
 }
 
 // ---------------------------------------------------------------------------

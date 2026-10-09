@@ -32,8 +32,8 @@ export function pipelineParts(p: PipelineResult): string[] {
   const parts: string[] = [];
   if (p.docs.length) parts.push(`Прочитал: ${p.docs.map((d) => d.label).join(', ')}.`);
   if (p.failed.length) parts.push(`Не удалось прочитать: ${p.failed.join(', ')}.`);
-  if (p.hiddenText > 0) parts.push('В документе найден скрытый текст — он проигнорирован.');
-  if (p.injectionSuspect) parts.push('В присланных данных есть похожее на инструкции для модели — проигнорировано.');
+  if (p.hiddenText > 0) parts.push('В документе найден скрытый текст - он проигнорирован.');
+  if (p.injectionSuspect) parts.push('В присланных данных есть похожее на инструкции для модели - проигнорировано.');
   if (p.proposed.length) {
     parts.push(
       `Нашёл ${countOf(p.proposed.length, FORMS.claim)}${p.rejected ? `, ${p.rejected} отбросил (${p.rejectSummary || 'нет цитаты в источнике'})` : ''}${p.merged ? `, объединил ${countOf(p.merged, FORMS.repeat)} из разных источников` : ''}. Посмотри карточки: «да» переводит утверждение в профиль, «поправить» меняет формулировку, «нет» убирает.`,
@@ -41,7 +41,7 @@ export function pipelineParts(p: PipelineResult): string[] {
   } else if (p.alreadyKnown > 0) {
     parts.push(`Новых утверждений нет: ${p.alreadyKnown} уже в твоём профиле.`);
   } else if (p.docs.length) {
-    parts.push('Утверждений из каталога с дословной цитатой не нашёл. Напиши, что делал, своими словами — подберу формулировки из каталога.');
+    parts.push('Утверждений из каталога с дословной цитатой не нашёл. Напиши, что делал, своими словами - подберу формулировки из каталога.');
   }
   return parts;
 }
@@ -51,7 +51,7 @@ export async function testPart(candidateId: string): Promise<string | undefined>
   const test = await safe(() => recommendTest(candidateId));
   if (!test) return undefined;
   if (test.reason === NO_CONFIRMED_REASON) return 'Тест предложу, когда будут подтверждённые утверждения: подтверди карточки.';
-  return `По утверждениям похоже на ${SPEC_RU[test.specialization] ?? test.specialization}, ${GRADE_RU[test.grade] ?? test.grade}: ${test.reason}. Категорию даёт только тест — ${test.allowed ? 'пойдёшь на него?' : `смена грейда откроется ${test.nextAllowedAt ?? 'позже'}.`}`;
+  return `По утверждениям похоже на ${SPEC_RU[test.specialization] ?? test.specialization}, ${GRADE_RU[test.grade] ?? test.grade}: ${test.reason}. Категорию даёт только тест - ${test.allowed ? 'пойдёшь на него?' : `смена грейда откроется ${test.nextAllowedAt ?? 'позже'}.`}`;
 }
 
 /** Строки по вакансиям из recommendTargets; undefined, если подбор недоступен. */
@@ -60,7 +60,7 @@ export async function targetsParts(candidateId: string, limit = 3): Promise<stri
   if (!targets) return undefined;
   return targets.map(
     (v) =>
-      `— ${v.companyName}, ${v.title}: закрываешь ${v.covered} из ${v.total}${v.missing.length ? `, не хватает: ${v.missing.map((m) => m.statement).join('; ')}` : ''}.`,
+      `- ${v.companyName}, ${v.title}: закрываешь ${v.covered} из ${v.total}${v.missing.length ? `, не хватает: ${v.missing.map((m) => m.statement).join('; ')}` : ''}.`,
   );
 }
 
@@ -74,19 +74,19 @@ export async function fallbackReply(input: FallbackInput): Promise<string> {
     if (lines?.length) {
       parts.push('По вакансиям платформы ближе всего:', ...lines);
     } else if (lines) {
-      parts.push('Пока подбирать не из чего: вакансии считаются по подтверждённым утверждениям. Подтверди карточки — покажу вакансии.');
+      parts.push('Пока подбирать не из чего: вакансии считаются по подтверждённым утверждениям. Подтверди карточки - покажу вакансии.');
     } else {
-      parts.push('Подбор вакансий сейчас недоступен — попробуй через минуту.');
+      parts.push('Подбор вакансий сейчас недоступен - попробуй через минуту.');
     }
   }
   if (/тест|грейд|категор/.test(t) || p?.proposed.length) {
     const test = await testPart(input.candidateId);
     if (test) parts.push(test);
   }
-  if (p?.proposed.length) parts.push('Подтверди карточки — покажу подходящие вакансии.');
+  if (p?.proposed.length) parts.push('Подтверди карточки - покажу подходящие вакансии.');
   if (!parts.length) {
     parts.push(
-      'Сейчас отвечаю в упрощённом режиме. Пришли резюме или ссылки — соберу утверждения с цитатами; спроси про тест или вакансии — отвечу по данным платформы.',
+      'Сейчас отвечаю в упрощённом режиме. Пришли резюме или ссылки - соберу утверждения с цитатами; спроси про тест или вакансии - отвечу по данным платформы.',
     );
   }
   return parts.join('\n');

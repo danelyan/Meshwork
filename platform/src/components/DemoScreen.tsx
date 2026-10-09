@@ -114,7 +114,7 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
       <PageTitle
         kicker="ФСП Карьера · демо для жюри"
         title="Демо-аккаунты"
-        lead="Готовые вымышленные пользователи с синтетическими данными. Настоящий вход — через Яндекс ID на странице входа."
+        lead="Готовые вымышленные пользователи с синтетическими данными. Настоящий вход - через Яндекс ID на странице входа."
       />
 
       {failure && <Notice tone="error">{failure}</Notice>}
@@ -122,9 +122,9 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
       <div className={styles.grid}>
       <section className={styles.block} aria-labelledby="demo-fresh">
         <h2 id="demo-fresh" className={styles.blockTitle}>
-          Новый пользователь — пройти онбординг
+          Новый пользователь - пройти онбординг
         </h2>
-        <p className={ui.hint}>Создаёт чистый аккаунт без роли: онбординг-чат сразу спросит, кто ты — специалист или работодатель.</p>
+        <p className={ui.hint}>Создаёт чистый аккаунт без роли: онбординг-чат сразу спросит, кто ты - специалист или работодатель.</p>
         <ConsentCheck checked={agreed} onChange={setAgreed} />
         <button
           type="button"

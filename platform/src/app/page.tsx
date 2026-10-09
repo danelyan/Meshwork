@@ -6,8 +6,8 @@ import { SHOWCASE } from '@/components/landing/showcase';
 import { SESSION_COOKIE, verifySession } from '@/server/session';
 
 export const metadata: Metadata = {
-  title: 'ФСП Карьера — твой код, твоя карьера',
-  description: 'ИТ-подбор с обратной механикой: покажи навыки и достижения — получай предложения от компаний с открытой зарплатной вилкой.',
+  title: 'ФСП Карьера - твой код, твоя карьера',
+  description: 'ИТ-подбор с обратной механикой: покажи навыки и достижения - получай предложения от компаний с открытой зарплатной вилкой.',
 };
 
 export default async function HomePage() {

@@ -11,8 +11,6 @@ import type { AgentEvent } from '@/server/agent/types';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 
-import { CompanionStage } from './avatar/CompanionStage';
-import { CompanionVoiceProvider, useCompanionVoice } from './avatar/voice';
 import styles from './Chat.module.css';
 import { useAttachments } from './chat/attachments';
 import { Composer } from './chat/Composer';
@@ -24,11 +22,11 @@ import { VisuallyHidden } from './ui';
 import ui from './ui.module.css';
 
 const GREETING =
-  'Пришли резюме или ссылки — прикрепи файл скрепкой, перетащи его в ленту или просто вставь ссылку на GitHub, Codeforces, статьи, портфолио. Я найду в них утверждения о твоих навыках, покажу цитаты и спрошу, всё ли верно. Категорию (специализацию и грейд) даёт только тест.';
+  'Пришли резюме или ссылки - прикрепи файл скрепкой, перетащи его в ленту или просто вставь ссылку на GitHub, Codeforces, статьи, портфолио. Я найду в них утверждения о твоих навыках, покажу цитаты и спрошу, всё ли верно. Категорию (специализацию и грейд) даёт только тест.';
 
 /** Приветствие после онбординга: та же лента, помощник становится консультантом. */
 const CONTINUE_GREETING =
-  'Дальше я — твой карьерный консультант. Пришли резюме или ссылки, спроси, что подтянуть до следующего грейда, — или выбери шаг ниже.';
+  'Дальше я - твой карьерный консультант. Пришли резюме или ссылки, спроси, что подтянуть до следующего грейда, - или выбери шаг ниже.';
 
 export interface ChatEmbedded {
   /** Подсказки следующих шагов — чипами под приветствием, пока не начат разговор. */
@@ -44,27 +42,11 @@ const SIMPLIFIED_CODES = new Set(['llm_unavailable', 'llm_rate_limited', 'rate_l
 let seq = 0;
 const nextId = () => `i${++seq}`;
 
-interface ChatProps {
-  demo?: ChatDemoContext;
-  initial?: RestoredChat;
-  embedded?: ChatEmbedded;
-}
-
 /**
  * Карьерный консультант. Самостоятельно — страница /consultant; `embedded` — продолжение ленты
  * онбординга (без заголовка страницы, приветствие с подсказками). Лента — примитивы components/chat.
- * Голос и аватар компаньона: на странице — свои; во встроенном режиме — от онбординга (тот же провайдер).
  */
-export function Chat(props: ChatProps) {
-  if (props.embedded) return <ChatBody {...props} />;
-  return (
-    <CompanionVoiceProvider>
-      <ChatBody {...props} />
-    </CompanionVoiceProvider>
-  );
-}
-
-function ChatBody({ demo, initial, embedded }: ChatProps) {
+export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; initial?: RestoredChat; embedded?: ChatEmbedded }) {
   const [items, setItems] = useState<FeedItem[]>(initial?.items ?? []);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [text, setText] = useState('');
@@ -80,17 +62,10 @@ function ChatBody({ demo, initial, embedded }: ChatProps) {
   const conversationRef = useRef<string | undefined>(initial?.conversationId ?? undefined);
   const endRef = useRef<HTMLDivElement>(null);
 
-  const voice = useCompanionVoice();
-  const voiceRef = useRef(voice);
-  voiceRef.current = voice;
   const rootRef = useRef<HTMLDivElement>(null);
   // Внутри онбординга лентой и автоскроллом управляет OnboardingChat.
   useStickToBottom(rootRef, !embedded);
   useEffect(() => () => abortRef.current?.abort(), []);
-  const setThinking = voice?.setThinking;
-  useEffect(() => {
-    setThinking?.(busy);
-  }, [busy, setThinking]);
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
   }, [items.length]);
@@ -101,8 +76,6 @@ function ChatBody({ demo, initial, embedded }: ChatProps) {
       return;
     }
     if (event.type === 'done') return;
-    // Завершённая реплика — авторитетный текст после дельт: её и озвучиваем (если включено).
-    if (event.type === 'message') voiceRef.current?.speak(event.text);
     setItems((p) => applyAgentEvent(p, event, nextId));
     if (event.type === 'error' && SIMPLIFIED_CODES.has(event.code)) setSimplified(true);
   }, []);
@@ -227,7 +200,6 @@ function ChatBody({ demo, initial, embedded }: ChatProps) {
       {!embedded && (
         <header className={styles.intro}>
           <h1>Карьерный консультант</h1>
-          <CompanionStage />
           {demo?.noLlm && (
             <p className={styles.demoNote} role="note">
               Демо-режим без языковой модели: ответы собираются по шаблонам из данных платформы, утверждения ищутся по словарю каталога.
@@ -282,7 +254,7 @@ function ChatBody({ demo, initial, embedded }: ChatProps) {
         voice
         maxLength={8000}
         attachments={{ files: att.files, onAdd: att.add, onRemove: att.remove }}
-        hint="Enter — отправить, Shift+Enter — новая строка"
+        hint="Enter - отправить, Shift+Enter - новая строка"
         top={
           <>
             {formError && (

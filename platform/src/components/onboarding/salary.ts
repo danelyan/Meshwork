@@ -34,6 +34,6 @@ export function parseSalary(text: string, spec: RangeSpec): SalaryRange | { erro
   const k = nums.map((n) => Math.round(n >= 1000 ? n / 1000 : n));
   const from = Math.min(...k.slice(0, 2));
   const to = Math.max(...k.slice(0, 2));
-  if (from < spec.min || to > spec.max) return { error: `Диапазон — от ${spec.min} до ${spec.max} тыс ₽ в месяц. Поправь сумму.` };
+  if (from < spec.min || to > spec.max) return { error: `Диапазон - от ${spec.min} до ${spec.max} тыс ₽ в месяц. Поправь сумму.` };
   return { from, to };
 }

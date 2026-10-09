@@ -37,7 +37,7 @@ export function useAttachments() {
     const added: Attachment[] = [];
     for (const file of Array.from(list)) {
       const key = `a${++seq}`;
-      const problem = room <= 0 ? `«${file.name}»: за раз — не больше ${MAX_ATTACHMENTS} файлов.` : validateUploadFile(file);
+      const problem = room <= 0 ? `«${file.name}»: за раз - не больше ${MAX_ATTACHMENTS} файлов.` : validateUploadFile(file);
       if (problem) {
         added.push({ key, name: file.name, size: file.size, status: 'error', error: problem });
         continue;

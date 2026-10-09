@@ -38,7 +38,7 @@ export function AttachmentChip({ file, onRemove, disabled }: { file: Attachment;
 export function AttachmentLimitsHint({ id, text }: { id?: string; text: string }) {
   return (
     <span id={id} className={styles.limits} role="note">
-      {text}. Можно перетащить файлы в ленту или вставить из буфера; ссылки — просто текстом.
+      {text}. Можно перетащить файлы в ленту или вставить из буфера; ссылки - просто текстом.
     </span>
   );
 }

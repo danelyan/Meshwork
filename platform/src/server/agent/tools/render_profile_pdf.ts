@@ -18,7 +18,7 @@ export const renderProfilePdf: AgentTool<Record<string, never>, z.infer<typeof O
     return {
       url: '/profile?print=1',
       claims,
-      note: claims ? 'В PDF попадают только подтверждённые утверждения.' : 'Подтверждённых утверждений пока нет — PDF будет пустым.',
+      note: claims ? 'В PDF попадают только подтверждённые утверждения.' : 'Подтверждённых утверждений пока нет - PDF будет пустым.',
     };
   },
 };

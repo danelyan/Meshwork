@@ -17,7 +17,7 @@ export const POST = withErrors(async (req: Request) => {
   if (!getSession(req)) throw errors.unauthorized();
   if (sttMode() !== 'yandex') throw errors.badRequest('Серверное распознавание выключено');
   const declared = Number(req.headers.get('content-length'));
-  if (Number.isFinite(declared) && declared > STT_MAX_BYTES) throw errors.payloadTooLarge('Запись длиннее 30 секунд — скажи короче');
+  if (Number.isFinite(declared) && declared > STT_MAX_BYTES) throw errors.payloadTooLarge('Запись длиннее 30 секунд - скажи короче');
   if (!req.body) throw errors.badRequest('Пустая запись');
   const reader = req.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -28,7 +28,7 @@ export const POST = withErrors(async (req: Request) => {
     size += value.byteLength;
     if (size > STT_MAX_BYTES) {
       await reader.cancel().catch(() => undefined);
-      throw errors.payloadTooLarge('Запись длиннее 30 секунд — скажи короче');
+      throw errors.payloadTooLarge('Запись длиннее 30 секунд - скажи короче');
     }
     chunks.push(value);
   }

@@ -94,7 +94,7 @@ function GapMap({ gaps, pending }: { gaps: Gap[]; pending: Set<string> }) {
                 ) : (
                   <span className={ui.muted}>нет утверждения</span>
                 )}</td>
-              <td>{g.suggestedProof.length ? g.suggestedProof.join('; ') : '—'}</td>
+              <td>{g.suggestedProof.length ? g.suggestedProof.join('; ') : '-'}</td>
             </tr>
           ))}
         </tbody>
@@ -120,7 +120,7 @@ function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
         {attempts.slice(0, 5).map((a) => (
           <li key={a.id}>
             <Link href={`/test?attempt=${encodeURIComponent(a.id)}`}>
-              {formatDate(a.startedAt)}: {a.specialization === 'backend' ? 'Backend' : 'Frontend'} · {a.grade} — {ATTEMPT_STATUS[a.status]}
+              {formatDate(a.startedAt)}: {a.specialization === 'backend' ? 'Backend' : 'Frontend'} · {a.grade} - {ATTEMPT_STATUS[a.status]}
               {a.juniorConfirmedAt ? ', Junior подтверждён' : ''}
               {a.status !== 'active' && a.status !== 'abandoned' ? ` (${a.correct} из ${a.answered})` : ''}
             </Link>
@@ -226,7 +226,7 @@ export function ProfilePage() {
         <p className={styles.sub}>
           {profile.category
             ? `Категория по тесту: ${specLabel(profile.category.specialization)}, ${profile.category.grade} (${formatDate(profile.category.confirmedAt)})`
-            : 'Категории пока нет: её даёт только тест. Ниже — утверждения со ссылками на источники.'}
+            : 'Категории пока нет: её даёт только тест. Ниже - утверждения со ссылками на источники.'}
         </p>
         <p className={styles.printOnly}>Распечатано {formatDate(new Date().toISOString())}</p>
         <dl className={styles.facts}>
@@ -325,7 +325,7 @@ export function ProfilePage() {
         ) : (
           <p className={ui.muted} data-testid="targets-empty">
             {confirmedCount === 0
-              ? 'Вакансии подбираются по подтверждённым утверждениям, а пока подтверждённых нет. Подтвердите карточки в чате с консультантом — и здесь появятся вакансии.'
+              ? 'Вакансии подбираются по подтверждённым утверждениям, а пока подтверждённых нет. Подтвердите карточки в чате с консультантом - и здесь появятся вакансии.'
               : 'По подтверждённым утверждениям подходящих вакансий пока нет. Добавьте источники или закройте пробелы из карты ниже.'}
           </p>
         )}

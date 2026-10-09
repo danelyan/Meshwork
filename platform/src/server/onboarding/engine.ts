@@ -127,7 +127,7 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
       if (optionsOf(step, ctx).some((o) => o.value === value)) return fail('Этот вариант пока недоступен');
       if (step.allowCustom) {
         const r = Custom.safeParse(value);
-        return r.success ? r.data : fail('Свой вариант — до 60 символов');
+        return r.success ? r.data : fail('Свой вариант - до 60 символов');
       }
       return fail('Выбери один из вариантов');
     }
@@ -178,7 +178,7 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
         })
         .safeParse(value);
       if (!r.success) return fail('Некорректный список файлов и ссылок');
-      if (r.data.uploadIds.length + r.data.urls.length === 0) return fail('Приложи файл или ссылку — или пропусти шаг');
+      if (r.data.uploadIds.length + r.data.urls.length === 0) return fail('Приложи файл или ссылку - или пропусти шаг');
       return r.data;
     }
     case 'summary':

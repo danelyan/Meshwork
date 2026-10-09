@@ -5,7 +5,7 @@ import { safeNext } from '@/server/auth/redirect';
 import { yandexConfig } from '@/server/auth/yandex';
 import { getEnv } from '@/server/env';
 
-export const metadata: Metadata = { title: 'Вход — ФСП Карьера' };
+export const metadata: Metadata = { title: 'Вход - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
 
 type Search = Promise<Record<string, string | string[] | undefined>>;

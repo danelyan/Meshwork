@@ -60,7 +60,7 @@ export const POST = withErrors(async (req: Request) => {
   }
 
   const lock = await acquireConversationLock(conversationId);
-  if (!lock) throw new AppError('busy', 'Консультант ещё отвечает в этом разговоре — дождись окончания', 409);
+  if (!lock) throw new AppError('busy', 'Консультант ещё отвечает в этом разговоре - дождись окончания', 409);
 
   const encoder = new TextEncoder();
   const signal = req.signal;

@@ -52,12 +52,12 @@ export function decideGrade(signature: CatalogEntry[], claimed: Set<string>): Te
   const pct = Math.round(cov * 100);
   const lackText = lacking.length ? ` Для Middle не хватает заявленных: ${lacking.join('; ')}.` : '';
   if (cov >= MIDDLE_THRESHOLD) {
-    return { grade: 'middle', coverage: cov, reason: `Заявлено ${pct}% того, что отличает Middle, — предлагаем тест Middle.${lackText}` };
+    return { grade: 'middle', coverage: cov, reason: `Заявлено ${pct}% того, что отличает Middle, - предлагаем тест Middle.${lackText}` };
   }
   if (cov >= MIDDLE_IF_SURE_THRESHOLD) {
-    return { grade: 'junior', coverage: cov, reason: `Заявлено ${pct}% того, что отличает Middle, — предлагаем Junior; Middle — если уверены.${lackText}` };
+    return { grade: 'junior', coverage: cov, reason: `Заявлено ${pct}% того, что отличает Middle, - предлагаем Junior; Middle - если уверены.${lackText}` };
   }
-  return { grade: 'junior', coverage: cov, reason: `Заявлено ${pct}% того, что отличает Middle, — предлагаем Junior.${lackText}` };
+  return { grade: 'junior', coverage: cov, reason: `Заявлено ${pct}% того, что отличает Middle, - предлагаем Junior.${lackText}` };
 }
 
 export async function recommendTest(candidateId: string, now: Date = new Date()): Promise<TestRecommendation> {
@@ -81,7 +81,7 @@ export async function recommendTest(candidateId: string, now: Date = new Date())
   // R-C-08: рекомендация не понижает уже подтверждённый тестом грейд; пересдача — выбор кандидата.
   if (last && last.grade === 'middle' && grade === 'junior') {
     grade = 'middle';
-    reason = `Текущая категория — Middle, понижение не навязываем; пересдать можно в любой грейд. ${decision.reason}`;
+    reason = `Текущая категория - Middle, понижение не навязываем; пересдать можно в любой грейд. ${decision.reason}`;
   }
 
   // R-C-09 [предложение: 30 дней]: смена грейда не чаще интервала; пересдача того же грейда — без ограничения.

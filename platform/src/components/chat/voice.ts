@@ -55,7 +55,7 @@ export function effectiveMode(server: VoiceMode): { mode: VoiceMode; reason?: st
     if (typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function' && audioContextCtor()) return { mode: 'yandex' };
     return { mode: 'off', reason: 'Браузер не даёт доступ к микрофону' };
   }
-  return speechRecognitionCtor() ? { mode: 'browser' } : { mode: 'off', reason: 'Этот браузер не умеет распознавать речь — попробуй Chrome или Safari' };
+  return speechRecognitionCtor() ? { mode: 'browser' } : { mode: 'off', reason: 'Этот браузер не умеет распознавать речь - попробуй Chrome или Safari' };
 }
 
 /** Float32-куски с частотой inRate → LPCM 16 бит little-endian с частотой outRate (усреднение окна). */
@@ -121,7 +121,7 @@ export function useVoiceInput(onText: (text: string, final: boolean) => void) {
       cb.current((finalText + interim).trim(), false);
     };
     rec.onerror = (e) => {
-      setError(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Нет доступа к микрофону — разреши его в настройках браузера.' : e.error === 'no-speech' ? 'Ничего не услышал — попробуй ещё раз.' : 'Распознавание сорвалось — напиши текстом.');
+      setError(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Нет доступа к микрофону - разреши его в настройках браузера.' : e.error === 'no-speech' ? 'Ничего не услышал - попробуй ещё раз.' : 'Распознавание сорвалось - напиши текстом.');
     };
     rec.onend = () => {
       clearInterval(timer);
@@ -143,7 +143,7 @@ export function useVoiceInput(onText: (text: string, final: boolean) => void) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
     } catch {
-      setError('Нет доступа к микрофону — разреши его в настройках браузера.');
+      setError('Нет доступа к микрофону - разреши его в настройках браузера.');
       return;
     }
     const Ctx = audioContextCtor()!;
@@ -185,18 +185,18 @@ export function useVoiceInput(onText: (text: string, final: boolean) => void) {
       void ctx.close();
       if (pcm.byteLength < TARGET_RATE * 2 * 0.3) {
         setState('idle');
-        setError('Слишком коротко — подержи кнопку подольше.');
+        setError('Слишком коротко - подержи кнопку подольше.');
         return;
       }
       setState('processing');
       try {
         const res = await fetch('/api/stt', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'audio/l16; rate=16000' }, body: pcm as unknown as BodyInit });
         const body = (await res.json().catch(() => ({}))) as { text?: string; message?: string; error?: { message?: string } };
-        if (!res.ok) throw new Error(body.error?.message ?? body.message ?? 'Распознавание сейчас недоступно — напиши текстом.');
+        if (!res.ok) throw new Error(body.error?.message ?? body.message ?? 'Распознавание сейчас недоступно - напиши текстом.');
         if (body.text) cb.current(body.text, true);
-        else setError('Ничего не разобрал — попробуй ещё раз.');
+        else setError('Ничего не разобрал - попробуй ещё раз.');
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Распознавание сейчас недоступно — напиши текстом.');
+        setError(e instanceof Error ? e.message : 'Распознавание сейчас недоступно - напиши текстом.');
       } finally {
         setState('idle');
       }

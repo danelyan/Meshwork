@@ -18,7 +18,7 @@ export function ConsentCheck({ checked, onChange }: { checked: boolean; onChange
       <label className={styles.consentRow} htmlFor={id}>
         <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
         <span>
-          Согласен(на) на обработку персональных данных —{' '}
+          Согласен(на) на обработку персональных данных -{' '}
           <a href="/consent" target="_blank" rel="noopener">
             полный текст
           </a>

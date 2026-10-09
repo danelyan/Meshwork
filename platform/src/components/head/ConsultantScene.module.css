@@ -1,0 +1,13 @@
+.scene { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(32px, 5vw, 88px); padding: 28px var(--page-pad) 0; max-width: 1800px; margin: 0 auto; align-items: start; }
+.conversation { min-width: 0; }
+.portrait { position: sticky; top: calc(var(--landing-header-h) + 24px); min-width: 0; height: min(740px, calc(100svh - var(--landing-header-h) - 68px)); min-height: 400px; pointer-events: none; overflow: hidden; }
+.canvas { display: block; width: 100%; height: 100%; }
+.fallback { position: absolute; inset: 0; display: grid; place-items: center; }
+.fallback img { width: min(90%, 440px); height: auto; }
+.caption { position: absolute; inset: auto 0 12px; text-align: center; font: 11px var(--mono); color: var(--muted); }
+@media (max-width: 1050px) {
+  .scene { display: block; padding-top: 20px; }
+  .portrait { display: none; }
+}
+@media (max-width: 640px) { .scene { padding-top: 16px; } }
+@media print { .portrait { display: none; } .scene { display: block; } }

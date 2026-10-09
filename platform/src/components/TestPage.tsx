@@ -131,7 +131,7 @@ function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Pro
         <h1 className={styles.h1}>Подтвердим грейд</h1>
         <p className={`${ui.muted} ${styles.lead}`}>
           7–10 коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
-          даёт только этот тест; выбор грейда — за вами.
+          даёт только этот тест; выбор грейда - за вами.
         </p>
       </div>
 
@@ -331,7 +331,7 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
         </dl>
         {r.confirmedCatalogIds.length > 0 && (
           <p className={ui.muted} data-testid="confirmed-claims">
-            Решённые задания подтверждают утверждения: {r.confirmedCatalogIds.join(', ')} — их уровень в профиле поднят до «платформа».
+            Решённые задания подтверждают утверждения: {r.confirmedCatalogIds.join(', ')} - их уровень в профиле поднят до «платформа».
           </p>
         )}
         {r.juniorOffered && (
@@ -349,7 +349,7 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
         <Button variant="primary" href="/profile">
           В профиль
         </Button>
-        <Button href="/profile#claims" title="Защита — подтверждающий слой: флаг к утверждению, категорию не меняет">
+        <Button href="/profile#claims" title="Защита - подтверждающий слой: флаг к утверждению, категорию не меняет">
           Защитить утверждение
         </Button>
         <Button onClick={onRetry}>Пройти ещё раз</Button>
@@ -367,7 +367,7 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
                 <Tag tone={it.correct ? 'solid' : 'dashed'}>{it.correct ? 'верно' : 'неверно'}</Tag>
               </div>
               <p className={ui.muted}>
-                Ваш ответ: {it.answer || '—'} · верный: {it.answerKey}
+                Ваш ответ: {it.answer || '-'} · верный: {it.answerKey}
               </p>
               <p>{it.explanation}</p>
             </li>
@@ -375,7 +375,7 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
         </ol>
       )}
       <p className={ui.muted} style={{ fontSize: 'var(--fs-sm)' }}>
-        Попытка от {formatDate(attempt.startedAt)}. Защита утверждения после теста — подтверждающий флаг, категорию она не меняет.
+        Попытка от {formatDate(attempt.startedAt)}. Защита утверждения после теста - подтверждающий флаг, категорию она не меняет.
       </p>
     </div>
   );

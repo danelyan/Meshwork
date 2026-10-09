@@ -9,7 +9,7 @@ import { useVoiceInput } from './voice';
 
 const PROVIDER_NOTE = {
   yandex: 'Распознаёт Yandex SpeechKit. Запись уходит на распознавание и не сохраняется.',
-  browser: 'Распознаёт браузер (в Chrome — сервис Google). Мы запись не получаем и не храним.',
+  browser: 'Распознаёт браузер (в Chrome - сервис Google). Мы запись не получаем и не храним.',
 } as const;
 
 const CONSENT_KEY = 'fsp.voice.ok';

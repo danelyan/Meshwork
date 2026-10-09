@@ -238,7 +238,7 @@ function tryParse(text: string | undefined): unknown {
 // ---------------------------------------------------------------------------
 const LABEL: Record<Criterion, string> = {
   depth: 'глубина деталей',
-  why: '«почему так» — альтернативы и их цена',
+  why: '«почему так» - альтернативы и их цена',
   boundary: 'честность на границе знаний',
   completion: 'доводит до результата',
 };
@@ -246,7 +246,7 @@ const LABEL: Record<Criterion, string> = {
 const HINT: Record<Criterion, string> = {
   depth: 'рассказывай конкретику: механизмы, параметры, цифры, что именно делал сам',
   why: 'объясняй выбор: какие были альтернативы и чем заплатили за решение',
-  boundary: 'если не уверен — так и скажи и порассуждай, как бы выяснил',
+  boundary: 'если не уверен - так и скажи и порассуждай, как бы выяснил',
   completion: 'называй результат, как его проверил и за что отвечал лично',
 };
 
@@ -262,7 +262,7 @@ export function buildExplanation(
   const weak = criteria.filter((c) => c.score < 2);
   const lines = weak.map((c) => {
     const note = !c.quoteValid && c.modelScore > 0 ? ' (оценка не засчитана: нет дословной цитаты из ответа)' : '';
-    return `• ${LABEL[c.criterion]} — ${c.score}/2${note}: ${HINT[c.criterion]}.`;
+    return `• ${LABEL[c.criterion]} - ${c.score}/2${note}: ${HINT[c.criterion]}.`;
   });
   const tail =
     'Интервью проверяет понимание сейчас, а не подлинность истории из резюме; грамотность и стиль не оцениваются.';

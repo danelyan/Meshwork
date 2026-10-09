@@ -14,7 +14,7 @@ const RULES = [
   { n: '04', title: 'ФСП в зачёт', text: 'Призовые места и рейтинг соревнований поднимают вас в выдаче.' },
 ];
 
-/** Главная: витрина (site/index.html). Компании и числа — из `data` (showcase.ts), это иллюстрация, не данные сервиса. */
+/** Главная: витрина (site/index.html). Компании и числа - из `data` (showcase.ts), это иллюстрация, не данные сервиса. */
 export function Landing({ data, signedIn }: { data: LandingData; signedIn: boolean }) {
   const { stats } = data;
   const tiles = [
@@ -60,7 +60,7 @@ export function Landing({ data, signedIn }: { data: LandingData; signedIn: boole
           </div>
         </section>
       </main>
-      <p className={styles.illustration}>Данные на этой странице — иллюстрация</p>
+      <p className={styles.illustration}>Данные на этой странице - иллюстрация</p>
     </div>
   );
 }

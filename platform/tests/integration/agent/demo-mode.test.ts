@@ -57,7 +57,7 @@ describe('демо-режим без модели (LLM_PROVIDER=stub, LLM_STUB_D
     expect(text).toContain('Нашёл 1 утверждение, 1 отбросил');
     expect(text).toContain('скрытый текст');
     expect(text).toContain('Backend, Middle');
-    expect(text).toContain('Подтверди карточки — покажу подходящие вакансии');
+    expect(text).toContain('Подтверди карточки - покажу подходящие вакансии');
     expect(text).not.toContain('Заглушка LLM');
     expect(text).not.toContain('вложения');
     expect(text).not.toMatch(/упрощённом режиме/);
@@ -83,7 +83,7 @@ describe('демо-режим без модели (LLM_PROVIDER=stub, LLM_STUB_D
 
   it('вакансии без подтверждённых утверждений → «подтверди карточки», recommendTargets не зовётся', async () => {
     const { text } = await turn('Какие есть вакансии?');
-    expect(text).toContain('Подтверди карточки — покажу вакансии');
+    expect(text).toContain('Подтверди карточки - покажу вакансии');
     expect(recommendMock.recommendTargets).not.toHaveBeenCalled();
   });
 

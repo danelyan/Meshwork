@@ -28,7 +28,7 @@ describe('причины отказа', () => {
   it('смесь причин', () => {
     const r = ['no_quote', 'unknown_catalog_id', 'duplicate', 'hidden_text'];
     expect(countByReason(r)).toEqual({ no_quote: 1, unknown_catalog_id: 1, duplicate: 1, hidden_text: 1 });
-    expect(claimsStepText(2, r)).toBe('нашёл 2, отбросил 3 — 1 без цитаты в источнике, 1 вне каталога, 1 из скрытого текста, объединил 1 повтор одинаковых утверждений');
+    expect(claimsStepText(2, r)).toBe('нашёл 2, отбросил 3 - 1 без цитаты в источнике, 1 вне каталога, 1 из скрытого текста, объединил 1 повтор одинаковых утверждений');
   });
 });
 

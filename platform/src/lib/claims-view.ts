@@ -66,7 +66,7 @@ export function normalizeRecommendation(raw: unknown, index: number): CardRecomm
     return {
       key: `target-${r.vacancyId}`,
       kind: 'target',
-      title: [str(r.title), str(r.companyName)].filter(Boolean).join(' — ') || 'Вакансия',
+      title: [str(r.title), str(r.companyName)].filter(Boolean).join(' - ') || 'Вакансия',
       meta: covered || undefined,
       reason: str(r.reason) || undefined,
       missing,

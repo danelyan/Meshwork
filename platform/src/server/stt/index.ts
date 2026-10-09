@@ -34,7 +34,7 @@ export async function recognizeYandex(
   opts: { apiKey: string; folderId?: string; signal?: AbortSignal; fetchImpl?: typeof fetch },
 ): Promise<string> {
   if (audio.byteLength === 0) throw new AppError('bad_request', 'Пустая запись', 400);
-  if (audio.byteLength > STT_MAX_BYTES) throw new AppError('payload_too_large', `Запись длиннее ${STT_MAX_SECONDS} секунд — скажи короче`, 413);
+  if (audio.byteLength > STT_MAX_BYTES) throw new AppError('payload_too_large', `Запись длиннее ${STT_MAX_SECONDS} секунд - скажи короче`, 413);
   const auth = yandexAuthHeader(opts.apiKey);
   const params = new URLSearchParams({ lang: 'ru-RU', format: 'lpcm', sampleRateHertz: String(STT_SAMPLE_RATE) });
   // folderId нужен только при авторизации пользовательским IAM-токеном; с ключом сервисного аккаунта — нельзя (docs SpeechKit v1).
@@ -48,11 +48,11 @@ export async function recognizeYandex(
       signal: opts.signal ? AbortSignal.any([opts.signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000),
     });
   } catch {
-    throw new AppError('stt_unavailable', 'Распознавание сейчас недоступно — напиши текстом', 503);
+    throw new AppError('stt_unavailable', 'Распознавание сейчас недоступно - напиши текстом', 503);
   }
   if (!res.ok) {
     const status = res.status === 429 ? 429 : 503;
-    throw new AppError(status === 429 ? 'rate_limited' : 'stt_unavailable', 'Распознавание сейчас недоступно — напиши текстом', status);
+    throw new AppError(status === 429 ? 'rate_limited' : 'stt_unavailable', 'Распознавание сейчас недоступно - напиши текстом', status);
   }
   const body = (await res.json().catch(() => ({}))) as { result?: unknown };
   return typeof body.result === 'string' ? body.result.trim() : '';

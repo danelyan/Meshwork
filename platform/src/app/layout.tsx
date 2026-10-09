@@ -31,7 +31,7 @@ const mono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'ФСП Карьера — консультант',
+  title: 'ФСП Карьера - консультант',
   description: 'Карьерный консультант платформы ФСП Карьера',
 };
 

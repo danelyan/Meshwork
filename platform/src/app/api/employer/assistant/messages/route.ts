@@ -39,7 +39,7 @@ export const POST = withErrors(async (req: Request) => {
 
   const { companyId } = await loadEmployerContext(employerProfileId);
   const lock = await acquireConversationLock(`emp:${conversationId}`);
-  if (!lock) throw new AppError('busy', 'Помощник ещё отвечает в этом разговоре — дождись окончания', 409);
+  if (!lock) throw new AppError('busy', 'Помощник ещё отвечает в этом разговоре - дождись окончания', 409);
 
   const encoder = new TextEncoder();
   const signal = req.signal;

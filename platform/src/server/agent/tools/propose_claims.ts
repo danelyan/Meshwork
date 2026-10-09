@@ -89,7 +89,7 @@ export function claimsStepText(found: number, reasons: string[]): string {
   const rejected = reasons.length - merged;
   const head = `нашёл ${found}`;
   const tail: string[] = [];
-  if (rejected) tail.push(`отбросил ${rejected} — ${describeRejects(reasons)}`);
+  if (rejected) tail.push(`отбросил ${rejected} - ${describeRejects(reasons)}`);
   if (merged) tail.push(`объединил ${countOf(merged, FORMS.repeat)} одинаковых утверждений`);
   return [head, ...tail].join(', ');
 }

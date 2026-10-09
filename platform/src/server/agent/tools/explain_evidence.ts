@@ -37,9 +37,9 @@ export const LEVEL_LABEL: Record<EvidenceLevel, string> = {
 export function whyLevel(level: EvidenceLevel, sourceKind: string): string {
   switch (level) {
     case 'self_reported':
-      return `Источник — ${sourceKind === 'chat' ? 'слова в чате' : 'резюме или документ'}: это рассказ кандидата, платформа его не проверяла.`;
+      return `Источник - ${sourceKind === 'chat' ? 'слова в чате' : 'резюме или документ'}: это рассказ кандидата, платформа его не проверяла.`;
     case 'artifact':
-      return 'Источник — публичный артефакт (репозиторий, страница, профиль без подтверждённого владения): работа видна, но кто её сделал и понимает ли — не проверено.';
+      return 'Источник - публичный артефакт (репозиторий, страница, профиль без подтверждённого владения): работа видна, но кто её сделал и понимает ли - не проверено.';
     case 'platform':
       return 'Платформа проверила сама: задание из банка или защита утверждения в чате.';
     case 'third_party':
@@ -60,7 +60,7 @@ export function waysUp(level: EvidenceLevel, proof: string[]): z.infer<typeof Wa
     ways.push({ toLevel: 'artifact', kind: 'link_account', how: 'Прислать ссылку на репозиторий или страницу, где эта работа видна.' });
   }
   if (rank < levelRank('third_party') && proof.some((p) => p.startsWith('registry:'))) {
-    ways.push({ toLevel: 'third_party', kind: 'link_account', how: 'Привязать аккаунт ФСП: результат из реестра — подтверждение третьей стороной.' });
+    ways.push({ toLevel: 'third_party', kind: 'link_account', how: 'Привязать аккаунт ФСП: результат из реестра - подтверждение третьей стороной.' });
   }
   if (PLATFORM_UPGRADABLE.has(level)) {
     const task = proof.find((p) => p.startsWith('task:'));
@@ -107,7 +107,7 @@ export const explainEvidence: AgentTool<z.infer<typeof Input>, z.infer<typeof Ou
       ways,
       note:
         claim.status === 'rejected'
-          ? 'Утверждение отклонено кандидатом — поднимать нечего.'
+          ? 'Утверждение отклонено кандидатом - поднимать нечего.'
           : ways.length
             ? 'Уровень поднимает код по результату проверки, не ты и не кандидат.'
             : `Для этого утверждения на платформе нет пути выше уровня «${LEVEL_LABEL[claim.level]}»${claim.level === top ? '' : PLATFORM_UPGRADABLE.has(claim.level) ? ' (нет задания, защиты или реестра в каталоге)' : ' (выше платформы уровня нет)'}.`,

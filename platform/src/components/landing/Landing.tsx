@@ -15,7 +15,7 @@ const RULES = [
   { n: '04', title: 'ФСП в зачёт', text: 'Призовые места и рейтинг соревнований поднимают вас в выдаче.' },
 ];
 
-/** Главная: оригинальный лендинг команды (site/index.html). Все числа — из `data` (БД), без захардкоженных метрик. */
+/** Главная: витрина (site/index.html). Компании и числа — из `data` (showcase.ts), это иллюстрация, не данные сервиса. */
 export function Landing({ data, signedIn }: { data: LandingData; signedIn: boolean }) {
   const { stats } = data;
   const tiles = [
@@ -23,6 +23,7 @@ export function Landing({ data, signedIn }: { data: LandingData; signedIn: boole
     { value: String(stats.vacancies), label: `${plural(stats.vacancies, VACANCY_FORMS)}, у каждой указана зарплатная вилка` },
     { value: String(stats.categorized), label: 'кандидатов с категорией, подтверждённой тестом' },
     ...(stats.maxSalary > 0 ? [{ value: `до ${shortRub(stats.maxSalary)}`, label: 'верхняя граница вилки среди вакансий, ₽ в месяц' }] : []),
+    { value: `${stats.responseRate}%`, label: 'приглашений получают ответ за сутки' },
   ];
   return (
     <div className={styles.page}>
@@ -30,7 +31,7 @@ export function Landing({ data, signedIn }: { data: LandingData; signedIn: boole
       <LandingHeader signedIn={signedIn} />
       <main id="main" className={styles.main}>
         <Hero companies={data.companies} signedIn={signedIn} />
-        <Companies companies={data.companies} />
+        <Companies companies={data.companies} total={stats.companies} />
         <section className={`${styles.section} ${styles.why}`} id="why" aria-labelledby="why-title">
           <div className={styles.sechead}>
             <h2 id="why-title">Почему это работает</h2>
@@ -64,6 +65,7 @@ export function Landing({ data, signedIn }: { data: LandingData; signedIn: boole
       <footer className={styles.footer}>
         <span>© Федерация спортивного программирования, 2026</span>
         <span>вилка всегда · контакты после «да» · ФСП в зачёт</span>
+        <span className={styles.illustration}>Данные на этой странице — иллюстрация</span>
       </footer>
     </div>
   );

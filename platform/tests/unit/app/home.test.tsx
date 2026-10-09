@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 
 import { Landing } from '@/components/landing/Landing';
+import { SHOWCASE } from '@/components/landing/showcase';
 import type { LandingData } from '@/components/landing/types';
 import { signSession } from '@/server/session';
 
@@ -8,14 +9,17 @@ const cookieValue = vi.hoisted(() => ({ value: undefined as string | undefined }
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: (name: string) => (name === 'cid' && cookieValue.value ? { name, value: cookieValue.value } : undefined) }),
 }));
-vi.mock('@/components/landing/data', async () => ({ loadLandingData: async () => DATA }));
+const dbCalls = vi.hoisted(() => ({ n: 0 }));
+vi.mock('@/server/db', () => ({
+  prisma: new Proxy({}, { get: () => { dbCalls.n++; throw new Error('главная не должна ходить в БД'); } }),
+}));
 
 const DATA: LandingData = {
   companies: [
     { id: 'co1', name: 'Нордстрим', focus: 'Backend, Frontend · Junior, Middle', description: 'Платежи', vacancies: 3, maxSalary: 280000 },
     { id: 'co2', name: 'Гранит', focus: 'Backend · Middle', description: null, vacancies: 1, maxSalary: 300000 },
   ],
-  stats: { companies: 2, vacancies: 4, categorized: 7, maxSalary: 300000 },
+  stats: { companies: 2, vacancies: 4, categorized: 7, maxSalary: 300000, responseRate: 91 },
 };
 
 afterEach(() => {
@@ -69,6 +73,7 @@ describe('главная (лендинг)', () => {
       '4вакансии, у каждой указана зарплатная вилка',
       '7кандидатов с категорией, подтверждённой тестом',
       'до 300kверхняя граница вилки среди вакансий, ₽ в месяц',
+      '91%приглашений получают ответ за сутки',
     ]);
     expect(screen.getByText('2 компании на платформе')).toBeDefined();
     // карточки компаний — реальные имена и вакансии
@@ -85,7 +90,7 @@ describe('главная (лендинг)', () => {
   });
 
   it('без вакансий: пустое состояние и без плитки «до …k»', () => {
-    const empty: LandingData = { companies: [], stats: { companies: 0, vacancies: 0, categorized: 0, maxSalary: 0 } };
+    const empty: LandingData = { companies: [], stats: { companies: 0, vacancies: 0, categorized: 0, maxSalary: 0, responseRate: 0 } };
     render(<Landing data={empty} signedIn={false} />);
     expect(screen.getByText('Вакансий пока нет.')).toBeDefined();
     expect(screen.queryByText(/верхняя граница вилки/)).toBeNull();
@@ -102,11 +107,30 @@ describe('главная (лендинг)', () => {
   });
 });
 
+describe('витрина (showcase.ts)', () => {
+  it('8–10 вымышленных компаний с уникальными id и именами, цифры согласованы', () => {
+    const { companies, stats } = SHOWCASE;
+    expect(companies.length).toBeGreaterThanOrEqual(8);
+    expect(companies.length).toBeLessThanOrEqual(10);
+    expect(new Set(companies.map((c) => c.id)).size).toBe(companies.length);
+    expect(new Set(companies.map((c) => c.name)).size).toBe(companies.length);
+    expect(stats.vacancies).toBe(companies.reduce((s, c) => s + c.vacancies, 0));
+    expect(stats.maxSalary).toBe(Math.max(...companies.map((c) => c.maxSalary)));
+    expect(stats.responseRate).toBeGreaterThan(0);
+    expect(stats.responseRate).toBeLessThanOrEqual(100);
+  });
+});
+
 describe('страница /', () => {
-  it('гость: серверный компонент грузит данные и рисует лендинг', async () => {
+  it('гость: рисует витрину из фикстур, БД не вызывается', async () => {
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
     expect(screen.getByRole('heading', { level: 1 })).toBeDefined();
+    const section = within(screen.getByRole('region', { name: 'Сейчас нанимают' }));
+    for (const c of SHOWCASE.companies) expect(section.getAllByText(c.name).length).toBeGreaterThan(0);
+    expect(screen.getByText(`${SHOWCASE.stats.companies} компаний на платформе`)).toBeDefined();
+    expect(screen.getByText('Данные на этой странице — иллюстрация')).toBeDefined();
+    expect(dbCalls.n).toBe(0);
     expect(screen.getAllByRole('link', { name: 'Войти' }).length).toBeGreaterThan(0);
   });
 

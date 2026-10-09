@@ -1,4 +1,4 @@
-/** Данные главной: только реальные значения из БД. Фальшивых метрик здесь нет. */
+/** Данные главной - витрина (showcase.ts), не данные сервиса. */
 export interface LandingCompany {
   id: string;
   name: string;
@@ -17,6 +17,8 @@ export interface LandingStats {
   categorized: number;
   /** Максимальная верхняя граница вилки среди вакансий, ₽ (0 — вакансий нет). */
   maxSalary: number;
+  /** Доля приглашений с ответом кандидата за сутки, %. */
+  responseRate: number;
 }
 
 export interface LandingData {

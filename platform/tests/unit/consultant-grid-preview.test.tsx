@@ -1,8 +1,10 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { ConsultantGridPreview } from '@/components/design/ConsultantGridPreview';
+import { ACCEPTED_GRID_SETTINGS, GRID_V3_STORAGE_KEY } from '@/components/design/grid-preview-settings';
 
-afterEach(cleanup);
+beforeEach(() => localStorage.clear());
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 function setup() {
   render(<ConsultantGridPreview />);
@@ -58,4 +60,38 @@ it('waits for each renderer after switching versions and reapplies the current s
   const send = vi.spyOn(frame.contentWindow!, 'postMessage');
   ready();
   expect(send).toHaveBeenLastCalledWith({ type: 'fsp-grid-settings', settings: { step: 24, relief: 1, angle: 0.5 } }, location.origin);
+});
+
+function openV3() {
+  render(<ConsultantGridPreview version="v3" source="/design/consultant-grid-v3/index.html" initialSettings={ACCEPTED_GRID_SETTINGS} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Настройки сетки' }));
+}
+
+it('starts v3 with the approved view and retains changed settings across remounts', () => {
+  openV3();
+  expect((screen.getByRole('slider', { name: /Шаг сетки/i }) as HTMLInputElement).value).toBe('42');
+  fireEvent.change(screen.getByRole('slider', { name: /Шаг сетки/i }), { target: { value: '54' } });
+  fireEvent.change(screen.getByRole('slider', { name: /Выпуклость/i }), { target: { value: '1.4' } });
+  fireEvent.change(screen.getByRole('slider', { name: /Угол/i }), { target: { value: '0.74' } });
+  cleanup();
+  openV3();
+  expect((screen.getByRole('slider', { name: /Шаг сетки/i }) as HTMLInputElement).value).toBe('54');
+  expect((screen.getByRole('slider', { name: /Выпуклость/i }) as HTMLInputElement).value).toBe('1.4');
+  expect((screen.getByRole('slider', { name: /Угол/i }) as HTMLInputElement).value).toBe('0.74');
+  fireEvent.click(screen.getByRole('button', { name: 'Твой сохранённый вид' }));
+  expect(JSON.parse(localStorage.getItem(GRID_V3_STORAGE_KEY)!)).toEqual(ACCEPTED_GRID_SETTINGS);
+});
+
+it.each(['{broken', '{"step":900,"relief":1,"angle":0}', '{"step":42}'])('ignores invalid saved settings: %s', value => {
+  localStorage.setItem(GRID_V3_STORAGE_KEY, value);
+  openV3();
+  expect((screen.getByRole('slider', { name: /Шаг сетки/i }) as HTMLInputElement).value).toBe('42');
+});
+
+it('keeps controls working when browser storage is denied', () => {
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new DOMException('Denied', 'SecurityError'); });
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Denied', 'SecurityError'); });
+  openV3();
+  fireEvent.change(screen.getByRole('slider', { name: /Шаг сетки/i }), { target: { value: '32' } });
+  expect((screen.getByRole('slider', { name: /Шаг сетки/i }) as HTMLInputElement).value).toBe('32');
 });

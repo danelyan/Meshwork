@@ -10,3 +10,4 @@ export type GridSettings = z.infer<typeof gridSettingsSchema>;
 export const DEFAULT_GRID_SETTINGS: GridSettings = { step: 46, relief: 1, angle: 0.5 };
 export const ACCEPTED_GRID_SETTINGS: GridSettings = { step: 42, relief: 1.25, angle: 0.18 };
 export const GRID_PREVIEW_SOURCE = '/design/consultant-grid/index.html';
+export const GRID_V3_STORAGE_KEY = 'fsp-consultant-grid-v3-settings';

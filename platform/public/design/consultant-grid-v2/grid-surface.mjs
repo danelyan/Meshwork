@@ -57,11 +57,14 @@ import { rasterizeHeightfield } from './grid-heightfield.mjs';
     const ro = new ResizeObserver(fit); ro.observe(stage); fit();
     const onMove = e => {
       const r = stage.getBoundingClientRect();
-      Lk.tx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width * 0.55)));
+      // v3 reflects only the canvas; inverse-map input so gaze and glow still
+      // follow the visible pointer. V2 keeps its original coordinates.
+      const pointerX = prm.mirror ? r.right - e.clientX : e.clientX - r.left;
+      Lk.tx = Math.max(-1, Math.min(1, (pointerX - r.width / 2) / (r.width * 0.55)));
       Lk.ty = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height * 0.42)) / (r.height * 0.55)));
       Lk.last = performance.now();
       const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-      Hv.x = e.clientX - r.left; Hv.y = e.clientY - r.top; Hv.ta = inside ? 1 : 0;
+      Hv.x = pointerX; Hv.y = e.clientY - r.top; Hv.ta = inside ? 1 : 0;
     };
     window.addEventListener('pointermove', onMove);
 

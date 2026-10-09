@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { ensureDemoCandidateUser, sessionInputFor } from '@/server/auth/users';
+import { createFreshDemoUser, ensureDemoCandidateUser, resetDemoOnboarding, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
 import { demoResumeFor } from '@/server/demo/resumes';
 import { getEnv } from '@/server/env';
@@ -38,6 +38,9 @@ export const GET = withErrors(async () => {
 });
 
 const LoginBody = z.union([
+  z.object({ fresh: z.literal(true) }),
+  z.object({ restartUserId: z.string().min(1).max(64) }),
+  z.object({ restartCandidateId: z.string().min(1).max(64) }),
   z.object({ candidateId: z.string().min(1).max(64) }),
   z.object({ employerUserId: z.string().min(1).max(64) }),
 ]);
@@ -50,6 +53,30 @@ const LoginBody = z.union([
 export const POST = withErrors(async (req: Request) => {
   assertEnabled();
   const body = LoginBody.parse(await req.json().catch(() => ({})));
+  if ('fresh' in body) {
+    // Новый пользователь: роль и согласие спросит сам онбординг.
+    const user = await createFreshDemoUser();
+    const res = NextResponse.json({ user: { id: user.id, name: user.name }, next: '/onboarding' });
+    res.cookies.set(userSessionCookie(sessionInputFor(user)));
+    return res;
+  }
+  if ('restartUserId' in body || 'restartCandidateId' in body) {
+    let userId: string;
+    if ('restartUserId' in body) {
+      userId = body.restartUserId;
+    } else {
+      const candidate = await prisma.candidate.findFirst({
+        where: { id: body.restartCandidateId, isDemo: true },
+        select: { id: true, name: true, email: true },
+      });
+      if (!candidate) throw errors.notFound('Демо-кандидат не найден');
+      userId = (await ensureDemoCandidateUser(candidate)).id;
+    }
+    const user = await resetDemoOnboarding(userId);
+    const res = NextResponse.json({ user: { id: user.id, name: user.name }, next: '/onboarding' });
+    res.cookies.set(userSessionCookie(sessionInputFor(user)));
+    return res;
+  }
   if ('employerUserId' in body) {
     const user = await prisma.user.findFirst({
       where: { id: body.employerUserId, isDemo: true, role: 'employer' },

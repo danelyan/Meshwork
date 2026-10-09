@@ -28,3 +28,18 @@
   .wrap { padding: 30px 16px 40px; gap: 28px; }
   .lead { font-size: 16px; }
 }
+
+.restart {
+  display: inline-block;
+  margin: 2px 0 0 var(--s-3, 12px);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.restart:hover:not(:disabled) { color: var(--ink); }
+.restart:disabled { cursor: default; opacity: 0.6; }

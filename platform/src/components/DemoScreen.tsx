@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { type DemoCandidate, type DemoEmployer, demoEmployerLogin, demoLogin, getDemoAccounts } from '@/lib/api';
+import { type DemoCandidate, type DemoEmployer, demoEmployerLogin, demoFreshLogin, demoLogin, demoRestartOnboarding, getDemoAccounts } from '@/lib/api';
 
 import styles from './AuthScreen.module.css';
 import ui from './ui.module.css';
@@ -85,6 +85,15 @@ export function DemoScreen() {
           {pending === c.id ? 'Вхожу…' : 'Войти →'}
         </span>
       </button>
+      <button
+        type="button"
+        className={styles.restart}
+        aria-label={`Пройти онбординг заново: ${c.name}`}
+        disabled={pending !== null}
+        onClick={() => void enter(`r-${c.id}`, () => demoRestartOnboarding({ restartCandidateId: c.id }), '/onboarding')}
+      >
+        пройти онбординг заново
+      </button>
     </li>
   );
 
@@ -104,6 +113,20 @@ export function DemoScreen() {
       )}
 
       <div className={styles.grid}>
+      <section className={styles.block} aria-labelledby="demo-fresh">
+        <h2 id="demo-fresh" className={styles.blockTitle}>
+          Новый пользователь — пройти онбординг
+        </h2>
+        <p className={ui.hint}>Создаёт чистый аккаунт без роли: онбординг-чат начнётся с согласия, роль (кандидат или работодатель) спросит сам чат.</p>
+        <button
+          type="button"
+          className={`${ui.btn} ${ui.cta}`}
+          disabled={pending !== null}
+          onClick={() => void enter('fresh', demoFreshLogin, '/onboarding')}
+        >
+          {pending === 'fresh' ? 'Создаю…' : 'Новый пользователь'}
+        </button>
+      </section>
       <section className={styles.block} aria-labelledby="auth-demo">
         <h2 id="auth-demo" className={styles.blockTitle}>
             Демо-вход
@@ -145,6 +168,15 @@ export function DemoScreen() {
                     <span className={`${ui.tag} ${ui.outline}`} aria-hidden="true">
                         {pending === e.id ? 'Вхожу…' : 'Войти →'}
                     </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.restart}
+                    aria-label={`Пройти онбординг заново: ${e.name}`}
+                    disabled={pending !== null}
+                    onClick={() => void enter(`r-${e.id}`, () => demoRestartOnboarding({ restartUserId: e.id }), '/onboarding')}
+                  >
+                    пройти онбординг заново
                   </button>
                 </li>
                 ))}

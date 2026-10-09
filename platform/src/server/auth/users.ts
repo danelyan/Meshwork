@@ -135,6 +135,33 @@ export async function ensureDemoCandidateUser(candidate: { id: string; name: str
   });
 }
 
+/**
+ * Новый демо-гость: pending без `onboardedAt`, чтобы пройти весь онбординг-чат с согласия
+ * (только DEMO_LOGIN, решает вызывающий). Создаётся при каждом нажатии; сид их не трогает.
+ */
+export async function createFreshDemoUser() {
+  const n = await prisma.authAccount.count({ where: { provider: 'demo' } });
+  return prisma.user.create({
+    data: {
+      name: `Демо-гость ${n + 1}`,
+      isDemo: true,
+      accounts: { create: { provider: 'demo', providerAccountId: crypto.randomUUID() } },
+    },
+    include: withProfiles,
+  });
+}
+
+/**
+ * Начать онбординг демо-аккаунта заново: сбрасывает состояние чата (`OnboardingState`) и
+ * `onboardedAt`. Ответы профиля, роль и согласие не трогает.
+ */
+export async function resetDemoOnboarding(userId: string) {
+  const user = await prisma.user.findFirst({ where: { id: userId, isDemo: true }, select: { id: true } });
+  if (!user) throw errors.notFound('Демо-аккаунт не найден');
+  await prisma.onboardingState.deleteMany({ where: { userId } });
+  return prisma.user.update({ where: { id: userId }, data: { onboardedAt: null }, include: withProfiles });
+}
+
 export async function loadUser(userId: string) {
   return prisma.user.findUnique({ where: { id: userId }, include: withProfiles });
 }

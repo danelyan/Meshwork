@@ -16,7 +16,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function readError(res: Response): Promise<ApiError> {
+async function readError(res: Response): Promise<ApiError> {
   let message = `Ошибка ${res.status}`;
   let code: string | undefined;
   try {
@@ -70,6 +70,9 @@ export interface DemoEmployer {
 }
 
 export const getDemoAccounts = () => request<{ candidates: DemoCandidate[]; employers?: DemoEmployer[] }>('/api/demo/login');
+export const demoFreshLogin = () => postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', { fresh: true });
+export const demoRestartOnboarding = (key: { restartUserId: string } | { restartCandidateId: string }) =>
+  postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', key);
 export const demoEmployerLogin = (employerUserId: string) =>
   postJson<{ employer: { id: string; name: string }; next: string }>('/api/demo/login', { employerUserId });
 export const logout = () => postJson<{ ok: true }>('/api/auth/logout', {});

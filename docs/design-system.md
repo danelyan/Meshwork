@@ -79,7 +79,7 @@
 
 ## 3. Типографика
 
-Шрифты подключает `app/layout.tsx` через `next/font`: **Playfair Display** (`--display`, 600-800) - заголовки h1/h2 (решение владельца 09.10 по запросу Карины: нужен «газетный» шрифт; letter-spacing около 0, line-height 1.05-1.15; Карина может переизбрать на `/design/fonts`, где рядом Playfair, Oswald, PT Serif, переключатель `?display=playfair|oswald|ptserif`); **Golos Text** (`--font`) - текст и интерфейс, h3; **JetBrains Mono** (`--mono`) - служебное. Тире в текстах - « - », не длинное.
+Шрифты подключает `app/layout.tsx` через `next/font`: **Golos Text** (`--font`) - весь интерфейс; **JetBrains Mono** (`--mono`) - служебное. Тире в текстах - « - », не длинное.
 
 | Токен | px | Где |
 |---|---|---|

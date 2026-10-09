@@ -21,7 +21,7 @@
 .section { padding: 0 var(--page-pad); }
 
 .sechead { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-top: 1.5px solid var(--ink); padding-top: 22px; margin-bottom: 28px; }
-.sechead h2 { font-family: var(--display); font-size: clamp(28px, 3vw, 44px); line-height: 1.1; letter-spacing: 0; }
+.sechead h2 { font-family: var(--mono); font-size: clamp(28px, 3vw, 44px); line-height: 1.15; letter-spacing: -0.045em; }
 .sechead span { font: 500 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 
 .why { padding-bottom: 96px; }
@@ -43,7 +43,7 @@
 
 .final { padding-bottom: 80px; }
 .finalIn { display: flex; justify-content: space-between; align-items: center; gap: 32px; flex-wrap: wrap; padding: 44px; background: var(--ink); color: var(--landing-white); }
-.finalIn h2 { font-family: var(--display); font-size: clamp(28px, 3vw, 44px); line-height: 1.1; letter-spacing: 0; }
+.finalIn h2 { font-family: var(--mono); font-size: clamp(28px, 3vw, 44px); line-height: 1.15; letter-spacing: -0.045em; }
 
 .footer {
   padding: 22px var(--page-pad); display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap;

@@ -3,7 +3,7 @@
   align-items: center; padding: 24px var(--page-pad) 56px;
 }
 .kicker { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 0 0 18px; }
-.title { margin: 0 0 24px; font-family: var(--display); font-size: clamp(38px, 4.8vw, 72px); line-height: 1.05; font-weight: 800; letter-spacing: -0.01em; text-wrap: balance; }
+.title { margin: 0 0 24px; font-family: var(--mono); font-size: clamp(38px, 4.8vw, 72px); line-height: 1.15; font-weight: 700; letter-spacing: -0.045em; text-wrap: balance; }
 .title i { font-style: normal; color: var(--blue); }
 .slogan { margin: 0 0 40px; font-size: 18px; line-height: 1.55; color: var(--text-soft); border-left: 1.5px solid var(--ink); padding-left: 18px; max-width: 540px; text-wrap: pretty; }
 .note { margin: 16px 0 0; padding: 0; list-style: none; font: 500 12px var(--mono); color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }

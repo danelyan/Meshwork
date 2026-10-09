@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { catalogFromFile } from '@/server/claims/catalog-file';
 import { buildIndex, creditFor, parseNeeds } from '@/server/recommend/evidence';
 import { computeGaps, reachFactor } from '@/server/recommend/gap-map';
@@ -190,20 +193,40 @@ describe('правило теста', () => {
     expect(be).not.toContain('common.git'); // M < J
   });
 
-  it('пороги 0.6 / 0.3 из каталога', () => {
+  it('пороги 0.4 (решение владельца 09.10) / 0.3', () => {
     expect(decideGrade(sig, take(0.7)).grade).toBe('middle');
-    const mid = decideGrade(sig, take(0.4));
+    expect(decideGrade(sig, take(0.45)).grade).toBe('middle');
+    const mid = decideGrade(sig, take(0.33));
     expect(mid.grade).toBe('junior');
     expect(mid.reason).toContain('Middle — если уверены');
-    expect(decideGrade(sig, take(0.1)).grade).toBe('junior');
+    const low = decideGrade(sig, take(0.1));
+    expect(low.grade).toBe('junior');
+    expect(low.reason).not.toContain('если уверены');
     expect(decideGrade(sig, new Set()).reason).toContain('Для Middle не хватает заявленных');
   });
 
-  it('точно на пороге 0.6 → Middle; пустая сигнатура → Junior', () => {
-    const five = ['a', 'b', 'c', 'd', 'e'].map((id) => ({ ...catalog.get('be.cache')!, id, weight: 2 as const }));
-    expect(decideGrade(five, new Set(['a', 'b', 'c'])).grade).toBe('middle');
-    expect(decideGrade(five, new Set(['a', 'b'])).grade).toBe('junior');
+  it('точно на порогах: 0.4 → Middle, 0.3 → «если уверены», ниже → Junior; пустая сигнатура → Junior', () => {
+    const ten = 'abcdefghij'.split('').map((id) => ({ ...catalog.get('be.cache')!, id, weight: 2 as const }));
+    const has = (n: number) => new Set(ten.slice(0, n).map((e) => e.id));
+    expect(decideGrade(ten, has(4)).grade).toBe('middle');
+    const sure = decideGrade(ten, has(3));
+    expect(sure.grade).toBe('junior');
+    expect(sure.reason).toContain('Middle — если уверены');
+    const under = decideGrade(ten, has(2));
+    expect(under.grade).toBe('junior');
+    expect(under.reason).not.toContain('если уверены');
     expect(decideGrade([], new Set()).grade).toBe('junior');
+  });
+
+  it('демо-кандидат Middle (eval/demo/demo-1): утверждения из резюме → Middle; без них → Junior', () => {
+    const real = new Map(catalogFromFile().map((e) => [e.id, e]));
+    const label = JSON.parse(readFileSync(join(__dirname, '../../../eval/demo/demo-1/label.json'), 'utf8')) as {
+      claims: { catalogId: string }[];
+    };
+    const d = decideGrade(middleSignature(real, 'backend'), new Set(label.claims.map((c) => c.catalogId)));
+    expect(d.coverage).toBeGreaterThanOrEqual(0.4);
+    expect(d.grade).toBe('middle');
+    expect(decideGrade(middleSignature(real, 'backend'), new Set()).grade).toBe('junior');
   });
 
   it('специализация по утверждениям', () => {

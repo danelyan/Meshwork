@@ -1,6 +1,6 @@
 .next/
 out/
-node_modules/
+node_modules
 next-env.d.ts.bak
 *.tsbuildinfo
 test-results/

@@ -18,8 +18,12 @@ export const ADJACENT_FACTOR = 0.5;
 /** ПРЕДЛОЖЕНИЕ (R-C-09): интервал смены грейда, дней. Интервал ТЗ оставляет на выбор команды. */
 export const GRADE_CHANGE_INTERVAL_DAYS = 30;
 
-/** ПРЕДЛОЖЕНИЕ (claims-catalog § 7): пороги покрытия сигнатуры Middle. */
-export const MIDDLE_THRESHOLD = 0.6;
+/**
+ * Пороги покрытия сигнатуры Middle (claims-catalog § 7). MIDDLE_THRESHOLD = 0,4 — решение
+ * владельца 09.10 (было 0,6 в предложении), не калибровка. Зоны: ≥ 0,4 — тест Middle;
+ * [0,3; 0,4) — Junior, «Middle — если уверены»; < 0,3 — Junior.
+ */
+export const MIDDLE_THRESHOLD = 0.4;
 export const MIDDLE_IF_SURE_THRESHOLD = 0.3;
 
 export const GRADE_INDEX: Record<Grade, number> = { junior: 0, middle: 1 };

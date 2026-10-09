@@ -5,7 +5,7 @@ import { Button } from '@/components/ui';
 import { createHeadRenderer, type HeadRenderer } from './renderer';
 import styles from './ConsultantScene.module.css';
 
-/** Separate decorative wire portrait over the unchanged page background. */
+/** Separate decorative glass portrait over the unchanged page background. */
 export function ConsultantHead() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const current = useRef<HeadRenderer | undefined>(undefined);

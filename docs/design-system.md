@@ -237,3 +237,6 @@
 
 ### Consultant portrait restoration, 9 October
 The consultant uses the separate Neuron wire material (mode 4) from codex/interactive-head over the original static landing grid. The canvas stays within the right portrait column, uses a transparent background and cannot paint over the chat or the page grid. No new colors or components are introduced. This supersedes the full-page deforming grid described above.
+
+### Glass consultant portrait, 9 October
+The user selected the glass material (mode 5) from codex/interactive-head. The local transparent canvas renders back and front glass surfaces and refracts a texture of the existing static 48px grid, using only paper, ink and blue tokens. The surrounding background and layout remain the same.

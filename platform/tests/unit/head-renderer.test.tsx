@@ -23,7 +23,7 @@ function stage() {
     createFramebuffer: vi.fn(() => ({})), bindFramebuffer: vi.fn(), framebufferTexture2D: vi.fn(), framebufferRenderbuffer: vi.fn(), deleteFramebuffer: vi.fn(),
     createRenderbuffer: vi.fn(() => ({})), bindRenderbuffer: vi.fn(), renderbufferStorage: vi.fn(), deleteRenderbuffer: vi.fn(),
     checkFramebufferStatus: vi.fn(() => 41), disable: vi.fn(), drawArrays: vi.fn(), uniform1i: vi.fn(),
-    polygonOffset: vi.fn(), generateMipmap: vi.fn(), depthMask: vi.fn(), clearDepth: vi.fn(), colorMask: vi.fn(),
+    blendFuncSeparate: vi.fn(), cullFace: vi.fn(), polygonOffset: vi.fn(), generateMipmap: vi.fn(), depthMask: vi.fn(), clearDepth: vi.fn(), colorMask: vi.fn(),
     createShader: vi.fn(() => ({})), shaderSource: vi.fn(), compileShader: vi.fn(),
     getShaderParameter: vi.fn(() => true), createProgram: vi.fn(() => ({})),
     attachShader: vi.fn(), linkProgram: vi.fn(), getProgramParameter: vi.fn(() => true), useProgram: vi.fn(),
@@ -64,28 +64,31 @@ function stage() {
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-describe('separate wire portrait', () => {
-  it('renders the imported wire material on a transparent local canvas', async () => {
+describe('separate glass portrait', () => {
+  it('renders both glass surfaces and refracts the static grid on a transparent local canvas', async () => {
     const s = stage();
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, true, vi.fn());
     s.frame(40);
     expect(s.canvas.width).toBe(600);
     expect(s.gl.clearColor).toHaveBeenCalledWith(0, 0, 0, 0);
-    expect(s.gl.uniform1i).toHaveBeenCalledWith('uMode', 4);
+    expect(s.gl.uniform1i).toHaveBeenCalledWith('uMode', 5);
     expect(s.gl.drawElements).toHaveBeenCalledTimes(2);
-    expect(s.gl.drawArrays).not.toHaveBeenCalled();
-    expect(s.gl.createFramebuffer).not.toHaveBeenCalled();
-    expect(s.canvas.dataset.rendered).toBe('wire');
+    expect(s.gl.drawArrays).toHaveBeenCalledOnce();
+    expect(s.gl.createFramebuffer).toHaveBeenCalledOnce();
+    expect(s.gl.uniform1f).toHaveBeenCalledWith('uBackface', 1);
+    expect(s.gl.uniform1f).toHaveBeenCalledWith('uBackface', 0);
+    expect(s.canvas.dataset.rendered).toBe('glass');
     renderer.dispose();
   });
   it('cleans resources once and stops responding after disposal', async () => {
     const s = stage();
     const renderer = await createHeadRenderer(s.canvas, new AbortController().signal, false, vi.fn());
     renderer.dispose(); renderer.dispose();
-    expect(s.gl.deleteBuffer).toHaveBeenCalledTimes(7);
-    expect(s.gl.deleteShader).toHaveBeenCalledTimes(2);
-    expect(s.gl.deleteTexture).toHaveBeenCalledTimes(2);
-    expect(s.gl.deleteProgram).toHaveBeenCalledOnce();
+    expect(s.gl.deleteBuffer).toHaveBeenCalledTimes(6);
+    expect(s.gl.deleteShader).toHaveBeenCalledTimes(4);
+    expect(s.gl.deleteTexture).toHaveBeenCalledTimes(3);
+    expect(s.gl.deleteProgram).toHaveBeenCalledTimes(2);
+    expect(s.gl.deleteFramebuffer).toHaveBeenCalledOnce();
     expect(s.disconnect).toHaveBeenCalledTimes(2);
     expect(s.queued.size).toBe(0);
   });

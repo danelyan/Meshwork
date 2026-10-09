@@ -146,14 +146,13 @@ export const backdropFragmentShader = `#version 300 es
 precision highp float;
 in vec2 vScreen;
 uniform vec3 uBackground;
-uniform vec3 uSilver;
-uniform vec3 uAccent;
+uniform vec3 uInk;
+uniform vec2 uResolution;
+uniform vec2 uOrigin;
+uniform float uDpr;
 out vec4 color;
 void main() {
-  vec2 uv=vScreen;
-  float panelA=exp(-pow((uv.x-.33)/.042,2.))*smoothstep(.06,.18,uv.y)*(1.-smoothstep(.82,.95,uv.y));
-  float panelB=exp(-pow((uv.x-.68)/.065,2.))*smoothstep(.12,.24,uv.y)*(1.-smoothstep(.72,.89,uv.y));
-  float diagonal=exp(-pow((uv.y-uv.x*.32-.3)/.025,2.));
-  vec3 studio=uBackground+uSilver*(panelA*.16+panelB*.1+diagonal*.06)+uAccent*panelB*.06;
-  color=vec4(studio,1.);
+  vec2 page=uOrigin+vec2(gl_FragCoord.x,uResolution.y-gl_FragCoord.y)/uDpr;
+  vec2 line=1.-smoothstep(vec2(.4),vec2(1.1),mod(page,48.));
+  color=vec4(mix(uBackground,uInk,max(line.x,line.y)*.035),1.);
 }`;

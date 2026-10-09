@@ -1,7 +1,27 @@
 import type { Metadata } from 'next';
+import { Golos_Text } from 'next/font/google';
+import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 
 import '@/styles/tokens.css';
+
+// Golos Text скачивается и самохостится при `next build`/`next dev` (нужна сеть к Google Fonts на сборке).
+const golos = Golos_Text({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-golos',
+});
+
+const mono = localFont({
+  src: [
+    { path: './fonts/JetBrainsMono-Regular.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/JetBrainsMono-Medium.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/JetBrainsMono-Bold.woff2', weight: '700', style: 'normal' },
+  ],
+  display: 'swap',
+  variable: '--font-mono',
+});
 
 export const metadata: Metadata = {
   title: 'ФСП Карьера — консультант',
@@ -10,7 +30,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ru">
+    <html lang="ru" className={`${golos.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );

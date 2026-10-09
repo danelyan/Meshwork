@@ -198,3 +198,10 @@ generate` в лейне перезапишет его для всех — схе
 `docker compose up --build`: `db` (Postgres 16), `migrate` (миграции + сид,
 одноразово), `app` (standalone, :3000), `mailpit` (веб-ящик :8025). Секреты —
 в `.env`. Локально Docker не нужен.
+
+## Дизайн
+
+Токены (`src/styles/tokens.css`) сведены из `docs/design-spec.md` и `site/styles.css`: светлая тема, `--ink`/`--paper`/`--muted`/`--blue`, стекло (`--glass*`, `--blur`), квадратная форма (все `--radius*` = 0), без теней. Старые имена (`--bg`, `--panel`, `--text`…) оставлены алиасами.
+Шрифты - `next/font` в `src/app/layout.tsx`: Golos Text (Google, самохостинг при сборке, нужна сеть) и JetBrains Mono (`src/app/fonts/`); в CSS - `var(--font)` и `var(--mono)`.
+Общие классы - `src/components/ui.module.css`: `btn` (призрак), `primary` (чёрная), `cta` (синяя), `small`, `chip`/`chipOn`, `tag`+`outline|solid|red`, `field`/`input`/`label`/`hint`, `panel`/`glass`, `notice`/`errorBox`, `kicker`, `muted`. Использовать: `import ui from './ui.module.css'` и `className={`${ui.btn} ${ui.cta}`}`.
+Лайм `#D4FF3A` - только на карте; уровни доказательств - `LevelBadge` (текст + знак + форма).

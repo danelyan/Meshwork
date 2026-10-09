@@ -1,97 +1,118 @@
 /*
- * Дизайн-токены тёмной темы из командного прототипа (fsp-lct-2026/src/styles.css).
- * Только токены, шрифты и базовые стили элементов; компоненты — CSS-модули (лейн ui).
- * Новых цветов и шрифтов вне брендбука не вводить.
+ * Светлые токены ФСП Карьера. Источник: docs/design-spec.md (вариант «основной»),
+ * site/brand.css + site/styles.css (последний блок побеждает).
+ * Шрифты подключает app/layout.tsx через next/font (переменные --font-golos, --font-mono).
+ * Лайм #D4FF3A и красный #EC1D35 не используются; тени и скругления - нет.
  */
-@font-face { font-family: JetBrains; src: url('/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: JetBrains; src: url('/assets/fonts/JetBrainsMono-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
-@font-face { font-family: JetBrains; src: url('/assets/fonts/JetBrainsMono-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
-
 :root {
-  color-scheme: dark;
-  --font: JetBrains, monospace;
+  color-scheme: light;
+  --font: var(--font-golos), 'Golos Text', system-ui, -apple-system, sans-serif;
+  --mono: var(--font-mono), ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* базовые (как в прототипе) */
-  --bg: #1b1c21;
-  --panel: #24252b;
-  --text: #ededed;
-  --muted: #a8a8ad;
-  --line: rgba(237, 237, 237, 0.17);
+  /* базовые (spec §2) */
+  --ink: #111111;
+  --paper: #f1f1f3;
+  --muted: #6b6b70;
   --blue: #402fff;
-  --red: #ff5266;
+  --line: rgba(17, 17, 17, 0.1);
+  --glass: rgba(255, 255, 255, 0.58);
+  --glass-strong: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --silhouette: #e6e6ea;
+  --glow: radial-gradient(900px 500px at 80% -10%, rgba(64, 47, 255, 0.08), transparent 70%);
+  --ease: cubic-bezier(0.65, 0, 0.25, 1);
 
-  /* производные — значения, которые прототип использует литералами */
-  --surface-input: #202127;
-  --surface-hover: #303138;
-  --surface-notice: #26262f;
-  --surface-dim: #32333b;
-  --border-strong: #6a6a72;
-  --border-input: #5f6069;
-  --border-soft: #55565e;
-  --rail: #5a5b61;
-  --focus: #aaa1ff;
-  --accent-soft: #8d83ff;
-  --accent-check: #b6aeff;
-  --placeholder: #92929c;
-  --text-soft: #bdbdc3;
-  --text-dim: #c8c8ce;
-  --demo: #a6a6ae;
-  --error: #ff929f;
-  --danger-border: #b2515d;
-  --danger-text: #ff8b99;
-  --tag-red-border: #ec1d35;
-  --tag-red-text: #ff6174;
-  --backdrop: #0c0c11c9;
+  /* алиасы прежних имён (на них завязаны модули экранов) */
+  --bg: var(--paper);
+  --panel: var(--glass);
+  --text: var(--ink);
+  --red: #b3261e;
 
-  /* радиусы и типографика */
-  --radius-sm: 5px;
-  --radius: 7px;
-  --radius-md: 9px;
-  --radius-lg: 12px;
-  --radius-xl: 14px;
-  --fs-xs: 10px;
-  --fs-sm: 11px;
-  --fs: 12px;
-  --fs-md: 13px;
-  --fs-lg: 15px;
+  --surface-input: rgba(255, 255, 255, 0.8);
+  --surface-hover: rgba(17, 17, 17, 0.05);
+  --surface-notice: rgba(255, 255, 255, 0.7);
+  --surface-dim: var(--silhouette);
+  --border-strong: var(--ink);
+  --border-input: rgba(17, 17, 17, 0.2);
+  --border-soft: rgba(17, 17, 17, 0.18);
+  --border-faint: rgba(17, 17, 17, 0.12);
+  --rail: rgba(17, 17, 17, 0.28);
+  --focus: var(--blue);
+  --accent-soft: var(--blue);
+  --accent-check: var(--blue);
+  --placeholder: #76767c;
+  --text-soft: #3a3a3f;
+  --text-dim: #4a4a50;
+  --demo: var(--muted);
+  --error: #b3261e;
+  --danger-border: #b3261e;
+  --danger-text: #b3261e;
+  --tag-red-border: var(--ink);
+  --tag-red-text: var(--ink);
+  --backdrop: rgba(17, 17, 17, 0.42);
+
+  /* форма: квадратная эстетика, spec §4 */
+  --radius-sm: 0;
+  --radius: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --blur: blur(18px) saturate(1.2);
+  --page-pad: 56px;
+
+  /* типографика: Golos 13-16px вместо моноширинных 10-15px прототипа */
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs: 14px;
+  --fs-md: 15px;
+  --fs-lg: 17px;
 
   font-family: var(--font);
-  color: var(--text);
-  background: var(--bg);
+  color: var(--ink);
+  background: var(--paper);
   font-synthesis: none;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--glow), var(--paper);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
 button, input, select, textarea { font: inherit; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button, a { touch-action: manipulation; }
 button { cursor: pointer; color: inherit; }
 button:disabled { cursor: default; opacity: 0.5; }
 a { color: inherit; text-decoration: none; }
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 5px;
-}
-::selection { background: var(--text); color: var(--blue); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+::selection { background: var(--blue); color: #fff; }
 h1, h2, h3, p { margin: 0; }
-h1, h2, h3 { font-weight: 500; }
-h1 { font-size: clamp(28px, 3vw, 42px); line-height: 1.25; letter-spacing: -1.4px; }
-h2 { font-size: 28px; line-height: 1.4; letter-spacing: -0.6px; }
-h3 { font-size: 19px; line-height: 1.5; }
-p { line-height: 1.8; }
+h1, h2, h3 { font-weight: 700; }
+h1 { font-size: clamp(28px, 3vw, 38px); line-height: 1.1; letter-spacing: -0.045em; }
+h2 { font-size: 26px; line-height: 1.2; letter-spacing: -0.04em; }
+h3 { font-size: 19px; line-height: 1.3; letter-spacing: -0.02em; }
+p { line-height: 1.55; }
 input, select, textarea {
   background: var(--surface-input);
-  color: var(--text);
+  color: var(--ink);
   border: 1px solid var(--border-input);
-  border-radius: var(--radius);
+  border-radius: 0;
   padding: 12px;
   min-width: 0;
 }
-textarea { resize: vertical; line-height: 1.7; min-height: 95px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { border-color: var(--blue); outline-offset: 0; }
+textarea { resize: vertical; line-height: 1.55; min-height: 95px; }
 input::placeholder, textarea::placeholder { color: var(--placeholder); }
-select { color-scheme: dark; }
+input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color: var(--blue); }
 
+@media (max-width: 1150px) { :root { --page-pad: 28px; } }
+@media (max-width: 640px) { :root { --page-pad: 16px; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

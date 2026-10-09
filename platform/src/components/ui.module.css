@@ -78,3 +78,10 @@
 /* добавлено для components/ui: плотная панель и текст ошибки поля */
 .panelStrong { background: var(--glass-strong); }
 .fieldError { color: var(--error); }
+
+/* Skeleton: заглушка с перелевом на токенах. Без анимации при prefers-reduced-motion (глобально в tokens.css). */
+.skeleton { display: block; background: linear-gradient(90deg, var(--line) 0%, var(--surface-ghost) 50%, var(--line) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+.skeleton_line { height: 12px; width: 100%; }
+.skeleton_block { height: 96px; width: 100%; }
+.skeleton_circle { width: 32px; height: 32px; border-radius: 50%; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }

@@ -2,7 +2,7 @@
 .thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
 /* реплика помощника: знак ФСП слева, текст на стекле */
-.assistant { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: start; min-width: 0; animation: rise 0.3s var(--ease); }
+.assistant { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: start; min-width: 0; animation: rise 0.18s var(--ease) backwards; }
 .mark { width: 32px; height: 32px; display: grid; place-items: center; background: var(--surface-ghost); border: 1px solid var(--border-faint); }
 .mark img { width: 20px; height: auto; display: block; }
 .markGap { width: 32px; }
@@ -15,7 +15,7 @@
 .card { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); min-width: 0; }
 
 /* ответ пользователя: синий пузырь справа */
-.user { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; animation: rise 0.25s var(--ease); }
+.user { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; animation: rise 0.18s var(--ease) backwards; }
 .userBubble { max-width: min(520px, 85%); padding: 10px 14px; background: var(--blue); color: var(--on-ink); line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
 .userBubble[data-quiet='true'] { background: var(--surface-ghost); color: var(--muted); border: 1px solid var(--border-faint); }
 .userAction { background: none; border: 0; padding: 2px 0; font: 500 var(--fs-xs) var(--mono); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -28,8 +28,15 @@
 .typing i:nth-child(3) { animation-delay: 0.3s; }
 .caret::after { content: ''; display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--blue); }
 
+/* скелеты ожидания: пузырь на месте будущей реплики, карточка по форме карточки сообщения */
+.skeletonBubble { width: min(420px, 100%); display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--glass-strong); border: 1px solid var(--line); animation: rise 0.18s var(--ease) backwards; }
+.skeletonCard { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--glass); border: 1px solid var(--glass-border); animation: rise 0.18s var(--ease) backwards; }
+.threadSkeleton { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
 /* быстрые ответы: чипы под последней репликой */
-.replies { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; animation: rise 0.25s var(--ease); }
+.replies { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* чипы выезжают по очереди: 50 мс на каждый, не больше 12 (задержка до 600 мс) */
+.chipIn { animation: rise 0.18s var(--ease) calc(var(--i, 0) * 50ms) backwards; }
 .replies small { font-size: var(--fs-xs); font-weight: 400; color: inherit; opacity: 0.7; }
 /* чип с пояснением: подпись и пояснение в столбик, по левому краю */
 .replies .chipNote { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; padding-top: 6px; padding-bottom: 6px; text-align: left; line-height: 1.3; }
@@ -51,7 +58,7 @@
 .progress { height: 3px; width: 100%; background: var(--line); overflow: hidden; }
 .progress span { display: block; height: 100%; background: var(--blue); transition: width 0.4s var(--ease); }
 
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
 
 @media (max-width: 640px) {

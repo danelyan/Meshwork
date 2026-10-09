@@ -74,7 +74,7 @@ it('чип: ответ становится пузырём справа, чип�
   fireEvent.click(screen.getByRole('button', { name: /Backend/ }));
   expect(screen.queryByTestId('quick-replies')).toBeNull();
   expect(screen.getByText('Backend')).toBeDefined();
-  expect(screen.getByTestId('typing')).toBeDefined();
+  expect(screen.getByTestId('reply-skeleton')).toBeDefined();
   release();
   await waitFor(() => expect(question()).toBe('На какой грейд претендуешь?'));
   expect(sent(fetchFn as never)).toEqual({ action: 'answer', stepId: 'specialization', value: 'backend' });

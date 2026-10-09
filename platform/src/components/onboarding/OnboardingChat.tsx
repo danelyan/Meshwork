@@ -12,7 +12,7 @@ import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { Chat } from '../Chat';
 import { AssistantChat, EMPLOYER_SUGGESTIONS } from '../employer/AssistantChat';
-import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, type ReplyLine, Thread, Typing, UserBubble } from '../chat/Thread';
+import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, ReplySkeleton, type ReplyLine, Thread, UserBubble } from '../chat/Thread';
 import { Brand } from '../shell/Brand';
 import { Button, VisuallyHidden } from '../ui';
 
@@ -237,7 +237,7 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
           {pending && <UserBubble quiet={pending.quiet}>{pending.text}</UserBubble>}
           {busy && pending && (
             <AssistantRow>
-              <Typing />
+              <ReplySkeleton />
             </AssistantRow>
           )}
           {error && (

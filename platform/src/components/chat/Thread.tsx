@@ -2,7 +2,7 @@
 
 import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useId, useRef } from 'react';
 
-import { Button, Chip, VisuallyHidden, cx } from '../ui';
+import { Button, Chip, Skeleton, VisuallyHidden, cx } from '../ui';
 
 import { useTypewriter } from './motion';
 import styles from './thread.module.css';
@@ -128,6 +128,54 @@ export function Typing({ onClick }: { onClick?: () => void }) {
   );
 }
 
+/**
+ * Ожидание ответа сервера: на месте будущей реплики — пузырь-скелет из двух строк.
+ * Дальше приходит настоящая реплика (`Reply`: «печатает…» → текст).
+ */
+export function ReplySkeleton({ label = 'Помощник готовит ответ…' }: { label?: string }) {
+  return (
+    <div className={styles.skeletonBubble} role="status" data-testid="reply-skeleton">
+      <Skeleton width="80%" />
+      <Skeleton width="55%" />
+      <VisuallyHidden>{label}</VisuallyHidden>
+    </div>
+  );
+}
+
+/** Скелет карточки в сообщении (документы, сводка, карточки кандидатов). */
+export function CardSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className={styles.skeletonCard} aria-hidden="true" data-testid="card-skeleton">
+      <Skeleton width="40%" />
+      {Array.from({ length: rows }, (_, i) => (
+        <Skeleton key={i} width={`${90 - i * 15}%`} />
+      ))}
+    </div>
+  );
+}
+
+/** Первая загрузка ленты (loading.tsx): знак помощника и два пузыря-скелета. */
+export function ThreadSkeleton() {
+  return (
+    <div className={styles.threadSkeleton} aria-busy="true" role="status">
+      <VisuallyHidden>Загружаю переписку…</VisuallyHidden>
+      <div className={styles.assistant}>
+        <Skeleton shape="circle" />
+        <div className={styles.body}>
+          <div className={styles.skeletonBubble} aria-hidden="true">
+            <Skeleton width="85%" />
+            <Skeleton width="60%" />
+          </div>
+          <div className={styles.skeletonBubble} aria-hidden="true">
+            <Skeleton width="70%" />
+            <Skeleton width="40%" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Ответ пользователя справа. `quiet` — пропуск («пропущу»); `action` — «изменить». */
 export function UserBubble({
   children,
@@ -185,8 +233,8 @@ export function QuickReplies({
 }) {
   return (
     <div className={styles.replies} role="group" aria-label={label} data-testid="quick-replies">
-      {items.map((o) => (
-        <Chip key={o.value} className={o.note ? styles.chipNote : undefined} pressed={Boolean(o.pressed)} disabled={disabled || o.disabled} onClick={() => onPick(o.value)}>
+      {items.map((o, i) => (
+        <Chip key={o.value} style={{ '--i': Math.min(i, 12) } as React.CSSProperties} className={cx(styles.chipIn, o.note && styles.chipNote)} pressed={Boolean(o.pressed)} disabled={disabled || o.disabled} onClick={() => onPick(o.value)}>
           {o.label}
           {o.note && <small>{o.note}</small>}
         </Chip>

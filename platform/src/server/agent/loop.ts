@@ -9,7 +9,7 @@ import { dispatchToolCall } from './dispatch';
 import { EXTERNAL_NOTE } from './external';
 import { FALLBACK_STEP, fallbackReply, type FallbackReason } from './fallback';
 import { buildHistory, fitHistory, HISTORY_TOTAL_MAX_CHARS } from './history';
-import { asideCannedReply, asideNote, ONBOARDING_RESUME_PATH, resumeLine, resumeNote } from './onboarding-aside';
+import { asideCannedReply, asideNote, IN_ONBOARDING_NOTE, ONBOARDING_RESUME_PATH, resumeLine, resumeNote } from './onboarding-aside';
 import { runPipeline, type PipelineResult } from './pipeline';
 import { createReplyStream } from './reply-stream';
 import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
@@ -72,6 +72,7 @@ export async function runTurn(
     return;
   }
   // Онбординг брошен («Настроить позже»): консультант напоминает и даёт ссылку на продолжение.
+  // Ход из самой ленты онбординга (вопрос, шаг «Документы») — не брошен, напоминать не о чем.
   const resume = input.onboarding ? null : await pendingOnboarding(candidateId).catch(() => null);
 
   if (demo) {
@@ -187,7 +188,8 @@ export function buildSystem(args: {
   resume?: OnboardingStepBrief | null;
 }): string {
   const parts = [CONSULTANT_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК).`, EXTERNAL_NOTE];
-  if (args.onboarding) parts.push(asideNote(args.onboarding));
+  // Ход конвейера из шага «Документы» — свои инструкции ниже; правило «коротко и вернуть к шагу» не к нему.
+  if (args.onboarding) parts.push(args.pipeline ? IN_ONBOARDING_NOTE : asideNote(args.onboarding));
   else if (args.resume) parts.push(resumeNote(args.resume));
   const p = args.pipeline;
   if (p) {

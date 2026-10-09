@@ -19,6 +19,8 @@ describe('matchStepText — текст как ответ на шаг', () => {
     expect(matchStepText({ kind: 'one', options: DIRECTIONS }, 'FRONTEND')).toMatchObject({ value: 'frontend' });
     expect(matchStepText({ kind: 'one', options: DIRECTIONS }, 'mobile')).toBeNull();
     expect(matchStepText({ kind: 'one', options: opts('goal') }, 'а зачем это?')).toBeNull();
+    // Точное имя варианта со знаком вопроса — всё равно ответ (решение интегратора): «?» срезает нормализация.
+    expect(matchStepText({ kind: 'one', options: opts('goal') }, 'Ищу работу?')).toMatchObject({ value: 'job_search' });
   });
 
   it('роль — по подписи; согласие текстом не даётся', () => {

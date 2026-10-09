@@ -80,7 +80,7 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
       abortRef.current = ctrl;
       try {
         const stream = await openConsultantStream(
-          { text: sent.text || DOCS_PROMPT, uploadIds: sent.uploadIds, urls: sent.urls, ...(convRef.current ? { conversationId: convRef.current } : {}) },
+          { text: sent.text || DOCS_PROMPT, uploadIds: sent.uploadIds, urls: sent.urls, onboardingStep: 'documents', ...(convRef.current ? { conversationId: convRef.current } : {}) },
           ctrl.signal,
         );
         const reader = stream.getReader();

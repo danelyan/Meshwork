@@ -297,7 +297,7 @@ it('документы: файл скрепкой и ссылка текстом
   fireEvent.change(box, { target: { value: 'и код тут github.com/demo-ryabinin' } });
   fireEvent.keyDown(box, { key: 'Enter' });
   await waitFor(() => expect(screen.getByText('Прочитал резюме.')).toBeDefined());
-  expect(bodies[0]).toMatchObject({ uploadIds: ['up1'], urls: ['https://github.com/demo-ryabinin'], text: 'и код тут github.com/demo-ryabinin' });
+  expect(bodies[0]).toMatchObject({ uploadIds: ['up1'], urls: ['https://github.com/demo-ryabinin'], text: 'и код тут github.com/demo-ryabinin', onboardingStep: 'documents' });
   expect(screen.getByText('читаю cv.pdf…')).toBeDefined();
 
   fireEvent.click(screen.getByRole('button', { name: /Дальше/ }));

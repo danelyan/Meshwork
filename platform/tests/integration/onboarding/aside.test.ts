@@ -1,6 +1,7 @@
 import { POST as consultant } from '@/app/api/consultant/messages/route';
 import { POST as onboarding } from '@/app/api/onboarding/route';
-import { runTurn } from '@/server/agent/loop';
+import { buildSystem, runTurn } from '@/server/agent/loop';
+import type { PipelineResult } from '@/server/agent/pipeline';
 import { loadLastChat } from '@/server/agent/restore';
 import { decodeSse } from '@/server/agent/events';
 import type { AgentEvent } from '@/server/agent/types';
@@ -149,5 +150,29 @@ describe('Свободный вопрос посреди онбординга', 
       process.env.LLM_STUB_DEMO = 'false';
       resetEnvCache();
     }
+  });
+
+  it('ход шага «Документы» помечен как онбординговый: напоминания «знакомство не закончено» нет', async () => {
+    const { cookie, candidateId } = await asCandidate('u1');
+    await act(cookie, { action: 'answer', stepId: 'goal', value: 'job_search' });
+    const step = (await asideContext('u1')).step!;
+    expect(step.stepId).toBe('documents');
+    const conv = await prisma.conversation.create({ data: { candidateId } });
+    const systems: string[] = [];
+    registerStubResponse('consultant', (req) => {
+      systems.push(req.system ?? '');
+      return { text: 'Прочитал.' };
+    });
+    await runTurn({ candidateId, conversationId: conv.id, text: 'Вот мои материалы.', onboarding: step }, () => undefined, undefined, {
+      llm: getLlm({ candidateId, conversationId: conv.id }),
+    });
+    expect(systems[0]).not.toContain('Онбординг кандидата не закончен');
+    expect(systems[0]).toContain('Не предлагай продолжить знакомство по ссылке');
+    // С конвейером (файлы/ссылки) правило «коротко и вернуть к шагу» не добавляется — у конвейера свои инструкции.
+    const pipeline = { docs: [], failed: [], proposed: [], rejected: 0, rejectSummary: '', merged: 0, hiddenText: 0, injectionSuspect: false, alreadyKnown: 0 } as unknown as PipelineResult;
+    const withPipeline = buildSystem({ now: new Date(), pipeline, toolsExhausted: false, onboarding: step, resume: null });
+    expect(withPipeline).not.toContain('Идёт онбординг');
+    expect(withPipeline).toContain('Ход пришёл из ленты онбординга');
+    expect(withPipeline).not.toContain('Онбординг кандидата не закончен');
   });
 });

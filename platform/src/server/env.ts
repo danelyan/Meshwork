@@ -47,6 +47,16 @@ export const envSchema = z
 
     /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
     STT_PROVIDER: z.enum(['auto', 'yandex', 'browser', 'off']).default('auto'),
+    /** Озвучка ответов компаньона (аватар): yandex (SpeechKit v1, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), off; auto — yandex при ключах, иначе off. */
+    TTS_PROVIDER: z.enum(['auto', 'yandex', 'off']).default('auto'),
+    /** Голос SpeechKit v1 (marina, jane, omazh, ermil, zahar, filipp, madi_ru) и амплуа (neutral, friendly, good …). */
+    TTS_VOICE: z.string().regex(/^[a-z_]{2,32}$/).default('marina'),
+    TTS_EMOTION: z.string().regex(/^[a-z_]{0,32}$/).default('neutral'),
+    TTS_SPEED: z.coerce.number().min(0.5).max(2).default(1.1),
+    /** mp3 декодирует любой браузер; oggopus меньше, но Safari до 17 его не декодирует. */
+    TTS_FORMAT: z.enum(['mp3', 'oggopus']).default('mp3'),
+    /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
+    WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
 
     /** Вход через Яндекс ID (oauth.yandex.ru). Не заданы → кнопка входа неактивна, работает демо-вход. */
     YANDEX_CLIENT_ID: optionalString,

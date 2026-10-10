@@ -19,6 +19,7 @@
 | `test` | Адаптивный тест на грейд (IRT, генераторы заданий, политика остановки) — ADR `docs/decisions/0002-grade-test.md` | `test/index.ts`, `test/service.ts` | claims, recommend, env |
 | `onboarding` | Анкета и сценарий онбординг-чата, ИНН, согласие, сервис завершения | `onboarding/service.ts`, `onboarding/engine.ts` | auth, claims, collector, llm, recommend |
 | `auth` | Яндекс ID (OAuth), роли, согласие, CSRF, устаревшие сессии — ADR `docs/decisions/0001-auth-yandex-id.md` | `auth/users.ts`, `auth/yandex.ts` | onboarding, session |
+| `mail` | Отправка писем (SMTP, Mailpit на стенде), шаблоны писем подтверждения и сброса пароля | `mail/index.ts` | env |
 | `employer` | Кабинет работодателя: вакансии, ранжирование, приглашения, приватность, веса | `employer/index.ts`, `employer/ranking.ts` | claims, recommend |
 | `demo` | Демо-режим для жюри: вход за сид-кандидата, демо-резюме (PDF), контекст | `demo/mode.ts`, `demo/resumes.ts` | db, env, session |
 | `stt` | Голос в текст: Yandex SpeechKit или браузер (Web Speech) | `stt/index.ts` | env, llm |
@@ -30,12 +31,12 @@
 
 | Группа | Маршруты | Модуль |
 |---|---|---|
-| Служебные | `health` | — |
-| Вход и роли | `auth/yandex`, `auth/yandex/callback`, `auth/consent`, `auth/logout`, `auth/me`, `auth/role`, `auth/stale`, `auth/onboarding/complete` | auth, onboarding |
+| Служебные | `health`, `openapi` (спецификация, `docs/openapi.yaml`) | — |
+| Вход и роли | `auth/yandex`, `auth/yandex/callback`, `auth/consent`, `auth/logout`, `auth/me`, `auth/role`, `auth/stale`, `auth/onboarding/complete`, `auth/register`, `auth/verify[/resend]`, `auth/login`, `auth/password/forgot|reset` (вход по email) | auth, onboarding, mail |
 | Онбординг | `onboarding` (SSE) | onboarding, agent |
 | Консультант | `consultant/messages` (SSE), `consultant/conversations[/id]` | agent |
 | Загрузки | `uploads` | collector |
-| Профиль | `profile`, `profile/privacy`, `claims/[id]/[action]`, `claims/confirm-batch` | claims |
+| Профиль | `profile`, `profile/contact`, `profile/privacy`, `claims/[id]/[action]`, `claims/confirm-batch` | claims |
 | Рекомендации | `recommendations` | recommend |
 | Защита | `defense`, `defense/[sessionId]` | defense |
 | Тест на грейд | `test/start`, `test/attempts`, `test/attempt/[id]` (+`answer`, `finish`, `confirm-junior`) | test |
@@ -46,7 +47,7 @@
 | Отладка | `dev/*` (login-as, new-user, reset-*, delete-account, …) | devtools |
 
 Страницы: `(candidate)/{consultant,profile,test,defense,invitations}`, `employer/*`,
-`onboarding`, `auth`, `consent`, `demo`, `design/*` (превью, не для пользователей).
+`onboarding`, `auth`, `consent`, `demo`, `design/*` (превью, не для пользователей), `api-docs` (Swagger UI по спецификации).
 
 ## Общие файлы: правила правки
 

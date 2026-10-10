@@ -26,14 +26,14 @@ const ctx = (): EmployerToolContext => ({
 describe('реестр помощника работодателя', () => {
   it('7 инструментов: 6 по решению владельца + ask_user', () => {
     expect([...EMPLOYER_TOOL_NAMES].sort()).toEqual(
-      ['ask_user', 'create_need_draft', 'draft_invitation', 'explain_candidate', 'get_employer_context', 'match_for_need', 'search_candidates'].sort(),
+      ['ask_user', 'create_need_draft', 'draft_invitation', 'explain_candidate', 'get_employer_context', 'match_for_need', 'search_candidates', 'search_knowledge', 'web_search'].sort(),
     );
   });
 
-  it('роли не смешиваются: ни одного общего объекта, общее имя — только ask_user', () => {
+  it('роли не смешиваются: общий объект — только search_knowledge (без контекста роли), общие имена — ask_user, база знаний, веб-поиск', () => {
     const shared = employerTools.filter((t) => (candidateTools as unknown[]).includes(t));
-    expect(shared).toEqual([]);
-    expect(EMPLOYER_TOOL_NAMES.filter((n) => TOOL_NAMES.includes(n))).toEqual(['ask_user']);
+    expect(shared.map((t) => t.name)).toEqual(['search_knowledge']);
+    expect(EMPLOYER_TOOL_NAMES.filter((n) => TOOL_NAMES.includes(n)).sort()).toEqual(['ask_user', 'search_knowledge', 'web_search']);
   });
 
   it('кандидатский инструмент работодателю недоступен: unknown_tool, хендлер не вызывается', async () => {

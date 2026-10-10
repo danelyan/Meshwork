@@ -1,8 +1,10 @@
 <!--
 Общий источник фактов о платформе. Подставляется вместо {{platform_facts}} в consultant.md,
-employer.md и onboarding.md генератором scripts/build-prompts.mjs (комментарии вырезаются).
+employer.md и onboarding.md генератором scripts/build-prompts.ts (комментарии вырезаются).
+Этот же файл — документ `platform-facts` базы знаний (agent/knowledge, инструмент search_knowledge):
+пункт F<n> — секция с id F<n>.
 Каждый факт сверен с кодом — ссылка в комментарии под ним. Правило поменялось в коде —
-поправь факт здесь, пересобери промпты (node scripts/build-prompts.mjs) и подними версии.
+поправь факт здесь, пересобери промпты и базу знаний (npx tsx scripts/build-prompts.ts) и подними версии.
 Числа, которые возвращают инструменты (остаток лимита, сроки пересдачи), сюда не пишем.
 -->
 <platform_facts>
@@ -26,7 +28,7 @@ F6. От одной компании у кандидата может быть �
 F7. Категория — это специализация и грейд; её даёт только адаптивный тест платформы. Сейчас доступны Backend и Frontend, грейды Junior и Middle; остальные направления помечены «скоро». Тест подтверждает выбранный грейд или не подтверждает; уже полученная категория при неудачной пересдаче не снимается. Когда можно пересдать или сменить грейд, возвращает get_test_status.
 <!-- код: test/service.ts finalize (candidateCategory.create только при confirmed), checkEligibility (интервалы); test/policy.ts explainDecision («не снимается»); onboarding/scenario.ts DIRECTIONS (disabled «скоро»); types.ts Grade -->
 F8. Уровень доказанности ставит код по типу источника, не кандидат и не ИИ. По возрастанию: «со слов» — резюме, документ, чат; «артефакт» — публичный репозиторий, страница, Stack Overflow; «третья сторона» — Codeforces или ФСП при подтверждённом владении аккаунтом; «проверено платформой» — задание, решённое в тесте, или защита утверждения в чате. Чем выше уровень, тем больше вес утверждения в подборке.
-<!-- код: claims/levels.ts maxLevelFor; порядок — решение владельца 09.10 (platform выше third_party), совпадает с recommend/weights.ts LEVEL_WEIGHT и employer/matching.ts dedupeClaims, расходится с claims/levels.ts LEVEL_ORDER (правит отдельный лейн); test/service.ts (level platform для решённых catalogId); defense/session.ts (level platform после защиты) -->
+<!-- код: claims/levels.ts maxLevelFor; порядок — решение владельца 09.10 (platform выше third_party): claims/levels.ts LEVEL_ORDER, от него recommend/weights.ts LEVEL_WEIGHT и employer/privacy.ts dedupeClaims; test/service.ts (level platform для решённых catalogId); defense/session.ts (level platform после защиты) -->
 F9. Утверждение попадает в профиль только после того, как кандидат подтвердил карточку. Каждое утверждение — из каталога платформы и с дословной цитатой из источника.
 <!-- код: claims/service.ts (status proposed → confirmed|edited кнопкой кандидата, api/claims); claims/verifier.ts (цитата — подстрока источника) -->
 F10. API ФСП платформе не предоставлен: привязка ФСП ID сейчас демонстрационная. Нет истории ФСП — без штрафа: место в подборке это не снижает, решает покрытие и тест.

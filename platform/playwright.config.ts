@@ -22,5 +22,7 @@ export default defineConfig({
     url: `http://127.0.0.1:${PORT}/api/health`,
     reuseExistingServer: !isCI,
     timeout: 120_000,
+    // Не зависим от .env: адрес приложения совпадает с baseURL теста, LLM без ключей размечает по словарю каталога.
+    env: { APP_URL: `http://127.0.0.1:${PORT}`, LLM_PROVIDER: 'stub', LLM_STUB_DEMO: 'true', DEMO_LOGIN: 'true' },
   },
 });

@@ -5,6 +5,8 @@ import { expect, test, type Page } from '@playwright/test';
 // Запускает интегратор; сценарий переживает повторный прогон (если приглашение уже есть — шаг отправки пропускается).
 const EMPLOYER = /Анна Кравец/;
 const POOL_TOP = 'Глеб Соколов'; // первый в подборке по потребности «Backend платежей» (demo-vac-be-m-1)
+// кандидаты пула по Frontend: E-02 их не приглашает, поэтому имена у них скрыты в любом порядке прогона
+const FRONTEND_POOL = ['Никита Захаров', 'Вера Лебедева', 'Тимур Гусев', 'Алина Морозова'];
 const VACANCY_URL = '**/employer/needs/demo-vac-be-m-1';
 
 async function loginFromAuth(page: Page, name: RegExp | string, landing: string) {
@@ -70,21 +72,28 @@ test('E-02: работодатель → подборка → приглашен
 
 test('Помощник работодателя (демо без модели): подборка карточками → «Пригласить» → форма; имён нет', async ({ page }) => {
   await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/employer');
+  // свежая потребность этого прогона на Frontend: сценарий не зависит от того, кого принял E-02 по Backend
+  const list = await (await page.request.get('/api/employer/vacancies')).json();
+  const sample = list.vacancies.find((v: { id: string }) => v.id === 'demo-vac-fe-j-2');
+  const title = `E2E Frontend Junior ${Date.now()}`;
+  const created = await page.request.post('/api/employer/vacancies', {
+    data: { title, specialization: 'frontend', grade: 'junior', salaryFrom: 100000, salaryTo: 150000, stack: ['React'], needs: sample.needs },
+  });
+  expect(created.status()).toBe(201);
   await page.getByRole('link', { name: 'Помощник' }).click();
   await page.waitForURL('**/employer/assistant');
-  await page.getByLabel('Сообщение помощнику').fill('Подбери под мою потребность Backend Middle');
+  await page.getByLabel('Сообщение помощнику').fill(`Подбери под мою потребность ${title}`);
   await page.getByRole('button', { name: 'Отправить', exact: true }).click();
   const block = page.getByTestId('assistant-candidates').last();
   await expect(block).toBeVisible();
   const first = block.getByTestId('assistant-candidate').first();
   await expect(first.getByRole('heading', { level: 3 })).toContainText(/Кандидат #[0-9A-F]{6}/);
   // граница доверия: имени из пула нет ни в карточках, ни в ответе помощника
-  await expect(page.getByText(POOL_TOP)).toHaveCount(0);
+  for (const name of FRONTEND_POOL) await expect(page.getByText(name)).toHaveCount(0);
   await page.getByLabel('Сообщение помощнику').fill('Пригласи первого');
   await page.getByRole('button', { name: 'Отправить', exact: true }).click();
   const draft = page.getByTestId('assistant-invitation-draft').last();
   await expect(draft).toBeVisible();
-  // открытое приглашение после основного сценария — тогда формы нет, есть пояснение
-  const blocked = await draft.getByText(/ещё не ответил|Лимит/).isVisible();
-  if (!blocked) await expect(draft.getByRole('button', { name: 'Отправить приглашение' })).toBeVisible();
+  // у свежей потребности и непринятых кандидатов открытого приглашения нет, форма на месте
+  await expect(draft.getByRole('button', { name: 'Отправить приглашение' })).toBeVisible();
 });

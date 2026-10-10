@@ -51,6 +51,9 @@ tags:
     name: test
     description: "Тест на грейд: попытки, ответы, итог"
   -
+    name: tts
+    description: tts
+  -
     name: uploads
     description: "Загрузка резюме и документов"
 paths:
@@ -2930,6 +2933,60 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/tts":
+    get:
+      operationId: getTts
+      tags:
+        - tts
+      summary: "Доступна ли озвучка аватару: yandex / off."
+      description: "Доступна ли озвучка аватару: yandex / off.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Доступна ли озвучка аватару: yandex / off."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postTts
+      tags:
+        - tts
+      summary: "Текст ответа компаньона → аудио SpeechKit (mp3 по умолчанию)."
+      description: "Текст ответа компаньона → аудио SpeechKit (mp3 по умолчанию). Только для вошедших, ≤ 1000 знаков после чистки markdown, лимит запросов на сессию. Аудио не хранится: ответ SpeechKit сразу уходит клиенту.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+              required:
+                - text
+      responses:
+        "200":
+          description: "Текст ответа компаньона → аудио SpeechKit (mp3 по умолчанию). Только для вошедших, ≤ 1000 знаков"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/uploads":

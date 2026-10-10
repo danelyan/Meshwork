@@ -1,7 +1,7 @@
 # platform — ФСП Карьера: карьерный консультант (E-01)
 
 Next.js 15 (App Router) + TypeScript strict + Prisma 6 / PostgreSQL 16 + Zod 4.
-Стек — `../docs/stack.md`. План, лейны и контракты — `fsp/docs/epics/E-01-plan.md`.
+Стек — `../docs/stack.md`. Карта модулей, маршрутов и общих файлов — [`../docs/modules.md`](../docs/modules.md).
 
 ## Быстрый старт (локально, без Docker)
 
@@ -64,7 +64,7 @@ PDF демо-резюме лежат в `src/server/demo/pdf/` (в standalone-с
 | `test` | все проекты Vitest |
 | `test:unit` | проекты `unit` (`tests/unit/**/*.test.ts`, Node) и `components` (`*.test.tsx`, jsdom) |
 | `test:integration` | `tests/integration/**`, реальная БД `TEST_DATABASE_URL`, файлы последовательно |
-| `e2e` | Playwright (`e2e/`), сам поднимает `next dev` на :3100 |
+| `e2e` | Playwright (`e2e/`), сам поднимает `next dev` на :3100 с `APP_URL` = адрес теста, `LLM_PROVIDER=stub`, `LLM_STUB_DEMO=true`, `DEMO_LOGIN=true` (не зависит от `.env`); БД — `DATABASE_URL` из окружения или `.env`, нужны миграции и `db:seed`. Вход в тестах — через окно входа (`e2e/helpers.ts`) или `/demo` |
 | `db:migrate` / `db:deploy` / `db:seed` / `db:generate` | Prisma |
 | `npx tsx scripts/build-openapi.ts` | Спецификация OpenAPI 3.1 из `src/app/api/**/route.ts` (кроме `api/dev`) → `docs/openapi.yaml` и `src/server/openapi/spec.generated.ts`; запускать после любого нового или изменённого маршрута (тест `tests/unit/openapi` сверяет актуальность). Формы ответов и пояснения к ошибкам — `scripts/openapi/overrides.ts`. Просмотр: `/api-docs`, сам документ — `GET /api/openapi` |
 
@@ -233,11 +233,11 @@ const res = await llm.complete({ purpose: 'consultant', system, messages, tools 
 
 Общие доменные типы — `src/server/types.ts` (`Specialization`, `Grade`, `FspState`).
 
-## Работа лейна в своём worktree
+## Работа в отдельном git worktree
 
 ```bash
-cd fsp/.wt/<lane>/platform
-ln -s ../../foundation/platform/node_modules node_modules   # не npm install
+cd <worktree>/platform
+ln -s <основной чекаут>/platform/node_modules node_modules   # не npm install
 bash scripts/db-local.sh start                               # если кластер не запущен
 bash scripts/db-local.sh create fsp_<lane>
 bash scripts/db-local.sh create fsp_test_<lane>

@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { signInAsDemoCandidate } from './helpers';
+
 // Сценарий С1 «Первый вход: собери мне профиль» (E-01-career-consultant.md § 3).
 // Запускает интегратор: нужны сид демо-кандидатов, collector/agent/claims и LLM_PROVIDER=stub.
 // Резюме: по умолчанию крошечный PDF из кода; своё можно задать E2E_RESUME=/path/cv.pdf
@@ -18,15 +20,9 @@ const RESUME: string | { name: string; mimeType: string; buffer: Buffer } = proc
 test('С1: вход → резюме и ссылка → шаги → карточки → подтверждение → профиль', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Твой код.');
-  // главная ведёт на /auth (только Яндекс ID); демо-аккаунты лежат на /demo (DEMO_LOGIN=true)
+  // «Приступим» открывает окно входа поверх главной; демо-профиль выбирается в окне
   await page.getByRole('link', { name: /Приступим/ }).first().click();
-  await page.waitForURL('**/auth');
-  await expect(page.getByRole('button', { name: /^Войти как / })).toHaveCount(0);
-  await page.getByRole('main').getByRole('link', { name: 'Демо для жюри' }).click(); // в подвале такая же ссылка
-  await page.waitForURL('**/demo');
-
-  // демо-вход за первого кандидата
-  await page.getByRole('button', { name: /^Войти как / }).first().click();
+  await signInAsDemoCandidate(page);
   await page.waitForURL('**/consultant');
   await expect(page.getByRole('heading', { name: 'Карьерный консультант' })).toBeVisible();
 
@@ -37,7 +33,8 @@ test('С1: вход → резюме и ссылка → шаги → карто
   await page.getByRole('button', { name: 'Отправить' }).click();
 
   // лента шагов появляется, затем карточки утверждений с цитатой, источником и уровнем
-  await expect(page.getByRole('list', { name: 'Шаги консультанта' })).toBeVisible({ timeout: 30_000 });
+  // шаги группируются в блоки между сообщениями: списков с этим именем может быть несколько
+  await expect(page.getByRole('list', { name: 'Шаги консультанта' }).first()).toBeVisible({ timeout: 30_000 });
   const cards = page.getByRole('article');
   await expect(cards.first()).toBeVisible({ timeout: 60_000 });
   await expect(cards.first().locator('blockquote')).toContainText('«');
@@ -53,15 +50,15 @@ test('С1: вход → резюме и ссылка → шаги → карто
   if (await bulk.isVisible()) await bulk.click();
 
   // профиль: утверждения сгруппированы по уровням
-  await page.getByRole('link', { name: 'Профиль' }).click();
+  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'Профиль' }).click();
   await page.waitForURL('**/profile');
   await expect(page.getByRole('button', { name: 'Печать / PDF' })).toBeVisible();
   await expect(page.getByText(/со слов|артефакт/).first()).toBeVisible();
 });
 
 test('С1: файл больше 5 МБ отклоняется сообщением, до сервера не уходит', async ({ page }) => {
-  await page.goto('/demo');
-  await page.getByRole('button', { name: /^Войти как / }).first().click();
+  await page.goto('/auth');
+  await signInAsDemoCandidate(page);
   await page.waitForURL('**/consultant');
   await page.setInputFiles('input[type=file]', {
     name: 'big.pdf',

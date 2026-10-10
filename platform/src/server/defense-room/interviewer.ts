@@ -14,7 +14,7 @@ import type { PlanItem } from './types';
  */
 
 export const MAX_FOLLOWUPS = 1;
-const NEUTRAL_ACKS = ['Понял, спасибо.', 'Хорошо, идём дальше.', 'Принято.'];
+const NEUTRAL_ACKS = ['Поняла, спасибо.', 'Хорошо, идём дальше.', 'Принято.'];
 
 export const InterviewerOutput = z.object({
   ack: z.string().max(80),

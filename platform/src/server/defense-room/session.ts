@@ -140,7 +140,9 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
 
   // Общий суточный лимит с созвонами лейна call: защита и квалифицирующий созвон считаются вместе.
   const dailyLimit = getEnv().CALL_DAILY_LIMIT;
-  if (dailyLimit > 0) {
+  // Демо-кандидаты общие для жюри и команды — лимит на них не действует (как в call/service.ts).
+  const demo = dailyLimit > 0 && (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { isDemo: true } }))?.isDemo === true;
+  if (dailyLimit > 0 && !demo) {
     // pending — приглашение работодателя, а не созвон: в лимит не считается.
     const recent = await prisma.callSession.count({ where: { candidateId, status: { not: 'pending' }, startedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } });
     if (recent >= dailyLimit) throw new AppError('call_limit', `Не больше ${dailyLimit} созвонов и защит в сутки - попробуй завтра`, 429);
@@ -289,6 +291,9 @@ async function respond(
 ): Promise<TurnResult> {
   const current = plan.items[plan.cursor];
   const seq = plan.cursor;
+  // Вопросы уже закончились (закрывающая реплика прозвучала): реплика кандидата сохранена (с ним может говорить
+  // работодатель), но ИИ второй раз «Это все вопросы…» не повторяет (живая отладка 11.10).
+  if (!current) return { text: null, muted: false, done: true };
   if (current && !current.answered && current.followUps > 0) {
     // На вопрос уже был ответ, ИИ уточнял, а дальше вмешался работодатель: не повторять вопрос, идти дальше.
     current.answered = true;

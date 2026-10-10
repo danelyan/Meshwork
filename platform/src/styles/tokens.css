@@ -142,3 +142,11 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --landing-header-h: 96px;
 }
 @media (max-width: 640px) { :root { --landing-header-h: 68px; } }
+
+/* аватар компаньона: тёмная сцена серебристой головы-сетки (брендбук ФСП, docs/research/19) */
+:root {
+  --avatar-stage: #15171c;
+  --avatar-stage-glow: radial-gradient(120% 90% at 30% 20%, rgba(200, 210, 230, 0.16), transparent 60%);
+  --avatar-stage-line: rgba(255, 255, 255, 0.08);
+  --avatar-silver: #c4c9d2;
+}

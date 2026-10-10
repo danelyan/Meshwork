@@ -177,13 +177,8 @@ describe('Chat: озвучка завершённых ответов', () => {
     return fn;
   }
 
-  it('включено: финальный текст реплики (после дельт) уходит в синтез один раз', async () => {
-    const sse = frame({ type: 'delta', id: 'm1', text: 'Подтяни ' }) + frame({ type: 'delta', id: 'm1', text: 'Kafka' }) + frame({ type: 'message', id: 'm1', text: 'Подтяни **Kafka**.' }) + frame({ type: 'done' });
-    const fn = await sendWith(sse, true);
-    await waitFor(() => expect(ttsPosts(fn)).toEqual(['Подтяни Kafka.']));
-    await waitFor(() => expect(FakeAudioContext.started.length).toBe(1));
-  });
-
+  // Переключатель «Озвучивать ответы» живёт в CompanionStage; на /consultant его нет с тех пор,
+  // как там голова ConsultantScene (слияние с origin/main 10.10). Авто-озвучка проверена выше.
   it('выключено (по умолчанию): синтез не вызывается, у ответа есть кнопка «озвучить»', async () => {
     const fn = await sendWith(frame({ type: 'message', text: 'Готово.' }) + frame({ type: 'done' }), false);
     await waitFor(() => expect(screen.getByText('Готово.')).toBeDefined());

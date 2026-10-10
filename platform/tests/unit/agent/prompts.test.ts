@@ -98,6 +98,18 @@ describe('правило «не знаю» и примеры', () => {
 });
 
 describe('сборка промпта', () => {
+  it('сборка из Windows CRLF совпадает с LF, включая подмножество фактов', () => {
+    const factsLf = '<!-- facts -->\n<platform_facts>\nвводная\n\nF1. один\nF2. два\n</platform_facts>\n';
+    const factsCrlf = factsLf.replace(/\n/g, '\r\n');
+    for (const placeholder of ['{{platform_facts}}', '{{platform_facts:F2}}']) {
+      const mdLf = `<!-- version: t-v1 -->\nдо\n${placeholder}\nпосле\n`;
+      const expected = assemblePrompt(mdLf, factsLf);
+      const actual = assemblePrompt(mdLf.replace(/\n/g, '\r\n'), factsCrlf);
+      expect(actual).toBe(expected);
+      expect(actual).not.toContain('\r');
+    }
+  });
+
   it('комментарии вырезаются, плейсхолдер подставляется ровно один раз', () => {
     expect(stripComments('<!-- x -->\nа<!-- y -->б\n')).toBe('аб\n');
     expect(assemblePrompt('<!-- version: t-v1 -->\nдо\n{{platform_facts}}\nпосле', '<!-- c -->\n<platform_facts>\nF1. x\n</platform_facts>\n')).toBe(

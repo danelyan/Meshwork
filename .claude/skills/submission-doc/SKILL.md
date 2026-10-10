@@ -1,0 +1,41 @@
+---
+name: submission-doc
+description: Assemble the mandatory DOC/PDF documentation for the FSP track submission (TZ section 3.4) from existing docs/, list gaps, and never claim unbuilt features. Use when preparing or updating the submission document. Manual only.
+disable-model-invocation: true
+---
+
+# Submission document
+
+The TZ requires accompanying documentation in DOC or PDF. Markdown in `docs/` is the source;
+the document is assembled from it, not written from scratch. Output: Russian, one file
+`docs/submission/fsp-career.md` plus its DOCX or PDF export next to it.
+
+## Sections and sources
+
+| # | Required section (TZ 3.4) | Take from | Known gap |
+|---|---|---|---|
+| 1 | Functional and component architecture | `docs/platform.md`, `docs/modules.md` | `docs/architecture.md` is an older proposal: use only what matches code |
+| 2 | Testing mechanics and leak resistance | `docs/decisions/0002-grade-test.md`, `docs/test-calibration.md` | Item parameters are expert estimates; say so |
+| 3 | Matching and categorization logic | `docs/employer-assistant.md`, `docs/platform.md`, `platform/src/server/employer/ranking.ts` | — |
+| 4 | Validation procedure and results | `docs/validation-plan.md`, `docs/validation-results.md` | Every number with its command and dataset |
+| 5 | FSP registry integration scheme | `docs/fsp-integration.md` | FSP API is not provided by the TZ: integration is our design, the demo source is simulated |
+| 6 | API description + OpenAPI in the repo | `platform/src/app/api/**`, `docs/modules.md` | **No OpenAPI file exists.** Write `docs/openapi.yaml` from the route handlers and their Zod schemas |
+| 7 | Libraries and components with versions | `platform/package-lock.json` (`npm ls --depth=0` from `platform/`), `docs/stack.md` | Exact installed versions, not `^` ranges |
+| 8 | Build, deploy, local run step by step | `platform/README.md`, `docs/deploy.md` | — |
+
+Also cover: the candidate without FSP history (R-FSP-03) and the demo path from `docs/demo-script.md`.
+
+## Rules
+
+- Describe only what runs on the stand or in the code. A planned feature is labelled as a plan.
+  Simulations (FSP ID, registry, company lookup, demo resumes) are labelled as simulations.
+- Numbers only from `docs/validation-results.md` or a fresh run whose command you include.
+- Check each library claim against the installed version, not memory.
+- Keep sections short: the jury reads it next to the code; link to repo paths for details.
+- End the document with a gap list: what the TZ asks for and we do not have.
+
+## Export
+
+No converter is installed by default. Use `pandoc fsp-career.md -o fsp-career.docx` if available;
+otherwise render the Markdown to HTML and print it to PDF with Playwright (`page.pdf()`), which is
+already in the stack. Open the result and check tables, Cyrillic and page breaks before uploading.

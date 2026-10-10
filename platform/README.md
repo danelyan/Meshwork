@@ -1,7 +1,7 @@
 # platform — ФСП Карьера: карьерный консультант (E-01)
 
 Next.js 15 (App Router) + TypeScript strict + Prisma 6 / PostgreSQL 16 + Zod 4.
-Стек — `../docs/stack.md`. План, лейны и контракты — `fsp/docs/epics/E-01-plan.md`.
+Стек — `../docs/stack.md`. Карта модулей, маршрутов и общих файлов — [`../docs/modules.md`](../docs/modules.md).
 
 ## Быстрый старт (локально, без Docker)
 
@@ -205,11 +205,11 @@ const res = await llm.complete({ purpose: 'consultant', system, messages, tools 
 
 Общие доменные типы — `src/server/types.ts` (`Specialization`, `Grade`, `FspState`).
 
-## Работа лейна в своём worktree
+## Работа в отдельном git worktree
 
 ```bash
-cd fsp/.wt/<lane>/platform
-ln -s ../../foundation/platform/node_modules node_modules   # не npm install
+cd <worktree>/platform
+ln -s <основной чекаут>/platform/node_modules node_modules   # не npm install
 bash scripts/db-local.sh start                               # если кластер не запущен
 bash scripts/db-local.sh create fsp_<lane>
 bash scripts/db-local.sh create fsp_test_<lane>

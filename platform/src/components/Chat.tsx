@@ -11,6 +11,7 @@ import type { AgentEvent } from '@/server/agent/types';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 
+import { CompanionVoiceProvider, useCompanionVoice } from './avatar/voice';
 import styles from './Chat.module.css';
 import { useAttachments } from './chat/attachments';
 import { Composer } from './chat/Composer';
@@ -42,11 +43,27 @@ const SIMPLIFIED_CODES = new Set(['llm_unavailable', 'llm_rate_limited', 'rate_l
 let seq = 0;
 const nextId = () => `i${++seq}`;
 
+interface ChatProps {
+  demo?: ChatDemoContext;
+  initial?: RestoredChat;
+  embedded?: ChatEmbedded;
+}
+
 /**
  * Карьерный консультант. Самостоятельно — страница /consultant; `embedded` — продолжение ленты
  * онбординга (без заголовка страницы, приветствие с подсказками). Лента — примитивы components/chat.
+ * Голос и аватар компаньона: на странице — свои; во встроенном режиме — от онбординга (тот же провайдер).
  */
-export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; initial?: RestoredChat; embedded?: ChatEmbedded }) {
+export function Chat(props: ChatProps) {
+  if (props.embedded) return <ChatBody {...props} />;
+  return (
+    <CompanionVoiceProvider>
+      <ChatBody {...props} />
+    </CompanionVoiceProvider>
+  );
+}
+
+function ChatBody({ demo, initial, embedded }: ChatProps) {
   const [items, setItems] = useState<FeedItem[]>(initial?.items ?? []);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [text, setText] = useState('');
@@ -62,12 +79,19 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
   const conversationRef = useRef<string | undefined>(initial?.conversationId ?? undefined);
   const endRef = useRef<HTMLDivElement>(null);
 
+  const voice = useCompanionVoice();
+  const voiceRef = useRef(voice);
+  voiceRef.current = voice;
   const rootRef = useRef<HTMLDivElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const paneRef = useRef<HTMLDivElement>(null);
   // Внутри онбординга лентой и автоскроллом управляет OnboardingChat.
   useStickToBottom(feedRef, !embedded, paneRef);
   useEffect(() => () => abortRef.current?.abort(), []);
+  const setThinking = voice?.setThinking;
+  useEffect(() => {
+    setThinking?.(busy);
+  }, [busy, setThinking]);
   useEffect(() => {
     if (embedded) endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
   }, [items.length, embedded]);
@@ -78,6 +102,8 @@ export function Chat({ demo, initial, embedded }: { demo?: ChatDemoContext; init
       return;
     }
     if (event.type === 'done') return;
+    // Завершённая реплика — авторитетный текст после дельт: её и озвучиваем (если включено).
+    if (event.type === 'message') voiceRef.current?.speak(event.text);
     setItems((p) => applyAgentEvent(p, event, nextId));
     if (event.type === 'error' && SIMPLIFIED_CODES.has(event.code)) setSimplified(true);
   }, []);

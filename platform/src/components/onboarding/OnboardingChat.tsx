@@ -10,6 +10,8 @@ import { checkInn } from '@/server/onboarding/inn';
 import { asideToModel, looksLikeQuestion, matchStepText } from '@/server/onboarding/match';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
+import { CompanionStage } from '../avatar/CompanionStage';
+import { CompanionVoiceProvider, useCompanionVoice } from '../avatar/voice';
 import { Chat } from '../Chat';
 import { AssistantChat, EMPLOYER_SUGGESTIONS } from '../employer/AssistantChat';
 import { extractUrls } from '@/lib/links';
@@ -57,7 +59,15 @@ const draftOf = (s: StepView) => (s.kind === 'text' && typeof s.value === 'strin
  * Без «Далее» и счётчика шагов: прогресс — тонкая полоса. После итога та же лента продолжается
  * карьерным консультантом (Chat embedded). Логика шагов — на сервере; клиент показывает OnboardingView.
  */
-export function OnboardingChat({ initial, consentText, consultant, employerAssistant }: OnboardingChatProps) {
+export function OnboardingChat(props: OnboardingChatProps) {
+  return (
+    <CompanionVoiceProvider>
+      <OnboardingChatBody {...props} />
+    </CompanionVoiceProvider>
+  );
+}
+
+function OnboardingChatBody({ initial, consentText, consultant, employerAssistant }: OnboardingChatProps) {
   const [view, setView] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +81,10 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
   const endRef = useRef<HTMLDivElement>(null);
   const onboardedRef = useRef(initial.onboarded);
   const att = useAttachments();
+  // Голос компаньона: реплика нового шага и ответы консультанта озвучиваются, если включено.
+  const voice = useCompanionVoice();
+  const voiceRef = useRef(voice);
+  voiceRef.current = voice;
   // Один разговор с консультантом: вопросы посреди шагов, разбор документов и чат после итога.
   const convRef = useRef<string | undefined>(consultant?.restored?.conversationId ?? undefined);
   const [convId, setConvId] = useState(convRef.current);
@@ -112,6 +126,7 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
     setPending(bubble ?? null);
     try {
       const v = await onboardingAct(body);
+      voiceRef.current?.speak(`${v.current.lead} ${v.current.question}`);
       setView(v);
       setDraft(draftOf(v.current));
       setSel(multiOf(v.current));
@@ -302,6 +317,11 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
               ? 'Выбери вариант выше или задай вопрос'
               : 'Выбери вариант выше или напиши его';
   const docsDone = cur.kind === 'files' && docs.started && !docs.running;
+  const setThinking = voice?.setThinking;
+  const thinking = busy || asides.asking || docs.running;
+  useEffect(() => {
+    setThinking?.(thinking);
+  }, [thinking, setThinking]);
 
   return (
     <div className={styles.shell}>
@@ -322,6 +342,7 @@ export function OnboardingChat({ initial, consentText, consultant, employerAssis
         <VisuallyHidden>
           <h1>Знакомство с помощником ФСП Карьеры</h1>
         </VisuallyHidden>
+        <CompanionStage className={styles.stage} />
         <Thread label="Переписка с помощником">
           {view.history.map((h) => (
             <HistoryPair

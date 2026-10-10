@@ -32,7 +32,7 @@ export interface EmployerTurnOptions {
 }
 
 /** Помощник недоступен (модель, бюджет) — шаг в ленте перед ответом по данным платформы. */
-export const EMPLOYER_FALLBACK_STEP = 'Помощник сейчас без языковой модели — отвечаю по данным платформы.';
+export const EMPLOYER_FALLBACK_STEP = 'Помощник сейчас без языковой модели - отвечаю по данным платформы.';
 
 const MSK = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeZone: 'Europe/Moscow' });
 

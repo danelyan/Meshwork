@@ -90,13 +90,14 @@ export function Subtitles({ className }: { className?: string }) {
   const cur = Math.max(0, Math.min(active, phrases.length - 1));
   let from = cur;
   let to = cur + 1;
-  let size = phrases[cur].length;
-  if (cur > 0 && size + phrases[cur - 1].length <= SUBTITLE_BUDGET) {
+  const len = (i: number) => phrases[i]?.length ?? 0;
+  let size = len(cur);
+  if (cur > 0 && size + len(cur - 1) <= SUBTITLE_BUDGET) {
     from = cur - 1;
-    size += phrases[from].length;
+    size += len(from);
   }
-  while (to < phrases.length && size + phrases[to].length <= SUBTITLE_BUDGET) {
-    size += phrases[to].length;
+  while (to < phrases.length && size + len(to) <= SUBTITLE_BUDGET) {
+    size += len(to);
     to += 1;
   }
   const shown = phrases.slice(from, to);

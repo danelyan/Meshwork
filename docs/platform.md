@@ -32,8 +32,9 @@ flowchart TD
   D -->|"POST /uploads, /run, Bearer RUNNER_TOKEN"| RUN["runner: песочница автопроверки, сеть internal"]
   D -->|"GitHub tarball и снимок репозитория (QLC), через SSRF-фильтр"| GH["GitHub API"]
   D --> FS[("том app-data: оригиналы резюме, аудио созвонов")]
-  Browser <-.->|"WebRTC P2P аудио, STUN; сигналинг через наш API"| Browser
 ```
+
+Аудио комнаты защиты идёт напрямую между браузерами кандидата и работодателя (WebRTC P2P, публичный STUN, TURN нет); сервер только передаёт сигналинг.
 
 Состав слоёв внутри приложения:
 

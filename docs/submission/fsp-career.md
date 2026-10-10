@@ -95,7 +95,6 @@ flowchart TD
   M -->|"POST /uploads, /run, Bearer"| R["runner: сеть internal, без интернета"]
   M --> F[("том app-data: оригиналы резюме, аудио созвонов")]
   M --> X["LLM, SMTP, Яндекс ID, SpeechKit, GitHub API (необязательные)"]
-  B <-.->|"WebRTC P2P, STUN; сигналинг через API"| B
 ```
 
 ```text

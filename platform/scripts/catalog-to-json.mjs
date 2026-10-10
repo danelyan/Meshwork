@@ -39,11 +39,14 @@ const cells = (line) => {
 const unTick = (s) => s.replace(/`/g, '').trim();
 const ticks = (s) => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim());
 
+// Грейды через «+» в порядке J, M, S (S — Senior, ADR-0003, дополнение 10.10 16:15): J, M, S, J+M, M+S, J+M+S.
+const GRADE_LETTER = { J: 'junior', M: 'middle', S: 'senior' };
 function parseGrades(s, id) {
-  if (s === 'J+M') return ['junior', 'middle'];
-  if (s === 'J') return ['junior'];
-  if (s === 'M') return ['middle'];
-  return fail(`${id}: неизвестный грейд «${s}»`);
+  const letters = s.split('+').map((x) => x.trim());
+  const order = Object.keys(GRADE_LETTER);
+  const ok = letters.length > 0 && letters.every((l, i) => l in GRADE_LETTER && (i === 0 || order.indexOf(l) > order.indexOf(letters[i - 1])));
+  if (!ok) return fail(`${id}: неизвестный грейд «${s}»`);
+  return letters.map((l) => GRADE_LETTER[l]);
 }
 function parseWeightPair(s, id) {
   const m = /^(—|-|[1-3])\s*\/\s*(—|-|[1-3])$/.exec(s);

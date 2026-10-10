@@ -88,13 +88,14 @@ const PERSONAS: Persona[] = [
   { id: 'JF', spec: 'frontend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(FE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
   // Engineering (тест на подкатегорию, ADR-0003, дополнение 10.10 16:15): на каждую подкатегорию 8 типов
   // из ADR — новичок (N), пограничный новичок (NB), Junior (J), Junior с одной слабой темой (JW), Middle (M),
-  // Middle с одной слабой темой (MW), Senior (S), идеальный Junior (I, контроль). Пул попытки — 14 семейств
+  // Middle с одной слабой темой (MW), Senior (S), идеальный Junior (I, контроль), пограничный Junior (JB, без цели). Пул попытки — 14 семейств
   // подкатегории (поле sub). Колонки — ENG_SUB: 6 Junior | 4 Middle | 4 Senior. Легенды — гипотеза агента
   // по research/25 § 3.4, не люди. «Слабая тема» — одно семейство своего грейда целиком не решено.
   { id: 'DN', spec: 'engineering', sub: 'engineering.data-eng', truth: 'below', legend: 'Excel-аналитик, курсы SQL 3 мес.', knows: eng('data-eng', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
   { id: 'DNB', spec: 'engineering', sub: 'engineering.data-eng', truth: 'below', legend: 'аналитик, 6 мес. SQL-отчётов', knows: eng('data-eng', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
   { id: 'DJ', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'Junior data-инженер, 1 год ETL на SQL', knows: eng('data-eng', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
-  { id: 'DJW', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'Junior data-инженер, не работал с CSV-выгрузками', knows: eng('data-eng', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'DJB', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'пограничный Junior (4 из 6 Junior), без цели', knows: eng('data-eng', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'DJW', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'Junior с одной слабой темой: одно Junior-семейство из 6 не решает', knows: eng('data-eng', [Y, Y, X, Y, Y, Y, H, X, X, X, X, X, X, X]) },
   { id: 'DM', spec: 'engineering', sub: 'engineering.data-eng', truth: 'middle', legend: 'Middle data-инженер, 4 года, Spark и DWH', knows: eng('data-eng', [Y, Y, Y, Y, Y, Y, Y, Y, Y, H, H, X, X, X]) },
   { id: 'DMW', spec: 'engineering', sub: 'engineering.data-eng', truth: 'middle', legend: 'Middle data-инженер без SCD2 в практике', knows: eng('data-eng', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
   { id: 'DS', spec: 'engineering', sub: 'engineering.data-eng', truth: 'senior', legend: 'Senior data-инженер, 7 лет, платформа данных', knows: eng('data-eng', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
@@ -102,7 +103,8 @@ const PERSONAS: Persona[] = [
   { id: 'ON', spec: 'engineering', sub: 'engineering.devops', truth: 'below', legend: 'сисадмин, курсы DevOps 3 мес.', knows: eng('devops', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
   { id: 'ONB', spec: 'engineering', sub: 'engineering.devops', truth: 'below', legend: 'сисадмин, полгода с Docker', knows: eng('devops', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
   { id: 'OJ', spec: 'engineering', sub: 'engineering.devops', truth: 'junior', legend: 'Junior DevOps, 1 год CI/CD и Docker', knows: eng('devops', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
-  { id: 'OJW', spec: 'engineering', sub: 'engineering.devops', truth: 'junior', legend: 'Junior DevOps, cron не настраивал', knows: eng('devops', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'OJB', spec: 'engineering', sub: 'engineering.devops', truth: 'junior', legend: 'пограничный Junior (4 из 6 Junior), без цели', knows: eng('devops', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'OJW', spec: 'engineering', sub: 'engineering.devops', truth: 'junior', legend: 'Junior с одной слабой темой: одно Junior-семейство из 6 не решает', knows: eng('devops', [Y, Y, X, Y, Y, Y, H, X, X, X, X, X, X, X]) },
   { id: 'OM', spec: 'engineering', sub: 'engineering.devops', truth: 'middle', legend: 'Middle DevOps, 4 года Kubernetes', knows: eng('devops', [Y, Y, Y, Y, Y, Y, Y, Y, Y, H, H, X, X, X]) },
   { id: 'OMW', spec: 'engineering', sub: 'engineering.devops', truth: 'middle', legend: 'Middle DevOps без проб в практике', knows: eng('devops', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
   { id: 'OS', spec: 'engineering', sub: 'engineering.devops', truth: 'senior', legend: 'Senior DevOps/platform, 7 лет', knows: eng('devops', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
@@ -110,7 +112,8 @@ const PERSONAS: Persona[] = [
   { id: 'QN', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'below', legend: 'ручной тестировщик, курсы автотестов 2 мес.', knows: eng('qa-automation', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
   { id: 'QNB', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'below', legend: 'ручной тестировщик, полгода пишет автотесты', knows: eng('qa-automation', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
   { id: 'QJ', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'junior', legend: 'Junior автоматизатор, 1 год pytest', knows: eng('qa-automation', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
-  { id: 'QJW', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'junior', legend: 'Junior автоматизатор без UI-автотестов', knows: eng('qa-automation', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'QJB', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'junior', legend: 'пограничный Junior (4 из 6 Junior), без цели', knows: eng('qa-automation', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'QJW', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'junior', legend: 'Junior с одной слабой темой: одно Junior-семейство из 6 не решает', knows: eng('qa-automation', [Y, Y, X, Y, Y, Y, H, X, X, X, X, X, X, X]) },
   { id: 'QM', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'middle', legend: 'Middle SDET, 4 года', knows: eng('qa-automation', [Y, Y, Y, Y, Y, Y, Y, Y, Y, H, H, X, X, X]) },
   { id: 'QMW', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'middle', legend: 'Middle SDET без моков в практике', knows: eng('qa-automation', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
   { id: 'QS', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'senior', legend: 'Senior SDET / лид автоматизации, 7 лет', knows: eng('qa-automation', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
@@ -118,7 +121,8 @@ const PERSONAS: Persona[] = [
   { id: 'SN', spec: 'engineering', sub: 'engineering.sre', truth: 'below', legend: 'инженер поддержки 1-й линии, без кода', knows: eng('sre', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
   { id: 'SNB', spec: 'engineering', sub: 'engineering.sre', truth: 'below', legend: 'инженер поддержки 2-й линии, полгода дежурств', knows: eng('sre', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
   { id: 'SJ', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'Junior SRE, 1 год мониторинга и дежурств', knows: eng('sre', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
-  { id: 'SJW', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'Junior SRE, дежурств с эскалацией не было', knows: eng('sre', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'SJB', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'пограничный Junior (4 из 6 Junior), без цели', knows: eng('sre', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'SJW', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'Junior с одной слабой темой: одно Junior-семейство из 6 не решает', knows: eng('sre', [Y, Y, X, Y, Y, Y, H, X, X, X, X, X, X, X]) },
   { id: 'SM', spec: 'engineering', sub: 'engineering.sre', truth: 'middle', legend: 'Middle SRE, 4 года', knows: eng('sre', [Y, Y, Y, Y, Y, Y, Y, Y, Y, H, H, X, X, X]) },
   { id: 'SMW', spec: 'engineering', sub: 'engineering.sre', truth: 'middle', legend: 'Middle SRE без расчёта очередей', knows: eng('sre', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
   { id: 'SS', spec: 'engineering', sub: 'engineering.sre', truth: 'senior', legend: 'Senior SRE, 7 лет, ёмкость и надёжность', knows: eng('sre', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
@@ -127,7 +131,7 @@ const PERSONAS: Persona[] = [
 /** Персоны прогона: все или одного направления (--spec). Индекс seed — по полному списку. */
 const ACTIVE = PERSONAS.filter((p) => (!SPEC || p.spec === SPEC) && (!SUB || p.sub === SUB));
 /** Контроли — не легенды: в суммы ошибок не входят. */
-const CONTROLS = new Set(['Z0', 'JB', 'JF', 'DI', 'OI', 'QI', 'SI']);
+const CONTROLS = new Set(['Z0', 'JB', 'JF', 'DI', 'OI', 'QI', 'SI', 'DJB', 'OJB', 'QJB', 'SJB']); // *JB — пограничный Junior, без цели
 /** Есть ли в пуле персоны Senior-шаблоны: тогда считается и заявка Senior. */
 const hasSenior = (pool: readonly SelectableTemplate[]) => pool.some((t) => t.grade === 'senior');
 

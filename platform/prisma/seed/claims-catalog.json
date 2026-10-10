@@ -2236,7 +2236,8 @@
       "specialization": "engineering",
       "statement": "Делал загрузку идемпотентной: перезапуск после сбоя не плодит дубли и не теряет строки",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2268,7 +2269,8 @@
       "specialization": "engineering",
       "statement": "Выгружал данные инкрементально по водяному знаку или CDC, учитывал опоздавшие записи",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2517,7 +2519,8 @@
       "specialization": "engineering",
       "statement": "Задавал ресурсы контейнеров (requests, limits) и считал, сколько подов поместится на узел",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 2,
       "weights": {
@@ -2549,7 +2552,8 @@
       "specialization": "engineering",
       "statement": "Выкатывал и откатывал релизы: rolling update, откат на нужную версию",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2610,7 +2614,8 @@
       "statement": "Строил набор автотестов по пирамиде: много модульных, меньше интеграционных, немного сквозных",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2644,7 +2649,8 @@
       "statement": "Проектировал тест-кейсы: граничные значения, классы эквивалентности, покрытие ветвей, параметризация",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2709,7 +2715,8 @@
       "specialization": "engineering",
       "statement": "Находил и чинил нестабильные тесты: ожидания вместо пауз, время, порядок, общие данные",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2799,7 +2806,8 @@
       "statement": "Задавал SLO и считал бюджет ошибок",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2868,7 +2876,8 @@
       "statement": "Участвовал в разборе инцидентов: таймлайн, время обнаружения и устранения, постмортем",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 2,
       "weights": {
@@ -2933,7 +2942,8 @@
       "specialization": "engineering",
       "statement": "Оценивал ёмкость: сколько обработчиков и ресурсов нужно под поток, как растёт очередь",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 2,
       "weights": {

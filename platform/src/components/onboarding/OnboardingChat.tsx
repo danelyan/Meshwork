@@ -16,6 +16,7 @@ import { Chat } from '../Chat';
 import { AssistantChat, EMPLOYER_SUGGESTIONS, EmployerAsideRows } from '../employer/AssistantChat';
 import { extractUrls } from '@/lib/links';
 
+import { useAsideRefresh } from '../consultant/aside-refresh';
 import { useAttachments } from '../chat/attachments';
 import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, ReplySkeleton, type ReplyLine, Thread, Typing, UserBubble } from '../chat/Thread';
 import { Brand } from '../shell/Brand';
@@ -82,6 +83,15 @@ export function OnboardingChat(props: OnboardingChatProps) {
 function OnboardingChatBody({ initial, consentText, consultant, employerAssistant, variant = 'page' }: OnboardingChatProps) {
   const inConsultant = variant === 'consultant';
   const [view, setView] = useState(initial);
+  // Шаг знакомства сменился (ответ, пропуск, возврат) — «Твой путь» и «Подсказка» в колонке перечитываются.
+  const refreshAside = useAsideRefresh();
+  const stepKey = `${view.current.id}:${view.progress.done}`;
+  const firstStep = useRef(stepKey);
+  useEffect(() => {
+    if (firstStep.current === stepKey) return;
+    firstStep.current = stepKey;
+    refreshAside();
+  }, [stepKey, refreshAside]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ text: string; quiet?: boolean } | null>(null);

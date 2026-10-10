@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 
+import { AsideProvider } from '../consultant/aside-refresh';
 import { SceneAside } from '../consultant/SceneAside';
 import type { SceneAsideData } from '@/server/consultant/aside';
 
@@ -35,6 +36,7 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
   const feed = (className?: string) => children ?? <Chat demo={demo} initial={initial} className={className} />;
   return (
     <CompanionVoiceProvider autoEnable>
+      <AsideProvider initial={aside}>
       {variant === 'portrait' && (
         <div className={styles.portraitScene} data-testid="scene-portrait">
           <div className={styles.conversation}>
@@ -113,6 +115,7 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
             </div>
           </div>
       )}
+      </AsideProvider>
     </CompanionVoiceProvider>
   );
 }

@@ -9,6 +9,7 @@ import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/
 
 import chatStyles from '../Chat.module.css';
 import { type AgentItem, applyAgentEvent } from '../chat/stream-items';
+import { useAsideRefresh } from '../consultant/aside-refresh';
 import { StreamingText } from '../chat/StreamingText';
 import { AssistantRow, Bubble, Composer, MessageCard, QuickReplies, type QuickReply, Reply, Thread, Typing, UserBubble } from '../chat/Thread';
 import { scrollToEnd, useStickToBottom } from '../chat/scroll';
@@ -52,6 +53,7 @@ const nextId = () => `e${++seq}`;
  * работодателя. Карточки кандидатов — компактные, с кнопкой «Пригласить»: отправляет человек.
  */
 export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: EmployerRestoredChat; embedded?: AssistantEmbedded; demoNoLlm?: boolean }) {
+  const refreshAside = useAsideRefresh();
   const [items, setItems] = useState<Item[]>(initial?.items ?? []);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -105,9 +107,10 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
         }
       } finally {
         setBusy(false);
+        refreshAside();
       }
     },
-    [busy, embedded, push],
+    [busy, embedded, push, refreshAside],
   );
 
   const started = items.some((it) => it.role === 'user');

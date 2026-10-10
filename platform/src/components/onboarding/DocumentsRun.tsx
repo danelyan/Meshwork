@@ -9,6 +9,7 @@ import type { AgentEvent } from '@/server/agent/types';
 
 import { useCompanionVoice } from '../avatar/voice';
 import { applyAgentEvent } from '../chat/stream-items';
+import { useAsideRefresh } from '../consultant/aside-refresh';
 
 import { FeedRows, type FeedItem } from '../EventFeed';
 
@@ -41,6 +42,7 @@ interface Sent {
  * все файлы, ссылки и число найденных утверждений.
  */
 export function useDocumentsRun(shared?: { conversation: MutableRefObject<string | undefined>; onConversation?: (id: string) => void }) {
+  const refreshAside = useAsideRefresh();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [running, setRunning] = useState(false);
@@ -104,9 +106,10 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
         }
       } finally {
         setRunning(false);
+        refreshAside();
       }
     },
-    [push, convRef],
+    [push, convRef, refreshAside],
   );
 
   const retry = useCallback(() => {
@@ -115,14 +118,16 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
 
   const onClaimAction = useCallback(async (claim: CardClaim, action: ClaimAction, statement?: string) => {
     await claimAction(claim.id, action, statement);
+    refreshAside();
     setOverrides((p) => ({
       ...p,
       [claim.id]: { status: action === 'confirm' ? 'confirmed' : action === 'reject' ? 'rejected' : 'edited', ...(action === 'edit' && statement ? { statement } : {}) },
     }));
-  }, []);
+  }, [refreshAside]);
 
   const onConfirmAll = useCallback(async (claims: CardClaim[]) => {
     const r = await confirmClaimsBatchApi(claims.map((c) => c.id));
+    refreshAside();
     const ok = new Set(r.confirmed);
     for (const s of r.skipped) if (s.reason === 'already_confirmed') ok.add(s.id);
     setOverrides((p) => {
@@ -131,7 +136,7 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
       return next;
     });
     return r.confirmed.length;
-  }, []);
+  }, [refreshAside]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();

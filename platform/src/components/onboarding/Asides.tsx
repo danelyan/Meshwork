@@ -9,6 +9,7 @@ import type { AgentEvent } from '@/server/agent/types';
 
 import { useCompanionVoice } from '../avatar/voice';
 import { applyAgentEvent } from '../chat/stream-items';
+import { useAsideRefresh } from '../consultant/aside-refresh';
 import { FeedRows, type FeedItem } from '../EventFeed';
 
 /** События консультанта в ответе на свободный вопрос: реплика (со стримом), ход работы, ошибка. */
@@ -38,6 +39,7 @@ export function groupAsides(items: RestoredItem[]): AsidesByStep {
  * сбой) сервер отвечает заготовкой. `local` — заготовка без сервера (до роли «специалист»).
  */
 export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<string | undefined>, onConversation: (id: string) => void) {
+  const refreshAside = useAsideRefresh();
   const [byStep, setByStep] = useState<AsidesByStep>(initial);
   const [asking, setAsking] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -86,9 +88,10 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
         }
       } finally {
         setAsking(false);
+        refreshAside();
       }
     },
-    [apply, conversation, push],
+    [apply, conversation, push, refreshAside],
   );
 
   /** Заготовка без модели: вопрос остаётся в ленте, ответ — фиксированный текст (в БД не пишется). */

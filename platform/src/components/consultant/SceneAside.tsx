@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import type { AsideDoc, JourneyStep, SceneAsideData } from '@/server/consultant/aside';
 
+import { useAsideData } from './aside-refresh';
 import styles from './SceneAside.module.css';
 
 const STATE_LABEL = { done: 'готово', now: 'сейчас', next: 'дальше' } as const;
@@ -93,7 +94,8 @@ function Docs({ docs }: { docs: AsideDoc[] }) {
 }
 
 /** Правая колонка под головой: роадмап, документы (кандидат) и подсказка по текущему шагу. */
-export function SceneAside({ data, className }: { data: SceneAsideData; className?: string }) {
+export function SceneAside({ data: initial, className }: { data: SceneAsideData; className?: string }) {
+  const data = useAsideData() ?? initial;
   return (
     <div className={`${styles.aside} ${className ?? ''}`} data-testid="scene-aside" data-solo={data.docs ? undefined : ''}>
       <Roadmap steps={data.steps} />

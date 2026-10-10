@@ -51,6 +51,18 @@ if (argStr('senior-cut') !== undefined) GRADE_CUT.senior = Number(argStr('senior
 const A_JUNIOR = argStr('a-junior') !== undefined ? Number(argStr('a-junior')) : null;
 const B_JUNIOR_SHIFT = Number(argStr('b-junior-shift') ?? 0);
 const A_SENIOR = argStr('a-senior') !== undefined ? Number(argStr('a-senior')) : null;
+const B_MIDDLE_SHIFT = Number(argStr('b-middle-shift') ?? 0);
+/** Эксперимент: --set "n-plus-one=1.1,-1.2;pool-capacity=,-1" — подменить a и/или b семейства по хвосту id (пусто — не менять). */
+const SET_ARG = new Map<string, [number | null, number | null]>(
+  (argStr('set') ?? '')
+    .split(';')
+    .filter(Boolean)
+    .map((e) => {
+      const [k, v] = e.split('=');
+      const [a, b] = (v ?? '').split(',');
+      return [k!, [a ? Number(a) : null, b ? Number(b) : null]] as [string, [number | null, number | null]];
+    }),
+);
 const A_MIDDLE = argStr('a-middle') !== undefined ? Number(argStr('a-middle')) : null;
 
 type Truth = 'below' | Grade;
@@ -95,6 +107,11 @@ const FRONTEND_PROFILES: Profile[] = [
   { id: 'SS', name: 'Senior с одной слабой темой (сверх списка ADR): три Senior-темы верно, самая трудная наполовину', truth: 'senior', j: [Y, Y, Y, Y, Y, Y], m: [Y, Y, Y, Y, Y, Y], s: [Y, Y, Y, H], slack: true },
   { id: 'JI', name: 'контроль: все Junior верно, остальное неверно', truth: 'junior', j: [Y, Y, Y, Y, Y, Y], m: NONE, s: NONE, control: true },
 ];
+/** Эксперимент: --j-mid "0.5,0,0,0" — строка Middle у Junior и «Junior со слабой темой» (по умолчанию ½ ½ 0 0). */
+if (argStr('j-mid') !== undefined) {
+  const row = argStr('j-mid')!.split(',').map(Number);
+  for (const p of PROFILES) if (p.id === 'J' || p.id === 'Jw') p.m = row;
+}
 const ACTIVE_PROFILES = argStr('profiles') === 'frontend' ? FRONTEND_PROFILES : PROFILES;
 
 interface Outcome {
@@ -181,13 +198,13 @@ for (const sub of subs) {
     console.log(`## ${sub.id}: банка нет — пропуск\n`);
     continue;
   }
-  const pool: SelectableTemplate[] = tp.generators.map((g) => ({
-    id: g.id,
-    a: g.grade === 'junior' && A_JUNIOR !== null ? A_JUNIOR : g.grade === 'senior' && A_SENIOR !== null ? A_SENIOR : g.grade === 'middle' && A_MIDDLE !== null ? A_MIDDLE : g.a,
-    b: g.grade === 'junior' ? g.b + B_JUNIOR_SHIFT : g.b,
-    catalogIds: g.catalogIds,
-    grade: g.grade,
-  }));
+  const pool: SelectableTemplate[] = tp.generators.map((g) => {
+    const a = g.grade === 'junior' && A_JUNIOR !== null ? A_JUNIOR : g.grade === 'senior' && A_SENIOR !== null ? A_SENIOR : g.grade === 'middle' && A_MIDDLE !== null ? A_MIDDLE : g.a;
+    const b = g.grade === 'junior' ? g.b + B_JUNIOR_SHIFT : g.grade === 'middle' ? g.b + B_MIDDLE_SHIFT : g.b;
+    const o = SET_ARG.get(g.id.split('.').pop()!);
+    return { id: g.id, a: o?.[0] ?? a, b: o?.[1] ?? b, catalogIds: g.catalogIds, grade: g.grade };
+  });
+
   console.log(`## ${sub.id} (${sub.title}): ${pool.length} семейств\n`);
   console.log('| Персона | Уровень | P(Junior) | P(Middle) | P(Senior) | Middle → Junior в 1 клик | Senior → Middle в 1 клик | Длина J / M / S | Дозадавание J / M / S |');
   console.log('|---|---|---|---|---|---|---|---|---|');

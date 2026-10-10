@@ -23,7 +23,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:local": "bash scripts/db-local.sh",
     "eval:test": "tsx eval/test/run.ts",
-    "eval:test-personas": "tsx eval/test/personas.ts"
+    "eval:test-personas": "tsx eval/test/personas.ts",
+    "eval:call": "tsx eval/call/personas.ts",
+    "eval:defense": "tsx eval/defense/personas.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

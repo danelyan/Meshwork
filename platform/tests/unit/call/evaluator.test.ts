@@ -1,4 +1,4 @@
-import { aggregateRuns, buildEvaluatorPayload, evaluateCall, medianScore, type EvalTopic } from '@/server/call/evaluator';
+import { aggregateRuns, buildEvaluatorPayload, evaluateCall, medianScore, redactFacts, type EvalTopic } from '@/server/call/evaluator';
 import { CallEvaluatorOutput } from '@/server/call/schemas';
 import { clearStubResponses, createStubProvider, registerStubResponse } from '@/server/llm/providers/stub';
 
@@ -87,5 +87,14 @@ describe('схема и слепота оценщика', () => {
     expect(json).not.toContain('Ускорял запросы');
     expect(json).not.toContain('maxLevel');
     expect(json).not.toContain('ускорил отчёт в 5 раз');
+  });
+});
+
+describe('redactFacts', () => {
+  const fact = 'Сократил время ответа платёжного шлюза с 800 до 120 мс за счёт пула соединений';
+  it('вырезает факт резюме целиком и усечённым началом', () => {
+    expect(redactFacts(`Ты пишешь: «${fact}». Как?`, [fact])).not.toContain('800 до 120');
+    const truncated = `В профиле у тебя: «${fact.slice(0, 60)}…». Как?`;
+    expect(redactFacts(truncated, [fact])).not.toContain(fact.slice(0, 40));
   });
 });

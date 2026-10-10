@@ -10,8 +10,9 @@ export const CALL_LIMITS = {
   maxPerTopic: 2,
   /** Тем в плане созвона. */
   maxTopics: 5,
+  /** Запусков оценщика на созвон (первый + повторы после 503); исчерпаны — созвон закрывается без оценки. */
+  maxFinishAttempts: 3,
   /** ПРЕДЛОЖЕНИЕ: созвонов на кандидата в сутки (защита платного LLM/TTS от цикла). */
-  maxPerDay: 5,
 } as const;
 
 /** Тема для проверки: из утверждений профиля или ключевая тема специализации. */
@@ -94,15 +95,11 @@ export function planNext(args: {
   return { topicIndex: nextIdx, level, signal, switched: true };
 }
 
-function short(text: string, n: number): string {
-  const t = text.replace(/\s+/g, ' ').trim();
-  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
-}
-
 /** Запасной вопрос по уровню: формулировка от темы, тип вопроса фиксирован. */
 export function templateQuestion(topic: TopicSeed, level: QuestionLevel, first: boolean): string {
   const hello = first ? 'Привет! Я ИИ-интервьюер платформы, задам несколько вопросов по твоей специализации. ' : '';
-  const fact = first && topic.resumeFact ? `В профиле у тебя: «${short(topic.resumeFact, 140)}». ` : '';
+  // Конкретику резюме в вопрос не вставляем: транскрипт читает слепой оценщик (ADR 0003).
+  const fact = first && topic.claimStatement ? 'Ты заявил эту тему в профиле. ' : '';
   const name = topic.topic;
   if (level === 1) return `${hello}${fact}Начнём с основ: что такое «${name}» и зачем это нужно в работе? Объясни своими словами.`;
   if (level === 2) return `${hello}${fact}Расскажи про «${name}» на практике: что конкретно ты делал сам и как это было устроено внутри?`;

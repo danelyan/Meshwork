@@ -3,10 +3,11 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '../db';
+import { getEnv } from '../env';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
 import { type CallPrincipal, publicVerdict, resolveCallAccess, type ResolvedAccess } from './access';
-import { concatRecording, listSegments, readSegmentPcm, recognizeSegment, saveSegment, callAudioDir } from './audio';
+import { assertSegment, concatRecording, listSegments, recognizeSegment, saveSegment, callAudioDir } from './audio';
 import { publishCall } from './bus';
 import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from './consent';
 import { CALL_DISCLAIMER, callDriver, questionTurns, type DriverSession } from './drivers';
@@ -148,10 +149,13 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
   });
   if (active) return { sessionId: active.id, resumed: true, webrtc: { iceServers: ICE_SERVERS }, call: await buildView(active as Row, CANDIDATE_ACCESS) };
 
-  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const recent = await prisma.callSession.count({ where: { candidateId, kind: body.kind, startedAt: { gte: dayAgo } } });
-  if (recent >= CALL_LIMITS.maxPerDay) {
-    throw new AppError('call_limit', `Не больше ${CALL_LIMITS.maxPerDay} созвонов в сутки - попробуй завтра`, 429);
+  const dailyLimit = getEnv().CALL_DAILY_LIMIT;
+  if (dailyLimit > 0) {
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recent = await prisma.callSession.count({ where: { candidateId, kind: body.kind, startedAt: { gte: dayAgo } } });
+    if (recent >= dailyLimit) {
+      throw new AppError('call_limit', `Не больше ${dailyLimit} созвонов в сутки - попробуй завтра`, 429);
+    }
   }
 
   const created = await prisma.callSession.create({
@@ -183,12 +187,9 @@ export async function submitTurn(
 ): Promise<TurnResult> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
-  let text = (input.text ?? '').replace(/\r\n/g, '\n').trim();
-  if (input.audioRef) {
-    // Сегмент должен существовать; без текста — распознаём его сервером (STT=yandex).
-    const pcm = await readSegmentPcm(sessionId, input.audioRef);
-    if (!text) text = (await recognizeSegment(pcm)) ?? '';
-  }
+  const text = (input.text ?? '').replace(/\r\n/g, '\n').trim();
+  // Сегмент должен существовать. Текст уже распознан в /audio или браузером — второй раз STT не зовём.
+  if (input.audioRef) await assertSegment(sessionId, input.audioRef);
   if (!text) throw new AppError('empty_answer', 'Не удалось разобрать ответ - скажи ещё раз или напиши текстом', 400);
   if (text.length > MAX_UTTERANCE_CHARS) throw new AppError('answer_too_long', `Ответ длиннее ${MAX_UTTERANCE_CHARS} символов`, 400);
 
@@ -268,11 +269,32 @@ export async function finishCall(candidateId: string, sessionId: string, llm: Ll
     return buildView(await loadOwn(candidateId, sessionId), CANDIDATE_ACCESS);
   }
 
+  // Каждый запуск оценщика — 3–6 вызовов LLM: запуски считаются атомарно, повторы после 503 ограничены.
+  const max = CALL_LIMITS.maxFinishAttempts;
+  const claimed = await prisma.callSession.updateMany({
+    where: { id: sessionId, status: 'active', finishAttempts: { lt: max } },
+    data: { finishAttempts: { increment: 1 } },
+  });
+  if (claimed.count === 0) {
+    const cur = await loadOwn(candidateId, sessionId);
+    if (cur.status === 'finished') return buildView(cur, CANDIDATE_ACCESS);
+    if (cur.status !== 'active') throw errors.conflict('Созвон закрыт без оценки');
+    throw errors.conflict('Оценка уже идёт - подожди результата');
+  }
+
   let partial;
   try {
     partial = await driver.evaluate(driverSession(row, transcript), llm);
   } catch (err) {
     console.warn('[call] evaluator failed:', err instanceof Error ? err.message : err);
+    const closed = await prisma.callSession.updateMany({
+      where: { id: sessionId, status: 'active', finishAttempts: { gte: max } },
+      data: { status: 'cancelled', finishedAt: new Date() },
+    });
+    if (closed.count === 1) {
+      publishCall(sessionId, { type: 'status', status: 'cancelled' });
+      throw new AppError('llm_unavailable', `Оценщик недоступен ${max} раза подряд - созвон закрыт без оценки, ответы сохранены. Начни новый созвон позже.`, 503);
+    }
     publishCall(sessionId, { type: 'error', code: 'llm_unavailable', message: 'Оценщик сейчас недоступен' });
     throw new AppError('llm_unavailable', 'Оценщик сейчас недоступен. Ответы сохранены - нажми «Завершить» ещё раз чуть позже.', 503);
   }

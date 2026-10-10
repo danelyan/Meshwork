@@ -8,7 +8,7 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock('@/server/db', () => ({ prisma: db }));
 
-import { publicVerdict, resolveCallAccess } from '@/server/call/access';
+import { eventForAccess, publicVerdict, resolveCallAccess } from '@/server/call/access';
 import type { CallVerdict } from '@/server/call/types';
 
 const call = { id: 'call-1', candidateId: 'cand-1' };
@@ -68,5 +68,32 @@ describe('гейт записи созвона для работодателя (
     expect(json).not.toContain('дословно кандидат');
     expect(json).not.toContain('Моя формулировка');
     expect(json).toContain('"total":6');
+
+    // SSE для summary-зрителя: вердикт уходит публичным, полный — только при full.
+    const ev = { type: 'verdict' as const, verdict: v };
+    const pub = JSON.stringify(eventForAccess(ev, 'summary'));
+    expect(pub).not.toContain('дословно кандидат');
+    expect(pub).toContain('"total":6');
+    expect(eventForAccess(ev, 'full')).toBe(ev);
+  });
+
+  it('SSE summary-зрителю: только status, participant, verdict', () => {
+    const entry = { index: 1, role: 'candidate' as const, text: 'ответ кандидата', at: '2026-10-10T00:00:00.000Z', tMs: 10 };
+    const hidden = [
+      { type: 'utterance' as const, entry },
+      { type: 'ai_state' as const, state: 'thinking' as const },
+      { type: 'mute' as const, aiMuted: true, userId: 'u' },
+      { type: 'question' as const, questionId: 'q', status: 'queued' as const },
+      { type: 'signal' as const, from: 'u', payload: { sdp: 'x' } },
+      { type: 'error' as const, code: 'llm_unavailable', message: 'm' },
+    ];
+    for (const ev of hidden) {
+      expect(eventForAccess(ev, 'summary')).toBeNull();
+      expect(eventForAccess(ev, 'full')).toBe(ev);
+    }
+    const status = { type: 'status' as const, status: 'finished' as const };
+    const joined = { type: 'participant' as const, userId: 'u', role: 'employer' as const, action: 'joined' as const };
+    expect(eventForAccess(status, 'summary')).toBe(status);
+    expect(eventForAccess(joined, 'summary')).toBe(joined);
   });
 });

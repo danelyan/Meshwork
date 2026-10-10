@@ -18,7 +18,7 @@ import { GET as listRoute } from '@/app/api/call/route';
 import { POST as startRoute } from '@/app/api/call/start/route';
 import { CALL_RECORDING_CONSENT_VERSION, type CallVerdict, type CallView } from '@/server/call';
 import { resetEnvCache } from '@/server/env';
-import { clearStubResponses } from '@/server/llm/providers/stub';
+import { clearStubResponses, registerStubResponse } from '@/server/llm/providers/stub';
 import { signUserSession } from '@/server/session';
 
 import { prisma, resetDb } from '../../helpers/db';
@@ -194,5 +194,58 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     const v = await json<CallView>(await finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id)));
     expect(v.status).toBe('cancelled');
     expect(v.verdict).toBeNull();
+  });
+
+  it('finish: повторы после 503 ограничены — третий сбой оценщика закрывает созвон без оценки', async () => {
+    const { sessionId: id } = await consentAndStart();
+    expect((await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG }, cookieA()), ctx(id))).status).toBe(200);
+    let calls = 0;
+    registerStubResponse('call_evaluator', () => {
+      calls += 1;
+      throw new Error('evaluator down');
+    });
+    const finish = () => finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id));
+    expect((await finish()).status).toBe(503);
+    expect((await finish()).status).toBe(503);
+    const third = await finish();
+    expect(third.status).toBe(503);
+    expect((await json<{ error: { message: string } }>(third)).error.message).toMatch(/закрыт без оценки/);
+    const callsAfterThree = calls;
+    expect((await finish()).status).toBe(409);
+    expect(calls).toBe(callsAfterThree); // четвёртый запуск LLM не зовёт
+    const row = await prisma.callSession.findUniqueOrThrow({ where: { id } });
+    expect(row).toMatchObject({ status: 'cancelled', finishAttempts: 3, verdictJson: null });
+  });
+
+  it('CALL_DAILY_LIMIT: 1 — второй созвон за сутки 429; 0 — без лимита', async () => {
+    const prev = process.env.CALL_DAILY_LIMIT;
+    try {
+      process.env.CALL_DAILY_LIMIT = '1';
+      resetEnvCache();
+      const { sessionId: id } = await consentAndStart();
+      await finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id)); // без ответов → cancelled
+      const limited = await startRoute(jsonRequest('/api/call/start', 'POST', { kind: 'qualifying' }, cookieA()));
+      expect(limited.status).toBe(429);
+      expect((await json<{ error: { code: string } }>(limited)).error.code).toBe('call_limit');
+
+      process.env.CALL_DAILY_LIMIT = '0';
+      resetEnvCache();
+      expect((await startRoute(jsonRequest('/api/call/start', 'POST', { kind: 'qualifying' }, cookieA()))).status).toBe(201);
+    } finally {
+      if (prev === undefined) delete process.env.CALL_DAILY_LIMIT;
+      else process.env.CALL_DAILY_LIMIT = prev;
+      resetEnvCache();
+    }
+  });
+
+  it('turn без текста (только audioRef) — 400: /turn второй раз STT не зовёт', async () => {
+    const { sessionId: id } = await consentAndStart();
+    const pcm = new Uint8Array(3200);
+    const a = await audioRoute(new Request(`http://localhost/api/call/${id}/audio`, { method: 'POST', headers: { cookie: cookieA(), 'content-type': 'audio/l16' }, body: pcm }), ctx(id));
+    const { audioRef } = await json<{ audioRef: string }>(a);
+    const res = await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { audioRef }, cookieA()), ctx(id));
+    expect(res.status).toBe(400);
+    const missing = await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG, audioRef: '007.wav' }, cookieA()), ctx(id));
+    expect(missing.status).toBe(404);
   });
 });

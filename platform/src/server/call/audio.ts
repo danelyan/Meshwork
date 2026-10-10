@@ -1,6 +1,6 @@
 // Аудио кандидата: сегменты LPCM 16 бит моно 16 кГц → WAV-файлы в <CALL_DATA_DIR>/calls/<sessionId>/NNN.wav.
 // Не в БД (ADR 0003, п. 4). Распознавание — Yandex SpeechKit кусками ≤ 1 МБ (лимит синхронного v1).
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { getEnv } from '../env';
@@ -58,8 +58,26 @@ export async function saveSegment(sessionId: string, pcm: Uint8Array): Promise<s
   const data = Buffer.from(pcm.buffer, pcm.byteOffset, pcm.byteLength - (pcm.byteLength % 2));
   const next = existing.length ? Number(existing[existing.length - 1]!.slice(0, 3)) + 1 : 0;
   const name = `${String(next).padStart(3, '0')}.wav`;
-  await writeFile(path.join(abs, name), Buffer.concat([wavHeader(data.byteLength), data]), { flag: 'wx' });
+  try {
+    await writeFile(path.join(abs, name), Buffer.concat([wavHeader(data.byteLength), data]), { flag: 'wx' });
+  } catch (err) {
+    // Гонка двух загрузок: обе увидели один список сегментов, вторая упирается в 'wx'.
+    if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw new AppError('conflict', 'Запись уже сохраняется - повтори через секунду', 409);
+    }
+    throw err;
+  }
   return name;
+}
+
+/** Сегмент существует (иначе 404). */
+export async function assertSegment(sessionId: string, name: string): Promise<void> {
+  if (!SEGMENT_RE.test(name)) throw new AppError('bad_request', 'Неверное имя сегмента', 400);
+  try {
+    await access(path.join(callAudioDir(sessionId).abs, name));
+  } catch {
+    throw new AppError('not_found', 'Сегмент записи не найден', 404);
+  }
 }
 
 export async function readSegmentPcm(sessionId: string, name: string): Promise<Buffer> {

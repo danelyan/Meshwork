@@ -12,6 +12,9 @@ tags:
     name: auth
     description: "Вход, сессия, согласие на обработку ПДн, роль"
   -
+    name: call
+    description: "Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события"
+  -
     name: claims
     description: "Карточки утверждений кандидата: подтвердить, поправить, отклонить"
   -
@@ -600,96 +603,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/auth/role/switch":
-    post:
-      operationId: postAuthRoleSwitch
-      tags:
-        - auth
-      summary: "Переключить активную роль (вторая роль на той же учётке)"
-      description: "ADR 0004. Профиль целевой роли есть — переключает; нет — создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль — идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.\n\nНужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              oneOf:
-                -
-                  type: object
-                  properties:
-                    role:
-                      type: string
-                      const: candidate
-                  required:
-                    - role
-                -
-                  type: object
-                  properties:
-                    role:
-                      type: string
-                      const: employer
-                    companyName:
-                      type: string
-                      minLength: 2
-                      maxLength: 120
-                  required:
-                    - role
-      responses:
-        "200":
-          description: "Роль активна; выставлена новая кука cid"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  role:
-                    type: string
-                  next:
-                    type: string
-                    description: "Дом роли (путь интерфейса)"
-                  created:
-                    type: boolean
-                  changed:
-                    type: boolean
-                required:
-                  - role
-                  - next
-                  - created
-                  - changed
-        "400":
-          description: "Нет названия компании, когда профиль работодателя надо создать (`bad_request`), или тело не прошло схему (`validation_failed`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "401":
-          description: "Нет входа (`unauthorized`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "403":
-          description: "Старая демо-кука без аккаунта, общий демо-аккаунт без второй роли или запрос с чужого сайта (`forbidden`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "409":
-          description: "Роль ещё не выбрана — сначала знакомство (`conflict`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "429":
-          description: "Слишком много переключений (`rate_limited`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/auth/stale":
     get:
       operationId: getAuthStale
@@ -904,6 +817,488 @@ paths:
             Location:
               schema:
                 type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call":
+    get:
+      operationId: getCall
+      tags:
+        - call
+      summary: "Мои созвоны и согласие на запись"
+      description: "свои созвоны (свежие первыми) и состояние согласия на запись.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - qualifying
+              - defense
+      responses:
+        "200":
+          description: "Состояние согласия на запись и созвоны кандидата (свежие первыми, до 10)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  consent:
+                    type: object
+                    properties:
+                      given:
+                        type: boolean
+                      version:
+                        type: string
+                      text:
+                        type: array
+                        items:
+                          type: string
+                    required:
+                      - given
+                      - version
+                      - text
+                  calls:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CallView"
+                required:
+                  - consent
+                  - calls
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call/{id}":
+    get:
+      operationId: getCallId
+      tags:
+        - call
+      summary: "Созвон: статус, транскрипт, вердикт"
+      description: "статус, транскрипт и вердикт с учётом роли: кандидату — всё; работодателю до принятого приглашения — только оценки по темам (`access: summary`), после — всё.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Созвон с учётом роли"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/CallView"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Нет созвона или нет доступа"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/audio":
+    post:
+      operationId: postCallIdAudio
+      tags:
+        - call
+      summary: "Сегмент голоса кандидата"
+      description: "сегмент голоса кандидата (LPCM 16 бит моно 16 кГц, `audio/l16`, до 3 МБ): сохраняется файлом созвона; при STT=yandex сразу распознаётся. Ответ `{audioRef, text}` → `/turn`.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "LPCM 16 бит, моно, 16 кГц, до 3 МБ (~90 с)"
+        content:
+          "audio/l16":
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: "Сегмент сохранён (WAV на диске); `text` — распознано SpeechKit или null (распознаёт браузер)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  audioRef:
+                    type: string
+                    description: "Имя сегмента NNN.wav"
+                  text:
+                    oneOf:
+                      -
+                        type: string
+                      -
+                        type: "null"
+                required:
+                  - audioRef
+                  - text
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Созвон завершён, лимит сегментов или параллельная загрузка"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "413":
+          description: "Сегмент длиннее ~90 секунд"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/events":
+    get:
+      operationId: getCallIdEvents
+      tags:
+        - call
+      summary: "События созвона (SSE)"
+      description: "поток событий созвона (SSE, `text/event-stream`): первым `snapshot`, дальше `utterance`, `status`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error`. Кадр — `event: <type>` + `data: <json>`. Работодатель без доступа к записи получает только статус и оценки.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Поток `text/event-stream`: кадры `event: <type>` + `data: <json>` (схема CallEvent), первым — snapshot; пинг-комментарий раз в 15 с"
+          content:
+            "text/event-stream":
+              schema:
+                $ref: "#/components/schemas/CallEvent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/finish":
+    post:
+      operationId: postCallIdFinish
+      tags:
+        - call
+      summary: "Завершить созвон и получить карту глубины"
+      description: "завершить созвон: слепой оценщик (3 прогона, медиана) строит карту глубины; подтверждённые темы поднимают утверждения до platform. Повтор после 503 — пересчёт.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Созвон с вердиктом (без ответов — cancelled без вердикта)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/CallView"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Оценка уже идёт или созвон закрыт без оценки"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: "Оценщик недоступен (`llm_unavailable`); ответы сохранены. Запусков оценщика на созвон не больше 3 — после третьего сбоя созвон закрывается (cancelled)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  "/api/call/{id}/recording":
+    get:
+      operationId: getCallIdRecording
+      tags:
+        - call
+      summary: "Аудио ответов кандидата"
+      description: "аудио ответов кандидата одним WAV (или один сегмент). Кандидату — всегда; работодателю — только после принятого приглашения (иначе 403).\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: segment
+          in: query
+          required: false
+          description: "Один сегмент NNN.wav; без параметра — все сегменты одним WAV"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "WAV (PCM 16 бит, 16 кГц)"
+          content:
+            "audio/wav":
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Работодатель без принятого приглашения"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: "Нет созвона, нет доступа или аудио не записывалось"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/turn":
+    post:
+      operationId: postCallIdTurn
+      tags:
+        - call
+      summary: "Реплика кандидата"
+      description: "реплика кандидата; в ответе следующая реплика ИИ `{text, done}` (озвучивает клиент через /api/tts). Без text — сервер распознаёт сегмент audioRef.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/TurnBody"
+      responses:
+        "200":
+          description: "Реплика кандидата и следующая реплика ИИ (`ai: null` — ИИ выключен работодателем); `done: true` — вопросы закончились, дальше finish"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  candidate:
+                    type: object
+                    additionalProperties: true
+                    description: "Реплика кандидата"
+                  ai:
+                    oneOf:
+                      -
+                        type: object
+                        additionalProperties: true
+                        description: "Реплика ИИ"
+                      -
+                        type: "null"
+                  text:
+                    oneOf:
+                      -
+                        type: string
+                      -
+                        type: "null"
+                  audioUrl:
+                    type: string
+                    description: "Зарезервировано; озвучка — через /api/tts"
+                  done:
+                    type: boolean
+                required:
+                  - candidate
+                  - ai
+                  - text
+                  - done
+        "400":
+          description: "Пустой текст ответа: распознаёт /audio или браузер, /turn сам STT не зовёт"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Чужой созвон или сегмент аудио"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Созвон завершён или ответ уже принят"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call/consent":
+    post:
+      operationId: postCallConsent
+      tags:
+        - call
+      summary: "Согласие на запись созвона"
+      description: "согласие на запись созвона (транскрипт и аудио). Повтор — без дубля.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/CallConsentBody"
+      responses:
+        "201":
+          description: "Согласие записано (повтор не создаёт дубля)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  acceptedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - version
+                  - acceptedAt
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "Версия текста устарела — обновить страницу"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call/start":
+    post:
+      operationId: postCallStart
+      tags:
+        - call
+      summary: "Начать созвон"
+      description: "начать созвон с ИИ (или продолжить активный). Перед первым созвоном нужно согласие на запись (409 `call_consent_required`). kind=defense — lane defense-room.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/StartCallBody"
+      responses:
+        "200":
+          description: "Продолжен активный созвон (`resumed: true`)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Та же форма, что у 201"
+        "201":
+          description: "Новый созвон: первая реплика ИИ в transcript"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                  resumed:
+                    type: boolean
+                  webrtc:
+                    type: object
+                    properties:
+                      iceServers:
+                        type: array
+                        items:
+                          type: object
+                    required:
+                      - iceServers
+                  call:
+                    $ref: "#/components/schemas/CallView"
+                required:
+                  - sessionId
+                  - resumed
+                  - webrtc
+                  - call
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "Нет согласия на запись (`call_consent_required`, `details.version`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Лимит созвонов в сутки (`call_limit`, env CALL_DAILY_LIMIT; 0 — без лимита)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/claims/{id}/{action}":
@@ -1668,99 +2063,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/employer/company":
-    get:
-      operationId: getEmployerCompany
-      tags:
-        - employer
-      summary: "Профиль своей компании"
-      description: "профиль своей компании (R-E-01).\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Название, описание, отрасль, ИНН и контакт компании"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  name:
-                    type: string
-                  description:
-                    type: string
-                  industry:
-                    type: string
-                  inn:
-                    type: string
-                  contact:
-                    type: string
-                required:
-                  - id
-                  - name
-                  - description
-                  - industry
-                  - inn
-                  - contact
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    patch:
-      operationId: patchEmployerCompany
-      tags:
-        - employer
-      summary: "Изменить профиль своей компании"
-      description: "Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/CompanyPatch"
-      responses:
-        "200":
-          description: "Профиль компании после правки"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  name:
-                    type: string
-                  description:
-                    type: string
-                  industry:
-                    type: string
-                  inn:
-                    type: string
-                  contact:
-                    type: string
-                required:
-                  - id
-                  - name
-                  - description
-                  - industry
-                  - inn
-                  - contact
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/invitations":
@@ -3298,6 +3600,176 @@ components:
       name: cid
       description: "Подписанная сессионная кука платформы"
   schemas:
+    CallConsentBody:
+      type: object
+      properties:
+        version:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - version
+    CallEvent:
+      description: "Кадр SSE созвона: `event: <type>` + `data: <json>`; `type` — различитель. Enum типов — CALL_EVENT_TYPES (server/call/types.ts); participant / mute / question / signal шлёт lane defense-room. Работодатель без доступа к записи получает только status, participant и verdict (без цитат)"
+      oneOf:
+        -
+          type: object
+          properties:
+            type:
+              const: snapshot
+            call:
+              $ref: "#/components/schemas/CallView"
+          required:
+            - type
+            - call
+          description: "Первый кадр: состояние созвона для этой роли"
+        -
+          type: object
+          properties:
+            type:
+              const: status
+            status:
+              type: string
+              enum:
+                - active
+                - finished
+                - cancelled
+          required:
+            - type
+            - status
+          description: "Сменился статус"
+        -
+          type: object
+          properties:
+            type:
+              const: utterance
+            entry:
+              type: object
+              additionalProperties: true
+              description: "Реплика транскрипта {index, role, text, at, tMs, audioRef?, meta?}"
+          required:
+            - type
+            - entry
+          description: "Новая реплика"
+        -
+          type: object
+          properties:
+            type:
+              const: ai_state
+            state:
+              type: string
+              enum:
+                - thinking
+                - idle
+          required:
+            - type
+            - state
+          description: "ИИ готовит реплику / закончил"
+        -
+          type: object
+          properties:
+            type:
+              const: participant
+            userId:
+              type: string
+            role:
+              type: string
+              enum:
+                - employer
+            action:
+              type: string
+              enum:
+                - joined
+                - left
+          required:
+            - type
+            - userId
+            - role
+            - action
+          description: "Участник вошёл или вышел"
+        -
+          type: object
+          properties:
+            type:
+              const: mute
+            aiMuted:
+              type: boolean
+            userId:
+              type: string
+          required:
+            - type
+            - aiMuted
+            - userId
+          description: "Работодатель выключил/включил ИИ"
+        -
+          type: object
+          properties:
+            type:
+              const: question
+            questionId:
+              type: string
+            status:
+              type: string
+              enum:
+                - queued
+                - asked
+                - answered
+          required:
+            - type
+            - questionId
+            - status
+          description: "Вопрос работодателя"
+        -
+          type: object
+          properties:
+            type:
+              const: verdict
+            verdict:
+              type: object
+              additionalProperties: true
+              description: "Карта глубины: depthMap [{topic, catalogId, claimed, probed, maxLevel, confirmed, scores, total, quote}], summary, runs, validRuns, upgradedCatalogIds"
+          required:
+            - type
+            - verdict
+          description: "Готов вердикт оценщика"
+        -
+          type: object
+          properties:
+            type:
+              const: signal
+            from:
+              type: string
+            to:
+              type: string
+            payload:
+              type: object
+              additionalProperties: true
+              description: "SDP или ICE-кандидат"
+          required:
+            - type
+            - from
+            - payload
+          description: "Сигналинг WebRTC (defense-room)"
+        -
+          type: object
+          properties:
+            type:
+              const: error
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - type
+            - code
+            - message
+          description: "Ошибка на сервере"
+      discriminator:
+        propertyName: type
+    CallView:
+      type: object
+      additionalProperties: true
+      description: "Созвон глазами роли: id, kind (qualifying | defense), status (active | finished | cancelled), projectSubmissionId, startedAt, finishedAt, access (full | summary), transcript — реплики {index, role: ai | candidate | employer, text, at, tMs, audioRef?, meta?} или null при summary, verdict (карта глубины; при summary — без цитат), hasRecording, progress {answered, minQuestions, maxQuestions, canFinish, awaitingAnswer}, participants, policyVersion, disclaimer"
     CandidateContactInput:
       type: object
       properties:
@@ -3368,36 +3840,6 @@ components:
         - status
         - confirmedAt
       description: "Утверждение кандидата с уровнем доказанности"
-    CompanyPatch:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 2
-          maxLength: 120
-        description:
-          anyOf:
-            -
-              type: string
-              maxLength: 600
-            -
-              type: "null"
-        industry:
-          anyOf:
-            -
-              type: string
-              maxLength: 80
-            -
-              type: "null"
-        inn:
-          type:
-            - string
-            - "null"
-        contact:
-          type:
-            - string
-            - "null"
-      additionalProperties: false
     ConsultantEvent:
       description: "Кадр SSE хода консультанта (`type` — различитель)"
       oneOf:
@@ -3546,6 +3988,18 @@ components:
             - type
             - items
           description: "Рекомендации для карточек в чате"
+        -
+          type: object
+          properties:
+            type:
+              const: call_offer
+            reason:
+              type: string
+              description: "Зачем созвон, одной фразой"
+          required:
+            - type
+            - reason
+          description: "Агент предлагает созвон (suggest_call): кнопка «Созвониться» в ленте"
       discriminator:
         propertyName: type
     EmployerEvent:
@@ -3773,6 +4227,30 @@ components:
           type: boolean
       required:
         - hiddenFromEmployers
+    StartCallBody:
+      type: object
+      properties:
+        kind:
+          default: qualifying
+          type: string
+          enum:
+            - qualifying
+            - defense
+        projectSubmissionId:
+          type: string
+          minLength: 1
+          maxLength: 64
+    TurnBody:
+      type: object
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+        audioRef:
+          type: string
+          pattern: "^\\d{3}\\.wav$"
+      required:
+        - text
     VacancyInput:
       type: object
       properties:

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { catalogFromFile } from '@/server/claims/catalog-file';
-import { CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
+import { CALL_RECORDING_CONSENT_PARAGRAPHS, CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
 import {
   AnswerError,
   answerLabel,
@@ -281,7 +281,7 @@ describe('реплики помощника', () => {
   });
   it('текст согласия совпадает с docs/consent.md', () => {
     const md = readFileSync(path.join(process.cwd(), '../docs/consent.md'), 'utf8').replace(/\s+/g, ' ');
-    for (const p of CONSENT_PARAGRAPHS) expect(md).toContain(p);
+    for (const p of [...CONSENT_PARAGRAPHS, ...CALL_RECORDING_CONSENT_PARAGRAPHS]) expect(md).toContain(p);
   });
 });
 

@@ -4,7 +4,7 @@
 //    после accepted — всё; участник комнаты (defense-room) — транскрипт вживую, запись — только после accepted.
 import { prisma } from '../db';
 import { errors } from '../errors';
-import type { CallAccess, CallVerdict, PublicCallVerdict } from './types';
+import type { CallAccess, CallEvent, CallVerdict, PublicCallVerdict } from './types';
 
 export interface CallPrincipal {
   role: 'candidate' | 'employer';
@@ -70,4 +70,15 @@ export function publicVerdict(v: CallVerdict): PublicCallVerdict {
     evaluatedAt: v.evaluatedAt,
     thresholdVersion: v.thresholdVersion,
   };
+}
+
+/** Что видит зритель с access=summary в SSE: только статус, участники и оценки (вердикт без цитат). */
+const SUMMARY_EVENTS = new Set<CallEvent['type']>(['status', 'participant', 'verdict']);
+
+/** Событие шины → что можно отдать этому зрителю; null — не отдавать. */
+export function eventForAccess(ev: CallEvent, access: CallAccess): CallEvent | null {
+  if (access === 'full') return ev;
+  if (!SUMMARY_EVENTS.has(ev.type)) return null;
+  if (ev.type === 'verdict' && 'runs' in ev.verdict) return { type: 'verdict', verdict: publicVerdict(ev.verdict as CallVerdict) };
+  return ev;
 }

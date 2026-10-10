@@ -33,12 +33,20 @@ export interface EvaluatorPayload {
 
 const REDACTED = '[фрагмент профиля скрыт от оценщика]';
 
-/** Вырезать из вопросов факты резюме, которые интервьюер мог процитировать. */
+const PREFIX_CHARS = 40;
+
+/**
+ * Вырезать из вопросов факты резюме, которые интервьюер мог процитировать: дословно целиком или
+ * усечённым началом (≥ 40 символов). Пересказ факта так не ловится — его запрещает промпт интервьюера,
+ * а промпт оценщика не засчитывает кандидату сказанное в вопросе.
+ */
 export function redactFacts(text: string, facts: readonly string[]): string {
   let out = text;
   for (const f of facts) {
-    const s = f.trim();
-    if (s.length >= 8) out = out.split(s).join(REDACTED);
+    const s = f.replace(/\s+/g, ' ').trim();
+    if (s.length < 8) continue;
+    out = out.split(s).join(REDACTED);
+    if (s.length > PREFIX_CHARS) out = out.split(s.slice(0, PREFIX_CHARS)).join(REDACTED);
   }
   return out;
 }

@@ -16,13 +16,15 @@ export type StartCallBody = z.infer<typeof StartCallBody>;
 /** Реплика кандидата: текст (набран или распознан) и/или сегмент аудио из POST /api/call/{id}/audio. */
 export const TurnBody = z
   .object({
-    text: z.string().max(MAX_UTTERANCE_CHARS).optional(),
+    // Текст обязателен: распознаёт /audio (SpeechKit) или браузер. /turn сам STT не зовёт — иначе
+    // при пустом тексте сегмент распознавался бы второй раз.
+    text: z.string().max(MAX_UTTERANCE_CHARS),
     audioRef: z
       .string()
       .regex(/^\d{3}\.wav$/, 'audioRef — имя сегмента из /audio')
       .optional(),
   })
-  .refine((b) => (b.text?.trim().length ?? 0) > 0 || b.audioRef, { message: 'Нужен текст или audioRef' });
+  .refine((b) => b.text.trim().length > 0, { message: 'Нужен текст ответа', path: ['text'] });
 export type TurnBody = z.infer<typeof TurnBody>;
 
 export const CallConsentBody = z.object({ version: z.string().min(1).max(64) });

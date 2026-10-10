@@ -67,9 +67,9 @@ export const SUBCATEGORIES: readonly SubcategoryDef[] = [
   { id: 'backend.data-model', specialization: 'backend', title: 'Модель данных', description: 'Миграции, транзакции, конкурентные обновления', status: 'active', order: 4 },
 
   { id: 'frontend.ui-app', specialization: 'frontend', title: 'UI-приложение', description: 'SPA из макета: компоненты, формы, состояние, роутинг', status: 'active', order: 1 },
-  { id: 'frontend.design-system', specialization: 'frontend', title: 'Дизайн-система', description: 'Библиотека компонентов, доступность, темизация', status: 'planned', order: 2 },
-  { id: 'frontend.web-perf', specialization: 'frontend', title: 'Производительность', description: 'Профилирование страницы, бандл, SSR и метрики', status: 'planned', order: 3 },
-  { id: 'frontend.realtime', specialization: 'frontend', title: 'Realtime', description: 'WebSocket/SSE, оптимистичные обновления, восстановление соединения', status: 'planned', order: 4 },
+  { id: 'frontend.design-system', specialization: 'frontend', title: 'Дизайн-система', description: 'Библиотека компонентов, доступность, темизация', status: 'active', order: 2 },
+  { id: 'frontend.web-perf', specialization: 'frontend', title: 'Производительность', description: 'Профилирование страницы, бандл, SSR и метрики', status: 'active', order: 3 },
+  { id: 'frontend.realtime', specialization: 'frontend', title: 'Realtime', description: 'WebSocket/SSE, оптимистичные обновления, восстановление соединения', status: 'active', order: 4 },
 
   { id: 'ai.llm-apps', specialization: 'ai', title: 'LLM-приложения', description: 'Промпты, структурированный вывод, RAG, tool-use, оценка качества', status: 'active', order: 1 },
   { id: 'ai.ai-integration', specialization: 'ai', title: 'AI-интеграция', description: 'LLM/ML-сервис в существующей системе: отказы, наблюдаемость, ПДн, fallback', status: 'active', order: 2 },

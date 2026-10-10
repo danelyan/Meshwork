@@ -14,6 +14,8 @@ import styles from './shell.module.css';
 
 const ROLE_LABEL = { candidate: 'Кандидат', employer: 'Работодатель' } as const;
 const BECOME_LABEL = { candidate: 'Стать кандидатом', employer: 'Стать работодателем' } as const;
+/** Тихий пункт внизу меню, когда второго профиля нет: роль не выдаём за существующую. */
+const CREATE_ITEM = { candidate: 'Ищу работу - создать профиль кандидата', employer: 'Я ещё и нанимаю - создать компанию' } as const;
 
 /** Куда ведёт переход после ответа API; вынесено, чтобы тест подменил навигацию. */
 export type Navigate = (href: string) => void;
@@ -41,8 +43,9 @@ export function initialsOf(name: string, email: string | null): string {
  * `aria-expanded`/`aria-controls` + панель), а не `role=menu`: в панели есть форма создания профиля, а меню-семантика
  * её не допускает. Стрелки ↑/↓ ходят по пунктам, Escape закрывает и возвращает фокус на кнопку, клик вне,
  * уход фокуса (Tab) и переход по ссылке закрывают.
- * Роль: второй профиль есть - переключаем сразу; нет - шаг подтверждения (профиль с ПДн одним кликом не создаём;
- * работодателю - ещё и название компании); общий демо-аккаунт - пункт неактивен. После ответа - полная
+ * Роль: переключатель ролей показываем, только когда оба профиля есть (решение владельца 10.10 «показывать честно»).
+ * Второго профиля нет - внизу тихий пункт «создать…» и шаг подтверждения (профиль с ПДн одним кликом не создаём;
+ * работодателю - ещё и название компании); на общем демо-аккаунте этого пункта нет. После ответа - полная
  * навигация на `next`: дом обеих ролей один адрес /consultant, клиентское состояние прежней роли должно сброситься.
  */
 export function AccountMenu({ account, navigate = fullNavigation }: { account: HeaderAccount; navigate?: Navigate }) {
@@ -100,9 +103,8 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
   };
 
   const pickRole = (role: ActiveRole) => {
-    if (!menu || role === menu.role || busy) return;
-    if (menu.otherExists) void go({ role });
-    else setConfirming(true);
+    if (!menu?.otherExists || role === menu.role || busy) return;
+    void go({ role });
   };
 
   const onConfirm = (e: FormEvent) => {
@@ -153,24 +155,21 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
     if (role === 'employer') return menu?.companyName ? `Работодатель · ${menu.companyName}` : ROLE_LABEL.employer;
     return ROLE_LABEL.candidate;
   };
-  const demoLocked = menu !== null && !menu.otherExists && !menu.canCreateOther;
+  const canCreate = menu !== null && !menu.otherExists && menu.canCreateOther;
 
   const roleItem = (role: ActiveRole) => {
     const active = role === menu?.role;
-    const locked = !active && demoLocked;
     return (
       <button
         key={role}
         type="button"
         className={styles.menuItem}
         aria-current={active ? 'true' : undefined}
-        disabled={locked}
         onClick={() => pickRole(role)}
       >
         <span className={styles.radio} aria-hidden="true" data-on={active || undefined} />
         <span className={styles.menuLabel}>{roleLabel(role)}</span>
         {active && <VisuallyHidden> (активная роль)</VisuallyHidden>}
-        {locked && <span className={styles.menuHint}>Недоступно на демо-аккаунте</span>}
       </button>
     );
   };
@@ -206,13 +205,28 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
             <strong>{account.userName}</strong>
             {account.userEmail && <span>{account.userEmail}</span>}
           </div>
-          {menu && (
+          {menu?.otherExists && (
             <div className={styles.menuGroup} role="group" aria-label="Роль">
               {roleItem('employer')}
               {roleItem('candidate')}
             </div>
           )}
-          {menu && confirming && (
+          {error && !confirming && (
+            <p role="alert" className={styles.roleError}>
+              {error}
+            </p>
+          )}
+          {menu?.role === 'employer' && (
+            <Link className={styles.menuItem} href="/employer/company">
+              Профиль компании
+            </Link>
+          )}
+          {menu && canCreate && !confirming && (
+            <button type="button" className={`${styles.menuItem} ${styles.menuQuiet}`} onClick={() => setConfirming(true)}>
+              {CREATE_ITEM[menu.other]}
+            </button>
+          )}
+          {menu && canCreate && confirming && (
             <form className={styles.rolePanel} onSubmit={onConfirm} aria-label={BECOME_LABEL[menu.other]}>
               <p className={styles.roleText}>{CREATE_TEXT[menu.other]}</p>
               {needsCompany ? (
@@ -235,16 +249,6 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
                 </Button>
               </div>
             </form>
-          )}
-          {error && !confirming && (
-            <p role="alert" className={styles.roleError}>
-              {error}
-            </p>
-          )}
-          {menu?.role === 'employer' && (
-            <Link className={styles.menuItem} href="/employer/company">
-              Профиль компании
-            </Link>
           )}
           <hr className={styles.menuSep} />
           <button type="button" className={styles.menuItem} onClick={() => void logout()}>

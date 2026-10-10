@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 // ADR 0004: переключение роли на одной учётке. «Новый пользователь» с /demo (личный демо-аккаунт; на общих
-// сид-аккаунтах вторую роль не создать) → кандидат → «Стать работодателем» → режим работодателя и обратно.
+// сид-аккаунтах вторую роль не создать) → кандидат → «Я ещё и нанимаю - создать компанию» → режим работодателя и обратно.
 test('E-05: кандидат становится работодателем на той же учётке и возвращается', async ({ page }) => {
   await page.goto('/demo');
   await page.getByRole('checkbox', { name: /Согласен\(на\) на обработку персональных данных/ }).check();
@@ -21,7 +21,7 @@ test('E-05: кандидат становится работодателем н�
     }).toPass({ timeout: 15_000 });
   await expect(account).toContainText('Кандидат');
   await openAccount();
-  await header.getByRole('button', { name: 'Работодатель' }).click();
+  await header.getByRole('button', { name: 'Я ещё и нанимаю - создать компанию' }).click();
   await header.getByLabel('Название компании').fill('ООО Переключатель');
   await header.getByRole('button', { name: 'Создать' }).click();
 

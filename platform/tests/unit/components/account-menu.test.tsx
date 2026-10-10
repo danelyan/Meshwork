@@ -98,7 +98,8 @@ describe('AccountMenu', () => {
 
   it('работодатель без профиля кандидата: сначала подтверждение, потом API', async () => {
     openMenu({ ...employer, otherExists: false, canCreateOther: true });
-    fireEvent.click(screen.getByRole('button', { name: 'Кандидат' }));
+    expect(screen.queryByRole('group', { name: 'Роль' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Ищу работу - создать профиль кандидата' }));
     expect(switchRoleApi).not.toHaveBeenCalled();
     expect(screen.getByRole('form', { name: 'Стать кандидатом' }).textContent).toContain('профиль кандидата');
     fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
@@ -108,7 +109,7 @@ describe('AccountMenu', () => {
 
   it('кандидат без профиля работодателя: компания от 2 символов (aria-invalid), затем API с названием', async () => {
     openMenu({ ...candidate, otherExists: false, canCreateOther: true });
-    fireEvent.click(screen.getByRole('button', { name: 'Работодатель' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Я ещё и нанимаю - создать компанию' }));
     fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
     const input = screen.getByLabelText('Название компании');
     expect(input.getAttribute('aria-invalid')).toBe('true');
@@ -122,19 +123,22 @@ describe('AccountMenu', () => {
 
   it('«Отмена» закрывает шаг подтверждения, меню остаётся', () => {
     openMenu({ ...candidate, otherExists: false, canCreateOther: true });
-    fireEvent.click(screen.getByRole('button', { name: 'Работодатель' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Я ещё и нанимаю - создать компанию' }));
     fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
     expect(screen.queryByRole('form')).toBeNull();
     expect(screen.getByText('ivan@example.ru')).toBeTruthy();
   });
 
-  it('общий демо-аккаунт: вторая роль неактивна с пояснением', () => {
+  it('общий демо-аккаунт без второго профиля: ни переключателя, ни пункта «создать…»', () => {
     openMenu({ ...candidate, otherExists: false, canCreateOther: false });
-    const item = screen.getByRole('button', { name: /Работодатель/ }) as HTMLButtonElement;
-    expect(item.disabled).toBe(true);
-    expect(item.textContent).toContain('Недоступно на демо-аккаунте');
-    fireEvent.click(item);
-    expect(switchRoleApi).not.toHaveBeenCalled();
+    expect(screen.queryByRole('group', { name: 'Роль' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Работодатель|создать/ })).toBeNull();
+  });
+
+  it('оба профиля есть: переключатель ролей, пункта «создать…» нет', () => {
+    openMenu(candidate);
+    expect(screen.getByRole('group', { name: 'Роль' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /создать/ })).toBeNull();
   });
 
   it('двойной клик по роли — один запрос', () => {

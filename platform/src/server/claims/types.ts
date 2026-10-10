@@ -81,9 +81,9 @@ export interface CatalogMeta {
   id: string;
   /** Вес по грейдам; у common — отдельно по специализациям. null — в грейде не ожидается. */
   weights:
-    | { junior: number | null; middle: number | null }
+    | { junior: number | null; middle: number | null; senior?: number | null }
     /** Общие записи: по специализациям. Направление без ключа — запись для него не ожидается (lane directions). */
-    | Partial<Record<Specialization, { junior: number | null; middle: number | null }>>;
+    | Partial<Record<Specialization, { junior: number | null; middle: number | null; senior?: number | null }>>;
   /** Квалификатор stack (каталог § 2.2): кандидат указывает технологию. null — нет. */
   stack: { kind: string | null } | null;
   /** Смежные утверждения (половинный зачёт, каталог § 6), в обе стороны. */

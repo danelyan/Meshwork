@@ -23,6 +23,11 @@
 //   npx tsx eval/test/subcategory-personas.ts                       # N = 1000 на персону и заявленный грейд
 //   npx tsx eval/test/subcategory-personas.ts --n 400 --sub ai.mlops
 //   npx tsx eval/test/subcategory-personas.ts --senior-cut 0.8      # другой порог Senior
+//   npx tsx eval/test/subcategory-personas.ts --spec frontend --profiles frontend   # профили лейна gen-frontend
+//
+// --profiles frontend — набор профилей лейна gen-frontend (был в eval/test/personas-subcategory.ts, слит сюда при
+// интеграции 10.10): N, NB, J, JS, M, MS, S, SS (Senior с одной слабой темой), JI. Отличается от набора ADR
+// шаблонами строк (у JS слабая тема — самая трудная Junior-тема наполовину, а не перебор всех).
 //
 // Честная граница: симуляция профилей знаний, не живые люди; a и b — экспертные.
 import { SUBCATEGORIES } from '../../src/lib/directions';
@@ -59,6 +64,8 @@ interface Profile {
   s: number[];
   weak?: { grade: Grade; count: number };
   control?: boolean;
+  /** «С одной слабой темой» без перебора (набор gen-frontend): цель 0,85, а не 0,90. */
+  slack?: boolean;
 }
 
 const Y = 1;
@@ -74,6 +81,21 @@ const PROFILES: Profile[] = [
   { id: 'S', name: 'Senior', truth: 'senior', j: [Y, Y, Y, Y, Y, Y], m: [Y, Y, Y, Y], s: [Y, Y, Y, H] },
   { id: 'JI', name: 'идеальный Junior (контроль)', truth: 'junior', j: [Y, Y, Y, Y, Y, Y], m: [X, X, X, X], s: [X, X, X, X], control: true },
 ];
+
+/** Набор лейна gen-frontend (личные профили; короче строки — добивается последним значением). */
+const NONE = [X, X, X, X, X, X];
+const FRONTEND_PROFILES: Profile[] = [
+  { id: 'N', name: 'новичок: курсы 3 мес., знает самое лёгкое', truth: 'below', j: [H, H, X, X, X, X], m: NONE, s: NONE },
+  { id: 'NB', name: 'пограничный новичок: стажёр 6 мес., два лёгких верно, третье наполовину', truth: 'below', j: [Y, Y, H, X, X, X], m: NONE, s: NONE },
+  { id: 'J', name: 'уверенный Junior, 1,5 года опыта', truth: 'junior', j: [Y, Y, Y, Y, Y, Y], m: [H, X, X, X, X, X], s: NONE },
+  { id: 'JS', name: 'Junior с одной слабой темой: пять Junior-тем верно, самая трудная наполовину', truth: 'junior', j: [Y, Y, Y, Y, Y, H], m: [H, X, X, X, X, X], s: NONE, slack: true },
+  { id: 'M', name: 'Middle, 4 года опыта', truth: 'middle', j: [Y, Y, Y, Y, Y, Y], m: [Y, Y, Y, Y, Y, Y], s: [H, X, X, X] },
+  { id: 'MS', name: 'Middle с одной слабой темой: самая трудная пара Middle наполовину', truth: 'middle', j: [Y, Y, Y, Y, Y, Y], m: [Y, Y, Y, Y, H, H], s: [H, X, X, X], slack: true },
+  { id: 'S', name: 'Senior, 8 лет опыта', truth: 'senior', j: [Y, Y, Y, Y, Y, Y], m: [Y, Y, Y, Y, Y, Y], s: [Y, Y, Y, Y] },
+  { id: 'SS', name: 'Senior с одной слабой темой (сверх списка ADR): три Senior-темы верно, самая трудная наполовину', truth: 'senior', j: [Y, Y, Y, Y, Y, Y], m: [Y, Y, Y, Y, Y, Y], s: [Y, Y, Y, H], slack: true },
+  { id: 'JI', name: 'контроль: все Junior верно, остальное неверно', truth: 'junior', j: [Y, Y, Y, Y, Y, Y], m: NONE, s: NONE, control: true },
+];
+const ACTIVE_PROFILES = argStr('profiles') === 'frontend' ? FRONTEND_PROFILES : PROFILES;
 
 interface Outcome {
   confirmed: boolean;
@@ -169,7 +191,7 @@ for (const sub of subs) {
   console.log(`## ${sub.id} (${sub.title}): ${pool.length} семейств\n`);
   console.log('| Персона | Уровень | P(Junior) | P(Middle) | P(Senior) | Middle → Junior в 1 клик | Senior → Middle в 1 клик | Длина J / M / S | Дозадавание J / M / S |');
   console.log('|---|---|---|---|---|---|---|---|---|');
-  PROFILES.forEach((p, pi) => {
+  ACTIVE_PROFILES.forEach((p, pi) => {
     const runs = p.weak ? Array.from({ length: p.weak.count }, (_, w) => runProfile(pool, p, pi, w)) : [runProfile(pool, p, pi, null)];
     // Для «слабой темы» — худший вариант по своему грейду (и среднее в скобках).
     const own: Grade = p.truth === 'below' ? 'junior' : p.truth;
@@ -187,13 +209,13 @@ for (const sub of subs) {
     if (p.truth === 'below') check(worst.junior.confirm <= 0.1, `ложный Junior ${f2(worst.junior.confirm)} > 0.10`);
     if (p.truth === 'junior') {
       check(worst.middle.confirm <= 0.1, `ложный Middle ${f2(worst.middle.confirm)} > 0.10`);
-      check(worst.junior.confirm >= (p.weak ? 0.85 : 0.9), `Junior ${f2(worst.junior.confirm)} < ${p.weak ? '0.85' : '0.90'}`);
+      check(worst.junior.confirm >= (p.weak || p.slack ? 0.85 : 0.9), `Junior ${f2(worst.junior.confirm)} < ${p.weak || p.slack ? '0.85' : '0.90'}`);
     }
     if (p.truth === 'middle') {
       check(worst.senior.confirm <= 0.1, `ложный Senior ${f2(worst.senior.confirm)} > 0.10`);
-      check(worst.middle.confirm >= (p.weak ? 0.85 : 0.9), `Middle ${f2(worst.middle.confirm)} < ${p.weak ? '0.85' : '0.90'}`);
+      check(worst.middle.confirm >= (p.weak || p.slack ? 0.85 : 0.9), `Middle ${f2(worst.middle.confirm)} < ${p.weak || p.slack ? '0.85' : '0.90'}`);
     }
-    if (p.truth === 'senior') check(worst.senior.confirm >= 0.9, `Senior ${f2(worst.senior.confirm)} < 0.90`);
+    if (p.truth === 'senior') check(worst.senior.confirm >= (p.slack ? 0.85 : 0.9), `Senior ${f2(worst.senior.confirm)} < ${p.slack ? '0.85' : '0.90'}`);
   });
   console.log('');
 }

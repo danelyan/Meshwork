@@ -1,10 +1,10 @@
 import 'server-only';
 
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 
-import { type PageLevel, foreignPageRedirect, pageLevelFor } from '@/server/auth/access';
+import { type PageLevel, authRedirect, foreignPageRedirect, pageLevelFor } from '@/server/auth/access';
 import { sessionExists } from '@/server/auth/stale';
 import { SESSION_COOKIE, type SessionPrincipal, parseSession } from '@/server/session';
 
@@ -31,7 +31,7 @@ export async function getPageSession(): Promise<SessionPrincipal | null> {
  * /api/auth/stale, который удаляет куку и ведёт на /auth.
  */
 async function guestRedirect(next: string, stale: boolean): Promise<never> {
-  return redirect(stale ? `/api/auth/stale?next=${encodeURIComponent(next)}` : `/auth?next=${encodeURIComponent(next)}`);
+  return redirect(authRedirect(next, stale));
 }
 
 /**
@@ -58,12 +58,17 @@ export async function requirePageAccess(path: string): Promise<SessionPrincipal 
 }
 
 /**
- * Типизированный гвард уровня: запись страницы в таблице обязана совпадать с уровнем гварда — иначе ошибка
- * разработчика (страница вызвала не тот гвард); статический тест ловит то же до запуска.
+ * Типизированный гвард уровня. Нет записи для пути (например, id с `/` дал адрес глубже таблицы) — 404:
+ * закрыто, но не 500. Запись есть, а уровень не тот — ошибка разработчика (не тот гвард): вне production
+ * исключение, в production 404; статический тест ловит то же до запуска.
  */
 async function requirePageLevel(level: Exclude<PageLevel, 'public'>, path: string): Promise<SessionPrincipal> {
   const actual = pageLevelFor(path);
-  if (actual !== level) throw new Error(`Гвард уровня ${level} на странице ${path}: в PAGE_ACCESS — ${actual ?? 'нет записи'}`);
+  if (actual === null) notFound();
+  if (actual !== level) {
+    if (process.env.NODE_ENV !== 'production') throw new Error(`Гвард уровня ${level} на странице ${path}: в PAGE_ACCESS — ${actual}`);
+    notFound();
+  }
   return (await requirePageAccess(path)) as SessionPrincipal;
 }
 

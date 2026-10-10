@@ -39,14 +39,25 @@ function sampleOf(pattern: string): string {
   return pattern.replace(/\[([^\]]+)\]/g, 'sample-$1');
 }
 
+/**
+ * Код без комментариев: гвард в `//…` или `/*…*​/` не считается вызовом. Строки и шаблоны не разбираем
+ * (`//` внутри строки `https://…` вырезать нельзя) — сначала прячем литералы, потом режем комментарии.
+ */
+export function stripComments(src: string): string {
+  const lits: string[] = [];
+  const hidden = src.replace(/'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`/g, (m) => `\u0000${lits.push(m) - 1}\u0000`);
+  const cut = hidden.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, '');
+  return cut.replace(/\u0000(\d+)\u0000/g, (_, i) => lits[Number(i)]!);
+}
+
 /** Исходник файла плюс его локальные импорты одного уровня (общая серверная часть страниц-вариантов). */
 function sourceWithLocalImports(file: string): string {
-  const src = readFileSync(file, 'utf8');
+  const src = stripComments(readFileSync(file, 'utf8'));
   const locals = [...src.matchAll(/from '(\.\.?\/[^']+)'/g)].flatMap(([, spec]) => {
     const base = resolve(dirname(file), spec!);
     for (const ext of ['', '.tsx', '.ts']) {
       try {
-        if (statSync(base + ext).isFile()) return [readFileSync(base + ext, 'utf8')];
+        if (statSync(base + ext).isFile()) return [stripComments(readFileSync(base + ext, 'utf8'))];
       } catch {
         // нет такого файла — пробуем следующее расширение
       }
@@ -68,6 +79,30 @@ const PAGE_GUARD: Record<Exclude<PageLevel, 'public'>, RegExp> = {
 };
 const ANY_PAGE_GUARD = /\brequirePage(Account|Candidate|Employer|Access|User)\(/;
 
+/**
+ * Каждый вызов `requirePageAccess(...)` обязан получать строковый литерал с адресом этой страницы:
+ * статичный маршрут — его же (до query), динамический — строку, начинающуюся со статичного префикса.
+ * `requirePageAccess('/')` на чужой странице или переменная вместо адреса — ошибка. Возвращает причины.
+ */
+export function pageAccessArgProblems(code: string, route: string): string[] {
+  const staticPrefix = route.split('/[')[0]!;
+  const dynamic = route.includes('/[');
+  const problems: string[] = [];
+  for (const m of code.matchAll(/\brequirePageAccess\(\s*([^)]*)/g)) {
+    const arg = m[1]!.trim();
+    const lit = /^(['"`])([^'"`]*)/.exec(arg);
+    if (!lit) {
+      problems.push(`аргумент не строковый литерал: ${arg.slice(0, 30)}`);
+      continue;
+    }
+    const value = lit[2]!;
+    const path = value.split(/[?#]/, 1)[0]!;
+    const ok = dynamic ? value.startsWith(`${staticPrefix}/`) : path === route;
+    if (!ok) problems.push(`адрес ${value} не относится к ${route}`);
+  }
+  return problems;
+}
+
 const API_GUARD: Record<Exclude<ApiLevel, 'public'>, (code: string) => boolean> = {
   candidate: (c) => /\brequireCandidate\(req\)/.test(c),
   employer: (c) => /\brequireEmployer\(req\)/.test(c),
@@ -78,11 +113,42 @@ const API_GUARD: Record<Exclude<ApiLevel, 'public'>, (code: string) => boolean> 
 };
 
 const METHOD_RE = /^export (?:const|async function|function) (GET|POST|PUT|PATCH|DELETE)\b/gm;
+const REEXPORT_RE = /^export \{([^}]*)\}/gm;
 
-/** Код каждого экспортированного обработчика: от его `export` до следующего. */
-function handlers(code: string): Array<[HttpMethod, string]> {
+/**
+ * Код каждого экспортированного обработчика: от его `export` до следующего. Хелпер после последнего
+ * обработчика (то, что идёт после закрытия функции на уровне колонки 0) ему не засчитывается.
+ * Реэкспорт `export { h as POST }` — обработчик с кодом всего файла; если метод так и не распознан
+ * (экспорт неведомой формы), `unrecognizedExports` это ловит.
+ */
+export function handlers(code: string): Array<[HttpMethod, string]> {
   const starts = [...code.matchAll(METHOD_RE)].map((m) => ({ method: m[1] as HttpMethod, at: m.index }));
-  return starts.map((s, i) => [s.method, code.slice(s.at, starts[i + 1]?.at ?? code.length)]);
+  const own = starts.map((s, i): [HttpMethod, string] => {
+    let end = starts[i + 1]?.at ?? code.length;
+    if (i === starts.length - 1) {
+      // Тело последнего обработчика кончается закрытием на нулевой колонке; дальше — хелперы.
+      const close = /^[})]/m.exec(code.slice(s.at + 1));
+      const closeAt = close ? s.at + 1 + close.index : -1;
+      const next = closeAt >= 0 ? /^(?:export |async function |function |const |let |class )/m.exec(code.slice(closeAt)) : null;
+      if (next) end = closeAt + next.index;
+    }
+    return [s.method, code.slice(s.at, end)];
+  });
+  const re: Array<[HttpMethod, string]> = [];
+  for (const m of code.matchAll(REEXPORT_RE)) {
+    for (const part of m[1]!.split(',')) {
+      const as = /\bas\s+(GET|POST|PUT|PATCH|DELETE)\b/.exec(part) ?? /^\s*(GET|POST|PUT|PATCH|DELETE)\s*$/.exec(part);
+      if (as) re.push([as[1] as HttpMethod, code]);
+    }
+  }
+  return [...own, ...re];
+}
+
+/** Экспорты HTTP-методов, которых не распознал `handlers` (например, `export const { GET } = …`). */
+export function unrecognizedExports(code: string): string[] {
+  const found = handlers(code).length;
+  const all = [...code.matchAll(/^export\b[^\n]*\b(?:GET|POST|PUT|PATCH|DELETE)\b/gm)];
+  return all.length > found ? all.map((m) => m[0]) : [];
 }
 
 function levelOf(rule: ApiRule, method: HttpMethod): ApiLevel | undefined {
@@ -122,6 +188,7 @@ describe('матрица страниц: вызов гварда своего у
       expect(code, `${route}: гвард уровня ${other}`).not.toMatch(wrapper);
     }
     expect(code, `${route}: requirePageUser вне таблицы`).not.toMatch(/\brequirePageUser\(/);
+    expect(pageAccessArgProblems(code, route), `${route}: requirePageAccess`).toEqual([]);
     // Гвард получает адрес этой страницы: в исходнике есть строка с её статичной частью.
     const staticPrefix = route.split('/[')[0]!;
     expect(code, `${route}: гварду передан адрес страницы`).toMatch(new RegExp(`['"\`]${staticPrefix.replace(/[/]/g, '\\/')}`));
@@ -138,7 +205,9 @@ describe('матрица API: полнота и вызов гварда', () => 
     expect(Object.keys(API_ACCESS), `${route}: нет записи в API_ACCESS`).toContain(route);
     expect(matchRoute(API_ACCESS, sampleOf(route))).toBe(route);
     const rule: ApiRule = API_ACCESS[route as keyof typeof API_ACCESS];
-    const hs = handlers(readFileSync(file, 'utf8'));
+    const src = stripComments(readFileSync(file, 'utf8'));
+    const hs = handlers(src);
+    expect(unrecognizedExports(src), `${route}: экспорт метода не распознан тестом`).toEqual([]);
     expect(hs.length, `${route}: не найдено ни одного обработчика`).toBeGreaterThan(0);
     for (const [method, code] of hs) {
       const level = levelOf(rule, method);
@@ -169,12 +238,51 @@ describe('server actions', () => {
       const key = relative(SRC, file).split(sep).join('/');
       expect(Object.keys(ACTION_ACCESS), `${key}: нет записи`).toContain(key);
       const level: PageLevel = ACTION_ACCESS[key as keyof typeof ACTION_ACCESS];
-      if (level !== 'public') expect(readFileSync(file, 'utf8'), key).toMatch(PAGE_GUARD[level]);
+      if (level !== 'public') expect(stripComments(readFileSync(file, 'utf8')), key).toMatch(PAGE_GUARD[level]);
     }
   });
 
   it('нет мёртвых записей ACTION_ACCESS', () => {
     const keys = new Set(actionFiles.map((f) => relative(SRC, f).split(sep).join('/')));
     expect(Object.keys(ACTION_ACCESS).filter((k) => !keys.has(k))).toEqual([]);
+  });
+});
+
+describe('мутационные проверки самого теста (фикстуры исходников)', () => {
+  const PAGE = (body: string) => stripComments(body);
+
+  it('гвард в комментарии не засчитывается', () => {
+    const code = PAGE(`// await requirePageCandidate('/profile');\n/* requirePageAccess('/profile') */\nexport default function P() {}`);
+    expect(code).not.toMatch(PAGE_GUARD.candidate);
+  });
+  it('`//` внутри строки не режет код после неё', () => {
+    const code = PAGE(`const u = 'https://x.y'; await requirePageCandidate('/profile'); // хвост`);
+    expect(code).toMatch(PAGE_GUARD.candidate);
+  });
+  it("requirePageAccess('/') на странице кандидата ловится", () => {
+    expect(pageAccessArgProblems(`await requirePageAccess('/')`, '/profile')).not.toEqual([]);
+    expect(pageAccessArgProblems(`await requirePageAccess('/profile')`, '/profile')).toEqual([]);
+    expect(pageAccessArgProblems(`await requirePageAccess(path)`, '/profile')).not.toEqual([]);
+  });
+  it('динамический маршрут: адрес со статичным префиксом принимается, чужой — нет', () => {
+    expect(pageAccessArgProblems('await requirePageAccess(`/employer/needs/${id}`)', '/employer/needs/[id]')).toEqual([]);
+    expect(pageAccessArgProblems(`await requirePageAccess('/employer')`, '/employer/needs/[id]')).not.toEqual([]);
+  });
+  it('реэкспорт export { h as POST } распознаётся и требует гварда', () => {
+    const code = `async function h(req: Request) { return requireCandidate(req); }\nexport { h as POST };`;
+    expect(handlers(code).map(([m]) => m)).toEqual(['POST']);
+    expect(API_GUARD.candidate(handlers(code)[0]![1])).toBe(true);
+    const bad = `async function h(req: Request) { return 1; }\nexport { h as POST };`;
+    expect(API_GUARD.candidate(handlers(bad)[0]![1])).toBe(false);
+  });
+  it('нераспознанный экспорт метода роняет тест, а не пропускается', () => {
+    expect(unrecognizedExports(`export const { GET } = make();`)).not.toEqual([]);
+    expect(unrecognizedExports(`export async function GET(req: Request) { return 1; }`)).toEqual([]);
+  });
+  it('хелпер после последнего экспорта не засчитывается последнему методу', () => {
+    const code = `export async function GET(req: Request) {\n  return 1;\n}\n\nfunction helper(req: Request) {\n  return requireCandidate(req);\n}\n`;
+    expect(API_GUARD.candidate(handlers(code)[0]![1])).toBe(false);
+    const ok = `export async function GET(req: Request) {\n  requireCandidate(req);\n  return 1;\n}\n`;
+    expect(API_GUARD.candidate(handlers(ok)[0]![1])).toBe(true);
   });
 });

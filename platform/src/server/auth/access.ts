@@ -145,12 +145,11 @@ const LEVEL_ROLES: Record<Exclude<PageLevel, 'public'>, readonly SessionRole[]> 
 
 /**
  * Куда вести вошедшего с чужой страницы (решения владельца 10.10): работодателя со страниц кандидата —
- * в профиль компании; кандидата из кабинета работодателя и pending — в ленту /consultant.
+ * в профиль компании; кандидата из кабинета работодателя и pending — в ленту /consultant (это `HOME`, отдельной записи не нужно).
  * Роль совпала, но профиля роли в куке нет — в дом роли (`homePathFor`).
  */
-const FOREIGN_REDIRECT: Record<'candidate' | 'employer', Partial<Record<SessionRole, string>>> = {
-  candidate: { pending: '/consultant', employer: '/employer/company' },
-  employer: { pending: '/consultant', candidate: '/consultant' },
+const FOREIGN_REDIRECT: Partial<Record<'candidate' | 'employer', Partial<Record<SessionRole, string>>>> = {
+  candidate: { employer: '/employer/company' },
 };
 
 /** Дом роли после входа и для чужих страниц. Пока у всех ролей — лента /consultant (решение владельца 10.10). */
@@ -167,14 +166,9 @@ export function hasActiveProfile(s: SessionPrincipal): boolean {
   return s.userId !== null;
 }
 
-/** Активная роль — кандидат с профилем. Старая демо-кука (userId = null, роль candidate) сюда попадает. */
-export function isActiveCandidate(s: SessionPrincipal | null): s is SessionPrincipal & { candidateId: string } {
-  return s?.role === 'candidate' && s.candidateId !== null;
-}
-
-/** Активная роль — работодатель с аккаунтом и профилем. */
-export function isActiveEmployer(s: SessionPrincipal | null): s is SessionPrincipal & { userId: string; employerProfileId: string } {
-  return s?.role === 'employer' && s.userId !== null && s.employerProfileId !== null;
+/** Пускает ли уровень сессию: активная роль уровня и профиль этой роли. Единственное место правила «роль + профиль». */
+export function allowsLevel(level: Exclude<PageLevel, 'public'>, s: SessionPrincipal): boolean {
+  return LEVEL_ROLES[level].includes(s.role) && hasActiveProfile(s);
 }
 
 function segments(path: string): string[] {
@@ -222,7 +216,8 @@ export function apiLevelFor(path: string, method: HttpMethod): ApiLevel | null {
   return typeof rule === 'string' ? rule : (rule[method] ?? null);
 }
 
-function authRedirect(next: string, stale: boolean): string {
+/** Адрес входа: гость → /auth, протухшая кука → /api/auth/stale (стирает куку). Единственная сборка адреса. */
+export function authRedirect(next: string, stale: boolean): string {
   return `${stale ? '/api/auth/stale' : '/auth'}?next=${encodeURIComponent(next)}`;
 }
 
@@ -238,6 +233,6 @@ export function foreignPageRedirect(session: SessionPrincipal | null, path: stri
   if (!session) return authRedirect(path, opts.stale ?? false);
   if (level === null) return homePathFor(session.role);
   if (level === 'account') return null;
-  if (LEVEL_ROLES[level].includes(session.role) && hasActiveProfile(session)) return null;
-  return FOREIGN_REDIRECT[level][session.role] ?? homePathFor(session.role);
+  if (allowsLevel(level, session)) return null;
+  return FOREIGN_REDIRECT[level]?.[session.role] ?? homePathFor(session.role);
 }

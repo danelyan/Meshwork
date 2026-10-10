@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import { allowsLevel } from './auth/access';
 import { getEnv } from './env';
 import { errors } from './errors';
 
@@ -180,15 +181,15 @@ export function getCandidateId(req: Request): string | null {
  */
 export function candidateFrom(s: SessionPrincipal | null): string {
   if (!s) throw errors.unauthorized();
-  if (s.role !== 'candidate' || !s.candidateId) throw errors.forbidden('Доступно только кандидату');
-  return s.candidateId;
+  if (!allowsLevel('candidate', s)) throw errors.forbidden('Доступно только кандидату');
+  return s.candidateId!;
 }
 
 /** Работодатель по активной роли: 401 — нет сессии; 403 — другая роль, нет аккаунта или профиля работодателя. */
 export function employerFrom(s: SessionPrincipal | null): { userId: string; employerProfileId: string } {
   if (!s) throw errors.unauthorized();
-  if (s.role !== 'employer' || !s.userId || !s.employerProfileId) throw errors.forbidden('Доступно только работодателю');
-  return { userId: s.userId, employerProfileId: s.employerProfileId };
+  if (!allowsLevel('employer', s)) throw errors.forbidden('Доступно только работодателю');
+  return { userId: s.userId!, employerProfileId: s.employerProfileId! };
 }
 
 /**

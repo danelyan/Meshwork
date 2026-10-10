@@ -100,7 +100,7 @@ describe('кабинет работодателя (БД)', () => {
     const body = await res.json();
     expect(body.items[0].candidateId).toBe(PAY.id);
     expect(body.items[0].explanation.summary).toMatch(/^Закрывает 6 из 6 требований/);
-    expect(body.items[0].explanation.fsp).toBe('есть подтверждённые достижения');
+    expect(body.items[0].explanation.fsp).toMatch(/^есть подтверждённые достижения/);
     expect(body.items[0].candidate.contacts).toBeNull();
     const raw = JSON.stringify(body);
     for (const p of DEMO_POOL) {

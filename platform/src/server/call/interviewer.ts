@@ -3,7 +3,7 @@
 // Модель недоступна или вернула мусор → вопрос из шаблона: созвон не падает из-за LLM на середине.
 import { responseJsonSchema } from '../llm/schema';
 import type { ChatMessage, LlmProvider } from '../llm/types';
-import { type PlanTurn, type TopicSeed, heuristicSignal, planNext, routeLevel, startLevel, templateQuestion } from './plan';
+import { CALL_LIMITS, type PlanTurn, type TopicSeed, heuristicSignal, planNext, routeLevel, startLevel, templateQuestion } from './plan';
 import { contextBlock, loadCallPrompt } from './prompt-utils';
 import { CallInterviewerOutput } from './schemas';
 import type { AiUtteranceMeta, AnswerSignal, QuestionLevel } from './types';
@@ -33,6 +33,8 @@ export interface InterviewerPayload {
     levelIfNone: number;
     /** Уровень первого вопроса новой темы. */
     startLevel: number;
+    /** Темы, по которым уже задано maxPerTopic вопросов: по ним больше не спрашивать. */
+    closedTopics: string[];
     minQuestions: number;
     maxQuestions: number;
   };
@@ -53,6 +55,7 @@ export function buildPayload(input: InterviewerInput): InterviewerPayload {
       levelIfWeak: last ? routeLevel(prev, 'weak') : base,
       levelIfNone: prev,
       startLevel: base,
+      closedTopics: [...new Set(input.turns.map((t) => t.topic))].filter((t) => input.turns.filter((x) => x.topic === t).length >= CALL_LIMITS.maxPerTopic),
       minQuestions: input.limits.minQuestions,
       maxQuestions: input.limits.maxQuestions,
     },
@@ -99,7 +102,8 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
       signal,
     );
     const parsed = CallInterviewerOutput.safeParse(res.kind === 'json' ? res.json : undefined);
-    if (parsed.success) {
+    // Вопрос по-русски: без кириллицы (мусор минимальной заглушки) — шаблон.
+    if (parsed.success && /[а-яё]/i.test(parsed.data.question)) {
       const out = parsed.data;
       const routed: AnswerSignal | null = input.turns.length ? out.answerSignal : null;
       // catalogId — только из плана: модель не может привязать тему к чужому утверждению.

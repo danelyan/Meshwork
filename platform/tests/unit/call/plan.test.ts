@@ -60,3 +60,21 @@ describe('planNext — тема и уровень без модели (stub, з�
     expect(heuristicSignal(null)).toBe('none');
   });
 });
+
+describe('схема интервьюера для строгого вывода', () => {
+  it('без pattern: провайдеры якорят его на всю строку и режут вопрос до одной буквы', async () => {
+    const { CallInterviewerOutput } = await import('@/server/call/schemas');
+    const { responseJsonSchema } = await import('@/server/llm/schema');
+    expect(JSON.stringify(responseJsonSchema(CallInterviewerOutput))).not.toContain('"pattern"');
+  });
+
+  it('вопрос без кириллицы → шаблон (запасной путь)', async () => {
+    const { nextCallQuestion } = await import('@/server/call/interviewer');
+    const { createStubProvider, registerStubResponse, clearStubResponses } = await import('@/server/llm/providers/stub');
+    registerStubResponse('call_interviewer', () => ({ json: { answerSignal: 'none', topic: 'Индексы', catalogId: 'be.idx', question: 'xxxxxxxxxxxx', done: false } }));
+    const q = await nextCallQuestion({ specialization: 'backend', claimedGrade: 'junior', topics, turns: [], limits: CALL_LIMITS }, createStubProvider());
+    clearStubResponses();
+    expect(q.meta.fallback).toBe(true);
+    expect(q.question).toMatch(/Индексы/);
+  });
+});

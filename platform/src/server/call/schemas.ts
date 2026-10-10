@@ -41,8 +41,10 @@ export const CallInterviewerOutput = z.object({
   answerSignal: z.enum(ANSWER_SIGNALS),
   topic: z.string().min(2).max(120),
   catalogId: z.string().max(80).nullable(),
-  // Вопрос по-русски: без кириллицы (мусор минимальной заглушки) — шаблон.
-  question: z.string().min(10).max(600).regex(/[а-яё]/i),
+  // Без `.regex()`: pattern в JSON Schema провайдеры со строгим выводом (guided decoding) якорят на всю
+  // строку, и `[а-яё]` даёт вопрос из одной буквы (живой прогон 10.10, deepseek через Yandex).
+  // Кириллицу проверяет код (nextCallQuestion в interviewer.ts).
+  question: z.string().min(10).max(600),
   done: z.boolean(),
 });
 export type CallInterviewerOutput = z.infer<typeof CallInterviewerOutput>;

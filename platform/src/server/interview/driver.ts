@@ -5,6 +5,7 @@ import type { ClaimStatus, Prisma } from '@prisma/client';
 
 import { PLATFORM_UPGRADABLE } from '../claims/levels';
 import { type CallDriver, type DriverSession, registerCallDriver, reviewDriverQuestion } from '../call/drivers';
+import { assertContentReady } from '../call/readiness';
 import { evaluateOwnership, loadTestReview, ownershipSentence, reviewDialog, reviewRemaining, reviewStepDue } from '../call/test-review';
 import { type EvalTopic, evaluateCall, notProbedItem } from '../call/evaluator';
 import type { QuestionLevel, TranscriptEntry } from '../call/types';
@@ -55,6 +56,11 @@ export const interviewDriver: CallDriver = {
   limits: { minQuestions: INTERVIEW_LIMITS.minQuestions, maxQuestions: INTERVIEW_LIMITS.maxQuestions, hardMaxQuestions: INTERVIEW_LIMITS.hardMaxQuestions },
   closingLine: INTERVIEW_CLOSING_LINE,
   disclaimer: INTERVIEW_DISCLAIMER,
+
+  // ИИнтервью — только после теста (есть категория из теста; то же правило, что resolveCallKind).
+  async assertCanStart(candidateId) {
+    await assertContentReady(candidateId, 'interview');
+  },
 
   async nextQuestion(session: DriverSession, llm, opts = {}) {
     const ctx = await loadInterviewContext(session.candidateId);

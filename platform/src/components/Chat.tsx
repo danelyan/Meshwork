@@ -317,6 +317,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         voice
         onCall={callMode ? () => callMode.start() : undefined}
         callKind={callMode?.kind}
+        callBlocked={callMode?.readiness?.ready === false ? callMode.readiness.reason : undefined}
         maxLength={8000}
         attachments={{ files: att.files, onAdd: att.add, onRemove: att.remove }}
         hint="Enter - отправить, Shift+Enter - новая строка"

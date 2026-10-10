@@ -11,6 +11,7 @@ import { assertSegment, concatRecording, listSegments, recognizeSegment, saveSeg
 import { publishCall } from './bus';
 import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from './consent';
 import { CALL_DISCLAIMER, callDriver, questionTurns, type CallDriver, type DriverSession } from './drivers';
+import { assertCooldownPassed } from './readiness';
 import { CALL_LIMITS, CLOSING_LINE, closingWithRecap } from './plan';
 import { INTERRUPTED_MARK, UNHEARD_MARK, heardPrefix } from '../../lib/sentences';
 import type { InterruptBody } from './schemas';
@@ -202,6 +203,9 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
     select: rowSelect,
   });
   if (active) return { sessionId: active.id, resumed: true, webrtc: { iceServers: ICE_SERVERS }, call: await buildView(active as Row, CANDIDATE_ACCESS) };
+
+  // Пауза между созвонами одного вида (демо-кандидаты освобождены); активный созвон выше продолжается без проверки.
+  await assertCooldownPassed(candidateId, body.kind);
 
   const dailyLimit = getEnv().CALL_DAILY_LIMIT;
   // Демо-кандидаты общие (жюри и команда входят под одним и тем же): суточный лимит на них не действует,

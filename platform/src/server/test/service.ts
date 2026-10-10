@@ -23,6 +23,8 @@ import {
   MIN_ITEMS,
   nextStep,
   phasePool,
+  POLICY_VERSION,
+  rulesFor,
   selectNext,
   START_THETA,
   type AttemptPhase,
@@ -41,16 +43,12 @@ import type {
   TaskGenerator,
 } from './types';
 
-/**
- * v2 (10.10): порог Junior −0,7 и дозадавание Junior-заданий при заявке Middle (ADR-0002, дополнения 10.10).
- * v3 (10.10): дозадавание и при заявке Junior (ADR-0002, «Заявка Junior»).
- * v4 (10.10): тест на подкатегорию — пул попытки только из семейств подкатегории кандидата
- * (ADR 0003, дополнение 10.10 15:50) и грейд Senior: порог +0,6, старт с Senior-заданий, дозадавание Middle,
- * Middle в один клик (ADR 0003, дополнение 10.10 16:15; ADR-0002 «Senior и пул по подкатегориям»).
- */
-export const POLICY_VERSION = 'adr-0002-v4';
+/** Версия политики и правила остановки по версии — policy.ts (POLICY_VERSION, rulesFor). */
+export { POLICY_VERSION };
 /** Версии с дозадаванием Junior (v3 и новее): правило фазы не меняется задним числом для v1–v2. */
-const PROBE_VERSIONS = new Set(['adr-0002-v3', 'adr-0002-v4']);
+const PROBE_VERSIONS = new Set(['adr-0002-v3', 'adr-0002-v4', 'adr-0002-v5']);
+/** Версии с ротацией семейств между попытками кандидата (v5). */
+const ROTATION_VERSIONS = new Set(['adr-0002-v5']);
 
 /**
  * ПРЕДЛОЖЕНИЕ (R-C-09, решение владельца 09.10): смена грейда — раз в 30 дней
@@ -208,11 +206,26 @@ function stepOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>): Ste
     shown.push(t);
     responses.push({ a: t.a, b: t.b, correct: it.correct });
   }
-  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade, probe: PROBE_VERSIONS.has(a.policyVersion) });
+  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade, probe: PROBE_VERSIONS.has(a.policyVersion) }, rulesFor(a.policyVersion));
 }
 
 async function poolMap(a: Pick<TestAttempt, 'specialization' | 'subcategoryId'>): Promise<Map<string, SelectableTemplate & { generator: TaskGenerator }>> {
   return new Map((await loadPool(a.specialization, a.subcategoryId)).map((t) => [t.id, t]));
+}
+
+/**
+ * Шаблоны, показанные кандидату в прошлых попытках того же направления и подкатегории (adr-0002-v5): после попытки
+ * он видит разбор и ключи, поэтому пересдача по возможности идёт на других семействах (selectNext, SEEN_BEFORE_WEIGHT).
+ * Попытки старых версий доигрываются без ротации — как начались.
+ */
+async function seenInPreviousAttempts(attempt: AttemptWithItems): Promise<Set<string>> {
+  if (!ROTATION_VERSIONS.has(attempt.policyVersion)) return new Set();
+  const rows = await prisma.testItem.findMany({
+    where: { attempt: { candidateId: attempt.candidateId, specialization: attempt.specialization, subcategoryId: attempt.subcategoryId, id: { not: attempt.id } } },
+    select: { templateId: true },
+    distinct: ['templateId'],
+  });
+  return new Set(rows.map((r) => r.templateId));
 }
 
 /** Сгенерировать и записать следующее задание попытки; null — банк исчерпан. */
@@ -221,7 +234,8 @@ async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: Att
   const byId = new Map(pool.map((t) => [t.id, t]));
   const shown = attempt.items.map((i) => byId.get(i.templateId)).filter((t): t is NonNullable<typeof t> => Boolean(t));
   const index = attempt.items.length;
-  const next = selectNext(phasePool(pool, phase, attempt.grade), { shown, theta, seed: deriveSeed(attempt.seed, 1000 + index) });
+  const seenBefore = await seenInPreviousAttempts(attempt);
+  const next = selectNext(phasePool(pool, phase, attempt.grade), { shown, theta, seed: deriveSeed(attempt.seed, 1000 + index), seenBefore });
   if (!next) return null;
   const generator = byId.get(next.id)!.generator;
   const instanceSeed = deriveSeed(attempt.seed, index);

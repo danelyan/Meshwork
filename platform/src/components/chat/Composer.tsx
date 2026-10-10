@@ -46,6 +46,8 @@ export interface ComposerProps {
   onCall?: () => void;
   /** Вид режима звонка: «interview» (после теста на грейд) меняет подпись кнопки на «ИИнтервью». */
   callKind?: 'qualifying' | 'interview' | 'defense';
+  /** Причина, по которой созвон пока недоступен (readiness): кнопка блокируется, причина — в title. */
+  callBlocked?: string;
 }
 
 /**
@@ -76,6 +78,7 @@ export function Composer({
   voice,
   onCall,
   callKind,
+  callBlocked,
 }: ComposerProps) {
   const id = useId();
   const limitsId = useId();
@@ -176,7 +179,7 @@ export function Composer({
         {inlineAction && <div className={styles.inlineAction}>{inlineAction}</div>}
         {voice && <VoiceButton value={value} onChange={onChange} disabled={disabled} />}
         {onCall && (
-          <button type="button" className={styles.iconBtn} onClick={onCall} disabled={disabled} aria-label={callKind === 'interview' ? 'ИИнтервью' : 'Созвониться'} title={callKind === 'interview' ? 'ИИнтервью после теста: вопросы по блокам голосом, профиль компетенций в кабинете' : 'Созвониться с ИИ-интервьюером: 4–6 вопросов голосом, карта глубины в профиле'} data-testid="call-button" data-call-kind={callKind ?? 'qualifying'}>
+          <button type="button" className={styles.iconBtn} onClick={onCall} disabled={disabled || Boolean(callBlocked)} aria-label={callKind === 'interview' ? 'ИИнтервью' : 'Созвониться'} title={callBlocked ?? (callKind === 'interview' ? 'ИИнтервью после теста: вопросы по блокам голосом, профиль компетенций в кабинете' : 'Созвон с ИИ-интервьюером: проверим 4–6 тем из твоего профиля голосом, подтверждённые станут «проверено платформой»')} data-testid="call-button" data-call-kind={callKind ?? 'qualifying'}>
             <PhoneIcon />
           </button>
         )}

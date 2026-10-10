@@ -69,6 +69,7 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   defense: 'Защита утверждения: короткое интервью, повышающее уровень до «платформа»',
   'defense-room': 'Защита проекта (ADR 0003, ступень 3): вопросы по коду, ходы, SSE звонка, итог слепого оценщика',
   demo: 'Демо-вход и демо-резюме (только при DEMO_LOGIN)',
+  'fsp-id': 'ФСП ID (R-FSP-01): привязка ФСП ID к профилю кандидата через OIDC-провайдер (Keycloak; сейчас — симулятор ФСП ID команды) и загрузка достижений',
   directions: 'Справочник направлений и подкатегорий (Subcategory, R-T-05)',
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
@@ -343,6 +344,32 @@ export const OVERRIDES: Record<string, OpOverride> = {
     ],
     description: 'Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка — на /auth?error=<код>, без подробностей и токенов.',
     success: { description: 'Редирект 303: незавершённый онбординг → /consultant (лента знакомства), иначе `next` или кабинет роли; при ошибке /auth?error=<код>' },
+  },
+  // lane fsp-oidc: привязка ФСП ID к профилю (R-FSP-01..04, R-C-15).
+  'GET /api/fsp-id/link': {
+    summary: 'Начать привязку ФСП ID',
+    description: 'Кнопка в настройках кандидата: state, nonce и PKCE verifier — в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата — на /auth.',
+    success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
+  },
+  'GET /api/fsp-id/callback': {
+    summary: 'Возврат из ФСП ID',
+    query: [
+      { name: 'code', description: 'Код авторизации', schema: str() },
+      { name: 'state', description: 'Должен совпасть со state из куки старта', schema: str() },
+      { name: 'error', description: 'Присутствует при отказе', schema: str() },
+    ],
+    description: 'Проверка state и кандидата потока, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce), привязка участника к профилю. Токены в URL не попадают.',
+    success: { status: 303, description: 'Редирект на /settings?fsp=linked|no_achievements|unavailable или /settings?fsp=error_<код>' },
+  },
+  'GET /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
+    summary: 'Мок ФСП ID: страница входа',
+    description: 'Authorization endpoint встроенного мока ФСП ID (путь как у Keycloak); только пока внешний провайдер не настроен, иначе 404. Проверяет client_id и redirect_uri по белому списку, PKCE S256, state и nonce; отдаёт HTML-страницу выбора демо-участника.',
+    success: { description: 'HTML-страница входа; ошибка запроса — редирект на redirect_uri с error или страница ошибки' },
+  },
+  'POST /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
+    summary: 'Мок ФСП ID: выбор демо-участника',
+    description: 'Форма страницы входа мока: одноразовый код на 60 секунд и редирект на redirect_uri с code и state; «Отмена» — error=access_denied.',
+    success: { status: 303, description: 'Редирект на /api/fsp-id/callback' },
   },
   // lane email-auth: вход по почте и паролю (R-D-04). Все формы — same-origin и лимит попыток на клиента (429).
   'POST /api/auth/register': {
@@ -651,6 +678,14 @@ export const OVERRIDES: Record<string, OpOverride> = {
       obj({ candidate: free('Реплика кандидата'), ai: nullable(free('Реплика ИИ')), text: nullable(str()), audioUrl: str('Зарезервировано; озвучка — через /api/tts'), done: bool() }, ['candidate', 'ai', 'text', 'done']),
     ),
     errors: { 400: 'Пустой текст ответа: распознаёт /audio или браузер, /turn сам STT не зовёт', 404: 'Чужой созвон или сегмент аудио', 409: 'Созвон завершён или ответ уже принят' },
+  },
+  'POST /api/call/{id}/interrupt': {
+    summary: 'Кандидат перебил реплику ИИ',
+    success: JSON_OK(
+      'Реплика ИИ обрезана до услышанного (пометка «…(перебит)»), хвост — в `meta.interrupted.tail`; повтор идемпотентен, полностью услышанная реплика не меняется',
+      free('Реплика транскрипта (TranscriptEntry)'),
+    ),
+    errors: { 404: 'Нет такой реплики ИИ', 409: 'Созвон завершён или это не текущий вопрос' },
   },
   'POST /api/call/{id}/audio': {
     summary: 'Сегмент голоса кандидата',

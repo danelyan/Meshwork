@@ -7,6 +7,7 @@ import { PLATFORM_UPGRADABLE } from '../claims/levels';
 import { AppError } from '../errors';
 import type { LlmProvider } from '../llm/types';
 import { loadCallContext } from './context';
+import { assertContentReady } from './readiness';
 import { type EvalTopic, evaluateCall, notProbedItem } from './evaluator';
 import { nextCallQuestion } from './interviewer';
 import { CALL_LIMITS, type PlanTurn } from './plan';
@@ -118,6 +119,11 @@ export function summaryOf(depthMap: CallVerdict['depthMap']): string {
 const qualifying: CallDriver = {
   kind: 'qualifying',
   limits: { minQuestions: CALL_LIMITS.minQuestions, maxQuestions: CALL_LIMITS.maxQuestions, hardMaxQuestions: CALL_LIMITS.hardMaxQuestions },
+
+  // «Есть о чём говорить»: хотя бы одно утверждение о навыке (readiness.ts).
+  async assertCanStart(candidateId) {
+    await assertContentReady(candidateId, 'qualifying');
+  },
 
   async nextQuestion(session, llm, opts = {}) {
     const ctx = await loadCallContext(session.candidateId);

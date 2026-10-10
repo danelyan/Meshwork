@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getMe, logout, onboardingAct, type MeView } from '@/lib/api';
 import { setPrivacyApi } from '@/lib/employer-api';
+import type { FspLinkView } from '@/server/fsp-id/link';
 import type { FspState } from '@/server/types';
 
 import { ContactForm } from '../employer/ContactForm';
@@ -12,7 +13,46 @@ import { ObjectionsList } from '../consent/ObjectionsList';
 import { Button, Kicker, Notice, Panel } from '../ui';
 import styles from './Candidate.module.css';
 
-export function CandidateSettings({ hidden, contact, fspState }: { hidden: boolean; contact: string | null; fspState: FspState }) {
+const FSP_RESULT_TEXT: Record<string, { tone: 'info' | 'error'; text: string }> = {
+  linked: { tone: 'info', text: 'ФСП ID привязан, достижения подтянуты из реестра.' },
+  no_achievements: { tone: 'info', text: 'ФСП ID привязан. Истории соревнований нет - на подбор это не влияет.' },
+  unavailable: { tone: 'info', text: 'ФСП ID привязан, но реестр достижений сейчас не отвечает. Профиль работает без него.' },
+  error_denied: { tone: 'error', text: 'Вход в ФСП ID отменён.' },
+  error_state: { tone: 'error', text: 'Сеанс привязки устарел или подменён. Начните привязку заново.' },
+  error_session: { tone: 'error', text: 'Привязку начали из другого аккаунта. Начните заново.' },
+  error_exchange: { tone: 'error', text: 'ФСП ID не выдал токен. Попробуйте ещё раз.' },
+  error_token: { tone: 'error', text: 'ID-токен ФСП ID не прошёл проверку. Привязка не выполнена.' },
+  error_unavailable: { tone: 'error', text: 'Сервер ФСП ID сейчас не отвечает. Попробуйте позже - профиль работает и без привязки.' },
+  error_internal: { tone: 'error', text: 'Не удалось привязать ФСП ID. Попробуйте позже.' },
+};
+
+function fspStateText(state: FspState, name: string | null): string {
+  const who = name ? ` (${name})` : '';
+  switch (state) {
+    case 'linked': return `ФСП ID привязан${who}.`;
+    case 'no_achievements': return `ФСП ID привязан${who}, достижений пока нет.`;
+    case 'unavailable': return `ФСП ID привязан${who}, реестр достижений сейчас недоступен.`;
+    default: return 'ФСП ID не подключён.';
+  }
+}
+
+function FspIdCard({ fsp, result, provider, onDialog, dialogBusy }: { fsp: FspLinkView; result: string | null; provider: 'external' | 'mock'; onDialog: () => void; dialogBusy: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const notice = result ? FSP_RESULT_TEXT[result] : undefined;
+  return <Panel className={styles.card}>
+    <h2>ФСП ID</h2>
+    {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
+    <p>{fspStateText(fsp.state, fsp.name)}</p>
+    {fsp.achievements.length > 0 && <ul className={styles.requirements}>{fsp.achievements.map((a) => <li key={`${a.event}-${a.year}`}>{a.event}, {a.year}: {a.result}; роль: {a.role} <span className={styles.meta}>(демо-данные)</span></li>)}</ul>}
+    <p className={styles.fine}>{provider === 'external'
+      ? 'Вход через симулятор ФСП ID на Keycloak (OIDC), достижения - из API симулятора реестра. Это стенд команды, а не сервис ФСП: спортсмены и результаты синтетические. Платформа работает и без истории в ФСП.'
+      : 'Вход через демонстрационный провайдер ФСП ID внутри платформы (OIDC, пути как у Keycloak). Настоящий реестр ФСП не подключён: участники и результаты - демо-данные. Платформа работает и без истории в ФСП.'}</p>
+    <Button size="sm" loading={busy} onClick={() => { setBusy(true); window.location.assign('/api/fsp-id/link'); }}>{fsp.subject ? 'Привязать другой ФСП ID' : 'Привязать ФСП ID'}</Button>
+    <Button size="sm" loading={dialogBusy} onClick={onDialog}>Добавить опыт в диалоге ↗</Button>
+  </Panel>;
+}
+
+export function CandidateSettings({ hidden, contact, fspState, fsp, fspProvider = 'mock', fspResult = null }: { hidden: boolean; contact: string | null; fspState: FspState; fsp?: FspLinkView; fspProvider?: 'external' | 'mock'; fspResult?: string | null }) {
   const [user, setUser] = useState<MeView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -23,7 +63,7 @@ export function CandidateSettings({ hidden, contact, fspState }: { hidden: boole
     catch (err) { setError(err instanceof Error ? err.message : 'Не удалось сохранить видимость.'); }
     finally { setBusy(false); }
   }
-  async function fsp() {
+  async function openFspStep() {
     setBusy(true); setError(null);
     try { await onboardingAct({ action: 'goto', stepId: 'fsp' }); window.location.assign('/consultant?edit=profile'); }
     catch (err) { setError(err instanceof Error ? err.message : 'Не удалось открыть подключение.'); setBusy(false); }
@@ -51,7 +91,7 @@ export function CandidateSettings({ hidden, contact, fspState }: { hidden: boole
         <Panel className={styles.card}><h2>В анонимной карточке</h2><dl className={styles.accountFacts}><div><dt>Всегда скрыто</dt><dd>Имя, контакты, цитаты из резюме. Имя и контакт открываются только после принятия приглашения.</dd></div><div><dt>Видно</dt><dd>Категория, специализация и подтверждённые вами утверждения с уровнями доказанности.</dd></div></dl><Button href="/profile" size="sm">Посмотреть профиль ↗</Button></Panel>
       </div>
       <aside className={styles.stack}>
-        <Panel className={styles.card}><h2>ФСП ID</h2><p>{fspState === 'linked' ? 'В профиле отмечена связь с ФСП.' : 'ФСП ID не подключён.'}</p><p className={styles.fine}>Реестр ФСП на этом стенде не подключён. Достижения из демонстрационного реестра остаются демоданными. Платформа работает и без истории в ФСП.</p><Button size="sm" loading={busy} onClick={() => void fsp()}>{fspState === 'linked' ? 'Изменить связь' : 'Подключить ФСП ID'} · демо ↗</Button></Panel>
+        <FspIdCard fsp={fsp ?? { state: fspState, subject: null, name: null, achievements: [] }} result={fspResult} provider={fspProvider} onDialog={() => void openFspStep()} dialogBusy={busy} />
         <Panel className={styles.card}><h2>Аккаунт</h2>{user ? <dl className={styles.accountFacts}><div><dt>Имя</dt><dd>{user.name}</dd></div><div><dt>Почта</dt><dd>{user.email ?? 'Не указана'}</dd></div><div><dt>Вход</dt><dd>{user.isDemo ? 'Демонстрационный аккаунт' : 'Личный аккаунт'}</dd></div></dl> : <p>Загружаем аккаунт…</p>}<Button loading={busy} onClick={() => void exit()}>Выйти</Button></Panel>
         <ObjectionsList />
         <AccountErasure />

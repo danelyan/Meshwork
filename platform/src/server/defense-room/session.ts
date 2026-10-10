@@ -2,7 +2,8 @@ import type { Prisma } from '@prisma/client';
 
 import { countOf } from '@/lib/plural';
 
-import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from '../call/consent';
+import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from '../call/consent';
+import { assertAiAssessmentConsent } from '../consent/service';
 import { CALL_LIMITS } from '../call/plan';
 import { prisma } from '../db';
 import { getEnv } from '../env';
@@ -128,7 +129,9 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
     : null;
   if (submissionId && (!submission || submission.candidateId !== candidateId)) throw errors.notFound('Сабмит проекта не найден');
   // Защита — тоже созвон: то же отдельное согласие на запись, что у лейна call (ADR 0003, п. 4).
-  if (!(await hasCallConsent(candidateId))) {
+  // Г3 (ADR 0005): защиту оценивает ИИ. Г2: согласия на запись не было — спросить; отозвано — защита текстом.
+  await assertAiAssessmentConsent(candidateId);
+  if ((await callRecordingMode(candidateId)) === 'ask') {
     throw new AppError('call_consent_required', 'Перед защитой нужно согласие на запись созвона', 403, { version: CALL_RECORDING_CONSENT_VERSION });
   }
 

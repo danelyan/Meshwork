@@ -49,6 +49,7 @@ export const PAGE_ACCESS = {
   '/skills': 'candidate',
   '/test': 'candidate',
   '/interview': 'candidate',
+  '/interview/room': 'candidate',
   '/invitations': 'candidate',
   '/defense/[claimId]': 'candidate',
   // Созвон-защита (ADR 0003): комната кандидата и наблюдение работодателя.
@@ -98,6 +99,11 @@ export const API_ACCESS = {
   '/api/auth/password/reset': 'public',
   '/api/auth/yandex': 'public',
   '/api/auth/yandex/callback': 'public',
+  // ФСП ID (R-FSP-01): привязка к профилю через внешний OIDC-провайдер (старт и возврат) — только кандидату.
+  '/api/fsp-id/link': 'candidate',
+  '/api/fsp-id/callback': 'candidate',
+  // Мок провайдера ФСП ID (страница входа «чужого» сервиса; без внешнего провайдера в env) — без входа на платформу.
+  '/api/fsp-id/realms/fsp/protocol/openid-connect/auth': 'public',
   '/api/auth/stale': 'public',
   // `{ user: null }` для гостя — отвечает всем.
   '/api/auth/me': 'public',
@@ -159,6 +165,7 @@ export const API_ACCESS = {
   '/api/call/[id]/recording': 'session',
   '/api/call/[id]/signal': 'session',
   '/api/call/[id]/turn': 'candidate',
+  '/api/call/[id]/interrupt': 'candidate',
   '/api/call/[id]/audio': 'candidate',
   '/api/call/[id]/finish': 'candidate',
   // Справочник направлений и подкатегорий (ADR 0003): общий, без персональных данных.

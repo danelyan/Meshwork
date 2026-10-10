@@ -2,7 +2,9 @@
 
 import type { CallKind } from '@/server/call/types';
 
-import { type ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+
+import { callApi } from '@/lib/call-api';
 
 /**
  * Режим звонка в сцене /consultant (ADR 0003, ступень 1): кнопка «Созвониться» в композере или
@@ -13,6 +15,8 @@ export interface CallMode {
   /** Вид режима: до теста на грейд — квалифицирующий созвон, после — ИИнтервью (решается на сервере). */
   kind: CallKind;
   open: boolean;
+  /** Можно ли начать созвон (GET /api/call → readiness); null — ещё не знаем (кнопка не блокируется). */
+  readiness: { ready: boolean; reason?: string; retryAt?: string } | null;
   /** Почему агент предложил созвон (suggest_call) — подпись на экране согласия/старта. */
   reason: string | null;
   start: (reason?: string) => void;
@@ -33,6 +37,26 @@ export function CallProvider({ children, kind = 'qualifying', initialOpen = fals
     setOpen(true);
   }, []);
   const close = useCallback(() => setOpen(false), []);
-  const value = useMemo(() => ({ kind, open, reason, start, close }), [kind, open, reason, start, close]);
+  const [readiness, setReadiness] = useState<CallMode['readiness']>(null);
+  // Готовность читаем с сервера: при монтировании, после закрытия панели и пока кнопка заблокирована (в чате
+  // могли появиться утверждения о навыках). Сбой запроса кнопку не блокирует: старт всё равно проверит сервер.
+  useEffect(() => {
+    if (open) return;
+    let alive = true;
+    const load = () =>
+      callApi
+        .list(kind)
+        .then((r) => alive && setReadiness((kind === 'defense' ? null : r.readiness?.[kind]) ?? null))
+        .catch(() => undefined);
+    void load();
+    const t = setInterval(() => {
+      if (readiness?.ready === false) void load();
+    }, 20000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [kind, open, readiness?.ready]);
+  const value = useMemo(() => ({ kind, open, readiness, reason, start, close }), [kind, open, readiness, reason, start, close]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

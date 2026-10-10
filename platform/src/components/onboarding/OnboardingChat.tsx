@@ -11,7 +11,6 @@ import { asideToModel, looksLikeQuestion, matchStepText } from '@/server/onboard
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { CompanionStage } from '../avatar/CompanionStage';
-import { SceneSlot } from '../avatar/SceneSlots';
 import { CompanionVoiceProvider, useCompanionVoice } from '../avatar/voice';
 import { Chat } from '../Chat';
 import { AssistantChat, EMPLOYER_SUGGESTIONS, EmployerAsideRows } from '../employer/AssistantChat';
@@ -31,6 +30,7 @@ import { AsideRows, groupAsides, useAsides } from './Asides';
 import { DocumentsRows, useDocumentsRun } from './DocumentsRun';
 import { parseSalary, salaryText } from './salary';
 import { StepControls } from './StepControls';
+import { OnboardingStrip } from './OnboardingStrip';
 import { OnboardingDraft, fieldVisibility } from './OnboardingDraft';
 
 export interface OnboardingChatProps {
@@ -158,6 +158,8 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     scrollToEnd(endRef.current);
   }, [curAsides?.length]);
 
+  const softGo = useSoftGo();
+
   const act = useCallback(async (body: OnboardingAction, bubble?: { text: string; quiet?: boolean }) => {
     setBusy(true);
     setError(null);
@@ -170,6 +172,11 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
       roleRef.current = v.role;
       if (roleChosen) {
         window.location.assign(CANDIDATE_FEED_PATH);
+        return;
+      }
+      // Кандидат ответил на вопрос-подсказку — сервер вернул ленту в разговор (service.ts backToChat).
+      if (inConsultant && v.later) {
+        softGo('/consultant');
         return;
       }
       voiceRef.current?.speak(`${v.current.lead} ${v.current.question}`);
@@ -194,8 +201,6 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const go = useCallback((path: string) => {
     window.location.assign(path);
   }, []);
-
-  const softGo = useSoftGo();
 
   async function later() {
     setBusy(true);
@@ -377,14 +382,19 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const Feed = inConsultant ? 'div' : 'main';
   return (
     <div className={inConsultant ? `${styles.shell} ${styles.inScene}` : styles.shell}>
-      <SceneSlot name="header" enabled={!isSummary}><header className={styles.top}>
+      {inConsultant && !employer && !isSummary ? (
+        // Кандидату знакомство — таймлайн над чатом (владелец 11.10), та же полоска, что в разговоре (PausedFeed).
+        <OnboardingStrip done={view.progress.done} total={view.progress.total} asking busy={busy} onContinue={() => undefined} onHide={() => void later()} />
+      ) : (
+      <header className={styles.top}>
         <div className={styles.topRow}>
           {inConsultant ? (
-            <><Brand />
+            // Знакомство идёт в том же виде консультанта, что и разговор после него (владелец 11.10):
+            // ответы и превью «Как видит компания» — в карточке «Что я о тебе знаю» справа.
             <h1 className={styles.sceneTitle}>
-              {isSummary ? (view.scenario === 'employer' ? 'Помощник по подбору' : 'Карьерный консультант') : employer ? 'Регистрация работодателя' : 'Регистрация кандидата'}
-              <span className={styles.title}>{isSummary ? 'Ведёт по платформе' : `Шаг ${Math.min(view.progress.done + 1, view.progress.total)} из ${view.progress.total} · ${cur.label.toLowerCase()}`}</span>
-            </h1></>
+              {view.scenario === 'employer' ? 'Помощник по подбору' : 'Карьерный консультант'}
+              <span className={styles.title}>{isSummary ? 'Ведёт по платформе' : `Знакомство · шаг ${Math.min(view.progress.done + 1, view.progress.total)} из ${view.progress.total}`}</span>
+            </h1>
           ) : (
             <>
               <Brand />
@@ -400,13 +410,14 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           {!isSummary && (
             <><span className={styles.saved}>сохранено {view.progress.done} из {view.progress.total}</span>
             <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
-              Настроить позже
+              {inConsultant && !employer ? 'Вернуться в чат' : 'Настроить позже'}
             </Button></>
           )}
         </div>
         <div className={styles.segments} role="progressbar" aria-valuenow={isSummary ? view.progress.total : view.progress.done} aria-valuemin={0} aria-valuemax={view.progress.total} aria-label={`Пройдено ${view.progress.done} из ${view.progress.total}`}>{Array.from({ length: view.progress.total }, (_, i) => <i key={i} data-done={isSummary || i < view.progress.done || undefined} />)}</div>
-      </header></SceneSlot>
-      {!isSummary && <SceneSlot name="draft"><OnboardingDraft view={view} busy={busy || asides.asking} onEdit={(stepId) => void act({ action: 'goto', stepId })} /></SceneSlot>}
+      </header>
+      )}
+      {!isSummary && !inConsultant && <OnboardingDraft view={view} busy={busy || asides.asking} onEdit={(stepId) => void act({ action: 'goto', stepId })} />}
 
       <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>
         {!inConsultant && (
@@ -416,7 +427,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         )}
         {!inConsultant && <CompanionStage className={styles.stage} />}
         <Thread label="Переписка с помощником">
-          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит. Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
+          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>{inConsultant ? (employer ? 'Справа в «Что я знаю о компании» видно, что я сохраняю, а «Как видит кандидат» покажет, что увидит кандидат.' : 'Справа в «Что я о тебе знаю» видно, что я сохраняю, а «Как видит компания» покажет, что из этого увидит работодатель.') : 'В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит.'} Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
           {view.history.map((h) => (
             <HistoryPair
               key={h.stepId}

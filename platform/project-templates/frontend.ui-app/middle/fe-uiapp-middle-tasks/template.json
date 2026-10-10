@@ -5,8 +5,18 @@
   "grade": "middle",
   "title": "Доска задач с серверным состоянием (React)",
   "summary": "Загрузка и ошибка с повтором, оптимистичное обновление с откатом, форма с валидацией и блокировкой повторной отправки, фильтры",
-  "stack": ["react19", "typescript", "testing-library", "vitest"],
-  "catalogIds": ["fe.react", "fe.state-management", "fe.forms", "fe.a11y"],
+  "stack": [
+    "react19",
+    "typescript",
+    "testing-library",
+    "vitest"
+  ],
+  "catalogIds": [
+    "fe.server-state",
+    "fe.state-mgmt",
+    "fe.forms",
+    "fe.a11y"
+  ],
   "image": "node20",
   "testEnvironment": "jsdom",
   "contractRef": "contract.md",
@@ -16,5 +26,9 @@
   "referenceRef": "reference",
   "timeLimitSec": 120,
   "timeBudgetMin": 240,
-  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+  "platformOwned": [
+    "contract.md",
+    "tests/visible/**",
+    ".platform-tests/**"
+  ]
 }

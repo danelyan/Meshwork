@@ -5,8 +5,19 @@
   "grade": "middle",
   "title": "API заказов: идемпотентность, курсорная пагинация, версии",
   "summary": "Idempotency-Key с защитой от гонок, стабильная курсорная пагинация, оптимистичная блокировка If-Match, машина статусов",
-  "stack": ["node20", "typescript", "express", "vitest", "supertest"],
-  "catalogIds": ["be.rest-design", "be.idempotency", "be.concurrency", "be.validation"],
+  "stack": [
+    "node20",
+    "typescript",
+    "express",
+    "vitest",
+    "supertest"
+  ],
+  "catalogIds": [
+    "be.rest-design",
+    "be.idempotency",
+    "be.concurrency",
+    "be.api-validation"
+  ],
   "image": "node20",
   "testEnvironment": "node",
   "contractRef": "contract.md",
@@ -16,5 +27,9 @@
   "referenceRef": "reference",
   "timeLimitSec": 120,
   "timeBudgetMin": 240,
-  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+  "platformOwned": [
+    "contract.md",
+    "tests/visible/**",
+    ".platform-tests/**"
+  ]
 }

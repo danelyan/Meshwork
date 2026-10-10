@@ -53,16 +53,10 @@ export const envSchema = z
     TTS_PROVIDER: z.enum(['auto', 'yandex', 'off']).default('auto'),
     /** Голос SpeechKit v1 (marina, jane, omazh, ermil, zahar, filipp, madi_ru) и амплуа (neutral, friendly, good …). */
     TTS_VOICE: z.string().regex(/^[a-z_]{2,32}$/).default('marina'),
-    /** Второй голос — реплики работодателя в защите проекта (ADR 0003), чтобы кандидат отличал его от ИИ. */
-    TTS_VOICE_EMPLOYER: z.string().regex(/^[a-z_]{2,32}$/).default('filipp'),
     TTS_EMOTION: z.string().regex(/^[a-z_]{0,32}$/).default('neutral'),
     TTS_SPEED: z.coerce.number().min(0.5).max(2).default(1.1),
     /** mp3 декодирует любой браузер; oggopus меньше, но Safari до 17 его не декодирует. */
     TTS_FORMAT: z.enum(['mp3', 'oggopus']).default('mp3'),
-    /** lane call: папка данных созвонов; аудио кандидата — <CALL_DATA_DIR>/calls/<sessionId>/*.wav. Относительный путь — от cwd. */
-    CALL_DATA_DIR: z.string().min(1).default('./data'),
-    /** lane call: лимит квалификационных созвонов кандидата за 24 часа; 0 — без лимита (так на стенде). */
-    CALL_DAILY_LIMIT: z.coerce.number().int().min(0).default(5),
     /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
     WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
 
@@ -75,6 +69,13 @@ export const envSchema = z
     COLLECTOR_FIXTURES: z.stringbool().default(false),
     /** lane test: интервалы теста на грейд в минутах вместо дней (стенд жюри, ADR-0002). */
     TEST_DEMO_INTERVALS: z.stringbool().default(false),
+    /** lane runner: адрес сервиса автопроверки проектов (compose: http://runner:8090). Не задан — проверка проектов недоступна. */
+    RUNNER_URL: optionalString.pipe(z.url().optional()),
+    /**
+     * lane runner: общий секрет app ↔ runner (Bearer), тот же в окружении runner. Длину (≥ 32) проверяет
+     * клиент при вызове, а не здесь: кривой токен не должен ронять всё приложение.
+     */
+    RUNNER_TOKEN: optionalString,
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: intFrom(1025, 1, 65535),
     /** lane email-auth: smtp — письма через SMTP (Mailpit на стенде); log — только в лог сервера и журнал в памяти (тесты, локально без Mailpit). */

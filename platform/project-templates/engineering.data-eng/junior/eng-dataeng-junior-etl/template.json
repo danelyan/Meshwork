@@ -5,8 +5,15 @@
   "grade": "junior",
   "title": "ETL: CSV заказов → SQLite с валидацией",
   "summary": "Загрузка CSV в SQLite: валидация и нормализация полей, отбраковка с причинами, дедупликация, идемпотентный перезапуск, отчёт",
-  "stack": ["python312", "sqlite3", "csv", "pytest"],
-  "catalogIds": [],
+  "stack": [
+    "python312",
+    "sqlite3",
+    "csv",
+    "pytest"
+  ],
+  "catalogIds": [
+    "common.sql-queries"
+  ],
   "image": "python312",
   "contractRef": "contract.md",
   "starterRef": "starter",
@@ -15,5 +22,9 @@
   "referenceRef": "reference",
   "timeLimitSec": 90,
   "timeBudgetMin": 180,
-  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+  "platformOwned": [
+    "contract.md",
+    "tests/visible/**",
+    ".platform-tests/**"
+  ]
 }

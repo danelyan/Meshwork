@@ -51,6 +51,9 @@ tags:
     name: recommendations
     description: "Рекомендации: тест, пробелы, задания, вакансии"
   -
+    name: sources
+    description: "Подключённые ссылки кандидата (GitHub, Codeforces, страницы): удаление"
+  -
     name: stt
     description: "Голосовой ввод (Yandex SpeechKit)"
   -
@@ -61,7 +64,7 @@ tags:
     description: tts
   -
     name: uploads
-    description: "Загрузка резюме и документов"
+    description: "Загрузка резюме и документов: разбор, оригинал, скачивание, удаление"
 paths:
   "/api/auth/consent":
     get:
@@ -606,101 +609,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/auth/role/switch":
-    post:
-      operationId: postAuthRoleSwitch
-      tags:
-        - auth
-      summary: "Переключить активную роль (вторая роль на той же учётке)"
-      description: "ADR 0004. Профиль целевой роли есть — переключает; нет — создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль — идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.\n\nНужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              oneOf:
-                -
-                  type: object
-                  properties:
-                    role:
-                      type: string
-                      const: candidate
-                  required:
-                    - role
-                -
-                  type: object
-                  properties:
-                    role:
-                      type: string
-                      const: employer
-                    companyName:
-                      anyOf:
-                        -
-                          type: string
-                          const: ""
-                        -
-                          type: string
-                          minLength: 2
-                          maxLength: 120
-                  required:
-                    - role
-      responses:
-        "200":
-          description: "Роль активна; выставлена новая кука cid"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  role:
-                    type: string
-                  next:
-                    type: string
-                    description: "Дом роли (путь интерфейса)"
-                  created:
-                    type: boolean
-                  changed:
-                    type: boolean
-                required:
-                  - role
-                  - next
-                  - created
-                  - changed
-        "400":
-          description: "Нет названия компании, когда профиль работодателя надо создать (`bad_request`), или тело не прошло схему (`validation_failed`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "401":
-          description: "Нет входа (`unauthorized`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "403":
-          description: "Старая демо-кука без аккаунта, общий демо-аккаунт без второй роли или запрос с чужого сайта (`forbidden`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "409":
-          description: "Роль ещё не выбрана — сначала знакомство (`conflict`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "429":
-          description: "Слишком много переключений (`rate_limited`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/auth/stale":
     get:
       operationId: getAuthStale
@@ -1204,10 +1112,8 @@ paths:
       tags:
         - call
       summary: "POST `{ to?, sdp?"
-      description: "POST `{ to?, sdp? , ice? }` — сигналинг WebRTC (ADR 0003): описание сессии или ICE-кандидат доставляется собеседнику через его SSE (`signal`). Работодатель — подключённый участник, адресат — кандидат; кандидат указывает `to: \"employer:<userId>\"`. Собеседник не на связи — 409 `peer_offline`.\n\nНужна любая сессия (кука cid)."
-      security:
-        -
-          cookieAuth: []
+      description: "POST `{ to?, sdp? , ice? }` — сигналинг WebRTC (ADR 0003): описание сессии или ICE-кандидат доставляется собеседнику через его SSE (`signal`). Работодатель — подключённый участник, адресат — кандидат; кандидат указывает `to: \"employer:<userId>\"`. Собеседник не на связи — 409 `peer_offline`.\n\nВход не нужен."
+      security: []
       parameters:
         -
           name: id
@@ -1231,8 +1137,6 @@ paths:
                 additionalProperties: true
         "400":
           $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -1698,6 +1602,126 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/consultant/memory":
+    get:
+      operationId: getConsultantMemory
+      tags:
+        - consultant
+      summary: "Память консультанта: свои заметки (из чата и добавленные вручную), не больше 20."
+      description: "Память консультанта: свои заметки (из чата и добавленные вручную), не больше 20. Ответы знакомства сюда не входят.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Память консультанта: свои заметки (из чата и добавленные вручную), не больше 20. Ответы знакомства сюда не входят."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postConsultantMemory
+      tags:
+        - consultant
+      summary: "Добавить заметку вручную (source user)."
+      description: "Добавить заметку вручную (source user). Лимит или дубль — 409.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/MemoryBody"
+      responses:
+        "201":
+          description: "Создано. Добавить заметку вручную (source user). Лимит или дубль — 409."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/consultant/memory/{id}":
+    patch:
+      operationId: patchConsultantMemoryId
+      tags:
+        - consultant
+      summary: "Поправить свою заметку; после правки она «добавлена вручную»."
+      description: "Поправить свою заметку; после правки она «добавлена вручную». Чужая или нет такой — 404.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/MemoryBody"
+      responses:
+        "200":
+          description: "Поправить свою заметку; после правки она «добавлена вручную». Чужая или нет такой — 404."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteConsultantMemoryId
+      tags:
+        - consultant
+      summary: "Удалить свою заметку."
+      description: "Удалить свою заметку. Чужая или нет такой — 404.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: "Удалить свою заметку. Чужая или нет такой — 404."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/consultant/messages":
     post:
       operationId: postConsultantMessages
@@ -1775,6 +1799,61 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/consultant/settings":
+    get:
+      operationId: getConsultantSettings
+      tags:
+        - consultant
+      summary: "Как работает консультант кандидата: включённые скиллы (id из каталога) и свои инструкции."
+      description: "Как работает консультант кандидата: включённые скиллы (id из каталога) и свои инструкции. Только свои настройки кандидата; меняют стиль и фокус ответов консультанта, не подборку и не тест.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Как работает консультант кандидата: включённые скиллы (id из каталога) и свои инструкции."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: putConsultantSettings
+      tags:
+        - consultant
+      summary: "Сохранить настройки целиком."
+      description: "Сохранить настройки целиком. Неизвестный id скилла или текст длиннее 500 символов — 400.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/SettingsInput"
+      responses:
+        "200":
+          description: "Сохранить настройки целиком. Неизвестный id скилла или текст длиннее 500 символов — 400."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/defense":
     post:
       operationId: postDefense
@@ -1841,10 +1920,8 @@ paths:
       tags:
         - defense-room
       summary: "GET — снимок защиты: транскрипт, участники, mute, прогресс, вердикт."
-      description: "GET — снимок защиты: транскрипт, участники, mute, прогресс, вердикт. Кандидату — своя сессия; работодателю — только после принятого приглашения (реплики других компаний скрыты). Иначе 404.\n\nНужна любая сессия (кука cid)."
-      security:
-        -
-          cookieAuth: []
+      description: "GET — снимок защиты: транскрипт, участники, mute, прогресс, вердикт. Кандидату — своя сессия; работодателю — только после принятого приглашения (реплики других компаний скрыты). Иначе 404.\n\nВход не нужен."
+      security: []
       parameters:
         -
           name: id
@@ -1860,8 +1937,6 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -1872,10 +1947,8 @@ paths:
       tags:
         - defense-room
       summary: "GET — SSE звонка защиты (EventSource), имена событий — как у лейна call: первым кадром `snapshot`,"
-      description: "GET — SSE звонка защиты (EventSource), имена событий — как у лейна call: первым кадром `snapshot`, дальше `utterance`, `ai_state`, `participant`, `mute`, `question`, `status`, `verdict`, `signal` (сигналы WebRTC — только адресату). Каждые 20 с — комментарий-keepalive. Доступ — как у GET снимка. Разрыв соединения клиентом — `request.signal` (docs Next.js: Route Handlers, streaming).\n\nНужна любая сессия (кука cid)."
-      security:
-        -
-          cookieAuth: []
+      description: "GET — SSE звонка защиты (EventSource), имена событий — как у лейна call: первым кадром `snapshot`, дальше `utterance`, `ai_state`, `participant`, `mute`, `question`, `status`, `verdict`, `signal` (сигналы WebRTC — только адресату). Каждые 20 с — комментарий-keepalive. Доступ — как у GET снимка. Разрыв соединения клиентом — `request.signal` (docs Next.js: Route Handlers, streaming).\n\nВход не нужен."
+      security: []
       parameters:
         -
           name: id
@@ -1890,8 +1963,6 @@ paths:
             "text/event-stream":
               schema:
                 type: string
-        "401":
-          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -2592,99 +2663,6 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/employer/company":
-    get:
-      operationId: getEmployerCompany
-      tags:
-        - employer
-      summary: "Профиль своей компании"
-      description: "профиль своей компании (R-E-01).\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Название, описание, отрасль, ИНН и контакт компании"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  name:
-                    type: string
-                  description:
-                    type: string
-                  industry:
-                    type: string
-                  inn:
-                    type: string
-                  contact:
-                    type: string
-                required:
-                  - id
-                  - name
-                  - description
-                  - industry
-                  - inn
-                  - contact
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    patch:
-      operationId: patchEmployerCompany
-      tags:
-        - employer
-      summary: "Изменить профиль своей компании"
-      description: "Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/CompanyPatch"
-      responses:
-        "200":
-          description: "Профиль компании после правки"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  name:
-                    type: string
-                  description:
-                    type: string
-                  industry:
-                    type: string
-                  inn:
-                    type: string
-                  contact:
-                    type: string
-                required:
-                  - id
-                  - name
-                  - description
-                  - industry
-                  - inn
-                  - contact
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3736,6 +3714,52 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/sources/{id}":
+    delete:
+      operationId: deleteSourcesId
+      tags:
+        - sources
+      summary: "Удалить подключённую ссылку"
+      description: "Удаляет ссылку (url, GitHub, Codeforces, Stack Overflow) со снимком. Неподтверждённые утверждения из неё удаляются, подтверждённые и исправленные человеком остаются.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Удалено"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  deletedClaims:
+                    type: integer
+                    description: "Удалено черновиков"
+                  keptClaims:
+                    type: integer
+                    description: "Осталось подтверждённых и исправленных"
+                required:
+                  - deletedClaims
+                  - keptClaims
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Нет ссылки или чужая"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/stt":
     get:
       operationId: getStt
@@ -4178,7 +4202,7 @@ paths:
       tags:
         - uploads
       summary: "Загрузить резюме или документ"
-      description: "Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Сам файл не хранится — только извлечённый текст с координатами. Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись.\n\nНужна сессия кандидата (кука cid)."
+      description: "Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Хранится извлечённый текст с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>, только после успешного разбора). Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись без второй копии.\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -4284,6 +4308,89 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "415":
           description: "Нужен multipart/form-data"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/uploads/{id}":
+    delete:
+      operationId: deleteUploadsId
+      tags:
+        - uploads
+      summary: "Удалить загруженный файл"
+      description: "Удаляет оригинал с диска и запись. Неподтверждённые утверждения из файла удаляются, подтверждённые и исправленные человеком остаются.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Удалено"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  deletedClaims:
+                    type: integer
+                    description: "Удалено черновиков"
+                  keptClaims:
+                    type: integer
+                    description: "Осталось подтверждённых и исправленных"
+                required:
+                  - deletedClaims
+                  - keptClaims
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Нет файла или чужой"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/uploads/{id}/file":
+    get:
+      operationId: getUploadsIdFile
+      tags:
+        - uploads
+      summary: "Скачать оригинал загруженного файла"
+      description: "Оригинал файла владельцу: всегда `Content-Disposition: attachment` (filename* по RFC 5987), `X-Content-Type-Options: nosniff`, тип — только PDF/DOCX, иначе application/octet-stream.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Файл PDF или DOCX"
+          content:
+            "application/octet-stream":
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Нет файла, чужой или загружен до хранения оригиналов"
           content:
             "application/json":
               schema:
@@ -4538,36 +4645,6 @@ components:
         - status
         - confirmedAt
       description: "Утверждение кандидата с уровнем доказанности"
-    CompanyPatch:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 2
-          maxLength: 120
-        description:
-          anyOf:
-            -
-              type: string
-              maxLength: 600
-            -
-              type: "null"
-        industry:
-          anyOf:
-            -
-              type: string
-              maxLength: 80
-            -
-              type: "null"
-        inn:
-          type:
-            - string
-            - "null"
-        contact:
-          type:
-            - string
-            - "null"
-      additionalProperties: false
     ConsultantEvent:
       description: "Кадр SSE хода консультанта (`type` — различитель)"
       oneOf:
@@ -4996,6 +5073,15 @@ components:
         - message
         - salaryFrom
         - salaryTo
+    MemoryBody:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+        - text
     MuteAiInput:
       type: object
       properties:
@@ -5023,6 +5109,32 @@ components:
           maxLength: 1000
       required:
         - text
+    SettingsInput:
+      type: object
+      properties:
+        skills:
+          maxItems: 5
+          type: array
+          items:
+            type: string
+            enum:
+              - test_prep
+              - invite_review
+              - brief
+              - code_examples
+              - wording
+          description: "id включённых скиллов"
+        custom:
+          description: "Свои инструкции, до 500 символов"
+          anyOf:
+            -
+              type: string
+              maxLength: 500
+            -
+              type: "null"
+      required:
+        - skills
+      additionalProperties: false
     SignalInput:
       type: object
       properties:

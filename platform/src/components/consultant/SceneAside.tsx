@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import type { AsideDoc, JourneyStep, KnownFact, MarketRow, SceneAsideData } from '@/server/consultant/aside';
+import type { AsideDoc, JourneyStep, MarketRow, SceneAsideData } from '@/server/consultant/aside';
 
 import { useAsideData } from './aside-refresh';
+import { FilesCard } from './FilesCard';
+import { MemoryCard } from './MemoryCard';
 import { InstructionsCard } from './InstructionsCard';
 import styles from './SceneAside.module.css';
 
@@ -42,14 +44,6 @@ function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint: SceneAsideData['
   );
 }
 
-/** Прикрепить: открывает выбор файла в композере ленты (кнопка-скрепка), иначе ставит фокус в поле ввода. */
-function attach() {
-  const feed = document.querySelector('[data-feed-scroll]');
-  const btn = feed?.querySelector<HTMLButtonElement>('button[aria-label="Прикрепить файл"]');
-  if (btn && !btn.disabled) btn.click();
-  else feed?.querySelector<HTMLElement>('textarea, input[type="text"]')?.focus();
-}
-
 /** Карточка с заголовком; на узком экране сворачивается (аккордеон), на широком всегда раскрыта. */
 function Card({ id, title, className, children }: { id: string; title: string; className?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -70,49 +64,8 @@ function Card({ id, title, className, children }: { id: string; title: string; c
 
 function Docs({ docs }: { docs: AsideDoc[] }) {
   return (
-    <Card id="docs" title={`Документы${docs.length ? ` · ${docs.length}` : ''}`}>
-      {docs.length === 0 ? (
-        <div className={styles.empty}>
-          <p>Пока ничего не загружено. Резюме, диплом или ссылка на GitHub - из них консультант достанет утверждения для профиля.</p>
-          <button type="button" className={styles.attach} onClick={attach}>
-            Прикрепить
-          </button>
-        </div>
-      ) : (
-        <ul className={styles.docs}>
-          {docs.map((d) => (
-            <li key={d.id} className={styles.doc}>
-              <span className={styles.docKind} aria-hidden="true">
-                {d.kind === 'file' ? 'файл' : 'ссылка'}
-              </span>
-              <span className={styles.docName} title={d.name}>
-                {d.name}
-              </span>
-              <span className={styles.docStatus}>{d.status}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  );
-}
-
-/** Что консультант уже узнал в знакомстве: короткое имя шага и ответ; меняется прямо в ленте. */
-function Known({ facts, role }: { facts: KnownFact[]; role: SceneAsideData['role'] }) {
-  return (
-    <Card id="known" title={`${role === 'employer' ? 'Что я знаю о компании' : 'Что я о тебе знаю'}${facts.length ? ` · ${facts.length}` : ''}`}>
-      {facts.length === 0 ? (
-        <p className={styles.muted}>Пока ничего. Отвечай в чате слева - ответы появятся здесь, и консультант будет на них опираться.</p>
-      ) : (
-        <dl className={styles.facts}>
-          {facts.map((f) => (
-            <div key={f.stepId} className={styles.fact}>
-              <dt>{f.label}</dt>
-              <dd title={f.value}>{f.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+    <Card id="docs" title={`Файлы и ссылки${docs.length ? ` · ${docs.length}` : ''}`}>
+      <FilesCard docs={docs} />
     </Card>
   );
 }
@@ -156,7 +109,7 @@ export function SceneAside({ data: initial, className }: { data: SceneAsideData;
   return (
     <div className={`${styles.aside} ${className ?? ''}`} data-testid="scene-aside">
       <Roadmap steps={data.steps} hint={data.hint} />
-      <Known facts={data.known ?? []} role={data.role} />
+      <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} />
       {data.market && <Market market={data.market} role={data.role} />}
       {data.docs && <Docs docs={data.docs} />}
       {data.role === 'candidate' && (

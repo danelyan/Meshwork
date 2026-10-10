@@ -4,7 +4,7 @@
  * перенесены на нашу сцену: наша сетка-металл по референсу брендбука остаётся основной, остальные —
  * для сравнения на `/design/avatar` и для питча. Челюсть по звуку работает во всех вариантах.
  */
-export type HeadStyle = 'metal' | 'grid' | 'weave' | 'weave2' | 'weave3' | 'weave4' | 'weave5' | 'weave6' | 'weave7' | 'weave8' | 'brand' | 'loops' | 'chrome' | 'hologram' | 'particles' | 'wire';
+export type HeadStyle = 'metal' | 'grid' | 'weave' | 'weave2' | 'weave3' | 'weave4' | 'weave5' | 'weave6' | 'weave7' | 'weave8' | 'weave9' | 'brand' | 'loops' | 'chrome' | 'hologram' | 'particles' | 'wire';
 
 export interface HeadStyleInfo {
   id: HeadStyle;
@@ -52,6 +52,11 @@ export const HEAD_STYLES: readonly HeadStyleInfo[] = [
     hint: 'Двойная нить: петли и спицы «Плетения 5», каждая 4-я нить — толстая проволока с бликом, между ними тонкая плоская ткань',
   },
   {
+    id: 'weave9',
+    label: 'Плетение 9',
+    hint: 'Проволока на линиях ретопологии',
+  },
+  {
     id: 'brand',
     label: 'Кольца (черновик)',
     hint: 'Бывшее «Плетение 2»: нити по форме лица — кольцами вокруг глаз и рта, на черепе параллелями и меридианами; белое по чёрному',
@@ -63,7 +68,8 @@ export const HEAD_STYLES: readonly HeadStyleInfo[] = [
   { id: 'wire', label: 'Нейросетка', hint: 'Треугольная сетка, загорается от речи' },
 ] as const;
 
-export const DEFAULT_HEAD_STYLE: HeadStyle = 'weave';
+/** Решение владельца 10.10: «Плетение 6» ближе всего к брендбуку. */
+export const DEFAULT_HEAD_STYLE: HeadStyle = 'weave6';
 
 /** Числовой код стиля для шейдера (`uStyle`), порядок — как в `HEAD_STYLES`. */
 export function styleIndex(style: HeadStyle): number {

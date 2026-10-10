@@ -17,7 +17,7 @@ import { BufferAttribute, type BufferGeometry } from 'three';
 export const WEAVE_FIELD_ATTR = 'fspField';
 
 /** Черты: центр, полуоси эллипса во фронтальной плоскости XY, вершины не глубже c.z. */
-const FEATURES: readonly { c: [number, number, number]; ab: [number, number] }[] = [
+export const FEATURES: readonly { c: [number, number, number]; ab: [number, number] }[] = [
   { c: [-0.115, 0.632, 0.27], ab: [0.052, 0.026] },
   { c: [0.115, 0.632, 0.27], ab: [0.052, 0.026] },
   { c: [0.0, 0.432, 0.36], ab: [0.07, 0.02] },
@@ -36,7 +36,7 @@ function seed(x: number, y: number, z: number): number {
 }
 
 /** Двоичная куча по ключу dist[i] (для Дейкстры без внешних зависимостей). */
-class Heap {
+export class Heap {
   private a: number[] = [];
   constructor(private key: Float64Array) {}
   get size() {
@@ -75,16 +75,15 @@ class Heap {
   }
 }
 
-/** Добавляет `fspField` в геометрию (если его ещё нет). Возвращает false, если сетка без индекса. */
-export function addWeaveField(g: BufferGeometry): boolean {
-  if (g.getAttribute(WEAVE_FIELD_ATTR)) return true;
+/**
+ * Граф сетки по «узлам»: совпадающие вершины (швы нормалей в GLB) сварены, части рта (`_mouth_part`)
+ * исключены. Смежность — CSR (`deg` — смещения, `adj` — соседи). Общий для weave-field и weave-lines.
+ */
+export function weldGraph(g: BufferGeometry) {
   const pos = g.getAttribute('position');
-  const index = g.getIndex();
-  if (!pos || !index) return false;
+  const index = g.getIndex()!;
   const part = g.getAttribute('_mouth_part');
   const n = pos.count;
-
-  // сварка совпадающих вершин (швы нормалей в GLB): граф строится по «узлам»
   const node = new Int32Array(n);
   const weld = new Map<string, number>();
   const nodePos: number[] = [];
@@ -125,6 +124,17 @@ export function addWeaveField(g: BufferGeometry): boolean {
     adj[fill[a]!++] = b;
     adj[fill[b]!++] = a;
   }
+
+  return { node, nodePos, m, skip, deg, adj };
+}
+
+/** Добавляет `fspField` в геометрию (если его ещё нет). Возвращает false, если сетка без индекса. */
+export function addWeaveField(g: BufferGeometry): boolean {
+  if (g.getAttribute(WEAVE_FIELD_ATTR)) return true;
+  if (!g.getAttribute('position') || !g.getIndex()) return false;
+  const n = g.getAttribute('position').count;
+
+  const { node, nodePos, m, skip, deg, adj } = weldGraph(g);
 
   // Дейкстра от всех вершин внутри черт сразу; каждая вершина наследует черту источника
   const dist = new Float64Array(m).fill(Infinity);

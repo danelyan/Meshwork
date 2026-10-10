@@ -25,11 +25,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { BRAND_GLSL_COLOR, BRAND_GLSL_HEAD } from './brand-weave';
 import { WEAVE_GLSL_COLOR, WEAVE_GLSL_HEAD } from './weave-versions';
 import { addWeaveField } from './weave-field';
+import { addWeaveLines } from './weave-lines';
 import { WEAVE_FIELD_STYLES, WEAVE_RETOPO_GLSL_COLOR, WEAVE_RETOPO_GLSL_HEAD, weaveRetopoFragment, weaveRetopoVertex } from './weave-retopo';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
-import { DEFAULT_LIGHTING, lightRig, type LightingPreset, type SoftboxEnvironment } from './lighting';
-import { buildSoftboxScene } from './softbox-environment';
 import {
   BASE_PITCH,
   BASE_YAW,
@@ -74,8 +73,6 @@ export interface Head3DProps {
    * странице поворотом шеи, дыхание и моргание Карины; `alive` — то же + скулы, глаза, брови.
    */
   motion?: HeadMotionMode;
-  /** Свет сцены (см. lighting.ts); по умолчанию `current` — прежние лампы и окружение. */
-  lighting?: LightingPreset;
 }
 
 /** Цвета бренда: акцент `--blue` из tokens.css и серебро референса. */
@@ -264,6 +261,7 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
   weave6: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.24, envMapIntensity: 0.3 },
   weave7: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.26, envMapIntensity: 0.3 },
   weave8: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.24, envMapIntensity: 0.3 },
+  weave9: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.24, envMapIntensity: 0.3 },
   loops: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   chrome: { color: new Color('#8e939c'), metalness: 0.95, roughness: 0.24 },
   hologram: { color: new Color('#0b0b16'), metalness: 0, roughness: 1 },
@@ -827,6 +825,8 @@ function MouthHead(props: Head3DProps) {
   useEffect(() => () => geometry.dispose(), [geometry]);
   // поле ретопологии для «Плетения 5/8» — один раз на геометрию (weave-field.ts)
   useMemo(() => WEAVE_FIELD_STYLES.has(props.style ?? DEFAULT_HEAD_STYLE) && addWeaveField(geometry), [geometry, props.style]);
+  // поле линий для «Плетения 9» (weave-lines.ts)
+  useMemo(() => (props.style ?? DEFAULT_HEAD_STYLE) === 'weave9' && addWeaveLines(geometry), [geometry, props.style]);
   const { material, groupRef, uniforms, particles } = useHeadMotion(props, 'mouth');
   const meshRef = useRef<Mesh>(null);
   // R3F ставит geometry пропом после создания объекта — словарь морфов собираем явно.
@@ -935,50 +935,23 @@ class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode
  * Карта окружения «студия» (RoomEnvironment → PMREM): без неё металл не отражает ничего и голова
  * выглядит плоской; с ней блики и градиенты дают объём. Считается один раз на контекст.
  */
-function roomScene() {
-  const room = new RoomEnvironment();
-  return { scene: room, dispose: () => room.dispose() };
-}
-
-function StudioEnvironment({ intensity, softbox }: { intensity: number; softbox?: SoftboxEnvironment }) {
+function StudioEnvironment() {
   const gl = useThree((st) => st.gl);
   const scene = useThree((st) => st.scene);
-  // сила окружения меняется по пресету света без пересчёта PMREM
-  useEffect(() => {
-    scene.environmentIntensity = intensity;
-  }, [scene, intensity]);
-  // своё окружение-студия (пресет с softbox) или RoomEnvironment; пересчёт только при смене окружения
   useEffect(() => {
     const pmrem = new PMREMGenerator(gl);
-    const source = softbox ? buildSoftboxScene(softbox) : roomScene();
-    const target = pmrem.fromScene(source.scene, 0.04);
+    const room = new RoomEnvironment();
+    const target = pmrem.fromScene(room, 0.04);
     scene.environment = target.texture;
-    source.dispose();
+    scene.environmentIntensity = 0.85;
+    room.dispose();
     pmrem.dispose();
     return () => {
       if (scene.environment === target.texture) scene.environment = null;
       target.dispose();
     };
-  }, [gl, scene, softbox]);
+  }, [gl, scene]);
   return null;
-}
-
-/**
- * Свет сцены по пресету (lighting.ts): окружение + полусферный + направленные лампы.
- * Смена пресета — обычное обновление пропов R3F; ключи по пресету, т.к. число ламп может отличаться.
- */
-function SceneLights({ preset }: { preset?: LightingPreset }) {
-  const rig = lightRig(preset);
-  const id = preset ?? DEFAULT_LIGHTING;
-  return (
-    <>
-      <StudioEnvironment intensity={rig.environment} softbox={rig.softbox} />
-      <hemisphereLight color={rig.hemisphere.sky} groundColor={rig.hemisphere.ground} intensity={rig.hemisphere.intensity} />
-      {rig.directional.map((d, i) => (
-        <directionalLight key={`${id}-${i}`} position={d.position} intensity={d.intensity} color={d.color ?? '#ffffff'} />
-      ))}
-    </>
-  );
 }
 
 /**
@@ -1036,7 +1009,11 @@ export default function Head3D(props: Head3DProps) {
         gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
         aria-hidden="true"
       >
-        <SceneLights preset={props.lighting} />
+        <StudioEnvironment />
+        <hemisphereLight args={['#e8edf5', '#15171c', 0.5]} />
+        <directionalLight position={[-2.5, 2.5, 3]} intensity={1.8} />
+        <directionalLight position={[3, 1, -2.5]} intensity={1.4} color="#dfe6ff" />
+        <directionalLight position={[0, -2, 2]} intensity={0.3} />
         {body}
       </Canvas>
     </div>

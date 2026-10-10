@@ -18,21 +18,25 @@
  * - `weave7` «Кубосфера»: равноугольная кубосфера из центра черепа с жёсткими швами (как патчи черепа на
  *   референсе), шея — цилиндр, лицо — с обтеканием черт;
  * - `weave8` «Двойная нить»: поле `weave5`, каждая 4-я нить — толстая проволока с бликом, между ними
- *   тонкие плоские нити ткани.
+ *   тонкие плоские нити ткани;
+ * - `weave9` «Проволока на линиях ретопологии»: проволока и ячейки `weave6` на поле линий
+ *   (weave-lines.ts): кольца по расстоянию до черт, спицы по его градиенту, лицо в 1,5 раза плотнее.
  *
  * Вставки — как у weave-versions.ts: шапка после `fspLine`, блок цвета после `#include <color_fragment>`;
  * плюс `weaveRetopoVertex` (атрибут поля в вершинный шейдер) и `weaveRetopoFragment` (roughness,
  * metalness и наклон нормали по нити) — отдельные вызовы в Head3D.surfaceMaterial.
  */
 import type { HeadStyle } from './head-styles';
+import { WEAVE_LINES_GLSL_COLOR, WEAVE_LINES_GLSL_HEAD, weaveLinesVertex } from './weave-lines';
 
 /** Стили, которым нужен per-vertex атрибут `fspField` (Head3D добавляет его в геометрию). */
 export const WEAVE_FIELD_STYLES: ReadonlySet<HeadStyle> = new Set<HeadStyle>(['weave5', 'weave8']);
 
 export const WEAVE_RETOPO_GLSL_HEAD = `
-  #if defined(FSP_WEAVE5) || defined(FSP_WEAVE6) || defined(FSP_WEAVE7) || defined(FSP_WEAVE8)
+  #if defined(FSP_WEAVE5) || defined(FSP_WEAVE6) || defined(FSP_WEAVE7) || defined(FSP_WEAVE8) || defined(FSP_WEAVE9)
   #define FSP_WEAVE_NEW
   #endif
+  ${WEAVE_LINES_GLSL_HEAD}
   #if defined(FSP_WEAVE5) || defined(FSP_WEAVE8)
   varying vec2 vFspField;
   #endif
@@ -176,6 +180,7 @@ export const WEAVE_RETOPO_GLSL_COLOR = `
       wire = mix(wire, vec3(1.0, 0.0, 0.0), fwSmooth(p));
     }
     #endif
+    ${WEAVE_LINES_GLSL_COLOR}
     // серебристая ткань: нить — металл основы, ячейка — тот же металл в тени (≈ 10 %) и матовая
     fwWireG = clamp(wire.x, 0.0, 1.0);
     fwBumpG = wire.yz * 0.7;
@@ -184,8 +189,9 @@ export const WEAVE_RETOPO_GLSL_COLOR = `
   #endif
 `;
 
-/** Атрибут поля в вершинный шейдер — только стилям из WEAVE_FIELD_STYLES. */
+/** Атрибут поля в вершинный шейдер — стилям из WEAVE_FIELD_STYLES; `weave9` — поле линий (weave-lines.ts). */
 export function weaveRetopoVertex(src: string, style: HeadStyle): string {
+  if (style === 'weave9') return weaveLinesVertex(src);
   if (!WEAVE_FIELD_STYLES.has(style)) return src;
   return src.replace('void main() {', 'attribute vec2 fspField;\nvarying vec2 vFspField;\nvoid main() {\n  vFspField = fspField;');
 }

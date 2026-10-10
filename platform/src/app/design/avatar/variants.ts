@@ -21,11 +21,11 @@ export const ALL_VARIANTS: readonly Variant[] = [
 ];
 
 /**
- * На экране сейчас только семейство «Плетения» (решение владельца 10.10: основной стиль — `weave`,
- * сравниваем его версии). Остальные стили и головы Карины не удалены — чтобы вернуть их на экран,
- * замените фильтр на `ALL_VARIANTS` (или добавьте id в `SHOWN`).
+ * На экране сейчас только семейство «Плетения» (решение владельца 10.10: основной стиль — `weave6`,
+ * версии 2–4 скрыты, рядом с ним — его развитие `weave9`). Остальные стили и головы Карины не
+ * удалены — чтобы вернуть их на экран, замените фильтр на `ALL_VARIANTS` (или добавьте id в `SHOWN`).
  */
-const SHOWN = new Set(['three-weave', 'three-weave2', 'three-weave3', 'three-weave4', 'three-weave5', 'three-weave6', 'three-weave7', 'three-weave8']);
+const SHOWN = new Set(['three-weave', 'three-weave5', 'three-weave6', 'three-weave7', 'three-weave8', 'three-weave9']);
 export const VARIANTS: readonly Variant[] = ALL_VARIANTS.filter((v) => SHOWN.has(v.id));
 
 export function variantById(id: string): Variant {

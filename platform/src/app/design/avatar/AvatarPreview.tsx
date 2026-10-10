@@ -10,7 +10,6 @@ import { CompanionVoiceProvider, useCompanionVoice, type VoiceStatus } from '@/c
 import { Button, Chip, Field, Kicker } from '@/components/ui';
 
 import { DemoPanel } from './DemoPanel';
-import { LightingPicker, LightingProvider } from './LightingPicker';
 import { MotionPicker, MotionProvider } from './MotionPicker';
 import { MouthLookPicker, MouthLookProvider } from './MouthLookPicker';
 import styles from './preview.module.css';
@@ -19,16 +18,14 @@ import type { MouthBus, MouthSink } from './variants';
 const SAMPLE = 'Привет! Я компаньон платформы ФСП. Помогу пройти тест, собрать профиль и попасть в подборку работодателя.';
 const MAX_PANELS = 4;
 /** По умолчанию: основное «Плетение» рядом с его версиями (на экране сейчас только они, см. variants.ts). */
-const DEFAULT_VARIANTS = [`three-${DEFAULT_HEAD_STYLE}`, 'three-weave2', 'three-weave3', 'three-weave4'];
+const DEFAULT_VARIANTS = [`three-${DEFAULT_HEAD_STYLE}`, 'three-weave9'];
 
 export function AvatarPreview() {
   return (
     <CompanionVoiceProvider>
       <MouthLookProvider>
         <MotionProvider>
-          <LightingProvider>
-            <Preview />
-          </LightingProvider>
+          <Preview />
         </MotionProvider>
       </MouthLookProvider>
     </CompanionVoiceProvider>
@@ -128,7 +125,6 @@ function Preview() {
         </Field>
         <MouthLookPicker />
         <MotionPicker />
-        <LightingPicker />
         <Field label="Состояние (влияет на наши головы; у Карины статуса нет)">
           <select value={status} onChange={(e) => setStatus(e.target.value as VoiceStatus)}>
             <option value="idle">idle</option>

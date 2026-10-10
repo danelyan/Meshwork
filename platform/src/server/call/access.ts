@@ -68,6 +68,7 @@ export function publicVerdict(v: CallVerdict): PublicCallVerdict {
       scores: d.scores,
       total: d.total,
     })),
+    ...(v.testOwnership ? { testOwnership: { status: v.testOwnership.status, items: v.testOwnership.items.map((i) => ({ title: i.title })) } } : {}),
     summary: v.summary,
     evaluatedAt: v.evaluatedAt,
     thresholdVersion: v.thresholdVersion,

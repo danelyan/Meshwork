@@ -6,6 +6,7 @@ import { subcategoryLabel } from '@/lib/directions';
 import type { DefenseFlag } from '../defense-room/types';
 import { maskContacts } from '../collector/mask';
 import type { RubricFlag } from '../project/schemas';
+import type { TestOwnershipStatus } from '../call/types';
 
 /** Строка карты глубины: без цитат и формулировок кандидата (как publicVerdict лейна call). */
 export interface DepthTopic {
@@ -25,6 +26,8 @@ export interface QualifyingEvidence {
   /** catalogId подтверждённых тем (только привязанные к каталогу) — для бонуса под потребность. */
   confirmedCatalogIds: string[];
   scoresByTopic: DepthTopic[];
+  /** Решения теста (связь теста и созвона, 11.10): сигнал для работодателя, в балл ранжирования не входит. */
+  testOwnership?: TestOwnershipStatus;
   evaluatedAt: string;
 }
 
@@ -100,7 +103,7 @@ export const defenseFlagLabel = (f: DefenseFlag): string => DEFENSE_FLAG_LABEL[f
 type DepthLike = { topic: string; catalogId: string | null; claimed: boolean; probed: number; confirmed: boolean; total: number; status?: string };
 
 /** Карта глубины ступени 1 → свидетельство. Берёт только поля без цитат (подходит и публичный вердикт). */
-export function summarizeQualifying(verdict: { depthMap: readonly DepthLike[]; evaluatedAt: string }): QualifyingEvidence {
+export function summarizeQualifying(verdict: { depthMap: readonly DepthLike[]; evaluatedAt: string; testOwnership?: { status: TestOwnershipStatus } }): QualifyingEvidence {
   // Темы «не проверено» (status=not_probed, лейн stage-tuning) в счёт «подтверждено X из N» не входят.
   const scoresByTopic = verdict.depthMap.filter((d) => d.status !== 'not_probed').map((d) => ({
     topic: d.topic,
@@ -115,6 +118,7 @@ export function summarizeQualifying(verdict: { depthMap: readonly DepthLike[]; e
     probedTopics: scoresByTopic.filter((d) => d.probed > 0).map((d) => d.topic),
     confirmedCatalogIds: [...new Set(scoresByTopic.filter((d) => d.confirmed && d.catalogId).map((d) => d.catalogId!))].sort(),
     scoresByTopic,
+    ...(verdict.testOwnership && verdict.testOwnership.status !== 'not_checked' ? { testOwnership: verdict.testOwnership.status } : {}),
     evaluatedAt: verdict.evaluatedAt,
   };
 }
@@ -142,6 +146,8 @@ export interface DepthBlock {
   confirmed: number;
   /** Подтверждённых тем, совпавших с требованиями потребности (дали бонус). */
   matchedNeed: number;
+  /** «Решения теста»: объяснил сам / частично / не смог объяснить; нет — не проверялось. */
+  testOwnership?: TestOwnershipStatus;
 }
 
 export interface ProjectOwnBlock {
@@ -181,6 +187,7 @@ export function buildDepthBlock(q: QualifyingEvidence, needIds: ReadonlySet<stri
     topics,
     confirmed: topics.filter((d) => d.confirmed).length,
     matchedNeed: new Set(topics.filter((d) => d.confirmed && d.forNeed).map((d) => d.catalogId)).size,
+    ...(q.testOwnership ? { testOwnership: q.testOwnership } : {}),
   };
 }
 

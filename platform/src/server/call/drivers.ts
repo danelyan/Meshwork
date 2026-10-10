@@ -10,6 +10,7 @@ import { loadCallContext } from './context';
 import { type EvalTopic, evaluateCall, notProbedItem } from './evaluator';
 import { nextCallQuestion } from './interviewer';
 import { CALL_LIMITS, type PlanTurn } from './plan';
+import { evaluateOwnership, nextReviewQuestion, ownershipSentence, REVIEW_QUESTIONS, reviewDialog, reviewState } from './test-review';
 import type { CallKind, CallVerdict, QuestionLevel, TranscriptEntry } from './types';
 
 export interface DriverSession {
@@ -38,21 +39,35 @@ export interface CallDriver {
   /** Проверка перед стартом (например, сабмит проекта принадлежит кандидату). */
   assertCanStart?(candidateId: string, projectSubmissionId: string | null): Promise<void>;
   nextQuestion(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; force?: { topic: string; level: QuestionLevel } }): Promise<DriverQuestion>;
+  /**
+   * Этап «разбор решённого задания теста» (только qualifying): следующий вопрос этапа или null, если этапа нет
+   * (у кандидата нет завершённой попытки теста), он уже пройден или шаг ещё не наступил.
+   */
+  nextReviewQuestion?(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; allowStart?: boolean }): Promise<DriverQuestion | null>;
   /** interim — промежуточная оценка этого же созвона: досчитываются только темы с дополнительными вопросами. */
   evaluate(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; interim?: CallVerdict | null }): Promise<Omit<CallVerdict, 'upgradedCatalogIds' | 'evaluatedAt'>>;
   /** Последствия вердикта в той же транзакции, что и завершение (уровни утверждений). Возвращает поднятые catalogId. */
   applyVerdict?(tx: Prisma.TransactionClient, candidateId: string, verdict: Omit<CallVerdict, 'upgradedCatalogIds' | 'evaluatedAt'>): Promise<string[]>;
 }
 
-/** Пары вопрос ИИ (с meta) → ответ кандидата, по порядку. Реплики работодателя не входят. */
+/**
+ * Пары вопрос ИИ (с meta) → ответ кандидата, по порядку. Реплики работодателя не входят. Этап «разбор задания
+ * теста» (meta.testReview) в пары не попадает: ни план, ни слепой оценщик, ни счётчик вопросов его не видят
+ * (его читает test-review.ts), а ответы на него не приклеиваются к предыдущему вопросу.
+ */
 export function questionTurns(transcript: readonly TranscriptEntry[]): (PlanTurn & { aiIndex: number; probe?: 'inconclusive' })[] {
   const out: (PlanTurn & { aiIndex: number; probe?: 'inconclusive' })[] = [];
+  let target: (typeof out)[number] | null = null;
   for (const e of transcript) {
     if (e.role === 'ai' && e.meta) {
-      out.push({ question: e.text, answer: null, topic: e.meta.topic, catalogId: e.meta.catalogId, level: e.meta.level, aiIndex: e.index, ...(e.meta.probe ? { probe: e.meta.probe } : {}) });
-    } else if (e.role === 'candidate') {
-      const last = out[out.length - 1];
-      if (last) last.answer = last.answer === null ? e.text : `${last.answer}\n${e.text}`;
+      if (e.meta.testReview) {
+        target = null;
+        continue;
+      }
+      target = { question: e.text, answer: null, topic: e.meta.topic, catalogId: e.meta.catalogId, level: e.meta.level, aiIndex: e.index, ...(e.meta.probe ? { probe: e.meta.probe } : {}) };
+      out.push(target);
+    } else if (e.role === 'candidate' && target) {
+      target.answer = target.answer === null ? e.text : `${target.answer}\n${e.text}`;
     }
   }
   return out;
@@ -91,6 +106,21 @@ const qualifying: CallDriver = {
     return { text: q.question, meta: q.meta, done: q.done };
   },
 
+  async nextReviewQuestion(session, llm, opts = {}) {
+    const st = reviewState(session.transcript);
+    // Шаг 1 — только когда обычные вопросы закончились (allowStart); шаг 2 — сразу после ответа на шаг 1.
+    if (st.asked >= REVIEW_QUESTIONS || (st.asked === 0 && !opts.allowStart) || (st.asked === 1 && st.answered < 1)) return null;
+    const ctx = await loadCallContext(session.candidateId);
+    if (ctx.testReview.length === 0) return null;
+    const step = (st.asked + 1) as 1 | 2;
+    const q = await nextReviewQuestion(ctx.testReview, step, reviewDialog(session.transcript), llm, opts.signal);
+    return {
+      text: q.question,
+      meta: { topic: ctx.testReview[0]!.title, catalogId: null, level: 2, routedBy: null, testReview: { step, templateId: ctx.testReview[0]!.templateId }, ...(q.fallback ? { fallback: true } : {}) },
+      done: false,
+    };
+  },
+
   async evaluate(session, llm, opts = {}) {
     const ctx = await loadCallContext(session.candidateId);
     const turns = questionTurns(session.transcript).filter((t) => t.answer !== null);
@@ -125,12 +155,15 @@ const qualifying: CallDriver = {
     for (const d of fresh.values()) if (!evaluated.some((x) => x.topic === d.topic)) evaluated.push(d);
     const asked = new Set(evaluated.map((d) => d.topic));
     const depthMap = [...evaluated, ...ctx.topics.filter((t) => !asked.has(t.topic)).map(notProbedItem)];
+    // Решения теста: этап был у кандидата с попыткой теста; при дополнительных вопросах берём из промежуточной оценки.
+    const testOwnership = interim?.testOwnership ?? (ctx.testReview.length ? await evaluateOwnership(ctx.testReview, reviewDialog(session.transcript), llm, opts.signal) : undefined);
     return {
       kind: 'qualifying',
       depthMap,
+      ...(testOwnership ? { testOwnership } : {}),
       runs: (interim?.runs ?? 0) + ev.runs,
       validRuns: (interim?.validRuns ?? 0) + ev.validRuns,
-      summary: summaryOf(depthMap),
+      summary: summaryOf(depthMap) + ownershipSentence(testOwnership),
       thresholdVersion: ev.thresholdVersion || interim?.thresholdVersion || '',
       disclaimer: CALL_DISCLAIMER,
     };

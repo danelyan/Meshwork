@@ -7,7 +7,7 @@ import path from 'node:path';
  */
 const cache = new Map<string, string>();
 
-export function loadCallPrompt(name: 'interviewer' | 'evaluator'): string {
+export function loadCallPrompt(name: 'interviewer' | 'evaluator' | 'test-review' | 'ownership'): string {
   const hit = cache.get(name);
   if (hit !== undefined) return hit;
   const text = readFileSync(path.join(process.cwd(), 'src/server/call/prompts', `${name}.md`), 'utf8');

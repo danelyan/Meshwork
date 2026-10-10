@@ -4,6 +4,7 @@ import type { Specialization } from '../../lib/directions';
 import { prisma } from '../db';
 import { CALL_LIMITS, type TopicSeed } from './plan';
 import type { Grade } from '../../lib/grades';
+import { loadTestReview, type ReviewItem } from './test-review';
 
 export interface CandidateCallContext {
   specialization: Specialization;
@@ -11,6 +12,8 @@ export interface CandidateCallContext {
   topics: TopicSeed[];
   /** Факты резюме (цитаты утверждений) — вырезаются из вопросов перед оценщиком. */
   resumeFacts: string[];
+  /** 0–2 задания последней завершённой попытки теста по той же подкатегории (разбор в конце созвона); нет теста — []. */
+  testReview: ReviewItem[];
 }
 
 const LEVEL_PRIORITY: Record<string, number> = { self_reported: 0, artifact: 1, third_party: 2, platform: 3 };
@@ -67,7 +70,7 @@ export async function loadCallContext(candidateId: string): Promise<CandidateCal
     select: {
       specialization: true,
       profile: { select: { claimedGrade: true } },
-      categories: { orderBy: { confirmedAt: 'desc' }, take: 1, select: { specialization: true, grade: true } },
+      categories: { orderBy: { confirmedAt: 'desc' }, take: 1, select: { specialization: true, grade: true, subcategoryId: true } },
     },
   });
   const specialization = cand?.categories[0]?.specialization ?? cand?.specialization ?? 'backend';
@@ -112,5 +115,6 @@ export async function loadCallContext(candidateId: string): Promise<CandidateCal
     for (const e of extra) topics.push({ topic: topicName(e.statement), catalogId: e.id, claimStatement: null, resumeFact: null });
   }
   const resumeFacts = claims.map((c) => c.quote.trim()).filter((q) => q.length >= 8);
-  return { specialization, claimedGrade, topics, resumeFacts };
+  const testReview = await loadTestReview(candidateId, specialization, cand?.categories[0]?.subcategoryId ?? null);
+  return { specialization, claimedGrade, topics, resumeFacts, testReview };
 }

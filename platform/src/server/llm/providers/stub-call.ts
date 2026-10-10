@@ -6,6 +6,7 @@ import type { DefenseEvaluatorPayload } from '../../defense-room/verdict';
 import { heuristicSignal, planNext, templateQuestion, type TopicSeed } from '../../call/plan';
 import { parseContextBlock } from '../../call/prompt-utils';
 import type { QuestionLevel } from '../../call/types';
+import { templateReviewQuestion, type OwnershipPayload, type ReviewPayload } from '../../call/test-review';
 import type { ChatMessage, CompleteRequest } from '../types';
 
 function lastUserText(messages: ChatMessage[]): string {
@@ -19,8 +20,15 @@ function firstUserText(messages: ChatMessage[]): string {
 
 /** Интервьюер: сигнал — эвристика по длине ответа, тема и уровень — planNext (как запасной путь). */
 export function stubCallInterviewer(req: CompleteRequest): { kind: 'json'; json: unknown } | undefined {
-  const p = parseContextBlock<InterviewerPayload>(lastUserText(req.messages));
-  if (!p) return undefined;
+  const raw = parseContextBlock<InterviewerPayload | ReviewPayload>(lastUserText(req.messages));
+  if (!raw) return undefined;
+  if ('kind' in raw && raw.kind === 'test_review') {
+    // Этап «разбор задания теста»: шаблонная реплика по названию задания.
+    const it = raw.items[0];
+    const question = templateReviewQuestion({ title: it?.title ?? 'задание' } as Parameters<typeof templateReviewQuestion>[0], raw.step);
+    return { kind: 'json', json: { question } };
+  }
+  const p = raw as InterviewerPayload;
   const topics: TopicSeed[] = p.topics.map((t) => ({ topic: t.topic, catalogId: t.catalogId, claimStatement: t.claim, resumeFact: t.resumeFact }));
   const turns = p.turns.map((t) => ({ question: t.question, answer: t.answer, topic: t.topic, catalogId: null, level: t.level as QuestionLevel }));
   const last = turns[turns.length - 1];
@@ -46,6 +54,7 @@ export function stubCallInterviewer(req: CompleteRequest): { kind: 'json'; json:
   };
 }
 
+const DONT_KNOW = /(не\s+помню|не\s+знаю|не\s+могу\s+объяснить)/i;
 const WHY_RE = /(потому что|поэтому|вместо|альтернатив|компромисс|цена|дороже|дешевле|рассматривал)/i;
 const BOUNDARY_RE = /(не уверен|не знаю|проверил бы|предполагаю|думаю|скорее всего)/i;
 const DONE_RE = /(в итоге|результат|измерил|проверил|снизил|ускорил|выросл|упал)/i;
@@ -59,8 +68,16 @@ function sentence(answer: string, re?: RegExp): string {
 
 /** Оценщик: баллы из признаков в тексте ответов — длина, «почему», граница, результат. */
 export function stubCallEvaluator(req: CompleteRequest): { kind: 'json'; json: unknown } | undefined {
-  const raw = parseContextBlock<EvaluatorPayload | DefenseEvaluatorPayload>(firstUserText(req.messages));
+  const raw = parseContextBlock<EvaluatorPayload | DefenseEvaluatorPayload | OwnershipPayload>(firstUserText(req.messages));
   if (!raw) return undefined;
+  if ('kind' in raw && raw.kind === 'ownership') {
+    // Решил сам: по длине и наличию «почему/потому» в устном объяснении (правила, не оценка качества).
+    const answers = raw.dialog.map((d) => d.answer ?? '').filter((a) => a && a !== '(кандидат не ответил)');
+    const all = answers.join(' ');
+    const quote = answers.map((a) => sentence(a)).find(Boolean) ?? '';
+    const status = !quote || DONT_KNOW.test(all) ? 'failed' : all.length >= 150 ? 'explained' : 'partial';
+    return { kind: 'json', json: { quote, reason: `[stub] правило по длине объяснения (${all.length} симв.)`, status } };
+  }
   // Защита проекта (defense-room/verdict.ts): те же правила, но по вопросам (items) вместо тем.
   const defense = 'kind' in raw && raw.kind === 'defense' ? raw : null;
   const topics = defense ? defense.items.map((i) => ({ topic: i.id, qa: i.qa })) : (raw as EvaluatorPayload).topics;

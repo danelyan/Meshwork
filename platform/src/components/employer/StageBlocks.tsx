@@ -6,6 +6,7 @@ import { Tag } from '../ui';
 import styles from './Employer.module.css';
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+const OWNERSHIP_TEXT = { explained: 'объяснил сам', partial: 'объяснил частично', failed: 'не смог объяснить', not_checked: 'не проверялось' } as const;
 const PASS = (v: boolean | null) => (v === null ? 'не проверялось' : v ? 'прошёл' : 'не прошёл');
 
 /** «Созвон: карта глубины» (ступень 1): тема → подтверждено/нет. Цитат нет по построению данных. */
@@ -17,6 +18,11 @@ export function DepthMapBlock({ depth }: { depth: NonNullable<Explanation['depth
         Подтверждено {depth.confirmed} из {depth.topics.length} тем
         {depth.matchedNeed > 0 && `, из них требований потребности - ${depth.matchedNeed}`}.
       </p>
+      {depth.testOwnership && (
+        <p className={styles.meta} data-testid="test-ownership">
+          Решения теста: {OWNERSHIP_TEXT[depth.testOwnership]}. Сигнал, в оценку не входит.
+        </p>
+      )}
       <ul className={styles.why}>
         {depth.topics.map((t) => (
           <li key={t.topic}>

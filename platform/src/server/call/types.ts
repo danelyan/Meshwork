@@ -39,11 +39,8 @@ export interface AiUtteranceMeta {
   /** kind=interview: компетенция модели (server/interview/model.ts) и блок интервью. */
   competencyId?: string;
   block?: BlockId;
-  /**
-   * Кандидат перебил реплику (POST /api/call/{id}/interrupt): в `text` остался услышанный префикс с пометкой,
-   * `tail` — недосказанное (в историю не входит, интервьюер может к нему вернуться). Разбиение — lib/sentences.ts.
-   */
-  interrupted?: { heardSentences: number; totalSentences: number; tail: string };
+  /** Этап «разбор решённого задания теста»: шаг 1 — объяснить ход решения, шаг 2 — изменить условие. */
+  testReview?: { step: 1 | 2; templateId: string };
 }
 
 /** Одна реплика транскрипта (CallSession.transcriptJson — массив таких). */
@@ -117,9 +114,34 @@ export function depthStatus(d: Pick<DepthMapItem, 'confirmed'> & { status?: Dept
   return d.status ?? (d.confirmed ? 'confirmed' : 'not_confirmed');
 }
 
+/**
+ * Связь теста и созвона (11.10): объяснил ли кандидат ход решения заданий, которые решал в тесте.
+ * Только сигнал: в ранжирование и категорию не входит. not_checked — этапа не было (нет попытки теста
+ * или кандидат завершил созвон раньше) либо оценка недоступна.
+ */
+export const TEST_OWNERSHIP_STATUSES = ['explained', 'partial', 'failed', 'not_checked'] as const;
+export type TestOwnershipStatus = (typeof TEST_OWNERSHIP_STATUSES)[number];
+
+export const OWNERSHIP_LABEL: Record<TestOwnershipStatus, string> = {
+  explained: 'объяснил сам',
+  partial: 'объяснил частично',
+  failed: 'не смог объяснить',
+  not_checked: 'не проверялось',
+};
+
+export interface TestOwnership {
+  status: TestOwnershipStatus;
+  /** Короткая причина от оценщика (≤ 240 символов). Работодателю до accepted не отдаётся. */
+  reason: string;
+  /** Какие задания разбирали: id шаблона, название и был ли ответ в тесте верным. */
+  items: { templateId: string; title: string; correct: boolean }[];
+}
+
 export interface CallVerdict {
   kind: CallKind;
   depthMap: DepthMapItem[];
+  /** Решения теста: объяснил сам / не смог (поле есть только у kind=qualifying после 11.10). */
+  testOwnership?: TestOwnership;
   /** Сколько прогонов оценщика запускалось и сколько дали валидный ответ. */
   runs: number;
   validRuns: number;
@@ -190,6 +212,8 @@ export type CallAccess = 'full' | 'summary';
 export interface PublicCallVerdict {
   kind: CallKind;
   depthMap: Omit<DepthMapItem, 'quote' | 'claimStatement' | 'runs' | 'agreement'>[];
+  /** Только статус и названия заданий, без причины (она может пересказывать слова кандидата). */
+  testOwnership?: { status: TestOwnershipStatus; items: { title: string }[] };
   summary: string;
   evaluatedAt: string;
   thresholdVersion: string;

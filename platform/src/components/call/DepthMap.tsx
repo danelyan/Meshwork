@@ -1,4 +1,4 @@
-import { type CallVerdict, type DepthMapItem, type DepthStatus, depthStatus, type PublicCallVerdict } from '@/server/call/types';
+import { type CallVerdict, OWNERSHIP_LABEL, type DepthMapItem, type DepthStatus, depthStatus, type PublicCallVerdict } from '@/server/call/types';
 
 import { cx } from '../ui';
 
@@ -36,6 +36,12 @@ export function DepthMap({ verdict, dark = false }: { verdict: CallVerdict | Pub
   return (
     <div className={cx(styles.map, dark && styles.dark)} data-testid="depth-map">
       <p className={styles.summary}>{verdict.summary}</p>
+      {verdict.testOwnership && verdict.testOwnership.status !== 'not_checked' && (
+        <p className={styles.note} data-testid="test-ownership">
+          Решения теста: {OWNERSHIP_LABEL[verdict.testOwnership.status]}
+          {'reason' in verdict.testOwnership && verdict.testOwnership.reason ? ` - ${verdict.testOwnership.reason}` : ''}
+        </p>
+      )}
       {items.length > 0 && (
         <ul className={styles.list}>
           {items.map((d) => {

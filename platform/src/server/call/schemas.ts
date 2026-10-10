@@ -29,13 +29,6 @@ export type TurnBody = z.infer<typeof TurnBody>;
 
 export const CallConsentBody = z.object({ version: z.string().min(1).max(64) });
 
-/** Перебивание: индекс текущей реплики ИИ и сколько её предложений успело прозвучать (lib/sentences.ts). */
-export const InterruptBody = z.object({
-  index: z.number().int().min(0),
-  heardSentences: z.number().int().min(0).max(64),
-});
-export type InterruptBody = z.infer<typeof InterruptBody>;
-
 export const CallListQuery = z.object({ kind: z.enum(CALL_KINDS).optional() });
 
 // ---------------------------------------------------------------------------
@@ -76,3 +69,15 @@ export const CallEvaluatorOutput = z.object({
     .max(12),
 });
 export type CallEvaluatorOutput = z.infer<typeof CallEvaluatorOutput>;
+
+/** Оценщик «решил сам»: статус, дословная цитата кандидата и причина. Без цитаты «объяснил» понижается кодом. */
+export const CallOwnershipOutput = z.object({
+  quote: z.string().max(600),
+  reason: z.string().min(2).max(300),
+  status: z.enum(['explained', 'partial', 'failed']),
+});
+export type CallOwnershipOutput = z.infer<typeof CallOwnershipOutput>;
+
+/** Реплика этапа «разбор решённого задания теста»: только текст вопроса (тему и уровень задаёт код). */
+export const CallReviewQuestionOutput = z.object({ question: z.string().min(10).max(600) });
+export type CallReviewQuestionOutput = z.infer<typeof CallReviewQuestionOutput>;

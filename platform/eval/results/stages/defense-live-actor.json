@@ -1,0 +1,448 @@
+{
+  "stage": 3,
+  "provider": "DeepSeek V4 Flash (Yandex)/gpt://b1g8c7gaanu3tnh3475r/deepseek-v4-flash",
+  "stub": false,
+  "runAt": "2026-10-10T15:13:17.565Z",
+  "defenses": 3,
+  "projectScore": 0.95,
+  "summaries": [
+    {
+      "persona": "ai-only",
+      "defenses": 3,
+      "failed": 0,
+      "totals": [
+        3.8,
+        3,
+        3.4
+      ],
+      "meanTotal": 3.4,
+      "passRate": 0,
+      "flagRate": 1,
+      "unevenRate": 0.3333333333333333,
+      "knownItemMean": null,
+      "unknownItemMean": null,
+      "itemSpreadMean": 1.3571428571428572,
+      "avgEvaluatorRuns": 3.6666666666666665,
+      "withinSpreadMean": 1.2333333333333332,
+      "withinSpreadMax": 3.1999999999999997,
+      "betweenSpread": 0.7999999999999998,
+      "disagreementFlags": 1,
+      "avgAnswered": 7.666666666666667,
+      "avgPlatformCalls": 9.333333333333334,
+      "avgPersonaCalls": 7.666666666666667,
+      "avgPlatformTokens": 22864.333333333332,
+      "qlcGenerators": {
+        "llm": 3
+      }
+    }
+  ],
+  "observations": [
+    {
+      "persona": "ai-only",
+      "defense": 1,
+      "sessionId": "cmv2j6w050007zmcl2unmluqm",
+      "total": 3.8,
+      "passed": false,
+      "runs": [
+        3.8,
+        3.5,
+        3.8
+      ],
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "answered": 7,
+      "followUps": 3,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "items": [
+        {
+          "itemId": "q1",
+          "label": "что сломается · src/links.js:L18-L44",
+          "ref": "src/links.js:L18-L44",
+          "total": 4,
+          "passed": false,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "itemId": "q2",
+          "label": "почему так · src/links.js:L5-L16",
+          "ref": "src/links.js:L5-L16",
+          "total": 4,
+          "passed": false,
+          "runs": [
+            4,
+            3,
+            4
+          ]
+        },
+        {
+          "itemId": "q3",
+          "label": "что делает · src/codec.js:L15-L23",
+          "ref": "src/codec.js:L15-L23",
+          "total": 3,
+          "passed": false,
+          "runs": [
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "itemId": "q-constraint",
+          "label": "смени ограничение",
+          "ref": null,
+          "total": 4,
+          "passed": false,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        }
+      ],
+      "platform": {
+        "calls": 8,
+        "failures": 0,
+        "inputTokens": 12124,
+        "outputTokens": 6162,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2110,
+            "outputTokens": 737
+          },
+          "call_interviewer": {
+            "calls": 4,
+            "failures": 0,
+            "inputTokens": 2547,
+            "outputTokens": 160
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 7467,
+            "outputTokens": 5265
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 7,
+        "failures": 0,
+        "inputTokens": 8658,
+        "outputTokens": 774,
+        "byPurpose": {
+          "smoke": {
+            "calls": 7,
+            "failures": 0,
+            "inputTokens": 8658,
+            "outputTokens": 774
+          }
+        }
+      }
+    },
+    {
+      "persona": "ai-only",
+      "defense": 2,
+      "sessionId": "cmv2j7pjw0018zmcl6flygaiw",
+      "total": 3,
+      "passed": false,
+      "runs": [
+        3.6,
+        3.2,
+        0.6,
+        2.8,
+        3.8
+      ],
+      "flags": [
+        "strong_project_weak_defense",
+        "evaluator_disagreement",
+        "uneven_understanding"
+      ],
+      "answered": 8,
+      "followUps": 3,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "items": [
+        {
+          "itemId": "q1",
+          "label": "что делает · src/server.js:L7-L43",
+          "ref": "src/server.js:L7-L43",
+          "total": 3,
+          "passed": false,
+          "runs": [
+            3,
+            3,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "itemId": "q2",
+          "label": "почему так · src/links.js:L5-L16",
+          "ref": "src/links.js:L5-L16",
+          "total": 3,
+          "passed": false,
+          "runs": [
+            4,
+            3,
+            0,
+            3,
+            4
+          ]
+        },
+        {
+          "itemId": "q3",
+          "label": "что сломается · src/codec.js:L4-L13",
+          "ref": "src/codec.js:L4-L13",
+          "total": 2,
+          "passed": false,
+          "runs": [
+            3,
+            3,
+            1,
+            1,
+            3
+          ]
+        },
+        {
+          "itemId": "q4",
+          "label": "измени поведение · src/codec.js:L15-L23",
+          "ref": "src/codec.js:L15-L23",
+          "total": 4,
+          "passed": false,
+          "runs": [
+            4,
+            4,
+            0,
+            4,
+            4
+          ]
+        },
+        {
+          "itemId": "q-constraint",
+          "label": "смени ограничение",
+          "ref": null,
+          "total": 3,
+          "passed": false,
+          "runs": [
+            4,
+            3,
+            0,
+            3,
+            4
+          ]
+        }
+      ],
+      "platform": {
+        "calls": 11,
+        "failures": 0,
+        "inputTokens": 19321,
+        "outputTokens": 8278,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2110,
+            "outputTokens": 822
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3281,
+            "outputTokens": 207
+          },
+          "call_evaluator": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 13930,
+            "outputTokens": 7249
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 8,
+        "failures": 0,
+        "inputTokens": 11227,
+        "outputTokens": 900,
+        "byPurpose": {
+          "smoke": {
+            "calls": 8,
+            "failures": 0,
+            "inputTokens": 11227,
+            "outputTokens": 900
+          }
+        }
+      }
+    },
+    {
+      "persona": "ai-only",
+      "defense": 3,
+      "sessionId": "cmv2j97mh002hzmclu53ycwkk",
+      "total": 3.4,
+      "passed": false,
+      "runs": [
+        3.6,
+        3.6,
+        3.4
+      ],
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "answered": 8,
+      "followUps": 3,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "items": [
+        {
+          "itemId": "q1",
+          "label": "почему так · src/links.js:L18-L44",
+          "ref": "src/links.js:L18-L44",
+          "total": 4,
+          "passed": false,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "itemId": "q2",
+          "label": "что сломается · src/server.js:L7-L43",
+          "ref": "src/server.js:L7-L43",
+          "total": 4,
+          "passed": false,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "itemId": "q3",
+          "label": "что сломается · src/codec.js:L15-L23",
+          "ref": "src/codec.js:L15-L23",
+          "total": 3,
+          "passed": false,
+          "runs": [
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "itemId": "q4",
+          "label": "измени поведение · src/codec.js:L4-L13",
+          "ref": "src/codec.js:L4-L13",
+          "total": 3,
+          "passed": false,
+          "runs": [
+            4,
+            3,
+            3
+          ]
+        },
+        {
+          "itemId": "q-constraint",
+          "label": "смени ограничение",
+          "ref": null,
+          "total": 3,
+          "passed": false,
+          "runs": [
+            3,
+            4,
+            3
+          ]
+        }
+      ],
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 14487,
+        "outputTokens": 8221,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2110,
+            "outputTokens": 964
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3530,
+            "outputTokens": 234
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 8847,
+            "outputTokens": 7023
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 8,
+        "failures": 0,
+        "inputTokens": 11827,
+        "outputTokens": 1016,
+        "byPurpose": {
+          "smoke": {
+            "calls": 8,
+            "failures": 0,
+            "inputTokens": 11827,
+            "outputTokens": 1016
+          }
+        }
+      }
+    }
+  ],
+  "totals": {
+    "platform": {
+      "calls": 28,
+      "failures": 0,
+      "inputTokens": 45932,
+      "outputTokens": 22661,
+      "byPurpose": {
+        "defense_qlc": {
+          "calls": 3,
+          "failures": 0,
+          "inputTokens": 6330,
+          "outputTokens": 2523
+        },
+        "call_interviewer": {
+          "calls": 14,
+          "failures": 0,
+          "inputTokens": 9358,
+          "outputTokens": 601
+        },
+        "call_evaluator": {
+          "calls": 11,
+          "failures": 0,
+          "inputTokens": 30244,
+          "outputTokens": 19537
+        }
+      }
+    },
+    "persona": {
+      "calls": 23,
+      "failures": 0,
+      "inputTokens": 31712,
+      "outputTokens": 2690,
+      "byPurpose": {
+        "smoke": {
+          "calls": 23,
+          "failures": 0,
+          "inputTokens": 31712,
+          "outputTokens": 2690
+        }
+      }
+    }
+  }
+}

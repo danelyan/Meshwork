@@ -44,6 +44,8 @@ export interface ComposerProps {
   voice?: boolean;
   /** Кнопка «Созвониться» (lane call): открыть режим звонка в сцене. Нет — кнопки нет. */
   onCall?: () => void;
+  /** Вид режима звонка: «interview» (после теста на грейд) меняет подпись кнопки на «ИИнтервью». */
+  callKind?: 'qualifying' | 'interview' | 'defense';
 }
 
 /**
@@ -73,6 +75,7 @@ export function Composer({
   attachments,
   voice,
   onCall,
+  callKind,
 }: ComposerProps) {
   const id = useId();
   const limitsId = useId();
@@ -169,7 +172,7 @@ export function Composer({
         {inlineAction && <div className={styles.inlineAction}>{inlineAction}</div>}
         {voice && <VoiceButton value={value} onChange={onChange} disabled={disabled} />}
         {onCall && (
-          <button type="button" className={styles.iconBtn} onClick={onCall} disabled={disabled} aria-label="Созвониться" title="Созвониться с ИИ-интервьюером: 4–6 вопросов голосом, карта глубины в профиле" data-testid="call-button">
+          <button type="button" className={styles.iconBtn} onClick={onCall} disabled={disabled} aria-label={callKind === 'interview' ? 'ИИнтервью' : 'Созвониться'} title={callKind === 'interview' ? 'ИИнтервью после теста: вопросы по блокам голосом, профиль компетенций в кабинете' : 'Созвониться с ИИ-интервьюером: 4–6 вопросов голосом, карта глубины в профиле'} data-testid="call-button" data-call-kind={callKind ?? 'qualifying'}>
             <PhoneIcon />
           </button>
         )}

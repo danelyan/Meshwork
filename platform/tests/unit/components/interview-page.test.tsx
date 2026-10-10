@@ -55,3 +55,17 @@ it('итог: соответствие по интервью, не «грейд 
   expect(screen.getByText('Категорию не меняет.')).toBeTruthy();
   expect(screen.getByRole('link', { name: /Открыть профиль/ }).getAttribute('href')).toBe('/profile');
 });
+
+it('страница /interview: без интервью — карточка со ссылкой «Пройти в консультанте», без старта на месте', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(JSON.stringify({ consent: { given: true, version: 'v', text: [] }, calls: [], mode: 'off' }), { status: 200, headers: { 'content-type': 'application/json' } })),
+  );
+  HTMLElement.prototype.scrollTo = () => {};
+  const { InterviewPage } = await import('@/components/interview/InterviewPage');
+  render(<InterviewPage />);
+  const link = await screen.findByText(/Пройти в консультанте/);
+  expect(link.closest('a')?.getAttribute('href')).toBe('/consultant?call=1');
+  expect(screen.queryByText('Начать ИИнтервью')).toBeNull();
+  vi.unstubAllGlobals();
+});

@@ -86,9 +86,9 @@ function OpenButton() {
   );
 }
 
-function renderScene() {
+function renderScene(kind?: 'interview') {
   return render(
-    <AvatarScene variant="call-side" call>
+    <AvatarScene variant="call-side" call callKind={kind}>
       <div data-testid="feed">
         лента <OpenButton />
       </div>
@@ -145,5 +145,68 @@ describe('CallPanel — режим звонка в сцене консульта
     rerender(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={onCall} />);
     fireEvent.click(screen.getByTestId('call-button'));
     expect(onCall).toHaveBeenCalledOnce();
+  });
+
+  it('кнопка входа в композере: «Созвониться» до теста, «ИИнтервью» после', () => {
+    const { rerender } = render(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} />);
+    expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('Созвониться');
+    rerender(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callKind="interview" />);
+    expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('ИИнтервью');
+  });
+});
+
+const iq = (index: number, text: string): TranscriptEntry => ({
+  index,
+  role: 'ai',
+  text,
+  at: '2026-10-10T12:00:00.000Z',
+  tMs: index * 1000,
+  meta: { topic: 'Данные и хранение', catalogId: 'be.data', competencyId: 'backend.data', block: 'test', level: 1, routedBy: null },
+});
+
+describe('CallPanel — вид «ИИнтервью» (после теста на грейд)', () => {
+  beforeEach(() => {
+    routes['GET /api/call'] = () => ({ consent: { given: true, version: 'cv-1', text: [] }, calls: [] });
+    routes['POST /api/call/start'] = () => ({ sessionId: 'call-1', resumed: false, webrtc: { iceServers: [] }, call: view({ kind: 'interview', transcript: [iq(0, 'Расскажи, как ты проектировал схему данных?')] }) });
+    routes['POST /api/call/call-1/turn'] = () => ({
+      candidate: { index: 1, role: 'candidate', text: 'Пропускаю этот вопрос.', at: 'x', tMs: 1 },
+      ai: iq(2, 'Как устроены индексы?'),
+      text: 'Как устроены индексы?',
+      done: false,
+    });
+  });
+
+  it('стартует интервью, показывает блок и этапы, «Пропустить» шлёт ответ-пропуск, «Уточнить» — подсказку', async () => {
+    renderScene('interview');
+    fireEvent.click(screen.getByText('открыть'));
+    expect(await screen.findByText('Расскажи, как ты проектировал схему данных?')).toBeTruthy();
+    expect(calls.find((c) => c.url === 'POST /api/call/start')?.body).toEqual({ kind: 'interview' });
+    expect(screen.getByText('ИИнтервью')).toBeTruthy();
+    expect(screen.getByTestId('call-block').textContent).toBe('Разбор теста');
+    expect(screen.getByTestId('interview-progress').textContent).toContain('вопрос 1 из');
+    expect(screen.getByTestId('interview-steps')).toBeTruthy();
+
+    await waitFor(() => expect((screen.getByText('Уточнить вопрос') as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(screen.getByText('Уточнить вопрос'));
+    expect(screen.getByTestId('call-hint').textContent).toContain('Поясню');
+    expect(calls.some((c) => c.url === 'POST /api/call/call-1/turn')).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Пропустить'));
+    });
+    expect(await screen.findByText('Как устроены индексы?')).toBeTruthy();
+    expect(calls.find((c) => c.url === 'POST /api/call/call-1/turn')?.body).toEqual({ text: 'Пропускаю этот вопрос.' });
+  });
+
+  it('прошлый завершённый интервью показывается итогом, без нового старта', async () => {
+    routes['GET /api/call'] = () => ({
+      consent: { given: true, version: 'cv-1', text: [] },
+      calls: [view({ kind: 'interview', status: 'finished', verdict: null })],
+    });
+    renderScene('interview');
+    fireEvent.click(screen.getByText('открыть'));
+    expect(await screen.findByText('Интервью закрыто без оценки: ответов не было или оценщик был недоступен.')).toBeTruthy();
+    expect(calls.some((c) => c.url === 'POST /api/call/start')).toBe(false);
+    expect(screen.getByText('Пройти ещё раз')).toBeTruthy();
   });
 });

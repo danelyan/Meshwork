@@ -105,3 +105,12 @@ export async function loadInterviewContext(candidateId: string): Promise<Intervi
     resumeFacts: claims.map((c) => c.quote.trim()).filter((q) => q.length >= 8),
   };
 }
+
+/**
+ * Вид режима созвона в сцене консультанта: после теста на грейд (есть категория из теста) — ИИнтервью,
+ * до него — квалифицирующий созвон. Категория создаётся только по итогам теста (CategorySource.test).
+ */
+export async function resolveCallKind(candidateId: string): Promise<'interview' | 'qualifying'> {
+  const n = await prisma.candidateCategory.count({ where: { candidateId, source: 'test' } });
+  return n > 0 ? 'interview' : 'qualifying';
+}

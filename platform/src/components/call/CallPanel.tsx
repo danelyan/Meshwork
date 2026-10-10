@@ -5,10 +5,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/lib/api';
 import { callApi, subscribeCallEvents } from '@/lib/call-api';
 import type { CallVerdict, CallView, TranscriptEntry } from '@/server/call/types';
+import { blockDef, competencyById } from '@/server/interview/model';
+import { INTERVIEW_LIMITS, clarificationHint, stageOf } from '@/server/interview/plan';
+
 
 import { HeadView } from '../avatar/HeadView';
 import { MuteToggle, StateChip } from '../avatar/Speaking';
 import { useCompanionVoice } from '../avatar/voice';
+import { Criteria, ResultCard, Stages } from '../interview/InterviewPage';
+import { SKIP_ANSWER, summaryOf, turnsOf } from '../interview/helpers';
 import { Spinner, cx } from '../ui';
 
 import styles from './CallPanel.module.css';
@@ -36,6 +41,8 @@ function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined
  */
 export function CallPanel() {
   const mode = useCallMode();
+  const kind = mode?.kind ?? 'qualifying';
+  const interview = kind === 'interview';
   const voice = useCompanionVoice();
   const voiceRef = useRef(voice);
   voiceRef.current = voice;
@@ -51,14 +58,24 @@ export function CallPanel() {
   const [closing, setClosing] = useState(false);
   /** Идут дополнительные вопросы по темам, где оценщик не определился. */
   const [extra, setExtra] = useState(false);
+  /** ИИнтервью: подсказка «Уточнить вопрос» к реплике ИИ с этим index (клиент, не ответ кандидата). */
+  const [hint, setHint] = useState<{ index: number; text: string } | null>(null);
+  const replays = useRef(0);
   const [now, setNow] = useState(() => Date.now());
   const spoken = useRef(new Set<string>());
 
   const begin = useCallback(async () => {
     setPhase('starting');
     setError(null);
+    setClosing(false);
+    setHint(null);
+    if (interview) {
+      // Новое интервью после завершённого: сбросить состояние прошлого.
+      setCall(null);
+      setTranscript([]);
+    }
     try {
-      const r = await callApi.start();
+      const r = await callApi.start(kind);
       setCall(r.call);
       setTranscript(r.call.transcript ?? []);
       setPhase('live');
@@ -67,17 +84,24 @@ export function CallPanel() {
       setError(e instanceof Error ? e.message : 'Не удалось начать созвон');
       setPhase('error');
     }
-  }, []);
+  }, [kind, interview]);
 
   // Открытие: согласие → старт (или продолжение активного созвона).
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const list = await callApi.list();
+        const list = await callApi.list(kind);
         if (!alive) return;
         setConsentText(list.consent.text);
         setConsentVersion(list.consent.version);
+        // ИИнтервью: уже пройденное показываем итогом (кнопка «Пройти ещё раз»), а не стартуем заново.
+        const lastDone = interview && !list.calls.some((c) => c.status === 'active') ? list.calls.find((c) => c.status === 'finished') : null;
+        if (lastDone) {
+          setCall(lastDone);
+          setTranscript(lastDone.transcript ?? []);
+          return setPhase('done');
+        }
         if (!list.consent.given) return setPhase('consent');
         await begin();
       } catch (e) {
@@ -89,7 +113,7 @@ export function CallPanel() {
     return () => {
       alive = false;
     };
-  }, [begin]);
+  }, [begin, kind, interview]);
 
   // События созвона: реплики из других вкладок и (позже) работодателя в комнате.
   const id = call?.id;
@@ -179,7 +203,7 @@ export function CallPanel() {
         // Оценщик разошёлся по какой-то теме: созвон продолжается дополнительным вопросом.
         setTranscript((t) => merge(t, v.transcript ?? []));
         setClosing(false);
-        setExtra(true);
+        setExtra(!interview);
         setPhase('live');
         return;
       }
@@ -207,18 +231,36 @@ export function CallPanel() {
   const startedAt = call ? new Date(call.startedAt).getTime() : now;
   const canFinish = answered > 0 && !busy && mic.state === 'idle';
   const progress = call?.progress;
+  const summary = interview ? summaryOf(call?.verdict) : null;
+  const stage = phase === 'done' ? 'summary' : stageOf(turnsOf(transcript), closing);
+  const aiBlock = (e: TranscriptEntry | undefined) => (interview && e?.meta?.block ? blockDef(e.meta.block).title : null);
+  const canAct = awaiting && !closing && phase === 'live';
+  const replay = () => {
+    if (!lastAi) return;
+    replays.current += 1;
+    voice?.replay(lastAi.text, `call-${id}-${lastAi.index}-r${replays.current}`);
+  };
+  const clarify = () => {
+    const c = lastAi?.meta?.competencyId ? competencyById(lastAi.meta.competencyId) : null;
+    if (lastAi && c) setHint({ index: lastAi.index, text: clarificationHint(c, lastAi.meta!.level) });
+  };
 
   return (
     <section className={styles.panel} aria-label="Созвон с ИИ-интервьюером" data-testid="call-panel" data-phase={phase}>
       <header className={styles.top}>
-        <span className={styles.badge}>Квалифицирующий созвон</span>
+        <span className={styles.badge}>{interview ? 'ИИнтервью' : 'Квалифицирующий созвон'}</span>
         {(phase === 'live' || phase === 'finishing') && (
           <span className={styles.rec} role="status" data-testid="call-rec">
             <i className={styles.recDot} aria-hidden="true" />
             Запись {mmss(now - startedAt)}
           </span>
         )}
-        {phase === 'live' && progress && (
+        {phase === 'live' && interview && (
+          <span className={styles.count} data-testid="interview-progress">
+            {blockDef(stage).title} · вопрос {Math.min(answered + 1, INTERVIEW_LIMITS.maxQuestions)} из {INTERVIEW_LIMITS.minQuestions}–{INTERVIEW_LIMITS.maxQuestions}
+          </span>
+        )}
+        {phase === 'live' && !interview && progress && (
           <span className={styles.count}>
             ответов {answered} · вопросов {progress.minQuestions}–{progress.maxQuestions}
           </span>
@@ -245,14 +287,14 @@ export function CallPanel() {
 
         {phase === 'consent' && (
           <div className={styles.consent} data-testid="call-consent">
-            <b>Перед первым созвоном - согласие на запись</b>
+            <b>{interview ? 'Перед ИИнтервью - согласие на запись' : 'Перед первым созвоном - согласие на запись'}</b>
             {mode?.reason && <p className={styles.reason}>{mode.reason}</p>}
             {consentText.map((p) => (
               <p key={p}>{p}</p>
             ))}
             <div className={styles.row}>
               <button type="button" className={styles.primary} onClick={() => void acceptConsent()}>
-                Согласен, начать созвон
+                {interview ? 'Согласен, начать ИИнтервью' : 'Согласен, начать созвон'}
               </button>
               <button type="button" className={styles.ghost} onClick={mode?.close}>
                 Не сейчас
@@ -263,9 +305,28 @@ export function CallPanel() {
 
         {(phase === 'live' || phase === 'finishing') && (
           <>
+            {!busy && aiBlock(lastAi) && (
+              <p className={styles.stage} data-testid="call-block">
+                {aiBlock(lastAi)}
+              </p>
+            )}
             <p className={styles.line} aria-live="polite" data-testid="call-ai-line">
               {busy ? 'Интервьюер думает…' : lastAi?.text}
             </p>
+            {interview && !busy && hint && lastAi && hint.index === lastAi.index && (
+              <p className={styles.hint} role="note" data-testid="call-hint">
+                {hint.text}
+              </p>
+            )}
+            {interview && (
+              <details className={styles.steps} data-testid="interview-steps">
+                <summary>Этапы и критерии · сейчас: {blockDef(stage).title}</summary>
+                <div className={styles.sheet}>
+                  <Stages current={stage} />
+                  <Criteria summary={summary} />
+                </div>
+              </details>
+            )}
             {mic.state === 'recording' && mic.interim ? (
               <p className={styles.mine}>{mic.interim}</p>
             ) : lastCandidate && !awaiting && busy ? (
@@ -275,13 +336,40 @@ export function CallPanel() {
             {closing && <p className={styles.hint}>Вопросы закончились - нажми «Завершить».</p>}
             {phase === 'finishing' && (
               <p className={styles.wait}>
-                <Spinner /> Оценщик разбирает ответы (три независимых прогона, при расхождении - пять)…
+                <Spinner /> {interview ? 'Собираю оценку по компетенциям…' : 'Оценщик разбирает ответы (три независимых прогона, при расхождении - пять)…'}
               </p>
             )}
           </>
         )}
 
-        {phase === 'done' && call?.verdict && (
+        {phase === 'done' && interview && summary && call && (
+          <div className={styles.sheet} data-testid="interview-result">
+            <ResultCard summary={summary} disclaimer={call.disclaimer} />
+            <Criteria summary={summary} />
+            <div className={styles.row}>
+              <button type="button" className={styles.sheetBtn} onClick={() => void begin()}>
+                Пройти ещё раз
+              </button>
+              <button type="button" className={styles.sheetBtn} onClick={mode?.close}>
+                Вернуться в чат
+              </button>
+            </div>
+          </div>
+        )}
+        {phase === 'done' && interview && !summary && (
+          <>
+            <p className={styles.hint}>Интервью закрыто без оценки: ответов не было или оценщик был недоступен.</p>
+            <div className={styles.row}>
+              <button type="button" className={styles.primary} onClick={() => void begin()}>
+                Пройти ещё раз
+              </button>
+              <button type="button" className={styles.ghost} onClick={mode?.close}>
+                Вернуться в чат
+              </button>
+            </div>
+          </>
+        )}
+        {phase === 'done' && !interview && call?.verdict && (
           <div className={styles.result}>
             <b>Карта глубины</b>
             <DepthMap verdict={call.verdict as CallVerdict} dark />
@@ -298,7 +386,7 @@ export function CallPanel() {
             </div>
           </div>
         )}
-        {phase === 'done' && !call?.verdict && <p className={styles.hint}>Ответов не было - созвон закрыт без оценки.</p>}
+        {phase === 'done' && !interview && !call?.verdict && <p className={styles.hint}>Ответов не было - созвон закрыт без оценки.</p>}
 
         {(error || mic.error) && (
           <p className={styles.error} role="alert">
@@ -335,6 +423,19 @@ export function CallPanel() {
                 Ответить
               </button>
             </form>
+          )}
+          {interview && (
+            <div className={styles.quick} data-testid="interview-quick">
+              <button type="button" className={styles.chip} disabled={!lastAi || !voice} onClick={replay}>
+                Повторить вопрос
+              </button>
+              <button type="button" className={styles.chip} disabled={!canAct || !lastAi?.meta?.competencyId} onClick={clarify}>
+                Уточнить вопрос
+              </button>
+              <button type="button" className={styles.chip} disabled={!canAct} onClick={() => void send({ text: SKIP_ANSWER })}>
+                Пропустить
+              </button>
+            </div>
           )}
           <div className={styles.bar}>
             {mic.available && (

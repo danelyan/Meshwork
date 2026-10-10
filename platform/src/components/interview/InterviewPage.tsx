@@ -2,20 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { ApiError } from '@/lib/api';
 import { callApi, subscribeCallEvents } from '@/lib/call-api';
-import type { CallVerdict, CallView, PublicCallVerdict, TranscriptEntry } from '@/server/call/types';
+import type { CallView, TranscriptEntry } from '@/server/call/types';
 import { AXES, AXIS_LABEL, BLOCK_DEFS, type BlockId, blockDef, competencyById } from '@/server/interview/model';
-import { INTERVIEW_LIMITS, type InterviewTurn, clarificationHint, stageOf } from '@/server/interview/plan';
+import { INTERVIEW_LIMITS, clarificationHint, stageOf } from '@/server/interview/plan';
 import type { InterviewSummary } from '@/server/interview/types';
 
 import { useCallMic } from '../call/useCallMic';
 import { Button, Spinner, cx } from '../ui';
 
+import { SKIP_ANSWER, summaryOf, turnsOf } from './helpers';
 import styles from './InterviewPage.module.css';
 import { useSpeech } from './useSpeech';
 
-type Phase = 'loading' | 'intro' | 'consent' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
+type Phase = 'loading' | 'intro' | 'live' | 'finishing' | 'done' | 'error';
 
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -28,19 +28,8 @@ function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined
   return [...byIndex.values()].sort((a, b) => a.index - b.index);
 }
 
-/** Пары вопрос → ответ из транскрипта для расчёта этапа (без сервера). */
-function turnsOf(transcript: readonly TranscriptEntry[]): InterviewTurn[] {
-  const out: InterviewTurn[] = [];
-  for (const e of transcript) {
-    if (e.role === 'ai' && e.meta?.competencyId && e.meta.block) {
-      out.push({ question: e.text, answer: null, competencyId: e.meta.competencyId, block: e.meta.block, level: e.meta.level, ...(e.meta.probe ? { probe: true } : {}) });
-    } else if (e.role === 'candidate') {
-      const last = out[out.length - 1];
-      if (last) last.answer = (last.answer ?? '') + e.text;
-    }
-  }
-  return out;
-}
+/** Вход в ИИнтервью: консультант с сразу открытым режимом созвона. */
+export const CONSULTANT_CALL_HREF = '/consultant?call=1';
 
 const QUESTION_BLOCKS = BLOCK_DEFS.filter((b) => b.questions.max > 0);
 
@@ -80,10 +69,6 @@ export function Criteria({ summary }: { summary: InterviewSummary | null }) {
       })}
     </div>
   );
-}
-
-function summaryOf(v: CallVerdict | PublicCallVerdict | null | undefined): InterviewSummary | null {
-  return v && 'interview' in v && v.interview ? v.interview : null;
 }
 
 /** Итоговая карточка (мокап: «Middle подтверждён · итог 84/100» → у нас соответствие по интервью, без вердикта о грейде). */
@@ -131,15 +116,12 @@ const MicIcon = () => (
 );
 
 /**
- * ИИнтервью (docs/competency-model.md): стартовая карточка → согласие на запись (как у созвона) → лента
- * вопросов по блокам, ответ текстом или голосом (микрофон → /api/call/{id}/audio → /turn), озвучка
- * реплик ИИ через /api/tts → «Завершить» → результат по осям и компетенциям.
+ * ИИнтервью (docs/competency-model.md): просмотр результата и истории. Новое интервью проходит в консультанте
+ * (режим созвона, решение владельца 10.10); стартовая карточка ведёт туда. Уже идущее интервью можно
+ * продолжить здесь: лента вопросов, ответ текстом или голосом, озвучка через /api/tts, «Завершить».
  */
 export function InterviewPage() {
   const [phase, setPhase] = useState<Phase>('loading');
-  const [consentText, setConsentText] = useState<string[]>([]);
-  const [consentVersion, setConsentVersion] = useState('');
-  const [consentGiven, setConsentGiven] = useState(false);
   const [call, setCall] = useState<CallView | null>(null);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [busy, setBusy] = useState(false);
@@ -165,9 +147,6 @@ export function InterviewPage() {
       try {
         const list = await callApi.list('interview');
         if (!alive) return;
-        setConsentText(list.consent.text);
-        setConsentVersion(list.consent.version);
-        setConsentGiven(list.consent.given);
         const active = list.calls.find((c) => c.status === 'active');
         if (active) {
           setCall(active);
@@ -193,43 +172,6 @@ export function InterviewPage() {
       alive = false;
     };
   }, []);
-
-  const begin = useCallback(async () => {
-    setPhase('starting');
-    setError(null);
-    // Новое интервью после завершённого: сбросить состояние прошлого.
-    setClosing(false);
-    setHint(null);
-    setDraft('');
-    setCall(null);
-    setTranscript([]);
-    try {
-      const r = await callApi.start('interview');
-      setCall(r.call);
-      setTranscript(r.call.transcript ?? []);
-      setPhase('live');
-    } catch (e) {
-      if (e instanceof ApiError && e.code === 'call_consent_required') return setPhase('consent');
-      setError(e instanceof Error ? e.message : 'Не удалось начать интервью');
-      setPhase('intro');
-    }
-  }, []);
-
-  const start = async () => {
-    if (!consentGiven) return setPhase('consent');
-    await begin();
-  };
-
-  const acceptConsent = async () => {
-    setError(null);
-    try {
-      await callApi.consent(consentVersion);
-      setConsentGiven(true);
-      await begin();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Согласие не записалось');
-    }
-  };
 
   // SSE: реплики могут прийти и не из нашего запроса (второй таб).
   useEffect(() => {
@@ -396,7 +338,7 @@ export function InterviewPage() {
                 <div className={styles.bubble}>{hint.text}</div>
               </div>
             )}
-            {(busy || phase === 'starting') && (
+            {busy && (
               <div className={cx(styles.msg, styles.ai, styles.typing)} aria-label="ИИ печатает">
                 <span className={styles.av} aria-hidden="true">
                   ИИ
@@ -432,9 +374,7 @@ export function InterviewPage() {
 
           {phase === 'done' && (
             <div className={styles.quick}>
-              <button type="button" onClick={() => void begin()}>
-                Пройти ещё раз
-              </button>
+              <a href={CONSULTANT_CALL_HREF}>Пройти ещё раз в консультанте</a>
             </div>
           )}
 
@@ -454,7 +394,7 @@ export function InterviewPage() {
                 >
                   Уточнить вопрос
                 </button>
-                <button type="button" disabled={!awaiting || closing} onClick={() => void send({ text: 'Пропускаю этот вопрос.' })}>
+                <button type="button" disabled={!awaiting || closing} onClick={() => void send({ text: SKIP_ANSWER })}>
                   Пропустить
                 </button>
               </div>
@@ -534,7 +474,7 @@ export function InterviewPage() {
         </aside>
       </div>
 
-      {(phase === 'intro' || phase === 'consent' || phase === 'starting' || phase === 'loading') && (
+      {(phase === 'intro' || phase === 'loading') && (
         <div className={styles.intro}>
           <div className={styles.card}>
             {phase === 'loading' ? (
@@ -551,7 +491,8 @@ export function InterviewPage() {
                 </div>
                 <p>
                   ИИ-интервьюер пройдёт с тобой четыре блока: знакомство, разбор профильных компетенций, системный дизайн и работу в команде. Итог -
-                  профиль компетенций в кабинете и подтверждённые утверждения в профиле. Категорию интервью не меняет.
+                  профиль компетенций в кабинете и подтверждённые утверждения в профиле. Категорию интервью не меняет. Интервью проходит в консультанте,
+                  в режиме созвона с Кирой; здесь остаётся результат и история.
                 </p>
                 <div className={styles.rules}>
                   <div>
@@ -571,28 +512,14 @@ export function InterviewPage() {
                     <span>только ответы</span>
                   </div>
                 </div>
-                {phase === 'consent' && (
-                  <div className={styles.consent}>
-                    <b>Согласие на запись</b>
-                    {consentText.map((p, i) => (
-                      <span key={i}>{p}</span>
-                    ))}
-                  </div>
-                )}
                 {error && (
                   <p className={styles.error} role="alert">
                     {error}
                   </p>
                 )}
-                {phase === 'consent' ? (
-                  <button type="button" className={styles.go} onClick={() => void acceptConsent()}>
-                    Согласен, начать ИИнтервью <span aria-hidden="true">→</span>
-                  </button>
-                ) : (
-                  <button type="button" className={styles.go} onClick={() => void start()} disabled={phase === 'starting'}>
-                    {phase === 'starting' ? <Spinner /> : 'Начать ИИнтервью'} <span aria-hidden="true">→</span>
-                  </button>
-                )}
+                <a className={styles.go} href={CONSULTANT_CALL_HREF}>
+                  Пройти в консультанте <span aria-hidden="true">→</span>
+                </a>
               </>
             )}
           </div>

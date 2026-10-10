@@ -1,5 +1,7 @@
 'use client';
 
+import type { CallKind } from '@/server/call/types';
+
 import { type ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 /**
@@ -8,6 +10,8 @@ import { type ReactNode, createContext, useCallback, useContext, useMemo, useSta
  * Вне провайдера (страницы без сцены, работодатель) хук возвращает null — кнопок звонка нет.
  */
 export interface CallMode {
+  /** Вид режима: до теста на грейд — квалифицирующий созвон, после — ИИнтервью (решается на сервере). */
+  kind: CallKind;
   open: boolean;
   /** Почему агент предложил созвон (suggest_call) — подпись на экране согласия/старта. */
   reason: string | null;
@@ -21,14 +25,14 @@ export function useCallMode(): CallMode | null {
   return useContext(Ctx);
 }
 
-export function CallProvider({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
+export function CallProvider({ children, kind = 'qualifying', initialOpen = false }: { children: ReactNode; kind?: CallKind; initialOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen);
   const [reason, setReason] = useState<string | null>(null);
   const start = useCallback((r?: string) => {
     setReason(r ?? null);
     setOpen(true);
   }, []);
   const close = useCallback(() => setOpen(false), []);
-  const value = useMemo(() => ({ open, reason, start, close }), [open, reason, start, close]);
+  const value = useMemo(() => ({ kind, open, reason, start, close }), [kind, open, reason, start, close]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -11,6 +11,8 @@ import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 
 import { CallPanel } from '../call/CallPanel';
+import type { CallKind } from '@/server/call/types';
+
 import { CallProvider, useCallMode } from '../call/CallContext';
 import { HeadView } from './HeadView';
 import { SceneSlotsContext } from './SceneSlots';
@@ -36,7 +38,7 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
  * `children` — готовая лента (слитая лента /consultant: онбординг + консультант, см.
  * components/consultant/ConsultantFeed); без них сцена рисует обычный `Chat`.
  */
-export function AvatarScene({ variant, demo, initial, children, aside, label = 'ИИ-консультант', call = false }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; aside?: SceneAsideData; call?: boolean }) {
+export function AvatarScene({ variant, demo, initial, children, aside, label = 'ИИ-консультант', call = false, callKind, callOpen }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; aside?: SceneAsideData; call?: boolean; callKind?: CallKind; callOpen?: boolean }) {
   const feed = (className?: string) => children ?? <Chat demo={demo} initial={initial} className={className} />;
   const scene = (
     <CompanionVoiceProvider autoEnable>
@@ -102,7 +104,7 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
     </CompanionVoiceProvider>
   );
   // Режим звонка (lane call): только у кандидата; провайдер снаружи голоса, чтобы кнопка в ленте его видела.
-  return call ? <CallProvider>{scene}</CallProvider> : scene;
+  return call ? <CallProvider kind={callKind} initialOpen={callOpen}>{scene}</CallProvider> : scene;
 }
 
 /** Сцена «звонок + чат слева»; открыт созвон — сцена становится панелью звонка, лента неактивна. */

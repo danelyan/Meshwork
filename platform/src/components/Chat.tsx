@@ -314,6 +314,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         multiline
         voice
         onCall={callMode ? () => callMode.start() : undefined}
+        callKind={callMode?.kind}
         maxLength={8000}
         attachments={{ files: att.files, onAdd: att.add, onRemove: att.remove }}
         hint="Enter - отправить, Shift+Enter - новая строка"

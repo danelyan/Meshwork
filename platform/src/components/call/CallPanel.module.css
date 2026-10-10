@@ -44,6 +44,18 @@
 .end:hover:not(:disabled) { background: var(--call-rec); }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ИИнтервью в режиме созвона: блок вопроса, этапы/критерии и итог (компоненты модуля интервью светлые - на светлой подложке). */
+.stage { font: 500 var(--fs-xs) var(--mono); text-align: center; text-transform: uppercase; letter-spacing: 0.06em; color: var(--call-on-stage-soft); }
+.steps { font-size: var(--fs-sm); color: var(--call-on-stage-soft); }
+.steps summary { cursor: pointer; text-align: center; }
+.sheet { display: grid; gap: 14px; padding: 14px; color: var(--ink); background: var(--panel); }
+.steps .sheet { margin-top: 8px; }
+.sheetBtn { padding: 10px 16px; font: 600 var(--fs) var(--font); color: var(--ink); background: transparent; border: 1px solid var(--ink); cursor: pointer; }
+.quick { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.chip { padding: 6px 12px; font: 500 var(--fs-sm) var(--font); color: var(--call-on-stage); background: transparent; border: 1px solid var(--avatar-stage-line); cursor: pointer; }
+.chip:hover:not(:disabled) { background: var(--call-control-hover); }
+.chip:disabled { opacity: 0.4; cursor: default; }
+
 @media (max-width: 640px) {
   .body { padding: 6px 12px 8px; }
   .line { font-size: var(--fs-md); }

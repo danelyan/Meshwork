@@ -40,6 +40,10 @@ export interface CompanionVoice {
   getViseme: () => Viseme;
   /** Признаки спектра последнего кадра — для калибровки на демо-странице. */
   getFeatures: () => SpectrumFeatures | null;
+  /** Исходный текст реплики, которую сейчас готовят или произносят; null — тишина. */
+  speakingText: string | null;
+  /** Прогресс воспроизведения звучащей реплики 0…1 (по часам AudioContext); 0 — тишина или загрузка. */
+  getProgress: () => number;
 }
 
 export { COMPANION_SAY_EVENT };
@@ -54,16 +58,25 @@ export function useCompanionVoice(): CompanionVoice | null {
 type AudioCtor = typeof AudioContext;
 
 interface Pending {
+  /** Исходный текст реплики (как пришёл от агента) — по нему лента находит звучащий пузырь. */
+  text: string;
   ctrl: AbortController;
   audio: Promise<AudioBuffer | null>;
 }
 
-export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
+/**
+ * `autoEnable` — озвучка включается сама на первом действии пользователя (клик, касание, клавиша):
+ * это снимает запрет autoplay, и ответы звучат без «Озвучивать ответы». Клик по кнопке с
+ * `data-voice-toggle` (переключатель «без звука») автоматику не запускает — решает сам переключатель.
+ * Без флага (онбординг) озвучка включается только кнопкой.
+ */
+export function CompanionVoiceProvider({ children, autoEnable = false }: { children: ReactNode; autoEnable?: boolean }) {
   const [enabled, setEnabled] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [thinking, setThinkingState] = useState(false);
   const [playing, setPlaying] = useState<'loading' | 'speaking' | null>(null);
+  const [speakingText, setSpeakingText] = useState<string | null>(null);
 
   const enabledRef = useRef(false);
   const availableRef = useRef<boolean | null>(null);
@@ -76,6 +89,8 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const queueRef = useRef<Pending[]>([]);
   const runningRef = useRef(false);
+  const startedAtRef = useRef(0);
+  const durationRef = useRef(0);
 
   /** Создать/разбудить AudioContext. Только синхронно из жеста пользователя (политика автозапуска). */
   const unlock = useCallback((): boolean => {
@@ -100,7 +115,7 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
     return true;
   }, []);
 
-  const fetchAudio = useCallback((text: string): Pending => {
+  const fetchAudio = useCallback((text: string): Omit<Pending, 'text'> => {
     const ctrl = new AbortController();
     const audio = (async () => {
       const res = await fetch('/api/tts', {
@@ -133,6 +148,7 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
         const next = queueRef.current[0];
         if (!next) break;
         setPlaying('loading');
+        setSpeakingText(next.text);
         let buffer: AudioBuffer | null = null;
         try {
           buffer = await next.audio;
@@ -152,6 +168,8 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
             sourceRef.current = src;
             lipRef.current?.reset();
             setPlaying('speaking');
+            startedAtRef.current = ctx.currentTime;
+            durationRef.current = buffer.duration;
             src.start();
           });
           sourceRef.current = null;
@@ -161,6 +179,7 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
     } finally {
       runningRef.current = false;
       setPlaying(null);
+      setSpeakingText(null);
     }
   }, []);
 
@@ -168,7 +187,7 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
     (raw: string) => {
       const text = speechText(raw);
       if (!text || availableRef.current === false) return;
-      queueRef.current.push(fetchAudio(text));
+      queueRef.current.push({ ...fetchAudio(text), text: raw });
       void pump();
     },
     [fetchAudio, pump],
@@ -201,13 +220,17 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
     return availableRef.current;
   }, []);
 
+  const userMutedRef = useRef(false);
+
   const toggle = useCallback(() => {
     if (enabledRef.current) {
       enabledRef.current = false;
+      userMutedRef.current = true;
       setEnabled(false);
       stop();
       return;
     }
+    userMutedRef.current = false;
     if (!unlock()) return;
     enabledRef.current = true;
     setEnabled(true);
@@ -239,6 +262,12 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
     [unlock, stop, checkAvailable, enqueue],
   );
 
+  const getProgress = useCallback(() => {
+    const ctx = ctxRef.current;
+    if (!ctx || !sourceRef.current || durationRef.current <= 0) return 0;
+    return Math.min(1, Math.max(0, (ctx.currentTime - startedAtRef.current) / durationRef.current));
+  }, []);
+
   const getLevel = useCallback(() => {
     const analyser = analyserRef.current;
     const buf = bufRef.current;
@@ -266,6 +295,21 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
   const getViseme = useCallback((): Viseme => tick()?.viseme ?? 'sil', [tick]);
   const getFeatures = useCallback((): SpectrumFeatures | null => tick()?.last ?? null, [tick]);
 
+  // Автовключение на первом жесте пользователя (см. `autoEnable`).
+  useEffect(() => {
+    if (!autoEnable) return;
+    const events = ['pointerdown', 'touchend', 'click', 'keydown'] as const;
+    const off = () => events.forEach((n) => window.removeEventListener(n, arm, true));
+    function arm(e: Event) {
+      off();
+      if (e.target instanceof Element && e.target.closest('[data-voice-toggle]')) return;
+      if (enabledRef.current || userMutedRef.current) return;
+      toggle();
+    }
+    events.forEach((n) => window.addEventListener(n, arm, true));
+    return off;
+  }, [autoEnable, toggle]);
+
   useEffect(() => {
     const onSay = (e: Event) => {
       const text = (e as CustomEvent<{ text?: string }>).detail?.text;
@@ -286,8 +330,8 @@ export function CompanionVoiceProvider({ children }: { children: ReactNode }) {
 
   const status: VoiceStatus = playing ?? (thinking ? 'thinking' : 'idle');
   const value = useMemo<CompanionVoice>(
-    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures }),
-    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel, getMouth, getViseme, getFeatures],
+    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, getProgress }),
+    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel, getMouth, getViseme, getFeatures, speakingText, getProgress],
   );
   return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;
 }

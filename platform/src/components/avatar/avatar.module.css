@@ -59,3 +59,8 @@
 .menu button { display: block; width: 100%; padding: 7px 12px; text-align: left; background: none; border: 0; font-size: var(--fs-sm); cursor: pointer; }
 .menu button:hover { background: var(--surface-ghost); }
 .menu button[aria-checked='true'] { color: var(--blue); font-weight: 600; }
+
+/* голова на всю область родителя (сцены консультанта): холст Head3D растягивается на 100% */
+.fill { position: absolute; inset: 0; background: var(--avatar-stage-glow), var(--avatar-stage); overflow: hidden; }
+.fill canvas { display: block; width: 100%; height: 100%; }
+.fill[data-status='thinking']::after, .fill[data-status='loading']::after { content: ''; position: absolute; inset: auto 0 0; height: 2px; background: var(--avatar-silver); opacity: 0.5; animation: scan 1.4s var(--ease) infinite; }

@@ -47,6 +47,8 @@ interface ChatProps {
   demo?: ChatDemoContext;
   initial?: RestoredChat;
   embedded?: ChatEmbedded;
+  /** Класс корня — сцена может задать размер ленты (экран-видеозвонок). */
+  className?: string;
 }
 
 /**
@@ -55,7 +57,9 @@ interface ChatProps {
  * Голос и аватар компаньона: на странице — свои; во встроенном режиме — от онбординга (тот же провайдер).
  */
 export function Chat(props: ChatProps) {
-  if (props.embedded) return <ChatBody {...props} />;
+  // Свой провайдер голоса — только если снаружи его нет (сцены /design/consultant-* держат провайдер сами).
+  const outer = useCompanionVoice();
+  if (props.embedded || outer) return <ChatBody {...props} />;
   return (
     <CompanionVoiceProvider>
       <ChatBody {...props} />
@@ -63,7 +67,7 @@ export function Chat(props: ChatProps) {
   );
 }
 
-function ChatBody({ demo, initial, embedded }: ChatProps) {
+function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   const [items, setItems] = useState<FeedItem[]>(initial?.items ?? []);
   const [overrides, setOverrides] = useState<Record<string, Partial<CardClaim>>>({});
   const [text, setText] = useState('');
@@ -224,7 +228,7 @@ function ChatBody({ demo, initial, embedded }: ChatProps) {
   const replying = items.slice(lastUser + 1).some((it) => it.role === 'agent' && it.event.type === 'message');
 
   return (
-    <div ref={rootRef} className={embedded ? styles.embedded : styles.chat}>
+    <div ref={rootRef} className={[embedded ? styles.embedded : styles.chat, className].filter(Boolean).join(' ')}>
       {!embedded && (
         <header className={styles.intro}>
           <div className={styles.title}>

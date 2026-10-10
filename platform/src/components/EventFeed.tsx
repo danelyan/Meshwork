@@ -8,6 +8,7 @@ import { type CardClaim, normalizeClaim } from '@/lib/claims-view';
 import type { AgentEvent } from '@/server/agent/types';
 
 import { ReplayButton } from './avatar/CompanionStage';
+import { SpeakingBubble } from './avatar/Speaking';
 import type { AgentItem } from './chat/stream-items';
 import { StreamingText } from './chat/StreamingText';
 import { AssistantRow, Bubble, QuickReplies, Thread, UserBubble } from './chat/Thread';
@@ -242,10 +243,10 @@ export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmA
               </p>
             )}
             {ev.type === 'message' && (
-              <Bubble>
+              <SpeakingBubble text={ev.text}>
                 <StreamingText text={ev.text} streaming={b.streaming} animate={Boolean(b.live)} />
                 {!b.streaming && <ReplayButton text={ev.text} />}
-              </Bubble>
+              </SpeakingBubble>
             )}
             {ev.type === 'claims' && <ClaimsBlock event={ev} overrides={claimOverrides} onAction={onClaimAction} onConfirmAll={onConfirmAll} />}
             {ev.type === 'ask' && <AskBlock event={ev} onAnswer={onAnswer} locked={locked} />}

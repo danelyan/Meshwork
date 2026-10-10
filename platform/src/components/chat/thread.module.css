@@ -10,6 +10,8 @@
 .bubble { max-width: min(600px, 100%); padding: var(--chat-bubble-pad, 12px 16px); font-size: var(--chat-message-size, inherit); background: var(--glass-strong); border: 1px solid var(--line); line-height: 1.55; overflow-wrap: anywhere; text-wrap: pretty; white-space: pre-wrap; cursor: default; }
 .bubble p { margin: 0; }
 .bubble p + p { margin-top: 6px; }
+.bubbleSpeaking { border-color: var(--blue); animation: bubblePulse 1.4s var(--ease) infinite alternate; }
+@keyframes bubblePulse { from { box-shadow: 0 0 0 0 transparent; } to { box-shadow: 0 0 0 3px var(--line); } }
 .bubbleError { border-left: 3px solid var(--danger-border); color: var(--error); }
 .secondary { color: var(--muted); font-size: var(--fs-sm); white-space: normal; }
 .card { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); min-width: 0; }

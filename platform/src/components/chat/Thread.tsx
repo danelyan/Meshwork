@@ -45,9 +45,9 @@ export function AssistantRow({ children, mark = true, testId }: { children: Reac
 }
 
 /** Пузырь помощника со статичным текстом. */
-export function Bubble({ children, tone, onClick }: { children: ReactNode; tone?: 'error'; onClick?: () => void }) {
+export function Bubble({ children, tone, onClick, speaking }: { children: ReactNode; tone?: 'error'; onClick?: () => void; speaking?: boolean }) {
   return (
-    <div className={cx(styles.bubble, tone === 'error' && styles.bubbleError)} onClick={onClick} role={tone === 'error' ? 'alert' : undefined}>
+    <div className={cx(styles.bubble, tone === 'error' && styles.bubbleError, speaking && styles.bubbleSpeaking)} data-speaking={speaking || undefined} onClick={onClick} role={tone === 'error' ? 'alert' : undefined}>
       {children}
     </div>
   );

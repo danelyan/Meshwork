@@ -49,6 +49,7 @@
 .roleInput { background: var(--surface-input); color: var(--ink); border: 1px solid var(--border-input); border-radius: 0; padding: 10px 12px; min-height: 44px; width: 100%; }
 .roleInput:focus-visible { border-color: var(--blue); outline-offset: 0; }
 .roleActions { display: flex; gap: 8px; }
+.roleText { margin: 0; font-size: var(--fs-sm); color: var(--text-soft); }
 .roleError { position: absolute; top: calc(100% + 8px); right: 0; margin: 0; padding: 8px 12px; max-width: 320px; font-size: var(--fs-sm); color: var(--error); background: var(--paper); border: 1px solid var(--line); }
 .rolePanel .roleError { position: static; padding: 0; border: 0; }
 .banner { margin: 0; padding: 8px var(--page-pad); font-size: var(--fs); color: var(--ink); background: var(--surface-notice); border-bottom: 1px solid var(--line); text-align: center; }

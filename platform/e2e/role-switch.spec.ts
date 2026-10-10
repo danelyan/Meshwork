@@ -12,18 +12,18 @@ test('E-05: кандидат становится работодателем н�
   await page.goto('/consultant');
 
   const header = page.getByRole('banner');
-  await expect(header.getByText('Кандидат', { exact: true })).toBeVisible();
+  await expect(header.getByText('Активная роль: Кандидат')).toBeVisible();
   await header.getByRole('button', { name: 'Стать работодателем' }).click();
   await header.getByLabel('Название компании').fill('ООО Переключатель');
   await header.getByRole('button', { name: 'Создать' }).click();
 
   await page.waitForURL('**/consultant');
-  await expect(header.getByText('Работодатель · ООО Переключатель')).toBeVisible({ timeout: 15_000 });
+  await expect(header.getByText('Активная роль: Работодатель · ООО Переключатель')).toBeVisible({ timeout: 15_000 });
   // Страница кандидата в режиме работодателя закрыта: редирект в профиль компании.
   await page.goto('/profile');
   await page.waitForURL('**/employer/company');
 
   await header.getByRole('button', { name: 'Режим кандидата' }).click();
-  await expect(header.getByText('Кандидат', { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(header.getByText('Активная роль: Кандидат')).toBeVisible({ timeout: 15_000 });
   await expect(header.getByRole('button', { name: 'Режим работодателя' })).toBeVisible();
 });

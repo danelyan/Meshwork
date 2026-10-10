@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, renderHook } from '@testing-library/re
 
 import { useIntegritySignals } from '@/components/useIntegritySignals';
 
-const beacon = vi.fn((_url: string, _body: string) => true);
+const beacon = vi.fn<(url: string, body: string) => boolean>(() => true);
 
 beforeEach(() => {
   vi.useFakeTimers();

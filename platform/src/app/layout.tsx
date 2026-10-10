@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Golos_Text } from 'next/font/google';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
@@ -36,6 +36,9 @@ export const metadata: Metadata = {
   title: 'ФСП Карьера - консультант',
   description: 'Карьерный консультант платформы ФСП Карьера',
 };
+
+// Клавиатура на мобильном уменьшает область вёрстки (Chrome Android): dvh и липкий ввод остаются видны. Safari параметр игнорирует.
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, interactiveWidget: 'resizes-content' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

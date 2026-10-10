@@ -1,6 +1,17 @@
 /* Оболочка сайта: шапка, подвал, колонка страницы. Токены — styles/tokens.css. */
 .frame { min-height: 100svh; display: flex; flex-direction: column; }
 .consultant { background: var(--paper); }
+/* /consultant на широком экране: шапка + сцена + подвал ровно в окне, страница не прокручивается (лента — внутри панели).
+   Уже 1050px — обычная страница: голова липкая сверху, подвал после ленты. */
+@media (min-width: 1051px) {
+  .consultant { height: 100svh; height: 100dvh; min-height: 520px; overflow: hidden; --scene-h: 100%; --scene-min-h: 0px; }
+  .consultant .page { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+  .consultant .page > * { flex: 1 1 0; min-height: 0; }
+  .consultant .footer { padding-top: 12px; padding-bottom: 12px; flex: none; }
+}
+@media (min-width: 1051px) and (max-height: 820px) {
+  .consultant { --landing-header-h: 72px; }
+}
 .page { flex: 1 0 auto; min-width: 0; }
 
 .skip { position: fixed; left: 16px; top: -70px; z-index: 30; background: var(--ink); color: var(--landing-white); padding: 12px; }

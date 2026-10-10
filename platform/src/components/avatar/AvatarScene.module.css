@@ -32,23 +32,29 @@
 .feedBox { max-height: min(60svh, 560px); overflow-y: auto; background: var(--surface-input); }
 
 /* --- D: звонок + чат слева. Тёмная сцена C, слева светлая панель 440px на всю высоту --- */
-.sideScene { display: grid; grid-template-columns: minmax(420px, 460px) minmax(0, 1fr); grid-template-areas: 'panel stage'; position: relative; isolation: isolate; height: calc(100svh - var(--landing-header-h)); min-height: 560px; background: var(--avatar-stage); }
+.sideScene { display: grid; grid-template-columns: minmax(420px, 460px) minmax(0, 1fr); grid-template-areas: 'panel stage'; position: relative; isolation: isolate; height: var(--scene-h, calc(100svh - var(--landing-header-h))); min-height: var(--scene-min-h, 560px); background: var(--avatar-stage); }
 .sideStage { grid-area: stage; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .sideHead { position: relative; flex: 1; min-height: 240px; }
-.sideSubs { flex: none; width: min(640px, 100%); margin: 0 auto; padding: 8px 32px 28px; }
+.sideSubs { flex: none; width: min(640px, 100%); margin: 0 auto; padding: 8px 32px 20px; box-sizing: border-box; min-height: calc(3em + 28px); max-height: calc(4.6em + 28px); overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
 .sidePanel { grid-area: panel; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--paper); color: var(--ink); border-right: 1px solid var(--avatar-stage-line); padding: 0 16px;
   /* шапка кабинета над панелью не липнет: липкое внутри панели прижимается к её верху */
   --landing-header-h: 0px; }
 .sidePanel > div { min-height: 0; }
+.sidePanel { --feed-min-h: 100%; }
 .sideChat.sideChat { height: auto; min-height: 100%; border: 0; background: transparent; }
 
 @media (max-width: 1050px) {
-  .sideScene { --page-header-h: var(--landing-header-h); --stage-h: max(40svh, 260px); display: flex; flex-direction: column; height: auto; min-height: calc(100svh - var(--landing-header-h)); }
+  .sideScene { --page-header-h: var(--landing-header-h); --stage-h: max(40svh, 220px); display: flex; flex-direction: column; height: auto; min-height: calc(100svh - var(--landing-header-h)); }
   .sideStage { flex: none; position: sticky; top: var(--landing-header-h); z-index: 30; height: var(--stage-h); min-height: 0; border-bottom: 1px solid var(--avatar-stage-line); background: var(--avatar-stage); }
   .sideHead { min-height: 0; }
-  .sideSubs { padding: 4px 16px 12px; min-height: 3.6em; }
+  .sideSubs { padding: 4px 16px 10px; min-height: calc(3em + 14px); max-height: calc(4.6em + 14px); }
   /* липкая шапка ленты прижимается под липкой головой */
-  .sidePanel { --landing-header-h: calc(var(--page-header-h) + var(--stage-h)); overflow: visible; border-right: 0; border-top: 1px solid var(--line); }
+  .sidePanel { --landing-header-h: calc(var(--page-header-h) + var(--stage-h)); --feed-min-h: calc(100svh - var(--page-header-h) - var(--stage-h)); overflow: visible; border-right: 0; border-top: 1px solid var(--line); }
+}
+/* низкое окно (телефон в ландшафте, открытая клавиатура): голова ниже, субтитры уходят, ввод остаётся виден */
+@media (max-width: 1050px) and (max-height: 560px) {
+  .sideScene { --stage-h: max(26dvh, 120px); }
+  .sideSubs { display: none; }
 }
 @media (max-width: 1050px) {
   .portraitScene { display: flex; flex-direction: column; }

@@ -11,6 +11,9 @@ import { type CompanionVoice, useCompanionVoice, type VoiceStatus } from './voic
 
 export const STATE_LABEL: Record<VoiceStatus, string> = { idle: '', thinking: 'думает', loading: 'готовит голос', speaking: 'говорит' };
 
+/** Сколько символов субтитров помещается в три строки сцены. */
+const SUBTITLE_BUDGET = 150;
+
 /** Индекс звучащей фразы: опрос прогресса раз в кадр, state меняется только при смене фразы. */
 function useActivePhrase(voice: CompanionVoice | null, phrases: readonly string[], on: boolean): number {
   const [active, setActive] = useState(-1);
@@ -82,8 +85,21 @@ export function Subtitles({ className }: { className?: string }) {
   const polled = useActivePhrase(voice, phrases, live);
   const active = live ? polled : voice?.status === 'loading' ? -1 : phrases.length - 1;
   if (!voice || phrases.length === 0) return <div className={cx(styles.subtitles, className)} data-testid="subtitles" />;
-  const from = Math.max(0, Math.min(active, phrases.length - 1) - 1);
-  const shown = phrases.slice(from, from + 3);
+  // Окно субтитров: активная фраза, предыдущая и следующая, пока влезает в ~3 строки (по символам);
+  // длинная реплика не вытесняет звучащую фразу за пределы сцены.
+  const cur = Math.max(0, Math.min(active, phrases.length - 1));
+  let from = cur;
+  let to = cur + 1;
+  let size = phrases[cur].length;
+  if (cur > 0 && size + phrases[cur - 1].length <= SUBTITLE_BUDGET) {
+    from = cur - 1;
+    size += phrases[from].length;
+  }
+  while (to < phrases.length && size + phrases[to].length <= SUBTITLE_BUDGET) {
+    size += phrases[to].length;
+    to += 1;
+  }
+  const shown = phrases.slice(from, to);
   return (
     <div className={cx(styles.subtitles, className)} data-testid="subtitles" aria-hidden="true">
       {shown.map((p, k) => (

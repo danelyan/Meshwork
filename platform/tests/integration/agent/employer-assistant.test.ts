@@ -14,6 +14,7 @@ import { DEMO_POOL, seedEmployer } from '../../../prisma/seed/employer';
 import { seedRecommend } from '../../../prisma/seed/recommend';
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { discloseAccepted } from '../../helpers/consents';
 
 const PROFILE = DEMO_EMPLOYER.profileId;
 const COMPANY = DEMO_EMPLOYER.companyId;
@@ -244,6 +245,7 @@ describe('помощник работодателя (БД)', () => {
 
     // принято: имя только у принявшего
     await prisma.invitation.update({ where: { id: inv.id }, data: { status: 'accepted' } });
+    await discloseAccepted(); // Г5 (ADR 0005)
     const after = await run();
     const names = new Map(sseNames(after));
     expect(names.get(pay.id)).toBe(pay.name);

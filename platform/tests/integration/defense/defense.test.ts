@@ -6,6 +6,7 @@ import { signSession } from '@/server/session';
 
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { grantCandidateConsents } from '../../helpers/consents';
 
 const llm = createStubProvider();
 const A = 'cand-a';
@@ -80,6 +81,7 @@ beforeEach(async () => {
       { id: B, email: 'b@example.test', name: 'Б' },
     ],
   });
+  await grantCandidateConsents([A, B]); // Г3 (ADR 0005): защиту оценивает ИИ
   await prisma.claimCatalog.create({
     data: {
       id: 'be.idempotency',

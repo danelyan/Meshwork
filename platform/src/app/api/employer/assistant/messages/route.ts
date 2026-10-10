@@ -6,6 +6,7 @@ import { encodeSse } from '@/server/agent/events';
 import { acquireConversationLock } from '@/server/agent/lock';
 import { enrichEvent } from '@/server/agent/employer/names';
 import { memoryExtractionEnabled, scheduleMemoryExtraction } from '@/server/consultant/memory';
+import { assertEmployerConsents } from '@/server/consent/service';
 import { prisma } from '@/server/db';
 import { getLlm } from '@/server/llm/client';
 import { loadEmployerContext } from '@/server/employer';
@@ -26,7 +27,8 @@ const Body = z.object({
  * разговор — свой EmployerConversation, чужой → 404; один ход на разговор — иначе 409.
  */
 export const POST = withErrors(async (req: Request) => {
-  const { employerProfileId } = requireEmployer(req);
+  const { employerProfileId, userId } = requireEmployer(req);
+  await assertEmployerConsents(userId); // ADR 0005: помощник ищет кандидатов — после оферты и обязательства по данным
   const body = Body.parse(await req.json().catch(() => ({})));
 
   let conversationId: string;

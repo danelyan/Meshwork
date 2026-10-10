@@ -19,6 +19,7 @@ import { GRADE_LABEL, GRADES, isGrade, type Grade } from '@/lib/grades';
 import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, subcategoriesFor, subcategoryLabel, type Specialization } from '@/lib/directions';
 import { formatDate } from '@/lib/labels';
 
+import { ObjectionButton } from './consent/ObjectionButton';
 import { useBareShell } from './shell/ShellFrame';
 import styles from './TestPage.module.css';
 import { Button, Chip, Field, Kicker, Notice, Panel, Tag } from './ui';
@@ -156,8 +157,7 @@ function IntroScreen({
         <h1 className={styles.h1}>Тест на грейд<i>.</i></h1>
         <p className={`${ui.muted} ${styles.lead}`}>
           7–10 коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
-          даёт только этот тест; выбор грейда - за вами. Результат - предварительная калибровка: грейд подтверждается на созвоне с ИИ-интервьюером, в проекте и
-          на защите.
+          даёт только этот тест; выбор грейда - за вами.
         </p>
       </div>
 
@@ -394,6 +394,9 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
             <dd>{r.answered}</dd>
           </div>
         </dl>
+        <p className={ui.muted}>
+          <ObjectionButton subject="grade_test" subjectId={attempt.id} />
+        </p>
         {r.confirmedCatalogIds.length > 0 && (
           <p className={ui.muted} data-testid="confirmed-claims">
             Решённые задания подтверждают утверждения: {r.confirmedCatalogIds.join(', ')} - их уровень в профиле поднят до «платформа».

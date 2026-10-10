@@ -67,24 +67,14 @@ export const envSchema = z
     UPLOAD_DIR: z.string().min(1).default('./data/uploads'),
     /** lane call: лимит квалификационных созвонов кандидата за 24 часа; 0 — без лимита (так на стенде). */
     CALL_DAILY_LIMIT: z.coerce.number().int().min(0).default(5),
+    /** lane consent (ADR 0005): сколько дней хранится аудио созвона; потом файлы и audioPath удаляются (транскрипт и оценки остаются). */
+    CALL_RECORDING_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
     /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
     WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
 
     /** Вход через Яндекс ID (oauth.yandex.ru). Не заданы → кнопка входа неактивна, работает демо-вход. */
     YANDEX_CLIENT_ID: optionalString,
     YANDEX_CLIENT_SECRET: optionalString,
-
-    /**
-     * Привязка ФСП ID (OIDC, Keycloak). Не задан FSP_OIDC_ISSUER → кнопка привязки скрыта, ФСП — демо-источник
-     * (server/collector/fsp-demo.ts). Сейчас issuer — симулятор ФСП ID команды; в проде — реалм Keycloak ФСП.
-     */
-    FSP_OIDC_ISSUER: optionalString.pipe(z.url().optional()),
-    /** client_id нашего приложения у провайдера; по умолчанию fsp-career. */
-    FSP_OIDC_CLIENT_ID: optionalString,
-    /** Секрет конфиденциального клиента (client_secret_post). Пусто — публичный клиент, только PKCE. */
-    FSP_OIDC_CLIENT_SECRET: optionalString,
-    /** Базовый URL API реестра достижений (…/api/v1); достижения — GET /me/achievements по токену пользователя. */
-    FSP_API_URL: optionalString.pipe(z.url().optional()),
 
     GITHUB_TOKEN: optionalString,
     /** true → сборщик не ходит в сеть за профилями, только фикстуры (демо-стенд, тесты). */

@@ -23,6 +23,7 @@ import { signUserSession } from '@/server/session';
 
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { discloseAccepted, grantConsents } from '../../helpers/consents';
 
 
 const A = 'cand-a';
@@ -39,6 +40,7 @@ async function seed() {
   await prisma.candidate.create({ data: { id: A, email: 'a@example.test', name: 'А', specialization: 'backend' } });
   await prisma.user.create({ data: { id: 'user-a', role: 'candidate', name: 'А', candidateId: A } });
   await prisma.candidateProfile.create({ data: { candidateId: A, claimedGrade: 'junior' } });
+  await grantConsents('user-a', ['ai_assessment']); // Г3 (ADR 0005): созвон оценивает ИИ
   await prisma.claimCatalog.createMany({
     data: [
       { id: 'be.sql-indexes', specialization: 'backend', statement: 'Подбирает индексы под запросы', grades: ['junior', 'middle'], weight: 3, proof: [], markers: [], limits: '' },
@@ -163,6 +165,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
 
     // после принятого приглашения — всё
     await prisma.invitation.create({ data: { candidateId: A, companyId: 'co-1', status: 'accepted', salaryFrom: 1, salaryTo: 2 } });
+    await discloseAccepted(); // Г5 (ADR 0005): контакты и запись — по принятому приглашению с раскрытием
     expect((await recordingRoute(jsonRequest(`/api/call/${id}/recording`, 'GET', undefined, cookieEmp()), ctx(id))).status).toBe(200);
     const full = await json<CallView>(await viewRoute(jsonRequest(`/api/call/${id}`, 'GET', undefined, cookieEmp()), ctx(id)));
     expect(full.access).toBe('full');

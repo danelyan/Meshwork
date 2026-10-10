@@ -1,6 +1,6 @@
 import { answerStep, getView, gotoStep } from '@/server/onboarding/service';
 const mocks = vi.hoisted(() => ({ find: vi.fn(), save: vi.fn(), profile: vi.fn(), consent: vi.fn() }));
-vi.mock('@/server/db', () => ({ prisma: { user: { findUnique: mocks.find }, onboardingState: { upsert: mocks.save }, candidateProfile: { upsert: mocks.profile } } }));
+vi.mock('@/server/db', () => ({ prisma: { user: { findUnique: mocks.find }, onboardingState: { upsert: mocks.save }, candidateProfile: { upsert: mocks.profile }, consent: { findMany: async () => [{ kind: 'ai_assessment' }] } } }));
 vi.mock('@/server/auth/consent', async (orig) => ({ ...(await orig<typeof import('@/server/auth/consent')>()), hasCurrentConsent: mocks.consent }));
 vi.mock('@/server/onboarding/phrase', async (orig) => ({ ...(await orig<typeof import('@/server/onboarding/phrase')>()), leadFor: async () => 'Уточним город.' }));
 const at = new Date('2026-10-10T10:00:00Z');

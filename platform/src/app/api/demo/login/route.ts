@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { ensureConsent } from '@/server/auth/consent';
-import { SHARED_DEMO_USER, createFreshDemoUser, ensureDemoCandidateUser, resetDemoOnboarding, sessionInputFor } from '@/server/auth/users';
+import { ensureConsents } from '@/server/consent/service';
+import { DEMO_EMPLOYER_CONSENTS, SHARED_DEMO_USER, createFreshDemoUser, ensureDemoCandidateUser, resetDemoOnboarding, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
 import { demoResumeFor } from '@/server/demo/resumes';
 import { getEnv } from '@/server/env';
@@ -86,6 +87,7 @@ export const POST = withErrors(async (req: Request) => {
     });
     if (!user?.employerProfile) throw errors.notFound('Демо-работодатель не найден');
     await ensureConsent(user.id); // готовые демо-аккаунты считаются согласившимися
+    await ensureConsents(user.id, DEMO_EMPLOYER_CONSENTS); // оферта и обязательство по данным (ADR 0005)
     const res = NextResponse.json({ employer: { id: user.id, name: user.name }, next: '/consultant' });
     res.cookies.set(userSessionCookie(sessionInputFor(user)));
     return res;

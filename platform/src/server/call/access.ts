@@ -2,6 +2,7 @@
 //  - кандидат — свой созвон целиком и запись всегда;
 //  - работодатель — до принятого приглашения только оценки по темам (без цитат, транскрипта и записи);
 //    после accepted — всё; участник комнаты (defense-room) — транскрипт вживую, запись — только после accepted.
+import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
 import { errors } from '../errors';
 import { type CallAccess, type CallEvent, type CallVerdict, depthStatus, type PublicCallVerdict } from './types';
@@ -24,8 +25,8 @@ export interface ResolvedAccess {
 export async function hasAcceptedInvitation(employerProfileId: string, candidateId: string): Promise<boolean> {
   const p = await prisma.employerProfile.findUnique({ where: { id: employerProfileId }, select: { companyId: true } });
   if (!p) return false;
-  const n = await prisma.invitation.count({ where: { companyId: p.companyId, candidateId, status: 'accepted' } });
-  return n > 0;
+  // Принятое приглашение с действующим раскрытием (Г5, ADR 0005): отзыв раскрытия закрывает транскрипт и запись.
+  return (await disclosedCandidateIds(p.companyId, [candidateId])).has(candidateId);
 }
 
 /**
@@ -68,7 +69,6 @@ export function publicVerdict(v: CallVerdict): PublicCallVerdict {
       scores: d.scores,
       total: d.total,
     })),
-    ...(v.testOwnership ? { testOwnership: { status: v.testOwnership.status, items: v.testOwnership.items.map((i) => ({ title: i.title })) } } : {}),
     summary: v.summary,
     evaluatedAt: v.evaluatedAt,
     thresholdVersion: v.thresholdVersion,

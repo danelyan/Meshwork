@@ -9,6 +9,7 @@ import type { DefenseVerdict } from '@/server/defense/types';
 import styles from './DefenseDialog.module.css';
 import ui from './ui.module.css';
 import { Notice } from './ui';
+import { ObjectionButton } from './consent/ObjectionButton';
 
 const AXES: { key: keyof DefenseVerdict['scores']; label: string }[] = [
   { key: 'depth', label: 'Глубина деталей' },
@@ -168,6 +169,7 @@ export function DefenseDialog({ claimId }: { claimId: string }) {
       </ol>
 
       {verdict && <VerdictView verdict={verdict} />}
+      {verdict && sessionId && <ObjectionButton subject="defense" subjectId={sessionId} />}
 
       {waiting && (
         <form className={styles.form} onSubmit={submit}>

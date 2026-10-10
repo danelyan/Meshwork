@@ -28,6 +28,8 @@ async function asCandidate(userId: string): Promise<string> {
   expect(r.status).toBe(200);
   c = cookieFrom(r.res)!;
   expect(c).toBeDefined();
+  // ADR 0005: шаг согласий кандидата (Г3/Г4/Г6/Г7) сразу после роли; без галочек — можно дальше.
+  expect((await act(c, { action: 'answer', stepId: 'candidateConsents', value: [] })).status).toBe(200);
   return c;
 }
 
@@ -63,7 +65,7 @@ describe('API онбординга', () => {
     expect(s).toMatchObject({ role: 'candidate' });
     const cand = await prisma.candidate.findUniqueOrThrow({ where: { id: s.candidateId! } });
     expect(cand.consentAt).toBeInstanceOf(Date);
-    expect(r.json.current.id).toBe('goal');
+    expect(r.json.current.id).toBe('candidateConsents');
     expect(r.json.scenario).toBe('candidate');
   });
 
@@ -126,14 +128,13 @@ describe('API онбординга', () => {
     expect((await prisma.user.findUniqueOrThrow({ where: { id: 'u1' } })).onboardedAt).toBeNull();
     const v = await view(c);
     expect(v.current.id).toBe('documents');
-    expect(v.history.map((h) => h.stepId)).toEqual(['role', 'goal']);
-    expect(v.history[1]).toMatchObject({ answer: 'Ищу работу', editable: true });
+    expect(v.history.map((h) => h.stepId)).toEqual(['role', 'candidateConsents', 'goal']);
+    expect(v.history[2]).toMatchObject({ answer: 'Ищу работу', editable: true });
   });
 
   it('«настроить позже» у кандидата — пауза в ленте /consultant: переживает перезагрузку, снимается возвратом к шагу', async () => {
     const c = await asCandidate('u1');
-    // Роль выбрана — кандидат сразу в разговоре, вопросы анкеты — подсказками в чате (решение владельца 11.10).
-    expect((await view(c)).later).toBe(true);
+    expect((await view(c)).later).toBe(false);
     await act(c, { action: 'later' });
     const paused = await view(c);
     expect(paused.later).toBe(true);
@@ -142,18 +143,11 @@ describe('API онбординга', () => {
     const back = await act(c, { action: 'goto', stepId: 'goal' });
     expect(back.json.later).toBe(false);
     expect(back.json.current.id).toBe('goal');
-    // Кандидату вопрос — подсказка в чате (решение владельца 11.10): после ответа лента снова разговор,
-    // следующий вопрос не открывается сам.
+    // Ответ после новой паузы тоже снимает её.
+    await act(c, { action: 'later' });
     const answered = await act(c, { action: 'answer', stepId: 'goal', value: 'job_search' });
-    expect(answered.json.later).toBe(true);
+    expect(answered.json.later).toBe(false);
     expect(answered.json.current.id).toBe('documents');
-    const skipped = await act(c, { action: 'skip', stepId: 'documents' });
-    expect(skipped.json.later).toBe(true);
-    // Обязательный шаг идёт сразу за своим: после направления — подкатегория, без возврата в чат.
-    await act(c, { action: 'goto', stepId: 'specialization' });
-    const spec = await act(c, { action: 'answer', stepId: 'specialization', value: 'backend' });
-    expect(spec.json.current.id).toBe('subcategory');
-    expect(spec.json.later).toBe(false);
   });
 
   it('«настроить позже» до роли — на главную', async () => {
@@ -194,6 +188,10 @@ describe('API онбординга', () => {
     c = cookieFrom(r2.res)!;
     const { employerProfileId } = parseSession(c.slice(4))!;
     const companyId = (await prisma.employerProfile.findUniqueOrThrow({ where: { id: employerProfileId! } })).companyId;
+    // ADR 0005: сразу после компании — оферта и обязательство по данным (отдельные галочки)
+    const rc = await act(c, { action: 'answer', stepId: 'employerConsents', value: ['employer_offer', 'employer_data_obligation'] });
+    expect(rc.status).toBe(200);
+    expect((await prisma.consent.findMany({ where: { userId: 'u1', kind: { in: ['employer_offer', 'employer_data_obligation'] } } })).length).toBe(2);
 
     expect((await act(c, { action: 'answer', stepId: 'inn', value: '7707083894' })).status).toBe(400);
     await act(c, { action: 'answer', stepId: 'inn', value: '7707083893' });

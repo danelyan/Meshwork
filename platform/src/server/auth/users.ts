@@ -5,7 +5,14 @@ import { errors } from '@/server/errors';
 import type { UserSessionInput } from '@/server/session';
 
 import { passwordVersionOf } from './password-version';
+import { ensureConsents } from '@/server/consent/service';
+import type { ConsentKindName } from '@/server/consent/texts';
+
 import { assertConsentVersion, ensureConsent, hasCurrentConsent } from './consent';
+
+/** Согласия готовых демо-аккаунтов (ADR 0005): жюри входит «как кандидат/работодатель» без онбординга. */
+export const DEMO_CANDIDATE_CONSENTS: readonly ConsentKindName[] = ['ai_assessment', 'employer_visibility'];
+export const DEMO_EMPLOYER_CONSENTS: readonly ConsentKindName[] = ['employer_offer', 'employer_data_obligation'];
 
 export type UserWithProfiles = User & { employerProfile: { id: string } | null };
 
@@ -115,8 +122,10 @@ export async function chooseRole(userId: string, choice: RoleChoice): Promise<Us
 export async function createCandidateProfile(tx: Prisma.TransactionClient, user: Pick<User, 'id' | 'name' | 'email'>): Promise<string> {
   const taken = user.email ? await tx.candidate.findUnique({ where: { email: user.email }, select: { id: true } }) : null;
   const email = user.email && !taken ? user.email : `user-${user.id}@users.invalid`;
-  const consent = await tx.consent.findFirst({ where: { userId: user.id }, orderBy: { acceptedAt: 'desc' } });
-  const candidate = await tx.candidate.create({ data: { name: user.name, email, consentAt: consent?.acceptedAt ?? null }, select: { id: true } });
+  const consent = await tx.consent.findFirst({ where: { userId: user.id, kind: 'pd_processing' }, orderBy: { acceptedAt: 'desc' } });
+  // Показ работодателям — только по согласию Г4 (ADR 0005): до него новый профиль скрыт из поиска.
+  const visible = await tx.consent.count({ where: { userId: user.id, kind: 'employer_visibility', revokedAt: null } });
+  const candidate = await tx.candidate.create({ data: { name: user.name, email, consentAt: consent?.acceptedAt ?? null, hiddenFromEmployers: visible === 0 }, select: { id: true } });
   return candidate.id;
 }
 
@@ -158,8 +167,10 @@ export async function ensureDemoCandidateUser(candidate: { id: string; name: str
     },
     include: withProfiles,
   });
-  // Готовые демо-кандидаты считаются согласившимися (сид ставит Candidate.consentAt) — пишем и Consent.
+  // Готовые демо-кандидаты считаются согласившимися (сид ставит Candidate.consentAt) — пишем и Consent:
+  // Г1 и согласия онбординга Г3 (тест, созвон, защита) и Г4 (показ работодателям), ADR 0005.
   await ensureConsent(user.id);
+  await ensureConsents(user.id, DEMO_CANDIDATE_CONSENTS);
   return user;
 }
 

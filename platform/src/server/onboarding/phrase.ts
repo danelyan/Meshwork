@@ -128,7 +128,7 @@ export async function leadFor(
 ): Promise<string> {
   const template = templateLead(step, ctx, prev);
   // Первая реплика (приветствие) и согласие — всегда шаблон: тон и смысл первого экрана не отдаём модели.
-  if (!llmEnabled() || step.id === 'consent' || (step.id === 'role' && prev === null)) return template;
+  if (!llmEnabled() || step.id === 'consent' || step.kind === 'consents' || (step.id === 'role' && prev === null)) return template;
   try {
     const llm = getLlm({ candidateId: opts.candidateId ?? undefined });
     const input = {

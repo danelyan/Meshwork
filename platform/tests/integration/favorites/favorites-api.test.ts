@@ -3,6 +3,7 @@ import { savedCandidateCards } from '@/server/favorites';
 import { signUserSession } from '@/server/session';
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { discloseAccepted } from '../../helpers/consents';
 
 const employer = { userId: 'fav-employer', role: 'employer' as const, candidateId: null, employerProfileId: 'fav-profile' };
 const candidate = { userId: 'fav-user', role: 'candidate' as const, candidateId: 'fav-candidate', employerProfileId: null };
@@ -61,6 +62,7 @@ describe('persistent favorites: own account and fresh privacy projection', () =>
     expect(result.cards[0]!.contacts).toBeNull();
     expect(JSON.stringify(result)).not.toContain('@private_contact');
     await prisma.invitation.create({ data: { companyId: 'fav-company', employerProfileId: employer.employerProfileId, candidateId: candidate.candidateId, status: 'accepted', salaryFrom: 100000, salaryTo: 200000 } });
+    await discloseAccepted(); // Г5 (ADR 0005)
     result = await savedCandidateCards(employer);
     expect(result.cards[0]!.contacts?.contact).toBe('@private_contact');
     await prisma.candidate.update({ where: { id: candidate.candidateId }, data: { hiddenFromEmployers: true } });

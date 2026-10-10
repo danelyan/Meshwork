@@ -4,6 +4,7 @@ import { CandidateInvitations } from '@/components/candidate/CandidateInvitation
 import { CareerPage, filterTargets } from '@/components/candidate/CareerPage';
 import type { CandidateInvitationView } from '@/server/employer/invitations';
 import type { TargetRec } from '@/server/recommend/types';
+import { CONSENT_TEXTS } from '@/server/consent/texts';
 import type { CareerVacancy } from '@/server/recommend/career';
 
 const refresh = vi.fn();
@@ -73,9 +74,12 @@ it('opens contacts only after successful acceptance and updates status filters',
   vi.stubGlobal('fetch', fetcher);
   render(<CandidateInvitations invitations={[invite]} contact="@candidate" />);
   expect(screen.getByText('Связь с компанией: hiring@example.test')).toBeDefined();
+  // Г5 (ADR 0005): принять можно только с отдельной неотмеченной галочкой раскрытия.
+  expect((screen.getByRole('button', { name: 'Принять' }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(screen.getByLabelText(/Раскрыть этому работодателю/));
   fireEvent.click(screen.getByRole('button', { name: 'Принять' }));
   expect(await screen.findByText(/Контакты открыты/)).toBeDefined();
-  expect(fetcher).toHaveBeenCalledWith('/api/invitations/i1', expect.objectContaining({ method: 'POST', body: JSON.stringify({ action: 'accept' }) }));
+  expect(fetcher).toHaveBeenCalledWith('/api/invitations/i1', expect.objectContaining({ method: 'POST', body: JSON.stringify({ action: 'accept', disclosureVersion: CONSENT_TEXTS.identity_disclosure.version }) }));
   expect(refresh).toHaveBeenCalledOnce();
   fireEvent.click(screen.getByRole('button', { name: 'Жду ответа · 0' }));
   expect(screen.getByText('Здесь пока пусто.')).toBeDefined();
@@ -84,6 +88,7 @@ it('opens contacts only after successful acceptance and updates status filters',
 it('keeps invitation open and contacts hidden on server error', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 500, json: async () => ({ error: { message: 'Не удалось сохранить ответ' } }) })));
   render(<CandidateInvitations invitations={[invite]} contact={null} />);
+  fireEvent.click(screen.getByLabelText(/Раскрыть этому работодателю/));
   fireEvent.click(screen.getByRole('button', { name: 'Принять' }));
   expect((await screen.findByRole('alert')).textContent).toContain('Не удалось сохранить ответ');
   expect(screen.queryByText(/Контакты открыты/)).toBeNull();

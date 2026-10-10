@@ -1,10 +1,11 @@
 // Клиент API созвона (lane call). Ошибки — ApiError из lib/api.ts.
-import type { CallEvent, CallKind, CallView, TranscriptEntry, TurnResult } from '@/server/call/types';
+import type { CallEvent, CallKind, CallView, TurnResult } from '@/server/call/types';
 
 import { ApiError, postJson, readError, request } from './api';
 
 export interface CallListResponse {
-  consent: { given: boolean; version: string; text: string[] };
+  /** mode (ADR 0005): audio — запись идёт; text — согласие на запись отозвано, созвон текстом; ask — спросить. */
+  consent: { given: boolean; mode?: 'audio' | 'text' | 'ask'; version: string; text: string[] };
   calls: CallView[];
 }
 
@@ -22,8 +23,6 @@ export const callApi = {
   get: (id: string) => request<CallView>(`/api/call/${encodeURIComponent(id)}`),
   turn: (id: string, body: { text?: string; audioRef?: string }) => postJson<TurnResult>(`/api/call/${encodeURIComponent(id)}/turn`, body),
   finish: (id: string) => postJson<CallView>(`/api/call/${encodeURIComponent(id)}/finish`, {}),
-  /** Кандидат перебил реплику ИИ: сколько её предложений прозвучало. */
-  interrupt: (id: string, body: { index: number; heardSentences: number }) => postJson<TranscriptEntry>(`/api/call/${encodeURIComponent(id)}/interrupt`, body),
   /** Сегмент голоса LPCM 16 кГц → сохранён на сервере; text — если распознал SpeechKit. */
   async audio(id: string, pcm: Uint8Array): Promise<{ audioRef: string; text: string | null }> {
     let res: Response;

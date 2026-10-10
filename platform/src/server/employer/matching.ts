@@ -4,6 +4,7 @@ import type { InvitationStatus } from '@prisma/client';
 
 import type { CatalogEntry } from '../claims/types';
 import { demoAchievements } from '../collector/fsp-demo';
+import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
@@ -134,14 +135,12 @@ async function loadFspAchievements(candidateIds: string[]): Promise<Map<string, 
   return out;
 }
 
-/** Кандидаты, принявшие приглашение этой компании, — им открыты контакты (R-E-07). */
+/**
+ * Кандидаты, раскрывшие себя этой компании (R-E-07, ADR 0005): принятое приглашение + действующее согласие на
+ * раскрытие по нему (Г5). Отзыв раскрытия возвращает псевдоним, хотя приглашение остаётся принятым.
+ */
 export async function acceptedCandidateIds(companyId: string, candidateIds: string[]): Promise<Set<string>> {
-  if (candidateIds.length === 0) return new Set();
-  const rows = await prisma.invitation.findMany({
-    where: { companyId, candidateId: { in: candidateIds }, status: 'accepted' },
-    select: { candidateId: true },
-  });
-  return new Set(rows.map((r) => r.candidateId));
+  return disclosedCandidateIds(companyId, candidateIds);
 }
 
 async function lastInvitations(companyId: string, candidateIds: string[]) {

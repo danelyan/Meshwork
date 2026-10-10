@@ -62,7 +62,11 @@ export const InvitationInput = z
   })
   .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Зарплата «до» меньше «от»', path: ['salaryTo'] });
 
-export const InvitationAction = z.object({ action: z.enum(['accept', 'decline']) });
+/**
+ * Ответ на приглашение. accept — только с `disclosureVersion`: кандидат отдельно подтверждает раскрытие имени и
+ * контактов этому работодателю (Г5, ADR 0005; версия — CONSENT_TEXTS.identity_disclosure.version).
+ */
+export const InvitationAction = z.object({ action: z.enum(['accept', 'decline']), disclosureVersion: z.string().min(1).max(64).optional() });
 
 export const PrivacyInput = z.object({ hiddenFromEmployers: z.boolean() });
 

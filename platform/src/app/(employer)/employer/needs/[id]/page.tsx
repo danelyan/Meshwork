@@ -5,7 +5,9 @@ import { MatchResults } from '@/components/employer/MatchResults';
 import { VacancySwitcher } from '@/components/employer/VacancySwitcher';
 import { EmployerProjectBlock } from '@/components/project/EmployerProjectBlock';
 import { Button, Notice } from '@/components/ui';
+import { EmployerConsentGate } from '@/components/consent/EmployerConsentGate';
 import { requirePageEmployer } from '@/server/auth/page';
+import { employerConsentsMissing } from '@/server/consent/service';
 import { listVacancies, loadEmployerContext, matchForVacancy } from '@/server/employer';
 import { parseFilters } from '@/server/employer/schemas';
 import { AppError } from '@/server/errors';
@@ -18,6 +20,8 @@ export default async function NeedMatchesPage({ params, searchParams }: Props) {
   const { id } = await params;
   const s = await requirePageEmployer(`/employer/needs/${encodeURIComponent(id)}`);
   const ctx = await loadEmployerContext(s.employerProfileId);
+  // ADR 0005: без оферты и обязательства по данным — вместо подборки форма принятия условий.
+  if ((await employerConsentsMissing(s.userId)).length) return <div className={styles.page}><h1>Подборка<span className={styles.accent}>.</span></h1><EmployerConsentGate /></div>;
   const { filters, limit } = parseFilters(await searchParams);
   const result = await matchForVacancy(ctx.companyId, id, filters, limit).catch((error: unknown) => { if (error instanceof AppError && error.status === 404) notFound(); throw error; });
   const v = result.vacancy!;

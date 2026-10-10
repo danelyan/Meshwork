@@ -49,7 +49,6 @@ export const PAGE_ACCESS = {
   '/skills': 'candidate',
   '/test': 'candidate',
   '/interview': 'candidate',
-  '/interview/room': 'candidate',
   '/invitations': 'candidate',
   '/defense/[claimId]': 'candidate',
   // Созвон-защита (ADR 0003): комната кандидата и наблюдение работодателя.
@@ -99,16 +98,16 @@ export const API_ACCESS = {
   '/api/auth/password/reset': 'public',
   '/api/auth/yandex': 'public',
   '/api/auth/yandex/callback': 'public',
-  // ФСП ID (R-FSP-01): привязка к профилю через внешний OIDC-провайдер (старт и возврат) — только кандидату.
-  '/api/fsp-id/link': 'candidate',
-  '/api/fsp-id/callback': 'candidate',
-  // Мок провайдера ФСП ID (страница входа «чужого» сервиса; без внешнего провайдера в env) — без входа на платформу.
-  '/api/fsp-id/realms/fsp/protocol/openid-connect/auth': 'public',
   '/api/auth/stale': 'public',
   // `{ user: null }` для гостя — отвечает всем.
   '/api/auth/me': 'public',
   '/api/auth/consent': { GET: 'public', POST: 'account' },
   '/api/auth/role': 'account',
+  // Мои согласия (ADR 0005): у кандидата и работодателя.
+  '/api/consents': 'account',
+  '/api/consents/[kind]': 'account',
+  // Возражение против оценки (ст. 16 152-ФЗ) — только кандидат, работодатель их не видит.
+  '/api/objections': 'candidate',
   // Переключение активной роли и вторая роль на той же учётке (ADR 0004).
   '/api/auth/role/switch': 'account',
   '/api/auth/onboarding/complete': 'account',
@@ -160,7 +159,6 @@ export const API_ACCESS = {
   '/api/call/[id]/recording': 'session',
   '/api/call/[id]/signal': 'session',
   '/api/call/[id]/turn': 'candidate',
-  '/api/call/[id]/interrupt': 'candidate',
   '/api/call/[id]/audio': 'candidate',
   '/api/call/[id]/finish': 'candidate',
   // Справочник направлений и подкатегорий (ADR 0003): общий, без персональных данных.
@@ -197,6 +195,8 @@ export const API_ACCESS = {
   // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
   '/api/evaluate': { POST: 'public' },
   '/api/dev/delete-account': 'dev',
+  // Ответ оператора на возражения против оценки (ст. 16, ADR 0005).
+  '/api/dev/objections': 'dev',
   '/api/dev/login-as': 'dev',
   '/api/dev/logout': 'dev',
   '/api/dev/new-conversation': 'dev',

@@ -12,6 +12,7 @@ import type { AttemptView } from '@/server/test/types';
 
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { grantCandidateConsents } from '../../helpers/consents';
 
 const A = 'cand-a';
 const B = 'cand-b';
@@ -43,6 +44,7 @@ beforeEach(async () => {
       { id: B, email: 'b@example.test', name: 'Б' },
     ],
   });
+  await grantCandidateConsents([A, B]); // Г3 (ADR 0005): тест оценивает ИИ
 });
 
 describe('API теста на грейд', () => {

@@ -63,17 +63,18 @@ export const ERROR_RESPONSES: Record<number, { name: string; description: string
 export const TAG_DESCRIPTIONS: Record<string, string> = {
   auth: 'Вход, сессия, согласие на обработку ПДн, роль',
   call: 'Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события, сигналинг WebRTC',
+  consents: 'Согласия (ADR 0005): список «Мои согласия», дать, отозвать; раскрытие — по приглашению',
   claims: 'Карточки утверждений кандидата: подтвердить, поправить, отклонить',
   consultant: 'Чат с консультантом (SSE) и история разговоров',
   defense: 'Защита утверждения: короткое интервью, повышающее уровень до «платформа»',
   'defense-room': 'Защита проекта (ADR 0003, ступень 3): вопросы по коду, ходы, SSE звонка, итог слепого оценщика',
   demo: 'Демо-вход и демо-резюме (только при DEMO_LOGIN)',
-  'fsp-id': 'ФСП ID (R-FSP-01): привязка ФСП ID к профилю кандидата через OIDC-провайдер (Keycloak; сейчас — симулятор ФСП ID команды) и загрузка достижений',
   directions: 'Справочник направлений и подкатегорий (Subcategory, R-T-05)',
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
   health: 'Проверка живости',
   invitations: 'Приглашения глазами кандидата',
+  objections: 'Возражения против автоматической оценки (ст. 16 152-ФЗ): тест, созвон, защита',
   onboarding: 'Онбординг: шаги, ответы, итог',
   openapi: 'Спецификация API',
   profile: 'Профиль кандидата и приватность',
@@ -343,32 +344,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка — на /auth?error=<код>, без подробностей и токенов.',
     success: { description: 'Редирект 303: незавершённый онбординг → /consultant (лента знакомства), иначе `next` или кабинет роли; при ошибке /auth?error=<код>' },
   },
-  // lane fsp-oidc: привязка ФСП ID к профилю (R-FSP-01..04, R-C-15).
-  'GET /api/fsp-id/link': {
-    summary: 'Начать привязку ФСП ID',
-    description: 'Кнопка в настройках кандидата: state, nonce и PKCE verifier — в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата — на /auth.',
-    success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
-  },
-  'GET /api/fsp-id/callback': {
-    summary: 'Возврат из ФСП ID',
-    query: [
-      { name: 'code', description: 'Код авторизации', schema: str() },
-      { name: 'state', description: 'Должен совпасть со state из куки старта', schema: str() },
-      { name: 'error', description: 'Присутствует при отказе', schema: str() },
-    ],
-    description: 'Проверка state и кандидата потока, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce), привязка участника к профилю. Токены в URL не попадают.',
-    success: { status: 303, description: 'Редирект на /settings?fsp=linked|no_achievements|unavailable или /settings?fsp=error_<код>' },
-  },
-  'GET /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
-    summary: 'Мок ФСП ID: страница входа',
-    description: 'Authorization endpoint встроенного мока ФСП ID (путь как у Keycloak); только пока внешний провайдер не настроен, иначе 404. Проверяет client_id и redirect_uri по белому списку, PKCE S256, state и nonce; отдаёт HTML-страницу выбора демо-участника.',
-    success: { description: 'HTML-страница входа; ошибка запроса — редирект на redirect_uri с error или страница ошибки' },
-  },
-  'POST /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
-    summary: 'Мок ФСП ID: выбор демо-участника',
-    description: 'Форма страницы входа мока: одноразовый код на 60 секунд и редирект на redirect_uri с code и state; «Отмена» — error=access_denied.',
-    success: { status: 303, description: 'Редирект на /api/fsp-id/callback' },
-  },
   // lane email-auth: вход по почте и паролю (R-D-04). Все формы — same-origin и лимит попыток на клиента (429).
   'POST /api/auth/register': {
     summary: 'Регистрация по почте',
@@ -473,7 +448,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
       description: 'Новая сессия защиты и первый вопрос',
       extra: [{ status: 200, description: 'Продолжена активная сессия (`resumed: true`)', schema: free('Та же форма, что у 201') }],
     },
-    errors: { 404: 'Утверждение не найдено или чужое', 409: 'Утверждение нельзя защищать в текущем состоянии или исчерпаны лимиты' },
+    errors: { 404: 'Утверждение не найдено или чужое', 409: 'Утверждение нельзя защищать в текущем состоянии, исчерпаны лимиты или нет согласия на оценку ИИ (`consent_required`)' },
   },
   'GET /api/defense/{sessionId}': {
     summary: 'Состояние защиты', success: JSON_OK('Состояние: вопросы, ответы, вердикт, лимиты, оговорка', free('Состояние сессии защиты')) },
@@ -522,7 +497,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Ход помощника работодателя (SSE)',
     description: 'Ход помощника работодателя: поток событий `EmployerEvent`, как у консультанта. Разговор — свой, чужой — 404. Один ход на разговор одновременно. Помощник видит только публичную часть кандидатов (псевдоним, категория, покрытие); имя — только у принявших приглашение.',
     success: { schema: { type: 'string', description: 'Кадры `data: <json>`; схема кадра — EmployerEvent', 'x-event-schema': ref('EmployerEvent') } },
-    errors: SSE_ERRORS,
+    errors: { 409: `${SSE_ERRORS[409]}; не приняты оферта или обязательство по данным (\`consent_required\`)` },
   },
   'GET /api/employer/invitations': {
     summary: 'Трекинг приглашений и остаток лимита',
@@ -533,20 +508,21 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Пригласить кандидата',
     description: 'Приглашение: описание задачи и зарплата обязательны, потребность — нет (R-E-05). Контакты кандидата до принятия скрыты.',
     success: { status: 201, description: 'Приглашение создано', schema: free('Созданное приглашение') },
-    errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть', 429: 'Суточный лимит приглашений исчерпан' },
+    errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)', 429: 'Суточный лимит приглашений исчерпан' },
   },
   'GET /api/employer/search': {
     summary: 'Поиск по базе кандидатов',
     query: FILTER_QUERY,
-    description: 'Поиск по всему банку без привязки к потребности (R-E-04): та же выдача, что у подборки.',
+    description: 'Поиск по всему банку без привязки к потребности (R-E-04): та же выдача, что у подборки. Нужны оферта и обязательство по данным (ADR 0005).',
     success: JSON_OK('Ранжированные карточки с обоснованием', MATCHES),
+    errors: { 409: 'Не приняты оферта или обязательство по данным (`consent_required`, `details.kind`)' },
   },
   'GET /api/employer/vacancies/{id}/matches': {
     summary: 'Подборка кандидатов под потребность',
     query: FILTER_QUERY,
     description: 'Подборка с обоснованием (R-E-03, R-M-03); фильтры — query (R-M-04). Контакты скрыты до принятия приглашения (R-E-07).',
     success: JSON_OK('Ранжированные карточки с обоснованием', MATCHES),
-    errors: { 404: 'Потребность не найдена или чужая' },
+    errors: { 404: 'Потребность не найдена или чужая', 409: 'Не приняты оферта или обязательство по данным (`consent_required`)' },
   },
   'GET /api/employer/vacancies/{id}': {
     summary: 'Потребность компании', success: JSON_OK('Потребность компании', free('Потребность: поля VacancyInput, id, archived, даты')), errors: { 404: 'Потребность не найдена или чужая' } },
@@ -575,13 +551,46 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'GET /api/invitations': {
     query: [{ name: 'view', description: '`1` — отметить просмотр: статус sent → viewed', schema: en('1') }],
     summary: 'Входящие приглашения кандидата',
-    success: JSON_OK('Приглашения кандидата, только свои (R-C-16)', obj({ invitations: arr(free('Приглашение: компания, потребность, зарплата, сообщение, статус, даты')) })),
+    success: JSON_OK('Приглашения кандидата, только свои (R-C-16)', obj({ invitations: arr(free('Приглашение: компания, потребность, зарплата, сообщение, статус, даты; `disclosed` — действует раскрытие имени и контактов (Г5)')) })),
   },
   'POST /api/invitations/{id}': {
     summary: 'Принять или отклонить приглашение',
-    description: 'Ответ кандидата на приглашение (R-C-11). После принятия работодатель видит контакты.',
+    description: 'Ответ кандидата на приглашение (R-C-11). Принятие требует `disclosureVersion` — версию текста согласия на раскрытие (Г5, ADR 0005): работодатель видит имя и контакты, пока раскрытие не отозвано.',
     success: JSON_OK('Приглашение с новым статусом', free('Приглашение')),
-    errors: { 404: 'Приглашение чужое или не существует', 409: 'На приглашение уже отвечено' },
+    errors: { 403: 'У кандидата нет аккаунта — раскрытие записать некому', 404: 'Приглашение чужое или не существует', 409: 'На приглашение уже отвечено; при accept без `disclosureVersion` — `consent_required`; версия текста устарела — `conflict`' },
+  },
+
+  'GET /api/consents': {
+    summary: 'Мои согласия',
+    description: 'Все согласия своей роли (ADR 0005): вид, текущая версия текста, данная версия, даты, состояние; раскрытия — по каждому приглашению с названием компании.',
+    success: JSON_OK('Согласия аккаунта', obj({ items: arr(obj({
+      kind: str('Вид согласия'), title: str(), label: str(), paragraphs: arr(str()), currentVersion: str(), version: nullable(str()),
+      acceptedAt: nullable(DT()), revokedAt: nullable(DT()), state: en('active', 'outdated', 'revoked', 'none'),
+      requiredFor: nullable(str()), revoke: en('button', 'erase', 'per_invitation'), invitationId: str(), company: str(), docUrl: str(),
+    }, ['kind', 'title', 'currentVersion', 'version', 'acceptedAt', 'revokedAt', 'state', 'revoke'])) })),
+  },
+  'POST /api/consents': {
+    summary: 'Дать согласие',
+    description: 'Записать согласие на текущую версию текста. Повтор при действующем не создаёт дубля. Показ профиля снимает скрытие; раскрытие (`identity_disclosure`) — только по своему принятому приглашению (`context.invitationId`).',
+    success: { status: 201, description: 'Согласие записано', schema: obj({ kind: str(), version: str(), acceptedAt: DT() }) },
+    errors: { 400: 'Раскрытие без `context.invitationId`', 404: 'Приглашение для раскрытия не найдено или чужое', 409: 'Версия текста устарела или приглашение не принято (`conflict`)' },
+  },
+  'DELETE /api/consents/{kind}': {
+    summary: 'Отозвать согласие',
+    description: 'Ставит `revokedAt` у действующих строк. Запись созвона — аудио удаляется сразу, новые созвоны идут текстом. Показ — профиль скрывается. Раскрытие — по `invitationId`. Согласие на обработку ПДн отзывается только удалением аккаунта.',
+    query: [{ name: 'invitationId', description: 'Для `identity_disclosure`: приглашение, по которому отозвать раскрытие', schema: str() }],
+    success: JSON_OK('Согласие отозвано', obj({ kind: str(), revokedAt: DT(), deletedRecordings: int('Удалено аудиозаписей (только call_recording)') }, ['kind', 'revokedAt'])),
+    errors: { 400: 'Неизвестный вид согласия', 409: 'Согласие на обработку ПДн отзывается удалением аккаунта (`consent_revoke_is_erase`)' },
+  },
+  'GET /api/objections': {
+    summary: 'Мои возражения против оценки',
+    success: JSON_OK('Возражения кандидата, свежие первыми', obj({ objections: arr(free('Возражение: предмет, текст, статус, срок ответа, ответ')) })),
+  },
+  'POST /api/objections': {
+    summary: 'Оспорить автоматическую оценку',
+    description: 'Возражение по ст. 16 152-ФЗ против оценки теста, созвона или защиты. Срок ответа — 30 дней; работодатель возражений не видит.',
+    success: { status: 201, description: 'Возражение принято', schema: free('Возражение со сроком ответа `dueAt`') },
+    errors: { 404: 'Оценка не найдена или чужая', 409: 'Открытое возражение по этой оценке уже есть' },
   },
 
   'GET /api/onboarding': {
@@ -617,7 +626,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'GET /api/call': {
     summary: 'Мои созвоны и согласие на запись',
-    success: JSON_OK('Состояние согласия на запись и созвоны кандидата (свежие первыми, до 10)', obj({ consent: obj({ given: bool(), version: str(), text: arr(str()) }), calls: arr(ref('CallView')) })),
+    success: JSON_OK('Состояние согласия на запись и созвоны кандидата (свежие первыми, до 10)', obj({ consent: obj({ given: bool(), mode: { ...en('audio', 'text', 'ask'), description: '`audio` — запись разрешена; `text` — согласие отозвано, созвон идёт текстом без записи голоса; `ask` — согласия не было, спросить' }, version: str(), text: arr(str()) }), calls: arr(ref('CallView')) })),
   },
   'POST /api/call/consent': {
     summary: 'Согласие на запись созвона',
@@ -632,7 +641,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
       schema: obj({ sessionId: str(), resumed: bool(), webrtc: obj({ iceServers: arr({ type: 'object' }) }), call: ref('CallView') }),
       extra: [{ status: 200, description: 'Продолжен активный созвон (`resumed: true`)', schema: free('Та же форма, что у 201') }],
     },
-    errors: { 409: 'Нет согласия на запись (`call_consent_required`, `details.version`)', 429: 'Лимит созвонов в сутки (`call_limit`, env CALL_DAILY_LIMIT; 0 — без лимита)' },
+    errors: { 409: 'Нет согласия на оценку ИИ (`consent_required`, kind ai_assessment) или на запись (`call_consent_required`, `details.version`)', 429: 'Лимит созвонов в сутки (`call_limit`, env CALL_DAILY_LIMIT; 0 — без лимита)' },
   },
   'GET /api/call/{id}': { summary: 'Созвон: статус, транскрипт, вердикт', role: 'session', success: JSON_OK('Созвон с учётом роли', ref('CallView')), errors: { 404: 'Нет созвона или нет доступа' } },
   'POST /api/call/{id}/turn': {
@@ -643,19 +652,11 @@ export const OVERRIDES: Record<string, OpOverride> = {
     ),
     errors: { 400: 'Пустой текст ответа: распознаёт /audio или браузер, /turn сам STT не зовёт', 404: 'Чужой созвон или сегмент аудио', 409: 'Созвон завершён или ответ уже принят' },
   },
-  'POST /api/call/{id}/interrupt': {
-    summary: 'Кандидат перебил реплику ИИ',
-    success: JSON_OK(
-      'Реплика ИИ обрезана до услышанного (пометка «…(перебит)»), хвост — в `meta.interrupted.tail`; повтор идемпотентен, полностью услышанная реплика не меняется',
-      free('Реплика транскрипта (TranscriptEntry)'),
-    ),
-    errors: { 404: 'Нет такой реплики ИИ', 409: 'Созвон завершён или это не текущий вопрос' },
-  },
   'POST /api/call/{id}/audio': {
     summary: 'Сегмент голоса кандидата',
     body: { contentType: 'audio/l16', description: 'LPCM 16 бит, моно, 16 кГц, до 3 МБ (~90 с)', schema: { type: 'string', format: 'binary' } },
     success: { status: 201, description: 'Сегмент сохранён (WAV на диске); `text` — распознано SpeechKit или null (распознаёт браузер)', schema: obj({ audioRef: str('Имя сегмента NNN.wav'), text: nullable(str()) }) },
-    errors: { 409: 'Созвон завершён, лимит сегментов или параллельная загрузка', 413: 'Сегмент длиннее ~90 секунд' },
+    errors: { 409: 'Созвон завершён, лимит сегментов, параллельная загрузка или согласие на запись отозвано (`call_recording_off`: созвон идёт текстом)', 413: 'Сегмент длиннее ~90 секунд' },
   },
   'POST /api/call/{id}/finish': {
     summary: 'Завершить созвон и получить карту глубины',
@@ -725,7 +726,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
       schema: free('Попытка: id, категория, первое задание без ключа; `resumed`'),
       extra: [{ status: 200, description: 'Продолжена активная попытка той же категории (`resumed: true`)', schema: free('Та же форма, что у 201') }],
     },
-    errors: { 409: 'Нельзя начать: активная попытка другой категории (`active_attempt`), смена грейда раньше срока (`grade_change_too_soon`) или пересдача раньше срока (`retake_too_soon`); в `details` — `nextAllowedAt`' },
+    errors: { 409: 'Нет согласия на оценку ИИ (`consent_required`); нельзя начать: активная попытка другой категории (`active_attempt`), смена грейда раньше срока (`grade_change_too_soon`) или пересдача раньше срока (`retake_too_soon`); в `details` — `nextAllowedAt`' },
   },
 
   'GET /api/uploads/{id}/file': {

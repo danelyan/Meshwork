@@ -47,8 +47,9 @@ export const listQuestionsApi = async (candidateId: string) =>
   (await request<{ questions: EmployerQuestionDto[] }>(`/api/employer/questions?candidateId=${encodeURIComponent(candidateId)}`)).questions;
 export const askQuestionApi = (candidateId: string, text: string) => postJson<EmployerQuestionDto>('/api/employer/questions', { candidateId, text });
 
-export const respondInvitationApi = (id: string, action: 'accept' | 'decline') =>
-  postJson<{ id: string; status: string }>(`/api/invitations/${encodeURIComponent(id)}`, { action });
+/** accept — с версией согласия на раскрытие имени и контактов этому работодателю (Г5, ADR 0005). */
+export const respondInvitationApi = (id: string, action: 'accept' | 'decline', disclosureVersion?: string) =>
+  postJson<{ id: string; status: string }>(`/api/invitations/${encodeURIComponent(id)}`, { action, ...(disclosureVersion ? { disclosureVersion } : {}) });
 export const setContactApi = (contact: string) => postJson<{ contact: string | null }>('/api/profile/contact', { contact });
 export const setPrivacyApi = (hiddenFromEmployers: boolean) =>
   postJson<{ hiddenFromEmployers: boolean }>('/api/profile/privacy', { hiddenFromEmployers });

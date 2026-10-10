@@ -29,6 +29,7 @@ import { seedEmployer } from '../../../prisma/seed/employer';
 import { seedRecommend } from '../../../prisma/seed/recommend';
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { discloseAccepted, grantConsents, grantEmployerConsents } from '../../helpers/consents';
 
 const EMP = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: DEMO_EMPLOYER.profileId })}`;
 const OTHER = `cid=${signUserSession({ userId: 'u-other', role: 'employer', employerProfileId: 'p-other' })}`;
@@ -42,6 +43,7 @@ const defenseCalls: DefenseRequest[] = [];
 async function makeCandidate(id: string, specialization: 'backend' | 'frontend' | null, grade: 'junior' | 'middle' | null) {
   await prisma.candidate.create({ data: { id, name: `Имя ${id}`, email: `${id}@example.test`, specialization, consentAt: new Date() } });
   await prisma.user.create({ data: { id: `u-${id}`, name: id, role: 'candidate', candidateId: id } });
+  await grantConsents(`u-${id}`, ['ai_assessment']); // Г3 (ADR 0005): защиту оценивает ИИ
   if (grade && specialization) await prisma.candidateCategory.create({ data: { candidateId: id, specialization, grade } });
 }
 
@@ -66,6 +68,7 @@ describe('проект под работодателя: лента и сдача
     await prisma.company.create({ data: { id: 'co-other', name: 'Другая', isDemo: false } });
     await prisma.user.create({ data: { id: 'u-other', name: 'Чужой', role: 'employer' } });
     await prisma.employerProfile.create({ data: { id: 'p-other', userId: 'u-other', companyId: 'co-other' } });
+    await grantEmployerConsents(['u-other']); // ADR 0005: оферта и обязательство по данным
     await makeCandidate('p-be', 'backend', 'junior');
     await makeCandidate('p-fe', 'frontend', 'junior');
     await makeCandidate('p-lim', 'backend', 'junior');
@@ -216,6 +219,7 @@ describe('проект под работодателя: лента и сдача
     expect(after.items[0].defense).toEqual({ invitationId: out.invitationId, invitationStatus: 'sent' });
     // после принятия приглашения — имя и ссылка на репозиторий
     await prisma.invitation.update({ where: { id: out.invitationId }, data: { status: 'accepted' } });
+    await discloseAccepted(); // Г5 (ADR 0005)
     const open = await (await employerSubs(jsonRequest(`/x?needId=${NEED}`, 'GET', undefined, EMP))).json();
     expect(open.items[0]).toMatchObject({ repoUrl: 'https://github.com/demo/reference-solution', candidate: { displayName: 'Имя p-be' } });
 
@@ -223,7 +227,7 @@ describe('проект под работодателя: лента и сдача
     expect(regen.status).toBe(409);
 
     // Кандидат начинает защиту сам (после согласия на запись) — активируется та же сессия, не вторая.
-    await prisma.consent.create({ data: { userId: 'u-p-be', version: CALL_RECORDING_CONSENT_VERSION } });
+    await prisma.consent.create({ data: { userId: 'u-p-be', kind: 'call_recording', version: CALL_RECORDING_CONSENT_VERSION } });
     const started = await startDefenseRoom('p-be', { mode: 'project', projectSubmissionId: subId }, getLlm({ candidateId: 'p-be' }), { loadSnapshot: async (url) => demoRepoSnapshot(url) });
     expect(started.sessionId).toBe(out.callSessionId);
     expect(await prisma.callSession.findUniqueOrThrow({ where: { id: out.callSessionId }, select: { status: true } })).toEqual({ status: 'active' });

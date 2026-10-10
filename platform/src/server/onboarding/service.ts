@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { getSubcategory, isSpecialization, SPEC_ROLE, subcategoryMatches } from '@/lib/directions';
 import { CONSENT_VERSION, hasCurrentConsent, recordConsent } from '@/server/auth/consent';
 import { chooseRole } from '@/server/auth/users';
+import { grantConsent } from '@/server/consent/service';
+import { CANDIDATE_ONBOARDING_KINDS, EMPLOYER_ONBOARDING_KINDS, consentVersion, type ConsentKindName } from '@/server/consent/texts';
 import { demoAchievements } from '@/server/collector/fsp-demo';
 import { prisma } from '@/server/db';
 import { AppError, errors } from '@/server/errors';
@@ -73,9 +75,14 @@ async function load(userId: string) {
   });
   if (!user) throw errors.notFound('Аккаунт не найден');
   const consent = await hasCurrentConsent(userId);
+  const decided = new Set(
+    (await prisma.consent.findMany({ where: { userId, kind: { in: [...CANDIDATE_ONBOARDING_KINDS, ...EMPLOYER_ONBOARDING_KINDS] } }, select: { kind: true }, distinct: ['kind'] })).map((c) => c.kind as string),
+  );
   const facts: Facts = {
     role: user.role,
     consent,
+    candidateConsents: CANDIDATE_ONBOARDING_KINDS.some((k) => decided.has(k)),
+    employerConsents: EMPLOYER_ONBOARDING_KINDS.some((k) => decided.has(k)),
     name: user.name,
     fspState: user.candidate?.fspState ?? null,
     specialization: user.candidate?.specialization ?? null,
@@ -230,7 +237,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
       lead: lines[s.id] ?? templateLead(s, l.ctx, prevOf(s, l)),
       question: s.question,
       answer: answered ? answerLabel(s, l.ctx.answers[s.id], l.ctx) : skipped ? null : factLabel(s, l.ctx),
-      editable: !s.doneBy?.(l.ctx) && s.kind !== 'consent' && s.kind !== 'role',
+      editable: !s.doneBy?.(l.ctx) && s.kind !== 'consent' && s.kind !== 'consents' && s.kind !== 'role',
     };
   });
 
@@ -288,6 +295,15 @@ async function apply(l: Loaded, step: StepDef, value: unknown): Promise<boolean>
     case 'consent':
       await recordConsent(userId, (value as { version: string }).version);
       return false;
+    case 'candidateConsents':
+    case 'employerConsents': {
+      // ADR 0005: каждая отмеченная галочка — своё согласие текущей версии. Без Г4 профиль скрыт от работодателей.
+      for (const kind of value as ConsentKindName[]) await grantConsent(userId, { kind, version: consentVersion(kind) });
+      if (step.id === 'candidateConsents' && !(value as string[]).includes('employer_visibility')) {
+        await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { hiddenFromEmployers: true } });
+      }
+      return false;
+    }
     case 'role':
       if (l.ctx.facts.role !== 'pending') throw errors.conflict('Роль уже выбрана');
       if (value === 'candidate') {
@@ -429,19 +445,8 @@ export async function answerStep(userId: string, stepId: string, value: unknown)
   const fresh = await load(userId);
   const ctx = { ...fresh.ctx, answers };
   const next = nextOpen(ctx, skipped, step.id);
-  if (backToChat(fresh, next)) meta = { ...meta, later: true };
   await save(userId, { stepId: next.id, answers, skipped, meta });
   return { sessionChanged };
-}
-
-/**
- * Знакомство кандидата — вопросы-подсказки в чате консультанта, без отдельного режима (решение владельца 11.10):
- * после ответа или пропуска лента возвращается в разговор; следующий вопрос кандидат открывает сам
- * («Дополнить профиль» в чате или в «Что я о тебе знаю»). Обязательный шаг (подкатегория после
- * направления) и итог идут сразу. Работодатель проходит шаги подряд, как раньше: из них собирается вакансия.
- */
-function backToChat(l: Loaded, next: StepDef): boolean {
-  return l.ctx.facts.role === 'candidate' && l.ctx.facts.consent && l.user.onboardedAt === null && !next.required && next.kind !== 'summary';
 }
 
 export async function skipStep(userId: string, stepId: string): Promise<MutationResult> {
@@ -450,8 +455,7 @@ export async function skipStep(userId: string, stepId: string): Promise<Mutation
   if (step.required || step.kind === 'summary') throw errors.conflict('Этот шаг нельзя пропустить');
   const skipped = isAnswered(step, l.ctx.answers) || l.state.skipped.includes(step.id) ? l.state.skipped : [...l.state.skipped, step.id];
   const next = nextOpen(l.ctx, skipped, step.id);
-  const meta = backToChat(l, next) ? { ...l.meta, later: true } : l.meta.later ? resumed(l.meta) : undefined;
-  await save(userId, { stepId: next.id, skipped, ...(meta ? { meta } : {}) });
+  await save(userId, { stepId: next.id, skipped, ...(l.meta.later ? { meta: resumed(l.meta) } : {}) });
   return { sessionChanged: false };
 }
 

@@ -28,6 +28,7 @@ async function asCandidate(userId: string) {
   const c = pending(userId);
   await act(c, { action: 'answer', stepId: 'consent', value: { version: CONSENT_VERSION } });
   const cookie = cookieFrom(await act(c, { action: 'answer', stepId: 'role', value: 'candidate' }))!;
+  await act(cookie, { action: 'answer', stepId: 'candidateConsents', value: [] }); // шаг согласий (ADR 0005) — без галочек
   return { cookie, candidateId: parseSession(cookie.slice(4))!.candidateId! };
 }
 
@@ -141,14 +142,14 @@ describe('Свободный вопрос посреди онбординга', 
       return { text: 'ok' };
     });
     await ask(cookie, { text: 'привет' });
-    expect(systems[0]).toContain('Анкета кандидата заполнена не до конца');
-    expect(systems[0]).toContain('Дополнить профиль');
+    expect(systems[0]).toContain('Онбординг кандидата не закончен');
+    expect(systems[0]).toContain('Вернуться к знакомству');
     expect(systems[0]).not.toMatch(/(?<!<)\/onboarding/); // кроме тега </onboarding> в промпте
 
     await prisma.user.update({ where: { id: 'u1' }, data: { onboardedAt: new Date() } });
     expect(await pendingOnboarding(candidateId)).toBeNull();
     await ask(cookie, { text: 'привет ещё раз' });
-    expect(systems.at(-1)).not.toContain('Анкета кандидата заполнена не до конца');
+    expect(systems.at(-1)).not.toContain('Онбординг кандидата не закончен');
   });
 
   it('демо без модели: напоминание о брошенном онбординге — одной строкой и один раз за разговор', async () => {
@@ -157,9 +158,9 @@ describe('Свободный вопрос посреди онбординга', 
     resetEnvCache();
     try {
       const first = await ask(cookie, { text: 'привет' });
-      expect(textOf(first.events)).toContain('Профиль заполнен не до конца - дополним здесь же: кнопка «Дополнить профиль» под чатом.');
+      expect(textOf(first.events)).toContain('Знакомство ещё не закончено - продолжим здесь же: кнопка «Вернуться к знакомству» вверху ленты.');
       const second = await ask(cookie, { text: 'а ещё?', conversationId: first.conversationId });
-      expect(textOf(second.events)).not.toContain('Профиль заполнен не до конца');
+      expect(textOf(second.events)).not.toContain('Знакомство ещё не закончено');
       const aside = await ask(cookie, { text: 'вопрос', onboardingStep: 'goal' });
       expect(textOf(aside.events)).toMatch(/без языковой модели.*Зачем ты здесь\?/s);
     } finally {
@@ -182,13 +183,13 @@ describe('Свободный вопрос посреди онбординга', 
     await runTurn({ candidateId, conversationId: conv.id, text: 'Вот мои материалы.', onboarding: step }, () => undefined, undefined, {
       llm: getLlm({ candidateId, conversationId: conv.id }),
     });
-    expect(systems[0]).not.toContain('Анкета кандидата заполнена не до конца');
+    expect(systems[0]).not.toContain('Онбординг кандидата не закончен');
     expect(systems[0]).toContain('Не предлагай продолжить знакомство по ссылке');
     // С конвейером (файлы/ссылки) правило «коротко и вернуть к шагу» не добавляется — у конвейера свои инструкции.
     const pipeline = { docs: [], failed: [], proposed: [], rejected: 0, rejectSummary: '', merged: 0, hiddenText: 0, injectionSuspect: false, alreadyKnown: 0 } as unknown as PipelineResult;
     const withPipeline = buildSystem({ now: new Date(), pipeline, toolsExhausted: false, onboarding: step, resume: null });
     expect(withPipeline).not.toContain('Идёт онбординг');
     expect(withPipeline).toContain('Ход пришёл из ленты онбординга');
-    expect(withPipeline).not.toContain('Анкета кандидата заполнена не до конца');
+    expect(withPipeline).not.toContain('Онбординг кандидата не закончен');
   });
 });

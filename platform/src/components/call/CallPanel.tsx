@@ -20,6 +20,7 @@ import styles from './CallPanel.module.css';
 import { useCallMode } from './CallContext';
 import { DepthMap } from './DepthMap';
 import { useCallMic } from './useCallMic';
+import { ObjectionButton } from '../consent/ObjectionButton';
 
 type Phase = 'loading' | 'consent' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
 
@@ -54,6 +55,8 @@ export function CallPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [typing, setTyping] = useState(false);
+  /** Согласие на запись отозвано (ADR 0005): созвон без записи голоса, ответы только текстом. */
+  const [textOnly, setTextOnly] = useState(false);
   const [draft, setDraft] = useState('');
   const [closing, setClosing] = useState(false);
   /** Идут дополнительные вопросы по темам, где оценщик не определился. */
@@ -102,7 +105,10 @@ export function CallPanel() {
           setTranscript(lastDone.transcript ?? []);
           return setPhase('done');
         }
-        if (!list.consent.given) return setPhase('consent');
+        if (list.consent.mode === 'text') {
+          setTextOnly(true);
+          setTyping(true);
+        } else if (!list.consent.given) return setPhase('consent');
         await begin();
       } catch (e) {
         if (!alive) return;
@@ -376,6 +382,9 @@ export function CallPanel() {
             {(call.verdict as CallVerdict).upgradedCatalogIds?.length ? (
               <p className={styles.hint}>Подтверждённые утверждения получили уровень «проверено платформой».</p>
             ) : null}
+            <div className={styles.hint}>
+              <ObjectionButton subject={call.kind === 'defense' ? 'defense' : 'call'} subjectId={call.id} />
+            </div>
             <div className={styles.row}>
               <a className={styles.primary} href="/profile">
                 Открыть профиль
@@ -388,9 +397,20 @@ export function CallPanel() {
         )}
         {phase === 'done' && !interview && !call?.verdict && <p className={styles.hint}>Ответов не было - созвон закрыт без оценки.</p>}
 
+        {textOnly && (phase === 'live' || phase === 'starting') && (
+          <p className={styles.hint} data-testid="call-text-mode">
+            Запись голоса отключена в «Моих согласиях» - созвон идёт текстом, аудио не сохраняется.
+          </p>
+        )}
         {(error || mic.error) && (
           <p className={styles.error} role="alert">
             {error ?? mic.error}
+            {/consent|согласи/i.test(error ?? '') && (
+              <>
+                {' '}
+                <a href="/settings#consents">Мои согласия</a>
+              </>
+            )}
           </p>
         )}
         {phase === 'error' && (
@@ -438,7 +458,7 @@ export function CallPanel() {
             </div>
           )}
           <div className={styles.bar}>
-            {mic.available && (
+            {mic.available && !textOnly && (
               <button
                 type="button"
                 className={cx(styles.ctl, styles.mic, mic.state === 'recording' && styles.recording)}

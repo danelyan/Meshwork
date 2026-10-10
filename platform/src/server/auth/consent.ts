@@ -1,11 +1,11 @@
-import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
-import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
+import { grantConsent, hasActiveConsent } from '@/server/consent/service';
+import { CONSENT_VERSION } from '@/server/consent/texts';
 
 /**
- * Версия текста согласия на обработку ПДн (R-C-14, 152-ФЗ). Текст —
- * `docs/consent.md` (черновик, не юридический текст). Согласие берётся при регистрации
- * одной галкой (/auth, /demo), решение владельца 09.10; в чате онбординга шага согласия нет.
+ * Г1 — согласие на обработку ПДн (R-C-14, 152-ФЗ, ADR 0005): `Consent.kind = pd_processing`.
+ * Тексты и версии — server/consent/texts.ts (черновик, не юридический текст). Берётся при регистрации
+ * отдельной галкой (/auth, /demo). Отзыв — только удалением аккаунта (eraseOwnAccount).
  */
 export { CONSENT_VERSION };
 
@@ -17,32 +17,21 @@ export function assertConsentVersion(version: string | null | undefined): string
 }
 
 /**
- * Записать согласие: факт + версия + время (запись не удаляется, история хранится).
- * Принимает только текущую версию: согласие на устаревший текст не засчитываем.
+ * Записать согласие: факт + версия + время (история хранится). Только текущая версия.
  * Если у аккаунта уже есть Candidate — проставляет и `Candidate.consentAt`.
  */
 export async function recordConsent(userId: string, version: string = CONSENT_VERSION) {
   if (version !== CONSENT_VERSION) throw errors.conflict('Текст согласия обновился - обновите страницу');
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { candidateId: true } });
-  if (!user) throw errors.notFound('Аккаунт не найден');
-  const consent = await prisma.consent.create({ data: { userId, version } });
-  if (user.candidateId) {
-    await prisma.candidate.update({ where: { id: user.candidateId }, data: { consentAt: consent.acceptedAt } });
-  }
-  return consent;
+  return grantConsent(userId, { kind: 'pd_processing', version });
 }
 
-/**
- * Согласие, если его ещё нет: готовые демо-аккаунты (сид) считаются согласившимися,
- * вход по Яндексу с галкой — тоже. Пишет так же, как recordConsent.
- */
+/** Согласие, если его ещё нет (демо-аккаунты из сида, вход по Яндексу с галкой). */
 export async function ensureConsent(userId: string, version: string = CONSENT_VERSION) {
   if (await hasCurrentConsent(userId)) return;
   await recordConsent(userId, version);
 }
 
-/** Есть ли согласие на текущую версию текста. */
+/** Есть ли действующее согласие на текущую версию текста. */
 export async function hasCurrentConsent(userId: string): Promise<boolean> {
-  const n = await prisma.consent.count({ where: { userId, version: CONSENT_VERSION } });
-  return n > 0;
+  return hasActiveConsent(userId, 'pd_processing');
 }

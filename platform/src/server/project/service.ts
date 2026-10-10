@@ -8,6 +8,7 @@ import type { Grade as PrismaGrade, Prisma, ProjectSubmissionStatus } from '@pri
 import { githubHeaders } from '../collector/github';
 import { getText } from '../collector/http-json';
 import { maskContacts } from '../collector/mask';
+import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
 import { categoryLabel } from '../employer/ranking';
 import { createInvitation } from '../employer/invitations';
@@ -730,7 +731,8 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
   });
   const candidateIds = [...new Set(subs.map((s) => s.candidateId))];
   const invitations = await prisma.invitation.findMany({ where: { companyId, candidateId: { in: candidateIds } }, select: { id: true, candidateId: true, status: true } });
-  const accepted = new Set(invitations.filter((i) => i.status === 'accepted').map((i) => i.candidateId));
+  // Открыто — только при принятом приглашении с действующим раскрытием (Г5, ADR 0005).
+  const accepted = await disclosedCandidateIds(companyId, candidateIds);
   for (const s of subs) resumeIfStale(s);
   return {
     task,

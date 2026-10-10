@@ -1,7 +1,7 @@
 // Подсчёт «заполнено N из M» для плашки: пропущенный шаг считается закрытым.
 const findUnique = vi.hoisted(() => vi.fn());
 const consent = vi.hoisted(() => vi.fn());
-vi.mock('@/server/db', () => ({ prisma: { user: { findUnique } } }));
+vi.mock('@/server/db', () => ({ prisma: { user: { findUnique }, consent: { findMany: async () => [] } } }));
 vi.mock('@/server/auth/consent', async (orig) => ({ ...(await orig<typeof import('@/server/auth/consent')>()), hasCurrentConsent: consent }));
 
 import { onboardingProgress } from '@/server/onboarding/service';

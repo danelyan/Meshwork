@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PLATFORM_UPGRADABLE } from '../claims/levels';
 import type { EvidenceLevel } from '../claims/types';
 import { prisma } from '../db';
+import { assertAiAssessmentConsent } from '../consent/service';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
 import { buildExplanation, decidePassed, evaluateDefense, scoreTotal, THRESHOLD } from './evaluator';
@@ -115,6 +116,7 @@ export async function startDefense(
   // Чужое утверждение — 404, не раскрываем, что оно существует.
   if (!claim || claim.candidateId !== candidateId) throw errors.notFound('Утверждение не найдено');
   assertEligible(claim);
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): защиту оценивает ИИ
 
   const existing = await resumeActive(candidateId, claimId);
   if (existing) return existing;

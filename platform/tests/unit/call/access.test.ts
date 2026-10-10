@@ -2,7 +2,8 @@ import { vi } from 'vitest';
 
 const db = vi.hoisted(() => ({
   employerProfile: { findUnique: vi.fn() },
-  invitation: { count: vi.fn() },
+  invitation: { findMany: vi.fn() },
+  consent: { findMany: vi.fn() },
   callParticipant: { count: vi.fn() },
   candidate: { findUnique: vi.fn() },
 }));
@@ -19,7 +20,15 @@ beforeEach(() => {
   db.employerProfile.findUnique.mockResolvedValue({ companyId: 'co-1' });
   db.candidate.findUnique.mockResolvedValue({ hiddenFromEmployers: false });
   db.callParticipant.count.mockResolvedValue(0);
+  db.consent.findMany.mockResolvedValue([]);
 });
+
+/** Принятые приглашения компании; раскрытие (Г5, ADR 0005) — по `disclosed`. */
+const accepted = (n: number, disclosed = true) => {
+  const invs = Array.from({ length: n }, (_, i) => ({ id: `inv-${i}`, candidateId: 'cand-1' }));
+  db.invitation.findMany.mockResolvedValue(invs);
+  db.consent.findMany.mockResolvedValue(disclosed ? invs.map((i) => ({ context: { invitationId: i.id } })) : []);
+};
 
 describe('гейт записи созвона для работодателя (R-C-16, ADR 0003 п. 4)', () => {
   it('кандидату — свой созвон и запись всегда; чужой — 404', async () => {
@@ -28,24 +37,29 @@ describe('гейт записи созвона для работодателя (
   });
 
   it('без принятого приглашения — только оценки, без записи', async () => {
-    db.invitation.count.mockResolvedValue(0);
+    accepted(0);
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'summary', recording: false });
-    expect(db.invitation.count).toHaveBeenCalledWith({ where: { companyId: 'co-1', candidateId: 'cand-1', status: 'accepted' } });
+    expect(db.invitation.findMany).toHaveBeenCalledWith({ where: { companyId: 'co-1', candidateId: { in: ['cand-1'] }, status: 'accepted' }, select: { id: true, candidateId: true } });
+  });
+
+  it('accepted, но раскрытие отозвано (Г5) — снова только оценки', async () => {
+    accepted(1, false);
+    await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'summary', recording: false });
   });
 
   it('после accepted — транскрипт и запись', async () => {
-    db.invitation.count.mockResolvedValue(1);
+    accepted(1);
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'full', recording: true });
   });
 
   it('участник комнаты без accepted — транскрипт, но не запись', async () => {
-    db.invitation.count.mockResolvedValue(0);
+    accepted(0);
     db.callParticipant.count.mockResolvedValue(1);
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'full', recording: false });
   });
 
   it('скрытый кандидат без accepted — 404', async () => {
-    db.invitation.count.mockResolvedValue(0);
+    accepted(0);
     db.candidate.findUnique.mockResolvedValue({ hiddenFromEmployers: true });
     await expect(resolveCallAccess(employer, call)).rejects.toMatchObject({ status: 404 });
   });

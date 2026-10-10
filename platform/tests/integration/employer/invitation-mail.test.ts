@@ -1,6 +1,7 @@
 import { createInvitation, notifyCandidateInvited, respondInvitation } from '@/server/employer/invitations';
 import { clearMailOutbox, mailOutbox } from '@/server/mail';
 
+import { DISCLOSURE_VERSION, grantEmployerConsents, linkCandidateUsers } from '../../helpers/consents';
 import { prisma, resetDb } from '../../helpers/db';
 
 /** Фоновое письмо: ждём, пока появится в журнале (fire-and-forget не блокирует запрос). */
@@ -26,6 +27,8 @@ describe('уведомления о приглашениях (lane email-auth)',
     const profile = await prisma.employerProfile.create({ data: { userId: user.id, companyId: company.id } });
     ctx = { companyId: company.id, employerProfileId: profile.id };
     candidateId = (await prisma.candidate.create({ data: { name: 'Ирина', email: 'irina@example.test' } })).id;
+    await grantEmployerConsents([user.id]); // ADR 0005: приглашать можно после оферты и обязательства
+    await linkCandidateUsers([candidateId]); // Г5 при принятии пишется на аккаунт кандидата
   });
 
   it('новое приглашение → письмо кандидату с компанией и зарплатой; принятие → письмо работодателю', async () => {
@@ -35,7 +38,7 @@ describe('уведомления о приглашениях (lane email-auth)',
     expect(toCandidate!.text).toContain('250');
     expect(toCandidate!.text).toContain('300');
 
-    await respondInvitation(candidateId, inv.id, 'accept');
+    await respondInvitation(candidateId, inv.id, 'accept', DISCLOSURE_VERSION);
     expect(await waitForMail('invitation_accepted')).toMatchObject({ to: 'hr@romashka.test' });
   });
 

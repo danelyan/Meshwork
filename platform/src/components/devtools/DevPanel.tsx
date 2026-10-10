@@ -9,6 +9,7 @@ import { Button, Kicker } from '@/components/ui';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
 import styles from './DevPanel.module.css';
+import { ObjectionsDev } from './ObjectionsDev';
 
 interface Me {
   id: string;
@@ -305,6 +306,7 @@ export function DevPanel() {
                   Выйти
                 </Button>
               </div>
+              <ObjectionsDev />
             </>
           )}
         </div>

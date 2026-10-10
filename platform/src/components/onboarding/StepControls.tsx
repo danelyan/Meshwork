@@ -83,6 +83,28 @@ export function StepControls(props: StepControlsProps) {
         />
       );
     }
+    case 'consents': {
+      // Согласия (ADR 0005): отдельные неотмеченные галочки с полным текстом; продолжить можно и без них.
+      const labelOf = (v: string) => opts.find((o) => o.value === v)?.label ?? v;
+      return (
+        <MessageCard label="Согласия">
+          <div role="group" aria-label="Согласия" data-testid="consent-checks">
+            {opts.map((o) => (
+              <label key={o.value} className={styles.sub} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
+                <input type="checkbox" checked={props.sel.includes(o.value)} disabled={busy} onChange={() => props.onToggle(o.value)} />
+                <span>
+                  <b>{o.label}</b>
+                  {o.note && <small style={{ display: 'block' }}>{o.note}</small>}
+                </span>
+              </label>
+            ))}
+          </div>
+          <DoneLink disabled={busy} onClick={() => onAnswer(props.sel, props.sel.length ? props.sel.map(labelOf).join('; ') : 'Без дополнительных согласий')}>
+            {props.sel.length ? `Сохранить · ${props.sel.length}` : 'Продолжить без согласий'}
+          </DoneLink>
+        </MessageCard>
+      );
+    }
     case 'range': {
       const spec = step.range!;
       const prev = step.value as { from: number; to: number } | undefined;

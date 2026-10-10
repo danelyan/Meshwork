@@ -25,6 +25,8 @@ async function asEmployer(userId: string) {
   await act(c, { action: 'answer', stepId: 'consent', value: { version: CONSENT_VERSION } });
   await act(c, { action: 'answer', stepId: 'role', value: 'employer' });
   const cookie = cookieFrom((await act(c, { action: 'answer', stepId: 'companyName', value: 'ООО Ромашка' })).res)!;
+  // ADR 0005: помощник по подбору открыт после оферты и обязательства по данным
+  await act(cookie, { action: 'answer', stepId: 'employerConsents', value: ['employer_offer', 'employer_data_obligation'] });
   return { cookie, employerProfileId: parseSession(cookie.slice(4))!.employerProfileId! };
 }
 

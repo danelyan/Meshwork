@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { CompanyProfile } from '@/components/employer/CompanyProfile';
 import { AccountErasure } from '@/components/auth/AccountErasure';
+import { ConsentsPanel } from '@/components/consent/ConsentsPanel';
 import styles from '@/components/employer/Employer.module.css';
 import { Button } from '@/components/ui';
 import { requirePageEmployer } from '@/server/auth/page';
@@ -40,6 +41,7 @@ export default async function EmployerCompanyPage() {
           <p className={styles.meta}>Предпросмотр по активной вакансии. Личное сообщение и вилка уточняются перед отправкой.</p>
         </aside>
       </div>
+      <ConsentsPanel />
       <AccountErasure />
     </div>
   );

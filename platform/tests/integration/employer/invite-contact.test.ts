@@ -12,6 +12,7 @@ import { DEMO_POOL, seedEmployer } from '../../../prisma/seed/employer';
 import { seedRecommend } from '../../../prisma/seed/recommend';
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { DISCLOSURE_VERSION, linkCandidateUsers } from '../../helpers/consents';
 
 const EMP = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: DEMO_EMPLOYER.profileId })}`;
 const candCookie = (candidateId: string) => `cid=${signUserSession({ userId: `u-${candidateId}`, role: 'candidate', candidateId })}`;
@@ -25,7 +26,8 @@ const post = (body: Record<string, unknown>) =>
   invite(jsonRequest('/api/employer/invitations', 'POST', { candidateId: PAY.id, vacancyId: PAY_VAC, message: 'Платёжная команда, Go и Kafka', ...body }, EMP));
 
 async function accept(candidateId: string, id: string) {
-  const r = await respond(jsonRequest('/x', 'POST', { action: 'accept' }, candCookie(candidateId)), params(id));
+  await linkCandidateUsers([candidateId]);
+  const r = await respond(jsonRequest('/x', 'POST', { action: 'accept', disclosureVersion: DISCLOSURE_VERSION }, candCookie(candidateId)), params(id));
   expect(r.status).toBe(200);
 }
 

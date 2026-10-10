@@ -15,6 +15,7 @@ import { DEMO_POOL, seedEmployer } from '../../../prisma/seed/employer';
 import { seedRecommend } from '../../../prisma/seed/recommend';
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { DISCLOSURE_VERSION, grantEmployerConsents, linkCandidateUsers } from '../../helpers/consents';
 
 const EMP = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: DEMO_EMPLOYER.profileId })}`;
 const OTHER = `cid=${signUserSession({ userId: 'u-other', role: 'employer', employerProfileId: 'p-other' })}`;
@@ -60,6 +61,10 @@ describe('кабинет работодателя (БД)', () => {
     await prisma.user.upsert({ where: { id: 'u-other' }, update: {}, create: { id: 'u-other', name: 'Чужой', role: 'employer' } });
     await prisma.employerProfile.upsert({ where: { userId: 'u-other' }, update: {}, create: { id: 'p-other', userId: 'u-other', companyId: 'co-other' } });
     await prisma.candidate.updateMany({ data: { hiddenFromEmployers: false } });
+    await linkCandidateUsers(DEMO_POOL.map((c) => c.id)); // Г5 (ADR 0005) пишется на аккаунт кандидата
+    // чужой работодатель принял оферту: проверяем изоляцию компаний (404), а не гейт согласий (409)
+    await prisma.consent.deleteMany({ where: { userId: 'u-other' } });
+    await grantEmployerConsents(['u-other']);
   });
   afterAll(() => prisma.$disconnect());
 
@@ -224,7 +229,7 @@ describe('кабинет работодателя (БД)', () => {
     expect((await respond(jsonRequest('/x', 'POST', { action: 'accept' }, candCookie('demo-pool-be-j-1')), params({ id }))).status).toBe(404);
     expect((await respond(jsonRequest('/x', 'POST', { action: 'accept' }, EMP), params({ id }))).status).toBe(403);
 
-    const ok = await respond(jsonRequest('/x', 'POST', { action: 'accept' }, candCookie(PAY.id)), params({ id }));
+    const ok = await respond(jsonRequest('/x', 'POST', { action: 'accept', disclosureVersion: DISCLOSURE_VERSION }, candCookie(PAY.id)), params({ id }));
     expect(await ok.json()).toEqual({ id, status: 'accepted' });
     expect((await respond(jsonRequest('/x', 'POST', { action: 'decline' }, candCookie(PAY.id)), params({ id }))).status).toBe(409);
 

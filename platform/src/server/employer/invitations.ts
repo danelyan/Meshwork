@@ -3,6 +3,8 @@
 import type { InvitationStatus } from '@prisma/client';
 import type { z } from 'zod';
 
+import { assertEmployerConsents, consentRequired, disclosedInvitationIds, grantConsent, hasActiveConsent, revokeConsent, userIdForCandidate } from '../consent/service';
+import { consentVersion } from '../consent/texts';
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 import { deliverable, notifyInBackground, sendMail } from '../mail';
@@ -51,6 +53,8 @@ export interface CandidateInvitationView {
   company: { name: string; description: string | null; contact: string | null; trust?: { index: number; band: 'low' | 'medium' | 'high'; concept: true } | null };
   /** Антифрод (R-X-01): красные флаги текста и вилки; пустой — ничего не найдено. Интерфейс пишет «Проверьте: …». */
   redFlags?: Pick<RedFlag, 'code' | 'severity' | 'candidateNote'>[];
+  /** Принято и раскрытие имени и контактов действует (Г5, ADR 0005); false после отзыва — компания видит псевдоним. */
+  disclosed?: boolean;
   vacancy: {
     title: string;
     specialization: Specialization;
@@ -77,6 +81,10 @@ export async function createInvitation(
   input: z.infer<typeof InvitationInput>,
   limit = DAILY_INVITATION_LIMIT,
 ): Promise<{ id: string; status: InvitationStatus }> {
+  // Приглашения — только после оферты и обязательства по данным кандидатов (ADR 0005).
+  const sender = await prisma.employerProfile.findUnique({ where: { id: ctx.employerProfileId }, select: { userId: true } });
+  if (!sender) throw errors.forbidden('Профиль работодателя не найден');
+  await assertEmployerConsents(sender.userId);
   const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false }, select: { id: true } });
   if (!cand) throw errors.notFound('Кандидат не найден');
   if (input.vacancyId) {
@@ -173,7 +181,9 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
   if (rows.length === 0) return [];
   const catalog = await loadCatalog();
   const pool = new Map((await loadPool(catalog)).map((p) => [p.evidence.id, p.claimsPublic]));
-  const accepted = new Set(rows.filter((r) => r.status === 'accepted').map((r) => r.candidateId));
+  // Имя и контакты — только по принятому приглашению с действующим раскрытием (Г5, ADR 0005): отзыв возвращает псевдоним.
+  const disclosed = await disclosedInvitationIds(rows.filter((r) => r.status === 'accepted').map((r) => r.id));
+  const accepted = new Set(rows.filter((r) => disclosed.has(r.id)).map((r) => r.candidateId));
   return rows.map((r) => ({
     id: r.id,
     status: r.status,
@@ -236,6 +246,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
     orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
   });
   const trusts = await loadCompanyTrusts(rows.map((r) => (r.company ?? r.vacancy?.company)?.id).filter((id): id is string => !!id));
+  const disclosed = await disclosedInvitationIds(rows.filter((r) => r.status === 'accepted').map((r) => r.id));
   return rows.map((r) => {
     const co = r.company ?? r.vacancy?.company ?? { id: null, name: 'Компания', description: null, contact: null };
     const senderEmail = r.employerProfile?.user.email;
@@ -264,22 +275,39 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
         salaryFrom: r.salaryFrom,
         salaryTo: r.salaryTo,
       }).map(({ code, severity, candidateNote }) => ({ code, severity, candidateNote })),
+      disclosed: disclosed.has(r.id),
       vacancy,
     };
   });
 }
 
-/** Ответ кандидата. Чужое — 404; уже отвеченное — 409. Условный update — без гонки двойного ответа. */
-export async function respondInvitation(candidateId: string, invitationId: string, action: 'accept' | 'decline') {
+/**
+ * Ответ кандидата. Чужое — 404; уже отвеченное — 409. Условный update — без гонки двойного ответа.
+ * accept требует отдельного подтверждения раскрытия имени и контактов этому работодателю (Г5, ADR 0005):
+ * без `disclosureVersion` — 409 consent_required, приглашение остаётся открытым. Статус и согласие — одной транзакцией.
+ */
+export async function respondInvitation(candidateId: string, invitationId: string, action: 'accept' | 'decline', disclosureVersion?: string) {
   const inv = await prisma.invitation.findFirst({ where: { id: invitationId, candidateId }, select: { id: true } });
   if (!inv) throw errors.notFound('Приглашение не найдено');
   const status: InvitationStatus = action === 'accept' ? 'accepted' : 'declined';
+  let userId: string | null = null;
+  if (status === 'accepted') {
+    if (!disclosureVersion) throw consentRequired('identity_disclosure', 'Чтобы принять приглашение, подтвердите раскрытие имени и контактов этому работодателю.');
+    if (disclosureVersion !== consentVersion('identity_disclosure')) throw errors.conflict('Текст согласия обновился - обновите страницу');
+    userId = await userIdForCandidate(candidateId);
+    if (!userId) throw errors.forbidden('Принять приглашение может аккаунт кандидата - войдите заново');
+  }
   const now = new Date();
-  const r = await prisma.invitation.updateMany({
-    where: { id: invitationId, candidateId, status: { in: OPEN } },
-    data: { status, respondedAt: now },
+  await prisma.$transaction(async (tx) => {
+    const r = await tx.invitation.updateMany({
+      where: { id: invitationId, candidateId, status: { in: OPEN } },
+      data: { status, respondedAt: now },
+    });
+    if (r.count === 0) throw errors.conflict('На приглашение уже ответили');
+    if (userId) {
+      await tx.consent.create({ data: { userId, kind: 'identity_disclosure', version: disclosureVersion!, acceptedAt: now, context: { invitationId } } });
+    }
   });
-  if (r.count === 0) throw errors.conflict('На приглашение уже ответили');
   void notifyInBackground('invitation_answer', () => notifyEmployerAnswered(invitationId, status === 'accepted'));
   void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
   return { id: invitationId, status };
@@ -307,6 +335,11 @@ export async function setCandidateContact(candidateId: string, contact: string |
 
 /** Настройка приватности (R-C-13): скрыть себя из подборок и поиска работодателей. */
 export async function setPrivacy(candidateId: string, hiddenFromEmployers: boolean) {
+  // Показ работодателям — согласие Г4 (ADR 0005): переключатель даёт или отзывает его. Профиль без аккаунта
+  // (демо-пул сида) согласий не хранит — у него меняется только флаг.
+  const userId = await userIdForCandidate(candidateId);
+  if (userId && !hiddenFromEmployers) await grantConsent(userId, { kind: 'employer_visibility', version: consentVersion('employer_visibility') });
+  if (userId && hiddenFromEmployers && (await hasActiveConsent(userId, 'employer_visibility'))) await revokeConsent(userId, 'employer_visibility');
   const r = await prisma.candidate.updateMany({ where: { id: candidateId }, data: { hiddenFromEmployers } });
   if (r.count === 0) throw errors.notFound('Кандидат не найден');
   return { hiddenFromEmployers };

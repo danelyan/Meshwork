@@ -41,6 +41,18 @@ export const WEAVE_RETOPO_GLSL_HEAD = `
   varying vec2 vFspField;
   #endif
   #ifdef FSP_WEAVE_NEW
+  // яркость основы в ячейке относительно нити: у 6 и 9 светлее (серые ячейки референса face1.png)
+  // и материал ячейки: у 6 и 9 — тот же металл, что нить, только темнее и шероховатее, поэтому ячейка
+  // везде темнее нити (матовая светлая ячейка в тени оказывалась светлее металлической нити)
+  #if defined(FSP_WEAVE6) || defined(FSP_WEAVE9)
+  #define FW_CELL 0.3
+  #define FW_CELL_METAL -1.0
+  #define FW_CELL_ROUGH 0.6
+  #else
+  #define FW_CELL 0.1
+  #define FW_CELL_METAL 0.2
+  #define FW_CELL_ROUGH 0.78
+  #endif
   // маска нити (1 — проволока, 0 — ячейка) и наклон «высоты» нити в экранных пикселях (для нормали)
   float fwWireG = 1.0;
   vec2 fwBumpG = vec2(0.0);
@@ -184,7 +196,8 @@ export const WEAVE_RETOPO_GLSL_COLOR = `
     // серебристая ткань: нить — металл основы, ячейка — тот же металл в тени (≈ 10 %) и матовая
     fwWireG = clamp(wire.x, 0.0, 1.0);
     fwBumpG = wire.yz * 0.7;
-    diffuseColor.rgb = mix(base * 0.1, base, fwWireG);
+    // тон ячейки: у 6 и 9 — серый, как на референсе (решение владельца 10.10: ячейки не чёрные)
+    diffuseColor.rgb = mix(base * FW_CELL, base, fwWireG);
   }
   #endif
 `;
@@ -197,8 +210,8 @@ export function weaveRetopoVertex(src: string, style: HeadStyle): string {
 }
 
 /**
- * Материал по маске нити: ячейка матовая и почти не металл (не ловит студийный блик), нить — металл
- * стиля; наклон нормали по профилю проволоки — формула perturbNormalArb из three (bumpmap_pars_fragment,
+ * Материал по маске нити: ячейка матовая (у 5, 7, 8 почти не металл, у 6 и 9 — тёмный металл нити, см.
+ * FW_CELL), нить — металл стиля; наклон нормали по профилю проволоки — формула perturbNormalArb из three (bumpmap_pars_fragment,
  * Mikkelsen), только dH/d(экран) считается аналитически по клетке, без текстуры.
  */
 export function weaveRetopoFragment(src: string): string {
@@ -207,14 +220,14 @@ export function weaveRetopoFragment(src: string): string {
       '#include <roughnessmap_fragment>',
       `#include <roughnessmap_fragment>
       #ifdef FSP_WEAVE_NEW
-      roughnessFactor = mix(0.78, roughnessFactor, fwWireG);
+      roughnessFactor = mix(FW_CELL_ROUGH, roughnessFactor, fwWireG);
       #endif`,
     )
     .replace(
       '#include <metalnessmap_fragment>',
       `#include <metalnessmap_fragment>
       #ifdef FSP_WEAVE_NEW
-      metalnessFactor = mix(0.2, metalnessFactor, fwWireG);
+      metalnessFactor = mix(FW_CELL_METAL < 0.0 ? metalnessFactor : FW_CELL_METAL, metalnessFactor, fwWireG);
       #endif`,
     )
     .replace(

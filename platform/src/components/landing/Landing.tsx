@@ -56,7 +56,7 @@ export function Landing({ data, signedIn }: { data: LandingData; signedIn: boole
         <section className={`${styles.section} ${styles.final}`} aria-labelledby="final-title">
           <div className={styles.finalIn}>
             <h2 id="final-title">Начни с профиля.</h2>
-            <Start inverted />
+            <Start inverted signedIn={signedIn} />
           </div>
         </section>
       </main>

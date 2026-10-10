@@ -20,13 +20,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     <div className={styles.page}>
       <div>
         <Kicker>Поиск по всей базе</Kicker>
-        <h1>Кандидаты</h1>
+        <h1>Поиск по базе.</h1>
         <p className={styles.lead}>
           Без потребности кандидат сравнивается с типичными требованиями своей категории (специализация и грейд из фильтра,
           иначе - из теста; без теста - Junior). Пригласить можно без привязки к вакансии.
         </p>
       </div>
-      <MatchResults result={result} basePath="/employer/search" />
+      <MatchResults result={result} basePath="/employer/search" favoriteScope={s.employerProfileId} />
     </div>
   );
 }

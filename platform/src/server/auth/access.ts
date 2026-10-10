@@ -40,6 +40,9 @@ export const PAGE_ACCESS = {
   // Дом обеих ролей: знакомство (pending), консультант кандидата, помощник работодателя.
   '/consultant': 'account',
   '/profile': 'candidate',
+  '/career': 'candidate',
+  '/saved': 'candidate',
+  '/settings': 'candidate',
   '/test': 'candidate',
   '/invitations': 'candidate',
   '/defense/[claimId]': 'candidate',
@@ -53,6 +56,7 @@ export const PAGE_ACCESS = {
   // Профиль компании (R-E-01) — страницу делает лейн company; сюда ведём работодателя с чужих страниц.
   '/employer/company': 'employer',
   '/employer/search': 'employer',
+  '/employer/saved': 'employer',
   '/employer/invitations': 'employer',
   '/employer/needs/new': 'employer',
   '/employer/needs/[id]': 'employer',
@@ -74,6 +78,10 @@ export const PAGE_ACCESS = {
 } as const satisfies Record<string, PageLevel>;
 
 export const API_ACCESS = {
+  '/api/auth/account': 'account',
+  '/api/favorites': 'account',
+  '/api/notifications': 'account',
+  '/api/career/vacancies': 'candidate',
   // Вход, регистрация, пароль, Яндекс ID — до входа.
   '/api/auth/login': 'public',
   '/api/auth/logout': 'public',

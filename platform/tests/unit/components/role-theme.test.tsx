@@ -14,6 +14,7 @@ vi.mock('@/components/auth/AuthEntry', () => ({ AuthEntry: () => null }));
 vi.mock('@/components/shell/SiteHeader', () => ({ SiteHeader: () => null }));
 vi.mock('@/components/shell/SiteFooter', () => ({ SiteFooter: () => null }));
 vi.mock('@/components/shell/ShellFrame', () => ({ ShellFrame: () => null }));
+vi.mock('@/server/auth/role-switch', () => ({ headerAccountFor: async () => null }));
 vi.mock('@/server/auth/yandex', () => ({ yandexConfig: () => null }));
 vi.mock('@/server/env', () => ({ getEnv: () => ({ DEMO_LOGIN: false }) }));
 vi.mock('@/server/stt', () => ({ sttMode: () => 'off' }));

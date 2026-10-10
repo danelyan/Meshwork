@@ -15,7 +15,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
           Твоя карьера<i>.</i>
         </h1>
         <p className={styles.slogan}>Покажи навыки и достижения - получай предложения от ИТ-компаний с открытой зарплатной вилкой.</p>
-        <Start />
+        <Start signedIn={signedIn} />
         <ul className={styles.note}>
           <li>можно загрузить резюме PDF</li>
           <li>ссылки на GitHub и профили</li>

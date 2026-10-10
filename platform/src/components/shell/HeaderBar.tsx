@@ -11,6 +11,7 @@ import { Brand } from './Brand';
 import { OnboardingBanner } from './OnboardingBanner';
 import { AccountMenu } from './AccountMenu';
 import { ThemeToggle } from './ThemeToggle';
+import { Notifications } from './Notifications';
 import styles from './shell.module.css';
 
 /**
@@ -45,6 +46,7 @@ export function HeaderBar({ signedIn, links, account = null }: { signedIn: boole
         )}
         {home && !account && <span className={styles.edition}>№ 01 · осень 2026</span>}
         <div className={styles.action}>
+          {account?.roles && <Notifications role={account.roles.role} />}
           {/* Тема пока действует только на экран консультанта — иконка там, где она что-то меняет. */}
           {pathname === '/consultant' && <ThemeToggle />}
           {account ? (

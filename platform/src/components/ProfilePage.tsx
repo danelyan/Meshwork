@@ -12,15 +12,25 @@ import type { Gap } from '@/server/recommend/types';
 
 import { DepthMapSection } from './call/DepthMapSection';
 import { LevelBadge } from './LevelBadge';
-import { Button, Notice } from './ui';
+import { Button, Kicker, Notice } from './ui';
 import styles from './ProfilePage.module.css';
 import ui from './ui.module.css';
 
 const STATUS_NOTE = { proposed: 'ждёт вашего подтверждения', edited: 'исправлено вами' } as const;
 
-function ClaimItem({ claim, onDecide }: { claim: ProfileClaim; onDecide?: (id: string, action: 'confirm' | 'reject') => Promise<void> }) {
+function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?: (id: string, action: 'confirm' | 'reject') => Promise<void>; onEdit?: (id: string, statement: string) => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [statement, setStatement] = useState(claim.statement);
+  async function save() {
+    if (!onEdit || !statement.trim()) return;
+    setBusy(true);
+    setErr(null);
+    try { await onEdit(claim.id, statement.trim()); setEditing(false); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'Не удалось сохранить.'); }
+    finally { setBusy(false); }
+  }
   async function decide(action: 'confirm' | 'reject') {
     if (!onDecide) return;
     setBusy(true);
@@ -36,6 +46,11 @@ function ClaimItem({ claim, onDecide }: { claim: ProfileClaim; onDecide?: (id: s
   return (
     <li className={`${ui.panel} ${styles.claim}`}>
       <p className={styles.statement}>{claim.statement}</p>
+      {editing && <form className={styles.editClaim} onSubmit={(event) => { event.preventDefault(); void save(); }}>
+        <label htmlFor={`edit-${claim.id}`}>Уточните формулировку</label>
+        <textarea id={`edit-${claim.id}`} className={ui.input} value={statement} maxLength={300} minLength={3} rows={3} onChange={(event) => setStatement(event.target.value)} />
+        <div className={styles.actions}><Button type="submit" size="sm" loading={busy} disabled={statement.trim().length < 3}>Сохранить формулировку</Button><Button size="sm" onClick={() => { setEditing(false); setStatement(claim.statement); }}>Отмена</Button></div>
+      </form>}
       {claim.quote && <p className={styles.quote}>«{claim.quote}»</p>}
       <div className={styles.meta}>
         <span>Источник: {claim.sourceRef || claim.sourceKind}</span>
@@ -55,11 +70,6 @@ function ClaimItem({ claim, onDecide }: { claim: ProfileClaim; onDecide?: (id: s
           <button type="button" className={`${ui.btn} ${ui.small}`} disabled={busy} onClick={() => void decide('reject')}>
             Нет
           </button>
-          {err && (
-            <span className={ui.muted} role="alert">
-              {err}
-            </span>
-          )}
         </div>
       )}
       {provable && (
@@ -69,6 +79,8 @@ function ClaimItem({ claim, onDecide }: { claim: ProfileClaim; onDecide?: (id: s
           </Link>
         </div>
       )}
+      {onEdit && !editing && <div className={`${styles.actions} ${styles.noPrint}`}><Button size="sm" onClick={() => setEditing(true)}>Изменить формулировку</Button></div>}
+      {err && <Notice tone="error">{err}</Notice>}
     </li>
   );
 }
@@ -167,6 +179,13 @@ export function ProfilePage() {
     if (r) setRecs(r);
   }
 
+  async function editClaim(id: string, statement: string) {
+    await claimAction(id, 'edit', statement);
+    const [p, r] = await Promise.all([getProfile(), getRecommendations().catch(() => null)]);
+    setProfile(p);
+    if (r) setRecs(r);
+  }
+
   // ?print=1 (ссылка render_profile_pdf консультанта) — открыть печать, когда профиль загружен.
   useEffect(() => {
     if (!profile || recs === null) return;
@@ -207,6 +226,10 @@ export function ProfilePage() {
 
   return (
     <div className={styles.page}>
+      <header className={styles.heading}>
+        <div><Kicker>Ваш опыт и доказательства</Kicker><h1>Профиль.</h1><p>У каждого факта есть источник: достижение, проверка платформой или ваши слова. Компании видят, откуда что взялось.</p></div>
+        <div className={`${styles.actions} ${styles.noPrint}`}><Button href="/consultant">↑ Обновить резюме</Button><Button onClick={() => window.print()}>↓ PDF-профиль</Button></div>
+      </header>
       <aside className={styles.side} aria-label="Кандидат">
         <div className={styles.me}>
           <span className={`${ui.avatar} ${styles.avatarFrame}`} aria-hidden="true">
@@ -216,7 +239,7 @@ export function ProfilePage() {
             </svg>
           </span>
           <div>
-            <h1 className={styles.name}>{profile.candidate.name}</h1>
+            <h2 className={styles.name}>{profile.candidate.name}</h2>
             {profile.category && (
               <span className={ui.kicker}>
                 {specLabel(profile.category.specialization)} · {profile.category.grade}
@@ -236,7 +259,7 @@ export function ProfilePage() {
             <dd>{claims.length}</dd>
           </div>
           <div>
-            <dt>Подтверждено</dt>
+            <dt>Принято вами</dt>
             <dd>{confirmedCount}</dd>
           </div>
         </dl>
@@ -260,6 +283,8 @@ export function ProfilePage() {
             {profile.category ? 'Пересдать тест' : 'Пройти тест'}
           </Button>
           <Button href="/consultant">К консультанту</Button>
+          <Button href="/projects">Проектные задания</Button>
+          <Button href="/settings">Приватность и контакты</Button>
           <Button onClick={() => window.print()}>Печать / PDF</Button>
         </div>
       </aside>
@@ -290,7 +315,7 @@ export function ProfilePage() {
               </h2>
               <ul className={styles.list}>
                 {list.map((c) => (
-                  <ClaimItem key={c.id} claim={c} onDecide={decide} />
+                  <ClaimItem key={c.id} claim={c} onDecide={decide} onEdit={editClaim} />
                 ))}
               </ul>
             </section>
@@ -300,6 +325,7 @@ export function ProfilePage() {
 
       <section className={styles.section} aria-labelledby="targets-title">
         <h2 id="targets-title">Подходящие вакансии</h2>
+        <div className={styles.noPrint}><Button size="sm" href="/career">Все вакансии на карте ↗</Button></div>
         {recs === null ? (
           <p className={ui.muted} role="status">
             Загружаю…
@@ -359,18 +385,11 @@ export function ProfilePage() {
         )}
       </section>
 
-      <fieldset className={`${styles.visibility} ${styles.noPrint}`} disabled>
-        <legend>Кто видит профиль</legend>
-        <label>
-          <input type="radio" name="visibility" defaultChecked /> Только я
-        </label>
-        <label>
-          <input type="radio" name="visibility" /> Работодатели, которые меня приглашают
-        </label>
-        <p className={ui.muted} style={{ fontSize: 'var(--fs-sm)', margin: 0 }}>
-          Настройка видимости пока недоступна: сейчас профиль виден только вам.
-        </p>
-      </fieldset>
+      <div className={`${styles.visibility} ${styles.noPrint}`}>
+        <h2>Что видят компании</h2>
+        <p className={ui.muted}>Имя, контакт и цитаты из резюме скрыты. После принятия приглашения имя и контакт открываются только этой компании.</p>
+        <Button size="sm" href="/settings">Настроить видимость профиля ↗</Button>
+      </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { DevPanelGate } from '@/components/devtools/DevPanelGate';
 import { AuthEntry } from '@/components/auth/AuthEntry';
 import { getPageSession } from '@/server/auth/page';
+import { headerAccountFor } from '@/server/auth/role-switch';
 import { yandexConfig } from '@/server/auth/yandex';
 import { ShellFrame } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
@@ -43,13 +44,15 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, interactiveWidget: 'resizes-content' };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const role = bodyRole(await getPageSession());
+  const session = await getPageSession();
+  const role = bodyRole(session);
+  const account = session ? await headerAccountFor(session.userId, session.role) : null;
   return (
     <html lang="ru" className={`${golos.variable} ${mono.variable}`}>
       {/* data-stt — режим голосового ввода для композера чата (server/stt, env STT_PROVIDER) */}
       <body data-stt={sttMode()} data-role={role}>
         <AuthEntry yandexEnabled={yandexConfig() !== null} demoEnabled={getEnv().DEMO_LOGIN}>
-        <ShellFrame header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
+        <ShellFrame account={account} header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
           {children}
         </ShellFrame>
         </AuthEntry>

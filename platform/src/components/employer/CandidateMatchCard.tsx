@@ -10,12 +10,14 @@ import { DefenseBlock, DepthMapBlock, ProjectBlock } from './StageBlocks';
 
 import styles from './Employer.module.css';
 import { InviteForm } from './InviteForm';
+import { SaveCandidateButton } from './SaveCandidateButton';
 import { INVITATION_STATUS_LABEL, NO_CANDIDATE_CONTACT, SOURCE_TYPE_LABEL } from './labels';
 
 export interface CandidateMatchCardProps {
   item: MatchItem;
   vacancyId: string | null;
   defaultSalary?: { from: number; to: number };
+  favoriteScope?: string;
 }
 
 /** Карточка кандидата в подборке: публичная часть (R-E-07) + обоснование (R-M-03) + приглашение. */
@@ -23,7 +25,7 @@ function SourceType({ type }: { type: PublicSourceType | null | undefined }) {
   return type ? <span className={styles.meta}> · доказано: {SOURCE_TYPE_LABEL[type]}</span> : null;
 }
 
-export function CandidateMatchCard({ item, vacancyId, defaultSalary }: CandidateMatchCardProps) {
+export function CandidateMatchCard({ item, vacancyId, defaultSalary, favoriteScope }: CandidateMatchCardProps) {
   const c = item.candidate;
   const ex = item.explanation;
   const typeByStatement = new Map(c.claims.map((cl) => [cl.statement, cl.sourceType]));
@@ -39,6 +41,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
           балл {item.score.toFixed(2)}
         </span>
       </div>
+      {favoriteScope && <SaveCandidateButton scope={favoriteScope} candidateId={c.id} />}
       <div className={styles.meta}>
         {c.category ? <Tag tone="solid">{c.category.label} · тест</Tag> : <Tag tone="dashed">без категории</Tag>}
         {c.fsp.hasAchievements && <Tag tone="outline">ФСП</Tag>}

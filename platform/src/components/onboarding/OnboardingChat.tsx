@@ -30,6 +30,7 @@ import { AsideRows, groupAsides, useAsides } from './Asides';
 import { DocumentsRows, useDocumentsRun } from './DocumentsRun';
 import { parseSalary, salaryText } from './salary';
 import { StepControls } from './StepControls';
+import { OnboardingDraft } from './OnboardingDraft';
 
 export interface OnboardingChatProps {
   initial: OnboardingView;
@@ -401,6 +402,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           )}
         </div>
         <ProgressLine value={isSummary ? view.progress.total : view.progress.done} max={view.progress.total} label={`Пройдено ${view.progress.done} из ${view.progress.total}`} />
+        {!isSummary && <OnboardingDraft view={view} busy={busy || asides.asking} onEdit={(stepId) => void act({ action: 'goto', stepId })} />}
       </header>
 
       <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>

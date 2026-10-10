@@ -1,7 +1,7 @@
 /* Кабинет работодателя и входящие приглашения (lane employer). Только токены. */
-.page { max-width: 1200px; margin: 0 auto; padding: 40px var(--page-pad) 64px; display: grid; gap: 24px; }
+.page { width: 100%; max-width: 1480px; margin: 0 auto; padding: 42px 36px 72px; display: grid; gap: 28px; }
 .head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
-.head h1 { margin: 6px 0 0; overflow-wrap: anywhere; }
+.head h1 { margin: 8px 0 0; overflow-wrap: anywhere; font-size: clamp(34px, 4.2vw, 56px); font-weight: 600; letter-spacing: -.055em; }
 .sectionTitle { margin: 0; font-size: 19px; }
 .lead { margin: 8px 0 0; color: var(--text-soft); font-size: var(--fs-md); max-width: 720px; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -41,7 +41,70 @@
 .stageTitle { margin: 0; font-size: var(--fs); font-weight: 600; }
 .note { margin: 0; padding: 8px 12px; border-left: 3px solid var(--line); background: var(--surface-quote); color: var(--text-soft); font-size: var(--fs-sm); overflow-wrap: anywhere; }
 
+.tabs { display: flex; gap: 0; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.tabs button { display: flex; align-items: center; gap: 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 13px 18px; min-height: 48px; font-family: var(--mono); font-size: var(--fs-sm); color: var(--muted); }
+.tabs button[aria-pressed='true'] { color: var(--blue); border-bottom-color: var(--blue); background: var(--surface-input); }
+.tabs button span { padding: 1px 5px; background: var(--surface-quote); font-size: var(--fs-xs); }
+.vacancyCard { padding: 24px; align-content: start; gap: 16px; border: 1px solid var(--line); background: var(--glass-strong); }
+.salary { font-family: var(--mono); font-size: 18px; font-weight: 500; }
+.vacancyActions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--line); }
+.explorer { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, 1fr); border: 1px solid var(--line); background: var(--glass); align-items: start; }
+.explorerOverview { min-width: 0; }
+.explorerBar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 18px; min-height: 66px; border-bottom: 1px solid var(--line); background: var(--glass-strong); }
+.selectedCandidate { min-width: 0; border-left: 1px solid var(--line); }
+.selectedCandidate .card { border: 0; background: var(--glass-strong); padding: 24px; }
+.matchMap { position: relative; padding: 26px 18px 30px; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 28px 28px; }
+.mapCenter { position: relative; width: min(90%, 290px); margin: 0 auto 30px; padding: 20px; display: grid; text-align: center; gap: 5px; background: var(--ink); color: var(--on-ink); }
+.mapCenter::after { content: ''; position: absolute; top: 100%; left: 50%; width: 1px; height: 30px; background: var(--blue); }
+.mapCenter > span { font-size: 34px; line-height: 1; }
+.mapCenter small { font-family: var(--mono); font-size: var(--fs-xs); color: var(--on-ink-soft); }
+.mapNodes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; position: relative; border-top: 1px solid var(--blue); padding-top: 18px; }
+.mapNode { position: relative; display: grid; gap: 8px; padding: 18px 12px; background: var(--glass-strong); border: 1px solid var(--border-input); text-align: left; min-width: 0; overflow-wrap: anywhere; transition: border-color .15s, background .15s; }
+.mapNode::before { content: ''; position: absolute; left: 50%; bottom: 100%; width: 1px; height: 18px; background: var(--blue); }
+.mapNode[aria-pressed='true'] { border-color: var(--blue); outline: 1px solid var(--blue); background: var(--surface-input); }
+.mapNode:hover { border-color: var(--blue); }
+.nodeRank { color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
+.mapNode strong { font-size: var(--fs); }
+.mapNode small { font-family: var(--mono); font-size: var(--fs-xs); color: var(--text-soft); }
+.nodeScore { color: var(--blue); font-family: var(--mono); font-size: var(--fs-sm); }
+.resultRows { margin: 0; padding: 0; list-style: none; }
+.resultRow { width: 100%; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 20px 18px; border: 0; border-bottom: 1px solid var(--line); text-align: left; background: var(--glass); min-height: 94px; }
+.resultRow[aria-pressed='true'] { box-shadow: inset 3px 0 0 var(--blue); background: var(--glass-strong); }
+.resultRow strong { display: block; font-size: var(--fs); overflow-wrap: anywhere; }
+.resultRow small { display: block; margin-top: 5px; color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
+.mapNote { padding: 16px 18px; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
+.saveButton { justify-self: start; min-height: 38px; padding: 6px 10px; background: transparent; border: 1px solid var(--line); font-family: var(--mono); font-size: var(--fs-sm); }
+.saveButton[aria-pressed='true'] { color: var(--blue); border-color: var(--blue); }
+.timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 12px 0; }
+.timeline > div { border-top: 2px solid var(--line); padding-top: 10px; display: grid; gap: 4px; color: var(--muted); font-family: var(--mono); font-size: var(--fs-sm); }
+.timeline > div[data-complete='true'] { border-color: var(--blue); color: var(--ink); }
+.timeline small { color: var(--muted); font-size: var(--fs-xs); }
+.invitationLimit { width: 250px; display: grid; gap: 8px; }
+.invitationLimit small { color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
+.companyColumns { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(250px, .8fr); gap: 24px; align-items: start; }
+.companyPreview { display: grid; gap: 20px; padding: 24px; border: 1px solid var(--line); background: var(--glass-strong); }
+.companyMark { width: 48px; height: 48px; display: grid; place-items: center; background: var(--ink); color: var(--on-ink); font-size: 24px; }
+.vacancySwitcher { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: start; padding: 20px; border: 1px solid var(--line); background: var(--glass-strong); }
+.vacancyPicker { min-width: 0; }
+.vacancyPicker summary { display: grid; gap: 5px; cursor: pointer; }
+.vacancyPicker summary strong { display: flex; justify-content: space-between; gap: 16px; overflow-wrap: anywhere; }
+.vacancyOptions { display: grid; gap: 6px; padding-top: 16px; }
+.vacancyOptions a { justify-content: flex-start; white-space: normal; }
+
+@media (max-width: 1150px) {
+  .page { padding: 32px 24px 56px; }
+  .explorer, .companyColumns { grid-template-columns: minmax(0, 1fr); }
+  .selectedCandidate { border-left: 0; border-top: 1px solid var(--line); }
+}
+
 @media (max-width: 640px) {
-  .page { padding-top: 24px; }
+  .page { padding: 24px 16px 48px; }
   .grid, .row, .filters { grid-template-columns: minmax(0, 1fr); }
+  .head h1 { font-size: 36px; }
+  .tabs button { padding: 12px 10px; }
+  .explorerBar { flex-wrap: wrap; }
+  .selectedCandidate .card, .vacancyCard { padding: 18px; }
+  .mapNodes { grid-template-columns: minmax(0, 1fr); }
+  .timeline { gap: 8px; }
+  .timeline > div { font-size: var(--fs-xs); }
 }

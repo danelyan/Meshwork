@@ -60,6 +60,9 @@ describe('главная (лендинг)', () => {
     render(<Landing data={DATA} signedIn />);
     expect(screen.getByRole('link', { name: /Ваш кабинет/ }).getAttribute('href')).toBe('/consultant');
     expect(screen.queryByRole('link', { name: /Уже есть аккаунт/ })).toBeNull();
+    for (const start of screen.getAllByRole('link', { name: /Приступим/ })) {
+      expect(start.getAttribute('href')).toBe('/consultant');
+    }
   });
 
   it('числа берутся из пропсов: компании, вакансии, категоризованные, потолок вилки', () => {

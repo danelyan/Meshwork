@@ -20,6 +20,8 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
   const [role, setRole] = useState<Role | null>(null);
   const [step, setStep] = useState(1);
   const [accounts, setAccounts] = useState<{candidates: DemoCandidate[]; employers?: DemoEmployer[]} | null>(null);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+  const [accountsAttempt, setAccountsAttempt] = useState(0);
   const [error, setError] = useState<string | null>(initialError ? initialError === 'consent_required'
     ? 'Чтобы войти, отметь согласие на обработку персональных данных.'
     : initialError === 'state' ? 'Сеанс входа устарел. Попробуй ещё раз.'
@@ -38,11 +40,16 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
   useEffect(() => {
     if (step !== 2 || !demoEnabled) return;
     let alive = true;
+    setAccountsError(null);
     getDemoAccounts().then(data => { if (alive) setAccounts(data); }, err => {
-      if (alive) setError(err instanceof Error ? err.message : 'Не удалось загрузить профили.');
+      if (alive) setAccountsError(err instanceof Error ? err.message : 'Не удалось загрузить профили.');
     });
     return () => { alive = false; };
-  }, [step, demoEnabled]);
+  }, [step, demoEnabled, accountsAttempt]);
+
+  const candidates = accounts?.candidates.filter(candidate => !candidate.id.startsWith('demo-pool-')) ?? [];
+  const employers = accounts?.employers ?? [];
+  const noAccounts = accounts && (role === 'candidate' ? candidates.length === 0 : employers.length === 0);
 
   async function enter(run: () => Promise<{next?: string}>, fallback: string, back: string | null = null) {
     setPending(true); setError(null);
@@ -79,13 +86,13 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
       {error && <Notice tone="error">{error}</Notice>}
       {step === 1 ? <>
         <div className={styles.choices}>
-          {([['candidate','Ищу работу','Кандидат · Star — компании пишут вам первыми'],['employer','Ищу специалистов','Работодатель · Scout — вы пишете кандидатам']] as const).map(([value,label,note], i) =>
+          {([['candidate','Ищу работу','Кандидат · Star - компании пишут вам первыми'],['employer','Ищу специалистов','Работодатель · Scout - вы пишете кандидатам']] as const).map(([value,label,note], i) =>
             <Button key={value} className={styles.choice} aria-pressed={role === value} onClick={() => setRole(value)}>
               <span className={styles.number}>{i + 1}</span><span className={styles.label}><b>{label}</b><small>{note}</small></span><span className={styles.check} aria-hidden="true" />
             </Button>)}
         </div>
         <Button variant="cta" className={styles.continue} disabled={!role} onClick={() => setStep(2)}>Продолжить →</Button>
-        <p className={styles.hint}>1–2 — выбрать · Enter — дальше · Esc — закрыть</p>
+        <p className={styles.hint}>1-2 - выбрать · Enter - дальше · Esc - закрыть</p>
       </> : <>
         <div className={styles.methods}>
           <section className={styles.method} aria-label="Вход на платформу">
@@ -99,11 +106,16 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
           {demoEnabled && <section className={styles.method} aria-label="Демо-профиль">
             <h3>Демо-профиль</h3>
             <p className={styles.hint}>Вымышленные данные, вход без пароля.</p>
-            {!accounts && !error && <p role="status">Загружаю профили…</p>}
+            {!accounts && !accountsError && <p role="status">Загружаю профили…</p>}
+            {accountsError && <>
+              <Notice tone="error">{accountsError}</Notice>
+              <Button onClick={() => { setAccounts(null); setAccountsAttempt(attempt => attempt + 1); }}>Повторить загрузку профилей</Button>
+            </>}
+            {noAccounts && <p className={styles.hint}>Готовых профилей для этой роли пока нет. Можно создать новый демо-профиль.</p>}
             <div className={styles.list}>
-              {role === 'candidate' ? accounts?.candidates.filter(c=>!c.id.startsWith('demo-pool-')).map(c=>
+              {role === 'candidate' ? candidates.map(c=>
                 <Button className={styles.account} disabled={pending} key={c.id} onClick={()=>void enter(()=>demoLogin(c.id),'/consultant',roleNext)}>{c.name} →</Button>)
-                : accounts?.employers?.map(e=><Button className={styles.account} disabled={pending} key={e.id} onClick={()=>void enter(()=>demoEmployerLogin(e.id),'/consultant',roleNext ?? '/consultant')}>{e.company?.name ?? e.name} →</Button>)}
+                : employers.map(e=><Button className={styles.account} disabled={pending} key={e.id} onClick={()=>void enter(()=>demoEmployerLogin(e.id),'/consultant',roleNext ?? '/consultant')}>{e.company?.name ?? e.name} →</Button>)}
             </div>
             <Button disabled={pending} onClick={()=>setFresh(!fresh)} aria-expanded={fresh}>Новый демо-профиль</Button>
             {fresh && <>

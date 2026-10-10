@@ -108,6 +108,8 @@ model Candidate {
   /// lane directions: подкатегория направления из справочника Subcategory ("ai.llm-apps"), выбор в
   /// онбординге необязателен. Без FK — справочник проверяется кодом (server/directions).
   subcategoryId       String?
+  /// lane astra-favorites: private employer bookmarks
+  savedByUsers        UserSavedCandidate[]
 }
 
 model CandidateCategory {
@@ -404,6 +406,8 @@ model Vacancy {
   invitations  Invitation[]
   /// lane project: проектное задание потребности (ADR 0003, ступень 2)
   projectTasks ProjectTask[]
+  /// lane astra-favorites: private candidate bookmarks
+  savedByUsers UserSavedVacancy[]
 
   @@index([specialization, grade])
 }
@@ -526,6 +530,37 @@ model User {
   /// Почта подтверждена кодом из письма. Без этого вход по паролю закрыт.
   emailVerifiedAt DateTime?
   authCodes       AuthCode[]
+  // lane astra: notification read cursors are independent for each account role.
+  candidateNotificationsReadAt DateTime?
+  employerNotificationsReadAt  DateTime?
+  /// lane astra-favorites: bookmarks are private to the account, not its company
+  savedVacancies  UserSavedVacancy[]
+  savedCandidates UserSavedCandidate[]
+}
+
+// =============================================================================
+// lane: astra-favorites — persistent private bookmarks for both account roles
+// =============================================================================
+model UserSavedVacancy {
+  userId    String
+  vacancyId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vacancy   Vacancy  @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, vacancyId])
+  @@index([vacancyId])
+}
+
+model UserSavedCandidate {
+  userId      String
+  candidateId String
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@id([userId, candidateId])
+  @@index([candidateId])
 }
 
 /// Внешний аккаунт (Яндекс ID). Токены провайдера не храним.

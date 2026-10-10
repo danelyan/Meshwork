@@ -101,3 +101,23 @@ it('creates an employer profile with a company before handing off to the assista
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
   expect(chooseRoleApi).toHaveBeenCalledWith({role:'employer',companyName:'Тестовая компания'});
 });
+
+it('retries failed demo loading without resetting the chosen role or blocking email login',async()=>{
+  vi.mocked(getDemoAccounts).mockRejectedValueOnce(new Error('Сеть недоступна'));
+  flow();select('Ищу специалистов');
+  expect((await screen.findByRole('alert')).textContent).toContain('Сеть недоступна');
+  expect(screen.getByRole('form',{name:'Вход по почте'})).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'Повторить загрузку профилей'}));
+  fireEvent.click(await screen.findByRole('button',{name:'Компания →'}));
+  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
+  expect(getDemoAccounts).toHaveBeenCalledTimes(2);
+  expect(demoEmployerLogin).toHaveBeenCalledWith('boss');
+});
+
+it('explains an empty demo list and keeps fresh profile creation available',async()=>{
+  vi.mocked(getDemoAccounts).mockResolvedValue({candidates:[],employers:[]});
+  flow();select();
+  expect(await screen.findByText(/Готовых профилей для этой роли пока нет/)).toBeTruthy();
+  expect(screen.queryByText('Загружаю профили…')).toBeNull();
+  expect(screen.getByRole('button',{name:'Новый демо-профиль'})).toBeTruthy();
+});

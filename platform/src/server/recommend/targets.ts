@@ -11,7 +11,7 @@ import type { TargetRec } from './types';
 export async function recommendTargets(candidateId: string, limit: number): Promise<TargetRec[]> {
   await assertCandidate(candidateId);
   const [vacancies, catalog, index] = await Promise.all([
-    prisma.vacancy.findMany({ include: { company: true }, orderBy: { id: 'asc' } }),
+    prisma.vacancy.findMany({ where: { archivedAt: null }, include: { company: true }, orderBy: { id: 'asc' } }),
     loadCatalog(),
     loadConfirmedIndex(candidateId),
   ]);

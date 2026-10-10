@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { ApiError } from '@/lib/api';
 import { CompanyFieldsError, updateCompanyApi, type CompanyBody } from '@/lib/employer-api';
@@ -20,6 +21,7 @@ const toForm = (c: CompanyBody) => ({
 
 /** Профиль компании (R-E-01): правка названия, описания, отрасли, ИНН и контакта. Проверки - на сервере. */
 export function CompanyForm({ company }: { company: CompanyBody }) {
+  const router = useRouter();
   const [saved, setSaved] = useState(toForm(company));
   const [form, setForm] = useState(saved);
   const [busy, setBusy] = useState(false);
@@ -44,6 +46,7 @@ export function CompanyForm({ company }: { company: CompanyBody }) {
       setSaved(next);
       setForm(next);
       setDone(true);
+      router.refresh();
     } catch (err) {
       if (err instanceof CompanyFieldsError) {
         setFields(err.fields);
@@ -74,7 +77,7 @@ export function CompanyForm({ company }: { company: CompanyBody }) {
             <input className={ui.input} value={form.inn} maxLength={12} inputMode="numeric" onChange={set('inn')} />
           </Field>
         </div>
-        <Field label="Контакт" hint="Почта или Telegram: кандидат увидит его, приняв приглашение." error={fields.contact}>
+        <Field label="Контакт" hint="Почта или Telegram: виден кандидату в приглашении ещё до ответа." error={fields.contact}>
           <input className={ui.input} value={form.contact} maxLength={120} placeholder="name@mail.ru или @username" onChange={set('contact')} />
         </Field>
         {error && <Notice tone="error">{error}</Notice>}

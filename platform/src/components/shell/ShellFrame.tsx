@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation';
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 import styles from './shell.module.css';
+import type { HeaderAccount } from '@/server/auth/role-plan';
+import { DashboardFrame } from './DashboardFrame';
 
 const BARE_PATHS = ['/onboarding', '/design/consultant-grid-preview', '/design/consultant-grid-v1', '/design/consultant-grid-v2', '/design/consultant-grid-v3'];
 
@@ -26,7 +28,7 @@ export function useBareShell(active: boolean): void {
  * элементами; здесь только решается, показывать ли их. Лэйаут не знает путь на сервере (не перерисовывается
  * при навигации), поэтому решение — на клиенте по `usePathname()`.
  */
-export function ShellFrame({ header, footer, children }: { header: ReactNode; footer: ReactNode; children: ReactNode }) {
+export function ShellFrame({ header, footer, children, account }: { header: ReactNode; footer: ReactNode; children: ReactNode; account?: HeaderAccount | null }) {
   const pathname = usePathname();
   const [bareByPage, setBareByPage] = useState(false);
   const bare = bareByPage || BARE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -38,7 +40,7 @@ export function ShellFrame({ header, footer, children }: { header: ReactNode; fo
         К содержимому
       </a>
       {!bare && header}
-      <div className={styles.page}>{children}</div>
+      <div className={styles.page}>{bare ? children : <DashboardFrame account={account}>{children}</DashboardFrame>}</div>
       {!bare && footer}
       </div>
     </BareContext.Provider>

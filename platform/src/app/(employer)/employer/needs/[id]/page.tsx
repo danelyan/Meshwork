@@ -8,7 +8,7 @@ import { EmployerProjectBlock } from '@/components/project/EmployerProjectBlock'
 import { Button, Kicker, Notice, Tag } from '@/components/ui';
 import { subcategoryLabel } from '@/lib/directions';
 import { requirePageEmployer } from '@/server/auth/page';
-import { loadEmployerContext, matchForVacancy } from '@/server/employer';
+import { listVacancies, loadEmployerContext, matchForVacancy } from '@/server/employer';
 import { parseFilters } from '@/server/employer/schemas';
 import { AppError } from '@/server/errors';
 import { projectBlockData } from '@/server/project/page-data';
@@ -29,7 +29,9 @@ export default async function NeedMatchesPage({ params, searchParams }: Props) {
     throw e;
   });
   const v = result.vacancy!;
-  const project = await projectBlockData(ctx.companyId, v);
+  const [project, allVacancies] = await Promise.all([projectBlockData(ctx.companyId, v), listVacancies(ctx.companyId)]);
+  const vacancies = allVacancies.filter((vacancy) => !vacancy.archived || vacancy.id === v.id);
+  const current = vacancies.findIndex((vacancy) => vacancy.id === v.id);
   const basePath = `/employer/needs/${encodeURIComponent(v.id)}`;
   return (
     <div className={styles.page}>
@@ -49,12 +51,20 @@ export default async function NeedMatchesPage({ params, searchParams }: Props) {
         <Button href={`${basePath}/edit`}>Изменить потребность</Button>
       </div>
       {v.archived && <Notice>Потребность закрыта. Подборка показана для справки; приглашать можно и без неё - из поиска по базе.</Notice>}
+      <nav className={styles.vacancySwitcher} aria-label="Выбор вакансии для подборки">
+        {current > 0 ? <Button size="sm" href={`/employer/needs/${encodeURIComponent(vacancies[current - 1]!.id)}`} aria-label="Предыдущая вакансия">←</Button> : <Button size="sm" disabled aria-label="Предыдущая вакансия">←</Button>}
+        <details className={styles.vacancyPicker}>
+          <summary><span className={styles.status}>Вакансия {current + 1} из {vacancies.length}</span><strong>{v.title} <span aria-hidden="true">⌄</span></strong></summary>
+          <div className={styles.vacancyOptions}>{vacancies.map((vacancy) => <Button key={vacancy.id} size="sm" href={`/employer/needs/${encodeURIComponent(vacancy.id)}`} aria-current={vacancy.id === v.id ? 'page' : undefined}>{vacancy.title}</Button>)}<Button size="sm" href="/employer/needs/new">+ Новая вакансия</Button></div>
+        </details>
+        {current < vacancies.length - 1 ? <Button size="sm" href={`/employer/needs/${encodeURIComponent(vacancies[current + 1]!.id)}`} aria-label="Следующая вакансия">→</Button> : <Button size="sm" disabled aria-label="Следующая вакансия">→</Button>}
+      </nav>
       <p className={styles.lead}>
         Порядок: покрытие требований с учётом уровня доказанности (со слов слабее артефакта, артефакт слабее третьей стороны и
         платформы), категория из теста усиливает покрытие, достижения ФСП дают небольшую прибавку. Только подтверждённые
         кандидатом карточки.
       </p>
-      <MatchResults result={result} basePath={basePath} />
+      <MatchResults result={result} basePath={basePath} favoriteScope={s.employerProfileId} />
       <EmployerProjectBlock
         vacancyId={v.id}
         specialization={v.specialization}

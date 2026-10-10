@@ -3,13 +3,13 @@ import { filtersToQuery } from '@/server/employer/schemas';
 
 import { Notice } from '../ui';
 
-import { CandidateMatchCard } from './CandidateMatchCard';
+import { MatchExplorer } from './MatchExplorer';
 import styles from './Employer.module.css';
 import { FilterForm, filtersLabel } from './FilterForm';
 import { RefinementHistory } from './RefinementHistory';
 
 /** Выдача: фильтры, прежние выдачи, карточки. Общая для подборки по потребности и поиска по базе. */
-export function MatchResults({ result, basePath }: { result: MatchResult; basePath: string }) {
+export function MatchResults({ result, basePath, favoriteScope }: { result: MatchResult; basePath: string; favoriteScope?: string }) {
   const query = filtersToQuery(result.filters);
   const vacancy = result.vacancy;
   return (
@@ -26,11 +26,7 @@ export function MatchResults({ result, basePath }: { result: MatchResult; basePa
           остались в списке выше.
         </Notice>
       ) : (
-        <ol className={styles.list}>
-          {result.items.map((item) => (
-            <CandidateMatchCard key={item.candidateId} item={item} vacancyId={vacancy?.id ?? null} defaultSalary={vacancy ? { from: vacancy.salaryFrom, to: vacancy.salaryTo } : undefined} />
-          ))}
-        </ol>
+        <MatchExplorer items={result.items} vacancyId={vacancy?.id ?? null} vacancyTitle={vacancy?.title} defaultSalary={vacancy ? { from: vacancy.salaryFrom, to: vacancy.salaryTo } : undefined} favoriteScope={favoriteScope} />
       )}
     </>
   );

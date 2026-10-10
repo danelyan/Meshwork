@@ -292,6 +292,75 @@ Frontend:
 6. **Цели по повторяемости и разделению не достигнуты:** retest 70–82 % при цели 90 %, κ 0,40–0,48 при цели 0,70, AUC Middle/Junior на `persona` 0,69–0,71 при цели 0,90;
    точность решения на синтетике ниже цели 85 % в обеих популяциях (архив, 68–73 %).
 
+### Направление engineering: тест на подкатегорию (10.10, ADR 0003, дополнения 10.10 и 10.10 15:50)
+
+**Итог: цели по персонам не достигнуты ни в одной подкатегории, и подбором a/b их не достичь.** Новичок получает
+Junior в 0,12–0,13 (цель ≤ 0,10), Junior — в 0,75 (цель ≥ 0,90). Причина — структурная: в подкатегории 8 семейств,
+политика показывает 7–10 заданий, поэтому кандидат видит весь пул, а адаптивность и дозадавание не работают
+(длина 7–8, дозадавание 0). Решение тогда — детерминированная функция от набора верных ответов. Худший исход Junior
+(3 лёгких Junior-задания верно, остальное неверно) — подмножество лучшего исхода новичка (те же 3 + одно
+Middle-задание). При любых монотонных a, b подтвердить первый и не подтвердить второй нельзя: или новичок ≥ 0,125,
+или Junior ≤ 0,75. Варианты: больше семейств на подкатегорию (≥ 12, как у направлений), иная политика для
+малого пула или иные легенды. Это решение владельца, не калибровка.
+
+Банк: 32 семейства `eng.*` (`platform/src/server/test/generators/engineering.ts`), по 8 на подкатегорию
+(4 Junior + 4 Middle, поле `subcategoryId`):
+
+| Подкатегория | Junior | Middle |
+|---|---|---|
+| `engineering.data-eng` | dedup-count, schema-types, null-aggregates, join-fanout | idempotent-load, incremental-watermark, partition-prune, scd2-as-of |
+| `engineering.devops` | docker-cache, secrets-leak, port-mapping, ci-stages | k8s-probes, k8s-capacity, deploy-rollback, rolling-update |
+| `engineering.qa-automation` | test-pyramid, fixture-isolation, boundary-values, parametrize-count | flaky-line, contract-test, mock-calls, branch-coverage |
+| `engineering.sre` | error-budget, symptom-alert, latency-percentile, log-count | retry-amplification, burn-rate, littles-law, circuit-breaker |
+
+a, b — экспертные по образцу backend/frontend: Junior b от −1,4 до −0,3, Middle b от 0,3 до 0,8. Ключи на 300 seed
+сверены с независимым решением по тексту условия (`tests/unit/test/engineering.test.ts`) у 29 из 32 семейств; у
+классификационных (пирамида, алерты, контракт) ключ берётся из размеченного пула.
+
+Сверено с документацией (Context7): откат Deployment создаёт новую ревизию, планирование по requests, пробы,
+округление maxSurge вверх и maxUnavailable вниз, кэш слоёв Docker, `when`/`allow_failure` GitLab CI, stacked
+parametrize в pytest. **Не сверено, знание агента:** приведение типов и partition pruning PostgreSQL, scope
+фикстур pytest, `call_count` у unittest.mock при исключении из `side_effect`.
+
+Персоны: `npx tsx eval/test/personas.ts --sub engineering.<подкатегория> --n 4000 --seed 1`, пул — только
+семейства подкатегории. Seed 2 отличается не больше чем на 0,016. Легенды — гипотеза агента, не люди. Матрица
+знаний у четырёх подкатегорий одинаковой формы: новичок — `Y H H X | H X X X`, Junior — `Y Y Y H | H X X X`,
+Middle — `Y Y Y Y | Y Y H H`, контроль — `Y Y Y Y | X X X X`. Колонки — 4 Junior и 4 Middle по возрастанию b.
+
+| Подкатегория | Новичок: P(Junior) | Junior: P(Junior) | Junior: ложный Middle | Middle: P(Middle) | Идеальный Junior | Длина |
+|---|---|---|---|---|---|---|
+| data-eng (DN / DJ / DM / DI) | **0,13** | **0,75** | 0,00 | 1,00 | 1,00 | 7,0–8,0 |
+| devops (ON / OJ / OM / OI) | **0,13** | **0,75** | 0,00 | 1,00 | 1,00 | 7,0–8,0 |
+| qa-automation (QN / QJ / QM / QI) | **0,12** | **0,75** | 0,00 | 1,00 | 1,00 | 7,0–8,0 |
+| sre (SN / SJ / SM / SI) | **0,12** | **0,75** | 0,00 | 1,00 | 1,00 | 7,0–8,0 |
+
+Предыдущий вариант (общий тест на направление, 16 семейств, 10.10) дал узкому Junior одной подкатегории 0,60. Этот
+вариант заменён решением владельца 15:45 (тест на подкатегорию). Цифры прежних персон backend/frontend не изменились.
+
+### Engineering: пул 6 Junior + 4 Middle + 4 Senior на подкатегорию (дополнение ADR-0003 10.10 16:15)
+
+`npx tsx eval/test/personas.ts --n 1000 --sub engineering.<sub>`, seed 1 (seed 2 по data-eng — в пределах 0,02).
+Пороги Junior −0,7 / Middle −0,1 / **Senior 0,6 — локально, до политики**. Персоны — модели знаний агента, не люди.
+Ячейки — P(подтверждён заявленный грейд); у ложных — доля ложных подтверждений.
+
+| Тип (цель) | data-eng | devops | qa-automation | sre |
+|---|---|---|---|---|
+| Новичок → Junior (≤ 0,10) | 0,000 | 0,000 | 0,000 | 0,000 |
+| Пограничный новичок → Junior (≤ 0,10) | **0,120** | 0,065 | **0,106** | 0,040 |
+| Junior → Junior (≥ 0,90) | 0,995 | **0,879** | 0,901 | **0,788** |
+| Junior со слабой темой → Junior (≥ 0,85) | **0,748** | **0,492** | **0,715** | **0,463** |
+| Junior → Middle (≤ 0,10) | 0,000 | 0,000 | 0,000 | 0,000 |
+| Middle → Middle (≥ 0,90) | 1,000 | 0,994 | 1,000 | 1,000 |
+| Middle со слабой темой → Middle (≥ 0,85) | 1,000 | 0,982 | 0,998 | 1,000 |
+| Middle → Senior (≤ 0,10) | **0,241** | 0,046 | **0,177** | **0,206** |
+| Middle со слабой темой → Senior (≤ 0,10) | 0,010 | 0,000 | 0,007 | 0,003 |
+| Senior → Senior (≥ 0,90) | 1,000 | 1,000 | 1,000 | 1,000 |
+| Идеальный Junior: Junior / Middle | 1,000 / 0,000 | 1,000 / 0,000 | 1,000 / 0,000 | 1,000 / 0,000 |
+
+Не достигнуто (жирное): «Junior с одной слабой темой» 0,46–0,75 при цели 0,85; ложный Senior у Middle 0,05–0,24
+при цели 0,10; пограничный новичок 0,11–0,12 в data-eng и qa. Пробный сдвиг b всех Senior-семейств на +0,2
+ухудшил ложный Senior (0,19–0,32) — откатан. Подбор a/b не завершён; порог Senior — до политики.
+
 ### Архив: цифры до 10.10 (порог −1,5, без дозадавания)
 
 Эти таблицы **больше не описывают прод**: они посчитаны при пороге Junior −1,5 либо при −0,7, но без дозадавания (`--no-probe`) и по старой популяции `legacy`. Оставлены как история и для сравнения; текущие цифры — выше.
@@ -545,48 +614,6 @@ persona — ложное подтверждение 32,5 → 33,5 %, ложны�
 | 0.7 | 8–12 | 74.2 % | 4.6 % | 47.0 % | 80.8 % | 10.23 |
 | 0.6 | 7–10 | 75.0 % | 8.2 % | 41.9 % | 78.2 % | 8.87 |
 | 0.6 | 8–12 | 75.3 % | 6.5 % | 42.9 % | 80.5 % | 10.23 |
-
-## Тест на грейд: backend по подкатегориям (10.10, ADR 0003 «тест на подкатегорию», пул 6+4+4)
-
-Пул теста - семейства подкатегории (`subcategoryId`), по 14 на каждую: 6 Junior + 4 Middle + 4 Senior. Всего 56 семейств `be.*` (12 прежних размечены, 44 новых). Ключ каждого нового семейства проверен независимым решением по тексту условия на 300 seed (`tests/unit/test/backend-subcategories.test.ts`).
-
-| Подкатегория | Junior | Middle | Senior |
-|---|---|---|---|
-| web-api | http-semantics, pagination-offset, route-matching, list-query, find-bug-idor, validation-rules | cursor-pagination, proxy-retry, rate-limit-window, optimistic-lock | api-breaking-changes, idempotency-ttl, shared-cache-origin, capacity-littles-law |
-| integrations | json-mapping, client-throttle, fetch-all-pages, timeout-budget, retryable-status, webhook-dedup | retry-policy, delivery-semantics, payment-retry, circuit-breaker | retry-amplification-chain, saga-compensation, webhook-replay-window, contract-drift |
-| highload | pool-capacity, batching-time, lru-hits, ttl-loads, n-plus-one, shell-output | queue-backpressure, cache-consistency, index-choice, cache-stampede | replica-lag-reads, hot-key-db-load, queue-drain, slow-query-top |
-| data-model | sql-rowcount, fk-actions, sql-aggregate, transaction-scope, null-count, schema-constraint | upsert-conflict, deadlock-commits, lost-update, isolation-anomaly | migration-safety, write-skew, unique-index-forms, sequence-gaps |
-
-Параметры a, b - экспертные. У 12 прежних семейств a, b прежние (ADR 0002). У новых Junior b в [-0,7; -0,4], a = 1,4 (подняты после первого прогона персон), у новых Senior b 1,0-1,7 (сдвинуты на +0,2), у новых Middle прежний диапазон. Прежние персоны без `--subcategory` (пул из 12, N = 2000): B1 0,000, B2 0,127 (новичок, цель ≤ 10 % - у границы, как и до правок), B3 0,933, B4 0,976, B5 1,000, JB 1,000; в первом варианте со сжатием b и a = 1,4 у всех 12 семейств B2 уходил в 0,284, поэтому прежним семействам параметры возвращены.
-
-Персоны на подкатегорию (`npx tsx eval/test/personas.ts --subcategory backend.web-api --n 2000`): новичок, пограничный новичок, Junior, Junior с одной слабой темой (3 из 6 верно + 2 наполовину), Middle, Middle с одной слабой темой, Senior, идеальный Junior. Матрицы знаний - гипотеза агента, не люди. Порог Senior +0,6 - предложение ADR, в `policy.ts` стоит «до политики» (политику Senior пишет directions); заявка Senior в прогоне идёт движком без Senior-старта и без дозадавания Middle, поэтому ложные подтверждения Senior завышены.
-
-Персоны подкатегорий, P(подтверждения заявленного грейда), N = 2000. Цели: новичок и пограничный новичок - ложное подтверждение Junior ≤ 10 %; Junior, Junior с одной слабой темой (5 из 6 Junior верно, одно семейство нет, Middle как у Junior), Middle, Middle с одной слабой темой, Senior - ≥ 85-90 %. «Пограничный Junior» (3 из 6 верно + 2 наполовину) - без цели, показан как есть: честная неуверенность.
-
-| Персона | web-api | integrations | highload | data-model |
-|---|---|---|---|---|
-| Новичок, P(Junior) | 0,000 | 0,000 | 0,000 | 0,000 |
-| Пограничный новичок, P(Junior) | 0,000 | 0,010 | 0,009 | 0,005 |
-| Junior, P(Junior) | 1,000 | 1,000 | 1,000 | 1,000 |
-| **Junior с одной слабой темой, P(Junior)** | 1,000 | 1,000 | 1,000 | 1,000 |
-| Пограничный Junior (без цели), P(Junior) | 0,512 | 0,614 | 0,701 | 0,656 |
-| Middle, P(Middle) | 1,000 | 1,000 | 1,000 | 1,000 |
-| Middle с одной слабой темой, P(Middle) | 0,930 | 0,998 | 1,000 | 0,999 |
-| Senior, P(Senior) | 1,000 | 1,000 | 1,000 | 1,000 |
-| Идеальный Junior, P(Junior) | 1,000 | 1,000 | 1,000 | 1,000 |
-
-Ложные подтверждения старшего грейда - **до политики Senior** (перемерить после политики directions; цель ≤ 10 %): заявка Senior идёт движком без Senior-старта и без дозадавания Middle, цифры завышены.
-
-| Персона заявляет | web-api | integrations | highload | data-model |
-|---|---|---|---|---|
-| Junior заявил Middle | 0,004 | 0,038 | 0,192 | 0,098 |
-| Middle заявил Senior | 0,055 | 0,164 | 0,326 | 0,368 |
-| Middle со слабой темой заявил Senior | 0,038 | 0,088 | 0,184 | 0,212 |
-
-Что не сошлось и оговорки:
-- Ложные подтверждения Middle и Senior в highload и data-model выше 10 % (до политики Senior): Middle- и Senior-задания в этих подкатегориях различаются по сложности слабее, чем в web-api. Часть завышения - от движка без Senior-политики (первое задание подбирается при θ = 0, а не из Senior-банка); перемерить после политики Senior от directions.
-- Все цифры - на симуляции персон; Senior-ключи и профили не оценены на людях.
-- Сверено с документацией PostgreSQL 17 (Context7): откат REPEATABLE READ при конкурентном UPDATE, действия внешнего ключа, взаимная блокировка строк, последовательности не откатываются (в том числе при ON CONFLICT), ADD COLUMN с постоянным DEFAULT без перезаписи, NOT NULL проверяется сканированием. По знанию агента, без сверки: коды HTTP, кэширование Cache-Control для общих кэшей, If-Match/412, ON CONFLICT, circuit breaker, Kafka-подобные партиции, SSI в SERIALIZABLE (результат write skew).
 
 ## Языковая модель (Yandex Cloud, 9 октября)
 

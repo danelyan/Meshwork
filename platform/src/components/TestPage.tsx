@@ -214,6 +214,7 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
   }
 
   const numbered = item.format === 'line';
+  const probe = attempt.phase === 'junior_probe';
   return (
     <div className={styles.page}>
       <div className={styles.progressRow}>
@@ -223,11 +224,18 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
           </Kicker>
           <p className={styles.progressText} data-testid="progress">
             Задание {item.index + 1}
-            <span className={ui.muted}> · всего от {attempt.minItems} до {attempt.maxItems}</span>
+            <span className={ui.muted}>
+              {probe ? ` · дополнительное, всего до ${attempt.maxItems}` : ` · всего от ${attempt.minItems} до ${attempt.maxItems}`}
+            </span>
           </p>
         </div>
         <SoftTimer askedAt={item.askedAt} limitSec={item.timeLimitSec} />
       </div>
+      {probe && (
+        <Notice data-testid="junior-probe">
+          Middle по ответам пока не подтверждается. Ещё несколько заданий уровня Junior покажут, можно ли подтвердить Junior по этой же попытке.
+        </Notice>
+      )}
       <div className={styles.progressBar} role="progressbar" aria-valuemin={0} aria-valuemax={attempt.maxItems} aria-valuenow={item.index} aria-label="Ход теста">
         <i style={{ width: `${Math.min(100, (item.index / attempt.maxItems) * 100)}%` }} />
       </div>

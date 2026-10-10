@@ -6,7 +6,7 @@ import { GET as historyRoute } from '@/app/api/test/attempts/route';
 import { GET as eligibilityRoute, POST as startRoute } from '@/app/api/test/start/route';
 import { signSession } from '@/server/session';
 import { answerAttempt, checkEligibility, finishAttempt, getAttempt, startAttempt } from '@/server/test';
-import { MAX_ITEMS, MIN_ITEMS } from '@/server/test/policy';
+import { JUNIOR_PROBE_MAX, MAX_ITEMS, MAX_ITEMS_TOTAL, MIN_ITEMS } from '@/server/test/policy';
 import type { AttemptView } from '@/server/test/types';
 
 import { prisma, resetDb } from '../../helpers/db';
@@ -164,8 +164,7 @@ describe('API теста на грейд', () => {
   });
 
   it('Middle не сдан, Junior решён → предложение и подтверждение Junior в один клик (R-C-08); повторно — 409', async () => {
-    // seed 1: 4 Junior-задания из 10, P(θ > −0,7) ≈ 0,93. При пороге Junior −0,7 «все Junior верно, Middle — нет»
-    // даёт предложение лишь в ~51 % seed (eval/test/personas.ts, ADR-0002 дополнение 10.10); 4242 даёт 0,797.
+    // seed 1: 4 Junior-задания из 10, P(θ > −0,7) ≈ 0,92 — предложение без дозадавания. Случай с дозадаванием — ниже (seed 4242).
     const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 1 });
     const v = await play(A, attemptId, (grade, key) => (grade === 'junior' ? key : 'нет'));
     expect(v.status).toBe('not_confirmed');
@@ -182,6 +181,32 @@ describe('API теста на грейд', () => {
     expect(cat).toMatchObject({ grade: 'junior', source: 'test' });
     const twice = await confirmJuniorRoute(jsonRequest(`/api/test/attempt/${attemptId}/confirm-junior`, 'POST', {}, cookie(A)), ctx(attemptId));
     expect(twice.status).toBe(409);
+  });
+
+  it('Middle не сдан, P(Junior) неуверенная → дозадаются Junior-задания в той же попытке, затем Junior в один клик (R-C-08, 10.10)', async () => {
+    // seed 4242: после 10 заданий (4 Junior) P(θ > −0,7) ≈ 0,80 — ниже порога 0,8; без дозадавания Junior не предлагался.
+    const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 4242 });
+    let v = await getAttempt(A, attemptId);
+    const probe: { index: number; grade: string; maxItems: number }[] = [];
+    while (v.status === 'active') {
+      const { key, grade } = await currentKey(attemptId);
+      if (v.phase === 'junior_probe') probe.push({ index: v.current!.index, grade, maxItems: v.maxItems });
+      else expect(v.maxItems).toBe(MAX_ITEMS);
+      v = await answerAttempt(A, attemptId, grade === 'junior' ? key : 'нет');
+    }
+    expect(probe.length).toBeGreaterThan(0);
+    expect(probe.length).toBeLessThanOrEqual(JUNIOR_PROBE_MAX);
+    expect(probe.every((p) => p.grade === 'junior' && p.index >= MAX_ITEMS && p.maxItems === MAX_ITEMS + JUNIOR_PROBE_MAX)).toBe(true);
+    expect(v.result?.answered).toBe(MAX_ITEMS + probe.length);
+    expect(v.result?.answered).toBeLessThanOrEqual(MAX_ITEMS_TOTAL);
+    expect(v.status).toBe('not_confirmed');
+    expect(v.result?.juniorOffered).toBe(true);
+    // Через HTTP — та же фаза в итоге, контракт ответа не сломан.
+    const res = await getRoute(jsonRequest(`/api/test/attempt/${attemptId}`, 'GET', undefined, cookie(A)), ctx(attemptId));
+    expect(((await res.json()) as AttemptView).phase).toBe('junior_probe');
+    const ok = await confirmJuniorRoute(jsonRequest(`/api/test/attempt/${attemptId}/confirm-junior`, 'POST', {}, cookie(A)), ctx(attemptId));
+    expect(ok.status).toBe(200);
+    expect(await prisma.candidateCategory.findFirst({ where: { candidateId: A } })).toMatchObject({ grade: 'junior', source: 'test' });
   });
 
   it('все ответы неверные → не подтверждён, Junior не предлагается; досрочное завершение считает по данным ответам', async () => {

@@ -72,8 +72,11 @@ export function selectNext(pool: readonly SelectableTemplate[], state: Selection
 
 export interface StopDecision {
   stop: boolean;
-  reason: 'max_items' | 'confident' | 'precise' | null;
+  reason: StopReason | null;
 }
+
+/** Причина остановки. junior_resolved — дозадавание Junior дало уверенный ответ (P ≥ 0,9 или ≤ 0,1). */
+export type StopReason = 'max_items' | 'confident' | 'precise' | 'junior_resolved';
 
 /** Правило остановки по текущей оценке и порогу заявленного грейда. */
 export interface StopLimits {
@@ -94,6 +97,109 @@ export function shouldStop(
   if (p >= EARLY_STOP_PROB || p <= 1 - EARLY_STOP_PROB) return { stop: true, reason: 'confident' };
   if (est.se <= SE_STOP) return { stop: true, reason: 'precise' };
   return { stop: false, reason: null };
+}
+
+// ---------------------------------------------------------------------------
+// Дозадавание Junior (R-C-08, решение владельца 10.10, ADR-0002 «Дозадавание Junior-заданий»)
+// ---------------------------------------------------------------------------
+
+/**
+ * Сколько Junior-заданий можно дозадать после основной фазы, если заявлен Middle, он не
+ * подтверждён, а P(Junior) неуверенная. В Middle-тесте всего ~4 Junior-задания, и P(θ > −0,7)
+ * у решившего их все часто не дотягивает до CONFIRM_PROB — «Junior в 1 клик» срабатывал в 51–63 %.
+ * Фактически дозадаётся не больше, чем осталось непоказанных Junior-шаблонов (6 на специализацию).
+ */
+export const JUNIOR_PROBE_MAX = 3;
+/** Общий потолок заданий попытки: основная фаза + дозадавание. */
+export const MAX_ITEMS_TOTAL = MAX_ITEMS + JUNIOR_PROBE_MAX;
+
+/** Фаза попытки: основная (по порогу заявленного грейда) или дозадавание Junior. */
+export type AttemptPhase = 'main' | 'junior_probe';
+
+export interface StepInput {
+  /** Все шаблоны специализации. */
+  pool: readonly SelectableTemplate[];
+  /** Показанные и отвеченные шаблоны попытки, по порядку (shown[i] ↔ responses[i]). */
+  shown: readonly SelectableTemplate[];
+  responses: readonly Response[];
+  grade: Grade;
+}
+
+export interface Step extends StopDecision {
+  /** Фаза следующего задания (или фаза, в которой попытка остановилась). */
+  phase: AttemptPhase;
+  /** На каком задании остановилась основная фаза; null — она ещё идёт. */
+  mainLength: number | null;
+  /** Потолок заданий для текущей фазы (для прогресса в UI). */
+  maxItems: number;
+}
+
+/** P(Junior) в зоне неуверенности: не подтверждает (< CONFIRM_PROB) и не отвергает уверенно (> 1 − CONFIRM_PROB). */
+export function juniorUncertain(pJunior: number): boolean {
+  return pJunior > 1 - CONFIRM_PROB && pJunior < CONFIRM_PROB;
+}
+
+/**
+ * Нужна ли фаза дозадавания после остановки основной: заявлен Middle, он не подтверждён
+ * (P(θ > порог Middle) < CONFIRM_PROB — ранняя остановка «вниз», по SE или по MAX_ITEMS),
+ * P(Junior) неуверенная и есть непоказанные Junior-шаблоны.
+ */
+export function needsJuniorProbe(est: ThetaEstimate, grade: Grade, juniorLeft: number): boolean {
+  if (grade !== 'middle' || juniorLeft <= 0) return false;
+  if (probAbove(est, GRADE_CUT.middle) >= CONFIRM_PROB) return false;
+  return juniorUncertain(probAbove(est, GRADE_CUT.junior));
+}
+
+/** Пул для выбора следующего задания в фазе: в дозадавании — только Junior-шаблоны. */
+export function phasePool<T extends SelectableTemplate>(pool: readonly T[], phase: AttemptPhase): readonly T[] {
+  return phase === 'junior_probe' ? pool.filter((t) => t.grade === 'junior') : pool;
+}
+
+/**
+ * Решение после очередного ответа: остановить попытку или дать следующее задание и в какой фазе.
+ * Чистая функция от ответов (фаза не хранится в БД, а выводится повтором shouldStop по префиксам):
+ * те же ответы → та же фаза и та же остановка.
+ *
+ * 1. Основная фаза — shouldStop по порогу заявленного грейда (MIN_ITEMS…MAX_ITEMS).
+ * 2. Остановилась, и needsJuniorProbe → фаза junior_probe: до JUNIOR_PROBE_MAX Junior-заданий
+ *    (randomesque и лимит доли утверждения — как в основной), стоп, как только
+ *    P(Junior) ≥ EARLY_STOP_PROB или ≤ 1 − EARLY_STOP_PROB, исчерпан лимит или Junior-шаблоны.
+ * Решение о грейде (decide) берёт все ответы попытки: адаптивный выбор заданий не смещает
+ * апостериорную оценку θ, дозаданные ответы — такие же наблюдения.
+ */
+export function nextStep(input: StepInput, limits: StopLimits = { min: MIN_ITEMS, max: MAX_ITEMS }): Step {
+  const { pool, shown, responses, grade } = input;
+  const n = responses.length;
+  const juniorTotal = pool.filter((t) => t.grade === 'junior').length;
+  const juniorShown = (k: number) => shown.slice(0, k).filter((t) => t.grade === 'junior').length;
+
+  // Где остановилась основная фаза (повтор по префиксам ответов).
+  let mainLength: number | null = null;
+  let mainStop: StopDecision = { stop: false, reason: null };
+  for (let k = 1; k <= n; k++) {
+    const d = shouldStop(k, estimateTheta(responses.slice(0, k)), grade, k >= pool.length, limits);
+    if (d.stop) {
+      mainLength = k;
+      mainStop = d;
+      break;
+    }
+  }
+  if (mainLength === null) return { stop: false, reason: null, phase: 'main', mainLength: null, maxItems: limits.max };
+
+  const atMain = estimateTheta(responses.slice(0, mainLength));
+  if (!needsJuniorProbe(atMain, grade, juniorTotal - juniorShown(mainLength))) {
+    return { ...mainStop, stop: true, phase: 'main', mainLength, maxItems: limits.max };
+  }
+
+  const probeMax = mainLength + JUNIOR_PROBE_MAX;
+  const probeAnswered = n - mainLength;
+  const probe = (stop: boolean, reason: StopReason | null): Step => ({ stop, reason, phase: 'junior_probe', mainLength, maxItems: probeMax });
+  if (probeAnswered > 0) {
+    const pJunior = probAbove(estimateTheta(responses), GRADE_CUT.junior);
+    if (pJunior >= EARLY_STOP_PROB || pJunior <= 1 - EARLY_STOP_PROB) return probe(true, 'junior_resolved');
+  }
+  if (probeAnswered >= JUNIOR_PROBE_MAX || juniorShown(n) >= juniorTotal) return probe(true, 'max_items');
+  return probe(false, null);
 }
 
 export interface GradeDecision {

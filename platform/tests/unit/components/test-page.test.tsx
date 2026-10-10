@@ -37,6 +37,7 @@ const active = (index: number): AttemptView => ({
   status: 'active',
   mode: 'demo',
   answered: index,
+  phase: 'main',
   minItems: 7,
   maxItems: 10,
   startedAt: '2026-10-09T08:00:00Z',
@@ -134,6 +135,23 @@ describe('TestPage', () => {
     await waitFor(() => expect(screen.getByTestId('progress').textContent).toContain('Задание 2'));
     expect(calls.find((c) => c.url === '/api/test/attempt/att1/answer')?.body).toEqual({ answer: '4' });
     expect(input.value).toBe('');
+  });
+
+  it('фаза дозадавания Junior: подпись прогресса и пояснение кандидату', async () => {
+    stubFetch((url) => (url === '/api/test/attempt/att1' ? { ...active(10), phase: 'junior_probe', maxItems: 13 } : {}));
+    search = 'attempt=att1';
+    render(<TestPage />);
+    await waitFor(() => expect(screen.getByTestId('progress').textContent).toContain('Задание 11'));
+    expect(screen.getByTestId('progress').textContent).toContain('дополнительное, всего до 13');
+    expect(screen.getByTestId('junior-probe').textContent).toContain('уровня Junior');
+  });
+
+  it('основная фаза: пояснения о дозадавании нет', async () => {
+    stubFetch((url) => (url === '/api/test/attempt/att1' ? active(3) : {}));
+    search = 'attempt=att1';
+    render(<TestPage />);
+    await waitFor(() => expect(screen.getByTestId('progress').textContent).toContain('всего от 7 до 10'));
+    expect(screen.queryByTestId('junior-probe')).toBeNull();
   });
 
   it('итог: Middle не подтверждён, предложение Junior → клик подтверждает и показывает «Junior подтверждён»', async () => {

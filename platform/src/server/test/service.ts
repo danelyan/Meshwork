@@ -12,7 +12,7 @@ import type { Grade, Specialization } from '../types';
 import { checkAnswer, MAX_ANSWER_CHARS } from './answers';
 import { GENERATORS, getGenerator } from './generators';
 import { estimateTheta, type Response } from './irt';
-import { decide, explainDecision, MAX_ITEMS, MIN_ITEMS, selectNext, shouldStop, type SelectableTemplate } from './policy';
+import { decide, explainDecision, MIN_ITEMS, nextStep, phasePool, selectNext, type AttemptPhase, type SelectableTemplate, type Step } from './policy';
 import { deriveSeed, randomSeed } from './rng';
 import type {
   AnsweredItemView,
@@ -25,7 +25,8 @@ import type {
   TaskGenerator,
 } from './types';
 
-export const POLICY_VERSION = 'adr-0002-v1';
+/** v2 (10.10): порог Junior −0,7 и дозадавание Junior-заданий (ADR-0002, дополнения 10.10). */
+export const POLICY_VERSION = 'adr-0002-v2';
 
 /**
  * ПРЕДЛОЖЕНИЕ (R-C-09, решение владельца 09.10): смена грейда — раз в 30 дней
@@ -139,17 +140,31 @@ function responsesOf(items: TestItem[], pool: Map<string, SelectableTemplate>): 
   return out;
 }
 
+/** Решение о продолжении по отвеченным заданиям попытки (фаза выводится из ответов, в БД не хранится). */
+function stepOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>): Step {
+  const shown: SelectableTemplate[] = [];
+  const responses: Response[] = [];
+  for (const it of a.items) {
+    if (it.correct === null) continue;
+    const t = byId.get(it.templateId);
+    if (!t) continue;
+    shown.push(t);
+    responses.push({ a: t.a, b: t.b, correct: it.correct });
+  }
+  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade });
+}
+
 async function poolMap(spec: Specialization): Promise<Map<string, SelectableTemplate & { generator: TaskGenerator }>> {
   return new Map((await loadPool(spec)).map((t) => [t.id, t]));
 }
 
 /** Сгенерировать и записать следующее задание попытки; null — банк исчерпан. */
-async function pushNextItem(attempt: AttemptWithItems, theta: number): Promise<TestItem | null> {
+async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: AttemptPhase = 'main'): Promise<TestItem | null> {
   const pool = await loadPool(attempt.specialization);
   const byId = new Map(pool.map((t) => [t.id, t]));
   const shown = attempt.items.map((i) => byId.get(i.templateId)).filter((t): t is NonNullable<typeof t> => Boolean(t));
   const index = attempt.items.length;
-  const next = selectNext(pool, { shown, theta, seed: deriveSeed(attempt.seed, 1000 + index) });
+  const next = selectNext(phasePool(pool, phase), { shown, theta, seed: deriveSeed(attempt.seed, 1000 + index) });
   if (!next) return null;
   const generator = byId.get(next.id)!.generator;
   const instanceSeed = deriveSeed(attempt.seed, index);
@@ -266,6 +281,7 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
   const answered = a.items.filter((i) => i.correct !== null).length;
   const current = a.status === 'active' ? a.items.find((i) => i.correct === null) : undefined;
   const g = current ? byId.get(current.templateId)?.generator : undefined;
+  const step = stepOf(a, byId);
   return {
     id: a.id,
     specialization: a.specialization,
@@ -273,8 +289,9 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     status: a.status,
     mode: a.mode === 'demo' ? 'demo' : 'full',
     answered,
+    phase: step.phase,
     minItems: MIN_ITEMS,
-    maxItems: MAX_ITEMS,
+    maxItems: step.maxItems,
     startedAt: a.startedAt.toISOString(),
     expiresAt: a.expiresAt.toISOString(),
     current: current && g ? itemView(current, g.title, g.format, g.timeLimitSec) : null,
@@ -337,11 +354,9 @@ export async function answerAttempt(candidateId: string, attemptId: string, rawA
   const est = estimateTheta(responsesOf(answeredItems, byId));
   await prisma.testItem.update({ where: { id: current.id }, data: { answer, correct, thetaAfter: est.theta, seAfter: est.se, answeredAt: now } });
   const updated = await loadAttempt(candidateId, attemptId);
-  const answeredCount = updated.items.filter((i) => i.correct !== null).length;
-  const poolSize = (await loadPool(a.specialization)).length;
-  const stop = shouldStop(answeredCount, est, a.grade, answeredCount >= poolSize);
-  if (stop.stop) return view(await finalize(updated, now));
-  const next = await pushNextItem(updated, est.theta);
+  const step = stepOf(updated, byId);
+  if (step.stop) return view(await finalize(updated, now));
+  const next = await pushNextItem(updated, est.theta, step.phase);
   if (!next) return view(await finalize(updated, now));
   return view(await loadAttempt(candidateId, attemptId));
 }

@@ -9,7 +9,7 @@ import { GET as historyRoute } from '@/app/api/test/attempts/route';
 import { GET as eligibilityRoute, POST as startRoute } from '@/app/api/test/start/route';
 import { signSession } from '@/server/session';
 import { answerAttempt, checkEligibility, finishAttempt, getAttempt, startAttempt } from '@/server/test';
-import { generatorsForSubcategory } from '@/server/test/generators';
+import { commonGeneratorsFor, generatorsForSubcategory } from '@/server/test/generators';
 import { CONFIRM_MAX_ITEMS, CONFIRM_MIN_ITEMS } from '@/server/test/confirm';
 import { JUNIOR_PROBE_MAX, MAX_ITEMS, MIN_ITEMS } from '@/server/test/policy';
 import type { AttemptView } from '@/server/test/types';
@@ -130,7 +130,8 @@ describe('API теста на грейд', () => {
     const v = await play(B, attemptId, (_g, key) => key);
     expect(v.status).toBe('passed');
     expect(v.subcategoryId).toBe('ai.mlops');
-    const own = new Set(generatorsForSubcategory('ai.mlops').map((g) => g.id));
+    // Пул v7: свои семейства подкатегории + общие компетенции направления (ADR 0003, ≤ MAX_COMMON_SHARE).
+    const own = new Set([...generatorsForSubcategory('ai.mlops'), ...commonGeneratorsFor('ai.mlops')].map((g) => g.id));
     const items = await prisma.testItem.findMany({ where: { attemptId } });
     expect(items.length).toBeGreaterThanOrEqual(MIN_ITEMS);
     expect(items.every((i) => own.has(i.templateId))).toBe(true);
@@ -194,6 +195,8 @@ describe('API теста на грейд', () => {
   it('повторяемость: тот же seed и те же ответы → те же задания и тот же грейд', async () => {
     const first = await startAttempt(A, 'frontend', 'junior', new Date(), { seed: 12345, subcategoryId: 'frontend.ui-app' });
     const v1 = await play(A, first.attemptId, (_g, key) => key);
+    // Экспозиция шаблонов глобальная и разбивает ничьи по информации: сравниваем при том же состоянии банка.
+    await prisma.taskTemplate.updateMany({ data: { exposure: 0 } });
     const items1 = await prisma.testItem.findMany({ where: { attemptId: first.attemptId }, orderBy: { index: 'asc' } });
     // Второй кандидат с тем же seed (интервалы на другого кандидата не действуют).
     const second = await startAttempt(B, 'frontend', 'junior', new Date(), { seed: 12345, subcategoryId: 'frontend.ui-app' });
@@ -256,10 +259,11 @@ describe('API теста на грейд', () => {
   });
 
   it('Middle не сдан, P(Junior) неуверенная → дозадаются Junior-задания в той же попытке, затем Junior в один клик (R-C-08, 10.10)', async () => {
-    // Пул — подкатегория backend.web-api (6 J + 4 M + 4 S). seed 1 подобран симуляцией цикла сервиса после калибровки backend (политика v4)
+    // Пул — подкатегория backend.web-api (после bank2: 9 J + 9 M + 8 S и общие). seed 3 подобран перебором после bank2 (11.10);
+    // прежде seed 1 подобран симуляцией цикла сервиса после калибровки backend (политика v4)
     // (10.10): основная фаза кончается при неуверенной P(Junior), дальше — дозадавание. Прежний seed 4242 был для пула
     // всего направления из 12 семейств; в пулах integrations/highload/data-model дозадавание при таком профиле не возникает.
-    const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 1, subcategoryId: 'backend.web-api' });
+    const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 3, subcategoryId: 'backend.web-api' });
     let v = await getAttempt(A, attemptId);
     const probe: { index: number; grade: string; maxItems: number }[] = [];
     let mainJunior = 0;
@@ -288,8 +292,9 @@ describe('API теста на грейд', () => {
     }
     expect(probe.length).toBeGreaterThan(0);
     expect(probe.length).toBeLessThanOrEqual(JUNIOR_PROBE_MAX);
-    // Потолок фазы — не больше оставшихся Junior-шаблонов (6 на специализацию), а не всегда 13.
-    const probeMax = MAX_ITEMS + Math.min(JUNIOR_PROBE_MAX, 6 - mainJunior);
+    // Потолок фазы — не больше оставшихся Junior-шаблонов подкатегории (общих в дозадавании нет), а не всегда 13.
+    const juniorFamilies = generatorsForSubcategory('backend.web-api').filter((g) => g.grade === 'junior').length;
+    const probeMax = MAX_ITEMS + Math.min(JUNIOR_PROBE_MAX, juniorFamilies - mainJunior);
     expect(probe.every((p) => p.grade === 'junior' && p.index >= MAX_ITEMS && p.maxItems === probeMax)).toBe(true);
     expect(v.result?.answered).toBe(MAX_ITEMS + probe.length);
     expect(v.result?.answered).toBeLessThanOrEqual(probeMax);

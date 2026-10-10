@@ -61,6 +61,10 @@ describe('генераторы ai.* (ADR 0003, дополнение 10.10)', () 
       expect(n.junior, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_BY_GRADE.junior);
       expect(n.middle, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_BY_GRADE.middle);
       expect(n.senior, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_BY_GRADE.senior);
+      // Расширение банка 11.10 (ai-bank2): +3 Junior, +5 Middle, +4 Senior на подкатегорию.
+      expect(n.junior, sub).toBeGreaterThanOrEqual(9);
+      expect(n.middle, sub).toBeGreaterThanOrEqual(9);
+      expect(n.senior, sub).toBeGreaterThanOrEqual(8);
       const pool = poolFor('ai', sub)!;
       expect(pool.legacy).toBe(false);
       expect(pool.generators.every((g) => g.subcategoryId === sub)).toBe(true);

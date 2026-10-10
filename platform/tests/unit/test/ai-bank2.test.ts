@@ -53,4 +53,17 @@ describe('AI: расширение банка (ai-bank2)', () => {
       expect(keys.size).toBeGreaterThanOrEqual(3);
     });
   }
+
+  for (const g of AI_BANK2_GENERATORS) {
+    it(`${g.id}: не угадывается (500 seed: доля самого частого ответа ≤ 20 %, разных ответов ≥ 8)`, () => {
+      const counts = new Map<string, number>();
+      for (let seed = 1; seed <= 500; seed++) {
+        const k = g.generate(seed * 104729 + 11).answerKey;
+        counts.set(k, (counts.get(k) ?? 0) + 1);
+      }
+      const top = Math.max(...counts.values());
+      expect(counts.size, `${g.id} разных ответов`).toBeGreaterThanOrEqual(8);
+      expect(top / 500, `${g.id} доля частого ответа`).toBeLessThanOrEqual(0.2);
+    });
+  }
 });

@@ -5,6 +5,10 @@ import { table } from './ai-util';
 
 const SUB = 'ai.ml-engineering';
 
+function nearHalf2(x: number): boolean {
+  return Math.abs(Math.abs((x * 100) % 1) - 0.5) < 0.03;
+}
+
 // ---------------------------------------------------------------------------
 // Junior
 // ---------------------------------------------------------------------------
@@ -35,9 +39,9 @@ export const seedReproCount = family(
   (rng) => {
     const ref = { seed: 42, data: 'a1f3', commit: 'c09e', lib: '1.4.2' };
     const alt = { seed: [7, 13, 99], data: ['b2c4', 'a1f0'], commit: ['d51a', 'c09f'], lib: ['1.5.0', '1.4.1'] };
-    const runs = Array.from({ length: rng.int(6, 8) }, () => {
+    const runs = Array.from({ length: rng.int(10, 15) }, () => {
       const r = { ...ref };
-      if (rng.next() < 0.65) {
+      if (rng.next() < 0.5) {
         const f = rng.pick(['seed', 'data', 'commit', 'lib'] as const);
         if (f === 'seed') r.seed = rng.pick(alt.seed);
         if (f === 'data') r.data = rng.pick(alt.data);
@@ -88,19 +92,20 @@ export const regressionError = family(
 // ---------------------------------------------------------------------------
 
 export const groupLeakCount = family(
-  { id: 'ai.group-leak-count', taskId: 'task:data-leakage', title: 'Сколько клиентов попало и в train, и в test', sub: SUB, grade: 'middle', catalogIds: ['ai.data-leakage', 'ai.validation'], a: 1.2, b: 0.3, space: 1e8, time: 240 },
+  { id: 'ai.group-leak-count', taskId: 'task:data-leakage', title: 'Сколько тестовых строк затронуто групповой утечкой', sub: SUB, grade: 'middle', catalogIds: ['ai.data-leakage', 'ai.validation'], a: 1.2, b: 0.3, space: 1e8, time: 240 },
   (rng) => {
-    const n = rng.int(12, 15);
-    const rows = Array.from({ length: n }, () => ({ client: rng.pick(['c1', 'c2', 'c3', 'c4', 'c5', 'c6']), part: rng.pick(['train', 'train', 'test']) }));
+    const n = rng.int(20, 34);
+    const rows = Array.from({ length: n }, () => ({ client: rng.pick(['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11', 'c12']), part: rng.pick(['train', 'train', 'test']) }));
     const byClient = new Map<string, Set<string>>();
     for (const r of rows) byClient.set(r.client, (byClient.get(r.client) ?? new Set()).add(r.part));
     const leaked = [...byClient.entries()].filter(([, s]) => s.size === 2).map(([c]) => c);
+    const leakedRows = rows.filter((r) => r.part === 'test' && leaked.includes(r.client)).length;
     return {
-      prompt: 'Строки датасета (по одной на покупку) случайно разложили в train и test. Все покупки одного клиента похожи, поэтому модель не должна видеть клиента в обучении, если он есть в тесте. Сколько клиентов оказалось и в train, и в test (групповая утечка)?',
+      prompt: 'Строки датасета (по одной на покупку) случайно разложили в train и test. Все покупки одного клиента похожи, поэтому модель не должна видеть клиента в обучении, если он есть в тесте. Клиент, встречающийся и в train, и в test, - групповая утечка. Сколько строк test принадлежат таким клиентам?',
       code: rows.map((r, i) => `${i + 1}. клиент ${r.client} → ${r.part}`).join('\n'),
-      answerHint: 'число клиентов',
-      answerKey: String(leaked.length),
-      explanation: `В обеих частях встречаются: ${leaked.length ? leaked.join(', ') : 'никто'}. Для таких данных нужно делить по клиентам (GroupKFold), а не по строкам.`,
+      answerHint: 'число строк',
+      answerKey: String(leakedRows),
+      explanation: `В обеих частях встречаются: ${leaked.length ? leaked.join(', ') : 'никто'}; в test их строк - ${leakedRows}. Для таких данных нужно делить по клиентам (GroupKFold), а не по строкам.`,
       params: { rows: rows.map((r) => `${r.client}/${r.part}`).join(',') },
     };
   },
@@ -127,7 +132,7 @@ export const pipelineRerun = family(
 );
 
 export const cvModelChoice = family(
-  { id: 'ai.cv-model-choice', taskId: 'task:model-selection', title: 'Какую модель выбрать по кросс-валидации', sub: SUB, grade: 'middle', catalogIds: ['ai.validation', 'ai.ml-baseline'], format: 'text', a: 1.2, b: 0.5, space: 1e9, time: 300 },
+  { id: 'ai.cv-model-choice', taskId: 'task:model-selection', title: 'Какую модель выбрать по кросс-валидации', sub: SUB, grade: 'middle', catalogIds: ['ai.validation', 'ai.ml-baseline'], a: 1.2, b: 0.5, space: 1e9, time: 300 },
   (rng) => {
     for (;;) {
       const names = ['linear', 'forest', 'boost'];
@@ -143,12 +148,13 @@ export const cvModelChoice = family(
       const best = [...stat].sort((a, b) => b.mean - a.mean)[0]!;
       const ok = stat.filter((x) => x.mean >= best.mean - best.sd).sort((a, b) => a.cost - b.cost);
       if (ok[0]!.m === best.m && rng.next() < 0.6) continue;
+      if (nearHalf2(ok[0]!.mean)) continue;
       return {
-        prompt: 'Три модели оценены 5-фолдовой кросс-валидацией (метрика - accuracy, %). Правило одного стандартного отклонения: берём лучшую по среднему модель, затем выбираем самую дешёвую по времени обучения среди тех, чьё среднее не ниже (среднее лучшей - стандартное отклонение лучшей). Отклонение - выборочное (деление на 4). Какую модель выбрать?',
+        prompt: 'Три модели оценены 5-фолдовой кросс-валидацией (метрика - accuracy, %). Правило одного стандартного отклонения: берём лучшую по среднему модель, затем выбираем самую дешёвую по времени обучения среди тех, чьё среднее не ниже (среднее лучшей - стандартное отклонение лучшей). Отклонение - выборочное (деление на 4). Модель выбрана по этому правилу. Чему равна её средняя accuracy по фолдам, % (до 2 знаков)?',
         code: table(['модель', 'accuracy по фолдам', 'обучение, мин'], models.map((x) => [x.m, x.scores.join(' '), x.cost])),
-        answerHint: 'linear, forest или boost',
-        answerKey: ok[0]!.m,
-        explanation: `Лучшая по среднему - ${best.m} (${fx(best.mean, 2)}, σ = ${fx(best.sd, 2)}); порог ${fx(best.mean - best.sd, 2)}. Подходят: ${ok.map((x) => `${x.m} (${fx(x.mean, 2)})`).join(', ')}; самая дешёвая - ${ok[0]!.m}.`,
+        answerHint: '% до 2 знаков',
+        answerKey: fx(ok[0]!.mean, 2),
+        explanation: `Лучшая по среднему - ${best.m} (${fx(best.mean, 2)}, σ = ${fx(best.sd, 2)}); порог ${fx(best.mean - best.sd, 2)}. Подходят: ${ok.map((x) => `${x.m} (${fx(x.mean, 2)})`).join(', ')}; самая дешёвая - ${ok[0]!.m} со средним ${fx(ok[0]!.mean, 2)}.`,
         params: { models: models.map((x) => `${x.scores.join('.')}/${x.cost}`).join('|') },
       };
     }
@@ -181,10 +187,10 @@ export const oofTargetEncoding = family(
   { id: 'ai.oof-target-encoding', taskId: 'task:feature-pipeline', title: 'Target encoding без утечки', sub: SUB, grade: 'middle', catalogIds: ['ai.feature-pipeline', 'ai.data-leakage'], a: 1.2, b: 0.6, space: 1e9, time: 300 },
   (rng) => {
     for (;;) {
-      const rows = Array.from({ length: 12 }, () => ({ cat: rng.pick(['msk', 'spb', 'kzn']), fold: rng.int(1, 3), y: rng.int(0, 1) }));
+      const rows = Array.from({ length: 20 }, () => ({ cat: rng.pick(['msk', 'spb']), fold: rng.int(1, 3), y: rng.int(0, 1) }));
       const i = rng.int(0, rows.length - 1);
       const peers = rows.filter((r, j) => j !== i && r.cat === rows[i]!.cat && r.fold !== rows[i]!.fold);
-      if (peers.length < 2) continue;
+      if (peers.length < 4) continue;
       const mean = sum(peers.map((r) => r.y)) / peers.length;
       if (Math.abs(((mean * 100) % 1) - 0.5) < 0.03) continue;
       return {
@@ -256,11 +262,11 @@ export const alertThresholdCapacity = family(
       if (ok.length === 0 || ok.length === rows.length) continue;
       const best = [...ok].sort((a, b) => b.tpr - a.tpr)[0]!;
       return {
-        prompt: `Антифрод-модель оценивает ${events} событий в сутки, доля настоящих нарушений - ${prev} %. Команда может проверить вручную не больше ${cap} сработавших алертов в сутки. Для каждого порога в таблице известны TPR и FPR (в %). Какой порог выбрать, чтобы поймать как можно больше нарушений, не перегрузив команду?`,
+        prompt: `Антифрод-модель оценивает ${events} событий в сутки, доля настоящих нарушений - ${prev} %. Команда может проверить вручную не больше ${cap} сработавших алертов в сутки. Для каждого порога в таблице известны TPR и FPR (в %). Выберите порог, при котором ловится как можно больше нарушений и команда не перегружена. Сколько алертов в сутки придётся проверять при этом пороге (округлите до целого)?`,
         code: table(['порог', 'TPR, %', 'FPR, %'], rows.map((r) => [r.t, r.tpr, r.fpr])),
-        answerHint: 'порог, например 0.6',
-        answerKey: String(best.t),
-        explanation: `Алертов в сутки = события × (доля нарушений × TPR + (1 - доля) × FPR): ${rows.map((r) => `${r.t} → ${Math.round(r.alerts)}`).join(', ')}. В лимит ${cap} укладываются ${ok.map((r) => r.t).join(', ')}; максимальный TPR у ${best.t}. Из-за редкости класса почти все алерты - ложные, поэтому важна именно FPR.`,
+        answerHint: 'алертов в сутки',
+        answerKey: String(Math.round(best.alerts)),
+        explanation: `Алертов в сутки = события × (доля нарушений × TPR + (1 - доля) × FPR): ${rows.map((r) => `${r.t} → ${Math.round(r.alerts)}`).join(', ')}. В лимит ${cap} укладываются ${ok.map((r) => r.t).join(', ')}; максимальный TPR у ${best.t} (алертов ${Math.round(best.alerts)}). Из-за редкости класса почти все алерты - ложные, поэтому важна именно FPR.`,
         params: { events, prev, cap, rows: rows.map((r) => `${r.t}:${r.tpr}:${r.fpr}`).join(',') },
       };
     }

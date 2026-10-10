@@ -17,10 +17,10 @@ export const registryStage = family(
       const ops: string[] = [];
       const stack: number[] = [];
       let registered = 0;
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 22; i++) {
         const can = { promote: registered > 0, rollback: stack.length >= 2 };
         const r = rng.next();
-        if (registered < 2 || (r < 0.25 && registered < 5)) {
+        if (registered < 2 || (r < 0.3 && registered < 12)) {
           registered++;
           ops.push(`register v${registered}`);
         } else if (can.rollback && r < 0.55) {
@@ -91,9 +91,9 @@ export const replicasNeeded = family(
 export const ksDriftStat = family(
   { id: 'ai.ks-drift-stat', taskId: 'task:drift-psi', title: 'Статистика Колмогорова-Смирнова', sub: SUB, grade: 'middle', catalogIds: ['ai.monitoring-drift'], a: 1.2, b: 0.4, space: 1e12, time: 300 },
   (rng) => {
-    const pool = rng.sample(Array.from({ length: 60 }, (_, i) => i + 1), 16);
-    const train = pool.slice(0, 8).sort((a, b) => a - b);
-    const prod = pool.slice(8).sort((a, b) => a - b);
+    const pool = rng.sample(Array.from({ length: 90 }, (_, i) => i + 1), 22);
+    const train = pool.slice(0, 10).sort((a, b) => a - b);
+    const prod = pool.slice(10).sort((a, b) => a - b);
     let d = 0;
     for (const x of [...train, ...prod]) {
       const f1 = train.filter((v) => v <= x).length / train.length;
@@ -101,7 +101,7 @@ export const ksDriftStat = family(
       d = Math.max(d, Math.abs(f1 - f2));
     }
     return {
-      prompt: 'Значения признака в обучении и в продакшене (по 8 наблюдений, все значения различны). Статистика Колмогорова-Смирнова - максимум модуля разности эмпирических функций распределения F_train(x) и F_prod(x), где F(x) - доля наблюдений ≤ x. Чему она равна?',
+      prompt: 'Значения признака в обучении и в продакшене (10 наблюдений в обучении и 12 в продакшене, все значения различны). Статистика Колмогорова-Смирнова - максимум модуля разности эмпирических функций распределения F_train(x) и F_prod(x), где F(x) - доля наблюдений ≤ x. Чему она равна?',
       code: `train: ${train.join(', ')}\nprod:  ${prod.join(', ')}`,
       answerHint: 'до 3 знаков',
       answerKey: fx(d, 3),
@@ -196,7 +196,9 @@ export const autoscaleSim = family(
       let lo = 0;
       let cool = 0;
       let changes = 0;
+      let replicaMinutes = 0;
       for (const c of cpu) {
+        replicaMinutes += n;
         if (cool > 0) {
           cool--;
           hi = 0;
@@ -221,11 +223,11 @@ export const autoscaleSim = family(
       }
       if (changes < 2) continue;
       return {
-        prompt: `Сервис модели стартует с ${start} репликами. Каждую минуту замеряется средний CPU. Правила: если CPU выше 75 % две минуты подряд - добавить реплику (максимум 6); если ниже 30 % три минуты подряд - убрать реплику (минимум 1). После любого изменения следующие 2 минуты замеры игнорируются (не считаются в «подряд», изменений нет). Сколько реплик будет после 12 минут?`,
+        prompt: `Сервис модели стартует с ${start} репликами. Каждую минуту замеряется средний CPU. Правила: если CPU выше 75 % две минуты подряд - добавить реплику (максимум 6); если ниже 30 % три минуты подряд - убрать реплику (минимум 1). После любого изменения следующие 2 минуты замеры игнорируются (не считаются в «подряд», изменений нет). Изменение числа реплик вступает в силу со следующей минуты. Сколько всего реплика-минут будет оплачено за эти 12 минут (сумма числа работающих реплик по минутам)?`,
         code: cpu.map((c, i) => `мин ${i + 1}: ${c}%`).join('\n'),
-        answerHint: 'число реплик',
-        answerKey: String(n),
-        explanation: `Прогоняем минуты по правилам: изменений было ${changes}, итог - ${n} реплик. Окна «подряд» сбрасываются и после изменения, и во время паузы.`,
+        answerHint: 'реплика-минуты',
+        answerKey: String(replicaMinutes),
+        explanation: `Прогоняем минуты по правилам: изменений было ${changes}, в конце ${n} реплик, суммарно ${replicaMinutes} реплика-минут. Окна «подряд» сбрасываются и после изменения, и во время паузы.`,
         params: { start, cpu: cpu.join(',') },
       };
     }
@@ -237,7 +239,7 @@ export const autoscaleSim = family(
 // ---------------------------------------------------------------------------
 
 export const driftTriageFirst = family(
-  { id: 'ai.drift-triage-first', taskId: 'task:drift-psi', title: 'С какого признака разбирать дрейф', sub: SUB, grade: 'senior', catalogIds: ['ai.monitoring-drift'], format: 'text', a: 1.2, b: 1.0, space: 1e9, time: 300 },
+  { id: 'ai.drift-triage-first', taskId: 'task:drift-psi', title: 'С какого признака разбирать дрейф', sub: SUB, grade: 'senior', catalogIds: ['ai.monitoring-drift'], a: 1.2, b: 1.0, space: 1e9, time: 300 },
   (rng) => {
     for (;;) {
       const names = ['age', 'income', 'region', 'tenure', 'device', 'score'];
@@ -248,11 +250,11 @@ export const driftTriageFirst = family(
       const maxPsi = [...risk].sort((a, b) => b.psi - a.psi)[0]!;
       if (ranked[0]!.risk === ranked[1]!.risk || ranked[0]!.f === maxPsi.f) continue;
       return {
-        prompt: 'После выкатки мониторинг показал PSI по признакам. Команде нужно сначала разобраться с признаком, дрейф которого сильнее всего влияет на прогноз: приоритет = важность признака (% вклада в модель) × PSI (в сотых долях). С какого признака начать?',
+        prompt: 'После выкатки мониторинг показал PSI по признакам. Команде нужно сначала разобраться с признаком, дрейф которого сильнее всего влияет на прогноз: приоритет = важность признака (% вклада в модель) × PSI (в сотых долях). Найдите признак с наибольшим приоритетом. Чему равен его приоритет (важность × PSI в сотых)?',
         code: table(['признак', 'важность, %', 'PSI, сотых'], feats.map((x) => [x.f, x.imp, x.psi])),
-        answerHint: 'название признака',
-        answerKey: ranked[0]!.f,
-        explanation: `Приоритеты: ${ranked.map((x) => `${x.f} ${x.risk}`).join(', ')}. Признак с самым большим PSI (${maxPsi.f}) может быть малозначимым для модели, поэтому смотреть нужно на произведение.`,
+        answerHint: 'число',
+        answerKey: String(ranked[0]!.risk),
+        explanation: `Приоритеты: ${ranked.map((x) => `${x.f} ${x.risk}`).join(', ')}; максимум у ${ranked[0]!.f}. Признак с самым большим PSI (${maxPsi.f}) может быть малозначимым для модели, поэтому смотреть нужно на произведение.`,
         params: { feats: feats.map((x) => `${x.f}:${x.imp}:${x.psi}`).join(',') },
       };
     }
@@ -307,10 +309,10 @@ export const canaryDetectMinutes = family(
 export const gpuPacking = family(
   { id: 'ai.gpu-packing', taskId: 'task:gpu-sizing', title: 'Сколько GPU нужно под набор моделей', sub: SUB, grade: 'senior', catalogIds: ['ai.model-serving'], a: 1.2, b: 1.0, space: 1e10, time: 330 },
   (rng) => {
-    const cap = rng.pick([40, 48, 80]);
+    const cap = rng.pick([24, 32, 40, 48]);
     const reserve = rng.pick([2, 4]);
     const over = rng.pick([1, 2]);
-    const mem = Array.from({ length: rng.int(7, 10) }, () => rng.int(3, Math.floor(cap / 2)));
+    const mem = Array.from({ length: rng.int(14, 24) }, () => rng.int(3, Math.floor(cap * 0.6)));
     const sizes = [...mem].sort((a, b) => b - a).map((m) => m + over);
     const bins: number[] = [];
     for (const s of sizes) {

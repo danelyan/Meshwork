@@ -32,7 +32,7 @@ type Rec = Record<string, unknown>;
 export const jsonSchemaValid = family(
   { id: 'ai.json-schema-valid', taskId: 'task:structured-output', title: 'Сколько ответов пройдут схему', sub: SUB, grade: 'junior', catalogIds: ['ai.structured-output'], a: 1.3, b: -0.9, space: 1e6, time: 180 },
   (rng) => {
-    const n = rng.int(7, 9);
+    const n = rng.int(10, 15);
     const recs: Rec[] = [];
     let valid = 0;
     for (let i = 0; i < n; i++) {
@@ -59,27 +59,25 @@ export const jsonSchemaValid = family(
 );
 
 export const chunkOverlapCover = family(
-  { id: 'ai.chunk-overlap-cover', taskId: 'task:rag-chunking', title: 'В скольких чанках окажется фраза', sub: SUB, grade: 'junior', catalogIds: ['ai.rag'], a: 1.3, b: -0.8, space: 1e6, time: 180 },
+  { id: 'ai.chunk-overlap-cover', taskId: 'task:rag-chunking', title: 'Сколько символов попадёт в два чанка', sub: SUB, grade: 'junior', catalogIds: ['ai.rag'], a: 1.3, b: -0.8, space: 1e6, time: 180 },
   (rng) => {
     const size = rng.pick([200, 300, 400, 500]);
     const overlap = rng.pick([50, 100, 150, 200].filter((o) => o < size));
     const step = size - overlap;
-    const total = rng.int(20, 60) * 50;
-    const pos = rng.int(0, total - 1);
-    let count = 0;
-    const hit: number[] = [];
+    const total = rng.int(20, 120) * 50 + rng.int(0, 49);
+    const cover = new Array<number>(total).fill(0);
+    let chunks = 0;
     for (let i = 0; i * step < total; i++) {
-      if (pos >= i * step && pos < i * step + size) {
-        count++;
-        hit.push(i + 1);
-      }
+      chunks++;
+      for (let c = i * step; c < Math.min(total, i * step + size); c++) cover[c]!++;
     }
+    const dup = cover.filter((c) => c >= 2).length;
     return {
-      prompt: `Документ длиной ${total} символов режут на чанки по ${size} символов с перекрытием ${overlap} (шаг между началами чанков ${step}). Первый чанк начинается с символа 0; последний может быть короче. В скольких чанках окажется символ с номером ${pos}?`,
-      answerHint: 'число чанков',
-      answerKey: String(count),
-      explanation: `Чанк i (с 0) покрывает [${step}·i; ${step}·i + ${size}). Символ ${pos} попадает в чанки ${hit.join(', ')} - итого ${count}.`,
-      params: { size, overlap, total, pos },
+      prompt: `Документ длиной ${total} символов режут на чанки по ${size} символов с перекрытием ${overlap} (шаг между началами чанков ${step}). Первый чанк начинается с символа 0; последний может быть короче (обрезается концом документа). Сколько символов документа окажутся более чем в одном чанке?`,
+      answerHint: 'число символов',
+      answerKey: String(dup),
+      explanation: `Чанк i (с 0) покрывает [${step}·i; ${step}·i + ${size}), всего ${chunks} чанков. Символ дублируется, если лежит в зоне перекрытия соседних чанков (последний чанк обрезан концом документа): таких символов ${dup}.`,
+      params: { size, overlap, total },
     };
   },
 );
@@ -116,14 +114,16 @@ export const mrrRanking = family(
 export const rerankRecall = family(
   { id: 'ai.rerank-recall', taskId: 'task:hybrid-search', title: 'Recall после реранкера', sub: SUB, grade: 'middle', catalogIds: ['ai.rag', 'ai.vector-search'], a: 1.2, b: 0.4, space: 1e8, time: 240 },
   (rng) => {
+    for (;;) {
     const n = 8;
     const scores = rng.shuffle([91, 84, 77, 70, 63, 55, 48, 40]);
-    const rows = Array.from({ length: n }, (_, i) => ({ doc: `d${i + 1}`, rel: rng.next() < 0.4, score: scores[i]! }));
+    const rows = Array.from({ length: n }, (_, i) => ({ doc: `d${i + 1}`, rel: rng.next() < 0.5, score: scores[i]! }));
     const relRetrieved = rows.filter((r) => r.rel).length;
     const totalRel = relRetrieved + rng.int(1, 3);
     const keep = rng.int(2, 4);
     const top = [...rows].sort((a, b) => b.score - a.score).slice(0, keep);
     const hits = top.filter((r) => r.rel).length;
+    if (hits === 0) continue;
     return {
       prompt: `Первичный поиск вернул ${n} кандидатов, реранкер выставил оценки. В LLM уходят ${keep} документа с самыми высокими оценками. Во всей базе по запросу релевантных документов ${totalRel} (часть не попала в первичную выдачу). Чему равен recall@${keep} после реранка?`,
       code: table(['doc', 'релевантный', 'оценка реранкера'], rows.map((r) => [r.doc, r.rel ? 'да' : 'нет', r.score])),
@@ -132,6 +132,7 @@ export const rerankRecall = family(
       explanation: `В топ-${keep} по оценке: ${top.map((r) => r.doc).join(', ')}; релевантных среди них ${hits}. Делим на все ${totalRel} релевантных в базе: ${fx(hits / totalRel, 3)}.`,
       params: { rows: rows.map((r) => `${r.rel ? 1 : 0}:${r.score}`).join(','), totalRel, keep },
     };
+    }
   },
 );
 
@@ -196,7 +197,7 @@ export const contextTrim = family(
   (rng) => {
     const sys = rng.int(10, 40) * 10;
     const summary = rng.int(10, 30) * 10;
-    const turns = Array.from({ length: rng.int(7, 10) }, () => rng.int(10, 60) * 10);
+    const turns = Array.from({ length: rng.int(9, 14) }, () => rng.int(10, 60) * 10);
     const total = sys + sum(turns);
     const minFit = sys + summary + turns[turns.length - 1]! + turns[turns.length - 2]!;
     const limit = rng.int(minFit, total - 1);
@@ -280,11 +281,11 @@ export const guardrailCascade = family(
       if (ok.length === 0 || ok.length === rows.length) continue;
       const best = ok[0]!;
       return {
-        prompt: `Вход проверяется каскадом: дешёвый классификатор оценивает каждый запрос (${num(c1x100 / 100)} $ за 1000 запросов), и запросы, где его уверенность ниже порога, уходят на проверку LLM (${c2} $ за 1000 таких вызовов). Для каждого порога в таблице - доля эскалаций и доля пропущенных нарушений. Бюджет - не больше ${num(budget100 / 100)} $ за 1000 запросов, допустимая доля пропусков - не больше ${maxMiss} %. Какой порог выбрать, чтобы уложиться в оба ограничения при минимальной стоимости?`,
+        prompt: `Вход проверяется каскадом: дешёвый классификатор оценивает каждый запрос (${num(c1x100 / 100)} $ за 1000 запросов), и запросы, где его уверенность ниже порога, уходят на проверку LLM (${c2} $ за 1000 таких вызовов). Для каждого порога в таблице - доля эскалаций и доля пропущенных нарушений. Бюджет - не больше ${num(budget100 / 100)} $ за 1000 запросов, допустимая доля пропусков - не больше ${maxMiss} %. Выберите порог, который укладывается в оба ограничения при минимальной стоимости. Сколько долларов за 1000 запросов будет стоить каскад с этим порогом?`,
         code: table(['порог', 'эскалаций, %', 'пропусков, %'], rng.shuffle(rows).map((r) => [r.t, r.e, r.m])),
-        answerHint: 'порог, например 0.7',
-        answerKey: num(best.t),
-        explanation: `Стоимость порога = ${num(c1x100 / 100)} + эскалации × ${c2}/100 $. Подходят по обоим ограничениям пороги ${ok.map((r) => r.t).join(', ')}; дешевле всех - ${best.t}.`,
+        answerHint: '$ за 1000 запросов',
+        answerKey: num(best.cost100 / 100),
+        explanation: `Стоимость порога = ${num(c1x100 / 100)} + эскалации × ${c2}/100 $. Подходят по обоим ограничениям пороги ${ok.map((r) => r.t).join(', ')}; дешевле всех - ${best.t}: ${num(c1x100 / 100)} + ${best.e} % × ${c2} = ${num(best.cost100 / 100)} $.`,
         params: { budget100, maxMiss, c1x100, c2, rows: rows.map((r) => `${r.t}:${r.e}:${r.m}`).join(',') },
       };
     }

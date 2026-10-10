@@ -58,7 +58,7 @@ export const logErrorRate = family(
 export const piiLogLeak = family(
   { id: 'ai.pii-log-leak', taskId: 'task:pii-masking', title: 'Сколько записей лога раскрывают ПДн', sub: SUB, grade: 'junior', catalogIds: ['ai.pii-masking'], a: 1.3, b: -0.9, space: 1e7, time: 180 },
   (rng) => {
-    const rows = Array.from({ length: rng.int(7, 9) }, () => {
+    const rows = Array.from({ length: rng.int(10, 16) }, () => {
       const email = rng.pick(['anna@mail.ru', 'h:3fa9c1', '***', 'ivan@corp.ru', 'h:b07e22']);
       const phone = rng.pick(['+79161234567', '+7***4567', 'h:77ad10', '89031112233', '***']);
       const route = rng.pick(['/chat', '/summarize', '/classify']);
@@ -110,13 +110,13 @@ export const traceCriticalPath = family(
 );
 
 export const sloBurnAlert = family(
-  { id: 'ai.slo-burn-alert', taskId: 'task:llm-rate-limit', title: 'Когда сработает алерт по SLO', sub: SUB, grade: 'middle', catalogIds: ['ai.llm-api', 'ai.llm-cost'], a: 1.2, b: 0.4, space: 1e9, time: 270 },
+  { id: 'ai.slo-burn-alert', taskId: 'task:llm-rate-limit', title: 'Сколько медленных запросов до алерта по SLO', sub: SUB, grade: 'middle', catalogIds: ['ai.llm-api', 'ai.llm-cost'], a: 1.2, b: 0.4, space: 1e9, time: 270 },
   (rng) => {
     for (;;) {
       const slo = rng.pick([1, 2, 5]); // допустимая доля медленных запросов, %
-      const rows = Array.from({ length: 8 }, () => {
+      const rows = Array.from({ length: 10 }, () => {
         const total = rng.pick([200, 400, 500, 1000]);
-        const slow = Math.round((total * rng.int(0, 90)) / 1000);
+        const slow = Math.round((total * rng.int(0, 60)) / 1000);
         return { total, slow };
       });
       let first = 0;
@@ -127,13 +127,13 @@ export const sloBurnAlert = family(
           break;
         }
       }
-      if (first === 0 && rng.next() < 0.8) continue;
+      if (first === 0) continue;
       return {
-        prompt: `SLO: не более ${slo} % запросов дольше 3 секунд в каждом 5-минутном окне. Окно нарушает SLO, если доля медленных строго больше ${slo} %. Алерт срабатывает, когда SLO нарушили два окна подряд (в момент конца второго). В каком окне сработает первый алерт? Если не сработает - 0.`,
+        prompt: `SLO: не более ${slo} % запросов дольше 3 секунд в каждом 5-минутном окне. Окно нарушает SLO, если доля медленных строго больше ${slo} %. Алерт срабатывает, когда SLO нарушили два окна подряд (в момент конца второго). В момент первого алерта сколько всего медленных запросов накоплено по окнам с первого до того, на котором сработал алерт (включительно)?`,
         code: table(['окно', 'запросов', 'медленных'], rows.map((r, i) => [i + 1, r.total, r.slow])),
-        answerHint: 'номер окна или 0',
-        answerKey: String(first),
-        explanation: first ? `Окна ${first - 1} и ${first} подряд выше порога ${slo} % - алерт в окне ${first}.` : `Двух нарушающих окон подряд нет - алерта нет.`,
+        answerHint: 'число запросов',
+        answerKey: String(sum(rows.slice(0, first).map((r) => r.slow))),
+        explanation: first ? `Окна ${first - 1} и ${first} подряд выше порога ${slo} % - алерт в окне ${first}; медленных запросов в окнах 1…${first}: ${sum(rows.slice(0, first).map((r) => r.slow))}.` : `Двух нарушающих окон подряд нет - алерта нет.`,
         params: { slo, rows: rows.map((r) => `${r.total}:${r.slow}`).join(',') },
       };
     }
@@ -141,7 +141,7 @@ export const sloBurnAlert = family(
 );
 
 export const costAttribution = family(
-  { id: 'ai.cost-attribution', taskId: 'task:llm-rate-limit', title: 'Какой клиент дороже всех', sub: SUB, grade: 'middle', catalogIds: ['ai.llm-cost'], format: 'text', a: 1.2, b: 0.5, space: 1e9, time: 300 },
+  { id: 'ai.cost-attribution', taskId: 'task:llm-rate-limit', title: 'Какой клиент дороже всех', sub: SUB, grade: 'middle', catalogIds: ['ai.llm-cost'], a: 1.2, b: 0.5, space: 1e9, time: 300 },
   (rng) => {
     for (;;) {
       const pin = rng.pick([1, 2, 3]);
@@ -158,12 +158,11 @@ export const costAttribution = family(
       }
       const ranked = [...cost.entries()].sort((a, b) => b[1] - a[1]);
       if (ranked.length < 3 || ranked[0]![1] === ranked[1]![1]) continue;
-      const [top] = ranked[0]!;
       return {
-        prompt: `Один LLM-шлюз обслуживает нескольких клиентов. Цена, центов за 1000 токенов: вход ${pin}, выход ${pout}. Токены входа, прочитанные из кеша промпта, стоят 10 % цены входа. Какому клиенту выставить самый большой счёт за период? Ответьте его названием.`,
+        prompt: `Один LLM-шлюз обслуживает нескольких клиентов. Цена, центов за 1000 токенов: вход ${pin}, выход ${pout}. Токены входа, прочитанные из кеша промпта, стоят 10 % цены входа. Сколько центов составит самый большой счёт среди клиентов за период?`,
         code: table(['клиент', 'токенов вход', 'из них из кеша', 'токенов выход'], calls.map((c) => [c.tenant, c.tin, c.cached, c.tout])),
-        answerHint: 'название клиента',
-        answerKey: top,
+        answerHint: 'центы, до 2 знаков',
+        answerKey: fx(ranked[0]![1] / 1000, 2),
         explanation: `Стоимость по клиентам, центы: ${ranked.map(([t, v]) => `${t} ${fx(v / 1000, 2)}`).join(', ')}. Кеш-токены удешевляют вход, поэтому наибольший по токенам клиент не обязательно самый дорогой.`,
         params: { pin, pout, calls: calls.map((c) => `${c.tenant}:${c.tin}:${c.cached}:${c.tout}`).join(',') },
       };
@@ -174,24 +173,24 @@ export const costAttribution = family(
 export const fallbackAvailability = family(
   { id: 'ai.fallback-availability', taskId: 'task:llm-fallback', title: 'Доступность с ретраями и запасным провайдером', sub: SUB, grade: 'middle', catalogIds: ['ai.llm-fallback'], a: 1.2, b: 0.5, space: 1e5, time: 270 },
   (rng) => {
-    const p1 = rng.pick([80, 85, 90, 95, 97]);
-    const p2 = rng.pick([70, 80, 90, 95]);
-    const r1 = rng.int(0, 3);
+    const p1 = rng.pick([50, 60, 70, 75, 80, 85, 90]);
+    const p2 = rng.pick([50, 60, 70, 80, 90]);
+    const r1 = rng.int(0, 2);
     const r2 = rng.int(0, 2);
     const fail = (1 - p1 / 100) ** (r1 + 1) * (1 - p2 / 100) ** (r2 + 1);
     const avail = (1 - fail) * 100;
     return {
-      prompt: `Основной провайдер LLM отвечает успешно с вероятностью ${p1} % на каждую попытку; при ошибке делается ещё ${r1} повторов. Если все попытки основного провайдера провалились, запрос уходит запасному (успех ${p2} % на попытку, ещё ${r2} повторов). Попытки независимы. Какова итоговая доступность, %?`,
-      answerHint: '% до 2 знаков',
-      answerKey: fx(avail, 2),
-      explanation: `Провал основного: (1 - ${p1 / 100})^${r1 + 1}; провал запасного: (1 - ${p2 / 100})^${r2 + 1}. Запрос не обслужен, только если провалились обе цепочки: ${fx(fail, 6)}. Доступность 1 - ${fx(fail, 6)} = ${fx(avail, 2)} %.`,
+      prompt: `Основной провайдер LLM отвечает успешно с вероятностью ${p1} % на каждую попытку; при ошибке делается ещё ${r1} повторов. Если все попытки основного провайдера провалились, запрос уходит запасному (успех ${p2} % на попытку, ещё ${r2} повторов). Попытки независимы. Сколько запросов из миллиона в среднем останутся без ответа (округлите до целого)?`,
+      answerHint: 'запросов на миллион',
+      answerKey: String(Math.round(fail * 1e6)),
+      explanation: `Провал основного: (1 - ${p1 / 100})^${r1 + 1}; провал запасного: (1 - ${p2 / 100})^${r2 + 1}. Запрос не обслужен, только если провалились обе цепочки: ${fx(fail, 6)}. Доступность ${fx(avail, 4)} %, то есть без ответа ${Math.round(fail * 1e6)} запросов из миллиона.`,
       params: { p1, p2, r1, r2 },
     };
   },
 );
 
 export const promptVersionFailures = family(
-  { id: 'ai.prompt-version-failures', taskId: 'task:extraction-review', title: 'Какая версия промпта ломает разбор чаще', sub: SUB, grade: 'middle', catalogIds: ['ai.structured-output', 'ai.llm-fallback'], format: 'text', a: 1.2, b: 0.3, space: 1e8, time: 240 },
+  { id: 'ai.prompt-version-failures', taskId: 'task:extraction-review', title: 'Какая версия промпта ломает разбор чаще', sub: SUB, grade: 'middle', catalogIds: ['ai.structured-output', 'ai.llm-fallback'], a: 1.2, b: 0.3, space: 1e8, time: 240 },
   (rng) => {
     for (;;) {
       const versions = ['v1', 'v2', 'v3', 'v4'].map((v) => {
@@ -200,14 +199,15 @@ export const promptVersionFailures = family(
       });
       const byRate = [...versions].sort((a, b) => b.errors / b.total - a.errors / a.total);
       if (byRate[0]!.errors / byRate[0]!.total === byRate[1]!.errors / byRate[1]!.total) continue;
+      if (Math.abs((((byRate[0]!.errors / byRate[0]!.total) * 10000) % 1) - 0.5) < 0.03) continue;
       const byCount = [...versions].sort((a, b) => b.errors - a.errors)[0]!;
       if (byCount.v === byRate[0]!.v && rng.next() < 0.7) continue;
       return {
-        prompt: 'Лог ошибок разбора структурированного ответа LLM по версиям промпта. У какой версии выше доля ошибок разбора (ошибки / запросы)? Ответьте названием версии.',
+        prompt: 'Лог ошибок разбора структурированного ответа LLM по версиям промпта. Найдите версию с наибольшей долей ошибок разбора (ошибки / запросы). Чему равна эта доля, %?',
         code: table(['версия', 'запросов', 'ошибок разбора'], versions.map((x) => [x.v, x.total, x.errors])),
-        answerHint: 'версия, например v2',
-        answerKey: byRate[0]!.v,
-        explanation: `Доли: ${versions.map((x) => `${x.v} ${fx((x.errors / x.total) * 100, 2)} %`).join(', ')}. Сравнивать нужно доли, а не абсолютное число ошибок: оно зависит от трафика версии.`,
+        answerHint: '% до 2 знаков',
+        answerKey: fx((byRate[0]!.errors / byRate[0]!.total) * 100, 2),
+        explanation: `Доли: ${versions.map((x) => `${x.v} ${fx((x.errors / x.total) * 100, 2)} %`).join(', ')}. Наибольшая доля - у ${byRate[0]!.v}. Сравнивать нужно доли, а не абсолютное число ошибок: оно зависит от трафика версии.`,
         params: { versions: versions.map((x) => `${x.total}:${x.errors}`).join(',') },
       };
     }
@@ -319,7 +319,7 @@ export const tenantFairShare = family(
 );
 
 export const degradationMode = family(
-  { id: 'ai.degradation-mode', taskId: 'task:provider-routing', title: 'В каком режиме работать в пик', sub: SUB, grade: 'senior', catalogIds: ['ai.llm-fallback', 'ai.llm-cost'], format: 'text', a: 1.2, b: 1.0, space: 1e9, time: 300 },
+  { id: 'ai.degradation-mode', taskId: 'task:provider-routing', title: 'В каком режиме работать в пик', sub: SUB, grade: 'senior', catalogIds: ['ai.llm-fallback', 'ai.llm-cost'], a: 1.2, b: 1.0, space: 1e9, time: 300 },
   (rng) => {
     for (;;) {
       const modes = [
@@ -335,11 +335,11 @@ export const degradationMode = family(
       const ranked = modes.filter((x) => x.cap >= demand).length;
       if (ranked === 4 && best.m === 'large' && rng.next() < 0.7) continue;
       return {
-        prompt: `Пиковая нагрузка - ${demand} запросов в секунду, бюджет на LLM - ${budget} $ в час. Режимы работы шлюза: у каждого своя оценка качества, пропускная способность (запросов в секунду) и цена за 1000 запросов. Режим подходит, если его пропускной способности хватает на пик и расходы за час (${demand} × 3600 / 1000 × цена) не больше бюджета. Какой режим даст наилучшее качество? Ответьте названием режима.`,
+        prompt: `Пиковая нагрузка - ${demand} запросов в секунду, бюджет на LLM - ${budget} $ в час. Режимы работы шлюза: у каждого своя оценка качества, пропускная способность (запросов в секунду) и цена за 1000 запросов. Режим подходит, если его пропускной способности хватает на пик и расходы за час (${demand} × 3600 / 1000 × цена) не больше бюджета. Выберите режим с наилучшим качеством. Какова его оценка качества?`,
         code: table(['режим', 'качество', 'пропускная способность, rps', 'цена за 1000 запросов, $'], modes.map((x) => [x.m, x.q, x.cap, x.cost])),
-        answerHint: 'large, small, cached или static',
-        answerKey: best.m,
-        explanation: `Расход за час = ${demand} × 3,6 × цена. Подходят по ёмкости и бюджету: ${feasible.map((x) => x.m).join(', ')}. Лучшее качество - ${best.m}.`,
+        answerHint: 'оценка качества режима',
+        answerKey: String(best.q),
+        explanation: `Расход за час = ${demand} × 3,6 × цена. Подходят по ёмкости и бюджету: ${feasible.map((x) => x.m).join(', ')}. Лучшее качество - у ${best.m}: ${best.q}.`,
         params: { demand, budget, modes: modes.map((x) => `${x.m}:${x.q}:${x.cap}:${x.cost}`).join(',') },
       };
     }

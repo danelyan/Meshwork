@@ -288,10 +288,10 @@ export const schemaConstraint: TaskGenerator = {
     type Ins = { sql: string; bad: boolean; email: string; why: string };
     const dup = rng.int(0, 1);
     const candidates: Ins[] = [
-      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[0]}', '${names[0]}', ${minAge + rng.int(0, 10)});`, bad: false, email: emails[0], why: 'все ограничения соблюдены' },
-      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[dup]}', '${names[1]}', ${minAge + 2});`, bad: false, email: emails[dup], why: 'все ограничения соблюдены' },
-      { sql: `INSERT INTO users (email, age) VALUES ('${emails[2]}', ${minAge + 1});`, bad: true, email: emails[2], why: 'name NOT NULL без DEFAULT' },
-      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[3]}', '${names[3]}', ${minAge - rng.int(1, 3)});`, bad: true, email: emails[3], why: `CHECK (age >= ${minAge}) нарушен` },
+      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[0]}', '${names[0]}', ${minAge + rng.int(0, 10)});`, bad: false, email: emails[0]!, why: 'все ограничения соблюдены' },
+      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[dup]}', '${names[1]}', ${minAge + 2});`, bad: false, email: emails[dup]!, why: 'все ограничения соблюдены' },
+      { sql: `INSERT INTO users (email, age) VALUES ('${emails[2]}', ${minAge + 1});`, bad: true, email: emails[2]!, why: 'name NOT NULL без DEFAULT' },
+      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[3]}', '${names[3]}', ${minAge - rng.int(1, 3)});`, bad: true, email: emails[3]!, why: `CHECK (age >= ${minAge}) нарушен` },
       { sql: `INSERT INTO users (email, name) VALUES ('${emails[1]}x', '${names[2]}');`, bad: false, email: `${emails[1]}x`, why: 'age может быть NULL: CHECK с NULL не считается нарушением' },
     ];
     const order = rng.shuffle(candidates);

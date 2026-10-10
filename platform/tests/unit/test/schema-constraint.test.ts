@@ -7,17 +7,17 @@ function simulateInserts(code: string): number[] {
   const taken = new Set<string>();
   const failing: number[] = [];
   inserts.forEach((m, i) => {
-    const cols = m[1].split(',').map((s) => s.trim());
-    const vals = m[2].split(',').map((s) => s.trim().replace(/^'|'$/g, ''));
+    const cols = m[1]!.split(',').map((s) => s.trim());
+    const vals = m[2]!.split(',').map((s) => s.trim().replace(/^'|'$/g, ''));
     const row = Object.fromEntries(cols.map((c, j) => [c, vals[j]]));
     const noName = row.name === undefined;
     const lowAge = row.age !== undefined && Number(row.age) < minAge;
-    const dupEmail = taken.has(row.email);
+    const dupEmail = taken.has(row.email!);
     if (noName || lowAge || dupEmail) {
       failing.push(i + 1);
       return;
     }
-    taken.add(row.email);
+    taken.add(row.email!);
   });
   return failing;
 }

@@ -13,6 +13,7 @@ import { checkAnswer, MAX_ANSWER_CHARS } from './answers';
 import { getSubcategory, specLabel } from '../../lib/directions';
 import { lowerGrade } from '../../lib/grades';
 
+import { COMMON_GENERATORS } from './generators/common';
 import { GENERATORS, getGenerator, hasTestFor, poolFor, unavailableReason } from './generators';
 import {
   CONFIRM_CANARIES,
@@ -74,11 +75,17 @@ import type {
 /** Версия политики и правила остановки по версии — policy.ts (POLICY_VERSION, rulesFor). */
 export { POLICY_VERSION };
 /** Версии с дозадаванием Junior (v3 и новее): правило фазы не меняется задним числом для v1–v2. */
-const PROBE_VERSIONS = new Set(['adr-0002-v3', 'adr-0002-v4', 'adr-0002-v5', 'adr-0002-v6']);
+const PROBE_VERSIONS = new Set(['adr-0002-v3', 'adr-0002-v4', 'adr-0002-v5', 'adr-0002-v6', 'adr-0002-v7']);
 /** Версии с ротацией семейств между попытками кандидата (v5 и новее). */
-const ROTATION_VERSIONS = new Set(['adr-0002-v5', 'adr-0002-v6']);
+const ROTATION_VERSIONS = new Set(['adr-0002-v5', 'adr-0002-v6', 'adr-0002-v7']);
 /** Версии с ловушками, фиксацией лимита и блокирующим индексом честности (v6). У старых индекс только считается. */
-const INTEGRITY_VERSIONS = new Set(['adr-0002-v6']);
+const INTEGRITY_VERSIONS = new Set(['adr-0002-v6', 'adr-0002-v7']);
+/**
+ * Версии с общими компетенциями в пуле подкатегории (v7, ADR 0003, дополнение 11.10). Попытки v6 и старше доигрываются
+ * по пулу из своих семейств — общие не появляются в них задним числом.
+ */
+const COMMON_VERSIONS = new Set(['adr-0002-v7']);
+const COMMON_IDS = new Set(COMMON_GENERATORS.map((g) => g.id));
 
 /**
  * ПРЕДЛОЖЕНИЕ (R-C-09, решение владельца 09.10): смена грейда — раз в 30 дней
@@ -128,20 +135,27 @@ export async function ensureTemplates(db: Prisma.TransactionClient | typeof pris
 }
 
 /**
- * Пул попытки. С подкатегорией — семейства подкатегории (poolFor; переходное направление — всё направление);
- * без неё (попытки до v4) — всё направление, как при их старте.
+ * Пул попытки. С подкатегорией — семейства подкатегории (poolFor; переходное направление — всё направление), у попыток
+ * v7 и новее — плюс общие семейства по карте common-map.ts; без подкатегории (попытки до v4) — всё направление, как при
+ * их старте. Общие семейства ищутся по id, а не по направлению: в БД у них «домашнее» направление.
  */
-async function loadPool(spec: Specialization, subcategoryId: string | null): Promise<(SelectableTemplate & { generator: TaskGenerator })[]> {
+async function loadPool(spec: Specialization, subcategoryId: string | null, common = false): Promise<(SelectableTemplate & { generator: TaskGenerator })[]> {
   await ensureTemplates();
-  const ids = subcategoryId ? poolFor(spec, subcategoryId)?.generators.map((g) => g.id) : undefined;
-  const rows = await prisma.taskTemplate.findMany({ where: { specialization: spec, ...(ids ? { id: { in: ids } } : {}) }, orderBy: { id: 'asc' } });
+  const ids = subcategoryId ? poolFor(spec, subcategoryId, { common })?.generators.map((g) => g.id) : undefined;
+  const rows = await prisma.taskTemplate.findMany({ where: ids ? { id: { in: ids } } : { specialization: spec }, orderBy: { id: 'asc' } });
   const out: (SelectableTemplate & { generator: TaskGenerator })[] = [];
   for (const r of rows) {
     const generator = getGenerator(r.id);
     if (!generator) continue; // шаблон выведен из кода — из оборота
-    out.push({ id: r.id, a: r.irtA, b: r.irtB, catalogIds: r.catalogIds, grade: r.grade, exposure: r.exposure, generator });
+    if (generator.shared && !ids) continue; // пул направления (до v4) — без общих
+    out.push({ id: r.id, a: r.irtA, b: r.irtB, catalogIds: r.catalogIds, grade: r.grade, exposure: r.exposure, common: Boolean(generator.shared), generator });
   }
   return out;
+}
+
+/** Пул попытки по её версии политики: общие семейства — только у COMMON_VERSIONS. */
+function loadAttemptPool(a: Pick<TestAttempt, 'specialization' | 'subcategoryId' | 'policyVersion'>): ReturnType<typeof loadPool> {
+  return loadPool(a.specialization, a.subcategoryId, COMMON_VERSIONS.has(a.policyVersion));
 }
 
 // ---------------------------------------------------------------------------
@@ -261,8 +275,8 @@ function stepOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>): Ste
   return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade, probe: PROBE_VERSIONS.has(a.policyVersion) }, rulesFor(a.policyVersion));
 }
 
-async function poolMap(a: Pick<TestAttempt, 'specialization' | 'subcategoryId'>): Promise<Map<string, SelectableTemplate & { generator: TaskGenerator }>> {
-  return new Map((await loadPool(a.specialization, a.subcategoryId)).map((t) => [t.id, t]));
+async function poolMap(a: Pick<TestAttempt, 'specialization' | 'subcategoryId' | 'policyVersion'>): Promise<Map<string, SelectableTemplate & { generator: TaskGenerator }>> {
+  return new Map((await loadAttemptPool(a)).map((t) => [t.id, t]));
 }
 
 /**
@@ -272,8 +286,13 @@ async function poolMap(a: Pick<TestAttempt, 'specialization' | 'subcategoryId'>)
  */
 async function seenInPreviousAttempts(attempt: AttemptWithItems): Promise<Set<string>> {
   if (!ROTATION_VERSIONS.has(attempt.policyVersion)) return new Set();
+  // Общие семейства (v7) кандидат видит и в попытках других подкатегорий — они тоже «виденные».
+  const common = COMMON_VERSIONS.has(attempt.policyVersion) && COMMON_IDS.size > 0;
+  const samePool = { candidateId: attempt.candidateId, specialization: attempt.specialization, subcategoryId: attempt.subcategoryId, id: { not: attempt.id } };
   const rows = await prisma.testItem.findMany({
-    where: { attempt: { candidateId: attempt.candidateId, specialization: attempt.specialization, subcategoryId: attempt.subcategoryId, id: { not: attempt.id } } },
+    where: common
+      ? { OR: [{ attempt: samePool }, { templateId: { in: [...COMMON_IDS] }, attempt: { candidateId: attempt.candidateId, id: { not: attempt.id } } }] }
+      : { attempt: samePool },
     select: { templateId: true },
     distinct: ['templateId'],
   });
@@ -304,7 +323,7 @@ async function confirmSourceOf(a: TestAttempt, byId: Map<string, SelectableTempl
 
 /** Сгенерировать и записать следующее задание попытки; null — банк исчерпан. */
 async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: AttemptPhase = 'main', now: Date = new Date()): Promise<TestItem | null> {
-  const pool = await loadPool(attempt.specialization, attempt.subcategoryId);
+  const pool = await loadAttemptPool(attempt);
   const byId = new Map(pool.map((t) => [t.id, t]));
   const shown = attempt.items.map((i) => byId.get(i.templateId)).filter((t): t is NonNullable<typeof t> => Boolean(t));
   const index = attempt.items.length;

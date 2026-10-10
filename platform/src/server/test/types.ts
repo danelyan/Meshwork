@@ -1,6 +1,22 @@
 // Типы теста на грейд (E-03, ADR-0002).
 import type { Grade, Specialization } from '../types';
 
+/**
+ * Общая компетенция между подкатегориями (ADR 0003, дополнение 11.10). Не путать с утверждениями каталога common.*:
+ * компетенция — тема семейства для карты пула, catalogIds семейства — по-прежнему ID каталога.
+ */
+export type CommonCompetency =
+  | 'common.sql'
+  | 'common.http'
+  | 'common.algorithms'
+  | 'common.data-structures'
+  | 'common.git'
+  | 'common.linux'
+  | 'common.regex'
+  | 'common.testing'
+  | 'common.security'
+  | 'common.concurrency';
+
 /** Формат ответа: кодом проверяется нормализованная строка (без MCQ, R-T-02). */
 export type AnswerFormat = 'number' | 'text' | 'line' | 'list';
 
@@ -35,6 +51,13 @@ export interface TaskGenerator {
    * poolFor → legacy). Семейство без subcategoryId в размеченном направлении в пул не попадает.
    */
   subcategoryId?: string;
+  /**
+   * Общее семейство (ADR 0003, дополнение 11.10 «Общие компетенции в пуле подкатегории»): у него нет subcategoryId,
+   * в пул подкатегории оно попадает по карте generators/common-map.ts (подкатегория → компетенции), только у попыток
+   * adr-0002-v7 и новее. bankComplete и MIN_FAMILIES_BY_GRADE его не считают; доля общих в попытке ≤ MAX_COMMON_SHARE
+   * (policy.ts). `specialization` у общего семейства — «домашнее» направление только для строки TaskTemplate в БД.
+   */
+  shared?: { competency: CommonCompetency };
   /** Senior-задания (дополнение 16:15): b 1,0…1,7, a 1,0…1,4 — проектные решения, компромиссы, диагностика по неполным данным. */
   grade: Grade;
   /** Утверждения каталога, которые подтверждает решённое задание. */

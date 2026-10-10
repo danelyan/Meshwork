@@ -10,10 +10,13 @@ import type { TaskGenerator } from '../types';
 
 import { AI_GENERATORS } from './ai';
 import { BACKEND_GENERATORS } from './backend';
+import { COMMON_GENERATORS } from './common';
+import { commonCompetenciesFor } from './common-map';
 import { ENGINEERING_GENERATORS } from './engineering';
 import { FRONTEND_GENERATORS } from './frontend';
 
-export const GENERATORS: readonly TaskGenerator[] = [...BACKEND_GENERATORS, ...FRONTEND_GENERATORS, ...AI_GENERATORS, ...ENGINEERING_GENERATORS];
+/** Все семейства: направлений и общие (ensureTemplates, сид, getGenerator). */
+export const GENERATORS: readonly TaskGenerator[] = [...BACKEND_GENERATORS, ...FRONTEND_GENERATORS, ...AI_GENERATORS, ...ENGINEERING_GENERATORS, ...COMMON_GENERATORS];
 
 const BY_ID = new Map(GENERATORS.map((g) => [g.id, g]));
 
@@ -21,8 +24,15 @@ export function getGenerator(id: string): TaskGenerator | undefined {
   return BY_ID.get(id);
 }
 
+/** Собственные семейства направления (без общих: их `specialization` — только строка в БД). */
 export function generatorsFor(spec: Specialization): TaskGenerator[] {
-  return GENERATORS.filter((g) => g.specialization === spec);
+  return GENERATORS.filter((g) => g.specialization === spec && !g.shared);
+}
+
+/** Общие семейства подкатегории по карте common-map.ts (ADR 0003, дополнение 11.10). */
+export function commonGeneratorsFor(subcategoryId: string | null | undefined): TaskGenerator[] {
+  const competencies = new Set(commonCompetenciesFor(subcategoryId));
+  return COMMON_GENERATORS.filter((g) => g.shared && competencies.has(g.shared.competency));
 }
 
 /** Минимум генераторов на направление, чтобы адаптивный тест имел смысл (MAX_ITEMS + дозадавание). */
@@ -57,9 +67,9 @@ export function familyCounts(subcategoryId: string): Record<Grade, number> {
   return Object.fromEntries(GRADES.map((g) => [g, own.filter((f) => f.grade === g).length])) as Record<Grade, number>;
 }
 
-/** Семейства подкатегории (по полю TaskGenerator.subcategoryId). */
+/** Собственные семейства подкатегории (по полю TaskGenerator.subcategoryId), без общих. */
 export function generatorsForSubcategory(subcategoryId: string): TaskGenerator[] {
-  return GENERATORS.filter((g) => g.subcategoryId === subcategoryId);
+  return GENERATORS.filter((g) => g.subcategoryId === subcategoryId && !g.shared);
 }
 
 export interface TestPool {
@@ -69,6 +79,16 @@ export interface TestPool {
    * пул — всё направление, как до теста на подкатегорию. false — пул подкатегории.
    */
   legacy: boolean;
+  /** Сколько в generators общих семейств (0 без opts.common). */
+  commonCount: number;
+}
+
+export interface PoolOptions {
+  /**
+   * Добавить общие семейства подкатегории (attempt adr-0002-v7 и новее, ADR 0003, дополнение 11.10). По умолчанию
+   * нет: попытки v6 и старше доигрываются по своим пулам, eval и тесты политики считают только свои семейства.
+   */
+  common?: boolean;
 }
 
 /**
@@ -76,13 +96,16 @@ export interface TestPool {
  * подкатегории, и только если банк полон по MIN_FAMILIES_BY_GRADE (6 J + 4 M + 4 S); иначе null («тест пока недоступен»).
  * Направление без единой разметки — переходный пул направления (legacy), если банк направления есть.
  */
-export function poolFor(spec: Specialization, subcategoryId: string | null | undefined): TestPool | null {
+export function poolFor(spec: Specialization, subcategoryId: string | null | undefined, opts: PoolOptions = {}): TestPool | null {
   const all = generatorsFor(spec);
   const marked = all.some((g) => g.subcategoryId);
-  if (!marked) return all.length >= MIN_GENERATORS_PER_SPEC ? { generators: all, legacy: true } : null;
+  if (!marked) return all.length >= MIN_GENERATORS_PER_SPEC ? { generators: all, legacy: true, commonCount: 0 } : null;
   if (!subcategoryId) return null;
   const own = all.filter((g) => g.subcategoryId === subcategoryId);
-  return bankComplete(own) ? { generators: own, legacy: false } : null;
+  // Полнота банка — только по своим семействам: общие не размывают минимумы MIN_FAMILIES_BY_GRADE.
+  if (!bankComplete(own)) return null;
+  const common = opts.common ? commonGeneratorsFor(subcategoryId) : [];
+  return { generators: [...own, ...common], legacy: false, commonCount: common.length };
 }
 
 /**

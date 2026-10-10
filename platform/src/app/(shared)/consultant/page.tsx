@@ -5,6 +5,7 @@ import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
 import { requirePageAccount } from '@/server/auth/page';
 import { chatDemoContextFromCookies } from '@/server/demo/context';
 import { CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
+import { guestAside, type SceneAsideData } from '@/server/consultant/aside';
 import { getView, onboardingInFeed } from '@/server/onboarding/service';
 import type { OnboardingView } from '@/server/onboarding/types';
 
@@ -57,8 +58,15 @@ export default async function ConsultantPage({ searchParams }: { searchParams?: 
 
   // Роль не выбрана: согласие и выбор роли. Онбординг недоступен — показать нечего, честная ошибка.
   if (!view) throw new Error(viewFailed ? 'onboarding unavailable' : 'no onboarding for account without role');
+  // Колонка знакомства (две карточки) — украшение: не собралась — сцена без неё, как раньше.
+  let aside: SceneAsideData | undefined;
+  try {
+    aside = guestAside(view);
+  } catch (err) {
+    warn('guest aside')(err);
+  }
   return (
-    <AvatarScene variant="call-side" label={CANDIDATE_LABEL}>
+    <AvatarScene variant="call-side" label={CANDIDATE_LABEL} aside={aside}>
       <OnboardingChat variant="consultant" initial={view} consentText={[...CONSENT_PARAGRAPHS]} consultant={{ demo: await chatDemoContextFromCookies() }} />
     </AvatarScene>
   );

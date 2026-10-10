@@ -76,7 +76,7 @@ function Editor({ initial, label, onSave, onCancel }: { initial: string; label: 
  * коротко подсвечен. Пока сервер извлекает факты из последней реплики (memoryPending), колонка
  * перечитывается ещё несколько раз через AsideProvider.
  */
-export function MemoryCard({ facts, role, pending, limit, fill }: { facts: KnownFact[]; role: SceneAsideData['role']; pending?: boolean; limit?: number; fill?: SceneAsideData['fill'] }) {
+export function MemoryCard({ facts, role, pending, limit, fill, minimal = false }: { facts: KnownFact[]; role: SceneAsideData['role']; pending?: boolean; limit?: number; fill?: SceneAsideData['fill']; minimal?: boolean }) {
   const refresh = useAsideRefresh();
   const softGo = useSoftGo();
   const [open, setOpen] = useState(false);
@@ -215,7 +215,7 @@ export function MemoryCard({ facts, role, pending, limit, fill }: { facts: Known
             + дополнить: {fill.label.toLowerCase()}
           </button>
         )}
-        {company ? null : adding ? (
+        {company || minimal ? null : adding ? (
           <Editor
             initial=""
             label="Новая заметка"

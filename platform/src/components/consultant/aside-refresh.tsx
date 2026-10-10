@@ -25,6 +25,10 @@ export function AsideProvider({ initial, children }: { initial?: SceneAsideData;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ctrl = useRef<AbortController | null>(null);
   const enabled = initial !== undefined;
+  // Страница перерисовалась на сервере (мягкое обновление: «Скрыть», выбор роли, итог знакомства) — взять её данные.
+  useEffect(() => {
+    if (initial !== undefined) setData(initial);
+  }, [initial]);
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);

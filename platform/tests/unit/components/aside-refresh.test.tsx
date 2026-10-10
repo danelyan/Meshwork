@@ -4,6 +4,8 @@ import { ASIDE_DEBOUNCE_MS, AsideProvider, useAsideRefresh } from '@/components/
 import { SceneAside } from '@/components/consultant/SceneAside';
 import { candidateSteps, type SceneAsideData } from '@/server/consultant/aside';
 
+// MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 
 const mk = (note: string): SceneAsideData => ({
@@ -70,6 +72,22 @@ describe('AsideProvider', () => {
     });
     expect(screen.getByText('2 из 10')).toBeTruthy();
   });
+  it('takes the new server data after a soft page refresh (e.g. «Скрыть» leaves onboarding)', () => {
+    const first = mk('2 из 10');
+    const { rerender } = render(
+      <AsideProvider initial={first}>
+        <SceneAside data={first} />
+      </AsideProvider>,
+    );
+    const next = mk('готово');
+    rerender(
+      <AsideProvider initial={next}>
+        <SceneAside data={next} />
+      </AsideProvider>,
+    );
+    expect(screen.getByTestId('journey-intro').textContent).toContain('готово');
+  });
+
   it('does nothing without initial data (scene without a column)', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

@@ -7,6 +7,7 @@ import type { DemoCandidate, DemoEmployer } from '@/lib/api';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 import { safeNext } from '@/server/auth/redirect';
 import { ConsentCheck } from './ConsentCheck';
+import { EmailAuth } from './EmailAuth';
 import { YandexSignIn } from './YandexSignIn';
 import styles from './AuthEntry.module.css';
 
@@ -89,9 +90,11 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
         <div className={styles.methods}>
           <section className={styles.method} aria-label="Вход на платформу">
             <h3>Войти на платформу</h3>
+            <EmailAuth next={roleNext} navigate={navigate} />
+            <p className={styles.or}>или</p>
             <YandexSignIn enabled={yandexEnabled} next={roleNext} />
             {!yandexEnabled && <p id="yandex-off" className={styles.hint}>Вход через Яндекс не настроен на этом стенде.</p>}
-            <p className={styles.hint}>ФСП ID пока не подключён. Для входа используйте Яндекс ID{demoEnabled ? ' или демо-профиль' : ''}.</p>
+            <p className={styles.hint}>ФСП ID пока не подключён. Для входа используйте почту, Яндекс ID{demoEnabled ? ' или демо-профиль' : ''}.</p>
           </section>
           {demoEnabled && <section className={styles.method} aria-label="Демо-профиль">
             <h3>Демо-профиль</h3>

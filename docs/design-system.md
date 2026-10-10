@@ -132,7 +132,7 @@
 
 Где используются сейчас: `Button` - шапка («Выйти»), `ProfilePage` («К консультанту», «Печать / PDF», «На страницу входа»); `Notice` - `ProfilePage` (ошибка загрузки). Остальное - в списке «к переводу».
 
-Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг — лента помощника на весь экран, см. «Лента чата»); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `AssistantChat`, `AssistantCandidateCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `IncomingInvitations`, `PrivacyToggle`, `RefinementHistory`, стили `Employer.module.css`). Шапка, подвал и колонка страницы — оболочка `components/shell` (см. «Оболочка»). Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
+Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг — лента помощника на весь экран, см. «Лента чата»); вход по почте — `auth/EmailAuth` (вкладки на `Chip`, поля `Field`, `Notice`, `Button`); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `AssistantChat`, `AssistantCandidateCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `IncomingInvitations`, `PrivacyToggle`, `RefinementHistory`, стили `Employer.module.css`). Шапка, подвал и колонка страницы — оболочка `components/shell` (см. «Оболочка»). Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
 
 ### К переводу на примитивы
 

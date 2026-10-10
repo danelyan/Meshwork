@@ -64,7 +64,6 @@ PDF демо-резюме лежат в `src/server/demo/pdf/` (в standalone-с
 | `test:integration` | `tests/integration/**`, реальная БД `TEST_DATABASE_URL`, файлы последовательно |
 | `e2e` | Playwright (`e2e/`), сам поднимает `next dev` на :3100 |
 | `db:migrate` / `db:deploy` / `db:seed` / `db:generate` | Prisma |
-| `npx tsx scripts/build-openapi.ts` | Спецификация OpenAPI 3.1 из `src/app/api/**/route.ts` (кроме `api/dev`) → `docs/openapi.yaml` и `src/server/openapi/spec.generated.ts`; запускать после любого нового или изменённого маршрута (тест `tests/unit/openapi` сверяет актуальность). Формы ответов и пояснения к ошибкам — `scripts/openapi/overrides.ts`. Просмотр: `/api-docs`, сам документ — `GET /api/openapi` |
 
 Тесты своего модуля: `npx vitest run tests/unit/<module>`. Полный прогон,
 `next build`, Playwright — только оркестратор/интегратор, последовательно.
@@ -81,6 +80,19 @@ Integration-тесты: перед прогоном `globalSetup` применя
 Обязательные: `DATABASE_URL`, `SESSION_SECRET` (≥ 32 символа). При
 `LLM_PROVIDER=yandex` — `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`; при
 `openai-chat` — `OPENAI_CHAT_BASE_URL`, `OPENAI_CHAT_API_KEY`, `OPENAI_CHAT_MODEL`.
+
+Почта (вход по email, уведомления о приглашениях — `src/server/mail/`):
+
+| Переменная | По умолчанию | Смысл |
+|---|---|---|
+| `MAIL_PROVIDER` | `smtp` | `smtp` — письма через SMTP (Mailpit на стенде, веб-ящик :8025); `log` — письмо в лог сервера и журнал в памяти, без сети (тесты ставят `log` в `vitest.config.mts`) |
+| `MAIL_FROM` | `ФСП Карьера <no-reply@fsp-career.local>` | отправитель |
+| `SMTP_HOST`, `SMTP_PORT` | `localhost`, `1025` | SMTP-сервер (в compose — `mailpit:1025`) |
+| `SMTP_SECURE` | `false` | `true` — TLS с первого байта (порт 465); STARTTLS не поддерживается |
+| `SMTP_USER`, `SMTP_PASSWORD` | пусто | AUTH PLAIN; пусто — без авторизации (Mailpit) |
+
+При `DEMO_LOGIN=true` код подтверждения почты дополнительно возвращается в ответе и
+показывается на экране входа (жюри без доступа к ящику); код сброса пароля — никогда.
 
 ## Дебаг-панель (только localhost)
 
@@ -99,6 +111,13 @@ Integration-тесты: перед прогоном `globalSetup` применя
   в сервисе, чужое → 404); `sessionCookie(id)` для `NextResponse.cookies.set`.
 - `/demo` и `/api/demo/login` — список демо-аккаунтов и вход за них (только `isDemo`);
   без `DEMO_LOGIN=true` оба отдают 404. `DELETE /api/demo/login` — выход. На `/auth` демо-аккаунтов нет.
+- Вход по почте (ADR 0001, «Дополнение 10.10»): `POST /api/auth/register` (email, пароль ≥ 8,
+  версия согласия) → письмо с 6-значным кодом; `POST /api/auth/verify` (код → почта
+  подтверждена, кука `cid`); `POST /api/auth/verify/resend`; `POST /api/auth/login`
+  (только подтверждённая почта; неверная почта и пароль — одинаковый 401);
+  `POST /api/auth/password/forgot` (всегда 200) и `POST /api/auth/password/reset`. Логика —
+  `src/server/auth/email.ts`, пароль — scrypt (`password.ts`), коды — `codes.ts`,
+  лимиты — `rate-limit.ts` (в памяти процесса).
 - `/api/health` — 200 `{ ok, db, llm }`; 503, если БД недоступна.
 - `src/styles/tokens.css` — токены тёмной темы прототипа, JetBrains Mono из `public/assets/fonts`.
 
@@ -217,7 +236,6 @@ bash scripts/db-local.sh create fsp_test_<lane>
 cp .env.example .env   # DATABASE_URL=…/fsp_<lane>, TEST_DATABASE_URL=…/fsp_test_<lane>, SESSION_SECRET
 npx prisma migrate deploy
 npx vitest run tests/unit/<module>
-# новый или изменённый маршрут в src/app/api → npx tsx scripts/build-openapi.ts (и закоммитить docs/openapi.yaml)
 ```
 
 Prisma Client сгенерирован в общий `node_modules` (`@prisma/client`). `prisma

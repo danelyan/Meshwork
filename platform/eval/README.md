@@ -51,3 +51,25 @@ node scripts/make-pdfs.mjs [--font FILE] [--out DIR]   # PDF в pdf/ (в git н�
 - Метрика по `catalogId` не оценивает точность цитаты и грейда; цитату проверяет `verifyClaims`, грейд — отдельная процедура (`gradeExpected` лежит в разметке для неё).
 - Атаки статичны; `maxRedirects: 5` в `ssrf/urls.json` — предложение eval, collector вправе выбрать другой лимит. DNS-кейсы (`requiresDns`) требуют подставного резолвера.
 - Ссылки в демо вымышлены, реальные сети не дёргаются.
+
+## Матрица инструментов (eval/tools-matrix)
+
+Живой прогон консультанта: 21 инструмент × 6 профилей пользователей × форматы файлов в чате (~60 ходов).
+Ход идёт через `runTurn`, файлы — через обработчик `POST /api/uploads` (та же подпись куки, разбор, хранение).
+На сценарий создаётся временный кандидат (клон демо-кандидата или пустой), в конце удаляется вместе
+с разговором, загрузками и оригиналами на диске; демо-данные не трогаются.
+
+```bash
+cd platform && set -a && . ./.env && set +a && export LLM_DAILY_TOKEN_BUDGET=0
+node eval/tools-matrix/make-fixtures.mjs                              # один раз: DOCX/XLSX/PNG/битые файлы (macOS textutil, python3+openpyxl, sharp)
+npx tsx eval/tools-matrix/run.ts --smoke --label smoke                # дымовой: 6 ходов
+npx tsx eval/tools-matrix/run.ts --label full --parallel 2            # полный, не больше 2 параллельно
+npx tsx eval/tools-matrix/run.ts --only t06-profile,f03-docx --label x
+```
+
+Итог: `eval/results/tools-matrix-<label>-<дата>.json` и `.md` (таблицы по инструментам, форматам и
+профилям, список провалов с цитатами). Проверки хода — `eval/tools-matrix/checks.ts` (тест
+`tests/unit/eval/tools-matrix.test.ts`): ожидаемые инструменты («хотя бы один из»), ошибки инструментов,
+пустой ответ, таймаут, мужской род от первого лица, числа и вакансии не из данных, выполнение инъекции.
+Композер принимает только PDF и DOCX: остальные форматы в таблице показаны как отклонённые с текстом
+ошибки для пользователя; сервер при этом тоже опрашивается, чтобы видеть его ответ.

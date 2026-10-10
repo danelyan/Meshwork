@@ -2,15 +2,17 @@ import { MAX_UPLOAD_BYTES, parseUrls, validateUploadFile } from '@/lib/api';
 import { normalizeClaim, normalizeRecommendation } from '@/lib/claims-view';
 
 describe('validateUploadFile', () => {
-  it('принимает PDF и DOCX в пределах лимита', () => {
+  it('принимает PDF, DOCX, MD, TXT и CSV в пределах лимита', () => {
     expect(validateUploadFile({ name: 'cv.pdf', size: 1000 })).toBeNull();
     expect(validateUploadFile({ name: 'CV.DOCX', size: MAX_UPLOAD_BYTES })).toBeNull();
+    for (const name of ['cv.md', 'notes.txt', 'skills.csv', 'README.markdown']) expect(validateUploadFile({ name, size: 10 })).toBeNull();
   });
   it('отклоняет больше 5 МБ с понятным текстом', () => {
     expect(validateUploadFile({ name: 'big.pdf', size: MAX_UPLOAD_BYTES + 1 })).toContain('5 МБ');
   });
   it('отклоняет чужой тип и пустой файл', () => {
-    expect(validateUploadFile({ name: 'a.exe', size: 10 })).toContain('PDF и DOCX');
+    expect(validateUploadFile({ name: 'a.exe', size: 10 })).toContain('PDF, DOCX, MD, TXT и CSV');
+    expect(validateUploadFile({ name: 'table.xlsx', size: 10 })).not.toBeNull();
     expect(validateUploadFile({ name: 'a.pdf', size: 0 })).toContain('пустой');
   });
 });

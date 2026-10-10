@@ -164,7 +164,7 @@ describe('Chat', () => {
     vi.stubGlobal('fetch', fetchMock);
     render(<Chat />);
     fireEvent.paste(screen.getByLabelText('Сообщение'), { clipboardData: { files: [new File(['x'], 'photo.png', { type: 'image/png' })] } });
-    expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toContain('только PDF и DOCX');
+    expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toContain('принимаем PDF, DOCX, MD, TXT и CSV');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

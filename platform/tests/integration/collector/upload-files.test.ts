@@ -97,6 +97,24 @@ describe('оригиналы загрузок: upload → download → delete', 
     expect((await downloadRoute(req('/api/uploads/nope/file', 'GET', cookieFor('cand-a')), params('nope'))).status).toBe(404);
   });
 
+  it('Markdown и CSV: принимаются, текст с ref по строкам, mime для скачивания — текстовый', async () => {
+    const md = Buffer.from('# Иван\nBackend на Go, 3 года', 'utf8');
+    const res = await upload(md, 'cv.md', cookieFor('cand-a'));
+    expect(res.status).toBe(201);
+    const { uploadId } = await res.json();
+    const row = await prisma.upload.findUniqueOrThrow({ where: { id: uploadId } });
+    expect(row.mime).toBe('text/markdown');
+    expect(JSON.stringify(row.extracted)).toContain('cv.md#p1:l2');
+    const file = await downloadRoute(req(`/api/uploads/${uploadId}/file`, 'GET', cookieFor('cand-a')), params(uploadId));
+    expect(file.headers.get('content-type')).toBe('text/markdown');
+    expect(Buffer.from(await file.arrayBuffer()).equals(md)).toBe(true);
+
+    const csv = await upload(Buffer.from('навык;опыт\nGo;3 года'), 'skills.csv', cookieFor('cand-a'));
+    expect(csv.status).toBe(201);
+    const bin = await upload(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x00]), 'photo.txt', cookieFor('cand-a'));
+    expect(bin.status).toBe(415);
+  });
+
   it('старая запись без оригинала — 404 на скачивание; повторная загрузка дописывает файл', async () => {
     const buf = resumePdf(['Old']);
     const { uploadId } = await (await upload(buf, 'old.pdf', cookieFor('cand-a'))).json();

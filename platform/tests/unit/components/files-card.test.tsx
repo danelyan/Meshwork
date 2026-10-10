@@ -63,7 +63,7 @@ describe('FilesCard', () => {
     render(<FilesCard docs={[]} />);
     fireEvent.drop(screen.getByTestId('files-drop'), { dataTransfer: dt([pdf('big.pdf', 6 * 1024 * 1024), pdf('photo.png')]) });
     expect(screen.getByText(/«big.pdf»: больше 5 МБ/)).toBeTruthy();
-    expect(screen.getByText(/«photo.png»: принимаем только PDF и DOCX/)).toBeTruthy();
+    expect(screen.getByText(/«photo.png»: принимаем PDF, DOCX, MD, TXT и CSV/)).toBeTruthy();
     expect(uploadFile).not.toHaveBeenCalled();
   });
 

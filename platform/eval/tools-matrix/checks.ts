@@ -119,7 +119,7 @@ function affirmedLocal(text: string, re: RegExp): string | null {
 
 /** Совет прислать формат, который композер и сервер не принимают (принимают только PDF и DOCX). */
 export function badFormatAdvice(text: string): string | null {
-  const m = /(?<!\p{L})(прикрепи|пришли|загрузи|приложи|отправь)(?:те)?(?!\p{L})[^.\n]{0,70}?(?<!\p{L})(txt|doc|odt|rtf|markdown|md|png|jpe?g|скриншот\p{L}*|фото|xlsx?|csv|excel|эксель)(?!\p{L})/iu.exec(text);
+  const m = /(?<!\p{L})(прикрепи|пришли|загрузи|приложи|отправь)(?:те)?(?!\p{L})[^.\n]{0,70}?(?<!\p{L})(doc|odt|rtf|png|jpe?g|скриншот\p{L}*|фото|xlsx?|excel|эксель)(?!\p{L})/iu.exec(text);
   return m ? m[0].replace(/\s+/g, ' ') : null;
 }
 

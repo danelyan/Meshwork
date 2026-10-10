@@ -198,3 +198,49 @@ describe('collector/files: таймаут разбора', () => {
     await expectAppError(parseInWorker('pdf', makePdf(pages), { timeoutMs: 1 }), 'parse_timeout', 422);
   });
 });
+
+describe('collector/files: MD, TXT, CSV (решение владельца 10.10)', () => {
+  it('по расширению и без NUL-байтов → text; бинарник с расширением .txt — нет', () => {
+    expect(detectFileKind(Buffer.from('# Иван'), 'cv.md', '')).toBe('text');
+    expect(detectFileKind(Buffer.from('a,b\n1,2'), 'skills.CSV', '')).toBe('text');
+    expect(detectFileKind(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]), 'photo.txt', '')).toBeNull();
+    expect(detectFileKind(Buffer.from('plain'), 'photo.png', 'text/plain')).toBeNull();
+  });
+
+  it('UTF-8 с BOM: строки с исходной нумерацией, пустые пропущены', async () => {
+    const doc = await extractFile(Buffer.from('﻿Иван Петров\n\nGo, PostgreSQL\r\nПлатёжный сервис', 'utf8'), 'cv.txt', 'text/plain');
+    expect(doc.meta?.fileKind).toBe('text');
+    expect(doc.lines.map((l) => [l.ref, l.text])).toEqual([
+      ['cv.txt#p1:l1', 'Иван Петров'],
+      ['cv.txt#p1:l3', 'Go, PostgreSQL'],
+      ['cv.txt#p1:l4', 'Платёжный сервис'],
+    ]);
+  });
+
+  it('Windows-1251 (Блокнот, Excel) читается как кириллица', async () => {
+    // «Привет» в cp1251
+    const doc = await extractFile(Buffer.from([0xcf, 0xf0, 0xe8, 0xe2, 0xe5, 0xf2]), 'notes.txt', '');
+    expect(doc.lines[0]?.text).toBe('Привет');
+  });
+
+  it('CSV: строка таблицы — строка документа', async () => {
+    const doc = await extractFile(Buffer.from('навык;опыт\nGo;3 года\nKafka;1 год'), 'skills.csv', 'text/csv');
+    expect(doc.lines.map((l) => l.text)).toEqual(['навык;опыт', 'Go;3 года', 'Kafka;1 год']);
+  });
+
+  it('комментарий HTML в Markdown — скрытый текст, в text не входит, флаг стоит', async () => {
+    const md = `# Иван\nBackend на Go <!-- ${INJ} -->\n<!--\nещё скрыто\n-->\nВидимая строка`;
+    const doc = await extractFile(Buffer.from(md), 'cv.md', 'text/markdown');
+    expect(doc.text).toContain('Backend на Go');
+    expect(doc.text).toContain('Видимая строка');
+    expect(doc.text).not.toContain('Ignore previous');
+    expect(doc.text).not.toContain('ещё скрыто');
+    expect(doc.flags.hiddenText?.count).toBeGreaterThanOrEqual(2);
+  });
+
+  it('пустой по содержимому текст → meta.empty, а 0 байт → 400', async () => {
+    const doc = await extractFile(Buffer.from('\n  \n'), 'empty.md', '');
+    expect(doc.meta?.empty).toBe(true);
+    await expectAppError(extractFile(Buffer.alloc(0), 'cv.txt', ''), 'bad_request', 400);
+  });
+});

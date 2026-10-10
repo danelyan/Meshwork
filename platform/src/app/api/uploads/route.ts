@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import type { Prisma } from '@prisma/client';
 
-import { extractFile } from '@/server/collector/files';
+import { extractFile, type FileKind, fileMime } from '@/server/collector/files';
 import { LIMITS } from '@/server/collector/limits';
 import type { ExtractedDoc } from '@/server/collector/types';
 import { prisma } from '@/server/db';
@@ -61,7 +61,7 @@ function brief(doc: ExtractedDoc) {
 }
 
 /**
- * Загрузка резюме/документа: PDF или DOCX ≤ 5 МБ (≤ 20 стр.). Хранится извлечённый текст
+ * Загрузка резюме/документа: PDF, DOCX, MD, TXT или CSV ≤ 5 МБ (PDF ≤ 20 стр.). Хранится извлечённый текст
  * с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>; скачать и удалить —
  * GET /api/uploads/:id/file, DELETE /api/uploads/:id). Оригинал пишется только после
  * успешного разбора. Повтор того же файла (sha256) у того же кандидата — прежняя запись, без копии.
@@ -100,7 +100,7 @@ export const POST = withErrors(async (req: Request) => {
   const data = {
     storageKey,
     filename: doc.title,
-    mime: doc.meta?.fileKind === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf',
+    mime: fileMime(doc.meta?.fileKind as FileKind, doc.title),
     size: buf.length,
     extracted: doc as unknown as Prisma.InputJsonValue,
     flags: doc.flags as unknown as Prisma.InputJsonValue,

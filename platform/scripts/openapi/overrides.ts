@@ -647,7 +647,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'GET /api/uploads/{id}/file': {
     summary: 'Скачать оригинал загруженного файла',
     description: 'Оригинал файла владельцу: всегда `Content-Disposition: attachment` (filename* по RFC 5987), `X-Content-Type-Options: nosniff`, тип — только PDF/DOCX, иначе application/octet-stream.',
-    success: { description: 'Файл PDF или DOCX', contentType: 'application/octet-stream', schema: { type: 'string', format: 'binary' } },
+    success: { description: 'Файл PDF, DOCX, MD, TXT или CSV', contentType: 'application/octet-stream', schema: { type: 'string', format: 'binary' } },
     errors: { 404: 'Нет файла, чужой или загружен до хранения оригиналов' },
   },
   'DELETE /api/uploads/{id}': {
@@ -664,10 +664,10 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'POST /api/uploads': {
     summary: 'Загрузить резюме или документ',
-    description: 'Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Хранится извлечённый текст с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>, только после успешного разбора). Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись без второй копии.',
+    description: 'Загрузка резюме или документа: PDF, DOCX, MD, TXT или CSV до 5 МБ (PDF до 20 страниц). Хранится извлечённый текст с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>, только после успешного разбора). Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись без второй копии.',
     body: {
       contentType: 'multipart/form-data',
-      schema: obj({ file: str('Файл PDF или DOCX', { format: 'binary' }), kind: en('resume', 'document') }, ['file']),
+      schema: obj({ file: str('Файл PDF, DOCX, MD, TXT или CSV', { format: 'binary' }), kind: en('resume', 'document') }, ['file']),
       description: '`kind` по умолчанию — resume',
     },
     success: {

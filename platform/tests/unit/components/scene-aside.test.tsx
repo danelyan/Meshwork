@@ -35,16 +35,27 @@ describe('journey steps', () => {
 
 describe('SceneAside', () => {
   const data = { role: 'candidate' as const, steps: candidateSteps(base), docs: [], hint: { title: 'Документы', text: 'Прикрепи файл' } };
-  it('renders roadmap, empty files card with the drop zone and the hint', () => {
+  it('renders roadmap, empty documents with the attach button and the hint', () => {
     render(<SceneAside data={data} />);
     expect(screen.getByTestId('journey-intro').getAttribute('data-state')).toBe('now');
-    expect(screen.getByTestId('files-drop')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Прикрепить' })).toBeTruthy();
     expect(screen.getByText('Прикрепи файл')).toBeTruthy();
+  });
+  it('attach clicks the composer paperclip inside the feed', () => {
+    const clicked = vi.fn();
+    render(
+      <div data-feed-scroll>
+        <button type="button" aria-label="Прикрепить файл" onClick={clicked} />
+        <SceneAside data={data} />
+      </div>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Прикрепить' }));
+    expect(clicked).toHaveBeenCalled();
   });
   it('lists documents with their parse status and toggles the accordion', () => {
     render(<SceneAside data={{ ...data, docs: [{ id: '1', name: 'cv.pdf', kind: 'file', status: 'разобран, 2 утверждения' }] }} />);
     expect(screen.getByText('cv.pdf')).toBeTruthy();
-    const toggle = screen.getByRole('button', { name: /Файлы и ссылки · 1/ });
+    const toggle = screen.getByRole('button', { name: /Документы/ });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
@@ -65,12 +76,12 @@ describe('known facts and market', () => {
         { stepId: 'fsp', label: 'ФСП', lead: '', question: '', answer: null, editable: true },
       ],
     });
-    expect(knownFacts(v)).toEqual([{ stepId: 'goal', label: 'Цель', value: 'Ищу работу' }]);
+    expect(knownFacts(v)).toEqual([{ id: 'step:goal', source: 'onboarding', stepId: 'goal', label: 'Цель', value: 'Ищу работу', editable: true }]);
     expect(knownFacts(undefined)).toEqual([]);
   });
   it('prefers the summary when it is shown', () => {
     const v = view({ summary: { items: [{ stepId: 'role', label: 'Роль', value: 'x' }, { stepId: 'spec', label: 'Специализация', value: 'Backend' }], skipped: [], warnings: [] } });
-    expect(knownFacts(v)).toEqual([{ stepId: 'spec', label: 'Специализация', value: 'Backend' }]);
+    expect(knownFacts(v)).toEqual([{ id: 'step:spec', source: 'onboarding', stepId: 'spec', label: 'Специализация', value: 'Backend', editable: false }]);
   });
   it('groups by category, puts the user category first', () => {
     const m = marketRows(
@@ -93,7 +104,7 @@ describe('known facts and market', () => {
         data={{
           role: 'employer',
           steps: employerSteps({ intro: false, introNote: '1 из 5', needs: 0, invitations: 0 }),
-          known: [{ stepId: 'inn', label: 'ИНН', value: '7707083893' }],
+          known: [{ id: 'step:inn', source: 'onboarding', stepId: 'inn', label: 'ИНН', value: '7707083893', editable: false }],
           market: { total: 4, rows: [{ key: 'backend:middle', label: 'Backend · Middle', count: 4, mine: true }] },
           docs: null,
           hint: { title: 'Компания', text: '...' },

@@ -5,7 +5,9 @@ import type { EmployerAgentEvent } from '@/server/agent/employer/types';
 import { encodeSse } from '@/server/agent/events';
 import { acquireConversationLock } from '@/server/agent/lock';
 import { enrichEvent } from '@/server/agent/employer/names';
+import { memoryExtractionEnabled, scheduleMemoryExtraction } from '@/server/consultant/memory';
 import { prisma } from '@/server/db';
+import { getLlm } from '@/server/llm/client';
 import { loadEmployerContext } from '@/server/employer';
 import { AppError, errors, withErrors } from '@/server/errors';
 import { requireEmployer } from '@/server/session';
@@ -69,6 +71,10 @@ export const POST = withErrors(async (req: Request) => {
       try {
         emit({ type: 'conversation', id: conversationId });
         await runEmployerTurn({ employerProfileId, conversationId, text: body.text }, emit, signal);
+        // Память помощника: факты из реплики — фоном, после завершённого хода; в демо и на заглушке — нет.
+        if (!signal.aborted && memoryExtractionEnabled()) {
+          void scheduleMemoryExtraction({ owner: { employerProfileId }, text: body.text, llm: getLlm({ conversationId }) });
+        }
       } catch (err) {
         if (!signal.aborted) {
           console.error('[api/employer/assistant] turn failed', err);

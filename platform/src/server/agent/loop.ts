@@ -17,6 +17,7 @@ import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
 import { withWebSearchGate } from './web-search/tool';
 import { tools as defaultTools } from './tools';
+import { loadMemoryBlock } from '@/server/consultant/memory';
 import { asideMark, pauseMark } from '@/server/onboarding/match';
 import { type OnboardingStepBrief, pendingOnboarding } from '@/server/onboarding/service';
 import { MAX_TOOL_CALLS_PER_TURN, type AgentEvent, type ToolContext, type TurnInput, type TurnOptions } from './types';
@@ -92,6 +93,8 @@ export async function runTurn(
     select: { role: true, content: true, toolCalls: true, toolCallId: true },
   });
   const messages: ChatMessage[] = buildHistory(rows);
+  // Память о собеседнике (заметки — данные, не инструкции; consultant/memory.ts).
+  const memory = await loadMemoryBlock({ candidateId });
   let calls = 0;
   // Бюджет истории; после ошибки «не влезло в контекст» — один повтор с втрое меньшим.
   let historyChars = HISTORY_TOTAL_MAX_CHARS;
@@ -105,7 +108,7 @@ export async function runTurn(
       const canCall = calls < MAX_TOOL_CALLS_PER_TURN;
       const req = {
         purpose: 'consultant' as const,
-        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume }),
+        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume, memory }),
         messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
         tools: specs,
         toolChoice: canCall ? ('auto' as const) : ('none' as const),
@@ -194,8 +197,11 @@ export function buildSystem(args: {
   onboarding?: OnboardingStepBrief;
   /** Онбординг брошен: напомнить, что продолжить можно здесь же. */
   resume?: OnboardingStepBrief | null;
+  /** Блок памяти о собеседнике (memoryPromptBlock) или null. */
+  memory?: string | null;
 }): string {
   const parts = [CONSULTANT_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК).`, EXTERNAL_NOTE];
+  if (args.memory) parts.push(args.memory);
   // Ход конвейера из шага «Документы» — свои инструкции ниже; правило «коротко и вернуть к шагу» не к нему.
   if (args.onboarding) parts.push(args.pipeline ? IN_ONBOARDING_NOTE : asideNote(args.onboarding));
   else if (args.resume) parts.push(resumeNote(args.resume));

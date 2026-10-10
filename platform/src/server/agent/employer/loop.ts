@@ -1,3 +1,4 @@
+import { loadMemoryBlock } from '@/server/consultant/memory';
 import { prisma } from '@/server/db';
 import { loadEmployerContext } from '@/server/employer';
 import { getEnv } from '@/server/env';
@@ -47,8 +48,9 @@ export function employerPauseNote(step: OnboardingStepBrief): string {
   return `Знакомство работодателя не закончено и стоит на паузе (остановился на шаге «${step.question}»). Отвечай на вопросы как обычно. Если в этом разговоре ты ещё не напоминал — в конце ответа одной фразой предложи продолжить знакомство здесь же, в ленте: кнопка «${EMPLOYER_RESUME_BUTTON}» вверху. Ссылок на другие страницы не давай. Уже напоминал — не повторяй.`;
 }
 
-export function buildEmployerSystem(args: { now: Date; companyName: string; toolsExhausted: boolean; paused?: OnboardingStepBrief | null }): string {
+export function buildEmployerSystem(args: { now: Date; companyName: string; toolsExhausted: boolean; paused?: OnboardingStepBrief | null; memory?: string | null }): string {
   const parts = [EMPLOYER_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК). Компания работодателя: ${args.companyName}.`, EXTERNAL_NOTE];
+  if (args.memory) parts.push(args.memory);
   if (args.paused) parts.push(employerPauseNote(args.paused));
   if (args.toolsExhausted) parts.push('Лимит вызовов инструментов на этот ход исчерпан — ответь работодателю текстом по тому, что уже есть.');
   return parts.join('\n\n');
@@ -98,6 +100,7 @@ export async function runEmployerTurn(
   });
   const messages: ChatMessage[] = buildHistory(rows);
   const specs = toolSpecs(registry);
+  const memory = await loadMemoryBlock({ employerProfileId });
   let calls = 0;
   let historyChars = HISTORY_TOTAL_MAX_CHARS;
   const reply = createReplyStream(emit, signal);
@@ -112,7 +115,7 @@ export async function runEmployerTurn(
         res = await llm.complete(
           {
             purpose: 'employer_assistant',
-            system: buildEmployerSystem({ now: now(), companyName: emp.companyName, toolsExhausted: !canCall, paused }),
+            system: buildEmployerSystem({ now: now(), companyName: emp.companyName, toolsExhausted: !canCall, paused, memory }),
             messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
             tools: specs,
             toolChoice: canCall ? 'auto' : 'none',

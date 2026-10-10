@@ -48,7 +48,9 @@ export type LlmPurpose =
   /** Зарезервированы для лейнов defense-room и project (enum в БД уже есть). */
   | 'defense_qlc'
   | 'project_spec'
-  | 'project_rubric';
+  | 'project_rubric'
+  /** lane memory: факты о собеседнике из реплики для памяти консультанта. */
+  | 'consultant_memory';
 
 export interface CompleteRequest {
   purpose: LlmPurpose;

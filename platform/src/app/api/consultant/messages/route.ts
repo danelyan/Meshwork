@@ -4,7 +4,9 @@ import { encodeSse } from '@/server/agent/events';
 import { acquireConversationLock } from '@/server/agent/lock';
 import { runTurn } from '@/server/agent/loop';
 import type { AgentEvent } from '@/server/agent/types';
+import { memoryExtractionEnabled, scheduleMemoryExtraction } from '@/server/consultant/memory';
 import { prisma } from '@/server/db';
+import { getLlm } from '@/server/llm/client';
 import { AppError, errors, withErrors } from '@/server/errors';
 import { asideContext, type OnboardingStepBrief } from '@/server/onboarding/service';
 import { getSession, requireCandidate } from '@/server/session';
@@ -82,6 +84,10 @@ export const POST = withErrors(async (req: Request) => {
           emit,
           signal,
         );
+        // Память: факты из реплики — фоном, после завершённого хода (ответ уже отдан); в демо и на заглушке — нет.
+        if (!signal.aborted && body.text.trim() && memoryExtractionEnabled()) {
+          void scheduleMemoryExtraction({ owner: { candidateId }, text: body.text, llm: getLlm({ candidateId, conversationId }) });
+        }
       } catch (err) {
         if (!signal.aborted) {
           console.error('[api/consultant] turn failed', err);

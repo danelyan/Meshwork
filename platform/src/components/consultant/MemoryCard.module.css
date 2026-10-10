@@ -1,0 +1,24 @@
+/* Карточка «Что я о тебе знаю» (MemoryCard): тёмная сцена, только токены. Оболочка карточки — SceneAside.module.css. */
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.item { display: grid; gap: 2px; padding-left: 8px; border-left: 2px solid var(--stage-track); transition: border-color 400ms var(--ease), background-color 400ms var(--ease); }
+.item[data-source='chat'] { border-left-color: var(--stage-accent-track); }
+.item[data-new] { border-left-color: var(--stage-accent); background: var(--stage-accent-fill); }
+.source { display: flex; gap: 6px; align-items: baseline; font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); }
+.badge { padding: 0 5px; color: var(--stage-on-accent); background: var(--stage-accent); }
+.text { font-size: var(--fs-sm); line-height: 1.4; color: var(--on-ink); overflow-wrap: anywhere; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.actions { display: flex; gap: 12px; }
+.action { padding: 0; background: none; border: 0; font: 500 var(--fs-xs) var(--mono); color: var(--stage-ink-dim); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.action:hover:not(:disabled) { color: var(--on-ink); }
+.action:disabled { opacity: 0.5; cursor: default; }
+.editor { display: grid; gap: 6px; }
+.input { width: 100%; padding: 6px 8px; font: inherit; font-size: var(--fs-sm); color: var(--on-ink); background: var(--stage-card); border: 1px solid var(--stage-ring); }
+.input:focus { outline: 1px solid var(--stage-accent); border-color: var(--stage-accent); }
+.add { margin-top: 12px; padding: 0; background: none; border: 0; font: 600 var(--fs-xs) var(--mono); color: var(--stage-accent); cursor: pointer; }
+.add:hover:not(:disabled) { color: var(--on-ink); }
+.add:disabled { color: var(--stage-ink-faint); cursor: default; }
+.editor + .add, .list + .editor { margin-top: 12px; }
+.note { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--stage-ink-faint); }
+.error { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--on-ink); }
+@media (prefers-reduced-motion: reduce) {
+  .item { transition: none; }
+}

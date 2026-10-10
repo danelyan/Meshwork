@@ -6,15 +6,19 @@ const SUBS = ['backend.web-api', 'backend.integrations', 'backend.highload', 'ba
 const SEEDS = Array.from({ length: 300 }, (_, i) => i + 1);
 
 describe('backend: подкатегории (ADR-0003, дополнение 10.10 15:50)', () => {
-  it('у каждого семейства есть subcategoryId из четырёх, по 8+ на подкатегорию (4 Junior + 4 Middle минимум)', () => {
+  it('у каждого семейства есть subcategoryId из четырёх; пул: 6+ Junior, 4+ Middle, 4+ Senior (ADR-0003, 16:15)', () => {
     for (const g of BACKEND_GENERATORS) expect(SUBS, g.id).toContain(g.subcategoryId);
     for (const s of SUBS) {
       const own = BACKEND_GENERATORS.filter((g) => g.subcategoryId === s);
-      expect(own.length, s).toBeGreaterThanOrEqual(8);
-      expect(own.filter((g) => g.grade === 'junior').length, `${s} junior`).toBeGreaterThanOrEqual(4);
+      expect(own.length, s).toBeGreaterThanOrEqual(14);
+      expect(own.filter((g) => g.grade === 'junior').length, `${s} junior`).toBeGreaterThanOrEqual(6);
       expect(own.filter((g) => g.grade === 'middle').length, `${s} middle`).toBeGreaterThanOrEqual(4);
+      expect(own.filter((g) => g.grade === 'senior').length, `${s} senior`).toBeGreaterThanOrEqual(4);
       for (const g of own) {
-        if (g.grade === 'middle') {
+        if (g.grade === 'senior') {
+          expect(g.b, g.id).toBeGreaterThanOrEqual(1.0);
+          expect(g.b, g.id).toBeLessThanOrEqual(1.7);
+        } else if (g.grade === 'middle') {
           expect(g.b, g.id).toBeGreaterThanOrEqual(0.3);
           expect(g.b, g.id).toBeLessThanOrEqual(0.8);
         } else expect(g.b, g.id).toBeLessThanOrEqual(-0.4);
@@ -472,6 +476,394 @@ describe('data-model: ключи', () => {
       // T2: при RR строка изменена после снимка T2 -> ошибка, откат
       if (!rr) bal = apply(lines[6]!);
       return String(bal);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// +2 Junior и +4 Senior на подкатегорию (ADR-0003, 16:15)
+// ---------------------------------------------------------------------------
+
+describe('web-api: новые ключи', () => {
+  it('route-matching', () => {
+    each(B.routeMatching, (p, code) => {
+      const [rt, rq] = code.split('\n\nЗапросы:\n');
+      const routes = rt!.replace('Маршруты:\n', '').split('\n').map((l) => l.split(' '));
+      const reqs = rq!.split('\n').map((l) => l.replace(/^\d+\. /, '').split(' '));
+      let c404 = 0;
+      let c405 = 0;
+      for (const [m, path] of reqs) {
+        const byPath = routes.filter(([, rp]) => {
+          const a = rp!.split('/');
+          const b = path!.split('/');
+          return a.length === b.length && a.every((x, i) => x.startsWith(':') || x === b[i]);
+        });
+        if (!byPath.length) c404++;
+        else if (!byPath.some(([rm]) => rm === m)) c405++;
+      }
+      return String(p.includes('получат 405') ? c405 : c404);
+    });
+  });
+
+  it('list-query', () => {
+    each(B.listQuery, (p, code) => {
+      const [, status, sort, limit, offset] = /status=(\w+)&sort=(-?)amount&limit=(\d+)&offset=(\d+)/.exec(p)!;
+      const rows = code
+        .split('\n')
+        .slice(3)
+        .map((l) => l.split('|').map((x) => x.trim()))
+        .map(([id, st, am]) => ({ id: +id!, st, am: +am! }))
+        .filter((r) => r.st === status);
+      rows.sort((a, b) => (sort ? b.am - a.am : a.am - b.am));
+      return rows.slice(+offset!, +offset! + +limit!).map((r) => r.id).join(',');
+    });
+  });
+
+  it('api-breaking-changes: классификация по тексту', () => {
+    const breaking = /переименовано|удалено|удалён|(?<!не)обязательное поле|изменён с integer|ужесточено/;
+    each(B.apiBreakingChanges, (_p, code) =>
+      code
+        .split('\n')
+        .flatMap((l) => {
+          const [, n, t] = /^(\d+)\. (.*)$/.exec(l)!;
+          return breaking.test(t!) ? [n] : [];
+        })
+        .join(','),
+    );
+  });
+
+  it('idempotency-ttl', () => {
+    each(B.idempotencyTtl, (p, code) => {
+      const ttl = num(/ровно (\d+) с/, p);
+      const executedAt = new Map<string, number>();
+      let n = 0;
+      for (const l of code.split('\n')) {
+        const [, t, key] = /t=(\d+)с\s+Idempotency-Key: (\w+)/.exec(l)!;
+        const at = executedAt.get(key!);
+        if (at !== undefined && +t! - at < ttl) continue;
+        executedAt.set(key!, +t!);
+        n++;
+      }
+      return String(n);
+    });
+  });
+
+  it('shared-cache-origin', () => {
+    each(B.sharedCacheHits, (p, code) => {
+      const h = /Cache-Control: ([^.]+)\. Запросы/.exec(p)![1]!;
+      const dir = (n: string) => new RegExp(`${n}=(\\d+)`).exec(h)?.[1];
+      const times = code.split('\n').map((l) => num(/t=(\d+)/, l));
+      if (/no-store|private/.test(h)) return String(times.length);
+      if (/no-cache/.test(h)) return String(times.length);
+      const fresh = Number(dir('s-maxage') ?? dir('max-age'));
+      let origin = 0;
+      let last = -Infinity;
+      for (const t of times) {
+        if (t - last >= fresh) {
+          origin++;
+          last = t;
+        }
+      }
+      return String(origin);
+    });
+  });
+
+  it('capacity-littles-law', () => {
+    each(B.littlesLaw, (p) => {
+      const rps = num(/получает (\d+) запросов/, p);
+      const lat = num(/обработки (\d+) мс/, p);
+      const w = num(/не больше (\d+) запросов одновременно/, p);
+      const u = num(/не выше (\d+)%/, p);
+      const conc = (rps * lat) / 1000;
+      const per = (w * u) / 100;
+      return String(Math.ceil(Math.round((conc / per) * 1e6) / 1e6) + (p.includes('нужен один резервный') ? 1 : 0));
+    });
+  });
+});
+
+describe('integrations: новые ключи', () => {
+  it('fetch-all-pages', () => {
+    each(B.fetchAllPages, (p) => {
+      const size = num(/по (\d+) записей/, p);
+      const total = num(/Всего у API (\d+) записей/, p);
+      const full = p.includes('если страница заполнена целиком');
+      let pos = 0;
+      let reqs = 0;
+      let hasNext = true;
+      while (hasNext) {
+        reqs++;
+        const got = Math.min(size, total - pos);
+        pos += got;
+        hasNext = full ? got === size : pos < total;
+      }
+      return String(reqs);
+    });
+  });
+
+  it('client-throttle: расписание по окнам', () => {
+    each(B.clientThrottle, (p) => {
+      const limit = num(/не больше (\d+) запросов в секунду/, p);
+      const m = num(/сделать (\d+) запросов/, p);
+      const perWindow: number[] = [];
+      for (let i = 0; i < m; i++) {
+        const w = Math.floor(i / limit);
+        perWindow[w] = (perWindow[w] ?? 0) + 1;
+      }
+      return String(p.includes('В какую секунду') ? perWindow.length - 1 : perWindow.length);
+    });
+  });
+
+  it('retry-amplification-chain', () => {
+    each(B.retryAmplification, (_p, code) => {
+      let calls = 1;
+      for (const l of code.split('\n')) {
+        const m = /при любой ошибке повторяет, (\d+) повтора/.exec(l);
+        if (m) calls *= +m[1]! + 1;
+      }
+      return String(calls);
+    });
+  });
+
+  it('saga-compensation', () => {
+    each(B.sagaCompensation, (p, code) => {
+      const failAt = num(/Шаг №(\d+)/, p);
+      const done = code.split('\n').slice(0, failAt - 1);
+      return done
+        .map((l) => /компенсация: (\S+)$/.exec(l)![1]!)
+        .filter((c) => c !== 'нет')
+        .reverse()
+        .join(',');
+    });
+  });
+
+  it('webhook-replay-window', () => {
+    each(B.webhookReplayWindow, (p, code) => {
+      const tol = num(/≤ (\d+) с/, p);
+      const seen = new Set<string>();
+      for (const l of code.split('\n').slice(1)) {
+        const [, , arr, sent, id, sig] = /^(\d+) \| (\d+) \| (\d+) \| (\w+) \| (\S+)$/.exec(l)!.map((x, i) => (i >= 2 && i <= 3 ? Number(x) : x)) as unknown as [string, string, number, number, string, string];
+        if (sig === 'верна' && Math.abs(arr - sent) <= tol && !seen.has(id)) seen.add(id);
+      }
+      return String(seen.size);
+    });
+  });
+
+  it('contract-drift', () => {
+    each(B.contractDrift, (_p, code) => {
+      const [head, ...rest] = code.split('\n').filter(Boolean);
+      const payload = head!.replace('Ответ: ', '').split(', ');
+      return rest
+        .flatMap((l) => {
+          const m = /^(C\d): обязательные \[(.*?)\], схема \[(.*?)\], (\S+)$/.exec(l)!;
+          const req = m[2]!.split(', ');
+          const schema = m[3]!.split(', ');
+          const broken = req.some((f) => !payload.includes(f)) || (m[4] === 'строгий' && payload.some((f) => !schema.includes(f)));
+          return broken ? [m[1]!] : [];
+        })
+        .join(',');
+    });
+  });
+});
+
+describe('highload: новые ключи', () => {
+  it('batching-time', () => {
+    each(B.batchingTime, (p) => {
+      const n = num(/вставить (\d+) строк/, p);
+      const rtt = num(/занимает (\d+) мс/, p);
+      const batch = /пач\S* по (\d+) строк/.exec(p) ? num(/пач\S* по (\d+) строк/, p) : 1;
+      const single = n * rtt;
+      const batched = Math.ceil(n / batch) * rtt;
+      if (p.includes('на сколько мс пачки быстрее')) return String(single - batched);
+      return String(p.includes('по одной строке отдельными') ? single : batched);
+    });
+  });
+
+  it('ttl-loads', () => {
+    each(B.ttlLoads, (p, code) => {
+      const ttl = num(/живёт (\d+) с/, p);
+      const times = code.split('\n').map((l) => num(/t=(\d+)/, l));
+      let loadedAt: number | null = null;
+      let loads = 0;
+      for (const t of times) {
+        if (loadedAt === null || t - loadedAt >= ttl) {
+          loads++;
+          loadedAt = t;
+        }
+      }
+      return String(loads);
+    });
+  });
+
+  it('replica-lag-reads', () => {
+    each(B.replicaLag, (p, code) => {
+      const lag = num(/отстаёт на (\d+) с/, p);
+      const sticky = /в течение (\d+) с/.exec(p) ? num(/в течение (\d+) с/, p) : 0;
+      const evs = code.split('\n').map((l) => ({ t: num(/t=(\d+)/, l), w: l.includes('запись') }));
+      let stale = 0;
+      let lastW: number | null = null;
+      evs.forEach((e, i) => {
+        if (e.w) {
+          lastW = e.t;
+          return;
+        }
+        if (sticky && lastW !== null && e.t < lastW + sticky) return;
+        const newest = Math.max(-Infinity, ...evs.slice(0, i).filter((x) => x.w).map((x) => x.t));
+        if (newest > e.t - lag) stale++;
+      });
+      return String(stale);
+    });
+  });
+
+  it('hot-key-db-load', () => {
+    each(B.hotKeyDbLoad, (p, code) => {
+      const cap = num(/вмещает (\d+) ключей/, p);
+      const groups = code.split('\n').map((l) => {
+        const [, n, r] = /: (\d+) ключей по (\d+) запросов/.exec(l)!;
+        return { n: +n!, r: +r! };
+      });
+      const keys = groups.flatMap((g) => Array<number>(g.n).fill(g.r)).sort((a, b) => b - a);
+      const total = keys.reduce((s, x) => s + x, 0);
+      return String(total - keys.slice(0, cap).reduce((s, x) => s + x, 0));
+    });
+  });
+
+  it('queue-drain: посекундная симуляция', () => {
+    each(B.queueDrain, (p) => {
+      const parts = num(/топике (\d+) партиях/, p);
+      let backlog = num(/накопилось (\d+) сообщений/, p);
+      const lambda = num(/поступать (\d+) сообщений/, p);
+      const cons = num(/Запущено (\d+) консьюмеров/, p);
+      const mu = num(/каждый обрабатывает (\d+) сообщений/, p);
+      const rate = Math.min(parts, cons) * mu;
+      if (rate <= lambda) return '0';
+      for (let s = 1; s < 100000; s++) {
+        backlog = Math.max(0, backlog + lambda - rate);
+        if (backlog === 0) return String(s);
+      }
+      return '0';
+    });
+  });
+
+  it('slow-query-top', () => {
+    each(B.slowQueryTop, (_p, code) => {
+      const lines = code.split('\n');
+      let best = 0;
+      let bestV = -1;
+      for (let i = 0; i < lines.length; i += 2) {
+        const t = lines[i + 1]!;
+        const calls = num(/calls=(\d+)/, t);
+        const v = /total=(\d+)/.test(t) ? num(/total=(\d+)/, t) : Math.round(calls * Number(/mean=([\d.]+)/.exec(t)![1]));
+        if (v > bestV) {
+          bestV = v;
+          best = i / 2 + 1;
+        }
+      }
+      return String(best);
+    });
+  });
+});
+
+describe('data-model: новые ключи', () => {
+  it('sql-aggregate: выполнение запроса над таблицей из условия', () => {
+    each(B.sqlAggregate, (_p, code) => {
+      const [tab, , sql] = code.split('\n\n').length === 2 ? [code.split('\n\n')[0]!, '', code.split('\n\n')[1]!] : [code, '', ''];
+      const rows = tab
+        .split('\n')
+        .slice(3)
+        .map((l) => l.split('|').map((x) => x.trim()))
+        .map(([id, u, st, am]) => ({ id: +id!, u: +u!, st, am: +am! }));
+      let m;
+      if ((m = /SUM\(amount\) FROM \w+ WHERE status = '(\w+)'/.exec(sql))) return String(rows.filter((r) => r.st === m![1]).reduce((s, r) => s + r.am, 0));
+      if ((m = /COUNT\(DISTINCT user_id\) FROM \w+ WHERE status <> '(\w+)'/.exec(sql))) return String(new Set(rows.filter((r) => r.st !== m![1]).map((r) => r.u)).size);
+      if ((m = /MAX\(amount\) FROM \w+ WHERE user_id = (\d+) AND status = '(\w+)'/.exec(sql))) return String(Math.max(0, ...rows.filter((r) => r.u === +m![1]! && r.st === m![2]).map((r) => r.am)));
+      m = /HAVING SUM\(amount\) > (\d+)/.exec(sql)!;
+      const sums: Record<number, number> = {};
+      for (const r of rows) sums[r.u] = (sums[r.u] ?? 0) + r.am;
+      return String(Object.values(sums).filter((v) => v > +m![1]!).length);
+    });
+  });
+
+  it('null-count', () => {
+    each(B.nullCount, (_p, code) => {
+      const [tab, sql] = code.split('\n\n');
+      const cities = tab!
+        .split('\n')
+        .slice(3)
+        .map((l) => l.split('|')[1]!.trim())
+        .map((c) => (c === 'NULL' ? null : c));
+      let m;
+      if (/COUNT\(city\)/.test(sql!)) return String(cities.filter((c) => c !== null).length);
+      if ((m = /city <> '(.+?)'/.exec(sql!))) return String(cities.filter((c) => c !== null && c !== m![1]).length);
+      if (/city = NULL/.test(sql!)) return '0';
+      if (/NOT IN/.test(sql!)) return '0';
+      m = /IS NULL OR city = '(.+?)'/.exec(sql!)!;
+      return String(cities.filter((c) => c === null || c === m![1]).length);
+    });
+  });
+
+  it('migration-safety', () => {
+    const bad = [/ADD COLUMN \w+ \w+ NOT NULL;/, /clock_timestamp/, /TYPE bigint/, /^CREATE INDEX orders/, /SET NOT NULL/, /DROP COLUMN/, /RENAME COLUMN/];
+    each(B.migrationSafety, (_p, code) =>
+      code
+        .split('\n')
+        .flatMap((l) => {
+          const [, n, sql] = /^(\d+)\. (.*)$/.exec(l)!;
+          return bad.some((r) => r.test(sql!)) ? [n] : [];
+        })
+        .join(','),
+    );
+  });
+
+  it('write-skew: выполнение по правилам изоляции PostgreSQL', () => {
+    each(B.writeSkew, (p, code) => {
+      const level = /ISOLATION LEVEL ([A-Z ]+);/.exec(code)![1]!;
+      const min = num(/не меньше (\d+)/, p);
+      const n = num(/Сейчас на дежурстве (\d+)/, p);
+      const counter = p.includes('общий счётчик');
+      if (!counter) return String(level === 'SERIALIZABLE' ? n - 1 : n - 2);
+      // Один счётчик, UPDATE ... WHERE n > min.
+      let v = n;
+      v = v > min ? v - 1 : v; // T1
+      if (level === 'READ COMMITTED') v = v > min ? v - 1 : v; // T2 перечитывает после коммита T1
+      return String(v);
+    });
+  });
+
+  it('unique-index-forms', () => {
+    each(B.uniqueIndexForms, (_p, code) => {
+      const [ddl, ...rest] = code.split('\n').filter((l) => l && !l.startsWith('--'));
+      const failing: number[] = [];
+      const seen = new Set<string>();
+      rest.forEach((l, i) => {
+        const m = /VALUES \((NULL|\d+), '([^']+)', (NULL|'[^']+')\)/.exec(l)!;
+        const tenant = m[1] === 'NULL' ? null : m[1];
+        const email = m[2]!;
+        const deleted = m[3] !== 'NULL';
+        let key: string | null;
+        if (ddl!.includes('lower(email)')) key = email.toLowerCase();
+        else if (ddl!.includes('WHERE deleted_at IS NULL')) key = deleted ? null : email;
+        else if (ddl!.includes('(tenant_id, email)')) key = tenant === null ? null : `${tenant}/${email}`;
+        else key = email;
+        if (key === null) return;
+        if (seen.has(key)) failing.push(i + 1);
+        else seen.add(key);
+      });
+      return failing.join(',');
+    });
+  });
+
+  it('sequence-gaps', () => {
+    each(B.sequenceGaps, (_p, code) => {
+      let seq = 0;
+      let inTx = false;
+      for (const l of code.split('\n')) {
+        if (l === 'BEGIN;') inTx = true;
+        else if (l === 'ROLLBACK;') inTx = false;
+        else if (/^INSERT INTO orders \(id, ref\)/.test(l)) continue; // явный id: последовательность не трогаем
+        else if (/^INSERT INTO orders \(ref\)|^SELECT nextval/.test(l)) seq++;
+      }
+      void inTx;
+      return String(seq);
     });
   });
 });

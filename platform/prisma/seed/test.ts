@@ -9,6 +9,7 @@ import { GENERATORS } from '../../src/server/test/generators';
  */
 export async function seedTest(prisma: PrismaClient): Promise<void> {
   for (const g of GENERATORS) {
+    if (g.grade === 'senior') continue; // senior в БД - после миграции enum Grade (лейн directions)
     const meta = { taskId: g.taskId, title: g.title, specialization: g.specialization, grade: g.grade, catalogIds: g.catalogIds, format: g.format };
     const existing = await prisma.taskTemplate.findUnique({ where: { id: g.id }, select: { paramsSource: true } });
     if (!existing) {

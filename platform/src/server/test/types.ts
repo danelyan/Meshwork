@@ -1,6 +1,9 @@
 // Типы теста на грейд (E-03, ADR-0002).
 import type { Grade, Specialization } from '../types';
 
+/** Грейд задания теста: Senior добавлен ADR-0003 (дополнение 10.10 16:15); глобальный Grade расширит лейн directions. */
+export type TestGrade = Grade | 'senior';
+
 /** Формат ответа: кодом проверяется нормализованная строка (без MCQ, R-T-02). */
 export type AnswerFormat = 'number' | 'text' | 'line' | 'list';
 
@@ -26,16 +29,12 @@ export interface TaskGenerator {
   taskId: string;
   title: string;
   specialization: Specialization;
+  grade: TestGrade;
   /**
-   * Подкатегория семейства ("ai.llm-apps", "backend.web-api") из src/lib/directions.ts (ADR 0003, дополнение
-   * 10.10 15:50: тест — на подкатегорию). Пул попытки — только семейства подкатегории кандидата; тест по
-   * подкатегории доступен при ≥ MIN_FAMILIES_PER_SUBCATEGORY (8) семействах, Junior и Middle.
-   * Необязательно ТОЛЬКО на переходный период, пока лейны генераторов размечают свои семейства: если у
-   * направления не размечено ни одно семейство, тест идёт по старому пулу направления (generators/index.ts,
-   * poolFor → legacy). Семейство без subcategoryId в размеченном направлении в пул не попадает.
+   * Подкатегория направления (ADR-0003, дополнение 10.10 15:50): "backend.web-api". Пул теста — семейства
+   * подкатегории кандидата; не размечено — в пул подкатегории не попадает.
    */
   subcategoryId?: string;
-  grade: Grade;
   /** Утверждения каталога, которые подтверждает решённое задание. */
   catalogIds: string[];
   format: AnswerFormat;
@@ -96,8 +95,6 @@ export interface AttemptResult {
 export interface AttemptView {
   id: string;
   specialization: Specialization;
-  /** Подкатегория попытки; null — попытка до теста на подкатегорию. */
-  subcategoryId: string | null;
   grade: Grade;
   status: AttemptStatus;
   mode: 'full' | 'demo';
@@ -122,8 +119,6 @@ export interface AttemptView {
 export interface AttemptSummary {
   id: string;
   specialization: Specialization;
-  /** Подкатегория попытки; null — попытка до теста на подкатегорию. */
-  subcategoryId: string | null;
   grade: Grade;
   status: AttemptStatus;
   theta: number | null;
@@ -144,11 +139,5 @@ export interface EligibilityView {
   allowed: boolean;
   reason?: string;
   nextAllowedAt?: string;
-  /**
-   * no_test — для направления или подкатегории нет банка заданий (тест пока недоступен);
-   * subcategory_required — подкатегория направления не выбрана (тест идёт по подкатегории).
-   */
-  code?: 'active_attempt' | 'grade_change_too_soon' | 'retake_too_soon' | 'no_test' | 'subcategory_required';
-  /** Подкатегория, для которой проверялся допуск (из запроса или профиля); null — не выбрана. */
-  subcategoryId?: string | null;
+  code?: 'active_attempt' | 'grade_change_too_soon' | 'retake_too_soon';
 }

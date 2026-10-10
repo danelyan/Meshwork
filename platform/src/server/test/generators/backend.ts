@@ -32,8 +32,8 @@ export const sqlRowcount: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['common.sql-queries'],
   format: 'number',
-  a: 1.2,
-  b: -1.3,
+  a: 1.4,
+  b: -0.65,
   paramSpace: 5e8,
   timeLimitSec: 180,
   generate(seed): TaskInstance {
@@ -116,8 +116,8 @@ export const httpSemantics: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.rest-design', 'common.http'],
   format: 'number',
-  a: 1.0,
-  b: -1.5,
+  a: 1.4,
+  b: -0.7,
   paramSpace: 48,
   timeLimitSec: 90,
   generate(seed): TaskInstance {
@@ -144,8 +144,8 @@ export const findBugIdor: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.authz', 'be.authn-impl', 'common.security-basics'],
   format: 'line',
-  a: 1.3,
-  b: -0.6,
+  a: 1.4,
+  b: -0.45,
   paramSpace: 3e5,
   timeLimitSec: 180,
   generate(seed): TaskInstance {
@@ -189,8 +189,8 @@ export const nPlusOne: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.orm', 'common.sql-queries'],
   format: 'number',
-  a: 1.1,
-  b: -0.7,
+  a: 1.4,
+  b: -0.48,
   paramSpace: 2e4,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -232,8 +232,8 @@ export const shellOutput: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.linux-shell', 'common.debugging'],
   format: 'number',
-  a: 1.0,
-  b: -0.5,
+  a: 1.4,
+  b: -0.43,
   paramSpace: 1e7,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -281,7 +281,7 @@ export const schemaConstraint: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.sql-schema', 'be.api-validation'],
   format: 'list',
-  a: 1.2,
+  a: 1.4,
   b: -0.4,
   paramSpace: 1e6,
   timeLimitSec: 180,
@@ -681,8 +681,8 @@ export const paginationOffset: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.rest-design', 'common.http'],
   format: 'number',
-  a: 1.1,
-  b: -1.2,
+  a: 1.4,
+  b: -0.62,
   paramSpace: 3e4,
   timeLimitSec: 120,
   generate(seed): TaskInstance {
@@ -724,8 +724,8 @@ export const validationRules: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.api-validation', 'be.rest-design'],
   format: 'list',
-  a: 1.2,
-  b: -0.5,
+  a: 1.4,
+  b: -0.43,
   paramSpace: 2e6,
   timeLimitSec: 180,
   generate(seed): TaskInstance {
@@ -1008,8 +1008,8 @@ export const jsonMapping: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.external-integration', 'be.api-contract'],
   format: 'number',
-  a: 1.0,
-  b: -1.3,
+  a: 1.4,
+  b: -0.65,
   paramSpace: 1e6,
   timeLimitSec: 120,
   generate(seed): TaskInstance {
@@ -1061,8 +1061,8 @@ export const timeoutBudget: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.retries-timeouts', 'be.external-integration'],
   format: 'number',
-  a: 1.1,
-  b: -0.9,
+  a: 1.4,
+  b: -0.54,
   paramSpace: 5e4,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -1117,8 +1117,8 @@ export const retryableStatus: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.retries-timeouts', 'common.http'],
   format: 'list',
-  a: 1.1,
-  b: -0.7,
+  a: 1.4,
+  b: -0.48,
   paramSpace: 3e3,
   timeLimitSec: 120,
   generate(seed): TaskInstance {
@@ -1146,7 +1146,7 @@ export const webhookDedup: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.idempotency', 'be.external-integration'],
   format: 'number',
-  a: 1.2,
+  a: 1.4,
   b: -0.4,
   paramSpace: 5e5,
   timeLimitSec: 180,
@@ -1283,8 +1283,8 @@ export const poolCapacity: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.performance', 'be.sql-schema'],
   format: 'number',
-  a: 1.0,
-  b: -1.2,
+  a: 1.4,
+  b: -0.62,
   paramSpace: 1e4,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -1332,8 +1332,8 @@ export const lruHits: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.cache', 'common.algo-complexity'],
   format: 'number',
-  a: 1.1,
-  b: -0.9,
+  a: 1.4,
+  b: -0.54,
   paramSpace: 1e6,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -1482,8 +1482,8 @@ export const fkActions: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.sql-schema', 'common.sql-queries'],
   format: 'number',
-  a: 1.1,
-  b: -1.0,
+  a: 1.4,
+  b: -0.56,
   paramSpace: 1e4,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -1536,8 +1536,8 @@ export const transactionScope: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['be.transactions', 'common.sql-queries'],
   format: 'number',
-  a: 1.1,
-  b: -0.8,
+  a: 1.4,
+  b: -0.51,
   paramSpace: 5e4,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -1745,7 +1745,7 @@ function simulateLocks(txs: { kind: 'upd' | 'lock' | 'sel' | 'commit'; row: numb
         }
       }
       // Цикл ожидания: T0 ждёт строку T1 и наоборот.
-      if (state[0] === 'run' && state[1] === 'run' && waiting[0] !== null && waiting[1] !== null && holder.get(waiting[0]) === 1 && holder.get(waiting[1]) === 0) {
+      if (state[0] === 'run' && state[1] === 'run' && waiting[0] !== null && waiting[1] !== null && holder.get(waiting[0]!) === 1 && holder.get(waiting[1]!) === 0) {
         deadlock = true;
         state[1] = 'aborted';
         release(1);
@@ -1820,6 +1820,1118 @@ export const lostUpdate: TaskGenerator = {
   },
 };
 
+// ===========================================================================
+// ADR-0003, дополнение 10.10 16:15: пул подкатегории ≥ 6 Junior + ≥ 4 Middle + ≥ 4 Senior.
+// Ниже: +2 Junior и +4 Senior на каждую подкатегорию. Senior: b 1,0-1,7, a 1,0-1,4; проектные
+// решения, компромиссы, диагностика по неполным данным, границы применимости. Ключ один, считает код.
+// ===========================================================================
+
+// --- web-api: Junior ---------------------------------------------------------
+
+export const routeMatching: TaskGenerator = {
+  id: 'be.route-matching',
+  taskId: 'task:route-matching',
+  title: '404 или 405',
+  specialization: 'backend',
+  subcategoryId: 'backend.web-api',
+  grade: 'junior',
+  catalogIds: ['be.rest-design', 'common.http'],
+  format: 'number',
+  a: 1.4,
+  b: -0.54,
+  paramSpace: 1e5,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const ent = rng.pick(ENTITIES);
+    const base = `/${ent.many}`;
+    const routes = rng.shuffle([`GET ${base}`, `POST ${base}`, `GET ${base}/:id`, `DELETE ${base}/:id`, `GET ${base}/:id/items`]).slice(0, 4);
+    const paths = [base, `${base}/${rng.int(1, 99)}`, `${base}/${rng.int(1, 99)}/items`, `${base}/${rng.int(1, 99)}/comments`, '/health'];
+    const methods = ['GET', 'POST', 'DELETE', 'PUT'];
+    const reqs = Array.from({ length: rng.int(6, 8) }, () => `${rng.pick(methods)} ${rng.pick(paths)}`);
+    const matchPath = (route: string, req: string) => {
+      const rp = route.split(' ')[1]!.split('/');
+      const qp = req.split(' ')[1]!.split('/');
+      return rp.length === qp.length && rp.every((seg, i) => seg.startsWith(':') || seg === qp[i]);
+    };
+    let c404 = 0;
+    let c405 = 0;
+    for (const r of reqs) {
+      const m = r.split(' ')[0]!;
+      const pathHit = routes.filter((rt) => matchPath(rt, r));
+      if (pathHit.length === 0) c404++;
+      else if (!pathHit.some((rt) => rt.startsWith(m + ' '))) c405++;
+    }
+    const ask405 = rng.int(0, 1) === 1;
+    return {
+      prompt: `Сервер знает только маршруты из списка (сегмент :id совпадает с любым одним сегментом пути). Если путь подходит под какой-то маршрут, но метод не поддерживается, сервер отвечает 405; если путь не подходит ни под один маршрут - 404; иначе запрос обрабатывается. Сколько запросов из списка получат ${ask405 ? '405' : '404'}?`,
+      code: `Маршруты:\n${routes.join('\n')}\n\nЗапросы:\n${reqs.map((r, i) => `${i + 1}. ${r}`).join('\n')}`,
+      answerHint: 'число запросов',
+      answerKey: String(ask405 ? c405 : c404),
+      explanation: '404 - путь не совпал ни с одним маршрутом; 405 - путь совпал, а метод для него не объявлен.',
+      params: { ask405, routes: routes.length },
+    };
+  },
+};
+
+export const listQuery: TaskGenerator = {
+  id: 'be.list-query',
+  taskId: 'task:list-query',
+  title: 'Что вернёт запрос со списком',
+  specialization: 'backend',
+  subcategoryId: 'backend.web-api',
+  grade: 'junior',
+  catalogIds: ['be.rest-design', 'common.sql-queries'],
+  format: 'text',
+  a: 1.4,
+  b: -0.48,
+  paramSpace: 2e5,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const ent = rng.pick(ENTITIES);
+    const statuses = ['new', 'paid', 'shipped'];
+    const amounts = rng.shuffle([100, 150, 200, 250, 300, 350, 400, 450]).slice(0, 7);
+    const rows = amounts.map((amount, i) => ({ id: 201 + i, status: rng.pick(statuses), amount }));
+    const status = rng.pick(statuses);
+    const desc = rng.int(0, 1) === 1;
+    const limit = rng.int(2, 3);
+    const offset = rng.int(0, 1);
+    let matched = rows.filter((r) => r.status === status);
+    for (let k = 0; matched.length < offset + 1 && k < 20; k++) {
+      rows[rng.int(0, rows.length - 1)]!.status = status;
+      matched = rows.filter((r) => r.status === status);
+    }
+    const sorted = [...matched].sort((x, y) => (desc ? y.amount - x.amount : x.amount - y.amount));
+    const res = sorted.slice(offset, offset + limit).map((r) => r.id);
+    return {
+      prompt: `Запрос GET /${ent.many}?status=${status}&sort=${desc ? '-' : ''}amount&limit=${limit}&offset=${offset} (минус перед полем - по убыванию; фильтр применяется до сортировки, offset - после). Перечислите id записей в том порядке, в котором они будут в ответе.`,
+      code: table(ent.many, ['id', 'status', 'amount'], rows.map((r) => [r.id, r.status, r.amount])),
+      answerHint: 'id через запятую, по порядку ответа',
+      answerKey: res.join(','),
+      explanation: 'Порядок операций: фильтр по status, сортировка по amount, затем пропуск offset записей и выдача не более limit.',
+      params: { status, desc, limit, offset },
+    };
+  },
+};
+
+// --- web-api: Senior ---------------------------------------------------------
+
+const API_CHANGES: { text: string; breaking: boolean; why: string }[] = [
+  { text: 'в ответ добавлено новое необязательное поле', breaking: false, why: 'клиенты игнорируют неизвестные поля' },
+  { text: 'добавлен новый эндпоинт', breaking: false, why: 'существующие вызовы не затронуты' },
+  { text: 'в запрос добавлен новый необязательный параметр', breaking: false, why: 'старые запросы без него остаются валидными' },
+  { text: 'ограничение длины поля name в запросе ослаблено со 50 до 100 символов', breaking: false, why: 'всё, что проходило раньше, проходит и сейчас' },
+  { text: 'изменён порядок полей в JSON-ответе', breaking: false, why: 'порядок ключей JSON не является частью контракта' },
+  { text: 'поле ответа price переименовано в cost', breaking: true, why: 'клиенты читают price' },
+  { text: 'поле status удалено из ответа', breaking: true, why: 'клиенты читают status' },
+  { text: 'в запрос добавлено новое обязательное поле region', breaking: true, why: 'старые запросы без region станут невалидными' },
+  { text: 'тип поля id в ответе изменён с integer на string', breaking: true, why: 'клиенты ожидают число' },
+  { text: 'ограничение длины поля name в запросе ужесточено со 100 до 50 символов', breaking: true, why: 'часть прежде валидных запросов отклоняется' },
+  { text: 'эндпоинт GET /v1/orders удалён без замены', breaking: true, why: 'вызовы получат 404' },
+];
+
+export const apiBreakingChanges: TaskGenerator = {
+  id: 'be.api-breaking-changes',
+  taskId: 'task:api-breaking-changes',
+  title: 'Какие изменения ломают клиентов',
+  specialization: 'backend',
+  subcategoryId: 'backend.web-api',
+  grade: 'senior',
+  catalogIds: ['be.api-contract', 'be.rest-design'],
+  format: 'list',
+  a: 1.1,
+  b: 1.2,
+  paramSpace: 1e4,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const pool = API_CHANGES;
+    const nBreaking = rng.int(3, 4);
+    const picked = rng.shuffle([...rng.sample(pool.filter((c) => c.breaking), nBreaking), ...rng.sample(pool.filter((c) => !c.breaking), 7 - nBreaking)]);
+    return {
+      prompt: 'API версии v1 уже используют клиенты, которые не обновляются: они читают только известные им поля, игнорируют неизвестные и ожидают прежние форматы. Укажите номера изменений, которые сломают таких клиентов (внесены в v1 без новой версии).',
+      code: picked.map((c, i) => `${i + 1}. ${c.text}`).join('\n'),
+      answerHint: 'номера через запятую',
+      answerKey: picked.map((c, i) => (c.breaking ? i + 1 : 0)).filter(Boolean).join(','),
+      explanation: picked.map((c, i) => `${i + 1}: ${c.breaking ? 'ломает' : 'безопасно'} - ${c.why}`).join('; ') + '.',
+      params: { nBreaking },
+    };
+  },
+};
+
+export const idempotencyTtl: TaskGenerator = {
+  id: 'be.idempotency-ttl',
+  taskId: 'task:idempotency-ttl',
+  title: 'Ключи идемпотентности и их срок жизни',
+  specialization: 'backend',
+  subcategoryId: 'backend.web-api',
+  grade: 'senior',
+  catalogIds: ['be.idempotency', 'be.api-contract'],
+  format: 'number',
+  a: 1.2,
+  b: 1.4,
+  paramSpace: 1e6,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const ttl = rng.pick([60, 120, 300]);
+    const n = rng.int(7, 9);
+    const keys = ['K1', 'K2'];
+    let t = 0;
+    const reqs: { t: number; key: string; amount: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      t += rng.pick([5, 10, 20, 30, ttl - 10, ttl + 20]);
+      reqs.push({ t, key: rng.pick(keys), amount: rng.pick([100, 100, 200]) });
+    }
+    // Ключ живёт ttl с от момента, когда запрос с ним был ВЫПОЛНЕН; повтор в пределах срока не продлевает его.
+    const store = new Map<string, { at: number; amount: number }>();
+    let executed = 0;
+    for (const r of reqs) {
+      const s = store.get(r.key);
+      if (s && r.t - s.at < ttl) continue; // повтор (тот же body) - ответ из кэша; другой body - 422; в обоих случаях не выполняется
+      store.set(r.key, { at: r.t, amount: r.amount });
+      executed++;
+    }
+    return {
+      prompt: `Сервер платежей хранит результат по Idempotency-Key ровно ${ttl} с с момента, когда запрос с этим ключом был фактически выполнен (повторы срок не продлевают; по истечении ключ забывается). Запрос с известным ключом и тем же телом возвращает сохранённый ответ, а с известным ключом и другим телом - 422; в обоих случаях платёж заново не выполняется. Запрос с неизвестным (или забытым) ключом выполняется. Сколько платежей будет выполнено?`,
+      code: reqs.map((r, i) => `${i + 1}. t=${r.t}с  Idempotency-Key: ${r.key}  amount=${r.amount}`).join('\n'),
+      answerHint: 'число выполненных платежей',
+      answerKey: String(executed),
+      explanation: `Платёж выполняется при первом запросе с ключом и при запросе после истечения ${ttl} с: повтор после срока (даже с тем же телом) считается новым платежом, это граница применимости идемпотентности.`,
+      params: { ttl, n },
+    };
+  },
+};
+
+export const sharedCacheHits: TaskGenerator = {
+  id: 'be.shared-cache-origin',
+  taskId: 'task:shared-cache-origin',
+  title: 'Сколько запросов дойдёт до origin',
+  specialization: 'backend',
+  subcategoryId: 'backend.web-api',
+  grade: 'senior',
+  catalogIds: ['common.http', 'be.cache'],
+  format: 'number',
+  a: 1.2,
+  b: 1.5,
+  paramSpace: 1e5,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const cfg = rng.pick([
+      { h: 'public, max-age=60', fresh: 60, store: true, reval: false },
+      { h: 'private, max-age=60', fresh: 60, store: false, reval: false },
+      { h: 'no-store', fresh: 0, store: false, reval: false },
+      { h: 'no-cache', fresh: 0, store: true, reval: true },
+      { h: 'public, max-age=30, s-maxage=120', fresh: 120, store: true, reval: false },
+      { h: 'public, max-age=300, s-maxage=20', fresh: 20, store: true, reval: false },
+    ]);
+    const n = rng.int(6, 8);
+    const times: number[] = [];
+    let t = 0;
+    for (let i = 0; i < n; i++) {
+      times.push(t);
+      t += rng.pick([5, 15, 25, 40, 70, 130]);
+    }
+    // Общий кэш (CDN). no-cache: хранит, но каждый запрос идёт на origin (условный), no-store/private: не хранит.
+    let origin = 0;
+    let storedAt: number | null = null;
+    for (const x of times) {
+      if (!cfg.store) {
+        origin++;
+        continue;
+      }
+      if (cfg.reval) {
+        origin++;
+        continue;
+      }
+      if (storedAt !== null && x - storedAt < cfg.fresh) continue;
+      origin++;
+      storedAt = x;
+    }
+    return {
+      prompt: `Перед origin стоит общий кэш (CDN, shared cache). Origin на GET /catalog всегда отвечает 200 с заголовком Cache-Control: ${cfg.h}. Запросы приходят от разных пользователей в моменты t (с). Кэш пуст, ответ считается свежим по правилам HTTP-кэширования для общих кэшей; запросы на повторную проверку (no-cache) тоже доходят до origin. Сколько запросов дойдёт до origin?`,
+      code: times.map((x) => `t=${x}`).join('\n'),
+      answerHint: 'число запросов к origin',
+      answerKey: String(origin),
+      explanation: 'Общий кэш не хранит ответы с private и no-store; no-cache хранит, но требует проверки на каждом запросе; s-maxage для общего кэша главнее max-age; иначе ответ свежий max-age (s-maxage) секунд с момента получения.',
+      params: { h: cfg.h, n },
+    };
+  },
+};
+
+export const littlesLaw: TaskGenerator = {
+  id: 'be.capacity-littles-law',
+  taskId: 'task:capacity-littles-law',
+  title: 'Сколько экземпляров нужно',
+  specialization: 'backend',
+  subcategoryId: 'backend.web-api',
+  grade: 'senior',
+  catalogIds: ['be.performance', 'be.concurrency'],
+  format: 'number',
+  a: 1.1,
+  b: 1.6,
+  paramSpace: 1e5,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const rps = rng.pick([200, 300, 400, 500, 800, 1200]);
+    const latency = rng.pick([50, 80, 120, 200, 250]);
+    const workers = rng.pick([16, 20, 32, 40]);
+    const util = rng.pick([50, 60, 70, 80]);
+    const spare = rng.int(0, 1);
+    // Средняя параллельность по закону Литтла: rps · latency(с). Экземпляр держит workers · util/100.
+    const num = rps * latency * 100;
+    const den = 1000 * workers * util;
+    const need = Math.ceil(num / den) + spare;
+    return {
+      prompt: `Сервис получает ${rps} запросов/с, средняя длительность обработки ${latency} мс. Каждый экземпляр обслуживает не больше ${workers} запросов одновременно, но по правилам эксплуатации загружается не выше ${util}% этого числа. ${
+        spare ? 'Кроме того, нужен один резервный экземпляр на случай отказа любого другого (N+1).' : 'Резерва на отказ не требуется.'
+      } Какое минимальное число экземпляров нужно? Используйте закон Литтла (число одновременных запросов = интенсивность · время обработки).`,
+      answerHint: 'число экземпляров',
+      answerKey: String(need),
+      explanation: `Одновременно в системе в среднем ${rps}·${latency}/1000 = ${(rps * latency) / 1000} запросов; экземпляр безопасно держит ${(workers * util) / 100}; ${Math.ceil(num / den)} шт.${spare ? ' + 1 резервный.' : ''}`,
+      params: { rps, latency, workers, util, spare },
+    };
+  },
+};
+
+// --- integrations: Junior ----------------------------------------------------
+
+export const fetchAllPages: TaskGenerator = {
+  id: 'be.fetch-all-pages',
+  taskId: 'task:fetch-all-pages',
+  title: 'Сколько запросов за всеми страницами',
+  specialization: 'backend',
+  subcategoryId: 'backend.integrations',
+  grade: 'junior',
+  catalogIds: ['be.external-integration', 'be.rest-design'],
+  format: 'number',
+  a: 1.4,
+  b: -0.51,
+  paramSpace: 1e4,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const size = rng.pick([10, 20, 25, 50]);
+    const total = rng.int(2, 7) * size + (rng.int(0, 1) === 0 ? 0 : rng.int(1, size - 1));
+    const mode = rng.pick(['full', 'count'] as const);
+    // full: next_cursor отдаётся, пока страница полная (в том числе последняя полная -> лишний пустой запрос);
+    // count: next_cursor = null на странице, которая исчерпала данные.
+    let requests = 0;
+    let left = total;
+    for (;;) {
+      requests++;
+      const got = Math.min(size, left);
+      left -= got;
+      const hasNext = mode === 'full' ? got === size : left > 0;
+      if (!hasNext) break;
+    }
+    return {
+      prompt: `Клиент забирает все записи внешнего API, запрашивая страницу за страницей (по ${size} записей), пока ответ содержит next_cursor. Всего у API ${total} записей. ${
+        mode === 'full' ? 'API возвращает next_cursor, если страница заполнена целиком (даже если дальше данных нет).' : 'API возвращает next_cursor только если после этой страницы остались данные.'
+      } Сколько запросов сделает клиент?`,
+      answerHint: 'число запросов',
+      answerKey: String(requests),
+      explanation: mode === 'full' ? `Полных страниц ${Math.floor(total / size)}; если записей кратно ${size}, последний запрос вернёт пустую страницу. Итого ${requests}.` : `Страниц ceil(${total}/${size}) = ${requests}.`,
+      params: { size, total, mode },
+    };
+  },
+};
+
+export const clientThrottle: TaskGenerator = {
+  id: 'be.client-throttle',
+  taskId: 'task:client-throttle',
+  title: 'Лимит внешнего API',
+  specialization: 'backend',
+  subcategoryId: 'backend.integrations',
+  grade: 'junior',
+  catalogIds: ['be.external-integration', 'be.rate-limit'],
+  format: 'number',
+  a: 1.4,
+  b: -0.59,
+  paramSpace: 1e4,
+  timeLimitSec: 120,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const limit = rng.pick([3, 5, 10, 20]);
+    const m = rng.int(2, 9) * limit + rng.int(1, limit - 1);
+    const kind = rng.int(0, 1);
+    const lastSec = Math.floor((m - 1) / limit);
+    const secsUsed = lastSec + 1;
+    return {
+      prompt: `Внешний API разрешает не больше ${limit} запросов в секунду (окна по секундам: [0; 1), [1; 2), ...). Клиент должен сделать ${m} запросов и отправляет в каждую секунду максимум разрешённое, начиная с t = 0. ${
+        kind === 0 ? 'В какую секунду (номер окна, считая с 0) уйдёт последний запрос?' : 'Сколько окон по секундам будет задействовано?'
+      }`,
+      answerHint: 'число',
+      answerKey: String(kind === 0 ? lastSec : secsUsed),
+      explanation: `Запросы идут пачками по ${limit}: окно k содержит запросы с номерами ${limit}·k+1 ... ${limit}·(k+1); последний запрос №${m} попадает в окно ${lastSec}, всего окон ${secsUsed}.`,
+      params: { limit, m, kind },
+    };
+  },
+};
+
+// --- integrations: Senior ----------------------------------------------------
+
+export const retryAmplification: TaskGenerator = {
+  id: 'be.retry-amplification-chain',
+  taskId: 'task:retry-amplification-chain',
+  title: 'Усиление нагрузки ретраями',
+  specialization: 'backend',
+  subcategoryId: 'backend.integrations',
+  grade: 'senior',
+  catalogIds: ['be.retries-timeouts', 'be.distributed-consistency'],
+  format: 'number',
+  a: 1.2,
+  b: 1.2,
+  paramSpace: 5e4,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const names = ['gateway', 'orders', 'billing', 'ledger'];
+    const depth = rng.int(3, 4);
+    // Слой i вызывает слой i+1. Нижний сервис недоступен и отвечает 503.
+    type Layer = { from: string; to: string; policy: 'any' | '429' | 'none'; extra: number };
+    const layers: Layer[] = [];
+    for (let i = 0; i < depth; i++) {
+      layers.push({ from: names[i]!, to: i + 1 < names.length ? names[i + 1]! : 'database-proxy', policy: rng.pick(['any', 'any', 'any', '429', 'none']), extra: rng.int(1, 3) });
+    }
+    let amp = 1;
+    const parts: string[] = [];
+    for (const l of layers) {
+      if (l.policy === 'any') {
+        amp *= 1 + l.extra;
+        parts.push(`${1 + l.extra}`);
+      } else parts.push('1');
+    }
+    const describe = (l: Layer) =>
+      l.policy === 'any' ? `${l.from} → ${l.to}: при любой ошибке повторяет, ${l.extra} повтора(ов) после первой попытки` : l.policy === '429' ? `${l.from} → ${l.to}: повторяет только при 429, иначе возвращает ошибку сразу` : `${l.from} → ${l.to}: без повторов`;
+    return {
+      prompt: `Один запрос пользователя проходит по цепочке сервисов (список ниже). Самый нижний сервис (${layers.at(-1)!.to}) недоступен и на каждый вызов отвечает 503. Каждый вызов, который вышестоящий слой повторяет, снова проходит всю цепочку вниз. Сколько вызовов в сумме получит ${layers.at(-1)!.to} от одного запроса пользователя?`,
+      code: layers.map((l, i) => `${i + 1}. ${describe(l)}`).join('\n'),
+      answerHint: 'число вызовов',
+      answerKey: String(amp),
+      explanation: `Нагрузка перемножается по слоям, которые повторяют на 503: ${parts.join(' · ')} = ${amp}. Слой с повтором только при 429 или без повторов множитель 1 не добавляет.`,
+      params: { depth, policies: layers.map((l) => `${l.policy}${l.extra}`).join(',') },
+    };
+  },
+};
+
+export const sagaCompensation: TaskGenerator = {
+  id: 'be.saga-compensation',
+  taskId: 'task:saga-compensation',
+  title: 'Какие компенсации выполнит сага',
+  specialization: 'backend',
+  subcategoryId: 'backend.integrations',
+  grade: 'senior',
+  catalogIds: ['be.distributed-consistency', 'be.external-integration'],
+  format: 'text',
+  a: 1.2,
+  b: 1.3,
+  paramSpace: 5e4,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const all = [
+      { step: 'reserve-stock', comp: 'release-stock' },
+      { step: 'charge-card', comp: 'refund-card' },
+      { step: 'create-shipment', comp: 'cancel-shipment' },
+      { step: 'send-email', comp: null },
+      { step: 'grant-bonus', comp: 'revoke-bonus' },
+      { step: 'notify-partner', comp: null },
+    ];
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const steps = rng.sample(all, rng.int(4, 6));
+      const fail = rng.int(2, steps.length - 1); // индекс упавшего шага (0-based), до него хотя бы 2 выполненных
+      const done = steps.slice(0, fail);
+      const comps = done
+        .map((s) => s.comp)
+        .filter((c): c is string => c !== null)
+        .reverse();
+      if (comps.length < 2) continue;
+      return {
+        prompt: `Сага выполняет шаги по порядку. Шаг №${fail + 1} (${steps[fail]!.step}) завершился ошибкой; его собственных побочных эффектов нет. Для отката оркестратор вызывает компенсацию каждого уже успешно выполненного шага в обратном порядке; у шагов с пометкой «нет» компенсации не существует, они пропускаются. Перечислите вызванные компенсации в порядке вызова.`,
+        code: steps.map((s, i) => `${i + 1}. ${s.step} - компенсация: ${s.comp ?? 'нет'}`).join('\n'),
+        answerHint: 'названия компенсаций через запятую, по порядку',
+        answerKey: comps.join(','),
+        explanation: 'Компенсируются только выполненные шаги (до упавшего), в обратном порядке; шаги без компенсации (письма, уведомления) откатить нельзя, поэтому их эффект остаётся.',
+        params: { n: steps.length, fail },
+      };
+    }
+    throw new Error('saga-compensation: не удалось подобрать экземпляр');
+  },
+};
+
+export const webhookReplayWindow: TaskGenerator = {
+  id: 'be.webhook-replay-window',
+  taskId: 'task:webhook-replay-window',
+  title: 'Окно времени и повтор вебхука',
+  specialization: 'backend',
+  subcategoryId: 'backend.integrations',
+  grade: 'senior',
+  catalogIds: ['be.external-integration', 'common.security-basics'],
+  format: 'number',
+  a: 1.1,
+  b: 1.3,
+  paramSpace: 1e6,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const tol = rng.pick([60, 120, 300]);
+    const n = rng.int(7, 9);
+    let now = 1000;
+    type Row = { arrival: number; sentAt: number; id: string; sig: boolean };
+    const rows: Row[] = [];
+    const ids = ['w1', 'w2', 'w3', 'w4'];
+    for (let i = 0; i < n; i++) {
+      now += rng.pick([5, 20, 40, 90]);
+      const skew = rng.pick([0, -10, 30, tol - 5, tol + 5, -(tol + 20), tol + 40]);
+      rows.push({ arrival: now, sentAt: now + skew, id: rng.pick(ids), sig: rng.next() > 0.2 });
+    }
+    // Принято: подпись верна, |arrival - sentAt| ≤ tol, id ещё не принят. Принятый id запоминается.
+    const accepted = new Set<string>();
+    let count = 0;
+    for (const r of rows) {
+      if (!r.sig) continue;
+      if (Math.abs(r.arrival - r.sentAt) > tol) continue;
+      if (accepted.has(r.id)) continue;
+      accepted.add(r.id);
+      count++;
+    }
+    return {
+      prompt: `Обработчик вебхуков принимает событие, только если одновременно: подпись верна; |момент получения − отметка времени в заголовке| ≤ ${tol} с; идентификатор события ещё не принимался (принятые запоминаются). Отклонённые события не запоминаются. Сколько событий будет принято?`,
+      code: ['№ | получено (с) | отметка в заголовке (с) | id | подпись', ...rows.map((r, i) => `${i + 1} | ${r.arrival} | ${r.sentAt} | ${r.id} | ${r.sig ? 'верна' : 'неверна'}`)].join('\n'),
+      answerHint: 'число принятых событий',
+      answerKey: String(count),
+      explanation: 'Проверяем по порядку три условия; событие с отклонённой отметкой времени id не занимает, поэтому такое же событие с верной отметкой позже будет принято.',
+      params: { tol, n },
+    };
+  },
+};
+
+export const contractDrift: TaskGenerator = {
+  id: 'be.contract-drift',
+  taskId: 'task:contract-drift',
+  title: 'Кого сломало расхождение контракта',
+  specialization: 'backend',
+  subcategoryId: 'backend.integrations',
+  grade: 'senior',
+  catalogIds: ['be.api-contract', 'be.external-integration'],
+  format: 'list',
+  a: 1.2,
+  b: 1.5,
+  paramSpace: 5e4,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const fields = ['id', 'amount', 'currency', 'status', 'created_at', 'note'];
+    for (let attempt = 0; attempt < 100; attempt++) {
+      // Ответ партнёра после его релиза: часть полей пропала, один добавился.
+      const present = rng.sample(fields, rng.int(4, 5));
+      const extra = rng.pick(['tax', 'region', 'trace_id']);
+      const payload = [...present, extra];
+      const consumers = Array.from({ length: 5 }, (_, i) => {
+        const required = rng.sample(fields.slice(0, 5), rng.int(2, 3));
+        const strict = rng.int(0, 2) === 0;
+        const known = new Set([...required, ...rng.sample(fields, rng.int(0, 2))]);
+        return { name: `C${i + 1}`, required, strict, known };
+      });
+      const broken = consumers.map((c) => (c.required.some((f) => !payload.includes(f)) || (c.strict && payload.some((f) => !c.known.has(f))) ? c.name : null)).filter((x): x is string => x !== null);
+      if (broken.length < 1 || broken.length > 4) continue;
+      return {
+        prompt: `Партнёрский API после релиза стал отдавать JSON с набором полей из списка «Ответ». Потребитель ломается, если в ответе нет хотя бы одного из его обязательных полей, а «строгий» потребитель ломается ещё и когда в ответе есть поле, которого нет в его схеме (обязательные поля входят в схему). Нестрогие игнорируют лишние поля. Какие потребители сломаются?`,
+        code: `Ответ: ${payload.join(', ')}\n\n${consumers.map((c) => `${c.name}: обязательные [${c.required.join(', ')}], схема [${[...c.known].join(', ')}], ${c.strict ? 'строгий' : 'нестрогий'}`).join('\n')}`,
+        answerHint: 'имена через запятую',
+        answerKey: broken.join(','),
+        explanation: 'Ломаются те, у кого пропало обязательное поле, и строгие потребители, увидевшие новое поле вне схемы; нестрогие новое поле игнорируют.',
+        params: { payload: payload.join(','), consumers: consumers.length },
+      };
+    }
+    throw new Error('contract-drift: не удалось подобрать экземпляр');
+  },
+};
+
+// --- highload: Junior --------------------------------------------------------
+
+export const batchingTime: TaskGenerator = {
+  id: 'be.batching-time',
+  taskId: 'task:batching-time',
+  title: 'Время вставки пачками',
+  specialization: 'backend',
+  subcategoryId: 'backend.highload',
+  grade: 'junior',
+  catalogIds: ['be.performance', 'common.sql-queries'],
+  format: 'number',
+  a: 1.4,
+  b: -0.56,
+  paramSpace: 1e4,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const n = rng.int(5, 60) * 10 + rng.pick([0, 0, 7, 13]);
+    const rtt = rng.pick([2, 5, 10, 20]);
+    const batch = rng.pick([10, 25, 50, 100]);
+    const one = n * rtt;
+    const batched = Math.ceil(n / batch) * rtt;
+    const kind = rng.int(0, 2);
+    const answer = kind === 0 ? one : kind === 1 ? batched : one - batched;
+    return {
+      prompt: `Нужно вставить ${n} строк в БД. Каждое обращение к БД (один INSERT, в том числе многострочный) занимает ${rtt} мс сетевой задержки, время самой вставки строк не учитывайте. ${
+        kind === 0 ? 'Сколько мс займёт вставка по одной строке отдельными запросами?' : kind === 1 ? `Сколько мс займёт вставка пачками по ${batch} строк в одном INSERT (последняя пачка может быть неполной)?` : `Вставка по одной строке против пачек по ${batch} строк в одном INSERT (последняя пачка может быть неполной): на сколько мс пачки быстрее?`
+      }`,
+      answerHint: 'миллисекунды',
+      answerKey: String(answer),
+      explanation: `По одной: ${n}·${rtt} = ${one} мс. Пачками: ceil(${n}/${batch}) = ${Math.ceil(n / batch)} запросов · ${rtt} = ${batched} мс.`,
+      params: { n, rtt, batch, kind },
+    };
+  },
+};
+
+export const ttlLoads: TaskGenerator = {
+  id: 'be.ttl-loads',
+  taskId: 'task:ttl-loads',
+  title: 'Сколько раз сходим в БД',
+  specialization: 'backend',
+  subcategoryId: 'backend.highload',
+  grade: 'junior',
+  catalogIds: ['be.cache', 'be.performance'],
+  format: 'number',
+  a: 1.4,
+  b: -0.45,
+  paramSpace: 1e6,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const ttl = rng.pick([30, 60, 120]);
+    const n = rng.int(8, 11);
+    const times: number[] = [];
+    let t = rng.int(0, 10);
+    for (let i = 0; i < n; i++) {
+      times.push(t);
+      t += rng.pick([5, 20, 35, 55, 90]);
+    }
+    let loads = 0;
+    let exp = -1;
+    for (const x of times) {
+      if (x >= exp) {
+        loads++;
+        exp = x + ttl;
+      }
+    }
+    return {
+      prompt: `Один ключ в кэше: если значения нет или его TTL истёк (значение живёт ${ttl} с с момента загрузки и в момент загрузки + ${ttl} уже считается устаревшим), запрос читает БД и кладёт значение в кэш заново. Кэш в начале пуст. Моменты запросов (с) даны ниже. Сколько раз запросы прочитают БД?`,
+      code: times.map((x) => `t=${x}`).join('\n'),
+      answerHint: 'число обращений к БД',
+      answerKey: String(loads),
+      explanation: 'После каждой загрузки следующая будет у первого запроса, пришедшего не раньше загрузка + TTL.',
+      params: { ttl, n },
+    };
+  },
+};
+
+// --- highload: Senior --------------------------------------------------------
+
+export const replicaLag: TaskGenerator = {
+  id: 'be.replica-lag-reads',
+  taskId: 'task:replica-lag-reads',
+  title: 'Устаревшие чтения с реплики',
+  specialization: 'backend',
+  subcategoryId: 'backend.highload',
+  grade: 'senior',
+  catalogIds: ['be.distributed-consistency', 'be.performance'],
+  format: 'number',
+  a: 1.2,
+  b: 1.4,
+  paramSpace: 1e6,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const lag = rng.pick([3, 4, 6]);
+    const sticky = rng.pick([0, 0, 3, 5]); // 0 - все чтения с реплики
+    type Ev = { t: number; kind: 'write' | 'read' };
+    const evs: Ev[] = [];
+    let t = 0;
+    for (let i = 0, n = rng.int(9, 11); i < n; i++) {
+      t += rng.int(1, 3);
+      evs.push({ t, kind: i === 0 || rng.next() < 0.6 ? 'read' : 'write' });
+    }
+    if (!evs.some((e) => e.kind === 'write')) evs[1] = { t: evs[1]!.t, kind: 'write' };
+    let lastWrite = -Infinity;
+    let stale = 0;
+    for (const e of evs) {
+      if (e.kind === 'write') {
+        lastWrite = e.t;
+        continue;
+      }
+      const onPrimary = sticky > 0 && e.t - lastWrite < sticky;
+      if (onPrimary) continue;
+      // Реплика видит записи не новее e.t - lag. Чтение устарело, если после последней видимой записи была ещё запись.
+      const writes = evs.filter((w) => w.kind === 'write' && w.t <= e.t);
+      const visible = writes.filter((w) => w.t <= e.t - lag);
+      if (visible.length < writes.length) stale++;
+    }
+    return {
+      prompt: `Один пользователь пишет в primary и читает. Реплика отстаёт на ${lag} с: на момент t она содержит все записи, сделанные не позже t − ${lag}. ${
+        sticky > 0 ? `После записи этого пользователя его чтения в течение ${sticky} с (до момента записи + ${sticky}, не включая) идут на primary, остальные - на реплику.` : 'Все чтения идут на реплику.'
+      } Чтение считается устаревшим, если на момент чтения уже была запись, которой нет в прочитанных данных (чтение на primary всегда свежее). События даны по времени. Сколько чтений устареют?`,
+      code: evs.map((e) => `t=${e.t}: ${e.kind === 'write' ? 'запись' : 'чтение'}`).join('\n'),
+      answerHint: 'число устаревших чтений',
+      answerKey: String(stale),
+      explanation: 'Чтение с реплики устарело, если между t − lag и t была запись (и ещё не пришла на реплику); липкость на primary защищает только первые sticky секунд после записи.',
+      params: { lag, sticky, n: evs.length },
+    };
+  },
+};
+
+export const hotKeyDbLoad: TaskGenerator = {
+  id: 'be.hot-key-db-load',
+  taskId: 'task:hot-key-db-load',
+  title: 'Нагрузка на БД за кэшем',
+  specialization: 'backend',
+  subcategoryId: 'backend.highload',
+  grade: 'senior',
+  catalogIds: ['be.cache', 'be.performance'],
+  format: 'number',
+  a: 1.2,
+  b: 1.5,
+  paramSpace: 1e6,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const groups = [
+      { n: rng.pick([3, 5, 10]), r: rng.pick([100, 200, 300]) },
+      { n: rng.pick([20, 50]), r: rng.pick([20, 30, 40]) },
+      { n: rng.pick([200, 500]), r: rng.pick([3, 5, 8]) },
+      { n: rng.pick([2000, 5000]), r: 1 },
+    ];
+    const total = groups.reduce((s, g) => s + g.n * g.r, 0);
+    const cap = rng.int(1, 3) === 1 ? groups[0]!.n + rng.int(1, groups[1]!.n) : groups[0]!.n + groups[1]!.n + rng.int(1, groups[2]!.n);
+    // Кэш держит cap самых горячих ключей (идеальный выбор).
+    let left = cap;
+    let hit = 0;
+    for (const g of groups) {
+      const take = Math.min(left, g.n);
+      hit += take * g.r;
+      left -= take;
+    }
+    return {
+      prompt: `Трафик на чтение распределён неравномерно (группы ключей ниже; r - запросов в секунду на один ключ группы). Кэш вмещает ${cap} ключей и всегда держит самые горячие (идеальный выбор), попадание в кэш не доходит до БД; прогрев и обновления не учитываем. Сколько запросов в секунду дойдёт до БД?`,
+      code: groups.map((g, i) => `группа ${i + 1}: ${g.n} ключей по ${g.r} запросов/с`).join('\n'),
+      answerHint: 'запросов в секунду',
+      answerKey: String(total - hit),
+      explanation: `Всего ${total} запросов/с. Кэш забирает ключи по убыванию r: ${hit} запросов/с попадут в кэш, остаётся ${total - hit}.`,
+      params: { cap, groups: groups.map((g) => `${g.n}x${g.r}`).join(',') },
+    };
+  },
+};
+
+export const queueDrain: TaskGenerator = {
+  id: 'be.queue-drain',
+  taskId: 'task:queue-drain',
+  title: 'Когда опустеет очередь',
+  specialization: 'backend',
+  subcategoryId: 'backend.highload',
+  grade: 'senior',
+  catalogIds: ['be.message-queue', 'be.performance'],
+  format: 'number',
+  a: 1.1,
+  b: 1.6,
+  paramSpace: 1e5,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const mu = rng.pick([10, 20, 25]);
+    const partitions = rng.int(2, 6);
+    const consumers = partitions + rng.int(-1, 4);
+    const eff = Math.min(consumers, Math.max(1, partitions));
+    const lambda = Math.max(1, Math.round(mu * rng.pick([0.5, 1, 1.5, 2, 2.5]) * rng.pick([1, 2])));
+    const drain = eff * mu - lambda;
+    let backlog: number;
+    let answer: number;
+    if (drain > 0) {
+      const secs = rng.int(5, 40);
+      backlog = drain * secs;
+      answer = secs;
+    } else {
+      backlog = rng.int(5, 40) * 100;
+      answer = 0;
+    }
+    return {
+      prompt: `В топике ${partitions} партиях накопилось ${backlog} сообщений, продолжают поступать ${lambda} сообщений/с. Запущено ${consumers} консьюмеров одной группы, каждый обрабатывает ${mu} сообщений/с; одну партицию в группе читает не больше одного консьюмера, лишние консьюмеры простаивают. Через сколько секунд очередь опустеет (потребитель успевает за поступлением и обрабатывает накопленное)? Если очередь не опустеет никогда, ответ 0.`,
+      answerHint: 'секунды (0, если никогда)',
+      answerKey: String(answer),
+      explanation: `Работают min(${consumers}, ${partitions}) = ${eff} консьюмеров: ${eff * mu} сообщений/с против поступления ${lambda}. ${drain > 0 ? `Очередь убывает на ${drain}/с: ${backlog}/${drain} = ${answer} с.` : 'Чистой скорости убывания нет: очередь не опустеет, лишние консьюмеры сверх числа партиций не помогают.'}`,
+      params: { partitions, consumers, mu, lambda, backlog },
+    };
+  },
+};
+
+export const slowQueryTop: TaskGenerator = {
+  id: 'be.slow-query-top',
+  taskId: 'task:slow-query-top',
+  title: 'Какой запрос оптимизировать первым',
+  specialization: 'backend',
+  subcategoryId: 'backend.highload',
+  grade: 'senior',
+  catalogIds: ['be.performance', 'be.sql-indexes'],
+  format: 'number',
+  a: 1.0,
+  b: 1.2,
+  paramSpace: 1e6,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const sqls = ['SELECT ... FROM orders WHERE user_id = $1', 'SELECT ... FROM orders o JOIN items i ON ... WHERE o.id = $1', 'UPDATE sessions SET seen_at = now() WHERE id = $1', 'SELECT count(*) FROM events WHERE day = $1', 'SELECT ... FROM users WHERE email = $1', 'INSERT INTO audit(...) VALUES (...)'];
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const rows = rng.shuffle(sqls).map((sql) => {
+        const calls = rng.pick([50, 400, 3000, 20000, 150000]);
+        const mean = rng.pick([0.2, 0.5, 2, 8, 40, 300]);
+        const byTotal = rng.int(0, 2) === 0;
+        const total = Math.round(calls * mean);
+        return { sql, calls, mean, total, byTotal };
+      });
+      const sorted = [...rows].sort((x, y) => y.total - x.total);
+      if (sorted[0]!.total === sorted[1]!.total) continue;
+      const best = rows.indexOf(sorted[0]!) + 1;
+      return {
+        prompt: 'Узким местом считается БД, цель - сократить суммарное время, которое она тратит. Ниже статистика запросов за час (calls - число вызовов, mean - среднее время вызова, total - суммарное время всех вызовов). Какой запрос (номер) даёт наибольший вклад в суммарное время, то есть его стоит оптимизировать первым?',
+        code: rows.map((r, i) => `${i + 1}. ${r.sql}\n   ${r.byTotal ? `calls=${r.calls}, total=${r.total} мс` : `calls=${r.calls}, mean=${r.mean} мс`}`).join('\n'),
+        answerHint: 'номер запроса',
+        answerKey: String(best),
+        explanation: 'Вклад запроса - calls · mean (или total, если он указан). Редкий, но медленный запрос и частый, но быстрый сравниваются именно по произведению.',
+        params: { rows: rows.map((r) => `${r.calls}x${r.mean}`).join(',') },
+      };
+    }
+    throw new Error('slow-query-top: не удалось подобрать экземпляр');
+  },
+};
+
+// --- data-model: Junior ------------------------------------------------------
+
+export const sqlAggregate: TaskGenerator = {
+  id: 'be.sql-aggregate',
+  taskId: 'task:sql-aggregate',
+  title: 'Результат агрегата',
+  specialization: 'backend',
+  subcategoryId: 'backend.data-model',
+  grade: 'junior',
+  catalogIds: ['common.sql-queries', 'be.sql-schema'],
+  format: 'number',
+  a: 1.4,
+  b: -0.54,
+  paramSpace: 1e6,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const ent = rng.pick(ENTITIES);
+    const n = rng.int(6, 8);
+    const statuses = ['new', 'paid', 'cancelled'];
+    const rows = Array.from({ length: n }, (_, i) => ({ id: 300 + i, user_id: rng.int(1, 3), status: rng.pick(statuses), amount: rng.int(1, 9) * 100 }));
+    const st = rng.pick(statuses);
+    const uid = rng.int(1, 3);
+    const kind = rng.int(0, 3);
+    let sql: string;
+    let answer: number;
+    if (kind === 0) {
+      sql = `SELECT SUM(amount) FROM ${ent.many} WHERE status = '${st}';`;
+      answer = rows.filter((r) => r.status === st).reduce((s, r) => s + r.amount, 0);
+    } else if (kind === 1) {
+      sql = `SELECT COUNT(DISTINCT user_id) FROM ${ent.many} WHERE status <> '${st}';`;
+      answer = new Set(rows.filter((r) => r.status !== st).map((r) => r.user_id)).size;
+    } else if (kind === 2) {
+      sql = `SELECT MAX(amount) FROM ${ent.many} WHERE user_id = ${uid} AND status = '${st}';`;
+      answer = Math.max(0, ...rows.filter((r) => r.user_id === uid && r.status === st).map((r) => r.amount));
+    } else {
+      sql = `SELECT COUNT(*) FROM (SELECT user_id FROM ${ent.many} GROUP BY user_id HAVING SUM(amount) > ${rng.pick([5, 8, 10]) * 100}) t;`;
+      const thr = Number(/> (\d+)\)/.exec(sql)![1]);
+      const sums = new Map<number, number>();
+      for (const r of rows) sums.set(r.user_id, (sums.get(r.user_id) ?? 0) + r.amount);
+      answer = [...sums.values()].filter((v) => v > thr).length;
+    }
+    return {
+      prompt: kind === 2 ? 'Какое значение вернёт запрос (если подходящих строк нет, считайте результат равным 0)?' : 'Какое значение вернёт запрос?',
+      code: `${table(ent.many, ['id', 'user_id', 'status', 'amount'], rows.map((r) => [r.id, r.user_id, r.status, r.amount]))}\n\n${sql}`,
+      answerHint: 'число',
+      answerKey: String(answer),
+      explanation: 'Сначала WHERE отбирает строки, затем агрегат считается по оставшимся; HAVING фильтрует группы после GROUP BY.',
+      params: { kind, n },
+    };
+  },
+};
+
+export const nullCount: TaskGenerator = {
+  id: 'be.null-count',
+  taskId: 'task:null-count',
+  title: 'NULL в запросах',
+  specialization: 'backend',
+  subcategoryId: 'backend.data-model',
+  grade: 'junior',
+  catalogIds: ['common.sql-queries', 'be.sql-schema'],
+  format: 'number',
+  a: 1.4,
+  b: -0.43,
+  paramSpace: 1e5,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const cities = ['Казань', 'Омск', 'Пермь'];
+    const n = rng.int(6, 8);
+    const rows = Array.from({ length: n }, (_, i) => ({ id: i + 1, city: rng.int(0, 2) === 0 ? null : rng.pick(cities) }));
+    if (!rows.some((r) => r.city === null)) rows[0]!.city = null;
+    const c = rng.pick(cities);
+    const kind = rng.pick([0, 0, 1, 1, 2, 3, 3, 4]);
+    let sql: string;
+    let answer: number;
+    const nonNull = rows.filter((r) => r.city !== null);
+    if (kind === 0) {
+      sql = 'SELECT COUNT(city) FROM users;';
+      answer = nonNull.length;
+    } else if (kind === 1) {
+      sql = `SELECT COUNT(*) FROM users WHERE city <> '${c}';`;
+      answer = nonNull.filter((r) => r.city !== c).length;
+    } else if (kind === 2) {
+      sql = 'SELECT COUNT(*) FROM users WHERE city = NULL;';
+      answer = 0;
+    } else if (kind === 3) {
+      sql = `SELECT COUNT(*) FROM users WHERE city IS NULL OR city = '${c}';`;
+      answer = rows.filter((r) => r.city === null || r.city === c).length;
+    } else {
+      sql = `SELECT COUNT(*) FROM users WHERE id NOT IN (SELECT id FROM users WHERE city = '${c}' UNION ALL SELECT NULL);`;
+      answer = 0;
+    }
+    return {
+      prompt: 'PostgreSQL, столбец city может содержать NULL. Какое значение вернёт запрос?',
+      code: `${table('users', ['id', 'city'], rows.map((r) => [r.id, r.city ?? 'NULL']))}\n\n${sql}`,
+      answerHint: 'число',
+      answerKey: String(answer),
+      explanation: 'COUNT(col) не считает NULL; сравнения с NULL (=, <>) дают неизвестность и строку отбрасывают; IS NULL проверяет NULL; NOT IN с NULL в списке не вернёт строк никогда.',
+      params: { kind, n },
+    };
+  },
+};
+
+// --- data-model: Senior ------------------------------------------------------
+
+const MIGRATION_STEPS: { sql: string; bad: boolean; why: string }[] = [
+  { sql: 'ALTER TABLE orders ADD COLUMN note text;', bad: false, why: 'столбец без значения по умолчанию - только метаданные, без перезаписи' },
+  { sql: "ALTER TABLE orders ADD COLUMN source text NOT NULL DEFAULT 'web';", bad: false, why: 'постоянный DEFAULT с PostgreSQL 11 хранится в метаданных, перезаписи нет' },
+  { sql: 'CREATE INDEX CONCURRENTLY orders_user_idx ON orders (user_id);', bad: false, why: 'CONCURRENTLY не блокирует запись' },
+  { sql: 'ALTER TABLE orders ADD CONSTRAINT amount_pos CHECK (amount > 0) NOT VALID;', bad: false, why: 'NOT VALID не проверяет существующие строки, блокировка короткая' },
+  { sql: 'ALTER TABLE orders ADD COLUMN region text NOT NULL;', bad: true, why: 'NOT NULL без DEFAULT на непустой таблице завершится ошибкой, а старая версия приложения вставляет строки без region' },
+  { sql: 'ALTER TABLE orders ADD COLUMN created timestamptz DEFAULT clock_timestamp();', bad: true, why: 'изменчивый DEFAULT вынуждает переписать всю таблицу под блокировкой' },
+  { sql: 'ALTER TABLE orders ALTER COLUMN amount TYPE bigint;', bad: true, why: 'смена типа int → bigint переписывает таблицу и индексы под ACCESS EXCLUSIVE' },
+  { sql: 'CREATE INDEX orders_status_idx ON orders (status);', bad: true, why: 'обычный CREATE INDEX блокирует запись в таблицу на время построения' },
+  { sql: 'ALTER TABLE orders ALTER COLUMN user_id SET NOT NULL;', bad: true, why: 'без готового проверенного CHECK PostgreSQL сканирует всю таблицу под ACCESS EXCLUSIVE' },
+  { sql: 'ALTER TABLE orders DROP COLUMN legacy_code;', bad: true, why: 'работающая старая версия приложения ещё читает legacy_code и начнёт падать' },
+  { sql: 'ALTER TABLE orders RENAME COLUMN status TO state;', bad: true, why: 'старая версия приложения обращается к status и сломается' },
+];
+
+export const migrationSafety: TaskGenerator = {
+  id: 'be.migration-safety',
+  taskId: 'task:migration-safety',
+  title: 'Какие миграции опасны без простоя',
+  specialization: 'backend',
+  subcategoryId: 'backend.data-model',
+  grade: 'senior',
+  catalogIds: ['be.migrations', 'be.sql-schema'],
+  format: 'list',
+  a: 1.2,
+  b: 1.5,
+  paramSpace: 1e5,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const nBad = rng.int(3, 4);
+    const picked = rng.shuffle([...rng.sample(MIGRATION_STEPS.filter((s) => s.bad), nBad), ...rng.sample(MIGRATION_STEPS.filter((s) => !s.bad), 6 - nBad)]);
+    return {
+      prompt:
+        'PostgreSQL 16, таблица orders - сотни миллионов строк, запись идёт непрерывно. Миграция выполняется во время работы, пока ещё запущена предыдущая версия приложения (она знает только прежние столбцы и их имена). Блокировать запись дольше секунды или ломать работающую версию приложения нельзя. Таблица не содержит готового проверенного CHECK (amount IS NOT NULL) и т.п. Укажите номера команд, которые нарушают эти условия.',
+      code: picked.map((s, i) => `${i + 1}. ${s.sql}`).join('\n'),
+      answerHint: 'номера через запятую',
+      answerKey: picked.map((s, i) => (s.bad ? i + 1 : 0)).filter(Boolean).join(','),
+      explanation: picked.map((s, i) => `${i + 1}: ${s.bad ? 'опасна' : 'безопасна'} - ${s.why}`).join('; ') + '.',
+      params: { nBad },
+    };
+  },
+};
+
+export const writeSkew: TaskGenerator = {
+  id: 'be.write-skew',
+  taskId: 'task:write-skew',
+  title: 'Дежурные врачи и уровень изоляции',
+  specialization: 'backend',
+  subcategoryId: 'backend.data-model',
+  grade: 'senior',
+  catalogIds: ['be.transactions', 'be.concurrency'],
+  format: 'number',
+  a: 1.3,
+  b: 1.7,
+  paramSpace: 1e5,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const level = rng.pick(['READ COMMITTED', 'REPEATABLE READ', 'SERIALIZABLE'] as const);
+    const storage = rng.pick(['rows', 'counter'] as const);
+    const min = rng.int(1, 2);
+    const n = min + 1 + rng.int(0, 1); // дежурных в начале
+    let result: number;
+    let why: string;
+    if (storage === 'rows') {
+      // Каждая T проверяет «дежурных больше min» по снимку и снимает с дежурства СЕБЯ (разные строки).
+      if (level === 'SERIALIZABLE') {
+        result = n - 1;
+        why = 'SERIALIZABLE обнаружит зависимость чтение-запись в обе стороны и откатит одну транзакцию: снимется один врач.';
+      } else {
+        result = n - 2;
+        why = `${level} не ловит write skew: обе видят в снимке ${n} дежурных, обновляют разные строки конфликта нет - снимаются оба.`;
+      }
+    } else if (level === 'READ COMMITTED') {
+      result = n - 1 > min ? n - 2 : n - 1;
+      why = 'READ COMMITTED: вторая T после коммита первой перечитывает строку и заново проверяет WHERE count > min.';
+    } else {
+      result = n - 1;
+      why = `${level}: вторая транзакция обновляет строку, изменённую после её снимка, и откатывается с ошибкой сериализации; остаётся снятие одного врача.`;
+    }
+    const upd =
+      storage === 'rows'
+        ? ['SELECT count(*) FROM doctors WHERE on_call;   -- видит ' + n, 'приложение: если count > ' + min + ' → UPDATE doctors SET on_call = false WHERE id = <свой id>;']
+        : [`UPDATE on_call_counter SET n = n - 1 WHERE n > ${min};   -- n изначально ${n}`];
+    const code = [
+      `T1: BEGIN ISOLATION LEVEL ${level};`,
+      `T2: BEGIN ISOLATION LEVEL ${level};`,
+      ...(storage === 'rows' ? upd.map((u) => `T1: ${u}`).concat(upd.map((u) => `T2: ${u}`)) : [`T1: ${upd[0]}`, `T2: ${upd[0]!.replace(/ {3}-- .*/, '')}`]),
+      'T1: COMMIT;',
+      'T2: COMMIT;',
+    ].join('\n');
+    return {
+      prompt: `PostgreSQL. Сейчас на дежурстве ${n}, правило: должно остаться не меньше ${min}. Две транзакции выполняются построчно сверху вниз, каждая «снимает» одного дежурного ${
+        storage === 'rows' ? '(свою строку, разные для T1 и T2)' : '(общий счётчик on_call_counter, одна строка)'
+      }. Если выражение завершается ошибкой, транзакция откатывается целиком. Сколько дежурных будет после обоих COMMIT (откатившаяся транзакция ничего не меняет)?`,
+      code,
+      answerHint: 'число дежурных',
+      answerKey: String(result),
+      explanation: why,
+      params: { level, storage, min, n },
+    };
+  },
+};
+
+export const uniqueIndexForms: TaskGenerator = {
+  id: 'be.unique-index-forms',
+  taskId: 'task:unique-index-forms',
+  title: 'Какие INSERT нарушат уникальный индекс',
+  specialization: 'backend',
+  subcategoryId: 'backend.data-model',
+  grade: 'senior',
+  catalogIds: ['be.sql-indexes', 'be.sql-schema'],
+  format: 'list',
+  a: 1.2,
+  b: 1.4,
+  paramSpace: 1e6,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const variants = [
+      { ddl: 'CREATE UNIQUE INDEX u ON users (email);', key: (r: Row) => r.email },
+      { ddl: 'CREATE UNIQUE INDEX u ON users (lower(email));', key: (r: Row) => r.email.toLowerCase() },
+      { ddl: 'CREATE UNIQUE INDEX u ON users (email) WHERE deleted_at IS NULL;', key: (r: Row) => (r.deleted ? null : r.email) },
+      { ddl: 'CREATE UNIQUE INDEX u ON users (tenant_id, email);', key: (r: Row) => (r.tenant === null ? null : `${r.tenant}|${r.email}`) },
+    ];
+    type Row = { tenant: number | null; email: string; deleted: boolean };
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const v = rng.pick(variants);
+      const rows: Row[] = Array.from({ length: 6 }, () => ({ tenant: rng.pick([1, 2, null]), email: rng.pick(['a@x.io', 'A@x.io', 'b@x.io']), deleted: rng.int(0, 2) === 0 }));
+      const seen = new Set<string>();
+      const failing: number[] = [];
+      rows.forEach((r, i) => {
+        const k = v.key(r);
+        if (k === null) return; // NULL в ключе или строка вне частичного индекса: конфликта нет
+        if (seen.has(k)) failing.push(i + 1);
+        else seen.add(k);
+      });
+      if (failing.length === 0 || failing.length > 4) continue;
+      const stmt = (r: Row) => `INSERT INTO users (tenant_id, email, deleted_at) VALUES (${r.tenant ?? 'NULL'}, '${r.email}', ${r.deleted ? "'2026-01-01'" : 'NULL'});`;
+      return {
+        prompt: 'PostgreSQL. Таблица users(tenant_id int NULL, email text NOT NULL, deleted_at timestamptz NULL) пуста, создан уникальный индекс из условия. INSERT выполняются по порядку, каждый в своей транзакции; упавший INSERT строку не добавляет. Укажите номера INSERT, которые завершатся ошибкой уникальности.',
+        code: `${v.ddl}\n\n${rows.map((r, i) => `-- ${i + 1}\n${stmt(r)}`).join('\n')}`,
+        answerHint: 'номера через запятую',
+        answerKey: failing.join(','),
+        explanation: 'В уникальном индексе NULL не равен NULL (строки с NULL в ключе не конфликтуют); индекс по lower(email) сравнивает без учёта регистра; частичный индекс учитывает только строки, подходящие под WHERE.',
+        params: { ddl: v.ddl, rows: rows.length },
+      };
+    }
+    throw new Error('unique-index-forms: не удалось подобрать экземпляр');
+  },
+};
+
+export const sequenceGaps: TaskGenerator = {
+  id: 'be.sequence-gaps',
+  taskId: 'task:sequence-gaps',
+  title: 'Какой id получит строка',
+  specialization: 'backend',
+  subcategoryId: 'backend.data-model',
+  grade: 'senior',
+  catalogIds: ['be.sql-schema', 'be.transactions'],
+  format: 'number',
+  a: 1.1,
+  b: 1.6,
+  paramSpace: 1e6,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const lines: string[] = [];
+    let seq = 0; // сколько значений последовательности израсходовано
+    const refs = new Set<string>();
+    let refNo = 0;
+    const fresh = () => `r${++refNo}`;
+    const n = rng.int(5, 7);
+    for (let i = 0; i < n; i++) {
+      const kind = rng.pick(['ok', 'dupFail', 'dupSkip', 'explicit', 'rolledBack', 'nextval'] as const);
+      if (kind === 'ok') {
+        const r = fresh();
+        refs.add(r);
+        lines.push(`INSERT INTO orders (ref) VALUES ('${r}');`);
+        seq++;
+      } else if (kind === 'dupFail' && refs.size > 0) {
+        const r = rng.pick([...refs]);
+        lines.push(`INSERT INTO orders (ref) VALUES ('${r}');   -- ошибка уникальности`);
+        seq++;
+      } else if (kind === 'dupSkip' && refs.size > 0) {
+        const r = rng.pick([...refs]);
+        lines.push(`INSERT INTO orders (ref) VALUES ('${r}') ON CONFLICT (ref) DO NOTHING;`);
+        seq++;
+      } else if (kind === 'explicit') {
+        const r = fresh();
+        refs.add(r);
+        lines.push(`INSERT INTO orders (id, ref) VALUES (${900 + i}, '${r}');`);
+      } else if (kind === 'rolledBack') {
+        const r = fresh();
+        lines.push('BEGIN;', `INSERT INTO orders (ref) VALUES ('${r}');`, 'ROLLBACK;');
+        seq++;
+      } else if (kind === 'nextval') {
+        lines.push("SELECT nextval('orders_id_seq');");
+        seq++;
+      } else {
+        const r = fresh();
+        refs.add(r);
+        lines.push(`INSERT INTO orders (ref) VALUES ('${r}');`);
+        seq++;
+      }
+    }
+    const last = fresh();
+    lines.push(`INSERT INTO orders (ref) VALUES ('${last}');   -- какой id получит эта строка?`);
+    return {
+      prompt: 'PostgreSQL. Таблица orders(id serial PRIMARY KEY, ref text UNIQUE); последовательность orders_id_seq только что создана (первое значение nextval = 1), таблица пуста. Выражения выполняются по порядку одной сессией. Какой id получит строка последнего INSERT?',
+      code: lines.join('\n'),
+      answerHint: 'число',
+      answerKey: String(seq + 1),
+      explanation: 'Значение последовательности не возвращается при откате, ошибке или ON CONFLICT DO NOTHING (DEFAULT вычисляется до проверки конфликта); INSERT с явным id последовательность не трогает.',
+      params: { n, seq },
+    };
+  },
+};
+
 export const BACKEND_GENERATORS: TaskGenerator[] = [
   sqlRowcount,
   httpSemantics,
@@ -1853,4 +2965,28 @@ export const BACKEND_GENERATORS: TaskGenerator[] = [
   upsertConflict,
   deadlockCommits,
   lostUpdate,
+  routeMatching,
+  listQuery,
+  apiBreakingChanges,
+  idempotencyTtl,
+  sharedCacheHits,
+  littlesLaw,
+  fetchAllPages,
+  clientThrottle,
+  retryAmplification,
+  sagaCompensation,
+  webhookReplayWindow,
+  contractDrift,
+  batchingTime,
+  ttlLoads,
+  replicaLag,
+  hotKeyDbLoad,
+  queueDrain,
+  slowQueryTop,
+  sqlAggregate,
+  nullCount,
+  migrationSafety,
+  writeSkew,
+  uniqueIndexForms,
+  sequenceGaps,
 ];

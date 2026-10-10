@@ -1,7 +1,8 @@
 // Правила адаптивного теста (ADR-0002): пороги грейдов, выбор задания, остановка, решение.
 // Все числа — ПРЕДЛОЖЕНИЕ: подобраны на симуляции (eval/test), на людях не оценены.
-import { SPEC_LABEL } from '@/lib/directions';
 import type { Grade, Specialization } from '../types';
+
+import type { TestGrade } from './types';
 
 import { estimateTheta, information, probAbove, type Response, type ThetaEstimate } from './irt';
 import { createRng } from './rng';
@@ -15,7 +16,8 @@ import { createRng } from './rng';
  * Зона Junior (0,6) шире SE остановки (0,4). Персоны — модели знаний агента, не люди; пороги — [В],
  * уточняются разметкой (docs/test-calibration.md).
  */
-export const GRADE_CUT: Record<Grade, number> = { junior: -0.7, middle: -0.1 };
+/** senior: +0.6 - предложение ADR-0003 (дополнение 10.10 16:15), политику Senior пишет directions; здесь только порог для калибровки. */
+export const GRADE_CUT: Record<TestGrade, number> = { junior: -0.7, middle: -0.1, senior: 0.6 };
 
 /** Грейд подтверждён, если P(θ > порог) ≥ 0,8. */
 export const CONFIRM_PROB = 0.8;
@@ -38,7 +40,7 @@ export interface SelectableTemplate {
   a: number;
   b: number;
   catalogIds: string[];
-  grade: Grade;
+  grade: TestGrade;
   /** Сколько раз шаблон показан за всё время (экспозиция). */
   exposure?: number;
 }
@@ -88,7 +90,7 @@ export interface StopLimits {
 export function shouldStop(
   answered: number,
   est: ThetaEstimate,
-  grade: Grade,
+  grade: TestGrade,
   poolExhausted = false,
   limits: StopLimits = { min: MIN_ITEMS, max: MAX_ITEMS },
 ): StopDecision {
@@ -125,7 +127,7 @@ export interface StepInput {
   /** Показанные и отвеченные шаблоны попытки, по порядку (shown[i] ↔ responses[i]). */
   shown: readonly SelectableTemplate[];
   responses: readonly Response[];
-  grade: Grade;
+  grade: TestGrade;
   /**
    * Разрешено ли дозадавание (по умолчанию да). false — только основная фаза: так считаются попытки
    * другой версии политики (POLICY_VERSION), чтобы они не меняли длину и фазу задним числом.
@@ -153,7 +155,7 @@ export function juniorUncertain(pJunior: number): boolean {
  * P(Junior) неуверенная (0,2…0,8) и есть непоказанные Junior-шаблоны. Для заявки Junior первое
  * условие совпадает со вторым (порог заявленного — порог Junior); для Middle — отдельная проверка.
  */
-export function needsJuniorProbe(est: ThetaEstimate, grade: Grade, juniorLeft: number): boolean {
+export function needsJuniorProbe(est: ThetaEstimate, grade: TestGrade, juniorLeft: number): boolean {
   if (juniorLeft <= 0) return false;
   if (grade === 'middle' && probAbove(est, GRADE_CUT.middle) >= CONFIRM_PROB) return false;
   return juniorUncertain(probAbove(est, GRADE_CUT.junior));
@@ -225,7 +227,7 @@ export interface GradeDecision {
 }
 
 /** Решение о грейде по ответам (чистое: те же ответы → то же решение). */
-export function decide(responses: readonly Response[], grade: Grade, confirmProb: number = CONFIRM_PROB): GradeDecision {
+export function decide(responses: readonly Response[], grade: TestGrade, confirmProb: number = CONFIRM_PROB): GradeDecision {
   const est = estimateTheta(responses);
   const pPass = probAbove(est, GRADE_CUT[grade]);
   const pJunior = probAbove(est, GRADE_CUT.junior);
@@ -241,7 +243,7 @@ export function decide(responses: readonly Response[], grade: Grade, confirmProb
 }
 
 export function specLabel(s: Specialization): string {
-  return SPEC_LABEL[s];
+  return s === 'backend' ? 'Backend' : 'Frontend';
 }
 
 export function gradeLabel(g: Grade): string {

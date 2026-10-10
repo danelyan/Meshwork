@@ -12,18 +12,25 @@ test('E-05: кандидат становится работодателем н�
   await page.goto('/consultant');
 
   const header = page.getByRole('banner');
-  await expect(header.getByText('Активная роль: Кандидат')).toBeVisible();
-  await header.getByRole('button', { name: 'Стать работодателем' }).click();
+  const account = header.getByRole('button', { name: /Аккаунт, активная роль/ });
+  await expect(account).toContainText('Кандидат');
+  await account.click();
+  await header.getByRole('button', { name: 'Работодатель' }).click();
   await header.getByLabel('Название компании').fill('ООО Переключатель');
   await header.getByRole('button', { name: 'Создать' }).click();
 
   await page.waitForURL('**/consultant');
-  await expect(header.getByText('Активная роль: Работодатель · ООО Переключатель')).toBeVisible({ timeout: 15_000 });
+  await expect(account).toContainText('Работодатель', { timeout: 15_000 });
+  await account.click();
+  await expect(header.getByRole('button', { name: 'Работодатель · ООО Переключатель' })).toHaveAttribute('aria-current', 'true');
+  await page.keyboard.press('Escape');
   // Страница кандидата в режиме работодателя закрыта: редирект в профиль компании.
   await page.goto('/profile');
   await page.waitForURL('**/employer/company');
 
-  await header.getByRole('button', { name: 'Режим кандидата' }).click();
-  await expect(header.getByText('Активная роль: Кандидат')).toBeVisible({ timeout: 15_000 });
-  await expect(header.getByRole('button', { name: 'Режим работодателя' })).toBeVisible();
+  await account.click();
+  await header.getByRole('button', { name: 'Кандидат' }).click();
+  await expect(account).toContainText('Кандидат', { timeout: 15_000 });
+  await account.click();
+  await expect(header.getByRole('button', { name: /Работодатель/ })).toBeVisible();
 });

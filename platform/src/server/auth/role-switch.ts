@@ -109,6 +109,8 @@ export async function roleMenuFor(userId: string | null, role: string): Promise<
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      name: true,
+      email: true,
       isDemo: true,
       candidateId: true,
       accounts: { select: { provider: true } },
@@ -124,5 +126,7 @@ export async function roleMenuFor(userId: string | null, role: string): Promise<
     other,
     otherExists,
     canCreateOther: !otherExists && !isSharedDemo(user),
+    userName: user.name,
+    userEmail: user.email,
   };
 }

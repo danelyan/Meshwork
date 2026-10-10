@@ -72,6 +72,9 @@ export interface RoleMenu {
   otherExists: boolean;
   /** Вторую роль можно создать (нет на общем демо-аккаунте). */
   canCreateOther: boolean;
+  /** Имя и почта учётки - для кнопки аккаунта и шапки меню. */
+  userName: string;
+  userEmail: string | null;
 }
 
 type Json = Record<string, unknown>;

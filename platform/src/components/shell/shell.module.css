@@ -38,20 +38,49 @@
   background: var(--ink); color: var(--landing-white); font-weight: 600; font-size: 15px; white-space: nowrap;
 }
 .login:hover { background: var(--blue); color: var(--landing-white); }
-/* метка роли и переключатель (RoleSwitch, ADR 0004) */
-.roleSwitch { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 8px; margin-left: auto; margin-right: 12px; }
-.roleTag { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.roleSwitch + .action { margin-left: 0; }
-.rolePanel {
+/* меню аккаунта (AccountMenu, ADR 0004) */
+.account { position: relative; display: flex; }
+.accountBtn {
+  height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 8px; background: transparent; color: var(--ink);
+  border: 1px solid var(--line); cursor: pointer; font: inherit; font-weight: 600; font-size: 15px; white-space: nowrap;
+}
+.accountBtn:hover, .accountBtn[aria-expanded='true'] { background: var(--surface-hover); }
+.avatar {
+  width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; flex: none;
+  background: var(--role-nav-active); color: var(--paper); font: 600 13px var(--mono);
+}
+.accountRole { color: var(--role-nav-active); }
+.chevron { width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 0.15s; }
+.chevron[data-open] { transform: translateY(1px) rotate(-135deg); }
+.accountPanel {
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 25; width: min(320px, calc(100vw - 2 * var(--page-pad)));
-  display: grid; gap: 12px; padding: 16px; background: var(--paper); border: 1px solid var(--line);
+  display: grid; padding: 8px 0; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(17, 17, 17, 0.14);
+}
+.menuHead { display: grid; gap: 2px; padding: 8px 16px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
+.menuHead strong, .menuHead span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menuHead span { font-size: var(--fs-sm); color: var(--muted); }
+.menuGroup { display: grid; padding: 4px 0; }
+.menuItem {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; width: 100%; min-height: 44px; padding: 8px 16px; border: 0; background: transparent;
+  color: var(--ink); font: inherit; font-size: 15px; text-align: left; cursor: pointer;
+}
+.menuItem:hover:not(:disabled) { background: var(--surface-hover); }
+.menuItem:disabled { cursor: not-allowed; color: var(--muted); }
+.menuItem:focus-visible { outline-offset: -2px; }
+.menuItem[aria-current='true'] { font-weight: 600; }
+.radio { width: 14px; height: 14px; flex: none; border: 2px solid currentColor; border-radius: 50%; }
+.radio[data-on] { background: radial-gradient(circle, var(--role-nav-active) 40%, transparent 45%); border-color: var(--role-nav-active); }
+.menuHint { flex-basis: 100%; padding-left: 24px; font-size: var(--fs-sm); font-weight: 400; color: var(--muted); }
+.menuSep { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--line); }
+.rolePanel {
+  display: grid; gap: 12px; padding: 12px 16px 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
 }
 .roleInput { background: var(--surface-input); color: var(--ink); border: 1px solid var(--border-input); border-radius: 0; padding: 10px 12px; min-height: 44px; width: 100%; }
 .roleInput:focus-visible { border-color: var(--blue); outline-offset: 0; }
 .roleActions { display: flex; gap: 8px; }
 .roleText { margin: 0; font-size: var(--fs-sm); color: var(--text-soft); }
-.roleError { position: absolute; top: calc(100% + 8px); right: 0; margin: 0; padding: 8px 12px; max-width: 320px; font-size: var(--fs-sm); color: var(--error); background: var(--paper); border: 1px solid var(--line); }
-.rolePanel .roleError { position: static; padding: 0; border: 0; }
+.roleError { margin: 0; padding: 8px 16px; font-size: var(--fs-sm); color: var(--error); }
+.rolePanel .roleError { padding: 0; }
 .banner { margin: 0; padding: 8px var(--page-pad); font-size: var(--fs); color: var(--ink); background: var(--surface-notice); border-bottom: 1px solid var(--line); text-align: center; }
 .banner a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
 
@@ -81,7 +110,6 @@
   /* Пять ссылок работодателя и метка роли не помещаются: ссылки прокручиваются, метка роли не сжимается. */
   .nav { overflow-x: auto; scrollbar-width: none; }
   .nav::-webkit-scrollbar { display: none; }
-  .roleCompany { display: none; }
 }
 @media (max-width: 960px) {
   .nav { margin-left: 20px; }
@@ -96,7 +124,8 @@
 }
 @media (max-width: 640px) {
   .header { gap: 8px; }
-  .roleSwitch { margin-right: 0; }
+  .accountBtn { height: 44px; padding-right: 8px; }
+  .accountRole { font-size: 14px; }
   .brand img { height: 30px; }
   .brand span, .edition { display: none; }
   .edition + .action { margin-left: auto; }

@@ -132,11 +132,6 @@ localhost/127.0.0.1/[::1], `DEVTOOLS` не `false`); письмо в этом р
   `POST /api/auth/password/forgot` (всегда 200) и `POST /api/auth/password/reset`. Логика —
   `src/server/auth/email.ts`, пароль — scrypt (`password.ts`), коды — `codes.ts`,
   лимиты — `rate-limit.ts` (в памяти процесса).
-- Переключение роли (ADR 0004): `POST /api/auth/role/switch` `{ role }` — у учётки может быть и профиль
-  кандидата, и профиль работодателя; активна одна роль (`User.role`), кука `cid` несёт id профиля только
-  активной роли. Нет профиля — создаётся (работодателю нужна `companyName`), знакомство новой роли идёт в
-  ленте `/consultant`. Метка роли и переключатель — в шапке (`shell/RoleSwitch`). На общих демо-аккаунтах
-  из сида вторую роль не создать (403) — для показа берите «Новый пользователь» на `/demo`.
 - `/api/health` — 200 `{ ok, db, llm }`; 503, если БД недоступна.
 - `src/styles/tokens.css` — токены тёмной темы прототипа, JetBrains Mono из `public/assets/fonts`.
 

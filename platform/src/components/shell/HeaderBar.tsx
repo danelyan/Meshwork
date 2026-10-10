@@ -9,12 +9,12 @@ import { HOME_ANCHORS, type NavLink } from './nav';
 import { LogoutButton } from './LogoutButton';
 import { Brand } from './Brand';
 import { OnboardingBanner } from './OnboardingBanner';
-import { RoleSwitch } from './RoleSwitch';
+import { AccountMenu } from './AccountMenu';
 import styles from './shell.module.css';
 
 /**
- * Шапка: знак слева, навигация роли (гостю на главной — якоря), справа метка активной роли с переключателем
- * (`roleMenu`, ADR 0004) и «Войти» или «Выйти».
+ * Шапка: знак слева, навигация роли (гостю на главной — якоря), справа меню аккаунта (`roleMenu`, ADR 0004:
+ * роли, профиль компании, «Выйти») или «Войти». Аккаунт без роли (знакомство не пройдено) - только «Выйти».
  */
 export function HeaderBar({ signedIn, links, roleMenu = null }: { signedIn: boolean; links: NavLink[]; roleMenu?: RoleMenu | null }) {
   const pathname = usePathname();
@@ -43,8 +43,17 @@ export function HeaderBar({ signedIn, links, roleMenu = null }: { signedIn: bool
           )
         )}
         {home && !roleMenu && <span className={styles.edition}>№ 01 · осень 2026</span>}
-        {roleMenu && <RoleSwitch menu={roleMenu} />}
-        <div className={styles.action}>{signedIn ? <LogoutButton className={styles.login} /> : <Link className={styles.login} href="/auth">Войти</Link>}</div>
+        <div className={styles.action}>
+          {roleMenu ? (
+            <AccountMenu menu={roleMenu} />
+          ) : signedIn ? (
+            <LogoutButton className={styles.login} />
+          ) : (
+            <Link className={styles.login} href="/auth">
+              Войти
+            </Link>
+          )}
+        </div>
       </header>
       {signedIn && <OnboardingBanner />}
     </>

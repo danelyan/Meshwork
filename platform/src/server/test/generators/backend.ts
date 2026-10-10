@@ -3,6 +3,7 @@
 // задающие сложность, — зафиксированы в семействе. a, b — ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
+import { WEBAPI_BANK2 } from './backend-bank2-webapi';
 
 const NAMES = ['Анна', 'Борис', 'Вера', 'Глеб', 'Дарья', 'Егор', 'Жанна', 'Захар', 'Инна', 'Кирилл', 'Лев', 'Мария'];
 const CITIES = ['Казань', 'Самара', 'Тверь', 'Омск', 'Пермь'];
@@ -2989,4 +2990,6 @@ export const BACKEND_GENERATORS: TaskGenerator[] = [
   writeSkew,
   uniqueIndexForms,
   sequenceGaps,
+  // Банк-2 (решение владельца 11.10): +12 семейств на подкатегорию.
+  ...WEBAPI_BANK2,
 ];

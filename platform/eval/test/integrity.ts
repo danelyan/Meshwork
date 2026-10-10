@@ -23,7 +23,6 @@ import {
   CANARY_SHIFT_MAX,
   CANARY_SHIFT_MIN,
   canarySlots,
-  FAST_SHARE,
   wantsCanary,
   type BrowserSignals,
   type IntegrityLevel,
@@ -231,31 +230,12 @@ const PERSONAS: Persona[] = [
 interface Stage {
   level: IntegrityLevel;
   reasons: IntegrityReason[];
-  /** Предложение A + B (см. altLevel); оценивается только здесь. */
-  altLevel: IntegrityLevel;
   theta: number;
   length: number;
   responses: Response[];
   obs: ItemObservation[];
   flaggedItems: number[];
   canaryHit: boolean;
-}
-
-/** Серия быстрых верных ответов: ≥ FAST_STREAK верных меньше FAST_SHARE лимита, трудность не важна (θ̂ при этом сам завышен). */
-const FAST_STREAK = 4;
-const CONSISTENCY_Z = 2;
-
-/**
- * Предложение (в integrity.ts НЕ внесено, считается только здесь): (A) overtime сам по себе — только medium и к
- * «≥ 2 групп» для high не добавляется; (B) серия быстрых верных ответов — high сама по себе.
- */
-function altLevel(reasons: readonly IntegrityReason[], obs: readonly ItemObservation[]): IntegrityLevel {
-  const fastCorrect = obs.filter((o) => o.correct && o.seconds !== null && o.timeLimitSec !== null && o.seconds < FAST_SHARE * o.timeLimitSec).length;
-  if (fastCorrect >= FAST_STREAK) return 'high';
-  if (reasons.length === 0) return 'low';
-  if (reasons.some((r) => r.group === 'canary')) return 'high';
-  const strong = reasons.filter((r) => r.code !== 'overtime');
-  return new Set(strong.map((r) => r.group)).size >= 2 ? 'high' : 'medium';
 }
 
 function makeAnswer(ctx: ItemCtx, canaryShift: number | null, correct: boolean, hit: boolean, rng: Rng): { answer: string; key: string } {
@@ -303,7 +283,6 @@ function runGrade(pool: PoolItem[], p: Persona, thetaTrue: number, beh: Behavior
   const stage: Stage = {
     level: idx.level,
     reasons: idx.reasons,
-    altLevel: altLevel(idx.reasons, obs),
     theta: d.theta,
     length: responses.length,
     responses,
@@ -315,7 +294,7 @@ function runGrade(pool: PoolItem[], p: Persona, thetaTrue: number, beh: Behavior
 }
 
 /** Подтверждающая попытка: confirmSelectionPool / confirmShouldStop / decideConfirm, как в service.ts. */
-function runConfirm(pool: PoolItem[], src: Stage, srcShown: PoolItem[], grade: Grade, thetaTrue: number, beh: Behavior, seed: number, rng: Rng): { confirmed: boolean; confirmedOwnOnly: boolean; confirmedConsistent: boolean; level: IntegrityLevel; length: number } {
+function runConfirm(pool: PoolItem[], src: Stage, srcShown: PoolItem[], grade: Grade, thetaTrue: number, beh: Behavior, seed: number, rng: Rng): { confirmed: boolean; level: IntegrityLevel; length: number } {
   const clean = cleanResponses(src.responses.map((r, index) => ({ ...r, index })), src.flaggedItems);
   const srcIds = new Set(srcShown.map((t) => t.id));
   const slots = canarySlots(createRng(deriveSeed(seed, 5000)).int, CONFIRM_CANARIES, 0, CONFIRM_MIN_ITEMS - 2);
@@ -345,14 +324,7 @@ function runConfirm(pool: PoolItem[], src: Stage, srcShown: PoolItem[], grade: G
   const est = estimateTheta([...clean, ...own]);
   const idx = assessAttempt(obs, est.theta, beh.signals(own.length, rng));
   const d = decideConfirm(clean, own, grade, idx.level);
-  // Предложение C (только здесь): решать по ответам подтверждающей попытки без ответов исходной.
-  const own2 = decideConfirm([], own, grade, idx.level);
-  // Предложение D (только здесь): к решению добавить согласованность — θ̂ по исходным и по подтверждающим ответам
-  // не расходятся больше чем на 2 стандартные ошибки их разности.
-  const eSrc = estimateTheta(clean);
-  const eOwn = estimateTheta(own);
-  const consistent = Math.abs(eSrc.theta - eOwn.theta) <= CONSISTENCY_Z * Math.sqrt(eSrc.se ** 2 + eOwn.se ** 2);
-  return { confirmed: d.confirmed, confirmedOwnOnly: own2.confirmed, confirmedConsistent: d.confirmed && consistent, level: idx.level, length: own.length };
+  return { confirmed: d.confirmed, level: idx.level, length: own.length };
 }
 
 // --- прогон --------------------------------------------------------------------------------------------
@@ -362,8 +334,6 @@ interface Tally {
   low: number;
   medium: number;
   high: number;
-  altHigh: number;
-  altMedium: number;
   /** Подтверждена или предложена оценка ниже (есть что выдавать). */
   grantable: number;
   /** high при grantable — попытка уходит в needs_confirmation. */
@@ -372,22 +342,20 @@ interface Tally {
   grantedUnchecked: number;
   canaryHit: number;
   /** Подтверждающий: попыток и пройдено (без помощи / с помощью снова). */
-  confirmUnaided: { n: number; passed: number; ownOnly: number; consistent: number };
-  confirmRepeat: { n: number; passed: number; ownOnly: number; consistent: number };
+  confirmUnaided: { n: number; passed: number };
+  confirmRepeat: { n: number; passed: number };
   /** Для high: какие группы причин (сочетания). */
   highGroups: Record<string, number>;
   length: number;
   /** Причины: сколько попыток с кодом. */
   codes: Record<string, number>;
 }
-const emptyTally = (): Tally => ({ n: 0, low: 0, medium: 0, high: 0, altHigh: 0, altMedium: 0, grantable: 0, blocking: 0, grantedUnchecked: 0, canaryHit: 0, confirmUnaided: { n: 0, passed: 0, ownOnly: 0, consistent: 0 }, confirmRepeat: { n: 0, passed: 0, ownOnly: 0, consistent: 0 }, highGroups: {}, length: 0, codes: {} });
+const emptyTally = (): Tally => ({ n: 0, low: 0, medium: 0, high: 0, grantable: 0, blocking: 0, grantedUnchecked: 0, canaryHit: 0, confirmUnaided: { n: 0, passed: 0 }, confirmRepeat: { n: 0, passed: 0 }, highGroups: {}, length: 0, codes: {} });
 
 function add(t: Tally, o: { stage: Stage; grantable: Grade | null }) {
   const blocking = o.stage.level === 'high' && o.grantable !== null;
   t.n++;
   t[o.stage.level]++;
-  if (o.stage.altLevel === 'high') t.altHigh++;
-  if (o.stage.altLevel === 'medium') t.altMedium++;
   if (o.grantable !== null) t.grantable++;
   if (blocking) t.blocking++;
   if (o.grantable !== null && o.stage.level !== 'high') t.grantedUnchecked++;
@@ -426,8 +394,6 @@ for (const sub of subs) {
           const slot = mode === 'unaided' ? tally.confirmUnaided : tally.confirmRepeat;
           slot.n++;
           if (c.confirmed) slot.passed++;
-          if (c.confirmedOwnOnly) slot.ownOnly++;
-          if (c.confirmedConsistent) slot.consistent++;
         }
       }
     }
@@ -439,12 +405,12 @@ for (const sub of subs) {
 const pct = (x: number, n: number) => (n ? `${((100 * x) / n).toFixed(1)} %` : '—');
 const r1 = (x: number, n: number) => (n ? Math.round((1000 * x) / n) / 10 : null);
 console.log(`# Индекс честности на персонах: N = ${N} попыток на персону и подкатегорию, подкатегорий ${subs.length}, seed = ${SEED}, claim читеров = ${CLAIM_CHEAT}, σ времени = ${SIGMA}, шум честных: вкладка λ = ${NOISE_TABS}, вставка ${NOISE_PASTE}, копия ${NOISE_COPY}\n`);
-console.log('| Персона | Попыток | low | medium | high | high при условии «есть что выдавать» | Выдано без проверки | Подтв. тест: сам | то же, решение только по ответам подтверждающего (C) | то же, плюс согласованность θ̂ (D) | Подтв. тест: снова с помощью | Итог: категория выдана (без проверки или после подтверждающего «сам») | Ловушка | high по предложению A+B |');
-console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+console.log('| Персона | Попыток | low | medium | high | high при условии «есть что выдавать» | Выдано без проверки | Подтв. тест: сам | Подтв. тест: снова с помощью | Итог: категория выдана (без проверки или после подтверждающего «сам») | Ловушка |');
+console.log('|---|---|---|---|---|---|---|---|---|---|---|');
 for (const p of PERSONAS) {
   const t = byPersona.get(p.id)!;
   console.log(
-    `| ${p.label} | ${t.n} | ${pct(t.low, t.n)} | ${pct(t.medium, t.n)} | ${pct(t.high, t.n)} | ${pct(t.blocking, t.grantable)} | ${pct(t.grantedUnchecked, t.n)} | ${t.confirmUnaided.n ? `${pct(t.confirmUnaided.passed, t.confirmUnaided.n)} (n = ${t.confirmUnaided.n})` : '—'} | ${t.confirmUnaided.n ? pct(t.confirmUnaided.ownOnly, t.confirmUnaided.n) : '—'} | ${t.confirmUnaided.n ? pct(t.confirmUnaided.consistent, t.confirmUnaided.n) : '—'} | ${p.kind === 'cheat' && t.confirmRepeat.n ? `${pct(t.confirmRepeat.passed, t.confirmRepeat.n)} (n = ${t.confirmRepeat.n})` : '—'} | ${pct(t.grantedUnchecked + t.confirmUnaided.passed, t.n)} | ${pct(t.canaryHit, t.n)} | ${pct(t.altHigh, t.n)} |`,
+    `| ${p.label} | ${t.n} | ${pct(t.low, t.n)} | ${pct(t.medium, t.n)} | ${pct(t.high, t.n)} | ${pct(t.blocking, t.grantable)} | ${pct(t.grantedUnchecked, t.n)} | ${t.confirmUnaided.n ? `${pct(t.confirmUnaided.passed, t.confirmUnaided.n)} (n = ${t.confirmUnaided.n})` : '—'} | ${p.kind === 'cheat' && t.confirmRepeat.n ? `${pct(t.confirmRepeat.passed, t.confirmRepeat.n)} (n = ${t.confirmRepeat.n})` : '—'} | ${pct(t.grantedUnchecked + t.confirmUnaided.passed, t.n)} | ${pct(t.canaryHit, t.n)} |`,
   );
 }
 console.log('\nСочетания групп при high:');
@@ -468,12 +434,12 @@ if (JSON_OUT) {
         kind: p.kind,
         claimed: p.claimed,
         attempts: t.n,
-        sharePct: { low: r1(t.low, t.n), medium: r1(t.medium, t.n), high: r1(t.high, t.n), canaryHit: r1(t.canaryHit, t.n), altHigh: r1(t.altHigh, t.n), altMedium: r1(t.altMedium, t.n) },
+        sharePct: { low: r1(t.low, t.n), medium: r1(t.medium, t.n), high: r1(t.high, t.n), canaryHit: r1(t.canaryHit, t.n) },
         blockingOfGrantablePct: r1(t.blocking, t.grantable),
         grantedUncheckedPct: r1(t.grantedUnchecked, t.n),
         grantedFinalPct: r1(t.grantedUnchecked + t.confirmUnaided.passed, t.n),
-        confirmUnaided: { n: t.confirmUnaided.n, passedPct: r1(t.confirmUnaided.passed, t.confirmUnaided.n), ownOnlyPassedPct: r1(t.confirmUnaided.ownOnly, t.confirmUnaided.n), consistentPassedPct: r1(t.confirmUnaided.consistent, t.confirmUnaided.n) },
-        confirmRepeatHelp: p.kind === 'cheat' ? { n: t.confirmRepeat.n, passedPct: r1(t.confirmRepeat.passed, t.confirmRepeat.n), ownOnlyPassedPct: r1(t.confirmRepeat.ownOnly, t.confirmRepeat.n), consistentPassedPct: r1(t.confirmRepeat.consistent, t.confirmRepeat.n) } : null,
+        confirmUnaided: { n: t.confirmUnaided.n, passedPct: r1(t.confirmUnaided.passed, t.confirmUnaided.n) },
+        confirmRepeatHelp: p.kind === 'cheat' ? { n: t.confirmRepeat.n, passedPct: r1(t.confirmRepeat.passed, t.confirmRepeat.n) } : null,
         meanLength: t.n ? Math.round((100 * t.length) / t.n) / 100 : null,
         highGroupsPct: Object.fromEntries(Object.entries(t.highGroups).map(([k, v]) => [k, r1(v, t.n)])),
         reasonSharePct: Object.fromEntries(Object.entries(t.codes).map(([c, v]) => [c, r1(v, t.n)])),

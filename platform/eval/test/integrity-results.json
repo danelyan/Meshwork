@@ -1,6 +1,6 @@
 {
   "command": "npx tsx eval/test/integrity.ts --n 1000 --json eval/test/integrity-results.json",
-  "generatedAt": "2026-10-10T23:11:27.016Z",
+  "generatedAt": "2026-10-10T23:30:57.891Z",
   "params": {
     "n": 1000,
     "seed": 1,
@@ -26,32 +26,28 @@
       "attempts": 4000,
       "sharePct": {
         "low": 38.6,
-        "medium": 52.7,
-        "high": 8.7,
-        "canaryHit": 0.8,
-        "altHigh": 1.3,
-        "altMedium": 60.1
+        "medium": 60.1,
+        "high": 1.3,
+        "canaryHit": 0.8
       },
-      "blockingOfGrantablePct": 8.2,
-      "grantedUncheckedPct": 78.8,
-      "grantedFinalPct": 85.1,
+      "blockingOfGrantablePct": 1.3,
+      "grantedUncheckedPct": 84.7,
+      "grantedFinalPct": 85.8,
       "confirmUnaided": {
-        "n": 281,
-        "passedPct": 90.4,
-        "ownOnlyPassedPct": 73.3,
-        "consistentPassedPct": 90
+        "n": 43,
+        "passedPct": 100
       },
       "confirmRepeatHelp": null,
       "meanLength": 8.06,
       "highGroupsPct": {
-        "browser+time": 6.2,
         "browser+canary": 0.1,
         "browser+fit": 0.2,
-        "fit+time": 1.5,
         "canary": 0.3,
         "browser+canary+time": 0.1,
         "browser+fit+time": 0.1,
         "canary+time": 0.3,
+        "fit+time": 0.1,
+        "browser+time": 0.2,
         "canary+fit+time": 0.1
       },
       "reasonSharePct": {
@@ -73,28 +69,23 @@
       "attempts": 4000,
       "sharePct": {
         "low": 47,
-        "medium": 46.4,
-        "high": 6.7,
-        "canaryHit": 0.9,
-        "altHigh": 1.5,
-        "altMedium": 51.6
+        "medium": 51.6,
+        "high": 1.5,
+        "canaryHit": 0.9
       },
-      "blockingOfGrantablePct": 6.4,
-      "grantedUncheckedPct": 87.4,
-      "grantedFinalPct": 92.4,
+      "blockingOfGrantablePct": 1.4,
+      "grantedUncheckedPct": 92,
+      "grantedFinalPct": 93.2,
       "confirmUnaided": {
-        "n": 239,
-        "passedPct": 83.7,
-        "ownOnlyPassedPct": 66.5,
-        "consistentPassedPct": 83.7
+        "n": 53,
+        "passedPct": 86.8
       },
       "confirmRepeatHelp": null,
       "meanLength": 8.55,
       "highGroupsPct": {
         "browser+canary": 0,
-        "browser+time": 4.4,
         "browser+fit+time": 0.2,
-        "fit+time": 1.1,
+        "browser+time": 0.2,
         "browser+canary+time": 0.1,
         "canary": 0.4,
         "canary+time": 0.4,
@@ -119,31 +110,26 @@
       "attempts": 4000,
       "sharePct": {
         "low": 60.7,
-        "medium": 34.6,
-        "high": 4.7,
-        "canaryHit": 0.6,
-        "altHigh": 0.9,
-        "altMedium": 38.5
+        "medium": 38.5,
+        "high": 0.9,
+        "canaryHit": 0.6
       },
-      "blockingOfGrantablePct": 3.7,
-      "grantedUncheckedPct": 86.2,
-      "grantedFinalPct": 89,
+      "blockingOfGrantablePct": 0.6,
+      "grantedUncheckedPct": 89,
+      "grantedFinalPct": 89.5,
       "confirmUnaided": {
-        "n": 131,
-        "passedPct": 86.3,
-        "ownOnlyPassedPct": 38.2,
-        "consistentPassedPct": 86.3
+        "n": 21,
+        "passedPct": 95.2
       },
       "confirmRepeatHelp": null,
       "meanLength": 6.58,
       "highGroupsPct": {
-        "fit+time": 0.8,
-        "browser+time": 3.1,
         "browser+fit+time": 0.1,
         "canary+time": 0.2,
         "canary": 0.4,
         "browser+canary": 0.1,
-        "browser+fit": 0.1
+        "browser+fit": 0.1,
+        "browser+time": 0
       },
       "reasonSharePct": {
         "paste": 3.2,
@@ -164,29 +150,25 @@
       "attempts": 4000,
       "sharePct": {
         "low": 4.8,
-        "medium": 82.6,
-        "high": 12.6,
-        "canaryHit": 0.9,
-        "altHigh": 3.3,
-        "altMedium": 92
+        "medium": 92,
+        "high": 3.3,
+        "canaryHit": 0.9
       },
-      "blockingOfGrantablePct": 12.3,
-      "grantedUncheckedPct": 81.8,
-      "grantedFinalPct": 90.8,
+      "blockingOfGrantablePct": 3.3,
+      "grantedUncheckedPct": 90.2,
+      "grantedFinalPct": 92.7,
       "confirmUnaided": {
-        "n": 460,
-        "passedPct": 78,
-        "ownOnlyPassedPct": 63.7,
-        "consistentPassedPct": 77.8
+        "n": 125,
+        "passedPct": 80.8
       },
       "confirmRepeatHelp": null,
       "meanLength": 8.55,
       "highGroupsPct": {
-        "browser+time": 9.2,
         "browser+canary+time": 0.1,
-        "fit+time": 2.3,
+        "browser+time": 1.6,
         "browser+fit+time": 0.4,
         "canary+time": 0.7,
+        "fit+time": 0.4,
         "canary": 0.1,
         "canary+fit+time": 0.1
       },
@@ -208,26 +190,20 @@
       "attempts": 4000,
       "sharePct": {
         "low": 0,
-        "medium": 51.3,
-        "high": 48.7,
-        "canaryHit": 46.5,
-        "altHigh": 49.1,
-        "altMedium": 50.9
+        "medium": 50.9,
+        "high": 49.1,
+        "canaryHit": 46.5
       },
-      "blockingOfGrantablePct": 48.7,
-      "grantedUncheckedPct": 51.3,
-      "grantedFinalPct": 79.4,
+      "blockingOfGrantablePct": 49.1,
+      "grantedUncheckedPct": 50.9,
+      "grantedFinalPct": 62.3,
       "confirmUnaided": {
-        "n": 1947,
-        "passedPct": 57.7,
-        "ownOnlyPassedPct": 5,
-        "consistentPassedPct": 21.8
+        "n": 1963,
+        "passedPct": 23.3
       },
       "confirmRepeatHelp": {
-        "n": 1947,
-        "passedPct": 73.8,
-        "ownOnlyPassedPct": 71.2,
-        "consistentPassedPct": 73.3
+        "n": 1963,
+        "passedPct": 73.1
       },
       "meanLength": 7.07,
       "highGroupsPct": {
@@ -237,7 +213,7 @@
         "browser+canary+time": 0.5,
         "browser+canary+fit+time": 0.1,
         "browser+fit+time": 0.1,
-        "browser+time": 0.1
+        "browser+time": 0.5
       },
       "reasonSharePct": {
         "tab_away": 100,
@@ -245,7 +221,8 @@
         "copy": 100,
         "canary_hit": 46.5,
         "person_misfit": 4.9,
-        "fast_correct_hard": 0.8
+        "fast_correct_hard": 0.8,
+        "fast_correct_series": 0.4
       }
     },
     {
@@ -256,35 +233,30 @@
       "attempts": 4000,
       "sharePct": {
         "low": 0,
-        "medium": 20.8,
-        "high": 79.2,
-        "canaryHit": 78.3,
-        "altHigh": 79.3,
-        "altMedium": 20.7
+        "medium": 20.7,
+        "high": 79.3,
+        "canaryHit": 78.3
       },
-      "blockingOfGrantablePct": 79.2,
-      "grantedUncheckedPct": 20.8,
-      "grantedFinalPct": 64.9,
+      "blockingOfGrantablePct": 79.3,
+      "grantedUncheckedPct": 20.7,
+      "grantedFinalPct": 40.2,
       "confirmUnaided": {
-        "n": 3167,
-        "passedPct": 55.7,
-        "ownOnlyPassedPct": 4.5,
-        "consistentPassedPct": 23
+        "n": 3171,
+        "passedPct": 24.6
       },
       "confirmRepeatHelp": {
-        "n": 3167,
-        "passedPct": 45.7,
-        "ownOnlyPassedPct": 43.7,
-        "consistentPassedPct": 45.4
+        "n": 3171,
+        "passedPct": 45.3
       },
       "meanLength": 7.16,
       "highGroupsPct": {
-        "browser+canary": 72.6,
+        "browser+canary": 72.5,
         "browser+canary+fit": 3.9,
-        "browser+canary+time": 1.3,
+        "browser+canary+time": 1.4,
         "browser+fit": 0.9,
         "browser+canary+fit+time": 0.5,
-        "browser+fit+time": 0
+        "browser+fit+time": 0,
+        "browser+time": 0.1
       },
       "reasonSharePct": {
         "canary_hit": 78.3,
@@ -292,7 +264,8 @@
         "paste": 99.3,
         "copy": 100,
         "person_misfit": 5.3,
-        "fast_correct_hard": 1.8
+        "fast_correct_hard": 1.8,
+        "fast_correct_series": 0.2
       }
     },
     {
@@ -305,32 +278,27 @@
         "low": 0,
         "medium": 3.6,
         "high": 96.4,
-        "canaryHit": 96.2,
-        "altHigh": 96.4,
-        "altMedium": 3.6
+        "canaryHit": 96.2
       },
       "blockingOfGrantablePct": 96.4,
       "grantedUncheckedPct": 3.6,
-      "grantedFinalPct": 53.5,
+      "grantedFinalPct": 29,
       "confirmUnaided": {
-        "n": 3852,
-        "passedPct": 51.8,
-        "ownOnlyPassedPct": 4.5,
-        "consistentPassedPct": 25
+        "n": 3853,
+        "passedPct": 26.4
       },
       "confirmRepeatHelp": {
-        "n": 3852,
-        "passedPct": 16.4,
-        "ownOnlyPassedPct": 15.7,
-        "consistentPassedPct": 16.3
+        "n": 3853,
+        "passedPct": 16.2
       },
       "meanLength": 7.27,
       "highGroupsPct": {
-        "browser+canary": 88,
+        "browser+canary": 87.9,
         "browser+canary+fit": 4.9,
-        "browser+canary+time": 2.4,
+        "browser+canary+time": 2.5,
         "browser+canary+fit+time": 0.9,
-        "browser+fit": 0.2
+        "browser+fit": 0.2,
+        "browser+time": 0
       },
       "reasonSharePct": {
         "canary_hit": 96.2,
@@ -338,7 +306,8 @@
         "paste": 99.3,
         "copy": 100,
         "person_misfit": 6,
-        "fast_correct_hard": 3.3
+        "fast_correct_hard": 3.3,
+        "fast_correct_series": 0.1
       }
     },
     {
@@ -351,24 +320,18 @@
         "low": 95.8,
         "medium": 4,
         "high": 0.2,
-        "canaryHit": 0.2,
-        "altHigh": 0.2,
-        "altMedium": 4
+        "canaryHit": 0.2
       },
       "blockingOfGrantablePct": 0.2,
       "grantedUncheckedPct": 99.8,
-      "grantedFinalPct": 99.9,
+      "grantedFinalPct": 99.8,
       "confirmUnaided": {
         "n": 7,
-        "passedPct": 57.1,
-        "ownOnlyPassedPct": 0,
-        "consistentPassedPct": 0
+        "passedPct": 0
       },
       "confirmRepeatHelp": {
         "n": 7,
-        "passedPct": 100,
-        "ownOnlyPassedPct": 100,
-        "consistentPassedPct": 100
+        "passedPct": 100
       },
       "meanLength": 7.02,
       "highGroupsPct": {
@@ -389,34 +352,30 @@
       "claimed": "middle",
       "attempts": 4000,
       "sharePct": {
-        "low": 97.1,
-        "medium": 2.5,
-        "high": 0.4,
-        "canaryHit": 0.1,
-        "altHigh": 100,
-        "altMedium": 0
+        "low": 0,
+        "medium": 0,
+        "high": 100,
+        "canaryHit": 0.1
       },
-      "blockingOfGrantablePct": 0.4,
-      "grantedUncheckedPct": 99.6,
-      "grantedFinalPct": 99.7,
+      "blockingOfGrantablePct": 100,
+      "grantedUncheckedPct": 0,
+      "grantedFinalPct": 13.4,
       "confirmUnaided": {
-        "n": 17,
-        "passedPct": 23.5,
-        "ownOnlyPassedPct": 0,
-        "consistentPassedPct": 0
+        "n": 4000,
+        "passedPct": 13.4
       },
       "confirmRepeatHelp": {
-        "n": 17,
-        "passedPct": 100,
-        "ownOnlyPassedPct": 100,
-        "consistentPassedPct": 94.1
+        "n": 4000,
+        "passedPct": 1.5
       },
       "meanLength": 7.01,
       "highGroupsPct": {
-        "fit+time": 0.3,
-        "canary": 0.1
+        "time": 97.4,
+        "fit+time": 2.5,
+        "canary+time": 0.1
       },
       "reasonSharePct": {
+        "fast_correct_series": 100,
         "person_misfit": 2.5,
         "fast_correct_hard": 0.7,
         "canary_hit": 0.1

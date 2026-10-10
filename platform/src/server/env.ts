@@ -74,6 +74,18 @@ export const envSchema = z
     YANDEX_CLIENT_ID: optionalString,
     YANDEX_CLIENT_SECRET: optionalString,
 
+    /**
+     * Привязка ФСП ID (OIDC, Keycloak). Не задан FSP_OIDC_ISSUER → кнопка привязки скрыта, ФСП — демо-источник
+     * (server/collector/fsp-demo.ts). Сейчас issuer — симулятор ФСП ID команды; в проде — реалм Keycloak ФСП.
+     */
+    FSP_OIDC_ISSUER: optionalString.pipe(z.url().optional()),
+    /** client_id нашего приложения у провайдера; по умолчанию fsp-career. */
+    FSP_OIDC_CLIENT_ID: optionalString,
+    /** Секрет конфиденциального клиента (client_secret_post). Пусто — публичный клиент, только PKCE. */
+    FSP_OIDC_CLIENT_SECRET: optionalString,
+    /** Базовый URL API реестра достижений (…/api/v1); достижения — GET /me/achievements по токену пользователя. */
+    FSP_API_URL: optionalString.pipe(z.url().optional()),
+
     GITHUB_TOKEN: optionalString,
     /** true → сборщик не ходит в сеть за профилями, только фикстуры (демо-стенд, тесты). */
     COLLECTOR_FIXTURES: z.stringbool().default(false),
@@ -86,10 +98,6 @@ export const envSchema = z
      * клиент при вызове, а не здесь: кривой токен не должен ронять всё приложение.
      */
     RUNNER_TOKEN: optionalString,
-    /** R-X-02 (концепт ATS): куда слать подписанный вебхук о смене статуса приглашения. Нет url или секрета — отправки нет. */
-    ATS_WEBHOOK_URL: optionalString.pipe(z.url().optional()),
-    /** Секрет HMAC-SHA256 подписи вебхука (заголовок X-FSP-Signature). */
-    ATS_WEBHOOK_SECRET: optionalString,
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: intFrom(1025, 1, 65535),
     /** lane email-auth: smtp — письма через SMTP (Mailpit на стенде); log — только в лог сервера и журнал в памяти (тесты, локально без Mailpit). */

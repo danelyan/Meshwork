@@ -68,9 +68,9 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   defense: 'Защита утверждения: короткое интервью, повышающее уровень до «платформа»',
   'defense-room': 'Защита проекта (ADR 0003, ступень 3): вопросы по коду, ходы, SSE звонка, итог слепого оценщика',
   demo: 'Демо-вход и демо-резюме (только при DEMO_LOGIN)',
+  'fsp-id': 'ФСП ID (R-FSP-01): привязка ФСП ID к профилю кандидата через OIDC-провайдер (Keycloak; сейчас — симулятор ФСП ID команды) и загрузка достижений',
   directions: 'Справочник направлений и подкатегорий (Subcategory, R-T-05)',
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
-  evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
   health: 'Проверка живости',
   invitations: 'Приглашения глазами кандидата',
   onboarding: 'Онбординг: шаги, ответы, итог',
@@ -211,54 +211,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
     },
     errors: {},
   },
-  'POST /api/evaluate': {
-    role: 'public',
-    summary: 'Проверить подбор на своём наборе',
-    description:
-      'Наше ранжирование (то же, что подборка под потребность в кабинете) и базовая линия на наборе пользователя: P@k, nDCG@k, MRR по каждой вакансии и в среднем, топ-k с объяснениями. Считается в памяти, в БД ничего не пишется. Лимиты: тело ≤ 1 МБ, ≤ 50 вакансий, ≤ 1000 кандидатов, ≤ 60 требований и ≤ 200 утверждений на объект, k ≤ 20; id утверждений — из каталога. Лимит частоты — 30 прогонов за 10 минут с адреса.',
-    body: {
-      description: 'Набор: вакансии, кандидаты, разметка релевантности 0/1/2',
-      schema: obj(
-        {
-          k: int('Глубина выдачи, 1–20 (по умолчанию 5)'),
-          vacancies: arr(
-            obj(
-              {
-                id: str(),
-                title: str(),
-                specialization: en('backend', 'frontend', 'ai', 'engineering'),
-                grade: en('junior', 'middle', 'senior'),
-                needs: arr(obj({ catalogId: str('id из каталога утверждений'), weight: int('1–3, по умолчанию 2') }, ['catalogId'])),
-                stack: arr(str()),
-              },
-              ['id', 'specialization', 'grade', 'needs'],
-            ),
-          ),
-          candidates: arr(
-            obj(
-              {
-                id: str(),
-                specialization: nullable(en('backend', 'frontend', 'ai', 'engineering')),
-                fspState: en('not_linked', 'no_achievements', 'unavailable', 'linked'),
-                category: nullable(obj({ specialization: en('backend', 'frontend', 'ai', 'engineering'), grade: en('junior', 'middle', 'senior') })),
-                stack: arr(str()),
-                claims: arr(obj({ catalogId: str(), level: en('self_reported', 'artifact', 'third_party', 'platform') }, ['catalogId'])),
-              },
-              ['id', 'claims'],
-            ),
-          ),
-          relevance: free('relevance[id вакансии][id кандидата] = 0 | 1 | 2; кого нет — 0'),
-        },
-        ['vacancies', 'candidates', 'relevance'],
-      ),
-    },
-    success: JSON_OK(
-      'Метрики по вакансиям и среднее по вакансиям, где есть хотя бы один релевантный',
-      free('k, candidates, vacancies, scored, mean {ours, baseline, precisionCeiling} | null, rows [{id, ours, baseline, top, baselineTop, …}], warnings'),
-    ),
-    errors: { 400: 'Не JSON, не прошла схема, неизвестный id каталога или разметка на несуществующих объектах', 403: 'Чужой Origin', 413: 'Тело больше 1 МБ', 429: 'Слишком много прогонов' },
-  },
-
   'GET /api/health': {
     role: 'public',
     summary: 'Проверка живости приложения и БД',
@@ -341,6 +293,32 @@ export const OVERRIDES: Record<string, OpOverride> = {
     ],
     description: 'Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка — на /auth?error=<код>, без подробностей и токенов.',
     success: { description: 'Редирект 303: незавершённый онбординг → /consultant (лента знакомства), иначе `next` или кабинет роли; при ошибке /auth?error=<код>' },
+  },
+  // lane fsp-oidc: привязка ФСП ID к профилю (R-FSP-01..04, R-C-15).
+  'GET /api/fsp-id/link': {
+    summary: 'Начать привязку ФСП ID',
+    description: 'Кнопка в настройках кандидата: state, nonce и PKCE verifier — в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата — на /auth.',
+    success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
+  },
+  'GET /api/fsp-id/callback': {
+    summary: 'Возврат из ФСП ID',
+    query: [
+      { name: 'code', description: 'Код авторизации', schema: str() },
+      { name: 'state', description: 'Должен совпасть со state из куки старта', schema: str() },
+      { name: 'error', description: 'Присутствует при отказе', schema: str() },
+    ],
+    description: 'Проверка state и кандидата потока, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce), привязка участника к профилю. Токены в URL не попадают.',
+    success: { status: 303, description: 'Редирект на /settings?fsp=linked|no_achievements|unavailable или /settings?fsp=error_<код>' },
+  },
+  'GET /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
+    summary: 'Мок ФСП ID: страница входа',
+    description: 'Authorization endpoint встроенного мока ФСП ID (путь как у Keycloak); только пока внешний провайдер не настроен, иначе 404. Проверяет client_id и redirect_uri по белому списку, PKCE S256, state и nonce; отдаёт HTML-страницу выбора демо-участника.',
+    success: { description: 'HTML-страница входа; ошибка запроса — редирект на redirect_uri с error или страница ошибки' },
+  },
+  'POST /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
+    summary: 'Мок ФСП ID: выбор демо-участника',
+    description: 'Форма страницы входа мока: одноразовый код на 60 секунд и редирект на redirect_uri с code и state; «Отмена» — error=access_denied.',
+    success: { status: 303, description: 'Редирект на /api/fsp-id/callback' },
   },
   // lane email-auth: вход по почте и паролю (R-D-04). Все формы — same-origin и лимит попыток на клиента (429).
   'POST /api/auth/register': {
@@ -615,14 +593,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
       obj({ candidate: free('Реплика кандидата'), ai: nullable(free('Реплика ИИ')), text: nullable(str()), audioUrl: str('Зарезервировано; озвучка — через /api/tts'), done: bool() }, ['candidate', 'ai', 'text', 'done']),
     ),
     errors: { 400: 'Пустой текст ответа: распознаёт /audio или браузер, /turn сам STT не зовёт', 404: 'Чужой созвон или сегмент аудио', 409: 'Созвон завершён или ответ уже принят' },
-  },
-  'POST /api/call/{id}/interrupt': {
-    summary: 'Кандидат перебил реплику ИИ',
-    success: JSON_OK(
-      'Реплика ИИ обрезана до услышанного (пометка «…(перебит)»), хвост — в `meta.interrupted.tail`; повтор идемпотентен, полностью услышанная реплика не меняется',
-      free('Реплика транскрипта (TranscriptEntry)'),
-    ),
-    errors: { 404: 'Нет такой реплики ИИ', 409: 'Созвон завершён или это не текущий вопрос' },
   },
   'POST /api/call/{id}/audio': {
     summary: 'Сегмент голоса кандидата',

@@ -4,6 +4,7 @@ import { readCache, saveSource, writeMemory } from './cache';
 import { fetchCodeforces } from './codeforces';
 import { fixtureDoc, fixturesOnly } from './fixtures';
 import { FSP_DEMO_HANDLES, fspDemoDoc, type FspState } from './fsp-demo';
+import { linkedFspSubject } from '../fsp-id/link';
 import { fetchGithub } from './github';
 import { fetchStackOverflow } from './stackoverflow';
 import type { ExtractedDoc, ProfileKind } from './types';
@@ -51,7 +52,10 @@ export async function fetchProfile(kind: ProfileKind, handle: string, opts: Fetc
 
   let doc: ExtractedDoc | null = fixtureDoc(kind, h);
   if (!doc && kind === 'fsp') {
-    doc = fspDemoDoc(opts.candidateId ?? h, await fspState(h, opts.candidateId));
+    const state = await fspState(h, opts.candidateId);
+    // Привязан через ФСП ID (OIDC) — достижения этого участника из демо-реестра, иначе прежний демо-набор.
+    const subject = opts.candidateId && state !== 'not_linked' ? await linkedFspSubject(opts.candidateId) : null;
+    doc = fspDemoDoc(opts.candidateId ?? h, state, subject ? { sub: subject.sub, name: subject.name ?? undefined, achievements: subject.achievements } : undefined);
   }
   if (!doc && !opts.fresh) doc = await readCache(kind, originOf(kind, h));
   if (!doc) {

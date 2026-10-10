@@ -5,6 +5,8 @@ import type { z } from 'zod';
 
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
+import { deliverable, notifyInBackground, sendMail } from '../mail';
+import { invitationAnswerMail, invitationMail } from '../mail/templates';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
@@ -68,7 +70,7 @@ export async function createInvitation(
     const v = await prisma.vacancy.findFirst({ where: { id: input.vacancyId, companyId: ctx.companyId, archivedAt: null }, select: { id: true } });
     if (!v) throw errors.notFound('Потребность не найдена');
   }
-  return prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${ctx.companyId}`}))`;
     const open = await tx.invitation.findFirst({
       where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: OPEN } },
@@ -91,6 +93,36 @@ export async function createInvitation(
       select: { id: true, status: true },
     });
   });
+  // lane: email-auth — письмо кандидату, не задерживая ответ работодателю.
+  void notifyInBackground('invitation', () => notifyCandidateInvited(created.id));
+  return created;
+}
+
+/** Письмо кандидату о новом приглашении (компания, позиция, зарплата). Служебный адрес — пропуск. */
+export async function notifyCandidateInvited(invitationId: string): Promise<void> {
+  const inv = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    select: {
+      salaryOffer: true,
+      candidate: { select: { email: true } },
+      company: { select: { name: true } },
+      vacancy: { select: { title: true, company: { select: { name: true } } } },
+    },
+  });
+  if (!inv || !deliverable(inv.candidate.email)) return;
+  const companyName = inv.company?.name ?? inv.vacancy?.company.name ?? 'Компания';
+  await sendMail(invitationMail(inv.candidate.email, { companyName, vacancyTitle: inv.vacancy?.title ?? null, salaryOffer: inv.salaryOffer }));
+}
+
+/** Письмо работодателю-отправителю об ответе кандидата. Нет отправителя или почты — пропуск. */
+export async function notifyEmployerAnswered(invitationId: string, accepted: boolean): Promise<void> {
+  const inv = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    select: { vacancy: { select: { title: true } }, employerProfile: { select: { user: { select: { email: true } } } } },
+  });
+  const to = inv?.employerProfile?.user.email;
+  if (!inv || !deliverable(to)) return;
+  await sendMail(invitationAnswerMail(to, { accepted, vacancyTitle: inv.vacancy?.title ?? null }));
 }
 
 /** Приглашения компании с карточкой кандидата: контакты — только у принятых. */
@@ -211,6 +243,7 @@ export async function respondInvitation(candidateId: string, invitationId: strin
     data: { status, respondedAt: now },
   });
   if (r.count === 0) throw errors.conflict('На приглашение уже ответили');
+  void notifyInBackground('invitation_answer', () => notifyEmployerAnswered(invitationId, status === 'accepted'));
   return { id: invitationId, status };
 }
 

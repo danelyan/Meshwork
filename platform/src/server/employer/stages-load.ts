@@ -44,9 +44,13 @@ export async function loadStageEvidence(candidateIds: string[]): Promise<Map<str
   });
   for (const c of calls) {
     if (!isObject(c.verdictJson)) continue;
-    if (c.kind === 'qualifying') {
+    if (c.kind === 'qualifying' || c.kind === 'interview') {
+      // ИИнтервью (kind=interview, открывается после теста) строит ту же карту глубины, что и квалифицирующий созвон;
+      // для работодателя это одна ступень 1. Если есть оба — берём более свежий вердикт.
       const v = c.verdictJson as unknown as CallVerdict;
       if (!Array.isArray(v.depthMap)) continue;
+      const prev = slot(c.candidateId).calls?.qualifying;
+      if (prev && prev.evaluatedAt >= (v.evaluatedAt ?? '')) continue;
       slot(c.candidateId).calls = { ...slot(c.candidateId).calls, qualifying: summarizeQualifying(publicVerdict(v)) };
     } else {
       const v = c.verdictJson as unknown as DefenseRoomVerdict;

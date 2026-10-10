@@ -210,4 +210,24 @@ describe('подборка со ступенями ADR 0003 (БД)', () => {
     expect(ev.projects).toHaveLength(1);
     expect(ev.projects![0]!.score).toBe(0.7);
   });
+
+  it('ИИнтервью (kind=interview) даёт работодателю ту же ступень 1, что и квалифицирующий созвон; свежий вердикт важнее', async () => {
+    await prisma.candidate.deleteMany({ where: { id: 'ec-interview' } });
+    await makeCandidate('ec-interview');
+    await prisma.callSession.create({
+      data: {
+        candidateId: 'ec-interview', kind: 'qualifying', status: 'finished', finishedAt: new Date('2026-10-01T00:00:00Z'), policyVersion: 'v', transcriptJson: [],
+        verdictJson: { kind: 'qualifying', depthMap: [{ topic: 'REST', catalogId: 'be.rest-design', claimed: true, probed: 1, confirmed: true, total: 6 }], evaluatedAt: '2026-10-01T00:00:00.000Z' },
+      },
+    });
+    await prisma.callSession.create({
+      data: {
+        candidateId: 'ec-interview', kind: 'interview', status: 'finished', finishedAt: new Date(), policyVersion: 'v', transcriptJson: [],
+        verdictJson: { kind: 'interview', depthMap: [{ topic: 'Кэширование', catalogId: 'be.caching', claimed: true, probed: 2, confirmed: true, total: 7 }], evaluatedAt: '2026-10-11T00:00:00.000Z' },
+      },
+    });
+    const ev = (await loadStageEvidence(['ec-interview'])).get('ec-interview')!;
+    expect(ev.calls?.qualifying?.confirmedTopics).toEqual(['Кэширование']);
+    expect(ev.calls?.defense).toBeUndefined();
+  });
 });

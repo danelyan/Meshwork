@@ -18,6 +18,7 @@ import { extractUrls } from '@/lib/links';
 
 import { useAsideRefresh } from '../consultant/aside-refresh';
 import { useAttachments } from '../chat/attachments';
+import { useSoftGo } from './soft-nav';
 import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, ReplySkeleton, type ReplyLine, Thread, Typing, UserBubble } from '../chat/Thread';
 import { Brand } from '../shell/Brand';
 import { Button, VisuallyHidden } from '../ui';
@@ -192,12 +193,15 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     window.location.assign(path);
   }, []);
 
+  const softGo = useSoftGo();
+
   async function later() {
     setBusy(true);
     setError(null);
     try {
-      // Кандидату сервер ставит знакомство на паузу и ведёт сюда же: лента станет свободным разговором.
-      go((await onboardingLater()).next);
+      // Кандидату сервер ставит знакомство на паузу и ведёт сюда же: лента станет свободным разговором
+      // (мягкое обновление, без перезагрузки — сцена с головой остаётся).
+      softGo((await onboardingLater()).next);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не получилось. Повтори.');
       setBusy(false);

@@ -23,8 +23,12 @@ vi.mock('@/components/employer/AssistantChat', () => ({
 }));
 
 const push = vi.fn();
+// мягкое обновление (soft-nav.ts): на том же адресе — router.refresh, без перезагрузки
+const refresh = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
 beforeEach(() => {
-  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign: push } });
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, pathname: '/consultant', assign: push } });
+  refresh.mockReset();
 });
 afterEach(() => {
   cleanup();
@@ -73,7 +77,8 @@ it('«Вернуться к знакомству» — goto на текущий 
   vi.stubGlobal('fetch', fetchFn);
   render(<PausedFeed view={view} restored={restored} />);
   fireEvent.click(screen.getByRole('button', { name: RESUME_LABEL }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
+  await waitFor(() => expect(refresh).toHaveBeenCalled());
+  expect(push).not.toHaveBeenCalled();
   const body = JSON.parse((fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
   expect(body).toEqual({ action: 'goto', stepId: 'documents' });
 });

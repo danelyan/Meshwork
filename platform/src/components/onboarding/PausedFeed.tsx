@@ -15,6 +15,7 @@ import { AssistantRow, Bubble, ProgressLine, Reply, Thread, UserBubble } from '.
 import { Button } from '../ui';
 
 import { AsideRows, groupAsides } from './Asides';
+import { useSoftGo } from './soft-nav';
 import styles from './Onboarding.module.css';
 
 /** Подпись кнопки возврата; её же называет консультант в напоминании (server/agent/onboarding-aside.ts). */
@@ -39,8 +40,8 @@ function splitFeed<T extends Tagged>(items: T[], curId: string): { aside: T[]; r
 /**
  * Знакомство на паузе («Настроить позже» на /consultant, решение владельца 10.10): пройденные шаги
  * остаются началом ленты, дальше — свободный разговор с консультантом, онбординг не завершается.
- * «Вернуться к знакомству» открывает текущий шаг (goto снимает паузу на сервере) — страница
- * перерисовывается лентой шагов. Пауза хранится на сервере (OnboardingState.meta) и переживает перезагрузку.
+ * «Вернуться к знакомству» открывает текущий шаг (goto снимает паузу на сервере) — лента
+ * перерисовывается лентой шагов мягким обновлением (soft-nav.ts), без перезагрузки страницы. Пауза хранится на сервере (OnboardingState.meta) и переживает перезагрузку.
  */
 export function PausedFeed(props: PausedFeedProps) {
   // Свой провайдер голоса — только если снаружи его нет (как у Chat).
@@ -56,6 +57,7 @@ export function PausedFeed(props: PausedFeedProps) {
 function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const softGo = useSoftGo();
   const cur = view.current;
   // Разговор этой паузы (на текущем шаге) — в чате ниже; вопросы посреди шагов и разговоры прежних
   // пауз — под своими шагами (хронология ленты).
@@ -75,7 +77,8 @@ function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
     setError(null);
     try {
       await onboardingAct({ action: 'goto', stepId: cur.id });
-      window.location.assign('/consultant');
+      // без перезагрузки: сервер отдаст ленту шагов, сцена с головой остаётся
+      softGo('/consultant');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не получилось. Повтори.');
       setBusy(false);

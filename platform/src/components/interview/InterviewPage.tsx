@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/lib/api';
 import { callApi, subscribeCallEvents } from '@/lib/call-api';
 import type { CallVerdict, CallView, PublicCallVerdict, TranscriptEntry } from '@/server/call/types';
-import { AXES, AXIS_LABEL, BLOCK_DEFS, type BlockId, blockDef } from '@/server/interview/model';
-import { INTERVIEW_LIMITS, type InterviewTurn, stageOf } from '@/server/interview/plan';
+import { AXES, AXIS_LABEL, BLOCK_DEFS, type BlockId, blockDef, competencyById } from '@/server/interview/model';
+import { INTERVIEW_LIMITS, type InterviewTurn, clarificationHint, stageOf } from '@/server/interview/plan';
 import type { InterviewSummary } from '@/server/interview/types';
 
 import { useCallMic } from '../call/useCallMic';
@@ -146,6 +146,8 @@ export function InterviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [closing, setClosing] = useState(false);
+  /** Подсказка «Уточнить вопрос» к реплике ИИ с этим index (клиент, не ответ). */
+  const [hint, setHint] = useState<{ index: number; text: string } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const feed = useRef<HTMLDivElement | null>(null);
   const spoken = useRef(new Set<string>());
@@ -197,6 +199,7 @@ export function InterviewPage() {
     setError(null);
     // Новое интервью после завершённого: сбросить состояние прошлого.
     setClosing(false);
+    setHint(null);
     setDraft('');
     setCall(null);
     setTranscript([]);
@@ -385,6 +388,14 @@ export function InterviewPage() {
                 </div>
               </div>
             ))}
+            {hint && lastAi && hint.index === lastAi.index && phase === 'live' && (
+              <div className={cx(styles.msg, styles.ai)} role="note">
+                <span className={styles.av} aria-hidden="true">
+                  ИИ
+                </span>
+                <div className={styles.bubble}>{hint.text}</div>
+              </div>
+            )}
             {(busy || phase === 'starting') && (
               <div className={cx(styles.msg, styles.ai, styles.typing)} aria-label="ИИ печатает">
                 <span className={styles.av} aria-hidden="true">
@@ -433,7 +444,14 @@ export function InterviewPage() {
                 <button type="button" disabled={!lastAi || !speech.available} onClick={() => lastAi && void speech.replay(lastAi.text)}>
                   Повторить вопрос
                 </button>
-                <button type="button" disabled={!awaiting || closing} onClick={() => void send({ text: 'Уточни, пожалуйста, вопрос — переформулируй проще.' })}>
+                <button
+                  type="button"
+                  disabled={!awaiting || closing || !lastAi?.meta?.competencyId}
+                  onClick={() => {
+                    const c = lastAi?.meta?.competencyId ? competencyById(lastAi.meta.competencyId) : null;
+                    if (lastAi && c) setHint({ index: lastAi.index, text: clarificationHint(c, lastAi.meta!.level) });
+                  }}
+                >
                   Уточнить вопрос
                 </button>
                 <button type="button" disabled={!awaiting || closing} onClick={() => void send({ text: 'Пропускаю этот вопрос.' })}>

@@ -13,6 +13,9 @@ export function useSpeech() {
   const [speaking, setSpeaking] = useState(false);
   const audio = useRef<HTMLAudioElement | null>(null);
   const url = useRef<string | null>(null);
+  /** Поколение запроса: stop() и новый say() обесценивают синтез, который ещё не вернулся. */
+  const gen = useRef(0);
+  const abort = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -26,6 +29,9 @@ export function useSpeech() {
   }, []);
 
   const stop = useCallback(() => {
+    gen.current += 1;
+    abort.current?.abort();
+    abort.current = null;
     audio.current?.pause();
     audio.current = null;
     if (url.current) URL.revokeObjectURL(url.current);
@@ -37,10 +43,15 @@ export function useSpeech() {
     async (text: string) => {
       if (!available || typeof window === 'undefined') return;
       stop();
+      const my = gen.current;
+      const ac = new AbortController();
+      abort.current = ac;
       try {
-        const res = await fetch('/api/tts', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
-        if (!res.ok) return;
+        const res = await fetch('/api/tts', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }), signal: ac.signal });
+        if (!res.ok || my !== gen.current) return;
         const blob = await res.blob();
+        // Пока грузили — остановили или заказали другую реплику: этот звук не играет.
+        if (my !== gen.current) return;
         const src = URL.createObjectURL(blob);
         url.current = src;
         const a = new Audio(src);
@@ -50,7 +61,7 @@ export function useSpeech() {
         setSpeaking(true);
         await a.play().catch(() => setSpeaking(false));
       } catch {
-        setSpeaking(false);
+        if (my === gen.current) setSpeaking(false);
       }
     },
     [available, stop],

@@ -1,6 +1,6 @@
 import type { AnswerSignal } from '@/server/call/types';
 import { buildBlockPlan } from '@/server/interview/context';
-import { INTERVIEW_LIMITS, type InterviewTurn, blockCounts, currentBlock, planInterviewNext, stageOf, templateInterviewQuestion } from '@/server/interview/plan';
+import { INTERVIEW_LIMITS, type InterviewTurn, blockCounts, clarificationHint, currentBlock, planInterviewNext, stageOf, templateInterviewQuestion } from '@/server/interview/plan';
 
 const plan = buildBlockPlan('backend', 'backend.web-api', []);
 
@@ -86,5 +86,16 @@ describe('план ИИнтервью: блоки по порядку, марш�
     expect(q.toLowerCase()).toContain(c.focus.middle.slice(1, 20).toLowerCase());
     expect(templateInterviewQuestion(plan.intro[0]!, 'intro', 1, false)).not.toMatch(/^Привет/);
     expect(templateInterviewQuestion(plan.systems[0]!, 'systems', 3, false)).toContain(plan.systems[0]!.focus.senior);
+  });
+});
+
+describe('подсказка «Уточнить вопрос» — клиентская, по фокусу компетенции', () => {
+  it('содержит название компетенции и фокус уровня, не является ответом', () => {
+    const c = plan.test[0]!;
+    const h = clarificationHint(c, 2);
+    expect(h).toContain(c.title.toLowerCase());
+    expect(h.toLowerCase()).toContain(c.focus.middle.slice(1, 25).toLowerCase());
+    expect(clarificationHint(c, 3)).toContain('альтернативы');
+    expect(clarificationHint(c, 1)).toContain('пример');
   });
 });

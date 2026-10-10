@@ -34,11 +34,7 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
  * `children` — готовая лента (слитая лента /consultant: онбординг + консультант, см.
  * components/consultant/ConsultantFeed); без них сцена рисует обычный `Chat`.
  */
-<<<<<<< HEAD
-export function AvatarScene({ variant, demo, initial, children, aside, label = 'ИИ-консультант' }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; aside?: SceneAsideData }) {
-=======
-export function AvatarScene({ variant, demo, initial, children, label = 'ИИ-консультант', call = false }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; call?: boolean }) {
->>>>>>> lane/call
+export function AvatarScene({ variant, demo, initial, children, aside, label = 'ИИ-консультант', call = false }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; aside?: SceneAsideData; call?: boolean }) {
   const feed = (className?: string) => children ?? <Chat demo={demo} initial={initial} className={className} />;
   const scene = (
     <CompanionVoiceProvider autoEnable>
@@ -99,33 +95,8 @@ export function AvatarScene({ variant, demo, initial, children, label = 'ИИ-к
           </div>
         </div>
       )}
-<<<<<<< HEAD
-      {variant === 'call-side' && (
-          <div className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side">
-            <section className={styles.sideStage} aria-label={label}>
-              <div className={styles.sideHead}>
-                <HeadView />
-                <span className={styles.badge}>{label}</span>
-                <div className={styles.callTop}>
-                  <StateChip />
-                  <MuteToggle />
-                </div>
-                <div className={styles.callStop}>
-                  <StopButton />
-                </div>
-              </div>
-              <Subtitles className={styles.sideSubs} />
-            </section>
-            {aside && <SceneAside data={aside} className={styles.sideAside} />}
-            <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll data-theme="feed-dark">
-              {feed(styles.sideChat)}
-            </div>
-          </div>
-      )}
+      {variant === 'call-side' && <SideScene label={label} aside={aside}>{feed(styles.sideChat)}</SideScene>}
       </AsideProvider>
-=======
-      {variant === 'call-side' && <SideScene label={label}>{feed(styles.sideChat)}</SideScene>}
->>>>>>> lane/call
     </CompanionVoiceProvider>
   );
   // Режим звонка (lane call): только у кандидата; провайдер снаружи голоса, чтобы кнопка в ленте его видела.
@@ -133,11 +104,11 @@ export function AvatarScene({ variant, demo, initial, children, label = 'ИИ-к
 }
 
 /** Сцена «звонок + чат слева»; открыт созвон — сцена становится панелью звонка, лента неактивна. */
-function SideScene({ label, children }: { label: string; children: ReactNode }) {
+function SideScene({ label, aside, children }: { label: string; aside?: SceneAsideData; children: ReactNode }) {
   const call = useCallMode();
   const inCall = Boolean(call?.open);
   return (
-    <div className={styles.sideScene} data-testid="scene-call-side" data-call={inCall || undefined}>
+    <div className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-call={inCall || undefined}>
       <section className={styles.sideStage} aria-label={label}>
         {inCall ? (
           <CallPanel />
@@ -158,6 +129,7 @@ function SideScene({ label, children }: { label: string; children: ReactNode }) 
           </>
         )}
       </section>
+      {aside && <SceneAside data={aside} className={styles.sideAside} />}
       <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll data-theme="feed-dark" inert={inCall || undefined} aria-hidden={inCall || undefined}>
         {inCall && <p className={styles.callPause}>Идёт созвон - чат на паузе</p>}
         {children}

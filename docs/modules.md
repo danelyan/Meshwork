@@ -16,10 +16,9 @@
 | `agent/employer` | Отдельный цикл и 7 инструментов ассистента работодателя | `agent/employer/index.ts` (`runEmployerTurn`) | employer, recommend, claims |
 | `recommend` | Карта пробелов, задания, целевые роли, матчинг вакансий, объяснение приглашений | `recommend/index.ts` | claims, db |
 | `defense` | Защита утверждения: интервьюер и оценщик | `defense/index.ts`, `defense/session.ts` | claims, llm |
-| `defense-room` | Ступень 3 ADR 0003: защита проекта со звонком работодателя — QLC по коду репозитория (`defense_qlc`), интервьюер (`call_interviewer`), очередь вопросов работодателя, слепой оценщик A-02 ×3 с медианой и флагами (`call_evaluator`), SSE-шина и сигналинг WebRTC P2P; события и форма транскрипта — по контракту лейна call | `defense-room/session.ts`, `defense-room/employer.ts` | defense (оценщик), employer (приглашения), collector (GitHub), llm |
 | `test` | Адаптивный тест на грейд (IRT, генераторы заданий, политика остановки) — ADR `docs/decisions/0002-grade-test.md` | `test/index.ts`, `test/service.ts` | claims, recommend, env |
 | `onboarding` | Анкета и сценарий онбординг-чата, ИНН, согласие, сервис завершения | `onboarding/service.ts`, `onboarding/engine.ts` | auth, claims, collector, llm, recommend |
-| `auth` | Яндекс ID (OAuth), роли, согласие, CSRF, устаревшие сессии — ADR `docs/decisions/0001-auth-yandex-id.md` | `auth/users.ts`, `auth/yandex.ts` | onboarding, session |
+| `auth` | Яндекс ID (OAuth), роли и их переключение, согласие, CSRF, устаревшие сессии — ADR `docs/decisions/0001-auth-yandex-id.md`, `0004-role-switching.md` | `auth/users.ts`, `auth/yandex.ts`, `auth/role-switch.ts` | onboarding, session |
 | `mail` | Отправка писем (SMTP, Mailpit на стенде), шаблоны писем подтверждения и сброса пароля | `mail/index.ts` | env |
 | `employer` | Кабинет работодателя: вакансии, ранжирование, приглашения, приватность, веса | `employer/index.ts`, `employer/ranking.ts` | claims, recommend |
 | `demo` | Демо-режим для жюри: вход за сид-кандидата, демо-резюме (PDF), контекст | `demo/mode.ts`, `demo/resumes.ts` | db, env, session |
@@ -40,7 +39,6 @@
 | Профиль | `profile`, `profile/contact`, `profile/privacy`, `claims/[id]/[action]`, `claims/confirm-batch` | claims |
 | Рекомендации | `recommendations` | recommend |
 | Защита | `defense`, `defense/[sessionId]` | defense |
-| Защита проекта (ступень 3) | `defense-room/start`, `defense-room/[id]` (+`turn`, `finish`, `events` — SSE), `defense-room/pending`, `call/[id]/signal`, `employer/call/[id]/join|leave|mute-ai|say`, `employer/questions`, `employer/calls` | defense-room |
 | Тест на грейд | `test/start`, `test/attempts`, `test/attempt/[id]` (+`answer`, `finish`, `confirm-junior`) | test |
 | Приглашения (кандидат) | `invitations`, `invitations/[id]` | employer |
 | Работодатель | `employer/vacancies[/id[/matches]]`, `employer/search`, `employer/invitations`, `employer/assistant/messages` (SSE) | employer, agent/employer |

@@ -37,7 +37,12 @@ vi.mock('@/components/head/ConsultantScene', () => ({ ConsultantScene: ({ childr
 type El = ReactElement<Record<string, unknown>>;
 async function inner(): Promise<El> {
   const { default: Page } = await import('@/app/(shared)/consultant/page');
-  const scene = (await Page()) as ReactElement<{ children: El }>;
+  let scene = (await Page()) as ReactElement<{ children: El }>;
+  // Страница отдаёт серверный компонент роли (CandidateHome / EmployerHome) - раскрываем его до сцены.
+  if (typeof scene.type === 'function' && /Home$/.test(scene.type.name)) {
+    const Home = scene.type as (props: unknown) => Promise<ReactElement<{ children: El }>>;
+    scene = await Home(scene.props);
+  }
   return scene.props.children;
 }
 async function redirected(): Promise<string> {

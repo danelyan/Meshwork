@@ -125,7 +125,7 @@ export const accessibleName: TaskGenerator = {
   catalogIds: ['fe.a11y', 'fe.components'],
   format: 'text',
   a: 1.3,
-  b: -0.6,
+  b: -0.65,
   paramSpace: 1e4,
   timeLimitSec: 120,
   generate(seed): TaskInstance {
@@ -160,7 +160,7 @@ export const cssUnits: TaskGenerator = {
   catalogIds: ['fe.css-layout', 'fe.responsive'],
   format: 'number',
   a: 1.3,
-  b: -0.7,
+  b: -0.55,
   paramSpace: 1e5,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -367,8 +367,8 @@ export const chatDedupe: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['fe.realtime-client', 'fe.js-core'],
   format: 'number',
-  a: 1.3,
-  b: -0.8,
+  a: 1.2,
+  b: -0.95,
   paramSpace: 1e5,
   timeLimitSec: 150,
   generate(seed): TaskInstance {

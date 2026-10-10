@@ -21,7 +21,7 @@ export const wsReadystate: TaskGenerator = {
   catalogIds: ['fe.realtime-client', 'fe.event-loop'],
   format: 'text',
   a: 1.3,
-  b: -0.9,
+  b: -1,
   paramSpace: 5e3,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -150,7 +150,7 @@ export const pubsubLog: TaskGenerator = {
   catalogIds: ['fe.realtime-client', 'fe.js-core'],
   format: 'text',
   a: 1.3,
-  b: -0.7,
+  b: -0.8,
   paramSpace: 1e5,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -310,7 +310,7 @@ export const seqReorder: TaskGenerator = {
   catalogIds: ['fe.realtime-client', 'fe.state-mgmt'],
   format: 'number',
   a: 1.2,
-  b: 0.5,
+  b: 0.4,
   paramSpace: 1e5,
   timeLimitSec: 180,
   generate(seed): TaskInstance {
@@ -455,7 +455,7 @@ export const conflictMerge: TaskGenerator = {
   catalogIds: ['fe.realtime-client', 'fe.architecture'],
   format: 'number',
   a: 1.2,
-  b: 0.8,
+  b: 0.65,
   paramSpace: 1e5,
   timeLimitSec: 200,
   generate(seed): TaskInstance {

@@ -21,7 +21,7 @@ export const tokensResolve: TaskGenerator = {
   catalogIds: ['fe.css-architecture', 'fe.css-cascade'],
   format: 'text',
   a: 1.3,
-  b: -0.7,
+  b: -0.65,
   paramSpace: 5e4,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -152,8 +152,8 @@ export const variantResolve: TaskGenerator = {
   grade: 'middle',
   catalogIds: ['fe.components', 'fe.design-handoff'],
   format: 'number',
-  a: 1.2,
-  b: 0.4,
+  a: 1.0,
+  b: 0.45,
   paramSpace: 1e5,
   timeLimitSec: 180,
   generate(seed): TaskInstance {
@@ -272,8 +272,8 @@ export const semverRelease: TaskGenerator = {
   grade: 'middle',
   catalogIds: ['fe.components', 'fe.architecture'],
   format: 'text',
-  a: 1.0,
-  b: 0.3,
+  a: 1.3,
+  b: 0.6,
   paramSpace: 5e4,
   timeLimitSec: 150,
   generate(seed): TaskInstance {

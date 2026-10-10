@@ -100,8 +100,8 @@ export const cssSpecificity: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['fe.css-cascade'],
   format: 'text',
-  a: 1.2,
-  b: -1.1,
+  a: 1.3,
+  b: -1.05,
   paramSpace: 1e5,
   timeLimitSec: 120,
   generate(seed): TaskInstance {
@@ -150,8 +150,8 @@ export const cssFlex: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['fe.css-layout', 'fe.responsive'],
   format: 'number',
-  a: 1.2,
-  b: -0.5,
+  a: 1.3,
+  b: -0.55,
   paramSpace: 1e5,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -191,7 +191,7 @@ export const htmlSemantics: TaskGenerator = {
   catalogIds: ['fe.html-semantic', 'fe.a11y'],
   format: 'line',
   a: 1.1,
-  b: -1.4,
+  b: -1.35,
   paramSpace: 2e4,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -278,7 +278,7 @@ export const eventLoop: TaskGenerator = {
   catalogIds: ['fe.event-loop', 'fe.js-core'],
   format: 'text',
   a: 1.4,
-  b: 0.5,
+  b: 0.35,
   paramSpace: 5e4,
   timeLimitSec: 180,
   generate(seed): TaskInstance {
@@ -331,8 +331,8 @@ export const tsTypecheck: TaskGenerator = {
   grade: 'middle',
   catalogIds: ['fe.ts-typing'],
   format: 'line',
-  a: 1.3,
-  b: 0.6,
+  a: 1.4,
+  b: 0.55,
   paramSpace: 5e3,
   timeLimitSec: 180,
   generate(seed): TaskInstance {

@@ -1,4 +1,5 @@
-import { buildInterviewerMessages, fallbackQuestion, nextQuestion, type InterviewerContext } from '@/server/defense/interviewer';
+import { buildInterviewerMessages, fallbackQuestion, InterviewerOutput, nextQuestion, type InterviewerContext } from '@/server/defense/interviewer';
+import { responseJsonSchema } from '@/server/llm/schema';
 import { clearStubResponses, createStubProvider, registerStubResponse } from '@/server/llm/providers/stub';
 import type { CompleteRequest } from '@/server/llm/types';
 
@@ -31,6 +32,14 @@ describe('интервьюер', () => {
   });
 
   it('мусор от модели (минимальный JSON заглушки) → шаблонный вопрос с цитатой', async () => {
+    const q = await nextQuestion(ctx, llm);
+    expect(q.fallback).toBe(true);
+    expect(q.question).toContain('Сделал идемпотентный приём платежей');
+  });
+
+  it('кириллица проверяется в коде, а не pattern в JSON Schema (строгий вывод якорит pattern на всю строку)', async () => {
+    expect(JSON.stringify(responseJsonSchema(InterviewerOutput))).not.toContain('pattern');
+    registerStubResponse('interviewer', () => ({ json: { question: 'How exactly did you store the keys?', enough: false } }));
     const q = await nextQuestion(ctx, llm);
     expect(q.fallback).toBe(true);
     expect(q.question).toContain('Сделал идемпотентный приём платежей');

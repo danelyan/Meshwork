@@ -12,7 +12,9 @@ import { loadPrompt, tag } from './prompt-utils';
 
 export const InterviewerOutput = z.object({
   // Вопрос по-русски: без кириллицы (мусор, «xxxxxxxxxx» минимальной заглушки) — шаблон.
-  question: z.string().min(10).max(600).regex(/[а-яё]/i),
+  // Не .regex: z.toJSONSchema делает из него pattern без флага i, провайдер строгого вывода
+  // якорит pattern на всю строку, и модель отвечает одной буквой. refine в JSON Schema не попадает.
+  question: z.string().min(10).max(600).refine((s) => /[а-яё]/i.test(s)),
   enough: z.boolean(),
 });
 export type InterviewerOutput = z.infer<typeof InterviewerOutput>;

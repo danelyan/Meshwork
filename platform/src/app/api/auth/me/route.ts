@@ -2,6 +2,7 @@ import { hasCurrentConsent } from '@/server/auth/consent';
 import { sessionExists } from '@/server/auth/stale';
 import { loadUser } from '@/server/auth/users';
 import { withErrors } from '@/server/errors';
+import { onboardingProgress } from '@/server/onboarding/service';
 import { getSession } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,8 @@ export const GET = withErrors(async (req: Request) => {
       employerProfileId: user.employerProfile?.id ?? null,
       onboarded: user.onboardedAt !== null,
       consent: await hasCurrentConsent(user.id),
+      // Для плашки «заполнено N из M»; у завершившего знакомство не считаем.
+      onboardingProgress: user.onboardedAt === null ? await onboardingProgress(user.id).catch(() => null) : null,
     },
   });
 });

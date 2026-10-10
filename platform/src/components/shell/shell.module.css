@@ -13,10 +13,6 @@
   .consultant { --landing-header-h: 72px; }
 }
 .page { flex: 1 0 auto; min-width: 0; }
-.frame:has([data-dashboard]) .nav { display: none; }
-.frame:has([data-dashboard]) { --page-pad: 32px; }
-.frame:has([data-dashboard]) .container { max-width: none; padding-top: 32px; }
-@media (max-width: 640px) { .frame:has([data-dashboard]) { --page-pad: 16px; } }
 
 .skip { position: fixed; left: 16px; top: -70px; z-index: 30; background: var(--ink); color: var(--landing-white); padding: 12px; }
 .skip:focus { top: 8px; }
@@ -94,7 +90,10 @@
 .roleText { margin: 0; font-size: var(--fs-sm); color: var(--text-soft); }
 .roleError { margin: 0; padding: 8px 16px; font-size: var(--fs-sm); color: var(--error); }
 .rolePanel .roleError { padding: 0; }
-.banner { margin: 0; padding: 8px var(--page-pad); font-size: var(--fs); color: var(--ink); background: var(--surface-notice); border-bottom: 1px solid var(--line); text-align: center; }
+.banner { position: relative; margin: 0; padding: 8px calc(var(--page-pad) + 28px); font-size: var(--fs); color: var(--ink); background: var(--surface-notice); border-bottom: 1px solid var(--line); text-align: center; }
+.bannerText { margin: 0; }
+.bannerClose { position: absolute; top: 50%; right: var(--page-pad); transform: translateY(-50%); width: 24px; height: 24px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; opacity: 0.7; }
+.bannerClose:hover, .bannerClose:focus-visible { opacity: 1; color: var(--ink); }
 .banner a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
 
 /* --- подвал --- */

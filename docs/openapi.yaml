@@ -15,9 +15,6 @@ tags:
     name: call
     description: "Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события, сигналинг WebRTC"
   -
-    name: career
-    description: career
-  -
     name: claims
     description: "Карточки утверждений кандидата: подтвердить, поправить, отклонить"
   -
@@ -39,17 +36,11 @@ tags:
     name: employer
     description: "Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)"
   -
-    name: favorites
-    description: favorites
-  -
     name: health
     description: "Проверка живости"
   -
     name: invitations
     description: "Приглашения глазами кандидата"
-  -
-    name: notifications
-    description: notifications
   -
     name: onboarding
     description: "Онбординг: шаги, ответы, итог"
@@ -84,32 +75,6 @@ tags:
     name: uploads
     description: "Загрузка резюме и документов: разбор, оригинал, скачивание, удаление"
 paths:
-  "/api/auth/account":
-    delete:
-      operationId: deleteAuthAccount
-      tags:
-        - auth
-      summary: "Delete the authenticated account, both profiles and stored files, then clear its session."
-      description: "Delete the authenticated account, both profiles and stored files, then clear its session.\n\nНужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Delete the authenticated account, both profiles and stored files, then clear its session."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/auth/consent":
     get:
       operationId: getAuthConsent
@@ -331,6 +296,21 @@ paths:
                           consent:
                             type: boolean
                             description: "Согласие текущей версии дано"
+                          onboardingProgress:
+                            oneOf:
+                              -
+                                type: object
+                                properties:
+                                  done:
+                                    type: integer
+                                  total:
+                                    type: integer
+                                required:
+                                  - done
+                                  - total
+                                description: "Закрыто шагов знакомства из скольки (пропуск считается закрытым); null — знакомство завершено или не посчитать"
+                              -
+                                type: "null"
                         required:
                           - id
                           - role
@@ -341,6 +321,7 @@ paths:
                           - employerProfileId
                           - onboarded
                           - consent
+                          - onboardingProgress
                       -
                         type: "null"
                   legacyCandidateId:
@@ -1485,42 +1466,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/career/vacancies":
-    get:
-      operationId: getCareerVacancies
-      tags:
-        - career
-      summary: "Active vacancy catalogue and genuine skill coverage; saved mode is scoped to the authenticated user."
-      description: "Active vacancy catalogue and genuine skill coverage; saved mode is scoped to the authenticated user.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: saved
-          in: query
-          required: false
-          schema:
-            type: string
-            enum:
-              - "true"
-              - "false"
-      responses:
-        "200":
-          description: "Active vacancy catalogue and genuine skill coverage; saved mode is scoped to the authenticated user."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/claims/{id}/{action}":
@@ -3682,59 +3627,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/favorites":
-    get:
-      operationId: getFavorites
-      tags:
-        - favorites
-      summary: "GET /api/favorites"
-      description: "Нужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Успешный ответ"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    put:
-      operationId: putFavorites
-      tags:
-        - favorites
-      summary: "PUT /api/favorites"
-      description: "Нужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/FavoriteInput"
-      responses:
-        "200":
-          description: "Успешный ответ"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/health":
     get:
       operationId: getHealth
@@ -3887,67 +3779,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/notifications":
-    get:
-      operationId: getNotifications
-      tags:
-        - notifications
-      summary: "GET /api/notifications"
-      description: "Нужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Успешный ответ"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postNotifications
-      tags:
-        - notifications
-      summary: "POST /api/notifications"
-      description: "Нужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                through:
-                  type: string
-                  format: date-time
-                  pattern: "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-              required:
-                - through
-              additionalProperties: false
-      responses:
-        "200":
-          description: "Успешный ответ"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/onboarding":
@@ -5864,25 +5695,6 @@ components:
       required:
         - error
       description: "Единый формат ошибки API (server/errors.ts)"
-    FavoriteInput:
-      type: object
-      properties:
-        kind:
-          type: string
-          enum:
-            - vacancy
-            - candidate
-        targetId:
-          type: string
-          minLength: 1
-          maxLength: 100
-        saved:
-          type: boolean
-      required:
-        - kind
-        - targetId
-        - saved
-      additionalProperties: false
     InvitationAction:
       type: object
       properties:

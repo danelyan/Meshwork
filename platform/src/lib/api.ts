@@ -96,6 +96,8 @@ export interface MeView {
   onboarded: boolean;
   /** Есть согласие на текущую версию текста. */
   consent: boolean;
+  /** Закрыто шагов знакомства из скольки; null — завершено или не посчитать. Пропуск считается закрытым. */
+  onboardingProgress?: { done: number; total: number } | null;
 }
 export const getMe = async () => (await request<{ user: MeView | null }>('/api/auth/me')).user;
 export const getConsentVersion = async () => (await request<{ version: string }>('/api/auth/consent')).version;

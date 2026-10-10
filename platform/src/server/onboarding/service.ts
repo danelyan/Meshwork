@@ -526,3 +526,12 @@ export async function onboardingInFeed(userId: string): Promise<boolean> {
   if (!user) return false;
   return user.role === 'pending' || user.onboardedAt === null || user.onboarding?.stepId === 'summary';
 }
+
+/**
+ * Сколько шагов знакомства закрыто и сколько их в сценарии роли (для плашки «заполнено N из M»).
+ * Пропущенный шаг считается закрытым. Без побочных эффектов — реплики помощника не генерируются.
+ */
+export async function onboardingProgress(userId: string): Promise<{ done: number; total: number }> {
+  const l = await load(userId);
+  return progress(l.ctx, l.state.skipped);
+}

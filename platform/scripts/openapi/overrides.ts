@@ -180,6 +180,7 @@ const SESSION_USER = obj({
   employerProfileId: nullable(str()),
   onboarded: bool(),
   consent: bool('Согласие текущей версии дано'),
+  onboardingProgress: nullable(obj({ done: int(), total: int() }, ['done', 'total'], 'Закрыто шагов знакомства из скольки (пропуск считается закрытым); null — знакомство завершено или не посчитать')),
 });
 
 const FILTER_QUERY = [

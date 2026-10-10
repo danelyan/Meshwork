@@ -81,4 +81,6 @@
 }
 @media print { .portrait { display: none; } .portraitScene { display: block; } }
 .sideScene { grid-template-columns: minmax(0, 44fr) minmax(0, 56fr); }
-.sidePanel { padding-inline: 0; }
+/* Созвон: панель звонка на всю высоту справа, колонка «Твой путь»/карточки прячется — иначе карточка согласия налезает на неё. */
+.sideScene.withAside[data-call] { grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; }
+.sideScene[data-call] .sideAside { display: none; }

@@ -3,9 +3,9 @@
     "k": 5,
     "profiles": 17,
     "vacancies": 8,
-    "precisionAt5": 0.675,
+    "precisionAt5": 0.7000000000000001,
     "precisionAt5Ceiling": 0.75,
-    "ndcgAt5": 0.9689291854424371,
+    "ndcgAt5": 0.9787012376596267,
     "baseline": {
       "precisionAt5": 0.47500000000000003,
       "ndcgAt5": 0.615182767518492
@@ -14,9 +14,9 @@
   "rows": [
     {
       "vacancy": "demo-vac-be-j-1",
-      "p": 0.6,
+      "p": 0.8,
       "pMax": 1,
-      "ndcg": 0.8207820281163857,
+      "ndcg": 0.8989584458539029,
       "bP": 0.4,
       "bNdcg": 0.7072908790226796,
       "top": [
@@ -24,7 +24,7 @@
         "demo-pool-be-m-pay",
         "eval-be-pay-partial",
         "eval-be-category-only",
-        "eval-nospec-algo"
+        "eval-be-weak-junior"
       ]
     },
     {
@@ -111,7 +111,7 @@
         "demo-pool-fe-j-1",
         "demo-pool-fe-m-1",
         "eval-fe-fullstackish",
-        "eval-nospec-algo"
+        "demo-pool-fe-m-2"
       ]
     },
     {
@@ -128,5 +128,1323 @@
         "eval-fe-fullstackish"
       ]
     }
-  ]
+  ],
+  "legacyExtended": {
+    "vacancies": 8,
+    "profiles": 17,
+    "seed": 20261010,
+    "relevantPerVacancy": {
+      "min": 2,
+      "median": 4,
+      "max": 6
+    },
+    "relevanceShare": {
+      "rel0": 0,
+      "rel1": 0.6451612903225806,
+      "rel2": 0.3548387096774194
+    },
+    "methods": {
+      "ours": {
+        "p5": {
+          "mean": 0.7000000000000001,
+          "lo": 0.55,
+          "hi": 0.8256249999999995
+        },
+        "p10": {
+          "mean": 0.3875,
+          "lo": 0.3,
+          "hi": 0.4875
+        },
+        "ndcg10": {
+          "mean": 0.994868833687113,
+          "lo": 0.9876043090422908,
+          "hi": 1
+        },
+        "recall50": {
+          "mean": 1,
+          "lo": 1,
+          "hi": 1
+        },
+        "mrr": {
+          "mean": 1,
+          "lo": 1,
+          "hi": 1
+        }
+      },
+      "baselineClaims": {
+        "p5": {
+          "mean": 0.47500000000000003,
+          "lo": 0.35000000000000003,
+          "hi": 0.6
+        },
+        "p10": {
+          "mean": 0.3875,
+          "lo": 0.3,
+          "hi": 0.47500000000000003
+        },
+        "ndcg10": {
+          "mean": 0.7352872703936328,
+          "lo": 0.6689943655557035,
+          "hi": 0.7984980657659639
+        },
+        "recall50": {
+          "mean": 1,
+          "lo": 1,
+          "hi": 1
+        },
+        "mrr": {
+          "mean": 0.8541666666666666,
+          "lo": 0.6666666666666666,
+          "hi": 1
+        }
+      },
+      "bm25": {
+        "p5": {
+          "mean": 0.55,
+          "lo": 0.45,
+          "hi": 0.65
+        },
+        "p10": {
+          "mean": 0.3375,
+          "lo": 0.27499999999999997,
+          "hi": 0.4125
+        },
+        "ndcg10": {
+          "mean": 0.9235524392902601,
+          "lo": 0.8649770656850089,
+          "hi": 0.978128770670142
+        },
+        "recall50": {
+          "mean": 1,
+          "lo": 1,
+          "hi": 1
+        },
+        "mrr": {
+          "mean": 1,
+          "lo": 1,
+          "hi": 1
+        }
+      },
+      "random": {
+        "p5": {
+          "mean": 0.224,
+          "lo": 0.17448750000000002,
+          "hi": 0.26899999999999996
+        },
+        "p10": {
+          "mean": 0.22675,
+          "lo": 0.17422499999999996,
+          "hi": 0.27677500000000005
+        },
+        "ndcg10": {
+          "mean": 0.3462340510927486,
+          "lo": 0.32730575992204847,
+          "hi": 0.3658332474380555
+        },
+        "recall50": {
+          "mean": 1,
+          "lo": 1,
+          "hi": 1
+        },
+        "mrr": {
+          "mean": 0.44606186174936174,
+          "lo": 0.387851365995116,
+          "hi": 0.5071997684607059
+        }
+      }
+    },
+    "deltaOursMinusBm25": {
+      "p5": {
+        "mean": 0.15000000000000002,
+        "lo": 0.05,
+        "hi": 0.27499999999999997
+      },
+      "p10": {
+        "mean": 0.049999999999999996,
+        "lo": 0.012499999999999997,
+        "hi": 0.1
+      },
+      "ndcg10": {
+        "mean": 0.07131639439685294,
+        "lo": 0.01964149714853093,
+        "hi": 0.13123435101714037
+      },
+      "recall50": {
+        "mean": 0,
+        "lo": 0,
+        "hi": 0
+      },
+      "mrr": {
+        "mean": 0,
+        "lo": 0,
+        "hi": 0
+      }
+    },
+    "deltaOursMinusBaselineClaims": {
+      "p5": {
+        "mean": 0.22499999999999998,
+        "lo": 0.125,
+        "hi": 0.325
+      },
+      "p10": {
+        "mean": 0,
+        "lo": 0,
+        "hi": 0
+      },
+      "ndcg10": {
+        "mean": 0.25958156329348014,
+        "lo": 0.19366322005569267,
+        "hi": 0.32603121130974105
+      },
+      "recall50": {
+        "mean": 0,
+        "lo": 0,
+        "hi": 0
+      },
+      "mrr": {
+        "mean": 0.14583333333333334,
+        "lo": 0,
+        "hi": 0.33333333333333337
+      }
+    },
+    "perVacancy": [
+      {
+        "vacancy": "demo-vac-be-j-1",
+        "relevant": 5,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.5,
+          "ndcg10": 0.9709419014207111,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.3,
+          "ndcg10": 0.8347911247384279,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "demo-vac-be-m-1",
+        "relevant": 5,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.5,
+          "ndcg10": 0.9880087680761932,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.4,
+          "ndcg10": 0.7581340702507121,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "demo-vac-be-j-2",
+        "relevant": 6,
+        "ours": {
+          "p5": 1,
+          "p10": 0.6,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.5,
+          "ndcg10": 0.8879737668790298,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "demo-vac-be-m-2",
+        "relevant": 4,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.4,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.4,
+          "p10": 0.4,
+          "ndcg10": 0.9285017529598751,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "demo-vac-fe-j-1",
+        "relevant": 3,
+        "ours": {
+          "p5": 0.6,
+          "p10": 0.3,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.3,
+          "ndcg10": 0.9790187994940358,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "demo-vac-fe-m-1",
+        "relevant": 2,
+        "ours": {
+          "p5": 0.4,
+          "p10": 0.2,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.4,
+          "p10": 0.2,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "demo-vac-fe-j-2",
+        "relevant": 4,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.4,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.4,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "demo-vac-fe-m-2",
+        "relevant": 2,
+        "ours": {
+          "p5": 0.4,
+          "p10": 0.2,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.4,
+          "p10": 0.2,
+          "ndcg10": 1,
+          "recall50": 1,
+          "mrr": 1
+        }
+      }
+    ],
+    "oursWorseThanBm25": []
+  },
+  "extended": {
+    "vacancies": 24,
+    "profiles": 247,
+    "seed": 20261010,
+    "relevantPerVacancy": {
+      "min": 11,
+      "median": 20,
+      "max": 35
+    },
+    "relevanceShare": {
+      "rel0": 0.917004048582996,
+      "rel1": 0.037112010796221326,
+      "rel2": 0.04588394062078273
+    },
+    "methods": {
+      "ours": {
+        "p5": {
+          "mean": 0.9500000000000001,
+          "lo": 0.9166666666666669,
+          "hi": 0.9833333333333334
+        },
+        "p10": {
+          "mean": 0.8541666666666666,
+          "lo": 0.8125000000000003,
+          "hi": 0.8958333333333331
+        },
+        "ndcg10": {
+          "mean": 0.7748933560184498,
+          "lo": 0.7480281120354042,
+          "hi": 0.8011491387306263
+        },
+        "recall50": {
+          "mean": 0.9100867103143627,
+          "lo": 0.8804418077628764,
+          "hi": 0.9364866774570169
+        },
+        "mrr": {
+          "mean": 1,
+          "lo": 1,
+          "hi": 1
+        }
+      },
+      "baselineClaims": {
+        "p5": {
+          "mean": 0.47500000000000003,
+          "lo": 0.3583333333333334,
+          "hi": 0.5833333333333334
+        },
+        "p10": {
+          "mean": 0.49583333333333335,
+          "lo": 0.4166666666666666,
+          "hi": 0.5791666666666667
+        },
+        "ndcg10": {
+          "mean": 0.3531520716838168,
+          "lo": 0.2909413266883735,
+          "hi": 0.41789898240966333
+        },
+        "recall50": {
+          "mean": 0.8577791359917937,
+          "lo": 0.8040280532915088,
+          "hi": 0.9087299077441959
+        },
+        "mrr": {
+          "mean": 0.6359126984126985,
+          "lo": 0.49600694444444443,
+          "hi": 0.7758184523809524
+        }
+      },
+      "bm25": {
+        "p5": {
+          "mean": 0.7833333333333337,
+          "lo": 0.7000000000000001,
+          "hi": 0.8583333333333335
+        },
+        "p10": {
+          "mean": 0.7833333333333333,
+          "lo": 0.7375000000000002,
+          "hi": 0.8292708333333335
+        },
+        "ndcg10": {
+          "mean": 0.6606751104476332,
+          "lo": 0.6021412898351809,
+          "hi": 0.7252298677917
+        },
+        "recall50": {
+          "mean": 0.8988766800519131,
+          "lo": 0.873776490587784,
+          "hi": 0.9239321586500876
+        },
+        "mrr": {
+          "mean": 0.7847222222222222,
+          "lo": 0.6666666666666666,
+          "hi": 0.888888888888889
+        }
+      },
+      "random": {
+        "p5": {
+          "mean": 0.08050000000000006,
+          "lo": 0.06833333333333337,
+          "hi": 0.09366666666666672
+        },
+        "p10": {
+          "mean": 0.08433333333333337,
+          "lo": 0.0727479166666667,
+          "hi": 0.09791875000000003
+        },
+        "ndcg10": {
+          "mean": 0.06104276417163244,
+          "lo": 0.053575346251324756,
+          "hi": 0.06944175628200994
+        },
+        "recall50": {
+          "mean": 0.2029896199763166,
+          "lo": 0.19883783793229598,
+          "hi": 0.2073651399982089
+        },
+        "mrr": {
+          "mean": 0.22218046450203044,
+          "lo": 0.19769643260683686,
+          "hi": 0.24867783895903314
+        }
+      }
+    },
+    "deltaOursMinusBm25": {
+      "p5": {
+        "mean": 0.16666666666666666,
+        "lo": 0.07500000000000001,
+        "hi": 0.25833333333333336
+      },
+      "p10": {
+        "mean": 0.07083333333333335,
+        "lo": 0.02500000000000001,
+        "hi": 0.12083333333333336
+      },
+      "ndcg10": {
+        "mean": 0.11421824557081672,
+        "lo": 0.05092105025301569,
+        "hi": 0.16980728235605713
+      },
+      "recall50": {
+        "mean": 0.011210030262449619,
+        "lo": -0.028099537857602365,
+        "hi": 0.04943012865643914
+      },
+      "mrr": {
+        "mean": 0.2152777777777778,
+        "lo": 0.10416666666666667,
+        "hi": 0.3333333333333334
+      }
+    },
+    "deltaOursMinusBaselineClaims": {
+      "p5": {
+        "mean": 0.47500000000000003,
+        "lo": 0.35833333333333334,
+        "hi": 0.6000000000000001
+      },
+      "p10": {
+        "mean": 0.3583333333333334,
+        "lo": 0.275,
+        "hi": 0.44166666666666665
+      },
+      "ndcg10": {
+        "mean": 0.4217412843346329,
+        "lo": 0.3552249169715957,
+        "hi": 0.49060566680451484
+      },
+      "recall50": {
+        "mean": 0.05230757432256896,
+        "lo": 0.01817522644224494,
+        "hi": 0.08352082985275118
+      },
+      "mrr": {
+        "mean": 0.3640873015873017,
+        "lo": 0.21624503968253972,
+        "hi": 0.5051091269841269
+      }
+    },
+    "perVacancy": [
+      {
+        "vacancy": "syn-vac-01-backend-junior",
+        "relevant": 16,
+        "ours": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.8210299761883049,
+          "recall50": 0.875,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.8,
+          "ndcg10": 0.7901711320885187,
+          "recall50": 0.875,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-02-backend-junior",
+        "relevant": 15,
+        "ours": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.8146824772118209,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.6,
+          "ndcg10": 0.6544266090266534,
+          "recall50": 0.8666666666666667,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-03-backend-middle",
+        "relevant": 18,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.8,
+          "ndcg10": 0.6888993892069657,
+          "recall50": 0.8333333333333334,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.7,
+          "ndcg10": 0.48699325708860314,
+          "recall50": 0.8333333333333334,
+          "mrr": 0.3333333333333333
+        }
+      },
+      {
+        "vacancy": "syn-vac-04-backend-middle",
+        "relevant": 18,
+        "ours": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.7230039482683296,
+          "recall50": 0.8333333333333334,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.2,
+          "p10": 0.6,
+          "ndcg10": 0.398939031729518,
+          "recall50": 0.8333333333333334,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-05-backend-middle",
+        "relevant": 23,
+        "ours": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.7827300052939035,
+          "recall50": 0.8695652173913043,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.8,
+          "ndcg10": 0.5806698126392557,
+          "recall50": 0.8695652173913043,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-06-backend-senior",
+        "relevant": 24,
+        "ours": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.8648396525935773,
+          "recall50": 0.8333333333333334,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.7276427210494696,
+          "recall50": 0.8333333333333334,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-07-backend-junior",
+        "relevant": 31,
+        "ours": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.8306962168266788,
+          "recall50": 0.9032258064516129,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.8032612276849741,
+          "recall50": 0.8709677419354839,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-08-frontend-junior",
+        "relevant": 13,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.8,
+          "ndcg10": 0.7581573304569279,
+          "recall50": 0.9230769230769231,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.7110448134361339,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-09-frontend-junior",
+        "relevant": 21,
+        "ours": {
+          "p5": 1,
+          "p10": 1,
+          "ndcg10": 0.8611511462453227,
+          "recall50": 0.8571428571428571,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 1,
+          "p10": 1,
+          "ndcg10": 0.7079278794463301,
+          "recall50": 0.9047619047619048,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-10-frontend-middle",
+        "relevant": 26,
+        "ours": {
+          "p5": 1,
+          "p10": 1,
+          "ndcg10": 0.7874707160768492,
+          "recall50": 0.8846153846153846,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 1,
+          "p10": 1,
+          "ndcg10": 0.9053206285482487,
+          "recall50": 0.9230769230769231,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-11-frontend-middle",
+        "relevant": 28,
+        "ours": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.7033880518332781,
+          "recall50": 0.8928571428571429,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.8273516207208508,
+          "recall50": 0.8571428571428571,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-12-frontend-middle",
+        "relevant": 35,
+        "ours": {
+          "p5": 1,
+          "p10": 1,
+          "ndcg10": 0.8022710688293165,
+          "recall50": 0.7714285714285715,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 1,
+          "p10": 1,
+          "ndcg10": 0.8988252059479765,
+          "recall50": 0.9428571428571428,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-13-frontend-senior",
+        "relevant": 14,
+        "ours": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.9082790523370563,
+          "recall50": 0.8571428571428571,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.9,
+          "ndcg10": 0.8831223230154521,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-14-frontend-junior",
+        "relevant": 26,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.9,
+          "ndcg10": 0.7549096191567919,
+          "recall50": 0.7692307692307693,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.8,
+          "ndcg10": 0.5669504044928511,
+          "recall50": 1,
+          "mrr": 0.5
+        }
+      },
+      {
+        "vacancy": "syn-vac-15-engineering-junior",
+        "relevant": 11,
+        "ours": {
+          "p5": 1,
+          "p10": 0.6,
+          "ndcg10": 0.6301260740383567,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.8865139938025501,
+          "recall50": 1,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-16-engineering-middle",
+        "relevant": 17,
+        "ours": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.6257810396268155,
+          "recall50": 0.9411764705882353,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.6,
+          "ndcg10": 0.4589052655225742,
+          "recall50": 0.9411764705882353,
+          "mrr": 0.3333333333333333
+        }
+      },
+      {
+        "vacancy": "syn-vac-17-engineering-middle",
+        "relevant": 20,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.6,
+          "ndcg10": 0.721726623353416,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.7,
+          "ndcg10": 0.7793319792519365,
+          "recall50": 0.95,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-18-engineering-junior",
+        "relevant": 24,
+        "ours": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.7469936685234897,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.7,
+          "ndcg10": 0.5444824507709155,
+          "recall50": 0.9583333333333334,
+          "mrr": 1
+        }
+      },
+      {
+        "vacancy": "syn-vac-19-engineering-senior",
+        "relevant": 18,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.8,
+          "ndcg10": 0.7884191653185312,
+          "recall50": 0.9444444444444444,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.8,
+          "ndcg10": 0.635980164355382,
+          "recall50": 0.9444444444444444,
+          "mrr": 0.5
+        }
+      },
+      {
+        "vacancy": "syn-vac-20-ai-junior",
+        "relevant": 14,
+        "ours": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.7915981982399838,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.8,
+          "ndcg10": 0.5417503073707319,
+          "recall50": 0.8571428571428571,
+          "mrr": 0.3333333333333333
+        }
+      },
+      {
+        "vacancy": "syn-vac-21-ai-middle",
+        "relevant": 14,
+        "ours": {
+          "p5": 1,
+          "p10": 0.8,
+          "ndcg10": 0.7609140452378389,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.7,
+          "ndcg10": 0.44228851175092276,
+          "recall50": 0.8571428571428571,
+          "mrr": 0.3333333333333333
+        }
+      },
+      {
+        "vacancy": "syn-vac-22-ai-middle",
+        "relevant": 28,
+        "ours": {
+          "p5": 0.8,
+          "p10": 0.9,
+          "ndcg10": 0.7598673592754995,
+          "recall50": 0.9642857142857143,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.6,
+          "ndcg10": 0.5423247252962317,
+          "recall50": 0.8214285714285714,
+          "mrr": 0.5
+        }
+      },
+      {
+        "vacancy": "syn-vac-23-ai-junior",
+        "relevant": 20,
+        "ours": {
+          "p5": 1,
+          "p10": 0.9,
+          "ndcg10": 0.8874582952544261,
+          "recall50": 1,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.6,
+          "p10": 0.8,
+          "ndcg10": 0.5625006253369198,
+          "recall50": 0.8,
+          "mrr": 0.5
+        }
+      },
+      {
+        "vacancy": "syn-vac-24-ai-senior",
+        "relevant": 18,
+        "ours": {
+          "p5": 1,
+          "p10": 1,
+          "ndcg10": 0.7830474250493152,
+          "recall50": 0.8888888888888888,
+          "mrr": 1
+        },
+        "bm25": {
+          "p5": 0.8,
+          "p10": 0.7,
+          "ndcg10": 0.5194779603701941,
+          "recall50": 0.8333333333333334,
+          "mrr": 0.5
+        }
+      }
+    ],
+    "byArchetype": {
+      "strong_proven": {
+        "ours": {
+          "relevantPairs": 110,
+          "hitTop10": 85,
+          "top5Slots": 64,
+          "falseInTop5": 2
+        },
+        "baselineClaims": {
+          "relevantPairs": 110,
+          "hitTop10": 46,
+          "top5Slots": 48,
+          "falseInTop5": 23
+        },
+        "bm25": {
+          "relevantPairs": 110,
+          "hitTop10": 54,
+          "top5Slots": 34,
+          "falseInTop5": 1
+        },
+        "random": {
+          "relevantPairs": 110,
+          "hitTop10": 3,
+          "top5Slots": 13,
+          "falseInTop5": 10
+        }
+      },
+      "strong_no_category": {
+        "ours": {
+          "relevantPairs": 75,
+          "hitTop10": 37,
+          "top5Slots": 12,
+          "falseInTop5": 0
+        },
+        "baselineClaims": {
+          "relevantPairs": 75,
+          "hitTop10": 10,
+          "top5Slots": 10,
+          "falseInTop5": 4
+        },
+        "bm25": {
+          "relevantPairs": 75,
+          "hitTop10": 29,
+          "top5Slots": 10,
+          "falseInTop5": 0
+        },
+        "random": {
+          "relevantPairs": 75,
+          "hitTop10": 3,
+          "top5Slots": 11,
+          "falseInTop5": 9
+        }
+      },
+      "strong_self_only": {
+        "ours": {
+          "relevantPairs": 65,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "baselineClaims": {
+          "relevantPairs": 65,
+          "hitTop10": 22,
+          "top5Slots": 15,
+          "falseInTop5": 5
+        },
+        "bm25": {
+          "relevantPairs": 65,
+          "hitTop10": 30,
+          "top5Slots": 14,
+          "falseInTop5": 0
+        },
+        "random": {
+          "relevantPairs": 65,
+          "hitTop10": 3,
+          "top5Slots": 9,
+          "falseInTop5": 7
+        }
+      },
+      "strong_category_only": {
+        "ours": {
+          "relevantPairs": 47,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "baselineClaims": {
+          "relevantPairs": 47,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "bm25": {
+          "relevantPairs": 47,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "random": {
+          "relevantPairs": 47,
+          "hitTop10": 2,
+          "top5Slots": 8,
+          "falseInTop5": 6
+        }
+      },
+      "weak_category_only": {
+        "ours": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "baselineClaims": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "bm25": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "random": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 2,
+          "falseInTop5": 2
+        }
+      },
+      "overclaimer": {
+        "ours": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "baselineClaims": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "bm25": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 16,
+          "falseInTop5": 16
+        },
+        "random": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 13,
+          "falseInTop5": 13
+        }
+      },
+      "adjacent_stack": {
+        "ours": {
+          "relevantPairs": 81,
+          "hitTop10": 57,
+          "top5Slots": 34,
+          "falseInTop5": 2
+        },
+        "baselineClaims": {
+          "relevantPairs": 81,
+          "hitTop10": 19,
+          "top5Slots": 12,
+          "falseInTop5": 6
+        },
+        "bm25": {
+          "relevantPairs": 81,
+          "hitTop10": 43,
+          "top5Slots": 21,
+          "falseInTop5": 0
+        },
+        "random": {
+          "relevantPairs": 81,
+          "hitTop10": 4,
+          "top5Slots": 17,
+          "falseInTop5": 16
+        }
+      },
+      "mid_average": {
+        "ours": {
+          "relevantPairs": 49,
+          "hitTop10": 18,
+          "top5Slots": 6,
+          "falseInTop5": 2
+        },
+        "baselineClaims": {
+          "relevantPairs": 49,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "bm25": {
+          "relevantPairs": 49,
+          "hitTop10": 20,
+          "top5Slots": 19,
+          "falseInTop5": 7
+        },
+        "random": {
+          "relevantPairs": 49,
+          "hitTop10": 1,
+          "top5Slots": 20,
+          "falseInTop5": 20
+        }
+      },
+      "weak_junior": {
+        "ours": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "baselineClaims": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "bm25": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 2,
+          "falseInTop5": 2
+        },
+        "random": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 11,
+          "falseInTop5": 11
+        }
+      },
+      "fullstack": {
+        "ours": {
+          "relevantPairs": 65,
+          "hitTop10": 8,
+          "top5Slots": 4,
+          "falseInTop5": 0
+        },
+        "baselineClaims": {
+          "relevantPairs": 65,
+          "hitTop10": 22,
+          "top5Slots": 35,
+          "falseInTop5": 25
+        },
+        "bm25": {
+          "relevantPairs": 65,
+          "hitTop10": 12,
+          "top5Slots": 4,
+          "falseInTop5": 0
+        },
+        "random": {
+          "relevantPairs": 65,
+          "hitTop10": 2,
+          "top5Slots": 8,
+          "falseInTop5": 7
+        }
+      },
+      "no_spec": {
+        "ours": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "baselineClaims": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "bm25": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 0,
+          "falseInTop5": 0
+        },
+        "random": {
+          "relevantPairs": 0,
+          "hitTop10": 0,
+          "top5Slots": 8,
+          "falseInTop5": 8
+        }
+      }
+    },
+    "oursWorseThanBm25": [
+      {
+        "vacancy": "syn-vac-10-frontend-middle",
+        "metric": "ndcg10",
+        "ours": 0.7874707160768492,
+        "bm25": 0.9053206285482487
+      },
+      {
+        "vacancy": "syn-vac-11-frontend-middle",
+        "metric": "ndcg10",
+        "ours": 0.7033880518332781,
+        "bm25": 0.8273516207208508
+      },
+      {
+        "vacancy": "syn-vac-12-frontend-middle",
+        "metric": "ndcg10",
+        "ours": 0.8022710688293165,
+        "bm25": 0.8988252059479765
+      },
+      {
+        "vacancy": "syn-vac-15-engineering-junior",
+        "metric": "p10",
+        "ours": 0.6,
+        "bm25": 0.8
+      },
+      {
+        "vacancy": "syn-vac-15-engineering-junior",
+        "metric": "ndcg10",
+        "ours": 0.6301260740383567,
+        "bm25": 0.8865139938025501
+      },
+      {
+        "vacancy": "syn-vac-17-engineering-middle",
+        "metric": "p10",
+        "ours": 0.6,
+        "bm25": 0.7
+      },
+      {
+        "vacancy": "syn-vac-17-engineering-middle",
+        "metric": "ndcg10",
+        "ours": 0.721726623353416,
+        "bm25": 0.7793319792519365
+      }
+    ],
+    "archetypes": {
+      "strong_proven": {
+        "profiles": 35,
+        "label": "сильный, всё доказано, с категорией"
+      },
+      "strong_no_category": {
+        "profiles": 25,
+        "label": "сильный, без категории"
+      },
+      "strong_self_only": {
+        "profiles": 22,
+        "label": "сильный, всё со слов"
+      },
+      "strong_category_only": {
+        "profiles": 15,
+        "label": "сильный, категория без утверждений"
+      },
+      "weak_category_only": {
+        "profiles": 10,
+        "label": "слабый, категория без утверждений"
+      },
+      "overclaimer": {
+        "profiles": 22,
+        "label": "переоценил себя (много утверждений со слов, мало умений)"
+      },
+      "adjacent_stack": {
+        "profiles": 28,
+        "label": "сильный, но соседний стек (другая тема той же специализации)"
+      },
+      "mid_average": {
+        "profiles": 45,
+        "label": "средний"
+      },
+      "weak_junior": {
+        "profiles": 20,
+        "label": "слабый джун"
+      },
+      "fullstack": {
+        "profiles": 12,
+        "label": "две специализации (backend + frontend)"
+      },
+      "no_spec": {
+        "profiles": 13,
+        "label": "без специализации (общие навыки)"
+      }
+    },
+    "note": "Разметка 0/1/2 — из скрытых латентных навыков и грейда генератора (eval/matching/synthetic.ts, truthRelevance), не из формулы подбора. Интервалы — бутстреп по вакансиям, 1000 повторов, 95 %."
+  }
 }

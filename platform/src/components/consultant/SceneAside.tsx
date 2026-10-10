@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import type { AsideDoc, JourneyStep, MarketRow, SceneAsideData } from '@/server/consultant/aside';
+import type { AsideDoc, JourneyStep, KnownFact, MarketRow, SceneAsideData } from '@/server/consultant/aside';
 
 import { useAsideData } from './aside-refresh';
-import { MemoryCard } from './MemoryCard';
+import { InstructionsCard } from './InstructionsCard';
 import styles from './SceneAside.module.css';
 
 const STATE_LABEL = { done: 'готово', now: 'сейчас', next: 'дальше' } as const;
@@ -97,6 +97,26 @@ function Docs({ docs }: { docs: AsideDoc[] }) {
   );
 }
 
+/** Что консультант уже узнал в знакомстве: короткое имя шага и ответ; меняется прямо в ленте. */
+function Known({ facts, role }: { facts: KnownFact[]; role: SceneAsideData['role'] }) {
+  return (
+    <Card id="known" title={`${role === 'employer' ? 'Что я знаю о компании' : 'Что я о тебе знаю'}${facts.length ? ` · ${facts.length}` : ''}`}>
+      {facts.length === 0 ? (
+        <p className={styles.muted}>Пока ничего. Отвечай в чате слева - ответы появятся здесь, и консультант будет на них опираться.</p>
+      ) : (
+        <dl className={styles.facts}>
+          {facts.map((f) => (
+            <div key={f.stepId} className={styles.fact}>
+              <dt>{f.label}</dt>
+              <dd title={f.value}>{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </Card>
+  );
+}
+
 const MARKET_ROWS = 6;
 
 /** Живые цифры базы: кандидату — активные потребности компаний, работодателю — кандидаты с категорией по тесту. */
@@ -136,9 +156,14 @@ export function SceneAside({ data: initial, className }: { data: SceneAsideData;
   return (
     <div className={`${styles.aside} ${className ?? ''}`} data-testid="scene-aside">
       <Roadmap steps={data.steps} hint={data.hint} />
-      <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} />
+      <Known facts={data.known ?? []} role={data.role} />
       {data.market && <Market market={data.market} role={data.role} />}
       {data.docs && <Docs docs={data.docs} />}
+      {data.role === 'candidate' && (
+        <Card id="instructions" title="Как мне работать">
+          <InstructionsCard initial={data.instructions} />
+        </Card>
+      )}
     </div>
   );
 }

@@ -54,8 +54,6 @@ enum LlmPurpose {
   defense_qlc
   project_spec
   project_rubric
-  /// lane memory: извлечение фактов о собеседнике из реплики для памяти консультанта
-  consultant_memory
 }
 
 model Candidate {
@@ -79,8 +77,6 @@ model Candidate {
   recommendations     Recommendation[]
   invitations         Invitation[]
   defenseSessions     DefenseSession[]
-  /// lane memory: память консультанта
-  memories            ConsultantMemory[]
   /// lane auth: аккаунт входа (null у старых демо-кандидатов до первого демо-входа)
   user                User?
   /// lane employer: настройка приватности (R-C-13) — true: не показывать в подборке и поиске работодателей
@@ -95,6 +91,8 @@ model Candidate {
   /// lane call: созвоны (квалифицирующий и защита проекта) и вопросы работодателей кандидату
   callSessions        CallSession[]
   employerQuestions   EmployerQuestion[]
+  /// lane instructions: как работает консультант кандидата (скиллы и свои инструкции)
+  consultantSettings  ConsultantSettings?
 }
 
 model CandidateCategory {
@@ -528,8 +526,6 @@ model EmployerProfile {
   invitations Invitation[]
   /// lane emp-agent: разговоры с помощником работодателя
   assistantConversations EmployerConversation[]
-  /// lane memory: память помощника по подбору
-  memories               ConsultantMemory[]
 
   @@index([companyId])
 }
@@ -891,30 +887,14 @@ model DefenseRoomPlan {
   createdAt     DateTime  @default(now())
 }
 
-// =============================================================================
-// lane: memory — память консультанта («Что я о тебе знаю», решение владельца 10.10)
-// =============================================================================
-
-enum MemorySource {
-  /// консультант запомнил из свободного разговора
-  chat
-  /// человек добавил сам
-  user
-}
-
-/// Заметка о собеседнике. Владелец — ровно один из candidateId / employerProfileId (проверяет код).
-/// Ответы знакомства сюда не копируются: они производные (OnboardingState), source «onboarding» только в UI.
-model ConsultantMemory {
-  id                String           @id @default(cuid())
-  candidateId       String?
-  candidate         Candidate?       @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  employerProfileId String?
-  employerProfile   EmployerProfile? @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
-  text              String           @db.VarChar(200)
-  source            MemorySource
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-
-  @@index([candidateId, createdAt])
-  @@index([employerProfileId, createdAt])
+/// lane instructions: настройки ИИ-консультанта кандидата (решение владельца 10.10).
+/// Меняют только стиль и фокус ответов консультанта; на подборку, категорию, тест не влияют.
+model ConsultantSettings {
+  candidateId String    @id
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  /// id из server/consultant/skills.ts
+  skills      String[]  @default([])
+  /// Свои инструкции кандидата, ≤ 500 символов (проверка — в API)
+  custom      String?   @db.VarChar(500)
+  updatedAt   DateTime  @updatedAt
 }

@@ -1599,126 +1599,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/consultant/memory":
-    get:
-      operationId: getConsultantMemory
-      tags:
-        - consultant
-      summary: "Память консультанта: свои заметки (из чата и добавленные вручную), не больше 20."
-      description: "Память консультанта: свои заметки (из чата и добавленные вручную), не больше 20. Ответы знакомства сюда не входят.\n\nНужна любая сессия (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Память консультанта: свои заметки (из чата и добавленные вручную), не больше 20. Ответы знакомства сюда не входят."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postConsultantMemory
-      tags:
-        - consultant
-      summary: "Добавить заметку вручную (source user)."
-      description: "Добавить заметку вручную (source user). Лимит или дубль — 409.\n\nНужна любая сессия (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/MemoryBody"
-      responses:
-        "201":
-          description: "Создано. Добавить заметку вручную (source user). Лимит или дубль — 409."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/consultant/memory/{id}":
-    patch:
-      operationId: patchConsultantMemoryId
-      tags:
-        - consultant
-      summary: "Поправить свою заметку; после правки она «добавлена вручную»."
-      description: "Поправить свою заметку; после правки она «добавлена вручную». Чужая или нет такой — 404.\n\nНужна любая сессия (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/MemoryBody"
-      responses:
-        "200":
-          description: "Поправить свою заметку; после правки она «добавлена вручную». Чужая или нет такой — 404."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    delete:
-      operationId: deleteConsultantMemoryId
-      tags:
-        - consultant
-      summary: "Удалить свою заметку."
-      description: "Удалить свою заметку. Чужая или нет такой — 404.\n\nНужна любая сессия (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: "Удалить свою заметку. Чужая или нет такой — 404."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/consultant/messages":
     post:
       operationId: postConsultantMessages
@@ -1794,6 +1674,61 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/consultant/settings":
+    get:
+      operationId: getConsultantSettings
+      tags:
+        - consultant
+      summary: "Как работает консультант кандидата: включённые скиллы (id из каталога) и свои инструкции."
+      description: "Как работает консультант кандидата: включённые скиллы (id из каталога) и свои инструкции. Только свои настройки кандидата; меняют стиль и фокус ответов консультанта, не подборку и не тест.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Как работает консультант кандидата: включённые скиллы (id из каталога) и свои инструкции."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: putConsultantSettings
+      tags:
+        - consultant
+      summary: "Сохранить настройки целиком."
+      description: "Сохранить настройки целиком. Неизвестный id скилла или текст длиннее 500 символов — 400.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/SettingsInput"
+      responses:
+        "200":
+          description: "Сохранить настройки целиком. Неизвестный id скилла или текст длиннее 500 символов — 400."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/defense":
@@ -4886,15 +4821,6 @@ components:
         - message
         - salaryFrom
         - salaryTo
-    MemoryBody:
-      type: object
-      properties:
-        text:
-          type: string
-          minLength: 1
-          maxLength: 200
-      required:
-        - text
     MuteAiInput:
       type: object
       properties:
@@ -4922,6 +4848,32 @@ components:
           maxLength: 1000
       required:
         - text
+    SettingsInput:
+      type: object
+      properties:
+        skills:
+          maxItems: 5
+          type: array
+          items:
+            type: string
+            enum:
+              - test_prep
+              - invite_review
+              - brief
+              - code_examples
+              - wording
+          description: "id включённых скиллов"
+        custom:
+          description: "Свои инструкции, до 500 символов"
+          anyOf:
+            -
+              type: string
+              maxLength: 500
+            -
+              type: "null"
+      required:
+        - skills
+      additionalProperties: false
     SignalInput:
       type: object
       properties:

@@ -97,7 +97,7 @@ describe('кабинет работодателя: компоненты', () => 
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
     expect(await screen.findByText(/хотя бы в 10 символах/)).toBeDefined();
     expect(screen.getAllByText('Укажи сумму в рублях')).toHaveLength(2);
-    fireEvent.change(screen.getByLabelText('Что предлагаешь'), { target: { value: 'Платёжная команда, Go' } });
+    fireEvent.change(screen.getByLabelText('Почему именно этот кандидат'), { target: { value: 'Платёжная команда, Go' } });
     fireEvent.change(screen.getByLabelText('Зарплата от, ₽ в месяц'), { target: { value: '260 000' } });
     fireEvent.change(screen.getByLabelText('до, ₽ в месяц'), { target: { value: '230000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
@@ -116,7 +116,7 @@ describe('кабинет работодателя: компоненты', () => 
     stubFetch({ error: { code: 'rate_limited', message: 'Лимит: не больше 20 приглашений от компании за сутки' } }, 429);
     render(<InviteForm candidateId="c1" candidateName="К" vacancyId={null} defaultSalaryFrom={100000} defaultSalaryTo={150000} />);
     fireEvent.click(screen.getByRole('button', { name: 'Пригласить: К' }));
-    fireEvent.change(screen.getByLabelText('Что предлагаешь'), { target: { value: 'Платёжная команда, Go' } });
+    fireEvent.change(screen.getByLabelText('Почему именно этот кандидат'), { target: { value: 'Платёжная команда, Go' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Лимит: не больше 20 приглашений от компании за сутки');
   });
@@ -126,9 +126,9 @@ describe('кабинет работодателя: компоненты', () => 
     const form = container.querySelector('form')!;
     expect(form.getAttribute('method')).toBe('get');
     expect(form.getAttribute('action')).toBe('/employer/search');
-    expect((screen.getByLabelText('Направление') as HTMLSelectElement).value).toBe('frontend');
+    expect((screen.getByRole('radio', { name: 'Frontend' }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText(/Стек/) as HTMLInputElement).value).toBe('React');
-    expect((screen.getByLabelText('есть достижения ФСП') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Достижения ФСП') as HTMLInputElement).checked).toBe(true);
   });
 
   it('форма потребности: требования из каталога, проверка вилки, POST', async () => {
@@ -197,3 +197,5 @@ describe('входящие приглашения кандидата', () => {
     expect(screen.getByText('Связь с компанией: Компания не указала способ связи')).toBeDefined();
   });
 });
+
+beforeEach(() => { HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) { this.open = true; }); HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) { this.open = false; }); });

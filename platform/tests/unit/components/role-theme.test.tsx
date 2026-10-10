@@ -74,11 +74,22 @@ describe('ролевые токены', () => {
       const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
       return (hi! + 0.05) / (lo! + 0.05);
     };
-    const bg = /--role-bar-bg:\s*(#[0-9a-f]{6})/i.exec(employer)?.[1] as string;
-    expect(bg).toBeTruthy();
-    const root = (name: string) => /--NAME:\s*(#[0-9a-f]{6})/i.exec(css.replace(new RegExp(`--${name}:`, 'g'), '--NAME:'))?.[1] as string;
-    expect(ratio(root('ink'), bg)).toBeGreaterThan(14);
-    expect(ratio(root('muted'), bg)).toBeGreaterThanOrEqual(4.5);
-    expect(ratio(root('blue'), bg)).toBeGreaterThanOrEqual(4.5);
+    const rootBlock = /:root\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    const value = (name: string): string => {
+      const pattern = new RegExp(`--${name}:\\s*([^;]+);`);
+      const token = pattern.exec(employer)?.[1]?.trim() ?? pattern.exec(rootBlock)?.[1]?.trim();
+      if (!token) throw new Error(`Missing token ${name}`);
+      const alias = /^var\(--([^,)]+)\)$/.exec(token);
+      return alias ? value(alias[1]!) : token;
+    };
+    // The translucent Astra header is composited over the actual page colour.
+    const surface = value('role-bar-bg');
+    const rgba = /^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/.exec(surface);
+    const paper = parseInt(value('paper').slice(1), 16);
+    const bg = rgba ? '#' + [paper >> 16, (paper >> 8) & 255, paper & 255].map((channel, i) => Math.round(Number(rgba[i + 1]) * Number(rgba[4]) + channel * (1 - Number(rgba[4]))).toString(16).padStart(2, '0')).join('') : surface;
+    expect(ratio(value('ink'), bg)).toBeGreaterThan(14);
+    expect(ratio(value('muted'), bg)).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(value('blue'), bg)).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(value('on-ink'), value('employer-accent'))).toBeGreaterThanOrEqual(4.5);
   });
 });

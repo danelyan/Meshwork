@@ -31,13 +31,16 @@ const CANDIDATE_LABEL = `${COMPANION_NAME} · ИИ-консультант`;
  * Сцена - «звонок + чат слева» (AvatarScene call-side, решение владельца 10.10); ConsultantScene Карины не используется.
  * История — шаги (OnboardingState) + разговор (loadLastChat), сшиваются на клиенте.
  */
-export default async function ConsultantPage() {
+export default async function ConsultantPage({ searchParams }: { searchParams?: Promise<{ edit?: string | string[] }> } = {}) {
   const s = await requirePageAccount('/consultant');
+  // The field is selected by the authenticated goto API before navigation. This flag
+  // only renders that saved step; it never resets completed onboarding or changes roles.
+  const editProfile = s.role === 'candidate' && (await searchParams)?.edit === 'profile';
   let view: OnboardingView | undefined;
   let viewFailed = false;
   if (s.userId) {
     try {
-      if (await onboardingInFeed(s.userId)) view = await getView(s.userId);
+      if (editProfile || await onboardingInFeed(s.userId)) view = await getView(s.userId);
     } catch (err) {
       viewFailed = true;
       warn('onboarding view')(err);

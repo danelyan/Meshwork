@@ -185,13 +185,13 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
         onClick={() => (open ? close(false) : setOpen(true))}
       >
         <span className={styles.avatar} aria-hidden="true">
-          {initialsOf(account.userName, account.userEmail)}
+          {initialsOf(menu?.role === 'employer' ? menu.companyName || account.userName : account.userName, account.userEmail)}
         </span>
         <span className={styles.accountRole}>
           {menu ? (
             <>
-              <VisuallyHidden>Аккаунт, активная роль: </VisuallyHidden>
-              {ROLE_LABEL[menu.role]}
+              <VisuallyHidden>Аккаунт, активная роль: {ROLE_LABEL[menu.role]}</VisuallyHidden>
+              <span aria-hidden="true">{menu.role === 'employer' ? menu.companyName || ROLE_LABEL.employer : account.userName}</span>
             </>
           ) : (
             'Аккаунт'

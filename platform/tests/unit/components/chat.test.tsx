@@ -193,7 +193,7 @@ describe('Chat: общая лента с онбордингом', () => {
     render(<Chat />);
     const greeting = screen.getByTestId('chat-greeting');
     expect(greeting.textContent).toMatch(/Пришли резюме/);
-    expect(greeting.querySelector('img[src="/avatar/face-6.png"]')).not.toBeNull();
+    expect(greeting.querySelector('[data-testid="assistant-face"]')?.textContent).toBe('К');
     const input = screen.getByLabelText('Сообщение');
     fireEvent.change(input, { target: { value: 'привет' } });
     fireEvent.keyDown(input, { key: 'Enter' });

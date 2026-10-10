@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { DashboardFrame } from '@/components/shell/DashboardFrame';
 import { OnboardingDraft } from '@/components/onboarding/OnboardingDraft';
 import type { HeaderAccount } from '@/server/auth/role-plan';
@@ -6,6 +6,7 @@ import type { OnboardingView } from '@/server/onboarding/types';
 
 const nav = vi.hoisted(() => ({ pathname: '/career' }));
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }));
+vi.mock('@/components/candidate/CandidateSidebarSummary', () => ({ CandidateSidebarSummary: () => null }));
 vi.mock('@/lib/api', () => ({ demoLogout: vi.fn() }));
 afterEach(cleanup);
 
@@ -37,12 +38,10 @@ it('draft edits use actual step IDs; privacy view does not repeat personal answe
   };
   const edit = vi.fn();
   render(<OnboardingDraft view={view} busy={false} onEdit={edit} />);
-  expect(screen.queryByText('private@example.com')).toBeNull();
-  fireEvent.click(screen.getByText('Черновик профиля'));
-  await waitFor(() => expect(screen.getByText('private@example.com')).toBeTruthy());
+  expect(screen.getByText('private@example.com')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'Изменить: Контакт' }));
   expect(edit).toHaveBeenCalledWith('candidateContact');
-  fireEvent.click(screen.getByRole('button', { name: 'Кто увидит' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Как видит компания' }));
   expect(screen.queryByText('private@example.com')).toBeNull();
-  expect(screen.getByRole('link', { name: 'Текст согласия' }).getAttribute('href')).toBe('/consent');
+  expect(screen.getByText(/АНОНИМНАЯ КАРТОЧКА/)).toBeTruthy();
 });

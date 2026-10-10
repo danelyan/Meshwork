@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 import styles from '@/components/employer/Employer.module.css';
 import { MatchResults } from '@/components/employer/MatchResults';
-import { Kicker } from '@/components/ui';
+
 import { requirePageEmployer } from '@/server/auth/page';
 import { loadEmployerContext, searchBank } from '@/server/employer';
 import { parseFilters } from '@/server/employer/schemas';
@@ -19,8 +19,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   return (
     <div className={styles.page}>
       <div>
-        <Kicker>Поиск по всей базе</Kicker>
-        <h1>Поиск по базе.</h1>
+
+        <h1>Поиск по базе<span className={styles.accent}>.</span></h1>
         <p className={styles.lead}>
           Без потребности кандидат сравнивается с типичными требованиями своей категории (специализация и грейд из фильтра,
           иначе - из теста; без теста - Junior). Пригласить можно без привязки к вакансии.

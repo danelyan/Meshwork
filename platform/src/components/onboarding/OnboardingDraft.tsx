@@ -2,30 +2,43 @@
 
 import { useState } from 'react';
 import type { OnboardingView } from '@/server/onboarding/types';
-import { Button } from '@/components/ui';
 import styles from './OnboardingDraft.module.css';
 
-/** Live answers only. Company privacy copy describes policy rather than exposing raw questionnaire text. */
+const candidateFields = [['goal', 'Цель'], ['documents', 'Документы'], ['fsp', 'ФСП ID'], ['specialization', 'Направление'], ['subcategory', 'Подкатегория'], ['grade', 'Предполагаемый грейд'], ['stack', 'Стек'], ['formats', 'Формат работы'], ['city', 'Город'], ['salary', 'Зарплата'], ['candidateContact', 'Контакт']];
+const employerFields = [['companyName', 'Компания'], ['inn', 'ИНН'], ['industry', 'Отрасль'], ['about', 'О компании'], ['contact', 'Контакт'], ['needSpecialization', 'Направление'], ['needSubcategory', 'Подкатегория'], ['needGrades', 'Грейд'], ['needStack', 'Стек'], ['needTeam', 'Команда'], ['needSalary', 'Вилка']];
+const publicFields = new Set(['specialization', 'subcategory', 'stack', 'formats', 'city', 'salary']);
+
+export function fieldVisibility(id: string) {
+  if (id === 'candidateContact') return 'после принятия приглашения';
+  return publicFields.has(id) ? 'в анонимной карточке' : 'только тебе';
+}
+
+/** Only actual answers are shown. Never invents a confirmed grade or candidate ID. */
 export function OnboardingDraft({ view, busy, onEdit }: { view: OnboardingView; busy: boolean; onEdit: (id: string) => void }) {
-  const [privacy, setPrivacy] = useState(false);
-  const [open, setOpen] = useState(false);
-  return <details className={styles.draft} onToggle={(e) => setOpen(e.currentTarget.open)}>
-    <summary><span><small>Что я сохраняю</small>Черновик профиля</span><b>{view.progress.done}/{view.progress.total}</b></summary>
-    {open && <><div className={styles.tabs} role="group" aria-label="Вид черновика">
-      <Button size="sm" variant={privacy ? 'ghost' : 'primary'} aria-pressed={!privacy} onClick={() => setPrivacy(false)}>Мои ответы</Button>
-      <Button size="sm" variant={privacy ? 'primary' : 'ghost'} aria-pressed={privacy} onClick={() => setPrivacy(true)}>Кто увидит</Button>
+  const [company, setCompany] = useState(false);
+  const employer = view.scenario === 'employer';
+  const fields = employer ? employerFields : candidateFields;
+  const answer = (id: string) => view.history.find((row) => row.stepId === id);
+  const filled = view.history.filter((row) => row.answer !== null).length;
+  return <section className={styles.draft}>
+    <div className={styles.tabs} role="group" aria-label="Вид черновика">
+      <button type="button" aria-pressed={!company} onClick={() => setCompany(false)}>Как вижу я</button>
+      <button type="button" aria-pressed={company} onClick={() => setCompany(true)}>{employer ? 'Как видит кандидат' : 'Как видит компания'}</button>
     </div>
-    {privacy ? <div className={styles.privacy}>
-      <p>{view.scenario === 'employer' ? 'Кандидат видит сведения о компании, контакт и зарплатную вилку в приглашении. Черновик потребности сохраняется только по вашему подтверждению.' : 'Компания видит анонимную карточку: направление, подтверждённые навыки и результаты оценки. Имя и контакт открываются этой компании после принятия приглашения.'}</p>
-      <p>Цель, предполагаемый грейд, исходные документы и реплики чата не становятся публичным профилем. Пропущенный ответ не считается заполненным.</p>
-      <Button href="/consent" variant="ghost" size="sm">Текст согласия</Button>
-    </div> : <div className={styles.rows}>
-      {view.history.length === 0 && <p className={styles.empty}>Ответы появятся здесь по мере знакомства.</p>}
-      {view.history.map((row) => <div className={styles.row} key={row.stepId}>
-        <div><small>{row.label || row.question}</small><p>{row.answer || 'Пропущено'}</p></div>
-        {row.editable && <Button variant="ghost" size="sm" disabled={busy} aria-label={`Изменить: ${row.label || row.question}`} onClick={() => onEdit(row.stepId)}>Изменить</Button>}
-      </div>)}
-      {view.current.kind !== 'summary' && <div className={styles.current}><small>Сейчас заполняем</small><strong>{view.current.label}</strong></div>}
-    </div>}</>}
-  </details>;
+    {company ? <div className={styles.companyCard}>
+      <small>ПРЕДПРОСМОТР · {employer ? 'КОМПАНИЯ' : 'АНОНИМНАЯ КАРТОЧКА'}</small>
+      <div className={styles.identity}><span className={styles.silhouette} aria-hidden="true">◇</span><div><h2>{employer ? answer('companyName')?.answer || 'Компания' : 'Кандидат'}</h2><p>{answer(employer ? 'needSpecialization' : 'specialization')?.answer || 'Направление ещё не выбрано'}</p></div></div>
+      <div className={styles.previewRows}>{fields.filter(([id]) => employer || publicFields.has(id!)).map(([id, label]) => <div key={id}><small>{label}</small><p>{answer(id!)?.answer || 'пока пусто'}</p></div>)}</div>
+      <p className={styles.notice}>{employer ? 'Кандидат увидит информацию о компании и зарплатную вилку в приглашении.' : 'Имя и контакт откроются компании после принятия её приглашения. Предполагаемый грейд не является подтверждённым результатом оценки.'}</p>
+    </div> : <div className={styles.card}>
+      <header><small>ЧТО Я СОХРАНЯЮ</small><h2>Черновик профиля</h2><p>Ответы сохраняются по ходу разговора. Нажми на заполненное поле, чтобы изменить.</p><span>{filled} ответов сохранено</span></header>
+      <div className={styles.rows}>{fields.map(([id, label]) => {
+        const row = answer(id!);
+        const current = view.current.id === id;
+        const contents = <><span className={styles.rowTitle}>{label}<small>{employer ? 'черновик подбора' : fieldVisibility(id!)}</small></span><span className={styles.value}>{row?.answer ?? (row ? 'пропущено' : 'пока пусто')}</span>{current && <span className={styles.now}>заполняем сейчас</span>}</>;
+        return row?.editable ? <button type="button" className={styles.row} data-current={current || undefined} key={id} disabled={busy} onClick={() => onEdit(id!)} aria-label={`Изменить: ${label}`}>{contents}</button> : <div className={styles.row} data-current={current || undefined} key={id}>{contents}</div>;
+      })}</div>
+      <footer><a href={view.consent.docUrl}>Согласие на обработку данных</a><span>Версия {view.consent.version}</span></footer>
+    </div>}
+  </section>;
 }

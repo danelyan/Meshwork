@@ -41,7 +41,7 @@ describe('AccountMenu', () => {
   it('кнопка: инициалы и роль, меню закрыто; открытие показывает имя, почту, роли; Escape возвращает фокус', () => {
     render(<AccountMenu account={acc(employer)} navigate={navigate} />);
     expect(trigger().getAttribute('aria-expanded')).toBe('false');
-    expect(trigger().textContent).toContain('ИП');
+    expect(trigger().textContent).toContain('ООО Ромашка');
     expect(screen.queryByText('ivan@example.ru')).toBeNull();
     fireEvent.click(trigger());
     expect(trigger().getAttribute('aria-expanded')).toBe('true');

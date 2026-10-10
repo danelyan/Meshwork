@@ -27,10 +27,7 @@ export function Thread({ label, children, className }: { label: string; children
  */
 export function AssistantMark() {
   return (
-    <span className={cx(styles.mark, styles.markFace)} aria-hidden="true" data-testid="assistant-face">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/avatar/face-6.png" alt="" width={32} height={32} />
-    </span>
+    <span className={styles.mark} aria-hidden="true" data-testid="assistant-face">К</span>
   );
 }
 

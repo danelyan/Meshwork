@@ -26,12 +26,12 @@ function candidate(id: string, rank: number): MatchItem {
 describe('Astra employer cabinet', () => {
   it('switches map/list and selects the corresponding real candidate for invitation', () => {
     render(<MatchExplorer items={[candidate('one', 1), candidate('two', 2)]} vacancyId="vacancy" vacancyTitle="Backend" />);
-    expect(screen.getByRole('button', { name: 'Карта' }).getAttribute('aria-pressed')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: /#2 Кандидат #two/ }));
+    expect(screen.getByRole('button', { name: /Карта/ }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: /Кандидат #two/ }));
     expect(screen.getByRole('button', { name: 'Пригласить: Кандидат #two' })).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Пригласить: Кандидат #one' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Список' }));
-    expect(screen.getByRole('button', { name: 'Список' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: /Список/ }));
+    expect(screen.getByRole('button', { name: /Список/ }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: 'Пригласить: Кандидат #two' })).toBeDefined();
   });
 
@@ -39,15 +39,15 @@ describe('Astra employer cabinet', () => {
     vi.mocked(getFavorites).mockResolvedValue({ kind: 'candidate', ids: [] });
     vi.mocked(setFavorite).mockResolvedValueOnce({ kind: 'candidate', ids: ['one'] });
     render(<MatchExplorer items={[candidate('one', 1)]} vacancyId={null} favoriteScope="employer-a" />);
-    await waitFor(() => expect(screen.getByRole('button', { name: '☆ В избранное' })).toHaveProperty('disabled', false));
-    fireEvent.click(screen.getByRole('button', { name: '☆ В избранное' }));
-    await screen.findByRole('button', { name: '★ В избранном' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'В избранное' })).toHaveProperty('disabled', false));
+    fireEvent.click(screen.getByRole('button', { name: 'В избранное' }));
+    await screen.findByRole('button', { name: 'Убрать из избранного' });
     expect(setFavorite).toHaveBeenCalledWith('candidate', 'one', true);
     cleanup();
     vi.mocked(setFavorite).mockResolvedValueOnce({ kind: 'candidate', ids: [] });
     render(<SavedCandidates scope="employer-a" cards={[candidate('one', 1).candidate]} unavailable={0} />);
     expect(screen.getByRole('heading', { name: /Кандидат #one/ })).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: '★ В избранном' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Убрать из избранного' }));
     expect(await screen.findByText(/Пока пусто/)).toBeDefined();
     expect(setFavorite).toHaveBeenLastCalledWith('candidate', 'one', false);
   });
@@ -55,10 +55,10 @@ describe('Astra employer cabinet', () => {
   it('filters vacancy status without losing edit and matching actions', () => {
     const vacancy: VacancyView = { id: 'v1', title: 'Backend', specialization: 'backend', grade: 'middle', salaryFrom: 100000, salaryTo: 150000, teamDescription: null, description: null, stack: ['Go'], subcategoryId: null, needs: [], archived: false, createdAt: '2026-10-10', invitations: 1 };
     render(<VacancyCatalog vacancies={[vacancy, { ...vacancy, id: 'v2', title: 'Archived job', archived: true }]} />);
-    expect(screen.queryByRole('heading', { name: 'Archived job' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Archived job' })).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /Закрытые/ }));
     expect(screen.getByRole('heading', { name: 'Archived job' })).toBeDefined();
-    expect(screen.getByRole('link', { name: 'Открыть вакансию' }).getAttribute('href')).toBe('/employer/needs/v2/edit');
+    expect(screen.getByRole('link', { name: 'Изменить' }).getAttribute('href')).toBe('/employer/needs/v2/edit');
   });
 
   it('shows an already open invitation in saved candidates instead of another send form', () => {
@@ -70,10 +70,10 @@ describe('Astra employer cabinet', () => {
   it('filters invitations and exposes only server-provided contacts', () => {
     const base = { id: 'i1', status: 'sent' as const, salaryFrom: 100000, salaryTo: 150000, message: null, createdAt: '2026-10-10T12:00:00Z', viewedAt: null, respondedAt: null, vacancy: null, candidate: candidate('one', 1).candidate };
     render(<InvitationTracker invitations={[base, { ...base, id: 'i2', status: 'accepted', candidate: { ...candidate('two', 2).candidate, displayName: 'Анна', contacts: { name: 'Анна', contact: '@anna' } }, respondedAt: '2026-10-10T13:00:00Z' }]} />);
-    fireEvent.click(screen.getByRole('button', { name: /Приняты/ }));
+    fireEvent.click(screen.getByRole('button', { name: /С ответом/ }));
     expect(screen.getByText('@anna')).toBeDefined();
     expect(screen.queryByRole('heading', { name: 'Кандидат #one' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Отправлены/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Ждут ответа/ }));
     expect(screen.queryByText('@anna')).toBeNull();
     expect(screen.getByText(/Имя и контакт откроются/)).toBeDefined();
   });

@@ -67,7 +67,7 @@ async function load(userId: string) {
     where: { id: userId },
     include: {
       employerProfile: { select: { id: true, companyId: true } },
-      candidate: { select: { id: true, fspState: true, specialization: true } },
+      candidate: { select: { id: true, fspState: true, specialization: true, subcategoryId: true, contact: true, profile: true } },
       onboarding: true,
     },
   });
@@ -81,9 +81,20 @@ async function load(userId: string) {
     specialization: user.candidate?.specialization ?? null,
   };
   const st = user.onboarding;
+  // Ready demo/imported accounts may have a real questionnaire profile but no
+  // onboarding answers. Use stored values for editing, without writing/resetting it.
+  const recovered: Answers = {};
+  if (user.role === 'candidate' && user.onboardedAt && user.candidate) {
+    const c = user.candidate;
+    const p = c.profile;
+    const values: Answers = { specialization: c.specialization, subcategory: c.subcategoryId, fsp: c.fspState, candidateContact: c.contact,
+      goal: p?.goal, grade: p?.claimedGrade, stack: p?.stack, formats: p?.workFormats, city: p?.city, fspParticipation: p?.fspParticipation };
+    if (p?.salaryMin != null && p.salaryExpected != null) values.salary = { from: p.salaryMin / 1000, to: p.salaryExpected / 1000 };
+    for (const [key, value] of Object.entries(values)) if (value != null && (!Array.isArray(value) || value.length)) recovered[key] = value;
+  }
   const state: EngineState = {
     stepId: st?.stepId ?? null,
-    answers: (st?.answers as Answers | undefined) ?? {},
+    answers: { ...((st?.answers as Answers | undefined) ?? {}), ...recovered },
     skipped: st?.skipped ?? [],
   };
   return {
@@ -95,6 +106,12 @@ async function load(userId: string) {
   };
 }
 type Loaded = Awaited<ReturnType<typeof load>>;
+
+/** City is conditional during first onboarding, but is always editable in a ready own profile. */
+function completedProfileStep(l: Loaded, stepId: string | null): StepDef | undefined {
+  if (stepId !== 'city' || l.user.role !== 'candidate' || !l.user.candidateId || !l.user.onboardedAt || !l.ctx.facts.consent) return undefined;
+  return findStep(stepId);
+}
 
 async function save(userId: string, data: { stepId: string; answers?: Answers; skipped?: string[]; lines?: Record<string, string>; meta?: Meta }) {
   const json = (v: unknown) => v as Prisma.InputJsonValue;
@@ -172,7 +189,7 @@ function laterTarget(l: Loaded): string {
 /** Вид онбординга. Генерирует (и запоминает) реплику помощника для текущего шага. */
 export async function getView(userId: string, signal?: AbortSignal): Promise<OnboardingView> {
   const l = await load(userId);
-  const current = currentStep(l.ctx, l.state);
+  const current = completedProfileStep(l, l.state.stepId) ?? currentStep(l.ctx, l.state);
   let lines = l.lines;
   if (!lines[current.id]) {
     const lead = await leadFor(current, l.ctx, prevOf(current, l), { candidateId: l.user.candidateId, signal });
@@ -234,7 +251,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
 }
 
 function stepOr409(l: Loaded, stepId: string): StepDef {
-  const step = visibleSteps(l.ctx).find((s) => s.id === stepId);
+  const step = visibleSteps(l.ctx).find((s) => s.id === stepId) ?? completedProfileStep(l, stepId);
   if (!step) throw errors.conflict('Этот вопрос сейчас недоступен - обнови страницу');
   return step;
 }

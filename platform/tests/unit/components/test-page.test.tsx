@@ -95,7 +95,7 @@ describe('TestPage', () => {
       return {};
     });
     render(<TestPage />);
-    expect(await screen.findByText('Подтвердим грейд')).toBeDefined();
+    expect(await screen.findByRole('heading', { name: /Тест на грейд/ })).toBeDefined();
     await waitFor(() => expect(screen.getByTestId('rec-hint').textContent).toContain('заявлено 40%'));
     // Рекомендация предзаполнила выбор
     expect(screen.getByTestId('start').textContent).toContain('Frontend · Middle');
@@ -222,4 +222,17 @@ describe('TestPage', () => {
     expect((await screen.findByTestId('result-title')).textContent).toBe('Middle подтверждён');
     expect(screen.getByText('категория записана')).toBeDefined();
   });
+});
+
+it('checks the interactive example locally without starting an attempt', async () => {
+  const calls = stubFetch((url) => url.startsWith('/api/test/start?') ? { allowed: true, rules: 'r' } : { test: null });
+  render(<TestPage />);
+  const field = await screen.findByRole('spinbutton', { name: 'Номер строки' });
+  fireEvent.change(field, { target: { value: '4' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Проверить →' }));
+  expect(screen.getByText(/Пока нет/).getAttribute('data-correct')).toBe('false');
+  fireEvent.change(field, { target: { value: '6' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Проверить →' }));
+  expect(screen.getByText(/Верно. return/).getAttribute('data-correct')).toBe('true');
+  expect(calls.filter((call) => call.body)).toHaveLength(0);
 });

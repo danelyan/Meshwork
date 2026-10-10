@@ -76,6 +76,24 @@ function CodeBlock({ code, numbered }: { code: string; numbered: boolean }) {
   );
 }
 
+function ExampleTask() {
+  const [answer, setAnswer] = useState('');
+  const [result, setResult] = useState<boolean | null>(null);
+  const code = ['def recent_total(orders, now):', '    total = 0', '    for o in orders:', '        if (now - o.created).days < 30:', '            total += o.amount', '        return total', '    return 0'];
+  return <aside className={styles.example} aria-label="Пример задания">
+    <div className={styles.exampleLabel}><Kicker>Попробуйте формат</Kicker><Tag>Пример · Python</Tag></div>
+    <h2>Найдите ошибку.</h2>
+    <p>Функция должна суммировать заказы за последние 30 дней, но обрабатывает только первый заказ. На какой строке ошибка?</p>
+    <pre className={styles.exampleCode}><code>{code.map((line, index) => <span key={index} data-correct={result === true && index === 5}><i>{index + 1}</i>{line}</span>)}</code></pre>
+    <form onSubmit={(event) => { event.preventDefault(); setResult(answer.trim() === '6'); }}>
+      <label htmlFor="example-line">Номер строки</label>
+      <div className={styles.exampleAnswer}><input id="example-line" type="number" min="1" max="7" required value={answer} onChange={(event) => { setAnswer(event.target.value); setResult(null); }} placeholder="Например, 4" /><Button type="submit">Проверить →</Button></div>
+    </form>
+    {result !== null && <p className={styles.exampleResult} data-correct={result} role="status">{result ? 'Верно. return находится внутри цикла: нужно вынести его на уровень ниже по отступу.' : 'Пока нет. Посмотрите, в какой момент функция выходит из цикла.'}</p>}
+    <p className={styles.exampleFine}>Это пример. Ответ не влияет на категорию и историю тестов.</p>
+  </aside>;
+}
+
 function IntroScreen({
   onStart,
   initial,
@@ -132,16 +150,17 @@ function IntroScreen({
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${styles.introPage}`}>
       <div>
         <Kicker>Тест на грейд</Kicker>
-        <h1 className={styles.h1}>Подтвердим грейд</h1>
+        <h1 className={styles.h1}>Тест на грейд<i>.</i></h1>
         <p className={`${ui.muted} ${styles.lead}`}>
           7–10 коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
           даёт только этот тест; выбор грейда - за вами.
         </p>
       </div>
 
+      <div className={styles.startGrid}><div className={styles.startContent}>
       <Panel as="section" aria-label="Направление и грейд" className={styles.choice}>
         <div className={styles.choiceRow}>
           <span className={ui.label}>Направление</span>
@@ -210,6 +229,8 @@ function IntroScreen({
         </Button>
         <Button href="/profile">В профиль</Button>
       </div>
+      <Panel className={styles.afterTest}><Kicker>Что произойдёт после</Kicker><h2>Результат станет частью профиля.</h2><p>Успешный тест подтвердит категорию. Если не получится, текущая категория сохранится, а рекомендации помогут подготовиться к следующей попытке.</p><p>Диалог с консультантом, проект и защита остаются отдельными этапами проверки опыта.</p></Panel>
+      </div><ExampleTask /></div>
     </div>
   );
 }

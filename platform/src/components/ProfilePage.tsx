@@ -5,11 +5,13 @@ import { specLabel } from '@/lib/directions';
 import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
 
-import { ApiError, type AttemptSummary, claimAction, getProfile, getRecommendations, listTestAttemptsApi, type RecommendationsView } from '@/lib/api';
+import { ApiError, type AttemptSummary, claimAction, getProfile, getRecommendations, listTestAttemptsApi, type RecommendationsView, request } from '@/lib/api';
 import { formatDate, LEVEL_HINT, LEVELS_TOP_DOWN } from '@/lib/labels';
 import type { ProfileClaim, ProfileView } from '@/server/claims/types';
 import type { Gap } from '@/server/recommend/types';
 
+import { ProfileBasics, ProfilePublicPreview } from './candidate/ProfileCards';
+import type { ProfileDetails } from '@/server/claims/profile-details';
 import { DepthMapSection } from './call/DepthMapSection';
 import { LevelBadge } from './LevelBadge';
 import { Button, Kicker, Notice } from './ui';
@@ -146,6 +148,7 @@ function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
 }
 
 export function ProfilePage() {
+  const [details, setDetails] = useState<ProfileDetails | null>(null);
   const [profile, setProfile] = useState<ProfileView | null>(null);
   const [recs, setRecs] = useState<RecommendationsView | null>(null);
   const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
@@ -157,6 +160,7 @@ export function ProfilePage() {
       (p) => alive && setProfile(p),
       (e: Error) => alive && setError(e),
     );
+    request<ProfileDetails>('/api/profile/details').then((value) => { if (alive && value.employerPreview) setDetails(value); }, () => undefined);
     // карта пробелов — необязательная часть: API рекомендаций может быть недоступен
     getRecommendations().then(
       (r) => alive && setRecs(r),
@@ -174,16 +178,18 @@ export function ProfilePage() {
   /** Да / Нет на черновике: действие на сервере, затем обновляем список и карту пробелов без перезагрузки. */
   async function decide(id: string, action: 'confirm' | 'reject') {
     await claimAction(id, action);
-    const [p, r] = await Promise.all([getProfile(), getRecommendations().catch(() => null)]);
+    const [p, r, d] = await Promise.all([getProfile(), getRecommendations().catch(() => null), request<ProfileDetails>('/api/profile/details').catch(() => null)]);
     setProfile(p);
     if (r) setRecs(r);
+    setDetails(d?.employerPreview ? d : null);
   }
 
   async function editClaim(id: string, statement: string) {
     await claimAction(id, 'edit', statement);
-    const [p, r] = await Promise.all([getProfile(), getRecommendations().catch(() => null)]);
+    const [p, r, d] = await Promise.all([getProfile(), getRecommendations().catch(() => null), request<ProfileDetails>('/api/profile/details').catch(() => null)]);
     setProfile(p);
     if (r) setRecs(r);
+    setDetails(d?.employerPreview ? d : null);
   }
 
   // ?print=1 (ссылка render_profile_pdf консультанта) — открыть печать, когда профиль загружен.
@@ -222,75 +228,22 @@ export function ProfilePage() {
   const targets = recs?.targets ?? [];
   const confirmedCount = claims.filter((c) => c.status === 'confirmed' || c.status === 'edited').length;
 
-  const test = recs?.test;
+
 
   return (
     <div className={styles.page}>
       <header className={styles.heading}>
-        <div><Kicker>Ваш опыт и доказательства</Kicker><h1>Профиль.</h1><p>У каждого факта есть источник: достижение, проверка платформой или ваши слова. Компании видят, откуда что взялось.</p></div>
+        <div><Kicker>Ваш опыт и доказательства</Kicker><h1>Профиль<i>.</i></h1><p>У каждого факта есть источник: достижение, проверка платформой или ваши слова. Компании видят, откуда что взялось.</p></div>
         <div className={`${styles.actions} ${styles.noPrint}`}><Button href="/consultant">↑ Обновить резюме</Button><Button onClick={() => window.print()}>↓ PDF-профиль</Button></div>
       </header>
-      <aside className={styles.side} aria-label="Кандидат">
-        <div className={styles.me}>
-          <span className={`${ui.avatar} ${styles.avatarFrame}`} aria-hidden="true">
-            <svg viewBox="0 0 44 44" width="100%" height="100%">
-              <circle cx="22" cy="16" r="8" fill="currentColor" />
-              <path d="M6 44c1.5-10 8-15 16-15s14.5 5 16 15z" fill="currentColor" />
-            </svg>
-          </span>
-          <div>
-            <h2 className={styles.name}>{profile.candidate.name}</h2>
-            {profile.category && (
-              <span className={ui.kicker}>
-                {specLabel(profile.category.specialization)} · {profile.category.grade}
-              </span>
-            )}
-          </div>
-        </div>
-        <p className={styles.sub}>
-          {profile.category
-            ? `Категория по тесту: ${specLabel(profile.category.specialization)}, ${profile.category.grade} (${formatDate(profile.category.confirmedAt)})`
-            : 'Категории пока нет: её даёт только тест. Ниже - утверждения со ссылками на источники.'}
-        </p>
-        <p className={styles.printOnly}>Распечатано {formatDate(new Date().toISOString())}</p>
-        <dl className={styles.facts}>
-          <div>
-            <dt>Утверждений</dt>
-            <dd>{claims.length}</dd>
-          </div>
-          <div>
-            <dt>Принято вами</dt>
-            <dd>{confirmedCount}</dd>
-          </div>
-        </dl>
-        {test && (
-          <div className={styles.testRec} data-testid="test-rec">
-            <span className={ui.kicker}>Рекомендация теста</span>
-            <b>
-              {specLabel(test.specialization)}, {test.grade}
-            </b>
-            <span className={styles.testReason}>{test.reason}</span>
-            {!test.allowed && test.nextAllowedAt && <span className={ui.muted}>Повторно можно с {formatDate(test.nextAllowedAt)}</span>}
-          </div>
-        )}
-        <TestHistory attempts={attempts} />
-        <div className={`${styles.sideActions} ${styles.noPrint}`}>
-          <Button
-            variant="cta"
-            href={test ? `/test?specialization=${test.specialization}&grade=${test.grade}` : '/test'}
-            data-testid="go-test"
-          >
-            {profile.category ? 'Пересдать тест' : 'Пройти тест'}
-          </Button>
-          <Button href="/consultant">К консультанту</Button>
-          <Button href="/projects">Проектные задания</Button>
-          <Button href="/settings">Приватность и контакты</Button>
-          <Button onClick={() => window.print()}>Печать / PDF</Button>
-        </div>
+      <aside className={styles.side} aria-label="Так вас видит компания">
+        <ProfilePublicPreview details={details} />
+        <div className={styles.sideActions}><Button href="/skills">Навыки и грейд →</Button><Button href="/projects">Проектные задания →</Button></div>
       </aside>
 
       <div className={styles.main}>
-      <DepthMapSection />
+      <ProfileBasics details={details} name={profile.candidate.name} />
+      <section className={styles.evidencePanel} aria-label="Утверждения о навыках"><header><h2>Утверждения о навыках</h2><span>Уровень доказанности</span></header>
       {claims.length === 0 ? (
         <div className={`${ui.panel}`}>
           <p>Утверждений пока нет.</p>
@@ -322,7 +275,8 @@ export function ProfilePage() {
           );
         })
       )}
-
+      </section>
+      <details className={styles.extraEvidence}><summary>Рекомендации и история проверок</summary><DepthMapSection /><TestHistory attempts={attempts} />
       <section className={styles.section} aria-labelledby="targets-title">
         <h2 id="targets-title">Подходящие вакансии</h2>
         <div className={styles.noPrint}><Button size="sm" href="/career">Все вакансии на карте ↗</Button></div>
@@ -385,6 +339,7 @@ export function ProfilePage() {
         )}
       </section>
 
+      </details>
       <div className={`${styles.visibility} ${styles.noPrint}`}>
         <h2>Что видят компании</h2>
         <p className={ui.muted}>Имя, контакт и цитаты из резюме скрыты. После принятия приглашения имя и контакт открываются только этой компании.</p>

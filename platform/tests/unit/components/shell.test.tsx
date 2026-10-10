@@ -13,6 +13,7 @@ vi.mock('next/navigation', () => ({
 }));
 const page = vi.hoisted(() => ({ session: null as unknown }));
 vi.mock('@/server/auth/page', () => ({ getPageSession: async () => page.session }));
+vi.mock('@/components/candidate/CandidateSidebarSummary', () => ({ CandidateSidebarSummary: () => null }));
 vi.mock('@/lib/api', () => ({ demoLogout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
 // Меню роли (ADR 0004) читает БД — в тестах шапки подставляем готовое.
 const menu = vi.hoisted(() => ({ value: null as unknown }));
@@ -75,7 +76,7 @@ describe('SiteHeader', () => {
     });
     const btn = h.getByRole('button', { name: /Аккаунт, активная роль: Работодатель/ });
     expect(btn.getAttribute('aria-expanded')).toBe('false');
-    expect(btn.textContent).toContain('ИП');
+    expect(btn.textContent).toContain('ООО Ромашка');
     expect(h.queryByRole('button', { name: 'Выйти' })).toBeNull();
   });
 

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 import styles from '@/components/employer/Employer.module.css';
-import { VacancyForm } from '@/components/employer/VacancyForm';
-import { Kicker, Notice } from '@/components/ui';
+import { VacancyEntry } from '@/components/employer/VacancyEntry';
+import { Notice } from '@/components/ui';
 import { parseNeedPrefill } from '@/server/agent/employer/prefill';
 import { requirePageEmployer } from '@/server/auth/page';
 import { getCatalog } from '@/server/claims/catalog';
@@ -18,12 +18,11 @@ export default async function NewNeedPage({ searchParams }: { searchParams: Prom
   return (
     <div className={styles.page}>
       <div>
-        <Kicker>Потребность</Kicker>
-        <h1>Кто нужен команде</h1>
-        <p className={styles.lead}>По требованиям платформа ранжирует кандидатов и объясняет, что каждый уже доказал.</p>
+        <h1>Новая вакансия<span className={styles.accent}>.</span></h1>
+        <p className={styles.lead}>Начни с направления. Укажи задачи команды, уровень, стек и зарплатную вилку, чтобы получить подборку по подтверждённым навыкам.</p>
       </div>
       {prefill && <Notice>Черновик помощника: проверь поля и требования и сохрани - без сохранения потребность не создаётся.</Notice>}
-      <VacancyForm catalog={catalog} initial={prefill ?? undefined} />
+      <VacancyEntry catalog={catalog} initial={prefill ?? undefined} />
     </div>
   );
 }

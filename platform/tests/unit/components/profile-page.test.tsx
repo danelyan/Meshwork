@@ -69,3 +69,19 @@ describe('ProfilePage: вакансии', () => {
     expect(screen.queryByText(/профиль виден только вам/)).toBeNull();
   });
 });
+
+it('refreshes anonymous employer preview immediately after confirming a claim', async () => {
+  let confirmed = false;
+  const fetcher = vi.fn(async (url: string) => {
+    if (url === '/api/claims/c1/confirm') confirmed = true;
+    const body = url === '/api/profile/details' ? { basics: null, employerPreview: { displayName: 'Кандидат #ABC', category: null, specialization: null, fsp: { hasAchievements: false }, claims: confirmed ? [{ catalogId: 'be.framework', statement: 'Публичный навык' }] : [] } }
+      : url === '/api/profile' ? { candidate: { id: 'x', name: 'Тест', specialization: null, fspState: 'not_linked' }, category: null, claims: [claim(confirmed ? 'confirmed' : 'proposed')], byLevel: {} }
+      : url.startsWith('/api/test') ? { attempts: [] } : { targets: [], gaps: [], tasks: [], calls: [] };
+    return { ok: true, status: 200, json: async () => body };
+  });
+  vi.stubGlobal('fetch', fetcher);
+  render(<ProfilePage />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Да' }));
+  expect(await screen.findByText('Публичный навык')).toBeDefined();
+  expect(fetcher.mock.calls.filter(([url]) => url === '/api/profile/details')).toHaveLength(2);
+});

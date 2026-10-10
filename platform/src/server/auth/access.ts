@@ -32,9 +32,6 @@ export const PAGE_ACCESS = {
   '/consent': 'public',
   '/site-access': 'public',
   '/api-docs': 'public',
-  // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе — жюри без регистрации.
-  '/validation': 'public',
-  '/evaluate': 'public',
   // Флаг DEMO_LOGIN проверяет сама страница (выключен → 404).
   '/demo': 'public',
   // Прежние адреса: только редирект на /consultant, данных нет.
@@ -46,7 +43,9 @@ export const PAGE_ACCESS = {
   '/career': 'candidate',
   '/saved': 'candidate',
   '/settings': 'candidate',
+  '/skills': 'candidate',
   '/test': 'candidate',
+  '/interview': 'candidate',
   '/invitations': 'candidate',
   '/defense/[claimId]': 'candidate',
   // Созвон-защита (ADR 0003): комната кандидата и наблюдение работодателя.
@@ -56,6 +55,7 @@ export const PAGE_ACCESS = {
   '/projects': 'candidate',
   '/projects/[taskId]': 'candidate',
   '/employer': 'employer',
+  '/employer/vacancies': 'employer',
   // Профиль компании (R-E-01) — страницу делает лейн company; сюда ведём работодателя с чужих страниц.
   '/employer/company': 'employer',
   '/employer/search': 'employer',
@@ -108,6 +108,7 @@ export const API_ACCESS = {
   '/api/demo/login': 'public',
   '/api/demo/resume': 'candidate',
   '/api/profile': 'candidate',
+  '/api/profile/details': 'candidate',
   '/api/profile/contact': 'candidate',
   '/api/profile/privacy': 'candidate',
   '/api/claims/[id]/[action]': 'candidate',
@@ -183,8 +184,6 @@ export const API_ACCESS = {
   '/api/tts': { GET: 'public', POST: 'session' },
   '/api/health': 'public',
   '/api/openapi': 'public',
-  // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
-  '/api/evaluate': { POST: 'public' },
   '/api/dev/delete-account': 'dev',
   '/api/dev/login-as': 'dev',
   '/api/dev/logout': 'dev',

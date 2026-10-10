@@ -1,11 +1,15 @@
 /* Профиль: слева панель кандидата (как .side в site/styles.css), справа утверждения, вакансии, карта пробелов. */
-.page { display: grid; grid-template-columns: minmax(0, 1fr) 280px; grid-template-areas: 'heading heading' 'main side'; align-items: flex-start; gap: 24px; padding: 28px 32px 48px; min-height: calc(100svh - 96px); }
+.page { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: 'heading heading' 'main side'; align-items: flex-start; gap: 24px; padding: 24px 32px 40px; min-height: calc(100svh - 96px); }
 .heading { grid-area: heading; display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; }
-.heading h1 { font-size: clamp(40px, 5vw, 64px); font-weight: 500; line-height: 1; letter-spacing: -.065em; margin: 10px 0 14px; }
-.heading p { max-width: 620px; color: var(--muted); line-height: 1.7; font-size: 14px; margin: 0; }
+.heading h1 { font-size: clamp(36px, 4vw, 60px); font-weight: 700; line-height: 1; letter-spacing: -.05em; margin: 0 0 14px; }
+.heading h1 i { font-style: normal; color: var(--blue); }
+.heading p { max-width: 680px; color: var(--text-soft); line-height: 1.55; font-size: 16px; margin: 0; border-left: 1.5px solid var(--ink); padding-left: 16px; }
 .editClaim { display: grid; gap: 10px; font-size: 12px; }
 .pageSingle { max-width: 760px; margin: 0 auto; padding: 24px var(--page-pad) 48px; display: grid; gap: 16px; }
-.side { grid-area: side; display: flex; flex-direction: column; gap: 16px; padding: 24px 18px 20px; background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border: 1px solid var(--glass-border); }
+.side { grid-area: side; display: flex; flex-direction: column; gap: 16px; }
+.extraEvidence { background: var(--glass); border: 1px solid var(--glass-border); padding: 20px; }
+.extraEvidence > summary { cursor: pointer; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+.extraEvidence[open] > :not(summary) { margin-top: 20px; }
 .me { display: flex; gap: 12px; align-items: center; }
 .avatarFrame { border: 2px solid var(--on-ink); }
 .name { font-size: 20px; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 4px; overflow-wrap: anywhere; }
@@ -39,7 +43,7 @@
 .visibility label { display: flex; gap: 8px; align-items: center; font-size: var(--fs); }
 .printOnly { display: none; }
 @media (max-width: 1050px) {
-  .page { grid-template-columns: 1fr; grid-template-areas: 'heading' 'side' 'main'; }
+  .page { grid-template-columns: 1fr; grid-template-areas: 'heading' 'main' 'side'; }
   .side { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--glass-border); }
   .sideActions { grid-template-columns: 1fr 1fr; margin-top: 0; }
   .main { padding: 0; }
@@ -55,3 +59,10 @@
   .noPrint { display: none !important; }
   .printOnly { display: block; }
 }
+.evidencePanel { padding: 24px; background: var(--surface-notice); border: 1px solid var(--line); display: grid; gap: 24px; }
+.evidencePanel > header { padding-bottom: 12px; border-bottom: 1.5px solid var(--ink); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.evidencePanel > header h2 { margin: 0; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+.evidencePanel > header span { font: 10px var(--mono); color: var(--muted); }
+.evidencePanel .section > h2 { border-top: 0; padding-top: 0; }
+.evidencePanel .claim { background: none; border: 0; border-bottom: 1px solid var(--line); padding: 16px 0; }
+@media(max-width:650px) { .evidencePanel { padding: 18px; } }

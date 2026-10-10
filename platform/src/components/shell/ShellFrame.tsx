@@ -28,7 +28,7 @@ export function useBareShell(active: boolean): void {
  * элементами; здесь только решается, показывать ли их. Лэйаут не знает путь на сервере (не перерисовывается
  * при навигации), поэтому решение — на клиенте по `usePathname()`.
  */
-export function ShellFrame({ header, footer, children, account }: { header: ReactNode; footer: ReactNode; children: ReactNode; account?: HeaderAccount | null }) {
+export function ShellFrame({ header, footer, children, account, employerSummary }: { header: ReactNode; footer: ReactNode; children: ReactNode; account?: HeaderAccount | null; employerSummary?: ReactNode }) {
   const pathname = usePathname();
   const [bareByPage, setBareByPage] = useState(false);
   const bare = bareByPage || BARE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -40,7 +40,7 @@ export function ShellFrame({ header, footer, children, account }: { header: Reac
         К содержимому
       </a>
       {!bare && header}
-      <div className={styles.page}>{bare ? children : <DashboardFrame account={account}>{children}</DashboardFrame>}</div>
+      <div className={styles.page}>{bare ? children : <DashboardFrame account={account} employerSummary={employerSummary}>{children}</DashboardFrame>}</div>
       {!bare && footer}
       </div>
     </BareContext.Provider>

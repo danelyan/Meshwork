@@ -2,7 +2,7 @@
 
 import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
-import { type OnboardingAction, completeOnboarding, onboardingAct, onboardingLater } from '@/lib/api';
+import { type OnboardingAction, completeOnboarding, fetchDemoResume, onboardingAct, onboardingLater } from '@/lib/api';
 import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/employer/restore';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
@@ -11,15 +11,16 @@ import { asideToModel, looksLikeQuestion, matchStepText } from '@/server/onboard
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { CompanionStage } from '../avatar/CompanionStage';
+import { SceneSlot } from '../avatar/SceneSlots';
 import { CompanionVoiceProvider, useCompanionVoice } from '../avatar/voice';
 import { Chat } from '../Chat';
 import { AssistantChat, EMPLOYER_SUGGESTIONS, EmployerAsideRows } from '../employer/AssistantChat';
 import { extractUrls } from '@/lib/links';
 
 import { useAsideRefresh } from '../consultant/aside-refresh';
-import { useAttachments } from '../chat/attachments';
+import { ATTACH_ACCEPT, ATTACH_LIMITS, useAttachments } from '../chat/attachments';
 import { useSoftGo } from './soft-nav';
-import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction, Reply, ReplySkeleton, type ReplyLine, Thread, Typing, UserBubble } from '../chat/Thread';
+import { AssistantRow, Bubble, Composer, QuickReplies, QuietAction, Reply, ReplySkeleton, type ReplyLine, Thread, Typing } from '../chat/Thread';
 import { Brand } from '../shell/Brand';
 import { Button, VisuallyHidden } from '../ui';
 
@@ -30,7 +31,7 @@ import { AsideRows, groupAsides, useAsides } from './Asides';
 import { DocumentsRows, useDocumentsRun } from './DocumentsRun';
 import { parseSalary, salaryText } from './salary';
 import { StepControls } from './StepControls';
-import { OnboardingDraft } from './OnboardingDraft';
+import { OnboardingDraft, fieldVisibility } from './OnboardingDraft';
 
 export interface OnboardingChatProps {
   initial: OnboardingView;
@@ -376,13 +377,14 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const Feed = inConsultant ? 'div' : 'main';
   return (
     <div className={inConsultant ? `${styles.shell} ${styles.inScene}` : styles.shell}>
-      <header className={styles.top}>
+      <SceneSlot name="header" enabled={!isSummary}><header className={styles.top}>
         <div className={styles.topRow}>
           {inConsultant ? (
+            <><Brand />
             <h1 className={styles.sceneTitle}>
-              {view.scenario === 'employer' ? 'Помощник по подбору' : 'Карьерный консультант'}
-              <span className={styles.title}>{isSummary ? 'Ведёт по платформе' : 'Знакомство'}</span>
-            </h1>
+              {isSummary ? (view.scenario === 'employer' ? 'Помощник по подбору' : 'Карьерный консультант') : employer ? 'Регистрация работодателя' : 'Регистрация кандидата'}
+              <span className={styles.title}>{isSummary ? 'Ведёт по платформе' : `Шаг ${Math.min(view.progress.done + 1, view.progress.total)} из ${view.progress.total} · ${cur.label.toLowerCase()}`}</span>
+            </h1></>
           ) : (
             <>
               <Brand />
@@ -396,14 +398,15 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             </nav>
           )}
           {!isSummary && (
+            <><span className={styles.saved}>сохранено {view.progress.done} из {view.progress.total}</span>
             <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
               Настроить позже
-            </Button>
+            </Button></>
           )}
         </div>
-        <ProgressLine value={isSummary ? view.progress.total : view.progress.done} max={view.progress.total} label={`Пройдено ${view.progress.done} из ${view.progress.total}`} />
-        {!isSummary && <OnboardingDraft view={view} busy={busy || asides.asking} onEdit={(stepId) => void act({ action: 'goto', stepId })} />}
-      </header>
+        <div className={styles.segments} role="progressbar" aria-valuenow={isSummary ? view.progress.total : view.progress.done} aria-valuemin={0} aria-valuemax={view.progress.total} aria-label={`Пройдено ${view.progress.done} из ${view.progress.total}`}>{Array.from({ length: view.progress.total }, (_, i) => <i key={i} data-done={isSummary || i < view.progress.done || undefined} />)}</div>
+      </header></SceneSlot>
+      {!isSummary && <SceneSlot name="draft"><OnboardingDraft view={view} busy={busy || asides.asking} onEdit={(stepId) => void act({ action: 'goto', stepId })} /></SceneSlot>}
 
       <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>
         {!inConsultant && (
@@ -413,6 +416,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         )}
         {!inConsultant && <CompanionStage className={styles.stage} />}
         <Thread label="Переписка с помощником">
+          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит. Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
           {view.history.map((h) => (
             <HistoryPair
               key={h.stepId}
@@ -429,9 +433,12 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             />
           ))}
 
-          <AssistantRow testId="ob-current">
-            <Reply key={`${cur.id}:${turn}`} lines={lines} animate={!(settled && turn === 0)} onDone={() => setReady(true)} extra={consentExtra} />
-          </AssistantRow>
+          <AstraRow testId="ob-current">
+            <div className={styles.questionCard}>
+              {!isSummary && <div className={styles.questionBadges}><span>сохраню в: {cur.label}</span><span>{employer ? 'черновик подбора' : fieldVisibility(cur.id)}</span></div>}
+              <Reply key={`${cur.id}:${turn}`} lines={lines} animate={!(settled && turn === 0)} onDone={() => setReady(true)} extra={consentExtra} />
+            </div>
+          </AstraRow>
 
           <AsideRows items={curAsides} locked={asides.asking} />
           <EmployerAsideRows items={empAsides[cur.id]} />
@@ -461,7 +468,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
               />
             </AssistantRow>
           )}
-          {pending && <UserBubble quiet={pending.quiet}>{pending.text}</UserBubble>}
+          {pending && <AstraAnswer>{pending.text}</AstraAnswer>}
           {busy && pending && (
             <AssistantRow>
               <ReplySkeleton />
@@ -475,6 +482,13 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
 
           {ready && !busy && !asides.asking && !isSummary && (
             <AssistantRow mark={false} testId="ob-controls">
+              {cur.kind === 'files' && <div className={styles.documentControls}>
+                <label className={styles.dropZone} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); att.add(Array.from(event.dataTransfer.files)); }}>
+                  <span aria-hidden="true">PDF</span><strong>Перетащи резюме сюда</strong><small>или нажми, чтобы выбрать файл</small><small>{ATTACH_LIMITS}</small>
+                  <input type="file" multiple accept={ATTACH_ACCEPT} aria-label="Выбрать резюме" onChange={(event) => { att.add(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
+                </label>
+                {consultant?.demo?.resume && <Button size="sm" onClick={async () => { try { att.add([await fetchDemoResume(consultant.demo!.resume!.fileName)]); } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось загрузить демо-резюме.'); } }}>Загрузить демо-резюме</Button>}
+              </div>}
               <StepControls
                 step={cur}
                 busy={busy}
@@ -545,7 +559,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             inputRef={inputRef}
             sendLabel={cur.kind === 'chips' ? 'Добавить' : 'Отправить'}
             allowEmpty={cur.kind === 'files' && att.ready.length > 0}
-            top={
+            inlineAction={
               // над полем и только пока виден вопрос шага (тот же признак, что у виджета шага выше)
               !cur.required && ready && !busy && !asides.asking ? (
                 <div className={styles.skipRow}>
@@ -571,13 +585,21 @@ function replyingIn(items: { role: string; event?: { type: string } }[] | undefi
 function HistoryPair({ lead, question, answer, asides, onEdit }: { lead: string; question: string; answer: string | null; asides?: ReactNode; onEdit?: () => void }) {
   return (
     <>
-      <AssistantRow>
+      <AstraRow>
         <Reply lines={[{ text: lead }, { text: question }]} />
-      </AssistantRow>
+      </AstraRow>
       {asides}
-      <UserBubble quiet={answer === null} action={onEdit ? { label: answer === null ? 'ответить' : 'изменить', onClick: onEdit } : undefined}>
+      <AstraAnswer onEdit={onEdit} skipped={answer === null}>
         {answer ?? 'пропущу'}
-      </UserBubble>
+      </AstraAnswer>
     </>
   );
+}
+
+function AstraRow({ children, testId }: { children: ReactNode; testId?: string }) {
+  return <li className={styles.astraRow} data-testid={testId}><span className={styles.mark} aria-hidden="true" /><div className={styles.astraBody}>{children}</div></li>;
+}
+
+function AstraAnswer({ children, onEdit, skipped }: { children: ReactNode; onEdit?: () => void; skipped?: boolean }) {
+  return <li className={styles.answer}><div>{children}</div>{onEdit && <button type="button" onClick={onEdit}>{skipped ? 'ответить' : 'изменить'}</button>}</li>;
 }

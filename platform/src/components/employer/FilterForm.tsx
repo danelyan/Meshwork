@@ -1,82 +1,22 @@
 import { SPEC_LABEL, SPECIALIZATIONS, specLabel, subcategoriesFor, subcategoryLabel } from '@/lib/directions';
 import type { MatchFilters } from '@/server/employer/ranking';
-
-import { Button, Field, Panel } from '../ui';
+import { Button } from '../ui';
 import ui from '../ui.module.css';
-
 import styles from './Employer.module.css';
 import { GRADE_LABEL, GRADES } from '@/lib/grades';
 
-export interface FilterFormProps {
-  action: string;
-  filters: MatchFilters;
-}
-
-/**
- * Фильтры выдачи (R-E-04, R-M-04): обычная GET-форма. Каждое уточнение — новый URL,
- * прежняя выдача остаётся в истории браузера и в «Прежних выдачах». Работает без JS.
- */
+export interface FilterFormProps { action: string; filters: MatchFilters; }
+/** Native GET controls keep filtered results bookmarkable and work without JavaScript. */
 export function FilterForm({ action, filters }: FilterFormProps) {
-  return (
-    <Panel>
-      <form method="get" action={action} className={styles.filters} aria-label="Фильтры подборки">
-      <Field label="Направление">
-        <select name="spec" className={ui.input} defaultValue={filters.specialization ?? ''}>
-          <option value="">любое</option>
-          {SPECIALIZATIONS.map((s) => (
-            <option key={s} value={s}>
-              {SPEC_LABEL[s]}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Подкатегория" hint="Задаёт и направление">
-        <select name="sub" className={ui.input} defaultValue={filters.subcategory ?? ''}>
-          <option value="">любая</option>
-          {SPECIALIZATIONS.map((s) => (
-            <optgroup key={s} label={SPEC_LABEL[s]}>
-              {subcategoriesFor(s).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </Field>
-      <Field label="Грейд (категория из теста)">
-        <select name="grade" className={ui.input} defaultValue={filters.grade ?? ''}>
-          <option value="">любой</option>
-          {GRADES.map((g) => (
-            <option key={g} value={g}>
-              {GRADE_LABEL[g]}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Стек" hint="Через запятую">
-        <input name="stack" className={ui.input} defaultValue={filters.stack?.join(', ') ?? ''} />
-      </Field>
-      <div className={styles.actions}>
-        <Button type="submit" variant="primary">
-          Уточнить
-        </Button>
-        <Button href={action}>Сбросить</Button>
-      </div>
-      <div className={styles.checks}>
-        <label>
-          <input type="checkbox" name="fsp" value="1" defaultChecked={filters.fsp} /> есть достижения ФСП
-        </label>
-        <label>
-          <input type="checkbox" name="category" value="1" defaultChecked={filters.categoryOnly} /> только с категорией из теста
-        </label>
-      </div>
-      </form>
-    </Panel>
-  );
+  return <form method="get" action={action} className={styles.searchFilters} aria-label="Фильтры подборки">
+    <div className={styles.filterLine}><span>Специализация</span><label><input type="radio" name="spec" value="" defaultChecked={!filters.specialization} /><span>Все</span></label>{SPECIALIZATIONS.map((specialization) => <label key={specialization}><input type="radio" name="spec" value={specialization} defaultChecked={filters.specialization === specialization} /><span>{SPEC_LABEL[specialization]}</span></label>)}</div>
+    <div className={styles.filterLine}><span>Грейд</span><label><input type="radio" name="grade" value="" defaultChecked={!filters.grade} /><span>Все</span></label>{GRADES.map((grade) => <label key={grade}><input type="radio" name="grade" value={grade} defaultChecked={filters.grade === grade} /><span>{GRADE_LABEL[grade]}</span></label>)}</div>
+    <div className={styles.filterLine}><span>Стек</span><input name="stack" aria-label="Стек через запятую" placeholder="Например, React, SQL" className={ui.input} style={{ maxWidth: 360 }} defaultValue={filters.stack?.join(', ') ?? ''} /></div>
+    <div className={styles.filterLine}><span>Подтверждено</span><label><input type="checkbox" name="fsp" value="1" defaultChecked={filters.fsp} /><span>Достижения ФСП</span></label><label><input type="checkbox" name="category" value="1" defaultChecked={filters.categoryOnly} /><span>Категория из теста</span></label></div>
+    <div className={styles.filterLine}><span>Подкатегория</span><select name="sub" aria-label="Подкатегория" className={ui.input} style={{ maxWidth: 360 }} defaultValue={filters.subcategory ?? ''}><option value="">Любая</option>{SPECIALIZATIONS.map((specialization) => <optgroup key={specialization} label={SPEC_LABEL[specialization]}>{subcategoriesFor(specialization).map((subcategory) => <option key={subcategory.id} value={subcategory.id}>{subcategory.title}</option>)}</optgroup>)}</select></div>
+    <div className={styles.filterLine}><Button type="submit" variant="primary" size="sm">Уточнить</Button><Button href={action} size="sm">Сбросить</Button></div>
+  </form>;
 }
-
-/** Подпись фильтров для «Прежних выдач». */
 export function filtersLabel(f: MatchFilters): string {
   const parts: string[] = [];
   if (f.specialization) parts.push(specLabel(f.specialization));

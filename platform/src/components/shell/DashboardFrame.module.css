@@ -1,10 +1,12 @@
-.frame { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100svh - var(--landing-header-h)); }
-.sidebar { align-self: start; position: sticky; top: var(--landing-header-h); padding: 24px 16px; background: var(--glass-strong); border-right: 1px solid var(--line); max-height: calc(100dvh - var(--landing-header-h)); overflow-y: auto; }
+.frame { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: calc(100svh - var(--landing-header-h)); }
+.sidebar { align-self: start; position: sticky; top: var(--landing-header-h); padding: 22px 16px; background: var(--glass); border-right: 1px solid var(--line); height: calc(100dvh - var(--landing-header-h)); overflow-y: auto; backdrop-filter: var(--blur); }
 .identity { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
-.monogram { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border: 1px solid var(--ink); font: 600 24px var(--font); }
+.monogram { display: grid; place-items: center; width: 48px; height: 48px; flex: none; border: 1px solid var(--line); background: var(--ink); color: var(--on-ink); font: 600 24px var(--font); }
+.monogram[data-employer] { background: var(--employer-accent); border-color: var(--employer-accent); }
+.summary { margin-bottom: 22px; }
 .identity strong { display: block; font-size: 15px; overflow-wrap: anywhere; }
 .identity small { display: block; margin-top: 4px; color: var(--muted); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-.create { display: block; padding: 12px; margin-bottom: 20px; background: var(--ink); color: var(--on-ink); text-align: center; font-weight: 600; }
+.create { display: block; padding: 12px; margin-bottom: 20px; background: var(--employer-accent); color: var(--on-ink); text-align: center; font-weight: 600; }
 .create:hover { background: var(--blue); color: var(--on-ink); }
 .nav { display: grid; gap: 3px; }
 .nav a { display: flex; gap: 12px; align-items: center; padding: 12px 14px; font-size: 14px; min-height: 44px; }
@@ -17,8 +19,8 @@
 .content { min-width: 0; }
 @media (max-width: 1050px) {
   .frame { display: block; }
-  .sidebar { position: relative; top: auto; padding: 8px var(--page-pad); border-right: 0; border-bottom: 1px solid var(--line); max-height: none; }
-  .identity, .note, .create { display: none; }
+  .sidebar { position: relative; top: auto; padding: 8px var(--page-pad); border-right: 0; border-bottom: 1px solid var(--line); max-height: none; height: auto; }
+  .identity, .note, .create, .summary { display: none; }
   .nav { display: flex; overflow-x: auto; gap: 4px; padding-bottom: 3px; }
   .nav a { flex: none; white-space: nowrap; padding: 10px 12px; font-size: 13px; }
 }

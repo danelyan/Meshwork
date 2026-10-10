@@ -2,7 +2,7 @@
  * Светлые токены ФСП Карьера. Источник: docs/design-spec.md (вариант «основной»),
  * site/brand.css + site/styles.css (последний блок побеждает).
  * Шрифты подключает app/layout.tsx через next/font (переменные --font-golos, --font-mono).
- * Лайм #D4FF3A и красный #EC1D35 не используются; тени и скругления - нет.
+ * Astra: кандидат синий, работодатель бордовый; красный отмечает пробелы и опасные действия.
  */
 :root {
   color-scheme: light;
@@ -16,6 +16,9 @@
   --auth-shadow: 0 28px 90px rgba(17, 17, 17, 0.2);
   --muted: #6b6b70;
   --blue: #402fff;
+  --candidate-accent: #402fff;
+  --employer-accent: #A3343F;
+  --astra-red: #EC1D35;
   --line: rgba(17, 17, 17, 0.1);
   --glass: rgba(255, 255, 255, 0.58);
   --glass-strong: rgba(255, 255, 255, 0.86);
@@ -89,7 +92,7 @@ body {
   min-height: 100vh;
   background-color: var(--paper);
   background-image: var(--glow), linear-gradient(var(--landing-grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--landing-grid-line) 1px, transparent 1px);
-  background-size: auto, 48px 48px, 48px 48px;
+  background-size: auto, 46px 46px, 46px 46px;
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font);
@@ -187,11 +190,19 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --role-nav-active: var(--ink);
 }
 [data-role='employer'] {
-  --role-bar-bg: #f2f0ff;
-  --role-rule: var(--blue);
-  --role-rule-w: 2px;
-  --role-nav-active: var(--blue);
-  --glow: radial-gradient(900px 520px at 12% -12%, rgba(64, 47, 255, 0.14), transparent 70%);
+  --employer-panel: rgba(255, 255, 255, 0.72);
+  --employer-ring: rgba(163, 52, 63, 0.08);
+  --employer-modal: rgba(255, 255, 255, 0.82);
+  --blue: var(--employer-accent);
+  --focus: var(--employer-accent);
+  --accent-soft: var(--employer-accent);
+  --accent-check: var(--employer-accent);
+  --meter-on: var(--employer-accent);
+  --role-bar-bg: var(--glass);
+  --role-rule: var(--glass-border);
+  --role-rule-w: 1px;
+  --role-nav-active: var(--employer-accent);
+  --glow: radial-gradient(900px 500px at 80% -10%, rgba(163, 52, 63, 0.07), transparent 70%);
 }
 
 /*

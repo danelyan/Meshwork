@@ -6,7 +6,7 @@ import { ApiError } from '@/lib/api';
 import { Button } from '@/components/ui';
 import styles from './Employer.module.css';
 
-export function SaveCandidateButton({ scope, candidateId, initialSaved, onChange }: { scope: string; candidateId: string; initialSaved?: boolean; onChange?: (saved: boolean) => void }) {
+export function SaveCandidateButton({ scope, candidateId, initialSaved, onChange, compact = false }: { scope: string; candidateId: string; initialSaved?: boolean; onChange?: (saved: boolean) => void; compact?: boolean }) {
   const [saved, setSaved] = useState(initialSaved ?? false);
   const [busy, setBusy] = useState(initialSaved === undefined);
   const [error, setError] = useState<string | null>(null);
@@ -28,5 +28,5 @@ export function SaveCandidateButton({ scope, candidateId, initialSaved, onChange
     } catch (err) { setError(err instanceof ApiError ? err.message : 'Не удалось сохранить избранное'); }
     finally { setBusy(false); }
   }
-  return <><Button size="sm" className={styles.saveButton} aria-pressed={saved} loading={busy} onClick={toggle}>{saved ? '★ В избранном' : '☆ В избранное'}</Button>{error && <span role="alert">{error}</span>}</>;
+  return <><Button size="sm" className={`${styles.saveButton} ${compact ? styles.iconButton : ''}`} aria-label={saved ? 'Убрать из избранного' : 'В избранное'} aria-pressed={saved} loading={busy} onClick={toggle}>{compact ? (saved ? '★' : '☆') : saved ? '★ В избранном' : '☆ В избранное'}</Button>{error && <span role="alert">{error}</span>}</>;
 }

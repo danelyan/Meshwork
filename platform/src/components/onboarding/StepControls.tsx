@@ -1,12 +1,17 @@
 'use client';
 
 import type { StepOption, StepView } from '@/server/onboarding/types';
+import type { ReactNode } from 'react';
 
-import { DoneLink, MessageCard, QuickReplies } from '../chat/Thread';
+import { DoneLink, MessageCard, type QuickReply } from '../chat/Thread';
 import { Tag } from '../ui';
 
 import styles from './Onboarding.module.css';
 import { salaryChips, salaryText } from './salary';
+
+function QuickReplies({ items, onPick, disabled, label = 'Варианты ответа', after }: { items: QuickReply[]; onPick: (value: string) => void; disabled?: boolean; label?: string; after?: ReactNode }) {
+  return <div className={styles.options} role="group" aria-label={label} data-testid="quick-replies">{items.map((item, index) => <button type="button" key={item.value} className={styles.option} aria-pressed={Boolean(item.pressed)} disabled={disabled || item.disabled} onClick={() => onPick(item.value)}><b aria-hidden="true">{String(index + 1).padStart(2, '0')}</b><span>{item.label}{item.note && <small>{item.note}</small>}</span></button>)}{after}</div>;
+}
 
 /** Как ответ звучит пузырём пользователя в ленте. */
 export const optionText = (o: StepOption) => o.answered ?? o.label;

@@ -40,7 +40,7 @@ it('search and list selection update the detail panel from real vacancy IDs', as
   fireEvent.click(screen.getByRole('button', { name: 'Список' }));
   fireEvent.change(screen.getByRole('textbox', { name: 'Компания, роль или навык' }), { target: { value: 'Бета' } });
   expect(screen.getByText('Вакансий: 1')).toBeDefined();
-  expect(within(screen.getByLabelText('Выбранная вакансия')).getByRole('heading', { name: 'Data API' })).toBeDefined();
+  expect(within(screen.getByLabelText('Выбранная вакансия')).getAllByText('Data API')[0]).toBeDefined();
   await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/recommendations?target=vacancy%3Ab', expect.anything()));
 });
 
@@ -77,7 +77,7 @@ it('opens contacts only after successful acceptance and updates status filters',
   expect(await screen.findByText(/Контакты открыты/)).toBeDefined();
   expect(fetcher).toHaveBeenCalledWith('/api/invitations/i1', expect.objectContaining({ method: 'POST', body: JSON.stringify({ action: 'accept' }) }));
   expect(refresh).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByRole('button', { name: 'Новые · 0' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Жду ответа · 0' }));
   expect(screen.getByText('Здесь пока пусто.')).toBeDefined();
 });
 
@@ -88,4 +88,29 @@ it('keeps invitation open and contacts hidden on server error', async () => {
   expect((await screen.findByRole('alert')).textContent).toContain('Не удалось сохранить ответ');
   expect(screen.queryByText(/Контакты открыты/)).toBeNull();
   expect(refresh).not.toHaveBeenCalled();
+});
+
+it('loads selected saved vacancy outside first catalogue page instead of showing a different one', async () => {
+  vi.stubGlobal('location', { ...window.location, search: '?vacancy=saved-late' });
+  const late = target('saved-late', { companyName: 'За пределами страницы' });
+  const fetcher = vi.fn(async (url: string) => ({ ok: true, status: 200, json: async () => url === '/api/favorites' ? { kind: 'vacancy', ids: ['saved-late'] } : url === '/api/career/vacancies?saved=true' ? { targets: [late], truncated: false } : { targets: [target('first')], truncated: true, gaps: [], tasks: [] } }));
+  vi.stubGlobal('fetch', fetcher);
+  render(<CareerPage />);
+  await screen.findByText('Вакансий: 2');
+  expect(within(screen.getByLabelText('Выбранная вакансия')).getByRole('heading', { name: 'За пределами страницы' })).toBeDefined();
+  expect(fetcher).toHaveBeenCalledWith('/api/career/vacancies?saved=true', expect.anything());
+  await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/recommendations?target=vacancy%3Asaved-late', expect.anything()));
+});
+
+it('does not silently substitute another vacancy for an unavailable saved link', async () => {
+  vi.stubGlobal('location', { ...window.location, search: '?vacancy=closed' });
+  const fetcher = vi.fn(async (url: string) => ({ ok: true, status: 200, json: async () => url === '/api/favorites' ? { kind: 'vacancy', ids: ['closed'] } : { targets: url.includes('saved=true') ? [] : [target('first')], truncated: false } }));
+  vi.stubGlobal('fetch', fetcher);
+  render(<CareerPage />);
+  await screen.findByText(/Вакансия по ссылке недоступна/);
+  expect(screen.queryByLabelText('Выбранная вакансия')).toBeNull();
+  expect(fetcher.mock.calls.some(([url]) => url.startsWith('/api/recommendations'))).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Выбрать другую вакансию' }));
+  expect(within(screen.getByLabelText('Выбранная вакансия')).getByRole('heading', { name: 'Альфа' })).toBeDefined();
+  await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/recommendations?target=vacancy%3Afirst', expect.anything()));
 });

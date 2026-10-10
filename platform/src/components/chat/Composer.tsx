@@ -30,6 +30,8 @@ export interface ComposerProps {
   inputMode?: 'numeric' | 'text';
   sendLabel?: string;
   aside?: ReactNode;
+  /** Optional questionnaire skip action in the input bar (Astra 02). */
+  inlineAction?: ReactNode;
   hint?: ReactNode;
   /** Над полем: ошибки, пояснения. */
   top?: ReactNode;
@@ -63,6 +65,7 @@ export function Composer({
   inputMode,
   sendLabel = 'Отправить',
   aside,
+  inlineAction,
   hint,
   top,
   inputRef,
@@ -163,6 +166,7 @@ export function Composer({
           inputMode={inputMode}
           autoComplete="off"
         />
+        {inlineAction && <div className={styles.inlineAction}>{inlineAction}</div>}
         {voice && <VoiceButton value={value} onChange={onChange} disabled={disabled} />}
         {onCall && (
           <button type="button" className={styles.iconBtn} onClick={onCall} disabled={disabled} aria-label="Созвониться" title="Созвониться с ИИ-интервьюером: 4–6 вопросов голосом, карта глубины в профиле" data-testid="call-button">

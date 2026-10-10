@@ -1,17 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
 import { ApiError } from '@/lib/api';
 import { inviteApi } from '@/lib/employer-api';
-import { detectRedFlags } from '@/server/employer/antifraud';
 
 import { Button, Field, Notice } from '../ui';
 import ui from '../ui.module.css';
 
 import styles from './Employer.module.css';
-import { RedFlagNotice } from './RedFlagNotice';
 
 export interface InviteFormProps {
   candidateId: string;
@@ -28,6 +26,19 @@ export interface InviteFormProps {
 const parseRub = (v: string) => Number(v.replace(/\s/g, ''));
 const isRub = (n: number) => Number.isInteger(n) && n > 0;
 
+function InvitationDialog({ children, close, busy, name }: { children: ReactNode; close: () => void; busy: boolean; name: string }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = ref.current!;
+    dialog.showModal();
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { dialog.close(); document.body.style.overflow = overflow; previous?.focus(); };
+  }, []);
+  return <dialog ref={ref} className={styles.invitationDialog} aria-label={`Приглашение: ${name}`} onCancel={(event) => { event.preventDefault(); if (!busy) close(); }} onClick={(event) => { if (event.target === event.currentTarget && !busy) close(); }}><div className={styles.dialogHeading}><span className={styles.status}>Приглашение кандидату</span><Button size="sm" onClick={close} disabled={busy} aria-label="Закрыть приглашение">×</Button></div><h2>{name}</h2>{children}</dialog>;
+}
+
 /** Приглашение конкретному кандидату (R-E-05, ТЗ 2.2): описание и вилка «от–до» обязательны. */
 export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalaryFrom, defaultSalaryTo, initialMessage, defaultOpen }: InviteFormProps) {
   const router = useRouter();
@@ -39,14 +50,13 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
   const [error, setError] = useState<string | null>(null);
   const [fieldErr, setFieldErr] = useState<{ message?: string; salaryFrom?: string; salaryTo?: string }>({});
   const [done, setDone] = useState(false);
-  const flags = useMemo(() => detectRedFlags({ texts: [message], salaryFrom: parseRub(salaryFrom), salaryTo: parseRub(salaryTo) }).filter((f) => f.code !== 'vague_text' && f.code !== 'no_salary'), [message, salaryFrom, salaryTo]);
 
   if (done) return <Notice>Приглашение отправлено. Статус - в разделе «Приглашения».</Notice>;
   if (!open) {
     return (
       <div>
-        <Button variant="cta" size="sm" onClick={() => setOpen(true)} aria-label={`Пригласить: ${candidateName}`}>
-          Пригласить
+        <Button variant="cta" className={styles.inviteTrigger} onClick={() => setOpen(true)} aria-label={`Пригласить: ${candidateName}`}>
+          Пригласить с вилкой →
         </Button>
       </div>
     );
@@ -76,10 +86,10 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
     }
   }
 
-  return (
+  const form = (
     <form className={styles.inviteBox} onSubmit={submit} noValidate aria-label={`Приглашение: ${candidateName}`}>
       <Field
-        label="Что предлагаешь"
+        label="Почему именно этот кандидат"
         hint="Задачи, команда, формат работы. Кандидат увидит это до принятия вместе с вилкой и контактом компании."
         error={fieldErr.message}
       >
@@ -93,7 +103,6 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
           <input className={ui.input} inputMode="numeric" value={salaryTo} onChange={(e) => setSalaryTo(e.target.value)} />
         </Field>
       </div>
-      <RedFlagNotice flags={flags} />
       {error && <Notice tone="error">{error}</Notice>}
       <div className={styles.actions}>
         <Button type="submit" variant="cta" size="sm" loading={busy}>
@@ -105,4 +114,7 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
       </div>
     </form>
   );
+  // Assistant drafts are part of the restored conversation, not requests to open a modal.
+  // Keep their original inline behavior even when a historical draft is reopened.
+  return defaultOpen ? form : <InvitationDialog name={candidateName} busy={busy} close={() => setOpen(false)}>{form}</InvitationDialog>;
 }

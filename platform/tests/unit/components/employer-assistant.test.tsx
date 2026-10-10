@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 import { AssistantChat } from '@/components/employer/AssistantChat';
+import { InviteForm } from '@/components/employer/InviteForm';
 import type { AssistantCandidate, CandidatesBlock, CandidatesBlockView, InvitationDraft, NeedDraft } from '@/server/agent/employer/types';
 
 const push = vi.fn();
@@ -67,6 +68,28 @@ const NEED: NeedDraft = {
 };
 
 describe('лента помощника работодателя', () => {
+  it('restores multiple invitation drafts inline; only an explicit cabinet action opens a modal', () => {
+    const overflow = document.body.style.overflow;
+    render(<><AssistantChat initial={{ conversationId: 'conv', items: [
+      { id: 'draft-1', role: 'agent', event: { type: 'invitation_draft', draft: DRAFT } },
+      { id: 'draft-2', role: 'agent', event: { type: 'invitation_draft', draft: { ...DRAFT, candidateId: 'c2', alias: 'Кандидат #DEF456' } } },
+    ] }} /><InviteForm candidateId="c3" candidateName="Кандидат из кабинета" vacancyId="v1" /></>);
+    expect(screen.getAllByRole('form', { name: /^Приглашение:/ })).toHaveLength(2);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    expect(document.body.style.overflow).toBe(overflow);
+    fireEvent.click(screen.getByRole('button', { name: 'Пригласить: Кандидат из кабинета' }));
+    expect(screen.getByRole('dialog', { name: 'Приглашение: Кандидат из кабинета' })).toBeDefined();
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+    expect(document.body.style.overflow).toBe('hidden');
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть приглашение' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getAllByRole('form', { name: /^Приглашение:/ })).toHaveLength(2);
+    expect(document.body.style.overflow).toBe(overflow);
+    cleanup();
+    expect(document.body.style.overflow).toBe(overflow);
+  });
+
   it('карточка принятого кандидата показывает имя (с псевдонимом), непринятого — только псевдоним; почты нет', () => {
     const block: CandidatesBlockView = { ...BLOCK, items: [CAND, { ...CAND, candidateId: 'c2', alias: 'Кандидат #DEF456', rank: 2, invitation: 'accepted', name: 'Мария Секретова' }] };
     render(<AssistantChat initial={{ conversationId: 'conv', items: [{ id: '2', role: 'agent', event: { type: 'candidates', block } }] }} />);
@@ -108,7 +131,7 @@ describe('лента помощника работодателя', () => {
     vi.stubGlobal('fetch', fetchMock);
     render(<AssistantChat initial={{ conversationId: 'conv', items: [{ id: '1', role: 'agent', event: { type: 'invitation_draft', draft: DRAFT } }] }} />);
     const form = screen.getByRole('form', { name: 'Приглашение: Кандидат #ABC123' });
-    expect((within(form).getByRole('textbox', { name: /Что предлагаешь/ }) as HTMLTextAreaElement).value).toContain('Северный Поток');
+    expect((within(form).getByRole('textbox', { name: /Почему именно этот кандидат/ }) as HTMLTextAreaElement).value).toContain('Северный Поток');
     expect(screen.getByText(/осталось 18 из 20/)).toBeDefined();
     expect(fetchMock).not.toHaveBeenCalled();
     fireEvent.click(within(form).getByRole('button', { name: 'Отправить приглашение' }));
@@ -159,3 +182,5 @@ describe('лента помощника работодателя', () => {
     expect(body(1)).toEqual({ text: 'ещё', conversationId: 'conv-9' });
   });
 });
+
+beforeEach(() => { HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) { this.open = true; }); HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) { this.open = false; }); });

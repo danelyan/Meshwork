@@ -1,8 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 
 import { AvatarScene } from '@/components/avatar/AvatarScene';
+import { SceneSlot } from '@/components/avatar/SceneSlots';
 import { AssistantRow } from '@/components/chat/Thread';
 
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
@@ -11,6 +10,17 @@ vi.mock('@/components/avatar/HeadView', () => ({ HeadView: () => <div data-testi
 afterEach(cleanup);
 
 describe('AvatarScene call-side (вариант D)', () => {
+  it('renders live onboarding slots outside the scrollable chat and restores the ordinary scene on unmount', () => {
+    const view = render(<AvatarScene variant="call-side"><SceneSlot name="header"><h1>Создаём профиль</h1></SceneSlot><SceneSlot name="draft"><button>Изменить ответ</button></SceneSlot><p>Вопрос</p></AvatarScene>);
+    const panel = screen.getByTestId('side-panel');
+    expect(panel.contains(screen.getByRole('heading', { name: 'Создаём профиль' }))).toBe(false);
+    expect(panel.contains(screen.getByRole('button', { name: 'Изменить ответ' }))).toBe(false);
+    expect(screen.getByRole('complementary', { name: 'Черновик профиля' }).contains(screen.getByRole('button', { name: 'Изменить ответ' }))).toBe(true);
+    expect(screen.getByTestId('scene-call-side').hasAttribute('data-onboarding')).toBe(true);
+    view.rerender(<AvatarScene variant="call-side"><p>Обычный разговор</p></AvatarScene>);
+    expect(screen.getByTestId('scene-call-side').hasAttribute('data-onboarding')).toBe(false);
+    expect(screen.queryByRole('complementary', { name: 'Черновик профиля' })).toBeNull();
+  });
   it('кладёт переданную ленту в левую панель, рядом голова и кнопки звонка', () => {
     render(
       <AvatarScene variant="call-side">
@@ -33,14 +43,14 @@ describe('AvatarScene call-side (вариант D)', () => {
 });
 
 describe('аватар в пузырях помощника', () => {
-  it('вместо звезды ФСП - статичное лицо 6, файл на месте', () => {
+  it('показывает знак консультанта из Astra 05', () => {
     const { container } = render(
       <ol>
         <AssistantRow>привет</AssistantRow>
       </ol>,
     );
-    expect(container.querySelector('img[src="/avatar/face-6.png"]')).not.toBeNull();
+    expect(screen.getByTestId('assistant-face').textContent).toBe('К');
     expect(container.querySelector('img[src="/assets/fsp-mark.svg"]')).toBeNull();
-    expect(existsSync(join(process.cwd(), 'public/avatar/face-6.png'))).toBe(true);
+
   });
 });

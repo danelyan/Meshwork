@@ -142,3 +142,17 @@
 @media (prefers-reduced-motion: reduce) {
   .assistant, .userBubble, .fresh, .chipIn { animation: none; }
 }
+/* Astra conversation controls; dimensions can be set by the owning screen. */
+.mark { color: var(--on-ink); background: var(--ink); border-color: var(--ink); font: 700 12px var(--mono); }
+.assistant { gap: 12px; }
+.composer { box-shadow: none; }
+.composerBox { gap: 8px; padding: 6px; }
+.composerBox textarea { min-height: var(--chat-control-size, 44px); font-size: 16px; }
+.inlineAction { align-self: center; flex: none; }
+.inlineAction button { font: 10px var(--mono); text-decoration: none; padding: 10px 4px; }
+.send { background: var(--chat-send-bg, var(--blue)); }
+@media (max-width: 680px) {
+  .composerBox { flex-wrap: wrap; }
+  .composerBox textarea { flex-basis: min(100%, 180px); }
+  .inlineAction { margin-left: auto; }
+}

@@ -39,9 +39,6 @@ tags:
     name: employer
     description: "Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)"
   -
-    name: evaluate
-    description: "Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД"
-  -
     name: favorites
     description: favorites
   -
@@ -1003,6 +1000,7 @@ paths:
             enum:
               - qualifying
               - defense
+              - interview
       responses:
         "200":
           description: "Состояние согласия на запись и созвоны кандидата (свежие первыми, до 10)"
@@ -3701,183 +3699,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/evaluate":
-    post:
-      operationId: postEvaluate
-      tags:
-        - evaluate
-      summary: "Проверить подбор на своём наборе"
-      description: "Наше ранжирование (то же, что подборка под потребность в кабинете) и базовая линия на наборе пользователя: P@k, nDCG@k, MRR по каждой вакансии и в среднем, топ-k с объяснениями. Считается в памяти, в БД ничего не пишется. Лимиты: тело ≤ 1 МБ, ≤ 50 вакансий, ≤ 1000 кандидатов, ≤ 60 требований и ≤ 200 утверждений на объект, k ≤ 20; id утверждений — из каталога. Лимит частоты — 30 прогонов за 10 минут с адреса.\n\nВход не нужен."
-      security: []
-      requestBody:
-        required: true
-        description: "Набор: вакансии, кандидаты, разметка релевантности 0/1/2"
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                k:
-                  type: integer
-                  description: "Глубина выдачи, 1–20 (по умолчанию 5)"
-                vacancies:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                      title:
-                        type: string
-                      specialization:
-                        type: string
-                        enum:
-                          - backend
-                          - frontend
-                          - ai
-                          - engineering
-                      grade:
-                        type: string
-                        enum:
-                          - junior
-                          - middle
-                          - senior
-                      needs:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            catalogId:
-                              type: string
-                              description: "id из каталога утверждений"
-                            weight:
-                              type: integer
-                              description: "1–3, по умолчанию 2"
-                          required:
-                            - catalogId
-                      stack:
-                        type: array
-                        items:
-                          type: string
-                    required:
-                      - id
-                      - specialization
-                      - grade
-                      - needs
-                candidates:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                      specialization:
-                        oneOf:
-                          -
-                            type: string
-                            enum:
-                              - backend
-                              - frontend
-                              - ai
-                              - engineering
-                          -
-                            type: "null"
-                      fspState:
-                        type: string
-                        enum:
-                          - not_linked
-                          - no_achievements
-                          - unavailable
-                          - linked
-                      category:
-                        oneOf:
-                          -
-                            type: object
-                            properties:
-                              specialization:
-                                type: string
-                                enum:
-                                  - backend
-                                  - frontend
-                                  - ai
-                                  - engineering
-                              grade:
-                                type: string
-                                enum:
-                                  - junior
-                                  - middle
-                                  - senior
-                            required:
-                              - specialization
-                              - grade
-                          -
-                            type: "null"
-                      stack:
-                        type: array
-                        items:
-                          type: string
-                      claims:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            catalogId:
-                              type: string
-                            level:
-                              type: string
-                              enum:
-                                - self_reported
-                                - artifact
-                                - third_party
-                                - platform
-                          required:
-                            - catalogId
-                    required:
-                      - id
-                      - claims
-                relevance:
-                  type: object
-                  additionalProperties: true
-                  description: "relevance[id вакансии][id кандидата] = 0 | 1 | 2; кого нет — 0"
-              required:
-                - vacancies
-                - candidates
-                - relevance
-      responses:
-        "200":
-          description: "Метрики по вакансиям и среднее по вакансиям, где есть хотя бы один релевантный"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-                description: "k, candidates, vacancies, scored, mean {ours, baseline, precisionCeiling} | null, rows [{id, ours, baseline, top, baselineTop, …}], warnings"
-        "400":
-          description: "Не JSON, не прошла схема, неизвестный id каталога или разметка на несуществующих объектах"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "403":
-          description: "Чужой Origin"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "413":
-          description: "Тело больше 1 МБ"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "429":
-          description: "Слишком много прогонов"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/favorites":
     get:
       operationId: getFavorites
@@ -4363,6 +4184,30 @@ paths:
                 additionalProperties: true
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/profile/details":
+    get:
+      operationId: getProfileDetails
+      tags:
+        - profile
+      summary: "GET /api/profile/details"
+      description: "Нужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Успешный ответ"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -6305,6 +6150,7 @@ components:
           enum:
             - qualifying
             - defense
+            - interview
         projectSubmissionId:
           type: string
           minLength: 1

@@ -59,7 +59,7 @@ it('лента: реплика и вопрос помощника, прошлы�
   render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
   expect(question()).toBe('В каком направлении работаешь?');
   expect(screen.getByText('Теперь про работу.')).toBeDefined();
-  expect(screen.getByText('Ищу работу')).toBeDefined();
+  expect(screen.getAllByText('Ищу работу').length).toBeGreaterThan(0);
   expect(screen.getByRole('progressbar', { name: 'Пройдено 3 из 10' })).toBeDefined();
   expect(screen.queryByText(/\d+ \/ \d+/)).toBeNull();
   expect(screen.queryByRole('button', { name: /Дальше|Далее/ })).toBeNull();
@@ -431,7 +431,7 @@ describe('свободный текст посреди онбординга', ()
       ],
     };
     render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} consultant={{ restored }} />);
-    const text = document.body.textContent ?? '';
+    const text = screen.getByRole('list', { name: 'Переписка с помощником' }).textContent ?? '';
     expect(screen.getAllByText('Что подтянуть до мидла?')).toHaveLength(1);
     expect(text.indexOf('Зачем ты здесь?')).toBeLessThan(text.indexOf('Что подтянуть до мидла?'));
     expect(text.indexOf('План к категории')).toBeLessThan(text.indexOf('Ищу работу'));
@@ -452,7 +452,7 @@ describe('свободный текст посреди онбординга', ()
     expect(screen.getAllByText('Чтобы подстроить шаги.')).toHaveLength(1);
     expect(screen.getAllByText('Обычный вопрос консультанту')).toHaveLength(1);
     // Вопрос — между репликой шага «Зачем ты здесь?» и ответом «Ищу работу».
-    const text = document.body.textContent ?? '';
+    const text = screen.getByRole('list', { name: 'Переписка с помощником' }).textContent ?? '';
     expect(text.indexOf('Зачем ты здесь?')).toBeLessThan(text.indexOf('Зачем цель?'));
     expect(text.indexOf('Чтобы подстроить шаги.')).toBeLessThan(text.indexOf('Ищу работу'));
   });
@@ -471,13 +471,13 @@ describe('лента внутри /consultant (онбординг и консу�
     expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'role', value: 'employer' });
     cleanup();
     render(<OnboardingChat variant="consultant" initial={makeView({ id: 'companyName', kind: 'text', question: 'Как называется компания?' }, { role: 'employer', scenario: 'employer' })} consentText={[]} />);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Помощник по подбору');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Регистрация работодателя');
   });
 
   it('заголовок консультанта, без своей шапки сайта и второго main; «Настроить позже» — пауза: лента обновляется без перезагрузки', async () => {
     const fetchFn = stubFetch({ next: '/consultant' });
     render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} />);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Карьерный консультант');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Регистрация кандидата');
     expect(document.querySelector('main')).toBeNull();
     expect(question()).toBe('В каком направлении работаешь?');
     fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));
@@ -496,4 +496,13 @@ describe('лента внутри /consultant (онбординг и консу�
     expect(screen.getByRole('link', { name: 'Тест' })).toBeDefined();
     expect(push).not.toHaveBeenCalled();
   });
+});
+
+it('completed profile editor summary exits without edit query or onboarding completion write', async () => {
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, pathname: '/consultant', search: '?edit=profile', assign: push } });
+  const fetcher = stubFetch();
+  render(<OnboardingChat initial={summaryView({ onboarded: true })} consentText={[]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Открыть профиль' }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/profile'));
+  expect(fetcher).not.toHaveBeenCalled();
 });

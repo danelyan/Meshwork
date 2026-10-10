@@ -48,4 +48,4 @@ export const DAILY_INVITATION_LIMIT = 20;
 export const DEFAULT_RESULT_LIMIT = 20;
 export const MAX_RESULT_LIMIT = 50;
 
-export const GRADE_RANK: Record<Grade, number> = { junior: 0, middle: 1 };
+export const GRADE_RANK: Record<Grade, number> = { junior: 0, middle: 1, senior: 2 };

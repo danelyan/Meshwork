@@ -1,6 +1,5 @@
 // Контракт онбординг-чата (E-02, лейн onboarding). Типы общие для сервера и клиента:
 // клиент импортирует их только как `import type`.
-import type { Specialization } from '@/lib/directions';
 
 export type StepKind = 'consent' | 'role' | 'one' | 'many' | 'chips' | 'range' | 'text' | 'files' | 'summary';
 
@@ -37,7 +36,7 @@ export interface Facts {
   consent: boolean;
   name: string;
   fspState: FspStateValue | null;
-  specialization: Specialization | null;
+  specialization: 'backend' | 'frontend' | null;
 }
 
 export type Answers = Record<string, unknown>;

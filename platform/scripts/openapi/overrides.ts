@@ -247,6 +247,22 @@ export const OVERRIDES: Record<string, OpOverride> = {
     success: JSON_OK('Роль выбрана; выставлена новая кука cid', obj({ role: str(), candidateId: nullable(str()), employerProfileId: nullable(str()) })),
     errors: { 409: 'Роль уже выбрана или не дано согласие (`conflict`)' },
   },
+  'POST /api/auth/role/switch': {
+    summary: 'Переключить активную роль (вторая роль на той же учётке)',
+    description:
+      'ADR 0004. Профиль целевой роли есть — переключает; нет — создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль — идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.',
+    success: JSON_OK(
+      'Роль активна; выставлена новая кука cid',
+      obj({ role: str(), next: str('Дом роли (путь интерфейса)'), created: bool(), changed: bool() }),
+    ),
+    errors: {
+      400: 'Нет названия компании, когда профиль работодателя надо создать (`bad_request`), или тело не прошло схему (`validation_failed`)',
+      401: 'Нет входа (`unauthorized`)',
+      403: 'Старая демо-кука без аккаунта, общий демо-аккаунт без второй роли или запрос с чужого сайта (`forbidden`)',
+      409: 'Роль ещё не выбрана — сначала знакомство (`conflict`)',
+      429: 'Слишком много переключений (`rate_limited`)',
+    },
+  },
   'GET /api/auth/stale': {
     summary: 'Сбросить протухшую сессию',
     role: 'public',
@@ -466,6 +482,16 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Создать потребность',
     description: 'Создать потребность. Требования — только из каталога своей специализации или общие.',
     success: { status: 201, description: 'Потребность создана', schema: free('Созданная потребность') },
+  },
+
+  'GET /api/employer/company': {
+    summary: 'Профиль своей компании',
+    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+  },
+  'PATCH /api/employer/company': {
+    summary: 'Изменить профиль своей компании',
+    description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.',
+    success: JSON_OK('Профиль компании после правки', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
   },
 
   'GET /api/invitations': {

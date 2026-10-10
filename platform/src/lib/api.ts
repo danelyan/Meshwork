@@ -98,6 +98,9 @@ export interface MeView {
 export const getMe = async () => (await request<{ user: MeView | null }>('/api/auth/me')).user;
 export const getConsentVersion = async () => (await request<{ version: string }>('/api/auth/consent')).version;
 export const acceptConsent = (version: string) => postJson<{ version: string; acceptedAt: string }>('/api/auth/consent', { version });
+/** Переключить активную роль (ADR 0004); после ответа — полная навигация на `next`. */
+export const switchRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName?: string }) =>
+  postJson<{ role: MeView['role']; next: string; created: boolean; changed: boolean }>('/api/auth/role/switch', body);
 export const chooseRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName: string }) =>
   postJson<{ role: MeView['role']; candidateId: string | null; employerProfileId: string | null }>('/api/auth/role', body);
 export const completeOnboarding = () => postJson<{ onboarded: true; next: string }>('/api/auth/onboarding/complete', {});

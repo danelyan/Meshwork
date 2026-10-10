@@ -1,6 +1,5 @@
 import type { Prisma } from '@prisma/client';
 
-import { getSubcategory, isSpecialization, SPEC_ROLE, subcategoryMatches } from '@/lib/directions';
 import { CONSENT_VERSION, hasCurrentConsent, recordConsent } from '@/server/auth/consent';
 import { chooseRole } from '@/server/auth/users';
 import { demoAchievements } from '@/server/collector/fsp-demo';
@@ -199,7 +198,6 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
     const skipped = !answered && !s.doneBy?.(l.ctx);
     return {
       stepId: s.id,
-      label: s.summaryLabel,
       lead: lines[s.id] ?? templateLead(s, l.ctx, prevOf(s, l)),
       question: s.question,
       answer: answered ? answerLabel(s, l.ctx.answers[s.id], l.ctx) : skipped ? null : factLabel(s, l.ctx),
@@ -309,19 +307,8 @@ async function apply(l: Loaded, step: StepDef, value: unknown): Promise<boolean>
     case 'fspParticipation':
       await upsertProfile(candidateIdOf(l), { fspParticipation: value as 'prize' | 'participant' | 'none' });
       return false;
-    case 'specialization': {
-      // Подкатегория чужого направления сбрасывается (смена направления возвратом к шагу).
-      const id = candidateIdOf(l);
-      const cur = await prisma.candidate.findUnique({ where: { id }, select: { subcategoryId: true } });
-      const spec = value as Specialization;
-      await prisma.candidate.update({
-        where: { id },
-        data: { specialization: spec, ...(subcategoryMatches(spec, cur?.subcategoryId) ? {} : { subcategoryId: null }) },
-      });
-      return false;
-    }
-    case 'subcategory':
-      await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { subcategoryId: value as string } });
+    case 'specialization':
+      await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { specialization: value as Specialization } });
       return false;
     case 'fsp':
       await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { fspState: value as 'linked' | 'no_achievements' | 'not_linked' } });
@@ -334,7 +321,8 @@ async function apply(l: Loaded, step: StepDef, value: unknown): Promise<boolean>
   }
 }
 
-const GRADE_TITLE: Record<Grade, string> = { junior: 'Junior', middle: 'Middle' };
+const SPEC_TITLE: Record<Specialization, string> = { backend: 'Backend', frontend: 'Frontend' };
+const GRADE_TITLE: Record<Grade, string> = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
 
 /**
  * Потребность работодателя → Vacancy (по одной на выбранный грейд). Пишется, когда
@@ -345,10 +333,8 @@ export async function syncVacancies(userId: string, answers: Answers, meta: Meta
   const rawSpec = answers.needSpecialization;
   const grades = answers.needGrades;
   const salary = answers.needSalary as { from: number; to: number } | undefined;
-  if (!isSpecialization(rawSpec) || !Array.isArray(grades) || grades.length === 0 || !salary) return meta;
+  if ((rawSpec !== 'backend' && rawSpec !== 'frontend') || !Array.isArray(grades) || grades.length === 0 || !salary) return meta;
   const spec: Specialization = rawSpec;
-  const rawSub = answers.needSubcategory;
-  const subcategoryId = typeof rawSub === 'string' && getSubcategory(rawSub)?.specialization === spec ? rawSub : null;
   const companyId = await companyIdOf(userId);
   const entries = [...(await loadCatalog()).values()];
   const stack = Array.isArray(answers.needStack) ? (answers.needStack as string[]) : [];
@@ -356,9 +342,8 @@ export async function syncVacancies(userId: string, answers: Answers, meta: Meta
   const vacancies: Partial<Record<Grade, string>> = { ...(meta.vacancies ?? {}) };
   for (const grade of grades as Grade[]) {
     const data = {
-      title: `${SPEC_ROLE[spec]} (${GRADE_TITLE[grade]})`,
+      title: `${SPEC_TITLE[spec]}-разработчик (${GRADE_TITLE[grade]})`,
       specialization: spec,
-      subcategoryId,
       grade,
       salaryFrom: salary.from * 1000,
       salaryTo: salary.to * 1000,

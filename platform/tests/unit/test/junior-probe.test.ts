@@ -18,10 +18,7 @@ import {
   type Step,
 } from '@/server/test/policy';
 import { deriveSeed } from '@/server/test/rng';
-import type { Grade, Specialization } from '@/server/types';
-
-/** Банк попытки: у backend после ADR-0003 (10.10 15:50) пул - семейства одной подкатегории, берём web-api. */
-const bankFor = (spec: Specialization) => generatorsFor(spec).filter((g) => spec !== 'backend' || g.subcategoryId === 'backend.web-api');
+import type { Grade } from '@/server/types';
 
 const tpl = (id: string, grade: Grade, a: number, b: number): SelectableTemplate => ({ id, grade, a, b, catalogIds: [id] });
 
@@ -51,6 +48,13 @@ function play(pool: readonly SelectableTemplate[], grade: Grade, seed: number, a
   return { shown, responses, phases, step: step! };
 }
 
+/** Боевые банки: backend целиком, frontend - по подкатегориям (тест на грейд отдельный на подкатегорию, ADR 0003, дополнение 10.10). */
+function bankPools() {
+  const fe = generatorsFor('frontend');
+  const subs = [...new Set(fe.map((g) => g.subcategoryId))];
+  return [generatorsFor('backend'), ...subs.map((s) => fe.filter((g) => g.subcategoryId === s))];
+}
+
 describe('Дозадавание Junior', () => {
   it('константы: потолок = MAX_ITEMS + JUNIOR_PROBE_MAX', () => {
     expect(JUNIOR_PROBE_MAX).toBe(3);
@@ -76,7 +80,7 @@ describe('Дозадавание Junior', () => {
   });
 
   it('фаза не включается: основная ещё идёт; Middle подтверждён; всё неверно', () => {
-    const bank = bankFor('backend').map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
+    const bank = generatorsFor('backend').map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
     const early = play(bank, 'middle', 1, () => false);
     expect(early.phases.every((p) => p === 'main')).toBe(true);
     expect(early.step).toMatchObject({ stop: true, phase: 'main' });
@@ -143,8 +147,8 @@ describe('Дозадавание Junior', () => {
   });
 
   it('боевой банк, «все Junior верно, Middle неверно»: дозадавание доводит до уверенного решения и предложения Junior', () => {
-    for (const spec of ['backend', 'frontend'] as const) {
-      const pool = bankFor(spec).map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
+    for (const [k, gens] of bankPools().entries()) {
+      const pool = gens.map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
       let probed = 0;
       for (let seed = 1; seed <= 60; seed++) {
         const run = play(pool, 'middle', seed, (t) => t.grade === 'junior');
@@ -160,14 +164,14 @@ describe('Дозадавание Junior', () => {
         expect(d.confirmed).toBe(false);
         expect(d.juniorOffered).toBe(true);
       }
-      // У пула подкатегории backend Junior-задания сложнее (b ближе к порогу), и идеальный Junior подтверждается без дозадавания.
-      if (spec !== 'backend') expect(probed).toBeGreaterThan(0);
+      // backend (k = 0): дозадавание срабатывает; у frontend-подкатегорий с 6 Junior идеальный Junior подтверждается ещё в основной фазе
+      if (k === 0) expect(probed).toBeGreaterThan(0);
     }
   });
 
   it('заявка Junior, боевой банк, «все Junior верно, Middle неверно»: Junior подтверждается, дозаданные — только Junior', () => {
-    for (const spec of ['backend', 'frontend'] as const) {
-      const pool = bankFor(spec).map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
+    for (const [k, gens] of bankPools().entries()) {
+      const pool = gens.map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
       let probed = 0;
       for (let seed = 1; seed <= 60; seed++) {
         const run = play(pool, 'junior', seed, (t) => t.grade === 'junior');
@@ -179,8 +183,8 @@ describe('Дозадавание Junior', () => {
         if (probeIdx.length > 0) probed++;
         expect(decide(run.responses, 'junior').confirmed).toBe(true);
       }
-      // У пула подкатегории backend Junior-задания сложнее (b ближе к порогу), и идеальный Junior подтверждается без дозадавания.
-      if (spec !== 'backend') expect(probed).toBeGreaterThan(0);
+      // backend (k = 0): дозадавание срабатывает; у frontend-подкатегорий с 6 Junior идеальный Junior подтверждается ещё в основной фазе
+      if (k === 0) expect(probed).toBeGreaterThan(0);
     }
   });
 
@@ -195,7 +199,7 @@ describe('Дозадавание Junior', () => {
   });
 
   it('детерминизм: те же ответы → та же фаза и та же остановка', () => {
-    const pool = bankFor('backend').map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
+    const pool = generatorsFor('backend').map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
     const a = play(pool, 'middle', 7, (t) => t.grade === 'junior');
     const b = play(pool, 'middle', 7, (t) => t.grade === 'junior');
     expect(b.shown.map((t) => t.id)).toEqual(a.shown.map((t) => t.id));

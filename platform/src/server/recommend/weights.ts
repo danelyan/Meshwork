@@ -26,7 +26,7 @@ export const GRADE_CHANGE_INTERVAL_DAYS = 30;
 export const MIDDLE_THRESHOLD = 0.25;
 export const MIDDLE_IF_SURE_THRESHOLD = 0.15;
 
-export const GRADE_INDEX: Record<Grade, number> = { junior: 0, middle: 1 };
+export const GRADE_INDEX: Record<Grade, number> = { junior: 0, middle: 1, senior: 2 };
 
 /** ПРЕДЛОЖЕНИЕ: «посильность» — цель не выше доказанного грейда + 1; иначе множитель 0,5. */
 export const REACH_PENALTY = 0.5;

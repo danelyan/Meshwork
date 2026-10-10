@@ -23,7 +23,6 @@ enum Specialization {
 enum Grade {
   junior
   middle
-  /// ADR 0003 «Дополнение 16:15». Локально в lane project (шаблоны Senior); enum и миграцию даёт lane directions.
   senior
 }
 
@@ -79,9 +78,6 @@ model Candidate {
   recommendations     Recommendation[]
   invitations         Invitation[]
   defenseSessions     DefenseSession[]
-  /// lane project: взятые задания ленты и сабмиты проектов (ADR 0003, ступень 2)
-  projectAssignments  ProjectAssignment[]
-  projectSubmissions  ProjectSubmission[]
   /// lane auth: аккаунт входа (null у старых демо-кандидатов до первого демо-входа)
   user                User?
   /// lane employer: настройка приватности (R-C-13) — true: не показывать в подборке и поиске работодателей
@@ -379,9 +375,7 @@ model Vacancy {
   archivedAt      DateTime?
   updatedAt       DateTime?      @updatedAt
 
-  invitations  Invitation[]
-  /// lane project: проектное задание потребности (ADR 0003, ступень 2)
-  projectTasks ProjectTask[]
+  invitations Invitation[]
 
   @@index([specialization, grade])
 }
@@ -770,8 +764,6 @@ enum CallStatus {
   active
   finished
   cancelled
-  /// kind=defense: работодатель пригласил на защиту проекта, кандидат ещё не начал (lane project → defense-room)
-  pending
 }
 
 enum CallParticipantRole {
@@ -791,9 +783,8 @@ model CallSession {
   candidateId         String
   candidate           Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   kind                CallKind
-  /// kind=defense: сабмит проекта (lane project)
+  /// kind=defense: сабмит проекта (lane project; связь добавит интегратор, когда появится модель)
   projectSubmissionId String?
-  projectSubmission   ProjectSubmission? @relation(fields: [projectSubmissionId], references: [id], onDelete: SetNull)
   status              CallStatus @default(active)
   startedAt           DateTime   @default(now())
   finishedAt          DateTime?
@@ -848,145 +839,4 @@ model EmployerQuestion {
 
   @@index([candidateId, status])
   @@index([companyId, candidateId])
-}
-
-// =============================================================================
-// lane: project — ступень 2 «проект под работодателя» (ADR 0003, «Дополнение 10.10»: лента заданий).
-// Шаблоны лежат на диске (platform/project-templates/<subcategory>/<grade>/<id>/template.json),
-// ProjectTemplate — их снимок для связей и выборок. subcategoryId — строка без relation
-// (модель Subcategory у лейна directions, связывает интегратор); specialization — строка, не enum,
-// чтобы не конфликтовать с расширением enum Specialization (ai, engineering).
-// =============================================================================
-
-enum ProjectTaskVisibility {
-  /// В ленте обезличенных заданий кандидатам подходящего направления.
-  open
-  /// Только кандидатам с приглашением по этой потребности.
-  invited
-}
-
-enum ProjectSubmissionStatus {
-  submitted
-  running
-  checked
-  failed
-}
-
-enum ProjectAssignmentStatus {
-  /// Взято, сдачи ещё нет — считается в лимит PROJECT_MAX_ACTIVE.
-  active
-  /// Сдано (есть сабмит) — в лимит не считается.
-  submitted
-}
-
-model ProjectTemplate {
-  /// = template.json id, например "be-webapi-junior-booking"
-  id              String   @id
-  subcategoryId   String
-  specialization  String
-  grade           Grade
-  title           String
-  contractMd      String
-  /// Путь шаблона от platform/project-templates, например "backend.web-api/junior/be-webapi-junior-booking"
-  dirRef          String
-  hiddenTestsRef  String
-  visibleTestsRef String
-  stackTags       String[] @default([])
-  /// Образ runner: node20 | python312
-  image           String
-  timeBudgetMin   Int
-  updatedAt       DateTime @updatedAt
-
-  tasks ProjectTask[]
-}
-
-model ProjectTask {
-  id                 String                @id @default(cuid())
-  /// Одна потребность — одно задание (перегенерация меняет условие, пока нет сабмитов).
-  vacancyId          String                @unique
-  vacancy            Vacancy               @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
-  templateId         String
-  template           ProjectTemplate       @relation(fields: [templateId], references: [id])
-  specialization     String
-  grade              Grade
-  subcategoryId      String?
-  visibility         ProjectTaskVisibility @default(open)
-  /// { title, domainStory, requirements[], acceptance[], notes, source: llm|fallback }
-  specJson           Json
-  /// Обязательные критерии работодателя — ID каталога утверждений
-  requiredCatalogIds String[]              @default([])
-  wishesText         String?
-  /// { criteria: [{ id, text, catalogId?, source: required|wish }] }
-  rubricJson         Json
-  deadlineDays       Int?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-
-  assignments ProjectAssignment[]
-  submissions ProjectSubmission[]
-
-  @@index([specialization, grade, visibility])
-}
-
-/// Кандидат взял задание из ленты (лимит активных — PROJECT_MAX_ACTIVE).
-model ProjectAssignment {
-  id            String                  @id @default(cuid())
-  projectTaskId String
-  projectTask   ProjectTask             @relation(fields: [projectTaskId], references: [id], onDelete: Cascade)
-  candidateId   String
-  candidate     Candidate               @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  status        ProjectAssignmentStatus @default(active)
-  takenAt       DateTime                @default(now())
-  /// После срока взятое, но не сданное задание не держит слот лимита.
-  expiresAt     DateTime
-
-  @@unique([projectTaskId, candidateId])
-  @@index([candidateId, status])
-}
-
-model ProjectSubmission {
-  id                  String                  @id @default(cuid())
-  projectTaskId       String
-  projectTask         ProjectTask             @relation(fields: [projectTaskId], references: [id], onDelete: Cascade)
-  candidateId         String
-  candidate           Candidate               @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  repoUrl             String
-  commitSha           String?
-  aiLogText           String?
-  status              ProjectSubmissionStatus @default(submitted)
-  /// { tests: {passed, total, score}, lint, rubric, platformOwnedViolations[] }
-  resultJson          Json?
-  /// Задание runner (GET /run/{jobId}); null — stub-режим
-  runnerJobId         String?
-  /// Почему failed — для кандидата, без деталей скрытых тестов
-  error               String?
-  /// Приглашение «на защиту» (POST /api/employer/project-submissions/{id}/invite-to-defense)
-  defenseInvitationId String?
-  /// Сдано после срока задания (ProjectAssignment.expiresAt) — сдавать можно, работодатель видит пометку.
-  late                Boolean                 @default(false)
-  submittedAt         DateTime                @default(now())
-  checkedAt           DateTime?
-
-  defenseSessions     CallSession[]
-
-  @@index([projectTaskId, submittedAt])
-  @@index([candidateId, submittedAt])
-}
-
-// =============================================================================
-// lane: defense-room — защита проекта (ступень 3, ADR 0003): план QLC-вопросов сессии.
-// =============================================================================
-
-/// План защиты проекта: вопросы из кода (QLC) и вопросы работодателя, курсор, блокировка хода.
-model DefenseRoomPlan {
-  id            String    @id @default(cuid())
-  callSessionId String    @unique
-  /// `PlanItem[]` (src/server/defense-room/types.ts)
-  itemsJson     Json
-  cursor        Int       @default(0)
-  /// Сводка репозитория и источников вопросов: { repoUrl, commitSha, files, generator: llm|fallback }
-  sourceJson    Json
-  /// Ход в обработке (LLM): не принимать второй параллельно; протухает через 90 с.
-  lockedAt      DateTime?
-  createdAt     DateTime  @default(now())
 }

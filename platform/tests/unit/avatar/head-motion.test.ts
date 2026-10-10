@@ -11,6 +11,7 @@ import {
   neckPose,
   neckWeight,
   trackPose,
+  TRACK_GAIN,
 } from '../../../src/components/avatar/head-motion';
 import { HEAD_MODEL } from '../../../src/components/avatar/Head3D';
 
@@ -21,10 +22,10 @@ describe('avatar head motion (Karina tracking on our model)', () => {
   });
 
   it('keeps Karina limits and signs: yaw ±0.24 to the cursor side, look up when the cursor is above', () => {
-    expect(trackPose(1, 0)[0]).toBeCloseTo(0.24);
-    expect(trackPose(-5, 0)[0]).toBeCloseTo(-0.24);
+    expect(trackPose(1, 0)[0]).toBeCloseTo(0.24 * TRACK_GAIN);
+    expect(trackPose(-5, 0)[0]).toBeCloseTo(-0.24 * TRACK_GAIN);
     expect(trackPose(0, 1)[1]).toBeLessThan(trackPose(0, -1)[1]);
-    expect(trackPose(0, 1)[1] - trackPose(0, -1)[1]).toBeCloseTo(-0.14);
+    expect(trackPose(0, 1)[1] - trackPose(0, -1)[1]).toBeCloseTo(-0.14 * TRACK_GAIN);
   });
 
   it('turns the neck, not the shoulders: base fixed, chin and jaw rigid', () => {

@@ -65,16 +65,20 @@ export function neckWeight(y: number, n = NECK): number {
 /** Смещение компенсации из headPose Карины: её модель смотрит на 31° вправо, наша — прямо. */
 const KARINA_YAW_OFFSET = headPose(0, 0)[0];
 
+/** Усиление слежения против её `headPose` (±0.24 рад ≈ ±14°): владелец 10.10 — до ±30° (≈ ±0.52 рад). */
+export const TRACK_GAIN = 2.2;
+
 /**
- * Поза за курсором (pointer — нормированный −1…1, как headPointer): yaw ±0.24, pitch 0.03 ∓ 0.07,
- * пределы и знаки — её `headPose`, без компенсации ориентации меша.
+ * Поза за курсором (pointer — нормированный −1…1, как headPointer): yaw ±0.53, pitch ∓0.15 вокруг
+ * её центра; пределы и знаки — её `headPose` × TRACK_GAIN, без компенсации ориентации меша.
  */
 export function trackPose(
   pointerX: number,
   pointerY: number,
 ): [number, number] {
   const [yaw, pitch] = headPose(pointerX, pointerY);
-  return [yaw - KARINA_YAW_OFFSET, pitch];
+  const [, pitch0] = headPose(0, 0);
+  return [(yaw - KARINA_YAW_OFFSET) * TRACK_GAIN, pitch0 + (pitch - pitch0) * TRACK_GAIN];
 }
 
 /** Её сглаживание слежения: экспоненциальное приближение со скоростью 5.2/с, не зависит от FPS. */

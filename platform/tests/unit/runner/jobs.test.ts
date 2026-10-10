@@ -75,3 +75,33 @@ describe('runner очередь и лимиты', () => {
     expect(existsSync(path.join(work, 'uploads', `${uploadId}.tar.gz`))).toBe(false);
   });
 });
+
+describe('runner: чтение отчёта задания', () => {
+  it('обычный файл читается; симлинк, FIFO, каталог и слишком большой файл — отказ без зависания', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const { mkdirSync, symlinkSync, writeFileSync } = await import('node:fs');
+    const { readReportSafe } = await import('../../../runner/src/jobs');
+    const d = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'fsp-report-')));
+    try {
+      writeFileSync(path.join(d, 'ok.json'), '{"a":1}');
+      expect(await readReportSafe(path.join(d, 'ok.json'))).toBe('{"a":1}');
+
+      writeFileSync(path.join(d, 'secret'), 'SECRET');
+      symlinkSync(path.join(d, 'secret'), path.join(d, 'link.json'));
+      await expect(readReportSafe(path.join(d, 'link.json'))).rejects.toThrow();
+
+      execFileSync('mkfifo', [path.join(d, 'fifo.json')]);
+      const started = Date.now();
+      await expect(readReportSafe(path.join(d, 'fifo.json'))).rejects.toThrow(/не обычный файл/);
+      expect(Date.now() - started).toBeLessThan(1000);
+
+      mkdirSync(path.join(d, 'dir.json'));
+      await expect(readReportSafe(path.join(d, 'dir.json'))).rejects.toThrow();
+
+      writeFileSync(path.join(d, 'big.json'), Buffer.alloc(2048));
+      await expect(readReportSafe(path.join(d, 'big.json'), 1024)).rejects.toThrow(/лимит/);
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+});

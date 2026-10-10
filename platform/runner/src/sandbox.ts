@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { execFile } from 'node:child_process';
+import { readdir, readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import path from 'node:path';
 
@@ -191,14 +192,46 @@ export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { conta
 
 const execFileP = promisify(execFile);
 
-/** Через помощник: от имени uid задания kill(-1) — все его процессы (setsid не спасает). */
-export async function helperKillAll(helper: string): Promise<void> {
-  await execFileP(helper, ['killall'], { env: {} as NodeJS.ProcessEnv, timeout: 10_000 }).catch(() => undefined);
+/** Через помощник: от имени uid задания kill(-1) — все его процессы (setsid не спасает). false — ошибка (залогирована). */
+export async function helperKillAll(helper: string): Promise<boolean> {
+  try {
+    await execFileP(helper, ['killall'], { env: {} as NodeJS.ProcessEnv, timeout: 10_000 });
+    return true;
+  } catch (err) {
+    console.error(`runner: fsp-sandbox killall: ${(err as Error).message}`);
+    return false;
+  }
 }
 
-/** Через помощник: удалить содержимое каталога, созданное заданием (сервису чужие файлы не удалить). */
-export async function helperClean(helper: string, dir: string): Promise<void> {
-  await execFileP(helper, ['clean', dir], { env: {} as NodeJS.ProcessEnv, timeout: 30_000 }).catch(() => undefined);
+/** Через помощник: удалить содержимое каталога задания или /dev/shm (сервису чужие файлы не удалить). */
+export async function helperClean(helper: string, dir: string): Promise<boolean> {
+  try {
+    await execFileP(helper, ['clean', dir], { env: {} as NodeJS.ProcessEnv, timeout: 30_000 });
+    return true;
+  } catch (err) {
+    console.error(`runner: fsp-sandbox clean ${dir}: ${(err as Error).message}`);
+    return false;
+  }
+}
+
+/** Живые процессы uid (Linux, /proc/<pid>/status читается любым uid). */
+export async function processesOfUid(uid: number): Promise<number[]> {
+  let pids: string[];
+  try {
+    pids = (await readdir('/proc')).filter((d) => /^\d+$/.test(d));
+  } catch {
+    return [];
+  }
+  const out: number[] = [];
+  for (const pid of pids) {
+    try {
+      const m = /^Uid:\s+(\d+)\s+(\d+)\s+(\d+)/m.exec(await readFile(`/proc/${pid}/status`, 'utf8'));
+      if (m && [m[1], m[2], m[3]].some((u) => Number(u) === uid)) out.push(Number(pid));
+    } catch {
+      /* процесс завершился */
+    }
+  }
+  return out;
 }
 
 export function runSandboxed(cmd: SandboxCommand, timeoutSec: number): Promise<SandboxOutcome> {

@@ -16,6 +16,7 @@
 | `agent/employer` | Отдельный цикл и 7 инструментов ассистента работодателя | `agent/employer/index.ts` (`runEmployerTurn`) | employer, recommend, claims |
 | `recommend` | Карта пробелов, задания, целевые роли, матчинг вакансий, объяснение приглашений | `recommend/index.ts` | claims, db |
 | `defense` | Защита утверждения: интервьюер и оценщик | `defense/index.ts`, `defense/session.ts` | claims, llm |
+| `call` | Созвон с ИИ (ADR 0003): квалифицирующий созвон (ступень 1) — интервьюер с маршрутом по уровню, слепой оценщик A-02 (3 прогона, медиана), карта глубины, подтверждённые темы → `platform`; SSE-шина, запись (транскрипт в БД, аудио WAV в `CALL_DATA_DIR`), доступ по роли, отдельное согласие на запись. Драйверы видов созвона — `drivers.ts` (`registerCallDriver('defense', …)` для защиты проекта) | `call/index.ts`, `call/service.ts` | claims, defense (рубрика, проверка цитат), llm, stt, onboarding (тексты согласия) |
 | `test` | Адаптивный тест на грейд (IRT, генераторы заданий `be.*`/`fe.*`/`ai.*`, политика остановки) — ADR `docs/decisions/0002-grade-test.md`; направление без генераторов — `no_test` / `NoGeneratorsError` | `test/index.ts`, `test/service.ts`, `test/generators/index.ts` | claims, recommend, env |
 | `directions.ts` + `src/lib/directions.ts` | Четыре направления (backend, frontend, ai, engineering) и 17 подкатегорий (ADR 0003, дополнение 10.10; R-T-05). `lib/directions.ts` — единый список для кода, UI и сида `Subcategory`; `server/directions.ts` — справочник из БД для `GET /api/directions` | `lib/directions.ts` (`SPECIALIZATIONS`, `SPEC_LABEL`, `SUBCATEGORIES`) | db, test |
 | `onboarding` | Анкета и сценарий онбординг-чата, ИНН, согласие, сервис завершения | `onboarding/service.ts`, `onboarding/engine.ts` | auth, claims, collector, llm, recommend |
@@ -45,9 +46,11 @@
 | Приглашения (кандидат) | `invitations`, `invitations/[id]` | employer |
 | Работодатель | `employer/vacancies[/id[/matches]]`, `employer/search`, `employer/invitations`, `employer/assistant/messages` (SSE) | employer, agent/employer |
 | Голос | `stt` | stt |
+| Созвон | `call` (список + согласие), `call/consent`, `call/start`, `call/[id]` (+`turn`, `audio`, `events` (SSE), `finish`, `recording`) | call |
 | Демо | `demo/login`, `demo/resume` | demo |
 | Отладка | `dev/*` (login-as, new-user, reset-*, delete-account, …) | devtools |
 
+Режим звонка — `components/call/*` (`CallPanel` в сцене `/consultant`, `DepthMap` в профиле).
 Страницы: `(candidate)/{consultant,profile,test,defense,invitations}`, `employer/*`,
 `onboarding`, `auth`, `consent`, `demo`, `design/*` (превью, не для пользователей), `api-docs` (Swagger UI по спецификации).
 
@@ -94,6 +97,9 @@
 - Демо-вход и демо-аккаунты: `DEMO_LOGIN=true` (`/demo`, `/api/demo/*`); на стенде включён, пока его смотрит жюри (`docs/deploy.md`).
 - Яндекс ID: пусто `YANDEX_CLIENT_ID/SECRET` — кнопка неактивна, остаётся демо-вход.
 - Голос: `STT_PROVIDER=auto|yandex|browser|off`; без ключей SpeechKit — распознаёт браузер.
+- Созвон на заглушке: `call_interviewer` / `call_evaluator` отвечают детерминированно по `<call_context>` (`llm/providers/stub-call.ts`):
+  сигнал маршрута — по длине ответа, баллы — по признакам в тексте. Порог подтверждения темы — предложение
+  (`defense/evaluator.ts` THRESHOLD), на людях не калиброван.
 - Тест на грейд: `TEST_DEMO_INTERVALS=true` — интервалы пересдачи в минутах, не днях (стенд жюри). Параметры заданий
   экспертные, на людях не оценены.
 - Отладочная панель и `/api/dev/*`: только localhost и не production; выключатель `DEVTOOLS=false`.

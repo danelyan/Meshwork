@@ -15,9 +15,12 @@ datasource db {
 // lane: foundation — кандидат, категория, журнал вызовов LLM
 // =============================================================================
 
+/// Направления (ADR 0003, дополнение 10.10): ai и engineering — lane directions.
 enum Specialization {
   backend
   frontend
+  ai
+  engineering
 }
 
 enum Grade {
@@ -77,9 +80,6 @@ model Candidate {
   recommendations     Recommendation[]
   invitations         Invitation[]
   defenseSessions     DefenseSession[]
-  /// lane project: взятые задания ленты и сабмиты проектов (ADR 0003, ступень 2)
-  projectAssignments  ProjectAssignment[]
-  projectSubmissions  ProjectSubmission[]
   /// lane auth: аккаунт входа (null у старых демо-кандидатов до первого демо-входа)
   user                User?
   /// lane employer: настройка приватности (R-C-13) — true: не показывать в подборке и поиске работодателей
@@ -91,6 +91,12 @@ model Candidate {
   /// lane invite-contact: способ связи для работодателя — почта или Telegram (server/contact.ts).
   /// Открывается компании только после accepted; null — показываем почту аккаунта, если она не служебная.
   contact             String?
+  /// lane call: созвоны (квалифицирующий и защита проекта) и вопросы работодателей кандидату
+  callSessions        CallSession[]
+  employerQuestions   EmployerQuestion[]
+  /// lane directions: подкатегория направления из справочника Subcategory ("ai.llm-apps"), выбор в
+  /// онбординге необязателен. Без FK — справочник проверяется кодом (server/directions).
+  subcategoryId       String?
 }
 
 model CandidateCategory {
@@ -188,6 +194,9 @@ enum CatalogSpecialization {
   backend
   frontend
   common
+  /// lane directions: записи ai.* / eng.* каталога
+  ai
+  engineering
 }
 
 enum EvidenceLevel {
@@ -348,6 +357,8 @@ model Company {
   inn         String?
   industry    String?
   contact     String?
+  /// lane call: вопросы компании кандидатам (очередь асинхронной дозащиты)
+  employerQuestions EmployerQuestion[]
 }
 
 model Vacancy {
@@ -371,10 +382,10 @@ model Vacancy {
   /// lane employer: потребность закрыта/в архиве — в кабинете отдельно, подборка не строится
   archivedAt      DateTime?
   updatedAt       DateTime?      @updatedAt
+  /// lane directions: подкатегория потребности ("backend.web-api"), необязательна. Без FK — см. Candidate.
+  subcategoryId   String?
 
-  invitations  Invitation[]
-  /// lane project: проектное задание потребности (ADR 0003, ступень 2)
-  projectTasks ProjectTask[]
+  invitations Invitation[]
 
   @@index([specialization, grade])
 }
@@ -487,6 +498,8 @@ model User {
   consents        Consent[]
   /// lane onboarding: где человек остановился в онбординге
   onboarding      OnboardingState?
+  /// lane call: участие в созвонах (работодатель в комнате защиты)
+  callParticipations CallParticipant[]
 
   // lane: email-auth — вход по почте и паролю (R-D-04; ADR 0001, дополнение 10.10).
   // Уникальность почты — через AuthAccount(provider = "email", providerAccountId = почта в нижнем регистре).
@@ -749,120 +762,115 @@ model AuthCode {
 }
 
 // =============================================================================
-// lane: project — ступень 2 «проект под работодателя» (ADR 0003, «Дополнение 10.10»: лента заданий).
-// Шаблоны лежат на диске (platform/project-templates/<subcategory>/<grade>/<id>/template.json),
-// ProjectTemplate — их снимок для связей и выборок. subcategoryId — строка без relation
-// (модель Subcategory у лейна directions, связывает интегратор); specialization — строка, не enum,
-// чтобы не конфликтовать с расширением enum Specialization (ai, engineering).
+// lane: call — созвоны: квалифицирующий (ступень 1) и защита проекта (ступень 3), ADR 0003
 // =============================================================================
 
-enum ProjectTaskVisibility {
-  /// В ленте обезличенных заданий кандидатам подходящего направления.
-  open
-  /// Только кандидатам с приглашением по этой потребности.
-  invited
+enum CallKind {
+  qualifying
+  defense
 }
 
-enum ProjectSubmissionStatus {
-  submitted
-  running
-  checked
-  failed
-}
-
-enum ProjectAssignmentStatus {
-  /// Взято, сдачи ещё нет — считается в лимит PROJECT_MAX_ACTIVE.
+enum CallStatus {
   active
-  /// Сдано (есть сабмит) — в лимит не считается.
-  submitted
+  finished
+  cancelled
 }
 
-model ProjectTemplate {
-  /// = template.json id, например "be-webapi-junior-booking"
-  id              String   @id
-  subcategoryId   String
-  specialization  String
-  grade           Grade
-  title           String
-  contractMd      String
-  /// Путь шаблона от platform/project-templates, например "backend.web-api/junior/be-webapi-junior-booking"
-  dirRef          String
-  hiddenTestsRef  String
-  visibleTestsRef String
-  stackTags       String[] @default([])
-  /// Образ runner: node20 | python312
-  image           String
-  timeBudgetMin   Int
-  updatedAt       DateTime @updatedAt
-
-  tasks ProjectTask[]
+enum CallParticipantRole {
+  employer
 }
 
-model ProjectTask {
-  id                 String                @id @default(cuid())
-  /// Одна потребность — одно задание (перегенерация меняет условие, пока нет сабмитов).
-  vacancyId          String                @unique
-  vacancy            Vacancy               @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
-  templateId         String
-  template           ProjectTemplate       @relation(fields: [templateId], references: [id])
-  specialization     String
-  grade              Grade
-  subcategoryId      String?
-  visibility         ProjectTaskVisibility @default(open)
-  /// { title, domainStory, requirements[], acceptance[], notes, source: llm|fallback }
-  specJson           Json
-  /// Обязательные критерии работодателя — ID каталога утверждений
-  requiredCatalogIds String[]              @default([])
-  wishesText         String?
-  /// { criteria: [{ id, text, catalogId?, source: required|wish }] }
-  rubricJson         Json
-  deadlineDays       Int?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-
-  assignments ProjectAssignment[]
-  submissions ProjectSubmission[]
-
-  @@index([specialization, grade, visibility])
+enum EmployerQuestionStatus {
+  queued
+  asked
+  answered
 }
 
-/// Кандидат взял задание из ленты (лимит активных — PROJECT_MAX_ACTIVE).
-model ProjectAssignment {
-  id            String                  @id @default(cuid())
-  projectTaskId String
-  projectTask   ProjectTask             @relation(fields: [projectTaskId], references: [id], onDelete: Cascade)
-  candidateId   String
-  candidate     Candidate               @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  status        ProjectAssignmentStatus @default(active)
-  takenAt       DateTime                @default(now())
-  /// После срока взятое, но не сданное задание не держит слот лимита.
-  expiresAt     DateTime
-
-  @@unique([projectTaskId, candidateId])
-  @@index([candidateId, status])
-}
-
-model ProjectSubmission {
-  id                  String                  @id @default(cuid())
-  projectTaskId       String
-  projectTask         ProjectTask             @relation(fields: [projectTaskId], references: [id], onDelete: Cascade)
+/// Созвон кандидата с ИИ. Реплики — в transcriptJson (роли ai | candidate | employer, таймкоды),
+/// аудио кандидата — файлы на диске (CALL_DATA_DIR/<audioPath>), не в БД.
+model CallSession {
+  id                  String     @id @default(cuid())
   candidateId         String
-  candidate           Candidate               @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  repoUrl             String
-  commitSha           String
-  aiLogText           String
-  status              ProjectSubmissionStatus @default(submitted)
-  /// { tests: {passed, total, score}, lint, rubric, platformOwnedViolations[] }
-  resultJson          Json?
-  /// Задание runner (GET /run/{jobId}); null — stub-режим
-  runnerJobId         String?
-  /// Почему failed — для кандидата, без деталей скрытых тестов
-  error               String?
-  /// Приглашение «на защиту» (POST /api/employer/project-submissions/{id}/invite-to-defense)
-  defenseInvitationId String?
-  submittedAt         DateTime                @default(now())
-  checkedAt           DateTime?
+  candidate           Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  kind                CallKind
+  /// kind=defense: сабмит проекта (lane project; связь добавит интегратор, когда появится модель)
+  projectSubmissionId String?
+  status              CallStatus @default(active)
+  startedAt           DateTime   @default(now())
+  finishedAt          DateTime?
+  /// TranscriptEntry[] (server/call/types.ts)
+  transcriptJson      Json       @default("[]")
+  /// Папка с аудио кандидата относительно CALL_DATA_DIR: "calls/<id>"; null — аудио не записывалось
+  audioPath           String?
+  /// Вердикт оценщика (qualifying — карта глубины, server/call/types.ts CallVerdict)
+  verdictJson         Json?
+  /// Версия согласия на запись созвона, под которой шёл звонок
+  policyVersion       String
+  /// Сколько раз запускался оценщик (finish): каждый запуск — 3–6 вызовов LLM, повторы после 503 ограничены
+  finishAttempts      Int        @default(0)
 
-  @@index([projectTaskId, submittedAt])
-  @@index([candidateId, submittedAt])
+  participants CallParticipant[]
+  questions    EmployerQuestion[]
+
+  @@index([candidateId, kind, status])
+  @@index([projectSubmissionId])
+}
+
+/// Участник созвона кроме кандидата (работодатель в комнате защиты, lane defense-room).
+model CallParticipant {
+  id            String              @id @default(cuid())
+  callSessionId String
+  callSession   CallSession         @relation(fields: [callSessionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          CallParticipantRole @default(employer)
+  joinedAt      DateTime            @default(now())
+  leftAt        DateTime?
+  /// Работодатель «замьютил ИИ»: ИИ не вступает, пока не разрешат
+  aiMuted       Boolean             @default(false)
+
+  @@index([callSessionId])
+  @@index([userId])
+}
+
+/// Вопрос работодателя кандидату: задаётся в созвоне сейчас или копится до следующего входа.
+model EmployerQuestion {
+  id                      String                 @id @default(cuid())
+  companyId               String
+  company                 Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  candidateId             String
+  candidate               Candidate              @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  projectSubmissionId     String?
+  text                    String
+  askedAt                 DateTime               @default(now())
+  answeredInCallSessionId String?
+  answeredInCallSession   CallSession?           @relation(fields: [answeredInCallSessionId], references: [id], onDelete: SetNull)
+  status                  EmployerQuestionStatus @default(queued)
+
+  @@index([candidateId, status])
+  @@index([companyId, candidateId])
+}
+
+// =============================================================================
+// lane: directions — справочник подкатегорий направлений (ADR 0003, дополнение 10.10; R-T-05)
+// =============================================================================
+
+enum SubcategoryStatus {
+  /// Тест по подкатегории доступен (банк ≥ 8 семейств) и/или есть шаблон проекта
+  active
+  /// В справочнике, тест пока недоступен
+  planned
+}
+
+/// Подкатегория направления. id вида "backend.web-api" (направление.подкатегория).
+/// Сид — prisma/seed/directions.ts из src/lib/directions.ts (карта research/25 владельца).
+model Subcategory {
+  id             String            @id
+  specialization Specialization
+  title          String
+  description    String
+  status         SubcategoryStatus @default(planned)
+  order          Int               @default(0)
+
+  @@index([specialization, order])
 }

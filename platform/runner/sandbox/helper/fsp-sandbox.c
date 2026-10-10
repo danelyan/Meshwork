@@ -8,7 +8,7 @@
  *
  *   fsp-sandbox exec <path> [args...]  — стать uid 2000, PR_SET_NO_NEW_PRIVS, execv(path, args)
  *   fsp-sandbox killall                — стать uid 2000, kill(-1, SIGKILL): все процессы задания
- *   fsp-sandbox clean <dir>            — стать uid 2000, удалить содержимое dir (только под /work/jobs/)
+ *   fsp-sandbox clean <dir>            — стать uid 2000, удалить содержимое dir (под /work/jobs/ или /dev/shm)
  *
  * После setresuid(2000,2000,2000) из euid 0 ядро очищает permitted/effective/ambient capabilities
  * (capabilities(7), «Effect of user ID changes on capabilities»), поэтому задание не получает ни одной.
@@ -92,9 +92,9 @@ int main(int argc, char **argv) {
   if (argc == 3 && strcmp(argv[1], "clean") == 0) {
     char real[PATH_MAX];
     if (realpath(argv[2], real) == NULL) die("realpath");
-    if (strncmp(real, WORK_PREFIX, strlen(WORK_PREFIX)) != 0) {
+    if (strncmp(real, WORK_PREFIX, strlen(WORK_PREFIX)) != 0 && strcmp(real, "/dev/shm") != 0) {
       errno = EINVAL;
-      die("clean outside /work/jobs");
+      die("clean outside /work/jobs and /dev/shm");
     }
     drop_to_sandbox();
     nftw(real, open_dirs, 32, FTW_PHYS);

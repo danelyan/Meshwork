@@ -1,4 +1,3 @@
-import { stubProject } from './stub-project';
 import {
   LlmError,
   type ChatMessage,
@@ -8,6 +7,7 @@ import {
   type LlmPurpose,
   type ToolCall,
 } from '../types';
+import { stubCallEvaluator, stubCallInterviewer } from './stub-call';
 
 /**
  * Детерминированная заглушка LLM для разработки и тестов (LLM_PROVIDER=stub).
@@ -17,6 +17,7 @@ import {
  *  3. Есть tools, toolChoice ≠ 'none', последнее сообщение — от user и в нём
  *     `[[tool:name {json}]]` (можно несколько) → kind 'tool_calls'.
  *     toolChoice {name} без маркера → вызов этого инструмента с `{}`.
+ *  3a. purpose call_interviewer / call_evaluator → детерминированный ответ по `<call_context>` (stub-call.ts).
  *  4. Есть schema → kind 'json': маркер `[[json {...}]]` или минимально валидный
  *     объект, сгенерированный по JSON Schema.
  *  5. Иначе — kind 'text': маркер `[[reply текст]]`; после результатов
@@ -225,6 +226,11 @@ export function createStubProvider(opts: StubOptions = {}): LlmProvider {
       );
     }
 
+    if (req.purpose === 'call_interviewer' || req.purpose === 'call_evaluator') {
+      const built = req.purpose === 'call_interviewer' ? stubCallInterviewer(req) : stubCallEvaluator(req);
+      if (built && !(lastIsUser && JSON_MARK_RE.test(userText))) return built;
+    }
+
     if (req.tools?.length && req.toolChoice !== 'none' && lastIsUser) {
       const calls = parseToolCalls(userText);
       if (calls.length) return { kind: 'tool_calls', toolCalls: calls };
@@ -234,9 +240,6 @@ export function createStubProvider(opts: StubOptions = {}): LlmProvider {
     }
 
     if (req.schema) {
-      // lane project: project_spec / project_rubric по <project_context> (маркер [[json]] важнее)
-      const project = lastIsUser && JSON_MARK_RE.test(userText) ? undefined : stubProject(req);
-      if (project) return project;
       const mark = lastIsUser ? JSON_MARK_RE.exec(userText) : null;
       if (mark) {
         const start = mark.index + mark[0].length;

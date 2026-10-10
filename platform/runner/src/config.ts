@@ -24,6 +24,8 @@ export interface RunnerConfig {
    * под uid сервиса (только локальный режим). uid/gid задания зашиты в помощник при сборке.
    */
   sandboxHelper?: string;
+  /** uid задания (зашит в помощник): по нему проверяется, что от прошлого задания не осталось процессов. */
+  sandboxUid: number;
   /** Группа задания: tmp/ и out/ отдаются ей (сервис состоит в этой группе). */
   sandboxGid: number;
   /** Лимит памяти задания, МБ (V8 heap для node, RLIMIT_AS для python). */
@@ -64,6 +66,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     pythonBin: env.RUNNER_PYTHON ?? 'python3',
     pytestIni: path.resolve(env.RUNNER_PYTEST_INI ?? path.join(base, 'sandbox/python/pytest.job.ini')),
     sandboxHelper: env.RUNNER_SANDBOX_HELPER || undefined,
+    sandboxUid: int(env.RUNNER_SANDBOX_UID, 2000, 1, 65534),
     sandboxGid: int(env.RUNNER_SANDBOX_GID, 2000, 1, 65534),
     memMb: int(env.RUNNER_JOB_MEM_MB, 768, 128, 8192),
     maxQueue: int(env.RUNNER_MAX_QUEUE, 5, 1, 1000),

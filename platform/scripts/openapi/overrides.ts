@@ -62,6 +62,7 @@ export const ERROR_RESPONSES: Record<number, { name: string; description: string
 
 export const TAG_DESCRIPTIONS: Record<string, string> = {
   auth: 'Вход, сессия, согласие на обработку ПДн, роль',
+  call: 'Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события',
   claims: 'Карточки утверждений кандидата: подтвердить, поправить, отклонить',
   consultant: 'Чат с консультантом (SSE) и история разговоров',
   defense: 'Защита утверждения: короткое интервью, повышающее уровень до «платформа»',
@@ -127,6 +128,7 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
       ...COMMON_EVENTS,
       ev('claims', { proposed: arr({ type: 'object' }), rejected: int(), rejectedByReason: { type: 'object', additionalProperties: int() }, hiddenText: int(), alreadyKnown: int() }, 'Карточки утверждений, извлечённые из вложений', ['proposed', 'rejected']),
       ev('recommendations', { items: arr({ type: 'object' }) }, 'Рекомендации для карточек в чате'),
+      ev('call_offer', { reason: str('Зачем созвон, одной фразой') }, 'Агент предлагает созвон (suggest_call): кнопка «Созвониться» в ленте'),
     ],
     discriminator: { propertyName: 'type' },
   },
@@ -137,6 +139,28 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
       ev('candidates', { block: free('Подборка: vacancy (id, title, salaryFrom) | null, total, items — карточки с псевдонимом, рангом, категорией, покрытием и обоснованием') }, 'Блок карточек кандидатов'),
       ev('invitation_draft', { draft: free('Черновик приглашения: candidateId, alias, vacancyId, salaryFrom, salaryTo, message, limit {sent, limit, left}, blocked') }, 'Черновик приглашения; отправляет человек'),
       ev('need_draft', { draft: free('Черновик потребности: title, specialization, grade, stack, salaryFrom/To, needs, formHref') }, 'Черновик потребности; подтверждает человек'),
+    ],
+    discriminator: { propertyName: 'type' },
+  },
+  CallView: free(
+    'Созвон глазами роли: id, kind (qualifying | defense), status (active | finished | cancelled), projectSubmissionId, startedAt, finishedAt, access (full | summary), ' +
+      'transcript — реплики {index, role: ai | candidate | employer, text, at, tMs, audioRef?, meta?} или null при summary, verdict (карта глубины; при summary — без цитат), ' +
+      'hasRecording, progress {answered, minQuestions, maxQuestions, canFinish, awaitingAnswer}, participants, policyVersion, disclaimer',
+  ),
+  CallEvent: {
+    description:
+      'Кадр SSE созвона: `event: <type>` + `data: <json>`; `type` — различитель. Enum типов — CALL_EVENT_TYPES (server/call/types.ts); participant / mute / question / signal шлёт lane defense-room. Работодатель без доступа к записи получает только status, participant и verdict (без цитат)',
+    oneOf: [
+      ev('snapshot', { call: ref('CallView') }, 'Первый кадр: состояние созвона для этой роли'),
+      ev('status', { status: en('active', 'finished', 'cancelled') }, 'Сменился статус'),
+      ev('utterance', { entry: free('Реплика транскрипта {index, role, text, at, tMs, audioRef?, meta?}') }, 'Новая реплика'),
+      ev('ai_state', { state: en('thinking', 'idle') }, 'ИИ готовит реплику / закончил'),
+      ev('participant', { userId: str(), role: en('employer'), action: en('joined', 'left') }, 'Участник вошёл или вышел'),
+      ev('mute', { aiMuted: bool(), userId: str() }, 'Работодатель выключил/включил ИИ'),
+      ev('question', { questionId: str(), status: en('queued', 'asked', 'answered') }, 'Вопрос работодателя'),
+      ev('verdict', { verdict: free('Карта глубины: depthMap [{topic, catalogId, claimed, probed, maxLevel, confirmed, scores, total, quote}], summary, runs, validRuns, upgradedCatalogIds') }, 'Готов вердикт оценщика'),
+      ev('signal', { from: str(), to: str(), payload: free('SDP или ICE-кандидат') }, 'Сигналинг WebRTC (defense-room)', ['from', 'payload']),
+      ev('error', { code: str(), message: str() }, 'Ошибка на сервере'),
     ],
     discriminator: { propertyName: 'type' },
   },
@@ -485,6 +509,58 @@ export const OVERRIDES: Record<string, OpOverride> = {
     success: JSON_OK('Режим голосового ввода', obj({ mode: en('yandex', 'browser', 'off'), sampleRate: int(), maxBytes: int() })),
     errors: {},
   },
+  'GET /api/call': {
+    summary: 'Мои созвоны и согласие на запись',
+    success: JSON_OK('Состояние согласия на запись и созвоны кандидата (свежие первыми, до 10)', obj({ consent: obj({ given: bool(), version: str(), text: arr(str()) }), calls: arr(ref('CallView')) })),
+  },
+  'POST /api/call/consent': {
+    summary: 'Согласие на запись созвона',
+    success: JSON_OK('Согласие записано (повтор не создаёт дубля)', obj({ version: str(), acceptedAt: DT() })),
+    errors: { 409: 'Версия текста устарела — обновить страницу' },
+  },
+  'POST /api/call/start': {
+    summary: 'Начать созвон',
+    success: {
+      status: 201,
+      description: 'Новый созвон: первая реплика ИИ в transcript',
+      schema: obj({ sessionId: str(), resumed: bool(), webrtc: obj({ iceServers: arr({ type: 'object' }) }), call: ref('CallView') }),
+      extra: [{ status: 200, description: 'Продолжен активный созвон (`resumed: true`)', schema: free('Та же форма, что у 201') }],
+    },
+    errors: { 409: 'Нет согласия на запись (`call_consent_required`, `details.version`)', 429: 'Лимит созвонов в сутки (`call_limit`, env CALL_DAILY_LIMIT; 0 — без лимита)' },
+  },
+  'GET /api/call/{id}': { summary: 'Созвон: статус, транскрипт, вердикт', role: 'session', success: JSON_OK('Созвон с учётом роли', ref('CallView')), errors: { 404: 'Нет созвона или нет доступа' } },
+  'POST /api/call/{id}/turn': {
+    summary: 'Реплика кандидата',
+    success: JSON_OK(
+      'Реплика кандидата и следующая реплика ИИ (`ai: null` — ИИ выключен работодателем); `done: true` — вопросы закончились, дальше finish',
+      obj({ candidate: free('Реплика кандидата'), ai: nullable(free('Реплика ИИ')), text: nullable(str()), audioUrl: str('Зарезервировано; озвучка — через /api/tts'), done: bool() }, ['candidate', 'ai', 'text', 'done']),
+    ),
+    errors: { 400: 'Пустой текст ответа: распознаёт /audio или браузер, /turn сам STT не зовёт', 404: 'Чужой созвон или сегмент аудио', 409: 'Созвон завершён или ответ уже принят' },
+  },
+  'POST /api/call/{id}/audio': {
+    summary: 'Сегмент голоса кандидата',
+    body: { contentType: 'audio/l16', description: 'LPCM 16 бит, моно, 16 кГц, до 3 МБ (~90 с)', schema: { type: 'string', format: 'binary' } },
+    success: { status: 201, description: 'Сегмент сохранён (WAV на диске); `text` — распознано SpeechKit или null (распознаёт браузер)', schema: obj({ audioRef: str('Имя сегмента NNN.wav'), text: nullable(str()) }) },
+    errors: { 409: 'Созвон завершён, лимит сегментов или параллельная загрузка', 413: 'Сегмент длиннее ~90 секунд' },
+  },
+  'POST /api/call/{id}/finish': {
+    summary: 'Завершить созвон и получить карту глубины',
+    success: JSON_OK('Созвон с вердиктом (без ответов — cancelled без вердикта)', ref('CallView')),
+    errors: { 409: 'Оценка уже идёт или созвон закрыт без оценки', 503: 'Оценщик недоступен (`llm_unavailable`); ответы сохранены. Запусков оценщика на созвон не больше 3 — после третьего сбоя созвон закрывается (cancelled)' },
+  },
+  'GET /api/call/{id}/recording': {
+    summary: 'Аудио ответов кандидата',
+    role: 'session',
+    query: [{ name: 'segment', description: 'Один сегмент NNN.wav; без параметра — все сегменты одним WAV' }],
+    success: { description: 'WAV (PCM 16 бит, 16 кГц)', contentType: 'audio/wav', schema: { type: 'string', format: 'binary' } },
+    errors: { 403: 'Работодатель без принятого приглашения', 404: 'Нет созвона, нет доступа или аудио не записывалось' },
+  },
+  'GET /api/call/{id}/events': {
+    summary: 'События созвона (SSE)',
+    role: 'session',
+    success: { description: 'Поток `text/event-stream`: кадры `event: <type>` + `data: <json>` (схема CallEvent), первым — snapshot; пинг-комментарий раз в 15 с', schema: ref('CallEvent') },
+  },
+
   'POST /api/stt': {
     summary: 'Распознать речь',
     description: 'Голос в текст через Yandex SpeechKit. Тело — LPCM 16 бит, моно, 16 кГц (`audio/l16`), до 1 МБ (около 30 секунд). Только для вошедших. Аудио не сохраняется. Если режим не `yandex` — 400.',

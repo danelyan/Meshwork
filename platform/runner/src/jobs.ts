@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { createWriteStream } from 'node:fs';
-import { chmod, chown, cp, mkdir, readdir, readFile, realpath, rm, stat, symlink } from 'node:fs/promises';
+import { constants as fsc, createWriteStream } from 'node:fs';
+import { chmod, chown, cp, mkdir, open, readdir, readFile, realpath, rm, stat, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import type { Readable } from 'node:stream';
@@ -18,7 +18,7 @@ import {
 } from './contract';
 import type { RunnerConfig } from './config';
 import { parseJunitXml, parseVitestJson, summarize } from './report';
-import { buildCommand, helperClean, isContainerMode, runSandboxed, type SandboxCommand, type SandboxOutcome } from './sandbox';
+import { buildCommand, helperClean, helperKillAll, isContainerMode, processesOfUid, runSandboxed, type SandboxCommand, type SandboxOutcome } from './sandbox';
 import { ArchiveError, parseTarGz, writeEntries } from './tar';
 import { PLATFORM_TESTS_DIR, bundleDir, loadTemplate, ownedPrefix, type TemplateManifest } from './templates';
 
@@ -330,6 +330,20 @@ export class JobManager {
         }
       }
 
+      if (container && this.cfg.sandboxHelper) {
+        // Перед стартом в контейнере не должно быть процессов прошлого задания (setsid, демоны).
+        let alive = await processesOfUid(this.cfg.sandboxUid);
+        if (alive.length) {
+          await helperKillAll(this.cfg.sandboxHelper);
+          await new Promise((r) => setTimeout(r, 100));
+          alive = await processesOfUid(this.cfg.sandboxUid);
+        }
+        if (alive.length) {
+          return this.fail(job, 'internal', `fsp-runner: остались процессы прошлого задания (uid ${this.cfg.sandboxUid}): ${alive.join(', ')}`);
+        }
+        await helperClean(this.cfg.sandboxHelper, '/dev/shm');
+      }
+
       const cmd = buildCommand(
         this.cfg,
         { jobDir, repoDir, tmpDir, outDir, image: job.template.image, testEnvironment: job.template.testEnvironment, timeoutSec: job.timeoutSec },
@@ -348,7 +362,7 @@ export class JobManager {
       }
       let tests: TestResult[] | null = null;
       try {
-        const text = await readFile(cmd.reportFile, 'utf8');
+        const text = await readReportSafe(cmd.reportFile);
         tests = cmd.reportKind === 'vitest-json' ? parseVitestJson(text, repoDir) : parseJunitXml(text);
       } catch {
         tests = null;
@@ -373,9 +387,42 @@ export class JobManager {
         // Файлы задания принадлежат uid 2000 — удалить их может только он (через помощник).
         await helperClean(this.cfg.sandboxHelper, tmpDir);
         await helperClean(this.cfg.sandboxHelper, outDir);
+        await helperClean(this.cfg.sandboxHelper, '/dev/shm'); // общая для всех заданий — не переносить между кандидатами
+        const left = await processesOfUid(this.cfg.sandboxUid);
+        if (left.length) console.error(`runner: после задания ${jobId} живы процессы uid ${this.cfg.sandboxUid}: ${left.join(', ')}`);
       }
       await rm(jobDir, { recursive: true, force: true }).catch((err: Error) => console.error(`runner: не удалось убрать ${jobId}: ${err.message}`));
     }
+  }
+}
+
+export const REPORT_MAX_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Прочитать отчёт, который писал процесс задания: каталог out/ ему доступен на запись, так что на месте
+ * файла может оказаться симлинк (чтение чужого файла) или FIFO (вечное ожидание). O_NOFOLLOW + O_NONBLOCK,
+ * только обычный файл, ≤ 10 МБ, таймаут 5 с.
+ */
+export async function readReportSafe(file: string, maxBytes = REPORT_MAX_BYTES, timeoutMs = 5_000): Promise<string> {
+  const handle = await open(file, fsc.O_RDONLY | fsc.O_NOFOLLOW | fsc.O_NONBLOCK);
+  try {
+    const st = await handle.stat();
+    if (!st.isFile()) throw new Error('отчёт — не обычный файл');
+    if (st.size > maxBytes) throw new Error('отчёт больше лимита');
+    const buf = Buffer.alloc(Math.min(st.size, maxBytes));
+    let timer: NodeJS.Timeout | undefined;
+    const read = handle.read(buf, 0, buf.length, 0);
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('таймаут чтения отчёта')), timeoutMs);
+    });
+    try {
+      const { bytesRead } = await Promise.race([read, timeout]);
+      return buf.subarray(0, bytesRead).toString('utf8');
+    } finally {
+      clearTimeout(timer);
+    }
+  } finally {
+    await handle.close();
   }
 }
 

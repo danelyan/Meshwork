@@ -34,22 +34,67 @@ services:
       # Остальное (SMTP_SECURE/USER/PASSWORD, MAIL_FROM, MAIL_PROVIDER) приходит из env_file.
       SMTP_HOST: ${SMTP_HOST:-mailpit}
       SMTP_PORT: ${SMTP_PORT:-1025}
+      # lane runner: автопроверка проектов; токен — RUNNER_TOKEN из .env (без него runner отвечает 503).
+      RUNNER_URL: http://runner:8090
     ports:
       - "3000:3000"
-    # lane call: аудио созвонов кандидата переживает пересборку контейнера
-    volumes:
-      - app-data:/app/data
+    # runner-net — внутренняя сеть только для вызовов app → runner.
+    networks: [default, runner-net]
     depends_on:
       migrate: { condition: service_completed_successfully }
       mailpit: { condition: service_started }
     restart: unless-stopped
 
+  # Автопроверка проектов кандидатов (ADR 0003, runner/README.md). Изоляция — контейнер + лимиты процесса:
+  # нет интернета (internal-сеть без адреса шлюза на хосте, видит только app), нет docker.sock, корень
+  # только на чтение. Сервис — uid 1001, задания — uid 2000 через setuid-помощник, на tmpfs /work.
+  # app от runner не зависит: упавший runner не мешает стенду.
+  runner:
+    build: { context: ., dockerfile: runner/Dockerfile }
+    user: "1001:1001"
+    # Группа заданий (sandbox, 2000): сервис отдаёт ей tmp/ и out/ и читает отчёт. Числовой user
+    # не подтягивает дополнительные группы из /etc/group — задаём явно.
+    group_add: ["2000"]
+    environment:
+      # Только токен: весь .env (ключи LLM и т. п.) runner не получает.
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+    networks: [runner-net]
+    read_only: true
+    tmpfs:
+      - /work:size=768m,mode=0711,uid=1001,gid=1001,noexec,nosuid,nodev
+    cap_drop: [ALL]
+    # Только для setuid-помощника fsp-sandbox: сменить uid/gid задания. Сам сервис (uid 1001)
+    # capabilities не имеет. no-new-privileges здесь НЕ ставится: он отключил бы setuid-бит помощника;
+    # задание получает no_new_privs от самого помощника (prctl) перед exec.
+    cap_add: [SETUID, SETGID]
+    # /dev/shm общая для всех заданий: маленькая и чистится помощником до и после каждого задания.
+    shm_size: 16m
+    mem_limit: 1536m
+    cpus: 0.8
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8090/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   mailpit:
     image: axllent/mailpit:v1.27
     ports:
-      - "8025:8025"
+      # Только loopback хоста: веб-ящик без пароля, и контейнеры (runner) не достанут его через мост.
+      - "127.0.0.1:8025:8025"
     restart: unless-stopped
 
 volumes:
   db-data:
-  app-data:
+
+networks:
+  # internal: true — у сети нет выхода наружу; runner подключён только к ней. gateway_mode isolated
+  # (Docker Engine ≥ 28) — у моста нет адреса на хосте, иначе контейнер достаёт сервисы хоста,
+  # слушающие 0.0.0.0 (например sshd), по адресу моста (docs: port-publishing, Gateway modes).
+  runner-net:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+      com.docker.network.bridge.gateway_mode_ipv6: isolated

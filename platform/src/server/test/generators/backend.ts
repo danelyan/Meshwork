@@ -284,16 +284,25 @@ export const schemaConstraint: TaskGenerator = {
     const minAge = rng.pick([16, 18, 21]);
     const names = rng.sample(NAMES, 4);
     const emails = names.map((n, i) => `u${i + 1}@example.com`);
-    type Ins = { sql: string; fails: boolean; why: string };
+    // `bad` - ошибка независимо от остальных строк; `email` - значение UNIQUE-колонки.
+    type Ins = { sql: string; bad: boolean; email: string; why: string };
     const dup = rng.int(0, 1);
     const candidates: Ins[] = [
-      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[0]}', '${names[0]}', ${minAge + rng.int(0, 10)});`, fails: false, why: 'все ограничения соблюдены' },
-      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[dup]}', '${names[1]}', ${minAge + 2});`, fails: dup === 0, why: dup === 0 ? 'повтор email нарушает UNIQUE' : 'email уникален' },
-      { sql: `INSERT INTO users (email, age) VALUES ('${emails[2]}', ${minAge + 1});`, fails: true, why: 'name NOT NULL без DEFAULT' },
-      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[3]}', '${names[3]}', ${minAge - rng.int(1, 3)});`, fails: true, why: `CHECK (age >= ${minAge}) нарушен` },
-      { sql: `INSERT INTO users (email, name) VALUES ('${emails[1]}x', '${names[2]}');`, fails: false, why: 'age может быть NULL: CHECK с NULL не считается нарушением' },
+      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[0]}', '${names[0]}', ${minAge + rng.int(0, 10)});`, bad: false, email: emails[0], why: 'все ограничения соблюдены' },
+      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[dup]}', '${names[1]}', ${minAge + 2});`, bad: false, email: emails[dup], why: 'все ограничения соблюдены' },
+      { sql: `INSERT INTO users (email, age) VALUES ('${emails[2]}', ${minAge + 1});`, bad: true, email: emails[2], why: 'name NOT NULL без DEFAULT' },
+      { sql: `INSERT INTO users (email, name, age) VALUES ('${emails[3]}', '${names[3]}', ${minAge - rng.int(1, 3)});`, bad: true, email: emails[3], why: `CHECK (age >= ${minAge}) нарушен` },
+      { sql: `INSERT INTO users (email, name) VALUES ('${emails[1]}x', '${names[2]}');`, bad: false, email: `${emails[1]}x`, why: 'age может быть NULL: CHECK с NULL не считается нарушением' },
     ];
     const order = rng.shuffle(candidates);
+    // Выполнение сверху вниз: упавший INSERT email не занимает, повтор падает у того, что идёт позже.
+    const taken = new Set<string>();
+    const outcome = order.map((c) => {
+      if (c.bad) return { fails: true, why: c.why };
+      if (taken.has(c.email)) return { fails: true, why: 'email уже вставлен выше: нарушен UNIQUE' };
+      taken.add(c.email);
+      return { fails: false, why: c.why };
+    });
     const code = [
       'CREATE TABLE users (',
       '  id    serial PRIMARY KEY,',
@@ -304,13 +313,13 @@ export const schemaConstraint: TaskGenerator = {
       '',
       ...order.map((c, i) => `-- ${i + 1}\n${c.sql}`),
     ].join('\n');
-    const failing = order.map((c, i) => (c.fails ? i + 1 : 0)).filter(Boolean);
+    const failing = outcome.map((o, i) => (o.fails ? i + 1 : 0)).filter(Boolean);
     return {
       prompt: 'PostgreSQL, таблица пустая, выражения выполняются по порядку, каждое в своей транзакции. Перечислите номера INSERT, которые завершатся ошибкой.',
       code,
       answerHint: 'номера через запятую',
       answerKey: failing.join(','),
-      explanation: order.map((c, i) => `${i + 1}: ${c.why}`).join('; ') + '.',
+      explanation: outcome.map((o, i) => `${i + 1}: ${o.why}`).join('; ') + '.',
       params: { minAge, dup },
     };
   },

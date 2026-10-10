@@ -6,11 +6,15 @@ import { estimateTheta, information, probAbove, type Response, type ThetaEstimat
 import { createRng } from './rng';
 
 /**
- * Пороги грейдов на шкале θ — границы между популяциями, а не их центры (eval/test/run.ts):
- * Middle −0,1 — середина между Junior N(−0,8; 0,5) и Middle N(0,6; 0,5); Junior −1,5 — между
- * новичком N(−2,1; 0,5) и Junior. Смесь и пороги — [В], уточняются разметкой (docs/test-calibration.md).
+ * Пороги грейдов на шкале θ — границы между популяциями, а не их центры.
+ * Middle −0,1 — середина между синтетическими Junior N(−0,8; 0,5) и Middle N(0,6; 0,5) (eval/test/run.ts).
+ * Junior −0,7 — по персонам (eval/test/personas.ts, ADR-0002, дополнение 10.10): прежний −1,5 лежал ниже
+ * самого лёгкого задания банка (b = −1,5) и подтверждал Junior у «3 месяца курсов» (0,81) и у
+ * верстальщика без JS (0,96); при −0,7 они ≈ 0,10 и 0,01, уверенный Junior — 0,90.
+ * Зона Junior (0,6) шире SE остановки (0,4). Персоны — модели знаний агента, не люди; пороги — [В],
+ * уточняются разметкой (docs/test-calibration.md).
  */
-export const GRADE_CUT: Record<Grade, number> = { junior: -1.5, middle: -0.1 };
+export const GRADE_CUT: Record<Grade, number> = { junior: -0.7, middle: -0.1 };
 
 /** Грейд подтверждён, если P(θ > порог) ≥ 0,8. */
 export const CONFIRM_PROB = 0.8;

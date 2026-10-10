@@ -20,7 +20,9 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:local": "bash scripts/db-local.sh"
+    "db:local": "bash scripts/db-local.sh",
+    "eval:test": "tsx eval/test/run.ts",
+    "eval:test-personas": "tsx eval/test/personas.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

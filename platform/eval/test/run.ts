@@ -1,6 +1,6 @@
 // Валидация теста на грейд на синтетических кандидатах (ADR-0002 § валидация), без LLM и без БД.
 // Тот же движок, что в проде: policy.selectNext / shouldStop / decide, параметры шаблонов из кода
-// (экспертные). Запуск из platform/: npx tsx eval/test/run.ts [--n 400] [--seed 1] [--noise 0.2]
+// (экспертные). Запуск из platform/: npx tsx eval/test/run.ts [--n 400] [--seed 1] [--noise 0.2] [--junior-cut −0.7]
 //
 // Честная граница: симуляция проверяет свойства механики ПРИ ЗАДАННЫХ параметрах заданий
 // (a, b экспертные, на людях не оценены), а не то, что задания измеряют умение.
@@ -21,6 +21,8 @@ const NOISE = arg('noise', 0.2);
 const CONFIRM = arg('confirm', CONFIRM_PROB);
 const MAXI = arg('max', MAX_ITEMS);
 const MINI = arg('min', MIN_ITEMS);
+// Порог Junior для сравнения «до/после»: подменяет общий GRADE_CUT движка на весь прогон.
+GRADE_CUT.junior = arg('junior-cut', GRADE_CUT.junior);
 
 /** Нормальное распределение (Бокс–Мюллер) на детерминированном rng. */
 function gauss(rng: ReturnType<typeof createRng>): number {
@@ -224,7 +226,7 @@ function runSpec(spec: Specialization): SpecReport {
 
 const t0 = Date.now();
 const reports = (['backend', 'frontend'] as Specialization[]).map(runSpec);
-console.log(`# Валидация теста на грейд (синтетика): N = ${N} на специализацию, seed = ${SEED}, шум экземпляра σ = ${NOISE}\n`);
+console.log(`# Валидация теста на грейд (синтетика): N = ${N} на специализацию, seed = ${SEED}, шум экземпляра σ = ${NOISE}, пороги Junior ${GRADE_CUT.junior} / Middle ${GRADE_CUT.middle}\n`);
 for (const rep of reports) {
   console.log(`## ${rep.spec}\n`);
   console.log('| Метрика | Цель | Факт |\n|---|---|---|');

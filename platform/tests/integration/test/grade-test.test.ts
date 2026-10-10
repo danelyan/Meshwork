@@ -164,7 +164,9 @@ describe('API теста на грейд', () => {
   });
 
   it('Middle не сдан, Junior решён → предложение и подтверждение Junior в один клик (R-C-08); повторно — 409', async () => {
-    const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 4242 });
+    // seed 1: 4 Junior-задания из 10, P(θ > −0,7) ≈ 0,93. При пороге Junior −0,7 «все Junior верно, Middle — нет»
+    // даёт предложение лишь в ~51 % seed (eval/test/personas.ts, ADR-0002 дополнение 10.10); 4242 даёт 0,797.
+    const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 1 });
     const v = await play(A, attemptId, (grade, key) => (grade === 'junior' ? key : 'нет'));
     expect(v.status).toBe('not_confirmed');
     expect(v.result?.confirmed).toBe(false);

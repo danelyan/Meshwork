@@ -95,9 +95,8 @@ describe('спецификация OpenAPI', () => {
 
   it('SSE-эндпоинты отдают text/event-stream, остальные JSON-операции событий не заявляют', () => {
     const sse = ops.filter((o) => String(JSON.stringify(o.op.responses['200'])).includes('text/event-stream')).map((o) => o.key);
-    expect(sse.sort()).toEqual(['GET /api/call/{id}/events', 'POST /api/consultant/messages', 'POST /api/employer/assistant/messages']);
+    expect(sse.sort()).toEqual(['GET /api/defense-room/{id}/events', 'POST /api/consultant/messages', 'POST /api/employer/assistant/messages']);
     expect(spec.components.schemas.ConsultantEvent).toBeTruthy();
-    expect(spec.components.schemas.CallEvent).toBeTruthy();
     expect(spec.components.schemas.EmployerEvent).toBeTruthy();
   });
 

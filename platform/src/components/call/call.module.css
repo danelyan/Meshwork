@@ -1,0 +1,37 @@
+/* Режим звонка защиты проекта (ADR 0003): аватар сверху, реплики, микрофон. Цвета — только токены. */
+.page { max-width: 960px; margin: 0 auto; padding: 24px var(--page-pad) 48px; display: grid; gap: 20px; }
+.stage { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
+.head { position: relative; width: 220px; height: 220px; background: var(--surface-dim); border: 1px solid var(--border-faint); }
+.side { display: grid; gap: 10px; }
+.subtitle { margin: 0; font-size: var(--fs-lg); line-height: 1.6; min-height: 3.2em; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; border: 1px solid var(--border-soft); padding: 4px 8px; background: var(--surface-ghost); }
+.chipOn { border-color: var(--blue); color: var(--blue); }
+.chipWarn { border-color: var(--danger-border); color: var(--danger-text); }
+.rec { display: inline-block; width: 8px; height: 8px; background: var(--red); margin-right: 6px; vertical-align: middle; }
+.thread { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-height: 52vh; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 12px; }
+.entry { display: grid; gap: 4px; max-width: 88%; padding: 10px 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--border-faint); background: var(--glass-strong); }
+.ai { justify-self: start; }
+.employer { justify-self: start; border-left: 3px solid var(--blue); }
+.candidate { justify-self: end; background: var(--blue); color: var(--on-ink); border-color: var(--blue); }
+.who { font-family: var(--mono); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.candidate .who { color: var(--on-ink-soft); }
+.composer { display: grid; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.input { flex: 1; min-width: 220px; min-height: 64px; resize: vertical; font: inherit; font-size: var(--fs-md); padding: 10px 12px; border: 1px solid var(--border-input); background: var(--surface-input); color: var(--text); }
+.input:focus { outline: 2px solid var(--focus); outline-offset: -1px; }
+.verdict { display: grid; gap: 10px; border: 1.5px solid var(--blue); padding: 16px; background: var(--glass-strong); }
+.total { font-size: 36px; font-weight: 700; letter-spacing: -0.04em; margin: 0; }
+.summary { margin: 0; white-space: pre-wrap; line-height: 1.7; }
+.scores { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.scores li { border: 1px solid var(--line); padding: 8px 10px; font-size: var(--fs); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.card { border: 1px solid var(--border-faint); background: var(--glass-strong); padding: 14px 16px; display: grid; gap: 8px; }
+.meta { color: var(--muted); font-size: var(--fs-sm); }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+@media (max-width: 720px) {
+  .page { padding-left: 16px; padding-right: 16px; }
+  .stage { grid-template-columns: 1fr; }
+  .head { width: 100%; height: 200px; }
+  .entry { max-width: 100%; }
+}

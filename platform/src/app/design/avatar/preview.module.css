@@ -1,9 +1,12 @@
 .page { display: grid; gap: 16px; padding: 24px var(--page-pad); }
 .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .panels { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 16px; }
+/* одна-две панели не должны занимать весь экран: кнопки озвучки и селекты ниже остаются в зоне досягаемости */
+.panels[data-count='1'] { max-width: 520px; }
+.panels[data-count='2'] { max-width: 1040px; }
 .panel { display: grid; gap: 8px; align-content: start; min-width: 0; }
 .panel select { width: 100%; }
-.stage { position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; background: var(--paper); touch-action: pan-y; }
+.stage { position: relative; width: 100%; height: clamp(220px, 46vh, 520px); overflow: hidden; background: var(--paper); touch-action: pan-y; }
 .stageDark { background: var(--avatar-stage-glow), var(--avatar-stage); }
 .stage[data-rotatable] { cursor: grab; user-select: none; }
 .stage[data-rotatable]:active { cursor: grabbing; }

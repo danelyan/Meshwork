@@ -103,7 +103,7 @@ describe('спецификация OpenAPI', () => {
   it('тела запросов берутся из Zod-схем маршрутов: обязательные поля совпадают с кодом', () => {
     const inv = spec.paths['/api/employer/invitations']!.post as unknown as { requestBody: { content: { 'application/json': { schema: { $ref: string } } } } };
     expect(inv.requestBody.content['application/json'].schema.$ref).toBe('#/components/schemas/InvitationInput');
-    expect(spec.components.schemas.InvitationInput!.required).toEqual(expect.arrayContaining(['candidateId', 'message', 'salaryOffer']));
+    expect(spec.components.schemas.InvitationInput!.required).toEqual(expect.arrayContaining(['candidateId', 'message', 'salaryFrom', 'salaryTo']));
     const start = spec.paths['/api/test/start']!.post as unknown as { requestBody: { content: { 'application/json': { schema: { properties: Record<string, { enum: string[] }> } } } } };
     expect(start.requestBody.content['application/json'].schema.properties.grade!.enum).toEqual(['junior', 'middle']);
   });

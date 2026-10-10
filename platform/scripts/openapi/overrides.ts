@@ -57,6 +57,7 @@ export const ERROR_RESPONSES: Record<number, { name: string; description: string
   415: { name: 'UnsupportedMediaType', description: 'Неподдерживаемый тип содержимого (`unsupported_media_type`)' },
   429: { name: 'TooManyRequests', description: 'Превышен лимит запросов или суточный лимит (`rate_limited`)' },
   500: { name: 'InternalError', description: 'Внутренняя ошибка (`internal`); текст исключения наружу не отдаётся' },
+  503: { name: 'ServiceUnavailable', description: 'Внешняя служба недоступна, например SMTP (`mail_unavailable`); повторить позже' },
 };
 
 export const TAG_DESCRIPTIONS: Record<string, string> = {
@@ -133,7 +134,7 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
     oneOf: [
       ...COMMON_EVENTS,
       ev('candidates', { block: free('Подборка: vacancy (id, title, salaryFrom) | null, total, items — карточки с псевдонимом, рангом, категорией, покрытием и обоснованием') }, 'Блок карточек кандидатов'),
-      ev('invitation_draft', { draft: free('Черновик приглашения: candidateId, alias, vacancyId, salaryOffer, message, limit {sent, limit, left}, blocked') }, 'Черновик приглашения; отправляет человек'),
+      ev('invitation_draft', { draft: free('Черновик приглашения: candidateId, alias, vacancyId, salaryFrom, salaryTo, message, limit {sent, limit, left}, blocked') }, 'Черновик приглашения; отправляет человек'),
       ev('need_draft', { draft: free('Черновик потребности: title, specialization, grade, stack, salaryFrom/To, needs, formHref') }, 'Черновик потребности; подтверждает человек'),
     ],
     discriminator: { propertyName: 'type' },
@@ -246,6 +247,64 @@ export const OVERRIDES: Record<string, OpOverride> = {
     ],
     description: 'Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка — на /auth?error=<код>, без подробностей и токенов.',
     success: { description: 'Редирект 303: незавершённый онбординг → /onboarding, иначе `next` или кабинет роли; при ошибке /auth?error=<код>' },
+  },
+  // lane email-auth: вход по почте и паролю (R-D-04). Все формы — same-origin и лимит попыток на клиента (429).
+  'POST /api/auth/register': {
+    summary: 'Регистрация по почте',
+    role: 'public',
+    body: {
+      schema: obj(
+        {
+          email: str('Почта; приводится к нижнему регистру', { format: 'email' }),
+          password: str('Пароль, 8–128 символов'),
+          name: str('Имя, до 120 символов'),
+          consent: str('Версия текста согласия из GET /api/auth/consent (R-C-14); без неё аккаунт не создаётся'),
+        },
+        ['email', 'password', 'consent'],
+      ),
+    },
+    success: JSON_OK('Код подтверждения отправлен. Ответ одинаковый и для занятой почты; `devCode` — только на локальном стенде', obj({ sent: { const: true }, devCode: str() }, ['sent'])),
+    errors: { 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток с клиента или писем на почту (`rate_limited`)', 503: 'Письмо не ушло: SMTP недоступен (`mail_unavailable`)' },
+  },
+  'POST /api/auth/verify': {
+    summary: 'Подтвердить почту кодом из письма',
+    role: 'public',
+    body: { schema: obj({ email: str(undefined, { format: 'email' }), code: str('6 цифр из письма'), next: nullable(str('Куда вести после входа; только внутренние пути')) }, ['email', 'code']) },
+    success: JSON_OK('Почта подтверждена, выставлена кука cid', obj({ next: str('Куда вести: /onboarding или кабинет роли') })),
+    errors: { 400: 'Неверный, просроченный или исчерпанный код (`invalid_code`, `code_expired`, `code_exhausted`) либо тело не прошло проверку', 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток (`rate_limited`)' },
+  },
+  'POST /api/auth/verify/resend': {
+    summary: 'Выслать код подтверждения заново',
+    role: 'public',
+    body: { schema: obj({ email: str(undefined, { format: 'email' }) }) },
+    success: JSON_OK('Ответ одинаковый для любой почты; `devCode` — только на локальном стенде', obj({ sent: { const: true }, devCode: str() }, ['sent'])),
+    errors: { 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток (`rate_limited`)', 503: 'Письмо не ушло (`mail_unavailable`)' },
+  },
+  'POST /api/auth/login': {
+    summary: 'Вход по почте и паролю',
+    role: 'public',
+    body: { schema: obj({ email: str(undefined, { format: 'email' }), password: str(), next: nullable(str('Куда вести после входа; только внутренние пути')) }, ['email', 'password']) },
+    success: JSON_OK('Вход выполнен, выставлена кука cid', obj({ next: str('Куда вести: /onboarding или кабинет роли') })),
+    errors: {
+      401: 'Неверная почта или пароль — одинаковый ответ (`invalid_credentials`)',
+      403: 'Почта не подтверждена, новый код отправлен (`email_not_verified`; `details.devCode` — только на локальном стенде) или чужой Origin',
+      429: 'Слишком много попыток (`rate_limited`)',
+    },
+  },
+  'POST /api/auth/password/forgot': {
+    summary: 'Код сброса пароля письмом',
+    role: 'public',
+    body: { schema: obj({ email: str(undefined, { format: 'email' }) }) },
+    success: JSON_OK('Всегда `{ sent: true }`: не раскрываем, есть ли аккаунт', obj({ sent: { const: true } })),
+    errors: { 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток с клиента (`rate_limited`)', 503: 'Письмо не ушло (`mail_unavailable`)' },
+  },
+  'POST /api/auth/password/reset': {
+    summary: 'Новый пароль по коду из письма',
+    role: 'public',
+    description: 'Смена пароля по коду; после смены прежние сессии аккаунта отзываются, выставляется новая кука cid.',
+    body: { schema: obj({ email: str(undefined, { format: 'email' }), code: str('6 цифр из письма'), password: str('Новый пароль, 8–128 символов'), next: nullable(str()) }, ['email', 'code', 'password']) },
+    success: JSON_OK('Пароль сменён, вход выполнен', obj({ next: str('Куда вести: /onboarding или кабинет роли') })),
+    errors: { 400: 'Неверный, просроченный или исчерпанный код (`invalid_code`, `code_expired`, `code_exhausted`) либо слабый пароль', 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток (`rate_limited`)' },
   },
 
   'POST /api/claims/confirm-batch': {

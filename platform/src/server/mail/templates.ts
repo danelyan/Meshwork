@@ -35,9 +35,10 @@ export function alreadyRegisteredMail(to: string): MailMessage {
 
 const rub = (n: number) => `${n.toLocaleString('ru-RU')} ₽`;
 
-export function invitationMail(to: string, p: { companyName: string; vacancyTitle: string | null; salaryOffer: number | null }): MailMessage {
+export function invitationMail(to: string, p: { companyName: string; vacancyTitle: string | null; salaryFrom: number; salaryTo: number }): MailMessage {
   const what = p.vacancyTitle ? `на позицию «${p.vacancyTitle}»` : 'к разговору о работе';
-  const salary = p.salaryOffer ? `\nЗарплатное предложение: ${rub(p.salaryOffer)}.` : '';
+  const range = p.salaryFrom === p.salaryTo ? rub(p.salaryFrom) : `от ${rub(p.salaryFrom)} до ${rub(p.salaryTo)}`;
+  const salary = `\nЗарплата: ${range} в месяц.`;
   return {
     kind: 'invitation',
     to,

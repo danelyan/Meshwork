@@ -83,6 +83,7 @@ describe('граница приватности: карточка помощни
     covered: 2,
     total: 3,
     provenCount: 1,
+    categoryMatch: true,
     boosts: { category: 0.1, fsp: 0.05, stack: 0.02, specPenalty: 0 },
     explanation: {
       summary: 'Закрывает 2 из 3',

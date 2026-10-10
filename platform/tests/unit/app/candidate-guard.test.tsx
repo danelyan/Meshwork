@@ -29,6 +29,7 @@ vi.mock('@/server/demo/context', () => ({ resolveChatDemoContext: vi.fn(async ()
 vi.mock('@/server/employer', () => ({
   listCandidateInvitations: vi.fn(async () => []),
   getPrivacy: vi.fn(async () => ({ hiddenFromEmployers: false })),
+  getCandidateContact: vi.fn(async () => ({ contact: null })),
 }));
 vi.mock('@/components/Chat', () => ({ Chat: () => null }));
 vi.mock('@/components/ProfilePage', () => ({ ProfilePage: () => null }));

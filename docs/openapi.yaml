@@ -128,6 +128,71 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/auth/login":
+    post:
+      operationId: postAuthLogin
+      tags:
+        - auth
+      summary: "Вход по почте и паролю"
+      description: "Вход по почте и паролю. Неверная почта или пароль — 401 invalid_credentials; почта не подтверждена — 403.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                next:
+                  oneOf:
+                    -
+                      type: string
+                      description: "Куда вести после входа; только внутренние пути"
+                    -
+                      type: "null"
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: "Вход выполнен, выставлена кука cid"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: string
+                    description: "Куда вести: /onboarding или кабинет роли"
+                required:
+                  - next
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: "Неверная почта или пароль — одинаковый ответ (`invalid_credentials`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: "Почта не подтверждена, новый код отправлен (`email_not_verified`; `details.devCode` — только на локальном стенде) или чужой Origin"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Слишком много попыток (`rate_limited`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/auth/logout":
     post:
       operationId: postAuthLogout
@@ -266,6 +331,195 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/auth/password/forgot":
+    post:
+      operationId: postAuthPasswordForgot
+      tags:
+        - auth
+      summary: "Код сброса пароля письмом"
+      description: "Код сброса пароля письмом. Всегда 200 `{ sent: true }`: не раскрываем, есть ли аккаунт.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        "200":
+          description: "Всегда `{ sent: true }`: не раскрываем, есть ли аккаунт"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  sent:
+                    const: true
+                required:
+                  - sent
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: "Чужой Origin (`forbidden`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Слишком много попыток с клиента (`rate_limited`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: "Письмо не ушло (`mail_unavailable`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  "/api/auth/password/reset":
+    post:
+      operationId: postAuthPasswordReset
+      tags:
+        - auth
+      summary: "Новый пароль по коду из письма"
+      description: "Смена пароля по коду; после смены прежние сессии аккаунта отзываются, выставляется новая кука cid.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  description: "6 цифр из письма"
+                password:
+                  type: string
+                  description: "Новый пароль, 8–128 символов"
+                next:
+                  oneOf:
+                    -
+                      type: string
+                    -
+                      type: "null"
+              required:
+                - email
+                - code
+                - password
+      responses:
+        "200":
+          description: "Пароль сменён, вход выполнен"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: string
+                    description: "Куда вести: /onboarding или кабинет роли"
+                required:
+                  - next
+        "400":
+          description: "Неверный, просроченный или исчерпанный код (`invalid_code`, `code_expired`, `code_exhausted`) либо слабый пароль"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: "Чужой Origin (`forbidden`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Слишком много попыток (`rate_limited`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/register":
+    post:
+      operationId: postAuthRegister
+      tags:
+        - auth
+      summary: "Регистрация по почте"
+      description: "Регистрация по почте (R-D-04): код подтверждения уходит письмом. Ответ не раскрывает, занята ли почта.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: "Почта; приводится к нижнему регистру"
+                  format: email
+                password:
+                  type: string
+                  description: "Пароль, 8–128 символов"
+                name:
+                  type: string
+                  description: "Имя, до 120 символов"
+                consent:
+                  type: string
+                  description: "Версия текста согласия из GET /api/auth/consent (R-C-14); без неё аккаунт не создаётся"
+              required:
+                - email
+                - password
+                - consent
+      responses:
+        "200":
+          description: "Код подтверждения отправлен. Ответ одинаковый и для занятой почты; `devCode` — только на локальном стенде"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  sent:
+                    const: true
+                  devCode:
+                    type: string
+                required:
+                  - sent
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: "Чужой Origin (`forbidden`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Слишком много попыток с клиента или писем на почту (`rate_limited`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: "Письмо не ушло: SMTP недоступен (`mail_unavailable`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
   "/api/auth/role":
     post:
       operationId: postAuthRole
@@ -368,6 +622,126 @@ paths:
                 type: string
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/auth/verify":
+    post:
+      operationId: postAuthVerify
+      tags:
+        - auth
+      summary: "Подтвердить почту кодом из письма"
+      description: "Код из письма → почта подтверждена, вход (кука `cid`).\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  description: "6 цифр из письма"
+                next:
+                  oneOf:
+                    -
+                      type: string
+                      description: "Куда вести после входа; только внутренние пути"
+                    -
+                      type: "null"
+              required:
+                - email
+                - code
+      responses:
+        "200":
+          description: "Почта подтверждена, выставлена кука cid"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: string
+                    description: "Куда вести: /onboarding или кабинет роли"
+                required:
+                  - next
+        "400":
+          description: "Неверный, просроченный или исчерпанный код (`invalid_code`, `code_expired`, `code_exhausted`) либо тело не прошло проверку"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: "Чужой Origin (`forbidden`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Слишком много попыток (`rate_limited`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/verify/resend":
+    post:
+      operationId: postAuthVerifyResend
+      tags:
+        - auth
+      summary: "Выслать код подтверждения заново"
+      description: "Выслать код подтверждения заново. Ответ одинаковый для любой почты.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        "200":
+          description: "Ответ одинаковый для любой почты; `devCode` — только на локальном стенде"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  sent:
+                    const: true
+                  devCode:
+                    type: string
+                required:
+                  - sent
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: "Чужой Origin (`forbidden`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Слишком много попыток (`rate_limited`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: "Письмо не ушло (`mail_unavailable`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
   "/api/auth/yandex":
     get:
       operationId: getAuthYandex
@@ -1989,6 +2363,61 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/profile/contact":
+    get:
+      operationId: getProfileContact
+      tags:
+        - profile
+      summary: "Способ связи кандидата (Q-35)."
+      description: "способ связи кандидата (Q-35).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Способ связи кандидата (Q-35)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postProfileContact
+      tags:
+        - profile
+      summary: "POST `{ contact }` — почта или Telegram; пустая строка или null — убрать."
+      description: "POST `{ contact }` — почта или Telegram; пустая строка или null — убрать. Компания увидит контакт только после принятия приглашения.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/CandidateContactInput"
+      responses:
+        "200":
+          description: "POST `{ contact }` — почта или Telegram; пустая строка или null — убрать. Компания увидит контакт только после принятия приглашения."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/profile/privacy":
     get:
       operationId: getProfilePrivacy
@@ -2629,6 +3058,22 @@ components:
       name: cid
       description: "Подписанная сессионная кука платформы"
   schemas:
+    CandidateContactInput:
+      type: object
+      properties:
+        contact:
+          anyOf:
+            -
+              type: string
+              const: ""
+            -
+              type: "null"
+            -
+              type: string
+              minLength: 1
+              maxLength: 120
+      required:
+        - contact
     Claim:
       type: object
       properties:
@@ -2965,7 +3410,7 @@ components:
             draft:
               type: object
               additionalProperties: true
-              description: "Черновик приглашения: candidateId, alias, vacancyId, salaryOffer, message, limit {sent, limit, left}, blocked"
+              description: "Черновик приглашения: candidateId, alias, vacancyId, salaryFrom, salaryTo, message, limit {sent, limit, left}, blocked"
           required:
             - type
             - draft
@@ -3034,14 +3479,19 @@ components:
           type: string
           minLength: 10
           maxLength: 2000
-        salaryOffer:
+        salaryFrom:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        salaryTo:
           type: integer
           minimum: 1
           maximum: 10000000
       required:
         - candidateId
         - message
-        - salaryOffer
+        - salaryFrom
+        - salaryTo
     OnboardingView:
       type: object
       additionalProperties: true
@@ -3182,6 +3632,12 @@ components:
             $ref: "#/components/schemas/ErrorBody"
     InternalError:
       description: "Внутренняя ошибка (`internal`); текст исключения наружу не отдаётся"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    ServiceUnavailable:
+      description: "Внешняя служба недоступна, например SMTP (`mail_unavailable`); повторить позже"
       content:
         "application/json":
           schema:

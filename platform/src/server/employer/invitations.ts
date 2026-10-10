@@ -112,7 +112,8 @@ export async function notifyCandidateInvited(invitationId: string): Promise<void
   const inv = await prisma.invitation.findUnique({
     where: { id: invitationId },
     select: {
-      salaryOffer: true,
+      salaryFrom: true,
+      salaryTo: true,
       candidate: { select: { email: true } },
       company: { select: { name: true } },
       vacancy: { select: { title: true, company: { select: { name: true } } } },
@@ -120,7 +121,7 @@ export async function notifyCandidateInvited(invitationId: string): Promise<void
   });
   if (!inv || !deliverable(inv.candidate.email)) return;
   const companyName = inv.company?.name ?? inv.vacancy?.company.name ?? 'Компания';
-  await sendMail(invitationMail(inv.candidate.email, { companyName, vacancyTitle: inv.vacancy?.title ?? null, salaryOffer: inv.salaryOffer }));
+  await sendMail(invitationMail(inv.candidate.email, { companyName, vacancyTitle: inv.vacancy?.title ?? null, salaryFrom: inv.salaryFrom, salaryTo: inv.salaryTo }));
 }
 
 /** Письмо работодателю-отправителю об ответе кандидата. Нет отправителя или почты — пропуск. */

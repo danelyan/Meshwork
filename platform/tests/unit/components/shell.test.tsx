@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 
 import { ShellFrame, useBareShell } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
@@ -94,21 +94,6 @@ describe('SiteHeader', () => {
     cleanup();
     h = await renderHeader(principal('pending'), '/profile', account);
     expect(h.queryByRole('button', { name: 'Тёмная тема' })).toBeNull();
-  });
-
-  it('вошёл с ролью: переключатель, колокольчик и меню на кабинете и на /consultant; разделы на /consultant - в меню', async () => {
-    const account = { userName: 'Иван Петров', userEmail: 'i@p.ru', roles: { role: 'candidate', companyName: null, other: 'employer', otherExists: true, canCreateOther: false } };
-    let h = await renderHeader(principal('candidate'), '/profile', account);
-    expect(h.getByRole('group', { name: 'Кабинеты' })).toBeDefined();
-    expect(h.getByRole('button', { name: 'Уведомления' })).toBeDefined();
-    expect(h.queryByRole('navigation', { name: 'Основная навигация' })).toBeNull();
-    cleanup();
-    h = await renderHeader(principal('candidate'), '/consultant', account);
-    expect(h.getByRole('group', { name: 'Кабинеты' })).toBeDefined();
-    expect(h.getByRole('button', { name: 'Уведомления' })).toBeDefined();
-    expect(h.queryByRole('navigation', { name: 'Основная навигация' })).toBeNull();
-    fireEvent.click(h.getByRole('button', { name: /Аккаунт, активная роль/ }));
-    expect(within(h.getByRole('navigation', { name: 'Разделы' })).getAllByRole('link').map((a) => a.textContent)).toEqual(['Консультант', 'Профиль', 'Тест', 'Проекты', 'Приглашения']);
   });
 
   it('сессия без учётки в БД (старая демо-кука): просто «Выйти»', async () => {

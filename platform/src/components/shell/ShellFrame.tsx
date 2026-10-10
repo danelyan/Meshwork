@@ -6,13 +6,14 @@ import { type ReactNode, createContext, useContext, useEffect, useMemo, useState
 import styles from './shell.module.css';
 import type { HeaderAccount } from '@/server/auth/role-plan';
 import { DashboardFrame } from './DashboardFrame';
-import { isBarePath } from './headerPlan';
+
+const BARE_PATHS = ['/onboarding', '/design/consultant-grid-preview', '/design/consultant-grid-v1', '/design/consultant-grid-v2', '/design/consultant-grid-v3'];
 
 const BareContext = createContext<(on: boolean) => void>(() => undefined);
 
 /**
  * Страница прячет шапку и подвал, пока `active` (тест в процессе: уйти случайно нельзя).
- * Для целых маршрутов (онбординг) список — BARE_PATHS в headerPlan.ts (вариант `bare` плана шапки).
+ * Для целых маршрутов (онбординг) список — BARE_PATHS.
  */
 export function useBareShell(active: boolean): void {
   const set = useContext(BareContext);
@@ -30,7 +31,7 @@ export function useBareShell(active: boolean): void {
 export function ShellFrame({ header, footer, children, account, employerSummary }: { header: ReactNode; footer: ReactNode; children: ReactNode; account?: HeaderAccount | null; employerSummary?: ReactNode }) {
   const pathname = usePathname();
   const [bareByPage, setBareByPage] = useState(false);
-  const bare = bareByPage || isBarePath(pathname);
+  const bare = bareByPage || BARE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const setter = useMemo(() => setBareByPage, []);
   return (
     <BareContext.Provider value={setter}>

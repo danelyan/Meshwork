@@ -60,9 +60,7 @@ test('С1: вход → резюме и ссылка → шаги → карто
   }
 
   // профиль: утверждения сгруппированы по уровням
-  // На /consultant сайдбара кабинета нет: разделы роли - в меню аккаунта (единая шапка).
-  await page.getByRole('banner').getByRole('button', { name: /Аккаунт/ }).click();
-  await page.getByRole('navigation', { name: 'Разделы' }).getByRole('link', { name: 'Профиль' }).click();
+  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'Профиль' }).click();
   await page.waitForURL('**/profile');
   await expect(page.getByRole('button', { name: 'PDF-профиль' })).toBeVisible();
   await expect(page.getByText(/со слов|артефакт/).first()).toBeVisible();

@@ -1,4 +1,6 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import 'server-only';
+
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { getEnv } from './env';
 import { errors } from './errors';
@@ -19,7 +21,10 @@ import { errors } from './errors';
  *      получают прежний 7-частный формат.
  *
  * Роль и id профиля в куке, чтобы `requireCandidate` оставался синхронным и не
- * ходил в БД. Смена роли (онбординг) перевыпускает куку (`userSessionCookie`).
+ * ходил в БД. Гварды решают по активной роли (`role`), id профиля — второе условие
+ * (`server/auth/access.ts`). `parseSession` к тому же отдаёт только id профиля активной роли:
+ * на это опираются страница /consultant и дебаг-панель (решают «есть candidateId — кандидат»).
+ * Смена роли (онбординг) перевыпускает куку (`userSessionCookie`).
  * Подделка любого поля ломает подпись.
  */
 export const SESSION_COOKIE = 'cid';
@@ -29,13 +34,7 @@ const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const OPT_ID_RE = /^[A-Za-z0-9_-]{0,64}$/;
 const PV_RE = /^[A-Za-z0-9_-]{1,16}$/;
 
-/**
- * Версия пароля для куки: 8 символов base64url от sha256(passwordHash). Хэш пароля солёный,
- * поэтому каждая смена пароля даёт новую версию. Нет пароля → пустая строка.
- */
-export function passwordVersionOf(passwordHash: string | null | undefined): string {
-  return passwordHash ? createHash('sha256').update(passwordHash).digest('base64url').slice(0, 8) : '';
-}
+export { passwordVersionOf } from './auth/password-version';
 
 export const USER_ROLES = ['pending', 'candidate', 'employer'] as const;
 export type SessionRole = (typeof USER_ROLES)[number];
@@ -176,30 +175,40 @@ export function getCandidateId(req: Request): string | null {
 }
 
 /**
- * candidateId или AppError: 401 — нет сессии; 403 — вошёл, но не кандидат
- * (работодатель или роль ещё не выбрана). Синхронная: проверяет только подпись
- * и срок; существование кандидата и владение объектом проверяет сервис.
+ * Кандидат по активной роли: 401 — нет сессии; 403 — активна другая роль (работодатель, pending) или нет
+ * профиля кандидата. Чистая функция (тесты без запроса). Старая демо-кука (userId = null) — кандидат.
  */
-export function requireCandidate(req: Request): string {
-  const s = getSession(req);
+export function candidateFrom(s: SessionPrincipal | null): string {
   if (!s) throw errors.unauthorized();
-  if (!s.candidateId) throw errors.forbidden('Доступно только кандидату');
+  if (s.role !== 'candidate' || !s.candidateId) throw errors.forbidden('Доступно только кандидату');
   return s.candidateId;
 }
 
-/** Аккаунт (любая роль, включая pending). Старая кука без аккаунта → 401. */
+/** Работодатель по активной роли: 401 — нет сессии; 403 — другая роль, нет аккаунта или профиля работодателя. */
+export function employerFrom(s: SessionPrincipal | null): { userId: string; employerProfileId: string } {
+  if (!s) throw errors.unauthorized();
+  if (s.role !== 'employer' || !s.userId || !s.employerProfileId) throw errors.forbidden('Доступно только работодателю');
+  return { userId: s.userId, employerProfileId: s.employerProfileId };
+}
+
+/**
+ * candidateId или AppError (см. `candidateFrom`). Синхронная: проверяет только подпись и срок;
+ * существование кандидата и владение объектом проверяет сервис. Уровень `candidate` в `API_ACCESS`.
+ */
+export function requireCandidate(req: Request): string {
+  return candidateFrom(getSession(req));
+}
+
+/** Аккаунт (любая роль, включая pending). Старая кука без аккаунта → 401. Уровень `account` в `API_ACCESS`. */
 export function requireUser(req: Request): SessionPrincipal & { userId: string } {
   const s = getSession(req);
   if (!s?.userId) throw errors.unauthorized();
   return s as SessionPrincipal & { userId: string };
 }
 
-/** Работодатель: 401 — нет входа, 403 — другая роль. */
+/** Работодатель: 401 — нет входа, 403 — другая активная роль (см. `employerFrom`). Уровень `employer`. */
 export function requireEmployer(req: Request): { userId: string; employerProfileId: string } {
-  const s = getSession(req);
-  if (!s) throw errors.unauthorized();
-  if (!s.userId || !s.employerProfileId) throw errors.forbidden('Доступно только работодателю');
-  return { userId: s.userId, employerProfileId: s.employerProfileId };
+  return employerFrom(getSession(req));
 }
 
 /** Параметры для `NextResponse.cookies.set(...)` (docs Next.js: NextResponse.cookies). */

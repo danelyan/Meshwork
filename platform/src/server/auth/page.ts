@@ -1,7 +1,10 @@
+import 'server-only';
+
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
+import { type PageLevel, foreignPageRedirect, pageLevelFor } from '@/server/auth/access';
 import { sessionExists } from '@/server/auth/stale';
 import { SESSION_COOKIE, type SessionPrincipal, parseSession } from '@/server/session';
 
@@ -31,7 +34,10 @@ async function guestRedirect(next: string, stale: boolean): Promise<never> {
   return redirect(stale ? `/api/auth/stale?next=${encodeURIComponent(next)}` : `/auth?next=${encodeURIComponent(next)}`);
 }
 
-/** Guard страницы: нужен аккаунт (любая роль). Иначе → /auth?next=… */
+/**
+ * Нужен аккаунт (любая роль, не старая демо-кука). Иначе → /auth?next=…. Вне таблицы `PAGE_ACCESS`:
+ * для `page.tsx` не использовать (тест вызова гвардов его не принимает) — там `requirePageAccess` и обёртки.
+ */
 export async function requirePageUser(next: string): Promise<SessionPrincipal & { userId: string }> {
   const { session: s, stale } = await getCheckedPageSession();
   if (!s?.userId) return guestRedirect(next, stale);
@@ -39,47 +45,42 @@ export async function requirePageUser(next: string): Promise<SessionPrincipal & 
 }
 
 /**
- * Куда отправить с страницы кандидата; null — пускать. Чистая функция (тесты без Next).
- * Нет сессии → /auth?next=…; роль не выбрана → /consultant (знакомство идёт в его ленте); работодатель → /employer.
- * Кандидат с незавершённым онбордингом («Настроить позже») пускается — ему плашка OnboardingBanner.
- * Старая кука демо-кандидата без аккаунта (userId = null) — кандидат, как и в API (requireCandidate).
+ * Единый гвард страниц: правило берётся из `PAGE_ACCESS` по пути (`foreignPageRedirect`), решает активная
+ * роль. Вызывать в каждой `page.tsx`, не в layout: layout не перерисовывается при клиентской навигации
+ * между дочерними страницами (docs Next.js: Authentication → Layouts and auth checks). `path` — адрес
+ * страницы с query: он же уходит в `next` после входа. Возвращает сессию (null — только на public-странице).
  */
-export function candidatePageRedirect(s: SessionPrincipal | null, next: string): string | null {
-  if (!s) return `/auth?next=${encodeURIComponent(next)}`;
-  if (s.candidateId) return null;
-  if (s.employerProfileId) return '/employer';
-  return '/consultant';
-}
-
-/**
- * Guard страниц кандидата — вызывать в каждой page.tsx группы (candidate), не в layout:
- * layout не перерисовывается при клиентской навигации между дочерними страницами
- * (docs Next.js: Authentication → Layouts and auth checks).
- */
-export async function requirePageCandidate(next: string): Promise<SessionPrincipal & { candidateId: string }> {
-  const { session: s, stale } = await getCheckedPageSession();
-  if (!s && stale) return guestRedirect(next, true);
-  const to = candidatePageRedirect(s, next);
+export async function requirePageAccess(path: string): Promise<SessionPrincipal | null> {
+  const { session, stale } = await getCheckedPageSession();
+  const to = foreignPageRedirect(session, path, { stale });
   if (to) redirect(to);
-  return s as SessionPrincipal & { candidateId: string };
+  return session;
 }
 
 /**
- * Guard /consultant — общий адрес ленты (решение владельца 10.10): знакомство (согласие, роль, шаги)
- * для любой роли и консультант кандидата. Пускает любой вход; что показать роли — решает страница:
- * данные кандидата (разговор, демо-резюме) грузятся только при candidateId из подписанной куки.
+ * Типизированный гвард уровня: запись страницы в таблице обязана совпадать с уровнем гварда — иначе ошибка
+ * разработчика (страница вызвала не тот гвард); статический тест ловит то же до запуска.
+ */
+async function requirePageLevel(level: Exclude<PageLevel, 'public'>, path: string): Promise<SessionPrincipal> {
+  const actual = pageLevelFor(path);
+  if (actual !== level) throw new Error(`Гвард уровня ${level} на странице ${path}: в PAGE_ACCESS — ${actual ?? 'нет записи'}`);
+  return (await requirePageAccess(path)) as SessionPrincipal;
+}
+
+/** Страница кандидата: гость → /auth, pending → /consultant, работодатель → /employer/company. */
+export async function requirePageCandidate(next: string): Promise<SessionPrincipal & { candidateId: string }> {
+  return (await requirePageLevel('candidate', next)) as SessionPrincipal & { candidateId: string };
+}
+
+/**
+ * /consultant — общий адрес ленты (решение владельца 10.10): знакомство (согласие, роль, шаги) для любой
+ * роли и дом обеих ролей. Пускает любой вход; что показать роли — решает страница.
  */
 export async function requirePageAccount(next: string): Promise<SessionPrincipal> {
-  const { session: s, stale } = await getCheckedPageSession();
-  if (!s) return guestRedirect(next, stale);
-  return s;
+  return requirePageLevel('account', next);
 }
 
-/** Guard кабинета работодателя: нет входа → /auth, роль не выбрана → /consultant (знакомство), кандидат → /consultant. */
+/** Кабинет работодателя: гость → /auth, pending и кандидат → /consultant. */
 export async function requirePageEmployer(next: string): Promise<SessionPrincipal & { userId: string; employerProfileId: string }> {
-  const { session: s, stale } = await getCheckedPageSession();
-  if (!s) return guestRedirect(next, stale);
-  if (s.userId && s.role === 'pending') redirect('/consultant');
-  if (!s.userId || !s.employerProfileId) redirect('/consultant');
-  return s as SessionPrincipal & { userId: string; employerProfileId: string };
+  return (await requirePageLevel('employer', next)) as SessionPrincipal & { userId: string; employerProfileId: string };
 }

@@ -1,5 +1,6 @@
 import { assertSameOrigin } from '@/server/auth/csrf';
-import { homePathFor, markOnboarded } from '@/server/auth/users';
+import { homePathFor } from '@/server/auth/access';
+import { markOnboarded } from '@/server/auth/users';
 import { withErrors } from '@/server/errors';
 import { requireUser } from '@/server/session';
 
@@ -9,6 +10,6 @@ export const dynamic = 'force-dynamic';
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { userId } = requireUser(req);
-  await markOnboarded(userId);
-  return Response.json({ onboarded: true, next: homePathFor() });
+  const user = await markOnboarded(userId);
+  return Response.json({ onboarded: true, next: homePathFor(user.role) });
 });

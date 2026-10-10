@@ -2,8 +2,9 @@ import { Prisma, type User } from '@prisma/client';
 
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
-import { passwordVersionOf, type UserSessionInput } from '@/server/session';
+import type { UserSessionInput } from '@/server/session';
 
+import { passwordVersionOf } from './password-version';
 import { assertConsentVersion, ensureConsent, hasCurrentConsent } from './consent';
 
 type UserWithProfiles = User & { employerProfile: { id: string } | null };
@@ -24,15 +25,6 @@ export function sessionInputFor(user: UserWithProfiles): UserSessionInput {
 /** Онбординг не завершён (или роль не выбрана): после входа — только в ленту знакомства, `next` не важен. */
 export function needsOnboarding(user: Pick<User, 'role' | 'onboardedAt'>): boolean {
   return !user.onboardedAt || user.role === 'pending';
-}
-
-/**
- * Куда вести после входа: всегда лента /consultant (решения владельца 10.10). Там знакомство любой
- * роли, а дальше — консультант кандидата или помощник по подбору работодателя: дом обеих ролей — чат.
- * Подбор работодателя (/employer) — по навигации и ссылкам из чата помощника.
- */
-export function homePathFor(): string {
-  return '/consultant';
 }
 
 export interface ExternalProfile {

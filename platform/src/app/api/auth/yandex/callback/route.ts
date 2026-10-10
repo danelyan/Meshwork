@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
+import { homePathFor } from '@/server/auth/access';
 import { CONSENT_VERSION, ensureConsent } from '@/server/auth/consent';
 import { safeNext } from '@/server/auth/redirect';
-import { homePathFor, needsOnboarding, sessionInputFor, upsertExternalUser } from '@/server/auth/users';
+import { needsOnboarding, sessionInputFor, upsertExternalUser } from '@/server/auth/users';
 import {
   OAUTH_COOKIE,
   YandexAuthError,
@@ -60,7 +61,7 @@ export async function GET(req: Request) {
     return back('internal');
   }
 
-  const home = homePathFor();
+  const home = homePathFor(user.role);
   const target = needsOnboarding(user) ? home : (safeNext(saved.next) ?? home);
   const res = NextResponse.redirect(new URL(target, env.APP_URL), 303);
   res.cookies.set(userSessionCookie(sessionInputFor(user)));

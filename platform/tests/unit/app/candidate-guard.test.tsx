@@ -1,9 +1,8 @@
 import { cleanup } from '@testing-library/react';
 import type { ReactElement } from 'react';
 
-import { candidatePageRedirect } from '@/server/auth/page';
 import { resetEnvCache } from '@/server/env';
-import { type SessionPrincipal, signSession, signUserSession } from '@/server/session';
+import { signSession, signUserSession } from '@/server/session';
 
 // Доступ к страницам группы (candidate) и /employer/* (E-02, граница доверия; R-C-14 — без входа данных не показываем).
 const cookie = vi.hoisted(() => ({ value: undefined as string | undefined }));
@@ -75,16 +74,7 @@ afterEach(() => {
   cleanup();
 });
 
-describe('candidatePageRedirect', () => {
-  const p = (x: Partial<SessionPrincipal>): SessionPrincipal => ({ userId: 'u', role: 'candidate', candidateId: null, employerProfileId: null, ...x });
-  it('матрица ролей', () => {
-    expect(candidatePageRedirect(null, '/test?a=1&b=2')).toBe('/auth?next=%2Ftest%3Fa%3D1%26b%3D2');
-    expect(candidatePageRedirect(p({ candidateId: 'c' }), '/x')).toBeNull();
-    expect(candidatePageRedirect(p({ userId: null, candidateId: 'c' }), '/x')).toBeNull();
-    expect(candidatePageRedirect(p({ role: 'employer', employerProfileId: 'e' }), '/x')).toBe('/employer');
-    expect(candidatePageRedirect(p({ role: 'pending' }), '/x')).toBe('/consultant');
-  });
-});
+// Чистая матрица редиректов (foreignPageRedirect) — tests/unit/auth/access-redirects.test.ts; здесь — сами страницы.
 
 describe.each(PAGES)('страница %s', (_name, next, run) => {
   it('гость → /auth?next=<путь>', async () => {
@@ -98,9 +88,9 @@ describe.each(PAGES)('страница %s', (_name, next, run) => {
     cookie.value = SESS.legacy();
     expect(await outcome(run)).toBe('ok');
   });
-  it('работодатель → /employer', async () => {
+  it('работодатель → профиль компании /employer/company (решение владельца 10.10)', async () => {
     cookie.value = SESS.employer();
-    expect(await outcome(run)).toBe('/employer');
+    expect(await outcome(run)).toBe('/employer/company');
   });
   it('роль не выбрана → /consultant (знакомство идёт в его ленте)', async () => {
     cookie.value = SESS.pending();

@@ -1,0 +1,3188 @@
+openapi: "3.1.0"
+info:
+  title: "ФСП Карьера - API платформы"
+  version: "0.1.0"
+  description: "REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.\n\nВход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.\n\nВсе ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).\n\nСлужебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.\n\n### События SSE\n\nЭндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.\n\nВторой ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`."
+servers:
+  -
+    url: "/"
+    description: "Тот же origin, что и интерфейс"
+tags:
+  -
+    name: auth
+    description: "Вход, сессия, согласие на обработку ПДн, роль"
+  -
+    name: claims
+    description: "Карточки утверждений кандидата: подтвердить, поправить, отклонить"
+  -
+    name: consultant
+    description: "Чат с консультантом (SSE) и история разговоров"
+  -
+    name: defense
+    description: "Защита утверждения: короткое интервью, повышающее уровень до «платформа»"
+  -
+    name: demo
+    description: "Демо-вход и демо-резюме (только при DEMO_LOGIN)"
+  -
+    name: employer
+    description: "Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)"
+  -
+    name: health
+    description: "Проверка живости"
+  -
+    name: invitations
+    description: "Приглашения глазами кандидата"
+  -
+    name: onboarding
+    description: "Онбординг: шаги, ответы, итог"
+  -
+    name: openapi
+    description: "Спецификация API"
+  -
+    name: profile
+    description: "Профиль кандидата и приватность"
+  -
+    name: recommendations
+    description: "Рекомендации: тест, пробелы, задания, вакансии"
+  -
+    name: stt
+    description: "Голосовой ввод (Yandex SpeechKit)"
+  -
+    name: test
+    description: "Тест на грейд: попытки, ответы, итог"
+  -
+    name: uploads
+    description: "Загрузка резюме и документов"
+paths:
+  "/api/auth/consent":
+    get:
+      operationId: getAuthConsent
+      tags:
+        - auth
+      summary: "Версия текста согласия на обработку ПДн"
+      description: "Текущая версия текста согласия (docs/consent.md).\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Текущая версия текста согласия"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                required:
+                  - version
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postAuthConsent
+      tags:
+        - auth
+      summary: "Зафиксировать согласие на обработку ПДн (R-C-14)."
+      description: "Зафиксировать согласие на обработку ПДн (R-C-14). Устаревшая версия → 409.\n\nНужна сессия аккаунта любой роли (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                version:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+              required:
+                - version
+      responses:
+        "200":
+          description: "Согласие записано"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  acceptedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - version
+                  - acceptedAt
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "Версия текста согласия устарела (`conflict`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/logout":
+    post:
+      operationId: postAuthLogout
+      tags:
+        - auth
+      summary: "Выход"
+      description: "Выход: только POST (GET-выход можно дёрнуть картинкой с чужого сайта). Куку стирает. Запрос с `Accept: text/html` получает 303 на /auth.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Кука стёрта (запрос не из HTML-формы)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+        "303":
+          description: "HTML-форма: редирект на /auth"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/me":
+    get:
+      operationId: getAuthMe
+      tags:
+        - auth
+      summary: "Текущий вход"
+      description: "Текущий вход. `{ user: null }` — не вошёл. Старая кука демо-кандидата без аккаунта → `{ user: null, legacyCandidateId }`.\n\nВход не нужен."
+      security:
+        - {}
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Текущий вход. `user: null` — не вошёл; `legacyCandidateId` — старая кука демо-кандидата без аккаунта"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  user:
+                    oneOf:
+                      -
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          role:
+                            type: string
+                            description: "candidate, employer или pending"
+                          name:
+                            type: string
+                          email:
+                            oneOf:
+                              -
+                                type: string
+                              -
+                                type: "null"
+                          isDemo:
+                            type: boolean
+                          candidateId:
+                            oneOf:
+                              -
+                                type: string
+                              -
+                                type: "null"
+                          employerProfileId:
+                            oneOf:
+                              -
+                                type: string
+                              -
+                                type: "null"
+                          onboarded:
+                            type: boolean
+                          consent:
+                            type: boolean
+                            description: "Согласие текущей версии дано"
+                        required:
+                          - id
+                          - role
+                          - name
+                          - email
+                          - isDemo
+                          - candidateId
+                          - employerProfileId
+                          - onboarded
+                          - consent
+                      -
+                        type: "null"
+                  legacyCandidateId:
+                    type: string
+                required:
+                  - user
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/onboarding/complete":
+    post:
+      operationId: postAuthOnboardingComplete
+      tags:
+        - auth
+      summary: "Завершить онбординг"
+      description: "Завершить онбординг: нужна роль и согласие текущей версии, иначе 409. Ответ — куда вести дальше.\n\nНужна сессия аккаунта любой роли (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Онбординг завершён"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  onboarded:
+                    const: true
+                  next:
+                    type: string
+                    description: "Куда вести дальше (путь интерфейса)"
+                required:
+                  - onboarded
+                  - next
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "Не выбрана роль или нет согласия текущей версии (`conflict`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/role":
+    post:
+      operationId: postAuthRole
+      tags:
+        - auth
+      summary: "Выбрать роль (кандидат или работодатель)"
+      description: "Выбор роли в онбординге (один раз). Перевыпускает куку с новой ролью.\n\nНужна сессия аккаунта любой роли (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              oneOf:
+                -
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      const: candidate
+                  required:
+                    - role
+                -
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      const: employer
+                    companyName:
+                      type: string
+                      minLength: 2
+                      maxLength: 120
+                  required:
+                    - role
+                    - companyName
+      responses:
+        "200":
+          description: "Роль выбрана; выставлена новая кука cid"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  candidateId:
+                    oneOf:
+                      -
+                        type: string
+                      -
+                        type: "null"
+                  employerProfileId:
+                    oneOf:
+                      -
+                        type: string
+                      -
+                        type: "null"
+                required:
+                  - role
+                  - candidateId
+                  - employerProfileId
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "Роль уже выбрана или не дано согласие (`conflict`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/stale":
+    get:
+      operationId: getAuthStale
+      tags:
+        - auth
+      summary: "Сбросить протухшую сессию"
+      description: "Страничный guard шлёт сюда, когда кука подписана верно, а аккаунта в БД нет. Стирает куку, только если она и вправду протухла; живую сессию не трогает.\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: next
+          in: query
+          required: false
+          description: "Куда вернуть после входа; принимаются только внутренние пути"
+          schema:
+            type: string
+      responses:
+        "303":
+          description: "Редирект 303: на /auth?next=… (кука стёрта) или на `next` (кука живая)"
+          headers:
+            Location:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/yandex":
+    get:
+      operationId: getAuthYandex
+      tags:
+        - auth
+      summary: "Начать вход через Яндекс ID"
+      description: "Старт входа через Яндекс ID: state и PKCE verifier в короткоживущей подписанной куке (10 минут), редирект на oauth.yandex.ru. Не настроен или нет согласия — обратно на /auth?error=… .\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: consent
+          in: query
+          required: true
+          description: "Версия текста согласия, отмеченная галкой на /auth (из GET /api/auth/consent); без неё в Яндекс не ведём"
+          schema:
+            type: string
+        -
+          name: next
+          in: query
+          required: false
+          description: "Куда вернуть после входа; только внутренние пути"
+          schema:
+            type: string
+      responses:
+        "303":
+          description: "Редирект 303 на oauth.yandex.ru или на /auth?error=yandex_not_configured|consent_required"
+          headers:
+            Location:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/auth/yandex/callback":
+    get:
+      operationId: getAuthYandexCallback
+      tags:
+        - auth
+      summary: "Возврат из Яндекс ID"
+      description: "Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка — на /auth?error=<код>, без подробностей и токенов.\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: code
+          in: query
+          required: false
+          description: "Код авторизации от Яндекса"
+          schema:
+            type: string
+        -
+          name: state
+          in: query
+          required: false
+          description: "Должен совпасть со state из куки старта"
+          schema:
+            type: string
+        -
+          name: error
+          in: query
+          required: false
+          description: "Присутствует, если пользователь отказал"
+          schema:
+            type: string
+      responses:
+        "303":
+          description: "Редирект 303: незавершённый онбординг → /onboarding, иначе `next` или кабинет роли; при ошибке /auth?error=<код>"
+          headers:
+            Location:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/claims/{id}/{action}":
+    post:
+      operationId: postClaimsIdAction
+      tags:
+        - claims
+      summary: "Подтвердить, поправить или отклонить утверждение"
+      description: "Карточка «да / поправить / нет». `action` — `confirm`, `edit` или `reject`; другое значение — 404. Только владелец: чужое и несуществующее — 404. Тело нужно только для `edit` и меняет лишь формулировку (3–300 символов); отклонённое не оживает (409).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: action
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - confirm
+              - edit
+              - reject
+      requestBody:
+        required: true
+        description: "Только для action = edit"
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                statement:
+                  type: string
+                  description: "Новая формулировка, 3–300 символов"
+              required:
+                - statement
+      responses:
+        "200":
+          description: "Обновлённое утверждение"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  claim:
+                    $ref: "#/components/schemas/Claim"
+                required:
+                  - claim
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Утверждение уже отклонено или в неподходящем статусе (`conflict`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/claims/confirm-batch":
+    post:
+      operationId: postClaimsConfirmBatch
+      tags:
+        - claims
+      summary: "Подтвердить пачку утверждений «со слов»"
+      description: "Подтвердить все утверждения «со слов»: одна транзакция, только свои утверждения уровня self_reported.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                ids:
+                  minItems: 1
+                  maxItems: 100
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+              required:
+                - ids
+      responses:
+        "200":
+          description: "Результат пакетного подтверждения (сколько подтверждено, какие id пропущены)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Счётчики и список подтверждённых утверждений"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/consultant/conversations":
+    get:
+      operationId: getConsultantConversations
+      tags:
+        - consultant
+      summary: "Список разговоров кандидата"
+      description: "Разговоры кандидата, свежие первыми.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "До 50 разговоров, свежие первыми"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - title
+                        - createdAt
+                        - updatedAt
+                required:
+                  - conversations
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/consultant/conversations/{id}":
+    get:
+      operationId: getConsultantConversationsId
+      tags:
+        - consultant
+      summary: "История разговора"
+      description: "История разговора. Только владелец. Служебные строки (system, tool, пустые assistant с вызовами) не отдаются.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Разговор и реплики по порядку"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  conversation:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      title:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+                    required:
+                      - id
+                      - title
+                      - createdAt
+                      - updatedAt
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        role:
+                          type: string
+                          enum:
+                            - user
+                            - assistant
+                        content:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - role
+                        - content
+                        - createdAt
+                required:
+                  - conversation
+                  - messages
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/consultant/messages":
+    post:
+      operationId: postConsultantMessages
+      tags:
+        - consultant
+      summary: "Ход консультанта (SSE)"
+      description: "Ход консультанта: тело — текст, вложения (id из /api/uploads) и ссылки; ответ — поток событий `ConsultantEvent`, заканчивается `done`. Один ход на разговор одновременно. Первый ход с вложениями запускает конвейер: сборщик → извлекатель → проверяющий → черновики утверждений (события `step`, `claims`). Не больше 6 вызовов инструментов за ход. В теле должен быть текст, вложение или ссылка (иначе 400); `onboardingStep` — свободный вопрос посреди онбординга, нужен вход, согласие и роль кандидата.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                conversationId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                text:
+                  default: ""
+                  type: string
+                  maxLength: 8000
+                uploadIds:
+                  maxItems: 10
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+                urls:
+                  maxItems: 10
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 2048
+                    format: uri
+                onboardingStep:
+                  type: string
+                  pattern: "^[A-Za-z]{1,40}$"
+      responses:
+        "200":
+          description: "Поток событий SSE: кадры `data: <json>\\n\\n`, последним приходит `done`"
+          headers:
+            X-Conversation-Id:
+              schema:
+                type: string
+              description: "Идентификатор разговора"
+          content:
+            "text/event-stream":
+              schema:
+                type: string
+                description: "Кадры `data: <json>`; схема кадра — ConsultantEvent"
+                x-event-schema:
+                  $ref: "#/components/schemas/ConsultantEvent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Вопрос посреди онбординга без входа или не кандидатом"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ход в этом разговоре уже идёт (`busy`) или не выполнено условие хода; до начала потока"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/defense":
+    post:
+      operationId: postDefense
+      tags:
+        - defense
+      summary: "Начать защиту утверждения"
+      description: "Начать (или продолжить активную) защиту утверждения: короткое интервью из 3–5 вопросов, оценщик по рубрике, порог и уровень решает код.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                claimId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+              required:
+                - claimId
+      responses:
+        "200":
+          description: "Продолжена активная сессия (`resumed: true`)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Та же форма, что у 201"
+        "201":
+          description: "Новая сессия защиты и первый вопрос"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Сессия защиты: id, утверждение, первый вопрос, лимиты, оговорка; `resumed` — продолжена активная сессия"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Утверждение не найдено или чужое"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Утверждение нельзя защищать в текущем состоянии или исчерпаны лимиты"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/defense/{sessionId}":
+    get:
+      operationId: getDefenseSessionId
+      tags:
+        - defense
+      summary: "Состояние защиты"
+      description: "состояние сессии (вопросы, ответы, вердикт). Чужая — 404.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Состояние: вопросы, ответы, вердикт, лимиты, оговорка"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Состояние сессии защиты"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postDefenseSessionId
+      tags:
+        - defense
+      summary: "Ответить на вопрос защиты"
+      description: "Ответ на текущий вопрос. Пустой ответ допустим («не знаю» оценивается честно). Результат — следующий вопрос или вердикт.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                answer:
+                  type: string
+                  maxLength: 6000
+              required:
+                - answer
+      responses:
+        "200":
+          description: "Следующий вопрос или вердикт"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Следующий вопрос либо вердикт с итоговым уровнем"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Сессия уже завершена"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/demo/login":
+    get:
+      operationId: getDemoLogin
+      tags:
+        - demo
+      summary: "Список демо-аккаунтов"
+      description: "Список демо-кандидатов и демо-работодателей для экрана выбора. При выключенном DEMO_LOGIN — 404.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Демо-аккаунты"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  candidates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        specialization:
+                          oneOf:
+                            -
+                              type: string
+                            -
+                              type: "null"
+                        fspState:
+                          type: string
+                        demoResume:
+                          oneOf:
+                            -
+                              type: object
+                              properties:
+                                fileName:
+                                  type: string
+                                link:
+                                  type: string
+                              required:
+                                - fileName
+                                - link
+                            -
+                              type: "null"
+                      required:
+                        - id
+                        - name
+                        - specialization
+                        - fspState
+                        - demoResume
+                  employers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        company:
+                          oneOf:
+                            -
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                name:
+                                  type: string
+                              required:
+                                - id
+                                - name
+                            -
+                              type: "null"
+                      required:
+                        - id
+                        - name
+                        - company
+                required:
+                  - candidates
+                  - employers
+        "404":
+          description: "Демо-вход выключен"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postDemoLogin
+      tags:
+        - demo
+      summary: "Войти в демо-аккаунт"
+      description: "Вход за демо-аккаунт: новый пользователь (`fresh` с версией согласия), перезапуск онбординга, готовый демо-кандидат или демо-работодатель. Выставляет куку cid. Не-демо аккаунты — 404.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              anyOf:
+                -
+                  type: object
+                  properties:
+                    fresh:
+                      type: boolean
+                      const: true
+                    consent:
+                      type: string
+                      minLength: 1
+                      maxLength: 64
+                  required:
+                    - fresh
+                    - consent
+                -
+                  type: object
+                  properties:
+                    restartUserId:
+                      type: string
+                      minLength: 1
+                      maxLength: 64
+                  required:
+                    - restartUserId
+                -
+                  type: object
+                  properties:
+                    restartCandidateId:
+                      type: string
+                      minLength: 1
+                      maxLength: 64
+                  required:
+                    - restartCandidateId
+                -
+                  type: object
+                  properties:
+                    candidateId:
+                      type: string
+                      minLength: 1
+                      maxLength: 64
+                  required:
+                    - candidateId
+                -
+                  type: object
+                  properties:
+                    employerUserId:
+                      type: string
+                      minLength: 1
+                      maxLength: 64
+                  required:
+                    - employerUserId
+      responses:
+        "200":
+          description: "Вход выполнен; в ответе `next` — куда вести"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: string
+                required:
+                  - next
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: "Демо-вход выключен или аккаунт не демо"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteDemoLogin
+      tags:
+        - demo
+      summary: "Выйти из демо"
+      description: "Выход: стирает куку cid.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Кука стёрта"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/demo/resume":
+    get:
+      operationId: getDemoResume
+      tags:
+        - demo
+      summary: "Демо-резюме текущего демо-кандидата"
+      description: "Демо-резюме текущего демо-кандидата (PDF), чтобы жюри не искало файлы. Только при DEMO_LOGIN и только для демо-кандидатов. `?info=1` — метаданные вместо файла.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: info
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "PDF-файл демо-резюме (при `info=1` — JSON с метаданными). При `info=1`: имя файла и ссылка для вставки"
+          content:
+            "application/pdf":
+              schema:
+                type: string
+                format: binary
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  fileName:
+                    type: string
+                  link:
+                    type: string
+                required:
+                  - fileName
+                  - link
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Демо-вход выключен"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: "Не демо-кандидат или у него нет резюме"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/assistant/messages":
+    post:
+      operationId: postEmployerAssistantMessages
+      tags:
+        - employer
+      summary: "Ход помощника работодателя (SSE)"
+      description: "Ход помощника работодателя: поток событий `EmployerEvent`, как у консультанта. Разговор — свой, чужой — 404. Один ход на разговор одновременно. Помощник видит только публичную часть кандидатов (псевдоним, категория, покрытие); имя — только у принявших приглашение.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                conversationId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+              required:
+                - text
+      responses:
+        "200":
+          description: "Поток событий SSE: кадры `data: <json>\\n\\n`, последним приходит `done`"
+          headers:
+            X-Conversation-Id:
+              schema:
+                type: string
+              description: "Идентификатор разговора"
+          content:
+            "text/event-stream":
+              schema:
+                type: string
+                description: "Кадры `data: <json>`; схема кадра — EmployerEvent"
+                x-event-schema:
+                  $ref: "#/components/schemas/EmployerEvent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ход в этом разговоре уже идёт (`busy`) или не выполнено условие хода; до начала потока"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/invitations":
+    get:
+      operationId: getEmployerInvitations
+      tags:
+        - employer
+      summary: "Трекинг приглашений и остаток лимита"
+      description: "Статусы приглашений компании (R-E-05) и остаток суточного лимита.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Приглашения компании и лимит"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  invitations:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                      description: "Приглашение: кандидат, потребность, зарплата, статус, даты; контакты — только после принятия"
+                  limit:
+                    type: object
+                    properties:
+                      perDay:
+                        type: integer
+                      sentToday:
+                        type: integer
+                    required:
+                      - perDay
+                      - sentToday
+                required:
+                  - invitations
+                  - limit
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postEmployerInvitations
+      tags:
+        - employer
+      summary: "Пригласить кандидата"
+      description: "Приглашение: описание задачи и зарплата обязательны, потребность — нет (R-E-05). Контакты кандидата до принятия скрыты.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/InvitationInput"
+      responses:
+        "201":
+          description: "Приглашение создано"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Созданное приглашение"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Кандидат скрыт или не существует, либо потребность чужая"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Открытое приглашение этому кандидату уже есть"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Суточный лимит приглашений исчерпан"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/search":
+    get:
+      operationId: getEmployerSearch
+      tags:
+        - employer
+      summary: "Поиск по базе кандидатов"
+      description: "Поиск по всему банку без привязки к потребности (R-E-04): та же выдача, что у подборки.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: spec
+          in: query
+          required: false
+          description: "Специализация"
+          schema:
+            type: string
+            enum:
+              - backend
+              - frontend
+        -
+          name: grade
+          in: query
+          required: false
+          description: "Грейд"
+          schema:
+            type: string
+            enum:
+              - junior
+              - middle
+        -
+          name: stack
+          in: query
+          required: false
+          description: "Технологии через запятую, не больше 10"
+          schema:
+            type: string
+        -
+          name: fsp
+          in: query
+          required: false
+          description: "`1` — только с достижениями ФСП"
+          schema:
+            type: string
+            enum:
+              - "1"
+        -
+          name: category
+          in: query
+          required: false
+          description: "`1` — только кандидаты с подтверждённой категорией"
+          schema:
+            type: string
+            enum:
+              - "1"
+        -
+          name: limit
+          in: query
+          required: false
+          description: "Размер выдачи; неверное значение заменяется значением по умолчанию"
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: "Ранжированные карточки с обоснованием"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Ранжированные карточки с обоснованием (псевдоним, категория, покрытие, что закрыто и чего не хватает); контакты `null` до принятия приглашения"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/vacancies":
+    get:
+      operationId: getEmployerVacancies
+      tags:
+        - employer
+      summary: "Потребности компании"
+      description: "потребности своей компании (R-E-02).\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Компания и её потребности"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  company:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                      - id
+                      - name
+                  vacancies:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                      description: "Потребность"
+                required:
+                  - company
+                  - vacancies
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postEmployerVacancies
+      tags:
+        - employer
+      summary: "Создать потребность"
+      description: "Создать потребность. Требования — только из каталога своей специализации или общие.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/VacancyInput"
+      responses:
+        "201":
+          description: "Потребность создана"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Созданная потребность"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/vacancies/{id}":
+    get:
+      operationId: getEmployerVacanciesId
+      tags:
+        - employer
+      summary: "Потребность компании"
+      description: "своя потребность; чужая — 404.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Потребность компании"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Потребность: поля VacancyInput, id, archived, даты"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Потребность не найдена или чужая"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: putEmployerVacanciesId
+      tags:
+        - employer
+      summary: "Заменить поля потребности"
+      description: "PUT — заменить поля потребности (форма редактирования).\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/VacancyInput"
+      responses:
+        "200":
+          description: "Обновлённая потребность"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Потребность целиком"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Потребность не найдена или чужая"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      operationId: patchEmployerVacanciesId
+      tags:
+        - employer
+      summary: "Закрыть или вернуть потребность"
+      description: "PATCH `{ archived }` — закрыть / вернуть потребность.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/VacancyPatch"
+      responses:
+        "200":
+          description: "Потребность с новым признаком archived"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Потребность целиком"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Потребность не найдена или чужая"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/vacancies/{id}/matches":
+    get:
+      operationId: getEmployerVacanciesIdMatches
+      tags:
+        - employer
+      summary: "Подборка кандидатов под потребность"
+      description: "Подборка с обоснованием (R-E-03, R-M-03); фильтры — query (R-M-04). Контакты скрыты до принятия приглашения (R-E-07).\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: spec
+          in: query
+          required: false
+          description: "Специализация"
+          schema:
+            type: string
+            enum:
+              - backend
+              - frontend
+        -
+          name: grade
+          in: query
+          required: false
+          description: "Грейд"
+          schema:
+            type: string
+            enum:
+              - junior
+              - middle
+        -
+          name: stack
+          in: query
+          required: false
+          description: "Технологии через запятую, не больше 10"
+          schema:
+            type: string
+        -
+          name: fsp
+          in: query
+          required: false
+          description: "`1` — только с достижениями ФСП"
+          schema:
+            type: string
+            enum:
+              - "1"
+        -
+          name: category
+          in: query
+          required: false
+          description: "`1` — только кандидаты с подтверждённой категорией"
+          schema:
+            type: string
+            enum:
+              - "1"
+        -
+          name: limit
+          in: query
+          required: false
+          description: "Размер выдачи; неверное значение заменяется значением по умолчанию"
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: "Ранжированные карточки с обоснованием"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Ранжированные карточки с обоснованием (псевдоним, категория, покрытие, что закрыто и чего не хватает); контакты `null` до принятия приглашения"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Потребность не найдена или чужая"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/health":
+    get:
+      operationId: getHealth
+      tags:
+        - health
+      summary: "Проверка живости приложения и БД"
+      description: "200 — приложение и БД живы; 503 — БД недоступна. Секретов и конфигурации не раскрывает.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Приложение и БД живы"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  db:
+                    type: string
+                    enum:
+                      - up
+                      - down
+                  llm:
+                    type: string
+                    description: "Провайдер LLM или misconfigured"
+                  time:
+                    type: string
+                    format: date-time
+                required:
+                  - ok
+                  - db
+                  - llm
+                  - time
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: "БД недоступна или LLM настроен неверно; тело той же формы"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  db:
+                    type: string
+                    enum:
+                      - up
+                      - down
+                  llm:
+                    type: string
+                  time:
+                    type: string
+                    format: date-time
+                required:
+                  - ok
+                  - db
+                  - llm
+                  - time
+  "/api/invitations":
+    get:
+      operationId: getInvitations
+      tags:
+        - invitations
+      summary: "Входящие приглашения кандидата"
+      description: "входящие приглашения кандидата (только свои, R-C-16). `?view=1` отмечает просмотр.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: view
+          in: query
+          required: false
+          description: "`1` — отметить просмотр: статус sent → viewed"
+          schema:
+            type: string
+            enum:
+              - "1"
+      responses:
+        "200":
+          description: "Приглашения кандидата, только свои (R-C-16)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  invitations:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                      description: "Приглашение: компания, потребность, зарплата, сообщение, статус, даты"
+                required:
+                  - invitations
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/invitations/{id}":
+    post:
+      operationId: postInvitationsId
+      tags:
+        - invitations
+      summary: "Принять или отклонить приглашение"
+      description: "Ответ кандидата на приглашение (R-C-11). После принятия работодатель видит контакты.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/InvitationAction"
+      responses:
+        "200":
+          description: "Приглашение с новым статусом"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Приглашение"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Приглашение чужое или не существует"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "На приглашение уже отвечено"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/onboarding":
+    get:
+      operationId: getOnboarding
+      tags:
+        - onboarding
+      summary: "Состояние онбординга"
+      description: "Состояние онбординга: текущий шаг, лента, прогресс, итог (OnboardingView).\n\nНужна сессия аккаунта любой роли (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Текущий шаг, лента, прогресс, итог"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/OnboardingView"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postOnboarding
+      tags:
+        - onboarding
+      summary: "Действие онбординга"
+      description: "Ответить на шаг (`answer`), пропустить (`skip`), вернуться (`goto`) или отложить (`later`). После `answer`/`skip`/`goto` — новое состояние; при смене роли выставляется новая кука cid. Завершение — `POST /api/auth/onboarding/complete`.\n\nНужна сессия аккаунта любой роли (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              oneOf:
+                -
+                  type: object
+                  properties:
+                    action:
+                      type: string
+                      const: answer
+                    stepId:
+                      type: string
+                      pattern: "^[A-Za-z]{1,40}$"
+                    value: {}
+                  required:
+                    - action
+                    - stepId
+                    - value
+                -
+                  type: object
+                  properties:
+                    action:
+                      type: string
+                      const: skip
+                    stepId:
+                      type: string
+                      pattern: "^[A-Za-z]{1,40}$"
+                  required:
+                    - action
+                    - stepId
+                -
+                  type: object
+                  properties:
+                    action:
+                      type: string
+                      const: goto
+                    stepId:
+                      type: string
+                      pattern: "^[A-Za-z]{1,40}$"
+                  required:
+                    - action
+                    - stepId
+                -
+                  type: object
+                  properties:
+                    action:
+                      type: string
+                      const: later
+                  required:
+                    - action
+      responses:
+        "200":
+          description: "Новое состояние онбординга (`later` — `{ next }` без завершения)"
+          content:
+            "application/json":
+              schema:
+                oneOf:
+                  -
+                    $ref: "#/components/schemas/OnboardingView"
+                  -
+                    type: object
+                    properties:
+                      next:
+                        type: string
+                    required:
+                      - next
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "Шаг недоступен в текущем состоянии"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/openapi":
+    get:
+      operationId: getOpenapi
+      tags:
+        - openapi
+      summary: "Спецификация OpenAPI"
+      description: "спецификация OpenAPI 3.1 всех методов API (R-N-06). По умолчанию YAML; `?format=json` или `Accept: application/json` — JSON. Документ сгенерирован из кода (scripts/build-openapi.ts).\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: format
+          in: query
+          required: false
+          description: "`json` — вернуть JSON (то же даёт `Accept: application/json`); иначе YAML"
+          schema:
+            type: string
+            enum:
+              - json
+              - yaml
+      responses:
+        "200":
+          description: "Документ OpenAPI 3.1: YAML (`application/yaml`) или JSON. При `format=json`"
+          content:
+            "application/yaml":
+              schema:
+                type: string
+            "application/json":
+              schema:
+                type: object
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/profile":
+    get:
+      operationId: getProfile
+      tags:
+        - profile
+      summary: "Профиль кандидата"
+      description: "Профиль текущего кандидата: категория (только из теста) и утверждения по уровням с датой и источником.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Профиль кандидата: категория (только из теста) и утверждения по уровням с датой и источником"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "category и claims, сгруппированные по уровням доказанности"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/profile/privacy":
+    get:
+      operationId: getProfilePrivacy
+      tags:
+        - profile
+      summary: "Видимость кандидата для работодателей"
+      description: "видят ли кандидата работодатели (R-C-13).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Видят ли кандидата работодатели (R-C-13)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  hiddenFromEmployers:
+                    type: boolean
+                required:
+                  - hiddenFromEmployers
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postProfilePrivacy
+      tags:
+        - profile
+      summary: "Скрыть или показать себя работодателям"
+      description: "POST `{ hiddenFromEmployers }`.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/PrivacyInput"
+      responses:
+        "200":
+          description: "Новое значение"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  hiddenFromEmployers:
+                    type: boolean
+                required:
+                  - hiddenFromEmployers
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/recommendations":
+    get:
+      operationId: getRecommendations
+      tags:
+        - recommendations
+      summary: "Рекомендации кандидату"
+      description: "Тест, пробелы к выбранной цели, задания под пробелы и цели-вакансии. Всё детерминированно и считается по подтверждённым утверждениям. Цель `vacancy:<id>` или `category:<spec>:<grade>`; по умолчанию — категория из теста, иначе лучшая вакансия.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: target
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+            pattern: "^(vacancy:[A-Za-z0-9_-]{1,64}|category:(backend|frontend):(junior|middle))$"
+        -
+          name: limit
+          in: query
+          required: false
+          schema:
+            default: 5
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        "200":
+          description: "Рекомендации"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  target:
+                    type: string
+                  test:
+                    type: object
+                    additionalProperties: true
+                    description: "Рекомендация теста: специализация, грейд, покрытие, пояснение"
+                  gaps:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                      description: "Пробел: запись каталога, приоритет"
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                      description: "Задание из банка"
+                  targets:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                      description: "Вакансия: «закрываешь k из n»"
+                required:
+                  - target
+                  - test
+                  - gaps
+                  - tasks
+                  - targets
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/stt":
+    get:
+      operationId: getStt
+      tags:
+        - stt
+      summary: "Режим голосового ввода"
+      description: "Какой распознаватель доступен композеру: yandex / browser / off.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Режим голосового ввода"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  mode:
+                    type: string
+                    enum:
+                      - yandex
+                      - browser
+                      - "off"
+                  sampleRate:
+                    type: integer
+                  maxBytes:
+                    type: integer
+                required:
+                  - mode
+                  - sampleRate
+                  - maxBytes
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postStt
+      tags:
+        - stt
+      summary: "Распознать речь"
+      description: "Голос в текст через Yandex SpeechKit. Тело — LPCM 16 бит, моно, 16 кГц (`audio/l16`), до 1 МБ (около 30 секунд). Только для вошедших. Аудио не сохраняется. Если режим не `yandex` — 400.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        description: "Сырое аудио"
+        content:
+          "audio/l16":
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: "Распознанный текст"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                required:
+                  - text
+        "400":
+          description: "Серверное распознавание выключено или запись пустая"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: "Запись длиннее 30 секунд"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/test/attempt/{id}":
+    get:
+      operationId: getTestAttemptId
+      tags:
+        - test
+      summary: "Состояние попытки теста"
+      description: "Состояние попытки: текущее задание без ключа и прогресс; после завершения — итог с разбором. Чужая попытка — 404.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Задание или итог"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Состояние попытки"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/test/attempt/{id}/answer":
+    post:
+      operationId: postTestAttemptIdAnswer
+      tags:
+        - test
+      summary: "Ответить на задание теста"
+      description: "Ответ на текущее задание: проверка кодом, обновление оценки, следующее задание или итог.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                answer:
+                  type: string
+                  maxLength: 2000
+              required:
+                - answer
+      responses:
+        "200":
+          description: "Следующее задание или итог попытки"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Прогресс и следующее задание (без ключа) либо итог с разбором"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Попытка уже завершена"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/test/attempt/{id}/confirm-junior":
+    post:
+      operationId: postTestAttemptIdConfirmJunior
+      tags:
+        - test
+      summary: "Подтвердить Junior вместо Middle"
+      description: "Middle не подтверждён — Junior по той же попытке по согласию кандидата (R-C-08).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Итог попытки с категорией Junior"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Итог попытки"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Попытка не в состоянии «Middle не подтверждён»"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/test/attempt/{id}/finish":
+    post:
+      operationId: postTestAttemptIdFinish
+      tags:
+        - test
+      summary: "Завершить попытку досрочно"
+      description: "Досрочное завершение: итог по данным ответам; без ответов попытка получает статус `abandoned`.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Итог попытки"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Итог попытки"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/test/attempts":
+    get:
+      operationId: getTestAttempts
+      tags:
+        - test
+      summary: "История попыток теста"
+      description: "история попыток кандидата (R-C-07).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "История попыток (R-C-07)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  attempts:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                      description: "Попытка: специализация, грейд, статус, итог, даты"
+                required:
+                  - attempts
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/test/start":
+    get:
+      operationId: getTestStart
+      tags:
+        - test
+      summary: "Можно ли начать тест"
+      description: "Допуск по интервалам пересдачи (R-C-09) и текст правил.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: specialization
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - backend
+              - frontend
+        -
+          name: grade
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - junior
+              - middle
+      responses:
+        "200":
+          description: "Допуск и правила"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Решение о допуске (`nextAllowedAt`, причина) и `rules` — текст интервалов"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postTestStart
+      tags:
+        - test
+      summary: "Начать попытку теста"
+      description: "Начать попытку теста на грейд (R-C-05, R-C-06, R-C-09).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                specialization:
+                  type: string
+                  enum:
+                    - backend
+                    - frontend
+                grade:
+                  type: string
+                  enum:
+                    - junior
+                    - middle
+              required:
+                - specialization
+                - grade
+      responses:
+        "200":
+          description: "Продолжена активная попытка той же категории (`resumed: true`)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Та же форма, что у 201"
+        "201":
+          description: "Новая попытка и первое задание"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Попытка: id, категория, первое задание без ключа; `resumed`"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: "Нельзя начать: активная попытка другой категории (`active_attempt`), смена грейда раньше срока (`grade_change_too_soon`) или пересдача раньше срока (`retake_too_soon`); в `details` — `nextAllowedAt`"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/uploads":
+    post:
+      operationId: postUploads
+      tags:
+        - uploads
+      summary: "Загрузить резюме или документ"
+      description: "Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Сам файл не хранится — только извлечённый текст с координатами. Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        description: "`kind` по умолчанию — resume"
+        content:
+          "multipart/form-data":
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  description: "Файл PDF или DOCX"
+                  format: binary
+                kind:
+                  type: string
+                  enum:
+                    - resume
+                    - document
+              required:
+                - file
+      responses:
+        "200":
+          description: "Тот же файл уже загружен (`deduplicated: true`)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  uploadId:
+                    type: string
+                  deduplicated:
+                    type: boolean
+                  doc:
+                    type: object
+                    additionalProperties: true
+                    description: "Метаданные документа"
+                required:
+                  - uploadId
+                  - deduplicated
+                  - doc
+        "201":
+          description: "Файл разобран"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  uploadId:
+                    type: string
+                    description: "Передаётся в POST /api/consultant/messages как uploadIds[]"
+                  deduplicated:
+                    type: boolean
+                  doc:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                      sourceKind:
+                        type: string
+                      lines:
+                        type: integer
+                      pages:
+                        oneOf:
+                          -
+                            type: integer
+                          -
+                            type: "null"
+                      flags:
+                        type: object
+                        additionalProperties: true
+                        description: "hiddenText, injectionSuspect, truncated, empty"
+                      preview:
+                        type: string
+                        description: "Первые 300 символов"
+                    required:
+                      - title
+                      - sourceKind
+                      - lines
+                      - pages
+                      - flags
+                      - preview
+                required:
+                  - uploadId
+                  - deduplicated
+                  - doc
+        "400":
+          description: "Нет файла в поле file, пустой файл или multipart не разобран"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "413":
+          description: "Файл больше 5 МБ"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "415":
+          description: "Нужен multipart/form-data"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: cid
+      description: "Подписанная сессионная кука платформы"
+  schemas:
+    Claim:
+      type: object
+      properties:
+        id:
+          type: string
+        catalogId:
+          type: string
+          description: "Запись каталога навыков"
+        statement:
+          type: string
+          description: "Формулировка утверждения"
+        level:
+          type: string
+          enum:
+            - self_reported
+            - artifact
+            - third_party
+            - platform
+        quote:
+          oneOf:
+            -
+              type: string
+              description: "Цитата из источника"
+            -
+              type: "null"
+        sourceRef:
+          oneOf:
+            -
+              type: string
+            -
+              type: "null"
+        sourceKind:
+          type: string
+        status:
+          type: string
+          description: "proposed, confirmed, rejected"
+        confirmedAt:
+          oneOf:
+            -
+              type: string
+              format: date-time
+            -
+              type: "null"
+      required:
+        - id
+        - catalogId
+        - statement
+        - level
+        - quote
+        - sourceRef
+        - sourceKind
+        - status
+        - confirmedAt
+      description: "Утверждение кандидата с уровнем доказанности"
+    ConsultantEvent:
+      description: "Кадр SSE хода консультанта (`type` — различитель)"
+      oneOf:
+        -
+          type: object
+          properties:
+            type:
+              const: conversation
+            id:
+              type: string
+          required:
+            - type
+            - id
+          description: "Первый кадр: id разговора (новый создаётся на первом ходе)"
+        -
+          type: object
+          properties:
+            type:
+              const: step
+            text:
+              type: string
+          required:
+            - type
+            - text
+          description: "Статус работы агента, например «читаю резюме…»"
+        -
+          type: object
+          properties:
+            type:
+              const: queue
+            position:
+              type: integer
+          required:
+            - type
+            - position
+          description: "Место в очереди к модели"
+        -
+          type: object
+          properties:
+            type:
+              const: ask
+            question:
+              type: string
+            options:
+              type: array
+              items:
+                type: string
+          required:
+            - type
+            - question
+          description: "Агент задаёт кандидату вопрос; ход на этом заканчивается"
+        -
+          type: object
+          properties:
+            type:
+              const: delta
+            id:
+              type: string
+            text:
+              type: string
+          required:
+            - type
+            - id
+            - text
+          description: "Очередной кусок реплики `id` по мере генерации"
+        -
+          type: object
+          properties:
+            type:
+              const: discard
+            id:
+              type: string
+          required:
+            - type
+            - id
+          description: "Показанный текст реплики `id` не был ответом (модель ушла в инструменты): убрать"
+        -
+          type: object
+          properties:
+            type:
+              const: message
+            text:
+              type: string
+            id:
+              type: string
+          required:
+            - type
+            - text
+          description: "Итог реплики, авторитетный; заменяет накопленные дельты `id`"
+        -
+          type: object
+          properties:
+            type:
+              const: error
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - type
+            - code
+            - message
+          description: "Ошибка хода; следом придёт `done`"
+        -
+          type: object
+          properties:
+            type:
+              const: done
+          required:
+            - type
+          description: "Последний кадр потока"
+        -
+          type: object
+          properties:
+            type:
+              const: claims
+            proposed:
+              type: array
+              items:
+                type: object
+            rejected:
+              type: integer
+            rejectedByReason:
+              type: object
+              additionalProperties:
+                type: integer
+            hiddenText:
+              type: integer
+            alreadyKnown:
+              type: integer
+          required:
+            - type
+            - proposed
+            - rejected
+          description: "Карточки утверждений, извлечённые из вложений"
+        -
+          type: object
+          properties:
+            type:
+              const: recommendations
+            items:
+              type: array
+              items:
+                type: object
+          required:
+            - type
+            - items
+          description: "Рекомендации для карточек в чате"
+      discriminator:
+        propertyName: type
+    EmployerEvent:
+      description: "Кадр SSE хода помощника работодателя (`type` — различитель). Имя кандидата добавляется карточке только после принятия приглашения"
+      oneOf:
+        -
+          type: object
+          properties:
+            type:
+              const: conversation
+            id:
+              type: string
+          required:
+            - type
+            - id
+          description: "Первый кадр: id разговора (новый создаётся на первом ходе)"
+        -
+          type: object
+          properties:
+            type:
+              const: step
+            text:
+              type: string
+          required:
+            - type
+            - text
+          description: "Статус работы агента, например «читаю резюме…»"
+        -
+          type: object
+          properties:
+            type:
+              const: queue
+            position:
+              type: integer
+          required:
+            - type
+            - position
+          description: "Место в очереди к модели"
+        -
+          type: object
+          properties:
+            type:
+              const: ask
+            question:
+              type: string
+            options:
+              type: array
+              items:
+                type: string
+          required:
+            - type
+            - question
+          description: "Агент задаёт кандидату вопрос; ход на этом заканчивается"
+        -
+          type: object
+          properties:
+            type:
+              const: delta
+            id:
+              type: string
+            text:
+              type: string
+          required:
+            - type
+            - id
+            - text
+          description: "Очередной кусок реплики `id` по мере генерации"
+        -
+          type: object
+          properties:
+            type:
+              const: discard
+            id:
+              type: string
+          required:
+            - type
+            - id
+          description: "Показанный текст реплики `id` не был ответом (модель ушла в инструменты): убрать"
+        -
+          type: object
+          properties:
+            type:
+              const: message
+            text:
+              type: string
+            id:
+              type: string
+          required:
+            - type
+            - text
+          description: "Итог реплики, авторитетный; заменяет накопленные дельты `id`"
+        -
+          type: object
+          properties:
+            type:
+              const: error
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - type
+            - code
+            - message
+          description: "Ошибка хода; следом придёт `done`"
+        -
+          type: object
+          properties:
+            type:
+              const: done
+          required:
+            - type
+          description: "Последний кадр потока"
+        -
+          type: object
+          properties:
+            type:
+              const: candidates
+            block:
+              type: object
+              additionalProperties: true
+              description: "Подборка: vacancy (id, title, salaryFrom) | null, total, items — карточки с псевдонимом, рангом, категорией, покрытием и обоснованием"
+          required:
+            - type
+            - block
+          description: "Блок карточек кандидатов"
+        -
+          type: object
+          properties:
+            type:
+              const: invitation_draft
+            draft:
+              type: object
+              additionalProperties: true
+              description: "Черновик приглашения: candidateId, alias, vacancyId, salaryOffer, message, limit {sent, limit, left}, blocked"
+          required:
+            - type
+            - draft
+          description: "Черновик приглашения; отправляет человек"
+        -
+          type: object
+          properties:
+            type:
+              const: need_draft
+            draft:
+              type: object
+              additionalProperties: true
+              description: "Черновик потребности: title, specialization, grade, stack, salaryFrom/To, needs, formHref"
+          required:
+            - type
+            - draft
+          description: "Черновик потребности; подтверждает человек"
+      discriminator:
+        propertyName: type
+    ErrorBody:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: "Машинный код ошибки"
+            message:
+              type: string
+              description: "Текст для человека"
+            details:
+              description: "Подробности, например список полей при `validation_failed`"
+          required:
+            - code
+            - message
+      required:
+        - error
+      description: "Единый формат ошибки API (server/errors.ts)"
+    InvitationAction:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - accept
+            - decline
+      required:
+        - action
+    InvitationInput:
+      type: object
+      properties:
+        candidateId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        vacancyId:
+          anyOf:
+            -
+              type: string
+              minLength: 1
+              maxLength: 64
+            -
+              type: "null"
+        message:
+          type: string
+          minLength: 10
+          maxLength: 2000
+        salaryOffer:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+      required:
+        - candidateId
+        - message
+        - salaryOffer
+    OnboardingView:
+      type: object
+      additionalProperties: true
+      description: "Состояние онбординга: name, role, scenario, consent {version, docUrl}, progress {done, total}, history, current (шаг), summary, laterTarget, test {href, ready}, onboarded"
+    PrivacyInput:
+      type: object
+      properties:
+        hiddenFromEmployers:
+          type: boolean
+      required:
+        - hiddenFromEmployers
+    VacancyInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 120
+        specialization:
+          type: string
+          enum:
+            - backend
+            - frontend
+        grade:
+          type: string
+          enum:
+            - junior
+            - middle
+        salaryFrom:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        salaryTo:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        teamDescription:
+          anyOf:
+            -
+              type: string
+              maxLength: 2000
+            -
+              type: "null"
+        description:
+          anyOf:
+            -
+              type: string
+              maxLength: 2000
+            -
+              type: "null"
+        stack:
+          default: []
+          maxItems: 15
+          type: array
+          items:
+            type: string
+            maxLength: 40
+        needs:
+          minItems: 1
+          maxItems: 25
+          type: array
+          items:
+            type: object
+            properties:
+              catalogId:
+                type: string
+                minLength: 1
+                maxLength: 64
+              weight:
+                type: integer
+                minimum: 1
+                maximum: 3
+            required:
+              - catalogId
+              - weight
+      required:
+        - title
+        - specialization
+        - grade
+        - salaryFrom
+        - salaryTo
+        - needs
+    VacancyPatch:
+      type: object
+      properties:
+        archived:
+          type: boolean
+      required:
+        - archived
+  responses:
+    BadRequest:
+      description: "Некорректный запрос: тело или query не прошли проверку (`validation_failed`, `details` — список полей) либо иная ошибка запроса (`bad_request`)"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Unauthorized:
+      description: "Нет входа (`unauthorized`) или кука подписана верно, а аккаунта в БД нет (`session_stale`, клиент ведёт на /auth)"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Forbidden:
+      description: "Нет доступа: другая роль (`forbidden`) или чужой Origin у изменяющего запроса"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    NotFound:
+      description: "Объект не найден; для чужих объектов тоже 404, чтобы не раскрывать их существование (`not_found`)"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Conflict:
+      description: "Конфликт состояния: повторное действие, занятый ресурс, устаревшая версия (`conflict` и специальные коды операции)"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    PayloadTooLarge:
+      description: "Слишком большой запрос (`payload_too_large`)"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    UnsupportedMediaType:
+      description: "Неподдерживаемый тип содержимого (`unsupported_media_type`)"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    TooManyRequests:
+      description: "Превышен лимит запросов или суточный лимит (`rate_limited`)"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    InternalError:
+      description: "Внутренняя ошибка (`internal`); текст исключения наружу не отдаётся"
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/ErrorBody"

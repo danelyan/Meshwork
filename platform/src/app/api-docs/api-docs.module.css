@@ -1,0 +1,17 @@
+.page { display: flex; flex-direction: column; gap: 20px; font-size: var(--fs-md); line-height: 1.55; }
+.lead { color: var(--text-soft); }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.group h2 { font-size: var(--fs-lg); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.method { font: 700 var(--fs-sm) var(--mono); }
+.path { font: 500 var(--fs-sm) var(--mono); overflow-wrap: anywhere; }
+.summary { grid-column: 2; color: var(--text-soft); font-size: var(--fs); }
+.codes { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px; }
+.swagger { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.swaggerHost { width: 100%; background: var(--surface-input); }
+@media (max-width: 600px) {
+  .row { grid-template-columns: minmax(0, 1fr); }
+  .summary, .codes { grid-column: 1; }
+}

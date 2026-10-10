@@ -124,6 +124,9 @@ export function checkQuoteLoose(quote: string, answers: string[]): ReturnType<ty
     .map((p) => p.replace(/^[\s".…]+|[\s".…]+$/g, ''))
     .filter(Boolean);
   if (!parts.length || parts.join('').replace(/\s/g, '').length < MIN_QUOTE_CHARS) return { valid: false, reason: 'too_short' };
+  // Каждый кусок — не короче MIN_QUOTE_CHARS: иначе «цитата» склеивается из отдельных букв и коротких слов
+  // ответа («я ... обработал» из «я не обработал»), то есть выдумывается.
+  if (parts.length > 1 && parts.some((p) => p.replace(/\s/g, '').length < MIN_QUOTE_CHARS)) return strict;
   const inOrder = (answer: string) => {
     let from = 0;
     for (const p of parts) {
@@ -133,7 +136,10 @@ export function checkQuoteLoose(quote: string, answers: string[]): ReturnType<ty
     }
     return true;
   };
-  return answers.some((a) => inOrder(norm(a))) ? { valid: true } : strict;
+  if (!answers.some((a) => inOrder(norm(a)))) return strict;
+  // Проверка на обращения к оценщику — как в checkQuote (там она идёт после дословности и сюда не доходила).
+  if (INSTRUCTION_RE.some((re) => re.test(parts.join(' ')))) return { valid: false, reason: 'instruction_like' };
+  return { valid: true };
 }
 
 // ---------------------------------------------------------------------------

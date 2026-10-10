@@ -51,7 +51,7 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | `SESSION_SECRET` | `openssl rand -hex 32` |
 | `DEMO_LOGIN` | `true`, пока стенд показывается жюри |
 
-`DATABASE_URL` задаёт Compose. Языковая модель и вход через Яндекс ID включаются своими переменными; после правки `.env` — `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`.
+`DATABASE_URL` задаёт Compose. Почта: без `SMTP_HOST`/`SMTP_PORT` в `.env` письма идут в Mailpit стенда; для реальных ящиков задать `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (`MAIL_PROVIDER=smtp`). Языковая модель и вход через Яндекс ID включаются своими переменными; после правки `.env` — `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`.
 
 ## Автодеплой
 

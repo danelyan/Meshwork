@@ -56,12 +56,29 @@ export async function sendMail(msg: MailMessage): Promise<void> {
   );
 }
 
+/** Непустая причина сбоя: у AggregateError (ECONNREFUSED по нескольким адресам) message пустой. */
+export function describeMailError(err: unknown): string {
+  if (err instanceof AggregateError && err.errors.length > 0) {
+    const parts = err.errors.map((e: unknown) => describeMailError(e));
+    return [...new Set(parts)].join('; ');
+  }
+  if (err instanceof Error) {
+    const code = (err as NodeJS.ErrnoException).code;
+    const msg = err.message.trim();
+    if (msg && code && !msg.includes(code)) return `${code}: ${msg}`;
+    if (msg) return msg;
+    if (code) return code;
+    return err.name || 'неизвестная ошибка';
+  }
+  return typeof err === 'string' && err.trim() ? err.trim() : 'неизвестная ошибка';
+}
+
 /**
  * Уведомление без блокировки запроса: ошибка только в лог (без адреса и текста письма).
  * Возвращает промис для тестов; в обработчиках его не ждут.
  */
 export function notifyInBackground(kind: string, task: () => Promise<void>): Promise<void> {
   return task().catch((err: unknown) => {
-    console.warn(`[mail] ${kind} не отправлено: ${err instanceof Error ? err.message : 'unknown'}`);
+    console.warn(`[mail] ${kind} не отправлено: ${describeMailError(err)}`);
   });
 }

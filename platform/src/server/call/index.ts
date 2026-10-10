@@ -1,3 +1,6 @@
+// Регистрация драйвера ИИнтервью (server/interview/driver.ts) — побочный эффект импорта.
+import '../interview/driver';
+
 export * from './types';
 export { startCall, submitTurn, finishCall, getCallForViewer, listCalls, latestQualifyingVerdict, addAudio, getRecording, buildView, awaitingAnswer, transcriptOf, ICE_SERVERS } from './service';
 export { callDriver, registerCallDriver, questionTurns, CALL_DISCLAIMER, type CallDriver, type DriverSession, type DriverQuestion } from './drivers';

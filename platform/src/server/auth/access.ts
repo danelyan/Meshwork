@@ -44,6 +44,7 @@ export const PAGE_ACCESS = {
   '/saved': 'candidate',
   '/settings': 'candidate',
   '/test': 'candidate',
+  '/interview': 'candidate',
   '/invitations': 'candidate',
   '/defense/[claimId]': 'candidate',
   // Созвон-защита (ADR 0003): комната кандидата и наблюдение работодателя.

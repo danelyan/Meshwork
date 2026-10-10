@@ -45,6 +45,8 @@ export type LlmPurpose =
   /** lane call (ADR 0003): интервьюер и слепой оценщик созвона. */
   | 'call_interviewer'
   | 'call_evaluator'
+  /** lane interview: интервьюер ИИнтервью (оценщик — call_evaluator). */
+  | 'interview_interviewer'
   /** Зарезервированы для лейнов defense-room и project (enum в БД уже есть). */
   | 'defense_qlc'
   | 'project_spec'

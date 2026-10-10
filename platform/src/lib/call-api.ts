@@ -1,5 +1,5 @@
 // Клиент API созвона (lane call). Ошибки — ApiError из lib/api.ts.
-import type { CallEvent, CallView, TurnResult } from '@/server/call/types';
+import type { CallEvent, CallKind, CallView, TurnResult } from '@/server/call/types';
 
 import { ApiError, postJson, readError, request } from './api';
 
@@ -16,9 +16,9 @@ export interface CallStartResponse {
 }
 
 export const callApi = {
-  list: (kind: 'qualifying' | 'defense' = 'qualifying') => request<CallListResponse>(`/api/call?kind=${kind}`),
+  list: (kind: CallKind = 'qualifying') => request<CallListResponse>(`/api/call?kind=${kind}`),
   consent: (version: string) => postJson<{ version: string; acceptedAt: string }>('/api/call/consent', { version }),
-  start: () => postJson<CallStartResponse>('/api/call/start', { kind: 'qualifying' }),
+  start: (kind: CallKind = 'qualifying') => postJson<CallStartResponse>('/api/call/start', { kind }),
   get: (id: string) => request<CallView>(`/api/call/${encodeURIComponent(id)}`),
   turn: (id: string, body: { text?: string; audioRef?: string }) => postJson<TurnResult>(`/api/call/${encodeURIComponent(id)}/turn`, body),
   finish: (id: string) => postJson<CallView>(`/api/call/${encodeURIComponent(id)}/finish`, {}),

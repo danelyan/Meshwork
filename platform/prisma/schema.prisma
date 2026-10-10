@@ -54,6 +54,8 @@ enum LlmPurpose {
   /// lane call: интервьюер и слепой оценщик квалифицирующего созвона (ADR 0003, ступень 1)
   call_interviewer
   call_evaluator
+  /// lane interview: интервьюер ИИнтервью (docs/competency-model.md); оценщик — call_evaluator
+  interview_interviewer
   /// Зарезервировано лейном call для соседей (ADR 0003), чтобы не делать вторую enum-миграцию:
   /// defense-room — вопросы по коду кандидата (QLC); project — условие проекта и рубрика пожеланий.
   defense_qlc
@@ -825,6 +827,8 @@ model AuthCode {
 enum CallKind {
   qualifying
   defense
+  /// ИИнтервью по модели компетенций (lane interview, docs/competency-model.md)
+  interview
 }
 
 enum CallStatus {

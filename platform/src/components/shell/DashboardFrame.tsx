@@ -9,7 +9,7 @@ import styles from './DashboardFrame.module.css';
 
 const candidate = [
   ['/career', '◇', 'Моя карта'], ['/profile', '○', 'Профиль'],
-  ['/test', '△', 'Навыки и грейд'], ['/projects', '▤', 'Проекты'],
+  ['/test', '△', 'Навыки и грейд'], ['/interview', '▷', 'ИИнтервью'], ['/projects', '▤', 'Проекты'],
   ['/invitations', '✉', 'Приглашения'], ['/saved', '☆', 'Избранное'],
   ['/consultant', '◆', 'Консультант'], ['/settings', '⚙', 'Настройки'],
 ] as const;

@@ -9,6 +9,7 @@ import {
   type ToolCall,
 } from '../types';
 import { stubCallEvaluator, stubCallInterviewer } from './stub-call';
+import { stubInterviewInterviewer } from './stub-interview';
 
 /**
  * Детерминированная заглушка LLM для разработки и тестов (LLM_PROVIDER=stub).
@@ -227,8 +228,8 @@ export function createStubProvider(opts: StubOptions = {}): LlmProvider {
       );
     }
 
-    if (req.purpose === 'call_interviewer' || req.purpose === 'call_evaluator') {
-      const built = req.purpose === 'call_interviewer' ? stubCallInterviewer(req) : stubCallEvaluator(req);
+    if (req.purpose === 'call_interviewer' || req.purpose === 'call_evaluator' || req.purpose === 'interview_interviewer') {
+      const built = req.purpose === 'call_interviewer' ? stubCallInterviewer(req) : req.purpose === 'interview_interviewer' ? stubInterviewInterviewer(req) : stubCallEvaluator(req);
       if (built && !(lastIsUser && JSON_MARK_RE.test(userText))) return built;
     }
 

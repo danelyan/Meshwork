@@ -255,7 +255,7 @@ flowchart LR
 
 ## Языковые модели
 
-`server/llm` даёт интерфейс `complete({ purpose, system, messages, tools?, schema?, … })` с целями вызова: `consultant`, `employer_assistant`, `extractor`, `interviewer`, `evaluator` (прежние) и `call_interviewer`, `call_evaluator`, `defense_qlc`, `project_spec`, `project_rubric`, `consultant_memory` (ADR 0003). Грейд, балл скрытых тестов и ранжирование от модели не зависят.
+`server/llm` даёт интерфейс `complete({ purpose, system, messages, tools?, schema?, … })` с целями вызова: `consultant`, `employer_assistant`, `extractor`, `interviewer`, `evaluator` (прежние) и `call_interviewer`, `call_evaluator`, `interview_interviewer`, `defense_qlc`, `project_spec`, `project_rubric`, `consultant_memory` (ADR 0003, [модель компетенций](competency-model.md)). Грейд, балл скрытых тестов и ранжирование от модели не зависят.
 
 | Провайдер (`LLM_PROVIDER`) | Что это |
 | --- | --- |

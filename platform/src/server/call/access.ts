@@ -71,6 +71,7 @@ export function publicVerdict(v: CallVerdict): PublicCallVerdict {
     summary: v.summary,
     evaluatedAt: v.evaluatedAt,
     thresholdVersion: v.thresholdVersion,
+    ...(v.interview ? { interview: v.interview } : {}),
   };
 }
 

@@ -1,6 +1,7 @@
 // Защита проекта (ступень 3, ADR 0003 docs/decisions/0003-three-stage-assessment.md).
 // Сессия — CallSession.kind = defense; здесь — типы плана, транскрипта, вопросов по коду и вердикта.
 
+import type { CallKind } from '../call/types';
 import type { DefenseScores } from '../defense/types';
 
 /** Роли реплик транскрипта (контракт ADR 0003). */
@@ -210,7 +211,7 @@ export type CallEventName = (typeof CALL_EVENT_NAMES)[number];
 
 export interface CallSnapshot {
   sessionId: string;
-  kind: 'qualifying' | 'defense';
+  kind: CallKind;
   status: 'active' | 'finished' | 'cancelled' | 'pending';
   mode: DefenseMode;
   transcript: TranscriptEntry[];

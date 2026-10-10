@@ -1,8 +1,11 @@
 // Созвон кандидата с ИИ (lane call, ADR 0003). Ступень 1 — квалифицирующий созвон (kind=qualifying);
 // ступень 3 — защита проекта (kind=defense, lane defense-room) на тех же моделях, событиях и транскрипте.
 import type { Score } from '../defense/types';
+import type { InterviewSummary } from '../interview/types';
+import type { BlockId } from '../interview/model';
 
-export const CALL_KINDS = ['qualifying', 'defense'] as const;
+// interview — ИИнтервью по модели компетенций (docs/competency-model.md, server/interview).
+export const CALL_KINDS = ['qualifying', 'defense', 'interview'] as const;
 export type CallKind = (typeof CALL_KINDS)[number];
 
 // pending — только kind=defense: приглашение на защиту проекта, кандидат ещё не начал (lane project).
@@ -33,6 +36,9 @@ export interface AiUtteranceMeta {
   employerQuestionId?: string;
   /** Дополнительный вопрос по теме, где прогоны оценщика разошлись в решении порога (status=inconclusive). */
   probe?: 'inconclusive';
+  /** kind=interview: компетенция модели (server/interview/model.ts) и блок интервью. */
+  competencyId?: string;
+  block?: BlockId;
 }
 
 /** Одна реплика транскрипта (CallSession.transcriptJson — массив таких). */
@@ -126,6 +132,8 @@ export interface CallVerdict {
    */
   interim?: boolean;
   pendingProbes?: string[];
+  /** kind=interview: оси, соответствие грейду, итог и компетенции (без цитат — можно отдавать при access=summary). */
+  interview?: InterviewSummary;
 }
 
 /**
@@ -180,6 +188,7 @@ export interface PublicCallVerdict {
   summary: string;
   evaluatedAt: string;
   thresholdVersion: string;
+  interview?: InterviewSummary;
 }
 
 export interface CallView {

@@ -30,11 +30,13 @@ const EXPECTED = [
 const EXTRA = ['get_onboarding_status', 'get_test_status', 'get_invitations', 'explain_evidence'];
 /** База знаний и веб-поиск (решения владельца 09.10): чтение, без записи. */
 const KNOWLEDGE = ['search_knowledge', 'web_search'];
+/** Предложение созвона (lane call, ADR 0003): только кнопка в ленте, созвон начинает кандидат. */
+const CALL = ['suggest_call'];
 
 describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
-  it('14 инструментов по ТЗ + 4 на чтение + база знаний и веб-поиск, без дублей', () => {
-    expect([...TOOL_NAMES].sort()).toEqual([...EXPECTED, ...EXTRA, ...KNOWLEDGE].sort());
-    expect(new Set(TOOL_NAMES).size).toBe(20);
+  it('14 инструментов по ТЗ + 4 на чтение + база знаний и веб-поиск + предложение созвона, без дублей', () => {
+    expect([...TOOL_NAMES].sort()).toEqual([...EXPECTED, ...EXTRA, ...KNOWLEDGE, ...CALL].sort());
+    expect(new Set(TOOL_NAMES).size).toBe(21);
   });
 
   it('нет инструментов записи в профиль, отклика, писем, категории, произвольного HTTP', () => {
@@ -53,7 +55,7 @@ describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
 
   it('у каждого инструмента описание и JSON Schema объекта для провайдера', () => {
     const specs = toolSpecs(tools);
-    expect(specs).toHaveLength(20);
+    expect(specs).toHaveLength(21);
     for (const s of specs) {
       expect(s.description.length).toBeGreaterThan(20);
       expect((s.parameters as { type: string }).type).toBe('object');

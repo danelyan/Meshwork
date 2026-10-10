@@ -11,6 +11,8 @@ export type AgentEvent =
   | { type: 'claims'; proposed: unknown[]; rejected: number; rejectedByReason?: Record<string, number>; hiddenText?: number; alreadyKnown?: number }
   | { type: 'ask'; question: string; options?: string[] }
   | { type: 'recommendations'; items: unknown[] }
+  /** lane call: агент предлагает созвон (инструмент suggest_call) — в ленте кнопка «Созвониться». */
+  | { type: 'call_offer'; reason: string }
   /** Итог реплики; `id` связывает его с дельтами (reply-stream.ts), текст авторитетный. */
   | { type: 'message'; text: string; id?: string }
   /** Кусок текста реплики `id` по мере генерации (docs/platform.md, «События SSE»). */

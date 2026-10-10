@@ -15,12 +15,14 @@ import { readUpload } from './read_upload';
 import { explainInvitationTool, getGapMap, recommendTargetsTool, recommendTasksTool, recommendTestTool } from './recommend';
 import { renderProfilePdf } from './render_profile_pdf';
 import { startVerification } from './start_verification';
+import { suggestCall } from './suggest_call';
 
 /**
  * Реестр инструментов консультанта: 14 по ТЗ § 4.1 + 4 только на чтение для
  * «ведёт по платформе» (E-02): get_onboarding_status, get_test_status,
  * get_invitations, explain_evidence; + search_knowledge (база знаний) и web_search (Яндекс,
- * крайний случай, решения владельца 09.10). Все 20 — чтение или предложение.
+ * крайний случай, решения владельца 09.10); suggest_call — предложение созвона (lane call, ADR 0003).
+ * Все 21 — чтение или предложение.
  * Записывающих в профиль, откликающихся и пишущих письма инструментов здесь
  * нет и быть не должно (ТЗ § 2) — тест tools.test.ts проверяет список.
  */
@@ -44,6 +46,7 @@ export const tools: AgentTool<any, any>[] = [
   getInvitations,
   explainInvitationTool,
   startVerification,
+  suggestCall,
   renderProfilePdf,
   candidateWebSearch,
   askUser,

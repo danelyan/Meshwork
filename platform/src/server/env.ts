@@ -21,8 +21,6 @@ export const envSchema = z
     APP_URL: z.url().default('http://localhost:3000'),
     /** Пароль на публичный адрес (без логина, src/server/site-access.ts). Пусто — стенд открыт; localhost не закрывается. */
     SITE_PASSWORD: optionalString,
-    /** То же, но SHA-256 пароля (64 hex): его можно держать в docker-compose.prod.yml. Важнее SITE_PASSWORD. */
-    SITE_PASSWORD_SHA256: optionalString.pipe(z.string().regex(/^[0-9a-fA-F]{64}$/, 'SITE_PASSWORD_SHA256 — 64 hex-символа').optional()),
 
     LLM_PROVIDER: z.enum(['stub', 'yandex', 'openai-chat']).default('stub'),
     /** Только для stub: извлекатель размечает документ словарём каталога — демо С1 без ключей. */
@@ -59,6 +57,8 @@ export const envSchema = z
     TTS_SPEED: z.coerce.number().min(0.5).max(2).default(1.1),
     /** mp3 декодирует любой браузер; oggopus меньше, но Safari до 17 его не декодирует. */
     TTS_FORMAT: z.enum(['mp3', 'oggopus']).default('mp3'),
+    /** lane call: папка данных созвонов; аудио кандидата — <CALL_DATA_DIR>/calls/<sessionId>/*.wav. Относительный путь — от cwd. */
+    CALL_DATA_DIR: z.string().min(1).default('./data'),
     /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
     WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
 

@@ -35,7 +35,20 @@ export interface ToolSpec {
   parameters: object;
 }
 
-export type LlmPurpose = 'consultant' | 'employer_assistant' | 'extractor' | 'evaluator' | 'interviewer' | 'smoke';
+export type LlmPurpose =
+  | 'consultant'
+  | 'employer_assistant'
+  | 'extractor'
+  | 'evaluator'
+  | 'interviewer'
+  | 'smoke'
+  /** lane call (ADR 0003): интервьюер и слепой оценщик созвона. */
+  | 'call_interviewer'
+  | 'call_evaluator'
+  /** Зарезервированы для лейнов defense-room и project (enum в БД уже есть). */
+  | 'defense_qlc'
+  | 'project_spec'
+  | 'project_rubric';
 
 export interface CompleteRequest {
   purpose: LlmPurpose;

@@ -11,12 +11,13 @@ import type { OnboardingView } from '@/server/onboarding/types';
 import { CandidateHome } from './CandidateHome';
 import { EmployerHome } from './EmployerHome';
 import { warn } from './warn';
+import { COMPANION_NAME } from '@/lib/persona';
 
 export const metadata: Metadata = { title: 'Консультант - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
 
 /** Подпись у головы без роли - консультант (у ролей - в CandidateHome / EmployerHome). */
-const CANDIDATE_LABEL = 'ИИ-консультант';
+const CANDIDATE_LABEL = `${COMPANION_NAME} · ИИ-консультант`;
 
 /**
  * Один адрес с чатом (решения владельца 10.10). Гость → /auth?next=/consultant; дальше по роли:

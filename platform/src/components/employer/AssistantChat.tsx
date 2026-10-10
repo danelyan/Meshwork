@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { openEmployerAssistantStream } from '@/lib/employer-api';
+import { COMPANION_NAME } from '@/lib/persona';
 import { createSseParser } from '@/lib/sse';
 import type { EmployerAgentEvent, InvitationDraft, NeedDraft } from '@/server/agent/employer/types';
 import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/employer/restore';
@@ -23,8 +24,8 @@ import { GRADE_LABEL, SPEC_LABEL } from './labels';
 type Item = { id: string; role: 'user'; text: string } | AgentItem<EmployerAgentEvent>;
 
 const GREETING =
-  'Я помощник работодателя. От тебя нужно немного: описать потребность - направление, грейд, стек и вилку зарплаты. По ней я подберу кандидатов и объясню, почему каждый на своём месте; подходящему ты отправишь приглашение с зарплатой, а кандидат сам решит, открыть ли контакты. Отправляешь и сохраняешь ты - кнопками.';
-const CONTINUE_GREETING = 'Дальше я - твой помощник по подбору. Опиши потребность (направление, грейд, стек, вилка зарплаты) - подберу кандидатов и подготовлю приглашение. Или выбери шаг ниже.';
+  `Я ${COMPANION_NAME}, помощница работодателя. От тебя нужно немного: описать потребность - направление, грейд, стек и вилку зарплаты. По ней я подберу кандидатов и объясню, почему каждый на своём месте; подходящему ты отправишь приглашение с зарплатой, а кандидат сам решит, открыть ли контакты. Отправляешь и сохраняешь ты - кнопками.`;
+const CONTINUE_GREETING = 'Дальше я - твоя помощница по подбору. Опиши потребность (направление, грейд, стек, вилка зарплаты) - подберу кандидатов и подготовлю приглашение. Или выбери шаг ниже.';
 
 export const EMPLOYER_SUGGESTIONS: QuickReply[] = [
   { value: 'Подбери под мою потребность', label: 'Подбери под потребность' },

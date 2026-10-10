@@ -1,5 +1,6 @@
 import { getEnv } from '@/server/env';
 import { getLlm } from '@/server/llm';
+import { COMPANION_NAME } from '@/lib/persona';
 
 import { ONBOARDING_PROMPT } from './prompt';
 import { DIRECTIONS } from './scenario';
@@ -36,12 +37,12 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
   }
   // Первая реплика чата — приветствие и сразу к делу (согласие уже взято при регистрации).
   if (step.id === 'role' && prev === null) {
-    return `Привет${name ? `, ${name}` : ''}! Я помощник ФСП Карьеры. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут - и настроим всё под тебя; любой вопрос можно пропустить.`;
+    return `Привет${name ? `, ${name}` : ''}! Я ${COMPANION_NAME}, помощница ФСП Карьеры. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут - и настроим всё под тебя; любой вопрос можно пропустить.`;
   }
   if (step.kind === 'summary') {
     return ctx.answers.role === 'employer' || ctx.facts.role === 'employer'
       ? `${hi}готово. Проверь потребность - по ней соберётся подборка кандидатов.`
-      : `${hi}готово. Проверь, всё ли я понял верно.`;
+      : `${hi}готово. Проверь, всё ли я поняла верно.`;
   }
   if (skipped) return 'Хорошо, к этому можно вернуться позже.';
   switch (step.id) {

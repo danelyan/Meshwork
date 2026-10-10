@@ -9,8 +9,9 @@ import type { OnboardingView } from '@/server/onboarding/types';
 import { loadCandidateAside } from '@/server/consultant/aside';
 
 import { warn } from './warn';
+import { COMPANION_NAME } from '@/lib/persona';
 
-const CANDIDATE_LABEL = 'ИИ-консультант';
+const CANDIDATE_LABEL = `${COMPANION_NAME} · ИИ-консультант`;
 
 /**
  * Дом кандидата на /consultant: шаги знакомства, после итога та же лента — консультант; «Настроить позже» —

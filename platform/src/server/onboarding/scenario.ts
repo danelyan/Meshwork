@@ -406,7 +406,7 @@ export const SUMMARY_STEP: StepDef = {
   id: 'summary',
   kind: 'summary',
   eyebrow: 'Готово',
-  question: 'Вот что я понял',
+  question: 'Вот что я поняла',
   summaryLabel: 'Итог',
   target: '-',
   req: '-',

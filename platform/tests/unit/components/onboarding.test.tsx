@@ -5,9 +5,13 @@ import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 const push = vi.fn();
+// мягкое обновление (soft-nav.ts): на том же адресе — router.refresh, без перезагрузки
+const refresh = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
 // Вход и переходы — полная навигация (window.location.assign), см. DemoScreen.enter.
 beforeEach(() => {
-  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign: push } });
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, pathname: '/consultant', assign: push } });
+  refresh.mockReset();
 });
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 
@@ -112,11 +116,12 @@ it('«изменить» на прошлом ответе возвращает �
   expect(sent(fetchFn)).toEqual({ action: 'goto', stepId: 'goal' });
 });
 
-it('«Настроить позже» уводит туда, куда сказал сервер, без завершения', async () => {
+it('«Настроить позже» — пауза без завершения, лента обновляется без перезагрузки страницы', async () => {
   const fetchFn = stubFetch({ next: '/consultant' });
   render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
   fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
+  await waitFor(() => expect(refresh).toHaveBeenCalled());
+  expect(push).not.toHaveBeenCalled();
   expect(sent(fetchFn)).toEqual({ action: 'later' });
 });
 
@@ -233,7 +238,7 @@ it('работодатель: та же лента продолжается по
     }),
   );
   render(<OnboardingChat initial={summaryView({ scenario: 'employer', role: 'employer' })} consentText={[]} consultant={{}} employerAssistant={{}} />);
-  expect(screen.getByText(/твой помощник по подбору/)).toBeDefined();
+  expect(screen.getByText(/твоя помощница по подбору/)).toBeDefined();
   expect(screen.getByRole('button', { name: 'Открыть подборку' })).toBeDefined();
   fireEvent.click(screen.getByRole('button', { name: 'Подбери под потребность' }));
   await waitFor(() => expect(screen.getByText('Под «Backend» нашлось 6')).toBeDefined());
@@ -469,14 +474,15 @@ describe('лента внутри /consultant (онбординг и консу�
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Помощник по подбору');
   });
 
-  it('заголовок консультанта, без своей шапки сайта и второго main; «Настроить позже» — пауза: сервер ведёт сюда же', async () => {
+  it('заголовок консультанта, без своей шапки сайта и второго main; «Настроить позже» — пауза: лента обновляется без перезагрузки', async () => {
     const fetchFn = stubFetch({ next: '/consultant' });
     render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Карьерный консультант');
     expect(document.querySelector('main')).toBeNull();
     expect(question()).toBe('В каком направлении работаешь?');
     fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(push).not.toHaveBeenCalled();
     expect(sent(fetchFn)).toEqual({ action: 'later' });
   });
 

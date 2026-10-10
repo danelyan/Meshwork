@@ -132,7 +132,7 @@ describe('лента помощника работодателя', () => {
 
   it('приветствие объясняет, что нужно от работодателя: потребность, подборка, приглашение', () => {
     render(<AssistantChat />);
-    const t = screen.getByText(/Я помощник работодателя/).textContent ?? '';
+    const t = screen.getByText(/Я Кира, помощница работодателя/).textContent ?? '';
     expect(t).toMatch(/описать потребность/);
     expect(t).toMatch(/подберу кандидатов/);
     expect(t).toMatch(/приглашение с зарплатой/);

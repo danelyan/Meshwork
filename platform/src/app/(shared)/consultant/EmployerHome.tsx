@@ -9,8 +9,9 @@ import type { OnboardingView } from '@/server/onboarding/types';
 import { loadEmployerAside } from '@/server/consultant/aside';
 
 import { warn } from './warn';
+import { COMPANION_NAME } from '@/lib/persona';
 
-const EMPLOYER_LABEL = 'Помощник по подбору';
+const EMPLOYER_LABEL = `${COMPANION_NAME} · помощница по подбору`;
 
 /**
  * Дом работодателя на /consultant: лента с помощником по подбору (решение владельца 10.10). Знакомство не

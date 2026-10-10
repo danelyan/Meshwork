@@ -57,7 +57,7 @@ export interface StepDef {
   eyebrow: string;
   question: string;
   sub?: string;
-  /** Как шаг называется в сводке «вот что я понял». */
+  /** Как шаг называется в сводке «вот что я поняла». */
   summaryLabel: string;
   /** Куда пишется ответ (документация и тест трассируемости). */
   target: string;

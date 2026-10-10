@@ -32,11 +32,11 @@ async function renderHeader(session: SessionPrincipal | null, pathname: string, 
 afterEach(cleanup);
 
 describe('SiteHeader', () => {
-  it('гость на главной: якоря, дата выпуска, «Войти» → /auth, без «Выйти»', async () => {
+  it('гость на главной: якоря, «Войти» → /auth, без даты выпуска и «Выйти»', async () => {
     const h = await renderHeader(null, '/');
     expect(h.getByRole('link', { name: 'Компании' }).getAttribute('href')).toBe('#companies');
     expect(h.getByRole('link', { name: 'Почему мы' }).getAttribute('href')).toBe('#why');
-    expect(h.getByText('№ 01 · осень 2026')).toBeDefined();
+    expect(h.queryByText('№ 01 · осень 2026')).toBeNull();
     expect(h.getByRole('link', { name: 'Войти' }).getAttribute('href')).toBe('/auth');
     expect(h.queryByRole('button', { name: 'Выйти' })).toBeNull();
   });

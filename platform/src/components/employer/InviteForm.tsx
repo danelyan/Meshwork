@@ -1,15 +1,17 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
 import { ApiError } from '@/lib/api';
 import { inviteApi } from '@/lib/employer-api';
+import { detectRedFlags } from '@/server/employer/antifraud';
 
 import { Button, Field, Notice } from '../ui';
 import ui from '../ui.module.css';
 
 import styles from './Employer.module.css';
+import { RedFlagNotice } from './RedFlagNotice';
 
 export interface InviteFormProps {
   candidateId: string;
@@ -50,6 +52,7 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
   const [error, setError] = useState<string | null>(null);
   const [fieldErr, setFieldErr] = useState<{ message?: string; salaryFrom?: string; salaryTo?: string }>({});
   const [done, setDone] = useState(false);
+  const flags = useMemo(() => detectRedFlags({ texts: [message], salaryFrom: parseRub(salaryFrom), salaryTo: parseRub(salaryTo) }).filter((f) => f.code !== 'vague_text' && f.code !== 'no_salary'), [message, salaryFrom, salaryTo]);
 
   if (done) return <Notice>Приглашение отправлено. Статус - в разделе «Приглашения».</Notice>;
   if (!open) {
@@ -103,6 +106,7 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
           <input className={ui.input} inputMode="numeric" value={salaryTo} onChange={(e) => setSalaryTo(e.target.value)} />
         </Field>
       </div>
+      <RedFlagNotice flags={flags} />
       {error && <Notice tone="error">{error}</Notice>}
       <div className={styles.actions}>
         <Button type="submit" variant="cta" size="sm" loading={busy}>

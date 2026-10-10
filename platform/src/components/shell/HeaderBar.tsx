@@ -48,7 +48,6 @@ export function HeaderBar({ signedIn, links, account = null, demoEnabled = false
             </nav>
           )
         )}
-        {home && !account && <span className={styles.edition}>№ 01 · осень 2026</span>}
         <div className={styles.action}>
           {account?.roles && <Notifications role={account.roles.role} />}
           {/* Тема пока действует только на экран консультанта — иконка там, где она что-то меняет. */}

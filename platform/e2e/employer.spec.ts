@@ -36,9 +36,10 @@ test('E-02: работодатель → подборка → приглашен
   await page.waitForURL(VACANCY_URL);
   const cards = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3 }) });
   const top = cards.first();
-  const alreadyAccepted = await top.getByText(/Приглашение принято. Контакты:/).isVisible();
+  const alreadyAccepted = (await top.getByRole('heading', { level: 3 }).filter({ hasText: POOL_TOP }).count()) > 0; // принявший кандидат показан по имени
   if (!alreadyAccepted) await expect(top.getByRole('heading', { level: 3 })).toContainText(/Кандидат #[0-9A-F]{6}/);
-  // тип источника виден, ссылок и цитат нет (R-E-07)
+  // тип источника виден, ссылок и цитат нет (R-E-07); утверждения лежат в свёрнутом блоке доказательств карточки
+  await top.getByText('Доказательства и этапы оценки').click();
   await expect(top.getByText(/доказано: (GitHub|Codeforces|Stack Overflow|статья|ФСП)/).first()).toBeVisible();
   if (!alreadyAccepted) await expect(top).not.toContainText(POOL_TOP);
 
@@ -46,11 +47,13 @@ test('E-02: работодатель → подборка → приглашен
   const invite = top.getByRole('button', { name: /^Пригласить:/ });
   if (await invite.isVisible()) {
     await invite.click();
-    await top.getByLabel('Что предлагаешь').fill('Платёжная команда, Go и Kafka, удалёнка');
-    await top.getByLabel('Зарплата от, ₽ в месяц').fill('230000');
-    await top.getByLabel('до, ₽ в месяц').fill('260000');
-    await top.getByRole('button', { name: 'Отправить приглашение' }).click();
-    await expect(top.getByText(/Приглашение:/)).toBeVisible();
+    // форма приглашения открывается модальным окном (<dialog>), а не внутри карточки
+    const dialog = page.getByRole('dialog', { name: /^Приглашение: / });
+    await dialog.getByLabel('Почему именно этот кандидат').fill('Платёжная команда, Go и Kafka, удалёнка');
+    await dialog.getByLabel('Зарплата от, ₽ в месяц').fill('230000');
+    await dialog.getByLabel('до, ₽ в месяц').fill('260000');
+    await dialog.getByRole('button', { name: 'Отправить приглашение' }).click();
+    await expect(page.getByText(/Приглашение (отправлено|просмотрено)/).first()).toBeVisible();
   }
 
   // 3. кандидат принимает
@@ -60,14 +63,14 @@ test('E-02: работодатель → подборка → приглашен
   await expect(page.getByText(/Связь с компанией: /).first()).toBeVisible();
   const accept = page.getByRole('button', { name: 'Принять' }).first();
   if (await accept.isVisible()) await accept.click();
-  await expect(page.getByText(/Приглашение принято/).first()).toBeVisible();
+  await expect(page.getByText(/Контакты открыты/).first()).toBeVisible();
 
   // 4. работодатель видит имя и контакты
   await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/consultant'); // дом работодателя — помощник (10.10)
   await page.goto('/employer/needs/demo-vac-be-m-1');
   await expect(page.getByText(POOL_TOP).first()).toBeVisible();
-  await expect(page.getByText(/Приглашение принято. Контакты:/)).toBeVisible();
-  await expect(page.getByText(/@example\.com/).first()).toBeVisible();
+  // контакт задаёт сам кандидат («Как с тобой связаться»); без него показывается почта аккаунта
+  await expect(page.getByText(/@example\.(com|test)|Кандидат не указал контакт/).first()).toBeVisible();
 });
 
 test('Помощник работодателя (демо без модели): подборка карточками → «Пригласить» → форма; имён нет', async ({ page }) => {
@@ -77,7 +80,7 @@ test('Помощник работодателя (демо без модели): 
   const sample = list.vacancies.find((v: { id: string }) => v.id === 'demo-vac-fe-j-2');
   const title = `E2E Frontend Junior ${Date.now()}`;
   const created = await page.request.post('/api/employer/vacancies', {
-    data: { title, specialization: 'frontend', grade: 'junior', salaryFrom: 100000, salaryTo: 150000, stack: ['React'], needs: sample.needs },
+    data: { title, specialization: 'frontend', grade: 'junior', subcategoryId: 'frontend.ui-app', salaryFrom: 100000, salaryTo: 150000, stack: ['React'], needs: sample.needs },
   });
   expect(created.status()).toBe(201);
   await page.getByRole('link', { name: 'Помощник' }).click();

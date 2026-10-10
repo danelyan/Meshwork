@@ -9,6 +9,9 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   workers: 1,
+  // dev-сервер компилирует страницы по первому заходу, машина слабая: 5 с на ожидание (по умолчанию) мало
+  expect: { timeout: 15_000 },
+  timeout: 60_000,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
   reporter: [['list']],

@@ -6,7 +6,7 @@ export const SUBMISSION_STATUS: Record<string, string> = {
   failed: 'ошибка проверки',
 };
 
-export const GRADE_RU: Record<string, string> = { junior: 'Junior', middle: 'Middle' };
+export const GRADE_RU: Record<string, string> = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
 
 export const FLAG_RU: Record<string, string> = {
   evidence_unverified: 'ссылка на файл не подтвердилась',

@@ -18,7 +18,7 @@ export const templateManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/),
   subcategoryId: z.string().regex(/^[a-z]+\.[a-z0-9-]+$/),
   specialization: z.string().min(1),
-  grade: z.enum(['junior', 'middle']),
+  grade: z.enum(['junior', 'middle', 'senior']),
   title: z.string().min(1),
   summary: z.string().default(''),
   stack: z.array(z.string()),

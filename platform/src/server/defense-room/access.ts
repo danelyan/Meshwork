@@ -20,7 +20,7 @@ export type Viewer =
 export interface ViewedSession {
   id: string;
   candidateId: string;
-  status: 'active' | 'finished' | 'cancelled';
+  status: 'active' | 'finished' | 'cancelled' | 'pending';
 }
 
 /** Работодатель видит кандидата за пределами псевдонима только после accepted. */

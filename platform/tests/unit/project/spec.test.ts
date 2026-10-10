@@ -3,7 +3,7 @@ import { gzipSync } from 'node:zlib';
 import { LlmError, type LlmProvider } from '@/server/llm';
 import { createStubProvider } from '@/server/llm/providers/stub';
 import { readTarGz, writeZip } from '@/server/project/archive';
-import { fallbackSpec, splitWishes, type SpecContext } from '@/server/project/fallback';
+import { dropContractEcho, fallbackSpec, splitWishes, type SpecContext } from '@/server/project/fallback';
 import { reviewRubric } from '@/server/project/review';
 import { createStubRunner } from '@/server/project/runner-client';
 import { SpecJson } from '@/server/project/schemas';
@@ -28,26 +28,74 @@ const failing: LlmProvider = {
   },
 };
 
+const CONTRACT = "# Контракт\n\n`POST /appointments` → 201; ошибка — `{ error: 'validation' }`, 400.\n";
+
+/** Модель-«пересказчик»: дублирует контракт с ошибкой и пишет легенду с названием компании. */
+function echoingLlm(): LlmProvider {
+  return {
+    name: 'echo',
+    model: 'x',
+    supportsTools: false,
+    supportsJsonSchema: true,
+    async complete() {
+      const json = {
+        domainStory: 'Команда «Клиника Плюс» принимает записи пациентов через сайт.',
+        requirements: [
+          'POST /appointments возвращает 201',
+          'При ошибке поле error = valid',
+          'Ответ 409 при пересечении',
+          'Код `createApp` разбит на слои',
+          '(пожелание) Логи с кодом ошибки помогают колл-центру',
+        ],
+      };
+      return { kind: 'json', json, usage: { inputTokens: 1, outputTokens: 1 } } as never;
+    },
+  };
+}
+
 describe('условие проекта (project_spec)', () => {
-  it('stub детерминирован и проходит схему; источник — fallback', async () => {
+  const ctx = { ...CTX, template: { ...CTX.template, contractMd: CONTRACT } };
+
+  it('stub детерминирован и проходит схему; контракт приложен дословно; источник — fallback', async () => {
     const llm = createStubProvider();
-    const a = await generateSpec(CTX, ['Клиника Плюс'], { llm });
-    const b = await generateSpec(CTX, ['Клиника Плюс'], { llm });
+    const a = await generateSpec(ctx, ['Клиника Плюс'], { llm });
+    const b = await generateSpec(ctx, ['Клиника Плюс'], { llm });
     expect(a).toEqual(b);
     expect(a.source).toBe('fallback');
     expect(SpecJson.safeParse(a).success).toBe(true);
-    expect(a.requirements).toContain('Показать в решении: Проектировал REST API');
+    expect(a.contractMd).toBe(CONTRACT);
+    expect(a.title).toBe(ctx.template.title);
+    expect(a.requirements).toContain('(критерий работодателя) Проектировал REST API');
     expect(a.requirements.filter((r) => r.startsWith('(пожелание)'))).toHaveLength(2);
+    // Требования не пересказывают контракт: ни маршрутов, ни кодов.
+    expect(a.requirements.join('\n')).not.toMatch(/appointments|validation|\b(?:201|400)\b/);
+  });
+
+  it('полный контракт из deps, а не урезанный из контекста модели', async () => {
+    const spec = await generateSpec({ ...ctx, template: { ...ctx.template, contractMd: CONTRACT.slice(0, 10) } }, [], { llm: createStubProvider(), contractMd: CONTRACT });
+    expect(spec.contractMd).toBe(CONTRACT);
   });
 
   it('модель недоступна — то же детерминированное условие, задание создаётся', async () => {
-    const spec = await generateSpec(CTX, [], { llm: failing });
-    expect(spec).toEqual({ ...fallbackSpec(CTX), source: 'fallback' });
+    const spec = await generateSpec(ctx, [], { llm: failing });
+    expect(spec).toEqual(fallbackSpec(ctx));
+  });
+
+  it('пересказ контракта моделью отбрасывается; легенда маскируется; контракт не трогается', async () => {
+    const spec = await generateSpec(ctx, ['Клиника Плюс'], { llm: echoingLlm() });
+    expect(spec.source).toBe('llm');
+    expect(spec.requirements.slice(1)).toEqual(['При ошибке поле error = valid', '(пожелание) Логи с кодом ошибки помогают колл-центру']);
+    expect(spec.domainStory).toContain('[компания]');
+    expect(spec.contractMd).toBe(CONTRACT);
+  });
+
+  it('dropContractEcho: имена из `…`, коды в кавычках, HTTP-коды и маршруты', () => {
+    expect(dropContractEcho(['вернуть validation', 'GET /x отдаёт список', 'статус 404', 'Понятные тексты ошибок'], CONTRACT)).toEqual(['Понятные тексты ошибок']);
   });
 
   it('ответ модели маскируется: название компании и суммы в рублях', async () => {
     const llm = createStubProvider();
-    const leaky = { ...CTX, need: { ...CTX.need, teamDescription: 'Команда «Клиника Плюс», оклад 150 000 ₽' } };
+    const leaky = { ...ctx, need: { ...ctx.need, teamDescription: 'Команда «Клиника Плюс», оклад 150 000 ₽' } };
     const spec = await generateSpec(leaky, ['Клиника Плюс'], { llm });
     const raw = JSON.stringify(spec);
     expect(raw).not.toContain('Клиника Плюс');
@@ -66,6 +114,13 @@ describe('рубрика (project_rubric)', () => {
     ]);
     expect((await composeRubric(CTX.required, null)).source).toBe('none');
     expect((await composeRubric([], 'Покрыть тестами пагинацию', { llm: failing })).criteria).toEqual([{ id: 'wish:1', text: 'Покрыть тестами пагинацию', source: 'wish' }]);
+  });
+
+  it('stub не выдумывает пожеланий: каждый критерий — фрагмент текста работодателя', async () => {
+    const wishes = 'Ответ всегда со ссылкой на пункт регламента; если ответа нет — честно сказать';
+    const r = await composeRubric([], wishes, { llm: createStubProvider() });
+    expect(r.criteria).toHaveLength(2);
+    for (const c of r.criteria) expect(wishes).toContain(c.text);
   });
 
   it('splitWishes: строки, «;», предложения, маркеры списка', () => {

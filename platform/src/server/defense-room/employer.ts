@@ -36,6 +36,7 @@ export interface JoinResult {
 
 export async function joinCall(principal: SessionPrincipal | null, sessionId: string): Promise<JoinResult> {
   const { viewer, session } = await employerViewer(principal, sessionId);
+  if (session.status === 'pending') throw errors.conflict('Кандидат ещё не начал защиту');
   if (session.status !== 'active') throw errors.conflict('Защита уже завершена - доступен транскрипт');
   // check-then-create под FOR UPDATE строки сессии: два одновременных join разных компаний не пролезут оба.
   const { p, joined } = await prisma.$transaction(async (tx) => {
@@ -200,7 +201,7 @@ export interface EmployerCallRow {
   id: string;
   candidateId: string;
   candidateName: string;
-  status: 'active' | 'finished' | 'cancelled';
+  status: 'active' | 'finished' | 'cancelled' | 'pending';
   mode: 'project' | 'questions';
   startedAt: string;
   finishedAt: string | null;

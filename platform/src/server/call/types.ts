@@ -5,7 +5,8 @@ import type { Score } from '../defense/types';
 export const CALL_KINDS = ['qualifying', 'defense'] as const;
 export type CallKind = (typeof CALL_KINDS)[number];
 
-export const CALL_STATUSES = ['active', 'finished', 'cancelled'] as const;
+// pending — только kind=defense: приглашение на защиту проекта, кандидат ещё не начал (lane project).
+export const CALL_STATUSES = ['active', 'finished', 'cancelled', 'pending'] as const;
 export type CallStatus = (typeof CALL_STATUSES)[number];
 
 /** Кто говорит в созвоне. employer — живой работодатель в комнате защиты (defense-room). */

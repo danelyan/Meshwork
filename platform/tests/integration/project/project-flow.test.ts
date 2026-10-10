@@ -12,6 +12,11 @@ import { GET as skeleton } from '@/app/api/project-tasks/[id]/skeleton.zip/route
 import { POST as submit } from '@/app/api/project-tasks/[id]/submissions/route';
 import { POST as take } from '@/app/api/project-tasks/[id]/take/route';
 import { GET as feed } from '@/app/api/project-tasks/feed/route';
+import { CALL_RECORDING_CONSENT_VERSION } from '@/server/call/consent';
+import { startDefenseRoom } from '@/server/defense-room';
+import { demoRepoSnapshot } from '@/server/defense-room/fixtures/demo-repo';
+import { requestProjectDefense } from '@/server/defense-room/pending';
+import { getLlm } from '@/server/llm';
 import { setDefenseHook, type DefenseRequest } from '@/server/project/defense-hook';
 import { createStubRunner, setProjectRunner } from '@/server/project/runner-client';
 import { PROJECT_MAX_ACTIVE } from '@/server/project/schemas';
@@ -68,7 +73,7 @@ describe('проект под работодателя: лента и сдача
     setDefenseHook({
       async requestDefense(req) {
         defenseCalls.push(req);
-        return { callSessionId: 'call-test-1' };
+        return requestProjectDefense(req.candidateId, req.submissionId);
       },
     });
   });
@@ -81,7 +86,7 @@ describe('проект под работодателя: лента и сдача
   it('шаблоны: работодателю — список с подкатегориями; кандидату — 403', async () => {
     const res = await templatesRoute(jsonRequest('/api/employer/project-templates?specialization=backend', 'GET', undefined, EMP));
     const body = await res.json();
-    expect(body.templates.map((t: { id: string }) => t.id).sort()).toEqual(['be-integrations-middle-delivery', 'be-webapi-junior-booking', 'be-webapi-middle-orders']);
+    expect(body.templates.map((t: { id: string }) => t.id).sort()).toEqual(['be-integrations-middle-delivery', 'be-integrations-senior-outbox', 'be-webapi-junior-booking', 'be-webapi-middle-orders', 'be-webapi-senior-ratelimit']);
     expect(body.templates[0].tests.hidden).toBeGreaterThan(body.templates[0].tests.visible);
     expect((await templatesRoute(jsonRequest('/x', 'GET', undefined, cand('p-be')))).status).toBe(403);
   });
@@ -198,7 +203,11 @@ describe('проект под работодателя: лента и сдача
     const res = await inviteDefense(jsonRequest('/x', 'POST', body, EMP), params({ id: subId }));
     expect(res.status).toBe(201);
     const out = await res.json();
-    expect(out.callSessionId).toBe('call-test-1');
+    // Ожидающая защита: CallSession kind=defense, pending, связана с сабмитом; повторный запрос — та же.
+    const pending = await prisma.callSession.findUniqueOrThrow({ where: { id: out.callSessionId } });
+    expect(pending).toMatchObject({ candidateId: 'p-be', kind: 'defense', status: 'pending', projectSubmissionId: subId });
+    expect((await requestProjectDefense('p-be', subId)).callSessionId).toBe(out.callSessionId);
+    await expect(requestProjectDefense('p-fe', subId)).rejects.toMatchObject({ status: 404 });
     const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: out.invitationId } });
     expect(inv).toMatchObject({ candidateId: 'p-be', vacancyId: NEED, salaryFrom: 100000, salaryTo: 120000, companyId: DEMO_EMPLOYER.companyId });
     expect(defenseCalls).toEqual([{ submissionId: subId, candidateId: 'p-be', invitationId: out.invitationId, companyId: DEMO_EMPLOYER.companyId }]);
@@ -212,9 +221,17 @@ describe('проект под работодателя: лента и сдача
 
     const regen = await needProject(jsonRequest('/x', 'POST', {}, EMP), params({ id: NEED }));
     expect(regen.status).toBe(409);
+
+    // Кандидат начинает защиту сам (после согласия на запись) — активируется та же сессия, не вторая.
+    await prisma.consent.create({ data: { userId: 'u-p-be', version: CALL_RECORDING_CONSENT_VERSION } });
+    const started = await startDefenseRoom('p-be', { mode: 'project', projectSubmissionId: subId }, getLlm({ candidateId: 'p-be' }), { loadSnapshot: async (url) => demoRepoSnapshot(url) });
+    expect(started.sessionId).toBe(out.callSessionId);
+    expect(await prisma.callSession.findUniqueOrThrow({ where: { id: out.callSessionId }, select: { status: true } })).toEqual({ status: 'active' });
+    expect(await prisma.callSession.count({ where: { projectSubmissionId: subId } })).toBe(1);
+    expect(await prisma.defenseRoomPlan.count({ where: { callSessionId: out.callSessionId } })).toBe(1);
   });
 
-  it('runner упал — failed с понятной причиной; повторная сдача разрешена', async () => {
+  it('runner упал — failed с понятной причиной; повторная сдача разрешена, после срока — с пометкой late', async () => {
     const task = await upsertProjectTask({ companyId: 'demo-co-northstream', companyName: COMPANY }, 'demo-vac-be-m-1', { requiredCatalogIds: [], wishesText: null, visibility: 'open' });
     await makeCandidate('p-mid', 'backend', 'middle');
     await take(jsonRequest('/x', 'POST', undefined, cand('p-mid')), params({ id: task.id }));
@@ -222,9 +239,13 @@ describe('проект под работодателя: лента и сдача
     const done = await waitChecked((await res.json()).id, cand('p-mid'));
     expect(done.status).toBe('failed');
     expect(done.error).toMatch(/лимит времени/);
+    // Срок истёк — сдать можно, работодатель видит «после срока».
+    await prisma.projectAssignment.updateMany({ where: { projectTaskId: task.id, candidateId: 'p-mid' }, data: { expiresAt: new Date(Date.now() - 1000) } });
     const again = await submit(jsonRequest('/x', 'POST', { repoUrl: 'https://github.com/demo/starter-only' }, cand('p-mid')), params({ id: task.id }));
     const second = await waitChecked((await again.json()).id, cand('p-mid'));
     expect(second.result.tests).toMatchObject({ passed: 0, score: 0 });
+    const list = await (await employerSubs(jsonRequest('/x?needId=demo-vac-be-m-1', 'GET', undefined, EMP))).json();
+    expect(list.items.map((i: { late: boolean }) => i.late)).toEqual([true, false]);
   });
 
   it(`лимит: не больше ${PROJECT_MAX_ACTIVE} взятых несданных`, async () => {

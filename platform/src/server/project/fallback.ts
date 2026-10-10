@@ -1,7 +1,7 @@
 // Детерминированные сборки условия и рубрики (lane project): ответ stub-провайдера для project_spec /
 // project_rubric и запасной путь, если модель недоступна или вернула мусор. Без импорта llm/*:
 // этот модуль подключает llm/providers/stub-project.ts, цикла быть не должно.
-import { MAX_WISH_CRITERIA, type RubricCriterion, type RubricResult, type SpecJson } from './schemas';
+import { MAX_WISH_CRITERIA, type RubricCriterion, type RubricResult, type SpecLlmOut, type StoredSpec } from './schemas';
 
 /** То, что видит модель (и stub) в блоке <project_context>. */
 export interface SpecContext {
@@ -45,30 +45,63 @@ export function parseContextBlock(text: string): ProjectContext | null {
   }
 }
 
-const GRADE_RU: Record<string, string> = { junior: 'Junior', middle: 'Middle' };
+const GRADE_RU: Record<string, string> = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
 
-export function fallbackSpec(ctx: SpecContext): SpecJson {
+/** Детерминированная легенда и требования поверх контракта (stub и запасной путь project_spec). */
+export function fallbackSpecOut(ctx: SpecContext): SpecLlmOut {
   const t = ctx.template;
   const team = ctx.need.teamDescription?.trim() || ctx.need.description?.trim() || null;
   const teamText = team?.slice(0, 400).replace(/[.\s]+$/, '');
   const domain = teamText ? (/^команд/i.test(teamText) ? teamText : `Команда: ${teamText}`) : 'Команда работодателя';
-  const wishes = splitWishes(ctx.wishes ?? '');
+  return {
+    domainStory: `${domain}. Проектное задание уровня ${GRADE_RU[t.grade] ?? t.grade}: ${t.summary || t.title}. Работодатель смотрит, как решение закрывает его критерии поверх контракта платформы.`.slice(0, 2000),
+    requirements: [...ctx.required.map((r) => `(критерий работодателя) ${r.statement}`), ...splitWishes(ctx.wishes ?? '').map((w) => `(пожелание) ${w}`)],
+  };
+}
+
+const HTTP_CODE = /\b(?:200|201|202|204|400|401|403|404|405|409|410|413|422|429|500|502|503)\b/;
+
+/**
+ * Требования модели, которые пересказывают контракт (имена из `…`, коды ошибок в кавычках, HTTP-коды,
+ * маршруты), отбрасываются: контракт приложен дословно, пересказ только вносит ошибки.
+ */
+export function dropContractEcho(items: string[], contractMd: string): string[] {
+  const idents = new Set<string>();
+  for (const m of contractMd.matchAll(/`([^`\n]{3,80})`/g)) idents.add(m[1]!.trim());
+  for (const m of contractMd.matchAll(/['"]([a-z][a-z0-9_]{2,40})['"]/g)) idents.add(m[1]!);
+  return items.filter((r) => {
+    if (r.includes('`') || HTTP_CODE.test(r) || /(?:^|\s)(?:GET|POST|PUT|PATCH|DELETE)\s+\//.test(r)) return false;
+    for (const id of idents) if (r.includes(id)) return false;
+    return true;
+  });
+}
+
+/** Итоговое условие: заголовок шаблона, легенда и требования (модель или fallback), остальное — кодом. */
+export function assembleSpec(ctx: SpecContext, out: SpecLlmOut, contractMd: string, source: StoredSpec['source']): StoredSpec {
+  const t = ctx.template;
   const hours = Math.round((t.timeBudgetMin / 60) * 10) / 10;
   return {
     title: t.title.slice(0, 160),
-    domainStory: `${domain}. Проектное задание уровня ${GRADE_RU[t.grade] ?? t.grade}: ${t.summary || t.title}. Задание строится на фиксированном контракте платформы — его проверяют автотесты, а работодатель смотрит, как решение закрывает его критерии.`.slice(0, 2000),
+    domainStory: out.domainStory.slice(0, 2000),
     requirements: [
-      `Реализовать контракт из contract.md без изменений имён модулей, функций, маршрутов и полей.`,
-      ...ctx.required.map((r) => `Показать в решении: ${r.statement}`),
-      ...wishes.map((w) => `(пожелание) ${w}`),
+      'Реализовать контракт платформы — он приложен ниже дословно (contract.md). Имена модулей, функций, маршрутов, полей и коды ошибок — только оттуда.',
+      ...dropContractEcho(out.requirements, contractMd).map((r) => r.slice(0, 400)),
     ].slice(0, 15),
     acceptance: [
-      'Скрытые автотесты платформы по contract.md: балл — доля пройденных.',
+      'Скрытые автотесты платформы по контракту: балл — доля пройденных.',
       'Видимые тесты tests/visible проходят локально.',
       ...ctx.required.map((r) => `Критерий работодателя (${r.catalogId}): ${r.statement}`),
+      ...(ctx.wishes?.trim() ? ['Пожелания работодателя проверяются по коду и журналу ИИ — отдельной таблицей критериев.'] : []),
     ].slice(0, 12),
-    notes: `ИИ-ассистенты разрешены — приложи журнал работы с ИИ. Если условие расходится с contract.md, прав contract.md. Ориентир по времени — около ${hours} ч.${ctx.need.stack.length ? ` Стек команды для контекста: ${ctx.need.stack.join(', ')}.` : ''}`,
+    notes: `ИИ-ассистенты разрешены — приложи журнал работы с ИИ. Если текст условия расходится с контрактом, прав контракт. Ориентир по времени — около ${hours} ч.${ctx.need.stack.length ? ` Стек команды для контекста: ${ctx.need.stack.join(', ')}.` : ''}`,
+    contractMd,
+    source,
   };
+}
+
+/** Полностью детерминированное условие (stub или сбой модели). */
+export function fallbackSpec(ctx: SpecContext, contractMd = ctx.template.contractMd): StoredSpec {
+  return assembleSpec(ctx, fallbackSpecOut(ctx), contractMd, 'fallback');
 }
 
 /** Пожелания свободным текстом → отдельные проверяемые пункты (строки, «;», предложения). */

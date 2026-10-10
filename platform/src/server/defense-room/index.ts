@@ -7,3 +7,4 @@ export { listCandidateSubmissions, pendingEmployerQuestions } from './candidate'
 export { generateQlc, summarizeProjectResult } from './qlc';
 export { loadRepoSnapshot } from './repo';
 export { subscribe, encodeCallEvent } from './bus';
+export { requestProjectDefense } from './pending';

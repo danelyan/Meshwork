@@ -141,7 +141,8 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   // Общий суточный лимит с созвонами лейна call: защита и квалифицирующий созвон считаются вместе.
   const dailyLimit = getEnv().CALL_DAILY_LIMIT;
   if (dailyLimit > 0) {
-    const recent = await prisma.callSession.count({ where: { candidateId, startedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } });
+    // pending — приглашение работодателя, а не созвон: в лимит не считается.
+    const recent = await prisma.callSession.count({ where: { candidateId, status: { not: 'pending' }, startedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } });
     if (recent >= dailyLimit) throw new AppError('call_limit', `Не больше ${dailyLimit} созвонов и защит в сутки - попробуй завтра`, 429);
   }
 
@@ -189,10 +190,23 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
       : `Привет! У работодателей есть к тебе вопросы: ${items.length}. Отвечай своими словами. `;
 
   const session = await prisma.$transaction(async (tx) => {
-    const s = await tx.callSession.create({
-      data: { candidateId, kind: 'defense', projectSubmissionId: submissionId, status: 'active', policyVersion: CALL_RECORDING_CONSENT_VERSION, transcriptJson: [] },
-      select: { id: true },
-    });
+    // Ожидающая защита по приглашению работодателя (pending.ts) — её и начинаем, а не заводим вторую.
+    const pending = submissionId
+      ? await tx.callSession.findFirst({ where: { candidateId, kind: 'defense', status: 'pending', projectSubmissionId: submissionId }, orderBy: { startedAt: 'asc' }, select: { id: true } })
+      : null;
+    const activated = pending
+      ? await tx.callSession.updateMany({
+          where: { id: pending.id, status: 'pending' },
+          data: { status: 'active', startedAt: new Date(), policyVersion: CALL_RECORDING_CONSENT_VERSION },
+        })
+      : { count: 0 };
+    const s =
+      pending && activated.count === 1
+        ? pending
+        : await tx.callSession.create({
+            data: { candidateId, kind: 'defense', projectSubmissionId: submissionId, status: 'active', policyVersion: CALL_RECORDING_CONSENT_VERSION, transcriptJson: [] },
+            select: { id: true },
+          });
     await tx.defenseRoomPlan.create({
       data: { callSessionId: s.id, itemsJson: items as unknown as Prisma.InputJsonValue, cursor: 0, sourceJson: source as unknown as Prisma.InputJsonValue },
     });

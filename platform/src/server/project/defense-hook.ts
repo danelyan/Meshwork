@@ -1,12 +1,8 @@
-// Точка стыка lane project → lane call / defense-room (ADR 0003, «Дополнение 10.10»):
-// «Пригласить на защиту» создаёт приглашение (модель Invitation) и CallSession kind=defense в статусе
-// «ожидает кандидата». Модели CallSession в ветке lane/project нет (она у лейна call), поэтому здесь
-// только интерфейс и заглушка — не дублируем модель.
-//
-// TODO(интегратор): после слияния lane/call заменить defaultHook реализацией:
-//   prisma.callSession.create({ data: { candidateId, kind: 'defense', projectSubmissionId: submissionId,
-//     status: <«ожидает кандидата» — по контракту CallStatus лейна call>, policyVersion: <версия call> } })
-// и вернуть { callSessionId }. Повторный вызов для того же сабмита должен вернуть существующую сессию.
+// Точка стыка lane project → defense-room (ADR 0003, «Дополнение 10.10»): «Пригласить на защиту» создаёт
+// приглашение (Invitation) и ожидающую защиту — CallSession kind=defense, status=pending
+// (defense-room/pending.ts). Кандидат начинает её сам на /defense-room: согласие на запись и вопросы по коду —
+// в момент старта (startDefenseRoom). Интерфейс оставлен, чтобы тесты могли подменить реализацию.
+import { requestProjectDefense } from '../defense-room/pending';
 
 export interface DefenseRequest {
   submissionId: string;
@@ -20,8 +16,9 @@ export interface DefenseHook {
 }
 
 const defaultHook: DefenseHook = {
-  async requestDefense() {
-    return { callSessionId: null };
+  async requestDefense({ submissionId, candidateId }) {
+    const { callSessionId } = await requestProjectDefense(candidateId, submissionId);
+    return { callSessionId };
   },
 };
 

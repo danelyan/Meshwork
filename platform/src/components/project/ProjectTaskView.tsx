@@ -85,7 +85,7 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
           <Tag tone="outline">{GRADE_RU[task.grade] ?? task.grade}</Tag>
           <span>{hours(task.timeBudgetMin)}</span>
           <span>{task.stack.join(', ')}</span>
-          {task.my.expiresAt && <span>сдать до {new Date(task.my.expiresAt).toLocaleDateString('ru-RU')}</span>}
+          {task.my.expiresAt && (new Date(task.my.expiresAt).getTime() > Date.now() ? <span>сдать до {new Date(task.my.expiresAt).toLocaleDateString('ru-RU')}</span> : <span>срок истёк — сдать можно, работодатель увидит пометку «после срока»</span>)}
         </div>
       </div>
       {error && <Notice tone="error">{error}</Notice>}
@@ -106,7 +106,7 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
         </ul>
         {spec.notes && <p className={styles.prose}>{spec.notes}</p>}
         <details className={styles.details}>
-          <summary>Технический контракт (contract.md) — при расхождении с условием прав он</summary>
+          <summary>Контракт (contract.md, дословно) — при расхождении с условием прав он</summary>
           <pre className={styles.code}>{task.contractMd}</pre>
         </details>
         <details className={styles.details}>

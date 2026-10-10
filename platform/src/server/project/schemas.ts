@@ -24,9 +24,21 @@ export const SpecJson = z.object({
 export type SpecJson = z.infer<typeof SpecJson>;
 
 export interface StoredSpec extends SpecJson {
-  /** llm — сгенерировано моделью; fallback — детерминированная сборка (stub или сбой модели). */
+  /** contract.md шаблона дословно на момент генерации: модель контракт не пересказывает. */
+  contractMd: string;
+  /** llm — легенда и требования от модели; fallback — детерминированная сборка (stub или сбой модели). */
   source: 'llm' | 'fallback';
 }
+
+/**
+ * Что пишет модель (project_spec): только легенду в домене работодателя и требования ПОВЕРХ контракта
+ * (критерии и пожелания работодателя). Заголовок, «как проверяется», заметки и сам контракт собирает код.
+ */
+export const SpecLlmOut = z.object({
+  domainStory: z.string().min(10).max(2000),
+  requirements: z.array(z.string().min(3).max(400)).max(12),
+});
+export type SpecLlmOut = z.infer<typeof SpecLlmOut>;
 
 export const RubricCriterion = z.object({
   id: z.string().min(1).max(80),

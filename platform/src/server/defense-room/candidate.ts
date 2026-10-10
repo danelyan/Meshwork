@@ -9,7 +9,7 @@ export interface CandidateSubmissionRow {
   repoUrl: string;
   status: string;
   submittedAt: string;
-  lastDefense: { sessionId: string; status: 'active' | 'finished' | 'cancelled'; verdict: DefenseRoomVerdict | null } | null;
+  lastDefense: { sessionId: string; status: 'active' | 'finished' | 'cancelled' | 'pending'; verdict: DefenseRoomVerdict | null } | null;
 }
 
 export async function listCandidateSubmissions(candidateId: string): Promise<CandidateSubmissionRow[]> {

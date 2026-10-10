@@ -176,7 +176,7 @@ export type CallEventName = (typeof CALL_EVENT_NAMES)[number];
 export interface CallSnapshot {
   sessionId: string;
   kind: 'qualifying' | 'defense';
-  status: 'active' | 'finished' | 'cancelled';
+  status: 'active' | 'finished' | 'cancelled' | 'pending';
   mode: DefenseMode;
   transcript: TranscriptEntry[];
   participants: { userId: string; companyId: string; companyName: string; aiMuted: boolean }[];
@@ -197,7 +197,7 @@ export interface SignalPayload {
  */
 export type CallEvent =
   | { type: 'snapshot'; call: CallSnapshot }
-  | { type: 'status'; status: 'active' | 'finished' | 'cancelled' }
+  | { type: 'status'; status: 'active' | 'finished' | 'cancelled' | 'pending' }
   | { type: 'utterance'; entry: TranscriptEntry; done?: boolean }
   | { type: 'ai_state'; state: 'thinking' | 'idle' }
   | { type: 'participant'; userId: string; role: 'employer'; action: 'joined' | 'left'; companyId: string; companyName: string }

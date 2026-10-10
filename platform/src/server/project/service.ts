@@ -15,7 +15,10 @@ import { pseudonym } from '../employer/privacy';
 import { AppError, errors } from '../errors';
 import { loadCatalog } from '../recommend/evidence';
 import { downloadGithubTarball, parseGithubRepoUrl, type GithubRepo } from '../runner/client';
-import type { Grade, Specialization } from '../types';
+import type { Grade as CategoryGrade, Specialization } from '../types';
+
+/** Грейд в модуле project: junior | middle | senior (Senior — ADR 0003 «Дополнение 16:15»). */
+type Grade = PrismaGrade;
 
 import { readTarGz, writeZip } from './archive';
 import { getDefenseHook } from './defense-hook';
@@ -82,7 +85,12 @@ export async function syncTemplates(force = false): Promise<void> {
       image: m.image,
       timeBudgetMin: m.timeBudgetMin,
     };
-    await prisma.projectTemplate.upsert({ where: { id: m.id }, update: data, create: { id: m.id, ...data } });
+    try {
+      await prisma.projectTemplate.upsert({ where: { id: m.id }, update: data, create: { id: m.id, ...data } });
+    } catch (err) {
+      // Один шаблон не должен ронять ленту: например, грейд senior до миграции enum Grade (lane directions).
+      console.warn(`[project] шаблон ${m.id} не записан в ProjectTemplate`, err instanceof Error ? err.message.split('\n').pop() : err);
+    }
   }
   synced = true;
 }
@@ -218,7 +226,7 @@ export async function upsertProjectTask(
     required,
     wishes: input.wishesText,
   };
-  const [spec, rubric] = await Promise.all([generateSpec(specCtx, [ctx.companyName]), composeRubric(required, input.wishesText)]);
+  const [spec, rubric] = await Promise.all([generateSpec(specCtx, [ctx.companyName], { contractMd: readContract(template) }), composeRubric(required, input.wishesText)]);
   const data = {
     templateId: m.id,
     specialization: m.specialization,
@@ -393,7 +401,8 @@ export async function takeTask(candidateId: string, taskId: string, now = new Da
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`project-take:${candidateId}`}))`;
     const existing = await tx.projectAssignment.findUnique({ where: { projectTaskId_candidateId: { projectTaskId: taskId, candidateId } } });
-    if (existing && (existing.status === 'submitted' || existing.expiresAt > now)) {
+    // Уже взято — срок не продлевается повторным «взять»: сдать после срока можно, но с пометкой late.
+    if (existing) {
       return { taskId, expiresAt: existing.expiresAt.toISOString(), active: await countActive(candidateId, now, tx), maxActive: PROJECT_MAX_ACTIVE };
     }
     const active = await countActive(candidateId, now, tx);
@@ -423,7 +432,8 @@ export async function getTaskForCandidate(candidateId: string, taskId: string): 
   const subs = await prisma.projectSubmission.findMany({ where: { candidateId, projectTaskId: taskId }, orderBy: { submittedAt: 'desc' } });
   return {
     ...feedItem(t, invited, my),
-    contractMd: readContract(requireTemplate(t.templateId)),
+    // Контракт из условия (снимок на момент генерации); у старых заданий его нет — с диска.
+    contractMd: (t.specJson as unknown as Partial<StoredSpec>).contractMd ?? readContract(requireTemplate(t.templateId)),
     skeletonUrl: `/api/project-tasks/${encodeURIComponent(t.id)}/skeleton.zip`,
     submissions: subs.map(candidateSubmissionView),
   };
@@ -444,7 +454,9 @@ export function renderTaskMd(spec: StoredSpec): string {
     '',
     spec.notes,
     '',
-    'Технический контракт — contract.md: при расхождении с этим текстом прав контракт.',
+    '## Контракт (дословно, contract.md)',
+    '',
+    spec.contractMd ?? 'См. contract.md в корне заготовки.',
     '',
   ].join('\n');
 }
@@ -523,7 +535,9 @@ export async function submitProject(candidateId: string, taskId: string, input: 
   const runner = getProjectRunner();
   const commitSha = input.commitSha ?? (runner.mode === 'stub' ? createHash('sha1').update(`${repoUrl}#${prev.length}`).digest('hex') : await resolveHeadSha(repo));
   const sub = await prisma.$transaction(async (tx) => {
-    const created = await tx.projectSubmission.create({ data: { projectTaskId: taskId, candidateId, repoUrl, commitSha, aiLogText: input.aiLogText } });
+    // Срок истёк — сдать можно, но работодатель видит пометку «после срока».
+    const late = assignment.expiresAt.getTime() < Date.now();
+    const created = await tx.projectSubmission.create({ data: { projectTaskId: taskId, candidateId, repoUrl, commitSha, aiLogText: input.aiLogText, late } });
     await tx.projectAssignment.update({ where: { id: assignment.id }, data: { status: 'submitted' } });
     return created;
   });
@@ -646,6 +660,8 @@ export interface EmployerSubmissionView {
   id: string;
   status: ProjectSubmissionStatus;
   submittedAt: string;
+  /** Сдано после срока задания. */
+  late: boolean;
   checkedAt: string | null;
   error: string | null;
   candidate: { id: string; displayName: string; category: string | null };
@@ -679,12 +695,13 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
         id: s.id,
         status: s.status,
         submittedAt: s.submittedAt.toISOString(),
+        late: s.late,
         checkedAt: s.checkedAt?.toISOString() ?? null,
         error: s.error,
         candidate: {
           id: s.candidateId,
           displayName: open ? s.candidate.name : pseudonym(s.candidateId),
-          category: cat ? categoryLabel(cat as { specialization: Specialization; grade: Grade }) : null,
+          category: cat ? categoryLabel(cat as { specialization: Specialization; grade: CategoryGrade }) : null,
         },
         repoUrl: open ? s.repoUrl : null,
         commitSha: open ? s.commitSha : null,
@@ -698,7 +715,7 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
 
 /**
  * «Пригласить на защиту»: приглашение в смысле ТЗ (вилка, R-D-01/02) по потребности задания +
- * CallSession kind=defense через defense-hook (модель — у лейна call). Только проверенный сабмит.
+ * ожидающая защита CallSession kind=defense, status=pending через defense-hook (defense-room/pending.ts). Только проверенный сабмит.
  */
 export async function inviteToDefense(
   ctx: { companyId: string; employerProfileId: string },

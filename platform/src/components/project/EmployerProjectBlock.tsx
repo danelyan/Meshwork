@@ -161,6 +161,12 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
               ))}
             </ul>
           </details>
+          {task.spec.contractMd && (
+            <details className={styles.details}>
+              <summary>Контракт шаблона — кандидат получает его дословно</summary>
+              <pre className={styles.code}>{task.spec.contractMd}</pre>
+            </details>
+          )}
         </Panel>
       )}
 
@@ -209,6 +215,7 @@ function SubmissionCard({ s, salaryFrom, salaryTo, onInvited }: { s: EmployerSub
       <div className={emp.meta}>
         {s.candidate.category && <Tag tone="solid">{s.candidate.category}</Tag>}
         <span>{new Date(s.submittedAt).toLocaleString('ru-RU')}</span>
+        {s.late && <Tag>сдано после срока</Tag>}
         {s.repoUrl ? <a href={s.repoUrl}>{s.repoUrl}</a> : <span>репозиторий — после принятия приглашения</span>}
       </div>
       {s.error && <Notice tone="error">{s.error}</Notice>}

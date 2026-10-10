@@ -165,8 +165,13 @@ export interface FspFlowState {
   verifier: string;
   /** Чей поток: callback сверяет с кандидатом текущей сессии. */
   candidateId: string;
+  /** Куда вернуть: настройки или чат знакомства (шаг ФСП). */
+  ret?: FspReturn;
   exp: number;
 }
+
+export type FspReturn = 'settings' | 'consultant';
+export const FSP_RETURN_PATH: Record<FspReturn, string> = { settings: '/settings', consultant: '/consultant' };
 
 const sign = (payload: string, secret: string) => createHmac('sha256', `fsp-oidc-state|${secret}`).update(payload).digest('base64url');
 
@@ -180,6 +185,7 @@ const FlowShape = z.object({
   nonce: z.string().min(16).max(256),
   verifier: z.string().min(43).max(128),
   candidateId: z.string().min(1).max(64),
+  ret: z.enum(['settings', 'consultant']).optional(),
   exp: z.number(),
 });
 
@@ -204,8 +210,8 @@ export function verifyFlowState(
 }
 
 /** Новый поток: state, nonce и PKCE verifier (64 символа base64url, RFC 7636: 43..128). */
-export function newFlow(candidateId: string, nowSec = Math.floor(Date.now() / 1000)): FspFlowState {
-  return { state: randomToken(24), nonce: randomToken(24), verifier: randomToken(48), candidateId, exp: nowSec + FSP_OAUTH_TTL_SEC };
+export function newFlow(candidateId: string, nowSec = Math.floor(Date.now() / 1000), ret: FspReturn = 'settings'): FspFlowState {
+  return { state: randomToken(24), nonce: randomToken(24), verifier: randomToken(48), candidateId, ret, exp: nowSec + FSP_OAUTH_TTL_SEC };
 }
 
 export async function buildAuthorizeUrl(t: FspIdTransport, flow: FspFlowState): Promise<string> {

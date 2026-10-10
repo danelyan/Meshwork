@@ -15,7 +15,9 @@ describe('matchStepText — текст как ответ на шаг', () => {
   it('«один из»: по подписи, значению и тексту ответа; недоступный вариант не засчитывается', () => {
     expect(matchStepText({ kind: 'one', options: opts('goal') }, 'ищу работу')).toEqual({ value: 'job_search', text: 'Ищу работу' });
     expect(matchStepText({ kind: 'one', options: opts('goal') }, 'job_search')).toMatchObject({ value: 'job_search' });
-    expect(matchStepText({ kind: 'one', options: opts('fsp') }, 'ФСП ID привязан (демо)')).toMatchObject({ value: 'linked' });
+    // «Войти через ФСП ID» — переход, текстом не выбирается; «нет истории» — обычный ответ.
+    expect(matchStepText({ kind: 'one', options: opts('fsp') }, 'Войти через ФСП ID')).toBeNull();
+    expect(matchStepText({ kind: 'one', options: opts('fsp') }, 'Нет истории ФСП')).toMatchObject({ value: 'not_linked' });
     expect(matchStepText({ kind: 'one', options: DIRECTIONS }, 'FRONTEND')).toMatchObject({ value: 'frontend' });
     expect(matchStepText({ kind: 'one', options: DIRECTIONS }, 'mobile')).toBeNull();
     expect(matchStepText({ kind: 'one', options: opts('goal') }, 'а зачем это?')).toBeNull();

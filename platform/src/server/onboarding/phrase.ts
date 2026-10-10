@@ -60,7 +60,8 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'fsp':
       return 'Ещё один источник - соревнования ФСП.';
     case 'specialization':
-      if (prev?.step.id === 'fsp' && prev.value === 'linked') return 'Демо-профиль ФСП привязан.';
+      if (prev?.step.id === 'fsp' && prev.value === 'linked') return 'ФСП ID привязан, достижения - в профиле.';
+      if (prev?.step.id === 'fsp' && (prev.value === 'no_achievements' || prev.value === 'unavailable')) return 'ФСП ID привязан.';
       if (prev?.step.id === 'fsp' && prev.value === 'not_linked') return 'Без истории ФСП - тоже нормально, решает тест.';
       return 'Теперь про работу: по направлению тебя и будут искать.';
     case 'grade': {
@@ -128,7 +129,7 @@ export async function leadFor(
 ): Promise<string> {
   const template = templateLead(step, ctx, prev);
   // Первая реплика (приветствие) и согласие — всегда шаблон: тон и смысл первого экрана не отдаём модели.
-  if (!llmEnabled() || step.id === 'consent' || step.kind === 'consents' || (step.id === 'role' && prev === null)) return template;
+  if (!llmEnabled() || step.id === 'consent' || (step.id === 'role' && prev === null)) return template;
   try {
     const llm = getLlm({ candidateId: opts.candidateId ?? undefined });
     const input = {

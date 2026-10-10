@@ -109,7 +109,7 @@ const Custom = z.string().trim().min(1).max(60);
 
 export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext): unknown {
   const enabled = optionsOf(step, ctx)
-    .filter((o) => !o.disabled)
+    .filter((o) => !o.disabled && !o.href)
     .map((o) => o.value);
   const fail = (msg: string): never => {
     throw new AnswerError(msg);
@@ -119,14 +119,6 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
       const r = z.object({ version: z.string().min(1).max(64) }).safeParse(value);
       return r.success ? r.data : fail('Нужна версия текста согласия');
     }
-    case 'consents': {
-      // Ноль галочек — допустимый ответ: каждое согласие необязательно для продолжения (ADR 0005).
-      const r = z.array(z.string()).max(enabled.length).safeParse(value);
-      if (!r.success) return fail('Отметь согласия из списка');
-      const uniq = [...new Set(r.data)];
-      if (uniq.some((v) => !enabled.includes(v))) return fail('Отметь согласия из списка');
-      return uniq;
-    }
     case 'role': {
       const r = z.enum(['candidate', 'employer']).safeParse(value);
       return r.success ? r.data : fail('Выбери роль');
@@ -134,7 +126,9 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
     case 'one': {
       if (typeof value !== 'string') return fail('Выбери вариант');
       if (enabled.includes(value)) return value;
-      if (optionsOf(step, ctx).some((o) => o.value === value)) return fail('Этот вариант пока недоступен');
+      const o = optionsOf(step, ctx).find((x) => x.value === value);
+      if (o?.href) return fail('Этот вариант - вход во внешний сервис: нажми кнопку');
+      if (o) return fail('Этот вариант пока недоступен');
       if (step.allowCustom) {
         const r = Custom.safeParse(value);
         return r.success ? r.data : fail('Свой вариант - до 60 символов');
@@ -205,13 +199,11 @@ export function answerLabel(step: StepDef, value: unknown, ctx: StepContext): st
   const opts = optionsOf(step, ctx);
   const label = (v: unknown) => {
     const o = opts.find((x) => x.value === v);
-    return o ? (o.answered ?? o.label) : String(v);
+    return o ? (o.answered ?? o.label) : (step.valueLabels?.[String(v)] ?? String(v));
   };
   switch (step.kind) {
     case 'consent':
       return 'Согласен(на) на обработку данных';
-    case 'consents':
-      return Array.isArray(value) && value.length ? `Согласен(на): ${value.map(label).join('; ')}` : 'Без дополнительных согласий';
     case 'role':
     case 'one':
       return label(value);
@@ -241,7 +233,6 @@ export function answerLabel(step: StepDef, value: unknown, ctx: StepContext): st
 /** Ответ для шага, закрытого фактом (согласие, роль) без записи в состоянии. */
 export function factLabel(step: StepDef, ctx: StepContext): string {
   if (step.kind === 'consent') return 'Согласие дано';
-  if (step.kind === 'consents') return 'Согласия сохранены';
   if (step.kind === 'role') return ctx.facts.role === 'employer' ? 'Я работодатель' : 'Я специалист';
   if (step.id === 'companyName') return 'Компания создана';
   return '';

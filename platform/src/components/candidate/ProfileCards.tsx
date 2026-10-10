@@ -23,7 +23,7 @@ export function ProfileBasics({ details, name }: { details: ProfileDetails | nul
     { label: 'Формат', value: p?.workFormats.map((f) => formats[f] ?? f).join(', '), source: 'опрос', step: 'formats' },
     { label: 'Ожидания', value: p?.salaryMin != null ? `${money.format(p.salaryMin)}${p.salaryExpected != null ? ` - ${money.format(p.salaryExpected)}` : ''} ₽` : null, source: 'опрос', step: 'salary' },
     { label: 'Контакты', value: details?.contact, source: 'скрыто от компаний', step: 'candidateContact' },
-    { label: 'ФСП', value: details?.fspState === 'linked' ? 'Связь отмечена · демоданные' : 'Не подключён', source: 'ФСП ID · демо', step: 'fsp' },
+    { label: 'ФСП', value: details?.fspState === 'linked' ? 'Привязан, достижения в профиле' : details?.fspState === 'no_achievements' ? 'Привязан, достижений нет' : details?.fspState === 'unavailable' ? 'Привязан, реестр недоступен' : 'Не подключён', source: 'ФСП ID · симулятор', step: 'fsp' },
   ];
   async function edit(stepId: string) {
     setBusy(true); setError(null);

@@ -31,8 +31,8 @@ F8. Уровень доказанности ставит код по типу и
 <!-- код: claims/levels.ts maxLevelFor; порядок — решение владельца 09.10 (platform выше third_party): claims/levels.ts LEVEL_ORDER, от него recommend/weights.ts LEVEL_WEIGHT и employer/privacy.ts dedupeClaims; test/service.ts (level platform для решённых catalogId); defense/session.ts (level platform после защиты) -->
 F9. Утверждение попадает в профиль только после того, как кандидат подтвердил карточку. Каждое утверждение — из каталога платформы и с дословной цитатой из источника.
 <!-- код: claims/service.ts (status proposed → confirmed|edited кнопкой кандидата, api/claims); claims/verifier.ts (цитата — подстрока источника) -->
-F10. API ФСП платформе не предоставлен: привязка ФСП ID сейчас демонстрационная. Нет истории ФСП — без штрафа: место в подборке это не снижает, решает покрытие и тест.
-<!-- код: onboarding/scenario.ts шаг fsp (note «демо: API ФСП не предоставлен»); employer/weights.ts FSP_BOOST, employer/ranking.ts fspText («на ранг не влияет») -->
+F10. ФСП ID привязывается входом по OIDC: кнопка «Войти через ФСП ID» в знакомстве (шаг ФСП) и в настройках; после входа подтверждённые достижения попадают в профиль. Keycloak и реестр ФСП организаторы не выдали, поэтому провайдер на стенде — симулятор ФСП ID с синтетическими участниками, их достижения помечены как демоданные. Нет истории ФСП — без штрафа: место в подборке это не снижает, решает покрытие и тест.
+<!-- код: onboarding/scenario.ts шаг fsp (вариант-ссылка на /api/fsp-id/link), server/fsp-id/ (OIDC-клиент, мок и симулятор); employer/weights.ts FSP_BOOST, employer/ranking.ts fspText («на ранг не влияет») -->
 F11. Вакансии, которые видит кандидат, — потребности работодателей на этой платформе; цифры по ним называй «по вакансиям на платформе». Рыночной статистики зарплат у платформы нет.
 <!-- код: recommend/targets.ts recommendTargets (только prisma.vacancy, reason «По вакансиям на платформе») -->
 

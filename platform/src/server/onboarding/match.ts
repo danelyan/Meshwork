@@ -49,7 +49,8 @@ const optionText = (o: StepOption) => o.answered ?? o.label;
  * только кнопкой (R-C-14). Остальные виды шагов здесь не сопоставляются.
  */
 export function matchStepText(step: StepLike, text: string): TextMatch | null {
-  const options = step.options ?? [];
+  // Вариант-ссылка (вход в ФСП ID) текстом не выбирается: ответ на него пишет сервер по возврату.
+  const options = (step.options ?? []).filter((o) => !o.href);
   if (step.kind === 'role' || step.kind === 'one') {
     const o = findOption(options, text);
     return o ? { value: o.value, text: optionText(o) } : null;
@@ -81,7 +82,7 @@ export function looksLikeQuestion(text: string): boolean {
  * и на итоге — нет: там заготовленный ответ без модели.
  */
 export function asideToModel(role: Role, kind: StepKind): boolean {
-  return role === 'candidate' && kind !== 'consent' && kind !== 'consents' && kind !== 'role' && kind !== 'summary';
+  return role === 'candidate' && kind !== 'consent' && kind !== 'role' && kind !== 'summary';
 }
 
 /** Маркер шага в тексте хода консультанта: по нему лента онбординга восстанавливает вопросы после перезагрузки. */

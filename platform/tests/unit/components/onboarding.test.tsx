@@ -157,16 +157,17 @@ it('текстовый шаг: Enter отправляет; ИНН с опеча�
   expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'inn', value: '7707083893' });
 });
 
-it('ФСП: демо-достижения карточкой в сообщении с пометкой «демо: API ФСП не предоставлен»', () => {
-  stubFetch();
+it('ФСП: «Войти через ФСП ID» ведёт на вход ФСП ID, а не отвечает на шаг', () => {
+  const fetcher = stubFetch();
   render(
     <OnboardingChat
-      initial={makeView({ id: 'fsp', question: 'ФСП?', options: [{ value: 'linked', label: 'Привязать' }], fspDemo: [{ event: 'Кубок', year: 2025, result: 'финалист', role: 'backend' }] })}
+      initial={makeView({ id: 'fsp', question: 'ФСП?', options: [{ value: 'linked', label: 'Войти через ФСП ID', href: '/api/fsp-id/link?return=consultant' }, { value: 'not_linked', label: 'Нет истории ФСП' }] })}
       consentText={[]}
     />,
   );
-  expect(screen.getByText('демо: API ФСП не предоставлен')).toBeDefined();
-  expect(screen.getByText(/Кубок, 2025: финалист/)).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: /Войти через ФСП ID/ }));
+  expect(push).toHaveBeenCalledWith('/api/fsp-id/link?return=consultant');
+  expect(fetcher).not.toHaveBeenCalledWith('/api/onboarding', expect.anything());
 });
 
 const summaryView = (over: Partial<OnboardingView> = {}) =>

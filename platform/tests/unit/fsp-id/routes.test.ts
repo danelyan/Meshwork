@@ -26,9 +26,9 @@ const APP = getEnv().APP_URL;
 const session = (id: string) => `${SESSION_COOKIE}=${signSession(id, getEnv().SESSION_SECRET)}`;
 const cookieValue = (res: Response, name: string) => /^[^=]+=([^;]*)/.exec(res.headers.getSetCookie().find((c) => c.startsWith(`${name}=`)) ?? '')?.[1] ?? '';
 
-async function runFlow(participantSub: string | null, opts: { startedBy?: string; returnedAs?: string } = {}) {
+async function runFlow(participantSub: string | null, opts: { startedBy?: string; returnedAs?: string; from?: string } = {}) {
   const startedBy = opts.startedBy ?? 'cand-1';
-  const start = await link(new Request(`${APP}/api/fsp-id/link`, { headers: { cookie: session(startedBy) } }));
+  const start = await link(new Request(`${APP}/api/fsp-id/link${opts.from ?? ''}`, { headers: { cookie: session(startedBy) } }));
   expect(start.status).toBe(303);
   const authorize = new URL(start.headers.get('location')!);
   const flowCookie = cookieValue(start, FSP_OAUTH_COOKIE);
@@ -45,7 +45,8 @@ async function runFlow(participantSub: string | null, opts: { startedBy?: string
   const back = new URL(chosen.headers.get('location')!);
 
   const done = await callback(new Request(back, { headers: { cookie: `${session(opts.returnedAs ?? startedBy)}; ${FSP_OAUTH_COOKIE}=${flowCookie}` } }));
-  return { authorize, html, back, done, result: new URL(done.headers.get('location')!).searchParams.get('fsp') };
+  const target = new URL(done.headers.get('location')!);
+  return { authorize, html, back, done, target, result: target.searchParams.get('fsp') };
 }
 
 beforeEach(() => {
@@ -81,6 +82,12 @@ describe('ФСП ID через маршруты (встроенный мок)', 
     expect(result).toBe(want);
     expect(tx.candidate.update).toHaveBeenCalledWith({ where: { id: 'cand-1' }, data: { fspState: want } });
     expect(tx.source.create).toHaveBeenCalledWith({ data: expect.objectContaining({ origin: `fsp:${p.sub}`, ownershipVerified: true }) });
+  });
+
+  it('старт из шага знакомства (?return=consultant) — возврат в чат консультанта', async () => {
+    const { target, result } = await runFlow(FSP_DEMO_PARTICIPANTS[0]!.sub, { from: '?return=consultant' });
+    expect(target.pathname).toBe('/consultant');
+    expect(result).toBe('linked');
   });
 
   it('«Отмена» на странице входа → error_denied, профиль не меняется', async () => {

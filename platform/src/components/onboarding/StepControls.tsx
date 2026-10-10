@@ -3,8 +3,7 @@
 import type { StepOption, StepView } from '@/server/onboarding/types';
 import type { ReactNode } from 'react';
 
-import { DoneLink, MessageCard, type QuickReply } from '../chat/Thread';
-import { Tag } from '../ui';
+import { DoneLink, type QuickReply } from '../chat/Thread';
 
 import styles from './Onboarding.module.css';
 import { salaryChips, salaryText } from './salary';
@@ -41,25 +40,14 @@ export function StepControls(props: StepControlsProps) {
     case 'one':
       return (
         <>
-          {step.fspDemo && step.fspDemo.length > 0 && (
-            <MessageCard label="Демо-достижения ФСП">
-              <Tag tone="dashed">демо: API ФСП не предоставлен</Tag>
-              <p className={styles.sub}>При привязке в профиль попадут демонстрационные достижения:</p>
-              <ul className={styles.list}>
-                {step.fspDemo.map((a) => (
-                  <li key={`${a.event}-${a.year}`}>
-                    {a.event}, {a.year}: {a.result}
-                  </li>
-                ))}
-              </ul>
-            </MessageCard>
-          )}
           <QuickReplies
             items={opts.map((o) => ({ value: o.value, label: o.label, note: o.note, disabled: o.disabled, pressed: step.value === o.value }))}
             disabled={busy}
             onPick={(v) => {
               const o = opts.find((x) => x.value === v)!;
-              onAnswer(o.value, optionText(o));
+              // Вход во внешний сервис (ФСП ID): переход, ответ запишет сервер по возврату.
+              if (o.href) window.location.assign(o.href);
+              else onAnswer(o.value, optionText(o));
             }}
           />
         </>
@@ -81,28 +69,6 @@ export function StepControls(props: StepControlsProps) {
             </DoneLink>
           }
         />
-      );
-    }
-    case 'consents': {
-      // Согласия (ADR 0005): отдельные неотмеченные галочки с полным текстом; продолжить можно и без них.
-      const labelOf = (v: string) => opts.find((o) => o.value === v)?.label ?? v;
-      return (
-        <MessageCard label="Согласия">
-          <div role="group" aria-label="Согласия" data-testid="consent-checks">
-            {opts.map((o) => (
-              <label key={o.value} className={styles.sub} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
-                <input type="checkbox" checked={props.sel.includes(o.value)} disabled={busy} onChange={() => props.onToggle(o.value)} />
-                <span>
-                  <b>{o.label}</b>
-                  {o.note && <small style={{ display: 'block' }}>{o.note}</small>}
-                </span>
-              </label>
-            ))}
-          </div>
-          <DoneLink disabled={busy} onClick={() => onAnswer(props.sel, props.sel.length ? props.sel.map(labelOf).join('; ') : 'Без дополнительных согласий')}>
-            {props.sel.length ? `Сохранить · ${props.sel.length}` : 'Продолжить без согласий'}
-          </DoneLink>
-        </MessageCard>
       );
     }
     case 'range': {

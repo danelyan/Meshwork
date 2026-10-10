@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { getEnv } from '@/server/env';
-import { completeFlow, FSP_OAUTH_COOKIE, FSP_OAUTH_COOKIE_PATH, FspCallbackFailed, fspIdentity, fspOidcConfig, fspProviderMode, fspTransport, verifyFlowState } from '@/server/fsp-id/client';
+import { completeFlow, FSP_OAUTH_COOKIE, FSP_OAUTH_COOKIE_PATH, FSP_RETURN_PATH, FspCallbackFailed, fspIdentity, fspOidcConfig, fspProviderMode, fspTransport, verifyFlowState } from '@/server/fsp-id/client';
 import { linkFspSubject } from '@/server/fsp-id/link';
 import { registryFor } from '@/server/fsp-id/registry';
-import { readCookie, requireCandidate } from '@/server/session';
+import { recordFspLink } from '@/server/onboarding/service';
+import { getSession, readCookie, requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +17,10 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: Request) {
   const env = getEnv();
+  const saved = verifyFlowState(readCookie(req, FSP_OAUTH_COOKIE));
+  const back = FSP_RETURN_PATH[saved?.ret ?? 'settings'];
   const done = (result: string) => {
-    const res = NextResponse.redirect(new URL(`/settings?fsp=${result}`, env.APP_URL), 303);
+    const res = NextResponse.redirect(new URL(`${back}?fsp=${result}`, env.APP_URL), 303);
     res.cookies.set({ name: FSP_OAUTH_COOKIE, value: '', path: FSP_OAUTH_COOKIE_PATH, maxAge: 0 });
     return res;
   };
@@ -29,10 +32,13 @@ export async function GET(req: Request) {
   }
   const params = new URL(req.url).searchParams;
   try {
-    const { claims, accessToken } = await completeFlow(fspTransport(), params, verifyFlowState(readCookie(req, FSP_OAUTH_COOKIE)), candidateId);
+    const { claims, accessToken } = await completeFlow(fspTransport(), params, saved, candidateId);
     const who = fspIdentity(claims);
     const registry = await registryFor(who.fspId, { apiUrl: fspOidcConfig()?.apiUrl ?? null, accessToken });
     const view = await linkFspSubject(candidateId, who, registry, fspProviderMode());
+    // Из шага знакомства: ответ шага ФСП и следующий вопрос в чате. Сбой здесь привязку не отменяет.
+    const userId = getSession(req)?.userId;
+    if (saved?.ret === 'consultant' && userId) await recordFspLink(userId).catch((e: unknown) => console.warn('[fsp-id] onboarding step not recorded', e instanceof Error ? e.message : 'unknown'));
     return done(view.state);
   } catch (err) {
     if (err instanceof FspCallbackFailed) {

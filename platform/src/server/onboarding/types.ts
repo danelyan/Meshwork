@@ -2,7 +2,7 @@
 // клиент импортирует их только как `import type`.
 import type { Specialization } from '@/lib/directions';
 
-export type StepKind = 'consent' | 'consents' | 'role' | 'one' | 'many' | 'chips' | 'range' | 'text' | 'files' | 'summary';
+export type StepKind = 'consent' | 'role' | 'one' | 'many' | 'chips' | 'range' | 'text' | 'files' | 'summary';
 
 export type Role = 'pending' | 'candidate' | 'employer';
 export type Scenario = 'candidate' | 'employer';
@@ -16,6 +16,11 @@ export interface StepOption {
   disabled?: boolean;
   /** Как ответ звучит в ленте и сводке, если label — действие («Привязать» → «привязан»). */
   answered?: string;
+  /**
+   * Вариант — переход, а не ответ (вход во внешний сервис): кнопка ведёт по ссылке, ответ записывает
+   * сервер по возврату (ФСП ID: `/api/fsp-id/callback`). Через POST /api/onboarding такой вариант не выбрать.
+   */
+  href?: string;
 }
 
 export interface RangeSpec {
@@ -35,9 +40,6 @@ export interface RangeSpec {
 export interface Facts {
   role: Role;
   consent: boolean;
-  /** Согласия онбординга уже решены (ADR 0005): есть строка Consent вида Г3/Г4/Г6/Г7 (кандидат) или оферты (работодатель). */
-  candidateConsents?: boolean;
-  employerConsents?: boolean;
   name: string;
   fspState: FspStateValue | null;
   specialization: Specialization | null;
@@ -56,6 +58,8 @@ export type TextCheck = 'inn' | 'contact';
 export interface StepDef {
   id: string;
   kind: StepKind;
+  /** Подписи значений, которых нет среди вариантов (их пишет сервер, например итог входа в ФСП ID). */
+  valueLabels?: Record<string, string>;
   /** Кикер над вопросом. */
   eyebrow: string;
   question: string;
@@ -83,12 +87,6 @@ export interface StepDef {
 
 // --- вид для клиента (GET/POST /api/onboarding) ---
 
-export interface FspDemoAchievement {
-  event: string;
-  year: number;
-  result: string;
-  role: string;
-}
 
 export interface StepView {
   id: string;
@@ -110,8 +108,6 @@ export interface StepView {
   placeholder?: string;
   /** Подсказка (рекомендация грейда по подтверждённым утверждениям). */
   hint?: string;
-  /** Шаг ФСП: что подтянется из демо-профиля (явно помечено «демо»). */
-  fspDemo?: FspDemoAchievement[];
 }
 
 export interface HistoryItem {

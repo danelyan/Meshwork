@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { catalogFromFile } from '@/server/claims/catalog-file';
-import { CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
+import { CALL_RECORDING_CONSENT_PARAGRAPHS, CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
 import {
   AnswerError,
   answerLabel,
@@ -50,28 +50,10 @@ describe('сценарий онбординга', () => {
     expect(ids(ctx(base, { fspState: 'not_linked' }))).toContain('fspParticipation');
   });
 
-  it('направления: четыре из справочника (ADR 0003, 10.10), остальные «скоро»', () => {
+  it('направления: доступны только Backend и Frontend, остальные «скоро»', () => {
     const opts = step('specialization').options as { value: string; disabled?: boolean }[];
-    expect(opts.filter((o) => !o.disabled).map((o) => o.value)).toEqual(['backend', 'frontend', 'ai', 'engineering']);
-    expect(opts.filter((o) => o.disabled).length).toBeGreaterThanOrEqual(3);
-  });
-
-  it('подкатегория: шаг после направления, варианты только своего направления, необязательна', () => {
-    const base = { role: 'candidate' };
-    expect(ids(ctx(base))).not.toContain('subcategory');
-    expect(ids(ctx({ ...base, specialization: 'ai' }))).toContain('subcategory');
-    expect(ids(ctx(base, { specialization: 'backend' }))).toContain('subcategory');
-    const c = ctx({ ...base, specialization: 'ai' });
-    const sub = step('subcategory');
-    expect(sub.required).toBeFalsy();
-    const values = (typeof sub.options === 'function' ? sub.options(c) : []).map((o) => o.value);
-    expect(values).toEqual(['ai.llm-apps', 'ai.ai-integration', 'ai.ml-engineering', 'ai.mlops', 'ai.data-science']);
-    expect(() => validateAnswer(sub, 'backend.web-api', c)).toThrow(AnswerError);
-    expect(validateAnswer(sub, 'ai.mlops', c)).toBe('ai.mlops');
-    const emp = ctx({ needSpecialization: 'engineering' }, { role: 'employer' });
-    expect(ids(emp)).toContain('needSubcategory');
-    const needOpts = step('needSubcategory').options as (x: StepContext) => { value: string }[];
-    expect(needOpts(emp).map((o) => o.value)).toContain('engineering.data-eng');
+    expect(opts.filter((o) => !o.disabled).map((o) => o.value)).toEqual(['backend', 'frontend']);
+    expect(opts.filter((o) => o.disabled).length).toBeGreaterThan(3);
   });
 });
 
@@ -299,7 +281,7 @@ describe('реплики помощника', () => {
   });
   it('текст согласия совпадает с docs/consent.md', () => {
     const md = readFileSync(path.join(process.cwd(), '../docs/consent.md'), 'utf8').replace(/\s+/g, ' ');
-    for (const p of CONSENT_PARAGRAPHS) expect(md).toContain(p);
+    for (const p of [...CONSENT_PARAGRAPHS, ...CALL_RECORDING_CONSENT_PARAGRAPHS]) expect(md).toContain(p);
   });
 });
 

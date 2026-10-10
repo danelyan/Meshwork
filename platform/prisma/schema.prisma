@@ -15,7 +15,6 @@ datasource db {
 // lane: foundation — кандидат, категория, журнал вызовов LLM
 // =============================================================================
 
-/// Направления (ADR 0003, дополнение 10.10): ai и engineering — lane directions.
 enum Specialization {
   backend
   frontend
@@ -83,9 +82,6 @@ model Candidate {
   /// lane invite-contact: способ связи для работодателя — почта или Telegram (server/contact.ts).
   /// Открывается компании только после accepted; null — показываем почту аккаунта, если она не служебная.
   contact             String?
-  /// lane directions: подкатегория направления из справочника Subcategory ("ai.llm-apps"), выбор в
-  /// онбординге необязателен. Без FK — справочник проверяется кодом (server/directions).
-  subcategoryId       String?
 }
 
 model CandidateCategory {
@@ -183,7 +179,6 @@ enum CatalogSpecialization {
   backend
   frontend
   common
-  /// lane directions: записи ai.* / eng.* каталога
   ai
   engineering
 }
@@ -369,8 +364,6 @@ model Vacancy {
   /// lane employer: потребность закрыта/в архиве — в кабинете отдельно, подборка не строится
   archivedAt      DateTime?
   updatedAt       DateTime?      @updatedAt
-  /// lane directions: подкатегория потребности ("backend.web-api"), необязательна. Без FK — см. Candidate.
-  subcategoryId   String?
 
   invitations Invitation[]
 
@@ -744,28 +737,4 @@ model AuthCode {
   createdAt  DateTime        @default(now())
 
   @@index([userId, purpose, createdAt])
-}
-
-// =============================================================================
-// lane: directions — справочник подкатегорий направлений (ADR 0003, дополнение 10.10; R-T-05)
-// =============================================================================
-
-enum SubcategoryStatus {
-  /// К сдаче: есть в фильтрах и онбординге, задания/шаблоны готовятся
-  active
-  /// В справочнике, но без шаблонов проектов (показывается с пометкой «в плане»)
-  planned
-}
-
-/// Подкатегория направления. id вида "backend.web-api" (направление.подкатегория).
-/// Сид — prisma/seed/directions.ts из src/server/directions/catalog.ts (карта research/25 владельца).
-model Subcategory {
-  id             String            @id
-  specialization Specialization
-  title          String
-  description    String
-  status         SubcategoryStatus @default(planned)
-  order          Int               @default(0)
-
-  @@index([specialization, order])
 }

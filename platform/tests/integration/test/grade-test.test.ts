@@ -122,6 +122,29 @@ describe('API теста на грейд', () => {
     expect(await prisma.candidateCategory.findFirst({ where: { candidateId: B } })).toMatchObject({ specialization: 'ai', subcategoryId: 'ai.mlops', grade: 'junior' });
   });
 
+  it('Senior (ADR 0003, 16:15): основная фаза — только Senior-задания; всё верно → категория ai × mlops × senior', async () => {
+    const { attemptId } = await startAttempt(B, 'ai', 'senior', new Date(), { seed: 7, subcategoryId: 'ai.mlops' });
+    const v = await play(B, attemptId, (_g, key) => key);
+    expect(v.status).toBe('passed');
+    const items = await prisma.testItem.findMany({ where: { attemptId }, include: { template: true }, orderBy: { index: 'asc' } });
+    const seniorCount = generatorsForSubcategory('ai.mlops').filter((g) => g.grade === 'senior').length;
+    expect(items.slice(0, Math.min(items.length, seniorCount)).every((i) => i.template.grade === 'senior')).toBe(true);
+    expect(await prisma.candidateCategory.findFirst({ where: { candidateId: B } })).toMatchObject({ specialization: 'ai', subcategoryId: 'ai.mlops', grade: 'senior' });
+  });
+
+  it('Senior не сдан, Middle решён → дозадавание Middle и подтверждение Middle в один клик', async () => {
+    const { attemptId } = await startAttempt(B, 'ai', 'senior', new Date(), { seed: 7, subcategoryId: 'ai.mlops' });
+    const v = await play(B, attemptId, (grade, key) => (grade === 'senior' ? 'нет' : key));
+    expect(v.status).toBe('not_confirmed');
+    expect(v.result).toMatchObject({ confirmed: false, juniorOffered: true, offeredGrade: 'middle' });
+    const items = await prisma.testItem.findMany({ where: { attemptId }, include: { template: true } });
+    expect(items.some((i) => i.template.grade === 'middle')).toBe(true);
+    expect(items.some((i) => i.template.grade === 'junior')).toBe(false);
+    const res = await confirmJuniorRoute(jsonRequest(`/api/test/attempt/${attemptId}/confirm-junior`, 'POST', {}, cookie(B)), ctx(attemptId));
+    expect(res.status).toBe(200);
+    expect(await prisma.candidateCategory.findFirst({ where: { candidateId: B } })).toMatchObject({ grade: 'middle', subcategoryId: 'ai.mlops' });
+  });
+
   it('без подкатегории направления — subcategory_required и 422; подкатегория из профиля подхватывается', async () => {
     const elig = await checkEligibility(B, 'ai', 'junior');
     expect(elig).toMatchObject({ allowed: false, code: 'subcategory_required' });

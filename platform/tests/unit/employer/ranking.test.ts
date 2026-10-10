@@ -256,11 +256,14 @@ describe('приватность карточки (R-E-07)', () => {
 
 describe('схемы', () => {
   it('фильтры из query: мусор отбрасывается, лимит ограничен, обратно в query', () => {
-    const { filters, limit } = parseFilters({ spec: 'backend', grade: 'senior', stack: 'Go, go ,Kafka', fsp: '1', limit: '999' });
+    const { filters, limit } = parseFilters({ spec: 'backend', grade: 'lead', stack: 'Go, go ,Kafka', fsp: '1', limit: '999' });
     expect(filters).toEqual({ specialization: 'backend', stack: ['Go', 'Kafka'], fsp: true });
     expect(limit).toBe(50);
     expect(filtersToQuery(filters)).toBe('spec=backend&stack=Go%2CKafka&fsp=1');
     expect(parseFilters({}).limit).toBe(20);
+  });
+  it('фильтр грейда принимает Senior', () => {
+    expect(parseFilters({ spec: 'ai', grade: 'senior' }).filters).toMatchObject({ specialization: 'ai', grade: 'senior' });
   });
   it('приглашение: вилка «от–до» и описание обязательны, потребность — нет', () => {
     const base = { candidateId: 'c', message: 'Платёжная команда, Go' };

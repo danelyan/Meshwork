@@ -1,11 +1,13 @@
 // Контекст интервьюера: специализация, заявленный грейд, темы из утверждений профиля и факты резюме.
 // Оценщику из этого уходят только названия тем (evaluator.ts).
+import type { Specialization } from '../../lib/directions';
 import { prisma } from '../db';
 import { CALL_LIMITS, type TopicSeed } from './plan';
+import type { Grade } from '../../lib/grades';
 
 export interface CandidateCallContext {
-  specialization: 'backend' | 'frontend';
-  claimedGrade: 'junior' | 'middle' | null;
+  specialization: Specialization;
+  claimedGrade: Grade | null;
   topics: TopicSeed[];
   /** Факты резюме (цитаты утверждений) — вырезаются из вопросов перед оценщиком. */
   resumeFacts: string[];

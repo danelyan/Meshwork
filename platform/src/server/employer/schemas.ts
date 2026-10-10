@@ -4,9 +4,10 @@ import { getSubcategory, SPECIALIZATIONS } from '@/lib/directions';
 import type { MatchFilters } from './ranking';
 import { normalizeStack } from './ranking';
 import { DEFAULT_RESULT_LIMIT, MAX_RESULT_LIMIT } from './weights';
+import { GRADES } from '@/lib/grades';
 
 export const SpecializationSchema = z.enum(SPECIALIZATIONS);
-export const GradeSchema = z.enum(['junior', 'middle']);
+export const GradeSchema = z.enum(GRADES);
 
 const optText = (max: number) =>
   z

@@ -3,9 +3,9 @@ import { checkAnswer } from '@/server/test/answers';
 import { getSubcategory } from '@/lib/directions';
 import {
   generatorsFor,
-  generatorsForSubcategory,
   hasTestFor,
-  MIN_FAMILIES_PER_SUBCATEGORY,
+  familyCounts,
+  MIN_FAMILIES_BY_GRADE,
   NoGeneratorsError,
   poolFor,
   requireGenerators,
@@ -20,6 +20,7 @@ import {
   ragChunking,
   toolLoop,
 } from '@/server/test/generators/ai';
+import { abDuration, agentLoopDiagnosis, diffInDiff, errorBudget, gpuSizing } from '@/server/test/generators/ai-senior';
 import { bonferroni, circuitBreaker, earlyStopping, latencyPercentile, rateLimits, srmCheck } from '@/server/test/generators/ai-extra';
 
 const SEEDS = Array.from({ length: 300 }, (_, i) => i + 1);
@@ -35,7 +36,15 @@ describe('генераторы ai.* (ADR 0003, дополнение 10.10)', () 
       expect(g.specialization).toBe('ai');
       expect(getSubcategory(g.subcategoryId)?.specialization, g.id).toBe('ai');
       if (g.grade === 'junior') expect(g.b).toBeLessThan(0);
-      else expect(g.b).toBeGreaterThan(0);
+      else if (g.grade === 'middle') expect(g.b).toBeGreaterThan(0);
+      else {
+        // Senior (ADR 0003, 16:15): b 1,0…1,7, a 1,0…1,4.
+        expect(g.b, g.id).toBeGreaterThanOrEqual(1.0);
+        expect(g.b, g.id).toBeLessThanOrEqual(1.7);
+        expect(g.a, g.id).toBeGreaterThanOrEqual(1.0);
+        expect(g.a, g.id).toBeLessThanOrEqual(1.4);
+      }
+      if (g.grade === 'middle') expect(g.b, g.id).toBeLessThan(1.0);
       expect(g.a).toBeGreaterThanOrEqual(0.8);
       expect(g.a).toBeLessThanOrEqual(1.6);
     }
@@ -44,12 +53,12 @@ describe('генераторы ai.* (ADR 0003, дополнение 10.10)', () 
     expect(AI_GENERATORS.filter((g) => g.grade === 'middle').length).toBeGreaterThanOrEqual(6);
   });
 
-  it('пять подкатегорий ai — по ≥ 8 семейств (MIN_FAMILIES_PER_SUBCATEGORY), в каждой оба грейда', () => {
+  it('пять подкатегорий ai — банк 6 Junior + 4 Middle + 4 Senior (MIN_FAMILIES_BY_GRADE, ADR 0003 16:15)', () => {
     for (const sub of ['ai.llm-apps', 'ai.ai-integration', 'ai.ml-engineering', 'ai.mlops', 'ai.data-science']) {
-      const fam = generatorsForSubcategory(sub);
-      expect(fam.length, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_PER_SUBCATEGORY);
-      expect(fam.filter((g) => g.grade === 'junior').length, sub).toBeGreaterThanOrEqual(3);
-      expect(fam.filter((g) => g.grade === 'middle').length, sub).toBeGreaterThanOrEqual(3);
+      const n = familyCounts(sub);
+      expect(n.junior, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_BY_GRADE.junior);
+      expect(n.middle, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_BY_GRADE.middle);
+      expect(n.senior, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_BY_GRADE.senior);
       const pool = poolFor('ai', sub)!;
       expect(pool.legacy).toBe(false);
       expect(pool.generators.every((g) => g.subcategoryId === sub)).toBe(true);
@@ -234,6 +243,51 @@ describe('ключи ai-extra совпадают с независимым пе�
       const k = Number(t.answerKey);
       expect(k).toBeLessThanOrEqual(n);
       expect(k).toBeGreaterThanOrEqual(Math.min(n, (t.params as { failN: number }).failN));
+    }
+  });
+});
+
+describe('Senior ai.* (ADR 0003, 16:15): ключи совпадают с независимым пересчётом', () => {
+  it('ai.gpu-sizing: ⌈токены/с ÷ GPU × запас⌉ + резерв', () => {
+    for (const seed of SEEDS) {
+      const t = gpuSizing.generate(seed);
+      const { rps, outTokens, tpsPerGpu, headroom, redundancy } = t.params as Record<string, number>;
+      expect(t.answerKey).toBe(String(Math.ceil(((rps! * outTokens!) / tpsPerGpu!) * (1 + headroom! / 100)) + redundancy!));
+    }
+  });
+
+  it('ai.ab-duration: n = 16·p(1−p)/δ² на группу, дни вверх', () => {
+    for (const seed of SEEDS) {
+      const t = abDuration.generate(seed);
+      const { p, relMde, traffic, share } = t.params as Record<string, number>;
+      const n = Math.ceil((16 * p! * (1 - p!)) / (p! * relMde!) ** 2);
+      expect(t.answerKey).toBe(String(Math.ceil(n / ((traffic! * share!) / 100 / 2))));
+    }
+  });
+
+  it('ai.diff-in-diff: (после − до) запуска минус (после − до) контроля', () => {
+    for (const seed of SEEDS) {
+      const t = diffInDiff.generate(seed);
+      const { preT, preC, postT, postC } = t.params as Record<string, number>;
+      expect(Number(t.answerKey)).toBeCloseTo(postT! - preT! - (postC! - preC!), 6);
+    }
+  });
+
+  it('ai.error-budget: бюджет минус взвешенные минуты инцидентов', () => {
+    for (const seed of SEEDS) {
+      const t = errorBudget.generate(seed);
+      const { slo, incidents } = t.params as { slo: number; incidents: string };
+      const spent = incidents.split(',').reduce((s, x) => s + (Number(x.split(':')[0]) * Number(x.split(':')[1])) / 100, 0);
+      expect(Number(t.answerKey)).toBeCloseTo(30 * 24 * 60 * (1 - slo / 100) - spent, 1);
+    }
+  });
+
+  it('ai.agent-loop-diagnosis: ответ — первая строка повторяющегося вызова', () => {
+    for (const seed of SEEDS) {
+      const t = agentLoopDiagnosis.generate(seed);
+      const lines = t.code!.split('\n');
+      const first = lines.findIndex((l, i) => l.startsWith('call') && lines.indexOf(l) !== i);
+      expect(Number(t.answerKey)).toBe(lines.indexOf(lines[first]!) + 1);
     }
   });
 });

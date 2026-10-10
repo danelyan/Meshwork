@@ -1,5 +1,5 @@
 import { getSubcategory, SPEC_LABEL, SPECIALIZATIONS, SUBCATEGORIES, subcategoriesFor, subcategoryMatches } from '@/lib/directions';
-import { generatorsFor, generatorsForSubcategory, hasTestFor, MIN_FAMILIES_PER_SUBCATEGORY } from '@/server/test/generators';
+import { bankComplete, familyCounts, generatorsFor, generatorsForSubcategory, hasTestFor } from '@/server/test/generators';
 import { passesFilters, type CandidateEvidence } from '@/server/employer/ranking';
 import { parseFilters, VacancyInput } from '@/server/employer/schemas';
 
@@ -15,12 +15,12 @@ describe('справочник направлений (ADR 0003, дополне�
     expect(subcategoriesFor('engineering')).toHaveLength(4);
   });
 
-  it('статус active ⇔ по подкатегории есть тест (≥ 8 размеченных семейств; переходное направление — по объявлению)', () => {
+  it('статус active ⇔ банк подкатегории полон (6 J + 4 M + 4 S; переходное направление — по объявлению)', () => {
     for (const s of SUBCATEGORIES) {
       const marked = generatorsFor(s.specialization).some((g) => g.subcategoryId);
       if (!marked && hasTestFor(s.specialization)) continue; // переходный пул всего направления: статус объявляет справочник
-      const own = generatorsForSubcategory(s.id).length;
-      expect(s.status, `${s.id}: ${own} семейств`).toBe(own >= MIN_FAMILIES_PER_SUBCATEGORY ? 'active' : 'planned');
+      const own = generatorsForSubcategory(s.id);
+      expect(s.status, `${s.id}: ${JSON.stringify(familyCounts(s.id))}`).toBe(bankComplete(own) ? 'active' : 'planned');
     }
     expect(subcategoriesFor('ai').every((s) => s.status === 'active')).toBe(true);
   });

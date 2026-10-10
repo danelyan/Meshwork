@@ -4,6 +4,7 @@ import { SPECIALIZATIONS } from '@/lib/directions';
 import { getProfile } from '@/server/claims';
 import type { AgentTool } from '../types';
 import { EmptyInput, SourceKindSchema } from './shared';
+import { GRADES } from '@/lib/grades';
 
 const Output = z.object({
   candidate: z.object({
@@ -12,7 +13,7 @@ const Output = z.object({
     specialization: z.enum(SPECIALIZATIONS).nullable(),
     fspState: z.enum(['not_linked', 'no_achievements', 'unavailable', 'linked']),
   }),
-  category: z.object({ specialization: z.enum(SPECIALIZATIONS), grade: z.enum(['junior', 'middle']), confirmedAt: z.string() }).nullable(),
+  category: z.object({ specialization: z.enum(SPECIALIZATIONS), grade: z.enum(GRADES), confirmedAt: z.string() }).nullable(),
   claims: z.array(
     z.object({
       id: z.string(),

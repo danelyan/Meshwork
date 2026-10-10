@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { SPECIALIZATIONS } from '@/lib/directions';
 import { prisma } from '@/server/db';
 import type { AgentTool } from '../types';
+import { GRADES } from '@/lib/grades';
 
 const Input = z.object({
   status: z.enum(['sent', 'viewed', 'accepted', 'declined', 'all']).default('sent').describe('sent — ждут ответа кандидата (по умолчанию); viewed — просмотрены; all — все'),
@@ -17,7 +18,7 @@ const Output = z.object({
       /** Приглашение может быть без потребности (R-E-05) — тогда поля вакансии null. */
       vacancyTitle: z.string().nullable(),
       specialization: z.enum(SPECIALIZATIONS).nullable(),
-      grade: z.enum(['junior', 'middle']).nullable(),
+      grade: z.enum(GRADES).nullable(),
       /** Вилка приглашения, ₽ в месяц (ТЗ 2.2). */
       salaryFrom: z.number().int(),
       salaryTo: z.number().int(),

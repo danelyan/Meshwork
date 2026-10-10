@@ -13,7 +13,7 @@ import { catalogFromFile } from '../../src/server/claims/catalog-file';
  */
 type Level = 'self_reported' | 'artifact' | 'third_party' | 'platform';
 type Spec = Specialization;
-type Grade = 'junior' | 'middle';
+type Grade = import('../../src/lib/grades').Grade;
 
 export interface DemoProfile {
   id: string;

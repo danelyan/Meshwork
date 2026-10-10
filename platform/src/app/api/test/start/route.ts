@@ -4,12 +4,13 @@ import { SPECIALIZATIONS } from '@/lib/directions';
 import { withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
 import { checkEligibility, describeIntervals, startAttempt } from '@/server/test';
+import { GRADES } from '@/lib/grades';
 
 export const dynamic = 'force-dynamic';
 
 const Body = z.object({
   specialization: z.enum(SPECIALIZATIONS),
-  grade: z.enum(['junior', 'middle']),
+  grade: z.enum(GRADES),
   /** Подкатегория теста (Subcategory.id); не передана — из профиля кандидата. Тест идёт по подкатегории. */
   subcategoryId: z.string().max(64).nullish(),
 });

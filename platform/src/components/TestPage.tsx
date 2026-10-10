@@ -15,6 +15,7 @@ import {
   startTestApi,
   testEligibilityApi,
 } from '@/lib/api';
+import { GRADE_LABEL, GRADES, isGrade, type Grade } from '@/lib/grades';
 import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, subcategoriesFor, subcategoryLabel, type Specialization } from '@/lib/directions';
 import { formatDate } from '@/lib/labels';
 
@@ -24,15 +25,9 @@ import { Button, Chip, Field, Kicker, Notice, Panel, Tag } from './ui';
 import ui from './ui.module.css';
 
 type Spec = Specialization;
-type Grade = 'junior' | 'middle';
-
-const GRADE_LABEL: Record<Grade, string> = { junior: 'Junior', middle: 'Middle' };
 
 function isSpec(v: string | null): v is Spec {
   return isSpecialization(v);
-}
-function isGrade(v: string | null): v is Grade {
-  return v === 'junior' || v === 'middle';
 }
 
 function errorText(e: unknown, fallback: string): string {
@@ -180,7 +175,7 @@ function IntroScreen({
         <div className={styles.choiceRow}>
           <span className={ui.label}>Грейд, который хотите подтвердить</span>
           <div className={styles.chips} role="group" aria-label="Грейд">
-            {(['junior', 'middle'] as Grade[]).map((g) => (
+            {GRADES.map((g) => (
               <Chip key={g} pressed={grade === g} onClick={() => setGrade(g)} disabled={pending}>
                 {GRADE_LABEL[g]}
               </Chip>
@@ -248,7 +243,7 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
   }
 
   const numbered = item.format === 'line';
-  const probe = attempt.phase === 'junior_probe';
+  const probe = attempt.phase === 'junior_probe' || attempt.phase === 'middle_probe';
   return (
     <div className={styles.page}>
       <div className={styles.progressRow}>
@@ -322,8 +317,10 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
   const [error, setError] = useState<string | null>(null);
   const [showItems, setShowItems] = useState(false);
   const grade = GRADE_LABEL[attempt.grade];
+  // Грейд ниже заявленного (Middle → Junior, Senior → Middle), который предлагается в один клик.
+  const lower = r.offeredGrade ? GRADE_LABEL[r.offeredGrade] : attempt.grade === 'senior' ? 'Middle' : 'Junior';
   const title =
-    r.status === 'abandoned' ? 'Попытка не засчитана' : r.confirmed ? `${grade} подтверждён` : r.juniorConfirmedAt ? 'Junior подтверждён' : `${grade} не подтверждён`;
+    r.status === 'abandoned' ? 'Попытка не засчитана' : r.confirmed ? `${grade} подтверждён` : r.juniorConfirmedAt ? `${lower} подтверждён` : `${grade} не подтверждён`;
 
   async function confirm() {
     setPending(true);
@@ -331,7 +328,7 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
     try {
       await onConfirmJunior();
     } catch (e) {
-      setError(errorText(e, 'Не удалось подтвердить Junior.'));
+      setError(errorText(e, `Не удалось подтвердить ${lower}.`));
     } finally {
       setPending(false);
     }
@@ -364,10 +361,12 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
             <dt>Уверенность в {grade}</dt>
             <dd>{Math.round(r.pPass * 100)}%</dd>
           </div>
-          <div>
-            <dt>Уверенность в Junior</dt>
-            <dd>{Math.round(r.pJunior * 100)}%</dd>
-          </div>
+          {attempt.grade !== 'junior' && (
+            <div>
+              <dt>Уверенность в {lower}</dt>
+              <dd>{Math.round((r.pLower ?? r.pJunior) * 100)}%</dd>
+            </div>
+          )}
           <div>
             <dt>Заданий</dt>
             <dd>{r.answered}</dd>
@@ -380,9 +379,12 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
         )}
         {r.juniorOffered && (
           <div className={styles.offer} data-testid="junior-offer">
-            <p>Middle не подтверждён, но задания уровня Junior решены уверенно. Подтвердить Junior по этой же попытке? Решение за вами: без вашего согласия категория не меняется.</p>
+            <p>
+              {grade} не подтверждён, но задания уровня {lower} решены уверенно. Подтвердить {lower} по этой же попытке? Решение за вами: без вашего согласия
+              категория не меняется.
+            </p>
             <Button variant="cta" onClick={() => void confirm()} loading={pending} data-testid="confirm-junior">
-              Подтвердить Junior
+              Подтвердить {lower}
             </Button>
           </div>
         )}

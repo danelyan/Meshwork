@@ -5,6 +5,7 @@ import { prisma } from '@/server/db';
 import { JOURNEY_STEPS, journeyState, STEP_HINT } from '../journey';
 import type { AgentTool } from '../types';
 import { EmptyInput } from './shared';
+import { GRADES } from '@/lib/grades';
 
 /**
  * Модели лейна onboarding (`CandidateProfile` по candidateId, `OnboardingState`
@@ -30,7 +31,7 @@ async function readOptional(name: 'candidateProfile' | 'onboardingState', where:
   }
 }
 
-const Grade = z.enum(['junior', 'middle']);
+const Grade = z.enum(GRADES);
 /** Анкета со слов кандидата: только то, что нужно для совета. Город и контакты в модель не отдаём. */
 const ProfileSchema = z.object({
   goal: z.enum(['job_search', 'market_watch', 'grade_confirm']).nullable().catch(null),

@@ -1,7 +1,7 @@
 import type { InvitationStatus } from '@prisma/client';
 
 export { SPEC_LABEL } from '@/lib/directions';
-export const GRADE_LABEL = { junior: 'Junior', middle: 'Middle' } as const;
+export { GRADE_LABEL } from '@/lib/grades';
 
 /** Статус приглашения текстом (не только цветом). */
 export const INVITATION_STATUS_LABEL: Record<InvitationStatus, string> = {

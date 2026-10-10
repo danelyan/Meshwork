@@ -47,8 +47,8 @@ export interface SubcategoryDef {
   title: string;
   description: string;
   /**
-   * active — по подкатегории есть тест на грейд: в банке ≥ 8 размеченных семейств (MIN_FAMILIES_PER_SUBCATEGORY,
-   * ADR 0003, дополнение 10.10 15:50); planned — запись справочника, «тест пока недоступен». Сверяется с реестром
+   * active — по подкатегории есть тест на грейд: банк полон по грейдам — 6 Junior + 4 Middle + 4 Senior
+   * (MIN_FAMILIES_BY_GRADE, ADR 0003, дополнение 10.10 16:15); planned — запись справочника, «тест пока недоступен». Сверяется с реестром
    * генераторов юнит-тестом (tests/unit/lib/directions.test.ts) — лейн генераторов меняет статус вместе с семействами.
    */
   status: SubcategoryStatus;

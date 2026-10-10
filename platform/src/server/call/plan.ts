@@ -1,6 +1,7 @@
 // Маршрут интервьюера по уровню и выбор темы — чистые функции (без БД и LLM). Их же использует
 // детерминированный stub (llm/providers/stub-call.ts) и запасной вопрос, когда модель не ответила.
 import type { AnswerSignal, QuestionLevel } from './types';
+import type { Grade } from '../../lib/grades';
 
 /** Лимиты квалифицирующего созвона (ADR 0003: 4–6 вопросов). */
 export const CALL_LIMITS = {
@@ -33,9 +34,9 @@ export interface PlanTurn {
   level: QuestionLevel;
 }
 
-/** Стартовый уровень: заявленный middle — с рабочего вопроса, junior — с базового. */
-export function startLevel(grade: 'junior' | 'middle' | null | undefined): QuestionLevel {
-  return grade === 'middle' ? 2 : 1;
+/** Стартовый уровень: заявленный middle — с рабочего вопроса, senior — с глубокого, junior — с базового. */
+export function startLevel(grade: Grade | null | undefined): QuestionLevel {
+  return grade === 'senior' ? 3 : grade === 'middle' ? 2 : 1;
 }
 
 /** После сильного ответа — глубже, после слабого — проще, без ответа — тот же уровень. */
@@ -75,7 +76,7 @@ export interface PlannedQuestion {
 export function planNext(args: {
   topics: readonly TopicSeed[];
   turns: readonly PlanTurn[];
-  grade: 'junior' | 'middle' | null | undefined;
+  grade: Grade | null | undefined;
   signal: AnswerSignal | null;
 }): PlannedQuestion {
   const { topics, turns, grade } = args;

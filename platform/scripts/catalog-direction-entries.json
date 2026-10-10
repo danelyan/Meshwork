@@ -17,6 +17,8 @@
       "proof": [
         "task:structured-output",
         "task:context-budget",
+        "task:sampling-params",
+        "task:eval-release-gate",
         "interview:defend"
       ],
       "markers": [
@@ -83,7 +85,8 @@
         "task:rag-chunking",
         "task:vector-topk",
         "task:retrieval-eval",
-        "task:hybrid-search"
+        "task:hybrid-search",
+        "task:rag-design"
       ],
       "markers": [
         "RAG",
@@ -117,6 +120,8 @@
       },
       "proof": [
         "task:vector-topk",
+        "task:vector-storage",
+        "task:semantic-cache",
         "interview:defend"
       ],
       "markers": [
@@ -149,7 +154,8 @@
       },
       "proof": [
         "task:tool-use-trace",
-        "task:prompt-injection"
+        "task:prompt-injection",
+        "task:agent-trace"
       ],
       "markers": [
         "tool use",
@@ -211,7 +217,8 @@
       },
       "proof": [
         "task:retrieval-eval",
-        "task:model-selection"
+        "task:model-selection",
+        "task:eval-release-gate"
       ],
       "markers": [
         "оценка качества LLM",
@@ -247,7 +254,8 @@
         "task:token-cost",
         "task:tool-use-trace",
         "task:llm-rate-limit",
-        "task:llm-cache"
+        "task:llm-cache",
+        "task:cost-forecast"
       ],
       "markers": [
         "стоимость токенов",
@@ -279,6 +287,8 @@
       },
       "proof": [
         "task:token-cost",
+        "task:streaming-latency",
+        "task:llm-queue",
         "interview:defend"
       ],
       "markers": [
@@ -314,6 +324,9 @@
       "proof": [
         "task:classification-metrics",
         "task:threshold-choice",
+        "task:confusion-matrix",
+        "task:cost-threshold",
+        "task:calibration",
         "interview:defend"
       ],
       "markers": [
@@ -380,7 +393,8 @@
       },
       "proof": [
         "task:data-leakage",
-        "task:feature-pipeline"
+        "task:feature-pipeline",
+        "task:temporal-split"
       ],
       "markers": [
         "утечка данных",
@@ -410,6 +424,8 @@
       },
       "proof": [
         "task:feature-pipeline",
+        "task:scaler-transform",
+        "task:one-hot",
         "interview:defend"
       ],
       "markers": [
@@ -445,6 +461,7 @@
         "task:split-sizes",
         "task:majority-baseline",
         "task:early-stopping",
+        "task:ensemble-budget",
         "interview:defend"
       ],
       "markers": [
@@ -480,6 +497,10 @@
         "task:inference-mode",
         "task:latency-percentile",
         "task:canary-rollout",
+        "task:batch-inference",
+        "task:model-memory",
+        "task:gpu-sizing",
+        "task:error-budget",
         "interview:defend"
       ],
       "markers": [
@@ -514,6 +535,8 @@
       "proof": [
         "task:model-registry",
         "task:version-routing",
+        "task:canary-guardrails",
+        "task:shadow-deploy",
         "interview:defend"
       ],
       "markers": [
@@ -583,6 +606,8 @@
         "task:mean-median",
         "task:funnel-conversion",
         "task:sql-analytics",
+        "task:weighted-mean",
+        "task:dropna",
         "interview:defend"
       ],
       "markers": [
@@ -616,6 +641,10 @@
         "task:simpson",
         "task:srm-check",
         "task:multiple-testing",
+        "task:ab-sample-size",
+        "task:diff-in-diff",
+        "task:novelty-effect",
+        "task:guardrail-metric",
         "interview:defend"
       ],
       "markers": [
@@ -647,6 +676,7 @@
       },
       "proof": [
         "task:pii-masking",
+        "task:pii-audit",
         "interview:defend"
       ],
       "markers": [
@@ -680,6 +710,8 @@
         "task:llm-retry",
         "task:llm-fallback",
         "task:circuit-breaker",
+        "task:llm-webhook",
+        "task:provider-routing",
         "interview:defend"
       ],
       "markers": [

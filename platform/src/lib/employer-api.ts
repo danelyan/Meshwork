@@ -1,11 +1,12 @@
 // Клиент кабинета работодателя и входящих приглашений кандидата (lane employer).
 import type { Specialization } from '@/lib/directions';
 import { ApiError, postJson, readError, request } from './api';
+import type { Grade } from '@/lib/grades';
 
 export interface VacancyBody {
   title: string;
   specialization: Specialization;
-  grade: 'junior' | 'middle';
+  grade: Grade;
   salaryFrom: number;
   salaryTo: number;
   teamDescription: string | null;

@@ -31,6 +31,7 @@ export function subcategoryOptions(spec: unknown): StepOption[] {
 export const GRADES: StepOption[] = [
   { value: 'junior', label: 'Junior', note: 'первые проекты, нужно ревью' },
   { value: 'middle', label: 'Middle', note: 'самостоятельные задачи' },
+  { value: 'senior', label: 'Senior', note: 'проектные решения и компромиссы' },
 ];
 
 /** Чипы стека — имена совпадают с маркерами каталога утверждений (по ним считается потребность). */
@@ -355,13 +356,14 @@ export const EMPLOYER_STEPS: StepDef[] = [
     kind: 'many',
     eyebrow: 'Грейд',
     question: 'Какой уровень нужен?',
-    sub: 'Можно оба - заведу потребность на каждый грейд.',
+    sub: 'Можно несколько - заведу потребность на каждый грейд.',
     summaryLabel: 'Грейд',
     target: 'Vacancy.grade (по вакансии на грейд)',
     req: 'R-E-02',
     options: [
       { value: 'junior', label: 'Junior', note: 'готов растить' },
       { value: 'middle', label: 'Middle', note: 'самостоятельный специалист' },
+      { value: 'senior', label: 'Senior', note: 'принимает проектные решения' },
     ],
   },
   {

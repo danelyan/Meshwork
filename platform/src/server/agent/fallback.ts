@@ -3,6 +3,7 @@ import { countOf, FORMS } from '@/lib/plural';
 import { recommendTargets, recommendTest } from '@/server/recommend';
 import { NO_CONFIRMED_REASON } from '@/server/recommend/types';
 import type { PipelineResult } from './pipeline';
+import { GRADE_LABEL } from '@/lib/grades';
 
 /**
  * План В: провайдер LLM упал / таймаут / бюджет исчерпан. Стенд отвечает
@@ -25,7 +26,7 @@ export interface FallbackInput {
   reason: FallbackReason;
 }
 
-const GRADE_RU: Record<string, string> = { junior: 'Junior', middle: 'Middle' };
+const GRADE_RU: Record<string, string> = GRADE_LABEL;
 const SPEC_RU: Record<string, string> = SPEC_LABEL;
 
 /** Что прочитал / нашёл / отбросил — общая часть ответа после конвейера (план В и демо-режим). */

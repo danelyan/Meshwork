@@ -59,6 +59,8 @@ const finished = (over: Partial<NonNullable<AttemptView['result']>> = {}): Attem
     pJunior: 0.91,
     confirmed: false,
     juniorOffered: true,
+    offeredGrade: 'junior',
+    pLower: 0.91,
     juniorConfirmedAt: null,
     answered: 8,
     correct: 5,

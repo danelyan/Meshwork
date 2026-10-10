@@ -4,6 +4,7 @@ import { SPECIALIZATIONS } from '@/lib/directions';
 import { getCatalog } from '@/server/claims';
 import type { CatalogEntry } from '@/server/claims/types';
 import type { AgentTool } from '../types';
+import { GRADES } from '@/lib/grades';
 
 const Input = z.object({
   query: z.string().min(2).max(300).describe('Что умеет кандидат, своими словами или фразой из источника'),
@@ -16,7 +17,7 @@ const Output = z.object({
       id: z.string(),
       statement: z.string(),
       specialization: z.enum([...SPECIALIZATIONS, 'common']),
-      grades: z.array(z.enum(['junior', 'middle'])),
+      grades: z.array(z.enum(GRADES)),
       weight: z.number(),
       proof: z.array(z.string()),
       limits: z.string(),

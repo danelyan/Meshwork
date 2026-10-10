@@ -5,6 +5,7 @@ import { Button, Field, Panel } from '../ui';
 import ui from '../ui.module.css';
 
 import styles from './Employer.module.css';
+import { GRADE_LABEL, GRADES } from '@/lib/grades';
 
 export interface FilterFormProps {
   action: string;
@@ -46,8 +47,11 @@ export function FilterForm({ action, filters }: FilterFormProps) {
       <Field label="Грейд (категория из теста)">
         <select name="grade" className={ui.input} defaultValue={filters.grade ?? ''}>
           <option value="">любой</option>
-          <option value="junior">Junior</option>
-          <option value="middle">Middle</option>
+          {GRADES.map((g) => (
+            <option key={g} value={g}>
+              {GRADE_LABEL[g]}
+            </option>
+          ))}
         </select>
       </Field>
       <Field label="Стек" hint="Через запятую">
@@ -77,7 +81,7 @@ export function filtersLabel(f: MatchFilters): string {
   const parts: string[] = [];
   if (f.specialization) parts.push(specLabel(f.specialization));
   if (f.subcategory) parts.push(subcategoryLabel(f.subcategory));
-  if (f.grade) parts.push(f.grade === 'junior' ? 'Junior' : 'Middle');
+  if (f.grade) parts.push(GRADE_LABEL[f.grade]);
   if (f.stack?.length) parts.push(f.stack.join(', '));
   if (f.fsp) parts.push('ФСП');
   if (f.categoryOnly) parts.push('с категорией');

@@ -5,6 +5,7 @@ import { prisma } from '@/server/db';
 import { recommendTest } from '@/server/recommend';
 import type { AgentTool } from '../types';
 import { EmptyInput } from './shared';
+import { GRADES } from '@/lib/grades';
 
 /**
  * Экран теста на грейд. Тест делает отдельный лейн (E-02 «Что НЕ входит»):
@@ -14,7 +15,7 @@ import { EmptyInput } from './shared';
 export const TEST_ROUTE: string | null = '/test';
 
 const Spec = z.enum(SPECIALIZATIONS);
-const Grade = z.enum(['junior', 'middle']);
+const Grade = z.enum(GRADES);
 const Output = z.object({
   category: z.object({ specialization: Spec, grade: Grade, confirmedAt: z.string() }).nullable(),
   history: z.array(z.object({ specialization: Spec, grade: Grade, confirmedAt: z.string() })),

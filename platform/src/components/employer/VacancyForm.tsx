@@ -13,6 +13,7 @@ import { Button, Chip, Field, Notice, Panel } from '../ui';
 import ui from '../ui.module.css';
 
 import styles from './Employer.module.css';
+import { GRADE_LABEL, GRADES } from '@/lib/grades';
 
 export type CatalogOption = Pick<CatalogEntry, 'id' | 'specialization' | 'statement' | 'grades' | 'weight' | 'weights'>;
 
@@ -144,8 +145,11 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
           </Field>
           <Field label="Грейд">
             <select className={ui.input} value={grade} onChange={(e) => changeTrack(spec, e.target.value as Grade)}>
-              <option value="junior">Junior</option>
-              <option value="middle">Middle</option>
+              {GRADES.map((g) => (
+                <option key={g} value={g}>
+                  {GRADE_LABEL[g]}
+                </option>
+              ))}
             </select>
           </Field>
         </div>
@@ -173,7 +177,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
             Требования
           </h2>
           <p className={styles.lead}>
-            Из каталога навыков для {specLabel(spec)} · {grade === 'junior' ? 'Junior' : 'Middle'}. По ним считается подборка: вес требования - из каталога для грейда.
+            Из каталога навыков для {specLabel(spec)} · {GRADE_LABEL[grade]}. По ним считается подборка: вес требования - из каталога для грейда.
             Выбрано: {picked.size}.
           </p>
         </div>

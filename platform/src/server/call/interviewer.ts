@@ -7,12 +7,13 @@ import { CALL_LIMITS, type PlanTurn, type TopicSeed, heuristicSignal, planNext, 
 import { contextBlock, loadCallPrompt } from './prompt-utils';
 import { CallInterviewerOutput } from './schemas';
 import type { AiUtteranceMeta, AnswerSignal, QuestionLevel } from './types';
+import type { Grade } from '../../lib/grades';
 
 const JSON_SCHEMA = responseJsonSchema(CallInterviewerOutput) as object;
 
 export interface InterviewerInput {
   specialization: string;
-  claimedGrade: 'junior' | 'middle' | null;
+  claimedGrade: Grade | null;
   topics: TopicSeed[];
   turns: PlanTurn[];
   /** Сколько вопросов уже задано и лимиты — модели для `done`. */

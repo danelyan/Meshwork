@@ -9,6 +9,7 @@ import type { Grade, Specialization } from '@/server/types';
 import type { NeedDraft } from '../types';
 
 import { GradeSchema, SpecSchema, type EmployerTool } from './shared';
+import { GRADE_LABEL } from '@/lib/grades';
 
 /** Сколько требований каталога предвыбрать — как форма потребности (VacancyForm DEFAULT_PICK). */
 export const NEED_DRAFT_PICK = 6;
@@ -29,6 +30,7 @@ export function parseSpecialization(text: string): Specialization | null {
 
 export function parseGrade(text: string): Grade | null {
   const t = text.toLowerCase();
+  if (/(senior|сеньор|синьор|ведущ)/.test(t)) return 'senior';
   if (/(middle|мидл|миддл)/.test(t)) return 'middle';
   if (/(junior|джун|стаж[её]р|начинающ)/.test(t)) return 'junior';
   return null;
@@ -120,7 +122,7 @@ export const createNeedDraft: EmployerTool = {
       .sort((a, b) => b.weight - a.weight || a.catalogId.localeCompare(b.catalogId))
       .slice(0, NEED_DRAFT_PICK)
       .map((n) => ({ catalogId: n.catalogId, statement: catalog.get(n.catalogId)?.statement ?? n.catalogId, weight: Math.min(3, Math.max(1, Math.round(n.weight))) }));
-    const title = input.title ?? `${SPEC_ROLE[spec]} ${grade === 'middle' ? 'Middle' : 'Junior'}${stack.length ? ` (${stack.slice(0, 3).join(', ')})` : ''}`;
+    const title = input.title ?? `${SPEC_ROLE[spec]} ${GRADE_LABEL[grade]}${stack.length ? ` (${stack.slice(0, 3).join(', ')})` : ''}`;
     const base = { title, specialization: spec, grade, stack, salaryFrom, salaryTo, teamDescription: input.description.slice(0, 2000), needs };
     const draft: NeedDraft = { ...base, formHref: needFormHref(base) };
     ctx.emit({ type: 'need_draft', draft });

@@ -8,6 +8,8 @@ import { createRng, type Rng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 
 import { AI_EXTRA_GENERATORS } from './ai-extra';
+import { AI_JUNIOR_GENERATORS } from './ai-junior';
+import { AI_SENIOR_GENERATORS } from './ai-senior';
 import { CITIES, DOMAINS, NAMES, num, SURNAMES, table } from './ai-util';
 
 // ---------------------------------------------------------------------------
@@ -24,7 +26,7 @@ export const ragChunking: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['ai.rag'],
   format: 'number',
-  a: 1.1,
+  a: 1.4,
   b: -1.0,
   paramSpace: 5e3,
   timeLimitSec: 150,
@@ -69,7 +71,7 @@ export const cosineTopK: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['ai.vector-search', 'ai.rag'],
   format: 'list',
-  a: 1.2,
+  a: 1.4,
   b: -0.6,
   paramSpace: 1e7,
   timeLimitSec: 180,
@@ -119,8 +121,8 @@ export const tokenCost: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['ai.llm-cost', 'ai.llm-api'],
   format: 'number',
-  a: 1.0,
-  b: -1.3,
+  a: 1.4,
+  b: -1.1,
   paramSpace: 1e5,
   timeLimitSec: 180,
   generate(seed): TaskInstance {
@@ -154,8 +156,8 @@ export const classificationMetrics: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['ai.ml-metrics'],
   format: 'number',
-  a: 1.2,
-  b: -1.1,
+  a: 1.4,
+  b: -0.9,
   paramSpace: 1e6,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -218,7 +220,7 @@ export const structuredOutput: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['ai.structured-output', 'ai.prompting'],
   format: 'list',
-  a: 1.2,
+  a: 1.4,
   b: -0.5,
   paramSpace: 1e6,
   timeLimitSec: 180,
@@ -279,7 +281,7 @@ export const pandasOutput: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['ai.pandas-sql'],
   format: 'number',
-  a: 1.1,
+  a: 1.4,
   b: -0.8,
   paramSpace: 1e8,
   timeLimitSec: 180,
@@ -348,8 +350,8 @@ export const piiMasking: TaskGenerator = {
   grade: 'junior',
   catalogIds: ['ai.pii-masking'],
   format: 'list',
-  a: 1.0,
-  b: -1.4,
+  a: 1.4,
+  b: -1.2,
   paramSpace: 1e7,
   timeLimitSec: 150,
   generate(seed): TaskInstance {
@@ -839,4 +841,6 @@ export const AI_GENERATORS: TaskGenerator[] = [
   modelRegistry,
   retrievalEval,
   ...AI_EXTRA_GENERATORS,
+  ...AI_JUNIOR_GENERATORS,
+  ...AI_SENIOR_GENERATORS,
 ];

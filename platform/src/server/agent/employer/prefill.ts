@@ -3,11 +3,12 @@
 import type { Specialization } from '@/lib/directions';
 import type { CatalogEntry } from '@/server/claims/types';
 import { normalizeStack } from '@/server/employer/ranking';
+import type { Grade } from '@/lib/grades';
 
 export interface NeedPrefill {
   title: string;
   specialization: Specialization;
-  grade: 'junior' | 'middle';
+  grade: Grade;
   salaryFrom: number;
   salaryTo: number;
   teamDescription: string | null;

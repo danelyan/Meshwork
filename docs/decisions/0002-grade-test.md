@@ -313,7 +313,7 @@ JB / JF — идеальные контроли «все Junior верно, вс
 (Junior b ∈ [−1,4; −0,5], Middle b ∈ [0,3; 0,7]). Каталог: 21 запись `ai.*` + веса `ai` у 8 записей `common.*`
 (`scripts/catalog-direction-entries.json`, `catalog-to-json.mjs` дописывает их к каталогу владельца).
 
-**Калибровка.** Персоны A1–A5 и контроль JA (`eval/test/personas.ts --spec ai`): новички проходят Junior
+**Калибровка (историческое, банк 15 семейств; заменено § «Senior и пул по подкатегориям»).** Персоны A1–A5 и контроль JA (`eval/test/personas.ts --spec ai`, сняты): новички проходят Junior
 в 0–2 % (цель ≤ 10 %), подстройка a/b не понадобилась; узкий Junior A4 — 0,58, идеальный Junior — 0,90–0,92.
 Цифры и цена — [validation-results.md](../validation-results.md), § «Направление ai».
 
@@ -323,3 +323,37 @@ JB / JF — идеальные контроли «все Junior верно, вс
 
 **Граница.** Как и для backend/frontend: персоны — модели знаний агента, `a`, `b` экспертные, на людях не
 оценены; категория ai — того же уровня доверия, что backend/frontend, не выше.
+
+## Дополнение: Senior и пул по подкатегориям (10.10, lane directions; ADR 0003, дополнение 16:15)
+
+**Грейды.** `Grade` = junior, middle, senior (enum Prisma, миграция `20261010181000_grade_senior`; список и подписи —
+`src/lib/grades.ts`: `GRADES`, `GRADE_LABEL`, `lowerGrade`). Все `Record<Grade, …>` и Zod-схемы грейда — три значения.
+Senior — сверх ТЗ (в ТЗ Junior и Middle); в каталоге утверждений весов Senior нет, `gradeWeight` берёт для Senior веса
+Middle — ПРЕДЛОЖЕНИЕ.
+
+**Пул попытки — подкатегория.** `poolFor(spec, sub)`: направление, у которого размечено хоть одно семейство, тестирует
+только семейства подкатегории и только при полном банке `MIN_FAMILIES_BY_GRADE = {junior: 6, middle: 4, senior: 4}`
+(`bankComplete`); иначе «тест пока недоступен» с числом семейств по грейдам. Направление без разметки — переходный пул
+всего направления (backend/frontend до слияния лейнов генераторов). Подкатегория `active` ⇔ банк полон.
+
+**Политика (`POLICY_VERSION` `adr-0002-v4`).** Числа — ПРЕДЛОЖЕНИЕ по персонам, на людях не оценены.
+
+| Параметр | Значение | Почему |
+|---|---|---|
+| Порог Senior | +0,8 (ADR 0003 предлагал +0,6) | См. ниже: при Senior-пуле цифры равны на +0,6…+1,0; +0,8 — запас над Middle 0,9 |
+| `CONFIRM_PROB` | 0,8, как у Junior/Middle | — |
+| Основная фаза заявки Senior | только Senior-пул (`mainPool`), стоп по `CONFIRM_PROB`/SE или по исчерпанию (4) | Без этого Middle подтверждал Senior в 18–47 % (лейны gen-frontend, gen-backend, engineering): высокий θ набирался на Junior/Middle |
+| Дозадавание Middle (`middle_probe`) | до `MIDDLE_PROBE_MAX = 4`, пока Senior не подтверждён и P(Middle) > 0,2; стоп при P(Senior) ≥ 0,8 или P(Middle) ≤ 0,1 | 4 Senior-задания мало: при 4 из 4 P(Senior) персоны S = 0,52; с Middle-заданиями — 1,00. С 3 Middle «Middle в 1 клик» не срабатывал (P 0,78) |
+| Junior и Middle | как раньше: весь пул подкатегории, `junior_probe` до 3 | — |
+| Предложение ниже | Middle → Junior, Senior → Middle (`offeredGrade`, `pLower`; поле БД по-прежнему `juniorOffered`, маршрут `confirm-junior` пишет `lowerGrade`) | — |
+
+**Калибровка банка ai** (`a`, `b` в коде генераторов): Junior и Senior a = 1,4; Junior b +0,2 у ml-engineering и
+ai-integration; два Middle-семейства data-science a = 1,2. Senior-задания — b 1,0…1,7, a 1,0…1,4 (проверяет тест).
+
+**Цифры** (`eval/test/subcategory-personas.ts`, N = 1000, seed 1 и 2, пять подкатегорий ai): ложный Senior у Middle
+0,00; Senior 1,00; новичок → Junior ≤ 0,08; Junior 0,94–1,00, «Junior с одной слабой темой» ≥ 0,89; Middle 0,92–1,00,
+«Middle с одной слабой темой» ≥ 0,86. Все цели ADR 0003 выполнены. Таблицы — [validation-results.md](../validation-results.md),
+§ «Тест по подкатегории и Senior». Слабое место: Middle, заявивший Senior, получает «Middle в 1 клик» в 0,49–0,76.
+
+**Риск экспозиции.** В подкатегории 14–15 семейств, попытка показывает 4–13 из них (Senior — 4–8): повторная попытка видит
+почти тот же набор семейств (экземпляры генерируются заново, ключи разные).

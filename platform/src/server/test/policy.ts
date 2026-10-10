@@ -1,9 +1,22 @@
 // Правила адаптивного теста (ADR-0002): пороги грейдов, выбор задания, остановка, решение.
 // Все числа — ПРЕДЛОЖЕНИЕ: подобраны на симуляции (eval/test), на людях не оценены.
+import { SPEC_LABEL } from '@/lib/directions';
 import type { Grade, Specialization } from '../types';
 
 import { estimateTheta, information, probAbove, type Response, type ThetaEstimate } from './irt';
 import { createRng } from './rng';
+import { GRADE_LABEL, lowerGrade } from '@/lib/grades';
+
+/**
+ * Порог Senior (ADR 0003, дополнение 10.10 16:15; ADR-0002 «Senior и пул по подкатегориям»): ПРЕДЛОЖЕНИЕ +0,8.
+ * Предложение ADR было +0,6. Пока основная фаза Senior шла по всему пулу, порог решал всё: при +0,6 персоны на
+ * подкатегорию (eval/test/subcategory-personas.ts) давали ложный Senior у Middle до 0,14, у «Middle с одной слабой
+ * темой» до 0,35. С основной фазой только по Senior-пулу (mainPool) ложный Senior 0,00 и Senior 1,00 при любом пороге
+ * +0,6…+1,0 во всех пяти подкатегориях AI. Оставлено +0,8: запас над Middle (−0,1) — 0,9, и при 4 из 4 верных
+ * Senior-ответах примерно в половине попыток добирается одно Middle-задание (4,5 задания вместо 4) — больше
+ * наблюдений на решение, которое видит работодатель. Senior-задания банка — b 1,0…1,7.
+ */
+export const SENIOR_CUT = 0.8;
 
 /**
  * Пороги грейдов на шкале θ — границы между популяциями, а не их центры.
@@ -14,7 +27,7 @@ import { createRng } from './rng';
  * Зона Junior (0,6) шире SE остановки (0,4). Персоны — модели знаний агента, не люди; пороги — [В],
  * уточняются разметкой (docs/test-calibration.md).
  */
-export const GRADE_CUT: Record<Grade, number> = { junior: -0.7, middle: -0.1, senior: 0.6 }; // senior - ПРЕДЛОЖЕНИЕ до политики (ADR 0003, дополнение 16:15; политику пишет lane/directions)
+export const GRADE_CUT: Record<Grade, number> = { junior: -0.7, middle: -0.1, senior: SENIOR_CUT };
 
 /** Грейд подтверждён, если P(θ > порог) ≥ 0,8. */
 export const CONFIRM_PROB = 0.8;
@@ -75,8 +88,11 @@ export interface StopDecision {
   reason: StopReason | null;
 }
 
-/** Причина остановки. junior_resolved — дозадавание Junior дало уверенный ответ (P ≥ 0,9 или ≤ 0,1). */
-export type StopReason = 'max_items' | 'confident' | 'precise' | 'junior_resolved';
+/**
+ * Причина остановки. junior_resolved — дозадавание Junior дало уверенный ответ (P ≥ 0,9 или ≤ 0,1);
+ * middle_resolved — то же для дозадавания Middle при заявке Senior.
+ */
+export type StopReason = 'max_items' | 'confident' | 'precise' | 'junior_resolved' | 'middle_resolved';
 
 /** Правило остановки по текущей оценке и порогу заявленного грейда. */
 export interface StopLimits {
@@ -112,11 +128,30 @@ export function shouldStop(
  * Фактически дозадаётся не больше, чем осталось непоказанных Junior-шаблонов (6 на специализацию).
  */
 export const JUNIOR_PROBE_MAX = 3;
-/** Общий потолок заданий попытки: основная фаза + дозадавание. */
+/**
+ * Дозадавание Middle у заявки Senior — до 4 заданий (весь Middle-пул подкатегории, MIN_FAMILIES_BY_GRADE.middle).
+ * Основная фаза Senior — только 4 Senior-задания; после них у профиля «Senior неверно, Middle верно» трёх Middle-заданий
+ * не хватало: P(Middle) 0,78…0,79 < CONFIRM_PROB, и «Middle в 1 клик» не предлагался (tests/unit/test/senior-policy).
+ */
+export const MIDDLE_PROBE_MAX = 4;
+const PROBE_MAX: Record<'junior' | 'middle', number> = { junior: JUNIOR_PROBE_MAX, middle: MIDDLE_PROBE_MAX };
+/** Общий потолок заданий попытки: основная фаза + дозадавание (Senior: 4 + 4 — меньше). */
 export const MAX_ITEMS_TOTAL = MAX_ITEMS + JUNIOR_PROBE_MAX;
 
-/** Фаза попытки: основная (по порогу заявленного грейда) или дозадавание Junior. */
-export type AttemptPhase = 'main' | 'junior_probe';
+/** Фаза попытки: основная (по порогу заявленного грейда), дозадавание Junior или (заявка Senior) — Middle. */
+export type AttemptPhase = 'main' | 'junior_probe' | 'middle_probe';
+
+/**
+ * Стартовая θ для выбора первого задания. Заявка Senior идёт по Senior-пулу (ADR 0003, 16:15; см. mainPool): при θ = 1,2 информация Фишера выше у заданий с b 1,0…1,7. Junior и Middle — с 0, как до Senior.
+ */
+export const START_THETA: Record<Grade, number> = { junior: 0, middle: 0, senior: 1.2 };
+
+/** Грейд дозадавания для заявленного: Senior → Middle, Middle и Junior → Junior. */
+export function probeGrade(grade: Grade): 'junior' | 'middle' {
+  return grade === 'senior' ? 'middle' : 'junior';
+}
+
+const PHASE_OF: Record<'junior' | 'middle', AttemptPhase> = { junior: 'junior_probe', middle: 'middle_probe' };
 
 export interface StepInput {
   /** Все шаблоны специализации. */
@@ -153,14 +188,48 @@ export function juniorUncertain(pJunior: number): boolean {
  * условие совпадает со вторым (порог заявленного — порог Junior); для Middle — отдельная проверка.
  */
 export function needsJuniorProbe(est: ThetaEstimate, grade: Grade, juniorLeft: number): boolean {
-  if (juniorLeft <= 0) return false;
-  if (grade === 'middle' && probAbove(est, GRADE_CUT.middle) >= CONFIRM_PROB) return false;
-  return juniorUncertain(probAbove(est, GRADE_CUT.junior));
+  return needsProbe(est, grade, juniorLeft);
 }
 
-/** Пул для выбора следующего задания в фазе: в дозадавании — только Junior-шаблоны. */
-export function phasePool<T extends SelectableTemplate>(pool: readonly T[], phase: AttemptPhase): readonly T[] {
-  return phase === 'junior_probe' ? pool.filter((t) => t.grade === 'junior') : pool;
+/**
+ * Общее правило дозадавания: заявленный грейд не подтверждён, P(грейд дозадавания) неуверенная (0,2…0,8)
+ * и есть непоказанные шаблоны этого грейда.
+ *
+ * Заявка Senior — дозадавание Middle, когда Senior не подтверждён, а Middle уверенно не отвергнут (P(Middle) > 0,2;
+ * верхней границы нет). Основная фаза Senior — всего 4 Senior-задания, их мало и для решения о Senior (при 4 из 4
+ * верных P(Senior) у персоны Senior — 0,52), и для «Middle в 1 клик». Middle-задания уточняют θ в обе стороны:
+ * у Senior добирают P(Senior) до CONFIRM_PROB, у Middle — P(Middle), а ложный Senior сдерживают неверные Senior-ответы.
+ */
+export function needsProbe(est: ThetaEstimate, grade: Grade, left: number): boolean {
+  if (left <= 0) return false;
+  const pg = probeGrade(grade);
+  if (grade === 'senior') return probAbove(est, GRADE_CUT.senior) < CONFIRM_PROB && probAbove(est, GRADE_CUT.middle) > 1 - CONFIRM_PROB;
+  if (grade !== pg && probAbove(est, GRADE_CUT[grade]) >= CONFIRM_PROB) return false;
+  return juniorUncertain(probAbove(est, GRADE_CUT[pg]));
+}
+
+/**
+ * Пул основной фазы для заявленного грейда (ADR 0003, дополнение 16:15; данные лейнов генераторов 10.10).
+ * Заявка Senior — только Senior-шаблоны: без этого Middle набирал высокий θ на десятке Junior/Middle-заданий и
+ * подтверждал Senior в 18–47 % (симуляции gen-frontend, gen-backend, engineering), не дойдя до Senior-заданий.
+ * Основная фаза Senior кончается по CONFIRM_PROB/SE или по исчерпанию Senior-пула (4 семейства подкатегории),
+ * затем при неуверенности — дозадавание Middle. Junior и Middle — весь пул подкатегории, как до Senior.
+ * Если Senior-шаблонов в пуле нет (переходный пул направления) — весь пул.
+ */
+export function mainPool<T extends SelectableTemplate>(pool: readonly T[], grade?: Grade): readonly T[] {
+  if (grade !== 'senior') return pool;
+  const senior = pool.filter((t) => t.grade === 'senior');
+  return senior.length > 0 ? senior : pool;
+}
+
+/**
+ * Пул для выбора следующего задания в фазе: в дозадавании — только шаблоны грейда дозадавания; в основной фазе —
+ * mainPool заявленного грейда. `grade` не передан — основная фаза без ограничения (как до Senior).
+ */
+export function phasePool<T extends SelectableTemplate>(pool: readonly T[], phase: AttemptPhase, grade?: Grade): readonly T[] {
+  if (phase === 'junior_probe') return pool.filter((t) => t.grade === 'junior');
+  if (phase === 'middle_probe') return pool.filter((t) => t.grade === 'middle');
+  return mainPool(pool, grade);
 }
 
 /**
@@ -168,48 +237,61 @@ export function phasePool<T extends SelectableTemplate>(pool: readonly T[], phas
  * Чистая функция от ответов (фаза не хранится в БД, а выводится повтором shouldStop по префиксам):
  * те же ответы → та же фаза и та же остановка.
  *
- * 1. Основная фаза — shouldStop по порогу заявленного грейда (MIN_ITEMS…MAX_ITEMS).
+ * 1. Основная фаза — shouldStop по порогу заявленного грейда (MIN_ITEMS…MAX_ITEMS или исчерпание mainPool:
+ *    у заявки Senior это Senior-пул подкатегории).
  * 2. Остановилась, и needsJuniorProbe (заявка Middle или Junior) → фаза junior_probe: до JUNIOR_PROBE_MAX Junior-заданий
  *    (randomesque и лимит доли утверждения — как в основной), стоп, как только
  *    P(Junior) ≥ EARLY_STOP_PROB или ≤ 1 − EARLY_STOP_PROB, исчерпан лимит или Junior-шаблоны.
+ * 3. Заявка Senior: основная фаза — Senior-пул, дозадавание — middle_probe до MIDDLE_PROBE_MAX Middle-заданий
+ *    по тем же правилам с порогом Middle.
  * Решение о грейде (decide) берёт все ответы попытки: адаптивный выбор заданий не смещает
  * апостериорную оценку θ, дозаданные ответы — такие же наблюдения.
  */
 export function nextStep(input: StepInput, limits: StopLimits = { min: MIN_ITEMS, max: MAX_ITEMS }): Step {
   const { pool, shown, responses, grade, probe: probeAllowed = true } = input;
   const n = responses.length;
-  const juniorTotal = pool.filter((t) => t.grade === 'junior').length;
-  const juniorShown = (k: number) => shown.slice(0, k).filter((t) => t.grade === 'junior').length;
+  const pg = probeGrade(grade);
+  const phase = PHASE_OF[pg];
+  const juniorTotal = pool.filter((t) => t.grade === pg).length;
+  const juniorShown = (k: number) => shown.slice(0, k).filter((t) => t.grade === pg).length;
+  const mainSize = mainPool(pool, grade).length;
+  // Потолок основной фазы для прогресса: у заявки Senior — размер Senior-пула (4), а не MAX_ITEMS.
+  const mainMax = Math.min(limits.max, mainSize);
 
   // Где остановилась основная фаза (повтор по префиксам ответов).
   let mainLength: number | null = null;
   let mainStop: StopDecision = { stop: false, reason: null };
   for (let k = 1; k <= n; k++) {
-    const d = shouldStop(k, estimateTheta(responses.slice(0, k)), grade, k >= pool.length, limits);
+    const d = shouldStop(k, estimateTheta(responses.slice(0, k)), grade, k >= mainSize, limits);
     if (d.stop) {
       mainLength = k;
       mainStop = d;
       break;
     }
   }
-  if (mainLength === null) return { stop: false, reason: null, phase: 'main', mainLength: null, maxItems: limits.max };
+  if (mainLength === null) return { stop: false, reason: null, phase: 'main', mainLength: null, maxItems: mainMax };
 
   const atMain = estimateTheta(responses.slice(0, mainLength));
   const juniorLeft = juniorTotal - juniorShown(mainLength);
-  if (!probeAllowed || !needsJuniorProbe(atMain, grade, juniorLeft)) {
-    return { ...mainStop, stop: true, phase: 'main', mainLength, maxItems: limits.max };
+  if (!probeAllowed || !needsProbe(atMain, grade, juniorLeft)) {
+    return { ...mainStop, stop: true, phase: 'main', mainLength, maxItems: mainMax };
   }
 
   // Потолок фазы — сколько реально можно дозадать: не больше оставшихся Junior-шаблонов (на backend
   // их часто 2), иначе экран обещал бы 13 заданий, а тест кончался на 12.
-  const probeMax = mainLength + Math.min(JUNIOR_PROBE_MAX, juniorLeft);
+  const probeMax = mainLength + Math.min(PROBE_MAX[pg], juniorLeft);
   const probeAnswered = n - mainLength;
-  const probe = (stop: boolean, reason: StopReason | null): Step => ({ stop, reason, phase: 'junior_probe', mainLength, maxItems: probeMax });
-  if (probeAnswered > 0) {
-    const pJunior = probAbove(estimateTheta(responses), GRADE_CUT.junior);
-    if (pJunior >= EARLY_STOP_PROB || pJunior <= 1 - EARLY_STOP_PROB) return probe(true, 'junior_resolved');
+  const probe = (stop: boolean, reason: StopReason | null): Step => ({ stop, reason, phase, mainLength, maxItems: probeMax });
+  if (probeAnswered > 0 && grade === 'senior') {
+    // Senior: стоп, как только Senior подтверждён или Middle уверенно отвергнут; иначе — весь Middle-лимит.
+    const est = estimateTheta(responses);
+    if (probAbove(est, GRADE_CUT.senior) >= CONFIRM_PROB) return probe(true, 'confident');
+    if (probAbove(est, GRADE_CUT.middle) <= 1 - EARLY_STOP_PROB) return probe(true, 'middle_resolved');
+  } else if (probeAnswered > 0) {
+    const pProbe = probAbove(estimateTheta(responses), GRADE_CUT[pg]);
+    if (pProbe >= EARLY_STOP_PROB || pProbe <= 1 - EARLY_STOP_PROB) return probe(true, pg === 'junior' ? 'junior_resolved' : 'middle_resolved');
   }
-  if (probeAnswered >= JUNIOR_PROBE_MAX || juniorShown(n) >= juniorTotal) return probe(true, 'max_items');
+  if (probeAnswered >= PROBE_MAX[pg] || juniorShown(n) >= juniorTotal) return probe(true, 'max_items');
   return probe(false, null);
 }
 
@@ -219,8 +301,15 @@ export interface GradeDecision {
   pPass: number;
   pJunior: number;
   confirmed: boolean;
-  /** Заявлен Middle, не подтверждён, но Junior подтверждается по той же попытке. */
+  /**
+   * Заявленный грейд не подтверждён, но грейд ниже подтверждается по той же попытке: Middle → Junior,
+   * Senior → Middle (имя поля — историческое, как в БД).
+   */
   juniorOffered: boolean;
+  /** Какой грейд предлагается при juniorOffered (Junior или Middle); null — предложения нет. */
+  offeredGrade: Grade | null;
+  /** P(θ > порог грейда ниже заявленного); у заявки Junior — null. */
+  pLower: number | null;
 }
 
 /** Решение о грейде по ответам (чистое: те же ответы → то же решение). */
@@ -229,22 +318,27 @@ export function decide(responses: readonly Response[], grade: Grade, confirmProb
   const pPass = probAbove(est, GRADE_CUT[grade]);
   const pJunior = probAbove(est, GRADE_CUT.junior);
   const confirmed = responses.length > 0 && pPass >= confirmProb;
+  const lower = lowerGrade(grade);
+  const pLower = lower ? probAbove(est, GRADE_CUT[lower]) : null;
+  const offered = lower !== null && !confirmed && responses.length > 0 && pLower! >= confirmProb;
   return {
     theta: est.theta,
     se: est.se,
     pPass,
     pJunior,
     confirmed,
-    juniorOffered: grade === 'middle' && !confirmed && responses.length > 0 && pJunior >= confirmProb,
+    juniorOffered: offered,
+    offeredGrade: offered ? lower : null,
+    pLower,
   };
 }
 
 export function specLabel(s: Specialization): string {
-  return s === 'backend' ? 'Backend' : 'Frontend';
+  return SPEC_LABEL[s];
 }
 
 export function gradeLabel(g: Grade): string {
-  return g === 'junior' ? 'Junior' : 'Middle';
+  return GRADE_LABEL[g];
 }
 
 /** Объяснение итога кандидату: без θ-жаргона, с вероятностью и числом решённых. */
@@ -252,8 +346,9 @@ export function explainDecision(d: GradeDecision, grade: Grade, answered: number
   const pct = Math.round(d.pPass * 100);
   const base = `Решено ${correct} из ${answered}. Уверенность, что уровень не ниже ${gradeLabel(grade)}: ${pct}% (нужно не меньше ${Math.round(CONFIRM_PROB * 100)}%).`;
   if (d.confirmed) return `${base} Грейд ${gradeLabel(grade)} подтверждён.`;
-  if (d.juniorOffered) {
-    return `${base} Middle не подтверждён, но задания уровня Junior решены уверенно (${Math.round(d.pJunior * 100)}%): можно подтвердить Junior по этой же попытке.`;
+  if (d.juniorOffered && d.offeredGrade) {
+    const lower = gradeLabel(d.offeredGrade);
+    return `${base} ${gradeLabel(grade)} не подтверждён, но задания уровня ${lower} решены уверенно (${Math.round((d.pLower ?? d.pJunior) * 100)}%): можно подтвердить ${lower} по этой же попытке.`;
   }
   return `${base} Грейд ${gradeLabel(grade)} не подтверждён. Уже подтверждённая категория не снимается.`;
 }

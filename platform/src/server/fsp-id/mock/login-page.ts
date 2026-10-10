@@ -14,7 +14,8 @@ export const LOGIN_PAGE_HEADERS: Record<string, string> = {
   'content-type': 'text/html; charset=utf-8',
   'cache-control': 'no-store',
   'x-frame-options': 'DENY',
-  'referrer-policy': 'no-referrer',
+  // same-origin, не no-referrer: при no-referrer браузер шлёт форму с `Origin: null`, и assertSameOrigin её отклоняет.
+  'referrer-policy': 'same-origin',
   'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
 };
 

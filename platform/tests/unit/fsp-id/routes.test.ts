@@ -102,6 +102,13 @@ describe('ФСП ID через маршруты (встроенный мок)', 
     expect(tx.candidate.update).not.toHaveBeenCalled();
   });
 
+  it('страница входа не обнуляет Origin формы (Referrer-Policy не no-referrer)', async () => {
+    const res = await link(new Request(`${APP}/api/fsp-id/link`, { headers: { cookie: session('cand-1') } }));
+    const page = await authPage(new Request(res.headers.get('location')!));
+    // При no-referrer браузер шлёт POST формы с `Origin: null`, и assertSameOrigin отклоняет выбор участника.
+    expect(page.headers.get('referrer-policy')).toBe('same-origin');
+  });
+
   it('POST формы входа с чужого сайта — 403', async () => {
     const res = await authChoose(new Request(`${APP}/api/fsp-id/realms/fsp/protocol/openid-connect/auth`, { method: 'POST', body: 'participant=x', headers: { origin: 'https://evil.example' } }));
     expect(res.status).toBe(403);

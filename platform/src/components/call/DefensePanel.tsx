@@ -34,7 +34,9 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
   const rtc = useRtcAudio(sessionId, 'candidate', iceServers, true);
   const { snapshot, lastEntry, connected, aiThinking } = useCallEvents(sessionId, initial, rtc.onSignal);
 
-  useEffect(() => voice?.setThinking(aiThinking), [voice, aiThinking]);
+  useEffect(() => {
+    voice?.setThinking(aiThinking);
+  }, [voice, aiThinking]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

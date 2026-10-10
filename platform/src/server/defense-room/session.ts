@@ -1,5 +1,7 @@
 import type { Prisma } from '@prisma/client';
 
+import { countOf } from '@/lib/plural';
+
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
@@ -168,7 +170,7 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   const first = items[0]!;
   const greeting =
     source.mode === 'project'
-      ? `Привет! Это защита проекта ${source.projectTitle}. Я задам ${items.length} вопросов по твоему коду и решениям; отвечай своими словами, «не знаю» - тоже честный ответ. `
+      ? `Привет! Это защита проекта ${source.projectTitle}. Я задам ${countOf(items.length, ['вопрос', 'вопроса', 'вопросов'])} по твоему коду и решениям; отвечай своими словами, «не знаю» - тоже честный ответ. `
       : `Привет! У работодателей есть к тебе вопросы: ${items.length}. Отвечай своими словами. `;
 
   const session = await prisma.$transaction(async (tx) => {

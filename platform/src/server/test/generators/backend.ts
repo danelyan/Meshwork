@@ -3,6 +3,7 @@
 // задающие сложность, — зафиксированы в семействе. a, b — ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
+import { DATAMODEL_BANK2 } from './backend-bank2-datamodel';
 import { HIGHLOAD_BANK2 } from './backend-bank2-highload';
 import { INTEGRATIONS_BANK2 } from './backend-bank2-integrations';
 import { WEBAPI_BANK2 } from './backend-bank2-webapi';
@@ -2996,4 +2997,5 @@ export const BACKEND_GENERATORS: TaskGenerator[] = [
   ...WEBAPI_BANK2,
   ...INTEGRATIONS_BANK2,
   ...HIGHLOAD_BANK2,
+  ...DATAMODEL_BANK2,
 ];

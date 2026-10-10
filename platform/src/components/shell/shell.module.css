@@ -13,6 +13,10 @@
   .consultant { --landing-header-h: 72px; }
 }
 .page { flex: 1 0 auto; min-width: 0; }
+.frame:has([data-dashboard]) .nav { display: none; }
+.frame:has([data-dashboard]) { --page-pad: 32px; }
+.frame:has([data-dashboard]) .container { max-width: none; padding-top: 32px; }
+@media (max-width: 640px) { .frame:has([data-dashboard]) { --page-pad: 16px; } }
 
 .skip { position: fixed; left: 16px; top: -70px; z-index: 30; background: var(--ink); color: var(--landing-white); padding: 12px; }
 .skip:focus { top: 8px; }

@@ -22,6 +22,7 @@ import { prisma } from '../../src/server/db';
 import { getEnv } from '../../src/server/env';
 import { sessionCookie } from '../../src/server/session';
 import { uploadRoot } from '../../src/server/uploads/storage';
+import { validateUploadFile } from '../../src/lib/api';
 import { Prisma } from '@prisma/client';
 
 import { evaluateTurn, type ToolCallObs, type TurnObs, type UploadObs } from './checks';
@@ -42,13 +43,8 @@ const ONLY = opt('only', '');
 const TURN_TIMEOUT_MS = Number(opt('timeout', '240000'));
 const RESCORE = opt('rescore', '');
 
-// Тот же запрет, что в композере (src/lib/api.ts validateUploadFile): до сервера не-PDF/DOCX не доходят.
-function clientValidate(name: string, size: number): string | null {
-  const n = name.toLowerCase();
-  if (!['.pdf', '.docx'].some((e) => n.endsWith(e))) return `«${name}»: принимаем только PDF и DOCX.`;
-  if (size === 0) return `«${name}»: файл пустой.`;
-  return null;
-}
+// Тот же запрет, что в композере: сама функция композера, а не её копия.
+const clientValidate = (name: string, size: number): string | null => validateUploadFile({ name, size });
 
 const MIME: Record<string, string> = {
   '.pdf': 'application/pdf',

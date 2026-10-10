@@ -22,6 +22,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+import { BRAND_GLSL_COLOR, BRAND_GLSL_HEAD } from './brand-weave';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
 import { mouthOpen, smoothLevel } from './level';
@@ -45,6 +46,8 @@ export interface Head3DProps {
   reducedMotion?: boolean;
   /** Вид головы (см. head-styles.ts); по умолчанию — сетка-металл по референсу. */
   style?: HeadStyle;
+  /** Ручной поворот (drag на демо-экране): прибавляется к повороту группы в каждом кадре. */
+  getOrbit?: () => { yaw: number; pitch: number };
 }
 
 /** Цвета бренда: акцент `--blue` из tokens.css и серебро референса. */
@@ -175,6 +178,7 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
   metal: { color: new Color(SILVER), metalness: 0.55, roughness: 0.36 },
   grid: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
+  brand: { color: new Color('#b4bac4'), metalness: 0.62, roughness: 0.32 },
   loops: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   chrome: { color: new Color('#8e939c'), metalness: 0.95, roughness: 0.24 },
   hologram: { color: new Color('#0b0b16'), metalness: 0, roughness: 1 },
@@ -284,7 +288,8 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         // (глубина не учитывается: нос и скулы выступают, а нити должны огибать черту целиком)
         float fspZone(vec2 p, vec2 c, float R) {
           return smoothstep(R, R * 0.45, distance(p, c));
-        }`,
+        }
+        ${BRAND_GLSL_HEAD}`,
       )
       .replace(
         '#include <color_fragment>',
@@ -343,6 +348,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
           diffuseColor.rgb = mix(FSP_DARK, diffuseColor.rgb, clamp(line, 0.0, 1.0));
         }
         #endif
+        ${BRAND_GLSL_COLOR}
         diffuseColor.rgb *= mouthDark;
         #ifdef FSP_MORPH_MOUTH
         // полость и изнанка головы — ровно тёмные, зубы светлые, язык тёплый тёмный; всё без сетки
@@ -520,8 +526,9 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
     const motion = props.reducedMotion ? 0 : 1;
     // покой: дыхание и лёгкое покачивание; «думает» — наклон и медленный поворот; говорит — кивки в такт
     const thinking = s === 'thinking' || s === 'loading' ? 1 : 0;
-    g.rotation.y = -0.42 + motion * (Math.sin(t * 0.4) * 0.06 + thinking * Math.sin(t * 0.9) * 0.12);
-    g.rotation.x = -0.1 + motion * (Math.sin(t * 0.55) * 0.02 + thinking * 0.08 + level.current * 0.2);
+    const orbit = props.getOrbit?.();
+    g.rotation.y = -0.42 + (orbit?.yaw ?? 0) + motion * (Math.sin(t * 0.4) * 0.06 + thinking * Math.sin(t * 0.9) * 0.12);
+    g.rotation.x = -0.1 + (orbit?.pitch ?? 0) + motion * (Math.sin(t * 0.55) * 0.02 + thinking * 0.08 + level.current * 0.2);
     g.rotation.z = motion * thinking * 0.06;
     g.position.y = motion * Math.sin(t * 1.2) * 0.012;
   });

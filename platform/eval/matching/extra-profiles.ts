@@ -1,4 +1,4 @@
-// Профили только для eval подбора (в БД не сидятся). Вымышленные, «трудные» случаи:
+// Профили только для eval подбора (в БД не сидятся). Вымышленные, «трудные» случаи (E9 — категория без утверждений, Q-36):
 // всё со слов, слабый джун, фронтендер с бэкенд-утверждениями, категория без
 // утверждений, доказанное платформой, без специализации.
 import type { DemoProfile } from '../../prisma/seed/employer';
@@ -23,4 +23,6 @@ export const EXTRA_PROFILES: DemoProfile[] = [
       ['be.sql-indexes', 'self_reported'], ['common.sql-queries', 'artifact']] },
   { id: 'eval-nospec-algo', name: 'E8', specialization: null, fspState: 'linked', category: null, stack: ['C++'],
     claims: [['common.git', 'artifact'], ['common.algo-complexity', 'third_party'], ['common.unit-tests', 'artifact']] },
+  { id: 'eval-be-cat-bare', name: 'E9', specialization: 'backend', fspState: 'not_linked', category: { specialization: 'backend', grade: 'middle' }, stack: [],
+    claims: [] },
 ];

@@ -129,10 +129,44 @@ describe('кабинет работодателя (БД)', () => {
     const vacId = created.id ?? created.vacancy?.id;
     const m = await (await matches(jsonRequest(`/x/${vacId}/matches`, 'GET', undefined, EMP), params({ id: vacId }))).json();
     expect(m.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('zero-cov');
-    expect(m.items.every((i: { covered: number }) => i.covered >= 1)).toBe(true);
+    // без закрытых требований в подборке только кандидаты с совпавшей категорией из теста (Q-36)
+    expect(m.items.every((i: { covered: number; categoryMatch: boolean }) => i.covered >= 1 || i.categoryMatch)).toBe(true);
     const bank = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go', 'GET', undefined, EMP))).json();
     expect(bank.items.map((i: { candidateId: string }) => i.candidateId)).toContain('zero-cov');
     await prisma.candidate.delete({ where: { id: 'zero-cov' } }); // не мешать соседним тестам
+  });
+
+  it('подборка: кандидат только с категорией из теста виден, чужая специализация — нет, порядок трёх типов (Q-36)', async () => {
+    const mk = (id: string, extra: Record<string, unknown> = {}) =>
+      prisma.candidate.create({ data: { id, name: id, email: `${id}@example.test`, specialization: 'backend', fspState: 'not_linked', consentAt: new Date(), ...extra } });
+    const claim = (candidateId: string) =>
+      prisma.claim.create({
+        data: {
+          candidateId, catalogId: 'be.idempotency', statement: 'Идемпотентность', level: 'self_reported', quote: 'Go',
+          sourceRef: 'cv.pdf#p1:l1', sourceKind: 'resume', confidence: 'high', limits: '', suggestedProof: [], status: 'confirmed', confirmedAt: new Date(),
+        },
+      });
+    await mk('q36-cat-only');
+    await prisma.candidateCategory.create({ data: { candidateId: 'q36-cat-only', specialization: 'backend', grade: 'middle' } });
+    await mk('q36-cat-fe', { specialization: 'frontend' });
+    await prisma.candidateCategory.create({ data: { candidateId: 'q36-cat-fe', specialization: 'frontend', grade: 'middle' } });
+    await mk('q36-both');
+    await prisma.candidateCategory.create({ data: { candidateId: 'q36-both', specialization: 'backend', grade: 'middle' } });
+    await claim('q36-both');
+    await mk('q36-claims');
+    await claim('q36-claims');
+    const created = await (await createVac(jsonRequest('/api/employer/vacancies', 'POST', { ...VAC_BODY, stack: [], needs: [{ catalogId: 'be.idempotency', weight: 3 }, { catalogId: 'be.transactions', weight: 3 }] }, EMP))).json();
+    const vacId = created.id ?? created.vacancy?.id;
+    const m = await (await matches(jsonRequest(`/x/${vacId}/matches`, 'GET', undefined, EMP), params({ id: vacId }))).json();
+    const ids: string[] = m.items.map((i: { candidateId: string }) => i.candidateId);
+    expect(ids).toContain('q36-cat-only');
+    expect(ids).not.toContain('q36-cat-fe');
+    expect(ids.indexOf('q36-both')).toBeLessThan(ids.indexOf('q36-claims'));
+    expect(ids.indexOf('q36-both')).toBeLessThan(ids.indexOf('q36-cat-only'));
+    const only = m.items.find((i: { candidateId: string }) => i.candidateId === 'q36-cat-only');
+    expect(only.covered).toBe(0);
+    expect(only.explanation.summary).toContain('подтверждена тестом; требования потребности не доказаны утверждениями');
+    await prisma.candidate.deleteMany({ where: { id: { startsWith: 'q36-' } } });
   });
 
   it('фильтры — query (R-M-04): ФСП, стек, грейд категории; чужая потребность — 404', async () => {

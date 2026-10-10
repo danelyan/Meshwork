@@ -1,15 +1,71 @@
 {
-  "_note": "РАЗМЕТКА АГЕНТА (лейн employer, 09.10.2026), второго оценщика нет. Релевантность кандидата вакансии: 2 — специализация совпадает, закрыта половина требований и больше, и половина закрытого доказана артефактом или выше; 1 — специализация совпадает, закрыто 2+ требования (или много, но только со слов, или кандидат выше грейдом и закрывает часть); 0 — другая специализация или закрыто не больше одного. Кандидаты, не указанные у вакансии, — 0. Критерий близок к формуле подбора, поэтому цифры — проверка согласованности, а не независимая валидация.",
-  "candidates": ["demo-pool-be-m-pay", "demo-pool-be-m-infra", "demo-pool-be-j-1", "demo-pool-be-j-2", "demo-pool-fe-m-1", "demo-pool-fe-m-2", "demo-pool-fe-j-1", "demo-pool-fe-j-2",
-    "eval-be-self-only", "eval-be-weak-junior", "eval-fe-fullstackish", "eval-be-category-only", "eval-fe-platform-junior", "eval-fe-perf-a11y", "eval-be-pay-partial", "eval-nospec-algo"],
-  "relevance": {
-    "demo-vac-be-j-1": { "demo-pool-be-j-1": 2, "demo-pool-be-m-pay": 1, "eval-be-weak-junior": 1 },
-    "demo-vac-be-m-1": { "demo-pool-be-m-pay": 2, "eval-be-pay-partial": 2, "eval-be-self-only": 1 },
-    "demo-vac-be-j-2": { "demo-pool-be-j-2": 2, "demo-pool-be-m-infra": 1 },
-    "demo-vac-be-m-2": { "demo-pool-be-m-infra": 2, "eval-be-category-only": 1 },
-    "demo-vac-fe-j-1": { "demo-pool-fe-j-1": 2, "eval-fe-platform-junior": 2 },
-    "demo-vac-fe-m-1": { "demo-pool-fe-m-1": 2, "eval-fe-perf-a11y": 2 },
-    "demo-vac-fe-j-2": { "demo-pool-fe-j-2": 2, "eval-fe-fullstackish": 1, "demo-pool-fe-j-1": 1 },
-    "demo-vac-fe-m-2": { "demo-pool-fe-m-2": 2, "demo-pool-fe-m-1": 1 }
+ "_note": "РАЗМЕТКА АГЕНТА (лейн employer, 09.10.2026), второго оценщика нет. Релевантность кандидата вакансии: 2 — специализация совпадает, закрыта половина требований и больше, и половина закрытого доказана артефактом или выше; 1 — специализация совпадает, закрыто 2+ требования (или много, но только со слов, или кандидат выше грейдом и закрывает часть); 0 — другая специализация или закрыто не больше одного. Кандидаты, не указанные у вакансии, — 0. Критерий близок к формуле подбора, поэтому цифры — проверка согласованности, а не независимая валидация. Правило Q-36 (10.10): кандидат с категорией из теста, совпавшей со специализацией вакансии (грейд равен или выше), — релевантность не ниже 1 даже без доказанных требований: ТЗ R-M-01 требует выдачу по категориям, а не по самоописанию. Правило применено ко всем профилям с категорией; новый профиль eval-be-cat-bare — Backend Middle без единого утверждения.",
+ "candidates": [
+  "demo-pool-be-m-pay",
+  "demo-pool-be-m-infra",
+  "demo-pool-be-j-1",
+  "demo-pool-be-j-2",
+  "demo-pool-fe-m-1",
+  "demo-pool-fe-m-2",
+  "demo-pool-fe-j-1",
+  "demo-pool-fe-j-2",
+  "eval-be-self-only",
+  "eval-be-weak-junior",
+  "eval-fe-fullstackish",
+  "eval-be-category-only",
+  "eval-fe-platform-junior",
+  "eval-fe-perf-a11y",
+  "eval-be-pay-partial",
+  "eval-nospec-algo",
+  "eval-be-cat-bare"
+ ],
+ "relevance": {
+  "demo-vac-be-j-1": {
+   "demo-pool-be-j-1": 2,
+   "demo-pool-be-m-pay": 1,
+   "eval-be-weak-junior": 1,
+   "eval-be-cat-bare": 1,
+   "eval-be-category-only": 1
+  },
+  "demo-vac-be-m-1": {
+   "demo-pool-be-m-pay": 2,
+   "eval-be-pay-partial": 2,
+   "eval-be-self-only": 1,
+   "eval-be-cat-bare": 1,
+   "eval-be-category-only": 1
+  },
+  "demo-vac-be-j-2": {
+   "demo-pool-be-j-2": 2,
+   "demo-pool-be-m-infra": 1,
+   "eval-be-cat-bare": 1,
+   "demo-pool-be-m-pay": 1,
+   "demo-pool-be-j-1": 1,
+   "eval-be-category-only": 1
+  },
+  "demo-vac-be-m-2": {
+   "demo-pool-be-m-infra": 2,
+   "eval-be-category-only": 1,
+   "eval-be-cat-bare": 1,
+   "demo-pool-be-m-pay": 1
+  },
+  "demo-vac-fe-j-1": {
+   "demo-pool-fe-j-1": 2,
+   "eval-fe-platform-junior": 2,
+   "demo-pool-fe-m-1": 1
+  },
+  "demo-vac-fe-m-1": {
+   "demo-pool-fe-m-1": 2,
+   "eval-fe-perf-a11y": 2
+  },
+  "demo-vac-fe-j-2": {
+   "demo-pool-fe-j-2": 2,
+   "eval-fe-fullstackish": 1,
+   "demo-pool-fe-j-1": 1,
+   "demo-pool-fe-m-1": 1
+  },
+  "demo-vac-fe-m-2": {
+   "demo-pool-fe-m-2": 2,
+   "demo-pool-fe-m-1": 1
   }
+ }
 }

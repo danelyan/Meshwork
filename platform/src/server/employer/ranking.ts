@@ -8,6 +8,7 @@ import { gradeWeight } from '../recommend/weights';
 import type { FspState, Grade, Specialization } from '../types';
 
 import {
+  CATEGORY_BASE,
   CATEGORY_MULT_ABOVE,
   CATEGORY_MULT_EXACT,
   FSP_BOOST,
@@ -73,6 +74,8 @@ export interface RankedCandidate {
   covered: number;
   total: number;
   provenCount: number;
+  /** Категория из теста совпала со специализацией потребности, грейд равен или выше (Q-36). */
+  categoryMatch: boolean;
   boosts: { category: number; fsp: number; stack: number; specPenalty: number };
   explanation: Explanation;
 }
@@ -153,12 +156,17 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
   if (cov.score === 0 && !c.category) return null;
 
   let category = 0;
+  let categoryMatch = false;
   let categoryText = 'тест не пройден - категории нет';
   if (c.category) {
     categoryText = `${categoryLabel(c.category)} (тест)`;
     if (c.category.specialization === target.specialization) {
       const d = GRADE_RANK[c.category.grade] - GRADE_RANK[target.grade];
-      category = cov.score * (d === 0 ? CATEGORY_MULT_EXACT : d > 0 ? CATEGORY_MULT_ABOVE : 0);
+      categoryMatch = d >= 0;
+      const mult = d === 0 ? CATEGORY_MULT_EXACT : d > 0 ? CATEGORY_MULT_ABOVE : 0;
+      // ПРЕДЛОЖЕНИЕ (Q-36): совпавшая категория даёт базу CATEGORY_BASE даже без закрытых требований,
+      // и множитель действует на (покрытие + база). Ниже требуемого грейда — ни базы, ни показа без покрытия.
+      category = (cov.score + (categoryMatch ? CATEGORY_BASE : 0)) * (1 + mult) - cov.score;
       if (d < 0) categoryText += ', ниже требуемого грейда';
     }
   }
@@ -172,12 +180,16 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
   const proven = coveredItems.filter((i) => PROVEN.has(i.level)).map((i) => i.statement);
   const missing = cov.missing.map((m) => m.statement);
 
+  const categoryOnly = categoryMatch && cov.covered === 0;
   const parts = [`Закрывает ${cov.covered} из ${cov.total} требований${coveredItems.length ? `: ${coveredItems.map((i) => i.statement).join('; ')}` : ''}`];
   parts.push(proven.length ? `доказано артефактами и выше: ${proven.join('; ')}` : 'доказанного артефактами нет - только со слов');
   parts.push(`ФСП: ${fspText(c.fspState)}`);
   parts.push(`категория: ${categoryText}`);
   if (stackMatched.length) parts.push(`стек в подтверждённых цитатах: ${stackMatched.join(', ')}`);
   if (specPenalty) parts.push('другая специализация');
+  const summary = categoryOnly
+    ? `Категория ${categoryLabel(c.category!)} подтверждена тестом; требования потребности не доказаны утверждениями. ФСП: ${fspText(c.fspState)}${stackMatched.length ? `. Стек в подтверждённых цитатах: ${stackMatched.join(', ')}` : ''}.`
+    : `${parts.join('. ')}.`;
 
   return {
     candidateId: c.id,
@@ -186,9 +198,10 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
     covered: cov.covered,
     total: cov.total,
     provenCount: proven.length,
+    categoryMatch,
     boosts: { category: round(category), fsp, stack: round(stack), specPenalty },
     explanation: {
-      summary: `${parts.join('. ')}.`,
+      summary,
       covered: coveredItems,
       proven,
       missing,
@@ -226,7 +239,10 @@ export function rankCandidates(
   return out;
 }
 
-/** Подборка под потребность: оставляет тех, кто закрыл не меньше MIN_COVERED_FOR_VACANCY требований. */
-export function dropUncovered<T extends { covered: number }>(ranked: T[]): T[] {
-  return ranked.filter((r) => r.covered >= MIN_COVERED_FOR_VACANCY);
+/**
+ * Подборка под потребность: оставляет тех, кто закрыл не меньше MIN_COVERED_FOR_VACANCY требований,
+ * и тех, чья категория из теста совпала с потребностью (Q-36) — даже при нуле закрытых.
+ */
+export function dropUncovered<T extends { covered: number; categoryMatch: boolean }>(ranked: T[]): T[] {
+  return ranked.filter((r) => r.covered >= MIN_COVERED_FOR_VACANCY || r.categoryMatch);
 }

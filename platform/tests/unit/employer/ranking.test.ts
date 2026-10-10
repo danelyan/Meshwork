@@ -11,7 +11,7 @@ import {
   type MatchTarget,
 } from '@/server/employer/ranking';
 import { InvitationInput, VacancyInput, filtersToQuery, parseFilters } from '@/server/employer/schemas';
-import { CATEGORY_MULT_EXACT, FSP_BOOST, SPEC_MISMATCH_PENALTY } from '@/server/employer/weights';
+import { CATEGORY_BASE, CATEGORY_MULT_EXACT, FSP_BOOST, SPEC_MISMATCH_PENALTY } from '@/server/employer/weights';
 
 import { maxPrecisionAtK, ndcgAtK, precisionAtK } from '../../../eval/matching/metrics';
 import { fixtureCatalog } from '../../helpers/recommend-fixtures';
@@ -68,15 +68,16 @@ describe('ранжирование работодателя', () => {
     const withCat = { ...base, id: 'b', category: { specialization: 'backend' as const, grade: 'middle' as const } };
     const a = scoreCandidate(base, { ...target, stack: [] }, catalog)!;
     const b = scoreCandidate(withCat, { ...target, stack: [] }, catalog)!;
-    expect(b.boosts.category).toBeCloseTo(a.coverageScore * CATEGORY_MULT_EXACT, 4);
+    expect(b.boosts.category).toBeCloseTo((a.coverageScore + CATEGORY_BASE) * (1 + CATEGORY_MULT_EXACT) - a.coverageScore, 4);
     expect(b.score).toBeGreaterThan(a.score);
     const empty = cand('c', [], { category: { specialization: 'backend', grade: 'middle' } });
     const e = scoreCandidate(empty, target, catalog)!;
-    expect(e.score).toBe(0);
+    expect(e.score).toBeCloseTo(CATEGORY_BASE * (1 + CATEGORY_MULT_EXACT), 4);
     expect(e.explanation.category).toBe('Backend · Middle (тест)');
     // грейд ниже требуемого — без множителя и с пометкой
     const low = scoreCandidate({ ...base, category: { specialization: 'backend', grade: 'junior' } }, target, catalog)!;
     expect(low.boosts.category).toBe(0);
+    expect(low.categoryMatch).toBe(false);
     expect(low.explanation.category).toMatch(/ниже требуемого/);
   });
 
@@ -125,15 +126,53 @@ describe('ранжирование работодателя', () => {
   });
 });
 
-describe('подборка под потребность: нулевое покрытие (решение владельца 09.10)', () => {
-  it('кандидат со стеком, но без закрытых требований, получает балл > 0, но dropUncovered его убирает', () => {
-    const zero = cand('z', [['be.background-jobs', 'self_reported']], { category: { specialization: 'backend', grade: 'middle' } });
-    zero.claims[0]!.quote = 'Go, Kafka';
+describe('подборка под потребность: категория из теста — самостоятельное основание показа (Q-36, 10.10)', () => {
+  const mid = { specialization: 'backend' as const, grade: 'middle' as const };
+
+  it('только категория (0 закрытых) остаётся в подборке; без категории и с нулём закрытых — нет', () => {
+    const catOnly = cand('cat', [], { category: mid });
+    const zero = cand('z', [['be.background-jobs', 'self_reported']]);
     const one = cand('o', [['be.idempotency', 'self_reported']]);
-    const ranked = rankCandidates([zero, one], target, catalog);
-    expect(ranked.map((x) => x.candidateId)).toContain('z');
-    expect(ranked.find((x) => x.candidateId === 'z')!.covered).toBe(0);
-    expect(dropUncovered(ranked).map((x) => x.candidateId)).toEqual(['o']);
+    const ranked = rankCandidates([catOnly, zero, one], target, catalog);
+    expect(dropUncovered(ranked).map((x) => x.candidateId)).toEqual(expect.arrayContaining(['cat', 'o']));
+    expect(dropUncovered(ranked).map((x) => x.candidateId)).not.toContain('z');
+  });
+
+  it('категория другой специализации или ниже требуемого грейда — не основание', () => {
+    const fe = cand('fe', [], { specialization: 'frontend', category: { specialization: 'frontend', grade: 'middle' } });
+    const low = cand('low', [], { category: { specialization: 'backend', grade: 'junior' } });
+    const ranked = dropUncovered(rankCandidates([fe, low], target, catalog));
+    expect(ranked).toEqual([]);
+    // грейд выше требуемого — основание есть
+    const high = cand('high', [], { category: mid });
+    const jTarget = { ...target, grade: 'junior' as const };
+    expect(dropUncovered(rankCandidates([high], jTarget, catalog)).map((x) => x.candidateId)).toEqual(['high']);
+  });
+
+  it('порядок: категория + закрытое > только категория > категория не нужна, но слабое покрытие; и при равном покрытии категория выше', () => {
+    const both = cand('both', [['be.idempotency', 'self_reported']], { category: mid });
+    const catOnly = cand('cat', [], { category: mid });
+    const claimsOnly = cand('claims', [['be.idempotency', 'self_reported']]);
+    const r = rankCandidates([claimsOnly, catOnly, both], { ...target, stack: [] }, catalog);
+    expect(r.map((x) => x.candidateId)).toEqual(['both', 'claims', 'cat']);
+    // только категория выше кандидата без категории с практически нулевым покрытием
+    const tiny = cand('tiny', [['be.sql-indexes', 'self_reported']]);
+    const tinyScore = scoreCandidate(tiny, { ...target, stack: [] }, catalog)!.score;
+    const catScore = scoreCandidate(catOnly, { ...target, stack: [] }, catalog)!.score;
+    expect(catScore).toBeCloseTo(CATEGORY_BASE * (1 + CATEGORY_MULT_EXACT), 4);
+    expect(tinyScore).toBeLessThan(catScore);
+    // категория с частичным покрытием не обгоняет сильное покрытие без категории
+    const strong = cand('strong', [['be.idempotency', 'artifact'], ['be.transactions', 'artifact'], ['be.message-queue', 'artifact'], ['be.sql-indexes', 'artifact']]);
+    const partial = cand('partial', [['be.idempotency', 'self_reported']], { category: mid });
+    const r2 = rankCandidates([partial, strong], { ...target, stack: [] }, catalog);
+    expect(r2[0]!.candidateId).toBe('strong');
+  });
+
+  it('объяснение для «только категория»', () => {
+    const r = scoreCandidate(cand('cat', [], { category: mid }), target, catalog)!;
+    expect(r.categoryMatch).toBe(true);
+    expect(r.covered).toBe(0);
+    expect(r.explanation.summary).toMatch(/^Категория Backend · Middle подтверждена тестом; требования потребности не доказаны утверждениями\./);
   });
 });
 

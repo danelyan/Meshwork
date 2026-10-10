@@ -1,7 +1,8 @@
 /**
  * Есть ли WebGL: аватар рисуется в three.js, без WebGL — запасной знак ФСП (SVG).
  * Проверка — по наличию `WebGLRenderingContext` и реальному контексту на пробном canvas
- * (на стенде без GPU контекст может не создаться). Результат кэшируется.
+ * (на стенде без GPU контекст может не создаться). Положительный результат кэшируется, отрицательный — нет: контекст мог не создаться из-за лимита
+ * вкладок, и при следующем монтировании (или по «обновить») проба повторяется.
  */
 let cached: boolean | undefined;
 
@@ -19,8 +20,9 @@ export function detectWebGL(win: (Window & typeof globalThis) | undefined = type
 }
 
 export function hasWebGL(): boolean {
-  if (cached === undefined) cached = detectWebGL();
-  return cached;
+  if (cached) return true;
+  cached = detectWebGL() || undefined;
+  return cached ?? false;
 }
 
 /** Только для тестов. */

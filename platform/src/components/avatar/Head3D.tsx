@@ -75,6 +75,8 @@ export interface Head3DProps {
    * странице поворотом шеи, дыхание и моргание Карины; `alive` — то же + скулы, глаза, брови.
    */
   motion?: HeadMotionMode;
+  /** WebGL-контекст потерян (`webglcontextlost`): родитель показывает знак с кнопкой «обновить». */
+  onContextLost?: () => void;
   /** Свет сцены (см. lighting.ts); по умолчанию `current` — прежние лампы и окружение. */
   lighting?: LightingPreset;
 }
@@ -1039,6 +1041,12 @@ export default function Head3D(props: Head3DProps) {
         camera={{ position: [0, -0.18, 4.3], fov: 34 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
         aria-hidden="true"
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+            props.onContextLost?.();
+          });
+        }}
       >
         <SceneLights preset={props.lighting} />
         {body}

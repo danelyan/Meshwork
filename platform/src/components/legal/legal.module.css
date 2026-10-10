@@ -1,0 +1,12 @@
+.page { display: flex; flex-direction: column; gap: 14px; font-size: var(--fs-md); line-height: 1.55; overflow-wrap: anywhere; }
+.draft { margin: 0; padding: 10px 12px; border: 1px dashed var(--border-strong); background: var(--surface-notice); font: 500 var(--fs-sm) var(--mono); color: var(--text); }
+.meta { margin: 0; font: 500 var(--fs-sm) var(--mono); color: var(--muted); }
+.lead { margin: 0; color: var(--text-soft); }
+.toc { padding: 12px 14px; border: 1px solid var(--line); background: var(--surface-quote); }
+.toc ol { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.toc a, .links a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.section { display: flex; flex-direction: column; gap: 10px; scroll-margin-top: 80px; }
+.section h2 { margin: 12px 0 0; font-size: var(--fs-lg); }
+.section p, .section ul { margin: 0; }
+.section ul { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: var(--fs-sm); }

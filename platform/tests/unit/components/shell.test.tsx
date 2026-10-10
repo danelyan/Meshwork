@@ -108,6 +108,9 @@ describe('SiteFooter', () => {
     const f = within(screen.getByRole('contentinfo'));
     expect(f.getByText(/Федерация спортивного программирования/)).toBeDefined();
     expect(f.getByRole('link', { name: 'Согласие' }).getAttribute('href')).toBe('/consent');
+    for (const [name, href] of [['Политика данных', '/privacy'], ['Соглашение', '/terms'], ['Для работодателя', '/employer-terms'], ['Как работает ИИ', '/ai']]) {
+      expect(f.getByRole('link', { name }).getAttribute('href')).toBe(href);
+    }
     expect(f.getByRole('link', { name: 'ФСП' }).getAttribute('href')).toBe('https://fsp-russia.ru/');
     expect(f.queryByRole('link', { name: 'Демо для жюри' })).toBeNull();
     cleanup();

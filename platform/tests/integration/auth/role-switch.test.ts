@@ -1,4 +1,11 @@
 import { POST as switchRoute } from '@/app/api/auth/role/switch/route';
+import { POST as deleteAccountRoute } from '@/app/api/dev/delete-account/route';
+import { POST as resetOnboardingRoute } from '@/app/api/dev/reset-onboarding/route';
+import { GET as listDemo, POST as demoLogin } from '@/app/api/demo/login/route';
+import { POST as onboardingRoute } from '@/app/api/onboarding/route';
+import { isSessionStale } from '@/server/auth/stale';
+import { resetEnvCache } from '@/server/env';
+import { CANDIDATE_STEPS, EMPLOYER_STEPS } from '@/server/onboarding/scenario';
 import { GET as employerVacancies } from '@/app/api/employer/vacancies/route';
 import { GET as profile } from '@/app/api/profile/route';
 import { recordConsent } from '@/server/auth/consent';
@@ -129,5 +136,139 @@ describe('POST /api/auth/role/switch', () => {
     expect(results.filter((r) => r.created)).toHaveLength(1);
     expect(await prisma.employerProfile.count()).toBe(1);
     expect(await prisma.company.count()).toBe(1);
+  });
+
+  it('companyName: "" при существующем профиле работодателя — как отсутствие (200)', async () => {
+    const toEmp = cookieFrom(await post({ role: 'employer', companyName: 'ООО Ромашка' }, candCookie()))!;
+    const toCand = cookieFrom(await post({ role: 'candidate' }, toEmp))!;
+    const res = await post({ role: 'employer', companyName: '' }, toCand);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ role: 'employer', created: false });
+    // Профиля нет и название пустое — 400.
+    await prisma.user.create({ data: { id: 'u4', name: 'Пётр', role: 'candidate', onboardedAt: new Date() } });
+    const c4 = await prisma.candidate.create({ data: { name: 'Пётр', email: 'p@example.test' } });
+    await prisma.user.update({ where: { id: 'u4' }, data: { candidateId: c4.id } });
+    expect((await post({ role: 'employer', companyName: '' }, `cid=${signUserSession({ userId: 'u4', role: 'candidate', candidateId: c4.id })}`)).status).toBe(400);
+  });
+
+  it('туда-обратно с завершённым знакомством обеих ролей: у каждой роли свой итог (view.current.lead)', async () => {
+    const allSkipped = [...CANDIDATE_STEPS, ...EMPLOYER_STEPS].map((st) => st.id);
+    await prisma.onboardingState.create({
+      data: { userId: 'u1', stepId: 'summary', skipped: allSkipped, lines: { summary: 'Итог кандидата' } },
+    });
+    const toEmp = cookieFrom(await post({ role: 'employer', companyName: 'ООО Ромашка' }, candCookie()))!;
+    // Знакомство работодателя завершено на итоге со своей репликой.
+    await prisma.onboardingState.update({ where: { userId: 'u1' }, data: { stepId: 'summary', lines: { summary: 'Итог работодателя' } } });
+    await prisma.user.update({ where: { id: 'u1' }, data: { onboardedAt: new Date() } });
+
+    const toCand = cookieFrom(await post({ role: 'candidate' }, toEmp))!;
+    let view = await getView('u1');
+    expect(view.current.id).toBe('summary');
+    expect(view.current.lead).toBe('Итог кандидата');
+    expect(view.onboarded).toBe(true);
+
+    await post({ role: 'employer' }, toCand);
+    view = await getView('u1');
+    expect(view.scenario).toBe('employer');
+    expect(view.current.lead).toBe('Итог работодателя');
+    expect(view.onboarded).toBe(true);
+  });
+
+  it('пауза «Настроить позже» своя у каждой роли: создание второй роли не стирает паузу первой', async () => {
+    await prisma.user.update({ where: { id: 'u1' }, data: { onboardedAt: null } });
+    await prisma.onboardingState.create({ data: { userId: 'u1', stepId: 'grade', meta: { later: true } } });
+    const toEmp = cookieFrom(await post({ role: 'employer', companyName: 'ООО Ромашка' }, candCookie()))!;
+    expect((await getView('u1')).later).toBe(false);
+    await post({ role: 'candidate' }, toEmp);
+    const view = await getView('u1');
+    expect(view.later).toBe(true);
+    expect((await prisma.onboardingState.findUniqueOrThrow({ where: { userId: 'u1' } })).stepId).toBe('grade');
+  });
+
+  it('кука другого устройства в прежней роли — протухшая: API и онбординг отвечают 401 session_stale', async () => {
+    const old = candCookie();
+    await post({ role: 'employer', companyName: 'ООО Ромашка' }, old);
+    expect(await isSessionStale(jsonRequest('/api/profile', 'GET', undefined, old))).toBe(true);
+    const res = await profile(jsonRequest('/api/profile', 'GET', undefined, old));
+    expect(res.status).toBe(401);
+    expect((await res.json()).error.code).toBe('session_stale');
+    const ob = await onboardingRoute(jsonRequest('/api/onboarding', 'POST', { action: 'skip', stepId: 'inn' }, old));
+    expect(ob.status).toBe(401);
+  });
+});
+
+describe('демо: личные аккаунты «Нового пользователя» не попадают в общие списки (ADR 0004)', () => {
+  afterAll(() => prisma.$disconnect());
+  beforeEach(async () => {
+    await resetDb();
+    resetRateLimits();
+    process.env.DEMO_LOGIN = 'true';
+    resetEnvCache();
+    await prisma.company.create({ data: { id: 'demo-co', name: 'Демо-компания' } });
+    await prisma.user.create({ data: { id: 'shared-emp', name: 'Общий работодатель', role: 'employer', isDemo: true, onboardedAt: new Date() } });
+    await prisma.employerProfile.create({ data: { userId: 'shared-emp', companyId: 'demo-co' } });
+    // Гость «Нового пользователя»: кандидат, ставший работодателем.
+    const c = await prisma.candidate.create({ data: { name: 'Гость', email: 'guest@example.test' } });
+    await prisma.user.create({
+      data: {
+        id: 'guest',
+        name: 'Демо-гость 1',
+        role: 'candidate',
+        isDemo: true,
+        candidateId: c.id,
+        onboardedAt: new Date(),
+        accounts: { create: { provider: 'demo', providerAccountId: 'g-1' } },
+      },
+    });
+    await switchRole('guest', { role: 'employer', companyName: 'ООО Гость' });
+  });
+
+  it('GET-список работодателей — только общие сид-аккаунты', async () => {
+    const body = await (await listDemo()).json();
+    expect(body.employers.map((e: { id: string }) => e.id)).toEqual(['shared-emp']);
+  });
+
+  it('вход по employerUserId и «пройти заново» по restartUserId гостя — 404', async () => {
+    expect((await demoLogin(jsonRequest('/api/demo/login', 'POST', { employerUserId: 'guest' }))).status).toBe(404);
+    expect((await demoLogin(jsonRequest('/api/demo/login', 'POST', { restartUserId: 'guest' }))).status).toBe(404);
+    expect((await demoLogin(jsonRequest('/api/demo/login', 'POST', { employerUserId: 'shared-emp' }))).status).toBe(200);
+  });
+});
+
+describe('дебаг-панель и учётка с двумя профилями', () => {
+  afterAll(() => prisma.$disconnect());
+  const dev = (path: string, body: unknown, cookie: string) =>
+    new Request(`http://localhost:3016${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', host: 'localhost:3016', cookie },
+      body: JSON.stringify(body),
+    });
+
+  beforeEach(async () => {
+    await resetDb();
+    resetRateLimits();
+    await prisma.candidate.create({ data: { id: 'c1', name: 'Иван', email: 'ivan@example.test' } });
+    await prisma.user.create({ data: { id: 'u1', name: 'Иван', role: 'candidate', candidateId: 'c1', onboardedAt: new Date() } });
+    await recordConsent('u1');
+    await prisma.candidateProfile.create({ data: { candidateId: 'c1', city: 'Казань' } });
+  });
+
+  it('удаление учётки удаляет оба профиля и компанию', async () => {
+    const res = await switchRoute(jsonRequest(URL, 'POST', { role: 'employer', companyName: 'ООО Ромашка' }, candCookie()));
+    const emp = cookieFrom(res)!;
+    expect((await deleteAccountRoute(dev('/api/dev/delete-account', {}, emp))).status).toBe(200);
+    expect(await prisma.user.count()).toBe(0);
+    expect(await prisma.candidate.count()).toBe(0);
+    expect(await prisma.employerProfile.count()).toBe(0);
+    expect(await prisma.company.count()).toBe(0);
+  });
+
+  it('сброс знакомства с профилем — только активной роли', async () => {
+    const emp = cookieFrom(await switchRoute(jsonRequest(URL, 'POST', { role: 'employer', companyName: 'ООО Ромашка' }, candCookie())))!;
+    await prisma.company.updateMany({ data: { industry: 'Финтех' } });
+    expect((await resetOnboardingRoute(dev('/api/dev/reset-onboarding', { alsoProfile: true }, emp))).status).toBe(200);
+    expect((await prisma.company.findFirstOrThrow()).industry).toBeNull();
+    expect(await prisma.candidateProfile.findUnique({ where: { candidateId: 'c1' } })).toMatchObject({ city: 'Казань' });
+    expect(await prisma.candidate.count()).toBe(1);
   });
 });

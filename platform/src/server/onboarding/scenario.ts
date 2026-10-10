@@ -1,32 +1,23 @@
-import { isSpecialization, SPEC_LABEL, SPEC_NOTE, SPECIALIZATIONS, type Specialization, subcategoriesFor } from '@/lib/directions';
-
 import type { RangeSpec, StepContext, StepDef, StepOption } from './types';
 
 /**
  * Декларативные сценарии онбординга (решение владельца 09.10: «проактивный
  * помощник задаёт вопросы по одному, всё можно пропустить или настроить позже»).
  * Порядок массива = порядок вопросов. Поведение — engine.ts, запись в БД — service.ts.
- * Направления — четыре из enum Specialization (ADR 0003, дополнение 10.10: backend, frontend, ai,
- * engineering; справочник src/lib/directions.ts); Mobile, Gamedev, Security показаны как «скоро».
- * Data/ML, DevOps и QA вошли в ai и engineering подкатегориями.
+ * Варианты направлений и грейдов — по мокапу site/onboarding.html; доступны только
+ * Backend и Frontend (enum Specialization), остальные показаны как «скоро».
  */
 
 export const DIRECTIONS: StepOption[] = [
-  ...SPECIALIZATIONS.map((s) => ({ value: s, label: SPEC_LABEL[s], note: SPEC_NOTE[s] })),
+  { value: 'backend', label: 'Backend', note: 'серверная разработка' },
+  { value: 'frontend', label: 'Frontend', note: 'интерфейсы и веб' },
   { value: 'mobile', label: 'Mobile', note: 'iOS / Android · скоро', disabled: true },
+  { value: 'data', label: 'Data / ML', note: 'данные и модели · скоро', disabled: true },
+  { value: 'devops', label: 'DevOps / Platform', note: 'инфраструктура · скоро', disabled: true },
+  { value: 'qa', label: 'QA', note: 'тестирование и автоматизация · скоро', disabled: true },
   { value: 'gamedev', label: 'Gamedev', note: 'игры и движки · скоро', disabled: true },
   { value: 'security', label: 'Security', note: 'информационная безопасность · скоро', disabled: true },
 ];
-
-/** Подкатегории выбранного направления (справочник Subcategory). planned — с пометкой, но выбрать можно. */
-export function subcategoryOptions(spec: unknown): StepOption[] {
-  if (!isSpecialization(spec)) return [];
-  return subcategoriesFor(spec).map((s) => ({
-    value: s.id,
-    label: s.title,
-    note: s.status === 'planned' ? `${s.description} · задания в плане` : s.description,
-  }));
-}
 
 export const GRADES: StepOption[] = [
   { value: 'junior', label: 'Junior', note: 'первые проекты, нужно ревью' },
@@ -34,15 +25,13 @@ export const GRADES: StepOption[] = [
 ];
 
 /** Чипы стека — имена совпадают с маркерами каталога утверждений (по ним считается потребность). */
-export const STACK: Record<Specialization, string[]> = {
+export const STACK: Record<'backend' | 'frontend', string[]> = {
   backend: ['Python', 'Java', 'Go', 'Kotlin', 'C#', 'Node.js', 'PHP', 'Spring', 'Django', 'FastAPI', 'NestJS', 'SQL', 'Redis', 'Kafka', 'RabbitMQ', 'Docker', 'gRPC', 'Linux'],
   frontend: ['JavaScript', 'TypeScript', 'React', 'Vue', 'Angular', 'Next.js', 'Redux', 'CSS', 'Tailwind', 'Vite', 'Webpack', 'Jest', 'Playwright', 'Figma'],
-  ai: ['Python', 'PyTorch', 'scikit-learn', 'pandas', 'LangChain', 'RAG', 'Qdrant', 'pgvector', 'vLLM', 'GigaChat', 'YandexGPT', 'OpenAI API', 'MLflow', 'Airflow', 'FastAPI', 'Docker', 'SQL'],
-  engineering: ['Python', 'SQL', 'Airflow', 'Spark', 'Kafka', 'ClickHouse', 'dbt', 'Docker', 'Kubernetes', 'Terraform', 'Ansible', 'GitLab CI', 'Prometheus', 'Grafana', 'Playwright', 'pytest', 'Linux'],
 };
 
 function stackOptions(spec: unknown): StepOption[] {
-  const list = isSpecialization(spec) ? STACK[spec] : [...new Set(SPECIALIZATIONS.flatMap((s) => STACK[s]))];
+  const list = spec === 'backend' || spec === 'frontend' ? STACK[spec] : [...STACK.backend, ...STACK.frontend];
   return list.map((s) => ({ value: s, label: s }));
 }
 
@@ -83,7 +72,7 @@ const roleStep: StepDef = {
   kind: 'role',
   eyebrow: 'Знакомство',
   question: 'Ты здесь как кто?',
-  sub: 'Роль выбирается один раз - дальше вопросы только под неё.',
+  sub: 'Дальше вопросы только под эту роль. Вторую роль можно добавить позже - переключатель в шапке.',
   summaryLabel: 'Роль',
   target: 'User.role (chooseRole)',
   req: 'R-N-07',
@@ -141,23 +130,11 @@ export const CANDIDATE_STEPS: StepDef[] = [
     kind: 'one',
     eyebrow: 'Направление',
     question: 'В каком направлении работаешь?',
-    sub: 'Выбери основное: под него будет тест на грейд и подбор.',
+    sub: 'Выбери основное. Сейчас тест и подбор есть для Backend и Frontend.',
     summaryLabel: 'Направление',
     target: 'Candidate.specialization',
     req: 'R-C-04',
     options: DIRECTIONS,
-  },
-  {
-    id: 'subcategory',
-    kind: 'one',
-    eyebrow: 'Подкатегория',
-    question: 'А если точнее?',
-    sub: 'Необязательно: подкатегория уточняет подборку заданий и поиск работодателя. Категорию всё равно даёт тест по направлению.',
-    summaryLabel: 'Подкатегория',
-    target: 'Candidate.subcategoryId',
-    req: 'R-T-05',
-    when: (ctx) => isSpecialization(ctx.answers.specialization ?? ctx.facts.specialization),
-    options: (ctx) => subcategoryOptions(ctx.answers.specialization ?? ctx.facts.specialization),
   },
   {
     id: 'grade',
@@ -328,23 +305,11 @@ export const EMPLOYER_STEPS: StepDef[] = [
     kind: 'one',
     eyebrow: 'Кого ищешь',
     question: 'Какое направление нужно?',
-    sub: 'Основное направление потребности.',
+    sub: 'Основное. Остальные направления появятся позже.',
     summaryLabel: 'Направление',
     target: 'Vacancy.specialization',
     req: 'R-E-02',
     options: DIRECTIONS,
-  },
-  {
-    id: 'needSubcategory',
-    kind: 'one',
-    eyebrow: 'Подкатегория',
-    question: 'Какая подкатегория ближе?',
-    sub: 'Необязательно: по ней приоритизируются задания и кандидаты в подборке.',
-    summaryLabel: 'Подкатегория',
-    target: 'Vacancy.subcategoryId',
-    req: 'R-T-05',
-    when: (ctx) => isSpecialization(ctx.answers.needSpecialization),
-    options: (ctx) => subcategoryOptions(ctx.answers.needSpecialization),
   },
   {
     id: 'needGrades',

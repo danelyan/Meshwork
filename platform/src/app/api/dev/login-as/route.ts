@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { ensureConsent } from '@/server/auth/consent';
-import { ensureDemoCandidateUser, sessionInputFor } from '@/server/auth/users';
+import { SHARED_DEMO_USER, ensureDemoCandidateUser, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
 import { listDemoAccounts } from '@/server/devtools/actions';
 import { devRoute } from '@/server/devtools/route';
@@ -21,7 +21,7 @@ export const POST = devRoute(async (req) => {
   const body = Body.parse(await req.json().catch(() => ({})));
   if ('employerUserId' in body) {
     const user = await prisma.user.findFirst({
-      where: { id: body.employerUserId, isDemo: true, role: 'employer' },
+      where: { id: body.employerUserId, ...SHARED_DEMO_USER, role: 'employer' },
       include: { employerProfile: { select: { id: true } } },
     });
     if (!user?.employerProfile) throw errors.notFound('Демо-работодатель не найден');

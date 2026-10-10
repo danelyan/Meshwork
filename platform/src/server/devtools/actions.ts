@@ -1,5 +1,5 @@
 import { prisma } from '@/server/db';
-import { createFreshDemoUser, sessionInputFor } from '@/server/auth/users';
+import { SHARED_DEMO_USER, createFreshDemoUser, sessionInputFor } from '@/server/auth/users';
 import { errors } from '@/server/errors';
 import type { SessionPrincipal } from '@/server/session';
 
@@ -107,7 +107,7 @@ export async function listDemoAccounts() {
     orderBy: { createdAt: 'asc' },
   });
   const employers = await prisma.user.findMany({
-    where: { isDemo: true, role: 'employer', employerProfile: { isNot: null } },
+    where: { ...SHARED_DEMO_USER, role: 'employer', employerProfile: { isNot: null } },
     select: { id: true, name: true },
     orderBy: { createdAt: 'asc' },
   });

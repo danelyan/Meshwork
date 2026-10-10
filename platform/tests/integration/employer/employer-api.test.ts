@@ -43,8 +43,11 @@ describe('кабинет работодателя (БД)', () => {
     await resetDb();
     await seedClaims(prisma);
     // Сессии в тестах ссылаются на аккаунты: кука на несуществующего пользователя = гость (session_stale).
-    const ids = ['u-other', ...DEMO_POOL.map((c) => `u-${c.id}`)];
-    await prisma.user.createMany({ data: ids.map((id) => ({ id, name: id })), skipDuplicates: true });
+    // Роль аккаунта совпадает с ролью куки (ADR 0004: иначе кука протухшая).
+    await prisma.user.createMany({
+      data: [{ id: 'u-other', name: 'u-other', role: 'employer' as const }, ...DEMO_POOL.map((c) => ({ id: `u-${c.id}`, name: c.id, role: 'candidate' as const }))],
+      skipDuplicates: true,
+    });
   });
   beforeEach(async () => {
     await prisma.invitation.deleteMany();

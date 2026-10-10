@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
 
-import { type ActiveRole, type RoleMenu, planRoleSwitch } from './role-plan';
+import { type ActiveRole, type RoleMenu, planRoleSwitch, swapRoleOnboarding } from './role-plan';
 import { type UserWithProfiles, createCandidateProfile, createEmployerProfile, withProfiles } from './users';
 
 /**
@@ -37,31 +37,22 @@ function doneRolesOf(meta: unknown): ActiveRole[] {
   return Array.isArray(raw) ? raw.filter((r): r is ActiveRole => r === 'candidate' || r === 'employer') : [];
 }
 
-/**
- * Состояние знакомства после перехода. Всегда — новое `meta.doneRoles`. Новая роль (`create`) начинает знакомство
- * с первого своего шага: снимаем текущий шаг, паузу «Настроить позже» и реплику итога прежней роли. Ответы не
- * трогаем: шаги ролей не пересекаются, ответы прежней роли понадобятся, если вернуться к ней.
- */
+/** Перенос шага, паузы и итога между ролями (`swapRoleOnboarding`) и запись `doneRoles`. */
 async function saveOnboardingState(
   tx: Prisma.TransactionClient,
   userId: string,
-  st: { lines: unknown; meta: unknown } | null,
-  doneRoles: ActiveRole[],
-  fresh: boolean,
+  st: { stepId: string | null; lines: unknown; meta: unknown } | null,
+  from: ActiveRole,
+  to: ActiveRole,
+  opts: { fresh: boolean; doneRoles: ActiveRole[] },
 ): Promise<void> {
-  const meta: Json = { ...((st?.meta as Json | null) ?? {}), doneRoles };
-  if (!fresh) {
-    await tx.onboardingState.upsert({
-      where: { userId },
-      create: { userId, meta: meta as Prisma.InputJsonValue },
-      update: { meta: meta as Prisma.InputJsonValue },
-    });
-    return;
-  }
-  delete meta.later;
-  const lines: Json = { ...((st?.lines as Json | null) ?? {}) };
-  delete lines.summary;
-  const data = { stepId: null, lines: lines as Prisma.InputJsonValue, meta: meta as Prisma.InputJsonValue };
+  const next = swapRoleOnboarding(
+    { stepId: st?.stepId ?? null, lines: (st?.lines as Json | null) ?? {}, meta: (st?.meta as Json | null) ?? {} },
+    from,
+    to,
+    opts,
+  );
+  const data = { stepId: next.stepId, lines: next.lines as Prisma.InputJsonValue, meta: next.meta as Prisma.InputJsonValue };
   await tx.onboardingState.upsert({ where: { userId }, create: { userId, ...data }, update: data });
 }
 
@@ -72,7 +63,7 @@ export async function switchRole(userId: string, request: RoleSwitchRequest): Pr
     await tx.$queryRaw`SELECT 1 FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
     const user = await tx.user.findUnique({
       where: { id: userId },
-      include: { ...withProfiles, accounts: { select: { provider: true } }, onboarding: { select: { lines: true, meta: true } } },
+      include: { ...withProfiles, accounts: { select: { provider: true } }, onboarding: { select: { stepId: true, lines: true, meta: true } } },
     });
     if (!user) throw errors.notFound('Аккаунт не найден');
     const target: ActiveRole = request.role;
@@ -98,7 +89,11 @@ export async function switchRole(userId: string, request: RoleSwitchRequest): Pr
       if (target === 'candidate') candidateId = await createCandidateProfile(tx, user);
       else await createEmployerProfile(tx, userId, companyName!.trim());
     }
-    await saveOnboardingState(tx, userId, onboarding, plan.onboardedRoles, plan.kind === 'create');
+    // planRoleSwitch отказал pending раньше, здесь user.role — активная роль.
+    await saveOnboardingState(tx, userId, onboarding, user.role as ActiveRole, target, {
+      fresh: plan.kind === 'create',
+      doneRoles: plan.onboardedRoles,
+    });
     const updated = await tx.user.update({
       where: { id: userId },
       data: { role: target, candidateId, onboardedAt: plan.targetOnboarded ? new Date() : null },

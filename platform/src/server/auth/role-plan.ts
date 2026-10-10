@@ -73,3 +73,51 @@ export interface RoleMenu {
   /** Вторую роль можно создать (нет на общем демо-аккаунте). */
   canCreateOther: boolean;
 }
+
+type Json = Record<string, unknown>;
+
+/** Состояние знакомства одной роли, пока она неактивна: шаг, пауза «Настроить позже», реплика итога. */
+export interface RoleOnboardingStash {
+  stepId: string | null;
+  later?: true;
+  summary?: string;
+}
+
+/** Часть `OnboardingState`, которую меняет переход. */
+export interface OnboardingSlice {
+  stepId: string | null;
+  lines: Json;
+  meta: Json;
+}
+
+/**
+ * Состояние знакомства у учётки одно (`OnboardingState`), а шаг, пауза и итог — свои у каждой роли: id шага `summary`
+ * общий для сценариев, пауза `meta.later` — флаг без роли. При переходе прячем их у уходящей роли в
+ * `meta.byRole[<роль>]` и достаём у целевой; новая роль (`fresh`) начинает с первого шага без паузы и итога.
+ * Ответы (`answers`) не трогаем: шаги ролей не пересекаются. `doneRoles` — роли с завершённым знакомством.
+ */
+export function swapRoleOnboarding(
+  st: OnboardingSlice,
+  from: ActiveRole,
+  to: ActiveRole,
+  opts: { fresh: boolean; doneRoles: ActiveRole[] },
+): OnboardingSlice {
+  const meta: Json = { ...st.meta };
+  const lines: Json = { ...st.lines };
+  const byRole: Partial<Record<ActiveRole, RoleOnboardingStash>> = { ...((meta.byRole as Json | undefined) ?? {}) };
+
+  const leaving: RoleOnboardingStash = { stepId: st.stepId };
+  if (meta.later === true) leaving.later = true;
+  if (typeof lines.summary === 'string') leaving.summary = lines.summary;
+  byRole[from] = leaving;
+
+  const restore: RoleOnboardingStash = opts.fresh ? { stepId: null } : (byRole[to] ?? { stepId: null });
+  delete byRole[to];
+  delete meta.later;
+  delete lines.summary;
+  if (restore.later) meta.later = true;
+  if (restore.summary !== undefined) lines.summary = restore.summary;
+  meta.byRole = byRole;
+  meta.doneRoles = opts.doneRoles;
+  return { stepId: restore.stepId, lines, meta };
+}

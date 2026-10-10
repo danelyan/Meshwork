@@ -1,4 +1,4 @@
-import { type RoleSwitchState, planRoleSwitch } from '@/server/auth/role-plan';
+import { type RoleSwitchState, planRoleSwitch, swapRoleOnboarding } from '@/server/auth/role-plan';
 import { AppError } from '@/server/errors';
 import { parseSession, requireCandidate, requireEmployer, signUserSession } from '@/server/session';
 
@@ -84,5 +84,39 @@ describe('кука после переключения: только профи�
     const emp = signUserSession({ userId: 'u1', role: 'employer', candidateId: 'c1', employerProfileId: 'e1' });
     expect(requireEmployer(req(emp))).toEqual({ userId: 'u1', employerProfileId: 'e1' });
     expect(statusOf(() => requireCandidate(req(emp)))).toBe(403);
+  });
+});
+
+describe('swapRoleOnboarding: шаг, пауза и итог — свои у каждой роли', () => {
+  const st = { stepId: 'summary', lines: { goal: 'цель', summary: 'итог кандидата' }, meta: { later: true, vacancies: {} } };
+
+  it('новая роль: прежняя прячется в byRole, новая начинает с первого шага без паузы и итога', () => {
+    const next = swapRoleOnboarding(st, 'candidate', 'employer', { fresh: true, doneRoles: ['candidate'] });
+    expect(next.stepId).toBeNull();
+    expect(next.lines).toEqual({ goal: 'цель' });
+    expect(next.meta).toEqual({
+      vacancies: {},
+      doneRoles: ['candidate'],
+      byRole: { candidate: { stepId: 'summary', later: true, summary: 'итог кандидата' } },
+    });
+  });
+
+  it('возврат: у каждой роли свой итог и своя пауза', () => {
+    const emp = swapRoleOnboarding(st, 'candidate', 'employer', { fresh: true, doneRoles: ['candidate'] });
+    const empDone = { ...emp, stepId: 'inn', lines: { ...emp.lines, summary: 'итог работодателя' } };
+    const back = swapRoleOnboarding(empDone, 'employer', 'candidate', { fresh: false, doneRoles: ['candidate'] });
+    expect(back.stepId).toBe('summary');
+    expect(back.lines.summary).toBe('итог кандидата');
+    expect(back.meta.later).toBe(true);
+    expect(back.meta.byRole).toEqual({ employer: { stepId: 'inn', summary: 'итог работодателя' } });
+    const again = swapRoleOnboarding(back, 'candidate', 'employer', { fresh: false, doneRoles: ['candidate'] });
+    expect(again.lines.summary).toBe('итог работодателя');
+    expect(again.meta.later).toBeUndefined();
+    expect(again.stepId).toBe('inn');
+  });
+
+  it('роль без сохранённого состояния — с первого шага', () => {
+    const next = swapRoleOnboarding({ stepId: 'goal', lines: {}, meta: {} }, 'candidate', 'employer', { fresh: false, doneRoles: [] });
+    expect(next.stepId).toBeNull();
   });
 });

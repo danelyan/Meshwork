@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 
 const Body = z.discriminatedUnion('role', [
   z.object({ role: z.literal('candidate') }),
-  // Название нужно, только когда профиля работодателя ещё нет (создаётся новая компания).
-  z.object({ role: z.literal('employer'), companyName: z.string().trim().min(2).max(120).optional() }),
+  // Название нужно, только когда профиля работодателя ещё нет (создаётся новая компания); пустая строка — как отсутствие.
+  z.object({ role: z.literal('employer'), companyName: z.union([z.literal(''), z.string().trim().min(2).max(120)]).optional() }),
 ]);
 
 /**
@@ -31,7 +31,8 @@ export const POST = withErrors(async (req: Request) => {
   const { userId } = requireUser(req);
   if (!hit(`role-switch:${userId}`, RATE.roleSwitch)) throw errors.rateLimited('Слишком много переключений. Подождите несколько минут.');
   const body = Body.parse(await req.json().catch(() => ({})));
-  const { user, created, changed } = await switchRole(userId, body);
+  const request = body.role === 'employer' ? { role: body.role, companyName: body.companyName || undefined } : body;
+  const { user, created, changed } = await switchRole(userId, request);
   const res = NextResponse.json({ role: user.role, next: homePathFor(user.role), created, changed });
   res.cookies.set(userSessionCookie(sessionInputFor(user)));
   return res;

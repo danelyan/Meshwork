@@ -9,6 +9,13 @@ import { assertConsentVersion, ensureConsent, hasCurrentConsent } from './consen
 
 export type UserWithProfiles = User & { employerProfile: { id: string } | null };
 
+/**
+ * Общий демо-аккаунт из сида: `isDemo` без своего входа. У «Нового пользователя» с /demo тоже `isDemo`, но есть вход
+ * `demo` — это личный аккаунт гостя (после «Стать работодателем» в нём профиль кандидата с ПДн), его не показываем в
+ * списках /demo и не пускаем в него по id (ADR 0004).
+ */
+export const SHARED_DEMO_USER = { isDemo: true, accounts: { none: { provider: 'demo' } } } satisfies Prisma.UserWhereInput;
+
 export const withProfiles = { employerProfile: { select: { id: true } } } as const;
 
 /** Поля куки сессии для аккаунта. */
@@ -181,7 +188,8 @@ export async function createFreshDemoUser(consentVersion: string | null | undefi
  * `onboardedAt`. Ответы профиля, роль и согласие не трогает.
  */
 export async function resetDemoOnboarding(userId: string) {
-  const user = await prisma.user.findFirst({ where: { id: userId, isDemo: true }, select: { id: true } });
+  // Только общий сид-аккаунт: по id гостя «Нового пользователя» войти нельзя (это чужой личный аккаунт).
+  const user = await prisma.user.findFirst({ where: { id: userId, ...SHARED_DEMO_USER }, select: { id: true } });
   if (!user) throw errors.notFound('Демо-аккаунт не найден');
   await prisma.onboardingState.deleteMany({ where: { userId } });
   await ensureConsent(userId); // демо-аккаунты считаются согласившимися: чат начинается с роли

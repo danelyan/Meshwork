@@ -51,7 +51,8 @@ describe('помощник работодателя (БД)', () => {
   beforeAll(async () => {
     await resetDb();
     await seedClaims(prisma);
-    await prisma.user.createMany({ data: [{ id: 'u-c', name: 'Кандидат' }], skipDuplicates: true });
+    // Роль аккаунта совпадает с ролью куки (ADR 0004: иначе кука протухшая).
+    await prisma.user.createMany({ data: [{ id: 'u-c', name: 'Кандидат', role: 'candidate' }], skipDuplicates: true });
   });
   beforeEach(async () => {
     process.env.LLM_PROVIDER = 'stub';

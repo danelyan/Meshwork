@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { ensureConsent } from '@/server/auth/consent';
-import { createFreshDemoUser, ensureDemoCandidateUser, resetDemoOnboarding, sessionInputFor } from '@/server/auth/users';
+import { SHARED_DEMO_USER, createFreshDemoUser, ensureDemoCandidateUser, resetDemoOnboarding, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
 import { demoResumeFor } from '@/server/demo/resumes';
 import { getEnv } from '@/server/env';
@@ -24,7 +24,7 @@ export const GET = withErrors(async () => {
     orderBy: { createdAt: 'asc' },
   });
   const employers = await prisma.user.findMany({
-    where: { isDemo: true, role: 'employer', employerProfile: { isNot: null } },
+    where: { ...SHARED_DEMO_USER, role: 'employer', employerProfile: { isNot: null } },
     select: { id: true, name: true, employerProfile: { select: { company: { select: { id: true, name: true } } } } },
     orderBy: { createdAt: 'asc' },
   });
@@ -81,7 +81,7 @@ export const POST = withErrors(async (req: Request) => {
   }
   if ('employerUserId' in body) {
     const user = await prisma.user.findFirst({
-      where: { id: body.employerUserId, isDemo: true, role: 'employer' },
+      where: { id: body.employerUserId, ...SHARED_DEMO_USER, role: 'employer' },
       include: { employerProfile: { select: { id: true } } },
     });
     if (!user?.employerProfile) throw errors.notFound('Демо-работодатель не найден');

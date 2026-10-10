@@ -38,8 +38,8 @@ describe('приглашение: вилка, контакт компании и
   beforeAll(async () => {
     await resetDb();
     await seedClaims(prisma);
-    const ids = DEMO_POOL.map((c) => `u-${c.id}`);
-    await prisma.user.createMany({ data: ids.map((id) => ({ id, name: id })), skipDuplicates: true });
+    // Роль аккаунта совпадает с ролью куки (ADR 0004: иначе кука протухшая).
+    await prisma.user.createMany({ data: DEMO_POOL.map((c) => ({ id: `u-${c.id}`, name: c.id, role: 'candidate' as const })), skipDuplicates: true });
   });
   beforeEach(async () => {
     await prisma.invitation.deleteMany();

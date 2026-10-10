@@ -40,6 +40,11 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
         {c.category ? <Tag tone="solid">{c.category.label} · тест</Tag> : <Tag tone="dashed">без категории</Tag>}
         {c.fsp.hasAchievements && <Tag tone="outline">ФСП</Tag>}
         {!c.category && c.specialization && <Tag>{specLabel(c.specialization)}</Tag>}
+        {item.subcategoryFit === 'neighbour' && (
+          <Tag tone="dashed" data-testid="neighbour-sub">
+            соседняя подкатегория
+          </Tag>
+        )}
       </div>
       <div>
         <Meter value={item.covered} max={item.total} label={`Закрыто ${item.covered} из ${item.total} требований`} />
@@ -63,7 +68,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
         </p>
       )}
       <p className={styles.meta}>
-        ФСП: {ex.fsp}. Категория: {ex.category}.{ex.stackMatched.length > 0 && ` Стек в подтверждённых цитатах: ${ex.stackMatched.join(', ')}.`}
+        ФСП: {ex.fsp}. Категория: {ex.category}.{ex.subcategory && ` Подкатегория: ${ex.subcategory}.`}{ex.stackMatched.length > 0 && ` Стек в подтверждённых цитатах: ${ex.stackMatched.join(', ')}.`}
       </p>
       {c.claims.length > 0 && (
         <details>

@@ -33,6 +33,7 @@ const item = (index: number): AttemptView['current'] => ({
 const active = (index: number): AttemptView => ({
   id: 'att1',
   specialization: 'backend',
+  subcategoryId: null,
   grade: 'middle',
   status: 'active',
   mode: 'demo',
@@ -126,6 +127,23 @@ describe('TestPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'AI / ML' }));
     await waitFor(() => expect((screen.getByTestId('start') as HTMLButtonElement).disabled).toBe(false));
     expect(screen.getByTestId('start').textContent).toContain('AI / ML');
+  });
+
+  it('подкатегория: из профиля через допуск, выбор чипом уходит в запрос; без подкатегории — подсказка выбрать', async () => {
+    const calls = stubFetch((url) => {
+      if (url.startsWith('/api/test/start?specialization=ai') && !url.includes('subcategoryId'))
+        return { allowed: false, code: 'subcategory_required', reason: 'Выберите подкатегорию направления AI / ML.', subcategoryId: null, rules: 'r' };
+      if (url.startsWith('/api/test/start?specialization=backend')) return { allowed: true, subcategoryId: 'backend.web-api', rules: 'r' };
+      if (url.startsWith('/api/test/start?')) return { allowed: true, rules: 'r' };
+      return { test: null };
+    });
+    render(<TestPage />);
+    await waitFor(() => expect(screen.getByTestId('start').textContent).toContain('Backend · Web API · Junior'));
+    fireEvent.click(screen.getByRole('button', { name: 'AI / ML' }));
+    await waitFor(() => expect(screen.getByTestId('need-subcategory').textContent).toContain('Выберите подкатегорию'));
+    fireEvent.click(screen.getByRole('button', { name: 'MLOps' }));
+    await waitFor(() => expect(calls.some((c) => c.url.includes('subcategoryId=ai.mlops'))).toBe(true));
+    await waitFor(() => expect(screen.getByTestId('start').textContent).toContain('AI / ML · MLOps'));
   });
 
   it('старт → задание с прогрессом и таймером; ответ → следующее задание; URL получает attempt', async () => {

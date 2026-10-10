@@ -61,7 +61,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       specialization: true,
       subcategoryId: true,
       fspState: true,
-      categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true } },
+      categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true, subcategoryId: true } },
       claims: {
         where: { status: { in: ['confirmed', 'edited'] } },
         select: { catalogId: true, level: true, statement: true, quote: true, sourceKind: true },
@@ -146,7 +146,13 @@ async function run(
 export async function matchForVacancy(companyId: string, vacancyId: string, filters: MatchFilters, limit: number): Promise<MatchResult> {
   const vacancy = await getVacancy(companyId, vacancyId);
   const catalog = await loadCatalog();
-  const target: MatchTarget = { specialization: vacancy.specialization, grade: vacancy.grade, needs: vacancy.needs, stack: vacancy.stack };
+  const target: MatchTarget = {
+    specialization: vacancy.specialization,
+    subcategoryId: vacancy.subcategoryId,
+    grade: vacancy.grade,
+    needs: vacancy.needs,
+    stack: vacancy.stack,
+  };
   const r = await run(companyId, catalog, target, filters, limit, true);
   return { vacancy, filters, ...r };
 }
@@ -164,7 +170,9 @@ export async function searchBank(companyId: string, filters: MatchFilters, limit
     if (!spec) return null;
     const grade: Grade = filters.grade ?? c.category?.grade ?? 'junior';
     const key = `${spec}:${grade}`;
-    if (!cache.has(key)) cache.set(key, { specialization: spec, grade, needs: categoryNeeds(catalog, spec, grade), stack: filters.stack ?? [] });
+    if (!cache.has(key)) {
+      cache.set(key, { specialization: spec, subcategoryId: filters.subcategory ?? null, grade, needs: categoryNeeds(catalog, spec, grade), stack: filters.stack ?? [] });
+    }
     return cache.get(key)!;
   };
   const r = await run(companyId, catalog, targetFor, filters, limit);

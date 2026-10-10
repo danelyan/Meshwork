@@ -8,5 +8,3 @@ test-results
 playwright-report
 **/.venv
 **/__pycache__
-# Эталонные решения шаблонов проектов — не в образы (ни runner, ни приложение)
-project-templates/**/reference

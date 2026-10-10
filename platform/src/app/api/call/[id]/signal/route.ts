@@ -1,7 +1,7 @@
 import { assertSameOrigin } from '@/server/auth/csrf';
 import { relaySignal } from '@/server/defense-room';
 import { SignalInput } from '@/server/defense-room/schemas';
-import { withErrors } from '@/server/errors';
+import { errors, withErrors } from '@/server/errors';
 import { getSession } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * кандидат; кандидат указывает `to: "employer:<userId>"`. Собеседник не на связи — 409 `peer_offline`.
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
+  if (!getSession(req)) throw errors.unauthorized();
   assertSameOrigin(req);
   const { id } = await ctx.params;
   const body = SignalInput.parse(await req.json().catch(() => ({})));

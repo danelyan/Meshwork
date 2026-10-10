@@ -1,6 +1,6 @@
 import { buildSnapshot, encodeCallEvent, redactEvent, redactSnapshot, resolveViewer, subscribe } from '@/server/defense-room';
 import type { CallEvent } from '@/server/defense-room';
-import { withErrors } from '@/server/errors';
+import { errors, withErrors } from '@/server/errors';
 import { getSession } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,7 @@ const KEEPALIVE_MS = 20_000;
  * Разрыв соединения клиентом — `request.signal` (docs Next.js: Route Handlers, streaming).
  */
 export const GET = withErrors(async (req: Request, ctx: Ctx) => {
+  if (!getSession(req)) throw errors.unauthorized();
   const { id } = await ctx.params;
   const { viewer } = await resolveViewer(getSession(req), id);
   const encoder = new TextEncoder();

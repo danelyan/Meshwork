@@ -34,6 +34,7 @@ const ITEM: MatchItem = {
   total: 3,
   provenCount: 1,
   categoryMatch: true,
+  subcategoryFit: 'exact',
   boosts: { category: 0.1, fsp: 0.05, stack: 0, specPenalty: 0 },
   explanation: {
     summary: 'Закрывает 2 из 3',
@@ -45,6 +46,7 @@ const ITEM: MatchItem = {
     missing: ['Очереди'],
     fsp: 'есть подтверждённые достижения',
     category: 'Backend · Middle (тест)',
+    subcategory: '',
     stackMatched: ['Go'],
   },
   candidate: {
@@ -144,6 +146,8 @@ describe('кабинет работодателя: компоненты', () => 
     fireEvent.change(screen.getByLabelText('Зарплата до, ₽'), { target: { value: '100000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Создать и показать подборку' }));
     expect(await screen.findByText('Верхняя граница меньше нижней')).toBeDefined();
+    expect(screen.getByText('Выбери подкатегорию: подборка ищет по ней')).toBeDefined();
+    fireEvent.change(screen.getByLabelText(/^Подкатегория/), { target: { value: 'backend.integrations' } });
     fireEvent.change(screen.getByLabelText('Зарплата до, ₽'), { target: { value: '250000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Git' }));
     fireEvent.click(screen.getByRole('button', { name: 'Git' }));
@@ -151,7 +155,7 @@ describe('кабинет работодателя: компоненты', () => 
     fireEvent.click(screen.getByRole('button', { name: 'Создать и показать подборку' }));
     await waitFor(() => expect(push).toHaveBeenCalledWith('/employer/needs/v9'));
     const body = JSON.parse((fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
-    expect(body).toMatchObject({ title: 'Backend', salaryFrom: 200000, salaryTo: 250000, stack: ['Go', 'Kafka'] });
+    expect(body).toMatchObject({ title: 'Backend', subcategoryId: 'backend.integrations', salaryFrom: 200000, salaryTo: 250000, stack: ['Go', 'Kafka'] });
     expect(body.needs.map((n: { catalogId: string }) => n.catalogId).sort()).toEqual(['be.orm', 'common.git']);
   });
 });

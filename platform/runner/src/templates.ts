@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { z } from 'zod';
@@ -31,41 +31,8 @@ export const PLATFORM_OWNED_MARKER = 'PLATFORM-OWNED';
 
 const SAFE_REL = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._\-/]+$/;
 
-const SAFE_ID = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/;
-
-async function isFile(p: string): Promise<boolean> {
-  try {
-    return (await stat(p)).isFile();
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Каталог шаблона по id: плоско `<id>/` или вложенно `<подкатегория>/<грейд>/<id>/` (раскладка lane project,
- * docs/project-templates.md). id уникален во всём дереве.
- */
-export async function resolveTemplateDir(templatesDir: string, id: string): Promise<string | null> {
-  if (!SAFE_ID.test(id)) return null;
-  const flat = path.join(templatesDir, id);
-  if (await isFile(path.join(flat, 'template.json'))) return flat;
-  const subs = await readdir(templatesDir, { withFileTypes: true }).catch(() => []);
-  for (const sub of subs) {
-    if (!sub.isDirectory()) continue;
-    const grades = await readdir(path.join(templatesDir, sub.name), { withFileTypes: true }).catch(() => []);
-    for (const grade of grades) {
-      if (!grade.isDirectory()) continue;
-      const dir = path.join(templatesDir, sub.name, grade.name, id);
-      if (await isFile(path.join(dir, 'template.json'))) return dir;
-    }
-  }
-  return null;
-}
-
 export async function loadTemplate(templatesDir: string, id: string): Promise<TemplateManifest | null> {
-  const dir = await resolveTemplateDir(templatesDir, id);
-  if (!dir) return null;
-  const file = path.join(dir, 'template.json');
+  const file = path.join(templatesDir, id, 'template.json');
   let raw: string;
   try {
     raw = await readFile(file, 'utf8');
@@ -81,9 +48,7 @@ export async function loadTemplate(templatesDir: string, id: string): Promise<Te
 }
 
 export async function bundleDir(templatesDir: string, manifest: TemplateManifest, suite: 'hidden' | 'visible'): Promise<string | null> {
-  const root = await resolveTemplateDir(templatesDir, manifest.id);
-  if (!root) return null;
-  const dir = path.join(root, suite === 'hidden' ? manifest.hiddenTestsRef : manifest.visibleTestsRef);
+  const dir = path.join(templatesDir, manifest.id, suite === 'hidden' ? manifest.hiddenTestsRef : manifest.visibleTestsRef);
   try {
     return (await stat(dir)).isDirectory() ? dir : null;
   } catch {

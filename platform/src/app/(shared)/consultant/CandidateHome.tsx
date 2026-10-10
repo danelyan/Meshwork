@@ -25,8 +25,9 @@ export async function CandidateHome({ candidateId, view }: { candidateId: string
   else if (view.later) feed = <PausedFeed view={view} demo={demo} restored={initial} />;
   else feed = <OnboardingChat variant="consultant" initial={view} consentText={[...CONSENT_PARAGRAPHS]} consultant={{ demo, restored: initial }} />;
   const aside = await loadCandidateAside(candidateId, view).catch(warn('candidate aside'));
+  // Режим звонка (ADR 0003, ступень 1) — только у кандидата: кнопка «Созвониться» и предложение агента.
   return (
-    <AvatarScene variant="call-side" label={CANDIDATE_LABEL} aside={aside ?? undefined}>
+    <AvatarScene variant="call-side" label={CANDIDATE_LABEL} aside={aside ?? undefined} call>
       {feed}
     </AvatarScene>
   );

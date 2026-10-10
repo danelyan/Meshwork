@@ -251,10 +251,12 @@ export async function answerDefenseApi(sessionId: string, answer: string): Promi
 
 export type { AttemptSummary, AttemptView, EligibilityView, StartResult } from '@/server/test/types';
 
-export const startTestApi = (specialization: Specialization, grade: 'junior' | 'middle') =>
-  postJson<import('@/server/test/types').StartResult>('/api/test/start', { specialization, grade });
-export const testEligibilityApi = (specialization: Specialization, grade: 'junior' | 'middle') =>
-  request<import('@/server/test/types').EligibilityView & { rules: string }>(`/api/test/start?specialization=${specialization}&grade=${grade}`);
+export const startTestApi = (specialization: Specialization, grade: 'junior' | 'middle', subcategoryId?: string | null) =>
+  postJson<import('@/server/test/types').StartResult>('/api/test/start', { specialization, grade, subcategoryId: subcategoryId ?? undefined });
+export const testEligibilityApi = (specialization: Specialization, grade: 'junior' | 'middle', subcategoryId?: string | null) =>
+  request<import('@/server/test/types').EligibilityView & { rules: string }>(
+    `/api/test/start?specialization=${specialization}&grade=${grade}${subcategoryId ? `&subcategoryId=${encodeURIComponent(subcategoryId)}` : ''}`,
+  );
 export const getTestAttemptApi = (id: string) => request<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}`);
 export const answerTestApi = (id: string, answer: string) =>
   postJson<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}/answer`, { answer });

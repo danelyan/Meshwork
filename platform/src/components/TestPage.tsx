@@ -15,7 +15,7 @@ import {
   startTestApi,
   testEligibilityApi,
 } from '@/lib/api';
-import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, type Specialization } from '@/lib/directions';
+import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, subcategoriesFor, subcategoryLabel, type Specialization } from '@/lib/directions';
 import { formatDate } from '@/lib/labels';
 
 import { useBareShell } from './shell/ShellFrame';
@@ -81,9 +81,17 @@ function CodeBlock({ code, numbered }: { code: string; numbered: boolean }) {
   );
 }
 
-function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Promise<void>; initial: { spec: Spec | null; grade: Grade | null } }) {
+function IntroScreen({
+  onStart,
+  initial,
+}: {
+  onStart: (s: Spec, g: Grade, sub: string | null) => Promise<void>;
+  initial: { spec: Spec | null; grade: Grade | null };
+}) {
   const [spec, setSpec] = useState<Spec>(initial.spec ?? 'backend');
   const [grade, setGrade] = useState<Grade>(initial.grade ?? 'junior');
+  // Подкатегория теста: null — сервер берёт из профиля (если она этого направления) и возвращает в допуске.
+  const [sub, setSub] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [elig, setElig] = useState<{ allowed: boolean; reason?: string; code?: string; rules: string } | null>(null);
   const [pending, setPending] = useState(false);
@@ -104,20 +112,24 @@ function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Pro
 
   useEffect(() => {
     let alive = true;
-    testEligibilityApi(spec, grade).then(
-      (e) => alive && setElig(e),
+    testEligibilityApi(spec, grade, sub).then(
+      (e) => {
+        if (!alive) return;
+        setElig(e);
+        if (!sub && e.subcategoryId) setSub(e.subcategoryId);
+      },
       () => alive && setElig(null),
     );
     return () => {
       alive = false;
     };
-  }, [spec, grade]);
+  }, [spec, grade, sub]);
 
   async function start() {
     setPending(true);
     setError(null);
     try {
-      await onStart(spec, grade);
+      await onStart(spec, grade, sub);
     } catch (e) {
       setError(errorText(e, 'Не удалось начать тест.'));
       setPending(false);
@@ -140,8 +152,27 @@ function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Pro
           <span className={ui.label}>Направление</span>
           <div className={styles.chips} role="group" aria-label="Направление">
             {SPECIALIZATIONS.map((s) => (
-              <Chip key={s} pressed={spec === s} onClick={() => setSpec(s)} disabled={pending}>
+              <Chip
+                key={s}
+                pressed={spec === s}
+                onClick={() => {
+                  setSpec(s);
+                  setSub(null);
+                }}
+                disabled={pending}
+              >
                 {SPEC_LABEL[s]}
+              </Chip>
+            ))}
+          </div>
+        </div>
+        <div className={styles.choiceRow}>
+          <span className={ui.label}>Подкатегория (тест - по её заданиям)</span>
+          <div className={styles.chips} role="group" aria-label="Подкатегория" data-testid="subcategories">
+            {subcategoriesFor(spec).map((c) => (
+              <Chip key={c.id} pressed={sub === c.id} onClick={() => setSub(c.id)} disabled={pending}>
+                {c.title}
+                {c.status === 'planned' ? ' · в плане' : ''}
               </Chip>
             ))}
           </div>
@@ -171,7 +202,7 @@ function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Pro
       </ul>
 
       {elig && !elig.allowed && (
-        <Notice data-testid={elig.code === 'no_test' ? 'no-test' : 'not-allowed'}>
+        <Notice data-testid={elig.code === 'no_test' ? 'no-test' : elig.code === 'subcategory_required' ? 'need-subcategory' : 'not-allowed'}>
           {elig.code === 'no_test' ? `Тест пока недоступен: ${elig.reason}` : elig.reason}
         </Notice>
       )}
@@ -179,7 +210,8 @@ function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Pro
 
       <div className={styles.actions}>
         <Button variant="cta" onClick={() => void start()} loading={pending} disabled={Boolean(elig && !elig.allowed)} data-testid="start">
-          Начать тест: {SPEC_LABEL[spec]} · {GRADE_LABEL[grade]}
+          Начать тест: {SPEC_LABEL[spec]}
+          {sub ? ` · ${subcategoryLabel(sub)}` : ''} · {GRADE_LABEL[grade]}
         </Button>
         <Button href="/profile">В профиль</Button>
       </div>
@@ -222,7 +254,8 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
       <div className={styles.progressRow}>
         <div>
           <Kicker>
-            {SPEC_LABEL[attempt.specialization]} · {GRADE_LABEL[attempt.grade]}
+            {SPEC_LABEL[attempt.specialization]}
+            {attempt.subcategoryId ? ` · ${subcategoryLabel(attempt.subcategoryId)}` : ''} · {GRADE_LABEL[attempt.grade]}
           </Kicker>
           <p className={styles.progressText} data-testid="progress">
             Задание {item.index + 1}
@@ -308,7 +341,8 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
     <div className={styles.page}>
       <div>
         <Kicker>
-          Итог · {SPEC_LABEL[attempt.specialization]} · {grade}
+          Итог · {SPEC_LABEL[attempt.specialization]}
+          {attempt.subcategoryId ? ` · ${subcategoryLabel(attempt.subcategoryId)}` : ''} · {grade}
         </Kicker>
         <h1 className={styles.h1} data-testid="result-title">
           {title}
@@ -420,8 +454,8 @@ export function TestPage() {
     );
   }, [attemptParam]);
 
-  async function start(spec: Spec, grade: Grade) {
-    const s = await startTestApi(spec, grade);
+  async function start(spec: Spec, grade: Grade, sub: string | null) {
+    const s = await startTestApi(spec, grade, sub);
     const a = await getTestAttemptApi(s.attemptId);
     loadedRef.current = s.attemptId;
     setAttempt(a);

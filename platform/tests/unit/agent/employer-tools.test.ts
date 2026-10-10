@@ -84,6 +84,7 @@ describe('граница приватности: карточка помощни
     total: 3,
     provenCount: 1,
     categoryMatch: true,
+    subcategoryFit: 'exact',
     boosts: { category: 0.1, fsp: 0.05, stack: 0.02, specPenalty: 0 },
     explanation: {
       summary: 'Закрывает 2 из 3',
@@ -95,6 +96,7 @@ describe('граница приватности: карточка помощни
       missing: ['Очереди'],
       fsp: 'есть',
       category: 'Backend · Middle (тест)',
+      subcategory: '',
       stackMatched: ['Go'],
     },
     candidate: {

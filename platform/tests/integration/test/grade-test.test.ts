@@ -6,6 +6,7 @@ import { GET as historyRoute } from '@/app/api/test/attempts/route';
 import { GET as eligibilityRoute, POST as startRoute } from '@/app/api/test/start/route';
 import { signSession } from '@/server/session';
 import { answerAttempt, checkEligibility, finishAttempt, getAttempt, startAttempt } from '@/server/test';
+import { generatorsForSubcategory } from '@/server/test/generators';
 import { JUNIOR_PROBE_MAX, MAX_ITEMS, MIN_ITEMS } from '@/server/test/policy';
 import type { AttemptView } from '@/server/test/types';
 
@@ -38,7 +39,7 @@ beforeEach(async () => {
   await resetDb();
   await prisma.candidate.createMany({
     data: [
-      { id: A, email: 'a@example.test', name: 'А', specialization: 'backend' },
+      { id: A, email: 'a@example.test', name: 'А', specialization: 'backend', subcategoryId: 'backend.web-api' },
       { id: B, email: 'b@example.test', name: 'Б' },
     ],
   });
@@ -109,13 +110,27 @@ describe('API теста на грейд', () => {
     for (const c of after) expect(c.level).toBe(solved.has(c.catalogId) ? 'platform' : 'third_party');
   });
 
-  it('направление ai: попытка из ai.*-шаблонов, верные ответы → Junior подтверждён, категория ai/junior (ADR 0003)', async () => {
-    const { attemptId } = await startAttempt(B, 'ai', 'junior');
+  it('тест на подкатегорию: ai.mlops — задания только её семейств, категория ai × mlops × junior (ADR 0003, 15:50)', async () => {
+    const { attemptId } = await startAttempt(B, 'ai', 'junior', new Date(), { subcategoryId: 'ai.mlops' });
     const v = await play(B, attemptId, (_g, key) => key);
     expect(v.status).toBe('passed');
+    expect(v.subcategoryId).toBe('ai.mlops');
+    const own = new Set(generatorsForSubcategory('ai.mlops').map((g) => g.id));
     const items = await prisma.testItem.findMany({ where: { attemptId } });
-    expect(items.every((i) => i.templateId.startsWith('ai.'))).toBe(true);
-    expect(await prisma.candidateCategory.findFirst({ where: { candidateId: B } })).toMatchObject({ specialization: 'ai', grade: 'junior' });
+    expect(items.length).toBeGreaterThanOrEqual(MIN_ITEMS);
+    expect(items.every((i) => own.has(i.templateId))).toBe(true);
+    expect(await prisma.candidateCategory.findFirst({ where: { candidateId: B } })).toMatchObject({ specialization: 'ai', subcategoryId: 'ai.mlops', grade: 'junior' });
+  });
+
+  it('без подкатегории направления — subcategory_required и 422; подкатегория из профиля подхватывается', async () => {
+    const elig = await checkEligibility(B, 'ai', 'junior');
+    expect(elig).toMatchObject({ allowed: false, code: 'subcategory_required' });
+    const started = await startRoute(jsonRequest('/api/test/start', 'POST', { specialization: 'ai', grade: 'junior' }, cookie(B)));
+    expect(started.status).toBe(422);
+    // Подкатегория чужого направления не подходит.
+    expect((await checkEligibility(A, 'ai', 'junior')).code).toBe('subcategory_required');
+    await prisma.candidate.update({ where: { id: B }, data: { subcategoryId: 'ai.data-science' } });
+    expect(await checkEligibility(B, 'ai', 'junior')).toMatchObject({ allowed: true, subcategoryId: 'ai.data-science' });
   });
 
   it('направление без генераторов (engineering): допуск no_test, старт — 422 с понятной причиной', async () => {
@@ -139,18 +154,18 @@ describe('API теста на грейд', () => {
   });
 
   it('повторяемость: тот же seed и те же ответы → те же задания и тот же грейд', async () => {
-    const first = await startAttempt(A, 'frontend', 'junior', new Date(), { seed: 12345 });
+    const first = await startAttempt(A, 'frontend', 'junior', new Date(), { seed: 12345, subcategoryId: 'frontend.ui-app' });
     const v1 = await play(A, first.attemptId, (_g, key) => key);
     const items1 = await prisma.testItem.findMany({ where: { attemptId: first.attemptId }, orderBy: { index: 'asc' } });
     // Второй кандидат с тем же seed (интервалы на другого кандидата не действуют).
-    const second = await startAttempt(B, 'frontend', 'junior', new Date(), { seed: 12345 });
+    const second = await startAttempt(B, 'frontend', 'junior', new Date(), { seed: 12345, subcategoryId: 'frontend.ui-app' });
     const v2 = await play(B, second.attemptId, (_g, key) => key);
     const items2 = await prisma.testItem.findMany({ where: { attemptId: second.attemptId }, orderBy: { index: 'asc' } });
     expect(items2.map((i) => [i.templateId, i.prompt, i.answerKey])).toEqual(items1.map((i) => [i.templateId, i.prompt, i.answerKey]));
     expect(v2.status).toBe(v1.status);
     expect(v2.result?.theta).toBe(v1.result?.theta);
     // Разные seed → другой вариант заданий (параметры), хотя грейд тот же.
-    const third = await startAttempt(B, 'frontend', 'junior', new Date(Date.now() + 100 * 24 * 3600e3), { seed: 777 });
+    const third = await startAttempt(B, 'frontend', 'junior', new Date(Date.now() + 100 * 24 * 3600e3), { seed: 777, subcategoryId: 'frontend.ui-app' });
     const items3 = await prisma.testItem.findMany({ where: { attemptId: third.attemptId } });
     const same = items1.find((i) => i.templateId === items3[0]!.templateId);
     expect(`${items3[0]!.prompt}\n${items3[0]!.code}`).not.toBe(`${same?.prompt}\n${same?.code}`);
@@ -263,13 +278,13 @@ describe('API теста на грейд', () => {
   });
 
   it('все ответы неверные → не подтверждён, Junior не предлагается; досрочное завершение считает по данным ответам', async () => {
-    const { attemptId } = await startAttempt(A, 'frontend', 'middle', new Date(), { seed: 99 });
+    const { attemptId } = await startAttempt(A, 'frontend', 'middle', new Date(), { seed: 99, subcategoryId: 'frontend.ui-app' });
     const v = await play(A, attemptId, () => 'мимо');
     expect(v.status).toBe('not_confirmed');
     expect(v.result?.juniorOffered).toBe(false);
     expect(v.result?.correct).toBe(0);
 
-    const b = await startAttempt(B, 'frontend', 'middle', new Date(), { seed: 5 });
+    const b = await startAttempt(B, 'frontend', 'middle', new Date(), { seed: 5, subcategoryId: 'frontend.ui-app' });
     const { key } = await currentKey(b.attemptId);
     await answerAttempt(B, b.attemptId, key);
     const fin = await finishAttempt(B, b.attemptId);

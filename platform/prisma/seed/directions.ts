@@ -7,7 +7,7 @@ import { seedPoolProfiles, type DemoProfile } from './employer';
 /**
  * Сид lane directions (ADR 0003, дополнение 10.10):
  * 1. Справочник Subcategory — 17 подкатегорий из src/lib/directions.ts (единый источник для кода и UI);
- *    статус active — подкатегории с шаблоном проекта к сдаче, остальные planned.
+ *    статус active — по подкатегории есть тест (≥ 8 семейств), остальные planned.
  * 2. Демо-кандидаты направления ai — по одному на грейд и ещё по одному, без и с ФСП (вымышленные, isDemo).
  *    Категории — ДЕМО (поставлены сидом, тест не проходили), как в employer-pool.ts. Утверждения — из ai.*
  *    и common.* каталога. Идемпотентно: upsert по стабильным id `demo-ai-<grade>-<n>`; префикс не demo-pool-,
@@ -40,11 +40,48 @@ export const DEMO_POOL_AI: DemoProfile[] = [
   },
 ];
 
+/**
+ * Подкатегории демо-данных Backend/Frontend (сиды до теста на подкатегорию их не знали): потребность и
+ * подборка идут по подкатегории (ADR 0003, дополнение 10.10 15:50). Явные — по смыслу профиля
+ * (платежи, очереди → integrations); остальные — первая подкатегория направления. ДЕМО, как и сами профили.
+ */
+const DEMO_SUBCATEGORY: Record<string, string> = {
+  'demo-vac-be-m-1': 'backend.integrations',
+  'demo-pool-be-m-pay': 'backend.integrations',
+  'demo-pool-be-m-4': 'backend.integrations',
+};
+const DEFAULT_SUBCATEGORY: Partial<Record<string, string>> = { backend: 'backend.web-api', frontend: 'frontend.ui-app' };
+
+async function backfillDemoSubcategories(prisma: PrismaClient): Promise<number> {
+  let n = 0;
+  const subFor = (id: string, spec: string) => DEMO_SUBCATEGORY[id] ?? DEFAULT_SUBCATEGORY[spec];
+  const vacancies = await prisma.vacancy.findMany({ where: { id: { startsWith: 'demo-' }, subcategoryId: null }, select: { id: true, specialization: true } });
+  for (const v of vacancies) {
+    const sub = subFor(v.id, v.specialization);
+    if (sub) n += (await prisma.vacancy.updateMany({ where: { id: v.id }, data: { subcategoryId: sub } })).count;
+  }
+  const candidates = await prisma.candidate.findMany({ where: { isDemo: true, subcategoryId: null }, select: { id: true, specialization: true } });
+  for (const c of candidates) {
+    const sub = c.specialization ? subFor(c.id, c.specialization) : undefined;
+    if (!sub) continue;
+    await prisma.candidate.update({ where: { id: c.id }, data: { subcategoryId: sub } });
+    n++;
+  }
+  // Демо-категории — той же подкатегории, что профиль (категория = направление × подкатегория × грейд).
+  const cats = await prisma.candidateCategory.findMany({ where: { subcategoryId: null, candidate: { isDemo: true } }, select: { id: true, specialization: true, candidate: { select: { subcategoryId: true } } } });
+  for (const c of cats) {
+    const sub = c.candidate.subcategoryId;
+    if (sub?.startsWith(`${c.specialization}.`)) await prisma.candidateCategory.update({ where: { id: c.id }, data: { subcategoryId: sub } });
+  }
+  return n;
+}
+
 export async function seedDirections(prisma: PrismaClient): Promise<void> {
   for (const s of SUBCATEGORIES) {
     const { id, ...data } = s;
     await prisma.subcategory.upsert({ where: { id }, update: data, create: s });
   }
   await seedPoolProfiles(prisma, DEMO_POOL_AI);
-  console.log(`seed(directions): ${SUBCATEGORIES.length} subcategories, ${DEMO_POOL_AI.length} ai demo candidates`);
+  const backfilled = await backfillDemoSubcategories(prisma);
+  console.log(`seed(directions): ${SUBCATEGORIES.length} subcategories, ${DEMO_POOL_AI.length} ai demo candidates, ${backfilled} demo rows got a subcategory`);
 }

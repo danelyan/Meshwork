@@ -1,5 +1,6 @@
 import { callPrincipal, encodeCallEvent, eventForAccess, getCallForViewer, subscribeCall } from '@/server/call';
-import { withErrors } from '@/server/errors';
+import { errors, withErrors } from '@/server/errors';
+import { getSession } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,6 +16,7 @@ const HEARTBEAT_MS = 15_000;
  * Кадр — `event: <type>` + `data: <json>`. Работодатель без доступа к записи получает только статус и оценки.
  */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
+  if (!getSession(req)) throw errors.unauthorized();
   const who = callPrincipal(req);
   const { id } = await params;
   const { view, access } = await getCallForViewer(who, id);

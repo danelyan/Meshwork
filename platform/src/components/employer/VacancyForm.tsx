@@ -20,7 +20,8 @@ export interface VacancyFormProps {
   catalog: CatalogOption[];
   /** Редактирование: id и текущие значения. */
   vacancyId?: string;
-  initial?: VacancyBody;
+  /** Черновик (подсказка ассистента) может прийти без подкатегории — её выбирают в форме. */
+  initial?: Omit<VacancyBody, 'subcategoryId'> & { subcategoryId?: string | null };
 }
 
 type Spec = VacancyBody['specialization'];
@@ -85,6 +86,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
     else if (to < from) next.salaryTo = 'Верхняя граница меньше нижней';
     const needs = options.filter((o) => picked.has(o.e.id)).map((o) => ({ catalogId: o.e.id, weight: Math.min(3, Math.max(1, o.w)) }));
     if (needs.length === 0) next.needs = 'Выбери хотя бы одно требование';
+    if (!subcategory) next.subcategory = 'Выбери подкатегорию: подборка ищет по ней';
     setErrs(next);
     if (Object.keys(next).length) return;
     const body: VacancyBody = {
@@ -96,7 +98,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
       teamDescription: team.trim() || null,
       description: description.trim() || null,
       stack: stack.split(',').map((s) => s.trim()).filter(Boolean),
-      subcategoryId: subcategory || null,
+      subcategoryId: subcategory,
       needs,
     };
     setBusy(true);
@@ -127,13 +129,15 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
               ))}
             </select>
           </Field>
-          <Field label="Подкатегория" hint="Необязательно">
-            <select className={ui.input} value={subcategory} onChange={(e) => setSubcategory(e.target.value)}>
-              <option value="">любая</option>
+          <Field label="Подкатегория" hint="Своя подкатегория - выше в подборке, соседние - ниже" error={errs.subcategory}>
+            <select className={ui.input} value={subcategory} onChange={(e) => setSubcategory(e.target.value)} required>
+              <option value="" disabled>
+                выбери
+              </option>
               {subcategoriesFor(spec).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.title}
-                  {c.status === 'planned' ? ' (задания в плане)' : ''}
+                  {c.status === 'planned' ? ' (тест в плане)' : ''}
                 </option>
               ))}
             </select>

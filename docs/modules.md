@@ -18,10 +18,9 @@
 | `defense` | Защита утверждения: интервьюер и оценщик | `defense/index.ts`, `defense/session.ts` | claims, llm |
 | `call` | Созвон с ИИ (ADR 0003): квалифицирующий созвон (ступень 1) — интервьюер с маршрутом по уровню, слепой оценщик A-02 (3 прогона, медиана), карта глубины, подтверждённые темы → `platform`; SSE-шина, запись (транскрипт в БД, аудио WAV в `CALL_DATA_DIR`), доступ по роли, отдельное согласие на запись. Драйверы видов созвона — `drivers.ts` (`registerCallDriver('defense', …)` для защиты проекта) | `call/index.ts`, `call/service.ts` | claims, defense (рубрика, проверка цитат), llm, stt, onboarding (тексты согласия) |
 | `defense-room` | Ступень 3 ADR 0003: защита проекта со звонком работодателя — QLC по коду репозитория (`defense_qlc`), интервьюер (`call_interviewer`), очередь вопросов работодателя, слепой оценщик A-02 ×3 с медианой и флагами (`call_evaluator`), SSE-шина и сигналинг WebRTC P2P; события и форма транскрипта — по контракту лейна call | `defense-room/session.ts`, `defense-room/employer.ts` | defense (оценщик), employer (приглашения), collector (GitHub), llm |
-| `test` | Адаптивный тест на грейд (IRT, генераторы заданий `be.*`/`fe.*`/`ai.*`, политика остановки) — ADR `docs/decisions/0002-grade-test.md`; направление без генераторов — `no_test` / `NoGeneratorsError` | `test/index.ts`, `test/service.ts`, `test/generators/index.ts` | claims, recommend, env |
-| `directions.ts` + `src/lib/directions.ts` | Четыре направления (backend, frontend, ai, engineering) и 17 подкатегорий (ADR 0003, дополнение 10.10; R-T-05). `lib/directions.ts` — единый список для кода, UI и сида `Subcategory`; `server/directions.ts` — справочник из БД для `GET /api/directions` | `lib/directions.ts` (`SPECIALIZATIONS`, `SPEC_LABEL`, `SUBCATEGORIES`) | db, test |
+| `test` | Адаптивный тест на грейд (IRT, генераторы заданий, политика остановки) — ADR `docs/decisions/0002-grade-test.md` | `test/index.ts`, `test/service.ts` | claims, recommend, env |
 | `onboarding` | Анкета и сценарий онбординг-чата, ИНН, согласие, сервис завершения | `onboarding/service.ts`, `onboarding/engine.ts` | auth, claims, collector, llm, recommend |
-| `auth` | Яндекс ID (OAuth), роли, согласие, CSRF, устаревшие сессии — ADR `docs/decisions/0001-auth-yandex-id.md` | `auth/users.ts`, `auth/yandex.ts` | onboarding, session |
+| `auth` | Яндекс ID (OAuth), роли и их переключение, согласие, CSRF, устаревшие сессии — ADR `docs/decisions/0001-auth-yandex-id.md`, `0004-role-switching.md` | `auth/users.ts`, `auth/yandex.ts`, `auth/role-switch.ts` | onboarding, session |
 | `mail` | Отправка писем (SMTP, Mailpit на стенде), шаблоны писем подтверждения и сброса пароля | `mail/index.ts` | env |
 | `employer` | Кабинет работодателя: вакансии, ранжирование, приглашения, приватность, веса | `employer/index.ts`, `employer/ranking.ts` | claims, recommend |
 | `demo` | Демо-режим для жюри: вход за сид-кандидата, демо-резюме (PDF), контекст | `demo/mode.ts`, `demo/resumes.ts` | db, env, session |
@@ -42,7 +41,6 @@
 | Профиль | `profile`, `profile/contact`, `profile/privacy`, `claims/[id]/[action]`, `claims/confirm-batch` | claims |
 | Рекомендации | `recommendations` | recommend |
 | Защита | `defense`, `defense/[sessionId]` | defense |
-| Справочник | `directions` (направления, подкатегории, есть ли тест) | directions |
 | Защита проекта (ступень 3) | `defense-room/start`, `defense-room/[id]` (+`turn`, `finish`, `events` — SSE), `defense-room/pending`, `call/[id]/signal`, `employer/call/[id]/join|leave|mute-ai|say`, `employer/questions`, `employer/calls` | defense-room |
 | Тест на грейд | `test/start`, `test/attempts`, `test/attempt/[id]` (+`answer`, `finish`, `confirm-junior`) | test |
 | Приглашения (кандидат) | `invitations`, `invitations/[id]` | employer |
@@ -61,10 +59,6 @@
 - `prisma/schema.prisma` — секции помечены `// lane: <модуль>`; правим аддитивно и в своей секции.
   Каждое изменение схемы — новая миграция в `prisma/migrations/` (`npm run db:migrate`), старые не переписывать.
   Сид — `prisma/seed.ts` + `prisma/seed/*`.
-- Направления: новое значение `Specialization` — сначала `src/lib/directions.ts` (`SPECIALIZATIONS`, подписи,
-  подкатегории), затем enum в схеме + миграция; `Record<Specialization, …>` по коду TS проверит исчерпывающе.
-  Генераторы теста — файл в `src/server/test/generators/` + регистрация в `index.ts`; записи каталога направления —
-  `scripts/catalog-direction-entries.json` и `node scripts/catalog-to-json.mjs` (каталог-Markdown владельца не трогаем).
 - `src/server/agent/tools/index.ts` — реестр инструментов консультанта. Новый инструмент: файл в `tools/`,
   строка в реестре, правка `tests/unit/agent/tools.test.ts`. Записывающих в профиль и пишущих от имени
   пользователя инструментов быть не должно (тест это проверяет). У работодателя свой реестр — `agent/employer/tools/index.ts`.

@@ -96,6 +96,8 @@ export interface AttemptResult {
 export interface AttemptView {
   id: string;
   specialization: Specialization;
+  /** Подкатегория попытки; null — попытка до теста на подкатегорию. */
+  subcategoryId: string | null;
   grade: Grade;
   status: AttemptStatus;
   mode: 'full' | 'demo';
@@ -120,6 +122,8 @@ export interface AttemptView {
 export interface AttemptSummary {
   id: string;
   specialization: Specialization;
+  /** Подкатегория попытки; null — попытка до теста на подкатегорию. */
+  subcategoryId: string | null;
   grade: Grade;
   status: AttemptStatus;
   theta: number | null;
@@ -140,5 +144,11 @@ export interface EligibilityView {
   allowed: boolean;
   reason?: string;
   nextAllowedAt?: string;
-  code?: 'active_attempt' | 'grade_change_too_soon' | 'retake_too_soon';
+  /**
+   * no_test — для направления или подкатегории нет банка заданий (тест пока недоступен);
+   * subcategory_required — подкатегория направления не выбрана (тест идёт по подкатегории).
+   */
+  code?: 'active_attempt' | 'grade_change_too_soon' | 'retake_too_soon' | 'no_test' | 'subcategory_required';
+  /** Подкатегория, для которой проверялся допуск (из запроса или профиля); null — не выбрана. */
+  subcategoryId?: string | null;
 }

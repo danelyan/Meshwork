@@ -173,6 +173,25 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
 }
 
 /*
+ * Роль в оболочке: data-role на <body> (app/layout.tsx), см. docs/design-system.md, «Роль в оболочке».
+ * По умолчанию (кандидат, гость) шапка и подвал - стекло, как раньше; работодатель - холодный фон и синяя
+ * рамка. Контраст --muted на #f2f0ff - 4,72:1, --ink - 16,8:1, --blue - 6,09:1.
+ */
+:root {
+  --role-bar-bg: var(--glass);
+  --role-rule: var(--glass-border);
+  --role-rule-w: 1px;
+  --role-nav-active: var(--ink);
+}
+[data-role='employer'] {
+  --role-bar-bg: #f2f0ff;
+  --role-rule: var(--blue);
+  --role-rule-w: 2px;
+  --role-nav-active: var(--blue);
+  --glow: radial-gradient(900px 520px at 12% -12%, rgba(64, 47, 255, 0.14), transparent 70%);
+}
+
+/*
  * Тёмная лента чата (панель сцены «звонок + чат слева», AvatarScene call-side): локальные переопределения
  * токенов на контейнере с data-theme='feed-dark', компоненты ленты не правятся. Алиасы (--bg, --text,
  * --focus и т.п.) на :root уже вычислены в светлые значения, поэтому переопределены явно.

@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
@@ -8,7 +10,13 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [react()],
   // Алиас @/* из tsconfig: встроенный resolve.tsconfigPaths Vite 8 вместо плагина vite-tsconfig-paths из доки Next.js.
-  resolve: { tsconfigPaths: true },
+  resolve: {
+    tsconfigPaths: true,
+    // `server-only` (session.ts, auth/page.ts, auth/access.ts): Next.js подставляет его сам, пакета в
+    // зависимостях нет (docs Next.js: установка необязательна). В тестах — пустой модуль из сборки Next,
+    // тот же, что Next отдаёт серверному коду (условие react-server).
+    alias: { 'server-only': fileURLToPath(new URL('./node_modules/next/dist/compiled/server-only/empty.js', import.meta.url)) },
+  },
   test: {
     // Демо-флаги стенда из .env не должны протекать в тесты (docs: test.env
     // перекрывает process.env воркеров; process.loadEnvFile не перезаписывает заданное).

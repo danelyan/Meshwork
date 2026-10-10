@@ -1,4 +1,3 @@
-import { stubProject } from './stub-project';
 import {
   LlmError,
   type ChatMessage,
@@ -241,9 +240,6 @@ export function createStubProvider(opts: StubOptions = {}): LlmProvider {
     }
 
     if (req.schema) {
-      // lane project: project_spec / project_rubric по <project_context> (маркер [[json]] важнее)
-      const project = lastIsUser && JSON_MARK_RE.test(userText) ? undefined : stubProject(req);
-      if (project) return project;
       const mark = lastIsUser ? JSON_MARK_RE.exec(userText) : null;
       if (mark) {
         const start = mark.index + mark[0].length;

@@ -97,6 +97,32 @@ describe('ранжирование работодателя', () => {
     expect(scoreCandidate(cand('z', []), target, catalog)).toBeNull();
   });
 
+  it('подкатегория потребности: своя выше соседней даже при меньшем балле; соседняя помечена; фильтр — по категории теста', () => {
+    const t = { ...target, subcategoryId: 'backend.integrations' };
+    const strongNeighbour = cand('n', [['be.idempotency', 'artifact'], ['be.transactions', 'artifact'], ['be.message-queue', 'artifact']], { subcategoryId: 'backend.web-api' });
+    const weakOwn = cand('o', [['be.idempotency', 'self_reported']], { subcategoryId: 'backend.integrations' });
+    // Подкатегория категории из теста главнее профиля.
+    const byTest = cand('t', [['be.idempotency', 'self_reported']], {
+      subcategoryId: 'backend.web-api',
+      category: { specialization: 'backend', grade: 'middle', subcategoryId: 'backend.integrations' },
+    });
+    const ranked = rankCandidates([strongNeighbour, weakOwn, byTest], t, catalog);
+    expect(ranked.map((r) => [r.candidateId, r.subcategoryFit])).toEqual([
+      ['t', 'exact'],
+      ['o', 'exact'],
+      ['n', 'neighbour'],
+    ]);
+    const n = ranked.find((r) => r.candidateId === 'n')!;
+    expect(n.score).toBeGreaterThan(ranked[1]!.score);
+    expect(n.explanation.subcategory).toMatch(/^соседняя подкатегория: Web API/);
+    expect(n.explanation.summary).toContain('подкатегория: соседняя');
+    expect(ranked[0]!.explanation.subcategory).toBe('Интеграции');
+    // Без подкатегории у потребности — порядок только по баллу, пометки нет.
+    expect(rankCandidates([strongNeighbour, weakOwn], target, catalog)[0]!.explanation.subcategory).toBe('');
+    expect(passesFilters(byTest, { subcategory: 'backend.integrations' })).toBe(true);
+    expect(passesFilters(byTest, { subcategory: 'backend.web-api' })).toBe(false);
+  });
+
   it('детерминированно: равный балл — по id', () => {
     const a = cand('b', [['be.idempotency', 'artifact']]);
     const b = cand('a', [['be.idempotency', 'artifact']]);
@@ -249,7 +275,7 @@ describe('схемы', () => {
     expect(InvitationInput.safeParse({ ...base, salaryFrom: 200000, salaryTo: 260000 }).success).toBe(true);
   });
   it('потребность: вилка не перевёрнута, хотя бы одно требование', () => {
-    const ok = { title: 'Backend', specialization: 'backend', grade: 'junior', salaryFrom: 1, salaryTo: 2, needs: [{ catalogId: 'be.orm', weight: 2 }] };
+    const ok = { title: 'Backend', specialization: 'backend', subcategoryId: 'backend.web-api', grade: 'junior', salaryFrom: 1, salaryTo: 2, needs: [{ catalogId: 'be.orm', weight: 2 }] };
     expect(VacancyInput.safeParse(ok).success).toBe(true);
     expect(VacancyInput.safeParse({ ...ok, salaryTo: 0 }).success).toBe(false);
     expect(VacancyInput.safeParse({ ...ok, needs: [] }).success).toBe(false);

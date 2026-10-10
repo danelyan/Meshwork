@@ -10,7 +10,9 @@ import { GRADE_CHANGE_INTERVAL_DAYS } from '../recommend/weights';
 import type { Grade, Specialization } from '../types';
 
 import { checkAnswer, MAX_ANSWER_CHARS } from './answers';
-import { GENERATORS, getGenerator, hasTestFor, NoGeneratorsError } from './generators';
+import { getSubcategory, specLabel } from '../../lib/directions';
+
+import { GENERATORS, getGenerator, hasTestFor, poolFor, unavailableReason } from './generators';
 import { estimateTheta, type Response } from './irt';
 import { decide, explainDecision, MAX_ITEMS, MIN_ITEMS, nextStep, phasePool, selectNext, type AttemptPhase, type SelectableTemplate, type Step } from './policy';
 import { deriveSeed, randomSeed } from './rng';
@@ -28,8 +30,12 @@ import type {
 /**
  * v2 (10.10): порог Junior −0,7 и дозадавание Junior-заданий при заявке Middle (ADR-0002, дополнения 10.10).
  * v3 (10.10): дозадавание и при заявке Junior (ADR-0002, «Заявка Junior»).
+ * v4 (10.10): тест на подкатегорию — пул попытки только из семейств подкатегории кандидата
+ * (ADR 0003, дополнение 10.10 15:50; ADR-0002, дополнение «Направления»).
  */
-export const POLICY_VERSION = 'adr-0002-v3';
+export const POLICY_VERSION = 'adr-0002-v4';
+/** Версии с дозадаванием Junior (v3 и новее): правило фазы не меняется задним числом для v1–v2. */
+const PROBE_VERSIONS = new Set(['adr-0002-v3', 'adr-0002-v4']);
 
 /**
  * ПРЕДЛОЖЕНИЕ (R-C-09, решение владельца 09.10): смена грейда — раз в 30 дней
@@ -78,9 +84,14 @@ export async function ensureTemplates(db: Prisma.TransactionClient | typeof pris
   }
 }
 
-async function loadPool(spec: Specialization): Promise<(SelectableTemplate & { generator: TaskGenerator })[]> {
+/**
+ * Пул попытки. С подкатегорией — семейства подкатегории (poolFor; переходное направление — всё направление);
+ * без неё (попытки до v4) — всё направление, как при их старте.
+ */
+async function loadPool(spec: Specialization, subcategoryId: string | null): Promise<(SelectableTemplate & { generator: TaskGenerator })[]> {
   await ensureTemplates();
-  const rows = await prisma.taskTemplate.findMany({ where: { specialization: spec }, orderBy: { id: 'asc' } });
+  const ids = subcategoryId ? poolFor(spec, subcategoryId)?.generators.map((g) => g.id) : undefined;
+  const rows = await prisma.taskTemplate.findMany({ where: { specialization: spec, ...(ids ? { id: { in: ids } } : {}) }, orderBy: { id: 'asc' } });
   const out: (SelectableTemplate & { generator: TaskGenerator })[] = [];
   for (const r of rows) {
     const generator = getGenerator(r.id);
@@ -94,13 +105,36 @@ async function loadPool(spec: Specialization): Promise<(SelectableTemplate & { g
 // Допуск к попытке (R-C-08, R-C-09)
 // ---------------------------------------------------------------------------
 
-export async function checkEligibility(candidateId: string, spec: Specialization, grade: Grade, now: Date = new Date()): Promise<EligibilityView> {
-  if (!hasTestFor(spec)) return { allowed: false, code: 'no_test', reason: new NoGeneratorsError(spec).message.replace(/ \(src\/.*\)\.$/, '.') };
+/** Подкатегория теста: явная (из запроса) или из профиля кандидата; чужая направлению — null. */
+async function resolveSubcategory(candidateId: string, spec: Specialization, explicit?: string | null): Promise<string | null> {
+  const id = explicit ?? (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { subcategoryId: true } }))?.subcategoryId ?? null;
+  return getSubcategory(id)?.specialization === spec ? id : null;
+}
+
+/**
+ * Допуск к попытке. Тест — на подкатегорию (ADR 0003, дополнение 10.10 15:50): без выбранной подкатегории
+ * направления — subcategory_required; подкатегория без банка (< 8 семейств) — no_test. `subcategoryId`
+ * не передан — берётся из профиля кандидата.
+ */
+export async function checkEligibility(
+  candidateId: string,
+  spec: Specialization,
+  grade: Grade,
+  now: Date = new Date(),
+  subcategoryId?: string | null,
+): Promise<EligibilityView> {
+  const sub = await resolveSubcategory(candidateId, spec, subcategoryId);
+  if (!hasTestFor(spec)) return { allowed: false, code: 'no_test', reason: unavailableReason(spec, null)!, subcategoryId: sub };
+  if (!sub) {
+    return { allowed: false, code: 'subcategory_required', reason: `Выберите подкатегорию направления ${specLabel(spec)}: тест на грейд идёт по подкатегории.`, subcategoryId: null };
+  }
+  const reason = unavailableReason(spec, sub);
+  if (reason) return { allowed: false, code: 'no_test', reason, subcategoryId: sub };
   const iv = intervals();
   const [category, lastSame] = await Promise.all([
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' } }),
     prisma.testAttempt.findFirst({
-      where: { candidateId, specialization: spec, grade, status: { in: ['passed', 'not_confirmed'] } },
+      where: { candidateId, specialization: spec, subcategoryId: sub, grade, status: { in: ['passed', 'not_confirmed'] } },
       orderBy: { finishedAt: 'desc' },
     }),
   ]);
@@ -118,7 +152,7 @@ export async function checkEligibility(candidateId: string, spec: Specialization
       return { allowed: false, code: 'retake_too_soon', nextAllowedAt: next.toISOString(), reason: `Пересдать этот грейд можно с ${next.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}. ${describeIntervals(iv)}` };
     }
   }
-  return { allowed: true };
+  return { allowed: true, subcategoryId: sub };
 }
 
 // ---------------------------------------------------------------------------
@@ -159,16 +193,16 @@ function stepOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>): Ste
     shown.push(t);
     responses.push({ a: t.a, b: t.b, correct: it.correct });
   }
-  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade, probe: a.policyVersion === POLICY_VERSION });
+  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade, probe: PROBE_VERSIONS.has(a.policyVersion) });
 }
 
-async function poolMap(spec: Specialization): Promise<Map<string, SelectableTemplate & { generator: TaskGenerator }>> {
-  return new Map((await loadPool(spec)).map((t) => [t.id, t]));
+async function poolMap(a: Pick<TestAttempt, 'specialization' | 'subcategoryId'>): Promise<Map<string, SelectableTemplate & { generator: TaskGenerator }>> {
+  return new Map((await loadPool(a.specialization, a.subcategoryId)).map((t) => [t.id, t]));
 }
 
 /** Сгенерировать и записать следующее задание попытки; null — банк исчерпан. */
 async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: AttemptPhase = 'main'): Promise<TestItem | null> {
-  const pool = await loadPool(attempt.specialization);
+  const pool = await loadPool(attempt.specialization, attempt.subcategoryId);
   const byId = new Map(pool.map((t) => [t.id, t]));
   const shown = attempt.items.map((i) => byId.get(i.templateId)).filter((t): t is NonNullable<typeof t> => Boolean(t));
   const index = attempt.items.length;
@@ -202,7 +236,7 @@ export async function startAttempt(
   spec: Specialization,
   grade: Grade,
   now: Date = new Date(),
-  opts: { seed?: number } = {},
+  opts: { seed?: number; subcategoryId?: string | null } = {},
 ): Promise<StartResult> {
   const candidate = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { id: true } });
   if (!candidate) throw errors.notFound('Кандидат не найден');
@@ -210,17 +244,20 @@ export async function startAttempt(
   await prisma.testAttempt.updateMany({ where: { candidateId, status: 'active', expiresAt: { lte: now } }, data: { status: 'abandoned', finishedAt: now } });
   const active = await prisma.testAttempt.findFirst({ where: { candidateId, status: 'active' } });
   if (active) {
-    if (active.specialization === spec && active.grade === grade) return { attemptId: active.id, resumed: true };
+    const sameSub = opts.subcategoryId === undefined || opts.subcategoryId === active.subcategoryId;
+    if (active.specialization === spec && active.grade === grade && sameSub) return { attemptId: active.id, resumed: true };
     throw new AppError('active_attempt', 'Сначала завершите текущую попытку.', 409, { attemptId: active.id });
   }
-  const elig = await checkEligibility(candidateId, spec, grade, now);
-  if (!elig.allowed) throw new AppError(elig.code!, elig.reason!, elig.code === 'no_test' ? 422 : 409, { nextAllowedAt: elig.nextAllowedAt });
+  const elig = await checkEligibility(candidateId, spec, grade, now, opts.subcategoryId);
+  const unprocessable = elig.code === 'no_test' || elig.code === 'subcategory_required';
+  if (!elig.allowed) throw new AppError(elig.code!, elig.reason!, unprocessable ? 422 : 409, { nextAllowedAt: elig.nextAllowedAt });
 
   const iv = intervals();
   const attempt = await prisma.testAttempt.create({
     data: {
       candidateId,
       specialization: spec,
+      subcategoryId: elig.subcategoryId ?? null,
       grade,
       mode: iv.demo ? 'demo' : 'full',
       seed: opts.seed ?? randomSeed(),
@@ -285,7 +322,7 @@ function resultView(a: AttemptWithItems, byId: Map<string, SelectableTemplate & 
 }
 
 async function view(a: AttemptWithItems): Promise<AttemptView> {
-  const byId = await poolMap(a.specialization);
+  const byId = await poolMap(a);
   const answered = a.items.filter((i) => i.correct !== null).length;
   const current = a.status === 'active' ? a.items.find((i) => i.correct === null) : undefined;
   const g = current ? byId.get(current.templateId)?.generator : undefined;
@@ -295,6 +332,7 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
   return {
     id: a.id,
     specialization: a.specialization,
+    subcategoryId: a.subcategoryId,
     grade: a.grade,
     status: a.status,
     mode: a.mode === 'demo' ? 'demo' : 'full',
@@ -320,7 +358,7 @@ function assertActive(a: AttemptWithItems, now: Date): void {
 
 /** Завершить попытку по ответам: решение, категория, уровень утверждений. */
 async function finalize(a: AttemptWithItems, now: Date): Promise<AttemptWithItems> {
-  const byId = await poolMap(a.specialization);
+  const byId = await poolMap(a);
   const responses = responsesOf(a.items, byId);
   if (responses.length === 0) {
     return prisma.testAttempt.update({ where: { id: a.id }, data: { status: 'abandoned', finishedAt: now }, include: { items: { orderBy: { index: 'asc' } } } });
@@ -335,7 +373,11 @@ async function finalize(a: AttemptWithItems, now: Date): Promise<AttemptWithItem
     }),
   ];
   if (d.confirmed) {
-    ops.push(prisma.candidateCategory.create({ data: { candidateId: a.candidateId, specialization: a.specialization, grade: a.grade, source: 'test', confirmedAt: now } }));
+    ops.push(
+      prisma.candidateCategory.create({
+        data: { candidateId: a.candidateId, specialization: a.specialization, subcategoryId: a.subcategoryId, grade: a.grade, source: 'test', confirmedAt: now },
+      }),
+    );
   }
   if (solvedCatalogIds.length > 0) {
     // Решённое на платформе задание — доказательство уровня «платформа» для утверждений кандидата (ADR-0001 уровни).
@@ -355,7 +397,7 @@ export async function answerAttempt(candidateId: string, attemptId: string, rawA
   assertActive(a, now);
   const current = a.items.find((i) => i.correct === null);
   if (!current) throw new AppError('no_current_item', 'Нет открытого задания.', 409);
-  const byId = await poolMap(a.specialization);
+  const byId = await poolMap(a);
   const g = byId.get(current.templateId)?.generator;
   if (!g) throw new AppError('template_missing', 'Шаблон задания выведен из оборота.', 409);
   const answer = rawAnswer.slice(0, MAX_ANSWER_CHARS);
@@ -385,7 +427,7 @@ export async function confirmJunior(candidateId: string, attemptId: string, now:
   if (a.juniorConfirmedAt) throw new AppError('already_confirmed', 'Junior по этой попытке уже подтверждён.', 409);
   await prisma.$transaction([
     prisma.testAttempt.update({ where: { id: a.id }, data: { juniorConfirmedAt: now } }),
-    prisma.candidateCategory.create({ data: { candidateId, specialization: a.specialization, grade: 'junior', source: 'test', confirmedAt: now } }),
+    prisma.candidateCategory.create({ data: { candidateId, specialization: a.specialization, subcategoryId: a.subcategoryId, grade: 'junior', source: 'test', confirmedAt: now } }),
   ]);
   return view(await loadAttempt(candidateId, attemptId));
 }
@@ -400,6 +442,7 @@ export async function listAttempts(candidateId: string): Promise<AttemptSummary[
   return rows.map((a) => ({
     id: a.id,
     specialization: a.specialization,
+    subcategoryId: a.subcategoryId,
     grade: a.grade,
     status: a.status,
     theta: a.theta,

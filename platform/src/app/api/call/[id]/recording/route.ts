@@ -1,5 +1,6 @@
 import { callPrincipal, getRecording } from '@/server/call';
-import { withErrors } from '@/server/errors';
+import { errors, withErrors } from '@/server/errors';
+import { getSession } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,6 +12,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * Кандидату — всегда; работодателю — только после принятого приглашения (иначе 403).
  */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
+  if (!getSession(req)) throw errors.unauthorized();
   const who = callPrincipal(req);
   const { id } = await params;
   const segment = new URL(req.url).searchParams.get('segment') ?? undefined;

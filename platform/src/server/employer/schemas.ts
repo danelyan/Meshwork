@@ -28,19 +28,18 @@ export const VacancyInput = z
     teamDescription: optText(2000),
     description: optText(2000),
     stack: z.array(z.string().max(40)).max(15).default([]).transform(normalizeStack),
-    /** lane directions: подкатегория из справочника, необязательна; должна принадлежать направлению. */
-    subcategoryId: z
-      .string()
-      .max(64)
-      .nullish()
-      .transform((v) => v || null),
+    /**
+     * lane directions: подкатегория из справочника, обязательна (подборка ищет по ней; ADR 0003, дополнение
+     * 10.10 15:50) и должна принадлежать направлению.
+     */
+    subcategoryId: z.string({ error: 'Выбери подкатегорию' }).min(1, 'Выбери подкатегорию').max(64),
     needs: z
       .array(z.object({ catalogId: z.string().min(1).max(64), weight: z.number().int().min(1).max(3) }))
       .min(1, 'Выбери хотя бы одно требование')
       .max(25),
   })
   .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Верхняя граница вилки меньше нижней', path: ['salaryTo'] })
-  .refine((v) => !v.subcategoryId || getSubcategory(v.subcategoryId)?.specialization === v.specialization, {
+  .refine((v) => getSubcategory(v.subcategoryId)?.specialization === v.specialization, {
     error: 'Подкатегория не из справочника этого направления',
     path: ['subcategoryId'],
   });

@@ -46,15 +46,19 @@ export interface SubcategoryDef {
   specialization: Specialization;
   title: string;
   description: string;
-  /** active — к сдаче (ADR 0003: есть шаблон проекта); planned — запись справочника. */
+  /**
+   * active — по подкатегории есть тест на грейд: в банке ≥ 8 размеченных семейств (MIN_FAMILIES_PER_SUBCATEGORY,
+   * ADR 0003, дополнение 10.10 15:50); planned — запись справочника, «тест пока недоступен». Сверяется с реестром
+   * генераторов юнит-тестом (tests/unit/lib/directions.test.ts) — лейн генераторов меняет статус вместе с семействами.
+   */
   status: SubcategoryStatus;
   order: number;
 }
 
 /**
- * 17 подкатегорий карты. Статус active — те, у которых к сдаче есть шаблон проекта по ADR 0003
- * («Контракт: лента заданий»): backend.web-api, backend.integrations, frontend.ui-app, ai.llm-apps,
- * engineering.data-eng. Остальные — planned.
+ * 17 подкатегорий карты research/25. Статус — по банку теста (см. SubcategoryDef.status). Backend и Frontend
+ * пока в переходном режиме (семейства не размечены, пул — всё направление): active у подкатегорий с шаблоном
+ * проекта по ADR 0003 — web-api, integrations, ui-app.
  */
 export const SUBCATEGORIES: readonly SubcategoryDef[] = [
   { id: 'backend.web-api', specialization: 'backend', title: 'Web API', description: 'CRUD, валидация, ошибки, SQL-схема и тесты', status: 'active', order: 1 },
@@ -68,12 +72,12 @@ export const SUBCATEGORIES: readonly SubcategoryDef[] = [
   { id: 'frontend.realtime', specialization: 'frontend', title: 'Realtime', description: 'WebSocket/SSE, оптимистичные обновления, восстановление соединения', status: 'planned', order: 4 },
 
   { id: 'ai.llm-apps', specialization: 'ai', title: 'LLM-приложения', description: 'Промпты, структурированный вывод, RAG, tool-use, оценка качества', status: 'active', order: 1 },
-  { id: 'ai.ai-integration', specialization: 'ai', title: 'AI-интеграция', description: 'LLM/ML-сервис в существующей системе: отказы, наблюдаемость, ПДн, fallback', status: 'planned', order: 2 },
-  { id: 'ai.ml-engineering', specialization: 'ai', title: 'ML-инженерия', description: 'Обучение и оценка модели, валидация без утечек, воспроизводимый пайплайн', status: 'planned', order: 3 },
-  { id: 'ai.mlops', specialization: 'ai', title: 'MLOps', description: 'Модель в сервисе: версии, мониторинг дрейфа, переобучение, откат', status: 'planned', order: 4 },
-  { id: 'ai.data-science', specialization: 'ai', title: 'Data Science', description: 'Аналитика и статистика: A/B, прогноз, интерпретация', status: 'planned', order: 5 },
+  { id: 'ai.ai-integration', specialization: 'ai', title: 'AI-интеграция', description: 'LLM/ML-сервис в существующей системе: отказы, наблюдаемость, ПДн, fallback', status: 'active', order: 2 },
+  { id: 'ai.ml-engineering', specialization: 'ai', title: 'ML-инженерия', description: 'Обучение и оценка модели, валидация без утечек, воспроизводимый пайплайн', status: 'active', order: 3 },
+  { id: 'ai.mlops', specialization: 'ai', title: 'MLOps', description: 'Модель в сервисе: версии, мониторинг дрейфа, переобучение, откат', status: 'active', order: 4 },
+  { id: 'ai.data-science', specialization: 'ai', title: 'Data Science', description: 'Аналитика и статистика: A/B, прогноз, интерпретация', status: 'active', order: 5 },
 
-  { id: 'engineering.data-eng', specialization: 'engineering', title: 'Data Engineering', description: 'ETL/ELT, качество данных, витрины, оркестрация', status: 'active', order: 1 },
+  { id: 'engineering.data-eng', specialization: 'engineering', title: 'Data Engineering', description: 'ETL/ELT, качество данных, витрины, оркестрация', status: 'planned', order: 1 },
   { id: 'engineering.devops', specialization: 'engineering', title: 'DevOps', description: 'CI/CD, Docker/K8s, IaC, наблюдаемость', status: 'planned', order: 2 },
   { id: 'engineering.qa-automation', specialization: 'engineering', title: 'QA-автоматизация', description: 'Автотесты API/UI, тест-дизайн, стабильность', status: 'planned', order: 3 },
   { id: 'engineering.sre', specialization: 'engineering', title: 'SRE', description: 'Инциденты, разбор, ёмкость', status: 'planned', order: 4 },
@@ -89,7 +93,7 @@ export function subcategoriesFor(spec: Specialization | null | undefined): Subca
   return SUBCATEGORIES.filter((s) => s.specialization === spec);
 }
 
-/** Подкатегория принадлежит направлению (null/undefined — подкатегория не выбрана, это допустимо). */
+/** Подкатегория принадлежит направлению (null/undefined — подкатегория не выбрана; обязательность проверяет вызывающий). */
 export function subcategoryMatches(spec: Specialization, id: string | null | undefined): boolean {
   if (!id) return true;
   return getSubcategory(id)?.specialization === spec;

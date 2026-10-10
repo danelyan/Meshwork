@@ -3902,6 +3902,13 @@ paths:
                   enum:
                     - junior
                     - middle
+                subcategoryId:
+                  anyOf:
+                    -
+                      type: string
+                      maxLength: 64
+                    -
+                      type: "null"
               required:
                 - specialization
                 - grade
@@ -4944,12 +4951,9 @@ components:
             type: string
             maxLength: 40
         subcategoryId:
-          anyOf:
-            -
-              type: string
-              maxLength: 64
-            -
-              type: "null"
+          type: string
+          minLength: 1
+          maxLength: 64
         needs:
           minItems: 1
           maxItems: 25
@@ -4974,6 +4978,7 @@ components:
         - grade
         - salaryFrom
         - salaryTo
+        - subcategoryId
         - needs
     VacancyPatch:
       type: object

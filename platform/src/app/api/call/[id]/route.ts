@@ -1,5 +1,6 @@
 import { callPrincipal, getCallForViewer } from '@/server/call';
-import { withErrors } from '@/server/errors';
+import { errors, withErrors } from '@/server/errors';
+import { getSession } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,6 +12,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * принятого приглашения — только оценки по темам (`access: summary`), после — всё.
  */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
+  if (!getSession(req)) throw errors.unauthorized();
   const who = callPrincipal(req);
   const { id } = await params;
   const { view } = await getCallForViewer(who, id);

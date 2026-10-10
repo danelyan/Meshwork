@@ -1,4 +1,5 @@
 import { getSubcategory, SPEC_LABEL, SPECIALIZATIONS, SUBCATEGORIES, subcategoriesFor, subcategoryMatches } from '@/lib/directions';
+import { generatorsFor, generatorsForSubcategory, hasTestFor, MIN_FAMILIES_PER_SUBCATEGORY } from '@/server/test/generators';
 import { passesFilters, type CandidateEvidence } from '@/server/employer/ranking';
 import { parseFilters, VacancyInput } from '@/server/employer/schemas';
 
@@ -14,10 +15,14 @@ describe('справочник направлений (ADR 0003, дополне�
     expect(subcategoriesFor('engineering')).toHaveLength(4);
   });
 
-  it('active — подкатегории с шаблоном проекта к сдаче (ADR 0003), остальные planned', () => {
-    expect(SUBCATEGORIES.filter((s) => s.status === 'active').map((s) => s.id).sort()).toEqual(
-      ['ai.llm-apps', 'backend.integrations', 'backend.web-api', 'engineering.data-eng', 'frontend.ui-app'].sort(),
-    );
+  it('статус active ⇔ по подкатегории есть тест (≥ 8 размеченных семейств; переходное направление — по объявлению)', () => {
+    for (const s of SUBCATEGORIES) {
+      const marked = generatorsFor(s.specialization).some((g) => g.subcategoryId);
+      if (!marked && hasTestFor(s.specialization)) continue; // переходный пул всего направления: статус объявляет справочник
+      const own = generatorsForSubcategory(s.id).length;
+      expect(s.status, `${s.id}: ${own} семейств`).toBe(own >= MIN_FAMILIES_PER_SUBCATEGORY ? 'active' : 'planned');
+    }
+    expect(subcategoriesFor('ai').every((s) => s.status === 'active')).toBe(true);
   });
 
   it('подкатегория должна принадлежать направлению', () => {
@@ -45,9 +50,10 @@ describe('фильтры поиска и потребность: подкате�
     expect(passesFilters(cand(null), { specialization: 'ai' })).toBe(true);
   });
 
-  it('VacancyInput: подкатегория необязательна и проверяется по направлению', () => {
+  it('VacancyInput: подкатегория обязательна и проверяется по направлению', () => {
     const base = { title: 'AI-инженер', specialization: 'ai', grade: 'junior', salaryFrom: 1, salaryTo: 2, stack: [], needs: [{ catalogId: 'ai.rag', weight: 2 }] };
-    expect(VacancyInput.parse(base).subcategoryId).toBeNull();
+    expect(VacancyInput.safeParse(base).success).toBe(false);
+    expect(VacancyInput.safeParse({ ...base, subcategoryId: null }).success).toBe(false);
     expect(VacancyInput.parse({ ...base, subcategoryId: 'ai.llm-apps' }).subcategoryId).toBe('ai.llm-apps');
     expect(VacancyInput.safeParse({ ...base, subcategoryId: 'backend.web-api' }).success).toBe(false);
   });

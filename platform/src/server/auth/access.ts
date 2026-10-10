@@ -46,6 +46,9 @@ export const PAGE_ACCESS = {
   // Созвон-защита (ADR 0003): комната кандидата и наблюдение работодателя.
   '/defense-room': 'candidate',
   '/defense-room/[sessionId]': 'candidate',
+  // Лента проектных заданий и задание (ADR 0003, ступень 2).
+  '/projects': 'candidate',
+  '/projects/[taskId]': 'candidate',
   '/employer': 'employer',
   // Профиль компании (R-E-01) — страницу делает лейн company; сюда ведём работодателя с чужих страниц.
   '/employer/company': 'employer',
@@ -138,6 +141,19 @@ export const API_ACCESS = {
   '/api/call/[id]/turn': 'candidate',
   '/api/call/[id]/audio': 'candidate',
   '/api/call/[id]/finish': 'candidate',
+  // Справочник направлений и подкатегорий (ADR 0003): общий, без персональных данных.
+  '/api/directions': 'public',
+  // Проектная ступень (ADR 0003, лента заданий): кандидат — лента, задание, сдача; работодатель — задание потребности и сабмиты.
+  '/api/project-tasks/feed': 'candidate',
+  '/api/project-tasks/[id]': 'candidate',
+  '/api/project-tasks/[id]/take': 'candidate',
+  '/api/project-tasks/[id]/submissions': 'candidate',
+  '/api/project-tasks/[id]/skeleton.zip': 'candidate',
+  '/api/project-submissions/[id]': 'candidate',
+  '/api/employer/needs/[id]/project': 'employer',
+  '/api/employer/project-templates': 'employer',
+  '/api/employer/project-submissions': 'employer',
+  '/api/employer/project-submissions/[id]/invite-to-defense': 'employer',
   '/api/defense-room/start': 'candidate',
   '/api/defense-room/pending': 'candidate',
   '/api/defense-room/[id]': 'session',

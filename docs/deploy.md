@@ -22,6 +22,8 @@
 push в main (platform/**) → GitHub Actions → rsync platform/ на сервер → docker compose up -d --build
                                                                               │
 Интернет ──443──► caddy (сертификат Let's Encrypt) ──► app :3000 ──► db (PostgreSQL 16)
+                                                        │
+                                                        └──► runner :8090 (сеть internal, без интернета)
                                                         migrate: миграции и сид перед стартом app
 ```
 
@@ -50,9 +52,10 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | `SITE_REDIRECT_FROM` | Необязательно: имена через запятую (`www.<домен>`, прежний адрес), с которых Caddy перенаправляет на `SITE_ADDRESS`. Каждое должно указывать на сервер — для него тоже выпускается сертификат |
 | `SESSION_SECRET` | `openssl rand -hex 32` |
 | `DEMO_LOGIN` | `true`, пока стенд показывается жюри |
+| `RUNNER_TOKEN` | Для автопроверки проектов (сервис `runner`): `openssl rand -hex 32`. Не задан — `runner` отвечает 503, остальной стенд работает |
 | `SITE_PASSWORD` | Необязательно: пароль на сайт (без логина, страница `/site-access`). Пусто — стенд открыт всем. Если задан к показу жюри — пароль должен быть в документе сдачи |
 
-`DATABASE_URL` задаёт Compose. Почта: без `SMTP_HOST`/`SMTP_PORT` в `.env` письма идут в Mailpit стенда; для реальных ящиков задать `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (`MAIL_PROVIDER=smtp`). Лимит созвонов с ИИ-интервьюером `CALL_DAILY_LIMIT` (за 24 часа на кандидата, дефолт в коде 5) на стенде ставим `0` — без лимита: жюри проходит созвон на демо-аккаунтах повторно. Языковая модель и вход через Яндекс ID включаются своими переменными; после правки `.env` — `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`.
+`DATABASE_URL` задаёт Compose. Почта: без `SMTP_HOST`/`SMTP_PORT` в `.env` письма идут в Mailpit стенда; для реальных ящиков задать `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (`MAIL_PROVIDER=smtp`). Языковая модель и вход через Яндекс ID включаются своими переменными; после правки `.env` — `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`.
 
 ## Автодеплой
 
@@ -80,6 +83,7 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | Состояние | `dc ps` |
 | Журнал приложения | `dc logs -f app` |
 | Журнал миграций и сида | `dc logs migrate` |
+| Журнал автопроверки проектов | `dc logs -f runner`; состояние — `dc exec runner node -e "fetch('http://127.0.0.1:8090/health').then(r=>r.text()).then(console.log)"` |
 | Перезапуск после правки `.env` | `dc up -d` |
 | Откат | Вернуть коммит в `main` (`git revert`) — деплой выложит прежнюю версию. Миграции назад не откатываются |
 | Почтовый ящик Mailpit | `ssh -L 8025:127.0.0.1:8025 <сервер>`, затем http://localhost:8025 |
@@ -88,6 +92,8 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 
 ## Ограничения
 
+- Сеть `runner-net` задана с `com.docker.network.bridge.gateway_mode_ipv4: isolated` — нужен Docker Engine ≥ 28 (проверено на 29.8; что сделает движок старше 28 — отклонит опцию или молча проигнорирует, оставив мост с адресом на хосте, — не проверено). Проверить: `docker version --format '{{.Server.Version}}'`.
+- `runner` берёт до 1,5 ГБ памяти и 0,8 CPU на время проверки проекта (одна за раз); на сервере 2 vCPU × 50 % и 4 ГБ стенд в это время заметно медленнее. Первая сборка образа `runner` ставит пакеты npm и pip — несколько минут.
 - Один сервер без резервирования; при пересоздании контейнера `app` стенд несколько секунд отвечает 502.
 - База — в томе Docker `db-data` на том же сервере, резервные копии по расписанию не настроены.
 - Пароль базы `fsp` задан в `docker-compose.yml`; порт базы наружу не опубликован.

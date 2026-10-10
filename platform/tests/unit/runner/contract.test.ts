@@ -61,7 +61,10 @@ describe('runner auth', () => {
 });
 
 describe('runner sandbox: команда задания', () => {
-  const cfg = loadConfig({ RUNNER_TOKEN: 's'.repeat(40), RUNNER_NODE_BIN: '/usr/local/bin/node' }, '/srv/platform');
+  const cfg = loadConfig(
+    { RUNNER_TOKEN: 's'.repeat(40), RUNNER_NODE_BIN: '/usr/local/bin/node', RUNNER_SANDBOX_HELPER: '/opt/runner/bin/fsp-sandbox' },
+    '/srv/platform',
+  );
   const spec = {
     jobDir: '/work/jobs/j',
     repoDir: '/work/jobs/j/repo',
@@ -72,12 +75,12 @@ describe('runner sandbox: команда задания', () => {
     timeoutSec: 30,
   };
 
-  it('контейнер: отдельный uid, лимит процессов, окружение без секретов сервиса', () => {
-    const cmd = buildCommand(cfg, spec, { root: true, platform: 'linux' });
-    expect(cmd.file).toBe('/bin/sh');
-    expect(cmd.uid).toBe(2000);
-    expect(cmd.gid).toBe(2000);
-    expect(cmd.args.slice(2, 8)).toEqual(['fsp-job', '35', String((64 * 1024 * 1024) / 512), '512', '256', '-']);
+  it('контейнер: смена uid через setuid-помощник, лимит процессов, окружение без секретов сервиса', () => {
+    const cmd = buildCommand(cfg, spec, { container: true, platform: 'linux' });
+    expect(cmd.file).toBe('/opt/runner/bin/fsp-sandbox');
+    expect(cmd.helper).toBe('/opt/runner/bin/fsp-sandbox');
+    expect(cmd.args.slice(0, 3)).toEqual(['exec', '/bin/sh', '-c']);
+    expect(cmd.args.slice(4, 10)).toEqual(['fsp-job', '35', String((64 * 1024 * 1024) / 512), '512', '256', '-']);
     expect(Object.keys(cmd.env).sort()).toEqual(
       ['CI', 'FSP_CACHE_DIR', 'FSP_REPO_DIR', 'FSP_REPORT_FILE', 'FSP_TEST_ENV', 'HOME', 'LANG', 'NODE_OPTIONS', 'NODE_PATH', 'NO_COLOR', 'PATH', 'TMPDIR', 'TZ'].sort(),
     );
@@ -88,8 +91,8 @@ describe('runner sandbox: команда задания', () => {
   });
 
   it('python: RLIMIT_AS и конфиг pytest платформы', () => {
-    const cmd = buildCommand(cfg, { ...spec, image: 'python312' }, { root: true, platform: 'linux' });
-    expect(cmd.args[7]).toBe(String(768 * 1024));
+    const cmd = buildCommand(cfg, { ...spec, image: 'python312' }, { container: true, platform: 'linux' });
+    expect(cmd.args[9]).toBe(String(768 * 1024));
     expect(cmd.args).toContain('-c');
     expect(cmd.args).toContain('/work/jobs/j/repo/.platform-tests');
     expect(cmd.env.PYTEST_DISABLE_PLUGIN_AUTOLOAD).toBe('1');
@@ -97,9 +100,9 @@ describe('runner sandbox: команда задания', () => {
 
   it('локально на macOS: sandbox-exec, без смены uid и без RLIMIT_NPROC', () => {
     const local = loadConfig({ RUNNER_LOCAL: '1' }, '/srv/platform');
-    const cmd = buildCommand(local, spec, { root: false, platform: 'darwin' });
+    const cmd = buildCommand(local, spec, { container: false, platform: 'darwin' });
     expect(cmd.file).toBe('/usr/bin/sandbox-exec');
-    expect(cmd.uid).toBeUndefined();
+    expect(cmd.helper).toBeUndefined();
     expect(cmd.args[1]).toBe(macSandboxProfile([spec.tmpDir, spec.outDir]));
     expect(cmd.args[1]).toContain('(deny network-outbound');
     expect(cmd.args.slice(5, 11)).toEqual(['fsp-job', '35', String((64 * 1024 * 1024) / 512), '512', '-', '-']);

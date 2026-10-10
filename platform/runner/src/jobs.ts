@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
-import { chmod, chown, cp, mkdir, readFile, realpath, rm, stat, symlink } from 'node:fs/promises';
+import { chmod, chown, cp, mkdir, readdir, readFile, realpath, rm, stat, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import type { Readable } from 'node:stream';
@@ -18,7 +18,7 @@ import {
 } from './contract';
 import type { RunnerConfig } from './config';
 import { parseJunitXml, parseVitestJson, summarize } from './report';
-import { buildCommand, isRoot, runSandboxed, type SandboxCommand, type SandboxOutcome } from './sandbox';
+import { buildCommand, helperClean, isContainerMode, runSandboxed, type SandboxCommand, type SandboxOutcome } from './sandbox';
 import { ArchiveError, parseTarGz, writeEntries } from './tar';
 import { PLATFORM_TESTS_DIR, bundleDir, loadTemplate, ownedPrefix, type TemplateManifest } from './templates';
 
@@ -45,6 +45,7 @@ interface Upload {
 
 interface Job {
   result: RunResult;
+  uploadBytes: number;
   request: RunRequest;
   template: TemplateManifest;
   suite: 'hidden' | 'visible';
@@ -100,15 +101,28 @@ export class JobManager {
     return { queued: this.queue.length, running: this.busy, jobs: this.jobs.size, uploads: this.uploads.size };
   }
 
-  /** Принять tarball потоком в свой каталог, не больше 50 МБ. */
+  /** Байты архивов, ждущих на диске: незабранные загрузки + задания в очереди. */
+  private pendingBytes(): number {
+    let sum = 0;
+    for (const u of this.uploads.values()) sum += u.bytes;
+    for (const id of this.queue) sum += this.jobs.get(id)?.uploadBytes ?? 0;
+    return sum;
+  }
+
+  /** Принять tarball потоком в свой каталог, не больше 50 МБ; общий объём ожидающих — не больше maxPendingBytes. */
   async receiveUpload(body: Readable, declaredLength: number | undefined): Promise<UploadResponse> {
     if (declaredLength !== undefined && declaredLength > MAX_TARBALL_BYTES) {
       throw new RunnerError('payload_too_large', `Архив больше ${MAX_TARBALL_BYTES / 1024 / 1024} МБ`, 413);
     }
     this.gcUploads();
+    const pending = this.pendingBytes();
+    if (this.uploads.size >= this.cfg.maxQueue || pending + (declaredLength ?? 0) > this.cfg.maxPendingBytes) {
+      throw new RunnerError('queue_full', 'Очередь проверок заполнена, повторите позже', 429);
+    }
     const uploadId = newId();
     const file = path.join(this.uploadsDir, `${uploadId}.tar.gz`);
     const hash = createHash('sha256');
+    const maxPending = this.cfg.maxPendingBytes;
     let bytes = 0;
     try {
       await pipeline(
@@ -117,6 +131,7 @@ export class JobManager {
           for await (const chunk of source) {
             bytes += chunk.length;
             if (bytes > MAX_TARBALL_BYTES) throw new RunnerError('payload_too_large', 'Архив больше 50 МБ', 413);
+            if (pending + bytes > maxPending) throw new RunnerError('queue_full', 'Очередь проверок заполнена, повторите позже', 429);
             hash.update(chunk);
             yield chunk;
           }
@@ -146,7 +161,22 @@ export class JobManager {
     }
   }
 
+  /** Поставить задание в очередь. При любом отказе загрузка удаляется: повтор — с новой загрузкой. */
   async submit(req: RunRequest): Promise<{ jobId: string }> {
+    try {
+      return await this.enqueue(req);
+    } catch (err) {
+      const id = req.repoTarballUrl ? UPLOAD_REF.exec(req.repoTarballUrl)?.[1] : undefined;
+      const upload = id ? this.uploads.get(id) : undefined;
+      if (id && upload) {
+        this.uploads.delete(id);
+        await rm(upload.file, { force: true });
+      }
+      throw err;
+    }
+  }
+
+  private async enqueue(req: RunRequest): Promise<{ jobId: string }> {
     if (req.repoUrl !== undefined && req.repoTarballUrl === undefined) {
       throw new RunnerError(
         'repo_url_not_supported',
@@ -166,16 +196,16 @@ export class JobManager {
     if (template.image !== req.image) {
       throw new RunnerError('image_mismatch', `Шаблон ${template.id} проверяется в образе ${template.image}, а не ${req.image}`, 400);
     }
-    if (this.queue.length >= this.cfg.maxQueue) throw new RunnerError('queue_full', 'Очередь проверок заполнена, повторите позже', 429);
-
     const uploadId = UPLOAD_REF.exec(req.repoTarballUrl)![1]!;
     const upload = this.uploads.get(uploadId);
     if (!upload) throw new RunnerError('upload_not_found', 'Загрузка не найдена или истекла', 404);
+    if (this.queue.length >= this.cfg.maxQueue) throw new RunnerError('queue_full', 'Очередь проверок заполнена, повторите позже', 429);
     this.uploads.delete(uploadId);
 
     const jobId = newId();
     const timeoutSec = Math.min(req.timeoutSec ?? template.timeLimitSec, MAX_TIMEOUT_SEC);
     this.jobs.set(jobId, {
+      uploadBytes: upload.bytes,
       request: req,
       template,
       suite: bundle.suite,
@@ -250,7 +280,7 @@ export class JobManager {
     const repoDir = path.join(jobDir, 'repo');
     const tmpDir = path.join(jobDir, 'tmp');
     const outDir = path.join(jobDir, 'out');
-    const root = isRoot() && process.platform === 'linux' && !this.cfg.local;
+    const container = isContainerMode(this.cfg);
     try {
       // 1. Архив → repo/ (владелец — сервис; заданию только чтение).
       let parsed;
@@ -283,6 +313,8 @@ export class JobManager {
       const testsDir = path.join(repoDir, PLATFORM_TESTS_DIR);
       await mkdir(testsDir, { mode: 0o755 });
       await cp(bundle, job.suite === 'hidden' ? testsDir : path.join(testsDir, 'visible'), { recursive: true, dereference: false, verbatimSymlinks: true });
+      // cp переносит режимы из образа (шаблоны там 0700/0600 у uid сервиса) — заданию нужно чтение.
+      await makeReadable(testsDir);
 
       // 3. Пакеты платформы: вверх по дереву от repo/ лежит node_modules → предустановленный набор.
       if (job.template.image === 'node20') await symlink(this.cfg.nodeDepsDir, path.join(jobDir, 'node_modules'), 'dir');
@@ -290,15 +322,18 @@ export class JobManager {
       // 4. Записываемые каталоги задания.
       await mkdir(tmpDir, { mode: 0o700 });
       await mkdir(outDir, { mode: 0o700 });
-      if (root) {
-        await chown(tmpDir, this.cfg.sandboxUid, this.cfg.sandboxGid);
-        await chown(outDir, this.cfg.sandboxUid, this.cfg.sandboxGid);
+      if (container) {
+        // Владелец — сервис, группа — задание (setgid-каталог): задание пишет, сервис читает отчёт.
+        for (const dir of [tmpDir, outDir]) {
+          await chown(dir, process.getuid!(), this.cfg.sandboxGid);
+          await chmod(dir, 0o2770);
+        }
       }
 
       const cmd = buildCommand(
         this.cfg,
         { jobDir, repoDir, tmpDir, outDir, image: job.template.image, testEnvironment: job.template.testEnvironment, timeoutSec: job.timeoutSec },
-        { root, platform: process.platform },
+        { container, platform: process.platform },
       );
       const outcome = await this.run(cmd, job.timeoutSec);
       const durationMs = this.now() - started;
@@ -334,8 +369,23 @@ export class JobManager {
         finishedAt: new Date(this.now()).toISOString(),
       });
     } finally {
-      await rm(jobDir, { recursive: true, force: true }).catch(() => undefined);
+      if (container && this.cfg.sandboxHelper) {
+        // Файлы задания принадлежат uid 2000 — удалить их может только он (через помощник).
+        await helperClean(this.cfg.sandboxHelper, tmpDir);
+        await helperClean(this.cfg.sandboxHelper, outDir);
+      }
+      await rm(jobDir, { recursive: true, force: true }).catch((err: Error) => console.error(`runner: не удалось убрать ${jobId}: ${err.message}`));
     }
+  }
+}
+
+/** chmod a+rX рекурсивно: каталоги 0755, файлы 0644 (симлинков в наборе тестов нет). */
+export async function makeReadable(dir: string): Promise<void> {
+  await chmod(dir, 0o755);
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const p = path.join(dir, entry.name);
+    if (entry.isDirectory()) await makeReadable(p);
+    else if (entry.isFile()) await chmod(p, 0o644);
   }
 }
 

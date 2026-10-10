@@ -19,12 +19,21 @@ export interface RunnerConfig {
   vitestConfig: string;
   pythonBin: string;
   pytestIni: string;
-  /** uid/gid задания; применяются, только если сервис запущен от root (в контейнере). */
-  sandboxUid: number;
+  /**
+   * setuid-помощник смены uid задания (контейнер, runner/sandbox/helper). Не задан — задания идут
+   * под uid сервиса (только локальный режим). uid/gid задания зашиты в помощник при сборке.
+   */
+  sandboxHelper?: string;
+  /** Группа задания: tmp/ и out/ отдаются ей (сервис состоит в этой группе). */
   sandboxGid: number;
   /** Лимит памяти задания, МБ (V8 heap для node, RLIMIT_AS для python). */
   memMb: number;
   maxQueue: number;
+  /**
+   * Сколько байт архивов может ждать на tmpfs одновременно (загрузки + задания в очереди).
+   * Больше — 429 на /uploads. По умолчанию 200 МБ при tmpfs /work 768 МБ.
+   */
+  maxPendingBytes: number;
   /** Сколько завершённых заданий держать в памяти. */
   keepJobs: number;
   /** Сколько хранить загрузку, которую не забрали в /run. */
@@ -54,10 +63,11 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     vitestConfig: path.resolve(env.RUNNER_VITEST_CONFIG ?? path.join(base, 'sandbox/node/vitest.job.config.mjs')),
     pythonBin: env.RUNNER_PYTHON ?? 'python3',
     pytestIni: path.resolve(env.RUNNER_PYTEST_INI ?? path.join(base, 'sandbox/python/pytest.job.ini')),
-    sandboxUid: int(env.RUNNER_SANDBOX_UID, 2000, 1, 65534),
+    sandboxHelper: env.RUNNER_SANDBOX_HELPER || undefined,
     sandboxGid: int(env.RUNNER_SANDBOX_GID, 2000, 1, 65534),
     memMb: int(env.RUNNER_JOB_MEM_MB, 768, 128, 8192),
-    maxQueue: int(env.RUNNER_MAX_QUEUE, 20, 1, 1000),
+    maxQueue: int(env.RUNNER_MAX_QUEUE, 5, 1, 1000),
+    maxPendingBytes: int(env.RUNNER_MAX_PENDING_MB, 200, 50, 10_000) * 1024 * 1024,
     keepJobs: int(env.RUNNER_KEEP_JOBS, 500, 10, 100_000),
     uploadTtlMs: int(env.RUNNER_UPLOAD_TTL_SEC, 900, 10, 86_400) * 1000,
   };

@@ -1,13 +1,18 @@
 import { loadConfig } from './config';
 import { JobManager } from './jobs';
-import { isRoot } from './sandbox';
+import { isContainerMode, isRoot } from './sandbox';
 import { createRunnerServer } from './server';
 
 /** Точка входа сервиса runner: `node dist/server.mjs` в контейнере, `npx tsx runner/src/main.ts` локально. */
 async function main() {
   const cfg = loadConfig();
-  if (!cfg.local && !(isRoot() && process.platform === 'linux')) {
-    console.error('runner: контейнерный режим требует Linux и root (для смены uid задания). Локально — RUNNER_LOCAL=1');
+  if (!cfg.local && !isContainerMode(cfg)) {
+    console.error('runner: контейнерный режим требует Linux и RUNNER_SANDBOX_HELPER (setuid-помощник). Локально — RUNNER_LOCAL=1');
+    process.exit(1);
+  }
+  if (isRoot()) {
+    // Решение владельца: сервис не работает от root; uid задания меняет только помощник.
+    console.error('runner: запуск от root запрещён — нужен непривилегированный uid (в образе — runner, 1001)');
     process.exit(1);
   }
   if (cfg.local) console.warn('runner: RUNNER_LOCAL=1 — задания под текущим пользователем; изоляция неполная, только для разработки');

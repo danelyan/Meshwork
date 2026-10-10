@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
-import { readdir, readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
 
 import type { RunnerImage } from './contract';
@@ -12,8 +13,10 @@ import type { RunnerConfig } from './config';
  * процессов (по таймауту — SIGKILL всей группе), rlimit через `ulimit` в обёртке `sh`
  * (CPU-секунды, размер файла, дескрипторы; в контейнере ещё число процессов и для python
  * адресное пространство), oom_score_adj=1000 — при нехватке памяти ядро убьёт задание, не сервис.
- * В контейнере (сервис от root): задание под отдельным uid без прав на запись вне своих tmp/out,
- * после задания добиваются все процессы этого uid. Сеть режется на уровне контейнера (internal-сеть).
+ * В контейнере сервис — непривилегированный uid 1001; задание запускает setuid-помощник
+ * `fsp-sandbox` (sandbox/helper/fsp-sandbox.c) под uid 2000 без capabilities и с no_new_privs.
+ * Тем же помощником (от имени uid 2000) добиваются все процессы задания и чистятся его tmp/out —
+ * сервис сам сигнал чужому uid послать не может. Сеть режется на уровне контейнера (internal-сеть).
  * Локально на macOS (`RUNNER_LOCAL=1`): тот же uid, а сеть наружу и запись вне tmp/out режет
  * `sandbox-exec`. На Linux без Docker локальный режим сеть не режет — только для разработки.
  */
@@ -36,8 +39,8 @@ export interface SandboxCommand {
   args: string[];
   env: Record<string, string>;
   cwd: string;
-  uid?: number;
-  gid?: number;
+  /** Путь к fsp-sandbox, если задание идёт под отдельным uid (контейнер): им же — killall. */
+  helper?: string;
   reportFile: string;
   reportKind: 'vitest-json' | 'junit-xml';
 }
@@ -82,8 +85,13 @@ export function isRoot(): boolean {
   return typeof process.getuid === 'function' && process.getuid() === 0;
 }
 
-export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { root: boolean; platform: NodeJS.Platform }): SandboxCommand {
-  const linuxContainer = opts.root && opts.platform === 'linux';
+/** Контейнерный режим: Linux, не RUNNER_LOCAL, задан помощник смены uid. */
+export function isContainerMode(cfg: RunnerConfig, platform: NodeJS.Platform = process.platform): boolean {
+  return !cfg.local && platform === 'linux' && Boolean(cfg.sandboxHelper);
+}
+
+export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { container: boolean; platform: NodeJS.Platform }): SandboxCommand {
+  const linuxContainer = opts.container && opts.platform === 'linux' && Boolean(cfg.sandboxHelper);
   const baseEnv: Record<string, string> = {
     PATH: '/usr/local/bin:/usr/bin:/bin',
     HOME: spec.tmpDir,
@@ -167,39 +175,30 @@ export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { root:
       reportKind,
     };
   }
-  return {
-    file: wrapped[0]!,
-    args: wrapped.slice(1),
-    env,
-    cwd: spec.repoDir,
-    ...(linuxContainer ? { uid: cfg.sandboxUid, gid: cfg.sandboxGid } : {}),
-    reportFile,
-    reportKind,
-  };
+  if (linuxContainer) {
+    return {
+      file: cfg.sandboxHelper!,
+      args: ['exec', ...wrapped],
+      env,
+      cwd: spec.repoDir,
+      helper: cfg.sandboxHelper!,
+      reportFile,
+      reportKind,
+    };
+  }
+  return { file: wrapped[0]!, args: wrapped.slice(1), env, cwd: spec.repoDir, reportFile, reportKind };
 }
 
-/** Добить все процессы uid задания (выход из группы через setsid не спасает). Только Linux и root. */
-export async function killUid(uid: number): Promise<number> {
-  let killed = 0;
-  let pids: string[];
-  try {
-    pids = (await readdir('/proc')).filter((d) => /^\d+$/.test(d));
-  } catch {
-    return 0;
-  }
-  for (const pid of pids) {
-    try {
-      const status = await readFile(`/proc/${pid}/status`, 'utf8');
-      const m = /^Uid:\s+(\d+)\s+(\d+)/m.exec(status);
-      if (m && (Number(m[1]) === uid || Number(m[2]) === uid)) {
-        process.kill(Number(pid), 'SIGKILL');
-        killed++;
-      }
-    } catch {
-      /* процесс уже завершился */
-    }
-  }
-  return killed;
+const execFileP = promisify(execFile);
+
+/** Через помощник: от имени uid задания kill(-1) — все его процессы (setsid не спасает). */
+export async function helperKillAll(helper: string): Promise<void> {
+  await execFileP(helper, ['killall'], { env: {} as NodeJS.ProcessEnv, timeout: 10_000 }).catch(() => undefined);
+}
+
+/** Через помощник: удалить содержимое каталога, созданное заданием (сервису чужие файлы не удалить). */
+export async function helperClean(helper: string, dir: string): Promise<void> {
+  await execFileP(helper, ['clean', dir], { env: {} as NodeJS.ProcessEnv, timeout: 30_000 }).catch(() => undefined);
 }
 
 export function runSandboxed(cmd: SandboxCommand, timeoutSec: number): Promise<SandboxOutcome> {
@@ -213,7 +212,6 @@ export function runSandboxed(cmd: SandboxCommand, timeoutSec: number): Promise<S
     const child = spawn(cmd.file, cmd.args, {
       cwd: cmd.cwd,
       env: cmd.env as NodeJS.ProcessEnv, // ровно этот набор, без process.env сервиса
-      ...(cmd.uid !== undefined ? { uid: cmd.uid, gid: cmd.gid } : {}),
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -221,7 +219,7 @@ export function runSandboxed(cmd: SandboxCommand, timeoutSec: number): Promise<S
     const killGroup = () => {
       if (child.pid === undefined) return;
       try {
-        process.kill(-child.pid, 'SIGKILL');
+        process.kill(-child.pid, 'SIGKILL'); // в контейнере EPERM (чужой uid) — там работает helperKillAll
       } catch {
         /* группа уже пуста */
       }
@@ -229,7 +227,7 @@ export function runSandboxed(cmd: SandboxCommand, timeoutSec: number): Promise<S
     const timer = setTimeout(() => {
       timedOut = true;
       killGroup();
-      if (cmd.uid !== undefined) void killUid(cmd.uid);
+      if (cmd.helper) void helperKillAll(cmd.helper);
     }, timeoutSec * 1000);
     child.stdout.on('data', append);
     child.stderr.on('data', append);
@@ -240,7 +238,7 @@ export function runSandboxed(cmd: SandboxCommand, timeoutSec: number): Promise<S
       done = true;
       clearTimeout(timer);
       killGroup(); // фоновые процессы, оставленные кодом кандидата
-      if (cmd.uid !== undefined) await killUid(cmd.uid);
+      if (cmd.helper) await helperKillAll(cmd.helper);
       // дочитать то, что уже в трубе, но не ждать её закрытия
       await new Promise((r) => setTimeout(r, 50));
       child.stdout.destroy();

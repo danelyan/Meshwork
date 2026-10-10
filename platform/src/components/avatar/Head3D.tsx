@@ -37,11 +37,11 @@ import {
   DEFAULT_HEAD_MOTION,
   easeToward,
   headMotion,
-  headPointer,
   type HeadMotionMode,
   livePose,
   NECK,
   neckPose,
+  trackPointer,
   trackPose,
 } from './head-motion';
 import { mouthOpen, smoothLevel } from './level';
@@ -695,7 +695,7 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
     const move = (e: PointerEvent) => {
       if (e.pointerType === 'touch') return;
       const r = canvas.getBoundingClientRect();
-      track.current.pointer = headPointer(e.clientX, e.clientY, innerWidth, innerHeight, r.left + r.width / 2, r.top + r.height * 0.4);
+      track.current.pointer = trackPointer(e.clientX, e.clientY, innerWidth, innerHeight, r.left + r.width / 2, r.top + r.height * 0.4);
     };
     const leave = () => {
       track.current.pointer = [0, 0];

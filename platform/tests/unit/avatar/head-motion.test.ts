@@ -10,6 +10,9 @@ import {
   NECK,
   neckPose,
   neckWeight,
+  PITCH_DOWN,
+  PITCH_UP,
+  trackPointer,
   trackPose,
   TRACK_GAIN,
 } from '../../../src/components/avatar/head-motion';
@@ -25,7 +28,24 @@ describe('avatar head motion (Karina tracking on our model)', () => {
     expect(trackPose(1, 0)[0]).toBeCloseTo(0.24 * TRACK_GAIN);
     expect(trackPose(-5, 0)[0]).toBeCloseTo(-0.24 * TRACK_GAIN);
     expect(trackPose(0, 1)[1]).toBeLessThan(trackPose(0, -1)[1]);
-    expect(trackPose(0, 1)[1] - trackPose(0, -1)[1]).toBeCloseTo(-0.14 * TRACK_GAIN);
+    expect(trackPose(0, 1)[1] - trackPose(0, -1)[1]).toBeCloseTo(-(PITCH_UP + PITCH_DOWN));
+  });
+
+  it('looks down noticeably when the cursor is under the head (owner 10.10)', () => {
+    const p0 = trackPose(0, 0)[1];
+    expect(trackPose(0, -1)[1] - p0).toBeCloseTo(PITCH_DOWN);
+    expect(PITCH_DOWN).toBeGreaterThan(0.3);
+    expect(p0 - trackPose(0, 1)[1]).toBeCloseTo(PITCH_UP);
+    expect(trackPose(0, -9)[1]).toBeCloseTo(trackPose(0, -1)[1]);
+  });
+
+  it('normalises vertical distance to the window edge on that side, not to the full height', () => {
+    // голова в верхней трети: центр 250 из 800 по высоте
+    expect(trackPointer(500, 800, 1000, 800, 500, 250)).toEqual([0, -1]);
+    expect(trackPointer(500, 0, 1000, 800, 500, 250)).toEqual([0, 1]);
+    expect(trackPointer(500, 525, 1000, 800, 500, 250)[1]).toBeCloseTo(-0.5);
+    expect(trackPointer(1000, 250, 1000, 800, 500, 250)).toEqual([1, 0]);
+    expect(trackPointer(500, 2000, 1000, 800, 500, 250)[1]).toBe(-1);
   });
 
   it('turns the neck, not the shoulders: base fixed, chin and jaw rigid', () => {

@@ -67,18 +67,38 @@ const KARINA_YAW_OFFSET = headPose(0, 0)[0];
 
 /** Усиление слежения против её `headPose` (±0.24 рад ≈ ±14°): владелец 10.10 — до ±30° (≈ ±0.52 рад). */
 export const TRACK_GAIN = 2.2;
+/**
+ * Наклон за курсором по вертикали, рад: вниз до ≈22°, вверх до ≈9°. У Карины ±0.07 (×TRACK_GAIN ≈ ±9°)
+ * — голова почти не опускалась, когда курсор под ней (владелец 10.10: «должна смотреть вниз»).
+ */
+export const PITCH_DOWN = 0.38;
+export const PITCH_UP = 0.15;
+
+const clampUnit = (v: number) => (Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
 
 /**
- * Поза за курсором (pointer — нормированный −1…1, как headPointer): yaw ±0.53, pitch ∓0.15 вокруг
- * её центра; пределы и знаки — её `headPose` × TRACK_GAIN, без компенсации ориентации меша.
+ * Курсор → −1…1 относительно головы. По X — как `headPointer` Карины. По Y — отдельно вверх и вниз:
+ * расстояние до края окна с той стороны. Голова стоит в верхней трети экрана, и у Карины
+ * (деление на всю высоту) курсор прямо под подбородком давал почти ноль — теперь низ окна = −1.
+ */
+export function trackPointer(x: number, y: number, width: number, height: number, centerX: number, centerY: number): [number, number] {
+  const [px] = headPointer(x, y, width, height, centerX, centerY);
+  const py = y <= centerY ? (centerY - y) / Math.max(1, centerY) : -(y - centerY) / Math.max(1, height - centerY);
+  return [px, clampUnit(py)];
+}
+
+/**
+ * Поза за курсором (pointer — нормированный −1…1, как trackPointer): yaw ±0.53 — её `headPose` ×
+ * TRACK_GAIN; pitch — вокруг её центра, вниз PITCH_DOWN, вверх PITCH_UP (плюс — голова опускается).
  */
 export function trackPose(
   pointerX: number,
   pointerY: number,
 ): [number, number] {
-  const [yaw, pitch] = headPose(pointerX, pointerY);
+  const [yaw] = headPose(pointerX, pointerY);
   const [, pitch0] = headPose(0, 0);
-  return [(yaw - KARINA_YAW_OFFSET) * TRACK_GAIN, pitch0 + (pitch - pitch0) * TRACK_GAIN];
+  const py = clampUnit(pointerY);
+  return [(yaw - KARINA_YAW_OFFSET) * TRACK_GAIN, pitch0 - py * (py < 0 ? PITCH_DOWN : PITCH_UP)];
 }
 
 /** Её сглаживание слежения: экспоненциальное приближение со скоростью 5.2/с, не зависит от FPS. */

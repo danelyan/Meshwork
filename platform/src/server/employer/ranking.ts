@@ -36,6 +36,8 @@ export interface CandidateEvidence {
   /** Последняя категория из теста или null (теста не было). Множитель покрытия — weights.ts. */
   category: { specialization: Specialization; grade: Grade } | null;
   claims: EvidenceClaim[];
+  /** lane directions: подкатегория из онбординга (необязательна; фильтр поиска по банку, R-T-05). */
+  subcategoryId?: string | null;
 }
 
 export interface MatchTarget {
@@ -55,6 +57,8 @@ export interface MatchFilters {
   fsp?: boolean;
   /** Только с категорией из теста. */
   categoryOnly?: boolean;
+  /** lane directions: подкатегория ("ai.llm-apps"); кандидаты без подкатегории или с другой не проходят. */
+  subcategory?: string;
 }
 
 export interface Explanation {
@@ -130,6 +134,7 @@ export function passesFilters(c: CandidateEvidence, f: MatchFilters): boolean {
   if (f.specialization && effectiveSpecialization(c) !== f.specialization) return false;
   if (f.grade && c.category?.grade !== f.grade) return false;
   if (f.categoryOnly && !c.category) return false;
+  if (f.subcategory && c.subcategoryId !== f.subcategory) return false;
   if (f.fsp && c.fspState !== 'linked') return false;
   if (f.stack && f.stack.length > 0 && matchStack(c.claims, f.stack).length !== f.stack.length) return false;
   return true;

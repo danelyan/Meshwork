@@ -4,6 +4,7 @@ import { loadPlatformEnv } from '../scripts/load-env.mjs';
 
 import { seedAuth } from './seed/auth';
 import { seedClaims } from './seed/claims';
+import { seedDirections } from './seed/directions';
 import { seedEmployer } from './seed/employer';
 import { seedEmployerPool } from './seed/employer-pool';
 import { seedRecommend } from './seed/recommend';
@@ -65,6 +66,8 @@ async function main() {
   await seedEmployer(prisma);
   // Q-39: по паре специализация × грейд не меньше трёх кандидатов с категорией.
   await seedEmployerPool(prisma);
+  // lane directions: справочник подкатегорий и демо-кандидаты ai (после каталога утверждений).
+  await seedDirections(prisma);
 }
 
 main()

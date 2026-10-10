@@ -59,6 +59,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       email: true,
       contact: true,
       specialization: true,
+      subcategoryId: true,
       fspState: true,
       categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true } },
       claims: {
@@ -76,6 +77,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
     evidence: {
       id: r.id,
       specialization: r.specialization,
+      subcategoryId: r.subcategoryId,
       fspState: r.fspState,
       category: r.categories[0] ?? null,
       claims: r.claims,

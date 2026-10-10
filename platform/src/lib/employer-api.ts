@@ -11,6 +11,8 @@ export interface VacancyBody {
   teamDescription: string | null;
   description: string | null;
   stack: string[];
+  /** lane directions: подкатегория из справочника или null. */
+  subcategoryId?: string | null;
   needs: { catalogId: string; weight: number }[];
 }
 

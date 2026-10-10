@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { SPECIALIZATIONS } from '@/lib/directions';
+import { getSubcategory, SPECIALIZATIONS } from '@/lib/directions';
 import type { MatchFilters } from './ranking';
 import { normalizeStack } from './ranking';
 import { DEFAULT_RESULT_LIMIT, MAX_RESULT_LIMIT } from './weights';
@@ -28,12 +28,22 @@ export const VacancyInput = z
     teamDescription: optText(2000),
     description: optText(2000),
     stack: z.array(z.string().max(40)).max(15).default([]).transform(normalizeStack),
+    /** lane directions: подкатегория из справочника, необязательна; должна принадлежать направлению. */
+    subcategoryId: z
+      .string()
+      .max(64)
+      .nullish()
+      .transform((v) => v || null),
     needs: z
       .array(z.object({ catalogId: z.string().min(1).max(64), weight: z.number().int().min(1).max(3) }))
       .min(1, 'Выбери хотя бы одно требование')
       .max(25),
   })
-  .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Верхняя граница вилки меньше нижней', path: ['salaryTo'] });
+  .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Верхняя граница вилки меньше нижней', path: ['salaryTo'] })
+  .refine((v) => !v.subcategoryId || getSubcategory(v.subcategoryId)?.specialization === v.specialization, {
+    error: 'Подкатегория не из справочника этого направления',
+    path: ['subcategoryId'],
+  });
 export type VacancyInput = z.infer<typeof VacancyInput>;
 
 export const VacancyPatch = z.object({ archived: z.boolean() });
@@ -75,6 +85,12 @@ export function parseFilters(raw: Raw): { filters: MatchFilters; limit: number }
   if (stack.length) filters.stack = stack;
   if (first(raw.fsp) === '1') filters.fsp = true;
   if (first(raw.category) === '1') filters.categoryOnly = true;
+  // Подкатегория — только из справочника и только вместе со своим направлением (иначе отбрасывается).
+  const sub = getSubcategory(first(raw.sub));
+  if (sub && (!filters.specialization || filters.specialization === sub.specialization)) {
+    filters.specialization = sub.specialization;
+    filters.subcategory = sub.id;
+  }
   const limit = Number.isInteger(limitN) && limitN > 0 ? Math.min(limitN, MAX_RESULT_LIMIT) : DEFAULT_RESULT_LIMIT;
   return { filters, limit };
 }

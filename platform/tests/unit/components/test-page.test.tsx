@@ -111,6 +111,23 @@ describe('TestPage', () => {
     expect((screen.getByTestId('start') as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('четыре направления; для направления без генераторов — «тест пока недоступен», старт выключен', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/api/test/start?specialization=engineering'))
+        return { allowed: false, code: 'no_test', reason: 'Тест на грейд для направления Engineering пока недоступен: нет генераторов заданий.', rules: 'r' };
+      if (url.startsWith('/api/test/start?')) return { allowed: true, rules: 'r' };
+      return { test: null };
+    });
+    render(<TestPage />);
+    for (const name of ['Backend', 'Frontend', 'AI / ML', 'Engineering']) expect(await screen.findByRole('button', { name })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Engineering' }));
+    await waitFor(() => expect(screen.getByTestId('no-test').textContent).toContain('Тест пока недоступен'));
+    expect((screen.getByTestId('start') as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'AI / ML' }));
+    await waitFor(() => expect((screen.getByTestId('start') as HTMLButtonElement).disabled).toBe(false));
+    expect(screen.getByTestId('start').textContent).toContain('AI / ML');
+  });
+
   it('старт → задание с прогрессом и таймером; ответ → следующее задание; URL получает attempt', async () => {
     let step = 0;
     const calls = stubFetch((url) => {

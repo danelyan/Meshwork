@@ -109,6 +109,25 @@ describe('API теста на грейд', () => {
     for (const c of after) expect(c.level).toBe(solved.has(c.catalogId) ? 'platform' : 'third_party');
   });
 
+  it('направление ai: попытка из ai.*-шаблонов, верные ответы → Junior подтверждён, категория ai/junior (ADR 0003)', async () => {
+    const { attemptId } = await startAttempt(B, 'ai', 'junior');
+    const v = await play(B, attemptId, (_g, key) => key);
+    expect(v.status).toBe('passed');
+    const items = await prisma.testItem.findMany({ where: { attemptId } });
+    expect(items.every((i) => i.templateId.startsWith('ai.'))).toBe(true);
+    expect(await prisma.candidateCategory.findFirst({ where: { candidateId: B } })).toMatchObject({ specialization: 'ai', grade: 'junior' });
+  });
+
+  it('направление без генераторов (engineering): допуск no_test, старт — 422 с понятной причиной', async () => {
+    const elig = await eligibilityRoute(jsonRequest('/api/test/start?specialization=engineering&grade=junior', 'GET', undefined, cookie(A)));
+    const body = (await elig.json()) as { allowed: boolean; code?: string; reason?: string };
+    expect(body).toMatchObject({ allowed: false, code: 'no_test' });
+    expect(body.reason).toMatch(/Engineering пока недоступен/);
+    const started = await startRoute(jsonRequest('/api/test/start', 'POST', { specialization: 'engineering', grade: 'junior' }, cookie(A)));
+    expect(started.status).toBe(422);
+    expect(await prisma.testAttempt.count({ where: { candidateId: A } })).toBe(0);
+  });
+
   it('чужая попытка — 404; без сессии — 401', async () => {
     const { attemptId } = await startAttempt(A, 'backend', 'junior');
     const res = await getRoute(jsonRequest(`/api/test/attempt/${attemptId}`, 'GET', undefined, cookie(B)), ctx(attemptId));

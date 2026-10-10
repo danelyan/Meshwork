@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 
+import type { Specialization } from '../../src/lib/directions';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
 
 /**
@@ -11,7 +12,7 @@ import { catalogFromFile } from '../../src/server/claims/catalog-file';
  * и seedRecommend. Идемпотентен: утверждения и категории пула пересоздаются.
  */
 type Level = 'self_reported' | 'artifact' | 'third_party' | 'platform';
-type Spec = 'backend' | 'frontend';
+type Spec = Specialization;
 type Grade = 'junior' | 'middle';
 
 export interface DemoProfile {
@@ -26,6 +27,8 @@ export interface DemoProfile {
   /** Технологии — попадают в цитаты (по ним работает фильтр «стек»). */
   stack: string[];
   claims: [catalogId: string, level: Level][];
+  /** lane directions: подкатегория из справочника (src/lib/directions.ts); не задана — null. */
+  subcategoryId?: string;
 }
 
 export const DEMO_POOL: DemoProfile[] = [
@@ -108,8 +111,8 @@ export async function seedPoolProfiles(prisma: PrismaClient, profiles: DemoProfi
     const contact = p.contact ?? `${p.id.replace(/^demo-pool-/, 'candidate.')}@example.com`;
     await prisma.candidate.upsert({
       where: { id: p.id },
-      update: { name: p.name, email, contact, specialization: p.specialization, fspState: p.fspState, isDemo: true },
-      create: { id: p.id, name: p.name, email, contact, specialization: p.specialization, fspState: p.fspState, isDemo: true, consentAt: now },
+      update: { name: p.name, email, contact, specialization: p.specialization, subcategoryId: p.subcategoryId ?? null, fspState: p.fspState, isDemo: true },
+      create: { id: p.id, name: p.name, email, contact, specialization: p.specialization, subcategoryId: p.subcategoryId ?? null, fspState: p.fspState, isDemo: true, consentAt: now },
     });
     await prisma.claim.deleteMany({ where: { candidateId: p.id } });
     await prisma.candidateCategory.deleteMany({ where: { candidateId: p.id } });

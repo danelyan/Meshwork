@@ -1,4 +1,4 @@
-import { specLabel } from '@/lib/directions';
+import { SPEC_LABEL, SPECIALIZATIONS, specLabel, subcategoriesFor, subcategoryLabel } from '@/lib/directions';
 import type { MatchFilters } from '@/server/employer/ranking';
 
 import { Button, Field, Panel } from '../ui';
@@ -19,11 +19,28 @@ export function FilterForm({ action, filters }: FilterFormProps) {
   return (
     <Panel>
       <form method="get" action={action} className={styles.filters} aria-label="Фильтры подборки">
-      <Field label="Специализация">
+      <Field label="Направление">
         <select name="spec" className={ui.input} defaultValue={filters.specialization ?? ''}>
+          <option value="">любое</option>
+          {SPECIALIZATIONS.map((s) => (
+            <option key={s} value={s}>
+              {SPEC_LABEL[s]}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Подкатегория" hint="Задаёт и направление">
+        <select name="sub" className={ui.input} defaultValue={filters.subcategory ?? ''}>
           <option value="">любая</option>
-          <option value="backend">Backend</option>
-          <option value="frontend">Frontend</option>
+          {SPECIALIZATIONS.map((s) => (
+            <optgroup key={s} label={SPEC_LABEL[s]}>
+              {subcategoriesFor(s).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </optgroup>
+          ))}
         </select>
       </Field>
       <Field label="Грейд (категория из теста)">
@@ -59,6 +76,7 @@ export function FilterForm({ action, filters }: FilterFormProps) {
 export function filtersLabel(f: MatchFilters): string {
   const parts: string[] = [];
   if (f.specialization) parts.push(specLabel(f.specialization));
+  if (f.subcategory) parts.push(subcategoryLabel(f.subcategory));
   if (f.grade) parts.push(f.grade === 'junior' ? 'Junior' : 'Middle');
   if (f.stack?.length) parts.push(f.stack.join(', '));
   if (f.fsp) parts.push('ФСП');

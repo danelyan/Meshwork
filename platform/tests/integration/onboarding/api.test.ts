@@ -74,6 +74,10 @@ describe('API онбординга', () => {
     await act(c, { action: 'skip', stepId: 'documents' });
     await act(c, { action: 'answer', stepId: 'fsp', value: 'not_linked' });
     await act(c, { action: 'answer', stepId: 'specialization', value: 'frontend' });
+    // lane directions: необязательная подкатегория своего направления (R-T-05)
+    expect((await view(c)).current.id).toBe('subcategory');
+    expect((await act(c, { action: 'answer', stepId: 'subcategory', value: 'ai.llm-apps' })).status).toBe(400);
+    await act(c, { action: 'answer', stepId: 'subcategory', value: 'frontend.ui-app' });
     const g = await view(c);
     expect(g.current.id).toBe('grade');
     expect(g.current.hint).toMatch(/Подтверди утверждения/);
@@ -91,7 +95,7 @@ describe('API онбординга', () => {
     expect(last.json.current.kind).toBe('summary');
     expect(last.json.summary!.skipped).toEqual([{ stepId: 'documents', label: 'Документы' }]);
 
-    expect(await prisma.candidate.findUniqueOrThrow({ where: { id: cid } })).toMatchObject({ specialization: 'frontend', fspState: 'not_linked', contact: '@ivan_dev' });
+    expect(await prisma.candidate.findUniqueOrThrow({ where: { id: cid } })).toMatchObject({ specialization: 'frontend', subcategoryId: 'frontend.ui-app', fspState: 'not_linked', contact: '@ivan_dev' });
     expect(await prisma.candidateProfile.findUniqueOrThrow({ where: { candidateId: cid } })).toMatchObject({
       goal: 'grade_confirm',
       claimedGrade: 'middle',
@@ -198,6 +202,7 @@ describe('API онбординга', () => {
     });
 
     await act(c, { action: 'answer', stepId: 'needSpecialization', value: 'backend' });
+    await act(c, { action: 'answer', stepId: 'needSubcategory', value: 'backend.integrations' });
     await act(c, { action: 'answer', stepId: 'needGrades', value: ['junior', 'middle'] });
     await act(c, { action: 'answer', stepId: 'needStack', value: ['Kafka', 'Go'] });
     await act(c, { action: 'answer', stepId: 'needTeam', value: 'Платёжный шлюз' });
@@ -211,6 +216,7 @@ describe('API онбординга', () => {
       ['middle', 150_000, 300_000, 'Платёжный шлюз'],
     ]);
     expect(vac[1]!.stack).toEqual(['Kafka', 'Go']);
+    expect(vac.map((v) => v.subcategoryId)).toEqual(['backend.integrations', 'backend.integrations']);
     const needIds = (vac[1]!.needs as { catalogId: string }[]).map((n) => n.catalogId);
     expect(needIds.slice(0, 2).sort()).toEqual(['be.lang-core', 'be.message-queue']); // Go и Kafka — первыми
 

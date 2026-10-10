@@ -17,6 +17,8 @@ export interface VacancyView {
   teamDescription: string | null;
   description: string | null;
   stack: string[];
+  /** lane directions: подкатегория потребности или null. */
+  subcategoryId: string | null;
   needs: Need[];
   archived: boolean;
   createdAt: string;
@@ -33,6 +35,7 @@ const select = {
   teamDescription: true,
   description: true,
   stack: true,
+  subcategoryId: true,
   needs: true,
   archivedAt: true,
   createdAt: true,
@@ -49,6 +52,7 @@ type Row = {
   teamDescription: string | null;
   description: string | null;
   stack: string[];
+  subcategoryId: string | null;
   needs: unknown;
   archivedAt: Date | null;
   createdAt: Date;
@@ -66,6 +70,7 @@ function toView(v: Row): VacancyView {
     teamDescription: v.teamDescription,
     description: v.description,
     stack: v.stack,
+    subcategoryId: v.subcategoryId,
     needs: parseNeeds(v.needs),
     archived: v.archivedAt !== null,
     createdAt: v.createdAt.toISOString(),
@@ -107,6 +112,7 @@ function data(input: VacancyInput, needs: Need[]) {
     teamDescription: input.teamDescription,
     description: input.description,
     stack: input.stack,
+    subcategoryId: input.subcategoryId,
     needs: needs.map((n) => ({ catalogId: n.catalogId, weight: n.weight })),
   };
 }

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type FormEvent } from 'react';
 
-import { specLabel } from '@/lib/directions';
+import { SPEC_LABEL, SPECIALIZATIONS, specLabel, subcategoriesFor } from '@/lib/directions';
 import { ApiError } from '@/lib/api';
 import { createVacancyApi, updateVacancyApi, type VacancyBody } from '@/lib/employer-api';
 import type { CatalogEntry } from '@/server/claims/types';
@@ -43,6 +43,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [spec, setSpec] = useState<Spec>(initial?.specialization ?? 'backend');
   const [grade, setGrade] = useState<Grade>(initial?.grade ?? 'junior');
+  const [subcategory, setSubcategory] = useState(initial?.subcategoryId ?? '');
   const [salaryFrom, setSalaryFrom] = useState(initial?.salaryFrom ? String(initial.salaryFrom) : '');
   const [salaryTo, setSalaryTo] = useState(initial?.salaryTo ? String(initial.salaryTo) : '');
   const [team, setTeam] = useState(initial?.teamDescription ?? '');
@@ -59,6 +60,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
   function changeTrack(nextSpec: Spec, nextGrade: Grade) {
     setSpec(nextSpec);
     setGrade(nextGrade);
+    if (nextSpec !== spec) setSubcategory('');
     // Смена специализации — требования другого каталога: подставляем самые весомые заново.
     if (nextSpec !== spec || picked.size === 0) setPicked(new Set(optionsFor(catalog, nextSpec, nextGrade).slice(0, DEFAULT_PICK).map((x) => x.e.id)));
   }
@@ -94,6 +96,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
       teamDescription: team.trim() || null,
       description: description.trim() || null,
       stack: stack.split(',').map((s) => s.trim()).filter(Boolean),
+      subcategoryId: subcategory || null,
       needs,
     };
     setBusy(true);
@@ -115,10 +118,24 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
           <input className={ui.input} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
         </Field>
         <div className={styles.row}>
-          <Field label="Специализация">
+          <Field label="Направление">
             <select className={ui.input} value={spec} onChange={(e) => changeTrack(e.target.value as Spec, grade)}>
-              <option value="backend">Backend</option>
-              <option value="frontend">Frontend</option>
+              {SPECIALIZATIONS.map((s) => (
+                <option key={s} value={s}>
+                  {SPEC_LABEL[s]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Подкатегория" hint="Необязательно">
+            <select className={ui.input} value={subcategory} onChange={(e) => setSubcategory(e.target.value)}>
+              <option value="">любая</option>
+              {subcategoriesFor(spec).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                  {c.status === 'planned' ? ' (задания в плане)' : ''}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Грейд">
@@ -163,6 +180,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
             </Chip>
           ))}
         </div>
+        {options.length === 0 && <Notice>Для этого направления в каталоге навыков пока нет требований - потребность сохранить не получится.</Notice>}
         {errs.needs && <Notice tone="error">{errs.needs}</Notice>}
       </Panel>
       {error && <Notice tone="error">{error}</Notice>}

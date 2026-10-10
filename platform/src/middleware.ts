@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 import { getEnv } from '@/server/env';
-import { SITE_ACCESS_COOKIE, SITE_ACCESS_PATH, siteAccessDecision } from '@/server/site-access';
+import { SITE_ACCESS_COOKIE, SITE_ACCESS_PATH, siteAccessDecision, siteAccessKey } from '@/server/site-access';
 
-/** Пароль на публичный стенд (SITE_PASSWORD, src/server/site-access.ts). Не задан — пропускает всё. */
+/** Пароль на публичный стенд (SITE_PASSWORD / SITE_PASSWORD_SHA256, src/server/site-access.ts). Не задан — пропускает всё. */
 export function middleware(req: NextRequest) {
   const env = getEnv();
   const decision = siteAccessDecision({
-    password: env.SITE_PASSWORD,
+    key: siteAccessKey(env),
+    secret: env.SESSION_SECRET,
     host: req.headers.get('host'),
     pathname: req.nextUrl.pathname,
     cookie: req.cookies.get(SITE_ACCESS_COOKIE)?.value,

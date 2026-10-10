@@ -50,7 +50,7 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | `SITE_REDIRECT_FROM` | Необязательно: имена через запятую (`www.<домен>`, прежний адрес), с которых Caddy перенаправляет на `SITE_ADDRESS`. Каждое должно указывать на сервер — для него тоже выпускается сертификат |
 | `SESSION_SECRET` | `openssl rand -hex 32` |
 | `DEMO_LOGIN` | `true`, пока стенд показывается жюри |
-| `SITE_PASSWORD` | Необязательно: пароль на сайт (без логина, страница `/site-access`). Пусто — стенд открыт всем. Если задан к показу жюри — пароль должен быть в документе сдачи |
+| `SITE_PASSWORD` | Необязательно: пароль на сайт (без логина, страница `/site-access`). На стенде сейчас задан SHA-256 пароля в `docker-compose.prod.yml` (`SITE_PASSWORD_SHA256`, важнее `.env`): включается и снимается коммитом, без входа на сервер. Перед показом жюри строку удалить |
 
 `DATABASE_URL` задаёт Compose. Почта: без `SMTP_HOST`/`SMTP_PORT` в `.env` письма идут в Mailpit стенда; для реальных ящиков задать `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (`MAIL_PROVIDER=smtp`). Языковая модель и вход через Яндекс ID включаются своими переменными; после правки `.env` — `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`.
 

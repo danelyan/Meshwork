@@ -1,16 +1,28 @@
+import { createHash } from 'node:crypto';
+
 import { NextRequest } from 'next/server';
 
 import { config, middleware } from '@/middleware';
 import { resetEnvCache } from '@/server/env';
-import { SITE_ACCESS_COOKIE, passwordMatches, siteAccessDecision, siteAccessToken } from '@/server/site-access';
+import { SITE_ACCESS_COOKIE, passwordMatches, siteAccessDecision, siteAccessKey, siteAccessToken } from '@/server/site-access';
 
 const PASSWORD = 'jury-2026';
-const base = { password: PASSWORD, host: 'fsp-stars.ru', pathname: '/', cookie: undefined };
+const SECRET = 's'.repeat(32);
+const KEY = siteAccessKey({ SITE_PASSWORD: PASSWORD })!;
+const base = { key: KEY, secret: SECRET, host: 'fsp-stars.ru', pathname: '/', cookie: undefined };
 
 describe('site access: пароль на публичный стенд', () => {
-  it('без SITE_PASSWORD пропускает всё', () => {
-    expect(siteAccessDecision({ ...base, password: undefined })).toBe('allow');
-    expect(siteAccessDecision({ ...base, password: undefined, pathname: '/api/me' })).toBe('allow');
+  it('без пароля пропускает всё', () => {
+    expect(siteAccessKey({})).toBeUndefined();
+    expect(siteAccessDecision({ ...base, key: undefined })).toBe('allow');
+    expect(siteAccessDecision({ ...base, key: undefined, pathname: '/api/me' })).toBe('allow');
+  });
+
+  it('SITE_PASSWORD_SHA256 = SHA-256 пароля, в любом регистре; важнее SITE_PASSWORD', () => {
+    const hex = createHash('sha256').update(PASSWORD).digest('hex');
+    expect(KEY).toBe(hex);
+    expect(siteAccessKey({ SITE_PASSWORD_SHA256: hex.toUpperCase() })).toBe(hex);
+    expect(siteAccessKey({ SITE_PASSWORD: 'other', SITE_PASSWORD_SHA256: hex })).toBe(hex);
   });
 
   it.each(['localhost', 'localhost:3000', '127.0.0.1:3100', '[::1]:3000'])('%s не закрывается', (host) => {
@@ -33,23 +45,32 @@ describe('site access: пароль на публичный стенд', () => {
     expect(siteAccessDecision({ ...base, pathname: '/site-access/x' })).toBe('redirect');
   });
 
-  it('кука от верного пароля пускает, от другого или сам пароль — нет', () => {
-    expect(siteAccessDecision({ ...base, pathname: '/api/me', cookie: siteAccessToken(PASSWORD) })).toBe('allow');
-    expect(siteAccessDecision({ ...base, cookie: siteAccessToken('old-password') })).toBe('redirect');
+  it('кука от верного пароля и секрета пускает; от другого пароля, без секрета, сам пароль или хеш — нет', () => {
+    expect(siteAccessDecision({ ...base, pathname: '/api/me', cookie: siteAccessToken(KEY, SECRET) })).toBe('allow');
+    const oldKey = siteAccessKey({ SITE_PASSWORD: 'old-password' })!;
+    expect(siteAccessDecision({ ...base, cookie: siteAccessToken(oldKey, SECRET) })).toBe('redirect');
+    expect(siteAccessDecision({ ...base, cookie: siteAccessToken(KEY, 'x'.repeat(32)) })).toBe('redirect');
     expect(siteAccessDecision({ ...base, cookie: PASSWORD })).toBe('redirect');
+    expect(siteAccessDecision({ ...base, cookie: KEY })).toBe('redirect');
     expect(siteAccessDecision({ ...base, cookie: '' })).toBe('redirect');
   });
 
   it('passwordMatches: точное совпадение, любая длина ввода', () => {
-    expect(passwordMatches(PASSWORD, PASSWORD)).toBe(true);
-    expect(passwordMatches(`${PASSWORD} `, PASSWORD)).toBe(false);
-    expect(passwordMatches('', PASSWORD)).toBe(false);
-    expect(passwordMatches('x'.repeat(1000), PASSWORD)).toBe(false);
+    expect(passwordMatches(PASSWORD, KEY)).toBe(true);
+    expect(passwordMatches(`${PASSWORD} `, KEY)).toBe(false);
+    expect(passwordMatches('', KEY)).toBe(false);
+    expect(passwordMatches('x'.repeat(1000), KEY)).toBe(false);
+    expect(passwordMatches(KEY, KEY)).toBe(false);
   });
 });
 
 describe('middleware', () => {
-  const env = { DATABASE_URL: 'postgresql://u@127.0.0.1/db', SESSION_SECRET: 'x'.repeat(32), SITE_PASSWORD: PASSWORD, APP_URL: 'https://fsp-stars.ru' };
+  const env = {
+    DATABASE_URL: 'postgresql://u@127.0.0.1/db',
+    SESSION_SECRET: SECRET,
+    SITE_PASSWORD_SHA256: KEY,
+    APP_URL: 'https://fsp-stars.ru',
+  };
   beforeEach(() => {
     for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
     resetEnvCache();
@@ -80,7 +101,7 @@ describe('middleware', () => {
   });
 
   it('с кукой доступа пропускает', () => {
-    const res = middleware(request('https://fsp-stars.ru/employer', siteAccessToken(PASSWORD)));
+    const res = middleware(request('https://fsp-stars.ru/employer', siteAccessToken(KEY, SECRET)));
     expect(res.headers.get('x-middleware-next')).toBe('1');
   });
 

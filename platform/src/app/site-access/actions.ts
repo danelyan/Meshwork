@@ -10,6 +10,7 @@ import {
   SITE_ACCESS_MAX_AGE,
   SITE_ACCESS_PATH,
   passwordMatches,
+  siteAccessKey,
   siteAccessToken,
 } from '@/server/site-access';
 
@@ -18,11 +19,12 @@ export async function enterSite(formData: FormData): Promise<void> {
   const env = getEnv();
   const next = safeNext(String(formData.get('next') ?? '')) ?? '/';
   const input = String(formData.get('password') ?? '').slice(0, 256);
-  if (!env.SITE_PASSWORD) redirect(next);
-  if (!passwordMatches(input, env.SITE_PASSWORD)) {
+  const key = siteAccessKey(env);
+  if (!key) redirect(next);
+  if (!passwordMatches(input, key)) {
     redirect(`${SITE_ACCESS_PATH}?error=1&next=${encodeURIComponent(next)}`);
   }
-  (await cookies()).set(SITE_ACCESS_COOKIE, siteAccessToken(env.SITE_PASSWORD), {
+  (await cookies()).set(SITE_ACCESS_COOKIE, siteAccessToken(key, env.SESSION_SECRET), {
     httpOnly: true,
     sameSite: 'lax',
     secure: env.APP_URL.startsWith('https://'),

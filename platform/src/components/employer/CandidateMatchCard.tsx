@@ -3,7 +3,10 @@ import { LevelBadge } from '@/components/LevelBadge';
 import type { MatchItem } from '@/server/employer/matching';
 import type { PublicSourceType } from '@/server/employer/privacy';
 
-import { Meter, Panel, Tag } from '../ui';
+import { Button, Meter, Panel, Tag } from '../ui';
+
+import { CandidateQuestions } from './CandidateQuestions';
+import { DefenseBlock, DepthMapBlock, ProjectBlock } from './StageBlocks';
 
 import styles from './Employer.module.css';
 import { InviteForm } from './InviteForm';
@@ -70,6 +73,9 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
       <p className={styles.meta}>
         ФСП: {ex.fsp}. Категория: {ex.category}.{ex.subcategory && ` Подкатегория: ${ex.subcategory}.`}{ex.stackMatched.length > 0 && ` Стек в подтверждённых цитатах: ${ex.stackMatched.join(', ')}.`}
       </p>
+      {ex.depthMap && <DepthMapBlock depth={ex.depthMap} />}
+      {ex.project && <ProjectBlock project={ex.project} />}
+      {ex.defense && <DefenseBlock defense={ex.defense} />}
       {c.claims.length > 0 && (
         <details>
           <summary className={`${styles.meta} ${styles.more}`}>Все подтверждённые карточки ({c.claims.length})</summary>
@@ -92,6 +98,15 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
       ) : (
         <p className={styles.meta}>Имя и контакты откроются, когда кандидат примет приглашение.</p>
       )}
+      {c.contacts && item.defenseRoom && (
+        <div>
+          <Button href={`/employer/calls/${item.defenseRoom.sessionId}`} variant="cta" size="sm">
+            Комната защиты
+          </Button>
+          <span className={styles.meta}> {item.defenseRoom.status === 'active' ? 'защита идёт' : 'ждёт кандидата'}</span>
+        </div>
+      )}
+      {c.contacts && <CandidateQuestions candidateId={c.id} />}
       {open ? (
         <p className={styles.meta}>
           Приглашение: <span className={styles.status}>{INVITATION_STATUS_LABEL[item.invitation!.status]}</span>

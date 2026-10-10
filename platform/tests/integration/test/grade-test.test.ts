@@ -241,8 +241,10 @@ describe('API теста на грейд', () => {
   });
 
   it('Middle не сдан, P(Junior) неуверенная → дозадаются Junior-задания в той же попытке, затем Junior в один клик (R-C-08, 10.10)', async () => {
-    // seed 4242: после 10 заданий (4 Junior) P(θ > −0,7) ≈ 0,80 — ниже порога 0,8; без дозадавания Junior не предлагался.
-    const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 4242 });
+    // Пул — подкатегория backend.web-api (6 J + 4 M + 4 S). seed 4 подобран симуляцией цикла сервиса после интеграции лейнов
+    // (10.10): основная фаза кончается при неуверенной P(Junior), дальше — дозадавание. Прежний seed 4242 был для пула
+    // всего направления из 12 семейств; в пулах integrations/highload/data-model дозадавание при таком профиле не возникает.
+    const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 4, subcategoryId: 'backend.web-api' });
     let v = await getAttempt(A, attemptId);
     const probe: { index: number; grade: string; maxItems: number }[] = [];
     let mainJunior = 0;

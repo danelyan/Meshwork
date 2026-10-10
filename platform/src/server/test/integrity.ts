@@ -5,7 +5,8 @@ import { normalizeNumber } from './answers';
 import { probCorrect, type ItemParams } from './irt';
 import type { AnswerFormat } from './types';
 
-export const INTEGRITY_VERSION = 'integrity-v1';
+/** v2 (11.10, решение владельца по симуляции eval/test/integrity.ts): overtime не группа для high, серия быстрых верных — high. */
+export const INTEGRITY_VERSION = 'integrity-v2';
 
 /** Форматы, где ловушка «прибавь N к ответу» однозначна: ответ — число. */
 export const CANARY_FORMATS: ReadonlySet<AnswerFormat> = new Set<AnswerFormat>(['number']);
@@ -33,6 +34,8 @@ export const FAST_SHARE = 0.1;
 export const HARD_MARGIN = 0.5;
 /** Лёгкое для кандидата: b < θ̂ − 1. */
 export const EASY_MARGIN = 1;
+/** Серия: столько верных ответов быстрее FAST_SHARE лимита своего задания (в попытке, не обязательно подряд) — high. */
+export const FAST_SERIES_MIN = 4;
 
 /** Ожидаемая (медианная) длительность ответа, сек: ln T ~ N(β − τ, σ²), β из лимита и b, τ из θ. */
 export function expectedSeconds(b: number, theta: number, timeLimitSec: number): number {
@@ -51,6 +54,7 @@ export function rtResidual(seconds: number, b: number, theta: number, timeLimitS
 export type IntegrityGroup = 'time' | 'fit' | 'browser' | 'canary';
 export type IntegrityCode =
   | 'fast_correct_hard'
+  | 'fast_correct_series'
   | 'slow_correct_easy'
   | 'overtime'
   | 'person_misfit'
@@ -96,6 +100,16 @@ export function timeFlags(it: ItemObservation, theta: number): IntegrityReason[]
     out.push({ code: 'overtime', group: 'time', item: it.index, detail: `Ответ через ${t} с при лимите ${it.timeLimitSec} с` });
   }
   return out;
+}
+
+/**
+ * Серия быстрых верных ответов: ≥ FAST_SERIES_MIN верных быстрее 10 % лимита, трудность не важна — быстрые верные
+ * ответы сами завышают θ̂, и fast_correct_hard у «слитых ключей» почти не срабатывает (симуляция лейна D, 11.10).
+ */
+export function fastSeries(items: readonly ItemObservation[]): IntegrityReason[] {
+  const fast = items.filter((o) => o.correct && o.seconds !== null && o.timeLimitSec !== null && o.seconds < FAST_SHARE * o.timeLimitSec).length;
+  if (fast < FAST_SERIES_MIN) return [];
+  return [{ code: 'fast_correct_series', group: 'time', detail: `Верных ответов быстрее 10 % лимита: ${fast}` }];
 }
 
 // ---------------------------------------------------------------------------
@@ -200,11 +214,15 @@ export interface IntegrityIndex {
   flaggedItems: number[];
 }
 
-/** high — ловушка ИЛИ флаги из ≥ 2 разных групп; любой флаг — medium; один браузерный флаг high не даёт. */
+/**
+ * high — ловушка, ИЛИ серия быстрых верных, ИЛИ флаги из ≥ 2 разных групп без учёта overtime (overtime даёт только
+ * medium: у честных он в 29–55 % попыток); любой иной флаг — medium; браузерные флаги — одна группа.
+ */
 export function riskLevel(reasons: readonly IntegrityReason[]): IntegrityLevel {
   if (reasons.length === 0) return 'low';
-  if (reasons.some((r) => r.group === 'canary')) return 'high';
-  return new Set(reasons.map((r) => r.group)).size >= 2 ? 'high' : 'medium';
+  if (reasons.some((r) => r.group === 'canary' || r.code === 'fast_correct_series')) return 'high';
+  const strong = reasons.filter((r) => r.code !== 'overtime');
+  return new Set(strong.map((r) => r.group)).size >= 2 ? 'high' : 'medium';
 }
 
 export function riskIndex(reasons: readonly IntegrityReason[], notes: readonly string[] = [], lzStar: number | null = null): IntegrityIndex {
@@ -221,6 +239,7 @@ export function assessAttempt(items: readonly ItemObservation[], theta: number, 
     }
     reasons.push(...timeFlags(it, theta));
   }
+  reasons.push(...fastSeries(items));
   const fit = fitFlags(items, theta);
   reasons.push(...fit.reasons);
   const browser = browserFlags(signals);

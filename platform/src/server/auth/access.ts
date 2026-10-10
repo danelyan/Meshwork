@@ -111,6 +111,11 @@ export const API_ACCESS = {
   '/api/auth/me': 'public',
   '/api/auth/consent': { GET: 'public', POST: 'account' },
   '/api/auth/role': 'account',
+  // Мои согласия (ADR 0005): у кандидата и работодателя.
+  '/api/consents': 'account',
+  '/api/consents/[kind]': 'account',
+  // Возражение против оценки (ст. 16 152-ФЗ) — только кандидат, работодатель их не видит.
+  '/api/objections': 'candidate',
   // Переключение активной роли и вторая роль на той же учётке (ADR 0004).
   '/api/auth/role/switch': 'account',
   '/api/auth/onboarding/complete': 'account',
@@ -199,6 +204,8 @@ export const API_ACCESS = {
   // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
   '/api/evaluate': { POST: 'public' },
   '/api/dev/delete-account': 'dev',
+  // Ответ оператора на возражения против оценки (ст. 16, ADR 0005).
+  '/api/dev/objections': 'dev',
   '/api/dev/login-as': 'dev',
   '/api/dev/logout': 'dev',
   '/api/dev/new-conversation': 'dev',

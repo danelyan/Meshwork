@@ -7,9 +7,10 @@ import {
   confirmSelectionPool,
   confirmShouldStop,
   confirmTimeLimit,
+  CONSISTENCY_Z,
   decideConfirm,
 } from '@/server/test/confirm';
-import type { Response } from '@/server/test/irt';
+import { estimateTheta, type Response } from '@/server/test/irt';
 import { CONFIRM_PROB, type SelectableTemplate } from '@/server/test/policy';
 
 const t = (id: string, b = 0): SelectableTemplate => ({ id, a: 1.2, b, catalogIds: [id], grade: 'middle' });
@@ -87,5 +88,25 @@ describe('решение подтверждающего теста', () => {
   it('без ответов подтверждающей — не подтверждён (одних исходных мало)', () => {
     const src = Array.from({ length: 10 }, () => r(0.5, true));
     expect(decideConfirm(src, [], 'middle', 'low').confirmed).toBe(false);
+  });
+
+  it('D: несогласованные ответы (исходные сильные, подтверждающие средние) — не пройден, даже если P по объединению ≥ порога', () => {
+    const src = Array.from({ length: 10 }, (_, i) => r(1 + (i % 3) * 0.3, true));
+    const own = [r(-0.2, true), r(0, false), r(-0.4, true), r(0.2, false), r(-0.6, true), r(0.1, false)];
+    const d = decideConfirm(src, own, 'middle', 'low');
+    expect(d.pPass).toBeGreaterThanOrEqual(CONFIRM_PROB);
+    expect(d.consistent).toBe(false);
+    expect(d.confirmed).toBe(false);
+    expect(d.blockedByRisk).toBe(false);
+  });
+
+  it('D: порог — CONSISTENCY_Z · SE разности, как в eval/test/integrity.ts', () => {
+    const src = [r(0, true), r(0.3, true), r(-0.5, true), r(0.6, true)];
+    const own = [r(0.2, true), r(0.5, true), r(0.4, true), r(-0.2, true), r(0.7, true), r(0.1, true)];
+    const eS = estimateTheta(src);
+    const eO = estimateTheta(own);
+    const expected = Math.abs(eS.theta - eO.theta) <= CONSISTENCY_Z * Math.sqrt(eS.se ** 2 + eO.se ** 2);
+    expect(decideConfirm(src, own, 'middle', 'low').consistent).toBe(expected);
+    expect(expected).toBe(true);
   });
 });

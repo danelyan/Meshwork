@@ -14,6 +14,11 @@ export const CONFIRM_TIME_FACTOR = 0.7;
 /** Ловушек: в обычной попытке 2, в подтверждающей 1. */
 export const GRADE_CANARIES = 2;
 export const CONFIRM_CANARIES = 1;
+/**
+ * Согласованность (11.10, решение владельца по симуляции лейна D): |θ̂(чистые исходные) − θ̂(подтверждающие)| ≤
+ * CONSISTENCY_Z · sqrt(SE_исх² + SE_подтв²) — SE разности. Без неё читер без помощи проходил 52–58 % (персоны).
+ */
+export const CONSISTENCY_Z = 2;
 
 export function confirmTimeLimit(timeLimitSec: number): number {
   return Math.max(10, Math.round(timeLimitSec * CONFIRM_TIME_FACTOR));
@@ -58,17 +63,23 @@ export interface ConfirmDecision {
   /** P(θ > порог грейда) по объединённым ответам. */
   pPass: number;
   pJunior: number;
-  /** P ≥ CONFIRM_PROB и риск подтверждающей попытки не high. */
+  /** P ≥ CONFIRM_PROB, ответы согласованы и риск подтверждающей попытки не high. */
   confirmed: boolean;
-  /** Порог пройден, но сама подтверждающая попытка получила high. */
+  /** θ̂ исходных чистых и подтверждающих ответов расходятся не больше CONSISTENCY_Z SE разности. */
+  consistent: boolean;
+  /** Порог пройден и ответы согласованы, но сама подтверждающая попытка получила high. */
   blockedByRisk: boolean;
 }
 
 export function decideConfirm(source: readonly Response[], confirm: readonly Response[], grade: Grade, confirmRisk: IntegrityLevel, confirmProb: number = CONFIRM_PROB): ConfirmDecision {
   const est = estimateTheta([...source, ...confirm]);
   const pPass = probAbove(est, GRADE_CUT[grade]);
-  const passes = confirm.length > 0 && pPass >= confirmProb;
+  const eSrc = estimateTheta(source);
+  const eOwn = estimateTheta(confirm);
+  const consistent = Math.abs(eSrc.theta - eOwn.theta) <= CONSISTENCY_Z * Math.sqrt(eSrc.se ** 2 + eOwn.se ** 2);
+  const passes = confirm.length > 0 && pPass >= confirmProb && consistent;
   return {
+    consistent,
     theta: est.theta,
     se: est.se,
     pPass,

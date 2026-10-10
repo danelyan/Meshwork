@@ -7,6 +7,8 @@ import {
   canaryText,
   EMPTY_SIGNALS,
   expectedSeconds,
+  FAST_SERIES_MIN,
+  fastSeries,
   fitFlags,
   INTEGRITY_VERSION,
   parseSignals,
@@ -154,8 +156,19 @@ describe('уровень риска', () => {
 
   it('ловушка → high; флаги из двух разных групп → high', () => {
     expect(riskLevel([reason('canary', 'canary_hit')])).toBe('high');
-    expect(riskLevel([reason('time'), reason('browser', 'paste')])).toBe('high');
-    expect(riskLevel([reason('time'), reason('fit', 'person_misfit')])).toBe('high');
+    expect(riskLevel([reason('time', 'fast_correct_hard'), reason('browser', 'paste')])).toBe('high');
+    expect(riskLevel([reason('time', 'slow_correct_easy'), reason('fit', 'person_misfit')])).toBe('high');
+  });
+
+  it('A (v2): overtime не группа для high — overtime + браузер или + lz* дают только medium', () => {
+    expect(riskLevel([reason('time', 'overtime'), reason('browser', 'paste')])).toBe('medium');
+    expect(riskLevel([reason('time', 'overtime'), reason('browser', 'tab_away'), reason('browser', 'copy')])).toBe('medium');
+    expect(riskLevel([reason('time', 'overtime'), reason('fit', 'person_misfit')])).toBe('medium');
+    expect(riskLevel([reason('time', 'overtime'), reason('time', 'fast_correct_hard'), reason('browser', 'paste')])).toBe('high');
+  });
+
+  it('B (v2): серия быстрых верных — high сама по себе', () => {
+    expect(riskLevel([reason('time', 'fast_correct_series')])).toBe('high');
   });
 
   it('flaggedItems — задания с флагами времени и ловушки; версия проставлена', () => {
@@ -166,6 +179,23 @@ describe('уровень риска', () => {
     ]);
     expect(idx.flaggedItems).toEqual([1, 3]);
     expect(idx.version).toBe(INTEGRITY_VERSION);
+  });
+});
+
+describe('серия быстрых верных ответов (B)', () => {
+  const fast = (index: number, over: Partial<ItemObservation> = {}) => obs({ index, b: -1, seconds: 10, timeLimitSec: 180, ...over });
+
+  it(`≥ ${FAST_SERIES_MIN} верных быстрее 10 % лимита, не обязательно подряд и на любой трудности → fast_correct_series`, () => {
+    const items = [fast(0), obs({ index: 1 }), fast(2), fast(3, { b: 2 }), obs({ index: 4, correct: false, seconds: 5 }), fast(5)];
+    expect(fastSeries(items).map((r) => r.code)).toEqual(['fast_correct_series']);
+    const r = assessAttempt(items, 0, EMPTY_SIGNALS);
+    expect(r.level).toBe('high');
+    expect(r.version).toBe('integrity-v2');
+  });
+
+  it('3 быстрых верных, неверные быстрые и ровно 10 % лимита — не серия', () => {
+    expect(fastSeries([fast(0), fast(1), fast(2), fast(3, { correct: false }), fast(4, { seconds: 18 })])).toEqual([]);
+    expect(fastSeries([fast(0, { timeLimitSec: null }), fast(1), fast(2), fast(3, { seconds: null })])).toEqual([]);
   });
 });
 

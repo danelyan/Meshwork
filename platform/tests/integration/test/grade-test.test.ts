@@ -50,6 +50,17 @@ beforeEach(async () => {
 });
 
 describe('API теста на грейд', () => {
+  // Эти сценарии отвечают мгновенно (время ответа ≈ 0): с индексом честности v2 это серия быстрых верных → high.
+  // Индекс здесь не проверяется — он выключен; его сценарии — в describe «индекс честности и подтверждающий тест».
+  beforeEach(() => {
+    vi.stubEnv('TEST_INTEGRITY', 'false');
+    resetEnvCache();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    resetEnvCache();
+  });
+
   it('start → задание без ключа; верные ответы → Middle подтверждён, категория записана, история видна', async () => {
     const started = await startRoute(jsonRequest('/api/test/start', 'POST', { specialization: 'backend', grade: 'middle' }, cookie(A)));
     expect(started.status).toBe(201);

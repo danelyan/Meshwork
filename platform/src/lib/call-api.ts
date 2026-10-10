@@ -4,7 +4,8 @@ import type { CallEvent, CallKind, CallView, TranscriptEntry, TurnResult } from 
 import { ApiError, postJson, readError, request } from './api';
 
 export interface CallListResponse {
-  consent: { given: boolean; version: string; text: string[] };
+  /** mode (ADR 0005): audio — запись идёт; text — согласие на запись отозвано, созвон текстом; ask — спросить. */
+  consent: { given: boolean; mode?: 'audio' | 'text' | 'ask'; version: string; text: string[] };
   calls: CallView[];
   /** Готовность к созвону по видам (server/call/readiness.ts); у старых ответов поля нет. */
   readiness?: Record<'qualifying' | 'interview', { ready: boolean; reason?: string; retryAt?: string }>;

@@ -9,7 +9,8 @@ import type { LlmProvider } from '../llm/types';
 import { type CallPrincipal, publicVerdict, resolveCallAccess, type ResolvedAccess } from './access';
 import { assertSegment, concatRecording, listSegments, recognizeSegment, saveSegment, callAudioDir } from './audio';
 import { publishCall } from './bus';
-import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from './consent';
+import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from './consent';
+import { assertAiAssessmentConsent } from '../consent/service';
 import { CALL_DISCLAIMER, callDriver, questionTurns, type CallDriver, type DriverSession } from './drivers';
 import { assertCooldownPassed } from './readiness';
 import { CALL_LIMITS, CLOSING_LINE, closingWithRecap } from './plan';
@@ -193,7 +194,10 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
   const driver = callDriver(body.kind);
   const projectSubmissionId = body.projectSubmissionId ?? null;
   if (body.kind === 'qualifying' && projectSubmissionId) throw errors.badRequest('projectSubmissionId — только для защиты проекта');
-  if (!(await hasCallConsent(candidateId))) {
+  // Г3 (ADR 0005): созвон и защиту оценивает ИИ — без согласия на ИИ-оценку не начинаем.
+  await assertAiAssessmentConsent(candidateId);
+  // Г2: согласия на запись не было — спросить; отозвано — созвон идёт текстом без записи голоса (addAudio закрыт).
+  if ((await callRecordingMode(candidateId)) === 'ask') {
     throw new AppError('call_consent_required', 'Перед первым созвоном нужно согласие на запись', 409, { version: CALL_RECORDING_CONSENT_VERSION });
   }
   await driver.assertCanStart?.(candidateId, projectSubmissionId);
@@ -557,6 +561,10 @@ export async function latestQualifyingVerdict(candidateId: string): Promise<Call
 export async function addAudio(candidateId: string, sessionId: string, pcm: Uint8Array): Promise<{ audioRef: string; text: string | null }> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
+  // Без действующего согласия на запись (Г2) голос не сохраняем: созвон идёт текстом (ADR 0005).
+  if ((await callRecordingMode(candidateId)) !== 'audio') {
+    throw new AppError('call_recording_off', 'Запись голоса отключена в «Моих согласиях» - ответь текстом', 409);
+  }
   const audioRef = await saveSegment(sessionId, pcm);
   if (!row.audioPath) await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: callAudioDir(sessionId).rel } });
   let text: string | null = null;

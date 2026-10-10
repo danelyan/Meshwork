@@ -23,7 +23,12 @@ export const VERDICT_RULES = {
   version: 'defense-room-v0-2026-10-10',
 } as const;
 
-/** Пары для оценщика: ответ кандидата и всё, что сказали ИИ и работодатель перед ним. */
+/**
+ * Пары для оценщика: ответ кандидата и вопросы ИИ перед ним (по плану: QLC, вопросы работодателя из
+ * очереди, уточнения). Живые реплики работодателя (`say`) оценщику не отдаются: это не вопросы рубрики,
+ * и в них может быть что угодно (зарплата, условия, оценки кандидата). Ответ на такую реплику
+ * дописывается к предыдущему ответу.
+ */
 export function transcriptTurns(transcript: TranscriptEntry[]): { question: string; answer: string }[] {
   const out: { question: string; answer: string }[] = [];
   let asked: string[] = [];
@@ -32,8 +37,8 @@ export function transcriptTurns(transcript: TranscriptEntry[]): { question: stri
       if (asked.length) out.push({ question: asked.join('\n'), answer: e.text });
       else if (out.length) out[out.length - 1]!.answer += `\n${e.text}`;
       asked = [];
-    } else if (e.defense?.kind !== 'closing') {
-      asked.push(e.role === 'employer' ? `Работодатель: ${e.text}` : e.text);
+    } else if (e.role === 'ai' && e.defense?.kind !== 'closing') {
+      asked.push(e.text);
     }
   }
   return out;

@@ -10,6 +10,7 @@ import { POST as joinRoute } from '@/app/api/employer/call/[id]/join/route';
 import { POST as muteRoute } from '@/app/api/employer/call/[id]/mute-ai/route';
 import { POST as sayRoute } from '@/app/api/employer/call/[id]/say/route';
 import { GET as listQuestions, POST as askRoute } from '@/app/api/employer/questions/route';
+import { CALL_RECORDING_CONSENT_VERSION } from '@/server/call/consent';
 import { subscribe, resetBus } from '@/server/defense-room/bus';
 import type { CallEvent, CallSnapshot, DefenseRoomVerdict, TranscriptEntry } from '@/server/defense-room/types';
 import { clearStubResponses, registerStubResponse } from '@/server/llm/providers/stub';
@@ -29,9 +30,10 @@ const post = (url: string, body: unknown, cookie: string) => jsonRequest(url, 'P
 // Слабая защита: оценщик ставит низко на всех трёх прогонах.
 const WEAK = { depth: { score: 1, quote: 'экспоненциально', rationale: '' }, why: { score: 0, quote: '', rationale: '' }, boundary: { score: 1, quote: 'не знаю точно', rationale: '' }, completion: { score: 0, quote: '', rationale: '' }, advice: 'Объясняй выбор.' };
 
-async function seed() {
+async function seed(opts: { consent?: boolean } = {}) {
   await prisma.candidate.create({ data: { id: CAND, email: 'c@example.com', name: 'Кандидат Защиты' } });
   await prisma.user.create({ data: { id: 'u-cand', name: 'Кандидат', role: 'candidate', candidateId: CAND } });
+  if (opts.consent !== false) await prisma.consent.create({ data: { userId: 'u-cand', version: CALL_RECORDING_CONSENT_VERSION } });
   for (const x of ['a', 'b']) {
     await prisma.company.create({ data: { id: `co-${x}`, name: x === 'a' ? 'Альфа' : 'Бета' } });
     await prisma.user.create({ data: { id: `u-emp-${x}`, name: `HR ${x}`, role: 'employer' } });
@@ -247,5 +249,127 @@ describe('защита: уточнение, затем вмешательств�
     const un = await (await muteRoute(post('/x', { muted: false }, EMP_A), params(sessionId))).json();
     expect(un.aiText).not.toMatch(/Вернёмся/);
     expect(un.aiText).toMatch(/^Понял, спасибо\. /);
+  });
+});
+
+describe('защита: доступ, лимиты, гонки', () => {
+  beforeEach(async () => {
+    await resetDb();
+    resetBus();
+    clearStubResponses();
+  });
+
+  const start = async () => startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE));
+  const acceptB = () => prisma.invitation.updateMany({ where: { companyId: 'co-b' }, data: { status: 'accepted' } });
+
+  it('без согласия на запись — 403 call_consent_required с версией; сессия не создаётся', async () => {
+    await seed({ consent: false });
+    const res = await start();
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error.code).toBe('call_consent_required');
+    expect(await prisma.callSession.count()).toBe(0);
+  });
+
+  it('policyVersion — версия согласия (как у call), версия правил защиты — в плане', async () => {
+    await seed();
+    const { sessionId } = await (await start()).json();
+    expect((await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId } })).policyVersion).toBe(CALL_RECORDING_CONSENT_VERSION);
+    const plan = await prisma.defenseRoomPlan.findUniqueOrThrow({ where: { callSessionId: sessionId } });
+    expect((plan.sourceJson as { policyVersion?: string }).policyVersion).toMatch(/^defense-room-/);
+  });
+
+  it('say и mute-ai: не подключившийся — 409, чужая компания без приглашения — 404', async () => {
+    await seed();
+    const { sessionId } = await (await start()).json();
+    expect((await sayRoute(post('/x', { text: 'Привет, это Альфа' }, EMP_A), params(sessionId))).status).toBe(409);
+    expect((await muteRoute(post('/x', { muted: true }, EMP_A), params(sessionId))).status).toBe(409);
+    expect((await sayRoute(post('/x', { text: 'Привет, это Бета' }, EMP_B), params(sessionId))).status).toBe(404);
+    expect((await muteRoute(post('/x', { muted: true }, EMP_B), params(sessionId))).status).toBe(404);
+    const t = (await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId } })).transcriptJson as unknown as TranscriptEntry[];
+    expect(t.some((e) => e.role === 'employer')).toBe(false);
+  });
+
+  it('одна компания в эфире: вторая получает room_busy, в том числе при одновременном join', async () => {
+    await seed();
+    await acceptB();
+    const { sessionId } = await (await start()).json();
+    const [a, b] = await Promise.all([joinRoute(post('/x', {}, EMP_A), params(sessionId)), joinRoute(post('/x', {}, EMP_B), params(sessionId))]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    const busy = a.status === 409 ? a : b;
+    expect((await busy.json()).error.code).toBe('room_busy');
+    expect(await prisma.callParticipant.count({ where: { callSessionId: sessionId, leftAt: null } })).toBe(1);
+  });
+
+  it('не больше 3 защит на сабмит и общий суточный лимит с созвонами', async () => {
+    await seed();
+    for (let i = 0; i < 3; i++) {
+      await prisma.callSession.create({ data: { candidateId: CAND, kind: 'defense', projectSubmissionId: SUB, status: 'finished', policyVersion: 'x', startedAt: new Date(Date.now() - 3 * 86_400_000) } });
+    }
+    const res = await start();
+    expect(res.status).toBe(429);
+    expect((await res.json()).error.code).toBe('defense_attempts_exhausted');
+
+    await prisma.callSession.deleteMany();
+    // 5 квалифицирующих созвонов за сутки (CALL_DAILY_LIMIT по умолчанию 5) — защита тоже упирается в лимит.
+    for (let i = 0; i < 5; i++) await prisma.callSession.create({ data: { candidateId: CAND, kind: 'qualifying', status: 'finished', policyVersion: 'x' } });
+    const limited = await start();
+    expect(limited.status).toBe(429);
+    expect((await limited.json()).error.code).toBe('call_limit');
+  });
+
+  it('два параллельных finish: оценщик запускается один раз, второй — 409 busy или тот же вердикт', async () => {
+    await seed();
+    const { sessionId } = await (await start()).json();
+    await turnRoute(post('/x', { text: 'Задержка растёт экспоненциально.' }, CAND_COOKIE), params(sessionId));
+    let evalCalls = 0;
+    registerStubResponse('call_evaluator', async () => {
+      evalCalls++;
+      await new Promise((r) => setTimeout(r, 50));
+      return { json: WEAK };
+    });
+    const [r1, r2] = await Promise.all([finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId)), finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId))]);
+    const statuses = [r1.status, r2.status].sort();
+    expect(statuses[0]).toBe(200);
+    expect([200, 409]).toContain(statuses[1]);
+    expect(evalCalls).toBe(3);
+    const row = await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId } });
+    expect(row).toMatchObject({ status: 'finished', finishAttempts: 1 });
+  });
+
+  it('оценщик недоступен 3 раза — защита закрыта без оценки; больше попыток нет', async () => {
+    await seed();
+    const { sessionId } = await (await start()).json();
+    await turnRoute(post('/x', { text: 'Задержка растёт экспоненциально.' }, CAND_COOKIE), params(sessionId));
+    registerStubResponse('call_evaluator', () => {
+      throw new Error('down');
+    });
+    for (let i = 0; i < 3; i++) expect((await finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId))).status).toBe(503);
+    const row = await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId } });
+    expect(row).toMatchObject({ status: 'cancelled', finishAttempts: 3, verdictJson: null });
+    expect((await finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId))).status).toBe(409);
+  });
+
+  it('изоляция компаний: вопрос A и ответ на него не видны B; список вопросов — только свои', async () => {
+    await seed();
+    await acceptB();
+    const qa = (await (await askRoute(post('/x', { candidateId: CAND, text: 'Какая у тебя зарплатная вилка в Альфе?' }, EMP_A))).json()).id as string;
+    await askRoute(post('/x', { candidateId: CAND, text: 'Что поменять в retry для Беты?' }, EMP_B));
+    const listB = await (await listQuestions(jsonRequest(`/api/employer/questions?candidateId=${CAND}`, 'GET', undefined, EMP_B))).json();
+    expect(listB.questions.map((q: { id: string }) => q.id)).not.toContain(qa);
+    expect(JSON.stringify(listB)).not.toMatch(/Альфе/);
+
+    const { sessionId } = await (await start()).json();
+    // Ход 1 — ответ на QLC; ИИ задаёт первый вопрос работодателя (порядок очереди — по времени: сначала A).
+    const t1 = await (await turnRoute(post('/x', { text: 'Задержка растёт экспоненциально.' }, CAND_COOKIE), params(sessionId))).json();
+    expect(t1.text).toMatch(/Альфа/);
+    await turnRoute(post('/x', { text: 'Секретный ответ для Альфы: от 300 тысяч.' }, CAND_COOKIE), params(sessionId));
+
+    const snapB = (await (await snapshotRoute(jsonRequest('/x', 'GET', undefined, EMP_B), params(sessionId))).json()) as CallSnapshot;
+    const textB = JSON.stringify(snapB);
+    expect(textB).not.toMatch(/Альф|300 тысяч|co-a/);
+    const snapA = JSON.stringify(await (await snapshotRoute(jsonRequest('/x', 'GET', undefined, EMP_A), params(sessionId))).json());
+    expect(snapA).toMatch(/300 тысяч/);
+    expect(snapA).not.toMatch(/для Беты/);
   });
 });

@@ -19,6 +19,8 @@ const transcript: TranscriptEntry[] = [
   e('candidate', 'Очередь тоже вариант, но тогда клиент ждёт дольше.'),
   e('ai', 'Вернёмся. Что сломается при трёх экземплярах?', { defense: { kind: 'return', itemId: 'q2' } }),
   e('candidate', ANSWER2),
+  e('ai', 'Что будет при пустом списке платежей?', { defense: { kind: 'question', itemId: 'q3' } }),
+  e('candidate', 'Вернётся пустой результат, к шлюзу запроса не будет.'),
   e('ai', 'Это все вопросы.', { defense: { kind: 'closing' } }),
 ];
 
@@ -30,10 +32,11 @@ function evalJson(total: 'high' | 'low' | 'mid') {
 }
 
 describe('пары для слепого оценщика', () => {
-  it('ответ кандидата — с репликами ИИ и работодателя перед ним; завершение не попадает', () => {
+  it('ответ кандидата — с вопросами ИИ перед ним; живые реплики работодателя и завершение не попадают', () => {
     const turns = transcriptTurns(transcript);
     expect(turns).toHaveLength(3);
-    expect(turns[1]).toEqual({ question: 'Работодатель: А почему не очередь с повтором?', answer: 'Очередь тоже вариант, но тогда клиент ждёт дольше.' });
+    expect(turns[0]!.answer).toBe(`${ANSWER1}\nОчередь тоже вариант, но тогда клиент ждёт дольше.`);
+    expect(JSON.stringify(turns)).not.toContain('очередь с повтором');
     expect(turns.map((t) => t.question).join(' ')).not.toContain('Это все вопросы');
   });
 });

@@ -69,11 +69,28 @@ export function redactEntry(entry: TranscriptEntry, viewer: Viewer): TranscriptE
   };
 }
 
+/**
+ * Транскрипт для зрителя. Ответ кандидата скрывается вместе с вопросом чужой компании: по метке
+ * `defense.companyId` у ответа, а у записей без метки — по связке с предыдущей репликой-вопросом.
+ */
+export function redactTranscript(transcript: TranscriptEntry[], viewer: Viewer): TranscriptEntry[] {
+  if (viewer.role === 'candidate') return transcript;
+  let askerCompany: string | undefined;
+  return transcript.map((e) => {
+    if (e.role !== 'candidate') {
+      askerCompany = e.defense?.companyId;
+      return redactEntry(e, viewer);
+    }
+    const companyId = e.defense?.companyId ?? askerCompany;
+    return redactEntry(companyId ? { ...e, defense: { ...e.defense, companyId } } : e, viewer);
+  });
+}
+
 export function redactSnapshot(s: CallSnapshot, viewer: Viewer): CallSnapshot {
   if (viewer.role === 'candidate') return s;
   return {
     ...s,
-    transcript: s.transcript.map((e) => redactEntry(e, viewer)),
+    transcript: redactTranscript(s.transcript, viewer),
     participants: s.participants.filter((p) => p.companyId === viewer.companyId),
   };
 }

@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { Button, Notice } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { callApi } from '@/lib/call-api';
 import { startDefenseRoomApi } from '@/lib/defense-room-api';
 
 /**
@@ -15,6 +16,8 @@ export function DefenseEntry(props: { projectSubmissionId: string; label?: strin
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Согласие на запись созвона — тот же пункт и тот же текст, что у CallPanel (lane call, /api/call/consent).
+  const [consent, setConsent] = useState<{ version: string; text: string[] } | null>(null);
   const start = async () => {
     setBusy(true);
     setError(null);
@@ -22,10 +25,47 @@ export function DefenseEntry(props: { projectSubmissionId: string; label?: strin
       const r = await startDefenseRoomApi('questions' in props ? { mode: 'questions' } : { mode: 'project', projectSubmissionId: props.projectSubmissionId });
       router.push(`/defense-room/${encodeURIComponent(r.sessionId)}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Не получилось начать защиту');
+      if (e instanceof ApiError && e.code === 'call_consent_required') {
+        try {
+          const list = await callApi.list('defense');
+          setConsent({ version: list.consent.version, text: list.consent.text });
+        } catch {
+          setError('Не получилось загрузить текст согласия');
+        }
+      } else {
+        setError(e instanceof ApiError ? e.message : 'Не получилось начать защиту');
+      }
       setBusy(false);
     }
   };
+  const acceptConsent = async () => {
+    if (!consent) return;
+    setError(null);
+    try {
+      await callApi.consent(consent.version);
+      setConsent(null);
+      await start();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Согласие не записалось');
+    }
+  };
+  if (consent) {
+    return (
+      <div data-testid="call-consent" style={{ display: 'grid', gap: 10 }}>
+        <b>Перед первым созвоном - согласие на запись</b>
+        {consent.text.map((p) => (
+          <p key={p}>{p}</p>
+        ))}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <Button onClick={() => void acceptConsent()}>Согласен, начать защиту</Button>
+          <Button variant="ghost" onClick={() => setConsent(null)}>
+            Не сейчас
+          </Button>
+        </div>
+        {error && <Notice tone="error">{error}</Notice>}
+      </div>
+    );
+  }
   return (
     <>
       <Button onClick={() => void start()} loading={busy} data-testid="defense-entry">

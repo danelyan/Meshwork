@@ -9,8 +9,13 @@ import type { SignalPayload } from '@/server/defense-room/types';
  * P2P-аудио защиты (ADR 0003): WebRTC между кандидатом и подключившимся работодателем, сигналинг —
  * POST /api/call/{id}/signal и SSE `signal`. Паттерн «perfect negotiation» (MDN, WebRTC API):
  * кандидат — вежливая сторона (уступает при встречных offer), работодатель — нет.
- * Только публичный STUN, TURN нет: если ICE не соединился за ICE_TIMEOUT_MS или ушёл в failed —
- * состояние `failed`, интерфейс пишет «аудио недоступно, текст» и разговор идёт текстом/TTS.
+ * Только публичный STUN, TURN нет: если ICE не соединился за ICE_TIMEOUT_MS, ушёл в failed или
+ * после `disconnected` не восстановился за ICE_TIMEOUT_MS — состояние `failed`, интерфейс пишет
+ * «аудио недоступно, текст» и разговор идёт текстом/TTS.
+ * Микрофон кандидата запрашивается только по его клику (`enableMic`), не на входящий offer: до клика
+ * кандидат только слушает (ответ recvonly), после клика трек добавляется и соединение пересогласуется.
+ * Работодатель включает микрофон кликом «Подключиться». Треки микрофона останавливаются, когда
+ * закрыт последний peer.
  */
 export type RtcState = 'off' | 'connecting' | 'connected' | 'failed';
 
@@ -30,6 +35,10 @@ export interface RtcAudio {
   /** Есть ли хотя бы одно поднятое аудио. */
   anyConnected: boolean;
   micError: string | null;
+  /** Микрофон выдан и пишет. */
+  micOn: boolean;
+  /** Запросить микрофон (только по клику пользователя) и добавить трек во все соединения. */
+  enableMic: () => void;
   /** Входящий сигнал из SSE. */
   onSignal: (from: string, payload: SignalPayload) => void;
   /** Поднять соединение с собеседником (работодатель зовёт для `candidate`; кандидат — на participant_joined). */
@@ -43,6 +52,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
   const streamRef = useRef<Promise<MediaStream | null> | null>(null);
   const [states, setStates] = useState<Record<string, RtcState>>({});
   const [micError, setMicError] = useState<string | null>(null);
+  const [micOn, setMicOn] = useState(false);
   const polite = role === 'candidate';
 
   const setState = useCallback((peer: string, s: RtcState) => setStates((prev) => (prev[peer] === s ? prev : { ...prev, [peer]: s })), []);
@@ -50,6 +60,11 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
   const mic = useCallback(() => {
     streamRef.current ??= navigator.mediaDevices
       ?.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+      .then((stream) => {
+        setMicError(null);
+        setMicOn(true);
+        return stream;
+      })
       .catch(() => {
         setMicError('Нет доступа к микрофону - собеседник вас не услышит, остаётся текст');
         return null;
@@ -65,8 +80,16 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
     [sessionId, role],
   );
 
-  const fail = useCallback(
-    (peer: string) => {
+  /** Последний peer закрыт — остановить треки микрофона (индикатор записи в браузере гаснет). */
+  const stopMicIfIdle = useCallback(() => {
+    if (peers.current.size > 0 || !streamRef.current) return;
+    void streamRef.current.then((st) => st?.getTracks().forEach((t) => t.stop()));
+    streamRef.current = null;
+    setMicOn(false);
+  }, []);
+
+  const drop = useCallback(
+    (peer: string, next: RtcState) => {
       const p = peers.current.get(peer);
       if (p) {
         if (p.timer) clearTimeout(p.timer);
@@ -74,10 +97,13 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
         p.audio.srcObject = null;
         peers.current.delete(peer);
       }
-      setState(peer, 'failed');
+      setState(peer, next);
+      stopMicIfIdle();
     },
-    [setState],
+    [setState, stopMicIfIdle],
   );
+
+  const fail = useCallback((peer: string) => drop(peer, 'failed'), [drop]);
 
   const ensure = useCallback(
     (peer: string): Peer => {
@@ -89,9 +115,13 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
       const p: Peer = { pc, makingOffer: false, ignoreOffer: false, timer: null, audio };
       peers.current.set(peer, p);
       setState(peer, 'connecting');
-      p.timer = setTimeout(() => {
-        if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') fail(peer);
-      }, ICE_TIMEOUT_MS);
+      const arm = () => {
+        if (p.timer) clearTimeout(p.timer);
+        p.timer = setTimeout(() => {
+          if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') fail(peer);
+        }, ICE_TIMEOUT_MS);
+      };
+      arm();
       pc.onicecandidate = ({ candidate }) => {
         if (candidate) void send(peer, { ice: candidate.toJSON() });
       };
@@ -105,9 +135,14 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
         const s = pc.iceConnectionState;
         if (s === 'connected' || s === 'completed') {
           if (p.timer) clearTimeout(p.timer);
+          p.timer = null;
           setState(peer, 'connected');
         } else if (s === 'failed') fail(peer);
-        else if (s === 'disconnected') setState(peer, 'connecting');
+        else if (s === 'disconnected') {
+          // Обрыв может пройти сам; не прошёл за ICE_TIMEOUT_MS — уходим в текст.
+          setState(peer, 'connecting');
+          arm();
+        }
       };
       pc.onnegotiationneeded = async () => {
         try {
@@ -121,7 +156,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
         }
       };
       // Звонит работодатель (невежливая сторона): его addTrack запускает negotiationneeded → offer.
-      // Кандидат добавляет микрофон, только получив offer (onSignal), чтобы не было встречных offer.
+      // Кандидат добавляет трек, только если сам включил микрофон (enableMic) — тогда пересогласует.
       if (!polite) {
         void mic().then((stream) => {
           if (!stream || pc.signalingState === 'closed') return;
@@ -146,8 +181,8 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
           if (p.ignoreOffer) return;
           await pc.setRemoteDescription(d as RTCSessionDescriptionInit);
           if (d.type === 'offer') {
-            // Микрофон до ответа: addTrack займёт трансивер из offer, ответ будет sendrecv.
-            const stream = await mic();
+            // Микрофон уже включён кликом — трек до ответа (sendrecv); иначе ответ recvonly, без запроса доступа.
+            const stream = polite ? await (streamRef.current ?? Promise.resolve(null)) : await mic();
             if (stream) addTracks(pc, stream);
             await pc.setLocalDescription();
             if (pc.localDescription) void send(from, { sdp: pc.localDescription.toJSON() });
@@ -179,22 +214,25 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
 
   const close = useCallback(
     (peer: string) => {
-      const p = peers.current.get(peer);
-      if (!p) return;
-      if (p.timer) clearTimeout(p.timer);
-      p.pc.close();
-      p.audio.srcObject = null;
-      peers.current.delete(peer);
-      setState(peer, 'off');
+      if (!peers.current.has(peer)) return;
+      drop(peer, 'off');
     },
-    [setState],
+    [drop],
   );
 
   const closeAll = useCallback(() => {
     for (const k of [...peers.current.keys()]) close(k);
     void streamRef.current?.then((s) => s?.getTracks().forEach((t) => t.stop()));
     streamRef.current = null;
+    setMicOn(false);
   }, [close]);
+
+  const enableMic = useCallback(() => {
+    void mic().then((stream) => {
+      if (!stream) return;
+      for (const p of peers.current.values()) if (p.pc.signalingState !== 'closed') addTracks(p.pc, stream);
+    });
+  }, [mic]);
 
   useEffect(() => () => closeAll(), [closeAll]);
 
@@ -202,6 +240,8 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
     states,
     anyConnected: Object.values(states).includes('connected'),
     micError,
+    micOn,
+    enableMic,
     onSignal: (from, payload) => void onSignal(from, payload),
     connect,
     close,

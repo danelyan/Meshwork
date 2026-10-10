@@ -37,15 +37,21 @@ export interface JoinResult {
 export async function joinCall(principal: SessionPrincipal | null, sessionId: string): Promise<JoinResult> {
   const { viewer, session } = await employerViewer(principal, sessionId);
   if (session.status !== 'active') throw errors.conflict('Защита уже завершена - доступен транскрипт');
-  let p = await activeParticipant(sessionId, viewer.userId);
-  if (!p) {
+  // check-then-create под FOR UPDATE строки сессии: два одновременных join разных компаний не пролезут оба.
+  const { p, joined } = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<{ status: string }[]>`SELECT "status"::text AS "status" FROM "CallSession" WHERE id = ${sessionId} FOR UPDATE`;
+    if (rows[0]?.status !== 'active') throw errors.conflict('Защита уже завершена - доступен транскрипт');
+    const mine = await tx.callParticipant.findFirst({ where: { callSessionId: sessionId, userId: viewer.userId, leftAt: null } });
+    if (mine) return { p: mine, joined: false };
     // Одна компания в эфире: иначе компании услышат и увидят друг друга.
-    const others = await prisma.callParticipant.findMany({ where: { callSessionId: sessionId, leftAt: null }, select: { userId: true } });
+    const others = await tx.callParticipant.findMany({ where: { callSessionId: sessionId, leftAt: null }, select: { userId: true } });
     if (others.length) {
-      const sameCompany = await prisma.employerProfile.count({ where: { userId: { in: others.map((o) => o.userId) }, companyId: viewer.companyId } });
+      const sameCompany = await tx.employerProfile.count({ where: { userId: { in: others.map((o) => o.userId) }, companyId: viewer.companyId } });
       if (sameCompany !== others.length) throw new AppError('room_busy', 'К этой защите сейчас подключена другая компания', 409);
     }
-    p = await prisma.callParticipant.create({ data: { callSessionId: sessionId, userId: viewer.userId, role: 'employer' } });
+    return { p: await tx.callParticipant.create({ data: { callSessionId: sessionId, userId: viewer.userId, role: 'employer' } }), joined: true };
+  });
+  if (joined) {
     publish(sessionId, { type: 'participant', userId: viewer.userId, role: 'employer', action: 'joined', companyId: viewer.companyId, companyName: viewer.companyName });
   }
   return { participantId: p.id, webrtc: { iceServers: ICE_SERVERS }, snapshot: redactSnapshot(await buildSnapshot(sessionId), viewer) };

@@ -24,6 +24,8 @@ export interface SourceInfo {
   files: number;
   fragments: number;
   truncated?: { treeEntries: number; files: number };
+  /** Версия правил защиты (DEFENSE_POLICY_VERSION); CallSession.policyVersion — версия согласия на запись, как у лейна call. */
+  policyVersion?: string;
 }
 
 export interface PlanRow {

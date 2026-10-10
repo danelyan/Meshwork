@@ -2,7 +2,10 @@ import type { Prisma } from '@prisma/client';
 
 import { countOf } from '@/lib/plural';
 
+import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from '../call/consent';
+import { CALL_LIMITS } from '../call/plan';
 import { prisma } from '../db';
+import { getEnv } from '../env';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
 import { publish } from './bus';
@@ -124,12 +127,23 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
       })
     : null;
   if (submissionId && (!submission || submission.candidateId !== candidateId)) throw errors.notFound('Сабмит проекта не найден');
+  // Защита — тоже созвон: то же отдельное согласие на запись, что у лейна call (ADR 0003, п. 4).
+  if (!(await hasCallConsent(candidateId))) {
+    throw new AppError('call_consent_required', 'Перед защитой нужно согласие на запись созвона', 403, { version: CALL_RECORDING_CONSENT_VERSION });
+  }
 
   const active = await prisma.callSession.findFirst({
     where: { candidateId, kind: 'defense', status: 'active', projectSubmissionId: submissionId },
     select: { id: true },
   });
   if (active) return { sessionId: active.id, resumed: true, webrtc: { iceServers: ICE_SERVERS }, snapshot: await buildSnapshot(active.id) };
+
+  // Общий суточный лимит с созвонами лейна call: защита и квалифицирующий созвон считаются вместе.
+  const dailyLimit = getEnv().CALL_DAILY_LIMIT;
+  if (dailyLimit > 0) {
+    const recent = await prisma.callSession.count({ where: { candidateId, startedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } });
+    if (recent >= dailyLimit) throw new AppError('call_limit', `Не больше ${dailyLimit} созвонов и защит в сутки - попробуй завтра`, 429);
+  }
 
   if (submissionId) {
     const done = await prisma.callSession.count({ where: { candidateId, kind: 'defense', status: 'finished', projectSubmissionId: submissionId } });
@@ -160,11 +174,12 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
       files: snapshot.files.length,
       fragments: qlc.fragments,
       truncated: snapshot.truncated,
+      policyVersion: DEFENSE_POLICY_VERSION,
     };
   } else {
     if (!queue.length) throw errors.conflict('Вопросов от работодателей нет');
     items = queue.map(employerItem);
-    source = { mode: 'questions', repoUrl: null, commitSha: null, projectTitle: 'ответы на вопросы работодателей', generator: 'none', files: 0, fragments: 0 };
+    source = { mode: 'questions', repoUrl: null, commitSha: null, projectTitle: 'ответы на вопросы работодателей', generator: 'none', files: 0, fragments: 0, policyVersion: DEFENSE_POLICY_VERSION };
   }
 
   const first = items[0]!;
@@ -175,7 +190,7 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
 
   const session = await prisma.$transaction(async (tx) => {
     const s = await tx.callSession.create({
-      data: { candidateId, kind: 'defense', projectSubmissionId: submissionId, status: 'active', policyVersion: DEFENSE_POLICY_VERSION, transcriptJson: [] },
+      data: { candidateId, kind: 'defense', projectSubmissionId: submissionId, status: 'active', policyVersion: CALL_RECORDING_CONSENT_VERSION, transcriptJson: [] },
       select: { id: true },
     });
     await tx.defenseRoomPlan.create({
@@ -221,7 +236,9 @@ export async function candidateTurn(candidateId: string, sessionId: string, rawT
   try {
     const before = await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId }, select: { transcriptJson: true } });
     const asker = lastAsker(asTranscript(before.transcriptJson));
-    await appendEntries(sessionId, [{ role: 'candidate', text: text || '(молчание)' }]);
+    // Ответ на вопрос или реплику компании помечается её companyId: другая компания его не увидит (access.ts).
+    const askerCompany = asker?.defense?.companyId;
+    await appendEntries(sessionId, [{ role: 'candidate', text: text || '(молчание)', ...(askerCompany ? { defense: { companyId: askerCompany } } : {}) }]);
 
     const plan = await loadPlan(sessionId);
     const current = plan.items[plan.cursor];
@@ -323,14 +340,42 @@ export async function resumeAi(sessionId: string, llm: LlmProvider): Promise<Tur
 // ---------------------------------------------------------------------------
 // Завершение
 // ---------------------------------------------------------------------------
+async function storedVerdict(sessionId: string): Promise<DefenseRoomVerdict> {
+  const stored = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { verdictJson: true, status: true } });
+  const v = asVerdict(stored?.verdictJson);
+  if (v) return v;
+  throw errors.conflict(stored?.status === 'cancelled' ? 'Защита закрыта без оценки' : 'Сессия защиты уже завершена');
+}
+
+/**
+ * Завершение. Два параллельных finish (двойной клик, две вкладки) сериализуются блокировкой хода
+ * (DefenseRoomPlan.lockedAt): второй получает 409 `busy`, а не второй запуск оценщика. Запуски оценщика
+ * считаются в CallSession.finishAttempts (≤ CALL_LIMITS.maxFinishAttempts, как у лейна call): после
+ * последней неудачи сессия закрывается без оценки, транскрипт остаётся.
+ */
 export async function finishDefenseRoom(candidateId: string, sessionId: string, llm: LlmProvider): Promise<DefenseRoomVerdict> {
   const s = await loadOwn(candidateId, sessionId);
-  if (s.status !== 'active') {
-    const stored = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { verdictJson: true } });
-    const v = asVerdict(stored?.verdictJson);
-    if (v) return v;
-    throw errors.conflict('Сессия защиты уже завершена');
+  if (s.status !== 'active') return storedVerdict(sessionId);
+  await lockPlan(sessionId);
+  try {
+    return await finishLocked(sessionId, llm);
+  } finally {
+    await unlockPlan(sessionId);
   }
+}
+
+async function finishLocked(sessionId: string, llm: LlmProvider): Promise<DefenseRoomVerdict> {
+  const max = CALL_LIMITS.maxFinishAttempts;
+  const claimed = await prisma.callSession.updateMany({
+    where: { id: sessionId, status: 'active', finishAttempts: { lt: max } },
+    data: { finishAttempts: { increment: 1 } },
+  });
+  if (claimed.count === 0) {
+    const cur = await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId }, select: { status: true } });
+    if (cur.status !== 'active') return storedVerdict(sessionId);
+    throw errors.conflict('Попытки оценки исчерпаны');
+  }
+
   const full = await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId }, select: { transcriptJson: true, projectSubmissionId: true } });
   const plan = await loadPlan(sessionId);
   const submission = full.projectSubmissionId
@@ -338,16 +383,37 @@ export async function finishDefenseRoom(candidateId: string, sessionId: string, 
     : null;
   const employerItems = plan.items.filter((i) => i.source === 'employer');
   const askedEmployer = employerItems.filter((i) => plan.items.indexOf(i) <= plan.cursor);
-  const verdict = await evaluateDefenseRoom(
-    {
-      projectTitle: plan.source.projectTitle,
-      transcript: asTranscript(full.transcriptJson),
-      projectScore: plan.source.mode === 'project' ? (summarizeProjectResult(submission?.resultJson)?.score ?? null) : null,
-      employerAsked: askedEmployer.length,
-      employerAnswered: askedEmployer.filter((i) => i.answered).length,
-    },
-    llm,
-  );
+  const requeue = employerItems.filter((i) => !i.answered).map((i) => (i.source === 'employer' ? i.employerQuestionId : ''));
+
+  let verdict: DefenseRoomVerdict;
+  try {
+    verdict = await evaluateDefenseRoom(
+      {
+        projectTitle: plan.source.projectTitle,
+        transcript: asTranscript(full.transcriptJson),
+        projectScore: plan.source.mode === 'project' ? (summarizeProjectResult(submission?.resultJson)?.score ?? null) : null,
+        employerAsked: askedEmployer.length,
+        employerAnswered: askedEmployer.filter((i) => i.answered).length,
+      },
+      llm,
+    );
+  } catch (err) {
+    const now = new Date();
+    const closed = await prisma.$transaction(async (tx) => {
+      const res = await tx.callSession.updateMany({
+        where: { id: sessionId, status: 'active', finishAttempts: { gte: max } },
+        data: { status: 'cancelled', finishedAt: now },
+      });
+      if (res.count !== 1) return false;
+      await closeRoom(tx, sessionId, requeue, now);
+      return true;
+    });
+    if (closed) {
+      publish(sessionId, { type: 'status', status: 'cancelled' });
+      throw new AppError('llm_unavailable', `Оценщик недоступен ${max} раза подряд - защита закрыта без оценки, ответы сохранены.`, 503);
+    }
+    throw err;
+  }
   // Режим «только вопросы работодателя»: сравнивать с проектом нечего — флаг no_project_result не нужен.
   if (plan.source.mode === 'questions') verdict.flags = verdict.flags.filter((f) => f !== 'no_project_result');
 
@@ -358,22 +424,20 @@ export async function finishDefenseRoom(candidateId: string, sessionId: string, 
       data: { status: 'finished', finishedAt: now, verdictJson: verdict as unknown as Prisma.InputJsonValue },
     });
     if (res.count !== 1) return false;
-    await tx.callParticipant.updateMany({ where: { callSessionId: sessionId, leftAt: null }, data: { leftAt: now } });
-    // Заданные, но не отвеченные вопросы работодателя возвращаются в очередь — до следующего входа кандидата.
-    const ids = employerItems.filter((i) => !i.answered).map((i) => (i.source === 'employer' ? i.employerQuestionId : ''));
-    if (ids.length) await tx.employerQuestion.updateMany({ where: { id: { in: ids }, status: 'asked' }, data: { status: 'queued' } });
+    await closeRoom(tx, sessionId, requeue, now);
     return true;
   });
-  if (!updated) {
-    const stored = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { verdictJson: true } });
-    const v = asVerdict(stored?.verdictJson);
-    if (v) return v;
-    throw errors.conflict('Сессия защиты уже завершена');
-  }
+  if (!updated) return storedVerdict(sessionId);
   publish(sessionId, { type: 'status', status: 'finished' });
   publish(sessionId, { type: 'verdict', verdict });
   publish(sessionId, { type: 'snapshot', call: await buildSnapshot(sessionId) });
   return verdict;
+}
+
+/** Участники выходят; заданные, но не отвеченные вопросы работодателя возвращаются в очередь — до следующего входа кандидата. */
+async function closeRoom(tx: Prisma.TransactionClient, sessionId: string, requeue: string[], now: Date): Promise<void> {
+  await tx.callParticipant.updateMany({ where: { callSessionId: sessionId, leftAt: null }, data: { leftAt: now } });
+  if (requeue.length) await tx.employerQuestion.updateMany({ where: { id: { in: requeue }, status: 'asked' }, data: { status: 'queued' } });
 }
 
 // ---------------------------------------------------------------------------

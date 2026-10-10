@@ -27,13 +27,21 @@ export interface CallEventsState {
   aiThinking: boolean;
 }
 
-export function useCallEvents(sessionId: string, initial: CallSnapshot | null, onSignal?: (from: string, payload: SignalPayload) => void): CallEventsState {
+export function useCallEvents(
+  sessionId: string,
+  initial: CallSnapshot | null,
+  onSignal?: (from: string, payload: SignalPayload) => void,
+  /** Работодатель вошёл или вышел (в т. ч. повторный вход): закрыть его старое RTCPeerConnection. */
+  onParticipant?: (userId: string, action: 'joined' | 'left') => void,
+): CallEventsState {
   const [snapshot, setSnapshot] = useState<CallSnapshot | null>(initial);
   const [connected, setConnected] = useState(false);
   const [lastEntry, setLastEntry] = useState<TranscriptEntry | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
   const signalRef = useRef(onSignal);
   signalRef.current = onSignal;
+  const participantRef = useRef(onParticipant);
+  participantRef.current = onParticipant;
 
   useEffect(() => {
     const es = new EventSource(`/api/defense-room/${encodeURIComponent(sessionId)}/events`);
@@ -62,6 +70,7 @@ export function useCallEvents(sessionId: string, initial: CallSnapshot | null, o
           setAiThinking(e.state === 'thinking');
           break;
         case 'participant':
+          participantRef.current?.(e.userId, e.action);
           setSnapshot((prev) => {
             if (!prev) return prev;
             const rest = prev.participants.filter((p) => p.userId !== e.userId);

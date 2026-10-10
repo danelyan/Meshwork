@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { HeadView } from '@/components/avatar/HeadView';
 import { CompanionVoiceProvider, useCompanionVoice } from '@/components/avatar/voice';
@@ -32,7 +32,10 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
   const voice = useCompanionVoice();
   const sayEmployer = useEmployerVoice();
   const rtc = useRtcAudio(sessionId, 'candidate', iceServers, true);
-  const { snapshot, lastEntry, connected, aiThinking } = useCallEvents(sessionId, initial, rtc.onSignal);
+  const { close: closePeer } = rtc;
+  // Вход и выход работодателя (и повторный вход) — старое соединение с ним закрывается: новое придёт новым offer.
+  const onParticipant = useCallback((userId: string) => closePeer(`employer:${userId}`), [closePeer]);
+  const { snapshot, lastEntry, connected, aiThinking } = useCallEvents(sessionId, initial, rtc.onSignal, onParticipant);
 
   useEffect(() => {
     voice?.setThinking(aiThinking);
@@ -124,6 +127,11 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
           {voice && !voice.enabled && (
             <Button variant="ghost" size="sm" onClick={voice.toggle} data-voice-toggle>
               Включить голос интервьюера
+            </Button>
+          )}
+          {employer && !rtc.micOn && !finished && (
+            <Button variant="ghost" size="sm" onClick={rtc.enableMic} data-testid="defense-mic">
+              Включить микрофон
             </Button>
           )}
           {rtc.micError && <Notice>{rtc.micError}</Notice>}

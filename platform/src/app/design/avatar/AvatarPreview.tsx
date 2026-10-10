@@ -10,18 +10,21 @@ import { CompanionVoiceProvider, useCompanionVoice, type VoiceStatus } from '@/c
 import { Button, Chip, Field, Kicker } from '@/components/ui';
 
 import { DemoPanel } from './DemoPanel';
+import { MouthLookPicker, MouthLookProvider } from './MouthLookPicker';
 import styles from './preview.module.css';
 import type { MouthBus, MouthSink } from './variants';
 
 const SAMPLE = 'Привет! Я компаньон платформы ФСП. Помогу пройти тест, собрать профиль и попасть в подборку работодателя.';
 const MAX_PANELS = 4;
-/** По умолчанию: основное «Плетение» рядом с его версиями (на экране сейчас только они, см. variants.ts). */
-const DEFAULT_VARIANTS = [`three-${DEFAULT_HEAD_STYLE}`, 'three-weave2', 'three-weave3', 'three-weave4'];
+/** По умолчанию: наша голова по умолчанию рядом со стеклянной головой Карины. */
+const DEFAULT_VARIANTS = [`three-${DEFAULT_HEAD_STYLE}`, 'glass', 'grid-v3', 'three-loops'];
 
 export function AvatarPreview() {
   return (
     <CompanionVoiceProvider>
-      <Preview />
+      <MouthLookProvider>
+        <Preview />
+      </MouthLookProvider>
     </CompanionVoiceProvider>
   );
 }
@@ -117,6 +120,7 @@ function Preview() {
         <Field label={`Громкость (RMS) ${mouth.toFixed(2)} — вручную, когда озвучка молчит или недоступна`}>
           <input type="range" min={0} max={0.3} step={0.01} value={mouth} onChange={(e) => setMouth(Number(e.target.value))} />
         </Field>
+        <MouthLookPicker />
         <Field label="Состояние (влияет на наши головы; у Карины статуса нет)">
           <select value={status} onChange={(e) => setStatus(e.target.value as VoiceStatus)}>
             <option value="idle">idle</option>

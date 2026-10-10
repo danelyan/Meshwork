@@ -23,11 +23,11 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 import { BRAND_GLSL_COLOR, BRAND_GLSL_HEAD } from './brand-weave';
-import { WEAVE_GLSL_COLOR, WEAVE_GLSL_HEAD } from './weave-versions';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
 import { mouthOpen, smoothLevel } from './level';
 import { CLOSED, type MouthShape, smoothShape } from './lipsync';
+import { DEFAULT_MOUTH_LOOK, type MouthLook, mouthLookIndex } from './mouth-looks';
 import type { VoiceStatus } from './voice';
 
 /**
@@ -49,6 +49,8 @@ export interface Head3DProps {
   style?: HeadStyle;
   /** Ручной поворот (drag на демо-экране): прибавляется к повороту группы в каждом кадре. */
   getOrbit?: () => { yaw: number; pitch: number };
+  /** Вид открытого рта (см. mouth-looks.ts); только у головы с ригом рта. */
+  mouthLook?: MouthLook;
 }
 
 /** Цвета бренда: акцент `--blue` из tokens.css и серебро референса. */
@@ -114,6 +116,8 @@ interface HeadUniforms {
   time: { value: number };
   /** Половина высоты холста в px — для размера точек в режиме «частицы» (как `scale` у PointsMaterial). */
   pointScale: { value: number };
+  /** Вид рта — индекс в MOUTH_LOOKS. */
+  mouthLook: { value: number };
 }
 
 /** attribute — процедурная голова; model — head.glb с процедурным ртом; mouth — head-mouth.glb с морфами. */
@@ -180,9 +184,6 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
   grid: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   brand: { color: new Color('#b4bac4'), metalness: 0.62, roughness: 0.32 },
-  weave2: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
-  weave3: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
-  weave4: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   loops: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   chrome: { color: new Color('#8e939c'), metalness: 0.95, roughness: 0.24 },
   hologram: { color: new Color('#0b0b16'), metalness: 0, roughness: 1 },
@@ -207,6 +208,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
     shader.uniforms.uJawRegion = { value: JAW_REGION };
     shader.uniforms.uAccent = { value: new Color(ACCENT) };
     shader.uniforms.uSilver = { value: new Color(SILVER) };
+    shader.uniforms.uMouthLook = u.mouthLook;
     shader.vertexShader = shader.vertexShader
       .replace(
         '#define STANDARD',
@@ -272,6 +274,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         uniform vec4 uJawRegion;
         uniform vec3 uAccent;
         uniform vec3 uSilver;
+        uniform float uMouthLook;
         // линия сетки по дробной части координат клетки, толщина стабильна в пикселях (fwidth)
         float fspLine(vec2 cell) {
           vec2 fw = fwidth(cell);
@@ -293,23 +296,38 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         float fspZone(vec2 p, vec2 c, float R) {
           return smoothstep(R, R * 0.45, distance(p, c));
         }
-        ${BRAND_GLSL_HEAD}
-        ${WEAVE_GLSL_HEAD}`,
+        ${BRAND_GLSL_HEAD}`,
       )
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
         // полость открытого рта: темно, без нитей
         float mouthDark = 1.0 - clamp(vMouth * 2.5, 0.0, 0.92);
+        // доля металла и бликов окружения (1 — как у головы, 0 — матово и без отражений)
+        float mouthSpec = mouthDark;
+        vec3 mouthGlow = vec3(0.0);
         // части рига: 0 голова, 1 полость, 2 зубы, 3 язык; при сомкнутых губах прячем всё, кроме головы
         float part = floor(vPart + 0.5);
         #ifdef FSP_MORPH_MOUTH
+        // вид рта (mouth-looks.ts): 0 полость, 1 полость + нити, 2 приглушённые зубы, 3 свечение, 4 как было
+        int look = int(uMouthLook + 0.5);
         if (part > 0.5 && uMouth.x < 0.08) discard;
-        if (part > 0.5) mouthDark = part > 2.5 ? 0.3 : part > 1.5 ? 1.0 : 0.06;
-        // стенки губ уходят в полость: от края губы к глубине — в тёмное
-        else mouthDark = 1.0 - 0.94 * smoothstep(0.0, 0.6, vWall);
+        if (part > 1.5 && look != 2 && look != 4) discard;
+        // глубина рта по оси взгляда: 0 у кромки губ (z ≈ 0.44), 1 у задней стенки полости (z ≈ 0.33)
+        float depth = smoothstep(0.44, 0.31, vModelPos.z);
+        float wall = smoothstep(0.0, 0.6, vWall);
+        if (look == 4) {
+          if (part > 0.5) mouthDark = part > 2.5 ? 0.3 : part > 1.5 ? 1.0 : 0.06;
+          // стенки губ уходят в полость: от края губы к глубине — в тёмное
+          else mouthDark = 1.0 - 0.94 * wall;
+          mouthSpec = mouthDark;
+        } else {
+          // цвет задаём ниже целиком; блики гаснут уже у самой кромки губы, внутри рта их нет
+          mouthDark = 1.0;
+          mouthSpec = part > 0.5 ? 0.0 : 1.0 - smoothstep(0.0, 0.2, vWall);
+        }
         // изнутри головы (видно в уголках открытого рта) — тёмная полость
-        if (!gl_FrontFacing) mouthDark = 0.04;
+        if (!gl_FrontFacing) { mouthDark = 0.04; mouthSpec = 0.0; }
         #endif
         #ifdef FSP_METAL
         {
@@ -354,13 +372,45 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         }
         #endif
         ${BRAND_GLSL_COLOR}
-        ${WEAVE_GLSL_COLOR}
         diffuseColor.rgb *= mouthDark;
         #ifdef FSP_MORPH_MOUTH
-        // полость и изнанка головы — ровно тёмные, зубы светлые, язык тёплый тёмный; всё без сетки
-        if ((part > 0.5 && part < 1.5) || !gl_FrontFacing) diffuseColor.rgb = vec3(0.012, 0.009, 0.011);
-        if (part > 1.5 && part < 2.5) diffuseColor.rgb = vec3(0.8, 0.82, 0.86);
-        if (part > 2.5) diffuseColor.rgb = vec3(0.16, 0.07, 0.08);
+        if (look == 4) {
+          // прежний вид: полость и изнанка ровно тёмные, зубы светлые, язык тёплый тёмный
+          if ((part > 0.5 && part < 1.5) || !gl_FrontFacing) diffuseColor.rgb = vec3(0.012, 0.009, 0.011);
+          if (part > 1.5 && part < 2.5) diffuseColor.rgb = vec3(0.8, 0.82, 0.86);
+          if (part > 2.5) diffuseColor.rgb = vec3(0.16, 0.07, 0.08);
+        } else {
+          // тень полости вместо AO: свет окружения внутрь рта почти не попадает. Полость видна почти
+          // анфас, поэтому глубину рисуем виньеткой по отверстию: у краёв (свет заходит из-за губ) — тёмный
+          // тёплый, к центру — чёрный; плюс вглубь по z и тень под верхней губой (центр полости x ≈ −0.02,
+          // y ≈ 0.41, полуоси 0.075 × 0.045 — по head-mouth.glb до морфов)
+          float rim = smoothstep(0.35, 1.15, length(vec2((vModelPos.x + 0.021) / 0.075, (vModelPos.y - 0.41) / 0.045)));
+          float floorLit = smoothstep(0.445, 0.385, vModelPos.y);
+          float lit = rim * (1.0 - 0.6 * depth) * (0.45 + 0.55 * floorLit);
+          vec3 inner = mix(vec3(0.0015, 0.0015, 0.002), vec3(0.06, 0.038, 0.042), lit);
+          if (look == 1) {
+            // нити сетки продолжаются внутрь (та же трипланарная клетка, что у «плетения») и гаснут вглубь
+            vec3 n = normalize(vModelNormal);
+            vec3 w = pow(abs(n), vec3(4.0));
+            w /= (w.x + w.y + w.z);
+            float k = uGrid.x * 0.5;
+            float line = fspLine(vModelPos.yz * k) * w.x + fspLine(vModelPos.xz * k) * w.y + fspLine(vModelPos.xy * k) * w.z;
+            // нити видны у краёв и тонут к центру — ткань уходит в темноту, а не натянута сеткой
+            float fade = rim * (1.0 - 0.4 * depth);
+            inner = mix(inner, uSilver * 0.3, clamp(line, 0.0, 1.0) * fade * fade);
+          }
+          // стенки губ плавно переходят от поверхности головы в полость
+          if (part < 0.5) diffuseColor.rgb = mix(diffuseColor.rgb, inner, wall);
+          if ((part > 0.5 && part < 1.5) || !gl_FrontFacing) diffuseColor.rgb = inner;
+          // приглушённые зубы и язык: матовые, в тени, темнеют вглубь
+          if (part > 1.5 && part < 2.5) diffuseColor.rgb = mix(vec3(0.03, 0.03, 0.034), vec3(0.006, 0.006, 0.008), depth);
+          if (part > 2.5) diffuseColor.rgb = mix(vec3(0.045, 0.018, 0.022), vec3(0.008, 0.004, 0.005), depth);
+          if (look == 3 && (part > 0.5 || wall > 0.0 || !gl_FrontFacing)) {
+            // «цифровой» рот: свечение акцентом идёт из глубины и к губам гаснет
+            float g = (0.008 + 0.12 * (1.0 - rim) * depth) * (part > 0.5 || !gl_FrontFacing ? 1.0 : wall);
+            mouthGlow = uAccent * g * smoothstep(0.08, 0.3, uMouth.x);
+          }
+        }
         #endif
         #ifdef FSP_CHROME
         {
@@ -372,11 +422,23 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         #endif`,
       )
       // в полости рта нет ни металла, ни бликов окружения
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(1.0, roughnessFactor, mouthDark);')
-      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor *= mouthDark;')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(1.0, roughnessFactor, mouthSpec);')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor *= mouthSpec;')
+      // у диэлектрика F0 = 0.04, но F90 = 1: на скользящих углах стенки губ отражали студию почти белым —
+      // внутри рта гасим и френелевский блик
+      .replace(
+        '#include <lights_physical_fragment>',
+        `#include <lights_physical_fragment>
+        #ifdef FSP_MORPH_MOUTH
+        material.specularColor *= mouthSpec;
+        material.specularColorBlended *= mouthSpec;
+        material.specularF90 *= mouthSpec;
+        #endif`,
+      )
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
+        totalEmissiveRadiance += mouthGlow;
         #ifdef FSP_HOLOGRAM
         if (part < 0.5 && gl_FrontFacing)
         {
@@ -481,7 +543,7 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
   const style = props.style ?? DEFAULT_HEAD_STYLE;
   const height = useThree((st) => st.size.height);
   const uniforms = useMemo<HeadUniforms>(
-    () => ({ grid: { value: gridDensity(160) }, jaw: { value: 0 }, mouth: { value: [0, 0, 0, 0] }, face: { value: [0, 0, 0, 0] }, time: { value: 0 }, pointScale: { value: 80 } }),
+    () => ({ grid: { value: gridDensity(160) }, jaw: { value: 0 }, mouth: { value: [0, 0, 0, 0] }, face: { value: [0, 0, 0, 0] }, time: { value: 0 }, pointScale: { value: 80 }, mouthLook: { value: 0 } }),
     [],
   );
   useEffect(() => {
@@ -527,6 +589,7 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
     const smile = props.reducedMotion ? 0 : speaking ? 0.35 : thinkingNow ? 0 : 0.15;
     uniforms.face.value = [props.reducedMotion ? 0 : lid, smile, 0, 0];
     uniforms.time.value = props.reducedMotion ? 0 : t;
+    uniforms.mouthLook.value = mouthLookIndex(props.mouthLook ?? DEFAULT_MOUTH_LOOK);
     const g = groupRef.current;
     if (!g) return;
     const motion = props.reducedMotion ? 0 : 1;

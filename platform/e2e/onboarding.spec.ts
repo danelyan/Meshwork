@@ -11,9 +11,10 @@ test('E-02: /demo → галка согласия → «Новый пользо�
   await expect(start).toBeEnabled();
   await start.click();
   await page.waitForURL('**/onboarding');
-  // лента-чат: текущий вопрос помощника — #ob-q (появляется после «печатает»)
+  // лента-чат: текущий вопрос помощника — #ob-q; он появляется после «печатает» и посимвольного набора вступления
+  // (набор идёт в реальном времени, на нагруженной машине дольше 5 с по умолчанию)
   const question = page.locator('#ob-q');
-  await expect(question).toBeVisible();
+  await expect(question).toBeVisible({ timeout: 30_000 });
   await expect(question).toContainText(/Ты здесь как кто/);
   await expect(question).not.toContainText(/\b[Вв]ы\b|ваш/);
   await expect(page.getByRole('list', { name: 'Переписка с помощником' })).toBeVisible();

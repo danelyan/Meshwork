@@ -141,6 +141,28 @@ describe('evaluateDefenseRoom: балл по вопросу', () => {
     expect(v.items![1]!.label).toBe('что сломается · src/dedupe.ts:L3-L8');
   });
 
+  it('молчание не считается ответом: short_defense срабатывает; у признака с баллом 0 цитаты нет', async () => {
+    const silent: TranscriptEntry[] = [
+      e('ai', 'Почему задержка растёт экспоненциально?', { defense: { kind: 'question', itemId: 'q1' } }),
+      e('candidate', '(молчание)'),
+      e('ai', 'Что сломается при трёх экземплярах?', { defense: { kind: 'question', itemId: 'q2' } }),
+      e('candidate', ''),
+      e('ai', 'Что будет при пустом списке?', { defense: { kind: 'question', itemId: 'q3' } }),
+      e('candidate', ANSWER2),
+    ];
+    registerStubResponse('call_evaluator', (req) => {
+      const items = parseContextBlock<{ items: { id: string; qa: { answer: string }[] }[] }>(req.messages[0]!.content)!.items;
+      // Оценщик приложил дословную цитату к нулевому баллу — показывать её как доказательство нельзя.
+      return { json: { items: items.map((it) => ({ id: it.id, depth: crit(0, ANSWER2.slice(0, 30)), why: crit(0, ''), boundary: crit(0, ''), completion: crit(0, '') })) } };
+    });
+    const v = await evaluateDefenseRoom({ projectTitle: 'p', transcript: silent, projectScore: 0.9, employerAsked: 0, employerAnswered: 0 }, llm);
+    expect(v.answered).toBe(1);
+    expect(v.items!.map((i) => i.answers)).toEqual([0, 0, 1]);
+    expect(v.flags).toContain('short_defense');
+    expect(v.items!.every((i) => i.quote === '')).toBe(true);
+    expect(v.quotes).toEqual([]);
+  });
+
   it('нет ответов — оценки нет, флаг short_defense', async () => {
     const v = await evaluateDefenseRoom({ projectTitle: 'p', transcript: [transcript[0]!], projectScore: 0.9, employerAsked: 0, employerAnswered: 0 }, llm);
     expect(v.total).toBeNull();

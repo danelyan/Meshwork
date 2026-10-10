@@ -345,7 +345,13 @@ export async function finishCall(candidateId: string, sessionId: string, llm: Ll
         const e = entry(t, cur.startedAt, { role: 'ai', text: q.text, meta: q.meta });
         const upd = (await tx.callSession.update({
           where: { id: sessionId },
-          data: { transcriptJson: [...t, e] as unknown as Prisma.InputJsonValue, verdictJson: pending as unknown as Prisma.InputJsonValue },
+          // Промежуточная оценка — не попытка завершения: попытка возвращается, иначе созвон с дополнительным
+          // вопросом мог бы упереться в maxFinishAttempts при первом же сбое оценщика на итоговом завершении.
+          data: {
+            transcriptJson: [...t, e] as unknown as Prisma.InputJsonValue,
+            verdictJson: pending as unknown as Prisma.InputJsonValue,
+            finishAttempts: { decrement: 1 },
+          },
           select: rowSelect,
         })) as Row;
         return { row: upd, entry: e };

@@ -206,7 +206,20 @@ describe('checkQuoteLoose', () => {
     expect(checkQuote("в заголовок уйдёт строка 'Infinity'", [answer]).valid).toBe(false);
   });
   it('принимает цитату с пропуском, если куски идут по порядку', () => {
-    expect(checkQuoteLoose('Да, это тот край, который я не обработал. ... признаю.', [answer])).toEqual({ valid: true });
+    expect(checkQuoteLoose('Деление на ноль ... в заголовок уйдёт строка', [answer])).toEqual({ valid: true });
+  });
+  it('отклоняет пропуск, в котором есть «не», «нет» или «ни»: он может перевернуть смысл', () => {
+    expect(checkQuoteLoose('который я ... обработал', [answer]).valid).toBe(false);
+    // Пропуск «… Пока этого нет —» — отклоняется, даже если смысл не перевёрнут (цена правила).
+    expect(checkQuoteLoose('Да, это тот край, который я не обработал. ... признаю.', [answer]).valid).toBe(false);
+    expect(checkQuoteLoose('кэш ... работает', ['кэш ни разу не работает'] ).valid).toBe(false);
+    // «не» внутри слова («нельзя», «ненадолго») — не отрицание-пропуск.
+    expect(checkQuoteLoose('кэш хранится ... в памяти', ['кэш хранится ненадолго в памяти']).valid).toBe(true);
+  });
+  it('не больше трёх кусков', () => {
+    const a = 'первое слово, второе слово, третье слово, четвёртое слово';
+    expect(checkQuoteLoose('первое слово ... второе слово ... третье слово', [a]).valid).toBe(true);
+    expect(checkQuoteLoose('первое слово ... второе слово ... третье слово ... четвёртое слово', [a]).valid).toBe(false);
   });
   it('не принимает куски не по порядку или выдуманные', () => {
     expect(checkQuoteLoose('признаю ... Да, это тот край', [answer]).valid).toBe(false);

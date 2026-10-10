@@ -186,6 +186,9 @@ export interface DefenseEvaluatorPayload {
   items: { id: string; kind: string; where: string | null; qa: { question: string; answer: string }[] }[];
 }
 
+/** Подпись пустого ответа для оценщика; в число ответов не входит. */
+export const NO_ANSWER = '(кандидат не ответил)';
+
 interface EvalItem {
   itemId: string;
   source: 'qlc' | 'employer';
@@ -211,7 +214,7 @@ export function evalItems(transcript: TranscriptEntry[], plan: readonly PlanItem
       ref,
       label: where ? `${QLC_LABEL[type]} · ${where}` : QLC_LABEL[type],
       question: p?.question ?? g.qa[0]?.question ?? '',
-      qa: g.qa.map((x) => ({ question: x.question, answer: x.answer.trim() === '' || x.answer === '(молчание)' ? '(кандидат не ответил)' : x.answer })),
+      qa: g.qa.map((x) => ({ question: x.question, answer: x.answer.trim() === '' || x.answer === '(молчание)' ? NO_ANSWER : x.answer })),
     };
   });
 }
@@ -299,7 +302,8 @@ export function aggregateItems(items: readonly EvalItem[], runs: readonly RunIte
     const runScores = per.map(scoresOf);
     const scores = medianScores(runScores);
     const passed = decidePassed(scores);
-    const quoteRun = per.find((p) => p.depth.valid && p.depth.score === scores.depth);
+    // Цитата-доказательство — только у признака с баллом > 0: цитата к нулю ничего не доказывает.
+    const quoteRun = scores.depth > 0 ? per.find((p) => p.depth.valid && p.depth.score === scores.depth) : undefined;
     const anyValid = per.flatMap((p) => CRITERIA.map((c) => p[c])).find((x) => x.valid && x.score > 0);
     return {
       itemId: it.itemId,
@@ -313,7 +317,7 @@ export function aggregateItems(items: readonly EvalItem[], runs: readonly RunIte
       passed,
       runs: runScores.map(scoreTotal),
       agreement: { same: runScores.filter((r) => decidePassed(r) === passed).length, of: runScores.length },
-      answers: it.qa.length,
+      answers: it.qa.filter((x) => x.answer !== NO_ANSWER).length,
       quote: (quoteRun?.depth.quote ?? anyValid?.quote ?? '').trim(),
     };
   });
@@ -341,7 +345,8 @@ export interface VerdictInput {
 
 export async function evaluateDefenseRoom(input: VerdictInput, llm: LlmProvider, runs = VERDICT_RUNS): Promise<DefenseRoomVerdict> {
   const items = evalItems(input.transcript, input.plan ?? []);
-  const answered = items.reduce((s, i) => s + i.qa.length, 0);
+  // Молчание не ответ: иначе short_defense не срабатывает, когда кандидат молчал на все вопросы.
+  const answered = items.reduce((s, i) => s + i.qa.filter((x) => x.answer !== NO_ANSWER).length, 0);
   const now = new Date().toISOString();
   const thresholdVersion = `${THRESHOLD.version}+${VERDICT_RULES.version}`;
   if (items.length === 0) {

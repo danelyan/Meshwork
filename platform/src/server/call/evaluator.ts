@@ -254,7 +254,8 @@ export function aggregateRuns(topics: readonly EvalTopic[], runs: readonly RunTo
     const runScores = per.map((p) => Object.fromEntries(CRITERIA.map((c) => [c, p[c].score])) as unknown as TopicScores);
     const { status, same } = decideStatus(scores, runScores);
     // Цитата — из прогона, где глубина совпала с медианой; иначе любая принятая.
-    const depthRun = per.find((p) => p.depth.valid && p.depth.score === scores.depth);
+    // Цитата-доказательство — только у признака с баллом > 0: цитата к нулю ничего не доказывает.
+    const depthRun = scores.depth > 0 ? per.find((p) => p.depth.valid && p.depth.score === scores.depth) : undefined;
     const anyValid = per.flatMap((p) => CRITERIA.map((c) => p[c])).find((x) => x.valid && x.score > 0);
     return {
       topic: t.topic,

@@ -108,6 +108,10 @@ export function checkQuote(
 
 const INNER_QUOTES_RE = /["'«»“”„‘’`]/g;
 const ELLIPSIS_RE = /\s*(?:\.\.\.|…)\s*/;
+/** Не больше трёх кусков в цитате с пропусками. */
+const MAX_QUOTE_PARTS = 3;
+/** Отрицание в пропущенном фрагменте: «не», «нет», «ни» отдельным словом. */
+const NEGATION_RE = /(?:^|[^\p{L}])(?:не|нет|ни)(?=[^\p{L}]|$)/u;
 
 /**
  * Проверка цитаты для оценщиков созвона и защиты (ступени 1 и 3). Строже не стала, мягче — в двух местах,
@@ -127,11 +131,15 @@ export function checkQuoteLoose(quote: string, answers: string[]): ReturnType<ty
   // Каждый кусок — не короче MIN_QUOTE_CHARS: иначе «цитата» склеивается из отдельных букв и коротких слов
   // ответа («я ... обработал» из «я не обработал»), то есть выдумывается.
   if (parts.length > 1 && parts.some((p) => p.replace(/\s/g, '').length < MIN_QUOTE_CHARS)) return strict;
+  if (parts.length > MAX_QUOTE_PARTS) return strict;
+  // Пропуск не должен переворачивать смысл: «который я … обработал» из «который я не обработал» — отказ.
+  // Куски ищутся по первому вхождению: если пропуск с отрицанием, цитата отклоняется (строже, но не выдумка).
   const inOrder = (answer: string) => {
     let from = 0;
-    for (const p of parts) {
+    for (const [i, p] of parts.entries()) {
       const at = answer.indexOf(p, from);
       if (at < 0) return false;
+      if (i > 0 && NEGATION_RE.test(answer.slice(from, at))) return false;
       from = at + p.length;
     }
     return true;

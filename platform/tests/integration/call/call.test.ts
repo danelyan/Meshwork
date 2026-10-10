@@ -188,6 +188,8 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     const probe = interim.transcript!.at(-1)!;
     expect(probe.meta).toMatchObject({ topic: 'Подбирает индексы под запросы', probe: 'inconclusive' });
     expect((await prisma.claim.findUniqueOrThrow({ where: { id: 'cl-1' } })).level).toBe('self_reported');
+    // Промежуточная оценка попытку завершения не тратит.
+    expect((await prisma.callSession.findUniqueOrThrow({ where: { id }, select: { finishAttempts: true } })).finishAttempts).toBe(0);
 
     const t = await json<{ done: boolean; ai: { meta?: unknown } }>(await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG2 }, cookieA()), ctx(id)));
     expect(t.done).toBe(true);

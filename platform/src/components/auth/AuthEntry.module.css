@@ -19,7 +19,6 @@
 .label small { color: var(--muted); font-size: var(--fs-md); font-weight: 400; }
 .check { flex: none; width: 24px; height: 24px; border: 1px solid var(--border-input); }
 .choice[aria-pressed='true'] .check { background: var(--blue); border-color: var(--blue); }
-.continue { margin-top: auto; width: 100%; min-height: 64px; font-size: 20px; }
 .hint { font: var(--fs-xs) var(--mono); color: var(--muted); }
 .methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; }
 .method { display: grid; align-content: start; gap: 14px; min-width: 0; }

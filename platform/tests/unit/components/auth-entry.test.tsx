@@ -22,7 +22,6 @@ function flow(next:string|null=null, demoEnabled=true) {
 }
 function select(role='Ищу работу') {
   fireEvent.click(screen.getByRole('button',{name:new RegExp(role)}));
-  fireEvent.click(screen.getByRole('button',{name:'Продолжить →'}));
 }
 
 it('opens over the existing page and closes with focus and scroll restored',()=>{
@@ -44,10 +43,11 @@ it('preserves modified clicks and external auth links',()=>{
   expect(screen.queryByRole('dialog')).toBeNull();
 });
 
-it('requires a role and logs a ready candidate into the assistant without a second account page',async()=>{
+it('a role click goes straight to sign-in and logs a ready candidate into the assistant',async()=>{
   flow('/profile');
-  expect((screen.getByRole('button',{name:'Продолжить →'}) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.queryByRole('button',{name:'Продолжить →'})).toBeNull();
   select();
+  expect(screen.getByRole('button',{name:'← Назад'})).toBeTruthy();
   fireEvent.click(await screen.findByRole('button',{name:'Анна →'}));
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/profile'));
   expect(demoLogin).toHaveBeenCalledWith('demo-1');
@@ -120,4 +120,10 @@ it('explains an empty demo list and keeps fresh profile creation available',asyn
   expect(await screen.findByText(/Готовых профилей для этой роли пока нет/)).toBeTruthy();
   expect(screen.queryByText('Загружаю профили…')).toBeNull();
   expect(screen.getByRole('button',{name:'Новый демо-профиль'})).toBeTruthy();
+});
+
+it('keys 1-2 pick a role and open sign-in at once',()=>{
+  flow();
+  fireEvent.keyDown(screen.getByRole('button',{name:/Ищу специалистов/}),{key:'2'});
+  expect(screen.getByRole('heading',{name:'Начнём с входа'})).toBeTruthy();
 });

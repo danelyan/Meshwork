@@ -90,7 +90,7 @@ describe('AccountMenu', () => {
 
   it('клик по активной роли ничего не делает', () => {
     openMenu(candidate);
-    fireEvent.click(screen.getByRole('button', { name: /Кандидат/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Кандидат \(активная/ }));
     expect(switchRoleApi).not.toHaveBeenCalled();
   });
 

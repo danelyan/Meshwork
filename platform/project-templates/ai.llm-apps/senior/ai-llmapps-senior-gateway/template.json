@@ -1,0 +1,20 @@
+{
+  "id": "ai-llmapps-senior-gateway",
+  "subcategoryId": "ai.llm-apps",
+  "specialization": "ai",
+  "grade": "senior",
+  "title": "Шлюз извлечения данных через LLM",
+  "summary": "Структурированное извлечение: фолбэк провайдеров по типу ошибки, проверка и один ремонт ответа, бюджет токенов до вызова, кэш с дедупликацией, маскирование ПДн; DESIGN.md",
+  "stack": ["node20", "typescript", "llm", "vitest"],
+  "catalogIds": ["common.security-basics", "common.unit-tests"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

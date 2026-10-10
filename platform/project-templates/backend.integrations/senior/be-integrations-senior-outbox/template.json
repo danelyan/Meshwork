@@ -1,0 +1,20 @@
+{
+  "id": "be-integrations-senior-outbox",
+  "subcategoryId": "backend.integrations",
+  "specialization": "backend",
+  "grade": "senior",
+  "title": "Outbox вебхуков: порядок, ретраи, предохранитель",
+  "summary": "Доставка событий партнёру: порядок по ключу, экспоненциальные ретраи с Retry-After, dead letters, circuit breaker с half-open, пул отправок без двойной отправки, DESIGN.md",
+  "stack": ["node20", "typescript", "vitest"],
+  "catalogIds": ["be.retries-timeouts", "be.external-integration", "be.message-queue", "be.distributed-consistency", "be.concurrency"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

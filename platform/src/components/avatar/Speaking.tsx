@@ -11,8 +11,8 @@ import { type CompanionVoice, useCompanionVoice, type VoiceStatus } from './voic
 
 export const STATE_LABEL: Record<VoiceStatus, string> = { idle: '', thinking: 'думает', loading: 'готовит голос', speaking: 'говорит' };
 
-/** Сколько символов субтитров помещается в три строки сцены. */
-const SUBTITLE_BUDGET = 150;
+/** Сколько символов субтитров помещается в две-три строки сцены. */
+const SUBTITLE_BUDGET = 110;
 
 /** Индекс звучащей фразы: опрос прогресса раз в кадр, state меняется только при смене фразы. */
 function useActivePhrase(voice: CompanionVoice | null, phrases: readonly string[], on: boolean): number {

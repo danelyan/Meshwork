@@ -2,6 +2,9 @@
 
 import type { ReactNode } from 'react';
 
+import { SceneAside } from '../consultant/SceneAside';
+import type { SceneAsideData } from '@/server/consultant/aside';
+
 import { Chat } from '../Chat';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
@@ -23,10 +26,12 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
  *  - `call-side` — «Звонок + чат слева» (D = C + A): тёмный экран звонка, слева светлая панель чата
  *    на всю высоту с полной лентой и вводом; уже 1050px — панель снизу, голова сверху ~40vh.
  * `label` — подпись у головы («Помощник по подбору» у работодателя).
+ * `aside` — данные правой колонки call-side под головой («Твой путь», «Документы», «Подсказка»,
+ * components/consultant/SceneAside; считаются на сервере в page.tsx).
  * `children` — готовая лента (слитая лента /consultant: онбординг + консультант, см.
  * components/consultant/ConsultantFeed); без них сцена рисует обычный `Chat`.
  */
-export function AvatarScene({ variant, demo, initial, children, label = 'ИИ-консультант' }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode }) {
+export function AvatarScene({ variant, demo, initial, children, aside, label = 'ИИ-консультант' }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; aside?: SceneAsideData }) {
   const feed = (className?: string) => children ?? <Chat demo={demo} initial={initial} className={className} />;
   return (
     <CompanionVoiceProvider autoEnable>
@@ -87,7 +92,7 @@ export function AvatarScene({ variant, demo, initial, children, label = 'ИИ-к
         </div>
       )}
       {variant === 'call-side' && (
-          <div className={styles.sideScene} data-testid="scene-call-side">
+          <div className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side">
             <section className={styles.sideStage} aria-label={label}>
               <div className={styles.sideHead}>
                 <HeadView />
@@ -102,6 +107,7 @@ export function AvatarScene({ variant, demo, initial, children, label = 'ИИ-к
               </div>
               <Subtitles className={styles.sideSubs} />
             </section>
+            {aside && <SceneAside data={aside} className={styles.sideAside} />}
             <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll data-theme="feed-dark">
               {feed(styles.sideChat)}
             </div>

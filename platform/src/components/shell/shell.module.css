@@ -22,7 +22,7 @@
   position: sticky; top: 0; z-index: 20; min-height: var(--landing-header-h); display: flex; align-items: center; padding: 0 var(--page-pad);
   background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-bottom: 1px solid var(--glass-border);
 }
-.brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 19px; }
+.brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 19px; }
 .brand:hover { color: var(--blue); }
 .brand img { height: 34px; width: auto; display: block; filter: grayscale(1) brightness(0); }
 .brand span { font-weight: 500; font-size: 15px; color: var(--muted); }
@@ -65,7 +65,12 @@
 @media (max-width: 1150px) {
   .anchors { display: none; }
 }
+@media (max-width: 960px) {
+  .nav { margin-left: 20px; }
+  .nav a { padding: 12px 11px; }
+}
 @media (max-width: 720px) {
+  .nav { margin-left: 0; }
   .header { flex-wrap: wrap; padding-top: 8px; padding-bottom: 4px; row-gap: 4px; }
   .nav { order: 2; flex: 1 0 100%; margin-left: 0; overflow-x: auto; gap: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .nav::-webkit-scrollbar { display: none; }

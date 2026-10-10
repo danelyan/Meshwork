@@ -318,7 +318,7 @@ export async function buildSpec(opts: BuildOptions = {}): Promise<Record<string,
     } else if (sse) {
       responses['200'] = {
         description: ov.success?.description ?? 'Поток событий SSE: кадры `data: <json>\\n\\n`, последним приходит `done`',
-        headers: { 'X-Conversation-Id': { schema: { type: 'string' }, description: 'Идентификатор разговора' } },
+        ...(/x-conversation-id/i.test(text) ? { headers: { 'X-Conversation-Id': { schema: { type: 'string' }, description: 'Идентификатор разговора' } } } : {}),
         content: { 'text/event-stream': { schema: ov.success?.schema ?? { type: 'string' } } },
       };
     } else {

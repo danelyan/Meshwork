@@ -27,7 +27,13 @@ it('does not navigate to editor when goto validation fails', async () => {
 it('opens FSP question in explicit editor from settings', async () => {
   const fetcher = stub();
   render(<CandidateSettings hidden={false} contact={null} fspState="not_linked" />);
-  fireEvent.click(screen.getByRole('button', { name: /Подключить ФСП ID/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Добавить опыт в диалоге/ }));
   await waitFor(() => expect(navigate).toHaveBeenCalledWith('/consultant?edit=profile'));
   expect(fetcher).toHaveBeenCalledWith('/api/onboarding', expect.objectContaining({ body: JSON.stringify({ action: 'goto', stepId: 'fsp' }) }));
+});
+it('starts FSP ID linking via OIDC from settings', async () => {
+  stub();
+  render(<CandidateSettings hidden={false} contact={null} fspState="not_linked" />);
+  fireEvent.click(screen.getByRole('button', { name: /^Привязать ФСП ID/ }));
+  await waitFor(() => expect(navigate).toHaveBeenCalledWith('/api/fsp-id/link'));
 });

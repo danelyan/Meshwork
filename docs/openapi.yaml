@@ -331,6 +331,21 @@ paths:
                           consent:
                             type: boolean
                             description: "Согласие текущей версии дано"
+                          onboardingProgress:
+                            oneOf:
+                              -
+                                type: object
+                                properties:
+                                  done:
+                                    type: integer
+                                  total:
+                                    type: integer
+                                required:
+                                  - done
+                                  - total
+                                description: "Закрыто шагов знакомства из скольки (пропуск считается закрытым); null — знакомство завершено или не посчитать"
+                              -
+                                type: "null"
                         required:
                           - id
                           - role
@@ -341,6 +356,7 @@ paths:
                           - employerProfileId
                           - onboarded
                           - consent
+                          - onboardingProgress
                       -
                         type: "null"
                   legacyCandidateId:
@@ -5006,7 +5022,7 @@ paths:
       tags:
         - uploads
       summary: "Загрузить резюме или документ"
-      description: "Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Хранится извлечённый текст с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>, только после успешного разбора). Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись без второй копии.\n\nНужна сессия кандидата (кука cid)."
+      description: "Загрузка резюме или документа: PDF, DOCX, MD, TXT или CSV до 5 МБ (PDF до 20 страниц). Хранится извлечённый текст с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>, только после успешного разбора). Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись без второй копии.\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -5020,7 +5036,7 @@ paths:
               properties:
                 file:
                   type: string
-                  description: "Файл PDF или DOCX"
+                  description: "Файл PDF, DOCX, MD, TXT или CSV"
                   format: binary
                 kind:
                   type: string
@@ -5183,7 +5199,7 @@ paths:
             type: string
       responses:
         "200":
-          description: "Файл PDF или DOCX"
+          description: "Файл PDF, DOCX, MD, TXT или CSV"
           content:
             "application/octet-stream":
               schema:

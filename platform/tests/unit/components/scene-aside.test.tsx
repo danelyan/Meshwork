@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { SceneAside } from '@/components/consultant/SceneAside';
-import { candidateSteps, employerSteps, markStates } from '@/server/consultant/aside';
+import { candidateSteps, employerSteps, knownFacts, markStates, marketRows } from '@/server/consultant/aside';
+import type { OnboardingView } from '@/server/onboarding/types';
 
 vi.mock('next/link', () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 afterEach(cleanup);
@@ -62,5 +63,56 @@ describe('SceneAside', () => {
   it('employer has no documents block', () => {
     render(<SceneAside data={{ ...data, role: 'employer', docs: null }} />);
     expect(screen.queryByTestId('aside-docs')).toBeNull();
+  });
+});
+
+describe('known facts and market', () => {
+  const view = (over: Partial<OnboardingView>) => ({ history: [], summary: null, ...over }) as unknown as OnboardingView;
+  it('takes answered steps from history, hides consent, role and skipped ones', () => {
+    const v = view({
+      history: [
+        { stepId: 'consent', label: 'Согласие', lead: '', question: '', answer: 'Да', editable: false },
+        { stepId: 'goal', label: 'Цель', lead: '', question: '', answer: 'Ищу работу', editable: true },
+        { stepId: 'fsp', label: 'ФСП', lead: '', question: '', answer: null, editable: true },
+      ],
+    });
+    expect(knownFacts(v)).toEqual([{ stepId: 'goal', label: 'Цель', value: 'Ищу работу' }]);
+    expect(knownFacts(undefined)).toEqual([]);
+  });
+  it('prefers the summary when it is shown', () => {
+    const v = view({ summary: { items: [{ stepId: 'role', label: 'Роль', value: 'x' }, { stepId: 'spec', label: 'Специализация', value: 'Backend' }], skipped: [], warnings: [] } });
+    expect(knownFacts(v)).toEqual([{ stepId: 'spec', label: 'Специализация', value: 'Backend' }]);
+  });
+  it('groups by category, puts the user category first', () => {
+    const m = marketRows(
+      [
+        { specialization: 'backend', grade: 'junior' },
+        { specialization: 'frontend', grade: 'middle' },
+        { specialization: 'frontend', grade: 'middle' },
+      ],
+      (s, g) => s === 'frontend' && g === 'middle',
+    );
+    expect(m.total).toBe(3);
+    expect(m.rows).toEqual([
+      { key: 'frontend:middle', label: 'Frontend · Middle', count: 2, mine: true },
+      { key: 'backend:junior', label: 'Backend · Junior', count: 1, mine: false },
+    ]);
+  });
+  it('renders the known and market cards', () => {
+    render(
+      <SceneAside
+        data={{
+          role: 'employer',
+          steps: employerSteps({ intro: false, introNote: '1 из 5', needs: 0, invitations: 0 }),
+          known: [{ stepId: 'inn', label: 'ИНН', value: '7707083893' }],
+          market: { total: 4, rows: [{ key: 'backend:middle', label: 'Backend · Middle', count: 4, mine: true }] },
+          docs: null,
+          hint: { title: 'Компания', text: '...' },
+        }}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /Что я знаю о компании · 1/ })).toBeTruthy();
+    expect(screen.getByText('7707083893')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Кандидаты в базе · 4/ })).toBeTruthy();
   });
 });

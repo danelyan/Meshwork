@@ -40,17 +40,8 @@ export const GRADE_TEST_PATH: string | null = '/test';
 
 const CABINET = { candidate: '/consultant', employer: '/employer' } as const;
 
-/**
- * Служебное состояние: вакансии работодателя; `later` — пауза знакомства («Настроить позже»); `doneRoles` — роли
- * учётки с завершённым знакомством (пишет переключение роли, ADR 0004; правки meta здесь его сохраняют).
- */
-type Meta = {
-  vacancies?: Partial<Record<Grade, string>>;
-  later?: boolean;
-  doneRoles?: ('candidate' | 'employer')[];
-  /** Шаг, пауза и итог неактивной роли (ADR 0004, `swapRoleOnboarding`); правки meta здесь его сохраняют. */
-  byRole?: Record<string, unknown>;
-};
+/** Служебное состояние: вакансии работодателя; `later` — пауза знакомства кандидата («Настроить позже»). */
+type Meta = { vacancies?: Partial<Record<Grade, string>>; later?: boolean };
 
 /** Шаг онбординга сделан (ответ, пропуск, возврат) — пауза «Настроить позже» снята. */
 function resumed(meta: Meta): Meta {
@@ -207,6 +198,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
     const skipped = !answered && !s.doneBy?.(l.ctx);
     return {
       stepId: s.id,
+      label: s.summaryLabel,
       lead: lines[s.id] ?? templateLead(s, l.ctx, prevOf(s, l)),
       question: s.question,
       answer: answered ? answerLabel(s, l.ctx.answers[s.id], l.ctx) : skipped ? null : factLabel(s, l.ctx),

@@ -1,7 +1,7 @@
-/* Правая колонка сцены консультанта (под головой): «Твой путь», «Документы», «Подсказка». Тёмная сцена, только токены. */
-.aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; align-content: start; }
+/* Правая колонка сцены консультанта (под головой): «Твой путь», «Что я знаю», «Рынок», «Документы», «Подсказка». Тёмная сцена, только токены. */
+.aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; align-content: start; }
 .road { grid-column: 1 / -1; }
-.aside[data-solo] .hintCard { grid-column: 1 / -1; }
+.aside > :last-child:nth-child(even) { grid-column: 1 / -1; }
 .title, .cardHead { margin: 0; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--on-ink-soft); }
 .title { margin-bottom: 10px; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -32,7 +32,7 @@
 .chevron { display: none; }
 .cardBody { padding: 10px 16px 14px; }
 .empty { display: grid; gap: 10px; justify-items: start; }
-.empty p, .hintText { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--on-ink-soft); }
+.empty p { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--on-ink-soft); }
 .attach { padding: 7px 14px; font-weight: 600; font-size: var(--fs-sm); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
 .attach:hover { background: var(--stage-ink); }
 .docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -40,7 +40,25 @@
 .docKind { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); border: 1px solid var(--avatar-stage-line); padding: 1px 5px; }
 .docName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--on-ink); }
 .docStatus { grid-column: 2; font-size: var(--fs-xs); color: var(--stage-ink-faint); }
-.hintTitle { margin: 0 0 4px; font-weight: 600; font-size: var(--fs-sm); color: var(--on-ink); }
+.hint { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--avatar-stage-line); font-size: var(--fs-sm); line-height: 1.5; color: var(--on-ink-soft); }
+.hintTitle { font-weight: 600; color: var(--on-ink); }
+.hintTitle::after { content: ' ·'; color: var(--stage-ink-faint); }
+
+/* --- что я знаю: пары «шаг — ответ»; рынок: категории с полосками --- */
+.muted { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--stage-ink-faint); }
+.facts { margin: 0; display: grid; gap: 8px; }
+.fact { display: grid; grid-template-columns: minmax(84px, 38%) minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.fact dt { font-size: var(--fs-xs); color: var(--stage-ink-faint); }
+.fact dd { margin: 0; font-size: var(--fs-sm); line-height: 1.4; color: var(--on-ink); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.market { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.marketRow { display: grid; grid-template-columns: minmax(0, 132px) minmax(0, 1fr) 28px; gap: 10px; align-items: center; }
+.marketLabel { font-size: var(--fs-xs); color: var(--on-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar { height: 6px; background: var(--stage-track); }
+.bar > span { display: block; height: 100%; min-width: 2px; background: var(--stage-accent-track); }
+.marketCount { font: 600 var(--fs-xs) var(--mono); text-align: right; color: var(--on-ink-soft); }
+.marketRow[data-mine] .marketLabel, .marketRow[data-mine] .marketCount { color: var(--on-ink); }
+.marketRow[data-mine] .bar > span { background: var(--stage-accent); }
+.marketNote { margin: 10px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--stage-ink-faint); }
 
 /* --- узкий экран: порядок задаёт сцена (display: contents у колонки), роадмап — горизонтальная полоса, карточки — аккордеон --- */
 @media (max-width: 1050px) {
@@ -51,6 +69,7 @@
   .stepLink { flex-direction: column; align-items: center; gap: 6px; padding: 0; text-align: center; }
   .stepText { justify-items: center; }
   .stepNote, .full { display: none; }
+  .hint { margin-top: 8px; padding-top: 8px; font-size: var(--fs-xs); }
   .short { display: inline; }
   .stepName { font-size: var(--fs-xs); }
   .card { order: 3; border-width: 1px 0 0; background: var(--avatar-stage); }

@@ -10,17 +10,32 @@ import { gradeWeight } from '../recommend/weights';
 import type { FspState, Grade, Specialization } from '../types';
 
 import {
+  CALL_TOPIC_BONUS,
+  CALL_TOPIC_BONUS_MAX,
   CATEGORY_BASE,
   CATEGORY_MULT_ABOVE,
   CATEGORY_MULT_EXACT,
   FSP_BOOST,
   GRADE_RANK,
+  PROJECT_BONUS_PER_SCORE,
   SPEC_MISMATCH_PENALTY,
   STACK_BOOST_MAX,
   STACK_BOOST_PER_TAG,
   MIN_COVERED_FOR_VACANCY,
 } from './weights';
 import { GRADE_LABEL } from '@/lib/grades';
+import {
+  buildDefenseBlock,
+  buildDepthBlock,
+  buildProjectBlock,
+  pickOwnProject,
+  stagesSentence,
+  type CallsEvidence,
+  type DefenseBlock,
+  type DepthBlock,
+  type ProjectBlock,
+  type ProjectEvidence,
+} from './stages';
 
 export interface EvidenceClaim {
   catalogId: string;
@@ -42,9 +57,15 @@ export interface CandidateEvidence {
   claims: EvidenceClaim[];
   /** lane directions: подкатегория из профиля (онбординг, R-T-05); уступает подкатегории категории из теста. */
   subcategoryId?: string | null;
+  /** ADR 0003, ступени 1 и 3: последний квалифицирующий созвон и последняя защита (баллы и флаги, без цитат). */
+  calls?: CallsEvidence;
+  /** ADR 0003, ступень 2: проверенные проекты кандидата (по одному на задание). */
+  projects?: ProjectEvidence[];
 }
 
 export interface MatchTarget {
+  /** Потребность (вакансия): по ней находим проект кандидата «под эту потребность». Нет — поиск по банку, проект не даёт баллов. */
+  vacancyId?: string | null;
   specialization: Specialization;
   /** Подкатегория потребности: кандидаты своей подкатегории — выше, соседние того же направления — ниже, с пометкой. */
   subcategoryId?: string | null;
@@ -79,6 +100,12 @@ export interface Explanation {
   /** Подкатегория кандидата относительно потребности: «Web API» или «соседняя подкатегория: …». Пусто — потребность без подкатегории. */
   subcategory: string;
   stackMatched: string[];
+  /** Ступень 1: карта глубины (тема → подтверждено/нет). Нет созвона — поля нет. */
+  depthMap?: DepthBlock;
+  /** Ступень 2: проект под эту потребность целиком, чужие — подкатегория и балл. */
+  project?: ProjectBlock;
+  /** Ступень 3: балл защиты и флаги. Флаг — пометка, на порядок не влияет. */
+  defense?: DefenseBlock;
 }
 
 /**
@@ -100,7 +127,9 @@ export interface RankedCandidate {
   categoryMatch: boolean;
   /** Подкатегория относительно потребности: сортировка идёт сначала по ней, потом по баллу. */
   subcategoryFit: SubcategoryFit;
-  boosts: { category: number; fsp: number; stack: number; specPenalty: number };
+  /** Проверенный проект под эту потребность (ступень 2): в выдаче остаётся и без закрытых требований. */
+  ownProject?: boolean;
+  boosts: { category: number; fsp: number; stack: number; specPenalty: number; project?: number; calls?: number };
   explanation: Explanation;
 }
 
@@ -186,7 +215,8 @@ const round = (x: number) => Math.round(x * 1e4) / 1e4;
 export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalog: Map<string, CatalogEntry>): RankedCandidate | null {
   const index = buildIndex(c.claims);
   const cov = computeCoverage(target.needs, catalog, index);
-  if (cov.score === 0 && !c.category) return null;
+  const ownProject = pickOwnProject(c.projects, target.vacancyId);
+  if (cov.score === 0 && !c.category && !ownProject) return null;
 
   let category = 0;
   let categoryMatch = false;
@@ -208,6 +238,14 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
   const fsp = c.fspState === 'linked' ? FSP_BOOST : 0;
   const stackMatched = matchStack(c.claims, target.stack);
   const stack = Math.min(STACK_BOOST_MAX, stackMatched.length * STACK_BOOST_PER_TAG);
+
+  // ADR 0003: бонус за проект под ЭТУ потребность и за подтверждённые созвоном темы потребности; защита в балл не входит.
+  const project = ownProject ? PROJECT_BONUS_PER_SCORE * ownProject.score : 0;
+  const needIds = new Set(target.needs.map((n) => n.catalogId));
+  const depthBlock = c.calls?.qualifying ? buildDepthBlock(c.calls.qualifying, needIds) : undefined;
+  const callsBonus = depthBlock ? Math.min(CALL_TOPIC_BONUS_MAX, depthBlock.matchedNeed * CALL_TOPIC_BONUS) : 0;
+  const projectBlock = c.projects?.length ? buildProjectBlock(c.projects, ownProject) : undefined;
+  const defenseBlock = c.calls?.defense ? buildDefenseBlock(c.calls.defense) : undefined;
 
   const fit = subcategoryFit(c, target);
   const sub = effectiveSubcategory(c);
@@ -233,20 +271,23 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
   if (subText) parts.push(`подкатегория: ${subText}`);
   if (stackMatched.length) parts.push(`стек в подтверждённых цитатах: ${stackMatched.join(', ')}`);
   if (specPenalty) parts.push('другая специализация');
-  const summary = categoryOnly
+  const stages = stagesSentence({ depth: depthBlock, project: projectBlock, defense: defenseBlock });
+  const base = categoryOnly
     ? `Категория ${categoryLabel(c.category!)} подтверждена тестом; требования потребности не доказаны утверждениями. ФСП: ${fspText(c.fspState)}${subText ? `. Подкатегория: ${subText}` : ''}${stackMatched.length ? `. Стек в подтверждённых цитатах: ${stackMatched.join(', ')}` : ''}.`
     : `${parts.join('. ')}.`;
+  const summary = stages ? `${base} ${stages[0]!.toUpperCase()}${stages.slice(1)}.` : base;
 
   return {
     candidateId: c.id,
-    score: round(cov.score + category + fsp + stack - specPenalty),
+    score: round(cov.score + category + fsp + stack + project + callsBonus - specPenalty),
     coverageScore: cov.score,
     covered: cov.covered,
     total: cov.total,
     provenCount: proven.length,
     categoryMatch,
     subcategoryFit: fit,
-    boosts: { category: round(category), fsp, stack: round(stack), specPenalty },
+    ...(ownProject ? { ownProject: true } : {}),
+    boosts: { category: round(category), fsp, stack: round(stack), specPenalty, ...(c.projects || c.calls ? { project: round(project), calls: round(callsBonus) } : {}) },
     explanation: {
       summary,
       covered: coveredItems,
@@ -256,6 +297,9 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
       category: categoryText,
       subcategory: subText,
       stackMatched,
+      ...(depthBlock ? { depthMap: depthBlock } : {}),
+      ...(projectBlock ? { project: projectBlock } : {}),
+      ...(defenseBlock ? { defense: defenseBlock } : {}),
     },
   };
 }
@@ -292,6 +336,6 @@ export function rankCandidates(
  * Подборка под потребность: оставляет тех, кто закрыл не меньше MIN_COVERED_FOR_VACANCY требований,
  * и тех, чья категория из теста совпала с потребностью (Q-36) — даже при нуле закрытых.
  */
-export function dropUncovered<T extends { covered: number; categoryMatch: boolean }>(ranked: T[]): T[] {
-  return ranked.filter((r) => r.covered >= MIN_COVERED_FOR_VACANCY || r.categoryMatch);
+export function dropUncovered<T extends { covered: number; categoryMatch: boolean; ownProject?: boolean }>(ranked: T[]): T[] {
+  return ranked.filter((r) => r.covered >= MIN_COVERED_FOR_VACANCY || r.categoryMatch || r.ownProject);
 }

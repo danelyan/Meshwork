@@ -25,5 +25,12 @@ test('E-02: у существующего демо-аккаунта «пройт
   await page.goto('/demo');
   await page.getByRole('button', { name: /^Пройти онбординг заново: / }).first().click();
   await page.waitForURL('**/consultant');
-  await expect(page.locator('#ob-q')).toBeVisible();
+  try {
+    await expect(page.locator('#ob-q')).toBeVisible();
+  } finally {
+    // «Заново» сбрасывает onboardedAt у общего сид-аккаунта (первый демо-профиль, тот же, что берёт
+    // consultant.spec): без возврата следующие прогоны на этой БД попадают в чат знакомства, а не в ленту.
+    const res = await page.request.post('/api/auth/onboarding/complete');
+    expect(res.ok()).toBe(true);
+  }
 });

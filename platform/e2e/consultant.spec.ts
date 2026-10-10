@@ -18,6 +18,8 @@ const RESUME: string | { name: string; mimeType: string; buffer: Buffer } = proc
 };
 
 test('С1: вход → резюме и ссылка → шаги → карточки → подтверждение → профиль', async ({ page }) => {
+  // внутри ожидания до 30 + 60 с (шаги и карточки на stub-LLM под нагрузкой): общий лимит 30 с им мало
+  test.setTimeout(150_000);
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Твой код.');
   // «Приступим» открывает окно входа поверх главной; демо-профиль выбирается в окне

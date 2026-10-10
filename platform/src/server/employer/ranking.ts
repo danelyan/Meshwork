@@ -9,6 +9,8 @@ import { computeCoverage } from '../recommend/matcher';
 import { gradeWeight } from '../recommend/weights';
 import type { FspState, Grade, Specialization } from '../types';
 
+import { fspWeight, type FspAchievementInput } from './fsp-weight';
+import { matchStackPartial, partialText, type PartialStackMatch } from './tech-proximity';
 import {
   CALL_TOPIC_BONUS,
   CALL_TOPIC_BONUS_MAX,
@@ -61,6 +63,16 @@ export interface CandidateEvidence {
   calls?: CallsEvidence;
   /** ADR 0003, ступень 2: проверенные проекты кандидата (по одному на задание). */
   projects?: ProjectEvidence[];
+  /**
+   * Достижения ФСП (форма ФСП-источника: событие, год, результат). Учитываются только при fspState = linked.
+   * Нет поля — список не загружен: прежняя плоская прибавка FSP_BOOST.
+   */
+  fspAchievements?: FspAchievementInput[];
+}
+
+/** Параметры ранжирования. year — год отсчёта давности достижений ФСП (по умолчанию текущий; в тестах — явно). */
+export interface RankOptions {
+  year?: number;
 }
 
 export interface MatchTarget {
@@ -100,6 +112,10 @@ export interface Explanation {
   /** Подкатегория кандидата относительно потребности: «Web API» или «соседняя подкатегория: …». Пусто — потребность без подкатегории. */
   subcategory: string;
   stackMatched: string[];
+  /** Метки стека, закрытые близкой технологией: «частично: RabbitMQ вместо Kafka». */
+  stackPartial?: PartialStackMatch[];
+  /** Вклад достижений ФСП, лучшие первыми: «призёр: Кубок России …, 2025: +0,028». */
+  fspReasons?: string[];
   /** Ступень 1: карта глубины (тема → подтверждено/нет). Нет созвона — поля нет. */
   depthMap?: DepthBlock;
   /** Ступень 2: проект под эту потребность целиком, чужие — подкатегория и балл. */
@@ -212,7 +228,12 @@ function fspText(state: FspState): string {
 const round = (x: number) => Math.round(x * 1e4) / 1e4;
 
 /** Оценка одного кандидата под цель. null — нечего показывать (ноль покрытия и нет категории). */
-export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalog: Map<string, CatalogEntry>): RankedCandidate | null {
+export function scoreCandidate(
+  c: CandidateEvidence,
+  target: MatchTarget,
+  catalog: Map<string, CatalogEntry>,
+  opts: RankOptions = {},
+): RankedCandidate | null {
   const index = buildIndex(c.claims);
   const cov = computeCoverage(target.needs, catalog, index);
   const ownProject = pickOwnProject(c.projects, target.vacancyId);
@@ -235,9 +256,21 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
   }
   const spec = effectiveSpecialization(c);
   const specPenalty = spec && spec !== target.specialization ? SPEC_MISMATCH_PENALTY : 0;
-  const fsp = c.fspState === 'linked' ? FSP_BOOST : 0;
+  // R-M-02: достижения ФСП — место × уровень × давность, с потолком (fsp-weight.ts). Без ФСП — 0, не штраф (R-FSP-03).
+  const fspW = c.fspState === 'linked' && c.fspAchievements ? fspWeight(c.fspAchievements, opts.year ?? new Date().getFullYear()) : null;
+  const fsp = c.fspState !== 'linked' ? 0 : fspW ? fspW.boost : FSP_BOOST;
+  const fspLine = fspW
+    ? fspW.reasons.length
+      ? `${fspText(c.fspState)}: ${fspW.reasons.join('; ')}${fspW.capped ? ` (потолок ${String(fsp).replace('.', ',')})` : ''}`
+      : `${fspText(c.fspState)}, вклад в порядок нулевой`
+    : fspText(c.fspState);
   const stackMatched = matchStack(c.claims, target.stack);
-  const stack = Math.min(STACK_BOOST_MAX, stackMatched.length * STACK_BOOST_PER_TAG);
+  // Близкая технология закрывает метку частично (tech-proximity.ts): коэффициент < 1, точное совпадение всегда весомее.
+  const stackPartial = matchStackPartial(
+    c.claims.map((x) => `${x.statement}\n${x.quote}`).join('\n'),
+    target.stack.filter((t) => !stackMatched.includes(t)),
+  );
+  const stack = Math.min(STACK_BOOST_MAX, (stackMatched.length + stackPartial.reduce((s, m) => s + m.coef, 0)) * STACK_BOOST_PER_TAG);
 
   // ADR 0003: бонус за проект под ЭТУ потребность и за подтверждённые созвоном темы потребности; защита в балл не входит.
   const project = ownProject ? PROJECT_BONUS_PER_SCORE * ownProject.score : 0;
@@ -266,14 +299,15 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
   const categoryOnly = categoryMatch && cov.covered === 0;
   const parts = [`Закрывает ${cov.covered} из ${cov.total} требований${coveredItems.length ? `: ${coveredItems.map((i) => i.statement).join('; ')}` : ''}`];
   parts.push(proven.length ? `доказано артефактами и выше: ${proven.join('; ')}` : 'доказанного артефактами нет - только со слов');
-  parts.push(`ФСП: ${fspText(c.fspState)}`);
+  parts.push(`ФСП: ${fspLine}`);
   parts.push(`категория: ${categoryText}`);
   if (subText) parts.push(`подкатегория: ${subText}`);
   if (stackMatched.length) parts.push(`стек в подтверждённых цитатах: ${stackMatched.join(', ')}`);
+  if (stackPartial.length) parts.push(`стек ${stackPartial.map(partialText).join('; ')}`);
   if (specPenalty) parts.push('другая специализация');
   const stages = stagesSentence({ depth: depthBlock, project: projectBlock, defense: defenseBlock });
   const base = categoryOnly
-    ? `Категория ${categoryLabel(c.category!)} подтверждена тестом; требования потребности не доказаны утверждениями. ФСП: ${fspText(c.fspState)}${subText ? `. Подкатегория: ${subText}` : ''}${stackMatched.length ? `. Стек в подтверждённых цитатах: ${stackMatched.join(', ')}` : ''}.`
+    ? `Категория ${categoryLabel(c.category!)} подтверждена тестом; требования потребности не доказаны утверждениями. ФСП: ${fspLine}${subText ? `. Подкатегория: ${subText}` : ''}${stackMatched.length ? `. Стек в подтверждённых цитатах: ${stackMatched.join(', ')}` : ''}${stackPartial.length ? `. Стек ${stackPartial.map(partialText).join('; ')}` : ''}.`
     : `${parts.join('. ')}.`;
   const ownNoCategory = Boolean(ownProject) && !categoryMatch;
   const note = ownNoCategory ? ' Показан за проверенный проект; категории под потребность нет.' : '';
@@ -290,16 +324,18 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
     categoryMatch,
     subcategoryFit: fit,
     ...(ownProject ? { ownProject: true } : {}),
-    boosts: { category: round(category), fsp, stack: round(stack), specPenalty, ...(c.projects || c.calls ? { project: round(project), calls: round(callsBonus) } : {}) },
+    boosts: { category: round(category), fsp: round(fsp), stack: round(stack), specPenalty, ...(c.projects || c.calls ? { project: round(project), calls: round(callsBonus) } : {}) },
     explanation: {
       summary,
       covered: coveredItems,
       proven,
       missing,
-      fsp: fspText(c.fspState),
+      fsp: fspLine,
       category: categoryText,
       subcategory: subText,
       stackMatched,
+      ...(stackPartial.length ? { stackPartial } : {}),
+      ...(fspW?.reasons.length ? { fspReasons: fspW.reasons } : {}),
       ...(depthBlock ? { depthMap: depthBlock } : {}),
       ...(projectBlock ? { project: projectBlock } : {}),
       ...(defenseBlock ? { defense: defenseBlock } : {}),
@@ -318,13 +354,14 @@ export function rankCandidates(
   target: MatchTarget | ((c: CandidateEvidence) => MatchTarget | null),
   catalog: Map<string, CatalogEntry>,
   filters: MatchFilters = {},
+  opts: RankOptions = {},
 ): RankedCandidate[] {
   const out: RankedCandidate[] = [];
   for (const c of candidates) {
     if (!passesFilters(c, filters)) continue;
     const t = typeof target === 'function' ? target(c) : target;
     if (!t) continue;
-    const r = scoreCandidate(c, t, catalog);
+    const r = scoreCandidate(c, t, catalog, opts);
     // Балл ≤ 0 (ничего не закрыто или другая специализация перевесила) — не подходит, не показываем.
     if (r && r.score > 0) out.push(r);
   }

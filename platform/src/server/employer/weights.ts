@@ -29,6 +29,29 @@ export const CATEGORY_BASE = 0.05;
 export const SPEC_MISMATCH_PENALTY = 0.2;
 /** ПРЕДЛОЖЕНИЕ (R-M-02): есть подтверждённые достижения ФСП (fspState = linked). Отсутствие ФСП не штрафуется (R-FSP-03). */
 export const FSP_BOOST = 0.05;
+/**
+ * ПРЕДЛОЖЕНИЕ (R-M-02 «внутри категории: результаты теста + достижения ФСП»): вес достижений, когда их
+ * список известен (fsp-weight.ts). Очки достижения = место × уровень соревнования × затухание по давности;
+ * прибавка = FSP_PER_POINT × Σ очков, не больше FSP_BOOST_MAX. Потолок 0,06 ниже вклада требования весом 2
+ * из 10, закрытого артефактом (0,10): ФСП уточняет порядок среди близких по покрытию, но не поднимает над
+ * тем, кто доказанно закрыл больше. Требование «со слов» (0,05 при том же весе) потолок перекрыть может —
+ * это осознанно: третья сторона (ФСП) сильнее самоописания. Без ФСП — 0, не штраф (R-FSP-03).
+ * Список не загружен (старые данные, eval) — прежняя плоская прибавка FSP_BOOST.
+ */
+export const FSP_PER_POINT = 0.05;
+export const FSP_BOOST_MAX = 0.06;
+/** Затухание: вес достижения падает вдвое каждые FSP_HALF_LIFE_YEARS лет. */
+export const FSP_HALF_LIFE_YEARS = 2;
+/** ПРЕДЛОЖЕНИЕ: место (победа 1; призовое 0,7; финал 0,4; участие 0,15). Модель достижений — наша (CLAUDE.md п. 4). */
+export const FSP_PLACE_WEIGHT = { winner: 1, prize: 0.7, finalist: 0.4, participant: 0.15 } as const;
+/** ПРЕДЛОЖЕНИЕ: уровень соревнования; отборочный этап — ×FSP_QUALIFIER_FACTOR. */
+export const FSP_LEVEL_WEIGHT = { international: 1, national: 0.8, regional: 0.4, other: 0.3 } as const;
+export const FSP_QUALIFIER_FACTOR = 0.5;
+/**
+ * ПРЕДЛОЖЕНИЕ: частичный зачёт метки стека близкой технологией (tech-proximity.ts): доля от
+ * STACK_BOOST_PER_TAG равна коэффициенту близости (0,3–0,6), поэтому близость всегда меньше точного совпадения.
+ */
+export const STACK_PARTIAL_MAX_COEF = 0.6;
 /** ПРЕДЛОЖЕНИЕ: стек потребности упомянут в подтверждённых цитатах — за каждую метку, не больше STACK_BOOST_MAX. */
 export const STACK_BOOST_PER_TAG = 0.02;
 export const STACK_BOOST_MAX = 0.06;

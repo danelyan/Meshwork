@@ -3,6 +3,7 @@
 import type { InvitationStatus } from '@prisma/client';
 
 import type { CatalogEntry } from '../claims/types';
+import { demoAchievements } from '../collector/fsp-demo';
 import { prisma } from '../db';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
@@ -18,6 +19,8 @@ import {
   type MatchTarget,
   type RankedCandidate,
 } from './ranking';
+import type { FspAchievementInput } from './fsp-weight';
+import { relaxationHints, type RelaxHint } from './relax';
 import { loadDefenseRooms, loadStageEvidence, type DefenseRoomLink } from './stages-load';
 import { maskProjectBlock } from './stages';
 import { getVacancy, type VacancyView } from './vacancies';
@@ -40,6 +43,8 @@ export interface MatchResult {
   filters: MatchFilters;
   total: number;
   items: MatchItem[];
+  /** Подборка под потребность: одиночные ослабления условий и сколько кандидатов они добавят (R-M-04). */
+  hints?: RelaxHint[];
 }
 
 interface PoolRow {
@@ -78,6 +83,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
     orderBy: { id: 'asc' },
   });
   const stages = await loadStageEvidence(rows.map((r) => r.id));
+  const fsp = await loadFspAchievements(rows.filter((r) => r.fspState === 'linked').map((r) => r.id));
   return rows.map((r) => ({
     name: r.name,
     email: r.email,
@@ -89,11 +95,43 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       fspState: r.fspState,
       category: r.categories[0] ?? null,
       claims: r.claims,
+      ...(r.fspState === 'linked' ? { fspAchievements: fsp.get(r.id) ?? demoAchievements(r.id) } : {}),
       ...(stages.get(r.id)?.calls ? { calls: stages.get(r.id)!.calls } : {}),
       ...(stages.get(r.id)?.projects ? { projects: stages.get(r.id)!.projects } : {}),
     },
     claimsPublic: dedupeClaims(r.claims, catalog),
   }));
+}
+
+function parseAchievements(snapshot: unknown): FspAchievementInput[] | null {
+  const list = (snapshot as { meta?: { achievements?: unknown } } | null)?.meta?.achievements;
+  if (!Array.isArray(list)) return null;
+  return list.flatMap((a: unknown) => {
+    const x = a as Partial<FspAchievementInput> | null;
+    return x && typeof x.event === 'string' && typeof x.result === 'string' && typeof x.year === 'number'
+      ? [{ event: x.event, year: x.year, result: x.result, ...(typeof x.role === 'string' ? { role: x.role } : {}) }]
+      : [];
+  });
+}
+
+/**
+ * Достижения ФСП из последнего снимка ФСП-источника (Source.snapshot.meta.achievements — форма collector/fsp-demo.ts).
+ * Снимка нет — вызывающий берёт тот же детерминированный демо-набор, что выдаёт ФСП-источник по id кандидата.
+ */
+async function loadFspAchievements(candidateIds: string[]): Promise<Map<string, FspAchievementInput[]>> {
+  const out = new Map<string, FspAchievementInput[]>();
+  if (candidateIds.length === 0) return out;
+  const rows = await prisma.source.findMany({
+    where: { candidateId: { in: candidateIds }, kind: 'fsp' },
+    select: { candidateId: true, snapshot: true },
+    orderBy: [{ fetchedAt: 'desc' }, { id: 'asc' }],
+  });
+  for (const r of rows) {
+    if (out.has(r.candidateId)) continue;
+    const list = parseAchievements(r.snapshot);
+    if (list) out.set(r.candidateId, list);
+  }
+  return out;
 }
 
 /** Кандидаты, принявшие приглашение этой компании, — им открыты контакты (R-E-07). */
@@ -124,7 +162,7 @@ async function run(
   filters: MatchFilters,
   limit: number,
   requireCoverage = false,
-): Promise<{ total: number; items: MatchItem[] }> {
+): Promise<{ total: number; items: MatchItem[]; hints?: RelaxHint[] }> {
   const pool = await loadPool(catalog);
   const byId = new Map(pool.map((p) => [p.evidence.id, p]));
   const all = rankCandidates(pool.map((p) => p.evidence), target, catalog, filters);
@@ -153,7 +191,9 @@ async function run(
       r.explanation.project && !accepted.has(r.candidateId) ? { ...r.explanation, project: maskProjectBlock(r.explanation.project) } : r.explanation;
     return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null };
   });
-  return { total: ranked.length, items };
+  // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
+  const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(pool.map((p) => p.evidence), target, catalog, filters) : undefined;
+  return { total: ranked.length, items, ...(hints ? { hints } : {}) };
 }
 
 /** Подборка под свою потребность. Чужая — 404. */

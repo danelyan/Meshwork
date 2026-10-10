@@ -447,3 +447,15 @@ export async function pendingOnboarding(candidateId: string): Promise<Onboarding
   const step = currentStep(l.ctx, l.state);
   return briefOf(step, l.ctx) ?? { stepId: 'summary', question: 'Проверить сводку и завершить знакомство', options: [] };
 }
+
+/**
+ * Показывать ли шаги онбординга в ленте /consultant (решение владельца 10.10: онбординг и
+ * консультант — одна страница). Да — знакомство не завершено или пройдено в чате (есть
+ * OnboardingState: история шагов — начало ленты). Нет — аккаунт завершён без чата (сид демо-
+ * кандидатов): getView не зовём, иначе он создал бы состояние и показал вопросы с первого шага.
+ */
+export async function onboardingInFeed(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { onboardedAt: true, onboarding: { select: { userId: true } } } });
+  if (!user) return false;
+  return user.onboardedAt === null || user.onboarding !== null;
+}

@@ -411,7 +411,8 @@ describe('свободный текст посреди онбординга', ()
     expect(fetchFn).not.toHaveBeenCalled();
     fireEvent.change(box, { target: { value: 'я специалист' } });
     fireEvent.keyDown(box, { key: 'Enter' });
-    await waitFor(() => expect(question()).toBe('Зачем ты здесь?'));
+    // Роль «специалист» на /onboarding — знакомство продолжается в ленте /consultant (решение владельца 10.10).
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
     expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'role', value: 'candidate' });
   });
 
@@ -433,5 +434,29 @@ describe('свободный текст посреди онбординга', ()
     const text = document.body.textContent ?? '';
     expect(text.indexOf('Зачем ты здесь?')).toBeLessThan(text.indexOf('Зачем цель?'));
     expect(text.indexOf('Чтобы подстроить шаги.')).toBeLessThan(text.indexOf('Ищу работу'));
+  });
+});
+
+describe('лента внутри /consultant (онбординг и консультант — одна страница, решение владельца 10.10)', () => {
+  it('заголовок консультанта, без своей шапки сайта и второго main; «Настроить позже» — в профиль, а не на эту же страницу', async () => {
+    const fetchFn = stubFetch({ next: '/consultant' });
+    render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Карьерный консультант');
+    expect(document.querySelector('main')).toBeNull();
+    expect(question()).toBe('В каком направлении работаешь?');
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/profile'));
+    expect(sent(fetchFn)).toEqual({ action: 'later' });
+  });
+
+  it('после итога та же лента продолжается консультантом: шаги онбординга выше, разговор ниже, без перехода', () => {
+    stubFetch();
+    const restored = { conversationId: 'conv-1', items: [{ id: 'r-3', role: 'user' as const, text: 'Что подтянуть до мидла?' }] };
+    render(<OnboardingChat variant="consultant" initial={summaryView({ onboarded: true })} consentText={[]} consultant={{ restored }} />);
+    const text = document.body.textContent ?? '';
+    expect(text.indexOf('Ищу работу')).toBeGreaterThan(-1);
+    expect(text.indexOf('Ищу работу')).toBeLessThan(text.indexOf('Что подтянуть до мидла?'));
+    expect(screen.getByRole('link', { name: 'Тест' })).toBeDefined();
+    expect(push).not.toHaveBeenCalled();
   });
 });

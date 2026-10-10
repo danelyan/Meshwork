@@ -113,6 +113,15 @@ describe.each(PAGES)('страница %s', (_name, next, run) => {
   });
 });
 
+describe('/onboarding: кандидат проходит знакомство в ленте /consultant (решение владельца 10.10)', () => {
+  const run = async () => (await import('@/app/onboarding/page')).default();
+  it('гость → /auth?next=/onboarding, кандидат → /consultant', async () => {
+    expect(await outcome(run)).toBe('/auth?next=%2Fonboarding');
+    cookie.value = SESS.candidate();
+    expect(await outcome(run)).toBe('/consultant');
+  });
+});
+
 describe('requirePageEmployer (кабинет работодателя)', () => {
   const run = async () => (await import('@/server/auth/page')).requirePageEmployer('/employer/search');
   it('гость → /auth?next, кандидат → /consultant, pending → /onboarding, работодатель → пускает', async () => {

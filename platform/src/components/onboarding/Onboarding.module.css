@@ -28,3 +28,12 @@
 .end { scroll-margin-bottom: 140px; }
 /* аватар компаньона: на широком экране закреплён слева под шапкой онбординга (60px) */
 .stage { --dock-top: 84px; }
+
+/* Лента онбординга внутри /consultant (ConsultantScene, левая колонка): шапка сайта сверху, голова справа. */
+.inScene { min-height: calc(100svh - var(--landing-header-h) - 44px); --chat-composer-bg: var(--paper); }
+.inScene .top { top: var(--landing-header-h); background: var(--paper); }
+.inScene .topRow { padding: 8px 0; flex-wrap: wrap; }
+.inScene .feed { width: 100%; padding-inline: 0; }
+.sceneTitle { flex: 1; display: grid; gap: 4px; margin: 0; font-size: clamp(20px, 2vw, 26px); line-height: 1.1; letter-spacing: -0.03em; }
+.sceneTitle .title { letter-spacing: 0.06em; }
+.routes { display: flex; flex-wrap: wrap; gap: 8px; }

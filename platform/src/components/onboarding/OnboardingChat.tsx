@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 import { type OnboardingAction, completeOnboarding, onboardingAct, onboardingLater } from '@/lib/api';
 import type { EmployerRestoredChat } from '@/server/agent/employer/restore';
@@ -40,7 +40,16 @@ export interface OnboardingChatProps {
   consultant?: { demo?: ChatDemoContext; restored?: RestoredChat };
   /** После итога работодателя лента продолжается помощником по подбору. */
   employerAssistant?: { demoNoLlm?: boolean; restored?: EmployerRestoredChat };
+  /**
+   * `consultant` — лента внутри /consultant (решение владельца 10.10: онбординг и консультант —
+   * одна страница): без своей шапки сайта и аватара (голова — в ConsultantScene), заголовок
+   * консультанта. `page` — отдельная /onboarding (аккаунт без роли, работодатель).
+   */
+  variant?: 'page' | 'consultant';
 }
+
+/** Адрес ленты кандидата: онбординг и консультация — на одной странице. */
+export const CANDIDATE_FEED_PATH = '/consultant';
 
 /** Заготовки без модели: до роли «специалист» свободный текст в модель не уходит (граница доверия). */
 export const PRE_ROLE_REPLY = 'Сначала выбери вариант кнопкой выше - после этого отвечу на любой вопрос.';
@@ -67,7 +76,8 @@ export function OnboardingChat(props: OnboardingChatProps) {
   );
 }
 
-function OnboardingChatBody({ initial, consentText, consultant, employerAssistant }: OnboardingChatProps) {
+function OnboardingChatBody({ initial, consentText, consultant, employerAssistant, variant = 'page' }: OnboardingChatProps) {
+  const inConsultant = variant === 'consultant';
   const [view, setView] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +90,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const onboardedRef = useRef(initial.onboarded);
+  const roleRef = useRef(initial.role);
   const att = useAttachments();
   // Голос компаньона: реплика нового шага и ответы консультанта озвучиваются, если включено.
   const voice = useCompanionVoice();
@@ -126,6 +137,14 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setPending(bubble ?? null);
     try {
       const v = await onboardingAct(body);
+      // Выбрана роль «специалист» на /onboarding — знакомство продолжается в ленте консультанта
+      // (состояние шагов на сервере, откроется с того же места; кука роли уже обновлена ответом).
+      const roleChosen = roleRef.current === 'pending' && v.role === 'candidate';
+      roleRef.current = v.role;
+      if (!inConsultant && roleChosen) {
+        window.location.assign(CANDIDATE_FEED_PATH);
+        return;
+      }
       voiceRef.current?.speak(`${v.current.lead} ${v.current.question}`);
       setView(v);
       setDraft(draftOf(v.current));
@@ -153,7 +172,9 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setBusy(true);
     setError(null);
     try {
-      go((await onboardingLater()).next);
+      const next = (await onboardingLater()).next;
+      // Кабинет кандидата — эта же страница: «позже» уводит в профиль, иначе вернулись бы к шагу.
+      go(inConsultant && next === CANDIDATE_FEED_PATH ? '/profile' : next);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не получилось. Повтори.');
       setBusy(false);
@@ -323,12 +344,29 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setThinking?.(thinking);
   }, [thinking, setThinking]);
 
+  // Внутри /consultant main#main уже есть (layout кабинета) — лента в div.
+  const Feed = inConsultant ? 'div' : 'main';
   return (
-    <div className={styles.shell}>
+    <div className={inConsultant ? `${styles.shell} ${styles.inScene}` : styles.shell}>
       <header className={styles.top}>
         <div className={styles.topRow}>
-          <Brand />
-          <span className={styles.title}>Знакомство</span>
+          {inConsultant ? (
+            <h1 className={styles.sceneTitle}>
+              Карьерный консультант
+              <span className={styles.title}>{isSummary ? 'Ведёт по платформе' : 'Знакомство'}</span>
+            </h1>
+          ) : (
+            <>
+              <Brand />
+              <span className={styles.title}>Знакомство</span>
+            </>
+          )}
+          {inConsultant && isSummary && (
+            <nav className={styles.routes} aria-label="Следующий шаг">
+              <Button href="/profile" size="sm">Профиль</Button>
+              <Button href="/test" size="sm">Тест</Button>
+            </nav>
+          )}
           {!isSummary && (
             <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
               Настроить позже
@@ -338,11 +376,13 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         <ProgressLine value={isSummary ? view.progress.total : view.progress.done} max={view.progress.total} label={`Пройдено ${view.progress.done} из ${view.progress.total}`} />
       </header>
 
-      <main id="main" ref={feedRef} className={styles.feed} aria-busy={busy}>
-        <VisuallyHidden>
-          <h1>Знакомство с помощником ФСП Карьеры</h1>
-        </VisuallyHidden>
-        <CompanionStage className={styles.stage} />
+      <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>
+        {!inConsultant && (
+          <VisuallyHidden>
+            <h1>Знакомство с помощником ФСП Карьеры</h1>
+          </VisuallyHidden>
+        )}
+        {!inConsultant && <CompanionStage className={styles.stage} />}
         <Thread label="Переписка с помощником">
           {view.history.map((h) => (
             <HistoryPair
@@ -480,7 +520,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             hint={composerHint}
           />
         )}
-      </main>
+      </Feed>
     </div>
   );
 }

@@ -112,6 +112,13 @@ const ELLIPSIS_RE = /\s*(?:\.\.\.|…)\s*/;
 const MAX_QUOTE_PARTS = 3;
 /** Отрицание в пропущенном фрагменте: «не», «нет», «ни» отдельным словом. */
 const NEGATION_RE = /(?:^|[^\p{L}])(?:не|нет|ни)(?=[^\p{L}]|$)/u;
+/** Пропуск длиннее — обычное многоточие между мыслями, а не вырезанная частица. */
+const MAX_FLIP_GAP_WORDS = 4;
+/** Короткий пропуск с отрицанием может перевернуть смысл («который я … обработал» из «который я не обработал»). */
+function flipsMeaning(gap: string): boolean {
+  const words = gap.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  return words.length <= MAX_FLIP_GAP_WORDS && NEGATION_RE.test(gap);
+}
 
 /**
  * Проверка цитаты для оценщиков созвона и защиты (ступени 1 и 3). Строже не стала, мягче — в двух местах,
@@ -132,14 +139,14 @@ export function checkQuoteLoose(quote: string, answers: string[]): ReturnType<ty
   // ответа («я ... обработал» из «я не обработал»), то есть выдумывается.
   if (parts.length > 1 && parts.some((p) => p.replace(/\s/g, '').length < MIN_QUOTE_CHARS)) return strict;
   if (parts.length > MAX_QUOTE_PARTS) return strict;
-  // Пропуск не должен переворачивать смысл: «который я … обработал» из «который я не обработал» — отказ.
-  // Куски ищутся по первому вхождению: если пропуск с отрицанием, цитата отклоняется (строже, но не выдумка).
+  // Пропуск не должен переворачивать смысл: короткий пропуск (≤ 4 слов) с отрицанием — отказ.
+  // Куски ищутся по первому вхождению: при таком пропуске цитата отклоняется (строже, но не выдумка).
   const inOrder = (answer: string) => {
     let from = 0;
     for (const [i, p] of parts.entries()) {
       const at = answer.indexOf(p, from);
       if (at < 0) return false;
-      if (i > 0 && NEGATION_RE.test(answer.slice(from, at))) return false;
+      if (i > 0 && flipsMeaning(answer.slice(from, at))) return false;
       from = at + p.length;
     }
     return true;

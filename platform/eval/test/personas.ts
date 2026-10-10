@@ -9,7 +9,7 @@
 //   npx tsx eval/test/personas.ts --n 4000 --seed 1 --no-probe   # без дозадавания (как до adr-0002-v2/v3)
 //   npx tsx eval/test/personas.ts --n 2000 --junior-cut -1.0    # другой порог Junior
 //   npx tsx eval/test/personas.ts --sweep -1.5:-0.6:0.1         # свип порога Junior
-//   npm run eval:test-personas -- --spec ai                     # только персоны направления (ADR 0003, 10.10)
+//   npx tsx eval/test/personas.ts --spec engineering            # только персоны одного направления
 //
 // Честная граница: это симуляция моделей знаний персон агентом, не живые люди. Матрицы знаний —
 // наша гипотеза (легенды: fsp/docs/research/22-persona-calibration.md владельца), a и b — экспертные.
@@ -31,13 +31,8 @@ const SEED = Number(argStr('seed') ?? 1);
 const BASE_JUNIOR_CUT = GRADE_CUT.junior;
 /** --no-probe: только основная фаза (shouldStop), как до дозадавания Junior — для сравнения «до/после». */
 const PROBE = !args.includes('--no-probe');
-/**
- * --spec <направление>[,<направление>]: прогнать только персоны этих направлений (seed персон не сдвигаются).
- * Для сравнения с цифрами до 10.10 (суммы ошибок и свип порога по backend + frontend) — --spec backend,frontend.
- */
-const SPEC_ARG = argStr('spec');
-const SPEC_FILTER = SPEC_ARG ? new Set(SPEC_ARG.split(',') as Specialization[]) : null;
-const inFilter = (p: { spec: Specialization }) => !SPEC_FILTER || SPEC_FILTER.has(p.spec);
+/** --spec <направление>: прогнать только персоны этого направления (seed персон от этого не меняются). */
+const SPEC = argStr('spec') as Specialization | undefined;
 
 /** Истинный уровень по легенде: ниже Junior, Junior, Middle. */
 type Truth = 'below' | 'junior' | 'middle';
@@ -55,13 +50,10 @@ const Y = 1;
 const H = 0.5;
 const X = 0;
 const BE = ['http-semantics', 'sql-rowcount', 'n-plus-one', 'find-bug-idor', 'shell-output', 'schema-constraint', 'retry-policy', 'delivery-semantics', 'payment-retry', 'cache-consistency', 'index-choice', 'isolation-anomaly'].map((s) => `be.${s}`);
+// Engineering (ADR-0003, дополнение 10.10): Junior по возрастанию b, затем Middle по возрастанию b.
+const ENG = ['test-pyramid', 'secrets-leak', 'symptom-alert', 'dedup-count', 'docker-cache', 'error-budget', 'schema-types', 'fixture-isolation', 'retry-amplification', 'k8s-runtime', 'contract-test', 'idempotent-load', 'flaky-line', 'deploy-rollback', 'partition-prune', 'incremental-watermark'].map((s) => `eng.${s}`);
 const FE = ['js-array-output', 'html-semantics', 'css-specificity', 'js-closure', 'css-flex', 'dom-events', 'complexity', 'state-bug', 'event-loop', 'ts-typecheck', 'api-client-race', 'web-vitals'].map((s) => `fe.${s}`);
-// AI (ADR 0003, дополнение 10.10): Junior по возрастанию b, затем Middle по возрастанию b.
-const AI = ['pii-masking', 'token-cost', 'classification-metrics', 'rag-chunking', 'pandas-output', 'cosine-topk', 'structured-output', 'imputer-fit', 'tool-loop', 'retrieval-eval', 'inference-capacity', 'prompt-injection', 'model-registry', 'data-leakage', 'holdout-report'].map((s) => `ai.${s}`);
-const matrix = (ids: string[], row: number[]): Record<string, number> => {
-  if (row.length !== ids.length) throw new Error(`матрица персоны: ${row.length} клеток на ${ids.length} шаблонов`);
-  return Object.fromEntries(ids.map((id, i) => [id, row[i]!]));
-};
+const matrix = (ids: string[], row: number[]): Record<string, number> => Object.fromEntries(ids.map((id, i) => [id, row[i]!]));
 
 // Порядок колонок — BE / FE выше (по возрастанию b внутри грейда).
 const PERSONAS: Persona[] = [
@@ -78,18 +70,19 @@ const PERSONAS: Persona[] = [
   // Не легенды, в суммы ошибок не входят. Стоят после Z0, чтобы seed прежних персон не сдвинулись.
   { id: 'JB', spec: 'backend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(BE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
   { id: 'JF', spec: 'frontend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(FE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
-  // AI / ML (ADR 0003, дополнение 10.10; lane directions). Легенды — гипотеза агента, не люди. Колонки — AI выше:
-  // 7 Junior (pii, cost, metrics, chunking, pandas, cosine, structured) | 8 Middle (imputer, tool-loop, retrieval,
-  // capacity, injection, registry, leakage, holdout). Стоят в конце, чтобы seed прежних персон не сдвинулись.
-  { id: 'A1', spec: 'ai', truth: 'below', legend: 'аналитик в Excel, пользуется ChatGPT', knows: matrix(AI, [H, Y, X, H, X, X, H, X, X, X, X, X, X, X, X]) },
-  { id: 'A2', spec: 'ai', truth: 'below', legend: 'курсы Python + ML 3 мес.', knows: matrix(AI, [Y, Y, H, H, H, X, H, H, X, X, X, X, X, X, X]) },
-  { id: 'A3', spec: 'ai', truth: 'junior', legend: 'Junior: год делает бота на GigaChat с RAG', knows: matrix(AI, [Y, Y, H, Y, H, Y, Y, X, Y, H, H, H, X, X, X]) },
-  { id: 'A4', spec: 'ai', truth: 'junior', legend: 'Junior DS после магистратуры, слабый в LLM', knows: matrix(AI, [Y, H, Y, H, Y, H, H, Y, X, X, H, X, X, H, H]) },
-  { id: 'A5', spec: 'ai', truth: 'middle', legend: 'Middle ML-инженер, 3 года в продакшене', knows: matrix(AI, [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H, Y, Y, H]) },
-  { id: 'JA', spec: 'ai', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(AI, [Y, Y, Y, Y, Y, Y, Y, X, X, X, X, X, X, X, X]) },
+  // Engineering (10.10): легенды — гипотеза агента по research/25 § 3.4 (data-eng, devops, qa-automation, sre), не люди.
+  // Колонки ENG: J — pyramid, secrets, symptom, dedup, docker, budget, types, fixture | M — retry, k8s, contract, idemp, flaky, rollback, partition, watermark.
+  { id: 'E1', spec: 'engineering', truth: 'below', legend: 'эникейщик, курсы DevOps 2 мес., кода не пишет', knows: matrix(ENG, [H, H, H, X, H, X, X, X, X, H, X, X, X, X, X, X]) },
+  { id: 'E2', spec: 'engineering', truth: 'below', legend: 'ручной тестировщик 1 год, автотестов не писал', knows: matrix(ENG, [Y, X, H, X, X, H, X, H, X, X, H, X, X, X, X, X]) },
+  { id: 'E3', spec: 'engineering', truth: 'junior', legend: 'Junior DevOps, 1 год CI/CD и Docker', knows: matrix(ENG, [Y, Y, Y, H, Y, Y, H, H, H, Y, X, X, X, H, X, X]) },
+  { id: 'E4', spec: 'engineering', truth: 'junior', legend: 'узкий Junior data-инженер, 1,5 года ETL на SQL', knows: matrix(ENG, [Y, H, H, Y, H, H, Y, Y, X, X, X, H, X, X, H, H]) },
+  { id: 'E5', spec: 'engineering', truth: 'middle', legend: 'Middle SRE/DevOps, 4 года', knows: matrix(ENG, [Y, Y, Y, Y, Y, Y, Y, H, Y, Y, Y, H, H, Y, H, H]) },
+  { id: 'JE', spec: 'engineering', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(ENG, [Y, Y, Y, Y, Y, Y, Y, Y, X, X, X, X, X, X, X, X]) },
 ];
+/** Персоны прогона: все или одного направления (--spec). Индекс seed — по полному списку. */
+const ACTIVE = SPEC ? PERSONAS.filter((p) => p.spec === SPEC) : PERSONAS;
 /** Контроли — не легенды: в суммы ошибок не входят. */
-const CONTROLS = new Set(['Z0', 'JB', 'JF', 'JA']);
+const CONTROLS = new Set(['Z0', 'JB', 'JF', 'JE']);
 
 interface Outcome {
   confirmed: boolean;
@@ -153,7 +146,8 @@ interface PersonaStats {
 function runAll(cut: number): PersonaStats[] {
   GRADE_CUT.junior = cut;
   try {
-    return PERSONAS.flatMap((p, pi) => (inFilter(p) ? [{ p, pi }] : [])).map(({ p, pi }) => {
+    return ACTIVE.map((p) => {
+      const pi = PERSONAS.indexOf(p);
       const pool: SelectableTemplate[] = generatorsFor(p.spec).map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
       let j = 0;
       let m = 0;
@@ -205,7 +199,7 @@ if (sweep) {
   const cuts: number[] = [];
   for (let c = from; c <= to + 1e-9; c += step) cuts.push(Number(c.toFixed(4)));
   console.log(`# Свип порога Junior по персонам: N = ${N} попыток на персону и грейд, seed = ${SEED}, порог Middle = ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
-  const ids = PERSONAS.filter(inFilter).map((p) => p.id);
+  const ids = ACTIVE.map((p) => p.id);
   console.log(`| Порог Junior | Зона Junior (Middle − Junior) | ${ids.map((id) => `${id} P(J)`).join(' | ')} | Σ ложных J | Σ отказов J | Σ ошибок |`);
   console.log(`|---|---|${ids.map(() => '---').join('|')}|---|---|---|`);
   for (const cut of cuts) {
@@ -217,14 +211,16 @@ if (sweep) {
 } else {
   const cut = argStr('junior-cut') !== undefined ? Number(argStr('junior-cut')) : GRADE_CUT.junior;
   const s = runAll(cut);
-  console.log(`# Персоны через движок теста${SPEC_ARG ? ` (направление ${SPEC_ARG})` : ''}: N = ${N} попыток на персону и грейд, seed = ${SEED}, пороги Junior ${cut} / Middle ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
+  console.log(`# Персоны через движок теста: N = ${N} попыток на персону и грейд, seed = ${SEED}, пороги Junior ${cut} / Middle ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}${SPEC ? `, направление ${SPEC}` : ''}\n`);
   console.log('| Персона | Легенда | Уровень по легенде | P(Junior), заявил Junior | Длина | Дозадавание | θ̂ | P(Middle), заявил Middle | Junior в 1 клик | Длина | Дозадавание |');
   console.log('|---|---|---|---|---|---|---|---|---|---|---|');
   for (const x of s) {
     console.log(`| ${x.p.id} | ${x.p.legend} | ${x.p.truth} | ${f3(x.pJunior)} | ${x.lenJunior.toFixed(2)} | ${f2(x.probedJunior)} | ${f2(x.thetaJunior)} | ${f3(x.pMiddle)} | ${f3(x.pOffer)} | ${x.lenMiddle.toFixed(2)} | ${f2(x.probedMiddle)} |`);
   }
   const e = errors(s);
-  const ids = (pred: (x: PersonaStats) => boolean) => s.filter((x) => !CONTROLS.has(x.p.id) && pred(x)).map((x) => x.p.id).join(', ');
-  console.log(`\nΣ ложных подтверждений Junior (${ids((x) => x.p.truth === 'below')}): ${f2(e.falsePass)}; Σ ложных отказов Junior (${ids((x) => x.p.truth !== 'below')}): ${f2(e.falseFail)}`);
+  const real = ACTIVE.filter((p) => !CONTROLS.has(p.id));
+  const below = real.filter((p) => p.truth === 'below').map((p) => p.id).join(', ');
+  const above = real.filter((p) => p.truth !== 'below').map((p) => p.id).join(', ');
+  console.log(`\nΣ ложных подтверждений Junior (${below}): ${f2(e.falsePass)}; Σ ложных отказов Junior (${above}): ${f2(e.falseFail)}`);
 }
 console.log(`\nВремя прогона: ${((Date.now() - t0) / 1000).toFixed(1)} с`);

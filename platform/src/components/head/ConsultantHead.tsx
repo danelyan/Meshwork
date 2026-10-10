@@ -1,8 +1,14 @@
-import { ConsultantGridPreview } from '@/components/design/ConsultantGridPreview';
-import { ACCEPTED_GRID_SETTINGS } from '@/components/design/grid-preview-settings';
+'use client';
 
-/** Approved mirrored grid, shared with v3; the conversation stays in React. */
+import { HeadView } from '@/components/avatar/HeadView';
+import { MuteToggle, StateChip, StopButton } from '@/components/avatar/Speaking';
+import styles from './ConsultantScene.module.css';
+
+/** Selected weave-six portrait with live neck and facial animation. */
 export function ConsultantHead() {
-  return <ConsultantGridPreview portrait version="v3"
-    source="/design/consultant-grid-v3/head.html" initialSettings={ACCEPTED_GRID_SETTINGS} />;
+  return <>
+    <HeadView style="weave6" />
+    <div className={styles.portraitLabel}><span>Консультант</span><StateChip /></div>
+    <div className={styles.caption}><MuteToggle /><StopButton /></div>
+  </>;
 }

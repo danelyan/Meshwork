@@ -6,7 +6,8 @@
 //
 // Честная граница: симуляция проверяет свойства механики ПРИ ЗАДАННЫХ параметрах заданий
 // (a, b экспертные, на людях не оценены), а не то, что задания измеряют умение.
-import { generatorsFor } from '../../src/server/test/generators';
+import { SPECIALIZATIONS } from '../../src/lib/directions';
+import { generatorsFor, hasTestFor } from '../../src/server/test/generators';
 import { estimateTheta, probCorrect, type Response } from '../../src/server/test/irt';
 import {
   CONFIRM_PROB,
@@ -163,7 +164,8 @@ interface SpecReport {
 }
 
 function runSpec(spec: Specialization): SpecReport {
-  const rng = createRng(SEED * 7919 + (spec === 'backend' ? 1 : 2));
+  // backend 1, frontend 2 (как до 10.10), ai 3, engineering 4 — seed прежних направлений не сдвигаются.
+  const rng = createRng(SEED * 7919 + SPECIALIZATIONS.indexOf(spec) + 1);
   const pool: SelectableTemplate[] = generatorsFor(spec).map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
   const sims: (Sim & { pop: string })[] = [];
   for (let i = 0; i < N; i++) {
@@ -273,7 +275,8 @@ function runSpec(spec: Specialization): SpecReport {
 }
 
 const t0 = Date.now();
-const reports = (['backend', 'frontend'] as Specialization[]).map(runSpec);
+// Направления с банком заданий (у engineering — после лейна engineering).
+const reports = SPECIALIZATIONS.filter((s) => hasTestFor(s)).map(runSpec);
 console.log(`# Валидация теста на грейд (синтетика): N = ${N} на специализацию, seed = ${SEED}, шум экземпляра σ = ${NOISE}, популяция ${POPULATION}, пороги Junior ${GRADE_CUT.junior} / Middle ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
 for (const rep of reports) {
   console.log(`## ${rep.spec}\n`);

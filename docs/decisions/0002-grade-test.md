@@ -296,3 +296,30 @@ JB / JF — идеальные контроли «все Junior верно, вс
 - Банк мал (6 Junior-шаблонов): на backend часто дозадаётся 2 задания, а не 3.
 
 **Граница.** Персоны — модели знаний, заданные агентом, не живые люди; `a`, `b` экспертные.
+
+## Дополнение: направления ai/engineering (10.10, lane directions; ADR 0003, дополнение 10.10)
+
+**Что меняется.** `Specialization` = backend, frontend, ai, engineering (справочник и подписи —
+`src/lib/directions.ts`, подкатегории — таблица `Subcategory`). Механика теста не меняется: те же IRT 2PL,
+пороги, остановка, дозадавание Junior; `POLICY_VERSION` тот же. Новое направление = свой банк генераторов
+с тем же интерфейсом `TaskGenerator`, регистрация в `generators/index.ts`, записи каталога и персоны.
+
+**ai.** 15 генераторов `ai.*` (`generators/ai.ts`): 7 Junior — `rag-chunking`, `cosine-topk`, `token-cost`,
+`classification-metrics`, `structured-output`, `pandas-output`, `pii-masking`; 8 Middle — `prompt-injection`,
+`tool-loop`, `data-leakage`, `holdout-report`, `imputer-fit`, `inference-capacity`, `model-registry`,
+`retrieval-eval`. Покрывают подкатегории llm-apps, ai-integration, ml-engineering, mlops, data-science. Ключ
+считает код; у заданий с ловушкой (выбор модели по тесту, fit импутера на всех данных, «последняя версия»)
+тест проверяет, что ловушка даёт другой ответ. `a`, `b` — ПРЕДЛОЖЕНИЕ в коридоре backend/frontend
+(Junior b ∈ [−1,4; −0,5], Middle b ∈ [0,3; 0,7]). Каталог: 21 запись `ai.*` + веса `ai` у 8 записей `common.*`
+(`scripts/catalog-direction-entries.json`, `catalog-to-json.mjs` дописывает их к каталогу владельца).
+
+**Калибровка.** Персоны A1–A5 и контроль JA (`eval/test/personas.ts --spec ai`): новички проходят Junior
+в 0–2 % (цель ≤ 10 %), подстройка a/b не понадобилась; узкий Junior A4 — 0,58, идеальный Junior — 0,90–0,92.
+Цифры и цена — [validation-results.md](../validation-results.md), § «Направление ai».
+
+**engineering.** Генераторов пока нет (лейн engineering, ключи `eng.*`). До них `checkEligibility` отвечает
+`{allowed: false, code: 'no_test'}`, старт попытки — 422, `requireGenerators` бросает `NoGeneratorsError`,
+экран теста показывает «тест пока недоступен». Порог «банк есть» — `MIN_GENERATORS_PER_SPEC = 12`.
+
+**Граница.** Как и для backend/frontend: персоны — модели знаний агента, `a`, `b` экспертные, на людях не
+оценены; категория ai — того же уровня доверия, что backend/frontend, не выше.

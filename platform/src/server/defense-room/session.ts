@@ -405,6 +405,7 @@ async function finishLocked(sessionId: string, llm: LlmProvider): Promise<Defens
       {
         projectTitle: plan.source.projectTitle,
         transcript: asTranscript(full.transcriptJson),
+        plan: plan.items,
         projectScore: plan.source.mode === 'project' ? (summarizeProjectResult(submission?.resultJson)?.score ?? null) : null,
         employerAsked: askedEmployer.length,
         employerAnswered: askedEmployer.filter((i) => i.answered).length,

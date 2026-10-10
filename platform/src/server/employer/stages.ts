@@ -89,6 +89,7 @@ const DEFENSE_FLAG_LABEL: Record<DefenseFlag, string> = {
   evaluator_disagreement: 'Прогоны оценщика разошлись - лучше прочитать транскрипт.',
   employer_questions_unanswered: 'Не на все вопросы работодателя есть ответ.',
   no_project_result: 'Результата автопроверки проекта нет - сравнить проект и защиту нельзя.',
+  uneven_understanding: 'Понимание неровное: часть кода объясняет уверенно, по другой части ответы почти пустые.',
 };
 export const defenseFlagLabel = (f: DefenseFlag): string => DEFENSE_FLAG_LABEL[f];
 

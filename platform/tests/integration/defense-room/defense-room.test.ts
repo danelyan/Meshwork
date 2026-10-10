@@ -11,6 +11,7 @@ import { POST as muteRoute } from '@/app/api/employer/call/[id]/mute-ai/route';
 import { POST as sayRoute } from '@/app/api/employer/call/[id]/say/route';
 import { GET as listQuestions, POST as askRoute } from '@/app/api/employer/questions/route';
 import { CALL_RECORDING_CONSENT_VERSION } from '@/server/call/consent';
+import { parseContextBlock } from '@/server/call/prompt-utils';
 import { subscribe, resetBus } from '@/server/defense-room/bus';
 import type { CallEvent, CallSnapshot, DefenseRoomVerdict, TranscriptEntry } from '@/server/defense-room/types';
 import { clearStubResponses, registerStubResponse } from '@/server/llm/providers/stub';
@@ -28,7 +29,9 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
 const post = (url: string, body: unknown, cookie: string) => jsonRequest(url, 'POST', body, cookie);
 
 // Слабая защита: оценщик ставит низко на всех трёх прогонах.
-const WEAK = { depth: { score: 1, quote: 'экспоненциально', rationale: '' }, why: { score: 0, quote: '', rationale: '' }, boundary: { score: 1, quote: 'не знаю точно', rationale: '' }, completion: { score: 0, quote: '', rationale: '' }, advice: 'Объясняй выбор.' };
+const WEAK_ITEM = { depth: { score: 1, quote: 'экспоненциально', rationale: '' }, why: { score: 0, quote: '', rationale: '' }, boundary: { score: 1, quote: 'не знаю точно', rationale: '' }, completion: { score: 0, quote: '', rationale: '' } };
+/** Оценщик по вопросам (defense-room/verdict.ts): одинаково слабо по каждому пункту из `<call_context>`. */
+const WEAK = (req: { messages: { content: string }[] }) => ({ items: (parseContextBlock<{ items: { id: string }[] }>(req.messages[0]!.content)?.items ?? []).map((i) => ({ id: i.id, ...WEAK_ITEM })) });
 
 async function seed(opts: { consent?: boolean } = {}) {
   await prisma.candidate.create({ data: { id: CAND, email: 'c@example.com', name: 'Кандидат Защиты' } });
@@ -140,9 +143,9 @@ describe('защита проекта с работодателем', () => {
 
     // Завершение: три прогона слепого оценщика, слабая защита при 90 % тестов → флаг, не понижение.
     let evalCalls = 0;
-    registerStubResponse('call_evaluator', () => {
+    registerStubResponse('call_evaluator', (req) => {
       evalCalls++;
-      return { json: WEAK };
+      return { json: WEAK(req) };
     });
     const fin = await finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId));
     expect(fin.status).toBe(200);
@@ -181,7 +184,7 @@ describe('защита проекта с работодателем', () => {
     const t1 = await (await turnRoute(post('/x', { text: 'Счётчик попыток и гистограмма задержек в Prometheus.' }, CAND_COOKIE), params(st.sessionId))).json();
     expect(t1.text).toMatch(/идемпотентности между узлами/);
     // Кандидат ушёл, не ответив на второй: после finish вопрос снова в очереди.
-    registerStubResponse('call_evaluator', () => ({ json: WEAK }));
+    registerStubResponse('call_evaluator', (req) => ({ json: WEAK(req) }));
     const v = (await (await finishRoute(post('/x', {}, CAND_COOKIE), params(st.sessionId))).json()).verdict as DefenseRoomVerdict;
     expect(v.flags).toContain('employer_questions_unanswered');
     expect(v.flags).not.toContain('no_project_result');
@@ -327,10 +330,10 @@ describe('защита: доступ, лимиты, гонки', () => {
     const { sessionId } = await (await start()).json();
     await turnRoute(post('/x', { text: 'Задержка растёт экспоненциально.' }, CAND_COOKIE), params(sessionId));
     let evalCalls = 0;
-    registerStubResponse('call_evaluator', async () => {
+    registerStubResponse('call_evaluator', async (req) => {
       evalCalls++;
       await new Promise((r) => setTimeout(r, 50));
-      return { json: WEAK };
+      return { json: WEAK(req) };
     });
     const [r1, r2] = await Promise.all([finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId)), finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId))]);
     const statuses = [r1.status, r2.status].sort();

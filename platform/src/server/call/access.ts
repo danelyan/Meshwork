@@ -4,7 +4,7 @@
 //    после accepted — всё; участник комнаты (defense-room) — транскрипт вживую, запись — только после accepted.
 import { prisma } from '../db';
 import { errors } from '../errors';
-import type { CallAccess, CallEvent, CallVerdict, PublicCallVerdict } from './types';
+import { type CallAccess, type CallEvent, type CallVerdict, depthStatus, type PublicCallVerdict } from './types';
 
 export interface CallPrincipal {
   role: 'candidate' | 'employer';
@@ -63,6 +63,8 @@ export function publicVerdict(v: CallVerdict): PublicCallVerdict {
       probed: d.probed,
       maxLevel: d.maxLevel,
       confirmed: d.confirmed,
+      status: depthStatus(d),
+      ...(d.extraProbe ? { extraProbe: true } : {}),
       scores: d.scores,
       total: d.total,
     })),

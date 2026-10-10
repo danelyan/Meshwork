@@ -13,7 +13,8 @@ import { STUB } from '../stages/boot';
 
 import { finishCall, startCall, submitTurn } from '../../src/server/call/service';
 import type { CallVerdict, TranscriptEntry } from '../../src/server/call/types';
-import { callTables, diffMeter, summarizeCallPersona, type CallObs, type CallTopicObs } from '../stages/metrics';
+import { retellsProfile } from '../../src/server/call/evaluator';
+import { callTables, callTuningTable, diffMeter, summarizeCallPersona, type CallObs, type CallTopicObs } from '../stages/metrics';
 import { argValue, createCandidate, ensureCatalog, personaAnswer, prisma, providers, runTag, snapshot, writeResult, type PersonaProfile } from '../stages/runtime';
 
 type Depth = 'deep' | 'shallow' | 'bluff' | 'weak';
@@ -258,15 +259,26 @@ async function runCall(p: CallPersona, n: number, tag: string, llm: ReturnType<t
     let transcript: TranscriptEntry[] = started.call.transcript ?? [];
     const history: { q: string; a: string | null }[] = [];
     let current = transcript[transcript.length - 1];
-    for (let turn = 0; turn < MAX_TURNS && current?.role === 'ai' && current.meta; turn++) {
-      history.push({ q: current.text, a: null });
-      const answer = STUB ? stubAnswer(p, current.meta.catalogId, current.meta.level) : await personaAnswer(llm.persona, profile, history);
-      history[history.length - 1]!.a = answer;
-      const res = await submitTurn(id, sessionId, { text: answer.slice(0, 3900) }, llm.platform);
-      transcript = [...transcript, res.candidate, ...(res.ai ? [res.ai] : [])];
-      current = res.done ? undefined : (res.ai ?? undefined);
+    const answerLoop = async () => {
+      for (let turn = 0; turn < MAX_TURNS && current?.role === 'ai' && current.meta; turn++) {
+        history.push({ q: current.text, a: null });
+        const answer = STUB ? stubAnswer(p, current.meta.catalogId, current.meta.level) : await personaAnswer(llm.persona, profile, history);
+        history[history.length - 1]!.a = answer;
+        const res = await submitTurn(id, sessionId, { text: answer.slice(0, 3900) }, llm.platform);
+        transcript = [...transcript, res.candidate, ...(res.ai ? [res.ai] : [])];
+        current = res.done ? undefined : (res.ai ?? undefined);
+      }
+    };
+    await answerLoop();
+    let view = await finishCall(id, sessionId, llm.platform);
+    // Темы «не определено» → дополнительные вопросы (созвон остаётся active), затем finish ещё раз.
+    for (let round = 0; round < 3 && view.status === 'active'; round++) {
+      transcript = view.transcript ?? transcript;
+      current = transcript[transcript.length - 1];
+      await answerLoop();
+      view = await finishCall(id, sessionId, llm.platform);
     }
-    const view = await finishCall(id, sessionId, llm.platform);
+    transcript = view.transcript ?? transcript;
     const verdict = view.verdict as CallVerdict | null;
     const expected = new Map(p.topics.map((t) => [t.catalogId, t.expected]));
     const asked = transcript.filter((e) => e.role === 'ai' && e.meta);
@@ -275,12 +287,17 @@ async function runCall(p: CallPersona, n: number, tag: string, llm: ReturnType<t
       sessionId,
       questions: asked.length,
       fallbackQuestions: asked.filter((e) => e.meta?.fallback).length,
+      retoldQuestions: asked.filter((e) => retellsProfile(e.text, p.topics.flatMap((t) => [t.statement, t.quote]), [e.meta?.topic ?? ''])).length,
+      probeQuestions: asked.filter((e) => e.meta?.probe).length,
+      evaluatorRuns: verdict?.runs ?? 0,
       validRuns: verdict?.validRuns ?? 0,
       topics: (verdict?.depthMap ?? []).map((d) => ({
         topic: d.topic,
         catalogId: d.catalogId,
         expected: d.catalogId && expected.has(d.catalogId) ? expected.get(d.catalogId)! : null,
         confirmed: d.confirmed,
+        status: d.status ?? (d.confirmed ? 'confirmed' : 'not_confirmed'),
+        ...(d.extraProbe ? { extraProbe: true } : {}),
         total: d.total,
         probed: d.probed,
         maxLevel: d.maxLevel,
@@ -314,7 +331,7 @@ async function main(): Promise<void> {
       const t0 = Date.now();
       const o = await runCall(p, n, tag, llm);
       obs.push(o);
-      const conf = o.topics.map((t) => `${t.catalogId}:${t.confirmed ? '✓' : '✗'}${t.total}`).join(' ');
+      const conf = o.topics.map((t) => `${t.catalogId}:${t.status === 'not_probed' ? '·' : t.status === 'inconclusive' ? '?' : t.confirmed ? '✓' : '✗'}${t.total}`).join(' ');
       console.log(`  ${p.id}${n}: ${o.error ? `ОШИБКА ${o.error}` : conf} · вопросов ${o.questions} · LLM ${o.platform.calls}+${o.persona_llm.calls} · ${Math.round((Date.now() - t0) / 1000)} с`);
     }
   }
@@ -326,8 +343,8 @@ async function main(): Promise<void> {
     ),
   );
   const legends = Object.fromEntries(personas.map((p) => [p.id, p.title]));
-  const md = callTables(summaries, legends);
-  const file = writeResult(`call-${STUB ? 'stub' : 'live'}.json`, {
+  const md = `${callTables(summaries, legends)}\n\n${callTuningTable(summaries, legends)}`;
+  const file = writeResult(`call-${STUB ? 'stub' : 'live'}${argValue('out') ? `-${argValue('out')}` : ''}.json`, {
     stage: 1,
     provider: `${llm.platform.name}/${llm.platform.model}`,
     stub: STUB,

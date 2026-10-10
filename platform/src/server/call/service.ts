@@ -13,7 +13,7 @@ import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from './consent';
 import { CALL_DISCLAIMER, callDriver, questionTurns, type DriverSession } from './drivers';
 import { CALL_LIMITS, CLOSING_LINE } from './plan';
 import { MAX_UTTERANCE_CHARS, type StartCallBody } from './schemas';
-import type { CallKind, CallStatus, CallVerdict, CallView, TranscriptEntry, TurnResult } from './types';
+import type { CallKind, CallStatus, CallVerdict, CallView, QuestionLevel, TranscriptEntry, TurnResult } from './types';
 
 /** Публичный STUN для WebRTC (defense-room; ADR 0003: P2P, сигналинг через наш API). */
 export const ICE_SERVERS = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }] as const;
@@ -60,6 +60,22 @@ export function awaitingAnswer(transcript: readonly TranscriptEntry[]): boolean 
   return Boolean(last && last.role === 'ai' && last.meta);
 }
 
+/** Промежуточная оценка (созвон ещё идёт, ждут дополнительные вопросы по неопределённым темам). */
+function interimOf(row: Pick<Row, 'verdictJson'>): CallVerdict | null {
+  const v = row.verdictJson as unknown as CallVerdict | null;
+  return v && v.interim ? v : null;
+}
+
+/** Следующая неопределённая тема из промежуточной оценки, по которой дополнительный вопрос ещё не задавали. */
+function nextProbe(interim: CallVerdict | null, transcript: readonly TranscriptEntry[]): { topic: string; level: QuestionLevel } | null {
+  if (!interim?.pendingProbes?.length) return null;
+  const asked = new Set(questionTurns(transcript).filter((t) => t.probe).map((t) => t.topic));
+  const topic = interim.pendingProbes.find((t) => !asked.has(t));
+  if (!topic) return null;
+  const item = interim.depthMap.find((d) => d.topic === topic);
+  return { topic, level: (item?.maxLevel ?? 2) as QuestionLevel };
+}
+
 function answeredCount(transcript: readonly TranscriptEntry[]): number {
   return questionTurns(transcript).filter((t) => t.answer !== null).length;
 }
@@ -92,7 +108,10 @@ export async function buildView(row: Row, acc: ResolvedAccess): Promise<CallView
   const transcript = transcriptOf(row);
   const driver = callDriver(row.kind);
   const answered = answeredCount(transcript);
-  const verdict = (row.verdictJson as unknown as CallVerdict | null) ?? null;
+  // Промежуточная оценка (созвон active, ждут дополнительные вопросы) наружу не отдаётся.
+  const stored = (row.verdictJson as unknown as CallVerdict | null) ?? null;
+  const verdict = stored?.interim ? null : stored;
+  const interim = stored?.interim ? stored : null;
   const participants = await prisma.callParticipant.findMany({
     where: { callSessionId: row.id },
     orderBy: { joinedAt: 'asc' },
@@ -112,7 +131,7 @@ export async function buildView(row: Row, acc: ResolvedAccess): Promise<CallView
     progress: {
       answered,
       minQuestions: driver.limits.minQuestions,
-      maxQuestions: driver.limits.maxQuestions,
+      maxQuestions: interim ? (driver.limits.hardMaxQuestions ?? driver.limits.maxQuestions) : driver.limits.maxQuestions,
       canFinish: row.status === 'active' && answered >= 1,
       awaitingAnswer: row.status === 'active' && awaitingAnswer(transcript),
     },
@@ -219,14 +238,21 @@ export async function submitTurn(
   let aiText: string;
   let meta: TranscriptEntry['meta'];
   let done = false;
-  if (answered >= driver.limits.maxQuestions) {
+  const interim = interimOf(saved.row);
+  const probe = interim ? nextProbe(interim, transcript) : null;
+  const hardMax = driver.limits.hardMaxQuestions ?? driver.limits.maxQuestions;
+  if (interim && (!probe || answered >= hardMax)) {
+    // Дополнительные вопросы по неопределённым темам заданы — дальше finish досчитает только их.
+    aiText = CLOSING_LINE;
+    done = true;
+  } else if (!interim && answered >= driver.limits.maxQuestions) {
     aiText = CLOSING_LINE;
     done = true;
   } else {
     publishCall(sessionId, { type: 'ai_state', state: 'thinking' });
     try {
-      const q = await driver.nextQuestion(driverSession(saved.row, transcript), llm);
-      if (answered >= driver.limits.minQuestions && q.done) {
+      const q = await driver.nextQuestion(driverSession(saved.row, transcript), llm, probe ? { force: probe } : {});
+      if (!probe && answered >= driver.limits.minQuestions && q.done) {
         aiText = CLOSING_LINE;
         done = true;
       } else {
@@ -282,9 +308,10 @@ export async function finishCall(candidateId: string, sessionId: string, llm: Ll
     throw errors.conflict('Оценка уже идёт - подожди результата');
   }
 
+  const interim = interimOf(row);
   let partial;
   try {
-    partial = await driver.evaluate(driverSession(row, transcript), llm);
+    partial = await driver.evaluate(driverSession(row, transcript), llm, { interim });
   } catch (err) {
     console.warn('[call] evaluator failed:', err instanceof Error ? err.message : err);
     const closed = await prisma.callSession.updateMany({
@@ -299,12 +326,46 @@ export async function finishCall(candidateId: string, sessionId: string, llm: Ll
     throw new AppError('llm_unavailable', 'Оценщик сейчас недоступен. Ответы сохранены - нажми «Завершить» ещё раз чуть позже.', 503);
   }
 
+  // Прогоны оценщика разошлись в решении по теме → «нужен ещё вопрос»: созвон продолжается дополнительными
+  // вопросами (до hardMaxQuestions), промежуточная оценка хранится в verdictJson и наружу не отдаётся.
+  const hardMax = driver.limits.hardMaxQuestions;
+  if (!interim && hardMax) {
+    const room = hardMax - answeredCount(transcript);
+    const probes = partial.depthMap.filter((d) => d.status === 'inconclusive').map((d) => d.topic).slice(0, Math.max(0, room));
+    if (probes.length) {
+      const pending: CallVerdict = { ...partial, upgradedCatalogIds: [], evaluatedAt: new Date().toISOString(), interim: true, pendingProbes: probes };
+      const first = nextProbe(pending, transcript)!;
+      const q = await driver.nextQuestion(driverSession(row, transcript), llm, { force: first });
+      const cont = await prisma.$transaction(async (tx) => {
+        const cur = await lockCall(tx, sessionId);
+        if (cur.status !== 'active') return null;
+        // Незаданный ответ на последний вопрос (кандидат нажал «Завершить» раньше) остаётся без ответа:
+        // дополнительный вопрос идёт следом, оценщик видит только пары с ответом.
+        const t = transcriptOf(cur);
+        const e = entry(t, cur.startedAt, { role: 'ai', text: q.text, meta: q.meta });
+        const upd = (await tx.callSession.update({
+          where: { id: sessionId },
+          data: { transcriptJson: [...t, e] as unknown as Prisma.InputJsonValue, verdictJson: pending as unknown as Prisma.InputJsonValue },
+          select: rowSelect,
+        })) as Row;
+        return { row: upd, entry: e };
+      });
+      if (cont) {
+        publishCall(sessionId, { type: 'utterance', entry: cont.entry });
+        return buildView(cont.row, CANDIDATE_ACCESS);
+      }
+      return buildView(await loadOwn(candidateId, sessionId), CANDIDATE_ACCESS);
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     const cur = await lockCall(tx, sessionId);
     if (cur.status !== 'active') return { row: cur, fresh: false };
     const upgradedCatalogIds = (await driver.applyVerdict?.(tx, cur.candidateId, partial)) ?? [];
     const now = new Date();
     const verdict: CallVerdict = { ...partial, upgradedCatalogIds, evaluatedAt: now.toISOString() };
+    delete verdict.interim;
+    delete verdict.pendingProbes;
     const upd = (await tx.callSession.update({
       where: { id: sessionId },
       data: { status: 'finished', finishedAt: now, verdictJson: verdict as unknown as Prisma.InputJsonValue },

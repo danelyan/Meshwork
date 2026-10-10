@@ -54,7 +54,7 @@ describe('гейт записи созвона для работодателя (
     const v: CallVerdict = {
       kind: 'qualifying',
       depthMap: [
-        { topic: 'Индексы', catalogId: 'be.idx', claimed: true, claimStatement: 'Моя формулировка', probed: 2, maxLevel: 3, confirmed: true, scores: { depth: 2, why: 2, boundary: 1, completion: 1 }, total: 6, quote: 'дословно кандидат', runs: [] },
+        { topic: 'Индексы', catalogId: 'be.idx', claimed: true, claimStatement: 'Моя формулировка', probed: 2, maxLevel: 3, confirmed: true, status: 'confirmed', scores: { depth: 2, why: 2, boundary: 1, completion: 1 }, total: 6, quote: 'дословно кандидат', runs: [] },
       ],
       runs: 3,
       validRuns: 3,

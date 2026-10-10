@@ -7,7 +7,7 @@ import { PLATFORM_UPGRADABLE } from '../claims/levels';
 import { AppError } from '../errors';
 import type { LlmProvider } from '../llm/types';
 import { loadCallContext } from './context';
-import { type EvalTopic, evaluateCall } from './evaluator';
+import { type EvalTopic, evaluateCall, notProbedItem } from './evaluator';
 import { nextCallQuestion } from './interviewer';
 import { CALL_LIMITS, type PlanTurn } from './plan';
 import type { CallKind, CallVerdict, QuestionLevel, TranscriptEntry } from './types';
@@ -29,21 +29,23 @@ export interface DriverQuestion {
 
 export interface CallDriver {
   kind: CallKind;
-  limits: { minQuestions: number; maxQuestions: number };
+  /** hardMaxQuestions — потолок с дополнительными вопросами по неопределённым темам (без него их нет). */
+  limits: { minQuestions: number; maxQuestions: number; hardMaxQuestions?: number };
   /** Проверка перед стартом (например, сабмит проекта принадлежит кандидату). */
   assertCanStart?(candidateId: string, projectSubmissionId: string | null): Promise<void>;
-  nextQuestion(session: DriverSession, llm: LlmProvider, signal?: AbortSignal): Promise<DriverQuestion>;
-  evaluate(session: DriverSession, llm: LlmProvider, signal?: AbortSignal): Promise<Omit<CallVerdict, 'upgradedCatalogIds' | 'evaluatedAt'>>;
+  nextQuestion(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; force?: { topic: string; level: QuestionLevel } }): Promise<DriverQuestion>;
+  /** interim — промежуточная оценка этого же созвона: досчитываются только темы с дополнительными вопросами. */
+  evaluate(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; interim?: CallVerdict | null }): Promise<Omit<CallVerdict, 'upgradedCatalogIds' | 'evaluatedAt'>>;
   /** Последствия вердикта в той же транзакции, что и завершение (уровни утверждений). Возвращает поднятые catalogId. */
   applyVerdict?(tx: Prisma.TransactionClient, candidateId: string, verdict: Omit<CallVerdict, 'upgradedCatalogIds' | 'evaluatedAt'>): Promise<string[]>;
 }
 
 /** Пары вопрос ИИ (с meta) → ответ кандидата, по порядку. Реплики работодателя не входят. */
-export function questionTurns(transcript: readonly TranscriptEntry[]): (PlanTurn & { aiIndex: number })[] {
-  const out: (PlanTurn & { aiIndex: number })[] = [];
+export function questionTurns(transcript: readonly TranscriptEntry[]): (PlanTurn & { aiIndex: number; probe?: 'inconclusive' })[] {
+  const out: (PlanTurn & { aiIndex: number; probe?: 'inconclusive' })[] = [];
   for (const e of transcript) {
     if (e.role === 'ai' && e.meta) {
-      out.push({ question: e.text, answer: null, topic: e.meta.topic, catalogId: e.meta.catalogId, level: e.meta.level, aiIndex: e.index });
+      out.push({ question: e.text, answer: null, topic: e.meta.topic, catalogId: e.meta.catalogId, level: e.meta.level, aiIndex: e.index, ...(e.meta.probe ? { probe: e.meta.probe } : {}) });
     } else if (e.role === 'candidate') {
       const last = out[out.length - 1];
       if (last) last.answer = last.answer === null ? e.text : `${last.answer}\n${e.text}`;
@@ -55,33 +57,40 @@ export function questionTurns(transcript: readonly TranscriptEntry[]): (PlanTurn
 export const CALL_DISCLAIMER =
   'Созвон проверяет, насколько глубоко ты понимаешь темы своей специализации сейчас. Он не доказывает подлинность истории из резюме и не меняет категорию - её даёт только тест. Грамотность, акцент и ошибки распознавания речи не оцениваются.';
 
-function summaryOf(depthMap: CallVerdict['depthMap']): string {
-  if (depthMap.length === 0) return 'Ответов для оценки не было.';
-  const ok = depthMap.filter((d) => d.confirmed);
-  const head = `Подтверждено тем: ${ok.length} из ${depthMap.length}.`;
+export function summaryOf(depthMap: CallVerdict['depthMap']): string {
+  const probed = depthMap.filter((d) => d.status !== 'not_probed');
+  if (probed.length === 0) return 'Ответов для оценки не было.';
+  const ok = probed.filter((d) => d.status === 'confirmed');
+  const unsure = probed.filter((d) => d.status === 'inconclusive');
+  const skipped = depthMap.length - probed.length;
+  const head = `Подтверждено тем: ${ok.length} из ${probed.length} проверенных.`;
   const list = ok.length ? ` Подтвердились: ${ok.map((d) => `«${d.topic}»`).join(', ')}.` : '';
-  return head + list;
+  const tail = [
+    unsure.length ? ` Не определено (оценщик разошёлся и после дополнительного вопроса): ${unsure.map((d) => `«${d.topic}»`).join(', ')}.` : '',
+    skipped ? ` Не проверено в этом созвоне: ${skipped}.` : '',
+  ].join('');
+  return head + list + tail;
 }
 
 const qualifying: CallDriver = {
   kind: 'qualifying',
-  limits: { minQuestions: CALL_LIMITS.minQuestions, maxQuestions: CALL_LIMITS.maxQuestions },
+  limits: { minQuestions: CALL_LIMITS.minQuestions, maxQuestions: CALL_LIMITS.maxQuestions, hardMaxQuestions: CALL_LIMITS.hardMaxQuestions },
 
-  async nextQuestion(session, llm, signal) {
+  async nextQuestion(session, llm, opts = {}) {
     const ctx = await loadCallContext(session.candidateId);
     const turns = questionTurns(session.transcript);
     const q = await nextCallQuestion(
-      { specialization: ctx.specialization, claimedGrade: ctx.claimedGrade, topics: ctx.topics, turns, limits: this.limits },
+      { specialization: ctx.specialization, claimedGrade: ctx.claimedGrade, topics: ctx.topics, turns, limits: this.limits, ...(opts.force ? { force: opts.force } : {}) },
       llm,
-      signal,
+      opts.signal,
     );
     return { text: q.question, meta: q.meta, done: q.done };
   },
 
-  async evaluate(session, llm, signal) {
+  async evaluate(session, llm, opts = {}) {
     const ctx = await loadCallContext(session.candidateId);
     const turns = questionTurns(session.transcript).filter((t) => t.answer !== null);
-    const byTopic = new Map<string, EvalTopic>();
+    const byTopic = new Map<string, EvalTopic & { extraProbe: boolean }>();
     for (const t of turns) {
       const seed = ctx.topics.find((s) => s.topic === t.topic);
       const cur = byTopic.get(t.topic) ?? {
@@ -91,19 +100,34 @@ const qualifying: CallDriver = {
         claimStatement: seed?.claimStatement ?? null,
         maxLevel: 1 as QuestionLevel,
         qa: [],
+        extraProbe: false,
       };
-      cur.qa.push({ question: t.question, answer: t.answer ?? '' });
+      cur.qa.push({ question: t.question, answer: t.answer ?? '', level: t.level });
       cur.maxLevel = Math.max(cur.maxLevel, t.level) as QuestionLevel;
+      if (t.probe) cur.extraProbe = true;
       byTopic.set(t.topic, cur);
     }
-    const ev = await evaluateCall(ctx.specialization, [...byTopic.values()], llm, { redact: ctx.resumeFacts, signal });
+    const redact = [...ctx.resumeFacts, ...ctx.topics.flatMap((t) => (t.claimStatement ? [t.claimStatement] : []))];
+    const interim = opts.interim?.interim ? opts.interim : null;
+    // После дополнительных вопросов досчитываются только эти темы; решения по остальным — из промежуточной оценки.
+    const toEval = interim ? [...byTopic.values()].filter((t) => t.extraProbe) : [...byTopic.values()];
+    const ev = toEval.length
+      ? await evaluateCall(ctx.specialization, toEval, llm, { redact, signal: opts.signal })
+      : { depthMap: [], runs: 0, validRuns: 0, thresholdVersion: interim?.thresholdVersion ?? '' };
+    const fresh = new Map(ev.depthMap.map((d) => [d.topic, { ...d, ...(byTopic.get(d.topic)?.extraProbe ? { extraProbe: true } : {}) }]));
+    const evaluated = interim
+      ? interim.depthMap.filter((d) => d.status !== 'not_probed').map((d) => fresh.get(d.topic) ?? d)
+      : [...fresh.values()];
+    for (const d of fresh.values()) if (!evaluated.some((x) => x.topic === d.topic)) evaluated.push(d);
+    const asked = new Set(evaluated.map((d) => d.topic));
+    const depthMap = [...evaluated, ...ctx.topics.filter((t) => !asked.has(t.topic)).map(notProbedItem)];
     return {
       kind: 'qualifying',
-      depthMap: ev.depthMap,
-      runs: ev.runs,
-      validRuns: ev.validRuns,
-      summary: summaryOf(ev.depthMap),
-      thresholdVersion: ev.thresholdVersion,
+      depthMap,
+      runs: (interim?.runs ?? 0) + ev.runs,
+      validRuns: (interim?.validRuns ?? 0) + ev.validRuns,
+      summary: summaryOf(depthMap),
+      thresholdVersion: ev.thresholdVersion || interim?.thresholdVersion || '',
       disclaimer: CALL_DISCLAIMER,
     };
   },
@@ -111,7 +135,8 @@ const qualifying: CallDriver = {
   // Подтверждённые темы с catalogId → утверждения кандидата до platform: тот же путь, что тест
   // (test/service.ts finalize) и защита: updateMany только по confirmed/edited ниже platform.
   async applyVerdict(tx, candidateId, verdict) {
-    const ids = [...new Set(verdict.depthMap.filter((d) => d.confirmed && d.catalogId).map((d) => d.catalogId as string))];
+    // Только status=confirmed: «не определено» и «не проверено» уровень не поднимают.
+    const ids = [...new Set(verdict.depthMap.filter((d) => d.status === 'confirmed' && d.confirmed && d.catalogId).map((d) => d.catalogId as string))];
     if (ids.length === 0) return [];
     const eligible = await tx.claim.findMany({
       where: { candidateId, catalogId: { in: ids }, status: { in: ['confirmed', 'edited'] }, level: { in: [...PLATFORM_UPGRADABLE] } },

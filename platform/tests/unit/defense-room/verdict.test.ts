@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { TranscriptEntry } from '@/server/defense-room/types';
+import { parseContextBlock } from '@/server/call/prompt-utils';
+import type { PlanItem, TranscriptEntry } from '@/server/defense-room/types';
 import { computeFlags, evaluateDefenseRoom, medianScores, transcriptTurns } from '@/server/defense-room/verdict';
 import { clearStubResponses, createStubProvider, registerStubResponse } from '@/server/llm/providers/stub';
 
@@ -25,10 +26,19 @@ const transcript: TranscriptEntry[] = [
 ];
 
 const crit = (score: number, quote: string) => ({ score, quote, rationale: 'r' });
-function evalJson(total: 'high' | 'low' | 'mid') {
-  if (total === 'high') return { depth: crit(2, ANSWER1.slice(0, 40)), why: crit(2, 'нужен общий Redis с TTL'), boundary: crit(1, 'Очередь тоже вариант'), completion: crit(2, 'джиттер разводит повторы'), advice: '' };
-  if (total === 'mid') return { depth: crit(1, ANSWER1.slice(0, 40)), why: crit(1, 'нужен общий Redis с TTL'), boundary: crit(1, 'Очередь тоже вариант'), completion: crit(1, 'джиттер разводит повторы'), advice: '' };
-  return { depth: crit(1, ANSWER1.slice(0, 40)), why: crit(0, ''), boundary: crit(0, ''), completion: crit(0, ''), advice: '' };
+type Level = 'high' | 'low' | 'mid';
+/** Ответ оценщика по вопросам: уровень на каждый пункт (по порядку items в <call_context>). */
+function itemsJson(req: { messages: { content: string }[] }, levels: Level[]) {
+  const items = parseContextBlock<{ items: { id: string; qa: { answer: string }[] }[] }>(req.messages[0]!.content)?.items ?? [];
+  return {
+    items: items.map((it, i) => {
+      const a = it.qa[0]!.answer;
+      const q = a.slice(0, 30);
+      const lv = levels[i % levels.length]!;
+      const s = lv === 'high' ? [2, 2, 1, 2] : lv === 'mid' ? [1, 1, 1, 1] : [1, 0, 0, 0];
+      return { id: it.id, depth: crit(s[0]!, q), why: crit(s[1]!, s[1] ? q : ''), boundary: crit(s[2]!, s[2] ? q : ''), completion: crit(s[3]!, s[3] ? q : '') };
+    }),
+  };
 }
 
 describe('пары для слепого оценщика', () => {
@@ -64,41 +74,78 @@ describe('медиана и флаги', () => {
   });
 });
 
-describe('evaluateDefenseRoom', () => {
-  it('три прогона call_evaluator, медиана, разброс → флаг; без слова «фейк»', async () => {
-    const order: ('high' | 'low' | 'mid')[] = ['high', 'low', 'mid'];
-    let n = 0;
+describe('evaluateDefenseRoom: балл по вопросу', () => {
+  it('каждый вопрос — свой балл; общий — среднее; без слова «фейк»', async () => {
     const purposes: string[] = [];
     registerStubResponse('call_evaluator', (req) => {
       purposes.push(req.purpose);
-      return { json: evalJson(order[n++ % 3]!) };
+      return { json: itemsJson(req, ['high', 'low', 'mid']) };
     });
     const v = await evaluateDefenseRoom({ projectTitle: 'fsp-demo/payments', transcript, projectScore: 0.95, employerAsked: 1, employerAnswered: 1 }, llm);
     expect(purposes).toEqual(['call_evaluator', 'call_evaluator', 'call_evaluator']);
-    expect(v.runs.sort()).toEqual([1, 4, 7]);
-    expect(v.scores).toEqual({ depth: 1, why: 1, boundary: 1, completion: 1 });
+    expect(v.items!.map((i) => [i.itemId, i.total, i.passed])).toEqual([
+      ['q1', 7, true],
+      ['q2', 1, false],
+      ['q3', 4, false],
+    ]);
+    expect(v.totalMean).toBe(4);
     expect(v.total).toBe(4);
     expect(v.passed).toBe(false);
-    expect(v.flags).toEqual(['strong_project_weak_defense', 'evaluator_disagreement']);
+    expect(v.flags).toEqual(['strong_project_weak_defense', 'uneven_understanding']);
     expect(v.summary).toMatch(/не вывод о подлинности/);
+    expect(v.summary).toMatch(/По вопросам:/);
     expect(JSON.stringify(v)).not.toMatch(/фейк|fake|списал/i);
   });
 
-  it('оценщик не видит кода и ожидаемых пунктов — только пары вопрос/ответ', async () => {
+  it('частичное понимание отличается от «не понимает ничего» средним по вопросам', async () => {
+    registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, ['high', 'high', 'low']) }));
+    const partial = await evaluateDefenseRoom({ projectTitle: 'p', transcript, projectScore: 0.95, employerAsked: 0, employerAnswered: 0 }, llm);
+    clearStubResponses();
+    registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, ['mid', 'low', 'low']) }));
+    const none = await evaluateDefenseRoom({ projectTitle: 'p', transcript, projectScore: 0.95, employerAsked: 0, employerAnswered: 0 }, llm);
+    expect(partial.totalMean!).toBeGreaterThan(none.totalMean!);
+    expect(partial.flags).toContain('uneven_understanding');
+    expect(none.flags).not.toContain('uneven_understanding');
+  });
+
+  it('прогоны разошлись (8/5/5 по вопросу) → ещё 2 прогона; разброс по решению → evaluator_disagreement', async () => {
+    const seq: Level[][] = [['high'], ['mid'], ['high'], ['mid'], ['mid']];
+    let n = 0;
+    registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, seq[n++]!) }));
+    const v = await evaluateDefenseRoom({ projectTitle: 'p', transcript, projectScore: null, employerAsked: 0, employerAnswered: 0 }, llm);
+    expect(n).toBe(5);
+    expect(v.items![0]!.runs).toHaveLength(5);
+    expect(v.items![0]!.agreement).toEqual({ same: 3, of: 5 });
+    expect(v.flags).toContain('evaluator_disagreement');
+  });
+
+  it('оценщик не видит кода и ожидаемых пунктов — только вопросы и ответы', async () => {
     let content = '';
     registerStubResponse('call_evaluator', (req) => {
       content = req.messages.map((m) => m.content).join('\n');
-      return { json: evalJson('high') };
+      return { json: itemsJson(req, ['high']) };
     });
     const v = await evaluateDefenseRoom({ projectTitle: 'p', transcript, projectScore: null, employerAsked: 0, employerAnswered: 0 }, llm);
-    expect(content).not.toMatch(/src\/|expectedPoints|скрытых тестов/);
+    expect(content).not.toMatch(/expectedPoints|скрытых тестов/);
     expect(v.passed).toBe(true);
     expect(v.flags).toEqual(['no_project_result']);
+  });
+
+  it('подписи вопросов — из плана: тип QLC и файл', async () => {
+    registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, ['high']) }));
+    const plan: PlanItem[] = [
+      { source: 'qlc', id: 'q1', type: 'why', question: 'Почему экспонента?', ref: 'src/retry.ts:L1-L9', expectedPoints: ['секрет'], answered: true, followUps: 0 },
+      { source: 'qlc', id: 'q2', type: 'what_breaks', question: 'Что сломается?', ref: 'src/dedupe.ts:L3-L8', expectedPoints: [], answered: true, followUps: 0 },
+    ];
+    const v = await evaluateDefenseRoom({ projectTitle: 'p', transcript, plan, projectScore: null, employerAsked: 0, employerAnswered: 0 }, llm);
+    expect(v.items![0]!.label).toBe('почему так · src/retry.ts:L1-L9');
+    expect(v.items![1]!.label).toBe('что сломается · src/dedupe.ts:L3-L8');
   });
 
   it('нет ответов — оценки нет, флаг short_defense', async () => {
     const v = await evaluateDefenseRoom({ projectTitle: 'p', transcript: [transcript[0]!], projectScore: 0.9, employerAsked: 0, employerAnswered: 0 }, llm);
     expect(v.total).toBeNull();
+    expect(v.items).toEqual([]);
     expect(v.flags).toContain('short_defense');
   });
 });

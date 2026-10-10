@@ -142,16 +142,51 @@ export const DEFENSE_FLAGS = [
   'employer_questions_unanswered',
   /** Результата проверки проекта нет — сравнить проект и защиту нельзя. */
   'no_project_result',
+  /** Понимание неровное: часть вопросов прошла порог, часть — почти нулевая (баллы по вопросам, items). */
+  'uneven_understanding',
 ] as const;
 export type DefenseFlag = (typeof DEFENSE_FLAGS)[number];
 
+/** Балл по одному вопросу защиты (пункту плана): медиана прогонов по каждому признаку A-02. */
+export interface DefenseItemVerdict {
+  /** id пункта плана (QLC — `q1`…, вопрос работодателя — `e-<id>`). */
+  itemId: string;
+  source: 'qlc' | 'employer';
+  /** Тип QLC-вопроса; у вопроса работодателя — employer. */
+  type: QlcType | 'employer';
+  /** Где в коде (`path:L1-L9`); null — без привязки. */
+  ref: string | null;
+  /** Подпись для карты: «почему так · src/a.ts:L1-L9». */
+  label: string;
+  /** Вопрос плана (без уточнений). */
+  question: string;
+  scores: DefenseScores;
+  total: number;
+  passed: boolean;
+  /** Суммы этого вопроса в каждом прогоне оценщика. */
+  runs: number[];
+  /** Сколько прогонов дали то же решение порога, что медиана. */
+  agreement: { same: number; of: number };
+  /** Ответов кандидата по вопросу (с уточнениями). */
+  answers: number;
+  quote: string;
+}
+
 export interface DefenseRoomVerdict {
-  /** Медиана трёх прогонов по каждому признаку A-02; null — ответов нет, оценивать нечего. */
+  /**
+   * Общий балл по признакам: среднее по вопросам (items), округлённое до 0–2; null — ответов нет.
+   * В вердиктах до 10.10 — медиана трёх прогонов по всему транскрипту.
+   */
   scores: DefenseScores | null;
+  /** Среднее сумм по вопросам, округлённое (0–8). */
   total: number | null;
+  /** Среднее сумм по вопросам с одним знаком (0–8); нет в вердиктах до 10.10. */
+  totalMean?: number | null;
+  /** Баллы по каждому вопросу/файлу — «карта» защиты; нет в вердиктах до 10.10. */
+  items?: DefenseItemVerdict[];
   /** Порог защиты утверждения (defense/evaluator THRESHOLD) — тот же. */
   passed: boolean | null;
-  /** Суммы каждого прогона оценщика. */
+  /** Общий балл (среднее по вопросам) в каждом прогоне оценщика. */
   runs: number[];
   flags: DefenseFlag[];
   /** Текст для работодателя и кандидата — строит код. Слова «фейк» и вердикта о подлинности нет. */

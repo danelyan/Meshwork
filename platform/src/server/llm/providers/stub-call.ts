@@ -2,6 +2,7 @@
 // Разбирают тот же JSON `<call_context>`, что видит модель, и считают ответ правилами без случайности.
 import type { InterviewerPayload } from '../../call/interviewer';
 import type { EvaluatorPayload } from '../../call/evaluator';
+import type { DefenseEvaluatorPayload } from '../../defense-room/verdict';
 import { heuristicSignal, planNext, templateQuestion, type TopicSeed } from '../../call/plan';
 import { parseContextBlock } from '../../call/prompt-utils';
 import type { QuestionLevel } from '../../call/types';
@@ -25,7 +26,13 @@ export function stubCallInterviewer(req: CompleteRequest): { kind: 'json'; json:
   const last = turns[turns.length - 1];
   const signal = last ? heuristicSignal(last.answer) : null;
   const grade = p.claimedGrade === 'middle' ? 'middle' : p.claimedGrade === 'junior' ? 'junior' : null;
-  const plan = planNext({ topics, turns, grade, signal });
+  if (p.next.probeTopic) {
+    // Дополнительный вопрос по теме с расхождением оценщика: тема и уровень заданы кодом.
+    const seed = topics.find((t) => t.topic === p.next.probeTopic) ?? { topic: p.next.probeTopic, catalogId: null, claimStatement: null, resumeFact: null };
+    const level = (p.next.probeLevel ?? 2) as QuestionLevel;
+    return { kind: 'json', json: { answerSignal: signal ?? 'none', topic: seed.topic, catalogId: seed.catalogId, question: `[stub] Ещё вопрос. ${templateQuestion(seed, level, false)}`, done: false } };
+  }
+  const plan = planNext({ topics, turns, grade, signal, maxQuestions: p.next.maxQuestions });
   const seed = topics[plan.topicIndex] ?? { topic: p.specialization, catalogId: null, claimStatement: null, resumeFact: null };
   return {
     kind: 'json',
@@ -52,26 +59,26 @@ function sentence(answer: string, re?: RegExp): string {
 
 /** Оценщик: баллы из признаков в тексте ответов — длина, «почему», граница, результат. */
 export function stubCallEvaluator(req: CompleteRequest): { kind: 'json'; json: unknown } | undefined {
-  const p = parseContextBlock<EvaluatorPayload>(firstUserText(req.messages));
-  if (!p) return undefined;
-  return {
-    kind: 'json',
-    json: {
-      topics: p.topics.map((t) => {
-        const answers = t.qa.map((x) => x.answer).filter((a) => a !== '(кандидат не ответил)');
-        const all = answers.join(' ');
-        const crit = (re: RegExp | undefined, score: (q: string) => 0 | 1 | 2) => {
-          const q = answers.map((a) => sentence(a, re)).find(Boolean) ?? '';
-          return { quote: q, rationale: '[stub] правило по тексту ответа', score: q ? score(q) : 0 };
-        };
-        return {
-          topic: t.topic,
-          depth: crit(undefined, () => (all.length >= 160 ? 2 : all.length >= 60 ? 1 : 0)),
-          why: crit(WHY_RE, () => (WHY_RE.test(all) && all.length >= 120 ? 2 : 1)),
-          boundary: crit(BOUNDARY_RE, () => 2),
-          completion: crit(DONE_RE, () => (all.length >= 120 ? 2 : 1)),
-        };
-      }),
-    },
-  };
+  const raw = parseContextBlock<EvaluatorPayload | DefenseEvaluatorPayload>(firstUserText(req.messages));
+  if (!raw) return undefined;
+  // Защита проекта (defense-room/verdict.ts): те же правила, но по вопросам (items) вместо тем.
+  const defense = 'kind' in raw && raw.kind === 'defense' ? raw : null;
+  const topics = defense ? defense.items.map((i) => ({ topic: i.id, qa: i.qa })) : (raw as EvaluatorPayload).topics;
+  const rows = topics.map((t) => {
+    const answers = t.qa.map((x) => x.answer).filter((a) => a !== '(кандидат не ответил)');
+    const all = answers.join(' ');
+    const crit = (re: RegExp | undefined, score: (q: string) => 0 | 1 | 2) => {
+      const q = answers.map((a) => sentence(a, re)).find(Boolean) ?? '';
+      return { quote: q, rationale: '[stub] правило по тексту ответа', score: q ? score(q) : 0 };
+    };
+    return {
+      topic: t.topic,
+      depth: crit(undefined, () => (all.length >= 160 ? 2 : all.length >= 60 ? 1 : 0)),
+      why: crit(WHY_RE, () => (WHY_RE.test(all) && all.length >= 120 ? 2 : 1)),
+      boundary: crit(BOUNDARY_RE, () => 2),
+      completion: crit(DONE_RE, () => (all.length >= 120 ? 2 : 1)),
+    };
+  });
+  if (defense) return { kind: 'json', json: { items: rows.map(({ topic, ...r }) => ({ id: topic, ...r })) } };
+  return { kind: 'json', json: { topics: rows } };
 }

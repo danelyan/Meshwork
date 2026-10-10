@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type { DefenseScores } from '@/server/defense/types';
+import { contextBlock } from '@/server/call/prompt-utils';
+import { stubCallEvaluator } from '@/server/llm/providers/stub-call';
 import type { CompleteRequest } from '@/server/llm/types';
 
 import {
@@ -18,7 +20,6 @@ import {
   type CallObs,
   type DefenseObs,
 } from '../../../eval/stages/metrics';
-import { answersOf, stubDefenseEvaluator } from '../../../eval/stages/stub-defense';
 
 const S = (depth: number, why: number, boundary: number, completion: number) => ({ depth, why, boundary, completion }) as DefenseScores;
 
@@ -138,21 +139,20 @@ describe('eval/stages: ступень 3 (защита)', () => {
   });
 });
 
-describe('eval/stages: stub оценщика защиты', () => {
+describe('stub оценщика защиты по вопросам (stub-call.ts)', () => {
   const req = (answers: string[]): CompleteRequest => ({
     purpose: 'call_evaluator',
     system: '',
-    messages: [{ role: 'user', content: `<transcript>\n${answers.map((a, i) => `<turn n="${i + 1}"><question>q</question><candidate_answer>${a}</candidate_answer></turn>`).join('\n')}\n</transcript>` }],
+    messages: [{ role: 'user', content: contextBlock({ kind: 'defense', project: 'p', items: answers.map((a, i) => ({ id: `q${i + 1}`, kind: 'почему так', where: null, qa: [{ question: 'q', answer: a }] })) }) }],
   });
 
-  it('детерминированные баллы с дословными цитатами; чужой формат — не его', () => {
-    const long = 'Сделал так, потому что альтернатива дороже по памяти. Не уверен насчёт кластера, проверил бы нагрузкой. В итоге тесты проходят &amp; лимит держится, и это видно по метрикам за неделю работы.';
-    expect(answersOf(req([long]).messages[0]!.content)[0]).toContain('& лимит');
-    const strong = stubDefenseEvaluator(req([long]))!.json as Record<string, { score: number; quote: string }>;
-    expect(strong.depth!.score).toBe(2);
-    expect(strong.why!.quote).toMatch(/потому что/);
-    const weak = stubDefenseEvaluator(req(['Ну, так правильнее.']))!.json as Record<string, { score: number }>;
-    expect(weak.depth!.score + weak.why!.score + weak.boundary!.score + weak.completion!.score).toBeLessThan(5);
-    expect(stubDefenseEvaluator({ ...req([]), messages: [{ role: 'user', content: '<call_context>{}</call_context>' }] })).toBeUndefined();
+  it('детерминированные баллы с дословными цитатами по каждому вопросу', () => {
+    const long = 'Сделал так, потому что альтернатива дороже по памяти. Не уверен насчёт кластера, проверил бы нагрузкой. В итоге тесты проходят & лимит держится, и это видно по метрикам за неделю работы.';
+    const out = stubCallEvaluator(req([long, 'Ну, так правильнее.']))!.json as { items: { id: string; depth: { score: number; quote: string }; why: { score: number; quote: string }; boundary: { score: number }; completion: { score: number } }[] };
+    expect(out.items.map((i) => i.id)).toEqual(['q1', 'q2']);
+    expect(out.items[0]!.depth.score).toBe(2);
+    expect(out.items[0]!.why.quote).toMatch(/потому что/);
+    const weak = out.items[1]!;
+    expect(weak.depth.score + weak.why.score + weak.boundary.score + weak.completion.score).toBeLessThan(5);
   });
 });

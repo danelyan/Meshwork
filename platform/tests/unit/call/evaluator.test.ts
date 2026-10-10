@@ -22,18 +22,20 @@ describe('медиана прогонов', () => {
     expect(medianScore([])).toBe(0);
   });
 
-  it('итог по теме — медиана каждого критерия из трёх прогонов', async () => {
+  it('итог по теме — медиана каждого критерия; прогоны разошлись в решении → ещё 2 прогона', async () => {
     const outs = [run(2, 2, 1, 0), run(1, 2, 2, 2), run(2, 0, 2, 1)];
     let i = 0;
     registerStubResponse('call_evaluator', () => ({ json: outs[i++ % 3] }));
     const ev = await evaluateCall('backend', topics, createStubProvider());
-    expect(ev.runs).toBe(3);
-    expect(ev.validRuns).toBe(3);
+    expect(ev.runs).toBe(5);
+    expect(ev.validRuns).toBe(5);
+    expect(ev.depthMap[0]!.status).toBe('confirmed');
+    expect(ev.depthMap[0]!.agreement).toEqual({ same: 4, of: 5 });
     const item = ev.depthMap[0]!;
     expect(item.scores).toEqual({ depth: 2, why: 2, boundary: 2, completion: 1 });
     expect(item.total).toBe(7);
     expect(item.confirmed).toBe(true);
-    expect(item.runs).toHaveLength(3);
+    expect(item.runs).toHaveLength(5);
     expect(item.quote).toBe('Составной индекс по status и created_at');
   });
 

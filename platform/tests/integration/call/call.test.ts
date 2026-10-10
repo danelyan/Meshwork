@@ -128,8 +128,10 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     const verdict = view.verdict as CallVerdict;
     expect(verdict.runs).toBe(3);
     expect(verdict.validRuns).toBe(3);
-    expect(verdict.depthMap).toHaveLength(1);
-    expect(verdict.depthMap[0]).toMatchObject({ topic: 'Подбирает индексы под запросы', catalogId: 'be.sql-indexes', claimed: true, probed: 2, maxLevel: 2, confirmed: true });
+    // Вторая тема спрошена, но без ответа — «не проверено», не входит в оценку.
+    expect(verdict.depthMap).toHaveLength(2);
+    expect(verdict.depthMap[0]).toMatchObject({ topic: 'Подбирает индексы под запросы', catalogId: 'be.sql-indexes', claimed: true, probed: 2, maxLevel: 2, confirmed: true, status: 'confirmed' });
+    expect(verdict.depthMap[1]).toMatchObject({ catalogId: 'be.idempotency', status: 'not_probed', confirmed: false, probed: 0 });
     expect(verdict.upgradedCatalogIds).toEqual(['be.sql-indexes']);
     expect((await prisma.claim.findUniqueOrThrow({ where: { id: 'cl-1' } })).level).toBe('platform');
     expect((await prisma.claim.findUniqueOrThrow({ where: { id: 'cl-2' } })).level).toBe('artifact');
@@ -165,6 +167,57 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     const full = await json<CallView>(await viewRoute(jsonRequest(`/api/call/${id}`, 'GET', undefined, cookieEmp()), ctx(id)));
     expect(full.access).toBe('full');
     expect(full.transcript).toHaveLength(5);
+  });
+
+  it('прогоны разошлись по теме → «нужен ещё вопрос»: дополнительный вопрос, потом решение', async () => {
+    const { sessionId: id } = await consentAndStart();
+    await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG }, cookieA()), ctx(id));
+    const q = 'Составной индекс по status и created_at';
+    const c = (score: 0 | 1 | 2) => ({ quote: q, rationale: 'r', score });
+    const pass = { topic: 'Подбирает индексы под запросы', depth: c(2), why: c(2), boundary: c(1), completion: c(1) };
+    const fail = { topic: 'Подбирает индексы под запросы', depth: c(1), why: c(0), boundary: c(1), completion: c(1) };
+    // Промежуточная оценка: 3 прогона pass/fail/pass → ещё 2: fail/pass → 3 из 5 — «не определено».
+    const seq = [pass, fail, pass, fail, pass, pass, pass, pass];
+    let n = 0;
+    registerStubResponse('call_evaluator', () => ({ json: { topics: [seq[n++]!] } }));
+    const interim = await json<CallView>(await finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id)));
+    expect(n).toBe(5);
+    expect(interim.status).toBe('active');
+    expect(interim.verdict).toBeNull(); // промежуточная оценка наружу не отдаётся
+    expect(interim.progress).toMatchObject({ awaitingAnswer: true, maxQuestions: 8 });
+    const probe = interim.transcript!.at(-1)!;
+    expect(probe.meta).toMatchObject({ topic: 'Подбирает индексы под запросы', probe: 'inconclusive' });
+    expect((await prisma.claim.findUniqueOrThrow({ where: { id: 'cl-1' } })).level).toBe('self_reported');
+
+    const t = await json<{ done: boolean; ai: { meta?: unknown } }>(await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG2 }, cookieA()), ctx(id)));
+    expect(t.done).toBe(true);
+    expect(t.ai.meta).toBeUndefined();
+    const fin = await json<CallView>(await finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id)));
+    expect(n).toBe(8); // досчитана только тема с дополнительным вопросом, 3 согласных прогона
+    expect(fin.status).toBe('finished');
+    const v = fin.verdict as CallVerdict;
+    expect(v.interim).toBeUndefined();
+    expect(v.depthMap[0]).toMatchObject({ status: 'confirmed', extraProbe: true, probed: 2 });
+    expect(v.upgradedCatalogIds).toEqual(['be.sql-indexes']);
+  });
+
+  it('тема остаётся «не определено» и после дополнительного вопроса — уровень не поднимается', async () => {
+    const { sessionId: id } = await consentAndStart();
+    await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG }, cookieA()), ctx(id));
+    const q = 'Составной индекс по status и created_at';
+    const c = (score: 0 | 1 | 2) => ({ quote: q, rationale: 'r', score });
+    const pass = { topic: 'Подбирает индексы под запросы', depth: c(2), why: c(2), boundary: c(1), completion: c(1) };
+    const fail = { topic: 'Подбирает индексы под запросы', depth: c(1), why: c(0), boundary: c(1), completion: c(1) };
+    let n = 0;
+    registerStubResponse('call_evaluator', () => ({ json: { topics: [n++ % 2 ? fail : pass] } }));
+    await finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id));
+    await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG2 }, cookieA()), ctx(id));
+    const fin = await json<CallView>(await finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id)));
+    const v = fin.verdict as CallVerdict;
+    expect(v.depthMap[0]).toMatchObject({ status: 'inconclusive', confirmed: false, extraProbe: true });
+    expect(v.upgradedCatalogIds).toEqual([]);
+    expect(v.summary).toMatch(/Не определено/);
+    expect((await prisma.claim.findUniqueOrThrow({ where: { id: 'cl-1' } })).level).toBe('self_reported');
   });
 
   it('SSE: первым кадром snapshot, затем реплики созвона', async () => {

@@ -31,6 +31,8 @@ export interface AiUtteranceMeta {
   fallback?: boolean;
   /** Вопрос из очереди работодателя (defense-room). */
   employerQuestionId?: string;
+  /** Дополнительный вопрос по теме, где прогоны оценщика разошлись в решении порога (status=inconclusive). */
+  probe?: 'inconclusive';
 }
 
 /** Одна реплика транскрипта (CallSession.transcriptJson — массив таких). */
@@ -59,6 +61,16 @@ export interface TopicScores {
   completion: Score;
 }
 
+/**
+ * Статус темы в карте глубины:
+ * - confirmed / not_confirmed — прогоны оценщика согласны (≥ 75 % прогонов дали то же решение порога, что медиана);
+ * - inconclusive — прогоны разошлись в решении порога даже после дополнительного вопроса: «не определено»,
+ *   утверждение не поднимается до platform;
+ * - not_probed — тема заявлена (или выбрана платформой), но вопросов по ней не было: «не проверено».
+ */
+export const DEPTH_STATUSES = ['confirmed', 'not_confirmed', 'inconclusive', 'not_probed'] as const;
+export type DepthStatus = (typeof DEPTH_STATUSES)[number];
+
 /** Строка «карты глубины»: тема → заявлено → копнули → подтвердилось/нет. */
 export interface DepthMapItem {
   topic: string;
@@ -72,8 +84,14 @@ export interface DepthMapItem {
   probed: number;
   /** Самый глубокий уровень вопроса по теме (1–3). */
   maxLevel: QuestionLevel;
-  /** Порог рубрики пройден (тот же, что у защиты утверждения: defense/evaluator THRESHOLD). */
+  /** Порог рубрики пройден и прогоны согласны (status=confirmed). Для inconclusive/not_probed — false. */
   confirmed: boolean;
+  /** Статус темы; в вердиктах до 10.10 поля нет — читать через depthStatus(). */
+  status: DepthStatus;
+  /** Сколько прогонов оценщика дали то же решение порога, что медиана (из скольких). */
+  agreement?: { same: number; of: number };
+  /** По теме задан дополнительный вопрос из-за расхождения прогонов. */
+  extraProbe?: boolean;
   /** Медиана трёх прогонов оценщика по каждому критерию. */
   scores: TopicScores;
   total: number;
@@ -81,6 +99,11 @@ export interface DepthMapItem {
   quote: string;
   /** Баллы каждого прогона — для валидации повторяемости. */
   runs: TopicScores[];
+}
+
+/** Статус строки карты глубины; старые вердикты без status — по confirmed. */
+export function depthStatus(d: Pick<DepthMapItem, 'confirmed'> & { status?: DepthStatus }): DepthStatus {
+  return d.status ?? (d.confirmed ? 'confirmed' : 'not_confirmed');
 }
 
 export interface CallVerdict {
@@ -96,6 +119,13 @@ export interface CallVerdict {
   evaluatedAt: string;
   thresholdVersion: string;
   disclaimer: string;
+  /**
+   * Промежуточная оценка (созвон ещё active): темы с расхождением прогонов получают дополнительный
+   * вопрос — `pendingProbes` (темы по порядку), после ответов finish досчитывает только их.
+   * Клиентам промежуточный вердикт не отдаётся (service.buildView).
+   */
+  interim?: boolean;
+  pendingProbes?: string[];
 }
 
 /**
@@ -146,7 +176,7 @@ export type CallAccess = 'full' | 'summary';
 /** Вердикт для работодателя без доступа к записи: темы и баллы, без цитат кандидата. */
 export interface PublicCallVerdict {
   kind: CallKind;
-  depthMap: Omit<DepthMapItem, 'quote' | 'claimStatement' | 'runs'>[];
+  depthMap: Omit<DepthMapItem, 'quote' | 'claimStatement' | 'runs' | 'agreement'>[];
   summary: string;
   evaluatedAt: string;
   thresholdVersion: string;

@@ -107,6 +107,10 @@ export interface CallTopicObs {
   /** Ожидание по легенде персоны: тема должна подтвердиться (true) / не должна (false) / не задано (null). */
   expected: boolean | null;
   confirmed: boolean;
+  /** Статус темы (после 10.10): confirmed / not_confirmed / inconclusive / not_probed. */
+  status?: string;
+  /** По теме задавали дополнительный вопрос (расхождение оценщика). */
+  extraProbe?: boolean;
   /** Сумма медиан по четырём признакам A-02 (0–8). */
   total: number;
   probed: number;
@@ -122,6 +126,12 @@ export interface CallObs {
   questions: number;
   /** Вопросы из шаблона (модель интервьюера не ответила валидно). */
   fallbackQuestions: number;
+  /** Вопросы, где интервьюер пересказал профиль (общая n-грамма ≥ 4 слов с утверждением/резюме). */
+  retoldQuestions?: number;
+  /** Дополнительные вопросы по неопределённым темам. */
+  probeQuestions?: number;
+  /** Прогонов оценщика всего (3, 5, с досчётом — больше). */
+  evaluatorRuns?: number;
   validRuns: number;
   topics: CallTopicObs[];
   platform: MeterSnapshot;
@@ -133,8 +143,8 @@ export interface CallTopicSummary {
   catalogId: string;
   topic: string;
   expected: boolean | null;
-  /** По созвонам: true/false — подтверждено/нет, null — тему не спросили. */
-  got: (boolean | null)[];
+  /** По созвонам: true/false — подтверждено/нет, 'inconclusive' — не определено, null — тему не спросили. */
+  got: (boolean | 'inconclusive' | null)[];
   totals: (number | null)[];
 }
 
@@ -150,6 +160,14 @@ export interface CallPersonaSummary {
   judged: number;
   /** Доля пар (созвон × заявленная тема), где тему вообще спросили. */
   coverage: number | null;
+  /** Тем со статусом «не определено» (из всех спрошенных). */
+  inconclusive: number;
+  /** Ошибок решения среди спрошенных тем с ожиданием: ✓ при «нет» или ✗ при «да» (не определено — не ошибка). */
+  wrongDecisions: number;
+  /** Пересказов профиля в вопросах (всего) и дополнительных вопросов (среднее на созвон). */
+  retoldQuestions: number;
+  avgProbeQuestions: number | null;
+  avgEvaluatorRuns: number | null;
   topics: CallTopicSummary[];
   /** Повторяемость оценщика на одном транскрипте: разброс суммы между прогонами по теме. */
   withinSpreadMean: number | null;
@@ -174,25 +192,28 @@ export function totalOf(s: DefenseScores): number {
 
 export function summarizeCallPersona(persona: string, expected: Record<string, boolean>, calls: readonly CallObs[]): CallPersonaSummary {
   const ok = calls.filter((c) => !c.error);
-  const all = ok.flatMap((c) => c.topics);
+  // Неспрошенные темы (status=not_probed) в карте есть, но в оценку и покрытие не входят.
+  const probedOf = (c: CallObs) => c.topics.filter((t) => t.status !== 'not_probed');
+  const all = ok.flatMap(probedOf);
   const judgedTopics = all.filter((t) => t.expected !== null);
-  const matched = judgedTopics.filter((t) => t.confirmed === t.expected).length;
+  const matched = judgedTopics.filter((t) => t.status !== 'inconclusive' && t.confirmed === t.expected).length;
+  const wrongDecisions = judgedTopics.filter((t) => t.status !== 'inconclusive' && t.confirmed !== t.expected).length;
 
   const ids = [...new Set([...Object.keys(expected), ...all.map((t) => t.catalogId ?? t.topic)])];
   const topics: CallTopicSummary[] = ids.map((id) => {
-    const per = ok.map((c) => c.topics.find((t) => (t.catalogId ?? t.topic) === id) ?? null);
+    const per = ok.map((c) => probedOf(c).find((t) => (t.catalogId ?? t.topic) === id) ?? null);
     const first = per.find(Boolean);
     return {
       catalogId: id,
       topic: first?.topic ?? id,
       expected: id in expected ? expected[id]! : null,
-      got: per.map((t) => (t ? t.confirmed : null)),
+      got: per.map((t) => (t ? (t.status === 'inconclusive' ? ('inconclusive' as const) : t.confirmed) : null)),
       totals: per.map((t) => (t ? t.total : null)),
     };
   });
   const expectedIds = Object.keys(expected);
   const coveragePairs = ok.length * expectedIds.length;
-  const covered = ok.reduce((s, c) => s + expectedIds.filter((id) => c.topics.some((t) => t.catalogId === id)).length, 0);
+  const covered = ok.reduce((s, c) => s + expectedIds.filter((id) => probedOf(c).some((t) => t.catalogId === id)).length, 0);
 
   const within = all.filter((t) => t.runs.length > 1);
   const withinSpreads = within.map((t) => spread(t.runs.map(totalOf)));
@@ -211,6 +232,11 @@ export function summarizeCallPersona(persona: string, expected: Record<string, b
     matched,
     judged: judgedTopics.length,
     coverage: coveragePairs ? covered / coveragePairs : null,
+    inconclusive: all.filter((t) => t.status === 'inconclusive').length,
+    wrongDecisions,
+    retoldQuestions: ok.reduce((s, c) => s + (c.retoldQuestions ?? 0), 0),
+    avgProbeQuestions: mean(ok.map((c) => c.probeQuestions ?? 0)),
+    avgEvaluatorRuns: mean(ok.map((c) => c.evaluatorRuns ?? 3)),
     topics,
     withinSpreadMean: mean(withinSpreads),
     withinSpreadMax: withinSpreads.length ? Math.max(...withinSpreads) : 0,
@@ -232,9 +258,11 @@ export interface DefenseObs {
   persona: string;
   defense: number;
   sessionId: string;
-  /** Медиана суммы рубрики (0–8); null — оценки нет. */
+  /** Общий балл (0–8): после 10.10 — среднее по вопросам с одним знаком; до — медиана по транскрипту. */
   total: number | null;
   passed: boolean | null;
+  /** Баллы по вопросам (после 10.10). */
+  items?: { itemId: string; label: string; ref: string | null; total: number; passed: boolean; runs: number[] }[];
   /** Суммы каждого прогона оценщика. */
   runs: number[];
   flags: string[];
@@ -256,6 +284,14 @@ export interface DefensePersonaSummary {
   passRate: number | null;
   /** Доля защит с флагом strong_project_weak_defense. */
   flagRate: number | null;
+  /** Доля защит с флагом uneven_understanding. */
+  unevenRate: number | null;
+  /** Средний балл вопросов по «своим» файлам персоны и по остальным (персона (c)). */
+  knownItemMean: number | null;
+  unknownItemMean: number | null;
+  /** Средний разброс суммы вопроса между прогонами; прогонов на защиту. */
+  itemSpreadMean: number | null;
+  avgEvaluatorRuns: number | null;
   /** Разброс сумм между тремя прогонами одного транскрипта: среднее и максимум. */
   withinSpreadMean: number | null;
   withinSpreadMax: number;
@@ -271,8 +307,11 @@ export interface DefensePersonaSummary {
 
 export const FLAG_STRONG_WEAK = 'strong_project_weak_defense';
 
-export function summarizeDefensePersona(persona: string, list: readonly DefenseObs[]): DefensePersonaSummary {
+export function summarizeDefensePersona(persona: string, list: readonly DefenseObs[], knownFiles: readonly string[] = []): DefensePersonaSummary {
   const ok = list.filter((d) => !d.error && d.total !== null);
+  const items = ok.flatMap((d) => d.items ?? []);
+  const isKnown = (ref: string | null) => !!ref && knownFiles.some((f) => ref.startsWith(f));
+  const withRef = items.filter((i) => i.ref);
   const totals = ok.map((d) => d.total as number);
   const within = ok.filter((d) => d.runs.length > 1).map((d) => spread(d.runs));
   const gens: Record<string, number> = {};
@@ -285,6 +324,11 @@ export function summarizeDefensePersona(persona: string, list: readonly DefenseO
     meanTotal: mean(totals),
     passRate: ok.length ? ok.filter((d) => d.passed).length / ok.length : null,
     flagRate: ok.length ? ok.filter((d) => d.flags.includes(FLAG_STRONG_WEAK)).length / ok.length : null,
+    unevenRate: ok.length ? ok.filter((d) => d.flags.includes('uneven_understanding')).length / ok.length : null,
+    knownItemMean: knownFiles.length ? mean(withRef.filter((i) => isKnown(i.ref)).map((i) => i.total)) : null,
+    unknownItemMean: knownFiles.length ? mean(withRef.filter((i) => !isKnown(i.ref)).map((i) => i.total)) : null,
+    itemSpreadMean: mean(items.filter((i) => i.runs.length > 1).map((i) => spread(i.runs))),
+    avgEvaluatorRuns: mean(ok.filter((d) => d.items?.length).map((d) => d.items![0]!.runs.length)),
     withinSpreadMean: mean(within),
     withinSpreadMax: within.length ? Math.max(...within) : 0,
     betweenSpread: spread(totals),
@@ -313,7 +357,7 @@ export function defenseSeparation(summaries: readonly DefensePersonaSummary[]): 
 // ---------------------------------------------------------------------------
 const pct = (x: number | null): string => (x === null ? '—' : `${Math.round(x * 100)} %`);
 const num = (x: number | null, d = 1): string => (x === null ? '—' : x.toFixed(d).replace('.', ','));
-const mark = (g: boolean | null): string => (g === null ? '·' : g ? '✓' : '✗');
+const mark = (g: boolean | 'inconclusive' | null): string => (g === null ? '·' : g === 'inconclusive' ? '?' : g ? '✓' : '✗');
 
 export function callTables(summaries: readonly CallPersonaSummary[], legends: Record<string, string>): string {
   const head = [
@@ -353,4 +397,34 @@ export function defenseTables(summaries: readonly DefensePersonaSummary[], legen
   );
   const sep = defenseSeparation(summaries).map((x) => `| ${x.a} над ${x.b} | ${x.auc === null ? '—' : x.auc.toFixed(2).replace('.', ',')} |`);
   return [...head, ...rows, '', '| Разведение (AUC по сумме; 1 — полностью, 0,5 — не различает) | AUC |', '|---|---|', ...sep].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Таблицы «после доработки 10.10» (статусы тем, баллы по вопросам защиты)
+// ---------------------------------------------------------------------------
+export function callTuningTable(summaries: readonly CallPersonaSummary[], legends: Record<string, string>): string {
+  return [
+    '| Персона | Созвонов | Совпало с ожиданием (решённые темы) | Ошибок решения | Не определено | Покрытие заявленных тем | Пересказов профиля в вопросах | Доп. вопросов на созвон | Прогонов оценщика на созвон | Вызовов платформы на созвон | Токенов платформы на созвон |',
+    '|---|---|---|---|---|---|---|---|---|---|---|',
+    ...summaries.map(
+      (s) =>
+        `| ${s.persona} ${legends[s.persona] ?? ''} | ${s.calls - s.failedCalls}/${s.calls} | ${s.matched}/${s.judged - s.inconclusive} | ${s.wrongDecisions} | ${s.inconclusive} | ${pct(s.coverage)} | ${s.retoldQuestions} | ${num(s.avgProbeQuestions)} | ${num(s.avgEvaluatorRuns)} | ${num(s.avgPlatformCalls)} | ${num(s.avgPlatformTokens, 0)} |`,
+    ),
+  ].join('\n');
+}
+
+export function defenseTuningTable(summaries: readonly DefensePersonaSummary[], legends: Record<string, string>): string {
+  const sep = defenseSeparation(summaries).map((x) => `| ${x.a} над ${x.b} | ${x.auc === null ? '—' : x.auc.toFixed(2).replace('.', ',')} |`);
+  return [
+    '| Персона | Защит | Общий балл по защитам (среднее по вопросам, 0–8) | Средняя | Прошли порог | strong_project_weak_defense | uneven_understanding | Балл вопросов по «своим» / остальным файлам | Разброс суммы вопроса между прогонами | Прогонов оценщика | Вызовов платформы на защиту | Токенов платформы |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|',
+    ...summaries.map(
+      (s) =>
+        `| ${s.persona} ${legends[s.persona] ?? ''} | ${s.defenses - s.failed}/${s.defenses} | ${s.totals.map((t) => num(t)).join(' / ') || '—'} | ${num(s.meanTotal)} | ${pct(s.passRate)} | ${pct(s.flagRate)} | ${pct(s.unevenRate)} | ${num(s.knownItemMean)} / ${num(s.unknownItemMean)} | ${num(s.itemSpreadMean)} | ${num(s.avgEvaluatorRuns)} | ${num(s.avgPlatformCalls)} | ${num(s.avgPlatformTokens, 0)} |`,
+    ),
+    '',
+    '| Разведение (AUC по общему баллу; 1 — полностью, 0,5 — не различает) | AUC |',
+    '|---|---|',
+    ...sep,
+  ].join('\n');
 }

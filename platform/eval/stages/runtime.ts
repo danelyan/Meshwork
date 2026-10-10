@@ -104,7 +104,7 @@ export async function createCandidate(id: string, opts: { grade: 'junior' | 'mid
 }
 
 export function runTag(): string {
-  return new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
+  return new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
 }
 
 export function writeResult(name: string, data: unknown): string {

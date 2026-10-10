@@ -7,7 +7,7 @@ import path from 'node:path';
  */
 const cache = new Map<string, string>();
 
-export function loadRoomPrompt(name: 'qlc' | 'interviewer'): string {
+export function loadRoomPrompt(name: 'qlc' | 'interviewer' | 'evaluator'): string {
   const hit = cache.get(name);
   if (hit !== undefined) return hit;
   const text = readFileSync(path.join(process.cwd(), 'src/server/defense-room/prompts', `${name}.md`), 'utf8');

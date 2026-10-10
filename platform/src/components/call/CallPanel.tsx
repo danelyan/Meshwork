@@ -49,6 +49,8 @@ export function CallPanel() {
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState('');
   const [closing, setClosing] = useState(false);
+  /** Идут дополнительные вопросы по темам, где оценщик не определился. */
+  const [extra, setExtra] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const spoken = useRef(new Set<string>());
 
@@ -173,6 +175,14 @@ export function CallPanel() {
     try {
       const v = await callApi.finish(id);
       setCall(v);
+      if (v.status === 'active') {
+        // Оценщик разошёлся по какой-то теме: созвон продолжается дополнительным вопросом.
+        setTranscript((t) => merge(t, v.transcript ?? []));
+        setClosing(false);
+        setExtra(true);
+        setPhase('live');
+        return;
+      }
       setPhase('done');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Оценщик сейчас недоступен - попробуй ещё раз');
@@ -261,10 +271,11 @@ export function CallPanel() {
             ) : lastCandidate && !awaiting && busy ? (
               <p className={styles.mine}>{lastCandidate.text}</p>
             ) : null}
+            {extra && !closing && <p className={styles.hint}>Ещё вопрос: по одной из тем ответы пока не дают однозначной оценки.</p>}
             {closing && <p className={styles.hint}>Вопросы закончились - нажми «Завершить».</p>}
             {phase === 'finishing' && (
               <p className={styles.wait}>
-                <Spinner /> Оценщик разбирает ответы (три независимых прогона)…
+                <Spinner /> Оценщик разбирает ответы (три независимых прогона, при расхождении - пять)…
               </p>
             )}
           </>

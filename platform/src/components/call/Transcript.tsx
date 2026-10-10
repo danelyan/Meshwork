@@ -31,11 +31,13 @@ export function Transcript({ entries, selfRole }: { entries: TranscriptEntry[]; 
 
 const CRITERION = { depth: 'Глубина', why: '«Почему так»', boundary: 'Граница знаний', completion: 'Доведение' } as const;
 
-/** Итог защиты: медиана рубрики A-02, флаги, пояснение. Без вердикта о подлинности. */
+/** Итог защиты: балл по каждому вопросу (карта «вопрос/файл → балл»), общий — среднее; флаги, пояснение. Без вердикта о подлинности. */
 export function VerdictView({ verdict }: { verdict: DefenseRoomVerdict }) {
+  const exact = verdict.totalMean ?? verdict.total;
+  const items = verdict.items ?? [];
   return (
     <section className={styles.verdict} aria-label="Итог защиты" data-testid="defense-verdict">
-      <p className={styles.total}>{verdict.total === null ? 'Без оценки' : `${verdict.total} из 8`}</p>
+      <p className={styles.total}>{exact === null ? 'Без оценки' : `${String(exact).replace('.', ',')} из 8`}</p>
       {verdict.scores && (
         <ul className={styles.scores}>
           {(Object.keys(CRITERION) as (keyof typeof CRITERION)[]).map((k) => (
@@ -45,8 +47,27 @@ export function VerdictView({ verdict }: { verdict: DefenseRoomVerdict }) {
           ))}
         </ul>
       )}
+      {items.length > 0 && (
+        <ol className={styles.items} aria-label="Баллы по вопросам" data-testid="defense-items">
+          {items.map((i) => (
+            <li key={i.itemId} className={styles.itemRow} data-passed={i.passed}>
+              <span className={styles.itemLabel}>{i.label}</span>
+              <b className={styles.itemScore}>{i.total} из 8</b>
+              <span className={styles.itemBar} aria-hidden="true">
+                {Array.from({ length: 8 }, (_, n) => (
+                  <i key={n} className={cx(styles.itemCell, n < i.total && styles.itemOn)} />
+                ))}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
       <p className={styles.summary}>{verdict.summary}</p>
-      {verdict.runs.length > 1 && <p className={styles.meta}>Прогоны оценщика: {verdict.runs.join(', ')} (медиана по каждому признаку)</p>}
+      {verdict.runs.length > 1 && (
+        <p className={styles.meta}>
+          Прогоны оценщика: {verdict.runs.map((r) => String(r).replace('.', ',')).join(', ')} ({items.length ? 'среднее по вопросам, медиана прогонов внутри вопроса' : 'медиана по каждому признаку'})
+        </p>
+      )}
     </section>
   );
 }

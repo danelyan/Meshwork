@@ -25,6 +25,15 @@
 .summary { margin: 0; white-space: pre-wrap; line-height: 1.7; }
 .scores { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 .scores li { border: 1px solid var(--line); padding: 8px 10px; font-size: var(--fs); }
+/* Карта защиты: вопрос/файл → балл (verdict.items) */
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.itemRow { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); font-size: var(--fs-sm); }
+.itemRow[data-passed='true'] { border-color: var(--blue); }
+.itemLabel { overflow-wrap: anywhere; }
+.itemScore { font-variant-numeric: tabular-nums; }
+.itemBar { grid-column: 1 / -1; display: flex; gap: 2px; }
+.itemCell { display: inline-block; width: 14px; height: 4px; background: var(--meter-off); }
+.itemOn { background: var(--meter-on); }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .card { border: 1px solid var(--border-faint); background: var(--glass-strong); padding: 14px 16px; display: grid; gap: 8px; }
 .meta { color: var(--muted); font-size: var(--fs-sm); }

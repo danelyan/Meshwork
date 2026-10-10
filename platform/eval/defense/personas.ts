@@ -18,10 +18,8 @@ import path from 'node:path';
 
 import { buildSnapshot, candidateTurn, finishDefenseRoom, startDefenseRoom } from '../../src/server/defense-room/session';
 import type { RepoSnapshot } from '../../src/server/defense-room/types';
-import { registerStubResponse } from '../../src/server/llm/providers/stub';
-import { defenseTables, diffMeter, summarizeDefensePersona, type DefenseObs } from '../stages/metrics';
+import { defenseTables, defenseTuningTable, diffMeter, summarizeDefensePersona, type DefenseObs } from '../stages/metrics';
 import { argValue, createCandidate, personaAnswer, prisma, providers, runTag, snapshot, writeResult, type PersonaProfile } from '../stages/runtime';
-import { stubDefenseEvaluator } from '../stages/stub-defense';
 
 const FIXTURES = path.join(process.cwd(), 'tests/fixtures/defense');
 /** Доля скрытых тестов проекта — «сильный проект» (порог флага в verdict.ts — 0.8). */
@@ -38,9 +36,10 @@ interface Fixture {
 }
 
 const PERSONAS: { id: string; label: string }[] = [
+  // Порядок задаёт направление AUC в таблице: (a) над (c), (a) над (b), (c) над (b).
   { id: 'own', label: '(a) сделал сам' },
-  { id: 'ai-only', label: '(b) ИИ целиком' },
   { id: 'partial', label: '(c) понимает частично' },
+  { id: 'ai-only', label: '(b) ИИ целиком' },
 ];
 
 function walk(dir: string, base = dir): string[] {
@@ -89,12 +88,35 @@ function stubAnswer(f: Fixture, question: string): string {
 
 const MAX_TURNS = 14;
 
+/** Задание-потребность под сабмит (FK ProjectSubmission → ProjectTask): компания, потребность и шаблон — служебные. */
+async function ensureEvalTask(fixtureId: string): Promise<string> {
+  const taskId = `eval-task-${fixtureId}`;
+  await prisma.company.upsert({ where: { id: 'eval-co' }, update: {}, create: { id: 'eval-co', name: 'Eval Co' } });
+  await prisma.projectTemplate.upsert({
+    where: { id: 'eval-tpl' },
+    update: {},
+    create: { id: 'eval-tpl', subcategoryId: 'backend.web-api', specialization: 'backend', grade: 'junior', title: 'eval', contractMd: '', dirRef: 'eval', hiddenTestsRef: 'eval', visibleTestsRef: 'eval', image: 'node20', timeBudgetMin: 60 },
+  });
+  await prisma.vacancy.upsert({
+    where: { id: `eval-vac-${fixtureId}` },
+    update: {},
+    create: { id: `eval-vac-${fixtureId}`, companyId: 'eval-co', title: 'eval', specialization: 'backend', grade: 'junior', salaryFrom: 1, salaryTo: 2, needs: [], archivedAt: new Date() },
+  });
+  await prisma.projectTask.upsert({
+    where: { id: taskId },
+    update: {},
+    create: { id: taskId, vacancyId: `eval-vac-${fixtureId}`, templateId: 'eval-tpl', specialization: 'backend', grade: 'junior', specJson: {}, rubricJson: {} },
+  });
+  return taskId;
+}
+
 async function runDefense(f: Fixture, snap: RepoSnapshot, n: number, tag: string, llm: ReturnType<typeof providers>): Promise<DefenseObs> {
   const id = `eval-${tag}-${f.id}${n}`;
   const before = { platform: snapshot(llm.platform.meter), persona: snapshot(llm.persona.meter) };
   const base = { persona: f.id, defense: n, sessionId: '', total: null, passed: null, runs: [] as number[], flags: [] as string[], answered: 0, followUps: 0, generator: '', projectScore: null };
   try {
     await createCandidate(id, { grade: 'junior' });
+    await ensureEvalTask(f.id);
     const hidden = Array.from({ length: 20 }, (_, i) => ({ name: `hidden-${i + 1}`, passed: i < 19 }));
     const sub = await prisma.projectSubmission.create({
       data: {
@@ -126,8 +148,9 @@ async function runDefense(f: Fixture, snap: RepoSnapshot, n: number, tag: string
     return {
       ...base,
       sessionId,
-      total: verdict.total,
+      total: verdict.totalMean ?? verdict.total,
       passed: verdict.passed,
+      items: (verdict.items ?? []).map((i) => ({ itemId: i.itemId, label: i.label, ref: i.ref, total: i.total, passed: i.passed, runs: i.runs })),
       runs: verdict.runs,
       flags: verdict.flags,
       answered: verdict.answered,
@@ -152,8 +175,6 @@ async function main(): Promise<void> {
   const only = argValue('persona');
   const personas = PERSONAS.filter((p) => !only || only.split(',').includes(p.id));
   const tag = `${STUB ? 's' : 'l'}${runTag()}`;
-  // Stub оценщика защиты — детерминированные баллы по признакам в ответах (как у созвона в stub-call.ts).
-  if (STUB) registerStubResponse('call_evaluator', stubDefenseEvaluator);
   const llm = providers();
   console.log(`eval:defense — провайдер ${llm.platform.name}/${llm.platform.model}, персон ${personas.length}, защит на персону ${defenses}`);
   const obs: DefenseObs[] = [];
@@ -168,9 +189,10 @@ async function main(): Promise<void> {
       );
     }
   }
-  const summaries = personas.map((p) => summarizeDefensePersona(p.id, obs.filter((o) => o.persona === p.id)));
-  const md = defenseTables(summaries, Object.fromEntries(personas.map((p) => [p.id, p.label])));
-  const file = writeResult(`defense-${STUB ? 'stub' : 'live'}.json`, {
+  const summaries = personas.map((p) => summarizeDefensePersona(p.id, obs.filter((o) => o.persona === p.id), loadFixture(p.id).fixture.persona.knownFiles));
+  const legends = Object.fromEntries(personas.map((p) => [p.id, p.label]));
+  const md = `${defenseTables(summaries, legends)}\n\n${defenseTuningTable(summaries, legends)}`;
+  const file = writeResult(`defense-${STUB ? 'stub' : 'live'}${argValue('out') ? `-${argValue('out')}` : ''}.json`, {
     stage: 3,
     provider: `${llm.platform.name}/${llm.platform.model}`,
     stub: STUB,

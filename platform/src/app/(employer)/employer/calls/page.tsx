@@ -17,6 +17,7 @@ const FLAG = {
   evaluator_disagreement: 'оценщик разошёлся',
   employer_questions_unanswered: 'есть вопросы без ответа',
   no_project_result: 'нет результата проверки',
+  uneven_understanding: 'понимание неровное',
 } as const;
 
 /** Защиты кандидатов, принявших приглашение компании (ADR 0003): идущие — подключиться, завершённые — транскрипт и оценка. */

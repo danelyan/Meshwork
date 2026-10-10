@@ -3,10 +3,12 @@
 import type { AnswerSignal, QuestionLevel } from './types';
 import type { Grade } from '../../lib/grades';
 
-/** Лимиты квалифицирующего созвона (ADR 0003: 4–6 вопросов). */
+/** Лимиты квалифицирующего созвона (ADR 0003: 4–6 вопросов; до 8 — с дополнительными по неопределённым темам). */
 export const CALL_LIMITS = {
   minQuestions: 4,
   maxQuestions: 6,
+  /** Потолок с дополнительными вопросами по темам, где прогоны оценщика разошлись (status=inconclusive). */
+  hardMaxQuestions: 8,
   /** На одну тему — не больше стольких вопросов. */
   maxPerTopic: 2,
   /** Тем в плане созвона. */
@@ -60,6 +62,18 @@ export function heuristicSignal(answer: string | null): AnswerSignal {
   return 'none';
 }
 
+/**
+ * Покрытие тем: сколько вопросов осталось (включая следующий) и какие темы ещё не спрошены. Если
+ * непроверенных тем не меньше, чем оставшихся вопросов, следующий вопрос обязан открыть новую тему —
+ * иначе заявленная тема в конце списка не спрашивается никогда (валидация 10.10: покрытие 75 %).
+ */
+export function coverage(topics: readonly TopicSeed[], turns: readonly PlanTurn[], maxQuestions: number): { remaining: number; unprobed: string[]; mustSwitch: boolean } {
+  const asked = new Set(turns.map((t) => t.topic));
+  const unprobed = topics.filter((t) => !asked.has(t.topic)).map((t) => t.topic);
+  const remaining = Math.max(0, maxQuestions - turns.length);
+  return { remaining, unprobed, mustSwitch: turns.length > 0 && unprobed.length > 0 && unprobed.length >= remaining };
+}
+
 export interface PlannedQuestion {
   topicIndex: number;
   level: QuestionLevel;
@@ -78,6 +92,8 @@ export function planNext(args: {
   turns: readonly PlanTurn[];
   grade: Grade | null | undefined;
   signal: AnswerSignal | null;
+  /** Лимит вопросов для правила покрытия (по умолчанию CALL_LIMITS.maxQuestions). */
+  maxQuestions?: number;
 }): PlannedQuestion {
   const { topics, turns, grade } = args;
   const base = startLevel(grade);
@@ -86,7 +102,8 @@ export function planNext(args: {
   const signal = args.signal ?? 'none';
   const curIdx = Math.max(0, topics.findIndex((t) => t.topic === last.topic));
   const onTopic = turns.filter((t) => t.topic === last.topic).length;
-  const leave = onTopic >= CALL_LIMITS.maxPerTopic || last.level === 3 || (signal === 'weak' && last.level === 1);
+  const cov = coverage(topics, turns, args.maxQuestions ?? CALL_LIMITS.maxQuestions);
+  const leave = cov.mustSwitch || onTopic >= CALL_LIMITS.maxPerTopic || last.level === 3 || (signal === 'weak' && last.level === 1);
   if (!leave) return { topicIndex: curIdx, level: routeLevel(last.level, signal), signal, switched: false };
   const asked = new Set(turns.map((t) => t.topic));
   const fresh = topics.findIndex((t) => !asked.has(t.topic));

@@ -60,7 +60,7 @@ beforeEach(() => {
         status: 'finished',
         verdict: {
           kind: 'qualifying',
-          depthMap: [{ topic: 'Индексы', catalogId: 'be.idx', claimed: true, claimStatement: null, probed: 2, maxLevel: 2, confirmed: true, scores: { depth: 2, why: 2, boundary: 1, completion: 1 }, total: 6, quote: 'B-дерево', runs: [] }],
+          depthMap: [{ topic: 'Индексы', catalogId: 'be.idx', claimed: true, claimStatement: null, probed: 2, maxLevel: 2, confirmed: true, status: 'confirmed', scores: { depth: 2, why: 2, boundary: 1, completion: 1 }, total: 6, quote: 'B-дерево', runs: [] }],
           runs: 3,
           validRuns: 3,
           upgradedCatalogIds: ['be.idx'],

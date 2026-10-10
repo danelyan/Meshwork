@@ -13,7 +13,6 @@
   .consultant { --landing-header-h: 72px; }
 }
 .page { flex: 1 0 auto; min-width: 0; }
-.frame:has([data-dashboard]) .nav { display: none; }
 .frame:has([data-dashboard]) { --page-pad: 32px; --landing-header-h: 72px; }
 .frame:has([data-dashboard]) .accountBtn { border: 0; }
 .frame:has([data-dashboard]) .avatar { border-radius: 0; width: 36px; height: 36px; }
@@ -92,7 +91,8 @@
 .menuItem:hover:not(:disabled) { background: var(--surface-hover); }
 .menuItem:disabled { cursor: not-allowed; color: var(--muted); }
 .menuItem:focus-visible { outline-offset: -2px; }
-.menuItem[aria-current='true'] { font-weight: 600; }
+.menuItem[aria-current='true'], .menuItem[aria-current='page'] { font-weight: 600; }
+a.menuItem { text-decoration: none; }
 .radio { width: 14px; height: 14px; flex: none; border: 2px solid currentColor; border-radius: 50%; }
 .radio[data-on] { background: radial-gradient(circle, var(--role-nav-active) 40%, transparent 45%); border-color: var(--role-nav-active); }
 .menuQuiet { font-size: var(--fs-sm); color: var(--text-soft); }

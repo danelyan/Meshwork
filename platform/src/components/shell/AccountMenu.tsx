@@ -10,6 +10,7 @@ import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { demoLogout, switchRoleApi } from '@/lib/api';
 import type { ActiveRole, HeaderAccount } from '@/server/auth/role-plan';
 
+import type { NavLink } from './nav';
 import styles from './shell.module.css';
 
 const ROLE_LABEL = { candidate: 'Кандидат', employer: 'Работодатель' } as const;
@@ -43,12 +44,13 @@ export function initialsOf(name: string, email: string | null): string {
  * `aria-expanded`/`aria-controls` + панель), а не `role=menu`: в панели есть форма создания профиля, а меню-семантика
  * её не допускает. Стрелки ↑/↓ ходят по пунктам, Escape закрывает и возвращает фокус на кнопку, клик вне,
  * уход фокуса (Tab) и переход по ссылке закрывают.
+ * `sections` — ссылки разделов роли: показываются в панели, когда сайдбара кабинета на странице нет (`/consultant`, `/`).
  * Роль: переключатель ролей показываем, только когда оба профиля есть (решение владельца 10.10 «показывать честно»).
  * Второго профиля нет - внизу тихий пункт «создать…» и шаг подтверждения (профиль с ПДн одним кликом не создаём;
  * работодателю - ещё и название компании); на общем демо-аккаунте этого пункта нет. После ответа - полная
  * навигация на `next`: дом обеих ролей один адрес /consultant, клиентское состояние прежней роли должно сброситься.
  */
-export function AccountMenu({ account, navigate = fullNavigation }: { account: HeaderAccount; navigate?: Navigate }) {
+export function AccountMenu({ account, navigate = fullNavigation, sections }: { account: HeaderAccount; navigate?: Navigate; sections?: NavLink[] }) {
   const menu = account.roles;
   const pathname = usePathname();
   const panelId = useId();
@@ -205,6 +207,15 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
             <strong>{account.userName}</strong>
             {account.userEmail && <span>{account.userEmail}</span>}
           </div>
+          {sections && sections.length > 0 && (
+            <nav className={styles.menuGroup} aria-label="Разделы">
+              {sections.map((l) => (
+                <Link key={l.href} className={styles.menuItem} href={l.href} aria-current={(l.exact ? pathname === l.href : pathname.startsWith(l.href)) ? 'page' : undefined}>
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+          )}
           {menu?.otherExists && (
             <div className={styles.menuGroup} role="group" aria-label="Роль">
               {roleItem('employer')}

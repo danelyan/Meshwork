@@ -9,6 +9,7 @@ import type { AgentEvent } from '@/server/agent/types';
 
 import { ReplayButton } from './avatar/CompanionStage';
 import { SpeakingBubble } from './avatar/Speaking';
+import { useCallMode } from './call/CallContext';
 import type { AgentItem } from './chat/stream-items';
 import { StreamingText } from './chat/StreamingText';
 import { AssistantRow, Bubble, QuickReplies, Thread, UserBubble } from './chat/Thread';
@@ -254,6 +255,7 @@ export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmA
             {ev.type === 'claims' && <ClaimsBlock event={ev} overrides={claimOverrides} onAction={onClaimAction} onConfirmAll={onConfirmAll} />}
             {ev.type === 'ask' && <AskBlock event={ev} onAnswer={onAnswer} locked={locked} />}
             {ev.type === 'recommendations' && <Recommendations items={ev.items} />}
+            {ev.type === 'call_offer' && <CallOffer reason={ev.reason} />}
             {ev.type === 'error' && (
               <Bubble tone="error">
                 {ev.message}
@@ -267,5 +269,20 @@ export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmA
         );
       })}
     </>
+  );
+}
+
+/** Предложение созвона от агента (suggest_call): кнопка открывает режим звонка в сцене. Вне сцены — подсказка. */
+function CallOffer({ reason }: { reason: string }) {
+  const call = useCallMode();
+  return (
+    <div data-testid="call-offer">
+      <QuickReplies
+        label={reason}
+        items={[{ value: 'call', label: 'Созвониться', note: '4–6 вопросов голосом, запись с согласия' }]}
+        disabled={!call}
+        onPick={() => call?.start(reason)}
+      />
+    </div>
   );
 }

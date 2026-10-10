@@ -9,6 +9,7 @@ import { formatDate, LEVEL_HINT, LEVELS_TOP_DOWN } from '@/lib/labels';
 import type { ProfileClaim, ProfileView } from '@/server/claims/types';
 import type { Gap } from '@/server/recommend/types';
 
+import { DepthMapSection } from './call/DepthMapSection';
 import { LevelBadge } from './LevelBadge';
 import { Button, Notice } from './ui';
 import styles from './ProfilePage.module.css';
@@ -264,6 +265,7 @@ export function ProfilePage() {
       </aside>
 
       <div className={styles.main}>
+      <DepthMapSection />
       {claims.length === 0 ? (
         <div className={`${ui.panel}`}>
           <p>Утверждений пока нет.</p>

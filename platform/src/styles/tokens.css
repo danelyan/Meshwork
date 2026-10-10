@@ -149,19 +149,13 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --avatar-stage-glow: radial-gradient(120% 90% at 30% 20%, rgba(200, 210, 230, 0.16), transparent 60%);
   --avatar-stage-line: rgba(255, 255, 255, 0.08);
   --avatar-silver: #c4c9d2;
-  /* колонка под головой (роадмап, документы, подсказка) */
-  --stage-card: rgba(255, 255, 255, 0.03);
-  --stage-track: rgba(255, 255, 255, 0.14);
-  --stage-ring: rgba(255, 255, 255, 0.3);
-  --stage-ink: #ffffff;
-  --stage-ink-dim: rgba(255, 255, 255, 0.6);
-  --stage-ink-faint: rgba(255, 255, 255, 0.55);
-  --stage-accent: #8a7dff;
-  --stage-accent-track: rgba(138, 125, 255, 0.55);
-  --stage-accent-fill: rgba(138, 125, 255, 0.2);
-  --stage-on-accent: #0e0f14;
-  --stage-btn: #eceef2;
-  --stage-mask: #000;
+  /* lane call: режим звонка на тёмной сцене (CallPanel) — не зависят от темы страницы, сцена всегда тёмная */
+  --call-on-stage: #ffffff;
+  --call-on-stage-soft: rgba(255, 255, 255, 0.72);
+  --call-control: rgba(255, 255, 255, 0.08);
+  --call-control-hover: rgba(255, 255, 255, 0.16);
+  --call-end: #d93a32;
+  --call-rec: #ff4d43;
 }
 
 /*

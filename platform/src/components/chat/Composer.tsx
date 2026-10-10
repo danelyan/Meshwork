@@ -40,6 +40,8 @@ export interface ComposerProps {
   attachments?: ComposerAttachments;
   /** Кнопка микрофона: надиктовать текст в поле (VoiceButton; режим — GET /api/stt). */
   voice?: boolean;
+  /** Кнопка «Созвониться» (lane call): открыть режим звонка в сцене. Нет — кнопки нет. */
+  onCall?: () => void;
 }
 
 /**
@@ -67,6 +69,7 @@ export function Composer({
   allowEmpty,
   attachments,
   voice,
+  onCall,
 }: ComposerProps) {
   const id = useId();
   const limitsId = useId();
@@ -161,6 +164,11 @@ export function Composer({
           autoComplete="off"
         />
         {voice && <VoiceButton value={value} onChange={onChange} disabled={disabled} />}
+        {onCall && (
+          <button type="button" className={styles.iconBtn} onClick={onCall} disabled={disabled} aria-label="Созвониться" title="Созвониться с ИИ-интервьюером: 4–6 вопросов голосом, карта глубины в профиле" data-testid="call-button">
+            <PhoneIcon />
+          </button>
+        )}
         <button type="submit" className={styles.send} disabled={!canSend} aria-busy={sending || undefined} data-sending={sending || undefined}>
           <span>{sendLabel}</span>
           {sending && (
@@ -242,6 +250,14 @@ function useWindowFileDrop(onAdd?: (files: File[]) => void): boolean {
     };
   }, [enabled]);
   return over;
+}
+
+function PhoneIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z" />
+    </svg>
+  );
 }
 
 function ClipIcon() {

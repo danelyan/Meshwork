@@ -2,14 +2,12 @@
 
 import type { ReactNode } from 'react';
 
-import { AsideProvider } from '../consultant/aside-refresh';
-import { SceneAside } from '../consultant/SceneAside';
-import type { SceneAsideData } from '@/server/consultant/aside';
-
 import { Chat } from '../Chat';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 
+import { CallPanel } from '../call/CallPanel';
+import { CallProvider, useCallMode } from '../call/CallContext';
 import { HeadView } from './HeadView';
 import { MuteToggle, StateChip, StopButton, Subtitles } from './Speaking';
 import { CompanionVoiceProvider } from './voice';
@@ -27,16 +25,13 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
  *  - `call-side` — «Звонок + чат слева» (D = C + A): тёмный экран звонка, слева светлая панель чата
  *    на всю высоту с полной лентой и вводом; уже 1050px — панель снизу, голова сверху ~40vh.
  * `label` — подпись у головы («Помощник по подбору» у работодателя).
- * `aside` — данные правой колонки call-side под головой («Твой путь», «Документы», «Подсказка»,
- * components/consultant/SceneAside; считаются на сервере в page.tsx).
  * `children` — готовая лента (слитая лента /consultant: онбординг + консультант, см.
  * components/consultant/ConsultantFeed); без них сцена рисует обычный `Chat`.
  */
-export function AvatarScene({ variant, demo, initial, children, aside, label = 'ИИ-консультант' }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; aside?: SceneAsideData }) {
+export function AvatarScene({ variant, demo, initial, children, label = 'ИИ-консультант', call = false }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; call?: boolean }) {
   const feed = (className?: string) => children ?? <Chat demo={demo} initial={initial} className={className} />;
-  return (
+  const scene = (
     <CompanionVoiceProvider autoEnable>
-      <AsideProvider initial={aside}>
       {variant === 'portrait' && (
         <div className={styles.portraitScene} data-testid="scene-portrait">
           <div className={styles.conversation}>
@@ -93,29 +88,43 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
           </div>
         </div>
       )}
-      {variant === 'call-side' && (
-          <div className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side">
-            <section className={styles.sideStage} aria-label={label}>
-              <div className={styles.sideHead}>
-                <HeadView />
-                <span className={styles.badge}>{label}</span>
-                <div className={styles.callTop}>
-                  <StateChip />
-                  <MuteToggle />
-                </div>
-                <div className={styles.callStop}>
-                  <StopButton />
-                </div>
-              </div>
-              <Subtitles className={styles.sideSubs} />
-            </section>
-            {aside && <SceneAside data={aside} className={styles.sideAside} />}
-            <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll data-theme="feed-dark">
-              {feed(styles.sideChat)}
-            </div>
-          </div>
-      )}
-      </AsideProvider>
+      {variant === 'call-side' && <SideScene label={label}>{feed(styles.sideChat)}</SideScene>}
     </CompanionVoiceProvider>
+  );
+  // Режим звонка (lane call): только у кандидата; провайдер снаружи голоса, чтобы кнопка в ленте его видела.
+  return call ? <CallProvider>{scene}</CallProvider> : scene;
+}
+
+/** Сцена «звонок + чат слева»; открыт созвон — сцена становится панелью звонка, лента неактивна. */
+function SideScene({ label, children }: { label: string; children: ReactNode }) {
+  const call = useCallMode();
+  const inCall = Boolean(call?.open);
+  return (
+    <div className={styles.sideScene} data-testid="scene-call-side" data-call={inCall || undefined}>
+      <section className={styles.sideStage} aria-label={label}>
+        {inCall ? (
+          <CallPanel />
+        ) : (
+          <>
+            <div className={styles.sideHead}>
+              <HeadView />
+              <span className={styles.badge}>{label}</span>
+              <div className={styles.callTop}>
+                <StateChip />
+                <MuteToggle />
+              </div>
+              <div className={styles.callStop}>
+                <StopButton />
+              </div>
+            </div>
+            <Subtitles className={styles.sideSubs} />
+          </>
+        )}
+      </section>
+      <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll data-theme="feed-dark" inert={inCall || undefined} aria-hidden={inCall || undefined}>
+        {inCall && <p className={styles.callPause}>Идёт созвон - чат на паузе</p>}
+        {children}
+      </div>
+    </div>
   );
 }

@@ -7,6 +7,7 @@
 import { createRng, type Rng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 
+import { AI_BANK2_GENERATORS } from './ai-bank2';
 import { AI_EXTRA_GENERATORS } from './ai-extra';
 import { AI_JUNIOR_GENERATORS } from './ai-junior';
 import { AI_SENIOR_GENERATORS } from './ai-senior';
@@ -843,4 +844,5 @@ export const AI_GENERATORS: TaskGenerator[] = [
   ...AI_EXTRA_GENERATORS,
   ...AI_JUNIOR_GENERATORS,
   ...AI_SENIOR_GENERATORS,
+  ...AI_BANK2_GENERATORS,
 ];

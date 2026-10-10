@@ -27,7 +27,7 @@
 | R-C-12 Вакансии, самоотклик, мои отклики | частично | `app/api/career/vacancies/route.ts`, `server/recommend/career.ts`, `components/candidate/CareerPage.tsx` | `unit/recommend/career-route.test.ts`, `unit/recommend/career.test.ts`, `integration/recommend/recommend.test.ts` | `/career` | Есть подборка вакансий под профиль. Самоотклика и списка «мои отклики» нет (модели отклика в `prisma/schema.prisma` нет) |
 | R-C-13 Настройки приватности | частично | `app/api/profile/privacy/route.ts`, `server/employer/privacy.ts`, `components/employer/PrivacyToggle.tsx` | `integration/employer/employer-api.test.ts` («скрытый кандидат не виден»), `unit/app/candidate-guard.test.tsx` | `/settings` | Один флаг «скрыть меня от работодателей» (`hiddenFromEmployers`); выбора отдельных полей нет |
 | R-C-14 Согласие (152-ФЗ) | готово | `server/auth/consent.ts` (версия и время), `app/consent/page.tsx`, `app/api/auth/consent/route.ts`, `server/auth/erase-account.ts` (удаление аккаунта) | `integration/auth/roles.test.ts` («согласие: фиксируется версия»), `integration/auth/email-auth.test.ts` («без согласия аккаунт не создаётся»), `integration/auth/account-erasure.test.ts` | `/consent`, `/settings`; шаг `consent` онбординга | Юридическая проверка текста согласия — не проверено |
-| R-C-15 Привязка ФСП ID | частично | шаг `fsp` в `server/onboarding/scenario.ts`, `Candidate.fspState`, `server/collector/fsp-demo.ts` | `unit/collector/profiles.test.ts`, `unit/components/profile-page.test.tsx` | `/onboarding` → «Привязать ФСП ID» | Имитация: вход в ФСП ID не вызывается, достижения демонстрационные. **в работе (лейн fsp-oidc)**: мок ФСП ID по OIDC |
+| R-C-15 Привязка ФСП ID | частично | шаг `fsp` в `server/onboarding/scenario.ts`, `Candidate.fspState`, `server/collector/fsp-demo.ts`, `server/fsp-id/` (OIDC-клиент, мок провайдера, реестр), `app/api/fsp-id/` | `unit/collector/profiles.test.ts`, `unit/components/profile-page.test.tsx`, `unit/fsp-id/oidc.test.ts`, `unit/fsp-id/routes.test.ts` | `/settings` → «Привязать ФСП ID» → выбор демо-участника | Вход по OIDC (Authorization Code + PKCE, проверка ID-токена по JWKS) работает; провайдер на стенде — встроенный мок ФСП ID, участники и достижения демонстрационные. Симулятор команды на Keycloak подключается через env (нужен секрет клиента) |
 | R-C-16 Только свои приглашения и отклики | готово | `server/auth/access.ts` (карта страниц, API, действий), гварды `requireCandidate/requireEmployer`, выборка по `candidateId` сессии | `unit/auth/access-coverage.test.ts` (каждый маршрут в карте), `integration/auth/roles.test.ts`, `integration/employer/employer-api.test.ts` (чужая потребность), `integration/recommend/recommend.test.ts` (чужое приглашение — 404) | — (проверка негативных путей) | — |
 
 ### Работодатель
@@ -75,10 +75,10 @@
 
 | ID | Статус | Где в коде | Чем подтверждено | Как увидеть на стенде | Оговорка |
 |---|---|---|---|---|---|
-| R-FSP-01 Связь с ФСП ID | частично | `Candidate.fspState` (4 состояния), вход — Яндекс ID (`server/auth/yandex.ts`, ADR 0001) | `unit/auth/yandex.test.ts`, `integration/auth/yandex-callback.test.ts` | `/onboarding` → шаг ФСП | Keycloak/ФСП ID реально не подключены (API не выданы). **в работе (лейн fsp-oidc)**: мок ФСП ID по OIDC. Яндекс ID на стенде 10.10 не включён (ключи не заданы) |
+| R-FSP-01 Связь с ФСП ID | частично | `Candidate.fspState` (4 состояния), привязка ФСП ID по OIDC — `server/fsp-id/`, вход — Яндекс ID (`server/auth/yandex.ts`, ADR 0001) | `unit/fsp-id/*.test.ts`, `unit/auth/yandex.test.ts`, `integration/auth/yandex-callback.test.ts` | `/settings` → «Привязать ФСП ID» | Привязка по OIDC работает со встроенным моком ФСП ID (Keycloak ФСП организаторы не дают). Клиент готов к симулятору команды на Keycloak и его API реестра (`FSP_OIDC_*`, `FSP_API_URL`); на стенде не включён — нет секрета клиента. Яндекс ID на стенде 10.10 не включён (ключи не заданы) |
 | R-FSP-02 Состав данных о достижениях | готово | `server/collector/fsp-demo.ts` (событие, год, результат, роль), `server/employer/privacy.ts` (источник `fsp`) | `unit/collector/profiles.test.ts` | `/profile` у демо-кандидата с ФСП | Модель — наше предложение; все строки помечены «демонстрационные» |
 | R-FSP-03 Кандидат без истории ФСП | готово | `FspState.not_linked/no_achievements`, `ranking.ts` (нет ФСП — нет штрафа), шаг `fspParticipation` | `unit/employer/ranking.test.ts` («отсутствие ФСП не штрафуется»), `unit/components/profile-page.test.tsx` | `/demo` → «frontend Junior без ФСП» либо новый пользователь с ответом «нет истории» | — |
-| R-FSP-04 Схема интеграции с реестром ФСП | готово (документ) | — | [fsp-integration.md](fsp-integration.md), [submission/fsp-career.md](submission/fsp-career.md) (раздел про ФСП) | — | Документ, кода нет. **в работе (лейн fsp-oidc)**: уточнение под мок OIDC |
+| R-FSP-04 Схема интеграции с реестром ФСП | готово (документ) | — | [fsp-integration.md](fsp-integration.md), [submission/fsp-career.md](submission/fsp-career.md) (раздел про ФСП) | — | Схема реализована в коде на моке: OIDC-клиент + адаптер реестра (`server/fsp-id/registry.ts`, `GET /me/achievements` по токену участника) |
 
 ### За рамками MVP
 
@@ -113,7 +113,7 @@
 | нет | 1 | R-C-10 |
 | не проверено | 3 | R-N-01, 08, 09 |
 
-Строки с пометкой «в работе»: R-C-15, R-E-07, R-M-02, R-M-03, R-M-04, R-FSP-01, R-FSP-04, R-X-01, R-X-02, R-N-02, R-N-07. После слияния лейнов их статусы пересмотреть.
+Строки с пометкой «в работе»: R-E-07, R-M-02, R-M-03, R-M-04, R-X-01, R-X-02, R-N-02, R-N-07. После слияния лейнов их статусы пересмотреть.
 
 ## 2. Критерии оценки: что показываем и граница доказательств
 
@@ -206,5 +206,5 @@
 | Сколько ложных Middle/Senior пропускает тест? | На персонах — до 0,13 (backend.highload), в остальных подкатегориях ≤ 0,10; на людях не измерено | раздел 2, критерий 2 |
 | Защищён ли тест от ChatGPT? | Нет, и мы это говорим. Текстовый тест нельзя защитить от нейросети в соседнем окне, и мы этого не обещаем: эту проблему не решает никто, а сигналы вкладок, вставки и person-fit ловят случайного, а не намеренного. Поэтому тест у нас - предварительная калибровка грейда, а единственные, кто проверяет умение вне теста, - мы: созвон с ИИ-интервьюером, проект на скрытых тестах и защита по собственному коду. Уникальные экземпляры и ротация заданий защищают от слива ответов, не от модели. | V04 организаторов; раздел 2, критерий 2 |
 | Стабильность оценки при повторе? | Движок детерминирован по seed; повтор человеком не измерялся | раздел 2, критерий 2 |
-| Работает ли вход через ФСП ID? | Нет, имитация: API не выданы; **в работе (лейн fsp-oidc)** мок по OIDC | R-FSP-01 |
+| Работает ли вход через ФСП ID? | Привязка по настоящему OIDC-потоку работает, провайдер — встроенный мок ФСП ID с демо-участниками (Keycloak ФСП не выдан) | R-FSP-01 |
 | Есть ли отклик на вакансию? | Нет | R-C-12, R-E-06 |

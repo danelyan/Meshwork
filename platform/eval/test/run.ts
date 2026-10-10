@@ -1,6 +1,6 @@
 // Валидация теста на грейд на синтетических кандидатах (ADR-0002 § валидация), без LLM и без БД.
 // Тот же движок, что в проде: policy.selectNext / shouldStop / decide, параметры шаблонов из кода
-// (экспертные). Запуск из platform/: npx tsx eval/test/run.ts [--n 400] [--seed 1] [--noise 0.2] [--junior-cut −0.7]
+// (экспертные). Запуск из platform/: npx tsx eval/test/run.ts [--n 400] [--seed 1] [--noise 0.2] [--junior-cut −0.7] [--population persona|legacy]
 //
 // Честная граница: симуляция проверяет свойства механики ПРИ ЗАДАННЫХ параметрах заданий
 // (a, b экспертные, на людях не оценены), а не то, что задания измеряют умение.
@@ -21,6 +21,10 @@ const NOISE = arg('noise', 0.2);
 const CONFIRM = arg('confirm', CONFIRM_PROB);
 const MAXI = arg('max', MAX_ITEMS);
 const MINI = arg('min', MIN_ITEMS);
+// Популяция синтетики: persona (по умолчанию) или legacy (старая, для сравнения «до/после»).
+const popIdx = args.indexOf('--population');
+const POPULATION = popIdx >= 0 ? args[popIdx + 1] : 'persona';
+if (POPULATION !== 'persona' && POPULATION !== 'legacy') throw new Error(`--population: persona | legacy, получено ${POPULATION}`);
 // Порог Junior для сравнения «до/после»: подменяет общий GRADE_CUT движка на весь прогон.
 GRADE_CUT.junior = arg('junior-cut', GRADE_CUT.junior);
 
@@ -30,6 +34,21 @@ function gauss(rng: ReturnType<typeof createRng>): number {
   const v = rng.next();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
+
+// Популяции [В]: θ_true ~ N(μ, σ) по группе. Сдают заявленный грейд: Junior-тест — Junior (истина «да») и
+// новичок («нет»); Middle-тест — Middle («да») и Junior («нет»).
+// legacy: μ/σ выбраны из головы до персон (новичок −2,1 / Junior −0,8 / Middle 0,6; σ 0,5).
+// persona (10.10.2026): среднее и разброс θ̂ симулированных персон (eval/test/personas.ts, N = 2000 попыток
+// Junior-теста на персону, боевой движок, пороги −0,7 / −0,1): ниже Junior (B1, B2, F3) θ̂ = −0,94 ± 0,51;
+// Junior (B3, B4, F1) 0,30 ± 0,32; Middle (B5, F2) 0,77 ± 0,58 (контроль Z0 исключён). Округлено до 0,1;
+// σ Junior поднята с 0,32 до 0,4 (по заданию не меньше 0,4: 0,32 — разброс оценщика у трёх персон, не людей).
+// Это θ̂ после оценки, а не истинное θ: шум оценки при прогоне добавится ещё раз (популяция чуть «размыта»).
+// Параметры подобраны по симуляции персон агентом; живой разметки нет.
+const POPS: Record<string, Record<string, { mu: number; sd: number }>> = {
+  legacy: { novice: { mu: -2.1, sd: 0.5 }, junior: { mu: -0.8, sd: 0.5 }, middle: { mu: 0.6, sd: 0.5 } },
+  persona: { novice: { mu: -0.9, sd: 0.5 }, junior: { mu: 0.3, sd: 0.4 }, middle: { mu: 0.8, sd: 0.6 } },
+};
+const POP = POPS[POPULATION]!;
 
 interface Sim {
   thetaTrue: number;
@@ -119,14 +138,11 @@ interface SpecReport {
 function runSpec(spec: Specialization): SpecReport {
   const rng = createRng(SEED * 7919 + (spec === 'backend' ? 1 : 2));
   const pool: SelectableTemplate[] = generatorsFor(spec).map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
-  // Популяции [В]: новичок N(−2,1; 0,5), Junior N(−0,8; 0,5), Middle N(0,6; 0,5). Сдают заявленный грейд:
-  // Junior-тест — Junior (истина «да») и новичок («нет»); Middle-тест — Middle («да») и Junior («нет»).
-  const POP: Record<string, number> = { novice: -2.1, junior: -0.8, middle: 0.6 };
   const sims: (Sim & { pop: string })[] = [];
   for (let i = 0; i < N; i++) {
     const pop = (['novice', 'junior', 'junior', 'middle'] as const)[i % 4]!;
     const claimed: Grade = i % 4 === 0 || i % 4 === 1 ? 'junior' : 'middle';
-    const thetaTrue = POP[pop]! + 0.5 * gauss(rng);
+    const thetaTrue = POP[pop]!.mu + POP[pop]!.sd * gauss(rng);
     sims.push({ thetaTrue, trueGrade: pop === 'middle' ? 'middle' : 'junior', claimed, pop });
   }
   // Основной сценарий: две попытки с разными seed.
@@ -226,7 +242,7 @@ function runSpec(spec: Specialization): SpecReport {
 
 const t0 = Date.now();
 const reports = (['backend', 'frontend'] as Specialization[]).map(runSpec);
-console.log(`# Валидация теста на грейд (синтетика): N = ${N} на специализацию, seed = ${SEED}, шум экземпляра σ = ${NOISE}, пороги Junior ${GRADE_CUT.junior} / Middle ${GRADE_CUT.middle}\n`);
+console.log(`# Валидация теста на грейд (синтетика): N = ${N} на специализацию, seed = ${SEED}, шум экземпляра σ = ${NOISE}, популяция ${POPULATION}, пороги Junior ${GRADE_CUT.junior} / Middle ${GRADE_CUT.middle}\n`);
 for (const rep of reports) {
   console.log(`## ${rep.spec}\n`);
   console.log('| Метрика | Цель | Факт |\n|---|---|---|');
@@ -240,12 +256,11 @@ console.log('## Чувствительность (backend): порог подт�
 console.log('| P_confirm | min–max | Точность | Ложное подтв. | Ложный отказ | Retest | Длина |\n|---|---|---|---|---|---|---|');
 {
   // Одни и те же кандидаты и один seed ответов во всех ячейках — сравнение честное.
-  const POP: Record<string, number> = { novice: -2.1, junior: -0.8, middle: 0.6 };
   const gridRng = createRng(SEED * 31 + 7);
   const gridSims = Array.from({ length: N }, (_, i) => {
     const pop = (['novice', 'junior', 'junior', 'middle'] as const)[i % 4]!;
     const claimed: Grade = i % 4 <= 1 ? 'junior' : 'middle';
-    const sim: Sim = { thetaTrue: POP[pop]! + 0.5 * gauss(gridRng), trueGrade: pop === 'middle' ? 'middle' : 'junior', claimed };
+    const sim: Sim = { thetaTrue: POP[pop]!.mu + POP[pop]!.sd * gauss(gridRng), trueGrade: pop === 'middle' ? 'middle' : 'junior', claimed };
     return { sim, truth: claimed === 'junior' ? pop !== 'novice' : pop === 'middle' };
   });
   const pool: SelectableTemplate[] = generatorsFor('backend').map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));

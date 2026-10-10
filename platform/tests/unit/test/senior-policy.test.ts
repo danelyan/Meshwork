@@ -11,6 +11,7 @@ import {
   probeGrade,
   selectNext,
   SENIOR_CUT,
+  SENIOR_MAIN_MAX,
   START_THETA,
   type AttemptPhase,
   type SelectableTemplate,
@@ -19,7 +20,17 @@ import {
 import { deriveSeed } from '@/server/test/rng';
 import type { Grade } from '@/server/types';
 
-const pool: SelectableTemplate[] = poolFor('ai', 'ai.mlops')!.generators.map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
+const basePool: SelectableTemplate[] = poolFor('ai', 'ai.mlops')!.generators.map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
+/**
+ * Расширенный банк (11.10): Senior-пул вдвое больше — копии Senior-шаблонов с другими id и b + 0,1. Основная фаза Senior
+ * всё равно ≤ SENIOR_MAIN_MAX, иначе Senior с неверными Senior-ответами не получает Middle в 1 клик.
+ */
+const expandedPool: SelectableTemplate[] = [
+  ...basePool,
+  ...basePool.filter((t) => t.grade === 'senior').map((t) => ({ ...t, id: `${t.id}.x`, b: Math.min(1.7, t.b + 0.1), catalogIds: [`${t.catalogIds[0]}.x`] })),
+  ...basePool.filter((t) => t.grade === 'middle').map((t) => ({ ...t, id: `${t.id}.x`, catalogIds: [`${t.catalogIds[0]}.x`] })),
+];
+let pool: SelectableTemplate[] = basePool;
 
 /** Цикл сервиса: старт с START_THETA, дальше θ̂ по ответам, фаза из nextStep. */
 function play(grade: Grade, seed: number, answer: (t: SelectableTemplate) => boolean) {
@@ -42,7 +53,12 @@ function play(grade: Grade, seed: number, answer: (t: SelectableTemplate) => boo
   return { shown, responses, phases, step: step!, d: decide(responses, grade) };
 }
 
-describe('Senior', () => {
+for (const [label, p] of [['банк 10.10', basePool], ['банк 11.10, Senior- и Middle-пулы ×2', expandedPool]] as const)
+describe(`Senior (${label})`, () => {
+  beforeAll(() => {
+    pool = [...p];
+  });
+
   it('порог выше Middle; грейд дозадавания: Senior → Middle, остальные → Junior', () => {
     expect(GRADE_CUT.senior).toBe(SENIOR_CUT);
     expect(GRADE_CUT.senior).toBeGreaterThan(GRADE_CUT.middle);
@@ -59,12 +75,12 @@ describe('Senior', () => {
         r.phases.forEach((p, i) => {
           if (p === 'main') expect(r.shown[i]!.grade).toBe('senior');
         });
-        expect(r.phases.filter((p) => p === 'main').length).toBeLessThanOrEqual(seniorCount);
+        expect(r.phases.filter((p) => p === 'main').length).toBeLessThanOrEqual(Math.min(seniorCount, SENIOR_MAIN_MAX));
       }
       // Middle-заявка видит и Junior-, и Middle-задания, Senior — тоже (пул подкатегории целиком).
       expect(new Set(play('middle', seed, () => true).shown.map((t) => t.grade)).size).toBeGreaterThan(1);
     }
-    expect(nextStep({ pool, shown: [], responses: [], grade: 'senior' }).maxItems).toBe(seniorCount);
+    expect(nextStep({ pool, shown: [], responses: [], grade: 'senior' }).maxItems).toBe(Math.min(seniorCount, SENIOR_MAIN_MAX));
   });
 
   it('всё верно → Senior подтверждён; Senior-задания неверно, остальное верно → Senior не подтверждён, предложен Middle', () => {

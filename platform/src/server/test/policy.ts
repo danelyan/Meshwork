@@ -213,6 +213,14 @@ export const JUNIOR_PROBE_MAX = 3;
  * не хватало: P(Middle) 0,78…0,79 < CONFIRM_PROB, и «Middle в 1 клик» не предлагался (tests/unit/test/senior-policy).
  */
 export const MIDDLE_PROBE_MAX = 4;
+/**
+ * Длина основной фазы Senior — не больше 4 заданий (как при Senior-пуле из 4 семейств, ADR 0003, дополнение 16:15),
+ * а не «до исчерпания Senior-пула». При расширении банка (11.10, ~8 Senior-семейств на подкатегорию) фаза шла бы все 8:
+ * Senior с неверными Senior-ответами уходил в P(Middle) ≤ 0,2 и не получал ни дозадавания Middle, ни «Middle в 1 клик».
+ * Больший Senior-пул теперь работает на ротацию: 4 задания выбираются randomesque из всех Senior-семейств.
+ * Junior и Middle от размера пула не зависят: их основная фаза — MIN_ITEMS…MAX_ITEMS, дозадавание — JUNIOR_PROBE_MAX.
+ */
+export const SENIOR_MAIN_MAX = 4;
 const PROBE_MAX: Record<'junior' | 'middle', number> = { junior: JUNIOR_PROBE_MAX, middle: MIDDLE_PROBE_MAX };
 /** Общий потолок заданий попытки: основная фаза + дозадавание (Senior: 4 + 4 — меньше). */
 export const MAX_ITEMS_TOTAL = MAX_ITEMS + JUNIOR_PROBE_MAX;
@@ -336,7 +344,8 @@ export function nextStep(input: StepInput, limits: StopLimits = { min: MIN_ITEMS
   const juniorTotal = pool.filter((t) => t.grade === pg && !t.common).length;
   const juniorShown = (k: number) => shown.slice(0, k).filter((t) => t.grade === pg && !t.common).length;
   // Исчерпание основной фазы — по достижимому числу заданий: общие сверх MAX_COMMON_SHARE не выдать.
-  const mainSize = reachableSize(mainPool(pool, grade));
+  // У заявки Senior — не больше SENIOR_MAIN_MAX, сколько бы Senior-семейств ни было в пуле.
+  const mainSize = Math.min(reachableSize(mainPool(pool, grade)), grade === 'senior' ? SENIOR_MAIN_MAX : Infinity);
   // Потолок основной фазы для прогресса: у заявки Senior — размер Senior-пула (4), а не MAX_ITEMS.
   const mainMax = Math.min(limits.max, mainSize);
 

@@ -35,18 +35,6 @@ export interface InviteBody {
 }
 export const inviteApi = (body: InviteBody) => postJson<{ id: string; status: string }>('/api/employer/invitations', body);
 
-/** Вопросы компании кандидату (ADR 0003, ступень 3): очередь, ответ кандидата приходит в защите. */
-export interface EmployerQuestionDto {
-  id: string;
-  text: string;
-  status: 'queued' | 'asked' | 'answered';
-  askedAt: string;
-  answer: string | null;
-}
-export const listQuestionsApi = async (candidateId: string) =>
-  (await request<{ questions: EmployerQuestionDto[] }>(`/api/employer/questions?candidateId=${encodeURIComponent(candidateId)}`)).questions;
-export const askQuestionApi = (candidateId: string, text: string) => postJson<EmployerQuestionDto>('/api/employer/questions', { candidateId, text });
-
 export const respondInvitationApi = (id: string, action: 'accept' | 'decline') =>
   postJson<{ id: string; status: string }>(`/api/invitations/${encodeURIComponent(id)}`, { action });
 export const setContactApi = (contact: string) => postJson<{ contact: string | null }>('/api/profile/contact', { contact });

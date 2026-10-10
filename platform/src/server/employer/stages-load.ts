@@ -1,6 +1,8 @@
 // Загрузка свидетельств ступеней 1–3 (ADR 0003) для пула кандидатов: пакетно, по трём запросам на весь пул.
 // Приватность: вердикт созвона проходит через `publicVerdict` лейна call (темы и баллы, без цитат и формулировок
 // кандидата — то, что работодатель видит до принятого приглашения, call/access.ts), защита — только баллы и флаги.
+import { Prisma } from '@prisma/client';
+
 import { publicVerdict } from '../call/access';
 import type { CallVerdict } from '../call/types';
 import { prisma } from '../db';
@@ -34,8 +36,9 @@ export async function loadStageEvidence(candidateIds: string[]): Promise<Map<str
 
   // Последний завершённый созвон каждого вида с вердиктом (distinct по кандидату и виду).
   const calls = await prisma.callSession.findMany({
-    where: { candidateId: { in: candidateIds }, status: 'finished' },
-    orderBy: [{ finishedAt: 'desc' }, { id: 'asc' }],
+    // Пустой вердикт (DB NULL или JSON null) не должен затенять более старый валидный: distinct берёт первую строку.
+    where: { candidateId: { in: candidateIds }, status: 'finished', NOT: { verdictJson: { equals: Prisma.AnyNull } } },
+    orderBy: [{ finishedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],
     distinct: ['candidateId', 'kind'],
     select: { candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true },
   });
@@ -54,8 +57,8 @@ export async function loadStageEvidence(candidateIds: string[]): Promise<Map<str
 
   // Проверенные сабмиты: по одному на задание — последний проверенный (повторная сдача заменяет прежнюю).
   const subs = await prisma.projectSubmission.findMany({
-    where: { candidateId: { in: candidateIds }, status: 'checked' },
-    orderBy: [{ checkedAt: 'desc' }, { id: 'asc' }],
+    where: { candidateId: { in: candidateIds }, status: 'checked', NOT: { resultJson: { equals: Prisma.AnyNull } } },
+    orderBy: [{ checkedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],
     distinct: ['candidateId', 'projectTaskId'],
     select: {
       id: true,

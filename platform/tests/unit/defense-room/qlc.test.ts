@@ -106,6 +106,15 @@ describe('summarizeProjectResult', () => {
     expect(summarizeProjectResult({ foo: 1 })).toBeNull();
   });
 
+  it('формат lane project: сводка score 0…1 читается как есть, имена скрытых тестов не раскрываются', () => {
+    const r = summarizeProjectResult({
+      tests: { passed: 19, total: 20, score: 0.95 },
+      hiddenTests: [{ name: 'h1', passed: true }, { name: 'h2', passed: false }],
+      lint: { status: 'skipped', note: '' },
+    });
+    expect(r).toMatchObject({ score: 0.95, passed: 19, total: 20, failed: [] });
+  });
+
   it('формат lane project: счёт из tests, имена только видимых, незакрытые критерии рубрики', () => {
     const r = summarizeProjectResult({
       tests: { passed: 12, total: 15, score: 80 },

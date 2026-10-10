@@ -18,8 +18,6 @@ import {
   type MatchTarget,
   type RankedCandidate,
 } from './ranking';
-import { loadDefenseRooms, loadStageEvidence, type DefenseRoomLink } from './stages-load';
-import { maskProjectBlock } from './stages';
 import { getVacancy, type VacancyView } from './vacancies';
 
 export interface MatchItem extends RankedCandidate {
@@ -27,11 +25,6 @@ export interface MatchItem extends RankedCandidate {
   candidate: CandidateCard;
   /** Последнее приглашение этой компании кандидату (по любой потребности) или null. */
   invitation: { id: string; status: InvitationStatus; vacancyId: string | null } | null;
-  /**
-   * Активная или ожидающая защита (кнопка «Комната защиты»). Только у кандидата, принявшего приглашение
-   * (до этого страница комнаты отвечает 404); нет сессии — поля нет.
-   */
-  defenseRoom?: DefenseRoomLink | null;
 }
 
 export interface MatchResult {
@@ -77,7 +70,6 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
     },
     orderBy: { id: 'asc' },
   });
-  const stages = await loadStageEvidence(rows.map((r) => r.id));
   return rows.map((r) => ({
     name: r.name,
     email: r.email,
@@ -89,8 +81,6 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       fspState: r.fspState,
       category: r.categories[0] ?? null,
       claims: r.claims,
-      ...(stages.get(r.id)?.calls ? { calls: stages.get(r.id)!.calls } : {}),
-      ...(stages.get(r.id)?.projects ? { projects: stages.get(r.id)!.projects } : {}),
     },
     claimsPublic: dedupeClaims(r.claims, catalog),
   }));
@@ -132,7 +122,6 @@ async function run(
   const top = ranked.slice(0, limit);
   const ids = top.map((r) => r.candidateId);
   const [accepted, invites] = await Promise.all([acceptedCandidateIds(companyId, ids), lastInvitations(companyId, ids)]);
-  const rooms = await loadDefenseRooms(companyId, [...accepted]);
   const items = top.map((r, i) => {
     const p = byId.get(r.candidateId)!;
     const candidate = toCandidateCard(
@@ -148,10 +137,7 @@ async function run(
       },
       accepted.has(r.candidateId),
     );
-    // R-C-16: пояснения рубрики проекта до принятого приглашения проходят maskContacts.
-    const explanation =
-      r.explanation.project && !accepted.has(r.candidateId) ? { ...r.explanation, project: maskProjectBlock(r.explanation.project) } : r.explanation;
-    return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null };
+    return { ...r, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null };
   });
   return { total: ranked.length, items };
 }
@@ -161,7 +147,6 @@ export async function matchForVacancy(companyId: string, vacancyId: string, filt
   const vacancy = await getVacancy(companyId, vacancyId);
   const catalog = await loadCatalog();
   const target: MatchTarget = {
-    vacancyId: vacancy.id,
     specialization: vacancy.specialization,
     subcategoryId: vacancy.subcategoryId,
     grade: vacancy.grade,

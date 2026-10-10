@@ -275,7 +275,10 @@ export function scoreCandidate(c: CandidateEvidence, target: MatchTarget, catalo
   const base = categoryOnly
     ? `Категория ${categoryLabel(c.category!)} подтверждена тестом; требования потребности не доказаны утверждениями. ФСП: ${fspText(c.fspState)}${subText ? `. Подкатегория: ${subText}` : ''}${stackMatched.length ? `. Стек в подтверждённых цитатах: ${stackMatched.join(', ')}` : ''}.`
     : `${parts.join('. ')}.`;
-  const summary = stages ? `${base} ${stages[0]!.toUpperCase()}${stages.slice(1)}.` : base;
+  const ownNoCategory = Boolean(ownProject) && !categoryMatch;
+  const note = ownNoCategory ? ' Показан за проверенный проект; категории под потребность нет.' : '';
+  const summary0 = stages ? `${base} ${stages[0]!.toUpperCase()}${stages.slice(1)}.` : base;
+  const summary = `${summary0}${note}`;
 
   return {
     candidateId: c.id,

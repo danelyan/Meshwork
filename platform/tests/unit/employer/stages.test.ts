@@ -140,6 +140,13 @@ describe('балл: проект под ЭТУ потребность и тем�
     expect(r.ownProject).toBe(true);
   });
 
+  it('проект под потребность без категории: summary объясняет, почему кандидат показан', () => {
+    const noCat = scoreCandidate(cand('p', { claims: [], projects: [project()] }), target, catalog)!;
+    expect(noCat.explanation.summary).toMatch(/Показан за проверенный проект; категории под потребность нет\.$/);
+    const withCat = scoreCandidate(cand('q', { category: { specialization: 'backend', grade: 'middle' }, projects: [project()] }), target, catalog)!;
+    expect(withCat.explanation.summary).not.toMatch(/Показан за проверенный проект/);
+  });
+
   it('ранжирование: кандидат с проектом под потребность выше такого же без проекта', () => {
     const r = rankCandidates([cand('a'), cand('b', { projects: [project()] })], target, catalog);
     expect(r.map((x) => x.candidateId)).toEqual(['b', 'a']);

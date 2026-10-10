@@ -40,8 +40,9 @@ export interface ProjectResultSummary {
 }
 
 /**
- * resultJson сабмита (lane project): ждём `tests: [{name, passed}]`, допускаем `score` 0…1 или 0…100
- * и `rubric/lint` как замечания. Формат ещё не зафиксирован — читаем терпимо, остальное игнорируем.
+ * resultJson сабмита: формат lane project `tests: {passed, total, score}` (score 0…100, сводка 0…1 тоже
+ * читается) — имена упавших только из visibleTests; старый формат `tests: [{name, passed}]`, `score`
+ * 0…1 или 0…100, `rubric/lint` как замечания. Читаем терпимо.
  */
 export function summarizeProjectResult(result: unknown): ProjectResultSummary | null {
   if (!result || typeof result !== 'object') return null;
@@ -54,7 +55,8 @@ export function summarizeProjectResult(result: unknown): ProjectResultSummary | 
     const rubric = r.rubric as { results?: { text?: unknown; passed?: unknown }[] } | undefined;
     const missed = (rubric?.results ?? []).filter((x) => x.passed === false).map((x) => `критерий не закрыт: ${String(x.text).slice(0, 200)}`);
     return {
-      score: typeof t.score === 'number' ? Math.max(0, Math.min(1, t.score / 100)) : null,
+      // lane project пишет 0…100; сводка 0…1 (старые сабмиты, eval) читается как есть.
+      score: typeof t.score === 'number' && Number.isFinite(t.score) ? Math.max(0, Math.min(1, t.score > 1 ? t.score / 100 : t.score)) : null,
       passed: typeof t.passed === 'number' ? t.passed : 0,
       total: typeof t.total === 'number' ? t.total : 0,
       failed: visible.filter((x) => x.passed === false).map((x) => String(x.name).slice(0, 120)).slice(0, 5),

@@ -3,6 +3,7 @@
 import { POST as needProject } from '@/app/api/employer/needs/[id]/project/route';
 import { GET as matches } from '@/app/api/employer/vacancies/[id]/matches/route';
 import type { Explanation } from '@/server/employer/ranking';
+import { loadDefenseRooms, loadStageEvidence } from '@/server/employer/stages-load';
 import { createInvitation } from '@/server/employer/invitations';
 import { signUserSession } from '@/server/session';
 
@@ -171,5 +172,42 @@ describe('подборка со ступенями ADR 0003 (БД)', () => {
     expect(accepted.candidate.contacts).not.toBeNull();
     expect(accepted.explanation.project.own!.criteria[0]!.evidence).toContain('ivan@example.com');
     expect(accepted.defenseRoom).toEqual({ sessionId: pending.id, status: 'pending' });
+  });
+
+  it('loadDefenseRooms: только своя компания и сессии без сабмита; идущая важнее ожидающей', async () => {
+    await prisma.candidate.deleteMany({ where: { id: 'ec-room' } });
+    await makeCandidate('ec-room');
+    const own = await checkedSubmission('ec-room', taskId, 0.5, 'x');
+    const other = await prisma.projectTask.findFirstOrThrow({ where: { vacancyId: 'v-x' } });
+    const foreign = await checkedSubmission('ec-room', other.id, 0.5, 'y');
+    const mk = (status: 'pending' | 'active' | 'finished', projectSubmissionId: string | null) =>
+      prisma.callSession.create({ data: { candidateId: 'ec-room', kind: 'defense', status, projectSubmissionId, policyVersion: 'v', transcriptJson: [] } });
+    await mk('active', foreign.id); // чужая компания: не показываем, хотя идёт
+    await mk('finished', own.id);
+    expect((await loadDefenseRooms(PROFILE.companyId, ['ec-room'])).size).toBe(0);
+    const pending = await mk('pending', own.id);
+    expect((await loadDefenseRooms(PROFILE.companyId, ['ec-room'])).get('ec-room')).toEqual({ sessionId: pending.id, status: 'pending' });
+    const active = await mk('active', null);
+    expect((await loadDefenseRooms(PROFILE.companyId, ['ec-room'])).get('ec-room')).toEqual({ sessionId: active.id, status: 'active' });
+    expect((await loadDefenseRooms(PROFILE.companyId, [])).size).toBe(0);
+  });
+
+  it('пустой последний вердикт и результат не затеняют старый валидный', async () => {
+    await prisma.candidate.deleteMany({ where: { id: 'ec-shadow' } });
+    await makeCandidate('ec-shadow');
+    await prisma.callSession.create({
+      data: {
+        candidateId: 'ec-shadow', kind: 'qualifying', status: 'finished', finishedAt: new Date('2026-10-01T00:00:00Z'), policyVersion: 'v', transcriptJson: [],
+        verdictJson: { kind: 'qualifying', depthMap: [{ topic: 'REST', catalogId: 'be.rest-design', claimed: true, probed: 1, confirmed: true, total: 6 }], evaluatedAt: 'old' },
+      },
+    });
+    await prisma.callSession.create({ data: { candidateId: 'ec-shadow', kind: 'qualifying', status: 'finished', finishedAt: new Date(), policyVersion: 'v', transcriptJson: [] } });
+    const good = await checkedSubmission('ec-shadow', taskId, 0.7, 'ok');
+    await prisma.projectSubmission.update({ where: { id: good.id }, data: { checkedAt: new Date('2026-10-01T00:00:00Z') } });
+    await prisma.projectSubmission.create({ data: { projectTaskId: taskId, candidateId: 'ec-shadow', repoUrl: 'https://github.com/x/y', status: 'checked', checkedAt: new Date() } });
+    const ev = (await loadStageEvidence(['ec-shadow'])).get('ec-shadow')!;
+    expect(ev.calls?.qualifying?.confirmedTopics).toEqual(['REST']);
+    expect(ev.projects).toHaveLength(1);
+    expect(ev.projects![0]!.score).toBe(0.7);
   });
 });

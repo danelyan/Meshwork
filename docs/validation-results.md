@@ -546,59 +546,31 @@ persona — ложное подтверждение 32,5 → 33,5 %, ложны�
 | 0.6 | 7–10 | 75.0 % | 8.2 % | 41.9 % | 78.2 % | 8.87 |
 | 0.6 | 8–12 | 75.3 % | 6.5 % | 42.9 % | 80.5 % | 10.23 |
 
-## Направление ai (ADR 0003, дополнение 10.10) — персоны и θ-синтетика, параметры заданий экспертные
+## Тест на грейд: backend по подкатегориям (10.10, ADR 0003 «тест на подкатегорию»)
 
-Банк: 15 генераторов `ai.*` (7 Junior, 8 Middle; `src/server/test/generators/ai.ts`), политика та же
-(`POLICY_VERSION`, пороги Junior −0,7 / Middle −0,1, дозадавание Junior). `a`, `b` — экспертные, в коридоре
-backend/frontend; на людях не оценены. Персоны — модели знаний, заданные агентом (легенды — в
-`eval/test/personas.ts`), не живые люди. 10.10, МСК.
+Пул теста — семейства подкатегории (`subcategoryId`), по 8 на каждую: 4 Junior (b от −1,5 до −0,4) + 4 Middle (b от 0,3 до 0,8), a 1,0–1,4. Всего 32 семейства `be.*` (12 прежних размечены + 20 новых). Параметры a, b — экспертные, не менялись после прогона персон.
 
-Команды (из `platform/`):
+| Подкатегория | Junior | Middle |
+|---|---|---|
+| web-api | http-semantics, pagination-offset, validation-rules, find-bug-idor | cursor-pagination, proxy-retry, rate-limit-window, optimistic-lock |
+| integrations | json-mapping, timeout-budget, retryable-status, webhook-dedup | retry-policy, delivery-semantics, payment-retry, circuit-breaker |
+| highload | pool-capacity, lru-hits, n-plus-one, shell-output | queue-backpressure, cache-consistency, index-choice, cache-stampede |
+| data-model | sql-rowcount, fk-actions, transaction-scope, schema-constraint | upsert-conflict, deadlock-commits, lost-update, isolation-anomaly |
 
-```bash
-npm run eval:test-personas -- --spec ai                 # seed 1, N = 2000 на персону и грейд
-npx tsx eval/test/personas.ts --spec ai --seed 2
-npx tsx eval/test/run.ts --n 2000 --seed 1              # синтетика: backend, frontend, ai
-```
+Персоны на подкатегорию (`npx tsx eval/test/personas.ts --subcategory backend.web-api --n 2000`): новичок (Junior-задания наполовину у двух, остальное нет), уверенный Junior (4 Junior верно, Middle наполовину у двух), Middle, идеальный Junior (все Junior верно, Middle неверно). Матрицы знаний — гипотеза агента, не люди.
 
-### Персоны (seed 1 / seed 2)
+| Подкатегория | Новичок: P(Junior) | Junior: P(Junior) | Идеальный Junior: P(Junior) | Middle: P(Middle) | Junior в 1 клик у уверенного Junior, заявившего Middle |
+|---|---|---|---|---|---|
+| web-api | 0,000 | 1,000 | 1,000 | 1,000 | 0,78 |
+| integrations | 0,000 | 1,000 | 1,000 | 1,000 | 0,74 |
+| highload | 0,000 | 1,000 | 1,000 | 1,000 | 0,77 |
+| data-model | 0,000 | 1,000 | 1,000 | 1,000 | 0,77 |
 
-| Персона | Легенда | Уровень | Заявил Junior: P(Junior) | Длина | Заявил Middle: P(Middle) | Junior в 1 клик |
-|---|---|---|---|---|---|---|
-| A1 | аналитик в Excel, пользуется ChatGPT | ниже Junior | **0,000 / 0,000** | 9,43 | 0,000 | 0,000 |
-| A2 | курсы Python + ML 3 мес. | ниже Junior | **0,018 / 0,021** | 10,89 | 0,000 | 0,021 / 0,014 |
-| A3 | Junior: год делает бота на GigaChat с RAG | Junior | 0,917 / 0,923 | 8,83 | 0,145 / 0,140 | 0,772 / 0,785 |
-| A4 | Junior DS после магистратуры, слабый в LLM | Junior | **0,584 / 0,591** | 10,29 | 0,058 / 0,066 | 0,508 / 0,500 |
-| A5 | Middle ML-инженер, 3 года в продакшене | Middle | 1,000 / 1,000 | 7,00 | 1,000 / 1,000 | 0,000 |
-| JA | контроль: все Junior верно, все Middle неверно | — | 0,902 / 0,920 | 12,89 | 0,000 / 0,000 | 0,908 / 0,912 |
-
-Новички проходят Junior в 0–2,1 % (цель ADR — не больше 10 %): подстройка `a`/`b` не понадобилась.
-Цифры backend/frontend от добавления персон ai не изменились (seed персон не сдвигаются;
-`--spec backend,frontend` даёт прежние суммы 0,13 / 0,13).
-
-**Цена, честно.**
-- A4 (узкий Junior: сильный в ML, слабый в LLM) подтверждает Junior лишь в **0,58**: из 7 Junior-заданий
-  у него уверенно 3, остальные — монета. Банк ai перекошен в LLM (4 из 7 Junior-заданий про LLM/RAG/ПДн).
-  Это свойство банка, не порога; лечится Junior-заданиями data-science/ml-engineering или подкатегорийным
-  банком — вопрос владельцу.
-- Идеальный Junior ai (JA) — **0,90–0,92**, у backend/frontend — 1,00: Junior-заданий 7 из 15, и после
-  основной фазы дозадавание (до 3) часто исчерпывает Junior-шаблоны раньше, чем P(Junior) переходит 0,8.
-
-### θ-синтетика (`run.ts --n 2000 --seed 1`, популяция `persona`)
-
-| Метрика | backend | frontend | ai |
-|---|---|---|---|
-| Точность решения | 71,9 % | 71,7 % | 69,6 % |
-| Ложное подтверждение | 32,0 % | 31,9 % | 34,4 % |
-| Ложный отказ | 24,3 % | 24,8 % | 26,4 % |
-| AUC θ̂: Middle против Junior | 0,694 | 0,696 | 0,658 |
-| AUC θ̂: Junior против новичка | 0,854 | 0,866 | 0,864 |
-| Test-retest: совпадение исхода | 70,7 % | 69,7 % | 69,8 % |
-| Средняя длина, заданий | 8,91 | 8,89 | 9,28 |
-| Максимальная доля попыток с одним шаблоном | 0,95 | 0,94 | 0,93 |
-
-Синтетика ai — того же порядка, что backend/frontend, и так же не достигает целей ADR (точность ≥ 85 %):
-это свойство банка из 12–15 заданий и экспертных `a`, а не направления. Цели и ограничения — § «Тест на грейд» выше.
+Цели (новичок ≤ 10 %, Junior ≥ 90 %, идеальный Junior ≈ 1) выполнены. Оговорки:
+- первая версия персоны «уверенный Junior» (3 из 4 Junior-заданий верно, 4-е наполовину) давала 0,74–0,77: на 4 Junior-заданиях такой профиль честно неуверенный; персона приведена к профилю B3 (все Junior верно), a и b заданий не менялись;
+- новичок слабее B2 («курсы Python»): близкий к границе новичок (например, 3 из 4 Junior-заданий наполовину) не проверялся;
+- Junior в 1 клик при заявке Middle ≈ 0,75: в пуле из 8 только 4 Junior-задания; до 90 % в этом режиме не доходит;
+- ключ каждого нового семейства проверен независимым решением по тексту условия на 300 seed (`tests/unit/test/backend-subcategories.test.ts`). Сверено с документацией PostgreSQL 17 (Context7): откат REPEATABLE READ при конкурентном UPDATE, действия внешнего ключа (NO ACTION, RESTRICT, CASCADE, SET NULL), взаимная блокировка строк. По знанию агента, без сверки: коды HTTP, семантика If-Match/412, ON CONFLICT, пул соединений, circuit breaker, LRU/FIFO.
 
 ## Языковая модель (Yandex Cloud, 9 октября)
 

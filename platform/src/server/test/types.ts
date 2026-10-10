@@ -26,16 +26,12 @@ export interface TaskGenerator {
   taskId: string;
   title: string;
   specialization: Specialization;
+  grade: Grade;
   /**
-   * Подкатегория семейства ("ai.llm-apps", "backend.web-api") из src/lib/directions.ts (ADR 0003, дополнение
-   * 10.10 15:50: тест — на подкатегорию). Пул попытки — только семейства подкатегории кандидата; тест по
-   * подкатегории доступен при ≥ MIN_FAMILIES_PER_SUBCATEGORY (8) семействах, Junior и Middle.
-   * Необязательно ТОЛЬКО на переходный период, пока лейны генераторов размечают свои семейства: если у
-   * направления не размечено ни одно семейство, тест идёт по старому пулу направления (generators/index.ts,
-   * poolFor → legacy). Семейство без subcategoryId в размеченном направлении в пул не попадает.
+   * Подкатегория направления (ADR-0003, дополнение 10.10 15:50): "backend.web-api". Пул теста — семейства
+   * подкатегории кандидата; не размечено — в пул подкатегории не попадает.
    */
   subcategoryId?: string;
-  grade: Grade;
   /** Утверждения каталога, которые подтверждает решённое задание. */
   catalogIds: string[];
   format: AnswerFormat;
@@ -140,6 +136,5 @@ export interface EligibilityView {
   allowed: boolean;
   reason?: string;
   nextAllowedAt?: string;
-  /** no_test — для направления нет генераторов заданий (тест пока недоступен). */
-  code?: 'active_attempt' | 'grade_change_too_soon' | 'retake_too_soon' | 'no_test';
+  code?: 'active_attempt' | 'grade_change_too_soon' | 'retake_too_soon';
 }

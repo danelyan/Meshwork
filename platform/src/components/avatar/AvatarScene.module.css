@@ -28,6 +28,32 @@
 .callChat.callChat { height: min(42svh, 380px); min-height: 260px; background: var(--surface-input); }
 .callChat > header { display: none; }
 
+/* Лента-«готовый узел» (слитая лента /consultant) в сценах B и C: свой скролл вместо высоты Chat */
+.feedBox { max-height: min(60svh, 560px); overflow-y: auto; background: var(--surface-input); }
+
+/* Запас под прокрутку окна: лента при новой реплике делает scrollIntoView, окно чуть едет —
+   сцена липкая и остаётся на месте (без запаса липкому нечем двигаться: контейнер = сцена) */
+.sideOuter { background: var(--paper); }
+.sideSpacer { height: 200px; } /* именно элемент, не padding: липкий ограничен контентным боксом родителя */
+/* --- D: звонок + чат слева. Тёмная сцена C, слева светлая панель 440px на всю высоту --- */
+.sideScene { display: grid; grid-template-columns: minmax(420px, 460px) minmax(0, 1fr); grid-template-areas: 'panel stage'; position: sticky; top: var(--landing-header-h); isolation: isolate; height: calc(100svh - var(--landing-header-h)); min-height: 560px; background: var(--avatar-stage); }
+.sideStage { grid-area: stage; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.sideHead { position: relative; flex: 1; min-height: 240px; }
+.sideSubs { flex: none; width: min(640px, 100%); margin: 0 auto; padding: 8px 32px 28px; }
+.sidePanel { grid-area: panel; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--paper); border-right: 1px solid var(--line); padding: 0 16px;
+  /* шапка кабинета над панелью не липнет: липкое внутри панели прижимается к её верху */
+  --landing-header-h: 0px; }
+.sidePanel > div { min-height: 0; }
+.sideChat.sideChat { height: auto; min-height: 100%; border: 0; background: transparent; }
+
+@media (max-width: 1050px) {
+  .sideSpacer { display: none; }
+  .sideScene { position: relative; top: auto; display: flex; flex-direction: column; height: auto; min-height: calc(100svh - var(--landing-header-h)); }
+  .sideStage { flex: none; position: sticky; top: var(--landing-header-h); z-index: 6; height: 40svh; min-height: 260px; border-bottom: 1px solid var(--avatar-stage-line); background: var(--avatar-stage); }
+  .sideHead { min-height: 0; }
+  .sideSubs { padding: 4px 16px 12px; min-height: 3.6em; }
+  .sidePanel { overflow: visible; border-right: 0; border-top: 1px solid var(--line); }
+}
 @media (max-width: 1050px) {
   .portraitScene { display: flex; flex-direction: column; }
   .conversation { width: 100%; padding: 20px var(--page-pad); }

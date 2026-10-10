@@ -21,12 +21,15 @@ export function Thread({ label, children, className }: { label: string; children
   );
 }
 
-/** Знак помощника (логотип ФСП из шапки). Декоративный: смысл — в тексте реплики. */
+/**
+ * Аватар помощника в ленте: статичный рендер лица 6 (public/avatar/face-6.png, 96px под retina).
+ * Звезда ФСП остаётся в шапке. Декоративный: смысл — в тексте реплики.
+ */
 export function AssistantMark() {
   return (
-    <span className={styles.mark} aria-hidden="true">
+    <span className={cx(styles.mark, styles.markFace)} aria-hidden="true" data-testid="assistant-face">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/fsp-mark.svg" alt="" />
+      <img src="/avatar/face-6.png" alt="" width={32} height={32} />
     </span>
   );
 }

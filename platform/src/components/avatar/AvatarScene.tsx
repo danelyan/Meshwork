@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { Chat } from '../Chat';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
@@ -9,7 +11,7 @@ import { MuteToggle, StateChip, StopButton, Subtitles } from './Speaking';
 import { CompanionVoiceProvider } from './voice';
 import styles from './AvatarScene.module.css';
 
-export type AvatarSceneVariant = 'portrait' | 'inline' | 'call';
+export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
 
 /**
  * Сцены консультанта с нашей головой (варианты экрана для выбора). Сцена держит свой
@@ -17,15 +19,20 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call';
  * подхватывает его, а не создаёт свой. ConsultantScene Карины не затронут.
  *  - `portrait` — «Портрет-собеседник»: сетка 44/56, справа липкий портрет с субтитрами;
  *  - `inline` — «Голова в ленте»: липкая голова ~160px над лентой, без правой колонки;
- *  - `call` — «Видеозвонок»: голова крупно по центру, лента — полупрозрачный транскрипт снизу.
+ *  - `call` — «Видеозвонок»: голова крупно по центру, лента — полупрозрачный транскрипт снизу;
+ *  - `call-side` — «Звонок + чат слева» (D = C + A): тёмный экран звонка, слева светлая панель чата
+ *    на всю высоту с полной лентой и вводом; уже 1050px — панель снизу, голова сверху ~40vh.
+ * `children` — готовая лента (слитая лента /consultant: онбординг + консультант, см.
+ * components/consultant/ConsultantFeed); без них сцена рисует обычный `Chat`.
  */
-export function AvatarScene({ variant, demo, initial }: { variant: AvatarSceneVariant; demo?: ChatDemoContext; initial?: RestoredChat }) {
+export function AvatarScene({ variant, demo, initial, children }: { variant: AvatarSceneVariant; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode }) {
+  const feed = (className?: string) => children ?? <Chat demo={demo} initial={initial} className={className} />;
   return (
     <CompanionVoiceProvider autoEnable>
       {variant === 'portrait' && (
         <div className={styles.portraitScene} data-testid="scene-portrait">
           <div className={styles.conversation}>
-            <Chat demo={demo} initial={initial} />
+            {feed()}
           </div>
           <aside className={styles.portrait} aria-label="ИИ-консультант">
             <HeadView />
@@ -56,7 +63,7 @@ export function AvatarScene({ variant, demo, initial }: { variant: AvatarSceneVa
             </div>
           </div>
           <div className={styles.inlineChat}>
-            <Chat demo={demo} initial={initial} className={styles.inlineChatBox} />
+            {children ? <div className={styles.feedBox}>{children}</div> : feed(styles.inlineChatBox)}
           </div>
         </div>
       )}
@@ -74,8 +81,32 @@ export function AvatarScene({ variant, demo, initial }: { variant: AvatarSceneVa
             </div>
           </div>
           <div className={styles.callTranscript}>
-            <Chat demo={demo} initial={initial} className={styles.callChat} />
+            {children ? <div className={styles.feedBox}>{children}</div> : feed(styles.callChat)}
           </div>
+        </div>
+      )}
+      {variant === 'call-side' && (
+        <div className={styles.sideOuter}>
+          <div className={styles.sideScene} data-testid="scene-call-side">
+            <section className={styles.sideStage} aria-label="ИИ-консультант">
+              <div className={styles.sideHead}>
+                <HeadView />
+                <span className={styles.badge}>ИИ-консультант</span>
+                <div className={styles.callTop}>
+                  <StateChip />
+                  <MuteToggle />
+                </div>
+                <div className={styles.callStop}>
+                  <StopButton />
+                </div>
+              </div>
+              <Subtitles className={styles.sideSubs} />
+            </section>
+            <div className={styles.sidePanel} data-testid="side-panel">
+              {feed(styles.sideChat)}
+            </div>
+          </div>
+          <div className={styles.sideSpacer} aria-hidden="true" />
         </div>
       )}
     </CompanionVoiceProvider>

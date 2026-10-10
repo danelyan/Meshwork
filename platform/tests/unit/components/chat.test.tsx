@@ -187,13 +187,13 @@ describe('Chat', () => {
 });
 
 describe('Chat: общая лента с онбордингом', () => {
-  it('приветствие — реплика помощника со знаком ФСП, ответ пользователя — пузырь; Enter отправляет', async () => {
+  it('приветствие — реплика помощника с аватаром (лицо 6), ответ пользователя — пузырь; Enter отправляет', async () => {
     const fetchMock = vi.fn(async () => new Response(streamOf([frame({ type: 'message', text: 'Принял' }) + frame({ type: 'done' })]), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     render(<Chat />);
     const greeting = screen.getByTestId('chat-greeting');
     expect(greeting.textContent).toMatch(/Пришли резюме/);
-    expect(greeting.querySelector('img[src="/assets/fsp-mark.svg"]')).not.toBeNull();
+    expect(greeting.querySelector('img[src="/avatar/face-6.png"]')).not.toBeNull();
     const input = screen.getByLabelText('Сообщение');
     fireEvent.change(input, { target: { value: 'привет' } });
     fireEvent.keyDown(input, { key: 'Enter' });

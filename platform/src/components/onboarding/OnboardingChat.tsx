@@ -69,6 +69,9 @@ const draftOf = (s: StepView) => (s.kind === 'text' && typeof s.value === 'strin
  * карьерным консультантом (Chat embedded). Логика шагов — на сервере; клиент показывает OnboardingView.
  */
 export function OnboardingChat(props: OnboardingChatProps) {
+  // Сцена с головой (AvatarScene, /design/consultant-*) держит провайдер голоса сама: лента подхватывает его.
+  const outer = useCompanionVoice();
+  if (outer) return <OnboardingChatBody {...props} />;
   return (
     <CompanionVoiceProvider>
       <OnboardingChatBody {...props} />
@@ -140,11 +143,11 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setPending(bubble ?? null);
     try {
       const v = await onboardingAct(body);
-      // Роль выбрана — страница /consultant перерисовывается под роль (данные кандидата или помощник
-      // по подбору приходят с сервера); шаги на сервере, откроется с того же места; кука уже обновлена.
-      const roleChosen = roleRef.current === 'pending' && v.role !== 'pending';
+      // Выбрана роль «специалист» на /onboarding — знакомство продолжается в ленте консультанта
+      // (состояние шагов на сервере, откроется с того же места; кука роли уже обновлена ответом).
+      const roleChosen = roleRef.current === 'pending' && v.role === 'candidate';
       roleRef.current = v.role;
-      if (roleChosen) {
+      if (!inConsultant && roleChosen) {
         window.location.assign(CANDIDATE_FEED_PATH);
         return;
       }
@@ -175,8 +178,9 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setBusy(true);
     setError(null);
     try {
-      // Кандидату сервер ставит знакомство на паузу и ведёт сюда же: лента станет свободным разговором.
-      go((await onboardingLater()).next);
+      const next = (await onboardingLater()).next;
+      // Кабинет кандидата — эта же страница: «позже» уводит в профиль, иначе вернулись бы к шагу.
+      go(inConsultant && next === CANDIDATE_FEED_PATH ? '/profile' : next);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не получилось. Повтори.');
       setBusy(false);
@@ -354,7 +358,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         <div className={styles.topRow}>
           {inConsultant ? (
             <h1 className={styles.sceneTitle}>
-              {view.scenario === 'employer' ? 'Помощник по подбору' : 'Карьерный консультант'}
+              Карьерный консультант
               <span className={styles.title}>{isSummary ? 'Ведёт по платформе' : 'Знакомство'}</span>
             </h1>
           ) : (
@@ -363,7 +367,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
               <span className={styles.title}>Знакомство</span>
             </>
           )}
-          {inConsultant && isSummary && view.scenario !== 'employer' && (
+          {inConsultant && isSummary && (
             <nav className={styles.routes} aria-label="Следующий шаг">
               <Button href="/profile" size="sm">Профиль</Button>
               <Button href="/test" size="sm">Тест</Button>

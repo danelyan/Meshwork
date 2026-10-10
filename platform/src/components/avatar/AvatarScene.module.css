@@ -88,7 +88,14 @@
   .callTop { top: 8px; right: 8px; }
 }
 @media print { .portrait { display: none; } .portraitScene { display: block; } }
-.sideScene { grid-template-columns: minmax(0, 44fr) minmax(0, 56fr); }
+.sideScene { grid-template-columns: var(--panel-w, minmax(0, 44fr)) minmax(0, 56fr); }
+/* Перетаскиваемая граница чата и сцены (PanelSplitter); на узком экране сцена — колонка, разделителя нет. */
+.splitter { position: absolute; z-index: 40; top: 0; bottom: 0; left: calc(var(--panel-w, 44%) - 4px); width: 8px; cursor: col-resize; touch-action: none; }
+.splitter::after { content: ''; position: absolute; inset: 0 3px; background: transparent; transition: background 150ms var(--ease); }
+.splitter:hover::after, .splitter:focus-visible::after { background: var(--blue); }
+.splitter:focus-visible { outline: none; }
+.sideScene[data-call] .splitter { display: none; }
+@media (max-width: 1050px) { .splitter { display: none; } }
 /* Созвон: панель звонка на всю высоту справа, колонка «Твой путь»/карточки прячется — иначе карточка согласия налезает на неё. */
 .sideScene.withAside[data-call] { grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; }
 .sideScene[data-call] .sideAside { display: none; }

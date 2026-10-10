@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef } from 'react';
 
 import { AsideProvider } from '../consultant/aside-refresh';
 import { SceneAside } from '../consultant/SceneAside';
@@ -16,6 +16,7 @@ import type { CallKind } from '@/server/call/types';
 
 import { CallProvider, useCallMode } from '../call/CallContext';
 import { HeadView } from './HeadView';
+import { PanelSplitter } from './PanelSplitter';
 import { useSceneTheme } from './scene-theme';
 import { MuteToggle, StateChip, StopButton, Subtitles } from './Speaking';
 import { CompanionVoiceProvider } from './voice';
@@ -113,9 +114,11 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
   const inCall = Boolean(call?.open);
   // светлая по умолчанию; созвон всегда на тёмной сцене (tokens.css, data-scene-theme)
   const theme = useSceneTheme();
+  const sceneRef = useRef<HTMLDivElement>(null);
   const dark = theme === 'dark' || inCall;
   return (
-    <div className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-call={inCall || undefined} data-scene-theme={theme}>
+    <div ref={sceneRef} className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-call={inCall || undefined} data-scene-theme={theme}>
+      <PanelSplitter scene={sceneRef} />
       <section className={styles.sideStage} aria-label={label}>
         {inCall ? (
           <CallPanel />

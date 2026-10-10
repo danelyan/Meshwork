@@ -6,8 +6,8 @@
 .road { grid-column: 1 / -1; }
 .aside > :last-child:nth-child(even) { grid-column: 1 / -1; }
 .box { min-height: 100%; display: grid; }
-/* широкая колонка: все карточки в один ряд; у работодателя их две — по половине */
-@container aside (width >= 880px) and (height >= 380px) {
+/* широкая колонка (каждой карточке от ~300px, владелец 11.10: «слишком узко»): все в один ряд; у работодателя две — по половине */
+@container aside (width >= 1240px) and (height >= 380px) {
   /* один ряд на всю высоту: длинный список прокручивается внутри своей карточки */
   .aside { grid-auto-rows: minmax(0, 1fr); }
   .card { min-height: 0; }

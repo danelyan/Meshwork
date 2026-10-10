@@ -35,27 +35,16 @@ describe('journey steps', () => {
 
 describe('SceneAside', () => {
   const data = { role: 'candidate' as const, steps: candidateSteps(base), docs: [], hint: { title: 'Документы', text: 'Прикрепи файл' } };
-  it('renders roadmap, empty documents with the attach button and the hint', () => {
+  it('renders roadmap, empty files card with the drop zone and the hint', () => {
     render(<SceneAside data={data} />);
     expect(screen.getByTestId('journey-intro').getAttribute('data-state')).toBe('now');
-    expect(screen.getByRole('button', { name: 'Прикрепить' })).toBeTruthy();
+    expect(screen.getByTestId('files-drop')).toBeTruthy();
     expect(screen.getByText('Прикрепи файл')).toBeTruthy();
-  });
-  it('attach clicks the composer paperclip inside the feed', () => {
-    const clicked = vi.fn();
-    render(
-      <div data-feed-scroll>
-        <button type="button" aria-label="Прикрепить файл" onClick={clicked} />
-        <SceneAside data={data} />
-      </div>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Прикрепить' }));
-    expect(clicked).toHaveBeenCalled();
   });
   it('lists documents with their parse status and toggles the accordion', () => {
     render(<SceneAside data={{ ...data, docs: [{ id: '1', name: 'cv.pdf', kind: 'file', status: 'разобран, 2 утверждения' }] }} />);
     expect(screen.getByText('cv.pdf')).toBeTruthy();
-    const toggle = screen.getByRole('button', { name: /Документы/ });
+    const toggle = screen.getByRole('button', { name: /Файлы и ссылки · 1/ });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');

@@ -1,0 +1,53 @@
+/* «Файлы и ссылки» в тёмной колонке сцены: только токены (tokens.css, блок аватара). */
+.root { display: grid; gap: 10px; }
+
+.drop {
+  display: grid; gap: 4px; justify-items: center; text-align: center;
+  padding: 14px 12px; cursor: pointer;
+  border: 1px dashed var(--border-soft); background: var(--stage-card);
+  transition: border-color 120ms, background 120ms;
+}
+.drop:hover { border-color: var(--stage-ring); }
+.drop:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.drop[data-over] { border-style: solid; border-color: var(--stage-accent); background: var(--surface-hover); }
+.dropTitle { font-size: var(--fs-sm); font-weight: 600; color: var(--on-ink); }
+.dropHint { font-size: var(--fs-xs); color: var(--stage-ink-faint); }
+.hidden { display: none; }
+
+.pending, .docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pendingRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; }
+.pendingRow .status { grid-column: 1; }
+.pendingRow > button { grid-column: 2; grid-row: 1 / span 2; }
+.pendingRow[data-status='error'] .status { color: var(--error); }
+
+.doc { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; }
+.kind { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); border: 1px solid var(--avatar-stage-line); padding: 1px 5px; }
+.name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--on-ink); }
+.status { grid-column: 2; font-size: var(--fs-xs); color: var(--stage-ink-faint); }
+.actions, .confirm { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.confirmText { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--on-ink-soft); }
+
+.link {
+  padding: 0; border: 0; background: none; cursor: pointer;
+  font-size: var(--fs-xs); color: var(--on-ink-soft); text-decoration: underline; text-underline-offset: 2px;
+}
+.link:hover { color: var(--on-ink); }
+.link:focus-visible, .danger:focus-visible, .add:focus-visible, .linkInput:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.danger { padding: 3px 10px; border: 1px solid var(--danger-border); background: none; color: var(--error); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; }
+
+.linkForm { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.linkInput {
+  min-width: 0; padding: 7px 10px; font-size: var(--fs-sm); color: var(--on-ink);
+  background: var(--surface-input); border: 1px solid var(--border-input);
+}
+.linkInput::placeholder { color: var(--stage-ink-faint); }
+.add { padding: 7px 12px; font-weight: 600; font-size: var(--fs-sm); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
+.add:hover:not(:disabled) { background: var(--stage-ink); }
+.add:disabled { opacity: 0.5; cursor: default; }
+
+.note, .error, .muted { margin: 0; font-size: var(--fs-xs); line-height: 1.5; }
+.note { color: var(--on-ink-soft); }
+.error { color: var(--error); }
+.muted { font-size: var(--fs-sm); color: var(--stage-ink-faint); }
+
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -30,9 +30,6 @@ tags:
     name: demo
     description: "Демо-вход и демо-резюме (только при DEMO_LOGIN)"
   -
-    name: directions
-    description: "Справочник направлений и подкатегорий (Subcategory, R-T-05)"
-  -
     name: employer
     description: "Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)"
   -
@@ -54,6 +51,9 @@ tags:
     name: recommendations
     description: "Рекомендации: тест, пробелы, задания, вакансии"
   -
+    name: sources
+    description: "Подключённые ссылки кандидата (GitHub, Codeforces, страницы): удаление"
+  -
     name: stt
     description: "Голосовой ввод (Yandex SpeechKit)"
   -
@@ -64,7 +64,7 @@ tags:
     description: tts
   -
     name: uploads
-    description: "Загрузка резюме и документов"
+    description: "Загрузка резюме и документов: разбор, оригинал, скачивание, удаление"
 paths:
   "/api/auth/consent":
     get:
@@ -2264,24 +2264,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/directions":
-    get:
-      operationId: getDirections
-      tags:
-        - directions
-      summary: "Четыре направления, их подкатегории (Subcategory) и есть ли тест на грейд."
-      description: "четыре направления, их подкатегории (Subcategory) и есть ли тест на грейд. R-T-05, ADR 0003.\n\nВход не нужен."
-      security: []
-      responses:
-        "200":
-          description: "Четыре направления, их подкатегории (Subcategory) и есть ли тест на грейд. R-T-05, ADR 0003."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/employer/assistant/messages":
     post:
       operationId: postEmployerAssistantMessages
@@ -3557,6 +3539,52 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/sources/{id}":
+    delete:
+      operationId: deleteSourcesId
+      tags:
+        - sources
+      summary: "Удалить подключённую ссылку"
+      description: "Удаляет ссылку (url, GitHub, Codeforces, Stack Overflow) со снимком. Неподтверждённые утверждения из неё удаляются, подтверждённые и исправленные человеком остаются.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Удалено"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  deletedClaims:
+                    type: integer
+                    description: "Удалено черновиков"
+                  keptClaims:
+                    type: integer
+                    description: "Осталось подтверждённых и исправленных"
+                required:
+                  - deletedClaims
+                  - keptClaims
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Нет ссылки или чужая"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/stt":
     get:
       operationId: getStt
@@ -3895,20 +3923,11 @@ paths:
                   enum:
                     - backend
                     - frontend
-                    - ai
-                    - engineering
                 grade:
                   type: string
                   enum:
                     - junior
                     - middle
-                subcategoryId:
-                  anyOf:
-                    -
-                      type: string
-                      maxLength: 64
-                    -
-                      type: "null"
               required:
                 - specialization
                 - grade
@@ -4008,7 +4027,7 @@ paths:
       tags:
         - uploads
       summary: "Загрузить резюме или документ"
-      description: "Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Сам файл не хранится — только извлечённый текст с координатами. Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись.\n\nНужна сессия кандидата (кука cid)."
+      description: "Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Хранится извлечённый текст с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>, только после успешного разбора). Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись без второй копии.\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -4114,6 +4133,89 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "415":
           description: "Нужен multipart/form-data"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/uploads/{id}":
+    delete:
+      operationId: deleteUploadsId
+      tags:
+        - uploads
+      summary: "Удалить загруженный файл"
+      description: "Удаляет оригинал с диска и запись. Неподтверждённые утверждения из файла удаляются, подтверждённые и исправленные человеком остаются.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Удалено"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  deletedClaims:
+                    type: integer
+                    description: "Удалено черновиков"
+                  keptClaims:
+                    type: integer
+                    description: "Осталось подтверждённых и исправленных"
+                required:
+                  - deletedClaims
+                  - keptClaims
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Нет файла или чужой"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/uploads/{id}/file":
+    get:
+      operationId: getUploadsIdFile
+      tags:
+        - uploads
+      summary: "Скачать оригинал загруженного файла"
+      description: "Оригинал файла владельцу: всегда `Content-Disposition: attachment` (filename* по RFC 5987), `X-Content-Type-Options: nosniff`, тип — только PDF/DOCX, иначе application/octet-stream.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Файл PDF или DOCX"
+          content:
+            "application/octet-stream":
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Нет файла, чужой или загружен до хранения оригиналов"
           content:
             "application/json":
               schema:
@@ -4914,8 +5016,6 @@ components:
           enum:
             - backend
             - frontend
-            - ai
-            - engineering
         grade:
           type: string
           enum:
@@ -4950,10 +5050,6 @@ components:
           items:
             type: string
             maxLength: 40
-        subcategoryId:
-          type: string
-          minLength: 1
-          maxLength: 64
         needs:
           minItems: 1
           maxItems: 25
@@ -4978,7 +5074,6 @@ components:
         - grade
         - salaryFrom
         - salaryTo
-        - subcategoryId
         - needs
     VacancyPatch:
       type: object

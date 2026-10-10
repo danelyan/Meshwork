@@ -232,9 +232,12 @@ function useWindowFileDrop(onAdd?: (files: File[]) => void): boolean {
     };
     const drop = (e: DragEvent) => {
       if (!hasFiles(e)) return;
+      // Файл уже принят своей зоной (FilesCard в колонке) — в композер не добавлять.
+      const taken = e.defaultPrevented;
       e.preventDefault();
       depth = 0;
       setOver(false);
+      if (taken) return;
       const list = Array.from(e.dataTransfer?.files ?? []);
       if (list.length) cb.current?.(list);
     };

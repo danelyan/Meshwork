@@ -83,7 +83,7 @@ Route handlers (/api/*): проверка подписанной куки, Zod, 
 | --- | --- |
 | `Candidate` | email, имя, специализация, состояние ФСП (`not_linked`, `no_achievements`, `unavailable`, `linked`), признак демо |
 | `CandidateCategory` | категория (специализация × грейд) с источником «тест» |
-| `Upload` | извлечённый текст с координатами и флаги; **сам файл не хранится**; уникальность по (кандидат, sha256) |
+| `Upload` | извлечённый текст с координатами и флаги; оригинал — файл `<UPLOAD_DIR>/<candidateId>/<sha256>` (`storageKey`; `null` у загрузок до 10.10.2026 — без «скачать»); уникальность по (кандидат, sha256) |
 | `Source` | снимок внешнего источника (он же кэш GitHub/Codeforces), признак подтверждённого владения |
 | `ClaimCatalog` | запись каталога: формулировка, грейды, вес, маркеры, «чем доказать», «что не доказывает», веса по грейдам, смежные |
 | `Claim` | утверждение кандидата: формулировка, уровень, цитата, `sourceRef` (`cv.pdf#p2:l14`), статус `proposed → confirmed / edited / rejected` |
@@ -102,14 +102,15 @@ Route handlers (/api/*): проверка подписанной куки, Zod, 
 
 | Метод и путь | Кто вызывает | Что возвращает |
 | --- | --- | --- |
-| `POST /api/auth/role/switch` `{ role, companyName? }` | шапка (`RoleSwitch`) | переключает активную роль учётки (ADR 0004); нет профиля роли — создаёт его и запускает её знакомство в `/consultant`; та же роль — идемпотентно; перевыпускает куку (в ней id профиля только активной роли), `{ role, next, created, changed }` |
 | `GET /api/health` | стенд, мониторинг | `{ ok, db, llm, time }`; 503, если БД недоступна |
 | `GET /api/demo/login` | экран входа | список демо-кандидатов |
 | `POST /api/demo/login` `{ candidateId }` | страница `/demo` | ставит куку; только для демо-кандидатов; без `DEMO_LOGIN=true` — 404 |
 | `POST /api/demo/login` `{ fresh: true }` | `/demo` → «Новый пользователь» | создаёт `User` (pending, без `onboardedAt`, провайдер `demo`, «Демо-гость N»), ставит куку, ведёт на `/onboarding`; роль и согласие спрашивает чат; без `DEMO_LOGIN=true` — 404 |
 | `POST /api/demo/login` `{ restartUserId }` / `{ restartCandidateId }` | `/demo` → «пройти онбординг заново» | сбрасывает `OnboardingState` и `onboardedAt` демо-аккаунта (профиль, роль, согласие не трогает), логинит, ведёт на `/onboarding` |
 | `DELETE /api/demo/login` | шапка | сбрасывает куку |
-| `POST /api/uploads` (multipart `file`, `kind`) | чат | `{ uploadId, deduplicated, doc: { title, lines, pages, flags, preview } }`; ≤ 5 МБ (415, 413, 422 на ошибки) |
+| `POST /api/uploads` (multipart `file`, `kind`) | чат, «Файлы и ссылки» | `{ uploadId, deduplicated, doc: { title, lines, pages, flags, preview } }`; ≤ 5 МБ (415, 413, 422 на ошибки); оригинал пишется на диск после успешного разбора, повтор того же sha256 копий не плодит |
+| `GET /api/uploads/:id/file` | «Файлы и ссылки» | оригинал владельцу: `attachment` с `filename*` (RFC 5987), `nosniff`, тип только PDF/DOCX; чужое и без оригинала — 404 |
+| `DELETE /api/uploads/:id`, `DELETE /api/sources/:id` | «Файлы и ссылки» | `{ deletedClaims, keptClaims }`: файл (с диска) или ссылка удаляются; неподтверждённые утверждения из них — тоже, подтверждённые и исправленные остаются; чужое — 404 |
 | `POST /api/consultant/messages` `{ conversationId?, text, uploadIds?, urls? }` | чат | поток SSE: `conversation`, `step`, `queue`, `claims`, `ask`, `recommendations`, `delta`, `discard`, `message`, `error`, `done` (см. «События SSE» ниже); второй ход в том же разговоре — 409 `busy` |
 | `GET /api/stt` | композер | `{ mode: 'yandex' \| 'browser' \| 'off', sampleRate, maxBytes }` — режим голосового ввода (env `STT_PROVIDER`); тот же режим — в `<body data-stt>` |
 | `POST /api/stt` (тело — LPCM 16 бит моно 16 кГц, `audio/l16`) | композер | `{ text }` через Yandex SpeechKit v1; только вошедшим; ≤ 1 МБ (≈ 30 с, иначе 413); аудио не хранится; режим не `yandex` — 400 |
@@ -163,7 +164,7 @@ Route handlers (/api/*): проверка подписанной куки, Zod, 
 | Галлюцинация навыка | Закрытый каталог; цитата ≥ 2 слов, дословно в видимом тексте; одно утверждение на id; уровень от источника | `claims/verifier.ts`, `levels.ts` |
 | Чужой GitHub / Codeforces | Максимум «артефакт»; подтверждение владения кодом не реализовано, поэтому «третья сторона» сейчас не выдаётся | `claims/levels.ts` |
 | Чужие данные | Кука подписана HMAC; владение проверяется в каждом сервисе; чужое — 404 | `session.ts`, сервисы |
-| ПДн (152-ФЗ) | Контакты (email, телефоны, мессенджеры, почтовые адреса) заменяются на `[скрыто]` до сохранения и до модели; файл не хранится, только текст; у Yandex-провайдера `store: false`; чужие ПДн не извлекаются | `collector/mask.ts`, `doc.ts`, `llm/providers/yandex-responses.ts` |
+| ПДн (152-ФЗ) | Контакты (email, телефоны, мессенджеры, почтовые адреса) заменяются на `[скрыто]` до сохранения и до модели (в извлечённом тексте; оригинал файла хранится как есть, только владельцу, удаляется им же); у Yandex-провайдера `store: false`; чужие ПДн не извлекаются | `collector/mask.ts`, `doc.ts`, `llm/providers/yandex-responses.ts` |
 | Гонка двух ходов | Один ход на разговор: `pg_try_advisory_xact_lock` в транзакции, второй ход — 409 `busy`; разрыв соединения останавливает цикл | `agent/lock.ts`, `api/consultant/messages` |
 | Накрутка уровня защитой | Одна активная сессия на утверждение (блокировка строки); 2 попытки за 30 дней; защищать можно только подтверждённое утверждение уровня «со слов» или «артефакт»; оценщик не видит резюме; цитата из ответа должна быть дословной и не похожей на обращение к оценщику; порог в коде | `defense/session.ts`, `evaluator.ts` |
 | Расход токенов | Бюджет `LLM_DAILY_TOKEN_BUDGET` (по умолчанию 200 000) за скользящие 24 часа на кандидата; лимит 6 вызовов за ход | `agent/budget.ts`, `loop.ts` |

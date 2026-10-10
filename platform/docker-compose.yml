@@ -36,9 +36,11 @@ services:
       SMTP_PORT: ${SMTP_PORT:-1025}
       # lane runner: автопроверка проектов; токен — RUNNER_TOKEN из .env (без него runner отвечает 503).
       RUNNER_URL: http://runner:8090
+      # Оригиналы файлов кандидатов (резюме, дипломы) — в томе app-data, рядом с аудио созвонов.
+      UPLOAD_DIR: /app/data/uploads
     ports:
       - "3000:3000"
-    # lane call: аудио созвонов кандидата переживает пересборку контейнера
+    # lane call: аудио созвонов; оригиналы загрузок (UPLOAD_DIR) — переживают пересборку контейнера
     volumes:
       - app-data:/app/data
     # runner-net — внутренняя сеть только для вызовов app → runner.

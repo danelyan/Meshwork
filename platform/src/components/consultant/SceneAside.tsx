@@ -6,6 +6,7 @@ import { useState } from 'react';
 import type { AsideDoc, JourneyStep, KnownFact, MarketRow, SceneAsideData } from '@/server/consultant/aside';
 
 import { useAsideData } from './aside-refresh';
+import { FilesCard } from './FilesCard';
 import styles from './SceneAside.module.css';
 
 const STATE_LABEL = { done: 'готово', now: 'сейчас', next: 'дальше' } as const;
@@ -41,14 +42,6 @@ function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint: SceneAsideData['
   );
 }
 
-/** Прикрепить: открывает выбор файла в композере ленты (кнопка-скрепка), иначе ставит фокус в поле ввода. */
-function attach() {
-  const feed = document.querySelector('[data-feed-scroll]');
-  const btn = feed?.querySelector<HTMLButtonElement>('button[aria-label="Прикрепить файл"]');
-  if (btn && !btn.disabled) btn.click();
-  else feed?.querySelector<HTMLElement>('textarea, input[type="text"]')?.focus();
-}
-
 /** Карточка с заголовком; на узком экране сворачивается (аккордеон), на широком всегда раскрыта. */
 function Card({ id, title, className, children }: { id: string; title: string; className?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -69,29 +62,8 @@ function Card({ id, title, className, children }: { id: string; title: string; c
 
 function Docs({ docs }: { docs: AsideDoc[] }) {
   return (
-    <Card id="docs" title={`Документы${docs.length ? ` · ${docs.length}` : ''}`}>
-      {docs.length === 0 ? (
-        <div className={styles.empty}>
-          <p>Пока ничего не загружено. Резюме, диплом или ссылка на GitHub - из них консультант достанет утверждения для профиля.</p>
-          <button type="button" className={styles.attach} onClick={attach}>
-            Прикрепить
-          </button>
-        </div>
-      ) : (
-        <ul className={styles.docs}>
-          {docs.map((d) => (
-            <li key={d.id} className={styles.doc}>
-              <span className={styles.docKind} aria-hidden="true">
-                {d.kind === 'file' ? 'файл' : 'ссылка'}
-              </span>
-              <span className={styles.docName} title={d.name}>
-                {d.name}
-              </span>
-              <span className={styles.docStatus}>{d.status}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+    <Card id="docs" title={`Файлы и ссылки${docs.length ? ` · ${docs.length}` : ''}`}>
+      <FilesCard docs={docs} />
     </Card>
   );
 }

@@ -8,6 +8,7 @@ import type { ExtractedDoc } from '@/server/collector/types';
 import { prisma } from '@/server/db';
 import { AppError, errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
+import { saveOriginal } from '@/server/uploads/storage';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -60,9 +61,10 @@ function brief(doc: ExtractedDoc) {
 }
 
 /**
- * Загрузка резюме/документа: PDF или DOCX ≤ 5 МБ (≤ 20 стр.). Сам файл не хранится —
- * только извлечённый текст с координатами (152-ФЗ: сырые данные не дольше разбора).
- * Повтор того же файла (sha256) у того же кандидата — вернуть прежнюю запись.
+ * Загрузка резюме/документа: PDF или DOCX ≤ 5 МБ (≤ 20 стр.). Хранится извлечённый текст
+ * с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>; скачать и удалить —
+ * GET /api/uploads/:id/file, DELETE /api/uploads/:id). Оригинал пишется только после
+ * успешного разбора. Повтор того же файла (sha256) у того же кандидата — прежняя запись, без копии.
  */
 export const POST = withErrors(async (req: Request) => {
   const candidateId = requireCandidate(req);
@@ -82,14 +84,21 @@ export const POST = withErrors(async (req: Request) => {
 
   const prev = await prisma.upload.findUnique({
     where: { candidateId_sha256: { candidateId, sha256 } },
-    select: { id: true, extracted: true },
+    select: { id: true, extracted: true, storageKey: true },
   });
   if (prev?.extracted) {
+    // Запись из времени до хранения оригиналов — дописать файл к ней.
+    if (!prev.storageKey) {
+      const storageKey = await saveOriginal(candidateId, sha256, buf);
+      await prisma.upload.update({ where: { id: prev.id }, data: { storageKey } });
+    }
     return Response.json({ uploadId: prev.id, deduplicated: true, doc: brief(prev.extracted as unknown as ExtractedDoc) });
   }
 
   const doc = await extractFile(buf, file.name || 'file', file.type, { sourceKind });
+  const storageKey = await saveOriginal(candidateId, sha256, buf);
   const data = {
+    storageKey,
     filename: doc.title,
     mime: doc.meta?.fileKind === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf',
     size: buf.length,

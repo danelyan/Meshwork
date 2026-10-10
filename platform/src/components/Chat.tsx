@@ -17,6 +17,7 @@ import styles from './Chat.module.css';
 import { useAttachments } from './chat/attachments';
 import { Composer } from './chat/Composer';
 import { useAsideRefresh } from './consultant/aside-refresh';
+import { materialsMessage, useMaterialsHandler } from './consultant/materials';
 import { applyAgentEvent } from './chat/stream-items';
 import { AssistantRow, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
 import { scrollToEnd, useStickToBottom } from './chat/scroll';
@@ -148,6 +149,16 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     },
     [pushEvent, embedded, refreshAside],
   );
+
+  // Файлы и ссылки из правой колонки (FilesCard) — тем же ходом, что вложения композера.
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+  useMaterialsHandler((m) => {
+    if (busyRef.current) return 'busy';
+    busyRef.current = true;
+    void send(materialsMessage(m), m.uploadIds, m.urls, m.names);
+    return 'sent';
+  });
 
   async function onSubmit() {
     if (busy) return;

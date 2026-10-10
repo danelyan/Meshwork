@@ -63,6 +63,8 @@ export const envSchema = z
     TTS_FORMAT: z.enum(['mp3', 'oggopus']).default('mp3'),
     /** lane call: папка данных созвонов; аудио кандидата — <CALL_DATA_DIR>/calls/<sessionId>/*.wav. Относительный путь — от cwd. */
     CALL_DATA_DIR: z.string().min(1).default('./data'),
+    /** Оригиналы файлов кандидата (POST /api/uploads): <UPLOAD_DIR>/<candidateId>/<sha256>. Относительный путь — от cwd; в Docker — том app-data. */
+    UPLOAD_DIR: z.string().min(1).default('./data/uploads'),
     /** lane call: лимит квалификационных созвонов кандидата за 24 часа; 0 — без лимита (так на стенде). */
     CALL_DAILY_LIMIT: z.coerce.number().int().min(0).default(5),
     /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */

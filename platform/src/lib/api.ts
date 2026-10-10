@@ -1,6 +1,5 @@
 // Тонкий клиент к API платформы. Контракты других лейнов могут быть заглушками,
 // поэтому ответы разбираются терпимо, а ошибки приводятся к ApiError с понятным текстом.
-import type { Specialization } from '@/lib/directions';
 import type { ProfileView } from '@/server/claims/types';
 import type { OnboardingView } from '@/server/onboarding/types';
 import type { AnswerResult, DefenseQuestion, DefenseSessionView, DefenseVerdict } from '@/server/defense/types';
@@ -57,7 +56,7 @@ export function postJson<T>(url: string, body: unknown): Promise<T> {
 export interface DemoCandidate {
   id: string;
   name: string;
-  specialization: Specialization | null;
+  specialization: 'backend' | 'frontend' | null;
   fspState: string;
   /** Какой файл загрузить и какую ссылку вставить; null — подсказки нет. */
   demoResume?: { fileName: string; link: string } | null;
@@ -149,7 +148,7 @@ export function validateUploadFile(file: { name: string; size: number }): string
   return null;
 }
 
-/** Ответ POST /api/uploads (collector): краткая сводка разбора, сам файл не хранится. */
+/** Ответ POST /api/uploads (collector): краткая сводка разбора; оригинал хранится, скачать — uploadFileHref. */
 export interface UploadResponse {
   uploadId: string;
   deduplicated: boolean;
@@ -163,6 +162,16 @@ export async function uploadFile(file: File): Promise<{ id: string; filename: st
   if (!data.uploadId) throw new ApiError('Сервер не вернул идентификатор файла.', 500);
   return { id: data.uploadId, filename: data.doc?.title || file.name, deduplicated: data.deduplicated };
 }
+
+/** Ответ DELETE /api/uploads/:id и /api/sources/:id: сколько черновиков удалено и сколько утверждений осталось. */
+export interface DeleteMaterialResponse {
+  deletedClaims: number;
+  keptClaims: number;
+}
+export const deleteMaterial = (kind: 'file' | 'link', id: string) =>
+  request<DeleteMaterialResponse>(`/api/${kind === 'file' ? 'uploads' : 'sources'}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+/** Ссылка на скачивание оригинала (GET /api/uploads/:id/file). */
+export const uploadFileHref = (id: string) => `/api/uploads/${encodeURIComponent(id)}/file`;
 
 /** Демо-резюме текущего демо-кандидата как File (GET /api/demo/resume) — для кнопки «Загрузить демо-резюме». */
 export async function fetchDemoResume(fileName: string): Promise<File> {
@@ -251,12 +260,10 @@ export async function answerDefenseApi(sessionId: string, answer: string): Promi
 
 export type { AttemptSummary, AttemptView, EligibilityView, StartResult } from '@/server/test/types';
 
-export const startTestApi = (specialization: Specialization, grade: 'junior' | 'middle', subcategoryId?: string | null) =>
-  postJson<import('@/server/test/types').StartResult>('/api/test/start', { specialization, grade, subcategoryId: subcategoryId ?? undefined });
-export const testEligibilityApi = (specialization: Specialization, grade: 'junior' | 'middle', subcategoryId?: string | null) =>
-  request<import('@/server/test/types').EligibilityView & { rules: string }>(
-    `/api/test/start?specialization=${specialization}&grade=${grade}${subcategoryId ? `&subcategoryId=${encodeURIComponent(subcategoryId)}` : ''}`,
-  );
+export const startTestApi = (specialization: 'backend' | 'frontend', grade: 'junior' | 'middle') =>
+  postJson<import('@/server/test/types').StartResult>('/api/test/start', { specialization, grade });
+export const testEligibilityApi = (specialization: 'backend' | 'frontend', grade: 'junior' | 'middle') =>
+  request<import('@/server/test/types').EligibilityView & { rules: string }>(`/api/test/start?specialization=${specialization}&grade=${grade}`);
 export const getTestAttemptApi = (id: string) => request<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}`);
 export const answerTestApi = (id: string, answer: string) =>
   postJson<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}/answer`, { answer });

@@ -75,9 +75,10 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   openapi: 'Спецификация API',
   profile: 'Профиль кандидата и приватность',
   recommendations: 'Рекомендации: тест, пробелы, задания, вакансии',
+  sources: 'Подключённые ссылки кандидата (GitHub, Codeforces, страницы): удаление',
   stt: 'Голосовой ввод (Yandex SpeechKit)',
   test: 'Тест на грейд: попытки, ответы, итог',
-  uploads: 'Загрузка резюме и документов',
+  uploads: 'Загрузка резюме и документов: разбор, оригинал, скачивание, удаление',
 };
 
 export const SSE_EVENTS_DOC = [
@@ -245,22 +246,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Выбор роли в онбординге (один раз). Перевыпускает куку с новой ролью.',
     success: JSON_OK('Роль выбрана; выставлена новая кука cid', obj({ role: str(), candidateId: nullable(str()), employerProfileId: nullable(str()) })),
     errors: { 409: 'Роль уже выбрана или не дано согласие (`conflict`)' },
-  },
-  'POST /api/auth/role/switch': {
-    summary: 'Переключить активную роль (вторая роль на той же учётке)',
-    description:
-      'ADR 0004. Профиль целевой роли есть — переключает; нет — создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль — идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.',
-    success: JSON_OK(
-      'Роль активна; выставлена новая кука cid',
-      obj({ role: str(), next: str('Дом роли (путь интерфейса)'), created: bool(), changed: bool() }),
-    ),
-    errors: {
-      400: 'Нет названия компании, когда профиль работодателя надо создать (`bad_request`), или тело не прошло схему (`validation_failed`)',
-      401: 'Нет входа (`unauthorized`)',
-      403: 'Старая демо-кука без аккаунта, общий демо-аккаунт без второй роли или запрос с чужого сайта (`forbidden`)',
-      409: 'Роль ещё не выбрана — сначала знакомство (`conflict`)',
-      429: 'Слишком много переключений (`rate_limited`)',
-    },
   },
   'GET /api/auth/stale': {
     summary: 'Сбросить протухшую сессию',
@@ -483,16 +468,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
     success: { status: 201, description: 'Потребность создана', schema: free('Созданная потребность') },
   },
 
-  'GET /api/employer/company': {
-    summary: 'Профиль своей компании',
-    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
-  },
-  'PATCH /api/employer/company': {
-    summary: 'Изменить профиль своей компании',
-    description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.',
-    success: JSON_OK('Профиль компании после правки', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
-  },
-
   'GET /api/invitations': {
     query: [{ name: 'view', description: '`1` — отметить просмотр: статус sent → viewed', schema: en('1') }],
     summary: 'Входящие приглашения кандидата',
@@ -641,9 +616,27 @@ export const OVERRIDES: Record<string, OpOverride> = {
     errors: { 409: 'Нельзя начать: активная попытка другой категории (`active_attempt`), смена грейда раньше срока (`grade_change_too_soon`) или пересдача раньше срока (`retake_too_soon`); в `details` — `nextAllowedAt`' },
   },
 
+  'GET /api/uploads/{id}/file': {
+    summary: 'Скачать оригинал загруженного файла',
+    description: 'Оригинал файла владельцу: всегда `Content-Disposition: attachment` (filename* по RFC 5987), `X-Content-Type-Options: nosniff`, тип — только PDF/DOCX, иначе application/octet-stream.',
+    success: { description: 'Файл PDF или DOCX', contentType: 'application/octet-stream', schema: { type: 'string', format: 'binary' } },
+    errors: { 404: 'Нет файла, чужой или загружен до хранения оригиналов' },
+  },
+  'DELETE /api/uploads/{id}': {
+    summary: 'Удалить загруженный файл',
+    description: 'Удаляет оригинал с диска и запись. Неподтверждённые утверждения из файла удаляются, подтверждённые и исправленные человеком остаются.',
+    success: JSON_OK('Удалено', obj({ deletedClaims: int('Удалено черновиков'), keptClaims: int('Осталось подтверждённых и исправленных') })),
+    errors: { 404: 'Нет файла или чужой' },
+  },
+  'DELETE /api/sources/{id}': {
+    summary: 'Удалить подключённую ссылку',
+    description: 'Удаляет ссылку (url, GitHub, Codeforces, Stack Overflow) со снимком. Неподтверждённые утверждения из неё удаляются, подтверждённые и исправленные человеком остаются.',
+    success: JSON_OK('Удалено', obj({ deletedClaims: int('Удалено черновиков'), keptClaims: int('Осталось подтверждённых и исправленных') })),
+    errors: { 404: 'Нет ссылки или чужая' },
+  },
   'POST /api/uploads': {
     summary: 'Загрузить резюме или документ',
-    description: 'Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Сам файл не хранится — только извлечённый текст с координатами. Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись.',
+    description: 'Загрузка резюме или документа: PDF или DOCX до 5 МБ и 20 страниц. Хранится извлечённый текст с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>, только после успешного разбора). Повтор того же файла (sha256) у того же кандидата возвращает прежнюю запись без второй копии.',
     body: {
       contentType: 'multipart/form-data',
       schema: obj({ file: str('Файл PDF или DOCX', { format: 'binary' }), kind: en('resume', 'document') }, ['file']),

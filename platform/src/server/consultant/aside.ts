@@ -1,4 +1,3 @@
-import { SPEC_LABEL } from '@/lib/directions';
 import { prisma } from '../db';
 import { listVacancies, loadEmployerContext } from '../employer';
 import type { OnboardingView } from '../onboarding/types';
@@ -26,6 +25,8 @@ export interface AsideDoc {
   kind: 'file' | 'link';
   /** «разобран, 3 утверждения» / «разбирается». */
   status: string;
+  /** Файл: оригинал сохранён — можно скачать (GET /api/uploads/:id/file). У ссылок и старых загрузок нет. */
+  hasFile?: boolean;
 }
 
 /** Ответ из знакомства: короткое имя шага и ответ так, как он звучит в ленте. */
@@ -79,7 +80,7 @@ export function introDone(view: OnboardingView | undefined): boolean {
   return !view || (view.onboarded && view.current.kind === 'summary');
 }
 
-const SPEC: Record<string, string> = SPEC_LABEL;
+const SPEC: Record<string, string> = { backend: 'Backend', frontend: 'Frontend' };
 const GRADE: Record<string, string> = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
 const GRADE_ORDER = ['junior', 'middle', 'senior'];
 
@@ -197,14 +198,14 @@ export function hintFor(role: 'candidate' | 'employer', steps: JourneyStep[], vi
 /** Документы кандидата: файлы (Upload) и подключённые ссылки (Source) со статусом разбора. */
 export async function loadCandidateDocs(candidateId: string): Promise<AsideDoc[]> {
   const [uploads, sources, claims] = await Promise.all([
-    prisma.upload.findMany({ where: { candidateId }, select: { id: true, filename: true, extracted: true }, orderBy: { createdAt: 'desc' }, take: 8 }),
-    prisma.source.findMany({ where: { candidateId, kind: { in: ['url', 'github', 'codeforces', 'stackoverflow'] } }, select: { id: true, origin: true, claims: { where: { status: { not: 'rejected' } }, select: { id: true } } }, orderBy: { fetchedAt: 'desc' }, take: 4 }),
+    prisma.upload.findMany({ where: { candidateId }, select: { id: true, filename: true, extracted: true, storageKey: true }, orderBy: { createdAt: 'desc' }, take: 20 }),
+    prisma.source.findMany({ where: { candidateId, kind: { in: ['url', 'github', 'codeforces', 'stackoverflow'] } }, select: { id: true, origin: true, claims: { where: { status: { not: 'rejected' } }, select: { id: true } } }, orderBy: { fetchedAt: 'desc' }, take: 10 }),
     prisma.claim.findMany({ where: { candidateId, status: { not: 'rejected' } }, select: { sourceRef: true } }),
   ]);
   const status = (n: number) => (n > 0 ? `разобран, ${claimsWord(n)}` : 'разобран, утверждений нет');
   const files = uploads.map((u): AsideDoc => {
     const n = claims.filter((c) => c.sourceRef.startsWith(`${u.filename}#`)).length;
-    return { id: u.id, name: u.filename, kind: 'file', status: u.extracted ? status(n) : 'разбирается' };
+    return { id: u.id, name: u.filename, kind: 'file', status: u.extracted ? status(n) : 'разбирается', hasFile: Boolean(u.storageKey) };
   });
   const links = sources.map((s): AsideDoc => ({ id: s.id, name: s.origin.replace(/^https?:\/\//, ''), kind: 'link', status: status(s.claims.length) }));
   return [...files, ...links];

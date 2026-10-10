@@ -35,10 +35,12 @@ export const DECISION_RULES = {
 /**
  * Что оценщик видит вместо текста вопроса: `question` — сам вопрос (пересказ профиля интервьюером
  * вырезается redactFacts); `type` — только уровень вопроса («база / практика / глубина»).
- * Выбор — по замеру на сохранённых транскриптах валидации (docs/validation-stages.md, раздел 10.10).
+ * Выбран `type`: на 12 сохранённых созвонах валидации (переоценка 10.10) совпадение с ожиданием 35/35
+ * против 34/35, «почему так» у сильных тем не просело (1,3 в обоих видах); цена — больше добавочных
+ * прогонов (4,2 против 3,3 на созвон). docs/validation-stages.md, раздел «после доработки 10.10».
  */
 export type EvaluatorView = 'question' | 'type';
-export const EVALUATOR_VIEW: EvaluatorView = 'question';
+export const EVALUATOR_VIEW: EvaluatorView = 'type';
 
 export interface EvalTopic {
   topic: string;

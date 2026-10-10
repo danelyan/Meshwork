@@ -97,11 +97,12 @@ export const defenseFlagLabel = (f: DefenseFlag): string => DEFENSE_FLAG_LABEL[f
 // Сжатие вердиктов БД до свидетельств
 // ---------------------------------------------------------------------------
 
-type DepthLike = { topic: string; catalogId: string | null; claimed: boolean; probed: number; confirmed: boolean; total: number };
+type DepthLike = { topic: string; catalogId: string | null; claimed: boolean; probed: number; confirmed: boolean; total: number; status?: string };
 
 /** Карта глубины ступени 1 → свидетельство. Берёт только поля без цитат (подходит и публичный вердикт). */
 export function summarizeQualifying(verdict: { depthMap: readonly DepthLike[]; evaluatedAt: string }): QualifyingEvidence {
-  const scoresByTopic = verdict.depthMap.map((d) => ({
+  // Темы «не проверено» (status=not_probed, лейн stage-tuning) в счёт «подтверждено X из N» не входят.
+  const scoresByTopic = verdict.depthMap.filter((d) => d.status !== 'not_probed').map((d) => ({
     topic: d.topic,
     catalogId: d.catalogId,
     claimed: d.claimed,

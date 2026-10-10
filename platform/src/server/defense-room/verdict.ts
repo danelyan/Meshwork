@@ -32,7 +32,12 @@ export const VERDICT_RULES = {
   extraRunsSpread: 2,
   /** Доля прогонов, согласных с медианой по решению порога вопроса; меньше — вопрос «разошёлся». */
   minAgreement: 0.75,
-  /** uneven_understanding: хотя бы один вопрос прошёл порог и хотя бы один набрал не больше lowItemTotal. */
+  /**
+   * uneven_understanding: разброс сумм по вопросам ≥ unevenSpread, либо ≥ unevenSpread − 1 при вопросе с суммой
+   * ≤ lowItemTotal. Подобрано на 9 транскриптах валидации 10.10 (переоценка): «понимает частично» 3/3, «сделал сам»
+   * и «ИИ целиком» 0/3; выборка маленькая — порог предварительный.
+   */
+  unevenSpread: 3,
   lowItemTotal: 2,
   version: 'defense-room-v1-2026-10-10-items',
 } as const;
@@ -127,7 +132,11 @@ export function computeFlags(i: FlagInput): DefenseFlag[] {
   if (runSpread >= VERDICT_RULES.disagreementSpread || itemSplit) flags.push('evaluator_disagreement');
   if (i.employerAsked > i.employerAnswered) flags.push('employer_questions_unanswered');
   const items = i.items ?? [];
-  if (items.length >= 2 && items.some((x) => x.passed) && items.some((x) => x.total <= VERDICT_RULES.lowItemTotal)) flags.push('uneven_understanding');
+  if (items.length >= 2) {
+    const totals = items.map((x) => x.total);
+    const sp = Math.max(...totals) - Math.min(...totals);
+    if (sp >= VERDICT_RULES.unevenSpread || (sp >= VERDICT_RULES.unevenSpread - 1 && Math.min(...totals) <= VERDICT_RULES.lowItemTotal)) flags.push('uneven_understanding');
+  }
   return flags;
 }
 
@@ -138,7 +147,7 @@ const FLAG_TEXT: Record<DefenseFlag, string> = {
   evaluator_disagreement: 'Прогоны оценщика заметно разошлись - лучше прочитать транскрипт.',
   employer_questions_unanswered: 'Не на все вопросы работодателя есть ответ - они остаются в очереди до следующего входа кандидата.',
   no_project_result: 'Результата автопроверки проекта нет - сравнить проект и защиту нельзя.',
-  uneven_understanding: 'Понимание неровное: часть кода кандидат объясняет уверенно, по другой части ответы почти пустые - посмотрите баллы по вопросам.',
+  uneven_understanding: 'Понимание неровное: одни части кода кандидат объясняет заметно лучше других - посмотрите баллы по вопросам.',
 };
 
 const fmt1 = (x: number) => x.toFixed(1).replace('.', ',');

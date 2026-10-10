@@ -1,0 +1,1500 @@
+{
+  "runAt": "2026-10-10T14:06:27.938Z",
+  "provider": "DeepSeek V4 Flash (Yandex)/gpt://b1g8c7gaanu3tnh3475r/deepseek-v4-flash",
+  "defense": [
+    {
+      "persona": "own",
+      "sessionId": "cmv2ftiup0006zm16y7jng0ll",
+      "before": 6,
+      "after": 5.6,
+      "passed": true,
+      "flags": [
+        "evaluator_disagreement"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/store.js:L17-L25",
+          "total": 5,
+          "runs": [
+            5,
+            5,
+            5,
+            3,
+            5
+          ]
+        },
+        {
+          "label": "почему так · src/store.js:L27-L32",
+          "total": 5,
+          "runs": [
+            5,
+            5,
+            4,
+            4,
+            5
+          ]
+        },
+        {
+          "label": "измени поведение · src/middleware.js:L5-L13",
+          "total": 6,
+          "runs": [
+            5,
+            6,
+            6,
+            3,
+            6
+          ]
+        },
+        {
+          "label": "что сломается · src/bucket.js:L16-L25",
+          "total": 6,
+          "runs": [
+            6,
+            6,
+            5,
+            4,
+            6
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 6,
+          "runs": [
+            5,
+            6,
+            6,
+            4,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "own",
+      "sessionId": "cmv2fu6cr0014zm1633j3gdbw",
+      "before": 6,
+      "after": 5.2,
+      "passed": true,
+      "flags": [],
+      "items": [
+        {
+          "label": "что делает · src/store.js:L17-L25",
+          "total": 5,
+          "runs": [
+            6,
+            5
+          ]
+        },
+        {
+          "label": "почему так · src/store.js:L27-L32",
+          "total": 5,
+          "runs": [
+            6,
+            5
+          ]
+        },
+        {
+          "label": "что сломается · src/middleware.js:L5-L13",
+          "total": 5,
+          "runs": [
+            6,
+            5
+          ]
+        },
+        {
+          "label": "почему так · src/bucket.js:L16-L25",
+          "total": 6,
+          "runs": [
+            7,
+            6
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 5,
+          "runs": [
+            6,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "own",
+      "sessionId": "cmv2fuqbw0022zm16ctq5fs87",
+      "before": 6,
+      "after": 5,
+      "passed": true,
+      "flags": [],
+      "items": [
+        {
+          "label": "что делает · src/store.js:L6-L37",
+          "total": 4,
+          "runs": [
+            4,
+            4
+          ]
+        },
+        {
+          "label": "почему так · src/bucket.js:L8-L14",
+          "total": 5,
+          "runs": [
+            6,
+            5
+          ]
+        },
+        {
+          "label": "что сломается · src/store.js:L27-L32",
+          "total": 5,
+          "runs": [
+            5,
+            5
+          ]
+        },
+        {
+          "label": "что сломается · src/middleware.js:L5-L13",
+          "total": 5,
+          "runs": [
+            6,
+            5
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 6,
+          "runs": [
+            6,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "ai-only",
+      "sessionId": "cmv2fvb6p0030zm16h55asjd4",
+      "before": 4,
+      "after": 4,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/links.js:L25-L34",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "почему так · src/links.js:L5-L16",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "что сломается · src/server.js:L7-L43",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "измени поведение · src/codec.js:L4-L13",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "ai-only",
+      "sessionId": "cmv2fvw210042zm16sb4gjy5w",
+      "before": 4,
+      "after": 3.6,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "items": [
+        {
+          "label": "что сломается · src/links.js:L25-L34",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "почему так · src/links.js:L5-L16",
+          "total": 3,
+          "runs": [
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "что сломается · src/codec.js:L4-L13",
+          "total": 4,
+          "runs": [
+            4,
+            3,
+            4
+          ]
+        },
+        {
+          "label": "измени поведение · src/codec.js:L15-L23",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 3,
+          "runs": [
+            3,
+            3,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "ai-only",
+      "sessionId": "cmv2fwk2p0056zm16hxhfad46",
+      "before": 4,
+      "after": 4,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/links.js:L25-L34",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "почему так · src/links.js:L5-L16",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "что сломается · src/server.js:L7-L43",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "измени поведение · src/codec.js:L4-L13",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "partial",
+      "sessionId": "cmv2fx2vc0066zm169br8ratg",
+      "before": 3,
+      "after": 3,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense",
+        "evaluator_disagreement"
+      ],
+      "items": [
+        {
+          "label": "почему так · src/retry-queue.js:L19-L24",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "что делает · src/retry-queue.js:L26-L39",
+          "total": 0,
+          "runs": [
+            0,
+            0,
+            0,
+            3,
+            0
+          ]
+        },
+        {
+          "label": "измени поведение · src/signature.js:L11-L21",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            4,
+            5
+          ]
+        },
+        {
+          "label": "что сломается · src/retry-queue.js:L11-L17",
+          "total": 3,
+          "runs": [
+            2,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            5,
+            5,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "partial",
+      "sessionId": "cmv2fxnvk0078zm169r09gn0i",
+      "before": 4,
+      "after": 3.2,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/retry-queue.js:L19-L24",
+          "total": 3,
+          "runs": [
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "что сломается · src/retry-queue.js:L26-L39",
+          "total": 2,
+          "runs": [
+            2,
+            1,
+            3
+          ]
+        },
+        {
+          "label": "что сломается · src/signature.js:L11-L21",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "что сломается · src/retry-queue.js:L10-L40",
+          "total": 3,
+          "runs": [
+            2,
+            2,
+            3
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "partial",
+      "sessionId": "cmv2fybi2008czm16dgk7968x",
+      "before": 4,
+      "after": 2.2,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense",
+        "evaluator_disagreement"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/retry-queue.js:L10-L40",
+          "total": 3,
+          "runs": [
+            2,
+            3,
+            2,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "почему так · src/retry-queue.js:L26-L39",
+          "total": 0,
+          "runs": [
+            4,
+            0,
+            0,
+            0,
+            4
+          ]
+        },
+        {
+          "label": "что сломается · src/signature.js:L11-L21",
+          "total": 3,
+          "runs": [
+            5,
+            0,
+            0,
+            3,
+            5
+          ]
+        },
+        {
+          "label": "измени поведение · src/relay.js:L4-L18",
+          "total": 2,
+          "runs": [
+            2,
+            0,
+            0,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "измени поведение · src/retry-queue.js:L19-L24",
+          "total": 2,
+          "runs": [
+            2,
+            0,
+            0,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 3,
+          "runs": [
+            2,
+            3,
+            3,
+            3,
+            3
+          ]
+        }
+      ]
+    }
+  ],
+  "call": [
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.authz",
+      "expected": true,
+      "status": "confirmed",
+      "total": 7,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": true,
+      "beforeTotal": 7
+    },
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.integration-tests",
+      "expected": true,
+      "status": "confirmed",
+      "total": 7,
+      "why": 1,
+      "runs": 3,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 7
+    },
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.rest-design",
+      "expected": true,
+      "status": "confirmed",
+      "total": 8,
+      "why": 2,
+      "runs": 3,
+      "spread": 1,
+      "before": true,
+      "beforeTotal": 8
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.authz",
+      "expected": true,
+      "status": "confirmed",
+      "total": 7,
+      "why": 1,
+      "runs": 5,
+      "spread": 3,
+      "before": true,
+      "beforeTotal": 7
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.integration-tests",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 5,
+      "spread": 4,
+      "before": true,
+      "beforeTotal": 7
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.rest-design",
+      "expected": true,
+      "status": "confirmed",
+      "total": 8,
+      "why": 2,
+      "runs": 5,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 8
+    },
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.authz",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 5,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.integration-tests",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 5,
+      "spread": 0,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.rest-design",
+      "expected": true,
+      "status": "inconclusive",
+      "total": 5,
+      "why": 2,
+      "runs": 5,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.authz",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 5,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.integration-tests",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 5,
+      "spread": 1,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.rest-design",
+      "expected": true,
+      "status": "confirmed",
+      "total": 5,
+      "why": 2,
+      "runs": 5,
+      "spread": 3,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.authz",
+      "expected": true,
+      "status": "confirmed",
+      "total": 7,
+      "why": 1,
+      "runs": 3,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 5
+    },
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.integration-tests",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "A",
+      "view": "question",
+      "catalogId": "be.rest-design",
+      "expected": true,
+      "status": "confirmed",
+      "total": 5,
+      "why": 2,
+      "runs": 3,
+      "spread": 1,
+      "before": true,
+      "beforeTotal": 5
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.authz",
+      "expected": true,
+      "status": "confirmed",
+      "total": 7,
+      "why": 1,
+      "runs": 5,
+      "spread": 0,
+      "before": true,
+      "beforeTotal": 5
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.integration-tests",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 5,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "A",
+      "view": "type",
+      "catalogId": "be.rest-design",
+      "expected": true,
+      "status": "confirmed",
+      "total": 7,
+      "why": 2,
+      "runs": 5,
+      "spread": 3,
+      "before": true,
+      "beforeTotal": 5
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 2,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.rest-design",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.sql-schema",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 2,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.rest-design",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.sql-schema",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 2,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.rest-design",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 1,
+      "why": 0,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 2
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.sql-schema",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 1,
+      "runs": 3,
+      "spread": 2,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 2,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.rest-design",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 2
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.sql-schema",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 2,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.rest-design",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "question",
+      "catalogId": "be.sql-schema",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 2,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.rest-design",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "B",
+      "view": "type",
+      "catalogId": "be.sql-schema",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 2,
+      "why": 0,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.idempotency",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "inconclusive",
+      "total": 4,
+      "why": 1,
+      "runs": 5,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.idempotency",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 5,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 5,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 0,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.idempotency",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 5,
+      "spread": 2,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.idempotency",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 5,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 5,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.idempotency",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "question",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.cache",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.idempotency",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "C",
+      "view": "type",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.idempotency",
+      "expected": true,
+      "status": "confirmed",
+      "total": 5,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": true,
+      "beforeTotal": 5
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 0,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.sql-indexes",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 2,
+      "runs": 3,
+      "spread": 1,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.idempotency",
+      "expected": true,
+      "status": "confirmed",
+      "total": 5,
+      "why": 1,
+      "runs": 3,
+      "spread": 0,
+      "before": true,
+      "beforeTotal": 5
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 4
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.sql-indexes",
+      "expected": true,
+      "status": "confirmed",
+      "total": 7,
+      "why": 2,
+      "runs": 3,
+      "spread": 1,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.idempotency",
+      "expected": true,
+      "status": "confirmed",
+      "total": 5,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": true,
+      "beforeTotal": 5
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 2,
+      "why": 0,
+      "runs": 3,
+      "spread": 0,
+      "before": false,
+      "beforeTotal": 2
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.sql-indexes",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 3,
+      "spread": 1,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.idempotency",
+      "expected": true,
+      "status": "confirmed",
+      "total": 5,
+      "why": 1,
+      "runs": 5,
+      "spread": 0,
+      "before": true,
+      "beforeTotal": 5
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 1,
+      "why": 0,
+      "runs": 5,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 2
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.sql-indexes",
+      "expected": true,
+      "status": "confirmed",
+      "total": 6,
+      "why": 1,
+      "runs": 5,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.idempotency",
+      "expected": true,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 5,
+      "spread": 5,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 3,
+      "why": 1,
+      "runs": 5,
+      "spread": 5,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "D",
+      "view": "question",
+      "catalogId": "be.sql-indexes",
+      "expected": true,
+      "status": "confirmed",
+      "total": 8,
+      "why": 2,
+      "runs": 5,
+      "spread": 3,
+      "before": true,
+      "beforeTotal": 6
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.idempotency",
+      "expected": true,
+      "status": "confirmed",
+      "total": 5,
+      "why": 1,
+      "runs": 5,
+      "spread": 3,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.message-queue",
+      "expected": false,
+      "status": "not_confirmed",
+      "total": 4,
+      "why": 1,
+      "runs": 5,
+      "spread": 1,
+      "before": false,
+      "beforeTotal": 3
+    },
+    {
+      "persona": "D",
+      "view": "type",
+      "catalogId": "be.sql-indexes",
+      "expected": true,
+      "status": "confirmed",
+      "total": 7,
+      "why": 2,
+      "runs": 5,
+      "spread": 2,
+      "before": true,
+      "beforeTotal": 6
+    }
+  ],
+  "meter": {
+    "calls": 131,
+    "failures": 0,
+    "inputTokens": 305936,
+    "outputTokens": 222247,
+    "byPurpose": {
+      "call_evaluator": {
+        "calls": 131,
+        "failures": 0,
+        "inputTokens": 305936,
+        "outputTokens": 222247
+      }
+    }
+  }
+}

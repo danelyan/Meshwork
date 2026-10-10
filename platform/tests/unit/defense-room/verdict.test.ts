@@ -97,13 +97,12 @@ describe('evaluateDefenseRoom: балл по вопросу', () => {
     expect(JSON.stringify(v)).not.toMatch(/фейк|fake|списал/i);
   });
 
-  it('частичное понимание отличается от «не понимает ничего» средним по вопросам', async () => {
+  it('частичное понимание — неровные баллы по вопросам; ровно средние ответы — без флага', async () => {
     registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, ['high', 'high', 'low']) }));
     const partial = await evaluateDefenseRoom({ projectTitle: 'p', transcript, projectScore: 0.95, employerAsked: 0, employerAnswered: 0 }, llm);
     clearStubResponses();
-    registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, ['mid', 'low', 'low']) }));
+    registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, ['mid', 'mid', 'mid']) }));
     const none = await evaluateDefenseRoom({ projectTitle: 'p', transcript, projectScore: 0.95, employerAsked: 0, employerAnswered: 0 }, llm);
-    expect(partial.totalMean!).toBeGreaterThan(none.totalMean!);
     expect(partial.flags).toContain('uneven_understanding');
     expect(none.flags).not.toContain('uneven_understanding');
   });

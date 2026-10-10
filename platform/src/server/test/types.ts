@@ -26,6 +26,15 @@ export interface TaskGenerator {
   taskId: string;
   title: string;
   specialization: Specialization;
+  /**
+   * Подкатегория семейства ("ai.llm-apps", "backend.web-api") из src/lib/directions.ts (ADR 0003, дополнение
+   * 10.10 15:50: тест — на подкатегорию). Пул попытки — только семейства подкатегории кандидата; тест по
+   * подкатегории доступен при ≥ MIN_FAMILIES_PER_SUBCATEGORY (8) семействах, Junior и Middle.
+   * Необязательно ТОЛЬКО на переходный период, пока лейны генераторов размечают свои семейства: если у
+   * направления не размечено ни одно семейство, тест идёт по старому пулу направления (generators/index.ts,
+   * poolFor → legacy). Семейство без subcategoryId в размеченном направлении в пул не попадает.
+   */
+  subcategoryId?: string;
   grade: Grade;
   /** Утверждения каталога, которые подтверждает решённое задание. */
   catalogIds: string[];

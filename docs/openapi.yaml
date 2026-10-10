@@ -1580,6 +1580,99 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/employer/company":
+    get:
+      operationId: getEmployerCompany
+      tags:
+        - employer
+      summary: "Профиль своей компании"
+      description: "профиль своей компании (R-E-01).\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Название, описание, отрасль, ИНН и контакт компании"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  industry:
+                    type: string
+                  inn:
+                    type: string
+                  contact:
+                    type: string
+                required:
+                  - id
+                  - name
+                  - description
+                  - industry
+                  - inn
+                  - contact
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      operationId: patchEmployerCompany
+      tags:
+        - employer
+      summary: "Изменить профиль своей компании"
+      description: "Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/CompanyPatch"
+      responses:
+        "200":
+          description: "Профиль компании после правки"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  industry:
+                    type: string
+                  inn:
+                    type: string
+                  contact:
+                    type: string
+                required:
+                  - id
+                  - name
+                  - description
+                  - industry
+                  - inn
+                  - contact
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/employer/invitations":
     get:
       operationId: getEmployerInvitations
@@ -3185,6 +3278,36 @@ components:
         - status
         - confirmedAt
       description: "Утверждение кандидата с уровнем доказанности"
+    CompanyPatch:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        description:
+          anyOf:
+            -
+              type: string
+              maxLength: 600
+            -
+              type: "null"
+        industry:
+          anyOf:
+            -
+              type: string
+              maxLength: 80
+            -
+              type: "null"
+        inn:
+          type:
+            - string
+            - "null"
+        contact:
+          type:
+            - string
+            - "null"
+      additionalProperties: false
     ConsultantEvent:
       description: "Кадр SSE хода консультанта (`type` — различитель)"
       oneOf:

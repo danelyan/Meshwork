@@ -55,7 +55,7 @@ describe('SiteHeader', () => {
 
   it('работодатель: свои ссылки; «Потребности» активна только на /employer', async () => {
     let h = await renderHeader(principal('employer'), '/employer');
-    expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/').map((a) => a.textContent)).toEqual(['Потребности', 'Поиск по базе', 'Приглашения', 'Помощник']);
+    expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/').map((a) => a.textContent)).toEqual(['Потребности', 'Поиск по базе', 'Приглашения', 'Профиль компании', 'Помощник']);
     expect(h.getByRole('link', { name: 'Потребности' }).getAttribute('aria-current')).toBe('page');
     cleanup();
     h = await renderHeader(principal('employer'), '/employer/search');

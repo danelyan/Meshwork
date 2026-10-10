@@ -441,6 +441,16 @@ export const OVERRIDES: Record<string, OpOverride> = {
     success: { status: 201, description: 'Потребность создана', schema: free('Созданная потребность') },
   },
 
+  'GET /api/employer/company': {
+    summary: 'Профиль своей компании',
+    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+  },
+  'PATCH /api/employer/company': {
+    summary: 'Изменить профиль своей компании',
+    description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.',
+    success: JSON_OK('Профиль компании после правки', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+  },
+
   'GET /api/invitations': {
     query: [{ name: 'view', description: '`1` — отметить просмотр: статус sent → viewed', schema: en('1') }],
     summary: 'Входящие приглашения кандидата',

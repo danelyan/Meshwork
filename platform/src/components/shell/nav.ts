@@ -18,6 +18,7 @@ export const EMPLOYER_LINKS: NavLink[] = [
   { href: '/employer', label: 'Потребности', exact: true },
   { href: '/employer/search', label: 'Поиск по базе' },
   { href: '/employer/invitations', label: 'Приглашения' },
+  { href: '/employer/company', label: 'Профиль компании' },
   // Помощник по подбору — дом работодателя, лента /consultant (решение владельца 10.10).
   { href: '/consultant', label: 'Помощник' },
 ];

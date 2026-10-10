@@ -18,8 +18,10 @@ import { AsideRows, groupAsides } from './Asides';
 import { useSoftGo } from './soft-nav';
 import styles from './Onboarding.module.css';
 
-/** Подпись кнопки возврата; её же называет консультант в напоминании (server/agent/onboarding-aside.ts). */
+/** Подпись кнопки возврата работодателя; её же называет помощник в напоминании (server/agent/employer/loop.ts). */
 export const RESUME_LABEL = 'Вернуться к знакомству';
+/** Кандидату знакомство — вопросы-подсказки в чате (решение владельца 11.10); подпись называет и консультант (onboarding-aside.ts). */
+export const FILL_LABEL = 'Дополнить профиль';
 
 export interface PausedFeedProps {
   view: OnboardingView;
@@ -91,13 +93,15 @@ function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
         <div className={styles.topRow}>
           <h1 className={styles.sceneTitle}>
             {isEmployer ? 'Помощник по подбору' : 'Карьерный консультант'}
-            <span className={styles.title}>Знакомство на паузе</span>
+            <span className={styles.title}>{isEmployer ? 'Знакомство на паузе' : 'Ведёт по платформе'}</span>
           </h1>
-          <Button size="sm" onClick={() => void resume()} disabled={busy} title="Продолжишь с того же шага - ответы сохранены">
-            {RESUME_LABEL}
-          </Button>
+          {isEmployer && (
+            <Button size="sm" onClick={() => void resume()} disabled={busy} title="Продолжишь с того же шага - ответы сохранены">
+              {RESUME_LABEL}
+            </Button>
+          )}
         </div>
-        <ProgressLine value={view.progress.done} max={view.progress.total} label={`Пройдено ${view.progress.done} из ${view.progress.total}`} />
+        {isEmployer && <ProgressLine value={view.progress.done} max={view.progress.total} label={`Пройдено ${view.progress.done} из ${view.progress.total}`} />}
       </header>
 
       <div className={styles.feed}>
@@ -112,14 +116,16 @@ function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
               <UserBubble quiet={h.answer === null}>{h.answer ?? 'пропущу'}</UserBubble>
             </Fragment>
           ))}
-          <AssistantRow testId="ob-paused">
-            <Reply
-              lines={[
-                { text: `Знакомство на паузе - остановились на вопросе «${cur.question}». Ответы сохранены, вернуться можно в любой момент.` },
-                { text: 'Пока спрашивай что угодно - я на связи.', secondary: true },
-              ]}
-            />
-          </AssistantRow>
+          {isEmployer && (
+            <AssistantRow testId="ob-paused">
+              <Reply
+                lines={[
+                  { text: `Знакомство на паузе - остановились на вопросе «${cur.question}». Ответы сохранены, вернуться можно в любой момент.` },
+                  { text: 'Пока спрашивай что угодно - я на связи.', secondary: true },
+                ]}
+              />
+            </AssistantRow>
+          )}
           <AsideRows items={asides[cur.id]} locked />
           <EmployerAsideRows items={empAsides[cur.id]} />
           {error && (
@@ -147,7 +153,8 @@ function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
             demo={demo}
             initial={{ conversationId: restored?.conversationId ?? null, items: rest }}
             embedded={{
-              suggestions: [{ value: 'resume', label: RESUME_LABEL, note: `с вопроса «${cur.label}»` }],
+              suggestions: [{ value: 'resume', label: FILL_LABEL, note: `вопрос «${cur.label}»` }],
+              pinned: { value: 'resume', label: FILL_LABEL, note: `вопрос «${cur.label}»` },
               onSuggestion: (v) => {
                 if (v === 'resume') void resume();
               },

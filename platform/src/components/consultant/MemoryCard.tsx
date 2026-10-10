@@ -70,7 +70,7 @@ function Editor({ initial, label, onSave, onCancel }: { initial: string; label: 
  * коротко подсвечен. Пока сервер извлекает факты из последней реплики (memoryPending), колонка
  * перечитывается ещё несколько раз через AsideProvider.
  */
-export function MemoryCard({ facts, role, pending, limit }: { facts: KnownFact[]; role: SceneAsideData['role']; pending?: boolean; limit?: number }) {
+export function MemoryCard({ facts, role, pending, limit, fill }: { facts: KnownFact[]; role: SceneAsideData['role']; pending?: boolean; limit?: number; fill?: SceneAsideData['fill'] }) {
   const refresh = useAsideRefresh();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
@@ -197,6 +197,11 @@ export function MemoryCard({ facts, role, pending, limit }: { facts: KnownFact[]
               </li>
             ))}
           </ul>
+        )}
+        {!company && fill && (
+          <button type="button" className={styles.add} onClick={() => void run(() => gotoStep(fill.stepId))} title="Вопрос откроется в чате слева">
+            + дополнить: {fill.label.toLowerCase()}
+          </button>
         )}
         {company ? null : adding ? (
           <Editor

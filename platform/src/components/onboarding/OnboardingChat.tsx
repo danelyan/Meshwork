@@ -157,6 +157,8 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     scrollToEnd(endRef.current);
   }, [curAsides?.length]);
 
+  const softGo = useSoftGo();
+
   const act = useCallback(async (body: OnboardingAction, bubble?: { text: string; quiet?: boolean }) => {
     setBusy(true);
     setError(null);
@@ -169,6 +171,11 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
       roleRef.current = v.role;
       if (roleChosen) {
         window.location.assign(CANDIDATE_FEED_PATH);
+        return;
+      }
+      // Кандидат ответил на вопрос-подсказку — сервер вернул ленту в разговор (service.ts backToChat).
+      if (inConsultant && v.later) {
+        softGo('/consultant');
         return;
       }
       voiceRef.current?.speak(`${v.current.lead} ${v.current.question}`);
@@ -193,8 +200,6 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const go = useCallback((path: string) => {
     window.location.assign(path);
   }, []);
-
-  const softGo = useSoftGo();
 
   async function later() {
     setBusy(true);
@@ -400,7 +405,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           {!isSummary && (
             <><span className={styles.saved}>сохранено {view.progress.done} из {view.progress.total}</span>
             <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
-              Настроить позже
+              {inConsultant && !employer ? 'Вернуться в чат' : 'Настроить позже'}
             </Button></>
           )}
         </div>

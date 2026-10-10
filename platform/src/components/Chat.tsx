@@ -36,6 +36,8 @@ export interface ChatEmbedded {
   /** Подсказки следующих шагов — чипами под приветствием, пока не начат разговор. */
   suggestions?: QuickReply[];
   onSuggestion?: (value: string) => void;
+  /** Подсказка, которая остаётся над полем ввода и после начала разговора (анкета кандидата: «Дополнить профиль»). */
+  pinned?: QuickReply;
   /** Перед первой отправкой (онбординг: завершить знакомство). */
   beforeSend?: () => Promise<void>;
 }
@@ -320,6 +322,9 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         hint="Enter - отправить, Shift+Enter - новая строка"
         top={
           <>
+            {embedded?.pinned && started && (
+              <QuickReplies label="Анкета" items={[embedded.pinned]} disabled={busy} onPick={(v) => embedded.onSuggestion?.(v)} />
+            )}
             {formError && (
               <p className={styles.warn} role="alert">
                 {formError}

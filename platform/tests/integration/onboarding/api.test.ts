@@ -132,7 +132,8 @@ describe('API онбординга', () => {
 
   it('«настроить позже» у кандидата — пауза в ленте /consultant: переживает перезагрузку, снимается возвратом к шагу', async () => {
     const c = await asCandidate('u1');
-    expect((await view(c)).later).toBe(false);
+    // Роль выбрана — кандидат сразу в разговоре, вопросы анкеты — подсказками в чате (решение владельца 11.10).
+    expect((await view(c)).later).toBe(true);
     await act(c, { action: 'later' });
     const paused = await view(c);
     expect(paused.later).toBe(true);
@@ -141,11 +142,18 @@ describe('API онбординга', () => {
     const back = await act(c, { action: 'goto', stepId: 'goal' });
     expect(back.json.later).toBe(false);
     expect(back.json.current.id).toBe('goal');
-    // Ответ после новой паузы тоже снимает её.
-    await act(c, { action: 'later' });
+    // Кандидату вопрос — подсказка в чате (решение владельца 11.10): после ответа лента снова разговор,
+    // следующий вопрос не открывается сам.
     const answered = await act(c, { action: 'answer', stepId: 'goal', value: 'job_search' });
-    expect(answered.json.later).toBe(false);
+    expect(answered.json.later).toBe(true);
     expect(answered.json.current.id).toBe('documents');
+    const skipped = await act(c, { action: 'skip', stepId: 'documents' });
+    expect(skipped.json.later).toBe(true);
+    // Обязательный шаг идёт сразу за своим: после направления — подкатегория, без возврата в чат.
+    await act(c, { action: 'goto', stepId: 'specialization' });
+    const spec = await act(c, { action: 'answer', stepId: 'specialization', value: 'backend' });
+    expect(spec.json.current.id).toBe('subcategory');
+    expect(spec.json.later).toBe(false);
   });
 
   it('«настроить позже» до роли — на главную', async () => {

@@ -111,7 +111,7 @@ export function SceneAside({ data: initial, className }: { data: SceneAsideData;
     <div className={`${styles.box} ${className ?? ''}`} data-testid="scene-aside">
       <div className={styles.aside} data-role={data.role}>
         <Roadmap steps={data.steps} hint={data.hint} />
-        <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} />
+        <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} fill={data.fill} />
         {data.market && <Market market={data.market} role={data.role} />}
         {data.docs && <Docs docs={data.docs} />}
         {data.role === 'candidate' && (

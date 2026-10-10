@@ -68,6 +68,8 @@ export interface SceneAsideData {
   steps: JourneyStep[];
   /** Что консультант уже узнал в знакомстве (ответы, без согласия и роли). */
   known?: KnownFact[];
+  /** Кандидату: следующий незаполненный вопрос анкеты — открывается в чате кнопкой «дополнить». */
+  fill?: { stepId: string; label: string };
   /** Идёт извлечение фактов из последней реплики — колонка перечитает данные ещё раз. */
   memoryPending?: boolean;
   /** Лимит пунктов памяти (chat + user). */
@@ -217,8 +219,9 @@ export function employerSteps(f: EmployerFacts): JourneyStep[] {
   ]);
 }
 
-const introNote = (view: OnboardingView | undefined, done: boolean) =>
-  done || !view ? 'пройдено' : `${view.progress.done} из ${view.progress.total}${view.later ? ', на паузе' : ''}`;
+// Кандидату знакомство — вопросы в чате, «паузы» нет (решение владельца 11.10); у работодателя пауза осталась.
+const introNote = (view: OnboardingView | undefined, done: boolean, paused = true) =>
+  done || !view ? 'пройдено' : `${view.progress.done} из ${view.progress.total}${paused && view.later ? ', на паузе' : ''}`;
 
 /** Подсказка по текущему шагу. Тексты — из существующих описаний экранов и шагов знакомства. */
 export function hintFor(role: 'candidate' | 'employer', steps: JourneyStep[], view: OnboardingView | undefined): { title: string; text: string } {
@@ -263,9 +266,11 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
     loadConsultantSettings(candidateId),
   ]);
   const intro = introDone(view);
-  const steps = candidateSteps({ intro, introNote: introNote(view, intro), confirmed: profileClaims, category, invitations });
+  const steps = candidateSteps({ intro, introNote: introNote(view, intro, false), confirmed: profileClaims, category, invitations });
   const market = marketRows(vacancies, (spec, grade) => category?.specialization === spec && category.grade === grade);
-  return { role: 'candidate', steps, ...known, market, docs, hint: hintFor('candidate', steps, view), instructions };
+  // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).
+  const fill = view?.later && view.current.kind !== 'summary' ? { stepId: view.current.id, label: view.current.label } : undefined;
+  return { role: 'candidate', steps, ...known, market, docs, hint: hintFor('candidate', steps, view), instructions, ...(fill ? { fill } : {}) };
 }
 
 export async function loadEmployerAside(employerProfileId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {

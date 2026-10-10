@@ -8,11 +8,11 @@ import type { OnboardingStepBrief } from '@/server/onboarding/service';
  * Тексты контекста хода — здесь, правило поведения — в prompts/consultant.md (<onboarding>).
  */
 
-/** Кнопка возврата к шагам вверху ленты /consultant (components/onboarding/PausedFeed.tsx, RESUME_LABEL). */
-export const RESUME_BUTTON = 'Вернуться к знакомству';
+/** Чип в чате /consultant, открывающий следующий незаполненный вопрос (components/onboarding/PausedFeed.tsx, FILL_LABEL). */
+export const RESUME_BUTTON = 'Дополнить профиль';
 
 /** Начало строки-напоминания без модели: по ней видно, что в разговоре уже напоминали. */
-export const RESUME_MARK = 'Знакомство ещё не закончено';
+export const RESUME_MARK = 'Профиль заполнен не до конца';
 
 const optionsLine = (s: OnboardingStepBrief) => (s.options.length ? ` Варианты: ${s.options.join('; ')}.` : '');
 
@@ -32,7 +32,7 @@ export function asideNote(step: OnboardingStepBrief): string {
 
 /** Контекст хода: онбординг брошен — напомнить один раз за разговор. */
 export function resumeNote(step: OnboardingStepBrief): string {
-  return `Онбординг кандидата не закончен, знакомство на паузе (остановился на шаге «${step.question}»). Если в этом разговоре ты ещё не напоминал об этом — в конце ответа одной фразой предложи продолжить знакомство здесь же, в этой ленте: кнопка «${RESUME_BUTTON}» вверху (откроется с того же шага). Ссылок на другие страницы не давай. Уже напоминал — не повторяй.`;
+  return `Анкета кандидата заполнена не до конца (следующий вопрос — «${step.question}»). Вопросы анкеты идут подсказками в этом же чате. Если в этом разговоре ты ещё не напоминал об этом — в конце ответа одной фразой предложи ответить на него здесь же: кнопка «${RESUME_BUTTON}» под чатом. Ссылок на другие страницы не давай. Уже напоминал — не повторяй.`;
 }
 
 /** Ответ без модели (заглушка LLM, демо-режим, сбой): честно и с возвратом к шагу. */
@@ -42,5 +42,5 @@ export function asideCannedReply(step: OnboardingStepBrief): string {
 
 /** Строка-напоминание для ответов без модели (демо, план В). */
 export function resumeLine(): string {
-  return `${RESUME_MARK} - продолжим здесь же: кнопка «${RESUME_BUTTON}» вверху ленты.`;
+  return `${RESUME_MARK} - дополним здесь же: кнопка «${RESUME_BUTTON}» под чатом.`;
 }

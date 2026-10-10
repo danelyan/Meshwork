@@ -429,8 +429,19 @@ export async function answerStep(userId: string, stepId: string, value: unknown)
   const fresh = await load(userId);
   const ctx = { ...fresh.ctx, answers };
   const next = nextOpen(ctx, skipped, step.id);
+  if (backToChat(fresh, next)) meta = { ...meta, later: true };
   await save(userId, { stepId: next.id, answers, skipped, meta });
   return { sessionChanged };
+}
+
+/**
+ * Знакомство кандидата — вопросы-подсказки в чате консультанта, без отдельного режима (решение владельца 11.10):
+ * после ответа или пропуска лента возвращается в разговор; следующий вопрос кандидат открывает сам
+ * («Дополнить профиль» в чате или в «Что я о тебе знаю»). Обязательный шаг (подкатегория после
+ * направления) и итог идут сразу. Работодатель проходит шаги подряд, как раньше: из них собирается вакансия.
+ */
+function backToChat(l: Loaded, next: StepDef): boolean {
+  return l.ctx.facts.role === 'candidate' && l.ctx.facts.consent && l.user.onboardedAt === null && !next.required && next.kind !== 'summary';
 }
 
 export async function skipStep(userId: string, stepId: string): Promise<MutationResult> {
@@ -439,7 +450,8 @@ export async function skipStep(userId: string, stepId: string): Promise<Mutation
   if (step.required || step.kind === 'summary') throw errors.conflict('Этот шаг нельзя пропустить');
   const skipped = isAnswered(step, l.ctx.answers) || l.state.skipped.includes(step.id) ? l.state.skipped : [...l.state.skipped, step.id];
   const next = nextOpen(l.ctx, skipped, step.id);
-  await save(userId, { stepId: next.id, skipped, ...(l.meta.later ? { meta: resumed(l.meta) } : {}) });
+  const meta = backToChat(l, next) ? { ...l.meta, later: true } : l.meta.later ? resumed(l.meta) : undefined;
+  await save(userId, { stepId: next.id, skipped, ...(meta ? { meta } : {}) });
   return { sessionChanged: false };
 }
 

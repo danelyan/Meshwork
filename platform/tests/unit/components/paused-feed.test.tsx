@@ -1,6 +1,6 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 
-import { PausedFeed, RESUME_LABEL } from '@/components/onboarding/PausedFeed';
+import { FILL_LABEL, PausedFeed } from '@/components/onboarding/PausedFeed';
 import { RESUME_BUTTON } from '@/server/agent/onboarding-aside';
 import type { OnboardingView } from '@/server/onboarding/types';
 
@@ -64,19 +64,23 @@ it('шаги — начало ленты, текущий вопрос не за�
   render(<PausedFeed view={view} restored={restored} />);
   expect(screen.getByText('Ищу работу')).toBeDefined();
   expect(screen.getByText('Зачем цель?')).toBeDefined();
-  expect(screen.getByTestId('ob-paused').textContent).toContain('Пришли резюме или ссылки');
+  // Кандидату нет режима «паузы» (решение владельца 11.10): ни плашки, ни кнопки возврата вверху.
+  expect(screen.queryByTestId('ob-paused')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Вернуться к знакомству' })).toBeNull();
   // Прошлая пауза — под своим шагом (хронология), разговор этой паузы — в чате.
   expect(screen.getByText('Разговор прошлой паузы')).toBeDefined();
   expect(chatProps.last?.initial).toEqual({ conversationId: 'conv-1', items: [restored.items[2]] });
   expect((chatProps.last?.embedded as { beforeSend?: unknown }).beforeSend).toBeUndefined();
 });
 
-it('«Вернуться к знакомству» — goto на текущий шаг и перерисовка ленты; подпись совпадает с напоминанием консультанта', async () => {
-  expect(RESUME_LABEL).toBe(RESUME_BUTTON);
+it('«Дополнить профиль» в чате — goto на следующий вопрос и перерисовка ленты; подпись совпадает с напоминанием консультанта', async () => {
+  expect(FILL_LABEL).toBe(RESUME_BUTTON);
   const fetchFn = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ...view, later: false }) }));
   vi.stubGlobal('fetch', fetchFn);
   render(<PausedFeed view={view} restored={restored} />);
-  fireEvent.click(screen.getByRole('button', { name: RESUME_LABEL }));
+  const embedded = chatProps.last?.embedded as { suggestions: { value: string; label: string }[]; onSuggestion: (v: string) => void };
+  expect(embedded.suggestions[0]).toMatchObject({ value: 'resume', label: FILL_LABEL });
+  act(() => embedded.onSuggestion('resume'));
   await waitFor(() => expect(refresh).toHaveBeenCalled());
   expect(push).not.toHaveBeenCalled();
   const body = JSON.parse((fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);

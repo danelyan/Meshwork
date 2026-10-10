@@ -132,6 +132,31 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
           </div>
         </Panel>
 
+        <Panel as="section" className={styles.section} aria-labelledby="boundary">
+          <h2 id="boundary">Что тест не защищает и как подтверждается умение</h2>
+          <ul className={styles.list}>
+            <li>
+              <b>Тест не защищён от нейросети в соседнем окне.</b> Задание с числовым ответом решает любая современная модель, и мы не измеряли, насколько
+              это ломает категорию. Поэтому тест — предварительная калибровка грейда, а не доказательство умения.
+            </li>
+            <li>
+              <b>Защищает он от слива ответов:</b> уникальные экземпляры каждого задания (генераторы) и ротация заданий между попытками. Подсмотренный у
+              знакомого ответ не подходит к вашему экземпляру; от модели это не защищает.
+            </li>
+            <li>
+              <b>Умение подтверждают три шага вне теста:</b> созвон с ИИ-интервьюером, проект на скрытых тестах и защита по собственному коду.
+            </li>
+          </ul>
+          <div className={styles.links}>
+            <Button href="/interview" size="sm">
+              Созвон с ИИ-интервьюером
+            </Button>
+            <Button href="/projects" size="sm">
+              Проект и защита
+            </Button>
+          </div>
+        </Panel>
+
         <section className={styles.section} aria-labelledby="grade">
           <h2 id="grade">Тест на грейд</h2>
           <p className={styles.soft}>Политика {grade.policy}. Источник чисел — {grade.doc}.</p>

@@ -24,6 +24,7 @@ describe('ValidationView', () => {
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(headings[0]).toMatch(/Оговорки/);
     expect(screen.getByText('0,675')).toBeDefined();
+    expect(screen.getByText(/Тест не защищён от нейросети/)).toBeDefined();
     expect(screen.getByText('0,475')).toBeDefined();
     expect(screen.getByText('demo-vac-be-j-1')).toBeDefined();
     expect(screen.getByText(/npx tsx eval\/matching\/run\.ts/)).toBeDefined();

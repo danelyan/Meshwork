@@ -18,7 +18,7 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<str
 /** Подборка по потребности (R-E-03, R-M-03), фильтры — query (R-M-04). */
 export default async function NeedMatchesPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const s = await requirePageEmployer(`/employer/needs/${id}`);
+  const s = await requirePageEmployer(`/employer/needs/${encodeURIComponent(id)}`);
   const ctx = await loadEmployerContext(s.employerProfileId);
   const { filters, limit } = parseFilters(await searchParams);
   const result = await matchForVacancy(ctx.companyId, id, filters, limit).catch((e: unknown) => {

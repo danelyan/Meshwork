@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function EditNeedPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const s = await requirePageEmployer(`/employer/needs/${id}/edit`);
+  const s = await requirePageEmployer(`/employer/needs/${encodeURIComponent(id)}/edit`);
   const ctx = await loadEmployerContext(s.employerProfileId);
   const v = await getVacancy(ctx.companyId, id).catch((e: unknown) => {
     if (e instanceof AppError && e.status === 404) notFound();

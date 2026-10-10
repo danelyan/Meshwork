@@ -107,16 +107,19 @@ function Market({ market, role }: { market: NonNullable<SceneAsideData['market']
 export function SceneAside({ data: initial, className }: { data: SceneAsideData; className?: string }) {
   const data = useAsideData() ?? initial;
   return (
-    <div className={`${styles.aside} ${className ?? ''}`} data-testid="scene-aside">
-      <Roadmap steps={data.steps} hint={data.hint} />
-      <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} />
-      {data.market && <Market market={data.market} role={data.role} />}
-      {data.docs && <Docs docs={data.docs} />}
-      {data.role === 'candidate' && (
-        <Card id="instructions" title="Как мне работать">
-          <InstructionsCard initial={data.instructions} />
-        </Card>
-      )}
+    // внешний блок — контейнер размера (@container aside), внутренний — сетка: запрос не стилизует сам контейнер
+    <div className={`${styles.box} ${className ?? ''}`} data-testid="scene-aside">
+      <div className={styles.aside} data-role={data.role}>
+        <Roadmap steps={data.steps} hint={data.hint} />
+        <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} />
+        {data.market && <Market market={data.market} role={data.role} />}
+        {data.docs && <Docs docs={data.docs} />}
+        {data.role === 'candidate' && (
+          <Card id="instructions" title="Как мне работать">
+            <InstructionsCard initial={data.instructions} />
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

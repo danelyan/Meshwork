@@ -15,3 +15,11 @@
 .save { padding: 7px 14px; font-weight: 600; font-size: var(--fs-sm); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
 .save:hover { background: var(--stage-ink); }
 .save:disabled { opacity: 0.6; cursor: default; }
+
+/* низкая колонка сцены (контейнер aside, AvatarScene.module.css): пояснение — в подсказку поля, поле ниже */
+@container aside (height < 560px) {
+  .wrap { gap: 8px; }
+  .lead { display: none; }
+  .field { min-height: 40px; height: 40px; }
+  .chip { padding: 4px 8px; }
+}

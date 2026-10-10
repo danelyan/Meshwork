@@ -33,9 +33,11 @@
 
 /* --- D: звонок + чат слева. Тёмная сцена C, слева светлая панель 440px на всю высоту --- */
 .sideScene { display: grid; grid-template-columns: minmax(420px, 460px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; position: relative; isolation: isolate; height: var(--scene-h, calc(100svh - var(--landing-header-h))); min-height: var(--scene-min-h, 560px); background: var(--avatar-stage); }
-.sideScene.withAside { grid-template-rows: clamp(250px, 40vh, 340px) minmax(0, 1fr); grid-template-areas: 'panel stage' 'panel aside'; }
+.sideScene.withAside { grid-template-rows: clamp(200px, 30vh, 340px) minmax(0, 1fr); grid-template-areas: 'panel stage' 'panel aside'; }
 .withAside .sideStage { border-bottom: 1px solid var(--avatar-stage-line); }
-.sideAside { grid-area: aside; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 24px 24px; }
+.sideAside { grid-area: aside; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 20px 16px; }
+/* колонка — контейнер по размеру: карточки подстраиваются под её ширину и высоту (SceneAside.module.css, @container aside) */
+@media (min-width: 1051px) { .sideAside { container: aside / size; } }
 .sideStage { grid-area: stage; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .sideHead { position: relative; flex: 1; min-height: 240px; }
 .sideSubs { flex: none; width: min(640px, 100%); margin: 0 auto; padding: 4px 32px 16px; box-sizing: border-box; min-height: calc(3em + 20px); max-height: calc(3em + 20px); overflow: hidden; -webkit-mask-image: linear-gradient(var(--stage-mask) 70%, transparent); mask-image: linear-gradient(var(--stage-mask) 70%, transparent); }

@@ -51,3 +51,10 @@
 .muted { font-size: var(--fs-sm); color: var(--stage-ink-faint); }
 
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* низкая колонка сцены (контейнер aside, AvatarScene.module.css): дроп-зона в две строки, пустое пояснение убрано */
+@container aside (height < 560px) {
+  .root { gap: 8px; }
+  .drop { padding: 8px 10px; gap: 2px; }
+  .muted { display: none; }
+}

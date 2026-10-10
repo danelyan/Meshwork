@@ -1,7 +1,23 @@
-/* Правая колонка сцены консультанта (под головой): «Твой путь», «Что я знаю», «Рынок», «Документы», «Подсказка». Тёмная сцена, только токены. */
-.aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; align-content: start; }
+/* Правая колонка сцены консультанта (под головой): «Твой путь», память, рынок, файлы, «Как мне работать». Тёмная сцена, только токены. */
+/* Высоту колонки задаёт сцена (контейнер aside, AvatarScene.module.css). Широкая и не слишком низкая колонка
+   (13-16" ноутбук): путь сверху, карточки одним рядом тянутся на остаток высоты, длинный список прокручивается
+   внутри своей карточки. Узкая или совсем низкая: карточки своей высоты в две колонки, прокручивается колонка. */
+.aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto; grid-auto-rows: auto; gap: 12px; align-items: stretch; min-height: 100%; }
 .road { grid-column: 1 / -1; }
 .aside > :last-child:nth-child(even) { grid-column: 1 / -1; }
+.box { min-height: 100%; display: grid; }
+/* широкая колонка: все карточки в один ряд; у работодателя их две — по половине */
+@container aside (width >= 880px) and (height >= 380px) {
+  /* один ряд на всю высоту: длинный список прокручивается внутри своей карточки */
+  .aside { grid-auto-rows: minmax(0, 1fr); }
+  .card { min-height: 0; }
+  .cardBody { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  /* память и рынок уже, файлы и настройки шире: у них поля ввода и чипы */
+  .aside { grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.3fr); }
+  .marketRow { grid-template-columns: minmax(0, 120px) minmax(24px, 1fr) 20px; gap: 8px; }
+  .aside > :last-child:nth-child(even) { grid-column: auto; }
+  .aside[data-role='employer'] > .card { grid-column: span 2; }
+}
 .title, .cardHead { margin: 0; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--on-ink-soft); }
 .title { margin-bottom: 10px; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -26,11 +42,11 @@
 .step[data-state='next'] .stepName { color: var(--stage-ink-dim); }
 
 /* --- карточки --- */
-.card { border: 1px solid var(--avatar-stage-line); background: var(--stage-card); }
+.card { display: flex; flex-direction: column; border: 1px solid var(--avatar-stage-line); background: var(--stage-card); }
 .cardHead { padding: 0; }
 .cardToggle { display: flex; width: 100%; align-items: center; justify-content: space-between; padding: 14px 16px 0; background: none; border: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: default; text-align: left; }
 .chevron { display: none; }
-.cardBody { padding: 10px 16px 14px; }
+.cardBody { flex: 1; padding: 10px 16px 14px; }
 .empty { display: grid; gap: 10px; justify-items: start; }
 .empty p { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--on-ink-soft); }
 .attach { padding: 7px 14px; font-weight: 600; font-size: var(--fs-sm); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
@@ -60,9 +76,22 @@
 .marketRow[data-mine] .bar > span { background: var(--stage-accent); }
 .marketNote { margin: 10px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--stage-ink-faint); }
 
+/* --- низкая колонка (13-14" ноутбук): плотнее отступы, заметки шагов в одну строку, заголовок пути убран --- */
+@container aside (height < 560px) {
+  .aside { gap: 10px; }
+  .road { padding: 10px 14px 10px; }
+  .title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .step { padding-top: 8px; }
+  .stepNote { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hint { margin-top: 8px; padding-top: 8px; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cardToggle { padding: 10px 14px 0; }
+  .cardBody { padding: 8px 14px 10px; }
+  .marketNote { display: none; }
+}
+
 /* --- узкий экран: порядок задаёт сцена (display: contents у колонки), роадмап — горизонтальная полоса, карточки — аккордеон --- */
 @media (max-width: 1050px) {
-  .aside { display: contents; }
+  .box, .aside { display: contents; }
   .road { order: 1; padding: 8px var(--page-pad) 10px; border-width: 0 0 1px; background: var(--avatar-stage); }
   .title { display: none; }
   .steps { gap: 6px; }

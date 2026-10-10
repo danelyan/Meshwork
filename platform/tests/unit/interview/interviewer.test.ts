@@ -44,11 +44,26 @@ describe('интервьюер ИИнтервью на stub-провайдере
     expect(payload.blocks.find((b) => b.id === 'test')!.competencies.find((c) => c.id === 'backend.data')!.test).toEqual({ wrong: 1, right: 0 });
   });
 
-  it('модель назвала компетенцию не по плану → вопрос из шаблона по плану', async () => {
-    registerStubResponse('interview_interviewer', () => ({ json: { answerSignal: 'none', competencyId: 'backend.security', question: 'Расскажи про хранение паролей и токены?', done: false } }));
+  it('модель назвала компетенцию не по плану дважды → вопрос из шаблона по плану', async () => {
+    let calls = 0;
+    registerStubResponse('interview_interviewer', () => {
+      calls++;
+      return { json: { answerSignal: 'none', competencyId: 'backend.security', question: 'Расскажи про хранение паролей и токены?', done: false } };
+    });
     const r = await nextInterviewQuestion(base, createStubProvider());
+    expect(calls).toBe(2);
     expect(r.meta.fallback).toBe(true);
     expect(r.meta.competencyId).toBe('common.context');
+  });
+
+  it('невалидный JSON → одна повторная попытка с подсказкой; валидный второй ответ принимается', async () => {
+    const outs = [{ json: { nonsense: true } }, { json: { answerSignal: 'none', competencyId: 'common.context', question: 'Привет! Расскажи про последний проект и свою роль в нём?', done: false } }];
+    let n = 0;
+    registerStubResponse('interview_interviewer', () => outs[n++]);
+    const r = await nextInterviewQuestion(base, createStubProvider());
+    expect(n).toBe(2);
+    expect(r.meta.fallback).toBeUndefined();
+    expect(r.question).toContain('последний проект');
   });
 
   it('пересказ резюме → одна переформулировка, затем шаблон', async () => {

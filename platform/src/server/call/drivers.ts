@@ -31,6 +31,10 @@ export interface CallDriver {
   kind: CallKind;
   /** hardMaxQuestions — потолок с дополнительными вопросами по неопределённым темам (без него их нет). */
   limits: { minQuestions: number; maxQuestions: number; hardMaxQuestions?: number };
+  /** Закрывающая реплика ИИ, когда вопросы закончились (по умолчанию CLOSING_LINE созвона). */
+  closingLine?: string;
+  /** Дисклеймер вида созвона в CallView (по умолчанию CALL_DISCLAIMER). */
+  disclaimer?: string;
   /** Проверка перед стартом (например, сабмит проекта принадлежит кандидату). */
   assertCanStart?(candidateId: string, projectSubmissionId: string | null): Promise<void>;
   nextQuestion(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; force?: { topic: string; level: QuestionLevel } }): Promise<DriverQuestion>;

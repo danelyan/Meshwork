@@ -10,7 +10,7 @@ import type { QuestionLevel, TranscriptEntry } from '../call/types';
 import { type InterviewContext, loadInterviewContext } from './context';
 import { nextInterviewQuestion } from './interviewer';
 import { type BlockId, type CompetencyDef, competencyById } from './model';
-import { INTERVIEW_LIMITS, type InterviewTurn } from './plan';
+import { INTERVIEW_CLOSING_LINE, INTERVIEW_LIMITS, type InterviewTurn } from './plan';
 import { INTERVIEW_DISCLAIMER, buildInterviewSummary, interviewSummaryText } from './verdict';
 
 /** Пары вопрос ИИ → ответ кандидата с компетенцией и блоком из meta (реплики без competencyId пропускаются). */
@@ -38,6 +38,8 @@ function competencyByTitle(ctx: InterviewContext, title: string): CompetencyDef 
 export const interviewDriver: CallDriver = {
   kind: 'interview',
   limits: { minQuestions: INTERVIEW_LIMITS.minQuestions, maxQuestions: INTERVIEW_LIMITS.maxQuestions, hardMaxQuestions: INTERVIEW_LIMITS.hardMaxQuestions },
+  closingLine: INTERVIEW_CLOSING_LINE,
+  disclaimer: INTERVIEW_DISCLAIMER,
 
   async nextQuestion(session: DriverSession, llm, opts = {}) {
     const ctx = await loadInterviewContext(session.candidateId);

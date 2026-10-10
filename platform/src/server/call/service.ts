@@ -137,7 +137,7 @@ export async function buildView(row: Row, acc: ResolvedAccess): Promise<CallView
     },
     participants: participants.map((p) => ({ userId: p.userId, role: p.role, joinedAt: p.joinedAt.toISOString(), leftAt: p.leftAt?.toISOString() ?? null, aiMuted: p.aiMuted })),
     policyVersion: row.policyVersion,
-    disclaimer: CALL_DISCLAIMER,
+    disclaimer: driver.disclaimer ?? CALL_DISCLAIMER,
   };
 }
 
@@ -243,17 +243,17 @@ export async function submitTurn(
   const hardMax = driver.limits.hardMaxQuestions ?? driver.limits.maxQuestions;
   if (interim && (!probe || answered >= hardMax)) {
     // Дополнительные вопросы по неопределённым темам заданы — дальше finish досчитает только их.
-    aiText = CLOSING_LINE;
+    aiText = driver.closingLine ?? CLOSING_LINE;
     done = true;
   } else if (!interim && answered >= driver.limits.maxQuestions) {
-    aiText = CLOSING_LINE;
+    aiText = driver.closingLine ?? CLOSING_LINE;
     done = true;
   } else {
     publishCall(sessionId, { type: 'ai_state', state: 'thinking' });
     try {
       const q = await driver.nextQuestion(driverSession(saved.row, transcript), llm, probe ? { force: probe } : {});
       if (!probe && answered >= driver.limits.minQuestions && q.done) {
-        aiText = CLOSING_LINE;
+        aiText = driver.closingLine ?? CLOSING_LINE;
         done = true;
       } else {
         aiText = q.text;

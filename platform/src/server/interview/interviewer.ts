@@ -127,6 +127,10 @@ export function buildInterviewerMessages(input: InterviewerInput, correction?: s
   return msgs;
 }
 
+const INVALID_CORRECTION =
+  'Ответ не прошёл схему: нужен JSON с полями answerSignal, competencyId, question (по-русски, 10–700 символов), done. Верни JSON заново.';
+const OFF_PLAN_CORRECTION =
+  'competencyId не совпадает с планом для твоего answerSignal (next.ifStrong / next.ifWeak / next.ifNone): возьми competencyId, block и level из плана и верни JSON заново.';
 const RETELL_CORRECTION =
   'Вопрос повторяет текст из профиля кандидата — так нельзя: транскрипт читает слепой оценщик. Переформулируй вопрос своими словами, не повторяя ни одной фразы профиля, и верни JSON заново.';
 
@@ -159,12 +163,19 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
         signal,
       );
       const parsed = InterviewerOutput.safeParse(res.kind === 'json' ? res.json : undefined);
-      if (!parsed.success || !/[а-яё]/i.test(parsed.data.question)) break;
+      // Невалидный вывод — одна повторная попытка с подсказкой, затем шаблон.
+      if (!parsed.success || !/[а-яё]/i.test(parsed.data.question)) {
+        correction = INVALID_CORRECTION;
+        continue;
+      }
       const out = parsed.data;
       const routed: AnswerSignal | null = input.turns.length ? out.answerSignal : null;
       const planned = plannedFor(input, routed);
-      // Компетенцию держит код: вопрос не по плану — шаблон.
-      if (out.competencyId.trim() !== planned.competency.id) break;
+      // Компетенцию держит код: вопрос не по плану — переформулировка, затем шаблон.
+      if (out.competencyId.trim() !== planned.competency.id) {
+        correction = OFF_PLAN_CORRECTION;
+        continue;
+      }
       if (retellsProfile(out.question, input.resumeFacts, titles)) {
         correction = RETELL_CORRECTION;
         continue;

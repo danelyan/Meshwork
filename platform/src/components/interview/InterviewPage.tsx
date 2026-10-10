@@ -195,6 +195,11 @@ export function InterviewPage() {
   const begin = useCallback(async () => {
     setPhase('starting');
     setError(null);
+    // Новое интервью после завершённого: сбросить состояние прошлого.
+    setClosing(false);
+    setDraft('');
+    setCall(null);
+    setTranscript([]);
     try {
       const r = await callApi.start('interview');
       setCall(r.call);

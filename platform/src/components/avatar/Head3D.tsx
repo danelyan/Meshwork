@@ -39,6 +39,8 @@ export interface Head3DProps {
   reducedMotion?: boolean;
   /** Вид головы (см. head-styles.ts); по умолчанию — сетка-металл по референсу. */
   style?: HeadStyle;
+  /** Ручной поворот (drag на демо-экране): прибавляется к повороту группы в каждом кадре. */
+  getOrbit?: () => { yaw: number; pitch: number };
 }
 
 /** Цвета бренда: акцент `--blue` из tokens.css и серебро референса. */
@@ -458,8 +460,9 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
     const motion = props.reducedMotion ? 0 : 1;
     // покой: дыхание и лёгкое покачивание; «думает» — наклон и медленный поворот; говорит — кивки в такт
     const thinking = s === 'thinking' || s === 'loading' ? 1 : 0;
-    g.rotation.y = -0.42 + motion * (Math.sin(t * 0.4) * 0.06 + thinking * Math.sin(t * 0.9) * 0.12);
-    g.rotation.x = -0.1 + motion * (Math.sin(t * 0.55) * 0.02 + thinking * 0.08 + level.current * 0.2);
+    const orbit = props.getOrbit?.();
+    g.rotation.y = -0.42 + (orbit?.yaw ?? 0) + motion * (Math.sin(t * 0.4) * 0.06 + thinking * Math.sin(t * 0.9) * 0.12);
+    g.rotation.x = -0.1 + (orbit?.pitch ?? 0) + motion * (Math.sin(t * 0.55) * 0.02 + thinking * 0.08 + level.current * 0.2);
     g.rotation.z = motion * thinking * 0.06;
     g.position.y = motion * Math.sin(t * 1.2) * 0.012;
   });

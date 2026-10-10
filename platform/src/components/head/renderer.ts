@@ -4,7 +4,7 @@ import { smoothMetalSurface } from './surface';
 import { headMotion, headPose, mouthWeights, portraitZoom } from './motion';
 import { fragmentShader, vertexShader } from './shaders';
 
-export type HeadRenderer = { dispose(): void; setPaused?(paused: boolean): void; setSpeech?(mouth: number, lipRound?: number, lipWide?: number): void };
+export type HeadRenderer = { dispose(): void; setPaused?(paused: boolean): void; setSpeech?(mouth: number, lipRound?: number, lipWide?: number): void; setOrbit?(yaw: number, pitch: number): void };
 
 function rgb(value: string): [number, number, number] {
   const match = value.trim().match(/^#([\da-f]{6})$/i);
@@ -87,7 +87,7 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
     let [targetX, targetY] = headPose(0, 0);
     let angleX = targetX, angleY = targetY;
-    let pointerX = 0, pointerY = 0, lastDraw = 0, visible = true, paused = false;
+    let orbitX = 0, orbitY = 0, pointerX = 0, pointerY = 0, lastDraw = 0, visible = true, paused = false;
     let previousTime: number | null = null, elapsed = 0;
     let speechTarget: [number, number, number] = [0, 0, 0];
     const speech: [number, number, number] = [0, 0, 0];
@@ -120,7 +120,7 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
       gl!.viewport(0, 0, width, height); gl!.clearColor(0, 0, 0, 0); gl!.clear(gl!.COLOR_BUFFER_BIT | gl!.DEPTH_BUFFER_BIT);
       gl!.uniform1f(uniform('Zoom'), portraitZoom(width / height));
-      gl!.uniform2f(angleUniform, angleX + motion.yaw, angleY + motion.pitch);
+      gl!.uniform2f(angleUniform, angleX + motion.yaw + orbitX, angleY + motion.pitch + orbitY);
       gl!.uniform2f(pointerUniform, pointerX, pointerY); gl!.uniform1f(aspectUniform, width / height);
       gl!.uniform1f(uniform('Time'), elapsed);
       gl!.uniform1f(blinkUniform, motion.blink); gl!.uniform1f(breathUniform, motion.breath);
@@ -144,6 +144,7 @@ export async function createHeadRenderer(canvas: HTMLCanvasElement, signal: Abor
       paused = value; previousTime = null;
       if (value) { cancelAnimationFrame(raf); raf = 0; } else schedule();
     },
+      setOrbit(yaw, pitch) { orbitX = yaw; orbitY = pitch; schedule(); },
       setSpeech(mouth, round, wide) { speechTarget = mouthWeights(mouth, round, wide); if (!paused && !reducedMotion) schedule(); }, dispose() {
       if (disposed) return;
       disposed = true; cancelAnimationFrame(raf); observer.disconnect(); resize.disconnect();

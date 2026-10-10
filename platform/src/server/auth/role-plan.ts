@@ -62,19 +62,26 @@ export function planRoleSwitch(state: RoleSwitchState, target: ActiveRole, opts:
   };
 }
 
-/** Что показать в шапке: активная роль, компания и куда можно перейти (`roleMenuFor`). */
+/** Роли в меню аккаунта: активная, компания работодателя и куда можно перейти. */
 export interface RoleMenu {
   role: ActiveRole;
-  /** Название компании работодателя; у кандидата null. */
+  /** Название компании работодателя (есть профиль работодателя — даже когда активна роль кандидата); иначе null. */
   companyName: string | null;
   other: ActiveRole;
   /** Профиль второй роли уже есть — «Перейти в режим…»; нет — «Стать…» (если можно создать). */
   otherExists: boolean;
   /** Вторую роль можно создать (нет на общем демо-аккаунте). */
   canCreateOther: boolean;
-  /** Имя и почта учётки - для кнопки аккаунта и шапки меню. */
+}
+
+/**
+ * Кнопка аккаунта в шапке (`headerAccountFor`): имя и почта есть у любого вошедшего; `roles` — только когда роль
+ * выбрана (у `pending` null: в меню лишь имя, почта и «Выйти», роль выбирают на знакомстве).
+ */
+export interface HeaderAccount {
   userName: string;
   userEmail: string | null;
+  roles: RoleMenu | null;
 }
 
 type Json = Record<string, unknown>;

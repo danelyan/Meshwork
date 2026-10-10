@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import type { RoleMenu } from '@/server/auth/role-plan';
+import type { HeaderAccount } from '@/server/auth/role-plan';
 
 import { HOME_ANCHORS, type NavLink } from './nav';
 import { LogoutButton } from './LogoutButton';
@@ -13,10 +13,10 @@ import { AccountMenu } from './AccountMenu';
 import styles from './shell.module.css';
 
 /**
- * Шапка: знак слева, навигация роли (гостю на главной — якоря), справа меню аккаунта (`roleMenu`, ADR 0004:
- * роли, профиль компании, «Выйти») или «Войти». Аккаунт без роли (знакомство не пройдено) - только «Выйти».
+ * Шапка: знак слева, навигация роли (гостю на главной — якоря), справа меню аккаунта (`account`, ADR 0004:
+ * роли, профиль компании, «Выйти») или «Войти». Сессия без учётки в БД (старая демо-кука) — просто «Выйти».
  */
-export function HeaderBar({ signedIn, links, roleMenu = null }: { signedIn: boolean; links: NavLink[]; roleMenu?: RoleMenu | null }) {
+export function HeaderBar({ signedIn, links, account = null }: { signedIn: boolean; links: NavLink[]; account?: HeaderAccount | null }) {
   const pathname = usePathname();
   const home = pathname === '/';
   return (
@@ -42,10 +42,10 @@ export function HeaderBar({ signedIn, links, roleMenu = null }: { signedIn: bool
             </nav>
           )
         )}
-        {home && !roleMenu && <span className={styles.edition}>№ 01 · осень 2026</span>}
+        {home && !account && <span className={styles.edition}>№ 01 · осень 2026</span>}
         <div className={styles.action}>
-          {roleMenu ? (
-            <AccountMenu menu={roleMenu} />
+          {account ? (
+            <AccountMenu account={account} />
           ) : signedIn ? (
             <LogoutButton className={styles.login} />
           ) : (

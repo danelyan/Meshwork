@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 import { AccountMenu, initialsOf } from '@/components/shell/AccountMenu';
 import { ApiError, demoLogout, switchRoleApi } from '@/lib/api';
-import type { RoleMenu } from '@/server/auth/role-plan';
+import type { HeaderAccount, RoleMenu } from '@/server/auth/role-plan';
 
 const nav = vi.hoisted(() => ({ pathname: '/consultant' }));
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }));
@@ -10,12 +10,14 @@ vi.mock('@/lib/api', async (orig) => ({ ...(await orig<typeof import('@/lib/api'
 
 const navigate = vi.fn();
 const user = { userName: 'Иван Петров', userEmail: 'ivan@example.ru' };
-const candidate: RoleMenu = { role: 'candidate', companyName: null, other: 'employer', otherExists: true, canCreateOther: false, ...user };
-const employer: RoleMenu = { role: 'employer', companyName: 'ООО Ромашка', other: 'candidate', otherExists: true, canCreateOther: false, ...user };
+const candidate: RoleMenu = { role: 'candidate', companyName: null, other: 'employer', otherExists: true, canCreateOther: false };
+const employer: RoleMenu = { role: 'employer', companyName: 'ООО Ромашка', other: 'candidate', otherExists: true, canCreateOther: false };
+
+const acc = (roles: RoleMenu | null): HeaderAccount => ({ ...user, roles });
 
 const trigger = () => screen.getByRole('button', { name: /Аккаунт, активная роль/ });
 const openMenu = (menu: RoleMenu) => {
-  render(<AccountMenu menu={menu} navigate={navigate} />);
+  render(<AccountMenu account={acc(menu)} navigate={navigate} />);
   fireEvent.click(trigger());
 };
 
@@ -37,7 +39,7 @@ describe('initialsOf', () => {
 
 describe('AccountMenu', () => {
   it('кнопка: инициалы и роль, меню закрыто; открытие показывает имя, почту, роли; Escape возвращает фокус', () => {
-    render(<AccountMenu menu={employer} navigate={navigate} />);
+    render(<AccountMenu account={acc(employer)} navigate={navigate} />);
     expect(trigger().getAttribute('aria-expanded')).toBe('false');
     expect(trigger().textContent).toContain('ИП');
     expect(screen.queryByText('ivan@example.ru')).toBeNull();
@@ -62,10 +64,10 @@ describe('AccountMenu', () => {
   });
 
   it('переход по ссылке (смена pathname) закрывает меню', () => {
-    const { rerender } = render(<AccountMenu menu={employer} navigate={navigate} />);
+    const { rerender } = render(<AccountMenu account={acc(employer)} navigate={navigate} />);
     fireEvent.click(trigger());
     nav.pathname = '/employer/company';
-    rerender(<AccountMenu menu={employer} navigate={navigate} />);
+    rerender(<AccountMenu account={acc(employer)} navigate={navigate} />);
     expect(screen.queryByText('ivan@example.ru')).toBeNull();
   });
 
@@ -160,5 +162,21 @@ describe('AccountMenu', () => {
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/'));
     expect(demoLogout).toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
+  });
+
+  it('роль не выбрана (знакомство): «Аккаунт», в панели имя, почта и «Выйти», ролей нет', () => {
+    render(<AccountMenu account={acc(null)} navigate={navigate} />);
+    const btn = screen.getByRole('button', { name: /Аккаунт/ });
+    expect(btn.textContent).toContain('ИП');
+    fireEvent.click(btn);
+    expect(screen.getByText('ivan@example.ru')).toBeDefined();
+    expect(screen.queryByRole('group', { name: 'Роль' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти' }));
+    expect(demoLogout).toHaveBeenCalled();
+  });
+
+  it('компания работодателя видна и из роли кандидата', () => {
+    openMenu({ ...candidate, companyName: 'ООО Ромашка' });
+    expect(screen.getByRole('button', { name: /Работодатель · ООО Ромашка/ })).toBeDefined();
   });
 });

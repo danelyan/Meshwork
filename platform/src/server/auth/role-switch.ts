@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
 
-import { type ActiveRole, type RoleMenu, planRoleSwitch, swapRoleOnboarding } from './role-plan';
+import { type ActiveRole, type HeaderAccount, planRoleSwitch, swapRoleOnboarding } from './role-plan';
 import { type UserWithProfiles, createCandidateProfile, createEmployerProfile, withProfiles } from './users';
 
 /**
@@ -103,9 +103,9 @@ export async function switchRole(userId: string, request: RoleSwitchRequest): Pr
   });
 }
 
-/** Меню роли для шапки (`RoleMenu`). */
-export async function roleMenuFor(userId: string | null, role: string): Promise<RoleMenu | null> {
-  if (!userId || (role !== 'candidate' && role !== 'employer')) return null;
+/** Кнопка аккаунта в шапке (`HeaderAccount`): имя, почта и, если роль выбрана, меню ролей. */
+export async function headerAccountFor(userId: string | null, role: string): Promise<HeaderAccount | null> {
+  if (!userId) return null;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -118,15 +118,18 @@ export async function roleMenuFor(userId: string | null, role: string): Promise<
     },
   });
   if (!user) return null;
+  const account = { userName: user.name, userEmail: user.email };
+  if (role !== 'candidate' && role !== 'employer') return { ...account, roles: null };
   const other: ActiveRole = role === 'candidate' ? 'employer' : 'candidate';
   const otherExists = other === 'candidate' ? user.candidateId !== null : user.employerProfile !== null;
   return {
-    role,
-    companyName: role === 'employer' ? (user.employerProfile?.company.name ?? null) : null,
-    other,
-    otherExists,
-    canCreateOther: !otherExists && !isSharedDemo(user),
-    userName: user.name,
-    userEmail: user.email,
+    ...account,
+    roles: {
+      role,
+      companyName: user.employerProfile?.company.name ?? null,
+      other,
+      otherExists,
+      canCreateOther: !otherExists && !isSharedDemo(user),
+    },
   };
 }

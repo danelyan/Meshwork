@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { demoLogout, switchRoleApi } from '@/lib/api';
-import type { ActiveRole, RoleMenu } from '@/server/auth/role-plan';
+import type { ActiveRole, HeaderAccount } from '@/server/auth/role-plan';
 
 import styles from './shell.module.css';
 
@@ -36,7 +36,8 @@ export function initialsOf(name: string, email: string | null): string {
 
 /**
  * Меню аккаунта в шапке (ADR 0004): кружок с инициалами, активная роль и шеврон; по клику - панель с именем и
- * почтой, ролями, ссылкой «Профиль компании» (работодатель) и «Выйти». Сделано как disclosure (кнопка с
+ * почтой, ролями, ссылкой «Профиль компании» (работодатель) и «Выйти». Роль не выбрана (`roles` null, знакомство) -
+ * на кнопке подпись «Аккаунт», в панели только имя, почта и «Выйти». Сделано как disclosure (кнопка с
  * `aria-expanded`/`aria-controls` + панель), а не `role=menu`: в панели есть форма создания профиля, а меню-семантика
  * её не допускает. Стрелки ↑/↓ ходят по пунктам, Escape закрывает и возвращает фокус на кнопку, клик вне,
  * уход фокуса (Tab) и переход по ссылке закрывают.
@@ -44,7 +45,8 @@ export function initialsOf(name: string, email: string | null): string {
  * работодателю - ещё и название компании); общий демо-аккаунт - пункт неактивен. После ответа - полная
  * навигация на `next`: дом обеих ролей один адрес /consultant, клиентское состояние прежней роли должно сброситься.
  */
-export function AccountMenu({ menu, navigate = fullNavigation }: { menu: RoleMenu; navigate?: Navigate }) {
+export function AccountMenu({ account, navigate = fullNavigation }: { account: HeaderAccount; navigate?: Navigate }) {
+  const menu = account.roles;
   const pathname = usePathname();
   const panelId = useId();
   const [open, setOpen] = useState(false);
@@ -56,7 +58,7 @@ export function AccountMenu({ menu, navigate = fullNavigation }: { menu: RoleMen
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
-  const needsCompany = !menu.otherExists && menu.other === 'employer';
+  const needsCompany = menu !== null && !menu.otherExists && menu.other === 'employer';
 
   const reset = () => {
     setOpen(false);
@@ -98,7 +100,7 @@ export function AccountMenu({ menu, navigate = fullNavigation }: { menu: RoleMen
   };
 
   const pickRole = (role: ActiveRole) => {
-    if (role === menu.role || busy) return;
+    if (!menu || role === menu.role || busy) return;
     if (menu.otherExists) void go({ role });
     else setConfirming(true);
   };
@@ -148,13 +150,13 @@ export function AccountMenu({ menu, navigate = fullNavigation }: { menu: RoleMen
   };
 
   const roleLabel = (role: ActiveRole) => {
-    if (role === 'employer') return menu.role === 'employer' && menu.companyName ? `Работодатель · ${menu.companyName}` : ROLE_LABEL.employer;
+    if (role === 'employer') return menu?.companyName ? `Работодатель · ${menu.companyName}` : ROLE_LABEL.employer;
     return ROLE_LABEL.candidate;
   };
-  const demoLocked = !menu.otherExists && !menu.canCreateOther;
+  const demoLocked = menu !== null && !menu.otherExists && !menu.canCreateOther;
 
   const roleItem = (role: ActiveRole) => {
-    const active = role === menu.role;
+    const active = role === menu?.role;
     const locked = !active && demoLocked;
     return (
       <button
@@ -184,25 +186,33 @@ export function AccountMenu({ menu, navigate = fullNavigation }: { menu: RoleMen
         onClick={() => (open ? close(false) : setOpen(true))}
       >
         <span className={styles.avatar} aria-hidden="true">
-          {initialsOf(menu.userName, menu.userEmail)}
+          {initialsOf(account.userName, account.userEmail)}
         </span>
         <span className={styles.accountRole}>
-          <VisuallyHidden>Аккаунт, активная роль: </VisuallyHidden>
-          {ROLE_LABEL[menu.role]}
+          {menu ? (
+            <>
+              <VisuallyHidden>Аккаунт, активная роль: </VisuallyHidden>
+              {ROLE_LABEL[menu.role]}
+            </>
+          ) : (
+            'Аккаунт'
+          )}
         </span>
         <span className={styles.chevron} aria-hidden="true" data-open={open || undefined} />
       </button>
       {open && (
         <div id={panelId} ref={panel} className={styles.accountPanel}>
           <div className={styles.menuHead}>
-            <strong>{menu.userName}</strong>
-            {menu.userEmail && <span>{menu.userEmail}</span>}
+            <strong>{account.userName}</strong>
+            {account.userEmail && <span>{account.userEmail}</span>}
           </div>
-          <div className={styles.menuGroup} role="group" aria-label="Роль">
-            {roleItem('employer')}
-            {roleItem('candidate')}
-          </div>
-          {confirming && (
+          {menu && (
+            <div className={styles.menuGroup} role="group" aria-label="Роль">
+              {roleItem('employer')}
+              {roleItem('candidate')}
+            </div>
+          )}
+          {menu && confirming && (
             <form className={styles.rolePanel} onSubmit={onConfirm} aria-label={BECOME_LABEL[menu.other]}>
               <p className={styles.roleText}>{CREATE_TEXT[menu.other]}</p>
               {needsCompany ? (
@@ -231,7 +241,7 @@ export function AccountMenu({ menu, navigate = fullNavigation }: { menu: RoleMen
               {error}
             </p>
           )}
-          {menu.role === 'employer' && (
+          {menu?.role === 'employer' && (
             <Link className={styles.menuItem} href="/employer/company">
               Профиль компании
             </Link>

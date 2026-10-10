@@ -16,13 +16,13 @@ vi.mock('@/server/auth/page', () => ({ getPageSession: async () => page.session 
 vi.mock('@/lib/api', () => ({ demoLogout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
 // Меню роли (ADR 0004) читает БД — в тестах шапки подставляем готовое.
 const menu = vi.hoisted(() => ({ value: null as unknown }));
-vi.mock('@/server/auth/role-switch', () => ({ roleMenuFor: async () => menu.value }));
+vi.mock('@/server/auth/role-switch', () => ({ headerAccountFor: async () => menu.value }));
 
 const principal = (role: SessionPrincipal['role']): SessionPrincipal => ({ userId: 'u1', role, candidateId: null, employerProfileId: null });
 
-async function renderHeader(session: SessionPrincipal | null, pathname: string, roleMenu: unknown = null) {
+async function renderHeader(session: SessionPrincipal | null, pathname: string, account: unknown = null) {
   page.session = session;
-  menu.value = roleMenu;
+  menu.value = account;
   nav.pathname = pathname;
   render(await SiteHeader());
   return within(screen.getByRole('banner'));
@@ -69,7 +69,9 @@ describe('SiteHeader', () => {
 
   it('кнопка аккаунта: инициалы, активная роль, меню закрыто (ADR 0004)', async () => {
     const h = await renderHeader(principal('employer'), '/employer', {
-      role: 'employer', companyName: 'ООО Ромашка', other: 'candidate', otherExists: true, canCreateOther: false, userName: 'Иван Петров', userEmail: 'i@p.ru',
+      userName: 'Иван Петров',
+      userEmail: 'i@p.ru',
+      roles: { role: 'employer', companyName: 'ООО Ромашка', other: 'candidate', otherExists: true, canCreateOther: false },
     });
     const btn = h.getByRole('button', { name: /Аккаунт, активная роль: Работодатель/ });
     expect(btn.getAttribute('aria-expanded')).toBe('false');
@@ -77,9 +79,15 @@ describe('SiteHeader', () => {
     expect(h.queryByRole('button', { name: 'Выйти' })).toBeNull();
   });
 
-  it('аккаунт без роли (онбординг не пройден): без ссылок роли, но с «Выйти»', async () => {
-    const h = await renderHeader(principal('pending'), '/onboarding');
+  it('аккаунт без роли (знакомство): без ссылок роли, кнопка «Аккаунт» вместо «Выйти» на виду', async () => {
+    const h = await renderHeader(principal('pending'), '/consultant', { userName: 'Иван Петров', userEmail: 'i@p.ru', roles: null });
     expect(h.queryByRole('navigation')).toBeNull();
+    expect(h.getByRole('button', { name: /Аккаунт/ }).getAttribute('aria-expanded')).toBe('false');
+    expect(h.queryByRole('button', { name: 'Выйти' })).toBeNull();
+  });
+
+  it('сессия без учётки в БД (старая демо-кука): просто «Выйти»', async () => {
+    const h = await renderHeader(principal('candidate'), '/consultant', null);
     expect(h.getByRole('button', { name: 'Выйти' })).toBeDefined();
   });
 });

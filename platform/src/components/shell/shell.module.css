@@ -54,7 +54,7 @@
 .chevron[data-open] { transform: translateY(1px) rotate(-135deg); }
 .accountPanel {
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 25; width: min(320px, calc(100vw - 2 * var(--page-pad)));
-  display: grid; padding: 8px 0; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(17, 17, 17, 0.14);
+  display: grid; padding: 8px 0; background: var(--paper); border: 1px solid var(--line); box-shadow: var(--landing-shadow-md);
 }
 .menuHead { display: grid; gap: 2px; padding: 8px 16px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
 .menuHead strong, .menuHead span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

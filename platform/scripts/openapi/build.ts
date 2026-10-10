@@ -3,6 +3,7 @@
 // Запуск: `npx tsx scripts/build-openapi.ts` из platform/ (см. README). Тест сверяет результат с docs/openapi.yaml.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import * as ts from 'typescript';
 
@@ -133,7 +134,9 @@ async function importName(scope: FileScope, name: string): Promise<unknown> {
   const file = spec ? resolveModule(scope, spec) : null;
   if (!file) return undefined;
   try {
-    const mod = (await import(file)) as Record<string, unknown>;
+    // Native ESM treats C:\\... as a URL with the unsupported `c:` scheme.
+    // File URLs also correctly escape spaces, Unicode, # and % in checkout paths.
+    const mod = (await import(pathToFileURL(file).href)) as Record<string, unknown>;
     return mod[name];
   } catch {
     // модуль тянет окружение (БД, env) — берём числовую/строковую константу прямо из текста

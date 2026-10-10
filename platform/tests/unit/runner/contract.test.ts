@@ -88,6 +88,8 @@ describe('runner sandbox: команда задания', () => {
     expect(cmd.args).toContain('--config');
     expect(cmd.args).toContain(cfg.vitestConfig);
     expect(cmd.args).not.toContain('install');
+    expect(cmd.reportFile).toBe('/work/jobs/j/out/report.json');
+    expect(cmd.env.FSP_CACHE_DIR).toBe('/work/jobs/j/tmp/.vite');
   });
 
   it('python: RLIMIT_AS и конфиг pytest платформы', () => {
@@ -95,6 +97,7 @@ describe('runner sandbox: команда задания', () => {
     expect(cmd.args[9]).toBe(String(768 * 1024));
     expect(cmd.args).toContain('-c');
     expect(cmd.args).toContain('/work/jobs/j/repo/.platform-tests');
+    expect(cmd.reportFile).toBe('/work/jobs/j/out/report.xml');
     expect(cmd.env.PYTEST_DISABLE_PLUGIN_AUTOLOAD).toBe('1');
   });
 

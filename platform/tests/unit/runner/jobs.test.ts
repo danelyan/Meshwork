@@ -13,23 +13,29 @@ import { dirEntries, makeTarGz } from '../../helpers/tar';
 /** Очередь и лимиты runner без настоящих процессов: run подменён и ждёт команды теста. */
 let work: string;
 let release: () => void;
+let started: Promise<void>;
 let open = false;
 let jobs: JobManager;
-const tarball = () => makeTarGz(dirEntries(path.resolve('tests/fixtures/runner/backend-solution')));
+// Queue behavior is independent of the job language. The Python fixture needs no
+// node_modules symlink (Windows requires extra privileges to create one).
+const tarball = () => makeTarGz(dirEntries(path.resolve('tests/fixtures/runner/python-solution')));
 const body = (b: Buffer) => Readable.from([b]);
 const req = (uploadId: string) => ({
   repoTarballUrl: `upload:${uploadId}`,
   commitSha: 'abc1234',
-  testsBundleRef: 'be-webapi-junior-notes',
-  image: 'node20' as const,
+  testsBundleRef: 'python-smoke-api',
+  image: 'python312' as const,
 });
 
 beforeEach(async () => {
   work = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'fsp-runner-q-')));
-  const cfg = loadConfig({ RUNNER_LOCAL: '1', RUNNER_WORK_DIR: work, RUNNER_MAX_QUEUE: '2', RUNNER_MAX_PENDING_MB: '50' });
+  const cfg = loadConfig({ RUNNER_LOCAL: '1', RUNNER_WORK_DIR: work, RUNNER_MAX_QUEUE: '2', RUNNER_MAX_PENDING_MB: '50', RUNNER_TEMPLATES_DIR: 'tests/fixtures/runner/templates' });
   open = false;
+  let markStarted!: () => void;
+  started = new Promise<void>((resolve) => { markStarted = resolve; });
   let gate = new Promise<void>((r) => (release = r));
   const run = async (): Promise<SandboxOutcome> => {
+    markStarted();
     if (!open) await gate;
     gate = new Promise<void>((r) => (release = r));
     return { exitCode: 1, signal: null, timedOut: false, log: '', durationMs: 1 };
@@ -49,7 +55,7 @@ describe('runner очередь и лимиты', () => {
   it('429 queue_full, когда очередь заполнена, и архив отклонённого запроса удаляется', async () => {
     const upload = async () => (await jobs.receiveUpload(body(tarball()), undefined)).uploadId;
     await jobs.submit(req(await upload())); // сразу running
-    await new Promise((r) => setTimeout(r, 20));
+    await started;
     await jobs.submit(req(await upload()));
     await jobs.submit(req(await upload())); // очередь = 2
     const last = await upload();
@@ -71,35 +77,45 @@ describe('runner очередь и лимиты', () => {
 
   it('отказ по шаблону тоже удаляет загрузку', async () => {
     const { uploadId } = await jobs.receiveUpload(body(tarball()), undefined);
-    await expect(jobs.submit({ ...req(uploadId), image: 'python312' })).rejects.toMatchObject({ code: 'image_mismatch' });
+    await expect(jobs.submit({ ...req(uploadId), image: 'node20' })).rejects.toMatchObject({ code: 'image_mismatch' });
     expect(existsSync(path.join(work, 'uploads', `${uploadId}.tar.gz`))).toBe(false);
   });
 });
 
 describe('runner: чтение отчёта задания', () => {
-  it('обычный файл читается; симлинк, FIFO, каталог и слишком большой файл — отказ без зависания', async () => {
-    const { execFileSync } = await import('node:child_process');
-    const { mkdirSync, symlinkSync, writeFileSync } = await import('node:fs');
+  it('обычный файл читается; каталог и слишком большой файл отклоняются', async () => {
+    const { mkdirSync, writeFileSync } = await import('node:fs');
     const { readReportSafe } = await import('../../../runner/src/jobs');
     const d = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'fsp-report-')));
     try {
       writeFileSync(path.join(d, 'ok.json'), '{"a":1}');
       expect(await readReportSafe(path.join(d, 'ok.json'))).toBe('{"a":1}');
 
-      writeFileSync(path.join(d, 'secret'), 'SECRET');
-      symlinkSync(path.join(d, 'secret'), path.join(d, 'link.json'));
-      await expect(readReportSafe(path.join(d, 'link.json'))).rejects.toThrow();
-
-      execFileSync('mkfifo', [path.join(d, 'fifo.json')]);
-      const started = Date.now();
-      await expect(readReportSafe(path.join(d, 'fifo.json'))).rejects.toThrow(/не обычный файл/);
-      expect(Date.now() - started).toBeLessThan(1000);
-
       mkdirSync(path.join(d, 'dir.json'));
       await expect(readReportSafe(path.join(d, 'dir.json'))).rejects.toThrow();
 
       writeFileSync(path.join(d, 'big.json'), Buffer.alloc(2048));
       await expect(readReportSafe(path.join(d, 'big.json'), 1024)).rejects.toThrow(/лимит/);
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+    }
+  });
+
+  // Production runner targets Linux; macOS is supported locally. Windows lacks
+  // POSIX FIFO/O_NOFOLLOW semantics, so these checks must run on a supported OS.
+  it.skipIf(process.platform === 'win32')('POSIX: симлинк и FIFO отклоняются без чтения чужого файла и зависания', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const { symlinkSync, writeFileSync } = await import('node:fs');
+    const { readReportSafe } = await import('../../../runner/src/jobs');
+    const d = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'fsp-report-posix-')));
+    try {
+      writeFileSync(path.join(d, 'secret'), 'SECRET');
+      symlinkSync(path.join(d, 'secret'), path.join(d, 'link.json'));
+      await expect(readReportSafe(path.join(d, 'link.json'))).rejects.toThrow();
+      execFileSync('mkfifo', [path.join(d, 'fifo.json')]);
+      const begin = Date.now();
+      await expect(readReportSafe(path.join(d, 'fifo.json'))).rejects.toThrow(/не обычный файл/);
+      expect(Date.now() - begin).toBeLessThan(1000);
     } finally {
       rmSync(d, { recursive: true, force: true });
     }

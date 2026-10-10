@@ -93,6 +93,8 @@ export function isContainerMode(cfg: RunnerConfig, platform: NodeJS.Platform = p
 
 export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { container: boolean; platform: NodeJS.Platform }): SandboxCommand {
   const linuxContainer = opts.container && opts.platform === 'linux' && Boolean(cfg.sandboxHelper);
+  // Commands use the target OS path syntax, including when inspected from Windows.
+  const commandPath = opts.platform === 'win32' ? path.win32 : path.posix;
   const baseEnv: Record<string, string> = {
     PATH: '/usr/local/bin:/usr/bin:/bin',
     HOME: spec.tmpDir,
@@ -107,11 +109,11 @@ export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { conta
   let reportFile: string;
   let reportKind: SandboxCommand['reportKind'];
   if (spec.image === 'node20') {
-    reportFile = path.join(spec.outDir, 'report.json');
+    reportFile = commandPath.join(spec.outDir, 'report.json');
     reportKind = 'vitest-json';
     argv = [
       cfg.nodeBin,
-      path.join(cfg.nodeDepsDir, 'vitest/vitest.mjs'),
+      commandPath.join(cfg.nodeDepsDir, 'vitest/vitest.mjs'),
       'run',
       '--root',
       spec.repoDir,
@@ -125,14 +127,14 @@ export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { conta
       NODE_OPTIONS: `--max-old-space-size=${cfg.memMb}`,
       NODE_PATH: cfg.nodeDepsDir,
       FSP_REPO_DIR: spec.repoDir,
-      FSP_CACHE_DIR: path.join(spec.tmpDir, '.vite'),
+      FSP_CACHE_DIR: commandPath.join(spec.tmpDir, '.vite'),
       FSP_TEST_ENV: spec.testEnvironment,
       FSP_REPORT_FILE: reportFile,
     };
   } else {
-    reportFile = path.join(spec.outDir, 'report.xml');
+    reportFile = commandPath.join(spec.outDir, 'report.xml');
     reportKind = 'junit-xml';
-    const testsDir = path.join(spec.repoDir, '.platform-tests');
+    const testsDir = commandPath.join(spec.repoDir, '.platform-tests');
     argv = [
       cfg.pythonBin,
       '-B',

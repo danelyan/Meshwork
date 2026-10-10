@@ -28,6 +28,8 @@ import { addWeaveField } from './weave-field';
 import { WEAVE_FIELD_STYLES, WEAVE_RETOPO_GLSL_COLOR, WEAVE_RETOPO_GLSL_HEAD, weaveRetopoFragment, weaveRetopoVertex } from './weave-retopo';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
+import { DEFAULT_LIGHTING, lightRig, type LightingPreset, type SoftboxEnvironment } from './lighting';
+import { buildSoftboxScene } from './softbox-environment';
 import {
   BASE_PITCH,
   BASE_YAW,
@@ -72,6 +74,8 @@ export interface Head3DProps {
    * странице поворотом шеи, дыхание и моргание Карины; `alive` — то же + скулы, глаза, брови.
    */
   motion?: HeadMotionMode;
+  /** Свет сцены (см. lighting.ts); по умолчанию `current` — прежние лампы и окружение. */
+  lighting?: LightingPreset;
 }
 
 /** Цвета бренда: акцент `--blue` из tokens.css и серебро референса. */
@@ -931,23 +935,50 @@ class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode
  * Карта окружения «студия» (RoomEnvironment → PMREM): без неё металл не отражает ничего и голова
  * выглядит плоской; с ней блики и градиенты дают объём. Считается один раз на контекст.
  */
-function StudioEnvironment() {
+function roomScene() {
+  const room = new RoomEnvironment();
+  return { scene: room, dispose: () => room.dispose() };
+}
+
+function StudioEnvironment({ intensity, softbox }: { intensity: number; softbox?: SoftboxEnvironment }) {
   const gl = useThree((st) => st.gl);
   const scene = useThree((st) => st.scene);
+  // сила окружения меняется по пресету света без пересчёта PMREM
+  useEffect(() => {
+    scene.environmentIntensity = intensity;
+  }, [scene, intensity]);
+  // своё окружение-студия (пресет с softbox) или RoomEnvironment; пересчёт только при смене окружения
   useEffect(() => {
     const pmrem = new PMREMGenerator(gl);
-    const room = new RoomEnvironment();
-    const target = pmrem.fromScene(room, 0.04);
+    const source = softbox ? buildSoftboxScene(softbox) : roomScene();
+    const target = pmrem.fromScene(source.scene, 0.04);
     scene.environment = target.texture;
-    scene.environmentIntensity = 0.85;
-    room.dispose();
+    source.dispose();
     pmrem.dispose();
     return () => {
       if (scene.environment === target.texture) scene.environment = null;
       target.dispose();
     };
-  }, [gl, scene]);
+  }, [gl, scene, softbox]);
   return null;
+}
+
+/**
+ * Свет сцены по пресету (lighting.ts): окружение + полусферный + направленные лампы.
+ * Смена пресета — обычное обновление пропов R3F; ключи по пресету, т.к. число ламп может отличаться.
+ */
+function SceneLights({ preset }: { preset?: LightingPreset }) {
+  const rig = lightRig(preset);
+  const id = preset ?? DEFAULT_LIGHTING;
+  return (
+    <>
+      <StudioEnvironment intensity={rig.environment} softbox={rig.softbox} />
+      <hemisphereLight color={rig.hemisphere.sky} groundColor={rig.hemisphere.ground} intensity={rig.hemisphere.intensity} />
+      {rig.directional.map((d, i) => (
+        <directionalLight key={`${id}-${i}`} position={d.position} intensity={d.intensity} color={d.color ?? '#ffffff'} />
+      ))}
+    </>
+  );
 }
 
 /**
@@ -1005,11 +1036,7 @@ export default function Head3D(props: Head3DProps) {
         gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
         aria-hidden="true"
       >
-        <StudioEnvironment />
-        <hemisphereLight args={['#e8edf5', '#15171c', 0.5]} />
-        <directionalLight position={[-2.5, 2.5, 3]} intensity={1.8} />
-        <directionalLight position={[3, 1, -2.5]} intensity={1.4} color="#dfe6ff" />
-        <directionalLight position={[0, -2, 2]} intensity={0.3} />
+        <SceneLights preset={props.lighting} />
         {body}
       </Canvas>
     </div>

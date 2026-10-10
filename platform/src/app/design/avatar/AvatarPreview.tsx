@@ -10,6 +10,7 @@ import { CompanionVoiceProvider, useCompanionVoice, type VoiceStatus } from '@/c
 import { Button, Chip, Field, Kicker } from '@/components/ui';
 
 import { DemoPanel } from './DemoPanel';
+import { LightingPicker, LightingProvider } from './LightingPicker';
 import { MotionPicker, MotionProvider } from './MotionPicker';
 import { MouthLookPicker, MouthLookProvider } from './MouthLookPicker';
 import styles from './preview.module.css';
@@ -25,7 +26,9 @@ export function AvatarPreview() {
     <CompanionVoiceProvider>
       <MouthLookProvider>
         <MotionProvider>
-          <Preview />
+          <LightingProvider>
+            <Preview />
+          </LightingProvider>
         </MotionProvider>
       </MouthLookProvider>
     </CompanionVoiceProvider>
@@ -125,6 +128,7 @@ function Preview() {
         </Field>
         <MouthLookPicker />
         <MotionPicker />
+        <LightingPicker />
         <Field label="Состояние (влияет на наши головы; у Карины статуса нет)">
           <select value={status} onChange={(e) => setStatus(e.target.value as VoiceStatus)}>
             <option value="idle">idle</option>

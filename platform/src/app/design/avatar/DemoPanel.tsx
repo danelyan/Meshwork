@@ -10,6 +10,7 @@ import { Field, Kicker } from '@/components/ui';
 import { GlassHead } from './GlassHead';
 import { GridFrame } from './GridFrame';
 import { OrbitState } from './orbit';
+import { useLighting } from './LightingPicker';
 import { useHeadMotionMode } from './MotionPicker';
 import { useMouthLook } from './MouthLookPicker';
 import styles from './preview.module.css';
@@ -57,6 +58,7 @@ function Stage({ variant, speech, bus }: { variant: Variant; speech: PanelSpeech
   const rotatable = variant.kind !== 'grid';
   const mouthLook = useMouthLook();
   const motion = useHeadMotionMode();
+  const lighting = useLighting();
 
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -93,7 +95,7 @@ function Stage({ variant, speech, bus }: { variant: Variant; speech: PanelSpeech
           }
         : {})}
     >
-      {variant.kind === 'three' && <Head3D status={speech.status} getLevel={speech.getLevel} getMouth={speech.getMouth} style={variant.style} getOrbit={getOrbit} mouthLook={mouthLook} motion={motion} />}
+      {variant.kind === 'three' && <Head3D status={speech.status} getLevel={speech.getLevel} getMouth={speech.getMouth} style={variant.style} getOrbit={getOrbit} mouthLook={mouthLook} motion={motion} lighting={lighting} />}
       {variant.kind === 'glass' && <GlassHead orbit={orbit} bus={bus} />}
       {variant.kind === 'grid' && <GridFrame source={variant.source} title={variant.label} />}
     </div>

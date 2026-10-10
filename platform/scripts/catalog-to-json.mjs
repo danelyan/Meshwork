@@ -187,12 +187,41 @@ if (existsSync(OVERRIDES)) {
   }
 }
 
+// Записи направлений (lane directions, ADR 0003 дополнение 10.10: ai.*, позже eng.*) поверх каталога-Markdown
+// владельца: scripts/catalog-direction-entries.json. entries — в конец; commonWeights — веса common.* для
+// новых направлений (у common веса по специализациям; направление без ключа — запись для него не ожидается).
+const DIRECTION_ENTRIES = join(here, 'catalog-direction-entries.json');
+if (existsSync(DIRECTION_ENTRIES)) {
+  const extra = JSON.parse(readFileSync(DIRECTION_ENTRIES, 'utf8'));
+  const PREFIX = { ai: 'ai.', engineering: 'eng.' };
+  for (const e of extra.entries ?? []) {
+    if (!PREFIX[e.specialization] || !e.id.startsWith(PREFIX[e.specialization])) fail(`${e.id}: направление ${e.specialization} не из ai/engineering или префикс не тот`);
+    if (byId.has(e.id)) fail(`повтор ID ${e.id}`);
+    if (!Array.isArray(e.proof) || e.proof.length === 0) fail(`${e.id}: нет пути доказательства`);
+    const nums = Object.values(e.weights).filter((x) => x !== null);
+    if (nums.length === 0 || e.weight !== Math.max(...nums)) fail(`${e.id}: weight должен быть максимумом weights`);
+    entries.push(e);
+    byId.set(e.id, e);
+  }
+  for (const e of extra.entries ?? []) {
+    for (const a of e.adjacent) {
+      if (!byId.has(a)) fail(`${e.id}: смежность на несуществующий ${a}`);
+      if (!byId.get(a).adjacent.includes(e.id)) fail(`${e.id} — ${a}: смежность не симметрична`);
+    }
+  }
+  for (const [id, bySpec] of Object.entries(extra.commonWeights ?? {})) {
+    const c = byId.get(id);
+    if (!c || c.specialization !== 'common') fail(`commonWeights: ${id} — не запись common`);
+    Object.assign(c.weights, bySpec);
+  }
+}
+
 const dateMatch = /(\d{2})\.(\d{2})\.(\d{4})/.exec(md.split('\n').find((l) => l.includes('Статус')) ?? '');
 const version = dateMatch
   ? `claims-catalog-${/черновик/i.test(md.slice(0, 400)) ? 'draft-' : ''}${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`
   : 'claims-catalog-unknown';
 const counts = Object.fromEntries(
-  ['backend', 'frontend', 'common'].map((s) => [s, entries.filter((e) => e.specialization === s).length]),
+  ['backend', 'frontend', 'ai', 'engineering', 'common'].map((s) => [s, entries.filter((e) => e.specialization === s).length]),
 );
 const out = JSON.stringify({ version, counts, entries }, null, 2) + '\n';
 
@@ -205,5 +234,5 @@ if (check) {
   console.log('claims-catalog.json актуален');
 } else {
   writeFileSync(OUT, out);
-  console.log(`${version}: backend ${counts.backend}, frontend ${counts.frontend}, common ${counts.common}, рёбер смежности ${adjacency.length} → ${OUT}`);
+  console.log(`${version}: backend ${counts.backend}, frontend ${counts.frontend}, ai ${counts.ai}, engineering ${counts.engineering}, common ${counts.common}, рёбер смежности ${adjacency.length} → ${OUT}`);
 }

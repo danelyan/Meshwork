@@ -3,6 +3,8 @@
   "counts": {
     "backend": 33,
     "frontend": 28,
+    "ai": 21,
+    "engineering": 0,
     "common": 11
   },
   "entries": [
@@ -1774,6 +1776,10 @@
         "frontend": {
           "junior": 2,
           "middle": 1
+        },
+        "ai": {
+          "junior": 2,
+          "middle": 1
         }
       },
       "proof": [
@@ -1808,6 +1814,10 @@
         "frontend": {
           "junior": 2,
           "middle": 2
+        },
+        "ai": {
+          "junior": 1,
+          "middle": 1
         }
       },
       "proof": [
@@ -1843,6 +1853,10 @@
         "frontend": {
           "junior": 1,
           "middle": 1
+        },
+        "ai": {
+          "junior": 2,
+          "middle": 2
         }
       },
       "proof": [
@@ -1876,6 +1890,10 @@
         },
         "frontend": {
           "junior": 2,
+          "middle": 2
+        },
+        "ai": {
+          "junior": 1,
           "middle": 2
         }
       },
@@ -1913,6 +1931,10 @@
         "frontend": {
           "junior": 3,
           "middle": 2
+        },
+        "ai": {
+          "junior": 2,
+          "middle": 1
         }
       },
       "proof": [
@@ -2013,6 +2035,10 @@
         "frontend": {
           "junior": 2,
           "middle": 2
+        },
+        "ai": {
+          "junior": 1,
+          "middle": 1
         }
       },
       "proof": [
@@ -2084,6 +2110,10 @@
         "frontend": {
           "junior": 1,
           "middle": 1
+        },
+        "ai": {
+          "junior": 1,
+          "middle": 2
         }
       },
       "proof": [
@@ -2116,6 +2146,10 @@
         "frontend": {
           "junior": null,
           "middle": 1
+        },
+        "ai": {
+          "junior": null,
+          "middle": 1
         }
       },
       "proof": [
@@ -2132,6 +2166,678 @@
       "limits": "деплой и инфраструктуру",
       "stack": null,
       "adjacent": []
+    },
+    {
+      "id": "ai.prompting",
+      "specialization": "ai",
+      "statement": "Проектировал промпты: системная инструкция, примеры (few-shot), явный формат ответа",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:structured-output",
+        "interview:defend"
+      ],
+      "markers": [
+        "промпт",
+        "prompt engineering",
+        "few-shot",
+        "системный промпт",
+        "system prompt",
+        "промпт-инжиниринг"
+      ],
+      "limits": "качество на реальных данных без оценки на размеченном наборе",
+      "stack": null,
+      "adjacent": [
+        "ai.structured-output"
+      ]
+    },
+    {
+      "id": "ai.structured-output",
+      "specialization": "ai",
+      "statement": "Получал от LLM структурированный ответ по JSON Schema и валидировал его до записи в систему",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:structured-output",
+        "interview:defend"
+      ],
+      "markers": [
+        "structured output",
+        "JSON Schema",
+        "json mode",
+        "pydantic",
+        "валидация ответа LLM",
+        "function calling"
+      ],
+      "limits": "устойчивость к промпт-инъекциям",
+      "stack": null,
+      "adjacent": [
+        "ai.prompting",
+        "ai.tool-use"
+      ]
+    },
+    {
+      "id": "ai.rag",
+      "specialization": "ai",
+      "statement": "Строил RAG: разбиение на чанки, эмбеддинги, поиск ближайших, сборка контекста для LLM",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:rag-chunking",
+        "task:vector-topk",
+        "task:retrieval-eval"
+      ],
+      "markers": [
+        "RAG",
+        "retrieval",
+        "чанкинг",
+        "chunking",
+        "эмбеддинги",
+        "embeddings",
+        "LangChain",
+        "LlamaIndex"
+      ],
+      "limits": "оценку качества ответов на размеченном наборе",
+      "stack": null,
+      "adjacent": [
+        "ai.vector-search",
+        "ai.llm-eval"
+      ]
+    },
+    {
+      "id": "ai.vector-search",
+      "specialization": "ai",
+      "statement": "Работал с векторным поиском: косинусная близость, top-k, векторные БД (Qdrant, pgvector)",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:vector-topk",
+        "interview:defend"
+      ],
+      "markers": [
+        "Qdrant",
+        "pgvector",
+        "FAISS",
+        "Milvus",
+        "Chroma",
+        "векторный поиск",
+        "косинусная близость"
+      ],
+      "limits": "настройку индексов под production-нагрузку",
+      "stack": "векторная БД",
+      "adjacent": [
+        "ai.rag"
+      ]
+    },
+    {
+      "id": "ai.tool-use",
+      "specialization": "ai",
+      "statement": "Подключал к LLM инструменты (function calling): агентный цикл, ограничение шагов, журнал вызовов",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:tool-use-trace",
+        "task:prompt-injection"
+      ],
+      "markers": [
+        "tool use",
+        "function calling",
+        "агент",
+        "agent",
+        "tool calls",
+        "инструменты LLM",
+        "MCP"
+      ],
+      "limits": "безопасность действий без подтверждения пользователя",
+      "stack": null,
+      "adjacent": [
+        "ai.structured-output",
+        "ai.prompt-injection"
+      ]
+    },
+    {
+      "id": "ai.prompt-injection",
+      "specialization": "ai",
+      "statement": "Защищал LLM-приложение от промпт-инъекций: недоверенный текст отдельно от инструкций, allowlist инструментов, очистка вывода",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:prompt-injection",
+        "interview:defend"
+      ],
+      "markers": [
+        "prompt injection",
+        "промпт-инъекция",
+        "jailbreak",
+        "guardrails",
+        "OWASP LLM"
+      ],
+      "limits": "полную защиту: инъекции снижаются, а не исключаются",
+      "stack": null,
+      "adjacent": [
+        "ai.tool-use",
+        "ai.pii-masking"
+      ]
+    },
+    {
+      "id": "ai.llm-eval",
+      "specialization": "ai",
+      "statement": "Оценивал качество LLM/RAG-приложения: размеченный набор, метрики ретрива и ответов, сравнение версий",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:retrieval-eval",
+        "task:model-selection"
+      ],
+      "markers": [
+        "оценка качества LLM",
+        "eval",
+        "evals",
+        "precision@k",
+        "recall@k",
+        "LLM-as-a-judge",
+        "golden set",
+        "RAGAS"
+      ],
+      "limits": "качество на пользователях после выката",
+      "stack": null,
+      "adjacent": [
+        "ai.rag",
+        "ai.validation"
+      ]
+    },
+    {
+      "id": "ai.llm-cost",
+      "specialization": "ai",
+      "statement": "Считал стоимость и латентность LLM: токены на вход и выход, лимиты, число вызовов в цикле",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "task:token-cost",
+        "task:tool-use-trace"
+      ],
+      "markers": [
+        "стоимость токенов",
+        "токены",
+        "латентность",
+        "rate limit",
+        "TPM",
+        "кэширование промптов",
+        "бюджет LLM"
+      ],
+      "limits": "оптимизацию под реальную нагрузку",
+      "stack": null,
+      "adjacent": [
+        "ai.llm-api"
+      ]
+    },
+    {
+      "id": "ai.llm-api",
+      "specialization": "ai",
+      "statement": "Вызывал LLM по API (GigaChat, YandexGPT, OpenAI-совместимые): ключи, ретраи, таймауты, стриминг",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:token-cost",
+        "interview:defend"
+      ],
+      "markers": [
+        "GigaChat",
+        "YandexGPT",
+        "Yandex AI Studio",
+        "OpenAI API",
+        "vLLM",
+        "Ollama",
+        "LLM API",
+        "стриминг"
+      ],
+      "limits": "выбор и дообучение модели",
+      "stack": "провайдер LLM",
+      "adjacent": [
+        "ai.llm-cost",
+        "ai.llm-fallback"
+      ]
+    },
+    {
+      "id": "ai.ml-metrics",
+      "specialization": "ai",
+      "statement": "Выбирал и считал метрики модели: precision, recall, F1, ROC-AUC, MAE — и объяснял, какая важна для задачи",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:classification-metrics",
+        "interview:defend"
+      ],
+      "markers": [
+        "precision",
+        "recall",
+        "F1",
+        "ROC-AUC",
+        "accuracy",
+        "MAE",
+        "метрики качества",
+        "confusion matrix"
+      ],
+      "limits": "корректную схему валидации",
+      "stack": null,
+      "adjacent": [
+        "ai.validation",
+        "ai.ml-baseline"
+      ]
+    },
+    {
+      "id": "ai.validation",
+      "specialization": "ai",
+      "statement": "Строил валидацию: отложенный тест, кросс-валидация, разбиение по времени и по группам",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:model-selection",
+        "task:data-leakage"
+      ],
+      "markers": [
+        "кросс-валидация",
+        "cross-validation",
+        "holdout",
+        "отложенная выборка",
+        "GroupKFold",
+        "TimeSeriesSplit",
+        "валидация модели"
+      ],
+      "limits": "качество после выката (дрейф)",
+      "stack": null,
+      "adjacent": [
+        "ai.data-leakage",
+        "ai.ml-metrics",
+        "ai.llm-eval"
+      ]
+    },
+    {
+      "id": "ai.data-leakage",
+      "specialization": "ai",
+      "statement": "Находил и устранял утечки данных: признаки из будущего, fit преобразований на всех данных, пересечение train и test",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:data-leakage",
+        "task:feature-pipeline"
+      ],
+      "markers": [
+        "утечка данных",
+        "data leakage",
+        "target leakage",
+        "leakage"
+      ],
+      "limits": "качество модели в целом",
+      "stack": null,
+      "adjacent": [
+        "ai.validation",
+        "ai.feature-pipeline"
+      ]
+    },
+    {
+      "id": "ai.feature-pipeline",
+      "specialization": "ai",
+      "statement": "Собирал пайплайн признаков: пропуски, кодирование категорий, масштабирование, обучение преобразований только на train",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:feature-pipeline",
+        "interview:defend"
+      ],
+      "markers": [
+        "feature engineering",
+        "признаки",
+        "sklearn Pipeline",
+        "SimpleImputer",
+        "one-hot",
+        "target encoding",
+        "пайплайн признаков"
+      ],
+      "limits": "выбор модели и подбор гиперпараметров",
+      "stack": null,
+      "adjacent": [
+        "ai.data-leakage",
+        "ai.ml-baseline"
+      ]
+    },
+    {
+      "id": "ai.ml-baseline",
+      "specialization": "ai",
+      "statement": "Обучал baseline-модели на табличных или текстовых данных и сравнивал с константным прогнозом",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 1
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "scikit-learn",
+        "sklearn",
+        "CatBoost",
+        "LightGBM",
+        "XGBoost",
+        "логистическая регрессия",
+        "baseline",
+        "PyTorch"
+      ],
+      "limits": "production-качество и воспроизводимость",
+      "stack": "ML-библиотека",
+      "adjacent": [
+        "ai.feature-pipeline",
+        "ai.ml-metrics"
+      ]
+    },
+    {
+      "id": "ai.model-serving",
+      "specialization": "ai",
+      "statement": "Выводил модель в сервис: API для онлайн-инференса или батч-прогон, расчёт пропускной способности",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:inference-mode",
+        "interview:defend"
+      ],
+      "markers": [
+        "инференс",
+        "inference",
+        "model serving",
+        "FastAPI",
+        "Triton",
+        "батч-инференс",
+        "онлайн-инференс",
+        "BentoML"
+      ],
+      "limits": "мониторинг качества после выката",
+      "stack": null,
+      "adjacent": [
+        "ai.model-versioning",
+        "ai.monitoring-drift"
+      ]
+    },
+    {
+      "id": "ai.model-versioning",
+      "specialization": "ai",
+      "statement": "Версионировал модели и данные: реестр моделей, продвижение staging → production, откат",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "task:model-registry",
+        "interview:defend"
+      ],
+      "markers": [
+        "MLflow",
+        "DVC",
+        "model registry",
+        "реестр моделей",
+        "версионирование моделей",
+        "ClearML"
+      ],
+      "limits": "автоматический CI/CD моделей",
+      "stack": null,
+      "adjacent": [
+        "ai.model-serving",
+        "ai.monitoring-drift"
+      ]
+    },
+    {
+      "id": "ai.monitoring-drift",
+      "specialization": "ai",
+      "statement": "Мониторил модель в продакшене: дрейф данных и качества, алерты, решение об откате или переобучении",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:model-registry",
+        "interview:defend"
+      ],
+      "markers": [
+        "дрейф данных",
+        "data drift",
+        "мониторинг модели",
+        "Evidently",
+        "переобучение",
+        "concept drift"
+      ],
+      "limits": "выбор причины падения качества без разбора данных",
+      "stack": null,
+      "adjacent": [
+        "ai.model-versioning",
+        "ai.model-serving"
+      ]
+    },
+    {
+      "id": "ai.pandas-sql",
+      "specialization": "ai",
+      "statement": "Анализировал данные в pandas и SQL: фильтры, группировки, пропуски, объединения",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 1
+      },
+      "proof": [
+        "task:pandas-output",
+        "interview:defend"
+      ],
+      "markers": [
+        "pandas",
+        "Jupyter",
+        "NumPy",
+        "EDA",
+        "анализ данных",
+        "polars"
+      ],
+      "limits": "статистические выводы и дизайн эксперимента",
+      "stack": null,
+      "adjacent": [
+        "ai.ab-testing"
+      ]
+    },
+    {
+      "id": "ai.ab-testing",
+      "specialization": "ai",
+      "statement": "Проектировал и разбирал A/B-тест: метрика, размер выборки, значимость и доверительный интервал",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "A/B-тест",
+        "AB-тест",
+        "p-value",
+        "статистическая значимость",
+        "доверительный интервал",
+        "эксперимент"
+      ],
+      "limits": "причинный вывод без рандомизации",
+      "stack": null,
+      "adjacent": [
+        "ai.pandas-sql"
+      ]
+    },
+    {
+      "id": "ai.pii-masking",
+      "specialization": "ai",
+      "statement": "Маскировал персональные данные перед отправкой во внешнюю LLM и в логи (152-ФЗ)",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:pii-masking",
+        "interview:defend"
+      ],
+      "markers": [
+        "ПДн",
+        "персональные данные",
+        "152-ФЗ",
+        "маскирование",
+        "анонимизация",
+        "PII"
+      ],
+      "limits": "юридическую оценку обработки данных",
+      "stack": null,
+      "adjacent": [
+        "ai.prompt-injection",
+        "ai.llm-fallback"
+      ]
+    },
+    {
+      "id": "ai.llm-fallback",
+      "specialization": "ai",
+      "statement": "Встраивал LLM в процесс с деградацией: ретраи, лимиты, наблюдаемость, сценарий без LLM при отказе",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "fallback",
+        "деградация",
+        "ретраи",
+        "circuit breaker",
+        "наблюдаемость",
+        "observability",
+        "интеграция LLM"
+      ],
+      "limits": "качество ответов самой модели",
+      "stack": null,
+      "adjacent": [
+        "ai.llm-api",
+        "ai.pii-masking"
+      ]
     }
   ]
 }

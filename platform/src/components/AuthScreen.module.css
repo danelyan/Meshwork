@@ -5,6 +5,7 @@
 .blockTitle { margin: 0; font-size: clamp(22px, 2.2vw, 28px); letter-spacing: -0.04em; border-top: 1.5px solid var(--ink); padding-top: 14px; }
 .yandex { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 22px; font-weight: 600; text-decoration: none; }
 .yandex[aria-disabled='true'] { opacity: 0.5; pointer-events: none; }
+.fsp { background: var(--ink); border-color: var(--ink); color: var(--on-ink); margin-bottom: 10px; }
 .ya { width: 22px; height: 22px; flex: none; }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .item { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; padding: 12px 14px; background: var(--glass); border: 1px solid var(--glass-border); --avatar: 44px; }

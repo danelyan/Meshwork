@@ -25,6 +25,9 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
   const [error, setError] = useState<string | null>(initialError ? initialError === 'consent_required'
     ? 'Чтобы войти, отметь согласие на обработку персональных данных.'
     : initialError === 'state' ? 'Сеанс входа устарел. Попробуй ещё раз.'
+    : initialError === 'fsp_denied' ? 'Вход через ФСП ID отменён.'
+    : initialError === 'fsp_unavailable' ? 'ФСП ID сейчас не отвечает. Войди по почте или попробуй позже.'
+    : initialError.startsWith('fsp_') ? 'ФСП ID не подтвердил вход. Попробуй ещё раз.'
     : 'Не удалось завершить вход. Попробуй ещё раз.' : null);
   const [pending, setPending] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -68,12 +71,11 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
     return {next:'/consultant'};
   }
 
-  // Выбор роли сразу ведёт ко входу, без «Продолжить» (владелец 11.10: «не обязательно два клика делать»); вернуться — «← Назад».
-  const pick = (value: Role) => { setRole(value); setStep(2); };
   return <div onKeyDown={event => {
     if (step !== 1 || (event.target as HTMLElement).matches('input,textarea,select')) return;
-    if (event.key === '1') pick('candidate');
-    if (event.key === '2') pick('employer');
+    if (event.key === '1') setRole('candidate');
+    if (event.key === '2') setRole('employer');
+    if (event.key === 'Enter' && role) { event.preventDefault(); setStep(2); }
   }}>
     <header className={styles.header}>
       <div className={styles.progress}><Meter value={step} max={2} label={`Шаг ${step} из 2`} /></div>
@@ -88,20 +90,21 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
       {step === 1 ? <>
         <div className={styles.choices}>
           {([['candidate','Ищу работу','Кандидат · Star - компании пишут вам первыми'],['employer','Ищу специалистов','Работодатель · Scout - вы пишете кандидатам']] as const).map(([value,label,note], i) =>
-            <Button key={value} className={styles.choice} aria-pressed={role === value} onClick={() => pick(value)}>
+            <Button key={value} className={styles.choice} aria-pressed={role === value} onClick={() => setRole(value)}>
               <span className={styles.number}>{i + 1}</span><span className={styles.label}><b>{label}</b><small>{note}</small></span><span className={styles.check} aria-hidden="true" />
             </Button>)}
         </div>
-        <p className={styles.hint}>1-2 - выбрать · Esc - закрыть</p>
+        <Button variant="cta" className={styles.continue} disabled={!role} onClick={() => setStep(2)}>Продолжить →</Button>
+        <p className={styles.hint}>1-2 - выбрать · Enter - дальше · Esc - закрыть</p>
       </> : <>
         <div className={styles.methods}>
           <section className={styles.method} aria-label="Вход на платформу">
             <h3>Войти на платформу</h3>
             <EmailAuth next={roleNext} navigate={navigate} />
             <p className={styles.or}>или</p>
-            <YandexSignIn enabled={yandexEnabled} next={roleNext} />
+            <YandexSignIn enabled={yandexEnabled} next={roleNext} fsp={role === 'candidate'} />
             {!yandexEnabled && <p id="yandex-off" className={styles.hint}>Вход через Яндекс не настроен на этом стенде.</p>}
-            <p className={styles.hint}>ФСП ID пока не подключён. Для входа используйте почту, Яндекс ID{demoEnabled ? ' или демо-профиль' : ''}.</p>
+            {role === 'candidate' && <p className={styles.hint}>ФСП ID - вход спортсмена ФСП: достижения сразу попадут в профиль. Реестр ФСП на стенде - симулятор с синтетическими участниками.</p>}
           </section>
           {demoEnabled && <section className={styles.method} aria-label="Демо-профиль">
             <h3>Демо-профиль</h3>

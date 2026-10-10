@@ -1,4 +1,5 @@
 import { GET as callback } from '@/app/api/fsp-id/callback/route';
+import { GET as fspLogin } from '@/app/api/fsp-id/login/route';
 import { GET as link } from '@/app/api/fsp-id/link/route';
 import { POST as authChoose } from '@/app/api/fsp-id/realms/fsp/protocol/openid-connect/auth/route';
 import { GET, POST } from '@/app/api/onboarding/route';
@@ -74,5 +75,61 @@ describe('ФСП ID из шага знакомства', () => {
     await loginFromStep(c, FSP_DEMO_PARTICIPANTS[1]!.sub);
     const state = await prisma.onboardingState.findUniqueOrThrow({ where: { userId: 'u1' } });
     expect((state.answers as Record<string, unknown>).fsp).toBe('no_achievements');
+  });
+});
+
+describe('Вход на платформу через ФСП ID', () => {
+  afterAll(() => prisma.$disconnect());
+  beforeEach(() => resetDb());
+
+  async function loginViaFsp(participant: string, consent: string = CONSENT_VERSION) {
+    const start = await fspLogin(new Request(`${APP}/api/fsp-id/login?consent=${encodeURIComponent(consent)}`));
+    const location = new URL(start.headers.get('location')!);
+    if (location.pathname === '/auth') return { done: start, location };
+    const form = new URLSearchParams(location.searchParams);
+    form.set('participant', participant);
+    const chosen = await authChoose(new Request(location.origin + location.pathname, { method: 'POST', body: form, headers: { 'content-type': 'application/x-www-form-urlencoded' } }));
+    const back = new URL(chosen.headers.get('location')!);
+    const done = await callback(new Request(back, { headers: { cookie: `${FSP_OAUTH_COOKIE}=${flowCookie(start)}` } }));
+    return { done, location: new URL(done.headers.get('location')!) };
+  }
+
+  it('без галки согласия — назад на /auth, аккаунт не создаётся', async () => {
+    const { location } = await loginViaFsp(FSP_DEMO_PARTICIPANTS[0]!.sub, 'old');
+    expect(location.pathname).toBe('/auth');
+    expect(location.searchParams.get('error')).toBe('consent_required');
+    expect(await prisma.user.count()).toBe(0);
+  });
+
+  it('первый вход: аккаунт кандидата, согласие, привязка ФСП, кука сессии; повторный вход — тот же аккаунт', async () => {
+    const p = FSP_DEMO_PARTICIPANTS[0]!;
+    const { done, location } = await loginViaFsp(p.sub);
+    expect(location.pathname).toBe('/consultant');
+    const session = cookieFrom(done)!;
+    const principal = parseSession(session.slice(4), getEnv().SESSION_SECRET)!;
+    expect(principal).toMatchObject({ role: 'candidate' });
+    const account = await prisma.authAccount.findUniqueOrThrow({ where: { provider_providerAccountId: { provider: 'fsp', providerAccountId: p.sub } } });
+    expect(account.userId).toBe(principal.userId);
+    expect(await prisma.consent.count({ where: { userId: principal.userId!, version: CONSENT_VERSION } })).toBe(1);
+    expect(await prisma.candidate.findUniqueOrThrow({ where: { id: principal.candidateId! } })).toMatchObject({ fspState: 'linked' });
+    expect(await prisma.source.count({ where: { candidateId: principal.candidateId!, kind: 'fsp', ownershipVerified: true } })).toBe(1);
+    const state = await prisma.onboardingState.findUniqueOrThrow({ where: { userId: principal.userId! } });
+    expect((state.answers as Record<string, unknown>).fsp).toBe('linked');
+
+    await loginViaFsp(p.sub);
+    expect(await prisma.user.count()).toBe(1);
+    expect(await prisma.authAccount.count({ where: { provider: 'fsp' } })).toBe(1);
+  });
+
+  it('кука потока привязки не годится для входа без сессии', async () => {
+    const c = await asCandidate((await prisma.user.create({ data: { name: 'Иван' } })).id);
+    const start = await link(new Request(`${APP}/api/fsp-id/link`, { headers: { cookie: c } }));
+    const authorize = new URL(start.headers.get('location')!);
+    const form = new URLSearchParams(authorize.searchParams);
+    form.set('participant', FSP_DEMO_PARTICIPANTS[0]!.sub);
+    const chosen = await authChoose(new Request(authorize.origin + authorize.pathname, { method: 'POST', body: form, headers: { 'content-type': 'application/x-www-form-urlencoded' } }));
+    const done = await callback(new Request(new URL(chosen.headers.get('location')!), { headers: { cookie: `${FSP_OAUTH_COOKIE}=${flowCookie(start)}` } }));
+    expect(new URL(done.headers.get('location')!).pathname).toBe('/auth');
+    expect(done.headers.getSetCookie().some((x) => x.startsWith('cid='))).toBe(false);
   });
 });

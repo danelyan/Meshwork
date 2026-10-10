@@ -8,14 +8,26 @@ import styles from '../AuthScreen.module.css';
 import ui from '../ui.module.css';
 import { ConsentCheck } from './ConsentCheck';
 
-/** Кнопка «Войти через Яндекс ID» с галкой согласия: версия текста уходит в старт входа (/api/auth/yandex). */
-export function YandexSignIn({ enabled, next }: { enabled: boolean; next: string | null }) {
+/**
+ * Кнопки внешнего входа под одной галкой согласия: версия текста уходит в старт входа.
+ * «Войти через ФСП ID» (/api/fsp-id/login) — только кандидату: ФСП ID есть у спортсменов; провайдер всегда
+ * доступен (симулятор по env или встроенный мок). «Войти через Яндекс ID» (/api/auth/yandex) — если настроен.
+ */
+export function YandexSignIn({ enabled, next, fsp = false }: { enabled: boolean; next: string | null; fsp?: boolean }) {
   const [agreed, setAgreed] = useState(false);
   const qs = new URLSearchParams({ consent: CONSENT_VERSION, ...(next ? { next } : {}) });
   const active = enabled && agreed;
   return (
     <>
       <ConsentCheck checked={agreed} onChange={setAgreed} />
+      {fsp && (
+        <a href={agreed ? `/api/fsp-id/login?${qs.toString()}` : undefined} className={`${ui.btn} ${ui.primary} ${styles.yandex} ${styles.fsp}`} aria-disabled={agreed ? undefined : 'true'}>
+          <svg className={styles.ya} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 2.5l2.6 6.3 6.8.5-5.2 4.4 1.6 6.6L12 16.8l-5.8 3.5 1.6-6.6-5.2-4.4 6.8-.5z" fill="currentColor" />
+          </svg>
+          Войти через ФСП ID
+        </a>
+      )}
       <a
         href={active ? `/api/auth/yandex?${qs.toString()}` : undefined}
         className={`${ui.btn} ${ui.primary} ${styles.yandex}`}

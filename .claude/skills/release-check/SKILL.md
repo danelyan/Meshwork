@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Release check
 
-A push to `main` touching `platform/**` deploys to https://fsp-stars.ru with no test gate.
+A push to `main` touching `platform/**` deploys to https://fsp2.ru with no test gate.
 After 11 October 2026, 23:59 Moscow time, commits are not accepted. Report each step as
 command + result; a skipped step is reported as skipped, with the reason.
 
@@ -32,7 +32,7 @@ command + result; a skipped step is reported as skipped, with the reason.
 
 1. Deploy run: `gh run list --workflow deploy.yml --limit 1`, then `gh run watch <id>`.
    Red build leaves the previous containers running; the stand is then stale, not down.
-2. Health: `curl -s https://fsp-stars.ru/api/health` returns `"ok":true`.
+2. Health: `curl -s https://fsp2.ru/api/health` returns `"ok":true`.
 3. Walk the jury path on the stand following `docs/demo-script.md`: `/demo` sign-in, consultant
    with a demo resume, profile, grade test, employer search and invitation. Check one narrow
    (mobile) viewport. Note anything broken.

@@ -9,7 +9,7 @@ import { SITE_ACCESS_COOKIE, passwordMatches, siteAccessDecision, siteAccessKey,
 const PASSWORD = 'jury-2026';
 const SECRET = 's'.repeat(32);
 const KEY = siteAccessKey({ SITE_PASSWORD: PASSWORD })!;
-const base = { key: KEY, secret: SECRET, host: 'fsp-stars.ru', pathname: '/', cookie: undefined };
+const base = { key: KEY, secret: SECRET, host: 'fsp2.ru', pathname: '/', cookie: undefined };
 
 describe('site access: пароль на публичный стенд', () => {
   it('без пароля пропускает всё', () => {
@@ -69,7 +69,7 @@ describe('middleware', () => {
     DATABASE_URL: 'postgresql://u@127.0.0.1/db',
     SESSION_SECRET: SECRET,
     SITE_PASSWORD_SHA256: KEY,
-    APP_URL: 'https://fsp-stars.ru',
+    APP_URL: 'https://fsp2.ru',
   };
   beforeEach(() => {
     for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
@@ -82,26 +82,26 @@ describe('middleware', () => {
 
   const request = (url: string, cookie?: string) =>
     new NextRequest(url, {
-      headers: { host: 'fsp-stars.ru', ...(cookie ? { cookie: `${SITE_ACCESS_COOKIE}=${cookie}` } : {}) },
+      headers: { host: 'fsp2.ru', ...(cookie ? { cookie: `${SITE_ACCESS_COOKIE}=${cookie}` } : {}) },
     });
 
   it('страница без куки → 307 на /site-access с next', () => {
     const res = middleware(request('http://0.0.0.0:3000/employer?tab=2'));
     expect(res.status).toBe(307);
     const to = new URL(res.headers.get('location') ?? '');
-    expect(to.origin).toBe('https://fsp-stars.ru');
+    expect(to.origin).toBe('https://fsp2.ru');
     expect(to.pathname).toBe('/site-access');
     expect(to.searchParams.get('next')).toBe('/employer?tab=2');
   });
 
   it('API без куки → 401 JSON', async () => {
-    const res = middleware(request('https://fsp-stars.ru/api/me'));
+    const res = middleware(request('https://fsp2.ru/api/me'));
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: { code: 'site_locked', message: 'Стенд закрыт паролем' } });
   });
 
   it('с кукой доступа пропускает', () => {
-    const res = middleware(request('https://fsp-stars.ru/employer', siteAccessToken(KEY, SECRET)));
+    const res = middleware(request('https://fsp2.ru/employer', siteAccessToken(KEY, SECRET)));
     expect(res.headers.get('x-middleware-next')).toBe('1');
   });
 

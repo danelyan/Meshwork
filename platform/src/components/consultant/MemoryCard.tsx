@@ -6,6 +6,7 @@ import { onboardingAct, readError, request } from '@/lib/api';
 import type { KnownFact, SceneAsideData } from '@/server/consultant/aside';
 
 import { CompanyPreview, ViewTabs, fieldVisibility } from '../onboarding/OnboardingDraft';
+import { useSoftGo } from '../onboarding/soft-nav';
 import { useAsideRefresh } from './aside-refresh';
 import aside from './SceneAside.module.css';
 import styles from './MemoryCard.module.css';
@@ -28,10 +29,13 @@ async function removeMemory(id: string): Promise<void> {
   if (!res.ok) throw await readError(res);
 }
 
-/** «Изменить» у ответа знакомства: шаг открывается в ленте (тот же goto, что «изменить» у ответа в ленте). */
-async function gotoStep(stepId: string) {
+/**
+ * «Изменить» у ответа знакомства и «+ дополнить»: шаг открывается в ленте (тот же goto, что «изменить» у ответа
+ * в ленте). На /consultant — мягкое обновление без перезагрузки (владелец 11.10: «почему страница перезагружается?»).
+ */
+async function gotoStep(stepId: string, go: (path: string) => void) {
   await onboardingAct({ action: 'goto', stepId });
-  window.location.assign('/consultant');
+  go('/consultant');
 }
 
 function Editor({ initial, label, onSave, onCancel }: { initial: string; label: string; onSave: (text: string) => Promise<void>; onCancel: () => void }) {
@@ -74,6 +78,7 @@ function Editor({ initial, label, onSave, onCancel }: { initial: string; label: 
  */
 export function MemoryCard({ facts, role, pending, limit, fill }: { facts: KnownFact[]; role: SceneAsideData['role']; pending?: boolean; limit?: number; fill?: SceneAsideData['fill'] }) {
   const refresh = useAsideRefresh();
+  const softGo = useSoftGo();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -174,7 +179,7 @@ export function MemoryCard({ facts, role, pending, limit, fill }: { facts: Known
                     <span className={styles.actions}>
                       {f.source === 'onboarding' ? (
                         f.editable && f.stepId ? (
-                          <button type="button" className={styles.action} onClick={() => void run(() => gotoStep(f.stepId!))} title="Откроется этот шаг знакомства в ленте">
+                          <button type="button" className={styles.action} onClick={() => void run(() => gotoStep(f.stepId!, softGo))} title="Откроется этот шаг знакомства в ленте">
                             изменить
                           </button>
                         ) : null
@@ -206,7 +211,7 @@ export function MemoryCard({ facts, role, pending, limit, fill }: { facts: Known
           </ul>
         )}
         {!company && fill && (
-          <button type="button" className={styles.add} onClick={() => void run(() => gotoStep(fill.stepId))} title="Вопрос откроется в чате слева">
+          <button type="button" className={styles.add} onClick={() => void run(() => gotoStep(fill.stepId, softGo))} title="Вопрос откроется в чате слева">
             + дополнить: {fill.label.toLowerCase()}
           </button>
         )}

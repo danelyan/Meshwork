@@ -486,6 +486,14 @@ describe('лента внутри /consultant (онбординг и консу�
     expect(sent(fetchFn)).toEqual({ action: 'later' });
   });
 
+  it('скрытый таймлайн возвращается, когда открыт вопрос (выбрали «дополнить»)', () => {
+    stubFetch();
+    localStorage.setItem('fsp:onboarding-strip-hidden', '1');
+    render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} />);
+    expect(screen.getByTestId('onboarding-strip')).toBeDefined();
+    expect(localStorage.getItem('fsp:onboarding-strip-hidden')).toBeNull();
+  });
+
   it('после итога та же лента продолжается консультантом: шаги онбординга выше, разговор ниже, без перехода', () => {
     stubFetch();
     const restored = { conversationId: 'conv-1', items: [{ id: 'r-3', role: 'user' as const, text: 'Что подтянуть до мидла?' }] };

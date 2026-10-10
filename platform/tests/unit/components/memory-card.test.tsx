@@ -6,6 +6,9 @@ import type { KnownFact } from '@/server/consultant/aside';
 const onboardingAct = vi.fn();
 vi.mock('@/lib/api', async (orig) => ({ ...(await orig<typeof import('@/lib/api')>()), onboardingAct: (b: unknown) => onboardingAct(b) }));
 
+const softGo = vi.fn();
+vi.mock('@/components/onboarding/soft-nav', () => ({ useSoftGo: () => softGo }));
+
 const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
@@ -86,12 +89,11 @@ describe('MemoryCard', () => {
     expect(screen.getByText('Только удалёнка')).toBeTruthy();
   });
 
-  it('onboarding «изменить» opens the step in the feed', async () => {
-    const assign = vi.fn();
-    vi.stubGlobal('location', { ...window.location, assign });
+  it('onboarding «изменить» opens the step in the feed without a page reload', async () => {
+    softGo.mockReset();
     render(<MemoryCard facts={facts} role="candidate" />);
     fireEvent.click(screen.getByTitle('Откроется этот шаг знакомства в ленте'));
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('/consultant'));
+    await waitFor(() => expect(softGo).toHaveBeenCalledWith('/consultant'));
     expect(onboardingAct).toHaveBeenCalledWith({ action: 'goto', stepId: 'goal' });
   });
 

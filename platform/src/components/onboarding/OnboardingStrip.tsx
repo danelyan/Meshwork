@@ -11,64 +11,51 @@ const HIDDEN_KEY = 'fsp:onboarding-strip-hidden';
 /**
  * Знакомство кандидата — таймлайн над чатом консультанта, а не отдельный экран (владелец 11.10:
  * «онбординг это то что показывается таймлайн над чатом и его можно скрыть / продолжить»).
- * Одна и та же полоска и когда вопрос открыт в ленте (`asking`), и когда идёт разговор:
- * «Продолжить» открывает следующий вопрос в этой же ленте, «Скрыть» закрывает вопрос и сворачивает таймлайн.
+ * «Скрыть» убирает полоску целиком (и закрывает открытый вопрос); вернуть её — выбрать продолжение
+ * заполнения внизу («Дополнить профиль» в чате, «+ дополнить» в карточке): вопрос открывается (`asking`),
+ * и полоска снова на месте (владелец 11.10: «по скрытию пропадать будет таймлайн и возвращаться, когда… нажму на вариант для продолжения»).
  */
 export function OnboardingStrip({ done, total, asking, busy, onContinue, onHide }: { done: number; total: number; asking: boolean; busy?: boolean; onContinue: () => void; onHide: () => void }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [hidden, setHidden] = useState(false);
   useEffect(() => {
     try {
-      setCollapsed(!asking && localStorage.getItem(HIDDEN_KEY) === '1');
+      // Открытый вопрос — это выбор «продолжить заполнение»: полоска возвращается и больше не помнит «скрыто».
+      if (asking) localStorage.removeItem(HIDDEN_KEY);
+      setHidden(!asking && localStorage.getItem(HIDDEN_KEY) === '1');
     } catch {
-      /* без хранилища — таймлайн развёрнут */
+      setHidden(false);
     }
   }, [asking]);
-  const remember = (hidden: boolean) => {
+  const hide = () => {
     try {
-      if (hidden) localStorage.setItem(HIDDEN_KEY, '1');
-      else localStorage.removeItem(HIDDEN_KEY);
+      localStorage.setItem(HIDDEN_KEY, '1');
     } catch {
       /* только удобство */
     }
-  };
-  const hide = () => {
-    remember(true);
-    setCollapsed(true);
+    setHidden(true);
     if (asking) onHide();
   };
-  const resume = () => {
-    remember(false);
-    setCollapsed(false);
-    onContinue();
-  };
 
+  if (hidden) return null;
   return (
-    <header className={styles.top} data-testid="onboarding-strip" data-collapsed={collapsed || undefined}>
+    <header className={`${styles.top} ${styles.strip}`} data-testid="onboarding-strip">
       <div className={styles.topRow}>
         <h1 className={styles.sceneTitle}>
           Карьерный консультант
           <span className={styles.title}>Знакомство · сохранено {done} из {total}</span>
         </h1>
         {!asking && (
-          <Button size="sm" variant="primary" onClick={resume} disabled={busy} title="Следующий вопрос откроется здесь же, в ленте">
+          <Button size="sm" variant="primary" onClick={onContinue} disabled={busy} title="Следующий вопрос откроется здесь же, в ленте">
             Продолжить
           </Button>
         )}
-        {collapsed ? (
-          <Button size="sm" variant="ghost" onClick={() => { remember(false); setCollapsed(false); }}>
-            Показать
-          </Button>
-        ) : (
-          <Button size="sm" variant="ghost" onClick={hide} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
-            Скрыть
-          </Button>
-        )}
+        <Button size="sm" variant="ghost" onClick={hide} disabled={busy} title="Ответы сохранены - вернуть таймлайн можно кнопкой «Дополнить профиль» внизу">
+          Скрыть
+        </Button>
       </div>
-      {!collapsed && (
-        <div className={styles.segments} role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={total} aria-label={`Пройдено ${done} из ${total}`}>
-          {Array.from({ length: total }, (_, i) => <i key={i} data-done={i < done || undefined} />)}
-        </div>
-      )}
+      <div className={styles.segments} role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={total} aria-label={`Пройдено ${done} из ${total}`}>
+        {Array.from({ length: total }, (_, i) => <i key={i} data-done={i < done || undefined} />)}
+      </div>
     </header>
   );
 }

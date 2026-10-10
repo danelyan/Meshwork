@@ -2,6 +2,8 @@
 .shell { min-height: 100svh; display: flex; flex-direction: column; }
 
 .top { position: sticky; top: 0; z-index: 20; background: var(--glass); border-bottom: 1px solid var(--line); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); }
+/* таймлайн знакомства над чатом: непрозрачный, иначе сквозь него читается лента */
+.top.strip, .inScene .top.strip { background: var(--paper); }
 .topRow { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 var(--page-pad); }
 .title { flex: 1; font: 600 var(--fs-sm) var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 

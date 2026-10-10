@@ -2,6 +2,7 @@
 // моделью исполнения в генераторе; юнит-тест сверяет их с реальным исполнением в node:vm.
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
+import { FRONTEND_BANK2_GENERATORS } from './frontend-bank2';
 import { DESIGN_SYSTEM_NEW_GENERATORS } from './frontend-design-system';
 import { JUNIOR_EXTRA_GENERATORS } from './frontend-junior-extra';
 import { REALTIME_NEW_GENERATORS } from './frontend-realtime';
@@ -566,4 +567,5 @@ export const FRONTEND_GENERATORS: TaskGenerator[] = [
   ...REALTIME_NEW_GENERATORS,
   ...JUNIOR_EXTRA_GENERATORS,
   ...SENIOR_GENERATORS,
+  ...FRONTEND_BANK2_GENERATORS,
 ];

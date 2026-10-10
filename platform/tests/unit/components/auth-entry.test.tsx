@@ -1,10 +1,10 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AuthEntry } from '@/components/auth/AuthEntry';
 import { AuthEntryFlow } from '@/components/auth/AuthEntryFlow';
-import { chooseRoleApi, demoEmployerLogin, demoFreshLogin, demoLogin, getDemoAccounts } from '@/lib/api';
+import { demoEmployerLogin, demoFreshLogin, demoLogin, getDemoAccounts } from '@/lib/api';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
-vi.mock('@/lib/api',()=>({chooseRoleApi:vi.fn(),demoEmployerLogin:vi.fn(),demoFreshLogin:vi.fn(),demoLogin:vi.fn(),getDemoAccounts:vi.fn()}));
+vi.mock('@/lib/api',()=>({demoEmployerLogin:vi.fn(),demoFreshLogin:vi.fn(),demoLogin:vi.fn(),getDemoAccounts:vi.fn()}));
 const navigate = vi.fn();
 beforeEach(()=>{
   vi.clearAllMocks();
@@ -12,7 +12,6 @@ beforeEach(()=>{
   vi.mocked(demoLogin).mockResolvedValue({candidate:{id:'demo-1',name:'Анна'},next:'/consultant'});
   vi.mocked(demoEmployerLogin).mockResolvedValue({employer:{id:'boss',name:'Олег'},next:'/employer'});
   vi.mocked(demoFreshLogin).mockResolvedValue({user:{id:'fresh',name:'Новый'},next:'/consultant'});
-  vi.mocked(chooseRoleApi).mockResolvedValue({role:'candidate',candidateId:'fresh',employerProfileId:null});
   HTMLDialogElement.prototype.showModal = vi.fn(function(this:HTMLDialogElement){this.open=true;});
   HTMLDialogElement.prototype.close = vi.fn(function(this:HTMLDialogElement){this.open=false;});
 });
@@ -20,15 +19,12 @@ afterEach(cleanup);
 function flow(next:string|null=null, demoEnabled=true) {
   render(<AuthEntryFlow yandexEnabled={false} demoEnabled={demoEnabled} next={next} onClose={vi.fn()} navigate={navigate} />);
 }
-function select(role='Ищу работу') {
-  fireEvent.click(screen.getByRole('button',{name:new RegExp(role)}));
-}
 
 it('opens over the existing page and closes with focus and scroll restored',()=>{
   render(<AuthEntry yandexEnabled={false} demoEnabled><a href="/auth">Приступим</a><p>Главная</p></AuthEntry>);
   const entry=screen.getByRole('link',{name:'Приступим'}); entry.focus();
   fireEvent.click(entry);
-  expect(screen.getByRole('dialog').textContent).toContain('Кто вы?');
+  expect(screen.getByRole('dialog').textContent).toContain('Вход');
   expect(screen.getByText('Главная')).toBeTruthy();
   expect(document.body.style.overflow).toBe('hidden');
   fireEvent.click(screen.getByRole('button',{name:'Закрыть окно входа'}));
@@ -43,27 +39,30 @@ it('preserves modified clicks and external auth links',()=>{
   expect(screen.queryByRole('dialog')).toBeNull();
 });
 
-it('a role click goes straight to sign-in and logs a ready candidate into the assistant',async()=>{
+// Вход без выбора роли (владелец 11.10): роль новому аккаунту задаёт чат, демо-профили — двумя группами.
+it('opens sign-in at once, without a role step, and logs a ready candidate back to the page',async()=>{
   flow('/profile');
-  expect(screen.queryByRole('button',{name:'Продолжить →'})).toBeNull();
-  select();
-  expect(screen.getByRole('button',{name:'← Назад'})).toBeTruthy();
+  expect(screen.queryByText('Кто вы?')).toBeNull();
+  expect(screen.getByRole('form',{name:'Вход по почте'})).toBeTruthy();
   fireEvent.click(await screen.findByRole('button',{name:'Анна →'}));
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/profile'));
   expect(demoLogin).toHaveBeenCalledWith('demo-1');
   expect(demoEmployerLogin).not.toHaveBeenCalled();
 });
 
-it('filters employer profiles and sends employers to their own assistant',async()=>{
-  flow('/profile');select('Ищу специалистов');
-  fireEvent.click(await screen.findByRole('button',{name:'Компания →'}));
+it('lists specialists and companies in separate groups; a company goes to its assistant, not to a candidate link',async()=>{
+  flow('/profile');
+  const people=await screen.findByRole('group',{name:'Специалисты'});
+  const companies=screen.getByRole('group',{name:'Компании'});
+  expect(people.textContent).toContain('Анна');
+  expect(companies.textContent).toContain('Компания');
+  fireEvent.click(screen.getByRole('button',{name:'Компания →'}));
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
-  expect(screen.queryByRole('button',{name:'Анна →'})).toBeNull();
   expect(demoEmployerLogin).toHaveBeenCalledWith('boss');
 });
 
-it('creates a new profile only after consent, chooses its role and continues in the AI chat',async()=>{
-  flow();select();
+it('creates a new demo profile only after consent; the role is asked in the AI chat',async()=>{
+  flow();
   fireEvent.click(screen.getByRole('button',{name:'Новый демо-профиль'}));
   const enter=screen.getByRole('button',{name:'К ИИ-помощнику →'});
   expect((enter as HTMLButtonElement).disabled).toBe(true);
@@ -71,59 +70,30 @@ it('creates a new profile only after consent, chooses its role and continues in 
   fireEvent.click(enter);
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
   expect(demoFreshLogin).toHaveBeenCalledWith(CONSENT_VERSION);
-  expect(chooseRoleApi).toHaveBeenCalledWith({role:'candidate'});
-  expect(screen.queryByText(/Выберите грейд/)).toBeNull();
-});
-
-it('keeps fresh-account retry from creating another account when assigning the role fails',async()=>{
-  vi.mocked(chooseRoleApi).mockRejectedValueOnce(new Error('Попробуйте снова'));
-  flow();select();fireEvent.click(screen.getByRole('button',{name:'Новый демо-профиль'}));
-  fireEvent.click(screen.getAllByRole('checkbox',{name:/Согласен/})[1]!);
-  fireEvent.click(screen.getByRole('button',{name:'К ИИ-помощнику →'}));
-  await screen.findByRole('alert');
-  fireEvent.click(screen.getByRole('button',{name:'К ИИ-помощнику →'}));
-  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
-  expect(demoFreshLogin).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('textbox',{name:'Название компании'})).toBeNull();
 });
 
 it('respects the demo flag and disables unconfigured real login',()=>{
-  flow(null,false);select();
+  flow(null,false);
   expect(screen.queryByRole('button',{name:'Новый демо-профиль'})).toBeNull();
   expect(screen.getByText('Войти через Яндекс ID').closest('a')?.getAttribute('href')).toBeNull();
 });
-it('creates an employer profile with a company before handing off to the assistant',async()=>{
-  flow();select('Ищу специалистов');
-  fireEvent.click(screen.getByRole('button',{name:'Новый демо-профиль'}));
-  fireEvent.click(screen.getAllByRole('checkbox',{name:/Согласен/})[1]!);
-  expect((screen.getByRole('button',{name:'К ИИ-помощнику →'}) as HTMLButtonElement).disabled).toBe(true);
-  fireEvent.change(screen.getByRole('textbox',{name:'Название компании'}),{target:{value:' Тестовая компания '}});
-  fireEvent.click(screen.getByRole('button',{name:'К ИИ-помощнику →'}));
-  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
-  expect(chooseRoleApi).toHaveBeenCalledWith({role:'employer',companyName:'Тестовая компания'});
-});
 
-it('retries failed demo loading without resetting the chosen role or blocking email login',async()=>{
+it('retries failed demo loading without blocking email login',async()=>{
   vi.mocked(getDemoAccounts).mockRejectedValueOnce(new Error('Сеть недоступна'));
-  flow();select('Ищу специалистов');
+  flow();
   expect((await screen.findByRole('alert')).textContent).toContain('Сеть недоступна');
   expect(screen.getByRole('form',{name:'Вход по почте'})).toBeTruthy();
   fireEvent.click(screen.getByRole('button',{name:'Повторить загрузку профилей'}));
   fireEvent.click(await screen.findByRole('button',{name:'Компания →'}));
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
   expect(getDemoAccounts).toHaveBeenCalledTimes(2);
-  expect(demoEmployerLogin).toHaveBeenCalledWith('boss');
 });
 
 it('explains an empty demo list and keeps fresh profile creation available',async()=>{
   vi.mocked(getDemoAccounts).mockResolvedValue({candidates:[],employers:[]});
-  flow();select();
-  expect(await screen.findByText(/Готовых профилей для этой роли пока нет/)).toBeTruthy();
+  flow();
+  expect(await screen.findByText(/Готовых профилей пока нет/)).toBeTruthy();
   expect(screen.queryByText('Загружаю профили…')).toBeNull();
   expect(screen.getByRole('button',{name:'Новый демо-профиль'})).toBeTruthy();
-});
-
-it('keys 1-2 pick a role and open sign-in at once',()=>{
-  flow();
-  fireEvent.keyDown(screen.getByRole('button',{name:/Ищу специалистов/}),{key:'2'});
-  expect(screen.getByRole('heading',{name:'Начнём с входа'})).toBeTruthy();
 });

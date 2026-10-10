@@ -487,6 +487,13 @@ describe('лента внутри /consultant (онбординг и консу�
     expect(sent(fetchFn)).toEqual({ action: 'later' });
   });
 
+  it('до выбора роли «Скрыть» на таймлайне нет: паузы ещё не может быть', () => {
+    stubFetch();
+    render(<OnboardingChat variant="consultant" initial={makeView({}, { role: 'pending' })} consentText={[]} />);
+    expect(screen.getByTestId('onboarding-strip')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Скрыть' })).toBeNull();
+  });
+
   it('скрытый таймлайн возвращается, когда открыт вопрос (выбрали «дополнить»)', () => {
     stubFetch();
     localStorage.setItem('fsp:onboarding-strip-hidden', '1');

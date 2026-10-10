@@ -344,7 +344,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const nextSteps = employer
     ? [{ value: 'go:/employer', label: 'Открыть подборку' }, ...skippedReplies]
     : [
-        { value: `go:${view.test.href}`, label: view.test.ready ? 'Пройти тест на грейд →' : 'Тест на грейд (скоро) - в профиль' },
+        { value: `go:${view.test.href}`, label: view.test.ready ? 'Пройти тест на грейд' : 'Тест на грейд (скоро) - в профиль' },
         { value: 'go:/profile', label: 'Открыть профиль' },
         ...skippedReplies,
       ];
@@ -384,7 +384,8 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     <div className={inConsultant ? `${styles.shell} ${styles.inScene}` : styles.shell}>
       {inConsultant && !employer && !isSummary ? (
         // Кандидату знакомство — таймлайн над чатом (владелец 11.10), та же полоска, что в разговоре (PausedFeed).
-        <OnboardingStrip done={view.progress.done} total={view.progress.total} asking busy={busy} onContinue={() => undefined} onHide={() => void later()} />
+        // До выбора роли паузы нет (сервер увёл бы на главную) — «Скрыть» не показываем.
+        <OnboardingStrip done={view.progress.done} total={view.progress.total} asking busy={busy} canHide={view.role !== 'pending'} onContinue={() => undefined} onHide={() => void later()} />
       ) : (
       <header className={styles.top}>
         <div className={styles.topRow}>
@@ -404,7 +405,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           {inConsultant && isSummary && view.scenario !== 'employer' && (
             <nav className={styles.routes} aria-label="Следующий шаг">
               <Button href="/profile" size="sm">Профиль</Button>
-              <Button href={view.test.href} size="sm" variant="cta">Пройти тест на грейд →</Button>
+              <Button href="/test" size="sm">Тест</Button>
             </nav>
           )}
           {!isSummary && (
@@ -514,13 +515,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
 
           {ready && isSummary && view.summary && (employer ? !employerAssistant : !consultant) && (
             <AssistantRow mark={false} testId="ob-summary">
-              {!employer && (
-                <div className={styles.routes} role="group" aria-label="Что дальше">
-                  <Button variant="cta" onClick={() => void finish(view.test.href)} disabled={busy} data-testid="ob-test-cta">{view.test.ready ? 'Пройти тест на грейд →' : 'Тест на грейд (скоро) - в профиль'}</Button>
-                  <Button onClick={() => void finish('/profile')} disabled={busy}>Открыть профиль</Button>
-                </div>
-              )}
-              <QuickReplies label={employer ? 'Что дальше' : 'Ответить на пропущенное'} items={employer ? nextSteps : skippedReplies} disabled={busy} onPick={onNext} />
+              <QuickReplies label="Что дальше" items={nextSteps} disabled={busy} onPick={onNext} />
             </AssistantRow>
           )}
         </Thread>

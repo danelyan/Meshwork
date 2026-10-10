@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Button, Field, Kicker, Meter, Notice } from '@/components/ui';
-import { chooseRoleApi, demoEmployerLogin, demoFreshLogin, demoLogin, getDemoAccounts } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import { Button, Kicker, Notice } from '@/components/ui';
+import { demoEmployerLogin, demoFreshLogin, demoLogin, getDemoAccounts } from '@/lib/api';
 import type { DemoCandidate, DemoEmployer } from '@/lib/api';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 import { safeNext } from '@/server/auth/redirect';
@@ -17,8 +17,6 @@ const assign = (path: string) => window.location.assign(path);
 export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navigate = assign, error: initialError = null }: {
   yandexEnabled: boolean; demoEnabled: boolean; next: string | null; error?: string | null; onClose: () => void; navigate?: (path: string) => void;
 }) {
-  const [role, setRole] = useState<Role | null>(null);
-  const [step, setStep] = useState(1);
   const [accounts, setAccounts] = useState<{candidates: DemoCandidate[]; employers?: DemoEmployer[]} | null>(null);
   const [accountsError, setAccountsError] = useState<string | null>(null);
   const [accountsAttempt, setAccountsAttempt] = useState(0);
@@ -32,27 +30,24 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
   const [pending, setPending] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [fresh, setFresh] = useState(false);
-  const [company, setCompany] = useState('');
-  const created = useRef(false);
   const destination = safeNext(next);
   const employerPath = destination?.split(/[?#]/)[0];
-  const roleNext = role === 'employer'
-    ? employerPath === '/employer' || employerPath?.startsWith('/employer/') ? destination : null
-    : employerPath === '/employer' || employerPath?.startsWith('/employer/') ? null : destination;
+  const toEmployer = employerPath === '/employer' || employerPath?.startsWith('/employer/');
+  // Куда вернуть после входа: ссылку кабинета работодателя — только работодателю, остальное — только кандидату.
+  const backFor = (role: Role) => role === 'employer' ? (toEmployer ? destination : null) : (toEmployer ? null : destination);
 
   useEffect(() => {
-    if (step !== 2 || !demoEnabled) return;
+    if (!demoEnabled) return;
     let alive = true;
     setAccountsError(null);
     getDemoAccounts().then(data => { if (alive) setAccounts(data); }, err => {
       if (alive) setAccountsError(err instanceof Error ? err.message : 'Не удалось загрузить профили.');
     });
     return () => { alive = false; };
-  }, [step, demoEnabled, accountsAttempt]);
+  }, [demoEnabled, accountsAttempt]);
 
   const candidates = accounts?.candidates.filter(candidate => !candidate.id.startsWith('demo-pool-')) ?? [];
   const employers = accounts?.employers ?? [];
-  const noAccounts = accounts && (role === 'candidate' ? candidates.length === 0 : employers.length === 0);
 
   async function enter(run: () => Promise<{next?: string}>, fallback: string, back: string | null = null) {
     setPending(true); setError(null);
@@ -65,74 +60,53 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
     }
   }
 
-  async function newProfile() {
-    if (!created.current) { await demoFreshLogin(CONSENT_VERSION); created.current = true; }
-    await chooseRoleApi(role === 'employer' ? {role,companyName:company.trim()} : {role:'candidate'});
-    return {next:'/consultant'};
-  }
-
-  // Выбор роли сразу ведёт ко входу, без «Продолжить» (владелец 11.10: «не обязательно два клика делать»); вернуться — «← Назад».
-  const pick = (value: Role) => { setRole(value); setStep(2); };
-  return <div onKeyDown={event => {
-    if (step !== 1 || (event.target as HTMLElement).matches('input,textarea,select')) return;
-    if (event.key === '1') pick('candidate');
-    if (event.key === '2') pick('employer');
-  }}>
+  // Роль при входе не спрашиваем (владелец 11.10: «зачем для входа выбирать роль? роль это при регистрации ведь только»):
+  // почта и Яндекс узнают аккаунт, а новому аккаунту роль задаёт первый вопрос знакомства в чате («Ты здесь как кто?»).
+  return <div>
     <header className={styles.header}>
-      <div className={styles.progress}><Meter value={step} max={2} label={`Шаг ${step} из 2`} /></div>
-      <span className={styles.count}>{step} / 2</span>
+      <Kicker>ФСП Карьера · вход</Kicker>
       <Button className={styles.close} aria-label="Закрыть окно входа" onClick={onClose}>×</Button>
     </header>
     <div className={styles.body}>
-      <Kicker>{step === 1 ? 'Знакомство' : 'ФСП Карьера · вход'}</Kicker>
-      <h2 id="auth-entry-title" className={styles.title}>{step === 1 ? 'Кто вы?' : 'Начнём с входа'}</h2>
-      <p className={styles.lead}>{step === 1 ? 'Помощник подстроится под вашу задачу.' : 'Опыт, навыки и цели обсудим уже с ИИ-помощником.'}</p>
+      <h2 id="auth-entry-title" className={styles.title}>Вход</h2>
+      <p className={styles.lead}>Новый аккаунт? Кто ты - специалист или компания - спросит ИИ-помощник первым вопросом.</p>
       {error && <Notice tone="error">{error}</Notice>}
-      {step === 1 ? <>
-        <div className={styles.choices}>
-          {([['candidate','Ищу работу','Кандидат · Star - компании пишут вам первыми'],['employer','Ищу специалистов','Работодатель · Scout - вы пишете кандидатам']] as const).map(([value,label,note], i) =>
-            <Button key={value} className={styles.choice} aria-pressed={role === value} onClick={() => pick(value)}>
-              <span className={styles.number}>{i + 1}</span><span className={styles.label}><b>{label}</b><small>{note}</small></span><span className={styles.check} aria-hidden="true" />
-            </Button>)}
-        </div>
-        <p className={styles.hint}>1-2 - выбрать · Esc - закрыть</p>
-      </> : <>
-        <div className={styles.methods}>
-          <section className={styles.method} aria-label="Вход на платформу">
-            <h3>Войти на платформу</h3>
-            <EmailAuth next={roleNext} navigate={navigate} />
-            <p className={styles.or}>или</p>
-            <YandexSignIn enabled={yandexEnabled} next={roleNext} fsp={role === 'candidate'} />
-            {!yandexEnabled && <p id="yandex-off" className={styles.hint}>Вход через Яндекс не настроен на этом стенде.</p>}
-            {role === 'candidate' && <p className={styles.hint}>ФСП ID - вход спортсмена ФСП: достижения сразу попадут в профиль. Реестр ФСП на стенде - симулятор с синтетическими участниками.</p>}
-          </section>
-          {demoEnabled && <section className={styles.method} aria-label="Демо-профиль">
-            <h3>Демо-профиль</h3>
-            <p className={styles.hint}>Вымышленные данные, вход без пароля.</p>
-            {!accounts && !accountsError && <p role="status">Загружаю профили…</p>}
-            {accountsError && <>
-              <Notice tone="error">{accountsError}</Notice>
-              <Button onClick={() => { setAccounts(null); setAccountsAttempt(attempt => attempt + 1); }}>Повторить загрузку профилей</Button>
-            </>}
-            {noAccounts && <p className={styles.hint}>Готовых профилей для этой роли пока нет. Можно создать новый демо-профиль.</p>}
-            <div className={styles.list}>
-              {role === 'candidate' ? candidates.map(c=>
-                <Button className={styles.account} disabled={pending} key={c.id} onClick={()=>void enter(()=>demoLogin(c.id),'/consultant',roleNext)}>{c.name} →</Button>)
-                : employers.map(e=><Button className={styles.account} disabled={pending} key={e.id} onClick={()=>void enter(()=>demoEmployerLogin(e.id),'/consultant',roleNext ?? '/consultant')}>{e.company?.name ?? e.name} →</Button>)}
-            </div>
-            <Button disabled={pending} onClick={()=>setFresh(!fresh)} aria-expanded={fresh}>Новый демо-профиль</Button>
-            {fresh && <>
-              {role === 'employer' && <Field label="Название компании"><input maxLength={120} value={company} onChange={e=>setCompany(e.target.value)} /></Field>}
-              <ConsentCheck checked={agreed} onChange={setAgreed} />
-              <Button variant="cta" loading={pending} disabled={!agreed || role === 'employer' && company.trim().length < 2} onClick={()=>void enter(newProfile,'/consultant')}>К ИИ-помощнику →</Button>
-            </>}
-          </section>}
-        </div>
-        <footer className={styles.footer}>
-          <Button disabled={pending || created.current} onClick={()=>{setStep(1);setError(null);setFresh(false);}}>← Назад</Button>
-          {pending && <span role="status">Входим…</span>}
-        </footer>
-      </>}
+      <div className={styles.methods}>
+        <section className={styles.method} aria-label="Вход на платформу">
+          <h3>Войти на платформу</h3>
+          <EmailAuth next={destination} navigate={navigate} />
+          <p className={styles.or}>или</p>
+          <YandexSignIn enabled={yandexEnabled} next={destination} fsp />
+          {!yandexEnabled && <p id="yandex-off" className={styles.hint}>Вход через Яндекс не настроен на этом стенде.</p>}
+          <p className={styles.hint}>ФСП ID - вход спортсмена ФСП: аккаунт специалиста, достижения сразу попадут в профиль. Реестр ФСП на стенде - симулятор с синтетическими участниками.</p>
+        </section>
+        {demoEnabled && <section className={styles.method} aria-label="Демо-профиль">
+          <h3>Демо-профиль</h3>
+          <p className={styles.hint}>Вымышленные данные, вход без пароля.</p>
+          {!accounts && !accountsError && <p role="status">Загружаю профили…</p>}
+          {accountsError && <>
+            <Notice tone="error">{accountsError}</Notice>
+            <Button onClick={() => { setAccounts(null); setAccountsAttempt(attempt => attempt + 1); }}>Повторить загрузку профилей</Button>
+          </>}
+          {accounts && <div className={styles.list}>
+            {candidates.length > 0 && <div role="group" aria-label="Специалисты" className={styles.group}>
+              <p className={styles.groupTitle}>Специалисты</p>
+              {candidates.map(c => <Button className={styles.account} disabled={pending} key={c.id} onClick={() => void enter(() => demoLogin(c.id), '/consultant', backFor('candidate'))}>{c.name} →</Button>)}
+            </div>}
+            {employers.length > 0 && <div role="group" aria-label="Компании" className={styles.group}>
+              <p className={styles.groupTitle}>Компании</p>
+              {employers.map(e => <Button className={styles.account} disabled={pending} key={e.id} onClick={() => void enter(() => demoEmployerLogin(e.id), '/consultant', backFor('employer') ?? '/consultant')}>{e.company?.name ?? e.name} →</Button>)}
+            </div>}
+            {candidates.length === 0 && employers.length === 0 && <p className={styles.hint}>Готовых профилей пока нет. Можно создать новый демо-профиль.</p>}
+          </div>}
+          <Button disabled={pending} onClick={() => setFresh(!fresh)} aria-expanded={fresh}>Новый демо-профиль</Button>
+          {fresh && <>
+            <ConsentCheck checked={agreed} onChange={setAgreed} />
+            <Button variant="cta" loading={pending} disabled={!agreed} onClick={() => void enter(async () => { await demoFreshLogin(CONSENT_VERSION); return { next: '/consultant' }; }, '/consultant')}>К ИИ-помощнику →</Button>
+          </>}
+        </section>}
+      </div>
+      {pending && <p role="status" className={styles.hint}>Входим…</p>}
     </div>
   </div>;
 }

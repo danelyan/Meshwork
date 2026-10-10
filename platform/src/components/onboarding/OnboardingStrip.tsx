@@ -15,17 +15,17 @@ const HIDDEN_KEY = 'fsp:onboarding-strip-hidden';
  * заполнения внизу («Дополнить профиль» в чате, «+ дополнить» в карточке): вопрос открывается (`asking`),
  * и полоска снова на месте (владелец 11.10: «по скрытию пропадать будет таймлайн и возвращаться, когда… нажму на вариант для продолжения»).
  */
-export function OnboardingStrip({ done, total, asking, busy, onContinue, onHide }: { done: number; total: number; asking: boolean; busy?: boolean; onContinue: () => void; onHide: () => void }) {
+export function OnboardingStrip({ done, total, asking, busy, canHide = true, onContinue, onHide }: { done: number; total: number; asking: boolean; busy?: boolean; canHide?: boolean; onContinue: () => void; onHide: () => void }) {
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
     try {
       // Открытый вопрос — это выбор «продолжить заполнение»: полоска возвращается и больше не помнит «скрыто».
       if (asking) localStorage.removeItem(HIDDEN_KEY);
-      setHidden(!asking && localStorage.getItem(HIDDEN_KEY) === '1');
+      setHidden(canHide && !asking && localStorage.getItem(HIDDEN_KEY) === '1');
     } catch {
       setHidden(false);
     }
-  }, [asking]);
+  }, [asking, canHide]);
   const hide = () => {
     try {
       localStorage.setItem(HIDDEN_KEY, '1');
@@ -49,9 +49,9 @@ export function OnboardingStrip({ done, total, asking, busy, onContinue, onHide 
             Продолжить
           </Button>
         )}
-        <Button size="sm" variant="ghost" onClick={hide} disabled={busy} title="Ответы сохранены - вернуть таймлайн можно кнопкой «Дополнить профиль» внизу">
+        {canHide && <Button size="sm" variant="ghost" onClick={hide} disabled={busy} title="Ответы сохранены - вернуть таймлайн можно кнопкой «Дополнить профиль» внизу">
           Скрыть
-        </Button>
+        </Button>}
       </div>
       <div className={styles.segments} role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={total} aria-label={`Пройдено ${done} из ${total}`}>
         {Array.from({ length: total }, (_, i) => <i key={i} data-done={i < done || undefined} />)}

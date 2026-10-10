@@ -3,7 +3,7 @@ import { gzipSync } from 'node:zlib';
 import { LlmError, type LlmProvider } from '@/server/llm';
 import { createStubProvider } from '@/server/llm/providers/stub';
 import { readTarGz, writeZip } from '@/server/project/archive';
-import { dropContractEcho, fallbackSpec, splitWishes, type SpecContext } from '@/server/project/fallback';
+import { CONTRACT_REQUIREMENT, dropContractEcho, fallbackSpec, fillRequirementsFromRubric, splitWishes, type SpecContext } from '@/server/project/fallback';
 import { reviewRubric } from '@/server/project/review';
 import { createStubRunner } from '@/server/project/runner-client';
 import { SpecJson } from '@/server/project/schemas';
@@ -101,6 +101,36 @@ describe('условие проекта (project_spec)', () => {
     expect(raw).not.toContain('Клиника Плюс');
     expect(raw).not.toContain('150 000');
     expect(maskEmployer({ a: ['клиника плюс платит 90 тыс. руб'] }, ['Клиника Плюс']).a[0]).toBe('[компания] платит [сумма скрыта]');
+  });
+
+  it('маска зарплаты: k/тыс/т.р., диапазоны и голые числа от 5 цифр; сроки, годы и объёмы не трогает', () => {
+    const mask = (t: string) => maskEmployer(t, []);
+    for (const t of ['от 150к', '150–200 тыс', '200 т.р. на руки', '150 000 – 200 000', 'зарплата 180000', '$3000', '1,5 млн руб.', '200 000 RUB', '120 k']) {
+      expect(mask(t), t).toContain('[сумма скрыта]');
+      expect(mask(t), t).not.toMatch(/\d{3}/);
+    }
+    for (const t of ['отвечать быстрее 200 мс', 'в 2026 году', 'обработать 100 000 строк', '10 тыс запросов в секунду', '5 сервисов']) {
+      expect(mask(t), t).toBe(t);
+    }
+  });
+
+  it('dropContractEcho: число — HTTP-код, только если оно код контракта или рядом со «статус/код/HTTP»', () => {
+    const contract = 'POST /orders → 201; при ошибке 422 `validation_error`.';
+    expect(
+      dropContractEcho(['Отвечать быстрее 200 мс', 'Хранить до 500 записей', 'Вернуть 422 при плохом теле', 'HTTP 404 если нет', 'Код ответа 200 на успех', 'Логировать ошибки'], contract),
+    ).toEqual(['Отвечать быстрее 200 мс', 'Хранить до 500 записей', 'Логировать ошибки']);
+  });
+
+  it('фильтр выбросил все требования модели — в условии критерии рубрики', () => {
+    const spec = fallbackSpec(CTX, CONTRACT);
+    const empty = { ...spec, requirements: [CONTRACT_REQUIREMENT] };
+    const filled = fillRequirementsFromRubric(empty, [
+      { id: 'r1', text: 'Проектировал REST API', catalogId: 'be.rest-design', source: 'required' },
+      { id: 'w1', text: 'Логи с кодом ошибки', source: 'wish' },
+    ]);
+    expect(filled.requirements).toEqual([CONTRACT_REQUIREMENT, '(критерий работодателя) Проектировал REST API', '(пожелание) Логи с кодом ошибки']);
+    // Свои требования остались — рубрику не подмешиваем.
+    expect(fillRequirementsFromRubric(spec, [{ id: 'w1', text: 'Логи', source: 'wish' }])).toBe(spec);
   });
 });
 

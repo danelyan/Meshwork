@@ -39,10 +39,10 @@ const COMPANY = 'Северный Поток';
 
 const defenseCalls: DefenseRequest[] = [];
 
-async function makeCandidate(id: string, specialization: 'backend' | 'frontend', grade: 'junior' | 'middle' | null) {
+async function makeCandidate(id: string, specialization: 'backend' | 'frontend' | null, grade: 'junior' | 'middle' | null) {
   await prisma.candidate.create({ data: { id, name: `Имя ${id}`, email: `${id}@example.test`, specialization, consentAt: new Date() } });
   await prisma.user.create({ data: { id: `u-${id}`, name: id, role: 'candidate', candidateId: id } });
-  if (grade) await prisma.candidateCategory.create({ data: { candidateId: id, specialization, grade } });
+  if (grade && specialization) await prisma.candidateCategory.create({ data: { candidateId: id, specialization, grade } });
 }
 
 async function waitChecked(id: string, cookie: string) {
@@ -246,6 +246,34 @@ describe('проект под работодателя: лента и сдача
     expect(second.result.tests).toMatchObject({ passed: 0, score: 0 });
     const list = await (await employerSubs(jsonRequest('/x?needId=demo-vac-be-m-1', 'GET', undefined, EMP))).json();
     expect(list.items.map((i: { late: boolean }) => i.late)).toEqual([true, false]);
+  });
+
+  it('открытое задание: только своё направление и грейд не выше категории; без категории — Junior; без направления — 403', async () => {
+    const mid = (await prisma.projectTask.findUniqueOrThrow({ where: { vacancyId: 'demo-vac-be-m-1' } })).id;
+    await makeCandidate('p-nocat', 'backend', null);
+    await makeCandidate('p-nodir', null, null);
+    const takeAs = async (who: string, id: string) => take(jsonRequest('/x', 'POST', undefined, cand(who)), params({ id }));
+    // Junior не берёт Middle; frontend не берёт backend; без категории — только Junior; без направления — ничего.
+    expect((await takeAs('p-be', mid)).status).toBe(403);
+    expect((await getTask(jsonRequest('/x', 'GET', undefined, cand('p-be')), params({ id: mid }))).status).toBe(403);
+    expect((await takeAs('p-fe', taskId)).status).toBe(403);
+    expect((await takeAs('p-nocat', mid)).status).toBe(403);
+    expect((await takeAs('p-nocat', taskId)).status).toBe(200);
+    expect((await takeAs('p-nodir', taskId)).status).toBe(403);
+    // Лента согласована: middle видит и Junior, и Middle; junior — без Middle; без направления — пусто.
+    const ids = async (who: string) => ((await (await feed(jsonRequest('/x', 'GET', undefined, cand(who)))).json()).items as { id: string }[]).map((i) => i.id);
+    expect(await ids('p-mid')).toEqual(expect.arrayContaining([mid, taskId]));
+    expect(await ids('p-be')).not.toContain(mid);
+    expect(await ids('p-nodir')).toEqual([]);
+  });
+
+  it('две параллельные сдачи одного задания: одна принята, вторая — 409', async () => {
+    await makeCandidate('p-par', 'backend', 'junior');
+    expect((await take(jsonRequest('/x', 'POST', undefined, cand('p-par')), params({ id: taskId }))).status).toBe(200);
+    const send = () => submit(jsonRequest('/x', 'POST', { repoUrl: 'https://github.com/demo/reference-solution' }, cand('p-par')), params({ id: taskId }));
+    const statuses = (await Promise.all([send(), send()])).map((r) => r.status).sort();
+    expect(statuses).toEqual([202, 409]);
+    expect(await prisma.projectSubmission.count({ where: { candidateId: 'p-par', projectTaskId: taskId } })).toBe(1);
   });
 
   it(`лимит: не больше ${PROJECT_MAX_ACTIVE} взятых несданных`, async () => {

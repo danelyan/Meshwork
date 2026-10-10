@@ -31,13 +31,29 @@ export interface SpecDeps {
   llm?: LlmProvider;
 }
 
+// Число: «150 000», «150000», «1,5». Диапазон: «150–200», «150 000 - 200 000».
+const NUM = String.raw`(?:\d{1,3}(?:[\s ]\d{3})+|\d+)(?:[.,]\d+)?`;
+const RANGE = String.raw`(?<![\p{L}\p{N}.,])${NUM}(?:\s*(?:[-–—]|до)\s*${NUM})?`;
+const RUB = String.raw`(?:₽|руб(?:\.|л[её]й|ля|ль)?|р\.|\$|usd|rub|eur|долл\S*|евро|€)`;
+// «150 тыс», «150 тыс. руб», «150 т.р.», «150к», «1,5 млн», «150 k».
+const MONEY_UNIT = String.raw`(?:(?:тыс(?:\.|яч[аи]?)?|млн\.?)(?:\s*${RUB})?|т\.\s?р\.?|[kкKК]|${RUB})`;
+/** После числа — не деньги: «100 000 строк», «10 тыс запросов», «1 млн записей». */
+const NOT_MONEY = String.raw`(?!\s*(?:строк|запис|запрос|событ|элемент|пользовател|клиент|сообщени|байт|бит|мс|ms|сек|rps|rpm|qps|шт|раз|символ|товар|заказ|документ|файл|[a-z]))`;
+/** Сумма с денежной единицей (в т. ч. диапазон и «$» спереди). */
+const MONEY = new RegExp(String.raw`(?:${RANGE}\s*${MONEY_UNIT}(?![\p{L}\p{N}])${NOT_MONEY}|[$€₽]\s*${NUM}(?:\s*[-–—]\s*[$€₽]?\s*${NUM})?)`, 'giu');
+/** Голое число от 5 цифр (или с разрядами) — вероятно зарплата; если дальше не единица «строк/запросов/мс…». */
+const BIG = String.raw`(?:\d{1,3}(?:[\s ]\d{3})+|\d{5,})`;
+const BIG_NUMBER = new RegExp(
+  String.raw`(?<![\p{L}\p{N}.,])${BIG}(?:\s*[-–—]\s*${BIG})?(?![\p{N}])${NOT_MONEY}`,
+  'giu',
+);
+
 /** Название компании и суммы в рублях → обезличено (лента кандидату — без компании и зарплаты). */
 export function maskEmployer<T>(value: T, companyNames: string[]): T {
   const names = companyNames.map((n) => n.trim()).filter((n) => n.length >= 2);
   const re = names.length ? new RegExp(names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'giu') : null;
-  const money = /\d[\d\s ]*(?:[.,]\d+)?\s*(?:₽|руб(?:\.|лей|ля)?|тыс\.?\s*руб)/giu;
   const walk = (v: unknown): unknown => {
-    if (typeof v === 'string') return (re ? v.replace(re, '[компания]') : v).replace(money, '[сумма скрыта]');
+    if (typeof v === 'string') return (re ? v.replace(re, '[компания]') : v).replace(MONEY, '[сумма скрыта]').replace(BIG_NUMBER, '[сумма скрыта]');
     if (Array.isArray(v)) return v.map(walk);
     if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
     return v;

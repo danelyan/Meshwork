@@ -22,7 +22,7 @@ type Grade = PrismaGrade;
 
 import { readTarGz, writeZip } from './archive';
 import { getDefenseHook } from './defense-hook';
-import type { SpecContext } from './fallback';
+import { fillRequirementsFromRubric, type SpecContext } from './fallback';
 import { reviewRubric } from './review';
 import { getProjectRunner, type RunOutcome } from './runner-client';
 import {
@@ -36,7 +36,7 @@ import {
   type StoredSpec,
   type SubmissionInput,
 } from './schemas';
-import { composeRubric, generateSpec } from './spec';
+import { composeRubric, generateSpec, maskEmployer } from './spec';
 import {
   checkPlatformOwned,
   countTests,
@@ -226,7 +226,9 @@ export async function upsertProjectTask(
     required,
     wishes: input.wishesText,
   };
-  const [spec, rubric] = await Promise.all([generateSpec(specCtx, [ctx.companyName], { contractMd: readContract(template) }), composeRubric(required, input.wishesText)]);
+  const [rawSpec, rubric] = await Promise.all([generateSpec(specCtx, [ctx.companyName], { contractMd: readContract(template) }), composeRubric(required, input.wishesText)]);
+  // Фильтр пересказа контракта мог выбросить все требования модели — тогда показываем критерии рубрики.
+  const spec = fillRequirementsFromRubric(rawSpec, maskEmployer(rubric.criteria, [ctx.companyName]));
   const data = {
     templateId: m.id,
     specialization: m.specialization,
@@ -260,6 +262,14 @@ async function candidateScope(candidateId: string): Promise<CandidateScope> {
   if (!cand) throw errors.notFound('Кандидат не найден');
   if (cat) return { specialization: cat.specialization, grade: cat.grade, fromTest: true };
   return { specialization: cand.specialization, grade: null, fromTest: false };
+}
+
+const GRADE_ORDER: Grade[] = ['junior', 'middle', 'senior'];
+
+/** Грейды открытых заданий, доступные кандидату: не выше категории из теста; без категории — только Junior. */
+function allowedGrades(scope: CandidateScope): Grade[] {
+  if (!scope.grade) return ['junior'];
+  return GRADE_ORDER.slice(0, GRADE_ORDER.indexOf(scope.grade) + 1);
 }
 
 type TaskWithTemplate = Prisma.ProjectTaskGetPayload<{ include: { vacancy: { select: { archivedAt: true } } } }>;
@@ -353,11 +363,8 @@ export async function listFeed(candidateId: string, opts: { preferredSubcategory
     where: {
       vacancy: { archivedAt: null },
       OR: [
-        {
-          visibility: 'open',
-          ...(scope.specialization ? { specialization: scope.specialization } : {}),
-          ...(scope.grade ? { grade: scope.grade } : {}),
-        },
+        // Открытые — только своего направления и грейда не выше категории; без направления — ничего открытого.
+        ...(scope.specialization ? [{ visibility: 'open' as const, specialization: scope.specialization, grade: { in: allowedGrades(scope) } }] : []),
         { vacancyId: { in: invitedVacancies } },
         { assignments: { some: { candidateId } } },
       ],
@@ -380,7 +387,10 @@ async function countActive(candidateId: string, now = new Date(), tx: Prisma.Tra
   return tx.projectAssignment.count({ where: { candidateId, status: 'active', expiresAt: { gt: now } } });
 }
 
-/** Задание доступно кандидату: открытое (потребность не в архиве) или он приглашён по этой потребности. */
+/**
+ * Задание доступно кандидату: уже взятое; по приглашению на эту потребность; открытое (потребность не в
+ * архиве) своего направления и грейда не выше категории из теста (без категории — только Junior).
+ */
 async function loadAccessibleTask(candidateId: string, taskId: string): Promise<TaskWithTemplate> {
   const t = await prisma.projectTask.findUnique({ where: { id: taskId }, include: { vacancy: { select: { archivedAt: true } } } });
   if (!t || !getTemplate(t.templateId)) throw errors.notFound('Задание не найдено');
@@ -390,6 +400,14 @@ async function loadAccessibleTask(candidateId: string, taskId: string): Promise<
   if (t.visibility === 'invited') {
     const inv = await prisma.invitation.findFirst({ where: { candidateId, vacancyId: t.vacancyId }, select: { id: true } });
     if (!inv) throw errors.notFound('Задание не найдено');
+    // Приглашение — решение работодателя: направление и грейд не проверяем.
+    return t;
+  }
+  const scope = await candidateScope(candidateId);
+  if (!scope.specialization) throw errors.forbidden('Сначала выбери направление — открытые задания подбираются по нему');
+  if (t.specialization !== scope.specialization) throw errors.forbidden('Задание другого направления');
+  if (!allowedGrades(scope).includes(t.grade)) {
+    throw errors.forbidden(scope.grade ? 'Грейд задания выше твоей категории' : 'Пока нет категории из теста — доступны только задания Junior');
   }
   return t;
 }
@@ -522,19 +540,31 @@ export interface SubmitDeps {
   background?: boolean;
 }
 
+/** Предыдущая сдача не на проверке и лимит сдач не исчерпан; возвращает число прошлых сдач. */
+async function assertCanSubmit(tx: Prisma.TransactionClient, candidateId: string, taskId: string): Promise<number> {
+  const prev = await tx.projectSubmission.findMany({ where: { candidateId, projectTaskId: taskId }, select: { status: true } });
+  if (prev.some((p) => p.status === 'submitted' || p.status === 'running')) throw errors.conflict('Предыдущая сдача ещё проверяется');
+  if (prev.length >= MAX_SUBMISSIONS_PER_TASK) throw new AppError('rate_limited', `Не больше ${MAX_SUBMISSIONS_PER_TASK} сдач одного задания`, 429);
+  return prev.length;
+}
+
 export async function submitProject(candidateId: string, taskId: string, input: SubmissionInput, deps: SubmitDeps = {}): Promise<CandidateSubmissionView> {
   await loadAccessibleTask(candidateId, taskId);
   const assignment = await prisma.projectAssignment.findUnique({ where: { projectTaskId_candidateId: { projectTaskId: taskId, candidateId } } });
   if (!assignment) throw errors.conflict('Сначала возьми задание');
   const repo = parseGithubRepoUrl(input.repoUrl);
   if (!repo) throw new AppError('bad_request', 'Нужна ссылка на публичный репозиторий GitHub: https://github.com/<владелец>/<репозиторий>', 400);
-  const prev = await prisma.projectSubmission.findMany({ where: { candidateId, projectTaskId: taskId }, select: { status: true } });
-  if (prev.some((p) => p.status === 'submitted' || p.status === 'running')) throw errors.conflict('Предыдущая сдача ещё проверяется');
-  if (prev.length >= MAX_SUBMISSIONS_PER_TASK) throw new AppError('rate_limited', `Не больше ${MAX_SUBMISSIONS_PER_TASK} сдач одного задания`, 429);
   const repoUrl = `https://github.com/${repo.owner}/${repo.repo}`;
   const runner = getProjectRunner();
-  const commitSha = input.commitSha ?? (runner.mode === 'stub' ? createHash('sha1').update(`${repoUrl}#${prev.length}`).digest('hex') : await resolveHeadSha(repo));
+  // Ранний отказ без сети; окончательная проверка — ниже под блокировкой.
+  await assertCanSubmit(prisma, candidateId, taskId);
+  // Сеть — до транзакции, чтобы не держать блокировку на запросе к GitHub.
+  const headSha = input.commitSha ?? (runner.mode === 'stub' ? null : await resolveHeadSha(repo));
   const sub = await prisma.$transaction(async (tx) => {
+    // Две параллельные сдачи одного задания: вторая ждёт первую и получает 409 «ещё проверяется».
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`project-submit:${candidateId}:${taskId}`}))`;
+    const prevCount = await assertCanSubmit(tx, candidateId, taskId);
+    const commitSha = headSha ?? createHash('sha1').update(`${repoUrl}#${prevCount}`).digest('hex');
     // Срок истёк — сдать можно, но работодатель видит пометку «после срока».
     const late = assignment.expiresAt.getTime() < Date.now();
     const created = await tx.projectSubmission.create({ data: { projectTaskId: taskId, candidateId, repoUrl, commitSha, aiLogText: input.aiLogText, late } });

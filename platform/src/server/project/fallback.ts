@@ -59,21 +59,43 @@ export function fallbackSpecOut(ctx: SpecContext): SpecLlmOut {
   };
 }
 
-const HTTP_CODE = /\b(?:200|201|202|204|400|401|403|404|405|409|410|413|422|429|500|502|503)\b/;
+/** Число-«код» (1xx–5xx), если за ним не единица измерения: «200 мс», «500 руб», «300 символов» — не коды. */
+const CODE_NUM = /(?<![\p{L}\p{N}])([1-5]\d\d)(?![\p{N}]|[.,]\d|\s*(?:мс|ms|сек|с(?![\p{L}])|мин|ч(?![\p{L}])|руб|₽|%|кб|мб|гб|kb|mb|gb|символ|строк|запрос|раз|шт|пользовател|клиент|элемент|запис))/giu;
+/** Слова, рядом с которыми трёхзначное число — HTTP-статус. */
+const CODE_CONTEXT = /(?:статус|код|http|ответ)\S*\s*[:=—-]?\s*(?:\S+\s+){0,2}?[1-5]\d\d(?![\p{N}])/iu;
 
 /**
- * Требования модели, которые пересказывают контракт (имена из `…`, коды ошибок в кавычках, HTTP-коды,
- * маршруты), отбрасываются: контракт приложен дословно, пересказ только вносит ошибки.
+ * Требования модели, которые пересказывают контракт (имена из `…`, коды ошибок в кавычках, HTTP-статусы,
+ * маршруты), отбрасываются: контракт приложен дословно, пересказ только вносит ошибки. Число считается
+ * статусом, только если оно встречается в контракте как код или стоит рядом со словами «статус/код/HTTP/ответ».
  */
 export function dropContractEcho(items: string[], contractMd: string): string[] {
   const idents = new Set<string>();
   for (const m of contractMd.matchAll(/`([^`\n]{3,80})`/g)) idents.add(m[1]!.trim());
   for (const m of contractMd.matchAll(/['"]([a-z][a-z0-9_]{2,40})['"]/g)) idents.add(m[1]!);
+  const contractCodes = new Set([...contractMd.matchAll(CODE_NUM)].map((m) => m[1]!));
   return items.filter((r) => {
-    if (r.includes('`') || HTTP_CODE.test(r) || /(?:^|\s)(?:GET|POST|PUT|PATCH|DELETE)\s+\//.test(r)) return false;
+    if (r.includes('`') || /(?:^|\s)(?:GET|POST|PUT|PATCH|DELETE)\s+\//.test(r)) return false;
+    if (CODE_CONTEXT.test(r)) return false;
+    for (const m of r.matchAll(CODE_NUM)) if (contractCodes.has(m[1]!)) return false;
     for (const id of idents) if (r.includes(id)) return false;
     return true;
   });
+}
+
+/** Первая строка требований: ссылка на приложенный контракт. */
+export const CONTRACT_REQUIREMENT = 'Реализовать контракт платформы — он приложен ниже дословно (contract.md). Имена модулей, функций, маршрутов, полей и коды ошибок — только оттуда.';
+
+/**
+ * Фильтр выбросил все требования модели — показываем критерии рубрики (обязательные и пожелания),
+ * чтобы кандидат видел, чего ждёт работодатель.
+ */
+export function fillRequirementsFromRubric(spec: StoredSpec, criteria: RubricCriterion[]): StoredSpec {
+  if (spec.requirements.some((r) => r !== CONTRACT_REQUIREMENT) || !criteria.length) return spec;
+  return {
+    ...spec,
+    requirements: [CONTRACT_REQUIREMENT, ...criteria.map((c) => `${c.source === 'required' ? '(критерий работодателя)' : '(пожелание)'} ${c.text}`)].slice(0, 15),
+  };
 }
 
 /** Итоговое условие: заголовок шаблона, легенда и требования (модель или fallback), остальное — кодом. */
@@ -84,7 +106,7 @@ export function assembleSpec(ctx: SpecContext, out: SpecLlmOut, contractMd: stri
     title: t.title.slice(0, 160),
     domainStory: out.domainStory.slice(0, 2000),
     requirements: [
-      'Реализовать контракт платформы — он приложен ниже дословно (contract.md). Имена модулей, функций, маршрутов, полей и коды ошибок — только оттуда.',
+      CONTRACT_REQUIREMENT,
       ...dropContractEcho(out.requirements, contractMd).map((r) => r.slice(0, 400)),
     ].slice(0, 15),
     acceptance: [

@@ -1,11 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 
 import { ApiError } from '@/lib/api';
-import { getSubmissionApi, submitProjectApi, takeProjectApi } from '@/lib/project-api';
-import type { CandidateSubmissionView, CandidateTaskView } from '@/server/project/service';
+import { submitProjectApi, takeProjectApi } from '@/lib/project-api';
+import type { CandidateTaskView } from '@/server/project/service';
 
 import emp from '../employer/Employer.module.css';
 import { Button, Field, Kicker, Notice, Panel, Tag } from '../ui';
@@ -14,32 +14,18 @@ import ui from '../ui.module.css';
 import { GRADE_RU, SUBMISSION_STATUS, hours } from './labels';
 import styles from './Project.module.css';
 import { RubricTable } from './SubmissionResult';
-
-const POLL_MS = 3000;
+import { useSubmissionPolling } from './useSubmissionPolling';
 
 /** Страница задания кандидату: условие, контракт, видимые тесты, заготовка, сдача и результат. */
 export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
   const router = useRouter();
-  const [subs, setSubs] = useState<CandidateSubmissionView[]>(task.submissions);
+  const [subs, setSubs] = useSubmissionPolling(task.submissions);
+  const pending = subs.find((s) => s.status === 'submitted' || s.status === 'running');
   const [repoUrl, setRepoUrl] = useState('');
   const [aiLog, setAiLog] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [repoErr, setRepoErr] = useState<string | null>(null);
-
-  const pending = subs.find((s) => s.status === 'submitted' || s.status === 'running');
-  useEffect(() => {
-    if (!pending) return;
-    const t = setTimeout(async () => {
-      try {
-        const fresh = await getSubmissionApi(pending.id);
-        setSubs((list) => list.map((s) => (s.id === fresh.id ? fresh : s)));
-      } catch {
-        /* следующий опрос */
-      }
-    }, POLL_MS);
-    return () => clearTimeout(t);
-  }, [pending]);
 
   async function take() {
     setBusy(true);

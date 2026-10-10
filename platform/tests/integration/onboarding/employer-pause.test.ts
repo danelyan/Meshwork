@@ -90,4 +90,18 @@ describe('пауза знакомства работодателя', () => {
     const again = await loadLastEmployerChat(employerProfileId);
     expect(again.items.filter((i) => i.stepId)).toHaveLength(2);
   });
+
+  it('демо без модели: на паузе ответ напоминает про «Вернуться к знакомству» один раз за разговор', async () => {
+    process.env.LLM_STUB_DEMO = 'true';
+    resetEnvCache();
+    resetLlmClient();
+    const { cookie } = await asEmployer('u1');
+    await act(cookie, { action: 'later' });
+    const conv = await ask(cookie, 'Что ты умеешь?');
+    await ask(cookie, 'А ещё что?', conv);
+    const replies = await prisma.employerMessage.findMany({ where: { conversationId: conv, role: 'assistant' }, orderBy: { createdAt: 'asc' } });
+    const marked = replies.filter((r) => r.content.includes('Знакомство ещё не закончено'));
+    expect(marked).toHaveLength(1);
+    expect(marked[0]!.content).toContain('Вернуться к знакомству');
+  });
 });

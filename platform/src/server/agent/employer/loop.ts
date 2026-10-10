@@ -87,7 +87,7 @@ export async function runEmployerTurn(
   if (signal?.aborted) return;
 
   if (demo) {
-    await scripted(ctx, registry, input.text);
+    await scripted(ctx, registry, input.text, paused);
     return;
   }
 
@@ -161,16 +161,23 @@ export async function runEmployerTurn(
     if (signal?.aborted || (err instanceof LlmError && err.code === 'aborted')) return;
     if (err instanceof BudgetExceededError || err instanceof LlmError) {
       emit({ type: 'step', text: EMPLOYER_FALLBACK_STEP });
-      await scripted(ctx, registry, input.text);
+      await scripted(ctx, registry, input.text, paused);
       return;
     }
     throw err;
   }
 }
 
-async function scripted(ctx: EmployerToolContext, registry: EmployerTool[], text: string) {
-  const reply = await runScriptedTurn(ctx, registry, text);
+/** Напоминание без модели (демо, план В): знакомство на паузе - один раз за разговор, как resumeLine кандидата. */
+export const EMPLOYER_RESUME_MARK = 'Знакомство ещё не закончено';
+
+async function scripted(ctx: EmployerToolContext, registry: EmployerTool[], text: string, paused: OnboardingStepBrief | null) {
+  let reply = await runScriptedTurn(ctx, registry, text);
   if (!reply) return;
+  if (paused) {
+    const reminded = await prisma.employerMessage.count({ where: { conversationId: ctx.conversationId, role: 'assistant', content: { contains: EMPLOYER_RESUME_MARK } } });
+    if (!reminded) reply = `${reply}\n${EMPLOYER_RESUME_MARK} - продолжим здесь же: кнопка «${EMPLOYER_RESUME_BUTTON}» вверху ленты.`;
+  }
   await saveEmployerMessage(ctx.conversationId, { role: 'assistant', content: reply });
   await createReplyStream(ctx.emit, ctx.signal).finish(reply);
 }

@@ -57,8 +57,16 @@ export async function resolveViewer(principal: SessionPrincipal | null, sessionI
 const HIDDEN = '[реплика другой компании скрыта]';
 
 export function redactEntry(entry: TranscriptEntry, viewer: Viewer): TranscriptEntry {
-  if (viewer.role === 'candidate' || !entry.companyId || entry.companyId === viewer.companyId) return entry;
-  return { seq: entry.seq, role: entry.role, at: entry.at, t: entry.t, text: HIDDEN, ...(entry.itemId ? { itemId: entry.itemId } : {}), ...(entry.kind ? { kind: entry.kind } : {}) };
+  const companyId = entry.defense?.companyId;
+  if (viewer.role === 'candidate' || !companyId || companyId === viewer.companyId) return entry;
+  return {
+    index: entry.index,
+    role: entry.role,
+    at: entry.at,
+    tMs: entry.tMs,
+    text: HIDDEN,
+    ...(entry.defense?.itemId || entry.defense?.kind ? { defense: { ...(entry.defense.itemId ? { itemId: entry.defense.itemId } : {}), ...(entry.defense.kind ? { kind: entry.defense.kind } : {}) } } : {}),
+  };
 }
 
 export function redactSnapshot(s: CallSnapshot, viewer: Viewer): CallSnapshot {
@@ -74,17 +82,15 @@ export function redactSnapshot(s: CallSnapshot, viewer: Viewer): CallSnapshot {
 export function redactEvent(e: CallEvent, viewer: Viewer): CallEvent | null {
   if (viewer.role === 'candidate') return e;
   switch (e.type) {
-    case 'turn':
+    case 'utterance':
       return { ...e, entry: redactEntry(e.entry, viewer) };
-    case 'participant_joined':
-    case 'participant_left':
+    case 'participant':
+    case 'question':
       return e.companyId === viewer.companyId ? e : null;
-    case 'employer_question':
-      return e.companyId === viewer.companyId ? e : null;
-    case 'ai_muted':
-      return { ...e, by: '' };
-    case 'status':
-      return { ...e, snapshot: redactSnapshot(e.snapshot, viewer) };
+    case 'mute':
+      return { ...e, userId: '' };
+    case 'snapshot':
+      return { ...e, call: redactSnapshot(e.call, viewer) };
     default:
       return e;
   }

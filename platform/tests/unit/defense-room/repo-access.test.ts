@@ -38,14 +38,14 @@ describe('чтение репозитория', () => {
 describe('приватность между компаниями', () => {
   const employerA: Viewer = { role: 'employer', userId: 'u1', employerProfileId: 'p1', companyId: 'A', companyName: 'A', peer: 'employer:u1' };
   const candidate: Viewer = { role: 'candidate', candidateId: 'c', peer: 'candidate' };
-  const other: TranscriptEntry = { seq: 2, role: 'employer', text: 'Вопрос компании B про зарплату', speaker: 'B', companyId: 'B', at: '', t: 0 };
+  const other: TranscriptEntry = { index: 2, role: 'employer', text: 'Вопрос компании B про зарплату', userId: 'u9', defense: { speaker: 'B', companyId: 'B' }, at: '', tMs: 0 };
 
   it('реплики и участники другой компании скрыты от работодателя, кандидат видит всё', () => {
-    const turn = redactEvent({ type: 'turn', entry: other }, employerA);
+    const turn = redactEvent({ type: 'utterance', entry: other }, employerA);
     expect(turn).toMatchObject({ entry: { text: '[реплика другой компании скрыта]' } });
-    expect(JSON.stringify(turn)).not.toContain('B');
-    expect(redactEvent({ type: 'participant_joined', userId: 'u9', companyId: 'B', companyName: 'B' }, employerA)).toBeNull();
-    expect(redactEvent({ type: 'turn', entry: other }, candidate)).toMatchObject({ entry: { text: other.text } });
+    expect(JSON.stringify(turn)).not.toMatch(/"B"|u9/);
+    expect(redactEvent({ type: 'participant', userId: 'u9', role: 'employer', action: 'joined', companyId: 'B', companyName: 'B' }, employerA)).toBeNull();
+    expect(redactEvent({ type: 'utterance', entry: other }, candidate)).toMatchObject({ entry: { text: other.text } });
     const snap: CallSnapshot = {
       sessionId: 's', kind: 'defense', status: 'active', mode: 'project', transcript: [other], aiMuted: false, progress: { asked: 1, total: 3 }, verdict: null,
       participants: [{ userId: 'u9', companyId: 'B', companyName: 'B', aiMuted: false }],
@@ -54,7 +54,7 @@ describe('приватность между компаниями', () => {
   });
 
   it('SSE-кадр: event + data одной строкой', () => {
-    const frame = encodeCallEvent({ type: 'ai_muted', muted: true, by: 'u1' });
-    expect(frame).toBe('event: ai_muted\ndata: {"type":"ai_muted","muted":true,"by":"u1"}\n\n');
+    const frame = encodeCallEvent({ type: 'mute', aiMuted: true, userId: 'u1' });
+    expect(frame).toBe('event: mute\ndata: {"type":"mute","aiMuted":true,"userId":"u1"}\n\n');
   });
 });

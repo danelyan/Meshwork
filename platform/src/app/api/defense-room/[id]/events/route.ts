@@ -11,8 +11,8 @@ type Ctx = { params: Promise<{ id: string }> };
 const KEEPALIVE_MS = 20_000;
 
 /**
- * GET — SSE звонка защиты (EventSource): первым кадром `status` со снимком, дальше `turn`,
- * `participant_joined`, `participant_left`, `ai_muted`, `employer_question`, `status`, `signal`
+ * GET — SSE звонка защиты (EventSource), имена событий — как у лейна call: первым кадром `snapshot`,
+ * дальше `utterance`, `ai_state`, `participant`, `mute`, `question`, `status`, `verdict`, `signal`
  * (сигналы WebRTC — только адресату). Каждые 20 с — комментарий-keepalive. Доступ — как у GET снимка.
  * Разрыв соединения клиентом — `request.signal` (docs Next.js: Route Handlers, streaming).
  */
@@ -37,7 +37,7 @@ export const GET = withErrors(async (req: Request, ctx: Ctx) => {
         const out = redactEvent(e, viewer);
         if (out) write(encodeCallEvent(out));
       };
-      // Подписка до снимка: событие между снимком и подпиской не потеряется (дубли клиент убирает по seq).
+      // Подписка до снимка: событие между снимком и подпиской не потеряется (дубли клиент убирает по index).
       const unsubscribe = subscribe(id, viewer.peer, send);
       const timer = setInterval(() => write(': keepalive\n\n'), KEEPALIVE_MS);
       cleanup = () => {
@@ -53,7 +53,7 @@ export const GET = withErrors(async (req: Request, ctx: Ctx) => {
       };
       signal.addEventListener('abort', cleanup, { once: true });
       write('retry: 3000\n\n');
-      send({ type: 'status', snapshot: redactSnapshot(await buildSnapshot(id), viewer) });
+      send({ type: 'snapshot', call: redactSnapshot(await buildSnapshot(id), viewer) });
     },
     cancel() {
       cleanup();

@@ -6,26 +6,51 @@ import type { DefenseScores } from '../defense/types';
 /** Роли реплик транскрипта (контракт ADR 0003). */
 export type SpeakerRole = 'ai' | 'candidate' | 'employer';
 
+/** Служебные пометки реплики ИИ — та же форма, что `AiUtteranceMeta` лейна call (server/call/types.ts). */
+export interface AiUtteranceMeta {
+  /** Тема: тип вопроса QLC и место в коде (`why · src/a.ts:L1-L9`) или «вопрос работодателя». */
+  topic: string;
+  catalogId: string | null;
+  /** 1 — вопрос плана, 2 — уточнение/возврат, 3 — «смени ограничение». */
+  level: 1 | 2 | 3;
+  routedBy: null;
+  fallback?: boolean;
+  /** Вопрос из очереди работодателя. */
+  employerQuestionId?: string;
+}
+
+/** Расширение реплики защиты проекта (лейн call хранит его как есть; интегратору — добавить поле в TranscriptEntry). */
+export interface DefenseEntryExt {
+  /** Пункт плана, к которому относится реплика ИИ. */
+  itemId?: string;
+  kind?: 'question' | 'followup' | 'return' | 'closing' | 'greeting';
+  /**
+   * Компания, чья это реплика (живая реплика работодателя или вопрос из её очереди). Другим
+   * компаниям реплика отдаётся скрытой (access.ts redactEntry): кандидат может общаться с несколькими.
+   */
+  companyId?: string;
+  /** Название компании — у реплик работодателя. */
+  speaker?: string;
+}
+
+/**
+ * Реплика транскрипта (CallSession.transcriptJson). Форма — как `TranscriptEntry` лейна call
+ * (index, role, text, at, tMs, userId, meta) плюс расширение `defense`.
+ */
 export interface TranscriptEntry {
-  /** Порядковый номер реплики в сессии (с 1), по нему клиенты убирают дубли SSE. */
-  seq: number;
+  /** 0-based порядковый номер реплики в созвоне; по нему клиенты убирают дубли SSE. */
+  index: number;
   role: SpeakerRole;
   text: string;
   /** ISO-время реплики. */
   at: string;
-  /** Миллисекунды от начала звонка. */
-  t: number;
-  /** Кто говорит от работодателя (название компании) — только у role=employer. */
-  speaker?: string;
-  /**
-   * Компания, чья это реплика (живая реплика работодателя или вопрос из её очереди). Другим
-   * компаниям такая реплика отдаётся скрытой (`redactFor`): кандидат может общаться с несколькими.
-   */
-  companyId?: string;
-  /** Пункт плана, к которому относится реплика ИИ (вопрос или уточнение). */
-  itemId?: string;
-  /** Вид реплики ИИ: вопрос плана, уточнение, возврат к вопросу, завершение. */
-  kind?: 'question' | 'followup' | 'return' | 'closing' | 'greeting';
+  /** Смещение от начала созвона, мс. */
+  tMs: number;
+  /** Автор-работодатель (role=employer). */
+  userId?: string;
+  /** Только у вопросов ИИ (у завершающей реплики нет). */
+  meta?: AiUtteranceMeta;
+  defense?: DefenseEntryExt;
 }
 
 /** Типы вопросов по коду (QLC, Lehtinen et al.): что делает / почему так / что сломается / измени / смени ограничение. */
@@ -142,10 +167,10 @@ export interface DefenseRoomVerdict {
 }
 
 // ---------------------------------------------------------------------------
-// SSE (контракт ADR 0003: те же имена, что у лейна call)
+// SSE — имена событий лейна call (server/call/types.ts CALL_EVENT_TYPES)
 // ---------------------------------------------------------------------------
 
-export const CALL_EVENT_NAMES = ['turn', 'participant_joined', 'participant_left', 'ai_muted', 'employer_question', 'status', 'signal'] as const;
+export const CALL_EVENT_NAMES = ['snapshot', 'status', 'utterance', 'ai_state', 'participant', 'mute', 'question', 'verdict', 'signal', 'error'] as const;
 export type CallEventName = (typeof CALL_EVENT_NAMES)[number];
 
 export interface CallSnapshot {
@@ -166,11 +191,18 @@ export interface SignalPayload {
   candidate?: { candidate: string; sdpMid?: string | null; sdpMLineIndex?: number | null; usernameFragment?: string | null } | null;
 }
 
+/**
+ * События звонка защиты. Имена и формы — как у лейна call; отличия: `snapshot.call` — CallSnapshot
+ * защиты; `participant`/`question` несут companyId (по нему скрываем чужие компании).
+ */
 export type CallEvent =
-  | { type: 'turn'; entry: TranscriptEntry; done?: boolean }
-  | { type: 'participant_joined'; userId: string; companyId: string; companyName: string }
-  | { type: 'participant_left'; userId: string; companyId: string }
-  | { type: 'ai_muted'; muted: boolean; by: string }
-  | { type: 'employer_question'; questionId: string; companyId?: string; status: 'queued' | 'asked' | 'answered' }
-  | { type: 'status'; snapshot: CallSnapshot }
-  | { type: 'signal'; from: string; to: string; payload: SignalPayload };
+  | { type: 'snapshot'; call: CallSnapshot }
+  | { type: 'status'; status: 'active' | 'finished' | 'cancelled' }
+  | { type: 'utterance'; entry: TranscriptEntry; done?: boolean }
+  | { type: 'ai_state'; state: 'thinking' | 'idle' }
+  | { type: 'participant'; userId: string; role: 'employer'; action: 'joined' | 'left'; companyId: string; companyName: string }
+  | { type: 'mute'; aiMuted: boolean; userId: string }
+  | { type: 'question'; questionId: string; companyId?: string; status: 'queued' | 'asked' | 'answered' }
+  | { type: 'verdict'; verdict: DefenseRoomVerdict }
+  | { type: 'signal'; from: string; to: string; payload: SignalPayload }
+  | { type: 'error'; code: string; message: string };

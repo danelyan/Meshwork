@@ -82,7 +82,7 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
 
 export const SSE_EVENTS_DOC = [
   '### События SSE',
-  'Звонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями `turn`, `participant_joined`, `participant_left`, `ai_muted`, `employer_question`, `status`, `signal` (кадр `event: <имя>` + `data: <json>`; первым приходит `status` со снимком, сигналы WebRTC — только адресату).',
+  'Звонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).',
   'Эндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.',
   'Второй ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.',
 ].join('\n\n');

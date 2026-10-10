@@ -73,7 +73,7 @@ describe('защита проекта с работодателем', () => {
     expect(started.status).toBe(201);
     const { sessionId, webrtc, snapshot } = (await started.json()) as { sessionId: string; webrtc: { iceServers: { urls: string }[] }; snapshot: CallSnapshot };
     expect(webrtc.iceServers[0]!.urls).toBe('stun:stun.l.google.com:19302');
-    expect(snapshot.transcript[0]).toMatchObject({ role: 'ai', kind: 'greeting' });
+    expect(snapshot.transcript[0]).toMatchObject({ index: 0, role: 'ai', defense: { kind: 'greeting' } });
     expect(snapshot.transcript[0]!.text).toMatch(/fsp-demo\/payments/);
     const plan = await prisma.defenseRoomPlan.findUniqueOrThrow({ where: { callSessionId: sessionId } });
     const items = plan.itemsJson as { source: string; type?: string; ref?: string | null }[];
@@ -115,7 +115,7 @@ describe('защита проекта с работодателем', () => {
     // Реплика работодателя → транскрипт с ролью employer.
     const said = await sayRoute(post('/x', { text: 'А что будет, если шлюз ответит таймаутом на последней попытке?' }, EMP_A), params(sessionId));
     expect(said.status).toBe(201);
-    expect((await said.json()).entry).toMatchObject({ role: 'employer', speaker: 'Альфа' });
+    expect((await said.json()).entry).toMatchObject({ role: 'employer', userId: 'u-emp-a', defense: { speaker: 'Альфа', companyId: 'co-a' } });
 
     // Mute: ИИ не вступает после ответа кандидата.
     expect((await (await muteRoute(post('/x', { muted: true }, EMP_A), params(sessionId))).json()).muted).toBe(true);
@@ -125,7 +125,7 @@ describe('защита проекта с работодателем', () => {
     // Unmute: ИИ возвращается к открытому вопросу плана.
     const un = await (await muteRoute(post('/x', { muted: false }, EMP_A), params(sessionId))).json();
     expect(un.aiText).toMatch(/Вернёмся к вопросу/);
-    expect(events.map((e) => e.type)).toEqual(expect.arrayContaining(['participant_joined', 'turn', 'ai_muted']));
+    expect(events.map((e) => e.type)).toEqual(expect.arrayContaining(['participant', 'utterance', 'mute']));
     unsub();
 
     // Работодатель видит транскрипт; кандидат — тоже; порядок ролей.
@@ -210,7 +210,7 @@ describe('защита проекта с работодателем', () => {
     u2();
   });
 
-  it('SSE: первым кадром status со снимком; работодателю без приглашения — 404', async () => {
+  it('SSE: первым кадром snapshot; работодателю без приглашения — 404', async () => {
     const { sessionId } = await (await startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE))).json();
     expect((await eventsRoute(jsonRequest('/x', 'GET', undefined, EMP_B), params(sessionId))).status).toBe(404);
     const ctrl = new AbortController();
@@ -219,8 +219,8 @@ describe('защита проекта с работодателем', () => {
     expect(res.headers.get('content-type')).toMatch(/text\/event-stream/);
     const reader = res.body!.getReader();
     let text = '';
-    while (!text.includes('event: status')) text += new TextDecoder().decode((await reader.read()).value);
-    expect(text).toMatch(/event: status\ndata: \{"type":"status"/);
+    while (!text.includes('event: snapshot')) text += new TextDecoder().decode((await reader.read()).value);
+    expect(text).toMatch(/^retry: 3000\n\nevent: snapshot\ndata: \{"type":"snapshot","call":\{/);
     ctrl.abort();
     await reader.cancel();
   });

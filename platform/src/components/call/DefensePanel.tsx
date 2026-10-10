@@ -32,13 +32,15 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
   const voice = useCompanionVoice();
   const sayEmployer = useEmployerVoice();
   const rtc = useRtcAudio(sessionId, 'candidate', iceServers, true);
-  const { snapshot, lastEntry, connected } = useCallEvents(sessionId, initial, rtc.onSignal);
+  const { snapshot, lastEntry, connected, aiThinking } = useCallEvents(sessionId, initial, rtc.onSignal);
+
+  useEffect(() => voice?.setThinking(aiThinking), [voice, aiThinking]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verdict, setVerdict] = useState<DefenseRoomVerdict | null>(initial.verdict);
-  const [done, setDone] = useState(initial.transcript.at(-1)?.kind === 'closing');
-  const spoken = useRef(new Set<number>(initial.transcript.map((e) => e.seq)));
+  const [done, setDone] = useState(initial.transcript.at(-1)?.defense?.kind === 'closing');
+  const spoken = useRef(new Set<number>(initial.transcript.map((e) => e.index)));
 
   const s = snapshot ?? initial;
   const finished = s.status !== 'active' || verdict !== null;
@@ -46,11 +48,11 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
 
   // Озвучить свежие реплики: ИИ — голосом аватара, работодателя — вторым голосом, если нет живого аудио.
   useEffect(() => {
-    if (!lastEntry || spoken.current.has(lastEntry.seq)) return;
-    spoken.current.add(lastEntry.seq);
-    if (lastEntry.role === 'ai') voice?.speak(lastEntry.text, String(lastEntry.seq));
+    if (!lastEntry || spoken.current.has(lastEntry.index)) return;
+    spoken.current.add(lastEntry.index);
+    if (lastEntry.role === 'ai') voice?.speak(lastEntry.text, String(lastEntry.index));
     if (lastEntry.role === 'employer' && !rtc.anyConnected) sayEmployer(lastEntry.text);
-    if (lastEntry.kind === 'closing') setDone(true);
+    if (lastEntry.defense?.kind === 'closing') setDone(true);
   }, [lastEntry, voice, sayEmployer, rtc.anyConnected]);
 
   // Работодатель вышел — закрыть его аудио.

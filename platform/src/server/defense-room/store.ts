@@ -13,7 +13,7 @@ import type { DefenseMode, DefenseRoomVerdict, PlanItem, TranscriptEntry } from 
 
 export const PLAN_LOCK_MS = 90_000;
 
-export type NewEntry = Omit<TranscriptEntry, 'seq' | 'at' | 't'>;
+export type NewEntry = Omit<TranscriptEntry, 'index' | 'at' | 'tMs'>;
 
 export interface SourceInfo {
   mode: DefenseMode;
@@ -47,15 +47,15 @@ export async function appendEntries(sessionId: string, entries: NewEntry[], opts
     if (row.status !== 'active') throw errors.conflict('Сессия уже завершена');
     const transcript = asTranscript(row.transcriptJson);
     const now = new Date();
-    let seq = transcript.length ? transcript[transcript.length - 1]!.seq : 0;
-    const out = entries.map((e) => ({ ...e, seq: ++seq, at: now.toISOString(), t: Math.max(0, now.getTime() - row.startedAt.getTime()) }));
+    let index = transcript.length ? transcript[transcript.length - 1]!.index + 1 : 0;
+    const out: TranscriptEntry[] = entries.map((e) => ({ ...e, index: index++, at: now.toISOString(), tMs: Math.max(0, now.getTime() - row.startedAt.getTime()) }));
     await tx.callSession.update({
       where: { id: sessionId },
       data: { transcriptJson: [...transcript, ...out] as unknown as Prisma.InputJsonValue },
     });
     return out;
   });
-  added.forEach((entry, i) => publish(sessionId, { type: 'turn', entry, ...(opts.done && i === added.length - 1 ? { done: true } : {}) }));
+  added.forEach((entry, i) => publish(sessionId, { type: 'utterance', entry, ...(opts.done && i === added.length - 1 ? { done: true } : {}) }));
   return added;
 }
 

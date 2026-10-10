@@ -19,7 +19,7 @@ import {
   type NewEntry,
   type SourceInfo,
 } from './store';
-import type { CallSnapshot, DefenseMode, DefenseRoomVerdict, PlanItem, RepoSnapshot, TranscriptEntry } from './types';
+import type { AiUtteranceMeta, CallSnapshot, DefenseEntryExt, DefenseMode, DefenseRoomVerdict, PlanItem, RepoSnapshot, TranscriptEntry } from './types';
 import { evaluateDefenseRoom } from './verdict';
 
 /**
@@ -87,20 +87,25 @@ export function itemSpeech(item: PlanItem): string {
   return item.source === 'employer' ? `Вопрос от компании «${item.companyName}»: ${item.question}` : item.question;
 }
 
-function itemEntry(item: PlanItem, prefix: string, kind: TranscriptEntry['kind']): NewEntry {
+/** Пометки вопроса ИИ в форме лейна call (meta) — по ним работает и `questionTurns` лейна call. */
+export function itemMeta(item: PlanItem, level: 1 | 2 | 3): AiUtteranceMeta {
+  if (item.source === 'employer') return { topic: `вопрос работодателя · ${item.companyName}`, catalogId: null, level, routedBy: null, employerQuestionId: item.employerQuestionId };
+  return { topic: item.ref ? `${item.type} · ${item.ref}` : item.type, catalogId: null, level: item.type === 'constraint' ? 3 : level, routedBy: null };
+}
+
+function itemEntry(item: PlanItem, prefix: string, kind: NonNullable<DefenseEntryExt['kind']>): NewEntry {
   return {
     role: 'ai',
     text: `${prefix}${itemSpeech(item)}`.trim(),
-    itemId: item.id,
-    kind,
-    ...(item.source === 'employer' ? { companyId: item.companyId } : {}),
+    meta: itemMeta(item, kind === 'return' ? 2 : 1),
+    defense: { itemId: item.id, kind, ...(item.source === 'employer' ? { companyId: item.companyId } : {}) },
   };
 }
 
 async function markAsked(item: PlanItem | undefined, sessionId: string): Promise<void> {
   if (item?.source !== 'employer') return;
   await prisma.employerQuestion.updateMany({ where: { id: item.employerQuestionId, status: 'queued' }, data: { status: 'asked' } });
-  publish(sessionId, { type: 'employer_question', questionId: item.employerQuestionId, companyId: item.companyId, status: 'asked' });
+  publish(sessionId, { type: 'question', questionId: item.employerQuestionId, companyId: item.companyId, status: 'asked' });
 }
 
 // ---------------------------------------------------------------------------
@@ -219,7 +224,7 @@ export async function candidateTurn(candidateId: string, sessionId: string, rawT
     const plan = await loadPlan(sessionId);
     const current = plan.items[plan.cursor];
     // Ответ засчитывается пункту плана, только если перед ним спрашивал ИИ по этому пункту.
-    const answeredCurrent = !!current && asker?.role === 'ai' && asker.itemId === current.id;
+    const answeredCurrent = !!current && asker?.role === 'ai' && asker.defense?.itemId === current.id;
     if (answeredCurrent) {
       current.answered = true;
       if (current.source === 'employer') {
@@ -227,12 +232,17 @@ export async function candidateTurn(candidateId: string, sessionId: string, rawT
           where: { id: current.employerQuestionId, status: { in: ['queued', 'asked'] } },
           data: { status: 'answered', answeredInCallSessionId: sessionId },
         });
-        publish(sessionId, { type: 'employer_question', questionId: current.employerQuestionId, companyId: current.companyId, status: 'answered' });
+        publish(sessionId, { type: 'question', questionId: current.employerQuestionId, companyId: current.companyId, status: 'answered' });
       }
       await savePlan(sessionId, plan);
     }
     if (await isAiMuted(sessionId)) return { text: null, muted: true, done: plan.cursor >= plan.items.length };
-    return await respond(sessionId, plan, { answer: text, allowFollowUp: answeredCurrent, llm });
+    publish(sessionId, { type: 'ai_state', state: 'thinking' });
+    try {
+      return await respond(sessionId, plan, { answer: text, allowFollowUp: answeredCurrent, llm });
+    } finally {
+      publish(sessionId, { type: 'ai_state', state: 'idle' });
+    }
   } finally {
     await unlockPlan(sessionId);
   }
@@ -263,7 +273,9 @@ async function respond(
       current.followUps += 1;
       current.answered = false;
       await savePlan(sessionId, plan);
-      const [e] = await appendEntries(sessionId, [{ role: 'ai', text: step.followUp, itemId: current.id, kind: 'followup', ...(current.source === 'employer' ? { companyId: current.companyId } : {}) }]);
+      const [e] = await appendEntries(sessionId, [
+        { role: 'ai', text: step.followUp, meta: itemMeta(current, 2), defense: { itemId: current.id, kind: 'followup', ...(current.source === 'employer' ? { companyId: current.companyId } : {}) } },
+      ]);
       return { text: e!.text, muted: false, done: false };
     }
   }
@@ -277,7 +289,7 @@ async function respond(
   }
   const [e] = await appendEntries(
     sessionId,
-    [{ role: 'ai', text: `${ack} Это все вопросы. Завершаю защиту и передаю ответы оценщику - результат появится через несколько секунд.`, kind: 'closing' }],
+    [{ role: 'ai', text: `${ack} Это все вопросы. Завершаю защиту и передаю ответы оценщику - результат появится через несколько секунд.`, defense: { kind: 'closing' } }],
     { done: true },
   );
   return { text: e!.text, muted: false, done: true };
@@ -356,7 +368,9 @@ export async function finishDefenseRoom(candidateId: string, sessionId: string, 
     if (v) return v;
     throw errors.conflict('Сессия защиты уже завершена');
   }
-  publish(sessionId, { type: 'status', snapshot: await buildSnapshot(sessionId) });
+  publish(sessionId, { type: 'status', status: 'finished' });
+  publish(sessionId, { type: 'verdict', verdict });
+  publish(sessionId, { type: 'snapshot', call: await buildSnapshot(sessionId) });
   return verdict;
 }
 

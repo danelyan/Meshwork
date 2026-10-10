@@ -17,9 +17,9 @@ export function Transcript({ entries, selfRole }: { entries: TranscriptEntry[]; 
   return (
     <ol className={styles.thread} aria-live="polite" data-testid="call-transcript">
       {entries.map((e) => (
-        <li key={e.seq} className={cx(styles.entry, styles[e.role])} data-role={e.role}>
+        <li key={e.index} className={cx(styles.entry, styles[e.role])} data-role={e.role}>
           <span className={styles.who}>
-            {e.role === selfRole ? 'Вы' : e.role === 'employer' && e.speaker ? `${WHO.employer} · ${e.speaker}` : WHO[e.role]}
+            {e.role === selfRole ? 'Вы' : e.role === 'employer' && e.defense?.speaker ? `${WHO.employer} · ${e.defense.speaker}` : WHO[e.role]}
           </span>
           {e.text}
         </li>

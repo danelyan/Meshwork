@@ -32,7 +32,7 @@ export function transcriptTurns(transcript: TranscriptEntry[]): { question: stri
       if (asked.length) out.push({ question: asked.join('\n'), answer: e.text });
       else if (out.length) out[out.length - 1]!.answer += `\n${e.text}`;
       asked = [];
-    } else if (e.kind !== 'closing') {
+    } else if (e.defense?.kind !== 'closing') {
       asked.push(e.role === 'employer' ? `Работодатель: ${e.text}` : e.text);
     }
   }

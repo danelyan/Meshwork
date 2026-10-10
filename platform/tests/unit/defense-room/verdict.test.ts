@@ -7,19 +7,19 @@ import { clearStubResponses, createStubProvider, registerStubResponse } from '@/
 const llm = createStubProvider();
 afterEach(() => clearStubResponses());
 
-let seq = 0;
-const e = (role: TranscriptEntry['role'], text: string, extra: Partial<TranscriptEntry> = {}): TranscriptEntry => ({ seq: ++seq, role, text, at: '', t: 0, ...extra });
+let index = 0;
+const e = (role: TranscriptEntry['role'], text: string, extra: Partial<TranscriptEntry> = {}): TranscriptEntry => ({ index: index++, role, text, at: '', tMs: 0, ...extra });
 
 const ANSWER1 = 'Задержка растёт экспоненциально, чтобы не добивать шлюз во время его сбоя, джиттер разводит повторы.';
 const ANSWER2 = 'Set живёт в памяти процесса, поэтому при двух экземплярах дубль пройдёт - нужен общий Redis с TTL.';
 const transcript: TranscriptEntry[] = [
-  e('ai', 'Привет! Почему задержка растёт экспоненциально?', { kind: 'greeting', itemId: 'q1' }),
+  e('ai', 'Привет! Почему задержка растёт экспоненциально?', { defense: { kind: 'greeting', itemId: 'q1' } }),
   e('candidate', ANSWER1),
-  e('employer', 'А почему не очередь с повтором?', { speaker: 'ООО Ромашка', companyId: 'co1' }),
+  e('employer', 'А почему не очередь с повтором?', { userId: 'u1', defense: { speaker: 'ООО Ромашка', companyId: 'co1' } }),
   e('candidate', 'Очередь тоже вариант, но тогда клиент ждёт дольше.'),
-  e('ai', 'Вернёмся. Что сломается при трёх экземплярах?', { kind: 'return', itemId: 'q2' }),
+  e('ai', 'Вернёмся. Что сломается при трёх экземплярах?', { defense: { kind: 'return', itemId: 'q2' } }),
   e('candidate', ANSWER2),
-  e('ai', 'Это все вопросы.', { kind: 'closing' }),
+  e('ai', 'Это все вопросы.', { defense: { kind: 'closing' } }),
 ];
 
 const crit = (score: number, quote: string) => ({ score, quote, rationale: 'r' });

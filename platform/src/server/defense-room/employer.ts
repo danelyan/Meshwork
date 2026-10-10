@@ -6,7 +6,7 @@ import type { SessionPrincipal } from '../session';
 import { employerMayAccess, redactSnapshot, resolveViewer, type Viewer } from './access';
 import { publish } from './bus';
 import { buildSnapshot, employerItem, ICE_SERVERS, resumeAi } from './session';
-import { appendEntries, asVerdict, loadPlan, savePlan, tryLockPlan, unlockPlan } from './store';
+import { appendEntries, asVerdict, isAiMuted, loadPlan, savePlan, tryLockPlan, unlockPlan } from './store';
 import type { CallSnapshot, DefenseFlag, TranscriptEntry } from './types';
 
 /**
@@ -46,7 +46,7 @@ export async function joinCall(principal: SessionPrincipal | null, sessionId: st
       if (sameCompany !== others.length) throw new AppError('room_busy', 'К этой защите сейчас подключена другая компания', 409);
     }
     p = await prisma.callParticipant.create({ data: { callSessionId: sessionId, userId: viewer.userId, role: 'employer' } });
-    publish(sessionId, { type: 'participant_joined', userId: viewer.userId, companyId: viewer.companyId, companyName: viewer.companyName });
+    publish(sessionId, { type: 'participant', userId: viewer.userId, role: 'employer', action: 'joined', companyId: viewer.companyId, companyName: viewer.companyName });
   }
   return { participantId: p.id, webrtc: { iceServers: ICE_SERVERS }, snapshot: redactSnapshot(await buildSnapshot(sessionId), viewer) };
 }
@@ -56,9 +56,9 @@ export async function leaveCall(principal: SessionPrincipal | null, sessionId: s
   const p = await activeParticipant(sessionId, viewer.userId);
   if (!p) return { left: false };
   await prisma.callParticipant.update({ where: { id: p.id }, data: { leftAt: new Date() } });
-  publish(sessionId, { type: 'participant_left', userId: viewer.userId, companyId: viewer.companyId });
+  publish(sessionId, { type: 'participant', userId: viewer.userId, role: 'employer', action: 'left', companyId: viewer.companyId, companyName: viewer.companyName });
   if (p.aiMuted) {
-    publish(sessionId, { type: 'ai_muted', muted: false, by: viewer.userId });
+    publish(sessionId, { type: 'mute', aiMuted: await isAiMuted(sessionId), userId: viewer.userId });
     await resumeAi(sessionId, llm);
   }
   return { left: true };
@@ -76,7 +76,7 @@ export async function muteAi(principal: SessionPrincipal | null, sessionId: stri
   const { viewer, session } = await employerViewer(principal, sessionId);
   const p = await requireJoined(viewer, sessionId, session.status);
   await prisma.callParticipant.update({ where: { id: p.id }, data: { aiMuted: muted } });
-  publish(sessionId, { type: 'ai_muted', muted, by: viewer.userId });
+  publish(sessionId, { type: 'mute', aiMuted: await isAiMuted(sessionId), userId: viewer.userId });
   const resumed = muted ? null : await resumeAi(sessionId, llm);
   return { muted, aiText: resumed?.text ?? null };
 }
@@ -88,7 +88,7 @@ export async function employerSay(principal: SessionPrincipal | null, sessionId:
   const text = rawText.trim();
   if (!text) throw errors.badRequest('Пустая реплика');
   if (text.length > EMPLOYER_QUESTION_LIMITS.maxSayChars) throw errors.payloadTooLarge(`Реплика длиннее ${EMPLOYER_QUESTION_LIMITS.maxSayChars} символов`);
-  const [entry] = await appendEntries(sessionId, [{ role: 'employer', text, speaker: viewer.companyName, companyId: viewer.companyId }]);
+  const [entry] = await appendEntries(sessionId, [{ role: 'employer', text, userId: viewer.userId, defense: { speaker: viewer.companyName, companyId: viewer.companyId } }]);
   return { entry: entry! };
 }
 
@@ -145,7 +145,7 @@ async function attachToLiveSession(q: { id: string; text: string; companyId: str
     const plan = await loadPlan(live.id);
     plan.items.push(employerItem({ id: q.id, text: q.text, companyId: q.companyId, companyName }));
     await savePlan(live.id, plan);
-    publish(live.id, { type: 'employer_question', questionId: q.id, companyId: q.companyId, status: 'queued' });
+    publish(live.id, { type: 'question', questionId: q.id, companyId: q.companyId, status: 'queued' });
   } finally {
     await unlockPlan(live.id);
   }
@@ -172,7 +172,7 @@ export function answerFor(transcript: TranscriptEntry[], questionId: string): st
   const out: string[] = [];
   let inside = false;
   for (const e of transcript) {
-    if (e.role === 'ai') inside = e.itemId === itemId;
+    if (e.role === 'ai') inside = e.defense?.itemId === itemId;
     else if (e.role === 'candidate' && inside) out.push(e.text);
   }
   return out.length ? out.join('\n') : null;

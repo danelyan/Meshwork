@@ -144,13 +144,17 @@ export function shouldStop(
  * v5 (11.10): ротация семейств между попытками кандидата — шаблоны прошлых попыток того же пула ранжируются с весом
  * SEEN_BEFORE_WEIGHT (selectNext, seenBefore). Правила остановки — как v4: классификационная остановка уже
  * доминирует (SE ≤ 0,4 за 10 заданий не достигается, замер eval/test/run.ts --se-stop none — без изменений).
+ * v6 (11.10): индекс честности (integrity.ts) — ловушки для нейросети на 2 числовых заданиях, лимит времени
+ * фиксируется при показе; при high и подтверждённом грейде — needs_confirmation и подтверждающий тест (confirm.ts).
+ * Правила остановки основной фазы — как v5.
  */
-export const POLICY_VERSION = 'adr-0002-v5';
+export const POLICY_VERSION = 'adr-0002-v6';
 
 /** Правила остановки основной фазы по версии политики; неизвестная версия (v1–v3) — как v4 (7–10, SE ≤ 0,4). */
 export const RULES_BY_VERSION: Readonly<Record<string, StopLimits>> = {
   'adr-0002-v4': { min: MIN_ITEMS, max: MAX_ITEMS },
   'adr-0002-v5': { min: MIN_ITEMS, max: MAX_ITEMS },
+  'adr-0002-v6': { min: MIN_ITEMS, max: MAX_ITEMS },
 };
 
 export function rulesFor(version: string): StopLimits {

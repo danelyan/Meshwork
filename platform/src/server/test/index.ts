@@ -6,6 +6,8 @@ export {
   answerAttempt,
   finishAttempt,
   confirmJunior,
+  startConfirmAttempt,
+  recordSignals,
   listAttempts,
   checkEligibility,
   ensureTemplates,

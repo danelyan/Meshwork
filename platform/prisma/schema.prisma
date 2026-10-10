@@ -94,7 +94,7 @@ model Candidate {
   /// lane auth: аккаунт входа (null у старых демо-кандидатов до первого демо-входа)
   user                User?
   /// lane employer: настройка приватности (R-C-13) — true: не показывать в подборке и поиске работодателей
-  hiddenFromEmployers Boolean               @default(false)
+  hiddenFromEmployers Boolean             @default(false)
   /// lane onboarding: анкета онбординга (цель, грейд, стек, формат, зарплата)
   profile             CandidateProfile?
   /// lane test: попытки теста на грейд
@@ -112,8 +112,6 @@ model Candidate {
   subcategoryId       String?
   /// lane astra-favorites: private employer bookmarks
   savedByUsers        UserSavedCandidate[]
-  /// lane consent: возражения против оценки (ст. 16 152-ФЗ)
-  objections          AssessmentObjection[]
 }
 
 model CandidateCategory {
@@ -530,16 +528,16 @@ model User {
   // lane: email-auth — вход по почте и паролю (R-D-04; ADR 0001, дополнение 10.10).
   // Уникальность почты — через AuthAccount(provider = "email", providerAccountId = почта в нижнем регистре).
   /// scrypt-хэш пароля `scrypt$N$r$p$salt$hash`; null — аккаунт без пароля (Яндекс, демо).
-  passwordHash                 String?
+  passwordHash    String?
   /// Почта подтверждена кодом из письма. Без этого вход по паролю закрыт.
-  emailVerifiedAt              DateTime?
-  authCodes                    AuthCode[]
+  emailVerifiedAt DateTime?
+  authCodes       AuthCode[]
   // lane astra: notification read cursors are independent for each account role.
   candidateNotificationsReadAt DateTime?
   employerNotificationsReadAt  DateTime?
   /// lane astra-favorites: bookmarks are private to the account, not its company
-  savedVacancies               UserSavedVacancy[]
-  savedCandidates              UserSavedCandidate[]
+  savedVacancies  UserSavedVacancy[]
+  savedCandidates UserSavedCandidate[]
 }
 
 // =============================================================================
@@ -599,72 +597,14 @@ model EmployerProfile {
 }
 
 /// Факт согласия на обработку ПДн (R-C-14, 152-ФЗ): версия текста + время. Записи не удаляются.
-/// lane consent (ADR 0005): вид согласия. Одна строка — один акт согласия; отзыв — revokedAt.
-enum ConsentKind {
-  /// Г1: обработка ПДн для подбора (регистрация). Отзыв = удаление аккаунта.
-  pd_processing
-  /// Г2: запись голоса и транскрипта ИИ-созвона
-  call_recording
-  /// Г3: оценка ответов ИИ (ст. 16 152-ФЗ, с правом возражения) — нужна для теста, созвона, защиты
-  ai_assessment
-  /// Г4: показ профиля работодателям под псевдонимом (без него hiddenFromEmployers = true)
-  employer_visibility
-  /// Г6: обезличенные данные для проверки качества теста и оценщика
-  research
-  /// Г7: рассылки (рассылок нет — галочка хранится и ни на что не влияет)
-  marketing
-  /// Г5: раскрытие имени и контактов конкретному работодателю (context.invitationId)
-  identity_disclosure
-  /// Работодатель: акцепт условий для работодателей (оферта, /employer-terms)
-  employer_offer
-  /// Работодатель: обязательство использовать данные кандидатов только для найма
-  employer_data_obligation
-}
-
 model Consent {
-  id         String      @id @default(cuid())
+  id         String   @id @default(cuid())
   userId     String
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind       ConsentKind @default(pd_processing)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   version    String
-  acceptedAt DateTime    @default(now())
-  /// Отзыв: строка остаётся в истории. Активное согласие — последнее по kind без revokedAt.
-  revokedAt  DateTime?
-  /// Привязка согласия (identity_disclosure: { invitationId }).
-  context    Json?
+  acceptedAt DateTime @default(now())
 
   @@index([userId, acceptedAt])
-  @@index([userId, kind, revokedAt])
-}
-
-enum ObjectionSubject {
-  grade_test
-  call
-  defense
-}
-
-enum ObjectionStatus {
-  open
-  answered
-}
-
-/// lane consent (ст. 16 152-ФЗ): возражение кандидата против автоматической оценки. Срок ответа — 30 дней.
-/// Работодателю не показывается.
-model AssessmentObjection {
-  id          String           @id @default(cuid())
-  candidateId String
-  candidate   Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  subject     ObjectionSubject
-  /// Что оспаривается: TestAttempt/CandidateCategory (grade_test), CallSession (call), DefenseSession или CallSession kind=defense (defense)
-  subjectId   String
-  text        String
-  status      ObjectionStatus  @default(open)
-  answer      String?
-  createdAt   DateTime         @default(now())
-  answeredAt  DateTime?
-
-  @@index([candidateId, createdAt])
-  @@index([status, createdAt])
 }
 
 // =============================================================================
@@ -736,6 +676,8 @@ enum TestAttemptStatus {
   passed
   not_confirmed
   abandoned
+  /// Грейд подтверждён по ответам, но индекс честности high: категория не выдаётся до подтверждающего теста (ADR-0002, 11.10)
+  needs_confirmation
 }
 
 /// Шаблон-генератор задания. Код генератора — src/server/test/generators; здесь —
@@ -790,6 +732,13 @@ model TestAttempt {
   startedAt         DateTime          @default(now())
   expiresAt         DateTime
   finishedAt        DateTime?
+  /// Агрегаты браузера за попытку (уходы со вкладки, вставки, копирования) — только счётчики, без содержимого (152-ФЗ)
+  signals           Json?
+  /// Индекс честности при финализации: уровень, причины, версия (src/server/test/integrity.ts)
+  integrity         Json?
+  /// grade — обычная попытка; confirm — подтверждающий тест к попытке confirmsAttemptId
+  kind              String            @default("grade")
+  confirmsAttemptId String?
 
   items TestItem[]
 
@@ -819,6 +768,10 @@ model TestItem {
   seAfter      Float?
   askedAt      DateTime     @default(now())
   answeredAt   DateTime?
+  /// Сдвиг ловушки для нейросети (скрытая строка «прибавь N»); null — без ловушки
+  canaryShift  Int?
+  /// Мягкий лимит времени, зафиксированный при показе (сек)
+  timeLimitSec Int?
 
   @@unique([attemptId, index])
 }
@@ -912,18 +865,18 @@ enum EmployerQuestionStatus {
 /// Созвон кандидата с ИИ. Реплики — в transcriptJson (роли ai | candidate | employer, таймкоды),
 /// аудио кандидата — файлы на диске (CALL_DATA_DIR/<audioPath>), не в БД.
 model CallSession {
-  id                  String             @id @default(cuid())
+  id                  String     @id @default(cuid())
   candidateId         String
-  candidate           Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate           Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   kind                CallKind
   /// kind=defense: сабмит проекта (lane project)
   projectSubmissionId String?
   projectSubmission   ProjectSubmission? @relation(fields: [projectSubmissionId], references: [id], onDelete: SetNull)
-  status              CallStatus         @default(active)
-  startedAt           DateTime           @default(now())
+  status              CallStatus @default(active)
+  startedAt           DateTime   @default(now())
   finishedAt          DateTime?
   /// TranscriptEntry[] (server/call/types.ts)
-  transcriptJson      Json               @default("[]")
+  transcriptJson      Json       @default("[]")
   /// Папка с аудио кандидата относительно CALL_DATA_DIR: "calls/<id>"; null — аудио не записывалось
   audioPath           String?
   /// Вердикт оценщика (qualifying — карта глубины, server/call/types.ts CallVerdict)
@@ -931,7 +884,7 @@ model CallSession {
   /// Версия согласия на запись созвона, под которой шёл звонок
   policyVersion       String
   /// Сколько раз запускался оценщик (finish): каждый запуск — 3–6 вызовов LLM, повторы после 503 ограничены
-  finishAttempts      Int                @default(0)
+  finishAttempts      Int        @default(0)
 
   participants CallParticipant[]
   questions    EmployerQuestion[]
@@ -1092,7 +1045,7 @@ model ProjectSubmission {
   submittedAt         DateTime                @default(now())
   checkedAt           DateTime?
 
-  defenseSessions CallSession[]
+  defenseSessions     CallSession[]
 
   @@index([projectTaskId, submittedAt])
   @@index([candidateId, submittedAt])

@@ -3993,7 +3993,7 @@ paths:
       tags:
         - fsp-id
       summary: "Возврат из ФСП ID"
-      description: "Проверка state, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce). Привязка (кука потока mode=link): кандидат сессии = кандидат потока, участник привязывается к профилю. Вход (mode=login): аккаунт по ФСП ID (новый — сразу кандидат), согласие, привязка, кука сессии. Токены в URL не попадают.\n\nНужна сессия кандидата (кука cid)."
+      description: "Проверка state и кандидата потока, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce), привязка участника к профилю. Токены в URL не попадают.\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -4021,7 +4021,7 @@ paths:
             type: string
       responses:
         "303":
-          description: "Привязка: /settings или /consultant с ?fsp=linked|no_achievements|unavailable|error_<код>. Вход: /consultant или next; ошибка — /auth?error=fsp_<код>"
+          description: "Редирект на /settings?fsp=linked|no_achievements|unavailable или /settings?fsp=error_<код>"
           headers:
             Location:
               schema:
@@ -4042,13 +4042,6 @@ paths:
       security:
         -
           cookieAuth: []
-      parameters:
-        -
-          name: return
-          in: query
-          required: false
-          schema:
-            type: string
       responses:
         "303":
           description: "Редирект на страницу входа ФСП ID"
@@ -4060,38 +4053,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/fsp-id/login":
-    get:
-      operationId: getFspIdLogin
-      tags:
-        - fsp-id
-      summary: "Войти через ФСП ID"
-      description: "Вход на платформу через ФСП ID (кандидат): state, nonce, PKCE verifier, согласие и next — в подписанной httpOnly-куке на 10 минут, редирект на страницу входа провайдера (симулятор ФСП ID по env или встроенный мок).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: consent
-          in: query
-          required: false
-          description: "Версия согласия с галки на /auth; иначе — /auth?error=consent_required"
-          schema:
-            type: string
-        -
-          name: next
-          in: query
-          required: false
-          description: "Куда вернуть после входа (только свой путь)"
-          schema:
-            type: string
-      responses:
-        "303":
-          description: "Редирект на страницу входа ФСП ID"
-          headers:
-            Location:
-              schema:
-                type: string
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/fsp-id/realms/fsp/protocol/openid-connect/auth":
@@ -5178,6 +5139,66 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/test/attempt/{id}/confirm-start":
+    post:
+      operationId: postTestAttemptIdConfirmStart
+      tags:
+        - test
+      summary: "Начать подтверждающий тест"
+      description: "Попытка в статусе `needs_confirmation` (индекс честности high, ADR-0002, дополнение 11.10): короткий тест 6–8 заданий других семейств, лимит времени ×0,7. Интервалы пересдачи не проверяются и не запускаются. Одна подтверждающая попытка на исходную.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Продолжена активная подтверждающая попытка (`resumed: true`)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  attemptId:
+                    type: string
+                  resumed:
+                    type: boolean
+                required:
+                  - attemptId
+                  - resumed
+        "201":
+          description: "Новая подтверждающая попытка (`kind: confirm`)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  attemptId:
+                    type: string
+                  resumed:
+                    type: boolean
+                required:
+                  - attemptId
+                  - resumed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Подтверждение не требуется (`confirm_not_needed`), уже подтверждено (`already_confirmed`), подтверждающий тест уже пройден (`confirm_used`) или есть другая активная попытка (`active_attempt`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/test/attempt/{id}/finish":
     post:
       operationId: postTestAttemptIdFinish
@@ -5210,6 +5231,102 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/test/attempt/{id}/signal":
+    post:
+      operationId: postTestAttemptIdSignal
+      tags:
+        - test
+      summary: "Сигналы браузера во время теста"
+      description: "Дельты агрегатов браузера с прошлой отправки; сервер суммирует их в попытке для индекса честности. Только счётчики, без содержимого вставок и копий (152-ФЗ). Принимает `application/json` и `text/plain` с JSON (navigator.sendBeacon). Только активная попытка своего кандидата.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "Дельты; отсутствующее поле — 0"
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                tabHidden:
+                  type: integer
+                  description: "Уходов со вкладки, 0–100"
+                hiddenMs:
+                  type: integer
+                  description: "Сколько вкладка была скрыта, мс, до суток"
+                pastes:
+                  type: integer
+                  description: "Вставок в поле ответа, 0–100"
+                pasteChars:
+                  type: integer
+                  description: "Символов вставлено, до 100000"
+                copies:
+                  type: integer
+                  description: "Копирований условия, 0–100"
+                extendedScreen:
+                  type: boolean
+                  description: "Подключён второй экран (пометка, не флаг)"
+              required: []
+      responses:
+        "200":
+          description: "Накопленные сигналы попытки"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  signals:
+                    type: object
+                    properties:
+                      tabHidden:
+                        type: integer
+                      hiddenMs:
+                        type: integer
+                      pastes:
+                        type: integer
+                      pasteChars:
+                        type: integer
+                      copies:
+                        type: integer
+                      extendedScreen:
+                        type: boolean
+                    required:
+                      - tabHidden
+                      - hiddenMs
+                      - pastes
+                      - pasteChars
+                      - copies
+                      - extendedScreen
+                required:
+                  - signals
+        "400":
+          description: "Тело не JSON, больше 2 КБ или значения вне пределов"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Попытка завершена или истекла (`attempt_finished`, `attempt_expired`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/test/attempts":

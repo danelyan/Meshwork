@@ -349,15 +349,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Кнопка в настройках кандидата: state, nonce и PKCE verifier — в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата — на /auth.',
     success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
   },
-  'GET /api/fsp-id/login': {
-    summary: 'Войти через ФСП ID',
-    query: [
-      { name: 'consent', description: 'Версия согласия с галки на /auth; иначе — /auth?error=consent_required', schema: str() },
-      { name: 'next', description: 'Куда вернуть после входа (только свой путь)', schema: str() },
-    ],
-    description: 'Вход на платформу через ФСП ID (кандидат): state, nonce, PKCE verifier, согласие и next — в подписанной httpOnly-куке на 10 минут, редирект на страницу входа провайдера (симулятор ФСП ID по env или встроенный мок).',
-    success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
-  },
   'GET /api/fsp-id/callback': {
     summary: 'Возврат из ФСП ID',
     query: [
@@ -365,8 +356,8 @@ export const OVERRIDES: Record<string, OpOverride> = {
       { name: 'state', description: 'Должен совпасть со state из куки старта', schema: str() },
       { name: 'error', description: 'Присутствует при отказе', schema: str() },
     ],
-    description: 'Проверка state, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce). Привязка (кука потока mode=link): кандидат сессии = кандидат потока, участник привязывается к профилю. Вход (mode=login): аккаунт по ФСП ID (новый — сразу кандидат), согласие, привязка, кука сессии. Токены в URL не попадают.',
-    success: { status: 303, description: 'Привязка: /settings или /consultant с ?fsp=linked|no_achievements|unavailable|error_<код>. Вход: /consultant или next; ошибка — /auth?error=fsp_<код>' },
+    description: 'Проверка state и кандидата потока, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce), привязка участника к профилю. Токены в URL не попадают.',
+    success: { status: 303, description: 'Редирект на /settings?fsp=linked|no_achievements|unavailable или /settings?fsp=error_<код>' },
   },
   'GET /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
     summary: 'Мок ФСП ID: страница входа',
@@ -703,6 +694,39 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Middle не подтверждён — Junior по той же попытке по согласию кандидата (R-C-08).',
     success: JSON_OK('Итог попытки с категорией Junior', free('Итог попытки')),
     errors: { 409: 'Попытка не в состоянии «Middle не подтверждён»' },
+  },
+  'POST /api/test/attempt/{id}/confirm-start': {
+    summary: 'Начать подтверждающий тест',
+    description:
+      'Попытка в статусе `needs_confirmation` (индекс честности high, ADR-0002, дополнение 11.10): короткий тест 6–8 заданий других семейств, лимит времени ×0,7. Интервалы пересдачи не проверяются и не запускаются. Одна подтверждающая попытка на исходную.',
+    success: {
+      status: 201,
+      description: 'Новая подтверждающая попытка (`kind: confirm`)',
+      schema: obj({ attemptId: str(), resumed: bool() }),
+      extra: [{ status: 200, description: 'Продолжена активная подтверждающая попытка (`resumed: true`)', schema: obj({ attemptId: str(), resumed: bool() }) }],
+    },
+    errors: { 409: 'Подтверждение не требуется (`confirm_not_needed`), уже подтверждено (`already_confirmed`), подтверждающий тест уже пройден (`confirm_used`) или есть другая активная попытка (`active_attempt`)' },
+  },
+  'POST /api/test/attempt/{id}/signal': {
+    summary: 'Сигналы браузера во время теста',
+    description:
+      'Дельты агрегатов браузера с прошлой отправки; сервер суммирует их в попытке для индекса честности. Только счётчики, без содержимого вставок и копий (152-ФЗ). Принимает `application/json` и `text/plain` с JSON (navigator.sendBeacon). Только активная попытка своего кандидата.',
+    body: {
+      description: 'Дельты; отсутствующее поле — 0',
+      schema: obj(
+        {
+          tabHidden: int('Уходов со вкладки, 0–100'),
+          hiddenMs: int('Сколько вкладка была скрыта, мс, до суток'),
+          pastes: int('Вставок в поле ответа, 0–100'),
+          pasteChars: int('Символов вставлено, до 100000'),
+          copies: int('Копирований условия, 0–100'),
+          extendedScreen: bool('Подключён второй экран (пометка, не флаг)'),
+        },
+        [],
+      ),
+    },
+    success: JSON_OK('Накопленные сигналы попытки', obj({ signals: obj({ tabHidden: int(), hiddenMs: int(), pastes: int(), pasteChars: int(), copies: int(), extendedScreen: bool() }) })),
+    errors: { 400: 'Тело не JSON, больше 2 КБ или значения вне пределов', 409: 'Попытка завершена или истекла (`attempt_finished`, `attempt_expired`)' },
   },
   'POST /api/test/attempt/{id}/finish': {
     summary: 'Завершить попытку досрочно',

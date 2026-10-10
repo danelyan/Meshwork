@@ -124,6 +124,7 @@ const ATTEMPT_STATUS: Record<AttemptSummary['status'], string> = {
   passed: 'подтверждён',
   not_confirmed: 'не подтверждён',
   abandoned: 'не засчитана',
+  needs_confirmation: 'нужен подтверждающий тест',
 };
 
 /** История попыток теста (R-C-07, lane test). Данные — /api/test/attempts; недоступны → блок пустой. */

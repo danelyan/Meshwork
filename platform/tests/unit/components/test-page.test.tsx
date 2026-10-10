@@ -28,6 +28,7 @@ const item = (index: number): AttemptView['current'] => ({
   format: 'number',
   timeLimitSec: 150,
   askedAt: new Date().toISOString(),
+  canary: null,
 });
 
 const active = (index: number): AttemptView => ({
@@ -37,6 +38,8 @@ const active = (index: number): AttemptView => ({
   grade: 'middle',
   status: 'active',
   mode: 'demo',
+  kind: 'grade',
+  confirmsAttemptId: null,
   answered: index,
   phase: 'main',
   minItems: 7,
@@ -68,6 +71,7 @@ const finished = (over: Partial<NonNullable<AttemptView['result']>> = {}): Attem
     confirmedCatalogIds: ['be.orm'],
     items: [{ ...item(0)!, answer: '4', correct: true, answerKey: '4', explanation: 'N+1', catalogIds: ['be.orm'] }],
     finishedAt: '2026-10-09T08:10:00Z',
+    integrity: null,
     ...over,
   },
 });

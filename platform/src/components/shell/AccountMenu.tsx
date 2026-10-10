@@ -168,7 +168,7 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
         onClick={() => pickRole(role)}
       >
         <span className={styles.radio} aria-hidden="true" data-on={active || undefined} />
-        <span>{roleLabel(role)}</span>
+        <span className={styles.menuLabel}>{roleLabel(role)}</span>
         {active && <VisuallyHidden> (активная роль)</VisuallyHidden>}
         {locked && <span className={styles.menuHint}>Недоступно на демо-аккаунте</span>}
       </button>

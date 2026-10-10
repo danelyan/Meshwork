@@ -1,0 +1,227 @@
+// Ступень 3 ADR 0003: защита проекта с подключением работодателя (БД, stub-LLM, маршруты напрямую).
+import { POST as signalRoute } from '@/app/api/call/[id]/signal/route';
+import { GET as eventsRoute } from '@/app/api/defense-room/[id]/events/route';
+import { POST as finishRoute } from '@/app/api/defense-room/[id]/finish/route';
+import { GET as snapshotRoute } from '@/app/api/defense-room/[id]/route';
+import { POST as turnRoute } from '@/app/api/defense-room/[id]/turn/route';
+import { GET as pendingRoute } from '@/app/api/defense-room/pending/route';
+import { POST as startRoute } from '@/app/api/defense-room/start/route';
+import { POST as joinRoute } from '@/app/api/employer/call/[id]/join/route';
+import { POST as muteRoute } from '@/app/api/employer/call/[id]/mute-ai/route';
+import { POST as sayRoute } from '@/app/api/employer/call/[id]/say/route';
+import { GET as listQuestions, POST as askRoute } from '@/app/api/employer/questions/route';
+import { subscribe, resetBus } from '@/server/defense-room/bus';
+import type { CallEvent, CallSnapshot, DefenseRoomVerdict, TranscriptEntry } from '@/server/defense-room/types';
+import { clearStubResponses, registerStubResponse } from '@/server/llm/providers/stub';
+import { signUserSession } from '@/server/session';
+
+import { prisma, resetDb } from '../../helpers/db';
+import { jsonRequest } from '../../helpers/requests';
+
+const CAND = 'cand-dr';
+const CAND_COOKIE = `cid=${signUserSession({ userId: 'u-cand', role: 'candidate', candidateId: CAND })}`;
+const EMP_A = `cid=${signUserSession({ userId: 'u-emp-a', role: 'employer', employerProfileId: 'ep-a' })}`;
+const EMP_B = `cid=${signUserSession({ userId: 'u-emp-b', role: 'employer', employerProfileId: 'ep-b' })}`;
+const SUB = 'sub-1';
+const params = (id: string) => ({ params: Promise.resolve({ id }) });
+const post = (url: string, body: unknown, cookie: string) => jsonRequest(url, 'POST', body, cookie);
+
+// Слабая защита: оценщик ставит низко на всех трёх прогонах.
+const WEAK = { depth: { score: 1, quote: 'экспоненциально', rationale: '' }, why: { score: 0, quote: '', rationale: '' }, boundary: { score: 1, quote: 'не знаю точно', rationale: '' }, completion: { score: 0, quote: '', rationale: '' }, advice: 'Объясняй выбор.' };
+
+async function seed() {
+  await prisma.candidate.create({ data: { id: CAND, email: 'c@example.com', name: 'Кандидат Защиты' } });
+  await prisma.user.create({ data: { id: 'u-cand', name: 'Кандидат', role: 'candidate', candidateId: CAND } });
+  for (const x of ['a', 'b']) {
+    await prisma.company.create({ data: { id: `co-${x}`, name: x === 'a' ? 'Альфа' : 'Бета' } });
+    await prisma.user.create({ data: { id: `u-emp-${x}`, name: `HR ${x}`, role: 'employer' } });
+    await prisma.employerProfile.create({ data: { id: `ep-${x}`, userId: `u-emp-${x}`, companyId: `co-${x}` } });
+  }
+  // Приглашение принято только компанией A.
+  await prisma.invitation.create({ data: { candidateId: CAND, companyId: 'co-a', status: 'accepted', salaryFrom: 200000, salaryTo: 250000 } });
+  await prisma.invitation.create({ data: { candidateId: CAND, companyId: 'co-b', status: 'sent', salaryFrom: 200000, salaryTo: 250000 } });
+  await prisma.projectSubmission.create({
+    data: {
+      id: SUB,
+      projectTaskId: 'task-1',
+      candidateId: CAND,
+      repoUrl: 'https://github.com/fsp-demo/payments',
+      commitSha: 'd3m0c0ffee0000000000000000000000000000aa',
+      status: 'checked',
+      aiLogText: 'Очередь Queue сгенерировал ИИ, retry писал сам.',
+      resultJson: { tests: Array.from({ length: 10 }, (_, i) => ({ name: `t${i}`, passed: i < 9 })) },
+    },
+  });
+}
+
+describe('защита проекта с работодателем', () => {
+  beforeEach(async () => {
+    await resetDb();
+    resetBus();
+    clearStubResponses();
+    await seed();
+  });
+  afterAll(() => prisma.$disconnect());
+
+  it('start → QLC → 2 хода → работодатель join → say → mute → finish → вердикт с флагом', async () => {
+    // Вопрос работодателя, оставленный заранее (асинхронная очередь).
+    const asked = await askRoute(post('/api/employer/questions', { candidateId: CAND, text: 'Почему очередь в памяти, а не брокер?' }, EMP_A));
+    expect(asked.status).toBe(201);
+    const qid = (await asked.json()).id as string;
+
+    const started = await startRoute(post('/api/defense-room/start', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE));
+    expect(started.status).toBe(201);
+    const { sessionId, webrtc, snapshot } = (await started.json()) as { sessionId: string; webrtc: { iceServers: { urls: string }[] }; snapshot: CallSnapshot };
+    expect(webrtc.iceServers[0]!.urls).toBe('stun:stun.l.google.com:19302');
+    expect(snapshot.transcript[0]).toMatchObject({ role: 'ai', kind: 'greeting' });
+    expect(snapshot.transcript[0]!.text).toMatch(/fsp-demo\/payments/);
+    const plan = await prisma.defenseRoomPlan.findUniqueOrThrow({ where: { callSessionId: sessionId } });
+    const items = plan.itemsJson as { source: string; type?: string; ref?: string | null }[];
+    // QLC: первый вопрос по коду, затем вопрос работодателя, затем остальные и ровно один «смени ограничение».
+    expect(items[0]!.source).toBe('qlc');
+    expect(items[1]!.source).toBe('employer');
+    expect(items.filter((i) => i.type === 'constraint')).toHaveLength(1);
+    expect(items.filter((i) => i.source === 'qlc' && i.type !== 'constraint').length).toBeGreaterThanOrEqual(3);
+    expect(items[0]!.ref).toMatch(/^src\/.+:L\d+-L\d+$/);
+
+    // Повторный старт — та же сессия.
+    const again = await startRoute(post('/api/defense-room/start', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE));
+    expect((await again.json()).sessionId).toBe(sessionId);
+
+    // Ход 1: ответ на вопрос по коду → ИИ задаёт вопрос работодателя из очереди.
+    const t1 = await (await turnRoute(post('/x', { text: 'Задержка растёт экспоненциально, чтобы не добивать шлюз при сбое.' }, CAND_COOKIE), params(sessionId))).json();
+    expect(t1).toMatchObject({ muted: false, done: false });
+    expect(t1.text).toMatch(/Вопрос от компании «Альфа»: Почему очередь в памяти/);
+    expect((await prisma.employerQuestion.findUniqueOrThrow({ where: { id: qid } })).status).toBe('asked');
+
+    // Ход 2: ответ на вопрос работодателя → answered.
+    const t2 = await (await turnRoute(post('/x', { text: 'Брокер избыточен для одного процесса, но при масштабировании не знаю точно, взял бы Kafka.' }, CAND_COOKIE), params(sessionId))).json();
+    expect(t2.done).toBe(false);
+    const q = await prisma.employerQuestion.findUniqueOrThrow({ where: { id: qid } });
+    expect(q).toMatchObject({ status: 'answered', answeredInCallSessionId: sessionId });
+
+    // Компания B без принятого приглашения: ни снимка, ни подключения.
+    expect((await snapshotRoute(jsonRequest('/x', 'GET', undefined, EMP_B), params(sessionId))).status).toBe(404);
+    expect((await joinRoute(post('/x', {}, EMP_B), params(sessionId))).status).toBe(404);
+
+    // Работодатель A подключается, слушает SSE.
+    const events: CallEvent[] = [];
+    const unsub = subscribe(sessionId, 'employer:u-emp-a', (e) => events.push(e));
+    const joined = await joinRoute(post('/x', {}, EMP_A), params(sessionId));
+    expect(joined.status).toBe(200);
+    const j = await joined.json();
+    expect(j.snapshot.participants).toEqual([{ userId: 'u-emp-a', companyId: 'co-a', companyName: 'Альфа', aiMuted: false }]);
+
+    // Реплика работодателя → транскрипт с ролью employer.
+    const said = await sayRoute(post('/x', { text: 'А что будет, если шлюз ответит таймаутом на последней попытке?' }, EMP_A), params(sessionId));
+    expect(said.status).toBe(201);
+    expect((await said.json()).entry).toMatchObject({ role: 'employer', speaker: 'Альфа' });
+
+    // Mute: ИИ не вступает после ответа кандидата.
+    expect((await (await muteRoute(post('/x', { muted: true }, EMP_A), params(sessionId))).json()).muted).toBe(true);
+    const t3 = await (await turnRoute(post('/x', { text: 'Тогда исключение пробросится наверх, обработчик вернёт 500.' }, CAND_COOKIE), params(sessionId))).json();
+    expect(t3).toEqual({ text: null, muted: true, done: false });
+
+    // Unmute: ИИ возвращается к открытому вопросу плана.
+    const un = await (await muteRoute(post('/x', { muted: false }, EMP_A), params(sessionId))).json();
+    expect(un.aiText).toMatch(/Вернёмся к вопросу/);
+    expect(events.map((e) => e.type)).toEqual(expect.arrayContaining(['participant_joined', 'turn', 'ai_muted']));
+    unsub();
+
+    // Работодатель видит транскрипт; кандидат — тоже; порядок ролей.
+    const snapA = (await (await snapshotRoute(jsonRequest('/x', 'GET', undefined, EMP_A), params(sessionId))).json()) as CallSnapshot;
+    expect(snapA.transcript.map((e: TranscriptEntry) => e.role)).toEqual(['ai', 'candidate', 'ai', 'candidate', 'ai', 'employer', 'candidate', 'ai']);
+
+    // Завершение: три прогона слепого оценщика, слабая защита при 90 % тестов → флаг, не понижение.
+    let evalCalls = 0;
+    registerStubResponse('call_evaluator', () => {
+      evalCalls++;
+      return { json: WEAK };
+    });
+    const fin = await finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId));
+    expect(fin.status).toBe(200);
+    const { verdict } = (await fin.json()) as { verdict: DefenseRoomVerdict };
+    expect(evalCalls).toBe(3);
+    expect(verdict.passed).toBe(false);
+    expect(verdict.projectScore).toBe(0.9);
+    expect(verdict.flags).toContain('strong_project_weak_defense');
+    expect(verdict.employerQuestions).toEqual({ asked: 1, answered: 1 });
+    expect(verdict.summary).not.toMatch(/фейк/i);
+
+    const row = await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId } });
+    expect(row).toMatchObject({ status: 'finished', kind: 'defense', projectSubmissionId: SUB });
+    expect(await prisma.callParticipant.count({ where: { callSessionId: sessionId, leftAt: null } })).toBe(0);
+    // Повторное завершение — тот же вердикт.
+    expect((await (await finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId))).json()).verdict.evaluatedAt).toBe(verdict.evaluatedAt);
+
+    // Ответ кандидата виден работодателю в списке вопросов.
+    const list = await (await listQuestions(jsonRequest(`/api/employer/questions?candidateId=${CAND}`, 'GET', undefined, EMP_A))).json();
+    expect(list.questions[0]).toMatchObject({ id: qid, status: 'answered' });
+    expect(list.questions[0].answer).toMatch(/Брокер избыточен/);
+  });
+
+  it('асинхронная дозащита: вопрос после защиты копится, кандидат видит «N вопросов» и отвечает в мини-сессии без QLC', async () => {
+    expect((await askRoute(post('/api/employer/questions', { candidateId: CAND, text: 'Как бы ты добавил метрики?' }, EMP_B))).status).toBe(404);
+    await askRoute(post('/api/employer/questions', { candidateId: CAND, text: 'Как бы ты добавил метрики в retry?' }, EMP_A));
+    await askRoute(post('/api/employer/questions', { candidateId: CAND, text: 'Что поменять для идемпотентности между узлами?' }, EMP_A));
+    const pending = await (await pendingRoute(jsonRequest('/x', 'GET', undefined, CAND_COOKIE))).json();
+    expect(pending.questions).toMatchObject({ total: 2, byCompany: [{ companyName: 'Альфа', count: 2 }], activeSessionId: null });
+    expect(pending.submissions[0]).toMatchObject({ id: SUB, lastDefense: null });
+
+    const st = await (await startRoute(post('/x', { mode: 'questions' }, CAND_COOKIE))).json();
+    expect(st.snapshot.mode).toBe('questions');
+    expect(st.snapshot.progress.total).toBe(2);
+    expect(await prisma.defenseRoomPlan.count()).toBe(1);
+    const t1 = await (await turnRoute(post('/x', { text: 'Счётчик попыток и гистограмма задержек в Prometheus.' }, CAND_COOKIE), params(st.sessionId))).json();
+    expect(t1.text).toMatch(/идемпотентности между узлами/);
+    // Кандидат ушёл, не ответив на второй: после finish вопрос снова в очереди.
+    registerStubResponse('call_evaluator', () => ({ json: WEAK }));
+    const v = (await (await finishRoute(post('/x', {}, CAND_COOKIE), params(st.sessionId))).json()).verdict as DefenseRoomVerdict;
+    expect(v.flags).toContain('employer_questions_unanswered');
+    expect(v.flags).not.toContain('no_project_result');
+    const statuses = (await prisma.employerQuestion.findMany({ orderBy: { askedAt: 'asc' } })).map((q) => q.status);
+    expect(statuses).toEqual(['answered', 'queued']);
+  });
+
+  it('сигналинг: только участникам, адресату по SSE; собеседника нет — 409 peer_offline', async () => {
+    const { sessionId } = await (await startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE))).json();
+    const offer = { sdp: { type: 'offer', sdp: 'v=0\r\n' } };
+    // Не подключился — нельзя.
+    expect((await signalRoute(post('/x', offer, EMP_A), params(sessionId))).status).toBe(409);
+    await joinRoute(post('/x', {}, EMP_A), params(sessionId));
+    // Кандидат не слушает SSE — peer_offline.
+    const off = await signalRoute(post('/x', offer, EMP_A), params(sessionId));
+    expect(off.status).toBe(409);
+    expect((await off.json()).error.code).toBe('peer_offline');
+
+    const toCandidate: CallEvent[] = [];
+    const toEmployer: CallEvent[] = [];
+    const u1 = subscribe(sessionId, 'candidate', (e) => e.type === 'signal' && toCandidate.push(e));
+    const u2 = subscribe(sessionId, 'employer:u-emp-a', (e) => e.type === 'signal' && toEmployer.push(e));
+    expect((await signalRoute(post('/x', offer, EMP_A), params(sessionId))).status).toBe(200);
+    expect(toCandidate).toEqual([{ type: 'signal', from: 'employer:u-emp-a', to: 'candidate', payload: { description: { type: 'offer', sdp: 'v=0\r\n' } } }]);
+    expect(toEmployer).toEqual([]);
+    // Кандидат отвечает конкретному работодателю; ICE-кандидат.
+    expect((await signalRoute(post('/x', { to: 'employer:u-emp-a', ice: { candidate: 'candidate:1 1 udp 1 1.2.3.4 5 typ host', sdpMid: '0', sdpMLineIndex: 0 } }, CAND_COOKIE), params(sessionId))).status).toBe(200);
+    expect(toEmployer[0]).toMatchObject({ from: 'candidate', payload: { candidate: { sdpMid: '0' } } });
+    // Адресат — не участник.
+    expect((await signalRoute(post('/x', { to: 'employer:u-emp-b', ice: null }, CAND_COOKIE), params(sessionId))).status).toBe(404);
+    u1();
+    u2();
+  });
+
+  it('SSE: первым кадром status со снимком; работодателю без приглашения — 404', async () => {
+    const { sessionId } = await (await startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE))).json();
+    expect((await eventsRoute(jsonRequest('/x', 'GET', undefined, EMP_B), params(sessionId))).status).toBe(404);
+    const ctrl = new AbortController();
+    const req = new Request('http://localhost/x', { headers: { cookie: CAND_COOKIE }, signal: ctrl.signal });
+    const res = await eventsRoute(req, params(sessionId));
+    expect(res.headers.get('content-type')).toMatch(/text\/event-stream/);
+    const reader = res.body!.getReader();
+    let text = '';
+    while (!text.includes('event: status')) text += new TextDecoder().decode((await reader.read()).value);
+    expect(text).toMatch(/event: status\ndata: \{"type":"status"/);
+    ctrl.abort();
+    await reader.cancel();
+  });
+});

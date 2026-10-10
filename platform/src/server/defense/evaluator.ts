@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { responseJsonSchema } from '../llm/schema';
-import { LlmError, type ChatMessage, type LlmProvider } from '../llm/types';
+import { LlmError, type ChatMessage, type LlmProvider, type LlmPurpose } from '../llm/types';
 import { loadPrompt, normalizeWs, tag } from './prompt-utils';
 import {
   CRITERIA,
@@ -120,6 +120,8 @@ export interface EvaluatorInput {
    * интервьюер вставляет её в первый вопрос — здесь она вырезается.
    */
   redact?: string[];
+  /** Журнал AgentRun: защита проекта (ADR 0003) пишет `call_evaluator`; по умолчанию `evaluator`. */
+  purpose?: LlmPurpose;
 }
 
 const REDACTED = '[фрагмент резюме скрыт от оценщика]';
@@ -190,7 +192,7 @@ export async function evaluateDefense(
             },
           ];
     const res = await llm.complete(
-      { purpose: 'evaluator', system, messages: msgs, schema, temperature: 0, maxTokens: 1500 },
+      { purpose: input.purpose ?? 'evaluator', system, messages: msgs, schema, temperature: 0, maxTokens: 1500 },
       signal,
     );
     const raw = res.kind === 'json' ? res.json : tryParse(res.text);

@@ -1,0 +1,16 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
+/**
+ * Промпты защиты проекта — `src/server/defense-room/prompts/*.md`, читаются от process.cwd()
+ * (как defense/prompt-utils.ts; в standalone-сборку их кладёт outputFileTracingIncludes из next.config.ts).
+ */
+const cache = new Map<string, string>();
+
+export function loadRoomPrompt(name: 'qlc' | 'interviewer'): string {
+  const hit = cache.get(name);
+  if (hit !== undefined) return hit;
+  const text = readFileSync(path.join(process.cwd(), 'src/server/defense-room/prompts', `${name}.md`), 'utf8');
+  cache.set(name, text);
+  return text;
+}

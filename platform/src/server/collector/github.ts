@@ -38,7 +38,8 @@ interface GhRepo {
   topics?: string[];
 }
 
-function headers(raw = false): Record<string, string> {
+/** Заголовки GitHub REST (токен из env, если есть). Экспорт — для чтения репозитория защитой проекта (lane defense-room). */
+export function githubHeaders(raw = false): Record<string, string> {
   const h: Record<string, string> = {
     accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json',
     'x-github-api-version': '2022-11-28',
@@ -74,12 +75,12 @@ export async function fetchGithub(handle: string): Promise<ExtractedDoc> {
   if (!GITHUB_HANDLE.test(handle)) throw new AppError('bad_request', 'Некорректный логин GitHub', 400);
   const src = 'GitHub';
   const { json: user } = await getJson<GhUser>(`${GITHUB_API}/users/${handle}`, {
-    headers: headers(),
+    headers: githubHeaders(),
     source: src,
     notFound: 'Пользователь GitHub не найден',
   });
   const { json: repos } = await getJson<GhRepo[]>(`${GITHUB_API}/users/${handle}/repos?per_page=100&sort=pushed&type=owner`, {
-    headers: headers(),
+    headers: githubHeaders(),
     source: src,
     maxBytes: 2 * 1024 * 1024,
   });
@@ -103,7 +104,7 @@ export async function fetchGithub(handle: string): Promise<ExtractedDoc> {
     const m = `github:${repo.full_name}#meta`;
     let langs: Record<string, number> = {};
     try {
-      langs = (await getJson<Record<string, number>>(`${GITHUB_API}/repos/${repo.full_name}/languages`, { headers: headers(), source: src })).json;
+      langs = (await getJson<Record<string, number>>(`${GITHUB_API}/repos/${repo.full_name}/languages`, { headers: githubHeaders(), source: src })).json;
     } catch {
       /* языки — необязательная деталь */
     }
@@ -125,7 +126,7 @@ export async function fetchGithub(handle: string): Promise<ExtractedDoc> {
     if (i < GITHUB_READMES) {
       try {
         const { text } = await getText(`${GITHUB_API}/repos/${repo.full_name}/readme`, {
-          headers: headers(true),
+          headers: githubHeaders(true),
           source: src,
           maxBytes: 200 * 1024,
         });

@@ -46,14 +46,11 @@ enum LlmPurpose {
   smoke
   /// Помощник работодателя (lane emp-agent)
   employer_assistant
-  /// lane call: интервьюер и слепой оценщик квалифицирующего созвона (ADR 0003, ступень 1)
+  /// lane call (ADR 0003): интервьюер и слепой оценщик созвона/защиты
   call_interviewer
   call_evaluator
-  /// Зарезервировано лейном call для соседей (ADR 0003), чтобы не делать вторую enum-миграцию:
-  /// defense-room — вопросы по коду кандидата (QLC); project — условие проекта и рубрика пожеланий.
+  /// lane defense-room (ADR 0003): генератор вопросов по коду (QLC)
   defense_qlc
-  project_spec
-  project_rubric
 }
 
 model Candidate {
@@ -88,9 +85,6 @@ model Candidate {
   /// lane invite-contact: способ связи для работодателя — почта или Telegram (server/contact.ts).
   /// Открывается компании только после accepted; null — показываем почту аккаунта, если она не служебная.
   contact             String?
-  /// lane call: созвоны (квалифицирующий и защита проекта) и вопросы работодателей кандидату
-  callSessions        CallSession[]
-  employerQuestions   EmployerQuestion[]
 }
 
 model CandidateCategory {
@@ -348,8 +342,6 @@ model Company {
   inn         String?
   industry    String?
   contact     String?
-  /// lane call: вопросы компании кандидатам (очередь асинхронной дозащиты)
-  employerQuestions EmployerQuestion[]
 }
 
 model Vacancy {
@@ -487,8 +479,6 @@ model User {
   consents        Consent[]
   /// lane onboarding: где человек остановился в онбординге
   onboarding      OnboardingState?
-  /// lane call: участие в созвонах (работодатель в комнате защиты)
-  callParticipations CallParticipant[]
 
   // lane: email-auth — вход по почте и паролю (R-D-04; ADR 0001, дополнение 10.10).
   // Уникальность почты — через AuthAccount(provider = "email", providerAccountId = почта в нижнем регистре).
@@ -751,7 +741,8 @@ model AuthCode {
 }
 
 // =============================================================================
-// lane: call — созвоны: квалифицирующий (ступень 1) и защита проекта (ступень 3), ADR 0003
+// lane: call — созвон и защита проекта (контракт ADR 0003, docs/decisions/0003-three-stage-assessment.md).
+// В ветке lane/defense-room — копия контракта, чтобы не ждать лейн call; при слиянии остаётся версия лейна call.
 // =============================================================================
 
 enum CallKind {
@@ -775,65 +766,97 @@ enum EmployerQuestionStatus {
   answered
 }
 
-/// Созвон кандидата с ИИ. Реплики — в transcriptJson (роли ai | candidate | employer, таймкоды),
-/// аудио кандидата — файлы на диске (CALL_DATA_DIR/<audioPath>), не в БД.
 model CallSession {
   id                  String     @id @default(cuid())
   candidateId         String
-  candidate           Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   kind                CallKind
-  /// kind=defense: сабмит проекта (lane project; связь добавит интегратор, когда появится модель)
   projectSubmissionId String?
   status              CallStatus @default(active)
   startedAt           DateTime   @default(now())
   finishedAt          DateTime?
-  /// TranscriptEntry[] (server/call/types.ts)
+  /// Реплики `{ seq, role: ai|candidate|employer, text, at, t }[]` — таймкоды от начала звонка.
   transcriptJson      Json       @default("[]")
-  /// Папка с аудио кандидата относительно CALL_DATA_DIR: "calls/<id>"; null — аудио не записывалось
+  /// Аудио кандидата — файл на диске, не в БД.
   audioPath           String?
-  /// Вердикт оценщика (qualifying — карта глубины, server/call/types.ts CallVerdict)
+  /// Вердикт по рубрике A-02 (оценщик), null до завершения.
   verdictJson         Json?
-  /// Версия согласия на запись созвона, под которой шёл звонок
   policyVersion       String
 
   participants CallParticipant[]
-  questions    EmployerQuestion[]
 
   @@index([candidateId, kind, status])
   @@index([projectSubmissionId])
 }
 
-/// Участник созвона кроме кандидата (работодатель в комнате защиты, lane defense-room).
 model CallParticipant {
   id            String              @id @default(cuid())
   callSessionId String
   callSession   CallSession         @relation(fields: [callSessionId], references: [id], onDelete: Cascade)
   userId        String
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   role          CallParticipantRole @default(employer)
   joinedAt      DateTime            @default(now())
   leftAt        DateTime?
-  /// Работодатель «замьютил ИИ»: ИИ не вступает, пока не разрешат
   aiMuted       Boolean             @default(false)
 
-  @@index([callSessionId])
-  @@index([userId])
+  @@index([callSessionId, leftAt])
 }
 
-/// Вопрос работодателя кандидату: задаётся в созвоне сейчас или копится до следующего входа.
 model EmployerQuestion {
   id                      String                 @id @default(cuid())
   companyId               String
-  company                 Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   candidateId             String
-  candidate               Candidate              @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   projectSubmissionId     String?
   text                    String
   askedAt                 DateTime               @default(now())
   answeredInCallSessionId String?
-  answeredInCallSession   CallSession?           @relation(fields: [answeredInCallSessionId], references: [id], onDelete: SetNull)
   status                  EmployerQuestionStatus @default(queued)
 
   @@index([candidateId, status])
   @@index([companyId, candidateId])
+}
+
+// =============================================================================
+// lane: project — контракт ADR 0003 (только ProjectSubmission, без связей). Копия, чтобы защита
+// проекта могла читать сабмит до слияния лейна project; при слиянии остаётся версия лейна project.
+// =============================================================================
+
+enum ProjectSubmissionStatus {
+  submitted
+  running
+  checked
+  failed
+}
+
+model ProjectSubmission {
+  id            String                  @id @default(cuid())
+  projectTaskId String
+  candidateId   String
+  repoUrl       String
+  commitSha     String?
+  aiLogText     String?
+  status        ProjectSubmissionStatus @default(submitted)
+  /// Тесты / статанализ / рубрика (пишет лейн project).
+  resultJson    Json?
+  submittedAt   DateTime                @default(now())
+  checkedAt     DateTime?
+
+  @@index([candidateId])
+}
+
+// =============================================================================
+// lane: defense-room — защита проекта (ступень 3, ADR 0003): план QLC-вопросов сессии.
+// =============================================================================
+
+/// План защиты проекта: вопросы из кода (QLC) и вопросы работодателя, курсор, блокировка хода.
+model DefenseRoomPlan {
+  id            String    @id @default(cuid())
+  callSessionId String    @unique
+  /// `PlanItem[]` (src/server/defense-room/types.ts)
+  itemsJson     Json
+  cursor        Int       @default(0)
+  /// Сводка репозитория и источников вопросов: { repoUrl, commitSha, files, generator: llm|fallback }
+  sourceJson    Json
+  /// Ход в обработке (LLM): не принимать второй параллельно; протухает через 90 с.
+  lockedAt      DateTime?
+  createdAt     DateTime  @default(now())
 }

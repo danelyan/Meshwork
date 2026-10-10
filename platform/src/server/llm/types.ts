@@ -42,13 +42,11 @@ export type LlmPurpose =
   | 'evaluator'
   | 'interviewer'
   | 'smoke'
-  /** lane call (ADR 0003): интервьюер и слепой оценщик созвона. */
+  /** ADR 0003: интервьюер и слепой оценщик созвона и защиты проекта */
   | 'call_interviewer'
   | 'call_evaluator'
-  /** Зарезервированы для лейнов defense-room и project (enum в БД уже есть). */
-  | 'defense_qlc'
-  | 'project_spec'
-  | 'project_rubric';
+  /** ADR 0003: генератор вопросов по коду кандидата (lane defense-room) */
+  | 'defense_qlc';
 
 export interface CompleteRequest {
   purpose: LlmPurpose;

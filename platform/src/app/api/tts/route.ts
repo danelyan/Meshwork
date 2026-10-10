@@ -13,7 +13,11 @@ export const runtime = 'nodejs';
 export const GET = withErrors(async () => Response.json({ mode: ttsMode(), maxChars: TTS_MAX_CHARS }));
 
 // Сырой текст до чистки может быть длиннее (markdown, ссылки) — режем после чистки.
-const Body = z.object({ text: z.string().min(1).max(TTS_MAX_CHARS * 4) });
+const Body = z.object({
+  text: z.string().min(1).max(TTS_MAX_CHARS * 4),
+  /** `employer` — второй голос (TTS_VOICE_EMPLOYER): реплики работодателя в защите проекта. */
+  voice: z.enum(['companion', 'employer']).optional(),
+});
 
 /**
  * Текст ответа компаньона → аудио SpeechKit (mp3 по умолчанию). Только для вошедших, ≤ 1000 знаков
@@ -34,8 +38,8 @@ export const POST = withErrors(async (req: Request) => {
   const audio = await synthesizeYandex(text, {
     apiKey: env.YANDEX_API_KEY as string,
     folderId: env.YANDEX_FOLDER_ID,
-    voice: env.TTS_VOICE,
-    emotion: env.TTS_EMOTION || undefined,
+    voice: parsed.data.voice === 'employer' ? env.TTS_VOICE_EMPLOYER : env.TTS_VOICE,
+    emotion: parsed.data.voice === 'employer' ? undefined : env.TTS_EMOTION || undefined,
     speed: env.TTS_SPEED,
     format: env.TTS_FORMAT,
     signal: req.signal,

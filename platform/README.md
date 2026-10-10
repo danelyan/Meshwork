@@ -37,6 +37,8 @@ npm run db:seed           # сам читает .env платформы, есл�
 npm run dev               # либо Docker-сборка
 ```
 
+Сид даёт демо-кандидатам и демо-компаниям вымышленные контакты (`…@example.com`): кандидат видит способ связи компании в приглашении до ответа, работодатель контакт кандидата — после принятия. Миграция `202610101030_invite_contact` переносит прежнюю сумму приглашения `salaryOffer` в вилку `salaryFrom = salaryTo` и удаляет столбец.
+
 Сценарий демо (шаги для жюри):
 
 1. На `/` выбрать кандидата: под каждым написано, какое резюме и какую ссылку брать (имена в сиде совпадают с резюме).
@@ -64,6 +66,7 @@ PDF демо-резюме лежат в `src/server/demo/pdf/` (в standalone-с
 | `test:integration` | `tests/integration/**`, реальная БД `TEST_DATABASE_URL`, файлы последовательно |
 | `e2e` | Playwright (`e2e/`), сам поднимает `next dev` на :3100 |
 | `db:migrate` / `db:deploy` / `db:seed` / `db:generate` | Prisma |
+| `npx tsx scripts/build-openapi.ts` | Спецификация OpenAPI 3.1 из `src/app/api/**/route.ts` (кроме `api/dev`) → `docs/openapi.yaml` и `src/server/openapi/spec.generated.ts`; запускать после любого нового или изменённого маршрута (тест `tests/unit/openapi` сверяет актуальность). Формы ответов и пояснения к ошибкам — `scripts/openapi/overrides.ts`. Просмотр: `/api-docs`, сам документ — `GET /api/openapi` |
 
 Тесты своего модуля: `npx vitest run tests/unit/<module>`. Полный прогон,
 `next build`, Playwright — только оркестратор/интегратор, последовательно.
@@ -241,6 +244,7 @@ bash scripts/db-local.sh create fsp_test_<lane>
 cp .env.example .env   # DATABASE_URL=…/fsp_<lane>, TEST_DATABASE_URL=…/fsp_test_<lane>, SESSION_SECRET
 npx prisma migrate deploy
 npx vitest run tests/unit/<module>
+# новый или изменённый маршрут в src/app/api → npx tsx scripts/build-openapi.ts (и закоммитить docs/openapi.yaml)
 ```
 
 Prisma Client сгенерирован в общий `node_modules` (`@prisma/client`). `prisma

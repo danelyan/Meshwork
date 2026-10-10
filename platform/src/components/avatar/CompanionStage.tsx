@@ -6,6 +6,7 @@ import { type MouseEvent, useEffect, useState } from 'react';
 import { cx } from '../ui';
 
 import styles from './avatar.module.css';
+import { CHAT_HEAD_MOTION } from './head-motion';
 import { DEFAULT_HEAD_STYLE, HEAD_STYLES, type HeadStyle, loadHeadStyle, saveHeadStyle } from './head-styles';
 import { MarkFallback } from './MarkFallback';
 import { type CompanionVoice, useCompanionVoice, type VoiceStatus } from './voice';
@@ -67,7 +68,7 @@ function Stage({ voice, className }: { voice: CompanionVoice; className?: string
     <aside className={cx(styles.stage, className)} aria-label="Компаньон" data-testid="companion-stage">
       <div className={styles.screen} data-status={status} onContextMenu={openMenu} title={gl ? 'Правый клик — вид головы' : undefined}>
         {gl ? (
-          <Head3D status={status} getLevel={voice.getLevel} getMouth={voice.getMouth} reducedMotion={reduced} style={style} />
+          <Head3D status={status} getLevel={voice.getLevel} getMouth={voice.getMouth} reducedMotion={reduced} style={style} motion={CHAT_HEAD_MOTION} />
         ) : (
           <MarkFallback status={status} getLevel={voice.getLevel} />
         )}

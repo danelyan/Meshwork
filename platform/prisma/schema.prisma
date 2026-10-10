@@ -474,6 +474,14 @@ model User {
   consents        Consent[]
   /// lane onboarding: где человек остановился в онбординге
   onboarding      OnboardingState?
+
+  // lane: email-auth — вход по почте и паролю (R-D-04; ADR 0001, дополнение 10.10).
+  // Уникальность почты — через AuthAccount(provider = "email", providerAccountId = почта в нижнем регистре).
+  /// scrypt-хэш пароля `scrypt$N$r$p$salt$hash`; null — аккаунт без пароля (Яндекс, демо).
+  passwordHash    String?
+  /// Почта подтверждена кодом из письма. Без этого вход по паролю закрыт.
+  emailVerifiedAt DateTime?
+  authCodes       AuthCode[]
 }
 
 /// Внешний аккаунт (Яндекс ID). Токены провайдера не храним.
@@ -701,4 +709,28 @@ model EmployerMessage {
   createdAt      DateTime             @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+// =============================================================================
+// lane: email-auth — одноразовые коды подтверждения почты и сброса пароля (R-D-04)
+// =============================================================================
+
+enum AuthCodePurpose {
+  verify
+  reset
+}
+
+/// Одноразовый 6-значный код из письма. Хранится только HMAC-хэш; 15 минут, до 5 попыток.
+model AuthCode {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose    AuthCodePurpose
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int             @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime        @default(now())
+
+  @@index([userId, purpose, createdAt])
 }

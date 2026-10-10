@@ -66,3 +66,8 @@
 .example .exampleFine { color: var(--muted); font: 11px/1.6 var(--mono); }
 @media(max-width:1050px) { .startGrid { grid-template-columns: minmax(0,1fr); } }
 @media(max-width:650px) { .introPage { padding: 20px 16px 32px; } .example { padding: 18px; } .exampleLabel { flex-wrap: wrap; } }
+
+.condition { display: grid; gap: 14px; position: relative; }
+.integrityNote { margin: 0; font-size: var(--fs-sm); }
+/* Ловушка для нейросети: не видна, но остаётся в выделении и копировании (не display:none / visibility:hidden). */
+.canary { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

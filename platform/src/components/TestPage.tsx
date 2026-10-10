@@ -12,6 +12,7 @@ import {
   finishTestApi,
   getRecommendations,
   getTestAttemptApi,
+  startConfirmTestApi,
   startTestApi,
   testEligibilityApi,
 } from '@/lib/api';
@@ -19,9 +20,9 @@ import { GRADE_LABEL, GRADES, isGrade, type Grade } from '@/lib/grades';
 import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, subcategoriesFor, subcategoryLabel, type Specialization } from '@/lib/directions';
 import { formatDate } from '@/lib/labels';
 
-import { ObjectionButton } from './consent/ObjectionButton';
 import { useBareShell } from './shell/ShellFrame';
 import styles from './TestPage.module.css';
+import { useIntegritySignals } from './useIntegritySignals';
 import { Button, Chip, Field, Kicker, Notice, Panel, Tag } from './ui';
 import ui from './ui.module.css';
 
@@ -94,6 +95,9 @@ function ExampleTask() {
     <p className={styles.exampleFine}>Это пример. Ответ не влияет на категорию и историю тестов.</p>
   </aside>;
 }
+
+const INTEGRITY_NOTICE =
+  'Мы отмечаем уход со вкладки, вставку и копирование — это не наказание, а повод для короткого подтверждающего теста.';
 
 function IntroScreen({
   onStart,
@@ -213,6 +217,7 @@ function IntroScreen({
       <ul className={styles.rules} aria-label="Правила">
         <li>Задание можно пропустить только ответом; назад вернуться нельзя.</li>
         <li>Таймер мягкий: превышение лимита не блокирует ответ, но учитывается.</li>
+        <li>{INTEGRITY_NOTICE}</li>
         <li>Неудачная попытка не снимает уже подтверждённую категорию.</li>
         {elig?.rules && <li>{elig.rules}</li>}
       </ul>
@@ -244,6 +249,7 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
   const [error, setError] = useState<string | null>(null);
   const fieldId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const signals = useIntegritySignals(attempt.id, item.index);
 
   useEffect(() => {
     setAnswer('');
@@ -284,6 +290,9 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
         </div>
         <SoftTimer askedAt={item.askedAt} limitSec={item.timeLimitSec} />
       </div>
+      <p className={`${ui.muted} ${styles.integrityNote}`} data-testid="integrity-note">
+        {INTEGRITY_NOTICE}
+      </p>
       {probe && (
         <Notice data-testid="junior-probe">
           Ещё несколько заданий для точности.
@@ -297,8 +306,18 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
         <h2 id={`${fieldId}-title`} className={styles.taskTitle}>
           {item.title}
         </h2>
-        <p className={styles.prompt}>{item.prompt}</p>
-        {item.code && <CodeBlock code={item.code} numbered={numbered} />}
+        <div className={styles.condition} onCopy={signals.onCopy}>
+          <p className={styles.prompt}>
+            {item.prompt}
+            {item.canary && (
+              <span className={styles.canary} aria-hidden="true" data-testid="canary">
+                {' '}
+                {item.canary}
+              </span>
+            )}
+          </p>
+          {item.code && <CodeBlock code={item.code} numbered={numbered} />}
+        </div>
         <form className={styles.form} onSubmit={submit}>
           <Field label={`Ответ (${item.answerHint})`}>
             <input
@@ -307,6 +326,7 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
               className={ui.input}
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
+              onPaste={signals.onPaste}
               maxLength={500}
               autoComplete="off"
               spellCheck={false}
@@ -334,16 +354,52 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
   );
 }
 
-function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptView; onConfirmJunior: () => Promise<void>; onRetry: () => void }) {
+const CONFIRM_ERRORS: Record<string, string> = {
+  confirm_not_needed: 'Подтверждающий тест для этой попытки не требуется.',
+  already_confirmed: 'Грейд по этой попытке уже подтверждён.',
+  confirm_used: 'Подтверждающий тест по этой попытке уже использован.',
+  active_attempt: 'Сначала завершите начатую попытку теста.',
+};
+
+function confirmErrorText(e: unknown): string {
+  if (e instanceof ApiError && e.code && CONFIRM_ERRORS[e.code]) return CONFIRM_ERRORS[e.code]!;
+  return errorText(e, 'Не удалось начать подтверждающий тест.');
+}
+
+function ResultScreen({
+  attempt,
+  onConfirmJunior,
+  onStartConfirm,
+  onRetry,
+}: {
+  attempt: AttemptView;
+  onConfirmJunior: () => Promise<void>;
+  onStartConfirm: () => Promise<void>;
+  onRetry: () => void;
+}) {
   const r = attempt.result!;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showItems, setShowItems] = useState(false);
   const grade = GRADE_LABEL[attempt.grade];
+  const needsConfirmation = r.status === 'needs_confirmation';
+  const confirmKind = attempt.kind === 'confirm';
   // Грейд ниже заявленного (Middle → Junior, Senior → Middle), который предлагается в один клик.
   const lower = r.offeredGrade ? GRADE_LABEL[r.offeredGrade] : attempt.grade === 'senior' ? 'Middle' : 'Junior';
   const title =
-    r.status === 'abandoned' ? 'Попытка не засчитана' : r.confirmed ? `${grade} подтверждён` : r.juniorConfirmedAt ? `${lower} подтверждён` : `${grade} не подтверждён`;
+    needsConfirmation ? 'Нужен подтверждающий тест' : r.status === 'abandoned' ? 'Попытка не засчитана' : r.confirmed ? `${grade} подтверждён` : r.juniorConfirmedAt ? `${lower} подтверждён` : `${grade} не подтверждён`;
+
+  async function startConfirm() {
+    setPending(true);
+    setError(null);
+    try {
+      await onStartConfirm();
+    } catch (e) {
+      setError(confirmErrorText(e));
+    } finally {
+      setPending(false);
+    }
+  }
 
   async function confirm() {
     setPending(true);
@@ -361,7 +417,7 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
     <div className={styles.page}>
       <div>
         <Kicker>
-          Итог · {SPEC_LABEL[attempt.specialization]}
+          {confirmKind ? 'Подтверждающий тест' : 'Итог'} · {SPEC_LABEL[attempt.specialization]}
           {attempt.subcategoryId ? ` · ${subcategoryLabel(attempt.subcategoryId)}` : ''} · {grade}
         </Kicker>
         <h1 className={styles.h1} data-testid="result-title">
@@ -395,15 +451,22 @@ function ResultScreen({ attempt, onConfirmJunior, onRetry }: { attempt: AttemptV
             <dd>{r.answered}</dd>
           </div>
         </dl>
-        <p className={ui.muted}>
-          <ObjectionButton subject="grade_test" subjectId={attempt.id} />
-        </p>
         {r.confirmedCatalogIds.length > 0 && (
           <p className={ui.muted} data-testid="confirmed-claims">
             Решённые задания подтверждают утверждения: {r.confirmedCatalogIds.join(', ')} - их уровень в профиле поднят до «платформа».
           </p>
         )}
-        {r.juniorOffered && (
+        {needsConfirmation && (
+          <div className={styles.offer} data-testid="confirm-needed">
+            <p>Грейд будет присвоен после короткого подтверждающего теста: 6–8 новых заданий.</p>
+            {r.integrity?.needsConfirmation !== false && (
+              <Button variant="cta" onClick={() => void startConfirm()} loading={pending} data-testid="confirm-start">
+                Пройти подтверждающий тест
+              </Button>
+            )}
+          </div>
+        )}
+        {r.juniorOffered && !needsConfirmation && (
           <div className={styles.offer} data-testid="junior-offer">
             <p>
               {grade} не подтверждён, но задания уровня {lower} решены уверенно. Подтвердить {lower} по этой же попытке? Решение за вами: без вашего согласия
@@ -533,6 +596,13 @@ export function TestPage() {
       <ResultScreen
         attempt={attempt}
         onConfirmJunior={async () => setAttempt(await confirmJuniorApi(attempt.id))}
+        onStartConfirm={async () => {
+          const s = await startConfirmTestApi(attempt.id);
+          const a = await getTestAttemptApi(s.attemptId);
+          loadedRef.current = s.attemptId;
+          setAttempt(a);
+          router.replace(`/test?attempt=${encodeURIComponent(s.attemptId)}`);
+        }}
         onRetry={() => {
           setAttempt(null);
           loadedRef.current = null;

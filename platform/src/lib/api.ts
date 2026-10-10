@@ -278,6 +278,8 @@ export const answerTestApi = (id: string, answer: string) =>
   postJson<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}/answer`, { answer });
 export const finishTestApi = (id: string) => postJson<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}/finish`, {});
 export const confirmJuniorApi = (id: string) => postJson<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}/confirm-junior`, {});
+export const startConfirmTestApi = (id: string) =>
+  postJson<{ attemptId: string; resumed: boolean }>(`/api/test/attempt/${encodeURIComponent(id)}/confirm-start`, {});
 export const listTestAttemptsApi = async () => {
   const res = await request<{ attempts?: import('@/server/test/types').AttemptSummary[] }>('/api/test/attempts');
   return Array.isArray(res.attempts) ? res.attempts : [];

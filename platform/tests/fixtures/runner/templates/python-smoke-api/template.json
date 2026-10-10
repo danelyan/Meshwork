@@ -1,0 +1,12 @@
+{
+  "id": "python-smoke-api",
+  "specialization": "backend",
+  "grade": "junior",
+  "title": "Тестовый шаблон runner: FastAPI health (только для тестов runner)",
+  "stack": ["python312", "fastapi"],
+  "image": "python312",
+  "visibleTestsRef": "hidden",
+  "hiddenTestsRef": "hidden",
+  "timeLimitSec": 60,
+  "platformOwned": [".platform-tests/**"]
+}

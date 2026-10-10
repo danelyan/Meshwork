@@ -34,14 +34,43 @@ services:
       # Остальное (SMTP_SECURE/USER/PASSWORD, MAIL_FROM, MAIL_PROVIDER) приходит из env_file.
       SMTP_HOST: ${SMTP_HOST:-mailpit}
       SMTP_PORT: ${SMTP_PORT:-1025}
+      # lane runner: автопроверка проектов; токен — RUNNER_TOKEN из .env (без него runner отвечает 503).
+      RUNNER_URL: http://runner:8090
     ports:
       - "3000:3000"
-    # lane call: аудио созвонов кандидата переживает пересборку контейнера
-    volumes:
-      - app-data:/app/data
+    # runner-net — внутренняя сеть только для вызовов app → runner.
+    networks: [default, runner-net]
     depends_on:
       migrate: { condition: service_completed_successfully }
       mailpit: { condition: service_started }
+    restart: unless-stopped
+
+  # Автопроверка проектов кандидатов (ADR 0003, runner/README.md). Изоляция — контейнер + лимиты процесса:
+  # нет интернета (internal-сеть, видит только app), нет docker.sock, корень только на чтение,
+  # задания — uid 2000 без capabilities на tmpfs /work. app от runner не зависит: упавший runner
+  # не мешает стенду.
+  runner:
+    build: { context: ., dockerfile: runner/Dockerfile }
+    environment:
+      # Только токен: весь .env (ключи LLM и т. п.) runner не получает.
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+    networks: [runner-net]
+    read_only: true
+    tmpfs:
+      - /work:size=512m,mode=0711,noexec,nosuid,nodev
+    cap_drop: [ALL]
+    # setuid/setgid — запуск задания под uid 2000; kill — добить его процессы; chown/dac_override/fowner —
+    # выдать заданию tmp/out и убрать за ним каталог.
+    cap_add: [SETUID, SETGID, KILL, CHOWN, DAC_OVERRIDE, FOWNER]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1536m
+    cpus: 0.8
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8090/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   mailpit:
@@ -52,4 +81,8 @@ services:
 
 volumes:
   db-data:
-  app-data:
+
+networks:
+  # internal: true — у сети нет выхода наружу; runner подключён только к ней.
+  runner-net:
+    internal: true

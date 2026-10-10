@@ -1,5 +1,3 @@
-import { fileURLToPath } from 'node:url';
-
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
@@ -10,13 +8,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [react()],
   // Алиас @/* из tsconfig: встроенный resolve.tsconfigPaths Vite 8 вместо плагина vite-tsconfig-paths из доки Next.js.
-  resolve: {
-    tsconfigPaths: true,
-    // `server-only` (session.ts, auth/page.ts, auth/access.ts): Next.js подставляет его сам, пакета в
-    // зависимостях нет (docs Next.js: установка необязательна). В тестах — пустой модуль из сборки Next,
-    // тот же, что Next отдаёт серверному коду (условие react-server).
-    alias: { 'server-only': fileURLToPath(new URL('./node_modules/next/dist/compiled/server-only/empty.js', import.meta.url)) },
-  },
+  resolve: { tsconfigPaths: true },
   test: {
     // Демо-флаги стенда из .env не должны протекать в тесты (docs: test.env
     // перекрывает process.env воркеров; process.loadEnvFile не перезаписывает заданное).
@@ -39,6 +31,18 @@ export default defineConfig({
           include: ['tests/unit/**/*.test.tsx'],
           environment: 'jsdom',
           setupFiles: ['tests/setup/unit.ts'],
+        },
+      },
+      {
+        // lane runner: сервис автопроверки в локальном режиме (настоящие процессы vitest, ~30 с).
+        // Нужен npm ci в runner/sandbox/node; запуск — npm run test:runner.
+        extends: true,
+        test: {
+          name: 'runner',
+          include: ['tests/runner/**/*.test.ts'],
+          environment: 'node',
+          fileParallelism: false,
+          testTimeout: 60_000,
         },
       },
       {

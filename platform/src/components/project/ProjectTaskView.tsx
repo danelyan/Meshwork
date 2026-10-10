@@ -158,7 +158,7 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
                   {SUBMISSION_STATUS[s.status]}
                 </span>
                 <span className={emp.rank}>
-                  {s.commitSha.slice(0, 7)} · {new Date(s.submittedAt).toLocaleString('ru-RU')}
+                  {s.commitSha ? `${s.commitSha.slice(0, 7)} · ` : ''}{new Date(s.submittedAt).toLocaleString('ru-RU')}
                 </span>
               </div>
               {s.error && <Notice tone="error">{s.error}</Notice>}

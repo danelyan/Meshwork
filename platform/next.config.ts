@@ -16,6 +16,16 @@ const nextConfig: NextConfig = {
     '/api/**/*': ['./src/server/**/prompts/*.md'],
     // Демо-резюме (PDF) читаются с диска через process.cwd() в /api/demo/resume.
     '/api/demo/resume': ['./src/server/demo/pdf/*.pdf'],
+    // Шаблоны проектов (lane project) читаются с диска: условие, заготовка, хеши PLATFORM-OWNED.
+    '/api/project-tasks/**': ['./project-templates/**/*'],
+    '/api/project-submissions/**': ['./project-templates/**/*'],
+    '/api/employer/**': ['./project-templates/**/*'],
+    '/employer/needs/**': ['./project-templates/**/*'],
+    '/projects/**': ['./project-templates/**/*'],
+  },
+  // Эталонные решения шаблонов приложению не нужны (docs: outputFileTracingExcludes).
+  outputFileTracingExcludes: {
+    '/*': ['./project-templates/**/reference/**'],
   },
 };
 

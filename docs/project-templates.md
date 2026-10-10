@@ -73,7 +73,9 @@ project-templates/<subcategoryId>/<grade>/<templateId>/
 5. `npx vitest run tests/unit/project` — проверяет манифесты, маркеры, совпадение видимых тестов и id каталога.
 6. Шаблоны синхронизируются в таблицу `ProjectTemplate` при первом обращении к заданиям (`syncTemplates`); миграция не нужна.
 
-## Что ещё учесть при выкладке
+## Выкладка
 
-- Каталог `project-templates/` должен попасть и в образ приложения (условие, заготовка, хеши PLATFORM-OWNED),
-  и в образ runner (тесты). `reference/` в образ runner класть не нужно.
+- runner ищет шаблон по id и в плоской раскладке `<id>/` (примеры лейна runner), и во вложенной
+  (`runner/src/templates.ts`, `resolveTemplateDir`); id уникален во всём дереве.
+- `reference/` исключён из обоих образов (`platform/.dockerignore`), приложение получает шаблоны через
+  `outputFileTracingIncludes` в `next.config.ts` (standalone-сборка сама файлы с диска не трассирует).

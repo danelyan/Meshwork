@@ -463,7 +463,7 @@ export interface CandidateSubmissionView {
   taskId: string;
   status: ProjectSubmissionStatus;
   repoUrl: string;
-  commitSha: string;
+  commitSha: string | null;
   submittedAt: string;
   checkedAt: string | null;
   error: string | null;
@@ -471,7 +471,7 @@ export interface CandidateSubmissionView {
   result: Omit<ResultJson, 'hiddenTests'> | null;
 }
 
-function candidateSubmissionView(s: { id: string; projectTaskId: string; status: ProjectSubmissionStatus; repoUrl: string; commitSha: string; submittedAt: Date; checkedAt: Date | null; error: string | null; resultJson: Prisma.JsonValue | null }): CandidateSubmissionView {
+function candidateSubmissionView(s: { id: string; projectTaskId: string; status: ProjectSubmissionStatus; repoUrl: string; commitSha: string | null; submittedAt: Date; checkedAt: Date | null; error: string | null; resultJson: Prisma.JsonValue | null }): CandidateSubmissionView {
   const r = s.resultJson as ResultJson | null;
   let result: CandidateSubmissionView['result'] = null;
   if (r) {
@@ -560,6 +560,9 @@ export async function processSubmission(id: string): Promise<void> {
     const tpl = getTemplate(sub.projectTask.templateId);
     if (!tpl) return fail(id, 'Шаблон задания недоступен.');
     const resumeJob = sub.status === 'running' ? sub.runnerJobId : null;
+    // Сабмиты lane project всегда с commitSha; null — запись не из этого модуля (схема допускает).
+    const commitSha = sub.commitSha;
+    if (!commitSha) return fail(id, 'Не указан коммит сдачи.');
     await prisma.projectSubmission.update({ where: { id }, data: { status: 'running' } });
     const runner = getProjectRunner();
 
@@ -569,7 +572,7 @@ export async function processSubmission(id: string): Promise<void> {
       const repo = parseGithubRepoUrl(sub.repoUrl);
       if (!repo) return fail(id, 'Некорректная ссылка на репозиторий.');
       try {
-        tarball = await downloadGithubTarball(repo, sub.commitSha);
+        tarball = await downloadGithubTarball(repo, commitSha);
         files = readTarGz(tarball);
       } catch (err) {
         const msg = err instanceof AppError && err.status === 404 ? 'Репозиторий или коммит не найден — нужен публичный репозиторий GitHub.' : err instanceof AppError ? err.message : 'Не удалось скачать репозиторий.';
@@ -578,7 +581,7 @@ export async function processSubmission(id: string): Promise<void> {
     }
     const violations = files ? checkPlatformOwned(ownedFileHashes(readStarter(tpl)), files) : [];
 
-    const runInput = { template: tpl, tarball, repoUrl: sub.repoUrl, commitSha: sub.commitSha };
+    const runInput = { template: tpl, tarball, repoUrl: sub.repoUrl, commitSha };
     let hidden: RunOutcome;
     try {
       hidden = resumeJob
@@ -599,7 +602,7 @@ export async function processSubmission(id: string): Promise<void> {
     const score = hidden.total ? Math.round((hidden.passed / hidden.total) * 100) : 0;
     const tests = { passed: hidden.passed, total: hidden.total, score };
     const rubricDef = RubricJson.safeParse(sub.projectTask.rubricJson);
-    const review = await reviewRubric({ criteria: rubricDef.success ? rubricDef.data.criteria : [], files, tests, aiLog: sub.aiLogText });
+    const review = await reviewRubric({ criteria: rubricDef.success ? rubricDef.data.criteria : [], files, tests, aiLog: sub.aiLogText ?? '' });
     const result: ResultJson = {
       tests,
       visibleTests: visible?.status === 'done' ? visible.tests : [],
@@ -685,7 +688,7 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
         },
         repoUrl: open ? s.repoUrl : null,
         commitSha: open ? s.commitSha : null,
-        aiLogText: maskContacts(s.aiLogText).text,
+        aiLogText: maskContacts(s.aiLogText ?? '').text,
         result: s.resultJson as ResultJson | null,
         defense: s.defenseInvitationId ? { invitationId: s.defenseInvitationId, invitationStatus: inv?.status ?? 'sent' } : null,
       };

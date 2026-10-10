@@ -15,9 +15,12 @@ datasource db {
 // lane: foundation — кандидат, категория, журнал вызовов LLM
 // =============================================================================
 
+/// Направления (ADR 0003, дополнение 10.10): ai и engineering — lane directions.
 enum Specialization {
   backend
   frontend
+  ai
+  engineering
 }
 
 enum Grade {
@@ -91,6 +94,9 @@ model Candidate {
   /// lane call: созвоны (квалифицирующий и защита проекта) и вопросы работодателей кандидату
   callSessions        CallSession[]
   employerQuestions   EmployerQuestion[]
+  /// lane directions: подкатегория направления из справочника Subcategory ("ai.llm-apps"), выбор в
+  /// онбординге необязателен. Без FK — справочник проверяется кодом (server/directions).
+  subcategoryId       String?
 }
 
 model CandidateCategory {
@@ -188,6 +194,9 @@ enum CatalogSpecialization {
   backend
   frontend
   common
+  /// lane directions: записи ai.* / eng.* каталога
+  ai
+  engineering
 }
 
 enum EvidenceLevel {
@@ -335,19 +344,19 @@ model Recommendation {
 }
 
 model Company {
-  id          String            @id @default(cuid())
-  name        String
-  description String?
-  isDemo      Boolean           @default(true)
-  vacancies   Vacancy[]
+  id                String             @id @default(cuid())
+  name              String
+  description       String?
+  isDemo            Boolean            @default(true)
+  vacancies         Vacancy[]
   /// lane auth: представители компании
-  employers   EmployerProfile[]
+  employers         EmployerProfile[]
   /// lane employer
-  invitations Invitation[]
+  invitations       Invitation[]
   /// lane onboarding: ИНН (проверен по контрольной сумме; реестр — демо), отрасль, контакт (R-E-01)
-  inn         String?
-  industry    String?
-  contact     String?
+  inn               String?
+  industry          String?
+  contact           String?
   /// lane call: вопросы компании кандидатам (очередь асинхронной дозащиты)
   employerQuestions EmployerQuestion[]
 }
@@ -373,6 +382,8 @@ model Vacancy {
   /// lane employer: потребность закрыта/в архиве — в кабинете отдельно, подборка не строится
   archivedAt      DateTime?
   updatedAt       DateTime?      @updatedAt
+  /// lane directions: подкатегория потребности ("backend.web-api"), необязательна. Без FK — см. Candidate.
+  subcategoryId   String?
 
   invitations Invitation[]
 
@@ -482,11 +493,11 @@ model User {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  accounts        AuthAccount[]
-  employerProfile EmployerProfile?
-  consents        Consent[]
+  accounts           AuthAccount[]
+  employerProfile    EmployerProfile?
+  consents           Consent[]
   /// lane onboarding: где человек остановился в онбординге
-  onboarding      OnboardingState?
+  onboarding         OnboardingState?
   /// lane call: участие в созвонах (работодатель в комнате защиты)
   callParticipations CallParticipant[]
 
@@ -514,14 +525,14 @@ model AuthAccount {
 }
 
 model EmployerProfile {
-  id          String       @id @default(cuid())
-  userId      String       @unique
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyId   String
-  company     Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  createdAt   DateTime     @default(now())
+  id                     String                 @id @default(cuid())
+  userId                 String                 @unique
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId              String
+  company                Company                @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdAt              DateTime               @default(now())
   /// lane employer
-  invitations Invitation[]
+  invitations            Invitation[]
   /// lane emp-agent: разговоры с помощником работодателя
   assistantConversations EmployerConversation[]
 
@@ -840,6 +851,7 @@ model EmployerQuestion {
   @@index([companyId, candidateId])
 }
 
+// =============================================================================
 // lane: project — контракт ADR 0003 (только ProjectSubmission, без связей). Копия, чтобы защита
 // проекта могла читать сабмит до слияния лейна project; при слиянии остаётся версия лейна project.
 // =============================================================================
@@ -883,4 +895,28 @@ model DefenseRoomPlan {
   /// Ход в обработке (LLM): не принимать второй параллельно; протухает через 90 с.
   lockedAt      DateTime?
   createdAt     DateTime  @default(now())
+}
+
+// =============================================================================
+// lane: directions — справочник подкатегорий направлений (ADR 0003, дополнение 10.10; R-T-05)
+// =============================================================================
+
+enum SubcategoryStatus {
+  /// Тест по подкатегории доступен (банк ≥ 8 семейств) и/или есть шаблон проекта
+  active
+  /// В справочнике, тест пока недоступен
+  planned
+}
+
+/// Подкатегория направления. id вида "backend.web-api" (направление.подкатегория).
+/// Сид — prisma/seed/directions.ts из src/lib/directions.ts (карта research/25 владельца).
+model Subcategory {
+  id             String            @id
+  specialization Specialization
+  title          String
+  description    String
+  status         SubcategoryStatus @default(planned)
+  order          Int               @default(0)
+
+  @@index([specialization, order])
 }

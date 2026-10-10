@@ -346,12 +346,18 @@ function InterviewRoom() {
         }
       }
       const b = barge.current;
-      if (!text.trim() || isBackchannel(text)) {
-        // Ложное перебивание: ИИ продолжает с непрозвучавшего предложения.
+      if (!text.trim()) {
         if (b) {
           barge.current = null;
           speech.resume(b.index, b.text);
         }
+        return;
+      }
+      // Поддакивание во время речи ИИ — ложное перебивание: ИИ продолжает с недоигранного предложения.
+      // Вне перебивания короткое «да» или «понял» — обычный ответ на вопрос.
+      if (b && isBackchannel(text)) {
+        barge.current = null;
+        speech.resume(b.index, b.text);
         return;
       }
       if (busyRef.current) {
@@ -362,7 +368,7 @@ function InterviewRoom() {
       if (!ai?.meta) return;
       if (b) {
         barge.current = null;
-        if (b.heard < speech.partsOf(b.index)) await callApi.interrupt(sid, { index: b.index, heardSentences: b.heard }).catch(() => undefined);
+        if (b.heard < speech.partsOf(b.index)) await callApi.interrupt(sid, { index: b.index, heardSentences: speech.heardSentencesOf(b.index) }).catch(() => undefined);
       }
       await send({ text, ...(audioRef ? { audioRef } : {}) });
     },

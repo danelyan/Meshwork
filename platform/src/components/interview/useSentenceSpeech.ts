@@ -10,14 +10,32 @@ import type { CompanionVoice } from '../avatar/voice';
 /** Предложений на реплику в очереди TTS — не больше: лимит /api/tts — 20 запросов в минуту на сессию. */
 export const MAX_TTS_PARTS = 4;
 
-/** Реплика → куски для озвучки: предложения, при избытке соседние склеиваются. */
-export function ttsParts(text: string): string[] {
-  const s = splitSentences(speechText(text));
-  if (s.length <= MAX_TTS_PARTS) return s;
-  const per = Math.ceil(s.length / MAX_TTS_PARTS);
-  const out: string[] = [];
-  for (let i = 0; i < s.length; i += per) out.push(s.slice(i, i + per).join(' '));
+export interface TtsPart {
+  /** Текст для синтеза (очищенный). */
+  text: string;
+  /** Сколько предложений сервера (lib/sentences.ts по сырому тексту) входит в часть. */
+  sentences: number;
+}
+
+/**
+ * Реплика → части для озвучки. Разбиение — то же, что у сервера (splitSentences по сырому тексту), чтобы
+ * счёт услышанного сходился с POST /interrupt; чистка для синтеза — по каждому предложению отдельно.
+ * При избытке соседние предложения склеиваются в одну часть, счёт предложений части сохраняется.
+ */
+export function ttsParts(text: string): TtsPart[] {
+  const raw = splitSentences(text);
+  const per = Math.max(1, Math.ceil(raw.length / MAX_TTS_PARTS));
+  const out: TtsPart[] = [];
+  for (let i = 0; i < raw.length; i += per) {
+    const group = raw.slice(i, i + per);
+    out.push({ text: group.map((s) => speechText(s)).filter(Boolean).join(' '), sentences: group.length });
+  }
   return out;
+}
+
+/** Сколько предложений сервера прозвучало, если начали звучать первые `parts` частей. */
+export function sentencesHeard(list: readonly TtsPart[], parts: number): number {
+  return list.slice(0, Math.max(0, parts)).reduce((s, p) => s + p.sentences, 0);
 }
 
 export const keyOf = (index: number, part: number) => `u${index}:${part}`;
@@ -33,7 +51,7 @@ export function parseKey(key: string | null): { index: number; part: number } | 
  * продолжает с первого непрозвучавшего предложения. Принцип — moko pipeline.py + player.ts.
  */
 export function useSentenceSpeech(voice: CompanionVoice | null) {
-  const parts = useRef(new Map<number, string[]>());
+  const parts = useRef(new Map<number, TtsPart[]>());
   /** Сколько частей реплики начало звучать (по speakingKey при status=speaking). */
   const heard = useRef(new Map<number, number>());
   const voiceRef = useRef(voice);
@@ -52,7 +70,7 @@ export function useSentenceSpeech(voice: CompanionVoice | null) {
     parts.current.set(index, list);
     if (from === 0) heard.current.set(index, 0);
     if (!v) return;
-    for (let i = from; i < list.length; i++) v.speak(list[i]!, keyOf(index, i));
+    for (let i = from; i < list.length; i++) if (list[i]!.text) v.speak(list[i]!.text, keyOf(index, i));
   }, []);
 
   const replay = useCallback((index: number, text: string) => {
@@ -62,26 +80,34 @@ export function useSentenceSpeech(voice: CompanionVoice | null) {
     const list = parts.current.get(index) ?? ttsParts(text);
     parts.current.set(index, list);
     heard.current.set(index, 0);
-    list.forEach((p, i) => (i === 0 ? v.replay(p, keyOf(index, 0)) : v.speak(p, keyOf(index, i))));
+    list.forEach((p, i) => (i === 0 ? v.replay(p.text, keyOf(index, 0)) : v.speak(p.text, keyOf(index, i))));
   }, []);
 
   const stop = useCallback(() => voiceRef.current?.stop(), []);
 
-  /** Продолжить реплику после ложного перебивания — с первого непрозвучавшего предложения. */
+  /**
+   * Продолжить реплику после ложного перебивания. Часть, на которой остановились, уже посчитана начатой,
+   * но не доиграна — её повторяем целиком, дальше по очереди.
+   */
   const resume = useCallback(
     (index: number, text: string) => {
-      const from = heard.current.get(index) ?? 0;
+      const started = heard.current.get(index) ?? 0;
+      const from = Math.max(0, started - 1);
+      heard.current.set(index, from);
       say(index, text, from);
     },
     [say],
   );
 
+  /** Сколько частей начало звучать (как moko: начатый чанк — услышанный). */
   const heardOf = useCallback((index: number) => heard.current.get(index) ?? 0, []);
+  /** Сколько предложений сервера прозвучало — для POST /interrupt. */
+  const heardSentencesOf = useCallback((index: number) => sentencesHeard(parts.current.get(index) ?? [], heard.current.get(index) ?? 0), []);
   const partsOf = useCallback((index: number) => parts.current.get(index)?.length ?? 0, []);
   const isPlaying = useCallback(() => {
     const s = voiceRef.current?.status;
     return s === 'speaking' || s === 'loading';
   }, []);
 
-  return { say, replay, stop, resume, heardOf, partsOf, isPlaying };
+  return { say, replay, stop, resume, heardOf, heardSentencesOf, partsOf, isPlaying };
 }

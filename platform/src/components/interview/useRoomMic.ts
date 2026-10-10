@@ -158,7 +158,7 @@ export function useRoomMic(opts: RoomMicOptions) {
         setInterim('');
       }
       if (!listening) return;
-      setState(mutedRef.current ? 'listening' : 'listening');
+      setState('listening');
       if (pcm === null && !browserText) return;
       await optsRef.current.onUtterance({ pcm, browserText, durationMs });
     };

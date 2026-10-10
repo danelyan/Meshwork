@@ -137,13 +137,16 @@ describe('TestPage', () => {
     expect(input.value).toBe('');
   });
 
-  it('фаза дозадавания Junior: подпись прогресса и пояснение кандидату', async () => {
+  it('фаза дозадавания Junior: подпись прогресса и нейтральная плашка без промежуточного итога', async () => {
     stubFetch((url) => (url === '/api/test/attempt/att1' ? { ...active(10), phase: 'junior_probe', maxItems: 13 } : {}));
     search = 'attempt=att1';
     render(<TestPage />);
     await waitFor(() => expect(screen.getByTestId('progress').textContent).toContain('Задание 11'));
     expect(screen.getByTestId('progress').textContent).toContain('дополнительное, всего до 13');
-    expect(screen.getByTestId('junior-probe').textContent).toContain('уровня Junior');
+    const notice = screen.getByTestId('junior-probe').textContent ?? '';
+    expect(notice).toContain('Ещё несколько заданий для точности');
+    // Промежуточный итог не раскрывается: ни грейда, ни «не подтверждается».
+    expect(notice).not.toMatch(/Junior|Middle|подтвержд/);
   });
 
   it('основная фаза: пояснения о дозадавании нет', async () => {

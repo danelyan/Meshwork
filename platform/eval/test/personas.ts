@@ -1,10 +1,12 @@
 // Персоны-тестировщики через боевой движок теста на грейд (ADR-0002, дополнение 10.10), без LLM и без БД.
 // Персона — легенда и заранее заданная модель знаний: по каждому из 12 шаблонов специализации
 // «решит» (1), «монета» (0,5) или «не решит» (0). Цикл тот же, что в service.ts и eval/test/run.ts:
-// policy.selectNext / shouldStop / decide, параметры a, b из кода (экспертные).
+// policy.selectNext по пулу фазы / nextStep (основная фаза + дозадавание Junior) / decide, параметры a, b
+// из кода (экспертные).
 //
 // Запуск из platform/:
 //   npm run eval:test-personas                                  # текущий GRADE_CUT, N = 2000 на персону и грейд
+//   npx tsx eval/test/personas.ts --n 4000 --seed 1 --no-probe   # без дозадавания (как до adr-0002-v2/v3)
 //   npx tsx eval/test/personas.ts --n 2000 --junior-cut -1.0    # другой порог Junior
 //   npx tsx eval/test/personas.ts --sweep -1.5:-0.6:0.1         # свип порога Junior
 //
@@ -14,7 +16,7 @@
 // порог пропускает «узкий» профиль, которого синтетика по θ не видит.
 import { generatorsFor } from '../../src/server/test/generators';
 import { estimateTheta, type Response } from '../../src/server/test/irt';
-import { decide, GRADE_CUT, SE_STOP, selectNext, shouldStop, type SelectableTemplate } from '../../src/server/test/policy';
+import { decide, GRADE_CUT, nextStep, phasePool, SE_STOP, selectNext, shouldStop, type AttemptPhase, type SelectableTemplate } from '../../src/server/test/policy';
 import { createRng, deriveSeed } from '../../src/server/test/rng';
 import type { Grade, Specialization } from '../../src/server/types';
 
@@ -26,6 +28,8 @@ const argStr = (name: string): string | undefined => {
 const N = Number(argStr('n') ?? 2000);
 const SEED = Number(argStr('seed') ?? 1);
 const BASE_JUNIOR_CUT = GRADE_CUT.junior;
+/** --no-probe: только основная фаза (shouldStop), как до дозадавания Junior — для сравнения «до/после». */
+const PROBE = !args.includes('--no-probe');
 
 /** Истинный уровень по легенде: ниже Junior, Junior, Middle. */
 type Truth = 'below' | 'junior' | 'middle';
@@ -57,13 +61,21 @@ const PERSONAS: Persona[] = [
   { id: 'F2', spec: 'frontend', truth: 'middle', legend: 'Middle с перекосом в вёрстку', knows: matrix(FE, [Y, Y, Y, H, Y, Y, H, Y, X, X, H, H]) },
   { id: 'F3', spec: 'frontend', truth: 'below', legend: 'верстальщик без JS, курсы 3 мес.', knows: matrix(FE, [H, Y, Y, X, Y, X, X, X, X, X, H, X]) },
   { id: 'Z0', spec: 'backend', truth: 'below', legend: 'контроль: не решает ничего', knows: matrix(BE, BE.map(() => X)) },
+  // Идеальные контроли (10.10, ADR-0002 «Дозадавание Junior-заданий»): все Junior-задания верно, все Middle — неверно.
+  // Не легенды, в суммы ошибок не входят. Стоят после Z0, чтобы seed прежних персон не сдвинулись.
+  { id: 'JB', spec: 'backend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(BE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
+  { id: 'JF', spec: 'frontend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(FE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
 ];
+/** Контроли — не легенды: в суммы ошибок не входят. */
+const CONTROLS = new Set(['Z0', 'JB', 'JF']);
 
 interface Outcome {
   confirmed: boolean;
   juniorOffered: boolean;
   length: number;
   theta: number;
+  /** Была ли фаза дозадавания Junior. */
+  probed: boolean;
 }
 
 /** Одна попытка: тот же цикл, что в service.ts (без БД). */
@@ -72,18 +84,27 @@ function runAttempt(pool: readonly SelectableTemplate[], p: Persona, claimed: Gr
   const shown: SelectableTemplate[] = [];
   const responses: Response[] = [];
   let est = estimateTheta([]);
+  let phase: AttemptPhase = 'main';
+  let probed = false;
   for (let index = 0; index < pool.length; index++) {
-    const next = selectNext(pool, { shown, theta: est.theta, seed: deriveSeed(attemptSeed, 1000 + index) });
+    const next = selectNext(phasePool(pool, phase), { shown, theta: est.theta, seed: deriveSeed(attemptSeed, 1000 + index) });
     if (!next) break;
     shown.push(next);
     const known = p.knows[next.id];
     if (known === undefined) throw new Error(`Персона ${p.id}: нет клетки для шаблона ${next.id}`);
     responses.push({ a: next.a, b: next.b, correct: rng.next() < known });
     est = estimateTheta(responses);
-    if (shouldStop(responses.length, est, claimed, shown.length >= pool.length).stop) break;
+    if (!PROBE) {
+      if (shouldStop(responses.length, est, claimed, shown.length >= pool.length).stop) break;
+      continue;
+    }
+    const step = nextStep({ pool, shown, responses, grade: claimed });
+    if (step.phase === 'junior_probe') probed = true;
+    if (step.stop) break;
+    phase = step.phase;
   }
   const d = decide(responses, claimed);
-  return { confirmed: d.confirmed, juniorOffered: d.juniorOffered, length: responses.length, theta: d.theta };
+  return { confirmed: d.confirmed, juniorOffered: d.juniorOffered, length: responses.length, theta: d.theta, probed };
 }
 
 interface PersonaStats {
@@ -97,6 +118,9 @@ interface PersonaStats {
   lenJunior: number;
   lenMiddle: number;
   thetaJunior: number;
+  /** Доля попыток с фазой дозадавания: заявил Junior / заявил Middle. */
+  probedJunior: number;
+  probedMiddle: number;
 }
 
 /**
@@ -115,6 +139,8 @@ function runAll(cut: number): PersonaStats[] {
       let lenJ = 0;
       let lenM = 0;
       let thJ = 0;
+      let prJ = 0;
+      let prM = 0;
       for (let r = 0; r < N; r++) {
         const base = deriveSeed(SEED * 7919 + pi, r);
         const oj = runAttempt(pool, p, 'junior', deriveSeed(base, 1), deriveSeed(base, 2));
@@ -125,8 +151,10 @@ function runAll(cut: number): PersonaStats[] {
         lenJ += oj.length;
         lenM += om.length;
         thJ += oj.theta;
+        prJ += +oj.probed;
+        prM += +om.probed;
       }
-      return { p, pJunior: j / N, pMiddle: m / N, pOffer: offer / N, lenJunior: lenJ / N, lenMiddle: lenM / N, thetaJunior: thJ / N };
+      return { p, pJunior: j / N, pMiddle: m / N, pOffer: offer / N, lenJunior: lenJ / N, lenMiddle: lenM / N, thetaJunior: thJ / N, probedJunior: prJ / N, probedMiddle: prM / N };
     });
   } finally {
     GRADE_CUT.junior = BASE_JUNIOR_CUT;
@@ -136,10 +164,10 @@ function runAll(cut: number): PersonaStats[] {
 /**
  * Ошибки по легенде при данном пороге (для свипа):
  * ложное Junior — «ниже Junior» подтвердил Junior; ложный отказ Junior — Junior/Middle не подтвердил Junior
- * (Z0 — контроль, в сумму не входит). Middle-тест от порога Junior не зависит, кроме предложения Junior.
+ * (контроли Z0, JB, JF в сумму не входят). Middle-тест от порога Junior не зависит, кроме предложения Junior.
  */
 function errors(stats: PersonaStats[]) {
-  const real = stats.filter((s) => s.p.id !== 'Z0');
+  const real = stats.filter((s) => !CONTROLS.has(s.p.id));
   const falsePass = real.filter((s) => s.p.truth === 'below').reduce((acc, s) => acc + s.pJunior, 0);
   const falseFail = real.filter((s) => s.p.truth !== 'below').reduce((acc, s) => acc + (1 - s.pJunior), 0);
   return { falsePass, falseFail, sum: falsePass + falseFail };
@@ -154,7 +182,7 @@ if (sweep) {
   const [from, to, step] = sweep.split(':').map(Number) as [number, number, number];
   const cuts: number[] = [];
   for (let c = from; c <= to + 1e-9; c += step) cuts.push(Number(c.toFixed(4)));
-  console.log(`# Свип порога Junior по персонам: N = ${N} попыток на персону и грейд, seed = ${SEED}, порог Middle = ${GRADE_CUT.middle}\n`);
+  console.log(`# Свип порога Junior по персонам: N = ${N} попыток на персону и грейд, seed = ${SEED}, порог Middle = ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
   const ids = PERSONAS.map((p) => p.id);
   console.log(`| Порог Junior | Зона Junior (Middle − Junior) | ${ids.map((id) => `${id} P(J)`).join(' | ')} | Σ ложных J | Σ отказов J | Σ ошибок |`);
   console.log(`|---|---|${ids.map(() => '---').join('|')}|---|---|---|`);
@@ -167,11 +195,11 @@ if (sweep) {
 } else {
   const cut = argStr('junior-cut') !== undefined ? Number(argStr('junior-cut')) : GRADE_CUT.junior;
   const s = runAll(cut);
-  console.log(`# Персоны через движок теста: N = ${N} попыток на персону и грейд, seed = ${SEED}, пороги Junior ${cut} / Middle ${GRADE_CUT.middle}\n`);
-  console.log('| Персона | Легенда | Уровень по легенде | P(Junior), заявил Junior | Длина | θ̂ | P(Middle), заявил Middle | Junior в 1 клик | Длина |');
-  console.log('|---|---|---|---|---|---|---|---|---|');
+  console.log(`# Персоны через движок теста: N = ${N} попыток на персону и грейд, seed = ${SEED}, пороги Junior ${cut} / Middle ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
+  console.log('| Персона | Легенда | Уровень по легенде | P(Junior), заявил Junior | Длина | Дозадавание | θ̂ | P(Middle), заявил Middle | Junior в 1 клик | Длина | Дозадавание |');
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|');
   for (const x of s) {
-    console.log(`| ${x.p.id} | ${x.p.legend} | ${x.p.truth} | ${f3(x.pJunior)} | ${x.lenJunior.toFixed(1)} | ${f2(x.thetaJunior)} | ${f3(x.pMiddle)} | ${f3(x.pOffer)} | ${x.lenMiddle.toFixed(1)} |`);
+    console.log(`| ${x.p.id} | ${x.p.legend} | ${x.p.truth} | ${f3(x.pJunior)} | ${x.lenJunior.toFixed(2)} | ${f2(x.probedJunior)} | ${f2(x.thetaJunior)} | ${f3(x.pMiddle)} | ${f3(x.pOffer)} | ${x.lenMiddle.toFixed(2)} | ${f2(x.probedMiddle)} |`);
   }
   const e = errors(s);
   console.log(`\nΣ ложных подтверждений Junior (B1, B2, F3): ${f2(e.falsePass)}; Σ ложных отказов Junior (B3, B4, B5, F1, F2): ${f2(e.falseFail)}`);

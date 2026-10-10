@@ -233,7 +233,7 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
       </div>
       {probe && (
         <Notice data-testid="junior-probe">
-          Middle по ответам пока не подтверждается. Ещё несколько заданий уровня Junior покажут, можно ли подтвердить Junior по этой же попытке.
+          Ещё несколько заданий для точности.
         </Notice>
       )}
       <div className={styles.progressBar} role="progressbar" aria-valuemin={0} aria-valuemax={attempt.maxItems} aria-valuenow={item.index} aria-label="Ход теста">

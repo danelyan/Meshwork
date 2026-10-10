@@ -12,7 +12,7 @@ import type { Grade, Specialization } from '../types';
 import { checkAnswer, MAX_ANSWER_CHARS } from './answers';
 import { GENERATORS, getGenerator } from './generators';
 import { estimateTheta, type Response } from './irt';
-import { decide, explainDecision, MIN_ITEMS, nextStep, phasePool, selectNext, type AttemptPhase, type SelectableTemplate, type Step } from './policy';
+import { decide, explainDecision, MAX_ITEMS, MIN_ITEMS, nextStep, phasePool, selectNext, type AttemptPhase, type SelectableTemplate, type Step } from './policy';
 import { deriveSeed, randomSeed } from './rng';
 import type {
   AnsweredItemView,
@@ -25,8 +25,11 @@ import type {
   TaskGenerator,
 } from './types';
 
-/** v2 (10.10): порог Junior −0,7 и дозадавание Junior-заданий (ADR-0002, дополнения 10.10). */
-export const POLICY_VERSION = 'adr-0002-v2';
+/**
+ * v2 (10.10): порог Junior −0,7 и дозадавание Junior-заданий при заявке Middle (ADR-0002, дополнения 10.10).
+ * v3 (10.10): дозадавание и при заявке Junior (ADR-0002, «Заявка Junior»).
+ */
+export const POLICY_VERSION = 'adr-0002-v3';
 
 /**
  * ПРЕДЛОЖЕНИЕ (R-C-09, решение владельца 09.10): смена грейда — раз в 30 дней
@@ -140,7 +143,11 @@ function responsesOf(items: TestItem[], pool: Map<string, SelectableTemplate>): 
   return out;
 }
 
-/** Решение о продолжении по отвеченным заданиям попытки (фаза выводится из ответов, в БД не хранится). */
+/**
+ * Решение о продолжении по отвеченным заданиям попытки (фаза выводится из ответов, в БД не хранится).
+ * Попытка другой версии политики (policyVersion ≠ POLICY_VERSION) дозадавания не получает: только
+ * основная фаза, как при её старте, — иначе обновление политики меняло бы длину и фазу задним числом.
+ */
 function stepOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>): Step {
   const shown: SelectableTemplate[] = [];
   const responses: Response[] = [];
@@ -151,7 +158,7 @@ function stepOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>): Ste
     shown.push(t);
     responses.push({ a: t.a, b: t.b, correct: it.correct });
   }
-  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade });
+  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade, probe: a.policyVersion === POLICY_VERSION });
 }
 
 async function poolMap(spec: Specialization): Promise<Map<string, SelectableTemplate & { generator: TaskGenerator }>> {
@@ -281,7 +288,9 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
   const answered = a.items.filter((i) => i.correct !== null).length;
   const current = a.status === 'active' ? a.items.find((i) => i.correct === null) : undefined;
   const g = current ? byId.get(current.templateId)?.generator : undefined;
-  const step = stepOf(a, byId);
+  // Фаза и потолок нужны только для прогресса активной попытки; у завершённой — основные значения,
+  // чтобы итог старой версии не показывал «дополнительное, всего до 13».
+  const step = a.status === 'active' ? stepOf(a, byId) : { phase: 'main' as const, maxItems: MAX_ITEMS };
   return {
     id: a.id,
     specialization: a.specialization,

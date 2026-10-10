@@ -1,12 +1,27 @@
 // Валидация теста на грейд на синтетических кандидатах (ADR-0002 § валидация), без LLM и без БД.
-// Тот же движок, что в проде: policy.selectNext / shouldStop / decide, параметры шаблонов из кода
-// (экспертные). Запуск из platform/: npx tsx eval/test/run.ts [--n 400] [--seed 1] [--noise 0.2] [--junior-cut −0.7] [--population persona|legacy]
+// Тот же движок, что в проде: policy.selectNext по пулу фазы / nextStep (основная фаза + дозадавание
+// Junior) / decide, параметры шаблонов из кода (экспертные). Запуск из platform/:
+//   npx tsx eval/test/run.ts [--n 400] [--seed 1] [--noise 0.2] [--junior-cut −0.7] [--population persona|legacy] [--no-probe]
+// --no-probe — только основная фаза (shouldStop), как до дозадавания Junior: для сравнения «до/после».
 //
 // Честная граница: симуляция проверяет свойства механики ПРИ ЗАДАННЫХ параметрах заданий
 // (a, b экспертные, на людях не оценены), а не то, что задания измеряют умение.
 import { generatorsFor } from '../../src/server/test/generators';
 import { estimateTheta, probCorrect, type Response } from '../../src/server/test/irt';
-import { CONFIRM_PROB, decide, GRADE_CUT, MAX_ITEMS, MIN_ITEMS, selectNext, shouldStop, type SelectableTemplate } from '../../src/server/test/policy';
+import {
+  CONFIRM_PROB,
+  decide,
+  GRADE_CUT,
+  JUNIOR_PROBE_MAX,
+  MAX_ITEMS,
+  MIN_ITEMS,
+  nextStep,
+  phasePool,
+  selectNext,
+  shouldStop,
+  type AttemptPhase,
+  type SelectableTemplate,
+} from '../../src/server/test/policy';
 import { createRng, deriveSeed } from '../../src/server/test/rng';
 import type { Grade, Specialization } from '../../src/server/types';
 
@@ -21,6 +36,7 @@ const NOISE = arg('noise', 0.2);
 const CONFIRM = arg('confirm', CONFIRM_PROB);
 const MAXI = arg('max', MAX_ITEMS);
 const MINI = arg('min', MIN_ITEMS);
+const PROBE = !args.includes('--no-probe');
 // Популяция синтетики: persona (по умолчанию) или legacy (старая, для сравнения «до/после»).
 const popIdx = args.indexOf('--population');
 const POPULATION = popIdx >= 0 ? args[popIdx + 1] : 'persona';
@@ -64,6 +80,8 @@ interface Outcome {
   length: number;
   shown: string[];
   correct: number;
+  /** Была ли фаза дозадавания Junior. */
+  probed: boolean;
 }
 
 /** Один прогон адаптивного теста для кандидата: тот же цикл, что в service.ts, без БД. */
@@ -72,8 +90,10 @@ function runAttempt(pool: SelectableTemplate[], sim: Sim, attemptSeed: number, r
   const responses: Response[] = [];
   let est = estimateTheta([]);
   let correct = 0;
+  let phase: AttemptPhase = 'main';
+  let probed = false;
   for (let index = 0; index < 100; index++) {
-    const next = selectNext(pool, { shown, theta: est.theta, seed: deriveSeed(attemptSeed, 1000 + index) });
+    const next = selectNext(phasePool(pool, phase), { shown, theta: est.theta, seed: deriveSeed(attemptSeed, 1000 + index) });
     if (!next) break;
     shown.push(next);
     // Экземпляр «не совсем изоморфен»: b_экз = b + ε; знание трюка шаблона: +0,3 к P.
@@ -84,10 +104,17 @@ function runAttempt(pool: SelectableTemplate[], sim: Sim, attemptSeed: number, r
     if (ok) correct++;
     responses.push({ a: next.a, b: next.b, correct: ok });
     est = estimateTheta(responses);
-    if (shouldStop(responses.length, est, sim.claimed, shown.length >= pool.length, { min: cfg.min, max: cfg.max }).stop) break;
+    if (!PROBE) {
+      if (shouldStop(responses.length, est, sim.claimed, shown.length >= pool.length, { min: cfg.min, max: cfg.max }).stop) break;
+      continue;
+    }
+    const step = nextStep({ pool, shown, responses, grade: sim.claimed }, { min: cfg.min, max: cfg.max });
+    if (step.phase === 'junior_probe') probed = true;
+    if (step.stop) break;
+    phase = step.phase;
   }
   const d = decide(responses, sim.claimed, cfg.confirm);
-  return { theta: d.theta, pPass: d.pPass, confirmed: d.confirmed, juniorOffered: d.juniorOffered, length: responses.length, shown: shown.map((s) => s.id), correct };
+  return { theta: d.theta, pPass: d.pPass, confirmed: d.confirmed, juniorOffered: d.juniorOffered, length: responses.length, shown: shown.map((s) => s.id), correct, probed };
 }
 
 function auc(pos: number[], neg: number[]): number {
@@ -179,6 +206,10 @@ function runSpec(spec: Specialization): SpecReport {
   const r = pearson(first.map((o) => o.theta), second.map((o) => o.theta));
   const overlap = first.reduce((s, o, i) => s + o.shown.filter((id) => second[i]!.shown.includes(id)).length / o.shown.length, 0) / N;
   const meanLen = first.reduce((s, o) => s + o.length, 0) / N;
+  const juniorIdx = sims.map((_, i) => i).filter((i) => sims[i]!.claimed === 'junior');
+  const middleIdx = sims.map((_, i) => i).filter((i) => sims[i]!.claimed === 'middle');
+  const probedShare = (idx: number[]) => idx.filter((i) => first[i]!.probed).length / Math.max(1, idx.length);
+  const lenOf = (idx: number[]) => idx.reduce((s, i) => s + first[i]!.length, 0) / Math.max(1, idx.length);
   const corr = pearson(first.map((o) => o.theta), sims.map((s) => s.thetaTrue));
 
   // Junior заявляет Middle: как часто подтверждается Middle (ложно) и предлагается Junior.
@@ -228,7 +259,8 @@ function runSpec(spec: Specialization): SpecReport {
     ['Test-retest: совпадение исхода двух попыток', '≥ 90 %', pct(retest)],
     ['Test-retest: κ Коэна', '≥ 0,70', fmt(k)],
     ['Test-retest: r(θ̂₁, θ̂₂)', '≥ 0,80', fmt(r)],
-    ['Средняя длина теста, заданий', '7–10', fmt(meanLen, 2)],
+    ['Средняя длина теста, заданий', `7–10${PROBE ? ` (+ до ${JUNIOR_PROBE_MAX} дозаданных)` : ''}`, `${fmt(meanLen, 2)} (Junior-тест ${fmt(lenOf(juniorIdx), 2)}, Middle-тест ${fmt(lenOf(middleIdx), 2)})`],
+    ['Доля попыток с дозадаванием Junior', 'показать', PROBE ? `Junior-тест ${pct(probedShare(juniorIdx))}, Middle-тест ${pct(probedShare(middleIdx))}` : 'выключено (--no-probe)'],
     ['Пересечение шаблонов двух попыток одного кандидата', 'показать', pct(overlap)],
     ['Junior заявил Middle: ложно подтверждён Middle', '≤ 10 %', pct(jcmFalseMiddle)],
     ['Junior заявил Middle: предложен Junior по той же попытке', 'показать', pct(jcmOffered)],
@@ -242,7 +274,7 @@ function runSpec(spec: Specialization): SpecReport {
 
 const t0 = Date.now();
 const reports = (['backend', 'frontend'] as Specialization[]).map(runSpec);
-console.log(`# Валидация теста на грейд (синтетика): N = ${N} на специализацию, seed = ${SEED}, шум экземпляра σ = ${NOISE}, популяция ${POPULATION}, пороги Junior ${GRADE_CUT.junior} / Middle ${GRADE_CUT.middle}\n`);
+console.log(`# Валидация теста на грейд (синтетика): N = ${N} на специализацию, seed = ${SEED}, шум экземпляра σ = ${NOISE}, популяция ${POPULATION}, пороги Junior ${GRADE_CUT.junior} / Middle ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
 for (const rep of reports) {
   console.log(`## ${rep.spec}\n`);
   console.log('| Метрика | Цель | Факт |\n|---|---|---|');

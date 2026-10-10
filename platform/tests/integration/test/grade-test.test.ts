@@ -6,7 +6,7 @@ import { GET as historyRoute } from '@/app/api/test/attempts/route';
 import { GET as eligibilityRoute, POST as startRoute } from '@/app/api/test/start/route';
 import { signSession } from '@/server/session';
 import { answerAttempt, checkEligibility, finishAttempt, getAttempt, startAttempt } from '@/server/test';
-import { JUNIOR_PROBE_MAX, MAX_ITEMS, MAX_ITEMS_TOTAL, MIN_ITEMS } from '@/server/test/policy';
+import { JUNIOR_PROBE_MAX, MAX_ITEMS, MIN_ITEMS } from '@/server/test/policy';
 import type { AttemptView } from '@/server/test/types';
 
 import { prisma, resetDb } from '../../helpers/db';
@@ -188,25 +188,59 @@ describe('API теста на грейд', () => {
     const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 4242 });
     let v = await getAttempt(A, attemptId);
     const probe: { index: number; grade: string; maxItems: number }[] = [];
+    let mainJunior = 0;
+    let checkedTwice = false;
     while (v.status === 'active') {
       const { key, grade } = await currentKey(attemptId);
-      if (v.phase === 'junior_probe') probe.push({ index: v.current!.index, grade, maxItems: v.maxItems });
-      else expect(v.maxItems).toBe(MAX_ITEMS);
+      if (v.phase === 'junior_probe') {
+        probe.push({ index: v.current!.index, grade, maxItems: v.maxItems });
+        if (!checkedTwice) {
+          // Чтение без ответа не меняет фазу, потолок и текущее задание (фаза выводится из ответов).
+          const again = await getAttempt(A, attemptId);
+          const http = (await (await getRoute(jsonRequest(`/api/test/attempt/${attemptId}`, 'GET', undefined, cookie(A)), ctx(attemptId))).json()) as AttemptView;
+          for (const w of [again, http]) {
+            expect(w.phase).toBe('junior_probe');
+            expect(w.maxItems).toBe(v.maxItems);
+            expect(w.current?.index).toBe(v.current!.index);
+            expect(w.current?.prompt).toBe(v.current!.prompt);
+          }
+          checkedTwice = true;
+        }
+      } else {
+        expect(v.maxItems).toBe(MAX_ITEMS);
+        if (grade === 'junior') mainJunior++;
+      }
       v = await answerAttempt(A, attemptId, grade === 'junior' ? key : 'нет');
     }
     expect(probe.length).toBeGreaterThan(0);
     expect(probe.length).toBeLessThanOrEqual(JUNIOR_PROBE_MAX);
-    expect(probe.every((p) => p.grade === 'junior' && p.index >= MAX_ITEMS && p.maxItems === MAX_ITEMS + JUNIOR_PROBE_MAX)).toBe(true);
+    // Потолок фазы — не больше оставшихся Junior-шаблонов (6 на специализацию), а не всегда 13.
+    const probeMax = MAX_ITEMS + Math.min(JUNIOR_PROBE_MAX, 6 - mainJunior);
+    expect(probe.every((p) => p.grade === 'junior' && p.index >= MAX_ITEMS && p.maxItems === probeMax)).toBe(true);
     expect(v.result?.answered).toBe(MAX_ITEMS + probe.length);
-    expect(v.result?.answered).toBeLessThanOrEqual(MAX_ITEMS_TOTAL);
+    expect(v.result?.answered).toBeLessThanOrEqual(probeMax);
     expect(v.status).toBe('not_confirmed');
     expect(v.result?.juniorOffered).toBe(true);
-    // Через HTTP — та же фаза в итоге, контракт ответа не сломан.
+    // Завершённая попытка: фаза и потолок — основные (прогресс больше не нужен).
     const res = await getRoute(jsonRequest(`/api/test/attempt/${attemptId}`, 'GET', undefined, cookie(A)), ctx(attemptId));
-    expect(((await res.json()) as AttemptView).phase).toBe('junior_probe');
+    expect(await res.json()).toMatchObject({ phase: 'main', maxItems: MAX_ITEMS });
     const ok = await confirmJuniorRoute(jsonRequest(`/api/test/attempt/${attemptId}/confirm-junior`, 'POST', {}, cookie(A)), ctx(attemptId));
     expect(ok.status).toBe(200);
     expect(await prisma.candidateCategory.findFirst({ where: { candidateId: A } })).toMatchObject({ grade: 'junior', source: 'test' });
+  });
+
+  it('попытка другой версии политики дозадавания не получает: те же ответы, стоп на основной фазе', async () => {
+    // seed 4242 при текущей версии уходит в junior_probe после 10 заданий (тест выше).
+    const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 4242 });
+    await prisma.testAttempt.update({ where: { id: attemptId }, data: { policyVersion: 'adr-0002-v1' } });
+    let v = await getAttempt(A, attemptId);
+    while (v.status === 'active') {
+      expect(v).toMatchObject({ phase: 'main', maxItems: MAX_ITEMS });
+      const { key, grade } = await currentKey(attemptId);
+      v = await answerAttempt(A, attemptId, grade === 'junior' ? key : 'нет');
+    }
+    expect(v.result?.answered).toBe(MAX_ITEMS);
+    expect(v).toMatchObject({ phase: 'main', maxItems: MAX_ITEMS });
   });
 
   it('все ответы неверные → не подтверждён, Junior не предлагается; досрочное завершение считает по данным ответам', async () => {

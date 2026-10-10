@@ -104,9 +104,11 @@ export function shouldStop(
 // ---------------------------------------------------------------------------
 
 /**
- * Сколько Junior-заданий можно дозадать после основной фазы, если заявлен Middle, он не
- * подтверждён, а P(Junior) неуверенная. В Middle-тесте всего ~4 Junior-задания, и P(θ > −0,7)
- * у решившего их все часто не дотягивает до CONFIRM_PROB — «Junior в 1 клик» срабатывал в 51–63 %.
+ * Сколько Junior-заданий можно дозадать после основной фазы, если Junior по ней неуверенный.
+ * Заявлен Middle: в Middle-тесте всего ~4 Junior-задания, и P(θ > −0,7) у решившего их все часто
+ * не дотягивает до CONFIRM_PROB — «Junior в 1 клик» срабатывал в 51–63 %. Заявлен Junior (решение
+ * владельца 10.10, adr-0002-v3): основная фаза останавливается по SE или MAX_ITEMS, перемешав Junior- и
+ * Middle-задания, и идеальный Junior (все Junior верно, Middle неверно) подтверждался в 52–68 %.
  * Фактически дозадаётся не больше, чем осталось непоказанных Junior-шаблонов (6 на специализацию).
  */
 export const JUNIOR_PROBE_MAX = 3;
@@ -123,6 +125,11 @@ export interface StepInput {
   shown: readonly SelectableTemplate[];
   responses: readonly Response[];
   grade: Grade;
+  /**
+   * Разрешено ли дозадавание (по умолчанию да). false — только основная фаза: так считаются попытки
+   * другой версии политики (POLICY_VERSION), чтобы они не меняли длину и фазу задним числом.
+   */
+  probe?: boolean;
 }
 
 export interface Step extends StopDecision {
@@ -140,13 +147,14 @@ export function juniorUncertain(pJunior: number): boolean {
 }
 
 /**
- * Нужна ли фаза дозадавания после остановки основной: заявлен Middle, он не подтверждён
- * (P(θ > порог Middle) < CONFIRM_PROB — ранняя остановка «вниз», по SE или по MAX_ITEMS),
- * P(Junior) неуверенная и есть непоказанные Junior-шаблоны.
+ * Нужна ли фаза дозадавания после остановки основной: заявленный грейд не подтверждён
+ * (P(θ > порог заявленного) < CONFIRM_PROB — ранняя остановка «вниз», по SE или по MAX_ITEMS),
+ * P(Junior) неуверенная (0,2…0,8) и есть непоказанные Junior-шаблоны. Для заявки Junior первое
+ * условие совпадает со вторым (порог заявленного — порог Junior); для Middle — отдельная проверка.
  */
 export function needsJuniorProbe(est: ThetaEstimate, grade: Grade, juniorLeft: number): boolean {
-  if (grade !== 'middle' || juniorLeft <= 0) return false;
-  if (probAbove(est, GRADE_CUT.middle) >= CONFIRM_PROB) return false;
+  if (juniorLeft <= 0) return false;
+  if (grade === 'middle' && probAbove(est, GRADE_CUT.middle) >= CONFIRM_PROB) return false;
   return juniorUncertain(probAbove(est, GRADE_CUT.junior));
 }
 
@@ -161,14 +169,14 @@ export function phasePool<T extends SelectableTemplate>(pool: readonly T[], phas
  * те же ответы → та же фаза и та же остановка.
  *
  * 1. Основная фаза — shouldStop по порогу заявленного грейда (MIN_ITEMS…MAX_ITEMS).
- * 2. Остановилась, и needsJuniorProbe → фаза junior_probe: до JUNIOR_PROBE_MAX Junior-заданий
+ * 2. Остановилась, и needsJuniorProbe (заявка Middle или Junior) → фаза junior_probe: до JUNIOR_PROBE_MAX Junior-заданий
  *    (randomesque и лимит доли утверждения — как в основной), стоп, как только
  *    P(Junior) ≥ EARLY_STOP_PROB или ≤ 1 − EARLY_STOP_PROB, исчерпан лимит или Junior-шаблоны.
  * Решение о грейде (decide) берёт все ответы попытки: адаптивный выбор заданий не смещает
  * апостериорную оценку θ, дозаданные ответы — такие же наблюдения.
  */
 export function nextStep(input: StepInput, limits: StopLimits = { min: MIN_ITEMS, max: MAX_ITEMS }): Step {
-  const { pool, shown, responses, grade } = input;
+  const { pool, shown, responses, grade, probe: probeAllowed = true } = input;
   const n = responses.length;
   const juniorTotal = pool.filter((t) => t.grade === 'junior').length;
   const juniorShown = (k: number) => shown.slice(0, k).filter((t) => t.grade === 'junior').length;
@@ -187,11 +195,14 @@ export function nextStep(input: StepInput, limits: StopLimits = { min: MIN_ITEMS
   if (mainLength === null) return { stop: false, reason: null, phase: 'main', mainLength: null, maxItems: limits.max };
 
   const atMain = estimateTheta(responses.slice(0, mainLength));
-  if (!needsJuniorProbe(atMain, grade, juniorTotal - juniorShown(mainLength))) {
+  const juniorLeft = juniorTotal - juniorShown(mainLength);
+  if (!probeAllowed || !needsJuniorProbe(atMain, grade, juniorLeft)) {
     return { ...mainStop, stop: true, phase: 'main', mainLength, maxItems: limits.max };
   }
 
-  const probeMax = mainLength + JUNIOR_PROBE_MAX;
+  // Потолок фазы — сколько реально можно дозадать: не больше оставшихся Junior-шаблонов (на backend
+  // их часто 2), иначе экран обещал бы 13 заданий, а тест кончался на 12.
+  const probeMax = mainLength + Math.min(JUNIOR_PROBE_MAX, juniorLeft);
   const probeAnswered = n - mainLength;
   const probe = (stop: boolean, reason: StopReason | null): Step => ({ stop, reason, phase: 'junior_probe', mainLength, maxItems: probeMax });
   if (probeAnswered > 0) {

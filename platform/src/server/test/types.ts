@@ -93,8 +93,9 @@ export interface AttemptView {
   /** Сколько заданий отвечено. */
   answered: number;
   /**
-   * Фаза: main — основная; junior_probe — заявлен Middle, он не подтверждён, и дозадаются до
-   * JUNIOR_PROBE_MAX Junior-заданий, чтобы уверенно решить про Junior в 1 клик (ADR-0002, 10.10).
+   * Фаза: main — основная; junior_probe — заявленный грейд (Middle или Junior) не подтверждён, P(Junior)
+   * неуверенная, и дозадаются до JUNIOR_PROBE_MAX Junior-заданий, чтобы уверенно решить про Junior
+   * (ADR-0002, «Дозадавание Junior-заданий», 10.10).
    */
   phase: 'main' | 'junior_probe';
   /** Минимум и максимум заданий (прогресс без подсказки о сложности); в junior_probe max — с учётом дозадавания. */

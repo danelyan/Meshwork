@@ -10,6 +10,9 @@ import { invitationAnswerMail, invitationMail } from '../mail/templates';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
+import { notifyAtsStatusChanged } from './ats-webhook';
+import { detectRedFlags, type RedFlag } from './antifraud';
+import { loadCompanyTrusts } from './company';
 import { loadPool } from './matching';
 import { contactEmail, toCandidateCard, type CandidateCard } from './privacy';
 import type { InvitationInput } from './schemas';
@@ -45,7 +48,9 @@ export interface CandidateInvitationView {
    * Компания и способ связи — до принятия (ТЗ 2.2: «кандидат видит условия до начала общения»).
    * contact: Company.contact, иначе почта отправителя; null — не указан (интерфейс пишет NO_COMPANY_CONTACT).
    */
-  company: { name: string; description: string | null; contact: string | null };
+  company: { name: string; description: string | null; contact: string | null; trust?: { index: number; band: 'low' | 'medium' | 'high'; concept: true } | null };
+  /** Антифрод (R-X-01): красные флаги текста и вилки; пустой — ничего не найдено. Интерфейс пишет «Проверьте: …». */
+  redFlags?: Pick<RedFlag, 'code' | 'severity' | 'candidateNote'>[];
   vacancy: {
     title: string;
     specialization: Specialization;
@@ -104,6 +109,7 @@ export async function createInvitation(
   });
   // lane: email-auth — письмо кандидату, не задерживая ответ работодателю.
   void notifyInBackground('invitation', () => notifyCandidateInvited(created.id));
+  void notifyInBackground('ats', () => notifyAtsStatusChanged(created.id));
   return created;
 }
 
@@ -212,7 +218,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       message: true,
       createdAt: true,
       respondedAt: true,
-      company: { select: { name: true, description: true, contact: true } },
+      company: { select: { id: true, name: true, description: true, contact: true } },
       employerProfile: { select: { user: { select: { email: true } } } },
       vacancy: {
         select: {
@@ -223,19 +229,22 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
           salaryTo: true,
           teamDescription: true,
           stack: true,
-          company: { select: { name: true, description: true, contact: true } },
+          company: { select: { id: true, name: true, description: true, contact: true } },
         },
       },
     },
     orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
   });
+  const trusts = await loadCompanyTrusts(rows.map((r) => (r.company ?? r.vacancy?.company)?.id).filter((id): id is string => !!id));
   return rows.map((r) => {
-    const co = r.company ?? r.vacancy?.company ?? { name: 'Компания', description: null, contact: null };
+    const co = r.company ?? r.vacancy?.company ?? { id: null, name: 'Компания', description: null, contact: null };
     const senderEmail = r.employerProfile?.user.email;
+    const t = co.id ? trusts.get(co.id) : undefined;
     const company = {
       name: co.name,
       description: co.description,
       contact: co.contact?.trim() || (senderEmail ? contactEmail(senderEmail) : null),
+      trust: t ? { index: t.index, band: t.band, concept: t.concept } : null,
     };
     const v = r.vacancy;
     const vacancy = v
@@ -250,6 +259,11 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       createdAt: r.createdAt.toISOString(),
       respondedAt: r.respondedAt?.toISOString() ?? null,
       company,
+      redFlags: detectRedFlags({
+        texts: [r.message, r.vacancy?.title, r.vacancy?.teamDescription],
+        salaryFrom: r.salaryFrom,
+        salaryTo: r.salaryTo,
+      }).map(({ code, severity, candidateNote }) => ({ code, severity, candidateNote })),
       vacancy,
     };
   });
@@ -267,6 +281,7 @@ export async function respondInvitation(candidateId: string, invitationId: strin
   });
   if (r.count === 0) throw errors.conflict('На приглашение уже ответили');
   void notifyInBackground('invitation_answer', () => notifyEmployerAnswered(invitationId, status === 'accepted'));
+  void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
   return { id: invitationId, status };
 }
 

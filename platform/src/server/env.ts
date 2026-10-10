@@ -86,6 +86,10 @@ export const envSchema = z
      * клиент при вызове, а не здесь: кривой токен не должен ронять всё приложение.
      */
     RUNNER_TOKEN: optionalString,
+    /** R-X-02 (концепт ATS): куда слать подписанный вебхук о смене статуса приглашения. Нет url или секрета — отправки нет. */
+    ATS_WEBHOOK_URL: optionalString.pipe(z.url().optional()),
+    /** Секрет HMAC-SHA256 подписи вебхука (заголовок X-FSP-Signature). */
+    ATS_WEBHOOK_SECRET: optionalString,
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: intFrom(1025, 1, 65535),
     /** lane email-auth: smtp — письма через SMTP (Mailpit на стенде); log — только в лог сервера и журнал в памяти (тесты, локально без Mailpit). */

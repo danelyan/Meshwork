@@ -11,7 +11,7 @@ import { maskContacts } from '../collector/mask';
 import { prisma } from '../db';
 import { categoryLabel } from '../employer/ranking';
 import { createInvitation } from '../employer/invitations';
-import { pseudonym } from '../employer/privacy';
+import { maskSubmissionForEmployer, pseudonym } from '../employer/privacy';
 import { AppError, errors } from '../errors';
 import { loadCatalog } from '../recommend/evidence';
 import { downloadGithubTarball, parseGithubRepoUrl, type GithubRepo } from '../runner/client';
@@ -738,13 +738,14 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
       const open = accepted.has(s.candidateId);
       const cat = s.candidate.categories[0];
       const inv = s.defenseInvitationId ? invitations.find((i) => i.id === s.defenseInvitationId) : undefined;
+      const safe = maskSubmissionForEmployer(s.resultJson as ResultJson | null, s.error, open);
       return {
         id: s.id,
         status: s.status,
         submittedAt: s.submittedAt.toISOString(),
         late: s.late,
         checkedAt: s.checkedAt?.toISOString() ?? null,
-        error: s.error,
+        error: safe.error,
         candidate: {
           id: s.candidateId,
           displayName: open ? s.candidate.name : pseudonym(s.candidateId),
@@ -753,7 +754,7 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
         repoUrl: open ? s.repoUrl : null,
         commitSha: open ? s.commitSha : null,
         aiLogText: maskContacts(s.aiLogText ?? '').text,
-        result: s.resultJson as ResultJson | null,
+        result: safe.result,
         defense: s.defenseInvitationId ? { invitationId: s.defenseInvitationId, invitationStatus: inv?.status ?? 'sent' } : null,
       };
     }),

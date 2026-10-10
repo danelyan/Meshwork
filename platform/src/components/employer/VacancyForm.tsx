@@ -7,12 +7,14 @@ import { SPEC_LABEL, SPECIALIZATIONS, specLabel, subcategoriesFor } from '@/lib/
 import { ApiError } from '@/lib/api';
 import { createVacancyApi, updateVacancyApi, type VacancyBody } from '@/lib/employer-api';
 import type { CatalogEntry } from '@/server/claims/types';
+import { detectRedFlags } from '@/server/employer/antifraud';
 import { gradeWeight } from '@/server/recommend/weights';
 
 import { Button, Chip, Field, Notice, Panel } from '../ui';
 import ui from '../ui.module.css';
 
 import styles from './Employer.module.css';
+import { RedFlagNotice } from './RedFlagNotice';
 import { GRADE_LABEL, GRADES } from '@/lib/grades';
 
 export type CatalogOption = Pick<CatalogEntry, 'id' | 'specialization' | 'statement' | 'grades' | 'weight' | 'weights'>;
@@ -51,6 +53,13 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
   const [team, setTeam] = useState(initial?.teamDescription ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [stack, setStack] = useState((initial?.stack ?? []).join(', '));
+  const flags = useMemo(
+    () =>
+      detectRedFlags({ texts: [title, team, description], salaryFrom: Number(salaryFrom.replace(/\s/g, '')), salaryTo: Number(salaryTo.replace(/\s/g, '')) }).filter(
+        (f) => f.code !== 'vague_text' && f.code !== 'no_salary',
+      ),
+    [title, team, description, salaryFrom, salaryTo],
+  );
   const options = useMemo(() => optionsFor(catalog, spec, grade), [catalog, spec, grade]);
   const [picked, setPicked] = useState<Set<string>>(
     () => new Set(initial ? initial.needs.map((n) => n.catalogId) : optionsFor(catalog, 'backend', 'junior').slice(0, DEFAULT_PICK).map((x) => x.e.id)),
@@ -191,6 +200,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
         {options.length === 0 && <Notice>Для этого направления в каталоге навыков пока нет требований - потребность сохранить не получится.</Notice>}
         {errs.needs && <Notice tone="error">{errs.needs}</Notice>}
       </Panel>
+      <RedFlagNotice flags={flags} />
       {error && <Notice tone="error">{error}</Notice>}
       <div className={styles.actions}>
         <Button type="submit" variant="cta" loading={busy}>

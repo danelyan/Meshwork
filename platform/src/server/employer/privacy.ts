@@ -2,6 +2,7 @@
 // до принятия приглашения — только публичная часть, контакты и имя скрыты.
 import { createHash } from 'node:crypto';
 
+import { maskContacts } from '../collector/mask';
 import { levelRank } from '../claims/levels';
 import type { CatalogEntry, EvidenceLevel } from '../claims/types';
 import type { FspState, Grade, Specialization } from '../types';
@@ -80,7 +81,10 @@ export function candidateContact(src: { contact: string | null; email: string })
 }
 
 export function toCandidateCard(src: CardSource, contactsVisible: boolean): CandidateCard {
-  const claims = [...src.claims].sort(
+  // Копируем ровно публичные поля: лишнее поле источника (цитата, sourceRef) наружу не уйдёт, даже если его передали по ошибке.
+  const claims = src.claims
+    .map(({ catalogId, statement, level, sourceType }) => ({ catalogId, statement, level, sourceType }))
+    .sort(
     (a, b) => levelRank(b.level) - levelRank(a.level) || a.catalogId.localeCompare(b.catalogId),
   );
   return {
@@ -113,4 +117,27 @@ export function dedupeClaims(
     statement: catalog.get(catalogId)?.statement ?? catalogId,
     sourceType: publicSourceType(sourceKind, level),
   }));
+}
+
+/**
+ * Результат автопроверки сдачи для работодателя (R-C-16, R-E-07). До принятого приглашения цитаты рубрики,
+ * пути файлов, заметка линтера и текст ошибки несут код кандидата с почтой, ссылками и никами — проходят
+ * `maskContacts`. После принятия — как есть. Без этого `GET /api/employer/project-submissions` отдавал
+ * необработанные `rubric.results[].evidence`, хотя подборка (`maskProjectBlock`) их маскирует.
+ */
+export function maskSubmissionForEmployer<R extends { rubric: { results: { evidence: string; file?: string | null }[] }; lint: { note: string; details?: unknown } }>(
+  result: R | null,
+  error: string | null,
+  open: boolean,
+): { result: R | null; error: string | null } {
+  if (open) return { result, error };
+  const m = (t: string) => maskContacts(t).text;
+  return {
+    result: result && {
+      ...result,
+      rubric: { ...result.rubric, results: result.rubric.results.map((c) => ({ ...c, evidence: m(c.evidence), file: c.file ? m(c.file) : c.file })) },
+      lint: { ...result.lint, note: m(result.lint.note), details: undefined },
+    },
+    error: error && m(error),
+  };
 }

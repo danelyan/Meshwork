@@ -15,7 +15,7 @@
 |---|---|
 | Основа | `db.ts`, `env.ts`, `errors.ts`, `session.ts`, `types.ts`, `contact.ts`, `site-access.ts`, `llm`, `mail`, `auth`, `onboarding`, `directions` |
 | Профиль кандидата | `collector`, `uploads`, `claims`, `agent`, `consultant`, `recommend`, `defense` |
-| Три ступени оценки | `test` → `call` → `project` + `runner` → `defense-room` (ADR 0003); `interview` — ИИнтервью по модели компетенций |
+| Три ступени оценки | `test` → `call` → `project` + `runner` → `defense-room` (ADR 0003) |
 | Работодатель | `employer`, `agent/employer` |
 | Сервисные | `stt`, `tts`, `demo`, `devtools`, `openapi` |
 
@@ -43,7 +43,7 @@
   `LLM_DAILY_TOKEN_BUDGET` (200 000 на кандидата за 24 ч), `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`, `YANDEX_BASE_URL`,
   `YANDEX_SUPPORTS_TOOLS`, `OPENAI_CHAT_BASE_URL|API_KEY|MODEL|NAME|SUPPORTS_TOOLS|SUPPORTS_JSON_SCHEMA|STREAM`.
 - **Ограничения:** не знает предметной области. Цели вызова (`LlmPurpose`): `consultant`, `employer_assistant`, `extractor`,
-  `interviewer`, `evaluator`, `call_interviewer`, `call_evaluator`, `interview_interviewer`, `defense_qlc`, `project_spec`, `project_rubric`,
+  `interviewer`, `evaluator`, `call_interviewer`, `call_evaluator`, `defense_qlc`, `project_spec`, `project_rubric`,
   `consultant_memory`, `smoke`. На стенде 10.10 провайдер — `stub`.
 
 ### `mail`
@@ -179,23 +179,6 @@
   сегментов; до `accepted` работодатель видит только публичный вердикт (оценки по темам без цитат), запись — только после `accepted`;
   на stub ответы детерминированы по `<call_context>`; отдельная валидация ступени — `docs/validation-stages.md` (дополняется).
 
-### `interview` — ИИнтервью ([модель компетенций](competency-model.md))
-- **Назначение:** структурированное интервью после теста (экран `interview.html` мокапа) как вид созвона `CallSession.kind=interview` на
-  инфраструктуре `call` (транскрипт, запись, согласие, SSE, STT/TTS, слепой оценщик A-02 ×3). Четыре блока с вопросами — знакомство,
-  разбор теста (технические компетенции подкатегории: ядро → с ошибками в тесте → верно), системный дизайн, работа в команде — 5–7 вопросов
-  (до 9 с дополнительными), блок и компетенцию выбирает код (`plan.ts`), уровень вопроса 1/2/3 = Junior/Middle/Senior по сигналу
-  интервьюера. Компетенция = «тема» карты глубины; сверху — оси (технический уровень, системное мышление, коммуникация), «соответствие
-  грейду» (доля компетенций на уровне ≥ заявленного) и итог 0–100 (`verdict.ts`). Подтверждённые компетенции поднимают свои утверждения
-  каталога до `platform`. Модель — `model.ts` (34 компетенции: 8 backend, 7 frontend, 8 ai, 7 engineering, 2 общие), тест сверяет её с
-  каталогом, справочником подкатегорий и документом.
-- **Модели:** `CallSession` (`kind=interview`, `verdictJson.interview`), `CallKind` и `LlmPurpose` += значения (миграция
-  `20261010230000_call_kind_interview`).
-- **Маршруты:** те же `/api/call/*` с `kind=interview`; страница `/interview` (`components/interview/InterviewPage`).
-- **Env:** как у `call` (`CALL_DATA_DIR`, `CALL_DAILY_LIMIT`, `STT_*`, `TTS_*`).
-- **Ограничения:** категорию не меняет; состав компетенций, фокусы, веса осей и пороги — экспертные, на людях не калиброваны; интервьюер видит
-  названия компетенций и пометки «в тесте были ошибки/верно», не задания; в подборку и ранжирование результат пока не входит; stub:
-  `interview_interviewer` отвечает по плану кода (`llm/providers/stub-interview.ts`).
-
 ### `project` — ступень 2, проект под работодателя
 - **Назначение:** шаблоны (`platform/project-templates/<подкатегория>/<грейд>/<id>/`, [project-templates.md](project-templates.md)),
   условие и рубрика под потребность (LLM `project_spec` / `project_rubric`, детерминированный запасной путь), лента заданий
@@ -252,13 +235,26 @@
 - **Модели:** `Company`, `Vacancy`, `Invitation`, `EmployerProfile`.
 - **Маршруты:** `employer/vacancies[/:id[/matches]]`, `employer/search`, `employer/invitations`, `employer/company`,
   `invitations[/:id]`, `profile/privacy`, `profile/contact`.
-- **Env:** —
+- **Env:** `ATS_WEBHOOK_URL`, `ATS_WEBHOOK_SECRET` (необязательные, см. «Антифрод и ATS» ниже).
 - **Ступени ADR 0003 в подборке** (`stages.ts`, `stages-load.ts`): `CandidateEvidence.calls/projects` грузятся пакетно (вердикт созвона —
   через `call/access.publicVerdict`, без цитат); `scoreCandidate` добавляет `PROJECT_BONUS_PER_SCORE` × балл за проверенный проект под
   ЭТУ потребность и `CALL_TOPIC_BONUS` за подтверждённые созвоном темы из требований (потолок `CALL_TOPIC_BONUS_MAX`); защита в балл
   не входит — флаг `strong_project_weak_defense` только пометка в `Explanation`; карточка показывает карту глубины, критерии своего
   проекта (чужие — подкатегория и балл), защиту, «Вопросы кандидату» и «Комнату защиты» (после принятого приглашения); пояснения
   рубрики до принятия проходят `maskContacts`.
+- **Антифрод и ATS (концепт, R-X-01, R-X-02).** `antifraud.ts` — чистые функции без БД. `detectRedFlags` ищет в тексте потребности и
+  приглашения признаки фиктивного предложения: нет вилки или она нереальна (меньше 25 000, больше 1 000 000 ₽, «до» выше «от» более чем
+  втрое), почта, телефон или мессенджер в тексте, просьба оплатить обучение, оборудование, стажировку или взнос, обязательные ИП или
+  самозанятость, обещания дохода без опыта, размытое описание. Работодатель видит предупреждение в формах потребности и приглашения
+  (`RedFlagNotice`) до отправки, кандидат — пометку «Проверьте: …» на приглашении (`CandidateInvitationView.redFlags`). Флаг ничего не
+  блокирует. `companyTrust` (`company.ts: loadCompanyTrusts`) считает «индекс доверия» 0–100 из заполненности профиля компании (35),
+  ИНН с верной контрольной цифрой (25, реестр не сверяется), возраста первого представителя (15) и доли отклонённых приглашений (25, от 5
+  приглашений); показывается кандидату с пометкой «концепция». Правила, пороги и веса — наше предложение, не калибровались на реальных
+  обманах. `ats-webhook.ts` — подписанный вебхук о смене статуса приглашения (`sent`, `accepted`, `declined`; `viewed` не шлётся):
+  тело JSON с идемпотентным `id` (`evt_` + sha256 от события, приглашения и статуса), заголовки `X-FSP-Event`, `X-FSP-Event-Id`,
+  `X-FSP-Signature: sha256=<HMAC-SHA256 по телу>`, таймаут 5 с, сбой только в лог. Без `ATS_WEBHOOK_URL` и `ATS_WEBHOOK_SECRET` — no-op.
+  В теле нет имени и контактов: псевдоним, `contactsOpen` и идентификаторы. Повторных попыток и очереди нет; получатель
+  дедуплицирует по `id`.
 - **Ограничения:** без LLM; все веса и бонусы — предложения без калибровки; до `accepted` — псевдоним, категория, утверждения формулировкой каталога, отметка ФСП; лимит 20
   приглашений в сутки на компанию и одно открытое приглашение компании кандидату (предложение); верификации компаний нет.
 
@@ -328,7 +324,7 @@
 
 - **LLM:** `LLM_PROVIDER=stub`; `LLM_STUB_DEMO=true` — извлекатель размечает резюме словарём каталога, консультант отвечает шаблонами.
 - **Созвон:** `call_interviewer` / `call_evaluator` на stub отвечают детерминированно по `<call_context>` (`llm/providers/stub-call.ts`):
-  сигнал маршрута — по длине ответа, баллы — по признакам в тексте. ИИнтервью: `interview_interviewer` — вопрос-шаблон по плану кода (`stub-interview.ts`), оценщик тот же.
+  сигнал маршрута — по длине ответа, баллы — по признакам в тексте.
 - **Проекты:** при `LLM_PROVIDER=stub` условие и рубрика собираются детерминированно (`project/fallback.ts`); пустые
   `RUNNER_URL`/`RUNNER_TOKEN` — stub-runner (`project/runner-client.ts`: адрес с `reference` — всё зелёное, `starter` — всё красное,
   `runner-fail` — сбой). Репозитории `https://github.com/fsp-demo/…` в защите — встроенные фикстуры.

@@ -10,6 +10,7 @@ export function SiteFooter({ demo = false }: { demo?: boolean }) {
       <span>вилка всегда · контакты после «да» · ФСП в зачёт</span>
       <nav className={styles.footLinks} aria-label="Сведения">
         <Link href="/consent">Согласие</Link>
+        <Link href="/validation">Валидация</Link>
         {demo && <Link href="/demo">Демо для жюри</Link>}
         <a href="https://fsp-russia.ru/" target="_blank" rel="noopener noreferrer">
           ФСП

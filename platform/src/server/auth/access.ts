@@ -32,6 +32,9 @@ export const PAGE_ACCESS = {
   '/consent': 'public',
   '/site-access': 'public',
   '/api-docs': 'public',
+  // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе — жюри без регистрации.
+  '/validation': 'public',
+  '/evaluate': 'public',
   // Флаг DEMO_LOGIN проверяет сама страница (выключен → 404).
   '/demo': 'public',
   // Прежние адреса: только редирект на /consultant, данных нет.
@@ -44,7 +47,6 @@ export const PAGE_ACCESS = {
   '/saved': 'candidate',
   '/settings': 'candidate',
   '/test': 'candidate',
-  '/interview': 'candidate',
   '/invitations': 'candidate',
   '/defense/[claimId]': 'candidate',
   // Созвон-защита (ADR 0003): комната кандидата и наблюдение работодателя.
@@ -181,6 +183,8 @@ export const API_ACCESS = {
   '/api/tts': { GET: 'public', POST: 'session' },
   '/api/health': 'public',
   '/api/openapi': 'public',
+  // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
+  '/api/evaluate': { POST: 'public' },
   '/api/dev/delete-account': 'dev',
   '/api/dev/login-as': 'dev',
   '/api/dev/logout': 'dev',

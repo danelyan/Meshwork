@@ -61,7 +61,16 @@ export interface SelectionState {
   theta: number;
   /** seed попытки + номер задания — детерминированный randomesque. */
   seed: number;
+  /**
+   * Шаблоны, которые кандидат уже видел в прошлых попытках того же пула (с разбором и ключом после попытки).
+   * Их информация при ранжировании умножается на SEEN_BEFORE_WEIGHT: пересдача по возможности идёт на других
+   * семействах, а не на тех же с другими числами. Не передано — как до v5.
+   */
+  seenBefore?: ReadonlySet<string>;
 }
+
+/** Вес информации шаблона, виденного в прошлой попытке (у Скаута ×0,5; у Рекрута 2 — исключение). ПРЕДЛОЖЕНИЕ. */
+export const SEEN_BEFORE_WEIGHT = 0.5;
 
 /**
  * Выбор следующего шаблона: кандидаты — не показанные в попытке и не нарушающие долю
@@ -77,7 +86,7 @@ export function selectNext(pool: readonly SelectableTemplate[], state: Selection
   const candidates = eligible.length > 0 ? eligible : pool.filter((t) => !shownIds.has(t.id));
   if (candidates.length === 0) return null;
   const ranked = candidates
-    .map((t) => ({ t, info: information(state.theta, t) }))
+    .map((t) => ({ t, info: information(state.theta, t) * (state.seenBefore?.has(t.id) ? SEEN_BEFORE_WEIGHT : 1) }))
     .sort((x, y) => y.info - x.info || (x.t.exposure ?? 0) - (y.t.exposure ?? 0) || x.t.id.localeCompare(y.t.id));
   const top = ranked.slice(0, RANDOMESQUE);
   return createRng(state.seed).pick(top).t;
@@ -98,6 +107,13 @@ export type StopReason = 'max_items' | 'confident' | 'precise' | 'junior_resolve
 export interface StopLimits {
   min: number;
   max: number;
+  /**
+   * Остановка по точности: SE(θ) ≤ seStop. undefined — SE_STOP (как до v5); null — выключена (классификационная
+   * остановка: стоп только при уверенном решении P ≥ EARLY_STOP_PROB или ≤ 1 − EARLY_STOP_PROB, иначе до max).
+   */
+  seStop?: number | null;
+  /** Уверенность ранней остановки основной фазы; undefined — EARLY_STOP_PROB (0,9). */
+  earlyStop?: number;
 }
 
 export function shouldStop(
@@ -110,9 +126,35 @@ export function shouldStop(
   if (answered >= limits.max || (poolExhausted && answered > 0)) return { stop: true, reason: 'max_items' };
   if (answered < limits.min) return { stop: false, reason: null };
   const p = probAbove(est, GRADE_CUT[grade]);
-  if (p >= EARLY_STOP_PROB || p <= 1 - EARLY_STOP_PROB) return { stop: true, reason: 'confident' };
-  if (est.se <= SE_STOP) return { stop: true, reason: 'precise' };
+  const early = limits.earlyStop ?? EARLY_STOP_PROB;
+  if (p >= early || p <= 1 - early) return { stop: true, reason: 'confident' };
+  const seStop = limits.seStop === undefined ? SE_STOP : limits.seStop;
+  if (seStop !== null && est.se <= seStop) return { stop: true, reason: 'precise' };
   return { stop: false, reason: null };
+}
+
+/**
+ * Версия политики попытки (TestAttempt.policyVersion) и её правила остановки. Попытка доигрывается по правилам
+ * своей версии: смена правил не меняет длину и фазу уже начатых попыток задним числом.
+ * v2 (10.10): порог Junior −0,7 и дозадавание Junior-заданий при заявке Middle (ADR-0002, дополнения 10.10).
+ * v3 (10.10): дозадавание и при заявке Junior (ADR-0002, «Заявка Junior»).
+ * v4 (10.10): тест на подкатегорию — пул попытки только из семейств подкатегории кандидата
+ * (ADR 0003, дополнение 10.10 15:50) и грейд Senior: порог +0,6, старт с Senior-заданий, дозадавание Middle,
+ * Middle в один клик (ADR 0003, дополнение 10.10 16:15; ADR-0002 «Senior и пул по подкатегориям»).
+ * v5 (11.10): ротация семейств между попытками кандидата — шаблоны прошлых попыток того же пула ранжируются с весом
+ * SEEN_BEFORE_WEIGHT (selectNext, seenBefore). Правила остановки — как v4: классификационная остановка уже
+ * доминирует (SE ≤ 0,4 за 10 заданий не достигается, замер eval/test/run.ts --se-stop none — без изменений).
+ */
+export const POLICY_VERSION = 'adr-0002-v5';
+
+/** Правила остановки основной фазы по версии политики; неизвестная версия (v1–v3) — как v4 (7–10, SE ≤ 0,4). */
+export const RULES_BY_VERSION: Readonly<Record<string, StopLimits>> = {
+  'adr-0002-v4': { min: MIN_ITEMS, max: MAX_ITEMS },
+  'adr-0002-v5': { min: MIN_ITEMS, max: MAX_ITEMS },
+};
+
+export function rulesFor(version: string): StopLimits {
+  return RULES_BY_VERSION[version] ?? RULES_BY_VERSION['adr-0002-v4']!;
 }
 
 // ---------------------------------------------------------------------------

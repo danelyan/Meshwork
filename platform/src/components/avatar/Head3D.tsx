@@ -23,6 +23,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 import { BRAND_GLSL_COLOR, BRAND_GLSL_HEAD } from './brand-weave';
+import { WEAVE_GLSL_COLOR, WEAVE_GLSL_HEAD } from './weave-versions';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
 import { mouthOpen, smoothLevel } from './level';
@@ -179,6 +180,9 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
   grid: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   brand: { color: new Color('#b4bac4'), metalness: 0.62, roughness: 0.32 },
+  weave2: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
+  weave3: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
+  weave4: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   loops: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   chrome: { color: new Color('#8e939c'), metalness: 0.95, roughness: 0.24 },
   hologram: { color: new Color('#0b0b16'), metalness: 0, roughness: 1 },
@@ -289,7 +293,8 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         float fspZone(vec2 p, vec2 c, float R) {
           return smoothstep(R, R * 0.45, distance(p, c));
         }
-        ${BRAND_GLSL_HEAD}`,
+        ${BRAND_GLSL_HEAD}
+        ${WEAVE_GLSL_HEAD}`,
       )
       .replace(
         '#include <color_fragment>',
@@ -349,6 +354,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         }
         #endif
         ${BRAND_GLSL_COLOR}
+        ${WEAVE_GLSL_COLOR}
         diffuseColor.rgb *= mouthDark;
         #ifdef FSP_MORPH_MOUTH
         // полость и изнанка головы — ровно тёмные, зубы светлые, язык тёплый тёмный; всё без сетки

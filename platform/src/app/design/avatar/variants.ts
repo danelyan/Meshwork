@@ -13,12 +13,20 @@ export const GRID_VARIANTS: readonly Extract<Variant, { kind: 'grid' }>[] = [
   { id: 'grid-v3', label: 'Карина · сетка v3 (принятая)', kind: 'grid', source: '/design/consultant-grid-v3/head.html', hint: 'Iframe-голова из чата: следит за курсором (через её канал pointer), вращения и губ нет — у файла нет канала речи.' },
 ];
 
-/** Список строится из HEAD_STYLES, поэтому новые стили (например, от лейна weave) подхватываются сами. */
-export const VARIANTS: readonly Variant[] = [
+/** Все варианты: список строится из HEAD_STYLES, поэтому новые стили подхватываются сами. */
+export const ALL_VARIANTS: readonly Variant[] = [
   ...HEAD_STYLES.map((s): Variant => ({ id: `three-${s.id}`, label: `Наша · ${s.label}`, kind: 'three', style: s.id, hint: s.hint })),
   { id: 'glass', label: 'Карина · стеклянная голова', kind: 'glass', hint: 'Raw-WebGL голова с морфами рта (head-mouth.glb): губы по общей озвучке, вращение мышью; следит за курсором.' },
   ...GRID_VARIANTS,
 ];
+
+/**
+ * На экране сейчас только семейство «Плетения» (решение владельца 10.10: основной стиль — `weave`,
+ * сравниваем его версии). Остальные стили и головы Карины не удалены — чтобы вернуть их на экран,
+ * замените фильтр на `ALL_VARIANTS` (или добавьте id в `SHOWN`).
+ */
+const SHOWN = new Set(['three-weave', 'three-weave2', 'three-weave3', 'three-weave4']);
+export const VARIANTS: readonly Variant[] = ALL_VARIANTS.filter((v) => SHOWN.has(v.id));
 
 export function variantById(id: string): Variant {
   return VARIANTS.find((v) => v.id === id) ?? VARIANTS[0]!;

@@ -1,22 +1,27 @@
 'use client';
 
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
-import { Component, type ReactNode, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { Component, type ReactNode, type RefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   AdditiveBlending,
-  type BufferGeometry,
+  BufferAttribute,
+  BufferGeometry,
   Color,
+  DoubleSide,
   type Group,
   type Material,
   type Mesh,
+  Matrix3,
   MeshStandardMaterial,
   PMREMGenerator,
+  type Points,
   ShaderMaterial,
+  Vector3,
 } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-import { BRAND_GLSL_COLOR, BRAND_GLSL_HEAD } from './brand-weave';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
 import { mouthOpen, smoothLevel } from './level';
@@ -25,11 +30,11 @@ import type { VoiceStatus } from './voice';
 
 /**
  * Серебристая голова-сетка компаньона на тёмном фоне (брендбук ФСП, docs/research/assets-19).
- * Основная голова — модель владельца `public/avatar/head.glb` (без текстур, см. README рядом):
- * металл MeshStandardMaterial + сетка «широта-долгота» в фрагментном шейдере по положению
- * вершины (как ткань на референсе), рот — процедурная челюсть в вершинном шейдере (поворот нижней
- * части лица вокруг оси ушей по громкости звука: у модели нет морфов). Пока файл грузится или если
- * он недоступен — процедурная голова из head-geometry с морфом `jawOpen`.
+ * Основная голова — модель владельца с ригом рта `public/avatar/head-mouth.glb` (без текстур, см.
+ * README рядом): металл MeshStandardMaterial + сетка в фрагментном шейдере по положению вершины
+ * (как ткань на референсе), рот — морфы JawOpen/LipRound/LipWide и полость/зубы/язык (`_mouth_part`).
+ * Если этот файл не загрузился — прежняя `head.glb` с процедурным ртом в вершинном шейдере, пока
+ * грузится или если и её нет — процедурная голова из head-geometry с морфом `jawOpen`.
  * Грузится только через next/dynamic({ ssr: false }) — three.js не попадает в общий бандл.
  */
 export interface Head3DProps {
@@ -47,13 +52,17 @@ const ACCENT = '#402fff';
 const SILVER = '#c4c9d2';
 
 export const HEAD_URL = '/avatar/head.glb';
+/** Та же голова с разрезанными губами, полостью рта и морфами (scripts/build-head-mouth.mjs). */
+export const HEAD_MOUTH_URL = '/avatar/head-mouth.glb';
+/** Морфы рта в head-mouth.glb (`extras.targetNames`). */
+export const MOUTH_MORPHS = { open: 'JawOpen', round: 'LipRound', wide: 'LipWide' } as const;
 
 /**
  * Антропометрия модели в её координатах (высота 0…1 от основания шеи до макушки, лицо смотрит в +Z;
  * профиль снят скриптом при подготовке файла): линия рта, низ подбородка, ось челюсти на уровне ушей.
  */
 export const HEAD_MODEL = {
-  mouthY: 0.365,
+  mouthY: 0.43,
   chinY: 0.27,
   jawPivotY: 0.55,
   /** Максимальный угол челюсти, рад (≈ 10°). */
@@ -103,13 +112,16 @@ interface HeadUniforms {
   pointScale: { value: number };
 }
 
-type Mode = 'attribute' | 'model';
+/** attribute — процедурная голова; model — head.glb с процедурным ртом; mouth — head-mouth.glb с морфами. */
+type Mode = 'attribute' | 'model' | 'mouth';
 
 /**
  * Процедурный рот без морфов: раскрытие в зоне губ (линия рта `uJawRegion.x`), а не поворот всей
  * челюсти. Нижняя губа опускается (вес максимален у линии рта, затухает к подбородку), верхняя
  * чуть поднимается, уголки сходятся к центру (округление), подбородок подхватывает лёгким поворотом
  * вокруг оси ушей. Всё — только спереди (z > 0) и в ширине рта (|x| < ~0.14 в координатах модели).
+ * У модели с морфами (FSP_MORPH_MOUTH) губы и челюсть двигают морфы — от блока остаются улыбка
+ * и моргание. Блок стоит после `begin_vertex`, морфы three прибавляет позже (`morphtarget_vertex`).
  */
 const JAW_GLSL = `
   {
@@ -117,10 +129,11 @@ const JAW_GLSL = `
     float width = 1.0 - smoothstep(0.09, 0.17, abs(position.x));
     float front = smoothstep(0.1, 0.3, position.z);
     float lips = width * front;
+    float corner = smoothstep(0.06, 0.12, abs(position.x)) * width * front * (1.0 - smoothstep(0.04, 0.07, abs(position.y - mouthY)));
+    #ifndef FSP_MORPH_MOUTH
     float open = uMouth.x * lips;
     // зона губ: узкая полоса вокруг линии рта; уголки — её края по X
     float lipBand = smoothstep(mouthY - 0.05, mouthY - 0.015, position.y) * (1.0 - smoothstep(mouthY + 0.015, mouthY + 0.05, position.y));
-    float corner = smoothstep(0.06, 0.12, abs(position.x)) * width * front * (1.0 - smoothstep(0.04, 0.07, abs(position.y - mouthY)));
     // нижняя губа и подбородок: сильнее у линии рта, к низу подбородка — слабее
     float lower = smoothstep(mouthY + 0.012, mouthY - 0.01, position.y) * smoothstep(uJawRegion.y - 0.05, mouthY - 0.03, position.y);
     // верхняя губа: узкая полоса над линией рта
@@ -138,8 +151,6 @@ const JAW_GLSL = `
     float pressW = uMouth.w * lips * lipBand;
     transformed.y -= (position.y - mouthY) * pressW * 0.45;
     transformed.z -= pressW * 0.012;
-    // улыбка: уголки вверх
-    transformed.y += uFace.y * 0.014 * corner;
     // подбородок слегка следует за нижней губой (поворот вокруг оси ушей)
     float chin = smoothstep(mouthY, uJawRegion.y - 0.02, position.y) * smoothstep(uJawRegion.y - 0.06, uJawRegion.y - 0.02, position.y);
     float a = uMouth.x * uJawRegion.w * 0.35 * chin * smoothstep(-0.12, 0.1, position.z);
@@ -147,6 +158,9 @@ const JAW_GLSL = `
     vec2 pv = vec2(transformed.y - uJawRegion.z, transformed.z);
     transformed.y = uJawRegion.z + pv.x * c - pv.y * sn;
     transformed.z = pv.x * sn + pv.y * c;
+    #endif
+    // улыбка: уголки вверх (у модели с морфами — поверх них: морфы прибавляются после этого блока)
+    transformed.y += uFace.y * 0.014 * corner;
     // моргание: верхнее веко опускается к линии глаза (центры глаз — как в стиле «петли»)
     float eyeY = 0.63;
     float dEye = min(distance(position.xy, vec2(-0.115, eyeY)), distance(position.xy, vec2(0.115, eyeY)));
@@ -161,7 +175,6 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
   metal: { color: new Color(SILVER), metalness: 0.55, roughness: 0.36 },
   grid: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
-  brand: { color: new Color('#b4bac4'), metalness: 0.62, roughness: 0.32 },
   loops: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   chrome: { color: new Color('#8e939c'), metalness: 0.95, roughness: 0.24 },
   hologram: { color: new Color('#0b0b16'), metalness: 0, roughness: 1 },
@@ -174,7 +187,8 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
  */
 function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 'particles'>): MeshStandardMaterial {
   const m = new MeshStandardMaterial(SURFACE[style]);
-  const model = mode === 'model';
+  const model = mode !== 'attribute';
+  const defines = model ? `#define FSP_MODEL${mode === 'mouth' ? '\n#define FSP_MORPH_MOUTH' : ''}` : '';
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uGrid = u.grid;
     shader.uniforms.uWidth = { value: GRID.width };
@@ -189,11 +203,17 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
       .replace(
         '#define STANDARD',
         `#define STANDARD
-        ${model ? '#define FSP_MODEL' : 'attribute vec2 gridUv;'}
+        ${model ? defines : 'attribute vec2 gridUv;'}
+        #ifdef FSP_MORPH_MOUTH
+        attribute float _mouth_part;
+        attribute float _lip_wall;
+        #endif
         varying vec2 vGridUv;
         varying vec3 vModelPos;
         varying vec3 vModelNormal;
         varying float vMouth;
+        varying float vPart;
+        varying float vWall;
         uniform float uJaw;
         uniform vec4 uMouth;
         uniform vec4 uFace;
@@ -205,6 +225,12 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         vModelPos = position;
         vModelNormal = normal;
         vMouth = 0.0;
+        vPart = 0.0;
+        vWall = 0.0;
+        #ifdef FSP_MORPH_MOUTH
+          vPart = _mouth_part;
+          vWall = _lip_wall;
+        #endif
         #ifdef FSP_MODEL
           vGridUv = vec2(atan(position.x, position.z) / 6.2831853 + 0.5, position.y);
         #else
@@ -223,10 +249,14 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         '#define STANDARD',
         `#define STANDARD
         #define FSP_${style.toUpperCase()}
+        ${mode === 'mouth' ? '#define FSP_MORPH_MOUTH' : ''}
         varying vec2 vGridUv;
         varying vec3 vModelPos;
         varying vec3 vModelNormal;
         varying float vMouth;
+        varying float vPart;
+        varying float vWall;
+        uniform vec4 uMouth;
         uniform vec2 uGrid;
         uniform float uWidth;
         uniform float uTime;
@@ -254,14 +284,23 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         // (глубина не учитывается: нос и скулы выступают, а нити должны огибать черту целиком)
         float fspZone(vec2 p, vec2 c, float R) {
           return smoothstep(R, R * 0.45, distance(p, c));
-        }
-        ${BRAND_GLSL_HEAD}`,
+        }`,
       )
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
         // полость открытого рта: темно, без нитей
         float mouthDark = 1.0 - clamp(vMouth * 2.5, 0.0, 0.92);
+        // части рига: 0 голова, 1 полость, 2 зубы, 3 язык; при сомкнутых губах прячем всё, кроме головы
+        float part = floor(vPart + 0.5);
+        #ifdef FSP_MORPH_MOUTH
+        if (part > 0.5 && uMouth.x < 0.08) discard;
+        if (part > 0.5) mouthDark = part > 2.5 ? 0.3 : part > 1.5 ? 1.0 : 0.06;
+        // стенки губ уходят в полость: от края губы к глубине — в тёмное
+        else mouthDark = 1.0 - 0.94 * smoothstep(0.0, 0.6, vWall);
+        // изнутри головы (видно в уголках открытого рта) — тёмная полость
+        if (!gl_FrontFacing) mouthDark = 0.04;
+        #endif
         #ifdef FSP_METAL
         {
           // первый вариант: светлый металл, тёмная клетка (крупнее, чем у нитей)
@@ -283,7 +322,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
           vec3 p = vModelPos;
           float u = uGrid.x;
           float base = fspLine(vGridUv * uGrid);
-          vec2 eyeL = vec2(-0.115, 0.63), eyeR = vec2(0.115, 0.63), mouth = vec2(0.0, 0.37);
+          vec2 eyeL = vec2(-0.115, 0.63), eyeR = vec2(0.115, 0.63), mouth = vec2(0.0, uJawRegion.x);
           float wl = fspZone(p.xy, eyeL, 0.16), wr = fspZone(p.xy, eyeR, 0.16), wm = fspZone(p.xy, mouth, 0.2);
           float wsum = wl + wr + wm;
           float loops = wsum > 0.001
@@ -304,8 +343,13 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
           diffuseColor.rgb = mix(FSP_DARK, diffuseColor.rgb, clamp(line, 0.0, 1.0));
         }
         #endif
-        ${BRAND_GLSL_COLOR}
         diffuseColor.rgb *= mouthDark;
+        #ifdef FSP_MORPH_MOUTH
+        // полость и изнанка головы — ровно тёмные, зубы светлые, язык тёплый тёмный; всё без сетки
+        if ((part > 0.5 && part < 1.5) || !gl_FrontFacing) diffuseColor.rgb = vec3(0.012, 0.009, 0.011);
+        if (part > 1.5 && part < 2.5) diffuseColor.rgb = vec3(0.8, 0.82, 0.86);
+        if (part > 2.5) diffuseColor.rgb = vec3(0.16, 0.07, 0.08);
+        #endif
         #ifdef FSP_CHROME
         {
           // полосы отражений студийного света бегут по металлу (HeadLab «живой хром»)
@@ -322,6 +366,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
         #ifdef FSP_HOLOGRAM
+        if (part < 0.5 && gl_FrontFacing)
         {
           // строчная развёртка, краевое свечение и сканирующая полоса (HeadLab «голограмма»)
           float facing = abs(normalize(vNormal).z);
@@ -343,6 +388,8 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
       );
   };
   m.customProgramCacheKey = () => `fsp-head-${style}-${mode}`;
+  // губы разрезаны: в уголках открытого рта видна изнанка головы — рисуем её тёмной, а не дырой
+  if (mode === 'mouth' && style !== 'wire') m.side = DoubleSide;
   return m;
 }
 
@@ -359,7 +406,7 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
       uAccent: { value: new Color(ACCENT) },
       uSilver: { value: new Color(SILVER) },
     },
-    defines: mode === 'model' ? { FSP_MODEL: '' } : {},
+    defines: mode === 'attribute' ? {} : mode === 'mouth' ? { FSP_MODEL: '', FSP_MORPH_MOUTH: '' } : { FSP_MODEL: '' },
     transparent: true,
     depthWrite: false,
     blending: AdditiveBlending,
@@ -373,12 +420,22 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
       varying float vFacing;
       varying float vSeed;
       varying float vMouth;
+      varying float vHide;
+      #ifdef FSP_MORPH_MOUTH
+      attribute float _mouth_part;
+      #include <morphtarget_pars_vertex>
+      #endif
       float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
       void main() {
         vec3 transformed = position;
         float seed = hash(position);
         #ifdef FSP_MODEL
         ${JAW_GLSL}
+        #endif
+        vHide = 0.0;
+        #ifdef FSP_MORPH_MOUTH
+        #include <morphtarget_vertex>
+        vHide = _mouth_part > 0.5 && uMouth.x < 0.08 ? 1.0 : 0.0;
         #endif
         // лёгкое мерцание облака + разлёт по нормали от громкости
         transformed += normal * (0.004 * sin(uTime * 1.5 + seed * 40.0) + uJaw * 0.03 * seed);
@@ -393,9 +450,10 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
       uniform vec3 uSilver;
       varying float vFacing;
       varying float vSeed;
+      varying float vHide;
       void main() {
         float d = length(gl_PointCoord - 0.5);
-        if (d > 0.5) discard;
+        if (d > 0.5 || vHide > 0.5) discard;
         vec3 c = mix(uAccent, uSilver, clamp(vFacing * 0.85 + 0.2, 0.0, 1.0));
         gl_FragColor = vec4(c * (0.45 + vSeed * 0.3), smoothstep(0.5, 0.15, d) * 0.55);
       }`,
@@ -416,7 +474,7 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
   );
   useEffect(() => {
     const g = gridDensity(height);
-    uniforms.grid.value = mode === 'model' ? sphericalGrid(g) : g;
+    uniforms.grid.value = mode === 'attribute' ? g : sphericalGrid(g);
     uniforms.pointScale.value = height / 2;
   }, [uniforms, height, mode]);
   const material = useMemo(() => headMaterial(uniforms, mode, style), [uniforms, mode, style]);
@@ -471,7 +529,92 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
   return { material, uniforms, groupRef, level, particles: style === 'particles' };
 }
 
-/** Голова из модели владельца: челюсть — в шейдере по `uJaw`. */
+/**
+ * Геометрия из head-mouth.glb в единицах модели. Файл квантован (KHR_mesh_quantization): позиции —
+ * int16 с масштабом и сдвигом в узле. Шейдер считает сетку и зону рта по `position`, поэтому
+ * возвращаем float-позиции, применив матрицу узла (дельты морфов — только масштаб).
+ */
+export function modelSpaceGeometry(mesh: Mesh, targetNames: readonly string[]): BufferGeometry {
+  mesh.updateWorldMatrix(true, false);
+  const m = mesh.matrixWorld;
+  const linear = new Matrix3().setFromMatrix4(m);
+  const src = mesh.geometry;
+  const v = new Vector3();
+  const floats = (a: BufferAttribute, fn: (x: Vector3) => Vector3) => {
+    const out = new Float32Array(a.count * 3);
+    for (let i = 0; i < a.count; i++) fn(v.fromBufferAttribute(a, i)).toArray(out, i * 3);
+    return new BufferAttribute(out, 3);
+  };
+  const g = new BufferGeometry();
+  g.setIndex(src.index);
+  g.setAttribute('position', floats(src.getAttribute('position') as BufferAttribute, (x) => x.applyMatrix4(m)));
+  g.setAttribute('normal', floats(src.getAttribute('normal') as BufferAttribute, (x) => x.normalize()));
+  // части рта и стенки губ (scripts/build-head-mouth.mjs) — как есть
+  for (const name of ['_mouth_part', '_lip_wall']) {
+    const a = src.getAttribute(name);
+    if (a) g.setAttribute(name, a);
+  }
+  const morph = (list: BufferAttribute[] | undefined, fn: (x: Vector3) => Vector3) =>
+    (list ?? []).map((a, i) => Object.assign(floats(a, fn), { name: targetNames[i] ?? String(i) }));
+  g.morphAttributes.position = morph(src.morphAttributes.position as BufferAttribute[], (x) => x.applyMatrix3(linear));
+  g.morphAttributes.normal = morph(src.morphAttributes.normal as BufferAttribute[], (x) => x);
+  g.morphTargetsRelative = true;
+  g.computeBoundingSphere();
+  return g;
+}
+
+/** Голова с ригом рта: висемы → морфы JawOpen/LipRound/LipWide, полость/зубы/язык — по `_mouth_part`. */
+function MouthHead(props: Head3DProps) {
+  const gltf = useLoader(GLTFLoader, HEAD_MOUTH_URL, (loader) => {
+    loader.setMeshoptDecoder(MeshoptDecoder);
+  });
+  const geometry = useMemo(() => {
+    let mesh: Mesh | null = null;
+    gltf.scene.traverse((o) => {
+      if (!mesh && (o as Mesh).isMesh) mesh = o as Mesh;
+    });
+    if (!mesh) throw new Error('В head-mouth.glb нет меша');
+    const names = Object.values(MOUTH_MORPHS);
+    const g = modelSpaceGeometry(mesh, names);
+    if (g.morphAttributes.position?.length !== names.length || !g.getAttribute('_mouth_part')) throw new Error('В head-mouth.glb нет рига рта');
+    return g;
+  }, [gltf]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  const { material, groupRef, uniforms, particles } = useHeadMotion(props, 'mouth');
+  const meshRef = useRef<Mesh>(null);
+  // R3F ставит geometry пропом после создания объекта — словарь морфов собираем явно.
+  useLayoutEffect(() => {
+    meshRef.current?.updateMorphTargets();
+  }, [geometry, particles]);
+  useFrame(() => {
+    const mesh = meshRef.current;
+    const dict = mesh?.morphTargetDictionary;
+    const w = mesh?.morphTargetInfluences;
+    if (!dict || !w) return;
+    const [open, round, wide, press] = uniforms.mouth.value;
+    const set = (name: string, value: number) => {
+      const i = dict[name];
+      if (i !== undefined) w[i] = Math.min(1, Math.max(0, value));
+    };
+    // смыкание (п/б/м): челюсть закрыта, губы чуть собраны; растяжение слабее при округлении
+    set(MOUTH_MORPHS.open, open * (1 - press));
+    set(MOUTH_MORPHS.round, round + press * 0.3);
+    set(MOUTH_MORPHS.wide, wide * (1 - round * 0.5));
+  });
+  const { scale, offsetY } = HEAD_MODEL;
+  const place = { scale, position: [0, offsetY * scale, 0] as [number, number, number] };
+  return (
+    <group ref={groupRef}>
+      {particles ? (
+        <points ref={meshRef as unknown as RefObject<Points>} geometry={geometry} material={material} {...place} />
+      ) : (
+        <mesh ref={meshRef} geometry={geometry} material={material} {...place} />
+      )}
+    </group>
+  );
+}
+
+/** Голова из модели владельца без рига (запасная): рот — процедурный, в вершинном шейдере. */
 function ModelHead(props: Head3DProps) {
   const gltf = useLoader(GLTFLoader, HEAD_URL);
   const geometry = useMemo(() => {
@@ -566,10 +709,18 @@ function StudioEnvironment() {
 
 export default function Head3D(props: Head3DProps) {
   const fallback = <ProceduralHead {...props} />;
-  const body = (
+  const plain = (
     <ModelBoundary fallback={fallback}>
       <Suspense fallback={fallback}>
         <ModelHead {...props} />
+      </Suspense>
+    </ModelBoundary>
+  );
+  // голова с ригом рта; не загрузилась — прежняя head.glb, не загрузилась и она — процедурная
+  const body = (
+    <ModelBoundary fallback={plain}>
+      <Suspense fallback={fallback}>
+        <MouthHead {...props} />
       </Suspense>
     </ModelBoundary>
   );

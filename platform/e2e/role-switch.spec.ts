@@ -22,7 +22,7 @@ test('E-05: кандидат становится работодателем н�
   await page.waitForURL('**/consultant');
   await expect(account).toContainText('Работодатель', { timeout: 15_000 });
   await account.click();
-  await expect(header.getByRole('button', { name: 'Работодатель · ООО Переключатель' })).toHaveAttribute('aria-current', 'true');
+  await expect(header.getByRole('button', { name: /^Работодатель · ООО Переключатель/ })).toHaveAttribute('aria-current', 'true');
   await page.keyboard.press('Escape');
   // Страница кандидата в режиме работодателя закрыта: редирект в профиль компании.
   await page.goto('/profile');

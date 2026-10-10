@@ -55,15 +55,16 @@ export const falsyRender = fam({
   generate(seed): TaskInstance {
     const rng = createRng(seed);
     const weighted = [...FALSY_POOL, FALSY_POOL[0]!, FALSY_POOL[0]!, FALSY_POOL[4]!];
-    const vals = Array.from({ length: rng.int(6, 9) }, () => rng.pick(weighted));
+    const vals = Array.from({ length: rng.int(8, 18) }, () => rng.pick(weighted));
     // React не рисует false, null, undefined и пустую строку, но рисует числа, в том числе 0 и NaN.
     const bad = vals.filter((x) => x.v === 0 || Number.isNaN(x.v));
+    const nodes = vals.filter((x) => Boolean(x.v)).length + bad.length; // [] истинно: даёт <b>
     return {
-      prompt: 'Компонент для каждого значения v из списка выводит {v && <b>ok</b>}. Сколько значений оставят в разметке голый текст «0» или «NaN» вместо пустого места или элемента?',
+      prompt: 'Компонент для каждого значения v из списка выводит {v && <b>ok</b>}. Сколько всего узлов (элементов <b> и текстовых узлов «0» или «NaN») появится в разметке?',
       code: `const values = [${vals.map((x) => x.src).join(', ')}];`,
       answerHint: 'число',
-      answerKey: String(bad.length),
-      explanation: 'Оператор && возвращает первый ложный операнд. React не рисует false, null, undefined и «», но числа 0 и NaN выводит как текст. Подходят только они.',
+      answerKey: String(nodes),
+      explanation: 'Оператор && возвращает первый ложный операнд. React не рисует false, null, undefined и «», но числа 0 и NaN выводит как текст. Узлы дают истинные значения (<b>) и числа 0 и NaN (текст).',
       params: { values: vals.map((x) => x.src).join(',') },
     };
   },
@@ -96,14 +97,13 @@ export const spreadMerge = fam({
     const defSrc = keys.map((k) => `${k}: '${defaults[k]}'`).join(', ');
     const propSrc = keys.map((k) => src[k]!).filter(Boolean).join(', ');
     const merged: Record<string, unknown> = { ...defaults, ...props };
-    const key = rng.pick(keys);
     return {
-      prompt: `Что выведет код? Если значение не определено, напишите undefined.`,
-      code: [`const defaults = { ${defSrc} };`, `const props = { ${propSrc} };`, `const cfg = { ...defaults, ...props };`, `console.log(cfg.${key});`].join('\n'),
+      prompt: `Что выведет код? Отсутствующее значение выводится как undefined.`,
+      code: [`const defaults = { ${defSrc} };`, `const props = { ${propSrc} };`, `const cfg = { ...defaults, ...props };`, 'console.log(cfg.theme + "/" + cfg.size + "/" + cfg.rounded);'].join('\n'),
       answerHint: 'значение',
-      answerKey: String(merged[key]),
+      answerKey: keys.map((k) => String(merged[k])).join('/'),
       explanation: 'Spread копирует все собственные ключи, и ключ со значением undefined затирает значение по умолчанию; отсутствующий ключ ничего не меняет.',
-      params: { key, defaults: defSrc, props: propSrc },
+      params: { defaults: defSrc, props: propSrc },
     };
   },
 });
@@ -173,18 +173,18 @@ export const staleClosure = fam({
     const T = rng.pick([200, 250, 500, 1000]);
     const ticks = rng.int(3, 9);
     const E = T * ticks + rng.int(0, T - 1);
-    const step = rng.int(1, 3);
+    const step = rng.int(1, 5);
     const v = rng.pick(['stale', 'fn', 'fnStep'] as const);
-    const setter = { stale: 'setCount(count + 1)', fn: 'setCount((c) => c + 1)', fnStep: `setCount((c) => c + ${step})` }[v];
-    const ans = v === 'stale' ? 1 : v === 'fn' ? ticks : ticks * step;
+    const setter = { stale: `setCount(count + ${step})`, fn: `setCount((c) => c + ${step})`, fnStep: `setCount((c) => c + ${step})` }[v];
+    const ans = v === 'stale' ? step : ticks * step;
     return {
-      prompt: `Компонент смонтирован один раз, пропсы не меняются. Сколько будет в count через ${E} мс после монтирования (таймеры точные, count стартует с 0, перерисовки мгновенные)?`,
+      prompt: `Компонент смонтирован один раз (обычный режим, без StrictMode), пропсы не меняются. Сколько будет в count через ${E} мс после монтирования (таймеры точные, count стартует с 0, перерисовки мгновенные)?`,
       code: ['useEffect(() => {', `  const id = setInterval(() => ${setter}, ${T});`, '  return () => clearInterval(id);', '}, []);'].join('\n'),
       answerHint: 'число',
       answerKey: String(ans),
       explanation:
         v === 'stale'
-          ? 'Эффект выполнился один раз, замыкание видит count = 0 навсегда, и каждый тик ставит 0 + 1 = 1.'
+          ? `Эффект выполнился один раз, замыкание видит count = 0 навсегда, и каждый тик ставит 0 + ${step} = ${step}.`
           : `Функциональная форма читает актуальное значение: тиков ${ticks}${v === 'fnStep' ? `, каждый добавляет ${step}` : ''}, итог ${ans}.`,
       params: { T, E, v, step },
     };
@@ -236,25 +236,27 @@ export const dirtyFields = fam({
   id: 'fe.b2-dirty-fields',
   sub: UI,
   grade: 'middle',
-  title: 'Сколько полей формы изменено',
+  title: 'Какие поля формы изменены',
   catalogIds: ['fe.forms', 'fe.state-mgmt'],
+  format: 'list',
   a: 1.2,
   b: 0.3,
   space: 1e6,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const names = rng.sample(['name', 'email', 'phone', 'city', 'bio', 'site', 'role'], rng.int(4, 6));
+    const names = rng.sample(['name', 'email', 'phone', 'city', 'bio', 'site', 'role', 'zip', 'tags'], rng.int(5, 9));
     const init: Record<string, string> = {};
     for (const n of names) init[n] = rng.pick(['a', 'b', 'c']);
-    const edits = Array.from({ length: rng.int(5, 8) }, () => ({ f: rng.pick(names), v: rng.pick(['a', 'b', 'c']) }));
+    const edits = Array.from({ length: rng.int(7, 16) }, () => ({ f: rng.pick(names), v: rng.pick(['a', 'b', 'c']) }));
     const cur = { ...init };
     for (const e of edits) cur[e.f] = e.v;
-    const dirty = names.filter((n) => cur[n] !== init[n]).length;
+    const dirtyNames = names.filter((n) => cur[n] !== init[n]).sort();
+    const dirty = dirtyNames.length;
     return {
-      prompt: 'Поле считается изменённым (dirty), если его текущее значение отличается от начального; возврат к начальному значению снимает пометку. Сколько полей помечено изменёнными после всех правок?',
+      prompt: 'Поле считается изменённым (dirty), если его текущее значение отличается от начального; возврат к начальному значению снимает пометку. Назовите через запятую поля, помеченные изменёнными после всех правок (если таких нет, none).',
       code: [`initial: ${names.map((n) => `${n}="${init[n]}"`).join(' ')}`, ...edits.map((e, i) => `${i + 1}. ${e.f} := "${e.v}"`)].join('\n'),
-      answerHint: 'число',
-      answerKey: String(dirty),
+      answerHint: 'имена полей или none',
+      answerKey: dirty ? dirtyNames.join(',') : 'none',
       explanation: 'dirty сравнивает итоговое значение с начальным, а не считает количество правок: поле, возвращённое к исходному, чистое.',
       params: { names: names.join(','), edits: edits.map((e) => e.f + e.v).join(',') },
     };
@@ -267,6 +269,7 @@ export const routeRank = fam({
   grade: 'middle',
   title: 'Какой маршрут сработает',
   catalogIds: ['fe.routing'],
+  format: 'text',
   a: 1.2,
   b: 0.4,
   space: 1e5,
@@ -281,33 +284,36 @@ export const routeRank = fam({
       if (rng.int(0, 3) === 0) out.push('*');
       return out;
     };
-    const urlParts = [pickSeg(), rng.pick(['42', pickSeg()]), rng.pick(['7', pickSeg()])].slice(0, rng.int(2, 3));
     const routes: string[][] = [];
-    for (let i = 0; i < 5; i++) routes.push(mk());
-    // гарантируем хотя бы один подходящий маршрут: общий splat
-    routes[rng.int(0, 4)] = ['*'];
-    const score = (r: string[]): number => {
-      let s = 0;
-      for (let i = 0; i < r.length; i++) {
-        if (r[i] === '*') return urlParts.length >= i ? s + 1 : -1;
-        if (i >= urlParts.length) return -1;
-        if (r[i]!.startsWith(':')) s += 2;
-        else if (r[i] === urlParts[i]) s += 3;
-        else return -1;
-      }
-      return r.length === urlParts.length ? s : -1;
+    for (let i = 0; i < 6; i++) routes.push(mk());
+    // гарантируем, что любой адрес найдёт маршрут: общий splat
+    routes[rng.int(0, 5)] = ['*'];
+    const mkUrl = () => [pickSeg(), rng.pick(['42', pickSeg()]), rng.pick(['7', pickSeg()])].slice(0, rng.int(1, 3));
+    const urls = [mkUrl(), mkUrl(), mkUrl()];
+    const pickRoute = (urlParts: string[]) => {
+      const score = (r: string[]): number => {
+        let sc = 0;
+        for (let i = 0; i < r.length; i++) {
+          if (r[i] === '*') return sc + 1;
+          if (i >= urlParts.length) return -1;
+          if (r[i]!.startsWith(':')) sc += 2;
+          else if (r[i] === urlParts[i]) sc += 3;
+          else return -1;
+        }
+        return r.length === urlParts.length ? sc : -1;
+      };
+      const scores = routes.map(score);
+      const best = Math.max(...scores);
+      return { win: scores.indexOf(best) + 1, scores, best }; // при равенстве выигрывает объявленный раньше
     };
-    const scores = routes.map(score);
-    const best = Math.max(...scores);
-    const winners = scores.map((s, i) => (s === best ? i : -1)).filter((i) => i >= 0);
-    const win = winners[0]! + 1; // при равенстве выигрывает объявленный раньше
+    const res = urls.map(pickRoute);
     return {
-      prompt: `Роутер выбирает среди подходящих маршрутов тот, у которого выше суммарный вес сегментов: статический сегмент — 3, параметр «:id» — 2, «*» (любой хвост, в том числе пустой) — 1. «*» допустим только последним. При равном весе выигрывает объявленный раньше. Какой по номеру маршрут обработает адрес /${urlParts.join('/')}?`,
-      code: routes.map((r, i) => `${i + 1}. /${r.join('/')}`).join('\n'),
-      answerHint: 'номер маршрута',
-      answerKey: String(win),
-      explanation: `Подходящие маршруты и веса: ${scores.map((s, i) => (s >= 0 ? `${i + 1} → ${s}` : null)).filter(Boolean).join('; ')}. Максимум ${best}, первый из них — номер ${win}.`,
-      params: { url: urlParts.join('/'), routes: routes.map((r) => r.join('/')).join(' | ') },
+      prompt: 'Роутер выбирает среди подходящих маршрутов тот, у которого выше суммарный вес сегментов: статический сегмент — 3, параметр «:id» — 2, «*» (любой хвост, в том числе пустой) — 1. «*» допустим только последним. При равном весе выигрывает объявленный раньше. Какие по номеру маршруты обработают три адреса ниже? Ответ — три номера через запятую, в порядке адресов.',
+      code: routes.map((r, i) => `${i + 1}. /${r.join('/')}`).join('\n') + '\n\n' + urls.map((u, i) => `адрес ${i + 1}: /${u.join('/')}`).join('\n'),
+      answerHint: 'три номера через запятую, например 2,5,1',
+      answerKey: res.map((r) => r.win).join(','),
+      explanation: `Побеждают маршруты с максимальным весом: ${res.map((r, i) => `адрес ${i + 1} → ${r.win} (вес ${r.best})`).join('; ')}.`,
+      params: { urls: urls.map((u) => u.join('/')).join('|'), routes: routes.map((r) => r.join('/')).join(' | ') },
     };
   },
 });
@@ -371,7 +377,7 @@ export const srDeferredRenders = fam({
   generate(seed): TaskInstance {
     const rng = createRng(seed);
     const R = rng.pick([120, 150, 200, 250, 300]);
-    const n = rng.int(6, 10);
+    const n = rng.int(8, 22);
     const gaps = Array.from({ length: n - 1 }, () => rng.pick([30, 60, 90, 110, 140, 180, 220, 270, 320, 400]));
     // фоновый рендер начинается сразу после срочного; новое нажатие до его завершения отменяет рендер
     let done = 1; // последний рендер никто не прервёт
@@ -402,7 +408,7 @@ export const srFetchWaterfall = fam({
     const names = rng.sample(['Page', 'Header', 'Feed', 'Post', 'Comments', 'Sidebar', 'Author', 'Stats', 'Tags'], n);
     const parent: number[] = [-1];
     for (let i = 1; i < n; i++) parent.push(rng.int(0, i - 1));
-    const t = names.map(() => rng.pick([80, 120, 150, 200, 250, 300]));
+    const t = names.map(() => rng.int(5, 40) * 10);
     // Вложенность: компонент запрашивает данные только после того, как отрисовался его родитель (данные родителя получены).
     const finish: number[] = [];
     for (let i = 0; i < n; i++) finish.push((i === 0 ? 0 : finish[parent[i]!]!) + t[i]!);
@@ -467,7 +473,7 @@ export const srErrorBoundary = fam({
     };
     walk(0);
     return {
-      prompt: 'Граница ошибок ловит ошибки рендера потомков (не свои) и заменяет себя и всё поддерево запасным видом, сам запасной вид не считается. Ошибка без границы выше по дереву размонтирует всё приложение. Сколько компонентов из списка останется на экране после всех ошибок?',
+      prompt: 'Граница ошибок ловит ошибки рендера потомков (не свои) и вместо их поддерева показывает запасной вид; сама граница и её потомки в списке на экране не считаются (остаётся только запасной вид). Ошибка без границы выше по дереву размонтирует всё приложение. Сколько компонентов из списка останется на экране после всех ошибок?',
       code: order.map((i) => `${'  '.repeat(depth(i))}${uniq[i]}${boundary.has(i) ? ' [ErrorBoundary]' : ''}${thrower.has(i) ? ' [бросает ошибку при рендере]' : ''}`).join('\n'),
       answerHint: 'число',
       answerKey: String(visible),

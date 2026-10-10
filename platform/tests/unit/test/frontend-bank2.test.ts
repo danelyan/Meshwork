@@ -48,12 +48,28 @@ describe('расширенный банк frontend: 50 seed', () => {
         expect(inst.prompt.trim().length).toBeGreaterThan(10);
         expect(inst.explanation.length).toBeGreaterThan(10);
         expect(inst.answerKey.length).toBeGreaterThan(0);
-        expect(inst.answerKey, 'ключ не должен быть NaN/undefined').not.toMatch(/NaN|undefined(?!$)|Infinity/);
+        expect(inst.answerKey, 'ключ не должен быть NaN/undefined').not.toMatch(/NaN|Infinity/);
         for (const k of inst.answerKey.split('|')) expect(checkAnswer(g.format, k, inst.answerKey), `${seed}: ${k}`).toBe(true);
         if (g.format === 'number') expect(Number.isFinite(Number(inst.answerKey)), `${seed}: ${inst.answerKey}`).toBe(true);
         seen.add(`${inst.prompt}\n${inst.code ?? ''}`);
       }
       expect(seen.size, `${g.id}: разных экземпляров`).toBeGreaterThanOrEqual(10);
+    });
+  }
+});
+
+describe('расширенный банк frontend: угадываемость ответа (500 seed)', () => {
+  const SEEDS_500 = Array.from({ length: 500 }, (_, i) => (i + 1) * 7919);
+  for (const g of FRONTEND_BANK2_GENERATORS) {
+    it(`${g.id}: ≥ 8 разных ответов, самый частый ≤ 20 %`, () => {
+      const counts = new Map<string, number>();
+      for (const seed of SEEDS_500) {
+        const k = g.generate(seed).answerKey;
+        counts.set(k, (counts.get(k) ?? 0) + 1);
+      }
+      const [topKey, top] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]!;
+      expect(counts.size, `${g.id}: разных ответов`).toBeGreaterThanOrEqual(8);
+      expect(top / SEEDS_500.length, `${g.id}: ответ «${topKey}» ${top}/500`).toBeLessThanOrEqual(0.2);
     });
   }
 });

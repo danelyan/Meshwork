@@ -217,28 +217,31 @@ export const rovingTabindex = fam({
   grade: 'middle',
   title: 'Стрелки в составном виджете (roving tabindex)',
   catalogIds: ['fe.a11y', 'fe.components'],
+  format: 'text',
   a: 1.2,
   b: 0.4,
   space: 1e6,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const n = rng.int(5, 8);
-    const dis = new Set(rng.sample(Array.from({ length: n }, (_, i) => i), rng.int(1, 2)));
+    const n = rng.int(6, 12);
+    const dis = new Set(rng.sample(Array.from({ length: n }, (_, i) => i), rng.int(1, 3)));
     const enabled = Array.from({ length: n }, (_, i) => i).filter((i) => !dis.has(i));
     let cur = rng.pick(enabled);
     const start = cur;
-    const keys = Array.from({ length: rng.int(5, 8) }, () => rng.pick(['ArrowRight', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'Home', 'End']));
+    const keys = Array.from({ length: rng.int(8, 14) }, () => rng.pick(['ArrowRight', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'Home', 'End']));
+    const trail: number[] = [];
     for (const k of keys) {
       const pos = enabled.indexOf(cur);
       if (k === 'Home') cur = enabled[0]!;
       else if (k === 'End') cur = enabled[enabled.length - 1]!;
       else cur = enabled[(pos + (k === 'ArrowRight' ? 1 : -1) + enabled.length) % enabled.length]!;
+      trail.push(cur + 1);
     }
     return {
-      prompt: `Панель инструментов из ${n} кнопок реализована как roving tabindex: фокус держит одна кнопка, стрелки Вправо/Влево двигают его по кругу, Home и End переходят к первой и последней доступной. Недоступные (disabled) кнопки пропускаются. Фокус стоит на кнопке №${start + 1}. Пользователь нажал: ${keys.join(', ')}. На какой кнопке (по номеру слева направо) окажется фокус?`,
+      prompt: `Панель инструментов из ${n} кнопок реализована как roving tabindex: фокус держит одна кнопка, стрелки Вправо/Влево двигают его по кругу, Home и End переходят к первой и последней доступной. Недоступные (disabled) кнопки пропускаются. Фокус стоит на кнопке №${start + 1}. Пользователь нажал: ${keys.join(', ')}. На каких кнопках (номера слева направо) окажется фокус после каждого нажатия? Ответ — номера через запятую по порядку нажатий.`,
       code: `недоступны: ${[...dis].sort((x, y) => x - y).map((i) => i + 1).join(', ')}`,
-      answerHint: 'номер кнопки',
-      answerKey: String(cur + 1),
+      answerHint: 'номера через запятую',
+      answerKey: trail.join(','),
       explanation: 'Считаем только по доступным кнопкам, с переходом через край: после последней идёт первая. Home и End сбрасывают позицию на край списка доступных.',
       params: { n, dis: [...dis].join(','), start, keys: keys.join(',') },
     };
@@ -251,21 +254,24 @@ export const tsUtilityTypes = fam({
   grade: 'middle',
   title: 'Утилитарные типы TypeScript',
   catalogIds: ['fe.ts-typing', 'fe.components'],
+  format: 'list',
   taskId: 'task:ts-typecheck',
   a: 1.2,
   b: 0.5,
   space: 1e6,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const keys = rng.sample(['id', 'label', 'size', 'tone', 'icon', 'onClick', 'href', 'disabled'], rng.int(5, 6));
-    const req = new Map(keys.map((k) => [k, rng.int(0, 1) === 1]));
+    const keys = rng.sample(['id', 'label', 'size', 'tone', 'icon', 'onClick', 'href', 'disabled'], rng.int(6, 8));
+    const req = new Map(keys.map((k) => [k, rng.int(0, 2) > 0]));
     const cur = new Map(req);
     let expr = 'Base';
     const nOps = rng.int(2, 3);
+    let prevPartial = false;
     for (let i = 0; i < nOps; i++) {
       const ks = [...cur.keys()];
       const last = i === nOps - 1;
-      const op = ks.length <= 2 ? rng.pick(['Partial', 'Required']) : rng.pick(last ? ['Omit', 'Pick', 'Required', 'Omit'] : ['Omit', 'Pick', 'Partial', 'Required']);
+      const op: string = prevPartial ? 'Required' : ks.length <= 2 ? 'Required' : rng.pick(last ? ['Omit', 'Pick', 'Required', 'Omit'] : ['Omit', 'Pick', 'Pick', 'Required', 'Omit', 'Partial']);
+      prevPartial = op === 'Partial';
       if (op === 'Partial') {
         for (const k of ks) cur.set(k, false);
         expr = `Partial<${expr}>`;
@@ -282,12 +288,13 @@ export const tsUtilityTypes = fam({
         expr = `Pick<${expr}, ${keep.map((k) => `'${k}'`).join(' | ')}>`;
       }
     }
-    const requiredCount = [...cur.values()].filter(Boolean).length;
+    const required = [...cur.entries()].filter(([, r]) => r).map(([k]) => k).sort();
+    const requiredCount = required.length;
     return {
-      prompt: 'Сколько обязательных (не optional) свойств у типа Result? Omit и Pick сохраняют необязательность оставшихся свойств, Partial делает все необязательными, Required — все обязательными.',
+      prompt: 'Перечислите обязательные (не optional) свойства типа Result через запятую; если таких нет, напишите none. Omit и Pick сохраняют необязательность оставшихся свойств, Partial делает все необязательными, Required — все обязательными.',
       code: `interface Base {\n${keys.map((k) => `  ${k}${req.get(k) ? '' : '?'}: unknown;`).join('\n')}\n}\ntype Result = ${expr};`,
-      answerHint: 'число',
-      answerKey: String(requiredCount),
+      answerHint: 'имена через запятую или none',
+      answerKey: requiredCount ? required.join(',') : 'none',
       explanation: `Применяем операции изнутри наружу, отслеживая множество свойств и их обязательность. В итоге свойств: ${cur.size}, обязательных: ${requiredCount}.`,
       params: { keys: keys.join(','), expr },
     };
@@ -306,19 +313,30 @@ export const fluidClamp = fam({
   space: 1e5,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const minRem = rng.pick([1, 1.5, 2, 2.5]);
-    const maxRem = minRem + rng.pick([1, 1.5, 2, 3]);
-    const vw = rng.int(1, 5);
-    const W = rng.pick([320, 400, 600, 800, 1000, 1200, 1600]);
-    const preferred = (vw * W) / 100;
-    const px = Math.min(Math.max(preferred, minRem * 16), maxRem * 16);
+    const vw = rng.int(1, 6);
+    const W = rng.int(3, 16) * 100;
+    const p = (vw * W) / 100;
+    const scen = rng.pick(['below', 'inside', 'above'] as const);
+    let lo: number;
+    let hi: number;
+    if (scen === 'inside') {
+      lo = p - rng.int(2, 14);
+      hi = p + rng.int(2, 14);
+    } else if (scen === 'below') {
+      lo = p + rng.int(2, 14);
+      hi = lo + rng.int(4, 20);
+    } else {
+      hi = p - rng.int(2, 14);
+      lo = hi - rng.int(4, 20);
+    }
+    const px = Math.min(Math.max(p, lo), hi);
     return {
-      prompt: `Корневой размер шрифта 16px. Какой размер шрифта (в px) получит заголовок при ширине окна ${W}px?`,
-      code: `h1 { font-size: clamp(${minRem}rem, ${vw}vw, ${maxRem}rem); }`,
+      prompt: `Какой размер шрифта (в px) получит заголовок при ширине окна ${W}px?`,
+      code: `h1 { font-size: clamp(${lo}px, ${vw}vw, ${hi}px); }`,
       answerHint: 'пиксели, число',
       answerKey: String(px),
-      explanation: `${vw}vw при ширине ${W}px — ${preferred}px; границы ${minRem * 16}px и ${maxRem * 16}px. clamp возвращает среднее значение между ними: ${px}px.`,
-      params: { minRem, maxRem, vw, W },
+      explanation: `${vw}vw при ширине ${W}px — ${p}px; границы ${lo}px и ${hi}px. clamp(мин, предпочтительное, макс) возвращает предпочтительное значение, зажатое между границами: ${px}px.`,
+      params: { lo, hi, vw, W },
     };
   },
 });
@@ -337,9 +355,9 @@ export const srTokenMigration = fam({
   space: 1e7,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const prim = ['blue-500', 'blue-700', 'gray-100', 'gray-900', 'red-600'].slice(0, 4);
+    const prim = ['blue-500', 'blue-700', 'gray-100', 'gray-900', 'red-600'];
     const sem = ['text-primary', 'text-link', 'surface', 'border', 'danger', 'focus-ring'];
-    const comps = ['Button', 'Input', 'Modal', 'Tabs', 'Toast', 'Badge', 'Table'];
+    const comps = ['Button', 'Input', 'Modal', 'Tabs', 'Toast', 'Badge', 'Table', 'Select', 'Tooltip'];
     const refs = new Map<string, string[]>();
     prim.forEach((p) => refs.set(p, []));
     const semNames = rng.sample(sem, rng.int(4, 5));
@@ -347,8 +365,8 @@ export const srTokenMigration = fam({
       const pool = [...prim, ...semNames.slice(0, i)];
       refs.set(s, rng.sample(pool, rng.int(1, 2)));
     });
-    const compNames = rng.sample(comps, rng.int(5, 6));
-    compNames.forEach((c) => refs.set(c, rng.sample([...semNames, ...semNames, ...prim], rng.int(1, 3)).filter((v, i, a) => a.indexOf(v) === i)));
+    const compNames = rng.sample(comps, rng.int(7, 9));
+    compNames.forEach((c) => refs.set(c, rng.sample([...semNames, ...semNames, ...prim], rng.int(1, 2)).filter((v, i, a) => a.indexOf(v) === i)));
     const target = rng.pick(prim);
     const dep = (node: string): boolean => (refs.get(node) ?? []).some((r) => r === target || dep(r));
     const hit = compNames.filter(dep);
@@ -367,8 +385,9 @@ export const srSemverCopies = fam({
   id: 'fe.b2-sr-semver-copies',
   sub: DS,
   grade: 'senior',
-  title: 'Сколько копий библиотеки в бандле',
+  title: 'Какие копии библиотеки попадут в бандл',
   catalogIds: ['fe.bundler', 'fe.architecture', 'fe.web-perf'],
+  format: 'list',
   taskId: 'task:web-vitals',
   a: 1.2,
   b: 1.3,
@@ -393,12 +412,13 @@ export const srSemverCopies = fam({
     const names = ['app', 'forms', 'charts', 'admin', 'widgets', 'icons', 'docs'];
     const deps = base.map((v, i) => ({ n: names[i]!, range: v }));
     const picks = deps.map((d) => reg.filter((v) => ok(d.range, v)).sort(cmp).pop()!);
-    const copies = new Set(picks).size;
+    const installed = [...new Set(picks)].sort(cmp);
+    const copies = installed.length;
     return {
-      prompt: 'Сборка устанавливает для каждого пакета самую высокую версию design-kit из реестра, подходящую под его диапазон ^. Для ^M.m.p при M ≥ 1 допустимы версии не ниже указанной в пределах мажора M; для 0.m.p — только та же 0.m. Каждая различная выбранная версия попадает в бандл отдельной копией. Сколько копий design-kit в бандле?',
+      prompt: 'Сборка устанавливает для каждого пакета самую высокую версию design-kit из реестра, подходящую под его диапазон ^. Для ^M.m.p при M ≥ 1 допустимы версии не ниже указанной в пределах мажора M; для 0.m.p — только та же 0.m. Каждая различная выбранная версия попадает в бандл отдельной копией. Какие версии design-kit попадут в бандл? Перечислите их через запятую.',
       code: `в реестре: ${[...reg].sort(cmp).join(', ')}\n${deps.map((d) => `${d.n}: "design-kit": "^${d.range}"`).join('\n')}`,
-      answerHint: 'число',
-      answerKey: String(copies),
+      answerHint: 'версии через запятую',
+      answerKey: installed.join(','),
       explanation: `Выбранные версии: ${picks.join(', ')}. Различных: ${copies}. Несовместимые мажоры и разные 0.x дают отдельные копии; единый диапазон peerDependencies позволил бы их свести.`,
       params: { reg: reg.join(','), ranges: base.join(',') },
     };
@@ -421,6 +441,7 @@ export const srContrastMatrix = fam({
   grade: 'senior',
   title: 'Аудит контраста в двух темах',
   catalogIds: ['fe.a11y', 'fe.design-handoff'],
+  format: 'list',
   taskId: 'task:web-vitals',
   a: 1.2,
   b: 1.2,
@@ -433,7 +454,7 @@ export const srContrastMatrix = fam({
     const pool: Array<[number, number]> = [];
     for (const f of GRAYS) for (const b of GRAYS) if (f !== b) pool.push([f, b]);
     const safe = pool.filter(([f, b]) => Math.abs(ratio(f, b) - 4.5) > 0.12 && Math.abs(ratio(f, b) - 3) > 0.12);
-    const parts = rng.sample(['Текст', 'Подпись', 'Ссылка', 'Placeholder', 'Иконка', 'Крупный заголовок'], 5);
+    const parts = ['Текст', 'Подпись', 'Ссылка', 'Placeholder', 'Иконка', 'Крупный заголовок'];
     for (const name of parts) {
       for (const theme of ['светлая', 'тёмная']) {
         const [fg, bg] = rng.pick(safe);
@@ -441,13 +462,14 @@ export const srContrastMatrix = fam({
         pairs.push({ name, theme, fg, bg, thr: large ? 3 : 4.5 });
       }
     }
-    const fails = pairs.filter((p) => ratio(p.fg, p.bg) < p.thr).length;
+    const failIdx = pairs.map((p, i) => (ratio(p.fg, p.bg) < p.thr ? i + 1 : 0)).filter(Boolean);
+    const fails = failIdx.length;
     return {
-      prompt: 'Для уровня AA нужен контраст не ниже 4,5:1 для обычного текста и 3:1 для крупного текста и графики (в списке это «Крупный заголовок» и «Иконка»). Сколько пар цвет текста/фон из списка не проходят проверку? Контраст = (L1 + 0,05) / (L2 + 0,05) по относительной яркости WCAG, где L1 — большая яркость; цвета серые, у канала c яркость ((c/255 + 0,055)/1,055)^2,4 при c/255 > 0,03928, иначе (c/255)/12,92.',
-      code: pairs.map((p) => `${p.theme}: ${p.name} ${hex(p.fg)} на ${hex(p.bg)}`).join('\n'),
-      answerHint: 'число',
-      answerKey: String(fails),
-      explanation: `Считаем контраст каждой пары и сравниваем с порогом 4,5 или 3 по типу элемента. Не проходят ${fails} из ${pairs.length}.`,
+      prompt: 'Для уровня AA нужен контраст не ниже 4,5:1 для обычного текста и 3:1 для крупного текста и графики (в списке это «Крупный заголовок» и «Иконка»). Назовите номера пар цвет/фон, которые не проходят проверку (через запятую; если таких нет, none). Контраст = (L1 + 0,05) / (L2 + 0,05) по относительной яркости WCAG, где L1 — большая яркость; цвета серые, у канала c яркость ((c/255 + 0,055)/1,055)^2,4 при c/255 > 0,03928, иначе (c/255)/12,92.',
+      code: pairs.map((p, i) => `${i + 1}. ${p.theme}: ${p.name} ${hex(p.fg)} на ${hex(p.bg)}`).join('\n'),
+      answerHint: 'номера через запятую или none',
+      answerKey: fails ? failIdx.join(',') : 'none',
+      explanation: `Считаем контраст каждой пары и сравниваем с порогом 4,5 или 3 по типу элемента. Не проходят ${fails} из ${pairs.length}: ${failIdx.join(', ') || 'нет'}.`,
       params: { pairs: pairs.map((p) => `${p.fg}/${p.bg}/${p.thr}`).join(',') },
     };
   },

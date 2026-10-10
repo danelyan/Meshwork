@@ -19,15 +19,17 @@ export const lazyImages = fam({
   space: 1e5,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const H = rng.pick([600, 700, 800, 900]);
-    const imgs = Array.from({ length: rng.int(6, 9) }, (_, i) => ({
+    const H = rng.int(5, 12) * 100;
+    const pLazy = rng.int(3, 9);
+    const step = rng.int(60, 360);
+    const imgs = Array.from({ length: rng.int(14, 30) }, (_, i) => ({
       top: i * rng.int(180, 320),
-      lazy: rng.int(0, 2) > 0,
+      lazy: rng.int(0, 9) < pLazy,
     }));
-    imgs.forEach((im, i) => (im.top = i === 0 ? rng.int(0, 200) : imgs[i - 1]!.top + rng.int(120, 330)));
+    imgs.forEach((im, i) => (im.top = i === 0 ? rng.int(0, 200) : imgs[i - 1]!.top + rng.int(Math.floor(step / 2), step)));
     const loaded = imgs.filter((im) => !im.lazy || im.top < H).length;
     return {
-      prompt: `Страница открыта, высота окна ${H}px, пользователь ещё не прокручивал. Картинка с loading="lazy" загружается, только если её верх выше нижней границы окна; без lazy загружается сразу. Сколько картинок будет загружено при первом показе?`,
+      prompt: `Страница открыта, высота окна ${H}px, пользователь ещё не прокручивал. Упрощение для задачи (реальный порог близости задаёт браузер): картинка с loading="lazy" загружается, только если её верх выше нижней границы окна; без lazy загружается сразу. Сколько картинок будет загружено при первом показе?`,
       code: imgs.map((im, i) => `img${i + 1}: top=${im.top}px${im.lazy ? ' loading="lazy"' : ''}`).join('\n'),
       answerHint: 'число',
       answerKey: String(loaded),
@@ -112,8 +114,8 @@ const HYDRATION_LINES: Array<{ line: string; bad: boolean }> = [
   { line: '<p>{new Date().toLocaleTimeString()}</p>', bad: true },
   { line: '<p>{Math.random().toFixed(2)}</p>', bad: true },
   { line: '<p>{typeof window !== "undefined" ? "client" : "server"}</p>', bad: true },
-  { line: '<p>{localStorage.getItem("theme")}</p>', bad: true },
-  { line: '<p>{window.innerWidth}</p>', bad: true },
+  { line: '<p>{typeof localStorage !== "undefined" ? localStorage.getItem("theme") : "light"}</p>', bad: true },
+  { line: '<p>{typeof window !== "undefined" ? window.innerWidth : 0}</p>', bad: true },
   { line: '<p>{props.user.name}</p>', bad: false },
   { line: '<p>{items.length} шт.</p>', bad: false },
   { line: '<p>{formatPrice(props.price)}</p>', bad: false },
@@ -135,10 +137,10 @@ export const hydrationMismatch = fam({
   space: 1e6,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const picks = rng.sample(HYDRATION_LINES, rng.int(5, 7));
+    const picks = Array.from({ length: rng.int(6, 18) }, () => rng.pick(HYDRATION_LINES));
     const bad = picks.filter((p) => p.bad).length;
     return {
-      prompt: 'Компоненты рендерятся на сервере, а затем гидрируются в браузере с теми же пропсами. Сколько из строк разметки (в каждой — отдельный компонент, браузерные API на сервере недоступны) выведут при первом рендере на клиенте не то, что вывел сервер, то есть вызовут ошибку гидрации?',
+      prompt: 'Компоненты рендерятся на сервере, а затем гидрируются в браузере с теми же пропсами. Сколько из строк разметки (в каждой — отдельный компонент; на сервере нет window и localStorage, поэтому обращения к ним защищены проверкой typeof) выведут при первом рендере на клиенте не то, что вывел сервер, то есть вызовут ошибку гидрации?',
       code: picks.map((p, i) => `${i + 1}. ${p.line}`).join('\n'),
       answerHint: 'число',
       answerKey: String(bad),
@@ -343,11 +345,11 @@ export const srCdnVary = fam({
   space: 1e7,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const paths = ['/', '/catalog', '/item/7'];
-    const langs = ['ru', 'en'];
-    const cookies = ['anon', 'u1', 'u2'];
+    const paths = ['/', '/catalog', '/item/7', '/cart', '/about', '/faq'];
+    const langs = ['ru', 'en', 'de'];
+    const cookies = ['anon', 'u1', 'u2', 'u3'];
     const vary = rng.pick([[], ['accept-language'], ['cookie'], ['accept-language', 'cookie']] as string[][]);
-    const reqs = Array.from({ length: rng.int(8, 12) }, () => ({ p: rng.pick(paths), l: rng.pick(langs), c: rng.pick(cookies) }));
+    const reqs = Array.from({ length: rng.int(6, 14) }, () => ({ p: rng.pick(paths), l: rng.pick(langs), c: rng.pick(cookies) }));
     const keys = new Set(reqs.map((r) => `${r.p}|${vary.includes('accept-language') ? r.l : ''}|${vary.includes('cookie') ? r.c : ''}`));
     return {
       prompt: `CDN кэширует ответы SSR-страниц на час (время ожидания не истекает за наше окно). Ключ кэша — URL плюс значения заголовков из Vary: ${vary.length ? vary.join(', ') : 'заголовок Vary отсутствует'}. Сколько запросов из списка дойдёт до origin (первый запрос с новым ключом — промах, остальные — попадание)?`,

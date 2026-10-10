@@ -60,7 +60,7 @@ export const jsonMessages = fam({
         `{"type":"join","user":"${w}"}`,
       ]);
     };
-    const msgs = Array.from({ length: rng.int(6, 9) }, make);
+    const msgs = Array.from({ length: rng.int(12, 30) }, make);
     let n = 0;
     for (const m of msgs) {
       try {
@@ -97,8 +97,8 @@ export const unreadCounter = fam({
     const unread: Record<string, number> = { A: 0, B: 0, C: 0 };
     const start = open;
     const evs: string[] = [];
-    for (let i = 0; i < rng.int(8, 12); i++) {
-      if (rng.int(0, 4) === 0) {
+    for (let i = 0; i < rng.int(10, 24); i++) {
+      if (rng.int(0, 5) === 0) {
         open = rng.pick(rooms);
         unread[open] = 0;
         evs.push(`открыт чат ${open}`);
@@ -136,9 +136,9 @@ export const throttleFlushes = fam({
     const W = rng.pick([200, 250, 300, 500]);
     const ts: number[] = [];
     let t = rng.int(0, 100);
-    for (let i = 0; i < rng.int(8, 12); i++) {
+    for (let i = 0; i < rng.int(14, 30); i++) {
       ts.push(t);
-      t += rng.pick([20, 50, 80, 120, 200, 350, 700]);
+      t += rng.int(10, 700);
     }
     let renders = 0;
     let i = 0;
@@ -172,17 +172,23 @@ export const lwwClocks = fam({
     const clients = ['A', 'B', 'C'];
     const skew: Record<string, number> = {};
     clients.forEach((c, i) => (skew[c] = rng.int(-4, 4) * 100 + i));
-    const times = rng.sample([100, 200, 300, 400, 500, 600, 700, 800], rng.int(4, 5)).sort((x, y) => x - y);
-    const writes = times.map((t, i) => ({ real: t, c: rng.pick(clients), v: `v${i + 1}` }));
-    let win = writes[0]!;
-    for (const w of writes) if (w.real + skew[w.c]! > win.real + skew[win.c]!) win = w;
+    const times = rng.sample([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000], rng.int(7, 10)).sort((x, y) => x - y);
+    const keys = ['k1', 'k2', 'k3'];
+    const writes = times.map((t, i) => ({ real: t, c: rng.pick(clients), key: rng.pick(keys), v: `v${i + 1}` }));
+    const final = keys.map((k) => {
+      const ws = writes.filter((w) => w.key === k);
+      if (!ws.length) return 'none';
+      let win = ws[0]!;
+      for (const w of ws) if (w.real + skew[w.c]! > win.real + skew[win.c]!) win = w;
+      return win.v;
+    });
     return {
-      prompt: 'Клиенты пишут в одну запись; каждое значение отправляется с отметкой времени по часам клиента, сервер сохраняет значение с наибольшей отметкой (last-write-wins). Реальные моменты записи и сдвиги часов клиентов относительно реального времени заданы ниже. Какое значение останется в записи?',
-      code: [`сдвиги часов, мс: ${clients.map((c) => `${c}${skew[c]! >= 0 ? '+' : ''}${skew[c]}`).join(', ')}`, ...writes.map((w) => `t=${w.real} мс: клиент ${w.c} пишет ${w.v}`)].join('\n'),
-      answerHint: 'значение, например v2',
-      answerKey: win.v,
-      explanation: `Отметка = реальный момент + сдвиг часов клиента. Наибольшая у ${win.v} (клиент ${win.c}, ${win.real + skew[win.c]!}). Часы клиентов не согласованы, поэтому LWW может отбросить фактически более позднюю запись.`,
-      params: { skew: clients.map((c) => skew[c]).join(','), writes: writes.map((w) => `${w.real}${w.c}`).join(',') },
+      prompt: 'Клиенты пишут в записи k1, k2, k3; каждое значение отправляется с отметкой времени по часам клиента, сервер сохраняет значение с наибольшей отметкой (last-write-wins). Реальные моменты записи и сдвиги часов клиентов относительно реального времени заданы ниже. Какие значения останутся в k1, k2, k3? Ответ — три значения через запятую (none, если в запись не писали).',
+      code: [`сдвиги часов, мс: ${clients.map((c) => `${c}${skew[c]! >= 0 ? '+' : ''}${skew[c]}`).join(', ')}`, ...writes.map((w) => `t=${w.real} мс: клиент ${w.c} пишет ${w.v} в ${w.key}`)].join('\n'),
+      answerHint: 'три значения через запятую, например v2,v5,none',
+      answerKey: final.join(','),
+      explanation: `Отметка = реальный момент + сдвиг часов клиента; для каждой записи побеждает наибольшая отметка. Итог: ${final.join(', ')}. Часы клиентов не согласованы, поэтому LWW может отбросить фактически более позднюю запись.`,
+      params: { skew: clients.map((c) => skew[c]).join(','), writes: writes.map((w) => `${w.real}${w.c}${w.key}`).join(',') },
     };
   },
 });
@@ -199,9 +205,9 @@ export const presenceCount = fam({
   generate(seed): TaskInstance {
     const rng = createRng(seed);
     const ttl = rng.pick([15, 20, 30]);
-    const users = rng.sample(['anna', 'boris', 'vera', 'gleb', 'dasha', 'egor', 'liza'], rng.int(5, 7));
-    const q = rng.int(60, 120);
-    const beats = users.map(() => Array.from({ length: rng.int(1, 4) }, () => rng.int(0, 140)).sort((x, y) => x - y));
+    const users = rng.sample(Array.from({ length: 18 }, (_, i) => `u${i + 1}`), rng.int(10, 18));
+    const q = rng.int(30, 140);
+    const beats = users.map(() => Array.from({ length: rng.int(1, 5) }, () => rng.int(0, 140)).sort((x, y) => x - y));
     const online = users.filter((_, i) => beats[i]!.some((h) => h <= q && q - h < ttl)).length;
     return {
       prompt: `Пользователь считается онлайн, если его последний heartbeat был не раньше ${ttl} секунд назад (строго меньше ${ttl} с). Запрос списка в секунде ${q}; heartbeat позже этого момента ещё не пришёл. Сколько пользователей онлайн?`,
@@ -266,36 +272,44 @@ export const subscriptionRefs = fam({
   grade: 'middle',
   title: 'Подписки на каналы и подсчёт ссылок',
   catalogIds: ['fe.realtime-client', 'fe.components'],
+  format: 'text',
   a: 1.2,
   b: 0.5,
   space: 1e7,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const chans = ['prices', 'chat', 'alerts'];
-    const comps = ['A', 'B', 'C', 'D'];
+    const chans = ['prices', 'chat', 'alerts', 'orders'];
+    const comps = ['A', 'B', 'C', 'D', 'E'];
     const subs = new Map<string, Set<string>>();
     chans.forEach((c) => subs.set(c, new Set()));
     const ops: string[] = [];
+    const msgList: string[] = [];
     let msgs = 0;
-    for (let i = 0; i < rng.int(8, 12); i++) {
+    for (let i = 0; i < rng.int(12, 26); i++) {
       const ch = rng.pick(chans);
       const co = rng.pick(comps);
       const set = subs.get(ch)!;
       if (set.has(co)) {
         set.delete(co);
-        if (set.size === 0) msgs++; // последний ушёл: UNSUBSCRIBE
+        if (set.size === 0) {
+          msgs++; // последний ушёл: UNSUBSCRIBE
+          msgList.push(`unsubscribe:${ch}`);
+        }
         ops.push(`${co} отписывается от ${ch}`);
       } else {
-        if (set.size === 0) msgs++; // первый пришёл: SUBSCRIBE
+        if (set.size === 0) {
+          msgs++; // первый пришёл: SUBSCRIBE
+          msgList.push(`subscribe:${ch}`);
+        }
         set.add(co);
         ops.push(`${co} подписывается на ${ch}`);
       }
     }
     return {
-      prompt: 'Менеджер подключения общий. Сообщение SUBSCRIBE уходит на сервер, только когда у канала появляется первый подписчик-компонент; UNSUBSCRIBE — когда уходит последний. Остальные подписки и отписки обрабатываются локально. Сколько всего сообщений SUBSCRIBE/UNSUBSCRIBE будет отправлено?',
+      prompt: 'Менеджер подключения общий. Сообщение SUBSCRIBE уходит на сервер, только когда у канала появляется первый подписчик-компонент; UNSUBSCRIBE — когда уходит последний. Остальные подписки и отписки обрабатываются локально. Перечислите сообщения, которые уйдут на сервер, по порядку отправки в виде subscribe:<канал> или unsubscribe:<канал>, через запятую; если их нет, none.',
       code: ops.map((o, i) => `${i + 1}. ${o}`).join('\n'),
-      answerHint: 'число',
-      answerKey: String(msgs),
+      answerHint: 'через запятую, например subscribe:chat,unsubscribe:chat',
+      answerKey: msgs ? msgList.join(',') : 'none',
       explanation: 'Для каждого канала ведём множество компонентов-подписчиков и считаем переходы пусто → непусто и непусто → пусто.',
       params: { ops: ops.join('|') },
     };
@@ -397,6 +411,7 @@ export const srOfflineCoalesce = fam({
   sub: RT,
   grade: 'senior',
   title: 'Очередь офлайн-операций со склейкой',
+  format: 'list',
   catalogIds: ['fe.realtime-client', 'fe.browser-storage', 'fe.api-client', 'fe.architecture'],
   taskId: 'task:find-bug',
   a: 1.2,
@@ -405,14 +420,14 @@ export const srOfflineCoalesce = fam({
   time: 280,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
-    const existing = ['t1', 't2', 't3'];
-    const fresh = ['n1', 'n2'];
+    const existing = ['t1', 't2', 't3', 't4', 't5'];
+    const fresh = ['n1', 'n2', 'n3'];
     type Ent = { isNew: boolean; sets: number; incs: number; del: boolean };
     const ents = new Map<string, Ent>();
     existing.forEach((e) => ents.set(e, { isNew: false, sets: 0, incs: 0, del: false }));
     const ops: string[] = [];
     const created: string[] = [];
-    for (let i = 0; i < rng.int(9, 13); i++) {
+    for (let i = 0; i < rng.int(12, 26); i++) {
       const kind = rng.pick(['create', 'set', 'set', 'inc', 'inc', 'del'] as const);
       const alive = [...ents.entries()].filter(([, v]) => !v.del).map(([k]) => k);
       if (kind === 'create' && created.length < fresh.length) {
@@ -429,17 +444,22 @@ export const srOfflineCoalesce = fam({
         ops.push(`${kind === 'del' ? 'delete' : kind === 'inc' ? 'increment' : 'update'} ${id}`);
       }
     }
-    let reqs = 0;
-    for (const e of ents.values()) {
-      if (e.isNew) reqs += e.del ? 0 : 1;
-      else if (e.del) reqs += 1;
-      else reqs += (e.sets > 0 ? 1 : 0) + (e.incs > 0 ? 1 : 0);
+    const sent: string[] = [];
+    for (const [id, e] of ents.entries()) {
+      if (e.isNew) {
+        if (!e.del) sent.push(`create:${id}`);
+      } else if (e.del) sent.push(`delete:${id}`);
+      else {
+        if (e.sets > 0) sent.push(`update:${id}`);
+        if (e.incs > 0) sent.push(`increment:${id}`);
+      }
     }
+    const reqs = sent.length;
     return {
-      prompt: 'Клиент накопил операции офлайн и при подключении отправляет очередь с оптимизацией. Правила: все update одной записи склеиваются в один запрос; все increment одной записи — в один; для записи, созданной офлайн, все её операции вливаются в один запрос create; если запись создана офлайн и затем удалена, не отправляется ничего; удаление существующей записи отменяет остальные её операции и уходит одним запросом. Сколько запросов уйдёт?',
+      prompt: 'Клиент накопил операции офлайн и при подключении отправляет очередь с оптимизацией. Правила: все update одной записи склеиваются в один запрос; все increment одной записи — в один; для записи, созданной офлайн, все её операции вливаются в один запрос create; если запись создана офлайн и затем удалена, не отправляется ничего; удаление существующей записи отменяет остальные её операции и уходит одним запросом. Перечислите уходящие запросы в виде <операция>:<запись> (create, update, increment, delete) через запятую, порядок не важен; если ничего не уйдёт, напишите none.',
       code: ops.map((o, i) => `${i + 1}. ${o}`).join('\n'),
-      answerHint: 'число',
-      answerKey: String(reqs),
+      answerHint: 'например update:t1,delete:t2 или none',
+      answerKey: reqs ? sent.join(',') : 'none',
       explanation: `Считаем по записям: ${[...ents.entries()].map(([k, v]) => `${k}: ${v.isNew ? 'новая' : 'старая'}${v.del ? ', удалена' : ''}, обновлений ${v.sets}, инкрементов ${v.incs}`).join('; ')}. Итого ${reqs}. Склейка требует идемпотентных запросов и учёта порядка при конфликтах с сервером.`,
       params: { ops: ops.join('|') },
     };

@@ -166,7 +166,7 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
                       className={styles.item}
                       aria-label={`Войти как ${e.name}`}
                       disabled={pending !== null}
-                      onClick={() => void enter(e.id, () => demoEmployerLogin(e.id), '/employer', next && isEmployerPath(next) ? next : null)}
+                      onClick={() => void enter(e.id, () => demoEmployerLogin(e.id), '/consultant', next && isEmployerPath(next) ? next : null)}
                     >
                     <Avatar />
                     <span className={styles.who}>

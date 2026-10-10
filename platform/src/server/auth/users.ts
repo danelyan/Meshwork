@@ -27,12 +27,12 @@ export function needsOnboarding(user: Pick<User, 'role' | 'onboardedAt'>): boole
 }
 
 /**
- * Куда вести после входа: незавершённый онбординг → /consultant (знакомство идёт в его ленте для
- * любой роли, решение владельца 10.10), иначе кабинет роли.
+ * Куда вести после входа: всегда лента /consultant (решения владельца 10.10). Там знакомство любой
+ * роли, а дальше — консультант кандидата или помощник по подбору работодателя: дом обеих ролей — чат.
+ * Подбор работодателя (/employer) — по навигации и ссылкам из чата помощника.
  */
-export function homePathFor(user: Pick<User, 'role' | 'onboardedAt'>): string {
-  if (needsOnboarding(user)) return '/consultant';
-  return user.role === 'employer' ? '/employer' : '/consultant';
+export function homePathFor(): string {
+  return '/consultant';
 }
 
 export interface ExternalProfile {

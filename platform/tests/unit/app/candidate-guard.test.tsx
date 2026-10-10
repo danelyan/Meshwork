@@ -127,9 +127,11 @@ describe('/consultant: общий адрес — гость на вход, ро�
     cookie.value = `${SESS.candidate().slice(0, -2)}xx`;
     expect(await outcome(run)).toBe('/auth?next=%2Fconsultant');
   });
-  it('работодатель без доступного онбординга → кабинет /employer, данных кандидата не грузит', async () => {
+  it('работодатель → рендер (дом работодателя — лента с помощником по подбору)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     cookie.value = SESS.employer();
-    expect(await outcome(run)).toBe('/employer');
+    expect(await outcome(run)).toBe('ok');
+    warn.mockRestore();
   });
 });
 

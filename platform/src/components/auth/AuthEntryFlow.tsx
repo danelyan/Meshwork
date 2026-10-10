@@ -103,7 +103,7 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
             <div className={styles.list}>
               {role === 'candidate' ? accounts?.candidates.filter(c=>!c.id.startsWith('demo-pool-')).map(c=>
                 <Button className={styles.account} disabled={pending} key={c.id} onClick={()=>void enter(()=>demoLogin(c.id),'/consultant',roleNext)}>{c.name} →</Button>)
-                : accounts?.employers?.map(e=><Button className={styles.account} disabled={pending} key={e.id} onClick={()=>void enter(()=>demoEmployerLogin(e.id),'/employer/assistant',roleNext ?? '/employer/assistant')}>{e.company?.name ?? e.name} →</Button>)}
+                : accounts?.employers?.map(e=><Button className={styles.account} disabled={pending} key={e.id} onClick={()=>void enter(()=>demoEmployerLogin(e.id),'/consultant',roleNext ?? '/consultant')}>{e.company?.name ?? e.name} →</Button>)}
             </div>
             <Button disabled={pending} onClick={()=>setFresh(!fresh)} aria-expanded={fresh}>Новый демо-профиль</Button>
             {fresh && <>

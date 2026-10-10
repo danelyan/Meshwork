@@ -9,6 +9,6 @@ export const dynamic = 'force-dynamic';
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { userId } = requireUser(req);
-  const user = await markOnboarded(userId);
-  return Response.json({ onboarded: true, next: homePathFor(user) });
+  await markOnboarded(userId);
+  return Response.json({ onboarded: true, next: homePathFor() });
 });

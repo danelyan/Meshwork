@@ -23,7 +23,7 @@ export async function parseAuthForm<S extends z.ZodType>(req: Request, schema: S
  * лента знакомства /consultant, иначе безопасный `next` или кабинет роли (как в callback Яндекса).
  */
 export function signedIn(user: LoadedUser, next: string | null | undefined): Response {
-  const home = homePathFor(user);
+  const home = homePathFor();
   const target = needsOnboarding(user) ? home : (safeNext(next) ?? home);
   const res = NextResponse.json({ next: target });
   res.cookies.set(userSessionCookie(sessionInputFor(user)));

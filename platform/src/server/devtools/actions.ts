@@ -15,7 +15,7 @@ export async function startNewConversation(s: SessionPrincipal): Promise<{ conve
   }
   if (s.employerProfileId) {
     const c = await prisma.employerConversation.create({ data: { employerProfileId: s.employerProfileId }, select: { id: true } });
-    return { conversationId: c.id, next: '/employer/assistant' };
+    return { conversationId: c.id, next: '/consultant' };
   }
   throw errors.conflict('Роль не выбрана: разговор начать негде');
 }

@@ -3,7 +3,7 @@
 import { Fragment, useState } from 'react';
 
 import { onboardingAct } from '@/lib/api';
-import type { RestoredChat } from '@/server/agent/restore';
+import type { RestoredChat, RestoredItem } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 import type { OnboardingView } from '@/server/onboarding/types';
 
@@ -45,10 +45,12 @@ function PausedFeedBody({ view, demo, restored }: PausedFeedProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const items = restored?.items ?? [];
-  // Вопросы посреди шагов — под своим шагом; свободный разговор — в чате ниже.
-  const [asides] = useState(() => groupAsides(items));
-  const [rest] = useState(() => items.filter((it) => !it.stepId));
   const cur = view.current;
+  // Разговор этой паузы (на текущем шаге) — в чате ниже; вопросы посреди шагов и разговоры прежних
+  // пауз — под своими шагами (хронология ленты).
+  const inChat = (it: RestoredItem) => !it.stepId || (it.paused === true && it.stepId === cur.id);
+  const [asides] = useState(() => groupAsides(items.filter((it) => !inChat(it))));
+  const [rest] = useState(() => items.filter(inChat));
 
   async function resume() {
     setBusy(true);

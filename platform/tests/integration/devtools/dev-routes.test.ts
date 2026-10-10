@@ -138,7 +138,7 @@ describe('api/dev/*', () => {
 
     const e = await mkEmployer('e');
     const r2 = await (await newConversation(req('/api/dev/new-conversation', 'POST', {}, e.cookie))).json();
-    expect(r2.next).toBe('/employer/assistant');
+    expect(r2.next).toBe('/consultant');
     expect(await prisma.employerConversation.count({ where: { employerProfileId: e.profile.id } })).toBe(2);
 
     const pending = await prisma.user.create({ data: { name: 'P' } });

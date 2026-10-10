@@ -116,6 +116,21 @@ describe('Свободный вопрос посреди онбординга', 
     expect(systems[0]).toContain('<onboarding>');
   });
 
+  it('разговор на паузе помечается шагом паузы: после возврата к шагам лента ставит его под этот шаг', async () => {
+    const { cookie, candidateId } = await asCandidate('u1');
+    await act(cookie, { action: 'answer', stepId: 'goal', value: 'job_search' });
+    await act(cookie, { action: 'later' });
+    registerStubResponse('consultant', () => ({ text: 'План такой.' }));
+    const turn = await ask(cookie, { text: 'Что подтянуть до мидла?' });
+    const user = await prisma.message.findFirstOrThrow({ where: { conversationId: turn.conversationId!, role: 'user' } });
+    expect(user.content).toBe('Что подтянуть до мидла?\n[знакомство на паузе: шаг documents]');
+    const restored = await loadLastChat(candidateId);
+    expect(restored.items.filter((it) => it.stepId)).toEqual([
+      expect.objectContaining({ role: 'user', text: 'Что подтянуть до мидла?', stepId: 'documents', paused: true }),
+      expect.objectContaining({ role: 'agent', stepId: 'documents', paused: true }),
+    ]);
+  });
+
   it('онбординг брошен («Настроить позже»): обычный ход консультанта получает напоминание продолжить здесь же', async () => {
     const { cookie, candidateId } = await asCandidate('u1');
     await act(cookie, { action: 'answer', stepId: 'goal', value: 'job_search' });

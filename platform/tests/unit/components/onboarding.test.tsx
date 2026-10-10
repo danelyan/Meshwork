@@ -416,6 +416,22 @@ describe('свободный текст посреди онбординга', ()
     expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'role', value: 'candidate' });
   });
 
+  it('разговор из паузы после возврата к шагам виден в ленте под шагом паузы, в хронологии', () => {
+    stubFetch();
+    const restored = {
+      conversationId: 'conv-1',
+      items: [
+        { id: 'p1', role: 'user' as const, text: 'Что подтянуть до мидла?', stepId: 'goal', paused: true as const },
+        { id: 'p2', role: 'agent' as const, event: { type: 'message' as const, text: 'План к категории…' }, stepId: 'goal', paused: true as const },
+      ],
+    };
+    render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} consultant={{ restored }} />);
+    const text = document.body.textContent ?? '';
+    expect(screen.getAllByText('Что подтянуть до мидла?')).toHaveLength(1);
+    expect(text.indexOf('Зачем ты здесь?')).toBeLessThan(text.indexOf('Что подтянуть до мидла?'));
+    expect(text.indexOf('План к категории')).toBeLessThan(text.indexOf('Ищу работу'));
+  });
+
   it('после перезагрузки вопросы стоят под своим шагом, а встроенный консультант их не дублирует', () => {
     stubFetch();
     const restored = {

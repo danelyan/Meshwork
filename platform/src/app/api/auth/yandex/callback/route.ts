@@ -60,7 +60,7 @@ export async function GET(req: Request) {
     return back('internal');
   }
 
-  const home = homePathFor(user);
+  const home = homePathFor();
   const target = needsOnboarding(user) ? home : (safeNext(saved.next) ?? home);
   const res = NextResponse.redirect(new URL(target, env.APP_URL), 303);
   res.cookies.set(userSessionCookie(sessionInputFor(user)));

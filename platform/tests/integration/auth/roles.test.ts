@@ -131,7 +131,7 @@ describe('демо-вход: кандидаты и работодатель', ()
 
   it('вход за работодателя → requireEmployer; не-демо работодатель — 404', async () => {
     const res = await demoLogin(jsonRequest('/api/demo/login', 'POST', { employerUserId: 'demo-employer' }));
-    expect(await res.json()).toMatchObject({ next: '/employer' });
+    expect(await res.json()).toMatchObject({ next: '/consultant' });
     expect(requireEmployer(jsonRequest('/x', 'GET', undefined, cookieFrom(res)))).toEqual({ userId: 'demo-employer', employerProfileId: 'demo-employer-northstream' });
     await prisma.user.update({ where: { id: 'demo-employer' }, data: { isDemo: false } });
     expect((await demoLogin(jsonRequest('/api/demo/login', 'POST', { employerUserId: 'demo-employer' }))).status).toBe(404);

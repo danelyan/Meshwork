@@ -29,6 +29,7 @@ vi.mock('@/server/demo/context', () => ({
 vi.mock('@/server/demo/mode', () => ({ llmIsDemoStub: () => true }));
 vi.mock('@/server/onboarding/service', () => ({ onboardingInFeed: m.inFeed, getView: m.getView }));
 vi.mock('@/components/Chat', () => ({ Chat: () => null }));
+vi.mock('@/components/employer/AssistantChat', () => ({ AssistantChat: () => null }));
 vi.mock('@/components/onboarding/OnboardingChat', () => ({ OnboardingChat: () => null }));
 vi.mock('@/components/onboarding/PausedFeed', () => ({ PausedFeed: () => null }));
 vi.mock('@/components/head/ConsultantScene', () => ({ ConsultantScene: ({ children }: { children: unknown }) => children }));
@@ -122,9 +123,21 @@ describe('работодатель', () => {
     expect(m.loadLastChat).not.toHaveBeenCalled();
   });
 
-  it('завершил без чата — в кабинет /employer', async () => {
+  it('завершил без чата (сид демо) — сразу помощник по подбору с последним разговором, без редиректа', async () => {
     m.inFeed.mockResolvedValueOnce(false);
-    expect(await redirected()).toBe('/employer');
+    expect(await redirected()).toBe('ok');
+    const { AssistantChat } = await import('@/components/employer/AssistantChat');
+    m.inFeed.mockResolvedValueOnce(false);
+    const el = await inner();
+    expect(el.type).toBe(AssistantChat);
+    expect(el.props.initial).toEqual({ conversationId: 'e-conv', items: [] });
     expect(m.loadLastChat).not.toHaveBeenCalled();
+  });
+
+  it('знакомство не завершено — шаги, разговор помощника ещё не грузится', async () => {
+    m.getView.mockResolvedValueOnce({ current: { kind: 'one' }, onboarded: false });
+    const el = await inner();
+    expect(el.props.employerAssistant).toEqual({ demoNoLlm: true, restored: undefined });
+    expect(m.loadLastEmployerChat).not.toHaveBeenCalled();
   });
 });

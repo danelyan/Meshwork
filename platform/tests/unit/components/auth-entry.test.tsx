@@ -57,7 +57,7 @@ it('requires a role and logs a ready candidate into the assistant without a seco
 it('filters employer profiles and sends employers to their own assistant',async()=>{
   flow('/profile');select('Ищу специалистов');
   fireEvent.click(await screen.findByRole('button',{name:'Компания →'}));
-  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/employer/assistant'));
+  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
   expect(screen.queryByRole('button',{name:'Анна →'})).toBeNull();
   expect(demoEmployerLogin).toHaveBeenCalledWith('boss');
 });

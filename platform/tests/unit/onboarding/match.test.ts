@@ -1,5 +1,5 @@
-import { asideStepOf, humanizeUserText } from '@/server/agent/restore';
-import { asideMark, asideToModel, looksLikeQuestion, matchStepText, normalizeAnswer } from '@/server/onboarding/match';
+import { asideStepOf, humanizeUserText, pauseStepOf } from '@/server/agent/restore';
+import { asideMark, pauseMark, asideToModel, looksLikeQuestion, matchStepText, normalizeAnswer } from '@/server/onboarding/match';
 import { CANDIDATE_STEPS, DIRECTIONS } from '@/server/onboarding/scenario';
 import type { StepOption } from '@/server/onboarding/types';
 
@@ -54,5 +54,15 @@ describe('matchStepText — текст как ответ на шаг', () => {
     expect(asideStepOf(content)).toBe('goal');
     expect(asideStepOf('просто вопрос')).toBeNull();
     expect(humanizeUserText(content, new Map())).toBe('Зачем цель?');
+  });
+});
+
+describe('маркер паузы знакомства (решение владельца 10.10)', () => {
+  it('шаг паузы читается из хода, маркер не показывается кандидату и не путается с вопросом посреди шага', () => {
+    const content = `Что дальше?\n${pauseMark('documents')}`;
+    expect(pauseStepOf(content)).toBe('documents');
+    expect(asideStepOf(content)).toBeNull();
+    expect(pauseStepOf(`x\n${asideMark('goal')}`)).toBeNull();
+    expect(humanizeUserText(content, new Map())).toBe('Что дальше?');
   });
 });

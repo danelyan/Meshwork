@@ -26,7 +26,7 @@ export const POST = devRoute(async (req) => {
     });
     if (!user?.employerProfile) throw errors.notFound('Демо-работодатель не найден');
     await ensureConsent(user.id); // готовые демо-аккаунты считаются согласившимися
-    const res = NextResponse.json({ next: '/employer' });
+    const res = NextResponse.json({ next: '/consultant' });
     res.cookies.set(userSessionCookie(sessionInputFor(user)));
     return res;
   }

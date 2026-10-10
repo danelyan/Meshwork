@@ -42,7 +42,8 @@ const restored = {
   conversationId: 'conv-1',
   items: [
     { id: 'a', role: 'user' as const, text: 'Зачем цель?', stepId: 'goal' },
-    { id: 'b', role: 'user' as const, text: 'Что подтянуть до мидла?' },
+    { id: 'p0', role: 'user' as const, text: 'Разговор прошлой паузы', stepId: 'goal', paused: true as const },
+    { id: 'b', role: 'user' as const, text: 'Что подтянуть до мидла?', stepId: 'documents', paused: true as const },
   ],
 };
 
@@ -51,7 +52,9 @@ it('шаги — начало ленты, текущий вопрос не за�
   expect(screen.getByText('Ищу работу')).toBeDefined();
   expect(screen.getByText('Зачем цель?')).toBeDefined();
   expect(screen.getByTestId('ob-paused').textContent).toContain('Пришли резюме или ссылки');
-  expect(chatProps.last?.initial).toEqual({ conversationId: 'conv-1', items: [restored.items[1]] });
+  // Прошлая пауза — под своим шагом (хронология), разговор этой паузы — в чате.
+  expect(screen.getByText('Разговор прошлой паузы')).toBeDefined();
+  expect(chatProps.last?.initial).toEqual({ conversationId: 'conv-1', items: [restored.items[2]] });
   expect((chatProps.last?.embedded as { beforeSend?: unknown }).beforeSend).toBeUndefined();
 });
 

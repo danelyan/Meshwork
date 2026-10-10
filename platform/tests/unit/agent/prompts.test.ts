@@ -85,6 +85,12 @@ describe('правило «не знаю» и примеры', () => {
     }
   });
 
+  it('помощник работодателя с первого ответа объясняет, что нужно от работодателя (дом работодателя — чат, решение владельца 10.10)', () => {
+    expect(EMPLOYER_PROMPT).toContain('Первый ответ в разговоре');
+    expect(EMPLOYER_PROMPT).toMatch(/направление, грейд, стек и вилку зарплаты/);
+    expect(EMPLOYER_PROMPT).toMatch(/приглашение с зарплатой/);
+  });
+
   it('консультант сохранил раздел <onboarding> со свободными вопросами', () => {
     expect(CONSULTANT_PROMPT).toContain('<onboarding>');
     expect(CONSULTANT_PROMPT).toContain('Свободный вопрос посреди шага');

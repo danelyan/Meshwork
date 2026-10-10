@@ -221,7 +221,7 @@ describe('API онбординга', () => {
     expect(after.map((v) => v.id)).toEqual([vac[1]!.id]);
 
     const r = await complete(jsonRequest('/x', 'POST', {}, c));
-    expect((await r.json()).next).toBe('/employer');
+    expect((await r.json()).next).toBe('/consultant'); // дом работодателя — лента помощника (решение владельца 10.10);
   });
 
   it('CSRF: чужой Origin — 403', async () => {

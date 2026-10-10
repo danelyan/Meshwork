@@ -30,7 +30,7 @@ test('E-02: на /demo основной список короткий, канд�
 
 test('E-02: работодатель → подборка → приглашение → кандидат принимает → контакты открыты', async ({ page }) => {
   // 1. работодатель: подборка по потребности
-  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/employer');
+  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/consultant'); // дом работодателя — помощник (10.10)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.goto('/employer/needs/demo-vac-be-m-1');
   await page.waitForURL(VACANCY_URL);
@@ -63,7 +63,7 @@ test('E-02: работодатель → подборка → приглашен
   await expect(page.getByText(/Приглашение принято/).first()).toBeVisible();
 
   // 4. работодатель видит имя и контакты
-  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/employer');
+  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/consultant'); // дом работодателя — помощник (10.10)
   await page.goto('/employer/needs/demo-vac-be-m-1');
   await expect(page.getByText(POOL_TOP).first()).toBeVisible();
   await expect(page.getByText(/Приглашение принято. Контакты:/)).toBeVisible();
@@ -71,7 +71,7 @@ test('E-02: работодатель → подборка → приглашен
 });
 
 test('Помощник работодателя (демо без модели): подборка карточками → «Пригласить» → форма; имён нет', async ({ page }) => {
-  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/employer');
+  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/consultant'); // дом работодателя — помощник (10.10)
   // свежая потребность этого прогона на Frontend: сценарий не зависит от того, кого принял E-02 по Backend
   const list = await (await page.request.get('/api/employer/vacancies')).json();
   const sample = list.vacancies.find((v: { id: string }) => v.id === 'demo-vac-fe-j-2');
@@ -81,7 +81,7 @@ test('Помощник работодателя (демо без модели): 
   });
   expect(created.status()).toBe(201);
   await page.getByRole('link', { name: 'Помощник' }).click();
-  await page.waitForURL('**/employer/assistant');
+  await page.waitForURL('**/consultant');
   await page.getByLabel('Сообщение помощнику').fill(`Подбери под мою потребность ${title}`);
   await page.getByRole('button', { name: 'Отправить', exact: true }).click();
   const block = page.getByTestId('assistant-candidates').last();

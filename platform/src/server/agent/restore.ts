@@ -1,6 +1,6 @@
 import { prisma } from '@/server/db';
 
-import { ASIDE_MARK_RE } from '@/server/onboarding/match';
+import { ASIDE_MARK_RE, PAUSE_MARK_RE } from '@/server/onboarding/match';
 
 import type { AgentEvent } from './types';
 
@@ -8,10 +8,21 @@ import type { AgentEvent } from './types';
  * Элемент ленты в сериализуемом виде (совпадает с FeedItem компонента). `stepId` — реплика
  * свободного вопроса посреди шага онбординга (маркер в тексте хода) и ответ на неё: лента
  * онбординга показывает их под своим шагом, встроенный консультант — без них (без дублей).
+ * `paused` — реплика свободного разговора, пока знакомство было на паузе («Настроить позже»):
+ * `stepId` — шаг паузы; лента показывает её под ним, лента паузы — в чате.
  */
 export type RestoredItem =
-  | { id: string; role: 'user'; text: string; stepId?: string }
-  | { id: string; role: 'agent'; event: AgentEvent; stepId?: string };
+  | { id: string; role: 'user'; text: string; stepId?: string; paused?: true }
+  | { id: string; role: 'agent'; event: AgentEvent; stepId?: string; paused?: true };
+
+/** Шаг паузы из маркера в тексте хода; null — не на паузе. */
+export function pauseStepOf(content: string): string | null {
+  for (const line of content.split('\n')) {
+    const m = PAUSE_MARK_RE.exec(line.trim());
+    if (m) return m[1]!;
+  }
+  return null;
+}
 
 /** Шаг онбординга из маркера в тексте хода кандидата; null — обычная реплика. */
 export function asideStepOf(content: string): string | null {
@@ -43,7 +54,7 @@ export function humanizeUserText(content: string, names: Map<string, string>): s
       if (l) return `Ссылки: ${l[1]}`;
       return line;
     })
-    .filter((line) => !ASIDE_MARK_RE.test(line.trim()))
+    .filter((line) => !ASIDE_MARK_RE.test(line.trim()) && !PAUSE_MARK_RE.test(line.trim()))
     .join('\n');
 }
 
@@ -76,13 +87,15 @@ export async function loadLastChat(candidateId: string): Promise<RestoredChat> {
     }
     const uploads = ids.size ? await prisma.upload.findMany({ where: { id: { in: [...ids] }, candidateId }, select: { id: true, filename: true } }) : [];
     const names = new Map(uploads.map((u) => [u.id, u.filename]));
-    let step: string | null = null;
+    let tag: { stepId?: string; paused?: true } = {};
     for (const m of rows) {
       if (m.role === 'user') {
-        step = asideStepOf(m.content);
-        items.push({ id: `r-${m.id}`, role: 'user', text: humanizeUserText(m.content, names), ...(step ? { stepId: step } : {}) });
+        const aside = asideStepOf(m.content);
+        const pause = aside ? null : pauseStepOf(m.content);
+        tag = aside ? { stepId: aside } : pause ? { stepId: pause, paused: true } : {};
+        items.push({ id: `r-${m.id}`, role: 'user', text: humanizeUserText(m.content, names), ...tag });
       } else if (m.content.trim()) {
-        items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'message', text: m.content }, ...(step ? { stepId: step } : {}) });
+        items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'message', text: m.content }, ...tag });
       }
     }
   }

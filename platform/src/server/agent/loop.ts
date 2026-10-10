@@ -17,7 +17,7 @@ import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
 import { withWebSearchGate } from './web-search/tool';
 import { tools as defaultTools } from './tools';
-import { asideMark } from '@/server/onboarding/match';
+import { asideMark, pauseMark } from '@/server/onboarding/match';
 import { type OnboardingStepBrief, pendingOnboarding } from '@/server/onboarding/service';
 import { MAX_TOOL_CALLS_PER_TURN, type AgentEvent, type ToolContext, type TurnInput, type TurnOptions } from './types';
 
@@ -52,8 +52,12 @@ export async function runTurn(
   const specs = toolSpecs(registry);
   const ctx: ToolContext = { candidateId, conversationId, emit, llm, ...(signal ? { signal } : {}) };
 
+  // Онбординг брошен («Настроить позже»): консультант напоминает: продолжим здесь же, кнопкой вверху ленты.
+  // Ход из самой ленты онбординга (вопрос, шаг «Документы») — не брошен, напоминать не о чем.
+  const resume = input.onboarding ? null : await pendingOnboarding(candidateId).catch(() => null);
+
   await ensurePromptVersion(conversationId);
-  await saveMessage(conversationId, { role: 'user', content: userContent(input) });
+  await saveMessage(conversationId, { role: 'user', content: userContent(input, resume) });
 
   let pipeline: PipelineResult | undefined;
   if (input.uploadIds?.length || input.urls?.length) {
@@ -73,10 +77,6 @@ export async function runTurn(
     await createReplyStream(emit, signal).finish(text);
     return;
   }
-  // Онбординг брошен («Настроить позже»): консультант напоминает: продолжим здесь же, кнопкой вверху ленты.
-  // Ход из самой ленты онбординга (вопрос, шаг «Документы») — не брошен, напоминать не о чем.
-  const resume = input.onboarding ? null : await pendingOnboarding(candidateId).catch(() => null);
-
   if (demo) {
     // Демо без ключей: модели нет, ответ — шаблоны по данным платформы (не сбой, без «упрощённого режима»).
     let text = await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
@@ -170,11 +170,17 @@ async function degrade(ctx: ToolContext, input: TurnInput, pipeline: PipelineRes
   await createReplyStream(ctx.emit, ctx.signal).finish(text);
 }
 
-function userContent(input: TurnInput): string {
+/**
+ * Текст хода для БД. Маркер шага: свободный вопрос посреди шага (asideMark) или реплика разговора,
+ * пока знакомство на паузе (pauseMark, решение владельца 10.10: эти сообщения видны в ленте под
+ * шагом, на котором была пауза, — хронологически и после возврата к шагам).
+ */
+function userContent(input: TurnInput, resume: OnboardingStepBrief | null): string {
   const parts = [input.text.trim()];
   if (input.uploadIds?.length) parts.push(`[вложения: ${input.uploadIds.map((id) => `файл ${id}`).join(', ')}]`);
   if (input.urls?.length) parts.push(`[ссылки: ${input.urls.join(' ')}]`);
   if (input.onboarding) parts.push(asideMark(input.onboarding.stepId));
+  else if (resume) parts.push(pauseMark(resume.stepId));
   return parts.filter(Boolean).join('\n');
 }
 

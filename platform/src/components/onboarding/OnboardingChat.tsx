@@ -83,7 +83,10 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ text: string; quiet?: boolean } | null>(null);
   const [turn, setTurn] = useState(0);
-  const [ready, setReady] = useState(false);
+  // Вернулся к завершённому знакомству (это и есть лента /consultant после итога): сводку не
+  // перепечатываем, разговор и поле ввода — сразу.
+  const settled = initial.onboarded && initial.current.kind === 'summary';
+  const [ready, setReady] = useState(settled);
   const [draft, setDraft] = useState(() => draftOf(initial.current));
   const [sel, setSel] = useState(() => multiOf(initial.current));
   const [extra, setExtra] = useState(() => extraOf(initial.current));
@@ -396,7 +399,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           ))}
 
           <AssistantRow testId="ob-current">
-            <Reply key={`${cur.id}:${turn}`} lines={lines} animate onDone={() => setReady(true)} extra={consentExtra} />
+            <Reply key={`${cur.id}:${turn}`} lines={lines} animate={!(settled && turn === 0)} onDone={() => setReady(true)} extra={consentExtra} />
           </AssistantRow>
 
           <AsideRows items={curAsides} locked={asides.asking} />

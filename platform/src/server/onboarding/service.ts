@@ -450,12 +450,13 @@ export async function pendingOnboarding(candidateId: string): Promise<Onboarding
 
 /**
  * Показывать ли шаги онбординга в ленте /consultant (решение владельца 10.10: онбординг и
- * консультант — одна страница). Да — знакомство не завершено или пройдено в чате (есть
- * OnboardingState: история шагов — начало ленты). Нет — аккаунт завершён без чата (сид демо-
- * кандидатов): getView не зовём, иначе он создал бы состояние и показал вопросы с первого шага.
+ * консультант — одна страница). Да — знакомство не завершено или завершено в чате (состояние
+ * стоит на итоге: шаги — начало ленты, дальше разговор). Нет — аккаунт завершён без чата (сид
+ * демо) или со старым состоянием посреди шагов (открывал прежнюю /onboarding после завершения):
+ * такому — обычный чат, иначе жюри под демо-кандидатом увидело бы вопросы вместо консультанта.
  */
 export async function onboardingInFeed(userId: string): Promise<boolean> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { onboardedAt: true, onboarding: { select: { userId: true } } } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { onboardedAt: true, onboarding: { select: { stepId: true } } } });
   if (!user) return false;
-  return user.onboardedAt === null || user.onboarding !== null;
+  return user.onboardedAt === null || user.onboarding?.stepId === 'summary';
 }

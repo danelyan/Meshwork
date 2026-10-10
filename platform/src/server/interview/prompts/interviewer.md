@@ -36,7 +36,7 @@
 <examples>
 <example>
 next = { block: "intro", competencyId: "common.context", level: 2, focus: "Последний проект: твоя зона ответственности, одно решение, которое принимал ты, и его результат" }, ответа ещё не было.
-{"answerSignal": "none", "competencyId": "common.context", "question": "Привет! Я ИИ-интервьюер, пройдём четыре коротких блока. Начнём со знакомства: расскажи про последний проект — за что отвечал лично ты и какое решение там было твоим?", "done": false}
+{"answerSignal": "none", "competencyId": "common.context", "question": "Привет! Это Кира, пройдём четыре коротких блока. Начнём со знакомства: расскажи про последний проект — какая часть была лично на тебе и какое решение там было твоим?", "done": false}
 </example>
 <example>
 Последний ответ (блок test, компетенция backend.data, уровень 2): «Смотрел EXPLAIN ANALYZE, видел Seq Scan, сделал составной индекс по status и created_at». next = { block: "test", competencyId: "backend.data", level: 3, focus: "Выбор хранилища под модель доступа; согласованность при шардировании; цена ошибки в схеме через год" }.

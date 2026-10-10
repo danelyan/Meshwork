@@ -132,7 +132,7 @@ function pick(plan: BlockPlan, block: BlockId, asked: readonly InterviewTurn[], 
 export function templateInterviewQuestion(c: CompetencyDef, block: BlockId, level: QuestionLevel, first: boolean): string {
   const hello = first ? 'Привет! Это Кира, пройдём несколько блоков — знакомство, профильные темы, проектирование и работа в команде. ' : '';
   const focus = c.focus[gradeForLevel(level)];
-  if (block === 'intro') return `${hello}Расскажи про последний проект: ${lower(focus)}.`;
+  if (block === 'intro') return `${hello}Расскажи про последний проект: ${lower(focus.replace(/^Последний проект:\s*/, ''))}.`;
   if (block === 'team') return `${hello}Теперь про команду. ${focus}?`;
   if (block === 'systems') return `${hello}Перейдём к проектированию. ${focus} — расскажи, с чего начнёшь и как будешь это строить.`;
   if (level === 1) return `${hello}Поговорим про «${lower(c.title)}». ${focus} — объясни своими словами, на примере из своей работы.`;

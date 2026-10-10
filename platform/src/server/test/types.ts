@@ -131,5 +131,6 @@ export interface EligibilityView {
   allowed: boolean;
   reason?: string;
   nextAllowedAt?: string;
-  code?: 'active_attempt' | 'grade_change_too_soon' | 'retake_too_soon';
+  /** no_test — для направления нет генераторов заданий (тест пока недоступен). */
+  code?: 'active_attempt' | 'grade_change_too_soon' | 'retake_too_soon' | 'no_test';
 }

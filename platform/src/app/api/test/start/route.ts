@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import { withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
 import { checkEligibility, describeIntervals, startAttempt } from '@/server/test';
 
 export const dynamic = 'force-dynamic';
 
-const Body = z.object({ specialization: z.enum(['backend', 'frontend']), grade: z.enum(['junior', 'middle']) });
+const Body = z.object({ specialization: z.enum(SPECIALIZATIONS), grade: z.enum(['junior', 'middle']) });
 
 /** POST /api/test/start {specialization, grade} — новая попытка (201) или активная той же категории (200). R-C-05, R-C-06, R-C-09. */
 export const POST = withErrors(async (req: Request) => {

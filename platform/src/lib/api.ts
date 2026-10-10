@@ -1,5 +1,6 @@
 // Тонкий клиент к API платформы. Контракты других лейнов могут быть заглушками,
 // поэтому ответы разбираются терпимо, а ошибки приводятся к ApiError с понятным текстом.
+import type { Specialization } from '@/lib/directions';
 import type { ProfileView } from '@/server/claims/types';
 import type { OnboardingView } from '@/server/onboarding/types';
 import type { AnswerResult, DefenseQuestion, DefenseSessionView, DefenseVerdict } from '@/server/defense/types';
@@ -56,7 +57,7 @@ export function postJson<T>(url: string, body: unknown): Promise<T> {
 export interface DemoCandidate {
   id: string;
   name: string;
-  specialization: 'backend' | 'frontend' | null;
+  specialization: Specialization | null;
   fspState: string;
   /** Какой файл загрузить и какую ссылку вставить; null — подсказки нет. */
   demoResume?: { fileName: string; link: string } | null;
@@ -98,9 +99,6 @@ export interface MeView {
 export const getMe = async () => (await request<{ user: MeView | null }>('/api/auth/me')).user;
 export const getConsentVersion = async () => (await request<{ version: string }>('/api/auth/consent')).version;
 export const acceptConsent = (version: string) => postJson<{ version: string; acceptedAt: string }>('/api/auth/consent', { version });
-/** Переключить активную роль (ADR 0004); после ответа — полная навигация на `next`. */
-export const switchRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName?: string }) =>
-  postJson<{ role: MeView['role']; next: string; created: boolean; changed: boolean }>('/api/auth/role/switch', body);
 export const chooseRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName: string }) =>
   postJson<{ role: MeView['role']; candidateId: string | null; employerProfileId: string | null }>('/api/auth/role', body);
 export const completeOnboarding = () => postJson<{ onboarded: true; next: string }>('/api/auth/onboarding/complete', {});
@@ -253,9 +251,9 @@ export async function answerDefenseApi(sessionId: string, answer: string): Promi
 
 export type { AttemptSummary, AttemptView, EligibilityView, StartResult } from '@/server/test/types';
 
-export const startTestApi = (specialization: 'backend' | 'frontend', grade: 'junior' | 'middle') =>
+export const startTestApi = (specialization: Specialization, grade: 'junior' | 'middle') =>
   postJson<import('@/server/test/types').StartResult>('/api/test/start', { specialization, grade });
-export const testEligibilityApi = (specialization: 'backend' | 'frontend', grade: 'junior' | 'middle') =>
+export const testEligibilityApi = (specialization: Specialization, grade: 'junior' | 'middle') =>
   request<import('@/server/test/types').EligibilityView & { rules: string }>(`/api/test/start?specialization=${specialization}&grade=${grade}`);
 export const getTestAttemptApi = (id: string) => request<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}`);
 export const answerTestApi = (id: string, answer: string) =>

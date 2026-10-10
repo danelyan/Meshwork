@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import type { MatchFilters } from './ranking';
 import { normalizeStack } from './ranking';
 import { DEFAULT_RESULT_LIMIT, MAX_RESULT_LIMIT } from './weights';
 
-export const SpecializationSchema = z.enum(['backend', 'frontend']);
+export const SpecializationSchema = z.enum(SPECIALIZATIONS);
 export const GradeSchema = z.enum(['junior', 'middle']);
 
 const optText = (max: number) =>

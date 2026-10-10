@@ -1,5 +1,6 @@
 // Правила адаптивного теста (ADR-0002): пороги грейдов, выбор задания, остановка, решение.
 // Все числа — ПРЕДЛОЖЕНИЕ: подобраны на симуляции (eval/test), на людях не оценены.
+import { SPEC_LABEL } from '@/lib/directions';
 import type { Grade, Specialization } from '../types';
 
 import { estimateTheta, information, probAbove, type Response, type ThetaEstimate } from './irt';
@@ -240,7 +241,7 @@ export function decide(responses: readonly Response[], grade: Grade, confirmProb
 }
 
 export function specLabel(s: Specialization): string {
-  return s === 'backend' ? 'Backend' : 'Frontend';
+  return SPEC_LABEL[s];
 }
 
 export function gradeLabel(g: Grade): string {

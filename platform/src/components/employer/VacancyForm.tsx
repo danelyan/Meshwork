@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type FormEvent } from 'react';
 
+import { specLabel } from '@/lib/directions';
 import { ApiError } from '@/lib/api';
 import { createVacancyApi, updateVacancyApi, type VacancyBody } from '@/lib/employer-api';
 import type { CatalogEntry } from '@/server/claims/types';
@@ -151,7 +152,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
             Требования
           </h2>
           <p className={styles.lead}>
-            Из каталога навыков для {spec === 'backend' ? 'Backend' : 'Frontend'} · {grade === 'junior' ? 'Junior' : 'Middle'}. По ним считается подборка: вес требования - из каталога для грейда.
+            Из каталога навыков для {specLabel(spec)} · {grade === 'junior' ? 'Junior' : 'Middle'}. По ним считается подборка: вес требования - из каталога для грейда.
             Выбрано: {picked.size}.
           </p>
         </div>

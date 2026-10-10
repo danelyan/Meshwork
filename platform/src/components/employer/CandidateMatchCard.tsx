@@ -1,3 +1,4 @@
+import { specLabel } from '@/lib/directions';
 import { LevelBadge } from '@/components/LevelBadge';
 import type { MatchItem } from '@/server/employer/matching';
 import type { PublicSourceType } from '@/server/employer/privacy';
@@ -38,7 +39,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
       <div className={styles.meta}>
         {c.category ? <Tag tone="solid">{c.category.label} · тест</Tag> : <Tag tone="dashed">без категории</Tag>}
         {c.fsp.hasAchievements && <Tag tone="outline">ФСП</Tag>}
-        {!c.category && c.specialization && <Tag>{c.specialization === 'backend' ? 'Backend' : 'Frontend'}</Tag>}
+        {!c.category && c.specialization && <Tag>{specLabel(c.specialization)}</Tag>}
       </div>
       <div>
         <Meter value={item.covered} max={item.total} label={`Закрыто ${item.covered} из ${item.total} требований`} />

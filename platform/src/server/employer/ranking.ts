@@ -1,6 +1,8 @@
 // Ранжирование кандидатов под потребность работодателя (R-E-03, R-M-01…R-M-04).
 // Чистые функции: без БД, детерминированно. Покрытие — общий матчер recommend
 // (тот же, что «закрываешь k из n» у кандидата), сверху — категория, ФСП, стек.
+import { SPEC_LABEL } from '@/lib/directions';
+
 import type { CatalogEntry, EvidenceLevel } from '../claims/types';
 import { buildIndex, type Need } from '../recommend/evidence';
 import { computeCoverage } from '../recommend/matcher';
@@ -82,7 +84,6 @@ export interface RankedCandidate {
 
 const PROVEN: ReadonlySet<EvidenceLevel> = new Set(['artifact', 'third_party', 'platform']);
 
-const SPEC_LABEL: Record<Specialization, string> = { backend: 'Backend', frontend: 'Frontend' };
 const GRADE_LABEL: Record<Grade, string> = { junior: 'Junior', middle: 'Middle' };
 
 export function categoryLabel(c: { specialization: Specialization; grade: Grade }): string {

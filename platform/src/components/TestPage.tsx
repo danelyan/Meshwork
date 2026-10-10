@@ -15,6 +15,7 @@ import {
   startTestApi,
   testEligibilityApi,
 } from '@/lib/api';
+import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, type Specialization } from '@/lib/directions';
 import { formatDate } from '@/lib/labels';
 
 import { useBareShell } from './shell/ShellFrame';
@@ -22,14 +23,13 @@ import styles from './TestPage.module.css';
 import { Button, Chip, Field, Kicker, Notice, Panel, Tag } from './ui';
 import ui from './ui.module.css';
 
-type Spec = 'backend' | 'frontend';
+type Spec = Specialization;
 type Grade = 'junior' | 'middle';
 
-const SPEC_LABEL: Record<Spec, string> = { backend: 'Backend', frontend: 'Frontend' };
 const GRADE_LABEL: Record<Grade, string> = { junior: 'Junior', middle: 'Middle' };
 
 function isSpec(v: string | null): v is Spec {
-  return v === 'backend' || v === 'frontend';
+  return isSpecialization(v);
 }
 function isGrade(v: string | null): v is Grade {
   return v === 'junior' || v === 'middle';
@@ -85,7 +85,7 @@ function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Pro
   const [spec, setSpec] = useState<Spec>(initial.spec ?? 'backend');
   const [grade, setGrade] = useState<Grade>(initial.grade ?? 'junior');
   const [hint, setHint] = useState<string | null>(null);
-  const [elig, setElig] = useState<{ allowed: boolean; reason?: string; rules: string } | null>(null);
+  const [elig, setElig] = useState<{ allowed: boolean; reason?: string; code?: string; rules: string } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,7 +139,7 @@ function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Pro
         <div className={styles.choiceRow}>
           <span className={ui.label}>Направление</span>
           <div className={styles.chips} role="group" aria-label="Направление">
-            {(['backend', 'frontend'] as Spec[]).map((s) => (
+            {SPECIALIZATIONS.map((s) => (
               <Chip key={s} pressed={spec === s} onClick={() => setSpec(s)} disabled={pending}>
                 {SPEC_LABEL[s]}
               </Chip>
@@ -171,7 +171,9 @@ function IntroScreen({ onStart, initial }: { onStart: (s: Spec, g: Grade) => Pro
       </ul>
 
       {elig && !elig.allowed && (
-        <Notice data-testid="not-allowed">{elig.reason}</Notice>
+        <Notice data-testid={elig.code === 'no_test' ? 'no-test' : 'not-allowed'}>
+          {elig.code === 'no_test' ? `Тест пока недоступен: ${elig.reason}` : elig.reason}
+        </Notice>
       )}
       {error && <Notice tone="error">{error}</Notice>}
 

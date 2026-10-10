@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import { prisma } from '@/server/db';
 import type { AgentTool } from '../types';
 
@@ -15,7 +16,7 @@ const Output = z.object({
       companyName: z.string().nullable(),
       /** Приглашение может быть без потребности (R-E-05) — тогда поля вакансии null. */
       vacancyTitle: z.string().nullable(),
-      specialization: z.enum(['backend', 'frontend']).nullable(),
+      specialization: z.enum(SPECIALIZATIONS).nullable(),
       grade: z.enum(['junior', 'middle']).nullable(),
       /** Вилка приглашения, ₽ в месяц (ТЗ 2.2). */
       salaryFrom: z.number().int(),

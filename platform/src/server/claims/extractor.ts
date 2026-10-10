@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { z } from 'zod';
 
+import type { Specialization } from '@/lib/directions';
 import { responseJsonSchema } from '../llm/schema';
 import type { ExtractedDoc } from '../collector/types';
 import { LlmError, type ChatMessage, type CompleteResult, type LlmProvider } from '../llm/types';
@@ -145,7 +146,7 @@ function shortIssues(err: z.ZodError | null): string {
 
 export interface ExtractOptions {
   /** Специализация кандидата: модель видит только её записи и общие. */
-  specialization?: 'backend' | 'frontend' | null;
+  specialization?: Specialization | null;
   signal?: AbortSignal;
   maxChunkChars?: number;
 }

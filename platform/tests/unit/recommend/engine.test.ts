@@ -189,7 +189,7 @@ describe('правило теста', () => {
       const s = middleSignature(real, spec);
       expect(s.length).toBeGreaterThan(5);
       for (const e of s) {
-        const w = 'junior' in e.weights! ? e.weights! : e.weights![spec];
+        const w = ('junior' in e.weights! ? e.weights! : e.weights![spec])!;
         expect(w.middle).toBeGreaterThanOrEqual(2);
         expect(w.middle!).toBeGreaterThan(w.junior ?? 0);
         expect(e.weight).toBe(w.middle);

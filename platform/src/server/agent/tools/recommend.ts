@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import { explainInvitation, gapMap, recommendTargets, recommendTasks, recommendTest } from '@/server/recommend';
 import type { AgentTool } from '../types';
 import { EmptyInput } from './shared';
@@ -33,7 +34,7 @@ export const getGapMap: AgentTool<z.infer<typeof GapInput>, { gaps: z.infer<type
 };
 
 const TestOutput = z.object({
-  specialization: z.enum(['backend', 'frontend']),
+  specialization: z.enum(SPECIALIZATIONS),
   grade: z.enum(['junior', 'middle']),
   reason: z.string(),
   allowed: z.boolean(),
@@ -82,7 +83,7 @@ const TargetSchema = z.object({
   companyId: z.string(),
   companyName: z.string(),
   title: z.string(),
-  specialization: z.enum(['backend', 'frontend']),
+  specialization: z.enum(SPECIALIZATIONS),
   grade: z.enum(['junior', 'middle']),
   salaryFrom: z.number(),
   salaryTo: z.number(),

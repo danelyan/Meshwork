@@ -1,3 +1,4 @@
+import { SPEC_LABEL } from '@/lib/directions';
 import { prisma } from '../db';
 import { listVacancies, loadEmployerContext } from '../employer';
 import type { OnboardingView } from '../onboarding/types';
@@ -59,7 +60,7 @@ export function introDone(view: OnboardingView | undefined): boolean {
   return !view || (view.onboarded && view.current.kind === 'summary');
 }
 
-const SPEC: Record<string, string> = { backend: 'Backend', frontend: 'Frontend' };
+const SPEC: Record<string, string> = SPEC_LABEL;
 const GRADE: Record<string, string> = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
 
 export interface CandidateFacts {

@@ -1,6 +1,7 @@
 // «План В» извлечения: словарь маркеров каталога, без LLM. Используют eval (предсказатель
 // catalog-keywords) и agent/fallback.ts при отказе провайдера. Детерминированно; каждая цитата —
 // дословный фрагмент строки источника, поэтому verifyClaims её пропускает.
+import type { Specialization } from '@/lib/directions';
 import type { ExtractedDoc } from '../collector/types';
 import { catalogFor } from './catalog-file';
 import { normalize } from './normalize';
@@ -76,7 +77,7 @@ function cleanQuote(s: string): string {
 }
 
 /** Специализация по документу: где больше маркеров и что в заголовке. null — не понятно. */
-export function guessSpecialization(doc: ExtractedDoc, catalog: CatalogEntry[]): 'backend' | 'frontend' | null {
+export function guessSpecialization(doc: ExtractedDoc, catalog: CatalogEntry[]): Specialization | null {
   const text = normalize(doc.text || docLines(doc).map((l) => l.text).join('\n'));
   const head = normalize(docLines(doc).slice(0, 5).map((l) => l.text).join(' '));
   let be = /backend|бэкенд|бекенд|back-end|java|golang|python|серверн/.test(head) ? 5 : 0;
@@ -93,7 +94,7 @@ export function guessSpecialization(doc: ExtractedDoc, catalog: CatalogEntry[]):
 
 export interface MarkerOptions {
   /** Ограничить каталог специализацией (+ общие). По умолчанию — угадать по документу. */
-  specialization?: 'backend' | 'frontend' | null;
+  specialization?: Specialization | null;
 }
 
 /**

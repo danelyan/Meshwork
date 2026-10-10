@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import { errors } from '@/server/errors';
 import { listVacancies, type VacancyView } from '@/server/employer';
 
@@ -10,7 +11,7 @@ import type { EmployerToolContext } from '../types';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type EmployerTool = AgentTool<any, any, EmployerToolContext>;
 
-export const SpecSchema = z.enum(['backend', 'frontend']);
+export const SpecSchema = z.enum(SPECIALIZATIONS);
 export const GradeSchema = z.enum(['junior', 'middle']);
 /** Выдача в ленту — коротко: подробности и полный список — в кабинете. */
 export const AGENT_RESULT_LIMIT = 10;

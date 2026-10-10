@@ -1,3 +1,4 @@
+import { SPEC_LABEL } from '@/lib/directions';
 import { countOf, FORMS } from '@/lib/plural';
 import { recommendTargets, recommendTest } from '@/server/recommend';
 import { NO_CONFIRMED_REASON } from '@/server/recommend/types';
@@ -25,7 +26,7 @@ export interface FallbackInput {
 }
 
 const GRADE_RU: Record<string, string> = { junior: 'Junior', middle: 'Middle' };
-const SPEC_RU: Record<string, string> = { backend: 'Backend', frontend: 'Frontend' };
+const SPEC_RU: Record<string, string> = SPEC_LABEL;
 
 /** Что прочитал / нашёл / отбросил — общая часть ответа после конвейера (план В и демо-режим). */
 export function pipelineParts(p: PipelineResult): string[] {

@@ -10,7 +10,7 @@ import { GRADE_CHANGE_INTERVAL_DAYS } from '../recommend/weights';
 import type { Grade, Specialization } from '../types';
 
 import { checkAnswer, MAX_ANSWER_CHARS } from './answers';
-import { GENERATORS, getGenerator } from './generators';
+import { GENERATORS, getGenerator, hasTestFor, NoGeneratorsError } from './generators';
 import { estimateTheta, type Response } from './irt';
 import { decide, explainDecision, MAX_ITEMS, MIN_ITEMS, nextStep, phasePool, selectNext, type AttemptPhase, type SelectableTemplate, type Step } from './policy';
 import { deriveSeed, randomSeed } from './rng';
@@ -95,6 +95,7 @@ async function loadPool(spec: Specialization): Promise<(SelectableTemplate & { g
 // ---------------------------------------------------------------------------
 
 export async function checkEligibility(candidateId: string, spec: Specialization, grade: Grade, now: Date = new Date()): Promise<EligibilityView> {
+  if (!hasTestFor(spec)) return { allowed: false, code: 'no_test', reason: new NoGeneratorsError(spec).message.replace(/ \(src\/.*\)\.$/, '.') };
   const iv = intervals();
   const [category, lastSame] = await Promise.all([
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' } }),
@@ -213,7 +214,7 @@ export async function startAttempt(
     throw new AppError('active_attempt', 'Сначала завершите текущую попытку.', 409, { attemptId: active.id });
   }
   const elig = await checkEligibility(candidateId, spec, grade, now);
-  if (!elig.allowed) throw new AppError(elig.code!, elig.reason!, 409, { nextAllowedAt: elig.nextAllowedAt });
+  if (!elig.allowed) throw new AppError(elig.code!, elig.reason!, elig.code === 'no_test' ? 422 : 409, { nextAllowedAt: elig.nextAllowedAt });
 
   const iv = intervals();
   const attempt = await prisma.testAttempt.create({

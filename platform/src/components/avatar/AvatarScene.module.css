@@ -32,27 +32,45 @@
 .feedBox { max-height: min(60svh, 560px); overflow-y: auto; background: var(--surface-input); }
 
 /* --- D: звонок + чат слева. Тёмная сцена C, слева светлая панель 440px на всю высоту --- */
-.sideScene { display: grid; grid-template-columns: minmax(420px, 460px) minmax(0, 1fr); grid-template-areas: 'panel stage'; position: relative; isolation: isolate; height: calc(100svh - var(--landing-header-h)); min-height: 560px; background: var(--avatar-stage); }
+.sideScene { display: grid; grid-template-columns: minmax(420px, 460px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; position: relative; isolation: isolate; height: var(--scene-h, calc(100svh - var(--landing-header-h))); min-height: var(--scene-min-h, 560px); background: var(--avatar-stage); }
+.sideScene.withAside { grid-template-rows: clamp(250px, 40vh, 340px) minmax(0, 1fr); grid-template-areas: 'panel stage' 'panel aside'; }
+.withAside .sideStage { border-bottom: 1px solid var(--avatar-stage-line); }
+.sideAside { grid-area: aside; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 24px 24px; }
 .sideStage { grid-area: stage; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .sideHead { position: relative; flex: 1; min-height: 240px; }
-.sideSubs { flex: none; width: min(640px, 100%); margin: 0 auto; padding: 8px 32px 28px; }
+.sideSubs { flex: none; width: min(640px, 100%); margin: 0 auto; padding: 4px 32px 16px; box-sizing: border-box; min-height: calc(3em + 20px); max-height: calc(3em + 20px); overflow: hidden; -webkit-mask-image: linear-gradient(var(--stage-mask) 70%, transparent); mask-image: linear-gradient(var(--stage-mask) 70%, transparent); }
 .sidePanel { grid-area: panel; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--paper); color: var(--ink); border-right: 1px solid var(--avatar-stage-line); padding: 0 16px;
   /* шапка кабинета над панелью не липнет: липкое внутри панели прижимается к её верху */
   --landing-header-h: 0px; }
+<<<<<<< HEAD
+.sidePanel { --feed-min-h: 100%; }
+.sidePanel.sidePanel h1 { font-size: 20px; white-space: nowrap; }
+=======
 .sidePanel > div { min-height: 0; }
 .sideScene[data-call] .sidePanel > :not(.callPause) { opacity: 0.35; filter: grayscale(1); }
 .callPause { position: sticky; top: 0; z-index: 2; margin: 0 -16px; padding: 10px 16px; font: 500 var(--fs-xs) var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); background: var(--paper); border-bottom: 1px solid var(--line); }
+>>>>>>> lane/call
 .sideChat.sideChat { height: auto; min-height: 100%; border: 0; background: transparent; }
 
 @media (max-width: 1050px) {
-  .sideScene { --page-header-h: var(--landing-header-h); --stage-h: max(40svh, 260px); display: flex; flex-direction: column; height: auto; min-height: calc(100svh - var(--landing-header-h)); }
-  .sideStage { flex: none; position: sticky; top: var(--landing-header-h); z-index: 30; height: var(--stage-h); min-height: 0; border-bottom: 1px solid var(--avatar-stage-line); background: var(--avatar-stage); }
+  .sideScene { --page-header-h: var(--landing-header-h); --stage-h: max(36svh, 200px); display: flex; flex-direction: column; height: auto; min-height: calc(100svh - var(--landing-header-h)); }
+  .sideScene.withAside { display: flex; }
+  .sideStage { order: 0; flex: none; position: sticky; top: var(--landing-header-h); z-index: 30; height: var(--stage-h); min-height: 0; border-bottom: 1px solid var(--avatar-stage-line); background: var(--avatar-stage); }
   .sideHead { min-height: 0; }
+<<<<<<< HEAD
+  .sideSubs { padding: 2px 16px 8px; min-height: calc(4.5em + 10px); max-height: calc(4.5em + 10px); }
+=======
   /* созвон: сцене нужна высота под голову, текст реплики и панель управления */
   .sideScene[data-call] { --stage-h: max(88svh, 520px); }
   .sideSubs { padding: 4px 16px 12px; min-height: 3.6em; }
+>>>>>>> lane/call
   /* липкая шапка ленты прижимается под липкой головой */
-  .sidePanel { --landing-header-h: calc(var(--page-header-h) + var(--stage-h)); overflow: visible; border-right: 0; border-top: 1px solid var(--line); }
+  .sidePanel { order: 2; --landing-header-h: calc(var(--page-header-h) + var(--stage-h)); --feed-min-h: calc(100svh - var(--page-header-h) - var(--stage-h)); overflow: visible; border-right: 0; border-top: 1px solid var(--line); }
+}
+/* низкое окно (телефон в ландшафте, открытая клавиатура): голова ниже, субтитры уходят, ввод остаётся виден */
+@media (max-width: 1050px) and (max-height: 560px) {
+  .sideScene { --stage-h: max(26dvh, 120px); }
+  .sideSubs { display: none; }
 }
 @media (max-width: 1050px) {
   .portraitScene { display: flex; flex-direction: column; }

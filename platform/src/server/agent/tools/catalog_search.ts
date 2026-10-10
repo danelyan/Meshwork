@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import { getCatalog } from '@/server/claims';
 import type { CatalogEntry } from '@/server/claims/types';
 import type { AgentTool } from '../types';
 
 const Input = z.object({
   query: z.string().min(2).max(300).describe('Что умеет кандидат, своими словами или фразой из источника'),
-  specialization: z.enum(['backend', 'frontend']).optional().describe('Сузить до специализации (common ищется всегда)'),
+  specialization: z.enum(SPECIALIZATIONS).optional().describe('Сузить до специализации (common ищется всегда)'),
   limit: z.number().int().min(1).max(20).default(8),
 });
 const Output = z.object({
@@ -14,7 +15,7 @@ const Output = z.object({
     z.object({
       id: z.string(),
       statement: z.string(),
-      specialization: z.enum(['backend', 'frontend', 'common']),
+      specialization: z.enum([...SPECIALIZATIONS, 'common']),
       grades: z.array(z.enum(['junior', 'middle'])),
       weight: z.number(),
       proof: z.array(z.string()),

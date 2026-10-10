@@ -1,11 +1,12 @@
 // Предзаполнение формы потребности из ссылки черновика помощника (create_need_draft → formHref).
 // Всё из query — недоверенное: значения режутся, требования — только из каталога своей специализации.
+import type { Specialization } from '@/lib/directions';
 import type { CatalogEntry } from '@/server/claims/types';
 import { normalizeStack } from '@/server/employer/ranking';
 
 export interface NeedPrefill {
   title: string;
-  specialization: 'backend' | 'frontend';
+  specialization: Specialization;
   grade: 'junior' | 'middle';
   salaryFrom: number;
   salaryTo: number;

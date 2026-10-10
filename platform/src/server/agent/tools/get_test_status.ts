@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import { prisma } from '@/server/db';
 import { recommendTest } from '@/server/recommend';
 import type { AgentTool } from '../types';
@@ -12,7 +13,7 @@ import { EmptyInput } from './shared';
  */
 export const TEST_ROUTE: string | null = '/test';
 
-const Spec = z.enum(['backend', 'frontend']);
+const Spec = z.enum(SPECIALIZATIONS);
 const Grade = z.enum(['junior', 'middle']);
 const Output = z.object({
   category: z.object({ specialization: Spec, grade: Grade, confirmedAt: z.string() }).nullable(),

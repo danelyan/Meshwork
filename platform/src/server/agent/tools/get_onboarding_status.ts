@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import { prisma } from '@/server/db';
 import { JOURNEY_STEPS, journeyState, STEP_HINT } from '../journey';
 import type { AgentTool } from '../types';
@@ -43,7 +44,7 @@ const ProfileSchema = z.object({
 
 const StepEnum = z.enum([...JOURNEY_STEPS, 'invitations', 'done']);
 const Output = z.object({
-  specialization: z.enum(['backend', 'frontend']).nullable(),
+  specialization: z.enum(SPECIALIZATIONS).nullable(),
   fspState: z.enum(['not_linked', 'no_achievements', 'unavailable', 'linked']),
   profileAvailable: z.boolean(),
   profile: ProfileSchema.nullable(),

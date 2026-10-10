@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { SPEC_ROLE } from '@/lib/directions';
 import { errors } from '@/server/errors';
 import { categoryNeeds, normalizeStack } from '@/server/employer/ranking';
 import { loadCatalog } from '@/server/recommend/evidence';
@@ -119,7 +120,7 @@ export const createNeedDraft: EmployerTool = {
       .sort((a, b) => b.weight - a.weight || a.catalogId.localeCompare(b.catalogId))
       .slice(0, NEED_DRAFT_PICK)
       .map((n) => ({ catalogId: n.catalogId, statement: catalog.get(n.catalogId)?.statement ?? n.catalogId, weight: Math.min(3, Math.max(1, Math.round(n.weight))) }));
-    const title = input.title ?? `${spec === 'backend' ? 'Backend' : 'Frontend'}-разработчик ${grade === 'middle' ? 'Middle' : 'Junior'}${stack.length ? ` (${stack.slice(0, 3).join(', ')})` : ''}`;
+    const title = input.title ?? `${SPEC_ROLE[spec]} ${grade === 'middle' ? 'Middle' : 'Junior'}${stack.length ? ` (${stack.slice(0, 3).join(', ')})` : ''}`;
     const base = { title, specialization: spec, grade, stack, salaryFrom, salaryTo, teamDescription: input.description.slice(0, 2000), needs };
     const draft: NeedDraft = { ...base, formHref: needFormHref(base) };
     ctx.emit({ type: 'need_draft', draft });

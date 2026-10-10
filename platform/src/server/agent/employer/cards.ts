@@ -3,6 +3,7 @@
 // displayName после принятия) не копируются — вместо имени всегда псевдоним.
 import { z } from 'zod';
 
+import { SPECIALIZATIONS } from '@/lib/directions';
 import type { MatchItem, MatchResult } from '@/server/employer/matching';
 import { pseudonym } from '@/server/employer/privacy';
 
@@ -49,7 +50,7 @@ export const AssistantCandidateSchema = z
     rank: z.number().int(),
     score: z.number(),
     category: z.string().nullable(),
-    specialization: z.enum(['backend', 'frontend']).nullable(),
+    specialization: z.enum(SPECIALIZATIONS).nullable(),
     fsp: z.boolean(),
     covered: z.number().int(),
     total: z.number().int(),

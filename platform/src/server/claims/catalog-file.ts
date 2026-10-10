@@ -1,3 +1,4 @@
+import type { Specialization } from '@/lib/directions';
 import catalogFile from '../../../prisma/seed/claims-catalog.json';
 import type { CatalogEntry, CatalogMeta } from './types';
 
@@ -48,7 +49,7 @@ export function getCatalogMeta(id: string): CatalogMeta | undefined {
 }
 
 /** Записи для специализации кандидата: свои + общие. Без специализации — весь каталог. */
-export function catalogFor(catalog: CatalogEntry[], specialization?: 'backend' | 'frontend' | null): CatalogEntry[] {
+export function catalogFor(catalog: CatalogEntry[], specialization?: Specialization | null): CatalogEntry[] {
   if (!specialization) return catalog;
   return catalog.filter((c) => c.specialization === specialization || c.specialization === 'common');
 }

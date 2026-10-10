@@ -1,4 +1,5 @@
 // Нормализация данных от агента: в событиях `claims`/`recommendations` приходит unknown[].
+import { specLabel } from '@/lib/directions';
 import type { ClaimStatus, EvidenceLevel } from '@/server/claims/types';
 
 import { isLevel } from './labels';
@@ -76,7 +77,7 @@ export function normalizeRecommendation(raw: unknown, index: number): CardRecomm
     return {
       key: `test-${index}`,
       kind: 'test',
-      title: `Тест: ${r.specialization === 'backend' ? 'Backend' : r.specialization === 'frontend' ? 'Frontend' : str(r.specialization)}, ${str(r.grade)}`,
+      title: `Тест: ${specLabel(str(r.specialization))}, ${str(r.grade)}`,
       reason: str(r.reason) || undefined,
       meta: r.allowed === false ? 'сейчас недоступен' : undefined,
     };

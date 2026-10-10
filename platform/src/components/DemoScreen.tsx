@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { specLabel } from '@/lib/directions';
 import { type DemoCandidate, type DemoEmployer, demoEmployerLogin, demoFreshLogin, demoLogin, demoRestartOnboarding, getDemoAccounts } from '@/lib/api';
 
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
@@ -13,7 +14,6 @@ import styles from './AuthScreen.module.css';
 import { Notice } from './ui';
 import ui from './ui.module.css';
 
-const SPEC = { backend: 'Backend', frontend: 'Frontend' } as const;
 
 function pluralCandidates(n: number): string {
   const m10 = n % 10;
@@ -90,7 +90,7 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
         <Avatar />
         <span className={styles.who}>
           <span className={styles.name}>{c.name}</span>
-          <span className={styles.sub}>кандидат · {c.specialization ? SPEC[c.specialization] : 'специализация не выбрана'}</span>
+          <span className={styles.sub}>кандидат · {c.specialization ? specLabel(c.specialization) : 'специализация не выбрана'}</span>
         </span>
         <span className={`${ui.tag} ${ui.outline}`} aria-hidden="true">
           {pending === c.id ? 'Вхожу…' : 'Войти →'}

@@ -1,6 +1,6 @@
 import type { InvitationStatus } from '@prisma/client';
 
-export const SPEC_LABEL = { backend: 'Backend', frontend: 'Frontend' } as const;
+export { SPEC_LABEL } from '@/lib/directions';
 export const GRADE_LABEL = { junior: 'Junior', middle: 'Middle' } as const;
 
 /** Статус приглашения текстом (не только цветом). */

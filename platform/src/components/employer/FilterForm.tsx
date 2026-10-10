@@ -1,3 +1,4 @@
+import { specLabel } from '@/lib/directions';
 import type { MatchFilters } from '@/server/employer/ranking';
 
 import { Button, Field, Panel } from '../ui';
@@ -57,7 +58,7 @@ export function FilterForm({ action, filters }: FilterFormProps) {
 /** Подпись фильтров для «Прежних выдач». */
 export function filtersLabel(f: MatchFilters): string {
   const parts: string[] = [];
-  if (f.specialization) parts.push(f.specialization === 'backend' ? 'Backend' : 'Frontend');
+  if (f.specialization) parts.push(specLabel(f.specialization));
   if (f.grade) parts.push(f.grade === 'junior' ? 'Junior' : 'Middle');
   if (f.stack?.length) parts.push(f.stack.join(', '));
   if (f.fsp) parts.push('ФСП');

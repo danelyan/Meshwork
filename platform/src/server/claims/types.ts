@@ -8,7 +8,7 @@ export type Confidence = 'low' | 'medium' | 'high';
 
 export interface CatalogEntry {
   id: string;
-  specialization: 'backend' | 'frontend' | 'common';
+  specialization: Specialization | 'common';
   statement: string;
   grades: Grade[];
   weight: 1 | 2 | 3;
@@ -82,7 +82,8 @@ export interface CatalogMeta {
   /** Вес по грейдам; у common — отдельно по специализациям. null — в грейде не ожидается. */
   weights:
     | { junior: number | null; middle: number | null }
-    | { backend: { junior: number | null; middle: number | null }; frontend: { junior: number | null; middle: number | null } };
+    /** Общие записи: по специализациям. Направление без ключа — запись для него не ожидается (lane directions). */
+    | Partial<Record<Specialization, { junior: number | null; middle: number | null }>>;
   /** Квалификатор stack (каталог § 2.2): кандидат указывает технологию. null — нет. */
   stack: { kind: string | null } | null;
   /** Смежные утверждения (половинный зачёт, каталог § 6), в обе стороны. */

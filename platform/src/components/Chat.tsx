@@ -16,6 +16,7 @@ import { useCallMode } from './call/CallContext';
 import styles from './Chat.module.css';
 import { useAttachments } from './chat/attachments';
 import { Composer } from './chat/Composer';
+import { useAsideRefresh } from './consultant/aside-refresh';
 import { applyAgentEvent } from './chat/stream-items';
 import { AssistantRow, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
 import { scrollToEnd, useStickToBottom } from './chat/scroll';
@@ -94,6 +95,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   // Внутри онбординга лентой и автоскроллом управляет OnboardingChat.
   useStickToBottom(feedRef, !embedded, paneRef);
   useEffect(() => () => abortRef.current?.abort(), []);
+  const refreshAside = useAsideRefresh();
   const setThinking = voice?.setThinking;
   useEffect(() => {
     setThinking?.(busy);
@@ -141,9 +143,10 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         }
       } finally {
         setBusy(false);
+        refreshAside();
       }
     },
-    [pushEvent, embedded],
+    [pushEvent, embedded, refreshAside],
   );
 
   async function onSubmit() {
@@ -184,6 +187,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
 
   const onClaimAction = useCallback(async (claim: CardClaim, action: ClaimAction, statement?: string) => {
     await claimAction(claim.id, action, statement);
+    refreshAside();
     setOverrides((p) => ({
       ...p,
       [claim.id]: {
@@ -191,11 +195,12 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         ...(action === 'edit' && statement ? { statement } : {}),
       },
     }));
-  }, []);
+  }, [refreshAside]);
 
   const onConfirmAll = useCallback(
     async (claims: CardClaim[]) => {
       const r = await confirmClaimsBatchApi(claims.map((c) => c.id));
+      refreshAside();
       const done = new Set(r.confirmed);
       // уже подтверждённые ранее тоже отражаем как подтверждённые
       for (const s of r.skipped) if (s.reason === 'already_confirmed') done.add(s.id);
@@ -206,7 +211,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       });
       return r.confirmed.length;
     },
-    [],
+    [refreshAside],
   );
 
   const started = items.some((it) => it.role === 'user');

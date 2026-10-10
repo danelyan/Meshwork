@@ -1,9 +1,10 @@
 // Клиент кабинета работодателя и входящих приглашений кандидата (lane employer).
+import type { Specialization } from '@/lib/directions';
 import { ApiError, postJson, readError, request } from './api';
 
 export interface VacancyBody {
   title: string;
-  specialization: 'backend' | 'frontend';
+  specialization: Specialization;
   grade: 'junior' | 'middle';
   salaryFrom: number;
   salaryTo: number;
@@ -55,50 +56,4 @@ export async function openEmployerAssistantStream(input: { text: string; convers
   if (!res.ok) throw await readError(res);
   if (!res.body) throw new ApiError('Сервер не отдал поток ответа.', 502);
   return res.body;
-}
-
-/** Профиль компании работодателя (R-E-01): GET/PATCH /api/employer/company. */
-export interface CompanyBody {
-  name: string;
-  description: string | null;
-  industry: string | null;
-  inn: string | null;
-  contact: string | null;
-}
-/** Отказ валидации с текстами по полям (`validation_failed`, details = [{ path, message }]). */
-export class CompanyFieldsError extends ApiError {
-  constructor(
-    message: string,
-    readonly fields: Partial<Record<keyof CompanyBody, string>>,
-  ) {
-    super(message, 400, 'validation_failed');
-    this.name = 'CompanyFieldsError';
-  }
-}
-
-export async function updateCompanyApi(body: Partial<CompanyBody>): Promise<CompanyBody & { id: string }> {
-  let res: Response;
-  try {
-    res = await fetch('/api/employer/company', {
-      method: 'PATCH',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new ApiError('Нет связи с сервером. Проверьте сеть и повторите.', 0, 'network');
-  }
-  if (res.ok) return (await res.json()) as CompanyBody & { id: string };
-  const clone = res.clone();
-  try {
-    const j = (await clone.json()) as { error?: { code?: string; details?: { path: string; message: string }[] } };
-    if (j.error?.code === 'validation_failed' && Array.isArray(j.error.details)) {
-      const fields: Partial<Record<keyof CompanyBody, string>> = {};
-      for (const d of j.error.details) if (d.path) fields[d.path as keyof CompanyBody] ??= d.message;
-      throw new CompanyFieldsError('Проверь выделенные поля', fields);
-    }
-  } catch (e) {
-    if (e instanceof CompanyFieldsError) throw e;
-  }
-  throw await readError(res);
 }

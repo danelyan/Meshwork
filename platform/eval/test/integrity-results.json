@@ -1,0 +1,426 @@
+{
+  "command": "npx tsx eval/test/integrity.ts --n 1000 --json eval/test/integrity-results.json",
+  "generatedAt": "2026-10-10T23:11:27.016Z",
+  "params": {
+    "n": 1000,
+    "seed": 1,
+    "noise": 0.2,
+    "sigma": 0.5,
+    "noiseTabs": 0.8,
+    "noisePaste": 0.03,
+    "noiseCopy": 0.04,
+    "claimCheat": "middle",
+    "subcategories": [
+      "backend.web-api",
+      "frontend.ui-app",
+      "ai.llm-apps",
+      "engineering.devops"
+    ]
+  },
+  "personas": [
+    {
+      "id": "honest-junior",
+      "label": "честный Junior",
+      "kind": "honest",
+      "claimed": "junior",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 38.6,
+        "medium": 52.7,
+        "high": 8.7,
+        "canaryHit": 0.8,
+        "altHigh": 1.3,
+        "altMedium": 60.1
+      },
+      "blockingOfGrantablePct": 8.2,
+      "grantedUncheckedPct": 78.8,
+      "grantedFinalPct": 85.1,
+      "confirmUnaided": {
+        "n": 281,
+        "passedPct": 90.4,
+        "ownOnlyPassedPct": 73.3,
+        "consistentPassedPct": 90
+      },
+      "confirmRepeatHelp": null,
+      "meanLength": 8.06,
+      "highGroupsPct": {
+        "browser+time": 6.2,
+        "browser+canary": 0.1,
+        "browser+fit": 0.2,
+        "fit+time": 1.5,
+        "canary": 0.3,
+        "browser+canary+time": 0.1,
+        "browser+fit+time": 0.1,
+        "canary+time": 0.3,
+        "canary+fit+time": 0.1
+      },
+      "reasonSharePct": {
+        "overtime": 55,
+        "slow_correct_easy": 2,
+        "tab_away": 5.3,
+        "paste": 2.8,
+        "person_misfit": 3.1,
+        "canary_hit": 0.8,
+        "copy": 3.6,
+        "fast_correct_hard": 0
+      }
+    },
+    {
+      "id": "honest-middle",
+      "label": "честный Middle",
+      "kind": "honest",
+      "claimed": "middle",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 47,
+        "medium": 46.4,
+        "high": 6.7,
+        "canaryHit": 0.9,
+        "altHigh": 1.5,
+        "altMedium": 51.6
+      },
+      "blockingOfGrantablePct": 6.4,
+      "grantedUncheckedPct": 87.4,
+      "grantedFinalPct": 92.4,
+      "confirmUnaided": {
+        "n": 239,
+        "passedPct": 83.7,
+        "ownOnlyPassedPct": 66.5,
+        "consistentPassedPct": 83.7
+      },
+      "confirmRepeatHelp": null,
+      "meanLength": 8.55,
+      "highGroupsPct": {
+        "browser+canary": 0,
+        "browser+time": 4.4,
+        "browser+fit+time": 0.2,
+        "fit+time": 1.1,
+        "browser+canary+time": 0.1,
+        "canary": 0.4,
+        "canary+time": 0.4,
+        "browser+fit": 0.2,
+        "canary+fit+time": 0.1
+      },
+      "reasonSharePct": {
+        "overtime": 45.7,
+        "paste": 2.4,
+        "canary_hit": 0.9,
+        "copy": 3.3,
+        "slow_correct_easy": 2.2,
+        "tab_away": 4.8,
+        "person_misfit": 2.9
+      }
+    },
+    {
+      "id": "honest-senior",
+      "label": "честный Senior",
+      "kind": "honest",
+      "claimed": "senior",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 60.7,
+        "medium": 34.6,
+        "high": 4.7,
+        "canaryHit": 0.6,
+        "altHigh": 0.9,
+        "altMedium": 38.5
+      },
+      "blockingOfGrantablePct": 3.7,
+      "grantedUncheckedPct": 86.2,
+      "grantedFinalPct": 89,
+      "confirmUnaided": {
+        "n": 131,
+        "passedPct": 86.3,
+        "ownOnlyPassedPct": 38.2,
+        "consistentPassedPct": 86.3
+      },
+      "confirmRepeatHelp": null,
+      "meanLength": 6.58,
+      "highGroupsPct": {
+        "fit+time": 0.8,
+        "browser+time": 3.1,
+        "browser+fit+time": 0.1,
+        "canary+time": 0.2,
+        "canary": 0.4,
+        "browser+canary": 0.1,
+        "browser+fit": 0.1
+      },
+      "reasonSharePct": {
+        "paste": 3.2,
+        "overtime": 29.2,
+        "copy": 4,
+        "person_misfit": 2.2,
+        "tab_away": 5,
+        "canary_hit": 0.6,
+        "slow_correct_easy": 0.1,
+        "fast_correct_hard": 0.1
+      }
+    },
+    {
+      "id": "honest-slow",
+      "label": "медленный честный (Middle, медиана 90 % лимита)",
+      "kind": "honest",
+      "claimed": "middle",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 4.8,
+        "medium": 82.6,
+        "high": 12.6,
+        "canaryHit": 0.9,
+        "altHigh": 3.3,
+        "altMedium": 92
+      },
+      "blockingOfGrantablePct": 12.3,
+      "grantedUncheckedPct": 81.8,
+      "grantedFinalPct": 90.8,
+      "confirmUnaided": {
+        "n": 460,
+        "passedPct": 78,
+        "ownOnlyPassedPct": 63.7,
+        "consistentPassedPct": 77.8
+      },
+      "confirmRepeatHelp": null,
+      "meanLength": 8.55,
+      "highGroupsPct": {
+        "browser+time": 9.2,
+        "browser+canary+time": 0.1,
+        "fit+time": 2.3,
+        "browser+fit+time": 0.4,
+        "canary+time": 0.7,
+        "canary": 0.1,
+        "canary+fit+time": 0.1
+      },
+      "reasonSharePct": {
+        "overtime": 94.3,
+        "slow_correct_easy": 17.6,
+        "paste": 2.5,
+        "canary_hit": 0.9,
+        "copy": 3.3,
+        "tab_away": 4.8,
+        "person_misfit": 2.9
+      }
+    },
+    {
+      "id": "cheat-copy-p30",
+      "label": "копирует условие в нейросеть, ловушка p = 0.3",
+      "kind": "cheat",
+      "claimed": "middle",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 0,
+        "medium": 51.3,
+        "high": 48.7,
+        "canaryHit": 46.5,
+        "altHigh": 49.1,
+        "altMedium": 50.9
+      },
+      "blockingOfGrantablePct": 48.7,
+      "grantedUncheckedPct": 51.3,
+      "grantedFinalPct": 79.4,
+      "confirmUnaided": {
+        "n": 1947,
+        "passedPct": 57.7,
+        "ownOnlyPassedPct": 5,
+        "consistentPassedPct": 21.8
+      },
+      "confirmRepeatHelp": {
+        "n": 1947,
+        "passedPct": 73.8,
+        "ownOnlyPassedPct": 71.2,
+        "consistentPassedPct": 73.3
+      },
+      "meanLength": 7.07,
+      "highGroupsPct": {
+        "browser+canary": 43.3,
+        "browser+fit": 2.1,
+        "browser+canary+fit": 2.6,
+        "browser+canary+time": 0.5,
+        "browser+canary+fit+time": 0.1,
+        "browser+fit+time": 0.1,
+        "browser+time": 0.1
+      },
+      "reasonSharePct": {
+        "tab_away": 100,
+        "paste": 99.2,
+        "copy": 100,
+        "canary_hit": 46.5,
+        "person_misfit": 4.9,
+        "fast_correct_hard": 0.8
+      }
+    },
+    {
+      "id": "cheat-copy-p60",
+      "label": "копирует условие в нейросеть, ловушка p = 0.6",
+      "kind": "cheat",
+      "claimed": "middle",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 0,
+        "medium": 20.8,
+        "high": 79.2,
+        "canaryHit": 78.3,
+        "altHigh": 79.3,
+        "altMedium": 20.7
+      },
+      "blockingOfGrantablePct": 79.2,
+      "grantedUncheckedPct": 20.8,
+      "grantedFinalPct": 64.9,
+      "confirmUnaided": {
+        "n": 3167,
+        "passedPct": 55.7,
+        "ownOnlyPassedPct": 4.5,
+        "consistentPassedPct": 23
+      },
+      "confirmRepeatHelp": {
+        "n": 3167,
+        "passedPct": 45.7,
+        "ownOnlyPassedPct": 43.7,
+        "consistentPassedPct": 45.4
+      },
+      "meanLength": 7.16,
+      "highGroupsPct": {
+        "browser+canary": 72.6,
+        "browser+canary+fit": 3.9,
+        "browser+canary+time": 1.3,
+        "browser+fit": 0.9,
+        "browser+canary+fit+time": 0.5,
+        "browser+fit+time": 0
+      },
+      "reasonSharePct": {
+        "canary_hit": 78.3,
+        "tab_away": 100,
+        "paste": 99.3,
+        "copy": 100,
+        "person_misfit": 5.3,
+        "fast_correct_hard": 1.8
+      }
+    },
+    {
+      "id": "cheat-copy-p90",
+      "label": "копирует условие в нейросеть, ловушка p = 0.9",
+      "kind": "cheat",
+      "claimed": "middle",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 0,
+        "medium": 3.6,
+        "high": 96.4,
+        "canaryHit": 96.2,
+        "altHigh": 96.4,
+        "altMedium": 3.6
+      },
+      "blockingOfGrantablePct": 96.4,
+      "grantedUncheckedPct": 3.6,
+      "grantedFinalPct": 53.5,
+      "confirmUnaided": {
+        "n": 3852,
+        "passedPct": 51.8,
+        "ownOnlyPassedPct": 4.5,
+        "consistentPassedPct": 25
+      },
+      "confirmRepeatHelp": {
+        "n": 3852,
+        "passedPct": 16.4,
+        "ownOnlyPassedPct": 15.7,
+        "consistentPassedPct": 16.3
+      },
+      "meanLength": 7.27,
+      "highGroupsPct": {
+        "browser+canary": 88,
+        "browser+canary+fit": 4.9,
+        "browser+canary+time": 2.4,
+        "browser+canary+fit+time": 0.9,
+        "browser+fit": 0.2
+      },
+      "reasonSharePct": {
+        "canary_hit": 96.2,
+        "tab_away": 100,
+        "paste": 99.3,
+        "copy": 100,
+        "person_misfit": 6,
+        "fast_correct_hard": 3.3
+      }
+    },
+    {
+      "id": "cheat-second-device",
+      "label": "нейросеть на втором устройстве (без ловушки и браузерных сигналов)",
+      "kind": "cheat",
+      "claimed": "middle",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 95.8,
+        "medium": 4,
+        "high": 0.2,
+        "canaryHit": 0.2,
+        "altHigh": 0.2,
+        "altMedium": 4
+      },
+      "blockingOfGrantablePct": 0.2,
+      "grantedUncheckedPct": 99.8,
+      "grantedFinalPct": 99.9,
+      "confirmUnaided": {
+        "n": 7,
+        "passedPct": 57.1,
+        "ownOnlyPassedPct": 0,
+        "consistentPassedPct": 0
+      },
+      "confirmRepeatHelp": {
+        "n": 7,
+        "passedPct": 100,
+        "ownOnlyPassedPct": 100,
+        "consistentPassedPct": 100
+      },
+      "meanLength": 7.02,
+      "highGroupsPct": {
+        "fit+time": 0,
+        "canary": 0.1,
+        "canary+fit": 0
+      },
+      "reasonSharePct": {
+        "person_misfit": 4.1,
+        "fast_correct_hard": 0,
+        "canary_hit": 0.2
+      }
+    },
+    {
+      "id": "cheat-leaked-keys",
+      "label": "слитые ключи (очень быстро)",
+      "kind": "cheat",
+      "claimed": "middle",
+      "attempts": 4000,
+      "sharePct": {
+        "low": 97.1,
+        "medium": 2.5,
+        "high": 0.4,
+        "canaryHit": 0.1,
+        "altHigh": 100,
+        "altMedium": 0
+      },
+      "blockingOfGrantablePct": 0.4,
+      "grantedUncheckedPct": 99.6,
+      "grantedFinalPct": 99.7,
+      "confirmUnaided": {
+        "n": 17,
+        "passedPct": 23.5,
+        "ownOnlyPassedPct": 0,
+        "consistentPassedPct": 0
+      },
+      "confirmRepeatHelp": {
+        "n": 17,
+        "passedPct": 100,
+        "ownOnlyPassedPct": 100,
+        "consistentPassedPct": 94.1
+      },
+      "meanLength": 7.01,
+      "highGroupsPct": {
+        "fit+time": 0.3,
+        "canary": 0.1
+      },
+      "reasonSharePct": {
+        "person_misfit": 2.5,
+        "fast_correct_hard": 0.7,
+        "canary_hit": 0.1
+      }
+    }
+  ]
+}

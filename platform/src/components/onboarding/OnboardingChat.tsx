@@ -424,7 +424,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
               <Typing />
             </AssistantRow>
           )}
-          {curAsides?.length && !asides.asking && !isSummary ? (
+          {(curAsides?.length || empAsides[cur.id]?.length) && !asides.asking && !isSummary ? (
             <AssistantRow mark={false} testId="ob-return">
               <Reply lines={[{ text: `Вернёмся к вопросу: ${cur.question}`, secondary: true }]} />
             </AssistantRow>

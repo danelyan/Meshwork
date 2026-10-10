@@ -51,7 +51,7 @@ describe('SiteHeader', () => {
   it('кандидат: Консультант / Профиль / Тест / Приглашения, активная — по пути, гость-кнопки нет', async () => {
     const h = await renderHeader(principal('candidate'), '/profile');
     const links = h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/');
-    expect(links.map((a) => a.textContent)).toEqual(['Консультант', 'Профиль', 'Тест', 'Приглашения']);
+    expect(links.map((a) => a.textContent)).toEqual(['Консультант', 'Профиль', 'Тест', 'Проекты', 'Приглашения']);
     expect(h.getByRole('link', { name: 'Профиль' }).getAttribute('aria-current')).toBe('page');
     expect(h.getByRole('link', { name: 'Тест' }).getAttribute('aria-current')).toBeNull();
     expect(h.queryByRole('link', { name: 'Войти' })).toBeNull();

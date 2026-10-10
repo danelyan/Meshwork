@@ -1,6 +1,6 @@
-// Реестр генераторов: Backend и Frontend (ADR-0002) и AI (ADR 0003, дополнения 10.10). Тест — на подкатегорию
+// Реестр генераторов: Backend и Frontend (ADR-0002), AI и Engineering (ADR 0003, дополнения 10.10). Тест — на подкатегорию
 // (дополнение 10.10 15:50): пул попытки — семейства подкатегории, не меньше MIN_FAMILIES_PER_SUBCATEGORY.
-// Направление без генераторов (пока engineering) — явная ошибка NoGeneratorsError, а не пустой банк. Параметры a, b здесь — стартовые экспертные; рабочие
+// Направление без генераторов — явная ошибка NoGeneratorsError, а не пустой банк. Параметры a, b здесь — стартовые экспертные; рабочие
 // значения читаются из TaskTemplate (БД), куда их переносит сид и правит калибровка (docs/test-calibration.md).
 import { getSubcategory, SPEC_LABEL, subcategoriesFor } from '@/lib/directions';
 import { GRADE_LABEL, GRADES, type Grade } from '@/lib/grades';
@@ -10,9 +10,10 @@ import type { TaskGenerator } from '../types';
 
 import { AI_GENERATORS } from './ai';
 import { BACKEND_GENERATORS } from './backend';
+import { ENGINEERING_GENERATORS } from './engineering';
 import { FRONTEND_GENERATORS } from './frontend';
 
-export const GENERATORS: readonly TaskGenerator[] = [...BACKEND_GENERATORS, ...FRONTEND_GENERATORS, ...AI_GENERATORS];
+export const GENERATORS: readonly TaskGenerator[] = [...BACKEND_GENERATORS, ...FRONTEND_GENERATORS, ...AI_GENERATORS, ...ENGINEERING_GENERATORS];
 
 const BY_ID = new Map(GENERATORS.map((g) => [g.id, g]));
 

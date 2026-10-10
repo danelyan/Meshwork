@@ -13,6 +13,10 @@
 
 ## Каталог шаблона
 
+Плоская раскладка `<id>/` (два шаблона-примера выше) или вложенная `<подкатегория>/<грейд>/<id>/` — шаблоны
+lane project, их формат и проверка — [docs/project-templates.md](../../docs/project-templates.md). runner ищет
+шаблон по id в обеих (`resolveTemplateDir`).
+
 ```text
 <id>/
   template.json   манифест (ниже)

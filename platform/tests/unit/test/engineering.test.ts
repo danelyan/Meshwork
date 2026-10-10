@@ -116,11 +116,14 @@ describe('банк engineering', () => {
     }
     for (const g of ENGINEERING_GENERATORS) expect(Object.keys(BY_SUB), g.id).toContain(g.subcategoryId);
     expect(new Set(GENERATORS.map((g) => g.id)).size).toBe(GENERATORS.length);
-    // taskId engineering не пересекаются ни между собой, ни с backend/frontend (там общие taskId допустимы).
+    // taskId engineering не пересекаются между собой. С другими направлениями общий taskId допустим (как у backend и
+    // frontend: «тип задания», а не семейство), но только из явного списка: при интеграции 10.10 совпали задания на
+    // одну и ту же тему у ai (SLO/латентность сервиса модели) и backend (circuit breaker). Новое совпадение — в список.
+    const SHARED = new Set(['task:error-budget', 'task:latency-percentile', 'task:circuit-breaker']);
     const others = new Set(GENERATORS.filter((g) => g.specialization !== 'engineering').map((g) => g.taskId));
     const engTasks = ENGINEERING_GENERATORS.map((g) => g.taskId);
     expect(new Set(engTasks).size).toBe(engTasks.length);
-    for (const t of engTasks) expect(others.has(t), t).toBe(false);
+    for (const t of engTasks) expect(others.has(t) && !SHARED.has(t), t).toBe(false);
   });
 
   it('a/b: Junior легче порога Junior−Middle, Middle тяжелее; Senior — b 1.0–1.7, a 1.0–1.4 (дополнение 10.10 16:15)', () => {

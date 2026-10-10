@@ -11,6 +11,8 @@
 //   npx tsx eval/test/personas.ts --sweep -1.5:-0.6:0.1         # свип порога Junior
 //   npm run eval:test-personas -- --spec ai                     # только персоны направления (ADR 0003, 10.10)
 //   npx tsx eval/test/personas.ts --subcategory backend.web-api  # персоны одной подкатегории (ADR-0003, 10.10 15:50)
+//   npx tsx eval/test/personas.ts --spec engineering            # все персоны направления, включая подкатегорийные
+//   npx tsx eval/test/personas.ts --sub engineering.devops      # --sub — синоним --subcategory
 //
 // Честная граница: это симуляция моделей знаний персон агентом, не живые люди. Матрицы знаний —
 // наша гипотеза (легенды: fsp/docs/research/22-persona-calibration.md владельца), a и b — экспертные.
@@ -40,7 +42,7 @@ const SPEC_ARG = argStr('spec');
 const SPEC_FILTER = SPEC_ARG ? new Set(SPEC_ARG.split(',') as Specialization[]) : null;
 const inFilter = (p: { spec: Specialization }) => !SPEC_FILTER || SPEC_FILTER.has(p.spec);
 /** --subcategory <id>: только персоны подкатегории; пул заданий — семейства этой подкатегории (поле subcategoryId). */
-const SUB = argStr('subcategory');
+const SUB = argStr('subcategory') ?? argStr('sub');
 
 /** Истинный уровень по легенде: ниже Junior, Junior, Middle. */
 type Truth = 'below' | 'junior' | 'middle' | 'senior';
@@ -60,6 +62,15 @@ const Y = 1;
 const H = 0.5;
 const X = 0;
 const BE = ['http-semantics', 'sql-rowcount', 'n-plus-one', 'find-bug-idor', 'shell-output', 'schema-constraint', 'retry-policy', 'delivery-semantics', 'payment-retry', 'cache-consistency', 'index-choice', 'isolation-anomaly'].map((s) => `be.${s}`);
+// Engineering — тест на подкатегорию (ADR-0003, дополнение 10.10 16:15): по 14 семейств —
+// 6 Junior, 4 Middle, 4 Senior, внутри грейда по возрастанию b.
+const ENG_SUB: Record<string, string[]> = {
+  'engineering.data-eng': ['group-having', 'dedup-count', 'null-aggregates', 'csv-fields', 'join-fanout', 'schema-types', 'idempotent-load', 'scd2-as-of', 'partition-prune', 'incremental-watermark', 'backfill-nights', 'diag-data', 'late-window', 'consumer-duplicates'],
+  'engineering.devops': ['secrets-leak', 'port-mapping', 'docker-cache', 'cron-runs', 'env-precedence', 'ci-stages', 'k8s-capacity', 'k8s-probes', 'rolling-update', 'deploy-rollback', 'hpa-replicas', 'zone-capacity', 'diag-deploy', 'rollout-blast'],
+  'engineering.qa-automation': ['test-pyramid', 'boundary-values', 'locator-stability', 'fixture-isolation', 'rerun-report', 'parametrize-count', 'contract-test', 'mock-calls', 'flaky-line', 'branch-coverage', 'ci-sharding', 'retry-budget', 'diag-tests', 'mutation-survivors'],
+  'engineering.sre': ['log-count', 'symptom-alert', 'escalation', 'error-budget', 'latency-percentile', 'counter-reset', 'retry-amplification', 'littles-law', 'burn-rate', 'circuit-breaker', 'dependency-budget', 'diag-latency', 'redundancy-nodes', 'mm1-latency'],
+};
+const eng = (sub: string, row: number[]) => matrix(ENG_SUB[`engineering.${sub}`]!.map((s) => `eng.${s}`), row);
 const FE = ['js-array-output', 'html-semantics', 'css-specificity', 'js-closure', 'css-flex', 'dom-events', 'complexity', 'state-bug', 'event-loop', 'ts-typecheck', 'api-client-race', 'web-vitals'].map((s) => `fe.${s}`);
 const matrix = (ids: string[], row: number[]): Record<string, number> => {
   if (row.length !== ids.length) throw new Error(`матрица персоны: ${row.length} клеток на ${ids.length} шаблонов`);
@@ -81,6 +92,47 @@ const PERSONAS: Persona[] = [
   // Не легенды, в суммы ошибок не входят. Стоят после Z0, чтобы seed прежних персон не сдвинулись.
   { id: 'JB', spec: 'backend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(BE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
   { id: 'JF', spec: 'frontend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(FE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
+  // Engineering (тест на подкатегорию, ADR-0003, дополнение 10.10 16:15): на каждую подкатегорию 8 типов
+  // из ADR — новичок (N), пограничный новичок (NB), Junior (J), Junior с одной слабой темой (JW), Middle (M),
+  // Middle с одной слабой темой (MW), Senior (S), идеальный Junior (I, контроль), пограничный Junior (JB, без цели). Пул попытки — 14 семейств
+  // подкатегории (поле sub). Колонки — ENG_SUB: 6 Junior | 4 Middle | 4 Senior. Легенды — гипотеза агента
+  // по research/25 § 3.4, не люди. «Слабая тема» — одно семейство своего грейда целиком не решено.
+  { id: 'DN', spec: 'engineering', sub: 'engineering.data-eng', truth: 'below', legend: 'Excel-аналитик, курсы SQL 3 мес.', knows: eng('data-eng', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
+  { id: 'DNB', spec: 'engineering', sub: 'engineering.data-eng', truth: 'below', legend: 'аналитик, 6 мес. SQL-отчётов', knows: eng('data-eng', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
+  { id: 'DJ', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'Junior data-инженер, 1 год ETL на SQL', knows: eng('data-eng', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'DJB', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'пограничный Junior (4 из 6 Junior), без цели', knows: eng('data-eng', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'DJW', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'Junior с одной слабой темой: одно Junior-семейство из 6 не решает', knows: eng('data-eng', [Y, Y, X, Y, Y, Y, H, X, X, X, X, X, X, X]) },
+  { id: 'DM', spec: 'engineering', sub: 'engineering.data-eng', truth: 'middle', legend: 'Middle data-инженер, 4 года, Spark и DWH', knows: eng('data-eng', [Y, Y, Y, Y, Y, Y, Y, Y, Y, H, H, X, X, X]) },
+  { id: 'DMW', spec: 'engineering', sub: 'engineering.data-eng', truth: 'middle', legend: 'Middle data-инженер без SCD2 в практике', knows: eng('data-eng', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
+  { id: 'DS', spec: 'engineering', sub: 'engineering.data-eng', truth: 'senior', legend: 'Senior data-инженер, 7 лет, платформа данных', knows: eng('data-eng', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
+  { id: 'DI', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'контроль: все Junior верно, Middle и Senior неверно', knows: eng('data-eng', [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X, X, X]) },
+  { id: 'ON', spec: 'engineering', sub: 'engineering.devops', truth: 'below', legend: 'сисадмин, курсы DevOps 3 мес.', knows: eng('devops', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
+  { id: 'ONB', spec: 'engineering', sub: 'engineering.devops', truth: 'below', legend: 'сисадмин, полгода с Docker', knows: eng('devops', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
+  { id: 'OJ', spec: 'engineering', sub: 'engineering.devops', truth: 'junior', legend: 'Junior DevOps, 1 год CI/CD и Docker', knows: eng('devops', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'OJB', spec: 'engineering', sub: 'engineering.devops', truth: 'junior', legend: 'пограничный Junior (4 из 6 Junior), без цели', knows: eng('devops', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'OJW', spec: 'engineering', sub: 'engineering.devops', truth: 'junior', legend: 'Junior с одной слабой темой: одно Junior-семейство из 6 не решает', knows: eng('devops', [Y, Y, X, Y, Y, Y, H, X, X, X, X, X, X, X]) },
+  { id: 'OM', spec: 'engineering', sub: 'engineering.devops', truth: 'middle', legend: 'Middle DevOps, 4 года Kubernetes', knows: eng('devops', [Y, Y, Y, Y, Y, Y, Y, Y, Y, H, H, X, X, X]) },
+  { id: 'OMW', spec: 'engineering', sub: 'engineering.devops', truth: 'middle', legend: 'Middle DevOps без проб в практике', knows: eng('devops', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
+  { id: 'OS', spec: 'engineering', sub: 'engineering.devops', truth: 'senior', legend: 'Senior DevOps/platform, 7 лет', knows: eng('devops', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
+  { id: 'OI', spec: 'engineering', sub: 'engineering.devops', truth: 'junior', legend: 'контроль: все Junior верно, Middle и Senior неверно', knows: eng('devops', [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X, X, X]) },
+  { id: 'QN', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'below', legend: 'ручной тестировщик, курсы автотестов 2 мес.', knows: eng('qa-automation', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
+  { id: 'QNB', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'below', legend: 'ручной тестировщик, полгода пишет автотесты', knows: eng('qa-automation', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
+  { id: 'QJ', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'junior', legend: 'Junior автоматизатор, 1 год pytest', knows: eng('qa-automation', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'QJB', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'junior', legend: 'пограничный Junior (4 из 6 Junior), без цели', knows: eng('qa-automation', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'QJW', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'junior', legend: 'Junior с одной слабой темой: одно Junior-семейство из 6 не решает', knows: eng('qa-automation', [Y, Y, X, Y, Y, Y, H, X, X, X, X, X, X, X]) },
+  { id: 'QM', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'middle', legend: 'Middle SDET, 4 года', knows: eng('qa-automation', [Y, Y, Y, Y, Y, Y, Y, Y, Y, H, H, X, X, X]) },
+  { id: 'QMW', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'middle', legend: 'Middle SDET без моков в практике', knows: eng('qa-automation', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
+  { id: 'QS', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'senior', legend: 'Senior SDET / лид автоматизации, 7 лет', knows: eng('qa-automation', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
+  { id: 'QI', spec: 'engineering', sub: 'engineering.qa-automation', truth: 'junior', legend: 'контроль: все Junior верно, Middle и Senior неверно', knows: eng('qa-automation', [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X, X, X]) },
+  { id: 'SN', spec: 'engineering', sub: 'engineering.sre', truth: 'below', legend: 'инженер поддержки 1-й линии, без кода', knows: eng('sre', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
+  { id: 'SNB', spec: 'engineering', sub: 'engineering.sre', truth: 'below', legend: 'инженер поддержки 2-й линии, полгода дежурств', knows: eng('sre', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
+  { id: 'SJ', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'Junior SRE, 1 год мониторинга и дежурств', knows: eng('sre', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'SJB', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'пограничный Junior (4 из 6 Junior), без цели', knows: eng('sre', [Y, Y, X, Y, Y, H, H, X, X, X, X, X, X, X]) },
+  { id: 'SJW', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'Junior с одной слабой темой: одно Junior-семейство из 6 не решает', knows: eng('sre', [Y, Y, X, Y, Y, Y, H, X, X, X, X, X, X, X]) },
+  { id: 'SM', spec: 'engineering', sub: 'engineering.sre', truth: 'middle', legend: 'Middle SRE, 4 года', knows: eng('sre', [Y, Y, Y, Y, Y, Y, Y, Y, Y, H, H, X, X, X]) },
+  { id: 'SMW', spec: 'engineering', sub: 'engineering.sre', truth: 'middle', legend: 'Middle SRE без расчёта очередей', knows: eng('sre', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
+  { id: 'SS', spec: 'engineering', sub: 'engineering.sre', truth: 'senior', legend: 'Senior SRE, 7 лет, ёмкость и надёжность', knows: eng('sre', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
+  { id: 'SI', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'контроль: все Junior верно, Middle и Senior неверно', knows: eng('sre', [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X, X, X]) },
   // AI-персоны A1–A5, JA сняты 10.10: у ai тест по подкатегориям (ADR 0003), банк 66 семейств, пул попытки —
   // семейства одной подкатегории. Персоны на подкатегорию — eval/test/subcategory-personas.ts.
 ];
@@ -97,7 +149,7 @@ const BE_SUBS: { sub: string; tag: string; ru: string }[] = [
   { sub: 'backend.web-api', tag: 'W', ru: 'web-api' },
   { sub: 'backend.integrations', tag: 'I', ru: 'integrations' },
   { sub: 'backend.highload', tag: 'H', ru: 'highload' },
-  { sub: 'backend.data-model', tag: 'D', ru: 'data-model' },
+  { sub: 'backend.data-model', tag: 'DM', ru: 'data-model' },
 ];
 const row = (j: number[], m: number[], s: number[]) => [...j, ...m, ...s];
 const ALL_J = [Y, Y, Y, Y, Y, Y];
@@ -116,10 +168,17 @@ for (const { sub, tag, ru } of BE_SUBS) {
     { id: `${tag}P`, spec: 'backend', sub, truth: 'junior', legend: 'контроль: все Junior верно, остальные неверно', knows: matrix(ids, row(ALL_J, NO_M, NO_M)) },
   );
 }
-/** Персоны прогона: все прежние (без --subcategory) или только выбранной подкатегории. Индекс seed - по полному списку. */
-const ACTIVE = (SUB ? PERSONAS.filter((p) => p.sub === SUB) : PERSONAS.filter((p) => !p.sub)).filter(inFilter);
+/**
+ * Персоны прогона. Индекс seed — по полному списку.
+ * --subcategory: только её персоны; --spec без подкатегории: все персоны направлений (и подкатегорийные);
+ * без флагов — прежние персоны направлений (без подкатегории), как до 10.10.
+ */
+const ACTIVE = SUB ? PERSONAS.filter((p) => p.sub === SUB) : SPEC_FILTER ? PERSONAS.filter(inFilter) : PERSONAS.filter((p) => !p.sub);
+/** Есть ли в прогоне персоны подкатегорий: тогда считается и заявка Senior. */
+const WITH_SENIOR = ACTIVE.some((p) => p.sub);
 /** Контроли — не легенды: в суммы ошибок не входят. */
-const CONTROLS = new Set(['Z0', 'JB', 'JF', ...BE_SUBS.map((x) => `${x.tag}P`)]);
+// *JB у engineering — пограничный Junior, без цели.
+const CONTROLS = new Set(['Z0', 'JB', 'JF', ...BE_SUBS.map((x) => `${x.tag}P`), 'DI', 'OI', 'QI', 'SI', 'DJB', 'OJB', 'QJB', 'SJB']);
 
 interface Outcome {
   confirmed: boolean;
@@ -260,11 +319,11 @@ if (sweep) {
   const cut = argStr('junior-cut') !== undefined ? Number(argStr('junior-cut')) : GRADE_CUT.junior;
   const s = runAll(cut);
   console.log(`# Персоны через движок теста${SPEC_ARG ? ` (направление ${SPEC_ARG})` : ''}${SUB ? ` (подкатегория ${SUB})` : ''}: N = ${N} попыток на персону и грейд, seed = ${SEED}, пороги Junior ${cut} / Middle ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
-  if (SUB) console.log(`Заявка Senior: порог GRADE_CUT.senior (${GRADE_CUT.senior}), основная фаза по Senior-пулу и дозадавание Middle (политика v4).\n`);
-  console.log('| Персона | Легенда | Уровень по легенде | P(Junior), заявил Junior | Длина | Дозадавание | θ̂ | P(Middle), заявил Middle | Junior в 1 клик | Длина | Дозадавание |' + (SUB ? ' P(Senior), заявил Senior | Длина |' : ''));
-  console.log('|---|---|---|---|---|---|---|---|---|---|---|' + (SUB ? '---|---|' : ''));
+  if (WITH_SENIOR) console.log(`Заявка Senior: порог GRADE_CUT.senior (${GRADE_CUT.senior}), основная фаза по Senior-пулу и дозадавание Middle (политика v4).\n`);
+  console.log('| Персона | Легенда | Уровень по легенде | P(Junior), заявил Junior | Длина | Дозадавание | θ̂ | P(Middle), заявил Middle | Junior в 1 клик | Длина | Дозадавание |' + (WITH_SENIOR ? ' P(Senior), заявил Senior | Длина |' : ''));
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|' + (WITH_SENIOR ? '---|---|' : ''));
   for (const x of s) {
-    console.log(`| ${x.p.id} | ${x.p.legend} | ${x.p.truth} | ${f3(x.pJunior)} | ${x.lenJunior.toFixed(2)} | ${f2(x.probedJunior)} | ${f2(x.thetaJunior)} | ${f3(x.pMiddle)} | ${f3(x.pOffer)} | ${x.lenMiddle.toFixed(2)} | ${f2(x.probedMiddle)} |${SUB ? ` ${f3(x.pSenior)} | ${x.lenSenior.toFixed(2)} |` : ''}`);
+    console.log(`| ${x.p.id} | ${x.p.legend} | ${x.p.truth} | ${f3(x.pJunior)} | ${x.lenJunior.toFixed(2)} | ${f2(x.probedJunior)} | ${f2(x.thetaJunior)} | ${f3(x.pMiddle)} | ${f3(x.pOffer)} | ${x.lenMiddle.toFixed(2)} | ${f2(x.probedMiddle)} |${x.p.sub ? ` ${f3(x.pSenior)} | ${x.lenSenior.toFixed(2)} |` : ''}`);
   }
   const e = errors(s);
   console.log(`\nΣ ложных подтверждений Junior (${ACTIVE.filter((p) => !CONTROLS.has(p.id) && p.truth === 'below').map((p) => p.id).join(', ')}): ${f2(e.falsePass)}; Σ ложных отказов Junior (${ACTIVE.filter((p) => !CONTROLS.has(p.id) && p.truth !== 'below').map((p) => p.id).join(', ')}): ${f2(e.falseFail)}`);

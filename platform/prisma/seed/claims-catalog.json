@@ -4,7 +4,7 @@
     "backend": 33,
     "frontend": 28,
     "ai": 21,
-    "engineering": 0,
+    "engineering": 27,
     "common": 11
   },
   "entries": [
@@ -2166,6 +2166,880 @@
       "limits": "деплой и инфраструктуру",
       "stack": null,
       "adjacent": []
+    },
+    {
+      "id": "eng.etl-pipeline",
+      "specialization": "engineering",
+      "statement": "Строил пайплайн загрузки данных: извлечение, преобразование, загрузка в хранилище по расписанию",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 3
+      },
+      "proof": [
+        "task:schema-types",
+        "task:idempotent-load",
+        "task:group-having",
+        "interview:defend"
+      ],
+      "markers": [
+        "ETL",
+        "ELT",
+        "пайплайн данных",
+        "загрузка данных",
+        "dbt",
+        "Spark",
+        "pandas"
+      ],
+      "limits": "качество и надёжность пайплайна под реальным объёмом данных",
+      "stack": null,
+      "adjacent": [
+        "eng.orchestration",
+        "eng.dwh-modeling"
+      ]
+    },
+    {
+      "id": "eng.data-types",
+      "specialization": "engineering",
+      "statement": "Описывал схему таблиц и типы колонок для загружаемых данных, разбирал строки, не прошедшие приведение типов",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 1
+      },
+      "proof": [
+        "task:schema-types",
+        "task:csv-fields"
+      ],
+      "markers": [
+        "схема данных",
+        "типы данных",
+        "DDL",
+        "staging",
+        "CSV",
+        "Parquet"
+      ],
+      "limits": "проектирование модели хранилища (звезда, Data Vault)",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "eng.data-quality",
+      "specialization": "engineering",
+      "statement": "Проверял качество данных: дубли, пропуски, повторная доставка событий",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:dedup-count",
+        "task:null-aggregates",
+        "task:join-fanout",
+        "interview:defend"
+      ],
+      "markers": [
+        "качество данных",
+        "дедупликация",
+        "data quality",
+        "Great Expectations",
+        "дубли"
+      ],
+      "limits": "мониторинг качества данных в продакшене",
+      "stack": null,
+      "adjacent": [
+        "eng.idempotent-load"
+      ]
+    },
+    {
+      "id": "eng.idempotent-load",
+      "specialization": "engineering",
+      "statement": "Делал загрузку идемпотентной: перезапуск после сбоя не плодит дубли и не теряет строки",
+      "grades": [
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:idempotent-load",
+        "task:consumer-duplicates",
+        "interview:defend"
+      ],
+      "markers": [
+        "идемпотентность",
+        "upsert",
+        "ON CONFLICT",
+        "MERGE",
+        "перезапуск",
+        "backfill"
+      ],
+      "limits": "распределённые транзакции между системами",
+      "stack": null,
+      "adjacent": [
+        "eng.data-quality",
+        "eng.incremental-load"
+      ]
+    },
+    {
+      "id": "eng.incremental-load",
+      "specialization": "engineering",
+      "statement": "Выгружал данные инкрементально по водяному знаку или CDC, учитывал опоздавшие записи",
+      "grades": [
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": 3
+      },
+      "proof": [
+        "task:incremental-watermark",
+        "task:late-window",
+        "interview:defend"
+      ],
+      "markers": [
+        "инкрементальная загрузка",
+        "watermark",
+        "CDC",
+        "Debezium",
+        "updated_at",
+        "дельта"
+      ],
+      "limits": "потоковую обработку с гарантиями exactly-once",
+      "stack": null,
+      "adjacent": [
+        "eng.idempotent-load"
+      ]
+    },
+    {
+      "id": "eng.partitioning",
+      "specialization": "engineering",
+      "statement": "Секционировал большие таблицы и проверял, что запросы читают только нужные секции",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "task:partition-prune",
+        "interview:defend"
+      ],
+      "markers": [
+        "партиционирование",
+        "секционирование",
+        "partition pruning",
+        "ClickHouse",
+        "PARTITION BY"
+      ],
+      "limits": "шардирование и распределённые СУБД",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "eng.dwh-modeling",
+      "specialization": "engineering",
+      "statement": "Моделировал хранилище: факты и измерения, история изменений измерений (SCD2)",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "task:scd2-as-of",
+        "interview:defend"
+      ],
+      "markers": [
+        "DWH",
+        "хранилище данных",
+        "SCD2",
+        "звезда",
+        "измерения",
+        "факты",
+        "Data Vault"
+      ],
+      "limits": "выбор модели под конкретную нагрузку и BI-инструмент",
+      "stack": null,
+      "adjacent": [
+        "eng.etl-pipeline"
+      ]
+    },
+    {
+      "id": "eng.orchestration",
+      "specialization": "engineering",
+      "statement": "Настраивал оркестрацию задач с данными: зависимости, расписание, повторы",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 1,
+        "middle": 2
+      },
+      "proof": [
+        "task:cron-runs",
+        "interview:defend"
+      ],
+      "markers": [
+        "Airflow",
+        "Dagster",
+        "Prefect",
+        "DAG",
+        "оркестрация",
+        "cron"
+      ],
+      "limits": "эксплуатацию оркестратора под нагрузкой",
+      "stack": null,
+      "adjacent": [
+        "eng.etl-pipeline"
+      ]
+    },
+    {
+      "id": "eng.dockerfile",
+      "specialization": "engineering",
+      "statement": "Упаковывал сервис в Docker: Dockerfile с учётом кэша слоёв, порты и сеть в docker compose",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:docker-cache",
+        "task:port-mapping",
+        "task:env-precedence",
+        "interview:defend"
+      ],
+      "markers": [
+        "Dockerfile",
+        "Docker",
+        "кэш слоёв",
+        "multi-stage",
+        "образ",
+        "docker compose",
+        "порты"
+      ],
+      "limits": "оркестрацию контейнеров в кластере",
+      "stack": null,
+      "adjacent": [
+        "eng.ci-cd"
+      ]
+    },
+    {
+      "id": "eng.ci-cd",
+      "specialization": "engineering",
+      "statement": "Настраивал CI/CD: сборка, тесты и выкладка по коммиту",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:secrets-leak",
+        "task:deploy-rollback",
+        "task:ci-stages",
+        "interview:defend"
+      ],
+      "markers": [
+        "CI/CD",
+        "GitLab CI",
+        "GitHub Actions",
+        "Jenkins",
+        "пайплайн",
+        "деплой"
+      ],
+      "limits": "стратегии выкладки под нагрузкой (canary, blue-green)",
+      "stack": null,
+      "adjacent": [
+        "eng.dockerfile",
+        "eng.secrets",
+        "eng.deploy-rollback"
+      ]
+    },
+    {
+      "id": "eng.secrets",
+      "specialization": "engineering",
+      "statement": "Хранил секреты вне кода и образов: переменные CI, секрет-хранилище, монтирование при сборке",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:secrets-leak"
+      ],
+      "markers": [
+        "секреты",
+        "Vault",
+        "Kubernetes Secrets",
+        "env",
+        "переменные окружения",
+        "sealed-secrets"
+      ],
+      "limits": "аудит и ротацию секретов в организации",
+      "stack": null,
+      "adjacent": [
+        "eng.ci-cd"
+      ]
+    },
+    {
+      "id": "eng.k8s-probes",
+      "specialization": "engineering",
+      "statement": "Настраивал проверки живости и готовности сервиса и понимал, что делает каждая",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:k8s-probes",
+        "interview:defend"
+      ],
+      "markers": [
+        "liveness",
+        "readiness",
+        "healthcheck",
+        "probes",
+        "Kubernetes",
+        "k8s"
+      ],
+      "limits": "тонкую настройку под реальные паттерны отказов",
+      "stack": null,
+      "adjacent": [
+        "eng.k8s-resources"
+      ]
+    },
+    {
+      "id": "eng.k8s-resources",
+      "specialization": "engineering",
+      "statement": "Задавал ресурсы контейнеров (requests, limits) и считал, сколько подов поместится на узел",
+      "grades": [
+        "middle",
+        "senior"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "task:k8s-capacity",
+        "task:hpa-replicas",
+        "interview:defend"
+      ],
+      "markers": [
+        "requests",
+        "limits",
+        "ресурсы",
+        "OOMKilled",
+        "HPA",
+        "Kubernetes"
+      ],
+      "limits": "планирование ёмкости кластера",
+      "stack": null,
+      "adjacent": [
+        "eng.k8s-probes",
+        "eng.capacity-planning"
+      ]
+    },
+    {
+      "id": "eng.deploy-rollback",
+      "specialization": "engineering",
+      "statement": "Выкатывал и откатывал релизы: rolling update, откат на нужную версию",
+      "grades": [
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:deploy-rollback",
+        "task:rolling-update",
+        "task:rollout-blast",
+        "interview:defend"
+      ],
+      "markers": [
+        "откат",
+        "rollback",
+        "rollout undo",
+        "релиз",
+        "Helm",
+        "Argo CD",
+        "rolling update",
+        "maxSurge"
+      ],
+      "limits": "автоматический откат по метрикам",
+      "stack": null,
+      "adjacent": [
+        "eng.ci-cd"
+      ]
+    },
+    {
+      "id": "eng.iac",
+      "specialization": "engineering",
+      "statement": "Описывал инфраструктуру кодом",
+      "grades": [
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "Terraform",
+        "Ansible",
+        "IaC",
+        "Pulumi",
+        "инфраструктура как код"
+      ],
+      "limits": "проектирование облачной архитектуры",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "eng.test-strategy",
+      "specialization": "engineering",
+      "statement": "Строил набор автотестов по пирамиде: много модульных, меньше интеграционных, немного сквозных",
+      "grades": [
+        "junior",
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:test-pyramid",
+        "task:diag-tests",
+        "task:ci-sharding",
+        "interview:defend"
+      ],
+      "markers": [
+        "пирамида тестов",
+        "автотесты",
+        "тест-дизайн",
+        "стратегия тестирования",
+        "pytest",
+        "JUnit"
+      ],
+      "limits": "нагрузочное тестирование и тестирование безопасности",
+      "stack": null,
+      "adjacent": [
+        "eng.ui-autotests",
+        "eng.test-design"
+      ]
+    },
+    {
+      "id": "eng.test-design",
+      "specialization": "engineering",
+      "statement": "Проектировал тест-кейсы: граничные значения, классы эквивалентности, покрытие ветвей, параметризация",
+      "grades": [
+        "junior",
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:boundary-values",
+        "task:parametrize-count",
+        "task:branch-coverage",
+        "task:mutation-survivors"
+      ],
+      "markers": [
+        "тест-дизайн",
+        "граничные значения",
+        "классы эквивалентности",
+        "покрытие",
+        "coverage",
+        "parametrize"
+      ],
+      "limits": "качество продукта в целом и исследовательское тестирование",
+      "stack": null,
+      "adjacent": [
+        "eng.test-strategy"
+      ]
+    },
+    {
+      "id": "eng.test-isolation",
+      "specialization": "engineering",
+      "statement": "Изолировал тесты друг от друга: фикстуры, тестовые данные, общее состояние",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2
+      },
+      "proof": [
+        "task:fixture-isolation",
+        "task:flaky-line",
+        "task:mock-calls"
+      ],
+      "markers": [
+        "фикстуры",
+        "fixtures",
+        "изоляция тестов",
+        "тестовые данные",
+        "Testcontainers",
+        "моки",
+        "mock"
+      ],
+      "limits": "тестовые данные на объёмах продакшена",
+      "stack": null,
+      "adjacent": [
+        "eng.flaky-tests"
+      ]
+    },
+    {
+      "id": "eng.flaky-tests",
+      "specialization": "engineering",
+      "statement": "Находил и чинил нестабильные тесты: ожидания вместо пауз, время, порядок, общие данные",
+      "grades": [
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 1,
+        "middle": 3
+      },
+      "proof": [
+        "task:flaky-line",
+        "task:rerun-report",
+        "task:retry-budget",
+        "interview:defend"
+      ],
+      "markers": [
+        "flaky",
+        "нестабильные тесты",
+        "флаки",
+        "ретраи тестов",
+        "ожидания"
+      ],
+      "limits": "стабильность целой инфраструктуры CI",
+      "stack": null,
+      "adjacent": [
+        "eng.test-isolation"
+      ]
+    },
+    {
+      "id": "eng.contract-tests",
+      "specialization": "engineering",
+      "statement": "Писал контрактные тесты между сервисами и понимал, какие изменения API их ломают",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": 3
+      },
+      "proof": [
+        "task:contract-test",
+        "interview:defend"
+      ],
+      "markers": [
+        "контрактные тесты",
+        "Pact",
+        "consumer-driven",
+        "OpenAPI",
+        "совместимость API"
+      ],
+      "limits": "сквозное поведение всей системы",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "eng.ui-autotests",
+      "specialization": "engineering",
+      "statement": "Автоматизировал сквозные сценарии в браузере",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:locator-stability",
+        "interview:defend"
+      ],
+      "markers": [
+        "Playwright",
+        "Selenium",
+        "Cypress",
+        "UI-автотесты",
+        "e2e",
+        "page object"
+      ],
+      "limits": "стабильность сквозных тестов на большом наборе",
+      "stack": null,
+      "adjacent": [
+        "eng.test-strategy"
+      ]
+    },
+    {
+      "id": "eng.slo",
+      "specialization": "engineering",
+      "statement": "Задавал SLO и считал бюджет ошибок",
+      "grades": [
+        "junior",
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:error-budget",
+        "task:burn-rate",
+        "task:dependency-budget",
+        "interview:defend"
+      ],
+      "markers": [
+        "SLO",
+        "SLI",
+        "SLA",
+        "бюджет ошибок",
+        "error budget",
+        "доступность",
+        "burn rate"
+      ],
+      "limits": "согласование SLO с бизнесом",
+      "stack": null,
+      "adjacent": [
+        "eng.alerting",
+        "eng.incident-postmortem"
+      ]
+    },
+    {
+      "id": "eng.alerting",
+      "specialization": "engineering",
+      "statement": "Настраивал алерты по симптомам, которые видит пользователь, а не по каждой метрике",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3
+      },
+      "proof": [
+        "task:symptom-alert",
+        "task:burn-rate",
+        "interview:defend"
+      ],
+      "markers": [
+        "алерты",
+        "алертинг",
+        "Prometheus",
+        "Alertmanager",
+        "Grafana",
+        "дежурство",
+        "on-call"
+      ],
+      "limits": "устройство системы мониторинга целиком",
+      "stack": null,
+      "adjacent": [
+        "eng.slo",
+        "eng.observability"
+      ]
+    },
+    {
+      "id": "eng.incident-postmortem",
+      "specialization": "engineering",
+      "statement": "Участвовал в разборе инцидентов: таймлайн, время обнаружения и устранения, постмортем",
+      "grades": [
+        "junior",
+        "middle",
+        "senior"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:error-budget",
+        "task:log-count",
+        "task:escalation",
+        "task:diag-data",
+        "task:diag-deploy",
+        "task:diag-latency",
+        "interview:defend"
+      ],
+      "markers": [
+        "инцидент",
+        "постмортем",
+        "postmortem",
+        "MTTR",
+        "дежурство",
+        "разбор"
+      ],
+      "limits": "руководство инцидентом",
+      "stack": null,
+      "adjacent": [
+        "eng.slo"
+      ]
+    },
+    {
+      "id": "eng.retries-resilience",
+      "specialization": "engineering",
+      "statement": "Ограничивал ретраи в цепочке сервисов: бэкофф, джиттер, бюджет ретраев, таймауты",
+      "grades": [
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": 3
+      },
+      "proof": [
+        "task:retry-amplification",
+        "task:circuit-breaker",
+        "interview:defend"
+      ],
+      "markers": [
+        "ретраи",
+        "retry",
+        "backoff",
+        "джиттер",
+        "circuit breaker",
+        "таймауты",
+        "отказоустойчивость"
+      ],
+      "limits": "отказоустойчивость на уровне архитектуры",
+      "stack": null,
+      "adjacent": []
+    },
+    {
+      "id": "eng.capacity-planning",
+      "specialization": "engineering",
+      "statement": "Оценивал ёмкость: сколько обработчиков и ресурсов нужно под поток, как растёт очередь",
+      "grades": [
+        "middle",
+        "senior"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": null,
+        "middle": 2
+      },
+      "proof": [
+        "task:littles-law",
+        "task:backfill-nights",
+        "task:zone-capacity",
+        "task:mm1-latency",
+        "task:redundancy-nodes",
+        "interview:defend"
+      ],
+      "markers": [
+        "ёмкость",
+        "capacity planning",
+        "очередь",
+        "закон Литтла",
+        "пропускная способность",
+        "RPS"
+      ],
+      "limits": "нагрузочное тестирование и масштабирование кластера",
+      "stack": null,
+      "adjacent": [
+        "eng.k8s-resources"
+      ]
+    },
+    {
+      "id": "eng.observability",
+      "specialization": "engineering",
+      "statement": "Подключал метрики, логи и трейсы к сервису",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 2,
+      "weights": {
+        "junior": 2,
+        "middle": 2
+      },
+      "proof": [
+        "task:latency-percentile",
+        "task:log-count",
+        "task:counter-reset",
+        "interview:defend"
+      ],
+      "markers": [
+        "метрики",
+        "логи",
+        "трейсинг",
+        "OpenTelemetry",
+        "Prometheus",
+        "Grafana",
+        "наблюдаемость",
+        "перцентили",
+        "p99",
+        "логи доступа"
+      ],
+      "limits": "анализ производительности по трейсам",
+      "stack": null,
+      "adjacent": [
+        "eng.alerting"
+      ]
     },
     {
       "id": "ai.prompting",

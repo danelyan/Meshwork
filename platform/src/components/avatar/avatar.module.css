@@ -66,5 +66,5 @@
 .fill[data-status='thinking']::after, .fill[data-status='loading']::after { content: ''; position: absolute; inset: auto 0 0; height: 2px; background: var(--avatar-silver); opacity: 0.5; animation: scan 1.4s var(--ease) infinite; }
 
 /* запасной знак вместо головы: повторная проба WebGL */
-.retry { position: absolute; left: 50%; bottom: 14px; z-index: 3; transform: translateX(-50%); padding: 6px 12px; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-ink-soft); background: transparent; border: 1px solid var(--avatar-stage-line); cursor: pointer; }
-.retry:hover { color: var(--on-ink); border-color: var(--on-ink-soft); }
+.retry { position: absolute; left: 50%; bottom: 14px; z-index: 3; transform: translateX(-50%); padding: 6px 12px; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-text-soft); background: transparent; border: 1px solid var(--avatar-stage-line); cursor: pointer; }
+.retry:hover { color: var(--stage-text); border-color: var(--stage-text-soft); }

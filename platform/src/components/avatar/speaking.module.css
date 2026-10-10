@@ -9,13 +9,13 @@
 .strip i.done { background: var(--muted); }
 .strip i.now { background: var(--blue); }
 
-.subtitles { min-height: 4.8em; text-align: center; font-size: var(--fs); line-height: 1.5; color: var(--on-ink-soft); text-wrap: balance; }
+.subtitles { min-height: 4.8em; text-align: center; font-size: var(--fs); line-height: 1.5; color: var(--stage-text-soft); text-wrap: balance; }
 .phrase { opacity: 0.5; transition: opacity 160ms linear, color 160ms linear; }
-.phraseActive { opacity: 1; color: var(--on-ink); }
+.phraseActive { opacity: 1; color: var(--stage-text); }
 
-.chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-ink-soft); border: 1px solid var(--avatar-stage-line); }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-text-soft); border: 1px solid var(--avatar-stage-line); }
 .chip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
-.chip[data-status='thinking']::before, .chip[data-status='loading']::before { background: var(--on-ink-soft); animation: blink 0.9s var(--ease) infinite alternate; }
+.chip[data-status='thinking']::before, .chip[data-status='loading']::before { background: var(--stage-text-soft); animation: blink 0.9s var(--ease) infinite alternate; }
 .chip[data-status='speaking']::before { background: var(--blue); animation: blink 0.5s var(--ease) infinite alternate; }
 @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
 

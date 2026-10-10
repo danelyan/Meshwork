@@ -28,6 +28,8 @@
 | `demo` | Демо-режим для жюри: вход за сид-кандидата, демо-резюме (PDF), контекст | `demo/mode.ts`, `demo/resumes.ts` | db, env, session |
 | `stt` | Голос в текст: Yandex SpeechKit или браузер (Web Speech) | `stt/index.ts` | env, llm |
 | `devtools` | Отладочная панель и `/api/dev/*`, только localhost | `devtools/guard.ts`, `devtools/actions.ts` | auth, db, session |
+| `project` | Ступень 2 (ADR 0003): шаблоны проектов (`project-templates/`), условие и рубрика под потребность (LLM `project_spec`/`project_rubric`, детерминированный запасной путь), лента заданий, сдача из публичного GitHub, прогон в runner (stub без `RUNNER_URL`), отчёт работодателю, приглашение на защиту (ожидающая защита `CallSession` status=pending через `defense-room/pending.ts`; кандидат начинает её сам) — `docs/project-templates.md` | `project/service.ts` | llm, runner, employer, collector, claims, defense-room |
+| `runner` | HTTP-клиент песочницы автопроверки (контракт `runner/src/contract.ts`) | `runner/client.ts` | env, collector |
 
 Серверной озвучки (TTS) в коде нет; «говорящая голова» (`src/components/head/`) — клиентская.
 
@@ -48,13 +50,15 @@
 | Тест на грейд | `test/start`, `test/attempts`, `test/attempt/[id]` (+`answer`, `finish`, `confirm-junior`) | test |
 | Приглашения (кандидат) | `invitations`, `invitations/[id]` | employer |
 | Работодатель | `employer/vacancies[/id[/matches]]`, `employer/search`, `employer/invitations`, `employer/assistant/messages` (SSE) | employer, agent/employer |
+| Проекты (кандидат) | `project-tasks/feed`, `project-tasks/[id]` (+`take`, `skeleton.zip`, `submissions`), `project-submissions/[id]` | project |
+| Проекты (работодатель) | `employer/needs/[id]/project`, `employer/project-templates`, `employer/project-submissions[/id/invite-to-defense]` | project |
 | Голос | `stt` | stt |
 | Созвон | `call` (список + согласие), `call/consent`, `call/start`, `call/[id]` (+`turn`, `audio`, `events` (SSE), `finish`, `recording`) | call |
 | Демо | `demo/login`, `demo/resume` | demo |
 | Отладка | `dev/*` (login-as, new-user, reset-*, delete-account, …) | devtools |
 
 Режим звонка — `components/call/*` (`CallPanel` в сцене `/consultant`, `DepthMap` в профиле).
-Страницы: `(candidate)/{consultant,profile,test,defense,invitations}`, `employer/*`,
+Страницы: `(candidate)/{consultant,profile,test,defense,invitations,projects}`, `employer/*`,
 `onboarding`, `auth`, `consent`, `demo`, `design/*` (превью, не для пользователей), `api-docs` (Swagger UI по спецификации).
 
 ## Общие файлы: правила правки
@@ -105,5 +109,6 @@
   (`defense/evaluator.ts` THRESHOLD), на людях не калиброван.
 - Тест на грейд: `TEST_DEMO_INTERVALS=true` — интервалы пересдачи в минутах, не днях (стенд жюри). Параметры заданий
   экспертные, на людях не оценены.
+- Проверка проектов: пусто `RUNNER_URL`/`RUNNER_TOKEN` — stub-runner (`project/runner-client.ts`): счёт по числу тестов шаблона, адрес с `reference` — всё зелёное, `starter` — всё красное, `runner-fail` — сбой. При `LLM_PROVIDER=stub` условие и рубрика собираются детерминированно (`project/fallback.ts`).
 - Отладочная панель и `/api/dev/*`: только localhost и не production; выключатель `DEVTOOLS=false`.
 - Почта: `SMTP_HOST/PORT` (Mailpit на стенде).

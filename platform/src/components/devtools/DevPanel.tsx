@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { COMPANION_SAY_EVENT } from '@/components/avatar/events';
+import { setSceneTheme, useSceneTheme } from '@/components/avatar/scene-theme';
 import { Button, Kicker } from '@/components/ui';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
@@ -57,6 +58,7 @@ const ROLE_LABEL = { pending: 'роль не выбрана', candidate: 'кан
 export function DevPanel() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const sceneTheme = useSceneTheme();
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [accounts, setAccounts] = useState<Accounts | null>(null);
   const [alsoProfile, setAlsoProfile] = useState(false);
@@ -182,6 +184,16 @@ export function DevPanel() {
               <span>Не вошёл</span>
             )}
             <span className={styles.mono}>{pathname}</span>
+          </div>
+
+          <div className={styles.row} role="group" aria-label="Тема экрана консультанта">
+            <span className={styles.check}>Тема консультанта:</span>
+            <Button size="sm" aria-pressed={sceneTheme === 'light'} variant={sceneTheme === 'light' ? 'primary' : undefined} onClick={() => setSceneTheme('light')}>
+              светлая
+            </Button>
+            <Button size="sm" aria-pressed={sceneTheme === 'dark'} variant={sceneTheme === 'dark' ? 'primary' : undefined} onClick={() => setSceneTheme('dark')}>
+              тёмная
+            </Button>
           </div>
 
           {confirmDelete ? (

@@ -292,6 +292,85 @@ Frontend:
 6. **Цели по повторяемости и разделению не достигнуты:** retest 70–82 % при цели 90 %, κ 0,40–0,48 при цели 0,70, AUC Middle/Junior на `persona` 0,69–0,71 при цели 0,90;
    точность решения на синтетике ниже цели 85 % в обеих популяциях (архив, 68–73 %).
 
+### Направление engineering: тест на подкатегорию (10.10, ADR 0003, дополнения 10.10 и 10.10 15:50)
+
+> **Цифры до политики v4** (лейн engineering): банк 8 семейств на подкатегорию, без Senior. Перемер под `adr-0002-v4` — § «Персоны под политикой v4» ниже.
+
+**Итог: цели по персонам не достигнуты ни в одной подкатегории, и подбором a/b их не достичь.** Новичок получает
+Junior в 0,12–0,13 (цель ≤ 0,10), Junior — в 0,75 (цель ≥ 0,90). Причина — структурная: в подкатегории 8 семейств,
+политика показывает 7–10 заданий, поэтому кандидат видит весь пул, а адаптивность и дозадавание не работают
+(длина 7–8, дозадавание 0). Решение тогда — детерминированная функция от набора верных ответов. Худший исход Junior
+(3 лёгких Junior-задания верно, остальное неверно) — подмножество лучшего исхода новичка (те же 3 + одно
+Middle-задание). При любых монотонных a, b подтвердить первый и не подтвердить второй нельзя: или новичок ≥ 0,125,
+или Junior ≤ 0,75. Варианты: больше семейств на подкатегорию (≥ 12, как у направлений), иная политика для
+малого пула или иные легенды. Это решение владельца, не калибровка.
+
+Банк: 32 семейства `eng.*` (`platform/src/server/test/generators/engineering.ts`), по 8 на подкатегорию
+(4 Junior + 4 Middle, поле `subcategoryId`):
+
+| Подкатегория | Junior | Middle |
+|---|---|---|
+| `engineering.data-eng` | dedup-count, schema-types, null-aggregates, join-fanout | idempotent-load, incremental-watermark, partition-prune, scd2-as-of |
+| `engineering.devops` | docker-cache, secrets-leak, port-mapping, ci-stages | k8s-probes, k8s-capacity, deploy-rollback, rolling-update |
+| `engineering.qa-automation` | test-pyramid, fixture-isolation, boundary-values, parametrize-count | flaky-line, contract-test, mock-calls, branch-coverage |
+| `engineering.sre` | error-budget, symptom-alert, latency-percentile, log-count | retry-amplification, burn-rate, littles-law, circuit-breaker |
+
+a, b — экспертные по образцу backend/frontend: Junior b от −1,4 до −0,3, Middle b от 0,3 до 0,8. Ключи на 300 seed
+сверены с независимым решением по тексту условия (`tests/unit/test/engineering.test.ts`) у 29 из 32 семейств; у
+классификационных (пирамида, алерты, контракт) ключ берётся из размеченного пула.
+
+Сверено с документацией (Context7): откат Deployment создаёт новую ревизию, планирование по requests, пробы,
+округление maxSurge вверх и maxUnavailable вниз, кэш слоёв Docker, `when`/`allow_failure` GitLab CI, stacked
+parametrize в pytest. **Не сверено, знание агента:** приведение типов и partition pruning PostgreSQL, scope
+фикстур pytest, `call_count` у unittest.mock при исключении из `side_effect`.
+
+Персоны: `npx tsx eval/test/personas.ts --sub engineering.<подкатегория> --n 4000 --seed 1`, пул — только
+семейства подкатегории. Seed 2 отличается не больше чем на 0,016. Легенды — гипотеза агента, не люди. Матрица
+знаний у четырёх подкатегорий одинаковой формы: новичок — `Y H H X | H X X X`, Junior — `Y Y Y H | H X X X`,
+Middle — `Y Y Y Y | Y Y H H`, контроль — `Y Y Y Y | X X X X`. Колонки — 4 Junior и 4 Middle по возрастанию b.
+
+| Подкатегория | Новичок: P(Junior) | Junior: P(Junior) | Junior: ложный Middle | Middle: P(Middle) | Идеальный Junior | Длина |
+|---|---|---|---|---|---|---|
+| data-eng (DN / DJ / DM / DI) | **0,13** | **0,75** | 0,00 | 1,00 | 1,00 | 7,0–8,0 |
+| devops (ON / OJ / OM / OI) | **0,13** | **0,75** | 0,00 | 1,00 | 1,00 | 7,0–8,0 |
+| qa-automation (QN / QJ / QM / QI) | **0,12** | **0,75** | 0,00 | 1,00 | 1,00 | 7,0–8,0 |
+| sre (SN / SJ / SM / SI) | **0,12** | **0,75** | 0,00 | 1,00 | 1,00 | 7,0–8,0 |
+
+Предыдущий вариант (общий тест на направление, 16 семейств, 10.10) дал узкому Junior одной подкатегории 0,60. Этот
+вариант заменён решением владельца 15:45 (тест на подкатегорию). Цифры прежних персон backend/frontend не изменились.
+
+### Engineering: пул 6 Junior + 4 Middle + 4 Senior на подкатегорию (дополнение ADR-0003 10.10 16:15)
+
+> **Цифры до политики v4** (лейн engineering): порог Senior +0,6 локально, заявка Senior без Senior-пула и без дозадавания Middle; id персон data-eng (DN, DJ, …) не путать с backend data-model (после интеграции — DMN, DMJ, …). Перемер под `adr-0002-v4` — § «Персоны под политикой v4» ниже.
+
+`npx tsx eval/test/personas.ts --n 1000 --seed {1,2} --sub engineering.<sub>`; в ячейке — seed 1 / seed 2.
+Пороги Junior −0,7 / Middle −0,1 / **Senior 0,6 — локально, до политики Senior**. Персоны — модели знаний агента, не люди.
+«Junior с одной слабой темой» — ровно одно Junior-семейство из 6 не решено, Middle как у Junior (как в gen-backend);
+прежний профиль «4 из 6» — «пограничный Junior», без цели. После подбора a/b (ниже).
+
+| Тип (цель) | data-eng | devops | qa-automation | sre |
+|---|---|---|---|---|
+| Новичок → Junior (≤ 0,10) | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| Пограничный новичок → Junior (≤ 0,10) | 0,031 / 0,028 | 0,056 / 0,067 | 0,063 / 0,065 | 0,058 / 0,058 |
+| Junior → Junior (≥ 0,90) | 1,000 / 1,000 | 1,000 / 1,000 | 1,000 / 1,000 | 0,981 / 0,986 |
+| Junior с одной слабой темой → Junior (≥ 0,85) | 1,000 / 1,000 | 1,000 / 1,000 | 1,000 / 1,000 | 1,000 / 1,000 |
+| Пограничный Junior → Junior (без цели) | 0,684 / 0,680 | 0,602 / 0,620 | 0,724 / 0,750 | 0,743 / 0,728 |
+| Junior → Middle (≤ 0,10) | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| Middle → Middle (≥ 0,90) | 0,999 / 0,996 | 0,996 / 0,995 | 1,000 / 0,999 | 1,000 / 1,000 |
+| Middle со слабой темой → Middle (≥ 0,85) | 0,994 / 0,987 | 0,986 / 0,980 | 1,000 / 0,997 | 1,000 / 1,000 |
+| Senior → Senior (≥ 0,90) | 1,000 / 1,000 | 1,000 / 1,000 | 1,000 / 1,000 | 1,000 / 1,000 |
+| Middle → Senior (≤ 0,10), **до политики Senior** | **0,185 / 0,188** | 0,051 / 0,057 | **0,146 / 0,171** | **0,204 / 0,192** |
+| Идеальный Junior: Junior / Middle | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 |
+
+Подбор a/b (только генераторы, пороги не трогали):
+- поднят b самых лёгких Junior в devops/sre: secrets-leak −0,9, log-count −1,0, symptom-alert −1,0, escalation −0,8;
+- поднят b самых лёгких Middle в devops/sre до 0,5: k8s-capacity, k8s-probes, retry-amplification, littles-law;
+- поднят a Junior средней трудности: csv-fields, join-fanout, fixture-isolation, rerun-report, latency-percentile 1,4; cron-runs 1,4; env-precedence, error-budget 1,3; log-count 1,2;
+- опущен b лёгких Junior в data/qa: group-having −1,2, dedup-count −1,1, boundary-values −1,1, locator-stability −1,0; counter-reset −0,5;
+- опущен a самого лёгкого Middle: idempotent-load, k8s-capacity 1,0.
+Пробный сдвиг b всех Senior на +0,2 ухудшил ложный Senior (0,19–0,32) и откатан. Ложный Senior у Middle —
+вопрос политики Senior (старт заявки Senior с Senior-заданий и дозадавание Middle, лейн directions); перемерить после слияния.
+
 ### Архив: цифры до 10.10 (порог −1,5, без дозадавания)
 
 Эти таблицы **больше не описывают прод**: они посчитаны при пороге Junior −1,5 либо при −0,7, но без дозадавания (`--no-probe`) и по старой популяции `legacy`. Оставлены как история и для сравнения; текущие цифры — выше.

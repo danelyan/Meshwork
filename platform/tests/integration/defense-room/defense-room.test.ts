@@ -42,6 +42,10 @@ async function seed(opts: { consent?: boolean } = {}) {
   // Приглашение принято только компанией A.
   await prisma.invitation.create({ data: { candidateId: CAND, companyId: 'co-a', status: 'accepted', salaryFrom: 200000, salaryTo: 250000 } });
   await prisma.invitation.create({ data: { candidateId: CAND, companyId: 'co-b', status: 'sent', salaryFrom: 200000, salaryTo: 250000 } });
+  // ProjectSubmission ссылается на ProjectTask (lane project): минимальные шаблон, потребность и задание.
+  await prisma.projectTemplate.create({ data: { id: 'tpl-1', subcategoryId: 'backend.integrations', specialization: 'backend', grade: 'middle', title: 'Платежи', contractMd: '#', dirRef: 'x', hiddenTestsRef: 'hidden', visibleTestsRef: 'visible', image: 'node20', timeBudgetMin: 240 } });
+  await prisma.vacancy.create({ data: { id: 'vac-1', companyId: 'co-a', title: 'Backend', specialization: 'backend', grade: 'middle', salaryFrom: 200000, salaryTo: 250000, needs: [] } });
+  await prisma.projectTask.create({ data: { id: 'task-1', vacancyId: 'vac-1', templateId: 'tpl-1', specialization: 'backend', grade: 'middle', specJson: {}, rubricJson: { criteria: [] } } });
   await prisma.projectSubmission.create({
     data: {
       id: SUB,

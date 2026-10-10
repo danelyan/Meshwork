@@ -77,10 +77,10 @@ export const SUBCATEGORIES: readonly SubcategoryDef[] = [
   { id: 'ai.mlops', specialization: 'ai', title: 'MLOps', description: 'Модель в сервисе: версии, мониторинг дрейфа, переобучение, откат', status: 'active', order: 4 },
   { id: 'ai.data-science', specialization: 'ai', title: 'Data Science', description: 'Аналитика и статистика: A/B, прогноз, интерпретация', status: 'active', order: 5 },
 
-  { id: 'engineering.data-eng', specialization: 'engineering', title: 'Data Engineering', description: 'ETL/ELT, качество данных, витрины, оркестрация', status: 'planned', order: 1 },
-  { id: 'engineering.devops', specialization: 'engineering', title: 'DevOps', description: 'CI/CD, Docker/K8s, IaC, наблюдаемость', status: 'planned', order: 2 },
-  { id: 'engineering.qa-automation', specialization: 'engineering', title: 'QA-автоматизация', description: 'Автотесты API/UI, тест-дизайн, стабильность', status: 'planned', order: 3 },
-  { id: 'engineering.sre', specialization: 'engineering', title: 'SRE', description: 'Инциденты, разбор, ёмкость', status: 'planned', order: 4 },
+  { id: 'engineering.data-eng', specialization: 'engineering', title: 'Data Engineering', description: 'ETL/ELT, качество данных, витрины, оркестрация', status: 'active', order: 1 },
+  { id: 'engineering.devops', specialization: 'engineering', title: 'DevOps', description: 'CI/CD, Docker/K8s, IaC, наблюдаемость', status: 'active', order: 2 },
+  { id: 'engineering.qa-automation', specialization: 'engineering', title: 'QA-автоматизация', description: 'Автотесты API/UI, тест-дизайн, стабильность', status: 'active', order: 3 },
+  { id: 'engineering.sre', specialization: 'engineering', title: 'SRE', description: 'Инциденты, разбор, ёмкость', status: 'active', order: 4 },
 ];
 
 const BY_ID = new Map(SUBCATEGORIES.map((s) => [s.id, s]));

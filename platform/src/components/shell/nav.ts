@@ -11,6 +11,8 @@ export const CANDIDATE_LINKS: NavLink[] = [
   { href: '/consultant', label: 'Консультант' },
   { href: '/profile', label: 'Профиль' },
   { href: '/test', label: 'Тест' },
+  /** lane project: лента проектных заданий (ADR 0003, ступень 2) */
+  { href: '/projects', label: 'Проекты' },
   { href: '/invitations', label: 'Приглашения' },
 ];
 

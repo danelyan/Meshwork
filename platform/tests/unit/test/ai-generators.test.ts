@@ -2,10 +2,12 @@ import { catalogFromFile } from '@/server/claims/catalog-file';
 import { checkAnswer } from '@/server/test/answers';
 import { getSubcategory } from '@/lib/directions';
 import {
+  bankComplete,
   generatorsFor,
   hasTestFor,
   familyCounts,
   MIN_FAMILIES_BY_GRADE,
+  MIN_GENERATORS_PER_SPEC,
   NoGeneratorsError,
   poolFor,
   requireGenerators,
@@ -292,14 +294,16 @@ describe('Senior ai.* (ADR 0003, 16:15): ключи совпадают с нез
   });
 });
 
-describe('направление без генераторов', () => {
-  it('engineering: теста нет, requireGenerators падает с понятной ошибкой', () => {
-    expect(hasTestFor('ai')).toBe(true);
-    expect(hasTestFor('backend')).toBe(true);
-    if (generatorsFor('engineering').length === 0) {
-      expect(hasTestFor('engineering')).toBe(false);
-      expect(() => requireGenerators('engineering')).toThrow(NoGeneratorsError);
-      expect(() => requireGenerators('engineering')).toThrow(/Engineering пока недоступен/);
+describe('банки всех направлений (интеграция лейнов 10.10)', () => {
+  it('engineering: тест есть — банк направления и полный банк 6/4/4 в каждой подкатегории', () => {
+    for (const spec of ['backend', 'frontend', 'ai', 'engineering'] as const) expect(hasTestFor(spec), spec).toBe(true);
+    expect(requireGenerators('engineering').length).toBeGreaterThanOrEqual(MIN_GENERATORS_PER_SPEC);
+    for (const sub of ['engineering.data-eng', 'engineering.devops', 'engineering.qa-automation', 'engineering.sre']) {
+      const pool = poolFor('engineering', sub);
+      expect(pool, sub).not.toBeNull();
+      expect(pool!.legacy, sub).toBe(false);
+      expect(bankComplete(pool!.generators), sub).toBe(true);
     }
+    expect(new NoGeneratorsError('engineering')).toBeInstanceOf(Error);
   });
 });

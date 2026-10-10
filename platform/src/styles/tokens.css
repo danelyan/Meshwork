@@ -162,6 +162,9 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --stage-on-accent: #0e0f14;
   --stage-btn: #eceef2;
   --stage-mask: #000;
+  /* текст на сцене (голова, субтитры, колонка); --on-ink остаётся «текст на чёрной/синей кнопке» */
+  --stage-text: #ffffff;
+  --stage-text-soft: rgba(255, 255, 255, 0.8);
 
   /* lane call: режим звонка на тёмной сцене (CallPanel) — не зависят от темы страницы, сцена всегда тёмная */
   --call-on-stage: #ffffff;
@@ -213,4 +216,31 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --on-ink: #0e0f14; --on-ink-soft: rgba(14, 15, 20, 0.75);
   --error: #ff8f86; --danger-border: #ff8f86; --danger-text: #ff8f86; --tag-red-border: var(--ink); --tag-red-text: var(--ink);
   --backdrop: rgba(0, 0, 0, 0.6); --chat-composer-bg: var(--paper);
+}
+
+/*
+ * Светлая сцена консультанта (решение владельца 10.10: по умолчанию светлая, тёмная — переключателем в
+ * dev-панели). Эталон — главная: бумага с синим свечением, стеклянные карточки с белой рамкой, чернила,
+ * синий акцент, моно-подписи приглушённым. Ставится на корень сцены (AvatarScene, data-scene-theme);
+ * режим созвона остаётся тёмным (CallPanel рассчитан на тёмную сцену). Лента слева в светлой теме —
+ * обычные токены страницы (без data-theme='feed-dark').
+ * Контраст: --muted на --paper 4,9:1, --blue на --paper 7,4:1, белый на --blue 8,6:1.
+ */
+[data-scene-theme='light']:not([data-call]) {
+  --avatar-stage: var(--paper);
+  --avatar-stage-glow: var(--glow);
+  --avatar-stage-line: var(--line);
+  --stage-card: var(--glass);
+  --stage-track: rgba(17, 17, 17, 0.1);
+  --stage-ring: rgba(17, 17, 17, 0.26);
+  --stage-ink: var(--ink);
+  --stage-ink-dim: #55555b;
+  --stage-ink-faint: var(--muted);
+  --stage-accent: var(--blue);
+  --stage-accent-track: rgba(64, 47, 255, 0.4);
+  --stage-accent-fill: rgba(64, 47, 255, 0.08);
+  --stage-on-accent: #ffffff;
+  --stage-btn: var(--ink);
+  --stage-text: var(--ink);
+  --stage-text-soft: var(--text-soft);
 }

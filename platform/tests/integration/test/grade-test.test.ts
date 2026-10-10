@@ -156,14 +156,14 @@ describe('API теста на грейд', () => {
     expect(await checkEligibility(B, 'ai', 'junior')).toMatchObject({ allowed: true, subcategoryId: 'ai.data-science' });
   });
 
-  it('направление без генераторов (engineering): допуск no_test, старт — 422 с понятной причиной', async () => {
+  it('engineering (банк 6/4/4 на подкатегорию): без своей подкатегории — subcategory_required, с подкатегорией — попытка по её семействам', async () => {
     const elig = await eligibilityRoute(jsonRequest('/api/test/start?specialization=engineering&grade=junior', 'GET', undefined, cookie(A)));
-    const body = (await elig.json()) as { allowed: boolean; code?: string; reason?: string };
-    expect(body).toMatchObject({ allowed: false, code: 'no_test' });
-    expect(body.reason).toMatch(/Engineering пока недоступен/);
-    const started = await startRoute(jsonRequest('/api/test/start', 'POST', { specialization: 'engineering', grade: 'junior' }, cookie(A)));
-    expect(started.status).toBe(422);
-    expect(await prisma.testAttempt.count({ where: { candidateId: A } })).toBe(0);
+    expect(await elig.json()).toMatchObject({ allowed: false, code: 'subcategory_required' });
+    const { attemptId } = await startAttempt(A, 'engineering', 'junior', new Date(), { seed: 3, subcategoryId: 'engineering.devops' });
+    const own = new Set(generatorsForSubcategory('engineering.devops').map((g) => g.id));
+    const items = await prisma.testItem.findMany({ where: { attemptId } });
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.every((i) => own.has(i.templateId))).toBe(true);
   });
 
   it('чужая попытка — 404; без сессии — 401', async () => {

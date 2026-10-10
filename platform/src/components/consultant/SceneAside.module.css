@@ -14,11 +14,10 @@
   .cardBody { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   /* память и рынок уже, файлы и настройки шире: у них поля ввода и чипы */
   .aside { grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.3fr); }
-  .marketRow { grid-template-columns: minmax(0, 120px) minmax(24px, 1fr) 20px; gap: 8px; }
   .aside > :last-child:nth-child(even) { grid-column: auto; }
   .aside[data-role='employer'] > .card { grid-column: span 2; }
 }
-.title, .cardHead { margin: 0; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--on-ink-soft); }
+.title, .cardHead { margin: 0; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--stage-text-soft); }
 .title { margin-bottom: 10px; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
@@ -26,19 +25,19 @@
 .road { padding: 14px 16px 16px; border: 1px solid var(--avatar-stage-line); background: var(--stage-card); }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .step { border-top: 3px solid var(--stage-track); padding-top: 10px; }
-.stepLink { display: flex; gap: 10px; align-items: flex-start; color: var(--on-ink-soft); }
-.stepLink:hover .stepName { color: var(--on-ink); }
-.marker { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--stage-ring); font: 600 var(--fs-xs) var(--mono); color: var(--on-ink-soft); }
+.stepLink { display: flex; gap: 10px; align-items: flex-start; color: var(--stage-text-soft); }
+.stepLink:hover .stepName { color: var(--stage-text); }
+.marker { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--stage-ring); font: 600 var(--fs-xs) var(--mono); color: var(--stage-text-soft); }
 .stepText { display: grid; gap: 2px; min-width: 0; }
-.stepName { font-weight: 600; font-size: var(--fs-sm); line-height: 1.3; color: var(--on-ink-soft); }
+.stepName { font-weight: 600; font-size: var(--fs-sm); line-height: 1.3; color: var(--stage-text-soft); }
 .short { display: none; }
 .stepNote { font-size: var(--fs-xs); line-height: 1.4; color: var(--stage-ink-faint); overflow-wrap: anywhere; }
 .step[data-state='done'] { border-top-color: var(--stage-accent-track); }
 .step[data-state='done'] .marker { background: var(--stage-accent-fill); border-color: var(--stage-accent); color: var(--stage-ink); }
 .step[data-state='now'] { border-top-color: var(--stage-accent); }
 .step[data-state='now'] .marker { background: var(--stage-accent); border-color: var(--stage-accent); color: var(--stage-on-accent); }
-.step[data-state='now'] .stepName { color: var(--on-ink); }
-.step[data-state='now'] .stepNote { color: var(--on-ink-soft); }
+.step[data-state='now'] .stepName { color: var(--stage-text); }
+.step[data-state='now'] .stepNote { color: var(--stage-text-soft); }
 .step[data-state='next'] .stepName { color: var(--stage-ink-dim); }
 
 /* --- карточки --- */
@@ -48,16 +47,16 @@
 .chevron { display: none; }
 .cardBody { flex: 1; padding: 10px 16px 14px; }
 .empty { display: grid; gap: 10px; justify-items: start; }
-.empty p { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--on-ink-soft); }
+.empty p { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--stage-text-soft); }
 .attach { padding: 7px 14px; font-weight: 600; font-size: var(--fs-sm); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
 .attach:hover { background: var(--stage-ink); }
 .docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .doc { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; }
 .docKind { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); border: 1px solid var(--avatar-stage-line); padding: 1px 5px; }
-.docName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--on-ink); }
+.docName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--stage-text); }
 .docStatus { grid-column: 2; font-size: var(--fs-xs); color: var(--stage-ink-faint); }
-.hint { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--avatar-stage-line); font-size: var(--fs-sm); line-height: 1.5; color: var(--on-ink-soft); }
-.hintTitle { font-weight: 600; color: var(--on-ink); }
+.hint { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--avatar-stage-line); font-size: var(--fs-sm); line-height: 1.5; color: var(--stage-text-soft); }
+.hintTitle { font-weight: 600; color: var(--stage-text); }
 .hintTitle::after { content: ' ·'; color: var(--stage-ink-faint); }
 
 /* --- что я знаю: пары «шаг — ответ»; рынок: категории с полосками --- */
@@ -65,14 +64,18 @@
 .facts { margin: 0; display: grid; gap: 8px; }
 .fact { display: grid; grid-template-columns: minmax(84px, 38%) minmax(0, 1fr); gap: 10px; align-items: baseline; }
 .fact dt { font-size: var(--fs-xs); color: var(--stage-ink-faint); }
-.fact dd { margin: 0; font-size: var(--fs-sm); line-height: 1.4; color: var(--on-ink); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.fact dd { margin: 0; font-size: var(--fs-sm); line-height: 1.4; color: var(--stage-text); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .market { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.marketRow { display: grid; grid-template-columns: minmax(0, 132px) minmax(0, 1fr) 28px; gap: 10px; align-items: center; }
-.marketLabel { font-size: var(--fs-xs); color: var(--on-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar { height: 6px; background: var(--stage-track); }
+/* подпись и число в строку, полоска под ними на всю ширину: читается и в узкой карточке */
+.marketRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'label count' 'bar bar'; gap: 4px 10px; align-items: baseline; }
+.marketLabel { grid-area: label; }
+.bar { grid-area: bar; }
+.marketCount { grid-area: count; }
+.marketLabel { font-size: var(--fs-xs); color: var(--stage-text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar { height: 4px; background: var(--stage-track); }
 .bar > span { display: block; height: 100%; min-width: 2px; background: var(--stage-accent-track); }
-.marketCount { font: 600 var(--fs-xs) var(--mono); text-align: right; color: var(--on-ink-soft); }
-.marketRow[data-mine] .marketLabel, .marketRow[data-mine] .marketCount { color: var(--on-ink); }
+.marketCount { font: 600 var(--fs-xs) var(--mono); text-align: right; color: var(--stage-text-soft); }
+.marketRow[data-mine] .marketLabel, .marketRow[data-mine] .marketCount { color: var(--stage-text); }
 .marketRow[data-mine] .bar > span { background: var(--stage-accent); }
 .marketNote { margin: 10px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--stage-ink-faint); }
 

@@ -4,12 +4,14 @@ import { notFound } from 'next/navigation';
 import styles from '@/components/employer/Employer.module.css';
 import { GRADE_LABEL, SPEC_LABEL, salaryRange } from '@/components/employer/labels';
 import { MatchResults } from '@/components/employer/MatchResults';
+import { EmployerProjectBlock } from '@/components/project/EmployerProjectBlock';
 import { Button, Kicker, Notice, Tag } from '@/components/ui';
 import { subcategoryLabel } from '@/lib/directions';
 import { requirePageEmployer } from '@/server/auth/page';
 import { loadEmployerContext, matchForVacancy } from '@/server/employer';
 import { parseFilters } from '@/server/employer/schemas';
 import { AppError } from '@/server/errors';
+import { projectBlockData } from '@/server/project/page-data';
 
 export const metadata: Metadata = { title: 'Подборка - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
@@ -27,6 +29,7 @@ export default async function NeedMatchesPage({ params, searchParams }: Props) {
     throw e;
   });
   const v = result.vacancy!;
+  const project = await projectBlockData(ctx.companyId, v);
   const basePath = `/employer/needs/${encodeURIComponent(v.id)}`;
   return (
     <div className={styles.page}>
@@ -52,6 +55,17 @@ export default async function NeedMatchesPage({ params, searchParams }: Props) {
         кандидатом карточки.
       </p>
       <MatchResults result={result} basePath={basePath} />
+      <EmployerProjectBlock
+        vacancyId={v.id}
+        specialization={v.specialization}
+        grade={v.grade}
+        salaryFrom={v.salaryFrom}
+        salaryTo={v.salaryTo}
+        archived={v.archived}
+        initialTask={project.task}
+        templates={project.templates}
+        criteriaOptions={project.criteriaOptions}
+      />
     </div>
   );
 }

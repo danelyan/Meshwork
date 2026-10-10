@@ -85,12 +85,8 @@ export async function syncTemplates(force = false): Promise<void> {
       image: m.image,
       timeBudgetMin: m.timeBudgetMin,
     };
-    try {
-      await prisma.projectTemplate.upsert({ where: { id: m.id }, update: data, create: { id: m.id, ...data } });
-    } catch (err) {
-      // Один шаблон не должен ронять ленту: например, грейд senior до миграции enum Grade (lane directions).
-      console.warn(`[project] шаблон ${m.id} не записан в ProjectTemplate`, err instanceof Error ? err.message.split('\n').pop() : err);
-    }
+    // Senior-шаблоны пишутся наравне с остальными: enum Grade с senior — миграция 20261010181000_grade_senior.
+    await prisma.projectTemplate.upsert({ where: { id: m.id }, update: data, create: { id: m.id, ...data } });
   }
   synced = true;
 }

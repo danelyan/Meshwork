@@ -106,12 +106,14 @@ describe('summarizeProjectResult', () => {
     expect(summarizeProjectResult({ foo: 1 })).toBeNull();
   });
 
-  it('формат lane project: tests — сводка {passed, total, score}, упавшие — из hiddenTests', () => {
+  it('формат lane project: счёт из tests, имена только видимых, незакрытые критерии рубрики', () => {
     const r = summarizeProjectResult({
-      tests: { passed: 19, total: 20, score: 0.95 },
-      hiddenTests: [{ name: 'h1', passed: true }, { name: 'h2', passed: false }],
-      lint: { status: 'skipped', note: '' },
+      tests: { passed: 12, total: 15, score: 80 },
+      visibleTests: [{ name: 'GET /slots', passed: false }],
+      hiddenTests: [{ name: 'скрытый: гонка слотов', passed: false }],
+      rubric: { results: [{ text: 'Есть ретраи', passed: false }, { text: 'Валидация', passed: true }] },
     });
-    expect(r).toMatchObject({ score: 0.95, passed: 19, total: 20, failed: ['h2'] });
+    expect(r).toMatchObject({ score: 0.8, passed: 12, total: 15, failed: ['GET /slots'], notes: ['критерий не закрыт: Есть ретраи'] });
+    expect(JSON.stringify(r)).not.toContain('скрытый');
   });
 });

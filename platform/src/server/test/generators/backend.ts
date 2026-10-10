@@ -3,6 +3,7 @@
 // задающие сложность, — зафиксированы в семействе. a, b — ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
+import { HIGHLOAD_BANK2 } from './backend-bank2-highload';
 import { INTEGRATIONS_BANK2 } from './backend-bank2-integrations';
 import { WEBAPI_BANK2 } from './backend-bank2-webapi';
 
@@ -2994,4 +2995,5 @@ export const BACKEND_GENERATORS: TaskGenerator[] = [
   // Банк-2 (решение владельца 11.10): +12 семейств на подкатегорию.
   ...WEBAPI_BANK2,
   ...INTEGRATIONS_BANK2,
+  ...HIGHLOAD_BANK2,
 ];

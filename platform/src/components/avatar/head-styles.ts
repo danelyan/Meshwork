@@ -4,7 +4,7 @@
  * перенесены на нашу сцену: наша сетка-металл по референсу брендбука остаётся основной, остальные —
  * для сравнения на `/design/avatar` и для питча. Челюсть по звуку работает во всех вариантах.
  */
-export type HeadStyle = 'metal' | 'grid' | 'weave' | 'loops' | 'chrome' | 'hologram' | 'particles' | 'wire';
+export type HeadStyle = 'metal' | 'grid' | 'weave' | 'brand' | 'loops' | 'chrome' | 'hologram' | 'particles' | 'wire';
 
 export interface HeadStyleInfo {
   id: HeadStyle;
@@ -16,6 +16,11 @@ export const HEAD_STYLES: readonly HeadStyleInfo[] = [
   { id: 'metal', label: 'Металл', hint: 'Первый вариант: светлый металл в тёмную клетку' },
   { id: 'grid', label: 'Сетка', hint: 'Референс брендбука ФСП: тёмная голова в светлых нитях по параллелям и меридианам' },
   { id: 'weave', label: 'Плетение', hint: 'Те же нити, но проекция по нормали — линии обтекают нос, губы и глазницы' },
+  {
+    id: 'brand',
+    label: 'Плетение 2',
+    hint: 'Ближе к брендбуку: нити идут по форме лица — кольцами вокруг глаз и рта, на черепе параллелями и меридианами',
+  },
   { id: 'loops', label: 'Петли', hint: 'Как на оригинале: на черепе параллели, вокруг глаз и рта — кольца и спицы' },
   { id: 'chrome', label: 'Живой хром', hint: 'Полированный металл, блики бегут по лицу' },
   { id: 'hologram', label: 'Голограмма', hint: 'Сканирующая полоса и строчная развёртка в синем' },

@@ -3,7 +3,6 @@ import type { Prisma } from '@prisma/client';
 import { getSubcategory, isSpecialization, SPEC_ROLE, subcategoryMatches } from '@/lib/directions';
 import { CONSENT_VERSION, hasCurrentConsent, recordConsent } from '@/server/auth/consent';
 import { chooseRole } from '@/server/auth/users';
-import { demoAchievements } from '@/server/collector/fsp-demo';
 import { prisma } from '@/server/db';
 import { AppError, errors } from '@/server/errors';
 import { loadCatalog } from '@/server/recommend/evidence';
@@ -186,15 +185,6 @@ function laterTarget(l: Loaded): string {
   return CABINET[l.ctx.facts.role];
 }
 
-/** Ссылка на тест с рекомендацией из знакомства: направление и заявленный грейд (как в CandidateSkills). */
-function testHref(l: Loaded): string {
-  if (GRADE_TEST_PATH === null) return '/profile';
-  const spec = l.ctx.facts.specialization;
-  const grade = l.ctx.answers.grade;
-  if (!spec) return GRADE_TEST_PATH;
-  return `${GRADE_TEST_PATH}?specialization=${encodeURIComponent(spec)}${typeof grade === 'string' && grade ? `&grade=${encodeURIComponent(grade)}` : ''}`;
-}
-
 /** Вид онбординга. Генерирует (и запоминает) реплику помощника для текущего шага. */
 export async function getView(userId: string, signal?: AbortSignal): Promise<OnboardingView> {
   const l = await load(userId);
@@ -228,7 +218,6 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
     const hint = await gradeHint(l.user.candidateId);
     if (hint) view.hint = hint;
   }
-  if (current.id === 'fsp' && l.user.candidateId) view.fspDemo = demoAchievements(l.user.candidateId);
 
   const history = historyOf(l.ctx, l.state, current).map((s) => {
     const answered = isAnswered(s, l.ctx.answers);
@@ -253,7 +242,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
     current: view,
     summary: current.kind === 'summary' ? summaryOf(l) : null,
     laterTarget: laterTarget(l),
-    test: { href: testHref(l), ready: GRADE_TEST_PATH !== null },
+    test: { href: GRADE_TEST_PATH ?? '/profile', ready: GRADE_TEST_PATH !== null },
     onboarded: l.user.onboardedAt !== null,
     later: isPaused(l),
   };
@@ -441,6 +430,23 @@ export async function answerStep(userId: string, stepId: string, value: unknown)
   if (backToChat(fresh, next)) meta = { ...meta, later: true };
   await save(userId, { stepId: next.id, answers, skipped, meta });
   return { sessionChanged };
+}
+
+/**
+ * Итог входа в ФСП ID из шага знакомства (`/api/fsp-id/callback`, `return=consultant`): ответ шага `fsp` —
+ * состояние, которое уже записала привязка (`Candidate.fspState`), и переход к следующему шагу, как после
+ * обычного ответа. Через `answerStep` нельзя: вариант «Войти через ФСП ID» — ссылка, не ответ.
+ */
+export async function recordFspLink(userId: string): Promise<void> {
+  const l = await load(userId);
+  const step = findStep('fsp');
+  if (!step || l.ctx.facts.role !== 'candidate' || !l.ctx.facts.fspState || l.ctx.facts.fspState === 'not_linked') return;
+  const answers = { ...l.state.answers, fsp: l.ctx.facts.fspState };
+  const skipped = l.state.skipped.filter((s) => s !== 'fsp');
+  let meta = resumed(l.meta);
+  const next = nextOpen({ ...l.ctx, answers }, skipped, 'fsp');
+  if (backToChat(l, next)) meta = { ...meta, later: true };
+  await save(userId, { stepId: next.id, answers, skipped, meta });
 }
 
 /**

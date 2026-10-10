@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getEnv } from '@/server/env';
-import { buildAuthorizeUrl, FSP_OAUTH_COOKIE, FSP_OAUTH_COOKIE_PATH, FSP_OAUTH_TTL_SEC, fspTransport, newFlow, signFlowState } from '@/server/fsp-id/client';
+import { buildAuthorizeUrl, FSP_OAUTH_COOKIE, FSP_OAUTH_COOKIE_PATH, FSP_OAUTH_TTL_SEC, FSP_RETURN_PATH, fspTransport, newFlow, signFlowState } from '@/server/fsp-id/client';
 import { requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
@@ -20,13 +20,15 @@ export async function GET(req: Request) {
   } catch {
     return NextResponse.redirect(new URL('/auth?next=/settings', env.APP_URL), 303);
   }
-  const flow = newFlow(candidateId);
+  // `?return=consultant` — старт из шага знакомства: вернём в чат. Иначе — в настройки.
+  const ret = new URL(req.url).searchParams.get('return') === 'consultant' ? 'consultant' : 'settings';
+  const flow = newFlow(candidateId, undefined, ret);
   let authorizeUrl: string;
   try {
     authorizeUrl = await buildAuthorizeUrl(fspTransport(), flow);
   } catch (err) {
     console.warn('[fsp-id] link: provider unavailable', err instanceof Error ? err.message : 'unknown');
-    return NextResponse.redirect(new URL('/settings?fsp=error_unavailable', env.APP_URL), 303);
+    return NextResponse.redirect(new URL(`${FSP_RETURN_PATH[ret]}?fsp=error_unavailable`, env.APP_URL), 303);
   }
   const res = NextResponse.redirect(authorizeUrl, 303);
   res.cookies.set({

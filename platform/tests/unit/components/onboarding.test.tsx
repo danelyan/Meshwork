@@ -157,16 +157,17 @@ it('текстовый шаг: Enter отправляет; ИНН с опеча�
   expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'inn', value: '7707083893' });
 });
 
-it('ФСП: демо-достижения карточкой в сообщении с пометкой «демо: API ФСП не предоставлен»', () => {
-  stubFetch();
+it('ФСП: «Войти через ФСП ID» ведёт на вход ФСП ID, а не отвечает на шаг', () => {
+  const fetcher = stubFetch();
   render(
     <OnboardingChat
-      initial={makeView({ id: 'fsp', question: 'ФСП?', options: [{ value: 'linked', label: 'Привязать' }], fspDemo: [{ event: 'Кубок', year: 2025, result: 'финалист', role: 'backend' }] })}
+      initial={makeView({ id: 'fsp', question: 'ФСП?', options: [{ value: 'linked', label: 'Войти через ФСП ID', href: '/api/fsp-id/link?return=consultant' }, { value: 'not_linked', label: 'Нет истории ФСП' }] })}
       consentText={[]}
     />,
   );
-  expect(screen.getByText('демо: API ФСП не предоставлен')).toBeDefined();
-  expect(screen.getByText(/Кубок, 2025: финалист/)).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: /Войти через ФСП ID/ }));
+  expect(push).toHaveBeenCalledWith('/api/fsp-id/link?return=consultant');
+  expect(fetcher).not.toHaveBeenCalledWith('/api/onboarding', expect.anything());
 });
 
 const summaryView = (over: Partial<OnboardingView> = {}) =>
@@ -190,21 +191,8 @@ it('итог: сводка — обычная реплика помощника 
 it('итог: чип теста завершает онбординг и ведёт по адресу теста (пока роута нет — в профиль)', async () => {
   const fetchFn = stubFetch({ onboarded: true, next: '/consultant' });
   render(<OnboardingChat initial={summaryView()} consentText={[]} />);
-  fireEvent.click(screen.getByTestId('ob-test-cta'));
+  fireEvent.click(screen.getByRole('button', { name: /Тест на грейд \(скоро\)/ }));
   await waitFor(() => expect(push).toHaveBeenCalledWith('/profile'));
-  expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/auth/onboarding/complete');
-});
-
-it('итог: главная кнопка — «Пройти тест на грейд →» по рекомендации, «Профиль» второстепенна', async () => {
-  const fetchFn = stubFetch({ onboarded: true, next: '/consultant' });
-  const href = '/test?specialization=backend&grade=middle';
-  render(<OnboardingChat initial={summaryView({ test: { href, ready: true } })} consentText={[]} />);
-  const cta = screen.getByTestId('ob-test-cta');
-  expect(cta.textContent).toBe('Пройти тест на грейд →');
-  expect(cta.className).toMatch(/cta/);
-  expect(screen.getByRole('button', { name: 'Открыть профиль' }).className).not.toMatch(/cta/);
-  fireEvent.click(cta);
-  await waitFor(() => expect(push).toHaveBeenCalledWith(href));
   expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/auth/onboarding/complete');
 });
 
@@ -514,7 +502,7 @@ describe('лента внутри /consultant (онбординг и консу�
     const text = document.body.textContent ?? '';
     expect(text.indexOf('Ищу работу')).toBeGreaterThan(-1);
     expect(text.indexOf('Ищу работу')).toBeLessThan(text.indexOf('Что подтянуть до мидла?'));
-    expect(screen.getByRole('link', { name: 'Пройти тест на грейд →' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Тест' })).toBeDefined();
     expect(push).not.toHaveBeenCalled();
   });
 });

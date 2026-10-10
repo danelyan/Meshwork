@@ -1,0 +1,653 @@
+{
+  "stage": 3,
+  "provider": "DeepSeek V4 Flash (Yandex)/gpt://b1g8c7gaanu3tnh3475r/deepseek-v4-flash",
+  "stub": false,
+  "runAt": "2026-10-10T13:40:14.077Z",
+  "defenses": 3,
+  "projectScore": 0.95,
+  "summaries": [
+    {
+      "persona": "own",
+      "defenses": 3,
+      "failed": 0,
+      "totals": [
+        6,
+        6,
+        6
+      ],
+      "meanTotal": 6,
+      "passRate": 1,
+      "flagRate": 0,
+      "withinSpreadMean": 1.3333333333333333,
+      "withinSpreadMax": 3,
+      "betweenSpread": 0,
+      "disagreementFlags": 1,
+      "avgAnswered": 5,
+      "avgPlatformCalls": 9,
+      "avgPersonaCalls": 5,
+      "avgPlatformTokens": 14655.666666666666,
+      "qlcGenerators": {
+        "llm": 3
+      }
+    },
+    {
+      "persona": "ai-only",
+      "defenses": 3,
+      "failed": 0,
+      "totals": [
+        4,
+        4,
+        4
+      ],
+      "meanTotal": 4,
+      "passRate": 0,
+      "flagRate": 1,
+      "withinSpreadMean": 0,
+      "withinSpreadMax": 0,
+      "betweenSpread": 0,
+      "disagreementFlags": 0,
+      "avgAnswered": 7,
+      "avgPlatformCalls": 9,
+      "avgPersonaCalls": 7,
+      "avgPlatformTokens": 14234.333333333334,
+      "qlcGenerators": {
+        "llm": 3
+      }
+    },
+    {
+      "persona": "partial",
+      "defenses": 3,
+      "failed": 0,
+      "totals": [
+        3,
+        4,
+        4
+      ],
+      "meanTotal": 3.6666666666666665,
+      "passRate": 0,
+      "flagRate": 1,
+      "withinSpreadMean": 1,
+      "withinSpreadMax": 2,
+      "betweenSpread": 1,
+      "disagreementFlags": 0,
+      "avgAnswered": 7.333333333333333,
+      "avgPlatformCalls": 9.333333333333334,
+      "avgPersonaCalls": 7.333333333333333,
+      "avgPlatformTokens": 15901.333333333334,
+      "qlcGenerators": {
+        "llm": 3
+      }
+    }
+  ],
+  "observations": [
+    {
+      "persona": "own",
+      "defense": 1,
+      "sessionId": "cmv2ftiup0006zm16y7jng0ll",
+      "total": 6,
+      "passed": true,
+      "runs": [
+        7,
+        6,
+        6
+      ],
+      "flags": [],
+      "answered": 5,
+      "followUps": 0,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 11623,
+        "outputTokens": 2699,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2345,
+            "outputTokens": 617
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3077,
+            "outputTokens": 93
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 6201,
+            "outputTokens": 1989
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 10676,
+        "outputTokens": 567,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 10676,
+            "outputTokens": 567
+          }
+        }
+      }
+    },
+    {
+      "persona": "own",
+      "defense": 2,
+      "sessionId": "cmv2fu6cr0014zm1633j3gdbw",
+      "total": 6,
+      "passed": true,
+      "runs": [
+        8,
+        5,
+        5
+      ],
+      "flags": [
+        "evaluator_disagreement"
+      ],
+      "answered": 5,
+      "followUps": 0,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 11988,
+        "outputTokens": 2409,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2345,
+            "outputTokens": 734
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3235,
+            "outputTokens": 91
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 6408,
+            "outputTokens": 1584
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 10809,
+        "outputTokens": 613,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 10809,
+            "outputTokens": 613
+          }
+        }
+      }
+    },
+    {
+      "persona": "own",
+      "defense": 3,
+      "sessionId": "cmv2fuqbw0022zm16ctq5fs87",
+      "total": 6,
+      "passed": true,
+      "runs": [
+        6,
+        6,
+        6
+      ],
+      "flags": [],
+      "answered": 5,
+      "followUps": 0,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 12636,
+        "outputTokens": 2612,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2345,
+            "outputTokens": 861
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3454,
+            "outputTokens": 90
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 6837,
+            "outputTokens": 1661
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 11141,
+        "outputTokens": 707,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 11141,
+            "outputTokens": 707
+          }
+        }
+      }
+    },
+    {
+      "persona": "ai-only",
+      "defense": 1,
+      "sessionId": "cmv2fvb6p0030zm16h55asjd4",
+      "total": 4,
+      "passed": false,
+      "runs": [
+        4,
+        4,
+        4
+      ],
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "answered": 7,
+      "followUps": 2,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 12336,
+        "outputTokens": 2233,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2130,
+            "outputTokens": 772
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3153,
+            "outputTokens": 153
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 7053,
+            "outputTokens": 1308
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 7,
+        "failures": 0,
+        "inputTokens": 7718,
+        "outputTokens": 681,
+        "byPurpose": {
+          "smoke": {
+            "calls": 7,
+            "failures": 0,
+            "inputTokens": 7718,
+            "outputTokens": 681
+          }
+        }
+      }
+    },
+    {
+      "persona": "ai-only",
+      "defense": 2,
+      "sessionId": "cmv2fvw210042zm16sb4gjy5w",
+      "total": 4,
+      "passed": false,
+      "runs": [
+        4,
+        4,
+        4
+      ],
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "answered": 8,
+      "followUps": 3,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 12010,
+        "outputTokens": 2372,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2130,
+            "outputTokens": 745
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 2980,
+            "outputTokens": 202
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 6900,
+            "outputTokens": 1425
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 8,
+        "failures": 0,
+        "inputTokens": 8692,
+        "outputTokens": 577,
+        "byPurpose": {
+          "smoke": {
+            "calls": 8,
+            "failures": 0,
+            "inputTokens": 8692,
+            "outputTokens": 577
+          }
+        }
+      }
+    },
+    {
+      "persona": "ai-only",
+      "defense": 3,
+      "sessionId": "cmv2fwk2p0056zm16hxhfad46",
+      "total": 4,
+      "passed": false,
+      "runs": [
+        4,
+        4,
+        4
+      ],
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "answered": 6,
+      "followUps": 1,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 11651,
+        "outputTokens": 2101,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2130,
+            "outputTokens": 710
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3074,
+            "outputTokens": 114
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 6447,
+            "outputTokens": 1277
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 6,
+        "failures": 0,
+        "inputTokens": 6070,
+        "outputTokens": 576,
+        "byPurpose": {
+          "smoke": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 6070,
+            "outputTokens": 576
+          }
+        }
+      }
+    },
+    {
+      "persona": "partial",
+      "defense": 1,
+      "sessionId": "cmv2fx2vc0066zm169br8ratg",
+      "total": 3,
+      "passed": false,
+      "runs": [
+        3,
+        3,
+        3
+      ],
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "answered": 7,
+      "followUps": 2,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 13107,
+        "outputTokens": 2644,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2261,
+            "outputTokens": 1006
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3427,
+            "outputTokens": 187
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 7419,
+            "outputTokens": 1451
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 7,
+        "failures": 0,
+        "inputTokens": 13514,
+        "outputTokens": 722,
+        "byPurpose": {
+          "smoke": {
+            "calls": 7,
+            "failures": 0,
+            "inputTokens": 13514,
+            "outputTokens": 722
+          }
+        }
+      }
+    },
+    {
+      "persona": "partial",
+      "defense": 2,
+      "sessionId": "cmv2fxnvk0078zm169r09gn0i",
+      "total": 4,
+      "passed": false,
+      "runs": [
+        6,
+        4,
+        4
+      ],
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "answered": 8,
+      "followUps": 3,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 13105,
+        "outputTokens": 2944,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2261,
+            "outputTokens": 939
+          },
+          "call_interviewer": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 3341,
+            "outputTokens": 204
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 7503,
+            "outputTokens": 1801
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 8,
+        "failures": 0,
+        "inputTokens": 15492,
+        "outputTokens": 767,
+        "byPurpose": {
+          "smoke": {
+            "calls": 8,
+            "failures": 0,
+            "inputTokens": 15492,
+            "outputTokens": 767
+          }
+        }
+      }
+    },
+    {
+      "persona": "partial",
+      "defense": 3,
+      "sessionId": "cmv2fybi2008czm16dgk7968x",
+      "total": 4,
+      "passed": false,
+      "runs": [
+        5,
+        4,
+        4
+      ],
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "answered": 7,
+      "followUps": 1,
+      "generator": "llm",
+      "projectScore": 0.95,
+      "platform": {
+        "calls": 10,
+        "failures": 0,
+        "inputTokens": 12980,
+        "outputTokens": 2924,
+        "byPurpose": {
+          "defense_qlc": {
+            "calls": 1,
+            "failures": 0,
+            "inputTokens": 2261,
+            "outputTokens": 1231
+          },
+          "call_interviewer": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 3714,
+            "outputTokens": 183
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 7005,
+            "outputTokens": 1510
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 7,
+        "failures": 0,
+        "inputTokens": 12969,
+        "outputTokens": 570,
+        "byPurpose": {
+          "smoke": {
+            "calls": 7,
+            "failures": 0,
+            "inputTokens": 12969,
+            "outputTokens": 570
+          }
+        }
+      }
+    }
+  ],
+  "totals": {
+    "platform": {
+      "calls": 82,
+      "failures": 0,
+      "inputTokens": 111436,
+      "outputTokens": 22938,
+      "byPurpose": {
+        "defense_qlc": {
+          "calls": 9,
+          "failures": 0,
+          "inputTokens": 20208,
+          "outputTokens": 7615
+        },
+        "call_interviewer": {
+          "calls": 46,
+          "failures": 0,
+          "inputTokens": 29455,
+          "outputTokens": 1317
+        },
+        "call_evaluator": {
+          "calls": 27,
+          "failures": 0,
+          "inputTokens": 61773,
+          "outputTokens": 14006
+        }
+      }
+    },
+    "persona": {
+      "calls": 58,
+      "failures": 0,
+      "inputTokens": 97081,
+      "outputTokens": 5780,
+      "byPurpose": {
+        "smoke": {
+          "calls": 58,
+          "failures": 0,
+          "inputTokens": 97081,
+          "outputTokens": 5780
+        }
+      }
+    }
+  }
+}

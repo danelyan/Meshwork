@@ -8,6 +8,8 @@ const m = vi.hoisted(() => ({
   getView: vi.fn(async (): Promise<Record<string, unknown>> => ({ current: { kind: 'one' }, onboarded: false })),
   loadLastChat: vi.fn(async () => ({ conversationId: 'conv-1', items: [] })),
   loadLastEmployerChat: vi.fn(async () => ({ conversationId: 'e-conv', items: [] })),
+  loadCandidateAside: vi.fn(async () => undefined),
+  loadEmployerAside: vi.fn(async () => undefined),
 }));
 class Redirect extends Error {
   constructor(readonly to: string) {
@@ -28,6 +30,8 @@ vi.mock('@/server/demo/context', () => ({
 }));
 vi.mock('@/server/demo/mode', () => ({ llmIsDemoStub: () => true }));
 vi.mock('@/server/onboarding/service', () => ({ onboardingInFeed: m.inFeed, getView: m.getView }));
+// Feed composition is independent of the database-backed sidebar loaders.
+vi.mock('@/server/consultant/aside', () => ({ loadCandidateAside: m.loadCandidateAside, loadEmployerAside: m.loadEmployerAside }));
 vi.mock('@/components/Chat', () => ({ Chat: () => null }));
 vi.mock('@/components/employer/AssistantChat', () => ({ AssistantChat: () => null }));
 vi.mock('@/components/onboarding/OnboardingChat', () => ({ OnboardingChat: () => null }));
@@ -69,6 +73,8 @@ describe('кандидат', () => {
     expect(el.props.variant).toBe('consultant');
     expect(el.props.consultant).toEqual({ demo: { noLlm: true, resume: null }, restored: { conversationId: 'conv-1', items: [] } });
     expect(m.getView).toHaveBeenCalledWith('u1');
+    expect(m.loadCandidateAside).toHaveBeenCalledWith('c1', expect.objectContaining({ onboarded: false }));
+    expect(m.loadEmployerAside).not.toHaveBeenCalled();
   });
 
   it('«Настроить позже» (view.later) — пауза: шаги + свободный разговор', async () => {
@@ -110,6 +116,8 @@ describe('роль не выбрана', () => {
     expect(el.type).toBe(OnboardingChat);
     expect(el.props.variant).toBe('consultant');
     expect(m.loadLastChat).not.toHaveBeenCalled();
+    expect(m.loadCandidateAside).not.toHaveBeenCalled();
+    expect(m.loadEmployerAside).not.toHaveBeenCalled();
   });
 });
 
@@ -126,6 +134,8 @@ describe('работодатель', () => {
     expect(el.props.consultant).toBeUndefined();
     expect(el.props.employerAssistant).toEqual({ demoNoLlm: true, restored: { conversationId: 'e-conv', items: [] } });
     expect(m.loadLastChat).not.toHaveBeenCalled();
+    expect(m.loadEmployerAside).toHaveBeenCalledWith('e1', expect.objectContaining({ onboarded: true }));
+    expect(m.loadCandidateAside).not.toHaveBeenCalled();
   });
 
   it('завершил без чата (сид демо) — сразу помощник по подбору с последним разговором, без редиректа', async () => {

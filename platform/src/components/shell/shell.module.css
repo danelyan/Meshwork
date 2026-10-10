@@ -13,7 +13,6 @@
   .consultant { --landing-header-h: 72px; }
 }
 .page { flex: 1 0 auto; min-width: 0; }
-.frame:has([data-dashboard]) .nav { display: none; }
 .frame:has([data-dashboard]) { --page-pad: 32px; --landing-header-h: 72px; }
 .frame:has([data-dashboard]) .accountBtn { border: 0; }
 .frame:has([data-dashboard]) .avatar { border-radius: 0; width: 36px; height: 36px; }

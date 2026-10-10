@@ -58,6 +58,14 @@ describe('SiteHeader', () => {
     expect(h.queryByRole('link', { name: 'Войти' })).toBeNull();
   });
 
+  it('кабинет с сайдбаром: в шапке те же вкладки роли, без переключателя «Ищу работу | Нанимаю»', async () => {
+    const account = { userName: 'Анна', email: 'a@x.ru', roles: { role: 'candidate', otherExists: false, canCreateOther: true, companyName: null } };
+    const h = await renderHeader(principal('candidate'), '/profile', account);
+    expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/').map((a) => a.textContent)).toEqual(['Консультант', 'Профиль', 'Тест', 'Проекты', 'Приглашения']);
+    expect(h.getByRole('link', { name: 'Профиль' }).getAttribute('aria-current')).toBe('page');
+    expect(h.queryByRole('button', { name: 'Нанимаю' })).toBeNull();
+  });
+
   it('работодатель: свои ссылки; «Потребности» активна только на /employer', async () => {
     let h = await renderHeader(principal('employer'), '/employer');
     expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/').map((a) => a.textContent)).toEqual(['Помощник', 'Потребности', 'Поиск по базе', 'Приглашения', 'Звонки']);

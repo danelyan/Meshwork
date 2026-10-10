@@ -55,7 +55,7 @@ export const intIsoLatest: TaskGenerator = fam(
   { slug: 'int-iso-latest', title: 'Какое событие случилось позже всех', sub: 'integrations', grade: 'junior', catalogIds: ['be.external-integration', 'common.http'], format: 'line', a: 1.2, b: -0.7, paramSpace: 5e5, timeLimitSec: 180 },
   (seed) => {
     const rng = createRng(seed);
-    const n = 5;
+    const n = 9;
     const used = new Set<number>();
     const rows: { s: string; ms: number }[] = [];
     while (rows.length < n) {
@@ -94,10 +94,10 @@ export const intBackoffDeadline: TaskGenerator = fam(
   (seed) => {
     const rng = createRng(seed);
     const base = rng.pick([1, 2, 3]);
-    const cap = rng.pick([8, 10, 16]);
-    const attemptT = rng.pick([2, 3, 5]);
-    const deadline = rng.int(25, 70);
-    const maxA = rng.int(7, 10);
+    const cap = rng.pick([8, 10, 16, 30]);
+    const attemptT = rng.pick([1, 2, 3, 5]);
+    const deadline = rng.int(20, 300);
+    const maxA = rng.int(4, 18);
     let t = 0;
     let attempts = 0;
     const starts: number[] = [];
@@ -123,7 +123,15 @@ export const intOutbox: TaskGenerator = fam(
     const rng = createRng(seed);
     const outbox = rng.int(0, 1) === 1;
     const kinds = ['A', 'B', 'C', 'D'] as const;
-    const log = Array.from({ length: 8 }, () => rng.pick(kinds));
+    const w = [rng.int(1, 4), rng.int(1, 4), rng.int(1, 4), rng.int(1, 4)];
+    const log = Array.from({ length: 14 }, () => {
+      let r = rng.int(1, w[0]! + w[1]! + w[2]! + w[3]!);
+      for (let i = 0; i < 4; i++) {
+        r -= w[i]!;
+        if (r <= 0) return kinds[i]!;
+      }
+      return kinds[3];
+    });
     const text: Record<(typeof kinds)[number], string> = {
       A: 'процесс упал до коммита транзакции',
       B: outbox ? 'процесс упал после коммита, до того как ретранслятор забрал запись из outbox' : 'процесс упал после коммита, до публикации события',
@@ -140,7 +148,7 @@ export const intOutbox: TaskGenerator = fam(
         outbox
           ? 'Реализация: заказ и запись события пишутся в одной транзакции (outbox); отдельный ретранслятор публикует записи и затем помечает их отправленными; неотмеченные записи публикуются повторно.'
           : 'Реализация: коммит транзакции с заказом, затем публикация события в брокер (без outbox и без повторов).'
-      } Аномалия - заказ создан, а события нет, либо событие опубликовано дважды. Ниже журнал восьми обработок с причиной сбоя. В скольких обработках возникла аномалия?`,
+      } Аномалия - заказ создан, а события нет, либо событие опубликовано дважды. Ниже журнал четырнадцати обработок с причиной сбоя. В скольких обработках возникла аномалия?`,
       code: log.map((k, i) => `${i + 1}. ${text[k]}`).join('\n'),
       answerHint: 'число обработок с аномалией',
       answerKey: String(anomalies),
@@ -156,12 +164,13 @@ export const intTolerantReader: TaskGenerator = fam(
     const rng = createRng(seed);
     const required: [string, 'number' | 'string'][] = [['id', 'number'], ['type', 'string'], ['amount', 'number']];
     const maxV = rng.int(2, 3);
-    const events = Array.from({ length: 7 }, () => {
+    const bad = rng.int(1, 4);
+    const events = Array.from({ length: 12 }, () => {
       const e: Record<string, unknown> = { v: rng.int(1, 4), id: rng.int(1, 99), type: rng.pick(['paid', 'refund']), amount: rng.int(1, 9) * 10 };
-      if (rng.int(0, 4) === 0) delete e.amount;
-      if (rng.int(0, 5) === 0) e.id = String(e.id);
+      if (rng.int(0, 11) < bad) delete e.amount;
+      if (rng.int(0, 11) < bad) e.id = String(e.id);
       if (rng.int(0, 3) === 0) e.currency = 'RUB';
-      if (rng.int(0, 4) === 0) e.type = rng.pick([1, 2]);
+      if (rng.int(0, 11) < bad) e.type = rng.pick([1, 2]);
       return e;
     });
     const ok = (e: Record<string, unknown>) => (e.v as number) <= maxV && required.every(([k, t]) => typeof e[k] === t);
@@ -207,14 +216,15 @@ export const intSyncDiff: TaskGenerator = fam(
   { slug: 'int-sync-diff', title: 'Сколько операций выполнит синхронизация', sub: 'integrations', grade: 'middle', catalogIds: ['be.external-integration', 'be.idempotency'], format: 'number', a: 1.2, b: 0.4, paramSpace: 1e6, timeLimitSec: 240 },
   (seed) => {
     const rng = createRng(seed);
-    const ids = rng.sample([101, 102, 103, 104, 105, 106, 107, 108, 109], 8);
-    const local = ids.slice(0, rng.int(5, 6)).map((id) => ({ id, ver: rng.int(1, 4) }));
+    const ids = rng.sample([101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115], 14);
+    const local = ids.slice(0, rng.int(6, 12)).map((id) => ({ id, ver: rng.int(1, 4) }));
+    const ch = rng.int(0, 5);
     const remote: { id: number; ver: number; deleted: boolean }[] = [];
     for (const l of local) {
-      if (rng.int(0, 4) === 0) continue; // у партнёра исчезла запись
-      remote.push({ id: l.id, ver: rng.int(0, 2) === 0 ? l.ver + 1 : l.ver, deleted: rng.int(0, 5) === 0 });
+      if (rng.int(0, 9) < ch) continue; // у партнёра исчезла запись
+      remote.push({ id: l.id, ver: rng.int(0, 9) < ch + 2 ? l.ver + 1 : l.ver, deleted: rng.int(0, 9) < ch });
     }
-    for (const id of ids.slice(local.length, local.length + 2)) remote.push({ id, ver: 1, deleted: rng.int(0, 3) === 0 });
+    for (const id of ids.slice(local.length, local.length + rng.int(2, 4))) remote.push({ id, ver: 1, deleted: rng.int(0, 3) === 0 });
     let create = 0;
     let update = 0;
     let del = 0;
@@ -292,8 +302,8 @@ export const intTokenRefresh: TaskGenerator = fam(
   (seed) => {
     const rng = createRng(seed);
     const ttl = rng.pick([60, 100, 120]);
-    const dur = rng.pick([3, 5, 8]);
-    const times = Array.from({ length: 14 }, () => rng.int(1, ttl * 3 + 10)).sort((a, b) => a - b);
+    const dur = rng.pick([8, 12, 15, 20]);
+    const times = Array.from({ length: 40 }, () => rng.int(1, ttl * 3 + 10)).sort((a, b) => a - b);
     const run = (lock: boolean): number => {
       let exp = ttl;
       let doneAt: number | null = null;

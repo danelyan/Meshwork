@@ -71,10 +71,16 @@ describe('backend банк-2: +12 семейств на подкатегорию
     });
   }
 
-  it('ответы не вырождены: у каждого семейства на 50 seed не меньше 3 разных ключей', () => {
+  it('угадываемость: по 500 seed не меньше 8 разных ответов, доля самого частого не больше 20 %', () => {
+    const many = Array.from({ length: 500 }, (_, i) => (i + 1) * 7919 + 13);
     for (const g of Object.values(BANK2).flat()) {
-      const keys = new Set(SEEDS.map((s) => g.generate(s).answerKey));
-      expect(keys.size, g.id).toBeGreaterThanOrEqual(3);
+      const count = new Map<string, number>();
+      for (const s of many) {
+        const k = g.generate(s).answerKey;
+        count.set(k, (count.get(k) ?? 0) + 1);
+      }
+      expect(count.size, g.id).toBeGreaterThanOrEqual(8);
+      expect(Math.max(...count.values()) / many.length, g.id).toBeLessThanOrEqual(0.2);
     }
   });
 });

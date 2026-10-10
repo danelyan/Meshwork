@@ -12,9 +12,9 @@ export const dmMigrationsPending: TaskGenerator = fam(
   { slug: 'dm-migrations-pending', title: 'Сколько миграций применится', sub: 'data-model', grade: 'junior', catalogIds: ['be.migrations'], format: 'number', a: 1.2, b: -0.8, paramSpace: 1e5, timeLimitSec: 180 },
   (seed) => {
     const rng = createRng(seed);
-    const names = ['create_users', 'add_email_index', 'create_orders', 'add_order_status', 'create_payments', 'add_user_phone', 'drop_legacy_table', 'add_payment_ref'];
-    const n = rng.int(6, 7);
-    const files = rng.sample(names, n).map((name, i) => `2026090${i + 1}_${name}`);
+    const names = ['create_users', 'add_email_index', 'create_orders', 'add_order_status', 'create_payments', 'add_user_phone', 'drop_legacy_table', 'add_payment_ref', 'create_items', 'add_item_sku', 'create_audit_log', 'add_user_locale'];
+    const n = rng.int(9, 12);
+    const files = rng.sample(names, n).map((name, i) => `202609${String(i + 1).padStart(2, '0')}_${name}`);
     const appliedCount = rng.int(2, n - 2);
     const applied = new Set(files.slice(0, appliedCount));
     // одна из старых миграций почему-то не применена (например, ветка влита позже)
@@ -39,15 +39,15 @@ export const dmJunctionRows: TaskGenerator = fam(
   (seed) => {
     const rng = createRng(seed);
     const pairs = new Set<string>();
-    const students = new Set([1, 2, 3, 4]);
+    const students = new Set([1, 2, 3, 4, 5, 6]);
     const mk = (s: number, c: number) => `${s}:${c}`;
-    for (let i = 0; i < rng.int(3, 5); i++) pairs.add(mk(rng.int(1, 4), rng.int(1, 3)));
+    for (let i = 0; i < rng.int(4, 8); i++) pairs.add(mk(rng.int(1, 6), rng.int(1, 4)));
     const start = [...pairs];
     const ops: string[] = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 10; i++) {
       const kind = rng.int(0, 3);
-      const s = rng.int(1, 4);
-      const c = rng.int(1, 3);
+      const s = rng.int(1, 6);
+      const c = rng.int(1, 4);
       if (kind <= 1) {
         ops.push(`INSERT INTO enrollments VALUES (${s}, ${c}) ON CONFLICT DO NOTHING;`);
         if (students.has(s)) pairs.add(mk(s, c));
@@ -61,7 +61,7 @@ export const dmJunctionRows: TaskGenerator = fam(
       }
     }
     return {
-      prompt: 'Таблица enrollments(student_id, course_id) связывает студентов и курсы: первичный ключ - пара (student_id, course_id), внешний ключ на students объявлен с ON DELETE CASCADE. В начале существуют студенты 1-4. Вставка записи для несуществующего студента завершается ошибкой, и строка не появляется (ON CONFLICT DO NOTHING ошибку внешнего ключа не скрывает - выполнение продолжается со следующей команды). Сколько строк будет в enrollments после всех команд?',
+      prompt: 'Таблица enrollments(student_id, course_id) связывает студентов и курсы: первичный ключ - пара (student_id, course_id), внешний ключ на students объявлен с ON DELETE CASCADE. В начале существуют студенты 1-6. Вставка записи для несуществующего студента завершается ошибкой, и строка не появляется (ON CONFLICT DO NOTHING ошибку внешнего ключа не скрывает - выполнение продолжается со следующей команды). Сколько строк будет в enrollments после всех команд?',
       code: `в начале (student_id:course_id): ${start.join(', ') || 'пусто'}\n${ops.map((o, i) => `${i + 1}. ${o}`).join('\n')}`,
       answerHint: 'число строк',
       answerKey: String(pairs.size),
@@ -152,11 +152,29 @@ const PLANS: { name: string; steps: string[]; decoys: string[] }[] = [
   },
 ];
 
+// Подстановки по сценариям: сначала длинные имена, чтобы «contact_phone» не ломался заменой «phone».
+const RENAMES: [string, string][][][] = [
+  [[['contact_phone', 'contact_phone'], ['phone', 'phone']], [['contact_phone', 'work_phone'], ['phone', 'tel']], [['contact_phone', 'postal_address'], ['phone', 'address']], [['contact_phone', 'display_name'], ['phone', 'nick']], [['contact_phone', 'home_city'], ['phone', 'city']]],
+  [[['first_name', 'first_name'], ['last_name', 'last_name'], ['full_name', 'full_name']], [['first_name', 'street'], ['last_name', 'house'], ['full_name', 'address_line']], [['first_name', 'title_ru'], ['last_name', 'title_en'], ['full_name', 'title']]],
+  [[['email', 'email']], [['email', 'phone']], [['email', 'passport_no']], [['email', 'inn']], [['email', 'country']]],
+  [[['order_statuses', 'order_statuses'], ['status_id', 'status_id'], ['orders', 'orders'], ['status', 'status']], [['order_statuses', 'ticket_priorities'], ['status_id', 'priority_id'], ['orders', 'tickets'], ['status', 'priority']], [['order_statuses', 'delivery_types'], ['status_id', 'delivery_type_id'], ['orders', 'shipments'], ['status', 'delivery_type']]],
+];
+
 export const dmRenameOrder: TaskGenerator = fam(
   { slug: 'dm-expand-contract-order', title: 'Порядок шагов безопасной миграции', sub: 'data-model', grade: 'middle', catalogIds: ['be.migrations', 'be.sql-schema'], format: 'text', a: 1.3, b: 0.45, paramSpace: 5e4, timeLimitSec: 270 },
   (seed) => {
     const rng = createRng(seed);
-    const plan = rng.pick(PLANS);
+    const pi = rng.int(0, PLANS.length - 1);
+    const base = PLANS[pi]!;
+    // Имена колонок и таблиц подставляются от seed: тексты шагов не повторяются между экземплярами.
+    const names = RENAMES[pi]![rng.int(0, RENAMES[pi]!.length - 1)]!;
+    const sw = (t: string) => {
+      let out = t;
+      names.forEach(([from], i) => (out = out.split(from).join(`\u0001${i}\u0001`)));
+      names.forEach(([, to], i) => (out = out.split(`\u0001${i}\u0001`).join(to)));
+      return out;
+    };
+    const plan = { name: sw(base.name), steps: base.steps.map(sw), decoys: base.decoys.map(sw) };
     const items = rng.shuffle([...plan.steps.map((text, order) => ({ text, order })), ...rng.sample(plan.decoys, rng.int(1, 2)).map((text) => ({ text, order: -1 }))]);
     const key = items
       .map((it, i) => ({ n: i + 1, order: it.order }))
@@ -169,7 +187,7 @@ export const dmRenameOrder: TaskGenerator = fam(
       answerHint: 'номера шагов через запятую',
       answerKey: key.join(','),
       explanation: 'Схема «расширить - перевести - сжать»: сначала добавляется новое (совместимое со старым кодом), код пишет в оба места, данные переносятся порциями, чтение переключается, старое перестаёт писаться и только потом удаляется. Небезопасные шаги ломают старый код или блокируют таблицу.',
-      params: { plan: plan.name.length, key: key.join(',') },
+      params: { plan: pi, names: names.map((n) => n[1]).join(','), key: key.join(',') },
     };
   },
 );
@@ -214,7 +232,7 @@ export const dmRowLockQueue: TaskGenerator = fam(
     }
     const target = rng.int(1, n - 1);
     return {
-      prompt: `${n} транзакции обновляют одну и ту же строку (SELECT ... FOR UPDATE, затем работа, затем COMMIT). Транзакция берёт блокировку в момент старта, если строка свободна; иначе встаёт в очередь, блокировки выдаются в порядке старта. Блокировка удерживается до коммита, то есть на указанное время работы с момента получения. Сколько миллисекунд ждёт блокировку транзакция №${target + 1}? Моменты и длительности даны в миллисекундах от начала.`,
+      prompt: `${n} транзакции обновляют одну и ту же строку (SELECT ... FOR UPDATE, затем работа, затем COMMIT). Транзакция берёт блокировку в момент старта, если строка свободна; иначе встаёт в очередь, блокировки (по упрощённой модели задачи) выдаются в порядке старта. Блокировка удерживается до коммита, то есть на указанное время работы с момента получения. Сколько миллисекунд ждёт блокировку транзакция №${target + 1}? Моменты и длительности даны в миллисекундах от начала.`,
       code: txs.map((t, i) => `T${i + 1}: старт ${t.start} мс, работа под блокировкой ${t.hold} мс`).join('\n'),
       answerHint: 'миллисекунды',
       answerKey: String(waits[target]),
@@ -234,14 +252,15 @@ export const dmSoftDeleteUnique: TaskGenerator = fam(
   (seed) => {
     const rng = createRng(seed);
     const partial = rng.int(0, 1) === 1;
-    const emails = ['a@x.ru', 'b@x.ru'];
+    const emails = ['a@x.ru', 'b@x.ru', 'c@x.ru'];
     const rows: URow[] = [];
     const ops: string[] = [];
     let failed = 0;
     const violates = (e: string): boolean => (partial ? rows.some((r) => !r.deleted && r.email === e) : rows.some((r) => r.email === e));
-    for (let i = 0; i < 8; i++) {
+    const kindsPool = rng.pick([['ins', 'ins', 'del', 'restore'], ['ins', 'del', 'del', 'restore'], ['ins', 'ins', 'ins', 'restore', 'del'], ['ins', 'del', 'restore', 'restore']]);
+    for (let i = 0; i < 18; i++) {
       const e = rng.pick(emails);
-      const kind = rng.pick(['ins', 'ins', 'del', 'restore']);
+      const kind = rng.pick(kindsPool);
       if (kind === 'ins') {
         ops.push(`INSERT INTO users (email) VALUES ('${e}');`);
         if (violates(e)) failed++;
@@ -285,8 +304,8 @@ export const dmCascadeChain: TaskGenerator = fam(
     const actB = rng.pick<Act>(['CASCADE', 'CASCADE', 'SET NULL', 'RESTRICT']);
     const actC = rng.pick<Act>(['CASCADE', 'SET NULL', 'RESTRICT']);
     const aRows = 3;
-    const b = Array.from({ length: rng.int(3, 5) }, (_, i) => ({ id: i + 1, a: rng.int(1, aRows) as number | null }));
-    const c = Array.from({ length: rng.int(3, 6) }, (_, i) => ({ id: i + 1, b: rng.int(1, b.length) as number | null }));
+    const b = Array.from({ length: rng.int(4, 9) }, (_, i) => ({ id: i + 1, a: rng.int(1, aRows) as number | null }));
+    const c = Array.from({ length: rng.int(4, 10) }, (_, i) => ({ id: i + 1, b: rng.int(1, b.length) as number | null }));
     // Удаляем A с id=1
     const bAffected = b.filter((x) => x.a === 1);
     let fail = false;

@@ -23,12 +23,13 @@ export const apiTestAsserts: TaskGenerator = fam(
   { slug: 'api-test-asserts', title: 'Какие тесты API упадут', sub: 'web-api', grade: 'junior', catalogIds: ['be.integration-tests', 'common.http'], format: 'number', a: 1.2, b: -0.8, paramSpace: 5e4, timeLimitSec: 180 },
   (seed) => {
     const rng = createRng(seed);
-    const picked = rng.sample(TEST_POOL, 6);
+    const picked = Array.from({ length: 11 }, () => rng.pick(TEST_POOL));
+    const badP = rng.pick([1, 2, 3, 4, 5]); // доля «плохих» тестов на экземпляр: 1/6 ... 5/6
     let failed = 0;
     const rows: string[] = [];
     const why: string[] = [];
     picked.forEach((p, i) => {
-      const mode = rng.int(0, 2);
+      const mode = rng.int(0, 5) < badP ? rng.int(1, 2) : 0;
       // 0 - тест корректен; 1 - в тесте ждут неверный статус; 2 - в ответе нет проверяемого поля
       const expStatus = mode === 1 ? p.wrongStatus : p.status;
       const hasField = p.keys.length > 0;
@@ -57,7 +58,7 @@ const ERR_POOL: { s: string; code: number }[] = [
   { s: 'клиент не передал токен авторизации', code: 401 },
   { s: 'токен верный, но роли не хватает для удаления', code: 403 },
   { s: 'заказа с таким id нет', code: 404 },
-  { s: 'пользователь с таким email уже существует (уникальное поле)', code: 409 },
+  { s: 'создание пользователя конфликтует с текущим состоянием: запись с таким уникальным email уже существует', code: 409 },
   { s: 'на путь /orders отправили метод PATCH, он не поддерживается', code: 405 },
   { s: 'тело запроса больше допустимого размера', code: 413 },
   { s: 'новый заказ успешно создан', code: 201 },
@@ -117,8 +118,9 @@ export const apiTestSharedState: TaskGenerator = fam(
   { slug: 'api-test-shared-state', title: 'Тесты с общим состоянием БД', sub: 'web-api', grade: 'middle', catalogIds: ['be.integration-tests', 'common.debugging'], format: 'number', a: 1.3, b: 0.55, paramSpace: 1e5, timeLimitSec: 240 },
   (seed) => {
     const rng = createRng(seed);
-    const n = rng.int(5, 6);
-    const tests = Array.from({ length: n }, (_, i) => ({ name: `тест ${i + 1}`, inserts: rng.int(1, 3), cleanup: rng.int(0, 2) > 0, skip: rng.int(0, 5) === 0 }));
+    const n = rng.int(8, 11);
+    const pc = rng.int(1, 4);
+    const tests = Array.from({ length: n }, (_, i) => ({ name: `тест ${i + 1}`, inserts: rng.int(1, 3), cleanup: rng.int(0, 4) < pc, skip: rng.int(0, 5) === 0 }));
     let count = 0;
     const failed: number[] = [];
     for (const [i, t] of tests.entries()) {
@@ -264,11 +266,11 @@ export const apiCorsPreflight: TaskGenerator = fam(
   { slug: 'api-cors-preflight', title: 'Какие запросы заблокирует CORS', sub: 'web-api', grade: 'middle', catalogIds: ['common.http', 'common.security-basics'], format: 'number', a: 1.2, b: 0.6, paramSpace: 1e6, timeLimitSec: 240 },
   (seed) => {
     const rng = createRng(seed);
-    const origins = ['https://app.example.com', 'https://admin.example.com', 'https://shop.example.net'];
-    const allowedOrigins = rng.sample(origins, 2);
+    const origins = ['https://app.example.com', 'https://admin.example.com', 'https://shop.example.net', 'https://partner.example.org'];
+    const allowedOrigins = rng.sample(origins, rng.int(1, 3));
     const allowedMethods = rng.pick([['GET', 'POST'], ['GET', 'POST', 'PUT'], ['GET', 'POST', 'DELETE']]);
     const allowedHeaders = rng.pick([['Content-Type'], ['Content-Type', 'Authorization']]);
-    const reqs = Array.from({ length: 6 }, () => ({
+    const reqs = Array.from({ length: 12 }, () => ({
       origin: rng.pick(origins),
       method: rng.pick(['GET', 'POST', 'PUT', 'DELETE']),
       headers: rng.pick([[], ['Authorization'], ['Content-Type: application/json'], ['Content-Type: text/plain']]),
@@ -283,7 +285,7 @@ export const apiCorsPreflight: TaskGenerator = fam(
       if (bad) blocked++;
     }
     return {
-      prompt: `Браузерные запросы идут из разных источников (Origin) к API. Сервер разрешает источники ${allowedOrigins.join(', ')}, методы ${allowedMethods.join(', ')} и заголовки ${allowedHeaders.join(', ')} (в preflight и в ответах). Preflight-запрос OPTIONS нужен, если метод не GET/HEAD/POST либо есть заголовок Authorization или Content-Type: application/json (text/plain - «простой» тип). Браузер блокирует запрос, если preflight не разрешил метод или заголовки, а также если Origin не входит в разрешённые (ответ нельзя прочитать). Сколько из шести запросов будет заблокировано?`,
+      prompt: `Браузерные запросы идут из разных источников (Origin) к API. Сервер разрешает источники ${allowedOrigins.join(', ')}, методы ${allowedMethods.join(', ')} и заголовки ${allowedHeaders.join(', ')} (в preflight и в ответах). Preflight-запрос OPTIONS нужен, если метод не GET/HEAD/POST либо есть заголовок Authorization или Content-Type: application/json (text/plain - «простой» тип). Браузер блокирует запрос, если preflight не разрешил метод или заголовки, а также если Origin не входит в разрешённые (ответ нельзя прочитать). Сколько из двенадцати запросов будет заблокировано?`,
       code: reqs.map((r, i) => `${i + 1}. Origin ${r.origin}; ${r.method}; заголовки: ${r.headers.length ? r.headers.join(', ') : 'нет'}`).join('\n'),
       answerHint: 'число заблокированных запросов',
       answerKey: String(blocked),
@@ -328,22 +330,23 @@ export const apiFanoutTail: TaskGenerator = fam(
   },
 );
 
-const CHANGES: { text: string; field: string; steps: number }[] = [
-  { text: 'переименовать поле', field: 'status', steps: 3 },
-  { text: 'сменить тип поля (число на строку)', field: 'amount', steps: 3 },
-  { text: 'удалить поле из ответа', field: 'legacyId', steps: 2 },
-  { text: 'сделать новое поле обязательным в запросе', field: 'currency', steps: 2 },
-  { text: 'добавить необязательное поле', field: 'comment', steps: 1 },
-  { text: 'удалить поле из ответа', field: 'status', steps: 2 },
-  { text: 'сменить тип поля (число на строку)', field: 'status', steps: 3 },
-  { text: 'добавить необязательное поле', field: 'amount', steps: 1 },
+const CHANGE_KINDS: { text: string; steps: number }[] = [
+  { text: 'переименовать поле', steps: 3 },
+  { text: 'сменить тип поля (число на строку)', steps: 3 },
+  { text: 'удалить поле из ответа', steps: 2 },
+  { text: 'сделать поле обязательным в запросе', steps: 2 },
+  { text: 'добавить необязательное поле', steps: 1 },
 ];
+const CHANGE_FIELDS = ['status', 'amount', 'legacyId', 'currency', 'comment', 'phone', 'region', 'channel'];
+const CHANGES: { text: string; field: string; steps: number }[] = CHANGE_FIELDS.flatMap((field) => CHANGE_KINDS.map((k) => ({ ...k, field })));
 
 export const apiExpandContract: TaskGenerator = fam(
   { slug: 'api-expand-contract', title: 'Сколько релизов на смену контракта', sub: 'web-api', grade: 'senior', catalogIds: ['be.api-contract', 'be.rest-design'], format: 'number', a: 1.1, b: 1.15, paramSpace: 5e3, timeLimitSec: 270 },
   (seed) => {
     const rng = createRng(seed);
-    const list = rng.sample(CHANGES, rng.int(3, 4));
+    const fields = rng.sample(CHANGE_FIELDS, rng.int(1, 4));
+    const pool = CHANGES.filter((c) => fields.includes(c.field));
+    const list = Array.from({ length: rng.int(4, 8) }, () => rng.pick(pool));
     const byField = new Map<string, number>();
     for (const c of list) byField.set(c.field, (byField.get(c.field) ?? 0) + c.steps);
     const total = Math.max(...byField.values());
@@ -408,7 +411,7 @@ export const apiRbacInherit: TaskGenerator = fam(
       for (const p of ROLE_DEFS[role]!.inherits) for (const x of denied(p)) s.add(x);
       return s;
     };
-    const reqs = Array.from({ length: 8 }, () => ({ user: rng.pick(users), perm: rng.pick(perms) }));
+    const reqs = Array.from({ length: 14 }, () => ({ user: rng.pick(users), perm: rng.pick(perms) }));
     let allowed = 0;
     for (const r of reqs) {
       const allow = new Set<string>();
@@ -421,7 +424,7 @@ export const apiRbacInherit: TaskGenerator = fam(
     }
     const roleLine = Object.entries(ROLE_DEFS).map(([r, d]) => `${r}: разрешает ${d.allow.join(', ')}${d.inherits.length ? `; наследует ${d.inherits.join(', ')}` : ''}${denies[r]!.length ? `; запрещает ${denies[r]!.join(', ')}` : ''}`);
     return {
-      prompt: 'Права вычисляются так: у пользователя может быть несколько ролей; роль даёт свои права плюс права унаследованных ролей (транзитивно); запрет (deny) роли - собственный или унаследованный - перекрывает любое разрешение у любой из ролей пользователя. Сколько из восьми запросов будет разрешено?',
+      prompt: 'Права вычисляются так: у пользователя может быть несколько ролей; роль даёт свои права плюс права унаследованных ролей (транзитивно); запрет (deny) роли - собственный или унаследованный - перекрывает любое разрешение у любой из ролей пользователя. Сколько из четырнадцати запросов будет разрешено?',
       code: [...roleLine, '', ...users.map((u) => `${u.u}: роли ${u.roles.join(', ')}`), '', ...reqs.map((r, i) => `${i + 1}. ${r.user.u} -> ${r.perm}`)].join('\n'),
       answerHint: 'число разрешённых запросов',
       answerKey: String(allowed),

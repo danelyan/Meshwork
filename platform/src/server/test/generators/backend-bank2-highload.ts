@@ -176,10 +176,10 @@ export const hlDiskIops: TaskGenerator = fam(
   { slug: 'hl-disk-iops', title: 'Сколько дисковых операций создаёт запрос', sub: 'highload', grade: 'middle', catalogIds: ['be.performance', 'be.sql-indexes'], format: 'number', a: 1.2, b: 0.45, paramSpace: 1e4, timeLimitSec: 240 },
   (seed) => {
     const rng = createRng(seed);
-    const qps = rng.pick([500, 1000, 2000, 3000, 5000, 8000]);
+    const qps = rng.pick([1000, 2000, 4000, 8000, 12000, 20000]);
     const pages = rng.pick([4, 6, 10, 12]);
     const hit = rng.pick([80, 90, 95, 98]);
-    const perDisk = rng.pick([500, 1000, 1500, 2000]);
+    const perDisk = rng.pick([300, 500, 800, 1000]);
     const reads = (qps * pages * (100 - hit)) / 100;
     const disks = Math.max(1, Math.ceil(reads / perDisk - 1e-9));
     return {

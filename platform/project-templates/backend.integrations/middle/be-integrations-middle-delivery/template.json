@@ -1,0 +1,20 @@
+{
+  "id": "be-integrations-middle-delivery",
+  "subcategoryId": "backend.integrations",
+  "specialization": "backend",
+  "grade": "middle",
+  "title": "Клиент внешнего API доставки: ретраи, таймауты, маппинг",
+  "summary": "HTTP-клиент к чужому API: экспоненциальные ретраи с Retry-After, таймауты, идемпотентный ключ, маппинг и проверка формата ответа",
+  "stack": ["node20", "typescript", "fetch", "vitest"],
+  "catalogIds": ["be.external-integration", "be.retries-timeouts", "be.idempotency"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 240,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "fe-uiapp-junior-catalog",
+  "subcategoryId": "frontend.ui-app",
+  "specialization": "frontend",
+  "grade": "junior",
+  "title": "Каталог товаров с фильтрами и корзиной (React)",
+  "summary": "Компонент по макету: поиск, фильтр по категории, корзина с суммой, пустое состояние, доступные роли и подписи",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.react", "fe.forms", "fe.a11y"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

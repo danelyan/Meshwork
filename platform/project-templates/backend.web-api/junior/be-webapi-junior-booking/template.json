@@ -1,0 +1,20 @@
+{
+  "id": "be-webapi-junior-booking",
+  "subcategoryId": "backend.web-api",
+  "specialization": "backend",
+  "grade": "junior",
+  "title": "REST API записи на приём",
+  "summary": "CRUD по готовому контракту: валидация, ошибки, пересечение слотов, фильтр списка, отмена",
+  "stack": ["node20", "typescript", "express", "vitest", "supertest"],
+  "catalogIds": ["be.rest-design", "be.validation", "be.testing"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "fe-uiapp-middle-tasks",
+  "subcategoryId": "frontend.ui-app",
+  "specialization": "frontend",
+  "grade": "middle",
+  "title": "Доска задач с серверным состоянием (React)",
+  "summary": "Загрузка и ошибка с повтором, оптимистичное обновление с откатом, форма с валидацией и блокировкой повторной отправки, фильтры",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.react", "fe.state-management", "fe.forms", "fe.a11y"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 240,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

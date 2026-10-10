@@ -1,0 +1,4 @@
+order_id,customer_email,amount,currency,created_at
+A-1,Anna@Example.com,1990.00,RUB,2026-10-01
+A-2,boris@example.com,"15,5",usd,2026-10-02T10:00:00Z
+A-3,not-an-email,10,RUB,2026-10-03

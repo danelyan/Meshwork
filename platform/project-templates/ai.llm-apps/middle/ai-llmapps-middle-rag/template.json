@@ -1,0 +1,20 @@
+{
+  "id": "ai-llmapps-middle-rag",
+  "subcategoryId": "ai.llm-apps",
+  "specialization": "ai",
+  "grade": "middle",
+  "title": "RAG по локальным документам с цитированием",
+  "summary": "Чанкинг, лексический ретрив (TF-IDF/BM25), сборка промпта в бюджет контекста, проверка цитат и отказ без LLM при отсутствии опоры; LLM-клиент подменяемый, без сети",
+  "stack": ["node20", "typescript", "rag", "vitest"],
+  "catalogIds": [],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 240,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

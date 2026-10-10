@@ -99,7 +99,6 @@
 
 .quiet { background: none; border: 0; padding: 4px 0; font: 500 var(--fs-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .quiet:hover:not(:disabled) { color: var(--ink); }
-.composerHint { font-size: var(--fs-xs); color: var(--muted); }
 
 /* тонкая полоса прогресса */
 .progress { height: 3px; width: 100%; background: var(--line); overflow: hidden; }
@@ -121,7 +120,6 @@
   .composer { padding: var(--chat-composer-pad, 8px 0 10px); }
   .send { padding: 0 14px; }
   .composerBox { gap: 2px; }
-  .composerHint { display: none; }
 }
 .files { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 0; list-style: none; font-family: var(--mono); font-size: var(--fs-sm); opacity: 0.85; }
 

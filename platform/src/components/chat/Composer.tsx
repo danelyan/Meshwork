@@ -79,6 +79,7 @@ export function Composer({
 }: ComposerProps) {
   const id = useId();
   const limitsId = useId();
+  const hintId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   const areaRef = useRef<HTMLTextAreaElement | null>(null);
   const dragging = useWindowFileDrop(attachments && !disabled ? attachments.onAdd : undefined);
@@ -168,6 +169,9 @@ export function Composer({
           maxLength={maxLength}
           inputMode={inputMode}
           autoComplete="off"
+          // Подсказка по клавишам — тултипом по наведению, поле ввода прижато к низу (владелец 11.10).
+          title={typeof hint === 'string' ? hint : undefined}
+          aria-describedby={hint ? hintId : undefined}
         />
         {inlineAction && <div className={styles.inlineAction}>{inlineAction}</div>}
         {voice && <VoiceButton value={value} onChange={onChange} disabled={disabled} />}
@@ -190,10 +194,14 @@ export function Composer({
           <AttachmentLimitsHint id={limitsId} text={ATTACH_LIMITS} />
         </VisuallyHidden>
       )}
-      {(aside || hint) && (
+      {hint && (
+        <VisuallyHidden>
+          <span id={hintId}>{hint}</span>
+        </VisuallyHidden>
+      )}
+      {aside && (
         <div className={styles.composerMeta}>
           <span>{aside}</span>
-          {hint && <span className={styles.composerHint}>{hint}</span>}
         </div>
       )}
       {dragging && (

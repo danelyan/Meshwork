@@ -39,6 +39,11 @@ export interface AiUtteranceMeta {
   /** kind=interview: компетенция модели (server/interview/model.ts) и блок интервью. */
   competencyId?: string;
   block?: BlockId;
+  /**
+   * Кандидат перебил реплику (POST /api/call/{id}/interrupt): в `text` остался услышанный префикс с пометкой,
+   * `tail` — недосказанное (в историю не входит, интервьюер может к нему вернуться). Разбиение — lib/sentences.ts.
+   */
+  interrupted?: { heardSentences: number; totalSentences: number; tail: string };
   /** Этап «разбор решённого задания теста»: шаг 1 — объяснить ход решения, шаг 2 — изменить условие. */
   testReview?: { step: 1 | 2; templateId: string };
 }

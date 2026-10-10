@@ -2,23 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { ApiError } from '@/lib/api';
 import { callApi, subscribeCallEvents } from '@/lib/call-api';
-import { isBackchannel } from '@/lib/sentences';
-import type { CallVerdict, CallView, PublicCallVerdict, TranscriptEntry } from '@/server/call/types';
+import type { CallView, TranscriptEntry } from '@/server/call/types';
 import { AXES, AXIS_LABEL, BLOCK_DEFS, type BlockId, blockDef, competencyById } from '@/server/interview/model';
-import { INTERVIEW_LIMITS, type InterviewTurn, clarificationHint, stageOf } from '@/server/interview/plan';
+import { INTERVIEW_LIMITS, clarificationHint, stageOf } from '@/server/interview/plan';
 import type { InterviewSummary } from '@/server/interview/types';
 
-import { HeadView } from '../avatar/HeadView';
-import { CompanionVoiceProvider, useCompanionVoice } from '../avatar/voice';
+import { useCallMic } from '../call/useCallMic';
 import { Button, Spinner, cx } from '../ui';
 
-import styles from './InterviewRoom.module.css';
-import { type RoomUtterance, useRoomMic } from './useRoomMic';
-import { useSentenceSpeech } from './useSentenceSpeech';
+import { SKIP_ANSWER, summaryOf, turnsOf } from './helpers';
+import styles from './InterviewPage.module.css';
+import { useSpeech } from './useSpeech';
 
-type Phase = 'loading' | 'intro' | 'consent' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
+type Phase = 'loading' | 'intro' | 'live' | 'finishing' | 'done' | 'error';
 
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -31,19 +28,10 @@ function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined
   return [...byIndex.values()].sort((a, b) => a.index - b.index);
 }
 
-/** Пары вопрос → ответ из транскрипта для расчёта этапа (без сервера). */
-function turnsOf(transcript: readonly TranscriptEntry[]): InterviewTurn[] {
-  const out: InterviewTurn[] = [];
-  for (const e of transcript) {
-    if (e.role === 'ai' && e.meta?.competencyId && e.meta.block) {
-      out.push({ question: e.text, answer: null, competencyId: e.meta.competencyId, block: e.meta.block, level: e.meta.level, ...(e.meta.probe ? { probe: true } : {}) });
-    } else if (e.role === 'candidate') {
-      const last = out[out.length - 1];
-      if (last) last.answer = (last.answer ?? '') + e.text;
-    }
-  }
-  return out;
-}
+/** Вход в ИИнтервью: консультант с сразу открытым режимом созвона. */
+export const CONSULTANT_CALL_HREF = '/consultant?call=1';
+/** Комната звонка с перебиванием голосом (components/interview/InterviewRoom). */
+export const ROOM_HREF = '/interview/room';
 
 const QUESTION_BLOCKS = BLOCK_DEFS.filter((b) => b.questions.max > 0);
 
@@ -85,10 +73,6 @@ export function Criteria({ summary }: { summary: InterviewSummary | null }) {
   );
 }
 
-function summaryOf(v: CallVerdict | PublicCallVerdict | null | undefined): InterviewSummary | null {
-  return v && 'interview' in v && v.interview ? v.interview : null;
-}
-
 /** Итоговая карточка (мокап: «Middle подтверждён · итог 84/100» → у нас соответствие по интервью, без вердикта о грейде). */
 export function ResultCard({ summary, disclaimer }: { summary: InterviewSummary; disclaimer: string }) {
   const probed = summary.competencies.filter((c) => c.status !== 'not_probed');
@@ -126,77 +110,50 @@ export function ResultCard({ summary, disclaimer }: { summary: InterviewSummary;
   );
 }
 
-const MicIcon = ({ off }: { off?: boolean }) => (
+const MicIcon = () => (
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
     <rect x="7" y="2" width="6" height="10" />
     <path d="M4 9v1a6 6 0 0012 0V9M10 16v2" />
-    {off && <path d="M3 17L17 3" />}
   </svg>
 );
 
-/** Провайдер голоса компаньона (озвучка /api/tts, липсинк головы) — включается первым жестом (кнопка «Подключиться»). */
-export function InterviewPage() {
-  return (
-    <CompanionVoiceProvider autoEnable>
-      <InterviewRoom />
-    </CompanionVoiceProvider>
-  );
-}
-
 /**
- * ИИнтервью как созвон (docs/competency-model.md): две плитки — ИИ-интервьюер (голова, субтитры) и кандидат
- * (микрофон открыт всё время, речь режет детектор). Кандидат может перебить ИИ голосом: озвучка гаснет по
- * предложению, сервер получает, сколько прозвучало (POST /api/call/{id}/interrupt), в транскрипте остаётся
- * услышанное. Поддакивание («угу», «да») перебиванием не считается — озвучка продолжается. Текст — запасной канал.
+ * ИИнтервью (docs/competency-model.md): просмотр результата и истории. Новое интервью проходит в консультанте
+ * (режим созвона, решение владельца 10.10); стартовая карточка ведёт туда. Уже идущее интервью можно
+ * продолжить здесь: лента вопросов, ответ текстом или голосом, озвучка через /api/tts, «Завершить».
  */
-function InterviewRoom() {
-  const voice = useCompanionVoice();
-  const speech = useSentenceSpeech(voice);
+export function InterviewPage() {
   const [phase, setPhase] = useState<Phase>('loading');
-  const [consentText, setConsentText] = useState<string[]>([]);
-  const [consentVersion, setConsentVersion] = useState('');
-  const [consentGiven, setConsentGiven] = useState(false);
   const [call, setCall] = useState<CallView | null>(null);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
-  const [typing, setTyping] = useState(false);
   const [closing, setClosing] = useState(false);
+  /** Подсказка «Уточнить вопрос» к реплике ИИ с этим index (клиент, не ответ). */
   const [hint, setHint] = useState<{ index: number; text: string } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const feed = useRef<HTMLDivElement | null>(null);
   const spoken = useRef(new Set<string>());
-  /** Перебивание в процессе: какая реплика ИИ и сколько её частей прозвучало до речи кандидата. */
-  const barge = useRef<{ index: number; heard: number; text: string } | null>(null);
-  /** Кандидат заговорил, пока ИИ думал: ответ ждёт следующей реплики ИИ. */
-  const pending = useRef<{ text: string; audioRef?: string } | null>(null);
-  const busyRef = useRef(false);
-  const idRef = useRef<string | null>(null);
-  const lastAiRef = useRef<TranscriptEntry | null>(null);
+  const speech = useSpeech();
+  const speechRef = useRef(speech);
+  speechRef.current = speech;
 
   const id = call?.id ?? null;
-  idRef.current = id;
   const summary = summaryOf(call?.verdict);
-  const lastAi = [...transcript].reverse().find((e) => e.role === 'ai') ?? null;
-  lastAiRef.current = lastAi;
 
-  // Открытие: прошлые интервью и согласие; активное — кнопка «Вернуться в созвон» (жест нужен микрофону и звуку).
+  // Открытие: прошлые интервью и согласие; активное — продолжаем сразу, иначе стартовая карточка.
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         const list = await callApi.list('interview');
         if (!alive) return;
-        setConsentText(list.consent.text);
-        setConsentVersion(list.consent.version);
-        setConsentGiven(list.consent.given);
         const active = list.calls.find((c) => c.status === 'active');
         if (active) {
           setCall(active);
           setTranscript(active.transcript ?? []);
-          for (const e of active.transcript ?? []) if (e.role === 'ai') spoken.current.add(`${active.id}-${e.index}`);
-          setPhase('intro');
+          setPhase('live');
           return;
         }
         const last = list.calls.find((c) => c.status === 'finished');
@@ -218,42 +175,7 @@ function InterviewRoom() {
     };
   }, []);
 
-  const begin = useCallback(async () => {
-    setPhase('starting');
-    setError(null);
-    setClosing(false);
-    setHint(null);
-    setDraft('');
-    barge.current = null;
-    pending.current = null;
-    try {
-      const r = await callApi.start('interview');
-      setCall(r.call);
-      setTranscript(r.call.transcript ?? []);
-      setPhase('live');
-    } catch (e) {
-      if (e instanceof ApiError && e.code === 'call_consent_required') return setPhase('consent');
-      setError(e instanceof Error ? e.message : 'Не удалось начать интервью');
-      setPhase('intro');
-    }
-  }, []);
-
-  const start = async () => {
-    if (!consentGiven) return setPhase('consent');
-    await begin();
-  };
-
-  const acceptConsent = async () => {
-    setError(null);
-    try {
-      await callApi.consent(consentVersion);
-      setConsentGiven(true);
-      await begin();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Согласие не записалось');
-    }
-  };
-
+  // SSE: реплики могут прийти и не из нашего запроса (второй таб).
   useEffect(() => {
     if (!id || phase !== 'live') return;
     return subscribeCallEvents(id, (ev) => {
@@ -265,22 +187,19 @@ function InterviewRoom() {
     });
   }, [id, phase]);
 
-  // Новая реплика ИИ — озвучить по предложениям один раз.
+  // Новая реплика ИИ — озвучить один раз; при открытии уже идущего интервью старые не читаем.
+  const lastAi = [...transcript].reverse().find((e) => e.role === 'ai');
   useEffect(() => {
     if (!lastAi || !id || phase !== 'live') return;
     const key = `${id}-${lastAi.index}`;
     if (spoken.current.has(key)) return;
     spoken.current.add(key);
-    speech.say(lastAi.index, lastAi.text);
-  }, [lastAi, id, phase, speech]);
-
-  useEffect(() => {
-    voice?.setThinking(busy);
-  }, [busy, voice]);
+    void speechRef.current.speak(lastAi.text);
+  }, [lastAi, id, phase]);
 
   useEffect(() => {
     feed.current?.scrollTo({ top: feed.current.scrollHeight });
-  }, [transcript, typing]);
+  }, [transcript, busy, phase]);
 
   useEffect(() => {
     if (phase !== 'live') return;
@@ -289,114 +208,59 @@ function InterviewRoom() {
   }, [phase]);
 
   const send = useCallback(
-    async (input: { text?: string; audioRef?: string }): Promise<void> => {
-      const sid = idRef.current;
-      if (!sid) return;
-      busyRef.current = true;
+    async (input: { text?: string; audioRef?: string }) => {
+      if (!id) return;
       setBusy(true);
-      setTyping(true);
       setError(null);
-      speech.stop();
-      let followUp: { text: string; audioRef?: string } | null = null;
+      speechRef.current.stop();
       try {
-        const r = await callApi.turn(sid, input);
+        const r = await callApi.turn(id, input);
         setTranscript((t) => merge(t, [r.candidate, r.ai]));
         if (r.done) setClosing(true);
-        // Кандидат говорил, пока ИИ думал: этот вопрос не прозвучал, ответ уходит сразу.
-        const p = pending.current;
-        if (p && r.ai?.meta && !r.done) {
-          pending.current = null;
-          spoken.current.add(`${sid}-${r.ai.index}`);
-          await callApi.interrupt(sid, { index: r.ai.index, heardSentences: 0 }).catch(() => undefined);
-          followUp = p;
-        }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Ответ не отправился - попробуй ещё раз');
       } finally {
-        busyRef.current = false;
         setBusy(false);
-        setTyping(false);
       }
-      if (followUp) await send(followUp);
     },
-    [speech],
+    [id],
   );
 
-  const onSpeechStart = useCallback(() => {
-    const ai = lastAiRef.current;
-    if (!speech.isPlaying() || !ai?.meta) return;
-    // Перебивание: гасим озвучку сразу, серверу сообщаем после распознавания (поддакивание — не перебивание).
-    barge.current = { index: ai.index, heard: speech.heardOf(ai.index), text: ai.text };
-    speech.stop();
-  }, [speech]);
-
-  const onUtterance = useCallback(
-    async ({ pcm, browserText }: RoomUtterance) => {
-      const sid = idRef.current;
-      if (!sid) return;
-      let audioRef: string | undefined;
-      let text = browserText ?? '';
-      if (pcm) {
-        try {
-          const a = await callApi.audio(sid, pcm);
-          audioRef = a.audioRef;
-          if (!text) text = a.text ?? '';
-        } catch (e) {
-          if (!text) setError(e instanceof Error ? e.message : 'Запись не сохранилась - ответь текстом');
+  const mic = useCallMic(async ({ pcm, browserText }) => {
+    if (!id) return;
+    let audioRef: string | undefined;
+    let text = browserText ?? '';
+    if (pcm) {
+      try {
+        const a = await callApi.audio(id, pcm);
+        audioRef = a.audioRef;
+        if (!text) text = a.text ?? '';
+      } catch (e) {
+        if (!text) {
+          setError(e instanceof Error ? e.message : 'Запись не сохранилась - ответь текстом');
+          return;
         }
       }
-      const b = barge.current;
-      if (!text.trim()) {
-        if (b) {
-          barge.current = null;
-          speech.resume(b.index, b.text);
-        }
-        return;
-      }
-      // Поддакивание во время речи ИИ — ложное перебивание: ИИ продолжает с недоигранного предложения.
-      // Вне перебивания короткое «да» или «понял» — обычный ответ на вопрос.
-      if (b && isBackchannel(text)) {
-        barge.current = null;
-        speech.resume(b.index, b.text);
-        return;
-      }
-      if (busyRef.current) {
-        pending.current = { text, ...(audioRef ? { audioRef } : {}) };
-        return;
-      }
-      const ai = lastAiRef.current;
-      if (!ai?.meta) return;
-      if (b) {
-        barge.current = null;
-        if (b.heard < speech.partsOf(b.index)) await callApi.interrupt(sid, { index: b.index, heardSentences: speech.heardSentencesOf(b.index) }).catch(() => undefined);
-      }
-      await send({ text, ...(audioRef ? { audioRef } : {}) });
-    },
-    [send, speech],
-  );
-
-  const mic = useRoomMic({ isPlaying: speech.isPlaying, onSpeechStart, onUtterance });
-  const micRef = useRef(mic);
-  micRef.current = mic;
-
-  // Комната открыта — микрофон открыт; закрыта — выключен.
-  useEffect(() => {
-    if (phase === 'live') void micRef.current.start();
-    else micRef.current.stop();
-  }, [phase]);
+    }
+    if (!text.trim()) {
+      setError('Не расслышал ответ - скажи ещё раз или ответь текстом.');
+      return;
+    }
+    await send({ text, ...(audioRef ? { audioRef } : {}) });
+  });
 
   const finish = async () => {
-    const sid = idRef.current;
-    if (!sid) return;
+    if (!id) return;
     mic.stop();
-    speech.stop();
+    speechRef.current.stop();
     setPhase('finishing');
     setError(null);
     try {
-      const v = await callApi.finish(sid);
+      const v = await callApi.finish(id);
       setCall(v);
       setTranscript(v.transcript ?? []);
       if (v.status === 'active') {
+        // Оценщик разошёлся по компетенции: интервью продолжается дополнительным вопросом.
         setClosing(false);
         setPhase('live');
         return;
@@ -411,12 +275,11 @@ function InterviewRoom() {
   const last = transcript[transcript.length - 1];
   const awaiting = Boolean(last && last.role === 'ai' && last.meta) && !busy && phase === 'live';
   const answered = transcript.filter((e) => e.role === 'candidate').length;
-  const stage: BlockId = phase === 'done' ? 'summary' : stageOf(turnsOf(transcript), closing);
-  const canFinish = answered > 0 && !busy && phase === 'live';
+  const turns = turnsOf(transcript);
+  const stage: BlockId = phase === 'done' ? 'summary' : stageOf(turns, closing);
+  const canFinish = answered > 0 && !busy && mic.state === 'idle' && phase === 'live';
   const startedAt = call ? Date.parse(call.startedAt) : now;
   const elapsed = phase === 'live' ? now - startedAt : call?.finishedAt ? Date.parse(call.finishedAt) - startedAt : 0;
-  const aiSpeaking = voice?.status === 'speaking' || voice?.status === 'loading';
-  const candidateLive = mic.state === 'speaking';
 
   const submitDraft = () => {
     const text = draft.trim();
@@ -426,7 +289,6 @@ function InterviewRoom() {
   };
 
   const blockTitle = (e: TranscriptEntry) => (e.meta?.block ? blockDef(e.meta.block).title : null);
-  const caption = voice?.speakingText ?? (busy ? 'Думаю над следующим вопросом…' : lastAi && phase === 'live' ? lastAi.text : null);
 
   return (
     <div className={styles.page} data-screen="interview">
@@ -438,244 +300,167 @@ function InterviewRoom() {
           <small>
             {phase === 'live' || phase === 'finishing'
               ? `${blockDef(stage).title} · вопрос ${Math.min(answered + 1, INTERVIEW_LIMITS.maxQuestions)} из ${INTERVIEW_LIMITS.minQuestions}–${INTERVIEW_LIMITS.maxQuestions}`
-              : 'созвон с ИИ-интервьюером'}
+              : 'после теста на грейд'}
           </small>
         </div>
         <span className={cx(styles.rec, phase !== 'live' && styles.idle)} aria-label="Идёт запись">
           {mmss(elapsed)}
         </span>
+        {speech.available && (
+          <Button variant="ghost" size="sm" onClick={speech.toggle} aria-pressed={speech.enabled}>
+            {speech.enabled ? 'Озвучка вкл' : 'Озвучка выкл'}
+          </Button>
+        )}
+        {phase === 'live' && (
+          <Button variant="ghost" size="sm" onClick={finish} disabled={!canFinish}>
+            Завершить
+          </Button>
+        )}
       </div>
 
       <div className={styles.shell}>
-        <main className={styles.stage} aria-label="Комната ИИнтервью">
-          {phase === 'done' ? (
-            <div className={styles.resultWrap}>
-              {summary && call ? (
-                <ResultCard summary={summary} disclaimer={call.disclaimer} />
-              ) : (
-                <p className={styles.hintLine}>Интервью закрыто без оценки: ответов не было или оценщик был недоступен. Можно начать заново.</p>
-              )}
-              <div className={styles.bar}>
-                <button type="button" className={cx(styles.ctl, styles.primary)} onClick={() => void begin()}>
-                  Пройти ещё раз
-                </button>
+        <main className={styles.chat} aria-label="ИИнтервью">
+          <div className={styles.feed} ref={feed} aria-live="polite">
+            {transcript.map((e) => (
+              <div key={e.index} className={cx(styles.msg, e.role === 'ai' ? styles.ai : styles.me)}>
+                <span className={styles.av} aria-hidden="true">
+                  {e.role === 'ai' ? 'ИИ' : 'Я'}
+                </span>
+                <div className={styles.bubble}>
+                  {e.role === 'ai' && blockTitle(e) && <span className={styles.stage}>{blockTitle(e)}</span>}
+                  {e.text}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className={styles.tiles}>
-              <section className={styles.tile} data-active={aiSpeaking ? 'true' : 'false'} aria-label="ИИ-интервьюер">
-                <div className={styles.head}>
-                  <HeadView />
-                </div>
-                {phase === 'live' && <span className={styles.chip}>{aiSpeaking ? 'говорит' : busy ? 'думает' : 'слушает'}</span>}
-                {caption && (phase === 'live' || phase === 'finishing') && (
-                  <p className={styles.caption} aria-live="polite">
-                    {phase === 'finishing' ? 'Спасибо, это всё! Собираю оценку…' : caption}
-                  </p>
-                )}
-                <div className={styles.nameplate} data-live={aiSpeaking ? 'true' : 'false'}>
+            ))}
+            {hint && lastAi && hint.index === lastAi.index && phase === 'live' && (
+              <div className={cx(styles.msg, styles.ai)} role="note">
+                <span className={styles.av} aria-hidden="true">
+                  ИИ
+                </span>
+                <div className={styles.bubble}>{hint.text}</div>
+              </div>
+            )}
+            {busy && (
+              <div className={cx(styles.msg, styles.ai, styles.typing)} aria-label="ИИ печатает">
+                <span className={styles.av} aria-hidden="true">
+                  ИИ
+                </span>
+                <div className={styles.bubble}>
                   <i />
-                  ИИ-интервьюер
-                </div>
-              </section>
-              <section className={styles.tile} data-active={candidateLive ? 'true' : 'false'} aria-label="Вы">
-                <div className={styles.monogram} aria-hidden="true">
-                  Я
-                </div>
-                <div className={styles.ring} style={{ '--level': mic.level.toFixed(2) } as React.CSSProperties} aria-hidden="true" />
-                {phase === 'live' && (
-                  <span className={styles.chip}>
-                    {mic.muted ? 'микрофон выключен' : mic.state === 'speaking' ? 'говорите' : mic.state === 'processing' ? 'распознаю' : mic.state === 'listening' ? 'слушаю' : 'без микрофона'}
-                  </span>
-                )}
-                {mic.interim && (
-                  <p className={cx(styles.caption, styles.captionMine)} aria-live="off">
-                    {mic.interim}
-                  </p>
-                )}
-                <div className={styles.nameplate} data-live={candidateLive ? 'true' : 'false'}>
                   <i />
-                  Вы
+                  <i />
                 </div>
-              </section>
+              </div>
+            )}
+            {phase === 'finishing' && (
+              <div className={cx(styles.msg, styles.ai)}>
+                <span className={styles.av} aria-hidden="true">
+                  ИИ
+                </span>
+                <div className={styles.bubble}>
+                  <span className={styles.stage}>Итоги</span>
+                  Спасибо, это всё! Собираю оценку… <Spinner />
+                </div>
+              </div>
+            )}
+            {phase === 'done' && summary && call && <ResultCard summary={summary} disclaimer={call.disclaimer} />}
+            {phase === 'done' && !summary && (
+              <div className={cx(styles.msg, styles.ai)}>
+                <span className={styles.av} aria-hidden="true">
+                  ИИ
+                </span>
+                <div className={styles.bubble}>Интервью закрыто без оценки: ответов не было или оценщик был недоступен. Можно начать заново.</div>
+              </div>
+            )}
+          </div>
+
+          {phase === 'done' && (
+            <div className={styles.quick}>
+              <a href={CONSULTANT_CALL_HREF}>Пройти ещё раз в консультанте</a>
             </div>
           )}
 
           {(phase === 'live' || phase === 'finishing') && (
-            <div className={styles.controls}>
-              {hint && lastAi && hint.index === lastAi.index && (
-                <p className={styles.hintLine} role="note">
-                  {hint.text}
-                </p>
-              )}
-              {(error || mic.error) && (
-                <p className={styles.error} role="alert">
-                  {error ?? mic.error}
-                </p>
-              )}
-              {closing && <p className={styles.hintLine}>Вопросы закончились - нажми «Завершить», оценщик соберёт результат.</p>}
-              <form
-                className={styles.typeRow}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  submitDraft();
-                }}
-              >
-                <textarea
-                  rows={1}
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      submitDraft();
-                    }
-                  }}
-                  placeholder={mic.available && !mic.muted ? 'Отвечай голосом или напиши здесь…' : 'Напиши ответ…'}
-                  aria-label="Ответ текстом"
-                  disabled={!awaiting || closing}
-                />
-                <button type="submit" className={styles.ctl} disabled={!awaiting || closing || !draft.trim()}>
-                  Отправить
-                </button>
-              </form>
-              <div className={styles.bar}>
-                {mic.available && (
-                  <button
-                    type="button"
-                    className={cx(styles.ctl, mic.muted && styles.ctlMuted)}
-                    onClick={() => mic.setMuted(!mic.muted)}
-                    aria-pressed={!mic.muted}
-                    aria-label={mic.muted ? 'Включить микрофон' : 'Выключить микрофон'}
-                  >
-                    <MicIcon off={mic.muted} />
-                    <span>{mic.muted ? 'Микрофон выкл' : 'Микрофон'}</span>
-                  </button>
-                )}
-                {voice && voice.available !== false && (
-                  <button type="button" className={cx(styles.ctl, voice.enabled && styles.ctlOn)} data-voice-toggle onClick={voice.toggle} aria-pressed={voice.enabled}>
-                    <span>{voice.enabled ? 'Звук вкл' : 'Звук выкл'}</span>
-                  </button>
-                )}
-                <button type="button" className={styles.ctl} disabled={!lastAi || !voice || voice.available === false} onClick={() => lastAi && speech.replay(lastAi.index, lastAi.text)}>
-                  Повторить
+            <>
+              <div className={styles.quick}>
+                <button type="button" disabled={!lastAi || !speech.available} onClick={() => lastAi && void speech.replay(lastAi.text)}>
+                  Повторить вопрос
                 </button>
                 <button
                   type="button"
-                  className={styles.ctl}
                   disabled={!awaiting || closing || !lastAi?.meta?.competencyId}
                   onClick={() => {
                     const c = lastAi?.meta?.competencyId ? competencyById(lastAi.meta.competencyId) : null;
                     if (lastAi && c) setHint({ index: lastAi.index, text: clarificationHint(c, lastAi.meta!.level) });
                   }}
                 >
-                  Уточнить
+                  Уточнить вопрос
                 </button>
-                <button type="button" className={styles.ctl} disabled={!awaiting || closing} onClick={() => void send({ text: 'Пропускаю этот вопрос.' })}>
+                <button type="button" disabled={!awaiting || closing} onClick={() => void send({ text: SKIP_ANSWER })}>
                   Пропустить
                 </button>
-                <button type="button" className={cx(styles.ctl, styles.end)} disabled={!canFinish} onClick={() => void finish()}>
-                  {phase === 'finishing' ? <Spinner /> : 'Завершить'}
-                </button>
               </div>
-            </div>
+              {(error || mic.error) && (
+                <p className={styles.error} role="alert">
+                  {error ?? mic.error}
+                </p>
+              )}
+              <form
+                className={styles.composer}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitDraft();
+                }}
+              >
+                {mic.state === 'recording' ? (
+                  <div className={styles.wave} aria-hidden="true">
+                    {Array.from({ length: 10 }, (_, k) => (
+                      <i key={k} style={{ animationDelay: `${k * 0.08}s`, height: `${6 + Math.round(mic.level * 22)}px` }} />
+                    ))}
+                    <span>{mic.interim || `слушаю… ${mmss(mic.elapsed)}`}</span>
+                  </div>
+                ) : (
+                  <textarea
+                    rows={1}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        submitDraft();
+                      }
+                    }}
+                    placeholder={closing ? 'Вопросы закончились - нажми «Завершить»' : 'Ответьте текстом или нажмите микрофон…'}
+                    aria-label="Ваш ответ"
+                    disabled={!awaiting || closing}
+                  />
+                )}
+                {mic.available && (
+                  <button
+                    type="button"
+                    className={cx(styles.mic, mic.state === 'recording' && styles.on)}
+                    onClick={() => (mic.state === 'recording' ? mic.stop() : void mic.start())}
+                    disabled={(!awaiting && mic.state !== 'recording') || mic.state === 'processing' || closing}
+                    aria-pressed={mic.state === 'recording'}
+                    aria-label={mic.state === 'recording' ? 'Закончить ответ' : 'Ответить голосом'}
+                  >
+                    {mic.state === 'processing' ? <Spinner /> : <MicIcon />}
+                  </button>
+                )}
+                <button type="submit" className={styles.send} disabled={!awaiting || closing || !draft.trim()}>
+                  Ответить
+                </button>
+              </form>
+            </>
           )}
           {phase === 'error' && (
             <p className={styles.error} role="alert">
               {error}
             </p>
           )}
-
-          {(phase === 'intro' || phase === 'consent' || phase === 'starting' || phase === 'loading') && (
-            <div className={styles.intro}>
-              <div className={styles.card}>
-                {phase === 'loading' ? (
-                  <Spinner />
-                ) : (
-                  <>
-                    <div>
-                      <span className={styles.kicker}>После теста на грейд</span>
-                      <h1>
-                        Следующий шаг - И<i>И</i>нтервью
-                      </h1>
-                    </div>
-                    <p>
-                      Созвон с ИИ-интервьюером: четыре блока - знакомство, профильные компетенции, системный дизайн, работа в команде. Микрофон открыт
-                      всё время, как в обычном звонке: можно перебивать и переспрашивать. Итог - профиль компетенций в кабинете. Категорию интервью не
-                      меняет.
-                    </p>
-                    <div className={styles.rules}>
-                      <div>
-                        <b>≈ 20 мин</b>
-                        <span>длительность</span>
-                      </div>
-                      <div>
-                        <b>{QUESTION_BLOCKS.length}</b>
-                        <span>блока вопросов</span>
-                      </div>
-                      <div>
-                        <b>голос / текст</b>
-                        <span>как удобнее</span>
-                      </div>
-                      <div>
-                        <b>без камеры</b>
-                        <span>только звук</span>
-                      </div>
-                    </div>
-                    {phase === 'consent' && (
-                      <div className={styles.consent}>
-                        <b>Согласие на запись</b>
-                        {consentText.map((p, i) => (
-                          <span key={i}>{p}</span>
-                        ))}
-                      </div>
-                    )}
-                    {error && (
-                      <p className={styles.cardError} role="alert">
-                        {error}
-                      </p>
-                    )}
-                    {phase === 'consent' ? (
-                      <button type="button" className={styles.go} onClick={() => void acceptConsent()}>
-                        Согласен, подключиться <span aria-hidden="true">→</span>
-                      </button>
-                    ) : (
-                      <button type="button" className={styles.go} onClick={() => void (call?.status === 'active' ? setPhase('live') : start())} disabled={phase === 'starting'}>
-                        {phase === 'starting' ? <Spinner /> : call?.status === 'active' ? 'Вернуться в созвон' : 'Подключиться'} <span aria-hidden="true">→</span>
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
         </main>
 
         <aside className={styles.side} aria-label="Ход интервью">
-          <div>
-            <h3>Транскрипт</h3>
-            <div className={styles.feed} ref={feed} aria-live="polite">
-              {transcript.map((e) => (
-                <div key={e.index} className={cx(styles.msg, e.role === 'ai' ? styles.ai : styles.me)}>
-                  <span className={styles.av} aria-hidden="true">
-                    {e.role === 'ai' ? 'ИИ' : 'Я'}
-                  </span>
-                  <div className={styles.bubble}>
-                    {e.role === 'ai' && blockTitle(e) && <span className={styles.stage}>{blockTitle(e)}</span>}
-                    {e.text}
-                  </div>
-                </div>
-              ))}
-              {typing && (
-                <div className={cx(styles.msg, styles.ai)} aria-label="ИИ думает">
-                  <span className={styles.av} aria-hidden="true">
-                    ИИ
-                  </span>
-                  <div className={styles.bubble}>…</div>
-                </div>
-              )}
-            </div>
-          </div>
           <div>
             <h3>Этапы</h3>
             <Stages current={stage} />
@@ -690,6 +475,61 @@ function InterviewRoom() {
           </p>
         </aside>
       </div>
+
+      {(phase === 'intro' || phase === 'loading') && (
+        <div className={styles.intro}>
+          <div className={styles.card}>
+            {phase === 'loading' ? (
+              <Spinner />
+            ) : (
+              <>
+                <div>
+                  <span className={styles.note} style={{ padding: 0, border: 0, background: 'transparent' }}>
+                    После теста на грейд
+                  </span>
+                  <h1>
+                    Следующий шаг - И<i>И</i>нтервью
+                  </h1>
+                </div>
+                <p>
+                  ИИ-интервьюер пройдёт с тобой четыре блока: знакомство, разбор профильных компетенций, системный дизайн и работу в команде. Итог -
+                  профиль компетенций в кабинете и подтверждённые утверждения в профиле. Категорию интервью не меняет. Интервью проходит в консультанте,
+                  в режиме созвона с Кирой; здесь остаётся результат и история.
+                </p>
+                <div className={styles.rules}>
+                  <div>
+                    <b>≈ 20 мин</b>
+                    <span>длительность</span>
+                  </div>
+                  <div>
+                    <b>{QUESTION_BLOCKS.length}</b>
+                    <span>блока вопросов</span>
+                  </div>
+                  <div>
+                    <b>текст / голос</b>
+                    <span>как удобнее</span>
+                  </div>
+                  <div>
+                    <b>без камеры</b>
+                    <span>только ответы</span>
+                  </div>
+                </div>
+                {error && (
+                  <p className={styles.error} role="alert">
+                    {error}
+                  </p>
+                )}
+                <a className={styles.go} href={CONSULTANT_CALL_HREF}>
+                  Пройти в консультанте <span aria-hidden="true">→</span>
+                </a>
+                <Button variant="ghost" href={ROOM_HREF}>
+                  Открыть комнату звонка (можно перебивать ИИ)
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

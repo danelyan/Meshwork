@@ -30,10 +30,6 @@ export const PAGE_ACCESS = {
   '/': 'public',
   '/auth': 'public',
   '/consent': 'public',
-  '/privacy': 'public',
-  '/terms': 'public',
-  '/employer-terms': 'public',
-  '/ai': 'public',
   '/site-access': 'public',
   '/api-docs': 'public',
   // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе — жюри без регистрации.
@@ -53,6 +49,7 @@ export const PAGE_ACCESS = {
   '/skills': 'candidate',
   '/test': 'candidate',
   '/interview': 'candidate',
+  '/interview/room': 'candidate',
   '/invitations': 'candidate',
   '/defense/[claimId]': 'candidate',
   // Созвон-защита (ADR 0003): комната кандидата и наблюдение работодателя.
@@ -158,6 +155,7 @@ export const API_ACCESS = {
   '/api/call/[id]/recording': 'session',
   '/api/call/[id]/signal': 'session',
   '/api/call/[id]/turn': 'candidate',
+  '/api/call/[id]/interrupt': 'candidate',
   '/api/call/[id]/audio': 'candidate',
   '/api/call/[id]/finish': 'candidate',
   // Справочник направлений и подкатегорий (ADR 0003): общий, без персональных данных.

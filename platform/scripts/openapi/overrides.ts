@@ -70,6 +70,7 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   demo: 'Демо-вход и демо-резюме (только при DEMO_LOGIN)',
   directions: 'Справочник направлений и подкатегорий (Subcategory, R-T-05)',
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
+  evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
   health: 'Проверка живости',
   invitations: 'Приглашения глазами кандидата',
   onboarding: 'Онбординг: шаги, ответы, итог',
@@ -210,6 +211,54 @@ export const OVERRIDES: Record<string, OpOverride> = {
     },
     errors: {},
   },
+  'POST /api/evaluate': {
+    role: 'public',
+    summary: 'Проверить подбор на своём наборе',
+    description:
+      'Наше ранжирование (то же, что подборка под потребность в кабинете) и базовая линия на наборе пользователя: P@k, nDCG@k, MRR по каждой вакансии и в среднем, топ-k с объяснениями. Считается в памяти, в БД ничего не пишется. Лимиты: тело ≤ 1 МБ, ≤ 50 вакансий, ≤ 1000 кандидатов, ≤ 60 требований и ≤ 200 утверждений на объект, k ≤ 20; id утверждений — из каталога. Лимит частоты — 30 прогонов за 10 минут с адреса.',
+    body: {
+      description: 'Набор: вакансии, кандидаты, разметка релевантности 0/1/2',
+      schema: obj(
+        {
+          k: int('Глубина выдачи, 1–20 (по умолчанию 5)'),
+          vacancies: arr(
+            obj(
+              {
+                id: str(),
+                title: str(),
+                specialization: en('backend', 'frontend', 'ai', 'engineering'),
+                grade: en('junior', 'middle', 'senior'),
+                needs: arr(obj({ catalogId: str('id из каталога утверждений'), weight: int('1–3, по умолчанию 2') }, ['catalogId'])),
+                stack: arr(str()),
+              },
+              ['id', 'specialization', 'grade', 'needs'],
+            ),
+          ),
+          candidates: arr(
+            obj(
+              {
+                id: str(),
+                specialization: nullable(en('backend', 'frontend', 'ai', 'engineering')),
+                fspState: en('not_linked', 'no_achievements', 'unavailable', 'linked'),
+                category: nullable(obj({ specialization: en('backend', 'frontend', 'ai', 'engineering'), grade: en('junior', 'middle', 'senior') })),
+                stack: arr(str()),
+                claims: arr(obj({ catalogId: str(), level: en('self_reported', 'artifact', 'third_party', 'platform') }, ['catalogId'])),
+              },
+              ['id', 'claims'],
+            ),
+          ),
+          relevance: free('relevance[id вакансии][id кандидата] = 0 | 1 | 2; кого нет — 0'),
+        },
+        ['vacancies', 'candidates', 'relevance'],
+      ),
+    },
+    success: JSON_OK(
+      'Метрики по вакансиям и среднее по вакансиям, где есть хотя бы один релевантный',
+      free('k, candidates, vacancies, scored, mean {ours, baseline, precisionCeiling} | null, rows [{id, ours, baseline, top, baselineTop, …}], warnings'),
+    ),
+    errors: { 400: 'Не JSON, не прошла схема, неизвестный id каталога или разметка на несуществующих объектах', 403: 'Чужой Origin', 413: 'Тело больше 1 МБ', 429: 'Слишком много прогонов' },
+  },
+
   'GET /api/health': {
     role: 'public',
     summary: 'Проверка живости приложения и БД',

@@ -1,0 +1,31 @@
+{
+  "id": "fe-uiapp-junior-widget",
+  "subcategoryId": "frontend.ui-app",
+  "specialization": "frontend",
+  "grade": "junior",
+  "title": "React-виджет: список с фильтром",
+  "summary": "Список с фильтром по ролям: доступные роли, счётчик, пустое состояние, сброс и фокус",
+  "stack": [
+    "node20",
+    "react19",
+    "javascript",
+    "testing-library"
+  ],
+  "catalogIds": [
+    "fe.components",
+    "fe.a11y"
+  ],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 90,
+  "platformOwned": [
+    "contract.md",
+    "tests/visible/**",
+    ".platform-tests/**"
+  ]
+}

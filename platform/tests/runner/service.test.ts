@@ -48,7 +48,7 @@ async function runTarball(entries: TarSpec[], opts: { bundle?: string; commitSha
     {
       source: { kind: 'tarball', data: makeTarGz(entries) },
       commitSha: opts.commitSha ?? 'abc1234',
-      testsBundleRef: opts.bundle ?? 'backend-junior-api',
+      testsBundleRef: opts.bundle ?? 'be-webapi-junior-notes',
       image: 'node20',
       ...(opts.timeoutSec ? { timeoutSec: opts.timeoutSec } : {}),
     },
@@ -81,13 +81,13 @@ describe('runner service (local)', () => {
   });
 
   it('верное решение frontend (jsdom + Testing Library) → зелёные', async () => {
-    const r = await runTarball(dirEntries(path.join(FIXTURES, 'frontend-solution')), { bundle: 'frontend-junior-widget' });
+    const r = await runTarball(dirEntries(path.join(FIXTURES, 'frontend-solution')), { bundle: 'fe-uiapp-junior-widget' });
     expect(r.status).toBe('done');
     expect(r.summary).toEqual({ total: 9, passed: 9, failed: 0 });
   });
 
   it('видимый набор по ссылке :visible', async () => {
-    const r = await runTarball(dirEntries(path.join(FIXTURES, 'backend-solution')), { bundle: 'backend-junior-api:visible' });
+    const r = await runTarball(dirEntries(path.join(FIXTURES, 'backend-solution')), { bundle: 'be-webapi-junior-notes:visible' });
     expect(r.status).toBe('done');
     expect(r.summary).toEqual({ total: 3, passed: 3, failed: 0 });
   });
@@ -172,7 +172,7 @@ export const createApp = real;
   it('образ не совпадает с шаблоном → 400 image_mismatch', async () => {
     await expect(
       submitRun(
-        { source: { kind: 'tarball', data: makeTarGz(dirEntries(path.join(FIXTURES, 'backend-solution'))) }, commitSha: 'abc1234', testsBundleRef: 'backend-junior-api', image: 'python312' },
+        { source: { kind: 'tarball', data: makeTarGz(dirEntries(path.join(FIXTURES, 'backend-solution'))) }, commitSha: 'abc1234', testsBundleRef: 'be-webapi-junior-notes', image: 'python312' },
         { baseUrl: base, token },
       ),
     ).rejects.toMatchObject({ code: 'image_mismatch', status: 400 });

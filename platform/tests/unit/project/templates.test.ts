@@ -6,18 +6,20 @@ import { checkPlatformOwned, countTests, getTemplates, ownedFileHashes, PLATFORM
 describe('шаблоны проектов на диске', () => {
   const all = getTemplates();
 
-  it('двенадцать шаблонов: 7 Junior/Middle (research/25 § 4) + Senior на каждую активную подкатегорию', () => {
+  it('четырнадцать шаблонов: 7 Junior/Middle (research/25 § 4) + Senior на каждую активную подкатегорию + два учебных Junior-шаблона runner', () => {
     expect(all.map((t) => `${t.manifest.subcategoryId}/${t.manifest.grade}/${t.manifest.id}`)).toEqual([
       'ai.llm-apps/middle/ai-llmapps-middle-rag',
       'ai.llm-apps/senior/ai-llmapps-senior-gateway',
       'backend.integrations/middle/be-integrations-middle-delivery',
       'backend.integrations/senior/be-integrations-senior-outbox',
       'backend.web-api/junior/be-webapi-junior-booking',
+      'backend.web-api/junior/be-webapi-junior-notes',
       'backend.web-api/middle/be-webapi-middle-orders',
       'backend.web-api/senior/be-webapi-senior-ratelimit',
       'engineering.data-eng/junior/eng-dataeng-junior-etl',
       'engineering.data-eng/senior/eng-dataeng-senior-incremental',
       'frontend.ui-app/junior/fe-uiapp-junior-catalog',
+      'frontend.ui-app/junior/fe-uiapp-junior-widget',
       'frontend.ui-app/middle/fe-uiapp-middle-tasks',
       'frontend.ui-app/senior/fe-uiapp-senior-search',
     ]);

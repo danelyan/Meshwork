@@ -20,7 +20,7 @@ const body = (b: Buffer) => Readable.from([b]);
 const req = (uploadId: string) => ({
   repoTarballUrl: `upload:${uploadId}`,
   commitSha: 'abc1234',
-  testsBundleRef: 'backend-junior-api',
+  testsBundleRef: 'be-webapi-junior-notes',
   image: 'node20' as const,
 });
 

@@ -1,0 +1,7 @@
+{
+  "name": "notes-api",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "vitest run tests/visible" },
+  "devDependencies": { "supertest": "7.3.1", "vitest": "4.1.11" }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "be-webapi-junior-notes",
+  "subcategoryId": "backend.web-api",
+  "specialization": "backend",
+  "grade": "junior",
+  "title": "HTTP API заметок: три эндпоинта по контракту",
+  "summary": "HTTP API заметок на чистом Node: GET /health, POST /notes, GET /notes/:id, валидация и 404",
+  "stack": [
+    "node20",
+    "javascript",
+    "http"
+  ],
+  "catalogIds": [
+    "be.rest-design",
+    "be.api-validation",
+    "be.error-handling"
+  ],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "timeLimitSec": 60,
+  "timeBudgetMin": 90,
+  "platformOwned": [
+    "contract.md",
+    "tests/visible/**",
+    ".platform-tests/**"
+  ]
+}

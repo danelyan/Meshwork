@@ -9,7 +9,7 @@ import { ownedPrefix } from '../../../runner/src/templates';
 const valid = {
   repoTarballUrl: `upload:${'a'.repeat(32)}`,
   commitSha: 'ABCDEF1',
-  testsBundleRef: 'backend-junior-api',
+  testsBundleRef: 'be-webapi-junior-notes',
   image: 'node20',
   timeoutSec: 60,
 };
@@ -33,8 +33,8 @@ describe('runner contract: POST /run', () => {
   });
 
   it('testsBundleRef: hidden по умолчанию, visible явно', () => {
-    expect(parseBundleRef('backend-junior-api')).toEqual({ templateId: 'backend-junior-api', suite: 'hidden' });
-    expect(parseBundleRef('backend-junior-api:visible')).toEqual({ templateId: 'backend-junior-api', suite: 'visible' });
+    expect(parseBundleRef('be-webapi-junior-notes')).toEqual({ templateId: 'be-webapi-junior-notes', suite: 'hidden' });
+    expect(parseBundleRef('be-webapi-junior-notes:visible')).toEqual({ templateId: 'be-webapi-junior-notes', suite: 'visible' });
     expect(parseBundleRef('x:secret')).toBeNull();
   });
 

@@ -8,8 +8,8 @@
 
 | id | Спец × грейд | Что проверяется | Тестов (видимых / скрытых) |
 | --- | --- | --- | --- |
-| `backend-junior-api` | backend × junior | HTTP API заметок: `GET /health`, `POST /notes`, `GET /notes/:id`, валидация, 404 | 3 / 13 |
-| `frontend-junior-widget` | frontend × junior | React-компонент «список с фильтром»: доступные роли, фильтр, счётчик, пустое состояние, кнопка сброса и фокус | 2 / 9 |
+| `be-webapi-junior-notes` | backend × junior | HTTP API заметок: `GET /health`, `POST /notes`, `GET /notes/:id`, валидация, 404 | 3 / 13 |
+| `fe-uiapp-junior-widget` | frontend × junior | React-компонент «список с фильтром»: доступные роли, фильтр, счётчик, пустое состояние, кнопка сброса и фокус | 2 / 9 |
 
 ## Каталог шаблона
 

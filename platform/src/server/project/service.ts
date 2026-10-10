@@ -348,9 +348,30 @@ async function myState(candidateId: string, taskIds: string[], now = new Date())
 }
 
 /**
+ * Подкатегория кандидата для сортировки ленты: подтверждённая категория (последняя), иначе выбранная в
+ * онбординге (Candidate.subcategoryId). Ничего нет — null, лента сортируется только по направлению.
+ */
+export async function preferredSubcategoryId(candidateId: string): Promise<string | null> {
+  const [cat, cand] = await Promise.all([
+    prisma.candidateCategory.findFirst({ where: { candidateId, subcategoryId: { not: null } }, orderBy: { confirmedAt: 'desc' }, select: { subcategoryId: true } }),
+    prisma.candidate.findUnique({ where: { id: candidateId }, select: { subcategoryId: true } }),
+  ]);
+  return cat?.subcategoryId ?? cand?.subcategoryId ?? null;
+}
+
+/** Порядок в ленте: взятые → своя подкатегория → соседние того же направления → остальные (приглашения). */
+export function feedRank(item: { my: { taken: boolean }; subcategoryId: string | null; specialization: string }, scope: { specialization: string | null }, pref: string | null): number {
+  if (item.my.taken) return 0;
+  if (pref && item.subcategoryId === pref) return 1;
+  if (scope.specialization && item.specialization === scope.specialization) return 2;
+  return 3;
+}
+
+/**
  * Лента (ADR 0003, п. 6): открытые задания направления кандидата (из теста, иначе заявленного), грейд —
- * по категории из теста; задания по приглашению — только приглашённым. Подкатегория кандидата — приоритет
- * в сортировке (поле Candidate.subcategoryId появится с лейном directions — интегратор передаст его сюда).
+ * по категории из теста, не выше; задания по приглашению — только приглашённым. Порядок — feedRank:
+ * подкатегория кандидата (opts.preferredSubcategoryId, см. preferredSubcategoryId) важнее соседних
+ * подкатегорий того же направления; внутри уровня — новые выше.
  */
 export async function listFeed(candidateId: string, opts: { preferredSubcategoryId?: string | null } = {}): Promise<{ items: FeedItem[]; scope: CandidateScope; limit: { maxActive: number; active: number } }> {
   const scope = await candidateScope(candidateId);
@@ -374,7 +395,7 @@ export async function listFeed(candidateId: string, opts: { preferredSubcategory
   const items = tasks
     .filter((t) => getTemplate(t.templateId))
     .map((t) => feedItem(t, invitedVacancies.includes(t.vacancyId), state(t.id)))
-    .sort((a, b) => Number(b.my.taken) - Number(a.my.taken) || Number(b.subcategoryId === pref && !!pref) - Number(a.subcategoryId === pref && !!pref));
+    .sort((a, b) => feedRank(a, scope, pref) - feedRank(b, scope, pref));
   const active = await countActive(candidateId);
   return { items, scope, limit: { maxActive: PROJECT_MAX_ACTIVE, active } };
 }

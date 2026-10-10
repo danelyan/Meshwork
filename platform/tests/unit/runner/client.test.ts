@@ -14,7 +14,7 @@ const doneResult = {
   logTail: '',
   durationMs: 900,
   exitCode: 0,
-  testsBundleRef: 'backend-junior-api',
+  testsBundleRef: 'be-webapi-junior-notes',
   commitSha: 'abcdef1',
   image: 'node20',
   createdAt: '2026-10-10T12:00:00.000Z',
@@ -53,7 +53,7 @@ describe('runner client: submitRun / getRun', () => {
     });
     const downloadTarball = vi.fn(async () => new Uint8Array([1, 2, 3]));
     const res = await submitRun(
-      { source: { kind: 'github', repoUrl: 'https://github.com/octo/notes-api' }, commitSha: 'ABCDEF1', testsBundleRef: 'backend-junior-api', image: 'node20' },
+      { source: { kind: 'github', repoUrl: 'https://github.com/octo/notes-api' }, commitSha: 'ABCDEF1', testsBundleRef: 'be-webapi-junior-notes', image: 'node20' },
       { baseUrl: 'http://runner:8090/', token, fetch: fetchMock as unknown as typeof fetch, downloadTarball },
     );
     expect(res).toEqual({ jobId: 'b'.repeat(32) });
@@ -63,7 +63,7 @@ describe('runner client: submitRun / getRun', () => {
     expect(JSON.parse(String(calls[1]!.init.body))).toEqual({
       repoTarballUrl: `upload:${'a'.repeat(32)}`,
       commitSha: 'abcdef1',
-      testsBundleRef: 'backend-junior-api',
+      testsBundleRef: 'be-webapi-junior-notes',
       image: 'node20',
     });
   });
@@ -71,7 +71,7 @@ describe('runner client: submitRun / getRun', () => {
   it('не на GitHub — 400 до скачивания', async () => {
     await expect(
       submitRun(
-        { source: { kind: 'github', repoUrl: 'https://evil.example/x' }, commitSha: 'abcdef1', testsBundleRef: 'backend-junior-api', image: 'node20' },
+        { source: { kind: 'github', repoUrl: 'https://evil.example/x' }, commitSha: 'abcdef1', testsBundleRef: 'be-webapi-junior-notes', image: 'node20' },
         { baseUrl: 'http://runner:8090', token, fetch: vi.fn() as unknown as typeof fetch },
       ),
     ).rejects.toMatchObject({ code: 'bad_request', status: 400 });

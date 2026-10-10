@@ -86,7 +86,7 @@ describe('проект под работодателя: лента и сдача
   it('шаблоны: работодателю — список с подкатегориями; кандидату — 403', async () => {
     const res = await templatesRoute(jsonRequest('/api/employer/project-templates?specialization=backend', 'GET', undefined, EMP));
     const body = await res.json();
-    expect(body.templates.map((t: { id: string }) => t.id).sort()).toEqual(['be-integrations-middle-delivery', 'be-integrations-senior-outbox', 'be-webapi-junior-booking', 'be-webapi-middle-orders', 'be-webapi-senior-ratelimit']);
+    expect(body.templates.map((t: { id: string }) => t.id).sort()).toEqual(['be-integrations-middle-delivery', 'be-integrations-senior-outbox', 'be-webapi-junior-booking', 'be-webapi-junior-notes', 'be-webapi-middle-orders', 'be-webapi-senior-ratelimit']);
     expect(body.templates[0].tests.hidden).toBeGreaterThan(body.templates[0].tests.visible);
     expect((await templatesRoute(jsonRequest('/x', 'GET', undefined, cand('p-be')))).status).toBe(403);
   });
@@ -265,6 +265,36 @@ describe('проект под работодателя: лента и сдача
     expect(await ids('p-mid')).toEqual(expect.arrayContaining([mid, taskId]));
     expect(await ids('p-be')).not.toContain(mid);
     expect(await ids('p-nodir')).toEqual([]);
+  });
+
+  it('лента: своя подкатегория выше соседних того же направления; грейд не выше категории', async () => {
+    // У be-m-1 шаблон по умолчанию — backend.integrations (первый Middle в алфавите); добавляем Middle под web-api.
+    await prisma.vacancy.create({
+      data: { id: 'demo-vac-be-m-web', companyId: 'demo-co-northstream', title: 'Web API (Middle)', specialization: 'backend', grade: 'middle', subcategoryId: 'backend.web-api', salaryFrom: 150000, salaryTo: 200000, needs: [], stack: ['Node.js'] },
+    });
+    const web = await upsertProjectTask({ companyId: 'demo-co-northstream', companyName: COMPANY }, 'demo-vac-be-m-web', { requiredCatalogIds: [], wishesText: null, visibility: 'open', subcategoryId: 'backend.web-api' });
+    expect(web.template.id).toBe('be-webapi-middle-orders');
+
+    const makePref = async (id: string, subcategoryId: string | null) => {
+      await makeCandidate(id, 'backend', 'middle');
+      await prisma.candidateCategory.updateMany({ where: { candidateId: id }, data: { subcategoryId } });
+    };
+    await makePref('p-pref-int', 'backend.integrations');
+    await makePref('p-pref-web', 'backend.web-api');
+    // Подкатегория только из онбординга (категории из теста с подкатегорией нет) — тоже работает.
+    await makeCandidate('p-onb-int', 'backend', 'middle');
+    await prisma.candidate.update({ where: { id: 'p-onb-int' }, data: { subcategoryId: 'backend.integrations' } });
+
+    const subs = async (who: string) => ((await (await feed(jsonRequest('/x', 'GET', undefined, cand(who)))).json()).items as { subcategoryId: string }[]).map((i) => i.subcategoryId);
+    const a = await subs('p-pref-int');
+    expect(a[0]).toBe('backend.integrations');
+    expect(a.slice(1).every((x) => x === 'backend.web-api')).toBe(true);
+    const b = await subs('p-pref-web');
+    expect(b.at(-1)).toBe('backend.integrations');
+    expect(b.slice(0, -1).every((x) => x === 'backend.web-api')).toBe(true);
+    expect((await subs('p-onb-int'))[0]).toBe('backend.integrations');
+    // Все три видят одно и то же множество (Junior и Middle своего направления) — порядок разный.
+    expect([...a].sort()).toEqual([...b].sort());
   });
 
   it('две параллельные сдачи одного задания: одна принята, вторая — 409', async () => {

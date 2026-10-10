@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 
-// Эталонное решение шаблона frontend-junior-widget (фикстура тестов runner).
+// Эталонное решение шаблона fe-uiapp-junior-widget (фикстура тестов runner).
 export default function FilterList({ items, placeholder = 'Поиск' }) {
   const [query, setQuery] = useState('');
   const input = useRef(null);

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-// Эталонное решение шаблона backend-junior-api (фикстура тестов runner).
+// Эталонное решение шаблона be-webapi-junior-notes (фикстура тестов runner).
 function send(res, status, body) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));

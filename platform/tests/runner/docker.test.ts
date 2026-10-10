@@ -69,16 +69,16 @@ describe.runIf(process.env.RUNNER_DOCKER === '1')('runner в Docker (смена 
     writeFileSync(
       path.join(dir, 'cases.json'),
       JSON.stringify([
-        { name: 'correct', file: 'correct.tgz', bundle: 'backend-junior-api' },
-        { name: 'frontend', file: 'frontend.tgz', bundle: 'frontend-junior-widget' },
-        { name: 'loop', file: 'loop.tgz', bundle: 'backend-junior-api', timeoutSec: 5 },
-        { name: 'fetch', file: 'fetch.tgz', bundle: 'backend-junior-api' },
-        { name: 'tamper', file: 'tamper.tgz', bundle: 'backend-junior-api' },
-        { name: 'probe', file: 'probe.tgz', bundle: 'backend-junior-api' },
-        { name: 'after', file: 'after.tgz', bundle: 'backend-junior-api' },
-        { name: 'reportSymlink', file: 'report-symlink.tgz', bundle: 'backend-junior-api' },
-        { name: 'reportFifo', file: 'report-fifo.tgz', bundle: 'backend-junior-api', timeoutSec: 10 },
-        { name: 'afterFifo', file: 'correct.tgz', bundle: 'backend-junior-api' },
+        { name: 'correct', file: 'correct.tgz', bundle: 'be-webapi-junior-notes' },
+        { name: 'frontend', file: 'frontend.tgz', bundle: 'fe-uiapp-junior-widget' },
+        { name: 'loop', file: 'loop.tgz', bundle: 'be-webapi-junior-notes', timeoutSec: 5 },
+        { name: 'fetch', file: 'fetch.tgz', bundle: 'be-webapi-junior-notes' },
+        { name: 'tamper', file: 'tamper.tgz', bundle: 'be-webapi-junior-notes' },
+        { name: 'probe', file: 'probe.tgz', bundle: 'be-webapi-junior-notes' },
+        { name: 'after', file: 'after.tgz', bundle: 'be-webapi-junior-notes' },
+        { name: 'reportSymlink', file: 'report-symlink.tgz', bundle: 'be-webapi-junior-notes' },
+        { name: 'reportFifo', file: 'report-fifo.tgz', bundle: 'be-webapi-junior-notes', timeoutSec: 10 },
+        { name: 'afterFifo', file: 'correct.tgz', bundle: 'be-webapi-junior-notes' },
       ]),
     );
     writeFileSync(path.join(dir, 'client.mjs'), readFileSync(path.resolve('tests/runner/docker-client.mjs')));

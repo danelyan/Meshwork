@@ -1,0 +1,8 @@
+{
+  "name": "filter-list-widget",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "vitest run tests/visible --environment jsdom" },
+  "dependencies": { "react": "19.3.0", "react-dom": "19.3.0" },
+  "devDependencies": { "@testing-library/dom": "10.4.2", "@testing-library/react": "16.3.3", "jsdom": "26.1.0", "vitest": "4.1.11" }
+}

@@ -539,11 +539,12 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             inputRef={inputRef}
             sendLabel={cur.kind === 'chips' ? 'Добавить' : 'Отправить'}
             allowEmpty={cur.kind === 'files' && att.ready.length > 0}
-            aside={
-              !cur.required && ready ? (
-                <QuietAction onClick={skip} disabled={busy}>
-                  Пропустить
-                </QuietAction>
+            top={
+              // над полем и только пока виден вопрос шага (тот же признак, что у виджета шага выше)
+              !cur.required && ready && !busy && !asides.asking ? (
+                <div className={styles.skipRow}>
+                  <QuietAction onClick={skip}>Пропустить вопрос</QuietAction>
+                </div>
               ) : undefined
             }
             hint={composerHint}

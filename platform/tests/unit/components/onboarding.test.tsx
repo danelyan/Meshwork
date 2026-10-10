@@ -83,15 +83,15 @@ it('чип: ответ становится пузырём справа, чип�
   expect(sent(fetchFn as never)).toEqual({ action: 'answer', stepId: 'specialization', value: 'backend' });
 });
 
-it('«Пропустить» — тихая ссылка у поля ввода, шлёт skip; у обязательного шага её нет', async () => {
+it('«Пропустить вопрос» — тихая ссылка над полем ввода, шлёт skip; у обязательного шага её нет', async () => {
   const fetchFn = stubFetch(makeView({ id: 'grade', question: 'Грейд?' }));
   const { unmount } = render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Пропустить' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Пропустить вопрос' }));
   await waitFor(() => expect(question()).toBe('Грейд?'));
   expect(sent(fetchFn)).toEqual({ action: 'skip', stepId: 'specialization' });
   unmount();
   render(<OnboardingChat initial={makeView({ id: 'consent', kind: 'consent', required: true, question: 'Согласие?' })} consentText={['Я даю согласие']} />);
-  expect(screen.queryByRole('button', { name: 'Пропустить' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Пропустить вопрос' })).toBeNull();
   expect(screen.getByText('Я даю согласие')).toBeDefined();
   expect(screen.getByRole('link', { name: /странице согласия/ }).getAttribute('href')).toBe('/consent');
 });

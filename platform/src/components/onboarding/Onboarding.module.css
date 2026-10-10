@@ -29,6 +29,8 @@
   .inScene .topRow > button { padding-inline: 10px; }
     }
 .end { scroll-margin-bottom: 140px; }
+/* «Пропустить вопрос» — над полем ввода, справа */
+.skipRow { display: flex; justify-content: flex-end; }
 /* аватар компаньона: на широком экране закреплён слева под шапкой онбординга (60px) */
 .stage { --dock-top: 84px; }
 

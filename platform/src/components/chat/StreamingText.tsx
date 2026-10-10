@@ -9,7 +9,7 @@ import { type RevealMode, stepReveal, visibleCut } from './smooth-text';
 import styles from './thread.module.css';
 
 /** Сколько свежий кусок проявляется (= анимация `.fresh` в thread.module.css). */
-const FRESH_MS = 220;
+const FRESH_MS = 450;
 
 interface Mark {
   len: number;

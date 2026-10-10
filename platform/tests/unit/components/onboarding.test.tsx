@@ -322,7 +322,7 @@ describe('появление реплики', () => {
     expect(screen.queryByTestId('quick-replies')).toBeNull();
     act(() => vi.advanceTimersByTime(typingMs('Кто ты?'.length)));
     expect(screen.queryByTestId('typing')).toBeNull();
-    act(() => vi.advanceTimersByTime(32));
+    act(() => vi.advanceTimersByTime(80));
     expect(question()?.trim()).toBe('Кто');
     expect(screen.queryByTestId('quick-replies')).toBeNull();
     act(() => vi.advanceTimersByTime(1000));
@@ -334,7 +334,7 @@ describe('появление реплики', () => {
     stubFetch();
     render(<OnboardingChat initial={makeView({ options: OPTS, lead: '', question: 'Длинный вопрос про направление' })} consentText={[]} />);
     act(() => vi.advanceTimersByTime(typingMs('Длинный вопрос про направление'.length)));
-    act(() => vi.advanceTimersByTime(80));
+    act(() => vi.advanceTimersByTime(200));
     expect(screen.queryByTestId('quick-replies')).toBeNull();
     fireEvent.click(document.getElementById('ob-q')!);
     expect(question()).toBe('Длинный вопрос про направление');

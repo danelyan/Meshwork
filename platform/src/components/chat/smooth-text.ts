@@ -2,22 +2,25 @@
  * Арифметика плавного раскрытия текста (стрим консультанта/помощника, реплики онбординга).
  * Чистые функции без DOM — покрыты unit-тестами.
  *
- * Курсор `pos` догоняет длину цели со скоростью max(пол, отставание / τ): большой кусок
- * раскрывается быстро и замедляется к концу, маленький — не медленнее пола. Пока поток идёт,
- * τ ≈ 0,6 с (отстаём от источника не больше чем на полсекунды); после `done` хвост дописывается
- * за ≈ 0,2 с. `paced` — для текста, известного целиком: постоянная «читаемая» скорость.
+ * Курсор `pos` догоняет длину цели с «человеческой» скоростью (решение владельца 10.10: стрим был
+ * слишком быстрым, выглядел искусственно): отставание / τ, но в пределах 45–110 зн/с, пока поток идёт;
+ * после `done` хвост дописывается так же, не быстрее 110 зн/с (без рывка в конце). Чтобы длинный ответ
+ * не отставал бесконечно, отставание держится не больше ~6 с. `paced` — для текста, известного целиком:
+ * реплика раскрывается примерно за 4 с, 70–140 зн/с.
  * Видимая граница — по целым словам, чтобы слово не рвалось посередине.
  */
 export type RevealMode = 'streaming' | 'settling' | 'paced';
 
-const STREAM_TAU_S = 0.6;
-const STREAM_MIN_CPS = 60;
-const SETTLE_TAU_S = 0.2;
-const SETTLE_MIN_CPS = 400;
-/** Готовая реплика раскрывается примерно за 2,5 с: не медленнее 160 и не быстрее 700 зн/с. */
-const PACED_TARGET_S = 2.5;
-const PACED_MIN_CPS = 160;
-const PACED_MAX_CPS = 700;
+const STREAM_TAU_S = 2.5;
+const STREAM_MIN_CPS = 45;
+const SETTLE_MIN_CPS = 70;
+const STREAM_MAX_CPS = 110;
+/** Больше этого текст не отстаёт от источника: длинный ответ раскрывается быстрее потолка. */
+const MAX_LAG_S = 6;
+/** Готовая реплика раскрывается примерно за 4 с: не медленнее 70 и не быстрее 140 зн/с. */
+const PACED_TARGET_S = 4;
+const PACED_MIN_CPS = 70;
+const PACED_MAX_CPS = 140;
 /** Кадр, пришедший с опозданием (главный поток занят), не двигает курсор больше чем на 50 мс. */
 export const MAX_FRAME_DT_MS = 50;
 /** Длинное «слово» (URL) не держим целиком — показываем по символам. */
@@ -25,8 +28,9 @@ const LONG_WORD = 24;
 
 export function revealRateCps(mode: RevealMode, backlog: number, total: number): number {
   if (mode === 'paced') return Math.min(PACED_MAX_CPS, Math.max(PACED_MIN_CPS, total / PACED_TARGET_S));
-  if (mode === 'settling') return Math.max(SETTLE_MIN_CPS, backlog / SETTLE_TAU_S);
-  return Math.max(STREAM_MIN_CPS, backlog / STREAM_TAU_S);
+  const floor = mode === 'settling' ? SETTLE_MIN_CPS : STREAM_MIN_CPS;
+  const cps = Math.min(STREAM_MAX_CPS, Math.max(floor, backlog / STREAM_TAU_S));
+  return Math.max(cps, backlog / MAX_LAG_S);
 }
 
 /** Новый курсор после кадра длительностью dtMs. */

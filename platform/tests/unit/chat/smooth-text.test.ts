@@ -3,12 +3,16 @@ import { MAX_FRAME_DT_MS, revealRateCps, stepReveal, visibleCut } from '@/compon
 import { extractUrls } from '@/lib/links';
 
 describe('smooth-text: раскрытие текста', () => {
-  it('скорость: стрим догоняет отставание за ~0,6 с, но не медленнее пола; paced ограничен', () => {
-    expect(revealRateCps('streaming', 600, 600)).toBe(1000);
-    expect(revealRateCps('streaming', 6, 6)).toBe(60);
-    expect(revealRateCps('settling', 40, 40)).toBe(400);
-    expect(revealRateCps('paced', 0, 100)).toBe(160);
-    expect(revealRateCps('paced', 0, 10_000)).toBe(700);
+  it('скорость: человеческий темп 45–110 зн/с, отставание не больше 6 с; paced — около 4 с в пределах 70–140', () => {
+    expect(revealRateCps('streaming', 100, 100)).toBe(45);
+    expect(revealRateCps('streaming', 200, 200)).toBe(80);
+    expect(revealRateCps('streaming', 500, 500)).toBe(110);
+    expect(revealRateCps('streaming', 1200, 1200)).toBe(200);
+    expect(revealRateCps('settling', 40, 40)).toBe(70);
+    expect(revealRateCps('settling', 600, 600)).toBe(110);
+    expect(revealRateCps('paced', 0, 100)).toBe(70);
+    expect(revealRateCps('paced', 0, 400)).toBe(100);
+    expect(revealRateCps('paced', 0, 10_000)).toBe(140);
   });
 
   it('кадр с опозданием не двигает курсор больше чем на 50 мс', () => {

@@ -1,0 +1,1807 @@
+{
+  "stage": 1,
+  "provider": "DeepSeek V4 Flash (Yandex)/gpt://b1g8c7gaanu3tnh3475r/deepseek-v4-flash",
+  "stub": false,
+  "runAt": "2026-10-10T22:01:25.434Z",
+  "calls": 2,
+  "summaries": [
+    {
+      "persona": "A",
+      "calls": 2,
+      "failedCalls": 0,
+      "confirmedShare": 1,
+      "matchRate": 1,
+      "matched": 8,
+      "judged": 8,
+      "coverage": 1,
+      "inconclusive": 0,
+      "wrongDecisions": 0,
+      "retoldQuestions": 0,
+      "avgProbeQuestions": 0,
+      "avgEvaluatorRuns": 5,
+      "topics": [
+        {
+          "catalogId": "be.rest-design",
+          "topic": "Проектировал REST API: ресурсы, методы, коды ошибок, пагинация, версионирование",
+          "expected": true,
+          "got": [
+            true,
+            true
+          ],
+          "totals": [
+            6,
+            6
+          ]
+        },
+        {
+          "catalogId": "be.sql-schema",
+          "topic": "Проектировал схему реляционной БД: нормализация, ключи, ограничения целостности",
+          "expected": true,
+          "got": [
+            true,
+            true
+          ],
+          "totals": [
+            6,
+            6
+          ]
+        },
+        {
+          "catalogId": "be.authz",
+          "topic": "Проверял права доступа к объекту: роли, проверка владельца, защита от IDOR",
+          "expected": true,
+          "got": [
+            true,
+            true
+          ],
+          "totals": [
+            7,
+            7
+          ]
+        },
+        {
+          "catalogId": "be.integration-tests",
+          "topic": "Писал интеграционные тесты сервиса с реальной БД в контейнере и тесты API",
+          "expected": true,
+          "got": [
+            true,
+            true
+          ],
+          "totals": [
+            7,
+            5
+          ]
+        }
+      ],
+      "withinSpreadMean": 1.875,
+      "withinSpreadMax": 4,
+      "withinPassAgreement": 0.875,
+      "betweenAgreement": 1,
+      "betweenSpreadMean": 0.5,
+      "avgQuestions": 5,
+      "avgPlatformCalls": 11,
+      "avgPersonaCalls": 5,
+      "avgPlatformTokens": 38053,
+      "fallbackQuestions": 0
+    },
+    {
+      "persona": "B",
+      "calls": 2,
+      "failedCalls": 0,
+      "confirmedShare": 0,
+      "matchRate": 1,
+      "matched": 6,
+      "judged": 6,
+      "coverage": 1,
+      "inconclusive": 0,
+      "wrongDecisions": 0,
+      "retoldQuestions": 0,
+      "avgProbeQuestions": 0,
+      "avgEvaluatorRuns": 3,
+      "topics": [
+        {
+          "catalogId": "be.rest-design",
+          "topic": "Проектировал REST API: ресурсы, методы, коды ошибок, пагинация, версионирование",
+          "expected": false,
+          "got": [
+            false,
+            false
+          ],
+          "totals": [
+            2,
+            3
+          ]
+        },
+        {
+          "catalogId": "be.sql-schema",
+          "topic": "Проектировал схему реляционной БД: нормализация, ключи, ограничения целостности",
+          "expected": false,
+          "got": [
+            false,
+            false
+          ],
+          "totals": [
+            2,
+            4
+          ]
+        },
+        {
+          "catalogId": "be.cache",
+          "topic": "Кэшировал данные: стратегия, TTL, инвалидация, защита от «лавины» промахов",
+          "expected": false,
+          "got": [
+            false,
+            false
+          ],
+          "totals": [
+            2,
+            3
+          ]
+        }
+      ],
+      "withinSpreadMean": 1.5,
+      "withinSpreadMax": 2,
+      "withinPassAgreement": 1,
+      "betweenAgreement": 1,
+      "betweenSpreadMean": 1.3333333333333333,
+      "avgQuestions": 5,
+      "avgPlatformCalls": 9,
+      "avgPersonaCalls": 5,
+      "avgPlatformTokens": 25235,
+      "fallbackQuestions": 0
+    },
+    {
+      "persona": "C",
+      "calls": 2,
+      "failedCalls": 0,
+      "confirmedShare": 0,
+      "matchRate": 1,
+      "matched": 8,
+      "judged": 8,
+      "coverage": 1,
+      "inconclusive": 0,
+      "wrongDecisions": 0,
+      "retoldQuestions": 0,
+      "avgProbeQuestions": 0,
+      "avgEvaluatorRuns": 4,
+      "topics": [
+        {
+          "catalogId": "be.message-queue",
+          "topic": "Обрабатывал сообщения из брокера: подтверждение, повторная доставка, порядок, DLQ",
+          "expected": false,
+          "got": [
+            false,
+            false
+          ],
+          "totals": [
+            4,
+            4
+          ]
+        },
+        {
+          "catalogId": "be.idempotency",
+          "topic": "Делал обработку повторных запросов идемпотентной: ключ идемпотентности, уникальное ограничение",
+          "expected": false,
+          "got": [
+            false,
+            false
+          ],
+          "totals": [
+            4,
+            4
+          ]
+        },
+        {
+          "catalogId": "be.distributed-consistency",
+          "topic": "Согласовывал данные между сервисами: transactional outbox, saga, компенсации",
+          "expected": false,
+          "got": [
+            false,
+            false
+          ],
+          "totals": [
+            4,
+            4
+          ]
+        },
+        {
+          "catalogId": "be.cache",
+          "topic": "Кэшировал данные: стратегия, TTL, инвалидация, защита от «лавины» промахов",
+          "expected": false,
+          "got": [
+            false,
+            false
+          ],
+          "totals": [
+            4,
+            4
+          ]
+        }
+      ],
+      "withinSpreadMean": 0.625,
+      "withinSpreadMax": 2,
+      "withinPassAgreement": 0.875,
+      "betweenAgreement": 1,
+      "betweenSpreadMean": 0,
+      "avgQuestions": 5.5,
+      "avgPlatformCalls": 10.5,
+      "avgPersonaCalls": 5.5,
+      "avgPlatformTokens": 33933,
+      "fallbackQuestions": 0
+    },
+    {
+      "persona": "D",
+      "calls": 2,
+      "failedCalls": 0,
+      "confirmedShare": 0.75,
+      "matchRate": 1,
+      "matched": 8,
+      "judged": 8,
+      "coverage": 1,
+      "inconclusive": 0,
+      "wrongDecisions": 0,
+      "retoldQuestions": 0,
+      "avgProbeQuestions": 0.5,
+      "avgEvaluatorRuns": 5.5,
+      "topics": [
+        {
+          "catalogId": "be.sql-indexes",
+          "topic": "Подбирал индексы и читал план запроса (EXPLAIN)",
+          "expected": true,
+          "got": [
+            true,
+            true
+          ],
+          "totals": [
+            6,
+            6
+          ]
+        },
+        {
+          "catalogId": "be.transactions",
+          "topic": "Использовал транзакции, выбирал уровень изоляции и знаю его аномалии",
+          "expected": true,
+          "got": [
+            true,
+            true
+          ],
+          "totals": [
+            8,
+            6
+          ]
+        },
+        {
+          "catalogId": "be.idempotency",
+          "topic": "Делал обработку повторных запросов идемпотентной: ключ идемпотентности, уникальное ограничение",
+          "expected": true,
+          "got": [
+            true,
+            true
+          ],
+          "totals": [
+            5,
+            6
+          ]
+        },
+        {
+          "catalogId": "be.message-queue",
+          "topic": "Обрабатывал сообщения из брокера: подтверждение, повторная доставка, порядок, DLQ",
+          "expected": false,
+          "got": [
+            false,
+            false
+          ],
+          "totals": [
+            2,
+            1
+          ]
+        }
+      ],
+      "withinSpreadMean": 1,
+      "withinSpreadMax": 2,
+      "withinPassAgreement": 1,
+      "betweenAgreement": 1,
+      "betweenSpreadMean": 1,
+      "avgQuestions": 5.5,
+      "avgPlatformCalls": 12,
+      "avgPersonaCalls": 5.5,
+      "avgPlatformTokens": 40202,
+      "fallbackQuestions": 0
+    }
+  ],
+  "observations": [
+    {
+      "persona": "A",
+      "call": 1,
+      "sessionId": "cmv2xp4ay0003zmkhdxwun9ze",
+      "questions": 5,
+      "fallbackQuestions": 0,
+      "validRuns": 5,
+      "topics": [
+        {
+          "topic": "Проверял права доступа к объекту: роли, проверка владельца, защита от IDOR",
+          "catalogId": "be.authz",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 7,
+          "probed": 2,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            }
+          ]
+        },
+        {
+          "topic": "Писал интеграционные тесты сервиса с реальной БД в контейнере и тесты API",
+          "catalogId": "be.integration-tests",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 7,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 0,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 0,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            }
+          ]
+        },
+        {
+          "topic": "Проектировал REST API: ресурсы, методы, коды ошибок, пагинация, версионирование",
+          "catalogId": "be.rest-design",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 6,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Проектировал схему реляционной БД: нормализация, ключи, ограничения целостности",
+          "catalogId": "be.sql-schema",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 6,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            }
+          ]
+        }
+      ],
+      "retoldQuestions": 0,
+      "probeQuestions": 0,
+      "evaluatorRuns": 5,
+      "platform": {
+        "calls": 11,
+        "failures": 0,
+        "inputTokens": 28925,
+        "outputTokens": 8374,
+        "byPurpose": {
+          "call_interviewer": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 17525,
+            "outputTokens": 653
+          },
+          "call_evaluator": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 11400,
+            "outputTokens": 7721
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 6808,
+        "outputTokens": 836,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 6808,
+            "outputTokens": 836
+          }
+        }
+      }
+    },
+    {
+      "persona": "A",
+      "call": 2,
+      "sessionId": "cmv2xpww90013zmkhl1hfmyw2",
+      "questions": 5,
+      "fallbackQuestions": 0,
+      "validRuns": 5,
+      "topics": [
+        {
+          "topic": "Проверял права доступа к объекту: роли, проверка владельца, защита от IDOR",
+          "catalogId": "be.authz",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 7,
+          "probed": 2,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            }
+          ]
+        },
+        {
+          "topic": "Писал интеграционные тесты сервиса с реальной БД в контейнере и тесты API",
+          "catalogId": "be.integration-tests",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 5,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Проектировал REST API: ресурсы, методы, коды ошибок, пагинация, версионирование",
+          "catalogId": "be.rest-design",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 6,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Проектировал схему реляционной БД: нормализация, ключи, ограничения целостности",
+          "catalogId": "be.sql-schema",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 6,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            }
+          ]
+        }
+      ],
+      "retoldQuestions": 0,
+      "probeQuestions": 0,
+      "evaluatorRuns": 5,
+      "platform": {
+        "calls": 11,
+        "failures": 0,
+        "inputTokens": 29318,
+        "outputTokens": 9489,
+        "byPurpose": {
+          "call_interviewer": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 17638,
+            "outputTokens": 638
+          },
+          "call_evaluator": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 11680,
+            "outputTokens": 8851
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 6865,
+        "outputTokens": 892,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 6865,
+            "outputTokens": 892
+          }
+        }
+      }
+    },
+    {
+      "persona": "B",
+      "call": 1,
+      "sessionId": "cmv2xqsrr0023zmkh4os6nqyo",
+      "questions": 5,
+      "fallbackQuestions": 0,
+      "validRuns": 3,
+      "topics": [
+        {
+          "topic": "Кэшировал данные: стратегия, TTL, инвалидация, защита от «лавины» промахов",
+          "catalogId": "be.cache",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 2,
+          "probed": 2,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            }
+          ]
+        },
+        {
+          "topic": "Проектировал REST API: ресурсы, методы, коды ошибок, пагинация, версионирование",
+          "catalogId": "be.rest-design",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 2,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            }
+          ]
+        },
+        {
+          "topic": "Проектировал схему реляционной БД: нормализация, ключи, ограничения целостности",
+          "catalogId": "be.sql-schema",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 2,
+          "probed": 2,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            }
+          ]
+        }
+      ],
+      "retoldQuestions": 0,
+      "probeQuestions": 0,
+      "evaluatorRuns": 3,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 21870,
+        "outputTokens": 3138,
+        "byPurpose": {
+          "call_interviewer": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 16068,
+            "outputTokens": 681
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 5802,
+            "outputTokens": 2457
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 4827,
+        "outputTokens": 535,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 4827,
+            "outputTokens": 535
+          }
+        }
+      }
+    },
+    {
+      "persona": "B",
+      "call": 2,
+      "sessionId": "cmv2xr6pr002zzmkhkdmha54i",
+      "questions": 5,
+      "fallbackQuestions": 0,
+      "validRuns": 3,
+      "topics": [
+        {
+          "topic": "Кэшировал данные: стратегия, TTL, инвалидация, защита от «лавины» промахов",
+          "catalogId": "be.cache",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 3,
+          "probed": 2,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 1,
+              "completion": 0
+            }
+          ]
+        },
+        {
+          "topic": "Проектировал REST API: ресурсы, методы, коды ошибок, пагинация, версионирование",
+          "catalogId": "be.rest-design",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 3,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Проектировал схему реляционной БД: нормализация, ключи, ограничения целостности",
+          "catalogId": "be.sql-schema",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 2,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        }
+      ],
+      "retoldQuestions": 0,
+      "probeQuestions": 0,
+      "evaluatorRuns": 3,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 21505,
+        "outputTokens": 3957,
+        "byPurpose": {
+          "call_interviewer": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 15856,
+            "outputTokens": 669
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 5649,
+            "outputTokens": 3288
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 4666,
+        "outputTokens": 484,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 4666,
+            "outputTokens": 484
+          }
+        }
+      }
+    },
+    {
+      "persona": "C",
+      "call": 1,
+      "sessionId": "cmv2xro4d003vzmkha5vavxpm",
+      "questions": 6,
+      "fallbackQuestions": 0,
+      "validRuns": 5,
+      "topics": [
+        {
+          "topic": "Кэшировал данные: стратегия, TTL, инвалидация, защита от «лавины» промахов",
+          "catalogId": "be.cache",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 2,
+          "maxLevel": 3,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Делал обработку повторных запросов идемпотентной: ключ идемпотентности, уникальное ограничение",
+          "catalogId": "be.idempotency",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 2,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 0,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 0,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 0,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Обрабатывал сообщения из брокера: подтверждение, повторная доставка, порядок, DLQ",
+          "catalogId": "be.message-queue",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 1,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 0,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 0,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Согласовывал данные между сервисами: transactional outbox, saga, компенсации",
+          "catalogId": "be.distributed-consistency",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 1,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 0,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 0,
+              "completion": 1
+            }
+          ]
+        }
+      ],
+      "retoldQuestions": 0,
+      "probeQuestions": 0,
+      "evaluatorRuns": 5,
+      "platform": {
+        "calls": 12,
+        "failures": 0,
+        "inputTokens": 31555,
+        "outputTokens": 7621,
+        "byPurpose": {
+          "call_interviewer": {
+            "calls": 7,
+            "failures": 0,
+            "inputTokens": 20450,
+            "outputTokens": 722
+          },
+          "call_evaluator": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 11105,
+            "outputTokens": 6899
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 6,
+        "failures": 0,
+        "inputTokens": 7288,
+        "outputTokens": 723,
+        "byPurpose": {
+          "smoke": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 7288,
+            "outputTokens": 723
+          }
+        }
+      }
+    },
+    {
+      "persona": "C",
+      "call": 2,
+      "sessionId": "cmv2xsku4004zzmkhdqth5z58",
+      "questions": 5,
+      "fallbackQuestions": 0,
+      "validRuns": 3,
+      "topics": [
+        {
+          "topic": "Кэшировал данные: стратегия, TTL, инвалидация, защита от «лавины» промахов",
+          "catalogId": "be.cache",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 2,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Делал обработку повторных запросов идемпотентной: ключ идемпотентности, уникальное ограничение",
+          "catalogId": "be.idempotency",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Обрабатывал сообщения из брокера: подтверждение, повторная доставка, порядок, DLQ",
+          "catalogId": "be.message-queue",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Согласовывал данные между сервисами: transactional outbox, saga, компенсации",
+          "catalogId": "be.distributed-consistency",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 4,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        }
+      ],
+      "retoldQuestions": 0,
+      "probeQuestions": 0,
+      "evaluatorRuns": 3,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 24106,
+        "outputTokens": 4584,
+        "byPurpose": {
+          "call_interviewer": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 17419,
+            "outputTokens": 610
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 6687,
+            "outputTokens": 3974
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 6010,
+        "outputTokens": 783,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 6010,
+            "outputTokens": 783
+          }
+        }
+      }
+    },
+    {
+      "persona": "D",
+      "call": 1,
+      "sessionId": "cmv2xtdox005vzmkheu2q6bf7",
+      "questions": 5,
+      "fallbackQuestions": 0,
+      "validRuns": 3,
+      "topics": [
+        {
+          "topic": "Делал обработку повторных запросов идемпотентной: ключ идемпотентности, уникальное ограничение",
+          "catalogId": "be.idempotency",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 5,
+          "probed": 2,
+          "maxLevel": 3,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Обрабатывал сообщения из брокера: подтверждение, повторная доставка, порядок, DLQ",
+          "catalogId": "be.message-queue",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 2,
+          "probed": 1,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 2,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 2,
+              "completion": 0
+            }
+          ]
+        },
+        {
+          "topic": "Подбирал индексы и читал план запроса (EXPLAIN)",
+          "catalogId": "be.sql-indexes",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 6,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            }
+          ]
+        },
+        {
+          "topic": "Использовал транзакции, выбирал уровень изоляции и знаю его аномалии",
+          "catalogId": "be.transactions",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 8,
+          "probed": 1,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        }
+      ],
+      "retoldQuestions": 0,
+      "probeQuestions": 0,
+      "evaluatorRuns": 3,
+      "platform": {
+        "calls": 9,
+        "failures": 0,
+        "inputTokens": 24189,
+        "outputTokens": 6140,
+        "byPurpose": {
+          "call_interviewer": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 17298,
+            "outputTokens": 643
+          },
+          "call_evaluator": {
+            "calls": 3,
+            "failures": 0,
+            "inputTokens": 6891,
+            "outputTokens": 5497
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 5,
+        "failures": 0,
+        "inputTokens": 6455,
+        "outputTokens": 840,
+        "byPurpose": {
+          "smoke": {
+            "calls": 5,
+            "failures": 0,
+            "inputTokens": 6455,
+            "outputTokens": 840
+          }
+        }
+      }
+    },
+    {
+      "persona": "D",
+      "call": 2,
+      "sessionId": "cmv2xu266006rzmkh5wnd6gzw",
+      "questions": 6,
+      "fallbackQuestions": 0,
+      "validRuns": 8,
+      "topics": [
+        {
+          "topic": "Делал обработку повторных запросов идемпотентной: ключ идемпотентности, уникальное ограничение",
+          "catalogId": "be.idempotency",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "extraProbe": true,
+          "total": 6,
+          "probed": 3,
+          "maxLevel": 3,
+          "runs": [
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 1,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Обрабатывал сообщения из брокера: подтверждение, повторная доставка, порядок, DLQ",
+          "catalogId": "be.message-queue",
+          "expected": false,
+          "confirmed": false,
+          "status": "not_confirmed",
+          "total": 1,
+          "probed": 1,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 2,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 1,
+              "completion": 0
+            },
+            {
+              "why": 0,
+              "depth": 0,
+              "boundary": 1,
+              "completion": 0
+            }
+          ]
+        },
+        {
+          "topic": "Подбирал индексы и читал план запроса (EXPLAIN)",
+          "catalogId": "be.sql-indexes",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 6,
+          "probed": 1,
+          "maxLevel": 1,
+          "runs": [
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 2
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 1,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        },
+        {
+          "topic": "Использовал транзакции, выбирал уровень изоляции и знаю его аномалии",
+          "catalogId": "be.transactions",
+          "expected": true,
+          "confirmed": true,
+          "status": "confirmed",
+          "total": 6,
+          "probed": 1,
+          "maxLevel": 2,
+          "runs": [
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            {
+              "why": 2,
+              "depth": 2,
+              "boundary": 1,
+              "completion": 1
+            }
+          ]
+        }
+      ],
+      "retoldQuestions": 0,
+      "probeQuestions": 1,
+      "evaluatorRuns": 8,
+      "platform": {
+        "calls": 15,
+        "failures": 0,
+        "inputTokens": 38849,
+        "outputTokens": 11226,
+        "byPurpose": {
+          "call_interviewer": {
+            "calls": 7,
+            "failures": 0,
+            "inputTokens": 21447,
+            "outputTokens": 729
+          },
+          "call_evaluator": {
+            "calls": 8,
+            "failures": 0,
+            "inputTokens": 17402,
+            "outputTokens": 10497
+          }
+        }
+      },
+      "persona_llm": {
+        "calls": 6,
+        "failures": 0,
+        "inputTokens": 8851,
+        "outputTokens": 1110,
+        "byPurpose": {
+          "smoke": {
+            "calls": 6,
+            "failures": 0,
+            "inputTokens": 8851,
+            "outputTokens": 1110
+          }
+        }
+      }
+    }
+  ],
+  "totals": {
+    "platform": {
+      "calls": 85,
+      "failures": 0,
+      "inputTokens": 220317,
+      "outputTokens": 54529,
+      "byPurpose": {
+        "call_interviewer": {
+          "calls": 50,
+          "failures": 0,
+          "inputTokens": 143701,
+          "outputTokens": 5345
+        },
+        "call_evaluator": {
+          "calls": 35,
+          "failures": 0,
+          "inputTokens": 76616,
+          "outputTokens": 49184
+        }
+      }
+    },
+    "persona": {
+      "calls": 42,
+      "failures": 0,
+      "inputTokens": 51770,
+      "outputTokens": 6203,
+      "byPurpose": {
+        "smoke": {
+          "calls": 42,
+          "failures": 0,
+          "inputTokens": 51770,
+          "outputTokens": 6203
+        }
+      }
+    }
+  }
+}

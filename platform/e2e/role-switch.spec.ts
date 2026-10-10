@@ -13,24 +13,30 @@ test('E-05: кандидат становится работодателем н�
 
   const header = page.getByRole('banner');
   const account = header.getByRole('button', { name: /Аккаунт, активная роль/ });
+  // После полной навигации кнопка видна до гидратации и клик теряется — повторяем, пока панель не откроется.
+  const openAccount = () =>
+    expect(async () => {
+      if ((await account.getAttribute('aria-expanded')) !== 'true') await account.click();
+      await expect(account).toHaveAttribute('aria-expanded', 'true', { timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
   await expect(account).toContainText('Кандидат');
-  await account.click();
+  await openAccount();
   await header.getByRole('button', { name: 'Работодатель' }).click();
   await header.getByLabel('Название компании').fill('ООО Переключатель');
   await header.getByRole('button', { name: 'Создать' }).click();
 
   await page.waitForURL('**/consultant');
   await expect(account).toContainText('Работодатель', { timeout: 15_000 });
-  await account.click();
+  await openAccount();
   await expect(header.getByRole('button', { name: /^Работодатель · ООО Переключатель/ })).toHaveAttribute('aria-current', 'true');
   await page.keyboard.press('Escape');
   // Страница кандидата в режиме работодателя закрыта: редирект в профиль компании.
   await page.goto('/profile');
   await page.waitForURL('**/employer/company');
 
-  await account.click();
+  await openAccount();
   await header.getByRole('button', { name: 'Кандидат' }).click();
   await expect(account).toContainText('Кандидат', { timeout: 15_000 });
-  await account.click();
+  await openAccount();
   await expect(header.getByRole('button', { name: /Работодатель/ })).toBeVisible();
 });

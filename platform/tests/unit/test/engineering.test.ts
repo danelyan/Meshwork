@@ -35,31 +35,59 @@ import {
   retryAmplification,
   schemaTypes,
   secretsLeak,
+  groupHaving,
+  csvFields,
+  envPrecedence,
+  cronRuns,
+  locatorStability,
+  rerunReport,
+  counterReset,
+  escalation,
+  diagData,
+  diagDeploy,
+  diagTests,
+  diagLatency,
+  backfillNights,
+  consumerDuplicates,
+  lateWindow,
+  zoneCapacity,
+  rolloutBlast,
+  hpaReplicas,
+  retryBudget,
+  ciSharding,
+  mutationSurvivors,
+  dependencyBudget,
+  mm1Latency,
+  redundancyNodes,
 } from '@/server/test/generators/engineering';
 import { deriveSeed } from '@/server/test/rng';
 
 const SEEDS = Array.from({ length: 300 }, (_, i) => deriveSeed(20261010, i));
 
-/** Подкатегория → 4 Junior + 4 Middle семейства (ADR-0003, дополнение 10.10 15:50). */
-const BY_SUB: Record<string, { junior: string[]; middle: string[] }> = {
+/** Подкатегория → 6 Junior + 4 Middle + 4 Senior семейств (ADR-0003, дополнение 10.10 16:15). */
+const BY_SUB: Record<string, { junior: string[]; middle: string[]; senior: string[] }> = {
   'engineering.data-eng': {
-    junior: ['dedup-count', 'schema-types', 'null-aggregates', 'join-fanout'],
+    junior: ['dedup-count', 'schema-types', 'null-aggregates', 'join-fanout', 'group-having', 'csv-fields'],
     middle: ['idempotent-load', 'incremental-watermark', 'partition-prune', 'scd2-as-of'],
+    senior: ['backfill-nights', 'consumer-duplicates', 'late-window', 'diag-data'],
   },
   'engineering.devops': {
-    junior: ['docker-cache', 'secrets-leak', 'port-mapping', 'ci-stages'],
+    junior: ['docker-cache', 'secrets-leak', 'port-mapping', 'ci-stages', 'env-precedence', 'cron-runs'],
     middle: ['k8s-probes', 'k8s-capacity', 'deploy-rollback', 'rolling-update'],
+    senior: ['zone-capacity', 'rollout-blast', 'hpa-replicas', 'diag-deploy'],
   },
   'engineering.qa-automation': {
-    junior: ['test-pyramid', 'fixture-isolation', 'boundary-values', 'parametrize-count'],
+    junior: ['test-pyramid', 'fixture-isolation', 'boundary-values', 'parametrize-count', 'locator-stability', 'rerun-report'],
     middle: ['flaky-line', 'contract-test', 'mock-calls', 'branch-coverage'],
+    senior: ['retry-budget', 'ci-sharding', 'mutation-survivors', 'diag-tests'],
   },
   'engineering.sre': {
-    junior: ['error-budget', 'symptom-alert', 'latency-percentile', 'log-count'],
+    junior: ['error-budget', 'symptom-alert', 'latency-percentile', 'log-count', 'counter-reset', 'escalation'],
     middle: ['retry-amplification', 'burn-rate', 'littles-law', 'circuit-breaker'],
+    senior: ['dependency-budget', 'mm1-latency', 'redundancy-nodes', 'diag-latency'],
   },
 };
-const EXPECTED_IDS = Object.values(BY_SUB).flatMap((x) => [...x.junior, ...x.middle].map((id) => `eng.${id}`));
+const EXPECTED_IDS = Object.values(BY_SUB).flatMap((x) => [...x.junior, ...x.middle, ...x.senior].map((id) => `eng.${id}`));
 
 const toMin = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -76,14 +104,15 @@ function tableRows(code: string, name: string): string[][] {
 }
 
 describe('банк engineering', () => {
-  it('32 семейства eng.*, зарегистрированы; на каждую из 4 подкатегорий — 4 Junior + 4 Middle (минимум 8)', () => {
+  it('56 семейств eng.*, зарегистрированы; на каждую из 4 подкатегорий — 6 Junior + 4 Middle + 4 Senior', () => {
     expect(ENGINEERING_GENERATORS.map((g) => g.id).sort()).toEqual([...EXPECTED_IDS].sort());
     expect(generatorsFor('engineering').map((g) => g.id).sort()).toEqual([...EXPECTED_IDS].sort());
-    for (const [sub, { junior, middle }] of Object.entries(BY_SUB)) {
+    for (const [sub, { junior, middle, senior }] of Object.entries(BY_SUB)) {
       const own = ENGINEERING_GENERATORS.filter((g) => g.subcategoryId === sub);
       expect(own.filter((g) => g.grade === 'junior').map((g) => g.id).sort(), sub).toEqual(junior.map((id) => `eng.${id}`).sort());
       expect(own.filter((g) => g.grade === 'middle').map((g) => g.id).sort(), sub).toEqual(middle.map((id) => `eng.${id}`).sort());
-      expect(own.length).toBeGreaterThanOrEqual(8);
+      expect(own.filter((g) => g.grade === 'senior').map((g) => g.id).sort(), sub).toEqual(senior.map((id) => `eng.${id}`).sort());
+      expect(own.length).toBe(14);
     }
     for (const g of ENGINEERING_GENERATORS) expect(Object.keys(BY_SUB), g.id).toContain(g.subcategoryId);
     expect(new Set(GENERATORS.map((g) => g.id)).size).toBe(GENERATORS.length);
@@ -94,12 +123,20 @@ describe('банк engineering', () => {
     for (const t of engTasks) expect(others.has(t), t).toBe(false);
   });
 
-  it('a/b: Junior-задания легче порога Junior−Middle, Middle — тяжелее (как в backend/frontend)', () => {
+  it('a/b: Junior легче порога Junior−Middle, Middle тяжелее; Senior — b 1.0–1.7, a 1.0–1.4 (дополнение 10.10 16:15)', () => {
     for (const g of ENGINEERING_GENERATORS) {
       expect(g.a, g.id).toBeGreaterThanOrEqual(0.8);
       expect(g.a, g.id).toBeLessThanOrEqual(1.6);
       if (g.grade === 'junior') expect(g.b, g.id).toBeLessThan(-0.1);
-      else expect(g.b, g.id).toBeGreaterThan(-0.1);
+      else if (g.grade === 'middle') {
+        expect(g.b, g.id).toBeGreaterThan(-0.1);
+        expect(g.b, g.id).toBeLessThan(1.0);
+      } else {
+        expect(g.b, g.id).toBeGreaterThanOrEqual(1.0);
+        expect(g.b, g.id).toBeLessThanOrEqual(1.7);
+        expect(g.a, g.id).toBeGreaterThanOrEqual(1.0);
+        expect(g.a, g.id).toBeLessThanOrEqual(1.4);
+      }
     }
   });
 
@@ -145,7 +182,8 @@ for (const g of ENGINEERING_GENERATORS) {
         }
         if (g.format === 'number') expect(Number.isFinite(Number(inst.answerKey)), `${seed}`).toBe(true);
         // Ответ не утекает в условие дословно (для list/line он неочевиден по тексту, для number — число не в prompt).
-        if (g.format === 'number' && inst.answerKey.length >= 3) expect(inst.prompt.includes(inst.answerKey), `${g.id} ${seed}`).toBe(false);
+        if (g.format === 'number' && inst.answerKey.length >= 3)
+          expect(new RegExp(`(^|[^0-9.,])${inst.answerKey.replace('.', '[.,]')}([^0-9]|$)`).test(inst.prompt), `${g.id} ${seed}`).toBe(false);
         prompts.add(`${inst.prompt}\n${inst.code ?? ''}`);
         keys.add(inst.answerKey);
       }
@@ -690,6 +728,370 @@ describe('независимые решения: семейства добора
       }
       const expected = t.prompt.includes('дойдёт до зависимости') ? reached : T - reached;
       expect(t.answerKey, `seed ${seed}`).toBe(String(expected));
+    }
+  });
+});
+
+describe('независимые решения: добор Junior до 6 и Senior (300 seed)', () => {
+  const num = (re: RegExp, text: string) => Number(re.exec(text)![1]!.replace(',', '.'));
+
+  it('eng.group-having: исполнение GROUP BY / HAVING по таблице', () => {
+    for (const seed of SEEDS) {
+      const t = groupHaving.generate(seed);
+      const rows = tableRows(t.code!, 'events').map(([, day, user]) => ({ day: day!, user: user! }));
+      const count = (key: (r: { day: string; user: string }) => string, rs = rows) => {
+        const m = new Map<string, number>();
+        for (const r of rs) m.set(key(r), (m.get(key(r)) ?? 0) + 1);
+        return [...m.values()];
+      };
+      let expected: number;
+      const where = /WHERE day = '([\d-]+)'/.exec(t.code!);
+      if (where) expected = count((r) => r.user, rows.filter((r) => r.day === where[1])).filter((c) => c > 1).length;
+      else if (t.code!.includes('GROUP BY day, user_name')) expected = count((r) => `${r.day}/${r.user}`).length;
+      else expected = count((r) => r.day).filter((c) => c >= num(/COUNT\(\*\) >= (\d+)/, t.code!)).length;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(expected));
+    }
+  });
+
+  it('eng.csv-fields: разбор строки по RFC 4180', () => {
+    for (const seed of SEEDS) {
+      const t = csvFields.generate(seed);
+      const target = num(/в строке (\d+)\?/, t.prompt);
+      const line = t.code!.split('\n')[target - 1]!.replace(/^\d+: /, '');
+      // Лексер: поле — либо "..." с "" внутри, либо текст без запятых; дальше запятая или конец строки.
+      const re = /("(?:[^"]|"")*"|[^,"]*)(,|$)/y;
+      let fields = 0;
+      for (;;) {
+        const m = re.exec(line)!;
+        expect(m, line).not.toBeNull();
+        fields++;
+        if (m[2] === '') break;
+      }
+      expect(t.answerKey, `seed ${seed}: ${line}`).toBe(String(fields));
+    }
+  });
+
+  it('eng.env-precedence: environment > env_file > ENV образа', () => {
+    for (const seed of SEEDS) {
+      const t = envPrecedence.generate(seed);
+      const v = /значение (\w+) увидит/.exec(t.prompt)![1]!;
+      const code = t.code!;
+      const fromEnv = new RegExp(`- ${v}=(\\w+)`).exec(code);
+      const fromFile = new RegExp(`# app\\.env\\n${v}=(\\w+)`).exec(code);
+      const fromImage = new RegExp(`ENV ${v}=(\\w+)`).exec(code);
+      expect(t.answerKey, `seed ${seed}`).toBe((fromEnv ?? fromFile ?? fromImage)![1]);
+    }
+  });
+
+  it('eng.cron-runs: перебор минут суток по выражению', () => {
+    const match = (field: string, v: number) =>
+      field.split(',').some((part) => {
+        const [range, step] = part.split('/');
+        const [lo, hi] = range === '*' ? [0, 1e9] : range!.includes('-') ? range!.split('-').map(Number) : [Number(range), Number(range)];
+        return v >= lo! && v <= hi! && (step ? (v - (range === '*' ? 0 : lo!)) % Number(step) === 0 : true);
+      });
+    for (const seed of SEEDS) {
+      const t = cronRuns.generate(seed);
+      const [m, h, , , dow] = t.code!.split(/\s+/);
+      const date = num(/запустится (\d+) октября/, t.prompt);
+      const wd = new Date(2026, 9, date).getDay();
+      let runs = 0;
+      if (match(dow!, wd)) for (let x = 0; x < 1440; x++) if (match(m!, x % 60) && match(h!, Math.floor(x / 60))) runs++;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(runs));
+    }
+  });
+
+  it('eng.locator-stability: data-testid и стабильный id', () => {
+    for (const seed of SEEDS) {
+      const t = locatorStability.generate(seed);
+      const stable = t.code!
+        .split('\n')
+        .filter((l) => /data-testid|getByTestId|'#[\w-]+'/.test(l))
+        .map((l) => Number(l.split('.')[0]));
+      expect(t.answerKey, `seed ${seed}`).toBe(stable.sort((x, y) => x - y).join(','));
+    }
+  });
+
+  it('eng.rerun-report: перезапуск до первого PASS', () => {
+    for (const seed of SEEDS) {
+      const t = rerunReport.generate(seed);
+      const retries = num(/до (\d+) раз/, t.prompt);
+      let flaky = 0;
+      let red = 0;
+      for (const line of t.code!.split('\n').slice(1)) {
+        const runs = line.split('|')[1]!.trim().split(' ').slice(0, retries + 1);
+        const first = runs.indexOf('PASS');
+        if (first === -1) red++;
+        else if (first > 0) flaky++;
+      }
+      expect(t.answerKey, `seed ${seed}`).toBe(String(t.prompt.includes('нестабильными?') ? flaky : red));
+    }
+  });
+
+  it('eng.counter-reset: сумма приростов, уменьшение — сброс', () => {
+    for (const seed of SEEDS) {
+      const t = counterReset.generate(seed);
+      const v = t.code!.split('\n').map((l) => Number(l.split(/\s+/).pop()));
+      let inc = 0;
+      let resets = 0;
+      for (let i = 1; i < v.length; i++) {
+        if (v[i]! < v[i - 1]!) resets++;
+        inc += v[i]! < v[i - 1]! ? v[i]! : v[i]! - v[i - 1]!;
+      }
+      expect(resets).toBe(1);
+      expect(t.answerKey, `seed ${seed}`).toBe(String(inc));
+    }
+  });
+
+  it('eng.escalation: поминутная симуляция политики', () => {
+    for (const seed of SEEDS) {
+      const t = escalation.generate(seed);
+      const a1 = num(/не подтвердил за (\d+) мин/, t.prompt);
+      const a2 = num(/и через (\d+) мин после этого/, t.prompt);
+      const ack = /на (\d+)-й минуте\./.exec(t.prompt);
+      const ackAt = ack ? Number(ack[1]) : Infinity;
+      let paged = 0;
+      for (let minute = 0; minute <= 60 && !paged; minute++) {
+        if (minute >= ackAt) break;
+        if (minute === a1 + a2) paged = minute;
+      }
+      expect(ackAt).not.toBe(a1 + a2);
+      expect(t.answerKey, `seed ${seed}`).toBe(String(paged));
+    }
+  });
+
+  it('eng.diag-*: правило исключения по окну, охвату и компонентам «в норме»', () => {
+    for (const gen of [diagData, diagDeploy, diagTests, diagLatency])
+      for (const seed of SEEDS) {
+        const t = gen.generate(seed);
+        const [statePart, eventPart] = t.code!.split('События (по времени):');
+        const degraded = new Map<string, number>();
+        const healthy = new Set<string>();
+        for (const l of statePart!.split('\n').slice(1)) {
+          const name = l.split(/\s+/)[0]!;
+          const d = /деградация с (\d\d:\d\d)/.exec(l);
+          if (d) degraded.set(name, toMin(d[1]!));
+          else if (l.includes('в норме')) healthy.add(name);
+        }
+        const first = Math.min(...degraded.values());
+        const fits = eventPart!
+          .trim()
+          .split('\n')
+          .filter((l) => {
+            const time = toMin(/ (\d\d:\d\d) /.exec(l)![1]!);
+            const scope = l.split('затрагивает: ')[1]!.split(', ');
+            return time <= first && time >= first - 30 && [...degraded.keys()].every((c) => scope.includes(c)) && !scope.some((c) => healthy.has(c));
+          })
+          .map((l) => Number(l.split('.')[0]));
+        expect(fits, `${gen.id} seed ${seed}`).toHaveLength(1);
+        expect(t.answerKey).toBe(String(fits[0]));
+      }
+  });
+
+  it('eng.backfill-nights: поночная симуляция потоков', () => {
+    for (const seed of SEEDS) {
+      const t = backfillNights.generate(seed);
+      const days = num(/перезалить (\d+) дневных/, t.prompt);
+      const gb = num(/партиций по (\d+) ГБ/, t.prompt);
+      const window = num(/Окно — (\d+) ч/, t.prompt);
+      const [workers, wRate] = [num(/воркеров: (\d+)/, t.code!), num(/каждый обрабатывает до (\d+)/, t.code!)];
+      const [readers, rRate] = [num(/не больше (\d+) одновременных/, t.code!), num(/читатель — до (\d+)/, t.code!)];
+      const lanes = Math.min(workers, readers);
+      const hours = (gb * 60) / Math.min(wRate, rRate); // минуты на партицию
+      let left = days;
+      let nights = 0;
+      while (left > 0) {
+        nights++;
+        for (let lane = 0; lane < lanes; lane++) for (let used = hours; used <= window * 60 + 1e-9 && left > 0; used += hours) left--;
+      }
+      expect(t.answerKey, `seed ${seed}`).toBe(String(nights));
+    }
+  });
+
+  it('eng.consumer-duplicates: симуляция смещений и вставок', () => {
+    for (const seed of SEEDS) {
+      const t = consumerDuplicates.generate(seed);
+      const total = num(/топик из (\d+) сообщений/, t.prompt);
+      const batch = num(/после каждого (\d+)-го/, t.prompt);
+      const crashes = /сразу после обработки \(записи в БД\) ([\d\-й, ]+) по счёту/.exec(t.prompt)![1]!.match(/\d+/g)!.map(Number);
+      const upsert = t.prompt.includes('UPSERT');
+      const inserts = new Map<number, number>();
+      let offset = 0;
+      let committed = 0;
+      let processed = 0;
+      while (offset < total) {
+        const msg = offset;
+        inserts.set(msg, (inserts.get(msg) ?? 0) + 1);
+        offset++;
+        processed++;
+        if (offset % batch === 0 || offset === total) committed = offset;
+        if (crashes.includes(processed)) offset = committed;
+      }
+      const dups = upsert ? 0 : [...inserts.values()].reduce((s, c) => s + c - 1, 0);
+      expect(t.answerKey, `seed ${seed}`).toBe(String(dups));
+    }
+  });
+
+  it('eng.late-window: водяной знак и закрытые окна', () => {
+    for (const seed of SEEDS) {
+      const t = lateWindow.generate(seed);
+      const lateness = num(/минус (\d+) мин/, t.prompt);
+      const evs = t.code!.split(', ').map(Number);
+      let wm = -Infinity;
+      let dropped = 0;
+      let first = 0;
+      for (const e of evs) {
+        const end = (Math.floor(e / 10) + 1) * 10;
+        if (wm >= end) dropped++;
+        else if (e < 10) first++;
+        wm = Math.max(wm, e - lateness);
+      }
+      expect(t.answerKey, `seed ${seed}`).toBe(String(t.prompt.includes('отброшено?') ? dropped : first));
+    }
+  });
+
+  it('eng.zone-capacity: перебор подов на зону', () => {
+    for (const seed of SEEDS) {
+      const t = zoneCapacity.generate(seed);
+      const peak = num(/пик (\d+) RPS/, t.prompt);
+      const perPod = num(/выдерживает (\d+) RPS/, t.prompt);
+      const util = num(/не выше (\d+) %/, t.prompt);
+      const zones = num(/в (\d+) зонах/, t.prompt);
+      let perZone = 1;
+      while (perZone * (zones - 1) * perPod * util < peak * 100) perZone++;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(perZone * zones));
+    }
+  });
+
+  it('eng.rollout-blast: поминутное накопление ошибок', () => {
+    for (const seed of SEEDS) {
+      const t = rolloutBlast.generate(seed);
+      const stages = /ступенями ([\d % →]+) трафика/.exec(t.prompt)![1]!.match(/\d+/g)!.map(Number);
+      const bake = num(/длится (\d+) мин/, t.prompt);
+      const rpm = num(/Поток — (\d+) запросов/, t.prompt);
+      const fail = num(/баг: (\d+) % её/, t.prompt);
+      const threshold = num(/достигает (\d+)/, t.prompt);
+      let errors = 0;
+      let minute = 0;
+      while (errors < threshold) {
+        const stage = Math.min(Math.floor(minute / bake), stages.length - 1);
+        errors += (rpm * stages[stage]! * fail) / 10000;
+        minute++;
+      }
+      expect(t.answerKey, `seed ${seed}`).toBe(String(errors));
+    }
+  });
+
+  it('eng.hpa-replicas: формула HPA с допуском и границами', () => {
+    for (const seed of SEEDS) {
+      const t = hpaReplicas.generate(seed);
+      const target = num(/цель (\d+) %/, t.prompt);
+      const min = num(/minReplicas (\d+)/, t.prompt);
+      const max = num(/maxReplicas (\d+)/, t.prompt);
+      let r = num(/Сейчас (\d+) реплик/, t.prompt);
+      const readings = /\): ([\d %,]+) %\./.exec(t.prompt)![1]!.match(/\d+/g)!.map(Number);
+      expect(readings).toHaveLength(3);
+      for (const cur of readings) {
+        const ratio = cur / target;
+        expect(Math.abs(Math.abs(ratio - 1) - 0.1)).toBeGreaterThan(1e-6);
+        if (Math.abs(ratio - 1) > 0.1) r = Math.min(max, Math.max(min, Math.ceil(r * ratio - 1e-9)));
+      }
+      expect(t.answerKey, `seed ${seed}`).toBe(String(r));
+    }
+  });
+
+  it('eng.retry-budget: вероятность ложно красного пайплайна', () => {
+    for (const seed of SEEDS) {
+      const t = retryBudget.generate(seed);
+      const n = num(/тестов \w+ (\d+) нестабильных/, t.prompt);
+      const p = num(/вероятностью (\d+) % на запуск/, t.prompt) / 100;
+      const target = num(/не выше (\d+) %/, t.prompt) / 100;
+      let r = 0;
+      // через логарифм: P(всё зелёное) = exp(n·ln(1 − p^(r+1)))
+      while (-Math.expm1(n * Math.log1p(-(p ** (r + 1)))) > target) r++;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(r));
+    }
+  });
+
+  it('eng.ci-sharding: раздача по убыванию, перебор числа раннеров', () => {
+    for (const seed of SEEDS) {
+      const t = ciSharding.generate(seed);
+      const files = /\(длительность, мин\): ([\d, ]+)\./.exec(t.prompt)![1]!.split(', ').map(Number);
+      const limit = num(/в (\d+) мин\?/, t.prompt);
+      const span = (k: number) => {
+        const load = new Array<number>(k).fill(0);
+        for (const d of [...files].sort((x, y) => y - x)) load[load.indexOf(Math.min(...load))]! += d;
+        return Math.max(...load);
+      };
+      let k = 1;
+      while (span(k) > limit) k++;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(k));
+    }
+  });
+
+  it('eng.mutation-survivors: исполнение мутантов на тестах', () => {
+    for (const seed of SEEDS) {
+      const t = mutationSurvivors.generate(seed);
+      const py = (expr: string) => new Function('age', 'income', `return ${expr.replace(/ and /g, ' && ').replace(/ or /g, ' || ')};`) as (a: number, i: number) => boolean;
+      const lines = t.code!.split('\n');
+      const orig = py(lines[1]!.replace('return', '').trim());
+      const tests = lines
+        .filter((l) => l.startsWith('def test_'))
+        .map((l) => {
+          const [, a, i, exp] = /is_eligible\((\d+), (\d+)\) is (True|False)/.exec(l)!;
+          return { a: Number(a), i: Number(i), exp: exp === 'True' };
+        });
+      for (const x of tests) expect(orig(x.a, x.i)).toBe(x.exp);
+      const mutants = lines.slice(lines.indexOf('Мутанты условия:') + 1).map((l) => py(l.replace(/^\d+\. /, '')));
+      const survived = mutants.filter((m) => tests.every((x) => m(x.a, x.i) === x.exp)).length;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(survived));
+    }
+  });
+
+  it('eng.dependency-budget: бюджет минус простои зависимостей', () => {
+    for (const seed of SEEDS) {
+      const t = dependencyBudget.generate(seed);
+      const minutes = 30 * 24 * 60;
+      const down = (pct: string) => (minutes * (100 - Number(pct.replace(',', '.')))) / 100;
+      const slo = /SLO доступности \w+: ([\d,]+) %/.exec(t.prompt)![1]!;
+      const own = num(/закладываем (\d+) мин/, t.prompt);
+      const deps = [...t.code!.matchAll(/SLO ([\d,]+) %/g)].map((m) => down(m[1]!));
+      const expected = down(slo) - deps.reduce((a, b) => a + b, 0) - own;
+      expect(Number(t.answerKey), `seed ${seed}`).toBeCloseTo(expected, 6);
+    }
+  });
+
+  it('eng.mm1-latency: W = 1/(μ − λ)', () => {
+    for (const seed of SEEDS) {
+      const t = mm1Latency.generate(seed);
+      const mu = num(/способность (\d+) запросов/, t.prompt);
+      const l2 = num(/вырос до (\d+) запросов/, t.prompt);
+      const l1 = num(/Сейчас поток (\d+) запросов/, t.prompt);
+      expect(num(/время в системе (\d+) мс/, t.prompt)).toBeCloseTo(1000 / (mu - l1), 6);
+      expect(Number(t.answerKey), `seed ${seed}`).toBeCloseTo(1000 / (mu - l2), 6);
+    }
+  });
+
+  it('eng.redundancy-nodes: биномиальная доступность k из n, ответ не на границе', () => {
+    for (const seed of SEEDS) {
+      const t = redundancyNodes.generate(seed);
+      const k = num(/не меньше (\d+) работающих/, t.prompt);
+      const a = num(/доступность узла — ([\d,]+) %/, t.prompt) / 100;
+      const target = num(/не ниже ([\d,]+) %\?/, t.prompt) / 100;
+      // P(отказ) = P(работает < k) — считаем через дополнение, а не прямую сумму.
+      const pFail = (n: number) => {
+        let s = 0;
+        let c = 1; // C(n, r)
+        for (let r = 0; r < k && r <= n; r++) {
+          s += c * a ** r * (1 - a) ** (n - r);
+          c = (c * (n - r)) / (r + 1);
+        }
+        return s;
+      };
+      let n = k;
+      while (pFail(n) > 1 - target) n++;
+      expect(Math.abs(pFail(n) - (1 - target)) / (1 - target)).toBeGreaterThan(1e-6);
+      expect(t.answerKey, `seed ${seed}`).toBe(String(n));
     }
   });
 });

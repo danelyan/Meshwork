@@ -1875,6 +1875,1054 @@ export const littlesLaw: TaskGenerator = {
 
 // --- sre: автоматический выключатель (Middle) --------------------------------------------------------
 
+// ===========================================================================
+// Пул 6 Junior + 4 Middle + 4 Senior на подкатегорию (ADR-0003, дополнение 10.10 16:15)
+// ===========================================================================
+
+// --- data-eng: GROUP BY / HAVING (Junior) ---------------------------------------------------------
+
+export const groupHaving: TaskGenerator = {
+  id: 'eng.group-having',
+  taskId: 'task:group-having',
+  title: 'Сколько строк даст агрегат',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'junior',
+  catalogIds: ['eng.etl-pipeline'],
+  format: 'number',
+  a: 1.1,
+  b: -1.0,
+  paramSpace: 1e7,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const users = rng.sample(NAMES, rng.int(3, 4));
+    const days = ['2026-10-01', '2026-10-02', '2026-10-03'];
+    const n = rng.int(8, 10);
+    const rows = Array.from({ length: n }, (_, i) => ({ id: 900 + i, day: rng.pick(days), user: rng.pick(users) }));
+    rows.sort((x, y) => x.day.localeCompare(y.day) || x.id - y.id);
+    const kind = rng.int(0, 2);
+    const k = rng.int(2, 4);
+    const d = rng.pick(days);
+    const groups = (key: (r: (typeof rows)[number]) => string) => {
+      const m = new Map<string, number>();
+      for (const r of rows) m.set(key(r), (m.get(key(r)) ?? 0) + 1);
+      return m;
+    };
+    let sql: string;
+    let answer: number;
+    if (kind === 0) {
+      sql = `SELECT day, COUNT(*)\nFROM events\nGROUP BY day\nHAVING COUNT(*) >= ${k};`;
+      answer = [...groups((r) => r.day).values()].filter((c) => c >= k).length;
+    } else if (kind === 1) {
+      sql = 'SELECT day, user_name, COUNT(*)\nFROM events\nGROUP BY day, user_name;';
+      answer = groups((r) => `${r.day}|${r.user}`).size;
+    } else {
+      sql = `SELECT user_name\nFROM events\nWHERE day = '${d}'\nGROUP BY user_name\nHAVING COUNT(*) > 1;`;
+      answer = [...groups((r) => (r.day === d ? r.user : '')).entries()].filter(([u, c]) => u !== '' && c > 1).length;
+    }
+    return {
+      prompt: 'Сколько строк вернёт запрос к таблице событий?',
+      code: [table('events', ['event_id', 'day', 'user_name'], rows.map((r) => [r.id, r.day, r.user])), '', sql].join('\n'),
+      answerHint: 'число строк',
+      answerKey: String(answer),
+      explanation: `GROUP BY даёт строку на каждую группу, HAVING отбрасывает группы после агрегации: ${answer}.`,
+      params: { kind, n, k },
+    };
+  },
+};
+
+// --- data-eng: CSV с кавычками (Junior) ------------------------------------------------------------
+
+export const csvFields: TaskGenerator = {
+  id: 'eng.csv-fields',
+  taskId: 'task:csv-fields',
+  title: 'Разбор CSV с кавычками',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'junior',
+  catalogIds: ['eng.data-types'],
+  format: 'number',
+  a: 1.2,
+  b: -0.6,
+  paramSpace: 1e6,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const cell = (): string => {
+      const kind = rng.int(0, 4);
+      if (kind === 0) return String(rng.int(1, 999));
+      if (kind === 1) return rng.pick(['Казань', 'Самара', 'Тверь']);
+      if (kind === 2) return `"${rng.pick(['Казань', 'Омск'])}, ул. ${rng.pick(['Ленина', 'Мира'])}, ${rng.int(1, 40)}"`;
+      if (kind === 3) return `"ООО ""${rng.pick(['Ромашка', 'Вектор', 'Север'])}"""`;
+      return '""';
+    };
+    const nLines = rng.int(3, 4);
+    const lines = Array.from({ length: nLines }, () => Array.from({ length: rng.int(3, 5) }, cell).join(','));
+    const target = rng.int(1, nLines);
+    // Число полей по правилам RFC 4180: запятые внутри кавычек не делят поле, "" внутри кавычек — это кавычка.
+    let fields = 1;
+    let inQ = false;
+    const s = lines[target - 1]!;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i]!;
+      if (inQ) {
+        if (ch === '"' && s[i + 1] === '"') i++;
+        else if (ch === '"') inQ = false;
+      } else if (ch === '"') inQ = true;
+      else if (ch === ',') fields++;
+    }
+    return {
+      prompt: `CSV по правилам RFC 4180 (поле в двойных кавычках может содержать запятые; "" внутри кавычек — это сама кавычка). Сколько полей в строке ${target}? (Номер строки с двоеточием в начале — не часть CSV.)`,
+      code: lines.map((l, i) => `${i + 1}: ${l}`).join('\n'),
+      answerHint: 'число полей',
+      answerKey: String(fields),
+      explanation: `Запятые внутри кавычек не разделяют поля, удвоенная кавычка не закрывает поле: в строке ${target} полей ${fields}.`,
+      params: { nLines, target },
+    };
+  },
+};
+
+// --- devops: приоритет переменных окружения (Junior) ----------------------------------------------
+
+export const envPrecedence: TaskGenerator = {
+  id: 'eng.env-precedence',
+  taskId: 'task:env-precedence',
+  title: 'Какое значение переменной в контейнере',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'junior',
+  catalogIds: ['eng.dockerfile'],
+  format: 'text',
+  a: 1.1,
+  b: -0.6,
+  paramSpace: 5e2,
+  timeLimitSec: 120,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const v = rng.pick(['LOG_LEVEL', 'APP_MODE', 'CACHE_DRIVER']);
+    const vals = rng.sample(['debug', 'info', 'warn', 'error', 'trace'], 3);
+    // Источники: [Dockerfile ENV, env_file, environment]; минимум два заданы.
+    const present = rng.pick([
+      [true, true, true],
+      [true, true, false],
+      [true, false, true],
+      [false, true, true],
+    ]);
+    const answer = present[2] ? vals[2]! : present[1] ? vals[1]! : vals[0]!;
+    const code = [
+      '# Dockerfile',
+      `FROM node:20-alpine`,
+      ...(present[0] ? [`ENV ${v}=${vals[0]}`] : []),
+      'CMD ["node", "server.js"]',
+      '',
+      '# app.env',
+      present[1] ? `${v}=${vals[1]}` : 'TZ=Europe/Moscow',
+      '',
+      '# compose.yaml',
+      'services:',
+      `  ${svc}:`,
+      '    build: .',
+      '    env_file: app.env',
+      ...(present[2] ? ['    environment:', `      - ${v}=${vals[2]}`] : []),
+    ].join('\n');
+    return {
+      prompt: `Сервис запускают командой docker compose up, в оболочке переменная ${v} не задана. Какое значение ${v} увидит приложение внутри контейнера?`,
+      code,
+      answerHint: 'значение',
+      answerKey: answer,
+      explanation: `Приоритет (сверху вниз): атрибут environment в compose, затем env_file, затем ENV из образа. Здесь — ${answer}.`,
+      params: { present: present.map(Number).join(''), v },
+    };
+  },
+};
+
+// --- devops: расписание cron (Junior) ---------------------------------------------------------------
+
+export const cronRuns: TaskGenerator = {
+  id: 'eng.cron-runs',
+  taskId: 'task:cron-runs',
+  title: 'Сколько раз сработает cron',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'junior',
+  catalogIds: ['eng.orchestration'],
+  format: 'number',
+  a: 1.2,
+  b: -0.7,
+  paramSpace: 1e3,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const minute = rng.pick([
+      { expr: '*/15', n: 4 },
+      { expr: '0,30', n: 2 },
+      { expr: '5', n: 1 },
+      { expr: '*/20', n: 3 },
+      { expr: '*/10', n: 6 },
+    ]);
+    const hour = rng.pick([
+      { expr: '9-18', n: 10 },
+      { expr: '*/6', n: 4 },
+      { expr: '8', n: 1 },
+      { expr: '*', n: 24 },
+      { expr: '10-12', n: 3 },
+    ]);
+    const dow = rng.pick([
+      { expr: '1-5', days: [1, 2, 3, 4, 5] },
+      { expr: '*', days: [0, 1, 2, 3, 4, 5, 6] },
+      { expr: '6,0', days: [6, 0] },
+    ]);
+    // Октябрь 2026: 1-е — четверг.
+    const date = rng.int(1, 14);
+    const wd = (4 + date - 1) % 7;
+    const names = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+    const answer = dow.days.includes(wd) ? minute.n * hour.n : 0;
+    return {
+      prompt: `Задача в crontab (поля: минута, час, день месяца, месяц, день недели; 0 — воскресенье). Сколько раз она запустится ${date} октября 2026 года (${names[wd]})?`,
+      code: `${minute.expr} ${hour.expr} * * ${dow.expr}  /opt/jobs/export.sh`,
+      answerHint: 'число запусков',
+      answerKey: String(answer),
+      explanation: `Минуты «${minute.expr}» — ${minute.n} в час, часы «${hour.expr}» — ${hour.n}, день недели «${dow.expr}» ${dow.days.includes(wd) ? 'подходит' : 'не подходит'}: ${answer}.`,
+      params: { minute: minute.expr, hour: hour.expr, dow: dow.expr, date },
+    };
+  },
+};
+
+// --- qa: устойчивые локаторы (Junior) ----------------------------------------------------------------
+
+const LOCATORS: { text: string; stable: boolean }[] = [
+  { text: "page.locator('[data-testid=\"checkout-submit\"]')", stable: true },
+  { text: "page.locator('[data-testid=\"cart-total\"]')", stable: true },
+  { text: "page.locator('#promo-code-input')", stable: true },
+  { text: "page.getByTestId('order-status')", stable: true },
+  { text: "page.locator('div.container > div:nth-child(3) > button')", stable: false },
+  { text: "page.locator('/html/body/div[2]/main/section[1]/form/button')", stable: false },
+  { text: "page.locator('.css-1q2w3e4')", stable: false },
+  { text: "page.locator('text=Купить сейчас')", stable: false },
+  { text: "page.locator('ul li:last-child a')", stable: false },
+];
+
+export const locatorStability: TaskGenerator = {
+  id: 'eng.locator-stability',
+  taskId: 'task:locator-stability',
+  title: 'Устойчивые локаторы',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'junior',
+  catalogIds: ['eng.ui-autotests'],
+  format: 'list',
+  a: 1.0,
+  b: -0.8,
+  paramSpace: 5e3,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const nStable = rng.int(2, 3);
+    const items = rng.shuffle([...rng.sample(LOCATORS.filter((l) => l.stable), nStable), ...rng.sample(LOCATORS.filter((l) => !l.stable), 6 - nStable)]);
+    const nums = items.flatMap((l, i) => (l.stable ? [i + 1] : []));
+    return {
+      prompt: 'Дизайнеры часто переставляют блоки, меняют тексты кнопок, а сборка перегенерирует CSS-классы. Какие локаторы Playwright переживут такие изменения? Перечислите номера.',
+      code: items.map((l, i) => `${i + 1}. ${l.text}`).join('\n'),
+      answerHint: 'номера через запятую',
+      answerKey: listKey(nums),
+      explanation: `Устойчивы локаторы по data-testid и стабильному id: ${listKey(nums)}. Позиция в DOM (nth-child, XPath), сгенерированные классы и тексты ломаются при перестановке, пересборке или смене копирайта.`,
+      params: { nums: listKey(nums) },
+    };
+  },
+};
+
+// --- qa: перезапуски упавших тестов (Junior) ----------------------------------------------------------
+
+export const rerunReport: TaskGenerator = {
+  id: 'eng.rerun-report',
+  taskId: 'task:rerun-report',
+  title: 'Отчёт с перезапусками',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'junior',
+  catalogIds: ['eng.flaky-tests'],
+  format: 'number',
+  a: 1.1,
+  b: -0.4,
+  paramSpace: 1e6,
+  timeLimitSec: 180,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const retries = rng.int(1, 2);
+    const n = rng.int(5, 7);
+    const names = rng.sample(['login', 'cart_add', 'checkout', 'search', 'profile_edit', 'promo', 'logout', 'refund'], n);
+    // Что вернул бы каждый из (retries + 1) запусков; фактически запуск идёт до первого PASS.
+    const outcomes = names.map(() => Array.from({ length: retries + 1 }, () => (rng.int(0, 2) === 0 ? 'FAIL' : 'PASS')));
+    const flaky = outcomes.filter((o) => o[0] === 'FAIL' && o.includes('PASS')).length;
+    const red = outcomes.filter((o) => !o.includes('PASS')).length;
+    const ask = rng.pick(['flaky', 'red'] as const);
+    const answer = ask === 'flaky' ? flaky : red;
+    return {
+      prompt: `CI перезапускает упавший тест до ${retries} раз и останавливается на первом успешном запуске. Тест «нестабильный», если упал, а на перезапуске прошёл; «красный», если не прошёл ни разу. В таблице — что вернул бы каждый запуск. ${ask === 'flaky' ? 'Сколько тестов отчёт пометит нестабильными?' : 'Сколько тестов останутся красными?'}`,
+      code: ['тест          | запуск 1..' + (retries + 1), ...names.map((nm, i) => `${nm.padEnd(13)} | ${outcomes[i]!.join(' ')}`)].join('\n'),
+      answerHint: 'число тестов',
+      answerKey: String(answer),
+      explanation: `Нестабильных ${flaky} (первый запуск FAIL, затем PASS), красных ${red} (PASS не было). Тест, прошедший с первого раза, не перезапускается.`,
+      params: { retries, n, ask },
+    };
+  },
+};
+
+// --- sre: счётчик со сбросом (Junior) ----------------------------------------------------------------
+
+export const counterReset: TaskGenerator = {
+  id: 'eng.counter-reset',
+  taskId: 'task:counter-reset',
+  title: 'Прирост счётчика со сбросом',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'junior',
+  catalogIds: ['eng.observability'],
+  format: 'number',
+  a: 1.2,
+  b: -0.4,
+  paramSpace: 1e8,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const n = rng.int(6, 8);
+    const resetAt = rng.int(2, n - 2);
+    const vals: number[] = [];
+    let v = rng.int(10, 50) * 10;
+    for (let i = 0; i < n; i++) {
+      if (i === resetAt) v = rng.int(1, 9) * 10; // процесс перезапустился, счётчик начал с нуля
+      else if (i > 0) v += rng.int(2, 15) * 10;
+      vals.push(v);
+    }
+    let inc = 0;
+    for (let i = 1; i < n; i++) inc += vals[i]! >= vals[i - 1]! ? vals[i]! - vals[i - 1]! : vals[i]!;
+    return {
+      prompt: 'Счётчик http_requests_total снимается раз в минуту. Между какими-то отсчётами процесс перезапустился. Сколько запросов обработано за интервал от первого до последнего отсчёта? (Уменьшение значения — сброс счётчика: после сброса прирост равен новому значению, как это учитывают rate() и increase() без экстраполяции.)',
+      code: vals.map((x, i) => `t+${i} мин  ${x}`).join('\n'),
+      answerHint: 'число запросов',
+      answerKey: String(inc),
+      explanation: `Складываем приросты; на сбросе (${vals[resetAt - 1]} → ${vals[resetAt]}) прирост — ${vals[resetAt]}, а не отрицательная разность. Итог ${inc}.`,
+      params: { n, resetAt },
+    };
+  },
+};
+
+// --- sre: эскалация (Junior) ------------------------------------------------------------------------
+
+export const escalation: TaskGenerator = {
+  id: 'eng.escalation',
+  taskId: 'task:escalation',
+  title: 'Политика эскалации',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'junior',
+  catalogIds: ['eng.incident-postmortem', 'eng.alerting'],
+  format: 'number',
+  a: 1.0,
+  b: -1.0,
+  paramSpace: 1e4,
+  timeLimitSec: 120,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const a1 = rng.pick([5, 10, 15]);
+    const a2 = rng.pick([5, 10, 15]);
+    // Когда подтвердил: primary, secondary или никто.
+    const who = rng.pick(['primary', 'secondary', 'none'] as const);
+    let ackAt: number | null = who === 'primary' ? rng.int(a1 + 1, a1 + 10) : who === 'secondary' ? rng.int(a1 + 1, a1 + a2 - 1) : null;
+    if (ackAt === a1 + a2) ackAt += 1; // без ничьей на границе
+    // Если primary «подтвердил» после своего таймаута — эскалация уже ушла на secondary.
+    const answer = ackAt === null || ackAt >= a1 + a2 ? a1 + a2 : 0;
+    const ackText = who === 'none' ? 'Алерт никто не подтвердил.' : `Алерт подтвердил ${who === 'primary' ? 'основной' : 'резервный'} дежурный на ${ackAt}-й минуте.`;
+    return {
+      prompt: `Политика: в момент алерта (минута 0) уведомляется основной дежурный; если он не подтвердил за ${a1} мин — уведомляется резервный; если алерт не подтверждён и через ${a2} мин после этого — уведомляется руководитель. Подтверждение любым уведомлённым останавливает эскалацию. ${ackText} На какой минуте уведомят руководителя? (0 — не уведомят.)`,
+      answerHint: 'минута или 0',
+      answerKey: String(answer),
+      explanation: answer ? `Подтверждения до минуты ${a1 + a2} не было — руководитель уведомлён на ${answer}-й минуте.` : `Подтверждение пришло раньше минуты ${a1 + a2} — эскалация остановилась.`,
+      params: { a1, a2, who, ackAt },
+    };
+  },
+};
+
+// --- Senior: диагностика по неполным данным (общий конструктор, 4 предметные области) ------------------
+
+interface DiagDomain {
+  components: string[];
+  /** Действия, которые затрагивают выбранные компоненты. */
+  actions: string[];
+  what: string;
+}
+
+function diagnosis(seed: number, d: DiagDomain): TaskInstance {
+  const rng = createRng(seed);
+  const comps = rng.shuffle(d.components).slice(0, 6);
+  const nDeg = rng.int(2, 3);
+  const degraded = comps.slice(0, nDeg);
+  const healthy = comps.slice(nDeg, 5);
+  const noData = comps[5]!;
+  const onset = 14 * 60 + rng.int(0, 40);
+  const acts = rng.shuffle(d.actions);
+  type Ev = { t: number; act: string; scope: string[]; why: string };
+  const evs: Ev[] = [
+    { t: onset - rng.int(3, 25), act: acts[0]!, scope: [...degraded, noData], why: 'причина' },
+    { t: onset + rng.int(2, 15), act: acts[1]!, scope: [...degraded], why: 'случилось после первого симптома' },
+    { t: onset - rng.int(3, 25), act: acts[2]!, scope: [...degraded, rng.pick(healthy)], why: 'затрагивает компонент, который в норме' },
+    { t: onset - rng.int(3, 25), act: acts[3]!, scope: degraded.slice(1), why: `не затрагивает ${degraded[0]}, а он деградировал` },
+    { t: onset - rng.int(45, 120), act: acts[4]!, scope: [...degraded], why: 'раньше 30-минутного окна' },
+  ];
+  const order = rng.shuffle(evs.map((_, i) => i)).sort((x, y) => evs[x]!.t - evs[y]!.t || x - y);
+  const answer = order.indexOf(0) + 1;
+  const symptoms = rng.shuffle(comps).map((c) => `${c.padEnd(18)} ${degraded.includes(c) ? `деградация с ${hhmm(onset + (c === degraded[0] ? 0 : rng.int(1, 4)))}` : c === noData ? 'нет данных (метрики не собираются)' : 'в норме'}`);
+  return {
+    prompt: `Разбор инцидента (${d.what}) по неполным данным. Правило разбора: причина — событие, которое (1) произошло не раньше чем за 30 минут до первого симптома и не позже него, (2) затрагивает все деградировавшие компоненты, (3) не затрагивает ни одного компонента «в норме». Компонент без данных ничего не исключает и не подтверждает. Номер какого события остаётся причиной?`,
+    code: [
+      'Состояние компонентов:',
+      ...symptoms,
+      '',
+      'События (по времени):',
+      ...order.map((i, k) => `${k + 1}. ${hhmm(evs[i]!.t)}  ${evs[i]!.act}; затрагивает: ${evs[i]!.scope.join(', ')}`),
+    ].join('\n'),
+    answerHint: 'номер события',
+    answerKey: String(answer),
+    explanation: `Остаётся событие ${answer}. Остальные отпадают: ${order
+      .filter((i) => i !== 0)
+      .map((i) => `${order.indexOf(i) + 1} — ${evs[i]!.why}`)
+      .join('; ')}. Затронутый компонент без данных его не исключает.`,
+    params: { nDeg, onset, answer },
+  };
+}
+
+export const diagData: TaskGenerator = {
+  id: 'eng.diag-data',
+  taskId: 'task:diag-data',
+  title: 'Причина сбоя пайплайна данных',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'senior',
+  catalogIds: ['eng.incident-postmortem', 'eng.data-quality'],
+  format: 'number',
+  a: 1.2,
+  b: 1.3,
+  paramSpace: 1e7,
+  timeLimitSec: 300,
+  generate: (seed) =>
+    diagnosis(seed, {
+      what: 'витрины данных отстают и расходятся',
+      components: ['ingest-orders', 'kafka-orders', 'stg_orders', 'dm_sales', 'dm_finance', 'bi-dashboard', 'cdc-payments', 'airflow-dags'],
+      actions: ['источник поменял тип колонки amount', 'выкатили новую версию dbt-моделей', 'перезапустили брокер Kafka', 'ротация пароля сервисной учётки', 'кластер Spark масштабировался'],
+    }),
+};
+
+export const diagDeploy: TaskGenerator = {
+  id: 'eng.diag-deploy',
+  taskId: 'task:diag-deploy',
+  title: 'Причина сбоя после изменений инфраструктуры',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'senior',
+  catalogIds: ['eng.incident-postmortem', 'eng.ci-cd'],
+  format: 'number',
+  a: 1.2,
+  b: 1.3,
+  paramSpace: 1e7,
+  timeLimitSec: 300,
+  generate: (seed) =>
+    diagnosis(seed, {
+      what: 'ошибки 5xx у части сервисов',
+      components: ['ingress-nginx', 'checkout', 'catalog', 'payments', 'profile', 'search', 'notify', 'auth'],
+      actions: ['обновили базовый образ node:20 → node:22', 'поменяли сетевую политику namespace', 'выкатили новый ConfigMap', 'ротация TLS-сертификата', 'обновили узлы кластера'],
+    }),
+};
+
+export const diagTests: TaskGenerator = {
+  id: 'eng.diag-tests',
+  taskId: 'task:diag-tests',
+  title: 'Причина массового падения автотестов',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'senior',
+  catalogIds: ['eng.flaky-tests', 'eng.test-strategy'],
+  format: 'number',
+  a: 1.2,
+  b: 1.3,
+  paramSpace: 1e7,
+  timeLimitSec: 300,
+  generate: (seed) =>
+    diagnosis(seed, {
+      what: 'наборы автотестов начали падать',
+      components: ['unit-backend', 'api-orders', 'api-payments', 'e2e-checkout', 'e2e-search', 'contract-billing', 'e2e-profile', 'visual-regression'],
+      actions: ['обновили образ CI-раннера', 'на тестовом стенде применили миграцию БД', 'подняли версию Playwright', 'включили фича-флаг new_cart', 'сменили тестовые данные в сид-скрипте'],
+    }),
+};
+
+export const diagLatency: TaskGenerator = {
+  id: 'eng.diag-latency',
+  taskId: 'task:diag-latency',
+  title: 'Причина роста задержек',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'senior',
+  catalogIds: ['eng.incident-postmortem'],
+  format: 'number',
+  a: 1.2,
+  b: 1.3,
+  paramSpace: 1e7,
+  timeLimitSec: 300,
+  generate: (seed) =>
+    diagnosis(seed, {
+      what: 'p99 задержки вырос',
+      components: ['api-gateway', 'checkout', 'payments', 'postgres-primary', 'redis-cache', 'search', 'profile', 'notify'],
+      actions: ['переключили PostgreSQL на реплику', 'уменьшили TTL кэша', 'выкатили новую версию клиента БД', 'изменили лимиты CPU', 'включили трассировку на 100 % запросов'],
+    }),
+};
+
+// --- Senior data-eng: ёмкость backfill ---------------------------------------------------------------
+
+export const backfillNights: TaskGenerator = {
+  id: 'eng.backfill-nights',
+  taskId: 'task:backfill-nights',
+  title: 'Сколько ночей займёт перезаливка',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'senior',
+  catalogIds: ['eng.capacity-planning', 'eng.etl-pipeline'],
+  format: 'number',
+  a: 1.2,
+  b: 1.1,
+  paramSpace: 1e7,
+  timeLimitSec: 300,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const days = rng.int(6, 24) * 10;
+    const gb = rng.pick([20, 30, 40, 50, 60]);
+    const workers = rng.int(4, 12);
+    const workerRate = rng.pick([20, 25, 40, 50]);
+    const readers = rng.int(2, 8);
+    const readerRate = rng.pick([15, 20, 30, 50]);
+    const window = rng.pick([5, 6, 7, 8]);
+    const lanes = Math.min(workers, readers);
+    const rate = Math.min(workerRate, readerRate);
+    const perPart = gb / rate; // часов на партицию (gb ≤ 60, rate ≥ 15 → ≤ 4 ч < окна)
+    const perNight = Math.floor((window * rate) / gb);
+    const nights = Math.ceil(days / (lanes * perNight));
+    return {
+      prompt: `Нужно перезалить ${days} дневных партиций по ${gb} ГБ из источника в хранилище. Каждый воркер читает одну партицию целиком (партиция не делится и не переносится через утро). Окно — ${window} ч каждую ночь. Сколько ночей потребуется?`,
+      code: [
+        `воркеров: ${workers}, каждый обрабатывает до ${workerRate} ГБ/ч`,
+        `источник: не больше ${readers} одновременных читателей, каждый читатель — до ${readerRate} ГБ/ч`,
+      ].join('\n'),
+      answerHint: 'число ночей',
+      answerKey: String(nights),
+      explanation: `Параллельно работают min(${workers}, ${readers}) = ${lanes} потока со скоростью min(${workerRate}, ${readerRate}) = ${rate} ГБ/ч; партиция — ${perPart.toFixed(2)} ч, за ночь поток успевает ${perNight} целых партиций; ночей ⌈${days} / (${lanes} · ${perNight})⌉ = ${nights}.`,
+      params: { days, gb, workers, workerRate, readers, readerRate, window },
+    };
+  },
+};
+
+// --- Senior data-eng: дубли при at-least-once (Senior) -----------------------------------------------
+
+export const consumerDuplicates: TaskGenerator = {
+  id: 'eng.consumer-duplicates',
+  taskId: 'task:consumer-duplicates',
+  title: 'Дубли после падений консьюмера',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'senior',
+  catalogIds: ['eng.idempotent-load'],
+  format: 'number',
+  a: 1.3,
+  b: 1.5,
+  paramSpace: 1e6,
+  timeLimitSec: 300,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const total = rng.int(20, 60);
+    const batch = rng.pick([5, 10, 20]);
+    const nCrash = rng.int(1, 3);
+    // Падения: после обработки N-го сообщения (сквозной счётчик обработок, включая повторные).
+    const crashes = rng.sample(Array.from({ length: total - 3 }, (_, i) => i + 3), nCrash).sort((x, y) => x - y);
+    const upsert = rng.int(0, 3) === 0;
+    let committed = 0;
+    let pos = 0;
+    let processed = 0;
+    let rows = 0;
+    let ci = 0;
+    while (pos < total) {
+      pos++;
+      processed++;
+      rows++;
+      if (pos % batch === 0 || pos === total) committed = pos;
+      if (ci < crashes.length && processed === crashes[ci]) {
+        ci++;
+        pos = committed; // рестарт с последнего закоммиченного смещения
+      }
+    }
+    const answer = upsert ? 0 : rows - total;
+    return {
+      prompt: `Консьюмер читает топик из ${total} сообщений (у каждого уникальный ключ), пишет каждое в БД и коммитит смещение после каждого ${batch}-го сообщения и после последнего. Процесс падает сразу после обработки (записи в БД) ${crashes.join('-й, ')}-й по счёту обработки (повторные обработки тоже считаются); если на этом сообщении положен коммит, он успевает пройти. После рестарта чтение идёт с последнего закоммиченного смещения. Запись в БД — ${upsert ? 'UPSERT по ключу сообщения' : 'обычный INSERT без ключа'}. Сколько лишних строк (дублей) будет в БД после того, как весь топик обработан?`,
+      answerHint: 'число дублей',
+      answerKey: String(answer),
+      explanation: upsert
+        ? 'UPSERT по ключу делает повторную обработку идемпотентной: дублей 0 при любых падениях.'
+        : `Всего обработок ${rows} при ${total} сообщениях: всё, что обработано после последнего коммита до падения, записывается повторно — дублей ${answer}. Цена большого батча коммита — больше дублей.`,
+      params: { total, batch, crashes: crashes.join(','), upsert },
+    };
+  },
+};
+
+// --- Senior data-eng: опоздавшие события и водяной знак окна --------------------------------------------
+
+export const lateWindow: TaskGenerator = {
+  id: 'eng.late-window',
+  taskId: 'task:late-window',
+  title: 'Опоздавшие события в оконной агрегации',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'senior',
+  catalogIds: ['eng.incremental-load'],
+  format: 'number',
+  a: 1.3,
+  b: 1.4,
+  paramSpace: 1e8,
+  timeLimitSec: 300,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const lateness = rng.pick([0, 2, 5]);
+    const n = rng.int(10, 14);
+    // Время события (минуты) приходит почти по порядку, с опозданиями.
+    const evs: number[] = [];
+    let base = 0;
+    for (let i = 0; i < n; i++) {
+      base += rng.int(0, 3);
+      evs.push(rng.int(0, 3) === 0 ? Math.max(0, base - rng.int(3, 9)) : base);
+    }
+    let wm = -Infinity;
+    const closed = new Set<number>();
+    let dropped = 0;
+    const counts = new Map<number, number>();
+    for (const t of evs) {
+      const w = Math.floor(t / 10);
+      if (closed.has(w)) dropped++;
+      else counts.set(w, (counts.get(w) ?? 0) + 1);
+      wm = Math.max(wm, t - lateness);
+      for (let k = 0; (k + 1) * 10 <= wm; k++) closed.add(k);
+    }
+    const ask = rng.pick(['dropped', 'first'] as const);
+    const answer = ask === 'dropped' ? dropped : (counts.get(0) ?? 0);
+    return {
+      prompt: `Потоковая агрегация: окна по 10 минут [0;10), [10;20), …; водяной знак = максимальное время события, увиденное к этому моменту, минус ${lateness} мин. Окно закрывается, как только водяной знак ≥ его конца; событие в закрытое окно отбрасывается. События приходят в указанном порядке (время события, мин). ${ask === 'dropped' ? 'Сколько событий будет отброшено?' : 'Сколько событий попадёт в итог окна [0;10)?'}`,
+      code: evs.join(', '),
+      answerHint: 'число событий',
+      answerKey: String(answer),
+      explanation: `Отброшено ${dropped}; в окне [0;10) — ${counts.get(0) ?? 0}. Больше допуск опоздания — меньше потерь, но позже результат: это компромисс, а не настройка «по умолчанию».`,
+      params: { lateness, n, ask },
+    };
+  },
+};
+
+// --- Senior devops: ёмкость с отказом зоны -----------------------------------------------------------------
+
+export const zoneCapacity: TaskGenerator = {
+  id: 'eng.zone-capacity',
+  taskId: 'task:zone-capacity',
+  title: 'Реплики с запасом на отказ зоны',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'senior',
+  catalogIds: ['eng.k8s-resources', 'eng.capacity-planning'],
+  format: 'number',
+  a: 1.3,
+  b: 1.2,
+  paramSpace: 1e6,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const peak = rng.int(12, 90) * 100;
+    const perPod = rng.pick([150, 200, 250, 300, 400]);
+    const util = rng.pick([60, 70, 80]);
+    const zones = rng.pick([3, 4]);
+    const need = Math.ceil(peak / ((perPod * util) / 100));
+    const perZone = Math.ceil(need / (zones - 1));
+    const total = perZone * zones;
+    return {
+      prompt: `Сервис ${svc}: пик ${peak} RPS, один под выдерживает ${perPod} RPS, загрузка пода в пике — не выше ${util} %. Поды размещены поровну в ${zones} зонах доступности. Сколько подов нужно всего, чтобы при отказе любой одной зоны оставшиеся выдержали пик?`,
+      answerHint: 'число подов',
+      answerKey: String(total),
+      explanation: `Без одной зоны нужно ⌈${peak} / (${perPod} · ${util} %)⌉ = ${need} подов на ${zones - 1} зонах → ⌈${need} / ${zones - 1}⌉ = ${perZone} в зоне; всего ${perZone} · ${zones} = ${total}. Запас — плата за отказоустойчивость.`,
+      params: { peak, perPod, util, zones },
+    };
+  },
+};
+
+// --- Senior devops: ущерб от постепенной выкатки ---------------------------------------------------------
+
+export const rolloutBlast: TaskGenerator = {
+  id: 'eng.rollout-blast',
+  taskId: 'task:rollout-blast',
+  title: 'Сколько пользователей заденет плохой релиз',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'senior',
+  catalogIds: ['eng.deploy-rollback'],
+  format: 'number',
+  a: 1.3,
+  b: 1.5,
+  paramSpace: 1e6,
+  timeLimitSec: 300,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const rpm = 10000;
+    let stages: number[] = [];
+    let bake = 0;
+    let fail = 0;
+    let threshold = 0;
+    let errors = 0;
+    let detectedAt = 0;
+    // Перевыбор, пока ответ совпадает с числом из условия (100 %, 10000 и т. п.): его нельзя «угадать» по тексту.
+    do {
+      stages = rng.pick([
+        [1, 5, 25, 100],
+        [1, 10, 50, 100],
+        [5, 20, 50, 100],
+      ]);
+      bake = rng.pick([5, 10, 15]);
+      fail = rng.pick([2, 5, 10]); // % запросов новой версии с ошибкой
+      threshold = rng.pick([51, 101, 151, 251, 301]); // не кратно 2 и 5: накопленное не совпадёт с порогом
+      errors = 0;
+      let minute = 0;
+      detectedAt = 0;
+      outer: for (const pct of stages) {
+        for (let m = 0; m < (pct === 100 ? 1000 : bake); m++) {
+          minute++;
+          errors += (rpm * pct * fail) / 10000;
+          if (errors >= threshold) {
+            detectedAt = minute;
+            break outer;
+          }
+        }
+      }
+    } while ([rpm, bake, fail, threshold, ...stages].includes(errors));
+    return {
+      prompt: `Новая версия выкатывается ступенями ${stages.join(' % → ')} % трафика, каждая ступень длится ${bake} мин (последняя — до отката). Поток — ${rpm} запросов в минуту. В новой версии баг: ${fail} % её запросов падают. Алерт срабатывает в конце минуты, когда накопленное с начала выкатки число ошибок достигает ${threshold}, и откат мгновенный. Сколько запросов пользователей завершится ошибкой?`,
+      answerHint: 'число запросов',
+      answerKey: String(errors),
+      explanation: `Ошибок в минуту на ступени p %: ${rpm} · p % · ${fail} %. Порог достигнут на ${detectedAt}-й минуте, накоплено ${errors}. Мелкие первые ступени ограничивают ущерб, но медленнее доставляют релиз.`,
+      params: { stages: stages.join(','), bake, fail, threshold, detectedAt },
+    };
+  },
+};
+
+// --- Senior devops: HPA ------------------------------------------------------------------------------------
+
+export const hpaReplicas: TaskGenerator = {
+  id: 'eng.hpa-replicas',
+  taskId: 'task:hpa-replicas',
+  title: 'Сколько реплик выставит HPA',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'senior',
+  catalogIds: ['eng.k8s-resources'],
+  format: 'number',
+  a: 1.2,
+  b: 1.1,
+  paramSpace: 1e6,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const target = rng.pick([50, 60, 70]);
+    const min = rng.int(2, 3);
+    const max = rng.int(8, 14);
+    let replicas = rng.int(min, 6);
+    const start = replicas;
+    const readings = Array.from({ length: 3 }, () => {
+      const r = rng.int(20, 140);
+      return Math.abs(r - target) * 10 === target ? r + 1 : r; // не ровно на границе допуска
+    });
+    for (const cur of readings) {
+      if (Math.abs(cur - target) * 10 <= target) continue;
+      replicas = Math.min(max, Math.max(min, Math.ceil((replicas * cur) / target)));
+    }
+    return {
+      prompt: `HPA по CPU: цель ${target} %, minReplicas ${min}, maxReplicas ${max}, допуск 10 % (при |текущее/цель − 1| ≤ 0,1 масштаб не меняется). Сейчас ${start} реплик. Последовательно приходят три замера средней загрузки CPU по подам (каждый — уже при числе реплик после предыдущего шага): ${readings.join(' %, ')} %. Сколько реплик будет после третьего шага? (Окна стабилизации не учитывать.)`,
+      answerHint: 'число реплик',
+      answerKey: String(replicas),
+      explanation: `desired = ⌈текущие реплики · текущее / цель⌉ с ограничением [${min}; ${max}] и допуском 10 %. Итог ${replicas}.`,
+      params: { target, min, max, start, readings: readings.join(',') },
+    };
+  },
+};
+
+// --- Senior qa: число перезапусков против ложных красных --------------------------------------------------------
+
+export const retryBudget: TaskGenerator = {
+  id: 'eng.retry-budget',
+  taskId: 'task:retry-budget',
+  title: 'Сколько перезапусков нужно',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'senior',
+  catalogIds: ['eng.flaky-tests'],
+  format: 'number',
+  a: 1.2,
+  b: 1.3,
+  paramSpace: 1e4,
+  timeLimitSec: 300,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const n = rng.pick([50, 100, 150, 200, 300, 400]);
+    const p = rng.pick([1, 2, 3, 4, 5]); // %
+    const target = rng.pick([1, 2, 5]); // %
+    let r = 0;
+    while (1 - (1 - (p / 100) ** (r + 1)) ** n > target / 100) r++;
+    return {
+      prompt: `В наборе тестов ${svc} ${n} нестабильных тестов, каждый независимо падает с вероятностью ${p} % на запуск (настоящих багов нет). CI перезапускает упавший тест до r раз. Какое наименьшее r даёт вероятность «ложно красного» пайплайна не выше ${target} %?`,
+      answerHint: 'число перезапусков',
+      answerKey: String(r),
+      explanation: `Тест остаётся красным с вероятностью p^(r+1); пайплайн ложно красный с вероятностью 1 − (1 − p^(r+1))^${n}. Наименьшее r — ${r}. Каждый перезапуск маскирует и настоящие нестабильные баги: это компромисс.`,
+      params: { n, p, target, r },
+    };
+  },
+};
+
+// --- Senior qa: шардирование CI ----------------------------------------------------------------------------
+
+export const ciSharding: TaskGenerator = {
+  id: 'eng.ci-sharding',
+  taskId: 'task:ci-sharding',
+  title: 'Сколько раннеров нужно CI',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'senior',
+  catalogIds: ['eng.test-strategy'],
+  format: 'number',
+  a: 1.1,
+  b: 1.1,
+  paramSpace: 1e9,
+  timeLimitSec: 300,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const files = Array.from({ length: rng.int(8, 10) }, () => rng.int(1, 12));
+    const limit = Math.max(...files) + rng.int(0, 8);
+    const makespan = (k: number) => {
+      const load = Array.from({ length: k }, () => 0);
+      for (const d of [...files].sort((x, y) => y - x)) {
+        let best = 0;
+        for (let i = 1; i < k; i++) if (load[i]! < load[best]!) best = i;
+        load[best]! += d;
+      }
+      return Math.max(...load);
+    };
+    let k = 1;
+    while (makespan(k) > limit) k++;
+    return {
+      prompt: `Набор тестов из ${files.length} файлов (длительность, мин): ${files.join(', ')}. Файлы раздаются раннерам так: по убыванию длительности, каждый — раннеру с наименьшей текущей загрузкой (при равенстве — с меньшим номером). Какое наименьшее число раннеров уложит прогон в ${limit} мин?`,
+      answerHint: 'число раннеров',
+      answerKey: String(k),
+      explanation: `Перебором числа раннеров по этому правилу: при ${k} раннерах прогон занимает ${makespan(k)} мин${k > 1 ? `, при ${k - 1} — ${makespan(k - 1)} мин` : ''}. Самый длинный файл (${Math.max(...files)} мин) — нижняя граница, которую раннеры не сократят.`,
+      params: { files: files.join(','), limit, k },
+    };
+  },
+};
+
+// --- Senior qa: границы покрытия — выжившие мутанты -----------------------------------------------------------
+
+export const mutationSurvivors: TaskGenerator = {
+  id: 'eng.mutation-survivors',
+  taskId: 'task:mutation-survivors',
+  title: 'Выжившие мутанты при полном покрытии',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'senior',
+  catalogIds: ['eng.test-design'],
+  format: 'number',
+  a: 1.3,
+  b: 1.4,
+  paramSpace: 1e6,
+  timeLimitSec: 300,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const A = rng.int(18, 25);
+    const I = rng.int(3, 9) * 10000;
+    const orig = (a: number, i: number) => a >= A && i > I;
+    const mutants: { code: string; f: (a: number, i: number) => boolean }[] = [
+      { code: `age > ${A} and income > ${I}`, f: (a, i) => a > A && i > I },
+      { code: `age >= ${A} and income >= ${I}`, f: (a, i) => a >= A && i >= I },
+      { code: `age >= ${A} or income > ${I}`, f: (a, i) => a >= A || i > I },
+      { code: `age >= ${A + 1} and income > ${I}`, f: (a, i) => a >= A + 1 && i > I },
+      { code: `age >= ${A} and income > ${I - 1}`, f: (a, i) => a >= A && i > I - 1 },
+      { code: `age >= ${A}`, f: (a) => a >= A },
+    ];
+    const pool: [number, number][] = [
+      [A, I + 1],
+      [A - 1, I + rng.int(1, 9) * 1000],
+      [A + rng.int(2, 9), I],
+      [A + rng.int(2, 9), I + rng.int(1, 9) * 1000],
+      [A - rng.int(2, 5), I - rng.int(1, 9) * 1000],
+      [A + rng.int(2, 9), I - rng.int(1, 9) * 1000],
+    ];
+    const tests = rng.sample(pool, rng.int(2, 4));
+    const survived = mutants.filter((m) => tests.every(([a, i]) => m.f(a, i) === orig(a, i))).length;
+    return {
+      prompt: `Тесты ниже покрывают все строки функции. Мутационное тестирование меняет условие (варианты ниже); мутант «убит», если хотя бы один тест получает другой результат. Сколько мутантов выживет?`,
+      code: [
+        'def is_eligible(age, income):',
+        `    return age >= ${A} and income > ${I}`,
+        '',
+        ...tests.map(([a, i], k) => `def test_${k + 1}(): assert is_eligible(${a}, ${i}) is ${orig(a, i) ? 'True' : 'False'}`),
+        '',
+        'Мутанты условия:',
+        ...mutants.map((m, k) => `${k + 1}. ${m.code}`),
+      ].join('\n'),
+      answerHint: 'число мутантов',
+      answerKey: String(survived),
+      explanation: `Выжило ${survived} из ${mutants.length}. Покрытие строк у всех наборов одинаково стопроцентное, а мутантов убивают только тесты на границах (age = ${A}, income = ${I}) и на связку условий — это предел метрики покрытия.`,
+      params: { A, I, nTests: tests.length, survived },
+    };
+  },
+};
+
+// --- Senior sre: бюджет для новой зависимости ----------------------------------------------------------------
+
+export const dependencyBudget: TaskGenerator = {
+  id: 'eng.dependency-budget',
+  taskId: 'task:dependency-budget',
+  title: 'Бюджет простоя новой зависимости',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'senior',
+  catalogIds: ['eng.slo'],
+  format: 'number',
+  a: 1.2,
+  b: 1.2,
+  paramSpace: 1e5,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const slo = rng.pick([
+      { pct: '99,9', frac: 0.001 },
+      { pct: '99,95', frac: 0.0005 },
+      { pct: '99,5', frac: 0.005 },
+    ]);
+    const deps = rng.sample(
+      [
+        { name: 'PostgreSQL', frac: 0.0001, pct: '99,99' },
+        { name: 'Redis', frac: 0.0005, pct: '99,95' },
+        { name: 'платёжный шлюз', frac: 0.0005, pct: '99,95' },
+        { name: 'S3', frac: 0.0001, pct: '99,99' },
+        { name: 'Kafka', frac: 0.0002, pct: '99,98' },
+      ],
+      rng.int(2, 3),
+    );
+    const own = rng.int(2, 10);
+    const month = 43200;
+    const budget = month * slo.frac;
+    const used = deps.reduce((a, d) => a + month * d.frac, 0);
+    const answer = Number((budget - used - own).toFixed(2));
+    return {
+      prompt: `SLO доступности ${svc}: ${slo.pct} % за 30 дней. Сервис синхронно зависит от каждой из зависимостей ниже: любая недоступна — недоступен и он. Считаем, что простои не перекрываются (недоступности складываются). На собственные релизы и сбои закладываем ${own} мин в месяц. Сколько минут в месяц может быть недоступна новая синхронная зависимость, чтобы SLO сохранился? (Может быть отрицательным; дробное — через запятую или точку.)`,
+      code: deps.map((d) => `${d.name}: SLO ${d.pct} %`).join('\n'),
+      answerHint: 'минуты',
+      answerKey: String(answer),
+      explanation: `Бюджет ${budget.toFixed(2)} мин − зависимости ${used.toFixed(2)} − свои ${own} = ${answer}. Отрицательный остаток значит: новую зависимость надо делать асинхронной или с деградацией, а не просто подключать.`,
+      params: { slo: slo.pct, deps: deps.map((d) => d.name).join(','), own },
+    };
+  },
+};
+
+// --- Senior sre: задержка у насыщения (M/M/1) ------------------------------------------------------------------
+
+export const mm1Latency: TaskGenerator = {
+  id: 'eng.mm1-latency',
+  taskId: 'task:mm1-latency',
+  title: 'Задержка у предела загрузки',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'senior',
+  catalogIds: ['eng.capacity-planning'],
+  format: 'number',
+  a: 1.3,
+  b: 1.5,
+  paramSpace: 1e4,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    let mu = 0;
+    let g1 = 0;
+    let g2 = 0;
+    // Перевыбор, пока ответ совпадает с числом из условия (тогда его можно «угадать» по тексту).
+    do {
+      mu = rng.pick([60, 80, 120, 150, 300]);
+      const gaps = [1, 2, 4, 5, 8, 10, 20, 25, 40, 50].filter((g) => g < mu / 2);
+      g2 = rng.pick(gaps.filter((g) => g <= 10));
+      g1 = rng.pick(gaps.filter((g) => g > g2));
+    } while ([mu, mu - g1, mu - g2, 1000 / g1].includes(1000 / g2));
+    const l1 = mu - g1;
+    const l2 = mu - g2;
+    const w1 = 1000 / g1;
+    const w2 = 1000 / g2;
+    return {
+      prompt: `Один обработчик, модель M/M/1 (пуассоновский поток, экспоненциальное время обслуживания): пропускная способность ${mu} запросов/с. Сейчас поток ${l1} запросов/с, среднее время в системе ${w1} мс. Поток вырос до ${l2} запросов/с. Каким станет среднее время в системе, мс?`,
+      answerHint: 'миллисекунды',
+      answerKey: String(w2),
+      explanation: `W = 1 / (μ − λ): при ${l2} запросах/с это 1 / ${g2} с = ${w2} мс. Рост потока на ${(((l2 - l1) / l1) * 100).toFixed(1)} % увеличил задержку в ${(w2 / w1).toFixed(1)} раза: у предела загрузки задержка нелинейна, линейная экстраполяция здесь неприменима.`,
+      params: { mu, l1, l2 },
+    };
+  },
+};
+
+// --- Senior sre: сколько узлов для k-из-n ----------------------------------------------------------------------
+
+export const redundancyNodes: TaskGenerator = {
+  id: 'eng.redundancy-nodes',
+  taskId: 'task:redundancy-nodes',
+  title: 'Сколько узлов для целевой доступности',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'senior',
+  catalogIds: ['eng.capacity-planning', 'eng.retries-resilience'],
+  format: 'number',
+  a: 1.2,
+  b: 1.4,
+  paramSpace: 1e3,
+  timeLimitSec: 300,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const k = rng.int(2, 5);
+    const a = rng.pick([0.9, 0.95, 0.98, 0.99]);
+    const tgt = rng.pick([
+      { v: 0.999, label: '99,9' },
+      { v: 0.9999, label: '99,99' },
+      { v: 0.99999, label: '99,999' },
+    ]);
+    const target = tgt.v;
+    const choose = (n: number, r: number) => {
+      let c = 1;
+      for (let i = 0; i < r; i++) c = (c * (n - i)) / (i + 1);
+      return c;
+    };
+    const pUp = (n: number) => {
+      let s = 0;
+      for (let r = k; r <= n; r++) s += choose(n, r) * a ** r * (1 - a) ** (n - r);
+      return s;
+    };
+    let n = k;
+    while (pUp(n) < target) n++;
+    const pct = (x: number) => String(Math.round(x * 100));
+    return {
+      prompt: `Сервису ${svc} нужно не меньше ${k} работающих узлов. Узлы отказывают независимо, доступность узла — ${pct(a)} %. Какое наименьшее число узлов даёт доступность сервиса не ниже ${tgt.label} %?`,
+      answerHint: 'число узлов',
+      answerKey: String(n),
+      explanation: `P(работает ≥ ${k} из n) = Σ C(n, r)·a^r·(1 − a)^(n − r) по r ≥ ${k}; впервые ≥ ${tgt.label} % при n = ${n}. Каждый лишний узел — прямая цена надёжности.`,
+      params: { k, a, target, n },
+    };
+  },
+};
+
 export const circuitBreaker: TaskGenerator = {
   id: 'eng.circuit-breaker',
   taskId: 'task:circuit-breaker',
@@ -1946,40 +2994,64 @@ export const circuitBreaker: TaskGenerator = {
 };
 
 export const ENGINEERING_GENERATORS: TaskGenerator[] = [
-  // data-eng: 4 Junior + 4 Middle
+  // data-eng: 6 Junior + 4 Middle + 4 Senior
   dedupCount,
   schemaTypes,
   nullAggregates,
   joinFanout,
+  groupHaving,
+  csvFields,
   idempotentLoad,
   incrementalWatermark,
   partitionPrune,
   scd2AsOf,
+  backfillNights,
+  consumerDuplicates,
+  lateWindow,
+  diagData,
   // devops
   dockerCache,
   secretsLeak,
   portMapping,
   ciStages,
+  envPrecedence,
+  cronRuns,
   k8sProbes,
   k8sCapacity,
   deployRollback,
   rollingUpdate,
+  zoneCapacity,
+  rolloutBlast,
+  hpaReplicas,
+  diagDeploy,
   // qa-automation
   testPyramid,
   fixtureIsolation,
   boundaryValues,
   parametrizeCount,
+  locatorStability,
+  rerunReport,
   flakyLine,
   contractTest,
   mockCalls,
   branchCoverage,
+  retryBudget,
+  ciSharding,
+  mutationSurvivors,
+  diagTests,
   // sre
   errorBudget,
   symptomAlert,
   latencyPercentile,
   logCount,
+  counterReset,
+  escalation,
   retryAmplification,
   burnRate,
   littlesLaw,
   circuitBreaker,
+  dependencyBudget,
+  mm1Latency,
+  redundancyNodes,
+  diagLatency,
 ];

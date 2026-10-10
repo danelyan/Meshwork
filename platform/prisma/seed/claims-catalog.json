@@ -2151,6 +2151,7 @@
       "proof": [
         "task:schema-types",
         "task:idempotent-load",
+        "task:group-having",
         "interview:defend"
       ],
       "markers": [
@@ -2183,7 +2184,8 @@
         "middle": 1
       },
       "proof": [
-        "task:schema-types"
+        "task:schema-types",
+        "task:csv-fields"
       ],
       "markers": [
         "схема данных",
@@ -2243,6 +2245,7 @@
       },
       "proof": [
         "task:idempotent-load",
+        "task:consumer-duplicates",
         "interview:defend"
       ],
       "markers": [
@@ -2274,6 +2277,7 @@
       },
       "proof": [
         "task:incremental-watermark",
+        "task:late-window",
         "interview:defend"
       ],
       "markers": [
@@ -2362,6 +2366,7 @@
         "middle": 2
       },
       "proof": [
+        "task:cron-runs",
         "interview:defend"
       ],
       "markers": [
@@ -2394,6 +2399,7 @@
       "proof": [
         "task:docker-cache",
         "task:port-mapping",
+        "task:env-precedence",
         "interview:defend"
       ],
       "markers": [
@@ -2520,6 +2526,7 @@
       },
       "proof": [
         "task:k8s-capacity",
+        "task:hpa-replicas",
         "interview:defend"
       ],
       "markers": [
@@ -2552,6 +2559,7 @@
       "proof": [
         "task:deploy-rollback",
         "task:rolling-update",
+        "task:rollout-blast",
         "interview:defend"
       ],
       "markers": [
@@ -2611,6 +2619,8 @@
       },
       "proof": [
         "task:test-pyramid",
+        "task:diag-tests",
+        "task:ci-sharding",
         "interview:defend"
       ],
       "markers": [
@@ -2644,7 +2654,8 @@
       "proof": [
         "task:boundary-values",
         "task:parametrize-count",
-        "task:branch-coverage"
+        "task:branch-coverage",
+        "task:mutation-survivors"
       ],
       "markers": [
         "тест-дизайн",
@@ -2707,6 +2718,8 @@
       },
       "proof": [
         "task:flaky-line",
+        "task:rerun-report",
+        "task:retry-budget",
         "interview:defend"
       ],
       "markers": [
@@ -2763,6 +2776,7 @@
         "middle": 2
       },
       "proof": [
+        "task:locator-stability",
         "interview:defend"
       ],
       "markers": [
@@ -2795,6 +2809,7 @@
       "proof": [
         "task:error-budget",
         "task:burn-rate",
+        "task:dependency-budget",
         "interview:defend"
       ],
       "markers": [
@@ -2863,6 +2878,10 @@
       "proof": [
         "task:error-budget",
         "task:log-count",
+        "task:escalation",
+        "task:diag-data",
+        "task:diag-deploy",
+        "task:diag-latency",
         "interview:defend"
       ],
       "markers": [
@@ -2923,6 +2942,10 @@
       },
       "proof": [
         "task:littles-law",
+        "task:backfill-nights",
+        "task:zone-capacity",
+        "task:mm1-latency",
+        "task:redundancy-nodes",
         "interview:defend"
       ],
       "markers": [
@@ -2955,6 +2978,7 @@
       "proof": [
         "task:latency-percentile",
         "task:log-count",
+        "task:counter-reset",
         "interview:defend"
       ],
       "markers": [

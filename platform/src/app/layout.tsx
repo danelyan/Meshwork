@@ -37,6 +37,10 @@ const mono = localFont({
 });
 
 export const metadata: Metadata = {
+  icons: {
+    icon: [{ url: '/assets/favicon.png', type: 'image/png', sizes: '64x64' }, { url: '/assets/favicon.svg', type: 'image/svg+xml' }],
+    apple: { url: '/assets/apple-touch-icon.png', sizes: '180x180' },
+  },
   title: 'ФСП Карьера - консультант',
   description: 'Карьерный консультант платформы ФСП Карьера',
 };

@@ -1,39 +1,31 @@
 import { Background } from './Background';
 import { Companies } from './Companies';
-import { COMPANY_FORMS, shortRub, VACANCY_FORMS } from './format';
 import { Hero } from './Hero';
 import { Start } from './Start';
 import styles from './Landing.module.css';
 import type { LandingData } from './types';
-import { plural } from '@/lib/plural';
 
 const RULES = [
-  { n: '01', title: 'Тест вместо резюме', text: 'Грейд подтверждается задачами, а не словами. Работодатель видит реальный уровень.' },
+  { n: '01', title: 'Тест вместо резюме', text: 'Категорию подтверждает адаптивный тест. Компания видит результат проверки и источники навыков.' },
   { n: '02', title: 'Вилка всегда', text: 'Без зарплатной вилки приглашение не отправить. Никаких «обсудим на интервью».' },
   { n: '03', title: 'Контакты после «да»', text: 'Профиль анонимен, пока вы не примете приглашение. Никакого спама.' },
-  { n: '04', title: 'ФСП в зачёт', text: 'Призовые места и рейтинг соревнований поднимают вас в выдаче.' },
+  { n: '04', title: 'Достижения по ФСП ID', text: 'Связь с ФСП ID добавляет спортивные достижения в профиль. На стенде используется демонстрационный реестр.' },
+  { n: '05', title: 'ИИ-помощник рядом', text: 'Кира разберёт резюме, предложит факты для профиля и поможет выбрать цель. Что сохранить, решаешь ты.' },
+  { n: '06', title: 'Навыки на практике', text: 'Созвон, проектное задание и защита показывают глубину опыта. Результаты и доказательства остаются в профиле.' },
 ];
 
-/** Главная: витрина (site/index.html). Компании и числа - из `data` (showcase.ts), это иллюстрация, не данные сервиса. */
+/** Product introduction and public company examples; no third-party vacancy feed. */
 export function Landing({ data, signedIn }: { data: LandingData; signedIn: boolean }) {
-  const { stats } = data;
-  const tiles = [
-    { value: String(stats.companies), label: `${plural(stats.companies, COMPANY_FORMS)} с открытыми вакансиями` },
-    { value: String(stats.vacancies), label: `${plural(stats.vacancies, VACANCY_FORMS)}, у каждой указана зарплатная вилка` },
-    { value: String(stats.categorized), label: 'кандидатов с категорией, подтверждённой тестом' },
-    ...(stats.maxSalary > 0 ? [{ value: `до ${shortRub(stats.maxSalary)}`, label: 'верхняя граница вилки среди вакансий, ₽ в месяц' }] : []),
-    { value: `${stats.responseRate}%`, label: 'приглашений получают ответ за сутки' },
-  ];
   return (
     <div className={styles.page}>
       <Background />
       <main id="main" className={styles.main}>
         <Hero signedIn={signedIn} />
-        <Companies companies={data.companies} total={stats.companies} />
+        <Companies companies={data.companies} />
         <section className={`${styles.section} ${styles.why}`} id="why" aria-labelledby="why-title">
           <div className={styles.sechead}>
             <h2 id="why-title">Почему это работает</h2>
-            <span>4 правила платформы</span>
+            <span>{RULES.length} правил платформы</span>
           </div>
           <ol className={styles.wgrid}>
             {RULES.map((r) => (
@@ -44,14 +36,6 @@ export function Landing({ data, signedIn }: { data: LandingData; signedIn: boole
               </li>
             ))}
           </ol>
-          <ul className={styles.stats} aria-label="Платформа в цифрах">
-            {tiles.map((t) => (
-              <li key={t.label}>
-                <b>{t.value}</b>
-                <span>{t.label}</span>
-              </li>
-            ))}
-          </ul>
         </section>
         <section className={`${styles.section} ${styles.final}`} aria-labelledby="final-title">
           <div className={styles.finalIn}>
@@ -60,7 +44,6 @@ export function Landing({ data, signedIn }: { data: LandingData; signedIn: boole
           </div>
         </section>
       </main>
-      <p className={styles.illustration}>Данные на этой странице - иллюстрация</p>
     </div>
   );
 }

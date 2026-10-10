@@ -1,13 +1,12 @@
 import { buildGraph } from '@/components/landing/graph-model';
+import { SHOWCASE } from '@/components/landing/showcase';
 
-it('restores the original illustrated companies and matching percentages', () => {
+it('uses sourced company logos without fabricated matching percentages', () => {
   const {nodes, edges} = buildGraph();
-  expect(nodes.filter(n => n.id.startsWith('c')).map(n => [n.label,n.letter])).toEqual([
-    ['North','N'],['Vector','V'],['Forma','F'],['Orbit','O'],['Atlas','A'],
-  ]);
-  expect(edges.filter(e=>e.mine).map(e=>e.mine)).toEqual(['92%','84%','68%','61%','46%']);
-  expect(nodes.find(n=>n.id==='x2')).toMatchObject({kind:'co',label:'Kernel',letter:'K'});
-  expect(nodes.find(n=>n.id==='x5')).toMatchObject({kind:'co',label:'Tensor',letter:'T'});
+  expect(nodes.filter(n => n.id.startsWith('c')).map(n => [n.label,n.logoSrc])).toEqual(SHOWCASE.companies.slice(0,5).map(c=>[c.name,c.logoSrc]));
+  expect(edges.filter(e=>e.mine).map(e=>e.mine)).toEqual([true,true,true,true,true]);
+  expect(nodes.find(n=>n.id==='x2')).toMatchObject({kind:'co',label:'VK',logoSrc:'/assets/companies/vk.png'});
+  expect(nodes.find(n=>n.id==='x5')).toMatchObject({kind:'co',label:'МТС',logoSrc:'/assets/companies/mts.svg'});
 });
 
 it('retains the reference topology and mobile slots', () => {

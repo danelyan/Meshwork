@@ -3,6 +3,7 @@
 import { type CSSProperties, useEffect, useRef } from 'react';
 
 import styles from './HeroGraph.module.css';
+import { CompanyLogo } from './CompanyLogo';
 import { buildGraph } from './graph-model';
 const { nodes, edges } = buildGraph();
 
@@ -17,12 +18,11 @@ function Silhouette() {
   );
 }
 
-/** Original mockup graph: decorative companies and illustrative percentages. */
+/** Decorative graph with public company examples, without fabricated match scores. */
 export function HeroGraph() {
   const demoRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const nodeEls = useRef<Record<string, HTMLDivElement | null>>({});
-  const lbls = useRef<Array<HTMLDivElement | null>>([]);
   const dots = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
@@ -70,11 +70,8 @@ export function HeroGraph() {
         l.setAttribute('y1', String(ay));
         l.setAttribute('x2', String(bx));
         l.setAttribute('y2', String(by));
-        const lbl = lbls.current[i];
         const dot = dots.current[i];
-        if (lbl && dot) {
-          lbl.style.left = `${ax + (bx - ax) * 0.55}px`;
-          lbl.style.top = `${ay + (by - ay) * 0.55}px`;
+        if (dot) {
           const q = (T * 0.22 + i * 0.17) % 1;
           dot.style.left = `${ax + (bx - ax) * q}px`;
           dot.style.top = `${ay + (by - ay) * q}px`;
@@ -125,7 +122,7 @@ export function HeroGraph() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src="/landing/person-0.webp" alt="" />
             )}
-            {n.kind === 'co' && n.letter}
+            {n.kind === 'co' && <CompanyLogo company={{ name: n.label ?? '', logoSrc: n.logoSrc }} className={styles.companyLogo} />}
             {n.kind === 'st' && <Silhouette />}
             {n.label && <span>{n.label}</span>}
           </div>
@@ -134,14 +131,6 @@ export function HeroGraph() {
       {edges.map((e, i) =>
         e.mine ? (
           <div key={`${e.a}-${e.b}`}>
-            <div
-              className={styles.lbl}
-              ref={(el) => {
-                lbls.current[i] = el;
-              }}
-            >
-              {e.mine}
-            </div>
             <div
               className={styles.dot}
               ref={(el) => {

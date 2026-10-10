@@ -1,3 +1,4 @@
+import { SHOWCASE } from './showcase';
 export type NodeKind = 'me' | 'co' | 'st';
 
 export interface GraphNode {
@@ -7,6 +8,7 @@ export interface GraphNode {
   label?: string;
   /** Буква компании. */
   letter?: string;
+  logoSrc?: string;
   /** Позиция на десктопе, % (как в мокапе: x масштабируется 6 + x*0.8, кроме узлов x*). */
   pos: [number, number];
   /** Позиция на мобильном (≤640px); нет — узел скрыт. */
@@ -16,8 +18,8 @@ export interface GraphNode {
 export interface GraphEdge {
   a: string;
   b: string;
-  /** Иллюстративный процент из исходного мокапа. */
-  mine?: string;
+  /** Decorative highlighted connection; never a measured match percentage. */
+  mine?: boolean;
 }
 
 // Слоты компаний: [десктоп x, y], мобильная позиция — из мокапа (heroPositions).
@@ -53,17 +55,16 @@ const LINKS: Array<[string, string]> = [
 export function buildGraph(): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const nodes: GraphNode[] = [{ id: 'me', kind: 'me', label: 'Вы', pos: scale([50, 50]), mobile: [50, 52] }];
   const edges: GraphEdge[] = [];
-  const companies = [['North', '92%'], ['Vector', '84%'], ['Forma', '68%'], ['Orbit', '61%'], ['Atlas', '46%']];
-  companies.forEach(([name, percent], i) => {
+  const companies = SHOWCASE.companies.slice(0, 5);
+  companies.forEach(({ name, logoSrc }, i) => {
     const slot = SLOTS[i]!;
-    nodes.push({ id: `c${i}`, kind: 'co', label: name, letter: name!.charAt(0), pos: scale(slot.pos), mobile: [slot.mobile[0], i === 2 || i === 4 ? 82 : slot.mobile[1]] });
-    edges.push({ a: 'me', b: `c${i}`, mine: percent });
+    nodes.push({ id: `c${i}`, kind: 'co', label: name, letter: name.charAt(0), logoSrc, pos: scale(slot.pos), mobile: [slot.mobile[0], i === 2 || i === 4 ? 82 : slot.mobile[1]] });
+    edges.push({ a: 'me', b: `c${i}`, mine: true });
   });
   for (const [id, label, p] of STRANGERS) nodes.push({ id, kind: 'st', label, pos: scale(p) });
   for (const [id, p] of FAR) {
-    const name = id === 'x2' ? 'Kernel' : id === 'x5' ? 'Tensor' : undefined;
-    const letter = name?.charAt(0) ?? (id === 'x11' ? 'M' : undefined);
-    nodes.push({ id, kind: letter ? 'co' : 'st', label: name, letter, pos: p });
+    const company = id === 'x2' ? SHOWCASE.companies[5] : id === 'x5' ? SHOWCASE.companies[6] : id === 'x11' ? SHOWCASE.companies[7] : undefined;
+    nodes.push({ id, kind: company ? 'co' : 'st', label: company?.name, letter: company?.name.charAt(0), logoSrc: company?.logoSrc, pos: p });
   }
   const ids = new Set(nodes.map((n) => n.id));
   for (const [a, b] of LINKS) if (ids.has(a) && ids.has(b)) edges.push({ a, b });

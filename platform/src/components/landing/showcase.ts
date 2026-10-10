@@ -1,22 +1,15 @@
 import type { LandingData } from './types';
 
-/*
- * ВИТРИНА, НЕ ДАННЫЕ СЕРВИСА. Всё на главной - вымышленные компании и правдоподобные
- * цифры для демонстрации; реальные данные платформы (компании, вакансии, кандидаты)
- * на публичной странице не показываем. Названия не совпадают с реальными брендами
- * и с сидом БД (prisma/seed). Узлы графа героя строятся из этих же компаний.
- */
+/** Public company examples. Sources: docs/sources/company-logos.md. No imported vacancies or partnership claims. */
 export const SHOWCASE: LandingData = {
   companies: [
-    { id: 'sc-1', name: 'Аврора Лабс', focus: 'Backend · Middle, Senior', description: 'Облачная платформа для логистики', vacancies: 4, maxSalary: 420000 },
-    { id: 'sc-2', name: 'Кедр', focus: 'Frontend · Junior, Middle', description: 'Сервис электронных очередей', vacancies: 3, maxSalary: 260000 },
-    { id: 'sc-3', name: 'Полюс Системс', focus: 'Backend, Data · Middle', description: 'Аналитика для промышленности', vacancies: 5, maxSalary: 380000 },
-    { id: 'sc-4', name: 'Вектор Пэй', focus: 'Backend · Junior, Middle', description: 'Платёжный шлюз для малого бизнеса', vacancies: 2, maxSalary: 300000 },
-    { id: 'sc-5', name: 'Маяк Мобайл', focus: 'Mobile · Middle, Senior', description: 'Приложения для ритейла', vacancies: 3, maxSalary: 400000 },
-    { id: 'sc-6', name: 'Тундра Тех', focus: 'DevOps · Middle', description: 'Инфраструктура и мониторинг', vacancies: 2, maxSalary: 350000 },
-    { id: 'sc-7', name: 'Ладога Софт', focus: 'Frontend, Backend · Junior', description: 'Образовательная платформа', vacancies: 4, maxSalary: 180000 },
-    { id: 'sc-8', name: 'Квант Ривер', focus: 'ML, Backend · Senior', description: 'Рекомендательные системы', vacancies: 2, maxSalary: 480000 },
-    { id: 'sc-9', name: 'Бирюза', focus: 'QA, Backend · Junior, Middle', description: 'Маркетплейс услуг', vacancies: 3, maxSalary: 240000 },
+    { id: 'yandex', name: 'Яндекс', focus: 'Поиск и цифровые сервисы', description: 'Продукты для людей и бизнеса', logoSrc: '/assets/companies/yandex.png', careersUrl: 'https://yandex.ru/jobs/' },
+    { id: 'tbank', name: 'Т-Банк', focus: 'Финансовые технологии', description: 'Цифровые продукты и банковские сервисы', logoSrc: '/assets/companies/tbank.svg', careersUrl: 'https://www.tbank.ru/career/' },
+    { id: 'avito', name: 'Авито', focus: 'Продуктовая разработка', description: 'Платформа объявлений и услуг', logoSrc: '/assets/companies/avito.svg', careersUrl: 'https://career.avito.com/' },
+    { id: 'ozon', name: 'Ozon', focus: 'Электронная коммерция', description: 'Маркетплейс и технологии доставки', logoSrc: '/assets/companies/ozon.png', careersUrl: 'https://hh.ru/employer/2180' },
+    { id: 'sber', name: 'Сбер', focus: 'Банкинг и технологии', description: 'Финансовые и цифровые сервисы', logoSrc: '/assets/companies/sber.jpg', careersUrl: 'https://rabota.sber.ru/' },
+    { id: 'vk', name: 'VK', focus: 'Социальные и цифровые сервисы', description: 'Коммуникации, контент и технологии', logoSrc: '/assets/companies/vk.png', careersUrl: 'https://team.vk.company/' },
+    { id: 'mts', name: 'МТС', focus: 'Связь и цифровая экосистема', description: 'Телекоммуникации и ИТ-продукты', logoSrc: '/assets/companies/mts.svg', careersUrl: 'https://job.mts.ru/' },
+    { id: 'alfa', name: 'Альфа-Банк', focus: 'Финансовые технологии', description: 'Банковские продукты и сервисы', logoSrc: '/assets/companies/alfa.png', careersUrl: 'https://hh.ru/employer/80' },
   ],
-  stats: { companies: 9, vacancies: 28, categorized: 1240, maxSalary: 480000, responseRate: 86 },
 };

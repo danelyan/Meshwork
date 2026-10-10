@@ -13,6 +13,6 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const jar = await cookies();
   const signedIn = verifySession(jar.get(SESSION_COOKIE)?.value) !== null;
-  // Витрина: фикстуры, без обращения к БД. Страница динамична только из-за чтения куки сессии.
+  // Публичные примеры ИТ-компаний; чужие вакансии не импортируются.
   return <Landing data={SHOWCASE} signedIn={signedIn} />;
 }

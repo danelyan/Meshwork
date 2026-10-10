@@ -8,6 +8,7 @@ import { responseJsonSchema } from '../llm/schema';
 import type { ChatMessage, LlmProvider } from '../llm/types';
 import { GRADE_CUT } from '../test/policy';
 import type { Grade } from '../../lib/grades';
+import { INTERVIEWER_TIMEOUT_MS, withRefusal } from './plan';
 import { contextBlock, loadCallPrompt } from './prompt-utils';
 import { CallOwnershipOutput, CallReviewQuestionOutput } from './schemas';
 import { OWNERSHIP_LABEL, type TestOwnership, type TestOwnershipStatus, type TranscriptEntry } from './types';
@@ -134,6 +135,22 @@ export function reviewState(transcript: readonly TranscriptEntry[]): { asked: nu
   return { asked, answered };
 }
 
+/**
+ * Какой шаг этапа задавать сейчас: шаг 1 — только когда обычные вопросы закончились (allowStart), шаг 2 — сразу
+ * после ответа на шаг 1; null — этап пройден или шаг ещё не наступил. Общая логика видов qualifying и interview.
+ */
+export function reviewStepDue(transcript: readonly TranscriptEntry[], allowStart: boolean): 1 | 2 | null {
+  const st = reviewState(transcript);
+  if (st.asked >= REVIEW_QUESTIONS) return null;
+  if (st.asked === 0) return allowStart ? 1 : null;
+  return st.answered >= st.asked ? ((st.asked + 1) as 1 | 2) : null;
+}
+
+/** Сколько реплик ИИ этапа ещё впереди (0 — этапа нет или он пройден). */
+export function reviewRemaining(items: readonly ReviewItem[], transcript: readonly TranscriptEntry[]): number {
+  return items.length === 0 ? 0 : Math.max(0, REVIEW_QUESTIONS - reviewState(transcript).asked);
+}
+
 /** Пары вопрос-ответ этапа, по порядку. */
 export function reviewDialog(transcript: readonly TranscriptEntry[]): { question: string; answer: string | null }[] {
   const out: { question: string; answer: string | null }[] = [];
@@ -168,6 +185,19 @@ export function templateReviewQuestion(item: ReviewItem, step: 1 | 2): string {
     : 'А что изменилось бы в твоём ответе, если в условии поменять одно число или одно условие? Покажи, как бы пересчитал.';
 }
 
+const firstSentence = (t: string) => (/^[^.!?]*[.!?]/.exec(t.trim())?.[0] ?? '').trim();
+
+/**
+ * Шаг 2 не повторяет вступление шага 1 («Теперь вернёмся к тесту.»): модель иногда копирует связку (живая отладка
+ * 11.10). Первое предложение срезается, если оно совпадает с первым предложением шага 1 и после него есть вопрос.
+ */
+export function dropRepeatedLead(question: string, stepOne: string): string {
+  const lead = firstSentence(question);
+  if (!lead || lead.length > 60 || lead.toLowerCase() !== firstSentence(stepOne).toLowerCase()) return question;
+  const rest = question.slice(question.indexOf(lead) + lead.length).trim();
+  return rest.length >= 15 ? rest.charAt(0).toUpperCase() + rest.slice(1) : question;
+}
+
 export async function nextReviewQuestion(
   items: readonly ReviewItem[],
   step: 1 | 2,
@@ -176,11 +206,13 @@ export async function nextReviewQuestion(
   signal?: AbortSignal,
 ): Promise<{ question: string; fallback: boolean }> {
   const main = items[0]!;
+  const lastAnswer = dialog[dialog.length - 1]?.answer ?? null;
+  const refuse = (q: string) => withRefusal(q, lastAnswer, 'Подсказать не могу, мне важно твоё рассуждение.');
   const payload: ReviewPayload = { kind: 'test_review', step, items: items.map(toPayloadItem), dialog };
   try {
     const res = await llm.complete(
       {
-        purpose: 'call_interviewer',
+        purpose: 'call_interviewer', timeoutMs: INTERVIEWER_TIMEOUT_MS,
         system: loadCallPrompt('test-review'),
         messages: [{ role: 'user', content: `${contextBlock(payload)}\n\nЗадай вопрос этапа, шаг ${step}. Ответ — только JSON по схеме.` }],
         schema: { name: 'call_review_question', jsonSchema: responseJsonSchema(CallReviewQuestionOutput) as object },
@@ -191,15 +223,15 @@ export async function nextReviewQuestion(
     );
     const parsed = CallReviewQuestionOutput.safeParse(res.kind === 'json' ? res.json : undefined);
     if (parsed.success) {
-      const q = parsed.data.question.trim();
+      const q = step === 2 ? dropRepeatedLead(parsed.data.question.trim(), dialog[0]?.question ?? '') : parsed.data.question.trim();
       const leaksKey = main.answerKey.length >= 5 && q.includes(main.answerKey);
-      if (/[а-яё]/i.test(q) && q.length <= 400 && !leaksKey) return { question: q, fallback: false };
+      if (/[а-яё]/i.test(q) && q.length <= 400 && !leaksKey) return { question: refuse(q), fallback: false };
     }
   } catch (err) {
     if (signal?.aborted) throw err;
     console.warn('[call] test-review fallback:', err instanceof Error ? err.message : err);
   }
-  return { question: templateReviewQuestion(main, step), fallback: true };
+  return { question: refuse(templateReviewQuestion(main, step)), fallback: true };
 }
 
 // ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@ import { loadCallContext } from './context';
 import { type EvalTopic, evaluateCall, notProbedItem } from './evaluator';
 import { nextCallQuestion } from './interviewer';
 import { CALL_LIMITS, type PlanTurn } from './plan';
-import { evaluateOwnership, nextReviewQuestion, ownershipSentence, REVIEW_QUESTIONS, reviewDialog, reviewState } from './test-review';
+import { evaluateOwnership, nextReviewQuestion, ownershipSentence, reviewDialog, reviewRemaining, reviewStepDue, type ReviewItem } from './test-review';
 import type { CallKind, CallVerdict, QuestionLevel, TranscriptEntry } from './types';
 
 export interface DriverSession {
@@ -38,7 +38,10 @@ export interface CallDriver {
   disclaimer?: string;
   /** Проверка перед стартом (например, сабмит проекта принадлежит кандидату). */
   assertCanStart?(candidateId: string, projectSubmissionId: string | null): Promise<void>;
-  nextQuestion(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; force?: { topic: string; level: QuestionLevel } }): Promise<DriverQuestion>;
+  /** maxQuestions — потолок обычных вопросов на этот созвон (сервис урезает его под этап разбора теста). */
+  nextQuestion(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; force?: { topic: string; level: QuestionLevel }; maxQuestions?: number }): Promise<DriverQuestion>;
+  /** Сколько реплик этапа «разбор задания теста» ещё впереди (0 — этапа нет). Нужен для общего лимита реплик ИИ. */
+  reviewRemaining?(session: DriverSession): Promise<number>;
   /**
    * Этап «разбор решённого задания теста» (только qualifying): следующий вопрос этапа или null, если этапа нет
    * (у кандидата нет завершённой попытки теста), он уже пройден или шаг ещё не наступил.
@@ -73,6 +76,24 @@ export function questionTurns(transcript: readonly TranscriptEntry[]): (PlanTurn
   return out;
 }
 
+/** Вопрос этапа «разбор задания теста» как реплика драйвера (общий для qualifying и interview). */
+export async function reviewDriverQuestion(
+  items: readonly ReviewItem[],
+  step: 1 | 2,
+  transcript: readonly TranscriptEntry[],
+  llm: LlmProvider,
+  signal?: AbortSignal,
+  extraMeta: Partial<TranscriptEntry['meta']> = {},
+): Promise<DriverQuestion | null> {
+  if (items.length === 0) return null;
+  const q = await nextReviewQuestion(items, step, reviewDialog(transcript), llm, signal);
+  return {
+    text: q.question,
+    meta: { topic: items[0]!.title, catalogId: null, level: 2, routedBy: null, ...extraMeta, testReview: { step, templateId: items[0]!.templateId }, ...(q.fallback ? { fallback: true } : {}) },
+    done: false,
+  };
+}
+
 export const CALL_DISCLAIMER =
   'Созвон проверяет, насколько глубоко ты понимаешь темы своей специализации сейчас. Он не доказывает подлинность истории из резюме и не меняет категорию - её даёт только тест. Грамотность, акцент и ошибки распознавания речи не оцениваются.';
 
@@ -85,7 +106,10 @@ export function summaryOf(depthMap: CallVerdict['depthMap']): string {
   const head = `Подтверждено тем: ${ok.length} из ${probed.length} проверенных.`;
   const list = ok.length ? ` Подтвердились: ${ok.map((d) => `«${d.topic}»`).join(', ')}.` : '';
   const tail = [
-    unsure.length ? ` Не определено (оценщик разошёлся и после дополнительного вопроса): ${unsure.map((d) => `«${d.topic}»`).join(', ')}.` : '',
+    // «После дополнительного вопроса» — только если он был: общий лимит реплик (maxAiTurns) может его не оставить.
+    unsure.length
+      ? ` Не определено (оценщик разошёлся${unsure.every((d) => d.extraProbe) ? ' и после дополнительного вопроса' : ''}): ${unsure.map((d) => `«${d.topic}»`).join(', ')}.`
+      : '',
     skipped ? ` Не проверено в этом созвоне: ${skipped}.` : '',
   ].join('');
   return head + list + tail;
@@ -98,27 +122,25 @@ const qualifying: CallDriver = {
   async nextQuestion(session, llm, opts = {}) {
     const ctx = await loadCallContext(session.candidateId);
     const turns = questionTurns(session.transcript);
+    const limits = { ...this.limits, maxQuestions: Math.min(this.limits.maxQuestions, opts.maxQuestions ?? this.limits.maxQuestions) };
     const q = await nextCallQuestion(
-      { specialization: ctx.specialization, claimedGrade: ctx.claimedGrade, topics: ctx.topics, turns, limits: this.limits, ...(opts.force ? { force: opts.force } : {}) },
+      { specialization: ctx.specialization, claimedGrade: ctx.claimedGrade, topics: ctx.topics, turns, limits, ...(opts.force ? { force: opts.force } : {}) },
       llm,
       opts.signal,
     );
     return { text: q.question, meta: q.meta, done: q.done };
   },
 
-  async nextReviewQuestion(session, llm, opts = {}) {
-    const st = reviewState(session.transcript);
-    // Шаг 1 — только когда обычные вопросы закончились (allowStart); шаг 2 — сразу после ответа на шаг 1.
-    if (st.asked >= REVIEW_QUESTIONS || (st.asked === 0 && !opts.allowStart) || (st.asked === 1 && st.answered < 1)) return null;
+  async reviewRemaining(session) {
     const ctx = await loadCallContext(session.candidateId);
-    if (ctx.testReview.length === 0) return null;
-    const step = (st.asked + 1) as 1 | 2;
-    const q = await nextReviewQuestion(ctx.testReview, step, reviewDialog(session.transcript), llm, opts.signal);
-    return {
-      text: q.question,
-      meta: { topic: ctx.testReview[0]!.title, catalogId: null, level: 2, routedBy: null, testReview: { step, templateId: ctx.testReview[0]!.templateId }, ...(q.fallback ? { fallback: true } : {}) },
-      done: false,
-    };
+    return reviewRemaining(ctx.testReview, session.transcript);
+  },
+
+  async nextReviewQuestion(session, llm, opts = {}) {
+    const step = reviewStepDue(session.transcript, Boolean(opts.allowStart));
+    if (!step) return null;
+    const ctx = await loadCallContext(session.candidateId);
+    return reviewDriverQuestion(ctx.testReview, step, session.transcript, llm, opts.signal);
   },
 
   async evaluate(session, llm, opts = {}) {

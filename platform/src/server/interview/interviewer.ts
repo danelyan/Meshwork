@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 import type { Grade } from '../../lib/grades';
 import { retellsProfile } from '../call/evaluator';
-import { heuristicSignal } from '../call/plan';
+import { heuristicSignal, INTERVIEWER_TIMEOUT_MS, withRefusal } from '../call/plan';
 import { contextBlock } from '../call/prompt-utils';
 import { ANSWER_SIGNALS, type AiUtteranceMeta, type AnswerSignal, type QuestionLevel } from '../call/types';
 import { responseJsonSchema } from '../llm/schema';
@@ -161,7 +161,7 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
     for (let attempt = 0; attempt < 2; attempt++) {
       const res = await llm.complete(
         {
-          purpose: 'interview_interviewer',
+          purpose: 'interview_interviewer', timeoutMs: INTERVIEWER_TIMEOUT_MS,
           system: loadInterviewPrompt(),
           messages: buildInterviewerMessages(input, correction),
           schema: { name: 'interview_question', jsonSchema: JSON_SCHEMA },
@@ -189,7 +189,7 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
         continue;
       }
       if (planned.done) return { question: out.question.trim(), meta: metaOf(planned, routed), done: true };
-      return { question: out.question.trim(), meta: metaOf(planned, routed, input.force ? { probe: 'inconclusive', fallback: false } : {}), done: false };
+      return { question: withRefusal(out.question.trim(), lastAnswer), meta: metaOf(planned, routed, input.force ? { probe: 'inconclusive', fallback: false } : {}), done: false };
     }
   } catch (err) {
     if (signal?.aborted) throw err;
@@ -199,7 +199,7 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
   const planned = plannedFor(input, routed);
   const first = input.turns.length === 0;
   return {
-    question: templateInterviewQuestion(planned.competency, planned.block === 'summary' ? 'test' : planned.block, planned.level, first),
+    question: withRefusal(templateInterviewQuestion(planned.competency, planned.block === 'summary' ? 'test' : planned.block, planned.level, first), lastAnswer),
     meta: metaOf(planned, routed, { fallback: true, ...(input.force ? { probe: 'inconclusive' as const } : {}) }),
     done: planned.done,
   };

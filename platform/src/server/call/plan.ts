@@ -15,8 +15,20 @@ export const CALL_LIMITS = {
   maxTopics: 5,
   /** Запусков оценщика на созвон (первый + повторы после 503); исчерпаны — созвон закрывается без оценки. */
   maxFinishAttempts: 3,
+  /**
+   * Реплик ИИ на созвон всего (решение владельца 11.10): обычные вопросы, этап разбора теста, дополнительные
+   * вопросы и одна итоговая реплика. Повтор итоговой после дополнительного вопроса не считается.
+   */
+  maxAiTurns: 8,
   /** ПРЕДЛОЖЕНИЕ: созвонов на кандидата в сутки (защита платного LLM/TTS от цикла). */
 } as const;
+
+/**
+ * Таймаут одного вызова интервьюера (вопрос созвона, вопрос разбора теста, ИИнтервью). Кандидат ждёт в тишине:
+ * дольше 20 с — лучше запасной вопрос из шаблона, чем общий LLM_TIMEOUT_MS (40 с; с повтором после пересказа — 80 с).
+ * Живой замер 11.10: обычный ход 1–3 с.
+ */
+export const INTERVIEWER_TIMEOUT_MS = 20_000;
 
 /** Тема для проверки: из утверждений профиля или ключевая тема специализации. */
 export interface TopicSeed {
@@ -49,6 +61,32 @@ export function routeLevel(prev: QuestionLevel, signal: AnswerSignal): QuestionL
 }
 
 const DONT_KNOW_RE = /(не\s+знаю|не\s+помню|не\s+сталкивал|не\s+уверен|без\s+понятия|затрудняюсь)/i;
+
+/**
+ * Кандидат прямо сказал, что не знает (коротко, без попытки рассуждать). Такой ответ не штрафуется как ложь,
+ * но закрывает тему: переспрашивать то же глубже или проще — давить, вопрос уходит на другую тему.
+ */
+export function saysDontKnow(answer: string | null | undefined): boolean {
+  if (!answer) return false;
+  const t = answer.replace(/\s+/g, ' ').trim();
+  return t.length < 160 && DONT_KNOW_RE.test(t);
+}
+
+const ASKS_ANSWER_RE =
+  /(подскаж|правильн\S* ответ|верн\S* ответ|какой ответ ты|что ты хочешь услышать|что нужно ответить|как(ая|ую|ой) [^.?!]{0,25}(оценк|балл)|сколько (у меня )?балл|поставь (мне )?(высш|максим|2|5)|скажи,? (я )?(прав|верно))/i;
+const REFUSED_RE = /(не могу подсказ|подсказать не могу|не подскажу|не могу сказать оценк|оценку не (говорю|называю))/i;
+
+/** Кандидат пытается выведать эталон, оценку или «что хотят услышать». */
+export function asksForAnswer(answer: string | null | undefined): boolean {
+  return Boolean(answer && ASKS_ANSWER_RE.test(answer));
+}
+
+/** Вежливый отказ одной фразой (если модель сама не отказала) — перед следующим вопросом. */
+export const REFUSAL_LINE = 'Подсказать не могу — ответы разбирает отдельный оценщик.';
+
+export function withRefusal(question: string, answer: string | null | undefined, line = REFUSAL_LINE): string {
+  return asksForAnswer(answer) && !REFUSED_RE.test(question) ? `${line} ${question}` : question;
+}
 
 /**
  * Эвристика сигнала для stub и запасного пути (без модели): пусто, «не знаю», очень коротко — слабый;
@@ -103,7 +141,7 @@ export function planNext(args: {
   const curIdx = Math.max(0, topics.findIndex((t) => t.topic === last.topic));
   const onTopic = turns.filter((t) => t.topic === last.topic).length;
   const cov = coverage(topics, turns, args.maxQuestions ?? CALL_LIMITS.maxQuestions);
-  const leave = cov.mustSwitch || onTopic >= CALL_LIMITS.maxPerTopic || last.level === 3 || (signal === 'weak' && last.level === 1);
+  const leave = cov.mustSwitch || onTopic >= CALL_LIMITS.maxPerTopic || last.level === 3 || (signal === 'weak' && last.level === 1) || saysDontKnow(last.answer);
   if (!leave) return { topicIndex: curIdx, level: routeLevel(last.level, signal), signal, switched: false };
   const asked = new Set(turns.map((t) => t.topic));
   const fresh = topics.findIndex((t) => !asked.has(t.topic));
@@ -113,17 +151,41 @@ export function planNext(args: {
   return { topicIndex: nextIdx, level, signal, switched: true };
 }
 
-/** Запасной вопрос по уровню: формулировка от темы, тип вопроса фиксирован. */
+/**
+ * Запасной вопрос по уровню: формулировка от темы, тип вопроса фиксирован. Название темы — формулировка каталога
+ * («Проверял права доступа…»), поэтому она идёт отдельной цитатой, а не в «что такое …» (было неграмотно).
+ */
 export function templateQuestion(topic: TopicSeed, level: QuestionLevel, first: boolean): string {
   const hello = first ? 'Привет! Это Кира, задам несколько вопросов по твоей специализации. ' : '';
   // Конкретику резюме в вопрос не вставляем: транскрипт читает слепой оценщик (ADR 0003).
   const fact = first && topic.claimStatement ? 'Эта тема есть у тебя в профиле. ' : '';
-  const name = topic.topic;
-  if (level === 1) return `${hello}${fact}Начнём с основ: что такое «${name}» и зачем это нужно в работе? Объясни своими словами.`;
-  if (level === 2) return `${hello}${fact}Расскажи про «${name}» на практике: какая часть была на тебе и как это было устроено внутри?`;
-  return `${hello}${fact}Копнём глубже в «${name}»: почему именно так, какие были альтернативы, чем пришлось заплатить и где этот подход перестаёт работать?`;
+  const name = topic.topic.replace(/[.\s]+$/, '');
+  if (level === 1) return `${hello}${fact}Тема: «${name}». Объясни своими словами, что здесь главное и зачем это нужно в работе.`;
+  if (level === 2) return `${hello}${fact}Тема: «${name}». Как это было устроено у тебя на практике и какая часть была на тебе?`;
+  return `${hello}${fact}Копнём глубже в тему «${name}»: почему именно так, какие были альтернативы, чем пришлось заплатить и где этот подход перестаёт работать?`;
 }
 
 /** Последняя реплика ИИ при завершении (без LLM). */
 export const CLOSING_LINE =
   'Спасибо, на этом вопросы закончились. Нажми «Завершить» — отдельный оценщик разберёт ответы, и карта глубины появится в профиле.';
+
+const plural = (n: number, one: string, few: string, many: string) => {
+  const d = n % 10;
+  const h = n % 100;
+  if (d === 1 && h !== 11) return one;
+  if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return few;
+  return many;
+};
+
+/**
+ * Итоговая реплика с кратким итогом для кандидата: сколько тем прошли и был ли разбор задания теста. Оценок не
+ * называет (их ставит слепой оценщик после «Завершить»). `base` — закрывающая реплика вида созвона; её первое
+ * предложение заменяется итогом, остальное (что делать дальше) сохраняется.
+ */
+export function closingWithRecap(base: string, recap: { topics: number; testReview: boolean }): string {
+  if (recap.topics === 0) return base;
+  const tail = base.replace(/^[^.!]*[.!]\s*/, '');
+  const what = `${recap.topics} ${plural(recap.topics, 'тему', 'темы', 'тем')}${recap.testReview ? ' и разобрали задание из теста' : ''}`;
+  return `Спасибо, на этом всё: мы прошли ${what}. ${tail}`.trim();
+}
+

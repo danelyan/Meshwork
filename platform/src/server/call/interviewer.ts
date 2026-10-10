@@ -4,7 +4,7 @@
 import { responseJsonSchema } from '../llm/schema';
 import type { ChatMessage, LlmProvider } from '../llm/types';
 import { retellsProfile } from './evaluator';
-import { CALL_LIMITS, coverage, type PlanTurn, type TopicSeed, heuristicSignal, planNext, routeLevel, startLevel, templateQuestion } from './plan';
+import { CALL_LIMITS, coverage, type PlanTurn, type TopicSeed, heuristicSignal, planNext, routeLevel, saysDontKnow, startLevel, templateQuestion, withRefusal, INTERVIEWER_TIMEOUT_MS } from './plan';
 import { contextBlock, loadCallPrompt } from './prompt-utils';
 import { CallInterviewerOutput } from './schemas';
 import type { AiUtteranceMeta, AnswerSignal, QuestionLevel } from './types';
@@ -57,7 +57,9 @@ export function buildPayload(input: InterviewerInput): InterviewerPayload {
   const base = startLevel(input.claimedGrade);
   const prev: QuestionLevel = last?.level ?? base;
   const cov = coverage(input.topics, input.turns, input.limits.maxQuestions);
-  const closed = [...new Set(input.turns.map((t) => t.topic))].filter((t) => input.turns.filter((x) => x.topic === t).length >= CALL_LIMITS.maxPerTopic);
+  const closed = [...new Set(input.turns.map((t) => t.topic))].filter(
+    (t) => input.turns.filter((x) => x.topic === t).length >= CALL_LIMITS.maxPerTopic || (last?.topic === t && saysDontKnow(last.answer)),
+  );
   return {
     specialization: input.specialization,
     claimedGrade: input.claimedGrade,
@@ -103,6 +105,9 @@ export function profileTexts(topics: readonly TopicSeed[]): string[] {
 const RETELL_CORRECTION =
   'Вопрос повторяет формулировку из профиля кандидата (утверждение или факт резюме) — так нельзя: транскрипт читает слепой оценщик. Переформулируй вопрос о теме своими словами, не повторяя ни одной фразы профиля, и верни JSON заново.';
 
+const DONT_KNOW_CORRECTION =
+  'Кандидат ответил «не знаю» — эта тема закрыта, по ней больше не спрашивай. Задай вопрос по другой теме (первая из next.unprobedTopics, если она есть) и верни JSON заново.';
+
 export interface NextCallQuestion {
   question: string;
   meta: AiUtteranceMeta;
@@ -129,7 +134,7 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
     for (let attempt = 0; attempt < 2; attempt++) {
       const res = await llm.complete(
         {
-          purpose: 'call_interviewer',
+          purpose: 'call_interviewer', timeoutMs: INTERVIEWER_TIMEOUT_MS,
           system: loadCallPrompt('interviewer'),
           messages: buildInterviewerMessages(input, correction),
           schema: { name: 'call_question', jsonSchema: JSON_SCHEMA },
@@ -153,12 +158,21 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
         correction = RETELL_CORRECTION;
         continue;
       }
+      // «Не знаю» закрывает тему: остаться на ней можно, только если других тем нет вовсе.
+      const last = input.turns[input.turns.length - 1];
+      if (!input.force && last && saysDontKnow(last.answer) && topic === last.topic && input.topics.some((t) => t.topic !== last.topic)) {
+        if (attempt === 0) {
+          correction = DONT_KNOW_CORRECTION;
+          continue;
+        }
+        break;
+      }
       // «Достаточно» не принимается, пока остались непроверенные темы и лимит не исчерпан (покрытие тем).
       const coverOpen = cov.unprobed.length > 0 && input.turns.length < input.limits.maxQuestions;
       if (!input.force && out.done && coverOpen && !cov.unprobed.includes(topic)) break;
       const level = input.force ? input.force.level : resolveLevel(input, topic, routed ?? 'none');
       return {
-        question: out.question.trim(),
+        question: withRefusal(out.question.trim(), lastAnswer),
         meta: { topic, catalogId: known?.catalogId ?? null, level, routedBy: routed, ...(input.force ? { probe: 'inconclusive' as const } : {}) },
         done: input.force || coverOpen ? false : out.done,
       };
@@ -171,15 +185,24 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
   if (input.force) {
     const seed = input.topics.find((t) => t.topic === input.force!.topic) ?? { topic: input.force.topic, catalogId: null, claimStatement: null, resumeFact: null };
     return {
-      question: templateQuestion(seed, input.force.level, false),
+      question: withRefusal(templateQuestion(seed, input.force.level, false), lastAnswer),
       meta: { topic: seed.topic, catalogId: seed.catalogId, level: input.force.level, routedBy: routed, fallback: true, probe: 'inconclusive' },
       done: false,
     };
   }
-  const plan = planNext({ topics: input.topics, turns: input.turns, grade: input.claimedGrade, signal: routed, maxQuestions: input.limits.maxQuestions });
+  let plan = planNext({ topics: input.topics, turns: input.turns, grade: input.claimedGrade, signal: routed, maxQuestions: input.limits.maxQuestions });
+  // Шаблон не повторяет уже заданный вопрос (сбой модели два хода подряд давал один и тот же текст): та же тема
+  // и уровень → следующая тема, лучше не спрошенная.
+  const asked = new Set(input.turns.map((t) => t.question));
+  const textOf = (p: typeof plan) => templateQuestion(input.topics[p.topicIndex] ?? { topic: input.specialization, catalogId: null, claimStatement: null, resumeFact: null }, p.level, input.turns.length === 0);
+  if (input.topics.length > 1 && asked.has(textOf(plan))) {
+    const used = new Set(input.turns.map((t) => t.topic));
+    const fresh = input.topics.findIndex((t, i) => i !== plan.topicIndex && !used.has(t.topic));
+    plan = { ...plan, topicIndex: fresh >= 0 ? fresh : (plan.topicIndex + 1) % input.topics.length, level: startLevel(input.claimedGrade), switched: true };
+  }
   const seed = input.topics[plan.topicIndex] ?? { topic: input.specialization, catalogId: null, claimStatement: null, resumeFact: null };
   return {
-    question: templateQuestion(seed, plan.level, input.turns.length === 0),
+    question: withRefusal(textOf(plan), lastAnswer),
     meta: { topic: seed.topic, catalogId: seed.catalogId, level: plan.level, routedBy: routed, fallback: true },
     done: false,
   };

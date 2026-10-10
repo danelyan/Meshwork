@@ -4,7 +4,8 @@
 import type { ClaimStatus, Prisma } from '@prisma/client';
 
 import { PLATFORM_UPGRADABLE } from '../claims/levels';
-import { type CallDriver, type DriverSession, registerCallDriver } from '../call/drivers';
+import { type CallDriver, type DriverSession, registerCallDriver, reviewDriverQuestion } from '../call/drivers';
+import { evaluateOwnership, loadTestReview, ownershipSentence, reviewDialog, reviewRemaining, reviewStepDue } from '../call/test-review';
 import { type EvalTopic, evaluateCall, notProbedItem } from '../call/evaluator';
 import type { QuestionLevel, TranscriptEntry } from '../call/types';
 import { type InterviewContext, loadInterviewContext } from './context';
@@ -16,8 +17,10 @@ import { INTERVIEW_DISCLAIMER, buildInterviewSummary, interviewSummaryText } fro
 /** Пары вопрос ИИ → ответ кандидата с компетенцией и блоком из meta (реплики без competencyId пропускаются). */
 export function interviewTurns(transcript: readonly TranscriptEntry[]): (InterviewTurn & { aiIndex: number })[] {
   const out: (InterviewTurn & { aiIndex: number })[] = [];
+  let detached = false;
   for (const e of transcript) {
     if (e.role === 'ai' && e.meta?.competencyId && e.meta.block) {
+      detached = false;
       out.push({
         question: e.text,
         answer: null,
@@ -28,7 +31,10 @@ export function interviewTurns(transcript: readonly TranscriptEntry[]): (Intervi
         ...(e.meta.probe ? { probe: true } : {}),
         ...(e.meta.interrupted ? { interrupted: { heardSentences: e.meta.interrupted.heardSentences, tail: e.meta.interrupted.tail } } : {}),
       });
-    } else if (e.role === 'candidate') {
+    } else if (e.role === 'ai') {
+      // Реплика ИИ вне плана (этап разбора теста, итоговая): следующий ответ к прошлому вопросу не приклеивается.
+      detached = true;
+    } else if (e.role === 'candidate' && !detached) {
       const last = out[out.length - 1];
       if (last) last.answer = last.answer === null ? e.text : `${last.answer}\n${e.text}`;
     }
@@ -68,13 +74,28 @@ export const interviewDriver: CallDriver = {
         testHints: ctx.testHints,
         resumeFacts: ctx.resumeFacts,
         turns,
-        limits: this.limits,
+        limits: { ...this.limits, maxQuestions: Math.min(this.limits.maxQuestions, opts.maxQuestions ?? this.limits.maxQuestions) },
         ...(force ? { force } : {}),
       },
       llm,
       opts.signal,
     );
     return { text: q.question, meta: q.meta, done: q.done };
+  },
+
+  // Разбор задания теста (11.10) — и в ИИнтервью: после теста сцена консультанта открывает именно его, а не
+  // квалифицирующий созвон, иначе этап до кандидата с пройденным тестом не доходит.
+  async reviewRemaining(session) {
+    const ctx = await loadInterviewContext(session.candidateId);
+    return reviewRemaining(await loadTestReview(session.candidateId, ctx.specialization, ctx.subcategoryId), session.transcript);
+  },
+
+  async nextReviewQuestion(session, llm, opts = {}) {
+    const step = reviewStepDue(session.transcript, Boolean(opts.allowStart));
+    if (!step) return null;
+    const ctx = await loadInterviewContext(session.candidateId);
+    const items = await loadTestReview(session.candidateId, ctx.specialization, ctx.subcategoryId);
+    return reviewDriverQuestion(items, step, session.transcript, llm, opts.signal, { block: 'test' });
   },
 
   async evaluate(session, llm, opts = {}) {
@@ -113,12 +134,15 @@ export const interviewDriver: CallDriver = {
     const depthMap = [...evaluated, ...rest];
     const blocks = [...new Set(turns.map((t) => t.block))];
     const summary = buildInterviewSummary({ depthMap, competencyOf: (title) => competencyByTitle(ctx, title), claimedGrade: ctx.claimedGrade, blocks });
+    const items = interim?.testOwnership ? [] : await loadTestReview(session.candidateId, ctx.specialization, ctx.subcategoryId);
+    const testOwnership = interim?.testOwnership ?? (items.length ? await evaluateOwnership(items, reviewDialog(session.transcript), llm, opts.signal) : undefined);
     return {
       kind: 'interview',
       depthMap,
+      ...(testOwnership ? { testOwnership } : {}),
       runs: (interim?.runs ?? 0) + ev.runs,
       validRuns: (interim?.validRuns ?? 0) + ev.validRuns,
-      summary: interviewSummaryText(summary),
+      summary: interviewSummaryText(summary) + ownershipSentence(testOwnership),
       thresholdVersion: ev.thresholdVersion || interim?.thresholdVersion || '',
       disclaimer: INTERVIEW_DISCLAIMER,
       interview: summary,

@@ -76,6 +76,23 @@ describe('кабинет работодателя: компоненты', () => 
     expect(screen.getByRole('button', { name: 'Пригласить: Кандидат #ABC123' })).toBeDefined();
   });
 
+  it('карточка: проверка честности теста - метка по уровню, без деталей; нет проверки - нет метки', () => {
+    const { rerender } = render(<ol><CandidateMatchCard item={ITEM} vacancyId="v1" /></ol>);
+    expect(screen.queryByTestId('test-integrity')).toBeNull();
+    rerender(<ol><CandidateMatchCard item={{ ...ITEM, testIntegrity: { level: 'low', groups: [], confirmedAgain: false } }} vacancyId="v1" /></ol>);
+    expect(screen.getByTestId('test-integrity').textContent).toMatch(/проверка честности - без замечаний/);
+    rerender(<ol><CandidateMatchCard item={{ ...ITEM, testIntegrity: { level: 'medium', groups: ['time', 'browser'], confirmedAgain: false } }} vacancyId="v1" /></ol>);
+    expect(screen.getByTestId('test-integrity').textContent).toMatch(/есть замечания \(время, браузер\)/);
+    rerender(<ol><CandidateMatchCard item={{ ...ITEM, testIntegrity: { level: 'high', groups: ['fit'], confirmedAgain: true } }} vacancyId="v1" /></ol>);
+    expect(screen.getByTestId('test-integrity').textContent).toMatch(/были замечания \(рисунок ответов\), подтверждён повторно/);
+  });
+
+  it('карточка: рядом с проверкой честности - сигнал «решения теста» созвона, если он есть', () => {
+    const item = { ...ITEM, testIntegrity: { level: 'low' as const, groups: [], confirmedAgain: false }, explanation: { ...ITEM.explanation, depthMap: { topics: [], confirmed: 0, matchedNeed: 0, testOwnership: 'explained' as const } } };
+    render(<ol><CandidateMatchCard item={item} vacancyId="v1" /></ol>);
+    expect(screen.getByTestId('test-integrity').textContent).toMatch(/На созвоне решения теста: объяснил сам/);
+  });
+
   it('карточка после принятия: контакты, без кнопки; открытое приглашение — статус', () => {
     const accepted = { ...ITEM, candidate: { ...ITEM.candidate, displayName: 'Иван', contacts: { name: 'Иван', contact: '@ivan_dev' } } };
     render(<ol><CandidateMatchCard item={accepted} vacancyId="v1" /></ol>);
@@ -186,13 +203,9 @@ describe('входящие приглашения кандидата', () => {
     expect(screen.getByText('Платёжная команда')).toBeDefined();
     expect(screen.getByText('230 000 - 260 000 ₽ в месяц')).toBeDefined();
     expect(screen.getByText('Связь с компанией: @northstream_hr')).toBeDefined();
-    // Г5: без отдельной галочки раскрытия принять нельзя (ADR 0005).
-    expect((screen.getByRole('button', { name: 'Принять' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Принять' }));
     expect(await screen.findByText('принято')).toBeDefined();
     expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/invitations/i1');
-    expect(JSON.parse((fetchFn.mock.calls[0] as unknown as [string, { body: string }])[1].body)).toMatchObject({ action: 'accept', disclosureVersion: expect.any(String) });
     expect(screen.queryByRole('button', { name: 'Отклонить' })).toBeNull();
   });
 

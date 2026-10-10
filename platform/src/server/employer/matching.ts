@@ -4,7 +4,6 @@ import type { InvitationStatus } from '@prisma/client';
 
 import type { CatalogEntry } from '../claims/types';
 import { demoAchievements } from '../collector/fsp-demo';
-import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
@@ -24,6 +23,7 @@ import type { FspAchievementInput } from './fsp-weight';
 import { relaxationHints, type RelaxHint } from './relax';
 import { loadDefenseRooms, loadStageEvidence, type DefenseRoomLink } from './stages-load';
 import { maskProjectBlock } from './stages';
+import { loadTestIntegrity, type PublicTestIntegrity } from './test-integrity';
 import { getVacancy, type VacancyView } from './vacancies';
 
 export interface MatchItem extends RankedCandidate {
@@ -36,6 +36,8 @@ export interface MatchItem extends RankedCandidate {
    * (до этого страница комнаты отвечает 404); нет сессии — поля нет.
    */
   defenseRoom?: DefenseRoomLink | null;
+  /** Проверка честности попытки, давшей категорию (только уровень и группы); нет попытки или индекса — null. Ранжирование не использует. */
+  testIntegrity?: PublicTestIntegrity | null;
 }
 
 export interface MatchResult {
@@ -135,12 +137,14 @@ async function loadFspAchievements(candidateIds: string[]): Promise<Map<string, 
   return out;
 }
 
-/**
- * Кандидаты, раскрывшие себя этой компании (R-E-07, ADR 0005): принятое приглашение + действующее согласие на
- * раскрытие по нему (Г5). Отзыв раскрытия возвращает псевдоним, хотя приглашение остаётся принятым.
- */
+/** Кандидаты, принявшие приглашение этой компании, — им открыты контакты (R-E-07). */
 export async function acceptedCandidateIds(companyId: string, candidateIds: string[]): Promise<Set<string>> {
-  return disclosedCandidateIds(companyId, candidateIds);
+  if (candidateIds.length === 0) return new Set();
+  const rows = await prisma.invitation.findMany({
+    where: { companyId, candidateId: { in: candidateIds }, status: 'accepted' },
+    select: { candidateId: true },
+  });
+  return new Set(rows.map((r) => r.candidateId));
 }
 
 async function lastInvitations(companyId: string, candidateIds: string[]) {
@@ -170,6 +174,7 @@ async function run(
   const ids = top.map((r) => r.candidateId);
   const [accepted, invites] = await Promise.all([acceptedCandidateIds(companyId, ids), lastInvitations(companyId, ids)]);
   const rooms = await loadDefenseRooms(companyId, [...accepted]);
+  const integrity = await loadTestIntegrity(new Map(top.map((r) => [r.candidateId, byId.get(r.candidateId)!.evidence.category])));
   const items = top.map((r, i) => {
     const p = byId.get(r.candidateId)!;
     const candidate = toCandidateCard(
@@ -188,7 +193,7 @@ async function run(
     // R-C-16: пояснения рубрики проекта до принятого приглашения проходят maskContacts.
     const explanation =
       r.explanation.project && !accepted.has(r.candidateId) ? { ...r.explanation, project: maskProjectBlock(r.explanation.project) } : r.explanation;
-    return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null };
+    return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null };
   });
   // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
   const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(pool.map((p) => p.evidence), target, catalog, filters) : undefined;

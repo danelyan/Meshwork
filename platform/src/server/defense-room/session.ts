@@ -246,6 +246,10 @@ async function respond(
 ): Promise<TurnResult> {
   const current = plan.items[plan.cursor];
   const seq = plan.cursor;
+  if (current && !current.answered && current.followUps > 0) {
+    // На вопрос уже был ответ, ИИ уточнял, а дальше вмешался работодатель: не повторять вопрос, идти дальше.
+    current.answered = true;
+  }
   if (current && !current.answered) {
     // Кандидат отвечал работодателю (или ИИ был замьючен) — вернуть разговор к открытому вопросу.
     const [e] = await appendEntries(sessionId, [itemEntry(current, 'Спасибо. Вернёмся к вопросу. ', 'return')]);
@@ -254,7 +258,7 @@ async function respond(
   let ack = neutralAck(seq);
   if (current && opts.allowFollowUp) {
     const step = await decideFollowUp(current, opts.answer, seq, opts.llm);
-    ack = step.ack;
+    ack = /[.!?…]$/.test(step.ack) ? step.ack : `${step.ack}.`;
     if (step.followUp) {
       current.followUps += 1;
       current.answered = false;

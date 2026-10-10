@@ -225,3 +225,27 @@ describe('защита проекта с работодателем', () => {
     await reader.cancel();
   });
 });
+
+describe('защита: уточнение, затем вмешательство работодателя', () => {
+  beforeEach(async () => {
+    await resetDb();
+    resetBus();
+    clearStubResponses();
+    await seed();
+  });
+
+  it('после уточнения ИИ и реплики работодателя ИИ не повторяет тот же вопрос, а идёт дальше; переход с точкой', async () => {
+    const { sessionId } = await (await startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE))).json();
+    let n = 0;
+    registerStubResponse('call_interviewer', () => ({ json: n++ === 0 ? { ack: 'Ясно', followUp: 'А что будет при пустом входе в эту функцию?' } : { ack: 'Понял, спасибо', followUp: '' } }));
+    const t1 = await (await turnRoute(post('/x', { text: 'Общие слова.' }, CAND_COOKIE), params(sessionId))).json();
+    expect(t1.text).toMatch(/пустом входе/);
+    await joinRoute(post('/x', {}, EMP_A), params(sessionId));
+    await sayRoute(post('/x', { text: 'Уточню сам: а если вход null?' }, EMP_A), params(sessionId));
+    await muteRoute(post('/x', { muted: true }, EMP_A), params(sessionId));
+    await turnRoute(post('/x', { text: 'Упадёт на разборе, надо проверять.' }, CAND_COOKIE), params(sessionId));
+    const un = await (await muteRoute(post('/x', { muted: false }, EMP_A), params(sessionId))).json();
+    expect(un.aiText).not.toMatch(/Вернёмся/);
+    expect(un.aiText).toMatch(/^Понял, спасибо\. /);
+  });
+});

@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
-import { Component, type ReactNode, type RefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Component, type ReactNode, type RefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -24,21 +24,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 import { BRAND_GLSL_COLOR, BRAND_GLSL_HEAD } from './brand-weave';
 import { WEAVE_GLSL_COLOR, WEAVE_GLSL_HEAD } from './weave-versions';
+import { addWeaveField } from './weave-field';
+import { WEAVE_FIELD_STYLES, WEAVE_RETOPO_GLSL_COLOR, WEAVE_RETOPO_GLSL_HEAD, weaveRetopoFragment, weaveRetopoVertex } from './weave-retopo';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
-import {
-  BASE_PITCH,
-  BASE_YAW,
-  DEFAULT_HEAD_MOTION,
-  easeToward,
-  headMotion,
-  headPointer,
-  type HeadMotionMode,
-  livePose,
-  NECK,
-  neckPose,
-  trackPose,
-} from './head-motion';
 import { mouthOpen, smoothLevel } from './level';
 import { CLOSED, type MouthShape, smoothShape } from './lipsync';
 import { DEFAULT_MOUTH_LOOK, type MouthLook, mouthLookIndex } from './mouth-looks';
@@ -65,11 +54,6 @@ export interface Head3DProps {
   getOrbit?: () => { yaw: number; pitch: number };
   /** Вид открытого рта (см. mouth-looks.ts); только у головы с ригом рта. */
   mouthLook?: MouthLook;
-  /**
-   * Движение (head-motion.ts): `classic` — покачивание группы; `karina` — слежение за курсором по всей
-   * странице поворотом шеи, дыхание и моргание Карины; `alive` — то же + скулы, глаза, брови.
-   */
-  motion?: HeadMotionMode;
 }
 
 /** Цвета бренда: акцент `--blue` из tokens.css и серебро референса. */
@@ -132,10 +116,6 @@ interface HeadUniforms {
   mouth: { value: [number, number, number, number] };
   /** Лицо: моргание 0…1, улыбка 0…1. */
   face: { value: [number, number, number, number] };
-  /** Шея: yaw, pitch, roll (рад), дыхание (подъём в единицах модели). */
-  neck: { value: [number, number, number, number] };
-  /** Живость: взгляд x/y −1…1, щёки 0…1, брови 0…1. */
-  live: { value: [number, number, number, number] };
   time: { value: number };
   /** Половина высоты холста в px — для размера точек в режиме «частицы» (как `scale` у PointsMaterial). */
   pointScale: { value: number };
@@ -199,50 +179,6 @@ const JAW_GLSL = `
     transformed.y -= uFace.x * lid * (position.y - eyeY) * 0.85;
   }`;
 
-/**
- * «Живость» лица (режим alive, uniform `uLive`: взгляд x/y, щёки, брови), в координатах модели до морфов:
- * зона глаз (глазницы и веки) чуть сдвигается к курсору, скулы приподнимаются при улыбке и речи,
- * брови поднимаются, когда думает. Амплитуды — миллиметры модели, без карикатуры. При uLive = 0 — ничего.
- */
-const LIVE_GLSL = `
-  {
-    float front = smoothstep(0.05, 0.2, position.z);
-    float dEye = min(distance(position.xy, vec2(-0.115, 0.63)), distance(position.xy, vec2(0.115, 0.63)));
-    float eyeZone = (1.0 - smoothstep(0.03, 0.075, dEye)) * front;
-    transformed.xy += uLive.xy * vec2(0.006, 0.004) * eyeZone;
-    float dCheek = min(distance(position.xy, vec2(-0.11, 0.52)), distance(position.xy, vec2(0.11, 0.52)));
-    float cheek = (1.0 - smoothstep(0.02, 0.075, dCheek)) * front;
-    transformed.y += uLive.z * 0.007 * cheek;
-    transformed.z += uLive.z * 0.004 * cheek;
-    float dBrow = min(distance(position.xy, vec2(-0.1, 0.70)), distance(position.xy, vec2(0.1, 0.70)));
-    float brow = (1.0 - smoothstep(0.02, 0.065, dBrow)) * front;
-    transformed.y += uLive.w * 0.006 * brow;
-  }`;
-
-/**
- * Поворот шеи (режимы karina/alive, uniform `uNeck`: yaw, pitch, roll, дыхание), как в renderer Карины:
- * вершины поворачиваются вокруг pivot внутри шеи с весом по высоте (основание на месте, от подбородка
- * и выше — жёстко). Стоит ПОСЛЕ `morphtarget_vertex`: дельты морфов рта заданы в покое модели и
- * должны повернуться вместе с головой. Нормали — тем же поворотом после `morphnormal_vertex`.
- */
-const NECK_GLSL_HEAD = `
-  uniform vec4 uNeck;
-  uniform vec4 uLive;
-  float fspNeckW(float y) { return smoothstep(${NECK.from.toFixed(3)}, ${NECK.to.toFixed(3)}, y); }
-  mat3 fspNeckRot(float w) {
-    float a = uNeck.x * w, b = uNeck.y * w, r = uNeck.z * w;
-    float ca = cos(a), sa = sin(a), cb = cos(b), sb = sin(b), cr = cos(r), sr = sin(r);
-    return mat3(ca, 0.0, -sa, 0.0, 1.0, 0.0, sa, 0.0, ca) * mat3(1.0, 0.0, 0.0, 0.0, cb, sb, 0.0, -sb, cb) * mat3(cr, sr, 0.0, -sr, cr, 0.0, 0.0, 0.0, 1.0);
-  }`;
-const NECK_GLSL = `
-  {
-    float neckW = fspNeckW(position.y);
-    vec3 neckPivot = vec3(0.0, ${NECK.pivotY.toFixed(3)}, ${NECK.pivotZ.toFixed(3)});
-    transformed = fspNeckRot(neckW) * (transformed - neckPivot) + neckPivot;
-    transformed.y += uNeck.w * neckW;
-  }`;
-const NECK_NORMAL_GLSL = `objectNormal = fspNeckRot(fspNeckW(position.y)) * objectNormal;`;
-
 const JAW_REGION = [HEAD_MODEL.mouthY, HEAD_MODEL.chinY, HEAD_MODEL.jawPivotY, HEAD_MODEL.jawAngle];
 
 /** Параметры MeshStandardMaterial по стилю (частицы — отдельный ShaderMaterial, см. particlesMaterial). */
@@ -254,6 +190,10 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
   weave2: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave3: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave4: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
+  weave5: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.26, envMapIntensity: 0.3 },
+  weave6: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.24, envMapIntensity: 0.3 },
+  weave7: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.26, envMapIntensity: 0.3 },
+  weave8: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.24, envMapIntensity: 0.3 },
   loops: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   chrome: { color: new Color('#8e939c'), metalness: 0.95, roughness: 0.24 },
   hologram: { color: new Color('#0b0b16'), metalness: 0, roughness: 1 },
@@ -274,8 +214,6 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
     shader.uniforms.uJaw = u.jaw;
     shader.uniforms.uMouth = u.mouth;
     shader.uniforms.uFace = u.face;
-    shader.uniforms.uNeck = u.neck;
-    shader.uniforms.uLive = u.live;
     shader.uniforms.uTime = u.time;
     shader.uniforms.uJawRegion = { value: JAW_REGION };
     shader.uniforms.uAccent = { value: new Color(ACCENT) };
@@ -299,8 +237,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         uniform float uJaw;
         uniform vec4 uMouth;
         uniform vec4 uFace;
-        uniform vec4 uJawRegion;
-        ${NECK_GLSL_HEAD}`,
+        uniform vec4 uJawRegion;`,
       )
       .replace(
         '#include <uv_vertex>',
@@ -325,21 +262,6 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         `#include <begin_vertex>
         #ifdef FSP_MODEL
         ${JAW_GLSL}
-        ${LIVE_GLSL}
-        #endif`,
-      )
-      .replace(
-        '#include <morphnormal_vertex>',
-        `#include <morphnormal_vertex>
-        #ifdef FSP_MODEL
-        ${NECK_NORMAL_GLSL}
-        #endif`,
-      )
-      .replace(
-        '#include <morphtarget_vertex>',
-        `#include <morphtarget_vertex>
-        #ifdef FSP_MODEL
-        ${NECK_GLSL}
         #endif`,
       );
     shader.fragmentShader = shader.fragmentShader
@@ -385,7 +307,8 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
           return smoothstep(R, R * 0.45, distance(p, c));
         }
         ${BRAND_GLSL_HEAD}
-        ${WEAVE_GLSL_HEAD}`,
+        ${WEAVE_GLSL_HEAD}
+        ${WEAVE_RETOPO_GLSL_HEAD}`,
       )
       .replace(
         '#include <color_fragment>',
@@ -462,6 +385,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         #endif
         ${BRAND_GLSL_COLOR}
         ${WEAVE_GLSL_COLOR}
+        ${WEAVE_RETOPO_GLSL_COLOR}
         diffuseColor.rgb *= mouthDark;
         #ifdef FSP_MORPH_MOUTH
         if (look == 4) {
@@ -551,6 +475,13 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         #endif`,
       );
   };
+  // «Плетение 5…8»: атрибут поля в вершинный шейдер, материал и нормаль по маске нити (weave-retopo.ts)
+  const surface = m.onBeforeCompile;
+  m.onBeforeCompile = (shader, renderer) => {
+    surface(shader, renderer);
+    shader.vertexShader = weaveRetopoVertex(shader.vertexShader, style);
+    shader.fragmentShader = weaveRetopoFragment(shader.fragmentShader);
+  };
   m.customProgramCacheKey = () => `fsp-head-${style}-${mode}`;
   // губы разрезаны: в уголках открытого рта видна изнанка головы — рисуем её тёмной, а не дырой
   if (mode === 'mouth' && style !== 'wire') m.side = DoubleSide;
@@ -564,8 +495,6 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
       uJaw: u.jaw,
       uMouth: u.mouth,
       uFace: u.face,
-      uNeck: u.neck,
-      uLive: u.live,
       uTime: u.time,
       uPointScale: u.pointScale,
       uJawRegion: { value: JAW_REGION },
@@ -587,7 +516,6 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
       varying float vSeed;
       varying float vMouth;
       varying float vHide;
-      ${NECK_GLSL_HEAD}
       #ifdef FSP_MORPH_MOUTH
       attribute float _mouth_part;
       #include <morphtarget_pars_vertex>
@@ -596,24 +524,18 @@ function particlesMaterial(u: HeadUniforms, mode: Mode): ShaderMaterial {
       void main() {
         vec3 transformed = position;
         float seed = hash(position);
-        vec3 objectNormal = normal;
         #ifdef FSP_MODEL
         ${JAW_GLSL}
-        ${LIVE_GLSL}
         #endif
         vHide = 0.0;
         #ifdef FSP_MORPH_MOUTH
         #include <morphtarget_vertex>
         vHide = _mouth_part > 0.5 && uMouth.x < 0.08 ? 1.0 : 0.0;
         #endif
-        #ifdef FSP_MODEL
-        ${NECK_GLSL}
-        ${NECK_NORMAL_GLSL}
-        #endif
         // лёгкое мерцание облака + разлёт по нормали от громкости
-        transformed += objectNormal * (0.004 * sin(uTime * 1.5 + seed * 40.0) + uJaw * 0.03 * seed);
+        transformed += normal * (0.004 * sin(uTime * 1.5 + seed * 40.0) + uJaw * 0.03 * seed);
         vec4 mv = modelViewMatrix * vec4(transformed, 1.0);
-        vFacing = abs(normalize(normalMatrix * objectNormal).z);
+        vFacing = abs(normalize(normalMatrix * normal).z);
         vSeed = seed;
         gl_Position = projectionMatrix * mv;
         gl_PointSize = (0.028 + seed * 0.022) * uPointScale / -mv.z;
@@ -642,7 +564,7 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
   const style = props.style ?? DEFAULT_HEAD_STYLE;
   const height = useThree((st) => st.size.height);
   const uniforms = useMemo<HeadUniforms>(
-    () => ({ grid: { value: gridDensity(160) }, jaw: { value: 0 }, mouth: { value: [0, 0, 0, 0] }, face: { value: [0, 0, 0, 0] }, neck: { value: [0, 0, 0, 0] }, live: { value: [0, 0, 0, 0] }, time: { value: 0 }, pointScale: { value: 80 }, mouthLook: { value: 0 } }),
+    () => ({ grid: { value: gridDensity(160) }, jaw: { value: 0 }, mouth: { value: [0, 0, 0, 0] }, face: { value: [0, 0, 0, 0] }, time: { value: 0 }, pointScale: { value: 80 }, mouthLook: { value: 0 } }),
     [],
   );
   useEffect(() => {
@@ -658,32 +580,6 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
   const blink = useRef({ next: 2.5, start: -1 });
   const statusRef = useRef(props.status);
   statusRef.current = props.status;
-  const motionMode = props.motion ?? DEFAULT_HEAD_MOTION;
-  const tracking = motionMode !== 'classic' && !props.reducedMotion;
-  // курсор (нормированный −1…1 относительно головы, как у Карины), сглаженная поза и время анимации
-  const track = useRef({ pointer: [0, 0] as [number, number], pose: trackPose(0, 0), gaze: [0, 0] as [number, number], time: 0 });
-  const canvas = useThree((st) => st.gl.domElement);
-  useEffect(() => {
-    if (!tracking) {
-      track.current.pointer = [0, 0];
-      return;
-    }
-    // вся страница — цель взгляда, включая колонку чата; центр — голова (40 % высоты холста)
-    const move = (e: PointerEvent) => {
-      if (e.pointerType === 'touch') return;
-      const r = canvas.getBoundingClientRect();
-      track.current.pointer = headPointer(e.clientX, e.clientY, innerWidth, innerHeight, r.left + r.width / 2, r.top + r.height * 0.4);
-    };
-    const leave = () => {
-      track.current.pointer = [0, 0];
-    };
-    document.addEventListener('pointermove', move, { passive: true });
-    document.addEventListener('pointerleave', leave);
-    return () => {
-      document.removeEventListener('pointermove', move);
-      document.removeEventListener('pointerleave', leave);
-    };
-  }, [tracking, canvas]);
 
   useFrame((state, dt) => {
     const t = state.clock.elapsedTime;
@@ -698,37 +594,6 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
     const m = shape.current;
     uniforms.jaw.value = m.open;
     uniforms.mouth.value = [m.open, m.round, m.wide, m.press];
-    const thinkingNow = s === 'thinking' || s === 'loading';
-    const smile = props.reducedMotion ? 0 : speaking ? 0.35 : thinkingNow ? 0 : 0.15;
-    uniforms.time.value = props.reducedMotion ? 0 : t;
-    uniforms.mouthLook.value = mouthLookIndex(props.mouthLook ?? DEFAULT_MOUTH_LOOK);
-    const g = groupRef.current;
-    const orbit = props.getOrbit?.();
-    const motion = props.reducedMotion ? 0 : 1;
-
-    if (motionMode !== 'classic') {
-      // как у Карины: время идёт только пока кадр рисуется (скрытая вкладка/вне экрана — пауза)
-      const tr = track.current;
-      if (motion) tr.time += step;
-      const goal = trackPose(tr.pointer[0], tr.pointer[1]);
-      tr.pose = [easeToward(tr.pose[0], goal[0], step), easeToward(tr.pose[1], goal[1], step)];
-      tr.gaze = [easeToward(tr.gaze[0], tr.pointer[0], step, 9), easeToward(tr.gaze[1], tr.pointer[1], step, 9)];
-      const idle = headMotion(tr.time);
-      uniforms.face.value = [motion * idle.blink, smile, 0, 0];
-      const neck = neckPose({ pose: tr.pose, time: tr.time, thinking: motion > 0 && thinkingNow, level: motion * level.current });
-      uniforms.neck.value = mode === 'attribute' ? [0, 0, 0, 0] : neck;
-      uniforms.live.value = motionMode === 'alive' && motion ? livePose({ gaze: tr.gaze, smile, open: m.open, thinking: thinkingNow }) : [0, 0, 0, 0];
-      if (!g) return;
-      // группа (вместе с основанием шеи) стоит; на демо её крутит drag. У процедурной головы шеи в шейдере нет —
-      // поворачиваем группу целиком.
-      const whole = mode === 'attribute' ? 1 : 0;
-      g.rotation.y = BASE_YAW + (orbit?.yaw ?? 0) + whole * neck[0];
-      g.rotation.x = BASE_PITCH + (orbit?.pitch ?? 0) + whole * neck[1];
-      g.rotation.z = whole * neck[2];
-      g.position.y = 0;
-      return;
-    }
-
     // моргание каждые 2.5–6 с по 0.18 с; улыбка — когда говорит, в покое — лёгкая
     const b = blink.current;
     if (b.start < 0 && t >= b.next) b.start = t;
@@ -741,17 +606,23 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
         b.next = t + 2.5 + Math.random() * 3.5;
       }
     }
+    const thinkingNow = s === 'thinking' || s === 'loading';
+    const smile = props.reducedMotion ? 0 : speaking ? 0.35 : thinkingNow ? 0 : 0.15;
     uniforms.face.value = [props.reducedMotion ? 0 : lid, smile, 0, 0];
-    uniforms.neck.value = [0, 0, 0, 0];
-    uniforms.live.value = [0, 0, 0, 0];
+    uniforms.time.value = props.reducedMotion ? 0 : t;
+    uniforms.mouthLook.value = mouthLookIndex(props.mouthLook ?? DEFAULT_MOUTH_LOOK);
+    const g = groupRef.current;
     if (!g) return;
+    const motion = props.reducedMotion ? 0 : 1;
     // покой: дыхание и лёгкое покачивание; «думает» — наклон и медленный поворот; говорит — кивки в такт
-    const thinking = thinkingNow ? 1 : 0;
+    const thinking = s === 'thinking' || s === 'loading' ? 1 : 0;
+    const orbit = props.getOrbit?.();
     g.rotation.y = -0.42 + (orbit?.yaw ?? 0) + motion * (Math.sin(t * 0.4) * 0.06 + thinking * Math.sin(t * 0.9) * 0.12);
     g.rotation.x = -0.1 + (orbit?.pitch ?? 0) + motion * (Math.sin(t * 0.55) * 0.02 + thinking * 0.08 + level.current * 0.2);
     g.rotation.z = motion * thinking * 0.06;
     g.position.y = motion * Math.sin(t * 1.2) * 0.012;
   });
+
   return { material, uniforms, groupRef, level, particles: style === 'particles' };
 }
 
@@ -806,6 +677,8 @@ function MouthHead(props: Head3DProps) {
     return g;
   }, [gltf]);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  // поле ретопологии для «Плетения 5/8» — один раз на геометрию (weave-field.ts)
+  useMemo(() => WEAVE_FIELD_STYLES.has(props.style ?? DEFAULT_HEAD_STYLE) && addWeaveField(geometry), [geometry, props.style]);
   const { material, groupRef, uniforms, particles } = useHeadMotion(props, 'mouth');
   const meshRef = useRef<Mesh>(null);
   // R3F ставит geometry пропом после создания объекта — словарь морфов собираем явно.
@@ -933,36 +806,7 @@ function StudioEnvironment() {
   return null;
 }
 
-/**
- * Как у Карины: кадры не рисуются, пока вкладка скрыта или холст вне экрана (frameloop `never`),
- * время анимации при этом стоит (оно копится только в кадрах, см. useHeadMotion).
- */
-function useOnScreen(ref: RefObject<HTMLElement | null>): boolean {
-  const [shown, setShown] = useState(true);
-  useEffect(() => {
-    const el = ref.current;
-    let inView = true;
-    const update = () => setShown(inView && !document.hidden);
-    const io =
-      typeof IntersectionObserver === 'function'
-        ? new IntersectionObserver((entries) => {
-            inView = entries[0]?.isIntersecting ?? true;
-            update();
-          })
-        : null;
-    if (el) io?.observe(el);
-    document.addEventListener('visibilitychange', update);
-    return () => {
-      io?.disconnect();
-      document.removeEventListener('visibilitychange', update);
-    };
-  }, [ref]);
-  return shown;
-}
-
 export default function Head3D(props: Head3DProps) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const shown = useOnScreen(wrapRef);
   const fallback = <ProceduralHead {...props} />;
   const plain = (
     <ModelBoundary fallback={fallback}>
@@ -980,21 +824,18 @@ export default function Head3D(props: Head3DProps) {
     </ModelBoundary>
   );
   return (
-    <div ref={wrapRef} style={{ width: '100%', height: '100%' }}>
-      <Canvas
-        frameloop={shown ? 'always' : 'never'}
-        dpr={[1, 2]}
-        camera={{ position: [0, -0.18, 4.3], fov: 34 }}
-        gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-        aria-hidden="true"
-      >
-        <StudioEnvironment />
-        <hemisphereLight args={['#e8edf5', '#15171c', 0.5]} />
-        <directionalLight position={[-2.5, 2.5, 3]} intensity={1.8} />
-        <directionalLight position={[3, 1, -2.5]} intensity={1.4} color="#dfe6ff" />
-        <directionalLight position={[0, -2, 2]} intensity={0.3} />
-        {body}
-      </Canvas>
-    </div>
+    <Canvas
+      dpr={[1, 2]}
+      camera={{ position: [0, -0.18, 4.3], fov: 34 }}
+      gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
+      aria-hidden="true"
+    >
+      <StudioEnvironment />
+      <hemisphereLight args={['#e8edf5', '#15171c', 0.5]} />
+      <directionalLight position={[-2.5, 2.5, 3]} intensity={1.8} />
+      <directionalLight position={[3, 1, -2.5]} intensity={1.4} color="#dfe6ff" />
+      <directionalLight position={[0, -2, 2]} intensity={0.3} />
+      {body}
+    </Canvas>
   );
 }

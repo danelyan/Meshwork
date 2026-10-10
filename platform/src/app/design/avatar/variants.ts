@@ -25,7 +25,7 @@ export const ALL_VARIANTS: readonly Variant[] = [
  * сравниваем его версии). Остальные стили и головы Карины не удалены — чтобы вернуть их на экран,
  * замените фильтр на `ALL_VARIANTS` (или добавьте id в `SHOWN`).
  */
-const SHOWN = new Set(['three-weave', 'three-weave2', 'three-weave3', 'three-weave4']);
+const SHOWN = new Set(['three-weave', 'three-weave2', 'three-weave3', 'three-weave4', 'three-weave5', 'three-weave6', 'three-weave7', 'three-weave8']);
 export const VARIANTS: readonly Variant[] = ALL_VARIANTS.filter((v) => SHOWN.has(v.id));
 
 export function variantById(id: string): Variant {

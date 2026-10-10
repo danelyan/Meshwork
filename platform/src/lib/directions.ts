@@ -56,15 +56,15 @@ export interface SubcategoryDef {
 }
 
 /**
- * 17 подкатегорий карты research/25. Статус — по банку теста (см. SubcategoryDef.status). Backend и Frontend
- * пока в переходном режиме (семейства не размечены, пул — всё направление): active у подкатегорий с шаблоном
- * проекта по ADR 0003 — web-api, integrations, ui-app.
+ * 17 подкатегорий карты research/25. Статус — по банку теста (см. SubcategoryDef.status): active ⇔ банк подкатегории
+ * полон (bankComplete, 6 Junior + 4 Middle + 4 Senior); направление без разметки семейств — переходный режим,
+ * статус по объявлению. Сверяет tests/unit/lib/directions.test.ts.
  */
 export const SUBCATEGORIES: readonly SubcategoryDef[] = [
   { id: 'backend.web-api', specialization: 'backend', title: 'Web API', description: 'CRUD, валидация, ошибки, SQL-схема и тесты', status: 'active', order: 1 },
   { id: 'backend.integrations', specialization: 'backend', title: 'Интеграции', description: 'Внешние API и очереди: ретраи, таймауты, идемпотентность, маппинг форматов', status: 'active', order: 2 },
-  { id: 'backend.highload', specialization: 'backend', title: 'Highload', description: 'Профилирование и ускорение: кэш, N+1, фоновые задачи', status: 'planned', order: 3 },
-  { id: 'backend.data-model', specialization: 'backend', title: 'Модель данных', description: 'Миграции, транзакции, конкурентные обновления', status: 'planned', order: 4 },
+  { id: 'backend.highload', specialization: 'backend', title: 'Highload', description: 'Профилирование и ускорение: кэш, N+1, фоновые задачи', status: 'active', order: 3 },
+  { id: 'backend.data-model', specialization: 'backend', title: 'Модель данных', description: 'Миграции, транзакции, конкурентные обновления', status: 'active', order: 4 },
 
   { id: 'frontend.ui-app', specialization: 'frontend', title: 'UI-приложение', description: 'SPA из макета: компоненты, формы, состояние, роутинг', status: 'active', order: 1 },
   { id: 'frontend.design-system', specialization: 'frontend', title: 'Дизайн-система', description: 'Библиотека компонентов, доступность, темизация', status: 'planned', order: 2 },

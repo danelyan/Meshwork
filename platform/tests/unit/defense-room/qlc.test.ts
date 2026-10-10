@@ -105,4 +105,13 @@ describe('summarizeProjectResult', () => {
     expect(summarizeProjectResult(null)).toBeNull();
     expect(summarizeProjectResult({ foo: 1 })).toBeNull();
   });
+
+  it('формат lane project: tests — сводка {passed, total, score}, упавшие — из hiddenTests', () => {
+    const r = summarizeProjectResult({
+      tests: { passed: 19, total: 20, score: 0.95 },
+      hiddenTests: [{ name: 'h1', passed: true }, { name: 'h2', passed: false }],
+      lint: { status: 'skipped', note: '' },
+    });
+    expect(r).toMatchObject({ score: 0.95, passed: 19, total: 20, failed: ['h2'] });
+  });
 });

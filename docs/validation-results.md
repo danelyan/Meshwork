@@ -714,6 +714,50 @@ npx tsx eval/test/subcategory-personas.ts --n 1000 --seed 2 --sub ai.mlops --sen
 Остальные получают «не подтверждено» без предложения Middle и должны пройти тест на Middle отдельно. Это не ложное
 подтверждение, а лишний шаг для кандидата; цель ADR на эту метрику не задана.
 
+## Тест на грейд: backend по подкатегориям (10.10, ADR 0003 «тест на подкатегорию», пул 6+4+4)
+
+> **Цифры до политики v4** (лейн gen-backend): порог Senior +0,6, заявка Senior без Senior-пула и без дозадавания Middle. Перемер под `adr-0002-v4` — § «Персоны под политикой v4» ниже.
+
+Пул теста - семейства подкатегории (`subcategoryId`), по 14 на каждую: 6 Junior + 4 Middle + 4 Senior. Всего 56 семейств `be.*` (12 прежних размечены, 44 новых). Ключ каждого нового семейства проверен независимым решением по тексту условия на 300 seed (`tests/unit/test/backend-subcategories.test.ts`).
+
+| Подкатегория | Junior | Middle | Senior |
+|---|---|---|---|
+| web-api | http-semantics, pagination-offset, route-matching, list-query, find-bug-idor, validation-rules | cursor-pagination, proxy-retry, rate-limit-window, optimistic-lock | api-breaking-changes, idempotency-ttl, shared-cache-origin, capacity-littles-law |
+| integrations | json-mapping, client-throttle, fetch-all-pages, timeout-budget, retryable-status, webhook-dedup | retry-policy, delivery-semantics, payment-retry, circuit-breaker | retry-amplification-chain, saga-compensation, webhook-replay-window, contract-drift |
+| highload | pool-capacity, batching-time, lru-hits, ttl-loads, n-plus-one, shell-output | queue-backpressure, cache-consistency, index-choice, cache-stampede | replica-lag-reads, hot-key-db-load, queue-drain, slow-query-top |
+| data-model | sql-rowcount, fk-actions, sql-aggregate, transaction-scope, null-count, schema-constraint | upsert-conflict, deadlock-commits, lost-update, isolation-anomaly | migration-safety, write-skew, unique-index-forms, sequence-gaps |
+
+Параметры a, b - экспертные. У 12 прежних семейств a, b прежние (ADR 0002). У новых Junior b в [-0,7; -0,4], a = 1,4 (подняты после первого прогона персон), у новых Senior b 1,0-1,7 (сдвинуты на +0,2), у новых Middle прежний диапазон. Прежние персоны без `--subcategory` (пул из 12, N = 2000): B1 0,000, B2 0,127 (новичок, цель ≤ 10 % - у границы, как и до правок), B3 0,933, B4 0,976, B5 1,000, JB 1,000; в первом варианте со сжатием b и a = 1,4 у всех 12 семейств B2 уходил в 0,284, поэтому прежним семействам параметры возвращены.
+
+Персоны на подкатегорию (`npx tsx eval/test/personas.ts --subcategory backend.web-api --n 2000`): новичок, пограничный новичок, Junior, Junior с одной слабой темой (3 из 6 верно + 2 наполовину), Middle, Middle с одной слабой темой, Senior, идеальный Junior. Матрицы знаний - гипотеза агента, не люди. Порог Senior +0,6 - предложение ADR, в `policy.ts` стоит «до политики» (политику Senior пишет directions); заявка Senior в прогоне идёт движком без Senior-старта и без дозадавания Middle, поэтому ложные подтверждения Senior завышены.
+
+Персоны подкатегорий, P(подтверждения заявленного грейда), N = 2000. Цели: новичок и пограничный новичок - ложное подтверждение Junior ≤ 10 %; Junior, Junior с одной слабой темой (5 из 6 Junior верно, одно семейство нет, Middle как у Junior), Middle, Middle с одной слабой темой, Senior - ≥ 85-90 %. «Пограничный Junior» (3 из 6 верно + 2 наполовину) - без цели, показан как есть: честная неуверенность.
+
+| Персона | web-api | integrations | highload | data-model |
+|---|---|---|---|---|
+| Новичок, P(Junior) | 0,000 | 0,000 | 0,000 | 0,000 |
+| Пограничный новичок, P(Junior) | 0,000 | 0,010 | 0,009 | 0,005 |
+| Junior, P(Junior) | 1,000 | 1,000 | 1,000 | 1,000 |
+| **Junior с одной слабой темой, P(Junior)** | 1,000 | 1,000 | 1,000 | 1,000 |
+| Пограничный Junior (без цели), P(Junior) | 0,512 | 0,614 | 0,701 | 0,656 |
+| Middle, P(Middle) | 1,000 | 1,000 | 1,000 | 1,000 |
+| Middle с одной слабой темой, P(Middle) | 0,930 | 0,998 | 1,000 | 0,999 |
+| Senior, P(Senior) | 1,000 | 1,000 | 1,000 | 1,000 |
+| Идеальный Junior, P(Junior) | 1,000 | 1,000 | 1,000 | 1,000 |
+
+Ложные подтверждения старшего грейда - **до политики Senior** (перемерить после политики directions; цель ≤ 10 %): заявка Senior идёт движком без Senior-старта и без дозадавания Middle, цифры завышены.
+
+| Персона заявляет | web-api | integrations | highload | data-model |
+|---|---|---|---|---|
+| Junior заявил Middle | 0,004 | 0,038 | 0,192 | 0,098 |
+| Middle заявил Senior | 0,055 | 0,164 | 0,326 | 0,368 |
+| Middle со слабой темой заявил Senior | 0,038 | 0,088 | 0,184 | 0,212 |
+
+Что не сошлось и оговорки:
+- Ложные подтверждения Middle и Senior в highload и data-model выше 10 % (до политики Senior): Middle- и Senior-задания в этих подкатегориях различаются по сложности слабее, чем в web-api. Часть завышения - от движка без Senior-политики (первое задание подбирается при θ = 0, а не из Senior-банка); перемерить после политики Senior от directions.
+- Все цифры - на симуляции персон; Senior-ключи и профили не оценены на людях.
+- Сверено с документацией PostgreSQL 17 (Context7): откат REPEATABLE READ при конкурентном UPDATE, действия внешнего ключа, взаимная блокировка строк, последовательности не откатываются (в том числе при ON CONFLICT), ADD COLUMN с постоянным DEFAULT без перезаписи, NOT NULL проверяется сканированием. По знанию агента, без сверки: коды HTTP, кэширование Cache-Control для общих кэшей, If-Match/412, ON CONFLICT, circuit breaker, Kafka-подобные партиции, SSI в SERIALIZABLE (результат write skew).
+
 ## Языковая модель (Yandex Cloud, 9 октября)
 
 Прогон `bash eval/llm-bench/protocol.sh alice,deepseek`, обе модели — в каталоге Yandex Cloud `fsp-lct-2026` (данные не покидают РФ). Набор — 10 размеченных резюме и атаки из `eval/`; разметил один агент, оговорки 2–3 выше действуют.

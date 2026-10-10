@@ -5,6 +5,7 @@ import styles from '@/components/employer/Employer.module.css';
 import { GRADE_LABEL, SPEC_LABEL, salaryRange } from '@/components/employer/labels';
 import { MatchResults } from '@/components/employer/MatchResults';
 import { Button, Kicker, Notice, Tag } from '@/components/ui';
+import { subcategoryLabel } from '@/lib/directions';
 import { requirePageEmployer } from '@/server/auth/page';
 import { loadEmployerContext, matchForVacancy } from '@/server/employer';
 import { parseFilters } from '@/server/employer/schemas';
@@ -37,6 +38,7 @@ export default async function NeedMatchesPage({ params, searchParams }: Props) {
             <Tag tone="solid">
               {SPEC_LABEL[v.specialization]} · {GRADE_LABEL[v.grade]}
             </Tag>
+            {v.subcategoryId && <span>подкатегория: {subcategoryLabel(v.subcategoryId)}</span>}
             <span>{salaryRange(v.salaryFrom, v.salaryTo)}</span>
             {v.stack.length > 0 && <span>стек: {v.stack.join(', ')}</span>}
           </div>

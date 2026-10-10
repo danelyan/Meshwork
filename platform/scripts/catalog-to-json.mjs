@@ -39,14 +39,11 @@ const cells = (line) => {
 const unTick = (s) => s.replace(/`/g, '').trim();
 const ticks = (s) => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim());
 
-// Грейды через «+» в порядке J, M, S (S — Senior, ADR-0003, дополнение 10.10 16:15): J, M, S, J+M, M+S, J+M+S.
-const GRADE_LETTER = { J: 'junior', M: 'middle', S: 'senior' };
 function parseGrades(s, id) {
-  const letters = s.split('+').map((x) => x.trim());
-  const order = Object.keys(GRADE_LETTER);
-  const ok = letters.length > 0 && letters.every((l, i) => l in GRADE_LETTER && (i === 0 || order.indexOf(l) > order.indexOf(letters[i - 1])));
-  if (!ok) return fail(`${id}: неизвестный грейд «${s}»`);
-  return letters.map((l) => GRADE_LETTER[l]);
+  if (s === 'J+M') return ['junior', 'middle'];
+  if (s === 'J') return ['junior'];
+  if (s === 'M') return ['middle'];
+  return fail(`${id}: неизвестный грейд «${s}»`);
 }
 function parseWeightPair(s, id) {
   const m = /^(—|-|[1-3])\s*\/\s*(—|-|[1-3])$/.exec(s);
@@ -119,8 +116,7 @@ for (const line of lines) {
   const isCommon = header.length === 8;
   if (c.length !== header.length) fail(`${id}: ${c.length} колонок вместо ${header.length}`);
   const prefix = id.split('.')[0];
-  // eng.* — раздел «Engineering» каталога-Markdown (лейн engineering, ADR 0003 дополнение 10.10).
-  const specialization = { be: 'backend', fe: 'frontend', common: 'common', eng: 'engineering' }[prefix];
+  const specialization = { be: 'backend', fe: 'frontend', common: 'common' }[prefix];
   if (!specialization) fail(`${id}: неизвестный префикс`);
   if (isCommon !== (specialization === 'common')) fail(`${id}: в таблице не своей специализации (${section})`);
   const parsed = parseStatement(c[1]);
@@ -188,6 +184,35 @@ if (existsSync(OVERRIDES)) {
     if (id.startsWith('_')) continue;
     if (!byId.has(id)) fail(`override маркеров: ID ${id} нет в каталоге`);
     byId.get(id).markers = markers;
+  }
+}
+
+// Записи направлений (lane directions, ADR 0003 дополнение 10.10: ai.*, позже eng.*) поверх каталога-Markdown
+// владельца: scripts/catalog-direction-entries.json. entries — в конец; commonWeights — веса common.* для
+// новых направлений (у common веса по специализациям; направление без ключа — запись для него не ожидается).
+const DIRECTION_ENTRIES = join(here, 'catalog-direction-entries.json');
+if (existsSync(DIRECTION_ENTRIES)) {
+  const extra = JSON.parse(readFileSync(DIRECTION_ENTRIES, 'utf8'));
+  const PREFIX = { ai: 'ai.', engineering: 'eng.' };
+  for (const e of extra.entries ?? []) {
+    if (!PREFIX[e.specialization] || !e.id.startsWith(PREFIX[e.specialization])) fail(`${e.id}: направление ${e.specialization} не из ai/engineering или префикс не тот`);
+    if (byId.has(e.id)) fail(`повтор ID ${e.id}`);
+    if (!Array.isArray(e.proof) || e.proof.length === 0) fail(`${e.id}: нет пути доказательства`);
+    const nums = Object.values(e.weights).filter((x) => x !== null);
+    if (nums.length === 0 || e.weight !== Math.max(...nums)) fail(`${e.id}: weight должен быть максимумом weights`);
+    entries.push(e);
+    byId.set(e.id, e);
+  }
+  for (const e of extra.entries ?? []) {
+    for (const a of e.adjacent) {
+      if (!byId.has(a)) fail(`${e.id}: смежность на несуществующий ${a}`);
+      if (!byId.get(a).adjacent.includes(e.id)) fail(`${e.id} — ${a}: смежность не симметрична`);
+    }
+  }
+  for (const [id, bySpec] of Object.entries(extra.commonWeights ?? {})) {
+    const c = byId.get(id);
+    if (!c || c.specialization !== 'common') fail(`commonWeights: ${id} — не запись common`);
+    Object.assign(c.weights, bySpec);
   }
 }
 

@@ -42,8 +42,17 @@ export const GRADE_TEST_PATH: string | null = '/test';
 
 const CABINET = { candidate: '/consultant', employer: '/employer' } as const;
 
-/** Служебное состояние: вакансии работодателя; `later` — пауза знакомства кандидата («Настроить позже»). */
-type Meta = { vacancies?: Partial<Record<Grade, string>>; later?: boolean };
+/**
+ * Служебное состояние: вакансии работодателя; `later` — пауза знакомства («Настроить позже»); `doneRoles` — роли
+ * учётки с завершённым знакомством (пишет переключение роли, ADR 0004; правки meta здесь его сохраняют).
+ */
+type Meta = {
+  vacancies?: Partial<Record<Grade, string>>;
+  later?: boolean;
+  doneRoles?: ('candidate' | 'employer')[];
+  /** Шаг, пауза и итог неактивной роли (ADR 0004, `swapRoleOnboarding`); правки meta здесь его сохраняют. */
+  byRole?: Record<string, unknown>;
+};
 
 /** Шаг онбординга сделан (ответ, пропуск, возврат) — пауза «Настроить позже» снята. */
 function resumed(meta: Meta): Meta {

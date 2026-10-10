@@ -40,13 +40,16 @@ export interface ProjectResultSummary {
 }
 
 /**
- * resultJson сабмита (lane project): ждём `tests: [{name, passed}]`, допускаем `score` 0…1 или 0…100
- * и `rubric/lint` как замечания. Формат ещё не зафиксирован — читаем терпимо, остальное игнорируем.
+ * resultJson сабмита: формат lane project `tests: {passed, total, score}` + `hiddenTests: [{name, passed}]`;
+ * допускаем и `tests: [{name, passed}]`, `score` 0…1 или 0…100, `rubric/lint` как замечания. Читаем терпимо.
  */
 export function summarizeProjectResult(result: unknown): ProjectResultSummary | null {
   if (!result || typeof result !== 'object') return null;
   const r = result as Record<string, unknown>;
-  const tests = Array.isArray(r.tests) ? (r.tests as unknown[]) : [];
+  // Формат lane project (project/schemas.ts ResultJson): tests — сводка {passed, total, score},
+  // список скрытых тестов — hiddenTests. Старый формат runner — tests: [{name, passed}].
+  const testsSummary = r.tests && typeof r.tests === 'object' && !Array.isArray(r.tests) ? (r.tests as Record<string, unknown>) : null;
+  const tests = Array.isArray(r.tests) ? (r.tests as unknown[]) : Array.isArray(r.hiddenTests) ? (r.hiddenTests as unknown[]) : [];
   const parsed = tests
     .filter((t): t is Record<string, unknown> => !!t && typeof t === 'object')
     .map((t) => ({ name: String(t.name ?? 'test').slice(0, 120), passed: t.passed === true }));
@@ -56,13 +59,16 @@ export function summarizeProjectResult(result: unknown): ProjectResultSummary | 
     if (v && typeof v === 'object') notes.push(`${key}: ${JSON.stringify(v).slice(0, 300)}`);
   }
   let score: number | null = null;
-  if (parsed.length) score = parsed.filter((t) => t.passed).length / parsed.length;
+  const summaryScore = typeof testsSummary?.score === 'number' && Number.isFinite(testsSummary.score) ? testsSummary.score : null;
+  if (summaryScore !== null) score = summaryScore > 1 ? Math.min(1, summaryScore / 100) : Math.max(0, summaryScore);
+  else if (parsed.length) score = parsed.filter((t) => t.passed).length / parsed.length;
   else if (typeof r.score === 'number' && Number.isFinite(r.score)) score = r.score > 1 ? Math.min(1, r.score / 100) : Math.max(0, r.score);
   if (score === null && !notes.length) return null;
+  const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
   return {
     score,
-    passed: parsed.filter((t) => t.passed).length,
-    total: parsed.length,
+    passed: num(testsSummary?.passed, parsed.filter((t) => t.passed).length),
+    total: num(testsSummary?.total, parsed.length),
     failed: parsed.filter((t) => !t.passed).map((t) => t.name).slice(0, 5),
     notes,
   };

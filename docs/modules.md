@@ -22,7 +22,7 @@
 | `src/lib/grades.ts` | Грейды `GRADES` (junior, middle, senior), подписи `GRADE_LABEL`, `lowerGrade` — единый список для Zod-схем, UI и `Record<Grade, …>` | `lib/grades.ts` | — |
 | `directions.ts` + `src/lib/directions.ts` | Четыре направления (backend, frontend, ai, engineering) и 17 подкатегорий (ADR 0003, дополнение 10.10; R-T-05). `lib/directions.ts` — единый список для кода, UI и сида `Subcategory`; `server/directions.ts` — справочник из БД для `GET /api/directions` | `lib/directions.ts` (`SPECIALIZATIONS`, `SPEC_LABEL`, `SUBCATEGORIES`) | db, test |
 | `onboarding` | Анкета и сценарий онбординг-чата, ИНН, согласие, сервис завершения | `onboarding/service.ts`, `onboarding/engine.ts` | auth, claims, collector, llm, recommend |
-| `auth` | Яндекс ID (OAuth), роли, согласие, CSRF, устаревшие сессии — ADR `docs/decisions/0001-auth-yandex-id.md` | `auth/users.ts`, `auth/yandex.ts` | onboarding, session |
+| `auth` | Яндекс ID (OAuth), роли и их переключение, согласие, CSRF, устаревшие сессии — ADR `docs/decisions/0001-auth-yandex-id.md`, `0004-role-switching.md` | `auth/users.ts`, `auth/yandex.ts`, `auth/role-switch.ts` | onboarding, session |
 | `mail` | Отправка писем (SMTP, Mailpit на стенде), шаблоны писем подтверждения и сброса пароля | `mail/index.ts` | env |
 | `employer` | Кабинет работодателя: вакансии, ранжирование, приглашения, приватность, веса | `employer/index.ts`, `employer/ranking.ts` | claims, recommend |
 | `demo` | Демо-режим для жюри: вход за сид-кандидата, демо-резюме (PDF), контекст | `demo/mode.ts`, `demo/resumes.ts` | db, env, session |

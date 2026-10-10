@@ -10,6 +10,7 @@
 //   npx tsx eval/test/personas.ts --n 2000 --junior-cut -1.0    # другой порог Junior
 //   npx tsx eval/test/personas.ts --sweep -1.5:-0.6:0.1         # свип порога Junior
 //   npm run eval:test-personas -- --spec ai                     # только персоны направления (ADR 0003, 10.10)
+//   npx tsx eval/test/personas.ts --subcategory backend.web-api  # персоны одной подкатегории (ADR-0003, 10.10 15:50)
 //
 // Честная граница: это симуляция моделей знаний персон агентом, не живые люди. Матрицы знаний —
 // наша гипотеза (легенды: fsp/docs/research/22-persona-calibration.md владельца), a и b — экспертные.
@@ -38,13 +39,17 @@ const PROBE = !args.includes('--no-probe');
 const SPEC_ARG = argStr('spec');
 const SPEC_FILTER = SPEC_ARG ? new Set(SPEC_ARG.split(',') as Specialization[]) : null;
 const inFilter = (p: { spec: Specialization }) => !SPEC_FILTER || SPEC_FILTER.has(p.spec);
+/** --subcategory <id>: только персоны подкатегории; пул заданий — семейства этой подкатегории (поле subcategoryId). */
+const SUB = argStr('subcategory');
 
 /** Истинный уровень по легенде: ниже Junior, Junior, Middle. */
-type Truth = 'below' | 'junior' | 'middle';
+type Truth = 'below' | 'junior' | 'middle' | 'senior';
 
 interface Persona {
   id: string;
   spec: Specialization;
+  /** Подкатегория: пул — её семейства; без неё пул — шаблоны из knows (прежние персоны направления). */
+  sub?: string;
   truth: Truth;
   legend: string;
   /** P(верно) по шаблону: 1 — решит, 0,5 — монета, 0 — не решит (типичная ошибка). */
@@ -79,8 +84,42 @@ const PERSONAS: Persona[] = [
   // AI-персоны A1–A5, JA сняты 10.10: у ai тест по подкатегориям (ADR 0003), банк 66 семейств, пул попытки —
   // семейства одной подкатегории. Персоны на подкатегорию — eval/test/subcategory-personas.ts.
 ];
+
+/** Семейства подкатегории в порядке «Junior по возрастанию b, затем Middle, затем Senior». */
+const subIds = (sub: string): string[] => {
+  const own = generatorsFor('backend').filter((g) => g.subcategoryId === sub);
+  const byB = (a: { b: number }, b: { b: number }) => a.b - b.b;
+  return (['junior', 'middle', 'senior'] as const).flatMap((gr) => own.filter((g) => g.grade === gr).sort(byB).map((g) => g.id));
+};
+// Персоны подкатегорий backend (ADR-0003, 10.10 16:15): список из ADR. Колонки: 6 Junior | 4 Middle | 4 Senior по возрастанию b.
+// Легенды - гипотеза агента, не люди. Senior-порог и политика Senior (v4) - в policy.ts.
+const BE_SUBS: { sub: string; tag: string; ru: string }[] = [
+  { sub: 'backend.web-api', tag: 'W', ru: 'web-api' },
+  { sub: 'backend.integrations', tag: 'I', ru: 'integrations' },
+  { sub: 'backend.highload', tag: 'H', ru: 'highload' },
+  { sub: 'backend.data-model', tag: 'D', ru: 'data-model' },
+];
+const row = (j: number[], m: number[], s: number[]) => [...j, ...m, ...s];
+const ALL_J = [Y, Y, Y, Y, Y, Y];
+const NO_M = [X, X, X, X];
+for (const { sub, tag, ru } of BE_SUBS) {
+  const ids = subIds(sub);
+  PERSONAS.push(
+    { id: `${tag}N`, spec: 'backend', sub, truth: 'below', legend: `новичок в ${ru}: курсы, 3 мес.`, knows: matrix(ids, row([H, H, X, X, X, X], NO_M, NO_M)) },
+    { id: `${tag}B`, spec: 'backend', sub, truth: 'below', legend: `пограничный новичок в ${ru}: полгода, только простое`, knows: matrix(ids, row([Y, H, H, H, X, X], NO_M, NO_M)) },
+    { id: `${tag}J`, spec: 'backend', sub, truth: 'junior', legend: `уверенный Junior в ${ru}, 1,5 года`, knows: matrix(ids, row([Y, Y, Y, Y, Y, H], [H, X, X, X], NO_M)) },
+    { id: `${tag}W`, spec: 'backend', sub, truth: 'junior', legend: `пограничный Junior в ${ru} (3 из 6 верно + 2 наполовину; без цели)`, knows: matrix(ids, row([Y, Y, Y, H, H, X], [H, H, X, X], NO_M)) },
+    { id: `${tag}T`, spec: 'backend', sub, truth: 'junior', legend: `Junior с одной слабой темой в ${ru} (5 из 6 верно, одно семейство нет; Middle как у Junior)`, knows: matrix(ids, row([Y, Y, Y, Y, Y, X], [H, X, X, X], NO_M)) },
+    { id: `${tag}M`, spec: 'backend', sub, truth: 'middle', legend: `Middle в ${ru}, 4 года`, knows: matrix(ids, row(ALL_J, [Y, Y, Y, H], [H, X, X, X])) },
+    { id: `${tag}V`, spec: 'backend', sub, truth: 'middle', legend: `Middle с одной слабой темой в ${ru}`, knows: matrix(ids, row(ALL_J, [Y, Y, H, X], [H, H, X, X])) },
+    { id: `${tag}S`, spec: 'backend', sub, truth: 'senior', legend: `Senior в ${ru}, 8 лет`, knows: matrix(ids, row(ALL_J, [Y, Y, Y, Y], [Y, Y, Y, H])) },
+    { id: `${tag}P`, spec: 'backend', sub, truth: 'junior', legend: 'контроль: все Junior верно, остальные неверно', knows: matrix(ids, row(ALL_J, NO_M, NO_M)) },
+  );
+}
+/** Персоны прогона: все прежние (без --subcategory) или только выбранной подкатегории. Индекс seed - по полному списку. */
+const ACTIVE = (SUB ? PERSONAS.filter((p) => p.sub === SUB) : PERSONAS.filter((p) => !p.sub)).filter(inFilter);
 /** Контроли — не легенды: в суммы ошибок не входят. */
-const CONTROLS = new Set(['Z0', 'JB', 'JF']);
+const CONTROLS = new Set(['Z0', 'JB', 'JF', ...BE_SUBS.map((x) => `${x.tag}P`)]);
 
 interface Outcome {
   confirmed: boolean;
@@ -100,7 +139,7 @@ function runAttempt(pool: readonly SelectableTemplate[], p: Persona, claimed: Gr
   let phase: AttemptPhase = 'main';
   let probed = false;
   for (let index = 0; index < pool.length; index++) {
-    const next = selectNext(phasePool(pool, phase), { shown, theta: est.theta, seed: deriveSeed(attemptSeed, 1000 + index) });
+    const next = selectNext(phasePool(pool, phase, claimed), { shown, theta: est.theta, seed: deriveSeed(attemptSeed, 1000 + index) });
     if (!next) break;
     shown.push(next);
     const known = p.knows[next.id];
@@ -112,7 +151,7 @@ function runAttempt(pool: readonly SelectableTemplate[], p: Persona, claimed: Gr
       continue;
     }
     const step = nextStep({ pool, shown, responses, grade: claimed });
-    if (step.phase === 'junior_probe') probed = true;
+    if (step.phase !== 'main') probed = true;
     if (step.stop) break;
     phase = step.phase;
   }
@@ -126,6 +165,9 @@ interface PersonaStats {
   pJunior: number;
   /** Заявил Middle: Middle подтверждён. */
   pMiddle: number;
+  /** Заявил Senior: Senior подтверждён (только для персон подкатегории). */
+  pSenior: number;
+  lenSenior: number;
   /** Заявил Middle, не подтверждён, предложен Junior в один клик. */
   pOffer: number;
   lenJunior: number;
@@ -144,8 +186,10 @@ interface PersonaStats {
 function runAll(cut: number): PersonaStats[] {
   GRADE_CUT.junior = cut;
   try {
-    return PERSONAS.flatMap((p, pi) => (inFilter(p) ? [{ p, pi }] : [])).map(({ p, pi }) => {
-      const pool: SelectableTemplate[] = generatorsFor(p.spec).map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
+    return ACTIVE.map((p) => {
+      const pi = PERSONAS.indexOf(p);
+      const gens = generatorsFor(p.spec).filter((g) => (p.sub ? g.subcategoryId === p.sub : g.id in p.knows));
+      const pool: SelectableTemplate[] = gens.map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
       let j = 0;
       let m = 0;
       let offer = 0;
@@ -154,10 +198,17 @@ function runAll(cut: number): PersonaStats[] {
       let thJ = 0;
       let prJ = 0;
       let prM = 0;
+      let sen = 0;
+      let lenS = 0;
       for (let r = 0; r < N; r++) {
         const base = deriveSeed(SEED * 7919 + pi, r);
         const oj = runAttempt(pool, p, 'junior', deriveSeed(base, 1), deriveSeed(base, 2));
         const om = runAttempt(pool, p, 'middle', deriveSeed(base, 3), deriveSeed(base, 4));
+        if (p.sub) {
+          const os = runAttempt(pool, p, 'senior', deriveSeed(base, 5), deriveSeed(base, 6));
+          if (os.confirmed) sen++;
+          lenS += os.length;
+        }
         if (oj.confirmed) j++;
         if (om.confirmed) m++;
         if (om.juniorOffered) offer++;
@@ -167,7 +218,7 @@ function runAll(cut: number): PersonaStats[] {
         prJ += +oj.probed;
         prM += +om.probed;
       }
-      return { p, pJunior: j / N, pMiddle: m / N, pOffer: offer / N, lenJunior: lenJ / N, lenMiddle: lenM / N, thetaJunior: thJ / N, probedJunior: prJ / N, probedMiddle: prM / N };
+      return { p, pSenior: sen / N, lenSenior: lenS / N, pJunior: j / N, pMiddle: m / N, pOffer: offer / N, lenJunior: lenJ / N, lenMiddle: lenM / N, thetaJunior: thJ / N, probedJunior: prJ / N, probedMiddle: prM / N };
     });
   } finally {
     GRADE_CUT.junior = BASE_JUNIOR_CUT;
@@ -196,7 +247,7 @@ if (sweep) {
   const cuts: number[] = [];
   for (let c = from; c <= to + 1e-9; c += step) cuts.push(Number(c.toFixed(4)));
   console.log(`# Свип порога Junior по персонам: N = ${N} попыток на персону и грейд, seed = ${SEED}, порог Middle = ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
-  const ids = PERSONAS.filter(inFilter).map((p) => p.id);
+  const ids = ACTIVE.map((p) => p.id);
   console.log(`| Порог Junior | Зона Junior (Middle − Junior) | ${ids.map((id) => `${id} P(J)`).join(' | ')} | Σ ложных J | Σ отказов J | Σ ошибок |`);
   console.log(`|---|---|${ids.map(() => '---').join('|')}|---|---|---|`);
   for (const cut of cuts) {
@@ -208,14 +259,14 @@ if (sweep) {
 } else {
   const cut = argStr('junior-cut') !== undefined ? Number(argStr('junior-cut')) : GRADE_CUT.junior;
   const s = runAll(cut);
-  console.log(`# Персоны через движок теста${SPEC_ARG ? ` (направление ${SPEC_ARG})` : ''}: N = ${N} попыток на персону и грейд, seed = ${SEED}, пороги Junior ${cut} / Middle ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
-  console.log('| Персона | Легенда | Уровень по легенде | P(Junior), заявил Junior | Длина | Дозадавание | θ̂ | P(Middle), заявил Middle | Junior в 1 клик | Длина | Дозадавание |');
-  console.log('|---|---|---|---|---|---|---|---|---|---|---|');
+  console.log(`# Персоны через движок теста${SPEC_ARG ? ` (направление ${SPEC_ARG})` : ''}${SUB ? ` (подкатегория ${SUB})` : ''}: N = ${N} попыток на персону и грейд, seed = ${SEED}, пороги Junior ${cut} / Middle ${GRADE_CUT.middle}, ${PROBE ? 'с дозадаванием Junior' : 'без дозадавания'}\n`);
+  if (SUB) console.log(`Заявка Senior: порог GRADE_CUT.senior (${GRADE_CUT.senior}), основная фаза по Senior-пулу и дозадавание Middle (политика v4).\n`);
+  console.log('| Персона | Легенда | Уровень по легенде | P(Junior), заявил Junior | Длина | Дозадавание | θ̂ | P(Middle), заявил Middle | Junior в 1 клик | Длина | Дозадавание |' + (SUB ? ' P(Senior), заявил Senior | Длина |' : ''));
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|' + (SUB ? '---|---|' : ''));
   for (const x of s) {
-    console.log(`| ${x.p.id} | ${x.p.legend} | ${x.p.truth} | ${f3(x.pJunior)} | ${x.lenJunior.toFixed(2)} | ${f2(x.probedJunior)} | ${f2(x.thetaJunior)} | ${f3(x.pMiddle)} | ${f3(x.pOffer)} | ${x.lenMiddle.toFixed(2)} | ${f2(x.probedMiddle)} |`);
+    console.log(`| ${x.p.id} | ${x.p.legend} | ${x.p.truth} | ${f3(x.pJunior)} | ${x.lenJunior.toFixed(2)} | ${f2(x.probedJunior)} | ${f2(x.thetaJunior)} | ${f3(x.pMiddle)} | ${f3(x.pOffer)} | ${x.lenMiddle.toFixed(2)} | ${f2(x.probedMiddle)} |${SUB ? ` ${f3(x.pSenior)} | ${x.lenSenior.toFixed(2)} |` : ''}`);
   }
   const e = errors(s);
-  const ids = (pred: (x: PersonaStats) => boolean) => s.filter((x) => !CONTROLS.has(x.p.id) && pred(x)).map((x) => x.p.id).join(', ');
-  console.log(`\nΣ ложных подтверждений Junior (${ids((x) => x.p.truth === 'below')}): ${f2(e.falsePass)}; Σ ложных отказов Junior (${ids((x) => x.p.truth !== 'below')}): ${f2(e.falseFail)}`);
+  console.log(`\nΣ ложных подтверждений Junior (${ACTIVE.filter((p) => !CONTROLS.has(p.id) && p.truth === 'below').map((p) => p.id).join(', ')}): ${f2(e.falsePass)}; Σ ложных отказов Junior (${ACTIVE.filter((p) => !CONTROLS.has(p.id) && p.truth !== 'below').map((p) => p.id).join(', ')}): ${f2(e.falseFail)}`);
 }
 console.log(`\nВремя прогона: ${((Date.now() - t0) / 1000).toFixed(1)} с`);

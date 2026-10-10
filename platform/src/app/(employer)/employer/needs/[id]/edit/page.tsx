@@ -43,6 +43,7 @@ export default async function EditNeedPage({ params }: { params: Promise<{ id: s
           teamDescription: v.teamDescription,
           description: v.description,
           stack: v.stack,
+          subcategoryId: v.subcategoryId,
           needs: v.needs,
         }}
       />

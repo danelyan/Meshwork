@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { specLabel } from '@/lib/directions';
 import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
 
@@ -121,7 +122,7 @@ function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
         {attempts.slice(0, 5).map((a) => (
           <li key={a.id}>
             <Link href={`/test?attempt=${encodeURIComponent(a.id)}`}>
-              {formatDate(a.startedAt)}: {a.specialization === 'backend' ? 'Backend' : 'Frontend'} · {a.grade} - {ATTEMPT_STATUS[a.status]}
+              {formatDate(a.startedAt)}: {specLabel(a.specialization)} · {a.grade} - {ATTEMPT_STATUS[a.status]}
               {a.juniorConfirmedAt ? ', Junior подтверждён' : ''}
               {a.status !== 'active' && a.status !== 'abandoned' ? ` (${a.correct} из ${a.answered})` : ''}
             </Link>
@@ -203,7 +204,6 @@ export function ProfilePage() {
   const confirmedCount = claims.filter((c) => c.status === 'confirmed' || c.status === 'edited').length;
 
   const test = recs?.test;
-  const specLabel = (sp: string) => (sp === 'backend' ? 'Backend' : 'Frontend');
 
   return (
     <div className={styles.page}>

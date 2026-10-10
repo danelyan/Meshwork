@@ -1,0 +1,6951 @@
+{
+  "schema": "grade-test-validation/v1",
+  "generatedAt": "2026-10-10T20:18:10.911Z",
+  "command": "npx tsx eval/test/run.ts --n 2000 --json eval/test/results.json",
+  "policy": {
+    "version": "adr-0002-v5",
+    "rules": {
+      "min": 7,
+      "max": 10,
+      "seStop": 0.4
+    },
+    "confirmProb": 0.8,
+    "probe": true,
+    "cuts": {
+      "junior": -0.7,
+      "middle": -0.1,
+      "senior": 0.8
+    }
+  },
+  "config": {
+    "n": 2000,
+    "seed": 1,
+    "population": "persona",
+    "errorModels": [
+      "instance",
+      "family"
+    ],
+    "instanceNoise": 0.2,
+    "familyError": {
+      "b": 0.3,
+      "lnA": 0.15
+    }
+  },
+  "settings": {
+    "strict": "Наша строгая постановка: истина — метка популяции (популяции пересекаются и заходят за пороги), бинарное решение «подтверждён / нет», κ Коэна по бинарному решению.",
+    "competitor": "Постановка конкурентов: θ ~ N(0; 1), истина — θ_true выше порога заявленного грейда; заявка — истинный грейд ±1; грейд 4 класса по старшему порогу с P ≥ 0,5; κw квадратичный; AUC по полосам истинной θ."
+  },
+  "rows": [
+    {
+      "key": "strict.accuracy",
+      "label": "Точность решения против метки популяции",
+      "setting": "strict",
+      "target": "≥ 0,85"
+    },
+    {
+      "key": "strict.falsePass",
+      "label": "Ложное подтверждение (популяция ниже заявленного)",
+      "setting": "strict",
+      "target": "≤ 0,10"
+    },
+    {
+      "key": "strict.falseFail",
+      "label": "Ложный отказ (популяция соответствует)",
+      "setting": "strict",
+      "target": "≤ 0,20"
+    },
+    {
+      "key": "strict.retest.decisionAgreement",
+      "label": "Ретест: совпадение решения",
+      "setting": "strict",
+      "target": "≥ 0,90"
+    },
+    {
+      "key": "strict.retest.kappaBinary",
+      "label": "Ретест: κ Коэна по бинарному решению",
+      "setting": "strict",
+      "target": "≥ 0,70"
+    },
+    {
+      "key": "strict.auc.middleVsJunior",
+      "label": "AUC θ̂ Middle против Junior (популяции пересекаются)",
+      "setting": "strict",
+      "target": "≥ 0,90"
+    },
+    {
+      "key": "strict.juniorClaimsMiddle.falseMiddle",
+      "label": "Junior заявил Middle: ложный Middle",
+      "setting": "strict",
+      "target": "≤ 0,10"
+    },
+    {
+      "key": "strict.leak.falsePass",
+      "label": "Утечка трюка 30 % шаблонов: ложное подтверждение",
+      "setting": "strict",
+      "target": "показать"
+    },
+    {
+      "key": "strict.retakeFalsePass",
+      "label": "Пересдача после разбора (β = LEARN): ложное подтверждение 2-й попытки",
+      "setting": "strict",
+      "target": "показать"
+    },
+    {
+      "key": "strict.retakeOverlap",
+      "label": "Пересдача: доля семейств, повторённых из 1-й попытки",
+      "setting": "strict",
+      "target": "показать"
+    },
+    {
+      "key": "strict.bestOf3FalsePass",
+      "label": "Лучшая из 3 попыток с обучением: ложное подтверждение",
+      "setting": "strict",
+      "target": "показать"
+    },
+    {
+      "key": "strict.length.mean",
+      "label": "Средняя длина, заданий",
+      "setting": "strict",
+      "target": "показать"
+    },
+    {
+      "key": "strict.minutes.mean",
+      "label": "Сумма лимитов времени, мин (верхняя граница)",
+      "setting": "strict",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.accuracy",
+      "label": "Точность решения против «θ выше порога»",
+      "setting": "competitor",
+      "target": "≥ 0,85"
+    },
+    {
+      "key": "competitor.falsePass",
+      "label": "Ложное подтверждение (θ ниже порога)",
+      "setting": "competitor",
+      "target": "≤ 0,10"
+    },
+    {
+      "key": "competitor.falseFail",
+      "label": "Ложный отказ (θ выше порога)",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.byDistance.0",
+      "label": "Точность при |θ − порог| < 0,1",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.byDistance.3",
+      "label": "Точность при |θ − порог| ≥ 0,5",
+      "setting": "competitor",
+      "target": "≥ 0,95"
+    },
+    {
+      "key": "competitor.retest.decisionAgreement",
+      "label": "Ретест: совпадение решения",
+      "setting": "competitor",
+      "target": "≥ 0,90"
+    },
+    {
+      "key": "competitor.retest.kappaBinary",
+      "label": "Ретест: κ по бинарному решению",
+      "setting": "competitor",
+      "target": "≥ 0,70"
+    },
+    {
+      "key": "competitor.retest.rTheta",
+      "label": "Ретест: r(θ̂₁, θ̂₂)",
+      "setting": "competitor",
+      "target": "≥ 0,80"
+    },
+    {
+      "key": "competitor.rThetaTrue",
+      "label": "r(θ̂, θ_true)",
+      "setting": "competitor",
+      "target": "≥ 0,80"
+    },
+    {
+      "key": "competitor.grade4.exact",
+      "label": "Грейд (4 класса): точно",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.grade4.kappaWeighted",
+      "label": "Грейд: κw квадратичный против истины",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.grade4.retestAgreement",
+      "label": "Ретест грейда: совпадение",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.grade4.retestKappa",
+      "label": "Ретест грейда: κ невзвешенный",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.grade4.retestKappaWeighted",
+      "label": "Ретест грейда: κw квадратичный",
+      "setting": "competitor",
+      "target": "≥ 0,70"
+    },
+    {
+      "key": "competitor.aucByBand.middleVsJunior",
+      "label": "AUC по полосам θ: Middle против Junior",
+      "setting": "competitor",
+      "target": "≥ 0,90"
+    },
+    {
+      "key": "competitor.aucByBand.seniorVsMiddle",
+      "label": "AUC по полосам θ: Senior против Middle",
+      "setting": "competitor",
+      "target": "≥ 0,90"
+    },
+    {
+      "key": "competitor.length.mean",
+      "label": "Средняя длина, заданий",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.length.p90",
+      "label": "Длина, 90-й перцентиль",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.retest.familyOverlap",
+      "label": "Ретест: доля семейств 1-й попытки во 2-й",
+      "setting": "competitor",
+      "target": "показать"
+    },
+    {
+      "key": "competitor.minutes.mean",
+      "label": "Сумма лимитов времени, мин (верхняя граница)",
+      "setting": "competitor",
+      "target": "показать"
+    }
+  ],
+  "summary": {
+    "instance": {
+      "strict.accuracy": {
+        "mean": 0.692,
+        "min": 0.673,
+        "max": 0.716
+      },
+      "strict.falsePass": {
+        "mean": 0.29,
+        "min": 0.264,
+        "max": 0.326
+      },
+      "strict.falseFail": {
+        "mean": 0.327,
+        "min": 0.287,
+        "max": 0.379
+      },
+      "strict.retest.decisionAgreement": {
+        "mean": 0.7,
+        "min": 0.684,
+        "max": 0.717
+      },
+      "strict.retest.kappaBinary": {
+        "mean": 0.398,
+        "min": 0.365,
+        "max": 0.433
+      },
+      "strict.auc.middleVsJunior": {
+        "mean": 0.655,
+        "min": 0.626,
+        "max": 0.707
+      },
+      "strict.juniorClaimsMiddle.falseMiddle": {
+        "mean": 0.408,
+        "min": 0.369,
+        "max": 0.453
+      },
+      "strict.leak.falsePass": {
+        "mean": 0.457,
+        "min": 0.392,
+        "max": 0.511
+      },
+      "strict.retakeFalsePass": {
+        "mean": 0.534,
+        "min": 0.49,
+        "max": 0.592
+      },
+      "strict.retakeOverlap": {
+        "mean": 0.713,
+        "min": 0.634,
+        "max": 0.77
+      },
+      "strict.bestOf3FalsePass": {
+        "mean": 0.801,
+        "min": 0.775,
+        "max": 0.837
+      },
+      "strict.length.mean": {
+        "mean": 8.267,
+        "min": 8.056,
+        "max": 8.526
+      },
+      "strict.minutes.mean": {
+        "mean": 27.518,
+        "min": 25.085,
+        "max": 30.86
+      },
+      "competitor.accuracy": {
+        "mean": 0.676,
+        "min": 0.652,
+        "max": 0.698
+      },
+      "competitor.falsePass": {
+        "mean": 0.087,
+        "min": 0.062,
+        "max": 0.109
+      },
+      "competitor.falseFail": {
+        "mean": 0.466,
+        "min": 0.432,
+        "max": 0.504
+      },
+      "competitor.byDistance.0": {
+        "mean": 0.464,
+        "min": 0.397,
+        "max": 0.527
+      },
+      "competitor.byDistance.3": {
+        "mean": 0.817,
+        "min": 0.768,
+        "max": 0.846
+      },
+      "competitor.retest.decisionAgreement": {
+        "mean": 0.711,
+        "min": 0.695,
+        "max": 0.727
+      },
+      "competitor.retest.kappaBinary": {
+        "mean": 0.38,
+        "min": 0.331,
+        "max": 0.419
+      },
+      "competitor.retest.rTheta": {
+        "mean": 0.709,
+        "min": 0.675,
+        "max": 0.739
+      },
+      "competitor.rThetaTrue": {
+        "mean": 0.836,
+        "min": 0.811,
+        "max": 0.855
+      },
+      "competitor.grade4.exact": {
+        "mean": 0.602,
+        "min": 0.565,
+        "max": 0.619
+      },
+      "competitor.grade4.kappaWeighted": {
+        "mean": 0.768,
+        "min": 0.735,
+        "max": 0.787
+      },
+      "competitor.grade4.retestAgreement": {
+        "mean": 0.516,
+        "min": 0.493,
+        "max": 0.533
+      },
+      "competitor.grade4.retestKappa": {
+        "mean": 0.333,
+        "min": 0.3,
+        "max": 0.354
+      },
+      "competitor.grade4.retestKappaWeighted": {
+        "mean": 0.642,
+        "min": 0.611,
+        "max": 0.668
+      },
+      "competitor.aucByBand.middleVsJunior": {
+        "mean": 0.769,
+        "min": 0.734,
+        "max": 0.803
+      },
+      "competitor.aucByBand.seniorVsMiddle": {
+        "mean": 0.838,
+        "min": 0.808,
+        "max": 0.856
+      },
+      "competitor.length.mean": {
+        "mean": 8.716,
+        "min": 8.516,
+        "max": 9.12
+      },
+      "competitor.length.p90": {
+        "mean": 10.882,
+        "min": 10,
+        "max": 12
+      },
+      "competitor.retest.familyOverlap": {
+        "mean": 0.692,
+        "min": 0.601,
+        "max": 0.753
+      },
+      "competitor.minutes.mean": {
+        "mean": 27.894,
+        "min": 25.214,
+        "max": 31.098
+      }
+    },
+    "family": {
+      "strict.accuracy": {
+        "mean": 0.694,
+        "min": 0.672,
+        "max": 0.712
+      },
+      "strict.falsePass": {
+        "mean": 0.277,
+        "min": 0.206,
+        "max": 0.346
+      },
+      "strict.falseFail": {
+        "mean": 0.336,
+        "min": 0.248,
+        "max": 0.399
+      },
+      "strict.retest.decisionAgreement": {
+        "mean": 0.704,
+        "min": 0.683,
+        "max": 0.736
+      },
+      "strict.retest.kappaBinary": {
+        "mean": 0.401,
+        "min": 0.364,
+        "max": 0.461
+      },
+      "strict.auc.middleVsJunior": {
+        "mean": 0.656,
+        "min": 0.628,
+        "max": 0.679
+      },
+      "strict.juniorClaimsMiddle.falseMiddle": {
+        "mean": 0.386,
+        "min": 0.273,
+        "max": 0.489
+      },
+      "strict.leak.falsePass": {
+        "mean": 0.441,
+        "min": 0.358,
+        "max": 0.558
+      },
+      "strict.retakeFalsePass": {
+        "mean": 0.523,
+        "min": 0.453,
+        "max": 0.593
+      },
+      "strict.retakeOverlap": {
+        "mean": 0.714,
+        "min": 0.629,
+        "max": 0.787
+      },
+      "strict.bestOf3FalsePass": {
+        "mean": 0.791,
+        "min": 0.737,
+        "max": 0.846
+      },
+      "strict.length.mean": {
+        "mean": 8.297,
+        "min": 8.107,
+        "max": 8.699
+      },
+      "strict.minutes.mean": {
+        "mean": 27.559,
+        "min": 25.194,
+        "max": 30.837
+      },
+      "competitor.accuracy": {
+        "mean": 0.671,
+        "min": 0.625,
+        "max": 0.733
+      },
+      "competitor.falsePass": {
+        "mean": 0.089,
+        "min": 0.039,
+        "max": 0.128
+      },
+      "competitor.falseFail": {
+        "mean": 0.474,
+        "min": 0.373,
+        "max": 0.556
+      },
+      "competitor.byDistance.0": {
+        "mean": 0.463,
+        "min": 0.393,
+        "max": 0.502
+      },
+      "competitor.byDistance.3": {
+        "mean": 0.811,
+        "min": 0.744,
+        "max": 0.873
+      },
+      "competitor.retest.decisionAgreement": {
+        "mean": 0.714,
+        "min": 0.686,
+        "max": 0.752
+      },
+      "competitor.retest.kappaBinary": {
+        "mean": 0.38,
+        "min": 0.334,
+        "max": 0.42
+      },
+      "competitor.retest.rTheta": {
+        "mean": 0.708,
+        "min": 0.681,
+        "max": 0.756
+      },
+      "competitor.rThetaTrue": {
+        "mean": 0.836,
+        "min": 0.821,
+        "max": 0.855
+      },
+      "competitor.grade4.exact": {
+        "mean": 0.591,
+        "min": 0.573,
+        "max": 0.619
+      },
+      "competitor.grade4.kappaWeighted": {
+        "mean": 0.76,
+        "min": 0.734,
+        "max": 0.795
+      },
+      "competitor.grade4.retestAgreement": {
+        "mean": 0.516,
+        "min": 0.488,
+        "max": 0.541
+      },
+      "competitor.grade4.retestKappa": {
+        "mean": 0.331,
+        "min": 0.292,
+        "max": 0.372
+      },
+      "competitor.grade4.retestKappaWeighted": {
+        "mean": 0.641,
+        "min": 0.609,
+        "max": 0.694
+      },
+      "competitor.aucByBand.middleVsJunior": {
+        "mean": 0.765,
+        "min": 0.738,
+        "max": 0.792
+      },
+      "competitor.aucByBand.seniorVsMiddle": {
+        "mean": 0.841,
+        "min": 0.811,
+        "max": 0.866
+      },
+      "competitor.length.mean": {
+        "mean": 8.739,
+        "min": 8.438,
+        "max": 9.209
+      },
+      "competitor.length.p90": {
+        "mean": 10.882,
+        "min": 10,
+        "max": 12
+      },
+      "competitor.retest.familyOverlap": {
+        "mean": 0.694,
+        "min": 0.601,
+        "max": 0.759
+      },
+      "competitor.minutes.mean": {
+        "mean": 27.916,
+        "min": 25.255,
+        "max": 31.041
+      }
+    }
+  },
+  "subcategories": [
+    {
+      "subcategoryId": "backend.web-api",
+      "title": "Web API",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.681,
+            "falsePass": 0.287,
+            "falseFail": 0.352,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.786,
+                "falsePass": 0.275,
+                "falseFail": 0.153
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.584,
+                "falsePass": 0.405,
+                "falseFail": 0.426
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.671,
+                "falsePass": 0.18,
+                "falseFail": 0.477
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 169,
+                "accuracy": 0.686
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 315,
+                "accuracy": 0.651
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 311,
+                "accuracy": 0.614
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1205,
+                "accuracy": 0.705
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.706,
+              "kappaBinary": 0.408,
+              "rTheta": 0.675,
+              "familyOverlap": 0.739
+            },
+            "rThetaTrue": 0.818,
+            "length": {
+              "mean": 8.526,
+              "p10": 7,
+              "p90": 12,
+              "byClaim": {
+                "junior": 9.316,
+                "middle": 9.141,
+                "senior": 7.119
+              }
+            },
+            "minutes": {
+              "mean": 26.053,
+              "p90": 34
+            },
+            "probedShare": 0.488,
+            "maxExposure": 0.936,
+            "auc": {
+              "juniorVsNovice": 0.857,
+              "middleVsJunior": 0.638,
+              "seniorVsMiddle": 0.764
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.405,
+              "offeredJunior": 0.423
+            },
+            "leak": {
+              "falsePass": 0.406,
+              "baseline": 0.287
+            },
+            "bestOf3FalsePass": 0.814,
+            "retakeFalsePass": 0.592,
+            "retakeOverlap": 0.77
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.676,
+            "falsePass": 0.088,
+            "falseFail": 0.466,
+            "byClaim": {
+              "junior": {
+                "n": 974,
+                "accuracy": 0.747,
+                "falsePass": 0.115,
+                "falseFail": 0.389
+              },
+              "middle": {
+                "n": 550,
+                "accuracy": 0.615,
+                "falsePass": 0.078,
+                "falseFail": 0.455
+              },
+              "senior": {
+                "n": 476,
+                "accuracy": 0.599,
+                "falsePass": 0.012,
+                "falseFail": 0.602
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 216,
+                "accuracy": 0.505
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 425,
+                "accuracy": 0.489
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 414,
+                "accuracy": 0.623
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 945,
+                "accuracy": 0.821
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.706,
+              "kappaBinary": 0.37,
+              "rTheta": 0.718,
+              "familyOverlap": 0.748
+            },
+            "rThetaTrue": 0.839,
+            "length": {
+              "mean": 9.12,
+              "p10": 7,
+              "p90": 12,
+              "byClaim": {
+                "junior": 9.868,
+                "middle": 9.336,
+                "senior": 7.34
+              }
+            },
+            "minutes": {
+              "mean": 27.304,
+              "p90": 34
+            },
+            "probedShare": 0.51,
+            "maxExposure": 0.936,
+            "grade4": {
+              "exact": 0.617,
+              "within1": 0.963,
+              "kappa": 0.477,
+              "kappaWeighted": 0.777,
+              "retestAgreement": 0.527,
+              "retestKappa": 0.343,
+              "retestKappaWeighted": 0.649
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.818,
+              "middleVsJunior": 0.797,
+              "seniorVsMiddle": 0.842
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.693,
+            "falsePass": 0.22,
+            "falseFail": 0.395,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.79,
+                "falsePass": 0.192,
+                "falseFail": 0.228
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.632,
+                "falsePass": 0.321,
+                "falseFail": 0.414
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.655,
+                "falsePass": 0.147,
+                "falseFail": 0.544
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 169,
+                "accuracy": 0.71
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 315,
+                "accuracy": 0.695
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 311,
+                "accuracy": 0.614
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1205,
+                "accuracy": 0.71
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.702,
+              "kappaBinary": 0.386,
+              "rTheta": 0.676,
+              "familyOverlap": 0.748
+            },
+            "rThetaTrue": 0.826,
+            "length": {
+              "mean": 8.699,
+              "p10": 7,
+              "p90": 12,
+              "byClaim": {
+                "junior": 9.545,
+                "middle": 9.299,
+                "senior": 7.249
+              }
+            },
+            "minutes": {
+              "mean": 26.458,
+              "p90": 34
+            },
+            "probedShare": 0.525,
+            "maxExposure": 0.943,
+            "auc": {
+              "juniorVsNovice": 0.87,
+              "middleVsJunior": 0.66,
+              "seniorVsMiddle": 0.758
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.321,
+              "offeredJunior": 0.48
+            },
+            "leak": {
+              "falsePass": 0.358,
+              "baseline": 0.22
+            },
+            "bestOf3FalsePass": 0.801,
+            "retakeFalsePass": 0.559,
+            "retakeOverlap": 0.787
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.638,
+            "falsePass": 0.071,
+            "falseFail": 0.537,
+            "byClaim": {
+              "junior": {
+                "n": 974,
+                "accuracy": 0.739,
+                "falsePass": 0.099,
+                "falseFail": 0.421
+              },
+              "middle": {
+                "n": 550,
+                "accuracy": 0.533,
+                "falsePass": 0.02,
+                "falseFail": 0.569
+              },
+              "senior": {
+                "n": 476,
+                "accuracy": 0.55,
+                "falsePass": 0.019,
+                "falseFail": 0.672
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 216,
+                "accuracy": 0.458
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 425,
+                "accuracy": 0.464
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 414,
+                "accuracy": 0.585
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 945,
+                "accuracy": 0.78
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.723,
+              "kappaBinary": 0.357,
+              "rTheta": 0.697,
+              "familyOverlap": 0.759
+            },
+            "rThetaTrue": 0.833,
+            "length": {
+              "mean": 9.209,
+              "p10": 7,
+              "p90": 12,
+              "byClaim": {
+                "junior": 9.835,
+                "middle": 9.584,
+                "senior": 7.494
+              }
+            },
+            "minutes": {
+              "mean": 27.455,
+              "p90": 34
+            },
+            "probedShare": 0.538,
+            "maxExposure": 0.93,
+            "grade4": {
+              "exact": 0.578,
+              "within1": 0.957,
+              "kappa": 0.424,
+              "kappaWeighted": 0.755,
+              "retestAgreement": 0.512,
+              "retestKappa": 0.321,
+              "retestKappaWeighted": 0.637
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.796,
+              "middleVsJunior": 0.762,
+              "seniorVsMiddle": 0.866
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "backend.integrations",
+      "title": "Интеграции",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.679,
+            "falsePass": 0.318,
+            "falseFail": 0.325,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.781,
+                "falsePass": 0.272,
+                "falseFail": 0.165
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.611,
+                "falsePass": 0.432,
+                "falseFail": 0.345
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.643,
+                "falsePass": 0.249,
+                "falseFail": 0.465
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 177,
+                "accuracy": 0.661
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 323,
+                "accuracy": 0.622
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 307,
+                "accuracy": 0.655
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1193,
+                "accuracy": 0.702
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.693,
+              "kappaBinary": 0.386,
+              "rTheta": 0.67,
+              "familyOverlap": 0.717
+            },
+            "rThetaTrue": 0.809,
+            "length": {
+              "mean": 8.235,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 8.892,
+                "middle": 8.841,
+                "senior": 6.968
+              }
+            },
+            "minutes": {
+              "mean": 25.136,
+              "p90": 30
+            },
+            "probedShare": 0.417,
+            "maxExposure": 0.891,
+            "auc": {
+              "juniorVsNovice": 0.856,
+              "middleVsJunior": 0.663,
+              "seniorVsMiddle": 0.722
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.432,
+              "offeredJunior": 0.429
+            },
+            "leak": {
+              "falsePass": 0.46,
+              "baseline": 0.318
+            },
+            "bestOf3FalsePass": 0.83,
+            "retakeFalsePass": 0.57,
+            "retakeOverlap": 0.74
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.657,
+            "falsePass": 0.109,
+            "falseFail": 0.476,
+            "byClaim": {
+              "junior": {
+                "n": 971,
+                "accuracy": 0.719,
+                "falsePass": 0.14,
+                "falseFail": 0.411
+              },
+              "middle": {
+                "n": 522,
+                "accuracy": 0.623,
+                "falsePass": 0.077,
+                "falseFail": 0.452
+              },
+              "senior": {
+                "n": 507,
+                "accuracy": 0.572,
+                "falsePass": 0.039,
+                "falseFail": 0.599
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 234,
+                "accuracy": 0.44
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 423,
+                "accuracy": 0.463
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 408,
+                "accuracy": 0.613
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 935,
+                "accuracy": 0.817
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.727,
+              "kappaBinary": 0.416,
+              "rTheta": 0.711,
+              "familyOverlap": 0.741
+            },
+            "rThetaTrue": 0.826,
+            "length": {
+              "mean": 8.753,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.354,
+                "middle": 9.075,
+                "senior": 7.268
+              }
+            },
+            "minutes": {
+              "mean": 25.882,
+              "p90": 30
+            },
+            "probedShare": 0.439,
+            "maxExposure": 0.927,
+            "grade4": {
+              "exact": 0.589,
+              "within1": 0.956,
+              "kappa": 0.445,
+              "kappaWeighted": 0.755,
+              "retestAgreement": 0.507,
+              "retestKappa": 0.327,
+              "retestKappaWeighted": 0.64
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.793,
+              "middleVsJunior": 0.779,
+              "seniorVsMiddle": 0.819
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.676,
+            "falsePass": 0.308,
+            "falseFail": 0.341,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.777,
+                "falsePass": 0.323,
+                "falseFail": 0.123
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.622,
+                "falsePass": 0.354,
+                "falseFail": 0.402
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.628,
+                "falsePass": 0.246,
+                "falseFail": 0.498
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 177,
+                "accuracy": 0.638
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 323,
+                "accuracy": 0.632
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 307,
+                "accuracy": 0.616
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1193,
+                "accuracy": 0.708
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.693,
+              "kappaBinary": 0.384,
+              "rTheta": 0.664,
+              "familyOverlap": 0.719
+            },
+            "rThetaTrue": 0.822,
+            "length": {
+              "mean": 8.333,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 8.901,
+                "middle": 9.065,
+                "senior": 7.03
+              }
+            },
+            "minutes": {
+              "mean": 25.379,
+              "p90": 30
+            },
+            "probedShare": 0.421,
+            "maxExposure": 0.901,
+            "auc": {
+              "juniorVsNovice": 0.863,
+              "middleVsJunior": 0.672,
+              "seniorVsMiddle": 0.722
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.354,
+              "offeredJunior": 0.505
+            },
+            "leak": {
+              "falsePass": 0.454,
+              "baseline": 0.308
+            },
+            "bestOf3FalsePass": 0.813,
+            "retakeFalsePass": 0.577,
+            "retakeOverlap": 0.749
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.681,
+            "falsePass": 0.098,
+            "falseFail": 0.445,
+            "byClaim": {
+              "junior": {
+                "n": 971,
+                "accuracy": 0.778,
+                "falsePass": 0.125,
+                "falseFail": 0.312
+              },
+              "middle": {
+                "n": 522,
+                "accuracy": 0.613,
+                "falsePass": 0.058,
+                "falseFail": 0.469
+              },
+              "senior": {
+                "n": 507,
+                "accuracy": 0.564,
+                "falsePass": 0.045,
+                "falseFail": 0.608
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 234,
+                "accuracy": 0.487
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 423,
+                "accuracy": 0.525
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 408,
+                "accuracy": 0.615
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 935,
+                "accuracy": 0.828
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.703,
+              "kappaBinary": 0.377,
+              "rTheta": 0.698,
+              "familyOverlap": 0.743
+            },
+            "rThetaTrue": 0.835,
+            "length": {
+              "mean": 8.788,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.381,
+                "middle": 9.209,
+                "senior": 7.217
+              }
+            },
+            "minutes": {
+              "mean": 25.993,
+              "p90": 30
+            },
+            "probedShare": 0.438,
+            "maxExposure": 0.927,
+            "grade4": {
+              "exact": 0.58,
+              "within1": 0.962,
+              "kappa": 0.43,
+              "kappaWeighted": 0.754,
+              "retestAgreement": 0.492,
+              "retestKappa": 0.295,
+              "retestKappaWeighted": 0.61
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.831,
+              "middleVsJunior": 0.763,
+              "seniorVsMiddle": 0.825
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "backend.highload",
+      "title": "Highload",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.673,
+            "falsePass": 0.275,
+            "falseFail": 0.379,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.796,
+                "falsePass": 0.24,
+                "falseFail": 0.168
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.589,
+                "falsePass": 0.42,
+                "falseFail": 0.402
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.634,
+                "falsePass": 0.165,
+                "falseFail": 0.568
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 156,
+                "accuracy": 0.654
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 311,
+                "accuracy": 0.678
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 311,
+                "accuracy": 0.614
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1222,
+                "accuracy": 0.689
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.695,
+              "kappaBinary": 0.383,
+              "rTheta": 0.663,
+              "familyOverlap": 0.727
+            },
+            "rThetaTrue": 0.811,
+            "length": {
+              "mean": 8.323,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.71,
+                "middle": 8.938,
+                "senior": 7.318
+              }
+            },
+            "minutes": {
+              "mean": 25.523,
+              "p90": 30
+            },
+            "probedShare": 0.366,
+            "maxExposure": 0.896,
+            "auc": {
+              "juniorVsNovice": 0.874,
+              "middleVsJunior": 0.626,
+              "seniorVsMiddle": 0.715
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.42,
+              "offeredJunior": 0.408
+            },
+            "leak": {
+              "falsePass": 0.392,
+              "baseline": 0.275
+            },
+            "bestOf3FalsePass": 0.79,
+            "retakeFalsePass": 0.54,
+            "retakeOverlap": 0.762
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.66,
+            "falsePass": 0.094,
+            "falseFail": 0.493,
+            "byClaim": {
+              "junior": {
+                "n": 969,
+                "accuracy": 0.754,
+                "falsePass": 0.11,
+                "falseFail": 0.384
+              },
+              "middle": {
+                "n": 572,
+                "accuracy": 0.565,
+                "falsePass": 0.101,
+                "falseFail": 0.514
+              },
+              "senior": {
+                "n": 459,
+                "accuracy": 0.577,
+                "falsePass": 0.042,
+                "falseFail": 0.636
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 227,
+                "accuracy": 0.471
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 457,
+                "accuracy": 0.492
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 400,
+                "accuracy": 0.63
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 916,
+                "accuracy": 0.802
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.697,
+              "kappaBinary": 0.331,
+              "rTheta": 0.683,
+              "familyOverlap": 0.753
+            },
+            "rThetaTrue": 0.814,
+            "length": {
+              "mean": 8.664,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 9.015,
+                "middle": 9.098,
+                "senior": 7.379
+              }
+            },
+            "minutes": {
+              "mean": 25.734,
+              "p90": 30.5
+            },
+            "probedShare": 0.292,
+            "maxExposure": 0.886,
+            "grade4": {
+              "exact": 0.565,
+              "within1": 0.956,
+              "kappa": 0.406,
+              "kappaWeighted": 0.735,
+              "retestAgreement": 0.504,
+              "retestKappa": 0.314,
+              "retestKappaWeighted": 0.613
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.812,
+              "middleVsJunior": 0.742,
+              "seniorVsMiddle": 0.828
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.68,
+            "falsePass": 0.322,
+            "falseFail": 0.319,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.795,
+                "falsePass": 0.314,
+                "falseFail": 0.096
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.595,
+                "falsePass": 0.486,
+                "falseFail": 0.324
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.649,
+                "falsePass": 0.165,
+                "falseFail": 0.538
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 156,
+                "accuracy": 0.577
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 311,
+                "accuracy": 0.63
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 311,
+                "accuracy": 0.637
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1222,
+                "accuracy": 0.716
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.707,
+              "kappaBinary": 0.413,
+              "rTheta": 0.674,
+              "familyOverlap": 0.712
+            },
+            "rThetaTrue": 0.82,
+            "length": {
+              "mean": 8.233,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.428,
+                "middle": 8.94,
+                "senior": 7.329
+              }
+            },
+            "minutes": {
+              "mean": 25.417,
+              "p90": 30
+            },
+            "probedShare": 0.349,
+            "maxExposure": 0.893,
+            "auc": {
+              "juniorVsNovice": 0.881,
+              "middleVsJunior": 0.628,
+              "seniorVsMiddle": 0.741
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.486,
+              "offeredJunior": 0.42
+            },
+            "leak": {
+              "falsePass": 0.436,
+              "baseline": 0.322
+            },
+            "bestOf3FalsePass": 0.807,
+            "retakeFalsePass": 0.571,
+            "retakeOverlap": 0.756
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.7,
+            "falsePass": 0.109,
+            "falseFail": 0.419,
+            "byClaim": {
+              "junior": {
+                "n": 969,
+                "accuracy": 0.792,
+                "falsePass": 0.151,
+                "falseFail": 0.267
+              },
+              "middle": {
+                "n": 572,
+                "accuracy": 0.635,
+                "falsePass": 0.064,
+                "falseFail": 0.436
+              },
+              "senior": {
+                "n": 459,
+                "accuracy": 0.586,
+                "falsePass": 0.012,
+                "falseFail": 0.639
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 227,
+                "accuracy": 0.498
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 457,
+                "accuracy": 0.521
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 400,
+                "accuracy": 0.655
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 916,
+                "accuracy": 0.858
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.715,
+              "kappaBinary": 0.406,
+              "rTheta": 0.703,
+              "familyOverlap": 0.742
+            },
+            "rThetaTrue": 0.828,
+            "length": {
+              "mean": 8.608,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.822,
+                "middle": 9.089,
+                "senior": 7.556
+              }
+            },
+            "minutes": {
+              "mean": 25.687,
+              "p90": 30.5
+            },
+            "probedShare": 0.294,
+            "maxExposure": 0.897,
+            "grade4": {
+              "exact": 0.593,
+              "within1": 0.957,
+              "kappa": 0.437,
+              "kappaWeighted": 0.739,
+              "retestAgreement": 0.524,
+              "retestKappa": 0.318,
+              "retestKappaWeighted": 0.634
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.827,
+              "middleVsJunior": 0.74,
+              "seniorVsMiddle": 0.811
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "backend.data-model",
+      "title": "Модель данных",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.686,
+            "falsePass": 0.295,
+            "falseFail": 0.334,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.766,
+                "falsePass": 0.308,
+                "falseFail": 0.159
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.617,
+                "falsePass": 0.408,
+                "falseFail": 0.357
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.673,
+                "falsePass": 0.168,
+                "falseFail": 0.486
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 176,
+                "accuracy": 0.67
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 329,
+                "accuracy": 0.699
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 314,
+                "accuracy": 0.589
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1181,
+                "accuracy": 0.71
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.694,
+              "kappaBinary": 0.385,
+              "rTheta": 0.657,
+              "familyOverlap": 0.715
+            },
+            "rThetaTrue": 0.818,
+            "length": {
+              "mean": 8.342,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.004,
+                "middle": 8.907,
+                "senior": 7.111
+              }
+            },
+            "minutes": {
+              "mean": 27.064,
+              "p90": 33
+            },
+            "probedShare": 0.435,
+            "maxExposure": 0.884,
+            "auc": {
+              "juniorVsNovice": 0.853,
+              "middleVsJunior": 0.655,
+              "seniorVsMiddle": 0.755
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.408,
+              "offeredJunior": 0.447
+            },
+            "leak": {
+              "falsePass": 0.485,
+              "baseline": 0.295
+            },
+            "bestOf3FalsePass": 0.837,
+            "retakeFalsePass": 0.571,
+            "retakeOverlap": 0.742
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.694,
+            "falsePass": 0.083,
+            "falseFail": 0.449,
+            "byClaim": {
+              "junior": {
+                "n": 1016,
+                "accuracy": 0.773,
+                "falsePass": 0.099,
+                "falseFail": 0.361
+              },
+              "middle": {
+                "n": 520,
+                "accuracy": 0.617,
+                "falsePass": 0.065,
+                "falseFail": 0.451
+              },
+              "senior": {
+                "n": 464,
+                "accuracy": 0.608,
+                "falsePass": 0.047,
+                "falseFail": 0.596
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 226,
+                "accuracy": 0.527
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 439,
+                "accuracy": 0.544
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 405,
+                "accuracy": 0.647
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 930,
+                "accuracy": 0.826
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.699,
+              "kappaBinary": 0.354,
+              "rTheta": 0.711,
+              "familyOverlap": 0.734
+            },
+            "rThetaTrue": 0.843,
+            "length": {
+              "mean": 8.906,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.512,
+                "middle": 9.112,
+                "senior": 7.347
+              }
+            },
+            "minutes": {
+              "mean": 28.191,
+              "p90": 33
+            },
+            "probedShare": 0.469,
+            "maxExposure": 0.927,
+            "grade4": {
+              "exact": 0.612,
+              "within1": 0.967,
+              "kappa": 0.47,
+              "kappaWeighted": 0.779,
+              "retestAgreement": 0.517,
+              "retestKappa": 0.329,
+              "retestKappaWeighted": 0.643
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.835,
+              "middleVsJunior": 0.765,
+              "seniorVsMiddle": 0.856
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.672,
+            "falsePass": 0.258,
+            "falseFail": 0.399,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.768,
+                "falsePass": 0.299,
+                "falseFail": 0.165
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.614,
+                "falsePass": 0.336,
+                "falseFail": 0.435
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.632,
+                "falsePass": 0.138,
+                "falseFail": 0.598
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 176,
+                "accuracy": 0.693
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 329,
+                "accuracy": 0.733
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 314,
+                "accuracy": 0.561
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1181,
+                "accuracy": 0.681
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.698,
+              "kappaBinary": 0.386,
+              "rTheta": 0.649,
+              "familyOverlap": 0.728
+            },
+            "rThetaTrue": 0.807,
+            "length": {
+              "mean": 8.504,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.051,
+                "middle": 9.168,
+                "senior": 7.29
+              }
+            },
+            "minutes": {
+              "mean": 27.468,
+              "p90": 33
+            },
+            "probedShare": 0.446,
+            "maxExposure": 0.9,
+            "auc": {
+              "juniorVsNovice": 0.845,
+              "middleVsJunior": 0.648,
+              "seniorVsMiddle": 0.737
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.336,
+              "offeredJunior": 0.486
+            },
+            "leak": {
+              "falsePass": 0.445,
+              "baseline": 0.258
+            },
+            "bestOf3FalsePass": 0.782,
+            "retakeFalsePass": 0.532,
+            "retakeOverlap": 0.755
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.649,
+            "falsePass": 0.101,
+            "falseFail": 0.512,
+            "byClaim": {
+              "junior": {
+                "n": 1016,
+                "accuracy": 0.752,
+                "falsePass": 0.13,
+                "falseFail": 0.371
+              },
+              "middle": {
+                "n": 520,
+                "accuracy": 0.533,
+                "falsePass": 0.087,
+                "falseFail": 0.549
+              },
+              "senior": {
+                "n": 464,
+                "accuracy": 0.552,
+                "falsePass": 0.023,
+                "falseFail": 0.699
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 226,
+                "accuracy": 0.487
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 439,
+                "accuracy": 0.506
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 405,
+                "accuracy": 0.602
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 930,
+                "accuracy": 0.775
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.719,
+              "kappaBinary": 0.376,
+              "rTheta": 0.681,
+              "familyOverlap": 0.746
+            },
+            "rThetaTrue": 0.821,
+            "length": {
+              "mean": 8.997,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.536,
+                "middle": 9.277,
+                "senior": 7.502
+              }
+            },
+            "minutes": {
+              "mean": 28.378,
+              "p90": 33
+            },
+            "probedShare": 0.469,
+            "maxExposure": 0.938,
+            "grade4": {
+              "exact": 0.587,
+              "within1": 0.962,
+              "kappa": 0.434,
+              "kappaWeighted": 0.752,
+              "retestAgreement": 0.537,
+              "retestKappa": 0.35,
+              "retestKappaWeighted": 0.626
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.802,
+              "middleVsJunior": 0.748,
+              "seniorVsMiddle": 0.849
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "frontend.ui-app",
+      "title": "UI-приложение",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.707,
+            "falsePass": 0.287,
+            "falseFail": 0.3,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.798,
+                "falsePass": 0.234,
+                "falseFail": 0.171
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.634,
+                "falsePass": 0.414,
+                "falseFail": 0.318
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.688,
+                "falsePass": 0.213,
+                "falseFail": 0.411
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 168,
+                "accuracy": 0.625
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 338,
+                "accuracy": 0.66
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 284,
+                "accuracy": 0.665
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1210,
+                "accuracy": 0.74
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.717,
+              "kappaBinary": 0.433,
+              "rTheta": 0.684,
+              "familyOverlap": 0.671
+            },
+            "rThetaTrue": 0.816,
+            "length": {
+              "mean": 8.246,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.819,
+                "middle": 8.905,
+                "senior": 7.011
+              }
+            },
+            "minutes": {
+              "mean": 25.449,
+              "p90": 30
+            },
+            "probedShare": 0.386,
+            "maxExposure": 0.883,
+            "auc": {
+              "juniorVsNovice": 0.883,
+              "middleVsJunior": 0.661,
+              "seniorVsMiddle": 0.746
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.414,
+              "offeredJunior": 0.402
+            },
+            "leak": {
+              "falsePass": 0.468,
+              "baseline": 0.287
+            },
+            "bestOf3FalsePass": 0.798,
+            "retakeFalsePass": 0.528,
+            "retakeOverlap": 0.711
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.667,
+            "falsePass": 0.097,
+            "falseFail": 0.47,
+            "byClaim": {
+              "junior": {
+                "n": 945,
+                "accuracy": 0.753,
+                "falsePass": 0.115,
+                "falseFail": 0.369
+              },
+              "middle": {
+                "n": 547,
+                "accuracy": 0.616,
+                "falsePass": 0.067,
+                "falseFail": 0.472
+              },
+              "senior": {
+                "n": 508,
+                "accuracy": 0.561,
+                "falsePass": 0.068,
+                "falseFail": 0.611
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 224,
+                "accuracy": 0.496
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 419,
+                "accuracy": 0.487
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 408,
+                "accuracy": 0.618
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 949,
+                "accuracy": 0.808
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.717,
+              "kappaBinary": 0.396,
+              "rTheta": 0.713,
+              "familyOverlap": 0.687
+            },
+            "rThetaTrue": 0.836,
+            "length": {
+              "mean": 8.6,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.058,
+                "middle": 9.068,
+                "senior": 7.244
+              }
+            },
+            "minutes": {
+              "mean": 25.606,
+              "p90": 30
+            },
+            "probedShare": 0.36,
+            "maxExposure": 0.879,
+            "grade4": {
+              "exact": 0.602,
+              "within1": 0.956,
+              "kappa": 0.461,
+              "kappaWeighted": 0.762,
+              "retestAgreement": 0.517,
+              "retestKappa": 0.34,
+              "retestKappaWeighted": 0.635
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.826,
+              "middleVsJunior": 0.785,
+              "seniorVsMiddle": 0.822
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.701,
+            "falsePass": 0.294,
+            "falseFail": 0.305,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.799,
+                "falsePass": 0.246,
+                "falseFail": 0.156
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.613,
+                "falsePass": 0.423,
+                "falseFail": 0.351
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.689,
+                "falsePass": 0.213,
+                "falseFail": 0.408
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 168,
+                "accuracy": 0.702
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 338,
+                "accuracy": 0.654
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 284,
+                "accuracy": 0.62
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1210,
+                "accuracy": 0.732
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.709,
+              "kappaBinary": 0.418,
+              "rTheta": 0.712,
+              "familyOverlap": 0.675
+            },
+            "rThetaTrue": 0.836,
+            "length": {
+              "mean": 8.271,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.894,
+                "middle": 8.956,
+                "senior": 6.961
+              }
+            },
+            "minutes": {
+              "mean": 25.49,
+              "p90": 30
+            },
+            "probedShare": 0.394,
+            "maxExposure": 0.877,
+            "auc": {
+              "juniorVsNovice": 0.893,
+              "middleVsJunior": 0.655,
+              "seniorVsMiddle": 0.756
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.423,
+              "offeredJunior": 0.45
+            },
+            "leak": {
+              "falsePass": 0.478,
+              "baseline": 0.294
+            },
+            "bestOf3FalsePass": 0.796,
+            "retakeFalsePass": 0.54,
+            "retakeOverlap": 0.713
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.67,
+            "falsePass": 0.101,
+            "falseFail": 0.463,
+            "byClaim": {
+              "junior": {
+                "n": 945,
+                "accuracy": 0.75,
+                "falsePass": 0.123,
+                "falseFail": 0.367
+              },
+              "middle": {
+                "n": 547,
+                "accuracy": 0.601,
+                "falsePass": 0.134,
+                "falseFail": 0.472
+              },
+              "senior": {
+                "n": 508,
+                "accuracy": 0.594,
+                "falsePass": 0.012,
+                "falseFail": 0.588
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 224,
+                "accuracy": 0.393
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 419,
+                "accuracy": 0.518
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 408,
+                "accuracy": 0.588
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 949,
+                "accuracy": 0.838
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.718,
+              "kappaBinary": 0.403,
+              "rTheta": 0.718,
+              "familyOverlap": 0.688
+            },
+            "rThetaTrue": 0.841,
+            "length": {
+              "mean": 8.666,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.176,
+                "middle": 9.154,
+                "senior": 7.191
+              }
+            },
+            "minutes": {
+              "mean": 25.711,
+              "p90": 30
+            },
+            "probedShare": 0.389,
+            "maxExposure": 0.887,
+            "grade4": {
+              "exact": 0.599,
+              "within1": 0.961,
+              "kappa": 0.456,
+              "kappaWeighted": 0.759,
+              "retestAgreement": 0.515,
+              "retestKappa": 0.333,
+              "retestKappaWeighted": 0.641
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.828,
+              "middleVsJunior": 0.738,
+              "seniorVsMiddle": 0.863
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "frontend.design-system",
+      "title": "Дизайн-система",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.691,
+            "falsePass": 0.289,
+            "falseFail": 0.33,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.778,
+                "falsePass": 0.287,
+                "falseFail": 0.156
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.623,
+                "falsePass": 0.417,
+                "falseFail": 0.336
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.67,
+                "falsePass": 0.162,
+                "falseFail": 0.498
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 152,
+                "accuracy": 0.618
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 331,
+                "accuracy": 0.692
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 318,
+                "accuracy": 0.616
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1199,
+                "accuracy": 0.719
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.697,
+              "kappaBinary": 0.394,
+              "rTheta": 0.674,
+              "familyOverlap": 0.671
+            },
+            "rThetaTrue": 0.809,
+            "length": {
+              "mean": 8.276,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.734,
+                "middle": 8.94,
+                "senior": 7.152
+              }
+            },
+            "minutes": {
+              "mean": 25.085,
+              "p90": 29.5
+            },
+            "probedShare": 0.384,
+            "maxExposure": 0.892,
+            "auc": {
+              "juniorVsNovice": 0.859,
+              "middleVsJunior": 0.646,
+              "seniorVsMiddle": 0.732
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.417,
+              "offeredJunior": 0.42
+            },
+            "leak": {
+              "falsePass": 0.477,
+              "baseline": 0.289
+            },
+            "bestOf3FalsePass": 0.79,
+            "retakeFalsePass": 0.527,
+            "retakeOverlap": 0.712
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.694,
+            "falsePass": 0.062,
+            "falseFail": 0.461,
+            "byClaim": {
+              "junior": {
+                "n": 1000,
+                "accuracy": 0.793,
+                "falsePass": 0.072,
+                "falseFail": 0.343
+              },
+              "middle": {
+                "n": 511,
+                "accuracy": 0.607,
+                "falsePass": 0.079,
+                "falseFail": 0.471
+              },
+              "senior": {
+                "n": 489,
+                "accuracy": 0.583,
+                "falsePass": 0.023,
+                "falseFail": 0.635
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 231,
+                "accuracy": 0.511
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 392,
+                "accuracy": 0.582
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 443,
+                "accuracy": 0.609
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 934,
+                "accuracy": 0.827
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.708,
+              "kappaBinary": 0.377,
+              "rTheta": 0.708,
+              "familyOverlap": 0.685
+            },
+            "rThetaTrue": 0.846,
+            "length": {
+              "mean": 8.673,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.103,
+                "middle": 9.035,
+                "senior": 7.415
+              }
+            },
+            "minutes": {
+              "mean": 25.214,
+              "p90": 29.5
+            },
+            "probedShare": 0.368,
+            "maxExposure": 0.902,
+            "grade4": {
+              "exact": 0.619,
+              "within1": 0.97,
+              "kappa": 0.484,
+              "kappaWeighted": 0.787,
+              "retestAgreement": 0.505,
+              "retestKappa": 0.323,
+              "retestKappaWeighted": 0.65
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.853,
+              "middleVsJunior": 0.774,
+              "seniorVsMiddle": 0.851
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.694,
+            "falsePass": 0.232,
+            "falseFail": 0.38,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.816,
+                "falsePass": 0.18,
+                "falseFail": 0.189
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.62,
+                "falsePass": 0.357,
+                "falseFail": 0.402
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.646,
+                "falsePass": 0.159,
+                "falseFail": 0.55
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 152,
+                "accuracy": 0.671
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 331,
+                "accuracy": 0.731
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 318,
+                "accuracy": 0.623
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1199,
+                "accuracy": 0.706
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.736,
+              "kappaBinary": 0.461,
+              "rTheta": 0.713,
+              "familyOverlap": 0.689
+            },
+            "rThetaTrue": 0.836,
+            "length": {
+              "mean": 8.363,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.846,
+                "middle": 8.97,
+                "senior": 7.27
+              }
+            },
+            "minutes": {
+              "mean": 25.22,
+              "p90": 29.5
+            },
+            "probedShare": 0.394,
+            "maxExposure": 0.897,
+            "auc": {
+              "juniorVsNovice": 0.896,
+              "middleVsJunior": 0.659,
+              "seniorVsMiddle": 0.731
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.357,
+              "offeredJunior": 0.444
+            },
+            "leak": {
+              "falsePass": 0.393,
+              "baseline": 0.232
+            },
+            "bestOf3FalsePass": 0.737,
+            "retakeFalsePass": 0.453,
+            "retakeOverlap": 0.724
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.664,
+            "falsePass": 0.039,
+            "falseFail": 0.525,
+            "byClaim": {
+              "junior": {
+                "n": 1000,
+                "accuracy": 0.751,
+                "falsePass": 0.044,
+                "falseFail": 0.455
+              },
+              "middle": {
+                "n": 511,
+                "accuracy": 0.583,
+                "falsePass": 0.059,
+                "falseFail": 0.505
+              },
+              "senior": {
+                "n": 489,
+                "accuracy": 0.569,
+                "falsePass": 0.011,
+                "falseFail": 0.663
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 231,
+                "accuracy": 0.502
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 392,
+                "accuracy": 0.51
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 443,
+                "accuracy": 0.578
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 934,
+                "accuracy": 0.808
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.752,
+              "kappaBinary": 0.42,
+              "rTheta": 0.756,
+              "familyOverlap": 0.702
+            },
+            "rThetaTrue": 0.854,
+            "length": {
+              "mean": 8.742,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.157,
+                "middle": 9.084,
+                "senior": 7.534
+              }
+            },
+            "minutes": {
+              "mean": 25.255,
+              "p90": 29.5
+            },
+            "probedShare": 0.379,
+            "maxExposure": 0.897,
+            "grade4": {
+              "exact": 0.597,
+              "within1": 0.964,
+              "kappa": 0.455,
+              "kappaWeighted": 0.777,
+              "retestAgreement": 0.54,
+              "retestKappa": 0.372,
+              "retestKappaWeighted": 0.694
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.841,
+              "middleVsJunior": 0.78,
+              "seniorVsMiddle": 0.864
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "frontend.web-perf",
+      "title": "Производительность",
+      "families": {
+        "junior": 6,
+        "middle": 5,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.69,
+            "falsePass": 0.28,
+            "falseFail": 0.341,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.796,
+                "falsePass": 0.278,
+                "falseFail": 0.129
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.629,
+                "falsePass": 0.396,
+                "falseFail": 0.345
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.643,
+                "falsePass": 0.165,
+                "falseFail": 0.55
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 169,
+                "accuracy": 0.704
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 324,
+                "accuracy": 0.66
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 317,
+                "accuracy": 0.615
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1190,
+                "accuracy": 0.715
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.684,
+              "kappaBinary": 0.365,
+              "rTheta": 0.651,
+              "familyOverlap": 0.688
+            },
+            "rThetaTrue": 0.8,
+            "length": {
+              "mean": 8.359,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.75,
+                "middle": 9.027,
+                "senior": 7.297
+              }
+            },
+            "minutes": {
+              "mean": 25.302,
+              "p90": 30
+            },
+            "probedShare": 0.408,
+            "maxExposure": 1,
+            "auc": {
+              "juniorVsNovice": 0.874,
+              "middleVsJunior": 0.643,
+              "seniorVsMiddle": 0.726
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.396,
+              "offeredJunior": 0.462
+            },
+            "leak": {
+              "falsePass": 0.444,
+              "baseline": 0.28
+            },
+            "bestOf3FalsePass": 0.775,
+            "retakeFalsePass": 0.521,
+            "retakeOverlap": 0.712
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.656,
+            "falsePass": 0.099,
+            "falseFail": 0.483,
+            "byClaim": {
+              "junior": {
+                "n": 1012,
+                "accuracy": 0.751,
+                "falsePass": 0.127,
+                "falseFail": 0.355
+              },
+              "middle": {
+                "n": 496,
+                "accuracy": 0.587,
+                "falsePass": 0.109,
+                "falseFail": 0.491
+              },
+              "senior": {
+                "n": 492,
+                "accuracy": 0.53,
+                "falsePass": 0.007,
+                "falseFail": 0.676
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 225,
+                "accuracy": 0.422
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 405,
+                "accuracy": 0.484
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 407,
+                "accuracy": 0.636
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 963,
+                "accuracy": 0.791
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.723,
+              "kappaBinary": 0.409,
+              "rTheta": 0.675,
+              "familyOverlap": 0.713
+            },
+            "rThetaTrue": 0.811,
+            "length": {
+              "mean": 8.848,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.316,
+                "middle": 9.252,
+                "senior": 7.478
+              }
+            },
+            "minutes": {
+              "mean": 25.96,
+              "p90": 30
+            },
+            "probedShare": 0.425,
+            "maxExposure": 1,
+            "grade4": {
+              "exact": 0.566,
+              "within1": 0.952,
+              "kappa": 0.412,
+              "kappaWeighted": 0.737,
+              "retestAgreement": 0.493,
+              "retestKappa": 0.3,
+              "retestKappaWeighted": 0.611
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.799,
+              "middleVsJunior": 0.736,
+              "seniorVsMiddle": 0.836
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.7,
+            "falsePass": 0.274,
+            "falseFail": 0.327,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.817,
+                "falsePass": 0.26,
+                "falseFail": 0.105
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.638,
+                "falsePass": 0.345,
+                "falseFail": 0.378
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.643,
+                "falsePass": 0.216,
+                "falseFail": 0.498
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 169,
+                "accuracy": 0.651
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 324,
+                "accuracy": 0.66
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 317,
+                "accuracy": 0.609
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1190,
+                "accuracy": 0.741
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.698,
+              "kappaBinary": 0.394,
+              "rTheta": 0.634,
+              "familyOverlap": 0.682
+            },
+            "rThetaTrue": 0.803,
+            "length": {
+              "mean": 8.323,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 8.811,
+                "middle": 9.081,
+                "senior": 7.075
+              }
+            },
+            "minutes": {
+              "mean": 25.194,
+              "p90": 30
+            },
+            "probedShare": 0.408,
+            "maxExposure": 1,
+            "auc": {
+              "juniorVsNovice": 0.874,
+              "middleVsJunior": 0.654,
+              "seniorVsMiddle": 0.726
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.345,
+              "offeredJunior": 0.526
+            },
+            "leak": {
+              "falsePass": 0.446,
+              "baseline": 0.274
+            },
+            "bestOf3FalsePass": 0.775,
+            "retakeFalsePass": 0.514,
+            "retakeOverlap": 0.718
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.655,
+            "falsePass": 0.101,
+            "falseFail": 0.484,
+            "byClaim": {
+              "junior": {
+                "n": 1012,
+                "accuracy": 0.755,
+                "falsePass": 0.132,
+                "falseFail": 0.344
+              },
+              "middle": {
+                "n": 496,
+                "accuracy": 0.56,
+                "falsePass": 0.069,
+                "falseFail": 0.534
+              },
+              "senior": {
+                "n": 492,
+                "accuracy": 0.545,
+                "falsePass": 0.026,
+                "falseFail": 0.647
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 225,
+                "accuracy": 0.462
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 405,
+                "accuracy": 0.533
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 407,
+                "accuracy": 0.595
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 963,
+                "accuracy": 0.777
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.686,
+              "kappaBinary": 0.334,
+              "rTheta": 0.682,
+              "familyOverlap": 0.71
+            },
+            "rThetaTrue": 0.827,
+            "length": {
+              "mean": 8.812,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.277,
+                "middle": 9.302,
+                "senior": 7.36
+              }
+            },
+            "minutes": {
+              "mean": 25.836,
+              "p90": 30
+            },
+            "probedShare": 0.431,
+            "maxExposure": 1,
+            "grade4": {
+              "exact": 0.584,
+              "within1": 0.959,
+              "kappa": 0.436,
+              "kappaWeighted": 0.751,
+              "retestAgreement": 0.488,
+              "retestKappa": 0.292,
+              "retestKappaWeighted": 0.609
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.812,
+              "middleVsJunior": 0.763,
+              "seniorVsMiddle": 0.833
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "frontend.realtime",
+      "title": "Realtime",
+      "families": {
+        "junior": 6,
+        "middle": 5,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.687,
+            "falsePass": 0.307,
+            "falseFail": 0.319,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.799,
+                "falsePass": 0.263,
+                "falseFail": 0.138
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.593,
+                "falsePass": 0.453,
+                "falseFail": 0.36
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.668,
+                "falsePass": 0.204,
+                "falseFail": 0.459
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 180,
+                "accuracy": 0.622
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 323,
+                "accuracy": 0.663
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 344,
+                "accuracy": 0.622
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1153,
+                "accuracy": 0.723
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.712,
+              "kappaBinary": 0.423,
+              "rTheta": 0.673,
+              "familyOverlap": 0.667
+            },
+            "rThetaTrue": 0.812,
+            "length": {
+              "mean": 8.254,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.84,
+                "middle": 8.848,
+                "senior": 7.071
+              }
+            },
+            "minutes": {
+              "mean": 26.922,
+              "p90": 32
+            },
+            "probedShare": 0.389,
+            "maxExposure": 1,
+            "auc": {
+              "juniorVsNovice": 0.878,
+              "middleVsJunior": 0.631,
+              "seniorVsMiddle": 0.741
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.453,
+              "offeredJunior": 0.423
+            },
+            "leak": {
+              "falsePass": 0.511,
+              "baseline": 0.307
+            },
+            "bestOf3FalsePass": 0.816,
+            "retakeFalsePass": 0.553,
+            "retakeOverlap": 0.689
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.683,
+            "falsePass": 0.095,
+            "falseFail": 0.46,
+            "byClaim": {
+              "junior": {
+                "n": 988,
+                "accuracy": 0.779,
+                "falsePass": 0.102,
+                "falseFail": 0.342
+              },
+              "middle": {
+                "n": 531,
+                "accuracy": 0.58,
+                "falsePass": 0.154,
+                "falseFail": 0.485
+              },
+              "senior": {
+                "n": 481,
+                "accuracy": 0.597,
+                "falsePass": 0.04,
+                "falseFail": 0.613
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 209,
+                "accuracy": 0.44
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 445,
+                "accuracy": 0.546
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 419,
+                "accuracy": 0.611
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 927,
+                "accuracy": 0.835
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.695,
+              "kappaBinary": 0.342,
+              "rTheta": 0.681,
+              "familyOverlap": 0.691
+            },
+            "rThetaTrue": 0.839,
+            "length": {
+              "mean": 8.755,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.217,
+                "middle": 9.194,
+                "senior": 7.32
+              }
+            },
+            "minutes": {
+              "mean": 27.601,
+              "p90": 32.333
+            },
+            "probedShare": 0.373,
+            "maxExposure": 1,
+            "grade4": {
+              "exact": 0.599,
+              "within1": 0.964,
+              "kappa": 0.452,
+              "kappaWeighted": 0.767,
+              "retestAgreement": 0.509,
+              "retestKappa": 0.321,
+              "retestKappaWeighted": 0.611
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.819,
+              "middleVsJunior": 0.774,
+              "seniorVsMiddle": 0.832
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.703,
+            "falsePass": 0.346,
+            "falseFail": 0.248,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.813,
+                "falsePass": 0.278,
+                "falseFail": 0.096
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.611,
+                "falsePass": 0.489,
+                "falseFail": 0.288
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.685,
+                "falsePass": 0.27,
+                "falseFail": 0.36
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 180,
+                "accuracy": 0.639
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 323,
+                "accuracy": 0.632
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 344,
+                "accuracy": 0.651
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1153,
+                "accuracy": 0.748
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.686,
+              "kappaBinary": 0.364,
+              "rTheta": 0.672,
+              "familyOverlap": 0.666
+            },
+            "rThetaTrue": 0.817,
+            "length": {
+              "mean": 8.107,
+              "p10": 5,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.771,
+                "middle": 8.754,
+                "senior": 6.794
+              }
+            },
+            "minutes": {
+              "mean": 26.495,
+              "p90": 31.833
+            },
+            "probedShare": 0.379,
+            "maxExposure": 1,
+            "auc": {
+              "juniorVsNovice": 0.876,
+              "middleVsJunior": 0.665,
+              "seniorVsMiddle": 0.747
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.489,
+              "offeredJunior": 0.378
+            },
+            "leak": {
+              "falsePass": 0.558,
+              "baseline": 0.346
+            },
+            "bestOf3FalsePass": 0.846,
+            "retakeFalsePass": 0.593,
+            "retakeOverlap": 0.679
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.701,
+            "falsePass": 0.128,
+            "falseFail": 0.409,
+            "byClaim": {
+              "junior": {
+                "n": 988,
+                "accuracy": 0.764,
+                "falsePass": 0.146,
+                "falseFail": 0.328
+              },
+              "middle": {
+                "n": 531,
+                "accuracy": 0.612,
+                "falsePass": 0.154,
+                "falseFail": 0.445
+              },
+              "senior": {
+                "n": 481,
+                "accuracy": 0.667,
+                "falsePass": 0.063,
+                "falseFail": 0.489
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 209,
+                "accuracy": 0.445
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 445,
+                "accuracy": 0.571
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 419,
+                "accuracy": 0.609
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 927,
+                "accuracy": 0.862
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.698,
+              "kappaBinary": 0.375,
+              "rTheta": 0.701,
+              "familyOverlap": 0.677
+            },
+            "rThetaTrue": 0.83,
+            "length": {
+              "mean": 8.665,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.18,
+                "middle": 9.047,
+                "senior": 7.183
+              }
+            },
+            "minutes": {
+              "mean": 27.385,
+              "p90": 32
+            },
+            "probedShare": 0.38,
+            "maxExposure": 1,
+            "grade4": {
+              "exact": 0.594,
+              "within1": 0.952,
+              "kappa": 0.448,
+              "kappaWeighted": 0.751,
+              "retestAgreement": 0.509,
+              "retestKappa": 0.331,
+              "retestKappaWeighted": 0.644
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.81,
+              "middleVsJunior": 0.76,
+              "seniorVsMiddle": 0.849
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "ai.llm-apps",
+      "title": "LLM-приложения",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.716,
+            "falsePass": 0.272,
+            "falseFail": 0.296,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.795,
+                "falsePass": 0.237,
+                "falseFail": 0.174
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.647,
+                "falsePass": 0.411,
+                "falseFail": 0.294
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.706,
+                "falsePass": 0.168,
+                "falseFail": 0.42
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 162,
+                "accuracy": 0.728
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 328,
+                "accuracy": 0.671
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 325,
+                "accuracy": 0.634
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1185,
+                "accuracy": 0.749
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.69,
+              "kappaBinary": 0.38,
+              "rTheta": 0.685,
+              "familyOverlap": 0.658
+            },
+            "rThetaTrue": 0.829,
+            "length": {
+              "mean": 8.187,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.644,
+                "middle": 8.89,
+                "senior": 7.024
+              }
+            },
+            "minutes": {
+              "mean": 30.097,
+              "p90": 36
+            },
+            "probedShare": 0.36,
+            "maxExposure": 0.858,
+            "auc": {
+              "juniorVsNovice": 0.867,
+              "middleVsJunior": 0.676,
+              "seniorVsMiddle": 0.761
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.411,
+              "offeredJunior": 0.444
+            },
+            "leak": {
+              "falsePass": 0.417,
+              "baseline": 0.272
+            },
+            "bestOf3FalsePass": 0.784,
+            "retakeFalsePass": 0.535,
+            "retakeOverlap": 0.698
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.693,
+            "falsePass": 0.1,
+            "falseFail": 0.432,
+            "byClaim": {
+              "junior": {
+                "n": 950,
+                "accuracy": 0.766,
+                "falsePass": 0.115,
+                "falseFail": 0.35
+              },
+              "middle": {
+                "n": 560,
+                "accuracy": 0.604,
+                "falsePass": 0.111,
+                "falseFail": 0.458
+              },
+              "senior": {
+                "n": 490,
+                "accuracy": 0.653,
+                "falsePass": 0.055,
+                "falseFail": 0.519
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 205,
+                "accuracy": 0.429
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 464,
+                "accuracy": 0.541
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 379,
+                "accuracy": 0.644
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 952,
+                "accuracy": 0.843
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.709,
+              "kappaBinary": 0.388,
+              "rTheta": 0.73,
+              "familyOverlap": 0.671
+            },
+            "rThetaTrue": 0.848,
+            "length": {
+              "mean": 8.516,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.941,
+                "middle": 8.957,
+                "senior": 7.186
+              }
+            },
+            "minutes": {
+              "mean": 29.915,
+              "p90": 35.5
+            },
+            "probedShare": 0.328,
+            "maxExposure": 0.818,
+            "grade4": {
+              "exact": 0.618,
+              "within1": 0.963,
+              "kappa": 0.478,
+              "kappaWeighted": 0.774,
+              "retestAgreement": 0.518,
+              "retestKappa": 0.338,
+              "retestKappaWeighted": 0.658
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.832,
+              "middleVsJunior": 0.776,
+              "seniorVsMiddle": 0.855
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.695,
+            "falsePass": 0.31,
+            "falseFail": 0.3,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.789,
+                "falsePass": 0.278,
+                "falseFail": 0.144
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.635,
+                "falsePass": 0.438,
+                "falseFail": 0.291
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.661,
+                "falsePass": 0.213,
+                "falseFail": 0.465
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 162,
+                "accuracy": 0.654
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 328,
+                "accuracy": 0.649
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 325,
+                "accuracy": 0.575
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1185,
+                "accuracy": 0.746
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.696,
+              "kappaBinary": 0.39,
+              "rTheta": 0.661,
+              "familyOverlap": 0.649
+            },
+            "rThetaTrue": 0.814,
+            "length": {
+              "mean": 8.147,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.659,
+                "middle": 8.752,
+                "senior": 7.027
+              }
+            },
+            "minutes": {
+              "mean": 29.989,
+              "p90": 36
+            },
+            "probedShare": 0.364,
+            "maxExposure": 0.835,
+            "auc": {
+              "juniorVsNovice": 0.876,
+              "middleVsJunior": 0.679,
+              "seniorVsMiddle": 0.719
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.438,
+              "offeredJunior": 0.429
+            },
+            "leak": {
+              "falsePass": 0.438,
+              "baseline": 0.31
+            },
+            "bestOf3FalsePass": 0.828,
+            "retakeFalsePass": 0.535,
+            "retakeOverlap": 0.691
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.733,
+            "falsePass": 0.091,
+            "falseFail": 0.373,
+            "byClaim": {
+              "junior": {
+                "n": 950,
+                "accuracy": 0.787,
+                "falsePass": 0.113,
+                "falseFail": 0.31
+              },
+              "middle": {
+                "n": 560,
+                "accuracy": 0.691,
+                "falsePass": 0.111,
+                "falseFail": 0.351
+              },
+              "senior": {
+                "n": 490,
+                "accuracy": 0.676,
+                "falsePass": 0.022,
+                "falseFail": 0.503
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 205,
+                "accuracy": 0.498
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 464,
+                "accuracy": 0.603
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 379,
+                "accuracy": 0.668
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 952,
+                "accuracy": 0.873
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.709,
+              "kappaBinary": 0.4,
+              "rTheta": 0.732,
+              "familyOverlap": 0.663
+            },
+            "rThetaTrue": 0.844,
+            "length": {
+              "mean": 8.438,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.822,
+                "middle": 8.843,
+                "senior": 7.229
+              }
+            },
+            "minutes": {
+              "mean": 29.734,
+              "p90": 35
+            },
+            "probedShare": 0.314,
+            "maxExposure": 0.832,
+            "grade4": {
+              "exact": 0.605,
+              "within1": 0.97,
+              "kappa": 0.461,
+              "kappaWeighted": 0.779,
+              "retestAgreement": 0.52,
+              "retestKappa": 0.338,
+              "retestKappaWeighted": 0.66
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.844,
+              "middleVsJunior": 0.773,
+              "seniorVsMiddle": 0.84
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "ai.ai-integration",
+      "title": "AI-интеграция",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.694,
+            "falsePass": 0.326,
+            "falseFail": 0.287,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.786,
+                "falsePass": 0.299,
+                "falseFail": 0.129
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.614,
+                "falsePass": 0.42,
+                "falseFail": 0.351
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.68,
+                "falsePass": 0.258,
+                "falseFail": 0.381
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 162,
+                "accuracy": 0.642
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 313,
+                "accuracy": 0.645
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 312,
+                "accuracy": 0.644
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1213,
+                "accuracy": 0.725
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.71,
+              "kappaBinary": 0.418,
+              "rTheta": 0.705,
+              "familyOverlap": 0.661
+            },
+            "rThetaTrue": 0.832,
+            "length": {
+              "mean": 8.179,
+              "p10": 5,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.72,
+                "middle": 8.911,
+                "senior": 6.904
+              }
+            },
+            "minutes": {
+              "mean": 29.701,
+              "p90": 35.5
+            },
+            "probedShare": 0.383,
+            "maxExposure": 0.838,
+            "auc": {
+              "juniorVsNovice": 0.869,
+              "middleVsJunior": 0.652,
+              "seniorVsMiddle": 0.767
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.42,
+              "offeredJunior": 0.444
+            },
+            "leak": {
+              "falsePass": 0.484,
+              "baseline": 0.326
+            },
+            "bestOf3FalsePass": 0.791,
+            "retakeFalsePass": 0.526,
+            "retakeOverlap": 0.703
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.698,
+            "falsePass": 0.084,
+            "falseFail": 0.44,
+            "byClaim": {
+              "junior": {
+                "n": 991,
+                "accuracy": 0.773,
+                "falsePass": 0.094,
+                "falseFail": 0.352
+              },
+              "middle": {
+                "n": 528,
+                "accuracy": 0.593,
+                "falsePass": 0.082,
+                "falseFail": 0.481
+              },
+              "senior": {
+                "n": 481,
+                "accuracy": 0.657,
+                "falsePass": 0.062,
+                "falseFail": 0.535
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 201,
+                "accuracy": 0.453
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 408,
+                "accuracy": 0.571
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 459,
+                "accuracy": 0.662
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 932,
+                "accuracy": 0.823
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.709,
+              "kappaBinary": 0.382,
+              "rTheta": 0.713,
+              "familyOverlap": 0.671
+            },
+            "rThetaTrue": 0.842,
+            "length": {
+              "mean": 8.656,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.11,
+                "middle": 9.08,
+                "senior": 7.256
+              }
+            },
+            "minutes": {
+              "mean": 29.964,
+              "p90": 35.5
+            },
+            "probedShare": 0.355,
+            "maxExposure": 0.842,
+            "grade4": {
+              "exact": 0.609,
+              "within1": 0.964,
+              "kappa": 0.466,
+              "kappaWeighted": 0.77,
+              "retestAgreement": 0.531,
+              "retestKappa": 0.352,
+              "retestKappaWeighted": 0.637
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.843,
+              "middleVsJunior": 0.771,
+              "seniorVsMiddle": 0.841
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.695,
+            "falsePass": 0.337,
+            "falseFail": 0.274,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.802,
+                "falsePass": 0.314,
+                "falseFail": 0.081
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.592,
+                "falsePass": 0.45,
+                "falseFail": 0.366
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.689,
+                "falsePass": 0.246,
+                "falseFail": 0.375
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 162,
+                "accuracy": 0.679
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 313,
+                "accuracy": 0.594
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 312,
+                "accuracy": 0.638
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1213,
+                "accuracy": 0.737
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.711,
+              "kappaBinary": 0.419,
+              "rTheta": 0.707,
+              "familyOverlap": 0.655
+            },
+            "rThetaTrue": 0.838,
+            "length": {
+              "mean": 8.118,
+              "p10": 5,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.641,
+                "middle": 8.899,
+                "senior": 6.812
+              }
+            },
+            "minutes": {
+              "mean": 29.526,
+              "p90": 35
+            },
+            "probedShare": 0.363,
+            "maxExposure": 0.827,
+            "auc": {
+              "juniorVsNovice": 0.875,
+              "middleVsJunior": 0.64,
+              "seniorVsMiddle": 0.774
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.45,
+              "offeredJunior": 0.423
+            },
+            "leak": {
+              "falsePass": 0.513,
+              "baseline": 0.337
+            },
+            "bestOf3FalsePass": 0.82,
+            "retakeFalsePass": 0.568,
+            "retakeOverlap": 0.694
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.718,
+            "falsePass": 0.101,
+            "falseFail": 0.397,
+            "byClaim": {
+              "junior": {
+                "n": 991,
+                "accuracy": 0.794,
+                "falsePass": 0.131,
+                "falseFail": 0.276
+              },
+              "middle": {
+                "n": 528,
+                "accuracy": 0.625,
+                "falsePass": 0.082,
+                "falseFail": 0.442
+              },
+              "senior": {
+                "n": 481,
+                "accuracy": 0.661,
+                "falsePass": 0.036,
+                "falseFail": 0.545
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 201,
+                "accuracy": 0.478
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 408,
+                "accuracy": 0.591
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 459,
+                "accuracy": 0.691
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 932,
+                "accuracy": 0.838
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.719,
+              "kappaBinary": 0.417,
+              "rTheta": 0.717,
+              "familyOverlap": 0.666
+            },
+            "rThetaTrue": 0.839,
+            "length": {
+              "mean": 8.62,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 8.996,
+                "middle": 9.104,
+                "senior": 7.312
+              }
+            },
+            "minutes": {
+              "mean": 29.978,
+              "p90": 35.5
+            },
+            "probedShare": 0.36,
+            "maxExposure": 0.843,
+            "grade4": {
+              "exact": 0.594,
+              "within1": 0.963,
+              "kappa": 0.445,
+              "kappaWeighted": 0.758,
+              "retestAgreement": 0.528,
+              "retestKappa": 0.342,
+              "retestKappaWeighted": 0.644
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.843,
+              "middleVsJunior": 0.742,
+              "seniorVsMiddle": 0.842
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "ai.ml-engineering",
+      "title": "ML-инженерия",
+      "families": {
+        "junior": 6,
+        "middle": 5,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.705,
+            "falsePass": 0.298,
+            "falseFail": 0.292,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.802,
+                "falsePass": 0.266,
+                "falseFail": 0.129
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.667,
+                "falsePass": 0.387,
+                "falseFail": 0.279
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.646,
+                "falsePass": 0.24,
+                "falseFail": 0.468
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 172,
+                "accuracy": 0.738
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 357,
+                "accuracy": 0.664
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 323,
+                "accuracy": 0.601
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1148,
+                "accuracy": 0.742
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.713,
+              "kappaBinary": 0.425,
+              "rTheta": 0.695,
+              "familyOverlap": 0.594
+            },
+            "rThetaTrue": 0.836,
+            "length": {
+              "mean": 8.056,
+              "p10": 5,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.621,
+                "middle": 8.725,
+                "senior": 6.82
+              }
+            },
+            "minutes": {
+              "mean": 27.08,
+              "p90": 32
+            },
+            "probedShare": 0.342,
+            "maxExposure": 0.788,
+            "auc": {
+              "juniorVsNovice": 0.87,
+              "middleVsJunior": 0.707,
+              "seniorVsMiddle": 0.723
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.387,
+              "offeredJunior": 0.45
+            },
+            "leak": {
+              "falsePass": 0.498,
+              "baseline": 0.298
+            },
+            "bestOf3FalsePass": 0.8,
+            "retakeFalsePass": 0.492,
+            "retakeOverlap": 0.634
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.697,
+            "falsePass": 0.077,
+            "falseFail": 0.435,
+            "byClaim": {
+              "junior": {
+                "n": 965,
+                "accuracy": 0.774,
+                "falsePass": 0.085,
+                "falseFail": 0.36
+              },
+              "middle": {
+                "n": 574,
+                "accuracy": 0.645,
+                "falsePass": 0.098,
+                "falseFail": 0.418
+              },
+              "senior": {
+                "n": 461,
+                "accuracy": 0.599,
+                "falsePass": 0.039,
+                "falseFail": 0.583
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 243,
+                "accuracy": 0.436
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 414,
+                "accuracy": 0.56
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 407,
+                "accuracy": 0.646
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 936,
+                "accuracy": 0.846
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.722,
+              "kappaBinary": 0.419,
+              "rTheta": 0.739,
+              "familyOverlap": 0.601
+            },
+            "rThetaTrue": 0.855,
+            "length": {
+              "mean": 8.568,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.934,
+                "middle": 9.028,
+                "senior": 7.228
+              }
+            },
+            "minutes": {
+              "mean": 27.164,
+              "p90": 32
+            },
+            "probedShare": 0.309,
+            "maxExposure": 0.802,
+            "grade4": {
+              "exact": 0.612,
+              "within1": 0.97,
+              "kappa": 0.468,
+              "kappaWeighted": 0.781,
+              "retestAgreement": 0.531,
+              "retestKappa": 0.352,
+              "retestKappaWeighted": 0.662
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.836,
+              "middleVsJunior": 0.803,
+              "seniorVsMiddle": 0.844
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.68,
+            "falsePass": 0.308,
+            "falseFail": 0.332,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.771,
+                "falsePass": 0.341,
+                "falseFail": 0.117
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.619,
+                "falsePass": 0.408,
+                "falseFail": 0.354
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.65,
+                "falsePass": 0.174,
+                "falseFail": 0.526
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 172,
+                "accuracy": 0.686
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 357,
+                "accuracy": 0.625
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 323,
+                "accuracy": 0.616
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1148,
+                "accuracy": 0.714
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.712,
+              "kappaBinary": 0.423,
+              "rTheta": 0.654,
+              "familyOverlap": 0.594
+            },
+            "rThetaTrue": 0.806,
+            "length": {
+              "mean": 8.185,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.566,
+                "middle": 8.883,
+                "senior": 7.107
+              }
+            },
+            "minutes": {
+              "mean": 27.56,
+              "p90": 32
+            },
+            "probedShare": 0.358,
+            "maxExposure": 0.808,
+            "auc": {
+              "juniorVsNovice": 0.836,
+              "middleVsJunior": 0.653,
+              "seniorVsMiddle": 0.742
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.408,
+              "offeredJunior": 0.453
+            },
+            "leak": {
+              "falsePass": 0.497,
+              "baseline": 0.308
+            },
+            "bestOf3FalsePass": 0.781,
+            "retakeFalsePass": 0.465,
+            "retakeOverlap": 0.629
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.664,
+            "falsePass": 0.114,
+            "falseFail": 0.465,
+            "byClaim": {
+              "junior": {
+                "n": 965,
+                "accuracy": 0.75,
+                "falsePass": 0.153,
+                "falseFail": 0.341
+              },
+              "middle": {
+                "n": 574,
+                "accuracy": 0.603,
+                "falsePass": 0.08,
+                "falseFail": 0.474
+              },
+              "senior": {
+                "n": 461,
+                "accuracy": 0.56,
+                "falsePass": 0.019,
+                "falseFail": 0.651
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 243,
+                "accuracy": 0.424
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 414,
+                "accuracy": 0.543
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 407,
+                "accuracy": 0.636
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 936,
+                "accuracy": 0.792
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.702,
+              "kappaBinary": 0.369,
+              "rTheta": 0.694,
+              "familyOverlap": 0.601
+            },
+            "rThetaTrue": 0.825,
+            "length": {
+              "mean": 8.63,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.974,
+                "middle": 9.066,
+                "senior": 7.367
+              }
+            },
+            "minutes": {
+              "mean": 27.459,
+              "p90": 32
+            },
+            "probedShare": 0.326,
+            "maxExposure": 0.832,
+            "grade4": {
+              "exact": 0.583,
+              "within1": 0.951,
+              "kappa": 0.431,
+              "kappaWeighted": 0.734,
+              "retestAgreement": 0.508,
+              "retestKappa": 0.322,
+              "retestKappaWeighted": 0.622
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.786,
+              "middleVsJunior": 0.778,
+              "seniorVsMiddle": 0.846
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "ai.mlops",
+      "title": "MLOps",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.695,
+            "falsePass": 0.28,
+            "falseFail": 0.331,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.814,
+                "falsePass": 0.234,
+                "falseFail": 0.138
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.625,
+                "falsePass": 0.435,
+                "falseFail": 0.315
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.644,
+                "falsePass": 0.171,
+                "falseFail": 0.541
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 166,
+                "accuracy": 0.699
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 344,
+                "accuracy": 0.695
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 321,
+                "accuracy": 0.626
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1169,
+                "accuracy": 0.713
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.698,
+              "kappaBinary": 0.394,
+              "rTheta": 0.689,
+              "familyOverlap": 0.638
+            },
+            "rThetaTrue": 0.824,
+            "length": {
+              "mean": 8.168,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.71,
+                "middle": 8.812,
+                "senior": 6.979
+              }
+            },
+            "minutes": {
+              "mean": 27.97,
+              "p90": 33.5
+            },
+            "probedShare": 0.366,
+            "maxExposure": 0.831,
+            "auc": {
+              "juniorVsNovice": 0.873,
+              "middleVsJunior": 0.672,
+              "seniorVsMiddle": 0.751
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.435,
+              "offeredJunior": 0.396
+            },
+            "leak": {
+              "falsePass": 0.46,
+              "baseline": 0.28
+            },
+            "bestOf3FalsePass": 0.777,
+            "retakeFalsePass": 0.52,
+            "retakeOverlap": 0.689
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.69,
+            "falsePass": 0.074,
+            "falseFail": 0.455,
+            "byClaim": {
+              "junior": {
+                "n": 1015,
+                "accuracy": 0.782,
+                "falsePass": 0.095,
+                "falseFail": 0.343
+              },
+              "middle": {
+                "n": 540,
+                "accuracy": 0.62,
+                "falsePass": 0.036,
+                "falseFail": 0.47
+              },
+              "senior": {
+                "n": 445,
+                "accuracy": 0.562,
+                "falsePass": 0.023,
+                "falseFail": 0.615
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 222,
+                "accuracy": 0.5
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 398,
+                "accuracy": 0.545
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 435,
+                "accuracy": 0.625
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 945,
+                "accuracy": 0.824
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.714,
+              "kappaBinary": 0.383,
+              "rTheta": 0.727,
+              "familyOverlap": 0.648
+            },
+            "rThetaTrue": 0.849,
+            "length": {
+              "mean": 8.582,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 8.989,
+                "middle": 9.041,
+                "senior": 7.094
+              }
+            },
+            "minutes": {
+              "mean": 28.108,
+              "p90": 33.5
+            },
+            "probedShare": 0.322,
+            "maxExposure": 0.861,
+            "grade4": {
+              "exact": 0.606,
+              "within1": 0.964,
+              "kappa": 0.466,
+              "kappaWeighted": 0.773,
+              "retestAgreement": 0.522,
+              "retestKappa": 0.345,
+              "retestKappaWeighted": 0.659
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.851,
+              "middleVsJunior": 0.751,
+              "seniorVsMiddle": 0.856
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.696,
+            "falsePass": 0.25,
+            "falseFail": 0.359,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.796,
+                "falsePass": 0.257,
+                "falseFail": 0.15
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.628,
+                "falsePass": 0.348,
+                "falseFail": 0.396
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.662,
+                "falsePass": 0.144,
+                "falseFail": 0.532
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 166,
+                "accuracy": 0.681
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 344,
+                "accuracy": 0.66
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 321,
+                "accuracy": 0.67
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1169,
+                "accuracy": 0.715
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.695,
+              "kappaBinary": 0.382,
+              "rTheta": 0.667,
+              "familyOverlap": 0.65
+            },
+            "rThetaTrue": 0.827,
+            "length": {
+              "mean": 8.254,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.735,
+                "middle": 9.053,
+                "senior": 6.971
+              }
+            },
+            "minutes": {
+              "mean": 28.117,
+              "p90": 33.5
+            },
+            "probedShare": 0.369,
+            "maxExposure": 0.848,
+            "auc": {
+              "juniorVsNovice": 0.859,
+              "middleVsJunior": 0.662,
+              "seniorVsMiddle": 0.778
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.348,
+              "offeredJunior": 0.511
+            },
+            "leak": {
+              "falsePass": 0.404,
+              "baseline": 0.25
+            },
+            "bestOf3FalsePass": 0.764,
+            "retakeFalsePass": 0.474,
+            "retakeOverlap": 0.691
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.663,
+            "falsePass": 0.083,
+            "falseFail": 0.493,
+            "byClaim": {
+              "junior": {
+                "n": 1015,
+                "accuracy": 0.773,
+                "falsePass": 0.105,
+                "falseFail": 0.351
+              },
+              "middle": {
+                "n": 540,
+                "accuracy": 0.574,
+                "falsePass": 0.063,
+                "falseFail": 0.521
+              },
+              "senior": {
+                "n": 445,
+                "accuracy": 0.517,
+                "falsePass": 0.015,
+                "falseFail": 0.683
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 222,
+                "accuracy": 0.45
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 398,
+                "accuracy": 0.497
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 435,
+                "accuracy": 0.614
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 945,
+                "accuracy": 0.804
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.725,
+              "kappaBinary": 0.399,
+              "rTheta": 0.725,
+              "familyOverlap": 0.652
+            },
+            "rThetaTrue": 0.848,
+            "length": {
+              "mean": 8.735,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.129,
+                "middle": 9.17,
+                "senior": 7.308
+              }
+            },
+            "minutes": {
+              "mean": 28.397,
+              "p90": 33.5
+            },
+            "probedShare": 0.343,
+            "maxExposure": 0.873,
+            "grade4": {
+              "exact": 0.592,
+              "within1": 0.964,
+              "kappa": 0.447,
+              "kappaWeighted": 0.761,
+              "retestAgreement": 0.519,
+              "retestKappa": 0.339,
+              "retestKappaWeighted": 0.652
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.835,
+              "middleVsJunior": 0.74,
+              "seniorVsMiddle": 0.861
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "ai.data-science",
+      "title": "Data Science",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.687,
+            "falsePass": 0.312,
+            "falseFail": 0.314,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.778,
+                "falsePass": 0.284,
+                "falseFail": 0.159
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.601,
+                "falsePass": 0.426,
+                "falseFail": 0.372
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.682,
+                "falsePass": 0.225,
+                "falseFail": 0.411
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 171,
+                "accuracy": 0.614
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 319,
+                "accuracy": 0.611
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 312,
+                "accuracy": 0.606
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1198,
+                "accuracy": 0.739
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.695,
+              "kappaBinary": 0.39,
+              "rTheta": 0.666,
+              "familyOverlap": 0.649
+            },
+            "rThetaTrue": 0.813,
+            "length": {
+              "mean": 8.25,
+              "p10": 5,
+              "p90": 11,
+              "byClaim": {
+                "junior": 8.862,
+                "middle": 8.986,
+                "senior": 6.898
+              }
+            },
+            "minutes": {
+              "mean": 29.095,
+              "p90": 35
+            },
+            "probedShare": 0.413,
+            "maxExposure": 0.868,
+            "auc": {
+              "juniorVsNovice": 0.85,
+              "middleVsJunior": 0.645,
+              "seniorVsMiddle": 0.758
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.426,
+              "offeredJunior": 0.378
+            },
+            "leak": {
+              "falsePass": 0.485,
+              "baseline": 0.312
+            },
+            "bestOf3FalsePass": 0.802,
+            "retakeFalsePass": 0.49,
+            "retakeOverlap": 0.695
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.677,
+            "falsePass": 0.088,
+            "falseFail": 0.463,
+            "byClaim": {
+              "junior": {
+                "n": 997,
+                "accuracy": 0.76,
+                "falsePass": 0.107,
+                "falseFail": 0.375
+              },
+              "middle": {
+                "n": 556,
+                "accuracy": 0.599,
+                "falsePass": 0.058,
+                "falseFail": 0.479
+              },
+              "senior": {
+                "n": 447,
+                "accuracy": 0.588,
+                "falsePass": 0.043,
+                "falseFail": 0.578
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 205,
+                "accuracy": 0.454
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 436,
+                "accuracy": 0.525
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 469,
+                "accuracy": 0.631
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 890,
+                "accuracy": 0.827
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.708,
+              "kappaBinary": 0.378,
+              "rTheta": 0.71,
+              "familyOverlap": 0.649
+            },
+            "rThetaTrue": 0.837,
+            "length": {
+              "mean": 8.745,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.215,
+                "middle": 9.138,
+                "senior": 7.206
+              }
+            },
+            "minutes": {
+              "mean": 29.715,
+              "p90": 35
+            },
+            "probedShare": 0.392,
+            "maxExposure": 0.83,
+            "grade4": {
+              "exact": 0.61,
+              "within1": 0.968,
+              "kappa": 0.47,
+              "kappaWeighted": 0.775,
+              "retestAgreement": 0.504,
+              "retestKappa": 0.315,
+              "retestKappaWeighted": 0.648
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.834,
+              "middleVsJunior": 0.754,
+              "seniorVsMiddle": 0.845
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.7,
+            "falsePass": 0.278,
+            "falseFail": 0.323,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.811,
+                "falsePass": 0.228,
+                "falseFail": 0.15
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.622,
+                "falsePass": 0.417,
+                "falseFail": 0.339
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.665,
+                "falsePass": 0.189,
+                "falseFail": 0.48
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 171,
+                "accuracy": 0.696
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 319,
+                "accuracy": 0.693
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 312,
+                "accuracy": 0.619
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1198,
+                "accuracy": 0.723
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.722,
+              "kappaBinary": 0.443,
+              "rTheta": 0.697,
+              "familyOverlap": 0.648
+            },
+            "rThetaTrue": 0.826,
+            "length": {
+              "mean": 8.279,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.753,
+                "middle": 8.886,
+                "senior": 7.195
+              }
+            },
+            "minutes": {
+              "mean": 29.213,
+              "p90": 34.5
+            },
+            "probedShare": 0.415,
+            "maxExposure": 0.861,
+            "auc": {
+              "juniorVsNovice": 0.882,
+              "middleVsJunior": 0.642,
+              "seniorVsMiddle": 0.758
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.417,
+              "offeredJunior": 0.423
+            },
+            "leak": {
+              "falsePass": 0.451,
+              "baseline": 0.278
+            },
+            "bestOf3FalsePass": 0.768,
+            "retakeFalsePass": 0.47,
+            "retakeOverlap": 0.698
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.67,
+            "falsePass": 0.059,
+            "falseFail": 0.492,
+            "byClaim": {
+              "junior": {
+                "n": 997,
+                "accuracy": 0.778,
+                "falsePass": 0.065,
+                "falseFail": 0.381
+              },
+              "middle": {
+                "n": 556,
+                "accuracy": 0.576,
+                "falsePass": 0.087,
+                "falseFail": 0.501
+              },
+              "senior": {
+                "n": 447,
+                "accuracy": 0.544,
+                "falsePass": 0.014,
+                "falseFail": 0.656
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 205,
+                "accuracy": 0.473
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 436,
+                "accuracy": 0.514
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 469,
+                "accuracy": 0.586
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 890,
+                "accuracy": 0.835
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.725,
+              "kappaBinary": 0.4,
+              "rTheta": 0.739,
+              "familyOverlap": 0.645
+            },
+            "rThetaTrue": 0.855,
+            "length": {
+              "mean": 8.821,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.218,
+                "middle": 9.189,
+                "senior": 7.479
+              }
+            },
+            "minutes": {
+              "mean": 29.941,
+              "p90": 35
+            },
+            "probedShare": 0.4,
+            "maxExposure": 0.836,
+            "grade4": {
+              "exact": 0.619,
+              "within1": 0.976,
+              "kappa": 0.481,
+              "kappaWeighted": 0.795,
+              "retestAgreement": 0.541,
+              "retestKappa": 0.366,
+              "retestKappaWeighted": 0.672
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.869,
+              "middleVsJunior": 0.792,
+              "seniorVsMiddle": 0.821
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "engineering.data-eng",
+      "title": "Data Engineering",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.685,
+            "falsePass": 0.295,
+            "falseFail": 0.335,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.778,
+                "falsePass": 0.299,
+                "falseFail": 0.144
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.628,
+                "falsePass": 0.384,
+                "falseFail": 0.36
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.649,
+                "falsePass": 0.201,
+                "falseFail": 0.502
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 173,
+                "accuracy": 0.636
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 341,
+                "accuracy": 0.642
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 307,
+                "accuracy": 0.625
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1179,
+                "accuracy": 0.72
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.695,
+              "kappaBinary": 0.388,
+              "rTheta": 0.673,
+              "familyOverlap": 0.681
+            },
+            "rThetaTrue": 0.817,
+            "length": {
+              "mean": 8.274,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.722,
+                "middle": 8.935,
+                "senior": 7.164
+              }
+            },
+            "minutes": {
+              "mean": 30.86,
+              "p90": 36
+            },
+            "probedShare": 0.375,
+            "maxExposure": 0.896,
+            "auc": {
+              "juniorVsNovice": 0.853,
+              "middleVsJunior": 0.658,
+              "seniorVsMiddle": 0.732
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.384,
+              "offeredJunior": 0.462
+            },
+            "leak": {
+              "falsePass": 0.472,
+              "baseline": 0.295
+            },
+            "bestOf3FalsePass": 0.81,
+            "retakeFalsePass": 0.533,
+            "retakeOverlap": 0.712
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.663,
+            "falsePass": 0.085,
+            "falseFail": 0.482,
+            "byClaim": {
+              "junior": {
+                "n": 946,
+                "accuracy": 0.752,
+                "falsePass": 0.11,
+                "falseFail": 0.376
+              },
+              "middle": {
+                "n": 529,
+                "accuracy": 0.588,
+                "falsePass": 0.075,
+                "falseFail": 0.498
+              },
+              "senior": {
+                "n": 525,
+                "accuracy": 0.579,
+                "falsePass": 0.024,
+                "falseFail": 0.61
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 224,
+                "accuracy": 0.397
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 459,
+                "accuracy": 0.536
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 400,
+                "accuracy": 0.603
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 917,
+                "accuracy": 0.818
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.706,
+              "kappaBinary": 0.363,
+              "rTheta": 0.711,
+              "familyOverlap": 0.692
+            },
+            "rThetaTrue": 0.836,
+            "length": {
+              "mean": 8.686,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.22,
+                "middle": 9.079,
+                "senior": 7.326
+              }
+            },
+            "minutes": {
+              "mean": 31.098,
+              "p90": 36.5
+            },
+            "probedShare": 0.367,
+            "maxExposure": 0.908,
+            "grade4": {
+              "exact": 0.605,
+              "within1": 0.967,
+              "kappa": 0.463,
+              "kappaWeighted": 0.776,
+              "retestAgreement": 0.533,
+              "retestKappa": 0.354,
+              "retestKappaWeighted": 0.658
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.816,
+              "middleVsJunior": 0.753,
+              "seniorVsMiddle": 0.854
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.706,
+            "falsePass": 0.215,
+            "falseFail": 0.374,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.786,
+                "falsePass": 0.21,
+                "falseFail": 0.219
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.659,
+                "falsePass": 0.273,
+                "falseFail": 0.408
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.671,
+                "falsePass": 0.162,
+                "falseFail": 0.495
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 173,
+                "accuracy": 0.78
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 341,
+                "accuracy": 0.677
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 307,
+                "accuracy": 0.629
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1179,
+                "accuracy": 0.723
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.698,
+              "kappaBinary": 0.384,
+              "rTheta": 0.658,
+              "familyOverlap": 0.688
+            },
+            "rThetaTrue": 0.817,
+            "length": {
+              "mean": 8.352,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.979,
+                "middle": 8.988,
+                "senior": 7.087
+              }
+            },
+            "minutes": {
+              "mean": 30.837,
+              "p90": 35.5
+            },
+            "probedShare": 0.389,
+            "maxExposure": 0.89,
+            "auc": {
+              "juniorVsNovice": 0.86,
+              "middleVsJunior": 0.677,
+              "seniorVsMiddle": 0.746
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.273,
+              "offeredJunior": 0.508
+            },
+            "leak": {
+              "falsePass": 0.415,
+              "baseline": 0.215
+            },
+            "bestOf3FalsePass": 0.78,
+            "retakeFalsePass": 0.497,
+            "retakeOverlap": 0.715
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.629,
+            "falsePass": 0.071,
+            "falseFail": 0.544,
+            "byClaim": {
+              "junior": {
+                "n": 946,
+                "accuracy": 0.718,
+                "falsePass": 0.09,
+                "falseFail": 0.459
+              },
+              "middle": {
+                "n": 529,
+                "accuracy": 0.531,
+                "falsePass": 0.028,
+                "falseFail": 0.581
+              },
+              "senior": {
+                "n": 525,
+                "accuracy": 0.566,
+                "falsePass": 0.047,
+                "falseFail": 0.618
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 224,
+                "accuracy": 0.491
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 459,
+                "accuracy": 0.464
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 400,
+                "accuracy": 0.6
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 917,
+                "accuracy": 0.757
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.718,
+              "kappaBinary": 0.348,
+              "rTheta": 0.692,
+              "familyOverlap": 0.698
+            },
+            "rThetaTrue": 0.829,
+            "length": {
+              "mean": 8.73,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.298,
+                "middle": 9.197,
+                "senior": 7.236
+              }
+            },
+            "minutes": {
+              "mean": 31.041,
+              "p90": 36.5
+            },
+            "probedShare": 0.383,
+            "maxExposure": 0.906,
+            "grade4": {
+              "exact": 0.573,
+              "within1": 0.959,
+              "kappa": 0.423,
+              "kappaWeighted": 0.754,
+              "retestAgreement": 0.508,
+              "retestKappa": 0.325,
+              "retestKappaWeighted": 0.633
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.782,
+              "middleVsJunior": 0.776,
+              "seniorVsMiddle": 0.847
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "engineering.devops",
+      "title": "DevOps",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.699,
+            "falsePass": 0.272,
+            "falseFail": 0.33,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.811,
+                "falsePass": 0.237,
+                "falseFail": 0.141
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.632,
+                "falsePass": 0.375,
+                "falseFail": 0.36
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.653,
+                "falsePass": 0.204,
+                "falseFail": 0.489
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 172,
+                "accuracy": 0.634
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 313,
+                "accuracy": 0.684
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 318,
+                "accuracy": 0.654
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1197,
+                "accuracy": 0.724
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.707,
+              "kappaBinary": 0.412,
+              "rTheta": 0.691,
+              "familyOverlap": 0.662
+            },
+            "rThetaTrue": 0.826,
+            "length": {
+              "mean": 8.253,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.751,
+                "middle": 8.851,
+                "senior": 7.155
+              }
+            },
+            "minutes": {
+              "mean": 26.853,
+              "p90": 30.5
+            },
+            "probedShare": 0.388,
+            "maxExposure": 0.899,
+            "auc": {
+              "juniorVsNovice": 0.87,
+              "middleVsJunior": 0.669,
+              "seniorVsMiddle": 0.737
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.375,
+              "offeredJunior": 0.453
+            },
+            "leak": {
+              "falsePass": 0.446,
+              "baseline": 0.272
+            },
+            "bestOf3FalsePass": 0.825,
+            "retakeFalsePass": 0.539,
+            "retakeOverlap": 0.706
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.659,
+            "falsePass": 0.081,
+            "falseFail": 0.488,
+            "byClaim": {
+              "junior": {
+                "n": 963,
+                "accuracy": 0.747,
+                "falsePass": 0.103,
+                "falseFail": 0.395
+              },
+              "middle": {
+                "n": 546,
+                "accuracy": 0.597,
+                "falsePass": 0.046,
+                "falseFail": 0.491
+              },
+              "senior": {
+                "n": 491,
+                "accuracy": 0.554,
+                "falsePass": 0.035,
+                "falseFail": 0.615
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 224,
+                "accuracy": 0.455
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 464,
+                "accuracy": 0.522
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 394,
+                "accuracy": 0.604
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 918,
+                "accuracy": 0.801
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.72,
+              "kappaBinary": 0.391,
+              "rTheta": 0.712,
+              "familyOverlap": 0.681
+            },
+            "rThetaTrue": 0.827,
+            "length": {
+              "mean": 8.662,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.13,
+                "middle": 9.027,
+                "senior": 7.338
+              }
+            },
+            "minutes": {
+              "mean": 26.86,
+              "p90": 30.5
+            },
+            "probedShare": 0.355,
+            "maxExposure": 0.917,
+            "grade4": {
+              "exact": 0.606,
+              "within1": 0.963,
+              "kappa": 0.464,
+              "kappaWeighted": 0.774,
+              "retestAgreement": 0.529,
+              "retestKappa": 0.349,
+              "retestKappaWeighted": 0.668
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.802,
+              "middleVsJunior": 0.791,
+              "seniorVsMiddle": 0.808
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.712,
+            "falsePass": 0.206,
+            "falseFail": 0.37,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.817,
+                "falsePass": 0.129,
+                "falseFail": 0.237
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.644,
+                "falsePass": 0.312,
+                "falseFail": 0.399
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.674,
+                "falsePass": 0.177,
+                "falseFail": 0.474
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 172,
+                "accuracy": 0.715
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 313,
+                "accuracy": 0.744
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 318,
+                "accuracy": 0.692
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1197,
+                "accuracy": 0.708
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.708,
+              "kappaBinary": 0.402,
+              "rTheta": 0.68,
+              "familyOverlap": 0.68
+            },
+            "rThetaTrue": 0.823,
+            "length": {
+              "mean": 8.328,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.861,
+                "middle": 8.976,
+                "senior": 7.144
+              }
+            },
+            "minutes": {
+              "mean": 26.776,
+              "p90": 30.5
+            },
+            "probedShare": 0.39,
+            "maxExposure": 0.888,
+            "auc": {
+              "juniorVsNovice": 0.891,
+              "middleVsJunior": 0.675,
+              "seniorVsMiddle": 0.746
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.312,
+              "offeredJunior": 0.474
+            },
+            "leak": {
+              "falsePass": 0.362,
+              "baseline": 0.206
+            },
+            "bestOf3FalsePass": 0.753,
+            "retakeFalsePass": 0.465,
+            "retakeOverlap": 0.713
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.625,
+            "falsePass": 0.052,
+            "falseFail": 0.556,
+            "byClaim": {
+              "junior": {
+                "n": 963,
+                "accuracy": 0.727,
+                "falsePass": 0.058,
+                "falseFail": 0.476
+              },
+              "middle": {
+                "n": 546,
+                "accuracy": 0.524,
+                "falsePass": 0.037,
+                "falseFail": 0.584
+              },
+              "senior": {
+                "n": 491,
+                "accuracy": 0.538,
+                "falsePass": 0.042,
+                "falseFail": 0.635
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 224,
+                "accuracy": 0.442
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 464,
+                "accuracy": 0.509
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 394,
+                "accuracy": 0.589
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 918,
+                "accuracy": 0.744
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.715,
+              "kappaBinary": 0.339,
+              "rTheta": 0.695,
+              "familyOverlap": 0.701
+            },
+            "rThetaTrue": 0.833,
+            "length": {
+              "mean": 8.742,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.219,
+                "middle": 9.161,
+                "senior": 7.338
+              }
+            },
+            "minutes": {
+              "mean": 26.754,
+              "p90": 30.5
+            },
+            "probedShare": 0.363,
+            "maxExposure": 0.899,
+            "grade4": {
+              "exact": 0.591,
+              "within1": 0.958,
+              "kappa": 0.447,
+              "kappaWeighted": 0.765,
+              "retestAgreement": 0.522,
+              "retestKappa": 0.342,
+              "retestKappaWeighted": 0.637
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.817,
+              "middleVsJunior": 0.779,
+              "seniorVsMiddle": 0.83
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "engineering.qa-automation",
+      "title": "QA-автоматизация",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.689,
+            "falsePass": 0.279,
+            "falseFail": 0.344,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.805,
+                "falsePass": 0.246,
+                "falseFail": 0.144
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.647,
+                "falsePass": 0.387,
+                "falseFail": 0.318
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.613,
+                "falsePass": 0.204,
+                "falseFail": 0.571
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 181,
+                "accuracy": 0.718
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 323,
+                "accuracy": 0.641
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 316,
+                "accuracy": 0.604
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1180,
+                "accuracy": 0.719
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.689,
+              "kappaBinary": 0.372,
+              "rTheta": 0.638,
+              "familyOverlap": 0.696
+            },
+            "rThetaTrue": 0.796,
+            "length": {
+              "mean": 8.273,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.807,
+                "middle": 8.946,
+                "senior": 7.063
+              }
+            },
+            "minutes": {
+              "mean": 30.195,
+              "p90": 36
+            },
+            "probedShare": 0.373,
+            "maxExposure": 0.863,
+            "auc": {
+              "juniorVsNovice": 0.866,
+              "middleVsJunior": 0.663,
+              "seniorVsMiddle": 0.708
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.387,
+              "offeredJunior": 0.447
+            },
+            "leak": {
+              "falsePass": 0.433,
+              "baseline": 0.279
+            },
+            "bestOf3FalsePass": 0.783,
+            "retakeFalsePass": 0.508,
+            "retakeOverlap": 0.717
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.652,
+            "falsePass": 0.084,
+            "falseFail": 0.504,
+            "byClaim": {
+              "junior": {
+                "n": 956,
+                "accuracy": 0.779,
+                "falsePass": 0.097,
+                "falseFail": 0.342
+              },
+              "middle": {
+                "n": 538,
+                "accuracy": 0.595,
+                "falsePass": 0.091,
+                "falseFail": 0.486
+              },
+              "senior": {
+                "n": 506,
+                "accuracy": 0.47,
+                "falsePass": 0.038,
+                "falseFail": 0.749
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 233,
+                "accuracy": 0.429
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 430,
+                "accuracy": 0.54
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 383,
+                "accuracy": 0.621
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 954,
+                "accuracy": 0.768
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.715,
+              "kappaBinary": 0.374,
+              "rTheta": 0.694,
+              "familyOverlap": 0.696
+            },
+            "rThetaTrue": 0.823,
+            "length": {
+              "mean": 8.712,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.179,
+                "middle": 9.086,
+                "senior": 7.433
+              }
+            },
+            "minutes": {
+              "mean": 30.339,
+              "p90": 35.5
+            },
+            "probedShare": 0.351,
+            "maxExposure": 0.86,
+            "grade4": {
+              "exact": 0.589,
+              "within1": 0.958,
+              "kappa": 0.444,
+              "kappaWeighted": 0.759,
+              "retestAgreement": 0.507,
+              "retestKappa": 0.325,
+              "retestKappaWeighted": 0.631
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.834,
+              "middleVsJunior": 0.734,
+              "seniorVsMiddle": 0.826
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.686,
+            "falsePass": 0.293,
+            "falseFail": 0.335,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.792,
+                "falsePass": 0.246,
+                "falseFail": 0.171
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.625,
+                "falsePass": 0.447,
+                "falseFail": 0.303
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.641,
+                "falsePass": 0.186,
+                "falseFail": 0.532
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 181,
+                "accuracy": 0.669
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 323,
+                "accuracy": 0.675
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 316,
+                "accuracy": 0.636
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1180,
+                "accuracy": 0.705
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.683,
+              "kappaBinary": 0.364,
+              "rTheta": 0.664,
+              "familyOverlap": 0.686
+            },
+            "rThetaTrue": 0.81,
+            "length": {
+              "mean": 8.21,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.828,
+                "middle": 8.77,
+                "senior": 7.03
+              }
+            },
+            "minutes": {
+              "mean": 29.985,
+              "p90": 35.5
+            },
+            "probedShare": 0.363,
+            "maxExposure": 0.853,
+            "auc": {
+              "juniorVsNovice": 0.871,
+              "middleVsJunior": 0.66,
+              "seniorVsMiddle": 0.728
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.447,
+              "offeredJunior": 0.384
+            },
+            "leak": {
+              "falsePass": 0.432,
+              "baseline": 0.293
+            },
+            "bestOf3FalsePass": 0.804,
+            "retakeFalsePass": 0.532,
+            "retakeOverlap": 0.717
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.681,
+            "falsePass": 0.088,
+            "falseFail": 0.454,
+            "byClaim": {
+              "junior": {
+                "n": 956,
+                "accuracy": 0.757,
+                "falsePass": 0.11,
+                "falseFail": 0.373
+              },
+              "middle": {
+                "n": 538,
+                "accuracy": 0.638,
+                "falsePass": 0.055,
+                "falseFail": 0.442
+              },
+              "senior": {
+                "n": 506,
+                "accuracy": 0.583,
+                "falsePass": 0.045,
+                "falseFail": 0.583
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 233,
+                "accuracy": 0.459
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 430,
+                "accuracy": 0.556
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 383,
+                "accuracy": 0.621
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 954,
+                "accuracy": 0.816
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.693,
+              "kappaBinary": 0.343,
+              "rTheta": 0.705,
+              "familyOverlap": 0.688
+            },
+            "rThetaTrue": 0.836,
+            "length": {
+              "mean": 8.62,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.209,
+                "middle": 8.955,
+                "senior": 7.148
+              }
+            },
+            "minutes": {
+              "mean": 30.009,
+              "p90": 35.5
+            },
+            "probedShare": 0.355,
+            "maxExposure": 0.842,
+            "grade4": {
+              "exact": 0.58,
+              "within1": 0.963,
+              "kappa": 0.435,
+              "kappaWeighted": 0.771,
+              "retestAgreement": 0.496,
+              "retestKappa": 0.32,
+              "retestKappaWeighted": 0.638
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.807,
+              "middleVsJunior": 0.786,
+              "seniorVsMiddle": 0.824
+            }
+          }
+        }
+      }
+    },
+    {
+      "subcategoryId": "engineering.sre",
+      "title": "SRE",
+      "families": {
+        "junior": 6,
+        "middle": 4,
+        "senior": 4
+      },
+      "byError": {
+        "instance": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.697,
+            "falsePass": 0.264,
+            "falseFail": 0.343,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.805,
+                "falsePass": 0.251,
+                "falseFail": 0.138
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.607,
+                "falsePass": 0.369,
+                "falseFail": 0.417
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.677,
+                "falsePass": 0.171,
+                "falseFail": 0.474
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 189,
+                "accuracy": 0.661
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 296,
+                "accuracy": 0.676
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 318,
+                "accuracy": 0.619
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1197,
+                "accuracy": 0.728
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.706,
+              "kappaBinary": 0.409,
+              "rTheta": 0.666,
+              "familyOverlap": 0.684
+            },
+            "rThetaTrue": 0.827,
+            "length": {
+              "mean": 8.33,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.838,
+                "middle": 9.012,
+                "senior": 7.138
+              }
+            },
+            "minutes": {
+              "mean": 29.425,
+              "p90": 34.5
+            },
+            "probedShare": 0.401,
+            "maxExposure": 0.889,
+            "auc": {
+              "juniorVsNovice": 0.875,
+              "middleVsJunior": 0.633,
+              "seniorVsMiddle": 0.771
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.369,
+              "offeredJunior": 0.495
+            },
+            "leak": {
+              "falsePass": 0.434,
+              "baseline": 0.264
+            },
+            "bestOf3FalsePass": 0.801,
+            "retakeFalsePass": 0.532,
+            "retakeOverlap": 0.725
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.681,
+            "falsePass": 0.081,
+            "falseFail": 0.469,
+            "byClaim": {
+              "junior": {
+                "n": 936,
+                "accuracy": 0.747,
+                "falsePass": 0.118,
+                "falseFail": 0.383
+              },
+              "middle": {
+                "n": 557,
+                "accuracy": 0.661,
+                "falsePass": 0.039,
+                "falseFail": 0.43
+              },
+              "senior": {
+                "n": 507,
+                "accuracy": 0.58,
+                "falsePass": 0.016,
+                "falseFail": 0.648
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 222,
+                "accuracy": 0.518
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 423,
+                "accuracy": 0.52
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 403,
+                "accuracy": 0.633
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 952,
+                "accuracy": 0.81
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.715,
+              "kappaBinary": 0.386,
+              "rTheta": 0.712,
+              "familyOverlap": 0.702
+            },
+            "rThetaTrue": 0.839,
+            "length": {
+              "mean": 8.72,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.224,
+                "middle": 9.018,
+                "senior": 7.462
+              }
+            },
+            "minutes": {
+              "mean": 29.548,
+              "p90": 34.5
+            },
+            "probedShare": 0.391,
+            "maxExposure": 0.919,
+            "grade4": {
+              "exact": 0.609,
+              "within1": 0.966,
+              "kappa": 0.468,
+              "kappaWeighted": 0.774,
+              "retestAgreement": 0.521,
+              "retestKappa": 0.334,
+              "retestKappaWeighted": 0.642
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.825,
+              "middleVsJunior": 0.788,
+              "seniorVsMiddle": 0.823
+            }
+          }
+        },
+        "family": {
+          "strict": {
+            "n": 2000,
+            "accuracy": 0.702,
+            "falsePass": 0.262,
+            "falseFail": 0.334,
+            "byClaim": {
+              "junior": {
+                "n": 668,
+                "accuracy": 0.802,
+                "falsePass": 0.257,
+                "falseFail": 0.138
+              },
+              "middle": {
+                "n": 666,
+                "accuracy": 0.64,
+                "falsePass": 0.354,
+                "falseFail": 0.366
+              },
+              "senior": {
+                "n": 666,
+                "accuracy": 0.664,
+                "falsePass": 0.174,
+                "falseFail": 0.498
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 189,
+                "accuracy": 0.683
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 296,
+                "accuracy": 0.696
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 318,
+                "accuracy": 0.61
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 1197,
+                "accuracy": 0.731
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.706,
+              "kappaBinary": 0.409,
+              "rTheta": 0.663,
+              "familyOverlap": 0.697
+            },
+            "rThetaTrue": 0.809,
+            "length": {
+              "mean": 8.346,
+              "p10": 7,
+              "p90": 10,
+              "byClaim": {
+                "junior": 8.858,
+                "middle": 8.985,
+                "senior": 7.192
+              }
+            },
+            "minutes": {
+              "mean": 29.387,
+              "p90": 34.5
+            },
+            "probedShare": 0.407,
+            "maxExposure": 0.897,
+            "auc": {
+              "juniorVsNovice": 0.863,
+              "middleVsJunior": 0.629,
+              "seniorVsMiddle": 0.751
+            },
+            "juniorClaimsMiddle": {
+              "falseMiddle": 0.354,
+              "offeredJunior": 0.52
+            },
+            "leak": {
+              "falsePass": 0.423,
+              "baseline": 0.262
+            },
+            "bestOf3FalsePass": 0.789,
+            "retakeFalsePass": 0.545,
+            "retakeOverlap": 0.717
+          },
+          "competitor": {
+            "n": 2000,
+            "accuracy": 0.659,
+            "falsePass": 0.101,
+            "falseFail": 0.491,
+            "byClaim": {
+              "junior": {
+                "n": 936,
+                "accuracy": 0.74,
+                "falsePass": 0.14,
+                "falseFail": 0.374
+              },
+              "middle": {
+                "n": 557,
+                "accuracy": 0.612,
+                "falsePass": 0.085,
+                "falseFail": 0.479
+              },
+              "senior": {
+                "n": 507,
+                "accuracy": 0.56,
+                "falsePass": 0.016,
+                "falseFail": 0.679
+              }
+            },
+            "byDistance": [
+              {
+                "from": 0,
+                "to": 0.1,
+                "n": 222,
+                "accuracy": 0.432
+              },
+              {
+                "from": 0.1,
+                "to": 0.3,
+                "n": 423,
+                "accuracy": 0.47
+              },
+              {
+                "from": 0.3,
+                "to": 0.5,
+                "n": 403,
+                "accuracy": 0.63
+              },
+              {
+                "from": 0.5,
+                "to": null,
+                "n": 952,
+                "accuracy": 0.808
+              }
+            ],
+            "retest": {
+              "decisionAgreement": 0.724,
+              "kappaBinary": 0.4,
+              "rTheta": 0.698,
+              "familyOverlap": 0.71
+            },
+            "rThetaTrue": 0.842,
+            "length": {
+              "mean": 8.735,
+              "p10": 7,
+              "p90": 11,
+              "byClaim": {
+                "junior": 9.201,
+                "middle": 9.088,
+                "senior": 7.485
+              }
+            },
+            "minutes": {
+              "mean": 29.562,
+              "p90": 34.5
+            },
+            "probedShare": 0.373,
+            "maxExposure": 0.923,
+            "grade4": {
+              "exact": 0.597,
+              "within1": 0.966,
+              "kappa": 0.451,
+              "kappaWeighted": 0.765,
+              "retestAgreement": 0.513,
+              "retestKappa": 0.317,
+              "retestKappaWeighted": 0.636
+            },
+            "aucByBand": {
+              "juniorVsBelow": 0.802,
+              "middleVsJunior": 0.782,
+              "seniorVsMiddle": 0.826
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -34,7 +34,19 @@ import { SUBCATEGORIES } from '../../src/lib/directions';
 import { GRADES, type Grade } from '../../src/lib/grades';
 import { poolFor } from '../../src/server/test/generators';
 import { estimateTheta, type Response } from '../../src/server/test/irt';
-import { decide, GRADE_CUT, nextStep, phasePool, selectNext, START_THETA, type AttemptPhase, type SelectableTemplate } from '../../src/server/test/policy';
+import {
+  decide,
+  GRADE_CUT,
+  nextStep,
+  phasePool,
+  POLICY_VERSION,
+  rulesFor,
+  selectNext,
+  START_THETA,
+  type AttemptPhase,
+  type SelectableTemplate,
+  type StopLimits,
+} from '../../src/server/test/policy';
 import { createRng, deriveSeed } from '../../src/server/test/rng';
 
 const args = process.argv.slice(2);
@@ -64,6 +76,14 @@ const SET_ARG = new Map<string, [number | null, number | null]>(
     }),
 );
 const A_MIDDLE = argStr('a-middle') !== undefined ? Number(argStr('a-middle')) : null;
+/** Правила остановки: --rules <версия политики> (по умолчанию текущая), поверх — --min / --max / --early (эксперименты). */
+const RULES_NAME = argStr('rules') ?? POLICY_VERSION;
+const RULES: StopLimits = {
+  ...rulesFor(RULES_NAME),
+  ...(argStr('min') !== undefined ? { min: Number(argStr('min')) } : {}),
+  ...(argStr('max') !== undefined ? { max: Number(argStr('max')) } : {}),
+  ...(argStr('early') !== undefined ? { earlyStop: Number(argStr('early')) } : {}),
+};
 
 type Truth = 'below' | Grade;
 interface Profile {
@@ -149,7 +169,7 @@ function runAttempt(pool: readonly SelectableTemplate[], knows: Map<string, numb
     if (!next) break;
     shown.push(next);
     responses.push({ a: next.a, b: next.b, correct: rng.next() < knows.get(next.id)! });
-    const step = nextStep({ pool, shown, responses, grade: claimed });
+    const step = nextStep({ pool, shown, responses, grade: claimed }, RULES);
     if (step.phase !== 'main') probed = true;
     if (step.stop) break;
     phase = step.phase;
@@ -189,7 +209,7 @@ function runProfile(pool: readonly SelectableTemplate[], p: Profile, pi: number,
 const f2 = (x: number) => x.toFixed(2);
 const t0 = Date.now();
 const subs = SUBCATEGORIES.filter((s) => s.specialization === SPEC_ARG && (!SUB_ARG || s.id === SUB_ARG));
-console.log(`# Персоны на подкатегорию: N = ${N} на персону и заявленный грейд, seed = ${SEED}, пороги J ${GRADE_CUT.junior} / M ${GRADE_CUT.middle} / S ${GRADE_CUT.senior}\n`);
+console.log(`# Персоны на подкатегорию: N = ${N} на персону и заявленный грейд, seed = ${SEED}, пороги J ${GRADE_CUT.junior} / M ${GRADE_CUT.middle} / S ${GRADE_CUT.senior}, правила ${RULES_NAME} (${RULES.min}–${RULES.max})\n`);
 
 const verdicts: string[] = [];
 for (const sub of subs) {

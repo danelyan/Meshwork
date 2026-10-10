@@ -18,7 +18,16 @@ export function interviewTurns(transcript: readonly TranscriptEntry[]): (Intervi
   const out: (InterviewTurn & { aiIndex: number })[] = [];
   for (const e of transcript) {
     if (e.role === 'ai' && e.meta?.competencyId && e.meta.block) {
-      out.push({ question: e.text, answer: null, competencyId: e.meta.competencyId, block: e.meta.block, level: e.meta.level, aiIndex: e.index, ...(e.meta.probe ? { probe: true } : {}) });
+      out.push({
+        question: e.text,
+        answer: null,
+        competencyId: e.meta.competencyId,
+        block: e.meta.block,
+        level: e.meta.level,
+        aiIndex: e.index,
+        ...(e.meta.probe ? { probe: true } : {}),
+        ...(e.meta.interrupted ? { interrupted: { heardSentences: e.meta.interrupted.heardSentences, tail: e.meta.interrupted.tail } } : {}),
+      });
     } else if (e.role === 'candidate') {
       const last = out[out.length - 1];
       if (last) last.answer = last.answer === null ? e.text : `${last.answer}\n${e.text}`;

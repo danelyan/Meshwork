@@ -61,7 +61,7 @@ export interface InterviewerPayload {
   subcategoryId: string | null;
   claimedGrade: string | null;
   blocks: { id: BlockId; title: string; competencies: { id: string; title: string; test?: { wrong: number; right: number } }[] }[];
-  turns: { n: number; block: BlockId; competencyId: string; level: number; question: string; answer: string | null }[];
+  turns: { n: number; block: BlockId; competencyId: string; level: number; question: string; answer: string | null; interrupted?: { heardSentences: number; unspokenTail: string } }[];
   next: {
     questionNumber: number;
     minQuestions: number;
@@ -101,7 +101,15 @@ export function buildInterviewerPayload(input: InterviewerInput): InterviewerPay
     subcategoryId: input.subcategoryId,
     claimedGrade: input.claimedGrade,
     blocks,
-    turns: input.turns.map((t, i) => ({ n: i + 1, block: t.block, competencyId: t.competencyId, level: t.level, question: t.question, answer: t.answer })),
+    turns: input.turns.map((t, i) => ({
+      n: i + 1,
+      block: t.block,
+      competencyId: t.competencyId,
+      level: t.level,
+      question: t.question,
+      answer: t.answer,
+      ...(t.interrupted ? { interrupted: { heardSentences: t.interrupted.heardSentences, unspokenTail: t.interrupted.tail } } : {}),
+    })),
     next: {
       questionNumber: input.turns.length + 1,
       minQuestions: input.limits.minQuestions,

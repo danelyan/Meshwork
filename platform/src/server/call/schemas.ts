@@ -29,6 +29,13 @@ export type TurnBody = z.infer<typeof TurnBody>;
 
 export const CallConsentBody = z.object({ version: z.string().min(1).max(64) });
 
+/** Перебивание: индекс текущей реплики ИИ и сколько её предложений успело прозвучать (lib/sentences.ts). */
+export const InterruptBody = z.object({
+  index: z.number().int().min(0),
+  heardSentences: z.number().int().min(0).max(64),
+});
+export type InterruptBody = z.infer<typeof InterruptBody>;
+
 export const CallListQuery = z.object({ kind: z.enum(CALL_KINDS).optional() });
 
 // ---------------------------------------------------------------------------

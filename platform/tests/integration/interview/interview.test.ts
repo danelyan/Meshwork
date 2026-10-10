@@ -149,3 +149,44 @@ describe('ИИнтервью: start → блоки → finish → оси, соо
     expect(empty.status).toBe(400);
   });
 });
+
+describe('перебивание ИИ в режиме звонка (POST /api/call/{id}/interrupt)', () => {
+  it('реплика обрезается до услышанного, хвост — интервьюеру; чужой индекс и повтор — без изменений', async () => {
+    const { POST: interruptRoute } = await import('@/app/api/call/[id]/interrupt/route');
+    await consentRoute(jsonRequest('/api/call/consent', 'POST', { version: CALL_RECORDING_CONSENT_VERSION }, cookieA()));
+    const started = await json<{ sessionId: string; call: CallView }>(await startRoute(jsonRequest('/api/call/start', 'POST', { kind: 'interview' }, cookieA())));
+    const id = started.sessionId;
+    const first = started.call.transcript![0]!;
+    const total = first.text.split(/(?<=[.!?…])\s+/).length;
+    expect(total).toBeGreaterThan(1);
+
+    const bad = await interruptRoute(jsonRequest(`/api/call/${id}/interrupt`, 'POST', { index: 5, heardSentences: 1 }, cookieA()), ctx(id));
+    expect(bad.status).toBe(404);
+
+    const res = await interruptRoute(jsonRequest(`/api/call/${id}/interrupt`, 'POST', { index: first.index, heardSentences: 1 }, cookieA()), ctx(id));
+    expect(res.status).toBe(200);
+    const cut = await json<TranscriptEntry>(res);
+    expect(cut.text).toMatch(/…\(перебит\)$/);
+    expect(cut.text.length).toBeLessThan(first.text.length);
+    expect(cut.meta?.interrupted).toMatchObject({ heardSentences: 1 });
+    expect(cut.meta?.interrupted?.tail.length).toBeGreaterThan(5);
+    expect(`${cut.text.replace(/ …\(перебит\)$/, '')} ${cut.meta!.interrupted!.tail}`).toBe(first.text);
+
+    // Повтор идемпотентен.
+    const again = await json<TranscriptEntry>(await interruptRoute(jsonRequest(`/api/call/${id}/interrupt`, 'POST', { index: first.index, heardSentences: 0 }, cookieA()), ctx(id)));
+    expect(again.text).toBe(cut.text);
+
+    // Ответ принимается, следующий вопрос — по плану; перебитый вопрос в транскрипте остаётся обрезанным.
+    const t = await json<{ ai: TranscriptEntry | null }>(await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG }, cookieA()), ctx(id)));
+    expect(t.ai?.meta).toMatchObject({ block: 'test' });
+    const view = await json<CallView>(await viewRoute(jsonRequest(`/api/call/${id}`, 'GET', undefined, cookieA()), ctx(id)));
+    expect(view.transcript![0]!.text).toBe(cut.text);
+    // Перебить можно только текущий вопрос.
+    const old = await interruptRoute(jsonRequest(`/api/call/${id}/interrupt`, 'POST', { index: t.ai!.index - 2, heardSentences: 0 }, cookieA()), ctx(id));
+    expect(old.status).toBe(409);
+    // Ничего не услышал — пометка «не прозвучало».
+    const none = await json<TranscriptEntry>(await interruptRoute(jsonRequest(`/api/call/${id}/interrupt`, 'POST', { index: t.ai!.index, heardSentences: 0 }, cookieA()), ctx(id)));
+    expect(none.text).toMatch(/не прозвучало/);
+    expect(none.meta?.interrupted?.heardSentences).toBe(0);
+  });
+});

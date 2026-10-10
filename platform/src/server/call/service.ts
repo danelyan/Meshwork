@@ -12,6 +12,8 @@ import { publishCall } from './bus';
 import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from './consent';
 import { CALL_DISCLAIMER, callDriver, questionTurns, type DriverSession } from './drivers';
 import { CALL_LIMITS, CLOSING_LINE } from './plan';
+import { INTERRUPTED_MARK, UNHEARD_MARK, heardPrefix } from '../../lib/sentences';
+import type { InterruptBody } from './schemas';
 import { MAX_UTTERANCE_CHARS, type StartCallBody } from './schemas';
 import type { CallKind, CallStatus, CallVerdict, CallView, QuestionLevel, TranscriptEntry, TurnResult } from './types';
 
@@ -276,6 +278,42 @@ export async function submitTurn(
   });
   publishCall(sessionId, { type: 'utterance', entry: aiEntry });
   return { candidate: saved.entry, ai: aiEntry, text: aiEntry.text, done };
+}
+
+// ---------------------------------------------------------------------------
+// Перебивание: кандидат заговорил, пока ИИ говорил (режим звонка)
+// ---------------------------------------------------------------------------
+/**
+ * Клиент остановил озвучку и сообщает, сколько предложений реплики ИИ прозвучало. В транскрипте остаётся
+ * только услышанное (как в moko: история = реально услышанное), хвост — в meta.interrupted.tail: интервьюер
+ * знает, что мысль не договорена, оценщик видит вопрос таким, каким его услышал кандидат. Перебивать можно
+ * только текущий вопрос (последняя реплика — ИИ с meta); повтор — идемпотентен.
+ */
+export async function interruptAi(candidateId: string, sessionId: string, body: InterruptBody): Promise<TranscriptEntry> {
+  const row = await loadOwn(candidateId, sessionId);
+  if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
+  const saved = await prisma.$transaction(async (tx) => {
+    const cur = await lockCall(tx, sessionId);
+    if (cur.status !== 'active') throw errors.conflict('Созвон уже завершён');
+    const t = transcriptOf(cur);
+    const e = t[body.index];
+    if (!e || e.role !== 'ai' || !e.meta) throw errors.notFound('Реплика ИИ не найдена');
+    if (body.index !== t.length - 1) throw errors.conflict('Перебить можно только текущий вопрос');
+    if (e.meta.interrupted) return { entry: e, changed: false };
+    const { heard, tail, total } = heardPrefix(e.text, body.heardSentences);
+    if (!tail) return { entry: e, changed: false };
+    const heardSentences = Math.min(body.heardSentences, total);
+    const next: TranscriptEntry = {
+      ...e,
+      text: heardSentences > 0 ? `${heard} ${INTERRUPTED_MARK}` : UNHEARD_MARK,
+      meta: { ...e.meta, interrupted: { heardSentences, totalSentences: total, tail } },
+    };
+    const all = [...t.slice(0, body.index), next];
+    await tx.callSession.update({ where: { id: sessionId }, data: { transcriptJson: all as unknown as Prisma.InputJsonValue } });
+    return { entry: next, changed: true };
+  });
+  if (saved.changed) publishCall(sessionId, { type: 'utterance', entry: saved.entry });
+  return saved.entry;
 }
 
 // ---------------------------------------------------------------------------

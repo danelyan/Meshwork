@@ -102,3 +102,14 @@ describe('интервьюер ИИнтервью на stub-провайдере
     expect(r.question.length).toBeGreaterThan(20);
   });
 });
+
+describe('перебивание в плане интервьюера', () => {
+  it('ход с interrupted уходит модели с услышанным текстом и недосказанным хвостом', () => {
+    const turns: InterviewTurn[] = [
+      { question: 'Привет! Расскажи про проект. …(перебит)', answer: 'Я делал платёжный сервис', competencyId: 'common.context', block: 'intro', level: 2, interrupted: { heardSentences: 1, tail: 'За что отвечал лично ты?' } },
+    ];
+    const p = buildInterviewerPayload({ ...base, turns });
+    expect(p.turns[0]).toMatchObject({ question: 'Привет! Расскажи про проект. …(перебит)', interrupted: { heardSentences: 1, unspokenTail: 'За что отвечал лично ты?' } });
+    expect(buildInterviewerPayload(base).turns).toEqual([]);
+  });
+});

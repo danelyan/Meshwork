@@ -26,6 +26,8 @@ export interface InterviewTurn {
   level: QuestionLevel;
   /** Дополнительный вопрос по компетенции с расхождением оценщика — в счёт блока не идёт. */
   probe?: boolean;
+  /** Кандидат перебил вопрос: сколько предложений услышал и что осталось недосказанным. */
+  interrupted?: { heardSentences: number; tail: string };
 }
 
 /** Компетенции каждого блока в порядке приоритета (строит context.ts: ядро подкатегории, пометки теста). */
@@ -130,11 +132,11 @@ function pick(plan: BlockPlan, block: BlockId, asked: readonly InterviewTurn[], 
 
 /** Запасной вопрос по фокусу компетенции на уровне; формулировка фиксирована, тему задаёт фокус. */
 export function templateInterviewQuestion(c: CompetencyDef, block: BlockId, level: QuestionLevel, first: boolean): string {
-  const hello = first ? 'Привет! Это Кира, пройдём несколько блоков — знакомство, профильные темы, проектирование и работа в команде. ' : '';
+  const hello = first ? 'Привет! Я ИИ-интервьюер платформы: пройдём несколько блоков — знакомство, профильные темы, проектирование и работа в команде. ' : '';
   const focus = c.focus[gradeForLevel(level)];
-  if (block === 'intro') return `${hello}Расскажи про последний проект: ${lower(focus.replace(/^Последний проект:\s*/, ''))}.`;
+  if (block === 'intro') return `${hello}Расскажи про последний проект: ${lower(focus)}.`;
   if (block === 'team') return `${hello}Теперь про команду. ${focus}?`;
-  if (block === 'systems') return `${hello}Перейдём к проектированию. ${focus} — расскажи, с чего начнёшь и как будешь это строить.`;
+  if (block === 'systems') return `${hello}Перейдём к проектированию. ${focus} — расскажи, как бы ты это делал и с чего начнёшь.`;
   if (level === 1) return `${hello}Поговорим про «${lower(c.title)}». ${focus} — объясни своими словами, на примере из своей работы.`;
   if (level === 2) return `${hello}Про «${lower(c.title)}» на практике: ${lower(focus)}. Почему именно так?`;
   return `${hello}Копнём глубже в «${lower(c.title)}»: ${lower(focus)}. Где этот подход перестаёт работать?`;
@@ -149,7 +151,7 @@ function lower(s: string): string {
  * спрашивает вопрос этой компетенции на этом уровне (фокус модели). Ответом не считается и оценщику не уходит.
  */
 export function clarificationHint(c: CompetencyDef, level: QuestionLevel): string {
-  const what = level === 1 ? 'Достаточно объяснить своими словами и привести пример из своей работы' : level === 2 ? 'Важно, какая часть была именно на тебе и почему решение было таким' : 'Важны альтернативы, цена решения и где подход перестаёт работать';
+  const what = level === 1 ? 'Достаточно объяснить своими словами и привести пример из своей работы' : level === 2 ? 'Важно, что делал именно ты и почему выбрал так' : 'Важны альтернативы, цена решения и где подход перестаёт работать';
   return `Поясню: речь о теме «${lower(c.title)}» — ${lower(c.focus[gradeForLevel(level)])}. ${what}.`;
 }
 

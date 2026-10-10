@@ -124,7 +124,7 @@ describe('кабинет работодателя: компоненты', () => 
     const form = container.querySelector('form')!;
     expect(form.getAttribute('method')).toBe('get');
     expect(form.getAttribute('action')).toBe('/employer/search');
-    expect((screen.getByLabelText('Специализация') as HTMLSelectElement).value).toBe('frontend');
+    expect((screen.getByLabelText('Направление') as HTMLSelectElement).value).toBe('frontend');
     expect((screen.getByLabelText(/Стек/) as HTMLInputElement).value).toBe('React');
     expect((screen.getByLabelText('есть достижения ФСП') as HTMLInputElement).checked).toBe(true);
   });

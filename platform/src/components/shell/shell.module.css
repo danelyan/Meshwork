@@ -26,7 +26,7 @@
 .brand:hover { color: var(--blue); }
 .brand img { height: 34px; width: auto; display: block; filter: grayscale(1) brightness(0); }
 .brand span { font-weight: 500; font-size: 15px; color: var(--muted); }
-.nav { display: flex; gap: 4px; margin-left: 56px; align-items: center; }
+.nav { display: flex; gap: 4px; margin-left: 56px; align-items: center; min-width: 0; }
 .nav a { padding: 12px 18px; font-weight: 500; font-size: 15px; color: var(--muted); white-space: nowrap; }
 .nav a:hover { color: var(--ink); background: var(--surface-hover); }
 .nav a[aria-current='page'] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--role-nav-active); }
@@ -39,7 +39,7 @@
 }
 .login:hover { background: var(--blue); color: var(--landing-white); }
 /* метка роли и переключатель (RoleSwitch, ADR 0004) */
-.roleSwitch { position: relative; display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 12px; min-width: 0; }
+.roleSwitch { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 8px; margin-left: auto; margin-right: 12px; }
 .roleTag { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .roleSwitch + .action { margin-left: 0; }
 .rolePanel {
@@ -78,6 +78,10 @@
 /* < 1150px: якоря главной прячем (как было на лендинге) */
 @media (max-width: 1150px) {
   .anchors { display: none; }
+  /* Пять ссылок работодателя и метка роли не помещаются: ссылки прокручиваются, метка роли не сжимается. */
+  .nav { overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .roleCompany { display: none; }
 }
 @media (max-width: 960px) {
   .nav { margin-left: 20px; }
@@ -93,7 +97,6 @@
 @media (max-width: 640px) {
   .header { gap: 8px; }
   .roleSwitch { margin-right: 0; }
-  .roleTag { max-width: 120px; }
   .brand img { height: 30px; }
   .brand span, .edition { display: none; }
   .edition + .action { margin-left: auto; }

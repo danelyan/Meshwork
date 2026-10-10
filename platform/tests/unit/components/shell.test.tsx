@@ -12,12 +12,16 @@ vi.mock('next/navigation', () => ({
 }));
 const page = vi.hoisted(() => ({ session: null as unknown }));
 vi.mock('@/server/auth/page', () => ({ getPageSession: async () => page.session }));
-vi.mock('@/lib/api', () => ({ demoLogout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }) }));
+vi.mock('@/lib/api', () => ({ demoLogout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
+// Меню роли (ADR 0004) читает БД — в тестах шапки подставляем готовое.
+const menu = vi.hoisted(() => ({ value: null as unknown }));
+vi.mock('@/server/auth/role-switch', () => ({ roleMenuFor: async () => menu.value }));
 
 const principal = (role: SessionPrincipal['role']): SessionPrincipal => ({ userId: 'u1', role, candidateId: null, employerProfileId: null });
 
-async function renderHeader(session: SessionPrincipal | null, pathname: string) {
+async function renderHeader(session: SessionPrincipal | null, pathname: string, roleMenu: unknown = null) {
   page.session = session;
+  menu.value = roleMenu;
   nav.pathname = pathname;
   render(await SiteHeader());
   return within(screen.getByRole('banner'));
@@ -46,7 +50,7 @@ describe('SiteHeader', () => {
   it('кандидат: Консультант / Профиль / Тест / Приглашения, активная — по пути, «Выйти»', async () => {
     const h = await renderHeader(principal('candidate'), '/profile');
     const links = h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/');
-    expect(links.map((a) => a.textContent)).toEqual(['Консультант', 'Профиль', 'Тест', 'Проекты', 'Приглашения']);
+    expect(links.map((a) => a.textContent)).toEqual(['Консультант', 'Профиль', 'Тест', 'Приглашения']);
     expect(h.getByRole('link', { name: 'Профиль' }).getAttribute('aria-current')).toBe('page');
     expect(h.getByRole('link', { name: 'Тест' }).getAttribute('aria-current')).toBeNull();
     expect(h.getByRole('button', { name: 'Выйти' })).toBeDefined();
@@ -55,12 +59,35 @@ describe('SiteHeader', () => {
 
   it('работодатель: свои ссылки; «Потребности» активна только на /employer', async () => {
     let h = await renderHeader(principal('employer'), '/employer');
-    expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/').map((a) => a.textContent)).toEqual(['Потребности', 'Поиск по базе', 'Приглашения', 'Помощник']);
+    expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/').map((a) => a.textContent)).toEqual(['Потребности', 'Поиск по базе', 'Приглашения', 'Профиль компании', 'Помощник']);
     expect(h.getByRole('link', { name: 'Потребности' }).getAttribute('aria-current')).toBe('page');
     cleanup();
     h = await renderHeader(principal('employer'), '/employer/search');
     expect(h.getByRole('link', { name: 'Потребности' }).getAttribute('aria-current')).toBeNull();
     expect(h.getByRole('link', { name: 'Поиск по базе' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it('метка активной роли и переключатель (ADR 0004)', async () => {
+    let h = await renderHeader(principal('employer'), '/employer', {
+      role: 'employer',
+      companyName: 'ООО Ромашка',
+      other: 'candidate',
+      otherExists: true,
+      canCreateOther: false,
+    });
+    // Роль и компания — соседние span (компания прячется на узкой шапке); текст метки целиком.
+    expect(h.getByText('Работодатель').closest('span')?.textContent).toBe('Активная роль: Работодатель · ООО Ромашка');
+    expect(h.getByRole('button', { name: 'Режим кандидата' })).toBeDefined();
+    cleanup();
+    h = await renderHeader(principal('candidate'), '/profile', {
+      role: 'candidate',
+      companyName: null,
+      other: 'employer',
+      otherExists: false,
+      canCreateOther: true,
+    });
+    expect(h.getByText('Кандидат')).toBeDefined();
+    expect(h.getByRole('button', { name: 'Стать работодателем' })).toBeDefined();
   });
 
   it('аккаунт без роли (онбординг не пройден): без ссылок роли, но с «Выйти»', async () => {

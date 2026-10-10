@@ -132,3 +132,11 @@ describe('шина событий созвона', () => {
     expect((globalThis as unknown as Record<symbol, unknown>)[Symbol.for('fsp.call.bus')]).toBeInstanceOf(Map);
   });
 });
+
+describe('дополнительный вопрос после итоговой реплики', () => {
+  it('с префиксом и без связки модели в начале', async () => {
+    const { probeText } = await import('@/server/call/service');
+    expect(probeText('Поняла. А если запрос упал?')).toBe('Хочу уточнить ещё кое-что. А если запрос упал?');
+    expect(probeText('как ты это проверял?')).toBe('Хочу уточнить ещё кое-что. Как ты это проверял?');
+  });
+});

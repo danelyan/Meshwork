@@ -106,7 +106,13 @@ async function regularCapOf(driver: CallDriver, session: DriverSession): Promise
 }
 
 /** Префикс дополнительного вопроса после итоговой реплики: кандидат уже слышал «вопросы закончились». */
-export const PROBE_PREFIX = 'Ещё один уточняющий вопрос, и закончим.';
+export const PROBE_PREFIX = 'Хочу уточнить ещё кое-что.';
+
+/** Дополнительный вопрос после итоговой реплики: префикс и без связки модели («Поняла.») в начале. */
+export function probeText(question: string): string {
+  const q = question.replace(/^(поняла|хорошо|понятно|ясно|спасибо)[.,!]?\s+/i, '');
+  return `${PROBE_PREFIX} ${q.charAt(0).toUpperCase()}${q.slice(1)}`;
+}
 
 function entry(transcript: readonly TranscriptEntry[], startedAt: Date, e: Omit<TranscriptEntry, 'index' | 'at' | 'tMs'>, now = new Date()): TranscriptEntry {
   return { index: transcript.length, at: now.toISOString(), tMs: Math.max(0, now.getTime() - startedAt.getTime()), ...e };
@@ -465,7 +471,7 @@ async function finishCallOnce(candidateId: string, sessionId: string, llm: LlmPr
         // Незаданный ответ на последний вопрос (кандидат нажал «Завершить» раньше) остаётся без ответа:
         // дополнительный вопрос идёт следом, оценщик видит только пары с ответом.
         const t = transcriptOf(cur);
-        const e = entry(t, cur.startedAt, { role: 'ai', text: `${PROBE_PREFIX} ${q.text}`, meta: q.meta });
+        const e = entry(t, cur.startedAt, { role: 'ai', text: probeText(q.text), meta: q.meta });
         const upd = (await tx.callSession.update({
           where: { id: sessionId },
           // Промежуточная оценка — не попытка завершения: попытка возвращается, иначе созвон с дополнительным

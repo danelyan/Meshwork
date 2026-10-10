@@ -11,6 +11,8 @@ export const CANDIDATE_LINKS: NavLink[] = [
   { href: '/consultant', label: 'Консультант' },
   { href: '/profile', label: 'Профиль' },
   { href: '/test', label: 'Тест' },
+  /** lane project: лента проектных заданий (ADR 0003, ступень 2) */
+  { href: '/projects', label: 'Проекты' },
   { href: '/invitations', label: 'Приглашения' },
 ];
 
@@ -18,7 +20,6 @@ export const EMPLOYER_LINKS: NavLink[] = [
   { href: '/employer', label: 'Потребности', exact: true },
   { href: '/employer/search', label: 'Поиск по базе' },
   { href: '/employer/invitations', label: 'Приглашения' },
-  { href: '/employer/company', label: 'Профиль компании' },
   // Помощник по подбору — дом работодателя, лента /consultant (решение владельца 10.10).
   { href: '/consultant', label: 'Помощник' },
 ];

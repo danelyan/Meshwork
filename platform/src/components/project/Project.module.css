@@ -1,0 +1,11 @@
+/* Ступень 2: проектные задания (lane project). Только токены. */
+.code { margin: 0; padding: 12px; background: var(--surface-quote); border-radius: var(--radius-sm); font-family: var(--mono); font-size: var(--fs-xs); line-height: 1.5; overflow-x: auto; white-space: pre; max-height: 420px; }
+.prose { margin: 0; color: var(--text-soft); font-size: var(--fs); white-space: pre-line; overflow-wrap: anywhere; }
+.bullets { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--text-soft); font-size: var(--fs); }
+.details > summary { cursor: pointer; min-height: 36px; display: flex; align-items: center; font-size: var(--fs); }
+.result { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.scoreBig { font-family: var(--mono); font-size: var(--fs-lg); color: var(--ink); }
+.pass { color: var(--ink); }
+.fail { color: var(--danger-text); }
+.flag { font-family: var(--mono); font-size: var(--fs-xs); color: var(--danger-text); }
+.textarea { min-height: 120px; resize: vertical; }

@@ -42,6 +42,12 @@ tags:
     name: profile
     description: "Профиль кандидата и приватность"
   -
+    name: project-submissions
+    description: project-submissions
+  -
+    name: project-tasks
+    description: project-tasks
+  -
     name: recommendations
     description: "Рекомендации: тест, пробелы, задания, вакансии"
   -
@@ -600,101 +606,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/auth/role/switch":
-    post:
-      operationId: postAuthRoleSwitch
-      tags:
-        - auth
-      summary: "Переключить активную роль (вторая роль на той же учётке)"
-      description: "ADR 0004. Профиль целевой роли есть — переключает; нет — создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль — идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.\n\nНужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              oneOf:
-                -
-                  type: object
-                  properties:
-                    role:
-                      type: string
-                      const: candidate
-                  required:
-                    - role
-                -
-                  type: object
-                  properties:
-                    role:
-                      type: string
-                      const: employer
-                    companyName:
-                      anyOf:
-                        -
-                          type: string
-                          const: ""
-                        -
-                          type: string
-                          minLength: 2
-                          maxLength: 120
-                  required:
-                    - role
-      responses:
-        "200":
-          description: "Роль активна; выставлена новая кука cid"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  role:
-                    type: string
-                  next:
-                    type: string
-                    description: "Дом роли (путь интерфейса)"
-                  created:
-                    type: boolean
-                  changed:
-                    type: boolean
-                required:
-                  - role
-                  - next
-                  - created
-                  - changed
-        "400":
-          description: "Нет названия компании, когда профиль работодателя надо создать (`bad_request`), или тело не прошло схему (`validation_failed`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "401":
-          description: "Нет входа (`unauthorized`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "403":
-          description: "Старая демо-кука без аккаунта, общий демо-аккаунт без второй роли или запрос с чужого сайта (`forbidden`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "409":
-          description: "Роль ещё не выбрана — сначала знакомство (`conflict`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "429":
-          description: "Слишком много переключений (`rate_limited`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/auth/stale":
     get:
       operationId: getAuthStale
@@ -1017,6 +928,30 @@ paths:
                 description: "Счётчики и список подтверждённых утверждений"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/consultant/aside":
+    get:
+      operationId: getConsultantAside
+      tags:
+        - consultant
+      summary: "Данные правой колонки экрана консультанта («Твой путь», «Документы», «Подсказка») для текущей"
+      description: "Данные правой колонки экрана консультанта («Твой путь», «Документы», «Подсказка») для текущей роли — те же, что страница отдаёт при загрузке; лента перечитывает их после своих событий. Роль не выбрана — 403 (колонки у такого аккаунта нет).\n\nНужна сессия аккаунта любой роли (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Данные правой колонки экрана консультанта («Твой путь», «Документы», «Подсказка») для текущей"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1675,99 +1610,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/employer/company":
-    get:
-      operationId: getEmployerCompany
-      tags:
-        - employer
-      summary: "Профиль своей компании"
-      description: "профиль своей компании (R-E-01).\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Название, описание, отрасль, ИНН и контакт компании"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  name:
-                    type: string
-                  description:
-                    type: string
-                  industry:
-                    type: string
-                  inn:
-                    type: string
-                  contact:
-                    type: string
-                required:
-                  - id
-                  - name
-                  - description
-                  - industry
-                  - inn
-                  - contact
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    patch:
-      operationId: patchEmployerCompany
-      tags:
-        - employer
-      summary: "Изменить профиль своей компании"
-      description: "Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/CompanyPatch"
-      responses:
-        "200":
-          description: "Профиль компании после правки"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  name:
-                    type: string
-                  description:
-                    type: string
-                  industry:
-                    type: string
-                  inn:
-                    type: string
-                  contact:
-                    type: string
-                required:
-                  - id
-                  - name
-                  - description
-                  - industry
-                  - inn
-                  - contact
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/employer/invitations":
     get:
       operationId: getEmployerInvitations
@@ -1859,6 +1701,190 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/needs/{id}/project":
+    get:
+      operationId: getEmployerNeedsIdProject
+      tags:
+        - employer
+      summary: "Проектное задание потребности (условие, рубрика, шаблон) или `{ task: null }`."
+      description: "проектное задание потребности (условие, рубрика, шаблон) или `{ task: null }`.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Проектное задание потребности (условие, рубрика, шаблон) или `{ task: null }`."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postEmployerNeedsIdProject
+      tags:
+        - employer
+      summary: "POST `{ templateId?, subcategoryId?, requiredCatalogIds[], wishesText?, visibility?, deadlineDays?"
+      description: "POST `{ templateId?, subcategoryId?, requiredCatalogIds[], wishesText?, visibility?, deadlineDays? }` — создать или перегенерировать задание (ADR 0003, ступень 2): ИИ пишет условие в домене потребности поверх фиксированного контракта шаблона, рубрика — из обязательных критериев каталога и пожеланий. После первого сабмита — 409.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/ProjectTaskInput"
+      responses:
+        "201":
+          description: "Создано. POST `{ templateId?, subcategoryId?, requiredCatalogIds[], wishesText?, visibility?, deadlineDays? }` — создать или"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/project-submissions":
+    get:
+      operationId: getEmployerProjectSubmissions
+      tags:
+        - employer
+      summary: "Сдачи проектного задания потребности: псевдоним до принятого"
+      description: "сдачи проектного задания потребности: псевдоним до принятого приглашения (R-C-16), автопроверка (балл скрытых тестов), таблица «критерий → прошёл/нет → доказательство».\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: needId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Сдачи проектного задания потребности: псевдоним до принятого"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/project-submissions/{id}/invite-to-defense":
+    post:
+      operationId: postEmployerProjectSubmissionsIdInviteToDefense
+      tags:
+        - employer
+      summary: "POST `{ message, salaryFrom, salaryTo }` — позвать автора сдачи на защиту: приглашение с вилкой по потребности"
+      description: "POST `{ message, salaryFrom, salaryTo }` — позвать автора сдачи на защиту: приглашение с вилкой по потребности задания (R-E-05) и сессия защиты (lane call). Только проверенная сдача; повторно — 409.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/InviteToDefenseInput"
+      responses:
+        "201":
+          description: "Создано. POST `{ message, salaryFrom, salaryTo }` — позвать автора сдачи на защиту: приглашение с вилкой по потребности"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/project-templates":
+    get:
+      operationId: getEmployerProjectTemplates
+      tags:
+        - employer
+      summary: "Базовые шаблоны проектов (контракт и скрытые тесты фиксированы)."
+      description: "базовые шаблоны проектов (контракт и скрытые тесты фиксированы).\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: specialization
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: grade
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Базовые шаблоны проектов (контракт и скрытые тесты фиксированы)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/search":
@@ -2672,6 +2698,203 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/project-submissions/{id}":
+    get:
+      operationId: getProjectSubmissionsId
+      tags:
+        - project-submissions
+      summary: "Статус и результат своей сдачи: балл скрытых тестов, видимые тесты, рубрика (без имён скрытых тестов)."
+      description: "статус и результат своей сдачи: балл скрытых тестов, видимые тесты, рубрика (без имён скрытых тестов).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Статус и результат своей сдачи: балл скрытых тестов, видимые тесты, рубрика (без имён скрытых тестов)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/project-tasks/{id}":
+    get:
+      operationId: getProjectTasksId
+      tags:
+        - project-tasks
+      summary: "Задание кандидату: условие, контракт, видимые тесты, ссылка на заготовку, свои сдачи."
+      description: "задание кандидату: условие, контракт, видимые тесты, ссылка на заготовку, свои сдачи.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Задание кандидату: условие, контракт, видимые тесты, ссылка на заготовку, свои сдачи."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/project-tasks/{id}/skeleton.zip":
+    get:
+      operationId: "getProjectTasksIdSkeleton.zip"
+      tags:
+        - project-tasks
+      summary: "Заготовка репозитория: starter, contract.md, видимые тесты, TASK.md (без скрытых тестов)."
+      description: "заготовка репозитория: starter, contract.md, видимые тесты, TASK.md (без скрытых тестов).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Заготовка репозитория: starter, contract.md, видимые тесты, TASK.md (без скрытых тестов)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/project-tasks/{id}/submissions":
+    post:
+      operationId: postProjectTasksIdSubmissions
+      tags:
+        - project-tasks
+      summary: "POST `{ repoUrl, aiLogText, commitSha?"
+      description: "POST `{ repoUrl, aiLogText, commitSha? }` — сдать проект: публичный репозиторий GitHub (без commitSha — HEAD ветки по умолчанию), журнал работы с ИИ. Проверка идёт в фоне: submitted → running → checked | failed (GET /api/project-submissions/:id).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/SubmissionInput"
+      responses:
+        "202":
+          description: "POST `{ repoUrl, aiLogText, commitSha? }` — сдать проект: публичный репозиторий GitHub (без commitSha — HEAD ветки по"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/project-tasks/{id}/take":
+    post:
+      operationId: postProjectTasksIdTake
+      tags:
+        - project-tasks
+      summary: "Взять задание (идемпотентно); не больше PROJECT_MAX_ACTIVE несданных — иначе 429."
+      description: "взять задание (идемпотентно); не больше PROJECT_MAX_ACTIVE несданных — иначе 429.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Взять задание (идемпотентно); не больше PROJECT_MAX_ACTIVE несданных — иначе 429."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/project-tasks/feed":
+    get:
+      operationId: getProjectTasksFeed
+      tags:
+        - project-tasks
+      summary: "Лента обезличенных проектных заданий направления и грейда кандидата"
+      description: "лента обезличенных проектных заданий направления и грейда кандидата (ADR 0003, п. 6): без компании, потребности и зарплаты; с условием и видимыми тестами; лимит активных.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Лента обезличенных проектных заданий направления и грейда кандидата"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/recommendations":
     get:
       operationId: getRecommendations
@@ -3373,36 +3596,6 @@ components:
         - status
         - confirmedAt
       description: "Утверждение кандидата с уровнем доказанности"
-    CompanyPatch:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 2
-          maxLength: 120
-        description:
-          anyOf:
-            -
-              type: string
-              maxLength: 600
-            -
-              type: "null"
-        industry:
-          anyOf:
-            -
-              type: string
-              maxLength: 80
-            -
-              type: "null"
-        inn:
-          type:
-            - string
-            - "null"
-        contact:
-          type:
-            - string
-            - "null"
-      additionalProperties: false
     ConsultantEvent:
       description: "Кадр SSE хода консультанта (`type` — различитель)"
       oneOf:
@@ -3767,6 +3960,25 @@ components:
         - message
         - salaryFrom
         - salaryTo
+    InviteToDefenseInput:
+      type: object
+      properties:
+        message:
+          type: string
+          minLength: 10
+          maxLength: 2000
+        salaryFrom:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        salaryTo:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+      required:
+        - message
+        - salaryFrom
+        - salaryTo
     OnboardingView:
       type: object
       additionalProperties: true
@@ -3778,6 +3990,61 @@ components:
           type: boolean
       required:
         - hiddenFromEmployers
+    ProjectTaskInput:
+      type: object
+      properties:
+        templateId:
+          type: string
+          minLength: 3
+          maxLength: 64
+        subcategoryId:
+          type: string
+          maxLength: 64
+        requiredCatalogIds:
+          default: []
+          maxItems: 8
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        wishesText:
+          anyOf:
+            -
+              type: string
+              maxLength: 2000
+            -
+              type: "null"
+        visibility:
+          default: open
+          type: string
+          enum:
+            - open
+            - invited
+        deadlineDays:
+          anyOf:
+            -
+              type: integer
+              minimum: 1
+              maximum: 30
+            -
+              type: "null"
+    SubmissionInput:
+      type: object
+      properties:
+        repoUrl:
+          type: string
+          minLength: 10
+          maxLength: 300
+        aiLogText:
+          default: ""
+          type: string
+          maxLength: 20000
+        commitSha:
+          type: string
+          pattern: "^[0-9a-f]{7,40}$"
+      required:
+        - repoUrl
     VacancyInput:
       type: object
       properties:

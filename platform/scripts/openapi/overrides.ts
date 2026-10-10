@@ -62,12 +62,12 @@ export const ERROR_RESPONSES: Record<number, { name: string; description: string
 
 export const TAG_DESCRIPTIONS: Record<string, string> = {
   auth: 'Вход, сессия, согласие на обработку ПДн, роль',
-  call: 'Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события',
+  call: 'Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события, сигналинг WebRTC',
   claims: 'Карточки утверждений кандидата: подтвердить, поправить, отклонить',
   consultant: 'Чат с консультантом (SSE) и история разговоров',
   defense: 'Защита утверждения: короткое интервью, повышающее уровень до «платформа»',
+  'defense-room': 'Защита проекта (ADR 0003, ступень 3): вопросы по коду, ходы, SSE звонка, итог слепого оценщика',
   demo: 'Демо-вход и демо-резюме (только при DEMO_LOGIN)',
-  directions: 'Справочник направлений и подкатегорий (Subcategory, R-T-05)',
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   health: 'Проверка живости',
   invitations: 'Приглашения глазами кандидата',
@@ -82,6 +82,7 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
 
 export const SSE_EVENTS_DOC = [
   '### События SSE',
+  'Звонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).',
   'Эндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.',
   'Второй ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.',
 ].join('\n\n');

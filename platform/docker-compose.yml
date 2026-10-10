@@ -38,6 +38,9 @@ services:
       RUNNER_URL: http://runner:8090
     ports:
       - "3000:3000"
+    # lane call: аудио созвонов кандидата переживает пересборку контейнера
+    volumes:
+      - app-data:/app/data
     # runner-net — внутренняя сеть только для вызовов app → runner.
     networks: [default, runner-net]
     depends_on:
@@ -88,6 +91,7 @@ services:
 
 volumes:
   db-data:
+  app-data:
 
 networks:
   # internal: true — у сети нет выхода наружу; runner подключён только к ней. gateway_mode isolated

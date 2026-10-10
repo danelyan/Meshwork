@@ -38,6 +38,7 @@ interface GhRepo {
   topics?: string[];
 }
 
+/** Заголовки GitHub REST (токен из env, если есть). Экспорт — для чтения репозитория защитой проекта (lane defense-room). */
 export function githubHeaders(raw = false): Record<string, string> {
   const h: Record<string, string> = {
     accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json',

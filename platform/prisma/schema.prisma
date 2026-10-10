@@ -15,12 +15,9 @@ datasource db {
 // lane: foundation — кандидат, категория, журнал вызовов LLM
 // =============================================================================
 
-/// Направления (ADR 0003, дополнение 10.10): ai и engineering — lane directions.
 enum Specialization {
   backend
   frontend
-  ai
-  engineering
 }
 
 enum Grade {
@@ -94,9 +91,6 @@ model Candidate {
   /// lane call: созвоны (квалифицирующий и защита проекта) и вопросы работодателей кандидату
   callSessions        CallSession[]
   employerQuestions   EmployerQuestion[]
-  /// lane directions: подкатегория направления из справочника Subcategory ("ai.llm-apps"), выбор в
-  /// онбординге необязателен. Без FK — справочник проверяется кодом (server/directions).
-  subcategoryId       String?
 }
 
 model CandidateCategory {
@@ -194,9 +188,6 @@ enum CatalogSpecialization {
   backend
   frontend
   common
-  /// lane directions: записи ai.* / eng.* каталога
-  ai
-  engineering
 }
 
 enum EvidenceLevel {
@@ -382,8 +373,6 @@ model Vacancy {
   /// lane employer: потребность закрыта/в архиве — в кабинете отдельно, подборка не строится
   archivedAt      DateTime?
   updatedAt       DateTime?      @updatedAt
-  /// lane directions: подкатегория потребности ("backend.web-api"), необязательна. Без FK — см. Candidate.
-  subcategoryId   String?
 
   invitations Invitation[]
 
@@ -851,26 +840,47 @@ model EmployerQuestion {
   @@index([companyId, candidateId])
 }
 
-// =============================================================================
-// lane: directions — справочник подкатегорий направлений (ADR 0003, дополнение 10.10; R-T-05)
+// lane: project — контракт ADR 0003 (только ProjectSubmission, без связей). Копия, чтобы защита
+// проекта могла читать сабмит до слияния лейна project; при слиянии остаётся версия лейна project.
 // =============================================================================
 
-enum SubcategoryStatus {
-  /// Тест по подкатегории доступен (банк ≥ 8 семейств) и/или есть шаблон проекта
-  active
-  /// В справочнике, тест пока недоступен
-  planned
+enum ProjectSubmissionStatus {
+  submitted
+  running
+  checked
+  failed
 }
 
-/// Подкатегория направления. id вида "backend.web-api" (направление.подкатегория).
-/// Сид — prisma/seed/directions.ts из src/lib/directions.ts (карта research/25 владельца).
-model Subcategory {
-  id             String            @id
-  specialization Specialization
-  title          String
-  description    String
-  status         SubcategoryStatus @default(planned)
-  order          Int               @default(0)
+model ProjectSubmission {
+  id            String                  @id @default(cuid())
+  projectTaskId String
+  candidateId   String
+  repoUrl       String
+  commitSha     String?
+  aiLogText     String?
+  status        ProjectSubmissionStatus @default(submitted)
+  /// Тесты / статанализ / рубрика (пишет лейн project).
+  resultJson    Json?
+  submittedAt   DateTime                @default(now())
+  checkedAt     DateTime?
 
-  @@index([specialization, order])
+  @@index([candidateId])
+}
+
+// =============================================================================
+// lane: defense-room — защита проекта (ступень 3, ADR 0003): план QLC-вопросов сессии.
+// =============================================================================
+
+/// План защиты проекта: вопросы из кода (QLC) и вопросы работодателя, курсор, блокировка хода.
+model DefenseRoomPlan {
+  id            String    @id @default(cuid())
+  callSessionId String    @unique
+  /// `PlanItem[]` (src/server/defense-room/types.ts)
+  itemsJson     Json
+  cursor        Int       @default(0)
+  /// Сводка репозитория и источников вопросов: { repoUrl, commitSha, files, generator: llm|fallback }
+  sourceJson    Json
+  /// Ход в обработке (LLM): не принимать второй параллельно; протухает через 90 с.
+  lockedAt      DateTime?
+  createdAt     DateTime  @default(now())
 }

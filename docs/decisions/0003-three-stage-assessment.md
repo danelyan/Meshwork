@@ -78,7 +78,12 @@
   commitSha, testsBundleRef, image, timeoutSec}` → `{jobId}`; `GET /run/{jobId}` →
   `{status, tests: [{name, passed, ms}], lint: {...}, logTail, durationMs}`; без сети у задания,
   лимиты CPU/RAM/время/размер, один job за раз на машине; токен между app и runner
-  (`RUNNER_TOKEN`).
+  (`RUNNER_TOKEN`). **Уточнено при реализации (10.10):** у runner нет интернета, поэтому tarball
+  репозитория скачивает app (`submitRun` в `src/server/runner/client.ts`: GitHub tarball через SSRF-фильтр
+  сборщика, ≤ 50 МБ) и передаёт его телом `POST /uploads` → `{uploadId}`; `repoTarballUrl` —
+  `upload:<uploadId>`, `repoUrl` в `POST /run` отклоняется (422). Общий volume не выбран: права на
+  томе между двумя uid и разный путь локально/в Docker. `lint` пока не заполняется; в ответе есть
+  `reason` для `failed` и `summary`. Подробно — `platform/runner/README.md`.
 - lane project: `POST /api/employer/needs/{id}/project` (создать/перегенерировать задание),
   `GET /api/project-tasks/{id}` (кандидату — условие, видимые тесты),
   `POST /api/project-tasks/{id}/submissions {repoUrl, aiLogText}`,

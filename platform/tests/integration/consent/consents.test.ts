@@ -15,6 +15,8 @@ import { POST as onboarding } from '@/app/api/onboarding/route';
 import { POST as startTest } from '@/app/api/test/start/route';
 import { CONSENT_VERSION } from '@/server/auth/consent';
 import { purgeExpiredRecordings } from '@/server/consent/recordings';
+import { listEmployerCalls } from '@/server/defense-room';
+import { loadEmployerContext } from '@/server/employer';
 import { CONSENT_TEXTS, consentVersion } from '@/server/consent/texts';
 import { resetEnvCache } from '@/server/env';
 import { signUserSession } from '@/server/session';
@@ -134,6 +136,9 @@ describe('согласия (ADR 0005)', () => {
     const ok = await respond(local('/api/invitations/inv-1', 'POST', { action: 'accept', disclosureVersion: CONSENT_TEXTS.identity_disclosure.version }, cand), params({ id: 'inv-1' }));
     expect(ok.status).toBe(200);
     expect(await contactsSeenByEmployer()).toEqual({ name: 'Анна Кандидатова', contact: '@anna' });
+    await prisma.callSession.create({ data: { id: 'def-1', candidateId: CAND, kind: 'defense', status: 'finished', policyVersion: 'v' } });
+    const ctx = await loadEmployerContext('p-emp');
+    expect((await listEmployerCalls(ctx)).map((c) => c.candidateName)).toEqual(['Анна Кандидатова']);
     const d = await prisma.consent.findFirstOrThrow({ where: { userId: 'u-cand', kind: 'identity_disclosure' } });
     expect(d.context).toEqual({ invitationId: 'inv-1' });
 
@@ -141,6 +146,8 @@ describe('согласия (ADR 0005)', () => {
     expect((await revoke(local('/api/consents/identity_disclosure', 'DELETE', undefined, cand), params({ kind: 'identity_disclosure' }))).status).toBe(400);
     expect((await revoke(local('/api/consents/identity_disclosure?invitationId=inv-1', 'DELETE', undefined, cand), params({ kind: 'identity_disclosure' }))).status).toBe(200);
     expect(await contactsSeenByEmployer()).toBeNull();
+    // Список защит с именем (кабинет «Звонки») тоже закрывается отзывом раскрытия.
+    expect(await listEmployerCalls(ctx)).toEqual([]);
     expect((await prisma.invitation.findUniqueOrThrow({ where: { id: 'inv-1' } })).status).toBe('accepted');
     const list = await (await listConsents(jsonRequest('/api/consents', 'GET', undefined, cand))).json();
     expect(list.items.find((i: { kind: string }) => i.kind === 'identity_disclosure')).toMatchObject({ invitationId: 'inv-1', company: 'Компания', state: 'revoked' });

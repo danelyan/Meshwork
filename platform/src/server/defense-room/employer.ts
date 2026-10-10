@@ -1,3 +1,4 @@
+import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
 import type { EmployerContext } from '../employer/context';
 import { AppError, errors } from '../errors';
@@ -209,10 +210,11 @@ export interface EmployerCallRow {
   flags: DefenseFlag[];
 }
 
-/** Защиты кандидатов, принявших приглашение компании: идущие сверху. */
+/** Защиты кандидатов, принявших приглашение компании и не отозвавших раскрытие: идущие сверху. */
 export async function listEmployerCalls(ctx: EmployerContext): Promise<EmployerCallRow[]> {
   const accepted = await prisma.invitation.findMany({ where: { companyId: ctx.companyId, status: 'accepted' }, select: { candidateId: true } });
-  const ids = [...new Set(accepted.map((a) => a.candidateId))];
+  // Имя и защиты — только при действующем раскрытии по принятому приглашению (Г5, ADR 0005): отзыв закрывает список.
+  const ids = [...(await disclosedCandidateIds(ctx.companyId, [...new Set(accepted.map((a) => a.candidateId))]))];
   if (!ids.length) return [];
   const rows = await prisma.callSession.findMany({
     where: { candidateId: { in: ids }, kind: 'defense' },

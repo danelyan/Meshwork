@@ -1,10 +1,10 @@
 // Слепой оценщик созвона (ADR 0003): видит только специализацию и пары вопрос-ответ по темам —
 // без резюме, утверждений профиля, уровней вопросов и сигналов интервьюера. Рубрика A-02 (0–2 по
 // четырём признакам) на каждую тему; прогоны адаптивные (3, при разбросе — ещё 2), итог — медиана;
-// баллы без дословной цитаты обнуляет код (defense/evaluator checkQuote). Тема, где прогоны разошлись
+// баллы без дословной цитаты обнуляет код (defense/evaluator checkQuoteLoose). Тема, где прогоны разошлись
 // в решении порога, получает статус inconclusive (интервьюер задаёт по ней ещё вопрос — service.ts).
 import { CRITERIA, type Criterion, type Score } from '../defense/types';
-import { checkQuote, decidePassed, THRESHOLD } from '../defense/evaluator';
+import { checkQuoteLoose, decidePassed, THRESHOLD } from '../defense/evaluator';
 import { responseJsonSchema } from '../llm/schema';
 import { type ChatMessage, LlmError, type LlmProvider } from '../llm/types';
 import { contextBlock, loadCallPrompt } from './prompt-utils';
@@ -201,7 +201,7 @@ async function oneRun(
       CRITERIA.map((c) => {
         const cr = row?.[c];
         if (!cr) return [c, { score: 0, quote: '', valid: false }];
-        const valid = checkQuote(cr.quote, answers).valid;
+        const valid = checkQuoteLoose(cr.quote, answers).valid;
         return [c, { score: (valid ? cr.score : 0) as Score, quote: cr.quote, valid }];
       }),
     ) as RunTopic;

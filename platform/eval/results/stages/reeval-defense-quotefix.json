@@ -1,0 +1,630 @@
+{
+  "runAt": "2026-10-10T14:45:01.520Z",
+  "provider": "DeepSeek V4 Flash (Yandex)/gpt://b1g8c7gaanu3tnh3475r/deepseek-v4-flash",
+  "defense": [
+    {
+      "persona": "own",
+      "sessionId": "cmv2huswa0007zmze8be0cwg5",
+      "before": 3.6,
+      "after": 4.8,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense",
+        "evaluator_disagreement"
+      ],
+      "items": [
+        {
+          "label": "что сломается · src/store.js:L17-L25",
+          "total": 5,
+          "runs": [
+            4,
+            5,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "что сломается · src/bucket.js:L16-L25",
+          "total": 5,
+          "runs": [
+            5,
+            7,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "измени поведение · src/store.js:L27-L32",
+          "total": 5,
+          "runs": [
+            5,
+            5,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "почему так · src/middleware.js:L5-L13",
+          "total": 5,
+          "runs": [
+            4,
+            6,
+            6,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 4,
+          "runs": [
+            6,
+            5,
+            3,
+            4,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "own",
+      "sessionId": "cmv2hvxg90016zmze9j4oorxc",
+      "before": 5.2,
+      "after": 5.2,
+      "passed": true,
+      "flags": [
+        "evaluator_disagreement"
+      ],
+      "items": [
+        {
+          "label": "почему так · src/store.js:L6-L37",
+          "total": 5,
+          "runs": [
+            5,
+            5,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "что делает · src/middleware.js:L5-L13",
+          "total": 5,
+          "runs": [
+            5,
+            5,
+            5,
+            5,
+            6
+          ]
+        },
+        {
+          "label": "что делает · src/middleware.js:L15-L30",
+          "total": 5,
+          "runs": [
+            5,
+            4,
+            5,
+            4,
+            5
+          ]
+        },
+        {
+          "label": "что сломается · src/bucket.js:L16-L25",
+          "total": 5,
+          "runs": [
+            6,
+            5,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 6,
+          "runs": [
+            6,
+            6,
+            6,
+            6,
+            7
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "own",
+      "sessionId": "cmv2hxgv90025zmze1dbsw4e1",
+      "before": 5.2,
+      "after": 5.3,
+      "passed": true,
+      "flags": [
+        "evaluator_disagreement"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/bucket.js:L8-L14",
+          "total": 5,
+          "runs": [
+            4,
+            6,
+            5,
+            5,
+            4
+          ]
+        },
+        {
+          "label": "что сломается · src/store.js:L27-L32",
+          "total": 6,
+          "runs": [
+            5,
+            7,
+            6,
+            6,
+            5
+          ]
+        },
+        {
+          "label": "что сломается · src/middleware.js:L5-L13",
+          "total": 5,
+          "runs": [
+            5,
+            6,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "что делает · src/middleware.js:L17-L29",
+          "total": 5,
+          "runs": [
+            5,
+            6,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "измени поведение · src/store.js:L6-L37",
+          "total": 5,
+          "runs": [
+            5,
+            6,
+            5,
+            4,
+            5
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 6,
+          "runs": [
+            5,
+            6,
+            6,
+            6,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "partial",
+      "sessionId": "cmv2hz5yu003czmzes2jxfs98",
+      "before": 3,
+      "after": 3.2,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense",
+        "evaluator_disagreement"
+      ],
+      "items": [
+        {
+          "label": "почему так · src/retry-queue.js:L19-L24",
+          "total": 3,
+          "runs": [
+            3,
+            4,
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "что делает · src/retry-queue.js:L10-L40",
+          "total": 3,
+          "runs": [
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "что делает · src/retry-queue.js:L26-L39",
+          "total": 3,
+          "runs": [
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "что сломается · src/relay.js:L5-L17",
+          "total": 3,
+          "runs": [
+            3,
+            5,
+            3,
+            6,
+            3
+          ]
+        },
+        {
+          "label": "что сломается · src/signature.js:L11-L21",
+          "total": 4,
+          "runs": [
+            4,
+            5,
+            4,
+            7,
+            4
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 3,
+          "runs": [
+            3,
+            4,
+            3,
+            3,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "partial",
+      "sessionId": "cmv2i0odo004rzmze6vntqmrb",
+      "before": 3,
+      "after": 3,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense",
+        "evaluator_disagreement",
+        "uneven_understanding"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/retry-queue.js:L19-L24",
+          "total": 1,
+          "runs": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "label": "что делает · src/retry-queue.js:L26-L39",
+          "total": 2,
+          "runs": [
+            4,
+            2,
+            3,
+            2,
+            3
+          ]
+        },
+        {
+          "label": "измени поведение · src/signature.js:L11-L21",
+          "total": 5,
+          "runs": [
+            4,
+            5,
+            4,
+            5,
+            5
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            5,
+            5,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "partial",
+      "sessionId": "cmv2i1tai005szmze94r22l6b",
+      "before": 3.8,
+      "after": 2.6,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense",
+        "evaluator_disagreement",
+        "uneven_understanding"
+      ],
+      "items": [
+        {
+          "label": "почему так · src/retry-queue.js:L19-L24",
+          "total": 2,
+          "runs": [
+            1,
+            1,
+            4,
+            2,
+            2
+          ]
+        },
+        {
+          "label": "что делает · src/retry-queue.js:L26-L39",
+          "total": 2,
+          "runs": [
+            2,
+            1,
+            3,
+            2,
+            2
+          ]
+        },
+        {
+          "label": "измени поведение · src/signature.js:L11-L21",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            6,
+            4,
+            5
+          ]
+        },
+        {
+          "label": "что сломается · src/relay.js:L4-L18",
+          "total": 2,
+          "runs": [
+            1,
+            1,
+            3,
+            2,
+            1
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 3,
+          "runs": [
+            2,
+            2,
+            4,
+            3,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "ai-only",
+      "sessionId": "cmv2i2kig006vzmze506m1ese",
+      "before": 4.4,
+      "after": 4.2,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/server.js:L7-L43",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "почему так · src/links.js:L18-L44",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            3,
+            4
+          ]
+        },
+        {
+          "label": "что сломается · src/links.js:L5-L16",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            3,
+            4
+          ]
+        },
+        {
+          "label": "измени поведение · src/codec.js:L4-L13",
+          "total": 4,
+          "runs": [
+            4,
+            5,
+            5,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 5,
+          "runs": [
+            5,
+            4,
+            5,
+            5,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "ai-only",
+      "sessionId": "cmv2i4b3i0086zmzewsaqp2bm",
+      "before": 3.4,
+      "after": 3.6,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "items": [
+        {
+          "label": "что сломается · src/links.js:L18-L44",
+          "total": 3,
+          "runs": [
+            4,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "почему так · src/links.js:L5-L16",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "что сломается · src/codec.js:L15-L23",
+          "total": 3,
+          "runs": [
+            4,
+            3,
+            3
+          ]
+        },
+        {
+          "label": "измени поведение · src/server.js:L7-L43",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "ai-only",
+      "sessionId": "cmv2i5iv2009fzmzel0pueiya",
+      "before": 4,
+      "after": 4,
+      "passed": false,
+      "flags": [
+        "strong_project_weak_defense"
+      ],
+      "items": [
+        {
+          "label": "что делает · src/server.js:L7-L43",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "почему так · src/links.js:L18-L44",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "что сломается · src/codec.js:L15-L23",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "измени поведение · src/links.js:L25-L34",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "label": "смени ограничение",
+          "total": 4,
+          "runs": [
+            4,
+            4,
+            5,
+            4,
+            4
+          ]
+        }
+      ]
+    }
+  ],
+  "meter": {
+    "calls": 43,
+    "failures": 0,
+    "inputTokens": 111240,
+    "outputTokens": 98937,
+    "byPurpose": {
+      "call_evaluator": {
+        "calls": 43,
+        "failures": 0,
+        "inputTokens": 111240,
+        "outputTokens": 98937
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { checkQuote, decidePassed, scoreTotal, THRESHOLD } from '../defense/evaluator';
+import { checkQuoteLoose, decidePassed, scoreTotal, THRESHOLD } from '../defense/evaluator';
 import { CRITERIA, type DefenseScores, type Score } from '../defense/types';
 import { contextBlock } from '../call/prompt-utils';
 import { AppError } from '../errors';
@@ -268,7 +268,7 @@ async function oneItemsRun(payload: DefenseEvaluatorPayload, items: readonly Eva
       CRITERIA.map((c) => {
         const cr = row?.[c];
         if (!cr) return [c, { score: 0, quote: '', valid: false }];
-        const valid = checkQuote(cr.quote, answers).valid;
+        const valid = checkQuoteLoose(cr.quote, answers).valid;
         return [c, { score: (valid ? cr.score : 0) as Score, quote: cr.quote, valid }];
       }),
     ) as RunItem;

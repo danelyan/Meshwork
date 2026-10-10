@@ -4,6 +4,7 @@
 //   ступень 3: балл по каждому вопросу (defense-room/verdict.ts) против одного балла на транскрипт.
 // Запуск из platform/ (БД, где лежат созвоны валидации; читается, не пишется):
 //   EVAL_DATABASE_URL=…/fsp_validation npx tsx eval/stages/reeval.ts [--stage call|defense] [--views question,type]
+//   [--from defense-live-tuned.json] [--from-call call-live-tuned.json] — переоценить защиты другого замера (его БД — в EVAL_DATABASE_URL); [--out метка]
 import { STUB } from './boot';
 
 import { readFileSync } from 'node:fs';
@@ -28,8 +29,8 @@ interface CallLiveObs {
   topics: { catalogId: string | null; expected: boolean | null; confirmed: boolean; total: number }[];
 }
 
-async function reevalCalls(llm: ReturnType<typeof providers>['platform'], views: EvaluatorView[]) {
-  const live = JSON.parse(readFileSync(path.join(RESULTS, 'call-live.json'), 'utf8')) as { observations: CallLiveObs[] };
+async function reevalCalls(llm: ReturnType<typeof providers>['platform'], views: EvaluatorView[], from = 'call-live.json') {
+  const live = JSON.parse(readFileSync(path.join(RESULTS, from), 'utf8')) as { observations: CallLiveObs[] };
   const rows: { persona: string; view: EvaluatorView; catalogId: string; expected: boolean | null; status: string; total: number; why: number; runs: number; spread: number; before: boolean; beforeTotal: number }[] = [];
   for (const o of live.observations) {
     const s = await prisma.callSession.findUnique({ where: { id: o.sessionId }, select: { transcriptJson: true, candidateId: true } });
@@ -92,8 +93,8 @@ interface DefenseLiveObs {
   total: number | null;
 }
 
-async function reevalDefense(llm: ReturnType<typeof providers>['platform']) {
-  const live = JSON.parse(readFileSync(path.join(RESULTS, 'defense-live.json'), 'utf8')) as { observations: DefenseLiveObs[] };
+async function reevalDefense(llm: ReturnType<typeof providers>['platform'], from = 'defense-live.json') {
+  const live = JSON.parse(readFileSync(path.join(RESULTS, from), 'utf8')) as { observations: DefenseLiveObs[] };
   const out: { persona: string; sessionId: string; before: number | null; after: number | null; passed: boolean | null; flags: string[]; items: { label: string; total: number; runs: number[] }[] }[] = [];
   for (const o of live.observations) {
     const s = await prisma.callSession.findUnique({ where: { id: o.sessionId }, select: { transcriptJson: true } });
@@ -141,18 +142,18 @@ async function main(): Promise<void> {
   console.log(`reeval — провайдер ${llm.platform.name}/${llm.platform.model}${STUB ? ' (stub)' : ''}`);
   const result: Record<string, unknown> = { runAt: new Date().toISOString(), provider: `${llm.platform.name}/${llm.platform.model}` };
   if (stage === 'all' || stage === 'defense') {
-    const d = await reevalDefense(llm.platform);
+    const d = await reevalDefense(llm.platform, argValue('from') ?? undefined);
     result.defense = d.out;
     console.log(`\n${d.table}\n`);
   }
   if (stage === 'all' || stage === 'call') {
-    const c = await reevalCalls(llm.platform, views);
+    const c = await reevalCalls(llm.platform, views, argValue('from-call') ?? undefined);
     result.call = c.rows;
     console.log(`\n${c.table}\n`);
   }
   result.meter = llm.platform.meter;
   console.log(`Вызовов платформы: ${llm.platform.meter.calls} (ошибок ${llm.platform.meter.failures}); токены ${llm.platform.meter.inputTokens} вх / ${llm.platform.meter.outputTokens} вых.`);
-  console.log(`Результат: ${writeResult(`reeval-${stage}${STUB ? '-stub' : ''}.json`, result)}`);
+  console.log(`Результат: ${writeResult(`reeval-${stage}${argValue('out') ? `-${argValue('out')}` : ''}${STUB ? '-stub' : ''}.json`, result)}`);
 }
 
 main()

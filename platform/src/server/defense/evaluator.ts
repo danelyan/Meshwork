@@ -106,6 +106,36 @@ export function checkQuote(
   return { valid: true };
 }
 
+const INNER_QUOTES_RE = /["'«»“”„‘’`]/g;
+const ELLIPSIS_RE = /\s*(?:\.\.\.|…)\s*/;
+
+/**
+ * Проверка цитаты для оценщиков созвона и защиты (ступени 1 и 3). Строже не стала, мягче — в двух местах,
+ * где модель портит дословную цитату без выдумки (замер 10.10: верный ответ «Infinity» получил 1 из 8):
+ * кавычки внутри цитаты сравниваются без учёта вида ("x" = 'x' = «x»), а цитата с пропуском «…» засчитывается,
+ * если каждый её кусок дословно стоит в одном ответе и в том же порядке.
+ */
+export function checkQuoteLoose(quote: string, answers: string[]): ReturnType<typeof checkQuote> {
+  const strict = checkQuote(quote, answers);
+  if (strict.valid || strict.reason !== 'not_verbatim') return strict;
+  const norm = (s: string) => normalizeForQuote(s).replace(INNER_QUOTES_RE, '"');
+  const parts = norm(quote)
+    .split(ELLIPSIS_RE)
+    .map((p) => p.replace(/^[\s".…]+|[\s".…]+$/g, ''))
+    .filter(Boolean);
+  if (!parts.length || parts.join('').replace(/\s/g, '').length < MIN_QUOTE_CHARS) return { valid: false, reason: 'too_short' };
+  const inOrder = (answer: string) => {
+    let from = 0;
+    for (const p of parts) {
+      const at = answer.indexOf(p, from);
+      if (at < 0) return false;
+      from = at + p.length;
+    }
+    return true;
+  };
+  return answers.some((a) => inOrder(norm(a))) ? { valid: true } : strict;
+}
+
 // ---------------------------------------------------------------------------
 // Вызов модели
 // ---------------------------------------------------------------------------

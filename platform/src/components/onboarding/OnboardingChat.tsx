@@ -30,6 +30,7 @@ import { AsideRows, groupAsides, useAsides } from './Asides';
 import { DocumentsRows, useDocumentsRun } from './DocumentsRun';
 import { parseSalary, salaryText } from './salary';
 import { StepControls } from './StepControls';
+import { OnboardingStrip } from './OnboardingStrip';
 import { OnboardingDraft, fieldVisibility } from './OnboardingDraft';
 
 export interface OnboardingChatProps {
@@ -381,6 +382,10 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const Feed = inConsultant ? 'div' : 'main';
   return (
     <div className={inConsultant ? `${styles.shell} ${styles.inScene}` : styles.shell}>
+      {inConsultant && !employer && !isSummary ? (
+        // Кандидату знакомство — таймлайн над чатом (владелец 11.10), та же полоска, что в разговоре (PausedFeed).
+        <OnboardingStrip done={view.progress.done} total={view.progress.total} asking busy={busy} onContinue={() => undefined} onHide={() => void later()} />
+      ) : (
       <header className={styles.top}>
         <div className={styles.topRow}>
           {inConsultant ? (
@@ -411,6 +416,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         </div>
         <div className={styles.segments} role="progressbar" aria-valuenow={isSummary ? view.progress.total : view.progress.done} aria-valuemin={0} aria-valuemax={view.progress.total} aria-label={`Пройдено ${view.progress.done} из ${view.progress.total}`}>{Array.from({ length: view.progress.total }, (_, i) => <i key={i} data-done={isSummary || i < view.progress.done || undefined} />)}</div>
       </header>
+      )}
       {!isSummary && !inConsultant && <OnboardingDraft view={view} busy={busy || asides.asking} onEdit={(stepId) => void act({ action: 'goto', stepId })} />}
 
       <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>

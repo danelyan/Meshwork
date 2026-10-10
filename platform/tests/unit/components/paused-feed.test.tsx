@@ -102,3 +102,18 @@ it('работодатель: чат паузы - помощник по подб
   expect(assistantProps.last?.initial).toEqual({ conversationId: 'e-1', items: [emp.items[1]] });
   expect((assistantProps.last?.embedded as { beforeSend?: unknown }).beforeSend).toBeUndefined();
 });
+
+it('кандидату знакомство — таймлайн над чатом: «Продолжить» открывает вопрос в этой же ленте, «Скрыть» сворачивает полоску', async () => {
+  const fetchFn = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ...view, later: false }) }));
+  vi.stubGlobal('fetch', fetchFn);
+  render(<PausedFeed view={view} restored={restored} />);
+  const strip = screen.getByTestId('onboarding-strip');
+  expect(strip.textContent).toContain(`сохранено ${view.progress.done} из ${view.progress.total}`);
+  act(() => screen.getByRole('button', { name: 'Скрыть' }).click());
+  expect(screen.queryByRole('progressbar')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Показать' })).toBeDefined();
+  act(() => screen.getByRole('button', { name: 'Продолжить' }).click());
+  await waitFor(() => expect(refresh).toHaveBeenCalled());
+  const body = JSON.parse((fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+  expect(body).toEqual({ action: 'goto', stepId: 'documents' });
+});

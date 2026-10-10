@@ -16,6 +16,7 @@ import { Button } from '../ui';
 
 import { AsideRows, groupAsides } from './Asides';
 import { useSoftGo } from './soft-nav';
+import { OnboardingStrip } from './OnboardingStrip';
 import styles from './Onboarding.module.css';
 
 /** Подпись кнопки возврата работодателя; её же называет помощник в напоминании (server/agent/employer/loop.ts). */
@@ -89,6 +90,9 @@ function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
 
   return (
     <div className={`${styles.shell} ${styles.inScene}`}>
+      {!isEmployer ? (
+        <OnboardingStrip done={view.progress.done} total={view.progress.total} asking={false} busy={busy} onContinue={() => void resume()} onHide={() => undefined} />
+      ) : (
       <header className={styles.top}>
         <div className={styles.topRow}>
           <h1 className={styles.sceneTitle}>
@@ -103,6 +107,7 @@ function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
         </div>
         {isEmployer && <ProgressLine value={view.progress.done} max={view.progress.total} label={`Пройдено ${view.progress.done} из ${view.progress.total}`} />}
       </header>
+      )}
 
       <div className={styles.feed}>
         <Thread label="Переписка с помощником">

@@ -474,13 +474,13 @@ describe('лента внутри /consultant (онбординг и консу�
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Помощник по подбору');
   });
 
-  it('заголовок консультанта, без своей шапки сайта и второго main; «Вернуться в чат» — пауза: лента обновляется без перезагрузки', async () => {
+  it('заголовок консультанта, без своей шапки сайта и второго main; «Скрыть» на таймлайне знакомства — вопрос закрывается, лента снова разговор без перезагрузки', async () => {
     const fetchFn = stubFetch({ next: '/consultant' });
     render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Карьерный консультант');
     expect(document.querySelector('main')).toBeNull();
     expect(question()).toBe('В каком направлении работаешь?');
-    fireEvent.click(screen.getByRole('button', { name: 'Вернуться в чат' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Скрыть' }));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(push).not.toHaveBeenCalled();
     expect(sent(fetchFn)).toEqual({ action: 'later' });

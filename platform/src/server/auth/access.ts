@@ -107,6 +107,7 @@ export const API_ACCESS = {
   '/api/consultant/conversations': 'candidate',
   '/api/consultant/conversations/[id]': 'candidate',
   '/api/employer/assistant/messages': 'employer',
+  '/api/employer/company': 'employer',
   '/api/employer/invitations': 'employer',
   '/api/employer/search': 'employer',
   '/api/employer/vacancies': 'employer',

@@ -25,12 +25,15 @@ export interface InviteBody {
   candidateId: string;
   vacancyId: string | null;
   message: string;
-  salaryOffer: number;
+  /** Вилка, ₽ в месяц; salaryTo ≥ salaryFrom. */
+  salaryFrom: number;
+  salaryTo: number;
 }
 export const inviteApi = (body: InviteBody) => postJson<{ id: string; status: string }>('/api/employer/invitations', body);
 
 export const respondInvitationApi = (id: string, action: 'accept' | 'decline') =>
   postJson<{ id: string; status: string }>(`/api/invitations/${encodeURIComponent(id)}`, { action });
+export const setContactApi = (contact: string) => postJson<{ contact: string | null }>('/api/profile/contact', { contact });
 export const setPrivacyApi = (hiddenFromEmployers: boolean) =>
   postJson<{ hiddenFromEmployers: boolean }>('/api/profile/privacy', { hiddenFromEmployers });
 

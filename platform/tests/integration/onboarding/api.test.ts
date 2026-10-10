@@ -84,11 +84,14 @@ describe('API онбординга', () => {
     expect((await view(c)).current.id).toBe('city');
     await act(c, { action: 'answer', stepId: 'city', value: 'Казань' });
     await act(c, { action: 'answer', stepId: 'salary', value: { from: 150, to: 220 } });
+    expect((await view(c)).current.id).toBe('candidateContact');
+    expect((await act(c, { action: 'answer', stepId: 'candidateContact', value: 'напишите мне' })).status).toBe(400);
+    await act(c, { action: 'answer', stepId: 'candidateContact', value: 'https://t.me/ivan_dev' });
     const last = await act(c, { action: 'answer', stepId: 'fspParticipation', value: 'participant' });
     expect(last.json.current.kind).toBe('summary');
     expect(last.json.summary!.skipped).toEqual([{ stepId: 'documents', label: 'Документы' }]);
 
-    expect(await prisma.candidate.findUniqueOrThrow({ where: { id: cid } })).toMatchObject({ specialization: 'frontend', fspState: 'not_linked' });
+    expect(await prisma.candidate.findUniqueOrThrow({ where: { id: cid } })).toMatchObject({ specialization: 'frontend', fspState: 'not_linked', contact: '@ivan_dev' });
     expect(await prisma.candidateProfile.findUniqueOrThrow({ where: { candidateId: cid } })).toMatchObject({
       goal: 'grade_confirm',
       claimedGrade: 'middle',
@@ -129,12 +132,12 @@ describe('API онбординга', () => {
 
   it('goto: вернуться к пропущенному из итога и ответить', async () => {
     const c = await asCandidate('u1');
-    for (const id of ['goal', 'documents', 'fsp', 'specialization', 'grade', 'stack', 'formats', 'salary', 'fspParticipation']) {
+    for (const id of ['goal', 'documents', 'fsp', 'specialization', 'grade', 'stack', 'formats', 'salary', 'candidateContact', 'fspParticipation']) {
       await act(c, { action: 'skip', stepId: id });
     }
     const sum = await view(c);
     expect(sum.current.kind).toBe('summary');
-    expect(sum.summary!.skipped).toHaveLength(9);
+    expect(sum.summary!.skipped).toHaveLength(10);
     expect(sum.summary!.warnings.join(' ')).toMatch(/направления/);
     const back = await act(c, { action: 'goto', stepId: 'grade' });
     expect(back.json.current.id).toBe('grade');

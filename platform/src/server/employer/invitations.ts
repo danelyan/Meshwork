@@ -5,13 +5,11 @@ import type { z } from 'zod';
 
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
-import { deliverable, notifyInBackground, sendMail } from '../mail';
-import { invitationAnswerMail, invitationMail } from '../mail/templates';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
 import { loadPool } from './matching';
-import { toCandidateCard, type CandidateCard } from './privacy';
+import { contactEmail, toCandidateCard, type CandidateCard } from './privacy';
 import type { InvitationInput } from './schemas';
 import { DAILY_INVITATION_LIMIT } from './weights';
 
@@ -21,7 +19,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export interface EmployerInvitationView {
   id: string;
   status: InvitationStatus;
-  salaryOffer: number | null;
+  /** Вилка предложения, ₽ в месяц (ТЗ 2.2). */
+  salaryFrom: number;
+  salaryTo: number;
   message: string | null;
   createdAt: string;
   viewedAt: string | null;
@@ -33,11 +33,17 @@ export interface EmployerInvitationView {
 export interface CandidateInvitationView {
   id: string;
   status: InvitationStatus;
-  salaryOffer: number | null;
+  /** Вилка предложения, ₽ в месяц (ТЗ 2.2): видна до принятия. */
+  salaryFrom: number;
+  salaryTo: number;
   message: string | null;
   createdAt: string;
   respondedAt: string | null;
-  company: { name: string; description: string | null };
+  /**
+   * Компания и способ связи — до принятия (ТЗ 2.2: «кандидат видит условия до начала общения»).
+   * contact: Company.contact, иначе почта отправителя; null — не указан (интерфейс пишет NO_COMPANY_CONTACT).
+   */
+  company: { name: string; description: string | null; contact: string | null };
   vacancy: {
     title: string;
     specialization: Specialization;
@@ -70,7 +76,7 @@ export async function createInvitation(
     const v = await prisma.vacancy.findFirst({ where: { id: input.vacancyId, companyId: ctx.companyId, archivedAt: null }, select: { id: true } });
     if (!v) throw errors.notFound('Потребность не найдена');
   }
-  const created = await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${ctx.companyId}`}))`;
     const open = await tx.invitation.findFirst({
       where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: OPEN } },
@@ -88,41 +94,12 @@ export async function createInvitation(
         candidateId: input.candidateId,
         vacancyId: input.vacancyId ?? null,
         message: input.message,
-        salaryOffer: input.salaryOffer,
+        salaryFrom: input.salaryFrom,
+        salaryTo: input.salaryTo,
       },
       select: { id: true, status: true },
     });
   });
-  // lane: email-auth — письмо кандидату, не задерживая ответ работодателю.
-  void notifyInBackground('invitation', () => notifyCandidateInvited(created.id));
-  return created;
-}
-
-/** Письмо кандидату о новом приглашении (компания, позиция, зарплата). Служебный адрес — пропуск. */
-export async function notifyCandidateInvited(invitationId: string): Promise<void> {
-  const inv = await prisma.invitation.findUnique({
-    where: { id: invitationId },
-    select: {
-      salaryOffer: true,
-      candidate: { select: { email: true } },
-      company: { select: { name: true } },
-      vacancy: { select: { title: true, company: { select: { name: true } } } },
-    },
-  });
-  if (!inv || !deliverable(inv.candidate.email)) return;
-  const companyName = inv.company?.name ?? inv.vacancy?.company.name ?? 'Компания';
-  await sendMail(invitationMail(inv.candidate.email, { companyName, vacancyTitle: inv.vacancy?.title ?? null, salaryOffer: inv.salaryOffer }));
-}
-
-/** Письмо работодателю-отправителю об ответе кандидата. Нет отправителя или почты — пропуск. */
-export async function notifyEmployerAnswered(invitationId: string, accepted: boolean): Promise<void> {
-  const inv = await prisma.invitation.findUnique({
-    where: { id: invitationId },
-    select: { vacancy: { select: { title: true } }, employerProfile: { select: { user: { select: { email: true } } } } },
-  });
-  const to = inv?.employerProfile?.user.email;
-  if (!inv || !deliverable(to)) return;
-  await sendMail(invitationAnswerMail(to, { accepted, vacancyTitle: inv.vacancy?.title ?? null }));
 }
 
 /** Приглашения компании с карточкой кандидата: контакты — только у принятых. */
@@ -132,7 +109,8 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
     select: {
       id: true,
       status: true,
-      salaryOffer: true,
+      salaryFrom: true,
+      salaryTo: true,
       message: true,
       createdAt: true,
       viewedAt: true,
@@ -144,6 +122,7 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
           id: true,
           name: true,
           email: true,
+          contact: true,
           specialization: true,
           fspState: true,
           categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true } },
@@ -159,7 +138,8 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
   return rows.map((r) => ({
     id: r.id,
     status: r.status,
-    salaryOffer: r.salaryOffer,
+    salaryFrom: r.salaryFrom,
+    salaryTo: r.salaryTo,
     message: r.message,
     createdAt: r.createdAt.toISOString(),
     viewedAt: r.viewedAt?.toISOString() ?? null,
@@ -170,6 +150,7 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
         id: r.candidate.id,
         name: r.candidate.name,
         email: r.candidate.email,
+        contact: r.candidate.contact,
         specialization: r.candidate.specialization,
         fspState: r.candidate.fspState,
         category: r.candidate.categories[0] ?? null,
@@ -193,11 +174,13 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
     select: {
       id: true,
       status: true,
-      salaryOffer: true,
+      salaryFrom: true,
+      salaryTo: true,
       message: true,
       createdAt: true,
       respondedAt: true,
-      company: { select: { name: true, description: true } },
+      company: { select: { name: true, description: true, contact: true } },
+      employerProfile: { select: { user: { select: { email: true } } } },
       vacancy: {
         select: {
           title: true,
@@ -207,14 +190,20 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
           salaryTo: true,
           teamDescription: true,
           stack: true,
-          company: { select: { name: true, description: true } },
+          company: { select: { name: true, description: true, contact: true } },
         },
       },
     },
     orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
   });
   return rows.map((r) => {
-    const company = r.company ?? r.vacancy?.company ?? { name: 'Компания', description: null };
+    const co = r.company ?? r.vacancy?.company ?? { name: 'Компания', description: null, contact: null };
+    const senderEmail = r.employerProfile?.user.email;
+    const company = {
+      name: co.name,
+      description: co.description,
+      contact: co.contact?.trim() || (senderEmail ? contactEmail(senderEmail) : null),
+    };
     const v = r.vacancy;
     const vacancy = v
       ? { title: v.title, specialization: v.specialization, grade: v.grade, salaryFrom: v.salaryFrom, salaryTo: v.salaryTo, teamDescription: v.teamDescription, stack: v.stack }
@@ -222,7 +211,8 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
     return {
       id: r.id,
       status: r.status,
-      salaryOffer: r.salaryOffer,
+      salaryFrom: r.salaryFrom,
+      salaryTo: r.salaryTo,
       message: r.message,
       createdAt: r.createdAt.toISOString(),
       respondedAt: r.respondedAt?.toISOString() ?? null,
@@ -243,7 +233,6 @@ export async function respondInvitation(candidateId: string, invitationId: strin
     data: { status, respondedAt: now },
   });
   if (r.count === 0) throw errors.conflict('На приглашение уже ответили');
-  void notifyInBackground('invitation_answer', () => notifyEmployerAnswered(invitationId, status === 'accepted'));
   return { id: invitationId, status };
 }
 
@@ -251,6 +240,20 @@ export async function getPrivacy(candidateId: string): Promise<{ hiddenFromEmplo
   const c = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { hiddenFromEmployers: true } });
   if (!c) throw errors.notFound('Кандидат не найден');
   return c;
+}
+
+/** Способ связи кандидата (Q-35): работодатель увидит его только после accepted. */
+export async function getCandidateContact(candidateId: string): Promise<{ contact: string | null }> {
+  const c = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { contact: true } });
+  if (!c) throw errors.notFound('Кандидат не найден');
+  return c;
+}
+
+/** contact уже нормализован ContactSchema; null — убрать (останется почта аккаунта, если она не служебная). */
+export async function setCandidateContact(candidateId: string, contact: string | null): Promise<{ contact: string | null }> {
+  const r = await prisma.candidate.updateMany({ where: { id: candidateId }, data: { contact } });
+  if (r.count === 0) throw errors.notFound('Кандидат не найден');
+  return { contact };
 }
 
 /** Настройка приватности (R-C-13): скрыть себя из подборок и поиска работодателей. */

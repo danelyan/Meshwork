@@ -37,6 +37,8 @@ npm run db:seed           # сам читает .env платформы, есл�
 npm run dev               # либо Docker-сборка
 ```
 
+Сид даёт демо-кандидатам и демо-компаниям вымышленные контакты (`…@example.com`): кандидат видит способ связи компании в приглашении до ответа, работодатель контакт кандидата — после принятия. Миграция `202610101030_invite_contact` переносит прежнюю сумму приглашения `salaryOffer` в вилку `salaryFrom = salaryTo` и удаляет столбец.
+
 Сценарий демо (шаги для жюри):
 
 1. На `/` выбрать кандидата: под каждым написано, какое резюме и какую ссылку брать (имена в сиде совпадают с резюме).
@@ -81,19 +83,6 @@ Integration-тесты: перед прогоном `globalSetup` применя
 `LLM_PROVIDER=yandex` — `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`; при
 `openai-chat` — `OPENAI_CHAT_BASE_URL`, `OPENAI_CHAT_API_KEY`, `OPENAI_CHAT_MODEL`.
 
-Почта (вход по email, уведомления о приглашениях — `src/server/mail/`):
-
-| Переменная | По умолчанию | Смысл |
-|---|---|---|
-| `MAIL_PROVIDER` | `smtp` | `smtp` — письма через SMTP (Mailpit на стенде, веб-ящик :8025); `log` — письмо в лог сервера и журнал в памяти, без сети (тесты ставят `log` в `vitest.config.mts`) |
-| `MAIL_FROM` | `ФСП Карьера <no-reply@fsp-career.local>` | отправитель |
-| `SMTP_HOST`, `SMTP_PORT` | `localhost`, `1025` | SMTP-сервер (в compose — `mailpit:1025`) |
-| `SMTP_SECURE` | `false` | `true` — TLS с первого байта (порт 465); STARTTLS не поддерживается |
-| `SMTP_USER`, `SMTP_PASSWORD` | пусто | AUTH PLAIN; пусто — без авторизации (Mailpit) |
-
-При `DEMO_LOGIN=true` код подтверждения почты дополнительно возвращается в ответе и
-показывается на экране входа (жюри без доступа к ящику); код сброса пароля — никогда.
-
 ## Дебаг-панель (только localhost)
 
 Плавающая кнопка `dev` справа внизу (`Ctrl+Shift+D`, Esc - закрыть): кто я, путь, быстрые действия - «Начать диалог заново», «Очистить онбординг» (с галкой «и ответы профиля»), «Очистить аккаунт» (с подтверждением), «Новый пользователь», «Сбросить попытки теста», «Войти как…», «Выйти». Действия - `POST /api/dev/<действие>` над пользователем из сессии (`src/app/api/dev/`, логика - `src/server/devtools/`).
@@ -111,13 +100,6 @@ Integration-тесты: перед прогоном `globalSetup` применя
   в сервисе, чужое → 404); `sessionCookie(id)` для `NextResponse.cookies.set`.
 - `/demo` и `/api/demo/login` — список демо-аккаунтов и вход за них (только `isDemo`);
   без `DEMO_LOGIN=true` оба отдают 404. `DELETE /api/demo/login` — выход. На `/auth` демо-аккаунтов нет.
-- Вход по почте (ADR 0001, «Дополнение 10.10»): `POST /api/auth/register` (email, пароль ≥ 8,
-  версия согласия) → письмо с 6-значным кодом; `POST /api/auth/verify` (код → почта
-  подтверждена, кука `cid`); `POST /api/auth/verify/resend`; `POST /api/auth/login`
-  (только подтверждённая почта; неверная почта и пароль — одинаковый 401);
-  `POST /api/auth/password/forgot` (всегда 200) и `POST /api/auth/password/reset`. Логика —
-  `src/server/auth/email.ts`, пароль — scrypt (`password.ts`), коды — `codes.ts`,
-  лимиты — `rate-limit.ts` (в памяти процесса).
 - `/api/health` — 200 `{ ok, db, llm }`; 503, если БД недоступна.
 - `src/styles/tokens.css` — токены тёмной темы прототипа, JetBrains Mono из `public/assets/fonts`.
 

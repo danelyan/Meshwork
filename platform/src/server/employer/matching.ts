@@ -39,6 +39,7 @@ interface PoolRow {
   evidence: CandidateEvidence;
   name: string;
   email: string;
+  contact: string | null;
   claimsPublic: PublicClaim[];
 }
 
@@ -56,6 +57,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       id: true,
       name: true,
       email: true,
+      contact: true,
       specialization: true,
       fspState: true,
       categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true } },
@@ -70,6 +72,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
   return rows.map((r) => ({
     name: r.name,
     email: r.email,
+    contact: r.contact,
     evidence: {
       id: r.id,
       specialization: r.specialization,
@@ -124,6 +127,7 @@ async function run(
         id: p.evidence.id,
         name: p.name,
         email: p.email,
+        contact: p.contact,
         specialization: p.evidence.specialization,
         fspState: p.evidence.fspState,
         category: p.evidence.category,

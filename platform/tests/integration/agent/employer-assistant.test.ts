@@ -76,7 +76,7 @@ describe('помощник работодателя (БД)', () => {
   it('граница приватности: выдача и разбор без имён, почт и цитат — и до, и после принятия приглашения', async () => {
     const pay = DEMO_POOL[0]!;
     await prisma.invitation.create({
-      data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: pay.id, vacancyId: PAY_VAC, message: 'Платёжная команда', salaryOffer: 230000, status: 'accepted' },
+      data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: pay.id, vacancyId: PAY_VAC, message: 'Платёжная команда', salaryFrom: 230000, salaryTo: 230000, status: 'accepted' },
     });
     const events: EmployerAgentEvent[] = [];
     const match = (await tool('match_for_need').handler(ctx(events), { vacancyId: PAY_VAC, limit: 10 })) as CandidatesBlock;
@@ -104,12 +104,13 @@ describe('помощник работодателя (БД)', () => {
     const pay = DEMO_POOL[0]!;
     const d = (await tool('draft_invitation').handler(ctx(), { candidateId: pay.id, vacancyId: PAY_VAC })) as InvitationDraft & { sent: false };
     expect(d).toMatchObject({ blocked: null, sent: false, vacancyId: PAY_VAC, limit: { sent: 0, limit: 20, left: 20 } });
-    expect(d.salaryOffer).toBeGreaterThan(0);
+    expect(d.salaryFrom).toBeGreaterThan(0);
+    expect(d.salaryTo).toBeGreaterThanOrEqual(d.salaryFrom!);
     expect(await prisma.invitation.count()).toBe(0);
     const others = DEMO_POOL.slice(1);
     for (let i = 0; i < 20; i++) {
       await prisma.invitation.create({
-        data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: others[i % others.length]!.id, message: 'm', salaryOffer: 1, status: 'declined' },
+        data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: others[i % others.length]!.id, message: 'm', salaryFrom: 1, salaryTo: 1, status: 'declined' },
       });
     }
     const d2 = (await tool('draft_invitation').handler(ctx(), { candidateId: pay.id, vacancyId: PAY_VAC })) as InvitationDraft;
@@ -236,7 +237,7 @@ describe('помощник работодателя (БД)', () => {
 
     // приглашение отправлено, но не принято — по-прежнему псевдоним
     const inv = await prisma.invitation.create({
-      data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: pay.id, vacancyId: PAY_VAC, message: 'Платёжная команда', salaryOffer: 230000, status: 'sent' },
+      data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: pay.id, vacancyId: PAY_VAC, message: 'Платёжная команда', salaryFrom: 230000, salaryTo: 230000, status: 'sent' },
     });
     expect(await run()).not.toContain(pay.name);
 

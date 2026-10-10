@@ -37,13 +37,19 @@ export type VacancyInput = z.infer<typeof VacancyInput>;
 
 export const VacancyPatch = z.object({ archived: z.boolean() });
 
-/** Приглашение (R-E-05): описание и зарплата обязательны, потребность — нет. */
-export const InvitationInput = z.object({
-  candidateId: z.string().min(1).max(64),
-  vacancyId: z.string().min(1).max(64).nullish(),
-  message: z.string().trim().min(10, 'Опиши задачу хотя бы в 10 символах').max(2000),
-  salaryOffer: z.number().int().min(1, 'Укажи зарплату').max(10_000_000),
-});
+/**
+ * Приглашение (R-E-05, ТЗ 2.2): описание и вилка «от–до» в ₽ обязательны, потребность — нет.
+ * Способ связи компании берётся из Company.contact, в теле не передаётся.
+ */
+export const InvitationInput = z
+  .object({
+    candidateId: z.string().min(1).max(64),
+    vacancyId: z.string().min(1).max(64).nullish(),
+    message: z.string().trim().min(10, 'Опиши задачу хотя бы в 10 символах').max(2000),
+    salaryFrom: z.number().int().min(1, 'Укажи зарплату «от»').max(10_000_000),
+    salaryTo: z.number().int().min(1, 'Укажи зарплату «до»').max(10_000_000),
+  })
+  .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Зарплата «до» меньше «от»', path: ['salaryTo'] });
 
 export const InvitationAction = z.object({ action: z.enum(['accept', 'decline']) });
 

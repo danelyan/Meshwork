@@ -171,6 +171,25 @@ describe('проверка ответов', () => {
     expect(() => validateAnswer(step('about'), '', emp)).toThrow(AnswerError);
   });
 
+  it('контакт (Q-35): шаг кандидата после зарплаты, почта или Telegram, служебная почта — отказ', () => {
+    const order = ids(ctx({ role: 'candidate' }, { fspState: 'not_linked' }));
+    expect(order.indexOf('candidateContact')).toBe(order.indexOf('salary') + 1);
+    expect(order.indexOf('candidateContact')).toBeLessThan(order.indexOf('fspParticipation'));
+    expect(step('candidateContact').target).toBe('Candidate.contact');
+    expect(step('candidateContact').required).toBeFalsy();
+    expect(validateAnswer(step('candidateContact'), ' ivan@mail.ru ', cand)).toBe('ivan@mail.ru');
+    expect(validateAnswer(step('candidateContact'), '@ivan_dev', cand)).toBe('@ivan_dev');
+    expect(validateAnswer(step('candidateContact'), 'ivan_dev', cand)).toBe('@ivan_dev');
+    expect(validateAnswer(step('candidateContact'), 'https://t.me/ivan_dev', cand)).toBe('@ivan_dev');
+    for (const v of ['напишите мне', '@abc', 'ivan@', 'user-1@users.invalid', '+7 900 000-00-00']) {
+      expect(() => validateAnswer(step('candidateContact'), v, cand)).toThrow(/почту .* или Telegram/);
+    }
+    // контакт компании проверяется тем же правилом
+    const emp = ctx({}, { role: 'employer', consent: true });
+    expect(validateAnswer(step('contact'), 't.me/romashka_hr', emp)).toBe('@romashka_hr');
+    expect(() => validateAnswer(step('contact'), 'звоните', emp)).toThrow(AnswerError);
+  });
+
   it('files: нужен хотя бы файл или ссылка, ссылка — URL', () => {
     expect(validateAnswer(step('documents'), { uploadIds: ['u1'], claims: 3 }, cand)).toEqual({ uploadIds: ['u1'], urls: [], claims: 3 });
     bad('documents', { uploadIds: [], urls: [] });

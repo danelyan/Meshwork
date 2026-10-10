@@ -101,10 +101,12 @@ export async function seedEmployer(prisma: PrismaClient): Promise<void> {
   const now = new Date();
   for (const p of DEMO_POOL) {
     const email = `${p.id}@example.test`;
+    // lane invite-contact: вымышленный контакт, который работодатель увидит после принятия приглашения (Q-35).
+    const contact = `${p.id.replace(/^demo-pool-/, 'candidate.')}@example.com`;
     await prisma.candidate.upsert({
       where: { id: p.id },
-      update: { name: p.name, email, specialization: p.specialization, fspState: p.fspState, isDemo: true },
-      create: { id: p.id, name: p.name, email, specialization: p.specialization, fspState: p.fspState, isDemo: true, consentAt: now },
+      update: { name: p.name, email, contact, specialization: p.specialization, fspState: p.fspState, isDemo: true },
+      create: { id: p.id, name: p.name, email, contact, specialization: p.specialization, fspState: p.fspState, isDemo: true, consentAt: now },
     });
     await prisma.claim.deleteMany({ where: { candidateId: p.id } });
     await prisma.candidateCategory.deleteMany({ where: { candidateId: p.id } });

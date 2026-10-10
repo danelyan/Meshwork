@@ -28,7 +28,7 @@ export function MatchResults({ result, basePath }: { result: MatchResult; basePa
       ) : (
         <ol className={styles.list}>
           {result.items.map((item) => (
-            <CandidateMatchCard key={item.candidateId} item={item} vacancyId={vacancy?.id ?? null} defaultSalary={vacancy?.salaryFrom} />
+            <CandidateMatchCard key={item.candidateId} item={item} vacancyId={vacancy?.id ?? null} defaultSalary={vacancy ? { from: vacancy.salaryFrom, to: vacancy.salaryTo } : undefined} />
           ))}
         </ol>
       )}

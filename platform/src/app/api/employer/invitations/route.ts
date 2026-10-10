@@ -15,7 +15,7 @@ export const GET = withErrors(async (req: Request) => {
   return Response.json({ invitations, limit: { perDay: DAILY_INVITATION_LIMIT, sentToday: sent } });
 });
 
-/** POST `{ candidateId, vacancyId?, message, salaryOffer }` — пригласить (зарплата обязательна). */
+/** POST `{ candidateId, vacancyId?, message, salaryFrom, salaryTo }` — пригласить (вилка обязательна, to ≥ from). */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { employerProfileId } = requireEmployer(req);

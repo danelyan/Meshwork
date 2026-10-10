@@ -13,7 +13,7 @@ import { INVITATION_STATUS_LABEL, SOURCE_TYPE_LABEL } from './labels';
  * только если сервер прислал `name` (у компании есть принятое приглашение), иначе
  * псевдоним. Контакты — по-прежнему только в «Приглашениях».
  */
-export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: AssistantCandidateView; vacancyId: string | null; defaultSalary?: number }) {
+export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: AssistantCandidateView; vacancyId: string | null; defaultSalary?: { from: number; to: number } }) {
   const open = c.invitation === 'sent' || c.invitation === 'viewed';
   const proven = c.coveredItems.filter((i) => i.level !== 'self_reported').length;
   return (
@@ -65,7 +65,7 @@ export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: Ass
           Приглашение: <span className={styles.status}>{INVITATION_STATUS_LABEL[c.invitation!]}</span>
         </p>
       ) : (
-        <InviteForm candidateId={c.candidateId} candidateName={c.alias} vacancyId={vacancyId} defaultSalary={defaultSalary} />
+        <InviteForm candidateId={c.candidateId} candidateName={c.alias} vacancyId={vacancyId} defaultSalaryFrom={defaultSalary?.from} defaultSalaryTo={defaultSalary?.to} />
       )}
     </li>
   );

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { contactError, normalizeContact } from '../contact';
+
 import { checkInn } from './inn';
 import { SUMMARY_STEP, scenarioSteps } from './scenario';
 import type { Answers, StepContext, StepDef, StepOption } from './types';
@@ -166,6 +168,10 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
         const c = checkInn(r.data);
         if (!c.ok) return fail(c.reason);
         return r.data.replace(/\s+/g, '');
+      }
+      if (step.check === 'contact') {
+        const c = normalizeContact(r.data);
+        return c ?? fail(contactError);
       }
       return r.data;
     }

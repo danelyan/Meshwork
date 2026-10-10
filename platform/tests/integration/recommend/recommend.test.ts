@@ -88,7 +88,7 @@ describe('recommend (БД)', () => {
 
   it('explainInvitation: объяснение по каталогу; чужое приглашение — 404', async () => {
     await claim('c1', 'be.idempotency', 'artifact');
-    const inv = await prisma.invitation.create({ data: { vacancyId: 'demo-vac-be-m-1', candidateId: 'c1', salaryOffer: 250000 } });
+    const inv = await prisma.invitation.create({ data: { vacancyId: 'demo-vac-be-m-1', candidateId: 'c1', salaryFrom: 250000, salaryTo: 250000 } });
     const cov = await explainInvitation('c1', inv.id);
     expect(cov).toMatchObject({ covered: 1, total: 6, vacancyId: 'demo-vac-be-m-1' });
     const ids = new Set(fixtureEntries().map((e) => e.id));

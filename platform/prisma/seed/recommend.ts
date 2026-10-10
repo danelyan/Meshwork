@@ -5,10 +5,11 @@ import type { PrismaClient } from '@prisma/client';
 
 type Need = [catalogId: string, weight: 1 | 2 | 3];
 
+// contact (lane invite-contact): кандидат видит способ связи до принятия (ТЗ 2.2); адреса вымышленные.
 export const DEMO_COMPANIES = [
-  { id: 'demo-co-northstream', name: 'Северный Поток', description: 'Вымышленная финтех-компания (демо)' },
-  { id: 'demo-co-granit', name: 'Гранит Софт', description: 'Вымышленный разработчик корпоративных систем (демо)' },
-  { id: 'demo-co-labirint', name: 'Лабиринт Медиа', description: 'Вымышленная медиаплатформа (демо)' },
+  { id: 'demo-co-northstream', name: 'Северный Поток', description: 'Вымышленная финтех-компания (демо)', contact: 'hr.northstream@example.com' },
+  { id: 'demo-co-granit', name: 'Гранит Софт', description: 'Вымышленный разработчик корпоративных систем (демо)', contact: 'jobs.granit@example.com' },
+  { id: 'demo-co-labirint', name: 'Лабиринт Медиа', description: 'Вымышленная медиаплатформа (демо)', contact: 'team.labirint@example.com' },
 ];
 
 export const DEMO_VACANCIES: {

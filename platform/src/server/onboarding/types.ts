@@ -46,8 +46,8 @@ export interface StepContext {
   facts: Facts;
 }
 
-/** Текстовая проверка (кроме длины): ИНН по контрольной сумме. */
-export type TextCheck = 'inn';
+/** Текстовая проверка (кроме длины): ИНН по контрольной сумме; контакт — почта или Telegram (server/contact.ts). */
+export type TextCheck = 'inn' | 'contact';
 
 export interface StepDef {
   id: string;

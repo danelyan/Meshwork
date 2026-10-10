@@ -15,22 +15,27 @@ export interface InviteFormProps {
   candidateId: string;
   candidateName: string;
   vacancyId: string | null;
-  /** Подстановка зарплаты — нижняя граница вилки потребности. */
-  defaultSalary?: number;
+  /** Подстановка вилки — из потребности или черновика помощника. */
+  defaultSalaryFrom?: number;
+  defaultSalaryTo?: number;
   /** Черновик помощника: текст предложения и форма сразу открыта. */
   initialMessage?: string;
   defaultOpen?: boolean;
 }
 
-/** Приглашение конкретному кандидату (R-E-05): описание и зарплата обязательны. */
-export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalary, initialMessage, defaultOpen }: InviteFormProps) {
+const parseRub = (v: string) => Number(v.replace(/\s/g, ''));
+const isRub = (n: number) => Number.isInteger(n) && n > 0;
+
+/** Приглашение конкретному кандидату (R-E-05, ТЗ 2.2): описание и вилка «от–до» обязательны. */
+export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalaryFrom, defaultSalaryTo, initialMessage, defaultOpen }: InviteFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(Boolean(defaultOpen));
   const [message, setMessage] = useState(initialMessage ?? '');
-  const [salary, setSalary] = useState(defaultSalary ? String(defaultSalary) : '');
+  const [salaryFrom, setSalaryFrom] = useState(defaultSalaryFrom ? String(defaultSalaryFrom) : '');
+  const [salaryTo, setSalaryTo] = useState(defaultSalaryTo ? String(defaultSalaryTo) : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErr, setFieldErr] = useState<{ message?: string; salary?: string }>({});
+  const [fieldErr, setFieldErr] = useState<{ message?: string; salaryFrom?: string; salaryTo?: string }>({});
   const [done, setDone] = useState(false);
 
   if (done) return <Notice>Приглашение отправлено. Статус - в разделе «Приглашения».</Notice>;
@@ -46,16 +51,19 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const salaryOffer = Number(salary.replace(/\s/g, ''));
+    const from = parseRub(salaryFrom);
+    const to = parseRub(salaryTo);
     const errs: typeof fieldErr = {};
     if (message.trim().length < 10) errs.message = 'Опиши задачу и команду хотя бы в 10 символах';
-    if (!Number.isInteger(salaryOffer) || salaryOffer <= 0) errs.salary = 'Укажи зарплату в рублях';
+    if (!isRub(from)) errs.salaryFrom = 'Укажи сумму в рублях';
+    if (!isRub(to)) errs.salaryTo = 'Укажи сумму в рублях';
+    else if (isRub(from) && to < from) errs.salaryTo = '«До» не может быть меньше «от»';
     setFieldErr(errs);
     if (Object.keys(errs).length) return;
     setBusy(true);
     setError(null);
     try {
-      await inviteApi({ candidateId, vacancyId, message: message.trim(), salaryOffer });
+      await inviteApi({ candidateId, vacancyId, message: message.trim(), salaryFrom: from, salaryTo: to });
       setDone(true);
       router.refresh();
     } catch (err) {
@@ -67,12 +75,21 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
 
   return (
     <form className={styles.inviteBox} onSubmit={submit} noValidate aria-label={`Приглашение: ${candidateName}`}>
-      <Field label="Что предлагаешь" hint="Задачи, команда, формат работы. Кандидат увидит это вместе с зарплатой." error={fieldErr.message}>
+      <Field
+        label="Что предлагаешь"
+        hint="Задачи, команда, формат работы. Кандидат увидит это до принятия вместе с вилкой и контактом компании."
+        error={fieldErr.message}
+      >
         <textarea className={ui.input} rows={4} value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} />
       </Field>
-      <Field label="Зарплата, ₽ в месяц" error={fieldErr.salary}>
-        <input className={ui.input} inputMode="numeric" value={salary} onChange={(e) => setSalary(e.target.value)} />
-      </Field>
+      <div className={styles.salaryRow}>
+        <Field label="Зарплата от, ₽ в месяц" error={fieldErr.salaryFrom}>
+          <input className={ui.input} inputMode="numeric" value={salaryFrom} onChange={(e) => setSalaryFrom(e.target.value)} />
+        </Field>
+        <Field label="до, ₽ в месяц" error={fieldErr.salaryTo}>
+          <input className={ui.input} inputMode="numeric" value={salaryTo} onChange={(e) => setSalaryTo(e.target.value)} />
+        </Field>
+      </div>
       {error && <Notice tone="error">{error}</Notice>}
       <div className={styles.actions}>
         <Button type="submit" variant="cta" size="sm" loading={busy}>

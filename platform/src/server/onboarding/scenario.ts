@@ -199,6 +199,21 @@ export const CANDIDATE_STEPS: StepDef[] = [
     range: SALARY,
   },
   {
+    // Q-35: служебная почта онбординга (`user-…@users.invalid`) — не контакт; без этого шага
+    // работодатель после принятия приглашения видел пустые контакты.
+    id: 'candidateContact',
+    kind: 'text',
+    eyebrow: 'Контакт',
+    question: 'Как с тобой связаться?',
+    sub: 'Почта или Telegram. Компания увидит контакт, только когда ты примешь её приглашение.',
+    summaryLabel: 'Контакт',
+    target: 'Candidate.contact',
+    req: 'R-E-07, R-C-11',
+    maxLength: 120,
+    check: 'contact',
+    placeholder: 'name@mail.ru или @username',
+  },
+  {
     id: 'fspParticipation',
     kind: 'one',
     eyebrow: 'ФСП',
@@ -282,7 +297,8 @@ export const EMPLOYER_STEPS: StepDef[] = [
     target: 'Company.contact',
     req: 'R-E-01',
     maxLength: 120,
-    placeholder: 'hr@company.ru',
+    check: 'contact',
+    placeholder: 'hr@company.ru или @username',
   },
   {
     id: 'needSpecialization',

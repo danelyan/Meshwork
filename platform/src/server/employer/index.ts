@@ -11,6 +11,8 @@ export {
   respondInvitation,
   getPrivacy,
   setPrivacy,
+  getCandidateContact,
+  setCandidateContact,
   invitationsSentToday,
 } from './invitations';
 export type { EmployerInvitationView, CandidateInvitationView } from './invitations';

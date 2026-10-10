@@ -14,7 +14,8 @@ import { resolveVacancy, type EmployerTool } from './shared';
 const Input = z.object({
   candidateId: z.string().min(1).max(64),
   vacancyId: z.string().min(1).max(64).optional().describe('Потребность; не указана — единственная активная, если она есть'),
-  salaryOffer: z.number().int().min(1).max(10_000_000).optional().describe('₽ в месяц; не указано — нижняя граница вилки'),
+  salaryFrom: z.number().int().min(1).max(10_000_000).optional().describe('Вилка «от», ₽ в месяц; не указано — из потребности'),
+  salaryTo: z.number().int().min(1).max(10_000_000).optional().describe('Вилка «до», ₽ в месяц; не указано — из потребности'),
   message: z.string().trim().min(10).max(2000).optional().describe('Текст предложения: задачи, команда, формат'),
 });
 const Output = z
@@ -23,7 +24,8 @@ const Output = z
     alias: z.string(),
     vacancyId: z.string().nullable(),
     vacancyTitle: z.string().nullable(),
-    salaryOffer: z.number().int().nullable(),
+    salaryFrom: z.number().int().nullable(),
+    salaryTo: z.number().int().nullable(),
     message: z.string(),
     limit: z.object({ sent: z.number().int(), limit: z.number().int(), left: z.number().int() }),
     blocked: z.enum(['daily_limit', 'open_invitation']).nullable(),
@@ -41,7 +43,7 @@ const fmtRub = (n: number) => `${n.toLocaleString('ru-RU').replace(/ /g, ' ')} 
 export const draftInvitation: EmployerTool = {
   name: 'draft_invitation',
   description:
-    'Подготовить черновик приглашения кандидату: зарплата и текст предложения. Ничего не отправляет — черновик появляется в ленте формой, отправляет работодатель кнопкой. Сообщает, сколько приглашений осталось на сутки и можно ли пригласить (лимит, открытое приглашение).',
+    'Подготовить черновик приглашения кандидату: вилка зарплаты от–до и текст предложения. Ничего не отправляет — черновик появляется в ленте формой, отправляет работодатель кнопкой. Сообщает, сколько приглашений осталось на сутки и можно ли пригласить (лимит, открытое приглашение).',
   input: Input,
   output: Output,
   async handler(ctx, input: z.infer<typeof Input>) {
@@ -59,7 +61,10 @@ export const draftInvitation: EmployerTool = {
       invitationsSentToday(ctx.companyId),
       prisma.invitation.findFirst({ where: { companyId: ctx.companyId, candidateId: cand.id, status: { in: ['sent', 'viewed'] } }, select: { id: true } }),
     ]);
-    const salary = input.salaryOffer ?? vacancy?.salaryFrom ?? null;
+    const from = input.salaryFrom ?? vacancy?.salaryFrom ?? input.salaryTo ?? null;
+    const toRaw = input.salaryTo ?? vacancy?.salaryTo ?? from;
+    // «до» не меньше «от»: форма и API (InvitationInput) иначе откажут.
+    const to = from !== null && toRaw !== null ? Math.max(from, toRaw) : toRaw;
     const message =
       input.message ??
       [
@@ -68,7 +73,7 @@ export const draftInvitation: EmployerTool = {
           : `${emp.companyName} хочет познакомиться.`,
         vacancy?.teamDescription ?? emp.companyDescription ?? '',
         vacancy?.stack.length ? `Стек: ${vacancy.stack.join(', ')}.` : '',
-        salary ? `Предлагаем ${fmtRub(salary)} в месяц.` : '',
+        from && to ? `Предлагаем ${from === to ? fmtRub(from) : `${fmtRub(from)} – ${fmtRub(to)}`} в месяц.` : '',
         'Если интересно - прими приглашение, и мы свяжемся, чтобы обсудить детали.',
       ]
         .filter(Boolean)
@@ -79,7 +84,8 @@ export const draftInvitation: EmployerTool = {
       alias: pseudonym(cand.id),
       vacancyId: vacancy?.id ?? null,
       vacancyTitle: vacancy?.title ?? null,
-      salaryOffer: salary,
+      salaryFrom: from,
+      salaryTo: to,
       message,
       limit: { sent, limit: DAILY_INVITATION_LIMIT, left },
       blocked: open ? 'open_invitation' : left === 0 ? 'daily_limit' : null,

@@ -32,7 +32,7 @@ export function toAssistantCandidate(item: MatchItem): AssistantCandidate {
 
 export function toCandidatesBlock(r: MatchResult): CandidatesBlock {
   return {
-    vacancy: r.vacancy ? { id: r.vacancy.id, title: r.vacancy.title, salaryFrom: r.vacancy.salaryFrom } : null,
+    vacancy: r.vacancy ? { id: r.vacancy.id, title: r.vacancy.title, salaryFrom: r.vacancy.salaryFrom, salaryTo: r.vacancy.salaryTo } : null,
     total: r.total,
     items: r.items.map(toAssistantCandidate),
   };
@@ -63,7 +63,7 @@ export const AssistantCandidateSchema = z
 
 export const CandidatesBlockSchema = z
   .object({
-    vacancy: z.object({ id: z.string(), title: z.string(), salaryFrom: z.number() }).nullable(),
+    vacancy: z.object({ id: z.string(), title: z.string(), salaryFrom: z.number(), salaryTo: z.number() }).nullable(),
     total: z.number().int(),
     items: z.array(AssistantCandidateSchema),
   })

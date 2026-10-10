@@ -57,7 +57,7 @@ describe('api/dev/*', () => {
       data: { candidateId: a.candidate.id, specialization: 'backend', grade: 'junior', seed: 1, policyVersion: 'v', expiresAt: new Date(Date.now() + 1e6) },
     });
     const company = await prisma.company.create({ data: { name: 'К' } });
-    await prisma.invitation.create({ data: { candidateId: a.candidate.id, companyId: company.id } });
+    await prisma.invitation.create({ data: { candidateId: a.candidate.id, companyId: company.id, salaryFrom: 1, salaryTo: 1 } });
 
     const res = await deleteAccount(req('/api/dev/delete-account', 'POST', {}, a.cookie));
     expect(res.status).toBe(200);
@@ -93,8 +93,8 @@ describe('api/dev/*', () => {
     const vac = await prisma.vacancy.create({
       data: { companyId: a.company.id, title: 'Go', specialization: 'backend', grade: 'junior', salaryFrom: 1, salaryTo: 2, needs: [] },
     });
-    await prisma.invitation.create({ data: { candidateId: cand.candidate.id, companyId: a.company.id, vacancyId: vac.id, employerProfileId: a.profile.id } });
-    await prisma.invitation.create({ data: { candidateId: cand.candidate.id, companyId: b.company.id, employerProfileId: b.profile.id } });
+    await prisma.invitation.create({ data: { candidateId: cand.candidate.id, companyId: a.company.id, vacancyId: vac.id, employerProfileId: a.profile.id, salaryFrom: 1, salaryTo: 1 } });
+    await prisma.invitation.create({ data: { candidateId: cand.candidate.id, companyId: b.company.id, employerProfileId: b.profile.id, salaryFrom: 1, salaryTo: 1 } });
 
     expect((await deleteAccount(req('/api/dev/delete-account', 'POST', {}, a.cookie))).status).toBe(200);
 

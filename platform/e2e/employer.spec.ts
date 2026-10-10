@@ -45,7 +45,8 @@ test('E-02: работодатель → подборка → приглашен
   if (await invite.isVisible()) {
     await invite.click();
     await top.getByLabel('Что предлагаешь').fill('Платёжная команда, Go и Kafka, удалёнка');
-    await top.getByLabel(/Зарплата/).fill('230000');
+    await top.getByLabel('Зарплата от, ₽ в месяц').fill('230000');
+    await top.getByLabel('до, ₽ в месяц').fill('260000');
     await top.getByRole('button', { name: 'Отправить приглашение' }).click();
     await expect(top.getByText(/Приглашение:/)).toBeVisible();
   }
@@ -53,6 +54,8 @@ test('E-02: работодатель → подборка → приглашен
   // 3. кандидат принимает
   await loginFromAuth(page, POOL_TOP, '**/consultant');
   await page.goto('/invitations');
+  // до принятия: вилка и способ связи компании (ТЗ 2.2)
+  await expect(page.getByText(/Связь с компанией: /).first()).toBeVisible();
   const accept = page.getByRole('button', { name: 'Принять' }).first();
   if (await accept.isVisible()) await accept.click();
   await expect(page.getByText(/Приглашение принято/).first()).toBeVisible();
@@ -62,6 +65,7 @@ test('E-02: работодатель → подборка → приглашен
   await page.goto('/employer/needs/demo-vac-be-m-1');
   await expect(page.getByText(POOL_TOP).first()).toBeVisible();
   await expect(page.getByText(/Приглашение принято. Контакты:/)).toBeVisible();
+  await expect(page.getByText(/@example\.com/).first()).toBeVisible();
 });
 
 test('Помощник работодателя (демо без модели): подборка карточками → «Пригласить» → форма; имён нет', async ({ page }) => {

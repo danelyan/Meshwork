@@ -42,13 +42,14 @@ const CAND: AssistantCandidate = {
   summary: 's',
   invitation: null,
 };
-const BLOCK: CandidatesBlock = { vacancy: { id: 'v1', title: 'Backend платежей', salaryFrom: 200000 }, total: 6, items: [CAND, { ...CAND, candidateId: 'c2', alias: 'Кандидат #DEF456', rank: 2, invitation: 'accepted' }] };
+const BLOCK: CandidatesBlock = { vacancy: { id: 'v1', title: 'Backend платежей', salaryFrom: 200000, salaryTo: 260000 }, total: 6, items: [CAND, { ...CAND, candidateId: 'c2', alias: 'Кандидат #DEF456', rank: 2, invitation: 'accepted' }] };
 const DRAFT: InvitationDraft = {
   candidateId: 'c1',
   alias: 'Кандидат #ABC123',
   vacancyId: 'v1',
   vacancyTitle: 'Backend платежей',
-  salaryOffer: 200000,
+  salaryFrom: 200000,
+  salaryTo: 260000,
   message: 'Северный Поток ищет: Backend платежей.',
   limit: { sent: 2, limit: 20, left: 18 },
   blocked: null,
@@ -114,7 +115,7 @@ describe('лента помощника работодателя', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/employer/invitations');
-    expect(JSON.parse(init.body as string)).toMatchObject({ candidateId: 'c1', vacancyId: 'v1', salaryOffer: 200000 });
+    expect(JSON.parse(init.body as string)).toMatchObject({ candidateId: 'c1', vacancyId: 'v1', salaryFrom: 200000, salaryTo: 260000 });
   });
 
   it('черновик при исчерпанном лимите — без формы, с пояснением', () => {

@@ -35,7 +35,7 @@ const VAC_BODY = {
 };
 
 async function sendInvite(candidateId = PAY.id, cookie = EMP, extra: Record<string, unknown> = {}) {
-  return invite(jsonRequest('/api/employer/invitations', 'POST', { candidateId, vacancyId: PAY_VAC, message: 'Платёжная команда, Go и Kafka', salaryOffer: 230000, ...extra }, cookie));
+  return invite(jsonRequest('/api/employer/invitations', 'POST', { candidateId, vacancyId: PAY_VAC, message: 'Платёжная команда, Go и Kafka', salaryFrom: 230000, salaryTo: 230000, ...extra }, cookie));
 }
 
 describe('кабинет работодателя (БД)', () => {
@@ -129,44 +129,10 @@ describe('кабинет работодателя (БД)', () => {
     const vacId = created.id ?? created.vacancy?.id;
     const m = await (await matches(jsonRequest(`/x/${vacId}/matches`, 'GET', undefined, EMP), params({ id: vacId }))).json();
     expect(m.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('zero-cov');
-    // без закрытых требований в подборке только кандидаты с совпавшей категорией из теста (Q-36)
-    expect(m.items.every((i: { covered: number; categoryMatch: boolean }) => i.covered >= 1 || i.categoryMatch)).toBe(true);
+    expect(m.items.every((i: { covered: number }) => i.covered >= 1)).toBe(true);
     const bank = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go', 'GET', undefined, EMP))).json();
     expect(bank.items.map((i: { candidateId: string }) => i.candidateId)).toContain('zero-cov');
     await prisma.candidate.delete({ where: { id: 'zero-cov' } }); // не мешать соседним тестам
-  });
-
-  it('подборка: кандидат только с категорией из теста виден, чужая специализация — нет, порядок трёх типов (Q-36)', async () => {
-    const mk = (id: string, extra: Record<string, unknown> = {}) =>
-      prisma.candidate.create({ data: { id, name: id, email: `${id}@example.test`, specialization: 'backend', fspState: 'not_linked', consentAt: new Date(), ...extra } });
-    const claim = (candidateId: string) =>
-      prisma.claim.create({
-        data: {
-          candidateId, catalogId: 'be.idempotency', statement: 'Идемпотентность', level: 'self_reported', quote: 'Go',
-          sourceRef: 'cv.pdf#p1:l1', sourceKind: 'resume', confidence: 'high', limits: '', suggestedProof: [], status: 'confirmed', confirmedAt: new Date(),
-        },
-      });
-    await mk('q36-cat-only');
-    await prisma.candidateCategory.create({ data: { candidateId: 'q36-cat-only', specialization: 'backend', grade: 'middle' } });
-    await mk('q36-cat-fe', { specialization: 'frontend' });
-    await prisma.candidateCategory.create({ data: { candidateId: 'q36-cat-fe', specialization: 'frontend', grade: 'middle' } });
-    await mk('q36-both');
-    await prisma.candidateCategory.create({ data: { candidateId: 'q36-both', specialization: 'backend', grade: 'middle' } });
-    await claim('q36-both');
-    await mk('q36-claims');
-    await claim('q36-claims');
-    const created = await (await createVac(jsonRequest('/api/employer/vacancies', 'POST', { ...VAC_BODY, stack: [], needs: [{ catalogId: 'be.idempotency', weight: 3 }, { catalogId: 'be.transactions', weight: 3 }] }, EMP))).json();
-    const vacId = created.id ?? created.vacancy?.id;
-    const m = await (await matches(jsonRequest(`/x/${vacId}/matches`, 'GET', undefined, EMP), params({ id: vacId }))).json();
-    const ids: string[] = m.items.map((i: { candidateId: string }) => i.candidateId);
-    expect(ids).toContain('q36-cat-only');
-    expect(ids).not.toContain('q36-cat-fe');
-    expect(ids.indexOf('q36-both')).toBeLessThan(ids.indexOf('q36-claims'));
-    expect(ids.indexOf('q36-both')).toBeLessThan(ids.indexOf('q36-cat-only'));
-    const only = m.items.find((i: { candidateId: string }) => i.candidateId === 'q36-cat-only');
-    expect(only.covered).toBe(0);
-    expect(only.explanation.summary).toContain('подтверждена тестом; требования потребности не доказаны утверждениями');
-    await prisma.candidate.deleteMany({ where: { id: { startsWith: 'q36-' } } });
   });
 
   it('фильтры — query (R-M-04): ФСП, стек, грейд категории; чужая потребность — 404', async () => {
@@ -205,7 +171,7 @@ describe('кабинет работодателя (БД)', () => {
     // кандидат: только свои; открытие отмечает просмотр
     const mine = await (await myInvites(jsonRequest('/api/invitations?view=1', 'GET', undefined, candCookie(PAY.id)))).json();
     expect(mine.invitations).toHaveLength(1);
-    expect(mine.invitations[0]).toMatchObject({ id, status: 'viewed', salaryOffer: 230000, company: { name: 'Северный Поток' } });
+    expect(mine.invitations[0]).toMatchObject({ id, status: 'viewed', salaryFrom: 230000, salaryTo: 230000, company: { name: 'Северный Поток' } });
     const other = await (await myInvites(jsonRequest('/api/invitations', 'GET', undefined, candCookie('demo-pool-be-j-1')))).json();
     expect(other.invitations).toEqual([]);
 
@@ -214,6 +180,7 @@ describe('кабинет работодателя (БД)', () => {
     expect(tracked.invitations[0].candidate.contacts).toBeNull();
     expect(tracked.invitations[0].status).toBe('viewed');
     expect(JSON.stringify(tracked)).not.toContain(`${PAY.id}@example.test`);
+    expect(JSON.stringify(tracked)).not.toContain('candidate.be-m-pay@example.com');
 
     // чужой кандидат не может ответить: 404; работодатель — 403
     expect((await respond(jsonRequest('/x', 'POST', { action: 'accept' }, candCookie('demo-pool-be-j-1')), params({ id }))).status).toBe(404);
@@ -224,12 +191,13 @@ describe('кабинет работодателя (БД)', () => {
     expect((await respond(jsonRequest('/x', 'POST', { action: 'decline' }, candCookie(PAY.id)), params({ id }))).status).toBe(409);
 
     tracked = await (await listInvites(jsonRequest('/x', 'GET', undefined, EMP))).json();
-    expect(tracked.invitations[0].candidate.contacts).toEqual({ name: PAY.name, email: `${PAY.id}@example.test` });
+    expect(tracked.invitations[0].candidate.contacts).toEqual({ name: PAY.name, contact: 'candidate.be-m-pay@example.com' });
     const m = await (await matches(jsonRequest('/x', 'GET', undefined, EMP), params({ id: PAY_VAC }))).json();
     expect(m.items[0].candidate.displayName).toBe(PAY.name);
     // другой компании контакты не открылись
     const s = await (await search(jsonRequest('/x', 'GET', undefined, OTHER))).json();
     expect(JSON.stringify(s)).not.toContain(`${PAY.id}@example.test`);
+    expect(JSON.stringify(s)).not.toContain('candidate.be-m-pay@example.com');
     expect((await (await listInvites(jsonRequest('/x', 'GET', undefined, OTHER))).json()).invitations).toEqual([]);
   });
 
@@ -240,7 +208,7 @@ describe('кабинет работодателя (БД)', () => {
     expect(mine.invitations[0].vacancy).toBeNull();
     expect(mine.invitations[0].company.name).toBe('Северный Поток');
     expect((await sendInvite(PAY.id)).status).toBe(409);
-    expect((await sendInvite('demo-pool-be-j-1', EMP, { salaryOffer: undefined })).status).toBe(400);
+    expect((await sendInvite('demo-pool-be-j-1', EMP, { salaryFrom: undefined })).status).toBe(400);
     expect((await sendInvite('demo-pool-be-j-1', OTHER)).status).toBe(404);
     expect((await sendInvite('nope')).status).toBe(404);
   });
@@ -248,12 +216,12 @@ describe('кабинет работодателя (БД)', () => {
   it('лимит приглашений компании за сутки — 429', async () => {
     const ctx = { companyId: DEMO_EMPLOYER.companyId, employerProfileId: DEMO_EMPLOYER.profileId };
     const ids = DEMO_POOL.slice(0, 3).map((p) => p.id);
-    await createInvitation(ctx, { candidateId: ids[0]!, message: 'Платёжная команда', salaryOffer: 1 }, 2);
-    await createInvitation(ctx, { candidateId: ids[1]!, message: 'Платёжная команда', salaryOffer: 1 }, 2);
-    await expect(createInvitation(ctx, { candidateId: ids[2]!, message: 'Платёжная команда', salaryOffer: 1 }, 2)).rejects.toMatchObject({ status: 429 });
+    await createInvitation(ctx, { candidateId: ids[0]!, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 }, 2);
+    await createInvitation(ctx, { candidateId: ids[1]!, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 }, 2);
+    await expect(createInvitation(ctx, { candidateId: ids[2]!, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 }, 2)).rejects.toMatchObject({ status: 429 });
     // параллельные запросы не обходят счётчик (advisory lock)
     await prisma.invitation.deleteMany();
-    const results = await Promise.allSettled(ids.map((candidateId) => createInvitation(ctx, { candidateId, message: 'Платёжная команда', salaryOffer: 1 }, 2)));
+    const results = await Promise.allSettled(ids.map((candidateId) => createInvitation(ctx, { candidateId, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 }, 2)));
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(2);
     expect(await prisma.invitation.count()).toBe(2);
   });

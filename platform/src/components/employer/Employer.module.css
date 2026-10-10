@@ -32,6 +32,7 @@
 .status { font-family: var(--mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em; }
 .contacts { display: grid; gap: 4px; padding: 12px; background: var(--surface-quote); font-size: var(--fs); overflow-wrap: anywhere; }
 .inviteBox { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.salaryRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
 .tableWrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: var(--fs); }
 .table th, .table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }

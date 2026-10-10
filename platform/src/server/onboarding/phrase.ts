@@ -75,6 +75,8 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
       return 'Офис или гибрид - понял.';
     case 'salary':
       return 'Почти закончили. Компании приходят сразу с вилкой - укажи, на что рассчитываешь.';
+    case 'candidateContact':
+      return 'Когда примешь приглашение, компании нужно будет как-то тебе написать.';
     case 'fspParticipation':
       return 'Последний вопрос.';
     case 'companyName':

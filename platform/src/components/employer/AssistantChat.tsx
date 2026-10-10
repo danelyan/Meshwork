@@ -236,7 +236,7 @@ function EventRow({ item }: { item: AgentItem<EmployerAgentEvent> }) {
             {b.items.length > 0 && (
               <ul className={styles.list}>
                 {b.items.map((c) => (
-                  <AssistantCandidateCard key={c.candidateId} c={c} vacancyId={b.vacancy?.id ?? null} defaultSalary={b.vacancy?.salaryFrom} />
+                  <AssistantCandidateCard key={c.candidateId} c={c} vacancyId={b.vacancy?.id ?? null} defaultSalary={b.vacancy ? { from: b.vacancy.salaryFrom, to: b.vacancy.salaryTo } : undefined} />
                 ))}
               </ul>
             )}
@@ -268,7 +268,8 @@ function InvitationDraftRow({ draft }: { draft: InvitationDraft }) {
             candidateId={draft.candidateId}
             candidateName={draft.alias}
             vacancyId={draft.vacancyId}
-            defaultSalary={draft.salaryOffer ?? undefined}
+            defaultSalaryFrom={draft.salaryFrom ?? undefined}
+            defaultSalaryTo={draft.salaryTo ?? undefined}
             initialMessage={draft.message}
             defaultOpen
           />

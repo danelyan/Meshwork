@@ -22,6 +22,7 @@ const DEMO_CANDIDATES = [
   {
     id: 'demo-backend-strong',
     email: 'demo.backend@example.test',
+    contact: 'd.ryabinin@example.com',
     name: 'Демо: Дмитрий Рябинин (backend, с ФСП)',
     specialization: 'backend' as const,
     fspState: 'linked' as const,
@@ -29,6 +30,7 @@ const DEMO_CANDIDATES = [
   {
     id: 'demo-frontend-mid',
     email: 'demo.frontend@example.test',
+    contact: 'yu.vlasova@example.com',
     name: 'Демо: Юлия Власова (frontend, без ФСП)',
     specialization: 'frontend' as const,
     fspState: 'no_achievements' as const,
@@ -36,6 +38,7 @@ const DEMO_CANDIDATES = [
   {
     id: 'demo-injection',
     email: 'demo.injection@example.test',
+    contact: 'm.lisitsyn@example.com',
     name: 'Демо: Матвей Лисицын (резюме со скрытым текстом)',
     specialization: 'backend' as const,
     fspState: 'not_linked' as const,
@@ -46,7 +49,7 @@ async function main() {
   for (const c of DEMO_CANDIDATES) {
     await prisma.candidate.upsert({
       where: { id: c.id },
-      update: { name: c.name, email: c.email, specialization: c.specialization, fspState: c.fspState, isDemo: true },
+      update: { name: c.name, email: c.email, contact: c.contact, specialization: c.specialization, fspState: c.fspState, isDemo: true },
       create: { ...c, isDemo: true, consentAt: new Date() },
     });
   }

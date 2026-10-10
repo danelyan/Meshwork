@@ -291,6 +291,9 @@ async function apply(l: Loaded, step: StepDef, value: unknown): Promise<boolean>
       await upsertProfile(candidateIdOf(l), { salaryMin: r.from, salaryExpected: r.to });
       return false;
     }
+    case 'candidateContact':
+      await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { contact: value as string } });
+      return false;
     case 'fspParticipation':
       await upsertProfile(candidateIdOf(l), { fspParticipation: value as 'prize' | 'participant' | 'none' });
       return false;

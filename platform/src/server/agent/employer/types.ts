@@ -40,7 +40,7 @@ export type AssistantCandidateView = AssistantCandidate & { name?: string };
 
 export interface CandidatesBlock {
   /** null — поиск по всей базе. */
-  vacancy: { id: string; title: string; salaryFrom: number } | null;
+  vacancy: { id: string; title: string; salaryFrom: number; salaryTo: number } | null;
   total: number;
   items: AssistantCandidate[];
 }
@@ -52,7 +52,9 @@ export interface InvitationDraft {
   alias: string;
   vacancyId: string | null;
   vacancyTitle: string | null;
-  salaryOffer: number | null;
+  /** Вилка, ₽ в месяц; null — нет потребности и не указана. */
+  salaryFrom: number | null;
+  salaryTo: number | null;
   message: string;
   limit: { sent: number; limit: number; left: number };
   /** Отправить нельзя: лимит или уже есть открытое приглашение. */

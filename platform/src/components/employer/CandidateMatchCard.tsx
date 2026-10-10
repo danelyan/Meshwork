@@ -6,12 +6,12 @@ import { Meter, Panel, Tag } from '../ui';
 
 import styles from './Employer.module.css';
 import { InviteForm } from './InviteForm';
-import { INVITATION_STATUS_LABEL, SOURCE_TYPE_LABEL } from './labels';
+import { INVITATION_STATUS_LABEL, NO_CANDIDATE_CONTACT, SOURCE_TYPE_LABEL } from './labels';
 
 export interface CandidateMatchCardProps {
   item: MatchItem;
   vacancyId: string | null;
-  defaultSalary?: number;
+  defaultSalary?: { from: number; to: number };
 }
 
 /** Карточка кандидата в подборке: публичная часть (R-E-07) + обоснование (R-M-03) + приглашение. */
@@ -81,7 +81,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
         <div className={styles.contacts}>
           <span>Приглашение принято. Контакты:</span>
           <span>{c.contacts.name}</span>
-          <span>{c.contacts.email ?? 'почта не указана'}</span>
+          <span>{c.contacts.contact ?? NO_CANDIDATE_CONTACT}</span>
         </div>
       ) : (
         <p className={styles.meta}>Имя и контакты откроются, когда кандидат примет приглашение.</p>
@@ -91,7 +91,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary }: Candidate
           Приглашение: <span className={styles.status}>{INVITATION_STATUS_LABEL[item.invitation!.status]}</span>
         </p>
       ) : (
-        !c.contacts && <InviteForm candidateId={c.id} candidateName={c.displayName} vacancyId={vacancyId} defaultSalary={defaultSalary} />
+        !c.contacts && <InviteForm candidateId={c.id} candidateName={c.displayName} vacancyId={vacancyId} defaultSalaryFrom={defaultSalary?.from} defaultSalaryTo={defaultSalary?.to} />
       )}
     </Panel>
   );

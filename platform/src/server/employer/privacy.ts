@@ -44,14 +44,20 @@ export interface CandidateCard {
   category: { specialization: Specialization; grade: Grade; label: string } | null;
   fsp: { state: FspState; hasAchievements: boolean };
   claims: PublicClaim[];
-  /** null — контакты скрыты (приглашение не принято). */
-  contacts: { name: string; email: string | null } | null;
+  /**
+   * null — контакты скрыты (приглашение не принято). После accepted: `contact` — способ связи
+   * кандидата (Candidate.contact), иначе почта аккаунта; null — связаться не через что
+   * (интерфейс пишет NO_CANDIDATE_CONTACT из components/employer/labels.ts, а не пустую строку).
+   */
+  contacts: { name: string; contact: string | null } | null;
 }
 
 export interface CardSource {
   id: string;
   name: string;
   email: string;
+  /** Candidate.contact (Q-35). */
+  contact: string | null;
   specialization: Specialization | null;
   fspState: FspState;
   category: { specialization: Specialization; grade: Grade } | null;
@@ -68,6 +74,11 @@ export function contactEmail(email: string): string | null {
   return email.endsWith('.invalid') ? null : email;
 }
 
+/** Контакт кандидата для работодателя после accepted: указанный кандидатом, иначе почта аккаунта. */
+export function candidateContact(src: { contact: string | null; email: string }): string | null {
+  return src.contact?.trim() || contactEmail(src.email);
+}
+
 export function toCandidateCard(src: CardSource, contactsVisible: boolean): CandidateCard {
   const claims = [...src.claims].sort(
     (a, b) => levelRank(b.level) - levelRank(a.level) || a.catalogId.localeCompare(b.catalogId),
@@ -79,7 +90,7 @@ export function toCandidateCard(src: CardSource, contactsVisible: boolean): Cand
     category: src.category ? { ...src.category, label: categoryLabel(src.category) } : null,
     fsp: { state: src.fspState, hasAchievements: src.fspState === 'linked' },
     claims,
-    contacts: contactsVisible ? { name: src.name, email: contactEmail(src.email) } : null,
+    contacts: contactsVisible ? { name: src.name, contact: candidateContact(src) } : null,
   };
 }
 

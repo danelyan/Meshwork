@@ -26,14 +26,14 @@ const ctx = (): EmployerToolContext => ({
 describe('реестр помощника работодателя', () => {
   it('7 инструментов: 6 по решению владельца + ask_user', () => {
     expect([...EMPLOYER_TOOL_NAMES].sort()).toEqual(
-      ['ask_user', 'create_need_draft', 'draft_invitation', 'explain_candidate', 'get_employer_context', 'match_for_need', 'search_candidates', 'search_knowledge', 'web_search'].sort(),
+      ['ask_user', 'create_need_draft', 'draft_invitation', 'explain_candidate', 'get_employer_context', 'match_for_need', 'search_candidates'].sort(),
     );
   });
 
-  it('роли не смешиваются: общий объект — только search_knowledge (без контекста роли), общие имена — ask_user, база знаний, веб-поиск', () => {
+  it('роли не смешиваются: ни одного общего объекта, общее имя — только ask_user', () => {
     const shared = employerTools.filter((t) => (candidateTools as unknown[]).includes(t));
-    expect(shared.map((t) => t.name)).toEqual(['search_knowledge']);
-    expect(EMPLOYER_TOOL_NAMES.filter((n) => TOOL_NAMES.includes(n)).sort()).toEqual(['ask_user', 'search_knowledge', 'web_search']);
+    expect(shared).toEqual([]);
+    expect(EMPLOYER_TOOL_NAMES.filter((n) => TOOL_NAMES.includes(n))).toEqual(['ask_user']);
   });
 
   it('кандидатский инструмент работодателю недоступен: unknown_tool, хендлер не вызывается', async () => {
@@ -104,7 +104,7 @@ describe('граница приватности: карточка помощни
       category: { specialization: 'backend', grade: 'middle', label: 'Backend · Middle' },
       fsp: { state: 'linked', hasAchievements: true },
       claims: [{ catalogId: 'be.idempotency', statement: 'Идемпотентность', level: 'artifact', sourceType: 'github' }],
-      contacts: { name: 'Мария Секретова', email: 'maria@secret.example' },
+      contacts: { name: 'Мария Секретова', contact: 'maria@secret.example' },
     },
     invitation: { id: 'i1', status: 'accepted', vacancyId: 'v1' },
   };
@@ -133,7 +133,7 @@ describe('граница приватности: карточка помощни
 
 describe('пустая подборка', () => {
   it('под потребность: «никто не закрыл ни одного требования», совет расширить стек или снизить грейд', () => {
-    const text = describeBlock({ vacancy: { id: 'v', title: 'Backend платежей', salaryFrom: 1 }, total: 0, items: [] });
+    const text = describeBlock({ vacancy: { id: 'v', title: 'Backend платежей', salaryFrom: 1, salaryTo: 2 }, total: 0, items: [] });
     expect(text).toContain('никто не закрыл ни одного требования');
     expect(text).toMatch(/Расширь стек или снизь грейд/);
   });

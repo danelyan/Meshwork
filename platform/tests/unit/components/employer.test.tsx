@@ -60,7 +60,7 @@ const ITEM: MatchItem = {
 
 describe('кабинет работодателя: компоненты', () => {
   it('карточка: псевдоним, обоснование, контакты скрыты, кнопка приглашения', () => {
-    render(<ol><CandidateMatchCard item={ITEM} vacancyId="v1" defaultSalary={200000} /></ol>);
+    render(<ol><CandidateMatchCard item={ITEM} vacancyId="v1" defaultSalary={{ from: 200000, to: 260000 }} /></ol>);
     expect(screen.getByRole('heading', { name: /Кандидат #ABC123/ })).toBeDefined();
     expect(screen.getByRole('img', { name: 'Закрыто 2 из 3 требований' })).toBeDefined();
     const covered = screen.getByRole('list', { name: 'Закрытые требования' });
@@ -74,35 +74,44 @@ describe('кабинет работодателя: компоненты', () => 
   });
 
   it('карточка после принятия: контакты, без кнопки; открытое приглашение — статус', () => {
-    const accepted = { ...ITEM, candidate: { ...ITEM.candidate, displayName: 'Иван', contacts: { name: 'Иван', email: 'i@example.test' } } };
+    const accepted = { ...ITEM, candidate: { ...ITEM.candidate, displayName: 'Иван', contacts: { name: 'Иван', contact: '@ivan_dev' } } };
     render(<ol><CandidateMatchCard item={accepted} vacancyId="v1" /></ol>);
-    expect(screen.getByText('i@example.test')).toBeDefined();
+    expect(screen.getByText('@ivan_dev')).toBeDefined();
+    cleanup();
+    // контакта нет — явный текст, а не пустое место (Q-35)
+    render(<ol><CandidateMatchCard item={{ ...accepted, candidate: { ...accepted.candidate, contacts: { name: 'Иван', contact: null } } }} vacancyId="v1" /></ol>);
+    expect(screen.getByText('Кандидат не указал контакт')).toBeDefined();
     expect(screen.queryByRole('button', { name: /Пригласить/ })).toBeNull();
     cleanup();
     render(<ol><CandidateMatchCard item={{ ...ITEM, invitation: { id: 'i', status: 'viewed', vacancyId: 'v1' } }} vacancyId="v1" /></ol>);
     expect(screen.getByText('просмотрено')).toBeDefined();
   });
 
-  it('приглашение: без описания и зарплаты не уходит; с ними — POST с потребностью', async () => {
+  it('приглашение: без описания и вилки не уходит, «до» меньше «от» — ошибка; с ними — POST с потребностью', async () => {
     const fetchFn = stubFetch({ id: 'inv', status: 'sent' });
     render(<InviteForm candidateId="c1" candidateName="Кандидат #A" vacancyId="v1" />);
     fireEvent.click(screen.getByRole('button', { name: 'Пригласить: Кандидат #A' }));
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
     expect(await screen.findByText(/хотя бы в 10 символах/)).toBeDefined();
-    expect(screen.getByText('Укажи зарплату в рублях')).toBeDefined();
-    expect(fetchFn).not.toHaveBeenCalled();
+    expect(screen.getAllByText('Укажи сумму в рублях')).toHaveLength(2);
     fireEvent.change(screen.getByLabelText('Что предлагаешь'), { target: { value: 'Платёжная команда, Go' } });
-    fireEvent.change(screen.getByLabelText('Зарплата, ₽ в месяц'), { target: { value: '230 000' } });
+    fireEvent.change(screen.getByLabelText('Зарплата от, ₽ в месяц'), { target: { value: '260 000' } });
+    fireEvent.change(screen.getByLabelText('до, ₽ в месяц'), { target: { value: '230000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
+    expect(await screen.findByText('«До» не может быть меньше «от»')).toBeDefined();
+    expect(fetchFn).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Зарплата от, ₽ в месяц'), { target: { value: '230 000' } });
+    fireEvent.change(screen.getByLabelText('до, ₽ в месяц'), { target: { value: '260 000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
     expect(await screen.findByText(/Приглашение отправлено/)).toBeDefined();
     const [url, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/employer/invitations');
-    expect(JSON.parse(init.body as string)).toEqual({ candidateId: 'c1', vacancyId: 'v1', message: 'Платёжная команда, Go', salaryOffer: 230000 });
+    expect(JSON.parse(init.body as string)).toEqual({ candidateId: 'c1', vacancyId: 'v1', message: 'Платёжная команда, Go', salaryFrom: 230000, salaryTo: 260000 });
   });
 
   it('ошибка лимита показывается текстом сервера', async () => {
     stubFetch({ error: { code: 'rate_limited', message: 'Лимит: не больше 20 приглашений от компании за сутки' } }, 429);
-    render(<InviteForm candidateId="c1" candidateName="К" vacancyId={null} defaultSalary={100000} />);
+    render(<InviteForm candidateId="c1" candidateName="К" vacancyId={null} defaultSalaryFrom={100000} defaultSalaryTo={150000} />);
     fireEvent.click(screen.getByRole('button', { name: 'Пригласить: К' }));
     fireEvent.change(screen.getByLabelText('Что предлагаешь'), { target: { value: 'Платёжная команда, Go' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить приглашение' }));
@@ -150,11 +159,12 @@ describe('входящие приглашения кандидата', () => {
   const INV: CandidateInvitationView = {
     id: 'i1',
     status: 'viewed',
-    salaryOffer: 230000,
+    salaryFrom: 230000,
+    salaryTo: 260000,
     message: 'Платёжная команда',
     createdAt: '2026-10-09T08:00:00.000Z',
     respondedAt: null,
-    company: { name: 'Северный Поток', description: null },
+    company: { name: 'Северный Поток', description: null, contact: '@northstream_hr' },
     vacancy: { title: 'Backend платежей', specialization: 'backend', grade: 'middle', salaryFrom: 200000, salaryTo: 280000, teamDescription: 'Переводы', stack: ['Go'] },
   };
 
@@ -163,14 +173,22 @@ describe('входящие приглашения кандидата', () => {
     expect(screen.getByRole('status').textContent).toMatch(/Приглашений пока нет/);
   });
 
-  it('вакансия, зарплата; принять — POST и статус «принято»', async () => {
+  it('до принятия видны компания, описание, вилка и способ связи; принять — POST и статус «принято»', async () => {
     const fetchFn = stubFetch({ id: 'i1', status: 'accepted' });
     render(<IncomingInvitations invitations={[INV]} />);
     expect(screen.getByRole('heading', { name: 'Backend платежей' })).toBeDefined();
-    expect(screen.getByText('230 000 ₽ в месяц')).toBeDefined();
+    expect(screen.getByText('Северный Поток')).toBeDefined();
+    expect(screen.getByText('Платёжная команда')).toBeDefined();
+    expect(screen.getByText('230 000 - 260 000 ₽ в месяц')).toBeDefined();
+    expect(screen.getByText('Связь с компанией: @northstream_hr')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Принять' }));
     expect(await screen.findByText('принято')).toBeDefined();
     expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/invitations/i1');
     expect(screen.queryByRole('button', { name: 'Отклонить' })).toBeNull();
+  });
+
+  it('компания без способа связи — явный текст', () => {
+    render(<IncomingInvitations invitations={[{ ...INV, company: { ...INV.company, contact: null } }]} />);
+    expect(screen.getByText('Связь с компанией: Компания не указала способ связи')).toBeDefined();
   });
 });

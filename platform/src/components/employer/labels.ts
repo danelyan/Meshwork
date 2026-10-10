@@ -11,6 +11,11 @@ export const INVITATION_STATUS_LABEL: Record<InvitationStatus, string> = {
   declined: 'отклонено',
 };
 
+/** Работодателю: кандидат принял приглашение, но ни контакта, ни настоящей почты нет (Q-35). */
+export const NO_CANDIDATE_CONTACT = 'Кандидат не указал контакт';
+/** Кандидату: компания не указала способ связи. */
+export const NO_COMPANY_CONTACT = 'Компания не указала способ связи';
+
 export function salaryRange(from: number, to: number): string {
   return `${from.toLocaleString('ru-RU')} - ${to.toLocaleString('ru-RU')} ₽`;
 }

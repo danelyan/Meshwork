@@ -471,13 +471,13 @@ describe('лента внутри /consultant (онбординг и консу�
     expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'role', value: 'employer' });
     cleanup();
     render(<OnboardingChat variant="consultant" initial={makeView({ id: 'companyName', kind: 'text', question: 'Как называется компания?' }, { role: 'employer', scenario: 'employer' })} consentText={[]} />);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Регистрация работодателя');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Помощник по подбору');
   });
 
   it('заголовок консультанта, без своей шапки сайта и второго main; «Настроить позже» — пауза: лента обновляется без перезагрузки', async () => {
     const fetchFn = stubFetch({ next: '/consultant' });
     render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} />);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Регистрация кандидата');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Карьерный консультант');
     expect(document.querySelector('main')).toBeNull();
     expect(question()).toBe('В каком направлении работаешь?');
     fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));

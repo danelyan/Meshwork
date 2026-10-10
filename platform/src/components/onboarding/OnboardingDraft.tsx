@@ -21,16 +21,8 @@ export function OnboardingDraft({ view, busy, onEdit }: { view: OnboardingView; 
   const answer = (id: string) => view.history.find((row) => row.stepId === id);
   const filled = view.history.filter((row) => row.answer !== null).length;
   return <section className={styles.draft}>
-    <div className={styles.tabs} role="group" aria-label="Вид черновика">
-      <button type="button" aria-pressed={!company} onClick={() => setCompany(false)}>Как вижу я</button>
-      <button type="button" aria-pressed={company} onClick={() => setCompany(true)}>{employer ? 'Как видит кандидат' : 'Как видит компания'}</button>
-    </div>
-    {company ? <div className={styles.companyCard}>
-      <small>ПРЕДПРОСМОТР · {employer ? 'КОМПАНИЯ' : 'АНОНИМНАЯ КАРТОЧКА'}</small>
-      <div className={styles.identity}><span className={styles.silhouette} aria-hidden="true">◇</span><div><h2>{employer ? answer('companyName')?.answer || 'Компания' : 'Кандидат'}</h2><p>{answer(employer ? 'needSpecialization' : 'specialization')?.answer || 'Направление ещё не выбрано'}</p></div></div>
-      <div className={styles.previewRows}>{fields.filter(([id]) => employer || publicFields.has(id!)).map(([id, label]) => <div key={id}><small>{label}</small><p>{answer(id!)?.answer || 'пока пусто'}</p></div>)}</div>
-      <p className={styles.notice}>{employer ? 'Кандидат увидит информацию о компании и зарплатную вилку в приглашении.' : 'Имя и контакт откроются компании после принятия её приглашения. Предполагаемый грейд не является подтверждённым результатом оценки.'}</p>
-    </div> : <div className={styles.card}>
+    <ViewTabs employer={employer} company={company} onChange={setCompany} />
+    {company ? <CompanyPreview employer={employer} answer={(id) => answer(id)?.answer} /> : <div className={styles.card}>
       <header><small>ЧТО Я СОХРАНЯЮ</small><h2>Черновик профиля</h2><p>Ответы сохраняются по ходу разговора. Нажми на заполненное поле, чтобы изменить.</p><span>{filled} ответов сохранено</span></header>
       <div className={styles.rows}>{fields.map(([id, label]) => {
         const row = answer(id!);
@@ -41,4 +33,23 @@ export function OnboardingDraft({ view, busy, onEdit }: { view: OnboardingView; 
       <footer><a href={view.consent.docUrl}>Согласие на обработку данных</a><span>Версия {view.consent.version}</span></footer>
     </div>}
   </section>;
+}
+
+/** «Как вижу я / Как видит компания» — общий переключатель черновика и карточки «Что я о тебе знаю». */
+export function ViewTabs({ employer, company, onChange }: { employer: boolean; company: boolean; onChange: (company: boolean) => void }) {
+  return <div className={styles.tabs} role="group" aria-label="Вид черновика">
+    <button type="button" aria-pressed={!company} onClick={() => onChange(false)}>Как вижу я</button>
+    <button type="button" aria-pressed={company} onClick={() => onChange(true)}>{employer ? 'Как видит кандидат' : 'Как видит компания'}</button>
+  </div>;
+}
+
+/** Предпросмотр для другой стороны: кандидату — анонимная карточка (только публичные поля), работодателю — компания. */
+export function CompanyPreview({ employer, answer }: { employer: boolean; answer: (id: string) => string | null | undefined }) {
+  const fields = employer ? employerFields : candidateFields;
+  return <div className={`${styles.draft} ${styles.companyCard}`}>
+    <small>ПРЕДПРОСМОТР · {employer ? 'КОМПАНИЯ' : 'АНОНИМНАЯ КАРТОЧКА'}</small>
+    <div className={styles.identity}><span className={styles.silhouette} aria-hidden="true">◇</span><div><h2>{employer ? answer('companyName') || 'Компания' : 'Кандидат'}</h2><p>{answer(employer ? 'needSpecialization' : 'specialization') || 'Направление ещё не выбрано'}</p></div></div>
+    <div className={styles.previewRows}>{fields.filter(([id]) => employer || publicFields.has(id!)).map(([id, label]) => <div key={id}><small>{label}</small><p>{answer(id!) || 'пока пусто'}</p></div>)}</div>
+    <p className={styles.notice}>{employer ? 'Кандидат увидит информацию о компании и зарплатную вилку в приглашении.' : 'Имя и контакт откроются компании после принятия её приглашения. Предполагаемый грейд не является подтверждённым результатом оценки.'}</p>
+  </div>;
 }

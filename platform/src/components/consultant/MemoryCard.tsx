@@ -5,6 +5,7 @@ import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 
 import { onboardingAct, readError, request } from '@/lib/api';
 import type { KnownFact, SceneAsideData } from '@/server/consultant/aside';
 
+import { CompanyPreview, ViewTabs, fieldVisibility } from '../onboarding/OnboardingDraft';
 import { useAsideRefresh } from './aside-refresh';
 import aside from './SceneAside.module.css';
 import styles from './MemoryCard.module.css';
@@ -75,6 +76,7 @@ export function MemoryCard({ facts, role, pending, limit }: { facts: KnownFact[]
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [company, setCompany] = useState(false);
   const [removed, setRemoved] = useState<Set<string>>(() => new Set());
   const [fresh, setFresh] = useState<Set<string>>(() => new Set());
   const seen = useRef<Set<string> | null>(null);
@@ -135,14 +137,17 @@ export function MemoryCard({ facts, role, pending, limit }: { facts: KnownFact[]
         </button>
       </h2>
       <div id="aside-known-body" className={aside.cardBody}>
-        {visible.length === 0 && !adding ? (
+        <ViewTabs employer={role === 'employer'} company={company} onChange={setCompany} />
+        {company ? (
+          <CompanyPreview employer={role === 'employer'} answer={(id) => visible.find((f) => f.source === 'onboarding' && f.stepId === id)?.value} />
+        ) : visible.length === 0 && !adding ? (
           <p className={aside.muted}>Пока ничего. Отвечай в чате слева - ответы и то, что я запомню из разговора, появятся здесь, и я буду на них опираться.</p>
         ) : (
           <ul className={styles.list}>
             {visible.map((f) => (
               <li key={f.id} className={styles.item} data-source={f.source} data-new={fresh.has(f.id) || undefined} data-testid={`memory-${f.id}`}>
                 <span className={styles.source}>
-                  {f.source === 'onboarding' ? `${SOURCE_LABEL.onboarding} · ${f.label}` : SOURCE_LABEL[f.source]}
+                  {f.source === 'onboarding' ? `${SOURCE_LABEL.onboarding} · ${f.label}${role === 'candidate' && f.stepId ? ` · ${fieldVisibility(f.stepId)}` : ''}` : SOURCE_LABEL[f.source]}
                   {fresh.has(f.id) && <span className={styles.badge}>новое</span>}
                 </span>
                 {editing === f.id ? (
@@ -193,7 +198,7 @@ export function MemoryCard({ facts, role, pending, limit }: { facts: KnownFact[]
             ))}
           </ul>
         )}
-        {adding ? (
+        {company ? null : adding ? (
           <Editor
             initial=""
             label="Новая заметка"

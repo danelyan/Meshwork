@@ -30,11 +30,29 @@ describe('MemoryCard', () => {
   it('shows each item with its source and the count in the title', () => {
     render(<MemoryCard facts={facts} role="candidate" limit={20} />);
     expect(screen.getByRole('button', { name: /Что я о тебе знаю · 3/ })).toBeTruthy();
-    expect(screen.getByText('знакомство · Цель')).toBeTruthy();
+    expect(screen.getByText('знакомство · Цель · только тебе')).toBeTruthy();
     expect(screen.getByText('из чата')).toBeTruthy();
     expect(screen.getByText('добавлено вручную')).toBeTruthy();
     // у ответа знакомства нет «удалить»
     expect(screen.queryByRole('button', { name: 'Удалить: Ищу работу' })).toBeNull();
+  });
+
+  it('«Как видит компания»: превью анонимной карточки — публичные ответы видны, личные нет', () => {
+    const withPublic: KnownFact[] = [
+      ...facts,
+      { id: 'step:specialization', source: 'onboarding', stepId: 'specialization', label: 'Направление', value: 'Backend', editable: true },
+      { id: 'step:candidateContact', source: 'onboarding', stepId: 'candidateContact', label: 'Контакт', value: 'me@example.com', editable: true },
+    ];
+    render(<MemoryCard facts={withPublic} role="candidate" limit={20} />);
+    expect(screen.getByText('me@example.com')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Как видит компания' }));
+    expect(screen.getByText(/АНОНИМНАЯ КАРТОЧКА/)).toBeTruthy();
+    expect(screen.getAllByText('Backend').length).toBeGreaterThan(0);
+    expect(screen.queryByText('me@example.com')).toBeNull();
+    expect(screen.queryByText('Ищу работу')).toBeNull();
+    expect(screen.queryByRole('button', { name: '+ добавить' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Как вижу я' }));
+    expect(screen.getByText('me@example.com')).toBeTruthy();
   });
 
   it('edits a memory item inline with PATCH', async () => {

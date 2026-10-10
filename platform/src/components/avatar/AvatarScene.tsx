@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { AsideProvider } from '../consultant/aside-refresh';
 import { SceneAside } from '../consultant/SceneAside';
@@ -15,7 +15,6 @@ import type { CallKind } from '@/server/call/types';
 
 import { CallProvider, useCallMode } from '../call/CallContext';
 import { HeadView } from './HeadView';
-import { SceneSlotsContext } from './SceneSlots';
 import { useSceneTheme } from './scene-theme';
 import { MuteToggle, StateChip, StopButton, Subtitles } from './Speaking';
 import { CompanionVoiceProvider } from './voice';
@@ -109,20 +108,13 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
 
 /** Сцена «звонок + чат слева»; открыт созвон — сцена становится панелью звонка, лента неактивна. */
 function SideScene({ label, aside, children }: { label: string; aside?: SceneAsideData; children: ReactNode }) {
-  const [onboarding, setOnboarding] = useState(false);
-  const [header, setHeader] = useState<HTMLElement | null>(null);
-  const [draft, setDraft] = useState<HTMLElement | null>(null);
-  const slots = useMemo(() => ({ header, draft, setOnboarding }), [header, draft]);
   const call = useCallMode();
   const inCall = Boolean(call?.open);
   // светлая по умолчанию; созвон всегда на тёмной сцене (tokens.css, data-scene-theme)
   const theme = useSceneTheme();
   const dark = theme === 'dark' || inCall;
   return (
-    <SceneSlotsContext.Provider value={slots}>
-    <div className={`${styles.sideScene}${aside && !onboarding ? ` ${styles.withAside}` : ''}${onboarding ? ` ${styles.onboardingScene}` : ''}`} data-testid="scene-call-side" data-onboarding={onboarding || undefined} data-call={inCall || undefined} data-scene-theme={theme}>
-      <div className={styles.sceneHeader} ref={setHeader} hidden={!onboarding} />
-      <div className={styles.sideComposite}>
+    <div className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-call={inCall || undefined} data-scene-theme={theme}>
       <section className={styles.sideStage} aria-label={label}>
         {inCall ? (
           <CallPanel />
@@ -143,14 +135,11 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
           </>
         )}
       </section>
-      <aside className={styles.draftSlot} ref={setDraft} hidden={!onboarding} aria-label="Черновик профиля" />
-      </div>
-      {aside && !onboarding && <SceneAside data={aside} className={styles.sideAside} />}
+      {aside && <SceneAside data={aside} className={styles.sideAside} />}
       <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll data-theme={dark ? 'feed-dark' : undefined} inert={inCall || undefined} aria-hidden={inCall || undefined}>
         {inCall && <p className={styles.callPause}>Идёт созвон - чат на паузе</p>}
         {children}
       </div>
     </div>
-    </SceneSlotsContext.Provider>
   );
 }

@@ -12,12 +12,16 @@ vi.mock('next/navigation', () => ({
 }));
 const page = vi.hoisted(() => ({ session: null as unknown }));
 vi.mock('@/server/auth/page', () => ({ getPageSession: async () => page.session }));
-vi.mock('@/lib/api', () => ({ demoLogout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }) }));
+vi.mock('@/lib/api', () => ({ demoLogout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
+// Меню роли (ADR 0004) читает БД — в тестах шапки подставляем готовое.
+const menu = vi.hoisted(() => ({ value: null as unknown }));
+vi.mock('@/server/auth/role-switch', () => ({ roleMenuFor: async () => menu.value }));
 
 const principal = (role: SessionPrincipal['role']): SessionPrincipal => ({ userId: 'u1', role, candidateId: null, employerProfileId: null });
 
-async function renderHeader(session: SessionPrincipal | null, pathname: string) {
+async function renderHeader(session: SessionPrincipal | null, pathname: string, roleMenu: unknown = null) {
   page.session = session;
+  menu.value = roleMenu;
   nav.pathname = pathname;
   render(await SiteHeader());
   return within(screen.getByRole('banner'));
@@ -61,6 +65,28 @@ describe('SiteHeader', () => {
     h = await renderHeader(principal('employer'), '/employer/search');
     expect(h.getByRole('link', { name: 'Потребности' }).getAttribute('aria-current')).toBeNull();
     expect(h.getByRole('link', { name: 'Поиск по базе' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it('метка активной роли и переключатель (ADR 0004)', async () => {
+    let h = await renderHeader(principal('employer'), '/employer', {
+      role: 'employer',
+      companyName: 'ООО Ромашка',
+      other: 'candidate',
+      otherExists: true,
+      canCreateOther: false,
+    });
+    expect(h.getByText('Работодатель · ООО Ромашка')).toBeDefined();
+    expect(h.getByRole('button', { name: 'Режим кандидата' })).toBeDefined();
+    cleanup();
+    h = await renderHeader(principal('candidate'), '/profile', {
+      role: 'candidate',
+      companyName: null,
+      other: 'employer',
+      otherExists: false,
+      canCreateOther: true,
+    });
+    expect(h.getByText('Кандидат')).toBeDefined();
+    expect(h.getByRole('button', { name: 'Стать работодателем' })).toBeDefined();
   });
 
   it('аккаунт без роли (онбординг не пройден): без ссылок роли, но с «Выйти»', async () => {

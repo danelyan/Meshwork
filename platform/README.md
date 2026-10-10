@@ -84,9 +84,8 @@ Integration-тесты: перед прогоном `globalSetup` применя
 `LLM_PROVIDER=yandex` — `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`; при
 `openai-chat` — `OPENAI_CHAT_BASE_URL`, `OPENAI_CHAT_API_KEY`, `OPENAI_CHAT_MODEL`.
 
-Пароль на стенд: `SITE_PASSWORD` (или его SHA-256 в `SITE_PASSWORD_SHA256`, на стенде — в
-`docker-compose.prod.yml`) задан → публичный адрес пускает только после ввода пароля на
-`/site-access` (без логина; кука `site_access` на 30 дней, подписана `SESSION_SECRET`, смена пароля сбрасывает её у всех).
+Пароль на стенд: `SITE_PASSWORD` задан → публичный адрес пускает только после ввода пароля на
+`/site-access` (без логина; кука `site_access` на 30 дней, смена пароля сбрасывает её у всех).
 Проверка — `src/middleware.ts` + `src/server/site-access.ts`. Не закрываются localhost/127.0.0.1/[::1],
 `/api/health` (CI, healthcheck) и статика; API без куки отвечает 401 `site_locked`. Пусто — стенд открыт.
 
@@ -132,6 +131,11 @@ localhost/127.0.0.1/[::1], `DEVTOOLS` не `false`); письмо в этом р
   `POST /api/auth/password/forgot` (всегда 200) и `POST /api/auth/password/reset`. Логика —
   `src/server/auth/email.ts`, пароль — scrypt (`password.ts`), коды — `codes.ts`,
   лимиты — `rate-limit.ts` (в памяти процесса).
+- Переключение роли (ADR 0004): `POST /api/auth/role/switch` `{ role }` — у учётки может быть и профиль
+  кандидата, и профиль работодателя; активна одна роль (`User.role`), кука `cid` несёт id профиля только
+  активной роли. Нет профиля — создаётся (работодателю нужна `companyName`), знакомство новой роли идёт в
+  ленте `/consultant`. Метка роли и переключатель — в шапке (`shell/RoleSwitch`). На общих демо-аккаунтах
+  из сида вторую роль не создать (403) — для показа берите «Новый пользователь» на `/demo`.
 - `/api/health` — 200 `{ ok, db, llm }`; 503, если БД недоступна.
 - `src/styles/tokens.css` — токены тёмной темы прототипа, JetBrains Mono из `public/assets/fonts`.
 

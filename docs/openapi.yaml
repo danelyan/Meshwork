@@ -2,7 +2,7 @@ openapi: "3.1.0"
 info:
   title: "ФСП Карьера - API платформы"
   version: "0.1.0"
-  description: "REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.\n\nВход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.\n\nВсе ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).\n\nСлужебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.\n\n### События SSE\n\nЗвонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).\n\nЭндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.\n\nВторой ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`."
+  description: "REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.\n\nВход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.\n\nВсе ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).\n\nСлужебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.\n\n### События SSE\n\nЭндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.\n\nВторой ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`."
 servers:
   -
     url: "/"
@@ -12,9 +12,6 @@ tags:
     name: auth
     description: "Вход, сессия, согласие на обработку ПДн, роль"
   -
-    name: call
-    description: "Звонок: сигналинг WebRTC (SDP/ICE) между кандидатом и работодателем"
-  -
     name: claims
     description: "Карточки утверждений кандидата: подтвердить, поправить, отклонить"
   -
@@ -23,9 +20,6 @@ tags:
   -
     name: defense
     description: "Защита утверждения: короткое интервью, повышающее уровень до «платформа»"
-  -
-    name: defense-room
-    description: "Защита проекта (ADR 0003, ступень 3): вопросы по коду, ходы, SSE звонка, итог слепого оценщика"
   -
     name: demo
     description: "Демо-вход и демо-резюме (только при DEMO_LOGIN)"
@@ -606,6 +600,96 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/auth/role/switch":
+    post:
+      operationId: postAuthRoleSwitch
+      tags:
+        - auth
+      summary: "Переключить активную роль (вторая роль на той же учётке)"
+      description: "ADR 0004. Профиль целевой роли есть — переключает; нет — создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль — идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.\n\nНужна сессия аккаунта любой роли (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              oneOf:
+                -
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      const: candidate
+                  required:
+                    - role
+                -
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      const: employer
+                    companyName:
+                      type: string
+                      minLength: 2
+                      maxLength: 120
+                  required:
+                    - role
+      responses:
+        "200":
+          description: "Роль активна; выставлена новая кука cid"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  next:
+                    type: string
+                    description: "Дом роли (путь интерфейса)"
+                  created:
+                    type: boolean
+                  changed:
+                    type: boolean
+                required:
+                  - role
+                  - next
+                  - created
+                  - changed
+        "400":
+          description: "Нет названия компании, когда профиль работодателя надо создать (`bad_request`), или тело не прошло схему (`validation_failed`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: "Нет входа (`unauthorized`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: "Старая демо-кука без аккаунта, общий демо-аккаунт без второй роли или запрос с чужого сайта (`forbidden`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Роль ещё не выбрана — сначала знакомство (`conflict`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "429":
+          description: "Слишком много переключений (`rate_limited`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/auth/stale":
     get:
       operationId: getAuthStale
@@ -820,43 +904,6 @@ paths:
             Location:
               schema:
                 type: string
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/call/{id}/signal":
-    post:
-      operationId: postCallIdSignal
-      tags:
-        - call
-      summary: "POST `{ to?, sdp?"
-      description: "POST `{ to?, sdp? , ice? }` — сигналинг WebRTC (ADR 0003): описание сессии или ICE-кандидат доставляется собеседнику через его SSE (`signal`). Работодатель — подключённый участник, адресат — кандидат; кандидат указывает `to: \"employer:<userId>\"`. Собеседник не на связи — 409 `peer_offline`.\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/SignalInput"
-      responses:
-        "200":
-          description: "POST `{ to?, sdp? , ice? }` — сигналинг WebRTC (ADR 0003): описание сессии или ICE-кандидат"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/claims/{id}/{action}":
@@ -1228,201 +1275,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/defense-room/{id}":
-    get:
-      operationId: getDefenseRoomId
-      tags:
-        - defense-room
-      summary: "GET — снимок защиты: транскрипт, участники, mute, прогресс, вердикт."
-      description: "GET — снимок защиты: транскрипт, участники, mute, прогресс, вердикт. Кандидату — своя сессия; работодателю — только после принятого приглашения (реплики других компаний скрыты). Иначе 404.\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "GET — снимок защиты: транскрипт, участники, mute, прогресс, вердикт. Кандидату — своя сессия;"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/defense-room/{id}/events":
-    get:
-      operationId: getDefenseRoomIdEvents
-      tags:
-        - defense-room
-      summary: "GET — SSE звонка защиты (EventSource), имена событий — как у лейна call: первым кадром `snapshot`,"
-      description: "GET — SSE звонка защиты (EventSource), имена событий — как у лейна call: первым кадром `snapshot`, дальше `utterance`, `ai_state`, `participant`, `mute`, `question`, `status`, `verdict`, `signal` (сигналы WebRTC — только адресату). Каждые 20 с — комментарий-keepalive. Доступ — как у GET снимка. Разрыв соединения клиентом — `request.signal` (docs Next.js: Route Handlers, streaming).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Поток событий SSE: кадры `data: <json>\\n\\n`, последним приходит `done`"
-          headers:
-            X-Conversation-Id:
-              schema:
-                type: string
-              description: "Идентификатор разговора"
-          content:
-            "text/event-stream":
-              schema:
-                type: string
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/defense-room/{id}/finish":
-    post:
-      operationId: postDefenseRoomIdFinish
-      tags:
-        - defense-room
-      summary: "POST — завершить защиту: слепой оценщик по рубрике A-02, три прогона, медиана → `verdictJson`"
-      description: "POST — завершить защиту: слепой оценщик по рубрике A-02, три прогона, медиана → `verdictJson` `{ scores, total, passed, flags, summary, … }`. Повторный вызов возвращает сохранённый вердикт; оценщик недоступен — 503, транскрипт сохранён, можно повторить.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "POST — завершить защиту: слепой оценщик по рубрике A-02, три прогона, медиана → `verdictJson`"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/defense-room/{id}/turn":
-    post:
-      operationId: postDefenseRoomIdTurn
-      tags:
-        - defense-room
-      summary: "POST `{ text }` — ответ кандидата (голос распознаётся заранее через /api/stt)."
-      description: "POST `{ text }` — ответ кандидата (голос распознаётся заранее через /api/stt). Ответ: `{ text, muted, done }` — реплика ИИ (null, если работодатель замьютил ИИ). Реплики уходят и в SSE. `done: true` — вопросы кончились, клиент вызывает finish. Второй ход параллельно — 409 busy.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/DefenseTurnInput"
-      responses:
-        "200":
-          description: "POST `{ text }` — ответ кандидата (голос распознаётся заранее через /api/stt). Ответ:"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/defense-room/pending":
-    get:
-      operationId: getDefenseRoomPending
-      tags:
-        - defense-room
-      summary: "GET — вход в защиту для кандидата: сабмиты проектов с последней защитой и вопросы работодателей в очереди."
-      description: "GET — вход в защиту для кандидата: сабмиты проектов с последней защитой и вопросы работодателей в очереди.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "GET — вход в защиту для кандидата: сабмиты проектов с последней защитой и вопросы работодателей в очереди."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/defense-room/start":
-    post:
-      operationId: postDefenseRoomStart
-      tags:
-        - defense-room
-      summary: "POST `{ mode: \"project\", projectSubmissionId }` | `{ mode: \"questions\" }` — начать защиту проекта"
-      description: "POST `{ mode: \"project\", projectSubmissionId }` | `{ mode: \"questions\" }` — начать защиту проекта (CallSession.kind = defense, ADR 0003 ступень 3) или мини-сессию ответов на вопросы работодателей. Читает репозиторий и готовит вопросы по коду (QLC) — до ~30 с. Активная сессия того же сабмита возвращается (`resumed: true`). Ответ: `{ sessionId, resumed, webrtc: { iceServers }, snapshot }`.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/DefenseStartInput"
-      responses:
-        "200":
-          description: "POST `{ mode: \"project\", projectSubmissionId }` | `{ mode: \"questions\" }` — начать защиту проекта"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "201":
-          description: "Создано. POST `{ mode: \"project\", projectSubmissionId }` | `{ mode: \"questions\" }` — начать защиту проекта"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/defense/{sessionId}":
@@ -1818,172 +1670,93 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/employer/call/{id}/join":
-    post:
-      operationId: postEmployerCallIdJoin
-      tags:
-        - employer
-      summary: "POST — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404)."
-      description: "POST — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404). В эфире одна компания: если подключена другая — 409 `room_busy`. Ответ: `{ participantId, webrtc, snapshot }`.\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "POST — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404)."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/employer/call/{id}/leave":
-    post:
-      operationId: postEmployerCallIdLeave
-      tags:
-        - employer
-      summary: "POST — выйти из защиты."
-      description: "POST — выйти из защиты. Если работодатель держал ИИ замьюченным — ИИ снова говорит.\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "POST — выйти из защиты. Если работодатель держал ИИ замьюченным — ИИ снова говорит."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/employer/call/{id}/mute-ai":
-    post:
-      operationId: postEmployerCallIdMuteAi
-      tags:
-        - employer
-      summary: "POST `{ muted }` — «ИИ молчит / говорит»: пока замьючен, ИИ не вступает после ответов кандидата."
-      description: "POST `{ muted }` — «ИИ молчит / говорит»: пока замьючен, ИИ не вступает после ответов кандидата. Размьют: если последним говорил кандидат, ИИ продолжает по плану (`aiText`). Нужно подключиться (join).\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/MuteAiInput"
-      responses:
-        "200":
-          description: "POST `{ muted }` — «ИИ молчит / говорит»: пока замьючен, ИИ не вступает после ответов кандидата."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/employer/call/{id}/say":
-    post:
-      operationId: postEmployerCallIdSay
-      tags:
-        - employer
-      summary: "POST `{ text }` — реплика работодателя в живой защите: попадает в транскрипт (role employer) и"
-      description: "POST `{ text }` — реплика работодателя в живой защите: попадает в транскрипт (role employer) и озвучивается кандидату вторым голосом TTS, если P2P-аудио не поднялось. Нужно подключиться (join).\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/SayInput"
-      responses:
-        "201":
-          description: "Создано. POST `{ text }` — реплика работодателя в живой защите: попадает в транскрипт (role employer) и"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/employer/calls":
+  "/api/employer/company":
     get:
-      operationId: getEmployerCalls
+      operationId: getEmployerCompany
       tags:
         - employer
-      summary: "GET — защиты проектов кандидатов, принявших приглашение компании: идущие сейчас сверху, с оценкой и флагами."
-      description: "GET — защиты проектов кандидатов, принявших приглашение компании: идущие сейчас сверху, с оценкой и флагами.\n\nНужна сессия работодателя (кука cid)."
+      summary: "Профиль своей компании"
+      description: "профиль своей компании (R-E-01).\n\nНужна сессия работодателя (кука cid)."
       security:
         -
           cookieAuth: []
       responses:
         "200":
-          description: "GET — защиты проектов кандидатов, принявших приглашение компании: идущие сейчас сверху, с оценкой и флагами."
+          description: "Название, описание, отрасль, ИНН и контакт компании"
           content:
             "application/json":
               schema:
                 type: object
-                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  industry:
+                    type: string
+                  inn:
+                    type: string
+                  contact:
+                    type: string
+                required:
+                  - id
+                  - name
+                  - description
+                  - industry
+                  - inn
+                  - contact
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      operationId: patchEmployerCompany
+      tags:
+        - employer
+      summary: "Изменить профиль своей компании"
+      description: "Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/CompanyPatch"
+      responses:
+        "200":
+          description: "Профиль компании после правки"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  industry:
+                    type: string
+                  inn:
+                    type: string
+                  contact:
+                    type: string
+                required:
+                  - id
+                  - name
+                  - description
+                  - industry
+                  - inn
+                  - contact
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2081,73 +1854,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/employer/questions":
-    get:
-      operationId: getEmployerQuestions
-      tags:
-        - employer
-      summary: "GET `?candidateId=` — вопросы компании кандидату: статус (queued → asked → answered) и ответ из транскрипта."
-      description: "GET `?candidateId=` — вопросы компании кандидату: статус (queued → asked → answered) и ответ из транскрипта.\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: candidateId
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 1
-            maxLength: 64
-            pattern: "^[A-Za-z0-9_-]+$"
-      responses:
-        "200":
-          description: "GET `?candidateId=` — вопросы компании кандидату: статус (queued → asked → answered) и ответ из транскрипта."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postEmployerQuestions
-      tags:
-        - employer
-      summary: "POST `{ candidateId, text, projectSubmissionId?"
-      description: "POST `{ candidateId, text, projectSubmissionId? }` — вопрос кандидату вне сессии: копится в очереди и задаётся при следующем входе кандидата в защиту (если он сейчас на защите — в конце текущей). Только после принятого приглашения; не больше 10 вопросов в очереди одному кандидату.\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/EmployerQuestionInput"
-      responses:
-        "201":
-          description: "Создано. POST `{ candidateId, text, projectSubmissionId? }` — вопрос кандидату вне сессии: копится в очереди и"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/search":
@@ -3448,11 +3154,6 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 4000
-                voice:
-                  type: string
-                  enum:
-                    - companion
-                    - employer
               required:
                 - text
       responses:
@@ -3667,6 +3368,36 @@ components:
         - status
         - confirmedAt
       description: "Утверждение кандидата с уровнем доказанности"
+    CompanyPatch:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        description:
+          anyOf:
+            -
+              type: string
+              maxLength: 600
+            -
+              type: "null"
+        industry:
+          anyOf:
+            -
+              type: string
+              maxLength: 80
+            -
+              type: "null"
+        inn:
+          type:
+            - string
+            - "null"
+        contact:
+          type:
+            - string
+            - "null"
+      additionalProperties: false
     ConsultantEvent:
       description: "Кадр SSE хода консультанта (`type` — различитель)"
       oneOf:
@@ -3817,38 +3548,6 @@ components:
           description: "Рекомендации для карточек в чате"
       discriminator:
         propertyName: type
-    DefenseStartInput:
-      oneOf:
-        -
-          type: object
-          properties:
-            mode:
-              type: string
-              const: project
-            projectSubmissionId:
-              type: string
-              minLength: 1
-              maxLength: 64
-              pattern: "^[A-Za-z0-9_-]+$"
-          required:
-            - mode
-            - projectSubmissionId
-        -
-          type: object
-          properties:
-            mode:
-              type: string
-              const: questions
-          required:
-            - mode
-    DefenseTurnInput:
-      type: object
-      properties:
-        text:
-          type: string
-          maxLength: 4000
-      required:
-        - text
     EmployerEvent:
       description: "Кадр SSE хода помощника работодателя (`type` — различитель). Имя кандидата добавляется карточке только после принятия приглашения"
       oneOf:
@@ -4001,26 +3700,6 @@ components:
           description: "Черновик потребности; подтверждает человек"
       discriminator:
         propertyName: type
-    EmployerQuestionInput:
-      type: object
-      properties:
-        candidateId:
-          type: string
-          minLength: 1
-          maxLength: 64
-          pattern: "^[A-Za-z0-9_-]+$"
-        text:
-          type: string
-          minLength: 5
-          maxLength: 1000
-        projectSubmissionId:
-          type: string
-          minLength: 1
-          maxLength: 64
-          pattern: "^[A-Za-z0-9_-]+$"
-      required:
-        - candidateId
-        - text
     ErrorBody:
       type: object
       properties:
@@ -4083,13 +3762,6 @@ components:
         - message
         - salaryFrom
         - salaryTo
-    MuteAiInput:
-      type: object
-      properties:
-        muted:
-          type: boolean
-      required:
-        - muted
     OnboardingView:
       type: object
       additionalProperties: true
@@ -4101,70 +3773,6 @@ components:
           type: boolean
       required:
         - hiddenFromEmployers
-    SayInput:
-      type: object
-      properties:
-        text:
-          type: string
-          minLength: 1
-          maxLength: 1000
-      required:
-        - text
-    SignalInput:
-      type: object
-      properties:
-        to:
-          type: string
-          maxLength: 80
-        sdp:
-          type: object
-          properties:
-            type:
-              type: string
-              enum:
-                - offer
-                - answer
-                - pranswer
-                - rollback
-            sdp:
-              type: string
-              maxLength: 20000
-          required:
-            - type
-        ice:
-          anyOf:
-            -
-              type: object
-              properties:
-                candidate:
-                  type: string
-                  maxLength: 1000
-                sdpMid:
-                  anyOf:
-                    -
-                      type: string
-                      maxLength: 64
-                    -
-                      type: "null"
-                sdpMLineIndex:
-                  anyOf:
-                    -
-                      type: integer
-                      minimum: 0
-                      maximum: 64
-                    -
-                      type: "null"
-                usernameFragment:
-                  anyOf:
-                    -
-                      type: string
-                      maxLength: 256
-                    -
-                      type: "null"
-              required:
-                - candidate
-            -
-              type: "null"
     VacancyInput:
       type: object
       properties:

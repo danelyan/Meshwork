@@ -63,10 +63,8 @@ export const ERROR_RESPONSES: Record<number, { name: string; description: string
 export const TAG_DESCRIPTIONS: Record<string, string> = {
   auth: 'Вход, сессия, согласие на обработку ПДн, роль',
   claims: 'Карточки утверждений кандидата: подтвердить, поправить, отклонить',
-  call: 'Звонок: сигналинг WebRTC (SDP/ICE) между кандидатом и работодателем',
   consultant: 'Чат с консультантом (SSE) и история разговоров',
   defense: 'Защита утверждения: короткое интервью, повышающее уровень до «платформа»',
-  'defense-room': 'Защита проекта (ADR 0003, ступень 3): вопросы по коду, ходы, SSE звонка, итог слепого оценщика',
   demo: 'Демо-вход и демо-резюме (только при DEMO_LOGIN)',
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   health: 'Проверка живости',
@@ -82,7 +80,6 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
 
 export const SSE_EVENTS_DOC = [
   '### События SSE',
-  'Звонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).',
   'Эндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.',
   'Второй ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.',
 ].join('\n\n');
@@ -222,6 +219,22 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Выбор роли в онбординге (один раз). Перевыпускает куку с новой ролью.',
     success: JSON_OK('Роль выбрана; выставлена новая кука cid', obj({ role: str(), candidateId: nullable(str()), employerProfileId: nullable(str()) })),
     errors: { 409: 'Роль уже выбрана или не дано согласие (`conflict`)' },
+  },
+  'POST /api/auth/role/switch': {
+    summary: 'Переключить активную роль (вторая роль на той же учётке)',
+    description:
+      'ADR 0004. Профиль целевой роли есть — переключает; нет — создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль — идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.',
+    success: JSON_OK(
+      'Роль активна; выставлена новая кука cid',
+      obj({ role: str(), next: str('Дом роли (путь интерфейса)'), created: bool(), changed: bool() }),
+    ),
+    errors: {
+      400: 'Нет названия компании, когда профиль работодателя надо создать (`bad_request`), или тело не прошло схему (`validation_failed`)',
+      401: 'Нет входа (`unauthorized`)',
+      403: 'Старая демо-кука без аккаунта, общий демо-аккаунт без второй роли или запрос с чужого сайта (`forbidden`)',
+      409: 'Роль ещё не выбрана — сначала знакомство (`conflict`)',
+      429: 'Слишком много переключений (`rate_limited`)',
+    },
   },
   'GET /api/auth/stale': {
     summary: 'Сбросить протухшую сессию',
@@ -442,6 +455,16 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Создать потребность',
     description: 'Создать потребность. Требования — только из каталога своей специализации или общие.',
     success: { status: 201, description: 'Потребность создана', schema: free('Созданная потребность') },
+  },
+
+  'GET /api/employer/company': {
+    summary: 'Профиль своей компании',
+    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+  },
+  'PATCH /api/employer/company': {
+    summary: 'Изменить профиль своей компании',
+    description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.',
+    success: JSON_OK('Профиль компании после правки', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
   },
 
   'GET /api/invitations': {

@@ -20,7 +20,7 @@
 /* --- шапка --- */
 .header {
   position: sticky; top: 0; z-index: 20; min-height: var(--landing-header-h); display: flex; align-items: center; padding: 0 var(--page-pad);
-  background: var(--role-bar-bg); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-bottom: var(--role-rule-w) solid var(--role-rule);
+  background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-bottom: 1px solid var(--glass-border);
 }
 .brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 19px; }
 .brand:hover { color: var(--blue); }
@@ -29,7 +29,7 @@
 .nav { display: flex; gap: 4px; margin-left: 56px; align-items: center; }
 .nav a { padding: 12px 18px; font-weight: 500; font-size: 15px; color: var(--muted); white-space: nowrap; }
 .nav a:hover { color: var(--ink); background: var(--surface-hover); }
-.nav a[aria-current='page'] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--role-nav-active); }
+.nav a[aria-current='page'] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
 .edition { margin-left: auto; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; border: 1px solid var(--ink); padding: 7px 12px; white-space: nowrap; }
 .action { margin-left: auto; display: flex; }
 .edition + .action { margin-left: 20px; }
@@ -38,6 +38,19 @@
   background: var(--ink); color: var(--landing-white); font-weight: 600; font-size: 15px; white-space: nowrap;
 }
 .login:hover { background: var(--blue); color: var(--landing-white); }
+/* метка роли и переключатель (RoleSwitch, ADR 0004) */
+.roleSwitch { position: relative; display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 12px; min-width: 0; }
+.roleTag { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roleSwitch + .action { margin-left: 0; }
+.rolePanel {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 25; width: min(320px, calc(100vw - 2 * var(--page-pad)));
+  display: grid; gap: 12px; padding: 16px; background: var(--paper); border: 1px solid var(--line);
+}
+.roleInput { background: var(--surface-input); color: var(--ink); border: 1px solid var(--border-input); border-radius: 0; padding: 10px 12px; min-height: 44px; width: 100%; }
+.roleInput:focus-visible { border-color: var(--blue); outline-offset: 0; }
+.roleActions { display: flex; gap: 8px; }
+.roleError { position: absolute; top: calc(100% + 8px); right: 0; margin: 0; padding: 8px 12px; max-width: 320px; font-size: var(--fs-sm); color: var(--error); background: var(--paper); border: 1px solid var(--line); }
+.rolePanel .roleError { position: static; padding: 0; border: 0; }
 .banner { margin: 0; padding: 8px var(--page-pad); font-size: var(--fs); color: var(--ink); background: var(--surface-notice); border-bottom: 1px solid var(--line); text-align: center; }
 .banner a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
 
@@ -45,7 +58,7 @@
 .footer {
   padding: 22px var(--page-pad); display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap;
   font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
-  background: var(--role-bar-bg); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-top: var(--role-rule-w) solid var(--role-rule);
+  background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-top: 1px solid var(--glass-border);
 }
 .footLinks { display: flex; gap: 16px; flex-wrap: wrap; }
 .footLinks a { color: inherit; text-decoration: underline; text-underline-offset: 3px; opacity: 0.8; }
@@ -78,6 +91,8 @@
 }
 @media (max-width: 640px) {
   .header { gap: 8px; }
+  .roleSwitch { margin-right: 0; }
+  .roleTag { max-width: 120px; }
   .brand img { height: 30px; }
   .brand span, .edition { display: none; }
   .edition + .action { margin-left: auto; }

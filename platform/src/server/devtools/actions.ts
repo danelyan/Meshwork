@@ -7,31 +7,37 @@ import type { SessionPrincipal } from '@/server/session';
 
 export type DevSession = SessionPrincipal & { userId: string };
 
-/** Новый пустой разговор; старые остаются, новый становится последним (его открывает страница). */
+/**
+ * Новый пустой разговор активной роли (`s.role`; ADR 0004 — у учётки могут быть оба профиля); старые остаются,
+ * новый становится последним (его открывает страница).
+ */
 export async function startNewConversation(s: SessionPrincipal): Promise<{ conversationId: string; next: string }> {
-  if (s.candidateId) {
+  if (s.role === 'candidate' && s.candidateId) {
     const c = await prisma.conversation.create({ data: { candidateId: s.candidateId }, select: { id: true } });
     return { conversationId: c.id, next: '/consultant' };
   }
-  if (s.employerProfileId) {
+  if (s.role === 'employer' && s.employerProfileId) {
     const c = await prisma.employerConversation.create({ data: { employerProfileId: s.employerProfileId }, select: { id: true } });
     return { conversationId: c.id, next: '/consultant' };
   }
   throw errors.conflict('Роль не выбрана: разговор начать негде');
 }
 
-/** Сбросить онбординг: состояние чата и `onboardedAt`; с `alsoProfile` - ещё и ответы профиля. */
+/**
+ * Сбросить онбординг активной роли: состояние чата и `onboardedAt`; с `alsoProfile` - ещё и ответы профиля этой
+ * роли. Профиль второй роли не трогаем: в куке только id профиля активной роли (`parseSession`).
+ */
 export async function clearOnboarding(s: DevSession, alsoProfile: boolean): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const state = await tx.onboardingState.findUnique({ where: { userId: s.userId }, select: { meta: true } });
     await tx.onboardingState.deleteMany({ where: { userId: s.userId } });
     await tx.user.update({ where: { id: s.userId }, data: { onboardedAt: null } });
     if (!alsoProfile) return;
-    if (s.candidateId) {
+    if (s.role === 'candidate' && s.candidateId) {
       await tx.candidateProfile.deleteMany({ where: { candidateId: s.candidateId } });
       await tx.candidate.update({ where: { id: s.candidateId }, data: { specialization: null } });
     }
-    if (s.employerProfileId) {
+    if (s.role === 'employer' && s.employerProfileId) {
       const profile = await tx.employerProfile.findUnique({ where: { id: s.employerProfileId }, select: { companyId: true } });
       if (profile) {
         await tx.company.update({
@@ -47,7 +53,7 @@ export async function clearOnboarding(s: DevSession, alsoProfile: boolean): Prom
 }
 
 /**
- * Удалить аккаунт и всё его. Кандидат: Candidate (каскадом - категории, загрузки, утверждения,
+ * Удалить аккаунт и всё его — оба профиля, если учётка переключала роль (ids берём из БД, не из куки). Кандидат: Candidate (каскадом - категории, загрузки, утверждения,
  * разговоры, попытки теста, приглашения, защита, анкета) и его AgentRun. Работодатель: приглашения,
  * разговоры помощника, профиль; компания с вакансиями - если в ней больше никого нет. Всё в одной транзакции.
  */
@@ -82,7 +88,7 @@ export async function deleteAccount(s: SessionPrincipal): Promise<void> {
 
 /** Удалить попытки теста кандидата (интервалы пересдачи мешают проверке). Возвращает число удалённых. */
 export async function resetTestAttempts(s: SessionPrincipal): Promise<number> {
-  if (!s.candidateId) throw errors.forbidden('Доступно только кандидату');
+  if (s.role !== 'candidate' || !s.candidateId) throw errors.forbidden('Доступно только кандидату');
   const r = await prisma.testAttempt.deleteMany({ where: { candidateId: s.candidateId } });
   return r.count;
 }

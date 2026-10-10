@@ -1,0 +1,75 @@
+import { errors } from '@/server/errors';
+import type { SessionRole } from '@/server/session';
+
+/**
+ * Переключение роли на одной учётке (ADR 0004) — чистое решение без БД: что сделать и как пересчитать
+ * отметки знакомства. Исполняет `switchRole` (role-switch.ts) в транзакции.
+ */
+
+export type ActiveRole = 'candidate' | 'employer';
+export const ACTIVE_ROLES: readonly ActiveRole[] = ['candidate', 'employer'];
+
+export interface RoleSwitchState {
+  role: SessionRole;
+  onboardedAt: Date | null;
+  onboardedRoles: readonly SessionRole[];
+  hasCandidate: boolean;
+  hasEmployer: boolean;
+  /** Общий демо-аккаунт из сида (им входят все члены жюри): вторую роль на нём не создаём. */
+  sharedDemo: boolean;
+}
+
+export type RoleSwitchPlan =
+  /** Роль уже активна — ничего не меняем (идемпотентно), только перевыпуск куки. */
+  | { kind: 'same' }
+  | {
+      /** activate — профиль целевой роли есть; create — создать его в той же транзакции. */
+      kind: 'activate' | 'create';
+      /** Роли с завершённым знакомством — новое `OnboardingState.meta.doneRoles`. */
+      onboardedRoles: ActiveRole[];
+      /** Знакомство целевой роли уже завершено: `onboardedAt` ставится, иначе обнуляется и лента начнёт её шаги. */
+      targetOnboarded: boolean;
+    };
+
+/** Есть ли у учётки профиль роли. */
+export function hasProfile(s: Pick<RoleSwitchState, 'hasCandidate' | 'hasEmployer'>, role: ActiveRole): boolean {
+  return role === 'candidate' ? s.hasCandidate : s.hasEmployer;
+}
+
+/**
+ * Решение по запросу «перейти в роль `target`». `onboardedAt` относится к активной роли, `onboardedRoles` (`meta.doneRoles`) —
+ * к остальным: уходя из роли, записываем, завершено ли её знакомство сейчас (сброс знакомства дебаг-панелью
+ * или демо тоже учитывается), а для целевой роли берём отметку из списка.
+ * Ошибки: роль не выбрана — 409 (первая роль выбирается в знакомстве); вторая роль на общем демо-аккаунте — 403;
+ * работодатель без названия компании, когда профиль надо создать, — 400.
+ */
+export function planRoleSwitch(state: RoleSwitchState, target: ActiveRole, opts: { companyName?: string | null } = {}): RoleSwitchPlan {
+  if (state.role === 'pending') throw errors.conflict('Сначала выберите роль в знакомстве');
+  if (state.role === target) return { kind: 'same' };
+  const create = !hasProfile(state, target);
+  if (create && state.sharedDemo) {
+    throw errors.forbidden('На общем демо-аккаунте вторую роль не создать: войдите как «Новый пользователь» на странице /demo');
+  }
+  if (create && target === 'employer' && !opts.companyName?.trim()) {
+    throw errors.badRequest('Укажите название компании');
+  }
+  const done = new Set<ActiveRole>(state.onboardedRoles.filter((r): r is ActiveRole => r !== state.role && r !== 'pending'));
+  if (state.onboardedAt) done.add(state.role);
+  return {
+    kind: create ? 'create' : 'activate',
+    onboardedRoles: ACTIVE_ROLES.filter((r) => done.has(r)),
+    targetOnboarded: !create && done.has(target),
+  };
+}
+
+/** Что показать в шапке: активная роль, компания и куда можно перейти (`roleMenuFor`). */
+export interface RoleMenu {
+  role: ActiveRole;
+  /** Название компании работодателя; у кандидата null. */
+  companyName: string | null;
+  other: ActiveRole;
+  /** Профиль второй роли уже есть — «Перейти в режим…»; нет — «Стать…» (если можно создать). */
+  otherExists: boolean;
+  /** Вторую роль можно создать (нет на общем демо-аккаунте). */
+  canCreateOther: boolean;
+}

@@ -81,6 +81,8 @@ export const API_ACCESS = {
   '/api/auth/me': 'public',
   '/api/auth/consent': { GET: 'public', POST: 'account' },
   '/api/auth/role': 'account',
+  // Переключение активной роли и вторая роль на той же учётке (ADR 0004).
+  '/api/auth/role/switch': 'account',
   '/api/auth/onboarding/complete': 'account',
   '/api/onboarding': 'account',
   // Флаг DEMO_LOGIN проверяет обработчик (выключен → 404).

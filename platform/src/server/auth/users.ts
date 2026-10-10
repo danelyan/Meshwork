@@ -7,9 +7,9 @@ import type { UserSessionInput } from '@/server/session';
 import { passwordVersionOf } from './password-version';
 import { assertConsentVersion, ensureConsent, hasCurrentConsent } from './consent';
 
-type UserWithProfiles = User & { employerProfile: { id: string } | null };
+export type UserWithProfiles = User & { employerProfile: { id: string } | null };
 
-const withProfiles = { employerProfile: { select: { id: true } } } as const;
+export const withProfiles = { employerProfile: { select: { id: true } } } as const;
 
 /** Поля куки сессии для аккаунта. */
 export function sessionInputFor(user: UserWithProfiles): UserSessionInput {
@@ -74,7 +74,8 @@ export async function upsertExternalUser(p: ExternalProfile): Promise<UserWithPr
 export type RoleChoice = { role: 'candidate' } | { role: 'employer'; companyName: string };
 
 /**
- * Выбор роли в онбординге — один раз (pending → candidate | employer).
+ * Выбор первой роли в онбординге — один раз (pending → candidate | employer); вторая роль на той же
+ * учётке — `switchRole` (ADR 0004).
  * Кандидату создаёт Candidate (email обязателен и уникален в Candidate: если
  * почты нет или она занята — служебный адрес `user-<id>@users.invalid`).
  * Работодателю — новую Company (isDemo = false) и EmployerProfile. Присоединиться
@@ -87,20 +88,36 @@ export async function chooseRole(userId: string, choice: RoleChoice): Promise<Us
     if (!user) throw errors.notFound('Аккаунт не найден');
     if (user.role !== 'pending') throw errors.conflict('Роль уже выбрана');
     if (choice.role === 'candidate') {
-      const taken = user.email ? await tx.candidate.findUnique({ where: { email: user.email }, select: { id: true } }) : null;
-      const email = user.email && !taken ? user.email : `user-${user.id}@users.invalid`;
-      const consent = await tx.consent.findFirst({ where: { userId }, orderBy: { acceptedAt: 'desc' } });
-      const candidate = await tx.candidate.create({ data: { name: user.name, email, consentAt: consent?.acceptedAt ?? null } });
+      const candidateId = await createCandidateProfile(tx, user);
       return tx.user.update({
         where: { id: userId },
-        data: { role: 'candidate', candidateId: candidate.id },
+        data: { role: 'candidate', candidateId },
         include: withProfiles,
       });
     }
-    const company = await tx.company.create({ data: { name: choice.companyName, isDemo: false } });
-    await tx.employerProfile.create({ data: { userId, companyId: company.id } });
+    await createEmployerProfile(tx, userId, choice.companyName);
     return tx.user.update({ where: { id: userId }, data: { role: 'employer' }, include: withProfiles });
   });
+}
+
+/**
+ * Профиль кандидата для аккаунта (выбор роли и вторая роль, ADR 0004). Почта — аккаунта, если она есть и не
+ * занята другим кандидатом, иначе служебная; `consentAt` — из последнего согласия аккаунта (повторно не спрашиваем).
+ * Связь `User.candidateId` ставит вызывающий.
+ */
+export async function createCandidateProfile(tx: Prisma.TransactionClient, user: Pick<User, 'id' | 'name' | 'email'>): Promise<string> {
+  const taken = user.email ? await tx.candidate.findUnique({ where: { email: user.email }, select: { id: true } }) : null;
+  const email = user.email && !taken ? user.email : `user-${user.id}@users.invalid`;
+  const consent = await tx.consent.findFirst({ where: { userId: user.id }, orderBy: { acceptedAt: 'desc' } });
+  const candidate = await tx.candidate.create({ data: { name: user.name, email, consentAt: consent?.acceptedAt ?? null }, select: { id: true } });
+  return candidate.id;
+}
+
+/** Профиль работодателя с новой компанией (`isDemo = false`; вступить в чужую нельзя, R-D-05). */
+export async function createEmployerProfile(tx: Prisma.TransactionClient, userId: string, companyName: string): Promise<string> {
+  const company = await tx.company.create({ data: { name: companyName, isDemo: false } });
+  const profile = await tx.employerProfile.create({ data: { userId, companyId: company.id }, select: { id: true } });
+  return profile.id;
 }
 
 /**

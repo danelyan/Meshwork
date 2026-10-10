@@ -26,6 +26,8 @@ export const RATE = {
   perClient: { limit: 60, windowMs: 15 * 60_000 },
   /** Попытки ввода кода на одну почту (поверх 5 попыток на сам код). */
   codePerEmail: { limit: 20, windowMs: 15 * 60_000 },
+  /** Переключения роли одной учётки (ADR 0004): каждое перевыпускает куку, первое создаёт профиль. */
+  roleSwitch: { limit: 30, windowMs: 15 * 60_000 },
 } satisfies Record<string, RateRule>;
 
 /** true — событие разрешено и учтено; false — лимит исчерпан. */

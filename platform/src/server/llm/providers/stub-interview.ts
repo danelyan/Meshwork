@@ -25,6 +25,6 @@ export function stubInterviewInterviewer(req: CompleteRequest): { kind: 'json'; 
   const question = c ? templateInterviewQuestion(c, block, level, p.turns.length === 0) : `Расскажи подробнее про «${planned.title}».`;
   return {
     kind: 'json',
-    json: { answerSignal: signal, competencyId: planned.competencyId, question: `[stub] ${p.next.probe ? 'Ещё вопрос. ' : ''}${question}`, done: planned.done },
+    json: { answerSignal: signal, competencyId: planned.competencyId, question: `${p.next.probe ? 'Ещё вопрос. ' : ''}${question}`, done: planned.done },
   };
 }

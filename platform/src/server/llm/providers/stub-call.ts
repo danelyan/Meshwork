@@ -30,7 +30,7 @@ export function stubCallInterviewer(req: CompleteRequest): { kind: 'json'; json:
     // Дополнительный вопрос по теме с расхождением оценщика: тема и уровень заданы кодом.
     const seed = topics.find((t) => t.topic === p.next.probeTopic) ?? { topic: p.next.probeTopic, catalogId: null, claimStatement: null, resumeFact: null };
     const level = (p.next.probeLevel ?? 2) as QuestionLevel;
-    return { kind: 'json', json: { answerSignal: signal ?? 'none', topic: seed.topic, catalogId: seed.catalogId, question: `[stub] Ещё вопрос. ${templateQuestion(seed, level, false)}`, done: false } };
+    return { kind: 'json', json: { answerSignal: signal ?? 'none', topic: seed.topic, catalogId: seed.catalogId, question: `Ещё вопрос. ${templateQuestion(seed, level, false)}`, done: false } };
   }
   const plan = planNext({ topics, turns, grade, signal, maxQuestions: p.next.maxQuestions });
   const seed = topics[plan.topicIndex] ?? { topic: p.specialization, catalogId: null, claimStatement: null, resumeFact: null };
@@ -40,7 +40,7 @@ export function stubCallInterviewer(req: CompleteRequest): { kind: 'json'; json:
       answerSignal: signal ?? 'none',
       topic: seed.topic,
       catalogId: seed.catalogId,
-      question: `[stub] ${templateQuestion(seed, plan.level, turns.length === 0)}`,
+      question: `${templateQuestion(seed, plan.level, turns.length === 0)}`,
       done: p.next.questionNumber > p.next.minQuestions,
     },
   };

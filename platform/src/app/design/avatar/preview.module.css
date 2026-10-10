@@ -21,3 +21,11 @@
 @media (max-width: 720px) {
   .panels { grid-template-columns: minmax(0, 1fr); }
 }
+/* широкий экран: панели слева, управление озвучкой и видом — липкой колонкой справа, всегда под рукой */
+@media (min-width: 1000px) {
+  .page { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
+  .page > h1, .page > .hint, .page > .row { grid-column: 1 / -1; }
+  .panels { grid-column: 1; }
+  .controls { grid-column: 2; grid-row: 4; position: sticky; top: 16px; }
+  .small { grid-column: 2; }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "fsp-runner-sandbox-node",
+  "private": true,
+  "description": "Preinstalled packages for candidate project checks (node20 image). Candidate dependencies are never installed.",
+  "dependencies": {
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "express": "5.2.1",
+    "jsdom": "26.1.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "supertest": "7.3.1",
+    "vitest": "4.1.11"
+  }
+}

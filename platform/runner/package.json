@@ -1,0 +1,12 @@
+{
+  "name": "fsp-runner",
+  "private": true,
+  "description": "Сервис автопроверки проектов кандидатов (ADR 0003). Сборка — только в runner/Dockerfile; локально — npx tsx runner/src/main.ts из platform/.",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/server.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "zod": "4.6.5"
+  }
+}

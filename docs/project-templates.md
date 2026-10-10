@@ -91,7 +91,16 @@ Senior-шаблон (ADR 0003, «Дополнение 16:15») проверяе�
 
 ## Выкладка
 
-- runner ищет шаблон по id и в плоской раскладке `<id>/` (примеры лейна runner), и во вложенной
-  (`runner/src/templates.ts`, `resolveTemplateDir`); id уникален во всём дереве.
+- Все шаблоны лежат во вложенной раскладке. runner ищет шаблон по id в ней и в плоской `<id>/` (`runner/src/templates.ts`,
+  `resolveTemplateDir`), загрузчик приложения читает только вложенную; id уникален во всём дереве. Два учебных Junior-шаблона
+  runner (`be-webapi-junior-notes`, `fe-uiapp-junior-widget`; эталоны — `tests/fixtures/runner/`, а не `reference/`) перенесены
+  туда 10.10 из плоской раскладки; они вторые Junior в своих подкатегориях и при автовыборе уступают `…-booking` и `…-catalog`
+  (порядок по id).
+
+## План шаблонов
+
+Не сделано (нужны контракт, эталон и 10–15 скрытых тестов, проверка «эталон всё зелёное, заготовка всё красное»; за один заход
+не уместилось): Junior для `backend.integrations` и `ai.llm-apps`, Middle для `engineering.data-eng`. Пока по этим грейдам
+задание под потребность не собрать.
 - `reference/` исключён из обоих образов (`platform/.dockerignore`), приложение получает шаблоны через
   `outputFileTracingIncludes` в `next.config.ts` (standalone-сборка сама файлы с диска не трассирует).

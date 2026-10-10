@@ -5,6 +5,7 @@ import { loadPlatformEnv } from '../scripts/load-env.mjs';
 import { seedAuth } from './seed/auth';
 import { seedClaims } from './seed/claims';
 import { seedEmployer } from './seed/employer';
+import { seedEmployerPool } from './seed/employer-pool';
 import { seedRecommend } from './seed/recommend';
 import { seedTest } from './seed/test';
 
@@ -62,6 +63,8 @@ async function main() {
   await seedAuth(prisma);
   // lane employer: пул демо-кандидатов с подтверждёнными утверждениями, детали потребностей.
   await seedEmployer(prisma);
+  // Q-39: по паре специализация × грейд не меньше трёх кандидатов с категорией.
+  await seedEmployerPool(prisma);
 }
 
 main()

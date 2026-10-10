@@ -21,6 +21,8 @@ export interface DemoProfile {
   fspState: 'not_linked' | 'no_achievements' | 'unavailable' | 'linked';
   /** ДЕМО-категория (не из теста) или null. */
   category: { specialization: Spec; grade: Grade } | null;
+  /** Контакт для принятого приглашения; без него — производный от id. */
+  contact?: string;
   /** Технологии — попадают в цитаты (по ним работает фильтр «стек»). */
   stack: string[];
   claims: [catalogId: string, level: Level][];
@@ -96,13 +98,14 @@ export function demoQuote(p: DemoProfile, statement: string): string {
   return `${p.stack.join(', ')}: ${statement.charAt(0).toLowerCase()}${statement.slice(1)}`;
 }
 
-export async function seedEmployer(prisma: PrismaClient): Promise<void> {
+/** Идемпотентно засевает профили пула: upsert кандидата, утверждения и категория пересоздаются. */
+export async function seedPoolProfiles(prisma: PrismaClient, profiles: DemoProfile[]): Promise<void> {
   const catalog = new Map(catalogFromFile().map((e) => [e.id, e]));
   const now = new Date();
-  for (const p of DEMO_POOL) {
+  for (const p of profiles) {
     const email = `${p.id}@example.test`;
     // lane invite-contact: вымышленный контакт, который работодатель увидит после принятия приглашения (Q-35).
-    const contact = `${p.id.replace(/^demo-pool-/, 'candidate.')}@example.com`;
+    const contact = p.contact ?? `${p.id.replace(/^demo-pool-/, 'candidate.')}@example.com`;
     await prisma.candidate.upsert({
       where: { id: p.id },
       update: { name: p.name, email, contact, specialization: p.specialization, fspState: p.fspState, isDemo: true },
@@ -124,6 +127,10 @@ export async function seedEmployer(prisma: PrismaClient): Promise<void> {
     }
     if (p.category) await prisma.candidateCategory.create({ data: { candidateId: p.id, ...p.category } });
   }
+}
+
+export async function seedEmployer(prisma: PrismaClient): Promise<void> {
+  await seedPoolProfiles(prisma, DEMO_POOL);
   for (const [id, d] of Object.entries(DEMO_NEED_DETAILS)) {
     await prisma.vacancy.updateMany({ where: { id }, data: d });
   }

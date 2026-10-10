@@ -410,20 +410,27 @@ export async function gotoStep(userId: string, stepId: string): Promise<Mutation
   return { sessionChanged: false };
 }
 
-/** Пауза знакомства имеет смысл только у кандидата с незавершённым онбордингом. */
+/** Пауза знакомства имеет смысл у кандидата и работодателя с незавершённым онбордингом (до выбора роли — нет). */
 function isPaused(l: Loaded): boolean {
-  return l.meta.later === true && l.ctx.facts.role === 'candidate' && l.user.onboardedAt === null;
+  return l.meta.later === true && (l.ctx.facts.role === 'candidate' || l.ctx.facts.role === 'employer') && l.user.onboardedAt === null;
+}
+
+/** Роль, у которой «Настроить позже» — пауза в ленте /consultant, а не уход со страницы. */
+function pausable(l: Loaded): boolean {
+  return (l.ctx.facts.role === 'candidate' || l.ctx.facts.role === 'employer') && l.ctx.facts.consent && l.user.onboardedAt === null;
 }
 
 /**
  * «Настроить позже»: ответы уже сохранены; онбординг не завершаем. Кандидат (решение владельца
- * 10.10) остаётся на /consultant: шаги на паузе (meta.later), лента — свободный разговор;
- * вернуться — ответить, пропустить или открыть шаг (goto). Остальным — куда вести, как раньше.
+ * 10.10) и работодатель (решение владельца 10.10, тот же механизм) остаются на /consultant: шаги на
+ * паузе (meta.later), лента — свободный разговор с консультантом / помощником по подбору; вернуться —
+ * ответить, пропустить или открыть шаг (goto). Остальным — куда вести, как раньше.
  */
 export async function finishLater(userId: string): Promise<{ next: string }> {
   const l = await load(userId);
-  if (l.ctx.facts.role === 'candidate' && l.ctx.facts.consent && l.user.onboardedAt === null) {
+  if (pausable(l)) {
     await save(userId, { stepId: l.state.stepId ?? currentStep(l.ctx, l.state).id, meta: { ...l.meta, later: true } });
+    return { next: '/consultant' };
   }
   return { next: laterTarget(l) };
 }
@@ -467,6 +474,17 @@ export async function pendingOnboarding(candidateId: string): Promise<Onboarding
   const user = await prisma.user.findUnique({ where: { candidateId }, select: { id: true, onboardedAt: true } });
   if (!user || user.onboardedAt) return null;
   const l = await load(user.id);
+  const step = currentStep(l.ctx, l.state);
+  return briefOf(step, l.ctx) ?? { stepId: 'summary', question: 'Проверить сводку и завершить знакомство', options: [] };
+}
+
+/**
+ * Знакомство работодателя на паузе («Настроить позже») — шаг, на котором остановился; null — не на
+ * паузе. По нему ход помощника ставит маркер паузы (pauseMark) и сообщения видны под этим шагом.
+ */
+export async function pausedOnboardingOf(userId: string): Promise<OnboardingStepBrief | null> {
+  const l = await load(userId);
+  if (!isPaused(l)) return null;
   const step = currentStep(l.ctx, l.state);
   return briefOf(step, l.ctx) ?? { stepId: 'summary', question: 'Проверить сводку и завершить знакомство', options: [] };
 }

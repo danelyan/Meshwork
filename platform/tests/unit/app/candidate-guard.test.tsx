@@ -135,6 +135,39 @@ describe('/consultant: общий адрес — гость на вход, ро�
   });
 });
 
+// Матрица «роль × страница работодателя → куда» (решение владельца 10.10, зеркало страниц кандидата).
+const EMPLOYER_PAGES: Array<[string, () => Promise<unknown>]> = [
+  ['/employer', async () => (await import('@/app/employer/page')).default()],
+  ['/employer/search', async () => (await import('@/app/employer/search/page')).default({ searchParams: Promise.resolve({}) })],
+  ['/employer/invitations', async () => (await import('@/app/employer/invitations/page')).default()],
+  ['/employer/needs/new', async () => (await import('@/app/employer/needs/new/page')).default({ searchParams: Promise.resolve({}) })],
+  ['/employer/needs/n1', async () => (await import('@/app/employer/needs/[id]/page')).default({ params: Promise.resolve({ id: 'n1' }), searchParams: Promise.resolve({}) })],
+  ['/employer/needs/n1/edit', async () => (await import('@/app/employer/needs/[id]/edit/page')).default({ params: Promise.resolve({ id: 'n1' }) })],
+];
+
+describe.each(EMPLOYER_PAGES)('страница работодателя %s', (name, run) => {
+  it('гость → /auth?next=<путь>', async () => {
+    expect(await outcome(run)).toBe(`/auth?next=${encodeURIComponent(name)}`);
+  });
+  it('кандидат (в т.ч. старая кука демо) → /consultant', async () => {
+    cookie.value = SESS.candidate();
+    expect(await outcome(run)).toBe('/consultant');
+    cookie.value = SESS.legacy();
+    expect(await outcome(run)).toBe('/consultant');
+  });
+  it('роль не выбрана → /consultant', async () => {
+    cookie.value = SESS.pending();
+    expect(await outcome(run)).toBe('/consultant');
+  });
+});
+
+describe('/employer/assistant — прежний адрес, любой вход → /consultant', () => {
+  it.each(['guest', 'candidate', 'employer', 'pending'] as const)('%s', async (who) => {
+    cookie.value = who === 'guest' ? undefined : SESS[who]();
+    expect(await outcome(async () => (await import('@/app/employer/assistant/page')).default())).toBe('/consultant');
+  });
+});
+
 describe('requirePageEmployer (кабинет работодателя)', () => {
   const run = async () => (await import('@/server/auth/page')).requirePageEmployer('/employer/search');
   it('гость → /auth?next, кандидат → /consultant, pending → /consultant, работодатель → пускает', async () => {

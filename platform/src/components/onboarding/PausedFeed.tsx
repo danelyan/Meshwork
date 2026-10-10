@@ -3,12 +3,14 @@
 import { Fragment, useState } from 'react';
 
 import { onboardingAct } from '@/lib/api';
+import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/employer/restore';
 import type { RestoredChat, RestoredItem } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 import type { OnboardingView } from '@/server/onboarding/types';
 
 import { CompanionVoiceProvider, useCompanionVoice } from '../avatar/voice';
 import { Chat } from '../Chat';
+import { AssistantChat, EmployerAsideRows } from '../employer/AssistantChat';
 import { AssistantRow, Bubble, ProgressLine, Reply, Thread, UserBubble } from '../chat/Thread';
 import { Button } from '../ui';
 
@@ -22,6 +24,16 @@ export interface PausedFeedProps {
   view: OnboardingView;
   demo?: ChatDemoContext;
   restored?: RestoredChat;
+  /** Работодатель: свободный разговор идёт с помощником по подбору (его таблицы разговоров), не с консультантом. */
+  employer?: { demoNoLlm?: boolean; restored?: EmployerRestoredChat };
+}
+
+type Tagged = { stepId?: string; paused?: true };
+
+/** Реплики паузы текущего шага и обычный разговор - в чат ниже; остальное (вопросы посреди шагов, прежние паузы) - под своими шагами. */
+function splitFeed<T extends Tagged>(items: T[], curId: string): { aside: T[]; rest: T[] } {
+  const inChat = (it: T) => !it.stepId || (it.paused === true && it.stepId === curId);
+  return { aside: items.filter((it) => !inChat(it)), rest: items.filter(inChat) };
 }
 
 /**
@@ -41,16 +53,22 @@ export function PausedFeed(props: PausedFeedProps) {
   );
 }
 
-function PausedFeedBody({ view, demo, restored }: PausedFeedProps) {
+function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const items = restored?.items ?? [];
   const cur = view.current;
   // Разговор этой паузы (на текущем шаге) — в чате ниже; вопросы посреди шагов и разговоры прежних
   // пауз — под своими шагами (хронология ленты).
-  const inChat = (it: RestoredItem) => !it.stepId || (it.paused === true && it.stepId === cur.id);
-  const [asides] = useState(() => groupAsides(items.filter((it) => !inChat(it))));
-  const [rest] = useState(() => items.filter(inChat));
+  const [split] = useState(() => splitFeed<RestoredItem>(restored?.items ?? [], cur.id));
+  const [asides] = useState(() => groupAsides(split.aside));
+  const rest = split.rest;
+  const [empSplit] = useState(() => splitFeed<EmployerRestoredItem>(employer?.restored?.items ?? [], cur.id));
+  const [empAsides] = useState(() => {
+    const out: Record<string, EmployerRestoredItem[]> = {};
+    for (const it of empSplit.aside) (out[it.stepId!] ??= []).push(it);
+    return out;
+  });
+  const isEmployer = employer !== undefined;
 
   async function resume() {
     setBusy(true);
@@ -69,7 +87,7 @@ function PausedFeedBody({ view, demo, restored }: PausedFeedProps) {
       <header className={styles.top}>
         <div className={styles.topRow}>
           <h1 className={styles.sceneTitle}>
-            Карьерный консультант
+            {isEmployer ? 'Помощник по подбору' : 'Карьерный консультант'}
             <span className={styles.title}>Знакомство на паузе</span>
           </h1>
           <Button size="sm" onClick={() => void resume()} disabled={busy} title="Продолжишь с того же шага - ответы сохранены">
@@ -87,6 +105,7 @@ function PausedFeedBody({ view, demo, restored }: PausedFeedProps) {
                 <Reply lines={[{ text: h.lead }, { text: h.question }]} />
               </AssistantRow>
               <AsideRows items={asides[h.stepId]} locked />
+              <EmployerAsideRows items={empAsides[h.stepId]} />
               <UserBubble quiet={h.answer === null}>{h.answer ?? 'пропущу'}</UserBubble>
             </Fragment>
           ))}
@@ -99,6 +118,7 @@ function PausedFeedBody({ view, demo, restored }: PausedFeedProps) {
             />
           </AssistantRow>
           <AsideRows items={asides[cur.id]} locked />
+          <EmployerAsideRows items={empAsides[cur.id]} />
           {error && (
             <AssistantRow mark={false}>
               <Bubble tone="error">{error}</Bubble>
@@ -106,16 +126,31 @@ function PausedFeedBody({ view, demo, restored }: PausedFeedProps) {
           )}
         </Thread>
 
-        <Chat
-          demo={demo}
-          initial={{ conversationId: restored?.conversationId ?? null, items: rest }}
-          embedded={{
-            suggestions: [{ value: 'resume', label: RESUME_LABEL, note: `с вопроса «${cur.label}»` }],
-            onSuggestion: (v) => {
-              if (v === 'resume') void resume();
-            },
-          }}
-        />
+        {isEmployer ? (
+          <AssistantChat
+            demoNoLlm={employer.demoNoLlm}
+            initial={{ conversationId: employer.restored?.conversationId ?? null, items: empSplit.rest }}
+            embedded={{
+              suggestions: [{ value: 'resume', label: RESUME_LABEL, note: `с вопроса «${cur.label}»` }],
+              onSuggestion: (v) => {
+                if (v !== 'resume') return false;
+                void resume();
+                return true;
+              },
+            }}
+          />
+        ) : (
+          <Chat
+            demo={demo}
+            initial={{ conversationId: restored?.conversationId ?? null, items: rest }}
+            embedded={{
+              suggestions: [{ value: 'resume', label: RESUME_LABEL, note: `с вопроса «${cur.label}»` }],
+              onSuggestion: (v) => {
+                if (v === 'resume') void resume();
+              },
+            }}
+          />
+        )}
       </div>
     </div>
   );

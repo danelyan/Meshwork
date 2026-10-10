@@ -13,6 +13,15 @@ vi.mock('@/components/Chat', () => ({
   },
 }));
 
+const assistantProps = vi.hoisted(() => ({ last: null as null | Record<string, unknown> }));
+vi.mock('@/components/employer/AssistantChat', () => ({
+  AssistantChat: (p: Record<string, unknown>) => {
+    assistantProps.last = p;
+    return <div data-testid="assistant" />;
+  },
+  EmployerAsideRows: ({ items }: { items?: Array<{ text?: string }> }) => <>{items?.map((i) => <p key={i.text}>{i.text}</p>)}</>,
+}));
+
 const push = vi.fn();
 beforeEach(() => {
   Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign: push } });
@@ -67,4 +76,20 @@ it('«Вернуться к знакомству» — goto на текущий 
   await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
   const body = JSON.parse((fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
   expect(body).toEqual({ action: 'goto', stepId: 'documents' });
+});
+
+it('работодатель: чат паузы - помощник по подбору; реплики прежних пауз под своим шагом, текущей - в чате', () => {
+  const emp = {
+    conversationId: 'e-1',
+    items: [
+      { id: 'p0', role: 'user' as const, text: 'Прошлая пауза', stepId: 'goal', paused: true as const },
+      { id: 'p1', role: 'user' as const, text: 'Эта пауза', stepId: 'documents', paused: true as const },
+    ],
+  };
+  render(<PausedFeed view={{ ...view, role: 'employer', scenario: 'employer' } as OnboardingView} employer={{ demoNoLlm: true, restored: emp }} />);
+  expect(screen.getByText('Помощник по подбору')).toBeDefined();
+  expect(screen.getByText('Прошлая пауза')).toBeDefined();
+  expect(screen.queryByTestId('chat')).toBeNull();
+  expect(assistantProps.last?.initial).toEqual({ conversationId: 'e-1', items: [emp.items[1]] });
+  expect((assistantProps.last?.embedded as { beforeSend?: unknown }).beforeSend).toBeUndefined();
 });

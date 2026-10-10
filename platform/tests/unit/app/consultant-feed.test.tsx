@@ -134,10 +134,20 @@ describe('работодатель', () => {
     expect(m.loadLastChat).not.toHaveBeenCalled();
   });
 
-  it('знакомство не завершено — шаги, разговор помощника ещё не грузится', async () => {
+  it('знакомство не завершено — шаги; разговор помощника грузится (реплики прежних пауз стоят под своими шагами)', async () => {
     m.getView.mockResolvedValueOnce({ current: { kind: 'one' }, onboarded: false });
     const el = await inner();
-    expect(el.props.employerAssistant).toEqual({ demoNoLlm: true, restored: undefined });
-    expect(m.loadLastEmployerChat).not.toHaveBeenCalled();
+    expect(el.props.employerAssistant).toEqual({ demoNoLlm: true, restored: { conversationId: 'e-conv', items: [] } });
+    expect(m.loadLastEmployerChat).toHaveBeenCalledWith('e1');
+  });
+
+  it('«Настроить позже» (view.later) — пауза с помощником по подбору, как у кандидата', async () => {
+    m.getView.mockResolvedValueOnce({ current: { kind: 'one' }, onboarded: false, later: true });
+    const { PausedFeed } = await import('@/components/onboarding/PausedFeed');
+    const el = await inner();
+    expect(el.type).toBe(PausedFeed);
+    expect(el.props.employer).toEqual({ demoNoLlm: true, restored: { conversationId: 'e-conv', items: [] } });
+    expect(el.props.restored).toBeUndefined();
+    expect(m.loadLastChat).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,7 @@
 import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 import { type OnboardingAction, completeOnboarding, onboardingAct, onboardingLater } from '@/lib/api';
-import type { EmployerRestoredChat } from '@/server/agent/employer/restore';
+import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/employer/restore';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 import { checkInn } from '@/server/onboarding/inn';
@@ -13,7 +13,7 @@ import type { OnboardingView, StepView } from '@/server/onboarding/types';
 import { CompanionStage } from '../avatar/CompanionStage';
 import { CompanionVoiceProvider, useCompanionVoice } from '../avatar/voice';
 import { Chat } from '../Chat';
-import { AssistantChat, EMPLOYER_SUGGESTIONS } from '../employer/AssistantChat';
+import { AssistantChat, EMPLOYER_SUGGESTIONS, EmployerAsideRows } from '../employer/AssistantChat';
 import { extractUrls } from '@/lib/links';
 
 import { useAttachments } from '../chat/attachments';
@@ -109,6 +109,14 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const asides = useAsides(groupAsides(consultant?.restored?.items ?? []), convRef, setConvId);
   // Обычные реплики разговора — встроенному консультанту, только если человек вернулся к завершённому знакомству.
   const [restoredRest] = useState(() => (initial.onboarded && initial.current.kind === 'summary' ? (consultant?.restored?.items ?? []).filter((it) => !it.stepId) : []));
+
+  // Работодатель: реплики паузы знакомства (под своим шагом) и обычный разговор помощника (после итога).
+  const [empAsides] = useState(() => {
+    const out: Record<string, EmployerRestoredItem[]> = {};
+    for (const it of employerAssistant?.restored?.items ?? []) if (it.stepId) (out[it.stepId] ??= []).push(it);
+    return out;
+  });
+  const [empRest] = useState(() => (employerAssistant?.restored?.items ?? []).filter((it) => !it.stepId));
 
   const cur = view.current;
   const isSummary = cur.kind === 'summary';
@@ -395,7 +403,12 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
               lead={h.lead}
               question={h.question}
               answer={h.answer}
-              asides={<AsideRows items={asides.byStep[h.stepId]} locked />}
+              asides={
+                <>
+                  <AsideRows items={asides.byStep[h.stepId]} locked />
+                  <EmployerAsideRows items={empAsides[h.stepId]} />
+                </>
+              }
               onEdit={h.editable && !busy && !asides.asking ? () => void act({ action: 'goto', stepId: h.stepId }) : undefined}
             />
           ))}
@@ -405,6 +418,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           </AssistantRow>
 
           <AsideRows items={curAsides} locked={asides.asking} />
+          <EmployerAsideRows items={empAsides[cur.id]} />
           {asides.asking && !replyingIn(curAsides) && (
             <AssistantRow>
               <Typing />
@@ -481,7 +495,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         {assistantMode && (
           <AssistantChat
             demoNoLlm={employerAssistant.demoNoLlm}
-            initial={employerAssistant.restored}
+            initial={employerAssistant.restored ? { ...employerAssistant.restored, items: empRest } : undefined}
             embedded={{
               suggestions: [...EMPLOYER_SUGGESTIONS, ...nextSteps],
               onSuggestion: (v) => {

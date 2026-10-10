@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { openEmployerAssistantStream } from '@/lib/employer-api';
 import { createSseParser } from '@/lib/sse';
 import type { EmployerAgentEvent, InvitationDraft, NeedDraft } from '@/server/agent/employer/types';
-import type { EmployerRestoredChat } from '@/server/agent/employer/restore';
+import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/employer/restore';
 
 import chatStyles from '../Chat.module.css';
 import { type AgentItem, applyAgentEvent } from '../chat/stream-items';
@@ -186,6 +186,19 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
         hint="Enter - отправить, Shift+Enter - новая строка"
       />
     </div>
+  );
+}
+
+/**
+ * Реплики помощника из паузы знакомства под своим шагом ленты онбординга (решение владельца 10.10):
+ * вопрос работодателя и ответ помощника (текст, карточки) - только чтение, без стрима.
+ */
+export function EmployerAsideRows({ items }: { items: EmployerRestoredItem[] | undefined }) {
+  if (!items?.length) return null;
+  return (
+    <>
+      {items.map((it) => (it.role === 'user' ? <UserBubble key={it.id}>{it.text}</UserBubble> : <EventRow key={it.id} item={it} />))}
+    </>
   );
 }
 

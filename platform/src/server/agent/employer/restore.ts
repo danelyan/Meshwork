@@ -2,10 +2,16 @@ import { prisma } from '@/server/db';
 import { loadEmployerContext } from '@/server/employer';
 import type { ToolCall } from '@/server/llm/types';
 
+import { PAUSE_MARK_RE } from '@/server/onboarding/match';
+
+import { pauseStepOf } from '../restore';
 import { withAcceptedNames } from './names';
 import type { CandidatesBlock, EmployerAgentEvent, InvitationDraft, NeedDraft } from './types';
 
-export type EmployerRestoredItem = { id: string; role: 'user'; text: string } | { id: string; role: 'agent'; event: EmployerAgentEvent };
+/** `stepId` + `paused` — реплика (и ответ на неё) из паузы знакомства: лента ставит их под шаг (как у кандидата, restore.ts). */
+export type EmployerRestoredItem =
+  | { id: string; role: 'user'; text: string; stepId?: string; paused?: true }
+  | { id: string; role: 'agent'; event: EmployerAgentEvent; stepId?: string; paused?: true };
 
 export interface EmployerRestoredChat {
   conversationId: string | null;
@@ -36,18 +42,27 @@ export async function loadLastEmployerChat(employerProfileId: string): Promise<E
   });
   const nameById = new Map<string, string>();
   const items: EmployerRestoredItem[] = [];
+  // Метка паузы стоит у реплики работодателя и действует на ответы (текст, карточки) до его следующей реплики.
+  let tag: { stepId?: string; paused?: true } = {};
   for (const m of rows) {
-    if (m.role === 'user') items.push({ id: `r-${m.id}`, role: 'user', text: m.content });
-    else if (m.role === 'assistant') {
+    if (m.role === 'user') {
+      const pause = pauseStepOf(m.content);
+      tag = pause ? { stepId: pause, paused: true } : {};
+      const text = m.content
+        .split('\n')
+        .filter((line) => !PAUSE_MARK_RE.test(line.trim()))
+        .join('\n');
+      items.push({ id: `r-${m.id}`, role: 'user', text, ...tag });
+    } else if (m.role === 'assistant') {
       if (Array.isArray(m.toolCalls)) for (const c of m.toolCalls as unknown as ToolCall[]) nameById.set(c.id, c.name);
-      if (m.content.trim()) items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'message', text: m.content } });
+      if (m.content.trim()) items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'message', text: m.content }, ...tag });
     } else {
       const name = m.toolCallId ? nameById.get(m.toolCallId) : undefined;
       const out = parse(m.content) as Record<string, unknown> | null;
       if (!name || !out || 'error' in out) continue;
-      if (name === 'match_for_need' || name === 'search_candidates') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'candidates', block: out as unknown as CandidatesBlock } });
-      else if (name === 'draft_invitation') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'invitation_draft', draft: out as unknown as InvitationDraft } });
-      else if (name === 'create_need_draft') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'need_draft', draft: out as unknown as NeedDraft } });
+      if (name === 'match_for_need' || name === 'search_candidates') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'candidates', block: out as unknown as CandidatesBlock }, ...tag });
+      else if (name === 'draft_invitation') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'invitation_draft', draft: out as unknown as InvitationDraft }, ...tag });
+      else if (name === 'create_need_draft') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'need_draft', draft: out as unknown as NeedDraft }, ...tag });
     }
   }
   // Актуальные статусы приглашений для показанных кандидатов.

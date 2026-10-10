@@ -3,6 +3,8 @@ import { loadEmployerContext } from '@/server/employer';
 import { getEnv } from '@/server/env';
 import { errors } from '@/server/errors';
 import { getLlm } from '@/server/llm/client';
+import { pauseMark } from '@/server/onboarding/match';
+import { type OnboardingStepBrief, pausedOnboardingOf } from '@/server/onboarding/service';
 import { LlmError, type ChatMessage, type ToolCall } from '@/server/llm/types';
 
 import { BudgetExceededError } from '../budget';
@@ -36,8 +38,18 @@ export const EMPLOYER_FALLBACK_STEP = 'Помощник сейчас без яз
 
 const MSK = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeZone: 'Europe/Moscow' });
 
-export function buildEmployerSystem(args: { now: Date; companyName: string; toolsExhausted: boolean }): string {
+/**
+ * Знакомство на паузе («Настроить позже», решение владельца 10.10): работодатель говорит с помощником
+ * свободно, шаги не завершены. Помощник отвечает по делу и один раз за разговор напоминает про возврат.
+ */
+export const EMPLOYER_RESUME_BUTTON = 'Вернуться к знакомству';
+export function employerPauseNote(step: OnboardingStepBrief): string {
+  return `Знакомство работодателя не закончено и стоит на паузе (остановился на шаге «${step.question}»). Отвечай на вопросы как обычно. Если в этом разговоре ты ещё не напоминал — в конце ответа одной фразой предложи продолжить знакомство здесь же, в ленте: кнопка «${EMPLOYER_RESUME_BUTTON}» вверху. Ссылок на другие страницы не давай. Уже напоминал — не повторяй.`;
+}
+
+export function buildEmployerSystem(args: { now: Date; companyName: string; toolsExhausted: boolean; paused?: OnboardingStepBrief | null }): string {
   const parts = [EMPLOYER_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК). Компания работодателя: ${args.companyName}.`, EXTERNAL_NOTE];
+  if (args.paused) parts.push(employerPauseNote(args.paused));
   if (args.toolsExhausted) parts.push('Лимит вызовов инструментов на этот ход исчерпан — ответь работодателю текстом по тому, что уже есть.');
   return parts.join('\n\n');
 }
@@ -68,7 +80,10 @@ export async function runEmployerTurn(
   const ctx: EmployerToolContext = { employerProfileId, companyId: emp.companyId, conversationId, emit, llm, ...(signal ? { signal } : {}) };
 
   await ensureEmployerPromptVersion(conversationId);
-  await saveEmployerMessage(conversationId, { role: 'user', content: input.text.trim() });
+  // Знакомство на паузе: реплика помечается шагом паузы - лента покажет её под этим шагом (restore.ts).
+  const owner = await prisma.employerProfile.findUnique({ where: { id: employerProfileId }, select: { userId: true } });
+  const paused = owner ? await pausedOnboardingOf(owner.userId).catch(() => null) : null;
+  await saveEmployerMessage(conversationId, { role: 'user', content: paused ? `${input.text.trim()}\n${pauseMark(paused.stepId)}` : input.text.trim() });
   if (signal?.aborted) return;
 
   if (demo) {
@@ -97,7 +112,7 @@ export async function runEmployerTurn(
         res = await llm.complete(
           {
             purpose: 'employer_assistant',
-            system: buildEmployerSystem({ now: now(), companyName: emp.companyName, toolsExhausted: !canCall }),
+            system: buildEmployerSystem({ now: now(), companyName: emp.companyName, toolsExhausted: !canCall, paused }),
             messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
             tools: specs,
             toolChoice: canCall ? 'auto' : 'none',

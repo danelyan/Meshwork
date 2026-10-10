@@ -21,6 +21,8 @@ export const envSchema = z
     APP_URL: z.url().default('http://localhost:3000'),
     /** Пароль на публичный адрес (без логина, src/server/site-access.ts). Пусто — стенд открыт; localhost не закрывается. */
     SITE_PASSWORD: optionalString,
+    /** То же, но SHA-256 пароля (64 hex): его можно держать в docker-compose.prod.yml. Важнее SITE_PASSWORD. */
+    SITE_PASSWORD_SHA256: optionalString.pipe(z.string().regex(/^[0-9a-fA-F]{64}$/, 'SITE_PASSWORD_SHA256 — 64 hex-символа').optional()),
 
     LLM_PROVIDER: z.enum(['stub', 'yandex', 'openai-chat']).default('stub'),
     /** Только для stub: извлекатель размечает документ словарём каталога — демо С1 без ключей. */

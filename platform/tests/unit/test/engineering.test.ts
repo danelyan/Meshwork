@@ -5,6 +5,21 @@ import { catalogFromFile } from '@/server/claims/catalog-file';
 import { checkAnswer, normalizeAnswer } from '@/server/test/answers';
 import { GENERATORS, generatorsFor } from '@/server/test/generators';
 import {
+  boundaryValues,
+  branchCoverage,
+  burnRate,
+  ciStages,
+  circuitBreaker,
+  joinFanout,
+  latencyPercentile,
+  littlesLaw,
+  logCount,
+  mockCalls,
+  nullAggregates,
+  parametrizeCount,
+  portMapping,
+  rollingUpdate,
+  scd2AsOf,
   dedupCount,
   deployRollback,
   dockerCache,
@@ -14,7 +29,8 @@ import {
   flakyLine,
   idempotentLoad,
   incrementalWatermark,
-  k8sRuntime,
+  k8sCapacity,
+  k8sProbes,
   partitionPrune,
   retryAmplification,
   schemaTypes,
@@ -24,24 +40,26 @@ import { deriveSeed } from '@/server/test/rng';
 
 const SEEDS = Array.from({ length: 300 }, (_, i) => deriveSeed(20261010, i));
 
-const EXPECTED_IDS = [
-  'eng.dedup-count',
-  'eng.schema-types',
-  'eng.docker-cache',
-  'eng.secrets-leak',
-  'eng.test-pyramid',
-  'eng.fixture-isolation',
-  'eng.error-budget',
-  'eng.symptom-alert',
-  'eng.idempotent-load',
-  'eng.incremental-watermark',
-  'eng.partition-prune',
-  'eng.k8s-runtime',
-  'eng.deploy-rollback',
-  'eng.flaky-line',
-  'eng.contract-test',
-  'eng.retry-amplification',
-];
+/** Подкатегория → 4 Junior + 4 Middle семейства (ADR-0003, дополнение 10.10 15:50). */
+const BY_SUB: Record<string, { junior: string[]; middle: string[] }> = {
+  'engineering.data-eng': {
+    junior: ['dedup-count', 'schema-types', 'null-aggregates', 'join-fanout'],
+    middle: ['idempotent-load', 'incremental-watermark', 'partition-prune', 'scd2-as-of'],
+  },
+  'engineering.devops': {
+    junior: ['docker-cache', 'secrets-leak', 'port-mapping', 'ci-stages'],
+    middle: ['k8s-probes', 'k8s-capacity', 'deploy-rollback', 'rolling-update'],
+  },
+  'engineering.qa-automation': {
+    junior: ['test-pyramid', 'fixture-isolation', 'boundary-values', 'parametrize-count'],
+    middle: ['flaky-line', 'contract-test', 'mock-calls', 'branch-coverage'],
+  },
+  'engineering.sre': {
+    junior: ['error-budget', 'symptom-alert', 'latency-percentile', 'log-count'],
+    middle: ['retry-amplification', 'burn-rate', 'littles-law', 'circuit-breaker'],
+  },
+};
+const EXPECTED_IDS = Object.values(BY_SUB).flatMap((x) => [...x.junior, ...x.middle].map((id) => `eng.${id}`));
 
 const toMin = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -58,11 +76,16 @@ function tableRows(code: string, name: string): string[][] {
 }
 
 describe('банк engineering', () => {
-  it('16 семейств: 8 Junior + 8 Middle, ключи eng.*, зарегистрированы в реестре', () => {
+  it('32 семейства eng.*, зарегистрированы; на каждую из 4 подкатегорий — 4 Junior + 4 Middle (минимум 8)', () => {
     expect(ENGINEERING_GENERATORS.map((g) => g.id).sort()).toEqual([...EXPECTED_IDS].sort());
     expect(generatorsFor('engineering').map((g) => g.id).sort()).toEqual([...EXPECTED_IDS].sort());
-    expect(ENGINEERING_GENERATORS.filter((g) => g.grade === 'junior')).toHaveLength(8);
-    expect(ENGINEERING_GENERATORS.filter((g) => g.grade === 'middle')).toHaveLength(8);
+    for (const [sub, { junior, middle }] of Object.entries(BY_SUB)) {
+      const own = ENGINEERING_GENERATORS.filter((g) => g.subcategoryId === sub);
+      expect(own.filter((g) => g.grade === 'junior').map((g) => g.id).sort(), sub).toEqual(junior.map((id) => `eng.${id}`).sort());
+      expect(own.filter((g) => g.grade === 'middle').map((g) => g.id).sort(), sub).toEqual(middle.map((id) => `eng.${id}`).sort());
+      expect(own.length).toBeGreaterThanOrEqual(8);
+    }
+    for (const g of ENGINEERING_GENERATORS) expect(Object.keys(BY_SUB), g.id).toContain(g.subcategoryId);
     expect(new Set(GENERATORS.map((g) => g.id)).size).toBe(GENERATORS.length);
     // taskId engineering не пересекаются ни между собой, ни с backend/frontend (там общие taskId допустимы).
     const others = new Set(GENERATORS.filter((g) => g.specialization !== 'engineering').map((g) => g.taskId));
@@ -324,19 +347,22 @@ describe('независимые решения по тексту условия
     }
   });
 
-  it('eng.k8s-runtime: пошаговая симуляция проб и сумма requests', () => {
+  it('eng.k8s-capacity и eng.k8s-probes: сумма requests и пошаговая симуляция проб', () => {
     for (const seed of SEEDS) {
-      const t = k8sRuntime.generate(seed);
+      const t = k8sCapacity.generate(seed);
       const code = t.code!;
-      if (code.startsWith('Узел')) {
+      {
         const [allocCpu, allocMem] = /allocatable cpu (\d+)m, memory (\d+)Mi/.exec(code)!.slice(1).map(Number);
         const [usedCpu, usedMem] = /requests cpu (\d+)m, memory (\d+)Mi;/.exec(code)!.slice(1).map(Number);
         const [reqCpu, reqMem] = /requests: \{ cpu: (\d+)m, memory: (\d+)Mi \}/.exec(code)!.slice(1).map(Number);
         let n = 0;
         while ((n + 1) * reqCpu! <= allocCpu! - usedCpu! && (n + 1) * reqMem! <= allocMem! - usedMem!) n++;
         expect(t.answerKey, `seed ${seed}`).toBe(String(n));
-        continue;
       }
+    }
+    for (const seed of SEEDS) {
+      const t = k8sProbes.generate(seed);
+      const code = t.code!;
       const hang = Number(/в t = (\d+) с завис/.exec(t.prompt)![1]);
       const probe = (name: string) => {
         const block = code.split(`${name}:`)[1]!;
@@ -405,6 +431,265 @@ describe('независимые решения по тексту условия
       }
       expect(t.answerKey, `seed ${seed}`).toBe(String(t.prompt.includes('PostgreSQL из-за') ? reach : total));
       expect(attempts.filter((a) => a > 1).length).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
+describe('независимые решения: семейства добора до 8 на подкатегорию (300 seed)', () => {
+  it('eng.null-aggregates: семантика NULL в SQL', () => {
+    for (const seed of SEEDS) {
+      const t = nullAggregates.generate(seed);
+      const tableName = t.code!.split('\n')[0]!;
+      const vals = tableRows(t.code!, tableName).map((r) => (r[2] === 'NULL' ? null : Number(r[2])));
+      const nn = vals.filter((v): v is number => v !== null);
+      const sql = t.code!.split('\n').at(-1)!;
+      let expected: number;
+      if (sql.includes('COUNT(DISTINCT')) expected = new Set(nn).size;
+      else if (sql.includes('COUNT(bonus)')) expected = nn.length;
+      else if (sql.includes('AVG')) expected = nn.reduce((a, b) => a + b, 0) / nn.length;
+      else {
+        const pivot = Number(/bonus <> (\d+)/.exec(sql)![1]);
+        expected = nn.filter((v) => v !== pivot).length;
+      }
+      expect(Number(t.answerKey), `seed ${seed}`).toBe(expected);
+      expect(Number.isInteger(expected)).toBe(true);
+    }
+  });
+
+  it('eng.join-fanout: исполнение JOIN по таблицам', () => {
+    for (const seed of SEEDS) {
+      const t = joinFanout.generate(seed);
+      const dim = tableRows(t.code!, 'customers').map((r) => Number(r[0]));
+      const orders = tableRows(t.code!, 'orders').map((r) => ({ cust: Number(r[1]), amount: Number(r[2]) }));
+      const left = t.code!.includes('LEFT JOIN');
+      const joined = orders.flatMap((o) => {
+        const m = dim.filter((d) => d === o.cust).length;
+        return Array.from({ length: m || (left ? 1 : 0) }, () => o);
+      });
+      const expected = t.code!.includes('SUM(') ? joined.reduce((a, o) => a + o.amount, 0) : joined.length;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(expected));
+    }
+  });
+
+  it('eng.scd2-as-of: соединение по дате с интервалом [valid_from; valid_to)', () => {
+    for (const seed of SEEDS) {
+      const t = scd2AsOf.generate(seed);
+      const vers = tableRows(t.code!, 'dim_customer').map((r) => ({ city: r[2]!, from: r[3]!, to: r[4] === 'NULL' ? null : r[4]! }));
+      const orders = tableRows(t.code!, 'orders').map((r) => ({ d: r[2]!, amount: Number(r[3]) }));
+      const target = /к городу «([^»]+)»/.exec(t.prompt)![1]!;
+      const sum = orders
+        .filter((o) => {
+          const v = vers.filter((x) => x.from <= o.d && (x.to === null || o.d < x.to));
+          expect(v).toHaveLength(1);
+          return v[0]!.city === target;
+        })
+        .reduce((a, o) => a + o.amount, 0);
+      expect(sum).toBeGreaterThan(0);
+      expect(t.answerKey, `seed ${seed}`).toBe(String(sum));
+    }
+  });
+
+  it('eng.port-mapping: хост — левая часть ports, сеть compose — порт контейнера', () => {
+    for (const seed of SEEDS) {
+      const t = portMapping.generate(seed);
+      const ports = [...t.code!.matchAll(/"(\d+):(\d+)"/g)].map((m) => ({ host: Number(m[1]), cont: Number(m[2]) }));
+      const [web, api] = ports as [{ host: number; cont: number }, { host: number; cont: number }];
+      let expected: number;
+      if (t.prompt.includes('открывает фронтенд')) expected = web.host;
+      else if (t.prompt.includes('http://api:')) expected = api.cont;
+      else if (t.prompt.includes('curl')) expected = api.host;
+      else expected = 5432;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(expected));
+    }
+  });
+
+  it('eng.ci-stages: правила when/allow_failure GitLab по YAML', () => {
+    for (const seed of SEEDS) {
+      const t = ciStages.generate(seed);
+      const failing = /Задача (\S+) упала/.exec(t.prompt)![1]!;
+      const jobs = t.code!
+        .split('\n\n')[1]!
+        .split(/\n(?=\S)/)
+        .map((block) => ({
+          name: block.split(':')[0]!,
+          stage: /stage: (\w+)/.exec(block)![1]!,
+          allow: block.includes('allow_failure: true'),
+          when: /when: (\w+)/.exec(block)?.[1] ?? 'on_success',
+        }));
+      const ran: string[] = [];
+      let bad = false;
+      for (const st of ['build', 'test', 'deploy']) {
+        let badHere = false;
+        for (const j of jobs.filter((x) => x.stage === st)) {
+          if (!(j.when === 'always' || (j.when === 'on_failure' ? bad : !bad))) continue;
+          ran.push(j.name);
+          if (j.name === failing && !j.allow) badHere = true;
+        }
+        bad ||= badHere;
+      }
+      expect(jobs).toHaveLength(7);
+      expect(t.answerKey, `seed ${seed}`).toBe(ran.filter((n) => n !== failing).sort().join(','));
+    }
+  });
+
+  it('eng.rolling-update: maxSurge вверх, maxUnavailable вниз', () => {
+    for (const seed of SEEDS) {
+      const t = rollingUpdate.generate(seed);
+      const replicas = Number(/replicas: (\d+)/.exec(t.code!)![1]);
+      const parse = (k: string, up: boolean) => {
+        const v = new RegExp(`${k}: (\\d+)(%?)`).exec(t.code!)!;
+        if (!v[2]) return Number(v[1]);
+        const raw = (replicas * Number(v[1])) / 100;
+        return up ? Math.ceil(raw) : Math.floor(raw);
+      };
+      const s = parse('maxSurge', true);
+      const u = parse('maxUnavailable', false);
+      expect(s + u).toBeGreaterThan(0);
+      expect(t.answerKey, `seed ${seed}`).toBe(String(t.prompt.includes('наибольшее') ? replicas + s : replicas - u));
+    }
+  });
+
+  it('eng.boundary-values: отклоняются значения вне диапазона требования', () => {
+    for (const seed of SEEDS) {
+      const t = boundaryValues.generate(seed);
+      const m = /(не меньше|больше) (\d+) и (не больше|меньше) (\d+)/.exec(t.prompt)!;
+      const lo = Number(m[2]);
+      const hi = Number(m[4]);
+      const ok = (v: number) => (m[1] === 'не меньше' ? v >= lo : v > lo) && (m[3] === 'не больше' ? v <= hi : v < hi);
+      const vals = t.code!.split('\n').map((l) => Number(l.split('. ')[1]));
+      const rejected = vals.flatMap((v, i) => (ok(v) ? [] : [i + 1]));
+      expect(rejected.length).toBeGreaterThan(0);
+      expect(rejected.length).toBeLessThan(vals.length);
+      expect(t.answerKey, `seed ${seed}`).toBe(rejected.join(','));
+    }
+  });
+
+  it('eng.parametrize-count: декартово произведение минус пропущенные', () => {
+    for (const seed of SEEDS) {
+      const t = parametrizeCount.generate(seed);
+      const lists = [...t.code!.matchAll(/parametrize\("\w+", \[(.*)\]\)/g)].map((m) => m[1]!.split(/,(?![^(]*\))/).map((x) => x.trim()));
+      let combos: string[][] = [[]];
+      for (const l of lists) combos = combos.flatMap((c) => l.map((v) => [...c, v]));
+      const run = combos.filter((c) => !c.some((v) => v.includes('mark.skip')));
+      expect(t.answerKey, `seed ${seed}`).toBe(String(run.length));
+    }
+  });
+
+  it('eng.mock-calls: прогон цикла ретраев по side_effect', () => {
+    for (const seed of SEEDS) {
+      const t = mockCalls.generate(seed);
+      const attempts = Number(/attempts=(\d+)/.exec(t.code!)![1]);
+      const effects = /side_effect = \[(.*)\]/.exec(t.code!)![1]!.split(', ');
+      let calls = 0;
+      for (let i = 0; i < attempts; i++) {
+        calls++;
+        if (effects[i] !== 'TimeoutError()') break;
+      }
+      expect(effects.length).toBeGreaterThanOrEqual(attempts);
+      expect(t.answerKey, `seed ${seed}`).toBe(String(calls));
+    }
+  });
+
+  it('eng.branch-coverage: ветви if по входам тестов', () => {
+    for (const seed of SEEDS) {
+      const t = branchCoverage.generate(seed);
+      const t1 = Number(/total >= (\d+)/.exec(t.code!)![1]);
+      const t2 = Number(/items > (\d+)/.exec(t.code!)![1]);
+      const covered = new Set<string>();
+      for (const m of t.code!.matchAll(/shipping\((\d+), (\d+), (True|False)\)/g)) {
+        covered.add(`a${Number(m[1]) >= t1}`);
+        covered.add(`b${Number(m[2]) > t2}`);
+        covered.add(`c${m[3] === 'True'}`);
+      }
+      expect(t.answerKey, `seed ${seed}`).toBe(String(6 - covered.size));
+    }
+  });
+
+  it('eng.latency-percentile: ближайший ранг', () => {
+    for (const seed of SEEDS) {
+      const t = latencyPercentile.generate(seed);
+      const vals = t.code!.split(', ').map(Number).sort((a, b) => a - b);
+      const p = Number(/Чему равен p(\d+)/.exec(t.prompt)![1]);
+      expect(vals).toHaveLength(20);
+      expect(t.answerKey, `seed ${seed}`).toBe(String(vals[Math.ceil((p / 100) * vals.length) - 1]));
+    }
+  });
+
+  it('eng.log-count: фильтр журнала', () => {
+    for (const seed of SEEDS) {
+      const t = logCount.generate(seed);
+      const m = /путь (\S+) с (\S+) по (\S+) включительно/.exec(t.prompt)!;
+      const n = t.code!.split('\n').filter((l) => {
+        const [ts, , path, status] = l.split(/\s+/);
+        return path === m[1] && Number(status) >= 500 && Number(status) <= 599 && ts! >= m[2]! && ts! <= m[3]!;
+      }).length;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(n));
+    }
+  });
+
+  it('eng.burn-rate: скорость сгорания и двухоконное правило', () => {
+    for (const seed of SEEDS) {
+      const t = burnRate.generate(seed);
+      const errors = t.code!.split('\n').slice(1).map((l) => Number(l.split('|')[1]));
+      const rate = (e: number, req: number) => e / req / 0.001;
+      let expected: number;
+      if (t.prompt.includes('за весь час')) expected = rate(errors.reduce((a, b) => a + b, 0), 12000);
+      else {
+        expected = 0;
+        for (let i = 0; i < 12; i++) {
+          const long = rate(errors.slice(0, i + 1).reduce((a, b) => a + b, 0), 1000 * (i + 1));
+          if (rate(errors[i]!, 1000) >= 14.4 - 1e-9 && long >= 6 - 1e-9) {
+            expected = i + 1;
+            break;
+          }
+        }
+      }
+      expect(Number(t.answerKey), `seed ${seed}`).toBeCloseTo(expected, 6);
+    }
+  });
+
+  it('eng.littles-law: L = λ·W и рост очереди', () => {
+    for (const seed of SEEDS) {
+      const t = littlesLaw.generate(seed);
+      const lambda = Number(/приходит (\d+) задач/.exec(t.prompt)![1]);
+      const w = Number(/одну задачу (\d+) мс/.exec(t.prompt)![1]);
+      const workers = /обработчиков (\d+)\./.exec(t.prompt);
+      if (!workers) expect(t.answerKey, `seed ${seed}`).toBe(String(Math.ceil((lambda * w) / 1000)));
+      else {
+        const minutes = Number(/за (\d+) мин/.exec(t.prompt)![1]);
+        const growth = (lambda - (Number(workers[1]) * 1000) / w) * minutes * 60;
+        expect(growth).toBeGreaterThan(0);
+        expect(Number(t.answerKey), `seed ${seed}`).toBeCloseTo(growth, 6);
+      }
+    }
+  });
+
+  it('eng.circuit-breaker: автомат closed → open → half-open', () => {
+    for (const seed of SEEDS) {
+      const t = circuitBreaker.generate(seed);
+      const T = Number(/t = 0, 1, …, (\d+)/.exec(t.prompt)![1]) + 1;
+      const [from, to] = /ошибкой при (\d+) ≤ t < (\d+)/.exec(t.prompt)!.slice(1).map(Number) as [number, number];
+      const threshold = Number(/после (\d+) ошибок подряд/.exec(t.code!)![1]);
+      const open = Number(/open: (\d+) с/.exec(t.code!)![1]);
+      let state = 'closed';
+      let fails = 0;
+      let until = -1;
+      let reached = 0;
+      for (let s = 0; s < T; s++) {
+        const down = s >= from && s < to;
+        if (state === 'open' && s < until) continue;
+        reached++;
+        if (state === 'open') {
+          // half-open
+          if (down) until = s + open;
+          else [state, fails] = ['closed', 0];
+          continue;
+        }
+        fails = down ? fails + 1 : 0;
+        if (fails >= threshold) [state, until] = ['open', s + open];
+      }
+      const expected = t.prompt.includes('дойдёт до зависимости') ? reached : T - reached;
+      expect(t.answerKey, `seed ${seed}`).toBe(String(expected));
     }
   });
 });

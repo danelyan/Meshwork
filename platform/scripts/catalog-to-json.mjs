@@ -116,7 +116,8 @@ for (const line of lines) {
   const isCommon = header.length === 8;
   if (c.length !== header.length) fail(`${id}: ${c.length} колонок вместо ${header.length}`);
   const prefix = id.split('.')[0];
-  const specialization = { be: 'backend', fe: 'frontend', common: 'common' }[prefix];
+  // eng.* — раздел «Engineering» каталога-Markdown (лейн engineering, ADR 0003 дополнение 10.10).
+  const specialization = { be: 'backend', fe: 'frontend', common: 'common', eng: 'engineering' }[prefix];
   if (!specialization) fail(`${id}: неизвестный префикс`);
   if (isCommon !== (specialization === 'common')) fail(`${id}: в таблице не своей специализации (${section})`);
   const parsed = parseStatement(c[1]);
@@ -184,35 +185,6 @@ if (existsSync(OVERRIDES)) {
     if (id.startsWith('_')) continue;
     if (!byId.has(id)) fail(`override маркеров: ID ${id} нет в каталоге`);
     byId.get(id).markers = markers;
-  }
-}
-
-// Записи направлений (lane directions, ADR 0003 дополнение 10.10: ai.*, позже eng.*) поверх каталога-Markdown
-// владельца: scripts/catalog-direction-entries.json. entries — в конец; commonWeights — веса common.* для
-// новых направлений (у common веса по специализациям; направление без ключа — запись для него не ожидается).
-const DIRECTION_ENTRIES = join(here, 'catalog-direction-entries.json');
-if (existsSync(DIRECTION_ENTRIES)) {
-  const extra = JSON.parse(readFileSync(DIRECTION_ENTRIES, 'utf8'));
-  const PREFIX = { ai: 'ai.', engineering: 'eng.' };
-  for (const e of extra.entries ?? []) {
-    if (!PREFIX[e.specialization] || !e.id.startsWith(PREFIX[e.specialization])) fail(`${e.id}: направление ${e.specialization} не из ai/engineering или префикс не тот`);
-    if (byId.has(e.id)) fail(`повтор ID ${e.id}`);
-    if (!Array.isArray(e.proof) || e.proof.length === 0) fail(`${e.id}: нет пути доказательства`);
-    const nums = Object.values(e.weights).filter((x) => x !== null);
-    if (nums.length === 0 || e.weight !== Math.max(...nums)) fail(`${e.id}: weight должен быть максимумом weights`);
-    entries.push(e);
-    byId.set(e.id, e);
-  }
-  for (const e of extra.entries ?? []) {
-    for (const a of e.adjacent) {
-      if (!byId.has(a)) fail(`${e.id}: смежность на несуществующий ${a}`);
-      if (!byId.get(a).adjacent.includes(e.id)) fail(`${e.id} — ${a}: смежность не симметрична`);
-    }
-  }
-  for (const [id, bySpec] of Object.entries(extra.commonWeights ?? {})) {
-    const c = byId.get(id);
-    if (!c || c.specialization !== 'common') fail(`commonWeights: ${id} — не запись common`);
-    Object.assign(c.weights, bySpec);
   }
 }
 

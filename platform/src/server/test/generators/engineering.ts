@@ -1,13 +1,16 @@
 // Генераторы заданий направления engineering (ADR-0003, дополнение 10.10; ADR-0002 — формат теста).
-// Подкатегории (research/25 § 3.4): data-eng, devops, qa-automation, sre — по 4–5 семейств,
-// 8 Junior + 8 Middle. Ключ ответа считает код генератора, не LLM (R-T-02); несущественные
-// параметры (имена, числа, порядок, позиции строк) — от seed (R-T-01), сложность задаётся
-// семейством. a, b — ПРЕДЛОЖЕНИЕ (экспертные, по образцу backend/frontend), калибруются персонами
+// Подкатегории (research/25 § 3.4): data-eng, devops, qa-automation, sre — по 8 семейств
+// (4 Junior + 4 Middle), тест — на подкатегорию (ADR-0003, дополнение 10.10 15:50; поле subcategoryId).
+// Ключ ответа считает код генератора, не LLM (R-T-02); несущественные параметры (имена, числа,
+// порядок, позиции строк) — от seed (R-T-01), сложность задаётся семейством. a, b — ПРЕДЛОЖЕНИЕ
+// (экспертные, по образцу backend/frontend), калибруются персонами по подкатегориям
 // (eval/test/personas.ts --spec engineering) и затем разметкой (docs/test-calibration.md).
 //
 // Поведение Kubernetes (откат, пробы, планирование по requests) и Docker (кэш слоёв) сверено с
-// документацией (kubernetes.io, docs.docker.com) 10.10; семантика pytest-фикстур и приведения
-// типов PostgreSQL — по знанию агента, без сверки (помечено в docs/validation-results.md).
+// документацией (kubernetes.io, docs.docker.com) 10.10, как и rolling update (округление maxSurge/
+// maxUnavailable), правила when/allow_failure GitLab CI и stacked parametrize в pytest. Без сверки,
+// по знанию агента: приведение типов и partition pruning PostgreSQL, unittest.mock (call_count при
+// исключении из side_effect) — помечено в docs/validation-results.md.
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 
@@ -47,6 +50,7 @@ export const dedupCount: TaskGenerator = {
   taskId: 'task:dedup-count',
   title: 'Дубли после повторной доставки',
   specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
   grade: 'junior',
   catalogIds: ['eng.data-quality'],
   format: 'number',
@@ -134,6 +138,7 @@ export const schemaTypes: TaskGenerator = {
   taskId: 'task:schema-types',
   title: 'Какие строки не загрузятся',
   specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
   grade: 'junior',
   catalogIds: ['eng.data-types', 'eng.etl-pipeline'],
   format: 'list',
@@ -205,6 +210,7 @@ export const dockerCache: TaskGenerator = {
   taskId: 'task:docker-cache',
   title: 'С какой строки пересоберётся образ',
   specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
   grade: 'junior',
   catalogIds: ['eng.dockerfile'],
   format: 'line',
@@ -260,6 +266,7 @@ export const secretsLeak: TaskGenerator = {
   taskId: 'task:secrets-leak',
   title: 'Где утекает секрет',
   specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
   grade: 'junior',
   catalogIds: ['eng.secrets', 'eng.ci-cd'],
   format: 'line',
@@ -363,6 +370,7 @@ export const testPyramid: TaskGenerator = {
   taskId: 'task:test-pyramid',
   title: 'Уровни пирамиды тестов',
   specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
   grade: 'junior',
   catalogIds: ['eng.test-strategy'],
   format: 'list',
@@ -403,6 +411,7 @@ export const fixtureIsolation: TaskGenerator = {
   taskId: 'task:fixture-isolation',
   title: 'Изоляция тестов и фикстуры',
   specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
   grade: 'junior',
   catalogIds: ['eng.test-isolation'],
   format: 'number',
@@ -459,6 +468,7 @@ export const errorBudget: TaskGenerator = {
   taskId: 'task:error-budget',
   title: 'Бюджет ошибок по таймлайну инцидента',
   specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
   grade: 'junior',
   catalogIds: ['eng.slo', 'eng.incident-postmortem'],
   format: 'number',
@@ -554,6 +564,7 @@ export const symptomAlert: TaskGenerator = {
   taskId: 'task:symptom-alert',
   title: 'Какие алерты будят дежурного',
   specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
   grade: 'junior',
   catalogIds: ['eng.alerting'],
   format: 'list',
@@ -591,6 +602,7 @@ export const idempotentLoad: TaskGenerator = {
   taskId: 'task:idempotent-load',
   title: 'Перезапуски загрузки',
   specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
   grade: 'middle',
   catalogIds: ['eng.idempotent-load', 'eng.etl-pipeline'],
   format: 'number',
@@ -664,6 +676,7 @@ export const incrementalWatermark: TaskGenerator = {
   taskId: 'task:incremental-watermark',
   title: 'Инкрементальная выгрузка',
   specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
   grade: 'middle',
   catalogIds: ['eng.incremental-load'],
   format: 'number',
@@ -730,6 +743,7 @@ export const partitionPrune: TaskGenerator = {
   taskId: 'task:partition-prune',
   title: 'Какие секции прочитает запрос',
   specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
   grade: 'middle',
   catalogIds: ['eng.partitioning'],
   format: 'list',
@@ -790,52 +804,23 @@ export const partitionPrune: TaskGenerator = {
 
 // --- devops: пробы и ресурсы Kubernetes ----------------------------------------------------
 
-export const k8sRuntime: TaskGenerator = {
-  id: 'eng.k8s-runtime',
-  taskId: 'task:k8s-runtime',
-  title: 'Пробы и ресурсы пода',
+export const k8sProbes: TaskGenerator = {
+  id: 'eng.k8s-probes',
+  taskId: 'task:k8s-probes',
+  title: 'Когда сработают пробы',
   specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
   grade: 'middle',
-  catalogIds: ['eng.k8s-probes', 'eng.k8s-resources'],
+  catalogIds: ['eng.k8s-probes'],
   format: 'number',
   a: 1.3,
   b: 0.4,
-  paramSpace: 1e6,
+  paramSpace: 5e5,
   timeLimitSec: 210,
   generate(seed): TaskInstance {
     const rng = createRng(seed);
     const svc = rng.pick(SERVICES);
-    const kind = rng.pick(['restart', 'unready', 'capacity'] as const);
-    if (kind === 'capacity') {
-      const allocCpu = rng.pick([2000, 3000, 4000]);
-      const allocMem = rng.pick([4096, 6144, 8192]);
-      const usedCpuReq = rng.int(2, 8) * 100;
-      const usedMemReq = rng.int(4, 12) * 128;
-      const reqCpu = rng.pick([100, 200, 250, 300, 500]);
-      const reqMem = rng.pick([256, 384, 512, 768]);
-      const limCpu = reqCpu * rng.int(2, 4);
-      const limMem = reqMem * 2;
-      const usageCpu = rng.int(1, Math.floor(usedCpuReq / 100)) * 50;
-      const answer = Math.min(Math.floor((allocCpu - usedCpuReq) / reqCpu), Math.floor((allocMem - usedMemReq) / reqMem));
-      const byCpu = Math.floor((allocCpu - usedCpuReq) / reqCpu);
-      const byMem = Math.floor((allocMem - usedMemReq) / reqMem);
-      return {
-        prompt: `На узле нет других ограничений (taints, affinity, лимит числа подов). Сколько подов деплоймента ${svc} планировщик максимум разместит на этом узле?`,
-        code: [
-          `Узел: allocatable cpu ${allocCpu}m, memory ${allocMem}Mi`,
-          `Уже запущенные поды: requests cpu ${usedCpuReq}m, memory ${usedMemReq}Mi; фактически потребляют cpu ${usageCpu}m`,
-          '',
-          `${svc}, один контейнер:`,
-          '  resources:',
-          `    requests: { cpu: ${reqCpu}m, memory: ${reqMem}Mi }`,
-          `    limits:   { cpu: ${limCpu}m, memory: ${limMem}Mi }`,
-        ].join('\n'),
-        answerHint: 'число подов',
-        answerKey: String(answer),
-        explanation: `Планировщик складывает requests, а не limits и не фактическое потребление: по CPU (${allocCpu} − ${usedCpuReq}) / ${reqCpu} = ${byCpu}, по памяти (${allocMem} − ${usedMemReq}) / ${reqMem} = ${byMem}; берётся минимум — ${answer}.`,
-        params: { kind, allocCpu, allocMem, usedCpuReq, usedMemReq, reqCpu, reqMem },
-      };
-    }
+    const kind = rng.pick(['restart', 'unready'] as const);
     const live = { delay: rng.pick([5, 10, 15]), period: rng.pick([5, 10]), fail: rng.int(2, 4) };
     const ready = { delay: rng.pick([0, 5]), period: rng.pick([3, 5]), fail: rng.int(1, 3) };
     const hang = rng.int(25, 70);
@@ -877,6 +862,54 @@ export const k8sRuntime: TaskGenerator = {
   },
 };
 
+export const k8sCapacity: TaskGenerator = {
+  id: 'eng.k8s-capacity',
+  taskId: 'task:k8s-capacity',
+  title: 'Сколько подов поместится на узел',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'middle',
+  catalogIds: ['eng.k8s-resources'],
+  format: 'number',
+  a: 1.2,
+  b: 0.3,
+  paramSpace: 1e5,
+  timeLimitSec: 180,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const kind = 'capacity';
+    const allocCpu = rng.pick([2000, 3000, 4000]);
+    const allocMem = rng.pick([4096, 6144, 8192]);
+    const usedCpuReq = rng.int(2, 8) * 100;
+    const usedMemReq = rng.int(4, 12) * 128;
+    const reqCpu = rng.pick([100, 200, 250, 300, 500]);
+    const reqMem = rng.pick([256, 384, 512, 768]);
+    const limCpu = reqCpu * rng.int(2, 4);
+    const limMem = reqMem * 2;
+    const usageCpu = rng.int(1, Math.floor(usedCpuReq / 100)) * 50;
+    const answer = Math.min(Math.floor((allocCpu - usedCpuReq) / reqCpu), Math.floor((allocMem - usedMemReq) / reqMem));
+    const byCpu = Math.floor((allocCpu - usedCpuReq) / reqCpu);
+    const byMem = Math.floor((allocMem - usedMemReq) / reqMem);
+    return {
+      prompt: `На узле нет других ограничений (taints, affinity, лимит числа подов). Сколько подов деплоймента ${svc} планировщик максимум разместит на этом узле?`,
+      code: [
+        `Узел: allocatable cpu ${allocCpu}m, memory ${allocMem}Mi`,
+        `Уже запущенные поды: requests cpu ${usedCpuReq}m, memory ${usedMemReq}Mi; фактически потребляют cpu ${usageCpu}m`,
+        '',
+        `${svc}, один контейнер:`,
+        '  resources:',
+        `    requests: { cpu: ${reqCpu}m, memory: ${reqMem}Mi }`,
+        `    limits:   { cpu: ${limCpu}m, memory: ${limMem}Mi }`,
+      ].join('\n'),
+      answerHint: 'число подов',
+      answerKey: String(answer),
+      explanation: `Планировщик складывает requests, а не limits и не фактическое потребление: по CPU (${allocCpu} − ${usedCpuReq}) / ${reqCpu} = ${byCpu}, по памяти (${allocMem} − ${usedMemReq}) / ${reqMem} = ${byMem}; берётся минимум — ${answer}.`,
+      params: { kind, allocCpu, allocMem, usedCpuReq, usedMemReq, reqCpu, reqMem },
+    };
+  },
+};
+
 // --- devops: откат деплоя ---------------------------------------------------------------
 
 export const deployRollback: TaskGenerator = {
@@ -884,6 +917,7 @@ export const deployRollback: TaskGenerator = {
   taskId: 'task:deploy-rollback',
   title: 'Что работает после отката',
   specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
   grade: 'middle',
   catalogIds: ['eng.deploy-rollback'],
   format: 'text',
@@ -943,6 +977,7 @@ export const flakyLine: TaskGenerator = {
   taskId: 'task:flaky-line',
   title: 'Найди причину флаки-теста',
   specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
   grade: 'middle',
   catalogIds: ['eng.flaky-tests', 'eng.test-isolation'],
   format: 'line',
@@ -1016,6 +1051,7 @@ export const contractTest: TaskGenerator = {
   taskId: 'task:contract-test',
   title: 'Что ломает контракт',
   specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
   grade: 'middle',
   catalogIds: ['eng.contract-tests'],
   format: 'list',
@@ -1071,6 +1107,7 @@ export const retryAmplification: TaskGenerator = {
   taskId: 'task:retry-amplification',
   title: 'Шторм ретраев',
   specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
   grade: 'middle',
   catalogIds: ['eng.retries-resilience'],
   format: 'number',
@@ -1108,22 +1145,841 @@ export const retryAmplification: TaskGenerator = {
   },
 };
 
+// ===========================================================================
+// Добор до 8 семейств на подкатегорию (ADR-0003, дополнение 10.10 15:50)
+// ===========================================================================
+
+// --- data-eng: NULL в агрегатах (Junior) -----------------------------------------------
+
+export const nullAggregates: TaskGenerator = {
+  id: 'eng.null-aggregates',
+  taskId: 'task:null-aggregates',
+  title: 'NULL в агрегатах',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'junior',
+  catalogIds: ['eng.data-quality'],
+  format: 'number',
+  a: 1.1,
+  b: -0.8,
+  paramSpace: 1e6,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const ds = rng.pick(DATASETS);
+    const n = rng.int(6, 8);
+    const nNull = rng.int(2, 3);
+    const nullIdx = new Set(rng.sample(Array.from({ length: n }, (_, i) => i), nNull));
+    const kind = rng.int(0, 3);
+    // Значения бонуса в сотнях; для AVG последний ненулевой подбирается так, чтобы среднее было целым.
+    const vals: (number | null)[] = Array.from({ length: n }, (_, i) => (nullIdx.has(i) ? null : rng.int(1, 9)));
+    if (kind === 2) {
+      const nn = vals.flatMap((v, i) => (v === null ? [] : [i]));
+      const last = nn[nn.length - 1]!;
+      const rest = nn.slice(0, -1).reduce((acc, i) => acc + vals[i]!, 0);
+      const options = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((v) => (rest + v) % nn.length === 0);
+      vals[last] = rng.pick(options);
+    }
+    const bonus = vals.map((v) => (v === null ? null : v * 100));
+    const rows = bonus.map((b, i) => [100 + i, rng.pick(NAMES), b === null ? 'NULL' : b]);
+    const nonNull = bonus.filter((b): b is number => b !== null);
+    const pivot = rng.pick(nonNull);
+    let sql: string;
+    let answer: number;
+    let why: string;
+    if (kind === 0) {
+      sql = `SELECT COUNT(bonus) FROM ${ds.table};`;
+      answer = nonNull.length;
+      why = 'COUNT(колонка) не считает NULL, в отличие от COUNT(*)';
+    } else if (kind === 1) {
+      sql = `SELECT COUNT(*) FROM ${ds.table} WHERE bonus <> ${pivot};`;
+      answer = nonNull.filter((b) => b !== pivot).length;
+      why = `сравнение NULL <> ${pivot} даёт NULL, а не TRUE: строки с NULL в выборку не попадают`;
+    } else if (kind === 2) {
+      sql = `SELECT AVG(bonus) FROM ${ds.table};`;
+      answer = nonNull.reduce((acc, b) => acc + b, 0) / nonNull.length;
+      why = 'AVG игнорирует NULL: делится сумма ненулевых значений на их количество, а не на число строк';
+    } else {
+      sql = `SELECT COUNT(DISTINCT bonus) FROM ${ds.table};`;
+      answer = new Set(nonNull).size;
+      why = 'COUNT(DISTINCT) считает разные ненулевые значения; NULL не считается значением';
+    }
+    return {
+      prompt: `Колонка bonus допускает NULL (бонус не начислен). Что вернёт запрос?`,
+      code: [table(ds.table, [ds.key, 'manager', 'bonus'], rows), '', sql].join('\n'),
+      answerHint: 'число',
+      answerKey: String(answer),
+      explanation: `${why}: ${answer}.`,
+      params: { kind, n, nNull, dataset: ds.table },
+    };
+  },
+};
+
+// --- data-eng: размножение строк при JOIN (Junior) ----------------------------------------
+
+export const joinFanout: TaskGenerator = {
+  id: 'eng.join-fanout',
+  taskId: 'task:join-fanout',
+  title: 'JOIN с дублем в справочнике',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'junior',
+  catalogIds: ['eng.data-quality', 'eng.etl-pipeline'],
+  format: 'number',
+  a: 1.2,
+  b: -0.5,
+  paramSpace: 1e7,
+  timeLimitSec: 180,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const nCust = rng.int(3, 4);
+    const cities = ['Казань', 'Самара', 'Тверь', 'Омск', 'Пермь'];
+    const names = rng.sample(NAMES, nCust);
+    const customers = Array.from({ length: nCust }, (_, i) => ({ id: i + 1, name: names[i]!, city: rng.pick(cities) }));
+    // Дубль: один клиент записан в справочник дважды (переехал, старую строку не закрыли).
+    const dup = rng.pick(customers);
+    const dupCity = rng.pick(cities.filter((c) => c !== dup.city));
+    const dim = rng.shuffle([...customers.map((c) => ({ ...c })), { ...dup, city: dupCity }]);
+    const nOrders = rng.int(5, 7);
+    const ghost = nCust + 1; // клиента нет в справочнике
+    const orders = Array.from({ length: nOrders }, (_, i) => ({ id: 500 + i, cust: i === 0 ? dup.id : i === 1 ? ghost : rng.int(1, nCust), amount: rng.int(1, 9) * 100 }));
+    const shuffled = rng.shuffle(orders);
+    const kind = rng.int(0, 2);
+    const mult = (cust: number) => dim.filter((d) => d.id === cust).length;
+    let sql: string;
+    let answer: number;
+    if (kind === 0) {
+      sql = 'SELECT SUM(o.amount)\nFROM orders o JOIN customers c ON c.customer_id = o.customer_id;';
+      answer = shuffled.reduce((acc, o) => acc + o.amount * mult(o.cust), 0);
+    } else if (kind === 1) {
+      sql = 'SELECT COUNT(*)\nFROM orders o JOIN customers c ON c.customer_id = o.customer_id;';
+      answer = shuffled.reduce((acc, o) => acc + mult(o.cust), 0);
+    } else {
+      sql = 'SELECT COUNT(*)\nFROM orders o LEFT JOIN customers c ON c.customer_id = o.customer_id;';
+      answer = shuffled.reduce((acc, o) => acc + Math.max(1, mult(o.cust)), 0);
+    }
+    return {
+      prompt: 'Аналитик строит витрину выручки. Что вернёт запрос?',
+      code: [
+        table('customers', ['customer_id', 'name', 'city'], dim.map((d) => [d.id, d.name, d.city])),
+        '',
+        table('orders', ['order_id', 'customer_id', 'amount'], shuffled.map((o) => [o.id, o.cust, o.amount])),
+        '',
+        sql,
+      ].join('\n'),
+      answerHint: 'число',
+      answerKey: String(answer),
+      explanation: `Клиент ${dup.id} записан в справочник дважды — его заказы после JOIN размножаются; заказа клиента ${ghost} в справочнике нет — ${kind === 2 ? 'LEFT JOIN его сохраняет' : 'INNER JOIN его отбрасывает'}. Итог: ${answer}.`,
+      params: { kind, nCust, nOrders, dup: dup.id },
+    };
+  },
+};
+
+// --- data-eng: SCD2 и отчёт на дату факта (Middle) --------------------------------------------
+
+export const scd2AsOf: TaskGenerator = {
+  id: 'eng.scd2-as-of',
+  taskId: 'task:scd2-as-of',
+  title: 'История измерения (SCD2)',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.data-eng',
+  grade: 'middle',
+  catalogIds: ['eng.dwh-modeling'],
+  format: 'number',
+  a: 1.3,
+  b: 0.6,
+  paramSpace: 1e7,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const cities = rng.sample(['Казань', 'Самара', 'Тверь', 'Омск', 'Пермь'], 3);
+    const who = rng.pick(NAMES);
+    // Версии клиента: город и дата начала действия (valid_from включительно, valid_to — исключительно).
+    const d1 = rng.int(3, 9);
+    const d2 = d1 + rng.int(5, 9);
+    const versions = [
+      { from: 1, to: d1, city: cities[0]! },
+      { from: d1, to: d2, city: cities[1]! },
+      { from: d2, to: null as number | null, city: cities[2]! },
+    ];
+    const day = (d: number) => `2026-09-${String(d).padStart(2, '0')}`;
+    // Заказы: обязательно один ровно в день смены версии.
+    const days = [d1, ...Array.from({ length: rng.int(4, 5) }, () => rng.int(1, 28))];
+    const orders = rng.shuffle(days).map((d, i) => ({ id: 700 + i, d, amount: rng.int(1, 9) * 100 }));
+    const cityAt = (d: number) => versions.find((v) => v.from <= d && (v.to === null || d < v.to))!.city;
+    const target = rng.pick(cities.filter((c) => orders.some((o) => cityAt(o.d) === c)));
+    const answer = orders.filter((o) => cityAt(o.d) === target).reduce((acc, o) => acc + o.amount, 0);
+    const naive = target === cities[2] ? orders.reduce((acc, o) => acc + o.amount, 0) : 0;
+    return {
+      prompt: `Измерение клиентов хранится как SCD2: valid_from включительно, valid_to не включительно, NULL — текущая версия. Отчёт относит каждый заказ к городу клиента на дату заказа. Какую сумму заказов отчёт отнесёт к городу «${target}»?`,
+      code: [
+        table('dim_customer', ['customer_id', 'name', 'city', 'valid_from', 'valid_to'], versions.map((v) => [42, who, v.city, day(v.from), v.to === null ? 'NULL' : day(v.to)])),
+        '',
+        table('orders', ['order_id', 'customer_id', 'order_date', 'amount'], orders.map((o) => [o.id, 42, day(o.d), o.amount])),
+      ].join('\n'),
+      answerHint: 'сумма',
+      answerKey: String(answer),
+      explanation: `Заказ в день смены (${day(d1)}) уже относится к новой версии (valid_from включительно). Сумма по «${target}» — ${answer}${naive ? `; по текущему городу без истории вышло бы ${naive}` : ''}.`,
+      params: { d1, d2, target, n: orders.length },
+    };
+  },
+};
+
+// --- devops: порты в docker compose (Junior) --------------------------------------------------
+
+export const portMapping: TaskGenerator = {
+  id: 'eng.port-mapping',
+  taskId: 'task:port-mapping',
+  title: 'Порты в docker compose',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'junior',
+  catalogIds: ['eng.dockerfile'],
+  format: 'number',
+  a: 1.1,
+  b: -0.8,
+  paramSpace: 1e6,
+  timeLimitSec: 120,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const webHost = rng.pick([8080, 8081, 3000, 8000, 9000]);
+    const webCont = rng.pick([80, 3000, 5173]);
+    const apiCont = rng.pick([8000, 8080, 5000, 4000]);
+    const apiHost = rng.pick([18000, 18080, 15000, 9090].filter((p) => p !== apiCont));
+    const dbPort = 5432;
+    const ask = rng.pick(['browser-web', 'web-to-api', 'host-to-api', 'api-to-db'] as const);
+    const code = [
+      'services:',
+      '  web:',
+      '    build: ./web',
+      '    ports:',
+      `      - "${webHost}:${webCont}"`,
+      '  api:',
+      '    build: ./api',
+      '    ports:',
+      `      - "${apiHost}:${apiCont}"`,
+      '  db:',
+      '    image: postgres:16',
+      '    # ports не опубликованы',
+    ].join('\n');
+    const q = {
+      'browser-web': ['Разработчик открывает фронтенд в браузере на своей машине: http://localhost:<порт>. Какой порт?', webHost, `слева в "${webHost}:${webCont}" — порт хоста`],
+      'web-to-api': ['Сервер web из своего контейнера ходит в API по адресу http://api:<порт>. Какой порт?', apiCont, `внутри сети compose обращаются по имени сервиса и порту контейнера (${apiCont}), проброс на хост не участвует`],
+      'host-to-api': ['Разработчик вызывает API curl-ом со своей машины: http://localhost:<порт>. Какой порт?', apiHost, `с хоста доступен опубликованный порт — левая часть "${apiHost}:${apiCont}"`],
+      'api-to-db': ['Сервис api подключается к базе: postgres://db:<порт>/app. Какой порт?', dbPort, 'внутри сети compose база доступна по имени сервиса и своему порту 5432, публикация на хост для этого не нужна'],
+    }[ask];
+    return {
+      prompt: `Все сервисы — в одном docker-compose.yml, в общей сети по умолчанию. ${q[0]}`,
+      code,
+      answerHint: 'номер порта',
+      answerKey: String(q[1]),
+      explanation: `Ответ ${q[1]}: ${q[2]}.`,
+      params: { ask, webHost, webCont, apiHost, apiCont },
+    };
+  },
+};
+
+// --- devops: стадии CI (Junior) ---------------------------------------------------------------
+
+export const ciStages: TaskGenerator = {
+  id: 'eng.ci-stages',
+  taskId: 'task:ci-stages',
+  title: 'Какие задачи CI запустятся',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'junior',
+  catalogIds: ['eng.ci-cd'],
+  format: 'list',
+  a: 1.2,
+  b: -0.5,
+  paramSpace: 2e4,
+  timeLimitSec: 180,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    type Job = { name: string; stage: 'build' | 'test' | 'deploy'; when: 'on_success' | 'on_failure' | 'always'; allow: boolean };
+    const nm = (a: string, b: string) => (rng.int(0, 1) === 0 ? a : b);
+    const lintAllow = rng.int(0, 2) > 0;
+    const e2eAllow = rng.int(0, 2) === 0;
+    const jobs: Job[] = [
+      { name: nm('compile', 'build-image'), stage: 'build', when: 'on_success', allow: false },
+      { name: nm('unit', 'unit-tests'), stage: 'test', when: 'on_success', allow: false },
+      { name: nm('lint', 'codestyle'), stage: 'test', when: 'on_success', allow: lintAllow },
+      { name: nm('e2e', 'api-tests'), stage: 'test', when: 'on_success', allow: e2eAllow },
+      { name: nm('deploy', 'release'), stage: 'deploy', when: 'on_success', allow: false },
+      { name: nm('notify', 'alert-chat'), stage: 'deploy', when: 'on_failure', allow: false },
+      { name: nm('cleanup', 'teardown'), stage: 'deploy', when: 'always', allow: false },
+    ];
+    const failing = rng.pick(jobs.slice(0, 4)).name;
+    const order = ['build', 'test', 'deploy'];
+    // Симуляция по правилам GitLab: on_success — нет неразрешённых падений в прошлых стадиях; on_failure — есть; always — всегда.
+    const ran: string[] = [];
+    let failedBefore = false;
+    for (const st of order) {
+      let failedHere = false;
+      for (const j of jobs.filter((x) => x.stage === st)) {
+        const run = j.when === 'always' || (j.when === 'on_success' ? !failedBefore : failedBefore);
+        if (!run) continue;
+        ran.push(j.name);
+        if (j.name === failing && !j.allow) failedHere = true;
+      }
+      failedBefore = failedBefore || failedHere;
+    }
+    const answer = ran.filter((n) => n !== failing).sort();
+    const yaml = ['stages: [build, test, deploy]', ''];
+    for (const j of jobs) {
+      yaml.push(`${j.name}:`, `  stage: ${j.stage}`, `  script: ./ci/${j.name}.sh ${svc}`);
+      if (j.allow) yaml.push('  allow_failure: true');
+      if (j.when !== 'on_success') yaml.push(`  when: ${j.when}`);
+    }
+    return {
+      prompt: `GitLab CI, пайплайн из файла ниже. Задача ${failing} упала, все остальные, если запускаются, проходят. Какие задачи, кроме ${failing}, будут выполнены? Перечислите имена.`,
+      code: yaml.join('\n'),
+      answerHint: 'имена через запятую',
+      answerKey: answer.join(','),
+      explanation: `Задачи одной стадии идут параллельно и запускаются независимо от соседа; on_success в следующих стадиях ждёт отсутствия падений (allow_failure считается успехом), on_failure — наоборот, always — всегда. Выполнятся: ${answer.join(', ')}.`,
+      params: { failing, lintAllow, e2eAllow },
+    };
+  },
+};
+
+// --- devops: rolling update (Middle) -----------------------------------------------------------
+
+export const rollingUpdate: TaskGenerator = {
+  id: 'eng.rolling-update',
+  taskId: 'task:rolling-update',
+  title: 'Rolling update: сколько подов',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.devops',
+  grade: 'middle',
+  catalogIds: ['eng.deploy-rollback'],
+  format: 'number',
+  a: 1.3,
+  b: 0.5,
+  paramSpace: 5e3,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const replicas = rng.int(3, 12);
+    const fmt = () => (rng.int(0, 1) === 0 ? { text: `${rng.pick([10, 20, 25, 30, 40, 50])}%`, pct: true } : { text: String(rng.int(1, 3)), pct: false });
+    let surge = fmt();
+    let unavail = fmt();
+    const val = (x: { text: string; pct: boolean }, up: boolean) => {
+      if (!x.pct) return Number(x.text);
+      const raw = (replicas * Number(x.text.replace('%', ''))) / 100;
+      return up ? Math.ceil(raw) : Math.floor(raw);
+    };
+    // Нельзя оба нуля (Kubernetes отклонит спецификацию).
+    if (val(surge, true) === 0 && val(unavail, false) === 0) unavail = { text: '1', pct: false };
+    if (val(surge, true) === 0 && val(unavail, false) === 0) surge = { text: '1', pct: false };
+    const s = val(surge, true);
+    const u = val(unavail, false);
+    const ask = rng.pick(['max', 'min'] as const);
+    const answer = ask === 'max' ? replicas + s : replicas - u;
+    return {
+      prompt: `Деплоймент ${svc} обновляется стратегией RollingUpdate. ${ask === 'max' ? 'Какое наибольшее число подов (старых и новых вместе) может существовать во время обновления?' : 'Какое наименьшее число доступных подов гарантируется во время обновления?'}`,
+      code: [`spec:`, `  replicas: ${replicas}`, `  strategy:`, `    type: RollingUpdate`, `    rollingUpdate:`, `      maxSurge: ${surge.text}`, `      maxUnavailable: ${unavail.text}`].join('\n'),
+      answerHint: 'число подов',
+      answerKey: String(answer),
+      explanation: `Проценты считаются от replicas: maxSurge округляется вверх (${s}), maxUnavailable — вниз (${u}). ${ask === 'max' ? `Максимум ${replicas} + ${s} = ${answer}` : `Минимум доступных ${replicas} − ${u} = ${answer}`}.`,
+      params: { replicas, surge: surge.text, unavail: unavail.text, ask },
+    };
+  },
+};
+
+// --- qa: граничные значения (Junior) -----------------------------------------------------------
+
+export const boundaryValues: TaskGenerator = {
+  id: 'eng.boundary-values',
+  taskId: 'task:boundary-values',
+  title: 'Граничные значения',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'junior',
+  catalogIds: ['eng.test-design'],
+  format: 'list',
+  a: 1.1,
+  b: -0.9,
+  paramSpace: 1e5,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const lo = rng.int(1, 30);
+    const hi = lo + rng.int(10, 60);
+    const loIncl = rng.int(0, 1) === 1;
+    const hiIncl = rng.int(0, 1) === 1;
+    const field = rng.pick(['возраст участника', 'количество товара в заказе', 'число гостей в брони', 'срок займа в днях']);
+    const ok = (v: number) => (loIncl ? v >= lo : v > lo) && (hiIncl ? v <= hi : v < hi);
+    const pool = [lo - 1, lo, lo + 1, hi - 1, hi, hi + 1, Math.floor((lo + hi) / 2)];
+    const values = rng.shuffle([...new Set(pool)]).slice(0, 6);
+    const rejected = values.flatMap((v, i) => (ok(v) ? [] : [i + 1]));
+    const spec = `${field}: целое число ${loIncl ? 'не меньше' : 'больше'} ${lo} и ${hiIncl ? 'не больше' : 'меньше'} ${hi}`;
+    return {
+      prompt: `Требование: «${spec}». Тестировщик проверяет значения ниже. Какие из них валидатор, реализованный строго по требованию, должен отклонить? Перечислите номера.`,
+      code: values.map((v, i) => `${i + 1}. ${v}`).join('\n'),
+      answerHint: 'номера через запятую',
+      answerKey: rejected.length ? listKey(rejected) : 'нет',
+      explanation: `Допустимо ${loIncl ? '[' : '('}${lo}; ${hi}${hiIncl ? ']' : ')'}: отклоняются ${rejected.length ? rejected.map((i) => values[i - 1]).join(', ') : 'ни одно значение'}.`,
+      params: { lo, hi, loIncl, hiIncl },
+    };
+  },
+};
+
+// --- qa: параметризация pytest (Junior) -----------------------------------------------------------
+
+export const parametrizeCount: TaskGenerator = {
+  id: 'eng.parametrize-count',
+  taskId: 'task:parametrize-count',
+  title: 'Сколько тестов выполнится',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'junior',
+  catalogIds: ['eng.test-design'],
+  format: 'number',
+  a: 1.2,
+  b: -0.3,
+  paramSpace: 1e4,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const fn = rng.pick(['calc_price', 'validate_promo', 'convert_currency', 'split_bill']);
+    const nA = rng.int(2, 4);
+    const nB = rng.int(2, 3);
+    const stacked = rng.int(0, 2) > 0;
+    const skipInA = rng.int(0, 1) === 1;
+    const aVals = Array.from({ length: nA }, (_, i) => (i + 1) * rng.int(2, 9));
+    const bVals = rng.sample(['"RUB"', '"USD"', '"EUR"', '"KZT"'], nB);
+    const skipIdx = rng.int(0, nA - 1);
+    const aList = aVals.map((v, i) => (skipInA && i === skipIdx ? `pytest.param(${v}, marks=pytest.mark.skip)` : String(v)));
+    const lines = ['import pytest', '', `@pytest.mark.parametrize("amount", [${aList.join(', ')}])`];
+    if (stacked) lines.push(`@pytest.mark.parametrize("currency", [${bVals.join(', ')}])`);
+    lines.push(`def test_${fn}(amount${stacked ? ', currency' : ''}):`, `    assert ${fn}(amount${stacked ? ', currency' : ''}) is not None`);
+    const total = nA * (stacked ? nB : 1);
+    const skipped = skipInA ? (stacked ? nB : 1) : 0;
+    const answer = total - skipped;
+    return {
+      prompt: 'Сколько тестов pytest выполнит (без учёта пропущенных) при запуске этого файла?',
+      code: lines.join('\n'),
+      answerHint: 'число тестов',
+      answerKey: String(answer),
+      explanation: `${stacked ? `Два декоратора parametrize дают декартово произведение: ${nA} × ${nB} = ${total}` : `Один декоратор: ${total} наборов`}${skipped ? `; пропуск значения ${aVals[skipIdx]} убирает ${skipped}` : ''}. Выполнится ${answer}.`,
+      params: { nA, nB, stacked, skipInA },
+    };
+  },
+};
+
+// --- qa: моки и число вызовов (Middle) ----------------------------------------------------------
+
+export const mockCalls: TaskGenerator = {
+  id: 'eng.mock-calls',
+  taskId: 'task:mock-calls',
+  title: 'Сколько раз вызван мок',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'middle',
+  catalogIds: ['eng.test-isolation'],
+  format: 'number',
+  a: 1.3,
+  b: 0.5,
+  paramSpace: 1e4,
+  timeLimitSec: 180,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const attempts = rng.int(2, 4);
+    // side_effect по вызовам: T — TimeoutError (ретраится), C — ConnectionError (не ловится), OK — ответ.
+    const len = attempts + rng.int(0, 1);
+    const effects: ('T' | 'C' | 'OK')[] = Array.from({ length: len }, () => rng.pick(['T', 'T', 'C', 'OK'] as const));
+    let calls = 0;
+    let outcome = 'исчерпаны попытки';
+    for (let i = 0; i < attempts; i++) {
+      calls++;
+      const e = effects[i]!;
+      if (e === 'OK') {
+        outcome = 'успех';
+        break;
+      }
+      if (e === 'C') {
+        outcome = 'ConnectionError не перехвачен';
+        break;
+      }
+    }
+    const py = (e: string) => (e === 'T' ? 'TimeoutError()' : e === 'C' ? 'ConnectionError()' : '{"ok": True}');
+    const code = [
+      `def fetch(client, url, attempts=${attempts}):`,
+      '    for _ in range(attempts):',
+      '        try:',
+      '            return client.get(url)',
+      '        except TimeoutError:',
+      '            continue',
+      '    raise TimeoutError("all attempts failed")',
+      '',
+      '',
+      'from unittest.mock import Mock',
+      '',
+      'def test_fetch():',
+      '    client = Mock()',
+      `    client.get.side_effect = [${effects.map(py).join(', ')}]`,
+      '    try:',
+      '        fetch(client, "/orders")',
+      '    except Exception:',
+      '        pass',
+      '    print(client.get.call_count)',
+    ].join('\n');
+    return {
+      prompt: 'unittest.mock: элементы side_effect по очереди возвращаются или, если это исключение, выбрасываются на каждом вызове. Что напечатает тест?',
+      code,
+      answerHint: 'число',
+      answerKey: String(calls),
+      explanation: `Вызов считается и тогда, когда мок выбрасывает исключение. TimeoutError ретраится, ConnectionError улетает сразу, ответ завершает цикл; итог — ${outcome}, вызовов ${calls}.`,
+      params: { attempts, effects: effects.join(','), calls },
+    };
+  },
+};
+
+// --- qa: покрытие ветвей (Middle) --------------------------------------------------------------
+
+export const branchCoverage: TaskGenerator = {
+  id: 'eng.branch-coverage',
+  taskId: 'task:branch-coverage',
+  title: 'Непокрытые ветви',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.qa-automation',
+  grade: 'middle',
+  catalogIds: ['eng.test-design'],
+  format: 'number',
+  a: 1.2,
+  b: 0.6,
+  paramSpace: 1e6,
+  timeLimitSec: 210,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const t1 = rng.int(10, 50) * 100;
+    const t2 = rng.int(1, 5);
+    const conds = [
+      { code: `total >= ${t1}`, f: (x: { total: number; items: number; promo: boolean }) => x.total >= t1 },
+      { code: `items > ${t2}`, f: (x: { total: number; items: number; promo: boolean }) => x.items > t2 },
+      { code: 'promo', f: (x: { total: number; items: number; promo: boolean }) => x.promo },
+    ];
+    const nTests = rng.int(2, 4);
+    const tests = Array.from({ length: nTests }, () => ({ total: rng.int(1, 80) * 100, items: rng.int(1, 8), promo: rng.int(0, 1) === 1 }));
+    const covered = new Set<string>();
+    for (const t of tests) conds.forEach((c, i) => covered.add(`${i}:${c.f(t)}`));
+    const answer = 6 - covered.size;
+    const code = [
+      'def shipping(total, items, promo):',
+      '    cost = 300',
+      `    if ${conds[0]!.code}:`,
+      '        cost = 0',
+      `    if ${conds[1]!.code}:`,
+      '        cost += 100',
+      `    if ${conds[2]!.code}:`,
+      '        cost -= 50',
+      '    return cost',
+      '',
+      ...tests.map((t, i) => `def test_${i + 1}(): assert shipping(${t.total}, ${t.items}, ${t.promo ? 'True' : 'False'}) is not None`),
+    ].join('\n');
+    return {
+      prompt: 'Покрытие по ветвям: у каждого if две ветви — условие истинно и ложно (всего 6). Сколько ветвей тесты ниже НЕ покрывают?',
+      code,
+      answerHint: 'число ветвей',
+      answerKey: String(answer),
+      explanation: `Покрыты ветви: ${[...covered].sort().join(', ')} (номер if : значение условия). Не покрыто ${answer}.`,
+      params: { nTests, t1, t2 },
+    };
+  },
+};
+
+// --- sre: перцентили задержки (Junior) ---------------------------------------------------------
+
+export const latencyPercentile: TaskGenerator = {
+  id: 'eng.latency-percentile',
+  taskId: 'task:latency-percentile',
+  title: 'Перцентиль задержки',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'junior',
+  catalogIds: ['eng.observability'],
+  format: 'number',
+  a: 1.1,
+  b: -0.6,
+  paramSpace: 1e9,
+  timeLimitSec: 180,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const n = 20;
+    const vals = Array.from({ length: n }, () => rng.int(8, 60) * 5);
+    // Хвост: пара медленных запросов.
+    vals[rng.int(0, n - 1)] = rng.int(80, 300) * 10;
+    vals[rng.int(0, n - 1)] = rng.int(80, 300) * 10;
+    const p = rng.pick([50, 90, 95]);
+    const sorted = [...vals].sort((x, y) => x - y);
+    const rank = Math.ceil((p / 100) * n);
+    const answer = sorted[rank - 1]!;
+    return {
+      prompt: `Время ответа ${n} запросов, мс. Перцентиль считаем методом ближайшего ранга: p-й перцентиль — значение с номером ⌈p/100 · N⌉ в отсортированном по возрастанию списке. Чему равен p${p}?`,
+      code: vals.join(', '),
+      answerHint: 'миллисекунды',
+      answerKey: String(answer),
+      explanation: `Ранг ⌈${p}/100 · ${n}⌉ = ${rank}; ${rank}-е значение по возрастанию — ${answer} мс. Среднее здесь не подходит: его тянут вверх редкие медленные запросы.`,
+      params: { p, rank },
+    };
+  },
+};
+
+// --- sre: подсчёт по логу (Junior) --------------------------------------------------------------
+
+export const logCount: TaskGenerator = {
+  id: 'eng.log-count',
+  taskId: 'task:log-count',
+  title: 'Ошибки по журналу доступа',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'junior',
+  catalogIds: ['eng.observability', 'eng.incident-postmortem'],
+  format: 'number',
+  a: 1.0,
+  b: -1.2,
+  paramSpace: 1e9,
+  timeLimitSec: 150,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const paths = ['/api/orders', '/api/cart', '/api/login', '/health'];
+    const target = rng.pick(paths.slice(0, 3));
+    const n = rng.int(10, 13);
+    let t = 10 * 3600 + rng.int(0, 120);
+    const lines: { t: number; method: string; path: string; status: number; ms: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      t += rng.int(5, 50);
+      const path = rng.int(0, 2) === 0 ? target : rng.pick(paths);
+      const status = rng.pick([200, 200, 200, 201, 204, 400, 404, 499, 500, 502, 503, 504]);
+      lines.push({ t, method: rng.pick(['GET', 'POST']), path, status, ms: rng.int(5, 900) });
+    }
+    const from = lines[rng.int(1, 3)]!.t;
+    const to = lines[rng.int(n - 4, n - 2)]!.t;
+    const ts = (x: number) => `${String(Math.floor(x / 3600)).padStart(2, '0')}:${String(Math.floor((x % 3600) / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`;
+    const answer = lines.filter((l) => l.path === target && l.status >= 500 && l.t >= from && l.t <= to).length;
+    return {
+      prompt: `Журнал доступа сервиса. Сколько ответов с ошибкой сервера (5xx) получил путь ${target} с ${ts(from)} по ${ts(to)} включительно?`,
+      code: lines.map((l) => `${ts(l.t)} ${l.method.padEnd(4)} ${l.path.padEnd(12)} ${l.status} ${l.ms}ms`).join('\n'),
+      answerHint: 'число',
+      answerKey: String(answer),
+      explanation: `Считаются только статусы 500–599 по ${target} в окне; 4xx (включая 499 — клиент закрыл соединение) — ошибки клиента. Итог: ${answer}.`,
+      params: { target, n, answer },
+    };
+  },
+};
+
+// --- sre: скорость сгорания бюджета (Middle) --------------------------------------------------------
+
+export const burnRate: TaskGenerator = {
+  id: 'eng.burn-rate',
+  taskId: 'task:burn-rate',
+  title: 'Скорость сгорания бюджета ошибок',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'middle',
+  catalogIds: ['eng.alerting', 'eng.slo'],
+  format: 'number',
+  a: 1.3,
+  b: 0.6,
+  paramSpace: 1e8,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    // 12 интервалов по 5 минут, по 1000 запросов; SLO 99,9 % → норма 1 ошибка на 1000.
+    const errors = Array.from({ length: 12 }, () => rng.int(0, 3));
+    const spikeAt = rng.int(4, 9);
+    for (let i = spikeAt; i < 12; i++) errors[i] = rng.int(8, 40);
+    const ask = rng.pick(['hour', 'first'] as const);
+    let answer: number;
+    let explanation: string;
+    if (ask === 'hour') {
+      // Подгоняем сумму к кратной 12, чтобы скорость была целой.
+      const total = errors.reduce((a, b) => a + b, 0);
+      errors[11]! += (12 - (total % 12)) % 12;
+      const sum = errors.reduce((a, b) => a + b, 0);
+      answer = sum / 12;
+      explanation = `За час ${sum} ошибок на 12000 запросов = ${(sum / 120).toFixed(2)} %; бюджет 0,1 %, скорость сгорания ${sum} / 12 = ${answer}.`;
+    } else {
+      // Правило: 5-минутная скорость ≥ 14,4 и средняя скорость с начала таблицы (окно «час») ≥ 6.
+      let first = 0;
+      let cum = 0;
+      for (let i = 0; i < 12; i++) {
+        cum += errors[i]!;
+        const short = errors[i]!; // ошибок на 1000 = скорость в долях бюджета 0,1 %
+        const long = cum / (i + 1);
+        if (short >= 14.4 && long >= 6 && first === 0) first = i + 1;
+      }
+      answer = first;
+      explanation = first
+        ? `Короткое окно (≥ 14,4) срабатывает раньше, но правило ждёт и длинное окно (≥ 6): оба выполнены впервые в интервале ${first}.`
+        : 'Длинное окно так и не дошло до 6 — правило не сработало (0).';
+    }
+    return {
+      prompt: `SLO доступности ${svc}: 99,9 %. В каждом 5-минутном интервале — 1000 запросов, в таблице — ошибки. Скорость сгорания = доля ошибок / 0,1 %. ${ask === 'hour' ? 'Чему равна скорость сгорания за весь час?' : 'Алерт: скорость в текущем интервале ≥ 14,4 И средняя скорость с начала часа по текущий интервал включительно ≥ 6. В каком по номеру интервале алерт сработает впервые? (0 — не сработает.)'}`,
+      code: ['интервал | ошибок', ...errors.map((e, i) => `${String(i + 1).padStart(8)} | ${e}`)].join('\n'),
+      answerHint: 'число',
+      answerKey: String(answer),
+      explanation,
+      params: { ask, spikeAt, answer },
+    };
+  },
+};
+
+// --- sre: закон Литтла (Middle) ----------------------------------------------------------------
+
+export const littlesLaw: TaskGenerator = {
+  id: 'eng.littles-law',
+  taskId: 'task:littles-law',
+  title: 'Сколько обработчиков нужно',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'middle',
+  catalogIds: ['eng.capacity-planning'],
+  format: 'number',
+  a: 1.2,
+  b: 0.4,
+  paramSpace: 1e5,
+  timeLimitSec: 180,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const lambda = rng.int(4, 40) * 10; // запросов в секунду
+    const w = rng.pick([20, 40, 50, 80, 120, 150, 200, 250]); // мс на запрос, один запрос на обработчик
+    const ask = rng.pick(['workers', 'backlog'] as const);
+    const need = Math.ceil((lambda * w) / 1000);
+    if (ask === 'workers') {
+      return {
+        prompt: `Очередь сервиса ${svc}: приходит ${lambda} задач в секунду, обработчик держит одну задачу ${w} мс и берёт следующую. Сколько обработчиков минимум нужно, чтобы очередь не росла бесконечно (пропускная способность ≥ потоку)?`,
+        answerHint: 'число обработчиков',
+        answerKey: String(need),
+        explanation: `По закону Литтла в работе одновременно λ·W = ${lambda} · ${w / 1000} = ${((lambda * w) / 1000).toFixed(2)} задач; округление вверх — ${need}.`,
+        params: { lambda, w, ask },
+      };
+    }
+    const workers = Math.max(1, need - rng.int(1, 3));
+    const minutes = rng.int(1, 10);
+    const capacity = (workers * 1000) / w;
+    const backlog = Math.round((lambda - capacity) * minutes * 60);
+    return {
+      prompt: `Очередь сервиса ${svc}: приходит ${lambda} задач в секунду, обработчик держит одну задачу ${w} мс, обработчиков ${workers}. Очередь была пуста. На сколько задач она вырастет за ${minutes} мин?`,
+      answerHint: 'число задач',
+      answerKey: String(backlog),
+      explanation: `Пропускная способность ${workers} · 1000 / ${w} = ${capacity.toFixed(2)} задач/с, приток ${lambda}; рост (${lambda} − ${capacity.toFixed(2)}) · ${minutes * 60} с ≈ ${backlog}.`,
+      params: { lambda, w, workers, minutes, ask },
+    };
+  },
+};
+
+// --- sre: автоматический выключатель (Middle) --------------------------------------------------------
+
+export const circuitBreaker: TaskGenerator = {
+  id: 'eng.circuit-breaker',
+  taskId: 'task:circuit-breaker',
+  title: 'Circuit breaker',
+  specialization: 'engineering',
+  subcategoryId: 'engineering.sre',
+  grade: 'middle',
+  catalogIds: ['eng.retries-resilience'],
+  format: 'number',
+  a: 1.3,
+  b: 0.7,
+  paramSpace: 1e5,
+  timeLimitSec: 240,
+  generate(seed): TaskInstance {
+    const rng = createRng(seed);
+    const svc = rng.pick(SERVICES);
+    const threshold = rng.int(2, 4);
+    const openSec = rng.pick([5, 10, 15]);
+    const T = rng.int(25, 40);
+    const downFrom = rng.int(2, 8);
+    const downTo = downFrom + rng.int(6, 20);
+    // Клиент вызывает раз в секунду, t = 0..T−1. Зависимость отвечает ошибкой при downFrom ≤ t < downTo.
+    let state: 'closed' | 'open' = 'closed';
+    let fails = 0;
+    let openedAt = 0;
+    let reached = 0;
+    let rejected = 0;
+    for (let t = 0; t < T; t++) {
+      const down = t >= downFrom && t < downTo;
+      if (state === 'open') {
+        if (t < openedAt + openSec) {
+          rejected++;
+          continue;
+        }
+        // half-open: пробный вызов
+        reached++;
+        if (down) openedAt = t;
+        else {
+          state = 'closed';
+          fails = 0;
+        }
+        continue;
+      }
+      reached++;
+      if (down) {
+        fails++;
+        if (fails >= threshold) {
+          state = 'open';
+          openedAt = t;
+        }
+      } else fails = 0;
+    }
+    const ask = rng.pick(['reached', 'rejected'] as const);
+    const answer = ask === 'reached' ? reached : rejected;
+    return {
+      prompt: `Клиент вызывает ${svc} раз в секунду, t = 0, 1, …, ${T - 1}. Зависимость отвечает ошибкой при ${downFrom} ≤ t < ${downTo}, иначе успешно. ${ask === 'reached' ? 'Сколько вызовов дойдёт до зависимости?' : 'Сколько вызовов выключатель отклонит, не обращаясь к зависимости?'}`,
+      code: [
+        `circuit breaker:`,
+        `  closed: после ${threshold} ошибок подряд — open (успех обнуляет счётчик)`,
+        `  open: ${openSec} с отклоняет все вызовы сразу (с момента открытия t₀ до t₀ + ${openSec} не включительно)`,
+        '  затем half-open: следующий вызов пробный — успех → closed, ошибка → снова open на тот же срок',
+      ].join('\n'),
+      answerHint: 'число вызовов',
+      answerKey: String(answer),
+      explanation: `Пошагово: до зависимости дошло ${reached}, отклонено ${rejected} из ${T}. Пока выключатель открыт, упавшую зависимость не добивают запросами.`,
+      params: { threshold, openSec, T, downFrom, downTo, ask },
+    };
+  },
+};
+
 export const ENGINEERING_GENERATORS: TaskGenerator[] = [
+  // data-eng: 4 Junior + 4 Middle
   dedupCount,
   schemaTypes,
-  dockerCache,
-  secretsLeak,
-  testPyramid,
-  fixtureIsolation,
-  errorBudget,
-  symptomAlert,
+  nullAggregates,
+  joinFanout,
   idempotentLoad,
   incrementalWatermark,
   partitionPrune,
-  k8sRuntime,
+  scd2AsOf,
+  // devops
+  dockerCache,
+  secretsLeak,
+  portMapping,
+  ciStages,
+  k8sProbes,
+  k8sCapacity,
   deployRollback,
+  rollingUpdate,
+  // qa-automation
+  testPyramid,
+  fixtureIsolation,
+  boundaryValues,
+  parametrizeCount,
   flakyLine,
   contractTest,
+  mockCalls,
+  branchCoverage,
+  // sre
+  errorBudget,
+  symptomAlert,
+  latencyPercentile,
+  logCount,
   retryAmplification,
+  burnRate,
+  littlesLaw,
+  circuitBreaker,
 ];
-

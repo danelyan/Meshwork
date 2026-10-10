@@ -3,13 +3,13 @@ import { catalogFor, catalogFromFile, getCatalogMeta, CATALOG_VERSION } from '@/
 describe('каталог из prisma/seed/claims-catalog.json', () => {
   const cat = catalogFromFile();
 
-  it('96 записей: backend 33, frontend 28, common 11, engineering 24; ID уникальны', () => {
-    expect(cat).toHaveLength(96);
+  it('99 записей: backend 33, frontend 28, common 11, engineering 27; ID уникальны', () => {
+    expect(cat).toHaveLength(99);
     expect(cat.filter((c) => c.specialization === 'backend')).toHaveLength(33);
     expect(cat.filter((c) => c.specialization === 'frontend')).toHaveLength(28);
     expect(cat.filter((c) => c.specialization === 'common')).toHaveLength(11);
-    expect(cat.filter((c) => c.specialization === 'engineering')).toHaveLength(24);
-    expect(new Set(cat.map((c) => c.id)).size).toBe(96);
+    expect(cat.filter((c) => c.specialization === 'engineering')).toHaveLength(27);
+    expect(new Set(cat.map((c) => c.id)).size).toBe(99);
     expect(CATALOG_VERSION).toMatch(/^claims-catalog-/);
   });
 
@@ -46,6 +46,6 @@ describe('каталог из prisma/seed/claims-catalog.json', () => {
     const be = catalogFor(cat, 'backend');
     expect(be).toHaveLength(44);
     expect(be.some((c) => c.specialization === 'frontend')).toBe(false);
-    expect(catalogFor(cat, null)).toHaveLength(96);
+    expect(catalogFor(cat, null)).toHaveLength(99);
   });
 });

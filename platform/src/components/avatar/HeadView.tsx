@@ -11,14 +11,14 @@ import { useCompanionVoice } from './voice';
  * Голова компаньона без рамки и кнопок — для сцен, где вокруг свой интерфейс. Читает ближайший
  * `CompanionVoiceProvider`; без WebGL — знак ФСП. Заполняет родителя (родитель задаёт размер).
  */
-export function HeadView() {
+export function HeadView({ style: fixedStyle }: { style?: HeadStyle } = {}) {
   const voice = useCompanionVoice();
   const [reduced, setReduced] = useState(false);
-  const [style, setStyle] = useState<HeadStyle>(DEFAULT_HEAD_STYLE);
+  const [style, setStyle] = useState<HeadStyle>(fixedStyle ?? DEFAULT_HEAD_STYLE);
   useEffect(() => {
     setReduced(typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    setStyle(loadHeadStyle());
-  }, []);
+    setStyle(fixedStyle ?? loadHeadStyle());
+  }, [fixedStyle]);
   if (!voice) return null;
   return (
     <div className={styles.fill} data-status={voice.status} data-testid="head-view">

@@ -114,3 +114,53 @@
 
 - Шаблоны проектов: сколько, какой стек, формат скрытых тестов — по разведке Worker-билдера.
 - Видео-запись кандидата — рассматривается (владелец), в этот план не входит.
+
+## Дополнение 10.10 (решения владельца, виджеты 15:00–15:30): лента заданий и четыре направления
+
+6. **Выдача проекта — лента обезличенных заданий до приглашения.** Главная боль, которую решаем, —
+   работодателя (тысячи откликов на вакансию, фермы и сгенерированные резюме; тезис владельца, источник
+   для слайда ещё нужен). Работодатель публикует задание к потребности в категорию; кандидат
+   подходящей категории видит его в ленте **без названия компании и зарплаты** (это не работа, а
+   задача для защиты), берёт не больше `PROJECT_MAX_ACTIVE = 3` одновременно, сдаёт репозиторий.
+   Работодатель видит сабмиты по своей потребности (под псевдонимом, R-C-16), выбирает кандидата и
+   **зовёт на защиту** — это приглашение в смысле ТЗ (название, зарплата, R-D-01/02), после него
+   открываются контакт, запись и комната защиты. Приглашение по-прежнему можно отправить и без
+   задания. Общий мини-проект категории (вариант D) не делаем.
+7. **Четыре направления полностью: backend, frontend, ai, engineering** — тест на грейд, каталог
+   утверждений, шаблоны проектов. Карта направлений и подкатегорий — ресёрч владельца
+   `research/25` (копия структуры ниже). Факт организаторов «двух специализаций достаточно» —
+   нижняя планка, не потолок; риск по времени владелец принял сознательно.
+
+### Контракт: направления и подкатегории (lane directions; lane engineering — только свои генераторы)
+
+- `enum Specialization` += `ai`, `engineering`; `enum CatalogSpecialization` += `ai`, `engineering`.
+  Все `switch`/`Record<Specialization, …>` по коду должны стать исчерпывающими (TS подскажет).
+- Модель `Subcategory`: `id` вида `backend.web-api` (@id), `specialization`, `title`, `description`,
+  `status active | planned`, `order`. Сид из карты: backend {web-api, integrations, highload,
+  data-model}, frontend {ui-app, design-system, web-perf, realtime}, ai {llm-apps, ai-integration,
+  ml-engineering, mlops, data-science}, engineering {data-eng, devops, qa-automation, sre}.
+- `Candidate.subcategoryId String?` (выбор в онбординге, необязателен), `Vacancy.subcategoryId
+  String?` (потребность), `ProjectTemplate.subcategoryId String` (lane project).
+- Генераторы заданий теста: `src/server/test/generators/ai.ts` и `engineering.ts` с тем же
+  интерфейсом, что `backend.ts`/`frontend.ts`, регистрация в `generators/index.ts`; ключи заданий
+  `ai.*`, `eng.*`; каталог утверждений — записи `ai.*`, `eng.*` в `claims-catalog.json`; калибровка
+  персонами (`eval/test/personas.ts`) для каждого нового направления; `POLICY_VERSION` не меняется.
+- Фильтры/справочники в UI (`R-T-05`): опрос, потребность, поиск по банку — четыре направления и
+  подкатегории из `Subcategory`.
+
+### Контракт: лента заданий (lane project)
+
+- `ProjectTask` += `visibility open | invited` (default `open`), `subcategoryId?`, `grade`,
+  `specialization`, `deadlineDays Int?`; `ProjectSubmission` без изменений.
+- `GET /api/project-tasks/feed` — кандидату: открытые задания его направления/грейда (подкатегория —
+  приоритет), **без companyId/названия/зарплаты**, с условием и видимыми тестами; `POST
+  /api/project-tasks/{id}/take` (лимит активных); `POST /api/project-tasks/{id}/submissions`.
+- Работодателю: `GET /api/employer/project-submissions?needId=` — сабмиты под псевдонимом с
+  результатом автопроверки; `POST /api/employer/project-submissions/{id}/invite-to-defense` —
+  создаёт приглашение (существующая модель, с зарплатой) и `CallSession.kind=defense` в статусе
+  «ожидает кандидата»; дальше — lane defense-room.
+- Шаблоны: `platform/project-templates/<subcategory>/<grade>/<template-id>/` с манифестом
+  (`template.json`: id, subcategoryId, grade, stack, image, visibleTests, hiddenTests, timeBudgetMin),
+  скрытые тесты не попадают в выдачу кандидату. К сдаче: backend.web-api ×2, backend.integrations ×1,
+  frontend.ui-app ×2, ai.llm-apps ×1, engineering.data-eng ×1; остальные подкатегории —
+  `status=planned`.

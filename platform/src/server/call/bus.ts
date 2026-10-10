@@ -4,7 +4,12 @@ import type { CallEvent } from './types';
 
 type Listener = (event: CallEvent) => void;
 
-const channels = new Map<string, Set<Listener>>();
+// На globalThis под Symbol.for: идентичность модуля не гарантирована (в dev маршруты собираются отдельными
+// модулями, и /turn публиковал в одну Map, а /events слушал другую — SSE получал только snapshot; отладка 11.10).
+// Тот же приём, что у defense-room/bus.ts и у самого Next.js для своих синглтонов.
+const KEY = Symbol.for('fsp.call.bus');
+const g = globalThis as unknown as Record<symbol, Map<string, Set<Listener>> | undefined>;
+const channels: Map<string, Set<Listener>> = (g[KEY] ??= new Map());
 
 export function subscribeCall(sessionId: string, listener: Listener): () => void {
   let set = channels.get(sessionId);

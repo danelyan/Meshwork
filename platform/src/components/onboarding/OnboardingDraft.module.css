@@ -3,6 +3,8 @@
 .tabs button { flex: 1; min-height: 36px; padding: 8px 10px; border: 1px solid var(--ink); background: var(--glass); color: var(--ink); font: 500 11px var(--mono); cursor: pointer; }
 .tabs button + button { border-left: 0; }
 .tabs button[aria-pressed='true'] { background: var(--ink); color: var(--on-ink); }
+.compact { margin-bottom: 12px; }
+.compact button { min-height: 28px; padding: 4px 8px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card, .companyCard { background: var(--glass); backdrop-filter: var(--blur); border: 1px solid var(--glass-border); box-shadow: inset 0 1px var(--glass-border); }
 .card header, .companyCard { padding: 18px; }
 .draft h2 { margin: 5px 0 8px; font-size: 20px; line-height: 1.2; letter-spacing: -.03em; }

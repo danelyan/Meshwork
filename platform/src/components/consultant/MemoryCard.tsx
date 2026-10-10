@@ -11,6 +11,8 @@ import aside from './SceneAside.module.css';
 import styles from './MemoryCard.module.css';
 
 const SOURCE_LABEL = { onboarding: 'знакомство', chat: 'из чата', user: 'добавлено вручную' } as const;
+/** Короткие метки видимости для узкой карточки; полная формулировка — в title. */
+const SEEN_SHORT: Record<string, string> = { 'только тебе': 'только тебе', 'в анонимной карточке': 'видит компания', 'после принятия приглашения': 'после «да»' };
 /** Сколько держится подсветка «новое» у пункта, который консультант запомнил из чата. */
 export const NEW_HIGHLIGHT_MS = 6_000;
 /** Пока сервер извлекает факты, колонка перечитывается с этим шагом, не больше MAX_PENDING_POLLS раз. */
@@ -137,7 +139,7 @@ export function MemoryCard({ facts, role, pending, limit, fill }: { facts: Known
         </button>
       </h2>
       <div id="aside-known-body" className={aside.cardBody}>
-        <ViewTabs employer={role === 'employer'} company={company} onChange={setCompany} />
+        <ViewTabs employer={role === 'employer'} company={company} onChange={setCompany} compact />
         {company ? (
           <CompanyPreview employer={role === 'employer'} answer={(id) => visible.find((f) => f.source === 'onboarding' && f.stepId === id)?.value} />
         ) : visible.length === 0 && !adding ? (
@@ -147,7 +149,12 @@ export function MemoryCard({ facts, role, pending, limit, fill }: { facts: Known
             {visible.map((f) => (
               <li key={f.id} className={styles.item} data-source={f.source} data-new={fresh.has(f.id) || undefined} data-testid={`memory-${f.id}`}>
                 <span className={styles.source}>
-                  {f.source === 'onboarding' ? `${SOURCE_LABEL.onboarding} · ${f.label}${role === 'candidate' && f.stepId ? ` · ${fieldVisibility(f.stepId)}` : ''}` : SOURCE_LABEL[f.source]}
+                  <span className={styles.sourceName}>{f.source === 'onboarding' ? f.label : SOURCE_LABEL[f.source]}</span>
+                  {f.source === 'onboarding' && role === 'candidate' && f.stepId && (
+                    <span className={styles.seen} title={fieldVisibility(f.stepId)}>
+                      {SEEN_SHORT[fieldVisibility(f.stepId)] ?? fieldVisibility(f.stepId)}
+                    </span>
+                  )}
                   {fresh.has(f.id) && <span className={styles.badge}>новое</span>}
                 </span>
                 {editing === f.id ? (

@@ -17,7 +17,7 @@
   .aside > :last-child:nth-child(even) { grid-column: auto; }
   .aside[data-role='employer'] > .card { grid-column: span 2; }
 }
-.title, .cardHead { margin: 0; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--stage-text-soft); }
+.title, .cardHead { margin: 0; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--stage-text-soft); }
 .title { margin-bottom: 10px; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 

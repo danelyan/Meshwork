@@ -36,10 +36,11 @@ export function OnboardingDraft({ view, busy, onEdit }: { view: OnboardingView; 
 }
 
 /** «Как вижу я / Как видит компания» — общий переключатель черновика и карточки «Что я о тебе знаю». */
-export function ViewTabs({ employer, company, onChange }: { employer: boolean; company: boolean; onChange: (company: boolean) => void }) {
-  return <div className={styles.tabs} role="group" aria-label="Вид черновика">
-    <button type="button" aria-pressed={!company} onClick={() => onChange(false)}>Как вижу я</button>
-    <button type="button" aria-pressed={company} onClick={() => onChange(true)}>{employer ? 'Как видит кандидат' : 'Как видит компания'}</button>
+export function ViewTabs({ employer, company, onChange, compact = false }: { employer: boolean; company: boolean; onChange: (company: boolean) => void; compact?: boolean }) {
+  // compact — узкая карточка «Что я о тебе знаю»: короткие подписи, полное название — в aria-label.
+  return <div className={`${styles.tabs}${compact ? ` ${styles.compact}` : ''}`} role="group" aria-label="Вид черновика">
+    <button type="button" aria-pressed={!company} onClick={() => onChange(false)} aria-label="Как вижу я">{compact ? 'Мой вид' : 'Как вижу я'}</button>
+    <button type="button" aria-pressed={company} onClick={() => onChange(true)} aria-label={employer ? 'Как видит кандидат' : 'Как видит компания'}>{compact ? (employer ? 'Для кандидата' : 'Для компании') : employer ? 'Как видит кандидат' : 'Как видит компания'}</button>
   </div>;
 }
 

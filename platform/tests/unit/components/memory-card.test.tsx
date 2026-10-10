@@ -30,7 +30,8 @@ describe('MemoryCard', () => {
   it('shows each item with its source and the count in the title', () => {
     render(<MemoryCard facts={facts} role="candidate" limit={20} />);
     expect(screen.getByRole('button', { name: /Что я о тебе знаю · 3/ })).toBeTruthy();
-    expect(screen.getByText('знакомство · Цель · только тебе')).toBeTruthy();
+    expect(screen.getByText('Цель')).toBeTruthy();
+    expect(screen.getByTitle('только тебе').textContent).toBe('только тебе');
     expect(screen.getByText('из чата')).toBeTruthy();
     expect(screen.getByText('добавлено вручную')).toBeTruthy();
     // у ответа знакомства нет «удалить»

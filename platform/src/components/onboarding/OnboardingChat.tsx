@@ -135,7 +135,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const isSummary = cur.kind === 'summary';
   const canType = ready && !busy && !asides.asking && !isSummary && typesText(cur);
   // Свободный текст: на любом шаге, кроме согласия (его дают только кнопкой) и итога.
-  const canInput = ready && !busy && !asides.asking && !isSummary && cur.kind !== 'consent' && cur.kind !== 'consents';
+  const canInput = ready && !busy && !asides.asking && !isSummary && cur.kind !== 'consent';
   const toModel = asideToModel(view.role, cur.kind);
   const curAsides = asides.byStep[cur.id];
 
@@ -344,7 +344,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const nextSteps = employer
     ? [{ value: 'go:/employer', label: 'Открыть подборку' }, ...skippedReplies]
     : [
-        { value: `go:${view.test.href}`, label: view.test.ready ? 'Пройти тест на грейд' : 'Тест на грейд (скоро) - в профиль' },
+        { value: `go:${view.test.href}`, label: view.test.ready ? 'Пройти тест на грейд →' : 'Тест на грейд (скоро) - в профиль' },
         { value: 'go:/profile', label: 'Открыть профиль' },
         ...skippedReplies,
       ];
@@ -360,7 +360,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const placeholder =
     !ready || busy || asides.asking
       ? ''
-      : cur.kind === 'consent' || cur.kind === 'consents'
+      : cur.kind === 'consent'
         ? 'Выбери вариант выше'
       : cur.kind === 'files'
         ? 'Прикрепи резюме или вставь ссылку'
@@ -405,7 +405,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           {inConsultant && isSummary && view.scenario !== 'employer' && (
             <nav className={styles.routes} aria-label="Следующий шаг">
               <Button href="/profile" size="sm">Профиль</Button>
-              <Button href="/test" size="sm">Тест</Button>
+              <Button href={view.test.href} size="sm" variant="cta">Пройти тест на грейд →</Button>
             </nav>
           )}
           {!isSummary && (
@@ -515,7 +515,13 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
 
           {ready && isSummary && view.summary && (employer ? !employerAssistant : !consultant) && (
             <AssistantRow mark={false} testId="ob-summary">
-              <QuickReplies label="Что дальше" items={nextSteps} disabled={busy} onPick={onNext} />
+              {!employer && (
+                <div className={styles.routes} role="group" aria-label="Что дальше">
+                  <Button variant="cta" onClick={() => void finish(view.test.href)} disabled={busy} data-testid="ob-test-cta">{view.test.ready ? 'Пройти тест на грейд →' : 'Тест на грейд (скоро) - в профиль'}</Button>
+                  <Button onClick={() => void finish('/profile')} disabled={busy}>Открыть профиль</Button>
+                </div>
+              )}
+              <QuickReplies label={employer ? 'Что дальше' : 'Ответить на пропущенное'} items={employer ? nextSteps : skippedReplies} disabled={busy} onPick={onNext} />
             </AssistantRow>
           )}
         </Thread>

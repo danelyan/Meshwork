@@ -411,7 +411,7 @@ describe('свободный текст посреди онбординга', ()
     expect(fetchFn).not.toHaveBeenCalled();
     fireEvent.change(box, { target: { value: 'я специалист' } });
     fireEvent.keyDown(box, { key: 'Enter' });
-    // Роль «специалист» на /onboarding — знакомство продолжается в ленте /consultant (решение владельца 10.10).
+    // Роль выбрана — /consultant перерисовывается под роль (решение владельца 10.10).
     await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
     expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'role', value: 'candidate' });
   });
@@ -438,14 +438,29 @@ describe('свободный текст посреди онбординга', ()
 });
 
 describe('лента внутри /consultant (онбординг и консультант — одна страница, решение владельца 10.10)', () => {
-  it('заголовок консультанта, без своей шапки сайта и второго main; «Настроить позже» — в профиль, а не на эту же страницу', async () => {
+  it('роль «работодатель» в ленте /consultant — перерисовка под роль; у работодателя свой заголовок', async () => {
+    const ROLE = [
+      { value: 'candidate', label: 'Я специалист' },
+      { value: 'employer', label: 'Я работодатель' },
+    ];
+    const fetchFn = stubFetch(makeView({ id: 'companyName', kind: 'text', question: 'Как называется компания?' }, { role: 'employer', scenario: 'employer' }));
+    render(<OnboardingChat variant="consultant" initial={makeView({ id: 'role', kind: 'role', required: true, question: 'Ты здесь как кто?', options: ROLE }, { role: 'pending', scenario: null })} consentText={[]} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Я работодатель/ }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
+    expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'role', value: 'employer' });
+    cleanup();
+    render(<OnboardingChat variant="consultant" initial={makeView({ id: 'companyName', kind: 'text', question: 'Как называется компания?' }, { role: 'employer', scenario: 'employer' })} consentText={[]} />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Помощник по подбору');
+  });
+
+  it('заголовок консультанта, без своей шапки сайта и второго main; «Настроить позже» — пауза: сервер ведёт сюда же', async () => {
     const fetchFn = stubFetch({ next: '/consultant' });
     render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Карьерный консультант');
     expect(document.querySelector('main')).toBeNull();
     expect(question()).toBe('В каком направлении работаешь?');
     fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/profile'));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
     expect(sent(fetchFn)).toEqual({ action: 'later' });
   });
 

@@ -2,7 +2,6 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 import { prisma } from '@/server/db';
-import { getEnv } from '@/server/env';
 import { AppError, errors } from '@/server/errors';
 import { type MailMessage, sendMail } from '@/server/mail';
 import { alreadyRegisteredMail, resetCodeMail, verifyCodeMail } from '@/server/mail/templates';
@@ -28,10 +27,19 @@ export const PasswordSchema = z
   .max(PASSWORD_MAX, `Пароль — не длиннее ${PASSWORD_MAX} символов`);
 export const CodeSchema = z.string().trim().regex(/^\d{6}$/, 'Код — 6 цифр');
 
-/** Ответ на отправку кода. `demoCode` — только при DEMO_LOGIN: жюри проходит регистрацию без доступа к ящику. */
+/**
+ * Ответ на отправку кода. `devCode` — только при локальной разработке (`isDevRequest`: не production,
+ * Host — localhost, DEVTOOLS не выключен). На стенде код никогда не отдаётся: регистрация — только
+ * через реальное письмо (решение владельца 10.10).
+ */
 export interface CodeSent {
   sent: true;
-  demoCode?: string;
+  devCode?: string;
+}
+
+/** Показать код в ответе — решает маршрут по `isDevRequest(req)`. */
+export interface RevealOption {
+  revealCode?: boolean;
 }
 
 const accountKey = (email: string) => ({ provider_providerAccountId: { provider: EMAIL_PROVIDER, providerAccountId: email } });
@@ -49,16 +57,19 @@ function limitOrThrow(key: string, rule: (typeof RATE)[keyof typeof RATE]) {
   if (!hit(key, rule)) throw errors.rateLimited('Слишком много попыток. Подождите несколько минут.');
 }
 
-/** Отправка кода: ошибка SMTP на демо-стенде не мешает (код на экране), иначе — 503. */
-async function deliverCode(mail: MailMessage, code: string): Promise<CodeSent> {
-  const demo = getEnv().DEMO_LOGIN;
+/**
+ * Отправка кода. Локальная разработка (`reveal`) — письмо не отправляется, код уходит в ответ
+ * (проверить настоящее письмо локально — DEVTOOLS=false). Иначе ошибка SMTP — 503.
+ */
+async function deliverCode(mail: MailMessage, code: string, reveal: boolean): Promise<CodeSent> {
+  if (reveal) return { sent: true, devCode: code };
   try {
     await sendMail(mail);
   } catch (err) {
     console.warn(`[auth] письмо ${mail.kind} не отправлено: ${err instanceof Error ? err.message : 'unknown'}`);
-    if (!demo) throw new AppError('mail_unavailable', 'Не удалось отправить письмо. Попробуйте позже.', 503);
+    throw new AppError('mail_unavailable', 'Не удалось отправить письмо. Попробуйте позже.', 503);
   }
-  return demo ? { sent: true, demoCode: code } : { sent: true };
+  return { sent: true };
 }
 
 export interface RegisterInput {
@@ -74,7 +85,7 @@ export interface RegisterInput {
  * ящика уходит письмо «аккаунт уже есть». Неподтверждённую регистрацию можно повторить:
  * пароль перезаписывается, старый код гаснет — иначе кто угодно занял бы чужую почту навсегда.
  */
-export async function registerWithEmail(input: RegisterInput): Promise<CodeSent> {
+export async function registerWithEmail(input: RegisterInput, opts: RevealOption = {}): Promise<CodeSent> {
   const version = assertConsentVersion(input.consent);
   limitOrThrow(`send:${input.email}`, RATE.sendPerEmail);
   const existing = await findEmailUser(input.email);
@@ -111,7 +122,7 @@ export async function registerWithEmail(input: RegisterInput): Promise<CodeSent>
     }
   }
   const code = await issueCode(userId, 'verify');
-  return deliverCode(verifyCodeMail(input.email, code), code);
+  return deliverCode(verifyCodeMail(input.email, code), code, opts.revealCode === true);
 }
 
 const CODE_ERRORS: Record<Exclude<CodeCheck, 'ok'>, string> = {
@@ -137,17 +148,17 @@ export async function verifyEmail(email: string, code: string) {
 }
 
 /** Повторно выслать код подтверждения (только неподтверждённой почте; ответ одинаковый). */
-export async function resendVerifyCode(email: string): Promise<CodeSent> {
+export async function resendVerifyCode(email: string, opts: RevealOption = {}): Promise<CodeSent> {
   limitOrThrow(`send:${email}`, RATE.sendPerEmail);
   const user = await findEmailUser(email);
   if (!user || user.emailVerifiedAt) return { sent: true };
   const code = await issueCode(user.id, 'verify');
-  return deliverCode(verifyCodeMail(email, code), code);
+  return deliverCode(verifyCodeMail(email, code), code, opts.revealCode === true);
 }
 
 export class EmailNotVerifiedError extends AppError {
   constructor(readonly sent: CodeSent) {
-    super('email_not_verified', 'Почта не подтверждена. Мы отправили новый код.', 403, sent.demoCode ? { demoCode: sent.demoCode } : undefined);
+    super('email_not_verified', 'Почта не подтверждена. Мы отправили новый код.', 403, sent.devCode ? { devCode: sent.devCode } : undefined);
   }
 }
 
@@ -155,13 +166,13 @@ export class EmailNotVerifiedError extends AppError {
  * Вход по паролю. Неверная почта и неверный пароль — одинаковый ответ 401 и одинаковое
  * время (scrypt против хэша-пустышки). Пароль верный, почта не подтверждена — 403 и новый код.
  */
-export async function loginWithEmail(email: string, password: string) {
+export async function loginWithEmail(email: string, password: string, opts: RevealOption = {}) {
   limitOrThrow(`login:${email}`, RATE.loginPerEmail);
   const user = await findEmailUser(email);
   const ok = await verifyPassword(password, user?.passwordHash ?? (await dummyPasswordHash()));
   if (!user || !user.passwordHash || !ok) throw new AppError('invalid_credentials', 'Неверная почта или пароль', 401);
   if (!user.emailVerifiedAt) {
-    const sent = await resendVerifyCode(email).catch((err: unknown) => {
+    const sent = await resendVerifyCode(email, opts).catch((err: unknown) => {
       if (err instanceof AppError && err.code === 'rate_limited') return { sent: true } as CodeSent;
       throw err;
     });
@@ -172,7 +183,7 @@ export async function loginWithEmail(email: string, password: string) {
 
 /**
  * «Забыли пароль»: код сброса на почту, если email-аккаунт есть. Ответ всегда одинаковый.
- * Код сброса на экран не выводится даже на демо-стенде: иначе любой сменил бы чужой пароль.
+ * Код сброса в ответе не отдаётся никогда (даже локально): иначе любой сменил бы чужой пароль.
  */
 export async function requestPasswordReset(email: string): Promise<{ sent: true }> {
   if (!hit(`send:${email}`, RATE.sendPerEmail)) return { sent: true };

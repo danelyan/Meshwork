@@ -37,7 +37,7 @@
 /* lane email-auth: вход и регистрация по почте (EmailAuth) */
 .emailForm { display: grid; gap: 14px; min-width: 0; }
 .modes { display: flex; flex-wrap: wrap; gap: 8px; }
-.demoCode b { font-family: var(--mono); letter-spacing: .12em; }
+.devCode b { font-family: var(--mono); letter-spacing: .12em; }
 .codeActions { display: flex; flex-wrap: wrap; gap: 8px; }
 .or { display: flex; align-items: center; gap: 12px; font: var(--fs-xs) var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
 .or::before, .or::after { content: ''; flex: 1; border-top: 1px solid var(--line); }

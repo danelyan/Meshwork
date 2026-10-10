@@ -1,4 +1,5 @@
 import { hasCurrentConsent } from '@/server/auth/consent';
+import { sessionExists } from '@/server/auth/stale';
 import { loadUser } from '@/server/auth/users';
 import { withErrors } from '@/server/errors';
 import { getSession } from '@/server/session';
@@ -14,7 +15,8 @@ export const GET = withErrors(async (req: Request) => {
   if (!s) return Response.json({ user: null });
   if (!s.userId) return Response.json({ user: null, legacyCandidateId: s.candidateId });
   const user = await loadUser(s.userId);
-  if (!user) return Response.json({ user: null });
+  // Нет аккаунта или пароль сменили после выдачи куки — не вошёл.
+  if (!user || !(await sessionExists(s))) return Response.json({ user: null });
   return Response.json({
     user: {
       id: user.id,

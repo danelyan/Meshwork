@@ -7,9 +7,9 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 describe('EmailAuth', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('регистрация: без галки согласия кнопка неактивна; демо-код показывается; код → переход', async () => {
+  it('регистрация: без галки согласия кнопка неактивна; локальный код показывается; код → переход', async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce(json(200, { sent: true, demoCode: '042137' }))
+      .mockResolvedValueOnce(json(200, { sent: true, devCode: '042137' }))
       .mockResolvedValueOnce(json(200, { next: '/onboarding' }));
     vi.stubGlobal('fetch', fetchMock);
     const navigate = vi.fn();
@@ -23,7 +23,7 @@ describe('EmailAuth', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(submit);
 
-    expect((await screen.findByText(/письма идут в Mailpit/)).textContent).toContain('042137');
+    expect((await screen.findByText(/Локальная разработка/)).textContent).toContain('042137');
     fireEvent.change(screen.getByLabelText('Код из письма'), { target: { value: '042137' } });
     fireEvent.click(screen.getByRole('button', { name: 'Подтвердить почту' }));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/onboarding'));

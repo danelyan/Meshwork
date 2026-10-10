@@ -2,7 +2,7 @@ import { Prisma, type User } from '@prisma/client';
 
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
-import type { UserSessionInput } from '@/server/session';
+import { passwordVersionOf, type UserSessionInput } from '@/server/session';
 
 import { assertConsentVersion, ensureConsent, hasCurrentConsent } from './consent';
 
@@ -17,6 +17,7 @@ export function sessionInputFor(user: UserWithProfiles): UserSessionInput {
     role: user.role,
     candidateId: user.candidateId,
     employerProfileId: user.employerProfile?.id ?? null,
+    passwordVersion: passwordVersionOf(user.passwordHash),
   };
 }
 

@@ -30,8 +30,8 @@ const MODES: [Mode, string][] = [
 
 /**
  * Вход и регистрация по почте (R-D-04): вкладки «Войти» / «Регистрация» / «Забыли пароль»
- * и шаг ввода 6-значного кода из письма. На демо-стенде сервер возвращает код подтверждения
- * (`demoCode`) — он показывается здесь, чтобы жюри прошло регистрацию без доступа к ящику.
+ * и шаг ввода 6-значного кода из письма. При локальной разработке сервер возвращает код
+ * подтверждения (`devCode`) — он показывается здесь; на стенде кода в ответе нет, только письмо.
  */
 export function EmailAuth({ next, navigate }: { next: string | null; navigate: (path: string) => void }) {
   const [mode, setMode] = useState<Mode>('login');
@@ -40,7 +40,7 @@ export function EmailAuth({ next, navigate }: { next: string | null; navigate: (
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [agreed, setAgreed] = useState(false);
-  const [demoCode, setDemoCode] = useState<string | null>(null);
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -51,13 +51,13 @@ export function EmailAuth({ next, navigate }: { next: string | null; navigate: (
     setError(null);
     setInfo(null);
     setCode('');
-    setDemoCode(null);
+    setDevCode(null);
   }
 
   function codeSent(r: CodeSent, to: Stage) {
     setStage(to);
     setCode('');
-    setDemoCode(r.demoCode ?? null);
+    setDevCode(r.devCode ?? null);
     setInfo(`Если почта ${email.trim()} есть в системе, на неё ушло письмо с кодом. Код действует 15 минут.`);
   }
 
@@ -70,7 +70,7 @@ export function EmailAuth({ next, navigate }: { next: string | null; navigate: (
       if (err instanceof AuthFormError && err.code === 'email_not_verified') {
         setStage('verify');
         setCode('');
-        setDemoCode(err.demoCode);
+        setDevCode(err.devCode);
         setInfo('Почта ещё не подтверждена: мы отправили новый код.');
       } else {
         setError(err instanceof Error ? err.message : 'Не получилось. Попробуйте ещё раз.');
@@ -119,9 +119,9 @@ export function EmailAuth({ next, navigate }: { next: string | null; navigate: (
       </div>
       {error && <Notice tone="error">{error}</Notice>}
       {info && <Notice>{info}</Notice>}
-      {demoCode && (
-        <Notice className={styles.demoCode}>
-          Демо-стенд: письма идут в Mailpit, ящик жюри недоступен. Ваш код: <b>{demoCode}</b>
+      {devCode && (
+        <Notice className={styles.devCode}>
+          Локальная разработка: код показан, письмо не отправлено. Код: <b>{devCode}</b>
         </Notice>
       )}
       <Field label="Почта">

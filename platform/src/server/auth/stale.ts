@@ -1,12 +1,17 @@
 import { prisma } from '@/server/db';
-import { type SessionPrincipal, parseSession, readCookie, SESSION_COOKIE } from '@/server/session';
+import { type SessionPrincipal, parseSession, passwordVersionOf, readCookie, SESSION_COOKIE } from '@/server/session';
 
 /**
  * Подпись куки валидна, но аккаунта (формат `u.…`) или кандидата (старая демо-кука) уже нет в БД:
- * пересид, «Очистить аккаунт» в другом окне, другая БД с тем же SESSION_SECRET. Такую куку считаем гостевой.
+ * пересид, «Очистить аккаунт» в другом окне, другая БД с тем же SESSION_SECRET, смена пароля
+ * (версия пароля в куке не совпала). Такую куку считаем гостевой.
  */
 export async function sessionExists(p: SessionPrincipal): Promise<boolean> {
-  if (p.userId) return (await prisma.user.findUnique({ where: { id: p.userId }, select: { id: true } })) !== null;
+  if (p.userId) {
+    const user = await prisma.user.findUnique({ where: { id: p.userId }, select: { passwordHash: true } });
+    // Пароль сменили (сброс) — кука со старой версией пароля больше не действует.
+    return user !== null && passwordVersionOf(user.passwordHash) === (p.passwordVersion ?? '');
+  }
   if (p.candidateId) return (await prisma.candidate.findUnique({ where: { id: p.candidateId }, select: { id: true } })) !== null;
   return false;
 }

@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 import { getEnv } from './env';
 import { errors } from './errors';
@@ -11,7 +11,12 @@ import { errors } from './errors';
  *      `<candidateId>.<exp>.<sig>` — 3 части;
  *  - аккаунт (User):
  *      `u.<userId>.<role>.<candidateId>.<employerProfileId>.<exp>.<sig>` — 7 частей,
- *      пустые id — пустая строка.
+ *      пустые id — пустая строка;
+ *  - аккаунт с паролем (lane email-auth, ADR 0001 «Дополнение 10.10»):
+ *      `u.<userId>.<role>.<candidateId>.<employerProfileId>.<pv>.<exp>.<sig>` — 8 частей,
+ *      `pv` — версия пароля (`passwordVersionOf`). Смена пароля меняет версию, и старые
+ *      куки считаются протухшими (`sessionExists`). Аккаунты без пароля (Яндекс, демо)
+ *      получают прежний 7-частный формат.
  *
  * Роль и id профиля в куке, чтобы `requireCandidate` оставался синхронным и не
  * ходил в БД. Смена роли (онбординг) перевыпускает куку (`userSessionCookie`).
@@ -22,6 +27,15 @@ export const SESSION_TTL_SEC = 30 * 24 * 60 * 60;
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const OPT_ID_RE = /^[A-Za-z0-9_-]{0,64}$/;
+const PV_RE = /^[A-Za-z0-9_-]{1,16}$/;
+
+/**
+ * Версия пароля для куки: 8 символов base64url от sha256(passwordHash). Хэш пароля солёный,
+ * поэтому каждая смена пароля даёт новую версию. Нет пароля → пустая строка.
+ */
+export function passwordVersionOf(passwordHash: string | null | undefined): string {
+  return passwordHash ? createHash('sha256').update(passwordHash).digest('base64url').slice(0, 8) : '';
+}
 
 export const USER_ROLES = ['pending', 'candidate', 'employer'] as const;
 export type SessionRole = (typeof USER_ROLES)[number];
@@ -32,6 +46,8 @@ export interface SessionPrincipal {
   role: SessionRole;
   candidateId: string | null;
   employerProfileId: string | null;
+  /** Версия пароля из куки (только аккаунты с паролем); сверяет `sessionExists`. */
+  passwordVersion?: string;
 }
 
 export interface UserSessionInput {
@@ -39,6 +55,8 @@ export interface UserSessionInput {
   role: SessionRole;
   candidateId?: string | null;
   employerProfileId?: string | null;
+  /** `passwordVersionOf(user.passwordHash)`; пусто — аккаунт без пароля, кука старого формата. */
+  passwordVersion?: string | null;
 }
 
 function hmac(payload: string, secret: string): string {
@@ -75,7 +93,11 @@ export function signUserSession(
     throw new Error('signUserSession: недопустимый id');
   }
   if (!USER_ROLES.includes(input.role)) throw new Error('signUserSession: недопустимая роль');
-  const payload = `u.${input.userId}.${input.role}.${cand}.${emp}.${nowSec + ttlSec}`;
+  const pv = input.passwordVersion ?? '';
+  if (pv && !PV_RE.test(pv)) throw new Error('signUserSession: недопустимая версия пароля');
+  const payload = pv
+    ? `u.${input.userId}.${input.role}.${cand}.${emp}.${pv}.${nowSec + ttlSec}`
+    : `u.${input.userId}.${input.role}.${cand}.${emp}.${nowSec + ttlSec}`;
   return `${payload}.${hmac(payload, secret)}`;
 }
 
@@ -93,17 +115,24 @@ export function parseSession(
     if (!sigOk(`${id}.${exp}`, sig, secret) || Number(exp) <= nowSec) return null;
     return { userId: null, role: 'candidate', candidateId: id, employerProfileId: null };
   }
-  if (parts.length === 7 && parts[0] === 'u') {
-    const [, userId, role, cand, emp, exp, sig] = parts as [string, string, string, string, string, string, string];
+  if ((parts.length === 7 || parts.length === 8) && parts[0] === 'u') {
+    const withPv = parts.length === 8;
+    const [, userId, role, cand, emp] = parts as [string, string, string, string, string];
+    const pv = withPv ? parts[5]! : '';
+    const exp = parts[parts.length - 2]!;
+    const sig = parts[parts.length - 1]!;
     if (!ID_RE.test(userId) || !OPT_ID_RE.test(cand) || !OPT_ID_RE.test(emp) || !/^\d{1,12}$/.test(exp)) return null;
+    if (withPv && !PV_RE.test(pv)) return null;
     if (!(USER_ROLES as readonly string[]).includes(role)) return null;
-    if (!sigOk(parts.slice(0, 6).join('.'), sig, secret) || Number(exp) <= nowSec) return null;
-    return {
+    if (!sigOk(parts.slice(0, -1).join('.'), sig, secret) || Number(exp) <= nowSec) return null;
+    const principal: SessionPrincipal = {
       userId,
       role: role as SessionRole,
       candidateId: role === 'candidate' && cand ? cand : null,
       employerProfileId: role === 'employer' && emp ? emp : null,
     };
+    if (withPv) principal.passwordVersion = pv;
+    return principal;
   }
   return null;
 }

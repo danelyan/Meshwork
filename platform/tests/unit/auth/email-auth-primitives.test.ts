@@ -47,3 +47,23 @@ describe('ограничитель частоты', () => {
     expect(hit('k', rule, 1000)).toBe(true);
   });
 });
+
+describe('версия пароля в куке сессии', () => {
+  const secret = 'x'.repeat(32);
+  it('с паролем — 8 частей и passwordVersion; без пароля — прежние 7 частей', async () => {
+    const { parseSession, passwordVersionOf, signUserSession } = await import('@/server/session');
+    const pv = passwordVersionOf('scrypt$32768$8$1$salt$hash');
+    expect(pv).toMatch(/^[\w-]{8}$/);
+    expect(passwordVersionOf(null)).toBe('');
+    const withPv = signUserSession({ userId: 'u1', role: 'pending', passwordVersion: pv }, secret);
+    expect(withPv.split('.')).toHaveLength(8);
+    expect(parseSession(withPv, secret)).toMatchObject({ userId: 'u1', passwordVersion: pv });
+    const plain = signUserSession({ userId: 'u1', role: 'pending', passwordVersion: '' }, secret);
+    expect(plain.split('.')).toHaveLength(7);
+    expect(parseSession(plain, secret)).not.toHaveProperty('passwordVersion');
+    // Подмена версии ломает подпись.
+    const parts = withPv.split('.');
+    parts[5] = 'AAAAAAAA';
+    expect(parseSession(parts.join('.'), secret)).toBeNull();
+  });
+});

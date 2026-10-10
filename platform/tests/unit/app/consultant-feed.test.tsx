@@ -36,7 +36,7 @@ vi.mock('@/components/head/ConsultantScene', () => ({ ConsultantScene: ({ childr
 
 type El = ReactElement<Record<string, unknown>>;
 async function inner(): Promise<El> {
-  const { default: Page } = await import('@/app/(candidate)/consultant/page');
+  const { default: Page } = await import('@/app/(shared)/consultant/page');
   const scene = (await Page()) as ReactElement<{ children: El }>;
   return scene.props.children;
 }

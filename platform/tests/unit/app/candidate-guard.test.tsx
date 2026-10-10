@@ -111,7 +111,7 @@ describe('/onboarding — только редирект на /consultant (оди
 });
 
 describe('/consultant: общий адрес — гость на вход, роли решает страница (tests/unit/app/consultant-feed.test.tsx)', () => {
-  const run = async () => (await import('@/app/(candidate)/consultant/page')).default();
+  const run = async () => (await import('@/app/(shared)/consultant/page')).default();
   it('гость → /auth?next=/consultant; поддельная кука = гость', async () => {
     expect(await outcome(run)).toBe('/auth?next=%2Fconsultant');
     cookie.value = `${SESS.candidate().slice(0, -2)}xx`;
@@ -127,12 +127,12 @@ describe('/consultant: общий адрес — гость на вход, ро�
 
 // Матрица «роль × страница работодателя → куда» (решение владельца 10.10, зеркало страниц кандидата).
 const EMPLOYER_PAGES: Array<[string, () => Promise<unknown>]> = [
-  ['/employer', async () => (await import('@/app/employer/page')).default()],
-  ['/employer/search', async () => (await import('@/app/employer/search/page')).default({ searchParams: Promise.resolve({}) })],
-  ['/employer/invitations', async () => (await import('@/app/employer/invitations/page')).default()],
-  ['/employer/needs/new', async () => (await import('@/app/employer/needs/new/page')).default({ searchParams: Promise.resolve({}) })],
-  ['/employer/needs/n1', async () => (await import('@/app/employer/needs/[id]/page')).default({ params: Promise.resolve({ id: 'n1' }), searchParams: Promise.resolve({}) })],
-  ['/employer/needs/n1/edit', async () => (await import('@/app/employer/needs/[id]/edit/page')).default({ params: Promise.resolve({ id: 'n1' }) })],
+  ['/employer', async () => (await import('@/app/(employer)/employer/page')).default()],
+  ['/employer/search', async () => (await import('@/app/(employer)/employer/search/page')).default({ searchParams: Promise.resolve({}) })],
+  ['/employer/invitations', async () => (await import('@/app/(employer)/employer/invitations/page')).default()],
+  ['/employer/needs/new', async () => (await import('@/app/(employer)/employer/needs/new/page')).default({ searchParams: Promise.resolve({}) })],
+  ['/employer/needs/n1', async () => (await import('@/app/(employer)/employer/needs/[id]/page')).default({ params: Promise.resolve({ id: 'n1' }), searchParams: Promise.resolve({}) })],
+  ['/employer/needs/n1/edit', async () => (await import('@/app/(employer)/employer/needs/[id]/edit/page')).default({ params: Promise.resolve({ id: 'n1' }) })],
 ];
 
 describe.each(EMPLOYER_PAGES)('страница работодателя %s', (name, run) => {
@@ -154,7 +154,7 @@ describe.each(EMPLOYER_PAGES)('страница работодателя %s', (n
 describe('/employer/assistant — прежний адрес, любой вход → /consultant', () => {
   it.each(['guest', 'candidate', 'employer', 'pending'] as const)('%s', async (who) => {
     cookie.value = who === 'guest' ? undefined : SESS[who]();
-    expect(await outcome(async () => (await import('@/app/employer/assistant/page')).default())).toBe('/consultant');
+    expect(await outcome(async () => (await import('@/app/(employer)/employer/assistant/page')).default())).toBe('/consultant');
   });
 });
 

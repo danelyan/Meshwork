@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   // (docs: next.config.js/serverExternalPackages).
   serverExternalPackages: ['unpdf', 'mammoth'],
   poweredByHeader: false,
+  // Второй локальный dev-сервер из той же папки — со своим каталогом сборки, иначе общий .next ломает оба
+  // (docs: next.config.js/distDir). По умолчанию .next.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   // Промпты defense/claims читаются с диска через process.cwd() — трассировщик их
   // не видит, без этого standalone-сборка останется без промптов. Ключ — glob
   // маршрута (picomatch), значение — glob файлов от корня проекта

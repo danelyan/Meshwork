@@ -1,0 +1,4 @@
+.page { display: grid; place-items: center; min-height: 60vh; padding: 16px; }
+.form { width: 100%; max-width: 360px; }
+.card { display: grid; gap: 16px; }
+.title { margin: 0; font-size: var(--fs-lg); }

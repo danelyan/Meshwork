@@ -19,6 +19,8 @@ export const envSchema = z
     /** Страница /demo и /api/demo/login со списком демо-аккаунтов. Для стенда жюри true, на проде выключить. */
     DEMO_LOGIN: z.stringbool().default(false),
     APP_URL: z.url().default('http://localhost:3000'),
+    /** Пароль на публичный адрес (без логина, src/server/site-access.ts). Пусто — стенд открыт; localhost не закрывается. */
+    SITE_PASSWORD: optionalString,
 
     LLM_PROVIDER: z.enum(['stub', 'yandex', 'openai-chat']).default('stub'),
     /** Только для stub: извлекатель размечает документ словарём каталога — демо С1 без ключей. */

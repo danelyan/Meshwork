@@ -84,6 +84,11 @@ Integration-тесты: перед прогоном `globalSetup` применя
 `LLM_PROVIDER=yandex` — `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`; при
 `openai-chat` — `OPENAI_CHAT_BASE_URL`, `OPENAI_CHAT_API_KEY`, `OPENAI_CHAT_MODEL`.
 
+Пароль на стенд: `SITE_PASSWORD` задан → публичный адрес пускает только после ввода пароля на
+`/site-access` (без логина; кука `site_access` на 30 дней, смена пароля сбрасывает её у всех).
+Проверка — `src/middleware.ts` + `src/server/site-access.ts`. Не закрываются localhost/127.0.0.1/[::1],
+`/api/health` (CI, healthcheck) и статика; API без куки отвечает 401 `site_locked`. Пусто — стенд открыт.
+
 Почта (вход по email, уведомления о приглашениях — `src/server/mail/`):
 
 | Переменная | По умолчанию | Смысл |

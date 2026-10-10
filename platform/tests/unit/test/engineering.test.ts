@@ -64,27 +64,27 @@ import { deriveSeed } from '@/server/test/rng';
 
 const SEEDS = Array.from({ length: 300 }, (_, i) => deriveSeed(20261010, i));
 
-/** Подкатегория → 6 Junior + 4 Middle + 4 Senior семейств (ADR-0003, дополнение 10.10 16:15). */
+/** Подкатегория → 9 Junior + 9 Middle + 8 Senior семейств (ADR-0003, дополнение 10.10 16:15; пакет bank2, решение владельца 11.10). */
 const BY_SUB: Record<string, { junior: string[]; middle: string[]; senior: string[] }> = {
   'engineering.data-eng': {
-    junior: ['dedup-count', 'schema-types', 'null-aggregates', 'join-fanout', 'group-having', 'csv-fields'],
-    middle: ['idempotent-load', 'incremental-watermark', 'partition-prune', 'scd2-as-of'],
-    senior: ['backfill-nights', 'consumer-duplicates', 'late-window', 'diag-data'],
+    junior: ['dedup-count', 'schema-types', 'null-aggregates', 'join-fanout', 'group-having', 'csv-fields', 'dag-skipped', 'retry-timeline', 'dq-checks'],
+    middle: ['idempotent-load', 'incremental-watermark', 'partition-prune', 'scd2-as-of', 'dag-critical-path', 'backoff-total', 'merge-upsert', 'shuffle-skew', 'cdc-replay'],
+    senior: ['backfill-nights', 'consumer-duplicates', 'late-window', 'diag-data', 'backfill-sim', 'salted-skew', 'freshness-lag', 'schema-compat'],
   },
   'engineering.devops': {
-    junior: ['docker-cache', 'secrets-leak', 'port-mapping', 'ci-stages', 'env-precedence', 'cron-runs'],
-    middle: ['k8s-probes', 'k8s-capacity', 'deploy-rollback', 'rolling-update'],
-    senior: ['zone-capacity', 'rollout-blast', 'hpa-replicas', 'diag-deploy'],
+    junior: ['docker-cache', 'secrets-leak', 'port-mapping', 'ci-stages', 'env-precedence', 'cron-runs', 'tf-plan-count', 'multistage-size', 'ci-matrix'],
+    middle: ['k8s-probes', 'k8s-capacity', 'deploy-rollback', 'rolling-update', 'tf-count-shift', 'alert-for-clause', 'cache-misses', 'quota-fit', 'pdb-drain'],
+    senior: ['zone-capacity', 'rollout-blast', 'hpa-replicas', 'diag-deploy', 'canary-exposure', 'ci-runners', 'tf-replace-cascade', 'series-cardinality'],
   },
   'engineering.qa-automation': {
-    junior: ['test-pyramid', 'fixture-isolation', 'boundary-values', 'parametrize-count', 'locator-stability', 'rerun-report'],
-    middle: ['flaky-line', 'contract-test', 'mock-calls', 'branch-coverage'],
-    senior: ['retry-budget', 'ci-sharding', 'mutation-survivors', 'diag-tests'],
+    junior: ['test-pyramid', 'fixture-isolation', 'boundary-values', 'parametrize-count', 'locator-stability', 'rerun-report', 'api-assertions', 'marker-select', 'schema-validate'],
+    middle: ['flaky-line', 'contract-test', 'mock-calls', 'branch-coverage', 'poll-wait', 'order-dependence', 'coverage-union', 'flaky-green', 'test-impact'],
+    senior: ['retry-budget', 'ci-sharding', 'mutation-survivors', 'diag-tests', 'quarantine-policy', 'contract-break', 'test-budget', 'locked-schedule'],
   },
   'engineering.sre': {
-    junior: ['error-budget', 'symptom-alert', 'latency-percentile', 'log-count', 'counter-reset', 'escalation'],
-    middle: ['retry-amplification', 'burn-rate', 'littles-law', 'circuit-breaker'],
-    senior: ['dependency-budget', 'mm1-latency', 'redundancy-nodes', 'diag-latency'],
+    junior: ['error-budget', 'symptom-alert', 'latency-percentile', 'log-count', 'counter-reset', 'escalation', 'availability-counts', 'mttr-mean', 'severity-count'],
+    middle: ['retry-amplification', 'burn-rate', 'littles-law', 'circuit-breaker', 'rolling-error-alert', 'composite-availability', 'deadline-attempts', 'backlog-drain', 'budget-recovery'],
+    senior: ['dependency-budget', 'mm1-latency', 'redundancy-nodes', 'diag-latency', 'release-gating', 'cache-cold-start', 'tail-fanout', 'rpo-failover'],
   },
 };
 const EXPECTED_IDS = Object.values(BY_SUB).flatMap((x) => [...x.junior, ...x.middle, ...x.senior].map((id) => `eng.${id}`));
@@ -104,7 +104,7 @@ function tableRows(code: string, name: string): string[][] {
 }
 
 describe('банк engineering', () => {
-  it('56 семейств eng.*, зарегистрированы; на каждую из 4 подкатегорий — 6 Junior + 4 Middle + 4 Senior', () => {
+  it('104 семейства eng.*, зарегистрированы; на каждую из 4 подкатегорий — 9 Junior + 9 Middle + 8 Senior', () => {
     expect(ENGINEERING_GENERATORS.map((g) => g.id).sort()).toEqual([...EXPECTED_IDS].sort());
     expect(generatorsFor('engineering').map((g) => g.id).sort()).toEqual([...EXPECTED_IDS].sort());
     for (const [sub, { junior, middle, senior }] of Object.entries(BY_SUB)) {
@@ -112,7 +112,7 @@ describe('банк engineering', () => {
       expect(own.filter((g) => g.grade === 'junior').map((g) => g.id).sort(), sub).toEqual(junior.map((id) => `eng.${id}`).sort());
       expect(own.filter((g) => g.grade === 'middle').map((g) => g.id).sort(), sub).toEqual(middle.map((id) => `eng.${id}`).sort());
       expect(own.filter((g) => g.grade === 'senior').map((g) => g.id).sort(), sub).toEqual(senior.map((id) => `eng.${id}`).sort());
-      expect(own.length).toBe(14);
+      expect(own.length).toBe(26);
     }
     for (const g of ENGINEERING_GENERATORS) expect(Object.keys(BY_SUB), g.id).toContain(g.subcategoryId);
     expect(new Set(GENERATORS.map((g) => g.id)).size).toBe(GENERATORS.length);

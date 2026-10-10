@@ -2173,7 +2173,8 @@
       "statement": "Строил пайплайн загрузки данных: извлечение, преобразование, загрузка в хранилище по расписанию",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2184,6 +2185,7 @@
         "task:schema-types",
         "task:idempotent-load",
         "task:group-having",
+        "task:freshness-lag",
         "interview:defend"
       ],
       "markers": [
@@ -2208,7 +2210,8 @@
       "statement": "Описывал схему таблиц и типы колонок для загружаемых данных, разбирал строки, не прошедшие приведение типов",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 2,
       "weights": {
@@ -2217,7 +2220,8 @@
       },
       "proof": [
         "task:schema-types",
-        "task:csv-fields"
+        "task:csv-fields",
+        "task:schema-compat"
       ],
       "markers": [
         "схема данных",
@@ -2248,6 +2252,7 @@
         "task:dedup-count",
         "task:null-aggregates",
         "task:join-fanout",
+        "task:dq-checks",
         "interview:defend"
       ],
       "markers": [
@@ -2279,6 +2284,7 @@
       "proof": [
         "task:idempotent-load",
         "task:consumer-duplicates",
+        "task:merge-upsert",
         "interview:defend"
       ],
       "markers": [
@@ -2312,6 +2318,7 @@
       "proof": [
         "task:incremental-watermark",
         "task:late-window",
+        "task:cdc-replay",
         "interview:defend"
       ],
       "markers": [
@@ -2333,7 +2340,8 @@
       "specialization": "engineering",
       "statement": "Секционировал большие таблицы и проверял, что запросы читают только нужные секции",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 2,
       "weights": {
@@ -2342,6 +2350,8 @@
       },
       "proof": [
         "task:partition-prune",
+        "task:shuffle-skew",
+        "task:salted-skew",
         "interview:defend"
       ],
       "markers": [
@@ -2392,7 +2402,8 @@
       "statement": "Настраивал оркестрацию задач с данными: зависимости, расписание, повторы",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 2,
       "weights": {
@@ -2401,6 +2412,11 @@
       },
       "proof": [
         "task:cron-runs",
+        "task:dag-skipped",
+        "task:retry-timeline",
+        "task:dag-critical-path",
+        "task:backoff-total",
+        "task:backfill-sim",
         "interview:defend"
       ],
       "markers": [
@@ -2434,6 +2450,7 @@
         "task:docker-cache",
         "task:port-mapping",
         "task:env-precedence",
+        "task:multistage-size",
         "interview:defend"
       ],
       "markers": [
@@ -2457,7 +2474,8 @@
       "statement": "Настраивал CI/CD: сборка, тесты и выкладка по коммиту",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2468,6 +2486,9 @@
         "task:secrets-leak",
         "task:deploy-rollback",
         "task:ci-stages",
+        "task:ci-matrix",
+        "task:cache-misses",
+        "task:ci-runners",
         "interview:defend"
       ],
       "markers": [
@@ -2530,6 +2551,7 @@
       },
       "proof": [
         "task:k8s-probes",
+        "task:pdb-drain",
         "interview:defend"
       ],
       "markers": [
@@ -2562,6 +2584,7 @@
       "proof": [
         "task:k8s-capacity",
         "task:hpa-replicas",
+        "task:quota-fit",
         "interview:defend"
       ],
       "markers": [
@@ -2596,6 +2619,7 @@
         "task:deploy-rollback",
         "task:rolling-update",
         "task:rollout-blast",
+        "task:canary-exposure",
         "interview:defend"
       ],
       "markers": [
@@ -2619,7 +2643,8 @@
       "specialization": "engineering",
       "statement": "Описывал инфраструктуру кодом",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 2,
       "weights": {
@@ -2627,6 +2652,9 @@
         "middle": 2
       },
       "proof": [
+        "task:tf-plan-count",
+        "task:tf-count-shift",
+        "task:tf-replace-cascade",
         "interview:defend"
       ],
       "markers": [
@@ -2658,6 +2686,10 @@
         "task:test-pyramid",
         "task:diag-tests",
         "task:ci-sharding",
+        "task:marker-select",
+        "task:test-impact",
+        "task:test-budget",
+        "task:locked-schedule",
         "interview:defend"
       ],
       "markers": [
@@ -2693,7 +2725,10 @@
         "task:boundary-values",
         "task:parametrize-count",
         "task:branch-coverage",
-        "task:mutation-survivors"
+        "task:mutation-survivors",
+        "task:api-assertions",
+        "task:schema-validate",
+        "task:coverage-union"
       ],
       "markers": [
         "тест-дизайн",
@@ -2725,7 +2760,8 @@
       "proof": [
         "task:fixture-isolation",
         "task:flaky-line",
-        "task:mock-calls"
+        "task:mock-calls",
+        "task:order-dependence"
       ],
       "markers": [
         "фикстуры",
@@ -2759,6 +2795,9 @@
         "task:flaky-line",
         "task:rerun-report",
         "task:retry-budget",
+        "task:poll-wait",
+        "task:flaky-green",
+        "task:quarantine-policy",
         "interview:defend"
       ],
       "markers": [
@@ -2779,7 +2818,8 @@
       "specialization": "engineering",
       "statement": "Писал контрактные тесты между сервисами и понимал, какие изменения API их ломают",
       "grades": [
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 3,
       "weights": {
@@ -2788,6 +2828,7 @@
       },
       "proof": [
         "task:contract-test",
+        "task:contract-break",
         "interview:defend"
       ],
       "markers": [
@@ -2850,6 +2891,11 @@
         "task:error-budget",
         "task:burn-rate",
         "task:dependency-budget",
+        "task:availability-counts",
+        "task:composite-availability",
+        "task:budget-recovery",
+        "task:release-gating",
+        "task:tail-fanout",
         "interview:defend"
       ],
       "markers": [
@@ -2884,6 +2930,7 @@
       "proof": [
         "task:symptom-alert",
         "task:burn-rate",
+        "task:rolling-error-alert",
         "interview:defend"
       ],
       "markers": [
@@ -2923,6 +2970,9 @@
         "task:diag-data",
         "task:diag-deploy",
         "task:diag-latency",
+        "task:mttr-mean",
+        "task:severity-count",
+        "task:rpo-failover",
         "interview:defend"
       ],
       "markers": [
@@ -2954,6 +3004,7 @@
       "proof": [
         "task:retry-amplification",
         "task:circuit-breaker",
+        "task:deadline-attempts",
         "interview:defend"
       ],
       "markers": [
@@ -2988,6 +3039,8 @@
         "task:zone-capacity",
         "task:mm1-latency",
         "task:redundancy-nodes",
+        "task:backlog-drain",
+        "task:cache-cold-start",
         "interview:defend"
       ],
       "markers": [
@@ -3010,7 +3063,8 @@
       "statement": "Подключал метрики, логи и трейсы к сервису",
       "grades": [
         "junior",
-        "middle"
+        "middle",
+        "senior"
       ],
       "weight": 2,
       "weights": {
@@ -3021,6 +3075,8 @@
         "task:latency-percentile",
         "task:log-count",
         "task:counter-reset",
+        "task:alert-for-clause",
+        "task:series-cardinality",
         "interview:defend"
       ],
       "markers": [

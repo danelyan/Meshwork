@@ -1,5 +1,5 @@
 // Генераторы заданий направления engineering (ADR-0003, дополнение 10.10; ADR-0002 — формат теста).
-// Подкатегории (research/25 § 3.4): data-eng, devops, qa-automation, sre — по 8 семейств
+// Подкатегории (research/25 § 3.4): data-eng, devops, qa-automation, sre — по 8 семейств (позже 14, затем 26: пакет engineering-bank2-*)
 // (4 Junior + 4 Middle), тест — на подкатегорию (ADR-0003, дополнение 10.10 15:50; поле subcategoryId).
 // Ключ ответа считает код генератора, не LLM (R-T-02); несущественные параметры (имена, числа,
 // порядок, позиции строк) — от seed (R-T-01), сложность задаётся семейством. a, b — ПРЕДЛОЖЕНИЕ
@@ -13,6 +13,10 @@
 // исключении из side_effect) — помечено в docs/validation-results.md.
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
+import { DATA_BANK2 } from './engineering-bank2-data';
+import { DEVOPS_BANK2 } from './engineering-bank2-devops';
+import { QA_BANK2 } from './engineering-bank2-qa';
+import { SRE_BANK2 } from './engineering-bank2-sre';
 
 const NAMES = ['Анна', 'Борис', 'Вера', 'Глеб', 'Дарья', 'Егор', 'Жанна', 'Захар', 'Инна', 'Кирилл', 'Лев', 'Мария'];
 const SERVICES = ['billing', 'catalog', 'checkout', 'profile', 'search', 'delivery', 'notify', 'auth'];
@@ -3054,4 +3058,9 @@ export const ENGINEERING_GENERATORS: TaskGenerator[] = [
   mm1Latency,
   redundancyNodes,
   diagLatency,
+  // второй пакет (решение владельца 11.10): +3 Junior, +5 Middle, +4 Senior на подкатегорию
+  ...DATA_BANK2,
+  ...DEVOPS_BANK2,
+  ...QA_BANK2,
+  ...SRE_BANK2,
 ];

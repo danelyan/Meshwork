@@ -24,8 +24,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 import { BRAND_GLSL_COLOR, BRAND_GLSL_HEAD } from './brand-weave';
 import { WEAVE_GLSL_COLOR, WEAVE_GLSL_HEAD } from './weave-versions';
-import { addWeaveField } from './weave-field';
-import { WEAVE_FIELD_STYLES, WEAVE_RETOPO_GLSL_COLOR, WEAVE_RETOPO_GLSL_HEAD, weaveRetopoFragment, weaveRetopoVertex } from './weave-retopo';
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { DEFAULT_HEAD_STYLE, type HeadStyle } from './head-styles';
 import { mouthOpen, smoothLevel } from './level';
@@ -190,10 +188,6 @@ const SURFACE: Record<Exclude<HeadStyle, 'particles'>, ConstructorParameters<typ
   weave2: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave3: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   weave4: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
-  weave5: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.26, envMapIntensity: 0.3 },
-  weave6: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.24, envMapIntensity: 0.3 },
-  weave7: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.26, envMapIntensity: 0.3 },
-  weave8: { color: new Color('#b8bec8'), metalness: 0.9, roughness: 0.24, envMapIntensity: 0.3 },
   loops: { color: new Color('#a4aab4'), metalness: 0.6, roughness: 0.34 },
   chrome: { color: new Color('#8e939c'), metalness: 0.95, roughness: 0.24 },
   hologram: { color: new Color('#0b0b16'), metalness: 0, roughness: 1 },
@@ -307,8 +301,7 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
           return smoothstep(R, R * 0.45, distance(p, c));
         }
         ${BRAND_GLSL_HEAD}
-        ${WEAVE_GLSL_HEAD}
-        ${WEAVE_RETOPO_GLSL_HEAD}`,
+        ${WEAVE_GLSL_HEAD}`,
       )
       .replace(
         '#include <color_fragment>',
@@ -385,7 +378,6 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         #endif
         ${BRAND_GLSL_COLOR}
         ${WEAVE_GLSL_COLOR}
-        ${WEAVE_RETOPO_GLSL_COLOR}
         diffuseColor.rgb *= mouthDark;
         #ifdef FSP_MORPH_MOUTH
         if (look == 4) {
@@ -396,9 +388,9 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         } else {
           // тень полости вместо AO: свет окружения внутрь рта почти не попадает. Полость видна почти
           // анфас, поэтому глубину рисуем виньеткой по отверстию: у краёв (свет заходит из-за губ) — тёмный
-          // тёплый, к центру — чёрный; плюс вглубь по z и тень под верхней губой (центр полости x ≈ −0.02,
-          // y ≈ 0.41, полуоси 0.075 × 0.045 — по head-mouth.glb до морфов)
-          float rim = smoothstep(0.35, 1.15, length(vec2((vModelPos.x + 0.021) / 0.075, (vModelPos.y - 0.41) / 0.045)));
+          // тёплый, к центру — чёрный; плюс вглубь по z и тень под верхней губой (центр полости на средней
+          // линии лица x = 0, y ≈ 0.41, полуоси 0.075 × 0.045 — по head-mouth.glb до морфов)
+          float rim = smoothstep(0.35, 1.15, length(vec2(vModelPos.x / 0.075, (vModelPos.y - 0.41) / 0.045)));
           float floorLit = smoothstep(0.445, 0.385, vModelPos.y);
           float lit = rim * (1.0 - 0.6 * depth) * (0.45 + 0.55 * floorLit);
           vec3 inner = mix(vec3(0.0015, 0.0015, 0.002), vec3(0.06, 0.038, 0.042), lit);
@@ -474,13 +466,6 @@ function surfaceMaterial(u: HeadUniforms, mode: Mode, style: Exclude<HeadStyle, 
         }
         #endif`,
       );
-  };
-  // «Плетение 5…8»: атрибут поля в вершинный шейдер, материал и нормаль по маске нити (weave-retopo.ts)
-  const surface = m.onBeforeCompile;
-  m.onBeforeCompile = (shader, renderer) => {
-    surface(shader, renderer);
-    shader.vertexShader = weaveRetopoVertex(shader.vertexShader, style);
-    shader.fragmentShader = weaveRetopoFragment(shader.fragmentShader);
   };
   m.customProgramCacheKey = () => `fsp-head-${style}-${mode}`;
   // губы разрезаны: в уголках открытого рта видна изнанка головы — рисуем её тёмной, а не дырой
@@ -677,8 +662,6 @@ function MouthHead(props: Head3DProps) {
     return g;
   }, [gltf]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  // поле ретопологии для «Плетения 5/8» — один раз на геометрию (weave-field.ts)
-  useMemo(() => WEAVE_FIELD_STYLES.has(props.style ?? DEFAULT_HEAD_STYLE) && addWeaveField(geometry), [geometry, props.style]);
   const { material, groupRef, uniforms, particles } = useHeadMotion(props, 'mouth');
   const meshRef = useRef<Mesh>(null);
   // R3F ставит geometry пропом после создания объекта — словарь морфов собираем явно.

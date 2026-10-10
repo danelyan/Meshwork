@@ -16,6 +16,7 @@
       },
       "proof": [
         "task:structured-output",
+        "task:context-budget",
         "interview:defend"
       ],
       "markers": [
@@ -47,6 +48,7 @@
       },
       "proof": [
         "task:structured-output",
+        "task:extraction-review",
         "interview:defend"
       ],
       "markers": [
@@ -80,7 +82,8 @@
       "proof": [
         "task:rag-chunking",
         "task:vector-topk",
-        "task:retrieval-eval"
+        "task:retrieval-eval",
+        "task:hybrid-search"
       ],
       "markers": [
         "RAG",
@@ -242,7 +245,9 @@
       },
       "proof": [
         "task:token-cost",
-        "task:tool-use-trace"
+        "task:tool-use-trace",
+        "task:llm-rate-limit",
+        "task:llm-cache"
       ],
       "markers": [
         "стоимость токенов",
@@ -308,6 +313,7 @@
       },
       "proof": [
         "task:classification-metrics",
+        "task:threshold-choice",
         "interview:defend"
       ],
       "markers": [
@@ -436,6 +442,9 @@
         "middle": 1
       },
       "proof": [
+        "task:split-sizes",
+        "task:majority-baseline",
+        "task:early-stopping",
         "interview:defend"
       ],
       "markers": [
@@ -469,6 +478,8 @@
       },
       "proof": [
         "task:inference-mode",
+        "task:latency-percentile",
+        "task:canary-rollout",
         "interview:defend"
       ],
       "markers": [
@@ -502,6 +513,7 @@
       },
       "proof": [
         "task:model-registry",
+        "task:version-routing",
         "interview:defend"
       ],
       "markers": [
@@ -533,6 +545,9 @@
       },
       "proof": [
         "task:model-registry",
+        "task:monitoring-alert",
+        "task:drift-psi",
+        "task:retrain-trigger",
         "interview:defend"
       ],
       "markers": [
@@ -565,6 +580,9 @@
       },
       "proof": [
         "task:pandas-output",
+        "task:mean-median",
+        "task:funnel-conversion",
+        "task:sql-analytics",
         "interview:defend"
       ],
       "markers": [
@@ -594,6 +612,10 @@
         "middle": 2
       },
       "proof": [
+        "task:ab-uplift",
+        "task:simpson",
+        "task:srm-check",
+        "task:multiple-testing",
         "interview:defend"
       ],
       "markers": [
@@ -655,6 +677,9 @@
         "middle": 3
       },
       "proof": [
+        "task:llm-retry",
+        "task:llm-fallback",
+        "task:circuit-breaker",
         "interview:defend"
       ],
       "markers": [

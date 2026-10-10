@@ -1,6 +1,15 @@
 import { catalogFromFile } from '@/server/claims/catalog-file';
 import { checkAnswer } from '@/server/test/answers';
-import { generatorsFor, hasTestFor, NoGeneratorsError, requireGenerators } from '@/server/test/generators';
+import { getSubcategory } from '@/lib/directions';
+import {
+  generatorsFor,
+  generatorsForSubcategory,
+  hasTestFor,
+  MIN_FAMILIES_PER_SUBCATEGORY,
+  NoGeneratorsError,
+  poolFor,
+  requireGenerators,
+} from '@/server/test/generators';
 import {
   AI_GENERATORS,
   cosineTopK,
@@ -11,18 +20,20 @@ import {
   ragChunking,
   toolLoop,
 } from '@/server/test/generators/ai';
+import { bonferroni, circuitBreaker, earlyStopping, latencyPercentile, rateLimits, srmCheck } from '@/server/test/generators/ai-extra';
 
 const SEEDS = Array.from({ length: 300 }, (_, i) => i + 1);
 
 describe('генераторы ai.* (ADR 0003, дополнение 10.10)', () => {
-  it('12–16 семейств, ключи ai.*, оба грейда, a/b в коридоре backend/frontend', () => {
+  it('семейства ai.*: оба грейда, a/b в коридоре backend/frontend, у каждого подкатегория своего направления', () => {
     expect(AI_GENERATORS.length).toBeGreaterThanOrEqual(12);
-    expect(AI_GENERATORS.length).toBeLessThanOrEqual(16);
+    expect(new Set(AI_GENERATORS.map((g) => g.id)).size).toBe(AI_GENERATORS.length);
     expect(generatorsFor('ai')).toHaveLength(AI_GENERATORS.length);
     for (const g of AI_GENERATORS) {
       expect(g.id).toMatch(/^ai\.[a-z0-9-]+$/);
       expect(g.taskId).toMatch(/^task:/);
       expect(g.specialization).toBe('ai');
+      expect(getSubcategory(g.subcategoryId)?.specialization, g.id).toBe('ai');
       if (g.grade === 'junior') expect(g.b).toBeLessThan(0);
       else expect(g.b).toBeGreaterThan(0);
       expect(g.a).toBeGreaterThanOrEqual(0.8);
@@ -31,6 +42,18 @@ describe('генераторы ai.* (ADR 0003, дополнение 10.10)', () 
     // Дозадавание Junior опирается на ≥ JUNIOR_PROBE_MAX Junior-шаблонов после основной фазы.
     expect(AI_GENERATORS.filter((g) => g.grade === 'junior').length).toBeGreaterThanOrEqual(6);
     expect(AI_GENERATORS.filter((g) => g.grade === 'middle').length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('пять подкатегорий ai — по ≥ 8 семейств (MIN_FAMILIES_PER_SUBCATEGORY), в каждой оба грейда', () => {
+    for (const sub of ['ai.llm-apps', 'ai.ai-integration', 'ai.ml-engineering', 'ai.mlops', 'ai.data-science']) {
+      const fam = generatorsForSubcategory(sub);
+      expect(fam.length, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_PER_SUBCATEGORY);
+      expect(fam.filter((g) => g.grade === 'junior').length, sub).toBeGreaterThanOrEqual(3);
+      expect(fam.filter((g) => g.grade === 'middle').length, sub).toBeGreaterThanOrEqual(3);
+      const pool = poolFor('ai', sub)!;
+      expect(pool.legacy).toBe(false);
+      expect(pool.generators.every((g) => g.subcategoryId === sub)).toBe(true);
+    }
   });
 
   it('каждый catalogId — запись каталога ai.* или common.*, и запись ссылается на задание (proof task:)', () => {
@@ -149,6 +172,68 @@ describe('ключи ai.* совпадают с независимым пере�
       const { prod, latest } = r.params as { prod: number; latest: number };
       expect(prod).not.toBe(latest);
       expect(r.answerKey.split('|')[0]).toBe(`v${prod}`);
+    }
+  });
+});
+
+describe('ключи ai-extra совпадают с независимым пересчётом', () => {
+  it('ai.rate-limits: min(RPM, ⌊TPM / токенов на запрос⌋)', () => {
+    for (const seed of SEEDS) {
+      const t = rateLimits.generate(seed);
+      const { rpm, tpm, tin, tout } = t.params as Record<string, number>;
+      expect(t.answerKey).toBe(String(Math.min(rpm!, Math.floor(tpm! / (tin! + tout!)))));
+    }
+  });
+
+  it('ai.latency-percentile: nearest-rank по коду задания', () => {
+    for (const seed of SEEDS) {
+      const t = latencyPercentile.generate(seed);
+      const xs = t.code!.split(', ').map(Number).sort((a, b) => a - b);
+      const p = (t.params as { p: number }).p;
+      expect(t.answerKey).toBe(String(xs[Math.ceil((p / 100) * xs.length) - 1]));
+    }
+  });
+
+  it('ai.bonferroni: p < 0.05 / m по коду задания', () => {
+    for (const seed of SEEDS) {
+      const t = bonferroni.generate(seed);
+      const ps = [...t.code!.matchAll(/p = ([\d.]+)/g)].map((m) => Number(m[1]));
+      expect(t.answerKey).toBe(String(ps.filter((p) => p < 0.05 / ps.length).length));
+    }
+  });
+
+  it('ai.srm-check: χ² против 3,84 по числам из кода задания', () => {
+    for (const seed of SEEDS) {
+      const t = srmCheck.generate(seed);
+      const bad = [...t.code!.matchAll(/^(\w+): A = (\d+), B = (\d+)$/gm)]
+        .filter((m) => {
+          const a = Number(m[2]);
+          const b = Number(m[3]);
+          const e = (a + b) / 2;
+          return ((a - e) ** 2 + (b - e) ** 2) / e > 3.84;
+        })
+        .map((m) => m[1]);
+      expect(t.answerKey).toBe(bad.join(','));
+    }
+  });
+
+  it('ai.early-stopping: лучшая эпоха — минимум val_loss до остановки', () => {
+    for (const seed of SEEDS) {
+      const t = earlyStopping.generate(seed);
+      const val = [...t.code!.matchAll(/^\s*\d+\s*\|\s*[\d.]+\s*\|\s*([\d.]+)\s*$/gm)].map((m) => Number(m[1]));
+      const { stopAt } = t.params as { stopAt: number };
+      const seen = val.slice(0, stopAt);
+      expect(Number(t.answerKey)).toBe(seen.indexOf(Math.min(...seen)) + 1);
+    }
+  });
+
+  it('ai.circuit-breaker: до провайдера доходит не больше запросов, чем всего, и хотя бы failN', () => {
+    for (const seed of SEEDS) {
+      const t = circuitBreaker.generate(seed);
+      const n = t.code!.split('\n').length;
+      const k = Number(t.answerKey);
+      expect(k).toBeLessThanOrEqual(n);
+      expect(k).toBeGreaterThanOrEqual(Math.min(n, (t.params as { failN: number }).failN));
     }
   });
 });

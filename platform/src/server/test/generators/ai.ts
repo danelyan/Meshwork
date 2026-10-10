@@ -7,26 +7,8 @@
 import { createRng, type Rng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 
-const NAMES = ['Анна', 'Борис', 'Вера', 'Глеб', 'Дарья', 'Егор', 'Жанна', 'Захар', 'Инна', 'Кирилл', 'Лев', 'Мария'];
-const SURNAMES = ['Иванова', 'Петров', 'Смирнова', 'Кузнецов', 'Попова', 'Соколов', 'Лебедева', 'Новиков'];
-const CITIES = ['Казань', 'Самара', 'Тверь', 'Омск', 'Пермь', 'Томск'];
-const DOMAINS = [
-  { ru: 'обращения в поддержку банка', intents: ['card_block', 'limit_change', 'complaint'] },
-  { ru: 'заявки в службу доставки', intents: ['track', 'cancel', 'reschedule'] },
-  { ru: 'обращения клиентов телеком-оператора', intents: ['tariff', 'roaming', 'billing'] },
-  { ru: 'вопросы сотрудников к HR-боту', intents: ['vacation', 'payroll', 'sick_leave'] },
-];
-
-function table(cols: string[], rows: (string | number)[][]): string {
-  const w = cols.map((c, i) => Math.max(c.length, ...rows.map((r) => String(r[i]).length)));
-  const line = (cells: (string | number)[]) => cells.map((c, i) => String(c).padEnd(w[i]!)).join(' | ');
-  return [line(cols), w.map((x) => '-'.repeat(x)).join('-+-'), ...rows.map(line)].join('\n');
-}
-
-/** Число без хвоста двоичной погрешности: 0.30000000000000004 → "0.3". */
-function num(x: number): string {
-  return String(Number(x.toFixed(6)));
-}
+import { AI_EXTRA_GENERATORS } from './ai-extra';
+import { CITIES, DOMAINS, NAMES, num, SURNAMES, table } from './ai-util';
 
 // ---------------------------------------------------------------------------
 // Junior
@@ -38,6 +20,7 @@ export const ragChunking: TaskGenerator = {
   taskId: 'task:rag-chunking',
   title: 'Сколько чанков получится',
   specialization: 'ai',
+  subcategoryId: 'ai.llm-apps',
   grade: 'junior',
   catalogIds: ['ai.rag'],
   format: 'number',
@@ -82,6 +65,7 @@ export const cosineTopK: TaskGenerator = {
   taskId: 'task:vector-topk',
   title: 'Какие документы найдёт векторный поиск',
   specialization: 'ai',
+  subcategoryId: 'ai.llm-apps',
   grade: 'junior',
   catalogIds: ['ai.vector-search', 'ai.rag'],
   format: 'list',
@@ -131,6 +115,7 @@ export const tokenCost: TaskGenerator = {
   taskId: 'task:token-cost',
   title: 'Сколько стоит LLM в день',
   specialization: 'ai',
+  subcategoryId: 'ai.ai-integration',
   grade: 'junior',
   catalogIds: ['ai.llm-cost', 'ai.llm-api'],
   format: 'number',
@@ -165,6 +150,7 @@ export const classificationMetrics: TaskGenerator = {
   taskId: 'task:classification-metrics',
   title: 'Precision, recall, accuracy',
   specialization: 'ai',
+  subcategoryId: 'ai.ml-engineering',
   grade: 'junior',
   catalogIds: ['ai.ml-metrics'],
   format: 'number',
@@ -228,6 +214,7 @@ export const structuredOutput: TaskGenerator = {
   taskId: 'task:structured-output',
   title: 'Какие ответы LLM пройдут схему',
   specialization: 'ai',
+  subcategoryId: 'ai.llm-apps',
   grade: 'junior',
   catalogIds: ['ai.structured-output', 'ai.prompting'],
   format: 'list',
@@ -288,6 +275,7 @@ export const pandasOutput: TaskGenerator = {
   taskId: 'task:pandas-output',
   title: 'Что вернёт pandas',
   specialization: 'ai',
+  subcategoryId: 'ai.data-science',
   grade: 'junior',
   catalogIds: ['ai.pandas-sql'],
   format: 'number',
@@ -356,6 +344,7 @@ export const piiMasking: TaskGenerator = {
   taskId: 'task:pii-masking',
   title: 'Что замаскировать перед LLM',
   specialization: 'ai',
+  subcategoryId: 'ai.ai-integration',
   grade: 'junior',
   catalogIds: ['ai.pii-masking'],
   format: 'list',
@@ -409,6 +398,7 @@ export const promptInjection: TaskGenerator = {
   taskId: 'task:prompt-injection',
   title: 'Где пайплайн открыт инъекции',
   specialization: 'ai',
+  subcategoryId: 'ai.llm-apps',
   grade: 'middle',
   catalogIds: ['ai.prompt-injection', 'ai.tool-use'],
   format: 'line',
@@ -479,6 +469,7 @@ export const toolLoop: TaskGenerator = {
   taskId: 'task:tool-use-trace',
   title: 'Сколько вызовов сделает агент',
   specialization: 'ai',
+  subcategoryId: 'ai.llm-apps',
   grade: 'middle',
   catalogIds: ['ai.tool-use', 'ai.llm-cost'],
   format: 'number',
@@ -540,6 +531,7 @@ export const dataLeakage: TaskGenerator = {
   taskId: 'task:data-leakage',
   title: 'Где утечка в пайплайне',
   specialization: 'ai',
+  subcategoryId: 'ai.ml-engineering',
   grade: 'middle',
   catalogIds: ['ai.data-leakage', 'ai.validation'],
   format: 'list',
@@ -588,6 +580,7 @@ export const holdoutReport: TaskGenerator = {
   taskId: 'task:model-selection',
   title: 'Какую метрику писать в отчёт',
   specialization: 'ai',
+  subcategoryId: 'ai.ml-engineering',
   grade: 'middle',
   catalogIds: ['ai.validation', 'ai.llm-eval'],
   format: 'number',
@@ -625,6 +618,7 @@ export const imputerFit: TaskGenerator = {
   taskId: 'task:feature-pipeline',
   title: 'Чем заполнится пропуск в тесте',
   specialization: 'ai',
+  subcategoryId: 'ai.ml-engineering',
   grade: 'middle',
   catalogIds: ['ai.feature-pipeline', 'ai.data-leakage'],
   format: 'number',
@@ -680,6 +674,7 @@ export const inferenceCapacity: TaskGenerator = {
   taskId: 'task:inference-mode',
   title: 'Батч или онлайн: сколько нужно',
   specialization: 'ai',
+  subcategoryId: 'ai.mlops',
   grade: 'middle',
   catalogIds: ['ai.model-serving'],
   format: 'number',
@@ -725,6 +720,7 @@ export const modelRegistry: TaskGenerator = {
   taskId: 'task:model-registry',
   title: 'Какая версия модели в production',
   specialization: 'ai',
+  subcategoryId: 'ai.mlops',
   grade: 'middle',
   catalogIds: ['ai.model-versioning', 'ai.monitoring-drift'],
   format: 'text',
@@ -790,6 +786,7 @@ export const retrievalEval: TaskGenerator = {
   taskId: 'task:retrieval-eval',
   title: 'Качество поиска для RAG',
   specialization: 'ai',
+  subcategoryId: 'ai.llm-apps',
   grade: 'middle',
   catalogIds: ['ai.llm-eval', 'ai.rag'],
   format: 'number',
@@ -841,4 +838,5 @@ export const AI_GENERATORS: TaskGenerator[] = [
   inferenceCapacity,
   modelRegistry,
   retrievalEval,
+  ...AI_EXTRA_GENERATORS,
 ];

@@ -130,6 +130,14 @@ describe('лента помощника работодателя', () => {
     expect(screen.getByRole('link', { name: 'Открыть форму и сохранить' }).getAttribute('href')).toBe(NEED.formHref);
   });
 
+  it('приветствие объясняет, что нужно от работодателя: потребность, подборка, приглашение', () => {
+    render(<AssistantChat />);
+    const t = screen.getByText(/Я помощник работодателя/).textContent ?? '';
+    expect(t).toMatch(/описать потребность/);
+    expect(t).toMatch(/подберу кандидатов/);
+    expect(t).toMatch(/приглашение с зарплатой/);
+  });
+
   it('подсказка отправляет ход; события потока рисуются в ленте, id разговора уходит дальше', async () => {
     const first = frame({ type: 'conversation', id: 'conv-9' }) + frame({ type: 'candidates', block: BLOCK }) + frame({ type: 'message', text: 'Готово' }) + frame({ type: 'done' });
     const second = frame({ type: 'ask', question: 'Под какую потребность?', options: ['Backend платежей', 'Frontend'] }) + frame({ type: 'done' });

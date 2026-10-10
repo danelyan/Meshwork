@@ -178,7 +178,7 @@ function describeContext(o: ContextOut): string {
   const needs = o.needs.length
     ? `Потребности ${o.company.name}: ${o.needs.map((n) => `«${n.title}» (${categoryLabel(n)})`).join(', ')}.`
     : `У ${o.company.name} пока нет потребностей - опиши словами, кто нужен, и я соберу черновик.`;
-  return [needs, `Приглашений на сутки осталось ${o.invitations.left} из ${o.invitations.limit}.`, 'Скажи «подбери под потребность», «найди по базе Frontend с ФСП» или «создай потребность: …».'].join('\n');
+  return [needs, `Приглашений на сутки осталось ${o.invitations.left} из ${o.invitations.limit}.`, 'Путь такой: потребность (направление, грейд, стек, вилка зарплаты) → подборка с обоснованием → приглашение с зарплатой; контакты кандидат откроет сам, приняв его.', 'Скажи «подбери под потребность», «найди по базе Frontend с ФСП» или «создай потребность: …».'].join('\n');
 }
 
 function describe(name: string, out: unknown): string {

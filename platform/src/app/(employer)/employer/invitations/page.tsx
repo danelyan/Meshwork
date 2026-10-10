@@ -8,7 +8,7 @@ import { requirePageEmployer } from '@/server/auth/page';
 import { invitationsSentToday, listCompanyInvitations, loadEmployerContext } from '@/server/employer';
 import { DAILY_INVITATION_LIMIT } from '@/server/employer/weights';
 
-export const metadata: Metadata = { title: 'Приглашения - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Отправленные приглашения - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
 
 /** Трекинг приглашений (R-E-05): статус, зарплата, контакты после принятия (R-E-07). */
@@ -20,7 +20,7 @@ export default async function EmployerInvitationsPage() {
     <div className={styles.page}>
       <div>
         <Kicker>{ctx.companyName}</Kicker>
-        <h1>Приглашения</h1>
+        <h1>Отправленные приглашения</h1>
         <p className={styles.lead}>
           За последние сутки отправлено {sent} из {DAILY_INVITATION_LIMIT}. Имя и контакт кандидата появляются после того, как он примет
           приглашение.

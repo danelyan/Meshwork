@@ -5,9 +5,11 @@ import type { ReactNode } from 'react';
 
 import { DevPanelGate } from '@/components/devtools/DevPanelGate';
 import { AuthEntry } from '@/components/auth/AuthEntry';
+import { getPageSession } from '@/server/auth/page';
 import { yandexConfig } from '@/server/auth/yandex';
 import { ShellFrame } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
+import { bodyRole } from '@/components/shell/bodyRole';
 import { SiteHeader } from '@/components/shell/SiteHeader';
 import { getEnv } from '@/server/env';
 import { sttMode } from '@/server/stt';
@@ -40,11 +42,12 @@ export const metadata: Metadata = {
 // Клавиатура на мобильном уменьшает область вёрстки (Chrome Android): dvh и липкий ввод остаются видны. Safari параметр игнорирует.
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, interactiveWidget: 'resizes-content' };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const role = bodyRole(await getPageSession());
   return (
     <html lang="ru" className={`${golos.variable} ${mono.variable}`}>
       {/* data-stt — режим голосового ввода для композера чата (server/stt, env STT_PROVIDER) */}
-      <body data-stt={sttMode()}>
+      <body data-stt={sttMode()} data-role={role}>
         <AuthEntry yandexEnabled={yandexConfig() !== null} demoEnabled={getEnv().DEMO_LOGIN}>
         <ShellFrame header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
           {children}

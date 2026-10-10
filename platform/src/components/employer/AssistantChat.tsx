@@ -9,7 +9,6 @@ import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/
 
 import chatStyles from '../Chat.module.css';
 import { type AgentItem, applyAgentEvent } from '../chat/stream-items';
-import { useAsideRefresh } from '../consultant/aside-refresh';
 import { StreamingText } from '../chat/StreamingText';
 import { AssistantRow, Bubble, Composer, MessageCard, QuickReplies, type QuickReply, Reply, Thread, Typing, UserBubble } from '../chat/Thread';
 import { scrollToEnd, useStickToBottom } from '../chat/scroll';
@@ -23,8 +22,8 @@ import { GRADE_LABEL, SPEC_LABEL } from './labels';
 type Item = { id: string; role: 'user'; text: string } | AgentItem<EmployerAgentEvent>;
 
 const GREETING =
-  'Я помощник работодателя. Подберу кандидатов под потребность и объясню, почему каждый на своём месте, найду по базе с фильтрами, подготовлю приглашение или черновик потребности. Отправляешь и сохраняешь ты - кнопками.';
-const CONTINUE_GREETING = 'Дальше я - твой помощник по подбору. Спроси про кандидатов под потребность или выбери шаг ниже.';
+  'Я помощник работодателя. От тебя нужно немного: описать потребность - направление, грейд, стек и вилку зарплаты. По ней я подберу кандидатов и объясню, почему каждый на своём месте; подходящему ты отправишь приглашение с зарплатой, а кандидат сам решит, открыть ли контакты. Отправляешь и сохраняешь ты - кнопками.';
+const CONTINUE_GREETING = 'Дальше я - твой помощник по подбору. Опиши потребность (направление, грейд, стек, вилка зарплаты) - подберу кандидатов и подготовлю приглашение. Или выбери шаг ниже.';
 
 export const EMPLOYER_SUGGESTIONS: QuickReply[] = [
   { value: 'Подбери под мою потребность', label: 'Подбери под потребность' },
@@ -53,7 +52,6 @@ const nextId = () => `e${++seq}`;
  * работодателя. Карточки кандидатов — компактные, с кнопкой «Пригласить»: отправляет человек.
  */
 export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: EmployerRestoredChat; embedded?: AssistantEmbedded; demoNoLlm?: boolean }) {
-  const refreshAside = useAsideRefresh();
   const [items, setItems] = useState<Item[]>(initial?.items ?? []);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -107,10 +105,9 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
         }
       } finally {
         setBusy(false);
-        refreshAside();
       }
     },
-    [busy, embedded, push, refreshAside],
+    [busy, embedded, push],
   );
 
   const started = items.some((it) => it.role === 'user');

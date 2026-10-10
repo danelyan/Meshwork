@@ -42,7 +42,7 @@ export interface EventFeedProps {
 type Block =
   | { kind: 'user'; item: Extract<FeedItem, { role: 'user' }> }
   | { kind: 'steps'; id: string; texts: string[] }
-  | { kind: 'event'; id: string; event: AgentEvent; live?: boolean; streaming?: boolean };
+  | { kind: 'event'; id: string; event: AgentEvent; live?: boolean; streaming?: boolean; speakKey?: string };
 
 /** Подряд идущие `step` склеиваем в один список; `queue` оставляем только последний; `done` не рисуем. */
 export function toBlocks(items: FeedItem[]): Block[] {
@@ -69,7 +69,7 @@ export function toBlocks(items: FeedItem[]): Block[] {
       else blocks.push({ kind: 'steps', id: it.id, texts: [ev.text] });
       continue;
     }
-    blocks.push({ kind: 'event', id: it.id, event: ev, live: it.live, streaming: it.streaming });
+    blocks.push({ kind: 'event', id: it.id, event: ev, live: it.live, streaming: it.streaming, speakKey: it.streamId ?? (ev.type === 'message' ? ev.id : undefined) });
   }
   return blocks;
 }
@@ -211,6 +211,9 @@ export function EventFeed({ lead, label = 'Переписка с консуль�
 export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, onRetry }: Omit<EventFeedProps, 'lead' | 'label'>) {
   const blocks = toBlocks(items);
   const lastBlock = blocks.at(-1);
+  // Последняя реплика с данным текстом: запасной признак для историй без id потока.
+  const lastWithText = new Map<string, string>();
+  for (const b of blocks) if (b.kind === 'event' && b.event.type === 'message') lastWithText.set(b.event.text, b.id);
   return (
     <>
       {blocks.map((b) => {
@@ -243,9 +246,9 @@ export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmA
               </p>
             )}
             {ev.type === 'message' && (
-              <SpeakingBubble text={ev.text}>
+              <SpeakingBubble text={ev.text} speakKey={b.speakKey} latest={lastWithText.get(ev.text) === b.id}>
                 <StreamingText text={ev.text} streaming={b.streaming} animate={Boolean(b.live)} />
-                {!b.streaming && <ReplayButton text={ev.text} />}
+                {!b.streaming && <ReplayButton text={ev.text} speakKey={b.speakKey} />}
               </SpeakingBubble>
             )}
             {ev.type === 'claims' && <ClaimsBlock event={ev} overrides={claimOverrides} onAction={onClaimAction} onConfirmAll={onConfirmAll} />}

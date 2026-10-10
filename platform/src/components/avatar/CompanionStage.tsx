@@ -104,11 +104,11 @@ function Stage({ voice, className }: { voice: CompanionVoice; className?: string
 }
 
 /** «Озвучить» у реплики компаньона: повтор по клику, работает и при выключенной автоозвучке. */
-export function ReplayButton({ text }: { text: string }) {
+export function ReplayButton({ text, speakKey }: { text: string; speakKey?: string }) {
   const voice = useCompanionVoice();
   if (!voice || voice.available === false || !text.trim()) return null;
   return (
-    <button type="button" className={styles.replay} onClick={() => voice.replay(text)} aria-label="Озвучить ответ">
+    <button type="button" className={styles.replay} onClick={() => voice.replay(text, speakKey)} aria-label="Озвучить ответ">
       <SpeakerIcon />
       озвучить
     </button>

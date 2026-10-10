@@ -150,3 +150,27 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --avatar-stage-line: rgba(255, 255, 255, 0.08);
   --avatar-silver: #c4c9d2;
 }
+
+/*
+ * Тёмная лента чата (панель сцены «звонок + чат слева», AvatarScene call-side): локальные переопределения
+ * токенов на контейнере с data-theme='feed-dark', компоненты ленты не правятся. Алиасы (--bg, --text,
+ * --focus и т.п.) на :root уже вычислены в светлые значения, поэтому переопределены явно.
+ * Акцент светлее (#8a7dff), --on-ink тёмный: пузырь пользователя, «Отправить» и активный чип читаются
+ * (#0e0f14 на #8a7dff - 5,8:1), акцентный текст на фоне панели - 5,1:1.
+ */
+[data-theme='feed-dark'] {
+  color-scheme: dark;
+  color: var(--ink);
+  --ink: #eceef2; --text: var(--ink); --paper: #1b1e25; --bg: var(--paper); --panel: var(--glass);
+  --muted: #a1a7b3; --placeholder: #8c92a0; --text-soft: #d4d7de; --text-dim: #c3c7d0; --demo: var(--muted);
+  --line: rgba(255, 255, 255, 0.12); --rail: rgba(255, 255, 255, 0.3);
+  --glass: rgba(255, 255, 255, 0.05); --glass-strong: rgba(255, 255, 255, 0.07); --glass-border: rgba(255, 255, 255, 0.1);
+  --silhouette: #272b34; --surface-dim: var(--silhouette);
+  --surface-input: rgba(255, 255, 255, 0.07); --surface-hover: rgba(255, 255, 255, 0.08); --surface-notice: rgba(255, 255, 255, 0.07);
+  --surface-ghost: rgba(255, 255, 255, 0.09); --surface-quote: rgba(255, 255, 255, 0.06);
+  --border-strong: var(--ink); --border-input: rgba(255, 255, 255, 0.24); --border-soft: rgba(255, 255, 255, 0.2); --border-faint: rgba(255, 255, 255, 0.13);
+  --blue: #8a7dff; --focus: var(--blue); --accent-soft: var(--blue); --accent-check: var(--blue); --meter-on: var(--blue); --meter-off: var(--line);
+  --on-ink: #0e0f14; --on-ink-soft: rgba(14, 15, 20, 0.75);
+  --error: #ff8f86; --danger-border: #ff8f86; --danger-text: #ff8f86; --tag-red-border: var(--ink); --tag-red-text: var(--ink);
+  --backdrop: rgba(0, 0, 0, 0.6); --chat-composer-bg: var(--paper);
+}

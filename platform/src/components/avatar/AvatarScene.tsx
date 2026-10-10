@@ -22,10 +22,11 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
  *  - `call` — «Видеозвонок»: голова крупно по центру, лента — полупрозрачный транскрипт снизу;
  *  - `call-side` — «Звонок + чат слева» (D = C + A): тёмный экран звонка, слева светлая панель чата
  *    на всю высоту с полной лентой и вводом; уже 1050px — панель снизу, голова сверху ~40vh.
+ * `label` — подпись у головы («Помощник по подбору» у работодателя).
  * `children` — готовая лента (слитая лента /consultant: онбординг + консультант, см.
  * components/consultant/ConsultantFeed); без них сцена рисует обычный `Chat`.
  */
-export function AvatarScene({ variant, demo, initial, children }: { variant: AvatarSceneVariant; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode }) {
+export function AvatarScene({ variant, demo, initial, children, label = 'ИИ-консультант' }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode }) {
   const feed = (className?: string) => children ?? <Chat demo={demo} initial={initial} className={className} />;
   return (
     <CompanionVoiceProvider autoEnable>
@@ -34,9 +35,9 @@ export function AvatarScene({ variant, demo, initial, children }: { variant: Ava
           <div className={styles.conversation}>
             {feed()}
           </div>
-          <aside className={styles.portrait} aria-label="ИИ-консультант">
+          <aside className={styles.portrait} aria-label={label}>
             <HeadView />
-            <span className={styles.badge}>ИИ-консультант</span>
+            <span className={styles.badge}>{label}</span>
             <div className={styles.callTop}>
               <MuteToggle />
             </div>
@@ -71,7 +72,7 @@ export function AvatarScene({ variant, demo, initial, children }: { variant: Ava
         <div className={styles.callScene} data-testid="scene-call">
           <div className={styles.callHead}>
             <HeadView />
-            <span className={styles.badge}>ИИ-консультант</span>
+            <span className={styles.badge}>{label}</span>
             <div className={styles.callTop}>
               <StateChip />
               <MuteToggle />
@@ -86,12 +87,11 @@ export function AvatarScene({ variant, demo, initial, children }: { variant: Ava
         </div>
       )}
       {variant === 'call-side' && (
-        <div className={styles.sideOuter}>
           <div className={styles.sideScene} data-testid="scene-call-side">
-            <section className={styles.sideStage} aria-label="ИИ-консультант">
+            <section className={styles.sideStage} aria-label={label}>
               <div className={styles.sideHead}>
                 <HeadView />
-                <span className={styles.badge}>ИИ-консультант</span>
+                <span className={styles.badge}>{label}</span>
                 <div className={styles.callTop}>
                   <StateChip />
                   <MuteToggle />
@@ -102,12 +102,10 @@ export function AvatarScene({ variant, demo, initial, children }: { variant: Ava
               </div>
               <Subtitles className={styles.sideSubs} />
             </section>
-            <div className={styles.sidePanel} data-testid="side-panel">
+            <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll data-theme="feed-dark">
               {feed(styles.sideChat)}
             </div>
           </div>
-          <div className={styles.sideSpacer} aria-hidden="true" />
-        </div>
       )}
     </CompanionVoiceProvider>
   );

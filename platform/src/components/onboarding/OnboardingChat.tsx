@@ -21,7 +21,7 @@ import { AssistantRow, Bubble, Composer, ProgressLine, QuickReplies, QuietAction
 import { Brand } from '../shell/Brand';
 import { Button, VisuallyHidden } from '../ui';
 
-import { useStickToBottom } from '../chat/scroll';
+import { scrollToEnd, useStickToBottom } from '../chat/scroll';
 
 import styles from './Onboarding.module.css';
 import { AsideRows, groupAsides, useAsides } from './Asides';
@@ -126,7 +126,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     const behavior = mountedRef.current ? 'smooth' : 'auto';
     const id = requestAnimationFrame(() => {
       mountedRef.current = true;
-      endRef.current?.scrollIntoView?.({ block: 'end', behavior });
+      scrollToEnd(endRef.current, behavior);
     });
     return () => cancelAnimationFrame(id);
   }, [turn, pending]);
@@ -134,7 +134,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     if (canType) inputRef.current?.focus({ preventScroll: true });
   }, [canType, turn]);
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
+    scrollToEnd(endRef.current);
   }, [curAsides?.length]);
 
   const act = useCallback(async (body: OnboardingAction, bubble?: { text: string; quiet?: boolean }) => {

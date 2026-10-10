@@ -1,5 +1,6 @@
 import { Chat } from '@/components/Chat';
 import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
+import { PausedFeed } from '@/components/onboarding/PausedFeed';
 import { loadLastChat, type RestoredChat } from '@/server/agent/restore';
 import { resolveChatDemoContext } from '@/server/demo/context';
 import { CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
@@ -29,6 +30,7 @@ export async function ConsultantFeed({ candidateId, userId, tag = 'consultant' }
       console.warn(`[${tag}] onboarding view failed`, err instanceof Error ? err.message : err);
     }
   }
+  if (view?.later) return <PausedFeed view={view} demo={demo} restored={initial} />;
   return view ? (
     <OnboardingChat variant="consultant" initial={view} consentText={[...CONSENT_PARAGRAPHS]} consultant={{ demo, restored: initial }} />
   ) : (

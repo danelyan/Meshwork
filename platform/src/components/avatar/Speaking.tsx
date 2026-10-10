@@ -43,10 +43,13 @@ function SpeakerIcon() {
 /**
  * Пузырь реплики консультанта в ленте. Пока именно эта реплика звучит: пульс рамки, значок динамика
  * и полоска фраз (активная светлее). Вне провайдера голоса — обычный пузырь.
+ * Реплику узнаём по `speakKey` (id потока), а не по тексту: две одинаковые реплики не мигают вместе.
+ * Без ключа (восстановленная история) — по тексту, и только у `latest` (последней с таким текстом).
  */
-export function SpeakingBubble({ text, children }: { text: string; children: React.ReactNode }) {
+export function SpeakingBubble({ text, speakKey, latest = true, children }: { text: string; speakKey?: string; latest?: boolean; children: React.ReactNode }) {
   const voice = useCompanionVoice();
-  const mine = voice?.status === 'speaking' && voice.speakingText === text;
+  const sameReply = voice?.speakingKey != null ? voice.speakingKey === speakKey : voice?.speakingText === text && latest;
+  const mine = voice?.status === 'speaking' && sameReply;
   const phrases = useMemo(() => (mine ? splitPhrases(text) : []), [mine, text]);
   const active = useActivePhrase(voice, phrases, mine);
   return (

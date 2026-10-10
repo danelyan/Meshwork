@@ -56,7 +56,7 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
         return;
       }
       if (!SHOWN.has(event.type)) return;
-      if (event.type === 'message') voiceRef.current?.speak(event.text);
+      if (event.type === 'message') voiceRef.current?.speak(event.text, event.id);
       setByStep((p) => ({ ...p, [stepId]: applyAgentEvent(p[stepId] ?? [], event, nextId) as FeedItem[] }));
     },
     [conversation, onConversation],

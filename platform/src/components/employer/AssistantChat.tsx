@@ -11,7 +11,7 @@ import chatStyles from '../Chat.module.css';
 import { type AgentItem, applyAgentEvent } from '../chat/stream-items';
 import { StreamingText } from '../chat/StreamingText';
 import { AssistantRow, Bubble, Composer, MessageCard, QuickReplies, type QuickReply, Reply, Thread, Typing, UserBubble } from '../chat/Thread';
-import { useStickToBottom } from '../chat/scroll';
+import { scrollToEnd, useStickToBottom } from '../chat/scroll';
 import { Button, Notice, VisuallyHidden } from '../ui';
 
 import { AssistantCandidateCard } from './AssistantCandidateCard';
@@ -64,7 +64,7 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
   useStickToBottom(rootRef, !embedded);
   useEffect(() => () => abortRef.current?.abort(), []);
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
+    scrollToEnd(endRef.current);
   }, [items.length]);
 
   const push = useCallback((event: EmployerAgentEvent) => {

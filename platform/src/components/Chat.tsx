@@ -17,7 +17,7 @@ import { useAttachments } from './chat/attachments';
 import { Composer } from './chat/Composer';
 import { applyAgentEvent } from './chat/stream-items';
 import { AssistantRow, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
-import { useStickToBottom } from './chat/scroll';
+import { scrollToEnd, useStickToBottom } from './chat/scroll';
 import { EventFeed, type FeedItem } from './EventFeed';
 import { Button, VisuallyHidden } from './ui';
 import ui from './ui.module.css';
@@ -97,7 +97,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     setThinking?.(busy);
   }, [busy, setThinking]);
   useEffect(() => {
-    if (embedded) endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
+    if (embedded) scrollToEnd(endRef.current);
   }, [items.length, embedded]);
 
   const pushEvent = useCallback((event: AgentEvent) => {
@@ -107,7 +107,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     }
     if (event.type === 'done') return;
     // Завершённая реплика — авторитетный текст после дельт: её и озвучиваем (если включено).
-    if (event.type === 'message') voiceRef.current?.speak(event.text);
+    if (event.type === 'message') voiceRef.current?.speak(event.text, event.id);
     setItems((p) => applyAgentEvent(p, event, nextId));
     if (event.type === 'error' && SIMPLIFIED_CODES.has(event.code)) setSimplified(true);
   }, []);

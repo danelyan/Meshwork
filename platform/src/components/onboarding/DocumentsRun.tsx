@@ -64,7 +64,7 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
       return;
     }
     if (!SHOWN.has(event.type)) return;
-    if (event.type === 'message') voiceRef.current?.speak(event.text);
+    if (event.type === 'message') voiceRef.current?.speak(event.text, event.id);
     if (event.type === 'claims') setTotals((t) => ({ ...t, claims: t.claims + event.proposed.length }));
     setItems((p) => applyAgentEvent(p, event, nextId));
     // convRef/onConversation стабильны на время жизни онбординга

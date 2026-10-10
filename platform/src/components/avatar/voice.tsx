@@ -27,9 +27,9 @@ export interface CompanionVoice {
   /** Включить/выключить автоозвучку. Вызывать из обработчика клика (разблокирует звук). */
   toggle: () => void;
   /** Завершённый ответ компаньона: озвучить, если автоозвучка включена. */
-  speak: (text: string) => void;
+  speak: (text: string, key?: string) => void;
   /** Озвучить по клику (повтор сообщения, тест) — независимо от переключателя. */
-  replay: (text: string) => void;
+  replay: (text: string, key?: string) => void;
   stop: () => void;
   setThinking: (thinking: boolean) => void;
   /** Текущая громкость (RMS 0…1) звучащей реплики; 0 — тишина. */
@@ -42,6 +42,8 @@ export interface CompanionVoice {
   getFeatures: () => SpectrumFeatures | null;
   /** Исходный текст реплики, которую сейчас готовят или произносят; null — тишина. */
   speakingText: string | null;
+  /** Ключ звучащей реплики (id потока), если вызывающий его передал: по нему пузырь отличает одинаковые тексты. */
+  speakingKey: string | null;
   /** Прогресс воспроизведения звучащей реплики 0…1 (по часам AudioContext); 0 — тишина или загрузка. */
   getProgress: () => number;
 }
@@ -60,6 +62,7 @@ type AudioCtor = typeof AudioContext;
 interface Pending {
   /** Исходный текст реплики (как пришёл от агента) — по нему лента находит звучащий пузырь. */
   text: string;
+  key?: string;
   ctrl: AbortController;
   audio: Promise<AudioBuffer | null>;
 }
@@ -77,6 +80,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
   const [thinking, setThinkingState] = useState(false);
   const [playing, setPlaying] = useState<'loading' | 'speaking' | null>(null);
   const [speakingText, setSpeakingText] = useState<string | null>(null);
+  const [speakingKey, setSpeakingKey] = useState<string | null>(null);
 
   const enabledRef = useRef(false);
   const availableRef = useRef<boolean | null>(null);
@@ -149,6 +153,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
         if (!next) break;
         setPlaying('loading');
         setSpeakingText(next.text);
+        setSpeakingKey(next.key ?? null);
         let buffer: AudioBuffer | null = null;
         try {
           buffer = await next.audio;
@@ -180,14 +185,15 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
       runningRef.current = false;
       setPlaying(null);
       setSpeakingText(null);
+      setSpeakingKey(null);
     }
   }, []);
 
   const enqueue = useCallback(
-    (raw: string) => {
+    (raw: string, key?: string) => {
       const text = speechText(raw);
       if (!text || availableRef.current === false) return;
-      queueRef.current.push({ ...fetchAudio(text), text: raw });
+      queueRef.current.push({ ...fetchAudio(text), text: raw, key });
       void pump();
     },
     [fetchAudio, pump],
@@ -244,18 +250,18 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
   }, [unlock, stop, checkAvailable]);
 
   const speak = useCallback(
-    (text: string) => {
-      if (enabledRef.current) enqueue(text);
+    (text: string, key?: string) => {
+      if (enabledRef.current) enqueue(text, key);
     },
     [enqueue],
   );
 
   const replay = useCallback(
-    (text: string) => {
+    (text: string, key?: string) => {
       if (!unlock()) return;
       stop();
       void checkAvailable().then((ok) => {
-        if (ok) enqueue(text);
+        if (ok) enqueue(text, key);
         else setNotice('Озвучка на этом стенде выключена — ответы остаются текстом');
       });
     },
@@ -330,8 +336,8 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
 
   const status: VoiceStatus = playing ?? (thinking ? 'thinking' : 'idle');
   const value = useMemo<CompanionVoice>(
-    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, getProgress }),
-    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel, getMouth, getViseme, getFeatures, speakingText, getProgress],
+    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress }),
+    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress],
   );
   return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;
 }

@@ -1,4 +1,5 @@
 import { SPEC_LABEL } from '@/lib/directions';
+import { gradeLabel } from '@/lib/grades';
 import { prisma } from '../db';
 import { listVacancies, loadEmployerContext } from '../employer';
 import type { OnboardingView } from '../onboarding/types';
@@ -55,6 +56,24 @@ export interface KnownFact {
   createdAt?: string;
 }
 
+/** Метрика сводки на сцене: число или короткое значение и пояснение, что его меняет. */
+export interface SceneStat {
+  label: string;
+  value: string;
+  note: string;
+}
+
+/** Сводка кандидата — только факты из базы, без оценок и прогнозов (F13: вероятность приглашения не считаем). */
+export function candidateStats(f: { confirmed: number; category: { specialization: string; grade: string } | null; vacancies: number; mine: number; invitations: number }): SceneStat[] {
+  const cat = f.category;
+  return [
+    { label: 'Навыков подтверждено', value: String(f.confirmed), note: f.confirmed ? 'видны работодателям в карточке' : 'пришли резюме или ссылку' },
+    { label: 'Категория', value: cat ? `${SPEC_LABEL[cat.specialization as keyof typeof SPEC_LABEL] ?? cat.specialization} · ${gradeLabel(cat.grade)}` : '—', note: cat ? 'по тесту платформы' : 'даёт только тест' },
+    { label: 'Вакансий на платформе', value: String(f.vacancies), note: cat ? `в твоей категории: ${f.mine}` : 'по всем направлениям' },
+    { label: 'Приглашений', value: String(f.invitations), note: f.invitations ? 'в разделе «Приглашения»' : 'компании пишут сами' },
+  ];
+}
+
 /** Строка «рынка»: категория (специализация × грейд) и сколько в ней; mine — совпадает с категорией/потребностью пользователя. */
 export interface MarketRow {
   key: string;
@@ -68,6 +87,8 @@ export interface SceneAsideData {
   steps: JourneyStep[];
   /** Что консультант уже узнал в знакомстве (ответы, без согласия и роли). */
   known?: KnownFact[];
+  /** Кандидату: сводка на сцене рядом с головой (владелец 11.10: «часть свободного места метриками залить»). */
+  stats?: SceneStat[];
   /** Кандидату: следующий незаполненный вопрос анкеты — открывается в чате кнопкой «дополнить». */
   fill?: { stepId: string; label: string };
   /** Идёт извлечение фактов из последней реплики — колонка перечитает данные ещё раз. */
@@ -268,9 +289,11 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
   const intro = introDone(view);
   const steps = candidateSteps({ intro, introNote: introNote(view, intro, false), confirmed: profileClaims, category, invitations });
   const market = marketRows(vacancies, (spec, grade) => category?.specialization === spec && category.grade === grade);
+  const mine = vacancies.filter((v) => category?.specialization === v.specialization && category.grade === v.grade).length;
+  const stats = candidateStats({ confirmed: profileClaims, category, vacancies: vacancies.length, mine, invitations });
   // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).
   const fill = view?.later && view.current.kind !== 'summary' ? { stepId: view.current.id, label: view.current.label } : undefined;
-  return { role: 'candidate', steps, ...known, market, docs, hint: hintFor('candidate', steps, view), instructions, ...(fill ? { fill } : {}) };
+  return { role: 'candidate', steps, ...known, market, docs, hint: hintFor('candidate', steps, view), instructions, stats, ...(fill ? { fill } : {}) };
 }
 
 export async function loadEmployerAside(employerProfileId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {

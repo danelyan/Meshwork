@@ -1,0 +1,6 @@
+/* Сводка на сцене (SceneStats): 2×2 плитки справа от головы. Только токены. */
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; align-content: center; }
+.stat { display: grid; gap: 2px; padding: 10px 12px; background: var(--glass); border: 1px solid var(--avatar-stage-line); backdrop-filter: var(--blur); min-width: 0; }
+.label { font: 500 10px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--stage-text-soft); }
+.value { margin: 0; font-size: 20px; line-height: 1.1; letter-spacing: -0.03em; color: var(--ink); overflow-wrap: anywhere; }
+.note { margin: 0; font-size: 11px; line-height: 1.4; color: var(--muted); }

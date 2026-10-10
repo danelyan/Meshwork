@@ -42,6 +42,14 @@
 @media (min-width: 1051px) { .sideAside { container: aside / size; } }
 .sideStage { grid-area: stage; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .sideHead { position: relative; flex: 1; min-height: 240px; }
+/* Голова слева, справа сводка кандидата (владелец 11.10: «лицо сдвинуть, свободное место — метриками»). */
+.headBox { position: absolute; inset: 0; }
+.sideStats { display: none; }
+@media (min-width: 1051px) {
+  .withStats { background: var(--avatar-stage-glow), var(--avatar-stage); }
+  .withStats .headBox { right: 52%; }
+  .withStats .sideStats { position: absolute; z-index: 1; top: 60px; bottom: 12px; left: 46%; right: 16px; display: grid; }
+}
 .sideSubs { flex: none; width: min(640px, 100%); margin: 0 auto; padding: 4px 32px 16px; box-sizing: border-box; min-height: calc(3em + 20px); max-height: calc(3em + 20px); overflow: hidden; -webkit-mask-image: linear-gradient(var(--stage-mask) 70%, transparent); mask-image: linear-gradient(var(--stage-mask) 70%, transparent); }
 .sidePanel { grid-area: panel; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--paper); color: var(--ink); border-right: 1px solid var(--avatar-stage-line); padding: 0 16px;
   /* шапка кабинета над панелью не липнет: липкое внутри панели прижимается к её верху */

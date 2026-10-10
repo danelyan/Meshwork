@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { AsideProvider } from '../consultant/aside-refresh';
 import { SceneAside } from '../consultant/SceneAside';
+import { SceneStats } from '../consultant/SceneStats';
 import type { SceneAsideData } from '@/server/consultant/aside';
 
 import { Chat } from '../Chat';
@@ -120,8 +121,11 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
           <CallPanel />
         ) : (
           <>
-            <div className={styles.sideHead}>
-              <HeadView />
+            <div className={`${styles.sideHead}${aside?.stats?.length ? ` ${styles.withStats}` : ''}`}>
+              <div className={styles.headBox}>
+                <HeadView />
+              </div>
+              {aside?.stats?.length ? <SceneStats initial={aside} className={styles.sideStats} /> : null}
               <span className={styles.badge}>{label}</span>
               <div className={styles.callTop}>
                 <StateChip />

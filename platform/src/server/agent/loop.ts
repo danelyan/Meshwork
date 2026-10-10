@@ -9,7 +9,7 @@ import { dispatchToolCall } from './dispatch';
 import { EXTERNAL_NOTE } from './external';
 import { FALLBACK_STEP, fallbackReply, type FallbackReason } from './fallback';
 import { buildHistory, fitHistory, HISTORY_TOTAL_MAX_CHARS } from './history';
-import { asideCannedReply, asideNote, IN_ONBOARDING_NOTE, ONBOARDING_RESUME_PATH, resumeLine, resumeNote } from './onboarding-aside';
+import { asideCannedReply, asideNote, IN_ONBOARDING_NOTE, RESUME_MARK, resumeLine, resumeNote } from './onboarding-aside';
 import { runPipeline, type PipelineResult } from './pipeline';
 import { withQuestionReminder } from './reminder';
 import { createReplyStream } from './reply-stream';
@@ -73,7 +73,7 @@ export async function runTurn(
     await createReplyStream(emit, signal).finish(text);
     return;
   }
-  // Онбординг брошен («Настроить позже»): консультант напоминает и даёт ссылку на продолжение.
+  // Онбординг брошен («Настроить позже»): консультант напоминает: продолжим здесь же, кнопкой вверху ленты.
   // Ход из самой ленты онбординга (вопрос, шаг «Документы») — не брошен, напоминать не о чем.
   const resume = input.onboarding ? null : await pendingOnboarding(candidateId).catch(() => null);
 
@@ -186,7 +186,7 @@ export function buildSystem(args: {
   toolsExhausted: boolean;
   /** Ход — свободный вопрос посреди шага онбординга. */
   onboarding?: OnboardingStepBrief;
-  /** Онбординг брошен: напомнить и дать ссылку на продолжение. */
+  /** Онбординг брошен: напомнить, что продолжить можно здесь же. */
   resume?: OnboardingStepBrief | null;
 }): string {
   const parts = [CONSULTANT_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК).`, EXTERNAL_NOTE];
@@ -214,9 +214,9 @@ export function buildSystem(args: {
   return parts.join('\n\n');
 }
 
-/** В разговоре уже было напоминание со ссылкой на онбординг (демо-ответы не повторяют его каждый ход). */
+/** В разговоре уже было напоминание о незаконченном знакомстве (демо-ответы не повторяют его каждый ход). */
 async function remindedResume(conversationId: string): Promise<boolean> {
-  const n = await prisma.message.count({ where: { conversationId, role: 'assistant', content: { contains: ONBOARDING_RESUME_PATH } } });
+  const n = await prisma.message.count({ where: { conversationId, role: 'assistant', content: { contains: RESUME_MARK } } });
   return n > 0;
 }
 

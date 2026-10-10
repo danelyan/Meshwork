@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { CONSENT_VERSION, ensureConsent } from '@/server/auth/consent';
 import { safeNext } from '@/server/auth/redirect';
-import { homePathFor, sessionInputFor, upsertExternalUser } from '@/server/auth/users';
+import { homePathFor, needsOnboarding, sessionInputFor, upsertExternalUser } from '@/server/auth/users';
 import {
   OAUTH_COOKIE,
   YandexAuthError,
@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
 /**
  * Возврат с oauth.yandex.ru: проверка state (из подписанной куки), обмен кода
  * с PKCE verifier, профиль, upsert аккаунта, новая кука сессии (ротация),
- * редирект: незавершённый онбординг → /onboarding, иначе next или кабинет роли.
+ * редирект: незавершённый онбординг → лента знакомства /consultant, иначе next или кабинет роли.
  * Любая ошибка → /auth?error=<код>, без подробностей и без токенов в логах.
  */
 export async function GET(req: Request) {
@@ -61,7 +61,7 @@ export async function GET(req: Request) {
   }
 
   const home = homePathFor(user);
-  const target = home === '/onboarding' ? home : (safeNext(saved.next) ?? home);
+  const target = needsOnboarding(user) ? home : (safeNext(saved.next) ?? home);
   const res = NextResponse.redirect(new URL(target, env.APP_URL), 303);
   res.cookies.set(userSessionCookie(sessionInputFor(user)));
   res.cookies.set({ name: OAUTH_COOKIE, value: '', path: '/api/auth/yandex', maxAge: 0 });

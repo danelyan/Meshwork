@@ -40,7 +40,7 @@ export async function requirePageUser(next: string): Promise<SessionPrincipal & 
 
 /**
  * Куда отправить с страницы кандидата; null — пускать. Чистая функция (тесты без Next).
- * Нет сессии → /auth?next=…; роль не выбрана → /onboarding; работодатель → /employer.
+ * Нет сессии → /auth?next=…; роль не выбрана → /consultant (знакомство идёт в его ленте); работодатель → /employer.
  * Кандидат с незавершённым онбордингом («Настроить позже») пускается — ему плашка OnboardingBanner.
  * Старая кука демо-кандидата без аккаунта (userId = null) — кандидат, как и в API (requireCandidate).
  */
@@ -48,7 +48,7 @@ export function candidatePageRedirect(s: SessionPrincipal | null, next: string):
   if (!s) return `/auth?next=${encodeURIComponent(next)}`;
   if (s.candidateId) return null;
   if (s.employerProfileId) return '/employer';
-  return '/onboarding';
+  return '/consultant';
 }
 
 /**
@@ -64,11 +64,22 @@ export async function requirePageCandidate(next: string): Promise<SessionPrincip
   return s as SessionPrincipal & { candidateId: string };
 }
 
-/** Guard кабинета работодателя: нет входа → /auth, роль не выбрана → /onboarding, кандидат → /consultant. */
+/**
+ * Guard /consultant — общий адрес ленты (решение владельца 10.10): знакомство (согласие, роль, шаги)
+ * для любой роли и консультант кандидата. Пускает любой вход; что показать роли — решает страница:
+ * данные кандидата (разговор, демо-резюме) грузятся только при candidateId из подписанной куки.
+ */
+export async function requirePageAccount(next: string): Promise<SessionPrincipal> {
+  const { session: s, stale } = await getCheckedPageSession();
+  if (!s) return guestRedirect(next, stale);
+  return s;
+}
+
+/** Guard кабинета работодателя: нет входа → /auth, роль не выбрана → /consultant (знакомство), кандидат → /consultant. */
 export async function requirePageEmployer(next: string): Promise<SessionPrincipal & { userId: string; employerProfileId: string }> {
   const { session: s, stale } = await getCheckedPageSession();
   if (!s) return guestRedirect(next, stale);
-  if (s.userId && s.role === 'pending') redirect('/onboarding');
+  if (s.userId && s.role === 'pending') redirect('/consultant');
   if (!s.userId || !s.employerProfileId) redirect('/consultant');
   return s as SessionPrincipal & { userId: string; employerProfileId: string };
 }

@@ -21,9 +21,17 @@ export function sessionInputFor(user: UserWithProfiles): UserSessionInput {
   };
 }
 
-/** Куда вести после входа: незавершённый онбординг → /onboarding, иначе кабинет роли. */
+/** Онбординг не завершён (или роль не выбрана): после входа — только в ленту знакомства, `next` не важен. */
+export function needsOnboarding(user: Pick<User, 'role' | 'onboardedAt'>): boolean {
+  return !user.onboardedAt || user.role === 'pending';
+}
+
+/**
+ * Куда вести после входа: незавершённый онбординг → /consultant (знакомство идёт в его ленте для
+ * любой роли, решение владельца 10.10), иначе кабинет роли.
+ */
 export function homePathFor(user: Pick<User, 'role' | 'onboardedAt'>): string {
-  if (!user.onboardedAt || user.role === 'pending') return '/onboarding';
+  if (needsOnboarding(user)) return '/consultant';
   return user.role === 'employer' ? '/employer' : '/consultant';
 }
 

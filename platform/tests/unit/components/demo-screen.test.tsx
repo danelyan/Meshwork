@@ -63,7 +63,7 @@ it('кандидаты пула работодателя свёрнуты в «�
 });
 
 it('«Новый пользователь»: без галки согласия кнопка неактивна; с галкой создаёт гостя с версией согласия и ведёт на /onboarding', async () => {
-  const fetchFn = stubFetch({ user: { id: 'u', name: 'Демо-гость 1' }, next: '/onboarding' });
+  const fetchFn = stubFetch({ user: { id: 'u', name: 'Демо-гость 1' }, next: '/consultant' });
   render(<DemoScreen />);
   await screen.findByRole('button', { name: 'Войти как Анна' });
   const btn = screen.getByRole('button', { name: 'Новый пользователь' }) as HTMLButtonElement;
@@ -72,23 +72,23 @@ it('«Новый пользователь»: без галки согласия 
   fireEvent.click(screen.getByRole('checkbox', { name: /Согласен\(на\) на обработку персональных данных/ }));
   expect(btn.disabled).toBe(false);
   fireEvent.click(btn);
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
   expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ fresh: true, consent: CONSENT_VERSION });
 });
 
 it('«пройти онбординг заново» у демо-кандидата шлёт restartCandidateId', async () => {
-  const fetchFn = stubFetch({ user: { id: 'u', name: 'x' }, next: '/onboarding' });
+  const fetchFn = stubFetch({ user: { id: 'u', name: 'x' }, next: '/consultant' });
   render(<DemoScreen />);
   fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Анна' }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
   expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ restartCandidateId: 'd1' });
 });
 
 it('«пройти онбординг заново» у демо-работодателя шлёт restartUserId', async () => {
-  const fetchFn = stubFetch({ user: { id: 'u', name: 'x' }, next: '/onboarding' });
+  const fetchFn = stubFetch({ user: { id: 'u', name: 'x' }, next: '/consultant' });
   render(<DemoScreen />);
   fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Олег HR' }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
   expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ restartUserId: 'e1' });
 });
 
@@ -120,9 +120,9 @@ describe('?next= от guard', () => {
   });
 
   it('«пройти онбординг заново» next не использует', async () => {
-    stubFetch({ user: { id: 'u', name: 'x' }, next: '/onboarding' });
+    stubFetch({ user: { id: 'u', name: 'x' }, next: '/consultant' });
     render(<DemoScreen next="/profile" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Анна' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding'));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
   });
 });

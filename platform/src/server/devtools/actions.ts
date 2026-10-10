@@ -90,7 +90,7 @@ export async function resetTestAttempts(s: SessionPrincipal): Promise<number> {
 /** Новый демо-гость (как «Новый пользователь» на /demo); без версии согласия не создаётся. */
 export async function newFreshUser(consent: string | null | undefined) {
   const user = await createFreshDemoUser(consent);
-  return { user, session: sessionInputFor(user), next: '/onboarding' };
+  return { user, session: sessionInputFor(user), next: '/consultant' };
 }
 
 /** Демо-аккаунты для переключателя «Войти как…». */

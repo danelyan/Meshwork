@@ -88,7 +88,9 @@ describe('правило «не знаю» и примеры', () => {
   it('консультант сохранил раздел <onboarding> со свободными вопросами', () => {
     expect(CONSULTANT_PROMPT).toContain('<onboarding>');
     expect(CONSULTANT_PROMPT).toContain('Свободный вопрос посреди шага');
-    expect(CONSULTANT_PROMPT).toContain('/onboarding');
+    // Знакомство продолжается в той же ленте /consultant (решение владельца 10.10): без ссылки на /onboarding.
+    expect(CONSULTANT_PROMPT).toContain('Вернуться к знакомству');
+    expect(CONSULTANT_PROMPT).not.toMatch(/(?<!<)\/onboarding/); // кроме закрывающего тега </onboarding>
   });
 
   it('онбординг: три примера и запрет выводить последствия ответа', () => {

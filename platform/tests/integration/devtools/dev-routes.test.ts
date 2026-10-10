@@ -194,7 +194,7 @@ describe('api/dev/*', () => {
     expect((await newUser(req('/api/dev/new-user'))).status).toBe(409);
     expect(await prisma.user.count()).toBe(0);
     const res = await newUser(req('/api/dev/new-user', 'POST', { consent: CONSENT_VERSION }));
-    expect((await res.json()).next).toBe('/onboarding');
+    expect((await res.json()).next).toBe('/consultant');
     expect(cookieFrom(res)).toMatch(/^cid=u\./);
     expect(await prisma.user.count({ where: { isDemo: true } })).toBe(1);
 

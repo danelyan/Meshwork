@@ -11,7 +11,7 @@ beforeEach(()=>{
   vi.mocked(getDemoAccounts).mockResolvedValue({candidates:[{id:'demo-1',name:'Анна',specialization:null,fspState:'not_linked'}],employers:[{id:'boss',name:'Олег',company:{id:'company',name:'Компания'}}]});
   vi.mocked(demoLogin).mockResolvedValue({candidate:{id:'demo-1',name:'Анна'},next:'/consultant'});
   vi.mocked(demoEmployerLogin).mockResolvedValue({employer:{id:'boss',name:'Олег'},next:'/employer'});
-  vi.mocked(demoFreshLogin).mockResolvedValue({user:{id:'fresh',name:'Новый'},next:'/onboarding'});
+  vi.mocked(demoFreshLogin).mockResolvedValue({user:{id:'fresh',name:'Новый'},next:'/consultant'});
   vi.mocked(chooseRoleApi).mockResolvedValue({role:'candidate',candidateId:'fresh',employerProfileId:null});
   HTMLDialogElement.prototype.showModal = vi.fn(function(this:HTMLDialogElement){this.open=true;});
   HTMLDialogElement.prototype.close = vi.fn(function(this:HTMLDialogElement){this.open=false;});
@@ -69,7 +69,7 @@ it('creates a new profile only after consent, chooses its role and continues in 
   expect((enter as HTMLButtonElement).disabled).toBe(true);
   fireEvent.click(screen.getAllByRole('checkbox',{name:/Согласен/})[1]!);
   fireEvent.click(enter);
-  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/onboarding'));
+  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
   expect(demoFreshLogin).toHaveBeenCalledWith(CONSENT_VERSION);
   expect(chooseRoleApi).toHaveBeenCalledWith({role:'candidate'});
   expect(screen.queryByText(/Выберите грейд/)).toBeNull();
@@ -82,7 +82,7 @@ it('keeps fresh-account retry from creating another account when assigning the r
   fireEvent.click(screen.getByRole('button',{name:'К ИИ-помощнику →'}));
   await screen.findByRole('alert');
   fireEvent.click(screen.getByRole('button',{name:'К ИИ-помощнику →'}));
-  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/onboarding'));
+  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
   expect(demoFreshLogin).toHaveBeenCalledTimes(1);
 });
 
@@ -98,6 +98,6 @@ it('creates an employer profile with a company before handing off to the assista
   expect((screen.getByRole('button',{name:'К ИИ-помощнику →'}) as HTMLButtonElement).disabled).toBe(true);
   fireEvent.change(screen.getByRole('textbox',{name:'Название компании'}),{target:{value:' Тестовая компания '}});
   fireEvent.click(screen.getByRole('button',{name:'К ИИ-помощнику →'}));
-  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/onboarding'));
+  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
   expect(chooseRoleApi).toHaveBeenCalledWith({role:'employer',companyName:'Тестовая компания'});
 });

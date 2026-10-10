@@ -10,7 +10,7 @@ import styles from './shell.module.css';
 
 /**
  * Аккаунт вошёл, но онбординг не завершён («Настроить позже») — плашка со ссылкой. Ошибки сети молча игнорируем.
- * Кандидат продолжает знакомство в ленте /consultant (решение владельца 10.10) — там плашка не нужна.
+ * Знакомство любой роли идёт в ленте /consultant (решение владельца 10.10) — там плашка не нужна.
  */
 export function OnboardingBanner() {
   const pathname = usePathname();
@@ -29,7 +29,7 @@ function useOnboardingPending(): string | null {
   useEffect(() => {
     let alive = true;
     getMe().then(
-      (u) => alive && setPending(u && !u.onboarded ? (u.role === 'candidate' ? '/consultant' : '/onboarding') : null),
+      (u) => alive && setPending(u && !u.onboarded ? '/consultant' : null),
       () => undefined,
     );
     return () => {

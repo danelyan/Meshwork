@@ -40,7 +40,16 @@ export const GRADE_TEST_PATH: string | null = '/test';
 
 const CABINET = { candidate: '/consultant', employer: '/employer' } as const;
 
-type Meta = { vacancies?: Partial<Record<Grade, string>> };
+/** Служебное состояние: вакансии работодателя; `later` — пауза знакомства кандидата («Настроить позже»). */
+type Meta = { vacancies?: Partial<Record<Grade, string>>; later?: boolean };
+
+/** Шаг онбординга сделан (ответ, пропуск, возврат) — пауза «Настроить позже» снята. */
+function resumed(meta: Meta): Meta {
+  if (!meta.later) return meta;
+  const rest = { ...meta };
+  delete rest.later;
+  return rest;
+}
 
 async function load(userId: string) {
   const user = await prisma.user.findUnique({
@@ -208,6 +217,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
     laterTarget: laterTarget(l),
     test: { href: GRADE_TEST_PATH ?? '/profile', ready: GRADE_TEST_PATH !== null },
     onboarded: l.user.onboardedAt !== null,
+    later: isPaused(l),
   };
 }
 
@@ -371,7 +381,7 @@ export async function answerStep(userId: string, stepId: string, value: unknown)
   const sessionChanged = await apply(l, step, parsed);
   const answers = { ...l.state.answers, [step.id]: parsed };
   const skipped = l.state.skipped.filter((s) => s !== step.id);
-  let meta = l.meta;
+  let meta = resumed(l.meta);
   if (step.id.startsWith('need')) meta = await syncVacancies(userId, answers, meta);
   // Факты могли измениться (согласие, роль, ФСП) — следующий шаг считаем по свежим.
   const fresh = await load(userId);
@@ -387,7 +397,7 @@ export async function skipStep(userId: string, stepId: string): Promise<Mutation
   if (step.required || step.kind === 'summary') throw errors.conflict('Этот шаг нельзя пропустить');
   const skipped = isAnswered(step, l.ctx.answers) || l.state.skipped.includes(step.id) ? l.state.skipped : [...l.state.skipped, step.id];
   const next = nextOpen(l.ctx, skipped, step.id);
-  await save(userId, { stepId: next.id, skipped });
+  await save(userId, { stepId: next.id, skipped, ...(l.meta.later ? { meta: resumed(l.meta) } : {}) });
   return { sessionChanged: false };
 }
 
@@ -396,13 +406,26 @@ export async function gotoStep(userId: string, stepId: string): Promise<Mutation
   const l = await load(userId);
   const step = stepOr409(l, stepId);
   if (step.kind !== 'summary' && step.doneBy?.(l.ctx)) throw errors.conflict('Этот шаг уже пройден');
-  await save(userId, { stepId: step.id });
+  await save(userId, { stepId: step.id, ...(l.meta.later ? { meta: resumed(l.meta) } : {}) });
   return { sessionChanged: false };
 }
 
-/** «Настроить позже»: состояние уже сохранено; онбординг не завершаем. */
+/** Пауза знакомства имеет смысл только у кандидата с незавершённым онбордингом. */
+function isPaused(l: Loaded): boolean {
+  return l.meta.later === true && l.ctx.facts.role === 'candidate' && l.user.onboardedAt === null;
+}
+
+/**
+ * «Настроить позже»: ответы уже сохранены; онбординг не завершаем. Кандидат (решение владельца
+ * 10.10) остаётся на /consultant: шаги на паузе (meta.later), лента — свободный разговор;
+ * вернуться — ответить, пропустить или открыть шаг (goto). Остальным — куда вести, как раньше.
+ */
 export async function finishLater(userId: string): Promise<{ next: string }> {
-  return { next: laterTarget(await load(userId)) };
+  const l = await load(userId);
+  if (l.ctx.facts.role === 'candidate' && l.ctx.facts.consent && l.user.onboardedAt === null) {
+    await save(userId, { stepId: l.state.stepId ?? currentStep(l.ctx, l.state).id, meta: { ...l.meta, later: true } });
+  }
+  return { next: laterTarget(l) };
 }
 
 /** Текущий шаг онбординга для хода консультанта (свободный вопрос посреди шага, напоминание). */
@@ -449,14 +472,14 @@ export async function pendingOnboarding(candidateId: string): Promise<Onboarding
 }
 
 /**
- * Показывать ли шаги онбординга в ленте /consultant (решение владельца 10.10: онбординг и
- * консультант — одна страница). Да — знакомство не завершено или завершено в чате (состояние
- * стоит на итоге: шаги — начало ленты, дальше разговор). Нет — аккаунт завершён без чата (сид
- * демо) или со старым состоянием посреди шагов (открывал прежнюю /onboarding после завершения):
- * такому — обычный чат, иначе жюри под демо-кандидатом увидело бы вопросы вместо консультанта.
+ * Показывать ли шаги онбординга в ленте /consultant (решения владельца 10.10: один адрес с чатом).
+ * Да — роль не выбрана, знакомство не завершено или завершено в чате (состояние стоит на итоге:
+ * шаги — начало ленты, дальше разговор). Нет — аккаунт завершён без чата (сид демо) или со старым
+ * состоянием посреди шагов (открывал прежнюю /onboarding после завершения): такому кандидату —
+ * обычный чат, работодателю — кабинет; иначе жюри под демо-аккаунтом увидело бы вопросы.
  */
 export async function onboardingInFeed(userId: string): Promise<boolean> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { onboardedAt: true, onboarding: { select: { stepId: true } } } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, onboardedAt: true, onboarding: { select: { stepId: true } } } });
   if (!user) return false;
-  return user.onboardedAt === null || user.onboarding?.stepId === 'summary';
+  return user.role === 'pending' || user.onboardedAt === null || user.onboarding?.stepId === 'summary';
 }

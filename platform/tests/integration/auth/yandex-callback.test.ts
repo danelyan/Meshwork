@@ -71,12 +71,12 @@ describe('вход через Яндекс ID (callback, fetch замокан)',
     expect(setCookie).toMatch(/Path=\/api\/auth\/yandex/i);
   });
 
-  it('успех: новый аккаунт pending → /onboarding, кука сессии, токен не сохранён', async () => {
+  it('успех: новый аккаунт pending → /consultant, кука сессии, токен не сохранён', async () => {
     const calls = mockYandex(OK_TOKEN, info());
     const { state, cookie } = await begin('/profile');
     const res = await cb(`code=1234567&state=${state}`, cookie);
     expect(res.status).toBe(303);
-    expect(res.headers.get('location')).toBe('http://localhost:3000/onboarding');
+    expect(res.headers.get('location')).toBe('http://localhost:3000/consultant');
     const s = sessionOf(res);
     expect(s).toMatchObject({ role: 'pending', candidateId: null });
     const user = await prisma.user.findUniqueOrThrow({ where: { id: s!.userId! }, include: { accounts: true } });
@@ -147,7 +147,7 @@ describe('вход через Яндекс ID (callback, fetch замокан)',
     mockYandex(OK_TOKEN, info({ default_email: undefined, real_name: undefined, display_name: 'ivan' }));
     const { state, cookie } = await begin();
     const res = await cb(`code=1234567&state=${state}`, cookie);
-    expect(res.headers.get('location')).toBe('http://localhost:3000/onboarding');
+    expect(res.headers.get('location')).toBe('http://localhost:3000/consultant');
     const user = await prisma.user.findFirstOrThrow();
     expect(user).toMatchObject({ email: null, name: 'ivan' });
   });

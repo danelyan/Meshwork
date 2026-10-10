@@ -171,7 +171,7 @@ paths:
                 properties:
                   next:
                     type: string
-                    description: "Куда вести: /onboarding или кабинет роли"
+                    description: "Куда вести: /consultant (лента знакомства) или кабинет роли"
                 required:
                   - next
         "400":
@@ -432,7 +432,7 @@ paths:
                 properties:
                   next:
                     type: string
-                    description: "Куда вести: /onboarding или кабинет роли"
+                    description: "Куда вести: /consultant (лента знакомства) или кабинет роли"
                 required:
                   - next
         "400":
@@ -666,7 +666,7 @@ paths:
                 properties:
                   next:
                     type: string
-                    description: "Куда вести: /onboarding или кабинет роли"
+                    description: "Куда вести: /consultant (лента знакомства) или кабинет роли"
                 required:
                   - next
         "400":
@@ -809,7 +809,7 @@ paths:
             type: string
       responses:
         "303":
-          description: "Редирект 303: незавершённый онбординг → /onboarding, иначе `next` или кабинет роли; при ошибке /auth?error=<код>"
+          description: "Редирект 303: незавершённый онбординг → /consultant (лента знакомства), иначе `next` или кабинет роли; при ошибке /auth?error=<код>"
           headers:
             Location:
               schema:
@@ -2224,7 +2224,7 @@ paths:
       tags:
         - onboarding
       summary: "Действие онбординга"
-      description: "Ответить на шаг (`answer`), пропустить (`skip`), вернуться (`goto`) или отложить (`later`). После `answer`/`skip`/`goto` — новое состояние; при смене роли выставляется новая кука cid. Завершение — `POST /api/auth/onboarding/complete`.\n\nНужна сессия аккаунта любой роли (кука cid)."
+      description: "Ответить на шаг (`answer`), пропустить (`skip`), вернуться (`goto`) или отложить (`later`: у кандидата шаги встают на паузу, лента /consultant продолжается свободным разговором; снимает паузу любой `answer`/`skip`/`goto`). После `answer`/`skip`/`goto` — новое состояние; при смене роли выставляется новая кука cid. Завершение — `POST /api/auth/onboarding/complete`.\n\nНужна сессия аккаунта любой роли (кука cid)."
       security:
         -
           cookieAuth: []

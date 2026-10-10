@@ -126,6 +126,24 @@ describe('API онбординга', () => {
     expect(v.history[1]).toMatchObject({ answer: 'Ищу работу', editable: true });
   });
 
+  it('«настроить позже» у кандидата — пауза в ленте /consultant: переживает перезагрузку, снимается возвратом к шагу', async () => {
+    const c = await asCandidate('u1');
+    expect((await view(c)).later).toBe(false);
+    await act(c, { action: 'later' });
+    const paused = await view(c);
+    expect(paused.later).toBe(true);
+    expect(paused.current.id).toBe('goal');
+    // «Вернуться к знакомству» — goto на текущий шаг: пауза снята, шаг тот же.
+    const back = await act(c, { action: 'goto', stepId: 'goal' });
+    expect(back.json.later).toBe(false);
+    expect(back.json.current.id).toBe('goal');
+    // Ответ после новой паузы тоже снимает её.
+    await act(c, { action: 'later' });
+    const answered = await act(c, { action: 'answer', stepId: 'goal', value: 'job_search' });
+    expect(answered.json.later).toBe(false);
+    expect(answered.json.current.id).toBe('documents');
+  });
+
   it('«настроить позже» до роли — на главную', async () => {
     expect((await act(pending('u1'), { action: 'later' })).json.next).toBe('/');
   });

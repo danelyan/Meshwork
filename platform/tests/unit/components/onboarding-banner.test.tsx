@@ -26,9 +26,9 @@ it('на самой /consultant плашки нет: шаги знакомств
   expect(screen.queryByRole('status')).toBeNull();
 });
 
-it('работодатель: продолжает на /onboarding', async () => {
+it('работодатель тоже продолжает в ленте /consultant (один адрес с чатом)', async () => {
   nav.pathname = '/employer';
   me.value = { role: 'employer', onboarded: false };
   render(<OnboardingBanner />);
-  await waitFor(() => expect(screen.getByRole('link', { name: 'продолжить' }).getAttribute('href')).toBe('/onboarding'));
+  await waitFor(() => expect(screen.getByRole('link', { name: 'продолжить' }).getAttribute('href')).toBe('/consultant'));
 });

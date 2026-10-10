@@ -10,7 +10,7 @@ describe('EmailAuth', () => {
   it('регистрация: без галки согласия кнопка неактивна; локальный код показывается; код → переход', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(json(200, { sent: true, devCode: '042137' }))
-      .mockResolvedValueOnce(json(200, { next: '/onboarding' }));
+      .mockResolvedValueOnce(json(200, { next: '/consultant' }));
     vi.stubGlobal('fetch', fetchMock);
     const navigate = vi.fn();
     render(<EmailAuth next={null} navigate={navigate} />);
@@ -26,7 +26,7 @@ describe('EmailAuth', () => {
     expect((await screen.findByText(/Локальная разработка/)).textContent).toContain('042137');
     fireEvent.change(screen.getByLabelText('Код из письма'), { target: { value: '042137' } });
     fireEvent.click(screen.getByRole('button', { name: 'Подтвердить почту' }));
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/onboarding'));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/consultant'));
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toMatchObject({ email: 'jury@example.test', code: '042137' });
   });
 

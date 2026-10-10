@@ -58,7 +58,7 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
   async function newProfile() {
     if (!created.current) { await demoFreshLogin(CONSENT_VERSION); created.current = true; }
     await chooseRoleApi(role === 'employer' ? {role,companyName:company.trim()} : {role:'candidate'});
-    return {next:'/onboarding'};
+    return {next:'/consultant'};
   }
 
   return <div onKeyDown={event => {
@@ -109,7 +109,7 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
             {fresh && <>
               {role === 'employer' && <Field label="Название компании"><input maxLength={120} value={company} onChange={e=>setCompany(e.target.value)} /></Field>}
               <ConsentCheck checked={agreed} onChange={setAgreed} />
-              <Button variant="cta" loading={pending} disabled={!agreed || role === 'employer' && company.trim().length < 2} onClick={()=>void enter(newProfile,'/onboarding')}>К ИИ-помощнику →</Button>
+              <Button variant="cta" loading={pending} disabled={!agreed || role === 'employer' && company.trim().length < 2} onClick={()=>void enter(newProfile,'/consultant')}>К ИИ-помощнику →</Button>
             </>}
           </section>}
         </div>

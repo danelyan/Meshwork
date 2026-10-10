@@ -12,5 +12,5 @@ export const POST = devRoute(async (req) => {
   const s = requireDevSession(req);
   const body = Body.parse(await req.json().catch(() => ({})));
   await clearOnboarding(s, body.alsoProfile);
-  return Response.json({ ok: true, next: '/onboarding' });
+  return Response.json({ ok: true, next: '/consultant' });
 });

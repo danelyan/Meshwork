@@ -116,7 +116,7 @@ describe('Свободный вопрос посреди онбординга', 
     expect(systems[0]).toContain('<onboarding>');
   });
 
-  it('онбординг брошен («Настроить позже»): обычный ход консультанта получает напоминание со ссылкой', async () => {
+  it('онбординг брошен («Настроить позже»): обычный ход консультанта получает напоминание продолжить здесь же', async () => {
     const { cookie, candidateId } = await asCandidate('u1');
     await act(cookie, { action: 'answer', stepId: 'goal', value: 'job_search' });
     expect(await pendingOnboarding(candidateId)).toMatchObject({ stepId: 'documents' });
@@ -127,7 +127,8 @@ describe('Свободный вопрос посреди онбординга', 
     });
     await ask(cookie, { text: 'привет' });
     expect(systems[0]).toContain('Онбординг кандидата не закончен');
-    expect(systems[0]).toContain('/onboarding');
+    expect(systems[0]).toContain('Вернуться к знакомству');
+    expect(systems[0]).not.toMatch(/(?<!<)\/onboarding/); // кроме тега </onboarding> в промпте
 
     await prisma.user.update({ where: { id: 'u1' }, data: { onboardedAt: new Date() } });
     expect(await pendingOnboarding(candidateId)).toBeNull();
@@ -141,9 +142,9 @@ describe('Свободный вопрос посреди онбординга', 
     resetEnvCache();
     try {
       const first = await ask(cookie, { text: 'привет' });
-      expect(textOf(first.events)).toContain('Знакомство ещё не закончено - продолжить можно здесь: /onboarding');
+      expect(textOf(first.events)).toContain('Знакомство ещё не закончено - продолжим здесь же: кнопка «Вернуться к знакомству» вверху ленты.');
       const second = await ask(cookie, { text: 'а ещё?', conversationId: first.conversationId });
-      expect(textOf(second.events)).not.toContain('/onboarding');
+      expect(textOf(second.events)).not.toContain('Знакомство ещё не закончено');
       const aside = await ask(cookie, { text: 'вопрос', onboardingStep: 'goal' });
       expect(textOf(aside.events)).toMatch(/без языковой модели.*Зачем ты здесь\?/s);
     } finally {

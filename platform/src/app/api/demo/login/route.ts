@@ -58,7 +58,7 @@ export const POST = withErrors(async (req: Request) => {
   if ('fresh' in body) {
     // Новый пользователь: согласие уже взято галкой на /demo (в createFreshDemoUser), роль спросит онбординг.
     const user = await createFreshDemoUser(body.consent);
-    const res = NextResponse.json({ user: { id: user.id, name: user.name }, next: '/onboarding' });
+    const res = NextResponse.json({ user: { id: user.id, name: user.name }, next: '/consultant' });
     res.cookies.set(userSessionCookie(sessionInputFor(user)));
     return res;
   }
@@ -75,7 +75,7 @@ export const POST = withErrors(async (req: Request) => {
       userId = (await ensureDemoCandidateUser(candidate)).id;
     }
     const user = await resetDemoOnboarding(userId);
-    const res = NextResponse.json({ user: { id: user.id, name: user.name }, next: '/onboarding' });
+    const res = NextResponse.json({ user: { id: user.id, name: user.name }, next: '/consultant' });
     res.cookies.set(userSessionCookie(sessionInputFor(user)));
     return res;
   }

@@ -101,7 +101,7 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
         className={styles.restart}
         aria-label={`Пройти онбординг заново: ${c.name}`}
         disabled={pending !== null}
-        onClick={() => void enter(`r-${c.id}`, () => demoRestartOnboarding({ restartCandidateId: c.id }), '/onboarding')}
+        onClick={() => void enter(`r-${c.id}`, () => demoRestartOnboarding({ restartCandidateId: c.id }), '/consultant')}
       >
         пройти онбординг заново
       </button>
@@ -130,7 +130,7 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
           type="button"
           className={`${ui.btn} ${ui.cta}`}
           disabled={pending !== null || !agreed}
-          onClick={() => void enter('fresh', () => demoFreshLogin(CONSENT_VERSION), '/onboarding')}
+          onClick={() => void enter('fresh', () => demoFreshLogin(CONSENT_VERSION), '/consultant')}
         >
           {pending === 'fresh' ? 'Создаю…' : 'Новый пользователь'}
         </button>
@@ -182,7 +182,7 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
                     className={styles.restart}
                     aria-label={`Пройти онбординг заново: ${e.name}`}
                     disabled={pending !== null}
-                    onClick={() => void enter(`r-${e.id}`, () => demoRestartOnboarding({ restartUserId: e.id }), '/onboarding')}
+                    onClick={() => void enter(`r-${e.id}`, () => demoRestartOnboarding({ restartUserId: e.id }), '/consultant')}
                   >
                     пройти онбординг заново
                   </button>

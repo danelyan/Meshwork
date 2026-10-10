@@ -31,7 +31,7 @@ describe('api/demo/login: новый пользователь и сброс он
     const res = await post({ fresh: true, consent: CONSENT_VERSION });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.next).toBe('/onboarding');
+    expect(body.next).toBe('/consultant');
     const cookie = cookieFrom(res)!;
     const user = await prisma.user.findUniqueOrThrow({ where: { id: body.user.id }, include: { accounts: true } });
     expect(user).toMatchObject({ role: 'pending', onboardedAt: null, isDemo: true });
@@ -58,7 +58,7 @@ describe('api/demo/login: новый пользователь и сброс он
 
     const res = await post({ restartCandidateId: 'demo-x' });
     expect(res.status).toBe(200);
-    expect((await res.json()).next).toBe('/onboarding');
+    expect((await res.json()).next).toBe('/consultant');
     const after = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(after.onboardedAt).toBeNull();
     expect(after.candidateId).toBe('demo-x');

@@ -7,7 +7,7 @@ import { userSessionCookie } from '@/server/session';
 import { assertSameOrigin } from './csrf';
 import { RATE, clientKey, hit } from './rate-limit';
 import { safeNext } from './redirect';
-import { homePathFor, type loadUser, sessionInputFor } from './users';
+import { homePathFor, type loadUser, needsOnboarding, sessionInputFor } from './users';
 
 type LoadedUser = NonNullable<Awaited<ReturnType<typeof loadUser>>>;
 
@@ -20,11 +20,11 @@ export async function parseAuthForm<S extends z.ZodType>(req: Request, schema: S
 
 /**
  * Успешный вход: новая кука сессии (ротация) и куда идти — незавершённый онбординг →
- * /onboarding, иначе безопасный `next` или кабинет роли (как в callback Яндекса).
+ * лента знакомства /consultant, иначе безопасный `next` или кабинет роли (как в callback Яндекса).
  */
 export function signedIn(user: LoadedUser, next: string | null | undefined): Response {
   const home = homePathFor(user);
-  const target = home === '/onboarding' ? home : (safeNext(next) ?? home);
+  const target = needsOnboarding(user) ? home : (safeNext(next) ?? home);
   const res = NextResponse.json({ next: target });
   res.cookies.set(userSessionCookie(sessionInputFor(user)));
   return res;

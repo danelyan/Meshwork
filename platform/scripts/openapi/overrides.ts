@@ -246,7 +246,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
       { name: 'error', description: 'Присутствует, если пользователь отказал', schema: str() },
     ],
     description: 'Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка — на /auth?error=<код>, без подробностей и токенов.',
-    success: { description: 'Редирект 303: незавершённый онбординг → /onboarding, иначе `next` или кабинет роли; при ошибке /auth?error=<код>' },
+    success: { description: 'Редирект 303: незавершённый онбординг → /consultant (лента знакомства), иначе `next` или кабинет роли; при ошибке /auth?error=<код>' },
   },
   // lane email-auth: вход по почте и паролю (R-D-04). Все формы — same-origin и лимит попыток на клиента (429).
   'POST /api/auth/register': {
@@ -270,7 +270,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Подтвердить почту кодом из письма',
     role: 'public',
     body: { schema: obj({ email: str(undefined, { format: 'email' }), code: str('6 цифр из письма'), next: nullable(str('Куда вести после входа; только внутренние пути')) }, ['email', 'code']) },
-    success: JSON_OK('Почта подтверждена, выставлена кука cid', obj({ next: str('Куда вести: /onboarding или кабинет роли') })),
+    success: JSON_OK('Почта подтверждена, выставлена кука cid', obj({ next: str('Куда вести: /consultant (лента знакомства) или кабинет роли') })),
     errors: { 400: 'Неверный, просроченный или исчерпанный код (`invalid_code`, `code_expired`, `code_exhausted`) либо тело не прошло проверку', 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток (`rate_limited`)' },
   },
   'POST /api/auth/verify/resend': {
@@ -284,7 +284,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Вход по почте и паролю',
     role: 'public',
     body: { schema: obj({ email: str(undefined, { format: 'email' }), password: str(), next: nullable(str('Куда вести после входа; только внутренние пути')) }, ['email', 'password']) },
-    success: JSON_OK('Вход выполнен, выставлена кука cid', obj({ next: str('Куда вести: /onboarding или кабинет роли') })),
+    success: JSON_OK('Вход выполнен, выставлена кука cid', obj({ next: str('Куда вести: /consultant (лента знакомства) или кабинет роли') })),
     errors: {
       401: 'Неверная почта или пароль — одинаковый ответ (`invalid_credentials`)',
       403: 'Почта не подтверждена, новый код отправлен (`email_not_verified`; `details.devCode` — только на локальном стенде) или чужой Origin',
@@ -303,7 +303,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     role: 'public',
     description: 'Смена пароля по коду; после смены прежние сессии аккаунта отзываются, выставляется новая кука cid.',
     body: { schema: obj({ email: str(undefined, { format: 'email' }), code: str('6 цифр из письма'), password: str('Новый пароль, 8–128 символов'), next: nullable(str()) }, ['email', 'code', 'password']) },
-    success: JSON_OK('Пароль сменён, вход выполнен', obj({ next: str('Куда вести: /onboarding или кабинет роли') })),
+    success: JSON_OK('Пароль сменён, вход выполнен', obj({ next: str('Куда вести: /consultant (лента знакомства) или кабинет роли') })),
     errors: { 400: 'Неверный, просроченный или исчерпанный код (`invalid_code`, `code_expired`, `code_exhausted`) либо слабый пароль', 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток (`rate_limited`)' },
   },
 
@@ -457,7 +457,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Состояние онбординга', success: JSON_OK('Текущий шаг, лента, прогресс, итог', ref('OnboardingView')) },
   'POST /api/onboarding': {
     summary: 'Действие онбординга',
-    description: 'Ответить на шаг (`answer`), пропустить (`skip`), вернуться (`goto`) или отложить (`later`). После `answer`/`skip`/`goto` — новое состояние; при смене роли выставляется новая кука cid. Завершение — `POST /api/auth/onboarding/complete`.',
+    description: 'Ответить на шаг (`answer`), пропустить (`skip`), вернуться (`goto`) или отложить (`later`: у кандидата шаги встают на паузу, лента /consultant продолжается свободным разговором; снимает паузу любой `answer`/`skip`/`goto`). После `answer`/`skip`/`goto` — новое состояние; при смене роли выставляется новая кука cid. Завершение — `POST /api/auth/onboarding/complete`.',
     success: { description: 'Новое состояние онбординга (`later` — `{ next }` без завершения)', schema: { oneOf: [ref('OnboardingView'), obj({ next: str() })] } },
     errors: { 409: 'Шаг недоступен в текущем состоянии' },
   },

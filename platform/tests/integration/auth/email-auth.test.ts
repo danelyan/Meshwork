@@ -66,7 +66,7 @@ describe('вход по почте: регистрация, подтвержде
 
     const ok = await post(verify, '/api/auth/verify', { email: 'ivan@example.test', code: fresh });
     expect(ok.status).toBe(200);
-    expect(await ok.json()).toEqual({ next: '/onboarding' });
+    expect(await ok.json()).toEqual({ next: '/consultant' });
     expect(parseSession(cookieFrom(ok)!.slice(4))).toMatchObject({ userId: user.id, role: 'pending' });
     expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).emailVerifiedAt).toBeInstanceOf(Date);
 

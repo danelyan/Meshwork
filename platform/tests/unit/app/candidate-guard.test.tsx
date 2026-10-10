@@ -58,7 +58,6 @@ async function outcome(run: () => Promise<unknown>): Promise<string> {
 
 const noSearch = { searchParams: Promise.resolve({}) };
 const PAGES: Array<[string, string, () => Promise<unknown>]> = [
-  ['/consultant', '/consultant', async () => (await import('@/app/(candidate)/consultant/page')).default()],
   ['/profile', '/profile', async () => (await import('@/app/(candidate)/profile/page')).default()],
   ['/test', '/test', async () => (await import('@/app/(candidate)/test/page')).default(noSearch)],
   [
@@ -83,7 +82,7 @@ describe('candidatePageRedirect', () => {
     expect(candidatePageRedirect(p({ candidateId: 'c' }), '/x')).toBeNull();
     expect(candidatePageRedirect(p({ userId: null, candidateId: 'c' }), '/x')).toBeNull();
     expect(candidatePageRedirect(p({ role: 'employer', employerProfileId: 'e' }), '/x')).toBe('/employer');
-    expect(candidatePageRedirect(p({ role: 'pending' }), '/x')).toBe('/onboarding');
+    expect(candidatePageRedirect(p({ role: 'pending' }), '/x')).toBe('/consultant');
   });
 });
 
@@ -103,9 +102,9 @@ describe.each(PAGES)('страница %s', (_name, next, run) => {
     cookie.value = SESS.employer();
     expect(await outcome(run)).toBe('/employer');
   });
-  it('роль не выбрана → /onboarding', async () => {
+  it('роль не выбрана → /consultant (знакомство идёт в его ленте)', async () => {
     cookie.value = SESS.pending();
-    expect(await outcome(run)).toBe('/onboarding');
+    expect(await outcome(run)).toBe('/consultant');
   });
   it('поддельная кука = гость', async () => {
     cookie.value = `${SESS.candidate().slice(0, -2)}xx`;
@@ -113,25 +112,37 @@ describe.each(PAGES)('страница %s', (_name, next, run) => {
   });
 });
 
-describe('/onboarding: кандидат проходит знакомство в ленте /consultant (решение владельца 10.10)', () => {
+describe('/onboarding — только редирект на /consultant (один адрес с чатом, решение владельца 10.10)', () => {
   const run = async () => (await import('@/app/onboarding/page')).default();
-  it('гость → /auth?next=/onboarding, кандидат → /consultant', async () => {
-    expect(await outcome(run)).toBe('/auth?next=%2Fonboarding');
-    cookie.value = SESS.candidate();
-    expect(await outcome(run)).toBe('/consultant');
+  it.each(['guest', 'candidate', 'employer', 'pending'] as const)('%s → /consultant', async (who) => {
+    cookie.value = who === 'guest' ? undefined : SESS[who]();
+    expect(await outcome(async () => run())).toBe('/consultant');
+  });
+});
+
+describe('/consultant: общий адрес — гость на вход, роли решает страница (tests/unit/app/consultant-feed.test.tsx)', () => {
+  const run = async () => (await import('@/app/(candidate)/consultant/page')).default();
+  it('гость → /auth?next=/consultant; поддельная кука = гость', async () => {
+    expect(await outcome(run)).toBe('/auth?next=%2Fconsultant');
+    cookie.value = `${SESS.candidate().slice(0, -2)}xx`;
+    expect(await outcome(run)).toBe('/auth?next=%2Fconsultant');
+  });
+  it('работодатель без доступного онбординга → кабинет /employer, данных кандидата не грузит', async () => {
+    cookie.value = SESS.employer();
+    expect(await outcome(run)).toBe('/employer');
   });
 });
 
 describe('requirePageEmployer (кабинет работодателя)', () => {
   const run = async () => (await import('@/server/auth/page')).requirePageEmployer('/employer/search');
-  it('гость → /auth?next, кандидат → /consultant, pending → /onboarding, работодатель → пускает', async () => {
+  it('гость → /auth?next, кандидат → /consultant, pending → /consultant, работодатель → пускает', async () => {
     expect(await outcome(run)).toBe('/auth?next=%2Femployer%2Fsearch');
     cookie.value = SESS.candidate();
     expect(await outcome(run)).toBe('/consultant');
     cookie.value = SESS.legacy();
     expect(await outcome(run)).toBe('/consultant');
     cookie.value = SESS.pending();
-    expect(await outcome(run)).toBe('/onboarding');
+    expect(await outcome(run)).toBe('/consultant');
     cookie.value = SESS.employer();
     expect(await outcome(run)).toBe('ok');
   });

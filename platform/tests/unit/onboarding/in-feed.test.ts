@@ -12,6 +12,7 @@ it.each([
   ['завершено в чате (состояние на итоге)', { onboardedAt: at, onboarding: { stepId: 'summary' } }, true],
   ['завершено без чата (сид демо)', { onboardedAt: at, onboarding: null }, false],
   ['завершено, старое состояние посреди шагов', { onboardedAt: at, onboarding: { stepId: 'documents' } }, false],
+  ['роль не выбрана (даже с отметкой завершения)', { role: 'pending', onboardedAt: at, onboarding: null }, true],
   ['аккаунта нет', null, false],
 ])('%s', async (_name, user, expected) => {
   findUnique.mockResolvedValueOnce(user);

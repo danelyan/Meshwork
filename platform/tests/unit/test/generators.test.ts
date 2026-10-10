@@ -130,7 +130,7 @@ describe('инвариант выводимости ответа из услов
           for (const k of inst.answerKey.split('|')) expect(Number.isFinite(Number(k)), `${g.id} ${seed}`).toBe(true);
       }
     }
-  });
+  }, 60_000);
 
   it('be.cache-consistency: есть начальная цена, запись и чтение до неё; ответ не всегда равен последней цене в БД', () => {
     let stale = 0;

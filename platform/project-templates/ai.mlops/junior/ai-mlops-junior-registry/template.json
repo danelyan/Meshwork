@@ -1,0 +1,19 @@
+{
+  "id": "ai-mlops-junior-registry",
+  "subcategoryId": "ai.mlops",
+  "specialization": "ai",
+  "grade": "junior",
+  "title": "Реестр моделей: версии, стадии, продвижение",
+  "summary": "Регистрация версий модели с метриками и параметрами, стадии staging/production/archived, правило одной production-версии, поиск лучшей версии, сохранение в JSON",
+  "stack": ["python312", "pytest", "json"],
+  "catalogIds": ["ai.model-versioning", "ai.ml-metrics", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

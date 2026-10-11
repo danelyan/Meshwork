@@ -1,0 +1,19 @@
+{
+  "id": "ai-mlops-middle-drift",
+  "subcategoryId": "ai.mlops",
+  "specialization": "ai",
+  "grade": "middle",
+  "title": "Мониторинг дрейфа: PSI и KS по окнам",
+  "summary": "Дрейф признаков и предсказаний относительно эталонной выборки: PSI (числовые и категориальные), статистика KS, пороги ok/warn/alert, отчёт по окнам, пустые бины и новые категории",
+  "stack": ["python312", "pytest", "numpy"],
+  "catalogIds": ["ai.monitoring-drift", "ai.ml-metrics", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

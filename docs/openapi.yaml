@@ -45,6 +45,9 @@ tags:
     name: evaluate
     description: "Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД"
   -
+    name: expert
+    description: expert
+  -
     name: favorites
     description: favorites
   -
@@ -3909,15 +3912,12 @@ paths:
           name: spec
           in: query
           required: false
-          description: "Специализация или fullstack (есть категории и в backend, и в frontend; грейд - меньший из двух)"
+          description: "Специализация"
           schema:
             type: string
             enum:
               - backend
               - frontend
-              - ai
-              - engineering
-              - fullstack
         -
           name: grade
           in: query
@@ -4205,15 +4205,12 @@ paths:
           name: spec
           in: query
           required: false
-          description: "Специализация или fullstack (есть категории и в backend, и в frontend; грейд - меньший из двух)"
+          description: "Специализация"
           schema:
             type: string
             enum:
               - backend
               - frontend
-              - ai
-              - engineering
-              - fullstack
         -
           name: grade
           in: query
@@ -4458,6 +4455,195 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/expert/attempt/{id}":
+    get:
+      operationId: getExpertAttemptId
+      tags:
+        - expert
+      summary: "Попытка эксперта (только своя, по куке fsp_expert); после итога — разбор."
+      description: "попытка эксперта (только своя, по куке fsp_expert); после итога — разбор.\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Попытка эксперта (только своя, по куке fsp_expert); после итога — разбор."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/expert/attempt/{id}/answer":
+    post:
+      operationId: postExpertAttemptIdAnswer
+      tags:
+        - expert
+      summary: "Ответ эксперта → следующее задание или итог с разбором (категория не пишется)."
+      description: "ответ эксперта → следующее задание или итог с разбором (категория не пишется).\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                answer:
+                  type: string
+                  maxLength: 2000
+              required:
+                - answer
+      responses:
+        "200":
+          description: "Ответ эксперта → следующее задание или итог с разбором (категория не пишется)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/expert/attempt/{id}/finish":
+    post:
+      operationId: postExpertAttemptIdFinish
+      tags:
+        - expert
+      summary: "Досрочный итог попытки эксперта с разбором (категория не пишется)."
+      description: "досрочный итог попытки эксперта с разбором (категория не пишется).\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Досрочный итог попытки эксперта с разбором (категория не пишется)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/expert/attempt/{id}/signal":
+    post:
+      operationId: postExpertAttemptIdSignal
+      tags:
+        - expert
+      summary: "Сигналы браузера к активной попытке эксперта (индекс честности)."
+      description: "сигналы браузера к активной попытке эксперта (индекс честности). Тело — JSON текстом (sendBeacon).\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Сигналы браузера к активной попытке эксперта (индекс честности). Тело — JSON текстом (sendBeacon)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/expert/start":
+    get:
+      operationId: getExpertStart
+      tags:
+        - expert
+      summary: "Направления и подкатегории, по которым тест эксперта доступен (банк заданий собран)."
+      description: "направления и подкатегории, по которым тест эксперта доступен (банк заданий собран). Флаг DEMO_LOGIN.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Направления и подкатегории, по которым тест эксперта доступен (банк заданий собран). Флаг DEMO_LOGIN."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postExpertStart
+      tags:
+        - expert
+      summary: "Режим эксперта: новый одноразовый эксперт (без"
+      description: "режим эксперта: новый одноразовый эксперт (без регистрации, скрыт от работодателей) и попытка теста на грейд тем же сервисом, что у кандидата. Кука `fsp_expert` (path /api/expert). Лимиты: адрес клиента и суточный потолок (429). Флаг DEMO_LOGIN выключен → 404.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                specialization:
+                  type: string
+                  enum:
+                    - backend
+                    - frontend
+                    - ai
+                    - engineering
+                grade:
+                  type: string
+                  enum:
+                    - junior
+                    - middle
+                    - senior
+                subcategoryId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+              required:
+                - specialization
+                - grade
+                - subcategoryId
+      responses:
+        "201":
+          description: "Создано. Режим эксперта: новый одноразовый эксперт (без"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/favorites":
@@ -5652,7 +5838,7 @@ paths:
       tags:
         - stt
       summary: "Режим голосового ввода"
-      description: "Какой распознаватель доступен композеру: yandex / openai / browser / off.\n\nВход не нужен."
+      description: "Какой распознаватель доступен композеру: yandex / browser / off.\n\nВход не нужен."
       security: []
       responses:
         "200":

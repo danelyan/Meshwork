@@ -6,6 +6,7 @@ import type { CatalogEntry } from '../claims/types';
 import { demoAchievements } from '../collector/fsp-demo';
 import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
+import { NOT_EXPERT_CANDIDATE } from '../expert/marker';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
@@ -65,12 +66,13 @@ interface PoolRow {
 /**
  * Пул кандидатов: не скрытые настройкой приватности (R-C-13), с подтверждёнными
  * утверждениями или категорией. Черновики (`proposed`) и отклонённые не считаются.
- * `companyId` — чья выдача: от него зависит, какие защиты видны (ADR 0008); null — только ИИ-защиты.
  */
-export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: string | null = null): Promise<PoolRow[]> {
+export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<PoolRow[]> {
   const rows = await prisma.candidate.findMany({
     where: {
       hiddenFromEmployers: false,
+      // Режим эксперта (server/expert): одноразовые эксперты жюри в поиск и подборку не попадают никогда.
+      ...NOT_EXPERT_CANDIDATE,
       OR: [{ claims: { some: { status: { in: ['confirmed', 'edited'] } } } }, { categories: { some: {} } }],
     },
     select: {
@@ -91,8 +93,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: st
     },
     orderBy: { id: 'asc' },
   });
-  // Защита — только видимая этой компании (ADR 0008): ИИ-защита или своя живая; чужая живая не попадает в evidence.
-  const stages = await loadStageEvidence(rows.map((r) => r.id), companyId);
+  const stages = await loadStageEvidence(rows.map((r) => r.id));
   const fsp = await loadFspAchievements(rows.filter((r) => r.fspState === 'linked').map((r) => r.id));
   return rows.map((r) => ({
     name: r.name,
@@ -183,7 +184,7 @@ async function run(
 ): Promise<{ total: number; items: MatchItem[]; hints?: RelaxHint[] }> {
   // lane hired: кандидат, нанятый другой компанией, уходит из выдачи до ранжирования (у нанявшей — остаётся).
   const hiredElsewhere = await hiredByOtherCompanies(companyId);
-  const pool = (await loadPool(catalog, companyId)).filter((p) => !hiredElsewhere.has(p.evidence.id));
+  const pool = (await loadPool(catalog)).filter((p) => !hiredElsewhere.has(p.evidence.id));
   const byId = new Map(pool.map((p) => [p.evidence.id, p]));
   // Вариант 2a (11.10): индекс честности всего пула до ранжирования; high без подтверждения тестом или созвоном —
   // категория не учитывается (ranking.ts integrityPenalty). Выключатель — TEST_INTEGRITY_RANKING.

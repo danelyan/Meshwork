@@ -45,7 +45,8 @@ function send(url: string, body: string): void {
  * Ничего не блокирует: preventDefault не вызывается; ответы сервера (в т.ч. 409) игнорируются.
  * Возвращает обработчики для поля ответа (onPaste) и блока условия (onCopy).
  */
-export function useIntegritySignals(attemptId: string, itemIndex: number, enabled = true) {
+/** `base` — префикс API попыток: кандидат `/api/test`, режим эксперта `/api/expert`. */
+export function useIntegritySignals(attemptId: string, itemIndex: number, enabled = true, base = '/api/test') {
   const acc = useRef<Deltas>(empty());
   const hiddenSince = useRef<number | null>(null);
   const extendedSent = useRef(false);
@@ -71,8 +72,8 @@ export function useIntegritySignals(attemptId: string, itemIndex: number, enable
       extendedSent.current = true;
     }
     acc.current = empty();
-    send(`/api/test/attempt/${encodeURIComponent(attemptId)}/signal`, JSON.stringify(body));
-  }, [attemptId, enabled, bump]);
+    send(`${base}/attempt/${encodeURIComponent(attemptId)}/signal`, JSON.stringify(body));
+  }, [attemptId, enabled, bump, base]);
 
   useEffect(() => {
     if (!enabled) return;

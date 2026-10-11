@@ -4,6 +4,7 @@ import { latestQualifyingVerdict } from '@/server/call';
 import { getProfile } from '@/server/claims';
 import { profileDetails } from '@/server/claims/profile-details';
 import { prisma } from '@/server/db';
+import { lowerGrade } from '@/lib/grades';
 
 import { buildProfileDocument, PDF_FILENAME, type ProfileStagesInput } from './model';
 import { renderProfilePdf } from './render';
@@ -40,17 +41,22 @@ export async function loadCategoryProvenance(candidateId: string): Promise<{ sub
   const category = await prisma.candidateCategory.findFirst({
     where: { candidateId },
     orderBy: { confirmedAt: 'desc' },
-    select: { subcategoryId: true, specialization: true, confirmedAt: true },
+    select: { subcategoryId: true, specialization: true, grade: true, confirmedAt: true },
   });
   if (!category) return { subcategoryId: null, policyVersion: null };
   const attempts = await prisma.testAttempt.findMany({
     where: { candidateId, specialization: category.specialization, OR: [{ status: 'passed', finishedAt: { not: null } }, { juniorConfirmedAt: { not: null } }] },
-    select: { policyVersion: true, status: true, finishedAt: true, juniorConfirmedAt: true },
+    select: { policyVersion: true, status: true, grade: true, subcategoryId: true, finishedAt: true, juniorConfirmedAt: true },
   });
   const issuedAt = category.confirmedAt.getTime();
   let best: { policyVersion: string; distance: number } | null = null;
   for (const a of attempts) {
-    const events = [a.status === 'passed' ? a.finishedAt : null, a.juniorConfirmedAt].filter((d): d is Date => d instanceof Date);
+    // Попытка должна относиться к этой категории: та же подкатегория (если категория её хранит) и тот же грейд —
+    // пройденная попытка на этот грейд или принятый грейд ниже после попытки на старший (confirmJunior).
+    if (category.subcategoryId && a.subcategoryId !== category.subcategoryId) continue;
+    const passedHere = a.status === 'passed' && a.grade === category.grade;
+    const offeredHere = a.juniorConfirmedAt !== null && lowerGrade(a.grade) === category.grade;
+    const events = [passedHere ? a.finishedAt : null, offeredHere ? a.juniorConfirmedAt : null].filter((d): d is Date => d instanceof Date);
     for (const event of events) {
       const distance = Math.abs(event.getTime() - issuedAt);
       if (distance <= PROVENANCE_WINDOW_MS && (!best || distance < best.distance)) best = { policyVersion: a.policyVersion, distance };

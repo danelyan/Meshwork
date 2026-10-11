@@ -211,7 +211,8 @@ const FILTER_QUERY = [
   { name: 'grade', description: 'Грейд', schema: en('junior', 'middle') },
   { name: 'stack', description: 'Технологии через запятую, не больше 10', schema: str() },
   { name: 'fsp', description: '`1` — только с достижениями ФСП', schema: en('1') },
-  { name: 'category', description: '`1` — только кандидаты с подтверждённой категорией', schema: en('1') },
+  { name: 'pool', description: '`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)', schema: en('all') },
+  { name: 'category', description: 'Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`', schema: en('1') },
   { name: 'limit', description: 'Размер выдачи; неверное значение заменяется значением по умолчанию', schema: int() },
 ];
 
@@ -590,7 +591,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Пригласить кандидата',
     description: 'Приглашение: описание задачи и зарплата обязательны, потребность — нет (R-E-05). Контакты кандидата до принятия скрыты.',
     success: { status: 201, description: 'Приглашение создано', schema: free('Созданное приглашение') },
-    errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)', 429: 'Суточный лимит приглашений исчерпан' },
+    errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть, не приняты оферта и обязательство по данным (`consent_required`) или у компании нет способа связи (`company_contact_required`, `details.companyUrl`)', 429: 'Суточный лимит приглашений исчерпан' },
   },
   'GET /api/employer/search': {
     summary: 'Поиск по базе кандидатов',
@@ -622,12 +623,12 @@ export const OVERRIDES: Record<string, OpOverride> = {
 
   'GET /api/employer/company': {
     summary: 'Профиль своей компании',
-    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании; `inviteContact` — способ связи в приглашениях от этого представителя (контакт компании, иначе его почта), null — приглашения не отправятся (409 company_contact_required)', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
   },
   'PATCH /api/employer/company': {
     summary: 'Изменить профиль своей компании',
     description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.',
-    success: JSON_OK('Профиль компании после правки', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+    success: JSON_OK('Профиль компании после правки, с `inviteContact`', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
   },
 
   'GET /api/invitations': {

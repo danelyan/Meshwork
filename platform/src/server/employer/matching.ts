@@ -17,6 +17,7 @@ import {
   categoryNeeds,
   effectiveSpecialization,
   dropUncovered,
+  integrityFlagged,
   rankCandidates,
   type CandidateEvidence,
   type MatchFilters,
@@ -66,7 +67,9 @@ interface PoolRow {
 
 /**
  * Пул кандидатов: не скрытые настройкой приватности (R-C-13), с подтверждёнными
- * утверждениями или категорией. Черновики (`proposed`) и отклонённые не считаются.
+ * утверждениями или категорией. Черновики (`proposed`) и отклонённые не считаются. Кандидаты без категории из теста
+ * загружаются всегда: в выдачу их пускает только MatchFilters.expandPool (ranking.ts passesFilters), а подсказка
+ * «расширьте пул» (relax.ts) считает по ним прибавку.
  * `companyId` — чья выдача: от него зависит, какие защиты видны (ADR 0008); null — только ИИ-защиты.
  */
 export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: string | null = null): Promise<PoolRow[]> {
@@ -198,6 +201,8 @@ async function run(
     : pool.map((p) => p.evidence);
   // ПРЕДЛОЖЕНИЕ агента (fullstack): та же формула, кандидат в виде «backend на меньшем из двух грейдов» (fullstack.ts).
   const evidence = filters.fullstack ? withIntegrity.map(asFullstackEvidence) : withIntegrity;
+  // Карточка должна говорить то же, что объяснение: у кого категория не учитывается (high без подтверждения), тот помечен и в ней.
+  const withheld = new Set(withIntegrity.filter((e) => integrityFlagged(e, opts)).map((e) => e.id));
   const all = rankCandidates(evidence, target, catalog, filters, opts);
   const ranked = requireCoverage ? dropUncovered(all) : all;
   const top = ranked.slice(0, limit);
@@ -216,6 +221,7 @@ async function run(
         specialization: p.evidence.specialization,
         fspState: p.evidence.fspState,
         category: p.evidence.category,
+        categoryWithheld: withheld.has(r.candidateId),
         claims: p.claimsPublic,
         experience: p.experience,
       },

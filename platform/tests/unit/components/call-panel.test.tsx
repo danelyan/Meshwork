@@ -148,7 +148,7 @@ describe('CallPanel — режим звонка в сцене консульта
     expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
     expect(screen.getByTestId('call-text-mode').textContent).toContain('аудио не сохраняется');
     const rec = screen.getByTestId('call-rec');
-    expect(rec.textContent).toMatch(/^\d+:\d\d$/);
+    expect(rec.textContent).toMatch(/^\d+:\d\d \/ 15:00$/);
     expect(rec.textContent).not.toContain('Запись');
     expect(rec.querySelector('i')).toBeNull();
   });

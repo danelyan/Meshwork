@@ -60,15 +60,15 @@ export function DepthMap({ verdict, dark = false }: { verdict: CallVerdict | Pub
                   ) : (
                     <>
                       <span>
-                        копнули: {d.probed} {d.probed === 1 ? 'вопрос' : d.probed < 5 ? 'вопроса' : 'вопросов'}, до уровня «{LEVEL[d.maxLevel] ?? d.maxLevel}»
+                        {d.probed} {d.probed === 1 ? 'вопрос' : d.probed < 5 ? 'вопроса' : 'вопросов'}, уровень «{LEVEL[d.maxLevel] ?? d.maxLevel}»
                         {d.extraProbe ? ', с дополнительным' : ''}
                       </span>
-                      <span>{d.total} из 8</span>
+                      <span>{d.total} из 8 баллов</span>
                     </>
                   )}
                 </div>
                 {status === 'inconclusive' && (
-                  <p className={styles.note}>Прогоны оценщика разошлись и после дополнительного вопроса - тема не засчитана и не поднимает уровень утверждения.</p>
+                  <p className={styles.note}>Оценка по теме осталась неоднозначной и после дополнительного вопроса - тема не засчитана и уровень утверждения не поднимает.</p>
                 )}
                 {!skipped && (
                   <div className={styles.scores} aria-label="Баллы по рубрике">

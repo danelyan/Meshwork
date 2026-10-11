@@ -27,6 +27,9 @@ import { ObjectionButton } from '../consent/ObjectionButton';
 import { useCamera } from '../interview/useCamera';
 
 type Phase = 'loading' | 'consent' | 'devices' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
+/** Лимит созвона по времени: подсказка и автозавершение (владелец 11.10). */
+export const CALL_SOFT_LIMIT_MS = 12 * 60_000;
+export const CALL_HARD_LIMIT_MS = 15 * 60_000;
 
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -327,6 +330,11 @@ export function CallPanel() {
   const lastCandidate = [...transcript].reverse().find((e) => e.role === 'candidate');
   const startedAt = call ? new Date(call.startedAt).getTime() : now;
   const canFinish = answered > 0 && !busy;
+  // Лимит по времени (решение владельца 11.10): с 12 минут - подсказка завершить, в 15 завершаем сами,
+  // когда кандидат не говорит и Кира не думает; оценка строится по уже данным ответам.
+  const elapsedMs = now - startedAt;
+  const overSoft = phase === 'live' && elapsedMs > CALL_SOFT_LIMIT_MS;
+  const overHard = phase === 'live' && elapsedMs > CALL_HARD_LIMIT_MS;
   const canAnswer = Boolean(last && last.role === 'ai' && last.meta) && !closing && phase === 'live';
   // Фраза, сказанная пока Кира думала, уходит, когда ответ пришёл и прозвучал (send() останавливает озвучку).
   // Пауза — чтобы озвучка ответа успела начаться (статус loading), прежде чем решить, что Кира молчит.
@@ -343,6 +351,13 @@ export function CallPanel() {
     }, 150);
     return () => clearTimeout(t);
   }, [busy, canAnswer, send, voiceStatus]);
+  const talkState = talk.state;
+  useEffect(() => {
+    if (!overHard || !canFinish || busy || talkState === 'user') return;
+    void finish();
+    // finish стабилен по id созвона; зависимости - только условия
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overHard, canFinish, busy, talkState]);
   const progress = call?.progress;
   const summary = interview ? summaryOf(call?.verdict) : null;
   const stage = phase === 'done' ? 'summary' : stageOf(turnsOf(transcript), closing);
@@ -366,7 +381,7 @@ export function CallPanel() {
           <span className={styles.rec} role="status" data-testid="call-rec">
             {/* Текстовый режим: аудио не сохраняется (подсказка ниже) - только таймер, без точки и слова «Запись». */}
             {!textOnly && <i className={styles.recDot} aria-hidden="true" />}
-            {textOnly ? mmss(now - startedAt) : `Запись ${mmss(now - startedAt)}`}
+            {textOnly ? mmss(now - startedAt) : `Запись ${mmss(now - startedAt)}`} / {mmss(CALL_HARD_LIMIT_MS)}
           </span>
         )}
         {phase === 'live' && interview && (
@@ -495,9 +510,14 @@ export function CallPanel() {
             )}
             {extra && !closing && <p className={styles.hint}>Ещё вопрос: по одной из тем ответы пока не дают однозначной оценки.</p>}
             {closing && <p className={styles.hint}>Вопросы закончились - нажми «Завершить».</p>}
+            {overSoft && !closing && (
+              <p className={styles.hint} role="status" data-testid="call-time-hint">
+                Созвон идёт дольше {Math.round(CALL_SOFT_LIMIT_MS / 60000)} минут - лучше завершить: оценка строится по уже данным ответам. В {Math.round(CALL_HARD_LIMIT_MS / 60000)} минут завершу сама.
+              </p>
+            )}
             {phase === 'finishing' && (
               <p className={styles.wait}>
-                <Spinner /> {interview ? 'Собираю оценку по компетенциям…' : 'Оценщик разбирает ответы (три независимых прогона, при расхождении - пять)…'}
+                <Spinner /> Подвожу итоги созвона - обычно это меньше минуты…
               </p>
             )}
           </>
@@ -532,7 +552,7 @@ export function CallPanel() {
         )}
         {phase === 'done' && !interview && call?.verdict && (
           <div className={styles.result}>
-            <b>Карта глубины</b>
+            <b>Созвон завершён - карта глубины</b>
             <DepthMap verdict={call.verdict as CallVerdict} dark />
             {(call.verdict as CallVerdict).upgradedCatalogIds?.length ? (
               <p className={styles.hint}>Подтверждённые утверждения получили уровень «проверено платформой».</p>

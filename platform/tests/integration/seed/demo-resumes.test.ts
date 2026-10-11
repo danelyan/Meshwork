@@ -38,4 +38,19 @@ describe('резюме демо-кандидатов (БД)', () => {
     }
     expect(checked).toBeGreaterThan(200);
   });
+
+  // lane resume-fields (R-C-01/02): стаж/роли/софт-скиллы демо-профилей — тем же разбором, с цитатой из их резюме.
+  it('поля профиля из резюме: цитата — дословные строки резюме, значения записаны в профиль', async () => {
+    const catalog = new Map(catalogFromFile().map((e) => [e.id, e.statement]));
+    const byId = new Map(ALL.map((p) => [p.id, p]));
+    const fields = await prisma.resumeField.findMany({ where: { candidate: { isDemo: true } } });
+    expect(fields.length).toBeGreaterThan(50);
+    expect(fields.every((f) => f.status === 'applied' && f.key !== 'name' && f.key !== 'contact')).toBe(true);
+    for (const f of fields) {
+      const text = resumeFor(byId.get(f.candidateId)!, (id) => catalog.get(id)!).text;
+      for (const line of f.quote.split('\n')) expect(text, `${f.candidateId} ${f.key}`).toContain(line);
+    }
+    const invited = await prisma.candidateProfile.findUniqueOrThrow({ where: { candidateId: 'demo-invited' } });
+    expect(invited.experienceYears).toBe(1); // «Полтора года пишу серверную часть…»
+  });
 });

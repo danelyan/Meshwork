@@ -12,6 +12,7 @@ import type { ProfileClaim, ProfileView } from '@/server/claims/types';
 import type { Gap } from '@/server/recommend/types';
 
 import { ProfileBasics, ProfilePublicPreview } from './candidate/ProfileCards';
+import { ResumeFieldsCard } from '@/components/candidate/ResumeFields';
 import type { ProfileDetails } from '@/server/claims/profile-details';
 import { DepthMapSection } from './call/DepthMapSection';
 import { LevelBadge } from './LevelBadge';
@@ -247,6 +248,7 @@ export function ProfilePage() {
 
       <div className={styles.main}>
       <ProfileBasics details={details} name={profile.candidate.name} />
+      <ResumeFieldsCard details={details} />
       <section className={styles.evidencePanel} aria-label="Утверждения о навыках"><header><h2>Утверждения о навыках</h2><span>Уровень доказанности</span></header>
       {claims.length === 0 ? (
         <div className={`${ui.panel}`}>

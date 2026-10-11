@@ -1,7 +1,7 @@
 import { specLabel } from '@/lib/directions';
 import { LevelBadge } from '@/components/LevelBadge';
 import type { MatchItem } from '@/server/employer/matching';
-import type { PublicSourceType } from '@/server/employer/privacy';
+import type { PublicExperience, PublicSourceType } from '@/server/employer/privacy';
 
 import { Button, Meter, Panel, Tag } from '../ui';
 
@@ -28,13 +28,29 @@ function SourceType({ type }: { type: PublicSourceType | null | undefined }) {
   return type ? <span className={styles.meta}> · доказано: {SOURCE_TYPE_LABEL[type]}</span> : null;
 }
 
+function yearsLabel(n: number): string {
+  const m10 = n % 10, m100 = n % 100;
+  return `${n} ${m10 === 1 && m100 !== 11 ? 'год' : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? 'года' : 'лет'}`;
+}
+
+/** Стаж, роли (без компаний) и софт-скиллы из профиля — видны и до принятия, личность не раскрывают (R-C-01/02). */
+export function ExperienceLine({ experience }: { experience?: PublicExperience }) {
+  if (!experience) return null;
+  const parts = [
+    experience.years !== null ? `стаж ${yearsLabel(experience.years)}` : null,
+    experience.roles.length ? experience.roles.join(', ') : null,
+    experience.softSkills.length ? `софт-скиллы: ${experience.softSkills.join(', ')}` : null,
+  ].filter(Boolean);
+  return parts.length ? <p className={styles.meta} data-testid="candidate-experience">{parts.join(' · ')}</p> : null;
+}
+
 export function CandidateMatchCard({ item, vacancyId, defaultSalary, favoriteScope, compact }: CandidateMatchCardProps) {
   const c = item.candidate;
   const ex = item.explanation;
   const typeByStatement = new Map(c.claims.map((cl) => [cl.statement, cl.sourceType]));
   const open = item.invitation && (item.invitation.status === 'sent' || item.invitation.status === 'viewed');
   if (compact) return <li className={styles.compactCard} aria-labelledby={`cand-${c.id}`}>
-    <div className={styles.identity}><CandidateSilhouette /><div><h3 id={`cand-${c.id}`}>{c.displayName}</h3><p>{c.category?.label ?? (c.specialization ? specLabel(c.specialization) : 'Без категории')}</p></div>{favoriteScope && <SaveCandidateButton scope={favoriteScope} candidateId={c.id} compact />}</div>
+    <div className={styles.identity}><CandidateSilhouette /><div><h3 id={`cand-${c.id}`}>{c.displayName}</h3><p>{c.category?.label ?? (c.specialization ? specLabel(c.specialization) : 'Без категории')}</p><ExperienceLine experience={c.experience} /></div>{favoriteScope && <SaveCandidateButton scope={favoriteScope} candidateId={c.id} compact />}</div>
     <div className={styles.coverage}><strong>{item.total ? Math.round(item.covered / item.total * 100) : 0}<span>%</span></strong><p>покрытие требований вакансии<br />{item.covered} из {item.total} требований</p></div>
     <div className={styles.reasonBox}><h4>Почему на этом месте</h4><dl><div><dt>Покрытие требований</dt><dd>{item.covered}/{item.total}</dd></div><div><dt>Артефакты и выше</dt><dd>{ex.proven.length}</dd></div><div><dt>Категория</dt><dd>{c.category?.label ?? 'не определена'}</dd></div><div><dt>Достижения ФСП</dt><dd>{c.fsp.hasAchievements ? 'есть' : 'не подтверждены'}</dd></div></dl><TestIntegrityLine integrity={item.testIntegrity} ownership={ex.depthMap?.testOwnership} /><p className={styles.meta} data-testid="assessment-disclaimer">{ASSESSMENT_DISCLAIMER}</p></div>
     <div className={styles.skillSection}><span className={styles.status}>Закрытые требования</span><div className={styles.skillChips}>{ex.covered.map((claim) => <span key={claim.statement}>{claim.statement}</span>)}</div>{ex.missing.length > 0 && <><span className={styles.status}>Не хватает</span><div className={styles.skillChips} data-missing="true">{ex.missing.map((statement) => <span key={statement}>{statement}</span>)}</div></>}</div>
@@ -53,6 +69,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary, favoriteSco
         </span>
       </div>
       {favoriteScope && <SaveCandidateButton scope={favoriteScope} candidateId={c.id} />}
+      <ExperienceLine experience={c.experience} />
       <div className={styles.meta}>
         {c.category ? <Tag tone="solid">{c.category.label} · тест</Tag> : <Tag tone="dashed">без категории</Tag>}
         {c.fsp.hasAchievements && <Tag tone="outline">ФСП</Tag>}

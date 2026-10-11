@@ -22,6 +22,15 @@ export interface BuildDocInput {
   now?: Date;
 }
 
+/**
+ * lane resume-fields: строки с контактами ДО маскирования — только в памяти процесса (WeakMap, в JSON и БД
+ * не попадают). Нужны, чтобы при загрузке резюме предложить кандидату его же контакт (server/resume-fields).
+ */
+const RAW_CONTACT_LINES = new WeakMap<ExtractedDoc, RawLine[]>();
+export function rawContactLines(doc: ExtractedDoc): RawLine[] {
+  return RAW_CONTACT_LINES.get(doc) ?? [];
+}
+
 const collapse = (s: string) => s.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim();
 
 /**
@@ -37,6 +46,7 @@ export function buildDoc(input: BuildDocInput): ExtractedDoc {
   let chars = 0;
   let truncated = false;
   const suspectParts: string[] = [];
+  const rawContacts: RawLine[] = [];
 
   for (const raw of input.lines) {
     const clean = collapse(raw.text);
@@ -53,6 +63,7 @@ export function buildDoc(input: BuildDocInput): ExtractedDoc {
     }
     const m = maskContacts(clean);
     masked += m.masked;
+    if (m.masked > 0 && !raw.hidden && rawContacts.length < 5) rawContacts.push({ ref: raw.ref, text: clean });
     chars += m.text.length + 1;
     lines.push(raw.hidden ? { ref: raw.ref, text: m.text, hidden: true } : { ref: raw.ref, text: m.text });
   }
@@ -86,5 +97,6 @@ export function buildDoc(input: BuildDocInput): ExtractedDoc {
     fetchedAt: (input.now ?? new Date()).toISOString(),
   };
   if (input.meta) doc.meta = input.meta;
+  if (rawContacts.length > 0) RAW_CONTACT_LINES.set(doc, rawContacts);
   return doc;
 }

@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto';
 
 import { maskContacts } from '../collector/mask';
+import { SOFT_SKILLS, cleanRole } from '../resume-fields/parse';
 import { levelRank } from '../claims/levels';
 import type { CatalogEntry, EvidenceLevel } from '../claims/types';
 import type { FspState, Grade, Specialization } from '../types';
@@ -51,6 +52,29 @@ export interface CandidateCard {
    * (интерфейс пишет NO_CANDIDATE_CONTACT из components/employer/labels.ts, а не пустую строку).
    */
   contacts: { name: string; contact: string | null } | null;
+  /**
+   * lane resume-fields (R-C-01/02): стаж, роли и софт-скиллы видны и до принятия — они не раскрывают личность:
+   * роли без компаний и контактов (`cleanRole`), софт-скиллы — только метки словаря. Нет данных — поля нет.
+   */
+  experience?: PublicExperience;
+}
+
+export interface PublicExperience {
+  years: number | null;
+  roles: string[];
+  softSkills: string[];
+}
+
+const SOFT_LABELS = new Set(SOFT_SKILLS.map((s) => s.label));
+
+/** Публичная проекция стажа/ролей/софт-скиллов; null — показывать нечего. */
+export function publicExperience(src: { experienceYears?: number | null; roles?: readonly string[]; softSkills?: readonly string[] } | null | undefined): PublicExperience | null {
+  if (!src) return null;
+  const years = typeof src.experienceYears === 'number' && src.experienceYears >= 0 ? Math.min(src.experienceYears, 60) : null;
+  const roles = [...new Set((src.roles ?? []).map((r) => cleanRole(r)).filter((r): r is string => r !== null))].slice(0, 5);
+  // Свой текст кандидата наружу не уходит: только метки словаря (как statement каталога у утверждений).
+  const softSkills = (src.softSkills ?? []).filter((s) => SOFT_LABELS.has(s));
+  return years === null && roles.length === 0 && softSkills.length === 0 ? null : { years, roles, softSkills };
 }
 
 export interface CardSource {
@@ -63,6 +87,8 @@ export interface CardSource {
   fspState: FspState;
   category: { specialization: Specialization; grade: Grade } | null;
   claims: PublicClaim[];
+  /** CandidateProfile: стаж, роли, софт-скиллы (из резюме или от кандидата). */
+  experience?: { experienceYears: number | null; roles: string[]; softSkills: string[] } | null;
 }
 
 /** Стабильный псевдоним без раскрытия id: 6 символов sha256. */
@@ -87,6 +113,7 @@ export function toCandidateCard(src: CardSource, contactsVisible: boolean): Cand
     .sort(
     (a, b) => levelRank(b.level) - levelRank(a.level) || a.catalogId.localeCompare(b.catalogId),
   );
+  const experience = publicExperience(src.experience);
   return {
     id: src.id,
     displayName: contactsVisible ? src.name : pseudonym(src.id),
@@ -95,6 +122,7 @@ export function toCandidateCard(src: CardSource, contactsVisible: boolean): Cand
     fsp: { state: src.fspState, hasAchievements: src.fspState === 'linked' },
     claims,
     contacts: contactsVisible ? { name: src.name, contact: candidateContact(src) } : null,
+    ...(experience ? { experience } : {}),
   };
 }
 

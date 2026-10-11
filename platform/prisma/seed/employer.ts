@@ -3,6 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 import type { Specialization } from '../../src/lib/directions';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
 import { wordingFromQuote } from '../../src/server/claims/wording';
+import { parseResumeText } from '../../src/server/resume-fields/parse';
 import { resumeFor } from './resumes';
 
 /**
@@ -142,6 +143,25 @@ export async function seedPoolProfiles(prisma: PrismaClient, profiles: DemoProfi
       });
     }
     if (p.category) await prisma.candidateCategory.create({ data: { candidateId: p.id, ...p.category } });
+    await seedResumeFields(prisma, p.id, resume.text, resume.fileName);
+  }
+}
+
+/**
+ * lane resume-fields (R-C-01/02): стаж, роли и софт-скиллы демо-профиля — тем же разбором, что при загрузке резюме,
+ * с цитатой-источником (ResumeField, status applied → в профиле пометка «из резюме»). ФИО и контакт сид задаёт сам.
+ */
+async function seedResumeFields(prisma: PrismaClient, candidateId: string, text: string, fileName: string): Promise<void> {
+  const fields = parseResumeText(text, fileName).filter((f) => f.key === 'experienceYears' || f.key === 'roles' || f.key === 'softSkills');
+  await prisma.resumeField.deleteMany({ where: { candidateId } });
+  const data = {
+    experienceYears: (fields.find((f) => f.key === 'experienceYears')?.value as number | undefined) ?? null,
+    roles: (fields.find((f) => f.key === 'roles')?.value as string[] | undefined) ?? [],
+    softSkills: (fields.find((f) => f.key === 'softSkills')?.value as string[] | undefined) ?? [],
+  };
+  await prisma.candidateProfile.upsert({ where: { candidateId }, update: data, create: { candidateId, ...data } });
+  for (const f of fields) {
+    await prisma.resumeField.create({ data: { candidateId, key: f.key, value: f.value, quote: f.quote, sourceRef: f.sourceRef, status: 'applied' } });
   }
 }
 

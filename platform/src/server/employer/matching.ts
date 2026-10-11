@@ -58,6 +58,8 @@ interface PoolRow {
   email: string;
   contact: string | null;
   claimsPublic: PublicClaim[];
+  /** lane resume-fields: стаж, роли, софт-скиллы (публичная проекция — employer/privacy.ts publicExperience) */
+  experience: { experienceYears: number | null; roles: string[]; softSkills: string[] } | null;
 }
 
 /**
@@ -78,6 +80,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       specialization: true,
       subcategoryId: true,
       fspState: true,
+      profile: { select: { experienceYears: true, roles: true, softSkills: true } },
       categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true, subcategoryId: true } },
       claims: {
         where: { status: { in: ['confirmed', 'edited'] } },
@@ -105,6 +108,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       ...(stages.get(r.id)?.projects ? { projects: stages.get(r.id)!.projects } : {}),
     },
     claimsPublic: dedupeClaims(r.claims, catalog),
+    experience: r.profile ?? null,
   }));
 }
 
@@ -204,6 +208,7 @@ async function run(
         fspState: p.evidence.fspState,
         category: p.evidence.category,
         claims: p.claimsPublic,
+        experience: p.experience,
       },
       accepted.has(r.candidateId),
     );

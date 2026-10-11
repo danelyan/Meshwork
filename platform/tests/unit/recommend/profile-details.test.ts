@@ -1,6 +1,6 @@
 import { profileDetails } from '@/server/claims/profile-details';
 const mocks = vi.hoisted(() => ({ candidate: vi.fn() }));
-vi.mock('@/server/db', () => ({ prisma: { candidate: { findUnique: mocks.candidate } } }));
+vi.mock('@/server/db', () => ({ prisma: { candidate: { findUnique: mocks.candidate }, resumeField: { findMany: async () => [] } } }));
 vi.mock('@/server/recommend/evidence', () => ({ loadCatalog: async () => new Map([['sql', { id: 'sql', statement: 'Работает с SQL' }]]) }));
 beforeEach(() => vi.resetAllMocks());
 it('keeps own private contact and questionnaire separate from exact anonymous employer projection', async () => {

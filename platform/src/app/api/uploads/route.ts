@@ -7,6 +7,7 @@ import { LIMITS } from '@/server/collector/limits';
 import type { ExtractedDoc } from '@/server/collector/types';
 import { prisma } from '@/server/db';
 import { AppError, errors, withErrors } from '@/server/errors';
+import { applyFromUpload, type ApplySummary } from '@/server/resume-fields';
 import { requireCandidate } from '@/server/session';
 import { saveOriginal } from '@/server/uploads/storage';
 
@@ -111,5 +112,13 @@ export const POST = withErrors(async (req: Request) => {
     update: data,
     select: { id: true },
   });
-  return Response.json({ uploadId: row.id, deduplicated: false, doc: brief(doc) }, { status: 201 });
+  // R-C-01/02: ФИО, контакт, стаж, роли, софт-скиллы — в пустые поля профиля, иначе предложение. Сбой разбора не валит загрузку.
+  let profileFields: ApplySummary | null = null;
+  if (sourceKind === 'resume') {
+    profileFields = await applyFromUpload(candidateId, row.id, doc).catch((err: unknown) => {
+      console.error('resume-fields: не удалось применить поля резюме', err instanceof Error ? err.message : err);
+      return null;
+    });
+  }
+  return Response.json({ uploadId: row.id, deduplicated: false, doc: brief(doc), profileFields }, { status: 201 });
 });

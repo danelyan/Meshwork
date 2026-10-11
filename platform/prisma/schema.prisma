@@ -114,6 +114,8 @@ model Candidate {
   savedByUsers        UserSavedCandidate[]
   /// lane consent: возражения против оценки (ст. 16 152-ФЗ)
   objections          AssessmentObjection[]
+  /// lane resume-fields: поля профиля, распознанные в резюме (R-C-01/02)
+  resumeFields        ResumeField[]
 }
 
 model CandidateCategory {
@@ -172,22 +174,55 @@ enum SourceKind {
 }
 
 model Upload {
-  id          String    @id @default(cuid())
-  candidateId String
-  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  filename    String
-  mime        String
-  sha256      String
-  size        Int
+  id           String        @id @default(cuid())
+  candidateId  String
+  candidate    Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  filename     String
+  mime         String
+  sha256       String
+  size         Int
   /// ExtractedDoc (server/collector/types.ts)
-  extracted   Json?
+  extracted    Json?
   /// ExtractedDoc.flags
-  flags       Json?
+  flags        Json?
   /// Оригинал файла: <UPLOAD_DIR>/<storageKey>, ключ = "<candidateId>/<sha256>" (только серверные id). null — загружен до хранения оригиналов.
-  storageKey  String?
-  createdAt   DateTime  @default(now())
+  storageKey   String?
+  createdAt    DateTime      @default(now())
+  /// lane resume-fields: поля профиля, распознанные в этом резюме (удаляются вместе с ним)
+  resumeFields ResumeField[]
 
   @@unique([candidateId, sha256])
+}
+
+/// lane resume-fields (R-C-01/02): поле профиля, распознанное в резюме, с цитатой-источником.
+/// applied — значение записано в пустое поле профиля («из резюме»); suggested — у кандидата своё значение,
+/// резюме предлагает другое («в резюме указано иначе»); dismissed — предложение отклонено.
+/// Код: server/resume-fields. ФИО и контакт работодателю до принятия приглашения не отдаются (employer/privacy.ts).
+model ResumeField {
+  id          String            @id @default(cuid())
+  candidateId String
+  candidate   Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  uploadId    String?
+  upload      Upload?           @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  /// name | contact | experienceYears | roles | softSkills
+  key         String
+  /// string | number | string[]
+  value       Json
+  /// Дословная строка резюме, откуда взято значение
+  quote       String
+  /// ref строки документа (ExtractedDoc.lines[].ref)
+  sourceRef   String
+  status      ResumeFieldStatus
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([candidateId, key])
+}
+
+enum ResumeFieldStatus {
+  applied
+  suggested
+  dismissed
 }
 
 model Source {
@@ -713,6 +748,10 @@ model CandidateProfile {
   salaryExpected   Int?
   fspParticipation FspParticipation?
   city             String?
+  /// lane resume-fields: стаж в годах, роли (должности без компаний) и софт-скиллы — из резюме или от кандидата
+  experienceYears  Int?
+  roles            String[]          @default([])
+  softSkills       String[]          @default([])
   updatedAt        DateTime          @updatedAt
 }
 
@@ -952,16 +991,12 @@ model CallSession {
   policyVersion       String
   /// Сколько раз запускался оценщик (finish): каждый запуск — 3–6 вызовов LLM, повторы после 503 ограничены
   finishAttempts      Int                @default(0)
-  /// kind=defense: ИИ-защита проекта до приглашения (ADR 0008 п. 1) — кандидат запускает сам, работодателей в комнате нет;
-  /// работодатель до accepted видит только вердикт под псевдонимом. false — живая защита (по приглашению / после accepted).
-  aiDefense           Boolean            @default(false)
 
   participants CallParticipant[]
   questions    EmployerQuestion[]
 
   @@index([candidateId, kind, status])
   @@index([projectSubmissionId])
-  @@index([projectSubmissionId, aiDefense, startedAt])
 }
 
 /// Участник созвона кроме кандидата (работодатель в комнате защиты, lane defense-room).

@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 
+import { consentVersion } from '@/server/consent/texts';
 import { prisma } from '@/server/db';
 
 /**
@@ -26,7 +27,7 @@ export const STEP_HINT: Record<JourneyStep, string> = {
   call: 'Тест пройден, созвона с ИИ не было: предложи созвон голосом (suggest_call; кнопка «Созвониться» в /consultant) — карта глубины по темам резюме, работодатель увидит её до приглашения. Утверждения из резюме и ссылок подтверждаются тут же, в консультации.',
   project: 'Созвон пройден, проверенного проекта нет: предложи взять проект из ленты на экране /projects (отдельного инструмента нет — дай ссылку), сдать репозиторий и дождаться проверки.',
   ai_defense: 'Проект проверен: следующий шаг — ИИ-защита проекта до приглашения. Кнопка «Защитить проект с ИИ» — под проверенной сдачей на странице задания /projects/:id (ссылка из ленты /projects; инструмента нет — дай ссылку). ИИ задаёт вопросы по коду и коммитам, нужна запись с согласием; не чаще раза в сутки на сдачу. Работодатель до приглашения увидит только баллы по рубрике и флаги — без транскрипта, записи и ссылки на репозиторий.',
-  waiting: 'Все шаги, доступные сейчас, пройдены: приглашений пока нет. Скажи, что работодатели находят профиль сами; предложи усилить его (get_gap_map, recommend_tasks) или спроси, чем помочь, одним вопросом.',
+  waiting: 'Все шаги, доступные сейчас, пройдены: приглашений пока нет. Скажи, что работодатели находят профиль сами; предложи усилить его (get_gap_map, recommend_tasks) или спроси, чем помочь, одним вопросом. Если в состоянии «Профиль скрыт: да» — компании кандидата не видят и приглашений не будет: сначала предложи открыть профиль в /settings (согласие на показ профиля работодателям).',
   invitations: 'Есть входящее приглашение без ответа: предложи разобрать его (get_invitations → explain_invitation). Принять или отклонить — кнопка кандидата.',
   live_defense: 'Приглашение принято: дальше живая защита проекта с работодателем (обязательна для найма, идёт с записью). Время назначает работодатель слотами; кандидат выбирает слот в /invitations. Инструмента нет — дай ссылку на экран.',
   hired: 'Кандидат нанят: компания отметила найм по принятому приглашению (финальный этап пути, hiredCompany). Поздравь коротко и спроси, чем помочь дальше; профиль больше не показывается в поиске других работодателей.',
@@ -36,9 +37,25 @@ export const STEP_HINT: Record<JourneyStep, string> = {
 export const CALL_NO_SOURCES_HINT =
   'Тест пройден, но утверждений для созвона с ИИ нет, а созвон открывается, только когда есть о чём говорить. Предложи приложить резюме файлом или ссылку на GitHub (read_upload / fetch_url / fetch_profile → propose_claims), либо рассказать о себе в чате; после этого — созвон (suggest_call).';
 
-/** Подсказка с учётом состояния: шаг «созвон» без источников — другой текст. */
-export function stepHint(state: Pick<JourneyState, 'nextStep' | 'callNeedsSources'>): string {
-  return state.nextStep === 'call' && state.callNeedsSources ? CALL_NO_SOURCES_HINT : STEP_HINT[state.nextStep];
+/** Нет согласия на оценку ИИ: тест, созвон и защиты отвечают 409 (assertAiAssessmentConsent). */
+export const AI_CONSENT_HINT =
+  'Нет согласия на оценку ИИ: без него тест, созвон и защиты не запустятся (ответят ошибкой). Сначала предложи дать согласие — кнопка «Дать согласие» в правой колонке «Твой путь» или /settings, раздел «Мои согласия»; потом — шаг ниже.';
+
+/** Шаги, которые без согласия на оценку ИИ не запустятся. */
+export const AI_CONSENT_STEPS: readonly JourneyStep[] = ['test', 'call', 'project', 'ai_defense', 'live_defense'];
+
+/** Подсказка с учётом состояния: шаг «созвон» без источников — другой текст; без согласия на ИИ — сначала согласие. */
+export function stepHint(state: Pick<JourneyState, 'nextStep' | 'callNeedsSources'> & Partial<Pick<JourneyState, 'aiConsent'>>): string {
+  const base = state.nextStep === 'call' && state.callNeedsSources ? CALL_NO_SOURCES_HINT : STEP_HINT[state.nextStep];
+  return state.aiConsent === false && AI_CONSENT_STEPS.includes(state.nextStep) ? `${AI_CONSENT_HINT} ${base}` : base;
+}
+
+type ConsentRowLite = { kind: string; version: string; acceptedAt: Date; revokedAt: Date | null };
+/** Действующее согласие вида: последнее по acceptedAt без отзыва и на текущую версию текста (как consentState в consent/service). */
+export function consentActive(rows: readonly ConsentRowLite[] | undefined, kind: 'ai_assessment' | 'employer_visibility'): boolean {
+  let best: ConsentRowLite | null = null;
+  for (const r of rows ?? []) if (r.kind === kind && !r.revokedAt && (!best || r.acceptedAt > best.acceptedAt)) best = r;
+  return best !== null && best.version === consentVersion(kind);
 }
 
 export interface JourneyState {
@@ -53,12 +70,20 @@ export interface JourneyState {
   name?: string | null;
   /** lane hired: компания, отметившая найм; null — найма нет. */
   hired: { company: string; at: string | null } | null;
+  /** Есть действующее согласие на оценку ИИ (без него тест, созвон и защиты — 409). Нет аккаунта — false. */
+  aiConsent: boolean;
+  /** Профиль скрыт от работодателей: флаг hiddenFromEmployers или нет согласия на показ (employer_visibility). */
+  hidden: boolean;
   nextStep: JourneyStep;
 }
 
 export async function journeyState(candidateId: string): Promise<JourneyState> {
-  const [user, sources, uploads, byStatus, category, qualifying, project, aiDefense, pending, accepted, hiredInv] = await Promise.all([
-    prisma.user.findUnique({ where: { candidateId }, select: { onboardedAt: true, name: true } }),
+  const [user, cand, sources, uploads, byStatus, category, qualifying, project, aiDefense, pending, accepted, hiredInv] = await Promise.all([
+    prisma.user.findUnique({
+      where: { candidateId },
+      select: { onboardedAt: true, name: true, consents: { where: { kind: { in: ['ai_assessment', 'employer_visibility'] } }, select: { kind: true, version: true, acceptedAt: true, revokedAt: true } } },
+    }),
+    prisma.candidate.findUnique({ where: { id: candidateId }, select: { hiddenFromEmployers: true } }),
     prisma.source.count({ where: { candidateId } }),
     prisma.upload.count({ where: { candidateId } }),
     prisma.claim.groupBy({ by: ['status'], where: { candidateId }, _count: { _all: true } }),
@@ -94,6 +119,9 @@ export async function journeyState(candidateId: string): Promise<JourneyState> {
     onboardedAt: user?.onboardedAt ?? null,
     name: user?.name?.trim() || null,
     hired,
+    aiConsent: Boolean(user) && consentActive(user?.consents, 'ai_assessment'),
+    // Без аккаунта (демо-кандидат из сида) согласий нет — видимость решает только флаг.
+    hidden: Boolean(cand?.hiddenFromEmployers) || (Boolean(user) && !consentActive(user?.consents, 'employer_visibility')),
     nextStep: next,
   };
 }
@@ -123,6 +151,8 @@ export function journeyPromptBlock(state: JourneyState): string {
     `Приглашения: без ответа ${c.pendingInvitations}, принято ${c.acceptedInvitations}.`,
     `Категория: ${state.hasCategory ? 'есть' : 'нет'}.`,
     `Найм: ${state.hired ? `нанят (${state.hired.company})` : 'нет'}.`,
+    `Профиль скрыт: ${state.hidden ? 'да (компании не видят профиль - приглашений не будет, пока не открыть в /settings)' : 'нет'}.`,
+    `Согласие на оценку ИИ: ${state.aiConsent ? 'есть' : 'нет (тест, созвон и защиты не запустятся)'}.`,
     `</${JOURNEY_TAG}>`,
   ].join('\n');
 }

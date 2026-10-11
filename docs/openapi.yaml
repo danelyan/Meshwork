@@ -7445,6 +7445,70 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/employer/vacancies/{id}/compare":
+    get:
+      operationId: getEmployerVacanciesIdCompare
+      tags:
+        - employer
+      summary: "Сравнение двух кандидатов подборки («Почему A выше B»)"
+      description: "Разница итогового балла (в п. = балл × 100) по факторам формулы ранжирования: покрытие, категория, ФСП, стек, проект, темы созвона. Новых весов нет - берутся вклады из подборки (R-M-03).\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: a
+          in: query
+          required: true
+          description: "id первого кандидата"
+          schema:
+            type: string
+        -
+          name: b
+          in: query
+          required: true
+          description: "id второго кандидата"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Таблица факторов и строка «Разница … Преимущество: …»"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+                description: "Comparison: aScore, bScore, diff, factors[{key,label,a,b,diff}], advantage[], headline"
+        "400":
+          description: "Не заданы два разных кандидата"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Потребность чужая или кандидата нет в подборке"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Не приняты оферта или обязательство по данным (`consent_required`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/employer/vacancies/{id}/matches":
     get:
       operationId: getEmployerVacanciesIdMatches

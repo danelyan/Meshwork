@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
+import { AsideProvider } from '@/components/consultant/aside-refresh';
 import { SceneAside } from '@/components/consultant/SceneAside';
-import { type SceneAsideData, candidateSteps, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
+import { AI_CONSENT_BLOCKER, HIDDEN_BLOCKER, type SceneAsideData, blockerNotes, candidateSteps, stepBlocker, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
 import type { OnboardingView } from '@/server/onboarding/types';
 
 // MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
@@ -9,6 +10,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: 
 vi.mock('next/link', () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 // MemoryCard uses the App Router for soft updates after editing onboarding facts.
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const consentApi = vi.hoisted(() => ({ grant: vi.fn() }));
+vi.mock('@/lib/consent-api', () => ({ grantConsentApi: consentApi.grant }));
 afterEach(cleanup);
 
 const base = { intro: false, introNote: '2 из 10', confirmed: 0, category: null, invitations: 0 };
@@ -229,5 +232,52 @@ describe('колонка на время знакомства', () => {
     render(<SceneAside data={guestAside(view({ later: true }))} />);
     expect(screen.getByRole('button', { name: '+ дополнить: грейд' })).toBeDefined();
     expect(screen.getByTestId('aside-progress').textContent).not.toContain('Сейчас');
+  });
+});
+
+describe('блокер шага', () => {
+  const hint = { title: 'x', text: 'y' };
+  const base: SceneAsideData = { role: 'candidate', steps: candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0 }), docs: null, hint };
+
+  it('stepBlocker: нет согласия на ИИ — у теста, созвона, проекта, защит; скрытый профиль — у приглашений', () => {
+    for (const step of ['test', 'call', 'project', 'ai_defense', 'live_defense'] as const) expect(stepBlocker(step, { aiConsent: false, hidden: false })).toBe(AI_CONSENT_BLOCKER);
+    expect(stepBlocker('onboarding', { aiConsent: false, hidden: true })).toBeUndefined();
+    expect(stepBlocker('waiting', { aiConsent: false, hidden: true })).toBe(HIDDEN_BLOCKER);
+    expect(stepBlocker('invitations', { aiConsent: true, hidden: true })).toBe(HIDDEN_BLOCKER);
+    expect(stepBlocker('test', { aiConsent: true, hidden: true })).toBeUndefined();
+    expect(HIDDEN_BLOCKER.href).toBe('/settings');
+  });
+
+  it('blockerNotes: нота текущего шага — про согласие, «Приглашения» — «профиль скрыт»', () => {
+    const steps = candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0 });
+    const out = blockerNotes(steps, 'test', { aiConsent: false, hidden: true });
+    expect(out.find((s) => s.id === 'test')!.note).toMatch(/согласие на оценку ИИ/);
+    expect(out.find((s) => s.id === 'call')!.note).not.toMatch(/согласие/);
+    expect(out.find((s) => s.id === 'invites')!.note).toBe('профиль скрыт');
+    expect(blockerNotes(steps, 'test', { aiConsent: true, hidden: false })).toEqual(steps);
+  });
+
+  it('согласие: блокер с кнопкой «Дать согласие», кнопка шага вторичная; клик выдаёт согласие и перечитывает колонку', async () => {
+    consentApi.grant.mockResolvedValue({ kind: 'ai_assessment', version: 'v', acceptedAt: '' });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => base });
+    vi.stubGlobal('fetch', fetchMock);
+    const data = { ...base, stepBlock: { step: 'test' as const, blocker: AI_CONSENT_BLOCKER } };
+    render(
+      <AsideProvider initial={data}>
+        <SceneAside data={data} />
+      </AsideProvider>,
+    );
+    expect(screen.getByTestId('step-test-blocker').textContent).toMatch(/Сначала — согласие на оценку ИИ/);
+    expect(screen.getByTestId('step-test-cta').className).toMatch(/ctaSecondary/);
+    fireEvent.click(screen.getByRole('button', { name: 'Дать согласие' }));
+    await vi.waitFor(() => expect(consentApi.grant).toHaveBeenCalledWith('ai_assessment', expect.any(String)));
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/consultant/aside', expect.anything()), { timeout: 2000 });
+    vi.unstubAllGlobals();
+  });
+
+  it('скрытый профиль: блокер со ссылкой на /settings', () => {
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'waiting', invitations: { pending: 0, accepted: 0, total: 0 }, blocker: HIDDEN_BLOCKER } }} />);
+    expect(screen.getByTestId('step-invitations-blocker').textContent).toMatch(/Профиль скрыт — компании тебя не видят/);
+    expect(screen.getByRole('link', { name: 'Открыть настройки' }).getAttribute('href')).toBe('/settings');
   });
 });

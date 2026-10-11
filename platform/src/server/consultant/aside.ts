@@ -82,8 +82,46 @@ export interface MarketRow {
 }
 
 /** Данные блока под текущий шаг пути кандидата. Нет данных — блок не рисуется. */
+/**
+ * Что мешает сделать шаг прямо сейчас (другое правило платформы): путь показывает блокер и ведёт к его снятию,
+ * а не к кнопке, которая ответит ошибкой. href — куда идти; action — действие кнопкой в колонке.
+ */
+export interface StepBlocker {
+  text: string;
+  href?: string;
+  action?: 'grant_ai_assessment';
+}
+
+/** Без согласия на оценку ИИ тест, созвон и защиты отвечают 409 (consent/service.ts, assertAiAssessmentConsent). */
+export const AI_CONSENT_BLOCKER: StepBlocker = { text: 'Сначала — согласие на оценку ИИ: без него тест, созвон и защита не запустятся', action: 'grant_ai_assessment' };
+/** Скрытый профиль (флаг или нет согласия employer_visibility) в поиске работодателей не показывается. */
+export const HIDDEN_BLOCKER: StepBlocker = { text: 'Профиль скрыт — компании тебя не видят', href: '/settings' };
+
+const AI_CONSENT_KEYS: readonly JourneyKey[] = ['test', 'call', 'project', 'ai_defense', 'live_defense'];
+/** id шага пути колонки по шагу journeyState. */
+const ASIDE_ID: Partial<Record<JourneyKey, string>> = { onboarding: 'intro', test: 'test', call: 'call', project: 'project', ai_defense: 'ai_defense', waiting: 'invites', invitations: 'invites', live_defense: 'live_defense', hired: 'hired' };
+
+/** Блокер текущего шага по фактам: согласие на ИИ — для оцениваемых шагов, скрытость — для приглашений. */
+export function stepBlocker(step: JourneyKey, f: { aiConsent: boolean; hidden: boolean }): StepBlocker | undefined {
+  if (!f.aiConsent && AI_CONSENT_KEYS.includes(step)) return AI_CONSENT_BLOCKER;
+  if (f.hidden && (step === 'waiting' || step === 'invitations')) return HIDDEN_BLOCKER;
+  return undefined;
+}
+
+/** Нота шага в пути отражает блокер: скрытый профиль — у «Приглашений», нет согласия — у текущего оцениваемого шага. */
+export function blockerNotes(steps: JourneyStep[], step: JourneyKey, f: { aiConsent: boolean; hidden: boolean }): JourneyStep[] {
+  const nowId = !f.aiConsent && AI_CONSENT_KEYS.includes(step) ? ASIDE_ID[step] : undefined;
+  return steps.map((s) => {
+    if (s.id === nowId && s.state !== 'done') return { ...s, note: 'сначала - согласие на оценку ИИ' };
+    if (f.hidden && s.id === 'invites' && s.state !== 'done') return { ...s, note: 'профиль скрыт' };
+    return s;
+  });
+}
+
 export interface StepBlock {
   step: JourneyKey;
+  /** Что мешает шагу сейчас; карточка шага показывает его вместо главной кнопки. */
+  blocker?: StepBlocker;
   /** waiting / invitations / live_defense: счётчики приглашений. */
   invitations?: { pending: number; accepted: number; total: number };
   /** project / ai_defense: сдача (последняя; для ИИ-защиты — последняя проверенная); null — сдач ещё нет. */
@@ -402,13 +440,16 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
     step === 'test' ? prisma.vacancy.findMany({ where: { archivedAt: null }, select: { specialization: true, grade: true } }) : Promise.resolve(null),
   ]);
   const demand = vacancies ? demandFor(vacancies, cand?.specialization) : undefined;
-  const stepBlock = await loadStepBlock(candidateId, journey, invitations, demand);
+  const block = await loadStepBlock(candidateId, journey, invitations, demand);
+  const facts = { aiConsent: journey.aiConsent, hidden: journey.hidden };
+  const blocker = stepBlocker(step, facts);
+  const stepBlock: StepBlock = blocker ? { ...block, blocker } : block;
   const intro = introDone(view);
   const hired = hiredInv ? { company: hiredInv.company?.name ?? hiredInv.vacancy?.company.name ?? 'компанию' } : null;
-  const steps = promoteNow(
+  const steps = blockerNotes(promoteNow(
     candidateSteps({ intro, introNote: introNote(view, intro, false, known.known?.filter((k) => k.source === 'onboarding').length ?? 0), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations }),
     journey.nextStep,
-  );
+  ), step, facts);
   const market = vacancies && !cand?.specialization ? marketRows(vacancies, () => false) : undefined;
   const stats = candidateStats({ confirmed: profileClaims, category });
   // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).

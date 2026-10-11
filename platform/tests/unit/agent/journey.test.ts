@@ -8,6 +8,7 @@ const db = vi.hoisted(() => ({
 vi.mock('@/server/db', () => ({ prisma: db.prisma }));
 
 import { journeyState, JOURNEY_STEPS, stepHint, STEP_HINT } from '@/server/agent/journey';
+import { consentVersion } from '@/server/consent/texts';
 
 interface World {
   onboarded: boolean;
@@ -20,8 +21,10 @@ interface World {
   sentInv: number;
   acceptedInv: number;
   hired: boolean;
+  consents: { kind: string; version: string; acceptedAt: Date; revokedAt: Date | null }[];
+  hiddenFlag: boolean;
 }
-const fresh = (): World => ({ onboarded: true, sources: 0, claims: {}, category: false, qualifying: 0, checkedProjects: 0, aiDefense: 0, sentInv: 0, acceptedInv: 0, hired: false });
+const fresh = (): World => ({ onboarded: true, sources: 0, claims: {}, category: false, qualifying: 0, checkedProjects: 0, aiDefense: 0, sentInv: 0, acceptedInv: 0, hired: false, consents: (['ai_assessment', 'employer_visibility'] as const).map((kind) => ({ kind, version: consentVersion(kind), acceptedAt: new Date(0), revokedAt: null })), hiddenFlag: false });
 let w: World;
 const seen: { call: unknown[]; project: unknown[] } = { call: [], project: [] };
 
@@ -30,7 +33,8 @@ beforeEach(() => {
   seen.call = [];
   seen.project = [];
   Object.assign(db.prisma, {
-    user: { findUnique: () => ({ onboardedAt: w.onboarded ? new Date() : null }) },
+    user: { findUnique: () => ({ onboardedAt: w.onboarded ? new Date() : null, consents: w.consents }) },
+    candidate: { findUnique: () => ({ hiddenFromEmployers: w.hiddenFlag }) },
     source: { count: () => w.sources },
     upload: { count: () => 0 },
     claim: { groupBy: () => Object.entries(w.claims).map(([status, n]) => ({ status, _count: { _all: n } })) },
@@ -147,5 +151,29 @@ describe('journeyState: порядок шагов (ADR 0008)', () => {
     const s = await journeyState('c1');
     expect(s.steps.onboarding).toBe(true);
     expect(s.nextStep).toBe('test');
+  });
+});
+
+describe('journeyState: согласие на оценку ИИ и скрытость профиля', () => {
+  const at = new Date('2026-10-10T10:00:00Z');
+  const row = (kind: 'ai_assessment' | 'employer_visibility', over: Partial<{ version: string; revokedAt: Date | null }> = {}) => ({ kind, version: consentVersion(kind), acceptedAt: at, revokedAt: null, ...over });
+  it('нет согласий: aiConsent false, профиль скрыт', async () => {
+    w.consents = [];
+    const s = await journeyState('c1');
+    expect(s.aiConsent).toBe(false);
+    expect(s.hidden).toBe(true);
+  });
+  it('действующие согласия: aiConsent true, профиль виден; флаг hiddenFromEmployers скрывает', async () => {
+    w.consents = [row('ai_assessment'), row('employer_visibility')];
+    let s = await journeyState('c1');
+    expect([s.aiConsent, s.hidden]).toEqual([true, false]);
+    w.hiddenFlag = true;
+    s = await journeyState('c1');
+    expect(s.hidden).toBe(true);
+  });
+  it('отозванное или устаревшее согласие не действует', async () => {
+    w.consents = [row('ai_assessment', { revokedAt: new Date() }), row('employer_visibility', { version: 'old' })];
+    const s = await journeyState('c1');
+    expect([s.aiConsent, s.hidden]).toEqual([false, true]);
   });
 });

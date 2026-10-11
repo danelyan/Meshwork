@@ -160,3 +160,10 @@
 .cta { display: inline-block; margin-top: 10px; padding: 7px 14px; border-radius: 999px; background: var(--stage-accent); color: var(--stage-on-accent); font-size: var(--fs); font-weight: 600; text-decoration: none; }
 .cta:hover { filter: brightness(1.08); }
 .cta:focus-visible { outline: 2px solid var(--stage-ring); outline-offset: 2px; }
+/* блокер шага: что мешает и как снять (согласие, скрытый профиль, кулдаун) */
+.blocker { margin-top: 10px; padding: 8px 10px; border-left: 3px solid var(--stage-accent); background: var(--stage-track); }
+.blockerText { margin: 0; font-size: var(--fs); line-height: 1.45; color: var(--stage-text); }
+.blocker .cta { border: 0; cursor: pointer; font-family: inherit; }
+.blocker .cta:disabled { opacity: 0.6; cursor: default; }
+.blockerError { margin: 6px 0 0; font-size: var(--fs-sm); color: var(--stage-text-soft); }
+.ctaSecondary { display: inline-block; margin-top: 10px; font-size: var(--fs-sm); color: var(--stage-text-soft); text-decoration: underline; }

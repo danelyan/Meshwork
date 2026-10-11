@@ -148,7 +148,11 @@ async function attachToLiveSession(q: { id: string; text: string; companyId: str
       kind: 'defense',
       status: 'active',
       aiDefense: false, // ИИ-защита — только вопросы по коду (ADR 0008 п. 1)
-      ...(q.projectSubmissionId ? { OR: [{ projectSubmissionId: q.projectSubmissionId }, { projectSubmissionId: null }] } : {}),
+      // Живая защита проекта — только компании-владельца (ADR 0008); защита без сабмита — общая.
+      OR: [
+        { projectSubmissionId: null },
+        { projectSubmission: { projectTask: { vacancy: { companyId: q.companyId } } }, ...(q.projectSubmissionId ? { projectSubmissionId: q.projectSubmissionId } : {}) },
+      ],
     },
     orderBy: { startedAt: 'desc' },
     select: { id: true },
@@ -195,9 +199,14 @@ export async function listEmployerQuestions(ctx: EmployerContext, candidateId: s
   if (!(await employerMayAccess(ctx.companyId, candidateId))) throw errors.notFound('Кандидат не найден');
   const rows = await prisma.employerQuestion.findMany({ where: { companyId: ctx.companyId, candidateId }, orderBy: [{ askedAt: 'desc' }, { id: 'asc' }], take: 50 });
   const sessionIds = [...new Set(rows.map((r) => r.answeredInCallSessionId).filter((x): x is string => !!x))];
-  const sessions = await prisma.callSession.findMany({ where: { id: { in: sessionIds } }, select: { id: true, transcriptJson: true } });
+  // Ответ отдаётся только из защиты, которую компания видит (ADR 0008): ответ из живой защиты чужой компании
+  // (старые данные до фильтра очереди) не раскрывается — ни текст, ни id сессии.
+  const sessions = await prisma.callSession.findMany({ where: { id: { in: sessionIds }, AND: [defenseVisibleTo(ctx.companyId)] }, select: { id: true, transcriptJson: true } });
   const t = new Map(sessions.map((s) => [s.id, (s.transcriptJson as unknown as TranscriptEntry[]) ?? []]));
-  return rows.map((r) => toView(r, r.answeredInCallSessionId ? answerFor(t.get(r.answeredInCallSessionId) ?? [], r.id) : null));
+  return rows.map((r) => {
+    const sid = r.answeredInCallSessionId && t.has(r.answeredInCallSessionId) ? r.answeredInCallSessionId : null;
+    return toView({ ...r, answeredInCallSessionId: sid }, sid ? answerFor(t.get(sid)!, r.id) : null);
+  });
 }
 
 // ---------------------------------------------------------------------------

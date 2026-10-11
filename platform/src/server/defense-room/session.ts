@@ -75,12 +75,17 @@ function repoTitle(url: string): string {
   }
 }
 
-async function queuedQuestions(candidateId: string, projectSubmissionId: string | null) {
+/**
+ * Вопросы работодателей в план живой защиты. Защита проекта принадлежит одной компании — владельцу вакансии
+ * задания (ADR 0008, visibility.ts): в её план попадают только вопросы этой компании, иначе чужая компания
+ * получила бы ответ кандидата из защиты, которую не видит. Защита без сабмита — вопросы всех компаний.
+ */
+async function queuedQuestions(candidateId: string, project: { id: string; ownerCompanyId: string } | null) {
   const rows = await prisma.employerQuestion.findMany({
     where: {
       candidateId,
       status: 'queued',
-      ...(projectSubmissionId ? { OR: [{ projectSubmissionId: null }, { projectSubmissionId }] } : {}),
+      ...(project ? { companyId: project.ownerCompanyId, OR: [{ projectSubmissionId: null }, { projectSubmissionId: project.id }] } : {}),
     },
     orderBy: [{ askedAt: 'asc' }, { id: 'asc' }],
     take: 10,
@@ -130,7 +135,7 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   const submission = submissionId
     ? await prisma.projectSubmission.findUnique({
         where: { id: submissionId },
-        select: { id: true, candidateId: true, repoUrl: true, commitSha: true, aiLogText: true, resultJson: true },
+        select: { id: true, candidateId: true, repoUrl: true, commitSha: true, aiLogText: true, resultJson: true, projectTask: { select: { vacancy: { select: { companyId: true } } } } },
       })
     : null;
   if (submissionId && (!submission || submission.candidateId !== candidateId)) throw errors.notFound('Сабмит проекта не найден');
@@ -171,7 +176,7 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   }
 
   // ИИ-защита — только вопросы по коду: вердикт сравним между компаниями и не несёт вопросов конкретной компании.
-  const queue = ai ? [] : await queuedQuestions(candidateId, submissionId);
+  const queue = ai ? [] : await queuedQuestions(candidateId, submission ? { id: submission.id, ownerCompanyId: submission.projectTask.vacancy.companyId } : null);
   let items: PlanItem[];
   let source: SourceInfo;
   if (submission) {

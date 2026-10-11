@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Button, Notice } from '@/components/ui';
 import { PersonaStepper, useDemoPersonas } from '@/components/demo/DemoPersonas';
@@ -63,6 +64,7 @@ export function AuthEntryFlow({ yandexEnabled, fspHint = null, demoEnabled, next
           <h3>Демо-профиль</h3>
           <p className={styles.hint}>Вымышленные данные, вход без пароля. Этапы пути соискателя; компании - с вакансиями и приглашениями.</p>
           <PersonaStepper state={personas} agreed={agreed} />
+          <p className={styles.hint}><Link href="/demo">Для жюри: маршрут на 5 минут →</Link></p>
         </section>}
       </div>
       {personas.pending && <p role="status" className={styles.hint}>Входим…</p>}

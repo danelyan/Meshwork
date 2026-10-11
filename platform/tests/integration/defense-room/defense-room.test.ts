@@ -12,8 +12,10 @@ import { POST as sayRoute } from '@/app/api/employer/call/[id]/say/route';
 import { GET as listQuestions, POST as askRoute } from '@/app/api/employer/questions/route';
 import { CALL_RECORDING_CONSENT_VERSION } from '@/server/call/consent';
 import { parseContextBlock } from '@/server/call/prompt-utils';
+import { startDefenseRoom } from '@/server/defense-room';
 import { subscribe, resetBus } from '@/server/defense-room/bus';
 import type { CallEvent, CallSnapshot, DefenseRoomVerdict, TranscriptEntry } from '@/server/defense-room/types';
+import { getLlm } from '@/server/llm';
 import { clearStubResponses, registerStubResponse } from '@/server/llm/providers/stub';
 import { signUserSession } from '@/server/session';
 
@@ -416,5 +418,91 @@ describe('защита: доступ, лимиты, гонки', () => {
     const snapA = JSON.stringify(await (await snapshotRoute(jsonRequest('/x', 'GET', undefined, EMP_A), params(sessionId))).json());
     expect(snapA).toMatch(/300 тысяч/);
     expect(snapA).not.toMatch(/для Беты/);
+  });
+});
+
+// ADR 0008: живая защита проекта принадлежит компании вакансии задания (co-a); вопросы другой компании
+// в её план не попадают, и ответ кандидата из неё другой компании не отдаётся.
+describe('живая защита проекта: только вопросы компании-владельца', () => {
+  beforeEach(async () => {
+    await resetDb();
+    resetBus();
+    clearStubResponses();
+    await seed();
+    await prisma.invitation.updateMany({ where: { companyId: 'co-b' }, data: { status: 'accepted' } });
+    await discloseAccepted();
+  });
+
+  const ask = async (cookie: string, text: string, projectSubmissionId?: string) =>
+    (await (await askRoute(post('/x', { candidateId: CAND, text, ...(projectSubmissionId ? { projectSubmissionId } : {}) }, cookie))).json()).id as string;
+  const employerIds = async (sessionId: string) =>
+    ((await prisma.defenseRoomPlan.findUniqueOrThrow({ where: { callSessionId: sessionId } })).itemsJson as { source: string; employerQuestionId?: string }[])
+      .filter((i) => i.source === 'employer')
+      .map((i) => i.employerQuestionId);
+  const listOf = async (cookie: string) =>
+    (await (await listQuestions(jsonRequest(`/api/employer/questions?candidateId=${CAND}`, 'GET', undefined, cookie))).json()).questions as { id: string; status: string; answer: string | null; answeredInCallSessionId: string | null }[];
+
+  it('вопрос B (общий и по сабмиту) не попадает в план защиты A; вопрос A попадает; B не получает ответ', async () => {
+    const qa = await ask(EMP_A, 'Почему очередь в памяти, а не брокер?');
+    const qb = await ask(EMP_B, 'Что поменять в retry для Беты?');
+    const qbSub = await ask(EMP_B, 'Какой SLA у Беты по этому проекту?', SUB);
+    const { sessionId } = await (await startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE))).json();
+    expect(await employerIds(sessionId)).toEqual([qa]);
+
+    // Вопросы, оставленные во время защиты: A встаёт в план, B — нет.
+    const qa2 = await ask(EMP_A, 'Как бы ты добавил метрики в retry?');
+    const qb2 = await ask(EMP_B, 'Как Бете масштабировать это решение?');
+    expect(await employerIds(sessionId)).toEqual([qa, qa2]);
+
+    const t1 = await (await turnRoute(post('/x', { text: 'Задержка растёт экспоненциально.' }, CAND_COOKIE), params(sessionId))).json();
+    expect(t1.text).toMatch(/Альфа/);
+    await turnRoute(post('/x', { text: 'Ответ для Альфы: брокер избыточен.' }, CAND_COOKIE), params(sessionId));
+
+    const listA = await listOf(EMP_A);
+    expect(listA.find((q) => q.id === qa)).toMatchObject({ status: 'answered', answeredInCallSessionId: sessionId });
+    expect(listA.find((q) => q.id === qa)!.answer).toMatch(/брокер избыточен/);
+    const statuses = await prisma.employerQuestion.findMany({ where: { id: { in: [qb, qbSub, qb2] } }, select: { status: true, answeredInCallSessionId: true } });
+    expect(statuses).toEqual([...Array(3)].map(() => ({ status: 'queued', answeredInCallSessionId: null })));
+    const listB = await listOf(EMP_B);
+    expect(JSON.stringify(listB)).not.toMatch(/брокер избыточен|Альф/);
+    expect(listB.every((q) => q.answer === null && q.answeredInCallSessionId === null)).toBe(true);
+  });
+
+  it('старые данные: вопрос B, отвеченный в живой защите A, — B не получает ни ответа, ни id сессии', async () => {
+    const qb = await ask(EMP_B, 'Что поменять в retry для Беты?');
+    const { sessionId } = await (await startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE))).json();
+    // Имитация данных до фильтра: вопрос B в транскрипте защиты A с ответом кандидата.
+    const transcript: TranscriptEntry[] = [
+      { index: 0, role: 'ai', text: 'Вопрос от компании «Бета»: retry', at: new Date().toISOString(), tMs: 0, defense: { itemId: `e-${qb}`, kind: 'question', companyId: 'co-b' } },
+      { index: 1, role: 'candidate', text: 'Секрет из защиты Альфы', at: new Date().toISOString(), tMs: 1, defense: { companyId: 'co-b' } },
+    ];
+    await prisma.callSession.update({ where: { id: sessionId }, data: { transcriptJson: transcript as never } });
+    await prisma.employerQuestion.update({ where: { id: qb }, data: { status: 'answered', answeredInCallSessionId: sessionId } });
+    const [view] = await listOf(EMP_B);
+    expect(view).toMatchObject({ id: qb, answer: null, answeredInCallSessionId: null });
+  });
+
+  it('ИИ-защита: вопросы работодателей не попадают ни при старте, ни во время', async () => {
+    await ask(EMP_A, 'Почему очередь в памяти, а не брокер?');
+    const res = await startDefenseRoom(CAND, { mode: 'project', projectSubmissionId: SUB, ai: true }, getLlm({ candidateId: CAND }));
+    expect(await employerIds(res.sessionId)).toEqual([]);
+    await ask(EMP_A, 'Как бы ты добавил метрики в retry?');
+    expect(await employerIds(res.sessionId)).toEqual([]);
+    expect(await prisma.employerQuestion.count({ where: { status: 'queued' } })).toBe(2);
+  });
+
+  it('защита без сабмита: вопросы обеих компаний, как раньше; ответы — каждой свои', async () => {
+    const qa = await ask(EMP_A, 'Как бы ты добавил метрики в retry?');
+    const qb = await ask(EMP_B, 'Что поменять для идемпотентности между узлами?');
+    const { sessionId } = await (await startRoute(post('/x', { mode: 'questions' }, CAND_COOKIE))).json();
+    expect(await employerIds(sessionId)).toEqual([qa, qb]);
+    await turnRoute(post('/x', { text: 'Ответ Альфе: гистограмма задержек.' }, CAND_COOKIE), params(sessionId));
+    await turnRoute(post('/x', { text: 'Ответ Бете: ключ идемпотентности.' }, CAND_COOKIE), params(sessionId));
+    const [a] = await listOf(EMP_A);
+    const [b] = await listOf(EMP_B);
+    expect(a).toMatchObject({ id: qa, status: 'answered', answeredInCallSessionId: sessionId });
+    expect(a!.answer).toMatch(/гистограмма/);
+    expect(b).toMatchObject({ id: qb, status: 'answered', answeredInCallSessionId: sessionId });
+    expect(b!.answer).toMatch(/идемпотентности/);
   });
 });

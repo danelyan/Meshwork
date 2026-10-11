@@ -26,7 +26,7 @@ describe('главная', () => {
   it('показывает шесть правил, ИИ-помощника и честное описание демореестра ФСП', () => {
     render(<Landing data={DATA} signedIn={false} />);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole('heading', { level: 2, name: 'ИТ-компании' })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 2, name: 'Сейчас нанимают' })).toBeDefined();
     expect(screen.getAllByRole('heading', { level: 3 }).map(h => h.textContent)).toEqual([
       'Тест вместо резюме', 'Вилка всегда', 'Контакты после «да»', 'Достижения по ФСП ID', 'ИИ-помощник рядом', 'Навыки на практике',
     ]);
@@ -47,7 +47,7 @@ describe('главная', () => {
   });
   it('компании ведут к публичному источнику и не выдаются за участников платформы', () => {
     render(<Landing data={DATA} signedIn={false} />);
-    const section = within(screen.getByRole('region', { name: 'ИТ-компании' }));
+    const section = within(screen.getByRole('region', { name: 'Сейчас нанимают' }));
     expect(section.getByRole('link', { name: /Команда А/ }).getAttribute('href')).toBe('https://yandex.ru/jobs/');
     expect(section.getByText('Команда Б')).toBeDefined();
     expect(screen.queryByRole('list', { name: 'Платформа в цифрах' })).toBeNull();
@@ -90,7 +90,7 @@ describe('страница /', () => {
   it('гость видит компании без обращения к БД и без вымышленных показателей', async () => {
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
-    const section = within(screen.getByRole('region', { name: 'ИТ-компании' }));
+    const section = within(screen.getByRole('region', { name: 'Сейчас нанимают' }));
     for (const company of SHOWCASE.companies) expect(section.getAllByText(company.name).length).toBeGreaterThan(0);
     expect(screen.queryByText('Данные на этой странице - иллюстрация')).toBeNull();
     expect(dbCalls.n).toBe(0);

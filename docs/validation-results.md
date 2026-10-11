@@ -1487,3 +1487,8 @@ Commands, sequentially from `platform/`:
 Browser check through CUA: desktop hero logo becomes coloured on hover; keyboard focus reveals the original carousel card with a visible outline and coloured logo; mobile 390×844 viewport has no document overflow (client/scroll width 375px). Six feature cards stack in one column. Favicon metadata points to the three local assets. No live LLM called by checks.
 
 Production: npm run build passed (Next.js 15.5.27, 25 static pages). Built server checked on localhost:3000 through CUA; 390px mobile width rechecked without document overflow. Screenshot: output/landing-companies-final.png (local artifact, not committed). Full Playwright journey not rerun for this landing-only change; production deploy and health are checked after push.
+
+## Restore concept carousel title (11.10.2026, Moscow)
+
+Owner requested the concept heading Сейчас нанимают. Changed only the heading and its accessible-name assertions; the original logo assets, links and company descriptions remain. Sequential checks: npm run typecheck passed; npm run lint passed (0 errors, 2 existing warnings); npm run test:unit -- --maxWorkers=2 passed (215 files, 3075 tests, 9 existing skipped, 86.48 seconds, 03:03:15 MSK); npm run build passed. Integration and the full account journey not rerun: copy-only change, no TEST_DATABASE_URL, API or schema edits.
+

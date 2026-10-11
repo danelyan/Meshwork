@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Notice } from '@/components/ui';
+import { Button, Notice, Popover } from '@/components/ui';
 import { readError } from '@/lib/api';
 import type { NotificationFeed } from '@/server/auth/notifications';
 import styles from './Notifications.module.css';
@@ -41,12 +41,12 @@ export function Notifications({ role }: { role: string }) {
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0v6l2 3H4l2-3Z M10 21h4" /></svg>
       {feed && feed.unread > 0 && <b>{feed.unread}</b>}
     </button>
-    {open && <section className={styles.panel} aria-label="Последние уведомления">
+    <Popover open={open} className={styles.panel} role="region" aria-label="Последние уведомления" style={{ transformOrigin: 'top right' }}>
       <header><h2>Уведомления</h2><Button size="sm" variant="ghost" disabled={!feed?.unread} loading={busy} onClick={() => void readAll()}>Прочитать все</Button></header>
       {error && <Notice tone="error">{error}</Notice>}
       {!feed && !error && <p role="status">Загружаем…</p>}
       {feed?.items.length === 0 && <p>Новых событий пока нет.</p>}
       {feed?.items.map((item) => <Link className={styles.item} href={item.href} key={item.id} data-unread={item.unread} onClick={() => setOpen(false)}><strong>{item.text}</strong><span>{item.detail}</span><time dateTime={item.at}>{new Date(item.at).toLocaleDateString('ru-RU')}</time></Link>)}
-    </section>}
+    </Popover>
   </div>;
 }

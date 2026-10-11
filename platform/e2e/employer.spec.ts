@@ -88,7 +88,7 @@ test('Помощник работодателя (демо без модели): 
     data: { title, specialization: 'frontend', grade: 'junior', subcategoryId: 'frontend.ui-app', salaryFrom: 100000, salaryTo: 150000, stack: ['React'], needs: sample.needs },
   });
   expect(created.status()).toBe(201);
-  await page.getByRole('link', { name: 'Помощник' }).click();
+  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'ИИ-помощник' }).click();
   await page.waitForURL('**/consultant');
   await page.getByLabel('Сообщение помощнику').fill(`Подбери под мою потребность ${title}`);
   await page.getByRole('button', { name: 'Отправить', exact: true }).click();

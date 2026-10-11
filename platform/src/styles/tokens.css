@@ -351,3 +351,12 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --stage-text: var(--ink);
   --stage-text-soft: var(--text-soft);
 }
+
+/* Движение: длительности и кривая для CSS; те же значения в секундах — components/ui/motion.ts.
+   При prefers-reduced-motion JS-анимации Motion отключает MotionProvider (reducedMotion="user"). */
+:root {
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 260ms;
+  --motion-ease: var(--ease);
+}

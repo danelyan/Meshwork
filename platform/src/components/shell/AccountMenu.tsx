@@ -6,6 +6,7 @@ import { type FocusEvent, type FormEvent, type KeyboardEvent, useEffect, useId, 
 
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
+import { Popover } from '@/components/ui/Reveal';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { demoLogout, switchRoleApi } from '@/lib/api';
 import type { ActiveRole, HeaderAccount } from '@/server/auth/role-plan';
@@ -199,8 +200,7 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
         </span>
         <span className={styles.chevron} aria-hidden="true" data-open={open || undefined} />
       </button>
-      {open && (
-        <div id={panelId} ref={panel} className={styles.accountPanel}>
+      <Popover open={open} id={panelId} ref={panel} className={styles.accountPanel} style={{ transformOrigin: 'top right' }}>
           <div className={styles.menuHead}>
             <strong>{account.userName}</strong>
             {account.userEmail && <span>{account.userEmail}</span>}
@@ -254,8 +254,7 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
           <button type="button" className={styles.menuItem} onClick={() => void logout()}>
             Выйти
           </button>
-        </div>
-      )}
+      </Popover>
     </div>
   );
 }

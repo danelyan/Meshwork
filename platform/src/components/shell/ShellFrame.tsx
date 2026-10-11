@@ -3,6 +3,8 @@
 import { usePathname } from 'next/navigation';
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
 
+import { MotionProvider } from '@/components/ui/MotionProvider';
+
 import styles from './shell.module.css';
 import type { HeaderAccount } from '@/server/auth/role-plan';
 import { DashboardFrame } from './DashboardFrame';
@@ -37,6 +39,7 @@ export function ShellFrame({ header, footer, children, account, employerSummary 
   const bare = bareByPage || BARE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const setter = useMemo(() => setBareByPage, []);
   return (
+    <MotionProvider>
     <BareContext.Provider value={setter}>
       <div className={`${styles.frame}${pathname === '/consultant' ? ` ${styles.consultant}` : ''}`}>
       <a className={styles.skip} href="#main">
@@ -47,5 +50,6 @@ export function ShellFrame({ header, footer, children, account, employerSummary 
       {!bare && footer}
       </div>
     </BareContext.Provider>
+    </MotionProvider>
   );
 }

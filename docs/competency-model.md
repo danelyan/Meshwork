@@ -117,8 +117,13 @@ S: отказ компонента, рост ×10, что менять перв�
 | `ai.ml` | ML-инженерия | technical | ai.ml-metrics, ai.validation, ai.data-leakage, ai.feature-pipeline, ai.ml-baseline | ml-engineering |
 | `ai.ops` | MLOps | technical | ai.model-serving, ai.model-versioning, ai.monitoring-drift | mlops |
 | `ai.analytics` | Анализ данных | technical | ai.pandas-sql, ai.ab-testing, common.sql-queries | data-science |
+| `ai.bi` | BI-аналитика | technical | ai.bi-sql-analytics, ai.bi-metrics-design, ai.bi-dashboards, ai.bi-data-modeling, ai.bi-experiment-reporting, ai.bi-data-quality, ai.bi-metric-governance | bi-analytics |
 | `ai.engineering` | Инженерная практика | technical | common.unit-tests, common.debugging, common.docker-local, common.ci-basics | — |
 | `ai.design` | Проектирование ИИ-систем | systems | common.algo-complexity, common.security-basics | ai-integration, mlops |
+
+Фокусы `ai.bi`: J — группировка и соединение для отчёта, определение метрики и проверка знаменателя;
+M — гранулярность витрины, оконные функции, качество данных и интерпретация A/B-теста;
+S — согласованные определения метрик, причинность и ограничения аналитического вывода, цена ошибки для бизнеса.
 
 ### 3.4. Engineering
 

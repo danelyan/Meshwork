@@ -385,6 +385,19 @@ const ai: readonly CompetencyDef[] = [
     },
   },
   {
+    id: 'ai.bi',
+    title: 'BI-аналитика',
+    specialization: 'ai',
+    axis: 'technical',
+    catalogIds: ['ai.bi-sql-analytics', 'ai.bi-metrics-design', 'ai.bi-dashboards', 'ai.bi-data-modeling', 'ai.bi-experiment-reporting', 'ai.bi-data-quality', 'ai.bi-metric-governance'],
+    core: ['ai.bi-analytics'],
+    focus: {
+      junior: 'Группировка и соединение для отчёта; как определил метрику и проверил знаменатель',
+      middle: 'Гранулярность витрины, оконные функции и качество данных; как интерпретировал результат A/B-теста',
+      senior: 'Согласованные определения метрик; причинность и ограничения аналитического вывода; цена ошибки для бизнеса',
+    },
+  },
+  {
     id: 'ai.engineering',
     title: 'Инженерная практика',
     specialization: 'ai',

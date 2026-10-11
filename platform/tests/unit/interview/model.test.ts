@@ -61,6 +61,12 @@ describe('модель компетенций (docs/competency-model.md)', () =>
     expect(orderTechnical('backend', null).map((c) => c.id)).toEqual(competenciesFor('backend').filter((c) => c.axis === 'technical').map((c) => c.id));
   });
 
+  it('BI-интервью начинает с BI-компетенции и покрывает утверждения её банка', () => {
+    const first = orderTechnical('ai', 'ai.bi-analytics')[0]!;
+    expect(first.id).toBe('ai.bi');
+    expect(first.catalogIds).toEqual(catalog.entries.filter((entry) => entry.id.startsWith('ai.bi-')).map((entry) => entry.id));
+  });
+
   it('оси, веса и блоки — как в документе', () => {
     expect(AXES).toEqual(['technical', 'systems', 'communication', 'grade_fit']);
     expect(Object.values(AXIS_WEIGHTS).reduce((s, w) => s + w, 0)).toBeCloseTo(1);

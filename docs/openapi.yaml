@@ -5056,6 +5056,8 @@ paths:
                 onboardingStep:
                   type: string
                   pattern: "^[A-Za-z]{1,40}$"
+                kickoff:
+                  type: boolean
       responses:
         "200":
           description: "Поток событий SSE: кадры `data: <json>\\n\\n`, последним приходит `done`"

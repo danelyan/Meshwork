@@ -7,7 +7,7 @@ import type { OnboardingView } from '@/server/onboarding/types';
 const nav = vi.hoisted(() => ({ pathname: '/career' }));
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }));
 vi.mock('@/components/candidate/CandidateSidebarSummary', () => ({ CandidateSidebarSummary: () => null }));
-vi.mock('@/lib/api', () => ({ demoLogout: vi.fn() }));
+vi.mock('@/lib/api', () => ({ logout: vi.fn() }));
 afterEach(cleanup);
 
 const account: HeaderAccount = { userName: 'Тестовый пользователь', userEmail: null, roles: { role: 'candidate', other: 'employer', otherExists: false, canCreateOther: true, companyName: null } };

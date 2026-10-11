@@ -89,9 +89,9 @@ export const DEMO_POOL: DemoProfile[] = [
 
 /** Поля потребностей демо-компании «Северный Поток» (вакансии засеяны лейном recommend). */
 export const DEMO_NEED_DETAILS: Record<string, { teamDescription: string; stack: string[] }> = {
-  'demo-vac-be-j-1': { teamDescription: 'Команда личного кабинета клиента: REST API и отчёты по счетам (демо).', stack: ['Python', 'PostgreSQL'] },
+  'demo-vac-be-j-1': { teamDescription: 'Команда мерчант-кабинета: REST API заказов и отчёты по транзакциям (демо).', stack: ['Python', 'PostgreSQL', 'FastAPI', 'SQLAlchemy', 'REST', 'Git'] },
   'demo-vac-be-m-1': { teamDescription: 'Команда платежей: приём и проведение переводов, очереди, повторы (демо).', stack: ['Go', 'PostgreSQL', 'Kafka'] },
-  'demo-vac-fe-j-2': { teamDescription: 'Команда веб-приложения банка: формы и экраны операций (демо).', stack: ['JavaScript', 'React'] },
+  'demo-vac-fe-j-2': { teamDescription: 'Команда мерчант-кабинета: таблицы платежей, формы и экраны настроек (демо).', stack: ['JavaScript', 'React', 'TypeScript', 'React Router', 'Vite', 'Git'] },
 };
 
 const SOURCE_FOR: Record<Level, { kind: 'resume' | 'github' | 'codeforces'; ref: (id: string) => string }> = {

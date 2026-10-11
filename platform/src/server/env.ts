@@ -50,7 +50,11 @@ export const envSchema = z
     OPENAI_CHAT_STREAM: z.stringbool().default(true),
 
     /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
-    STT_PROVIDER: z.enum(['auto', 'yandex', 'browser', 'off']).default('auto'),
+    STT_PROVIDER: z.enum(['auto', 'yandex', 'openai', 'browser', 'off']).default('auto'),
+    /** STT_PROVIDER=openai: OpenAI-совместимый /audio/transcriptions (vLLM whisper в Selectel). Базовый URL с /v1, ключ сервиса — Bearer. */
+    STT_OPENAI_BASE_URL: optionalString,
+    STT_OPENAI_API_KEY: optionalString,
+    STT_OPENAI_MODEL: z.string().min(1).default('whisper-large-v3'),
     /** Озвучка ответов компаньона (аватар): yandex (SpeechKit v1, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), off; auto — yandex при ключах, иначе off. */
     TTS_PROVIDER: z.enum(['auto', 'yandex', 'off']).default('auto'),
     /** Голос SpeechKit v1 (marina, jane, omazh, ermil, zahar, filipp, madi_ru) и амплуа (neutral, friendly, good …). */
@@ -152,6 +156,11 @@ export const envSchema = z
         }
       }
     };
+    if (env.STT_PROVIDER === 'openai') {
+      for (const key of ['STT_OPENAI_BASE_URL', 'STT_OPENAI_API_KEY'] as const) {
+        if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен при STT_PROVIDER=openai` });
+      }
+    }
     if (env.LLM_PROVIDER === 'yandex') need(['YANDEX_API_KEY', 'YANDEX_FOLDER_ID', 'YANDEX_MODEL'], 'yandex');
     if (env.LLM_PROVIDER === 'openai-chat') {
       need(['OPENAI_CHAT_BASE_URL', 'OPENAI_CHAT_API_KEY', 'OPENAI_CHAT_MODEL'], 'openai-chat');

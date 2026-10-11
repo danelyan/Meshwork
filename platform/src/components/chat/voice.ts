@@ -21,6 +21,8 @@ const TARGET_RATE = 16_000;
 export function readVoiceMode(): VoiceMode {
   if (typeof document === 'undefined') return 'off';
   const v = document.body?.dataset.stt;
+  // openai (whisper) — тоже серверное распознавание, клиент пишет тот же LPCM, что и для yandex
+  if (v === 'openai') return 'yandex';
   return v === 'yandex' || v === 'off' ? v : 'browser';
 }
 

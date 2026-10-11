@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { getEnv } from '../env';
 import { AppError } from '../errors';
-import { STT_MAX_BYTES, STT_SAMPLE_RATE, recognizeYandex, sttMode } from '../stt';
+import { STT_MAX_BYTES, STT_SAMPLE_RATE, recognizeServer, sttMode } from '../stt';
 
 /** Сегмент ответа: до ~94 с речи (3 МБ LPCM). */
 export const CALL_SEGMENT_MAX_BYTES = 3 * 1024 * 1024;
@@ -105,17 +105,17 @@ export async function concatRecording(sessionId: string, only?: string): Promise
 }
 
 /**
- * Распознать сегмент: при STT=yandex — SpeechKit кусками ≤ 1 МБ подряд (граница куска может разрезать
+ * Распознать сегмент: при STT=yandex|openai — SpeechKit/whisper кусками ≤ 1 МБ подряд (граница куска может разрезать
  * слово — допустимо для созвона); иначе null — текст пришлёт клиент (Web Speech в браузере).
  */
 export async function recognizeSegment(pcm: Uint8Array, signal?: AbortSignal): Promise<string | null> {
-  if (sttMode() !== 'yandex') return null;
-  const env = getEnv();
+  const mode = sttMode();
+  if (mode !== 'yandex' && mode !== 'openai') return null;
   const out: string[] = [];
   for (let off = 0; off < pcm.byteLength; off += STT_MAX_BYTES) {
     const chunk = pcm.subarray(off, Math.min(pcm.byteLength, off + STT_MAX_BYTES));
     if (chunk.byteLength < STT_SAMPLE_RATE * 2 * 0.2) continue; // хвост < 0,2 с
-    const text = await recognizeYandex(chunk, { apiKey: env.YANDEX_API_KEY as string, folderId: env.YANDEX_FOLDER_ID, signal });
+    const text = await recognizeServer(chunk, signal);
     if (text) out.push(text);
   }
   return out.join(' ').trim();

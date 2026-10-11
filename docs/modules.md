@@ -319,7 +319,7 @@
   голос — работодатель). «Говорящая голова» (`components/head/`) и `CallPanel` — клиентские.
 - **Модели:** —
 - **Маршруты:** `GET|POST /api/stt` (LPCM 16 бит моно 16 кГц, ≤ 1 МБ), `/api/tts`.
-- **Env:** `STT_PROVIDER` (`auto|yandex|browser|off`), `TTS_PROVIDER` (`auto|yandex|off`), `TTS_VOICE`, `TTS_VOICE_EMPLOYER`, `TTS_EMOTION`,
+- **Env:** `STT_PROVIDER` (`auto|yandex|openai|browser|off`; openai - запасной whisper через OpenAI-совместимый `/audio/transcriptions`, нужны `STT_OPENAI_BASE_URL`, `STT_OPENAI_API_KEY`, опц. `STT_OPENAI_MODEL`), `TTS_PROVIDER` (`auto|yandex|off`), `TTS_VOICE`, `TTS_VOICE_EMPLOYER`, `TTS_EMOTION`,
   `TTS_SPEED`, `TTS_FORMAT`, `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`.
 - **Ограничения:** аудио ввода не хранится (аудио созвона хранит `call` с согласия); без ключей озвучки реплики остаются текстом.
 

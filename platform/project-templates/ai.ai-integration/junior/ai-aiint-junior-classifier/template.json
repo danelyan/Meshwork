@@ -1,0 +1,20 @@
+{
+  "id": "ai-aiint-junior-classifier",
+  "subcategoryId": "ai.ai-integration",
+  "specialization": "ai",
+  "grade": "junior",
+  "title": "Классификатор обращений через LLM",
+  "summary": "Функция классификации текста: шаблон промпта, разбор JSON-ответа модели, проверка схемы, повтор при невалидном ответе, понятные ошибки",
+  "stack": ["node20", "typescript", "llm", "vitest"],
+  "catalogIds": ["ai.prompting", "ai.structured-output", "ai.llm-api"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**", "src/llm.ts"]
+}

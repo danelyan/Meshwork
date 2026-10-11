@@ -1,0 +1,15 @@
+/* Сегментированный переключатель. Только смысловые токены; --seg-* переопределяются контейнером (сцена консультанта). */
+.segmented {
+  --seg-text: var(--muted); --seg-text-on: var(--ink); --seg-line: var(--line); --seg-hover: var(--surface-hover);
+  --seg-on: var(--blue); --seg-on-text: var(--on-ink);
+  display: flex; border: 1px solid var(--seg-line);
+}
+.segmented button {
+  flex: 1; min-width: 0; min-height: 36px; padding: 8px 12px; border: 0; background: transparent; color: var(--seg-text);
+  font: 500 var(--fs-xs) var(--mono); cursor: pointer; transition: background 0.16s var(--ease), color 0.16s var(--ease);
+}
+.segmented button + button { border-left: 1px solid var(--seg-line); }
+.segmented button:hover:not([aria-pressed='true']) { background: var(--seg-hover); color: var(--seg-text-on); }
+.segmented button[aria-pressed='true'] { background: var(--seg-on); color: var(--seg-on-text); font-weight: 700; }
+.compact { margin-bottom: 12px; }
+.compact button { min-height: 28px; padding: 4px 8px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

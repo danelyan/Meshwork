@@ -64,13 +64,11 @@
 .iconBtn:hover:not(:disabled) { color: var(--ink); border-color: var(--border-soft); }
 .iconBtn:disabled { opacity: 0.5; cursor: default; }
 .iconBtn[aria-pressed='true'] { color: var(--on-ink); background: var(--blue); }
-.send { position: relative; flex: none; height: var(--chat-control-size, 40px); padding: 0 18px; background: var(--blue); color: var(--on-ink); border: 0; font: 600 var(--fs) var(--font); cursor: pointer; transition: background 0.16s var(--ease), opacity 0.16s var(--ease); }
-.send:hover:not(:disabled) { background: var(--ink); }
-.send:disabled { opacity: 0.5; cursor: default; }
-.send[data-sending] { opacity: 1; }
-.send[data-sending] > span:first-child { visibility: hidden; }
-.sendSpin { position: absolute; inset: 0; display: grid; place-items: center; }
-.sendSpin > span { border-color: var(--on-ink-soft); border-top-color: var(--on-ink); }
+/* «Отправить» — основная кнопка (ui/Button primary); здесь только размер под поле ввода. Disabled: нейтральная плашка, не полупрозрачный блок */
+button.send { flex: none; height: var(--chat-control-size, 40px); min-height: 0; padding: 0 18px; }
+button.send:disabled { opacity: 1; background: var(--surface-ghost); border-color: var(--border-faint); color: var(--muted); cursor: default; }
+button.send[aria-busy='true'] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+button.send[aria-busy='true'] > span { border-color: var(--on-ink-soft); border-top-color: var(--on-ink); }
 .hiddenInput { display: none; }
 .clipWrap { position: relative; display: flex; }
 .clipTip { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 6; width: max-content; max-width: 260px; padding: 6px 10px; background: var(--ink); color: var(--on-ink); font: 500 var(--fs-xs) var(--mono); opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity 0.16s var(--ease), transform 0.16s var(--ease); }
@@ -118,7 +116,7 @@
   .card { padding: 12px; }
   .userBubble { max-width: 92%; }
   .composer { padding: var(--chat-composer-pad, 8px 0 10px); }
-  .send { padding: 0 14px; }
+  button.send { padding: 0 14px; }
   .composerBox { gap: 2px; }
 }
 .files { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 0; list-style: none; font-family: var(--mono); font-size: var(--fs-sm); opacity: 0.85; }
@@ -148,7 +146,6 @@
 .composerBox textarea { min-height: var(--chat-control-size, 44px); font-size: 16px; }
 .inlineAction { align-self: center; flex: none; }
 .inlineAction button { font: 10px var(--mono); text-decoration: none; padding: 10px 4px; }
-.send { background: var(--chat-send-bg, var(--blue)); }
 @media (max-width: 680px) {
   .composerBox { flex-wrap: wrap; }
   .composerBox textarea { flex-basis: min(100%, 180px); }

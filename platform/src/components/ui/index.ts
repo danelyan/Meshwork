@@ -12,6 +12,8 @@ export type { MeterProps } from './Meter';
 export { Notice } from './Notice';
 export { Panel } from './Panel';
 export type { PanelProps } from './Panel';
+export { Segmented } from './Segmented';
+export type { SegmentedOption, SegmentedProps } from './Segmented';
 export { Skeleton } from './Skeleton';
 export type { SkeletonProps, SkeletonShape } from './Skeleton';
 export { Spinner } from './Spinner';

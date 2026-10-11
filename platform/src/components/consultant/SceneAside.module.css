@@ -4,6 +4,18 @@
    внутри своей карточки. Узкая или совсем низкая: карточки своей высоты в две колонки, прокручивается колонка. */
 .aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto; grid-auto-rows: auto; gap: 12px; align-items: stretch; min-height: 100%; }
 .road { grid-column: 1 / -1; }
+/* Колонка живёт на сцене: общие компоненты внутри (переключатель вида, предпросмотр карточки, поля) читают смысловые
+   токены страницы, а сцена в тёмной теме тёмная при светлой странице. Сводим их к токенам сцены (в светлой они равны). */
+.aside {
+  --ink: var(--stage-text); --text: var(--stage-text); --muted: var(--stage-ink-faint); --text-soft: var(--stage-text-soft);
+  --glass: var(--stage-card); --glass-border: var(--avatar-stage-line); --line: var(--avatar-stage-line);
+  --surface-input: var(--stage-card); --surface-hover: var(--stage-accent-fill); --surface-notice: var(--stage-card); --surface-quote: var(--stage-card);
+  --border-input: var(--stage-ring); --border-soft: var(--stage-ring); --border-faint: var(--avatar-stage-line);
+  --silhouette: var(--stage-track); --blue: var(--stage-accent); --on-ink: var(--stage-on-accent);
+  /* переключатель вида: активный сегмент — акцент сцены, неактивный — прозрачный */
+  --seg-text: var(--stage-ink-dim); --seg-text-on: var(--stage-text); --seg-line: var(--stage-ring); --seg-hover: var(--stage-accent-fill);
+  --seg-on: var(--stage-accent); --seg-on-text: var(--stage-on-accent);
+}
 .aside > :last-child:nth-child(even) { grid-column: 1 / -1; }
 .box { min-height: 100%; display: grid; }
 /* широкая колонка (каждой карточке от ~300px, владелец 11.10: «слишком узко»): все в один ряд; у работодателя две — по половине */
@@ -112,3 +124,19 @@
   .cardBody { display: none; padding: 4px var(--page-pad) 16px; }
   .card[data-open='true'] .cardBody { display: block; }
 }
+/* знакомство: только «Заполнение профиля» и «Что я о тебе знаю». Одна колонка на всю ширину: профиль сверху, память под ним тянется
+   на остаток высоты (длинный список прокручивается внутри карточки). Раньше профиль занимал полширины, под ним оставалась пустота. */
+.aside[data-mode='onboarding'] { grid-template-columns: minmax(0, 1fr); }
+.aside[data-mode='onboarding'] > .card { grid-column: auto; min-height: 0; }
+@container aside (height >= 380px) {
+  .aside[data-mode='onboarding'] { grid-template-rows: auto minmax(0, 1fr); grid-auto-rows: auto; }
+  .aside[data-mode='onboarding'] .cardBody { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+}
+.progressBar { display: flex; gap: 3px; margin: 4px 0 14px; }
+.progressBar i { flex: 1; height: 4px; background: var(--avatar-stage-line); }
+.progressBar i[data-done] { background: var(--stage-accent); }
+.progressStats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
+.progressStats div { display: grid; gap: 2px; }
+.progressStats dt { font: 500 10px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--stage-ink-faint); }
+.progressStats dd { margin: 0; font-size: 22px; font-weight: 600; color: var(--stage-text); }
+

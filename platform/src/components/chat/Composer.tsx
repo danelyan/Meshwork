@@ -2,7 +2,7 @@
 
 import { type ClipboardEvent, type FormEvent, type KeyboardEvent, type ReactNode, type Ref, useEffect, useId, useRef, useState } from 'react';
 
-import { Spinner, VisuallyHidden, cx } from '../ui';
+import { Button, VisuallyHidden, cx } from '../ui';
 
 import { AttachmentChip, AttachmentLimitsHint } from './AttachmentChip';
 import { ATTACH_ACCEPT, ATTACH_LIMITS, type Attachment } from './attachments';
@@ -183,14 +183,9 @@ export function Composer({
             <PhoneIcon />
           </button>
         )}
-        <button type="submit" className={styles.send} disabled={!canSend} aria-busy={sending || undefined} data-sending={sending || undefined}>
-          <span>{sendLabel}</span>
-          {sending && (
-            <span className={styles.sendSpin} aria-hidden="true">
-              <Spinner />
-            </span>
-          )}
-        </button>
+        <Button type="submit" variant="primary" className={styles.send} disabled={!canSend} loading={sending}>
+          {sendLabel}
+        </Button>
       </div>
       {attachments && (
         <VisuallyHidden>

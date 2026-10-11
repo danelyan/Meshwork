@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { OnboardingView } from '@/server/onboarding/types';
+import { Segmented } from '../ui';
 import styles from './OnboardingDraft.module.css';
 
 const candidateFields = [['goal', 'Цель'], ['documents', 'Документы'], ['fsp', 'ФСП ID'], ['specialization', 'Направление'], ['subcategory', 'Подкатегория'], ['grade', 'Предполагаемый грейд'], ['stack', 'Стек'], ['formats', 'Формат работы'], ['city', 'Город'], ['salary', 'Зарплата'], ['candidateContact', 'Контакт']];
@@ -38,10 +39,11 @@ export function OnboardingDraft({ view, busy, onEdit }: { view: OnboardingView; 
 /** «Как вижу я / Как видит компания» — общий переключатель черновика и карточки «Что я о тебе знаю». */
 export function ViewTabs({ employer, company, onChange, compact = false }: { employer: boolean; company: boolean; onChange: (company: boolean) => void; compact?: boolean }) {
   // compact — узкая карточка «Что я о тебе знаю»: короткие подписи, полное название — в aria-label.
-  return <div className={`${styles.tabs}${compact ? ` ${styles.compact}` : ''}`} role="group" aria-label="Вид черновика">
-    <button type="button" aria-pressed={!company} onClick={() => onChange(false)} aria-label="Как вижу я">{compact ? 'Мой вид' : 'Как вижу я'}</button>
-    <button type="button" aria-pressed={company} onClick={() => onChange(true)} aria-label={employer ? 'Как видит кандидат' : 'Как видит компания'}>{compact ? (employer ? 'Для кандидата' : 'Для компании') : employer ? 'Как видит кандидат' : 'Как видит компания'}</button>
-  </div>;
+  const other = employer ? 'Как видит кандидат' : 'Как видит компания';
+  return <Segmented label="Вид черновика" compact={compact} value={company ? 'company' : 'mine'} onChange={(v) => onChange(v === 'company')} options={[
+    { value: 'mine', label: compact ? 'Мой вид' : 'Как вижу я', ariaLabel: 'Как вижу я' },
+    { value: 'company', label: compact ? (employer ? 'Для кандидата' : 'Для компании') : other, ariaLabel: other },
+  ]} />;
 }
 
 /** Предпросмотр для другой стороны: кандидату — анонимная карточка (только публичные поля), работодателю — компания. */

@@ -2,7 +2,7 @@
 .chat { display: flex; flex-direction: column; width: 100%; min-width: 0; margin: 0; height: calc(100svh - var(--landing-header-h) - 44px); min-height: 480px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: var(--blur); --chat-avatar-size: 36px; --chat-avatar-bg: var(--ink); --chat-avatar-filter: brightness(0) invert(1); --chat-message-size: 16px; --chat-bubble-pad: 14px 16px; --chat-composer-pad: 12px 24px 20px; --chat-control-size: 48px; }
 /* продолжение ленты: тянется на остаток высоты ленты, чтобы поле ввода (margin-top: auto) стояло внизу */
 .embedded { flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.intro { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 24px; border-bottom: 1px solid var(--line); }
+.intro { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .title { display: grid; gap: 6px; flex: 1; }
 .intro h1 { margin: 0; font-size: clamp(20px, 2vw, 26px); line-height: 1.1; letter-spacing: -0.03em; }
 .subtitle { font: 500 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
@@ -10,7 +10,7 @@
 .routes a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border: 1px solid var(--border-faint); background: var(--surface-ghost); }
 .routes a:hover { border-color: var(--ink); }
 .feedPane { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-.feedContent { display: flex; flex-direction: column; gap: 16px; padding: 28px 24px 16px; }
+.feedContent { display: flex; flex-direction: column; gap: 16px; padding: 16px 16px 12px; }
 .intro .demoNote { flex-basis: 100%; }
 .working { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; }
 .working > :first-child { grid-column: 2; justify-self: start; }

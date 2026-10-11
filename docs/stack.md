@@ -71,6 +71,11 @@ Chat Completions: `LLM_PROVIDER=openai-chat`,
 (`TTS_PROVIDER=auto`; ключу нужна область `yc.ai.speechkitTts.execute`, роль
 `ai.speechkit-tts.user` — в ключе лейна проверено ответом 200).
 
+Для распознавания добавлен `STT_PROVIDER=openai`: OpenAI-совместимый `/audio/transcriptions`
+для Whisper с отдельными `STT_OPENAI_BASE_URL`, `STT_OPENAI_API_KEY`, `STT_OPENAI_MODEL`.
+Это протокол адаптера, а не обязательный выбор облака OpenAI. Фактическое размещение
+провайдера и обработку данных нужно проверять по конфигурации стенда.
+
 ## Ограничения и уточнения
 
 - В корне репозитория добавлена MIT License; полный аудит лицензий зависимостей и ресурсов ещё не выполнен.

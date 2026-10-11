@@ -1,0 +1,20 @@
+{
+  "id": "ai-aiint-senior-pii-guard",
+  "subcategoryId": "ai.ai-integration",
+  "specialization": "ai",
+  "grade": "senior",
+  "title": "Охранный шлюз вызовов LLM: ПДн, бюджет, кэш, запасная модель",
+  "summary": "Маскирование ПДн до отправки и обратная подстановка, кэш масканного ответа, бюджет токенов на пользователя и период (фейковые часы), переход на запасную модель, аудит без ПДн; DESIGN.md",
+  "stack": ["node20", "typescript", "llm", "vitest"],
+  "catalogIds": ["ai.pii-masking", "ai.llm-cost", "ai.llm-api"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

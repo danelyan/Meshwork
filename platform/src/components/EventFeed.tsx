@@ -39,6 +39,8 @@ export interface EventFeedProps {
   label?: string;
   /** «Повторить» под последней ошибкой (повтор последнего сообщения). */
   onRetry?: () => void;
+  /** «Переотправить» у последнего сообщения кандидата: срезать всё после него и отправить заново. */
+  onResend?: () => void;
 }
 
 type Block =
@@ -217,9 +219,10 @@ export function EventFeed({ lead, label = 'Переписка с консуль�
 }
 
 /** Строки ленты без обёртки `Thread` — для вставки в чужую ленту (документы в онбординге). */
-export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, onRetry }: Omit<EventFeedProps, 'lead' | 'label'>) {
+export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, onRetry, onResend }: Omit<EventFeedProps, 'lead' | 'label'>) {
   const blocks = toBlocks(items);
   const lastBlock = blocks.at(-1);
+  const lastUser = blocks.findLast((b) => b.kind === 'user');
   // Последняя реплика с данным текстом: запасной признак для историй без id потока.
   const lastWithText = new Map<string, string>();
   for (const b of blocks) if (b.kind === 'event' && b.event.type === 'message') lastWithText.set(b.event.text, b.id);
@@ -228,7 +231,7 @@ export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmA
       {blocks.map((b) => {
         if (b.kind === 'user') {
           return (
-            <UserBubble key={b.item.id} files={b.item.files}>
+            <UserBubble key={b.item.id} files={b.item.files} action={onResend && b === lastUser && !locked ? { label: 'Переотправить', onClick: onResend } : undefined}>
               {b.item.text}
             </UserBubble>
           );

@@ -803,6 +803,7 @@ export async function inviteToDefense(
     message: input.message,
     salaryFrom: input.salaryFrom,
     salaryTo: input.salaryTo,
+    matchSource: 'other', // из проверенной сдачи задания: ранга подборки нет
   });
   await prisma.projectSubmission.update({ where: { id: s.id }, data: { defenseInvitationId: inv.id } });
   const { callSessionId } = await getDefenseHook().requestDefense({ submissionId: s.id, candidateId: s.candidateId, invitationId: inv.id, companyId: ctx.companyId });

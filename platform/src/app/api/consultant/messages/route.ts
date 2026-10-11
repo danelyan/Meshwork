@@ -27,8 +27,13 @@ const Body = z
     onboardingStep: z.string().regex(/^[A-Za-z]{1,40}$/).optional(),
     /** Первая реплика в пустом разговоре без сообщения кандидата (loop.ts, KICKOFF_INSTRUCTION). */
     kickoff: z.boolean().optional(),
+    /**
+     * Переотправить последнее сообщение кандидата: оно и всё после него (ответ, вызовы инструментов)
+     * удаляются из истории, ход идёт заново с тем же текстом на прежней истории. Нужен conversationId.
+     */
+    resend: z.boolean().optional(),
   })
-  .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length || b.kickoff, {
+  .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length || b.kickoff || b.resend, {
     message: 'Нужен текст, вложение или ссылка',
     path: ['text'],
   });
@@ -75,6 +80,15 @@ export const POST = withErrors(async (req: Request) => {
   const lock = await acquireConversationLock(conversationId);
   if (!lock) throw new AppError('busy', 'Консультант ещё отвечает в этом разговоре - дождись окончания', 409);
 
+  // Переотправка: под lock (ход не идёт) срезаем историю с последнего сообщения кандидата и берём его текст.
+  let text = body.text;
+  if (body.resend) {
+    const last = await prisma.message.findFirst({ where: { conversationId, role: 'user' }, orderBy: { createdAt: 'desc' }, select: { content: true, createdAt: true } });
+    if (!last) throw errors.notFound('Нечего переотправлять');
+    await prisma.message.deleteMany({ where: { conversationId, createdAt: { gte: last.createdAt } } });
+    text = stripMarks(last.content);
+  }
+
   const encoder = new TextEncoder();
   // Ход живёт дольше соединения: свой контроллер (стоп, таймаут), не req.signal.
   const turn = new AbortController();
@@ -103,7 +117,7 @@ export const POST = withErrors(async (req: Request) => {
           {
             candidateId,
             conversationId,
-            text: body.text,
+            text,
             ...(body.uploadIds ? { uploadIds: body.uploadIds } : {}),
             ...(body.urls ? { urls: body.urls } : {}),
             ...(onboarding ? { onboarding } : {}),
@@ -114,8 +128,8 @@ export const POST = withErrors(async (req: Request) => {
           { pace },
         );
         // Память: факты из реплики — фоном, после завершённого хода (ответ уже отдан); в демо и на заглушке — нет.
-        if (!signal.aborted && body.text.trim() && memoryExtractionEnabled()) {
-          void scheduleMemoryExtraction({ owner: { candidateId }, text: body.text, llm: getLlm({ candidateId, conversationId }) });
+        if (!signal.aborted && !body.resend && text.trim() && memoryExtractionEnabled()) {
+          void scheduleMemoryExtraction({ owner: { candidateId }, text, llm: getLlm({ candidateId, conversationId }) });
         }
       } catch (err) {
         if (!signal.aborted) {
@@ -155,3 +169,12 @@ export const POST = withErrors(async (req: Request) => {
     },
   });
 });
+
+/** Текст сообщения кандидата без служебных пометок кода (вложения, ссылки, шаг онбординга; loop.ts userContent). */
+export function stripMarks(content: string): string {
+  return content
+    .split('\n')
+    .filter((line) => !/^\[(вложения|ссылки|онбординг|знакомство на паузе): .*\]$/u.test(line.trim()))
+    .join('\n')
+    .trim();
+}

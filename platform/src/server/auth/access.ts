@@ -56,6 +56,8 @@ export const PAGE_ACCESS = {
   '/consultant': 'account',
   '/profile': 'candidate',
   '/career': 'candidate',
+  '/companies': 'candidate',
+  '/companies/[id]': 'candidate',
   '/saved': 'candidate',
   '/settings': 'candidate',
   '/skills': 'candidate',

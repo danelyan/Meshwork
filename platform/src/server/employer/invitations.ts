@@ -229,6 +229,8 @@ export async function createInvitation(
         message: input.message,
         salaryFrom: input.salaryFrom,
         salaryTo: input.salaryTo,
+        matchRank: input.matchRank ?? null,
+        matchSource: input.matchSource ?? null,
       },
       select: { id: true, status: true },
     });

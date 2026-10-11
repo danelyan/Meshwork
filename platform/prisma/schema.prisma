@@ -528,6 +528,11 @@ model Invitation {
   /// lane lifecycle: приглашение создано из принятого самоотклика (accepted сразу; лимит 20/сутки не расходует)
   sourceApplicationId String?          @unique
   sourceApplication   Application?     @relation(fields: [sourceApplicationId], references: [id], onDelete: SetNull)
+  /// lane admin (E-08, фаза 5): позиция кандидата в подборке/поиске работодателя на момент отправки (1 = первый).
+  /// Подсказка клиента (валидируется 1..1000), только для метрики «доля принятых из топ-N»; null — ранг неизвестен.
+  matchRank           Int?
+  /// lane admin (E-08, фаза 5): откуда отправлено — matching | search | favorites | assistant | other; null — неизвестно.
+  matchSource         String?
   /// lane complaints: жалоба кандидата на это приглашение (не больше одной)
   complaint           Complaint?
   /// lane live-slots: предложения слотов живой защиты (ADR 0008); активное — activeKey = id приглашения

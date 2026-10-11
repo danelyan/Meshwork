@@ -124,7 +124,7 @@ describe('кабинет работодателя (БД)', () => {
     for (const key of ['sourceRef', 'sourceKind', '"quote"', '"wording"', 'github:demo', 'codeforces:demo', 'cv-demo.pdf']) expect(raw).not.toContain(key);
   });
 
-  it('подборка скрывает кандидата с нулевым покрытием; поиск по банку — нет (решение владельца 09.10)', async () => {
+  it('подборка скрывает кандидата с нулевым покрытием; поиск по банку — нет (решение владельца 09.10); без категории — только в расширенном пуле (M05)', async () => {
     await prisma.candidate.create({
       data: { id: 'zero-cov', name: 'Нулевой', email: 'zero-cov@example.test', specialization: 'backend', fspState: 'not_linked', consentAt: new Date() },
     });
@@ -140,11 +140,19 @@ describe('кабинет работодателя (БД)', () => {
     expect(m.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('zero-cov');
     // без закрытых требований в подборке только кандидаты с совпавшей категорией из теста (Q-36)
     expect(m.items.every((i: { covered: number; categoryMatch: boolean }) => i.covered >= 1 || i.categoryMatch)).toBe(true);
-    // ТЗ 2.1: по умолчанию только с категорией по тесту; без теста - явный переключатель untested=1
-    const tested = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go', 'GET', undefined, EMP))).json();
-    expect(tested.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('zero-cov');
-    const bank = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go&untested=1', 'GET', undefined, EMP))).json();
+    // основной режим — только подтверждённые категории: кандидата без теста в банке нет; pool=all показывает его с пометкой
+    const main = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go', 'GET', undefined, EMP))).json();
+    expect(main.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('zero-cov');
+    expect(main.items.every((i: { candidate: { category: unknown } }) => i.candidate.category !== null)).toBe(true);
+    const bank = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go&pool=all', 'GET', undefined, EMP))).json();
     expect(bank.items.map((i: { candidateId: string }) => i.candidateId)).toContain('zero-cov');
+    const zero = bank.items.find((i: { candidateId: string }) => i.candidateId === 'zero-cov');
+    expect(zero.candidate.category).toBeNull();
+    expect(zero.explanation.category).toBe('без категории из теста - расширенный пул');
+    expect(bank.filters).toEqual({ specialization: 'backend', stack: ['Go'], expandPool: true });
+    // прежний category=1 — no-op: совпадает с режимом по умолчанию
+    const legacy = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go&category=1', 'GET', undefined, EMP))).json();
+    expect(legacy.items.map((i: { candidateId: string }) => i.candidateId)).toEqual(main.items.map((i: { candidateId: string }) => i.candidateId));
     await prisma.candidate.delete({ where: { id: 'zero-cov' } }); // не мешать соседним тестам
   });
 
@@ -169,11 +177,11 @@ describe('кабинет работодателя (БД)', () => {
     await claim('q36-claims');
     const created = await (await createVac(jsonRequest('/api/employer/vacancies', 'POST', { ...VAC_BODY, stack: [], needs: [{ catalogId: 'be.idempotency', weight: 3 }, { catalogId: 'be.transactions', weight: 3 }] }, EMP))).json();
     const vacId = created.id ?? created.vacancy?.id;
-    const def = await (await matches(jsonRequest(`/x/${vacId}/matches`, 'GET', undefined, EMP), params({ id: vacId }))).json();
-    const defIds: string[] = def.items.map((i: { candidateId: string }) => i.candidateId);
-    expect(defIds).toContain('q36-both');
-    expect(defIds).not.toContain('q36-claims'); // без теста - только по переключателю (ТЗ 2.1)
-    const m = await (await matches(jsonRequest(`/x/${vacId}/matches?untested=1`, 'GET', undefined, EMP), params({ id: vacId }))).json();
+    // q36-claims без категории: в основном режиме его нет, подсказка предлагает расширить пул; в расширенном — ниже q36-both
+    const main = await (await matches(jsonRequest(`/x/${vacId}/matches`, 'GET', undefined, EMP), params({ id: vacId }))).json();
+    expect(main.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('q36-claims');
+    expect(main.hints.find((h: { kind: string }) => h.kind === 'expandPool')).toMatchObject({ gain: expect.any(Number), filters: { expandPool: true } });
+    const m = await (await matches(jsonRequest(`/x/${vacId}/matches?pool=all`, 'GET', undefined, EMP), params({ id: vacId }))).json();
     const ids: string[] = m.items.map((i: { candidateId: string }) => i.candidateId);
     expect(ids).toContain('q36-cat-only');
     expect(ids).not.toContain('q36-cat-fe');
@@ -192,10 +200,8 @@ describe('кабинет работодателя (БД)', () => {
     const stack = await (await matches(url('stack=Kafka'), params({ id: PAY_VAC }))).json();
     expect(stack.items.map((i: { candidateId: string }) => i.candidateId)).toEqual([PAY.id]);
     const fe = (q: string) => jsonRequest(`/x?${q}`, 'GET', undefined, EMP);
-    const tested = await (await matches(fe(''), params({ id: 'demo-vac-fe-j-2' }))).json();
-    expect(tested.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('demo-pool-fe-j-2'); // демо-персона без теста: только по переключателю
-    const all = await (await matches(fe('untested=1'), params({ id: 'demo-vac-fe-j-2' }))).json();
-    expect(all.items.map((i: { candidateId: string }) => i.candidateId)).toContain('demo-pool-fe-j-2');
+    const all = await (await matches(fe('pool=all'), params({ id: 'demo-vac-fe-j-2' }))).json();
+    expect(all.items.map((i: { candidateId: string }) => i.candidateId)).toContain('demo-pool-fe-j-2'); // без категории — расширенный пул
     const grade = await (await matches(fe('grade=junior'), params({ id: 'demo-vac-fe-j-2' }))).json();
     expect(grade.items.map((i: { candidateId: string }) => i.candidateId)).toEqual(['demo-pool-fe-j-1']);
     // кандидаты другой специализации в выдачу по потребности не попадают (балл ≤ 0)
@@ -204,15 +210,15 @@ describe('кабинет работодателя (БД)', () => {
   });
 
   it('поиск по банку (R-E-04) без потребности; скрытый кандидат (R-C-13) не виден ни там, ни там', async () => {
-    const tested = await (await search(jsonRequest('/api/employer/search?spec=frontend', 'GET', undefined, EMP))).json();
-    expect(tested.items.length).toBe(2); // только с категорией по тесту (ТЗ 2.1)
-    const all = await (await search(jsonRequest('/api/employer/search?spec=frontend&untested=1', 'GET', undefined, EMP))).json();
-    expect(all.vacancy).toBeNull();
+    const main = await (await search(jsonRequest('/api/employer/search?spec=frontend', 'GET', undefined, EMP))).json();
+    expect(main.vacancy).toBeNull();
+    expect(main.items.length).toBe(2); // только с категорией из теста (M05)
+    const all = await (await search(jsonRequest('/api/employer/search?spec=frontend&pool=all', 'GET', undefined, EMP))).json();
     expect(all.items.length).toBe(4);
     const fe = DEMO_POOL.find((p) => p.id === 'demo-pool-fe-j-2')!;
     expect((await setPrivacy(jsonRequest('/x', 'POST', { hiddenFromEmployers: true }, candCookie(fe.id)))).status).toBe(200);
     expect((await (await getPrivacy(jsonRequest('/x', 'GET', undefined, candCookie(fe.id)))).json()).hiddenFromEmployers).toBe(true);
-    const after = await (await search(jsonRequest('/api/employer/search?spec=frontend&untested=1', 'GET', undefined, EMP))).json();
+    const after = await (await search(jsonRequest('/api/employer/search?spec=frontend&pool=all', 'GET', undefined, EMP))).json();
     expect(after.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain(fe.id);
     expect((await sendInvite(fe.id)).status).toBe(404);
   });

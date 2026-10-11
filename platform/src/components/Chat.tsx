@@ -138,7 +138,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   }, []);
 
   const send = useCallback(
-    async (message: string, uploadIds: string[], urls: string[], fileNames: string[], opts: { kickoff?: boolean } = {}) => {
+    async (message: string, uploadIds: string[], urls: string[], fileNames: string[], opts: { kickoff?: boolean; resend?: boolean } = {}) => {
       setBusy(true);
       if (!opts.kickoff) {
         lastSent.current = { message, uploadIds, urls, fileNames };
@@ -161,7 +161,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       try {
         await embedded?.beforeSend?.();
         const stream = await openConsultantStream(
-          { text: message, uploadIds, urls, conversationId: conversationRef.current, ...(opts.kickoff ? { kickoff: true } : {}) },
+          { text: message, uploadIds, urls, conversationId: conversationRef.current, ...(opts.kickoff ? { kickoff: true } : {}), ...(opts.resend ? { resend: true } : {}) },
           ctrl.signal,
         );
         const reader = stream.getReader();
@@ -260,6 +260,16 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   const retry = () => {
     const l = lastSent.current;
     if (l && !busy) void send(l.message, l.uploadIds, l.urls, l.fileNames);
+  };
+  // «Переотправить» у последнего сообщения кандидата: лента срезается до него, сервер срезает историю
+  // (route `resend`) и отвечает заново с прежней историей. Вложения заново не разбираются - только текст.
+  const resend = () => {
+    if (busy || !conversationRef.current) return;
+    const i = items.findLastIndex((it) => it.role === 'user');
+    if (i < 0) return;
+    const last = items[i] as Extract<FeedItem, { role: 'user' }>;
+    setItems((p) => p.slice(0, i));
+    void send(last.text, [], [], last.files ?? [], { resend: true });
   };
 
   const onClaimAction = useCallback(async (claim: CardClaim, action: ClaimAction, statement?: string) => {
@@ -360,6 +370,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         onConfirmAll={onConfirmAll}
         onAnswer={(t) => void send(t, [], [], [])}
         onRetry={retry}
+        onResend={resend}
         locked={busy}
       />
       {busy && !replying && (

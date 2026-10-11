@@ -449,7 +449,9 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           <AstraRow testId="ob-current">
             <div className={styles.questionCard}>
               {!isSummary && <div className={styles.questionBadges}><span>сохраню в: {cur.label}</span><span>{employer ? 'черновик подбора' : fieldVisibility(cur.id)}</span></div>}
-              <Reply key={`${cur.id}:${turn}`} lines={lines} animate={!(settled && turn === 0)} onDone={() => setReady(true)} extra={consentExtra} />
+              {/* Печатается только новый шаг (turn > 0) или самое первое приветствие; восстановленный после F5
+                  или возврата со страницы шаг показывается сразу (владелец 11.10: текст «стримился посреди чата»). */}
+              <Reply key={`${cur.id}:${turn}`} lines={lines} animate={turn > 0 || (initial.history.length === 0 && !settled)} onDone={() => setReady(true)} extra={consentExtra} />
             </div>
           </AstraRow>
 

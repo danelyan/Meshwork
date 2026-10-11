@@ -53,7 +53,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
           {items.map((r) => (
             <tr key={r.id}>
               <td className={styles.mono}>{fmt.format(r.createdAt)}</td>
-              <td>
+              <td className={styles.nowrap}>
                 {r.actor ? (
                   <Link href={`/admin/audit?actorId=${r.actor.id}`}>{r.actor.name}</Link>
                 ) : (
@@ -65,8 +65,25 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
               <td className={styles.mono}>{r.targetType ? <Link href={`/admin/audit?targetType=${encodeURIComponent(r.targetType)}&targetId=${encodeURIComponent(r.targetId ?? '')}`}>{`${r.targetType}:${r.targetId ?? ''}`}</Link> : '—'}</td>
               <td>{r.reason ?? '—'}</td>
               <td>
-                {short(r.before) && <pre className={styles.json}>{short(r.before)}</pre>}
-                {short(r.after) && <pre className={styles.json}>{short(r.after)}</pre>}
+                {(short(r.before) || short(r.after)) ? (
+                  <details className={styles.details}>
+                    <summary>Показать</summary>
+                    {short(r.before) && (
+                      <>
+                        <p className={styles.jsonLabel}>До</p>
+                        <pre className={styles.json}>{short(r.before)}</pre>
+                      </>
+                    )}
+                    {short(r.after) && (
+                      <>
+                        <p className={styles.jsonLabel}>После</p>
+                        <pre className={styles.json}>{short(r.after)}</pre>
+                      </>
+                    )}
+                  </details>
+                ) : (
+                  '—'
+                )}
               </td>
             </tr>
           ))}

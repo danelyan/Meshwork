@@ -267,77 +267,80 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
  * --on-ink/--blue 5,9:1; --on-ink/--ink 16,5:1; --error/--paper 8,1:1; работодатель: --employer-accent/--paper 6,2:1,
  * --on-ink/--employer-accent 6,7:1.
  */
-:root[data-theme='dark'],
-[data-call] {
-  color-scheme: dark;
-  color: var(--ink);
-  --ink: var(--p-mist-100);
-  --paper: var(--p-night-900);
-  --muted: var(--p-mist-400);
-  --blue: var(--p-indigo-300);
-  --candidate-accent: var(--p-indigo-300);
-  --employer-accent: var(--p-wine-300);
-  --line: rgba(255, 255, 255, 0.12);
-  --glass: rgba(255, 255, 255, 0.05);
-  --glass-strong: rgba(255, 255, 255, 0.07);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --silhouette: var(--p-night-700);
-  --glow: radial-gradient(900px 500px at 80% -10%, rgba(138, 125, 255, 0.1), transparent 70%);
+/* Печать (PDF-профиль) всегда светлая: тёмные значения не применяются, действуют светлые из :root. */
+@media not print {
+  :root[data-theme='dark'],
+  [data-call] {
+    color-scheme: dark;
+    color: var(--ink);
+    --ink: var(--p-mist-100);
+    --paper: var(--p-night-900);
+    --muted: var(--p-mist-400);
+    --blue: var(--p-indigo-300);
+    --candidate-accent: var(--p-indigo-300);
+    --employer-accent: var(--p-wine-300);
+    --line: rgba(255, 255, 255, 0.12);
+    --glass: rgba(255, 255, 255, 0.05);
+    --glass-strong: rgba(255, 255, 255, 0.07);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --silhouette: var(--p-night-700);
+    --glow: radial-gradient(900px 500px at 80% -10%, rgba(138, 125, 255, 0.1), transparent 70%);
 
-  --bg: var(--paper);
-  --panel: var(--glass);
-  --text: var(--ink);
-  --red: var(--p-red-300);
+    --bg: var(--paper);
+    --panel: var(--glass);
+    --text: var(--ink);
+    --red: var(--p-red-300);
 
-  --surface-input: rgba(255, 255, 255, 0.07);
-  --surface-hover: rgba(255, 255, 255, 0.08);
-  --surface-notice: rgba(255, 255, 255, 0.07);
-  --surface-dim: var(--silhouette);
-  --border-strong: var(--ink);
-  --border-input: rgba(255, 255, 255, 0.24);
-  --border-dashed: rgba(255, 255, 255, 0.3);
-  --code-bg: var(--p-night-950);
-  --code-ink: var(--p-mist-100);
-  --border-soft: rgba(255, 255, 255, 0.2);
-  --border-faint: rgba(255, 255, 255, 0.13);
-  --rail: rgba(255, 255, 255, 0.3);
-  --focus: var(--blue);
-  --accent-soft: var(--blue);
-  --accent-check: var(--blue);
-  --placeholder: var(--p-mist-500);
-  --text-soft: var(--p-mist-200);
-  --text-dim: var(--p-mist-300);
-  --demo: var(--muted);
-  --error: var(--p-red-300);
-  --danger-border: var(--p-red-300);
-  --danger-text: var(--p-red-300);
-  --danger-accent: var(--p-red-300);
-  --tag-red-border: var(--ink);
-  --tag-red-text: var(--ink);
-  --backdrop: rgba(0, 0, 0, 0.6);
+    --surface-input: rgba(255, 255, 255, 0.07);
+    --surface-hover: rgba(255, 255, 255, 0.08);
+    --surface-notice: rgba(255, 255, 255, 0.07);
+    --surface-dim: var(--silhouette);
+    --border-strong: var(--ink);
+    --border-input: rgba(255, 255, 255, 0.24);
+    --border-dashed: rgba(255, 255, 255, 0.3);
+    --code-bg: var(--p-night-950);
+    --code-ink: var(--p-mist-100);
+    --border-soft: rgba(255, 255, 255, 0.2);
+    --border-faint: rgba(255, 255, 255, 0.13);
+    --rail: rgba(255, 255, 255, 0.3);
+    --focus: var(--blue);
+    --accent-soft: var(--blue);
+    --accent-check: var(--blue);
+    --placeholder: var(--p-mist-500);
+    --text-soft: var(--p-mist-200);
+    --text-dim: var(--p-mist-300);
+    --demo: var(--muted);
+    --error: var(--p-red-300);
+    --danger-border: var(--p-red-300);
+    --danger-text: var(--p-red-300);
+    --danger-accent: var(--p-red-300);
+    --tag-red-border: var(--ink);
+    --tag-red-text: var(--ink);
+    --backdrop: rgba(0, 0, 0, 0.6);
 
-  --on-ink: var(--p-night-950);
-  --on-ink-soft: rgba(14, 15, 20, 0.75);
-  --surface-ghost: rgba(255, 255, 255, 0.09);
-  --surface-quote: rgba(255, 255, 255, 0.06);
-  --meter-off: var(--line);
-  --meter-on: var(--blue);
+    --on-ink: var(--p-night-950);
+    --on-ink-soft: rgba(14, 15, 20, 0.9);
+    --surface-ghost: rgba(255, 255, 255, 0.09);
+    --surface-quote: rgba(255, 255, 255, 0.06);
+    --meter-off: var(--line);
+    --meter-on: var(--blue);
 
-  --ink-dim: rgba(255, 255, 255, 0.6);
-  --track: rgba(255, 255, 255, 0.14);
-  --ring: rgba(255, 255, 255, 0.3);
-  --accent-track: rgba(138, 125, 255, 0.55);
-  --accent-fill: rgba(138, 125, 255, 0.2);
-  --logo-filter: grayscale(1) brightness(0) invert(0.93);
+    --ink-dim: rgba(255, 255, 255, 0.6);
+    --track: rgba(255, 255, 255, 0.14);
+    --ring: rgba(255, 255, 255, 0.3);
+    --accent-track: rgba(138, 125, 255, 0.55);
+    --accent-fill: rgba(138, 125, 255, 0.2);
+    --logo-filter: grayscale(1) brightness(0) invert(0.93);
 
-  --landing-label-bg: rgba(21, 23, 28, 0.85);
-  --landing-shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --landing-shadow-md: 0 14px 34px rgba(0, 0, 0, 0.45);
-  --landing-grid-line: rgba(255, 255, 255, 0.03);
+    --landing-label-bg: rgba(21, 23, 28, 0.85);
+    --landing-shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --landing-shadow-md: 0 14px 34px rgba(0, 0, 0, 0.45);
+    --landing-grid-line: rgba(255, 255, 255, 0.03);
 
-  --role-bar-bg: var(--glass);
-  --role-rule: var(--glass-border);
-  --role-nav-active: var(--ink);
+    --role-bar-bg: var(--glass);
+    --role-rule: var(--glass-border);
+    --role-nav-active: var(--ink);
+  }
 }
 
 /*

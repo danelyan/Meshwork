@@ -32,9 +32,9 @@ describe('fallbackReply', () => {
         degraded: true,
       },
     });
-    expect(text).toContain('Прочитал: резюме cv.pdf');
+    expect(text).toContain('Прочитала: резюме cv.pdf');
     expect(text).toContain('скрытый текст');
-    expect(text).toContain('Нашёл 1 утверждение, 2 отбросил');
+    expect(text).toContain('Нашла 1 утверждение, 2 отбросила');
     expect(text).toContain('Backend, Junior');
     expect(text).toContain('Категорию даёт только тест');
   });
@@ -48,7 +48,7 @@ describe('fallbackReply', () => {
     });
     expect(text).toContain('Новых утверждений нет: 3 уже в твоём профиле');
     expect(text).not.toContain('/profile');
-    expect(text).not.toContain('не нашёл');
+    expect(text).not.toContain('не нашла');
   });
 
   it('вопрос про вакансии → список по вакансиям платформы; модуль недоступен → честная фраза', async () => {

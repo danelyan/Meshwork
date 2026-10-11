@@ -221,7 +221,7 @@ describe('runTurn (stub LLM, моки модулей)', () => {
     const claims = events.find((e) => e.type === 'claims') as { proposed: { catalogId: string }[] };
     expect(claims.proposed.map((c) => c.catalogId).sort()).toEqual(['be.framework', 'be.idempotency']);
     const msg = lastMessage(events)?.text ?? '';
-    expect(msg).toContain('Нашёл 2 утверждения');
+    expect(msg).toContain('Нашла 2 утверждения');
     expect(msg).toContain('Backend, Middle');
     expect(await prisma.agentRun.count({ where: { purpose: 'consultant' } })).toBe(0);
   });

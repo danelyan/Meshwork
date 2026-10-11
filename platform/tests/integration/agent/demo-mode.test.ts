@@ -53,8 +53,8 @@ describe('демо-режим без модели (LLM_PROVIDER=stub, LLM_STUB_D
       { catalogId: 'be.idempotency', statement: 'выдумано', quote: 'нет такого текста', sourceRef: 'cv.pdf#p1:l7', confidence: 'low' },
     ]);
     const { text, steps } = await turn('Вот моё резюме', [up.id]);
-    expect(text).toContain('Прочитал: резюме');
-    expect(text).toContain('Нашёл 1 утверждение, 1 отбросил');
+    expect(text).toContain('Прочитала: резюме');
+    expect(text).toContain('Нашла 1 утверждение, 1 отбросила');
     expect(text).toContain('скрытый текст');
     expect(text).toContain('Backend, Middle');
     expect(text).toContain('Подтверди карточки - покажу подходящие вакансии');
@@ -75,7 +75,7 @@ describe('демо-режим без модели (LLM_PROVIDER=stub, LLM_STUB_D
     claimsMock.proposeClaims.mockImplementationOnce(async () => []);
     const { text, events } = await turn('Вот моё резюме', [up.id]);
     expect(text).toContain('Новых утверждений нет: 1 уже в твоём профиле');
-    expect(text).not.toContain('не нашёл');
+    expect(text).not.toContain('не нашла');
     const ev = events.find((e) => e.type === 'claims') as { alreadyKnown?: number; proposed: unknown[] };
     expect(ev.proposed).toEqual([]);
     expect(ev.alreadyKnown).toBe(1);

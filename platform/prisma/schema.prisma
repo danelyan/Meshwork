@@ -395,6 +395,8 @@ enum InvitationStatus {
   hired
   /// lane invite-cancel: работодатель отозвал приглашение (из sent/viewed/accepted) с причиной; финальный статус
   withdrawn
+  /// lane lifecycle: кандидат нанят другой компанией — открытые приглашения (sent/viewed/accepted) закрываются при найме; финальный
+  closed_hired
 }
 
 model Recommendation {
@@ -477,35 +479,40 @@ model Task {
 }
 
 model Invitation {
-  id                String           @id @default(cuid())
+  id                  String           @id @default(cuid())
   /// lane employer: null — приглашение без привязки к потребности (R-E-05)
-  vacancyId         String?
-  vacancy           Vacancy?         @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
-  candidateId       String
-  candidate         Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  status            InvitationStatus @default(sent)
+  vacancyId           String?
+  vacancy             Vacancy?         @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  candidateId         String
+  candidate           Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  status              InvitationStatus @default(sent)
   /// lane invite-contact: вилка предложения, ₽ в месяц (ТЗ 2.2: «зарплата от–до»); заменила salaryOffer
-  salaryFrom        Int
-  salaryTo          Int
-  message           String?
-  createdAt         DateTime         @default(now())
+  salaryFrom          Int
+  salaryTo            Int
+  message             String?
+  createdAt           DateTime         @default(now())
   /// lane employer: компания-отправитель (null только у строк до миграции без вакансии)
-  companyId         String?
-  company           Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId           String?
+  company             Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   /// lane employer: кто отправил
-  employerProfileId String?
-  employerProfile   EmployerProfile? @relation(fields: [employerProfileId], references: [id], onDelete: SetNull)
-  viewedAt          DateTime?
-  respondedAt       DateTime?
+  employerProfileId   String?
+  employerProfile     EmployerProfile? @relation(fields: [employerProfileId], references: [id], onDelete: SetNull)
+  viewedAt            DateTime?
+  respondedAt         DateTime?
   /// lane hired: когда работодатель отметил найм (status = hired)
-  hiredAt           DateTime?
+  hiredAt             DateTime?
   /// lane invite-cancel: когда и почему работодатель отозвал приглашение (status = withdrawn); причина видна кандидату
-  withdrawnAt       DateTime?
-  withdrawReason    String?
+  withdrawnAt         DateTime?
+  withdrawReason      String?
+  /// lane lifecycle: когда приглашение закрыто наймом кандидата другой компанией (status = closed_hired)
+  closedAt            DateTime?
+  /// lane lifecycle: приглашение создано из принятого самоотклика (accepted сразу; лимит 20/сутки не расходует)
+  sourceApplicationId String?          @unique
+  sourceApplication   Application?     @relation(fields: [sourceApplicationId], references: [id], onDelete: SetNull)
   /// lane complaints: жалоба кандидата на это приглашение (не больше одной)
-  complaint         Complaint?
+  complaint           Complaint?
   /// lane live-slots: предложения слотов живой защиты (ADR 0008); активное — activeKey = id приглашения
-  liveDefenses      LiveDefense[]
+  liveDefenses        LiveDefense[]
 
   @@index([candidateId, status])
   @@index([companyId, createdAt])
@@ -1274,6 +1281,8 @@ enum ApplicationStatus {
   viewed
   accepted
   declined
+  /// lane lifecycle: закрыт системой — вакансия закрыта или кандидат нанят другой компанией; причина в closeReason
+  closed
 }
 
 model Application {
@@ -1287,6 +1296,11 @@ model Application {
   createdAt   DateTime          @default(now())
   viewedAt    DateTime?
   respondedAt DateTime?
+  /// lane lifecycle: когда и почему отклик закрыт системой (status = closed)
+  closedAt    DateTime?
+  closeReason String?
+  /// lane lifecycle: приглашение, созданное при принятии отклика
+  invitation  Invitation?
 
   @@unique([vacancyId, candidateId])
   @@index([vacancyId, status])

@@ -16,7 +16,6 @@
 .nav a[aria-current='page'] { background: var(--ink); color: var(--on-ink); font-weight: 600; }
 .note { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 14px; }
 .note p { margin: 0 0 12px; font: var(--fs-xs)/1.6 var(--mono); color: var(--muted); }
-.logout { border: 0; padding: 8px 0; background: transparent; color: var(--muted); text-align: left; cursor: pointer; font: var(--fs-sm) var(--mono); }
 .content { min-width: 0; }
 @media (max-width: 1050px) {
   .frame { display: block; }

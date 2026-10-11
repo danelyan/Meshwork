@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import type { HeaderAccount } from '@/server/auth/role-plan';
 import { CANDIDATE_NAV, EMPLOYER_NAV, activeLinkHref } from './nav';
-import { LogoutButton } from './LogoutButton';
 import { CandidateSidebarSummary } from '@/components/candidate/CandidateSidebarSummary';
 import { EmployerConsultantDock } from '@/components/employer/EmployerConsultantDock';
 import styles from './DashboardFrame.module.css';
@@ -44,7 +43,6 @@ export function DashboardFrame({ account, children, employerSummary, bare = fals
       <div className={styles.note}>
         {isEmployer && employerSummary}
         <p>{isEmployer ? 'Имя и контакт кандидата откроются после принятия приглашения.' : 'Контакты доступны компании только после вашего согласия на приглашение.'}</p>
-        <LogoutButton className={styles.logout} />
       </div>
     </aside>}
     <div className={styles.content}>{children}</div>

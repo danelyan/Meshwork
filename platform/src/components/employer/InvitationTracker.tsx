@@ -11,7 +11,7 @@ import { INVITATION_STATUS_LABEL, NO_CANDIDATE_CONTACT, salaryRange } from './la
 import styles from './Employer.module.css';
 
 const FILTERS = [{ id: 'all', label: 'Все' }, { id: 'pending', label: 'Ждут ответа' }, { id: 'answered', label: 'С ответом' }] as const;
-const matches = (status: string, filter: string) => filter === 'all' || (filter === 'pending' ? status === 'sent' || status === 'viewed' : status === 'accepted' || status === 'declined' || status === 'hired' || status === 'withdrawn');
+const matches = (status: string, filter: string) => filter === 'all' || (filter === 'pending' ? status === 'sent' || status === 'viewed' : status === 'accepted' || status === 'declined' || status === 'hired' || status === 'withdrawn' || status === 'closed_hired');
 /** lane invite-cancel: отозвать можно до найма и до отказа кандидата. */
 const withdrawable = (status: string) => status === 'sent' || status === 'viewed' || status === 'accepted';
 

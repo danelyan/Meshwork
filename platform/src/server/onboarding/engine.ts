@@ -119,14 +119,6 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
       const r = z.object({ version: z.string().min(1).max(64) }).safeParse(value);
       return r.success ? r.data : fail('Нужна версия текста согласия');
     }
-    case 'consents': {
-      // Ноль галочек — допустимый ответ: каждое согласие необязательно для продолжения (ADR 0005).
-      const r = z.array(z.string()).max(enabled.length).safeParse(value);
-      if (!r.success) return fail('Отметь согласия из списка');
-      const uniq = [...new Set(r.data)];
-      if (uniq.some((v) => !enabled.includes(v))) return fail('Отметь согласия из списка');
-      return uniq;
-    }
     case 'role': {
       const r = z.enum(['candidate', 'employer']).safeParse(value);
       return r.success ? r.data : fail('Выбери роль');
@@ -151,8 +143,9 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
       return uniq;
     }
     case 'chips': {
-      const r = z.array(Custom).max(30).safeParse(value);
-      if (!r.success) return fail('До 30 пунктов, каждый до 60 символов');
+      const max = step.maxItems ?? 30;
+      const r = z.array(Custom).max(max).safeParse(value);
+      if (!r.success) return fail(`До ${max} пунктов, каждый до 60 символов`);
       const known = new Map(optionsOf(step, ctx).map((o) => [o.value.toLowerCase(), o.value]));
       const out: string[] = [];
       for (const v of r.data) {
@@ -212,8 +205,6 @@ export function answerLabel(step: StepDef, value: unknown, ctx: StepContext): st
   switch (step.kind) {
     case 'consent':
       return 'Согласен(на) на обработку данных';
-    case 'consents':
-      return Array.isArray(value) && value.length ? `Согласен(на): ${value.map(label).join('; ')}` : 'Без дополнительных согласий';
     case 'role':
     case 'one':
       return label(value);
@@ -243,7 +234,6 @@ export function answerLabel(step: StepDef, value: unknown, ctx: StepContext): st
 /** Ответ для шага, закрытого фактом (согласие, роль) без записи в состоянии. */
 export function factLabel(step: StepDef, ctx: StepContext): string {
   if (step.kind === 'consent') return 'Согласие дано';
-  if (step.kind === 'consents') return 'Согласия сохранены';
   if (step.kind === 'role') return ctx.facts.role === 'employer' ? 'Я работодатель' : 'Я специалист';
   if (step.id === 'companyName') return 'Компания создана';
   return '';

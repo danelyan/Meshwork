@@ -19,7 +19,6 @@ import { signUserSession } from '@/server/session';
 
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
-import { discloseAccepted, grantConsents, grantEmployerConsents } from '../../helpers/consents';
 
 const CAND = 'cand-dr';
 const CAND_COOKIE = `cid=${signUserSession({ userId: 'u-cand', role: 'candidate', candidateId: CAND })}`;
@@ -37,8 +36,7 @@ const WEAK = (req: { messages: { content: string }[] }) => ({ items: (parseConte
 async function seed(opts: { consent?: boolean } = {}) {
   await prisma.candidate.create({ data: { id: CAND, email: 'c@example.com', name: 'Кандидат Защиты' } });
   await prisma.user.create({ data: { id: 'u-cand', name: 'Кандидат', role: 'candidate', candidateId: CAND } });
-  if (opts.consent !== false) await prisma.consent.create({ data: { userId: 'u-cand', kind: 'call_recording', version: CALL_RECORDING_CONSENT_VERSION } });
-  await grantConsents('u-cand', ['ai_assessment']); // Г3 (ADR 0005): защиту оценивает ИИ
+  if (opts.consent !== false) await prisma.consent.create({ data: { userId: 'u-cand', version: CALL_RECORDING_CONSENT_VERSION } });
   for (const x of ['a', 'b']) {
     await prisma.company.create({ data: { id: `co-${x}`, name: x === 'a' ? 'Альфа' : 'Бета' } });
     await prisma.user.create({ data: { id: `u-emp-${x}`, name: `HR ${x}`, role: 'employer' } });
@@ -47,8 +45,6 @@ async function seed(opts: { consent?: boolean } = {}) {
   // Приглашение принято только компанией A.
   await prisma.invitation.create({ data: { candidateId: CAND, companyId: 'co-a', status: 'accepted', salaryFrom: 200000, salaryTo: 250000 } });
   await prisma.invitation.create({ data: { candidateId: CAND, companyId: 'co-b', status: 'sent', salaryFrom: 200000, salaryTo: 250000 } });
-  await discloseAccepted(); // Г5 (ADR 0005): принятие = раскрытие по приглашению
-  await grantEmployerConsents(['u-emp-a', 'u-emp-b']); // оферта (ADR 0005): комната — данные кандидата
   // ProjectSubmission ссылается на ProjectTask (lane project): минимальные шаблон, потребность и задание.
   await prisma.projectTemplate.create({ data: { id: 'tpl-1', subcategoryId: 'backend.integrations', specialization: 'backend', grade: 'middle', title: 'Платежи', contractMd: '#', dirRef: 'x', hiddenTestsRef: 'hidden', visibleTestsRef: 'visible', image: 'node20', timeBudgetMin: 240 } });
   await prisma.vacancy.create({ data: { id: 'vac-1', companyId: 'co-a', title: 'Backend', specialization: 'backend', grade: 'middle', salaryFrom: 200000, salaryTo: 250000, needs: [] } });
@@ -304,7 +300,6 @@ describe('защита: доступ, лимиты, гонки', () => {
   it('одна компания в эфире: вторая получает room_busy, в том числе при одновременном join', async () => {
     await seed();
     await acceptB();
-    await discloseAccepted();
     const { sessionId } = await (await start()).json();
     const [a, b] = await Promise.all([joinRoute(post('/x', {}, EMP_A), params(sessionId)), joinRoute(post('/x', {}, EMP_B), params(sessionId))]);
     expect([a.status, b.status].sort()).toEqual([200, 409]);
@@ -328,31 +323,6 @@ describe('защита: доступ, лимиты, гонки', () => {
     const limited = await start();
     expect(limited.status).toBe(429);
     expect((await limited.json()).error.code).toBe('call_limit');
-  });
-
-  it('Г3 отозван посреди защиты: ход и finish — 409 consent_required, оценщик не запускается', async () => {
-    await seed();
-    const { sessionId } = await (await start()).json();
-    let evalCalls = 0;
-    registerStubResponse('call_evaluator', (req) => { evalCalls++; return { json: WEAK(req) }; });
-    await prisma.consent.updateMany({ where: { userId: 'u-cand', kind: 'ai_assessment' }, data: { revokedAt: new Date() } });
-    const t = await turnRoute(post('/x', { text: 'Задержка растёт экспоненциально.' }, CAND_COOKIE), params(sessionId));
-    expect(t.status).toBe(409);
-    expect((await t.json()).error.code).toBe('consent_required');
-    const f = await finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId));
-    expect(f.status).toBe(409);
-    expect(evalCalls).toBe(0);
-    expect((await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId } })).status).toBe('active');
-  });
-
-  it('работодатель без оферты: комната защиты и подключение закрыты (409 consent_required)', async () => {
-    await seed();
-    const { sessionId } = await (await start()).json();
-    await prisma.consent.deleteMany({ where: { userId: 'u-emp-a' } });
-    const j = await joinRoute(post('/x', {}, EMP_A), params(sessionId));
-    expect(j.status).toBe(409);
-    expect((await j.json()).error.code).toBe('consent_required');
-    expect((await snapshotRoute(jsonRequest('/x', 'GET', undefined, EMP_A), params(sessionId))).status).toBe(409);
   });
 
   it('два параллельных finish: оценщик запускается один раз, второй — 409 busy или тот же вердикт', async () => {
@@ -390,7 +360,6 @@ describe('защита: доступ, лимиты, гонки', () => {
   it('изоляция компаний: вопрос A и ответ на него не видны B; список вопросов — только свои', async () => {
     await seed();
     await acceptB();
-    await discloseAccepted();
     const qa = (await (await askRoute(post('/x', { candidateId: CAND, text: 'Какая у тебя зарплатная вилка в Альфе?' }, EMP_A))).json()).id as string;
     await askRoute(post('/x', { candidateId: CAND, text: 'Что поменять в retry для Беты?' }, EMP_B));
     const listB = await (await listQuestions(jsonRequest(`/api/employer/questions?candidateId=${CAND}`, 'GET', undefined, EMP_B))).json();

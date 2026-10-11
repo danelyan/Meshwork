@@ -27,3 +27,17 @@ button.row:hover { background: var(--surface-notice); }
 .identity h2 { font-size: 17px; }
 .previewRows > div { padding: 12px 0; border-top: 1px solid var(--line); }
 .notice { border-top: 1px solid var(--line); padding-top: 14px; }
+/* The starter draft is a compact live summary, with private self-report kept separate. */
+.intakeDraft { gap: 10px; }
+.intakeDraft .tabs button { min-height: 34px; padding: 7px 8px; font-size: 10px; }
+.intakeDraft .card header { padding: 14px; }
+.intakeDraft h2 { font-size: 18px; margin: 4px 0 6px; }
+.intakeDraft .card header p { font-size: 11px; }
+.intakeDraft .card header > span { margin-top: 8px; }
+.fieldGroup h3 { margin: 0; padding: 12px 14px 7px; border-top: 1px solid var(--line); font: 500 10px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.intakeDraft .row { padding: 8px 14px; gap: 4px; }
+.intakeDraft .rowTitle { font-size: 10px; }
+.intakeDraft .rowTitle small { font-size: 8px; }
+.intakeDraft .value { font-size: 12px; line-height: 1.45; }
+.intakeDraft .now { font-size: 9px; }
+.intakeDraft .card footer { padding: 12px 14px; font-size: 9px; }

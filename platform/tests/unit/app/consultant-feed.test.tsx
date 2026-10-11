@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   loadLastEmployerChat: vi.fn(async () => ({ conversationId: 'e-conv', items: [] })),
   loadCandidateAside: vi.fn(async () => undefined),
   loadEmployerAside: vi.fn(async () => undefined),
+  resolveCallKind: vi.fn(async () => 'qualifying'),
 }));
 class Redirect extends Error {
   constructor(readonly to: string) {
@@ -30,6 +31,7 @@ vi.mock('@/server/demo/context', () => ({
 }));
 vi.mock('@/server/demo/mode', () => ({ llmIsDemoStub: () => true }));
 vi.mock('@/server/onboarding/service', () => ({ onboardingInFeed: m.inFeed, getView: m.getView }));
+vi.mock('@/server/interview/context', () => ({ resolveCallKind: m.resolveCallKind }));
 // Feed composition is independent of the database-backed sidebar loaders.
 vi.mock('@/server/consultant/aside', () => ({ loadCandidateAside: m.loadCandidateAside, loadEmployerAside: m.loadEmployerAside }));
 vi.mock('@/components/Chat', () => ({ Chat: () => null }));
@@ -39,15 +41,16 @@ vi.mock('@/components/onboarding/PausedFeed', () => ({ PausedFeed: () => null })
 vi.mock('@/components/head/ConsultantScene', () => ({ ConsultantScene: ({ children }: { children: unknown }) => children }));
 
 type El = ReactElement<Record<string, unknown>>;
-async function inner(): Promise<El> {
+async function inner(query?: { mode?: string; edit?: string; call?: string }): Promise<El> {
   const { default: Page } = await import('@/app/(shared)/consultant/page');
-  let scene = (await Page()) as ReactElement<{ children: El }>;
+  let scene = (await Page(query ? { searchParams: Promise.resolve(query) } : undefined)) as ReactElement<{ children: El }>;
   // Страница отдаёт серверный компонент роли (CandidateHome / EmployerHome) - раскрываем его до сцены.
   if (typeof scene.type === 'function' && /Home$/.test(scene.type.name)) {
     const Home = scene.type as (props: unknown) => Promise<ReactElement<{ children: El }>>;
     scene = await Home(scene.props);
   }
-  return scene.props.children;
+  const { OnboardingChat } = await import('@/components/onboarding/OnboardingChat');
+  return scene.type === OnboardingChat ? scene as El : scene.props.children;
 }
 async function redirected(): Promise<string> {
   try {
@@ -66,15 +69,34 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe('кандидат', () => {
-  it('знакомство не завершено или пройдено в чате — лента онбординга с разговором консультанта', async () => {
+  it('незавершённое знакомство — чистый intake без рыночной панели и созвона', async () => {
     const { OnboardingChat } = await import('@/components/onboarding/OnboardingChat');
     const el = await inner();
     expect(el.type).toBe(OnboardingChat);
-    expect(el.props.variant).toBe('consultant');
+    expect(el.props.variant).toBe('intake');
     expect(el.props.consultant).toEqual({ demo: { noLlm: true, resume: null }, restored: { conversationId: 'conv-1', items: [] } });
     expect(m.getView).toHaveBeenCalledWith('u1');
-    expect(m.loadCandidateAside).toHaveBeenCalledWith('c1', expect.objectContaining({ onboarded: false }));
+    expect(m.loadCandidateAside).not.toHaveBeenCalled();
+    expect(m.resolveCallKind).not.toHaveBeenCalled();
     expect(m.loadEmployerAside).not.toHaveBeenCalled();
+  });
+
+  it('завершённое знакомство открывает основной чат, а ответы остаются в знакомстве', async () => {
+    m.getView.mockResolvedValueOnce({ current: { kind: 'summary' }, onboarded: true });
+    const { Chat } = await import('@/components/Chat');
+    expect((await inner()).type).toBe(Chat);
+    expect(m.loadCandidateAside).toHaveBeenCalledWith('c1', expect.objectContaining({ onboarded: true }));
+  });
+
+  it('готовый аккаунт может явно открыть знакомство без сброса или повторной регистрации', async () => {
+    m.getView.mockResolvedValueOnce({ current: { kind: 'summary' }, onboarded: true });
+    const { OnboardingChat } = await import('@/components/onboarding/OnboardingChat');
+    const el = await inner({ mode: 'intake' });
+    expect(el.type).toBe(OnboardingChat);
+    expect(el.props.variant).toBe('intake');
+    expect((el.props.initial as { onboarded: boolean }).onboarded).toBe(true);
+    expect(m.inFeed).not.toHaveBeenCalled();
+    expect(m.loadCandidateAside).not.toHaveBeenCalled();
   });
 
   it('«Настроить позже» (view.later) — пауза: шаги + свободный разговор', async () => {
@@ -114,7 +136,7 @@ describe('роль не выбрана', () => {
     const { OnboardingChat } = await import('@/components/onboarding/OnboardingChat');
     const el = await inner();
     expect(el.type).toBe(OnboardingChat);
-    expect(el.props.variant).toBe('consultant');
+    expect(el.props.variant).toBe('intake');
     expect(m.loadLastChat).not.toHaveBeenCalled();
     expect(m.loadCandidateAside).not.toHaveBeenCalled();
     expect(m.loadEmployerAside).not.toHaveBeenCalled();

@@ -3,7 +3,6 @@ import path from 'node:path';
 
 import { catalogFromFile } from '@/server/claims/catalog-file';
 import { CALL_RECORDING_CONSENT_PARAGRAPHS, CONSENT_PARAGRAPHS } from '@/server/onboarding/consent-text';
-import { CONSENT_TEXTS } from '@/server/consent/texts';
 import {
   AnswerError,
   answerLabel,
@@ -23,13 +22,31 @@ import { assemblePrompt } from '@/server/agent/prompts/assemble';
 import { BASE_STEPS, CANDIDATE_STEPS, EMPLOYER_STEPS, findStep } from '@/server/onboarding/scenario';
 import type { Answers, Facts, StepContext } from '@/server/onboarding/types';
 
-// Согласия онбординга (ADR 0005) по умолчанию уже решены: проверки порядка шагов — без шага consents.
-const facts = (f: Partial<Facts> = {}): Facts => ({ role: 'pending', consent: false, candidateConsents: true, employerConsents: true, name: 'Иван Петров', fspState: null, specialization: null, ...f });
+const facts = (f: Partial<Facts> = {}): Facts => ({ role: 'pending', consent: false, name: 'Иван Петров', fspState: null, specialization: null, ...f });
 const ctx = (answers: Answers = {}, f: Partial<Facts> = {}): StepContext => ({ answers, facts: facts(f) });
 const ids = (c: StepContext) => visibleSteps(c).map((s) => s.id);
 const step = (id: string) => findStep(id)!;
 
 describe('сценарий онбординга', () => {
+  it('первичное знакомство идёт от цели и опыта к грейду, материалам и условиям; ФСП в конце', () => {
+    expect(CANDIDATE_STEPS.map((s) => s.id)).toEqual(['goal', 'specialization', 'subcategory', 'experience', 'experienceSummary', 'candidateIndustries', 'grade', 'stack', 'documents', 'formats', 'city', 'salary', 'candidateContact', 'fspParticipation', 'fsp']);
+  });
+
+  it('новые self-report поля приватны, необязательны и ограничены; произвольного грейда нет', () => {
+    const c = ctx({}, { role: 'candidate', consent: true });
+    for (const id of ['experience', 'experienceSummary', 'candidateIndustries']) {
+      expect(step(id).required).not.toBe(true);
+      expect(step(id).target).toContain('OnboardingState.answers.');
+    }
+    expect(validateAnswer(step('experience'), 'oneToThree', c)).toBe('oneToThree');
+    expect(() => validateAnswer(step('experience'), 'senior', c)).toThrow(AnswerError);
+    expect(() => validateAnswer(step('experienceSummary'), 'x'.repeat(1001), c)).toThrow(AnswerError);
+    expect(validateAnswer(step('experienceSummary'), 'x'.repeat(1000), c)).toHaveLength(1000);
+    expect(() => validateAnswer(step('candidateIndustries'), Array(13).fill('Образование'), c)).toThrow(AnswerError);
+    expect(() => validateAnswer(step('candidateIndustries'), ['x'.repeat(61)], c)).toThrow(AnswerError);
+    expect(() => validateAnswer(step('grade'), 'principal', c)).toThrow(AnswerError);
+  });
+
   it('каждый шаг трассируется на R-* и цель записи', () => {
     for (const s of [...CANDIDATE_STEPS, ...EMPLOYER_STEPS]) {
       expect(s.req).toMatch(/R-[A-Z]+-\d+/);
@@ -42,18 +59,6 @@ describe('сценарий онбординга', () => {
     expect(ids(ctx({ role: 'candidate' }))).toContain('goal');
     expect(ids(ctx({}, { role: 'employer' }))).toContain('needSalary');
     expect(ids(ctx({}, { role: 'employer' }))).not.toContain('goal');
-  });
-
-  it('согласия (ADR 0005): шаг consents первым у кандидата и после названия компании у работодателя; ноль галочек — ответ', () => {
-    const c = ctx({}, { consent: true, role: 'candidate', candidateConsents: false });
-    expect(nextOpen(c, [], null).id).toBe('candidateConsents');
-    expect(validateAnswer(step('candidateConsents'), [], c)).toEqual([]);
-    expect(validateAnswer(step('candidateConsents'), ['ai_assessment', 'ai_assessment'], c)).toEqual(['ai_assessment']);
-    expect(() => validateAnswer(step('candidateConsents'), ['employer_offer'], c)).toThrow(AnswerError);
-    expect(answerLabel(step('candidateConsents'), [], c)).toBe('Без дополнительных согласий');
-    const e = ctx({}, { consent: true, role: 'employer', employerConsents: false });
-    expect(ids(e).slice(ids(e).indexOf('companyName'), ids(e).indexOf('companyName') + 2)).toEqual(['companyName', 'employerConsents']);
-    expect(isClosed(step('candidateConsents'), ctx({}, { role: 'candidate', candidateConsents: true }), [])).toBe(true);
   });
 
   it('условия: город — только при офисе или гибриде; участие в ФСП — если ФСП ID не привязан', () => {
@@ -100,8 +105,8 @@ describe('движок: переходы, пропуски, восстановл
 
   it('следующий — первый незакрытый после текущего; пропуск закрывает шаг', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
-    expect(nextOpen(c, [], 'goal').id).toBe('documents');
-    expect(nextOpen(c, ['documents'], 'goal').id).toBe('fsp');
+    expect(nextOpen(c, [], 'goal').id).toBe('specialization');
+    expect(nextOpen(c, ['specialization'], 'goal').id).toBe('experience');
   });
 
   it('из итога вернулись к пропущенному и ответили — снова итог', () => {
@@ -117,17 +122,17 @@ describe('движок: переходы, пропуски, восстановл
 
   it('незакрытый шаг раньше текущего не теряется (пропуск через goto)', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
-    // Последний шаг ответили, а documents открыт — после последнего ведём к нему, а не на итог.
-    expect(nextOpen(c, [], 'fspParticipation').id).toBe('documents');
+    // Последний шаг ответили, но прежний незакрытый вопрос не потерялся.
+    expect(nextOpen(c, [], 'fsp').id).toBe('specialization');
   });
 
   it('восстановление: сохранённый шаг продолжается после перезагрузки; закрытый фактом — пропускается', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
     expect(currentStep(c, { stepId: 'grade', answers: c.answers, skipped: [] }).id).toBe('grade');
-    expect(currentStep(c, { stepId: 'consent', answers: c.answers, skipped: [] }).id).toBe('documents');
-    expect(currentStep(c, { stepId: 'city', answers: c.answers, skipped: [] }).id).toBe('documents'); // city не виден
+    expect(currentStep(c, { stepId: 'consent', answers: c.answers, skipped: [] }).id).toBe('specialization');
+    expect(currentStep(c, { stepId: 'city', answers: c.answers, skipped: [] }).id).toBe('specialization'); // city не виден
     // итог, когда есть открытые шаги, не показываем
-    expect(currentStep(c, { stepId: 'summary', answers: c.answers, skipped: [] }).id).toBe('documents');
+    expect(currentStep(c, { stepId: 'summary', answers: c.answers, skipped: [] }).id).toBe('specialization');
   });
 
   it('прогресс: пока роль не выбрана — по длине сценария кандидата; пропуск считается пройденным', () => {
@@ -135,7 +140,7 @@ describe('движок: переходы, пропуски, восстановл
     expect(p0.done).toBe(0);
     expect(p0.total).toBe(visibleSteps(ctx({ role: 'candidate' })).length - 1);
     const p1 = progress(ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' }), ['documents']);
-    expect(p1.done).toBe(4); // роль, согласия онбординга (ADR 0005), цель, документы: согласие Г1 взято при регистрации и в чате не считается
+    expect(p1.done).toBe(3); // роль, цель, документы: согласие взято при регистрации и в чате не считается
   });
 
   it('роль из аккаунта: пока согласие не дано, шаг роли не в ленте и не в прогрессе', () => {
@@ -144,7 +149,7 @@ describe('движок: переходы, пропуски, восстановл
     expect(historyOf(c, { stepId: null, answers: c.answers, skipped: [] }, step('consent'))).toEqual([]);
     expect(progress(c, []).done).toBe(0);
     const c2 = ctx({}, { role: 'candidate', consent: true });
-    expect(progress(c2, []).done).toBe(2); // роль и шаг согласий (по умолчанию в фикстуре решён)
+    expect(progress(c2, []).done).toBe(1);
   });
 
   it('согласие взято при регистрации: шага согласия в чате нет, первый вопрос — роль с приветствием без модели', () => {
@@ -161,7 +166,7 @@ describe('движок: переходы, пропуски, восстановл
   it('лента — закрытые шаги без текущего', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
     const h = historyOf(c, { stepId: 'goal', answers: c.answers, skipped: [] }, step('goal'));
-    expect(h.map((s) => s.id)).toEqual(['role', 'candidateConsents']);
+    expect(h.map((s) => s.id)).toEqual(['role']);
   });
 });
 
@@ -312,13 +317,9 @@ describe('реплики помощника', () => {
     const facts = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/platform-facts.md'), 'utf8');
     expect(ONBOARDING_PROMPT).toBe(assemblePrompt(md, facts));
   });
-  it('тексты согласий совпадают с docs/consent.md (все виды, ADR 0005)', () => {
+  it('текст согласия совпадает с docs/consent.md', () => {
     const md = readFileSync(path.join(process.cwd(), '../docs/consent.md'), 'utf8').replace(/\s+/g, ' ');
     for (const p of [...CONSENT_PARAGRAPHS, ...CALL_RECORDING_CONSENT_PARAGRAPHS]) expect(md).toContain(p);
-    for (const t of Object.values(CONSENT_TEXTS)) {
-      expect(md).toContain(t.version);
-      for (const p of t.paragraphs) expect(md).toContain(p);
-    }
   });
 });
 

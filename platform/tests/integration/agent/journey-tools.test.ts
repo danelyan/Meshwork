@@ -57,6 +57,21 @@ describe('инструменты «ведёт по платформе»', () => 
     expect(r.json).toMatchObject({ nextStep: 'onboarding', steps: { onboarding: false, documents: false } });
   });
 
+  it('get_onboarding_status: приватный опыт читается только из своей анкеты, маскируется и не становится доказательством', async () => {
+    const user = await prisma.user.create({ data: { name: 'К', role: 'candidate', candidateId: CAND } });
+    await prisma.onboardingState.create({ data: { userId: user.id, stepId: 'grade', answers: { experience: 'oneToThree', experienceSummary: 'Делал API. person@example.org', candidateIndustries: ['Образование'] } } });
+    const other = await prisma.user.create({ data: { name: 'Другой', role: 'candidate' } });
+    await prisma.onboardingState.create({ data: { userId: other.id, stepId: 'grade', answers: { experienceSummary: 'Чужой секретный проект' } } });
+    const result = await call('get_onboarding_status');
+    expect(result.ok).toBe(true);
+    expect(result.content).toMatch(/^<external_data source="tool:get_onboarding_status" trust="untrusted">/);
+    expect(result.json).toMatchObject({ intake: { experience: 'oneToThree', experienceSummary: 'Делал API. [скрыто]', candidateIndustries: ['Образование'] }, counts: { confirmed: 0 } });
+    expect(result.content).not.toContain('person@example.org');
+    expect(result.content).not.toContain('Чужой секретный проект');
+    expect(await prisma.claim.count({ where: { candidateId: CAND } })).toBe(0);
+    expect(await prisma.candidateCategory.count({ where: { candidateId: CAND } })).toBe(0);
+  });
+
   it('get_onboarding_status: онбординг пройден, карточки ждут ответа → confirm_claims; приглашение — вне очереди', async () => {
     await prisma.user.create({ data: { name: 'К', role: 'candidate', candidateId: CAND, onboardedAt: new Date() } });
     await seedClaim('proposed');

@@ -70,7 +70,7 @@ describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
 
   it('только ask_user завершает ход; untrusted — ровно читающие внешний текст', () => {
     expect(tools.filter((t) => t.terminal).map((t) => t.name)).toEqual(['ask_user']);
-    expect(tools.filter((t) => t.untrusted).map((t) => t.name).sort()).toEqual(['fetch_profile', 'fetch_url', 'get_invitations', 'read_upload', 'web_search']);
+    expect(tools.filter((t) => t.untrusted).map((t) => t.name).sort()).toEqual(['fetch_profile', 'fetch_url', 'get_invitations', 'get_onboarding_status', 'read_upload', 'web_search']);
   });
 });
 

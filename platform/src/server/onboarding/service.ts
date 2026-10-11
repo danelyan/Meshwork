@@ -3,8 +3,6 @@ import type { Prisma } from '@prisma/client';
 import { getSubcategory, isSpecialization, SPEC_ROLE, subcategoryMatches } from '@/lib/directions';
 import { CONSENT_VERSION, hasCurrentConsent, recordConsent } from '@/server/auth/consent';
 import { chooseRole } from '@/server/auth/users';
-import { grantConsent } from '@/server/consent/service';
-import { CANDIDATE_ONBOARDING_KINDS, EMPLOYER_ONBOARDING_KINDS, consentVersion, type ConsentKindName } from '@/server/consent/texts';
 import { prisma } from '@/server/db';
 import { AppError, errors } from '@/server/errors';
 import { loadCatalog } from '@/server/recommend/evidence';
@@ -28,7 +26,7 @@ import {
 } from './engine';
 import { computeNeeds } from './needs';
 import { type PrevAnswer, leadFor, templateLead } from './phrase';
-import { GRADES, findStep, scenarioSteps } from './scenario';
+import { GRADES, PRIVATE_INTAKE_STEPS, findStep, scenarioSteps } from './scenario';
 import type { Answers, Facts, OnboardingView, StepContext, StepDef, StepView, SummaryView } from './types';
 import { GRADE_LABEL } from '@/lib/grades';
 
@@ -50,6 +48,8 @@ const CABINET = { candidate: '/consultant', employer: '/employer' } as const;
 type Meta = {
   vacancies?: Partial<Record<Grade, string>>;
   later?: boolean;
+  /** Candidate opened one field from a paused/completed profile, rather than continuous first intake. */
+  manualProfileEdit?: boolean;
   doneRoles?: ('candidate' | 'employer')[];
   /** Шаг, пауза и итог неактивной роли (ADR 0004, `swapRoleOnboarding`); правки meta здесь его сохраняют. */
   byRole?: Record<string, unknown>;
@@ -74,14 +74,9 @@ async function load(userId: string) {
   });
   if (!user) throw errors.notFound('Аккаунт не найден');
   const consent = await hasCurrentConsent(userId);
-  const decided = new Set(
-    (await prisma.consent.findMany({ where: { userId, kind: { in: [...CANDIDATE_ONBOARDING_KINDS, ...EMPLOYER_ONBOARDING_KINDS] } }, select: { kind: true }, distinct: ['kind'] })).map((c) => c.kind as string),
-  );
   const facts: Facts = {
     role: user.role,
     consent,
-    candidateConsents: CANDIDATE_ONBOARDING_KINDS.some((k) => decided.has(k)),
-    employerConsents: EMPLOYER_ONBOARDING_KINDS.some((k) => decided.has(k)),
     name: user.name,
     fspState: user.candidate?.fspState ?? null,
     specialization: user.candidate?.specialization ?? null,
@@ -103,6 +98,11 @@ async function load(userId: string) {
     answers: { ...((st?.answers as Answers | undefined) ?? {}), ...recovered },
     skipped: st?.skipped ?? [],
   };
+  // New optional intake fields must not reopen a completed older questionnaire.
+  // Explicit goto still opens a skipped field, and an answer removes its skip.
+  if (user.role === 'candidate' && user.onboardedAt) {
+    state.skipped = [...new Set([...state.skipped, ...PRIVATE_INTAKE_STEPS.filter((id) => !Object.prototype.hasOwnProperty.call(state.answers, id))])];
+  }
   return {
     user,
     state,
@@ -192,22 +192,16 @@ function laterTarget(l: Loaded): string {
   return CABINET[l.ctx.facts.role];
 }
 
-/** Ссылка на тест с рекомендацией из знакомства: направление и заявленный грейд (как в CandidateSkills). */
-function testHref(l: Loaded): string {
-  if (GRADE_TEST_PATH === null) return '/profile';
-  const spec = l.ctx.facts.specialization;
-  const grade = l.ctx.answers.grade;
-  if (!spec) return GRADE_TEST_PATH;
-  return `${GRADE_TEST_PATH}?specialization=${encodeURIComponent(spec)}${typeof grade === 'string' && grade ? `&grade=${encodeURIComponent(grade)}` : ''}`;
-}
-
 /** Вид онбординга. Генерирует (и запоминает) реплику помощника для текущего шага. */
 export async function getView(userId: string, signal?: AbortSignal): Promise<OnboardingView> {
   const l = await load(userId);
   const current = completedProfileStep(l, l.state.stepId) ?? currentStep(l.ctx, l.state);
   let lines = l.lines;
   if (!lines[current.id]) {
-    const lead = await leadFor(current, l.ctx, prevOf(current, l), { candidateId: l.user.candidateId, signal });
+    const prev = prevOf(current, l);
+    const lead = !l.ctx.facts.consent || l.ctx.facts.role === 'pending'
+      ? templateLead(current, l.ctx, prev)
+      : await leadFor(current, l.ctx, prev, { candidateId: l.user.candidateId, signal });
     lines = { ...lines, [current.id]: lead };
     await save(userId, { stepId: current.id, lines });
   } else if (l.state.stepId !== current.id) {
@@ -244,7 +238,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
       lead: lines[s.id] ?? templateLead(s, l.ctx, prevOf(s, l)),
       question: s.question,
       answer: answered ? answerLabel(s, l.ctx.answers[s.id], l.ctx) : skipped ? null : factLabel(s, l.ctx),
-      editable: !s.doneBy?.(l.ctx) && s.kind !== 'consent' && s.kind !== 'consents' && s.kind !== 'role',
+      editable: !s.doneBy?.(l.ctx) && s.kind !== 'consent' && s.kind !== 'role',
     };
   });
 
@@ -258,7 +252,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
     current: view,
     summary: current.kind === 'summary' ? summaryOf(l) : null,
     laterTarget: laterTarget(l),
-    test: { href: testHref(l), ready: GRADE_TEST_PATH !== null },
+    test: { href: GRADE_TEST_PATH ?? '/profile', ready: GRADE_TEST_PATH !== null },
     onboarded: l.user.onboardedAt !== null,
     later: isPaused(l),
   };
@@ -302,15 +296,6 @@ async function apply(l: Loaded, step: StepDef, value: unknown): Promise<boolean>
     case 'consent':
       await recordConsent(userId, (value as { version: string }).version);
       return false;
-    case 'candidateConsents':
-    case 'employerConsents': {
-      // ADR 0005: каждая отмеченная галочка — своё согласие текущей версии. Без Г4 профиль скрыт от работодателей.
-      for (const kind of value as ConsentKindName[]) await grantConsent(userId, { kind, version: consentVersion(kind) });
-      if (step.id === 'candidateConsents' && !(value as string[]).includes('employer_visibility')) {
-        await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { hiddenFromEmployers: true } });
-      }
-      return false;
-    }
     case 'role':
       if (l.ctx.facts.role !== 'pending') throw errors.conflict('Роль уже выбрана');
       if (value === 'candidate') {
@@ -475,13 +460,12 @@ export async function recordFspLink(userId: string): Promise<void> {
 }
 
 /**
- * Знакомство кандидата — вопросы-подсказки в чате консультанта, без отдельного режима (решение владельца 11.10):
- * после ответа или пропуска лента возвращается в разговор; следующий вопрос кандидат открывает сам
- * («Дополнить профиль» в чате или в «Что я о тебе знаю»). Обязательный шаг (подкатегория после
- * направления) и итог идут сразу. Работодатель проходит шаги подряд, как раньше: из них собирается вакансия.
+ * First candidate intake advances continuously. A field opened from a paused or
+ * completed profile returns to chat after its required dependent steps. Explicit
+ * «Настроить позже» remains a pause; the employer flow is unchanged.
  */
 function backToChat(l: Loaded, next: StepDef): boolean {
-  return l.ctx.facts.role === 'candidate' && l.ctx.facts.consent && l.user.onboardedAt === null && !next.required && next.kind !== 'summary';
+  return l.ctx.facts.role === 'candidate' && l.ctx.facts.consent && l.meta.manualProfileEdit === true && !next.required && next.kind !== 'summary';
 }
 
 export async function skipStep(userId: string, stepId: string): Promise<MutationResult> {
@@ -500,13 +484,19 @@ export async function gotoStep(userId: string, stepId: string): Promise<Mutation
   const l = await load(userId);
   const step = stepOr409(l, stepId);
   if (step.kind !== 'summary' && step.doneBy?.(l.ctx)) throw errors.conflict('Этот шаг уже пройден');
-  await save(userId, { stepId: step.id, ...(l.meta.later ? { meta: resumed(l.meta) } : {}) });
+  // The paused feed resumes the current step; a different field is a one-field edit.
+  const continuing = l.ctx.facts.role === 'candidate' && l.user.onboardedAt === null && l.meta.later === true && step.id === l.state.stepId;
+  const manual = !continuing && l.ctx.facts.role === 'candidate' && (l.user.onboardedAt !== null || l.meta.later === true);
+  const meta = manual ? { ...resumed(l.meta), manualProfileEdit: true } : l.meta.later ? { ...resumed(l.meta) } : undefined;
+  if (continuing && meta) delete meta.manualProfileEdit;
+  await save(userId, { stepId: step.id, ...(meta ? { meta } : {}) });
   return { sessionChanged: false };
 }
 
 /** Пауза знакомства имеет смысл у кандидата и работодателя с незавершённым онбордингом (до выбора роли — нет). */
 function isPaused(l: Loaded): boolean {
-  return l.meta.later === true && (l.ctx.facts.role === 'candidate' || l.ctx.facts.role === 'employer') && l.user.onboardedAt === null;
+  return l.meta.later === true && (l.ctx.facts.role === 'candidate' || l.ctx.facts.role === 'employer') &&
+    (l.user.onboardedAt === null || (l.ctx.facts.role === 'candidate' && l.meta.manualProfileEdit === true));
 }
 
 /** Роль, у которой «Настроить позже» — пауза в ленте /consultant, а не уход со страницы. */

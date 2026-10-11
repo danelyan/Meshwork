@@ -36,3 +36,12 @@ it('stub (демо) — модель не вызывается', async () => {
   expect(await leadFor(findStep('documents')!, ctx, prev)).toMatch(/компании найдут тебя сами/);
   expect(complete).not.toHaveBeenCalled();
 });
+
+it('private experience summary contacts are masked before the next lead reaches the model', async () => {
+  complete.mockResolvedValue({ kind: 'text', text: 'Уточним предметную область.' });
+  await leadFor(findStep('candidateIndustries')!, ctx, { step: findStep('experienceSummary')!, value: 'Проект', label: 'Разработала API. person@example.org, +7 999 123-45-67' });
+  const req = complete.mock.calls[0]![0] as CompleteRequest;
+  expect(req.messages[0]!.content).not.toContain('person@example.org');
+  expect(req.messages[0]!.content).not.toContain('999');
+  expect(JSON.parse(req.messages[0]!.content).previous.answer).toContain('[скрыто]');
+});

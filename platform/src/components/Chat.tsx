@@ -256,6 +256,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
             <span className={styles.subtitle}>Ведёт по платформе</span>
           </div>
           <nav className={styles.routes} aria-label="Следующий шаг">
+            <Button href="/consultant?mode=intake" size="sm">Знакомство</Button>
             <Button href="/profile" size="sm">Профиль</Button>
             <Button href="/test" size="sm">Тест</Button>
           </nav>

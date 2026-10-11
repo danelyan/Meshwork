@@ -1,7 +1,5 @@
 import { isSpecialization, SPEC_LABEL, SPEC_NOTE, SPECIALIZATIONS, type Specialization, subcategoriesFor } from '@/lib/directions';
 
-import { CANDIDATE_ONBOARDING_KINDS, CONSENT_TEXTS, EMPLOYER_ONBOARDING_KINDS } from '@/server/consent/texts';
-
 import type { RangeSpec, StepContext, StepDef, StepOption } from './types';
 
 /**
@@ -64,6 +62,9 @@ const VACANCY_SALARY: RangeSpec = { ...SALARY, fromLabel: 'От', toLabel: 'До
 
 const hasRole = (ctx: StepContext) => ctx.facts.role !== 'pending';
 
+/** Private questionnaire answers only; these do not create evidence or employer filters. */
+export const PRIVATE_INTAKE_STEPS = ['experience', 'experienceSummary', 'candidateIndustries'] as const;
+
 const consentStep: StepDef = {
   id: 'consent',
   kind: 'consent',
@@ -98,48 +99,7 @@ const roleStep: StepDef = {
   doneBy: hasRole,
 };
 
-const consentOption = (kind: keyof typeof CONSENT_TEXTS): StepOption => {
-  const t = CONSENT_TEXTS[kind];
-  const need = t.requiredFor ? `Нужно для ${t.requiredFor}.` : 'Необязательно.';
-  return { value: kind, label: t.label, note: `${need} ${t.paragraphs.join(' ')}` };
-};
-
-/**
- * Согласия кандидата (ADR 0005): Г3 ИИ-оценка, Г4 показ работодателям, Г6 исследования, Г7 рассылки —
- * отдельные неотмеченные галочки. Продолжить можно без любой из них: без Г3 закрыты тест, созвон и защита,
- * без Г4 профиль скрыт (hiddenFromEmployers). Всё меняется позже в настройках («Мои согласия»).
- */
-export const CANDIDATE_CONSENTS_STEP: StepDef = {
-  id: 'candidateConsents',
-  kind: 'consents',
-  eyebrow: 'Согласия',
-  question: 'Что мне можно делать с твоими данными?',
-  sub: 'Отметь, на что согласен. Без оценки ИИ не получится пройти тест, созвон и защиту; без показа работодателям профиль останется скрытым. Изменить можно в настройках, раздел «Мои согласия».',
-  summaryLabel: 'Согласия',
-  target: 'Consent (ai_assessment, employer_visibility, research, marketing), Candidate.hiddenFromEmployers',
-  req: 'R-C-13, R-C-14, R-C-16',
-  required: true,
-  options: CANDIDATE_ONBOARDING_KINDS.map(consentOption),
-  doneBy: (ctx) => Boolean(ctx.facts.candidateConsents),
-};
-
-/** Согласия работодателя (ADR 0005): оферта и обязательство по данным — обе нужны для поиска и приглашений. */
-export const EMPLOYER_CONSENTS_STEP: StepDef = {
-  id: 'employerConsents',
-  kind: 'consents',
-  eyebrow: 'Условия',
-  question: 'Условия работы с кандидатами',
-  sub: 'Обе галочки нужны для поиска кандидатов и приглашений. Без них кабинет откроется, но поиск будет закрыт - принять условия можно позже в профиле компании.',
-  summaryLabel: 'Условия для работодателей',
-  target: 'Consent (employer_offer, employer_data_obligation)',
-  req: 'R-N-07',
-  required: true,
-  options: EMPLOYER_ONBOARDING_KINDS.map(consentOption),
-  doneBy: (ctx) => Boolean(ctx.facts.employerConsents),
-};
-
 export const CANDIDATE_STEPS: StepDef[] = [
-  CANDIDATE_CONSENTS_STEP,
   {
     id: 'goal',
     kind: 'one',
@@ -154,31 +114,6 @@ export const CANDIDATE_STEPS: StepDef[] = [
       { value: 'market_watch', label: 'Смотрю рынок', note: 'пока не меняю работу, интересно, сколько стою' },
       { value: 'grade_confirm', label: 'Хочу подтвердить грейд', note: 'нужна категория по тесту' },
     ],
-  },
-  {
-    id: 'documents',
-    kind: 'files',
-    eyebrow: 'Документы',
-    question: 'Пришли резюме или ссылки',
-    sub: 'Прикрепи файл скрепкой (PDF, DOCX, MD, TXT или CSV до 5 МБ) или просто вставь ссылку на GitHub или портфолио сюда, в сообщение. Я найду в них утверждения о навыках с цитатами - ты подтвердишь или поправишь каждое.',
-    summaryLabel: 'Документы',
-    target: 'Upload, Source, Claim (конвейер консультанта: /api/uploads → /api/consultant/messages)',
-    req: 'R-C-01',
-  },
-  {
-    id: 'fsp',
-    kind: 'one',
-    eyebrow: 'ФСП',
-    question: 'Привяжем ФСП ID?',
-    sub: 'Войди в ФСП ID - подтверждённые достижения в соревнованиях по спортивному программированию попадут в профиль. Нет истории ФСП - это нормально, на подбор не влияет.',
-    summaryLabel: 'ФСП ID',
-    target: 'Candidate.fspState',
-    req: 'R-C-15, R-FSP-03',
-    options: [
-      { value: 'linked', label: 'Войти через ФСП ID', note: 'откроется страница входа ФСП ID, потом вернёмся сюда', answered: 'ФСП ID привязан', href: '/api/fsp-id/link?return=consultant' },
-      { value: 'not_linked', label: 'Нет истории ФСП', note: 'без штрафа: решает тест на грейд' },
-    ],
-    valueLabels: { no_achievements: 'ФСП ID привязан, достижений пока нет', unavailable: 'ФСП ID привязан, реестр сейчас недоступен' },
   },
   {
     id: 'specialization',
@@ -206,6 +141,48 @@ export const CANDIDATE_STEPS: StepDef[] = [
     options: (ctx) => subcategoryOptions(ctx.answers.specialization ?? ctx.facts.specialization),
   },
   {
+    id: 'experience',
+    kind: 'one',
+    eyebrow: 'Опыт',
+    question: 'Какой у тебя опыт в этом направлении?',
+    sub: 'Укажи профессиональный опыт. Учебные и личные проекты тоже важны: расскажешь о них дальше. Это твои слова, не подтверждение грейда.',
+    summaryLabel: 'Профессиональный опыт',
+    target: 'OnboardingState.answers.experience (private self-report)',
+    req: 'R-C-04',
+    options: [
+      { value: 'learning', label: 'Учусь или делаю личные проекты' },
+      { value: 'underOne', label: 'Меньше года' },
+      { value: 'oneToThree', label: 'От 1 до 3 лет' },
+      { value: 'threeToFive', label: 'От 3 до 5 лет' },
+      { value: 'fivePlus', label: 'Больше 5 лет' },
+    ],
+  },
+  {
+    id: 'experienceSummary',
+    kind: 'text',
+    eyebrow: 'Опыт и проекты',
+    question: 'Расскажи о своей роли и одном-двух проектах',
+    sub: 'Что делал(а) лично, какие задачи решал(а), чего удалось добиться? Можно описать учебный проект. Это приватный черновик со слов, он не подтверждает навыки автоматически.',
+    summaryLabel: 'Роль, проекты и личный вклад',
+    target: 'OnboardingState.answers.experienceSummary (private self-report)',
+    req: 'R-C-04',
+    maxLength: 1000,
+    placeholder: 'Например: разработал(а) API сервиса, отвечал(а) за…',
+  },
+  {
+    id: 'candidateIndustries',
+    maxItems: 12,
+    kind: 'chips',
+    eyebrow: 'Отрасли',
+    question: 'С какими отраслями или предметными областями знаком(а)?',
+    sub: 'Необязательно. Выбери несколько или добавь свою область. Сохраним для тебя и консультанта; это пока не фильтр для компаний.',
+    summaryLabel: 'Отраслевой опыт',
+    target: 'OnboardingState.answers.candidateIndustries (private self-report)',
+    req: 'R-C-04',
+    allowCustom: true,
+    options: () => INDUSTRIES,
+  },
+  {
     id: 'grade',
     kind: 'one',
     eyebrow: 'Грейд',
@@ -227,6 +204,16 @@ export const CANDIDATE_STEPS: StepDef[] = [
     req: 'R-C-04',
     allowCustom: true,
     options: (ctx) => stackOptions(ctx.answers.specialization ?? ctx.facts.specialization),
+  },
+  {
+    id: 'documents',
+    kind: 'files',
+    eyebrow: 'Документы',
+    question: 'Пришли резюме или ссылки',
+    sub: 'Прикрепи файл скрепкой (PDF, DOCX, MD, TXT или CSV до 5 МБ) или просто вставь ссылку на GitHub или портфолио сюда, в сообщение. Я найду в них утверждения о навыках с цитатами - ты подтвердишь или поправишь каждое.',
+    summaryLabel: 'Документы',
+    target: 'Upload, Source, Claim (конвейер консультанта: /api/uploads → /api/consultant/messages)',
+    req: 'R-C-01',
   },
   {
     id: 'formats',
@@ -261,7 +248,7 @@ export const CANDIDATE_STEPS: StepDef[] = [
     kind: 'range',
     eyebrow: 'Ожидания',
     question: 'Сколько хочешь получать?',
-    sub: 'Компании увидят ожидания, только если их вилка подходит.',
+    sub: 'Сохраню ожидания для твоих консультаций. Работодатель отправляет приглашение со своей вилкой.',
     summaryLabel: 'Зарплата',
     target: 'CandidateProfile.salaryMin, CandidateProfile.salaryExpected',
     req: 'R-C-04',
@@ -298,6 +285,21 @@ export const CANDIDATE_STEPS: StepDef[] = [
     ],
     when: (ctx) => ctx.facts.fspState !== 'linked',
   },
+  {
+    id: 'fsp',
+    kind: 'one',
+    eyebrow: 'ФСП',
+    question: 'Привяжем ФСП ID?',
+    sub: 'На стенде ФСП ID и реестр достижений работают в деморежиме. Можно посмотреть привязку достижений к профилю. Нет истории ФСП - это нормально, решает тест на грейд.',
+    summaryLabel: 'ФСП ID',
+    target: 'Candidate.fspState',
+    req: 'R-C-15, R-FSP-03',
+    options: [
+      { value: 'linked', label: 'Войти через ФСП ID', note: 'демо привязки достижений, потом вернёмся сюда', answered: 'ФСП ID привязан', href: '/api/fsp-id/link?return=consultant' },
+      { value: 'not_linked', label: 'Нет истории ФСП', note: 'без штрафа: решает тест на грейд' },
+    ],
+    valueLabels: { no_achievements: 'ФСП ID привязан, достижений пока нет', unavailable: 'ФСП ID привязан, реестр сейчас недоступен' },
+  },
 ];
 
 export const INDUSTRIES: StepOption[] = ['Финтех', 'E-commerce', 'Медиа', 'Госсектор', 'Промышленность', 'Образование', 'Медицина', 'Телеком'].map((v) => ({
@@ -321,7 +323,6 @@ export const EMPLOYER_STEPS: StepDef[] = [
     // Роль employer уже выбрана — компания создана, шаг закрыт (название правится в кабинете).
     doneBy: hasRole,
   },
-  EMPLOYER_CONSENTS_STEP,
   {
     id: 'inn',
     kind: 'text',

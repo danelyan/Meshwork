@@ -1,6 +1,7 @@
 import { getEnv } from '@/server/env';
 import { getLlm } from '@/server/llm';
 import { COMPANION_NAME } from '@/lib/persona';
+import { maskContacts } from '@/server/collector/mask';
 
 import { ONBOARDING_PROMPT } from './prompt';
 import { DIRECTIONS } from './scenario';
@@ -69,6 +70,12 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
       if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s} - понял. ` : ''}Раз хочешь подтвердить грейд, скажи, на какой претендуешь.`;
       return s ? `${s} - понял.` : 'Понял.';
     }
+    case 'experience':
+      return 'Теперь уточним твой опыт. Он поможет выбрать подходящий следующий шаг.';
+    case 'experienceSummary':
+      return 'Несколько конкретных примеров помогут понять, чем ты занимался лично.';
+    case 'candidateIndustries':
+      return 'Уточним предметные области, в которых ты уже работал или делал проекты.';
     case 'stack':
       return 'Принято. Уточним инструменты.';
     case 'formats':
@@ -129,14 +136,14 @@ export async function leadFor(
 ): Promise<string> {
   const template = templateLead(step, ctx, prev);
   // Первая реплика (приветствие) и согласие — всегда шаблон: тон и смысл первого экрана не отдаём модели.
-  if (!llmEnabled() || step.id === 'consent' || step.kind === 'consents' || (step.id === 'role' && prev === null)) return template;
+  if (!llmEnabled() || step.id === 'consent' || (step.id === 'role' && prev === null)) return template;
   try {
     const llm = getLlm({ candidateId: opts.candidateId ?? undefined });
     const input = {
       name: firstName(ctx.facts.name),
       role: ctx.facts.role === 'pending' ? (ctx.answers.role ?? 'pending') : ctx.facts.role,
       step: { eyebrow: step.eyebrow, question: step.question },
-      previous: prev ? { question: prev.step.question, answer: prev.label ?? 'пропущено' } : null,
+      previous: prev ? { question: prev.step.question, answer: maskContacts(prev.label ?? 'пропущено').text } : null,
     };
     const res = await llm.complete(
       {

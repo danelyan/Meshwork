@@ -25,7 +25,10 @@ export interface CatalogEntry {
 
 export interface ProposedClaim {
   catalogId: string;
+  /** Каталожная формулировка: ранжирование, созвон, работодатель. */
   statement: string;
+  /** Формулировка для кандидата в границах цитаты (от модели); нет — строится из цитаты в verifyClaims. */
+  wording?: string;
   quote: string;
   sourceRef: string;
   confidence: Confidence;
@@ -55,6 +58,8 @@ export interface ProfileClaim {
   id: string;
   catalogId: string;
   statement: string;
+  /** Формулировка для кандидата (под цитату); null — старая запись, показывать statement. Работодателю не отдаётся. */
+  wording?: string | null;
   level: EvidenceLevel;
   quote: string;
   sourceRef: string;

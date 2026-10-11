@@ -2,6 +2,7 @@ import type { ExtractedDoc } from '../collector/types';
 import { levelRank, maxLevelFor } from './levels';
 import { normalizeQuote, wordCount } from './normalize';
 import { docHasRef, findQuote, indexDoc, type IndexedDoc, type QuoteMatch } from './source-text';
+import { wordingFor } from './wording';
 import type { CatalogEntry, Confidence, ProposedClaim, RejectReason, VerifiedClaim, VerifyResult } from './types';
 
 /** Цитата короче — не доказательство умения («Kafka», «SQL»), а слово-технология (каталог § 1 п. 1). */
@@ -21,7 +22,8 @@ export interface VerifyOptions {
  *     короче MIN_QUOTE_WORDS слов — `quote_too_short`;
  *     найдена только в строках, помеченных скрытыми, — `hidden_text`;
  *  3. один catalogId — одно утверждение (лучшее по уверенности, затем по уровню), остальные `duplicate`.
- * Формулировку, ограничения и пути доказательства берёт из каталога, уровень — из типа источника
+ * Формулировку для кандидата (`wording`) берёт от модели, только если она в границах цитаты (`wordingFor`),
+ * иначе строит из самой цитаты. Каталожную формулировку, ограничения и пути доказательства берёт из каталога, уровень — из типа источника
  * (`maxLevelFor`), цитату и ссылку — из найденного фрагмента источника. От LLM остаются только
  * выбор ID, место цитаты и уверенность.
  */
@@ -75,6 +77,7 @@ export function verifyClaims(
     candidates.push({
       catalogId: entry.id,
       statement: entry.statement,
+      wording: wordingFor(typeof claim.wording === 'string' ? claim.wording : undefined, m.quote),
       quote: m.quote,
       sourceRef: m.sourceRef,
       confidence,

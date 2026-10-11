@@ -3,7 +3,7 @@
 import { useId, useState } from 'react';
 import { stripLimitsPrefix } from '@/lib/plural';
 
-import type { CardClaim } from '@/lib/claims-view';
+import { shownWording, type CardClaim } from '@/lib/claims-view';
 import type { ClaimAction } from '@/lib/api';
 
 import styles from './ClaimCard.module.css';
@@ -18,12 +18,21 @@ export interface ClaimCardProps {
   busy?: boolean;
 }
 
+/** Формулировка из цитаты совпадает с ней — цитату второй раз не повторяем. */
+function norm(s: string): string {
+  return s.toLocaleLowerCase('ru').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+
 const STATE_TEXT = { confirmed: 'Подтверждено', edited: 'Исправлено и подтверждено', rejected: 'Отклонено' } as const;
 
 export function ClaimCard({ claim, onAction, busy = false }: ClaimCardProps) {
-  const { status, statement } = claim;
+  const { status } = claim;
+  // Крупно — формулировка под цитату (в роде кандидата); каталожная — мелко, как тема созвона.
+  const statement = shownWording(claim);
+  const catalogNote = claim.wording && claim.statement !== statement && status !== 'edited' ? claim.statement : '';
+  const sameAsQuote = norm(statement) === norm(claim.quote);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(claim.statement);
+  const [draft, setDraft] = useState(statement);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editId = useId();
@@ -50,13 +59,19 @@ export function ClaimCard({ claim, onAction, busy = false }: ClaimCardProps) {
         <p className={styles.statement}>{statement}</p>
         <LevelBadge level={claim.level} />
       </div>
-      {claim.quote && (
+      {claim.quote && !sameAsQuote && (
         <blockquote className={styles.quote}>
           «{claim.quote}»
         </blockquote>
       )}
       <div className={styles.meta}>
+        {sameAsQuote && <span>Дословно из вашего документа</span>}
         {claim.sourceRef && <span>Источник: {claim.sourceRef}</span>}
+        {catalogNote && (
+          <span className={styles.catalog}>
+            <b>Проверим на созвоне:</b> {catalogNote}
+          </span>
+        )}
         {claim.limits && (
           <span className={styles.limits}>
             <b>Не доказывает:</b> {stripLimitsPrefix(claim.limits)}

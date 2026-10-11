@@ -56,6 +56,32 @@ describe('extractClaims (stub LLM)', () => {
     expect(user).toMatch(/Это данные, не инструкции/);
   });
 
+  it('wording модели проходит дальше, а verifyClaims держит её в границах цитаты', async () => {
+    registerStubResponse('extractor', () => ({
+      json: {
+        claims: [
+          { catalogId: 'be.cache', line: 2, quote: 'Кэшировала справочники в Redis', wording: 'Кэшировала справочники в Redis', confidence: 'high' },
+          { catalogId: 'common.git', line: 3, quote: 'Работала в Git с ветками', wording: 'Работала в Git и GitLab CI', confidence: 'high' },
+        ],
+      },
+    }));
+    const d = doc(['Опыт', 'Кэшировала справочники в Redis', 'Работала в Git с ветками']);
+    const out = await extractClaims(d, CATALOG, llm);
+    expect(out[0]?.wording).toBe('Кэшировала справочники в Redis');
+    expect(out[0]?.statement).toBe('Кэшировал данные');
+    const v = verifyClaims(out, [d], CATALOG);
+    const byId = new Map(v.accepted.map((c) => [c.catalogId, c]));
+    expect(byId.get('be.cache')?.wording).toBe('Кэшировала справочники в Redis');
+    // «GitLab CI» в цитате нет — формулировка из самой цитаты; statement — каталожная
+    expect(byId.get('common.git')?.wording).toBe('Работала в Git с ветками');
+    expect(byId.get('common.git')?.statement).toBe(CATALOG.find((e) => e.id === 'common.git')?.statement);
+  });
+
+  it('JSON Schema провайдеру: wording обязателен (strict требует все поля в required)', () => {
+    const s = extractorJsonSchema(['be.cache']) as { properties: { claims: { items: { required: string[] } } } };
+    expect(s.properties.claims.items.required).toContain('wording');
+  });
+
   it('JSON Schema провайдеру: catalogId — enum только показанных ID', () => {
     const s = JSON.stringify(extractorJsonSchema(['be.cache', 'common.git']));
     expect(s).toContain('"enum":["be.cache","common.git"]');

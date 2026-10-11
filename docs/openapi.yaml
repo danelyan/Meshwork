@@ -1768,7 +1768,7 @@ paths:
               properties:
                 statement:
                   type: string
-                  description: "Новая формулировка, 3–300 символов"
+                  description: "Новая формулировка, 3–300 символов; меняет и wording, и statement"
               required:
                 - statement
       responses:
@@ -6520,7 +6520,14 @@ components:
           description: "Запись каталога навыков"
         statement:
           type: string
-          description: "Формулировка утверждения"
+          description: "Формулировка утверждения из каталога (или правка кандидата) — то, что проверяется на созвоне"
+        wording:
+          oneOf:
+            -
+              type: string
+              description: "Формулировка для кандидата в границах цитаты; null — старая запись, показывать statement"
+            -
+              type: "null"
         level:
           type: string
           enum:
@@ -6557,6 +6564,7 @@ components:
         - id
         - catalogId
         - statement
+        - wording
         - level
         - quote
         - sourceRef

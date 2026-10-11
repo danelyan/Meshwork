@@ -164,7 +164,7 @@ export async function runPipeline(ctx: ToolContext, input: TurnInput, deps: Pipe
   result.rejectSummary = describeRejects(reasons);
   ctx.emit({
     type: 'claims',
-    proposed: created.map((c) => ({ id: c.id, catalogId: c.catalogId, statement: c.statement, level: c.level, quote: c.quote, sourceRef: c.sourceRef, limits: c.limits, status: c.status })),
+    proposed: created.map((c) => ({ id: c.id, catalogId: c.catalogId, statement: c.statement, wording: c.wording, level: c.level, quote: c.quote, sourceRef: c.sourceRef, limits: c.limits, status: c.status })),
     rejected: rejected.length,
     rejectedByReason: byReason,
     ...(result.hiddenText ? { hiddenText: result.hiddenText } : {}),

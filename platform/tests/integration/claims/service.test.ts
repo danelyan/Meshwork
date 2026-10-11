@@ -100,6 +100,14 @@ describe('proposeClaims', () => {
     ]);
   });
 
+  it('wording сохраняется рядом с каталожной statement и уходит в профиль; без wording — null', async () => {
+    const [w, n] = await proposeClaims(A, [v('be.cache', { wording: 'Кэшировала справочники в Redis' }), v('common.git')]);
+    expect(w).toMatchObject({ statement: 'Формулировка be.cache', wording: 'Кэшировала справочники в Redis' });
+    expect(n?.wording).toBeNull();
+    const p = await getProfile(A);
+    expect(p.claims.find((c) => c.catalogId === 'be.cache')?.wording).toBe('Кэшировала справочники в Redis');
+  });
+
   it('один вызов с дублями ID — одна запись', async () => {
     const rows = await proposeClaims(A, [v('be.cache'), v('be.cache')]);
     expect(rows).toHaveLength(1);
@@ -126,6 +134,8 @@ describe('confirm / edit / reject', () => {
     const c = await editClaim(A, id, '  Кэшировал справочники в Redis  ');
     expect(c).toMatchObject({
       statement: 'Кэшировал справочники в Redis',
+      // кандидат правит показанную формулировку; statement получает тот же текст, как до появления wording
+      wording: 'Кэшировал справочники в Redis',
       status: 'edited',
       level: before.level,
       quote: before.quote,

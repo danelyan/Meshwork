@@ -9,13 +9,19 @@ import type { AgentTool } from '../types';
 const Item = z.object({
   catalogId: z.string().min(1).max(64).describe('id из каталога (catalog_search)'),
   statement: z.string().min(1).max(300).optional().describe('Формулировка; по умолчанию — из каталога'),
+  wording: z
+    .string()
+    .min(1)
+    .max(160)
+    .optional()
+    .describe('Формулировка для кандидата строго в границах цитаты, в его роде или безличная; ничего сверх цитаты. Нет — строится из цитаты'),
   quote: z.string().min(3).max(600).describe('Дословная цитата из источника, подтверждающая утверждение'),
   sourceRef: z.string().min(1).max(200).describe('Координата строки с цитатой: `cv.pdf#p2:l14`, `github:user/repo#README:l3`'),
   confidence: z.enum(['low', 'medium', 'high']).default('medium'),
 });
 const Input = z.object({ items: z.array(Item).min(1).max(30) });
 const Output = z.object({
-  proposed: z.array(z.object({ id: z.string(), catalogId: z.string(), statement: z.string(), level: z.string(), quote: z.string(), sourceRef: z.string() })),
+  proposed: z.array(z.object({ id: z.string(), catalogId: z.string(), statement: z.string(), wording: z.string().nullable(), level: z.string(), quote: z.string(), sourceRef: z.string() })),
   rejected: z.array(z.object({ catalogId: z.string(), reason: z.enum(['no_quote', 'unknown_catalog_id', 'duplicate', 'hidden_text', 'quote_too_short']) })),
   note: z.string(),
 });
@@ -36,6 +42,7 @@ export const proposeClaimsTool: AgentTool<z.infer<typeof Input>, z.infer<typeof 
     const proposals: ProposedClaim[] = items.map((i) => ({
       catalogId: i.catalogId,
       statement: i.statement ?? byId.get(i.catalogId)?.statement ?? i.catalogId,
+      ...(i.wording ? { wording: i.wording } : {}),
       quote: i.quote,
       sourceRef: i.sourceRef,
       confidence: i.confidence,
@@ -47,6 +54,7 @@ export const proposeClaimsTool: AgentTool<z.infer<typeof Input>, z.infer<typeof 
       id: c.id,
       catalogId: c.catalogId,
       statement: c.statement,
+      wording: c.wording,
       level: c.level,
       quote: c.quote,
       sourceRef: c.sourceRef,

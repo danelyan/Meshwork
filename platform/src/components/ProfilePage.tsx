@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { specLabel } from '@/lib/directions';
+import { shownWording } from '@/lib/claims-view';
 import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
 
@@ -24,7 +25,8 @@ function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [statement, setStatement] = useState(claim.statement);
+  const shown = shownWording(claim);
+  const [statement, setStatement] = useState(shown);
   async function save() {
     if (!onEdit || !statement.trim()) return;
     setBusy(true);
@@ -47,15 +49,16 @@ function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?
   const provable = claim.level === 'self_reported' || claim.level === 'artifact';
   return (
     <li className={`${ui.panel} ${styles.claim}`}>
-      <p className={styles.statement}>{claim.statement}</p>
+      <p className={styles.statement}>{shown}</p>
       {editing && <form className={styles.editClaim} onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <label htmlFor={`edit-${claim.id}`}>Уточните формулировку</label>
         <textarea id={`edit-${claim.id}`} className={ui.input} value={statement} maxLength={300} minLength={3} rows={3} onChange={(event) => setStatement(event.target.value)} />
-        <div className={styles.actions}><Button type="submit" size="sm" loading={busy} disabled={statement.trim().length < 3}>Сохранить формулировку</Button><Button size="sm" onClick={() => { setEditing(false); setStatement(claim.statement); }}>Отмена</Button></div>
+        <div className={styles.actions}><Button type="submit" size="sm" loading={busy} disabled={statement.trim().length < 3}>Сохранить формулировку</Button><Button size="sm" onClick={() => { setEditing(false); setStatement(shown); }}>Отмена</Button></div>
       </form>}
       {claim.quote && <p className={styles.quote}>«{claim.quote}»</p>}
       <div className={styles.meta}>
         <span>Источник: {claim.sourceRef || claim.sourceKind}</span>
+        {claim.wording && claim.status !== 'edited' && claim.statement !== shown && <span>Проверим на созвоне: {claim.statement}</span>}
         <span>Дата: {formatDate(claim.confirmedAt ?? claim.createdAt)}</span>
         {(claim.status === 'proposed' || claim.status === 'edited') && <span>{STATUS_NOTE[claim.status]}</span>}
       </div>

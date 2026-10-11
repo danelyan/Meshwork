@@ -111,6 +111,7 @@ export async function loadLastChat(candidateId: string): Promise<RestoredChat> {
           id: c.id,
           catalogId: c.catalogId,
           statement: c.statement,
+          wording: c.wording,
           level: c.level,
           quote: c.quote,
           sourceRef: c.sourceRef,

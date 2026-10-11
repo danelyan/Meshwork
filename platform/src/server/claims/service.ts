@@ -64,6 +64,7 @@ export async function proposeClaims(
       if (levelRank(v.level) <= top) continue;
       const data = {
         statement: v.statement,
+        wording: v.wording ?? null,
         level: v.level,
         quote: v.quote,
         sourceRef: v.sourceRef,
@@ -149,13 +150,17 @@ export async function confirmClaimsBatch(candidateId: string, ids: string[]): Pr
   });
 }
 
-/** Меняется только формулировка (и статус → edited); уровень, цитата и источник — нет. Правка = подтверждение. */
+/**
+ * Меняется только формулировка (и статус → edited); уровень, цитата и источник — нет. Правка = подтверждение.
+ * Кандидат правит то, что видит (`wording`); `statement` получает тот же текст, как и до появления wording —
+ * ранжирование, созвон и работодатель видят правку так же, как раньше.
+ */
 export async function editClaim(candidateId: string, claimId: string, statement: string): Promise<Claim> {
   assertClaimId(claimId);
   const text = StatementSchema.parse(statement);
   await prisma.claim.updateMany({
     where: { id: claimId, candidateId, status: { in: ACTIVE } },
-    data: { statement: text, status: 'edited' },
+    data: { statement: text, wording: text, status: 'edited' },
   });
   await prisma.claim.updateMany({
     where: { id: claimId, candidateId, status: 'edited', confirmedAt: null },
@@ -181,6 +186,7 @@ function toProfileClaim(c: Claim): ProfileClaim {
     id: c.id,
     catalogId: c.catalogId,
     statement: c.statement,
+    wording: c.wording,
     level: c.level,
     quote: c.quote,
     sourceRef: c.sourceRef,

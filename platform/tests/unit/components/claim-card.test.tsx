@@ -98,3 +98,40 @@ describe('ClaimCard', () => {
     expect(screen.getByText('Подтверждено')).toBeDefined();
   });
 });
+
+describe('ClaimCard: формулировка под цитату', () => {
+  const api: CardClaim = {
+    ...base,
+    statement: 'Получал данные с сервера: состояния загрузки и ошибки, отмена запросов, гонки ответов',
+    wording: 'Получала данные с API через fetch: состояния загрузки и ошибки',
+    quote: 'Получала данные с API через fetch, показывала состояния загрузки и ошибки.',
+  };
+
+  it('крупно — формулировка под цитату, каталожная — мелко как тема созвона', () => {
+    render(<ClaimCard claim={api} onAction={async () => {}} />);
+    expect(screen.getByText('Получала данные с API через fetch: состояния загрузки и ошибки')).toBeDefined();
+    expect(screen.getByText(/Проверим на созвоне:/)).toBeDefined();
+    expect(screen.getByRole('article').getAttribute('aria-label')).toContain('Получала данные с API');
+  });
+
+  it('«Поправить» начинается с показанной формулировки', async () => {
+    const spy = vi.fn(async () => {});
+    render(<ClaimCard claim={api} onAction={spy} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Поправить' }));
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(api.wording);
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(api, 'edit', api.wording));
+  });
+
+  it('старая запись без wording — показывается statement, без строки о созвоне', () => {
+    render(<ClaimCard claim={base} onAction={async () => {}} />);
+    expect(screen.getByText('Пишет REST API на Node.js')).toBeDefined();
+    expect(screen.queryByText(/Проверим на созвоне/)).toBeNull();
+  });
+
+  it('формулировка совпадает с цитатой — цитата не дублируется', () => {
+    render(<ClaimCard claim={{ ...api, wording: 'Получала данные с API через fetch, показывала состояния загрузки и ошибки' }} onAction={async () => {}} />);
+    expect(screen.queryByText(/^«/)).toBeNull();
+    expect(screen.getByText('Дословно из вашего документа')).toBeDefined();
+  });
+});

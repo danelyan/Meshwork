@@ -10,6 +10,7 @@ import { LlmError, type ChatMessage, type CompleteResult, type LlmProvider } fro
 import { catalogFor } from './catalog-file';
 import { docLines, type SourceLine } from './source-text';
 import type { CatalogEntry, ProposedClaim } from './types';
+import { WORDING_MAX } from './wording';
 
 /** Символов документа в одном вызове; длиннее — по частям с общей нумерацией строк. */
 export const EXTRACTOR_MAX_CHUNK_CHARS = 12_000;
@@ -29,6 +30,8 @@ const OutputSchema = z.object({
           .optional()
           .catch(undefined),
         quote: z.string().max(1000),
+        /** Формулировка под цитату; битая или пустая — не повод для ремонта: verifyClaims построит её из цитаты. */
+        wording: z.string().trim().min(1).max(WORDING_MAX).optional().catch(undefined),
         confidence: Confidence.catch('low'),
       }),
     )
@@ -45,6 +48,7 @@ export function extractorJsonSchema(ids: string[]): object {
           catalogId: z.enum(ids as [string, ...string[]]),
           line: z.number().int().min(1),
           quote: z.string().min(1),
+          wording: z.string().min(1).max(WORDING_MAX),
           confidence: Confidence,
         }),
       )
@@ -119,7 +123,7 @@ export function buildUserMessage(doc: ExtractedDoc, entries: CatalogEntry[], chu
     chunk.body.trimEnd(),
     '</document>',
     '',
-    'Верни JSON {"claims": [...]} по правилам из системного сообщения.',
+    'Верни JSON {"claims": [...]} по правилам из системного сообщения (у каждого — wording строго по цитате).',
   ].join('\n');
 }
 
@@ -207,7 +211,14 @@ export async function extractClaims(
       if (!entry) continue; // ID вне каталога (галлюцинация или инъекция)
       const li = c.line !== undefined ? c.line - 1 : -1;
       const ref = inChunk.has(li) ? (lines[li]?.ref ?? '') : '';
-      out.push({ catalogId: entry.id, statement: entry.statement, quote: c.quote, sourceRef: ref, confidence: c.confidence });
+      out.push({
+        catalogId: entry.id,
+        statement: entry.statement,
+        ...(c.wording ? { wording: c.wording } : {}),
+        quote: c.quote,
+        sourceRef: ref,
+        confidence: c.confidence,
+      });
       taken++;
     }
   }

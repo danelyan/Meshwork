@@ -205,7 +205,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       ...p,
       [claim.id]: {
         status: action === 'confirm' ? 'confirmed' : action === 'reject' ? 'rejected' : 'edited',
-        ...(action === 'edit' && statement ? { statement } : {}),
+        ...(action === 'edit' && statement ? { statement, wording: statement } : {}),
       },
     }));
   }, [refreshAside]);

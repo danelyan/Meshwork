@@ -19,6 +19,8 @@ const Output = z.object({
       id: z.string(),
       catalogId: z.string(),
       statement: z.string(),
+      /** Как карточка показана кандидату (под цитату); null — старая запись. Говорить с кандидатом — этими словами. */
+      wording: z.string().nullable(),
       level: z.enum(['self_reported', 'artifact', 'platform', 'third_party']),
       sourceKind: SourceKindSchema,
       status: z.enum(['proposed', 'confirmed', 'edited', 'rejected']),
@@ -42,6 +44,7 @@ export const getProfileTool: AgentTool<Record<string, never>, z.infer<typeof Out
       id: c.id,
       catalogId: c.catalogId,
       statement: c.statement,
+      wording: c.wording ?? null,
       level: c.level,
       sourceKind: c.sourceKind,
       status: c.status,

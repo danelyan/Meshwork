@@ -4,6 +4,7 @@
 .quote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--ink); background: rgba(17, 17, 17, 0.04); color: var(--text-soft); font-size: var(--fs); line-height: 1.65; overflow-wrap: anywhere; }
 .meta { font-family: var(--mono); font-size: var(--fs-sm); color: var(--muted); display: grid; gap: 4px; overflow-wrap: anywhere; line-height: 1.5; }
 .limits b { color: var(--ink); font-weight: 600; }
+.catalog b { color: var(--ink); font-weight: 600; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .state { font-family: var(--mono); font-size: var(--fs-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--blue); margin: 0; }
 .state::before { content: ''; display: inline-block; width: 8px; height: 8px; background: var(--blue); margin-right: 8px; }

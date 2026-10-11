@@ -121,7 +121,7 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
     refreshAside();
     setOverrides((p) => ({
       ...p,
-      [claim.id]: { status: action === 'confirm' ? 'confirmed' : action === 'reject' ? 'rejected' : 'edited', ...(action === 'edit' && statement ? { statement } : {}) },
+      [claim.id]: { status: action === 'confirm' ? 'confirmed' : action === 'reject' ? 'rejected' : 'edited', ...(action === 'edit' && statement ? { statement, wording: statement } : {}) },
     }));
   }, [refreshAside]);
 

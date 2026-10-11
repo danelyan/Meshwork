@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 
 import type { Specialization } from '../../src/lib/directions';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
+import { wordingFromQuote } from '../../src/server/claims/wording';
 import { resumeFor } from './resumes';
 
 /**
@@ -133,6 +134,8 @@ export async function seedPoolProfiles(prisma: PrismaClient, profiles: DemoProfi
       await prisma.claim.create({
         data: {
           candidateId: p.id, catalogId, statement: entry.statement, level, quote,
+          // Кандидату — формулировка под цитату (строка резюме уже в его роде); у демо-текста других уровней — каталожная.
+          wording: level === 'self_reported' ? wordingFromQuote(quote) : null,
           sourceRef: src.ref(p.id), sourceKind: src.kind, confidence: 'high', limits: entry.limits,
           suggestedProof: entry.proof, status: 'confirmed', confirmedAt: now,
         },

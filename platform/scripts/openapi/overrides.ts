@@ -118,7 +118,8 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
     {
       id: str(),
       catalogId: str('Запись каталога навыков'),
-      statement: str('Формулировка утверждения'),
+      statement: str('Формулировка утверждения из каталога (или правка кандидата) — то, что проверяется на созвоне'),
+      wording: nullable(str('Формулировка для кандидата в границах цитаты; null — старая запись, показывать statement')),
       level: en('self_reported', 'artifact', 'third_party', 'platform'),
       quote: nullable(str('Цитата из источника')),
       sourceRef: nullable(str()),
@@ -448,7 +449,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Подтвердить, поправить или отклонить утверждение',
     pathParams: { action: en('confirm', 'edit', 'reject') },
     description: 'Карточка «да / поправить / нет». `action` — `confirm`, `edit` или `reject`; другое значение — 404. Только владелец: чужое и несуществующее — 404. Тело нужно только для `edit` и меняет лишь формулировку (3–300 символов); отклонённое не оживает (409).',
-    body: { description: 'Только для action = edit', schema: obj({ statement: str('Новая формулировка, 3–300 символов') }) },
+    body: { description: 'Только для action = edit', schema: obj({ statement: str('Новая формулировка, 3–300 символов; меняет и wording, и statement') }) },
     success: JSON_OK('Обновлённое утверждение', obj({ claim: ref('Claim') })),
     errors: { 409: 'Утверждение уже отклонено или в неподходящем статусе (`conflict`)' },
   },

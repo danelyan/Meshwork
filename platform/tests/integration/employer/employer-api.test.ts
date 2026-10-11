@@ -121,7 +121,7 @@ describe('кабинет работодателя (БД)', () => {
     expect(artifact.every((c) => c.sourceType === 'github')).toBe(true);
     expect(claims.filter((c) => c.level === 'third_party').every((c) => c.sourceType === 'codeforces')).toBe(true);
     expect(claims.filter((c) => c.level === 'self_reported').every((c) => c.sourceType === null)).toBe(true);
-    for (const key of ['sourceRef', 'sourceKind', '"quote"', 'github:demo', 'codeforces:demo', 'cv-demo.pdf']) expect(raw).not.toContain(key);
+    for (const key of ['sourceRef', 'sourceKind', '"quote"', '"wording"', 'github:demo', 'codeforces:demo', 'cv-demo.pdf']) expect(raw).not.toContain(key);
   });
 
   it('подборка скрывает кандидата с нулевым покрытием; поиск по банку — нет (решение владельца 09.10)', async () => {

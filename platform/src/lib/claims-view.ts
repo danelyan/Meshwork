@@ -7,7 +7,10 @@ import { isLevel } from './labels';
 export interface CardClaim {
   /** id сохранённого утверждения — нужен для POST /api/claims/[id]/[action] */
   id: string;
+  /** Каталожная формулировка — что проверим на созвоне. */
   statement: string;
+  /** Формулировка под цитату для кандидата; пусто — старая запись, показывается statement. */
+  wording?: string;
   quote: string;
   sourceRef: string;
   level: EvidenceLevel;
@@ -29,12 +32,18 @@ export function normalizeClaim(raw: unknown): CardClaim | null {
   return {
     id,
     statement,
+    wording: str(r.wording),
     quote: str(r.quote),
     sourceRef: str(r.sourceRef),
     level: isLevel(r.level) ? r.level : 'self_reported',
     limits: str(r.limits),
     status,
   };
+}
+
+/** Что показать кандидату крупно: формулировку под цитату, а у старых записей — каталожную. */
+export function shownWording(c: { statement: string; wording?: string | null }): string {
+  return c.wording?.trim() || c.statement;
 }
 
 export interface CardRecommendation {

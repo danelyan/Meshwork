@@ -271,7 +271,10 @@ model Claim {
   candidate      Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   catalogId      String
   catalog        ClaimCatalog  @relation(fields: [catalogId], references: [id])
+  /// Каталожная формулировка (или правка кандидата): ранжирование, созвон, работодатель.
   statement      String
+  /// Формулировка для кандидата в границах цитаты и в его роде (или безличная). null — старые записи: показывается statement.
+  wording        String?
   /// Ставит код по типу источника (ADR-0001), не LLM и не кандидат.
   level          EvidenceLevel
   quote          String

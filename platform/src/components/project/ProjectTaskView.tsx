@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react';
 
 import { ApiError } from '@/lib/api';
 import { submitProjectApi, takeProjectApi } from '@/lib/project-api';
+import { DefenseEntry } from '@/components/call/DefenseEntry';
 import type { CandidateTaskView } from '@/server/project/service';
 
 import emp from '../employer/Employer.module.css';
@@ -168,6 +169,14 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
                   <p className={emp.status}>{s.result.lint.note}</p>
                   <RubricTable results={s.result.rubric.results} />
                 </>
+              )}
+              {s.status === 'checked' && (
+                <div className={styles.aiDefense}>
+                  <p className={emp.status}>
+                    ИИ задаст вопросы по твоему коду и коммитам. Работодатели до приглашения увидят только баллы и флаги - без транскрипта, записи и ссылки на репозиторий. Не чаще раза в сутки.
+                  </p>
+                  <DefenseEntry projectSubmissionId={s.id} ai label="Защитить проект с ИИ" />
+                </div>
               )}
             </Panel>
           ))}

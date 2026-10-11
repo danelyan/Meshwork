@@ -2653,6 +2653,45 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/defense-room/ai":
+    post:
+      operationId: postDefenseRoomAi
+      tags:
+        - defense-room
+      summary: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п."
+      description: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же комната `/defense-room/{sessionId}`, только вопросы по коду. Не чаще раза в сутки на сабмит (429 `ai_defense_limit`, демо-кандидатов не ограничивает); идущая возвращается (`resumed: true`). Нужно согласие на запись (403 `call_consent_required`). Работодатель до принятия приглашения видит только баллы и флаги.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/AiDefenseStartInput"
+      responses:
+        "200":
+          description: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "201":
+          description: "Создано. POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/defense-room/pending":
     get:
       operationId: getDefenseRoomPending
@@ -3669,6 +3708,39 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/project-submissions/{id}/ai-defense":
+    get:
+      operationId: getEmployerProjectSubmissionsIdAiDefense
+      tags:
+        - employer
+      summary: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п."
+      description: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п. 1). До принятого приглашения — псевдоним, баллы по рубрике A-02 и флаги; без транскрипта, записи и ссылки на репозиторий. После accepted с действующим раскрытием — ещё `sessionId`, `transcript`, `hasRecording` (запись — `/api/call/{sessionId}/recording`) и `repoUrl`. Сдача чужой вакансии или скрытого кандидата — 404.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п. 1). До принятого приглашения — псевдоним, баллы по рубрике A-02 и флаги;"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/project-submissions/{id}/invite-to-defense":
@@ -6324,6 +6396,16 @@ components:
       name: cid
       description: "Подписанная сессионная кука платформы"
   schemas:
+    AiDefenseStartInput:
+      type: object
+      properties:
+        projectSubmissionId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z0-9_-]+$"
+      required:
+        - projectSubmissionId
     CallConsentBody:
       type: object
       properties:

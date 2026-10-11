@@ -37,6 +37,7 @@ export interface JoinResult {
 
 export async function joinCall(principal: SessionPrincipal | null, sessionId: string): Promise<JoinResult> {
   const { viewer, session } = await employerViewer(principal, sessionId);
+  if (session.aiDefense) throw errors.conflict('Это ИИ-защита без работодателя - доступен транскрипт');
   if (session.status === 'pending') throw errors.conflict('Кандидат ещё не начал защиту');
   if (session.status !== 'active') throw errors.conflict('Защита уже завершена - доступен транскрипт');
   // check-then-create под FOR UPDATE строки сессии: два одновременных join разных компаний не пролезут оба.
@@ -143,6 +144,7 @@ async function attachToLiveSession(q: { id: string; text: string; companyId: str
       candidateId: q.candidateId,
       kind: 'defense',
       status: 'active',
+      aiDefense: false, // ИИ-защита — только вопросы по коду (ADR 0008 п. 1)
       ...(q.projectSubmissionId ? { OR: [{ projectSubmissionId: q.projectSubmissionId }, { projectSubmissionId: null }] } : {}),
     },
     orderBy: { startedAt: 'desc' },

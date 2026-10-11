@@ -2,7 +2,8 @@ import type { Prisma } from '@prisma/client';
 
 import { countOf } from '@/lib/plural';
 
-import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from '../call/consent';
+import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from '../call/consent';
+import { assertAiAssessmentConsent, hasAiAssessmentConsent } from '../consent/service';
 import { CALL_LIMITS } from '../call/plan';
 import { prisma } from '../db';
 import { getEnv } from '../env';
@@ -47,6 +48,11 @@ export const DEFENSE_ROOM_LIMITS = {
 export interface StartInput {
   mode: DefenseMode;
   projectSubmissionId?: string;
+  /**
+   * ИИ-защита до приглашения (ADR 0008 п. 1; ai-defense.ts): только вопросы по коду, без очереди вопросов
+   * работодателей и без ожидающей сессии по приглашению; в лимит живых защит сабмита не считается.
+   */
+  ai?: boolean;
 }
 
 export interface StartDeps {
@@ -128,12 +134,15 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
     : null;
   if (submissionId && (!submission || submission.candidateId !== candidateId)) throw errors.notFound('Сабмит проекта не найден');
   // Защита — тоже созвон: то же отдельное согласие на запись, что у лейна call (ADR 0003, п. 4).
-  if (!(await hasCallConsent(candidateId))) {
+  // Г3 (ADR 0005): защиту оценивает ИИ. Г2: согласия на запись не было — спросить; отозвано — защита текстом.
+  await assertAiAssessmentConsent(candidateId);
+  if ((await callRecordingMode(candidateId)) === 'ask') {
     throw new AppError('call_consent_required', 'Перед защитой нужно согласие на запись созвона', 403, { version: CALL_RECORDING_CONSENT_VERSION });
   }
 
+  const ai = input.ai === true && submissionId !== null;
   const active = await prisma.callSession.findFirst({
-    where: { candidateId, kind: 'defense', status: 'active', projectSubmissionId: submissionId },
+    where: { candidateId, kind: 'defense', status: 'active', projectSubmissionId: submissionId, aiDefense: ai },
     select: { id: true },
   });
   if (active) return { sessionId: active.id, resumed: true, webrtc: { iceServers: ICE_SERVERS }, snapshot: await buildSnapshot(active.id) };
@@ -149,13 +158,14 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   }
 
   if (submissionId) {
-    const done = await prisma.callSession.count({ where: { candidateId, kind: 'defense', status: 'finished', projectSubmissionId: submissionId } });
-    if (done >= DEFENSE_ROOM_LIMITS.maxDefensesPerSubmission) {
+    const done = await prisma.callSession.count({ where: { candidateId, kind: 'defense', status: 'finished', projectSubmissionId: submissionId, aiDefense: false } });
+    if (!ai && done >= DEFENSE_ROOM_LIMITS.maxDefensesPerSubmission) {
       throw new AppError('defense_attempts_exhausted', `Проект можно защитить не больше ${DEFENSE_ROOM_LIMITS.maxDefensesPerSubmission} раз`, 429);
     }
   }
 
-  const queue = await queuedQuestions(candidateId, submissionId);
+  // ИИ-защита — только вопросы по коду: вердикт сравним между компаниями и не несёт вопросов конкретной компании.
+  const queue = ai ? [] : await queuedQuestions(candidateId, submissionId);
   let items: PlanItem[];
   let source: SourceInfo;
   if (submission) {
@@ -188,12 +198,12 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   const first = items[0]!;
   const greeting =
     source.mode === 'project'
-      ? `Привет! Это защита проекта ${source.projectTitle}. Я задам ${countOf(items.length, ['вопрос', 'вопроса', 'вопросов'])} по твоему коду и решениям; отвечай своими словами, «не знаю» - тоже честный ответ. `
+      ? `Привет! Это ${ai ? 'ИИ-защита' : 'защита'} проекта ${source.projectTitle}.${ai ? ' Работодатели до приглашения увидят только оценки и флаги, без транскрипта и записи.' : ''} Я задам ${countOf(items.length, ['вопрос', 'вопроса', 'вопросов'])} по твоему коду и решениям; отвечай своими словами, «не знаю» - тоже честный ответ. `
       : `Привет! У работодателей есть к тебе вопросы: ${items.length}. Отвечай своими словами. `;
 
   const session = await prisma.$transaction(async (tx) => {
     // Ожидающая защита по приглашению работодателя (pending.ts) — её и начинаем, а не заводим вторую.
-    const pending = submissionId
+    const pending = submissionId && !ai
       ? await tx.callSession.findFirst({ where: { candidateId, kind: 'defense', status: 'pending', projectSubmissionId: submissionId }, orderBy: { startedAt: 'asc' }, select: { id: true } })
       : null;
     const activated = pending
@@ -206,7 +216,7 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
       pending && activated.count === 1
         ? pending
         : await tx.callSession.create({
-            data: { candidateId, kind: 'defense', projectSubmissionId: submissionId, status: 'active', policyVersion: CALL_RECORDING_CONSENT_VERSION, transcriptJson: [] },
+            data: { candidateId, kind: 'defense', projectSubmissionId: submissionId, status: 'active', aiDefense: ai, policyVersion: CALL_RECORDING_CONSENT_VERSION, transcriptJson: [] },
             select: { id: true },
           });
     await tx.defenseRoomPlan.create({
@@ -248,6 +258,7 @@ export async function candidateTurn(candidateId: string, sessionId: string, rawT
   if (text.length > DEFENSE_ROOM_LIMITS.maxAnswerChars) throw new AppError('answer_too_long', `Ответ длиннее ${DEFENSE_ROOM_LIMITS.maxAnswerChars} символов`, 400);
   const s = await loadOwn(candidateId, sessionId);
   if (s.status !== 'active') throw errors.conflict('Сессия защиты уже завершена');
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её
   await lockPlan(sessionId);
   try {
     const before = await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId }, select: { transcriptJson: true } });
@@ -338,8 +349,9 @@ async function respond(
  * уточнений. Ход занят — ничего не делаем: продолжение случится на следующем ответе кандидата.
  */
 export async function resumeAi(sessionId: string, llm: LlmProvider): Promise<TurnResult | null> {
-  const s = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { status: true, transcriptJson: true } });
+  const s = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { status: true, transcriptJson: true, candidateId: true } });
   if (!s || s.status !== 'active') return null;
+  if (!(await hasAiAssessmentConsent(s.candidateId))) return null; // Г3 отозван — ИИ в комнате не отвечает
   const t = asTranscript(s.transcriptJson);
   if (t[t.length - 1]?.role !== 'candidate') return null;
   if (await isAiMuted(sessionId)) return null;
@@ -375,6 +387,7 @@ async function storedVerdict(sessionId: string): Promise<DefenseRoomVerdict> {
 export async function finishDefenseRoom(candidateId: string, sessionId: string, llm: LlmProvider): Promise<DefenseRoomVerdict> {
   const s = await loadOwn(candidateId, sessionId);
   if (s.status !== 'active') return storedVerdict(sessionId);
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её: оценщик не запускается
   await lockPlan(sessionId);
   try {
     return await finishLocked(sessionId, llm);

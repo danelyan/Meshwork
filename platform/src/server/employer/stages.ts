@@ -41,6 +41,8 @@ export interface DefenseEvidence {
   projectScore: number | null;
   projectSubmissionId: string | null;
   evaluatedAt: string;
+  /** ИИ-защита до приглашения (ADR 0008 п. 1), а не живая защита с работодателем. */
+  ai?: boolean;
 }
 
 export interface CallsEvidence {
@@ -179,6 +181,8 @@ export interface DefenseBlock {
   flags: DefenseFlag[];
   /** Пояснения к флагам готовыми фразами. */
   notes: string[];
+  /** ИИ-защита до приглашения (ADR 0008 п. 1). */
+  ai?: boolean;
 }
 
 export function buildDepthBlock(q: QualifyingEvidence, needIds: ReadonlySet<string>): DepthBlock {
@@ -217,7 +221,7 @@ export function buildProjectBlock(projects: readonly ProjectEvidence[], own: Pro
 }
 
 export function buildDefenseBlock(d: DefenseEvidence): DefenseBlock {
-  return { score: d.score, passed: d.passed, flags: d.flags, notes: d.flags.map(defenseFlagLabel) };
+  return { score: d.score, passed: d.passed, flags: d.flags, notes: d.flags.map(defenseFlagLabel), ...(d.ai ? { ai: true } : {}) };
 }
 
 /** Одно предложение для summary; пусто, если ступеней нет. */

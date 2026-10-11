@@ -40,7 +40,7 @@ export async function loadStageEvidence(candidateIds: string[]): Promise<Map<str
     where: { candidateId: { in: candidateIds }, status: 'finished', NOT: { verdictJson: { equals: Prisma.AnyNull } } },
     orderBy: [{ finishedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],
     distinct: ['candidateId', 'kind'],
-    select: { candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true },
+    select: { candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true, aiDefense: true },
   });
   for (const c of calls) {
     if (!isObject(c.verdictJson)) continue;
@@ -55,7 +55,7 @@ export async function loadStageEvidence(candidateIds: string[]): Promise<Map<str
     } else {
       const v = c.verdictJson as unknown as DefenseRoomVerdict;
       if (!Array.isArray(v.flags)) continue;
-      slot(c.candidateId).calls = { ...slot(c.candidateId).calls, defense: summarizeDefense(v, c.projectSubmissionId) };
+      slot(c.candidateId).calls = { ...slot(c.candidateId).calls, defense: { ...summarizeDefense(v, c.projectSubmissionId), ...(c.aiDefense ? { ai: true } : {}) } };
     }
   }
 

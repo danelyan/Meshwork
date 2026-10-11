@@ -16,6 +16,8 @@ const enc = encodeURIComponent;
 
 export const startDefenseRoomApi = (body: { mode: 'project'; projectSubmissionId: string } | { mode: 'questions' }) =>
   postJson<StartResponse>('/api/defense-room/start', body);
+/** ИИ-защита проверенного сабмита до приглашения (ADR 0008 п. 1). */
+export const startAiDefenseApi = (projectSubmissionId: string) => postJson<StartResponse>('/api/defense-room/ai', { projectSubmissionId });
 export const defenseSnapshotApi = (id: string) => request<CallSnapshot>(`/api/defense-room/${enc(id)}`);
 export const defenseTurnApi = (id: string, text: string) =>
   postJson<{ text: string | null; muted: boolean; done: boolean }>(`/api/defense-room/${enc(id)}/turn`, { text });

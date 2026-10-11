@@ -8,3 +8,4 @@ export { generateQlc, summarizeProjectResult } from './qlc';
 export { loadRepoSnapshot } from './repo';
 export { subscribe, encodeCallEvent } from './bus';
 export { requestProjectDefense } from './pending';
+export { startAiDefense, getEmployerAiDefense, aiDefenseSummaries, publicAiDefenseVerdict, AI_DEFENSE_LIMITS, type EmployerAiDefenseView, type PublicAiDefenseVerdict, type AiDefenseSummary } from './ai-defense';

@@ -41,3 +41,6 @@ export const EmployerQuestionInput = z.object({
 });
 
 export const EmployerQuestionsQuery = z.object({ candidateId: Id });
+
+/** ИИ-защита проверенного сабмита до приглашения (ADR 0008 п. 1). */
+export const AiDefenseStartInput = z.object({ projectSubmissionId: Id });

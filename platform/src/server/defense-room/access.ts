@@ -22,6 +22,8 @@ export interface ViewedSession {
   id: string;
   candidateId: string;
   status: 'active' | 'finished' | 'cancelled' | 'pending';
+  /** ИИ-защита до приглашения (ADR 0008 п. 1): работодатель в неё не входит. */
+  aiDefense: boolean;
 }
 
 /** Работодатель видит кандидата за пределами псевдонима только после accepted. */
@@ -31,7 +33,7 @@ export async function employerMayAccess(companyId: string, candidateId: string):
 
 export async function resolveViewer(principal: SessionPrincipal | null, sessionId: string): Promise<{ viewer: Viewer; session: ViewedSession }> {
   if (!principal) throw errors.unauthorized();
-  const s = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, kind: true, status: true } });
+  const s = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, kind: true, status: true, aiDefense: true } });
   if (!s || s.kind !== 'defense') throw errors.notFound('Сессия не найдена');
   if (principal.candidateId && principal.candidateId === s.candidateId) {
     return { viewer: { role: 'candidate', candidateId: s.candidateId, peer: CANDIDATE_PEER }, session: s };

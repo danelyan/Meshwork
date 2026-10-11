@@ -182,6 +182,42 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
   );
 }
 
+/** Вердикт ИИ-защиты (ADR 0008 п. 1): баллы по рубрике A-02 и флаги; текст кандидата и запись — после принятия приглашения. */
+function AiDefenseBlock({ d, open }: { d: NonNullable<EmployerSubmissionView['aiDefense']>; open: boolean }) {
+  const v = d.verdict;
+  return (
+    <section className={styles.aiDefense} aria-label="ИИ-защита проекта">
+      <h4>ИИ-защита проекта</h4>
+      {!v ? (
+        <p className={emp.status}>{d.status === 'active' ? 'Кандидат сейчас проходит ИИ-защиту.' : 'Вердикта пока нет.'}</p>
+      ) : (
+        <>
+          <p>
+            {v.total === null
+              ? 'Оценки нет: кандидат не ответил ни на один вопрос.'
+              : `Рубрика A-02: ${String(v.totalMean ?? v.total).replace('.', ',')} из 8 - ${v.passed ? 'понимание своего кода показано' : 'ниже порога'} (3 прогона оценщика, медиана).`}
+          </p>
+          {v.items.length > 0 && (
+            <ul className={styles.bullets} aria-label="Баллы по вопросам">
+              {v.items.map((i, k) => (
+                <li key={k} className={i.passed ? styles.pass : styles.fail}>
+                  {i.label}: {i.total} из 8
+                </li>
+              ))}
+            </ul>
+          )}
+          {v.notes.map((n, k) => (
+            <p key={v.flags[k] ?? k} className={styles.flag} data-flag={v.flags[k]}>
+              {n}
+            </p>
+          ))}
+        </>
+      )}
+      <p className={emp.status}>{open ? <>Транскрипт и запись - в разделе <a href="/employer/calls">«Защиты»</a>.</> : 'Транскрипт и запись - после принятия приглашения.'}</p>
+    </section>
+  );
+}
+
 function SubmissionCard({ s, salaryFrom, salaryTo, onInvited }: { s: EmployerSubmissionView; salaryFrom: number; salaryTo: number; onInvited: () => void }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('Приглашаем на защиту проекта: разберём решения и обсудим работу в команде.');
@@ -241,6 +277,7 @@ function SubmissionCard({ s, salaryFrom, salaryTo, onInvited }: { s: EmployerSub
           </details>
         </>
       )}
+      {s.aiDefense && <AiDefenseBlock d={s.aiDefense} open={s.repoUrl !== null} />}
       {s.defense ? (
         <Notice>Приглашён на защиту · приглашение: {s.defense.invitationStatus}</Notice>
       ) : (

@@ -36,7 +36,7 @@ export async function hasAcceptedInvitation(employerProfileId: string, candidate
  */
 export async function resolveCallAccess(
   who: CallPrincipal,
-  call: { id: string; candidateId: string; status?: string | null },
+  call: { id: string; candidateId: string; status?: string | null; kind?: string | null },
 ): Promise<ResolvedAccess> {
   if (who.role === 'candidate') {
     if (!who.candidateId || who.candidateId !== call.candidateId) throw errors.notFound('Созвон не найден');
@@ -52,6 +52,9 @@ export async function resolveCallAccess(
     ? (await prisma.callParticipant.count({ where: { callSessionId: call.id, userId: who.userId } })) > 0
     : false;
   if (participant) return { role: 'employer', access: 'full', recording: false };
+  // Защита проекта до accepted: вердикт — только через /api/employer/project-submissions/{id}/ai-defense (свои вакансии,
+  // баллы и флаги, ADR 0008 п. 1); карта глубины созвона (publicVerdict) к вердикту защиты не применима.
+  if (call.kind === 'defense') throw errors.notFound('Созвон не найден');
   const cand = await prisma.candidate.findUnique({ where: { id: call.candidateId }, select: { hiddenFromEmployers: true } });
   if (!cand || cand.hiddenFromEmployers) throw errors.notFound('Созвон не найден');
   return { role: 'employer', access: 'summary', recording: false };

@@ -42,7 +42,7 @@ export const VERDICT_RULES = {
   version: 'defense-room-v1-2026-10-10-items',
 } as const;
 
-const QLC_LABEL: Record<QlcType | 'employer', string> = {
+export const QLC_LABEL: Record<QlcType | 'employer', string> = {
   what: 'что делает',
   why: 'почему так',
   what_breaks: 'что сломается',

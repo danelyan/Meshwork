@@ -641,7 +641,7 @@ export async function addVideo(candidateId: string, sessionId: string, bytes: Ui
 
 /** Сегмент видео: кандидату — всегда, работодателю — после принятого приглашения (как аудио). */
 export async function getVideo(who: CallPrincipal, sessionId: string, segment: string): Promise<Buffer> {
-  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true } });
+  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, kind: true } });
   if (!row) throw errors.notFound('Созвон не найден');
   const access = await resolveCallAccess(who, row);
   if (!access.recording) throw errors.forbidden('Запись созвона откроется после того, как кандидат примет приглашение');
@@ -649,7 +649,7 @@ export async function getVideo(who: CallPrincipal, sessionId: string, segment: s
 }
 
 export async function getRecording(who: CallPrincipal, sessionId: string, segment?: string): Promise<Buffer> {
-  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, status: true } });
+  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, status: true, kind: true } });
   if (!row) throw errors.notFound('Созвон не найден');
   const access = await resolveCallAccess(who, row);
   if (!access.recording) throw errors.forbidden('Запись созвона откроется после того, как кандидат примет приглашение');

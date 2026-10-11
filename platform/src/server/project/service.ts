@@ -23,6 +23,7 @@ import type { Grade as CategoryGrade, Specialization } from '../types';
 type Grade = PrismaGrade;
 
 import { readTarGz, writeZip } from './archive';
+import { aiDefenseSummaries, type AiDefenseSummary } from '../defense-room/ai-defense';
 import { getDefenseHook } from './defense-hook';
 import { fillRequirementsFromRubric, type SpecContext } from './fallback';
 import { reviewRubric } from './review';
@@ -729,6 +730,8 @@ export interface EmployerSubmissionView {
   aiLogText: string;
   result: ResultJson | null;
   defense: { invitationId: string; invitationStatus: string } | null;
+  /** ИИ-защита сдачи (ADR 0008 п. 1): до принятия — только баллы и флаги. */
+  aiDefense: AiDefenseSummary | null;
 }
 
 export async function listEmployerSubmissions(companyId: string, vacancyId: string): Promise<{ task: EmployerTaskView | null; items: EmployerSubmissionView[] }> {
@@ -744,6 +747,7 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
   // Открыто — только при принятом приглашении с действующим раскрытием (Г5, ADR 0005).
   const accepted = await disclosedCandidateIds(companyId, candidateIds);
   for (const s of subs) resumeIfStale(s);
+  const aiDefense = await aiDefenseSummaries(subs.map((s) => s.id));
   return {
     task,
     items: subs.map((s) => {
@@ -768,6 +772,7 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
         aiLogText: maskContacts(s.aiLogText ?? '').text,
         result: safe.result,
         defense: s.defenseInvitationId ? { invitationId: s.defenseInvitationId, invitationStatus: inv?.status ?? 'sent' } : null,
+        aiDefense: aiDefense.get(s.id) ?? null,
       };
     }),
   };

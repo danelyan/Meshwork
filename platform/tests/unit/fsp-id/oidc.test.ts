@@ -75,6 +75,8 @@ describe('мок ФСП ID: discovery и поток Authorization Code + PKCE', 
     expect(authUrl.searchParams.get('state')).toBe(flow.state);
     expect(authUrl.searchParams.get('nonce')).toBe(flow.nonce);
     expect(authUrl.searchParams.get('redirect_uri')).toBe(`${APP}/api/fsp-id/callback`);
+    // Логин спрашиваем всегда: иначе SSO-сессия провайдера молча впускает под прежним участником.
+    expect(authUrl.searchParams.get('prompt')).toBe('login');
   });
 
   it('успешный возврат: подпись, iss, aud, nonce проверены, sub участника', async () => {

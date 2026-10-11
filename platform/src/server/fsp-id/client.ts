@@ -30,6 +30,8 @@ export interface FspIdTransport {
   token(form: URLSearchParams): Promise<{ status: number; body: unknown }>;
   /** `refresh` — перечитать JWKS мимо кэша (ротация ключа: kid не найден). */
   jwks(opts?: { refresh?: boolean }): Promise<Jwks>;
+  /** Завершить сессию участника у провайдера (есть только у внешнего; у мока сессий нет). */
+  endSession?(refreshToken: string): Promise<void>;
 }
 
 export interface FspOidcConfig {
@@ -63,6 +65,14 @@ export function fspProviderMode(): FspProviderMode {
   return fspOidcConfig() ? 'external' : 'mock';
 }
 
+/**
+ * Чем войти в симулятор ФСП ID (env `FSP_OIDC_DEMO_HINT`): показываем у кнопок входа и привязки. Только при
+ * внешнем провайдере — у встроенного мока вместо логина и пароля выбор демо-участника.
+ */
+export function fspDemoHint(): string | null {
+  return fspOidcConfig() ? (getEnv().FSP_OIDC_DEMO_HINT ?? null) : null;
+}
+
 /** Транспорт для маршрутов привязки: внешний по env, иначе мок в процессе (`/api/fsp-id/realms/fsp`). */
 export function fspTransport(): FspIdTransport {
   const cfg = fspOidcConfig();
@@ -82,6 +92,7 @@ const Discovery = z.object({
   authorization_endpoint: z.url(),
   token_endpoint: z.url(),
   jwks_uri: z.url(),
+  end_session_endpoint: z.url().optional(),
 });
 type DiscoveryDoc = z.infer<typeof Discovery>;
 const JwksShape = z.object({ keys: z.array(z.object({ kty: z.string(), kid: z.string().optional() }).passthrough()) });
@@ -156,7 +167,40 @@ export function httpTransport(cfg: FspOidcConfig): FspIdTransport {
       jwksCache.set(d.jwks_uri, { set, exp: Date.now() + CACHE_TTL_MS });
       return set;
     },
+    /**
+     * Logout endpoint Keycloak, вызванный приложением напрямую: refresh token + учётные данные клиента, ответ 204
+     * (доки Keycloak, securing-apps «Logout endpoint»: формат нестандартный, но поддерживается; проверено на
+     * симуляторе 11.10). Стандартный RP-Initiated Logout требует редиректа браузера с `id_token_hint`.
+     */
+    async endSession(refreshToken) {
+      const d = await discover(cfg.issuer);
+      if (!d.end_session_endpoint) return;
+      const body = new URLSearchParams({ client_id: cfg.clientId, refresh_token: refreshToken });
+      if (cfg.clientSecret) body.set('client_secret', cfg.clientSecret);
+      const res = await fetch(d.end_session_endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error(`end_session: http_${res.status}`);
+    },
   };
+}
+
+/**
+ * Платформа берёт у провайдера личность один раз и его сессию дальше не использует, поэтому сразу её завершает.
+ * Иначе SSO-сессия Keycloak (до 30 минут) привязывает браузер к прежнему участнику: после выхода нельзя войти
+ * другим спортсменом, а «Привязать другой ФСП ID» привязывает того же (проверено на симуляторе 11.10).
+ * Сбой завершения вход не отменяет: тогда сработает `prompt=login` — провайдер переспросит пароль того же участника.
+ */
+export async function endProviderSession(t: FspIdTransport, refreshToken: string | null): Promise<void> {
+  if (!t.endSession || !refreshToken) return;
+  try {
+    await t.endSession(refreshToken);
+  } catch (err) {
+    console.warn('[fsp-id] provider session not ended', err instanceof Error ? err.message : 'unknown');
+  }
 }
 
 export interface FspFlowState {
@@ -237,6 +281,10 @@ export async function buildAuthorizeUrl(t: FspIdTransport, flow: FspFlowState): 
   u.searchParams.set('nonce', flow.nonce);
   u.searchParams.set('code_challenge', pkceChallenge(flow.verifier));
   u.searchParams.set('code_challenge_method', 'S256');
+  // Страховка к `endProviderSession`: если сессия у провайдера осталась, он не впустит молча, а переспросит
+  // пароль (OpenID Connect Core § 3.1.2.1). Сменить участника это не даёт — Keycloak подтверждает того же.
+  // Мок параметр не читает. В целевой интеграции с единым входом ФСП — убрать вместе с завершением сессии.
+  u.searchParams.set('prompt', 'login');
   return u.toString();
 }
 
@@ -257,12 +305,19 @@ function stateEq(a: string, b: string | null): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-const TokenBody = z.object({ id_token: z.string().min(10).max(16384), access_token: z.string().min(1).max(16384), token_type: z.string().regex(/^bearer$/i) });
+const TokenBody = z.object({
+  id_token: z.string().min(10).max(16384),
+  access_token: z.string().min(1).max(16384),
+  refresh_token: z.string().min(1).max(16384).optional(),
+  token_type: z.string().regex(/^bearer$/i),
+});
 
 export interface FspFlowResult {
   claims: IdTokenClaims;
   /** Токен пользователя для API реестра (/me/achievements); живёт только в памяти запроса. */
   accessToken: string;
+  /** Только чтобы завершить сессию у провайдера (`endProviderSession`); не хранится. null — провайдер его не выдал. */
+  refreshToken: string | null;
 }
 
 /**
@@ -307,7 +362,7 @@ export async function completeFlow(
       if (!(err instanceof IdTokenInvalid && err.reason === 'kid')) throw err;
       claims = verify(await t.jwks({ refresh: true }));
     }
-    return { claims, accessToken: parsed.data.access_token };
+    return { claims, accessToken: parsed.data.access_token, refreshToken: parsed.data.refresh_token ?? null };
   } catch (err) {
     if (err instanceof FspCallbackFailed) throw err;
     if (err instanceof IdTokenInvalid) throw new FspCallbackFailed('token', err.reason);

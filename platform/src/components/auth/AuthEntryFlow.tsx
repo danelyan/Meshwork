@@ -14,8 +14,9 @@ import styles from './AuthEntry.module.css';
 type Role = 'candidate' | 'employer';
 const assign = (path: string) => window.location.assign(path);
 
-export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navigate = assign, error: initialError = null }: {
-  yandexEnabled: boolean; demoEnabled: boolean; next: string | null; error?: string | null; onClose: () => void; navigate?: (path: string) => void;
+export function AuthEntryFlow({ yandexEnabled, fspHint = null, demoEnabled, next, onClose, navigate = assign, error: initialError = null }: {
+  /** Чем войти в симулятор ФСП ID (env FSP_OIDC_DEMO_HINT); null - встроенный мок или подсказка не задана. */
+  yandexEnabled: boolean; fspHint?: string | null; demoEnabled: boolean; next: string | null; error?: string | null; onClose: () => void; navigate?: (path: string) => void;
 }) {
   const [accounts, setAccounts] = useState<{candidates: DemoCandidate[]; employers?: DemoEmployer[]} | null>(null);
   const [accountsError, setAccountsError] = useState<string | null>(null);
@@ -77,7 +78,7 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
           <h3>Войти на платформу</h3>
           <EmailAuth next={destination} navigate={navigate} agreed={agreed} />
           <p className={styles.or}>или</p>
-          <YandexSignIn enabled={yandexEnabled} next={destination} fsp agreed={agreed} />
+          <YandexSignIn enabled={yandexEnabled} next={destination} fsp fspHint={fspHint} agreed={agreed} />
           {!yandexEnabled && <p id="yandex-off" className={styles.hint}>Вход через Яндекс не настроен на этом стенде.</p>}
           <p className={styles.hint}>ФСП ID - вход спортсмена ФСП: аккаунт специалиста, достижения сразу попадут в профиль. Реестр ФСП на стенде - симулятор с синтетическими участниками.</p>
         </section>

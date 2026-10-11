@@ -5,7 +5,7 @@ import { CONSENT_VERSION, ensureConsent } from '@/server/auth/consent';
 import { safeNext } from '@/server/auth/redirect';
 import { chooseRole, needsOnboarding, sessionInputFor, upsertExternalUser } from '@/server/auth/users';
 import { getEnv } from '@/server/env';
-import { completeFlow, FSP_OAUTH_COOKIE, FSP_OAUTH_COOKIE_PATH, FSP_RETURN_PATH, FspCallbackFailed, fspIdentity, fspOidcConfig, fspProviderMode, fspTransport, verifyFlowState } from '@/server/fsp-id/client';
+import { completeFlow, endProviderSession, FSP_OAUTH_COOKIE, FSP_OAUTH_COOKIE_PATH, FSP_RETURN_PATH, FspCallbackFailed, fspIdentity, fspOidcConfig, fspProviderMode, fspTransport, verifyFlowState } from '@/server/fsp-id/client';
 import { linkFspSubject } from '@/server/fsp-id/link';
 import { registryFor } from '@/server/fsp-id/registry';
 import { recordFspLink } from '@/server/onboarding/service';
@@ -46,9 +46,12 @@ export async function GET(req: Request) {
   if (login && saved?.consent !== CONSENT_VERSION) return redirect('/auth?error=consent_required');
 
   try {
-    const { claims, accessToken } = await completeFlow(fspTransport(), new URL(req.url).searchParams, saved, candidateId);
+    const transport = fspTransport();
+    const { claims, accessToken, refreshToken } = await completeFlow(transport, new URL(req.url).searchParams, saved, candidateId);
     const who = fspIdentity(claims);
     const registry = await registryFor(who.fspId, { apiUrl: fspOidcConfig()?.apiUrl ?? null, accessToken });
+    // Личность и достижения получены — сессия у провайдера больше не нужна (иначе следующий вход будет тем же участником).
+    await endProviderSession(transport, refreshToken);
 
     if (!login) {
       const view = await linkFspSubject(candidateId!, who, registry, fspProviderMode());

@@ -6,7 +6,7 @@ import { AuthEntryFlow } from './AuthEntryFlow';
 import styles from './AuthEntry.module.css';
 
 function EntryDialog({ onClose, ...props }: {
-  yandexEnabled: boolean; demoEnabled: boolean; next: string | null; error?: string | null; onClose: () => void;
+  yandexEnabled: boolean; fspHint: string | null; demoEnabled: boolean; next: string | null; error?: string | null; onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -24,8 +24,8 @@ function EntryDialog({ onClose, ...props }: {
 }
 
 /** Normal /auth links open in place; modified clicks and direct routes keep their fallback. */
-export function AuthEntry({ children, yandexEnabled, demoEnabled, initiallyOpen = false, next = null, error = null }: {
-  children: ReactNode; yandexEnabled: boolean; demoEnabled: boolean; initiallyOpen?: boolean; next?: string | null; error?: string | null;
+export function AuthEntry({ children, yandexEnabled, fspHint = null, demoEnabled, initiallyOpen = false, next = null, error = null }: {
+  children: ReactNode; yandexEnabled: boolean; fspHint?: string | null; demoEnabled: boolean; initiallyOpen?: boolean; next?: string | null; error?: string | null;
 }) {
   const [entry, setEntry] = useState<{next:string|null} | null>(initiallyOpen ? {next:safeNext(next)} : null);
   return <div onClickCapture={event=>{
@@ -38,7 +38,7 @@ export function AuthEntry({ children, yandexEnabled, demoEnabled, initiallyOpen 
     setEntry({next:safeNext(url.searchParams.get('next'))});
   }}>
     {children}
-    {entry && <EntryDialog yandexEnabled={yandexEnabled} demoEnabled={demoEnabled} next={entry.next} error={error}
+    {entry && <EntryDialog yandexEnabled={yandexEnabled} fspHint={fspHint} demoEnabled={demoEnabled} next={entry.next} error={error}
       onClose={()=>{ if (initiallyOpen) window.location.assign('/'); else setEntry(null); }} />}
   </div>;
 }

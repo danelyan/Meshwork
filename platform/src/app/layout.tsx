@@ -8,6 +8,7 @@ import { AuthEntry } from '@/components/auth/AuthEntry';
 import { getPageSession } from '@/server/auth/page';
 import { headerAccountFor } from '@/server/auth/role-switch';
 import { yandexConfig } from '@/server/auth/yandex';
+import { fspDemoHint } from '@/server/fsp-id/client';
 import { ShellFrame } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
 import { bodyRole } from '@/components/shell/bodyRole';
@@ -56,7 +57,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="ru" className={`${golos.variable} ${mono.variable}`}>
       {/* data-stt — режим голосового ввода для композера чата (server/stt, env STT_PROVIDER) */}
       <body data-stt={sttMode()} data-role={role}>
-        <AuthEntry yandexEnabled={yandexConfig() !== null} demoEnabled={getEnv().DEMO_LOGIN}>
+        <AuthEntry yandexEnabled={yandexConfig() !== null} fspHint={fspDemoHint()} demoEnabled={getEnv().DEMO_LOGIN}>
         <ShellFrame account={account} employerSummary={session?.role === 'employer' && session.employerProfileId ? <EmployerSidebarSummary employerProfileId={session.employerProfileId} /> : null} header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
           {children}
         </ShellFrame>

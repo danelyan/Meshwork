@@ -6,6 +6,7 @@ import { SHOWCASE } from '@/components/landing/showcase';
 import { safeNext } from '@/server/auth/redirect';
 import { yandexConfig } from '@/server/auth/yandex';
 import { getEnv } from '@/server/env';
+import { fspDemoHint } from '@/server/fsp-id/client';
 
 export const metadata: Metadata = { title: 'Вход - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,7 @@ export default async function AuthPage({ searchParams }: { searchParams: Search 
   return (
       <AuthEntry initiallyOpen
         yandexEnabled={yandexConfig() !== null}
+        fspHint={fspDemoHint()}
         demoEnabled={getEnv().DEMO_LOGIN}
         next={safeNext(one(sp.next))}
         error={error && /^[a-z_]{1,32}$/.test(error) ? error : null}

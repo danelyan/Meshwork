@@ -34,7 +34,7 @@ function fspStateText(state: FspState, name: string | null): string {
   }
 }
 
-function FspIdCard({ fsp, result, provider, onDialog, dialogBusy }: { fsp: FspLinkView; result: string | null; provider: 'external' | 'mock'; onDialog: () => void; dialogBusy: boolean }) {
+function FspIdCard({ fsp, result, provider, hint, onDialog, dialogBusy }: { fsp: FspLinkView; result: string | null; provider: 'external' | 'mock'; hint: string | null; onDialog: () => void; dialogBusy: boolean }) {
   const [busy, setBusy] = useState(false);
   const notice = result ? FSP_RESULT_TEXT[result] : undefined;
   return <Panel className={styles.card}>
@@ -45,12 +45,13 @@ function FspIdCard({ fsp, result, provider, onDialog, dialogBusy }: { fsp: FspLi
     <p className={styles.fine}>{provider === 'external'
       ? 'Вход через симулятор ФСП ID на Keycloak (OIDC), достижения - из API симулятора реестра. Это стенд команды, а не сервис ФСП: спортсмены и результаты синтетические. Платформа работает и без истории в ФСП.'
       : 'Вход через демонстрационный провайдер ФСП ID внутри платформы (OIDC, пути как у Keycloak). Настоящий реестр ФСП не подключён: участники и результаты - демо-данные. Платформа работает и без истории в ФСП.'}</p>
+    {hint && <p className={styles.fine}>Вход в симулятор ФСП ID: {hint}</p>}
     <Button size="sm" loading={busy} onClick={() => { setBusy(true); window.location.assign('/api/fsp-id/link'); }}>{fsp.subject ? 'Привязать другой ФСП ID' : 'Привязать ФСП ID'}</Button>
     <Button size="sm" loading={dialogBusy} onClick={onDialog}>Добавить опыт в диалоге ↗</Button>
   </Panel>;
 }
 
-export function CandidateSettings({ hidden, contact, fspState, fsp, fspProvider = 'mock', fspResult = null }: { hidden: boolean; contact: string | null; fspState: FspState; fsp?: FspLinkView; fspProvider?: 'external' | 'mock'; fspResult?: string | null }) {
+export function CandidateSettings({ hidden, contact, fspState, fsp, fspProvider = 'mock', fspHint = null, fspResult = null }: { hidden: boolean; contact: string | null; fspState: FspState; fsp?: FspLinkView; fspProvider?: 'external' | 'mock'; fspHint?: string | null; fspResult?: string | null }) {
   const [user, setUser] = useState<MeView | null>(null);
   const [version, setVersion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +97,7 @@ export function CandidateSettings({ hidden, contact, fspState, fsp, fspProvider 
         <Panel className={styles.card}><h2>В анонимной карточке</h2><dl className={styles.accountFacts}><div><dt>Всегда скрыто</dt><dd>Имя, контакты, цитаты из резюме. Имя и контакт открываются только после принятия приглашения.</dd></div><div><dt>Видно</dt><dd>Категория, специализация и подтверждённые вами утверждения с уровнями доказанности.</dd></div></dl><Button href="/profile" size="sm">Посмотреть профиль ↗</Button></Panel>
       </div>
       <aside className={styles.stack}>
-        <FspIdCard fsp={fsp ?? { state: fspState, subject: null, name: null, achievements: [] }} result={fspResult} provider={fspProvider} onDialog={() => void openFspStep()} dialogBusy={busy} />
+        <FspIdCard fsp={fsp ?? { state: fspState, subject: null, name: null, achievements: [] }} result={fspResult} provider={fspProvider} hint={fspHint} onDialog={() => void openFspStep()} dialogBusy={busy} />
         <Panel className={styles.card}><h2>Согласие</h2><p>{user ? user.consent ? 'Согласие на текущую версию сохранено.' : 'Нужно подтвердить актуальную версию согласия.' : 'Загружаем статус…'}</p>{version && <span className={styles.meta}>Версия {version}</span>}<p className={styles.fine}>Данные обрабатываются на серверах в РФ. Компаниям доступна анонимная карточка; имя и контакт только после принятия приглашения.</p><Button href="/consent" size="sm">Читать текст</Button>{user && !user.consent && <Button size="sm" loading={busy} disabled={!version} onClick={() => void consent()}>Принять согласие</Button>}</Panel>
         <Panel className={styles.card}><h2>Аккаунт</h2>{user ? <dl className={styles.accountFacts}><div><dt>Имя</dt><dd>{user.name}</dd></div><div><dt>Почта</dt><dd>{user.email ?? 'Не указана'}</dd></div><div><dt>Вход</dt><dd>{user.isDemo ? 'Демонстрационный аккаунт' : 'Личный аккаунт'}</dd></div></dl> : <p>Загружаем аккаунт…</p>}<Button loading={busy} onClick={() => void exit()}>Выйти</Button></Panel>
         <AccountErasure />

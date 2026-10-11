@@ -267,3 +267,5 @@
 :global(:root[data-theme='dark']) :is(.vacancyCard, .explorerOverview, .selectedCandidate, .companyPreview, .companyProfile, .candidateRow, .searchFilters, .templateCard) { background: var(--glass); }
 :global(:root[data-theme='dark']) :is(.invitationDialog, .consultantDock) { background: linear-gradient(var(--glass-strong), var(--glass-strong)), var(--paper); }
 :global(:root[data-theme='dark']) :is(.mapCenter, .mapNode[aria-pressed='true'] .silhouette) { box-shadow: 0 0 0 8px var(--surface-quote), var(--landing-shadow-sm); }
+:global(:root[data-theme='dark']) .contacts { background: var(--surface-notice); color: var(--ink); border: 1px solid var(--border-soft); }
+:global(:root[data-theme='dark']) .skillChips:not([data-missing='true']) > span { background: var(--surface-ghost); color: var(--ink); border: 1px solid var(--border-soft); }

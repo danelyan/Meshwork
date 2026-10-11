@@ -14,7 +14,7 @@ const assign = (path: string) => window.location.assign(path);
 export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navigate = assign, error: initialError = null }: {
   yandexEnabled: boolean; demoEnabled: boolean; next: string | null; error?: string | null; onClose: () => void; navigate?: (path: string) => void;
 }) {
-  const [error, setError] = useState<string | null>(initialError ? initialError === 'consent_required'
+  const [error] = useState<string | null>(initialError ? initialError === 'consent_required'
     ? 'Чтобы войти, отметь согласие на обработку персональных данных.'
     : initialError === 'state' ? 'Сеанс входа устарел. Попробуй ещё раз.'
     : initialError === 'fsp_denied' ? 'Вход через ФСП ID отменён.'
@@ -50,7 +50,7 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
         {demoEnabled && <section className={`${styles.method} ${styles.demo}`} aria-label="Демо-профиль">
           <h3>Демо-профиль</h3>
           <p className={styles.hint}>Вымышленные данные, вход без пароля. Профили идут по этапам пути соискателя; для компании - с вакансиями и с приглашениями.</p>
-          <PersonaGroups state={personas} agreed={agreed} columns />
+          <PersonaGroups state={personas} agreed={agreed} />
         </section>}
       </div>
       {personas.pending && <p role="status" className={styles.hint}>Входим…</p>}

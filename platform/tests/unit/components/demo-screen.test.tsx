@@ -1,130 +1,69 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-import { DemoScreen } from '@/components/DemoScreen';
+import { DEMO_FEATURES, DemoScreen } from '@/components/DemoScreen';
+import { ALL_PERSONAS } from '@/server/demo/personas';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
 const push = vi.fn();
-// Вход и переходы — полная навигация (window.location.assign), см. DemoScreen.enter.
+// Вход и переходы - полная навигация (window.location.assign), см. useDemoPersonas.
 beforeEach(() => {
   Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign: push } });
 });
-
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   push.mockReset();
 });
 
-const LIST = {
-  candidates: [{ id: 'd1', name: 'Анна', specialization: 'backend', fspState: 'linked' }],
-  employers: [{ id: 'e1', name: 'Олег HR', company: { id: 'co', name: 'Гранит' } }],
-};
-
 function stubFetch(login: unknown) {
   const fn = vi.fn(async (_url: string, init?: RequestInit) => ({
     ok: true,
     status: 200,
-    json: async () => (init?.method === 'POST' ? login : LIST),
+    json: async () => (init?.method === 'POST' ? login : { personas: ALL_PERSONAS, candidates: [], employers: [] }),
   }));
   vi.stubGlobal('fetch', fn);
   return fn;
 }
 
-it('показывает демо-кандидатов и работодателей', async () => {
+it('персоны: этапы 1…8 без дублей, у каждой одна строка «что увидишь»', () => {
+  const stages = ALL_PERSONAS.filter((p) => p.stage !== null).map((p) => p.stage);
+  expect(stages).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  expect(new Set(ALL_PERSONAS.map((p) => p.id)).size).toBe(ALL_PERSONAS.length);
+  for (const p of ALL_PERSONAS) expect(p.sees.length).toBeGreaterThan(20);
+  const ids = new Set(ALL_PERSONAS.map((p) => p.id));
+  for (const f of DEMO_FEATURES) for (const id of f.personas) expect(ids.has(id)).toBe(true);
+});
+
+it('показывает 6 пунктов и быстрый вход персоной под каждым', async () => {
   stubFetch({});
   render(<DemoScreen />);
-  expect(await screen.findByRole('button', { name: 'Войти как Анна' })).toBeDefined();
-  expect(screen.getByRole('button', { name: 'Войти как Олег HR' })).toBeDefined();
-  expect(screen.getByText(/Гранит/)).toBeDefined();
+  expect((await screen.findAllByRole('button', { name: 'Войти как Юлия Власова' })).length).toBeGreaterThanOrEqual(1);
+  expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThanOrEqual(DEMO_FEATURES.length);
 });
 
-it('демо-работодатель: вход ведёт в /employer', async () => {
-  const fetchFn = stubFetch({ employer: { id: 'e1', name: 'Олег HR' }, next: '/employer' });
-  render(<DemoScreen />);
-  fireEvent.click(await screen.findByRole('button', { name: 'Войти как Олег HR' }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/employer'));
-  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ employerUserId: 'e1' });
+it('работодатель ведёт по ссылке next в /employer, кандидат с таким next - в свой кабинет', async () => {
+  const fetchFn = stubFetch({ employer: { id: 'demo-employer', name: 'x' }, candidate: { id: 'c', name: 'y' }, next: '/consultant' });
+  render(<DemoScreen next="/employer/search" />);
+  fireEvent.click((await screen.findAllByRole('button', { name: 'Войти как Анна Кравец · Северный Поток' }))[0]!);
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/employer/search'));
+  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ employerUserId: 'demo-employer' });
 });
 
-it('кандидаты пула работодателя свёрнуты в «ещё N кандидатов для подборки», основной список короткий', async () => {
-  const pool = Array.from({ length: 8 }, (_, i) => ({ id: `demo-pool-${i}`, name: `Пул ${i}`, specialization: 'backend', fspState: 'linked' }));
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ candidates: [...LIST.candidates, ...pool], employers: LIST.employers }) })),
-  );
-  render(<DemoScreen />);
-  await screen.findByRole('button', { name: 'Войти как Анна' });
-  const summary = screen.getByText('ещё 8 кандидатов для подборки');
-  const details = summary.closest('details')!;
-  expect(details.open).toBe(false);
-  expect(details.querySelectorAll('button[aria-label^="Войти"]')).toHaveLength(8);
-  expect(summary.closest('section')!.querySelectorAll('ul > li > button[aria-label^="Войти"]')).toHaveLength(10);
-  expect(screen.getByRole('button', { name: 'Войти как Анна' }).closest('details')).toBeNull();
+it('кандидат с next на кабинет работодателя входит в свой кабинет', async () => {
+  stubFetch({ candidate: { id: 'c', name: 'y' }, next: '/consultant' });
+  render(<DemoScreen next="/employer/search" />);
+  fireEvent.click((await screen.findAllByRole('button', { name: 'Войти как Марина Котова' }))[0]!);
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
 });
 
-it('«Новый пользователь»: без галки согласия кнопка неактивна; с галкой создаёт гостя с версией согласия и ведёт на /onboarding', async () => {
+it('«Новый пользователь»: без галки согласия неактивен; с галкой создаёт гостя с версией согласия', async () => {
   const fetchFn = stubFetch({ user: { id: 'u', name: 'Демо-гость 1' }, next: '/consultant' });
   render(<DemoScreen />);
-  await screen.findByRole('button', { name: 'Войти как Анна' });
-  const btn = screen.getByRole('button', { name: 'Новый пользователь' }) as HTMLButtonElement;
-  expect(btn.disabled).toBe(true);
-  fireEvent.click(screen.getByRole('button', { name: 'Показать текст согласия' }));
-  expect(screen.getByRole('link', { name: 'Полный текст согласия' }).getAttribute('href')).toBe('/consent');
+  const btn = (await screen.findAllByRole('button', { name: 'Новый пользователь' }))[0] as HTMLButtonElement;
   expect(btn.disabled).toBe(true);
   fireEvent.click(screen.getByRole('checkbox', { name: /Согласен\(на\) на обработку персональных данных/ }));
   expect(btn.disabled).toBe(false);
   fireEvent.click(btn);
   await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
   expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ fresh: true, consent: CONSENT_VERSION });
-});
-
-it('«пройти онбординг заново» у демо-кандидата шлёт restartCandidateId', async () => {
-  const fetchFn = stubFetch({ user: { id: 'u', name: 'x' }, next: '/consultant' });
-  render(<DemoScreen />);
-  fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Анна' }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
-  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ restartCandidateId: 'd1' });
-});
-
-it('«пройти онбординг заново» у демо-работодателя шлёт restartUserId', async () => {
-  const fetchFn = stubFetch({ user: { id: 'u', name: 'x' }, next: '/consultant' });
-  render(<DemoScreen />);
-  fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Олег HR' }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
-  expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ restartUserId: 'e1' });
-});
-
-describe('?next= от guard', () => {
-  it('кандидат: вход ведёт на исходную страницу кандидата', async () => {
-    stubFetch({ candidate: { id: 'd1', name: 'Анна' }, next: '/consultant' });
-    render(<DemoScreen next="/test?specialization=backend" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Войти как Анна' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/test?specialization=backend'));
-  });
-
-  it('кандидат с next на кабинет работодателя — в свой кабинет', async () => {
-    stubFetch({ candidate: { id: 'd1', name: 'Анна' }, next: '/consultant' });
-    render(<DemoScreen next="/employer/search" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Войти как Анна' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
-  });
-
-  it('работодатель: next /employer/… — туда, страница кандидата — в /employer', async () => {
-    stubFetch({ employer: { id: 'e1', name: 'Олег HR' }, next: '/employer' });
-    render(<DemoScreen next="/employer/search" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Войти как Олег HR' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/employer/search'));
-    cleanup();
-    push.mockReset();
-    render(<DemoScreen next="/profile" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Войти как Олег HR' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/employer'));
-  });
-
-  it('«пройти онбординг заново» next не использует', async () => {
-    stubFetch({ user: { id: 'u', name: 'x' }, next: '/consultant' });
-    render(<DemoScreen next="/profile" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Пройти онбординг заново: Анна' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
-  });
 });

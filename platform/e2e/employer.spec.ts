@@ -3,34 +3,35 @@ import { expect, test, type Page } from '@playwright/test';
 // R-E-03..R-E-07: вход работодателя через /demo → подборка по потребности → приглашение →
 // кандидат из пула принимает → работодатель видит контакты. Нужен сид (db:seed: auth, employer, recommend, claims).
 // Запускает интегратор; сценарий переживает повторный прогон (если приглашение уже есть — шаг отправки пропускается).
-const EMPLOYER = /Анна Кравец/;
 const POOL_TOP = 'Глеб Соколов'; // первый в подборке по потребности «Backend платежей» (demo-vac-be-m-1)
 // кандидаты пула по Frontend: E-02 их не приглашает, поэтому имена у них скрыты в любом порядке прогона
 const FRONTEND_POOL = ['Никита Захаров', 'Вера Лебедева', 'Тимур Гусев', 'Алина Морозова'];
 const VACANCY_URL = '**/employer/needs/demo-vac-be-m-1';
 
-async function loginFromAuth(page: Page, name: RegExp | string, landing: string) {
+// Работодатель входит персоной с /demo; кандидат пула в списки входа не попадает (решение владельца 11.10) -
+// его аккаунт открывает тот же API, что кнопки входа.
+async function loginAsEmployer(page: Page) {
   await page.goto('/demo');
-  // кандидаты пула работодателя свёрнуты в <details>; открываем, если нужный лежит там
-  const button = page.getByRole('button', { name: typeof name === 'string' ? `Войти как Демо: ${name}` : name });
-  if (!(await button.isVisible())) await page.getByText(/ещё \d+ кандидат/).click();
-  await button.click();
-  await page.waitForURL(landing);
+  await page.getByRole('button', { name: /^Войти как .*Анна Кравец/ }).first().click();
+  await page.waitForURL('**/consultant'); // дом работодателя - помощник (10.10)
 }
 
-test('E-02: на /demo основной список короткий, кандидаты для подборки свёрнуты', async ({ page }) => {
+async function loginAsPoolCandidate(page: Page, candidateId: string) {
+  const res = await page.request.post('/api/demo/login', { data: { candidateId } });
+  expect(res.ok()).toBe(true);
+}
+
+test('E-02: на /demo персоны по этапам, кандидаты пула в списках входа не показаны', async ({ page }) => {
   await page.goto('/demo');
-  const more = page.getByText(/ещё \d+ кандидат\S* для подборки/);
-  await expect(more).toBeVisible();
-  const details = page.locator('details', { has: more });
-  expect(await details.evaluate((el: HTMLDetailsElement) => el.open)).toBe(false);
-  await more.click();
-  await expect(details.getByRole('button', { name: /^Войти как / }).first()).toBeVisible();
+  await page.getByText('Все профили по этапам пути').click();
+  await expect(page.getByRole('button', { name: 'Войти как Юлия Власова' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Войти как Демо: / })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Глеб Соколов/ })).toHaveCount(0);
 });
 
 test('E-02: работодатель → подборка → приглашение → кандидат принимает → контакты открыты', async ({ page }) => {
   // 1. работодатель: подборка по потребности
-  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/consultant'); // дом работодателя — помощник (10.10)
+  await loginAsEmployer(page);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.goto('/employer/needs/demo-vac-be-m-1');
   await page.waitForURL(VACANCY_URL);
@@ -57,7 +58,7 @@ test('E-02: работодатель → подборка → приглашен
   }
 
   // 3. кандидат принимает
-  await loginFromAuth(page, POOL_TOP, '**/consultant');
+  await loginAsPoolCandidate(page, 'demo-pool-be-m-pay');
   await page.goto('/invitations');
   // до принятия: вилка и способ связи компании (ТЗ 2.2)
   await expect(page.getByText(/Связь с компанией: /).first()).toBeVisible();
@@ -70,7 +71,7 @@ test('E-02: работодатель → подборка → приглашен
   await expect(page.getByText(/Контакты открыты/).first()).toBeVisible();
 
   // 4. работодатель видит имя и контакты
-  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/consultant'); // дом работодателя — помощник (10.10)
+  await loginAsEmployer(page);
   await page.goto('/employer/needs/demo-vac-be-m-1');
   await expect(page.getByText(POOL_TOP).first()).toBeVisible();
   // контакт задаёт сам кандидат («Как с тобой связаться»); без него показывается почта аккаунта
@@ -78,7 +79,7 @@ test('E-02: работодатель → подборка → приглашен
 });
 
 test('Помощник работодателя (демо без модели): подборка карточками → «Пригласить» → форма; имён нет', async ({ page }) => {
-  await loginFromAuth(page, new RegExp(`Войти как .*${EMPLOYER.source}`), '**/consultant'); // дом работодателя — помощник (10.10)
+  await loginAsEmployer(page);
   // свежая потребность этого прогона на Frontend: сценарий не зависит от того, кого принял E-02 по Backend
   const list = await (await page.request.get('/api/employer/vacancies')).json();
   const sample = list.vacancies.find((v: { id: string }) => v.id === 'demo-vac-fe-j-2');
@@ -87,7 +88,7 @@ test('Помощник работодателя (демо без модели): 
     data: { title, specialization: 'frontend', grade: 'junior', subcategoryId: 'frontend.ui-app', salaryFrom: 100000, salaryTo: 150000, stack: ['React'], needs: sample.needs },
   });
   expect(created.status()).toBe(201);
-  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'ИИ-помощник' }).click();
+  await page.getByRole('link', { name: 'Помощник' }).click();
   await page.waitForURL('**/consultant');
   await page.getByLabel('Сообщение помощнику').fill(`Подбери под мою потребность ${title}`);
   await page.getByRole('button', { name: 'Отправить', exact: true }).click();

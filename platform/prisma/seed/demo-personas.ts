@@ -44,6 +44,10 @@ export const PERSONA_PROFILES: DemoProfile[] = [
     category: { specialization: 'backend', grade: 'junior' }, contact: 'marina.kotova@example.com', stack: ['Node.js', 'NestJS', 'PostgreSQL'], claims: BE_J_CLAIMS,
   },
   {
+    id: 'demo-hired', name: 'Демо: Алёна Мироненко', specialization: 'backend', fspState: 'linked',
+    category: { specialization: 'backend', grade: 'junior' }, contact: 'alena.mironenko@example.com', stack: ['Node.js', 'NestJS', 'PostgreSQL'], claims: BE_J_CLAIMS,
+  },
+  {
     id: 'demo-accepted', name: 'Демо: Роман Зайцев', specialization: 'backend', fspState: 'linked',
     category: { specialization: 'backend', grade: 'junior' }, contact: '@roman_zaitsev_demo', stack: ['Node.js', 'NestJS', 'Redis'], claims: BE_J_CLAIMS,
   },
@@ -54,6 +58,7 @@ const QUESTIONNAIRE: Record<string, { claimedGrade: 'junior' | 'middle'; salaryM
   'demo-tested': { claimedGrade: 'junior', salaryMin: 70000, salaryExpected: 100000, city: 'Казань' },
   'demo-strong': { claimedGrade: 'middle', salaryMin: 200000, salaryExpected: 260000, city: 'Москва' },
   'demo-invited': { claimedGrade: 'junior', salaryMin: 80000, salaryExpected: 110000, city: 'Екатеринбург' },
+  'demo-hired': { claimedGrade: 'junior', salaryMin: 90000, salaryExpected: 120000, city: 'Самара' },
   'demo-accepted': { claimedGrade: 'junior', salaryMin: 80000, salaryExpected: 115000, city: 'Новосибирск' },
 };
 
@@ -155,14 +160,15 @@ async function seedGranitEmployer(prisma: PrismaClient): Promise<void> {
 }
 
 /** Приглашение компании «Гранит Софт» (фиксированный id — повторный сид обновляет, а не плодит). */
-async function seedInvitation(prisma: PrismaClient, id: string, candidateId: string, status: 'sent' | 'accepted', ageDays: number): Promise<void> {
+async function seedInvitation(prisma: PrismaClient, id: string, candidateId: string, status: 'sent' | 'accepted' | 'hired', ageDays: number): Promise<void> {
   const created = daysAgo(ageDays);
   const base = {
     vacancyId: GRANIT.vacancyId, candidateId, companyId: GRANIT.companyId, employerProfileId: GRANIT.profileId, status,
     salaryFrom: 100000, salaryTo: 130000, createdAt: created,
     message: 'Здравствуйте! Ваш профиль подходит под нашу вакансию Backend-разработчика. Расскажем о команде и задачах на коротком созвоне.',
-    viewedAt: status === 'accepted' ? new Date(created.getTime() + 3_600_000) : null,
-    respondedAt: status === 'accepted' ? new Date(created.getTime() + 7_200_000) : null,
+    viewedAt: status !== 'sent' ? new Date(created.getTime() + 3_600_000) : null,
+    respondedAt: status !== 'sent' ? new Date(created.getTime() + 7_200_000) : null,
+    hiredAt: status === 'hired' ? new Date(created.getTime() + 5 * 86_400_000) : null,
   };
   await prisma.invitation.upsert({ where: { id }, update: base, create: { id, ...base } });
 }
@@ -177,5 +183,6 @@ export async function seedDemoPersonas(prisma: PrismaClient): Promise<void> {
   await seedGranitEmployer(prisma);
   await seedInvitation(prisma, 'demo-inv-invited', 'demo-invited', 'sent', 1);
   await seedInvitation(prisma, 'demo-inv-accepted', 'demo-accepted', 'accepted', 4);
-  console.log(`seed(demo-personas): ${PERSONA_PROFILES.length + 1} candidates, employer Гранит Софт, 2 invitations`);
+  await seedInvitation(prisma, 'demo-inv-hired', 'demo-hired', 'hired', 9);
+  console.log(`seed(demo-personas): ${PERSONA_PROFILES.length + 1} candidates, employer Гранит Софт, 3 invitations (sent/accepted/hired)`);
 }

@@ -21,18 +21,11 @@ test('E-02: /demo → галка согласия → «Новый пользо�
   await expect(page.getByRole('list', { name: 'Переписка с помощником' })).toBeVisible();
 });
 
-test('E-02: у существующего демо-аккаунта «пройти онбординг заново» открывает чат', async ({ page }) => {
+// Персона этапа 2 «Павел Нестеров»: знакомство начато, часть ответов уже сохранена, продолжение - в ленте чата.
+test('E-02: персона «Знакомство» с /demo открывает ленту знакомства с сохранёнными ответами', async ({ page }) => {
   await page.goto('/demo');
-  await page.getByRole('button', { name: /^Пройти онбординг заново: / }).first().click();
+  await page.getByRole('button', { name: 'Войти как Павел Нестеров' }).first().click();
   await page.waitForURL('**/consultant');
-  try {
-    // лента знакомства открылась; конкретный #ob-q проверяет тест выше на чистом аккаунте: у общего сид-аккаунта
-    // история чата накапливается между прогонами и вопрос печатается в реальном времени дольше любого разумного таймаута
-    await expect(page.getByRole('list', { name: 'Переписка с помощником' })).toBeVisible({ timeout: 30_000 });
-  } finally {
-    // «Заново» сбрасывает onboardedAt у общего сид-аккаунта (первый демо-профиль, тот же, что берёт
-    // consultant.spec): без возврата следующие прогоны на этой БД попадают в чат знакомства, а не в ленту.
-    const res = await page.request.post('/api/auth/onboarding/complete');
-    expect(res.ok()).toBe(true);
-  }
+  await expect(page.getByRole('list', { name: 'Переписка с помощником' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/Знакомство · сохранено \d+ из \d+/i)).toBeVisible();
 });

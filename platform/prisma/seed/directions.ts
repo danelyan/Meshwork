@@ -3,6 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 import { SUBCATEGORIES } from '../../src/lib/directions';
 
 import { seedPoolProfiles, type DemoProfile } from './employer';
+import { DEMO_POOL_CATEGORIES } from './pool-categories';
 
 /**
  * Сид lane directions (ADR 0003, дополнение 10.10):
@@ -45,12 +46,12 @@ export const DEMO_POOL_AI: DemoProfile[] = [
  * подборка идут по подкатегории (ADR 0003, дополнение 10.10 15:50). Явные — по смыслу профиля
  * (платежи, очереди → integrations); остальные — первая подкатегория направления. ДЕМО, как и сами профили.
  */
-const DEMO_SUBCATEGORY: Record<string, string> = {
+export const DEMO_SUBCATEGORY: Record<string, string> = {
   'demo-vac-be-m-1': 'backend.integrations',
   'demo-pool-be-m-pay': 'backend.integrations',
   'demo-pool-be-m-4': 'backend.integrations',
 };
-const DEFAULT_SUBCATEGORY: Partial<Record<string, string>> = { backend: 'backend.web-api', frontend: 'frontend.ui-app' };
+export const DEFAULT_SUBCATEGORY: Partial<Record<string, string>> = { backend: 'backend.web-api', frontend: 'frontend.ui-app' };
 
 async function backfillDemoSubcategories(prisma: PrismaClient): Promise<number> {
   let n = 0;
@@ -82,6 +83,7 @@ export async function seedDirections(prisma: PrismaClient): Promise<void> {
     await prisma.subcategory.upsert({ where: { id }, update: data, create: s });
   }
   await seedPoolProfiles(prisma, DEMO_POOL_AI);
+  await seedPoolProfiles(prisma, DEMO_POOL_CATEGORIES);
   const backfilled = await backfillDemoSubcategories(prisma);
-  console.log(`seed(directions): ${SUBCATEGORIES.length} subcategories, ${DEMO_POOL_AI.length} ai demo candidates, ${backfilled} demo rows got a subcategory`);
+  console.log(`seed(directions): ${SUBCATEGORIES.length} subcategories, ${DEMO_POOL_AI.length} ai demo candidates, ${DEMO_POOL_CATEGORIES.length} category demo candidates, ${backfilled} demo rows got a subcategory`);
 }

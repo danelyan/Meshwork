@@ -16,6 +16,7 @@ import { CALL_DISCLAIMER, callDriver, questionTurns, type CallDriver, type Drive
 import { assertCooldownPassed } from './readiness';
 import { CALL_LIMITS, CLOSING_LINE, closingWithRecap } from './plan';
 import { INTERRUPTED_MARK, UNHEARD_MARK, heardPrefix } from '../../lib/sentences';
+import { listVideoSegments, readVideoSegment, saveVideoSegment, type VideoSegment } from './video';
 import type { InterruptBody } from './schemas';
 import { REVIEW_QUESTIONS, reviewState } from './test-review';
 import { MAX_UTTERANCE_CHARS, type StartCallBody } from './schemas';
@@ -166,6 +167,7 @@ export async function buildView(row: Row, acc: ResolvedAccess): Promise<CallView
     transcript: acc.access === 'full' ? transcript : null,
     verdict: verdict ? (acc.access === 'full' ? verdict : publicVerdict(verdict)) : null,
     hasRecording: acc.recording && (await listSegments(row.id)).length > 0,
+    videoSegments: acc.recording ? await listVideoSegments(row.id) : [],
     progress: {
       answered,
       minQuestions: driver.limits.minQuestions,
@@ -245,27 +247,11 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
 // ---------------------------------------------------------------------------
 // Реплика кандидата → следующий вопрос
 // ---------------------------------------------------------------------------
-/**
- * Замер хода (лейн call-speed, 11.10): сколько думала модель и когда было готово первое предложение. Без текста
- * кандидата. Уходит в лог и в заголовок Server-Timing ответа /turn (route.ts), eval/call/latency.ts читает его.
- */
-export interface TurnTiming {
-  /** Генерация реплики ИИ целиком (вопрос, этап разбора или итог), мс. */
-  llmMs: number;
-  /** От начала генерации до первого предложения, отданного клиенту (utterance_delta), мс; нет — не стримилось. */
-  firstSentenceMs: number | null;
-  /** Сколько предложений ушло потоком. */
-  sentences: number;
-  /** Вопрос генерировался в потоковом режиме (CALL_STREAMING). */
-  streaming: boolean;
-}
-
 export async function submitTurn(
   candidateId: string,
   sessionId: string,
   input: { text?: string; audioRef?: string },
   llm: LlmProvider,
-  obs?: { timing?: TurnTiming },
 ): Promise<TurnResult> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
@@ -302,8 +288,6 @@ export async function submitTurn(
   let aiText: string;
   let meta: TranscriptEntry['meta'];
   let done = false;
-  const genStarted = Date.now();
-  const timing: TurnTiming = { llmMs: 0, firstSentenceMs: null, sentences: 0, streaming: false };
   const interim = interimOf(saved.row);
   const probe = interim ? nextProbe(interim, transcript) : null;
   const hardMax = driver.limits.hardMaxQuestions ?? driver.limits.maxQuestions;
@@ -350,22 +334,8 @@ export async function submitTurn(
     await closeOrReview();
   } else {
     publishCall(sessionId, { type: 'ai_state', state: 'thinking' });
-    // Потоковый режим: предложения вопроса уходят по SSE до конца генерации (stream.ts). closable — этот ход
-    // может закрыть созвон ответом модели «достаточно» (тогда вопрос заранее не озвучивается).
-    const afterIndex = saved.entry.index;
-    const stream = getEnv().CALL_STREAMING
-      ? {
-          closable: !probe && answered >= driver.limits.minQuestions,
-          onSentence: (text: string, n: number) => {
-            timing.firstSentenceMs ??= Date.now() - genStarted;
-            timing.sentences = n + 1;
-            publishCall(sessionId, { type: 'utterance_delta', afterIndex, n, text });
-          },
-        }
-      : undefined;
-    timing.streaming = Boolean(stream);
     try {
-      const q = await driver.nextQuestion(driverSession(saved.row, transcript), llm, { ...(probe ? { force: probe } : { maxQuestions: regularCap }), ...(stream ? { stream } : {}) });
+      const q = await driver.nextQuestion(driverSession(saved.row, transcript), llm, probe ? { force: probe } : { maxQuestions: regularCap });
       if (!probe && answered >= driver.limits.minQuestions && q.done) {
         await closeOrReview();
       } else {
@@ -377,9 +347,6 @@ export async function submitTurn(
     }
   }
 
-  timing.llmMs = Date.now() - genStarted;
-  if (obs) obs.timing = timing;
-  console.info('[call] turn timing', JSON.stringify({ sessionId, kind: row.kind, ...timing }));
   const aiEntry = await prisma.$transaction(async (tx) => {
     const cur = await lockCall(tx, sessionId);
     const t = transcriptOf(cur);
@@ -597,7 +564,7 @@ export async function latestQualifyingVerdict(candidateId: string): Promise<Call
 // ---------------------------------------------------------------------------
 // Аудио
 // ---------------------------------------------------------------------------
-export async function addAudio(candidateId: string, sessionId: string, pcm: Uint8Array, obs?: { sttMs?: number }): Promise<{ audioRef: string; text: string | null }> {
+export async function addAudio(candidateId: string, sessionId: string, pcm: Uint8Array): Promise<{ audioRef: string; text: string | null }> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
   // Без действующего согласия на запись (Г2) голос не сохраняем: созвон идёт текстом (ADR 0005).
@@ -615,17 +582,31 @@ export async function addAudio(candidateId: string, sessionId: string, pcm: Uint
     throw new AppError('call_recording_off', 'Запись голоса отключена в «Моих согласиях» - ответь текстом', 409);
   }
   let text: string | null = null;
-  const sttStarted = Date.now();
   try {
     text = await recognizeSegment(pcm);
-    // Замер STT (лейн call-speed): длительность и размер сегмента, без текста.
-    if (obs) obs.sttMs = Date.now() - sttStarted;
-    console.info('[call] stt timing', JSON.stringify({ sessionId, sttMs: Date.now() - sttStarted, bytes: pcm.byteLength }));
   } catch (err) {
     // Аудио сохранено; текст пришлёт клиент или кандидат наберёт.
     console.warn('[call] stt failed:', err instanceof Error ? err.message : err);
   }
   return { audioRef, text };
+}
+
+/** Сегмент видео с камеры (комната звонка): сохраняется файлом созвона, в БД — ничего. */
+export async function addVideo(candidateId: string, sessionId: string, bytes: Uint8Array, startMs: number): Promise<VideoSegment> {
+  const row = await loadOwn(candidateId, sessionId);
+  if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
+  const seg = await saveVideoSegment(sessionId, bytes, startMs);
+  if (!row.audioPath) await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: callAudioDir(sessionId).rel } });
+  return seg;
+}
+
+/** Сегмент видео: кандидату — всегда, работодателю — после принятого приглашения (как аудио). */
+export async function getVideo(who: CallPrincipal, sessionId: string, segment: string): Promise<Buffer> {
+  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true } });
+  if (!row) throw errors.notFound('Созвон не найден');
+  const access = await resolveCallAccess(who, row);
+  if (!access.recording) throw errors.forbidden('Запись созвона откроется после того, как кандидат примет приглашение');
+  return readVideoSegment(sessionId, segment);
 }
 
 export async function getRecording(who: CallPrincipal, sessionId: string, segment?: string): Promise<Buffer> {

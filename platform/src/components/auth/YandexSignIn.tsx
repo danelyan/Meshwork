@@ -13,11 +13,11 @@ import { ConsentCheck } from './ConsentCheck';
  * «Войти через ФСП ID» (/api/fsp-id/login) — только кандидату: ФСП ID есть у спортсменов; провайдер всегда
  * доступен (симулятор по env или встроенный мок). «Войти через Яндекс ID» (/api/auth/yandex) — если настроен.
  */
-type SignInProps = { enabled: boolean; next: string | null; fsp?: boolean; fspHint?: string | null; agreed?: boolean };
+type SignInProps = { enabled: boolean; next: string | null; fsp?: boolean; agreed?: boolean };
 
 export function YandexSignIn(props: SignInProps) {
   if (props.agreed === undefined) return <StandaloneSignIn {...props} />;
-  const { enabled, next, fsp = false, fspHint = null, agreed } = props;
+  const { enabled, next, fsp = false, agreed } = props;
   const qs = new URLSearchParams({ consent: CONSENT_VERSION, ...(next ? { next } : {}) });
   const active = enabled && agreed;
   return (
@@ -30,8 +30,6 @@ export function YandexSignIn(props: SignInProps) {
           Войти через ФСП ID
         </a>
       )}
-      {/* Внешний провайдер спрашивает логин и пароль: чем войти в симулятор, говорим прямо под кнопкой. */}
-      {fsp && fspHint && <p className={ui.hint}>Вход в симулятор ФСП ID: {fspHint}</p>}
       <a
         href={active ? `/api/auth/yandex?${qs.toString()}` : undefined}
         className={`${ui.btn} ${ui.primary} ${styles.yandex}`}

@@ -3,9 +3,10 @@ import type { Prisma } from '@prisma/client';
 import { getSubcategory, isSpecialization, SPEC_ROLE, subcategoryMatches } from '@/lib/directions';
 import { CONSENT_VERSION, hasCurrentConsent, recordConsent } from '@/server/auth/consent';
 import { chooseRole } from '@/server/auth/users';
+import { grantConsent } from '@/server/consent/service';
+import { CANDIDATE_ONBOARDING_KINDS, EMPLOYER_ONBOARDING_KINDS, consentVersion, type ConsentKindName } from '@/server/consent/texts';
 import { prisma } from '@/server/db';
 import { AppError, errors } from '@/server/errors';
-import { fspDemoHint } from '@/server/fsp-id/client';
 import { loadCatalog } from '@/server/recommend/evidence';
 import { recommendTest } from '@/server/recommend/test';
 import type { Grade, Specialization } from '@/server/types';
@@ -75,9 +76,14 @@ async function load(userId: string) {
   });
   if (!user) throw errors.notFound('Аккаунт не найден');
   const consent = await hasCurrentConsent(userId);
+  const decided = new Set(
+    (await prisma.consent.findMany({ where: { userId, kind: { in: [...CANDIDATE_ONBOARDING_KINDS, ...EMPLOYER_ONBOARDING_KINDS] } }, select: { kind: true }, distinct: ['kind'] })).map((c) => c.kind as string),
+  );
   const facts: Facts = {
     role: user.role,
     consent,
+    candidateConsents: CANDIDATE_ONBOARDING_KINDS.some((k) => decided.has(k)),
+    employerConsents: EMPLOYER_ONBOARDING_KINDS.some((k) => decided.has(k)),
     name: user.name,
     fspState: user.candidate?.fspState ?? null,
     specialization: user.candidate?.specialization ?? null,
@@ -193,6 +199,15 @@ function laterTarget(l: Loaded): string {
   return CABINET[l.ctx.facts.role];
 }
 
+/** Ссылка на тест с рекомендацией из знакомства: направление и заявленный грейд (как в CandidateSkills). */
+function testHref(l: Loaded): string {
+  if (GRADE_TEST_PATH === null) return '/profile';
+  const spec = l.ctx.facts.specialization;
+  const grade = l.ctx.answers.grade;
+  if (!spec) return GRADE_TEST_PATH;
+  return `${GRADE_TEST_PATH}?specialization=${encodeURIComponent(spec)}${typeof grade === 'string' && grade ? `&grade=${encodeURIComponent(grade)}` : ''}`;
+}
+
 /** Вид онбординга. Генерирует (и запоминает) реплику помощника для текущего шага. */
 export async function getView(userId: string, signal?: AbortSignal): Promise<OnboardingView> {
   const l = await load(userId);
@@ -229,11 +244,6 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
     const hint = await gradeHint(l.user.candidateId);
     if (hint) view.hint = hint;
   }
-  if (current.id === 'fsp') {
-    // Внешний провайдер спрашивает логин и пароль: подсказываем, чем войти в симулятор.
-    const hint = fspDemoHint();
-    if (hint) view.hint = `Вход в симулятор ФСП ID: ${hint}`;
-  }
 
   const history = historyOf(l.ctx, l.state, current).map((s) => {
     const answered = isAnswered(s, l.ctx.answers);
@@ -244,7 +254,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
       lead: lines[s.id] ?? templateLead(s, l.ctx, prevOf(s, l)),
       question: s.question,
       answer: answered ? answerLabel(s, l.ctx.answers[s.id], l.ctx) : skipped ? null : factLabel(s, l.ctx),
-      editable: !s.doneBy?.(l.ctx) && s.kind !== 'consent' && s.kind !== 'role',
+      editable: !s.doneBy?.(l.ctx) && s.kind !== 'consent' && s.kind !== 'consents' && s.kind !== 'role',
     };
   });
 
@@ -258,7 +268,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
     current: view,
     summary: current.kind === 'summary' ? summaryOf(l) : null,
     laterTarget: laterTarget(l),
-    test: { href: GRADE_TEST_PATH ?? '/profile', ready: GRADE_TEST_PATH !== null },
+    test: { href: testHref(l), ready: GRADE_TEST_PATH !== null },
     onboarded: l.user.onboardedAt !== null,
     later: isPaused(l),
   };
@@ -302,6 +312,15 @@ async function apply(l: Loaded, step: StepDef, value: unknown): Promise<boolean>
     case 'consent':
       await recordConsent(userId, (value as { version: string }).version);
       return false;
+    case 'candidateConsents':
+    case 'employerConsents': {
+      // ADR 0005: каждая отмеченная галочка — своё согласие текущей версии. Без Г4 профиль скрыт от работодателей.
+      for (const kind of value as ConsentKindName[]) await grantConsent(userId, { kind, version: consentVersion(kind) });
+      if (step.id === 'candidateConsents' && !(value as string[]).includes('employer_visibility')) {
+        await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { hiddenFromEmployers: true } });
+      }
+      return false;
+    }
     case 'role':
       if (l.ctx.facts.role !== 'pending') throw errors.conflict('Роль уже выбрана');
       if (value === 'candidate') {

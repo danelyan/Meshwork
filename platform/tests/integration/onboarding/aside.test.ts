@@ -28,6 +28,7 @@ async function asCandidate(userId: string) {
   const c = pending(userId);
   await act(c, { action: 'answer', stepId: 'consent', value: { version: CONSENT_VERSION } });
   const cookie = cookieFrom(await act(c, { action: 'answer', stepId: 'role', value: 'candidate' }))!;
+  await act(cookie, { action: 'answer', stepId: 'candidateConsents', value: [] }); // шаг согласий (ADR 0005) — без галочек
   return { cookie, candidateId: parseSession(cookie.slice(4))!.candidateId! };
 }
 

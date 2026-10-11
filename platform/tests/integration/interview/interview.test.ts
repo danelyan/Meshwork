@@ -21,6 +21,7 @@ import { signUserSession } from '@/server/session';
 
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { grantConsents } from '../../helpers/consents';
 
 const A = 'cand-a';
 const cookieA = () => `cid=${signUserSession({ userId: 'user-a', role: 'candidate', candidateId: A })}`;
@@ -34,6 +35,7 @@ const STRONG =
 async function seed() {
   await prisma.candidate.create({ data: { id: A, email: 'a@example.test', name: 'А', specialization: 'backend', subcategoryId: 'backend.web-api' } });
   await prisma.user.create({ data: { id: 'user-a', role: 'candidate', name: 'А', candidateId: A } });
+  await grantConsents('user-a', ['ai_assessment']); // Г3 (ADR 0005)
   await prisma.candidateProfile.create({ data: { candidateId: A, claimedGrade: 'middle' } });
   // ИИнтервью открывается после теста: категория из теста (call/readiness.ts).
   await prisma.candidateCategory.create({ data: { candidateId: A, specialization: 'backend', grade: 'middle', source: 'test', subcategoryId: 'backend.web-api' } });

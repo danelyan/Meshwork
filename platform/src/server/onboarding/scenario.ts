@@ -1,5 +1,7 @@
 import { isSpecialization, SPEC_LABEL, SPEC_NOTE, SPECIALIZATIONS, type Specialization, subcategoriesFor } from '@/lib/directions';
 
+import { CANDIDATE_ONBOARDING_KINDS, CONSENT_TEXTS, EMPLOYER_ONBOARDING_KINDS } from '@/server/consent/texts';
+
 import type { RangeSpec, StepContext, StepDef, StepOption } from './types';
 
 /**
@@ -99,7 +101,48 @@ const roleStep: StepDef = {
   doneBy: hasRole,
 };
 
+const consentOption = (kind: keyof typeof CONSENT_TEXTS): StepOption => {
+  const t = CONSENT_TEXTS[kind];
+  const need = t.requiredFor ? `Нужно для ${t.requiredFor}.` : 'Необязательно.';
+  return { value: kind, label: t.label, note: `${need} ${t.paragraphs.join(' ')}` };
+};
+
+/**
+ * Согласия кандидата (ADR 0005): Г3 ИИ-оценка, Г4 показ работодателям, Г6 исследования, Г7 рассылки —
+ * отдельные неотмеченные галочки. Продолжить можно без любой из них: без Г3 закрыты тест, созвон и защита,
+ * без Г4 профиль скрыт (hiddenFromEmployers). Всё меняется позже в настройках («Мои согласия»).
+ */
+export const CANDIDATE_CONSENTS_STEP: StepDef = {
+  id: 'candidateConsents',
+  kind: 'consents',
+  eyebrow: 'Согласия',
+  question: 'Что мне можно делать с твоими данными?',
+  sub: 'Отметь, на что согласен. Без оценки ИИ не получится пройти тест, созвон и защиту; без показа работодателям профиль останется скрытым. Изменить можно в настройках, раздел «Мои согласия».',
+  summaryLabel: 'Согласия',
+  target: 'Consent (ai_assessment, employer_visibility, research, marketing), Candidate.hiddenFromEmployers',
+  req: 'R-C-13, R-C-14, R-C-16',
+  required: true,
+  options: CANDIDATE_ONBOARDING_KINDS.map(consentOption),
+  doneBy: (ctx) => Boolean(ctx.facts.candidateConsents),
+};
+
+/** Согласия работодателя (ADR 0005): оферта и обязательство по данным — обе нужны для поиска и приглашений. */
+export const EMPLOYER_CONSENTS_STEP: StepDef = {
+  id: 'employerConsents',
+  kind: 'consents',
+  eyebrow: 'Условия',
+  question: 'Условия работы с кандидатами',
+  sub: 'Обе галочки нужны для поиска кандидатов и приглашений. Без них кабинет откроется, но поиск будет закрыт - принять условия можно позже в профиле компании.',
+  summaryLabel: 'Условия для работодателей',
+  target: 'Consent (employer_offer, employer_data_obligation)',
+  req: 'R-N-07',
+  required: true,
+  options: EMPLOYER_ONBOARDING_KINDS.map(consentOption),
+  doneBy: (ctx) => Boolean(ctx.facts.employerConsents),
+};
+
 export const CANDIDATE_STEPS: StepDef[] = [
+  CANDIDATE_CONSENTS_STEP,
   {
     id: 'goal',
     kind: 'one',
@@ -323,6 +366,7 @@ export const EMPLOYER_STEPS: StepDef[] = [
     // Роль employer уже выбрана — компания создана, шаг закрыт (название правится в кабинете).
     doneBy: hasRole,
   },
+  EMPLOYER_CONSENTS_STEP,
   {
     id: 'inn',
     kind: 'text',

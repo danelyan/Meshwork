@@ -2,7 +2,7 @@
 // клиент импортирует их только как `import type`.
 import type { Specialization } from '@/lib/directions';
 
-export type StepKind = 'consent' | 'role' | 'one' | 'many' | 'chips' | 'range' | 'text' | 'files' | 'summary';
+export type StepKind = 'consent' | 'consents' | 'role' | 'one' | 'many' | 'chips' | 'range' | 'text' | 'files' | 'summary';
 
 export type Role = 'pending' | 'candidate' | 'employer';
 export type Scenario = 'candidate' | 'employer';
@@ -40,6 +40,9 @@ export interface RangeSpec {
 export interface Facts {
   role: Role;
   consent: boolean;
+  /** Согласия онбординга уже решены (ADR 0005): есть строка Consent вида Г3/Г4/Г6/Г7 (кандидат) или оферты (работодатель). */
+  candidateConsents?: boolean;
+  employerConsents?: boolean;
   name: string;
   fspState: FspStateValue | null;
   specialization: Specialization | null;

@@ -23,7 +23,6 @@ describe('блок <journey> в системном промпте', () => {
     expect(sys).toContain('предложено 3, подтверждено 1');
     expect(sys).toContain('get_onboarding_status');
     expect(sys).toContain('не первый');
-    console.log(block);
   });
   it('без journey блока нет', () => {
     expect(buildSystem(base)).not.toContain('## Путь кандидата');

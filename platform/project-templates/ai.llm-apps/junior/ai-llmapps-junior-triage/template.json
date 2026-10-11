@@ -1,0 +1,35 @@
+{
+  "id": "ai-llmapps-junior-triage",
+  "subcategoryId": "ai.llm-apps",
+  "specialization": "ai",
+  "grade": "junior",
+  "title": "Классификация обращений через LLM: промпт, разбор ответа, отказ",
+  "summary": "Простое LLM-приложение: шаблон промпта с безопасной подстановкой, экранирование пользовательского ввода, строгий разбор JSON-ответа, повтор при невалидном ответе и обработка отказа; LLM-клиент подменяемый, без сети",
+  "stack": [
+    "node20",
+    "typescript",
+    "llm",
+    "vitest"
+  ],
+  "catalogIds": [
+    "ai.prompting",
+    "ai.structured-output",
+    "ai.llm-api",
+    "common.unit-tests"
+  ],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 180,
+  "platformOwned": [
+    "contract.md",
+    "src/llm.ts",
+    "tests/visible/**",
+    ".platform-tests/**"
+  ]
+}

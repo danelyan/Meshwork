@@ -23,6 +23,8 @@ export const TurnBody = z
       .string()
       .regex(/^\d{3}\.wav$/, 'audioRef — имя сегмента из /audio')
       .optional(),
+    /** Телеметрия: STT сегмента на сервере, мс (клиент читает Server-Timing ответа /audio). */
+    sttMs: z.number().int().min(0).max(600_000).optional(),
   })
   .refine((b) => b.text.trim().length > 0, { message: 'Нужен текст ответа', path: ['text'] });
 export type TurnBody = z.infer<typeof TurnBody>;
@@ -47,17 +49,19 @@ export const CallListQuery = z.object({ kind: z.enum(CALL_KINDS).optional() });
 
 /**
  * Интервьюер: оценивает только маршрут (сильный/слабый ответ → глубже/проще), сам вердикт не ставит.
- * Порядок полей: сначала сигнал по прошлому ответу, затем тема и вопрос (structured output идёт по порядку схемы).
+ * Порядок полей: сигнал по прошлому ответу, тема, done, затем вопрос (structured output идёт по порядку схемы).
  */
 export const CallInterviewerOutput = z.object({
   answerSignal: z.enum(ANSWER_SIGNALS),
   topic: z.string().min(2).max(120),
   catalogId: z.string().max(80).nullable(),
+  // done до вопроса: ворота потока ждут его в ходах, которые могут закрыть созвон (аудит 42, B5). DeepSeek на
+  // Yandex порядок схемы не держит (ключи по алфавиту — done и так до question), порядок важен для остальных.
+  done: z.boolean(),
   // Без `.regex()`: pattern в JSON Schema провайдеры со строгим выводом (guided decoding) якорят на всю
   // строку, и `[а-яё]` даёт вопрос из одной буквы (живой прогон 10.10, deepseek через Yandex).
   // Кириллицу проверяет код (nextCallQuestion в interviewer.ts).
   question: z.string().min(10).max(600),
-  done: z.boolean(),
 });
 export type CallInterviewerOutput = z.infer<typeof CallInterviewerOutput>;
 
@@ -91,3 +95,18 @@ export type CallOwnershipOutput = z.infer<typeof CallOwnershipOutput>;
 /** Реплика этапа «разбор решённого задания теста»: только текст вопроса (тему и уровень задаёт код). */
 export const CallReviewQuestionOutput = z.object({ question: z.string().min(10).max(600) });
 export type CallReviewQuestionOutput = z.infer<typeof CallReviewQuestionOutput>;
+
+/** Телеметрия хода из браузера: индекс реплики ИИ и водопад «конец речи → первый звук» (ClientTurnTiming). */
+const ms = z.number().int().min(0).max(600_000);
+export const TelemetryBody = z.object({
+  index: z.number().int().min(0),
+  client: z.object({
+    uploadMs: ms.nullable(),
+    endToFirstDeltaMs: ms.nullable(),
+    endToReplyMs: ms.nullable(),
+    endToSoundMs: ms,
+    streamed: z.boolean(),
+    ackMs: ms.nullable(),
+  }),
+});
+export type TelemetryBody = z.infer<typeof TelemetryBody>;

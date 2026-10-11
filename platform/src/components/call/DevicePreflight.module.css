@@ -1,16 +1,67 @@
-.box { display: grid; gap: 12px; padding: 16px; font-size: var(--fs); line-height: 1.5; text-align: left; border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); background: var(--call-control, transparent); color: inherit; }
-.box b { font-size: var(--fs-md); }
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.state { display: flex; gap: 8px; align-items: center; font-size: var(--fs-sm); }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; opacity: 0.4; flex: none; }
-.ok .dot { background: var(--call-ready); opacity: 1; }
-.bad .dot { background: var(--call-rec); opacity: 1; }
-.help { margin: 0; padding-left: 18px; font-size: var(--fs-sm); opacity: 0.85; }
-.meter { height: 8px; width: 100%; border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); overflow: hidden; }
-.meter i { display: block; height: 100%; width: 100%; background: var(--call-ready); transform-origin: left; transform: scaleX(var(--level, 0)); transition: transform 0.08s linear; }
-.select { max-width: 100%; padding: 6px 8px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); }
+/* Шаг «Проверка устройств» (созвон с Кирой и комната интервью): две карточки — микрофон и камера — на тёмной сцене. */
+.box { display: grid; gap: 18px; padding: 20px; font-size: var(--fs); line-height: 1.5; text-align: left; color: var(--call-on-stage); border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); background: var(--call-control, transparent); }
+.head { display: grid; gap: 4px; }
+.head b { font-size: var(--fs-lg, 1.25rem); line-height: 1.25; }
+.sub { margin: 0; font-size: var(--fs-sm); color: var(--call-on-stage-soft); max-width: 60ch; }
+
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
+.card { display: grid; gap: 12px; align-content: start; padding: 16px; min-height: 100%; border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); background: var(--call-control, transparent); }
+.cardHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.title { font-weight: 600; font-size: var(--fs-md); }
+
+/* Статус-чип: точка + слово. Цвет только дополняет текст (a11y). */
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; font-size: var(--fs-xs, 0.8125rem); font-weight: 500; white-space: nowrap; color: var(--call-on-stage-soft); border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.5; flex: none; }
+.chip[data-tone='ok'] { color: var(--call-on-stage); border-color: color-mix(in srgb, var(--call-ready) 55%, transparent); }
+.chip[data-tone='ok'] .dot { background: var(--call-ready); opacity: 1; }
+.chip[data-tone='bad'] { color: var(--call-on-stage); border-color: color-mix(in srgb, var(--call-rec) 55%, transparent); }
+.chip[data-tone='bad'] .dot { background: var(--call-rec); opacity: 1; }
+.chip[data-tone='wait'] .dot { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+.note { margin: 0; font-size: var(--fs-sm); color: var(--call-on-stage-soft); }
+.noteBad { color: var(--call-rec); }
+.help { margin: 0; padding-left: 18px; font-size: var(--fs-sm); color: var(--call-on-stage-soft); display: grid; gap: 4px; }
+
+/* Уровень микрофона: сегментная полоса, заполнение по --level. */
+.meter { position: relative; height: 10px; width: 100%; background: var(--avatar-stage-line, var(--line, currentColor)); mask-image: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 9px); -webkit-mask-image: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 9px); }
+.meter i { position: absolute; inset: 0; display: block; background: linear-gradient(90deg, var(--call-ready) 0 70%, color-mix(in srgb, var(--call-ready), var(--call-rec)) 85%, var(--call-rec)); transform-origin: left; transform: scaleX(var(--level, 0)); transition: transform 0.08s linear; }
+
+.field { display: grid; gap: 4px; font-size: var(--fs-sm); }
+.fieldLabel { color: var(--call-on-stage-soft); }
+.select { width: 100%; max-width: 100%; padding: 8px 10px; font: inherit; color: inherit; background: var(--call-control, transparent); border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); }
+.select:focus-visible { outline: 2px solid var(--call-on-stage); outline-offset: 1px; }
 .select option { color: var(--ink); background: var(--paper); }
-.preview { width: 160px; max-width: 100%; background: var(--avatar-stage); transform: scaleX(-1); }
-.check { display: flex; gap: 8px; align-items: center; font-size: var(--fs-sm); }
-.note { margin: 0; font-size: var(--fs-sm); opacity: 0.8; }
-@media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+
+.toneRow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.linkBtn { padding: 7px 12px; font-size: var(--fs-sm); }
+
+/* Камера: превью 4:3 на всю ширину карточки, зеркально, как в созвоне. */
+.previewBox { position: relative; aspect-ratio: 4 / 3; width: 100%; display: grid; place-items: center; overflow: hidden; background: var(--avatar-stage); border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); }
+.preview { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.previewEmpty { font-size: var(--fs-sm); color: var(--call-on-stage-soft); }
+
+/* Тумблер: сам чекбокс стилизован как дорожка (остаётся настоящим input: клик, фокус, checked). */
+.switch { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.switchInput { appearance: none; -webkit-appearance: none; flex: none; width: 38px; height: 22px; margin: 2px 0 0; position: relative; cursor: pointer; background: var(--call-control-hover, color-mix(in srgb, var(--paper) 16%, transparent)); border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); transition: background 0.15s var(--ease, ease); }
+.switchInput::before { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: var(--call-on-stage); transition: transform 0.15s var(--ease, ease); }
+.switchInput:checked { background: var(--call-ready); border-color: var(--call-ready); }
+.switchInput:checked::before { transform: translateX(16px); }
+.switchInput:focus-visible { outline: 2px solid var(--call-on-stage); outline-offset: 2px; }
+.switchText { display: grid; gap: 2px; font-size: var(--fs); font-weight: 500; }
+.switchText small { font-size: var(--fs-sm); font-weight: 400; color: var(--call-on-stage-soft); }
+
+/* Кнопки сразу под заголовком (order), а не под карточками: при узком экране низ панели уходит за край, и до «начать» надо было догадаться проскроллить. */
+.head { order: 0; }
+.actions { order: 1; display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; }
+.grid { order: 2; }
+.go { min-width: 220px; justify-content: center; }
+.secondary { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+
+@media (max-width: 560px) {
+  .box { padding: 16px; gap: 14px; }
+  .go { width: 100%; }
+  .secondary { margin-left: 0; width: 100%; }
+  .secondary > * { flex: 1; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .meter i, .switchInput, .switchInput::before { transition: none; } .chip[data-tone='wait'] .dot { animation: none; } }

@@ -220,3 +220,57 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(micErrorState({ name: 'NotReadableError' })).toBe('busy');
   });
 });
+
+describe('DevicePreflight — textFallback=false (созвон строго голосом)', () => {
+  it('нет «Продолжить текстом» ни при разрешении, ни при отказе; «Не сейчас» остаётся', async () => {
+    gum.mockRejectedValue(Object.assign(new Error('x'), { name: 'NotAllowedError' }));
+    const p = props();
+    const { unmount } = render(<DevicePreflight {...p} textFallback={false} />);
+    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('denied'));
+    expect(screen.queryByTestId('call-devices-text')).toBeNull();
+    expect(screen.getByTestId('call-devices-retry')).toBeTruthy();
+    expect(screen.getByText('Не сейчас')).toBeTruthy();
+    unmount();
+
+    gum.mockResolvedValue(fakeStream().stream);
+    render(<DevicePreflight {...p} textFallback={false} />);
+    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
+    expect(screen.queryByTestId('call-devices-text')).toBeNull();
+    expect(screen.getByTestId('call-devices-go')).toBeTruthy();
+  });
+});
+
+describe('DevicePreflight — cameraRequired (созвон строго с видео)', () => {
+  it('тумблера нет, камера запрашивается сразу; «начать» только когда камера включена → onReady({ camera: true })', async () => {
+    gum.mockImplementation(async () => fakeStream().stream);
+    const p = props();
+    render(<DevicePreflight {...p} withCamera cameraJoinsCall cameraRequired textFallback={false} />);
+    expect(screen.queryByTestId('call-devices-camera')).toBeNull();
+    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
+    await waitFor(() => expect(gum.mock.calls.some((c) => c[0].video)).toBe(true));
+    await waitFor(() => expect(screen.getByTestId('call-devices-go')).toBeTruthy());
+    expect(screen.queryByTestId('call-devices-text')).toBeNull();
+    fireEvent.click(screen.getByTestId('call-devices-go'));
+    expect(p.onReady).toHaveBeenCalledWith({ camera: true });
+  });
+
+  it('камера запрещена: инструкция, «Повторить камеру», кнопки «начать» нет; после разрешения - появляется', async () => {
+    let camOk = false;
+    gum.mockImplementation(async (c: MediaStreamConstraints) => {
+      if (c.video && !camOk) throw Object.assign(new Error('x'), { name: 'NotAllowedError' });
+      return fakeStream().stream;
+    });
+    const p = props();
+    render(<DevicePreflight {...p} withCamera cameraJoinsCall cameraRequired textFallback={false} />);
+    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
+    expect((await screen.findByTestId('call-devices-camera-denied')).textContent).toContain('Без камеры созвон не начать');
+    expect(screen.queryByTestId('call-devices-go')).toBeNull();
+    expect(screen.getByTestId('call-devices-wait-camera').textContent).toContain('Разреши камеру');
+    camOk = true;
+    fireEvent.click(screen.getByTestId('call-devices-camera-retry'));
+    await waitFor(() => expect(screen.getByTestId('call-devices-go')).toBeTruthy());
+    expect(screen.queryByTestId('call-devices-camera-denied')).toBeNull();
+    fireEvent.click(screen.getByTestId('call-devices-go'));
+    expect(p.onReady).toHaveBeenCalledWith({ camera: true });
+  });
+});

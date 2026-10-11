@@ -53,6 +53,44 @@ export interface AiUtteranceMeta {
   streamCut?: boolean;
 }
 
+/**
+ * Телеметрия хода в браузере (useReplySpeech → POST /api/call/{id}/telemetry): водопад от конца речи кандидата
+ * до первого звука ответа. Хранится в `timing.client` реплики ИИ; на оценку не влияет.
+ */
+export interface ClientTurnTiming {
+  /** Конец речи (стоп детектора / отправка текста) → сегмент загружен и распознан (/audio), мс; null — текстом. */
+  uploadMs: number | null;
+  /** → первое предложение из потока (SSE), мс; null — потока не было. */
+  endToFirstDeltaMs: number | null;
+  /** → реплика целиком (ответ /turn), мс. */
+  endToReplyMs: number | null;
+  /** → первый звук ответа Киры, мс. */
+  endToSoundMs: number;
+  /** Первый звук был из потока. */
+  streamed: boolean;
+  /** → мгновенный ack («Угу…») из банка, мс; null — не играл. */
+  ackMs: number | null;
+}
+
+/**
+ * Тайминг реплики (телеметрия созвона, 11.10): у реплики кандидата — распознавание сегмента на сервере,
+ * у реплики ИИ — генерация и водопад из браузера. В вердикт и оценщику не передаётся.
+ */
+export interface EntryTiming {
+  /** role=candidate: STT сегмента на сервере, мс (из Server-Timing /audio, присылает клиент в /turn). */
+  sttMs?: number;
+  /** role=ai: генерация реплики целиком, мс. */
+  llmMs?: number;
+  /** role=ai: до первого предложения потока, мс; null — не стримилось. */
+  firstSentenceMs?: number | null;
+  /** role=ai: предложений ушло потоком. */
+  sentences?: number;
+  /** role=ai: потоковый режим (CALL_STREAMING). */
+  streaming?: boolean;
+  /** role=ai: водопад из браузера. */
+  client?: ClientTurnTiming;
+}
+
 /** Одна реплика транскрипта (CallSession.transcriptJson — массив таких). */
 export interface TranscriptEntry {
   /** 0-based порядковый номер реплики в созвоне. */
@@ -69,6 +107,8 @@ export interface TranscriptEntry {
   userId?: string;
   /** Только у role=ai. */
   meta?: AiUtteranceMeta;
+  /** Телеметрия хода (EntryTiming); у реплик до 11.10 поля нет. */
+  timing?: EntryTiming;
 }
 
 /** Баллы рубрики A-02 по одной теме (после проверки цитат кодом). */

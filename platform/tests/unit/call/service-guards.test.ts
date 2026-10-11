@@ -23,7 +23,7 @@ vi.mock('@/server/consent/service', async (orig) => ({ ...(await orig<typeof imp
 
 import { registerCallDriver, type CallDriver } from '@/server/call/drivers';
 import type { StartCallBody } from '@/server/call/schemas';
-import { addVideo, listCalls, startCall } from '@/server/call/service';
+import { addVideo, listCalls, recordTurnTelemetry, startCall } from '@/server/call/service';
 import type { LlmProvider } from '@/server/llm/types';
 
 const row = (over: Record<string, unknown> = {}) => ({
@@ -111,5 +111,33 @@ describe('startCall: projectSubmissionId', () => {
     const body: StartCallBody = { kind: 'interview', projectSubmissionId: 'not-mine' };
     await expect(startCall('c1', body, {} as LlmProvider)).rejects.toMatchObject({ code: 'bad_request', status: 400 });
     expect(db.callSession.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('recordTurnTelemetry: водопад из браузера дописывается в реплику ИИ', () => {
+  const client = { uploadMs: 800, endToFirstDeltaMs: null, endToReplyMs: 2100, endToSoundMs: 2400, streamed: false, ackMs: 150 };
+  const transcript = [
+    { index: 0, role: 'ai', text: 'Привет! Что такое индекс?', at: 'x', tMs: 0, timing: { llmMs: 1300, firstSentenceMs: null, sentences: 0, streaming: false } },
+    { index: 1, role: 'candidate', text: 'B-дерево', at: 'x', tMs: 5000, audioRef: '000.wav', timing: { sttMs: 812 } },
+    { index: 2, role: 'ai', text: 'Почему именно B-дерево?', at: 'x', tMs: 7000, timing: { llmMs: 1500, firstSentenceMs: null, sentences: 0, streaming: false } },
+  ];
+  beforeEach(() => {
+    db.callSession.findUnique.mockResolvedValue(row({ transcriptJson: transcript }));
+    (db as unknown as { $transaction: unknown }).$transaction = async (fn: (tx: unknown) => unknown) => fn({ ...db, $queryRaw: async () => [] });
+    db.callSession.update.mockResolvedValue(row());
+  });
+
+  it('серверный тайминг сохраняется, client — рядом; созвон уже завершён — тоже можно', async () => {
+    db.callSession.findUnique.mockResolvedValue(row({ status: 'finished', transcriptJson: transcript }));
+    const e = await recordTurnTelemetry('c1', 's1', { index: 2, client });
+    expect(e.timing).toEqual({ llmMs: 1500, firstSentenceMs: null, sentences: 0, streaming: false, client });
+    const saved = db.callSession.update.mock.calls[0]![0].data.transcriptJson as typeof transcript;
+    expect(saved[2]!.timing).toEqual(e.timing);
+    expect(saved[0]).toEqual(transcript[0]);
+    expect(saved[1]!.timing).toEqual({ sttMs: 812 });
+  });
+
+  it('index не реплика ИИ — 404', async () => {
+    await expect(recordTurnTelemetry('c1', 's1', { index: 1, client })).rejects.toMatchObject({ status: 404 });
   });
 });

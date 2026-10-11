@@ -23,10 +23,20 @@ export interface DevicePreflightProps {
    * Без флага — как в комнате интервью: только проверка, камера включается в комнате отдельно.
    */
   cameraJoinsCall?: boolean;
+  /**
+   * Созвон строго с видео (созвон с Кирой, владелец 12.10): тумблера нет, камера запрашивается сразу, без
+   * разрешения начать нельзя - инструкция и «Повторить», как у микрофона. Подразумевает withCamera + cameraJoinsCall.
+   */
+  cameraRequired?: boolean;
   /** Всё в порядке (или человек сам решил продолжить): начинаем созвон голосом. camera — включить камеру в созвоне. */
   onReady: (opts?: { camera: boolean }) => void;
-  /** Без микрофона: созвон текстом. */
-  onTextOnly: () => void;
+  /** Без микрофона: созвон текстом. Нужен только при textFallback (по умолчанию). */
+  onTextOnly?: () => void;
+  /**
+   * Показывать «Продолжить текстом». Созвон с Кирой строго голосом и с видео (владелец 12.10) - там false:
+   * без микрофона остаются «Повторить» и «Не сейчас». Комната интервью оставляет текстовый путь.
+   */
+  textFallback?: boolean;
   onCancel?: () => void;
   /** Классы кнопок родителя (стиль панели). */
   primaryClass?: string;
@@ -54,7 +64,7 @@ export function mediaSupported(): boolean {
   return typeof navigator.mediaDevices?.getUserMedia === 'function';
 }
 
-export function DevicePreflight({ withCamera, cameraJoinsCall, onReady, onTextOnly, onCancel, primaryClass, ghostClass }: DevicePreflightProps) {
+export function DevicePreflight({ withCamera, cameraJoinsCall, cameraRequired, onReady, onTextOnly, onCancel, primaryClass, ghostClass, textFallback = true }: DevicePreflightProps) {
   const [mic, setMic] = useState<MicCheck>(() => (mediaSupported() ? 'asking' : 'unsupported'));
   const [level, setLevel] = useState(0);
   const [devices, setDevices] = useState<{ id: string; label: string }[]>([]);
@@ -62,7 +72,9 @@ export function DevicePreflight({ withCamera, cameraJoinsCall, onReady, onTextOn
   const [tone, setTone] = useState<'idle' | 'played' | 'failed'>('idle');
   const [cam, setCam] = useState<'off' | 'starting' | 'on' | 'denied'>('off');
   // В созвоне с Кирой камера по умолчанию включена (владелец 11.10: разрешение должно запрашиваться сразу); в комнате — по желанию.
-  const [wantCam, setWantCam] = useState(Boolean(withCamera && cameraJoinsCall));
+  const [wantCam, setWantCam] = useState(Boolean(withCamera && (cameraJoinsCall || cameraRequired)));
+  /** Повтор запроса камеры после отказа (cameraRequired): перезапускает эффект камеры. */
+  const [camTry, setCamTry] = useState(0);
 
   const stream = useRef<MediaStream | null>(null);
   const camStream = useRef<MediaStream | null>(null);
@@ -192,7 +204,7 @@ export function DevicePreflight({ withCamera, cameraJoinsCall, onReady, onTextOn
       alive = false;
       stopCam();
     };
-  }, [wantCam, stopCam]);
+  }, [wantCam, camTry, stopCam]);
 
   useEffect(() => {
     if (cam === 'on' && video.current && camStream.current) video.current.srcObject = camStream.current;
@@ -225,115 +237,178 @@ export function DevicePreflight({ withCamera, cameraJoinsCall, onReady, onTextOn
     stopMic();
     stopCam();
     void playSilentUnlock();
-    if (textOnly) onTextOnly();
+    if (textOnly) onTextOnly?.();
     // Камера по умолчанию выключена: включаем, только если галочку поставили и браузер не отказал.
-    else onReady({ camera: Boolean(withCamera && cameraJoinsCall && wantCam && cam !== 'denied') });
+    else onReady({ camera: Boolean(withCamera && (cameraJoinsCall || cameraRequired) && wantCam && cam !== 'denied') });
   };
 
   const granted = mic === 'granted';
   const problem = mic === 'denied' || mic === 'nodevice' || mic === 'busy' || mic === 'unsupported';
+  const micTone = granted ? 'ok' : problem ? 'bad' : 'wait';
+  const micChip = { asking: 'Ждём разрешения', granted: 'Разрешён', denied: 'Нет доступа', nodevice: 'Не найден', busy: 'Занят', unsupported: 'Недоступен' }[mic];
+  const camChip = !wantCam ? 'Выключена' : cam === 'denied' ? 'Нет доступа' : cam === 'on' ? 'Включена' : 'Ждём разрешения';
+  const camTone = !wantCam ? 'off' : cam === 'denied' ? 'bad' : cam === 'on' ? 'ok' : 'wait';
+  const camRequired = Boolean(withCamera && cameraRequired);
+  /** Можно начинать: микрофон разрешён и, если камера обязательна, она включена. */
+  const canStart = granted && (!camRequired || cam === 'on');
 
   return (
     <div className={styles.box} data-testid="call-devices" data-mic={mic}>
-      <b>Проверка устройств</b>
+      <header className={styles.head}>
+        <b>Проверка устройств</b>
+        <p className={styles.sub}>
+          {camRequired
+            ? 'Созвон идёт голосом и с видео: нужны микрофон и камера. Проверочные потоки закроются, когда начнётся созвон.'
+            : withCamera
+              ? 'Убедимся, что Кира тебя слышит и видит. Проверочные потоки закроются, когда начнётся созвон.'
+              : 'Убедимся, что Кира тебя слышит. Проверочный поток закроется, когда начнётся созвон.'}
+        </p>
+      </header>
 
-      <div className={cx(styles.state, granted && styles.ok, problem && styles.bad)} role="status" data-testid="call-devices-mic">
-        <i className={styles.dot} aria-hidden="true" />
-        {mic === 'asking' && 'Микрофон: ждём разрешения - подтверди запрос в окне браузера.'}
-        {granted && 'Микрофон: разрешён. Скажи что-нибудь - полоска ниже должна двигаться.'}
-        {mic === 'denied' && 'Микрофон: доступ запрещён.'}
-        {mic === 'nodevice' && 'Микрофон: устройство не найдено.'}
-        {mic === 'busy' && 'Микрофон: занят другим приложением или недоступен.'}
-        {mic === 'unsupported' && 'Микрофон: браузер не даёт к нему доступ (нужен https или localhost и современный браузер).'}
-      </div>
-
-      {granted && (
-        <>
-          <div className={styles.meter} role="meter" aria-label="Уровень микрофона" aria-valuemin={0} aria-valuemax={1} aria-valuenow={Number(level.toFixed(2))} data-testid="call-devices-level">
-            <i style={{ '--level': level.toFixed(2) } as React.CSSProperties} />
-          </div>
-          {devices.length > 1 && (
-            <label className={styles.check}>
+      <div className={styles.grid}>
+        <section className={styles.card} aria-labelledby="devices-mic-title">
+          <div className={styles.cardHead}>
+            <span className={styles.title} id="devices-mic-title">
               Микрофон
-              <select
-                className={styles.select}
-                value={deviceId}
-                onChange={(e) => {
-                  setDeviceId(e.target.value);
-                  void request(e.target.value);
-                }}
-                data-testid="call-devices-select"
-              >
-                {devices.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            </span>
+            <span className={styles.chip} data-tone={micTone} data-testid="call-devices-mic" role="status">
+              <i className={styles.dot} aria-hidden="true" />
+              {micChip}
+            </span>
+          </div>
+
+          {granted && (
+            <>
+              <p className={styles.note}>Скажи что-нибудь - полоска должна двигаться.</p>
+              <div className={styles.meter} role="meter" aria-label="Уровень микрофона" aria-valuemin={0} aria-valuemax={1} aria-valuenow={Number(level.toFixed(2))} data-testid="call-devices-level">
+                <i style={{ '--level': level.toFixed(2) } as React.CSSProperties} />
+              </div>
+              {devices.length > 1 && (
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Устройство</span>
+                  <select
+                    className={styles.select}
+                    value={deviceId}
+                    onChange={(e) => {
+                      setDeviceId(e.target.value);
+                      void request(e.target.value);
+                    }}
+                    data-testid="call-devices-select"
+                  >
+                    {devices.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </>
           )}
-        </>
-      )}
+          {mic === 'asking' && <p className={styles.note}>Подтверди запрос в окне браузера.</p>}
+          {mic === 'denied' && (
+            <ol className={styles.help} data-testid="call-devices-help">
+              <li>Нажми на значок замка (или настроек) слева в адресной строке.</li>
+              <li>Поставь для микрофона «Разрешить» и вернись сюда.</li>
+              <li>Нажми «Повторить» (если браузер просит, обнови страницу).</li>
+            </ol>
+          )}
+          {mic === 'nodevice' && <p className={styles.note}>Подключи микрофон или гарнитуру и нажми «Повторить».</p>}
+          {mic === 'busy' && <p className={styles.note}>Закрой другие программы, которые используют микрофон (звонки, запись экрана), и нажми «Повторить».</p>}
+          {mic === 'unsupported' && <p className={styles.note}>Браузер не даёт доступ к микрофону: нужен https (или localhost) и современный браузер.{!textFallback && ' Созвон идёт только голосом.'}</p>}
 
-      {mic === 'denied' && (
-        <ol className={styles.help} data-testid="call-devices-help">
-          <li>Нажми на значок замка (или настроек) слева в адресной строке.</li>
-          <li>Поставь для микрофона «Разрешить» и вернись сюда.</li>
-          <li>Нажми «Повторить» (если браузер просит, обнови страницу).</li>
-        </ol>
-      )}
-      {mic === 'nodevice' && <p className={styles.note}>Подключи микрофон или гарнитуру и нажми «Повторить».</p>}
-      {mic === 'busy' && <p className={styles.note}>Закрой другие программы, которые используют микрофон (звонки, запись экрана), и нажми «Повторить».</p>}
+          <div className={styles.toneRow}>
+            <button type="button" className={cx(styles.linkBtn, ghostClass)} onClick={() => void playTone()} data-testid="call-devices-tone">
+              Проверить звук
+            </button>
+            <span className={cx(styles.note, tone === 'failed' && styles.noteBad)} role="status">
+              {tone === 'played' && 'Короткий сигнал: если слышно - звук Киры тоже будет слышно.'}
+              {tone === 'failed' && 'Звук не воспроизвёлся - проверь громкость и вывод звука в системе.'}
+            </span>
+          </div>
+        </section>
 
-      <div className={styles.row}>
-        <button type="button" className={ghostClass} onClick={() => void playTone()} data-testid="call-devices-tone">
-          Проверить звук
-        </button>
-        <span className={styles.note} role="status">
-          {tone === 'played' && 'Короткий сигнал: если слышно - звук Киры тоже будет слышно.'}
-          {tone === 'failed' && 'Не получилось воспроизвести звук - проверь громкость и вывод звука в системе.'}
-        </span>
+        {withCamera && (
+          <section className={styles.card} aria-labelledby="devices-cam-title">
+            <div className={styles.cardHead}>
+              <span className={styles.title} id="devices-cam-title">
+                Камера
+              </span>
+              <span className={styles.chip} data-tone={camTone}>
+                <i className={styles.dot} aria-hidden="true" />
+                {camChip}
+              </span>
+            </div>
+            <div className={styles.previewBox} data-state={wantCam && cam === 'on' ? 'on' : 'off'}>
+              {wantCam && cam === 'on' ? (
+                <video ref={video} className={styles.preview} autoPlay muted playsInline aria-label="Превью камеры" />
+              ) : (
+                <span className={styles.previewEmpty}>{wantCam && cam === 'starting' ? 'Ждём разрешения камеры…' : 'Без видео'}</span>
+              )}
+            </div>
+            {camRequired ? (
+              <p className={styles.note}>Видео записывается вместе с аудио; никакая модель его не анализирует.</p>
+            ) : (
+              <label className={styles.switch}>
+                <input type="checkbox" className={styles.switchInput} checked={wantCam} onChange={(e) => setWantCam(e.target.checked)} data-testid="call-devices-camera" />
+                <span className={styles.switchText}>
+                  {cameraJoinsCall ? 'Камера в созвоне' : 'Проверить камеру'}
+                  <small>{cameraJoinsCall ? 'Видео записывается вместе с аудио. Сними, чтобы говорить без видео.' : 'По умолчанию выключена, в комнате включается отдельно.'}</small>
+                </span>
+              </label>
+            )}
+            {cam === 'denied' && camRequired && (
+              <>
+                <ol className={styles.help} data-testid="call-devices-camera-denied">
+                  <li>Без камеры созвон не начать: нажми на значок замка (или настроек) слева в адресной строке.</li>
+                  <li>Поставь для камеры «Разрешить» и вернись сюда.</li>
+                  <li>Нажми «Повторить камеру» (если браузер просит, обнови страницу).</li>
+                </ol>
+                <div className={styles.toneRow}>
+                  <button type="button" className={cx(styles.linkBtn, ghostClass)} onClick={() => setCamTry((n) => n + 1)} data-testid="call-devices-camera-retry">
+                    Повторить камеру
+                  </button>
+                </div>
+              </>
+            )}
+            {cam === 'denied' && !camRequired && (
+              <p className={cx(styles.note, styles.noteBad)} data-testid="call-devices-camera-denied">
+                {cameraJoinsCall ? 'Камера недоступна или запрещена - созвон пойдёт без видео.' : 'Камера недоступна или запрещена - можно продолжить без неё.'}
+              </p>
+            )}
+          </section>
+        )}
       </div>
 
-      {withCamera && (
-        <div className={styles.row}>
-          <label className={styles.check}>
-            <input type="checkbox" checked={wantCam} onChange={(e) => setWantCam(e.target.checked)} data-testid="call-devices-camera" />
-            {cameraJoinsCall
-              ? 'Камера в созвоне (видео записывается вместе с аудио; сними галочку, чтобы говорить без видео)'
-              : 'Проверить камеру (по умолчанию выключена, включается в комнате отдельно)'}
-          </label>
-          {cam === 'starting' && <span className={styles.note}>Ждём разрешения камеры…</span>}
-          {cam === 'denied' && (
-            <span className={styles.note} data-testid="call-devices-camera-denied">
-              {cameraJoinsCall ? 'Камера недоступна или запрещена - созвон пойдёт без видео.' : 'Камера недоступна или запрещена - можно продолжить без неё.'}
-            </span>
-          )}
-          {wantCam && cam === 'on' && <video ref={video} className={styles.preview} autoPlay muted playsInline aria-label="Превью камеры" />}
-        </div>
-      )}
-
-      <div className={styles.row}>
-        {granted ? (
-          <button type="button" className={primaryClass} onClick={() => finish(false)} data-testid="call-devices-go">
+      <footer className={styles.actions}>
+        {canStart ? (
+          <button type="button" className={cx(styles.go, primaryClass)} onClick={() => finish(false)} data-testid="call-devices-go">
             Всё работает - начать
           </button>
+        ) : granted ? (
+          <span className={styles.note} role="status" data-testid="call-devices-wait-camera">
+            {cam === 'denied' ? 'Разреши камеру, чтобы начать.' : 'Ждём камеру…'}
+          </span>
         ) : (
           mic !== 'unsupported' && (
-            <button type="button" className={primaryClass} onClick={() => void request(deviceId || undefined)} disabled={mic === 'asking'} data-testid="call-devices-retry">
+            <button type="button" className={cx(styles.go, primaryClass)} onClick={() => void request(deviceId || undefined)} disabled={mic === 'asking'} data-testid="call-devices-retry">
               Повторить
             </button>
           )
         )}
-        <button type="button" className={ghostClass} onClick={() => finish(true)} data-testid="call-devices-text">
-          Продолжить текстом
-        </button>
-        {onCancel && (
-          <button type="button" className={ghostClass} onClick={onCancel}>
-            Не сейчас
-          </button>
-        )}
-      </div>
+        <span className={styles.secondary}>
+          {textFallback && (
+            <button type="button" className={ghostClass} onClick={() => finish(true)} data-testid="call-devices-text">
+              Продолжить текстом
+            </button>
+          )}
+          {onCancel && (
+            <button type="button" className={ghostClass} onClick={onCancel}>
+              Не сейчас
+            </button>
+          )}
+        </span>
+      </footer>
     </div>
   );
 }

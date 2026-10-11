@@ -132,7 +132,7 @@ export async function createInvitation(
   limit = DAILY_INVITATION_LIMIT,
 ): Promise<{ id: string; status: InvitationStatus }> {
   // Приглашения — только после оферты и обязательства по данным кандидатов (ADR 0005).
-  const sender = await prisma.employerProfile.findUnique({ where: { id: ctx.employerProfileId }, select: { userId: true } });
+  const sender = await prisma.employerProfile.findUnique({ where: { id: ctx.employerProfileId }, select: { userId: true, user: { select: { email: true } }, company: { select: { contact: true } } } });
   if (!sender) throw errors.forbidden('Профиль работодателя не найден');
   await assertEmployerConsents(sender.userId);
   const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false }, select: { id: true } });
@@ -140,6 +140,10 @@ export async function createInvitation(
   if (input.vacancyId) {
     const v = await prisma.vacancy.findFirst({ where: { id: input.vacancyId, companyId: ctx.companyId, archivedAt: null }, select: { id: true } });
     if (!v) throw errors.notFound('Потребность не найдена');
+  }
+  // ТЗ 2.2 п. 2: приглашение содержит способ связи с компанией; без него кандидату не с кем договариваться.
+  if (!sender.company?.contact?.trim() && !(sender.user.email && contactEmail(sender.user.email))) {
+    throw new AppError('company_contact_required', 'Укажите способ связи в профиле компании — кандидат должен видеть его в приглашении', 422);
   }
   const created = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${ctx.companyId}`}))`;

@@ -12,7 +12,6 @@ import { Button, Field, Notice } from '../ui';
 import ui from '../ui.module.css';
 
 import styles from './Employer.module.css';
-import { useInviteContact } from './InviteContactContext';
 import { RedFlagNotice } from './RedFlagNotice';
 
 export interface InviteFormProps {
@@ -43,22 +42,16 @@ function InvitationDialog({ children, close, busy, name }: { children: ReactNode
   return <dialog ref={ref} className={styles.invitationDialog} aria-label={`Приглашение: ${name}`} onCancel={(event) => { event.preventDefault(); if (!busy) close(); }} onClick={(event) => { if (event.target === event.currentTarget && !busy) close(); }}><div className={styles.dialogHeading}><span className={styles.status}>Приглашение кандидату</span><Button size="sm" onClick={close} disabled={busy} aria-label="Закрыть приглашение">×</Button></div><h2>{name}</h2>{children}</dialog>;
 }
 
-/** Текст у формы, когда у компании нет способа связи (E05): отправка закрыта, пока контакт не указан. */
-export const NO_COMPANY_CONTACT_NOTICE = 'Кандидат должен видеть, как с вами связаться. Укажите почту или Telegram компании';
-
-/**
- * Приглашение конкретному кандидату (R-E-05, ТЗ 2.2): описание и вилка «от–до» обязательны. Без способа связи компании
- * (InviteContactContext: null) кнопка отправки закрыта — сервер в этом случае всё равно ответит 409 company_contact_required.
- */
+/** Приглашение конкретному кандидату (R-E-05, ТЗ 2.2): описание и вилка «от–до» обязательны. */
 export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalaryFrom, defaultSalaryTo, initialMessage, defaultOpen }: InviteFormProps) {
   const router = useRouter();
-  const contactMissing = useInviteContact() === null;
   const [open, setOpen] = useState(Boolean(defaultOpen));
   const [message, setMessage] = useState(initialMessage ?? '');
   const [salaryFrom, setSalaryFrom] = useState(defaultSalaryFrom ? String(defaultSalaryFrom) : '');
   const [salaryTo, setSalaryTo] = useState(defaultSalaryTo ? String(defaultSalaryTo) : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needContact, setNeedContact] = useState(false);
   const [fieldErr, setFieldErr] = useState<{ message?: string; salaryFrom?: string; salaryTo?: string }>({});
   const [done, setDone] = useState(false);
   const flags = useMemo(() => detectRedFlags({ texts: [message], salaryFrom: parseRub(salaryFrom), salaryTo: parseRub(salaryTo) }).filter((f) => f.code !== 'vague_text' && f.code !== 'no_salary'), [message, salaryFrom, salaryTo]);
@@ -87,11 +80,13 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
     if (Object.keys(errs).length) return;
     setBusy(true);
     setError(null);
+    setNeedContact(false);
     try {
       await inviteApi({ candidateId, vacancyId, message: message.trim(), salaryFrom: from, salaryTo: to });
       setDone(true);
       router.refresh();
     } catch (err) {
+      setNeedContact(err instanceof ApiError && err.code === 'company_contact_required');
       setError(err instanceof ApiError ? err.message : 'Не удалось отправить приглашение');
     } finally {
       setBusy(false);
@@ -116,14 +111,9 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
         </Field>
       </div>
       <RedFlagNotice flags={flags} />
-      {contactMissing && (
-        <Notice tone="error">
-          {NO_COMPANY_CONTACT_NOTICE} на странице <Link href="/employer/company">«Компания»</Link>.
-        </Notice>
-      )}
-      {error && <Notice tone="error">{error}</Notice>}
+      {error && <Notice tone="error">{error}{needContact && <> <Link href="/employer/company">Профиль компании →</Link></>}</Notice>}
       <div className={styles.actions}>
-        <Button type="submit" variant="cta" size="sm" loading={busy} disabled={contactMissing}>
+        <Button type="submit" variant="cta" size="sm" loading={busy}>
           Отправить приглашение
         </Button>
         <Button size="sm" onClick={() => setOpen(false)} disabled={busy}>

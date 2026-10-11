@@ -17,7 +17,8 @@ describe('AvatarScene call-side (вариант D)', () => {
     );
     expect(screen.getByTestId('side-panel').contains(screen.getByTestId('feed'))).toBe(true);
     expect(screen.getByTestId('head-view')).toBeTruthy();
-    expect(screen.getByTestId('head-view').closest('[data-call]')).toBeTruthy();
+    // Вне созвона портрет следует теме страницы, тёмная только панель звонка.
+    expect(screen.getByTestId('head-view').closest('[data-call]')).toBeNull();
     expect(screen.getByTestId('side-panel').closest('[data-call]')).toBeNull();
     expect(screen.getByTestId('state-chip')).toBeTruthy();
   });

@@ -119,6 +119,7 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
   const inCall = Boolean(call?.open);
   // Тема — на <html> (components/shell/theme.ts), сцена следует ей через [data-scene]; тёмная только панель звонка
   // (data-call на sideStage, tokens.css); на корне data-in-call — режим звонка для раскладки и приглушения чата.
+  // Портрет вне созвона следует теме страницы (решение владельца 11.10): data-call на нём не ставить.
   const sceneRef = useRef<HTMLDivElement>(null);
   return (
     <div ref={sceneRef} className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-in-call={inCall || undefined} data-scene>
@@ -128,7 +129,7 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
           <CallPanel />
         ) : (
           <>
-            <div className={`${styles.sideHead}${aside?.stats?.length ? ` ${styles.withStats}` : ''}`} data-call>
+            <div className={`${styles.sideHead}${aside?.stats?.length ? ` ${styles.withStats}` : ''}`}>
               <div className={styles.headBox}>
                 <HeadView />
               </div>

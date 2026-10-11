@@ -535,3 +535,27 @@ it('completed profile editor summary exits without edit query or onboarding comp
   await waitFor(() => expect(push).toHaveBeenCalledWith('/profile'));
   expect(fetcher).not.toHaveBeenCalled();
 });
+
+it('согласия: главная кнопка «Согласиться со всем», с отметкой — «с отмеченным · N», ссылка «без согласий» отдельно', () => {
+  const fetchFn = stubFetch({ next: '/consultant' }, { next: '/consultant' });
+  const CONSENTS = [
+    { value: 'ai_assessment', label: 'Согласен(на), что мои ответы оценивает ИИ', note: 'Нужно для теста' },
+    { value: 'employer_visibility', label: 'Показывать мой профиль работодателям', note: 'Нужно для поиска' },
+  ];
+  render(<OnboardingChat initial={makeView({ id: 'candidateConsents', kind: 'consents', question: 'Что мне можно делать с твоими данными?', options: CONSENTS })} consentText={[]} />);
+  expect(screen.getByRole('button', { name: 'Продолжить без согласий' })).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: 'Согласиться со всем' }));
+  expect(sent(fetchFn).value).toEqual(['ai_assessment', 'employer_visibility']);
+});
+
+it('согласия: отмечена одна — кнопка «Согласиться с отмеченным · 1» шлёт только её', () => {
+  const fetchFn = stubFetch({ next: '/consultant' });
+  const CONSENTS = [
+    { value: 'ai_assessment', label: 'Оценка ИИ' },
+    { value: 'employer_visibility', label: 'Показ работодателям' },
+  ];
+  render(<OnboardingChat initial={makeView({ id: 'candidateConsents', kind: 'consents', question: '?', options: CONSENTS })} consentText={[]} />);
+  fireEvent.click(screen.getByLabelText(/Оценка ИИ/));
+  fireEvent.click(screen.getByRole('button', { name: 'Согласиться с отмеченным · 1' }));
+  expect(sent(fetchFn).value).toEqual(['ai_assessment']);
+});

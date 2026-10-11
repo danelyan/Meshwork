@@ -3,7 +3,7 @@
 import type { StepOption, StepView } from '@/server/onboarding/types';
 import type { ReactNode } from 'react';
 
-import { DoneLink, type QuickReply } from '../chat/Thread';
+import { DoneLink, MessageCard, type QuickReply } from '../chat/Thread';
 
 import styles from './Onboarding.module.css';
 import { salaryChips, salaryText } from './salary';
@@ -69,6 +69,40 @@ export function StepControls(props: StepControlsProps) {
             </DoneLink>
           }
         />
+      );
+    }
+    case 'consents': {
+      // Согласия (ADR 0005): карточки-галочки с полным текстом. Главная кнопка — согласиться (со всем или с отмеченным),
+      // «без согласий» — второстепенная ссылка (владелец 11.10: «не видно, как согласиться»).
+      const labelOf = (v: string) => opts.find((o) => o.value === v)?.label ?? v;
+      const all = opts.map((o) => o.value);
+      const n = props.sel.length;
+      return (
+        <MessageCard label="Согласия">
+          <div role="group" aria-label="Согласия" className={styles.consentList} data-testid="consent-checks">
+            {opts.map((o) => (
+              <label key={o.value} className={styles.consentItem} data-checked={props.sel.includes(o.value) || undefined}>
+                <input type="checkbox" checked={props.sel.includes(o.value)} disabled={busy} onChange={() => props.onToggle(o.value)} />
+                <span>
+                  <b>{o.label}</b>
+                  {o.note && <small>{o.note}</small>}
+                </span>
+              </label>
+            ))}
+          </div>
+          <div className={styles.consentActions}>
+            {n > 0 ? (
+              <button type="button" className={styles.consentGo} disabled={busy} onClick={() => onAnswer(props.sel, props.sel.map(labelOf).join('; '))}>
+                Согласиться с отмеченным · {n}
+              </button>
+            ) : (
+              <button type="button" className={styles.consentGo} disabled={busy} onClick={() => onAnswer(all, all.map(labelOf).join('; '))}>
+                Согласиться со всем
+              </button>
+            )}
+            <DoneLink disabled={busy} onClick={() => onAnswer([], 'Без дополнительных согласий')}>Продолжить без согласий</DoneLink>
+          </div>
+        </MessageCard>
       );
     }
     case 'range': {

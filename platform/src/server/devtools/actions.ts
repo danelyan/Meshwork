@@ -1,6 +1,8 @@
 import { prisma } from '@/server/db';
 import { SHARED_DEMO_USER, createFreshDemoUser, sessionInputFor } from '@/server/auth/users';
 import { errors } from '@/server/errors';
+import { answerRevisions, revisionRows } from '@/server/onboarding/service';
+import type { Answers } from '@/server/onboarding/types';
 import type { SessionPrincipal } from '@/server/session';
 
 /** Действия дебаг-панели (только localhost, гейт — guard.ts). Работают над пользователем из сессии. */
@@ -29,8 +31,11 @@ export async function startNewConversation(s: SessionPrincipal): Promise<{ conve
  */
 export async function clearOnboarding(s: DevSession, alsoProfile: boolean): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    const state = await tx.onboardingState.findUnique({ where: { userId: s.userId }, select: { meta: true } });
+    const state = await tx.onboardingState.findUnique({ where: { userId: s.userId }, select: { meta: true, answers: true } });
     await tx.onboardingState.deleteMany({ where: { userId: s.userId } });
+    // Журнал редакций (C05): сброс - тоже редакция, по записи на каждый стёртый ответ.
+    const wiped = answerRevisions((state?.answers as Answers | undefined) ?? {}, {}, 'reset');
+    if (wiped.length) await tx.onboardingAnswerRevision.createMany({ data: revisionRows(s.userId, wiped) });
     await tx.user.update({ where: { id: s.userId }, data: { onboardedAt: null } });
     if (!alsoProfile) return;
     if (s.role === 'candidate' && s.candidateId) {

@@ -127,6 +127,22 @@ export interface HistoryItem {
   editable: boolean;
 }
 
+/** Откуда редакция ответа: ответ человека, итог входа в ФСП ID, сброс опроса. */
+export type AnswerRevisionSource = 'user' | 'fsp' | 'reset';
+
+/** Запись журнала редакций опроса (C05): шаг, «было → стало» человеческим текстом, когда и откуда. */
+export interface AnswerRevisionView {
+  id: string;
+  stepId: string;
+  label: string;
+  /** null - ответа не было. */
+  previous: string | null;
+  /** null - ответ удалён (сброс). */
+  value: string | null;
+  source: AnswerRevisionSource;
+  createdAt: string;
+}
+
 export interface SummaryView {
   items: { stepId: string; label: string; value: string }[];
   skipped: { stepId: string; label: string }[];

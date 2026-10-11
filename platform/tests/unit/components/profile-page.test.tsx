@@ -103,4 +103,19 @@ describe('ProfilePage: индекс честности и история опр�
     expect(screen.getByRole('link', { name: 'Открыть попытку и подтвердить' }).getAttribute('href')).toBe('/test?attempt=att-held');
     expect(screen.getByTestId('test-history').textContent).toContain('в подборках пока не учитывается');
   });
+
+  it('без rankingHold уведомления нет; история ответов опроса показывает «было → стало» и источник', async () => {
+    stubAll([attempt({})], [
+      { id: 'r2', stepId: 'grade', label: 'Грейд', previous: 'Junior', value: 'Middle', source: 'user', createdAt: '2026-10-11T10:00:00Z' },
+      { id: 'r1', stepId: 'city', label: 'Город', previous: null, value: 'Казань', source: 'user', createdAt: '2026-10-10T10:00:00Z' },
+      { id: 'r0', stepId: 'goal', label: 'Цель', previous: 'Ищу работу', value: null, source: 'reset', createdAt: '2026-10-09T10:00:00Z' },
+    ]);
+    render(<ProfilePage />);
+    const history = await screen.findByTestId('onboarding-history');
+    expect(screen.queryByTestId('ranking-hold-notice')).toBeNull();
+    expect(history.textContent).toContain('История ответов опроса');
+    expect(history.textContent).toContain('Грейд - Junior → Middle');
+    expect(history.textContent).toContain('Город - не было → Казань');
+    expect(history.textContent).toContain('Цель - Ищу работу → удалено (сброс опроса)');
+  });
 });

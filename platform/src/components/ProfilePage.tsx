@@ -7,7 +7,8 @@ import { shownWording } from '@/lib/claims-view';
 import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
 
-import { ApiError, type AttemptSummary, claimAction, getProfile, listTestAttemptsApi, request } from '@/lib/api';
+import { ApiError, type AttemptSummary, claimAction, getProfile, listOnboardingHistoryApi, listTestAttemptsApi, request } from '@/lib/api';
+import type { AnswerRevisionView } from '@/server/onboarding/types';
 import { formatDate, LEVEL_HINT, LEVELS_TOP_DOWN } from '@/lib/labels';
 import type { ProfileClaim, ProfileView } from '@/server/claims/types';
 
@@ -137,10 +138,29 @@ function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
   );
 }
 
+/** История ответов опроса (C05): «было → стало» по шагам. Данные — /api/onboarding/history; недоступны → блок пустой. */
+function OnboardingHistory({ revisions }: { revisions: AnswerRevisionView[] }) {
+  if (revisions.length === 0) return null;
+  return (
+    <div className={styles.testRec} data-testid="onboarding-history">
+      <span className={ui.kicker}>История ответов опроса</span>
+      <ul className={styles.history}>
+        {revisions.slice(0, 20).map((r) => (
+          <li key={r.id}>
+            {formatDate(r.createdAt)}: {r.label} - {r.previous ?? 'не было'} → {r.value ?? 'удалено'}
+            {r.source === 'reset' ? ' (сброс опроса)' : r.source === 'fsp' ? ' (вход через ФСП ID)' : ''}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function ProfilePage() {
   const [details, setDetails] = useState<ProfileDetails | null>(null);
   const [profile, setProfile] = useState<ProfileView | null>(null);
     const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
+  const [revisions, setRevisions] = useState<AnswerRevisionView[]>([]);
   const [error, setError] = useState<ApiError | Error | null>(null);
 
   useEffect(() => {
@@ -152,6 +172,10 @@ export function ProfilePage() {
     request<ProfileDetails>('/api/profile/details').then((value) => { if (alive && value.employerPreview) setDetails(value); }, () => undefined);
     listTestAttemptsApi().then(
       (a) => alive && setAttempts(a),
+      () => undefined,
+    );
+    listOnboardingHistoryApi().then(
+      (r) => alive && setRevisions(r),
       () => undefined,
     );
     return () => {
@@ -255,7 +279,7 @@ export function ProfilePage() {
         })
       )}
       </section>
-      <details className={styles.extraEvidence}><summary>История проверок</summary><TestHistory attempts={attempts} /></details>
+      <details className={styles.extraEvidence}><summary>История проверок</summary><TestHistory attempts={attempts} /><OnboardingHistory revisions={revisions} /></details>
       <div className={`${styles.noPrint} ${styles.homeLinks}`}>
         <Link href="/skills">Карта глубины и пробелы → Навыки и грейд</Link>
         <Link href="/career">Подходящие вакансии → Вакансии</Link>

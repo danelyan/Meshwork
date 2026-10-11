@@ -153,7 +153,7 @@ flowchart LR
 | `DefenseRoomPlan` | план вопросов защиты проекта (QLC и вопросы работодателя), курсор, источник (репозиторий, коммит) |
 | `ProjectTemplate`, `ProjectTask`, `ProjectAssignment`, `ProjectSubmission` | ступень 2: шаблон (синхронизируется с `platform/project-templates/`), задание под потребность (условие, рубрика, `visibility`), «взятое» задание со сроком, сдача (репозиторий, коммит, журнал ИИ, результат, id задания runner, id приглашения на защиту) |
 | `ConsultantMemory`, `ConsultantSettings` | память консультанта и настройки собеседника (`/consultant`) |
-| `User`, `AuthAccount`, `EmployerProfile`, `Consent`, `AuthCode`, `CandidateProfile`, `OnboardingState`, `EmployerConversation`, `EmployerMessage` | вход, роли, согласия (в том числе отдельное — на запись созвона), онбординг, диалог помощника работодателя |
+| `User`, `AuthAccount`, `EmployerProfile`, `Consent`, `AuthCode`, `CandidateProfile`, `OnboardingState`, `OnboardingAnswerRevision` (журнал редакций ответов опроса «было → стало», C05), `EmployerConversation`, `EmployerMessage` | вход, роли, согласия (в том числе отдельное — на запись созвона), онбординг, диалог помощника работодателя |
 | `TaskTemplate`, `TestAttempt`, `TestItem` | тест на грейд (попытка хранит `subcategoryId` и `POLICY_VERSION`) ([ADR 0002](decisions/0002-grade-test.md)): шаблон-генератор с параметрами IRT и экспозицией; попытка с seed, θ, SE, P(pass) и исходом; задание попытки с параметрами экземпляра, ключом (только на сервере), ответом и θ после ответа |
 
 Сид (`npm run db:seed`): 3 демо-кандидата, каталог (142 записи), 18 подкатегорий, 3 демо-компании, 8 вакансий, 16 заданий; lane employer — ещё 16 синтетических кандидатов `demo-pool-*` (Backend/Frontend × Junior/Middle) с подтверждёнными утверждениями: 8 в `seed/employer.ts` и 8 в `seed/employer-pool.ts` (Q-39); у 12 из них демо-категория (поставлена сидом, не тестом), по три на каждую пару специализация × грейд, и команда/стек у трёх потребностей «Северного Потока». Приглашений сид не создаёт.
@@ -192,6 +192,7 @@ flowchart LR
 | `POST /api/test/attempt/:id/finish` | экран теста | досрочный итог по данным ответам; без ответов — `abandoned` |
 | `POST /api/test/attempt/:id/confirm-junior` | итог теста | старший грейд не подтверждён → грейд ниже по той же попытке по согласию кандидата (R-C-08; Senior → Middle, Middle → Junior; имя маршрута историческое) |
 | `GET /api/test/attempts` | профиль | история попыток (R-C-07); `rankingHold` - категория по попытке в выдаче пока не учитывается |
+| `GET /api/onboarding/history` | профиль | журнал редакций ответов опроса (C05): шаг, «было → стало», источник (ответ, ФСП ID, сброс) |
 | `GET/POST /api/employer/vacancies` | кабинет работодателя | потребности своей компании; создание (требования — только из каталога своей специализации или общие) |
 | `GET/PUT/PATCH /api/employer/vacancies/:id` | кабинет | своя потребность (чужая — 404); `PUT` — все поля, `PATCH { archived }` — закрыть/вернуть |
 | `GET /api/employer/vacancies/:id/matches?spec=&grade=&stack=a,b&fsp=1&category=1&limit=` | подборка | ранжированные карточки с обоснованием; контакты `null` до принятия |

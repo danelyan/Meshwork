@@ -4,7 +4,7 @@ import type { Answers } from '@/server/onboarding/types';
 
 const mocks = vi.hoisted(() => ({ find: vi.fn(), save: vi.fn(), profile: vi.fn(), candidate: vi.fn(), claim: vi.fn(), category: vi.fn(), consent: vi.fn(), lead: vi.fn() }));
 vi.mock('@/server/db', () => ({ prisma: {
-  user: { findUnique: mocks.find }, onboardingState: { upsert: mocks.save }, candidateProfile: { upsert: mocks.profile },
+  user: { findUnique: mocks.find }, onboardingState: { upsert: mocks.save }, onboardingAnswerRevision: { createMany: vi.fn(async () => ({ count: 0 })) }, $transaction: async (ops: Promise<unknown>[]) => Promise.all(ops), candidateProfile: { upsert: mocks.profile },
   consent: { findMany: async () => [{ kind: 'ai_assessment' }] }, candidate: { update: mocks.candidate }, claim: { create: mocks.claim, count: async () => 0 }, candidateCategory: { create: mocks.category },
 } }));
 vi.mock('@/server/auth/consent', async (orig) => ({ ...(await orig<typeof import('@/server/auth/consent')>()), hasCurrentConsent: mocks.consent }));

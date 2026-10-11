@@ -589,6 +589,8 @@ model User {
   consents           Consent[]
   /// lane onboarding: где человек остановился в онбординге
   onboarding         OnboardingState?
+  /// lane onboarding: журнал редакций ответов опроса (C05)
+  onboardingRevisions OnboardingAnswerRevision[]
   /// lane call: участие в созвонах (работодатель в комнате защиты)
   callParticipations CallParticipant[]
 
@@ -794,6 +796,25 @@ model OnboardingState {
   meta      Json     @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// Журнал редакций ответов опроса (C05, аудит 11.10): каждая смена ответа - запись «было → стало».
+/// Текущие значения остаются в OnboardingState.answers; журнал только дополняется и удаляется вместе с аккаунтом.
+model OnboardingAnswerRevision {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Шаг опроса (StepDef.id)
+  stepId    String
+  /// Значение после изменения; NULL - ответ удалён (сброс)
+  value     Json?
+  /// Значение до изменения; NULL - ответа не было
+  previous  Json?
+  /// user - ответ человека; fsp - итог входа в ФСП ID; reset - сброс опроса
+  source    String   @default("user")
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // =============================================================================

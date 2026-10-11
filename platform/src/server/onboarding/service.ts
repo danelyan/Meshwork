@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { getSubcategory, isSpecialization, SPEC_ROLE, subcategoryMatches } from '@/lib/directions';
 import { CONSENT_VERSION, hasCurrentConsent, recordConsent } from '@/server/auth/consent';
@@ -30,7 +30,7 @@ import {
 import { computeNeeds } from './needs';
 import { type PrevAnswer, leadFor, templateLead } from './phrase';
 import { GRADES, PRIVATE_INTAKE_STEPS, findStep, scenarioSteps } from './scenario';
-import type { Answers, Facts, OnboardingView, StepContext, StepDef, StepView, SummaryView } from './types';
+import type { AnswerRevisionSource, AnswerRevisionView, Answers, Facts, OnboardingView, StepContext, StepDef, StepView, SummaryView } from './types';
 import { GRADE_LABEL } from '@/lib/grades';
 
 /**
@@ -125,7 +125,34 @@ function completedProfileStep(l: Loaded, stepId: string | null): StepDef | undef
   return findStep(stepId);
 }
 
-async function save(userId: string, data: { stepId: string; answers?: Answers; skipped?: string[]; lines?: Record<string, string>; meta?: Meta }) {
+/** Одна редакция ответа для журнала (C05). */
+export interface AnswerRevisionInput {
+  stepId: string;
+  previous: unknown;
+  value: unknown;
+  source: AnswerRevisionSource;
+}
+
+/** Ответы, изменившиеся между двумя состояниями опроса. Одинаковое значение - записи нет; undefined и null - «ответа нет». */
+export function answerRevisions(before: Answers, after: Answers, source: AnswerRevisionSource): AnswerRevisionInput[] {
+  const out: AnswerRevisionInput[] = [];
+  for (const stepId of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    const prev = before[stepId] ?? null;
+    const next = after[stepId] ?? null;
+    if (JSON.stringify(prev) === JSON.stringify(next)) continue;
+    out.push({ stepId, previous: prev, value: next, source });
+  }
+  return out;
+}
+
+const revisionJson = (v: unknown) => (v === null || v === undefined ? Prisma.DbNull : (v as Prisma.InputJsonValue));
+
+/** Записи журнала для createMany (общая с devtools: сброс опроса пишет те же записи). */
+export function revisionRows(userId: string, revisions: readonly AnswerRevisionInput[]): Prisma.OnboardingAnswerRevisionCreateManyInput[] {
+  return revisions.map((r) => ({ userId, stepId: r.stepId, previous: revisionJson(r.previous), value: revisionJson(r.value), source: r.source }));
+}
+
+async function save(userId: string, data: { stepId: string; answers?: Answers; skipped?: string[]; lines?: Record<string, string>; meta?: Meta; revisions?: AnswerRevisionInput[] }) {
   const json = (v: unknown) => v as Prisma.InputJsonValue;
   const patch = {
     stepId: data.stepId,
@@ -134,7 +161,39 @@ async function save(userId: string, data: { stepId: string; answers?: Answers; s
     ...(data.lines ? { lines: json(data.lines) } : {}),
     ...(data.meta ? { meta: json(data.meta) } : {}),
   };
-  await prisma.onboardingState.upsert({ where: { userId }, create: { userId, ...patch }, update: patch });
+  const upsert = prisma.onboardingState.upsert({ where: { userId }, create: { userId, ...patch }, update: patch });
+  if (!data.revisions?.length) {
+    await upsert;
+    return;
+  }
+  await prisma.$transaction([upsert, prisma.onboardingAnswerRevision.createMany({ data: revisionRows(userId, data.revisions) })]);
+}
+
+/** Журнал редакций ответов опроса (C05), новые сверху; значения - человеческим текстом, как в сводке. */
+export async function listAnswerHistory(userId: string): Promise<AnswerRevisionView[]> {
+  const [l, rows] = await Promise.all([
+    load(userId),
+    prisma.onboardingAnswerRevision.findMany({ where: { userId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 200 }),
+  ]);
+  const text = (stepId: string, v: Prisma.JsonValue | null): string | null => {
+    if (v === null) return null;
+    const step = findStep(stepId);
+    if (!step) return JSON.stringify(v);
+    try {
+      return answerLabel(step, v, l.ctx);
+    } catch {
+      return JSON.stringify(v);
+    }
+  };
+  return rows.map((r) => ({
+    id: r.id,
+    stepId: r.stepId,
+    label: findStep(r.stepId)?.summaryLabel ?? r.stepId,
+    previous: text(r.stepId, r.previous),
+    value: text(r.stepId, r.value),
+    source: r.source === 'fsp' || r.source === 'reset' ? r.source : 'user',
+    createdAt: r.createdAt.toISOString(),
+  }));
 }
 
 function prevOf(step: StepDef, l: Pick<Loaded, 'ctx' | 'state' | 'lines'>): PrevAnswer | null {
@@ -467,7 +526,7 @@ export async function answerStep(userId: string, stepId: string, value: unknown)
   const ctx = { ...fresh.ctx, answers };
   const next = nextOpen(ctx, skipped, step.id);
   if (backToChat(fresh, next)) meta = { ...meta, later: true };
-  await save(userId, { stepId: next.id, answers, skipped, meta });
+  await save(userId, { stepId: next.id, answers, skipped, meta, revisions: answerRevisions(l.state.answers, answers, 'user') });
   return { sessionChanged };
 }
 
@@ -485,7 +544,7 @@ export async function recordFspLink(userId: string): Promise<void> {
   let meta = resumed(l.meta);
   const next = nextOpen({ ...l.ctx, answers }, skipped, 'fsp');
   if (backToChat(l, next)) meta = { ...meta, later: true };
-  await save(userId, { stepId: next.id, answers, skipped, meta });
+  await save(userId, { stepId: next.id, answers, skipped, meta, revisions: answerRevisions(l.state.answers, answers, 'fsp') });
 }
 
 /**

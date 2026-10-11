@@ -1,0 +1,20 @@
+{
+  "id": "fe-designsys-senior-dialog",
+  "subcategoryId": "frontend.design-system",
+  "specialization": "frontend",
+  "grade": "senior",
+  "title": "Модальный Dialog: focus trap, возврат фокуса, вложенность",
+  "summary": "Compound-компонент Dialog по WAI-ARIA APG: ловушка фокуса, стек вложенных окон, возврат фокуса, блокировка прокрутки, скрытие фона от скринридеров, контролируемый и неконтролируемый режим, DESIGN.md",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.components", "fe.a11y", "fe.dom-events", "fe.render-lifecycle", "fe.architecture"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

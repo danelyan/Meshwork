@@ -52,7 +52,7 @@ describe('Combobox: разметка и фильтр', () => {
     fireEvent.change(combo(), { target: { value: 'СТАН' } });
     expect(labels()).toEqual(['Казахстан']);
     expect(combo().getAttribute('aria-expanded')).toBe('true');
-    fireEvent.change(combo(), { target: { value: 'ия' } });
+    fireEvent.change(combo(), { target: { value: 'сия' } });
     expect(labels()).toEqual(['Россия']);
     fireEvent.change(combo(), { target: { value: 'ямайка' } });
     expect(screen.queryByRole('listbox')).toBeNull();
@@ -116,7 +116,7 @@ describe('Combobox: клавиатура', () => {
     render(<Combobox label="Страна" options={OPTIONS} />);
     key('ArrowDown');
     expect(activeText()).toBe('Россия');
-    fireEvent.change(combo(), { target: { value: 'а' } });
+    fireEvent.change(combo(), { target: { value: 'и' } });
     expect(combo().hasAttribute('aria-activedescendant')).toBe(false);
     key('ArrowDown');
     expect(activeText()).toBe('Россия');

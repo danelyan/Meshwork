@@ -31,8 +31,8 @@ test.afterAll(async () => {
 async function loginAsEmployer(page: Page) {
   await page.goto('/demo');
   await page.getByRole('button', { name: /^Войти как .*Анна Кравец/ }).first().click();
-  // Дом работодателя: помощник (10.10) или подборка — маршрут жюри на /demo ведёт в /employer/search (11.10).
-  await page.waitForURL(/\/(consultant|employer\/search)(\?.*)?$/);
+  // Дом работодателя: помощник (10.10) или подборка — первый шаг маршрута жюри на /demo ведёт в /employer (11.10).
+  await page.waitForURL(/\/(consultant|employer(\/search)?)(\?.*)?$/);
 }
 
 async function loginAsPoolCandidate(page: Page, candidateId: string) {

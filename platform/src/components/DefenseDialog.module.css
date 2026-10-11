@@ -4,10 +4,10 @@
 .thread { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
 .turn { display: grid; gap: 12px; }
 .qRow { display: flex; gap: 12px; align-items: flex-start; }
-.mark { flex: none; width: 36px; height: 36px; background: var(--ink); color: #fff; font-family: var(--mono); font-size: var(--fs-sm); font-weight: 700; display: grid; place-items: center; }
+.mark { flex: none; width: 36px; height: 36px; background: var(--ink); color: var(--on-ink); font-family: var(--mono); font-size: var(--fs-sm); font-weight: 700; display: grid; place-items: center; }
 .q { flex: 1; min-width: 0; background: var(--glass-strong); border: 1px solid var(--border-faint); padding: 14px 16px; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
-.a { justify-self: end; max-width: 88%; background: var(--blue); color: #fff; padding: 12px 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
-.a .label { color: rgba(255, 255, 255, 0.8); }
+.a { justify-self: end; max-width: 88%; background: var(--blue); color: var(--on-ink); padding: 12px 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.a .label { color: var(--on-ink-soft); }
 .label { font-family: var(--mono); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; margin-bottom: 4px; }
 .q .label { color: var(--blue); }
 .form { display: grid; gap: 10px; }

@@ -148,8 +148,8 @@
 .gapRow b { font-weight: 500; }
 .gapStatus { display: flex; align-items: center; gap: 7px; font-size: 12px; }
 .gapStatus i { width: 12px; height: 12px; flex: none; border: 1px solid var(--rail); }
-.gapStatus[data-missing='true'] { color: var(--astra-red); }
-.gapStatus[data-missing='true'] i { border-color: var(--astra-red); }
+.gapStatus[data-missing='true'] { color: var(--danger-accent); }
+.gapStatus[data-missing='true'] i { border-color: var(--danger-accent); }
 .skillsHistory { list-style: none; padding: 0; margin: 0; }
 .skillsHistory li { display: grid; grid-template-columns: 14px minmax(0,1fr); gap: 12px; position: relative; padding-bottom: 22px; }
 .skillsHistory li:not(:last-child)::after { content: ''; position: absolute; left: 5px; top: 14px; bottom: 0; width: 1px; background: var(--line); }

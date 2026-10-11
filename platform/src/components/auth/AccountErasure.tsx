@@ -22,8 +22,8 @@ export function AccountErasure() {
     <h2>Управление данными</h2>
     {!reason ? <>
       <p>Вы можете отозвать согласие с удалением данных или удалить аккаунт. Это касается обоих профилей, если вы также нанимаете.</p>
-      <Button variant="ghost" style={{ borderColor: 'var(--astra-red)', color: 'var(--astra-red)' }} onClick={() => setReason('withdraw')}>Отозвать согласие и удалить данные</Button>{' '}
-      <Button variant="danger" style={{ background: 'var(--astra-red)', borderColor: 'var(--astra-red)', color: 'var(--on-ink)' }} onClick={() => setReason('delete')}>Удалить аккаунт</Button>
+      <Button variant="ghost" style={{ borderColor: 'var(--danger-accent)', color: 'var(--danger-accent)' }} onClick={() => setReason('withdraw')}>Отозвать согласие и удалить данные</Button>{' '}
+      <Button variant="danger" style={{ background: 'var(--danger-accent)', borderColor: 'var(--danger-accent)', color: 'var(--on-ink)' }} onClick={() => setReason('delete')}>Удалить аккаунт</Button>
     </> : <form onSubmit={(e) => { e.preventDefault(); void erase(); }}>
       <p>Будут удалены аккаунт, профили кандидата и работодателя, ответы, файлы, записи завершённых созвонов, результаты и избранное. Это действие нельзя отменить. Общие демонстрационные аккаунты защищены от удаления.</p>
       <Field label="Для подтверждения введите УДАЛИТЬ"><input autoComplete="off" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} disabled={busy} /></Field>

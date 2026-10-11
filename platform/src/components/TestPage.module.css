@@ -54,14 +54,14 @@
 .exampleLabel { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .example h2 { font-size: 28px; letter-spacing: -.04em; margin: 0; }
 .example p { margin: 0; font-size: 14px; line-height: 1.6; }
-.exampleCode { background: var(--ink); color: var(--on-ink); padding: 18px 14px; font: 12px/1.9 var(--mono); margin: 0; overflow-x: auto; }
+.exampleCode { background: var(--code-bg); color: var(--code-ink); padding: 18px 14px; font: 12px/1.9 var(--mono); margin: 0; overflow-x: auto; }
 .exampleCode span { display: block; white-space: pre; }
 .exampleCode i { display: inline-block; width: 24px; font-style: normal; opacity: .45; user-select: none; }
 .exampleCode [data-correct=true] { background: var(--blue); }
 .example form label { font: 11px var(--mono); text-transform: uppercase; display: block; margin-bottom: 8px; }
 .exampleAnswer { display: flex; gap: 8px; }
 .exampleAnswer input { width: 100px; flex: 1; min-width: 0; padding: 12px; border: 1px solid var(--border-input); background: var(--on-ink); font: 13px var(--mono); }
-.exampleResult { color: var(--astra-red); }
+.exampleResult { color: var(--danger-accent); }
 .exampleResult[data-correct=true] { color: var(--blue); }
 .example .exampleFine { color: var(--muted); font: 11px/1.6 var(--mono); }
 @media(max-width:1050px) { .startGrid { grid-template-columns: minmax(0,1fr); } }

@@ -20,7 +20,7 @@ const ICONS = { link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a
 /** React port of landing-astra. Showcase figures are fictional; authentication is the existing product flow. */
 export function Landing({ signedIn, demoEnabled = false }: { data: LandingData; signedIn: boolean; demoEnabled?: boolean }) {
   return <div className={styles.page} data-landing-astra>
-    <Background /><LandingHeader signedIn={signedIn} />
+    <Background /><LandingHeader signedIn={signedIn} juryEnabled={demoEnabled} />
     <main id="main" className={styles.main}>
       <Hero signedIn={signedIn} demoEnabled={demoEnabled} /><HiringShowcase signedIn={signedIn} /><LandingSections signedIn={signedIn} />
       <section className={styles.section} id="why" aria-labelledby="why-title">

@@ -4,10 +4,10 @@ import { useCallback, useRef, useState } from 'react';
 
 import { MAX_UPLOAD_BYTES, uploadFile, validateUploadFile } from '@/lib/api';
 
-/** Вложения композера: PDF/DOCX/MD/TXT/CSV до 5 МБ, не больше 10 за сообщение (лимит POST /api/consultant/messages). */
+/** Вложения композера: PDF/DOCX/MD/TXT/CSV/JPG/PNG до 5 МБ, не больше 10 за сообщение (лимит POST /api/consultant/messages). */
 export const MAX_ATTACHMENTS = 10;
-export const ATTACH_ACCEPT = '.pdf,.docx,.md,.markdown,.txt,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/csv';
-export const ATTACH_LIMITS = `PDF, DOCX, MD, TXT, CSV · до ${MAX_UPLOAD_BYTES / 1024 / 1024} МБ · до ${MAX_ATTACHMENTS} файлов`;
+export const ATTACH_ACCEPT = '.pdf,.docx,.md,.markdown,.txt,.csv,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/csv';
+export const ATTACH_LIMITS = `PDF, DOCX, MD, TXT, CSV, JPG, PNG · до ${MAX_UPLOAD_BYTES / 1024 / 1024} МБ · до ${MAX_ATTACHMENTS} файлов`;
 
 export interface Attachment {
   key: string;

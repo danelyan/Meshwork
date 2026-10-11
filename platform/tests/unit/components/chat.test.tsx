@@ -189,8 +189,8 @@ describe('Chat', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     render(<Chat />);
-    fireEvent.paste(screen.getByLabelText('Сообщение'), { clipboardData: { files: [new File(['x'], 'photo.png', { type: 'image/png' })] } });
-    expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toContain('принимаем PDF, DOCX, MD, TXT и CSV');
+    fireEvent.paste(screen.getByLabelText('Сообщение'), { clipboardData: { files: [new File(['x'], 'table.xlsx', { type: 'application/vnd.ms-excel' })] } });
+    expect(screen.getByRole('list', { name: 'Вложения' }).textContent).toContain('принимаем PDF, DOCX, MD, TXT, CSV, JPG и PNG');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

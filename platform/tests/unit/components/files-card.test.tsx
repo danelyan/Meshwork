@@ -61,9 +61,9 @@ describe('FilesCard', () => {
 
   it('ошибки лимита понятным текстом, без запроса', () => {
     render(<FilesCard docs={[]} />);
-    fireEvent.drop(screen.getByTestId('files-drop'), { dataTransfer: dt([pdf('big.pdf', 6 * 1024 * 1024), pdf('photo.png')]) });
+    fireEvent.drop(screen.getByTestId('files-drop'), { dataTransfer: dt([pdf('big.pdf', 6 * 1024 * 1024), pdf('table.xlsx')]) });
     expect(screen.getByText(/«big.pdf»: больше 5 МБ/)).toBeTruthy();
-    expect(screen.getByText(/«photo.png»: принимаем PDF, DOCX, MD, TXT и CSV/)).toBeTruthy();
+    expect(screen.getByText(/«table.xlsx»: принимаем PDF, DOCX, MD, TXT, CSV, JPG и PNG/)).toBeTruthy();
     expect(uploadFile).not.toHaveBeenCalled();
   });
 

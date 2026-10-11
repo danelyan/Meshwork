@@ -21,6 +21,7 @@ export function extractUrls(text: string): string[] {
     try {
       const u = new URL(hasScheme ? raw : `https://${raw}`);
       if (!u.hostname.includes('.')) continue;
+      if (typeof window !== 'undefined' && u.origin === window.location.origin) continue;
       const s = u.toString();
       if (!out.includes(s)) out.push(s);
     } catch {

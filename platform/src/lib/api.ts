@@ -144,12 +144,12 @@ export interface ConfirmBatchResponse {
 export const confirmClaimsBatchApi = (ids: string[]) => postJson<ConfirmBatchResponse>('/api/claims/confirm-batch', { ids });
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
-const ALLOWED_EXT = ['.pdf', '.docx', '.md', '.markdown', '.txt', '.csv'];
+const ALLOWED_EXT = ['.pdf', '.docx', '.md', '.markdown', '.txt', '.csv', '.jpg', '.jpeg', '.png'];
 
 /** Проверка файла до отправки; текст ошибки показывается пользователю как есть. */
 export function validateUploadFile(file: { name: string; size: number }): string | null {
   const name = file.name.toLowerCase();
-  if (!ALLOWED_EXT.some((e) => name.endsWith(e))) return `«${file.name}»: принимаем PDF, DOCX, MD, TXT и CSV.`;
+  if (!ALLOWED_EXT.some((e) => name.endsWith(e))) return `«${file.name}»: принимаем PDF, DOCX, MD, TXT, CSV, JPG и PNG.`;
   if (file.size === 0) return `«${file.name}»: файл пустой.`;
   if (file.size > MAX_UPLOAD_BYTES) return `«${file.name}»: больше 5 МБ. Сожмите файл или пришлите ссылкой.`;
   return null;

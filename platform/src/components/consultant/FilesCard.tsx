@@ -22,7 +22,7 @@ interface Pending {
   outcome?: MaterialsOutcome;
 }
 
-const LIMITS = `PDF, DOCX, MD, TXT, CSV · до ${MAX_UPLOAD_BYTES / 1024 / 1024} МБ · до ${MAX_ATTACHMENTS} за раз`;
+const LIMITS = `PDF, DOCX, MD, TXT, CSV, JPG, PNG · до ${MAX_UPLOAD_BYTES / 1024 / 1024} МБ · до ${MAX_ATTACHMENTS} за раз`;
 
 const OUTCOME_NOTE: Record<MaterialsOutcome, string> = {
   sent: 'сохранён, консультант разбирает',

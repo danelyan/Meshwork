@@ -60,6 +60,14 @@ describe('extractUrls: ссылки в тексте сообщения', () => {
       'https://habr.com/',
     ]);
   });
+  it('ссылки на сам сайт платформы не берём', () => {
+    vi.stubGlobal('window', { location: { origin: 'https://fsp.example' } });
+    try {
+      expect(extractUrls('https://fsp.example/profile и github.com/x')).toEqual(['https://github.com/x']);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it('без ссылок — пусто; повторы схлопываются', () => {
     expect(extractUrls('Пишу на Go и TypeScript')).toEqual([]);
     expect(extractUrls('github.com/x github.com/x')).toEqual(['https://github.com/x']);

@@ -40,6 +40,8 @@ export interface RtcAudio {
   micError: string | null;
   /** Микрофон выдан и пишет. */
   micOn: boolean;
+  /** Поток микрофона (тот же, что уходит собеседнику): по нему работодатель пишет свою дорожку (ADR 0008 п. 3). */
+  micStream: MediaStream | null;
   /** Запросить микрофон (только по клику пользователя) и добавить трек во все соединения. */
   enableMic: () => void;
   /** Входящий сигнал из SSE. */
@@ -56,6 +58,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
   const [states, setStates] = useState<Record<string, RtcState>>({});
   const [micError, setMicError] = useState<string | null>(null);
   const [micOn, setMicOn] = useState(false);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const polite = role === 'candidate';
 
   const setState = useCallback((peer: string, s: RtcState) => setStates((prev) => (prev[peer] === s ? prev : { ...prev, [peer]: s })), []);
@@ -66,6 +69,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
       .then((stream) => {
         setMicError(null);
         setMicOn(true);
+        setMicStream(stream);
         return stream;
       })
       .catch(() => {
@@ -89,6 +93,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
     void streamRef.current.then((st) => st?.getTracks().forEach((t) => t.stop()));
     streamRef.current = null;
     setMicOn(false);
+    setMicStream(null);
   }, []);
 
   const drop = useCallback(
@@ -233,6 +238,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
     void streamRef.current?.then((s) => s?.getTracks().forEach((t) => t.stop()));
     streamRef.current = null;
     setMicOn(false);
+    setMicStream(null);
   }, [close]);
 
   const enableMic = useCallback(() => {
@@ -249,6 +255,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
     anyConnected: Object.values(states).includes('connected'),
     micError,
     micOn,
+    micStream,
     enableMic,
     onSignal: (from, payload) => void onSignal(from, payload),
     connect,

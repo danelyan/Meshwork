@@ -697,7 +697,18 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'GET /api/employer/calls': { errors: { 409: 'Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)' } },
   'GET /api/employer/project-submissions': { errors: { 409: 'Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)' } },
   'POST /api/employer/project-submissions/{id}/invite-to-defense': { errors: { 409: 'Сдача ещё не проверена или защита уже назначена; ' + 'Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)' } },
-  'POST /api/employer/call/{id}/join': { errors: { 409: 'В эфире другая компания (`room_busy`); ' + 'Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)' } },
+  'POST /api/employer/call/{id}/join': { errors: { 409: 'В эфире другая компания (`room_busy`); ' + 'Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005); ' + 'Не подтверждена запись разговора (`recording_consent_required`, ADR 0008 п. 3)' } },
+  'POST /api/employer/call/{id}/audio': {
+    summary: 'Сегмент голоса работодателя в живой защите',
+    query: [{ name: 'startMs', description: 'Смещение начала сегмента от начала защиты, мс' }],
+    body: { contentType: 'audio/webm', description: 'WebM/Opus с микрофона работодателя, до 4 МБ (~60 с)', schema: { type: 'string', format: 'binary' } },
+    success: { status: 201, description: 'Сегмент сохранён файлом защиты (calls/<id>/employer)', schema: obj({ name: str('Имя сегмента NNN-<startMs>.webm'), startMs: { type: 'integer' } }) },
+    errors: {
+      404: 'Чужая или не своя живая защита, нет принятого приглашения',
+      409: 'Не подключён, защита завершена или ИИ-защита; запись не подтверждена при входе (`recording_consent_required`); кандидат отозвал согласие на запись (`call_recording_off`); лимит сегментов',
+      413: 'Сегмент больше 4 МБ',
+    },
+  },
 
   'GET /api/onboarding': {
     summary: 'Состояние онбординга', success: JSON_OK('Текущий шаг, лента, прогресс, итог', ref('OnboardingView')) },
@@ -790,6 +801,19 @@ export const OVERRIDES: Record<string, OpOverride> = {
     query: [{ name: 'segment', description: 'Имя сегмента из CallView.videoSegments' }],
     success: { description: 'WebM', contentType: 'video/webm', schema: { type: 'string', format: 'binary' } },
     errors: { 403: 'Работодателю — только после принятого приглашения', 404: 'Нет сегмента' },
+  },
+  'GET /api/call/{id}/employer-audio': {
+    summary: 'Сегменты голоса работодателя в живой защите',
+    role: 'session',
+    success: JSON_OK('Список сегментов', obj({ segments: { type: 'array', items: obj({ name: str('NNN-<startMs>.webm'), startMs: { type: 'integer' } }) } })),
+    errors: { 403: 'Работодатель без действующего раскрытия (Г5)', 404: 'Нет защиты, ИИ-защита или чужая живая защита' },
+  },
+  'GET /api/call/{id}/employer-audio/file': {
+    summary: 'Сегмент голоса работодателя',
+    role: 'session',
+    query: [{ name: 'segment', description: 'Имя сегмента из GET /api/call/{id}/employer-audio' }],
+    success: { description: 'WebM/Opus', contentType: 'audio/webm', schema: { type: 'string', format: 'binary' } },
+    errors: { 403: 'Работодатель без действующего раскрытия (Г5)', 404: 'Нет защиты, сегмента или доступа' },
   },
   'GET /api/call/{id}/recording': {
     summary: 'Аудио ответов кандидата',

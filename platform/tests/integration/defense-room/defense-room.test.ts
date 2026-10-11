@@ -117,12 +117,12 @@ describe('защита проекта с работодателем', () => {
 
     // Компания B без принятого приглашения: ни снимка, ни подключения.
     expect((await snapshotRoute(jsonRequest('/x', 'GET', undefined, EMP_B), params(sessionId))).status).toBe(404);
-    expect((await joinRoute(post('/x', {}, EMP_B), params(sessionId))).status).toBe(404);
+    expect((await joinRoute(post('/x', { recordingConsent: true }, EMP_B), params(sessionId))).status).toBe(404);
 
     // Работодатель A подключается, слушает SSE.
     const events: CallEvent[] = [];
     const unsub = subscribe(sessionId, 'employer:u-emp-a', (e) => events.push(e));
-    const joined = await joinRoute(post('/x', {}, EMP_A), params(sessionId));
+    const joined = await joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(sessionId));
     expect(joined.status).toBe(200);
     const j = await joined.json();
     expect(j.snapshot.participants).toEqual([{ userId: 'u-emp-a', companyId: 'co-a', companyName: 'Альфа', aiMuted: false }]);
@@ -203,7 +203,7 @@ describe('защита проекта с работодателем', () => {
     const offer = { sdp: { type: 'offer', sdp: 'v=0\r\n' } };
     // Не подключился — нельзя.
     expect((await signalRoute(post('/x', offer, EMP_A), params(sessionId))).status).toBe(409);
-    await joinRoute(post('/x', {}, EMP_A), params(sessionId));
+    await joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(sessionId));
     // Кандидат не слушает SSE — peer_offline.
     const off = await signalRoute(post('/x', offer, EMP_A), params(sessionId));
     expect(off.status).toBe(409);
@@ -255,7 +255,7 @@ describe('защита: уточнение, затем вмешательств�
     registerStubResponse('call_interviewer', () => ({ json: n++ === 0 ? { ack: 'Ясно', followUp: 'А что будет при пустом входе в эту функцию?' } : { ack: 'Понял, спасибо', followUp: '' } }));
     const t1 = await (await turnRoute(post('/x', { text: 'Общие слова.' }, CAND_COOKIE), params(sessionId))).json();
     expect(t1.text).toMatch(/пустом входе/);
-    await joinRoute(post('/x', {}, EMP_A), params(sessionId));
+    await joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(sessionId));
     await sayRoute(post('/x', { text: 'Уточню сам: а если вход null?' }, EMP_A), params(sessionId));
     await muteRoute(post('/x', { muted: true }, EMP_A), params(sessionId));
     await turnRoute(post('/x', { text: 'Упадёт на разборе, надо проверять.' }, CAND_COOKIE), params(sessionId));
@@ -309,13 +309,13 @@ describe('защита: доступ, лимиты, гонки', () => {
     await discloseAccepted();
     // ADR 0008: живая защита проекта по заданию A — только для A; B даже с accepted получает 404.
     const project = (await (await start()).json()).sessionId as string;
-    expect((await joinRoute(post('/x', {}, EMP_B), params(project))).status).toBe(404);
+    expect((await joinRoute(post('/x', { recordingConsent: true }, EMP_B), params(project))).status).toBe(404);
     await prisma.callSession.update({ where: { id: project }, data: { status: 'finished', finishedAt: new Date() } });
     // Защита без сабмита (вопросы нескольких компаний) открыта обеим, но в эфире одна компания.
     await askRoute(post('/api/employer/questions', { candidateId: CAND, text: 'Как бы ты добавил метрики в retry?' }, EMP_A));
     await askRoute(post('/api/employer/questions', { candidateId: CAND, text: 'Что поменять для идемпотентности между узлами?' }, EMP_B));
     const { sessionId } = await (await startRoute(post('/x', { mode: 'questions' }, CAND_COOKIE))).json();
-    const [a, b] = await Promise.all([joinRoute(post('/x', {}, EMP_A), params(sessionId)), joinRoute(post('/x', {}, EMP_B), params(sessionId))]);
+    const [a, b] = await Promise.all([joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(sessionId)), joinRoute(post('/x', { recordingConsent: true }, EMP_B), params(sessionId))]);
     expect([a.status, b.status].sort()).toEqual([200, 409]);
     const busy = a.status === 409 ? a : b;
     expect((await busy.json()).error.code).toBe('room_busy');
@@ -358,7 +358,7 @@ describe('защита: доступ, лимиты, гонки', () => {
     await seed();
     const { sessionId } = await (await start()).json();
     await prisma.consent.deleteMany({ where: { userId: 'u-emp-a' } });
-    const j = await joinRoute(post('/x', {}, EMP_A), params(sessionId));
+    const j = await joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(sessionId));
     expect(j.status).toBe(409);
     expect((await j.json()).error.code).toBe('consent_required');
     expect((await snapshotRoute(jsonRequest('/x', 'GET', undefined, EMP_A), params(sessionId))).status).toBe(409);

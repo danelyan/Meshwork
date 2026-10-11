@@ -185,6 +185,8 @@ export const API_ACCESS = {
   '/api/call/[id]/events': 'session',
   '/api/call/[id]/recording': 'session',
   '/api/call/[id]/video': 'session',
+  '/api/call/[id]/employer-audio': 'session',
+  '/api/call/[id]/employer-audio/file': 'session',
   '/api/call/[id]/signal': 'session',
   '/api/call/[id]/turn': 'candidate',
   '/api/call/[id]/interrupt': 'candidate',
@@ -218,6 +220,7 @@ export const API_ACCESS = {
   '/api/employer/call/[id]/leave': 'employer',
   '/api/employer/call/[id]/mute-ai': 'employer',
   '/api/employer/call/[id]/say': 'employer',
+  '/api/employer/call/[id]/audio': 'employer',
   // GET — режим распознавания/озвучки для композера; POST — только с входом (тратит квоту SpeechKit).
   '/api/stt': { GET: 'public', POST: 'session' },
   '/api/tts': { GET: 'public', POST: 'session' },

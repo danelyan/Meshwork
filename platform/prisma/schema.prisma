@@ -395,8 +395,6 @@ enum InvitationStatus {
   hired
   /// lane invite-cancel: работодатель отозвал приглашение (из sent/viewed/accepted) с причиной; финальный статус
   withdrawn
-  /// lane lifecycle: кандидат нанят другой компанией — открытые приглашения (sent/viewed/accepted) закрываются при найме; финальный
-  closed_hired
 }
 
 model Recommendation {
@@ -479,40 +477,35 @@ model Task {
 }
 
 model Invitation {
-  id                  String           @id @default(cuid())
+  id                String           @id @default(cuid())
   /// lane employer: null — приглашение без привязки к потребности (R-E-05)
-  vacancyId           String?
-  vacancy             Vacancy?         @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
-  candidateId         String
-  candidate           Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  status              InvitationStatus @default(sent)
+  vacancyId         String?
+  vacancy           Vacancy?         @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  candidateId       String
+  candidate         Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  status            InvitationStatus @default(sent)
   /// lane invite-contact: вилка предложения, ₽ в месяц (ТЗ 2.2: «зарплата от–до»); заменила salaryOffer
-  salaryFrom          Int
-  salaryTo            Int
-  message             String?
-  createdAt           DateTime         @default(now())
+  salaryFrom        Int
+  salaryTo          Int
+  message           String?
+  createdAt         DateTime         @default(now())
   /// lane employer: компания-отправитель (null только у строк до миграции без вакансии)
-  companyId           String?
-  company             Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   /// lane employer: кто отправил
-  employerProfileId   String?
-  employerProfile     EmployerProfile? @relation(fields: [employerProfileId], references: [id], onDelete: SetNull)
-  viewedAt            DateTime?
-  respondedAt         DateTime?
+  employerProfileId String?
+  employerProfile   EmployerProfile? @relation(fields: [employerProfileId], references: [id], onDelete: SetNull)
+  viewedAt          DateTime?
+  respondedAt       DateTime?
   /// lane hired: когда работодатель отметил найм (status = hired)
-  hiredAt             DateTime?
+  hiredAt           DateTime?
   /// lane invite-cancel: когда и почему работодатель отозвал приглашение (status = withdrawn); причина видна кандидату
-  withdrawnAt         DateTime?
-  withdrawReason      String?
-  /// lane lifecycle: когда приглашение закрыто наймом кандидата другой компанией (status = closed_hired)
-  closedAt            DateTime?
-  /// lane lifecycle: приглашение создано из принятого самоотклика (accepted сразу; лимит 20/сутки не расходует)
-  sourceApplicationId String?          @unique
-  sourceApplication   Application?     @relation(fields: [sourceApplicationId], references: [id], onDelete: SetNull)
+  withdrawnAt       DateTime?
+  withdrawReason    String?
   /// lane complaints: жалоба кандидата на это приглашение (не больше одной)
-  complaint           Complaint?
+  complaint         Complaint?
   /// lane live-slots: предложения слотов живой защиты (ADR 0008); активное — activeKey = id приглашения
-  liveDefenses        LiveDefense[]
+  liveDefenses      LiveDefense[]
 
   @@index([candidateId, status])
   @@index([companyId, createdAt])
@@ -1008,6 +1001,9 @@ model CallSession {
   transcriptJson      Json               @default("[]")
   /// Папка с аудио кандидата относительно CALL_DATA_DIR: "calls/<id>"; null — аудио не записывалось
   audioPath           String?
+  /// Живая защита (ADR 0008 п. 3): папка с дорожкой работодателя относительно CALL_DATA_DIR — "calls/<id>/employer"
+  /// (сегменты WebM/Opus с его микрофона); null — голос работодателя не записывался
+  employerAudioPath   String?
   /// Вердикт оценщика (qualifying — карта глубины, server/call/types.ts CallVerdict)
   verdictJson         Json?
   /// Версия согласия на запись созвона, под которой шёл звонок
@@ -1028,16 +1024,21 @@ model CallSession {
 
 /// Участник созвона кроме кандидата (работодатель в комнате защиты, lane defense-room).
 model CallParticipant {
-  id            String              @id @default(cuid())
-  callSessionId String
-  callSession   CallSession         @relation(fields: [callSessionId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role          CallParticipantRole @default(employer)
-  joinedAt      DateTime            @default(now())
-  leftAt        DateTime?
+  id                      String              @id @default(cuid())
+  callSessionId           String
+  callSession             CallSession         @relation(fields: [callSessionId], references: [id], onDelete: Cascade)
+  userId                  String
+  user                    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role                    CallParticipantRole @default(employer)
+  joinedAt                DateTime            @default(now())
+  leftAt                  DateTime?
   /// Работодатель «замьютил ИИ»: ИИ не вступает, пока не разрешат
-  aiMuted       Boolean             @default(false)
+  aiMuted                 Boolean             @default(false)
+  /// Работодатель подтвердил при входе, что разговор записывается, включая его голос (ADR 0008 п. 3).
+  /// Без подтверждения вход в живую защиту не пускает, дорожка работодателя не принимается.
+  recordingConsentAt      DateTime?
+  /// Версия текста предупреждения о записи, которое он подтвердил
+  recordingConsentVersion String?
 
   @@index([callSessionId])
   @@index([userId])
@@ -1273,8 +1274,6 @@ enum ApplicationStatus {
   viewed
   accepted
   declined
-  /// lane lifecycle: закрыт системой — вакансия закрыта или кандидат нанят другой компанией; причина в closeReason
-  closed
 }
 
 model Application {
@@ -1288,11 +1287,6 @@ model Application {
   createdAt   DateTime          @default(now())
   viewedAt    DateTime?
   respondedAt DateTime?
-  /// lane lifecycle: когда и почему отклик закрыт системой (status = closed)
-  closedAt    DateTime?
-  closeReason String?
-  /// lane lifecycle: приглашение, созданное при принятии отклика
-  invitation  Invitation?
 
   @@unique([vacancyId, candidateId])
   @@index([vacancyId, status])

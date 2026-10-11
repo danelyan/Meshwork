@@ -1,18 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { VoiceButton } from '@/components/chat/VoiceButton';
 import { Button, Notice, cx } from '@/components/ui';
 import { ApiError } from '@/lib/api';
-import { askQuestionApi, joinCallApi, leaveCallApi, muteAiApi, sayApi, type CallSnapshot } from '@/lib/defense-room-api';
+import { askQuestionApi, employerAudioFileUrl, employerAudioListApi, joinCallApi, leaveCallApi, muteAiApi, sayApi, type CallSnapshot } from '@/lib/defense-room-api';
 
 import styles from './call.module.css';
 import { Transcript, VerdictView } from './Transcript';
 import { useCallEvents } from './useCallEvents';
+import { useEmployerRecorder } from './useEmployerRecorder';
 import { rtcLabel, useRtcAudio } from './useRtcAudio';
 
 const STUN: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
+
+/** Текст предупреждения о записи для работодателя (тот же по смыслу, что EMPLOYER_RECORDING_NOTICE на сервере). */
+const RECORDING_NOTICE =
+  'Живая защита записывается целиком: голос кандидата и ваш голос, а также транскрипт. Запись хранится вместе с записью защиты и доступна вашей компании и кандидату. Без согласия на запись подключиться к защите нельзя.';
+
+/** Начало защиты по транскрипту (at − tMs первой реплики): к нему привязаны смещения сегментов голоса работодателя. */
+function startedAtOf(s: CallSnapshot): number | null {
+  const e = s.transcript[0];
+  const at = e ? Date.parse(e.at) : NaN;
+  return Number.isFinite(at) ? at - (e?.tMs ?? 0) : null;
+}
 
 /**
  * Комната работодателя (ADR 0003): транскрипт в реальном времени, «Подключиться», «ИИ молчит/говорит»,
@@ -31,6 +43,18 @@ export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [recordingOk, setRecordingOk] = useState(false);
+  const [joinedAt, setJoinedAt] = useState<number | null>(null);
+  const getStartedAt = useCallback(() => startedAtOf(s) ?? joinedAt ?? Date.now(), [s, joinedAt]);
+  // ADR 0008 п. 3: пишутся обе стороны — работодатель пишет свою дорожку сам; ошибки записи звонок не роняют.
+  const rec = useEmployerRecorder({ sessionId, stream: rtc.micStream, enabled: joined && active, getStartedAt });
+  const [ownAudio, setOwnAudio] = useState<{ name: string; startMs: number }[]>([]);
+  useEffect(() => {
+    if (active) return;
+    employerAudioListApi(sessionId)
+      .then((r) => setOwnAudio(r.segments))
+      .catch(() => setOwnAudio([]));
+  }, [active, sessionId]);
 
   useEffect(() => {
     if (!active) rtc.closeAll();
@@ -50,7 +74,8 @@ export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { 
 
   const join = () =>
     run(async () => {
-      const r = await joinCallApi(sessionId);
+      const r = await joinCallApi(sessionId, recordingOk);
+      setJoinedAt(Date.now());
       setIce(r.webrtc.iceServers);
       // Звонит работодатель: offer уходит кандидату через сигналинг, ответ — через SSE.
       rtc.connect('candidate');
@@ -82,6 +107,7 @@ export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { 
         <span className={cx(styles.chip, active && styles.chipOn)}>{active ? 'Идёт сейчас' : 'Завершена'}</span>
         {active && !connected && <span className={styles.chip}>переподключаемся…</span>}
         {joined && <span className={cx(styles.chip, audio === 'failed' && styles.chipWarn)}>{rtcLabel(audio)}</span>}
+        {joined && active && <span className={cx(styles.chip, rec.state === 'recording' && styles.chipOn)} data-testid="room-recording">{rec.state === 'recording' ? 'Идёт запись, включая ваш голос' : 'Идёт запись'}</span>}
         {s.aiMuted && <span className={cx(styles.chip, styles.chipWarn)}>ИИ молчит</span>}
         <span className={styles.meta}>
           Вопрос {s.progress.asked} из {s.progress.total}
@@ -90,9 +116,14 @@ export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { 
       {active && (
         <div className={styles.toolbar}>
           {!joined ? (
-            <Button onClick={() => void join()} loading={busy} data-testid="room-join">
-              Подключиться
-            </Button>
+            <>
+              <label className={styles.meta}>
+                <input type="checkbox" checked={recordingOk} onChange={(e) => setRecordingOk(e.target.checked)} data-testid="room-recording-consent" /> {RECORDING_NOTICE}
+              </label>
+              <Button onClick={() => void join()} loading={busy} disabled={!recordingOk} data-testid="room-join">
+                Подключиться
+              </Button>
+            </>
           ) : (
             <>
               <Button variant={s.aiMuted ? 'cta' : 'ghost'} onClick={() => void toggleMute()} disabled={busy} data-testid="room-mute">
@@ -106,6 +137,7 @@ export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { 
         </div>
       )}
       {rtc.micError && <Notice>{rtc.micError}</Notice>}
+      {joined && active && rec.error && <Notice>{rec.error}</Notice>}
 
       <Transcript entries={s.transcript} selfRole="employer" />
 
@@ -122,6 +154,15 @@ export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { 
       )}
 
       {s.verdict && <VerdictView verdict={s.verdict} />}
+
+      {!active && ownAudio.length > 0 && (
+        <div className={styles.composer} data-testid="employer-audio">
+          <span className={styles.who}>Голос работодателя в записи защиты</span>
+          {ownAudio.map((a) => (
+            <audio key={a.name} controls preload="none" src={employerAudioFileUrl(sessionId, a.name)} />
+          ))}
+        </div>
+      )}
 
       <div className={styles.composer}>
         <label className={styles.who} htmlFor="ask-later">

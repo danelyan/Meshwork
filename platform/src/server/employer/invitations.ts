@@ -1,7 +1,7 @@
 // Приглашения (R-E-05, R-C-11, R-C-16, R-E-07). Статусы: sent → viewed → accepted | declined; accepted → hired (lane hired: работодатель отметил найм);
 // sent | viewed | accepted → withdrawn (lane invite-cancel: работодатель отозвал с причиной).
 // Контакты работодатель видит только после accepted — решает matching/privacy на сервере.
-import type { InvitationStatus, Prisma } from '@prisma/client';
+import type { InvitationStatus } from '@prisma/client';
 import type { z } from 'zod';
 
 import { assertEmployerConsents, consentRequired, disclosedInvitationIds, revokeDisclosureForInvitation, grantConsent, hasActiveConsent, revokeConsent, userIdForCandidate } from '../consent/service';
@@ -10,7 +10,7 @@ import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 import { deliverable, notifyInBackground, sendMail } from '../mail';
 import { invitationAnswerMail, invitationMail, invitationWithdrawnMail } from '../mail/templates';
-import { closeLiveDefenseOnWithdraw, closeLiveDefensesOnHire, liveDefenseViews, type LiveDefenseView } from '../live-defense/service';
+import { closeLiveDefenseOnWithdraw, closeLiveDefensesOnHire, liveDefenseViews, projectReadyByInvitation, type LiveDefenseView } from '../live-defense/service';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
@@ -26,33 +26,6 @@ import { DAILY_INVITATION_LIMIT } from './weights';
 
 const OPEN: InvitationStatus[] = ['sent', 'viewed'];
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** lane lifecycle: пауза после отказа кандидата или отзыва компанией — столько дней компания не может пригласить его снова. */
-export const INVITE_COOLDOWN_DAYS = 14;
-/** lane lifecycle: причина отзыва при закрытии вакансии; такой отзыв паузу не запускает — это не отказ кандидату лично. */
-export const VACANCY_CLOSED_REASON = 'Вакансия закрыта';
-/** lane lifecycle: причина закрытия при найме другой компанией (имя нанявшей компании не раскрывается). */
-export const HIRED_ELSEWHERE_REASON = 'Кандидат принял предложение другой компании';
-/** lane lifecycle: открытые приглашения, которые закрывает найм кандидата другой компанией. */
-export const CLOSED_BY_HIRE: InvitationStatus[] = ['sent', 'viewed', 'accepted'];
-/** Приглашения, созданные из принятого самоотклика, лимит 20/сутки не расходуют. */
-const COUNTS_TO_LIMIT = { sourceApplicationId: null } as const;
-
-/**
- * lane lifecycle: дата, с которой компания снова может пригласить кандидата; null — пауза не действует.
- * Пауза — 14 дней от последнего отказа кандидата (declined, respondedAt) или отзыва компанией (withdrawn, withdrawnAt),
- * кроме отзыва из-за закрытия вакансии. Чистая функция.
- */
-export function inviteCooldownUntil(rows: readonly { status: InvitationStatus; respondedAt: Date | null; withdrawnAt: Date | null; withdrawReason: string | null }[], now = new Date()): Date | null {
-  let last = 0;
-  for (const r of rows) {
-    const at = r.status === 'declined' ? r.respondedAt : r.status === 'withdrawn' && r.withdrawReason !== VACANCY_CLOSED_REASON ? r.withdrawnAt : null;
-    if (at && at.getTime() > last) last = at.getTime();
-  }
-  if (!last) return null;
-  const next = new Date(last + INVITE_COOLDOWN_DAYS * DAY_MS);
-  return next > now ? next : null;
-}
 
 export interface EmployerInvitationView {
   id: string;
@@ -72,6 +45,8 @@ export interface EmployerInvitationView {
   candidate: CandidateCard;
   /** lane live-slots (ADR 0008): активное предложение слотов живой защиты и его подстатус; null — не назначалась. */
   liveDefense?: LiveDefenseView | null;
+  /** lane defense-rules (ADR 0008): у кандидата есть проверенный проект - только тогда можно предлагать слоты живой защиты. */
+  projectReady?: boolean;
 }
 
 export interface CandidateInvitationView {
@@ -100,6 +75,8 @@ export interface CandidateInvitationView {
   disclosed?: boolean;
   /** lane live-slots (ADR 0008): слоты живой защиты и подстатус; null — компания ещё не предлагала. */
   liveDefense?: LiveDefenseView | null;
+  /** lane defense-rules: у кандидата есть проверенный проект (иначе живую защиту назначить нельзя - сдайте его в «Проектах»). */
+  projectReady?: boolean;
   vacancy: {
     title: string;
     specialization: Specialization;
@@ -112,7 +89,7 @@ export interface CandidateInvitationView {
 }
 
 export async function invitationsSentToday(companyId: string, now = new Date()): Promise<number> {
-  return prisma.invitation.count({ where: { companyId, ...COUNTS_TO_LIMIT, createdAt: { gt: new Date(now.getTime() - DAY_MS) } } });
+  return prisma.invitation.count({ where: { companyId, createdAt: { gt: new Date(now.getTime() - DAY_MS) } } });
 }
 
 /**
@@ -144,20 +121,6 @@ export async function createInvitation(
       select: { id: true },
     });
     if (open) throw errors.conflict('Кандидат ещё не ответил на прошлое приглашение компании');
-    // lane lifecycle: пауза 14 дней после отказа кандидата или отзыва компанией — под тем же lock, что и дубль.
-    const past = await tx.invitation.findMany({
-      where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: ['declined', 'withdrawn'] }, OR: [{ respondedAt: { gt: new Date(Date.now() - INVITE_COOLDOWN_DAYS * DAY_MS) } }, { withdrawnAt: { gt: new Date(Date.now() - INVITE_COOLDOWN_DAYS * DAY_MS) } }] },
-      select: { status: true, respondedAt: true, withdrawnAt: true, withdrawReason: true },
-    });
-    const nextAt = inviteCooldownUntil(past);
-    if (nextAt) {
-      throw new AppError(
-        'invite_cooldown',
-        `Пригласить этого кандидата снова можно с ${nextAt.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })} МСК: после отказа или отзыва действует пауза ${INVITE_COOLDOWN_DAYS} дней`,
-        409,
-        { nextAt: nextAt.toISOString() },
-      );
-    }
     // lane complaints: санкция читается тем же tx под тем же lock — решение и вставка в одной транзакции.
     const sanction = invitationSanction(await countRecentComplaints(tx, ctx.companyId), limit);
     if (sanction.level === 'blocked') {
@@ -169,7 +132,7 @@ export async function createInvitation(
       );
     }
     const effective = sanction.limit;
-    const sent = await tx.invitation.count({ where: { companyId: ctx.companyId, ...COUNTS_TO_LIMIT, createdAt: { gt: new Date(Date.now() - DAY_MS) } } });
+    const sent = await tx.invitation.count({ where: { companyId: ctx.companyId, createdAt: { gt: new Date(Date.now() - DAY_MS) } } });
     if (sent >= effective) {
       const why = sanction.level === 'reduced' ? ` (лимит снижен из-за ${sanction.complaints} жалоб кандидатов за 30 дней)` : '';
       throw new AppError('rate_limited', `Лимит: не больше ${effective} приглашений от компании за сутки${why}`, 429, { limit: effective, sanction: sanction.level });
@@ -260,8 +223,10 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
   const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
   const accepted = new Set(rows.filter((r) => disclosed.has(r.id)).map((r) => r.candidateId));
   const live = await liveDefenseViews(rows.map((r) => r.id), 'employer');
+  const ready = await projectReadyByInvitation(rows.filter((r) => r.status === 'accepted').map((r) => ({ id: r.id, candidateId: r.candidateId, companyId })));
   return rows.map((r) => ({
     liveDefense: live.get(r.id) ?? null,
+    projectReady: ready.get(r.id) ?? false,
     id: r.id,
     status: r.status,
     salaryFrom: r.salaryFrom,
@@ -331,6 +296,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
   const trusts = await loadCompanyTrusts(rows.map((r) => (r.company ?? r.vacancy?.company)?.id).filter((id): id is string => !!id));
   const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
   const live = await liveDefenseViews(rows.map((r) => r.id), 'candidate');
+  const ready = await projectReadyByInvitation(rows.filter((r) => r.status === 'accepted').map((r) => ({ id: r.id, candidateId, companyId: (r.company ?? r.vacancy?.company)?.id ?? null })));
   return rows.map((r) => {
     const co = r.company ?? r.vacancy?.company ?? { id: null, name: 'Компания', description: null, contact: null };
     const senderEmail = r.employerProfile?.user.email;
@@ -364,6 +330,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       disclosed: disclosed.has(r.id),
       complaint: r.complaint ? { reason: r.complaint.reason, createdAt: r.complaint.createdAt.toISOString() } : null,
       liveDefense: live.get(r.id) ?? null,
+      projectReady: ready.get(r.id) ?? false,
       vacancy,
     };
   });
@@ -407,85 +374,20 @@ export async function respondInvitation(candidateId: string, invitationId: strin
  * Условный update — без гонки с отзывом/повторной отметкой.
  */
 export async function markInvitationHired(companyId: string, invitationId: string): Promise<{ id: string; status: InvitationStatus; hiredAt: string }> {
-  const inv = await prisma.invitation.findFirst({ where: { id: invitationId, companyId }, select: { status: true, hiredAt: true, candidateId: true } });
+  const inv = await prisma.invitation.findFirst({ where: { id: invitationId, companyId }, select: { status: true, hiredAt: true } });
   if (!inv) throw errors.notFound('Приглашение не найдено');
   if (inv.status === 'hired') return { id: invitationId, status: 'hired', hiredAt: (inv.hiredAt ?? new Date()).toISOString() };
   if (inv.status !== 'accepted') throw errors.conflict('Отметить найм можно только по принятому приглашению');
   const now = new Date();
-  // lane lifecycle: найм, закрытие открытых приглашений и самооткликов других компаний — одной транзакцией под lock
-  // кандидата: две компании не наймут одного кандидата одновременно (вторая получит 409 — её приглашение уже closed_hired).
-  const closed = await prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hire:${inv.candidateId}`}))`;
-    const r = await tx.invitation.updateMany({ where: { id: invitationId, companyId, status: 'accepted' }, data: { status: 'hired', hiredAt: now } });
-    if (r.count === 0) return null;
-    return closeOthersOnHire(tx, companyId, inv.candidateId, now);
-  });
-  if (!closed) {
+  const r = await prisma.invitation.updateMany({ where: { id: invitationId, companyId, status: 'accepted' }, data: { status: 'hired', hiredAt: now } });
+  if (r.count === 0) {
     const again = await prisma.invitation.findFirst({ where: { id: invitationId, companyId }, select: { status: true, hiredAt: true } });
     if (again?.status === 'hired') return { id: invitationId, status: 'hired', hiredAt: (again.hiredAt ?? now).toISOString() };
     throw errors.conflict('Отметить найм можно только по принятому приглашению');
   }
-  // Живые защиты других компаний закрывает live-defense (своей транзакцией): их приглашения уже closed_hired,
-  // новые слоты по ним предложить нельзя (live-defense требует accepted), так что окна для гонки нет.
   await closeLiveDefensesOnHire(companyId, invitationId, now);
-  for (const id of [invitationId, ...closed.invitationIds]) void notifyInBackground('ats', () => notifyAtsStatusChanged(id));
+  void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
   return { id: invitationId, status: 'hired', hiredAt: now.toISOString() };
-}
-
-/**
- * lane lifecycle: кандидат нанят компанией `companyId` — его открытые приглашения других компаний (sent/viewed/accepted)
- * становятся closed_hired (closedAt), открытые самоотклики к другим компаниям (sent/viewed) — closed с причиной.
- * Раскрытие по закрытым приглашениям прекращается (как при отзыве). Компании B видят уведомление без имени A.
- */
-async function closeOthersOnHire(tx: Prisma.TransactionClient, companyId: string, candidateId: string, now: Date): Promise<{ invitationIds: string[]; applicationIds: string[] }> {
-  const invs = await tx.invitation.findMany({
-    where: { candidateId, status: { in: CLOSED_BY_HIRE }, NOT: { companyId } },
-    select: { id: true },
-  });
-  const invitationIds = invs.map((i) => i.id);
-  if (invitationIds.length) {
-    await tx.invitation.updateMany({ where: { id: { in: invitationIds }, status: { in: CLOSED_BY_HIRE } }, data: { status: 'closed_hired', closedAt: now } });
-    for (const id of invitationIds) await revokeDisclosureForInvitation(tx, candidateId, id, now);
-  }
-  const apps = await tx.application.findMany({
-    where: { candidateId, status: { in: ['sent', 'viewed'] }, vacancy: { companyId: { not: companyId } } },
-    select: { id: true },
-  });
-  const applicationIds = apps.map((a) => a.id);
-  if (applicationIds.length) {
-    await tx.application.updateMany({ where: { id: { in: applicationIds }, status: { in: ['sent', 'viewed'] } }, data: { status: 'closed', closedAt: now, closeReason: HIRED_ELSEWHERE_REASON } });
-  }
-  return { invitationIds, applicationIds };
-}
-
-/**
- * lane lifecycle: вакансия закрыта (архив) — открытые приглашения на неё (sent/viewed) отзываются через withdrawInvitation
- * с причиной «Вакансия закрыта» (пауза 14 дней от такого отзыва не действует), accepted не трогаются (контакт уже есть);
- * открытые самоотклики (sent/viewed) закрываются с той же причиной. Гонка с ответом кандидата: отзыв уже принятого
- * в этот момент приглашения — тоже отзыв (withdrawInvitation допускает accepted), поэтому выбираем только sent/viewed
- * и пропускаем те, что за это время ушли в финальный статус (409).
- */
-export async function closeVacancyPipelines(
-  ctx: { companyId: string; userId: string },
-  vacancyId: string,
-  now = new Date(),
-): Promise<{ withdrawnInvitations: number; acceptedInvitations: number; closedApplications: number }> {
-  const open = await prisma.invitation.findMany({ where: { vacancyId, companyId: ctx.companyId, status: { in: OPEN } }, select: { id: true } });
-  let withdrawnInvitations = 0;
-  for (const { id } of open) {
-    try {
-      await withdrawInvitation(ctx, id, VACANCY_CLOSED_REASON, now, OPEN);
-      withdrawnInvitations++;
-    } catch (err) {
-      if (!(err instanceof AppError && err.code === 'invitation_not_withdrawable')) throw err;
-    }
-  }
-  const acceptedInvitations = await prisma.invitation.count({ where: { vacancyId, companyId: ctx.companyId, status: 'accepted' } });
-  const r = await prisma.application.updateMany({
-    where: { vacancyId, vacancy: { companyId: ctx.companyId }, status: { in: ['sent', 'viewed'] } },
-    data: { status: 'closed', closedAt: now, closeReason: VACANCY_CLOSED_REASON },
-  });
-  return { withdrawnInvitations, acceptedInvitations, closedApplications: r.count };
 }
 
 const withdrawnView = (r: { withdrawnAt: Date | null; withdrawReason: string | null }) =>
@@ -507,8 +409,6 @@ export async function withdrawInvitation(
   invitationId: string,
   rawReason: string,
   now = new Date(),
-  /** lane lifecycle: из каких статусов отзывать (архив вакансии — только sent/viewed, принятое не трогает). */
-  from: readonly InvitationStatus[] = WITHDRAWABLE,
 ): Promise<{ id: string; status: InvitationStatus; withdrawn: { at: string; reason: string } }> {
   const reason = rawReason.trim();
   if (reason.length < WITHDRAW_REASON.minChars || reason.length > WITHDRAW_REASON.maxChars) {
@@ -518,10 +418,10 @@ export async function withdrawInvitation(
   const inv = await prisma.invitation.findFirst({ where: { id: invitationId, companyId: ctx.companyId }, select: { status: true, candidateId: true } });
   if (!inv) throw errors.notFound('Приглашение не найдено');
   const notWithdrawable = () => new AppError('invitation_not_withdrawable', 'Отозвать можно только приглашение без ответа или принятое - не после найма и не после отказа', 409);
-  if (!from.includes(inv.status)) throw notWithdrawable();
+  if (!WITHDRAWABLE.includes(inv.status)) throw notWithdrawable();
   await prisma.$transaction(async (tx) => {
     const r = await tx.invitation.updateMany({
-      where: { id: invitationId, companyId: ctx.companyId, status: { in: [...from] } },
+      where: { id: invitationId, companyId: ctx.companyId, status: { in: WITHDRAWABLE } },
       data: { status: 'withdrawn', withdrawnAt: now, withdrawReason: reason },
     });
     if (r.count === 0) throw notWithdrawable();

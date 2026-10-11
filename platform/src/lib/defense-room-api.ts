@@ -23,8 +23,12 @@ export const defenseTurnApi = (id: string, text: string) =>
   postJson<{ text: string | null; muted: boolean; done: boolean }>(`/api/defense-room/${enc(id)}/turn`, { text });
 export const defenseFinishApi = (id: string) => postJson<{ verdict: DefenseRoomVerdict }>(`/api/defense-room/${enc(id)}/finish`, {});
 
-export const joinCallApi = (id: string) =>
-  postJson<{ participantId: string; webrtc: { iceServers: RTCIceServer[] }; snapshot: CallSnapshot }>(`/api/employer/call/${enc(id)}/join`, {});
+/** Вход в живую защиту: `recordingConsent` — работодатель подтвердил, что разговор записывается, включая его голос (ADR 0008 п. 3). */
+export const joinCallApi = (id: string, recordingConsent: boolean) =>
+  postJson<{ participantId: string; webrtc: { iceServers: RTCIceServer[] }; snapshot: CallSnapshot }>(`/api/employer/call/${enc(id)}/join`, { recordingConsent });
+/** Сегменты голоса работодателя в живой защите; файл — `/api/call/{id}/employer-audio/file?segment=`. */
+export const employerAudioListApi = (id: string) => request<{ segments: { name: string; startMs: number }[] }>(`/api/call/${enc(id)}/employer-audio`);
+export const employerAudioFileUrl = (id: string, segment: string) => `/api/call/${enc(id)}/employer-audio/file?segment=${encodeURIComponent(segment)}`;
 export const leaveCallApi = (id: string) => postJson<{ left: boolean }>(`/api/employer/call/${enc(id)}/leave`, {});
 export const muteAiApi = (id: string, muted: boolean) => postJson<{ muted: boolean; aiText: string | null }>(`/api/employer/call/${enc(id)}/mute-ai`, { muted });
 export const sayApi = (id: string, text: string) => postJson<{ entry: TranscriptEntry }>(`/api/employer/call/${enc(id)}/say`, { text });

@@ -11,7 +11,7 @@ import { INVITATION_STATUS_LABEL, NO_CANDIDATE_CONTACT, salaryRange } from './la
 import styles from './Employer.module.css';
 
 const FILTERS = [{ id: 'all', label: 'Все' }, { id: 'pending', label: 'Ждут ответа' }, { id: 'answered', label: 'С ответом' }] as const;
-const matches = (status: string, filter: string) => filter === 'all' || (filter === 'pending' ? status === 'sent' || status === 'viewed' : status === 'accepted' || status === 'declined' || status === 'hired' || status === 'withdrawn' || status === 'closed_hired');
+const matches = (status: string, filter: string) => filter === 'all' || (filter === 'pending' ? status === 'sent' || status === 'viewed' : status === 'accepted' || status === 'declined' || status === 'hired' || status === 'withdrawn');
 /** lane invite-cancel: отозвать можно до найма и до отказа кандидата. */
 const withdrawable = (status: string) => status === 'sent' || status === 'viewed' || status === 'accepted';
 
@@ -74,7 +74,7 @@ export function InvitationTracker({ invitations: initial }: { invitations: Emplo
         {inv.message && <p className={styles.text}>{inv.message}</p>}
         {inv.candidate.contacts ? <div className={styles.contacts}><strong>Контакт открыт</strong><span>{inv.candidate.contacts.name}</span><span>{inv.candidate.contacts.contact ?? NO_CANDIDATE_CONTACT}</span></div> : inv.status === 'withdrawn' ? null : <p className={styles.meta}>{inv.status === 'declined' ? 'Кандидат отклонил приглашение. Контакты остаются скрыты.' : 'Имя и контакт откроются после принятия приглашения.'}</p>}
         {/* lane live-slots (ADR 0008): назначение живой защиты — только по принятому приглашению */}
-        {(inv.status === 'accepted' || (inv.status === 'hired' && inv.liveDefense)) && <EmployerLiveDefense invitationId={inv.id} live={inv.liveDefense} />}
+        {(inv.status === 'accepted' || (inv.status === 'hired' && inv.liveDefense)) && <EmployerLiveDefense invitationId={inv.id} live={inv.liveDefense} projectReady={inv.projectReady ?? true} />}
         {withdrawing === inv.id && withdrawable(inv.status) && <div className={styles.form} data-testid="withdraw-form">
           <label className={styles.meta} htmlFor={`withdraw-${inv.id}`}>Причина отзыва - её увидит кандидат</label>
           <textarea id={`withdraw-${inv.id}`} className={styles.textarea} maxLength={300} placeholder="Например: позиция закрыта" value={reason} onChange={(e) => setReason(e.target.value)} />

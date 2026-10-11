@@ -1,5 +1,6 @@
 // Аудио созвонов (ADR 0005): удаление при отзыве согласия на запись (Г2) и по сроку хранения
-// CALL_RECORDING_RETENTION_DAYS. Удаляются файлы <CALL_DATA_DIR>/calls/<id> и CallSession.audioPath;
+// CALL_RECORDING_RETENTION_DAYS. Удаляются файлы <CALL_DATA_DIR>/calls/<id> (вместе с дорожкой работодателя живой
+// защиты calls/<id>/employer, ADR 0008 п. 3) и CallSession.audioPath/employerAudioPath;
 // транскрипт, оценки и ссылки audioRef в транскрипте остаются (по ним запись больше не отдаётся: 404).
 import { rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -23,7 +24,7 @@ async function removeAudio(ids: readonly string[]): Promise<number> {
       console.error(`[consent] audio of call ${id} not removed:`, err instanceof Error ? err.message : err);
     }
   }
-  if (ids.length) await prisma.callSession.updateMany({ where: { id: { in: [...ids] } }, data: { audioPath: null } });
+  if (ids.length) await prisma.callSession.updateMany({ where: { id: { in: [...ids] } }, data: { audioPath: null, employerAudioPath: null } });
   return ids.length;
 }
 
@@ -52,7 +53,7 @@ export function retentionCutoff(now: Date, days: number): Date {
 /** Очистка по сроку хранения. Активные созвоны не трогает. Возвращает число очищенных созвонов. */
 export async function purgeExpiredRecordings(now = new Date(), days = getEnv().CALL_RECORDING_RETENTION_DAYS): Promise<number> {
   const calls = await prisma.callSession.findMany({
-    where: { audioPath: { not: null }, status: { not: 'active' }, startedAt: { lt: retentionCutoff(now, days) } },
+    where: { OR: [{ audioPath: { not: null } }, { employerAudioPath: { not: null } }], status: { not: 'active' }, startedAt: { lt: retentionCutoff(now, days) } },
     select: { id: true },
   });
   return removeAudio(calls.map((c) => c.id));

@@ -30,6 +30,14 @@ export const SignalInput = z
   })
   .refine((b) => b.sdp !== undefined || b.ice !== undefined, { message: 'Нужен sdp или ice', path: ['sdp'] });
 
+/** Вход в живую защиту: подтверждение, что разговор записывается, включая голос работодателя (ADR 0008 п. 3). */
+export const JoinCallInput = z.object({ recordingConsent: z.boolean().optional() });
+
+/** Сегмент дорожки работодателя: смещение от начала защиты, мс. */
+export const EmployerAudioQuery = z.object({ startMs: z.coerce.number().int().min(0).max(24 * 60 * 60 * 1000).default(0) });
+
+export const EmployerAudioSegmentQuery = z.object({ segment: z.string().max(40).regex(/^\d{3}-\d{1,9}\.webm$/) });
+
 export const MuteAiInput = z.object({ muted: z.boolean() });
 
 export const SayInput = z.object({ text: z.string().min(1).max(1000) });

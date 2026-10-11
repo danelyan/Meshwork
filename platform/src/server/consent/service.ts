@@ -208,7 +208,7 @@ export async function revokeConsent(userId: string, kind: ConsentKindName, opts:
       deletedRecordings = await deleteCandidateRecordings(candidateId);
     } catch (err) {
       console.error('[consent] call recordings cleanup failed:', err instanceof Error ? err.message : err);
-      await prisma.callSession.updateMany({ where: { candidateId }, data: { audioPath: null } }).catch(() => undefined);
+      await prisma.callSession.updateMany({ where: { candidateId }, data: { audioPath: null, employerAudioPath: null } }).catch(() => undefined);
       deletedRecordings = 0;
     }
   }

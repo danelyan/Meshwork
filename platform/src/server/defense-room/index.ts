@@ -9,3 +9,4 @@ export { loadRepoSnapshot } from './repo';
 export { subscribe, encodeCallEvent } from './bus';
 export { requestProjectDefense } from './pending';
 export { startAiDefense, getEmployerAiDefense, aiDefenseSummaries, publicAiDefenseVerdict, AI_DEFENSE_LIMITS, type EmployerAiDefenseView, type PublicAiDefenseVerdict, type AiDefenseSummary } from './ai-defense';
+export { addEmployerAudio, listEmployerAudio, getEmployerAudio, EMPLOYER_RECORDING_NOTICE, EMPLOYER_RECORDING_NOTICE_VERSION, EMPLOYER_AUDIO_SEGMENT_MAX_BYTES, EMPLOYER_AUDIO_CONTENT_TYPE, type EmployerAudioSegment } from './employer-audio';

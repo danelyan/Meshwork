@@ -7,6 +7,7 @@ import type { SessionPrincipal } from '../session';
 import { employerMayAccess, redactSnapshot, resolveViewer, type Viewer } from './access';
 import { assertLiveRoomOpen } from '../live-defense/service';
 import { publish } from './bus';
+import { EMPLOYER_RECORDING_NOTICE_VERSION } from './employer-audio';
 import { buildSnapshot, employerItem, ICE_SERVERS, resumeAi } from './session';
 import { appendEntries, asVerdict, isAiMuted, loadPlan, savePlan, tryLockPlan, unlockPlan } from './store';
 import type { CallSnapshot, DefenseFlag, TranscriptEntry } from './types';
@@ -37,25 +38,38 @@ export interface JoinResult {
   snapshot: CallSnapshot;
 }
 
-export async function joinCall(principal: SessionPrincipal | null, sessionId: string): Promise<JoinResult> {
+/**
+ * Вход в живую защиту. ADR 0008 п. 3: запись обязательна и пишет обе стороны — без подтверждения записи
+ * (`recordingConsent: true`, текст EMPLOYER_RECORDING_NOTICE) работодатель в эфир не входит: 409 `recording_consent_required`.
+ * Подтверждение сохраняется в строке участника (recordingConsentAt/Version), по нему принимается дорожка его голоса.
+ */
+export async function joinCall(principal: SessionPrincipal | null, sessionId: string, opts: { recordingConsent?: boolean } = {}): Promise<JoinResult> {
   const { viewer, session } = await employerViewer(principal, sessionId);
   if (session.aiDefense) throw errors.conflict('Это ИИ-защита без работодателя - доступен транскрипт');
   await assertLiveRoomOpen([sessionId]); // ADR 0008 п. 5: комната живой защиты — за 10 минут до начала
   if (session.status === 'pending') throw errors.conflict('Кандидат ещё не начал защиту');
   if (session.status !== 'active') throw errors.conflict('Защита уже завершена - доступен транскрипт');
+  if (opts.recordingConsent !== true) {
+    throw new AppError('recording_consent_required', 'Живая защита записывается, включая ваш голос - подтвердите запись, чтобы подключиться', 409);
+  }
+  const consent = { recordingConsentAt: new Date(), recordingConsentVersion: EMPLOYER_RECORDING_NOTICE_VERSION };
   // check-then-create под FOR UPDATE строки сессии: два одновременных join разных компаний не пролезут оба.
   const { p, joined } = await prisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<{ status: string }[]>`SELECT "status"::text AS "status" FROM "CallSession" WHERE id = ${sessionId} FOR UPDATE`;
     if (rows[0]?.status !== 'active') throw errors.conflict('Защита уже завершена - доступен транскрипт');
     const mine = await tx.callParticipant.findFirst({ where: { callSessionId: sessionId, userId: viewer.userId, leftAt: null } });
-    if (mine) return { p: mine, joined: false };
+    if (mine) {
+      // Участник, вошедший до появления подтверждения (или по старому клиенту), подтверждает сейчас.
+      if (!mine.recordingConsentAt) return { p: await tx.callParticipant.update({ where: { id: mine.id }, data: consent }), joined: false };
+      return { p: mine, joined: false };
+    }
     // Одна компания в эфире: иначе компании услышат и увидят друг друга.
     const others = await tx.callParticipant.findMany({ where: { callSessionId: sessionId, leftAt: null }, select: { userId: true } });
     if (others.length) {
       const sameCompany = await tx.employerProfile.count({ where: { userId: { in: others.map((o) => o.userId) }, companyId: viewer.companyId } });
       if (sameCompany !== others.length) throw new AppError('room_busy', 'К этой защите сейчас подключена другая компания', 409);
     }
-    return { p: await tx.callParticipant.create({ data: { callSessionId: sessionId, userId: viewer.userId, role: 'employer' } }), joined: true };
+    return { p: await tx.callParticipant.create({ data: { callSessionId: sessionId, userId: viewer.userId, role: 'employer', ...consent } }), joined: true };
   });
   if (joined) {
     publish(sessionId, { type: 'participant', userId: viewer.userId, role: 'employer', action: 'joined', companyId: viewer.companyId, companyName: viewer.companyName });

@@ -1160,6 +1160,112 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/employer-audio":
+    get:
+      operationId: getCallIdEmployerAudio
+      tags:
+        - call
+      summary: "Сегменты голоса работодателя в живой защите"
+      description: "сегменты голоса работодателя в живой защите (ADR 0008 п. 3). Доступ как к записи защиты: кандидату — своя; работодателю — только компании-владельцу живой защиты после принятого приглашения.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Список сегментов"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  segments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "NNN-<startMs>.webm"
+                        startMs:
+                          type: integer
+                      required:
+                        - name
+                        - startMs
+                required:
+                  - segments
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Работодатель без действующего раскрытия (Г5)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: "Нет защиты, ИИ-защита или чужая живая защита"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/employer-audio/file":
+    get:
+      operationId: getCallIdEmployerAudioFile
+      tags:
+        - call
+      summary: "Сегмент голоса работодателя"
+      description: "один сегмент голоса работодателя (доступ как к списку).\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: segment
+          in: query
+          required: false
+          description: "Имя сегмента из GET /api/call/{id}/employer-audio"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "WebM/Opus"
+          content:
+            "audio/webm":
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Работодатель без действующего раскрытия (Г5)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: "Нет защиты, сегмента или доступа"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/call/{id}/events":
     get:
       operationId: getCallIdEvents
@@ -3179,7 +3285,7 @@ paths:
       tags:
         - employer
       summary: "Ответ на отклик (R-C-12)."
-      description: "ответ на отклик (R-C-12). Чужой — 404, повторный ответ — 409. accept создаёт приглашение accepted (`invitationId` в ответе) — дальше слоты живой защиты и найм как у приглашения.\n\nНужна сессия работодателя (кука cid)."
+      description: "ответ на отклик (R-C-12). Чужой — 404, повторный ответ — 409.\n\nНужна сессия работодателя (кука cid)."
       security:
         -
           cookieAuth: []
@@ -3272,13 +3378,13 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/employer/call/{id}/join":
+  "/api/employer/call/{id}/audio":
     post:
-      operationId: postEmployerCallIdJoin
+      operationId: postEmployerCallIdAudio
       tags:
         - employer
-      summary: "POST — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404)."
-      description: "POST — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404). В эфире одна компания: если подключена другая — 409 `room_busy`. Ответ: `{ participantId, webrtc, snapshot }`.\n\nНужна сессия работодателя (кука cid)."
+      summary: "Сегмент голоса работодателя в живой защите"
+      description: "сегмент голоса работодателя в живой защите (WebM/Opus, до 4 МБ; ADR 0008 п. 3: пишутся обе стороны). Только участник комнаты своей компании, подтвердивший запись при входе.\n\nНужна сессия работодателя (кука cid)."
       security:
         -
           cookieAuth: []
@@ -3289,14 +3395,96 @@ paths:
           required: true
           schema:
             type: string
+        -
+          name: startMs
+          in: query
+          required: false
+          description: "Смещение начала сегмента от начала защиты, мс"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "WebM/Opus с микрофона работодателя, до 4 МБ (~60 с)"
+        content:
+          "audio/webm":
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: "Сегмент сохранён файлом защиты (calls/<id>/employer)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "Имя сегмента NNN-<startMs>.webm"
+                  startMs:
+                    type: integer
+                required:
+                  - name
+                  - startMs
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Чужая или не своя живая защита, нет принятого приглашения"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Не подключён, защита завершена или ИИ-защита; запись не подтверждена при входе (`recording_consent_required`); кандидат отозвал согласие на запись (`call_recording_off`); лимит сегментов"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "413":
+          description: "Сегмент больше 4 МБ"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/call/{id}/join":
+    post:
+      operationId: postEmployerCallIdJoin
+      tags:
+        - employer
+      summary: "POST `{ recordingConsent: true }` — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404)."
+      description: "POST `{ recordingConsent: true }` — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404). Защита записывается целиком, включая голос работодателя (ADR 0008 п. 3): без `recordingConsent: true` — 409 `recording_consent_required`. В эфире одна компания: если подключена другая — 409 `room_busy`. Ответ: `{ participantId, webrtc, snapshot }`.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/JoinCallInput"
       responses:
         "200":
-          description: "POST — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404)."
+          description: "POST `{ recordingConsent: true }` — подключиться к живой защите кандидата (только после принятого приглашения, иначе 404)."
           content:
             "application/json":
               schema:
                 type: object
                 additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3304,7 +3492,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          description: "В эфире другая компания (`room_busy`); Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
+          description: "В эфире другая компания (`room_busy`); Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005); Не подтверждена запись разговора (`recording_consent_required`, ADR 0008 п. 3)"
           content:
             "application/json":
               schema:
@@ -4431,7 +4619,7 @@ paths:
       tags:
         - employer
       summary: "Закрыть или вернуть потребность"
-      description: "PATCH `{ archived }` — закрыть / вернуть потребность. Закрытие отзывает открытые приглашения на неё и закрывает открытые самоотклики (причина «Вакансия закрыта»); принятые приглашения остаются, их число — в `closed`.\n\nНужна сессия работодателя (кука cid)."
+      description: "PATCH `{ archived }` — закрыть / вернуть потребность.\n\nНужна сессия работодателя (кука cid)."
       security:
         -
           cookieAuth: []
@@ -7823,6 +8011,11 @@ components:
         - message
         - salaryFrom
         - salaryTo
+    JoinCallInput:
+      type: object
+      properties:
+        recordingConsent:
+          type: boolean
     LiveCancelInput:
       type: object
       properties:

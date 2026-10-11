@@ -1,10 +1,11 @@
 'use client';
 
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Color, type Group, type Mesh, MeshStandardMaterial } from 'three';
 
 import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
+import { easeToward, pointerPose, trackPointer } from './head-motion';
 
 /**
  * «Овальный болванчик» — первая версия головы компаньона (процедурная, коммит ca1c7ca2, 09.10) для страницы 404.
@@ -38,11 +39,32 @@ function gridMaterial(): MeshStandardMaterial {
   return m;
 }
 
-function Head({ reducedMotion }: { reducedMotion: boolean }) {
+function Head({ reducedMotion, avoidPointer }: { reducedMotion: boolean; avoidPointer: boolean }) {
   const { head, neck } = useMemo(() => buildHeadGeometry(), []);
   const material = useMemo(() => gridMaterial(), []);
   const headRef = useRef<Mesh>(null);
   const groupRef = useRef<Group>(null);
+  const canvas = useThree((state) => state.gl.domElement);
+  const pointer = useRef<[number, number]>([0, 0]);
+  const turn = useRef<[number, number]>([0, 0]);
+
+  useEffect(() => {
+    if (!avoidPointer || reducedMotion) { pointer.current = [0, 0]; return; }
+    const move = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      const rect = canvas.getBoundingClientRect();
+      pointer.current = trackPointer(event.clientX, event.clientY, innerWidth, innerHeight, rect.left + rect.width / 2, rect.top + rect.height * 0.4);
+    };
+    const leave = () => { pointer.current = [0, 0]; };
+    document.addEventListener('pointermove', move, { passive: true });
+    document.addEventListener('pointerleave', leave);
+    window.addEventListener('blur', leave);
+    return () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerleave', leave);
+      window.removeEventListener('blur', leave);
+    };
+  }, [avoidPointer, reducedMotion, canvas]);
 
   useLayoutEffect(() => {
     const mesh = headRef.current;
@@ -61,7 +83,7 @@ function Head({ reducedMotion }: { reducedMotion: boolean }) {
     [head, neck, material],
   );
 
-  useFrame((state) => {
+  useFrame((state, dt) => {
     const g = groupRef.current;
     if (!g) return;
     const t = state.clock.elapsedTime;
@@ -69,8 +91,10 @@ function Head({ reducedMotion }: { reducedMotion: boolean }) {
     // каждые 6 с — короткое «нет»: затухающее покачивание по Y длиной 1.4 с
     const phase = t % 6;
     const shake = phase < 1.4 ? Math.sin(phase * 14) * 0.22 * (1 - phase / 1.4) : 0;
-    g.rotation.y = -0.35 + motion * (Math.sin(t * 0.4) * 0.06 + shake);
-    g.rotation.x = -0.1 + motion * Math.sin(t * 0.55) * 0.03;
+    const goal = pointerPose(pointer.current[0], pointer.current[1], 'avoid');
+    turn.current = [easeToward(turn.current[0], goal[0], dt), easeToward(turn.current[1], goal[1] - pointerPose(0, 0)[1], dt)];
+    g.rotation.y = avoidPointer ? motion * (turn.current[0] + Math.sin(t * 0.4) * 0.03) : -0.35 + motion * (Math.sin(t * 0.4) * 0.06 + shake);
+    g.rotation.x = -0.1 + motion * (Math.sin(t * 0.55) * 0.03 + (avoidPointer ? turn.current[1] : 0));
     g.rotation.z = 0.05 + motion * Math.sin(t * 0.3) * 0.02;
     g.position.y = motion * Math.sin(t * 1.2) * 0.012;
   });
@@ -83,7 +107,7 @@ function Head({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
-export default function OvalHeadCanvas({ reducedMotion = false }: { reducedMotion?: boolean }) {
+export default function OvalHeadCanvas({ reducedMotion = false, avoidPointer = false }: { reducedMotion?: boolean; avoidPointer?: boolean }) {
   return (
     <Canvas
       dpr={[1, 2]}
@@ -95,7 +119,7 @@ export default function OvalHeadCanvas({ reducedMotion = false }: { reducedMotio
       <directionalLight position={[-2.5, 2.5, 3]} intensity={2.4} />
       <directionalLight position={[3, 1, -2.5]} intensity={1.6} color="#dfe6ff" />
       <directionalLight position={[0, -2, 2]} intensity={0.35} />
-      <Head reducedMotion={reducedMotion} />
+      <Head reducedMotion={reducedMotion} avoidPointer={avoidPointer} />
     </Canvas>
   );
 }

@@ -1,8 +1,8 @@
 /* Очереди модерации (E-08, фаза 2). Только токены tokens.css. */
-.list { display: grid; gap: 16px; }
-.item { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--line); background: var(--glass); font-size: var(--fs-md); }
+.list { display: grid; gap: 14px; }
+.item { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-notice); }
 .head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; justify-content: space-between; }
-.facts { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: var(--fs); color: var(--text-soft); margin: 0; padding: 0; list-style: none; }
-.quote { margin: 0; padding: 10px 14px; border-left: 2px solid var(--ink); background: var(--surface-quote); white-space: pre-wrap; font-size: var(--fs-md); color: var(--text); }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--fs-sm); color: var(--text-soft); margin: 0; padding: 0; list-style: none; }
+.quote { margin: 0; padding: 8px 12px; border-left: 2px solid var(--line); white-space: pre-wrap; font-size: var(--fs-sm); }
 .overdue { color: var(--red); font-weight: 600; }
-.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }

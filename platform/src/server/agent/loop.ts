@@ -1,4 +1,5 @@
 import { prisma, type Prisma } from '@/server/db';
+import { getSetting } from '@/server/admin/settings';
 import { getEnv } from '@/server/env';
 import { errors } from '@/server/errors';
 import { getLlm } from '@/server/llm/client';
@@ -60,7 +61,7 @@ export async function runTurn(
   if (!conv) throw errors.notFound('Разговор не найден');
 
   const now = opts.now ?? (() => new Date());
-  const budget = opts.dailyTokenBudget ?? getEnv().LLM_DAILY_TOKEN_BUDGET;
+  const budget = opts.dailyTokenBudget ?? (await getSetting('llm.dailyTokenBudget'));
   const demo = !opts.llm && isDemoMode();
   const llm =
     opts.llm ?? getLlm({ candidateId, conversationId, onQueue: (position) => emit({ type: 'queue', position }) });

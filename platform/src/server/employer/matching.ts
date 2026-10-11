@@ -2,6 +2,9 @@
 // Загрузка из БД + чистое ранжирование (ranking.ts) + проекция приватности (privacy.ts).
 import type { InvitationStatus } from '@prisma/client';
 
+import { notBlockedCandidateWhere } from '@/server/admin/accounts/state';
+import { getSetting } from '@/server/admin/settings';
+
 import type { CatalogEntry } from '../claims/types';
 import { demoAchievements } from '../collector/fsp-demo';
 import { disclosedCandidateIds } from '../consent/service';
@@ -28,7 +31,7 @@ import type { FspAchievementInput } from './fsp-weight';
 import { relaxationHints, type RelaxHint } from './relax';
 import { loadDefenseRooms, loadStageEvidence, type DefenseRoomLink } from './stages-load';
 import { maskProjectBlock } from './stages';
-import { loadGradeConfidence, loadTestIntegrity, type PublicTestIntegrity } from './test-integrity';
+import { loadTestIntegrity, type PublicTestIntegrity } from './test-integrity';
 import { getVacancy, type VacancyView } from './vacancies';
 
 export interface MatchItem extends RankedCandidate {
@@ -43,8 +46,6 @@ export interface MatchItem extends RankedCandidate {
   defenseRoom?: DefenseRoomLink | null;
   /** Проверка честности попытки, давшей категорию (только уровень и группы); нет попытки или индекса — null. Порядок меняет не эта метка, а integrity-ranking.ts (2a). */
   testIntegrity?: PublicTestIntegrity | null;
-  /** Уверенность теста в грейде категории, 0..1 (P(θ выше порога), policy.ts probAbove). Не вероятность найма. Нет пройденного теста - null. */
-  gradeConfidence?: number | null;
 }
 
 export interface MatchResult {
@@ -73,11 +74,15 @@ interface PoolRow {
  * `companyId` — чья выдача: от него зависит, какие защиты видны (ADR 0008); null — только ИИ-защиты.
  */
 export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: string | null = null): Promise<PoolRow[]> {
+  const showDemo = await getSetting('matching.show_demo_candidates');
   const rows = await prisma.candidate.findMany({
     where: {
       hiddenFromEmployers: false,
       // Режим эксперта (server/expert): одноразовые эксперты жюри в поиск и подборку не попадают никогда.
       ...NOT_EXPERT_CANDIDATE,
+      // E-08 фаза 3: аккаунт заблокирован модератором — не в выдаче; демо — по переключателю админки.
+      AND: [notBlockedCandidateWhere()],
+      ...(showDemo ? {} : { isDemo: false }),
       OR: [{ claims: { some: { status: { in: ['confirmed', 'edited'] } } } }, { categories: { some: {} } }],
     },
     select: {
@@ -209,7 +214,6 @@ async function run(
   const [accepted, invites] = await Promise.all([acceptedCandidateIds(companyId, ids), lastInvitations(companyId, ids)]);
   const rooms = await loadDefenseRooms(companyId, [...accepted]);
   const integrity = await loadTestIntegrity(new Map(top.map((r) => [r.candidateId, byId.get(r.candidateId)!.evidence.category])));
-  const confidence = await loadGradeConfidence(new Map(top.map((r) => [r.candidateId, byId.get(r.candidateId)!.evidence.category])));
   const items = top.map((r, i) => {
     const p = byId.get(r.candidateId)!;
     const candidate = toCandidateCard(
@@ -232,7 +236,7 @@ async function run(
     // Fullstack: в карточке вместо «Backend · Middle (тест)» - обе стороны: «Fullstack: backend Middle + frontend Junior».
     const fs = filters.fullstack ? fullstackProfile(p.evidence) : null;
     if (fs) explanation = { ...explanation, category: `${fullstackLabel(fs)} (тест)` };
-    return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null, gradeConfidence: confidence.get(r.candidateId) ?? null };
+    return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null };
   });
   // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
   const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(evidence, target, catalog, resolved, opts) : undefined;

@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { Component, type ReactNode, useCallback, useEffect, useState } from 'react';
 
 import styles from './avatar.module.css';
-import { CHAT_HEAD_MOTION, type PointerBehavior } from './head-motion';
+import { CHAT_HEAD_MOTION } from './head-motion';
 import type { HeadStyle } from './head-styles';
 import { MarkFallback } from './MarkFallback';
 import type { CompanionVoice } from './voice';
@@ -39,7 +39,7 @@ class CanvasGuard extends Component<{ onError: () => void; children: ReactNode }
  * не кэшируется), ловит ошибку создания контекста и `webglcontextlost`, в запасном режиме даёт кнопку
  * «обновить» — повторная проба и новая голова. `onLive` сообщает, рисуется ли сейчас голова.
  */
-export function HeadSurface({ voice, reduced, style, onLive, pointerBehavior }: { voice: Pick<CompanionVoice, 'status' | 'getLevel' | 'getMouth'>; reduced: boolean; style: HeadStyle; onLive?: (live: boolean) => void; pointerBehavior?: PointerBehavior }) {
+export function HeadSurface({ voice, reduced, style, onLive }: { voice: CompanionVoice; reduced: boolean; style: HeadStyle; onLive?: (live: boolean) => void }) {
   // До монтирования (SSR и первый кадр) — знак: проба нужна браузеру, а разметка должна совпасть.
   const [mode, setMode] = useState<'pending' | 'gl' | 'mark'>('pending');
   const [attempt, setAttempt] = useState(0);
@@ -75,7 +75,7 @@ export function HeadSurface({ voice, reduced, style, onLive, pointerBehavior }: 
   if (mode === 'gl') {
     return (
       <CanvasGuard key={attempt} onError={lost}>
-        <Head3D status={voice.status} getLevel={voice.getLevel} getMouth={voice.getMouth} reducedMotion={reduced} style={style} motion={CHAT_HEAD_MOTION} pointerBehavior={pointerBehavior} lighting="studio" onContextLost={lost} />
+        <Head3D status={voice.status} getLevel={voice.getLevel} getMouth={voice.getMouth} reducedMotion={reduced} style={style} motion={CHAT_HEAD_MOTION} lighting="studio" onContextLost={lost} />
       </CanvasGuard>
     );
   }

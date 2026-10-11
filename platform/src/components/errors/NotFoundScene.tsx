@@ -3,14 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { HeadSurface } from '@/components/avatar/HeadSurface';
-import { CLOSED } from '@/components/avatar/lipsync';
+import { OvalHead } from '@/components/avatar/OvalHead';
 import { useBareShell } from '@/components/shell/ShellFrame';
 import { Button } from '@/components/ui';
 
 import styles from './NotFoundScene.module.css';
-
-const idleVoice = { status: 'idle' as const, getLevel: () => 0, getMouth: () => CLOSED };
 
 export function NotFoundScene() {
   useBareShell(true);
@@ -30,7 +27,7 @@ export function NotFoundScene() {
       <Link href="/" className={styles.brand} aria-label="MESHWORK — на главную">MESHWORK<span> / ФСП Карьера</span></Link>
       <div className={styles.code} aria-hidden="true">404</div>
       <div className={styles.head}>
-        <HeadSurface voice={idleVoice} reduced={reduced} style="weave" pointerBehavior="avoid" />
+        <OvalHead reducedMotion={reduced} avoidPointer />
       </div>
       <section className={styles.copy} aria-labelledby="not-found-title">
         <p className={styles.eyebrow}>Ошибка 404</p>

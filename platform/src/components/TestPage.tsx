@@ -633,7 +633,7 @@ function ResultScreen({
                   Пройти подтверждающий тест
                 </Button>
               )}
-              <Button href="/interview" data-testid="ranking-hold-call">
+              <Button href="/consultant?call=1" data-testid="ranking-hold-call">
                 Созвон с ИИ
               </Button>
             </div>

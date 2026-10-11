@@ -7,7 +7,7 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock('@/server/db', () => ({ prisma: db.prisma }));
 
-import { journeyState, JOURNEY_STEPS, stepHint, STEP_HINT } from '@/server/agent/journey';
+import { journeyState, JOURNEY_STEPS, LAST_CALL_MAX_PAIRS, lastCallBlock, lastCallBrief, stepHint, STEP_HINT } from '@/server/agent/journey';
 import { consentVersion } from '@/server/consent/texts';
 
 interface World {
@@ -23,8 +23,9 @@ interface World {
   hired: boolean;
   consents: { kind: string; version: string; acceptedAt: Date; revokedAt: Date | null }[];
   hiddenFlag: boolean;
+  lastCall: Record<string, unknown> | null;
 }
-const fresh = (): World => ({ onboarded: true, sources: 0, claims: {}, category: false, qualifying: 0, checkedProjects: 0, aiDefense: 0, sentInv: 0, acceptedInv: 0, hired: false, consents: (['ai_assessment', 'employer_visibility'] as const).map((kind) => ({ kind, version: consentVersion(kind), acceptedAt: new Date(0), revokedAt: null })), hiddenFlag: false });
+const fresh = (): World => ({ onboarded: true, sources: 0, claims: {}, category: false, qualifying: 0, checkedProjects: 0, aiDefense: 0, sentInv: 0, acceptedInv: 0, hired: false, lastCall: null, consents: (['ai_assessment', 'employer_visibility'] as const).map((kind) => ({ kind, version: consentVersion(kind), acceptedAt: new Date(0), revokedAt: null })), hiddenFlag: false });
 let w: World;
 const seen: { call: unknown[]; project: unknown[] } = { call: [], project: [] };
 
@@ -44,6 +45,7 @@ beforeEach(() => {
         seen.call.push(a?.where);
         return a?.where?.kind !== 'defense' ? w.qualifying : w.aiDefense;
       },
+      findFirst: () => w.lastCall,
     },
     projectSubmission: { count: (a?: { where?: Record<string, unknown> }) => { seen.project.push(a?.where); return w.checkedProjects; } },
     invitation: {
@@ -184,5 +186,69 @@ describe('journeyState: согласие на оценку ИИ и скрыто�
     w.consents = [row('ai_assessment', { revokedAt: new Date() }), row('employer_visibility', { version: 'old' })];
     const s = await journeyState('c1');
     expect([s.aiConsent, s.hidden]).toEqual([false, true]);
+  });
+});
+
+
+describe('lastCallBrief / lastCallBlock: консультант знает о последнем созвоне', () => {
+  const ai = (index: number, text: string) => ({ index, role: 'ai', text, at: 'x', tMs: 0 });
+  const me = (index: number, text: string) => ({ index, role: 'candidate', text, at: 'x', tMs: 0 });
+  const finishedAt = new Date('2026-10-12T00:40:00Z');
+  const verdict = {
+    kind: 'qualifying',
+    summary: 'Подтверждено тем: 1 из 2.',
+    depthMap: [
+      { topic: 'Индексы', status: 'confirmed', probed: 2, maxLevel: 3 },
+      { topic: 'Кэш', status: 'not_confirmed', probed: 1, maxLevel: 1 },
+    ],
+    testOwnership: { status: 'explained', reason: 'r', items: [] },
+  };
+
+  it('нет завершённых созвонов → null, journeyState.lastCall = null', async () => {
+    expect(await lastCallBrief('c1')).toBeNull();
+    expect((await journeyState('c1')).lastCall).toBeNull();
+  });
+
+  it('сводка: вид, минуты, итог, темы, разбор теста, диалог парами с обрезкой', async () => {
+    const long = 'о'.repeat(400);
+    w.lastCall = {
+      kind: 'qualifying',
+      finishedAt,
+      transcriptJson: [ai(0, 'Привет! Что такое индекс?'), me(1, 'B-дерево'), ai(2, 'Почему?'), me(3, long), ai(4, 'Спасибо, на этом всё.')],
+      verdictJson: verdict,
+    };
+    const b = (await lastCallBrief('c1', new Date('2026-10-12T00:52:00Z')))!;
+    expect(b).toMatchObject({ kind: 'qualifying', minutesAgo: 12, summary: 'Подтверждено тем: 1 из 2.', testOwnership: 'объяснил сам', interview: null });
+    expect(b.topics).toEqual(['Индексы — подтверждено (вопросов 2, до уровня 3)', 'Кэш — не подтверждено (вопросов 1, до уровня 1)']);
+    expect(b.dialog).toHaveLength(2); // заключительная реплика без ответа - не пара
+    expect(b.dialog[0]).toEqual({ q: 'Привет! Что такое индекс?', a: 'B-дерево' });
+    expect(b.dialog[1]!.a.length).toBe(240);
+    expect(b.dialog[1]!.a.endsWith('…')).toBe(true);
+    expect((await journeyState('c1')).lastCall?.kind).toBe('qualifying');
+  });
+
+  it('не больше LAST_CALL_MAX_PAIRS пар; без вердикта - «вердикта нет»', async () => {
+    const t: unknown[] = [];
+    for (let i = 0; i < 24; i += 2) t.push(ai(i, `Вопрос ${i}`), me(i + 1, `Ответ ${i}`));
+    w.lastCall = { kind: 'interview', finishedAt, transcriptJson: t, verdictJson: null };
+    const b = (await lastCallBrief('c1'))!;
+    expect(b.dialog).toHaveLength(LAST_CALL_MAX_PAIRS);
+    expect(b.summary).toBeNull();
+    expect(lastCallBlock(b)).toContain('вердикта нет');
+  });
+
+  it('блок: свежий созвон (≤ 30 мин) просит начать с итога, старый - нет; теги и диалог на месте', async () => {
+    w.lastCall = { kind: 'qualifying', finishedAt, transcriptJson: [ai(0, 'Q'), me(1, 'A')], verdictJson: verdict };
+    const fresh = lastCallBlock((await lastCallBrief('c1', new Date('2026-10-12T00:45:00Z')))!);
+    expect(fresh).toContain('## Последний созвон с ИИ');
+    expect(fresh).toContain('<last_call>');
+    expect(fresh).toContain('Вид: квалифицирующий созвон');
+    expect(fresh).toContain('5 мин назад');
+    expect(fresh).toContain('завершился только что');
+    expect(fresh).toContain('1. Кира: Q → Кандидат: A');
+    expect(fresh).toContain('Разбор задания теста: объяснил сам');
+    const old = lastCallBlock((await lastCallBrief('c1', new Date('2026-10-12T03:00:00Z')))!);
+    expect(old).not.toContain('завершился только что');
+    expect(old).toContain('140 мин назад');
   });
 });

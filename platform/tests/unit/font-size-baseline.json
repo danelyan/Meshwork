@@ -11,6 +11,5 @@
   "components/employer/Employer.module.css": 68,
   "components/head/ConsultantScene.module.css": 2,
   "components/interview/InterviewPage.module.css": 4,
-  "components/interview/InterviewRoom.module.css": 4,
   "components/validation/Validation.module.css": 4
 }

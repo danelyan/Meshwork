@@ -141,9 +141,9 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   }, []);
 
   const send = useCallback(
-    async (message: string, uploadIds: string[], urls: string[], fileNames: string[], opts: { kickoff?: boolean; resend?: boolean } = {}) => {
+    async (message: string, uploadIds: string[], urls: string[], fileNames: string[], opts: { kickoff?: boolean; afterCall?: boolean; resend?: boolean } = {}) => {
       setBusy(true);
-      if (!opts.kickoff) {
+      if (!opts.kickoff && !opts.afterCall) {
         lastSent.current = { message, uploadIds, urls, fileNames };
         setItems((p) => [...p, { id: nextId(), role: 'user', text: message, files: fileNames }]);
       }
@@ -164,7 +164,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       try {
         await embedded?.beforeSend?.();
         const stream = await openConsultantStream(
-          { text: message, uploadIds, urls, conversationId: conversationRef.current, ...(opts.kickoff ? { kickoff: true } : {}), ...(opts.resend ? { resend: true } : {}) },
+          { text: message, uploadIds, urls, conversationId: conversationRef.current, ...(opts.kickoff ? { kickoff: true } : {}), ...(opts.afterCall ? { afterCall: true } : {}), ...(opts.resend ? { resend: true } : {}) },
           ctrl.signal,
         );
         const reader = stream.getReader();
@@ -209,6 +209,17 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     kickRef.current = true;
     void send('', [], [], [], { kickoff: true });
   }, [kickoff, send]);
+
+  // Созвон завершён и панель закрыта («Вернуться в чат»): консультант сам подводит итог по <last_call>
+  // (ход afterCall без сообщения кандидата; владелец 12.10 «единая точка - окно консультанта»).
+  const afterCallDone = useRef<number | null>(null);
+  const callFinishedAt = callMode?.finishedAt ?? null;
+  const callOpen = callMode?.open ?? false;
+  useEffect(() => {
+    if (callOpen || callFinishedAt === null || afterCallDone.current === callFinishedAt) return;
+    afterCallDone.current = callFinishedAt;
+    void send('', [], [], [], { afterCall: true });
+  }, [callOpen, callFinishedAt, send]);
 
   // «Стоп»: сервер останавливает ход и отдаёт показанный кусок (`message` + `done`), затем — обрыв локального fetch.
   const stop = useCallback(async () => {

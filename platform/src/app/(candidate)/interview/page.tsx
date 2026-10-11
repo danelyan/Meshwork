@@ -1,12 +1,12 @@
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-import { InterviewPage } from '@/components/interview/InterviewPage';
 import { requirePageCandidate } from '@/server/auth/page';
 
-export const metadata: Metadata = { title: 'Созвон с ИИ - MESHWORK' };
-
-/** /interview — ИИнтервью по модели компетенций (docs/competency-model.md). Guard — только кандидат. */
+/**
+ * /interview — старый вход в созвон. Единая точка созвона с ИИ — окно консультанта (решение владельца 12.10):
+ * старые ссылки и закладки ведём в консультанта с сразу открытым режимом созвона. Guard — только кандидат.
+ */
 export default async function Page() {
   await requirePageCandidate('/interview');
-  return <InterviewPage />;
+  redirect('/consultant?call=1');
 }

@@ -41,6 +41,18 @@ export const KICKOFF_INSTRUCTION =
   'Два-три предложения, без списков, инструменты не вызывай, вопросов анкеты не задавай.]';
 /** Запасной текст kickoff: демо без модели и план В. */
 export const KICKOFF_CANNED = CONTINUE_GREETING;
+/**
+ * Ход `afterCall` (созвон только что завершён, кандидат вернулся в чат; владелец 12.10 «консультант в курсе о
+ * созвоне»): вместо сообщения кандидата - эта инструкция, в историю не пишется; данные созвона - блок
+ * <last_call> в системном промпте (journey.ts, lastCallBlock).
+ */
+export const AFTER_CALL_INSTRUCTION =
+  '[Платформа, не сообщение кандидата: кандидат только что завершил созвон с ИИ и вернулся в чат, ещё ничего не написал. ' +
+  'По блоку <last_call>: одной фразой скажи, что созвон прошёл и запись сохранена, назови 2–3 вывода своими словами ' +
+  '(что подтвердилось, где не хватило конкретики), без баллов и цифр рубрики, и предложи либо разобрать слабую тему здесь, ' +
+  'либо СЛЕДУЮЩИЙ ШАГ из <journey>. Три-четыре предложения, без списков, инструменты не вызывай.]';
+/** Запасной текст afterCall: демо без модели и план В. */
+export const AFTER_CALL_CANNED = 'Созвон завершён, запись и карта глубины сохранены в профиле. Хочешь разобрать какую-то из тем подробнее или идём дальше?';
 /** Текст ассистента, когда модель вернула пустой ответ. */
 export const EMPTY_REPLY = 'Не получилось сформулировать ответ. Спроси ещё раз или уточни, что нужно.';
 
@@ -79,7 +91,7 @@ export async function runTurn(
   const preferences = preferencesBlock(await settingsForTurn(candidateId));
 
   await ensurePromptVersion(conversationId);
-  if (!input.kickoff) await saveMessage(conversationId, { role: 'user', content: userContent(input, resume) });
+  if (!input.kickoff && !input.afterCall) await saveMessage(conversationId, { role: 'user', content: userContent(input, resume) });
 
   let pipeline: PipelineResult | undefined;
   if (input.uploadIds?.length || input.urls?.length) {
@@ -100,7 +112,7 @@ export async function runTurn(
   }
   if (demo) {
     // Демо без ключей: модели нет, ответ — шаблоны по данным платформы (не сбой, без «упрощённого режима»).
-    let text = input.kickoff ? KICKOFF_CANNED : await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
+    let text = input.kickoff ? KICKOFF_CANNED : input.afterCall ? AFTER_CALL_CANNED : await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
     if (resume && !(await remindedResume(conversationId))) text = `${text}\n${resumeLine()}`;
     await finishAndSave(conversationId, createReplyStream(emit, signal, undefined, opts.pace), text);
     return;
@@ -113,6 +125,7 @@ export async function runTurn(
   });
   const messages: ChatMessage[] = buildHistory(rows);
   if (input.kickoff) messages.push({ role: 'user', content: KICKOFF_INSTRUCTION });
+  else if (input.afterCall) messages.push({ role: 'user', content: AFTER_CALL_INSTRUCTION });
   // Память о собеседнике (заметки — данные, не инструкции; consultant/memory.ts).
   const memory = await loadMemoryBlock({ candidateId });
   let calls = 0;
@@ -129,7 +142,7 @@ export async function runTurn(
       const req = {
         purpose: 'consultant' as const,
         system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume, memory, journey, preferences }),
-        messages: withQuestionReminder(fitHistory(messages, historyChars), input.kickoff ? 'поприветствуй и предложи следующий шаг' : input.text),
+        messages: withQuestionReminder(fitHistory(messages, historyChars), input.kickoff ? 'поприветствуй и предложи следующий шаг' : input.afterCall ? 'подведи итог созвона из <last_call>' : input.text),
         tools: specs,
         toolChoice: canCall ? ('auto' as const) : ('none' as const),
         maxTokens: TURN_MAX_TOKENS,
@@ -194,7 +207,9 @@ async function degrade(ctx: ToolContext, input: TurnInput, pipeline: PipelineRes
   ctx.emit({ type: 'step', text: FALLBACK_STEP[reason] });
   const text = input.kickoff
     ? KICKOFF_CANNED
-    : input.onboarding && !pipeline
+    : input.afterCall
+      ? AFTER_CALL_CANNED
+      : input.onboarding && !pipeline
       ? asideCannedReply(input.onboarding)
       : await fallbackReply({ candidateId: ctx.candidateId, text: input.text, reason, ...(pipeline ? { pipeline } : {}) });
   await finishAndSave(ctx.conversationId, createReplyStream(ctx.emit, ctx.signal, undefined, ctx.pace), text);

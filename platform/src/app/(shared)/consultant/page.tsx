@@ -14,7 +14,7 @@ import { EmployerHome } from './EmployerHome';
 import { warn } from './warn';
 import { COMPANION_NAME } from '@/lib/persona';
 
-export const metadata: Metadata = { title: 'Консультант - MESHWORK' };
+export const metadata: Metadata = { title: 'Консультант - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
 
 /** Подпись у головы без роли - консультант (у ролей - в CandidateHome / EmployerHome). */
@@ -38,7 +38,7 @@ export default async function ConsultantPage({ searchParams }: { searchParams?: 
   // only renders that saved step; it never resets completed onboarding or changes roles.
   const query = await searchParams;
   const editProfile = s.role === 'candidate' && query?.edit === 'profile';
-  // ?call=1 — открыть режим созвона сразу (ссылка со страницы /interview).
+  // ?call=1 — открыть режим созвона сразу (пункт «Созвон с ИИ», старый /interview редиректит сюда).
   const openCall = query?.call === '1';
   let view: OnboardingView | undefined;
   let viewFailed = false;

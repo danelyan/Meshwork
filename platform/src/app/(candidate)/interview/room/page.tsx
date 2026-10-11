@@ -1,12 +1,9 @@
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-import { InterviewRoom } from '@/components/interview/InterviewRoom';
 import { requirePageCandidate } from '@/server/auth/page';
 
-export const metadata: Metadata = { title: 'Созвон с ИИ: комната - MESHWORK' };
-
-/** /interview/room — комната звонка ИИнтервью с перебиванием голосом (docs/competency-model.md § 4.1). Guard — только кандидат. */
+/** /interview/room — старая комната звонка; созвон идёт только в консультанте (решение владельца 12.10). */
 export default async function Page() {
   await requirePageCandidate('/interview/room');
-  return <InterviewRoom />;
+  redirect('/consultant?call=1');
 }

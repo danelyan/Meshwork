@@ -1,6 +1,6 @@
 openapi: "3.1.0"
 info:
-  title: "MESHWORK - API платформы"
+  title: "ФСП Карьера - API платформы"
   version: "0.1.0"
   description: "REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.\n\nВход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.\n\nВсе ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).\n\nСлужебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.\n\n### События SSE\n\nЗвонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).\n\nЭндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.\n\nВторой ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.\n\nПока ход идёт, сервер раз в 15 с шлёт комментарий `: ping` (строка без `data:`, клиент её пропускает). Разрыв соединения ход не прерывает: реплика дописывается и сохраняется в историю. Остановить ход — `POST /api/consultant/messages/stop`."
 servers:
@@ -4018,6 +4018,47 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/telemetry":
+    post:
+      operationId: postCallIdTelemetry
+      tags:
+        - call
+      summary: "Водопад хода из браузера (конец речи → загрузка → первое"
+      description: "водопад хода из браузера (конец речи → загрузка → первое предложение → реплика → первый звук, ack). Дописывается в timing.client реплики ИИ; на оценку не влияет.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/TelemetryBody"
+      responses:
+        "200":
+          description: "Водопад хода из браузера (конец речи → загрузка → первое"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/call/{id}/turn":
     post:
       operationId: postCallIdTurn
@@ -5083,6 +5124,8 @@ paths:
                   type: string
                   pattern: "^[A-Za-z]{1,40}$"
                 kickoff:
+                  type: boolean
+                afterCall:
                   type: boolean
                 resend:
                   type: boolean
@@ -11773,6 +11816,64 @@ components:
         commitSha:
           type: string
           pattern: "^[0-9a-f]{7,40}$"
+    TelemetryBody:
+      type: object
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        client:
+          type: object
+          properties:
+            uploadMs:
+              anyOf:
+                -
+                  type: integer
+                  minimum: 0
+                  maximum: 600000
+                -
+                  type: "null"
+            endToFirstDeltaMs:
+              anyOf:
+                -
+                  type: integer
+                  minimum: 0
+                  maximum: 600000
+                -
+                  type: "null"
+            endToReplyMs:
+              anyOf:
+                -
+                  type: integer
+                  minimum: 0
+                  maximum: 600000
+                -
+                  type: "null"
+            endToSoundMs:
+              type: integer
+              minimum: 0
+              maximum: 600000
+            streamed:
+              type: boolean
+            ackMs:
+              anyOf:
+                -
+                  type: integer
+                  minimum: 0
+                  maximum: 600000
+                -
+                  type: "null"
+          required:
+            - uploadMs
+            - endToFirstDeltaMs
+            - endToReplyMs
+            - endToSoundMs
+            - streamed
+            - ackMs
+      required:
+        - index
+        - client
     TurnBody:
       type: object
       properties:
@@ -11782,6 +11883,10 @@ components:
         audioRef:
           type: string
           pattern: "^\\d{3}\\.wav$"
+        sttMs:
+          type: integer
+          minimum: 0
+          maximum: 600000
       required:
         - text
     VacancyInput:
@@ -11806,11 +11911,11 @@ components:
             - senior
         salaryFrom:
           type: integer
-          minimum: 0
+          minimum: 1
           maximum: 10000000
         salaryTo:
           type: integer
-          minimum: 0
+          minimum: 1
           maximum: 10000000
         teamDescription:
           anyOf:

@@ -342,7 +342,7 @@ describe('TestPage: честность', () => {
     expect(note.textContent).toContain('в подборках и поиске компаний пока не учитывается');
     expect(note.textContent).toContain('не обвинение и не снятие грейда');
     expect(note.textContent).not.toMatch(/списыва|высокий|индекс/i);
-    expect(screen.getByRole('link', { name: 'Созвон с ИИ' }).getAttribute('href')).toBe('/interview');
+    expect(screen.getByRole('link', { name: 'Созвон с ИИ' }).getAttribute('href')).toBe('/consultant?call=1');
     expect(screen.getByTestId('objection-open')).toBeDefined();
     expect(screen.queryByTestId('confirm-needed')).toBeNull();
     fireEvent.click(screen.getByTestId('confirm-start'));

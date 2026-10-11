@@ -30,8 +30,6 @@ function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined
 
 /** Вход в ИИнтервью: консультант с сразу открытым режимом созвона. */
 export const CONSULTANT_CALL_HREF = '/consultant?call=1';
-/** Старая комната звонка (components/interview/InterviewRoom): перебивание голосом теперь есть в созвоне с Кирой, с заставки не ведём. */
-export const ROOM_HREF = '/interview/room';
 
 const QUESTION_BLOCKS = BLOCK_DEFS.filter((b) => b.questions.max > 0);
 

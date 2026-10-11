@@ -384,7 +384,7 @@ export function ValidationView({
             </li>
           </ul>
           <div className={styles.links}>
-            <Button href="/interview" size="sm">
+            <Button href="/consultant?call=1" size="sm">
               Созвон с ИИ-интервьюером
             </Button>
             <Button href="/projects" size="sm">

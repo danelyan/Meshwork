@@ -1,0 +1,20 @@
+{
+  "id": "fe-webperf-junior-suggest",
+  "subcategoryId": "frontend.web-perf",
+  "specialization": "frontend",
+  "grade": "junior",
+  "title": "Подсказки без лишних запросов: debounce, throttle, отмена",
+  "summary": "debounce и throttle своими руками, поле подсказок с паузой ввода, минимальной длиной запроса, отменой устаревших запросов через AbortController и без повторов",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.web-perf", "fe.event-loop", "fe.api-client"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

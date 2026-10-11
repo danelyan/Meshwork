@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   // (docs: next.config.js/serverExternalPackages).
   serverExternalPackages: ['unpdf', 'mammoth', 'pdfkit'],
   poweredByHeader: false,
+  // Типы и lint проверяет workflow Checks (.github/workflows/checks.yml) параллельно деплою; в next build
+  // на 2 vCPU стенда этот шаг занимал ~3.5 из ~11 минут выкатки (docs: next.config.js/typescript, eslint).
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
   // Второй локальный dev-сервер из той же папки — со своим каталогом сборки, иначе общий .next ломает оба
   // (docs: next.config.js/distDir). По умолчанию .next.
   distDir: process.env.NEXT_DIST_DIR || '.next',

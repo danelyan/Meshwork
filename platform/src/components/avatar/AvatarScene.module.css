@@ -97,7 +97,6 @@
 .splitter::after { content: ''; position: absolute; inset: 0 3px; background: transparent; transition: background 150ms var(--ease); }
 .splitter:hover::after, .splitter:focus-visible::after { background: var(--blue); }
 .splitter:focus-visible { outline: none; }
-.sideScene[data-in-call] .splitter { display: none; }
 @media (max-width: 1050px) { .splitter { display: none; } }
 /* Созвон: панель звонка на всю высоту справа, колонка «Твой путь»/карточки прячется — иначе карточка согласия налезает на неё. */
 .sideScene.withAside[data-in-call] { grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; }
@@ -148,12 +147,3 @@
 .sideHead .callTop > :last-child { display: none; }
 @media (max-width: 1050px) { .sidePanel { overflow: visible; } .panelFeed { overflow: visible; } }
 @media (max-width: 640px) { .sideToolbar { padding: 12px 16px; gap: 8px; } .sideTitle { min-width: 120px; } }
-
-/* Astra v2: полоса этапов знакомства (StageStrip) над сценой. Размер окна держит обёртка, сцена занимает остаток;
-   уже 1050px — обычная страница: полоса сверху, сцена ниже прежней высоты. */
-.sideWrap { display: flex; flex-direction: column; height: var(--scene-h, calc(100svh - var(--landing-header-h))); min-height: var(--scene-min-h, 560px); }
-.sideWrap > .sideScene { flex: 1 1 auto; height: auto; min-height: 0; }
-@media (max-width: 1050px) {
-  .sideWrap { height: auto; min-height: 0; }
-  .sideWrap > .sideScene { flex: none; min-height: calc(100svh - var(--landing-header-h)); }
-}

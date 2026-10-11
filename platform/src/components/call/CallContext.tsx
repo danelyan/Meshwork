@@ -31,6 +31,14 @@ export function useCallMode(): CallMode | null {
 
 export function CallProvider({ children, kind = 'qualifying', initialOpen = false }: { children: ReactNode; kind?: CallKind; initialOpen?: boolean }) {
   const [open, setOpen] = useState(initialOpen);
+  // ?call=1 (переход с /interview, шаг «Созвон с ИИ») — одноразовый: убираем из адреса, чтобы обновление
+  // страницы после закрытия созвона не открывало его снова. Созвон живёт в том же интерфейсе, своего адреса у него нет.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('call')) return;
+    url.searchParams.delete('call');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+  }, []);
   const [reason, setReason] = useState<string | null>(null);
   const start = useCallback((r?: string) => {
     setReason(r ?? null);

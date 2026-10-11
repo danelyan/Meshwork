@@ -26,6 +26,8 @@
   --p-wine-600: #A3343F;
   --p-wine-300: #e07a86;
   --p-red-astra: #EC1D35;
+  --p-orange-700: #c2410c;
+  --p-orange-300: #fb923c;
   --p-red-700: #b3261e;
   --p-red-300: #ff8f86;
   --p-night-950: #0e0f14;
@@ -51,6 +53,9 @@
   --candidate-accent: var(--p-indigo-600);
   --employer-accent: var(--p-wine-600);
   --astra-red: var(--p-red-astra);
+  /* оранжевый = только для демонстрации жюри (кнопка «Для жюри», демо-ссылки, плашки); на белом 5,2:1 */
+  --jury: var(--p-orange-700);
+  --on-jury: var(--p-white);
   --line: rgba(17, 17, 17, 0.1);
   --glass: rgba(255, 255, 255, 0.58);
   --glass-strong: rgba(255, 255, 255, 0.86);
@@ -259,7 +264,7 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
 
 /*
  * Тёмная тема (лейн theme, решение владельца 11.10): data-theme='dark' на <html> ставит components/shell/theme.ts
- * и инлайн-скрипт в app/layout.tsx — только на /consultant. Панель созвона ([data-call] на .sideStage, не на корне сцены: чат слева в теме страницы) тёмная
+ * и инлайн-скрипт в app/layout.tsx — только на /consultant. Режим созвона ([data-call] на корне сцены) тёмный
  * всегда, поэтому тот же блок применяется и к нему. Material dark: тёмно-серая бумага (не чёрная), глубина —
  * более светлыми поверхностями (стекло = белый .05 поверх бумаги), акцент обесцвечен (#8a7dff), текст ≥ 4,5:1.
  * Алиасы (--bg, --text, --focus, --accent-*, --meter-*, --role-*) переобъявлены: var() на :root уже вычислен
@@ -279,6 +284,8 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
     --paper: var(--p-night-900);
     --muted: var(--p-mist-400);
     --blue: var(--p-indigo-300);
+    --jury: var(--p-orange-300);
+    --on-jury: var(--p-night-950);
     --candidate-accent: var(--p-indigo-300);
     --employer-accent: var(--p-wine-300);
     --line: rgba(255, 255, 255, 0.12);
@@ -348,12 +355,10 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
 /*
  * Сцена консультанта (корень SideScene, data-scene): компонентные --stage-* / --avatar-stage* выводятся из
  * смысловых, поэтому сцена следует теме страницы сама, без отдельного переопределения. Вне сцены (комната
- * ИИнтервью, превью аватара, онбординг) действуют тёмные значения сцены по умолчанию (блок выше); панель созвона ([data-call])
- * выводит их из тёмных смысловых токенов.
+ * ИИнтервью, превью аватара, онбординг) и в созвоне действуют тёмные значения сцены по умолчанию (блок выше).
  * Светлые значения совпадают с прежним [data-scene-theme='light'] пиксель в пиксель.
  */
-[data-scene],
-[data-call] {
+[data-scene]:not([data-call]) {
   --avatar-stage: var(--paper);
   --avatar-stage-glow: var(--glow);
   --avatar-stage-line: var(--line);

@@ -48,7 +48,7 @@
 .stepLink:hover .stepName { color: var(--stage-text); }
 .step { position: relative; }
 /* Шаг «дальше»: при наведении и фокусе - что сделать сначала; цвета сцены, как у подсказки шага */
-.lock { position: absolute; left: 0; top: calc(100% + 6px); z-index: 2; max-width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--stage-ink); color: var(--stage-on-accent); font-size: var(--fs-sm); line-height: 1.4; box-shadow: 0 4px 14px rgb(0 0 0 / .22); opacity: 0; pointer-events: none; transition: opacity .12s; }
+.lock { position: absolute; left: 0; top: calc(100% + 6px); z-index: 2; max-width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--stage-ink); color: var(--stage-on-accent); font-size: var(--fs-sm); line-height: 1.4; box-shadow: 0 4px 14px rgb(0 0 0 / .22); opacity: 0; pointer-events: none; transition: opacity .12s; } /* raw-ok: тень подсказки, не цвет бренда */
 .stepLink:hover .lock, .stepLink:focus-visible .lock { opacity: 1; }
 .step[data-state='next'] .stepLink { cursor: help; }
 .marker { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--stage-ring); font: 600 var(--fs-xs) var(--mono); color: var(--stage-text-soft); }

@@ -1,6 +1,6 @@
 {
   "schema": "grade-test-validation/v1",
-  "generatedAt": "2026-10-11T15:33:12.836Z",
+  "generatedAt": "2026-10-11T16:27:14.798Z",
   "command": "npx tsx eval/test/run.ts --n 2000 --json eval/test/results.json",
   "policy": {
     "version": "adr-0002-v7",

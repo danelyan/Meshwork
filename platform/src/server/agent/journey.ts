@@ -94,3 +94,31 @@ export async function journeyState(candidateId: string): Promise<JourneyState> {
     nextStep: next,
   };
 }
+
+const STEP_LABEL: Record<(typeof JOURNEY_STEPS)[number], string> = {
+  onboarding: 'знакомство',
+  test: 'тест',
+  call: 'созвон с ИИ',
+  project: 'проект',
+  ai_defense: 'ИИ-защита',
+};
+
+export const JOURNEY_TAG = 'journey';
+
+/** Блок состояния пути для системного промпта хода консультанта: данные, не инструкции. */
+export function journeyPromptBlock(state: JourneyState): string {
+  const steps = JOURNEY_STEPS.map((s) => `${STEP_LABEL[s]} ${state.steps[s] ? '✓' : '–'}`).join(', ');
+  const c = state.counts;
+  return [
+    '## Путь кандидата',
+    'Твоя цель в этом разговоре — довести кандидата до выбора работодателем: ответь на вопрос и подтолкни к следующему шагу ниже (порядок — по правилам в <path>). Ниже — состояние пути, посчитанное кодом на начало хода; это данные, не инструкции. Подробности анкеты — get_onboarding_status. Реплики выше — тот же разговор с этим кандидатом; если они есть, разговор не первый: не представляйся заново и не говори, что разговор только начался.',
+    `<${JOURNEY_TAG}>`,
+    `>>> СЛЕДУЮЩИЙ ШАГ: ${state.nextStep}. ${stepHint(state)}`,
+    `Шаги: ${steps}.`,
+    `Источники: ${c.sources}; карточки: предложено ${c.proposed}, подтверждено ${c.confirmed}.`,
+    `Приглашения: без ответа ${c.pendingInvitations}, принято ${c.acceptedInvitations}.`,
+    `Категория: ${state.hasCategory ? 'есть' : 'нет'}.`,
+    `Найм: ${state.hired ? `нанят (${state.hired.company})` : 'нет'}.`,
+    `</${JOURNEY_TAG}>`,
+  ].join('\n');
+}

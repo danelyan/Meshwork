@@ -17,6 +17,7 @@ import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
 import { withWebSearchGate } from './web-search/tool';
 import { tools as defaultTools } from './tools';
+import { journeyPromptBlock, journeyState } from './journey';
 import { loadMemoryBlock } from '@/server/consultant/memory';
 import { settingsForTurn } from '@/server/consultant/settings';
 import { preferencesBlock } from '@/server/consultant/skills';
@@ -59,6 +60,8 @@ export async function runTurn(
   // Ход из самой ленты онбординга (вопрос, шаг «Документы») — не брошен, напоминать не о чем.
   const resume = input.onboarding ? null : await pendingOnboarding(candidateId).catch(() => null);
   // Свои инструкции и скиллы кандидата: блок-данные хода, ниже правил платформы (prompts/consultant.md <preferences>).
+  // Стадия кандидата кодом, а не вызовом инструмента (модель часто не зовёт get_onboarding_status). Не для онбординг-aside.
+  const journey = input.onboarding ? null : await journeyState(candidateId).then(journeyPromptBlock).catch(() => null);
   const preferences = preferencesBlock(await settingsForTurn(candidateId));
 
   await ensurePromptVersion(conversationId);
@@ -110,7 +113,7 @@ export async function runTurn(
       const canCall = calls < MAX_TOOL_CALLS_PER_TURN;
       const req = {
         purpose: 'consultant' as const,
-        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume, memory, preferences }),
+        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume, memory, journey, preferences }),
         messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
         tools: specs,
         toolChoice: canCall ? ('auto' as const) : ('none' as const),
@@ -220,11 +223,14 @@ export function buildSystem(args: {
   resume?: OnboardingStepBrief | null;
   /** Блок памяти о собеседнике (memoryPromptBlock) или null. */
   memory?: string | null;
+  /** Блок пути кандидата (journeyPromptBlock) или null; в онбординг-aside не передаётся. */
+  journey?: string | null;
   /** Предпочтения кандидата (preferencesBlock): только стиль и фокус ответа. */
   preferences?: string | null;
 }): string {
   const parts = [CONSULTANT_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК).`, EXTERNAL_NOTE];
   if (args.memory) parts.push(args.memory);
+  if (args.journey && !args.onboarding) parts.push(args.journey);
   // Ход конвейера из шага «Документы» — свои инструкции ниже; правило «коротко и вернуть к шагу» не к нему.
   if (args.onboarding) parts.push(args.pipeline ? IN_ONBOARDING_NOTE : asideNote(args.onboarding));
   else if (args.resume) parts.push(resumeNote(args.resume));

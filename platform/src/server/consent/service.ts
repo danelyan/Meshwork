@@ -4,18 +4,21 @@
 // у него версия фиксирует, что видел кандидат в момент принятия, и переподтверждать её задним числом нечего).
 import type { Prisma } from '@prisma/client';
 
+import { isHiddenByModerator } from '@/server/admin/accounts/state';
+
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 
 import { deleteCandidateRecordings } from './recordings';
+import { getSetting } from '../admin/settings';
 import { getEnv } from '../env';
 
 import { CONSENT_TEXTS, type ConsentKindName, type ConsentText, callRecordingParagraphs, consentVersion } from './texts';
 
-/** Текст для показа: у Г2 срок хранения аудио — фактический, из env CALL_RECORDING_RETENTION_DAYS. */
-export function consentTextFor(kind: ConsentKindName): ConsentText {
+/** Текст для показа: у Г2 срок хранения аудио — фактический (настройка call.recordingRetentionDays; умолчание - env CALL_RECORDING_RETENTION_DAYS). */
+export function consentTextFor(kind: ConsentKindName, retentionDays: number = getEnv().CALL_RECORDING_RETENTION_DAYS): ConsentText {
   const t = CONSENT_TEXTS[kind];
-  return kind === 'call_recording' ? { ...t, paragraphs: callRecordingParagraphs(getEnv().CALL_RECORDING_RETENTION_DAYS) } : t;
+  return kind === 'call_recording' ? { ...t, paragraphs: callRecordingParagraphs(retentionDays) } : t;
 }
 
 export interface ConsentRow {
@@ -141,7 +144,8 @@ async function candidateOfUser(userId: string): Promise<string | null> {
 async function applyGranted(userId: string, kind: ConsentKindName, at: Date): Promise<void> {
   const candidateId = await candidateOfUser(userId);
   if (!candidateId) return;
-  if (kind === 'employer_visibility') await prisma.candidate.update({ where: { id: candidateId }, data: { hiddenFromEmployers: false } });
+  // E-08 фаза 3: скрытый модератором профиль согласие не возвращает в поиск (согласие при этом записано).
+  if (kind === 'employer_visibility' && !(await isHiddenByModerator(candidateId))) await prisma.candidate.update({ where: { id: candidateId }, data: { hiddenFromEmployers: false } });
   if (kind === 'pd_processing') await prisma.candidate.update({ where: { id: candidateId }, data: { consentAt: at } });
 }
 
@@ -299,9 +303,10 @@ export async function listConsents(userId: string): Promise<{ items: ConsentItem
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { candidateId: true, employerProfile: { select: { id: true } } } });
   if (!user) throw errors.notFound('Аккаунт не найден');
   const rows = await rowsOf(userId);
+  const retentionDays = await getSetting('call.recordingRetentionDays');
   const kinds = [...new Set([...(user.candidateId ? CANDIDATE_LIST : []), ...(user.employerProfile ? EMPLOYER_LIST : []), 'pd_processing' as const])];
   const view = (kind: ConsentKindName, own: ConsentRow[], extra: Partial<ConsentItemView> = {}): ConsentItemView => {
-    const t = consentTextFor(kind);
+    const t = consentTextFor(kind, retentionDays);
     const last = pickActive(own) ?? own[0] ?? null;
     return {
       kind,

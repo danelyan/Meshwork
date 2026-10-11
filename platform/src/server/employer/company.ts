@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { getSetting } from '../admin/settings';
 import { ContactSchema } from '../contact';
 import { prisma } from '../db';
 import { errors } from '../errors';
@@ -90,6 +91,7 @@ export async function updateCompany(companyId: string, patch: CompanyPatch): Pro
 export async function loadCompanyTrusts(companyIds: string[], now = new Date()): Promise<Map<string, CompanyTrust>> {
   const ids = [...new Set(companyIds)];
   if (ids.length === 0) return new Map();
+  const [weights, complaintPenalty, noShowPenalty, windowDays] = await Promise.all([getSetting('employer.trustWeights'), getSetting('employer.complaintTrustPenalty'), getSetting('employer.noShowTrustPenalty'), getSetting('employer.complaintWindowDays')]);
   const [companies, stats, complaints, noShows] = await Promise.all([
     prisma.company.findMany({
       where: { id: { in: ids } },
@@ -97,7 +99,7 @@ export async function loadCompanyTrusts(companyIds: string[], now = new Date()):
     }),
     prisma.invitation.groupBy({ by: ['companyId', 'status'], where: { companyId: { in: ids } }, _count: { _all: true } }),
     // lane complaints: жалобы кандидатов за 30 дней, кроме dismissed.
-    prisma.complaint.groupBy({ by: ['companyId'], where: { companyId: { in: ids }, status: { not: 'dismissed' }, createdAt: { gt: complaintWindowStart(now) } }, _count: { _all: true } }),
+    prisma.complaint.groupBy({ by: ['companyId'], where: { companyId: { in: ids }, status: { not: 'dismissed' }, createdAt: { gt: complaintWindowStart(now, windowDays) } }, _count: { _all: true } }),
     // lane defense-rules: неявки работодателя на назначенные защиты за 30 дней (вычисляются при чтении).
     countEmployerNoShows(ids, new Date(now.getTime() - NO_SHOW_WINDOW_DAYS * 24 * 60 * 60 * 1000), now),
   ]);
@@ -118,7 +120,7 @@ export async function loadCompanyTrusts(companyIds: string[], now = new Date()):
         complaints: complaints.find((x) => x.companyId === c.id)?._count._all ?? 0,
         noShows: noShows.get(c.id) ?? 0,
         now,
-      }),
+      }, { weights, complaintPenalty, noShowPenalty, complaintWindowDays: windowDays }),
     );
   }
   return out;

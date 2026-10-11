@@ -9,6 +9,9 @@ servers:
     description: "Тот же origin, что и интерфейс"
 tags:
   -
+    name: admin
+    description: "Админка владельцев платформы (E-08, ADR 0009): вход персонала (пароль + TOTP), персонал, журнал; разделы фаз 1–5"
+  -
     name: auth
     description: "Вход, сессия, согласие на обработку ПДн, роль"
   -
@@ -102,6 +105,2514 @@ tags:
     name: uploads
     description: "Загрузка резюме и документов: разбор, оригинал, скачивание, удаление"
 paths:
+  "/api/admin/appeals":
+    get:
+      operationId: getAdminAppeals
+      tags:
+        - admin
+      summary: "Очередь апелляций работодателей на санкцию (`?status=…`): текст, текущая санкция и жалобы, на которых она держится."
+      description: "Очередь апелляций работодателей на санкцию (`?status=…`): текст, текущая санкция и жалобы, на которых она держится.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Очередь апелляций работодателей на санкцию (`?status=…`): текст, текущая санкция и жалобы, на которых она держится."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/appeals/{id}":
+    post:
+      operationId: postAdminAppealsId
+      tags:
+        - admin
+      summary: "Решение по апелляции `{ decision: upheld|rejected, reason, complaintIds?"
+      description: "Решение по апелляции `{ decision: upheld|rejected, reason, complaintIds? }`. upheld отклоняет выбранные открытые жалобы компании за окно (по умолчанию все) под advisory-lock отправки; rejected санкцию не меняет. Письмо работодателю об итоге.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - upheld
+                    - rejected
+                reason:
+                  type: string
+                  maxLength: 1000
+                complaintIds:
+                  maxItems: 200
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+              required:
+                - decision
+                - reason
+      responses:
+        "200":
+          description: "Решение по апелляции `{ decision: upheld|rejected, reason, complaintIds? }`. upheld отклоняет выбранные открытые жалобы"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/applications":
+    get:
+      operationId: getAdminApplications
+      tags:
+        - admin
+      summary: "Список самооткликов кандидатов на вакансии (право просмотра приглашений)."
+      description: "Список самооткликов кандидатов на вакансии (право просмотра приглашений).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        -
+          name: page
+          in: query
+          required: false
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 10000
+        -
+          name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: vacancyId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: "Список самооткликов кандидатов на вакансии (право просмотра приглашений)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/audit":
+    get:
+      operationId: getAdminAudit
+      tags:
+        - admin
+      summary: "Журнал действий персонала (только owner): лента новых сверху, фильтры по сотруднику, действию и объекту, курсор."
+      description: "Журнал действий персонала (только owner): лента новых сверху, фильтры по сотруднику, действию и объекту, курсор.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: actorId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        -
+          name: action
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        -
+          name: targetType
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+        -
+          name: targetId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        -
+          name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        -
+          name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: "Журнал действий персонала (только owner): лента новых сверху, фильтры по сотруднику, действию и объекту, курсор."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/login":
+    post:
+      operationId: postAdminAuthLogin
+      tags:
+        - admin
+      summary: "Вход персонала, шаг 1: почта и пароль."
+      description: "Вход персонала, шаг 1: почта и пароль. Верно → промежуточная кука fsp_admin_pre (5 минут) и следующий шаг: `totp` — ввести код, `setup` — TOTP ещё не настроен, в ответе секрет и otpauth-URI для приложения-аутентификатора. Неверная пара или отключённый сотрудник — 401 без уточнения.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  minLength: 3
+                  maxLength: 254
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: "Вход персонала, шаг 1: почта и пароль. Верно → промежуточная кука fsp_admin_pre (5 минут) и следующий шаг:"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/logout":
+    post:
+      operationId: postAdminAuthLogout
+      tags:
+        - admin
+      summary: "Выход персонала: сессия отзывается в БД, кука fsp_admin стирается."
+      description: "Выход персонала: сессия отзывается в БД, кука fsp_admin стирается.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Выход персонала: сессия отзывается в БД, кука fsp_admin стирается."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/me":
+    get:
+      operationId: getAdminAuthMe
+      tags:
+        - admin
+      summary: "Кто вошёл в админку: сотрудник, роль и список его прав (для интерфейса; решает всё равно сервер)."
+      description: "Кто вошёл в админку: сотрудник, роль и список его прав (для интерфейса; решает всё равно сервер).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Кто вошёл в админку: сотрудник, роль и список его прав (для интерфейса; решает всё равно сервер)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/password":
+    post:
+      operationId: postAdminAuthPassword
+      tags:
+        - admin
+      summary: "Смена своего пароля (временный пароль из приглашения меняют после первого входа)."
+      description: "Смена своего пароля (временный пароль из приглашения меняют после первого входа). Прочие сессии отзываются.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                current:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                next:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+              required:
+                - current
+                - next
+      responses:
+        "200":
+          description: "Смена своего пароля (временный пароль из приглашения меняют после первого входа). Прочие сессии отзываются."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/totp":
+    post:
+      operationId: postAdminAuthTotp
+      tags:
+        - admin
+      summary: "Вход персонала, шаг 2: код TOTP (RFC 6238, 6 цифр, шаг 30 с)."
+      description: "Вход персонала, шаг 2: код TOTP (RFC 6238, 6 цифр, шаг 30 с). Нужна кука fsp_admin_pre из шага 1. Верный код → кука сессии fsp_admin и `{ next: \"/admin\" }`; при первом входе код включает TOTP.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  pattern: "^\\d{6}$"
+              required:
+                - code
+      responses:
+        "200":
+          description: "Вход персонала, шаг 2: код TOTP (RFC 6238, 6 цифр, шаг 30 с). Нужна кука fsp_admin_pre из шага 1."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/candidates":
+    get:
+      operationId: getAdminCandidates
+      tags:
+        - admin
+      summary: "Список кандидатов: псевдоним вместо ФИО, текущая категория; поиск по id и псевдониму (по почте и имени — тем, кто вправе раскрывать ПДн)."
+      description: "Список кандидатов: псевдоним вместо ФИО, текущая категория; поиск по id и псевдониму (по почте и имени — тем, кто вправе раскрывать ПДн).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        -
+          name: page
+          in: query
+          required: false
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 10000
+        -
+          name: specialization
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: grade
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: fsp
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: hidden
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: demo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Список кандидатов: псевдоним вместо ФИО, текущая категория; поиск по id и псевдониму (по почте и имени — тем, кто вправе раскрывать ПДн)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/candidates/{id}":
+    get:
+      operationId: getAdminCandidatesId
+      tags:
+        - admin
+      summary: "Карточка кандидата: категория, попытки теста, утверждения, согласия, приглашения, жалобы."
+      description: "Карточка кандидата: категория, попытки теста, утверждения, согласия, приглашения, жалобы. ПДн — только через /pii.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Карточка кандидата: категория, попытки теста, утверждения, согласия, приглашения, жалобы. ПДн — только через /pii."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/candidates/{id}/cooldown":
+    get:
+      operationId: getAdminCandidatesIdCooldown
+      tags:
+        - admin
+      summary: "Кулдауны теста кандидата: текущая категория, последняя попытка, последний сброс (owner, support)."
+      description: "Кулдауны теста кандидата: текущая категория, последняя попытка, последний сброс (owner, support).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Кулдауны теста кандидата: текущая категория, последняя попытка, последний сброс (owner, support)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postAdminCandidatesIdCooldown
+      tags:
+        - admin
+      summary: "Сбросить кулдаун смены грейда и пересдачи (R-C-09) с причиной."
+      description: "Сбросить кулдаун смены грейда и пересдачи (R-C-09) с причиной. Категорию не меняет (R-C-06).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - reason
+      responses:
+        "200":
+          description: "Сбросить кулдаун смены грейда и пересдачи (R-C-09) с причиной. Категорию не меняет (R-C-06)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/candidates/{id}/hide":
+    post:
+      operationId: postAdminCandidatesIdHide
+      tags:
+        - admin
+      summary: "Скрыть кандидата из подборки и поиска (`hidden: true`) или вернуть (`false`) — owner, moderator."
+      description: "Скрыть кандидата из подборки и поиска (`hidden: true`) или вернуть (`false`) — owner, moderator. Скрытый модератором профиль сам кандидат не возвращает; при возврате видимость — по его согласию Г4.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                hidden:
+                  type: boolean
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - hidden
+                - reason
+      responses:
+        "200":
+          description: "Скрыть кандидата из подборки и поиска (`hidden: true`) или вернуть (`false`) — owner, moderator. Скрытый"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/candidates/{id}/pii":
+    post:
+      operationId: postAdminCandidatesIdPii
+      tags:
+        - admin
+      summary: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал."
+      description: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал. POST, а не GET: запрос оставляет след (журнал) и проходит CSRF-проверку.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - reason
+      responses:
+        "200":
+          description: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/catalogs":
+    get:
+      operationId: getAdminCatalogs
+      tags:
+        - admin
+      summary: "Справочники: подкатегории, каталог утверждений (первые 500 по фильтру ?q=&specialization=), шаблоны заданий и проектов (edit_catalogs)."
+      description: "Справочники: подкатегории, каталог утверждений (первые 500 по фильтру ?q=&specialization=), шаблоны заданий и проектов (edit_catalogs).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: specialization
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Справочники: подкатегории, каталог утверждений (первые 500 по фильтру ?q=&specialization=), шаблоны заданий и проектов (edit_catalogs)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/catalogs/claims/{id}":
+    patch:
+      operationId: patchAdminCatalogsClaimsId
+      tags:
+        - admin
+      summary: "PATCH { statement?, limits?, reason } - текст записи каталога утверждений; id, веса, грейды и маркеры не меняются (edit_catalogs)."
+      description: "PATCH { statement?, limits?, reason } - текст записи каталога утверждений; id, веса, грейды и маркеры не меняются (edit_catalogs).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "PATCH { statement?, limits?, reason } - текст записи каталога утверждений; id, веса, грейды и маркеры не меняются (edit_catalogs)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/catalogs/subcategories/{id}":
+    patch:
+      operationId: patchAdminCatalogsSubcategoriesId
+      tags:
+        - admin
+      summary: "PATCH { status?, order?, reason } - статус и порядок подкатегории (edit_catalogs)."
+      description: "PATCH { status?, order?, reason } - статус и порядок подкатегории (edit_catalogs).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "PATCH { status?, order?, reason } - статус и порядок подкатегории (edit_catalogs)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/catalogs/templates/{kind}/{id}":
+    put:
+      operationId: putAdminCatalogsTemplatesKindId
+      tags:
+        - admin
+      summary: "PUT { published, reason } - опубликовать или снять шаблон задания теста (kind=task) или проекта (kind=project) (edit_catalogs)."
+      description: "PUT { published, reason } - опубликовать или снять шаблон задания теста (kind=task) или проекта (kind=project) (edit_catalogs).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                published:
+                  type: boolean
+                reason:
+                  type: string
+              required:
+                - published
+                - reason
+      responses:
+        "200":
+          description: "PUT { published, reason } - опубликовать или снять шаблон задания теста (kind=task) или проекта (kind=project) (edit_catalogs)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/companies":
+    get:
+      operationId: getAdminCompanies
+      tags:
+        - admin
+      summary: "Список компаний с индексом доверия и состоянием проверки и блокировки."
+      description: "Список компаний с индексом доверия и состоянием проверки и блокировки.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        -
+          name: page
+          in: query
+          required: false
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 10000
+        -
+          name: verified
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: blocked
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Список компаний с индексом доверия и состоянием проверки и блокировки."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/companies/{id}":
+    get:
+      operationId: getAdminCompaniesId
+      tags:
+        - admin
+      summary: "Карточка компании: профиль, ИНН, представители (маски), вакансии, приглашения, жалобы, индекс доверия, санкция."
+      description: "Карточка компании: профиль, ИНН, представители (маски), вакансии, приглашения, жалобы, индекс доверия, санкция.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Карточка компании: профиль, ИНН, представители (маски), вакансии, приглашения, жалобы, индекс доверия, санкция."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/companies/{id}/block":
+    post:
+      operationId: postAdminCompaniesIdBlock
+      tags:
+        - admin
+      summary: "Заблокировать компанию (owner, moderator): приглашения не отправляются, вакансии скрыты от кандидатов."
+      description: "Заблокировать компанию (owner, moderator): приглашения не отправляются, вакансии скрыты от кандидатов.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+                until:
+                  anyOf:
+                    -
+                      type: string
+                      format: date-time
+                      pattern: "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    -
+                      type: "null"
+              required:
+                - reason
+      responses:
+        "200":
+          description: "Заблокировать компанию (owner, moderator): приглашения не отправляются, вакансии скрыты от кандидатов."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminCompaniesIdBlock
+      tags:
+        - admin
+      summary: "Снять блокировку компании (owner, moderator)."
+      description: "Снять блокировку компании (owner, moderator).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Снять блокировку компании (owner, moderator)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/companies/{id}/pii":
+    post:
+      operationId: postAdminCompaniesIdPii
+      tags:
+        - admin
+      summary: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал."
+      description: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал. POST, а не GET: запрос оставляет след (журнал) и проходит CSRF-проверку.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - reason
+      responses:
+        "200":
+          description: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/complaints":
+    get:
+      operationId: getAdminComplaints
+      tags:
+        - admin
+      summary: "Очередь жалоб кандидатов (`?status=open|upheld|dismissed|all`): приглашение, текст, история компании, санкция."
+      description: "Очередь жалоб кандидатов (`?status=open|upheld|dismissed|all`): приглашение, текст, история компании, санкция. Кандидаты — псевдонимы.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Очередь жалоб кандидатов (`?status=open|upheld|dismissed|all`): приглашение, текст, история компании, санкция. Кандидаты — псевдонимы."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/complaints/{id}":
+    post:
+      operationId: postAdminComplaintsId
+      tags:
+        - admin
+      summary: "Решение по жалобе `{ decision: upheld|dismissed, reason }`."
+      description: "Решение по жалобе `{ decision: upheld|dismissed, reason }`. Причина обязательна (400), повтор — 409. Под advisory-lock отправки приглашений: отклонённая жалоба сразу перестаёт снижать лимит и индекс доверия. Письмо кандидату об итоге.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - upheld
+                    - dismissed
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - decision
+                - reason
+      responses:
+        "200":
+          description: "Решение по жалобе `{ decision: upheld|dismissed, reason }`. Причина обязательна (400), повтор — 409. Под advisory-lock"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/dashboard":
+    get:
+      operationId: getAdminDashboard
+      tags:
+        - admin
+      summary: "Сводка дашборда админки: пользователи, категории, компании, воронка приглашений, очереди, расход LLM за сутки."
+      description: "Сводка дашборда админки: пользователи, категории, компании, воронка приглашений, очереди, расход LLM за сутки.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Сводка дашборда админки: пользователи, категории, компании, воронка приглашений, очереди, расход LLM за сутки."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/demo":
+    get:
+      operationId: getAdminDemo
+      tags:
+        - admin
+      summary: "Демо-данные (owner): демо-пользователи и компании, мусор e2e, переключатель показа демо в подборке."
+      description: "Демо-данные (owner): демо-пользователи и компании, мусор e2e, переключатель показа демо в подборке.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Демо-данные (owner): демо-пользователи и компании, мусор e2e, переключатель показа демо в подборке."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postAdminDemo
+      tags:
+        - admin
+      summary: "Удалить показанный мусор e2e; `show_demo` — показывать ли демо-кандидатов в подборке и поиске."
+      description: "`cleanup` — удалить показанный мусор e2e; `show_demo` — показывать ли демо-кандидатов в подборке и поиске.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              oneOf:
+                -
+                  type: object
+                  properties:
+                    action:
+                      type: string
+                      const: cleanup
+                    reason:
+                      type: string
+                      maxLength: 1000
+                    vacancyIds:
+                      maxItems: 500
+                      type: array
+                      items:
+                        type: string
+                        minLength: 1
+                        maxLength: 64
+                    companyIds:
+                      maxItems: 500
+                      type: array
+                      items:
+                        type: string
+                        minLength: 1
+                        maxLength: 64
+                  required:
+                    - action
+                    - reason
+                    - vacancyIds
+                    - companyIds
+                -
+                  type: object
+                  properties:
+                    action:
+                      type: string
+                      const: show_demo
+                    value:
+                      type: boolean
+                    reason:
+                      type: string
+                      maxLength: 1000
+                  required:
+                    - action
+                    - value
+                    - reason
+      responses:
+        "200":
+          description: "Удалить показанный мусор e2e; `show_demo` — показывать ли демо-кандидатов в подборке и поиске."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/export/{file}":
+    get:
+      operationId: getAdminExportFile
+      tags:
+        - admin
+      summary: "Обезличенная выгрузка агрегатов: `/api/admin/export/{test|matching|llm}.csv?days=30`."
+      description: "Обезличенная выгрузка агрегатов: `/api/admin/export/{test|matching|llm}.csv?days=30`. Только owner (`export_csv`); каждая выгрузка пишется в журнал (вид, период, число строк). Группы меньше 5 скрыты.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: file
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: days
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Обезличенная выгрузка агрегатов: `/api/admin/export/{test|matching|llm}.csv?days=30`. Только owner (`export_csv`);"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/invitations":
+    get:
+      operationId: getAdminInvitations
+      tags:
+        - admin
+      summary: "Список приглашений: кандидат под псевдонимом."
+      description: "Список приглашений: кандидат под псевдонимом.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        -
+          name: page
+          in: query
+          required: false
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 10000
+        -
+          name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: complaint
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: companyId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        -
+          name: candidateId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: "Список приглашений: кандидат под псевдонимом."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/invitations/{id}":
+    get:
+      operationId: getAdminInvitationsId
+      tags:
+        - admin
+      summary: "Карточка приглашения (кандидат под псевдонимом)."
+      description: "Карточка приглашения (кандидат под псевдонимом).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Карточка приглашения (кандидат под псевдонимом)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/metrics/llm":
+    get:
+      operationId: getAdminMetricsLlm
+      tags:
+        - admin
+      summary: "Расходы LLM за период: по purpose, по дням, кандидаты у потолка суточного бюджета (только id)."
+      description: "Расходы LLM за период: по purpose, по дням, кандидаты у потолка суточного бюджета (только id). Только owner.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: days
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Расходы LLM за период: по purpose, по дням, кандидаты у потолка суточного бюджета (только id). Только owner."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/metrics/matching":
+    get:
+      operationId: getAdminMetricsMatching
+      tags:
+        - admin
+      summary: "Воронка приглашений по категориям за период (`?days=`)."
+      description: "Воронка приглашений по категориям за период (`?days=`). Только owner.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: days
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Воронка приглашений по категориям за период (`?days=`). Только owner."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/metrics/test":
+    get:
+      operationId: getAdminMetricsTest
+      tags:
+        - admin
+      summary: "Монитор теста на грейд по заданиям за период (`?days=`, по умолчанию 30)."
+      description: "Монитор теста на грейд по заданиям за период (`?days=`, по умолчанию 30). Только owner.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: days
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Монитор теста на грейд по заданиям за период (`?days=`, по умолчанию 30). Только owner."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/objections":
+    get:
+      operationId: getAdminObjections
+      tags:
+        - admin
+      summary: "Возражения против автоматической оценки (152-ФЗ, ст."
+      description: "Возражения против автоматической оценки (152-ФЗ, ст. 16): открытые — по сроку ответа (30 дней), с предметом и часами до срока.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Возражения против автоматической оценки (152-ФЗ, ст. 16): открытые — по сроку ответа (30 дней), с предметом и часами до срока."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/objections/{id}":
+    post:
+      operationId: postAdminObjectionsId
+      tags:
+        - admin
+      summary: "Решение по возражению `{ decision: answer|review|annul, text }`: ответить кандидату; назначить пересмотр (итог даёт"
+      description: "Решение по возражению `{ decision: answer|review|annul, text }`: ответить кандидату; назначить пересмотр (итог даёт другой сотрудник); аннулировать попытку теста с объяснением (категория по попытке снимается, вручную не ставится).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - answer
+                    - review
+                    - annul
+                text:
+                  type: string
+                  maxLength: 4000
+              required:
+                - decision
+                - text
+      responses:
+        "200":
+          description: "Решение по возражению `{ decision: answer|review|annul, text }`: ответить кандидату; назначить пересмотр (итог даёт"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/red-flags":
+    get:
+      operationId: getAdminRedFlags
+      tags:
+        - admin
+      summary: "Очередь красных флагов (`?status=…`): приглашения и вакансии, где сработал detectRedFlags."
+      description: "Очередь красных флагов (`?status=…`): приглашения и вакансии, где сработал detectRedFlags.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Очередь красных флагов (`?status=…`): приглашения и вакансии, где сработал detectRedFlags."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/red-flags/{id}":
+    post:
+      operationId: postAdminRedFlagsId
+      tags:
+        - admin
+      summary: "Решение по флагу `{ decision: ok|hidden|warned, reason }`: hidden скрывает вакансию от кандидатов, warned — письмо компании."
+      description: "Решение по флагу `{ decision: ok|hidden|warned, reason }`: hidden скрывает вакансию от кандидатов, warned — письмо компании.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - ok
+                    - hidden
+                    - warned
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - decision
+                - reason
+      responses:
+        "200":
+          description: "Решение по флагу `{ decision: ok|hidden|warned, reason }`: hidden скрывает вакансию от кандидатов, warned — письмо компании."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/settings":
+    get:
+      operationId: getAdminSettings
+      tags:
+        - admin
+      summary: "Настройки платформы: текущее значение, умолчание из кода, кто и когда менял (view_settings)."
+      description: "Настройки платформы: текущее значение, умолчание из кода, кто и когда менял (view_settings).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Настройки платформы: текущее значение, умолчание из кода, кто и когда менял (view_settings)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/settings/{key}":
+    get:
+      operationId: getAdminSettingsKey
+      tags:
+        - admin
+      summary: "Значение, умолчание и история версий (view_settings)."
+      description: "Значение, умолчание и история версий (view_settings).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Значение, умолчание и история версий (view_settings)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: putAdminSettingsKey
+      tags:
+        - admin
+      summary: "PUT { value, reason } - записать значение (edit_settings)."
+      description: "PUT { value, reason } - записать значение (edit_settings). Причина обязательна, версия и журнал - в одной транзакции.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                value: {}
+                reason:
+                  type: string
+              required:
+                - value
+                - reason
+      responses:
+        "200":
+          description: "PUT { value, reason } - записать значение (edit_settings). Причина обязательна, версия и журнал - в одной транзакции."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/settings/{key}/rollback":
+    post:
+      operationId: postAdminSettingsKeyRollback
+      tags:
+        - admin
+      summary: "POST { versionId, reason } - откат на версию из истории; { toDefault: true, reason } - вернуть умолчание из кода (edit_settings)."
+      description: "POST { versionId, reason } - откат на версию из истории; { toDefault: true, reason } - вернуть умолчание из кода (edit_settings).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              anyOf:
+                -
+                  type: object
+                  properties:
+                    versionId:
+                      type: string
+                      minLength: 1
+                    reason:
+                      type: string
+                  required:
+                    - versionId
+                    - reason
+                -
+                  type: object
+                  properties:
+                    toDefault:
+                      type: boolean
+                      const: true
+                    reason:
+                      type: string
+                  required:
+                    - toDefault
+                    - reason
+      responses:
+        "200":
+          description: "POST { versionId, reason } - откат на версию из истории; { toDefault: true, reason } - вернуть умолчание из кода (edit_settings)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/staff":
+    get:
+      operationId: getAdminStaff
+      tags:
+        - admin
+      summary: "Персонал платформы (только owner): список."
+      description: "Персонал платформы (только owner): список.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Персонал платформы (только owner): список."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postAdminStaff
+      tags:
+        - admin
+      summary: "Пригласить сотрудника (только owner): создаётся учётка с временным паролем — он в ответе один раз."
+      description: "Пригласить сотрудника (только owner): создаётся учётка с временным паролем — он в ответе один раз. TOTP — при первом входе.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  minLength: 3
+                  maxLength: 254
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                role:
+                  type: string
+                  enum:
+                    - owner
+                    - moderator
+                    - support
+              required:
+                - email
+                - name
+                - role
+      responses:
+        "201":
+          description: "Создано. Пригласить сотрудника (только owner): создаётся учётка с временным паролем — он в ответе один раз. TOTP — при первом входе."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/staff/{id}":
+    patch:
+      operationId: patchAdminStaffId
+      tags:
+        - admin
+      summary: "Изменить сотрудника (только owner): сменить роль, отключить/включить или сбросить 2FA."
+      description: "Изменить сотрудника (только owner): сменить роль, отключить/включить или сбросить 2FA. Причина обязательна, сессии сотрудника отзываются. Себя менять нельзя; последний активный owner не снимается (409).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              anyOf:
+                -
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      enum:
+                        - owner
+                        - moderator
+                        - support
+                    reason:
+                      type: string
+                      maxLength: 1000
+                  required:
+                    - role
+                    - reason
+                -
+                  type: object
+                  properties:
+                    disabled:
+                      type: boolean
+                    reason:
+                      type: string
+                      maxLength: 1000
+                  required:
+                    - disabled
+                    - reason
+                -
+                  type: object
+                  properties:
+                    resetTotp:
+                      type: boolean
+                      const: true
+                    reason:
+                      type: string
+                      maxLength: 1000
+                  required:
+                    - resetTotp
+                    - reason
+      responses:
+        "200":
+          description: "Изменить сотрудника (только owner): сменить роль, отключить/включить или сбросить 2FA. Причина обязательна,"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/users":
+    get:
+      operationId: getAdminUsers
+      tags:
+        - admin
+      summary: "Список учётных записей: маски имени и почты, фильтры по роли, блокировке и демо; поиск по id (по почте и имени — тем, кто вправе раскрывать ПДн)."
+      description: "Список учётных записей: маски имени и почты, фильтры по роли, блокировке и демо; поиск по id (по почте и имени — тем, кто вправе раскрывать ПДн).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        -
+          name: page
+          in: query
+          required: false
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 10000
+        -
+          name: role
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: blocked
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: demo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Список учётных записей: маски имени и почты, фильтры по роли, блокировке и демо; поиск по id (по почте и имени — тем, кто вправе раскрывать ПДн)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/users/{id}":
+    get:
+      operationId: getAdminUsersId
+      tags:
+        - admin
+      summary: "Карточка учётной записи (имя и почта — маской)."
+      description: "Карточка учётной записи (имя и почта — маской).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Карточка учётной записи (имя и почта — маской)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/users/{id}/block":
+    post:
+      operationId: postAdminUsersIdBlock
+      tags:
+        - admin
+      summary: "Заблокировать пользователя (owner): вход закрыт, активные сессии отклоняются."
+      description: "Заблокировать пользователя (owner): вход закрыт, активные сессии отклоняются. Причина обязательна, `until` — срок.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+                until:
+                  anyOf:
+                    -
+                      type: string
+                      format: date-time
+                      pattern: "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    -
+                      type: "null"
+              required:
+                - reason
+      responses:
+        "200":
+          description: "Заблокировать пользователя (owner): вход закрыт, активные сессии отклоняются. Причина обязательна, `until` — срок."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminUsersIdBlock
+      tags:
+        - admin
+      summary: "Снять блокировку (owner, support)."
+      description: "Снять блокировку (owner, support). Сессии, выданные до блокировки, не оживают — нужен новый вход.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Снять блокировку (owner, support). Сессии, выданные до блокировки, не оживают — нужен новый вход."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/users/{id}/erase":
+    post:
+      operationId: postAdminUsersIdErase
+      tags:
+        - admin
+      summary: "Удалить аккаунт по запросу субъекта ПДн (owner, support) через `eraseOwnAccount`."
+      description: "Удалить аккаунт по запросу субъекта ПДн (owner, support) через `eraseOwnAccount`. `confirm` — id пользователя, введённый вручную (второе подтверждение). В журнал — id и факт удаления, без ПДн.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                confirm:
+                  type: string
+                  maxLength: 64
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - confirm
+                - reason
+      responses:
+        "200":
+          description: "Удалить аккаунт по запросу субъекта ПДн (owner, support) через `eraseOwnAccount`. `confirm` — id пользователя,"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/users/{id}/pii":
+    post:
+      operationId: postAdminUsersIdPii
+      tags:
+        - admin
+      summary: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал."
+      description: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал. POST, а не GET: запрос оставляет след (журнал) и проходит CSRF-проверку.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - reason
+      responses:
+        "200":
+          description: "Раскрыть ПДн: нужны право просмотра раздела и `reveal_pii`, причина обязательна, раскрытие пишется в журнал."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/vacancies":
+    get:
+      operationId: getAdminVacancies
+      tags:
+        - admin
+      summary: "Список потребностей и вакансий."
+      description: "Список потребностей и вакансий.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        -
+          name: page
+          in: query
+          required: false
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 10000
+        -
+          name: specialization
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: grade
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        -
+          name: companyId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: "Список потребностей и вакансий."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/vacancies/{id}":
+    get:
+      operationId: getAdminVacanciesId
+      tags:
+        - admin
+      summary: "Карточка потребности."
+      description: "Карточка потребности.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Карточка потребности."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/vacancies/{id}/hide":
+    post:
+      operationId: postAdminVacanciesIdHide
+      tags:
+        - admin
+      summary: "Скрыть вакансию от кандидатов (`hidden: true`) или вернуть (`false`) — owner, moderator."
+      description: "Скрыть вакансию от кандидатов (`hidden: true`) или вернуть (`false`) — owner, moderator. Скрытие держится в очереди красных флагов (hidden), поэтому разархивирование вакансии работодателем его не снимает.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                hidden:
+                  type: boolean
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - hidden
+                - reason
+      responses:
+        "200":
+          description: "Скрыть вакансию от кандидатов (`hidden: true`) или вернуть (`false`) — owner, moderator. Скрытие держится"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/verification":
+    get:
+      operationId: getAdminVerification
+      tags:
+        - admin
+      summary: "Запросы на ручную проверку компаний (`?filter=pending|verified`): ИНН, название, основание (выписка или домен почты)."
+      description: "Запросы на ручную проверку компаний (`?filter=pending|verified`): ИНН, название, основание (выписка или домен почты).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: filter
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Запросы на ручную проверку компаний (`?filter=pending|verified`): ИНН, название, основание (выписка или домен почты)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/verification/{id}":
+    post:
+      operationId: postAdminVerificationId
+      tags:
+        - admin
+      summary: "Решение по компании `[id]` `{ decision: verify|reject|revoke, reason }`: метка «компания проверена» видна кандидату на приглашении."
+      description: "Решение по компании `[id]` `{ decision: verify|reject|revoke, reason }`: метка «компания проверена» видна кандидату на приглашении.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - verify
+                    - reject
+                    - revoke
+                reason:
+                  type: string
+                  maxLength: 1000
+              required:
+                - decision
+                - reason
+      responses:
+        "200":
+          description: "Решение по компании `[id]` `{ decision: verify|reject|revoke, reason }`: метка «компания проверена» видна кандидату на приглашении."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/auth/account":
     delete:
       operationId: deleteAuthAccount
@@ -3705,13 +6216,13 @@ paths:
       tags:
         - employer
       summary: "Профиль своей компании"
-      description: "профиль своей компании (R-E-01). `inviteContact` — способ связи, который увидит кандидат в приглашении от этого представителя (Company.contact, иначе его почта); null — приглашения не отправятся.\n\nНужна сессия работодателя (кука cid)."
+      description: "профиль своей компании (R-E-01).\n\nНужна сессия работодателя (кука cid)."
       security:
         -
           cookieAuth: []
       responses:
         "200":
-          description: "Название, описание, отрасль, ИНН и контакт компании; `inviteContact` — способ связи в приглашениях от этого представителя (контакт компании, иначе его почта), null — приглашения не отправятся (422 company_contact_required)"
+          description: "Название, описание, отрасль, ИНН и контакт компании"
           content:
             "application/json":
               schema:
@@ -3729,12 +6240,6 @@ paths:
                     type: string
                   contact:
                     type: string
-                  inviteContact:
-                    oneOf:
-                      -
-                        type: string
-                      -
-                        type: "null"
                 required:
                   - id
                   - name
@@ -3742,7 +6247,6 @@ paths:
                   - industry
                   - inn
                   - contact
-                  - inviteContact
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3766,7 +6270,7 @@ paths:
               $ref: "#/components/schemas/CompanyPatch"
       responses:
         "200":
-          description: "Профиль компании после правки, с `inviteContact`"
+          description: "Профиль компании после правки"
           content:
             "application/json":
               schema:
@@ -3784,12 +6288,6 @@ paths:
                     type: string
                   contact:
                     type: string
-                  inviteContact:
-                    oneOf:
-                      -
-                        type: string
-                      -
-                        type: "null"
                 required:
                   - id
                   - name
@@ -3797,7 +6295,73 @@ paths:
                   - industry
                   - inn
                   - contact
-                  - inviteContact
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/company/verification":
+    get:
+      operationId: getEmployerCompanyVerification
+      tags:
+        - employer
+      summary: "Статус ручной проверки своей компании."
+      description: "статус ручной проверки своей компании.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Статус ручной проверки своей компании."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postEmployerCompanyVerification
+      tags:
+        - employer
+      summary: "Запросить проверку модератором."
+      description: "запросить проверку модератором.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                method:
+                  type: string
+                  enum:
+                    - egrul
+                    - email_domain
+                text:
+                  default: ""
+                  type: string
+                  maxLength: 2000
+              required:
+                - method
+      responses:
+        "200":
+          description: "Запросить проверку модератором."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -3893,12 +6457,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "409":
           description: "Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "422":
-          description: "У компании нет способа связи (`company_contact_required`, `details.companyUrl`)"
           content:
             "application/json":
               schema:
@@ -4444,6 +7002,67 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/employer/sanction-appeal":
+    get:
+      operationId: getEmployerSanctionAppeal
+      tags:
+        - employer
+      summary: "Апелляции своей компании на санкцию (новые сверху)."
+      description: "апелляции своей компании на санкцию (новые сверху).\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Апелляции своей компании на санкцию (новые сверху)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postEmployerSanctionAppeal
+      tags:
+        - employer
+      summary: "Оспорить санкцию."
+      description: "оспорить санкцию. Санкции нет или апелляция уже открыта — 409.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  maxLength: 4000
+              required:
+                - text
+      responses:
+        "201":
+          description: "Создано. Оспорить санкцию. Санкции нет или апелляция уже открыта — 409."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/employer/search":
     get:
       operationId: getEmployerSearch
@@ -4495,19 +7114,10 @@ paths:
             enum:
               - "1"
         -
-          name: pool
-          in: query
-          required: false
-          description: "`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)"
-          schema:
-            type: string
-            enum:
-              - all
-        -
           name: category
           in: query
           required: false
-          description: "Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`"
+          description: "`1` — только кандидаты с подтверждённой категорией"
           schema:
             type: string
             enum:
@@ -4839,19 +7449,10 @@ paths:
             enum:
               - "1"
         -
-          name: pool
-          in: query
-          required: false
-          description: "`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)"
-          schema:
-            type: string
-            enum:
-              - all
-        -
           name: category
           in: query
           required: false
-          description: "Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`"
+          description: "`1` — только кандидаты с подтверждённой категорией"
           schema:
             type: string
             enum:
@@ -6063,30 +8664,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/onboarding/history":
-    get:
-      operationId: getOnboardingHistory
-      tags:
-        - onboarding
-      summary: "Журнал редакций ответов опроса кандидата (C05): шаг, «было → стало» человеческим"
-      description: "журнал редакций ответов опроса кандидата (C05): шаг, «было → стало» человеческим текстом, когда и откуда (ответ, вход через ФСП ID, сброс). Только свои записи; работодателю недоступно.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Журнал редакций ответов опроса кандидата (C05): шаг, «было → стало» человеческим"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/openapi":
     get:
       operationId: getOpenapi
@@ -6216,30 +8793,6 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/profile/pdf":
-    get:
-      operationId: getProfilePdf
-      tags:
-        - profile
-      summary: "Скачать PDF-профиль"
-      description: "Стандартизированный PDF-профиль текущего кандидата, формируется сервером (pdfkit): категория из теста с датой и версией политики, основное из анкеты и резюме, подтверждённые утверждения с уровнем доказанности (без цитат), статус ФСП, ступени проверки. Всегда `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, без кеширования. Только свои данные.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "PDF-файл профиля"
-          content:
-            "application/pdf":
-              schema:
-                type: string
-                format: binary
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -7569,6 +10122,11 @@ components:
       in: cookie
       name: cid
       description: "Подписанная сессионная кука платформы"
+    adminCookieAuth:
+      type: apiKey
+      in: cookie
+      name: fsp_admin
+      description: "Сессия персонала админки (ADR 0009): вход /api/admin/auth/login + /api/admin/auth/totp"
   schemas:
     AiDefenseStartInput:
       type: object
@@ -9039,12 +11597,6 @@ components:
             $ref: "#/components/schemas/ErrorBody"
     UnsupportedMediaType:
       description: "Неподдерживаемый тип содержимого (`unsupported_media_type`)"
-      content:
-        "application/json":
-          schema:
-            $ref: "#/components/schemas/ErrorBody"
-    UnprocessableEntity:
-      description: "Запрос корректен, но действие невозможно из-за состояния данных: у компании нет способа связи (`company_contact_required`) или у кандидата нет теста для выбранной категории (`no_test`, `subcategory_required`)"
       content:
         "application/json":
           schema:

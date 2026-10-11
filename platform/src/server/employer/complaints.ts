@@ -8,7 +8,7 @@ import { prisma } from '../db';
 import { errors } from '../errors';
 
 import { complaintWindowStart, invitationSanction, type InvitationSanction } from './antifraud';
-import { DAILY_INVITATION_LIMIT } from './weights';
+import { getSetting } from '@/server/admin/settings';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -20,13 +20,21 @@ export interface ComplaintView {
 }
 
 /** Жалобы на компанию за окно (кроме dismissed). `db` — tx, если считать под advisory-lock отправки. */
-export function countRecentComplaints(db: Db, companyId: string, now = new Date()): Promise<number> {
-  return db.complaint.count({ where: { companyId, status: { not: 'dismissed' }, createdAt: { gt: complaintWindowStart(now) } } });
+export async function countRecentComplaints(db: Db, companyId: string, now = new Date(), windowDays?: number): Promise<number> {
+  const days = windowDays ?? (await getSetting('employer.complaintWindowDays'));
+  return db.complaint.count({ where: { companyId, status: { not: 'dismissed' }, createdAt: { gt: complaintWindowStart(now, days) } } });
+}
+
+/** Параметры санкций из настроек платформы (E-08, фаза 4) — один источник для отправки, кабинета и модерации. */
+export async function sanctionConfig(): Promise<{ baseLimit: number; sanctions: Awaited<ReturnType<typeof getSetting<'employer.complaintSanctions'>>>; windowDays: number }> {
+  const [baseLimit, sanctions, windowDays] = await Promise.all([getSetting('employer.dailyInvitationLimit'), getSetting('employer.complaintSanctions'), getSetting('employer.complaintWindowDays')]);
+  return { baseLimit, sanctions, windowDays };
 }
 
 /** Текущая санкция компании — для показа в кабинете. Решение при отправке принимается заново внутри транзакции. */
-export async function companySanction(companyId: string, baseLimit = DAILY_INVITATION_LIMIT): Promise<InvitationSanction> {
-  return invitationSanction(await countRecentComplaints(prisma, companyId), baseLimit);
+export async function companySanction(companyId: string, baseLimit?: number): Promise<InvitationSanction> {
+  const [complaints, limit, sanctions] = await Promise.all([countRecentComplaints(prisma, companyId), baseLimit ?? getSetting('employer.dailyInvitationLimit'), getSetting('employer.complaintSanctions')]);
+  return invitationSanction(complaints, limit, sanctions);
 }
 
 /** Подать жалобу. Чужое или несуществующее приглашение — 404; повторная жалоба на то же приглашение — 409. */

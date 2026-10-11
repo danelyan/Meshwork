@@ -2,47 +2,12 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 
-import { splitSentences } from '@/lib/sentences';
-import { speechText } from '@/lib/speech-text';
+import { parseKey, ttsParts, keyOf, sentencesHeard, type TtsPart } from '@/lib/tts-parts';
 
 import type { CompanionVoice } from '../avatar/voice';
 
-/** Предложений на реплику в очереди TTS — не больше: лимит /api/tts — 20 запросов в минуту на сессию. */
-export const MAX_TTS_PARTS = 4;
-
-export interface TtsPart {
-  /** Текст для синтеза (очищенный). */
-  text: string;
-  /** Сколько предложений сервера (lib/sentences.ts по сырому тексту) входит в часть. */
-  sentences: number;
-}
-
-/**
- * Реплика → части для озвучки. Разбиение — то же, что у сервера (splitSentences по сырому тексту), чтобы
- * счёт услышанного сходился с POST /interrupt; чистка для синтеза — по каждому предложению отдельно.
- * При избытке соседние предложения склеиваются в одну часть, счёт предложений части сохраняется.
- */
-export function ttsParts(text: string): TtsPart[] {
-  const raw = splitSentences(text);
-  const per = Math.max(1, Math.ceil(raw.length / MAX_TTS_PARTS));
-  const out: TtsPart[] = [];
-  for (let i = 0; i < raw.length; i += per) {
-    const group = raw.slice(i, i + per);
-    out.push({ text: group.map((s) => speechText(s)).filter(Boolean).join(' '), sentences: group.length });
-  }
-  return out;
-}
-
-/** Сколько предложений сервера прозвучало, если начали звучать первые `parts` частей. */
-export function sentencesHeard(list: readonly TtsPart[], parts: number): number {
-  return list.slice(0, Math.max(0, parts)).reduce((s, p) => s + p.sentences, 0);
-}
-
-export const keyOf = (index: number, part: number) => `u${index}:${part}`;
-export function parseKey(key: string | null): { index: number; part: number } | null {
-  const m = key && /^u(\d+):(\d+)$/.exec(key);
-  return m ? { index: Number(m[1]), part: Number(m[2]) } : null;
-}
+// Нарезка на части вынесена в общий модуль (панель созвона консультанта озвучивает так же): lib/tts-parts.ts.
+export { MAX_TTS_PARTS, keyOf, parseKey, sentencesHeard, ttsParts, type TtsPart } from '@/lib/tts-parts';
 
 /**
  * Озвучка реплик ИИ по предложениям поверх голоса компаньона (/api/tts, тот же липсинк головы): каждое

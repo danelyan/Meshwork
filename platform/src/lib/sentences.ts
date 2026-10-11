@@ -13,13 +13,34 @@ export const MAX_SENTENCE_CHARS = 160;
 
 const BOUNDARY_RE = /(?<=[.!?…])\s+/u;
 
-export function splitSentences(text: string): string[] {
+/**
+ * Сокращения, после которых предложение не кончается никогда: «т.е.», «т.к.», «напр.», «см.», одиночная буква
+ * с точкой («т. е.» без пробела режется на «т.» и «е.»). «т.д.», «т.п.», «др.» могут стоять в конце фразы —
+ * их склеивает только правило строчной буквы ниже.
+ */
+const NEVER_FINAL_RE = /(?:^|[\s(«"])(?:т\.\s?е|т\.\s?к|т\.\s?н|напр|см|ср|им|г|ул|[а-яё])\.$/iu;
+/** Следующий кусок со строчной буквы — это продолжение предложения («и т.д. и всё такое»). */
+const LOWER_START_RE = /^[a-zа-яё]/u;
+
+/** Куски между концами предложений с учётом сокращений; последний может быть недописан (поток). */
+function rawParts(text: string): string[] {
   const parts = text
     .replace(/\s+/g, ' ')
     .trim()
     .split(BOUNDARY_RE)
     .map((s) => s.trim())
     .filter(Boolean);
+  const out: string[] = [];
+  for (const p of parts) {
+    const prev = out[out.length - 1];
+    if (prev !== undefined && (NEVER_FINAL_RE.test(prev) || LOWER_START_RE.test(p))) out[out.length - 1] = `${prev} ${p}`;
+    else out.push(p);
+  }
+  return out;
+}
+
+/** Клейка коротких кусков (буфер) и принудительная резка длинных: общая для полной и потоковой нарезки. */
+function group(parts: readonly string[]): { out: string[]; buf: string } {
   const out: string[] = [];
   let buf = '';
   for (const p of parts) {
@@ -29,11 +50,32 @@ export function splitSentences(text: string): string[] {
       buf = '';
     }
   }
+  return { out, buf };
+}
+
+export function splitSentences(text: string): string[] {
+  const { out, buf } = group(rawParts(text));
   if (buf) {
     if (out.length) out[out.length - 1] = `${out[out.length - 1]} ${buf}`;
     else out.push(buf);
   }
   return out;
+}
+
+/**
+ * Потоковая нарезка: предложения начала недописанного текста, которые уже не изменятся, сколько бы текста ни
+ * пришло дальше. Гарантия: результат — всегда префикс `splitSentences(prefix + любое продолжение)`, поэтому
+ * клиент, озвучивший их до прихода всей реплики, считает услышанное так же, как сервер (POST /interrupt).
+ * Последний кусок считается недописанным (за концом предложения ещё не было пробела и следующего слова), а
+ * последнее готовое предложение отдаётся, только когда хвост уже не короче MIN_SENTENCE_CHARS — иначе
+ * короткий хвост в конце реплики приклеился бы к нему.
+ */
+export function stableSentences(prefix: string): string[] {
+  const parts = rawParts(prefix);
+  const pending = parts.pop() ?? '';
+  const { out, buf } = group(parts);
+  const tail = buf ? `${buf} ${pending}`.trim() : pending;
+  return tail.length >= MIN_SENTENCE_CHARS ? out : out.slice(0, -1);
 }
 
 function forceSplit(s: string): string[] {

@@ -20,6 +20,7 @@ import styles from './CallPanel.module.css';
 import { useCallMode } from './CallContext';
 import { DepthMap } from './DepthMap';
 import { useCallMic } from './useCallMic';
+import { useReplySpeech } from './useReplySpeech';
 import { ObjectionButton } from '../consent/ObjectionButton';
 
 type Phase = 'loading' | 'consent' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
@@ -123,6 +124,8 @@ export function CallPanel() {
 
   // События созвона: реплики из других вкладок и (позже) работодателя в комнате.
   const id = call?.id;
+  const reply = useReplySpeech(voice, id);
+  const markSpeechEnd = reply.markSpeechEnd;
   useEffect(() => {
     if (!id) return;
     return subscribeCallEvents(id, (ev) => {
@@ -134,15 +137,16 @@ export function CallPanel() {
     });
   }, [id]);
 
-  // Новая реплика ИИ — озвучить один раз (ключ = созвон + номер реплики).
+  // Новая реплика ИИ — озвучить один раз (ключ = созвон + номер реплики), по предложениям (useReplySpeech).
+  const speakEntry = reply.speakEntry;
   const lastAi = [...transcript].reverse().find((e) => e.role === 'ai');
   useEffect(() => {
     if (!lastAi || !id) return;
     const key = `call-${id}-${lastAi.index}`;
     if (spoken.current.has(key)) return;
     spoken.current.add(key);
-    voiceRef.current?.speak(lastAi.text, key);
-  }, [lastAi, id]);
+    speakEntry(lastAi);
+  }, [lastAi, id, speakEntry]);
 
   useEffect(() => {
     voice?.setThinking(busy);
@@ -157,6 +161,7 @@ export function CallPanel() {
   const send = useCallback(
     async (input: { text?: string; audioRef?: string }) => {
       if (!id) return;
+      if (!input.audioRef) markSpeechEnd(); // текстом: конец «речи» — отправка
       setBusy(true);
       setError(null);
       voiceRef.current?.stop();
@@ -170,11 +175,12 @@ export function CallPanel() {
         setBusy(false);
       }
     },
-    [id],
+    [id, markSpeechEnd],
   );
 
   const mic = useCallMic(async ({ pcm, browserText }) => {
     if (!id) return;
+    markSpeechEnd();
     let audioRef: string | undefined;
     let text = browserText ?? '';
     if (pcm) {

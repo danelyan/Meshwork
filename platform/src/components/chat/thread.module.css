@@ -80,19 +80,19 @@ button.send[aria-busy='true'] > span { border-color: var(--on-ink-soft); border-
 .attachList { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .attach { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 6px 6px 8px; background: var(--glass-strong); border: 1px solid var(--line); animation: send 0.2s var(--ease) backwards; }
 .attach[data-status='error'] { border-left: 3px solid var(--danger-border); }
-.attachIcon { flex: none; width: 30px; height: 30px; display: grid; place-items: center; background: var(--surface-ghost); border: 1px solid var(--border-faint); font: 700 9px var(--mono); color: var(--muted); }
+.attachIcon { flex: none; width: 30px; height: 30px; display: grid; place-items: center; background: var(--surface-ghost); border: 1px solid var(--border-faint); font: 700 var(--fs-xs) var(--mono); color: var(--muted); }
 .attach[data-status='error'] .attachIcon { color: var(--error); }
 .attachText { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
 .attachName { font-size: var(--fs-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .attachText small { font-size: var(--fs-xs); color: var(--muted); }
 .attach[data-status='error'] small { color: var(--error); white-space: normal; }
-.attachRemove { flex: none; width: 28px; height: 28px; background: none; border: 0; font-size: 18px; line-height: 1; color: var(--muted); cursor: pointer; }
+.attachRemove { flex: none; width: 28px; height: 28px; background: none; border: 0; font-size: var(--fs-lg); line-height: 1; color: var(--muted); cursor: pointer; }
 .attachRemove:hover:not(:disabled) { color: var(--ink); }
 
 /* drag-n-drop: подсветка на всю ленту */
 .dropOverlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: var(--backdrop); pointer-events: none; animation: rise 0.16s var(--ease); }
 .dropOverlay > div { display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(520px, 100%); padding: 40px 24px; background: var(--glass-strong); border: 2px dashed var(--blue); text-align: center; }
-.dropOverlay strong { font-size: 20px; letter-spacing: -0.02em; }
+.dropOverlay strong { font-size: var(--fs-xl); letter-spacing: -0.02em; }
 .dropOverlay span { font: 500 var(--fs-sm) var(--mono); color: var(--muted); }
 
 .quiet { background: none; border: 0; padding: 4px 0; font: 500 var(--fs-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -139,13 +139,13 @@ button.send[aria-busy='true'] > span { border-color: var(--on-ink-soft); border-
   .assistant, .userBubble, .fresh, .chipIn { animation: none; }
 }
 /* Astra conversation controls; dimensions can be set by the owning screen. */
-.mark { color: var(--on-ink); background: var(--ink); border-color: var(--ink); font: 700 12px var(--mono); }
+.mark { color: var(--on-ink); background: var(--ink); border-color: var(--ink); font: 700 var(--fs-sm) var(--mono); }
 .assistant { gap: 12px; }
 .composer { box-shadow: none; }
 .composerBox { gap: 8px; padding: 6px; }
-.composerBox textarea { min-height: var(--chat-control-size, 44px); font-size: 16px; }
+.composerBox textarea { min-height: var(--chat-control-size, 44px); font-size: 16px; } /* fs-ok: 16px - минимум против автозума iOS при фокусе */
 .inlineAction { align-self: center; flex: none; }
-.inlineAction button { font: 10px var(--mono); text-decoration: none; padding: 10px 4px; }
+.inlineAction button { font: var(--fs-xs) var(--mono); text-decoration: none; padding: 10px 4px; }
 @media (max-width: 680px) {
   .composerBox { flex-wrap: wrap; }
   .composerBox textarea { flex-basis: min(100%, 180px); }

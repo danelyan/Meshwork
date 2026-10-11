@@ -64,7 +64,7 @@
 .attach:hover { background: var(--stage-ink); }
 .docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .doc { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; }
-.docKind { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); border: 1px solid var(--avatar-stage-line); padding: 1px 5px; }
+.docKind { font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); border: 1px solid var(--avatar-stage-line); padding: 1px 5px; }
 .docName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--stage-text); }
 .docStatus { grid-column: 2; font-size: var(--fs-xs); color: var(--stage-ink-faint); }
 .hint { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--avatar-stage-line); font-size: var(--fs-sm); line-height: 1.5; color: var(--stage-text-soft); }
@@ -137,6 +137,6 @@
 .progressBar i[data-done] { background: var(--stage-accent); }
 .progressStats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
 .progressStats div { display: grid; gap: 2px; }
-.progressStats dt { font: 500 10px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--stage-ink-faint); }
-.progressStats dd { margin: 0; font-size: 22px; font-weight: 600; color: var(--stage-text); }
+.progressStats dt { font: 500 var(--fs-xs) var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--stage-ink-faint); }
+.progressStats dd { margin: 0; font-size: var(--fs-2xl); font-weight: 600; color: var(--stage-text); }
 

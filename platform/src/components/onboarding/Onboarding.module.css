@@ -26,7 +26,7 @@
   .topRow { gap: 10px; min-height: 52px; }
     .title { font-size: var(--fs-xs); }
   .feed { padding-top: 16px; }
-  .inScene .sceneTitle { font-size: 17px; }
+  .inScene .sceneTitle { font-size: var(--fs-lg); }
   .inScene .topRow { gap: 8px; }
   .inScene .topRow > button { padding-inline: 10px; }
     }
@@ -41,13 +41,13 @@
 .inScene .top { top: var(--landing-header-h); background: var(--paper); }
 .inScene .topRow { padding: 8px 0; flex-wrap: wrap; }
 .inScene .feed { width: 100%; padding-inline: 0; }
-.sceneTitle { flex: 1; min-width: 0; display: grid; gap: 4px; margin: 0; font-size: 20px; white-space: nowrap; line-height: 1.1; letter-spacing: -0.03em; }
+.sceneTitle { flex: 1; min-width: 0; display: grid; gap: 4px; margin: 0; font-size: var(--fs-xl); white-space: nowrap; line-height: 1.1; letter-spacing: -0.03em; }
 .sceneTitle .title { letter-spacing: 0.06em; }
 .routes { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Astra 02 question and answer anatomy. The underlying step/voice lifecycle is unchanged. */
 .topRow { min-height: 66px; padding: 0 40px; gap: 20px; }
-.topRow h1 { font-size: 16px; }
-.title { font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.topRow h1 { font-size: var(--fs-lg); }
+.title { font-size: var(--fs-xs); font-weight: 400; letter-spacing: 0; text-transform: none; }
 .inScene .topRow { padding: 0 40px; }
 .inScene .top { background: var(--glass); }
 .feed { gap: 20px; }
@@ -55,50 +55,50 @@
 .mark { flex: none; width: 32px; height: 32px; display: grid; place-items: center; background: var(--ink); color: var(--on-ink); }
 .mark::after { content: ''; width: 16px; height: 16px; background: currentColor; mask: url('/assets/fsp-mark.svg') center / contain no-repeat; }
 .astraBody { flex: 1; min-width: 0; }
-.intro { padding: 14px 16px; border: 1px solid var(--glass-border); background: var(--glass); font-size: 15px; line-height: 1.6; }
+.intro { padding: 14px 16px; border: 1px solid var(--glass-border); background: var(--glass); font-size: var(--fs-md); line-height: 1.6; }
 .questionCard { padding: 16px 18px; background: var(--glass-strong); border: 1px solid var(--glass-border); }
 .questionCard > div:last-child { background: transparent; border: 0; padding: 0; }
-.questionCard p { font-size: 15px; color: var(--text-soft); }
-.questionCard :global(#ob-q) { margin-top: 8px; font-size: 24px; font-weight: 600; line-height: 1.2; letter-spacing: -.03em; color: var(--ink); }
+.questionCard p { font-size: var(--fs-md); color: var(--text-soft); }
+.questionCard :global(#ob-q) { margin-top: 8px; font-size: var(--fs-2xl); font-weight: 600; line-height: 1.2; letter-spacing: -.03em; color: var(--ink); }
 .questionBadges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.questionBadges span { padding: 4px 6px; border: 1px solid var(--border-faint); font: 10px/1.4 var(--mono); color: var(--muted); }
+.questionBadges span { padding: 4px 6px; border: 1px solid var(--border-faint); font: var(--fs-xs)/1.4 var(--mono); color: var(--muted); }
 .questionBadges span:first-child { background: transparent; border-color: var(--blue); color: var(--blue); }
 .answer { display: grid; justify-items: end; gap: 5px; padding-left: 44px; }
-.answer > div { max-width: 90%; padding: 12px 16px; background: var(--ink); color: var(--on-ink); font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
-.answer button { border: 0; background: transparent; padding: 4px; font: 10px var(--mono); color: var(--muted); cursor: pointer; }
+.answer > div { max-width: 90%; padding: 12px 16px; background: var(--ink); color: var(--on-ink); font-size: var(--fs-md); line-height: 1.5; overflow-wrap: anywhere; }
+.answer button { border: 0; background: transparent; padding: 4px; font: var(--fs-xs) var(--mono); color: var(--muted); cursor: pointer; }
 .options { display: grid; gap: 8px; }
 .option { min-height: 60px; display: flex; align-items: center; gap: 14px; padding: 10px 14px; width: 100%; border: 1px solid var(--border-faint); background: var(--glass); color: var(--ink); text-align: left; cursor: pointer; }
-.option > b { flex: none; display: grid; place-items: center; width: 28px; height: 28px; background: var(--surface-quote); font: 500 11px var(--mono); }
-.option > span { display: grid; gap: 4px; font-size: 15px; }
-.option small { color: var(--muted); font-size: 13px; font-weight: 400; }
+.option > b { flex: none; display: grid; place-items: center; width: 28px; height: 28px; background: var(--surface-quote); font: 500 var(--fs-xs) var(--mono); }
+.option > span { display: grid; gap: 4px; font-size: var(--fs-md); }
+.option small { color: var(--muted); font-size: var(--fs-sm); font-weight: 400; }
 .option:hover, .option[aria-pressed='true'] { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
 .option[aria-pressed='true'] > b { color: var(--on-ink); background: var(--blue); }
 .option:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 680px) {
   .topRow, .inScene .topRow { padding: 10px 16px; gap: 12px; }
   .questionCard { padding: 14px; }
-  .questionCard :global(#ob-q) { font-size: 21px; }
+  .questionCard :global(#ob-q) { font-size: var(--fs-xl); }
 }
 .inScene { --chat-avatar-size: 32px; --chat-send-bg: var(--ink); --chat-control-size: 44px; --chat-composer-bg: linear-gradient(transparent, var(--paper) 30%); --chat-composer-pad: 8px 0 12px; }
-.inScene .topRow h1 { font-size: 16px; }
+.inScene .topRow h1 { font-size: var(--fs-lg); }
 @media (max-width: 680px) { .inScene .topRow > a { display: none; } }
 .documentControls { display: grid; gap: 10px; width: 100%; }
 .dropZone { position: relative; min-height: 150px; padding: 20px; border: 1px dashed var(--border-soft); background: var(--glass); display: grid; justify-items: center; align-content: center; gap: 7px; cursor: pointer; }
-.dropZone > span { border: 1px solid var(--ink); padding: 6px; font: 10px var(--mono); }
-.dropZone strong { font-size: 14px; font-weight: 500; }
-.dropZone small { font: 10px var(--mono); color: var(--muted); }
+.dropZone > span { border: 1px solid var(--ink); padding: 6px; font: var(--fs-xs) var(--mono); }
+.dropZone strong { font-size: var(--fs); font-weight: 500; }
+.dropZone small { font: var(--fs-xs) var(--mono); color: var(--muted); }
 .dropZone input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
 .dropZone:focus-within { outline: 2px solid var(--blue); outline-offset: 3px; }
 .options { width: 100%; }
 .segments { display: flex; gap: 3px; padding: 0 40px 14px; }
 .segments i { flex: 1; height: 4px; background: var(--line); }
 .segments i[data-done] { background: var(--blue); }
-.saved { margin-left: auto; display: flex; align-items: center; gap: 8px; font: 500 12px var(--mono); color: var(--muted); }
+.saved { margin-left: auto; display: flex; align-items: center; gap: 8px; font: 500 var(--fs-sm) var(--mono); color: var(--muted); }
 .saved::before { content: ''; width: 7px; height: 7px; background: var(--blue); }
 .inScene .sceneTitle { flex: initial; gap: 3px; padding-left: 20px; border-left: 1px solid var(--line); }
 .inScene .sceneTitle .title { font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
 .intro p { margin: 0; }
-.intro p + p { margin-top: 10px; color: var(--muted); font-size: 14px; }
+.intro p + p { margin-top: 10px; color: var(--muted); font-size: var(--fs); }
 .questionCard { box-shadow: var(--landing-shadow-sm); }
 @media (max-width: 680px) { .saved { display: none; } .segments { padding-inline: 16px; } .inScene .sceneTitle { padding-left: 0; border: 0; } }
 

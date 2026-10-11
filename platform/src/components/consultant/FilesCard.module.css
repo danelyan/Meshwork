@@ -21,7 +21,7 @@
 .pendingRow[data-status='error'] .status { color: var(--error); }
 
 .doc { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; }
-.kind { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); border: 1px solid var(--avatar-stage-line); padding: 1px 5px; }
+.kind { font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); border: 1px solid var(--avatar-stage-line); padding: 1px 5px; }
 .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--stage-text); }
 .status { grid-column: 2; font-size: var(--fs-xs); color: var(--stage-ink-faint); }
 .actions, .confirm { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }

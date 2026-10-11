@@ -41,7 +41,8 @@ one at a time, never in parallel.
 - Code changes follow `.claude/skills/fullstack-dev/SKILL.md` (stack, Context7 doc checks, tests with each
   change). Commit messages follow `.claude/skills/commit-message/SKILL.md`.
 - UI: build from `platform/src/components/ui`, colors only from tokens in `src/styles/tokens.css`; raw
-  `#hex`/`rgb()` in `*.module.css` fails `tests/unit/design-tokens.test.ts`. New token or component goes
+  `#hex`/`rgb()` in `*.module.css` fails `tests/unit/design-tokens.test.ts`; font sizes only `var(--fs-*)` (raw `px` in `font`/`font-size` fails
+  `tests/unit/font-sizes.test.ts`, escape hatch is a `fs-ok: <reason>` comment on the line). New token or component goes
   into `docs/design-system.md` first. Visual source: `docs/design-spec.md`.
 - Prisma schema: additive edits in the module's section, every change is a new migration
   (`npm run db:migrate`); never rewrite applied migrations.

@@ -1,23 +1,23 @@
 .draft { min-width: 0; display: grid; align-content: start; gap: 12px; }
 .card, .companyCard { background: var(--glass); backdrop-filter: var(--blur); border: 1px solid var(--glass-border); box-shadow: inset 0 1px var(--glass-border); }
 .card header, .companyCard { padding: 18px; }
-.draft h2 { margin: 5px 0 8px; font-size: 20px; line-height: 1.2; letter-spacing: -.03em; }
-.draft p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-soft); overflow-wrap: anywhere; }
-.draft small { font: 10px/1.5 var(--mono); color: var(--muted); }
-.card header > span { display: block; margin-top: 12px; font: 10px var(--mono); color: var(--blue); }
+.draft h2 { margin: 5px 0 8px; font-size: var(--fs-xl); line-height: 1.2; letter-spacing: -.03em; }
+.draft p { margin: 0; font-size: var(--fs); line-height: 1.6; color: var(--text-soft); overflow-wrap: anywhere; }
+.draft small { font: var(--fs-xs)/1.5 var(--mono); color: var(--muted); }
+.card header > span { display: block; margin-top: 12px; font: var(--fs-xs) var(--mono); color: var(--blue); }
 .rows { display: grid; }
 .row { width: 100%; display: grid; gap: 7px; border: 0; border-top: 1px solid var(--line); padding: 13px 18px; background: transparent; color: var(--ink); text-align: left; }
 button.row { cursor: pointer; }
 button.row:hover { background: var(--surface-notice); }
 .row[data-current] { background: var(--surface-input); box-shadow: inset 3px 0 var(--blue); }
-.rowTitle { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; font: 500 11px var(--mono); }
-.rowTitle small { font-size: 9px; }
-.value { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.now { color: var(--blue); font: 10px var(--mono); }
-.card footer { display: grid; gap: 5px; padding: 16px 18px; border-top: 1px solid var(--line); font: 10px/1.5 var(--mono); color: var(--muted); }
+.rowTitle { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; font: 500 var(--fs-xs) var(--mono); }
+.rowTitle small { font-size: var(--fs-xs); }
+.value { font-size: var(--fs); line-height: 1.5; overflow-wrap: anywhere; }
+.now { color: var(--blue); font: var(--fs-xs) var(--mono); }
+.card footer { display: grid; gap: 5px; padding: 16px 18px; border-top: 1px solid var(--line); font: var(--fs-xs)/1.5 var(--mono); color: var(--muted); }
 .card footer a { text-decoration: underline; text-underline-offset: 3px; }
 .identity { display: flex; gap: 12px; margin: 20px 0; }
-.silhouette { width: 48px; height: 48px; flex: none; display: grid; place-items: center; background: var(--silhouette); font-size: 32px; }
-.identity h2 { font-size: 17px; }
+.silhouette { width: 48px; height: 48px; flex: none; display: grid; place-items: center; background: var(--silhouette); font-size: var(--fs-3xl); }
+.identity h2 { font-size: var(--fs-lg); }
 .previewRows > div { padding: 12px 0; border-top: 1px solid var(--line); }
 .notice { border-top: 1px solid var(--line); padding-top: 14px; }

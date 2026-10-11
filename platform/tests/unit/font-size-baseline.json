@@ -1,0 +1,18 @@
+{
+  "components/AuthScreen.module.css": 2,
+  "components/Chat.module.css": 2,
+  "components/DefenseDialog.module.css": 1,
+  "components/LoginForm.module.css": 7,
+  "components/ProfilePage.module.css": 8,
+  "components/TestPage.module.css": 15,
+  "components/auth/AuthEntry.module.css": 2,
+  "components/call/CallPanel.module.css": 1,
+  "components/call/call.module.css": 1,
+  "components/candidate/Candidate.module.css": 84,
+  "components/demo/DemoPersonas.module.css": 4,
+  "components/employer/Employer.module.css": 68,
+  "components/head/ConsultantScene.module.css": 2,
+  "components/interview/InterviewPage.module.css": 4,
+  "components/interview/InterviewRoom.module.css": 4,
+  "components/validation/Validation.module.css": 4
+}

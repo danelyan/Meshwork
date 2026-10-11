@@ -121,3 +121,14 @@ describe('promoteNow: путь и блок шага показывают одн�
     expect(promoteNow(base, 'test')).toEqual(base);
   });
 });
+
+describe('locked: у шага «дальше» есть, что сделать сначала', () => {
+  it('цепочка незавершённых шагов до него; у «готово» и «сейчас» нет', async () => {
+    const { candidateSteps } = await import('@/server/consultant/aside');
+    const steps = candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0, hired: null, call: false, project: false, aiDefense: false, accepted: 0 });
+    expect(steps.find((s) => s.id === 'intro')?.locked).toBeUndefined();
+    expect(steps.find((s) => s.id === 'test')?.locked).toBeUndefined();
+    expect(steps.find((s) => s.id === 'call')?.locked).toBe('Сначала: Тест на грейд');
+    expect(steps.find((s) => s.id === 'ai_defense')?.locked).toBe('Сначала: Тест на грейд → Созвон с ИИ → Проект из ленты');
+  });
+});

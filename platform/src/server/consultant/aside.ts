@@ -21,6 +21,8 @@ export interface JourneyStep {
   note: string;
   href: string;
   state: StepState;
+  /** Для шага «дальше»: что сделать сначала (подсказка при наведении); у «готово» и «сейчас» нет. */
+  locked?: string;
 }
 
 export interface AsideDoc {
@@ -135,7 +137,7 @@ export function guestAside(view: OnboardingView): SceneAsideData {
 }
 
 /** final — завершающий шаг пути (lane hired: «Нанят»): может быть «готов», тогда весь путь пройден. */
-type StepDraft = Omit<JourneyStep, 'state'> & { done: boolean; final?: boolean };
+type StepDraft = Omit<JourneyStep, 'state'> & { done: boolean; final?: boolean; /** Своё условие вместо цепочки предыдущих шагов. */ lockedNote?: string };
 
 /**
  * Первый незавершённый шаг — «сейчас», до него — «готово», после — «дальше».
@@ -144,7 +146,12 @@ type StepDraft = Omit<JourneyStep, 'state'> & { done: boolean; final?: boolean }
 export function markStates(drafts: StepDraft[]): JourneyStep[] {
   const found = drafts.findIndex((d, i) => !d.done || (i === drafts.length - 1 && !d.final));
   const nowIdx = found === -1 ? drafts.length : found;
-  return drafts.map((d, i) => ({ id: d.id, label: d.label, short: d.short, note: d.note, href: d.href, state: i < nowIdx ? 'done' : i === nowIdx ? 'now' : 'next' }));
+  return drafts.map((d, i) => {
+    const state: StepState = i < nowIdx ? 'done' : i === nowIdx ? 'now' : 'next';
+    const before = drafts.slice(nowIdx, i).filter((x) => !x.done).map((x) => x.label);
+    const locked = d.lockedNote ?? (before.length ? `Сначала: ${before.join(' → ')}` : undefined);
+    return { id: d.id, label: d.label, short: d.short, note: d.note, href: d.href, state, ...(state === 'next' && locked ? { locked } : {}) };
+  });
 }
 
 const plural = (n: number, one: string, few: string, many: string) => {
@@ -233,7 +240,7 @@ const PRIORITY_STEP: Partial<Record<string, string>> = { invitations: 'invites',
 export function promoteNow(steps: JourneyStep[], nextStep: string): JourneyStep[] {
   const id = PRIORITY_STEP[nextStep];
   if (!id || !steps.some((s) => s.id === id)) return steps;
-  return steps.map((s) => (s.id === id ? { ...s, state: 'now' } : s.state === 'now' ? { ...s, state: 'next' } : s));
+  return steps.map((s) => (s.id === id ? { ...s, state: 'now', locked: undefined } : s.state === 'now' ? { ...s, state: 'next' } : s));
 }
 
 export function candidateSteps(f: CandidateFacts): JourneyStep[] {
@@ -266,8 +273,9 @@ export function candidateSteps(f: CandidateFacts): JourneyStep[] {
       note: f.invitations > 0 ? invitesWord(f.invitations) : 'работодатели находят тебя сами',
       href: '/invitations',
       done: answered,
+      lockedNote: 'Компании находят тебя сами после теста; проект и ИИ-защита повышают шансы на приглашение',
     },
-    { id: 'live_defense', label: 'Живая защита', short: 'Защита', note: hired ? 'пройдена' : answered ? 'работодатель назначит время' : 'после принятого приглашения', href: '/invitations', done: hired !== null },
+    { id: 'live_defense', label: 'Живая защита', short: 'Защита', note: hired ? 'пройдена' : answered ? 'работодатель назначит время' : 'после принятого приглашения', href: '/invitations', done: hired !== null, lockedNote: 'Сначала: принять приглашение компании - тогда она предложит время защиты' },
     ...(hired ? [{ id: 'hired', label: `Нанят в ${hired.company}`, short: 'Нанят', note: 'компания отметила найм', href: '/invitations', done: true, final: true }] : []),
   ]);
 }

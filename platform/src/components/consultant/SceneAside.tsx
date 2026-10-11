@@ -21,7 +21,7 @@ function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint: SceneAsideData['
       <ol className={styles.steps}>
         {steps.map((s, i) => (
           <li key={s.id} className={styles.step} data-state={s.state} data-testid={`journey-${s.id}`}>
-            <Link href={s.href} className={styles.stepLink} aria-current={s.state === 'now' ? 'step' : undefined}>
+            <Link href={s.href} className={styles.stepLink} aria-current={s.state === 'now' ? 'step' : undefined} aria-describedby={s.locked ? `journey-lock-${s.id}` : undefined}>
               <span className={styles.marker} aria-hidden="true">
                 {s.state === 'done' ? '✓' : i + 1}
               </span>
@@ -33,6 +33,7 @@ function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint: SceneAsideData['
                 <span className={styles.stepNote}>{s.note}</span>
               </span>
               <span className={styles.vh}> — {STATE_LABEL[s.state]}</span>
+              {s.locked && <span id={`journey-lock-${s.id}`} role="tooltip" className={styles.lock} data-testid={`journey-lock-${s.id}`}>{s.locked}</span>}
             </Link>
           </li>
         ))}

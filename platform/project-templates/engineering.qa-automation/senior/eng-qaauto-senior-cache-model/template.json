@@ -1,0 +1,20 @@
+{
+  "id": "eng-qaauto-senior-cache-model",
+  "subcategoryId": "engineering.qa-automation",
+  "specialization": "engineering",
+  "grade": "senior",
+  "title": "Модельное тестирование кэша с TTL: проверка, которая ловит редкие дефекты",
+  "summary": "Кандидат пишет verify(createCache) — детерминированную проверку по случайным последовательностям операций против модели; качество измеряется числом пойманных мутантов, в том числе проявляющихся только в длинных сценариях; DESIGN.md со стратегией",
+  "stack": ["node20", "typescript", "vitest"],
+  "catalogIds": ["eng.test-strategy", "eng.test-design", "eng.flaky-tests", "eng.test-isolation"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

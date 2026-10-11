@@ -18,7 +18,11 @@ it('/method: четыре блока, графики, карточки канд�
   expect(screen.getByText(POLICY_VERSION)).toBeTruthy();
   expect(screen.getAllByRole('img', { name: /Информация Фишера|Стандартная ошибка/ })).toHaveLength(2);
   const personas = screen.getByRole('heading', { name: '3. Смоделированные кандидаты' }).closest('section')!;
-  expect(within(personas).getAllByRole('listitem')).toHaveLength(4);
+  expect(within(personas).getAllByRole('listitem')).toHaveLength(8);
+  for (const name of ['Середина зоны грейда', 'Уверенный: верхняя треть зоны']) {
+    const row = within(personas).getByRole('heading', { name }).parentElement!;
+    expect(within(row).getAllByRole('listitem')).toHaveLength(4);
+  }
   expect(within(personas).getByText(/не люди/)).toBeTruthy();
   expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe(sub.id);
   for (const href of ['/simulator', '/validation', '/mechanics', '/evaluate']) {

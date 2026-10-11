@@ -78,12 +78,35 @@ it('политика берётся из policy.ts', () => {
   expect(p.maxItems).toBe(MAX_ITEMS);
 });
 
+it('две строки по 4 кандидата: уверенный глубже в зоне своего грейда, грейд по θ тот же', async () => {
+  const { gradeOfTheta } = await import('@/server/validation/method');
+  const { GRADE_CUT } = await import('@/server/test/policy');
+  const mid = PERSONAS.filter((p) => p.row === 'mid');
+  const conf = PERSONAS.filter((p) => p.row === 'confident');
+  expect(mid).toHaveLength(4);
+  expect(conf).toHaveLength(4);
+  expect(new Set(PERSONAS.map((p) => p.id)).size).toBe(PERSONAS.length);
+  mid.forEach((m, i) => {
+    const c = conf[i]!;
+    expect(c.claimed).toBe(m.claimed);
+    expect(gradeOfTheta(c.theta)).toBe(gradeOfTheta(m.theta));
+    // Новичок — ниже, остальные — выше середины зоны.
+    if (gradeOfTheta(m.theta) === 'none') expect(c.theta).toBeLessThan(m.theta);
+    else expect(c.theta).toBeGreaterThan(m.theta);
+  });
+  // Верхняя треть зоны Junior и Middle.
+  const third = (lo: number, hi: number) => lo + ((hi - lo) * 2) / 3;
+  expect(conf[1]!.theta).toBeGreaterThanOrEqual(third(GRADE_CUT.junior, GRADE_CUT.middle));
+  expect(conf[2]!.theta).toBeGreaterThanOrEqual(third(GRADE_CUT.middle, GRADE_CUT.senior));
+});
+
 it('завышение и занижение: доли согласованы с вердиктами и истинным грейдом', async () => {
   const { gradeOfTheta } = await import('@/server/validation/method');
   expect(gradeOfTheta(-1.3)).toBe('none');
   expect(gradeOfTheta(-0.4)).toBe('junior');
   expect(gradeOfTheta(0.35)).toBe('middle');
   expect(gradeOfTheta(1.3)).toBe('senior');
+  for (const p of PERSONAS) expect(p.theta).toBeGreaterThanOrEqual(-3);
   for (const p of simulatedCandidates(sub, 30)!) {
     expect(p.truth).toBe(gradeOfTheta(p.theta));
     expect(p.overRate + p.underRate + p.verdicts[p.truth]).toBeCloseTo(1, 10);

@@ -106,19 +106,35 @@ export function bankInformation(subcategoryId: string): BankInformation | null {
   };
 }
 
-/** Смоделированные кандидаты: «истинная» θ в середине зоны своего грейда, заявка — свой грейд (новичок заявляет Junior). */
-export const PERSONAS: readonly { id: string; title: string; theta: number; claimed: Grade; expect: string }[] = [
-  { id: 'novice', title: 'Новичок', theta: -1.3, claimed: 'junior', expect: 'Junior не должен подтвердиться' },
-  { id: 'junior', title: 'Junior', theta: -0.4, claimed: 'junior', expect: 'Junior должен подтвердиться' },
-  { id: 'middle', title: 'Middle', theta: 0.35, claimed: 'middle', expect: 'Middle должен подтвердиться' },
-  { id: 'senior', title: 'Senior', theta: 1.3, claimed: 'senior', expect: 'Senior должен подтвердиться' },
+/** Строка карточек: «истинная» θ в середине зоны грейда или в верхней трети («уверенный»; новичок — глубже в своей зоне). */
+export type PersonaRow = 'mid' | 'confident';
+export const PERSONA_ROWS: readonly PersonaRow[] = ['mid', 'confident'];
+
+/** Верхняя треть зоны [от; до] — середина этой трети: от + (до − от) × 5/6. */
+const upperThird = (from: number, to: number) => Number((from + ((to - from) * 5) / 6).toFixed(2));
+
+/**
+ * Смоделированные кандидаты, заявка — свой грейд (новичок заявляет Junior). Середина зоны: −1,3 / −0,4 / 0,35 / 1,3.
+ * Уверенный: Junior и Middle — середина верхней трети зоны между порогами GRADE_CUT; у открытых зон (новичок ниже
+ * порога Junior, Senior выше своего) — на 0,7 дальше от порога, чем середина (−2,0 и 2,0 при текущих порогах).
+ */
+export const PERSONAS: readonly { id: string; row: PersonaRow; title: string; theta: number; claimed: Grade; expect: string }[] = [
+  { id: 'novice', row: 'mid', title: 'Новичок', theta: -1.3, claimed: 'junior', expect: 'Junior не должен подтвердиться' },
+  { id: 'junior', row: 'mid', title: 'Junior', theta: -0.4, claimed: 'junior', expect: 'Junior должен подтвердиться' },
+  { id: 'middle', row: 'mid', title: 'Middle', theta: 0.35, claimed: 'middle', expect: 'Middle должен подтвердиться' },
+  { id: 'senior', row: 'mid', title: 'Senior', theta: 1.3, claimed: 'senior', expect: 'Senior должен подтвердиться' },
+  { id: 'novice-confident', row: 'confident', title: 'Новичок', theta: Number((GRADE_CUT.junior - 1.3).toFixed(2)), claimed: 'junior', expect: 'Junior не должен подтвердиться' },
+  { id: 'junior-confident', row: 'confident', title: 'Junior', theta: upperThird(GRADE_CUT.junior, GRADE_CUT.middle), claimed: 'junior', expect: 'Junior должен подтвердиться' },
+  { id: 'middle-confident', row: 'confident', title: 'Middle', theta: upperThird(GRADE_CUT.middle, GRADE_CUT.senior), claimed: 'middle', expect: 'Middle должен подтвердиться' },
+  { id: 'senior-confident', row: 'confident', title: 'Senior', theta: Number((GRADE_CUT.senior + 1.2).toFixed(2)), claimed: 'senior', expect: 'Senior должен подтвердиться' },
 ];
 
-/** Прогонов на кандидата (seed 1…N). 4 × 200 прогонов — около 0,3 с на подкатегорию. */
+/** Прогонов на кандидата (seed 1…N). 8 × 200 прогонов — около 0,6 с на подкатегорию (первый расчёт, дальше кэш). */
 export const SIM_RUNS = 200;
 
 export interface PersonaStats {
   id: string;
+  row: PersonaRow;
   title: string;
   theta: number;
   claimed: Grade;

@@ -23,7 +23,7 @@ import {
   STACK_PARTIAL_MAX_COEF,
 } from '@/server/employer/weights';
 import { ADJACENT_FACTOR, LEVEL_WEIGHT } from '@/server/recommend/weights';
-import type { BankInformation, MethodPolicy, PersonaStats } from '@/server/validation/method';
+import { PERSONA_ROWS, type BankInformation, type MethodPolicy, type PersonaRow, type PersonaStats } from '@/server/validation/method';
 import type { SimSubcategory } from '@/server/validation/simulator';
 
 import { dec, pct } from '../validation/format';
@@ -237,6 +237,12 @@ const VERDICTS: { key: Grade | 'none'; label: string; cls: string }[] = [
   { key: 'senior', label: 'Senior', cls: styles.stackSenior! },
 ];
 
+const ROW_TITLE: Record<PersonaRow, string> = { mid: 'Середина зоны грейда', confident: 'Уверенный: верхняя треть зоны' };
+const ROW_TEXT: Record<PersonaRow, string> = {
+  mid: 'θ посередине между порогами своего грейда; у новичка и Senior — на 0,6 и 0,5 от порога.',
+  confident: 'θ в верхней трети зоны своего грейда; новичок — глубже в своей зоне, Senior — дальше от порога.',
+};
+
 function Personas({ personas }: { personas: PersonaStats[] }) {
   return (
     <ul className={styles.cards}>
@@ -395,15 +401,26 @@ export function MethodScreen({ policy, subcategories, selected, info, personas, 
         <section className={styles.section} aria-labelledby="m-personas">
           <h2 id="m-personas">3. Смоделированные кандидаты</h2>
           <p className={styles.soft}>
-            Четыре виртуальных кандидата с «истинным» уровнем в середине зоны своего грейда, по {runs} прогонов каждый (seed 1…{runs}) через тот же движок, что
-            и боевой тест. Подкатегория — выбранная выше.
+            Две четвёрки виртуальных кандидатов с заданным «истинным» уровнем θ, по {runs} прогонов каждый (seed 1…{runs}) через тот же движок, что и боевой
+            тест. Подкатегория — выбранная выше.
           </p>
-          {personas ? <Personas personas={personas} /> : <p className={styles.soft}>Для этой подкатегории теста нет.</p>}
+          {personas ? (
+            PERSONA_ROWS.map((row) => (
+              <div key={row} className={styles.section}>
+                <h3>{ROW_TITLE[row]}</h3>
+                <p className={styles.note}>{ROW_TEXT[row]}</p>
+                <Personas personas={personas.filter((p) => p.row === row)} />
+              </div>
+            ))
+          ) : (
+            <p className={styles.soft}>Для этой подкатегории теста нет.</p>
+          )}
           {personas && (
             <p className={styles.note}>
               Тест осторожный: грейд подтверждается только при P(θ &gt; порог) ≥ {dec(policy.confirmProb, 1)}, поэтому ошибается он чаще в сторону занижения,
               чем завышения. Зона Junior узкая ({dec(policy.cuts.middle - policy.cuts.junior, 1)} по θ) при итоговом SE около {dec(avgSe, 1)}, и кандидат в
-              середине зоны подтверждается не всегда — это видно в цифрах выше и в валидации.
+              середине зоны подтверждается не всегда, а уверенный — заметно чаще. Разница между двумя строками и есть осторожность теста: сомнение решается в пользу
+              грейда ниже. Те же выводы — в цифрах валидации.
             </p>
           )}
           <p className={styles.note}>

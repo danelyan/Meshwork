@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 // ИИ-защита до приглашения (ADR 0008 п. 1): границы доступа работодателя и запуск кандидатом.
 const db = vi.hoisted(() => ({
   projectSubmission: { findUnique: vi.fn() },
-  callSession: { findFirst: vi.fn(), findMany: vi.fn() },
+  callSession: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn() },
   invitation: { findMany: vi.fn() },
   consent: { findMany: vi.fn() },
   employerProfile: { findUnique: vi.fn() },
@@ -132,6 +132,8 @@ describe('созвон-защита через /api/call/{id} до accepted', ()
     accepted(false);
     await expect(resolveCallAccess(employer, { id: 'cs-ai', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).rejects.toMatchObject({ status: 404 });
     accepted(true);
+    // Защита видна компании: ИИ-защита или своя живая (defenseOwnedOrAi считает callSession по visibility).
+    db.callSession.count.mockResolvedValue(1);
     await expect(resolveCallAccess(employer, { id: 'cs-ai', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).resolves.toEqual({ role: 'employer', access: 'full', recording: true });
   });
 });

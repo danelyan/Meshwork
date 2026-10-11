@@ -2,8 +2,7 @@
 /* Высоту колонки задаёт сцена (контейнер aside, AvatarScene.module.css). Широкая и не слишком низкая колонка
    (13-16" ноутбук): путь сверху, карточки одним рядом тянутся на остаток высоты, длинный список прокручивается
    внутри своей карточки. Узкая или совсем низкая: карточки своей высоты в две колонки, прокручивается колонка. */
-.aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto; grid-auto-rows: auto; gap: 12px; align-items: stretch; align-content: start; min-height: 100%; }
-/* align-content: start — свободная высота не раздаёт пустоту карточкам (путь растягивался на полэкрана) */
+.aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto; grid-auto-rows: auto; gap: 12px; align-items: stretch; min-height: 100%; }
 .road { grid-column: 1 / -1; }
 /* Колонка живёт на сцене: общие компоненты внутри (переключатель вида, предпросмотр карточки, поля) читают смысловые
    токены страницы, а сцена в тёмной теме тёмная при светлой странице. Сводим их к токенам сцены (в светлой они равны). */
@@ -22,19 +21,13 @@
 /* широкая колонка (каждой карточке от ~300px, владелец 11.10: «слишком узко»): все в один ряд; у работодателя две — по половине */
 @container aside (width >= 1240px) and (height >= 380px) {
   /* один ряд на всю высоту: длинный список прокручивается внутри своей карточки */
-  .aside { grid-auto-rows: minmax(0, 1fr); align-content: normal; }
-  /* все шаги пути в один ряд (7–8), иначе 4+3 с пустыми ячейками */
-  .steps { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; }
+  .aside { grid-auto-rows: minmax(0, 1fr); }
   .card { min-height: 0; }
   .cardBody { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   /* память и рынок уже, файлы и настройки шире: у них поля ввода и чипы */
   .aside { grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.3fr); }
   .aside > :last-child:nth-child(even) { grid-column: auto; }
-  /* карточек под путём обычно две (блок шага и память) — по половине; три — по трети; четыре — по четверти */
-  .aside > .card { grid-column: span 2; }
-  .aside:has(> :nth-child(4)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .aside:has(> :nth-child(4)) > .card { grid-column: auto; }
-  .aside:has(> :nth-child(5)) { grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.3fr); }
+  .aside[data-role='employer'] > .card { grid-column: span 2; }
 }
 .title, .cardHead { margin: 0; font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--stage-text-soft); }
 .title { margin-bottom: 10px; }
@@ -43,12 +36,12 @@
 /* --- роадмап: четыре колонки-«полоски прогресса»: готово — приглушённый акцент, сейчас — яркий --- */
 .road { padding: 14px 16px 16px; border: 1px solid var(--avatar-stage-line); background: var(--stage-card); }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.step { border-top: 3px solid var(--stage-track); padding: 10px 8px 8px; }
+.step { border-top: 3px solid var(--stage-track); padding-top: 10px; }
 .stepLink { display: flex; gap: 10px; align-items: flex-start; color: var(--stage-text-soft); }
 .stepLink:hover .stepName { color: var(--stage-text); }
 .step { position: relative; }
 /* Шаг «дальше»: при наведении и фокусе - что сделать сначала; цвета сцены, как у подсказки шага */
-.lock { position: absolute; left: 0; top: calc(100% + 6px); z-index: 2; max-width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--stage-ink); color: var(--stage-on-accent); font-size: var(--fs-sm); line-height: 1.4; box-shadow: 0 4px 14px rgb(0 0 0 / .22); opacity: 0; pointer-events: none; transition: opacity .12s; }
+.lock { position: absolute; left: 0; top: calc(100% + 6px); z-index: 2; max-width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--stage-ink); color: var(--stage-on-accent); font-size: var(--fs-sm); line-height: 1.4; box-shadow: 0 4px 14px rgb(0 0 0 / .22); opacity: 0; pointer-events: none; transition: opacity .12s; } /* raw-ok: тень подсказки, не цвет бренда */
 .stepLink:hover .lock, .stepLink:focus-visible .lock { opacity: 1; }
 .step[data-state='next'] .stepLink { cursor: help; }
 .marker { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--stage-ring); font: 600 var(--fs-xs) var(--mono); color: var(--stage-text-soft); }
@@ -58,13 +51,11 @@
 .stepNote { font-size: var(--fs-sm); line-height: 1.4; color: var(--stage-ink-faint); overflow-wrap: anywhere; }
 .step[data-state='done'] { border-top-color: var(--stage-accent-track); }
 .step[data-state='done'] .marker { background: var(--stage-accent-fill); border-color: var(--stage-accent); color: var(--stage-ink); }
-/* «сейчас» — подложка акцента, чтобы текущий шаг читался с первого взгляда; «дальше» — пунктирный маркер */
-.step[data-state='now'] { border-top-color: var(--stage-accent); background: var(--stage-accent-fill); }
+.step[data-state='now'] { border-top-color: var(--stage-accent); }
 .step[data-state='now'] .marker { background: var(--stage-accent); border-color: var(--stage-accent); color: var(--stage-on-accent); }
 .step[data-state='now'] .stepName { color: var(--stage-text); }
 .step[data-state='now'] .stepNote { color: var(--stage-text-soft); }
 .step[data-state='next'] .stepName { color: var(--stage-ink-dim); }
-.step[data-state='next'] .marker { border-style: dashed; color: var(--stage-ink-dim); }
 
 /* --- карточки --- */
 .card { display: flex; flex-direction: column; border: 1px solid var(--avatar-stage-line); background: var(--stage-card); }
@@ -110,7 +101,7 @@
   .aside { gap: 10px; }
   .road { padding: 10px 14px 10px; }
   .title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  .step { padding: 8px 8px 6px; }
+  .step { padding-top: 8px; }
   .stepNote { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hint { margin-top: 8px; padding-top: 8px; font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cardToggle { padding: 10px 14px 0; }

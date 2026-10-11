@@ -16,8 +16,8 @@ beforeEach(()=>{
   HTMLDialogElement.prototype.close = vi.fn(function(this:HTMLDialogElement){this.open=false;});
 });
 afterEach(cleanup);
-function flow(next:string|null=null, demoEnabled=true) {
-  render(<AuthEntryFlow yandexEnabled={false} demoEnabled={demoEnabled} next={next} onClose={vi.fn()} navigate={navigate} />);
+function flow(next:string|null=null, demoEnabled=true, fspHint:string|null=null) {
+  render(<AuthEntryFlow yandexEnabled={false} fspHint={fspHint} demoEnabled={demoEnabled} next={next} onClose={vi.fn()} navigate={navigate} />);
 }
 
 it('opens over the existing page and closes with focus and scroll restored',()=>{
@@ -48,6 +48,12 @@ it('opens sign-in at once, without a role step, and logs a ready candidate back 
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/profile'));
   expect(demoLogin).toHaveBeenCalledWith('demo-1');
   expect(demoEmployerLogin).not.toHaveBeenCalled();
+});
+
+it('keeps the landing intake destination for an already completed demo candidate', async () => {
+  flow('/consultant?mode=intake');
+  fireEvent.click(await screen.findByRole('button', { name: 'Анна →' }));
+  await waitFor(() => expect(navigate).toHaveBeenCalledWith('/consultant?mode=intake'));
 });
 
 it('lists specialists and companies in separate groups; a company goes to its assistant, not to a candidate link',async()=>{
@@ -130,4 +136,12 @@ it('explains an empty demo list and keeps fresh profile creation available',asyn
   expect(await screen.findByText(/Готовых профилей пока нет/)).toBeTruthy();
   expect(screen.queryByText('Загружаю профили…')).toBeNull();
   expect(screen.getByRole('button',{name:'Новый демо-профиль'})).toBeTruthy();
+});
+
+it('подсказка «чем войти в симулятор ФСП ID» показана, только когда она задана (внешний провайдер)',()=>{
+  flow(null, true, 'логин fsp-10001, пароль demo-pass');
+  expect(screen.getByText('Вход в симулятор ФСП ID: логин fsp-10001, пароль demo-pass')).toBeTruthy();
+  cleanup();
+  flow();
+  expect(screen.queryByText(/Вход в симулятор ФСП ID/)).toBeNull();
 });

@@ -39,7 +39,7 @@ describe('главная', () => {
     render(<Landing data={DATA} signedIn={false} />);
     const starts = screen.getAllByRole('link', { name: /Приступим/ });
     expect(starts).toHaveLength(2);
-    for (const link of starts) expect(link.getAttribute('href')).toBe('/auth');
+    for (const link of starts) expect(link.getAttribute('href')).toBe('/auth?next=%2Fconsultant%3Fmode%3Dintake');
     for (const link of starts) {
       const arrow = link.querySelector('svg path');
       expect(arrow?.getAttribute('fill')).toBe('currentColor');
@@ -47,10 +47,10 @@ describe('главная', () => {
     }
     expect(screen.getByRole('link', { name: /Уже есть аккаунт/ }).getAttribute('href')).toBe('/auth');
   });
-  it('с сессией ведёт в кабинет', () => {
+  it('с сессией открывает знакомство, сохраняя отдельный вход в кабинет', () => {
     render(<Landing data={DATA} signedIn />);
     expect(screen.getByRole('link', { name: /Ваш кабинет/ }).getAttribute('href')).toBe('/consultant');
-    for (const link of screen.getAllByRole('link', { name: /Приступим/ })) expect(link.getAttribute('href')).toBe('/consultant');
+    for (const link of screen.getAllByRole('link', { name: /Приступим/ })) expect(link.getAttribute('href')).toBe('/consultant?mode=intake');
   });
   it('компании ведут к публичному источнику и не выдаются за участников платформы', () => {
     render(<Landing data={DATA} signedIn={false} />);

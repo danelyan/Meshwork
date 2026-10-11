@@ -10,6 +10,7 @@ import { formatMsk } from '@/lib/msk';
 import { type LiveStepInfo, liveStepCopy, pickLive } from '@/lib/live-step';
 import type { OnboardingView } from '../onboarding/types';
 import { listMemory, MEMORY_LIMIT, type MemoryItem, type MemoryOwner, memoryPending } from './memory';
+import { candidateStages, checklistProgress, employerStages, hasSavedAnswer, type IntroStages, stageAnswer } from './stages';
 
 // Данные правой колонки экрана консультанта: «Твой путь», «Что я уже знаю», «Рынок», «Документы», «Подсказка».
 // Всё читается из существующих таблиц (опрос, утверждения, категория из теста, приглашения);
@@ -208,6 +209,8 @@ export interface SceneAsideData {
   stepBlock?: StepBlock;
   /** Идёт знакомство: колонка — только «Заполнение профиля» и «Что я о тебе знаю», остального нет. */
   onboarding?: { done: number; total: number; current: string | null };
+  /** Полоса этапов знакомства над чатом (stages.ts); нет — полоса не рисуется. */
+  stages?: IntroStages;
 }
 
 /**
@@ -504,8 +507,63 @@ async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<ty
   return { step };
 }
 
+/** Полоса этапов — украшение над чатом: сбой чтения не ломает колонку, полосы просто нет. */
+const warnStages = (err: unknown): undefined => {
+  console.warn('[aside] stages failed', err instanceof Error ? err.message : err);
+  return undefined;
+};
+
+/**
+ * Этапы знакомства кандидата: ответы ленты, а где её нет — сохранённые ответы и поля профиля. Категория — только из теста.
+ * «Резюме и опыт»: файл, ссылка, рассказ в чате, подтверждённые утверждения или ответ про опыт. Привязка ФСП ID создаёт
+ * источник и без достижений (fsp-id/link.ts) — материалом об опыте она не считается.
+ */
+async function loadCandidateStages(candidateId: string, view: OnboardingView | undefined, f: { specialization: string | null | undefined; category: { specialization: string; grade: string } | null; claims: number }): Promise<IntroStages> {
+  const [profile, uploads, sources, saved] = await Promise.all([
+    prisma.candidateProfile.findUnique({ where: { candidateId }, select: { claimedGrade: true, stack: true, workFormats: true, city: true, salaryMin: true, salaryExpected: true } }),
+    prisma.upload.count({ where: { candidateId } }),
+    prisma.source.count({ where: { candidateId, kind: { not: 'fsp' } } }),
+    // Лента знакомства закрыта (итог пройден): ответы про опыт остаются только в OnboardingState.answers.
+    view ? null : prisma.user.findUnique({ where: { candidateId }, select: { onboarding: { select: { answers: true } } } }),
+  ]);
+  const savedAnswers = saved?.onboarding?.answers;
+  const answered = (id: string) => stageAnswer(view, id) !== null || hasSavedAnswer(savedAnswers, id);
+  const specialization = stageAnswer(view, 'specialization') ?? (f.specialization ? (SPEC[f.specialization] ?? f.specialization) : null);
+  const claimedGrade = stageAnswer(view, 'grade') ?? (profile?.claimedGrade ? (GRADE[profile.claimedGrade] ?? profile.claimedGrade) : null);
+  const materials = uploads + sources > 0 || f.claims > 0 || answered('experience') || answered('experienceSummary');
+  const formats = (profile?.workFormats.length ?? 0) > 0 || answered('formats');
+  const city = Boolean(profile?.city) || answered('city');
+  const salary = profile?.salaryMin != null || profile?.salaryExpected != null || answered('salary');
+  const category = f.category ? `${SPEC[f.category.specialization] ?? f.category.specialization} · ${GRADE[f.category.grade] ?? f.category.grade}` : null;
+  const progress = view ? view.progress : checklistProgress([specialization !== null, claimedGrade !== null, (profile?.stack.length ?? 0) > 0, materials, formats, city, salary, category !== null]);
+  return candidateStages({ specialization, claimedGrade, materials, terms: formats || city || salary, category, progress });
+}
+
+/** Этапы знакомства работодателя: компания, отрасль, контакт, активные вакансии, отправленные приглашения. */
+async function loadEmployerStages(companyId: string, view: OnboardingView | undefined, f: { needs: number; invitations: number }): Promise<IntroStages> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true, industry: true, contact: true } });
+  return employerStages({
+    company: stageAnswer(view, 'companyName') ?? company?.name ?? null,
+    industry: stageAnswer(view, 'industry') ?? company?.industry ?? null,
+    contact: Boolean(company?.contact) || stageAnswer(view, 'contact') !== null,
+    needs: f.needs,
+    invitations: f.invitations,
+    ...(view ? { progress: view.progress } : {}),
+  });
+}
+
 export async function loadCandidateAside(candidateId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {
-  if (view && onboardingMode(view)) return onboardingAside('candidate', view, await knownWithMemory({ candidateId }, view));
+  if (view && onboardingMode(view)) {
+    const [known, stages] = await Promise.all([
+      knownWithMemory({ candidateId }, view),
+      Promise.all([
+        prisma.candidate.findUnique({ where: { id: candidateId }, select: { specialization: true } }),
+        prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' }, select: { specialization: true, grade: true } }),
+        prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } }),
+      ]).then(([c, category, claims]) => loadCandidateStages(candidateId, view, { specialization: c?.specialization, category, claims })).catch(warnStages),
+    ]);
+    return { ...onboardingAside('candidate', view, known), ...(stages ? { stages } : {}) };
+  }
   const [profileClaims, category, invitations, hiredInv, known, journey, cand] = await Promise.all([
     prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } }),
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' }, select: { specialization: true, grade: true } }),
@@ -540,11 +598,23 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
   const stats = candidateStats({ confirmed: profileClaims, category });
   // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).
   const fill = view?.later && view.current.kind !== 'summary' ? { stepId: view.current.id, label: view.current.label } : undefined;
-  return { role: 'candidate', steps, ...known, ...(market ? { market } : {}), docs, hint: hintFor('candidate', steps, view), stepBlock, stats, ...(fill ? { fill } : {}) };
+  const stages = await loadCandidateStages(candidateId, view, { specialization: cand?.specialization, category, claims: profileClaims }).catch(warnStages);
+  return { role: 'candidate', steps, ...known, ...(market ? { market } : {}), docs, hint: hintFor('candidate', steps, view), stepBlock, stats, ...(fill ? { fill } : {}), ...(stages ? { stages } : {}) };
 }
 
 export async function loadEmployerAside(employerProfileId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {
-  if (view && onboardingMode(view)) return onboardingAside('employer', view, await knownWithMemory({ employerProfileId }, view));
+  if (view && onboardingMode(view)) {
+    const [known, stages] = await Promise.all([
+      knownWithMemory({ employerProfileId }, view),
+      loadEmployerContext(employerProfileId)
+        .then(async ({ companyId }) => {
+          const [needs, invitations] = await Promise.all([prisma.vacancy.count({ where: { companyId, archivedAt: null } }), prisma.invitation.count({ where: { companyId } })]);
+          return loadEmployerStages(companyId, view, { needs, invitations });
+        })
+        .catch(warnStages),
+    ]);
+    return { ...onboardingAside('employer', view, known), ...(stages ? { stages } : {}) };
+  }
   const ctx = await loadEmployerContext(employerProfileId);
   const [vacancies, invitations, categories, known] = await Promise.all([
     listVacancies(ctx.companyId),
@@ -559,5 +629,6 @@ export async function loadEmployerAside(employerProfileId: string, view: Onboard
   const latest = new Map<string, { specialization: string; grade: string }>();
   for (const c of categories) if (!latest.has(c.candidateId)) latest.set(c.candidateId, c);
   const market = marketRows([...latest.values()], (spec, grade) => active.some((v) => v.specialization === spec && v.grade === grade));
-  return { role: 'employer', steps, ...known, market, docs: null, hint: hintFor('employer', steps, view) };
+  const stages = await loadEmployerStages(ctx.companyId, view, { needs: active.length, invitations }).catch(warnStages);
+  return { role: 'employer', steps, ...known, market, docs: null, hint: hintFor('employer', steps, view), ...(stages ? { stages } : {}) };
 }

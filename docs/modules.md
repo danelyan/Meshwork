@@ -133,7 +133,8 @@
 
 ### `consultant` (память, настройки, боковая панель)
 - **Назначение:** память консультанта «что я о тебе знаю» (заметки из разговора или добавленные человеком), настройки
-  собеседника, навыки, подсказки боковой панели.
+  собеседника, навыки, подсказки боковой панели, полоса этапов знакомства над чатом (`stages.ts`, поле `stages` в ответе
+  `GET /api/consultant/aside`).
 - **Модели:** `ConsultantMemory`, `ConsultantSettings`.
 - **Маршруты:** `GET|POST /api/consultant/memory`, `PATCH|DELETE /api/consultant/memory/:id`,
   `GET|PUT /api/consultant/settings`, `GET /api/consultant/aside`.

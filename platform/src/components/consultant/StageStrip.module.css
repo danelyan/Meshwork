@@ -1,0 +1,43 @@
+/* Полоса этапов знакомства (StageStrip): стекло на всю ширину над чатом, макет Astra v2. Только токены. */
+.strip { flex: none; padding: 14px 32px 12px; background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-bottom: 1px solid var(--glass-border); box-shadow: 0 1px 0 var(--line); color: var(--ink); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 18px; }
+.title { margin: 0; font: 500 var(--fs-xs) var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-dim); }
+.count { margin: 0; font-size: var(--fs); color: var(--text-soft); white-space: nowrap; }
+.track { position: relative; }
+.stages { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); }
+.stage { position: relative; display: grid; gap: 2px; min-width: 0; padding: 16px 16px 0 0; border-top: 2px solid var(--ink); }
+.stage[data-state='next'] { border-top-color: var(--border-soft); }
+.node { position: absolute; left: 0; top: -15px; width: 28px; height: 28px; display: grid; place-items: center; background: var(--ink); color: var(--paper); font: 700 var(--fs-sm) var(--mono); }
+.stage[data-state='now'] .node { background: var(--blue); color: var(--on-ink); }
+.stage[data-state='next'] .node { background: var(--paper); color: var(--ink-dim); outline: 1px dashed var(--rail); outline-offset: -1px; }
+.name { font-size: var(--fs); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stage[data-state='now'] .name { font-weight: 700; }
+.stage[data-state='next'] .name { color: var(--ink-dim); }
+.note { font: var(--fs-xs) var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stage[data-state='now'] .note { color: var(--blue); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* «Светлячок»: бежит по линии от первого этапа до текущего (--run-to задаёт компонент). */
+.dot { position: absolute; z-index: 2; top: -5px; left: 0; margin-left: 8px; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 5px color-mix(in srgb, var(--blue) 16%, transparent); pointer-events: none; animation: stageRun 6s var(--ease) infinite; }
+@keyframes stageRun {
+  0% { left: 0%; opacity: 0; }
+  6% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: var(--run-to); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot { display: none; }
+}
+
+@media (max-width: 1050px) {
+  .strip { padding: 12px 16px 10px; }
+  .top { margin-bottom: 16px; }
+  .stage { padding-right: 8px; }
+}
+@media (max-width: 640px) {
+  .note { display: none; }
+  .name { font-size: var(--fs-sm); }
+  .node { width: 24px; height: 24px; top: -13px; }
+  .stage { padding-top: 14px; }
+}
+@media print { .dot { display: none; } }

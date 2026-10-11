@@ -4,9 +4,10 @@ import { type ReactNode, useEffect, useRef } from 'react';
 
 import { TelemetryMount } from '@/components/chat/TelemetryMount';
 
-import { AsideProvider } from '../consultant/aside-refresh';
+import { AsideProvider, useAsideData } from '../consultant/aside-refresh';
 import { SceneAside } from '../consultant/SceneAside';
 import { SceneStats } from '../consultant/SceneStats';
+import { StageStrip } from '../consultant/StageStrip';
 import type { SceneAsideData } from '@/server/consultant/aside';
 
 import { Chat } from '../Chat';
@@ -39,6 +40,7 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
  *  - `call` — «Видеозвонок»: голова крупно по центру, лента — полупрозрачный транскрипт снизу;
  *  - `call-side` — «Звонок + чат слева» (D = C + A): тёмный экран звонка, слева светлая панель чата
  *    на всю высоту с полной лентой и вводом; уже 1050px — панель снизу, голова сверху ~40vh.
+ *    Над сценой — полоса этапов знакомства (StageStrip, макет Astra v2), если сервер её посчитал (`aside.stages`).
  * `label` — подпись у головы («Помощник по подбору» у работодателя).
  * `aside` — данные правой колонки call-side под головой («Твой путь», «Документы», «Подсказка»,
  * components/consultant/SceneAside; считаются на сервере в page.tsx).
@@ -146,7 +148,12 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
   // (data-call на sideStage, tokens.css); на корне data-in-call — режим звонка для раскладки и приглушения чата.
   // Портрет вне созвона следует теме страницы (решение владельца 11.10): data-call на нём не ставить.
   const sceneRef = useRef<HTMLDivElement>(null);
+  // Этапы знакомства обновляются вместе с колонкой (AsideProvider); во время созвона полоса убрана — экран занят звонком.
+  const stages = (useAsideData() ?? aside)?.stages;
   return (
+    // Обёртка есть всегда: полоса появляется и исчезает, не перемонтируя сцену и ленту под ней.
+    <div className={styles.sideWrap}>
+    {stages && !inCall && <StageStrip data={stages} />}
     <div ref={sceneRef} className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-in-call={inCall || undefined} data-scene>
       <PanelSplitter scene={sceneRef} />
       <section className={styles.sideStage} aria-label={label} data-call={inCall || undefined}>
@@ -181,10 +188,11 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
           </div>
           <ToolbarStop />
           <MuteToggle />
-          {call && <Button size="sm" disabled={call.readiness?.ready === false} title={call.readiness?.reason} onClick={() => call.start()}>Созвониться</Button>}
+          {call && <Button size="sm" variant="primary" disabled={call.readiness?.ready === false} title={call.readiness?.reason} onClick={() => call.start()}>Созвониться</Button>}
         </header>
         <div className={styles.panelFeed} data-feed-scroll>{children}</div>
       </div>
+    </div>
     </div>
   );
 }

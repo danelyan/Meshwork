@@ -4,3 +4,5 @@
  * в src/server/agent/prompts/*.md — при смене имени править и их.
  */
 export const COMPANION_NAME = 'Кира';
+/** Творительный падеж имени («Знакомство с Кирой»). */
+export const COMPANION_NAME_INS = 'Кирой';

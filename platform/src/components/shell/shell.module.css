@@ -151,6 +151,16 @@
   .nav a { padding: 12px 12px; }
   .accountRole { max-width: 120px; }
 }
+/* Вне кабинета (валидация, методика, демо) вкладки роли остаются в шапке. Чтобы они помещались целиком, а не
+   прокручивались, имя аккаунта уступает им место (оно есть в меню аккаунта): у работодателя с шестью вкладками -
+   до 1500px, у остальных - до 1320px. В кабинете вкладок в шапке нет, имя остаётся. */
+.nav { overscroll-behavior-x: contain; }
+.nav a:focus-visible { outline-offset: -2px; }
+@media (max-width: 1500px) { .header:has(.nav):has(.employerBadge) .accountRole { display: none; } }
+@media (max-width: 1320px) {
+  .header:has(.nav) .accountRole { display: none; }
+  .nav a { padding: 12px 10px; }
+}
 @media (max-width: 960px) {
   .nav { margin-left: 20px; }
   .nav a { padding: 12px 11px; }
@@ -179,4 +189,7 @@
   .footer { padding: 18px var(--page-pad); }
   .container { padding-top: 30px; padding-bottom: 40px; }
 }
+/* Телефон: имя аккаунта не показываем ни в одной шапке (оно в меню аккаунта). В кабинете его уже нет, а в знакомстве,
+   где кабинета ещё нет, строка действий с именем была шире окна 320px и страница прокручивалась вбок. */
+@media (max-width: 640px) { .accountRole { display: none; } }
 @media print { .header, .footer, .banner, .skip { display: none; } }

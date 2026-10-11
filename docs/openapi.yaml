@@ -4156,7 +4156,7 @@ paths:
       tags:
         - call
       summary: "Сегмент видео с камеры кандидата"
-      description: "сегмент видео с камеры кандидата (WebM, до 8 МБ): файл созвона рядом с аудио. Видео не анализируется — хранится как материал созвона (согласие: пункт о камере).\n\nНужна сессия кандидата (кука cid)."
+      description: "сегмент видео с камеры кандидата (WebM, до 8 МБ): файл созвона рядом с аудио. Видео не анализируется — хранится как материал созвона (согласие: пункт о камере). Без действующего согласия на запись сегмент не сохраняется: 409 `call_recording_off`, как у аудио.\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -4207,7 +4207,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          description: "Созвон завершён, лимит сегментов или параллельная загрузка"
+          description: "Созвон завершён, лимит сегментов, параллельная загрузка или нет согласия на запись (`call_recording_off`)"
           content:
             "application/json":
               schema:
@@ -4963,6 +4963,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/consultant/memory/{id}":
@@ -5000,6 +5002,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -5030,6 +5034,8 @@ paths:
                 additionalProperties: true
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -5770,6 +5776,8 @@ paths:
                   - next
         "400":
           $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: "Демо-вход выключен или аккаунт не демо"
           content:
@@ -7858,6 +7866,8 @@ paths:
                 additionalProperties: true
         "400":
           $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -7885,6 +7895,8 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -7914,6 +7926,8 @@ paths:
                 additionalProperties: true
         "400":
           $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -7981,6 +7995,8 @@ paths:
                 additionalProperties: true
         "400":
           $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/favorites":
@@ -9306,7 +9322,7 @@ paths:
           schema:
             type: string
             maxLength: 100
-            pattern: "^(vacancy:[A-Za-z0-9_-]{1,64}|category:(backend|frontend):(junior|middle))$"
+            pattern: "^(vacancy:[A-Za-z0-9_-]{1,64}|category:(backend|frontend|ai|engineering):(junior|middle|senior))$"
         -
           name: limit
           in: query
@@ -9523,10 +9539,8 @@ paths:
       tags:
         - stt
       summary: "Распознать речь"
-      description: "Голос в текст через Yandex SpeechKit. Тело — LPCM 16 бит, моно, 16 кГц (`audio/l16`), до 1 МБ (около 30 секунд). Только для вошедших. Аудио не сохраняется. Если режим не `yandex` — 400.\n\nНужна любая сессия (кука cid)."
-      security:
-        -
-          cookieAuth: []
+      description: "Голос в текст через Yandex SpeechKit. Тело — LPCM 16 бит, моно, 16 кГц (`audio/l16`), до 1 МБ (около 30 секунд). Только для вошедших. Аудио не сохраняется. Если режим не `yandex` — 400.\n\nВход не нужен."
+      security: []
       requestBody:
         required: true
         description: "Сырое аудио"
@@ -9553,14 +9567,16 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "413":
           description: "Запись длиннее 30 секунд"
           content:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/test/attempt/{id}":
@@ -10082,6 +10098,8 @@ paths:
                 additionalProperties: true
         "400":
           $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "413":
           $ref: "#/components/responses/PayloadTooLarge"
         "429":

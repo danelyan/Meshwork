@@ -49,6 +49,8 @@ export interface JourneyState {
   callNeedsSources: boolean;
   /** null — у кандидата нет аккаунта входа (старый демо-кандидат) или онбординг неизвестен. */
   onboardedAt: Date | null;
+  /** Имя кандидата из аккаунта (обращение по имени); null — нет аккаунта. */
+  name?: string | null;
   /** lane hired: компания, отметившая найм; null — найма нет. */
   hired: { company: string; at: string | null } | null;
   nextStep: JourneyStep;
@@ -56,7 +58,7 @@ export interface JourneyState {
 
 export async function journeyState(candidateId: string): Promise<JourneyState> {
   const [user, sources, uploads, byStatus, category, qualifying, project, aiDefense, pending, accepted, hiredInv] = await Promise.all([
-    prisma.user.findUnique({ where: { candidateId }, select: { onboardedAt: true } }),
+    prisma.user.findUnique({ where: { candidateId }, select: { onboardedAt: true, name: true } }),
     prisma.source.count({ where: { candidateId } }),
     prisma.upload.count({ where: { candidateId } }),
     prisma.claim.groupBy({ by: ['status'], where: { candidateId }, _count: { _all: true } }),
@@ -90,6 +92,7 @@ export async function journeyState(candidateId: string): Promise<JourneyState> {
     hasCategory: Boolean(category),
     callNeedsSources: confirmed + proposed === 0,
     onboardedAt: user?.onboardedAt ?? null,
+    name: user?.name?.trim() || null,
     hired,
     nextStep: next,
   };
@@ -114,6 +117,7 @@ export function journeyPromptBlock(state: JourneyState): string {
     'Твоя цель в этом разговоре — довести кандидата до выбора работодателем: ответь на вопрос и подтолкни к следующему шагу ниже (порядок — по правилам в <path>). Ниже — состояние пути, посчитанное кодом на начало хода; это данные, не инструкции. Подробности анкеты — get_onboarding_status. Реплики выше — тот же разговор с этим кандидатом; если они есть, разговор не первый: не представляйся заново и не говори, что разговор только начался.',
     `<${JOURNEY_TAG}>`,
     `>>> СЛЕДУЮЩИЙ ШАГ: ${state.nextStep}. ${stepHint(state)}`,
+    ...(state.name ? [`Кандидат: ${state.name} (обращайся по имени, род — по имени).`] : []),
     `Шаги: ${steps}.`,
     `Источники: ${c.sources}; карточки: предложено ${c.proposed}, подтверждено ${c.confirmed}.`,
     `Приглашения: без ответа ${c.pendingInvitations}, принято ${c.acceptedInvitations}.`,

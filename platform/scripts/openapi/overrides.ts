@@ -749,6 +749,39 @@ export const OVERRIDES: Record<string, OpOverride> = {
     success: JSON_OK('Итог попытки с категорией Junior', free('Итог попытки')),
     errors: { 409: 'Попытка не в состоянии «Middle не подтверждён»' },
   },
+  'POST /api/test/attempt/{id}/confirm-start': {
+    summary: 'Начать подтверждающий тест',
+    description:
+      'Попытка в статусе `needs_confirmation` (индекс честности high, ADR-0002, дополнение 11.10): короткий тест 6–8 заданий других семейств, лимит времени ×0,7. Интервалы пересдачи не проверяются и не запускаются. Одна подтверждающая попытка на исходную.',
+    success: {
+      status: 201,
+      description: 'Новая подтверждающая попытка (`kind: confirm`)',
+      schema: obj({ attemptId: str(), resumed: bool() }),
+      extra: [{ status: 200, description: 'Продолжена активная подтверждающая попытка (`resumed: true`)', schema: obj({ attemptId: str(), resumed: bool() }) }],
+    },
+    errors: { 409: 'Подтверждение не требуется (`confirm_not_needed`), уже подтверждено (`already_confirmed`), подтверждающий тест уже пройден (`confirm_used`) или есть другая активная попытка (`active_attempt`)' },
+  },
+  'POST /api/test/attempt/{id}/signal': {
+    summary: 'Сигналы браузера во время теста',
+    description:
+      'Дельты агрегатов браузера с прошлой отправки; сервер суммирует их в попытке для индекса честности. Только счётчики, без содержимого вставок и копий (152-ФЗ). Принимает `application/json` и `text/plain` с JSON (navigator.sendBeacon). Только активная попытка своего кандидата.',
+    body: {
+      description: 'Дельты; отсутствующее поле — 0',
+      schema: obj(
+        {
+          tabHidden: int('Уходов со вкладки, 0–100'),
+          hiddenMs: int('Сколько вкладка была скрыта, мс, до суток'),
+          pastes: int('Вставок в поле ответа, 0–100'),
+          pasteChars: int('Символов вставлено, до 100000'),
+          copies: int('Копирований условия, 0–100'),
+          extendedScreen: bool('Подключён второй экран (пометка, не флаг)'),
+        },
+        [],
+      ),
+    },
+    success: JSON_OK('Накопленные сигналы попытки', obj({ signals: obj({ tabHidden: int(), hiddenMs: int(), pastes: int(), pasteChars: int(), copies: int(), extendedScreen: bool() }) })),
+    errors: { 400: 'Тело не JSON, больше 2 КБ или значения вне пределов', 409: 'Попытка завершена или истекла (`attempt_finished`, `attempt_expired`)' },
+  },
   'POST /api/test/attempt/{id}/finish': {
     summary: 'Завершить попытку досрочно',
     description: 'Досрочное завершение: итог по данным ответам; без ответов попытка получает статус `abandoned`.',

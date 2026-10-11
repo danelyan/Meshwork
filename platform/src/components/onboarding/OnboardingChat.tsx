@@ -135,7 +135,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const isSummary = cur.kind === 'summary';
   const canType = ready && !busy && !asides.asking && !isSummary && typesText(cur);
   // Свободный текст: на любом шаге, кроме согласия (его дают только кнопкой) и итога.
-  const canInput = ready && !busy && !asides.asking && !isSummary && cur.kind !== 'consent';
+  const canInput = ready && !busy && !asides.asking && !isSummary && cur.kind !== 'consent' && cur.kind !== 'consents';
   const toModel = asideToModel(view.role, cur.kind);
   const curAsides = asides.byStep[cur.id];
 
@@ -360,7 +360,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const placeholder =
     !ready || busy || asides.asking
       ? ''
-      : cur.kind === 'consent'
+      : cur.kind === 'consent' || cur.kind === 'consents'
         ? 'Выбери вариант выше'
       : cur.kind === 'files'
         ? 'Прикрепи резюме или вставь ссылку'

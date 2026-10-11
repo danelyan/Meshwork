@@ -259,7 +259,7 @@ describe('защита: уточнение, затем вмешательств�
     await turnRoute(post('/x', { text: 'Упадёт на разборе, надо проверять.' }, CAND_COOKIE), params(sessionId));
     const un = await (await muteRoute(post('/x', { muted: false }, EMP_A), params(sessionId))).json();
     expect(un.aiText).not.toMatch(/Вернёмся/);
-    expect(un.aiText).toMatch(/^Понял, спасибо\. /);
+    expect(un.aiText).toMatch(/^Поняла, спасибо\. /);
   });
 });
 

@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { getSubcategory, isSpecialization, SPEC_ROLE, subcategoryMatches } from '@/lib/directions';
 import { CONSENT_VERSION, hasCurrentConsent, recordConsent } from '@/server/auth/consent';
 import { chooseRole } from '@/server/auth/users';
+import { grantConsent } from '@/server/consent/service';
+import { CANDIDATE_ONBOARDING_KINDS, EMPLOYER_ONBOARDING_KINDS, consentVersion, type ConsentKindName } from '@/server/consent/texts';
 import { prisma } from '@/server/db';
 import { AppError, errors } from '@/server/errors';
 import { loadCatalog } from '@/server/recommend/evidence';
@@ -72,9 +74,14 @@ async function load(userId: string) {
   });
   if (!user) throw errors.notFound('Аккаунт не найден');
   const consent = await hasCurrentConsent(userId);
+  const decided = new Set(
+    (await prisma.consent.findMany({ where: { userId, kind: { in: [...CANDIDATE_ONBOARDING_KINDS, ...EMPLOYER_ONBOARDING_KINDS] } }, select: { kind: true }, distinct: ['kind'] })).map((c) => c.kind as string),
+  );
   const facts: Facts = {
     role: user.role,
     consent,
+    candidateConsents: CANDIDATE_ONBOARDING_KINDS.some((k) => decided.has(k)),
+    employerConsents: EMPLOYER_ONBOARDING_KINDS.some((k) => decided.has(k)),
     name: user.name,
     fspState: user.candidate?.fspState ?? null,
     specialization: user.candidate?.specialization ?? null,
@@ -237,7 +244,7 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
       lead: lines[s.id] ?? templateLead(s, l.ctx, prevOf(s, l)),
       question: s.question,
       answer: answered ? answerLabel(s, l.ctx.answers[s.id], l.ctx) : skipped ? null : factLabel(s, l.ctx),
-      editable: !s.doneBy?.(l.ctx) && s.kind !== 'consent' && s.kind !== 'role',
+      editable: !s.doneBy?.(l.ctx) && s.kind !== 'consent' && s.kind !== 'consents' && s.kind !== 'role',
     };
   });
 
@@ -295,6 +302,15 @@ async function apply(l: Loaded, step: StepDef, value: unknown): Promise<boolean>
     case 'consent':
       await recordConsent(userId, (value as { version: string }).version);
       return false;
+    case 'candidateConsents':
+    case 'employerConsents': {
+      // ADR 0005: каждая отмеченная галочка — своё согласие текущей версии. Без Г4 профиль скрыт от работодателей.
+      for (const kind of value as ConsentKindName[]) await grantConsent(userId, { kind, version: consentVersion(kind) });
+      if (step.id === 'candidateConsents' && !(value as string[]).includes('employer_visibility')) {
+        await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { hiddenFromEmployers: true } });
+      }
+      return false;
+    }
     case 'role':
       if (l.ctx.facts.role !== 'pending') throw errors.conflict('Роль уже выбрана');
       if (value === 'candidate') {

@@ -203,9 +203,13 @@ describe('входящие приглашения кандидата', () => {
     expect(screen.getByText('Платёжная команда')).toBeDefined();
     expect(screen.getByText('230 000 - 260 000 ₽ в месяц')).toBeDefined();
     expect(screen.getByText('Связь с компанией: @northstream_hr')).toBeDefined();
+    // Г5: без отдельной галочки раскрытия принять нельзя (ADR 0005).
+    expect((screen.getByRole('button', { name: 'Принять' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Принять' }));
     expect(await screen.findByText('принято')).toBeDefined();
     expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/invitations/i1');
+    expect(JSON.parse((fetchFn.mock.calls[0] as unknown as [string, { body: string }])[1].body)).toMatchObject({ action: 'accept', disclosureVersion: expect.any(String) });
     expect(screen.queryByRole('button', { name: 'Отклонить' })).toBeNull();
   });
 

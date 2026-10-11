@@ -67,6 +67,8 @@ export const envSchema = z
     UPLOAD_DIR: z.string().min(1).default('./data/uploads'),
     /** lane call: лимит квалификационных созвонов кандидата за 24 часа; 0 — без лимита (так на стенде). */
     CALL_DAILY_LIMIT: z.coerce.number().int().min(0).default(5),
+    /** lane consent (ADR 0005): сколько дней хранится аудио созвона; потом файлы и audioPath удаляются (транскрипт и оценки остаются). */
+    CALL_RECORDING_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
     /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
     WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
 

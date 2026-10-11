@@ -24,6 +24,10 @@ export function useCamera(opts: { getCallId: () => string | null; getStartedAt: 
   const optsRef = useRef(opts);
   optsRef.current = opts;
   const live = useRef(false);
+  /** Поколение запуска: stop() обесценивает запрос разрешения, который ещё не вернулся. */
+  const gen = useRef(0);
+  /** Незавершённые загрузки сегментов — stop() ждёт их, чтобы последний сегмент не потерялся. */
+  const uploads = useRef(new Set<Promise<void>>());
 
   const supported = typeof window !== 'undefined' && typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function' && typeof MediaRecorder !== 'undefined';
 
@@ -33,20 +37,23 @@ export function useCamera(opts: { getCallId: () => string | null; getStartedAt: 
     return undefined;
   };
 
-  const upload = useCallback(async (blob: Blob, startMs: number) => {
+  const upload = useCallback((blob: Blob, startMs: number) => {
     const id = optsRef.current.getCallId();
     if (!id || blob.size === 0) return;
-    try {
-      const res = await fetch(`/api/call/${encodeURIComponent(id)}/video?startMs=${Math.max(0, Math.floor(startMs))}`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'content-type': 'video/webm' },
-        body: blob,
-      });
-      if (res.ok) setSegments((n) => n + 1);
-    } catch {
-      /* сегмент потерян — созвон не ломаем */
-    }
+    const p = (async () => {
+      try {
+        const res = await fetch(`/api/call/${encodeURIComponent(id)}/video?startMs=${Math.max(0, Math.floor(startMs))}`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'content-type': 'video/webm' },
+          body: blob,
+        });
+        if (res.ok) setSegments((n) => n + 1);
+      } catch {
+        /* сегмент потерян — созвон не ломаем */
+      }
+    })().finally(() => uploads.current.delete(p));
+    uploads.current.add(p);
   }, []);
 
   const recordSegment = useCallback(() => {
@@ -65,7 +72,7 @@ export function useCamera(opts: { getCallId: () => string | null; getStartedAt: 
       if (e.data.size > 0) chunks.push(e.data);
     };
     rec.onstop = () => {
-      void upload(new Blob(chunks, { type: 'video/webm' }), startMs);
+      upload(new Blob(chunks, { type: 'video/webm' }), startMs);
       if (live.current) recordSegment();
     };
     recorder.current = rec;
@@ -75,25 +82,43 @@ export function useCamera(opts: { getCallId: () => string | null; getStartedAt: 
     }, VIDEO_SEGMENT_MS);
   }, [upload]);
 
-  const stop = useCallback(() => {
+  /** Выключить камеру и дождаться загрузки последнего сегмента (вызывать перед finish). */
+  const stop = useCallback(async () => {
     live.current = false;
+    gen.current += 1;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     const rec = recorder.current;
     recorder.current = null;
-    if (rec && rec.state !== 'inactive') rec.stop();
+    if (rec && rec.state !== 'inactive') {
+      await new Promise<void>((resolve) => {
+        const prev = rec.onstop;
+        rec.onstop = (e) => {
+          prev?.call(rec, e);
+          resolve();
+        };
+        rec.stop();
+      });
+    }
     stream.current?.getTracks().forEach((t) => t.stop());
     stream.current = null;
     if (video.current) video.current.srcObject = null;
     setState('off');
+    await Promise.all([...uploads.current]);
   }, []);
 
   const start = useCallback(async () => {
     if (!supported) return;
     setError(null);
     setState('starting');
+    const my = ++gen.current;
     try {
       const s = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false });
+      if (my !== gen.current) {
+        // Пока ждали разрешение, комнату закрыли: камеру не включаем.
+        s.getTracks().forEach((t) => t.stop());
+        return;
+      }
       stream.current = s;
       if (video.current) {
         video.current.srcObject = s;
@@ -117,7 +142,12 @@ export function useCamera(opts: { getCallId: () => string | null; getStartedAt: 
     }
   }, []);
 
-  useEffect(() => stop, [stop]);
+  useEffect(
+    () => () => {
+      void stop();
+    },
+    [stop],
+  );
 
   return { supported, state, error, segments, start, stop, attach };
 }

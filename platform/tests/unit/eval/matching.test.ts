@@ -85,3 +85,51 @@ describe('eval/matching: синтетический набор', () => {
     for (const vac of s.vacancies) expect(s.relevance[vac.id]![over.id]).toBe(truthRelevance(over.latent, over.trueGrade, vac).rel);
   });
 });
+
+describe('ranking: режим абляции (RankOptions.ablate)', async () => {
+  const { scoreCandidate, ABLATION_SIGNALS } = await import('../../../src/server/employer/ranking');
+  const { catalogFromFile } = await import('../../../src/server/claims/catalog-file');
+  const entries = catalogFromFile().filter((e) => e.specialization === 'backend');
+  const [A, B] = [entries[0]!, entries[1]!];
+  const catalog = new Map(catalogFromFile().map((e) => [e.id, e]));
+  const cand = {
+    id: 'c1', specialization: 'backend', fspState: 'linked',
+    category: { specialization: 'backend', grade: 'middle' },
+    claims: [
+      { catalogId: A.id, level: 'platform', statement: A.statement, quote: 'Kafka' },
+      { catalogId: B.id, level: 'artifact', statement: B.statement, quote: 'Postgres' },
+    ],
+  } as never;
+  const target = { specialization: 'backend', grade: 'middle', needs: [{ catalogId: A.id, weight: 1 }, { catalogId: B.id, weight: 1 }], stack: ['Kafka'] } as never;
+  const off = (s: (typeof ABLATION_SIGNALS)[number]) => scoreCandidate(cand, target, catalog as never, { year: 2026, ablate: [s] })!;
+  const full = scoreCandidate(cand, target, catalog as never, { year: 2026 })!;
+
+  it('без ablate - прежний балл, пустой список - то же самое', () => {
+    expect(scoreCandidate(cand, target, catalog as never, { year: 2026, ablate: [] })!.score).toBe(full.score);
+    expect(full.boosts.category).toBeGreaterThan(0);
+    expect(full.boosts.fsp).toBeGreaterThan(0);
+    expect(full.boosts.stack).toBeGreaterThan(0);
+  });
+  it('каждый сигнал обнуляет свой вклад и больше ничего не трогает', () => {
+    expect(off('category').boosts.category).toBe(0);
+    expect(off('category').categoryMatch).toBe(false);
+    expect(off('fsp').boosts.fsp).toBe(0);
+    expect(off('stack').boosts.stack).toBe(0);
+    expect(off('coverage').coverageScore).toBe(0);
+    expect(off('coverage').boosts.category).toBeGreaterThan(0); // база категории остаётся
+    expect(off('fsp').coverageScore).toBe(full.coverageScore);
+    expect(off('fsp').boosts.stack).toBe(full.boosts.stack);
+    for (const s of ABLATION_SIGNALS) expect(off(s).score).toBeLessThanOrEqual(full.score + 1e-9);
+  });
+  it('доказанность: все утверждения считаются «со слов», покрытие падает', () => {
+    expect(off('proven').coverageScore).toBeLessThan(full.coverageScore);
+    expect(off('proven').covered).toBe(full.covered);
+  });
+  it('штраф специализации снимается', () => {
+    const wrong = { ...(cand as object), specialization: 'frontend', category: null } as never;
+    const a = scoreCandidate(wrong, target, catalog as never, { year: 2026 })!;
+    const b = scoreCandidate(wrong, target, catalog as never, { year: 2026, ablate: ['spec_penalty'] })!;
+    expect(a.boosts.specPenalty).toBeGreaterThan(0);
+    expect(b.boosts.specPenalty).toBe(0);
+  });
+});

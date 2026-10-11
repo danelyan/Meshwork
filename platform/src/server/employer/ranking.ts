@@ -94,11 +94,22 @@ export interface CandidateEvidence {
  */
 export type IntegrityPenalty = { mode: 'drop_category' } | { mode: 'multiplier'; factor: number };
 
+/**
+ * Сигналы формулы, которые можно выключить по одному (абляция, eval/matching/ablation.ts). В бою не используется.
+ * coverage — взвешенное покрытие требований (в баллах = 0); proven — вес уровня доказанности (все утверждения как «со слов»);
+ * category — категория из теста (как будто теста не было); fsp — прибавка ФСП; stack — метки стека целиком, stack_partial —
+ * только близкие технологии; spec_penalty — штраф за другую специализацию; project / calls — бонусы ступеней 2 и 1 ADR 0003.
+ */
+export const ABLATION_SIGNALS = ['coverage', 'proven', 'category', 'fsp', 'stack', 'stack_partial', 'spec_penalty', 'project', 'calls'] as const;
+export type AblationSignal = (typeof ABLATION_SIGNALS)[number];
+
 /** Параметры ранжирования. year — год отсчёта давности достижений ФСП (по умолчанию текущий; в тестах — явно). */
 export interface RankOptions {
   year?: number;
   /** Вариант 2 индекса честности; нет поля — порядок не зависит от индекса (вариант 1, как сейчас). */
   integrityPenalty?: IntegrityPenalty;
+  /** Абляция: выключить сигналы формулы (только eval). Нет поля — формула целиком. */
+  ablate?: readonly AblationSignal[];
 }
 
 /** Индекс high у категории, не подтверждённой ни подтверждающим тестом, ни созвоном, при включённом integrityPenalty. */
@@ -283,8 +294,11 @@ export function scoreCandidate(
 ): RankedCandidate | null {
   const flagged = integrityFlagged(c, opts);
   c = applyIntegrity(c, opts);
-  const index = buildIndex(c.claims);
-  const cov = computeCoverage(target.needs, catalog, index);
+  const off = new Set<AblationSignal>(opts.ablate ?? []);
+  if (off.has('category')) c = { ...c, category: null, categories: undefined };
+  const index = buildIndex(off.has('proven') ? c.claims.map((x) => ({ ...x, level: 'self_reported' as const })) : c.claims);
+  const cov0 = computeCoverage(target.needs, catalog, index);
+  const cov = off.has('coverage') ? { ...cov0, score: 0 } : cov0;
   const ownProject = pickOwnProject(c.projects, target.vacancyId);
   if (cov.score === 0 && !c.category && !ownProject) return null;
 
@@ -304,10 +318,10 @@ export function scoreCandidate(
     }
   }
   const spec = effectiveSpecialization(c);
-  const specPenalty = spec && spec !== target.specialization ? SPEC_MISMATCH_PENALTY : 0;
+  const specPenalty = spec && spec !== target.specialization && !off.has('spec_penalty') ? SPEC_MISMATCH_PENALTY : 0;
   // R-M-02: достижения ФСП — место × уровень × давность, с потолком (fsp-weight.ts). Без ФСП — 0, не штраф (R-FSP-03).
   const fspW = c.fspState === 'linked' && c.fspAchievements ? fspWeight(c.fspAchievements, opts.year ?? new Date().getFullYear()) : null;
-  const fsp = c.fspState !== 'linked' ? 0 : fspW ? fspW.boost : FSP_BOOST;
+  const fsp = c.fspState !== 'linked' || off.has('fsp') ? 0 : fspW ? fspW.boost : FSP_BOOST;
   const fspLine = fspW
     ? fspW.reasons.length
       ? `${fspText(c.fspState)}: ${fspW.reasons.join('; ')}${fspW.capped ? ` (потолок ${String(fsp).replace('.', ',')})` : ''}`
@@ -319,13 +333,15 @@ export function scoreCandidate(
     c.claims.map((x) => `${x.statement}\n${x.quote}`).join('\n'),
     target.stack.filter((t) => !stackMatched.includes(t)),
   );
-  const stack = Math.min(STACK_BOOST_MAX, (stackMatched.length + stackPartial.reduce((s, m) => s + m.coef, 0)) * STACK_BOOST_PER_TAG);
+  const stack = off.has('stack')
+    ? 0
+    : Math.min(STACK_BOOST_MAX, ((off.has('stack_partial') ? 0 : stackPartial.reduce((s, m) => s + m.coef, 0)) + stackMatched.length) * STACK_BOOST_PER_TAG);
 
   // ADR 0003: бонус за проект под ЭТУ потребность и за подтверждённые созвоном темы потребности; защита в балл не входит.
-  const project = ownProject ? PROJECT_BONUS_PER_SCORE * ownProject.score : 0;
+  const project = ownProject && !off.has('project') ? PROJECT_BONUS_PER_SCORE * ownProject.score : 0;
   const needIds = new Set(target.needs.map((n) => n.catalogId));
   const depthBlock = c.calls?.qualifying ? buildDepthBlock(c.calls.qualifying, needIds) : undefined;
-  const callsBonus = depthBlock ? Math.min(CALL_TOPIC_BONUS_MAX, depthBlock.matchedNeed * CALL_TOPIC_BONUS) : 0;
+  const callsBonus = depthBlock && !off.has('calls') ? Math.min(CALL_TOPIC_BONUS_MAX, depthBlock.matchedNeed * CALL_TOPIC_BONUS) : 0;
   const projectBlock = c.projects?.length ? buildProjectBlock(c.projects, ownProject) : undefined;
   const defenseBlock = c.calls?.defense ? buildDefenseBlock(c.calls.defense) : undefined;
 

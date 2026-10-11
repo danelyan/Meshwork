@@ -43,6 +43,19 @@ const Extended = z.object({
   deltaOursMinusBaselineClaims: z.record(z.string(), Interval).optional(),
 });
 
+/** Абляция (eval/matching/ablation.ts): строка «без сигнала X». Блок необязательный. */
+const AblationRow = z.object({
+  signal: z.string(),
+  label: z.string(),
+  p5: Interval,
+  ndcg10: Interval,
+  dP5: Interval.nullable(),
+  dNdcg10: Interval.nullable(),
+  measured: z.boolean(),
+});
+const Ablation = z.object({ note: z.string().optional(), profiles: z.number(), vacancies: z.number(), rows: z.array(AblationRow) });
+export type MatchingAblation = z.infer<typeof Ablation>;
+
 export type MatchingSummary = z.infer<typeof Summary>;
 export type MatchingRow = z.infer<typeof Row>;
 export type MatchingExtended = z.infer<typeof Extended>;
@@ -53,6 +66,8 @@ export interface MatchingResults {
   extended: MatchingExtended | null;
   /** Тот же демо-набор, но с BM25, интервалами и случайной линией (если есть). */
   legacyExtended: MatchingExtended | null;
+  /** Абляция сигналов формулы (если есть в results.json). */
+  ablation: MatchingAblation | null;
 }
 
 const optional = (v: unknown): MatchingExtended | null => {
@@ -60,11 +75,16 @@ const optional = (v: unknown): MatchingExtended | null => {
   return v !== undefined && r.success ? r.data : null;
 };
 
+const parseAblation = (v: unknown): MatchingAblation | null => {
+  const r = Ablation.safeParse(v);
+  return v !== undefined && r.success ? r.data : null;
+};
+
 /** Разбор results.json; обязательная часть не сошлась — исключение (тест это ловит до стенда). */
 export function parseMatchingResults(json: unknown): MatchingResults {
   const base = z.object({ summary: Summary, rows: z.array(Row) }).parse(json);
   const o = json as Record<string, unknown>;
-  return { summary: base.summary, rows: base.rows, extended: optional(o.extended), legacyExtended: optional(o.legacyExtended) };
+  return { summary: base.summary, rows: base.rows, extended: optional(o.extended), legacyExtended: optional(o.legacyExtended), ablation: parseAblation(o.ablation) };
 }
 
 export function matchingResults(): MatchingResults {

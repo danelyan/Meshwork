@@ -31,6 +31,46 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 /** Таблица методов и разниц с интервалом из расширенного прогона; пустые блоки не рисуем. */
+function AblationBlock({ ab }: { ab: NonNullable<MatchingResults['ablation']> }) {
+  const full = ab.rows.find((r) => r.signal === 'full');
+  const sign = (x: number) => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(x).toFixed(3).replace('.', ',')}`;
+  if (!full) return null;
+  return (
+    <>
+      <h3>Абляция: что даёт каждый сигнал формулы</h3>
+      <p className={styles.soft}>
+        {ab.vacancies} вакансий × {ab.profiles} профилей. Сигнал выключаем по одному, остальная формула прежняя; Δ — разница с полной формулой
+        (минус — сигнал помогает), в скобках 95 % интервал (парный бутстреп по вакансиям). Разметку сделал один генератор, а не независимые эксперты, —
+        цифры показывают вклад в этом наборе, а не в жизни.
+      </p>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Режим</th>
+              <th className={styles.num}>P@5</th>
+              <th className={styles.num}>nDCG@10</th>
+              <th className={styles.num}>Δ P@5</th>
+              <th className={styles.num}>Δ nDCG@10</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ab.rows.map((r) => (
+              <tr key={r.signal}>
+                <td>{r.signal === 'full' ? r.label : `без: ${r.label}`}</td>
+                <td className={styles.num}>{dec(r.p5.mean)}</td>
+                <td className={styles.num}>{dec(r.ndcg10.mean)}</td>
+                <td className={styles.num}>{!r.measured ? 'нет данных' : r.dP5 ? `${sign(r.dP5.mean)} (${sign(r.dP5.lo)}; ${sign(r.dP5.hi)})` : '—'}</td>
+                <td className={styles.num}>{!r.measured ? 'нет данных' : r.dNdcg10 ? `${sign(r.dNdcg10.mean)} (${sign(r.dNdcg10.lo)}; ${sign(r.dNdcg10.hi)})` : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 function ExtendedBlock({ title, ext }: { title: string; ext: MatchingExtended }) {
   const methods = Object.entries(ext.methods ?? {});
   const metrics = Object.keys(METRIC_LABEL).filter((m) => methods.some(([, v]) => typeof v[m as keyof typeof v] === 'number'));
@@ -304,8 +344,9 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
           </div>
           {matching.legacyExtended && <ExtendedBlock title="Тот же набор: BM25, случайный порядок, интервалы" ext={matching.legacyExtended} />}
           {matching.extended && <ExtendedBlock title="Расширенная синтетика" ext={matching.extended} />}
+          {matching.ablation && <AblationBlock ab={matching.ablation} />}
           <h3>Как повторить (из platform/, без БД и сети)</h3>
-          <pre className={styles.code}>npx tsx eval/matching/run.ts --no-write</pre>
+          <pre className={styles.code}>{'npx tsx eval/matching/run.ts --no-write\nnpx tsx eval/matching/ablation.ts --no-write'}</pre>
           <p className={styles.soft}>
             Свой набор вакансий, кандидатов и разметки можно прогнать через то же ранжирование прямо на сайте — страница «Проверить на своих данных» (/evaluate)
             или POST /api/evaluate.

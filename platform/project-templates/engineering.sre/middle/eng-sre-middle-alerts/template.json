@@ -1,0 +1,19 @@
+{
+  "id": "eng-sre-middle-alerts",
+  "subcategoryId": "engineering.sre",
+  "specialization": "engineering",
+  "grade": "middle",
+  "title": "Движок алертов по burn rate с молчаниями",
+  "summary": "Multi-window multi-burn-rate, состояния pending/firing/resolved на фейковых часах, дедупликация, молчания по меткам, повторная доставка",
+  "stack": ["python312", "pytest"],
+  "catalogIds": ["eng.alerting", "eng.slo", "eng.retries-resilience", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

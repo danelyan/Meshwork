@@ -1,0 +1,19 @@
+{
+  "id": "eng-sre-junior-slo",
+  "subcategoryId": "engineering.sre",
+  "specialization": "engineering",
+  "grade": "junior",
+  "title": "SLI/SLO и бюджет ошибок по журналу запросов",
+  "summary": "Доступность и латентность по журналу запросов: перцентили по окнам, пустые окна, остаток бюджета ошибок",
+  "stack": ["python312", "pytest"],
+  "catalogIds": ["eng.slo", "eng.observability", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 150,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

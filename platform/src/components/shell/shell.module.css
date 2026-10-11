@@ -34,6 +34,8 @@
 .brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 18px; }
 .wordmark { font: 700 var(--fs-2xl)/1 var(--mono); letter-spacing: -.02em; }
 .wordmark span { color: var(--candidate-accent); }
+/* Кабинет работодателя (data-role на <body>): вторая половина знака - в цвете роли, как остальные акценты кабинета. */
+:global([data-role='employer']) .wordmark span { color: var(--employer-accent); }
 .federation { display: flex; align-items: center; padding-left: 18px; border-left: 1px solid var(--border-input); min-height: 32px; }
 .federation img { height: 28px; width: auto; display: block; filter: var(--logo-filter); }
 .nav { display: flex; gap: 4px; margin-left: 56px; align-items: center; min-width: 0; }

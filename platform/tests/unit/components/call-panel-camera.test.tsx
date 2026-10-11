@@ -64,6 +64,28 @@ class FakeRecorder {
   }
 }
 
+class FakeAudioCtx {
+  state = 'running';
+  sampleRate = 16_000;
+  destination = {};
+  createMediaStreamSource() {
+    return { connect: () => undefined, disconnect: () => undefined };
+  }
+  createAnalyser() {
+    return { fftSize: 512, connect: () => undefined, disconnect: () => undefined, getByteTimeDomainData: (a: Uint8Array) => a.fill(128) };
+  }
+  createScriptProcessor() {
+    return { onaudioprocess: null, connect: () => undefined, disconnect: () => undefined };
+  }
+  resume() {
+    return Promise.resolve();
+  }
+  close() {
+    this.state = 'closed';
+    return Promise.resolve();
+  }
+}
+
 beforeEach(() => {
   calls.length = 0;
   camDenied = false;
@@ -87,6 +109,8 @@ beforeEach(() => {
     }),
   );
   vi.stubGlobal('SpeechRecognition', class {});
+  // Свободный разговор (useRoomMic.canRecord) требует AudioContext - без него шаг устройств пропускается.
+  vi.stubGlobal('AudioContext', FakeAudioCtx);
   vi.stubGlobal('MediaRecorder', FakeRecorder);
   gum = vi.fn(async (c: MediaStreamConstraints) => {
     if (c.video && camDenied) throw Object.assign(new Error('denied'), { name: 'NotAllowedError' });

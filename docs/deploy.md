@@ -9,7 +9,7 @@
 | Адрес | https://fsp2.ru, проверка — `/api/health` |
 | Сервер | Selectel, проект `fsp-lct-2026`, Москва (`ru-7a`): сервер `fsp-stand`, конфигурация `PRC50.2-4096` (2 vCPU с долей 50 %, 4 ГБ), сетевой диск 40 ГБ `basicssd`, Ubuntu 24.04 |
 | Сеть | Плавающий адрес 90.156.158.121; группа безопасности `fsp-stand` пропускает внутрь только 22, 80, 443 и ICMP |
-| Режим | Демо без ключей: `LLM_PROVIDER=stub`, `LLM_STUB_DEMO=true`, `COLLECTOR_FIXTURES=true`, `DEMO_LOGIN=true`. Языковая модель и вход через Яндекс ID не подключены |
+| Режим | `LLM_PROVIDER=openai-chat` (проверено `/api/health`); демо-профили доступны. Вход через Яндекс ID MESHWORK подключён 11 октября через серверное окружение; параметры настройки — [README платформы](../platform/README.md#вход-через-яндекс-id) |
 | Поднят | 9 октября 2026 года |
 
 Домен `fsp2.ru` (DNS у reg.ru) указывает A-записью на адрес сервера. `www.fsp2.ru` и прежние адреса — `fsp-stars.ru`, `www.fsp-stars.ru`, `90-156-158-121.sslip.io` — перенаправляются на основной (`SITE_REDIRECT_FROM`). При смене адреса сервера меняются A-записи домена и переменные `DEPLOY_HOST` и `DEPLOY_KNOWN_HOSTS` в GitHub; при смене домена — `SITE_ADDRESS` и `APP_URL` в `.env` и переменная `APP_URL` в GitHub.
@@ -72,6 +72,7 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | Имя | Вид | Значение |
 | --- | --- | --- |
 | `DEPLOY_SSH_KEY` | секрет | Закрытый ключ пользователя `deploy` |
+| `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET` | секреты | Ключи приложения MESHWORK в Яндекс OAuth; используются только в ручном режиме настройки Яндекс ID |
 | `DEPLOY_HOST` | переменная | Адрес сервера |
 | `DEPLOY_USER` | переменная | `deploy` |
 | `DEPLOY_PATH` | переменная | `/opt/fsp/platform` |
@@ -79,6 +80,20 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | `APP_URL` | переменная | `https://<домен>` — для проверки после деплоя |
 
 Сид выполняется при каждом деплое. Он идемпотентен: демо-аккаунты обновляются по фиксированным id, у синтетического пула кандидатов работодателя утверждения пересоздаются; данные остальных пользователей не затрагиваются.
+
+Для подключения или замены ключей Яндекс ID сохранить обе переменные в GitHub
+Actions Secrets и запустить `Deploy stand` с `configure_yandex_only=true`:
+
+```bash
+gh workflow run deploy.yml -f configure_yandex_only=true
+```
+
+Этот режим передаёт ключи через stdin SSH, атомарно обновляет только две строки
+в серверном `.env` с правами 600 и пересоздаёт только `app` без сборки. Исходники,
+миграции и сид не запускаются; остальные настройки `.env` сохраняются. Значения
+ключей не выводятся в журнал. Скрипт обновления —
+[`configure-yandex.sh`](../platform/scripts/configure-yandex.sh); ручная настройка
+приложения Яндекса — [README платформы](../platform/README.md#вход-через-яндекс-id).
 
 ## Обслуживание
 

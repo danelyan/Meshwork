@@ -92,6 +92,11 @@ export const envSchema = z
     FSP_OIDC_CLIENT_SECRET: optionalString,
     /** Базовый URL API реестра достижений (…/api/v1); достижения — GET /me/achievements по токену пользователя. */
     FSP_API_URL: optionalString.pipe(z.url().optional()),
+    /**
+     * Подсказка у входа через ФСП ID, когда провайдер внешний: чем войти в симулятор (логины вымышленных
+     * спортсменов и их общий демо-пароль). Пусто — подсказки нет. Со встроенным моком не показывается.
+     */
+    FSP_OIDC_DEMO_HINT: optionalString.pipe(z.string().max(200).optional()),
 
     GITHUB_TOKEN: optionalString,
     /** true → сборщик не ходит в сеть за профилями, только фикстуры (демо-стенд, тесты). */

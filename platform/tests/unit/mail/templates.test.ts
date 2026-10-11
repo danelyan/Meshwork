@@ -129,7 +129,12 @@ describe('шаблоны писем', () => {
 
   it('цвета письма совпадают с токенами интерфейса', () => {
     const css = readFileSync(join(__dirname, '../../../src/styles/tokens.css'), 'utf8');
-    const token = (name: string) => new RegExp(`--${name}:\\s*([^;]+);`).exec(css)?.[1]?.trim().toLowerCase();
+    // Семантические токены ссылаются на палитру (`--ink: var(--p-gray-950)`): разворачиваем до значения.
+    const token = (name: string): string | undefined => {
+      const v = new RegExp(`--${name}:\\s*([^;]+);`).exec(css)?.[1]?.trim().toLowerCase();
+      const ref = v && /^var\(--([\w-]+)\)$/.exec(v);
+      return ref ? token(ref[1]) : v;
+    };
     expect(token('ink')).toBe(MAIL_COLORS.ink);
     expect(token('paper')).toBe(MAIL_COLORS.paper);
     expect(token('muted')).toBe(MAIL_COLORS.muted);

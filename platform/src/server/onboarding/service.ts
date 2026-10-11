@@ -7,6 +7,7 @@ import { grantConsent } from '@/server/consent/service';
 import { CANDIDATE_ONBOARDING_KINDS, EMPLOYER_ONBOARDING_KINDS, consentVersion, type ConsentKindName } from '@/server/consent/texts';
 import { prisma } from '@/server/db';
 import { AppError, errors } from '@/server/errors';
+import { fspDemoHint } from '@/server/fsp-id/client';
 import { loadCatalog } from '@/server/recommend/evidence';
 import { recommendTest } from '@/server/recommend/test';
 import type { Grade, Specialization } from '@/server/types';
@@ -241,6 +242,11 @@ export async function getView(userId: string, signal?: AbortSignal): Promise<Onb
   if (current.id === 'grade') {
     const hint = await gradeHint(l.user.candidateId);
     if (hint) view.hint = hint;
+  }
+  if (current.id === 'fsp') {
+    // Внешний провайдер спрашивает логин и пароль: подсказываем, чем войти в симулятор.
+    const hint = fspDemoHint();
+    if (hint) view.hint = `Вход в симулятор ФСП ID: ${hint}`;
   }
 
   const history = historyOf(l.ctx, l.state, current).map((s) => {

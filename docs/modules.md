@@ -160,7 +160,7 @@
   Итог — `CandidateCategory` и подъём подтверждённых утверждений до `platform`.
 - **Модели:** `TaskTemplate`, `TestAttempt` (seed, θ, SE, P(pass), исход, `subcategoryId`, версия политики), `TestItem`, `CandidateCategory`.
 - **Маршруты:** `GET|POST /api/test/start`, `GET /api/test/attempts`, `GET /api/test/attempt/:id`, `POST …/answer|finish|confirm-junior`.
-- **Env:** `TEST_DEMO_INTERVALS` (интервалы пересдачи в минутах — только для показа).
+- **Env:** `TEST_DEMO_INTERVALS` (интервалы пересдачи в минутах — только для показа); `TEST_INTEGRITY` (выключатель индекса честности), `TEST_INTEGRITY_ACTION=silent|confirm` (по умолчанию `silent`: high не задерживает категорию и кандидату не раскрывается), `JURY_INSIGHTS` (слой «только для жюри»: на стенде true, на проде false).
 - **Ограничения:** без LLM; параметры заданий `a`, `b` экспертные, на людях не оценены; подкатегория без полного банка — «тест пока
   недоступен»; смена грейда не чаще раза в 30 дней, пересдача того же — через 14 (предложение); принудительного понижения нет.
   Сопоставимость результатов (R-T-02) — внутри подкатегории.
@@ -191,9 +191,20 @@
   двойного «Завершить» — на `globalThis` (один инстанс). Демо-кандидаты (`isDemo`) — без суточного лимита и паузы (общие для жюри).
   Условия старта (`call/readiness.ts`, `callReadiness` → `readiness` в `GET /api/call`): qualifying — есть утверждение о навыке, interview — есть категория из теста
   (иначе 409 `call_not_ready`); повтор вида — не раньше 24 ч после завершённого созвона с вердиктом (409 `call_cooldown`, `details.retryAt`); активный созвон продолжается без проверок.
+- **Скорость ответа (лейн call-speed, 11.10):** при `CALL_STREAMING=true` (по умолчанию) вопрос интервьюера генерируется потоком
+  (`onJsonDelta`, только openai-chat со stream; yandex/stub — ответ целиком, как раньше) и уходит клиенту по предложениям SSE-событием
+  `utterance_delta {afterIndex, n, text}` до ответа `/turn`; в транскрипт пишется реплика целиком, и она всегда начинается с отданных
+  предложений (`call/stream.ts`, нарезка `lib/sentences.ts:stableSentences`), поэтому счёт услышанного для `/interrupt` сходится.
+  Защиты проверяются по мере поступления: тема/компетенция, покрытие, «не знаю», `done` — до первого предложения; пересказ профиля и
+  кириллица — на всём полученном тексте перед каждым предложением; отказ подсказывать — первым предложением. Сбой после прозвучавшего —
+  без повтора: прозвучавшее (+ шаблон), `meta.streamCut`. Этап разбора теста и первый вопрос не стримятся. Панель консультанта
+  (`components/call/useReplySpeech.ts`) озвучивает по предложениям через очередь голоса компаньона (тот же `AnalyserNode` липсинка);
+  комната `/interview/room` поток не слушает (озвучивает реплику по предложениям после `/turn`, как раньше). Замер: `Server-Timing`
+  у `/turn` (`llm`, `first`), `/audio` (`stt`), `/api/tts` (`tts`), лог `[call] turn|stt timing` без текста кандидата, в браузере
+  `window.__fspCallLatency`; скрипт `eval/call/latency.ts`, цифры — `validation-results.md` («Задержка созвона 11.10»).
 - **Маршруты:** `GET /api/call`, `POST /api/call/consent`, `POST /api/call/start`, `GET /api/call/:id`, `POST …/turn|audio|finish`,
   `GET …/events` (SSE), `GET …/recording`, `POST …/signal`.
-- **Env:** `CALL_DATA_DIR` (`./data`; том `app-data`), `CALL_DAILY_LIMIT` (5 за 24 ч на вид созвона, `0` — без лимита; демо-кандидаты не
+- **Env:** `CALL_STREAMING` (`true`; `false` — вопрос целиком, как до 11.10), `CALL_DATA_DIR` (`./data`; том `app-data`), `CALL_DAILY_LIMIT` (5 за 24 ч на вид созвона, `0` — без лимита; демо-кандидаты не
   ограничены; на стенде переменная не задана → 5 для обычных кандидатов), `STT_*`, `TTS_*`. `/turn` требует `text` (распознанный в `/audio`
   или браузером): только `audioRef` — 400.
 - **Ограничения:** категорию не меняет; порог подтверждения темы — предложение, на людях не калиброван; сегмент аудио ≤ 3 МБ, ≤ 40
@@ -230,8 +241,7 @@
   `GET /api/project-submissions/:id`, `POST /api/employer/needs/:id/project`, `GET /api/employer/project-templates`,
   `GET /api/employer/project-submissions`, `POST …/:id/invite-to-defense`.
 - **Env:** `RUNNER_URL`, `RUNNER_TOKEN`, `GITHUB_TOKEN` (приватные репозитории).
-- **Ограничения:** 14 шаблонов в 5 подкатегориях (web-api: все три грейда, Junior — два; ui-app: все три, Junior — два; integrations:
-  Middle, Senior; llm-apps: Middle, Senior; data-eng: Junior, Senior) — по остальным подкатегориям задание не собрать; открытая лента
+- **Ограничения:** 53 шаблона, покрыты все 51 категория (17 подкатегорий × 3 грейда; Junior по два в web-api и ui-app); открытая лента
   показывает направление кандидата и грейды не выше его категории; порядок: взятые, подкатегория кандидата (`preferredSubcategoryId`:
   категория из теста, иначе онбординг), соседние подкатегории того же направления; балл — доля пройденных скрытых тестов, рубрика LLM — пояснение и флаги, не балл; статанализ в отчёте
   «не выполнялся» (статанализ `lint` runner не выполняет, поле помечено `skipped`); без `RUNNER_URL` работает stub-runner (счёт по шаблону, не по коду); только публичный GitHub.
@@ -374,6 +384,6 @@
 - **ФСП** — демонстрационный источник (`collector/fsp-demo.ts`: `not_linked | no_achievements | unavailable | linked`); вход через ФСП ID не подключён.
 - **Яндекс ID:** пусто `YANDEX_CLIENT_ID/SECRET` — кнопка неактивна, остаётся демо-вход (`DEMO_LOGIN=true`, `/demo`).
 - **Голос:** без ключей SpeechKit ввод распознаёт браузер, озвучки нет.
-- **Тест:** `TEST_DEMO_INTERVALS=true` — интервалы пересдачи в минутах (стенд жюри).
+- **Тест:** `TEST_DEMO_INTERVALS=true` — интервалы пересдачи в минутах (стенд жюри); `JURY_INSIGHTS=true` — слой жюри над тестом (на проде не включать).
 - **Почта:** `SMTP_HOST/PORT` (Mailpit на стенде); `MAIL_PROVIDER=log` — только в лог.
 - **Отладочная панель** и `/api/dev/*`: только localhost и не production; выключатель `DEVTOOLS=false`.

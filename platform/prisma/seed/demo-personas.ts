@@ -4,6 +4,7 @@ import { CALL_RECORDING_CONSENT_VERSION, CONSENT_TEXTS } from '../../src/server/
 import { CALL_DISCLAIMER } from '../../src/server/call/drivers';
 import { POLICY_VERSION } from '../../src/server/test/policy';
 
+import { CANDIDATE_PERSONAS } from '../../src/server/demo/personas';
 import { type DemoProfile, seedPoolProfiles } from './employer';
 
 /**
@@ -173,6 +174,19 @@ async function seedInvitation(prisma: PrismaClient, id: string, candidateId: str
   await prisma.invitation.upsert({ where: { id }, update: base, create: { id, ...base } });
 }
 
+/**
+ * Персоны этапов 3–8 показывают путь после знакомства. Общий демо-аккаунт могли сбросить («пройти онбординг заново»,
+ * dev-панель) — тогда вместо этапа жюри видит знакомство с начала. Каждый сид (и деплой) возвращает их в «знакомство пройдено».
+ */
+async function healOnboardedPersonas(prisma: PrismaClient): Promise<void> {
+  const ids = CANDIDATE_PERSONAS.filter((p) => (p.stage ?? 0) >= 3).map((p) => p.id);
+  const users = await prisma.user.findMany({ where: { candidateId: { in: ids }, isDemo: true, onboardedAt: null }, select: { id: true } });
+  if (users.length === 0) return;
+  const userIds = users.map((u) => u.id);
+  await prisma.onboardingState.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.user.updateMany({ where: { id: { in: userIds } }, data: { onboardedAt: new Date() } });
+}
+
 export async function seedDemoPersonas(prisma: PrismaClient): Promise<void> {
   await seedPoolProfiles(prisma, PERSONA_PROFILES);
   for (const p of PERSONA_PROFILES) await seedQuestionnaire(prisma, p);
@@ -184,5 +198,6 @@ export async function seedDemoPersonas(prisma: PrismaClient): Promise<void> {
   await seedInvitation(prisma, 'demo-inv-invited', 'demo-invited', 'sent', 1);
   await seedInvitation(prisma, 'demo-inv-accepted', 'demo-accepted', 'accepted', 4);
   await seedInvitation(prisma, 'demo-inv-hired', 'demo-hired', 'hired', 9);
+  await healOnboardedPersonas(prisma);
   console.log(`seed(demo-personas): ${PERSONA_PROFILES.length + 1} candidates, employer Гранит Софт, 3 invitations (sent/accepted/hired)`);
 }

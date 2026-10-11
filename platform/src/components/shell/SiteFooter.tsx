@@ -15,7 +15,7 @@ export function SiteFooter({ demo = false }: { demo?: boolean }) {
         <Link href="/ai">Как работает ИИ</Link>
         <Link href="/consent">Согласие</Link>
         <Link href="/validation">Валидация</Link>
-        {demo && <Link href="/demo">Демо для жюри</Link>}
+        {demo && <Link className={styles.demoLink} href="/demo">Демо для жюри</Link>}
         <a href="https://fsp-russia.ru/" target="_blank" rel="noopener noreferrer">
           ФСП
         </a>

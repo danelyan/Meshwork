@@ -41,6 +41,7 @@
 .sso > a svg { width: 18px; height: 18px; }
 .method h3 { margin: 0; }
 .method .hint { margin: 0; }
+.demo .hint a { color: var(--jury); font-weight: 600; } /* оранжевый = только для жюри */
 .accordion { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 4px 0; border: 0; background: none; font: 600 var(--fs-sm) inherit; font-family: inherit; color: var(--ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .accordion[aria-expanded='true'] .chev { transform: rotate(180deg); }
 .chev { display: inline-block; transition: transform .16s var(--ease); }

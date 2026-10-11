@@ -75,8 +75,8 @@
 .ruleTitle { margin: 4px 0 8px; font-size: var(--fs); }
 .ruleList { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--text-soft); line-height: 1.5; }
 /* Слой «только для жюри» (JURY_INSIGHTS): пунктирная рамка, на проде не выводится */
-.jury { border: 1.5px dashed var(--muted); padding: 12px 16px; display: grid; gap: 8px; font-size: var(--fs-sm); }
-.juryHead { margin: 0; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.jury { border: 1.5px dashed var(--jury); padding: 12px 16px; display: grid; gap: 8px; font-size: var(--fs-sm); }
+.juryHead { margin: 0; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--jury); }
 .juryGrid { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px 16px; }
 .juryGrid div { display: grid; gap: 2px; }
 .juryGrid dt { color: var(--muted); }

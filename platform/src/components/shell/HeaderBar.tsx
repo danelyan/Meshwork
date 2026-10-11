@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import type { HeaderAccount } from '@/server/auth/role-plan';
-import { JURY_HOME, isJuryPath } from '@/components/demo/jury';
+import { JURY_HINT, JURY_HOME, isJuryPath } from '@/components/demo/jury';
 
 import { HOME_ANCHORS, activeLinkHref, navFor, type NavLink } from './nav';
 import { LogoutButton } from './LogoutButton';
@@ -51,9 +51,14 @@ export function HeaderBar({ signedIn, links, account = null, jury = false }: { s
         )}
         <div className={styles.action}>
           {jury && (
-            <Link className={styles.jury} href={JURY_HOME} aria-current={isJuryPath(pathname) ? 'page' : undefined}>
-              Для жюри
-            </Link>
+            <span className={styles.juryWrap}>
+              <Link className={styles.jury} href={JURY_HOME} aria-current={isJuryPath(pathname) ? 'page' : undefined} aria-describedby="jury-hint">
+                Для жюри
+              </Link>
+              <span id="jury-hint" role="tooltip" className={styles.juryHint}>
+                {JURY_HINT}
+              </span>
+            </span>
           )}
           {account?.roles && <Notifications role={account.roles.role} />}
           {/* Тема действует в разделах кабинета (THEMED_PATHS) — иконка там, где она что-то меняет; на лендинге, входе и юридических её нет. */}

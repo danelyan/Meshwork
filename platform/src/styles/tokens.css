@@ -26,6 +26,8 @@
   --p-wine-600: #A3343F;
   --p-wine-300: #e07a86;
   --p-red-astra: #EC1D35;
+  --p-orange-700: #c2410c;
+  --p-orange-300: #fb923c;
   --p-red-700: #b3261e;
   --p-red-300: #ff8f86;
   --p-night-950: #0e0f14;
@@ -51,6 +53,9 @@
   --candidate-accent: var(--p-indigo-600);
   --employer-accent: var(--p-wine-600);
   --astra-red: var(--p-red-astra);
+  /* оранжевый = только для демонстрации жюри (кнопка «Для жюри», демо-ссылки, плашки); на белом 5,2:1 */
+  --jury: var(--p-orange-700);
+  --on-jury: var(--p-white);
   --line: rgba(17, 17, 17, 0.1);
   --glass: rgba(255, 255, 255, 0.58);
   --glass-strong: rgba(255, 255, 255, 0.86);
@@ -127,8 +132,6 @@
   --fs-xl: 20px;  /* заголовок карточки, крупный лид */
   --fs-2xl: 24px; /* заголовок панели, вопрос, цифра статистики */
   --fs-3xl: 28px; /* крупная цифра, заголовок экрана */
-  --fs-landing-section: clamp(32px, 3.4vw, 52px);
-  --fs-landing-role: clamp(24px, 2.2vw, 32px);
 
   font-family: var(--font);
   color: var(--ink);
@@ -279,6 +282,8 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
     --paper: var(--p-night-900);
     --muted: var(--p-mist-400);
     --blue: var(--p-indigo-300);
+    --jury: var(--p-orange-300);
+    --on-jury: var(--p-night-950);
     --candidate-accent: var(--p-indigo-300);
     --employer-accent: var(--p-wine-300);
     --line: rgba(255, 255, 255, 0.12);

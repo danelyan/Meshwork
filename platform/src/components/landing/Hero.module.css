@@ -1,16 +1,16 @@
 .hero {
   min-height: calc(100svh - var(--landing-header-h)); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px;
-  align-items: center; padding: 24px var(--page-pad) 72px;
+  align-items: center; padding: 24px var(--page-pad) 56px;
 }
 .kicker { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 0 0 18px; }
-.title { margin: 0 0 24px; font-family: var(--font); font-size: clamp(52px, 6vw, 104px); line-height: .95; font-weight: 700; letter-spacing: -0.03em; text-wrap: balance; }
+.title { margin: 0 0 24px; font-family: var(--font); font-size: clamp(52px, 6vw, 104px); line-height: .95; font-weight: 700; letter-spacing: -0.055em; text-wrap: balance; }
 .title i { font-style: normal; color: var(--blue); }
 .slogan { margin: 0 0 40px; font-size: 18px; line-height: 1.55; color: var(--text-soft); border-left: 1.5px solid var(--ink); padding-left: 18px; max-width: 540px; text-wrap: pretty; }
 .note { margin: 16px 0 0; padding: 0; list-style: none; font: 500 12px var(--mono); color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
 .note li::before { content: ''; display: inline-block; width: 6px; height: 6px; background: var(--blue); margin-right: 8px; vertical-align: middle; }
 .entry { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 20px; padding: 14px 0; text-align: left; }
 .entry b { font-size: 16px; text-decoration: underline; text-underline-offset: 4px; }
-.jury { display: inline-block; margin-top: 4px; font: 600 var(--fs-sm) var(--mono); color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+.jury { display: inline-block; margin-top: 4px; font: 600 var(--fs-sm) var(--mono); color: var(--jury); text-decoration: underline; text-underline-offset: 4px; }
 .jury:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .entry small { font: 12px var(--mono); color: var(--muted); }
 

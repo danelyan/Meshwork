@@ -1,1 +1,21 @@
-{ "think": [], "listen": [], "soft": [] }
+{
+  "think": [
+    "think_01.mp3",
+    "think_02.mp3",
+    "think_03.mp3",
+    "think_04.mp3"
+  ],
+  "listen": [
+    "listen_01.mp3",
+    "listen_02.mp3",
+    "listen_03.mp3",
+    "listen_04.mp3",
+    "listen_05.mp3"
+  ],
+  "soft": [
+    "soft_01.mp3",
+    "soft_02.mp3",
+    "soft_03.mp3",
+    "soft_04.mp3"
+  ]
+}

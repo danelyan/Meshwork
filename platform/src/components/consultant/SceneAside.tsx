@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { grantConsentApi } from '@/lib/consent-api';
+import { liveStepCopy } from '@/lib/live-step';
 import type { AsideDoc, JourneyStep, MarketRow, SceneAsideData, StepBlock, StepBlocker } from '@/server/consultant/aside';
 import { CONSENT_TEXTS } from '@/server/consent/texts';
 
@@ -217,8 +218,10 @@ function StepBlockView({ block, market, docs, role }: { block: StepBlock; market
       const text = inv.pending > 0 ? `Ждут ответа: ${invitesWord(inv.pending)}.` : inv.total > 0 ? `Всего: ${invitesWord(inv.total)}.` : 'Приглашений пока нет: компании находят профиль сами.';
       return <StepCard id="step-invitations" title={`Приглашения · ${inv.total}`} text={text} href="/invitations" cta="Открыть приглашения" blocker={block.blocker} />;
     }
-    case 'live_defense':
-      return <StepCard id="step-live" title="Живая защита" text="Приглашение принято: работодатель предложит слоты, ты выберешь время. Защита идёт с записью." href="/invitations" cta="Выбрать слот" blocker={block.blocker} />;
+    case 'live_defense': {
+      const c = liveStepCopy(block.live);
+      return <StepCard id="step-live" title="Живая защита" text={c.text} extra={block.live?.company} href={c.cta?.href} cta={c.cta?.label} blocker={block.blocker} />;
+    }
     case 'hired':
       return block.hired ? <StepCard id="step-hired" title="Нанят" text={`Компания отметила найм: ${block.hired.company}.`} href="/invitations" cta="Открыть приглашения" /> : null;
   }

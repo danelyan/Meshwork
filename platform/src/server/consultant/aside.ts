@@ -3,6 +3,8 @@ import { gradeLabel } from '@/lib/grades';
 import { prisma } from '../db';
 import { journeyState, type JourneyStep as JourneyKey } from '../agent/journey';
 import { listVacancies, loadEmployerContext } from '../employer';
+import { liveDefenseViews } from '../live-defense/service';
+import { type LiveStepInfo, liveStepCopy, pickLive } from '@/lib/live-step';
 import type { OnboardingView } from '../onboarding/types';
 import { listMemory, MEMORY_LIMIT, type MemoryItem, type MemoryOwner, memoryPending } from './memory';
 
@@ -128,6 +130,8 @@ export interface StepBlock {
   project?: { taskId: string; title: string; status: 'submitted' | 'running' | 'checked' | 'failed' } | null;
   /** hired: компания, отметившая найм. */
   hired?: { company: string } | null;
+  /** live_defense: подстатус живой защиты по принятому приглашению (нет записи — 'none'). */
+  live?: LiveStepInfo;
   /** project: приглашение принято, а проверенного проекта нет — компания ждёт проект, без него защиту не назначить. */
   forLive?: boolean;
   /**
@@ -411,6 +415,32 @@ export function demandFor(vacancies: { specialization: string; grade: string }[]
   return { direction: SPEC[spec] ?? spec, total, detail: rows.map((r) => `${r.label.replace(/^.* · /, '')} ${r.count}`).join(' · ') };
 }
 
+/** Живая защита по принятым приглашениям: подстатус, время (МСК — при показе), компания. */
+async function loadLive(candidateId: string): Promise<LiveStepInfo> {
+  const accepted = await prisma.invitation.findMany({
+    where: { candidateId, status: 'accepted' },
+    select: { id: true, company: { select: { name: true } }, vacancy: { select: { company: { select: { name: true } } } } },
+  });
+  const views = await liveDefenseViews(accepted.map((i) => i.id), 'candidate');
+  const items = accepted.map((i): LiveStepInfo => {
+    const v = views.get(i.id);
+    const company = i.company?.name ?? i.vacancy?.company.name;
+    return {
+      status: v?.status ?? 'none',
+      ...(company ? { company } : {}),
+      ...(v?.status === 'scheduled' && v.scheduled ? { scheduledAt: v.scheduled.startsAt, ...(v.scheduled.roomOpen && v.scheduled.roomHref ? { roomHref: v.scheduled.roomHref } : {}) } : {}),
+    };
+  });
+  return pickLive(items) ?? { status: 'none' };
+}
+
+/** Нота шага «Живая защита» в пути — по подстатусу (то же, что в карточке, коротко). */
+export function liveNote(steps: JourneyStep[], live: LiveStepInfo | undefined): JourneyStep[] {
+  if (!live) return steps;
+  const note = liveStepCopy(live).note;
+  return steps.map((s) => (s.id === 'live_defense' && s.state !== 'done' ? { ...s, note } : s));
+}
+
 /** Блок под текущий шаг: что нужно для отрисовки; проект — только там, где он нужен. */
 async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<typeof journeyState>>, invitations: number, demand?: StepBlock['demand']): Promise<StepBlock> {
   const step = journey.nextStep;
@@ -420,7 +450,8 @@ async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<ty
     const forLive = step === 'project' && journey.counts.acceptedInvitations > 0;
     return { step, project: step === 'project' ? subs.latest : subs.checked ?? subs.latest, ...(forLive ? { forLive } : {}) };
   }
-  if (step === 'waiting' || step === 'invitations' || step === 'live_defense') return { step, invitations: { pending: journey.counts.pendingInvitations, accepted: journey.counts.acceptedInvitations, total: invitations } };
+  if (step === 'live_defense') return { step, invitations: { pending: journey.counts.pendingInvitations, accepted: journey.counts.acceptedInvitations, total: invitations }, live: await loadLive(candidateId) };
+  if (step === 'waiting' || step === 'invitations') return { step, invitations: { pending: journey.counts.pendingInvitations, accepted: journey.counts.acceptedInvitations, total: invitations } };
   if (step === 'hired') return { step, hired: journey.hired ? { company: journey.hired.company } : null };
   return { step };
 }
@@ -450,11 +481,11 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
   const stepBlock: StepBlock = blocker ? { ...block, blocker } : block;
   const intro = introDone(view);
   const hired = hiredInv ? { company: hiredInv.company?.name ?? hiredInv.vacancy?.company.name ?? 'компанию' } : null;
-  const steps = blockerNotes(promoteNow(
+  const steps = blockerNotes(liveNote(promoteNow(
     candidateSteps({ intro, introNote: introNote(view, intro, false, known.known?.filter((k) => k.source === 'onboarding').length ?? 0), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations }),
     journey.nextStep,
     journey.counts.acceptedInvitations > 0 && !journey.steps.project,
-  ), step, facts);
+  ), stepBlock.live), step, facts);
   const market = vacancies && !cand?.specialization ? marketRows(vacancies, () => false) : undefined;
   const stats = candidateStats({ confirmed: profileClaims, category });
   // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).

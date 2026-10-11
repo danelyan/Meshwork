@@ -2,8 +2,9 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { AsideProvider } from '@/components/consultant/aside-refresh';
 import { SceneAside } from '@/components/consultant/SceneAside';
-import { AI_CONSENT_BLOCKER, HIDDEN_BLOCKER, type SceneAsideData, blockerNotes, candidateSteps, promoteNow, stepBlocker, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
+import { AI_CONSENT_BLOCKER, HIDDEN_BLOCKER, type SceneAsideData, blockerNotes, candidateSteps, liveNote, promoteNow, stepBlocker, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
 import type { OnboardingView } from '@/server/onboarding/types';
+import { liveStepCopy, pickLive } from '@/lib/live-step';
 
 // MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
@@ -295,5 +296,51 @@ describe('блокер шага', () => {
     render(<SceneAside data={{ ...base, stepBlock: { step: 'waiting', invitations: { pending: 0, accepted: 0, total: 0 }, blocker: HIDDEN_BLOCKER } }} />);
     expect(screen.getByTestId('step-invitations-blocker').textContent).toMatch(/Профиль скрыт — компании тебя не видят/);
     expect(screen.getByRole('link', { name: 'Открыть настройки' }).getAttribute('href')).toBe('/settings');
+  });
+});
+
+describe('живая защита: подстатусы', () => {
+  const hint = { title: 'x', text: 'y' };
+  const base: SceneAsideData = { role: 'candidate', steps: candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0 }), docs: null, hint };
+  const at = '2026-10-12T11:30:00.000Z'; // 14:30 МСК
+  const card = (live: Parameters<typeof liveStepCopy>[0]) => {
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'live_defense', live } }} />);
+    const el = screen.getByTestId('aside-step-live');
+    const links = Array.from(el.querySelectorAll('a')).map((a) => [a.textContent, a.getAttribute('href')]);
+    const text = el.textContent;
+    cleanup();
+    return { text, links };
+  };
+
+  it('нет предложения — компания предложит время, кнопка «Открыть приглашения»', () => {
+    const c = card({ status: 'none' });
+    expect(c.text).toMatch(/Компания предложит время; ты выберешь слот/);
+    expect(c.links).toEqual([['Открыть приглашения', '/invitations']]);
+  });
+  it('slots_proposed — выбрать слот', () => {
+    const c = card({ status: 'slots_proposed', company: 'Северный Поток' });
+    expect(c.text).toMatch(/Компания предложила слоты — выбери время/);
+    expect(c.text).toMatch(/Северный Поток/);
+    expect(c.links).toEqual([['Выбрать слот', '/invitations']]);
+  });
+  it('scheduled — дата и время по МСК; комната открыта — «Открыть комнату»', () => {
+    let c = card({ status: 'scheduled', scheduledAt: at });
+    expect(c.text).toMatch(/Защита назначена на .*12\.10 14:30 МСК/);
+    expect(c.links).toEqual([['Открыть приглашения', '/invitations']]);
+    c = card({ status: 'scheduled', scheduledAt: at, roomHref: '/defense-room/x' });
+    expect(c.links).toEqual([['Открыть комнату', '/defense-room/x']]);
+  });
+  it('done — ждём решение, без главной кнопки; no_show — компания может назначить новую', () => {
+    const d = card({ status: 'done' });
+    expect(d.text).toMatch(/Защита прошла — ждём решение компании/);
+    expect(d.links).toEqual([]);
+    expect(card({ status: 'no_show' }).text).toMatch(/Защита не состоялась — компания может назначить новую/);
+  });
+  it('нота шага в пути — коротко по подстатусу; из нескольких приглашений — самое живое', () => {
+    const steps = promoteNow(candidateSteps({ intro: true, introNote: '', confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, project: true, aiDefense: true, invitations: 1, accepted: 1 }), 'live_defense');
+    expect(liveNote(steps, { status: 'slots_proposed' }).find((s) => s.id === 'live_defense')!.note).toBe('выбери слот');
+    expect(liveNote(steps, { status: 'scheduled', scheduledAt: at }).find((s) => s.id === 'live_defense')!.note).toMatch(/назначена: .*14:30 МСК/);
+    expect(liveNote(steps, undefined)).toEqual(steps);
+    expect(pickLive([{ status: 'done' }, { status: 'slots_proposed' }, { status: 'none' }])!.status).toBe('slots_proposed');
   });
 });

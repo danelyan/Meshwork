@@ -39,11 +39,14 @@ const tool = (name: string) => employerTools.find((t) => t.name === name)!;
 /** Всё, что работодатель не должен узнать до принятия: имена, почты, цитаты кандидатов пула. */
 async function secrets(): Promise<string[]> {
   const cands = await prisma.candidate.findMany({ select: { name: true, email: true, claims: { select: { quote: true } } } });
+  // Формулировки каталога публичны: демо-резюме дословно повторяют их (строка резюме = statement + точка),
+  // поэтому такая «цитата» не секрет кандидата, а общий текст каталога (он законно есть в выдаче).
+  const catalog = new Set((await prisma.claimCatalog.findMany({ select: { statement: true } })).map((e) => e.statement.replace(/\.$/, '')));
   const out = new Set<string>();
   for (const c of cands) {
     out.add(c.name);
     out.add(c.email);
-    for (const q of c.claims) if (q.quote.length > 12) out.add(q.quote);
+    for (const q of c.claims) if (q.quote.length > 12 && !catalog.has(q.quote.replace(/\.$/, ''))) out.add(q.quote);
   }
   return [...out];
 }
@@ -67,12 +70,6 @@ describe('помощник работодателя (БД)', () => {
     await seedRecommend(prisma);
     await seedAuth(prisma);
     await seedEmployer(prisma);
-    // Демо-цитаты иногда совпадают с публичной формулировкой каталога. Отделяем
-    // приватный текст источника, чтобы проверка ловила утечку, а не название навыка.
-    const claims = await prisma.claim.findMany({ select: { id: true, quote: true } });
-    for (const claim of claims) {
-      await prisma.claim.update({ where: { id: claim.id }, data: { quote: `Private fixture quote ${claim.id}: ${claim.quote}` } });
-    }
     await prisma.candidate.updateMany({ data: { hiddenFromEmployers: false } });
   });
   afterAll(async () => {

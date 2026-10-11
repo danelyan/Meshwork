@@ -236,8 +236,8 @@ describe('колонка на время знакомства', () => {
 
   it('две карточки: заполнение профиля с цифрами и ответы; без пути, рынка, файлов и настроек', () => {
     render(<SceneAside data={guestAside(view({}))} />);
-    expect(screen.getByTestId('aside-progress').textContent).toContain('Заполнение профиля · 2 из 11');
-    expect(screen.getByRole('progressbar', { name: 'Заполнено 2 из 11' })).toBeDefined();
+    expect(screen.getByTestId('aside-progress').textContent).toContain('Заполнение профиля · 2 из 11 вопросов');
+    expect(screen.getByRole('progressbar', { name: 'Пройдено 2 из 11 вопросов' })).toBeDefined();
     expect(screen.getByTestId('aside-progress').textContent).toContain('сейчас: грейд'.replace('сейчас', 'Сейчас'));
     expect(screen.getByTestId('aside-known').textContent).toContain('Подтвердить грейд');
     expect(screen.queryByRole('button', { name: '+ добавить' })).toBeNull();

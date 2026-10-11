@@ -108,7 +108,7 @@ it('кандидату знакомство — таймлайн над чато
   vi.stubGlobal('fetch', fetchFn);
   render(<PausedFeed view={view} restored={restored} />);
   const strip = screen.getByTestId('onboarding-strip');
-  expect(strip.textContent).toContain(`сохранено ${view.progress.done} из ${view.progress.total}`);
+  expect(strip.textContent).toContain(`пройдено ${view.progress.done} из ${view.progress.total} вопрос`);
   act(() => screen.getByRole('button', { name: 'Продолжить' }).click());
   await waitFor(() => expect(refresh).toHaveBeenCalled());
   const body = JSON.parse((fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);

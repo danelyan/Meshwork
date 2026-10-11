@@ -15,10 +15,12 @@ import { GRADE_RU, SUBMISSION_STATUS, hours } from './labels';
 export interface ProjectFeedProps {
   items: FeedItem[];
   limit: { maxActive: number; active: number };
+  /** Категория из теста уже есть: пустая лента не зовёт проходить тест повторно. */
+  hasCategory?: boolean;
 }
 
 /** Лента обезличенных проектных заданий (ADR 0003, п. 6): без компании и зарплаты; «Взять» - с лимитом активных. */
-export function ProjectFeed({ items, limit }: ProjectFeedProps) {
+export function ProjectFeed({ items, limit, hasCategory = false }: ProjectFeedProps) {
   const router = useRouter();
   const [filter, setFilter] = useState<'all' | 'mine' | 'available'>('all');
   const visible = items.filter((item) => filter === 'all' || (filter === 'mine' ? item.my.taken : !item.my.taken));
@@ -50,7 +52,27 @@ export function ProjectFeed({ items, limit }: ProjectFeedProps) {
       <div className={styles.feedTabs} aria-label="Фильтр заданий">{([{ id: 'all', label: 'Для вас' }, { id: 'mine', label: 'Мои' }, { id: 'available', label: 'Доступно' }] as const).map((tab) => <Button size="sm" key={tab.id} aria-pressed={filter === tab.id} onClick={() => setFilter(tab.id)}>{tab.label} · {items.filter((item) => tab.id === 'all' || (tab.id === 'mine' ? item.my.taken : !item.my.taken)).length}</Button>)}</div>
       {error && <Notice tone="error">{error}</Notice>}
       {visible.length === 0 ? (
-        <Notice>{items.length ? 'В этой группе пока нет заданий. Выберите другую вкладку.' : 'Пока нет открытых заданий для твоего направления и грейда. Загляни позже или пройди тест - категория уточнит подборку.'}</Notice>
+        items.length ? (
+          <Notice>В этой группе пока нет заданий. Выберите другую вкладку.</Notice>
+        ) : hasCategory ? (
+          <>
+            <Notice>Сейчас нет открытых заданий для твоей категории. Они появляются, когда работодатели твоего направления публикуют проект. Загляни позже.</Notice>
+            <div className={styles.actions}>
+              <Button href="/consultant" variant="primary">
+                Следующий шаг — у консультанта
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <Notice>Пока нет открытых заданий для твоего направления. Без категории из теста видны только задания уровня Junior — пройди тест на грейд, чтобы открыть остальные.</Notice>
+            <div className={styles.actions}>
+              <Button href="/test" variant="cta">
+                Пройти тест на грейд
+              </Button>
+            </div>
+          </>
+        )
       ) : (
         <ul className={styles.list} aria-label="Задания">
           {visible.map((t) => (

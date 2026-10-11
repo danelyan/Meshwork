@@ -50,6 +50,8 @@
 .afterTest { display: grid; gap: 12px; }
 .afterTest h2 { margin: 0; font-size: 24px; letter-spacing: -.04em; }
 .afterTest p { margin: 0; font-size: 13px; line-height: 1.6; }
+.afterTest a { text-decoration: underline; text-underline-offset: 3px; }
+.afterTest a:hover { color: var(--blue); }
 .example { border: 1px solid var(--line); padding: 24px; background: var(--surface-notice); min-width: 0; display: grid; gap: 18px; }
 .exampleLabel { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .example h2 { font-size: 28px; letter-spacing: -.04em; margin: 0; }

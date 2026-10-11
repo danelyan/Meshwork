@@ -109,22 +109,26 @@ function Market({ market, role }: { market: NonNullable<SceneAsideData['market']
   );
 }
 
-/** Знакомство: таймлайн заполнения анкеты и цифры — сколько сохранено, что увидит компания. */
-function ProfileProgress({ progress, known }: { progress: NonNullable<SceneAsideData['onboarding']>; known: SceneAsideData['known'] }) {
+/**
+ * Знакомство: таймлайн анкеты и цифры. `progress.done` — пройденные вопросы (отвеченные и пропущенные, engine.ts),
+ * «ответов сохранено» — только ответы (пропуск ответом не считается), поэтому числа могут отличаться.
+ */
+function ProfileProgress({ progress, known, role }: { progress: NonNullable<SceneAsideData['onboarding']>; known: SceneAsideData['known']; role: SceneAsideData['role'] }) {
   const answers = (known ?? []).filter((f) => f.source === 'onboarding' && f.stepId);
   const seen = answers.filter((f) => fieldVisibility(f.stepId!) === 'в анонимной карточке').length;
   const left = Math.max(0, progress.total - progress.done);
   return (
-    <Card id="progress" title={`Заполнение профиля · ${progress.done} из ${progress.total}`}>
-      <div className={styles.progressBar} role="progressbar" aria-valuenow={progress.done} aria-valuemin={0} aria-valuemax={progress.total} aria-label={`Заполнено ${progress.done} из ${progress.total}`}>
+    <Card id="progress" title={`Заполнение профиля · ${progress.done} из ${progress.total} ${plural(progress.total, 'вопроса', 'вопросов', 'вопросов')}`}>
+      <div className={styles.progressBar} role="progressbar" aria-valuenow={progress.done} aria-valuemin={0} aria-valuemax={progress.total} aria-label={`Пройдено ${progress.done} из ${progress.total} ${plural(progress.total, 'вопроса', 'вопросов', 'вопросов')}`}>
         {Array.from({ length: progress.total }, (_, i) => <i key={i} data-done={i < progress.done || undefined} />)}
       </div>
       <dl className={styles.progressStats}>
-        <div><dt>сохранено</dt><dd>{progress.done}</dd></div>
-        <div><dt>осталось</dt><dd>{left}</dd></div>
-        <div><dt>видит компания</dt><dd>{seen}</dd></div>
+        <div><dt>ответов сохранено</dt><dd>{answers.length}</dd></div>
+        <div><dt>вопросов осталось</dt><dd>{left}</dd></div>
+        {/* публичные поля анонимной карточки есть только у кандидата (fieldVisibility) */}
+        {role === 'candidate' && <div><dt>ответов видит компания</dt><dd>{seen}</dd></div>}
       </dl>
-      {progress.current && <p className={styles.muted}>Сейчас: {progress.current.toLowerCase()} - вопрос в чате слева.</p>}
+      {progress.current && <p className={styles.muted}>Сейчас: {progress.current.toLowerCase()} - вопрос ждёт в чате.</p>}
     </Card>
   );
 }
@@ -234,7 +238,7 @@ export function SceneAside({ data: initial, className }: { data: SceneAsideData;
     return (
       <div className={`${styles.box} ${className ?? ''}`} data-testid="scene-aside">
         <div className={styles.aside} data-role={data.role} data-mode="onboarding">
-          <ProfileProgress progress={data.onboarding} known={data.known} />
+          <ProfileProgress progress={data.onboarding} known={data.known} role={data.role} />
           <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} fill={data.fill} minimal />
         </div>
       </div>

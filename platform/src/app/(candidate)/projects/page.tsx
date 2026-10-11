@@ -10,6 +10,6 @@ export const dynamic = 'force-dynamic';
 /** Лента проектных заданий (ADR 0003, ступень 2): обезличенные задачи работодателей направления кандидата. */
 export default async function ProjectsPage() {
   const s = await requirePageCandidate('/projects');
-  const { items, limit } = await listFeed(s.candidateId, { preferredSubcategoryId: await preferredSubcategoryId(s.candidateId) });
-  return <ProjectFeed items={items} limit={limit} />;
+  const { items, limit, scope } = await listFeed(s.candidateId, { preferredSubcategoryId: await preferredSubcategoryId(s.candidateId) });
+  return <ProjectFeed items={items} limit={limit} hasCategory={scope.fromTest} />;
 }

@@ -10,16 +10,24 @@
 .badge { padding: 0 5px; color: var(--stage-on-accent); background: var(--stage-accent); }
 .text { font-size: var(--fs); line-height: 1.4; color: var(--stage-text); overflow-wrap: anywhere; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
 .actions { display: flex; gap: 10px; }
-.action { padding: 0; background: none; border: 0; font: 500 var(--fs-sm) var(--mono); color: var(--stage-ink-dim); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+/* зона нажатия 32px (на узком экране 44px): поля компенсированы отрицательным отступом, подпись и сетка строки не сдвигаются */
+.action { min-height: 32px; padding: 8px 4px; margin: -8px -4px; background: none; border: 0; font: 500 var(--fs-sm) var(--mono); color: var(--stage-ink-dim); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .action:hover:not(:disabled) { color: var(--stage-text); }
 .action:disabled { opacity: 0.5; cursor: default; }
 .editor { display: grid; gap: 6px; }
 .input { width: 100%; padding: 6px 8px; font: inherit; font-size: var(--fs-body); color: var(--stage-text); background: var(--stage-card); border: 1px solid var(--stage-ring); }
 .input:focus { outline: 1px solid var(--stage-accent); border-color: var(--stage-accent); }
-.add { margin-top: 12px; padding: 0; background: none; border: 0; font: 600 var(--fs-sm) var(--mono); color: var(--stage-accent); cursor: pointer; }
+.add { min-height: 32px; margin-top: 4px; padding: 8px 0; background: none; border: 0; font: 600 var(--fs-sm) var(--mono); color: var(--stage-accent); cursor: pointer; }
 .add:hover:not(:disabled) { color: var(--stage-text); }
 .add:disabled { color: var(--stage-ink-faint); cursor: default; }
-.editor + .add, .list + .editor { margin-top: 12px; }
+.list + .editor { margin-top: 12px; }
+.link { color: var(--stage-accent); text-decoration: underline; text-underline-offset: 2px; }
+.link:hover { color: var(--stage-text); }
+@media (max-width: 1050px) {
+  .actions { gap: 16px; }
+  .action { min-height: 44px; padding: 14px 6px; margin: -14px -6px; }
+  .add { min-height: 44px; margin-top: 0; padding: 14px 0; }
+}
 .note { margin: 8px 0 0; font-size: var(--fs-sm); color: var(--stage-ink-faint); }
 .error { margin: 8px 0 0; font-size: var(--fs-sm); color: var(--stage-text); }
 @media (prefers-reduced-motion: reduce) {

@@ -42,7 +42,7 @@ export function OnboardingStrip({ done, total, asking, busy, canHide = true, onC
       <div className={styles.topRow}>
         <h1 className={styles.sceneTitle}>
           Карьерный консультант
-          <span className={styles.title}>Знакомство · сохранено {done} из {total}</span>
+          <span className={styles.title}>Знакомство · пройдено {done} из {total} {total % 10 === 1 && total % 100 !== 11 ? 'вопроса' : 'вопросов'}</span>
         </h1>
         {!asking && (
           <Button size="sm" variant="primary" onClick={onContinue} disabled={busy} title="Следующий вопрос откроется здесь же, в ленте">

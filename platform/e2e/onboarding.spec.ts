@@ -28,5 +28,5 @@ test('E-02: персона «Знакомство» с /demo открывает 
   await page.getByRole('button', { name: 'Войти как Павел Нестеров' }).first().click();
   await page.waitForURL('**/consultant');
   await expect(page.getByRole('list', { name: 'Переписка с помощником' })).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText(/Знакомство · сохранено \d+ из \d+/i)).toBeVisible();
+  await expect(page.getByText(/Знакомство · пройдено \d+ из \d+ вопрос/i)).toBeVisible();
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 
 import { onboardingAct, readError, request } from '@/lib/api';
@@ -20,6 +21,8 @@ export const NEW_HIGHLIGHT_MS = 6_000;
 export const PENDING_POLL_MS = 1_500;
 export const MAX_PENDING_POLLS = 8;
 const TEXT_MAX = 200;
+/** «4 факта»: ответы знакомства и заметки памяти вместе (пропущенные вопросы сюда не попадают — knownFacts). */
+const factsWord = (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'факт' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'факта' : 'фактов'}`;
 
 const json = { 'content-type': 'application/json' };
 const addMemory = (text: string) => request('/api/consultant/memory', { method: 'POST', headers: json, body: JSON.stringify({ text }) });
@@ -133,7 +136,7 @@ export function MemoryCard({ facts, role, pending, limit, fill, minimal = false 
   const visible = facts.filter((f) => !removed.has(f.id));
   const memoryCount = visible.filter((f) => f.source !== 'onboarding').length;
   const full = limit !== undefined && memoryCount >= limit;
-  const title = `${role === 'employer' ? 'Что я знаю о компании' : 'Что я о тебе знаю'}${visible.length ? ` · ${visible.length}` : ''}`;
+  const title = `${role === 'employer' ? 'Что я знаю о компании' : 'Что я о тебе знаю'}${visible.length ? ` · ${factsWord(visible.length)}` : ''}`;
 
   return (
     <section className={aside.card} data-open={open} data-testid="aside-known">
@@ -149,7 +152,20 @@ export function MemoryCard({ facts, role, pending, limit, fill, minimal = false 
         {company ? (
           <CompanyPreview employer={role === 'employer'} answer={(id) => visible.find((f) => f.source === 'onboarding' && f.stepId === id)?.value} />
         ) : visible.length === 0 && !adding ? (
-          <p className={aside.muted}>Пока ничего. Отвечай в чате слева - ответы и то, что я запомню из разговора, появятся здесь, и я буду на них опираться.</p>
+          // Пустой блок — это заметки из разговора, а не профиль: навыки, категория, компания и вакансии лежат в своих разделах.
+          <p className={aside.muted} data-testid="memory-empty">
+            Заметок из разговора пока нет.{' '}
+            {role === 'employer' ? (
+              <>
+                Данные компании - в <Link href="/employer/company" className={styles.link}>профиле компании</Link>, вакансии - в разделе <Link href="/employer/vacancies" className={styles.link}>«Вакансии»</Link>.
+              </>
+            ) : (
+              <>
+                Навыки и категория хранятся в <Link href="/profile" className={styles.link}>профиле</Link>.
+              </>
+            )}{' '}
+            Здесь появятся ответы знакомства и то, что я запомню из чата, - на них я буду опираться.
+          </p>
         ) : (
           <ul className={styles.list}>
             {visible.map((f) => (
@@ -212,7 +228,7 @@ export function MemoryCard({ facts, role, pending, limit, fill, minimal = false 
           </ul>
         )}
         {!company && fill && (
-          <button type="button" className={styles.add} onClick={() => void run(() => gotoStep(fill.stepId, softGo))} title="Вопрос откроется в чате слева">
+          <button type="button" className={styles.add} onClick={() => void run(() => gotoStep(fill.stepId, softGo))} title="Вопрос откроется в чате">
             + дополнить: {fill.label.toLowerCase()}
           </button>
         )}

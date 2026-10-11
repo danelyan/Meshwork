@@ -1,0 +1,19 @@
+{
+  "id": "ai-bi-junior-salesmart",
+  "subcategoryId": "ai.bi-analytics",
+  "specialization": "ai",
+  "grade": "junior",
+  "title": "Витрина метрик продаж: корректные join и агрегаты",
+  "summary": "Витрина продаж из трёх таблиц (заказы, позиции, товары) в pandas: фильтр по статусу, join без потери и размножения строк, выручка, месячные метрики и доли категорий",
+  "stack": ["python312", "pandas", "numpy", "pytest"],
+  "catalogIds": ["ai.bi-sql-analytics", "ai.bi-data-modeling", "ai.pandas-sql", "common.sql-queries", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

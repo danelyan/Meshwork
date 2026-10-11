@@ -4,9 +4,9 @@
 шаблон, ИИ пишет условие в домене работодателя поверх контракта (lane project), runner проверяет
 решение скрытыми тестами ([runner/README.md](../runner/README.md)).
 
-Каталог шаблонов приложения — [docs/project-templates.md](../../docs/project-templates.md). Ниже — все 53 шаблона: покрыты все 51 категория
-(17 подкатегорий × Junior / Middle / Senior). Два учебных Junior-шаблона runner (`be-webapi-junior-notes`, `fe-uiapp-junior-widget`) — Node 20, без
-установки зависимостей кандидата, эталоны в `tests/fixtures/runner/`. Остальные 51 имеют `reference/`; приёмка: эталон N/N, чистая заготовка 0/N
+Каталог шаблонов приложения — [docs/project-templates.md](../../docs/project-templates.md). Ниже — все 56 шаблонов: покрыты все 54 категории
+(18 подкатегорий × Junior / Middle / Senior). Два учебных Junior-шаблона runner (`be-webapi-junior-notes`, `fe-uiapp-junior-widget`) — Node 20, без
+установки зависимостей кандидата, эталоны в `tests/fixtures/runner/`. Остальные 54 имеют `reference/`; приёмка: эталон N/N, чистая заготовка 0/N
 (`npx tsx scripts/project-templates-check.ts`). Раскладка `<подкатегория>/<грейд>/<id>/`.
 
 | id | Подкатегория × грейд | Что проверяется | Скрытых тестов (эталон) |
@@ -14,6 +14,9 @@
 | `ai-aiint-junior-classifier` | ai.ai-integration × junior | Классификатор обращений через LLM | 15/15 |
 | `ai-aiint-middle-toolloop` | ai.ai-integration × middle | Цикл вызова инструментов моделью | 18/18 |
 | `ai-aiint-senior-pii-guard` | ai.ai-integration × senior | Охранный шлюз вызовов LLM: ПДн, бюджет, кэш, запасная модель | 25/25 |
+| `ai-bi-junior-salesmart` | ai.bi-analytics × junior | Витрина метрик продаж: join без потери и размножения строк, месячные метрики, доли категорий | 39/39 |
+| `ai-bi-middle-retention` | ai.bi-analytics × middle | Проверки качества журнала событий, недельный retention с цензурированием, строгая воронка | 34/34 |
+| `ai-bi-senior-metriclayer` | ai.bi-analytics × senior | Слой метрик: определения, сверка срезов с итогом, план-факт с допуском | 49/49 |
 | `ai-datasci-junior-eda` | ai.data-science × junior | Очистка таблицы и сводка: пропуски, дубли, выбросы | 22/22 |
 | `ai-datasci-middle-abtest` | ai.data-science × middle | Анализ A/B-теста: SRM, конверсия, выручка, решение | 29/29 |
 | `ai-datasci-senior-cohorts` | ai.data-science × senior | Когортное удержание, LTV и CUPED для A/B по выручке | 35/35 |

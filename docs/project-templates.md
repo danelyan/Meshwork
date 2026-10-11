@@ -99,11 +99,12 @@ Senior-шаблон (ADR 0003, «Дополнение 16:15») проверяе�
 
 ## Покрытие шаблонов
 
-53 шаблона, покрыты все 51 категория (17 подкатегорий × Junior / Middle / Senior). Второй Junior есть у `backend.web-api` и `frontend.ui-app` (учебные шаблоны runner, без `reference/`: их не проверяет `project-templates-check`). Приёмка каждого шаблона с `reference/`: эталон N/N, чистая заготовка 0/N на скрытых и видимых тестах.
+56 шаблонов, покрыты все 54 категории (18 подкатегорий × Junior / Middle / Senior). Второй Junior есть у `backend.web-api` и `frontend.ui-app` (учебные шаблоны runner, без `reference/`: их не проверяет `project-templates-check`). Приёмка каждого шаблона с `reference/`: эталон N/N, чистая заготовка 0/N на скрытых и видимых тестах.
 
 | Подкатегория | Junior | Middle | Senior |
 | --- | --- | --- | --- |
 | `ai.ai-integration` | `ai-aiint-junior-classifier` | `ai-aiint-middle-toolloop` | `ai-aiint-senior-pii-guard` |
+| `ai.bi-analytics` | `ai-bi-junior-salesmart` | `ai-bi-middle-retention` | `ai-bi-senior-metriclayer` |
 | `ai.data-science` | `ai-datasci-junior-eda` | `ai-datasci-middle-abtest` | `ai-datasci-senior-cohorts` |
 | `ai.llm-apps` | `ai-llmapps-junior-triage` | `ai-llmapps-middle-rag` | `ai-llmapps-senior-gateway` |
 | `ai.ml-engineering` | `ai-mleng-junior-metrics` | `ai-mleng-middle-leakfree` | `ai-mleng-senior-serving` |
@@ -121,7 +122,7 @@ Senior-шаблон (ADR 0003, «Дополнение 16:15») проверяе�
 | `frontend.ui-app` | `fe-uiapp-junior-catalog`<br>`fe-uiapp-junior-widget` | `fe-uiapp-middle-tasks` | `fe-uiapp-senior-search` |
 | `frontend.web-perf` | `fe-webperf-junior-suggest` | `fe-webperf-middle-virtual` | `fe-webperf-senior-dashboard` |
 
-Особый случай: `eng-qaauto-*` — кандидат пишет `verify(impl)`, скрытые тесты проверяют, что он пропускает эталон и ловит мутантов (мутационное тестирование). Senior-шаблоны требуют `DESIGN.md`. Шаблоны `ai-datasci-junior-eda`, `ai-datasci-middle-abtest`, `ai-datasci-senior-cohorts`, `ai-mleng-junior-metrics`, `ai-mleng-middle-leakfree`, `ai-mlops-middle-drift`, `eng-dataeng-middle-quality` используют numpy/pandas из песочницы runner (numpy 2.3.3, pandas 2.3.3, BLAS в один поток, образ linux/amd64).
+Особый случай: `eng-qaauto-*` — кандидат пишет `verify(impl)`, скрытые тесты проверяют, что он пропускает эталон и ловит мутантов (мутационное тестирование). Senior-шаблоны требуют `DESIGN.md`. Шаблоны `ai-bi-junior-salesmart`, `ai-bi-middle-retention`, `ai-bi-senior-metriclayer`, `ai-datasci-junior-eda`, `ai-datasci-middle-abtest`, `ai-datasci-senior-cohorts`, `ai-mleng-junior-metrics`, `ai-mleng-middle-leakfree`, `ai-mlops-middle-drift`, `eng-dataeng-middle-quality` используют numpy/pandas из песочницы runner (numpy 2.3.3, pandas 2.3.3, BLAS в один поток, образ linux/amd64).
 
 - `reference/` исключён из обоих образов (`platform/.dockerignore`), приложение получает шаблоны через
   `outputFileTracingIncludes` в `next.config.ts` (standalone-сборка сама файлы с диска не трассирует).

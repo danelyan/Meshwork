@@ -1,0 +1,19 @@
+{
+  "id": "ai-bi-senior-metriclayer",
+  "subcategoryId": "ai.bi-analytics",
+  "specialization": "ai",
+  "grade": "senior",
+  "title": "Слой метрик: определения, согласованность и план-факт",
+  "summary": "Семантический слой метрик в pandas: декларативные определения (сумма, счётчик, уникальные, отношение), проверка определений, запросы по измерениям, сверка срезов с итогом и план-факт с допуском; обязательный DESIGN.md",
+  "stack": ["python312", "pandas", "numpy", "pytest"],
+  "catalogIds": ["ai.bi-metrics-design", "ai.bi-data-modeling", "ai.bi-data-quality", "ai.bi-metric-governance", "ai.bi-sql-analytics", "common.unit-tests", "common.architecture-decisions"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

@@ -117,6 +117,7 @@ function selectelModel(id: string, prefix: string, title: string, timeoutMs: num
           apiKey: env(`${prefix}_API_KEY`),
           model: env(`${prefix}_MODEL`),
           supportsTools: !planB,
+          extraBody: process.env[`${prefix}_EXTRA_BODY`] ? (JSON.parse(process.env[`${prefix}_EXTRA_BODY`] as string) as Record<string, unknown>) : undefined,
           timeoutMs,
         }),
     },

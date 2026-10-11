@@ -6,6 +6,13 @@ const valid = {
 };
 
 describe('env', () => {
+  it('OPENAI_CHAT_EXTRA_BODY: JSON-объект разбирается, не объект — ошибка', () => {
+    expect(parseEnv({ ...valid, OPENAI_CHAT_EXTRA_BODY: '{"chat_template_kwargs":{"enable_thinking":false}}' }).OPENAI_CHAT_EXTRA_BODY).toEqual({ chat_template_kwargs: { enable_thinking: false } });
+    expect(parseEnv(valid).OPENAI_CHAT_EXTRA_BODY).toBeUndefined();
+    expect(() => parseEnv({ ...valid, OPENAI_CHAT_EXTRA_BODY: '[1]' })).toThrow(EnvError);
+    expect(() => parseEnv({ ...valid, OPENAI_CHAT_EXTRA_BODY: 'нет' })).toThrow(EnvError);
+  });
+
   it('минимальный валидный набор + значения по умолчанию', () => {
     const env = parseEnv(valid);
     expect(env).toMatchObject({

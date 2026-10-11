@@ -25,6 +25,8 @@ export interface OpenAiChatConfig {
   strict?: boolean;
   /** Заголовки сверх Bearer (например, `OpenAI-Project`/`x-folder-id` для Yandex). */
   headers?: Record<string, string>;
+  /** Поля сверх стандартных в тело запроса (vLLM: `chat_template_kwargs: { enable_thinking: false }` для Qwen3); стандартные поля не перекрывают. */
+  extraBody?: Record<string, unknown>;
   fetch?: Fetch;
   timeoutMs?: number;
 }
@@ -68,7 +70,7 @@ export function toChatMessages(req: CompleteRequest, nativeSchema: boolean): Cha
   return out;
 }
 
-export function toChatBody(req: CompleteRequest, model: string, cfg: Pick<OpenAiChatConfig, 'strict' | 'supportsJsonSchema'>) {
+export function toChatBody(req: CompleteRequest, model: string, cfg: Pick<OpenAiChatConfig, 'strict' | 'supportsJsonSchema' | 'extraBody'>) {
   const strict = cfg.strict ?? false;
   const nativeSchema = cfg.supportsJsonSchema ?? true;
   const body: Record<string, unknown> = { model, messages: toChatMessages(req, nativeSchema) };
@@ -88,6 +90,7 @@ export function toChatBody(req: CompleteRequest, model: string, cfg: Pick<OpenAi
       json_schema: { name: req.schema.name, schema: req.schema.jsonSchema, strict },
     };
   }
+  for (const [k, v] of Object.entries(cfg.extraBody ?? {})) if (!(k in body)) body[k] = v;
   return body;
 }
 

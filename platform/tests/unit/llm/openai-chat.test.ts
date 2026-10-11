@@ -1,4 +1,4 @@
-import { createOpenAiChatProvider } from '@/server/llm/providers/openai-chat';
+import { createOpenAiChatProvider, toChatBody } from '@/server/llm/providers/openai-chat';
 import { LlmError, type CompleteRequest } from '@/server/llm/types';
 import { fakeFetch, fixture } from './fake-fetch';
 
@@ -68,6 +68,15 @@ describe('openai-chat: запрос', () => {
     await b.provider.complete({ ...base, schema });
     expect(b.calls[0]?.body.response_format).toBeUndefined();
     expect((b.calls[0]?.body.messages as { content: string }[])[0]?.content).toContain('схеме «grade»');
+  });
+});
+
+describe('openai-chat: extraBody', () => {
+  it('доп. поля попадают в тело, стандартные не перекрывают', () => {
+    const body = toChatBody({ system: 's', messages: [{ role: 'user', content: 'x' }] } as CompleteRequest, 'm', {
+      extraBody: { chat_template_kwargs: { enable_thinking: false }, model: 'чужая' },
+    });
+    expect(body).toMatchObject({ model: 'm', chat_template_kwargs: { enable_thinking: false } });
   });
 });
 

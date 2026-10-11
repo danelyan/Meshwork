@@ -1,0 +1,28 @@
+.page { display: flex; flex-direction: column; gap: 28px; font-size: var(--fs-md); line-height: 1.55; }
+.section { display: flex; flex-direction: column; gap: 14px; }
+.section h2 { margin: 0; font-size: var(--fs-2xl); letter-spacing: -0.02em; }
+.section h3 { margin: 0; font-size: var(--fs-lg); }
+.soft { color: var(--text-soft); margin: 0; }
+.list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pick { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); color: inherit; text-decoration: none; font-size: var(--fs); }
+.pick[aria-current='true'] { background: var(--accent-fill); border-color: var(--accent-track); font-weight: 700; }
+.pick:hover { border-color: var(--text-soft); }
+.grades { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; align-items: start; }
+.variant { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); background: var(--surface-input); }
+.prompt { margin: 0; white-space: pre-wrap; }
+.code { margin: 0; padding: 12px 14px; background: var(--surface-quote); font: 500 var(--fs-sm)/1.6 var(--mono); overflow-x: auto; white-space: pre; }
+.key { padding: 10px 12px; background: var(--surface-quote); display: flex; flex-direction: column; gap: 6px; }
+.details summary { cursor: pointer; font-weight: 600; }
+.mono { font-family: var(--mono); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--line); background: var(--surface-input); }
+.statValue { font: 700 28px/1.1 var(--font); /* fs-ok: крупная цифра */ letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.statLabel { font-size: var(--fs-sm); color: var(--text-soft); }
+.tableWrap { overflow-x: auto; max-width: 100%; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs); }
+.table th, .table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table th { font-weight: 600; color: var(--text-soft); font-size: var(--fs-sm); }
+.table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 640px) { .section h2 { font-size: 22px; /* fs-ok: заголовок секции на узком экране */ } }

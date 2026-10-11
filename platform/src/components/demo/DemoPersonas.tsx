@@ -18,7 +18,8 @@ export interface PersonasState {
   personas: DemoPersona[] | null;
   error: string | null;
   pending: string | null;
-  enter: (p: DemoPersona) => void;
+  /** `to` - путь возврата для этого входа вместо общего `next` (шаги маршрута жюри); проходит ту же проверку safeNext. */
+  enter: (p: DemoPersona, to?: string | null) => void;
   reload: () => void;
 }
 
@@ -32,7 +33,7 @@ export function useDemoPersonas({ next = null, agreed, navigate = assign, enable
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const destination = safeNext(next);
+  const defaultDestination = safeNext(next);
 
   useEffect(() => {
     if (!enabled) return;
@@ -44,8 +45,9 @@ export function useDemoPersonas({ next = null, agreed, navigate = assign, enable
     return () => { alive = false; };
   }, [attempt, enabled]);
 
-  const enter = useCallback((p: DemoPersona) => {
+  const enter = useCallback((p: DemoPersona, to?: string | null) => {
     if (p.kind === 'fresh' && !agreed) return;
+    const destination = to ? safeNext(to) : defaultDestination;
     setPending(p.id);
     setError(null);
     const back = p.kind === 'employer' ? (isEmployerPath(destination) ? destination : null) : (isEmployerPath(destination) ? null : destination);
@@ -54,7 +56,7 @@ export function useDemoPersonas({ next = null, agreed, navigate = assign, enable
       (r) => navigate(back ?? safeNext((r as { next?: string }).next) ?? '/consultant'),
       (e: unknown) => { setError(e instanceof Error ? e.message : 'Не удалось войти. Попробуй ещё раз.'); setPending(null); },
     );
-  }, [agreed, destination, navigate]);
+  }, [agreed, defaultDestination, navigate]);
 
   return { personas, error, pending, enter, reload: () => { setPersonas(null); setError(null); setAttempt((n) => n + 1); } };
 }
@@ -124,7 +126,7 @@ export function PersonaGroups({ state, agreed, columns = false }: { state: Perso
 }
 
 /** Компактная кнопка входа для /demo: имя и метка этапа, «что увидишь» — в подсказке (title). */
-export function PersonaChip({ persona, state, agreed }: { persona: DemoPersona; state: PersonasState; agreed: boolean }) {
+export function PersonaChip({ persona, state, agreed, to }: { persona: DemoPersona; state: PersonasState; agreed: boolean; to?: string }) {
   const blocked = persona.kind === 'fresh' && !agreed;
   return (
     <button
@@ -133,7 +135,7 @@ export function PersonaChip({ persona, state, agreed }: { persona: DemoPersona; 
       title={blocked ? `${persona.sees} Сначала отметь согласие.` : persona.sees}
       aria-label={persona.kind === 'fresh' ? persona.name : `Войти как ${persona.name}`}
       disabled={state.pending !== null || blocked}
-      onClick={() => state.enter(persona)}
+      onClick={() => state.enter(persona, to)}
     >
       <span className={styles.chipStep} aria-hidden="true">{persona.stage ?? '⌂'}</span>
       <span>{persona.name}</span>

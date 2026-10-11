@@ -3,6 +3,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 
 import { Container } from '@/components/shell/Container';
+import { JuryBackLink } from '@/components/demo/JuryRoute';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { Button, Field, Notice, Panel, Tag } from '@/components/ui';
 import type { EVAL_LIMITS, EvaluateInput, EvaluateReport, Metrics } from '@/server/validation/evaluate';
@@ -38,7 +39,7 @@ async function errorText(res: Response): Promise<string> {
  * /evaluate: вставить или загрузить JSON набора → POST /api/evaluate → метрики нашего ранжирования и базовой линии
  * по каждой вакансии и в среднем, топ с объяснениями. Текст из входа выводится только как текст (React экранирует).
  */
-export function EvaluateScreen({ sample, catalog, limits }: { sample: EvaluateInput; catalog: CatalogItem[]; limits: typeof EVAL_LIMITS }) {
+export function EvaluateScreen({ sample, catalog, limits, juryLink = false }: { sample: EvaluateInput; catalog: CatalogItem[]; limits: typeof EVAL_LIMITS; juryLink?: boolean }) {
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -91,6 +92,7 @@ export function EvaluateScreen({ sample, catalog, limits }: { sample: EvaluateIn
   return (
     <main id="main">
       <Container size="default" className={styles.page}>
+        {juryLink && <JuryBackLink />}
         <PageTitle
           kicker="Валидация"
           title="Проверить подбор на своих данных"

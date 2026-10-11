@@ -14,12 +14,12 @@ const RULES = [
 ];
 
 /** Product introduction and public company examples; no third-party vacancy feed. */
-export function Landing({ data, signedIn }: { data: LandingData; signedIn: boolean }) {
+export function Landing({ data, signedIn, demoEnabled = false }: { data: LandingData; signedIn: boolean; demoEnabled?: boolean }) {
   return (
     <div className={styles.page}>
       <Background />
       <main id="main" className={styles.main}>
-        <Hero signedIn={signedIn} />
+        <Hero signedIn={signedIn} demoEnabled={demoEnabled} />
         <Companies companies={data.companies} />
         <section className={`${styles.section} ${styles.why}`} id="why" aria-labelledby="why-title">
           <div className={styles.sechead}>

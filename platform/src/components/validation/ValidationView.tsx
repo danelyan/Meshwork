@@ -4,6 +4,8 @@ import { Button, Panel } from '@/components/ui';
 import type { PersonaRow, SyntheticRow } from '@/server/validation/grade-test-figures';
 import type { MatchingExtended, MatchingResults } from '@/server/validation/matching-results';
 
+import { JuryBackLink } from '@/components/demo/JuryRoute';
+
 import { dec, pct } from './format';
 import styles from './Validation.module.css';
 
@@ -89,7 +91,7 @@ function ExtendedBlock({ title, ext }: { title: string; ext: MatchingExtended })
 }
 
 /** Страница /validation: цифры теста на грейд и подбора, оговорки до цифр, команды воспроизведения. */
-export function ValidationView({ grade, matching }: { grade: GradeTestData; matching: MatchingResults }) {
+export function ValidationView({ grade, matching, juryLink = false }: { grade: GradeTestData; matching: MatchingResults; juryLink?: boolean }) {
   const s = matching.summary;
   const persona = grade.synthetic.filter((r) => r.population === 'persona');
   const range = (xs: number[], f: (x: number) => string) => {
@@ -100,6 +102,7 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
   return (
     <main id="main">
       <Container size="default" className={styles.page}>
+        {juryLink && <JuryBackLink />}
         <PageTitle
           kicker="Валидация"
           title="Как мы проверяем тест и подбор"

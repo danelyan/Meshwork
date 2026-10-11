@@ -4,7 +4,7 @@ import { HeroGraph } from './HeroGraph';
 import styles from './Hero.module.css';
 import { Start } from './Start';
 
-export function Hero({ signedIn }: { signedIn: boolean }) {
+export function Hero({ signedIn, demoEnabled = false }: { signedIn: boolean; demoEnabled?: boolean }) {
   return (
     <section className={styles.hero} aria-labelledby="hero-title">
       <div>
@@ -26,6 +26,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
           <b>{signedIn ? 'Ваш кабинет →' : 'Уже есть аккаунт? Войти →'}</b>
           <small>{signedIn ? 'Вы уже вошли' : 'Демо-стенд · готовые демо-профили'}</small>
         </Link>
+        {demoEnabled && <Link className={styles.jury} href="/demo">Для жюри: маршрут на 5 минут и проверка цифр →</Link>}
       </div>
       <HeroGraph />
     </section>

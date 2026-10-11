@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { type DemoPersona } from '@/lib/api';
 
 import { ConsentCheck } from './auth/ConsentCheck';
+import { JuryPages, JuryRoute } from './demo/JuryRoute';
 import { PersonaChip, PersonaGroups, type PersonasState, useDemoPersonas } from './demo/DemoPersonas';
 import { Container } from './shell/Container';
 import { PageTitle } from './shell/PageTitle';
@@ -67,6 +68,12 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
       {state.error && <Notice tone="error">{state.error}</Notice>}
 
       <ConsentCheck checked={agreed} onChange={setAgreed} />
+
+      <JuryRoute state={state} agreed={agreed} />
+
+      <JuryPages />
+
+      <h2 className={styles.sectionTitle}>Возможности платформы</h2>
 
       <ul className={styles.features}>
         {DEMO_FEATURES.map((f, i) => (

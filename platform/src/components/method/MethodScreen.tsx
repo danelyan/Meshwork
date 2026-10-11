@@ -2,9 +2,10 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { JuryBackLink } from '@/components/demo/JuryRoute';
+import { SubcategoryPicker } from '@/components/method/SubcategoryPicker';
 import { Container } from '@/components/shell/Container';
 import { PageTitle } from '@/components/shell/PageTitle';
-import { Button, Panel, Tag } from '@/components/ui';
+import { Panel, Tag } from '@/components/ui';
 import { GRADE_LABEL, GRADES, type Grade } from '@/lib/grades';
 import type { EvidenceLevel } from '@/server/claims/types';
 import {
@@ -160,32 +161,6 @@ function Flow({ p }: { p: MethodPolicy }) {
         </div>
       </li>
     </ol>
-  );
-}
-
-function Picker({ subcategories, selected }: { subcategories: SimSubcategory[]; selected: SimSubcategory | null }) {
-  const bySpec = new Map<string, SimSubcategory[]>();
-  for (const s of subcategories) bySpec.set(s.specializationTitle, [...(bySpec.get(s.specializationTitle) ?? []), s]);
-  return (
-    <form method="get" action="/method" className={styles.picker} aria-label="Подкатегория для графиков и симуляции">
-      <label className={styles.pickerField}>
-        <span className={styles.pickerLabel}>Направление и подкатегория</span>
-        <select name="sub" className={styles.select} defaultValue={selected?.id}>
-          {[...bySpec.entries()].map(([spec, subs]) => (
-            <optgroup key={spec} label={spec}>
-              {subs.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
-      <Button type="submit" variant="ghost">
-        Показать
-      </Button>
-    </form>
   );
 }
 
@@ -389,7 +364,7 @@ export function MethodScreen({ policy, subcategories, selected, info, personas, 
 
         <section className={styles.section} aria-labelledby="m-bank">
           <h2 id="m-bank">2. Где тест различает лучше всего</h2>
-          <Picker subcategories={subcategories} selected={selected} />
+          <SubcategoryPicker subcategories={subcategories} selected={selected} />
           {selected && (
             <p className={styles.note}>
               {selected.specializationTitle} · {selected.title}

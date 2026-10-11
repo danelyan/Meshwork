@@ -5,6 +5,8 @@ import { POLICY_VERSION } from '@/server/test/policy';
 import { bankInformation, methodPolicy, simulatedCandidates } from '@/server/validation/method';
 import { simulatorSubcategories } from '@/server/validation/simulator';
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
+
 afterEach(cleanup);
 
 const subs = simulatorSubcategories();

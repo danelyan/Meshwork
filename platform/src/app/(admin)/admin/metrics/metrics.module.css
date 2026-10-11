@@ -1,0 +1,8 @@
+/* Метрики (E-08, фаза 5): только токены. */
+.section { display: grid; gap: 12px; }
+.h2 { font-size: var(--fs-lg); font-weight: 700; margin: 8px 0 0; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.cell { display: grid; gap: 4px; min-width: 120px; }
+.flag { color: var(--text-soft); font-size: var(--fs-xs); margin: 0; }
+.rules { margin: 0; padding-left: 18px; color: var(--text-soft); font-size: var(--fs-sm); display: grid; gap: 4px; }
+.scroll { overflow-x: auto; }

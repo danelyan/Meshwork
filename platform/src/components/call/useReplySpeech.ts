@@ -53,9 +53,13 @@ export function useReplySpeech(voice: CompanionVoice | null, callId: string | un
   /** Предложения из потока по index реплики кандидата, на которую отвечает ИИ. */
   const streams = useRef(new Map<number, { sentences: string[]; broken: boolean }>());
   const mark = useRef<{ at: number; firstDelta: number | null; reply: number | null; streamed: boolean } | null>(null);
+  /** index последней озвученной реплики ИИ целиком: дельты к более ранним репликам кандидата опоздали. */
+  const lastEntry = useRef(-1);
 
   const onDelta = useCallback(
     (afterIndex: number, n: number, text: string) => {
+      // Дельта пришла по SSE позже ответа /turn (разные соединения): реплика уже озвучена целиком — не повторять.
+      if (afterIndex < lastEntry.current) return;
       const cur = streams.current.get(afterIndex) ?? { sentences: [], broken: false };
       streams.current.set(afterIndex, cur);
       // Пропуск в нумерации (обрыв SSE): дальше поток не озвучиваем, остаток доскажет реплика целиком.
@@ -76,6 +80,7 @@ export function useReplySpeech(voice: CompanionVoice | null, callId: string | un
   const speakEntry = useCallback(
     (entry: TranscriptEntry) => {
       const v = voiceRef.current;
+      lastEntry.current = Math.max(lastEntry.current, entry.index);
       // Поток этой реплики — последний по index кандидата, который раньше неё.
       let after = -1;
       for (const k of streams.current.keys()) if (k < entry.index && k > after) after = k;

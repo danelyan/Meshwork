@@ -65,6 +65,7 @@ function Harness({ text }: { text: string }) {
       <button onClick={() => reply.onDelta(3, 0, 'Хорошо, понял тебя.')}>d0</button>
       <button onClick={() => reply.onDelta(3, 1, 'Теперь про кэш.')}>d1</button>
       <button onClick={() => reply.speakEntry(entry(4, text))}>реплика</button>
+      <button onClick={() => reply.onDelta(3, 0, 'Хорошо, понял тебя.')}>поздняя</button>
       <span data-testid="status">{voice?.status}</span>
     </>
   );
@@ -98,6 +99,19 @@ describe('useReplySpeech + очередь голоса', () => {
     await waitFor(() => expect(posts).toHaveLength(3));
     expect(posts[2]).toBe('Как ты выбираешь время жизни ключа?');
     for (const s of sources) expect(s.connect).toHaveBeenCalledWith(analysers[0]);
+  });
+});
+
+describe('useReplySpeech: поздняя дельта', () => {
+  it('дельта к уже озвученной реплике (SSE пришёл позже ответа /turn) не озвучивается второй раз', async () => {
+    render(<CompanionVoiceProvider><Harness text={TEXT} /></CompanionVoiceProvider>);
+    fireEvent.click(screen.getByText('звук'));
+    await waitFor(() => expect(screen.getByTestId('status').textContent).toBe('idle'));
+    await act(async () => fireEvent.click(screen.getByText('реплика')));
+    await waitFor(() => expect(posts).toHaveLength(3));
+    await act(async () => fireEvent.click(screen.getByText('поздняя')));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(posts).toHaveLength(3);
   });
 });
 

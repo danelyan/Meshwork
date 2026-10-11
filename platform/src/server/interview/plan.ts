@@ -1,4 +1,4 @@
-// План ИИнтервью – чистые функции (без БД и LLM): блоки по порядку, внутри блока – маршрут по уровню как
+// План ИИнтервью — чистые функции (без БД и LLM): блоки по порядку, внутри блока — маршрут по уровню как
 // в созвоне (call/plan.ts). Их же использует детерминированный stub (llm/providers/stub-interview.ts) и
 // запасной вопрос, когда модель не ответила.
 import { routeLevel } from '../call/plan';
@@ -11,7 +11,7 @@ export const INTERVIEW_LIMITS = {
   minQuestions: 5,
   maxQuestions: 7,
   hardMaxQuestions: 9,
-  /** На одну компетенцию – не больше стольких вопросов (дополнительные по inconclusive не считаются). */
+  /** На одну компетенцию — не больше стольких вопросов (дополнительные по inconclusive не считаются). */
   maxPerCompetency: 2,
 } as const;
 
@@ -24,7 +24,7 @@ export interface InterviewTurn {
   competencyId: string;
   block: BlockId;
   level: QuestionLevel;
-  /** Дополнительный вопрос по компетенции с расхождением оценщика – в счёт блока не идёт. */
+  /** Дополнительный вопрос по компетенции с расхождением оценщика — в счёт блока не идёт. */
   probe?: boolean;
   /** Кандидат перебил вопрос: сколько предложений услышал и что осталось недосказанным. */
   interrupted?: { heardSentences: number; tail: string };
@@ -44,13 +44,13 @@ export function blockCounts(turns: readonly InterviewTurn[]): Record<BlockId, nu
   return out;
 }
 
-/** Текущий блок – блок последнего вопроса (переход к следующему решает planInterviewNext). */
+/** Текущий блок — блок последнего вопроса (переход к следующему решает planInterviewNext). */
 export function currentBlock(turns: readonly InterviewTurn[]): BlockId {
   const last = [...turns].reverse().find((t) => !t.probe);
   return last?.block ?? QUESTION_BLOCKS[0]!;
 }
 
-/** Блок, в котором интервью сейчас (для UI: этапы): summary – когда вопросы закончились. */
+/** Блок, в котором интервью сейчас (для UI: этапы): summary — когда вопросы закончились. */
 export function stageOf(turns: readonly InterviewTurn[], done: boolean): BlockId {
   return done ? 'summary' : currentBlock(turns);
 }
@@ -66,10 +66,10 @@ export interface PlannedInterviewQuestion {
 
 /**
  * Следующий вопрос: блок → компетенция → уровень.
- * - Блок: остаёмся, пока не задан минимум; при сильном ответе и запасе до максимума – остаёмся углублять (кроме intro);
- *   иначе – следующий блок. После последнего блока – done.
- * - Компетенция: после сильного ответа на уровне < 3 и при лимите на компетенцию – та же, глубже;
- *   иначе первая ещё не спрошенная компетенция блока (все спрошены – спрошенная меньше всех).
+ * - Блок: остаёмся, пока не задан минимум; при сильном ответе и запасе до максимума — остаёмся углублять (кроме intro);
+ *   иначе — следующий блок. После последнего блока — done.
+ * - Компетенция: после сильного ответа на уровне < 3 и при лимите на компетенцию — та же, глубже;
+ *   иначе первая ещё не спрошенная компетенция блока (все спрошены — спрошенная меньше всех).
  * - Уровень: стартовый по заявленному грейду; после слабого ответа новая компетенция стартует на уровень проще.
  */
 export function planInterviewNext(args: {
@@ -100,7 +100,10 @@ export function planInterviewNext(args: {
     if (stay && last.level < 3 && onComp < INTERVIEW_LIMITS.maxPerCompetency) {
       return { block, competency: pick(plan, block, asked, last.competencyId), level: routeLevel(last.level, 'strong'), signal, done: false };
     }
-    if (!stay && counts[block] >= def.questions.min) {
+    // Углублять некуда (уровень 3 или лимит на компетенцию), а новых компетенций в блоке нет — остаться значило бы
+    // задать тот же вопрос ещё раз (аудит 12.10: Senior, системный дизайн с одной компетенцией — вопрос повторён дословно).
+    const fresh = plan[block].some((c) => !asked.some((t) => t.competencyId === c.id));
+    if ((!stay || !fresh) && counts[block] >= def.questions.min) {
       const next = QUESTION_BLOCKS[QUESTION_BLOCKS.indexOf(block) + 1];
       if (!next) return done(block);
       block = next;
@@ -132,29 +135,33 @@ function pick(plan: BlockPlan, block: BlockId, asked: readonly InterviewTurn[], 
 
 /** Запасной вопрос по фокусу компетенции на уровне; формулировка фиксирована, тему задаёт фокус. */
 export function templateInterviewQuestion(c: CompetencyDef, block: BlockId, level: QuestionLevel, first: boolean): string {
-  const hello = first ? 'Привет! Это Кира, пройдём несколько блоков – знакомство, профильные темы, проектирование и работа в команде. ' : '';
+  const hello = first ? 'Привет! Это Кира, пройдём четыре коротких блока — знакомство, профильные темы, проектирование и работа в команде. ' : '';
   const focus = c.focus[gradeForLevel(level)];
   if (block === 'intro') return `${hello}Расскажи про последний проект: ${lower(focus.replace(/^Последний проект:\s*/, ''))}.`;
-  if (block === 'team') return `${hello}Теперь про команду. ${focus}?`;
-  if (block === 'systems') return `${hello}Перейдём к проектированию. ${focus} – расскажи, с чего начнёшь и как будешь это строить.`;
-  if (level === 1) return `${hello}Поговорим про «${lower(c.title)}». ${focus} – объясни своими словами, на примере из своей работы.`;
-  if (level === 2) return `${hello}Про «${lower(c.title)}» на практике: ${lower(focus)}. Почему именно так?`;
-  return `${hello}Копнём глубже в «${lower(c.title)}»: ${lower(focus)}. Где этот подход перестаёт работать?`;
+  if (block === 'team') return `${hello}Теперь про команду — вспомни конкретный случай из опыта. ${focus}?`;
+  if (block === 'systems') return `${hello}Перейдём к проектированию. ${focus} — с чего начнёшь и где будет узкое место?`;
+  // Название компетенции — в именительном падеже после тире («Про «вёрстка и стили»» было неграмотно).
+  const theme = `Следующая тема — ${lower(c.title)}.`;
+  if (level === 1) return `${hello}${theme} ${focus} — объясни своими словами, на примере из своей работы.`;
+  if (level === 2) return `${hello}${theme} ${focus}. Как это было устроено у тебя и почему именно так?`;
+  return `${hello}Копнём глубже. ${theme} ${focus}. Где этот подход перестаёт работать?`;
 }
 
 function lower(s: string): string {
+  // Аббревиатуры («API и контракты», «LLM-приложения») не трогаем: было «aPI и контракты».
+  if (/^[A-ZА-ЯЁ]{2}/.test(s)) return s;
   return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
 /**
- * Подсказка «Уточнить вопрос» – на клиенте, без обращения к серверу и без расхода лимита: о чём именно
+ * Подсказка «Уточнить вопрос» — на клиенте, без обращения к серверу и без расхода лимита: о чём именно
  * спрашивает вопрос этой компетенции на этом уровне (фокус модели). Ответом не считается и оценщику не уходит.
  */
 export function clarificationHint(c: CompetencyDef, level: QuestionLevel): string {
   const what = level === 1 ? 'Достаточно объяснить своими словами и привести пример из своей работы' : level === 2 ? 'Важно, какая часть была именно на тебе и почему решение было таким' : 'Важны альтернативы, цена решения и где подход перестаёт работать';
-  return `Поясню: речь о теме «${lower(c.title)}» – ${lower(c.focus[gradeForLevel(level)])}. ${what}.`;
+  return `Поясню: речь о теме «${lower(c.title)}» — ${lower(c.focus[gradeForLevel(level)])}. ${what}.`;
 }
 
 /** Последняя реплика ИИ при завершении (без LLM). */
 export const INTERVIEW_CLOSING_LINE =
-  'Спасибо, это все вопросы. Нажми «Завершить» – отдельный оценщик разберёт ответы, и профиль компетенций появится в кабинете.';
+  'Спасибо, это все вопросы. Нажми «Завершить» — отдельный оценщик разберёт ответы, и профиль компетенций появится в кабинете.';

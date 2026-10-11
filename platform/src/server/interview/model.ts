@@ -1,11 +1,11 @@
-// Модель компетенций ИИнтервью (docs/competency-model.md). Чистый модуль без серверных импортов – его читают
+// Модель компетенций ИИнтервью (docs/competency-model.md). Чистый модуль без серверных импортов — его читают
 // клиентские компоненты (этапы и критерии на экране). Юнит-тест tests/unit/interview/model.test.ts сверяет
 // привязку к каталогу утверждений и к подкатегориям справочника.
 import type { Specialization } from '../../lib/directions';
 import type { Grade } from '../../lib/grades';
 import type { QuestionLevel } from '../call/types';
 
-/** Оси результата – четыре критерия мокапа (design-spec § 11). grade_fit не спрашивается, считается кодом. */
+/** Оси результата — четыре критерия мокапа (design-spec § 11). grade_fit не спрашивается, считается кодом. */
 export const AXES = ['technical', 'systems', 'communication', 'grade_fit'] as const;
 export type Axis = (typeof AXES)[number];
 /** Оси, по которым задаются вопросы (компетенция принадлежит одной из них). */
@@ -28,9 +28,9 @@ export type BlockId = (typeof BLOCKS)[number];
 export interface BlockDef {
   id: BlockId;
   title: string;
-  /** Вопросов в блоке: минимум и максимум (summary – 0: закрывающая реплика). */
+  /** Вопросов в блоке: минимум и максимум (summary — 0: закрывающая реплика). */
   questions: { min: number; max: number };
-  /** Ось компетенций блока; summary – null. */
+  /** Ось компетенций блока; summary — null. */
   axis: QuestionAxis | null;
 }
 
@@ -62,7 +62,7 @@ export interface CompetencyDef {
   axis: QuestionAxis;
   /** Утверждения каталога, которые подтверждает компетенция (поднимаются до platform). */
   catalogIds: readonly string[];
-  /** Подкатегории, где компетенция – ядро (приоритет в блоке «Разбор теста»). */
+  /** Подкатегории, где компетенция — ядро (приоритет в блоке «Разбор теста»). */
   core: readonly string[];
   /** О чём спросить на уровне грейда. Оценщику не передаётся. */
   focus: Record<Grade, string>;
@@ -77,9 +77,9 @@ const common: readonly CompetencyDef[] = [
     catalogIds: [],
     core: [],
     focus: {
-      junior: 'Последний проект: что делал сам, какая задача была твоей, чем закончилось',
-      middle: 'Последний проект: твоя зона ответственности, одно решение, которое принимал ты, и его результат',
-      senior: 'Последний проект: за что отвечал, какие ограничения задавали рамки, что бы сделал иначе',
+      junior: 'Последний проект: какая задача была твоей, что в ней было лично на тебе, чем закончилось',
+      middle: 'Последний проект: твоя зона ответственности, одно решение, которое было за тобой, и его результат',
+      senior: 'Последний проект: твоя зона ответственности, какие ограничения задавали рамки, что сейчас сделать иначе',
     },
   },
   {
@@ -90,9 +90,9 @@ const common: readonly CompetencyDef[] = [
     catalogIds: ['common.code-review', 'common.git'],
     core: [],
     focus: {
-      junior: 'Как получал замечания в ревью и что с ними делал; как договаривался о задаче, когда что-то было непонятно',
-      middle: 'Случай несогласия с решением коллеги или лида: что сделал, как договорились, чем закончилось',
-      senior: 'Как вёл ревью и передавал контекст команде; конфликт приоритетов между командами и как его разрешал',
+      junior: 'Замечания в ревью: как к ним относишься и что с ними делаешь; как договориться о задаче, когда что-то непонятно',
+      middle: 'Случай несогласия с решением коллеги или лида: какие были шаги с твоей стороны, как договорились, чем закончилось',
+      senior: 'Ревью и передача контекста команде; конфликт приоритетов между командами и как его удалось разрешить',
     },
   },
 ];
@@ -107,7 +107,7 @@ const backend: readonly CompetencyDef[] = [
     core: ['backend.web-api'],
     focus: {
       junior: 'Как устроен обработчик запроса в твоём фреймворке и где живёт бизнес-логика; как обрабатываешь ошибки',
-      middle: 'Почему разделил сервис на слои именно так; как не «проглотить» ошибку и что вернуть клиенту',
+      middle: 'Почему сервис разделён на слои именно так; как не «проглотить» ошибку и что вернуть клиенту',
       senior: 'Где границы слоёв перестают помогать; как язык и фреймворк ограничивают архитектуру и чем платишь',
     },
   },
@@ -119,8 +119,8 @@ const backend: readonly CompetencyDef[] = [
     catalogIds: ['be.rest-design', 'be.api-validation', 'be.api-contract', 'be.grpc', 'common.http'],
     core: ['backend.web-api', 'backend.integrations'],
     focus: {
-      junior: 'Как спроектировал ресурсы и коды ответа; как валидируешь вход и что отдаёшь при ошибке',
-      middle: 'Пагинация, версионирование, обратная совместимость контракта: как менял API, не ломая клиентов',
+      junior: 'Как спроектировать ресурсы и коды ответа; как валидируешь вход и что отдаёшь при ошибке',
+      middle: 'Пагинация, версионирование, обратная совместимость контракта: как менять API, не ломая клиентов',
       senior: 'REST против gRPC или событий для конкретной интеграции; как эволюционировать контракт на годы',
     },
   },
@@ -132,7 +132,7 @@ const backend: readonly CompetencyDef[] = [
     catalogIds: ['be.sql-schema', 'be.sql-indexes', 'be.transactions', 'be.migrations', 'be.orm', 'be.nosql', 'common.sql-queries'],
     core: ['backend.data-model', 'backend.web-api'],
     focus: {
-      junior: 'Схема и ключи для простой предметной области; что такое N+1 и как заметил',
+      junior: 'Схема и ключи для простой предметной области; что такое N+1 и как его заметить',
       middle: 'Индекс под конкретный запрос и план; уровень изоляции транзакции и его аномалии; миграция без простоя',
       senior: 'Выбор хранилища под модель доступа; согласованность при шардировании; цена ошибки в схеме через год',
     },
@@ -145,7 +145,7 @@ const backend: readonly CompetencyDef[] = [
     catalogIds: ['be.external-integration', 'be.retries-timeouts', 'be.message-queue', 'be.idempotency', 'be.background-jobs'],
     core: ['backend.integrations'],
     focus: {
-      junior: 'Как вызывал внешний API и что делал при ошибке; зачем выносить долгую операцию в фон',
+      junior: 'Вызов внешнего API и что делать при ошибке; зачем выносить долгую операцию в фон',
       middle: 'Ретраи с backoff и таймауты; идемпотентность повторного запроса; повторная доставка и DLQ',
       senior: 'Гарантии доставки и порядок; что происходит при частичном отказе брокера; бюджет ретраев в цепочке',
     },
@@ -158,9 +158,9 @@ const backend: readonly CompetencyDef[] = [
     catalogIds: ['be.cache', 'be.concurrency', 'be.performance', 'be.observability', 'be.rate-limit'],
     core: ['backend.highload'],
     focus: {
-      junior: 'Что кэшировал и как инвалидировал; как по логам нашёл проблему',
-      middle: 'Как нашёл узкое место профилировщиком или нагрузочным тестом и чем подтвердил улучшение; гонки и блокировки',
-      senior: 'Лавина промахов кэша, рост нагрузки ×10, деградация под отказом зависимости – что проектировал заранее',
+      junior: 'Что кэшировать и как инвалидировать; как найти проблему по логам',
+      middle: 'Поиск узкого места профилировщиком или нагрузочным тестом и чем подтвердил улучшение; гонки и блокировки',
+      senior: 'Лавина промахов кэша, рост нагрузки ×10, деградация под отказом зависимости — что заложить заранее',
     },
   },
   {
@@ -172,7 +172,7 @@ const backend: readonly CompetencyDef[] = [
     core: ['backend.web-api'],
     focus: {
       junior: 'Где хранишь пароли и секреты; как проверяешь, что пользователь видит только своё',
-      middle: 'Сессии против JWT, обновление токена, IDOR и как его искал; типовые уязвимости в своём коде',
+      middle: 'Сессии против JWT, обновление токена, IDOR и как его искать; типовые уязвимости в своём коде',
       senior: 'Модель угроз сервиса; компромисс между удобством и безопасностью; как ограничить ущерб при утечке',
     },
   },
@@ -184,7 +184,7 @@ const backend: readonly CompetencyDef[] = [
     catalogIds: ['be.integration-tests', 'common.unit-tests', 'common.debugging', 'common.docker-local', 'common.ci-basics'],
     core: [],
     focus: {
-      junior: 'Какие тесты писал и что они ловили; как воспроизводил ошибку по стектрейсу',
+      junior: 'Какие тесты пишешь и что они ловят; как воспроизвести ошибку по стектрейсу',
       middle: 'Интеграционные тесты с реальной БД в контейнере; что гоняется в CI и почему; нестабильные тесты',
       senior: 'Стратегия тестирования сервиса и её цена; когда тесты мешают; как держать CI быстрым',
     },
@@ -239,7 +239,7 @@ const frontend: readonly CompetencyDef[] = [
     catalogIds: ['fe.components', 'fe.render-lifecycle', 'fe.state-mgmt', 'fe.forms', 'fe.routing'],
     core: ['frontend.ui-app', 'frontend.design-system'],
     focus: {
-      junior: 'Контролируемая форма с валидацией; как делил экран на компоненты',
+      junior: 'Контролируемая форма с валидацией; как поделить экран на компоненты',
       middle: 'Где хранить состояние и почему; лишние перерисовки, ключи списков, мемоизация по делу',
       senior: 'Границы модулей и общий UI-kit; как состояние сервера и клиента не дублируется в большом приложении',
     },
@@ -265,8 +265,8 @@ const frontend: readonly CompetencyDef[] = [
     catalogIds: ['fe.web-perf', 'fe.render-perf', 'fe.bundler', 'fe.ssr'],
     core: ['frontend.web-perf'],
     focus: {
-      junior: 'Что такое ленивая загрузка и где применял; как смотрел размер бандла',
-      middle: 'Core Web Vitals конкретной страницы: что мерил, что сделал, чем подтвердил; долгие задачи и виртуализация',
+      junior: 'Что такое ленивая загрузка и где она нужна; как посмотреть размер бандла',
+      middle: 'Core Web Vitals конкретной страницы: что измерить, что поменять, чем подтвердить; долгие задачи и виртуализация',
       senior: 'SSR против CSR для продукта, гидратация и её цена; бюджет производительности и как его держать',
     },
   },
@@ -278,7 +278,7 @@ const frontend: readonly CompetencyDef[] = [
     catalogIds: ['fe.a11y', 'fe.component-tests', 'fe.e2e-tests', 'common.unit-tests', 'common.debugging'],
     core: ['frontend.design-system'],
     focus: {
-      junior: 'Клавиатурная навигация и фокус; какие тесты компонентов писал',
+      junior: 'Клавиатурная навигация и фокус; какие тесты компонентов нужны',
       middle: 'ARIA по делу и когда вредит; тесты через поведение пользователя с моками сети; сквозные сценарии',
       senior: 'Доступность как требование дизайн-системы; пирамида тестов фронтенда и её цена',
     },
@@ -291,7 +291,7 @@ const frontend: readonly CompetencyDef[] = [
     catalogIds: ['fe.architecture', 'common.algo-complexity', 'common.security-basics', 'common.auth-flow'],
     core: ['frontend.ui-app', 'frontend.web-perf'],
     focus: {
-      junior: 'Структура проекта: где что лежит и почему; как хранил токен входа',
+      junior: 'Структура проекта: где что лежит и почему; где хранить токен входа',
       middle: 'Приложение с ролями и защищёнными маршрутами: слои, границы модулей, где кэш, где состояние',
       senior: 'Рост команды ×3: модули, владение кодом, миграция без остановки разработки; XSS и CSRF в архитектуре',
     },
@@ -307,7 +307,7 @@ const ai: readonly CompetencyDef[] = [
     catalogIds: ['ai.prompting', 'ai.structured-output', 'ai.tool-use', 'ai.llm-api', 'ai.llm-cost'],
     core: ['ai.llm-apps'],
     focus: {
-      junior: 'Как строил промпт и проверял результат; как получал структурированный ответ',
+      junior: 'Как построить промпт и проверить результат; как получить структурированный ответ',
       middle: 'Валидация вывода по схеме и что делать при мусоре; агентный цикл с инструментами и ограничение шагов; цена вызовов',
       senior: 'Когда LLM не нужна; бюджет латентности и стоимости на продукт; деградация при недоступности провайдера',
     },
@@ -320,8 +320,8 @@ const ai: readonly CompetencyDef[] = [
     catalogIds: ['ai.rag', 'ai.vector-search', 'ai.llm-eval'],
     core: ['ai.llm-apps'],
     focus: {
-      junior: 'Из чего состоит RAG; как разбивал документы на чанки',
-      middle: 'Как оценивал качество ретрива и ответов на размеченном наборе; top-k, фильтры, гибридный поиск',
+      junior: 'Из чего состоит RAG; как разбить документы на чанки',
+      middle: 'Оценка качества ретрива и ответов на размеченном наборе; top-k, фильтры, гибридный поиск',
       senior: 'Почему RAG не отвечает: диагностика по метрикам; обновление индекса и консистентность; цена эмбеддингов',
     },
   },
@@ -346,8 +346,8 @@ const ai: readonly CompetencyDef[] = [
     catalogIds: ['ai.ml-metrics', 'ai.validation', 'ai.data-leakage', 'ai.feature-pipeline', 'ai.ml-baseline'],
     core: ['ai.ml-engineering'],
     focus: {
-      junior: 'Какую метрику выбрал и почему; baseline против константного прогноза',
-      middle: 'Разбиение по времени или группам; утечка признаков из будущего, которую нашёл; пайплайн признаков без утечки',
+      junior: 'Выбор метрики и почему она; baseline против константного прогноза',
+      middle: 'Разбиение по времени или группам; утечка признаков из будущего и как её найти; пайплайн признаков без утечки',
       senior: 'Когда метрика врёт бизнесу; воспроизводимость обучения; цена усложнения модели',
     },
   },
@@ -360,7 +360,7 @@ const ai: readonly CompetencyDef[] = [
     core: ['ai.mlops'],
     focus: {
       junior: 'Как модель попадает в сервис: онлайн или батч; что такое версия модели',
-      middle: 'Реестр моделей и продвижение в production; дрейф данных: что мерил, когда алерт, как откатывал',
+      middle: 'Реестр моделей и продвижение в production; дрейф данных: что измерять, когда алерт, как откатить',
       senior: 'Пропускная способность инференса и его стоимость; переобучение по расписанию против по дрейфу',
     },
   },
@@ -372,7 +372,7 @@ const ai: readonly CompetencyDef[] = [
     catalogIds: ['ai.pandas-sql', 'ai.ab-testing', 'common.sql-queries'],
     core: ['ai.data-science'],
     focus: {
-      junior: 'Группировки и объединения в pandas или SQL; как обрабатывал пропуски',
+      junior: 'Группировки и объединения в pandas или SQL; что делать с пропусками',
       middle: 'A/B-тест: метрика, размер выборки, значимость; типовые ошибки чтения результата',
       senior: 'Когда A/B невозможен и что вместо него; как интерпретация попадает в решение бизнеса',
     },
@@ -385,8 +385,8 @@ const ai: readonly CompetencyDef[] = [
     catalogIds: ['ai.bi-sql-analytics', 'ai.bi-metrics-design', 'ai.bi-dashboards', 'ai.bi-data-modeling', 'ai.bi-experiment-reporting', 'ai.bi-data-quality', 'ai.bi-metric-governance'],
     core: ['ai.bi-analytics'],
     focus: {
-      junior: 'Группировка и соединение для отчёта; как определил метрику и проверил знаменатель',
-      middle: 'Гранулярность витрины, оконные функции и качество данных; как интерпретировал результат A/B-теста',
+      junior: 'Группировка и соединение для отчёта; как определить метрику и проверить знаменатель',
+      middle: 'Гранулярность витрины, оконные функции и качество данных; как интерпретировать результат A/B-теста',
       senior: 'Согласованные определения метрик; причинность и ограничения аналитического вывода; цена ошибки для бизнеса',
     },
   },
@@ -398,8 +398,8 @@ const ai: readonly CompetencyDef[] = [
     catalogIds: ['common.unit-tests', 'common.debugging', 'common.docker-local', 'common.ci-basics'],
     core: [],
     focus: {
-      junior: 'Как упаковывал пайплайн в Docker; какие тесты писал',
-      middle: 'Что гоняется в CI для ML-кода; как отлаживал нестабильное обучение',
+      junior: 'Как упаковать пайплайн в Docker; какие тесты нужны',
+      middle: 'Что гоняется в CI для ML-кода; как отладить нестабильное обучение',
       senior: 'Тестирование недетерминированных систем; стоимость CI с моделями',
     },
   },
@@ -427,7 +427,7 @@ const engineering: readonly CompetencyDef[] = [
     catalogIds: ['eng.etl-pipeline', 'eng.data-types', 'eng.data-quality', 'eng.idempotent-load', 'eng.incremental-load', 'eng.orchestration'],
     core: ['engineering.data-eng'],
     focus: {
-      junior: 'Из чего состоит пайплайн; что делал со строками, не прошедшими схему; как проверял дубли',
+      junior: 'Из чего состоит пайплайн; что делать со строками, не прошедшими схему; как проверить дубли',
       middle: 'Идемпотентная загрузка после сбоя; инкремент по водяному знаку и опоздавшие записи; повторы в оркестраторе',
       senior: 'CDC против батча; гарантии при частичном отказе; стоимость переобработки истории',
     },
@@ -467,7 +467,7 @@ const engineering: readonly CompetencyDef[] = [
     core: ['engineering.devops', 'engineering.sre'],
     focus: {
       junior: 'Чем liveness отличается от readiness; что такое requests и limits',
-      middle: 'Неправильная проба, которая уронила сервис; сколько подов поместится на узел и как это считал',
+      middle: 'Неправильная проба, которая уронила сервис; сколько подов поместится на узел и как это посчитать',
       senior: 'Планирование ёмкости кластера; шумные соседи; отказ узла и что произойдёт с нагрузкой',
     },
   },
@@ -479,8 +479,8 @@ const engineering: readonly CompetencyDef[] = [
     catalogIds: ['eng.test-strategy', 'eng.test-design', 'eng.test-isolation', 'eng.flaky-tests', 'eng.contract-tests', 'eng.ui-autotests'],
     core: ['engineering.qa-automation'],
     focus: {
-      junior: 'Граничные значения и классы эквивалентности на примере; как изолировал тесты',
-      middle: 'Пирамида тестов и её нарушение; нестабильный тест, который чинил: причина и что сделал; контрактные тесты',
+      junior: 'Граничные значения и классы эквивалентности на примере; как изолировать тесты',
+      middle: 'Пирамида тестов и её нарушение; нестабильный тест: причина и как его починить; контрактные тесты',
       senior: 'Стратегия автотестов продукта и её цена; какие тесты удалить; тесты как инструмент релизов',
     },
   },
@@ -492,7 +492,7 @@ const engineering: readonly CompetencyDef[] = [
     catalogIds: ['eng.slo', 'eng.alerting', 'eng.incident-postmortem', 'eng.retries-resilience', 'eng.observability'],
     core: ['engineering.sre'],
     focus: {
-      junior: 'Что такое SLO и бюджет ошибок; какие метрики, логи и трейсы подключал',
+      junior: 'Что такое SLO и бюджет ошибок; какие метрики, логи и трейсы нужны',
       middle: 'Алерты по симптомам пользователя; разбор инцидента: таймлайн и постмортем; ретраи в цепочке и шторм',
       senior: 'SLO на систему из многих сервисов; как бюджет ошибок управляет релизами; цена наблюдаемости',
     },
@@ -525,7 +525,7 @@ export function competenciesFor(specialization: Specialization): CompetencyDef[]
   return COMPETENCIES.filter((c) => c.specialization === specialization);
 }
 
-/** Компетенция блока по порядку: intro/team – общие, systems – ось systems направления. */
+/** Компетенция блока по порядку: intro/team — общие, systems — ось systems направления. */
 export function blockCompetencies(block: BlockId, specialization: Specialization): CompetencyDef[] {
   if (block === 'intro') return [BY_ID.get('common.context')!];
   if (block === 'team') return [BY_ID.get('common.teamwork')!];
@@ -534,7 +534,7 @@ export function blockCompetencies(block: BlockId, specialization: Specialization
   return [];
 }
 
-/** Технические компетенции направления: ядро подкатегории – первыми, остальные – по порядку модели. */
+/** Технические компетенции направления: ядро подкатегории — первыми, остальные — по порядку модели. */
 export function orderTechnical(specialization: Specialization, subcategoryId: string | null): CompetencyDef[] {
   const tech = competenciesFor(specialization).filter((c) => c.axis === 'technical');
   if (!subcategoryId) return tech;

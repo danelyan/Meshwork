@@ -1,0 +1,19 @@
+{
+  "id": "ai-datasci-junior-eda",
+  "subcategoryId": "ai.data-science",
+  "specialization": "ai",
+  "grade": "junior",
+  "title": "Очистка таблицы и сводка: пропуски, дубли, выбросы",
+  "summary": "Чистка таблицы пользователей в pandas: приведение типов, дубли, пропуски, выбросы по IQR, отчёт о чистке и сводка groupby в заданном формате",
+  "stack": ["python312", "pandas", "numpy", "pytest"],
+  "catalogIds": ["ai.pandas-sql", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

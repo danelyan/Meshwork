@@ -1,0 +1,19 @@
+{
+  "id": "ai-datasci-middle-abtest",
+  "subcategoryId": "ai.data-science",
+  "specialization": "ai",
+  "grade": "middle",
+  "title": "Анализ A/B-теста: SRM, конверсия, выручка, решение",
+  "summary": "Проверка SRM хи-квадратом, разница конверсий и средней выручки с доверительным интервалом (нормальное приближение), винзоризация выбросов, решение по первичной метрике, размер выборки",
+  "stack": ["python312", "pandas", "numpy", "pytest"],
+  "catalogIds": ["ai.ab-testing", "ai.pandas-sql", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

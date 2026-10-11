@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { getRecommendations, type RecommendationsView } from '@/lib/api';
 import { LEVEL_LABEL, isLevel } from '@/lib/labels';
@@ -19,6 +19,7 @@ import { SavedVacancies } from './SavedVacancies';
 
 type Filters = { query: string; specialization: string; grade: string; salary: string; fit?: string };
 const EMPTY: Filters = { query: '', specialization: '', grade: '', salary: '' };
+const VIEW_KEY = 'career:view';
 const money = new Intl.NumberFormat('ru-RU');
 export const coveragePercent = (target: TargetRec) => target.total > 0 ? Math.round(Math.min(1, target.covered / target.total) * 100) : 0;
 /** Доказано — уровень выше «со слов» (ссылка на работу, третья сторона, платформа). */
@@ -43,7 +44,10 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [expanded, setExpanded] = useState(false);
-  const [mode, setMode] = useState<'map' | 'list'>(savedOnly ? 'list' : 'map');
+  const [mode, setMode] = useState<'map' | 'list'>('list');
+  // Пользователь (или ссылка на вакансию) уже определил вид: автовыбор карты его не перебивает.
+  const viewLocked = useRef(false);
+  const listRef = useRef<HTMLUListElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saved, setSaved] = useState<string[]>([]);
   const [storageError, setStorageError] = useState<string | null>(null);
@@ -54,6 +58,19 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
   const [moving, setMoving] = useState(true);
   const [revision, setRevision] = useState(0);
   const [onlySaved, setOnlySaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(VIEW_KEY);
+      if (stored === 'map' || stored === 'list') { viewLocked.current = true; setMode(stored); }
+    } catch { /* storage может быть недоступен: остаётся вид по умолчанию */ }
+  }, []);
+
+  function chooseMode(next: 'map' | 'list') {
+    viewLocked.current = true;
+    setMode(next);
+    try { window.localStorage.setItem(VIEW_KEY, next); } catch { /* не критично */ }
+  }
 
   useEffect(() => {
     let alive = true;
@@ -74,7 +91,8 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
       setCategories(catalog.categories ?? []);
       setData({});
       setSaved(favorites.kind === 'vacancy' ? favorites.ids : []);
-      if (requested) setSelectedId(requested);
+      if (requested) { setSelectedId(requested); viewLocked.current = true; setMode('list'); }
+      else if (!viewLocked.current && !savedOnly && rows.some((row) => coveragePercent(row) > 0)) setMode('map');
     }).catch((err: Error) => alive && setError(err.message));
     return () => { alive = false; };
   }, [revision, savedOnly]);
@@ -96,6 +114,12 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
     );
     return () => { alive = false; };
   }, [selectedVacancyId]);
+
+  useEffect(() => {
+    if (mode !== 'list' || !selectedVacancyId) return;
+    const row = Array.from(listRef.current?.querySelectorAll<HTMLElement>('[data-vacancy-id]') ?? []).find((el) => el.dataset.vacancyId === selectedVacancyId);
+    row?.scrollIntoView?.({ block: 'nearest' });
+  }, [mode, selectedVacancyId]);
 
   async function toggleSave(id: string) {
     setSaving(true);
@@ -130,10 +154,11 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
         <Field label="Соответствие"><select className={ui.input} value={filters.fit ?? ''} onChange={(e) => setFilters({ ...filters, fit: e.target.value })}><option value="">Любое</option><option value="40">от 40%</option><option value="60">от 60%</option><option value="80">от 80%</option></select></Field>
         <Button onClick={() => setFilters(EMPTY)}>Сбросить всё</Button>
       </Panel>}
+      {!savedOnly && targets.length > 0 && targets.every((t) => coveragePercent(t) === 0) && <Notice>Совпадений пока нет: <a href="/test">пройди тест на грейд</a> и подтверди навыки — карта покажет, какие вакансии ближе.</Notice>}
       {storageError && <Notice tone="error">{storageError}</Notice>}
       {requestedMissing && <Notice>Вакансия по ссылке недоступна в текущем каталоге. Возможно, она закрыта. <Button size="sm" onClick={() => setSelectedId(null)}>Выбрать другую вакансию</Button></Notice>}
       {truncated && <Notice>Показаны первые 200 активных вакансий. В избранном сохранённые предложения загружаются отдельно.</Notice>}
-      <div className={styles.resultBar}><span role="status">Вакансий: {filtered.length}</span><span className={styles.viewBar}><div className={styles.viewSwitch} aria-label="Вид вакансий"><Button size="sm" aria-pressed={mode === 'map'} onClick={() => setMode('map')}>Карта</Button><Button size="sm" aria-pressed={mode === 'list'} onClick={() => setMode('list')}>Список</Button></div><Button size="sm" aria-pressed={onlySaved} onClick={() => setOnlySaved(!onlySaved)}>☆ Сохранённое</Button></span></div>
+      <div className={styles.resultBar}><span role="status">Вакансий: {filtered.length}</span><span className={styles.viewBar}><div className={styles.viewSwitch} aria-label="Вид вакансий"><Button size="sm" aria-pressed={mode === 'map'} onClick={() => chooseMode('map')}>Карта</Button><Button size="sm" aria-pressed={mode === 'list'} onClick={() => chooseMode('list')}>Список</Button></div><Button size="sm" aria-pressed={onlySaved} onClick={() => setOnlySaved(!onlySaved)}>☆ Сохранённое</Button></span></div>
       {!filtered.length ? <Panel className={styles.empty}>
         <h2>{savedOnly && !filterCount ? 'Пока ничего не сохранено' : 'Подходящих вакансий пока нет'}</h2>
         <p>{filterCount ? 'Попробуйте другое название или сбросьте фильтры.' : savedOnly ? 'Добавьте вакансии в избранное из раздела «Вакансии».' : 'Подтвердите карточки опыта у консультанта. Подбор учитывает реальные требования вакансий и утверждения вашего профиля.'}</p>
@@ -155,7 +180,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
                 {mapTargets.map((target, i) => { const angle = i * 2.39996 - .8; const radius = 95 + (100 - coveragePercent(target)) * 1.25; return <span key={target.vacancyId} className={styles.mapPercent} data-active={target.vacancyId === selected?.vacancyId} style={{ left: `${50 + Math.cos(angle) * radius / 12}%`, top: `${50 + Math.sin(angle) * radius * .9 / 10.4}%` }}>{coveragePercent(target)}%</span>; })}
               </div>
             </div>
-          </> : <ul className={styles.vacancyList}>{filtered.map((target) => <li key={target.vacancyId}><button className={`${styles.vacancyRow} ${selected?.vacancyId === target.vacancyId ? styles.activeRow : ''}`} onClick={() => setSelectedId(target.vacancyId)} aria-pressed={selected?.vacancyId === target.vacancyId}><span className={styles.letter}>{target.companyName.slice(0, 1)}</span><span><b>{target.companyName}</b><span>{target.title}</span><small>{money.format(target.salaryFrom)}–{money.format(target.salaryTo)} ₽ · {specLabel(target.specialization)}</small></span><strong>{coveragePercent(target)}%</strong></button></li>)}</ul>}
+          </> : <ul className={styles.vacancyList} ref={listRef}>{filtered.map((target) => <li key={target.vacancyId}><button data-vacancy-id={target.vacancyId} className={`${styles.vacancyRow} ${selected?.vacancyId === target.vacancyId ? styles.activeRow : ''}`} onClick={() => setSelectedId(target.vacancyId)} aria-pressed={selected?.vacancyId === target.vacancyId}><span className={styles.letter}>{target.companyName.slice(0, 1)}</span><span><b>{target.companyName}</b><span>{target.title}</span><small>{money.format(target.salaryFrom)}–{money.format(target.salaryTo)} ₽ · {specLabel(target.specialization)}</small></span><strong>{coveragePercent(target)}%<small>закрываешь {target.covered} из {target.total}</small></strong></button></li>)}</ul>}
           <div className={styles.mapControls}>{mode === 'map' && <><Button size="sm" aria-label="Уменьшить карту" disabled={zoom <= .8} onClick={() => setZoom((z) => Math.max(.8, z - .1))}>−</Button><Button size="sm" aria-label="Увеличить карту" disabled={zoom >= 1.5} onClick={() => setZoom((z) => Math.min(1.5, z + .1))}>+</Button><Button size="sm" aria-label="Приостановить анимацию" aria-pressed={!moving} onClick={() => setMoving(!moving)}>{moving ? 'Ⅱ' : '▶'}</Button><span className={styles.mapLegend}><i />Ваши связи</span></>}</div>
         </section>
         {selected && <Panel className={styles.detail} aria-label="Выбранная вакансия">

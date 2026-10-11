@@ -1,4 +1,5 @@
 import { GET } from '@/app/api/profile/pdf/route';
+import { loadCategoryProvenance } from '@/server/profile-pdf';
 import { proposeClaims } from '@/server/claims/service';
 import type { VerifiedClaim } from '@/server/claims/types';
 import { signSession, signUserSession } from '@/server/session';
@@ -65,6 +66,22 @@ describe('GET /api/profile/pdf (БД)', () => {
     expect(body.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     expect(body.length).toBeGreaterThan(1024);
     expect(Number(res.headers.get('content-length'))).toBe(body.length);
+  });
+
+  it('принятый грейд ниже из старой попытки при более новой passed: версия — по событию выдачи, а не по последней попытке', async () => {
+    // Старая попытка (v4) с принятым Junior ровно в момент выдачи категории; новая passed (v7) была раньше по времени выдачи.
+    await prisma.testAttempt.update({ where: { id: 'att-owner' }, data: { status: 'not_confirmed', juniorConfirmedAt: new Date('2026-10-05T10:00:00.000Z') } });
+    await prisma.testAttempt.create({ data: { id: 'att-newer', candidateId: 'owner', specialization: 'backend', grade: 'middle', status: 'passed', policyVersion: 'adr-0002-v7', seed: 2, expiresAt: new Date('2026-10-05T09:50:00.000Z'), startedAt: new Date('2026-10-05T09:40:00.000Z'), finishedAt: new Date('2026-10-05T09:59:30.000Z') } });
+    await prisma.candidateCategory.updateMany({ where: { candidateId: 'owner' }, data: { grade: 'junior' } });
+    expect(await loadCategoryProvenance('owner')).toEqual({ subcategoryId: null, policyVersion: 'adr-0002-v4' });
+    const res = await get(cookieOf('owner'));
+    expect(res.status).toBe(200);
+    expect(Buffer.from(await res.arrayBuffer()).length).toBeGreaterThan(1024);
+  });
+
+  it('категория без попытки в окне выдачи: версия политики не сохранена (null)', async () => {
+    await prisma.testAttempt.deleteMany({ where: { candidateId: 'owner' } });
+    expect(await loadCategoryProvenance('owner')).toEqual({ subcategoryId: null, policyVersion: null });
   });
 
   it('кандидат без анкеты, категории и утверждений тоже получает PDF (пустые состояния)', async () => {

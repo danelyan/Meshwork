@@ -97,7 +97,7 @@ function categorySection(input: ProfileDocumentInput): DocSection {
     { label: 'Категория', value: `${specLabel(category.specialization)} · ${gradeLabel(category.grade)}` },
     { label: 'Подкатегория', value: input.subcategoryId ? subcategoryLabel(input.subcategoryId) : 'не указана' },
     { label: 'Подтверждена тестом', value: formatDate(category.confirmedAt) },
-    { label: 'Политика теста', value: input.policyVersion ?? 'не сохранена: попытки теста для этой категории в базе нет (демоданные)' },
+    { label: 'Политика теста', value: input.policyVersion ?? 'не сохранена: в базе нет попытки теста, выдавшей эту категорию (например, демоданные)' },
   ];
   return { title: 'Категория', facts, note: 'Категория выдана адаптивным тестом на грейд; параметры заданий — экспертные оценки, на людях не калиброваны.' };
 }

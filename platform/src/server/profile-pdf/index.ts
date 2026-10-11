@@ -27,24 +27,36 @@ async function loadStages(candidateId: string): Promise<ProfileStagesInput> {
   };
 }
 
+/** Запас между событием, выдавшим категорию, и её confirmedAt: обе записи делает одна транзакция. */
+const PROVENANCE_WINDOW_MS = 60_000;
+
 /**
  * Подкатегория и версия политики теста, по которой выдана текущая категория. Категория не хранит id попытки,
- * поэтому берём последнюю завершённую попытку того же направления не позже выдачи категории (с запасом в минуту).
- * Её нет у категорий из сида (демоданные) — тогда версия не сохранена, и PDF так и пишет, а не подставляет текущую.
+ * поэтому ищем попытку того же направления, чьё событие выдачи ближе всего к дате категории: для passed это
+ * finishedAt, для принятого грейда ниже — juniorConfirmedAt (confirmJunior оставляет попытку not_confirmed).
+ * Попытки нет у категорий из сида (демоданные) — тогда версия не сохранена, и PDF так и пишет, а не подставляет текущую.
  */
-async function loadCategoryProvenance(candidateId: string): Promise<{ subcategoryId: string | null; policyVersion: string | null }> {
+export async function loadCategoryProvenance(candidateId: string): Promise<{ subcategoryId: string | null; policyVersion: string | null }> {
   const category = await prisma.candidateCategory.findFirst({
     where: { candidateId },
     orderBy: { confirmedAt: 'desc' },
     select: { subcategoryId: true, specialization: true, confirmedAt: true },
   });
   if (!category) return { subcategoryId: null, policyVersion: null };
-  const attempt = await prisma.testAttempt.findFirst({
-    where: { candidateId, specialization: category.specialization, status: 'passed', finishedAt: { lte: new Date(category.confirmedAt.getTime() + 60_000) } },
-    orderBy: { finishedAt: 'desc' },
-    select: { policyVersion: true },
+  const attempts = await prisma.testAttempt.findMany({
+    where: { candidateId, specialization: category.specialization, OR: [{ status: 'passed', finishedAt: { not: null } }, { juniorConfirmedAt: { not: null } }] },
+    select: { policyVersion: true, status: true, finishedAt: true, juniorConfirmedAt: true },
   });
-  return { subcategoryId: category.subcategoryId, policyVersion: attempt?.policyVersion ?? null };
+  const issuedAt = category.confirmedAt.getTime();
+  let best: { policyVersion: string; distance: number } | null = null;
+  for (const a of attempts) {
+    const events = [a.status === 'passed' ? a.finishedAt : null, a.juniorConfirmedAt].filter((d): d is Date => d instanceof Date);
+    for (const event of events) {
+      const distance = Math.abs(event.getTime() - issuedAt);
+      if (distance <= PROVENANCE_WINDOW_MS && (!best || distance < best.distance)) best = { policyVersion: a.policyVersion, distance };
+    }
+  }
+  return { subcategoryId: category.subcategoryId, policyVersion: best?.policyVersion ?? null };
 }
 
 /** PDF собственного профиля кандидата: только его данные (candidateId — из сессии). */

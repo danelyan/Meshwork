@@ -7,8 +7,7 @@ import { shownWording } from '@/lib/claims-view';
 import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
 
-import { ApiError, type AttemptSummary, claimAction, getProfile, listOnboardingHistoryApi, listTestAttemptsApi, request } from '@/lib/api';
-import type { AnswerRevisionView } from '@/server/onboarding/types';
+import { ApiError, type AttemptSummary, claimAction, getProfile, listTestAttemptsApi, request } from '@/lib/api';
 import { formatDate, LEVEL_HINT, LEVELS_TOP_DOWN } from '@/lib/labels';
 import type { ProfileClaim, ProfileView } from '@/server/claims/types';
 
@@ -100,22 +99,6 @@ const ATTEMPT_STATUS: Record<AttemptSummary['status'], string> = {
   needs_confirmation: 'нужен подтверждающий тест',
 };
 
-/**
- * Категория записана, но выдача работодателя её не учитывает (индекс честности, аудит 11.10): говорим прямо,
- * без уровня и причин, и ведём к попытке - там подтверждающий тест, созвон и возражение.
- */
-function RankingHoldNotice({ attempts }: { attempts: AttemptSummary[] }) {
-  const held = attempts.find((a) => a.rankingHold);
-  if (!held) return null;
-  return (
-    <Notice className={styles.noPrint} data-testid="ranking-hold-notice">
-      Категория по тесту от {formatDate(held.startedAt)} записана, но в подборках и поиске компаний пока не учитывается: нужен короткий подтверждающий
-      тест или созвон с ИИ с разбором этой попытки. Это не снятие грейда.{' '}
-      <Link href={`/test?attempt=${encodeURIComponent(held.id)}`} style={{ textDecoration: 'underline' }}>Открыть попытку и подтвердить</Link>
-    </Notice>
-  );
-}
-
 /** История попыток теста (R-C-07, lane test). Данные — /api/test/attempts; недоступны → блок пустой. */
 function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
   if (attempts.length === 0) return null;
@@ -129,26 +112,7 @@ function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
               {formatDate(a.startedAt)}: {specLabel(a.specialization)} · {a.grade} - {ATTEMPT_STATUS[a.status]}
               {a.juniorConfirmedAt ? ', Junior подтверждён' : ''}
               {a.status !== 'active' && a.status !== 'abandoned' ? ` (${a.correct} из ${a.answered})` : ''}
-              {a.rankingHold ? ' - в подборках пока не учитывается' : ''}
             </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/** История ответов опроса (C05): «было → стало» по шагам. Данные — /api/onboarding/history; недоступны → блок пустой. */
-function OnboardingHistory({ revisions }: { revisions: AnswerRevisionView[] }) {
-  if (revisions.length === 0) return null;
-  return (
-    <div className={styles.testRec} data-testid="onboarding-history">
-      <span className={ui.kicker}>История ответов опроса</span>
-      <ul className={styles.history}>
-        {revisions.slice(0, 20).map((r) => (
-          <li key={r.id}>
-            {formatDate(r.createdAt)}: {r.label} - {r.previous ?? 'не было'} → {r.value ?? 'удалено'}
-            {r.source === 'reset' ? ' (сброс опроса)' : r.source === 'fsp' ? ' (вход через ФСП ID)' : ''}
           </li>
         ))}
       </ul>
@@ -160,7 +124,6 @@ export function ProfilePage() {
   const [details, setDetails] = useState<ProfileDetails | null>(null);
   const [profile, setProfile] = useState<ProfileView | null>(null);
     const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
-  const [revisions, setRevisions] = useState<AnswerRevisionView[]>([]);
   const [error, setError] = useState<ApiError | Error | null>(null);
 
   useEffect(() => {
@@ -172,10 +135,6 @@ export function ProfilePage() {
     request<ProfileDetails>('/api/profile/details').then((value) => { if (alive && value.employerPreview) setDetails(value); }, () => undefined);
     listTestAttemptsApi().then(
       (a) => alive && setAttempts(a),
-      () => undefined,
-    );
-    listOnboardingHistoryApi().then(
-      (r) => alive && setRevisions(r),
       () => undefined,
     );
     return () => {
@@ -244,7 +203,6 @@ export function ProfilePage() {
 
       <div className={styles.main}>
       <ProfileBasics details={details} name={profile.candidate.name} />
-      <RankingHoldNotice attempts={attempts} />
       <ResumeFieldsCard details={details} />
       <section className={styles.evidencePanel} aria-label="Утверждения о навыках"><header><h2>Утверждения о навыках</h2><span>Уровень доказанности</span></header>
       {claims.length === 0 ? (
@@ -279,7 +237,7 @@ export function ProfilePage() {
         })
       )}
       </section>
-      <details className={styles.extraEvidence}><summary>История проверок</summary><TestHistory attempts={attempts} /><OnboardingHistory revisions={revisions} /></details>
+      <details className={styles.extraEvidence}><summary>История проверок</summary><TestHistory attempts={attempts} /></details>
       <div className={`${styles.noPrint} ${styles.homeLinks}`}>
         <Link href="/skills">Карта глубины и пробелы → Навыки и грейд</Link>
         <Link href="/career">Подходящие вакансии → Вакансии</Link>

@@ -3656,13 +3656,13 @@ paths:
       tags:
         - employer
       summary: "Профиль своей компании"
-      description: "профиль своей компании (R-E-01). `inviteContact` — способ связи, который увидит кандидат в приглашении от этого представителя (Company.contact, иначе его почта); null — приглашения не отправятся.\n\nНужна сессия работодателя (кука cid)."
+      description: "профиль своей компании (R-E-01).\n\nНужна сессия работодателя (кука cid)."
       security:
         -
           cookieAuth: []
       responses:
         "200":
-          description: "Название, описание, отрасль, ИНН и контакт компании; `inviteContact` — способ связи в приглашениях от этого представителя (контакт компании, иначе его почта), null — приглашения не отправятся (409 company_contact_required)"
+          description: "Название, описание, отрасль, ИНН и контакт компании"
           content:
             "application/json":
               schema:
@@ -3680,12 +3680,6 @@ paths:
                     type: string
                   contact:
                     type: string
-                  inviteContact:
-                    oneOf:
-                      -
-                        type: string
-                      -
-                        type: "null"
                 required:
                   - id
                   - name
@@ -3693,7 +3687,6 @@ paths:
                   - industry
                   - inn
                   - contact
-                  - inviteContact
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3717,7 +3710,7 @@ paths:
               $ref: "#/components/schemas/CompanyPatch"
       responses:
         "200":
-          description: "Профиль компании после правки, с `inviteContact`"
+          description: "Профиль компании после правки"
           content:
             "application/json":
               schema:
@@ -3735,12 +3728,6 @@ paths:
                     type: string
                   contact:
                     type: string
-                  inviteContact:
-                    oneOf:
-                      -
-                        type: string
-                      -
-                        type: "null"
                 required:
                   - id
                   - name
@@ -3748,7 +3735,6 @@ paths:
                   - industry
                   - inn
                   - contact
-                  - inviteContact
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -3843,7 +3829,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
         "409":
-          description: "Открытое приглашение этому кандидату уже есть, не приняты оферта и обязательство по данным (`consent_required`) или у компании нет способа связи (`company_contact_required`, `details.companyUrl`)"
+          description: "Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)"
           content:
             "application/json":
               schema:
@@ -4440,19 +4426,10 @@ paths:
             enum:
               - "1"
         -
-          name: pool
-          in: query
-          required: false
-          description: "`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)"
-          schema:
-            type: string
-            enum:
-              - all
-        -
           name: category
           in: query
           required: false
-          description: "Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`"
+          description: "`1` — только кандидаты с подтверждённой категорией"
           schema:
             type: string
             enum:
@@ -4784,19 +4761,10 @@ paths:
             enum:
               - "1"
         -
-          name: pool
-          in: query
-          required: false
-          description: "`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)"
-          schema:
-            type: string
-            enum:
-              - all
-        -
           name: category
           in: query
           required: false
-          description: "Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`"
+          description: "`1` — только кандидаты с подтверждённой категорией"
           schema:
             type: string
             enum:
@@ -6006,30 +5974,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/onboarding/history":
-    get:
-      operationId: getOnboardingHistory
-      tags:
-        - onboarding
-      summary: "Журнал редакций ответов опроса кандидата (C05): шаг, «было → стало» человеческим"
-      description: "журнал редакций ответов опроса кандидата (C05): шаг, «было → стало» человеческим текстом, когда и откуда (ответ, вход через ФСП ID, сброс). Только свои записи; работодателю недоступно.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Журнал редакций ответов опроса кандидата (C05): шаг, «было → стало» человеческим"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/openapi":

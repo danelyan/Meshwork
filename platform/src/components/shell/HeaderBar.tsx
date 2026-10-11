@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import type { HeaderAccount } from '@/server/auth/role-plan';
+import { JURY_HOME, isJuryPath } from '@/components/demo/jury';
 
 import { HOME_ANCHORS, activeLinkHref, navFor, type NavLink } from './nav';
 import { LogoutButton } from './LogoutButton';
@@ -19,7 +20,7 @@ import styles from './shell.module.css';
  * Шапка: знак слева, навигация роли (гостю на главной — якоря), справа меню аккаунта (`account`, ADR 0004:
  * роли, профиль компании, «Выйти») или «Войти». Сессия без учётки в БД (старая демо-кука) — просто «Выйти».
  */
-export function HeaderBar({ signedIn, links, account = null }: { signedIn: boolean; links: NavLink[]; account?: HeaderAccount | null }) {
+export function HeaderBar({ signedIn, links, account = null, jury = false }: { signedIn: boolean; links: NavLink[]; account?: HeaderAccount | null; jury?: boolean }) {
   const pathname = usePathname();
   const home = pathname === '/';
   const role = account?.roles?.role ?? null;
@@ -49,6 +50,11 @@ export function HeaderBar({ signedIn, links, account = null }: { signedIn: boole
           )
         )}
         <div className={styles.action}>
+          {jury && (
+            <Link className={styles.jury} href={JURY_HOME} aria-current={isJuryPath(pathname) ? 'page' : undefined}>
+              Для жюри
+            </Link>
+          )}
           {account?.roles && <Notifications role={account.roles.role} />}
           {/* Тема действует в разделах кабинета (THEMED_PATHS) — иконка там, где она что-то меняет; на лендинге, входе и юридических её нет. */}
           {isThemedPath(pathname) && <ThemeToggle />}

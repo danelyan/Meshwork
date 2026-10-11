@@ -1,4 +1,5 @@
 import { getPageSession } from '@/server/auth/page';
+import { getEnv } from '@/server/env';
 import { headerAccountFor } from '@/server/auth/role-switch';
 
 import { HeaderBar } from './HeaderBar';
@@ -15,5 +16,6 @@ export async function SiteHeader() {
   const role = session ? session.role : null;
   // Меню аккаунта (ADR 0004): роль — активная из куки, имя, профили и компания — из БД.
   const account = session ? await headerAccountFor(session.userId, session.role) : null;
-  return <HeaderBar signedIn={session !== null} links={linksFor(role)} account={account} />;
+  // «Для жюри» — вход в хаб /demo на каждой странице, только при DEMO_LOGIN (как сама страница).
+  return <HeaderBar signedIn={session !== null} links={linksFor(role)} account={account} jury={getEnv().DEMO_LOGIN} />;
 }

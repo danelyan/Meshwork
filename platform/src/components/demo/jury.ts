@@ -10,3 +10,8 @@ export const JURY_PAGES: JuryPage[] = [
   { href: '/simulator', title: 'Симулятор теста', text: 'Адаптивный тест на заданных «кандидатах»: как выбираются задания и как сходится грейд.', criterion: 'Тест и валидация · 25 %' },
   { href: '/expert', title: 'Пройти тест самому', text: 'Настоящий тест без регистрации. Грейд нигде не сохраняется.', criterion: 'Тест и валидация · 25 %' },
 ];
+
+/** Хаб жюри или одна из его страниц — подсветка кнопки «Для жюри» в шапке. */
+export function isJuryPath(pathname: string): boolean {
+  return [JURY_HOME, ...JURY_PAGES.map((p) => p.href)].some((h) => pathname === h || pathname.startsWith(`${h}/`));
+}

@@ -13,7 +13,7 @@ beforeEach(() => {
   mocks.candidate.mockResolvedValue({ specialization: null, fspState: 'not_linked', user: { id: 'own-user', onboardedAt: null } });
   mocks.profile.mockResolvedValue(null);
   mocks.state.mockResolvedValue(null);
-  mocks.journey.mockResolvedValue({ steps: { onboarding: false, documents: false, confirm_claims: false, test: false, vacancies: false, defense: false }, counts: { sources: 0, proposed: 0, confirmed: 0, pendingInvitations: 0, defended: 0 }, nextStep: 'onboarding' });
+  mocks.journey.mockResolvedValue({ steps: { onboarding: false, test: false, call: false, project: false, ai_defense: false }, counts: { sources: 0, proposed: 0, confirmed: 0, pendingInvitations: 0, acceptedInvitations: 0 }, callNeedsSources: true, nextStep: 'onboarding' });
 });
 
 it('reads only the context candidate and their owner state; exposes masked self-reports as untrusted data', async () => {

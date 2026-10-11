@@ -72,11 +72,11 @@ describe('инструменты «ведёт по платформе»', () => 
     expect(await prisma.candidateCategory.count({ where: { candidateId: CAND } })).toBe(0);
   });
 
-  it('get_onboarding_status: онбординг пройден, карточки ждут ответа → confirm_claims; приглашение — вне очереди', async () => {
+  it('get_onboarding_status: онбординг пройден, карточки ждут ответа, но первым идёт тест; приглашение — вне очереди', async () => {
     await prisma.user.create({ data: { name: 'К', role: 'candidate', candidateId: CAND, onboardedAt: new Date() } });
     await seedClaim('proposed');
     let r = await call('get_onboarding_status');
-    expect(r.json).toMatchObject({ nextStep: 'confirm_claims', counts: { proposed: 1, confirmed: 0 } });
+    expect(r.json).toMatchObject({ nextStep: 'test', counts: { proposed: 1, confirmed: 0 } });
 
     const company = await prisma.company.create({ data: { name: 'Тест-Банк' } });
     const vacancy = await prisma.vacancy.create({ data: { companyId: company.id, title: 'Backend', specialization: 'backend', grade: 'middle', salaryFrom: 200_000, salaryTo: 300_000, needs: [] } });

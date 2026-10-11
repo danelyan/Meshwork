@@ -16,23 +16,36 @@ const base = { intro: false, introNote: '2 из 10', confirmed: 0, category: nul
 describe('journey steps', () => {
   it('marks the first unfinished step as now, earlier ones done, later ones next', () => {
     const s = candidateSteps({ ...base, intro: true, confirmed: 3 });
-    expect(s.map((x) => x.state)).toEqual(['done', 'done', 'now', 'next']);
+    expect(s.map((x) => x.id)).toEqual(['intro', 'test', 'call', 'project', 'ai_defense', 'invites', 'live_defense']);
+    expect(s.map((x) => x.state)).toEqual(['done', 'now', 'next', 'next', 'next', 'next', 'next']);
   });
-  it('keeps the last step as now when everything before it is done', () => {
-    const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, invitations: 2 });
-    expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'now']);
-    expect(s[2]!.note).toBe('Backend · Middle');
-    expect(s[3]!.note).toBe('2 приглашения');
+  it('порядок: тест → созвон → проект → ИИ-защита; ИИ-защита без готовой функции остаётся «скоро»', () => {
+    const cat = { specialization: 'backend', grade: 'middle' };
+    const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: cat, call: true, project: true });
+    expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'done', 'now', 'next', 'next']);
+    expect(s[1]!.note).toBe('Backend · Middle');
+    expect(s[4]!.note).toBe('скоро');
+    expect(hintFor('candidate', s, undefined).title).toBe('ИИ-защита проекта');
+  });
+  it('нет утверждений — шаг созвона просит приложить резюме или ссылки', () => {
+    const s = candidateSteps({ ...base, intro: true, category: { specialization: 'backend', grade: 'middle' } });
+    expect(s[2]!.state).toBe('now');
+    expect(s[2]!.note).toMatch(/резюме или ссылки/);
+  });
+  it('принятое приглашение: «Приглашения» пройдено, «Живая защита» — сейчас', () => {
+    const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, project: true, aiDefense: true, invitations: 2, accepted: 1 });
+    expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'done', 'done', 'done', 'now']);
+    expect(hintFor('candidate', s, undefined).title).toBe('Живая защита');
   });
   it('lane hired: найм — финальный этап «Нанят в …», весь путь пройден, подсказка про найм', () => {
-    const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, invitations: 1, hired: { company: 'Северный Поток' } });
-    expect(s.map((x) => x.id)).toEqual(['intro', 'profile', 'test', 'invites', 'hired']);
-    expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'done', 'done']);
-    expect(s[4]!.label).toBe('Нанят в Северный Поток');
+    const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, project: true, aiDefense: true, invitations: 1, accepted: 1, hired: { company: 'Северный Поток' } });
+    expect(s.map((x) => x.id)).toEqual(['intro', 'test', 'call', 'project', 'ai_defense', 'invites', 'live_defense', 'hired']);
+    expect(s.every((x) => x.state === 'done')).toBe(true);
+    expect(s[7]!.label).toBe('Нанят в Северный Поток');
     expect(hintFor('candidate', s, undefined).title).toBe('Нанят в Северный Поток');
   });
   it('links candidate steps to existing sections', () => {
-    expect(candidateSteps(base).map((x) => x.href)).toEqual(['/consultant', '/profile', '/test', '/invitations']);
+    expect(candidateSteps(base).map((x) => x.href)).toEqual(['/consultant', '/test', '/consultant', '/projects', '/projects', '/invitations', '/invitations']);
   });
   it('employer path: company, need, search, invitations', () => {
     const s = employerSteps({ intro: true, introNote: 'пройдено', needs: 1, invitations: 0 });

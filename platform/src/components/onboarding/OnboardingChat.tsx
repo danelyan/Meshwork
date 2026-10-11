@@ -341,6 +341,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
 
   const employer = view.scenario === 'employer';
   const skippedReplies = (view.summary?.skipped ?? []).map((it) => ({ value: `goto:${it.stepId}`, label: `Ответить: ${it.label}` }));
+  // Порядок кандидата — server/agent/journey.ts: после знакомства первым идёт тест (дальше созвон, проект, ИИ-защита).
   const nextSteps = employer
     ? [{ value: 'go:/employer', label: 'Открыть подборку' }, ...skippedReplies]
     : [

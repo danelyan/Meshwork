@@ -14,6 +14,7 @@ import { errors } from '@/server/errors';
 import { audit, requireReason } from './audit';
 import type { StaffContext } from './session';
 import { ADMIN_SESSION_TTL_SEC } from './session';
+import { DEMO_STAFF_EMAIL } from './permissions';
 import { generateTotpSecret, openTotpSecret, otpauthUri, sealTotpSecret, verifyTotp } from './totp';
 
 /** Лимиты входа персонала (in-memory, как у пользовательского входа). */
@@ -83,6 +84,33 @@ export async function totpStep(req: Request, pre: { staffId: string; pv: string 
     if (setup) await audit({ actor, action: 'staff.totp_enabled', target: { type: 'staff', id: staff.id } }, tx);
     await audit({ actor, action: 'staff.login', target: { type: 'staff', id: staff.id } }, tx);
     return { sessionId: session.id, staffId: staff.id };
+  });
+}
+
+/**
+ * Демо-вход жюри: при DEMO_LOGIN — сессия сотрудника `DEMO_STAFF_EMAIL` (owner, только чтение) без пароля и TOTP.
+ * Сотрудник заводится при первом нажатии; пароль у него непроверяемый (не scrypt), поэтому войти им через форму
+ * нельзя. Права режет `requireStaff` (session.demoAllows), а не роль: экраны owner видны целиком.
+ */
+export async function demoLogin(req: Request, now = new Date()): Promise<{ sessionId: string }> {
+  if (!getEnv().DEMO_LOGIN) throw errors.forbidden('Демо-вход выключен');
+  if (!hit(`admin:client:${clientKey(req)}`, ADMIN_RATE.perClient)) throw errors.rateLimited('Слишком много попыток. Подождите несколько минут.');
+  const ip = clientKey(req);
+  return prisma.$transaction(async (tx) => {
+    const staff = await tx.staffMember.upsert({
+      where: { email: DEMO_STAFF_EMAIL },
+      create: { email: DEMO_STAFF_EMAIL, name: 'Демо-владелец (жюри)', role: 'owner', passwordHash: 'demo-no-password', totpEnabledAt: now },
+      update: {},
+      select: { id: true, disabledAt: true, totpEnabledAt: true },
+    });
+    if (staff.disabledAt) throw errors.forbidden('Демо-вход отключён владельцем платформы');
+    if (!staff.totpEnabledAt) await tx.staffMember.update({ where: { id: staff.id }, data: { totpEnabledAt: now } });
+    const session = await tx.adminSession.create({
+      data: { staffId: staff.id, expiresAt: new Date(now.getTime() + ADMIN_SESSION_TTL_SEC * 1000), ip, userAgent: req.headers.get('user-agent')?.slice(0, 300) ?? null },
+      select: { id: true },
+    });
+    await audit({ actor: { staffId: staff.id, ip }, action: 'staff.login', target: { type: 'staff', id: staff.id }, after: { demo: true } }, tx);
+    return { sessionId: session.id };
   });
 }
 

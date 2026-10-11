@@ -324,6 +324,26 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/demo":
+    post:
+      operationId: postAdminAuthDemo
+      tags:
+        - admin
+      summary: "Демо-вход жюри в админку: только при DEMO_LOGIN (иначе 403)."
+      description: "Демо-вход жюри в админку: только при DEMO_LOGIN (иначе 403). Без пароля и TOTP — сотрудник-owner `demo-owner@admin.demo` с правом только на чтение; изменения и раскрытие ПДн отвечают 403.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Демо-вход жюри в админку: только при DEMO_LOGIN (иначе 403). Без пароля и TOTP — сотрудник-owner"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/admin/auth/login":
     post:
       operationId: postAdminAuthLogin

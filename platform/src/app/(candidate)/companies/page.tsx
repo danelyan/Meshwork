@@ -25,7 +25,6 @@ export default async function Page() {
         <div className={styles.cardHead}><h2><Link href={`/companies/${encodeURIComponent(c.id)}`}>{c.name}</Link></h2>{c.industry && <Kicker>{c.industry}</Kicker>}</div>
         {c.summary && <p>{c.summary}</p>}
         <p>Открытых вакансий: {c.vacancyCount} · {money.format(c.salaryMin)} – {money.format(c.salaryMax)} ₽</p>
-        {c.preview.length > 0 && <ul className={styles.requirements} aria-label="Вакансии">{c.preview.map((v) => <li key={v.id}>{v.title} <small className={styles.meta}>· {money.format(v.salaryFrom)} – {money.format(v.salaryTo)} ₽</small></li>)}{c.vacancyCount > c.preview.length && <li><small className={styles.meta}>и ещё {c.vacancyCount - c.preview.length}</small></li>}</ul>}
         <div>{c.specializations.map((s) => <Tag key={s}>{specLabel(s)}</Tag>)}</div>
       </Panel>)}
     </>}

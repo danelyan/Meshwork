@@ -50,6 +50,23 @@ export const envSchema = z
     OPENAI_CHAT_SUPPORTS_JSON_SCHEMA: z.stringbool().default(true),
     /** Стримить ответы чата (`stream: true`): реплики консультанта и помощника появляются по мере генерации. */
     OPENAI_CHAT_STREAM: z.stringbool().default(true),
+    /** JSON-объект доп. полей тела запроса, напр. {"chat_template_kwargs":{"enable_thinking":false}} — выключить рассуждения Qwen3 на vLLM. */
+    OPENAI_CHAT_EXTRA_BODY: optionalString.pipe(
+      z
+        .string()
+        .optional()
+        .transform((s, ctx) => {
+          if (!s) return undefined;
+          try {
+            const v: unknown = JSON.parse(s);
+            if (v && typeof v === 'object' && !Array.isArray(v)) return v as Record<string, unknown>;
+          } catch {
+            /* ниже — ошибка конфигурации */
+          }
+          ctx.addIssue({ code: 'custom', message: 'OPENAI_CHAT_EXTRA_BODY должен быть JSON-объектом' });
+          return z.NEVER;
+        }),
+    ),
 
     /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
     STT_PROVIDER: z.enum(['auto', 'yandex', 'openai', 'browser', 'off']).default('auto'),

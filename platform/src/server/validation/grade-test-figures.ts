@@ -9,6 +9,12 @@ export const GRADE_TEST_DOC = 'docs/validation-results.md, раздел «Пер
 export const GRADE_TEST_POLICY =
   'adr-0002-v7: пороги Junior −0,7, Middle −0,1, Senior +0,8; подтверждение при P ≥ 0,8; 7–10 заданий, остановка по SE 0,4, дозадавание до 3; ротация семейств между попытками, индекс честности, общие компетенции в пуле подкатегории';
 
+import raw from '../../../eval/test/results.json';
+
+import { DEFAULT_ITEM_LIMITS, formatItemRange } from '@/lib/test-limits';
+
+import { parseLengthBlock } from './length-sweep';
+
 /** Персоны по подкатегориям: вымышленные кандидаты с моделью знаний, заданной агентом; seed 1, N = 1000 на персону и заявленный грейд, среднее по 18 подкатегориям. */
 export interface PersonaRow {
   id: string;
@@ -73,7 +79,7 @@ export const TARGETS = {
   retest: '≥ 90 %',
   kappa: '≥ 0,70',
   auc: '≥ 0,90',
-  length: '7–10 + до 3',
+  length: `${formatItemRange(DEFAULT_ITEM_LIMITS)} + до 3`,
 } as const;
 
 /** Команды воспроизведения из platform/ (без LLM, без БД; полный прогон ≈ 50 с, персоны ≈ 20 с на специализацию). */
@@ -82,4 +88,9 @@ export const GRADE_TEST_COMMANDS = [
   'npx tsx eval/test/run.ts --n 2000 --seed 1 --spec backend                      # и frontend, ai, engineering',
   'npx tsx eval/test/run.ts --n 2000 --seed 1 --spec backend --population legacy',
   'npx tsx eval/test/subcategory-personas.ts --spec backend --n 1000 --seed 1     # и frontend, ai, engineering',
+  'npx tsx eval/test/length-sweep.ts   # лимиты длины 7–10 … 12–16, ≈ 4 мин',
+  'npx tsx eval/test/bank-width.ts',
 ];
+
+/** «Длина теста и надёжность»: lengthSweep и bankWidth из results.json (eval/test/length-sweep.ts, bank-width.ts). */
+export const LENGTH_BLOCK = parseLengthBlock(raw);

@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
 
-import { type AuditAction, can } from './permissions';
+import { type AuditAction, DEMO_READONLY_MESSAGE, can } from './permissions';
 import type { StaffContext } from './session';
 
 /**
@@ -90,6 +90,7 @@ export interface RevealInput {
  */
 export async function revealPii<T>(input: RevealInput, load: () => Promise<T>): Promise<T> {
   if (!can(input.actor.role, 'reveal_pii')) throw errors.forbidden('Недостаточно прав');
+  if (input.actor.demo) throw errors.forbidden(DEMO_READONLY_MESSAGE);
   const reason = requireReason(input.reason);
   await audit({ actor: input.actor, action: 'reveal_pii', target: input.target, reason, after: { fields: input.fields } });
   return load();

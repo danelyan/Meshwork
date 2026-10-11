@@ -7322,5 +7322,535 @@
         }
       }
     }
-  ]
+  ],
+  "lengthSweep": {
+    "generatedAt": "2026-10-11T17:38:46.911Z",
+    "command": "npx tsx eval/test/length-sweep.ts",
+    "config": {
+      "n": 2000,
+      "seed": 1,
+      "errorModel": "instance"
+    },
+    "variants": [
+      {
+        "min": 7,
+        "max": 10,
+        "current": true,
+        "strict": {
+          "kappa": 0.418,
+          "kappaMin": 0.386,
+          "agreement": 0.71,
+          "lengthMean": 8.476,
+          "earlyStopShare": 0.334,
+          "falsePass": 0.296,
+          "minutesMean": 30.302
+        },
+        "competitor": {
+          "kappa": 0.4,
+          "kappaMin": 0.346,
+          "agreement": 0.719,
+          "lengthMean": 9.064,
+          "earlyStopShare": 0.321,
+          "falsePass": 0.088,
+          "minutesMean": 30.695
+        }
+      },
+      {
+        "min": 9,
+        "max": 12,
+        "current": false,
+        "strict": {
+          "kappa": 0.443,
+          "kappaMin": 0.402,
+          "agreement": 0.722,
+          "lengthMean": 9.647,
+          "earlyStopShare": 0.351,
+          "falsePass": 0.294,
+          "minutesMean": 34.669
+        },
+        "competitor": {
+          "kappa": 0.418,
+          "kappaMin": 0.362,
+          "agreement": 0.727,
+          "lengthMean": 10.355,
+          "earlyStopShare": 0.34,
+          "falsePass": 0.083,
+          "minutesMean": 35.394
+        }
+      },
+      {
+        "min": 10,
+        "max": 14,
+        "current": false,
+        "strict": {
+          "kappa": 0.461,
+          "kappaMin": 0.436,
+          "agreement": 0.731,
+          "lengthMean": 10.477,
+          "earlyStopShare": 0.378,
+          "falsePass": 0.302,
+          "minutesMean": 37.83
+        },
+        "competitor": {
+          "kappa": 0.434,
+          "kappaMin": 0.398,
+          "agreement": 0.734,
+          "lengthMean": 11.339,
+          "earlyStopShare": 0.366,
+          "falsePass": 0.07,
+          "minutesMean": 39.057
+        }
+      },
+      {
+        "min": 12,
+        "max": 16,
+        "current": false,
+        "strict": {
+          "kappa": 0.467,
+          "kappaMin": 0.431,
+          "agreement": 0.734,
+          "lengthMean": 11.68,
+          "earlyStopShare": 0.396,
+          "falsePass": 0.304,
+          "minutesMean": 42.417
+        },
+        "competitor": {
+          "kappa": 0.439,
+          "kappaMin": 0.404,
+          "agreement": 0.736,
+          "lengthMean": 12.668,
+          "earlyStopShare": 0.389,
+          "falsePass": 0.072,
+          "minutesMean": 44.084
+        }
+      }
+    ]
+  },
+  "bankWidth": {
+    "generatedAt": "2026-10-11T17:38:55.201Z",
+    "command": "npx tsx eval/test/bank-width.ts",
+    "maxes": [
+      10,
+      12,
+      14,
+      16
+    ],
+    "probe": 3,
+    "rows": [
+      {
+        "subcategoryId": "backend.web-api",
+        "title": "Web API",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 20,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "backend.integrations",
+        "title": "Интеграции",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 20,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "backend.highload",
+        "title": "Highload",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 20,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "backend.data-model",
+        "title": "Модель данных",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 20,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "frontend.ui-app",
+        "title": "UI-приложение",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 18,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "frontend.design-system",
+        "title": "Дизайн-система",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 18,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "frontend.web-perf",
+        "title": "Производительность",
+        "own": {
+          "junior": 9,
+          "middle": 10,
+          "senior": 8
+        },
+        "common": 18,
+        "reachable": 38,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "frontend.realtime",
+        "title": "Realtime",
+        "own": {
+          "junior": 9,
+          "middle": 10,
+          "senior": 8
+        },
+        "common": 18,
+        "reachable": 38,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "ai.llm-apps",
+        "title": "LLM-приложения",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "ai.ai-integration",
+        "title": "AI-интеграция",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "ai.ml-engineering",
+        "title": "ML-инженерия",
+        "own": {
+          "junior": 9,
+          "middle": 10,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 38,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "ai.mlops",
+        "title": "MLOps",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "ai.data-science",
+        "title": "Data Science",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "ai.bi-analytics",
+        "title": "BI-аналитика",
+        "own": {
+          "junior": 8,
+          "middle": 5,
+          "senior": 5
+        },
+        "common": 15,
+        "reachable": 25,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 3,
+          "16": 7
+        }
+      },
+      {
+        "subcategoryId": "engineering.data-eng",
+        "title": "Data Engineering",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "engineering.devops",
+        "title": "DevOps",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "engineering.qa-automation",
+        "title": "QA-автоматизация",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      },
+      {
+        "subcategoryId": "engineering.sre",
+        "title": "SRE",
+        "own": {
+          "junior": 9,
+          "middle": 9,
+          "senior": 8
+        },
+        "common": 15,
+        "reachable": 37,
+        "shortBy": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        },
+        "shortByRetest": {
+          "10": 0,
+          "12": 0,
+          "14": 0,
+          "16": 0
+        }
+      }
+    ]
+  }
 }

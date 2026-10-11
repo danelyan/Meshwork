@@ -13,7 +13,7 @@ import { getEnv } from '@/server/env';
 import { errors } from '@/server/errors';
 import { readCookie } from '@/server/session';
 
-import { type Action, type StaffRoleName, can } from './permissions';
+import { type Action, DEMO_READONLY_MESSAGE, DEMO_STAFF_ACTIONS, DEMO_STAFF_EMAIL, type StaffRoleName, can } from './permissions';
 
 /**
  * Сессия персонала (ADR 0009). Граница доверия:
@@ -109,8 +109,17 @@ export interface StaffContext {
   role: StaffRoleName;
   name: string;
   email: string;
+  /** Демо-сотрудник жюри (`DEMO_STAFF_EMAIL`): только чтение, см. permissions.ts. */
+  demo: boolean;
   /** Адрес клиента (X-Forwarded-For) — для журнала; null на страницах. */
   ip: string | null;
+}
+
+/** Демо-сотруднику — только чтение: право из `DEMO_STAFF_ACTIONS` и никаких мутаций, кроме выхода. */
+export function demoAllows(req: Request, action?: Action): boolean {
+  if (action && !DEMO_STAFF_ACTIONS.has(action)) return false;
+  if (req.method === 'GET' || req.method === 'HEAD') return true;
+  return new URL(req.url).pathname === '/api/admin/auth/logout';
 }
 
 /** Сессия по id из куки: жива, сотрудник активен и с включённым TOTP. */
@@ -121,7 +130,10 @@ async function loadStaffSession(sessionId: string, now = new Date()): Promise<Om
   });
   if (!s || s.revokedAt || s.expiresAt <= now) return null;
   if (s.staff.disabledAt || !s.staff.totpEnabledAt) return null;
-  return { staffId: s.staff.id, sessionId: s.id, role: s.staff.role, name: s.staff.name, email: s.staff.email };
+  const demo = s.staff.email === DEMO_STAFF_EMAIL;
+  // Демо-сессии живут только пока на стенде включён DEMO_LOGIN: выключили флаг — они сразу недействительны.
+  if (demo && !getEnv().DEMO_LOGIN) return null;
+  return { staffId: s.staff.id, sessionId: s.id, role: s.staff.role, name: s.staff.name, email: s.staff.email, demo };
 }
 
 /**
@@ -135,6 +147,7 @@ export async function requireStaff(req: Request, action?: Action): Promise<Staff
   const ctx = id ? await loadStaffSession(id) : null;
   if (!ctx) throw errors.unauthorized('Нужен вход в админку');
   if (action && !can(ctx.role, action)) throw errors.forbidden('Недостаточно прав');
+  if (ctx.demo && !demoAllows(req, action)) throw errors.forbidden(DEMO_READONLY_MESSAGE);
   return { ...ctx, ip: clientKey(req) };
 }
 

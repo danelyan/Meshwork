@@ -9,12 +9,15 @@ import type { CatalogEntry } from '../claims/types';
 import { demoAchievements } from '../collector/fsp-demo';
 import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
+import { errors } from '../errors';
 import { NOT_EXPERT_CANDIDATE } from '../expert/marker';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
 import { asFullstackEvidence, fullstackLabel, fullstackNeeds, fullstackProfile } from './fullstack';
 import { loadRankingIntegrity, rankingIntegrityOptions, withRankingIntegrity } from './integrity-ranking';
+import { scoreToProbability } from './calibration';
+import { compareCandidates, type Comparison } from './compare';
 import { dedupeClaims, toCandidateCard, type CandidateCard, type PublicClaim } from './privacy';
 import {
   categoryNeeds,
@@ -31,7 +34,7 @@ import type { FspAchievementInput } from './fsp-weight';
 import { relaxationHints, type RelaxHint } from './relax';
 import { loadDefenseRooms, loadStageEvidence, type DefenseRoomLink } from './stages-load';
 import { maskProjectBlock } from './stages';
-import { loadTestIntegrity, type PublicTestIntegrity } from './test-integrity';
+import { loadGradeConfidence, loadTestIntegrity, type PublicTestIntegrity } from './test-integrity';
 import { getVacancy, type VacancyView } from './vacancies';
 
 export interface MatchItem extends RankedCandidate {
@@ -46,6 +49,10 @@ export interface MatchItem extends RankedCandidate {
   defenseRoom?: DefenseRoomLink | null;
   /** Проверка честности попытки, давшей категорию (только уровень и группы); нет попытки или индекса — null. Порядок меняет не эта метка, а integrity-ranking.ts (2a). */
   testIntegrity?: PublicTestIntegrity | null;
+  /** Уверенность теста в грейде категории, 0..1 (P(θ выше порога), policy.ts probAbove). Не вероятность найма. Нет пройденного теста - null. */
+  gradeConfidence?: number | null;
+  /** Калиброванная вероятность «подойдёт вакансии», 0..1 (calibration.ts; по синтетическому набору). Только в подборке под потребность. Порядок не меняет. */
+  matchProbability?: number;
 }
 
 export interface MatchResult {
@@ -217,6 +224,7 @@ async function run(
   const [accepted, invites] = await Promise.all([acceptedCandidateIds(companyId, ids), lastInvitations(companyId, ids)]);
   const rooms = await loadDefenseRooms(companyId, [...accepted]);
   const integrity = await loadTestIntegrity(new Map(top.map((r) => [r.candidateId, byId.get(r.candidateId)!.evidence.category])));
+  const confidence = await loadGradeConfidence(new Map(top.map((r) => [r.candidateId, byId.get(r.candidateId)!.evidence.category])));
   const items = top.map((r, i) => {
     const p = byId.get(r.candidateId)!;
     const candidate = toCandidateCard(
@@ -240,7 +248,7 @@ async function run(
     // Fullstack: в карточке вместо «Backend · Middle (тест)» - обе стороны: «Fullstack: backend Middle + frontend Junior».
     const fs = filters.fullstack ? fullstackProfile(p.evidence) : null;
     if (fs) explanation = { ...explanation, category: `${fullstackLabel(fs)} (тест)` };
-    return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null };
+    return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null, gradeConfidence: confidence.get(r.candidateId) ?? null, ...(requireCoverage ? { matchProbability: scoreToProbability(r.score) } : {}) };
   });
   // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
   const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(evidence, target, catalog, filters, opts) : undefined;
@@ -290,4 +298,17 @@ export async function searchBank(companyId: string, filters: MatchFilters, limit
   };
   const r = await run(companyId, catalog, targetFor, filters, limit);
   return { vacancy: null, filters, ...r };
+}
+
+/**
+ * «Почему A выше B»: оба кандидата берутся из полной подборки под свою потребность (тот же ранжир и вклады,
+ * без новых весов). Кого-то нет в подборке (скрыт, нанят другой компанией, нет покрытия) - 404.
+ */
+export async function compareForVacancy(companyId: string, vacancyId: string, aId: string, bId: string): Promise<Comparison> {
+  if (aId === bId) throw errors.badRequest('Выберите двух разных кандидатов');
+  const r = await matchForVacancy(companyId, vacancyId, {}, Number.MAX_SAFE_INTEGER);
+  const a = r.items.find((i) => i.candidateId === aId);
+  const b = r.items.find((i) => i.candidateId === bId);
+  if (!a || !b) throw errors.notFound('Кандидата нет в подборке');
+  return compareCandidates(a, b);
 }

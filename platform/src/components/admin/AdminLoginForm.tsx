@@ -12,7 +12,7 @@ import { adminFetch } from './adminFetch';
 type Step = { kind: 'password' } | { kind: 'totp' } | { kind: 'setup'; secret: string; otpauthUri: string };
 
 /** Форма входа персонала: шаг 1 — пароль, шаг 2 — код TOTP (или настройка при первом входе). */
-export function AdminLoginForm({ next }: { next: string }) {
+export function AdminLoginForm({ next, demo = false }: { next: string; demo?: boolean }) {
   const [step, setStep] = useState<Step>({ kind: 'password' });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,6 +55,23 @@ export function AdminLoginForm({ next }: { next: string }) {
             <input className={ui.input} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
           <Button type="submit" loading={busy}>Дальше</Button>
+          {demo && (
+            <>
+              <p className={styles.muted}>Демо-стенд: войти владельцем без пароля и 2FA. Видны все экраны, изменения и раскрытие ПДн отключены.</p>
+              <Button
+                type="button"
+                loading={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await adminFetch<{ next: string }>('/api/admin/auth/demo', { body: {} });
+                    window.location.assign(next);
+                  })
+                }
+              >
+                Демо-вход (только просмотр)
+              </Button>
+            </>
+          )}
         </form>
       ) : (
         <form

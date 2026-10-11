@@ -617,6 +617,16 @@ export const OVERRIDES: Record<string, OpOverride> = {
     success: JSON_OK('Ранжированные карточки с обоснованием', MATCHES),
     errors: { 404: 'Потребность не найдена или чужая', 409: 'Не приняты оферта или обязательство по данным (`consent_required`)' },
   },
+  'GET /api/employer/vacancies/{id}/compare': {
+    summary: 'Сравнение двух кандидатов подборки («Почему A выше B»)',
+    query: [
+      { name: 'a', description: 'id первого кандидата', schema: str(), required: true },
+      { name: 'b', description: 'id второго кандидата', schema: str(), required: true },
+    ],
+    description: 'Разница итогового балла (в п. = балл × 100) по факторам формулы ранжирования: покрытие, категория, ФСП, стек, проект, темы созвона. Новых весов нет - берутся вклады из подборки (R-M-03).',
+    success: JSON_OK('Таблица факторов и строка «Разница … Преимущество: …»', free('Comparison: aScore, bScore, diff, factors[{key,label,a,b,diff}], advantage[], headline')),
+    errors: { 400: 'Не заданы два разных кандидата', 404: 'Потребность чужая или кандидата нет в подборке', 409: 'Не приняты оферта или обязательство по данным (`consent_required`)' },
+  },
   'GET /api/employer/vacancies/{id}': {
     summary: 'Потребность компании', success: JSON_OK('Потребность компании', free('Потребность: поля VacancyInput, id, archived, даты')), errors: { 404: 'Потребность не найдена или чужая' } },
   'PUT /api/employer/vacancies/{id}': { summary: 'Заменить поля потребности', success: JSON_OK('Обновлённая потребность', free('Потребность целиком')), errors: { 404: 'Потребность не найдена или чужая' } },

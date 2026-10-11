@@ -5,7 +5,8 @@ import type { ReactNode } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { AdminLogout } from '@/components/admin/AdminLogout';
 import { navFor } from '@/lib/admin-nav';
-import { STAFF_ROLE_LABEL } from '@/server/admin/permissions';
+import { Notice } from '@/components/ui';
+import { DEMO_READONLY_MESSAGE, STAFF_ROLE_LABEL } from '@/server/admin/permissions';
 import { getStaffPageSession } from '@/server/admin/session';
 
 import styles from './admin.module.css';
@@ -27,12 +28,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         <AdminNav groups={navFor(staff.role)} />
         <div className={styles.who}>
           <span>{staff.name}</span>
-          <span className={styles.mono}>{STAFF_ROLE_LABEL[staff.role]}</span>
-          <Link href="/admin/password" className={styles.link}>Сменить пароль</Link>
+          <span className={styles.mono}>{staff.demo ? 'Демо-вход · только просмотр' : STAFF_ROLE_LABEL[staff.role]}</span>
+          {!staff.demo && <Link href="/admin/password" className={styles.link}>Сменить пароль</Link>}
           <AdminLogout />
         </div>
       </aside>
-      <main className={styles.main}>{children}</main>
+      <main className={styles.main}>
+        {staff.demo && <Notice tone="info">{DEMO_READONLY_MESSAGE}</Notice>}
+        {children}
+      </main>
     </div>
   );
 }

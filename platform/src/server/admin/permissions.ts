@@ -114,6 +114,15 @@ export function can(role: StaffRoleName, action: Action): boolean {
   return ROLE_ACTIONS[role]?.has(action) ?? false;
 }
 
+/**
+ * Демо-вход жюри (решение владельца 11.10): кнопка на /admin/login при DEMO_LOGIN входит сотрудником-owner
+ * `DEMO_STAFF_EMAIL` без пароля и TOTP. Ему доступно только чтение — экраны `view_*` и обезличенная
+ * выгрузка; любые изменения и раскрытие ПДн — 403, чтобы один проверяющий не менял стенд остальным.
+ */
+export const DEMO_STAFF_EMAIL = 'demo-owner@admin.demo';
+export const DEMO_STAFF_ACTIONS: ReadonlySet<Action> = new Set(ACTIONS.filter((a) => a.startsWith('view_') || a === 'export_csv'));
+export const DEMO_READONLY_MESSAGE = 'Демо-вход: только просмотр. Изменения доступны сотрудникам с паролем и 2FA.';
+
 export function isAction(x: string): x is Action {
   return (ACTIONS as readonly string[]).includes(x);
 }

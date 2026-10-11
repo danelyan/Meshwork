@@ -11,6 +11,7 @@ import type { FspState, Grade, Specialization } from '../types';
 
 import { fullstackProfile } from './fullstack';
 import { fspWeight, type FspAchievementInput } from './fsp-weight';
+import { semanticSignal, semanticText, type SemanticMatch } from './semantic';
 import { matchStackPartial, partialText, type PartialStackMatch } from './tech-proximity';
 import {
   CALL_TOPIC_BONUS,
@@ -21,6 +22,8 @@ import {
   FSP_BOOST,
   GRADE_RANK,
   PROJECT_BONUS_PER_SCORE,
+  SEMANTIC_DEFAULT_ON,
+  SEMANTIC_WEIGHT,
   SPEC_MISMATCH_PENALTY,
   STACK_BOOST_MAX,
   STACK_BOOST_PER_TAG,
@@ -94,11 +97,27 @@ export interface CandidateEvidence {
  */
 export type IntegrityPenalty = { mode: 'drop_category' } | { mode: 'multiplier'; factor: number };
 
+/**
+ * Сигналы формулы, которые можно выключить по одному (абляция, eval/matching/ablation.ts). В бою не используется.
+ * coverage — взвешенное покрытие требований (в баллах = 0); proven — вес уровня доказанности (все утверждения как «со слов»);
+ * category — категория из теста (как будто теста не было); fsp — прибавка ФСП; stack — метки стека целиком, stack_partial —
+ * только близкие технологии; spec_penalty — штраф за другую специализацию; project / calls — бонусы ступеней 2 и 1 ADR 0003;
+ * semantic — смежные навыки (semantic.ts, R-N-02).
+ */
+export const ABLATION_SIGNALS = ['coverage', 'proven', 'category', 'fsp', 'stack', 'stack_partial', 'spec_penalty', 'project', 'calls', 'semantic'] as const;
+export type AblationSignal = (typeof ABLATION_SIGNALS)[number];
+
 /** Параметры ранжирования. year — год отсчёта давности достижений ФСП (по умолчанию текущий; в тестах — явно). */
 export interface RankOptions {
   year?: number;
   /** Вариант 2 индекса честности; нет поля — порядок не зависит от индекса (вариант 1, как сейчас). */
   integrityPenalty?: IntegrityPenalty;
+  /** Абляция: выключить сигналы формулы (только eval). Нет поля — формула целиком. */
+  ablate?: readonly AblationSignal[];
+  /** Семантический сигнал «смежные навыки» (semantic.ts). Нет поля — SEMANTIC_DEFAULT_ON (weights.ts). */
+  semantic?: boolean;
+  /** Вес семантического сигнала (только eval, подбор веса). Нет поля — SEMANTIC_WEIGHT. */
+  semanticWeight?: number;
 }
 
 /** Индекс high у категории, не подтверждённой ни подтверждающим тестом, ни созвоном, при включённом integrityPenalty. */
@@ -157,6 +176,8 @@ export interface Explanation {
   stackMatched: string[];
   /** Метки стека, закрытые близкой технологией: «частично: RabbitMQ вместо Kafka». */
   stackPartial?: PartialStackMatch[];
+  /** Смежные навыки: требование, не закрытое точно, и близкое по смыслу утверждение кандидата (semantic.ts). */
+  semantic?: SemanticMatch[];
   /** Вклад достижений ФСП, лучшие первыми: «призёр: Кубок России …, 2025: +0,028». */
   fspReasons?: string[];
   /** Ступень 1: карта глубины (тема → подтверждено/нет). Нет созвона — поля нет. */
@@ -188,7 +209,7 @@ export interface RankedCandidate {
   subcategoryFit: SubcategoryFit;
   /** Проверенный проект под эту потребность (ступень 2): в выдаче остаётся и без закрытых требований. */
   ownProject?: boolean;
-  boosts: { category: number; fsp: number; stack: number; specPenalty: number; project?: number; calls?: number };
+  boosts: { category: number; fsp: number; stack: number; specPenalty: number; project?: number; calls?: number; semantic?: number };
   explanation: Explanation;
 }
 
@@ -290,8 +311,11 @@ export function scoreCandidate(
 ): RankedCandidate | null {
   const flagged = integrityFlagged(c, opts);
   c = applyIntegrity(c, opts);
-  const index = buildIndex(c.claims);
-  const cov = computeCoverage(target.needs, catalog, index);
+  const off = new Set<AblationSignal>(opts.ablate ?? []);
+  if (off.has('category')) c = { ...c, category: null, categories: undefined };
+  const index = buildIndex(off.has('proven') ? c.claims.map((x) => ({ ...x, level: 'self_reported' as const })) : c.claims);
+  const cov0 = computeCoverage(target.needs, catalog, index);
+  const cov = off.has('coverage') ? { ...cov0, score: 0 } : cov0;
   const ownProject = pickOwnProject(c.projects, target.vacancyId);
   if (cov.score === 0 && !c.category && !ownProject) return null;
 
@@ -311,10 +335,10 @@ export function scoreCandidate(
     }
   }
   const spec = effectiveSpecialization(c);
-  const specPenalty = spec && spec !== target.specialization ? SPEC_MISMATCH_PENALTY : 0;
+  const specPenalty = spec && spec !== target.specialization && !off.has('spec_penalty') ? SPEC_MISMATCH_PENALTY : 0;
   // R-M-02: достижения ФСП — место × уровень × давность, с потолком (fsp-weight.ts). Без ФСП — 0, не штраф (R-FSP-03).
   const fspW = c.fspState === 'linked' && c.fspAchievements ? fspWeight(c.fspAchievements, opts.year ?? new Date().getFullYear()) : null;
-  const fsp = c.fspState !== 'linked' ? 0 : fspW ? fspW.boost : FSP_BOOST;
+  const fsp = c.fspState !== 'linked' || off.has('fsp') ? 0 : fspW ? fspW.boost : FSP_BOOST;
   const fspLine = fspW
     ? fspW.reasons.length
       ? `${fspText(c.fspState)}: ${fspW.reasons.join('; ')}${fspW.capped ? ` (потолок ${String(fsp).replace('.', ',')})` : ''}`
@@ -326,13 +350,22 @@ export function scoreCandidate(
     c.claims.map((x) => `${x.statement}\n${x.quote}`).join('\n'),
     target.stack.filter((t) => !stackMatched.includes(t)),
   );
-  const stack = Math.min(STACK_BOOST_MAX, (stackMatched.length + stackPartial.reduce((s, m) => s + m.coef, 0)) * STACK_BOOST_PER_TAG);
+  const stack = off.has('stack')
+    ? 0
+    : Math.min(STACK_BOOST_MAX, ((off.has('stack_partial') ? 0 : stackPartial.reduce((s, m) => s + m.coef, 0)) + stackMatched.length) * STACK_BOOST_PER_TAG);
+
+  // R-N-02: смежные навыки — требования без зачёта в покрытии, закрытые близким по смыслу утверждением (semantic.ts).
+  const semanticOn = (opts.semantic ?? SEMANTIC_DEFAULT_ON) && !off.has('semantic');
+  const sem = semanticOn
+    ? semanticSignal(c.claims, target.needs, target.stack, new Set(cov.items.filter((i) => i.credit > 0).map((i) => i.catalogId)), [...stackMatched, ...stackPartial.map((m) => m.tag)], catalog)
+    : null;
+  const semantic = sem ? (opts.semanticWeight ?? SEMANTIC_WEIGHT) * sem.score : 0;
 
   // ADR 0003: бонус за проект под ЭТУ потребность и за подтверждённые созвоном темы потребности; защита в балл не входит.
-  const project = ownProject ? PROJECT_BONUS_PER_SCORE * ownProject.score : 0;
+  const project = ownProject && !off.has('project') ? PROJECT_BONUS_PER_SCORE * ownProject.score : 0;
   const needIds = new Set(target.needs.map((n) => n.catalogId));
   const depthBlock = c.calls?.qualifying ? buildDepthBlock(c.calls.qualifying, needIds) : undefined;
-  const callsBonus = depthBlock ? Math.min(CALL_TOPIC_BONUS_MAX, depthBlock.matchedNeed * CALL_TOPIC_BONUS) : 0;
+  const callsBonus = depthBlock && !off.has('calls') ? Math.min(CALL_TOPIC_BONUS_MAX, depthBlock.matchedNeed * CALL_TOPIC_BONUS) : 0;
   const projectBlock = c.projects?.length ? buildProjectBlock(c.projects, ownProject) : undefined;
   const defenseBlock = c.calls?.defense ? buildDefenseBlock(c.calls.defense) : undefined;
 
@@ -360,6 +393,7 @@ export function scoreCandidate(
   if (subText) parts.push(`подкатегория: ${subText}`);
   if (stackMatched.length) parts.push(`стек в подтверждённых цитатах: ${stackMatched.join(', ')}`);
   if (stackPartial.length) parts.push(`стек ${stackPartial.map(partialText).join('; ')}`);
+  if (sem?.matches.length) parts.push(`смежные навыки: ${sem.matches.map(semanticText).join('; ')}`);
   if (specPenalty) parts.push('другая специализация');
   const stages = stagesSentence({ depth: depthBlock, project: projectBlock, defense: defenseBlock });
   const base = categoryOnly
@@ -370,7 +404,7 @@ export function scoreCandidate(
   const summary0 = stages ? `${base} ${stages[0]!.toUpperCase()}${stages.slice(1)}.` : base;
   const summary = `${summary0}${note}`;
 
-  const total = cov.score + category + fsp + stack + project + callsBonus - specPenalty;
+  const total = cov.score + category + fsp + stack + project + callsBonus + semantic - specPenalty;
   const factor = flagged && opts.integrityPenalty?.mode === 'multiplier' && total > 0 ? opts.integrityPenalty.factor : 1;
   return {
     candidateId: c.id,
@@ -382,7 +416,7 @@ export function scoreCandidate(
     categoryMatch,
     subcategoryFit: fit,
     ...(ownProject ? { ownProject: true } : {}),
-    boosts: { category: round(category), fsp: round(fsp), stack: round(stack), specPenalty, ...(c.projects || c.calls ? { project: round(project), calls: round(callsBonus) } : {}) },
+    boosts: { category: round(category), fsp: round(fsp), stack: round(stack), specPenalty, ...(c.projects || c.calls ? { project: round(project), calls: round(callsBonus) } : {}), ...(semantic ? { semantic: round(semantic) } : {}) },
     explanation: {
       summary,
       covered: coveredItems,
@@ -393,6 +427,7 @@ export function scoreCandidate(
       subcategory: subText,
       stackMatched,
       ...(stackPartial.length ? { stackPartial } : {}),
+      ...(sem?.matches.length ? { semantic: sem.matches } : {}),
       ...(fspW?.reasons.length ? { fspReasons: fspW.reasons } : {}),
       ...(depthBlock ? { depthMap: depthBlock } : {}),
       ...(projectBlock ? { project: projectBlock } : {}),

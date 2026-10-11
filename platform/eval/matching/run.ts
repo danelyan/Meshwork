@@ -22,6 +22,7 @@ import { bm25Rank } from './bm25';
 import {
   bootstrapDiff, bootstrapMean, maxPrecisionAtK, mulberry32, ndcgAtK, precisionAtK, recallAtK, reciprocalRank, type Interval,
 } from './metrics';
+import { toEvidence } from './evidence';
 import { ARCHETYPE_LABEL, generateSynthetic, SYN_SEED, type SynProfile } from './synthetic';
 
 const K = 5;
@@ -101,20 +102,17 @@ type MethodName = 'ours' | 'baselineClaims' | 'bm25' | 'random';
 const METHODS: MethodName[] = ['ours', 'baselineClaims', 'bm25', 'random'];
 
 interface EvalVacancy { id: string; specialization: 'backend' | 'frontend' | 'ai' | 'engineering'; grade: 'junior' | 'middle' | 'senior'; needs: [string, number][]; stack: string[]; text: string }
-interface EvalProfile extends DemoProfile { text: string }
+interface EvalProfile extends DemoProfile { text: string; projects?: SynProfile['projects']; callTopics?: SynProfile['callTopics'] }
 
 function perVacancyMetrics(ranked: string[], rel: Record<string, number>): Record<MetricName, number | null> {
   return { p5: precisionAtK(ranked, rel, 5), p10: precisionAtK(ranked, rel, 10), ndcg10: ndcgAtK(ranked, rel, 10), recall50: recallAtK(ranked, rel, 50), mrr: reciprocalRank(ranked, rel) };
 }
 
 function rankers(ps: EvalProfile[], seed: number): Record<MethodName, (v: EvalVacancy, vi: number) => string[][]> {
-  const ev: CandidateEvidence[] = ps.map((p) => ({
-    id: p.id, specialization: p.specialization, fspState: p.fspState, category: p.category,
-    claims: p.claims.map(([catalogId, level]) => ({ catalogId, level, statement: catalog.get(catalogId)?.statement ?? catalogId, quote: p.stack.join(', ') })),
-  }));
+  const ev: CandidateEvidence[] = ps.map((p) => toEvidence(p, catalog));
   const docs = ps.map((p) => ({ id: p.id, text: p.text }));
   return {
-    ours: (v) => [dropUncovered(rankCandidates(ev, { specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: v.stack }, catalog, EVAL_FILTERS)).map((r) => r.candidateId)],
+    ours: (v) => [dropUncovered(rankCandidates(ev, { vacancyId: v.id, specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: v.stack }, catalog, EVAL_FILTERS)).map((r) => r.candidateId)],
     baselineClaims: (v) => [[...ev].filter((c) => c.specialization === v.specialization).sort((a, b) => b.claims.length - a.claims.length || a.id.localeCompare(b.id)).map((c) => c.id)],
     bm25: (v) => [bm25Rank(docs, v.text).map((d) => d.id)],
     random: (_v, vi) => {
@@ -210,6 +208,9 @@ const legacy = evaluate(legacyVacancies, legacyProfiles, labels.relevance, SYN_S
 const syn = generateSynthetic(SYN_SEED);
 const archOf = new Map(syn.profiles.map((p: SynProfile) => [p.id, p.archetype] as [string, string]));
 const extended = evaluate(syn.vacancies, syn.profiles, syn.relevance, SYN_SEED, archOf);
+// (3) тот же набор с проектами и созвонами (ADR 0003): профили/разметка те же, меняется только слепок для формулы
+const synStages = generateSynthetic(SYN_SEED, { withStages: true });
+const extendedStages = evaluate(synStages.vacancies, synStages.profiles, synStages.relevance, SYN_SEED, null);
 const archSizes: Record<string, number> = {};
 for (const p of syn.profiles) archSizes[p.archetype] = (archSizes[p.archetype] ?? 0) + 1;
 
@@ -222,9 +223,25 @@ function printTable(title: string, r: ExtendedResult) {
 }
 printTable('Малый набор (разметка агента)', legacy);
 printTable('Расширенный набор (скрытая истина)', extended);
+printTable('Расширенный набор + проекты и созвоны (ADR 0003)', extendedStages);
 console.log(`\nВакансий, где наш подбор хуже BM25 больше чем на 0,05 (P@10 или nDCG@10): ${new Set(extended.oursWorseThanBm25.map((x) => x.vacancy)).size} из ${extended.vacancies}`);
 
 if (!process.argv.includes('--no-write')) {
-  writeFileSync(join(here, 'results.json'), `${JSON.stringify({ summary, rows, legacyExtended: legacy, extended: { ...extended, archetypes: Object.fromEntries(Object.entries(archSizes).map(([k, n]) => [k, { profiles: n, label: ARCHETYPE_LABEL[k as keyof typeof ARCHETYPE_LABEL] }])), note: 'Разметка 0/1/2 — из скрытых латентных навыков и грейда генератора (eval/matching/synthetic.ts, truthRelevance), не из формулы подбора. Интервалы — бутстреп по вакансиям, 1000 повторов, 95 %.' } }, null, 2)}\n`);
+  const path = join(here, 'results.json');
+  let prev: Record<string, unknown> = {};
+  try { prev = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>; } catch { /* нет файла - пишем с нуля */ }
+  // Ключи других скриптов (ablation, integrityRanking...) сохраняются: перезаписываем только свои.
+  const share = (f: (p: SynProfile) => boolean) => synStages.profiles.filter(f).length / synStages.profiles.length;
+  const next = {
+    ...prev, summary, rows, legacyExtended: legacy,
+    extended: { ...extended, archetypes: Object.fromEntries(Object.entries(archSizes).map(([k, n]) => [k, { profiles: n, label: ARCHETYPE_LABEL[k as keyof typeof ARCHETYPE_LABEL] }])), note: 'Разметка 0/1/2 — из скрытых латентных навыков и грейда генератора (eval/matching/synthetic.ts, truthRelevance), не из формулы подбора. Интервалы — бутстреп по вакансиям, 1000 повторов, 95 %.' },
+    extendedStages: {
+      ...extendedStages,
+      note: 'Тот же набор и та же разметка, но профили несут проверенные проекты (ступень 2) и темы созвона (ступень 1) по ADR 0003; генератор: withStages (допущения агента, шум ~10 %).',
+      stagesShare: { withProject: share((p) => Boolean(p.projects?.length)), withCall: share((p) => Boolean(p.callTopics)) },
+      deltaStagesMinusBase: Object.fromEntries(METRICS.map((x) => [x, { base: extended.methods.ours[x], stages: extendedStages.methods.ours[x] }])),
+    },
+  };
+  writeFileSync(path, `${JSON.stringify(next, null, 2)}\n`);
   console.log('\nзаписано: eval/matching/results.json');
 }

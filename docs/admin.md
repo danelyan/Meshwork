@@ -64,6 +64,10 @@ export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id:
 
 ## Вход и персонал
 
+- Демо-вход жюри: `POST /api/admin/auth/demo` при `DEMO_LOGIN=true` → сессия owner `demo-owner@admin.demo`
+  без пароля и TOTP. `requireStaff` пропускает только `view_*` и `export_csv` на GET плюс выход, остальное —
+  403; `revealPii` для демо — 403 (`session.demoAllows`, `permissions.DEMO_STAFF_ACTIONS`).
+
 - Первый owner: `printf '%s' "$PASS" | npx tsx scripts/admin-create.ts --email … --name … --role owner`
   (пароль — stdin или `ADMIN_PASSWORD`). Потерян телефон: `… --reset-totp --email …`.
 - TOTP настраивается при первом входе (секрет и otpauth-URI на экране). Приглашённый в `/admin/staff`

@@ -19,6 +19,7 @@ import {
 import { GRADE_LABEL, GRADES, isGrade, type Grade } from '@/lib/grades';
 import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, subcategoriesFor, subcategoryLabel, type Specialization } from '@/lib/directions';
 import { formatDate } from '@/lib/labels';
+import { DEFAULT_ITEM_LIMITS, formatItemRange, type ItemLimits } from '@/lib/test-limits';
 
 import { ObjectionButton } from './consent/ObjectionButton';
 import { useBareShell } from './shell/ShellFrame';
@@ -196,9 +197,12 @@ export function JuryResultPlate({ jury }: { jury: JuryResult }) {
 function IntroScreen({
   onStart,
   initial,
+  itemLimits,
 }: {
   onStart: (s: Spec, g: Grade, sub: string | null) => Promise<void>;
   initial: { spec: Spec | null; grade: Grade | null };
+  /** Лимиты основной фазы из policy (с учётом TEST_ITEM_LIMITS) — для текста «N–M коротких заданий». */
+  itemLimits: ItemLimits;
 }) {
   const [spec, setSpec] = useState<Spec>(initial.spec ?? 'backend');
   const [grade, setGrade] = useState<Grade>(initial.grade ?? 'junior');
@@ -254,7 +258,7 @@ function IntroScreen({
         <Kicker>Тест на грейд</Kicker>
         <h1 className={styles.h1}>Тест на грейд<i>.</i></h1>
         <p className={`${ui.muted} ${styles.lead}`}>
-          7–10 коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
+          {formatItemRange(itemLimits)} коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
           (направление × грейд) даёт только этот тест; выбор грейда - за вами. Созвон с ИИ, проект и защита - дополнительные проверки опыта: они
           подтверждают утверждения профиля и видны работодателю, но для категории не обязательны.
         </p>
@@ -541,8 +545,8 @@ function ResultScreen({
         </p>
         <dl className={styles.facts}>
           <div>
-            <dt>Уверенность в {grade}</dt>
-            <dd>{Math.round(r.pPass * 100)}%</dd>
+            <dt>Вероятность, что уровень не ниже {grade}</dt>
+            <dd>{Math.round(r.pPass * 100)} %</dd>
           </div>
           {attempt.grade !== 'junior' && (
             <div>
@@ -555,6 +559,9 @@ function ResultScreen({
             <dd>{r.answered}</dd>
           </div>
         </dl>
+        <p className={ui.muted} data-testid="confidence-note">
+          Это уверенность теста по вашим ответам, а не вероятность найма.
+        </p>
         <p className={ui.muted}>
           <ObjectionButton subject="grade_test" subjectId={attempt.id} />
         </p>
@@ -649,7 +656,8 @@ function ResultScreen({
   );
 }
 
-export function TestPage() {
+/** itemLimits — действующие лимиты длины (страница передаёт activeItemLimits()); без пропа — дефолт policy. */
+export function TestPage({ itemLimits = DEFAULT_ITEM_LIMITS }: { itemLimits?: ItemLimits } = {}) {
   const params = useSearchParams();
   const router = useRouter();
   const attemptParam = params.get('attempt');
@@ -713,7 +721,7 @@ export function TestPage() {
     );
   }
   if (!attempt) {
-    return <IntroScreen onStart={start} initial={{ spec: isSpec(initialSpec) ? initialSpec : null, grade: isGrade(initialGrade) ? initialGrade : null }} />;
+    return <IntroScreen onStart={start} itemLimits={itemLimits} initial={{ spec: isSpec(initialSpec) ? initialSpec : null, grade: isGrade(initialGrade) ? initialGrade : null }} />;
   }
   if (attempt.status === 'active' && attempt.current) {
     return (

@@ -1,7 +1,8 @@
 export * from './ranking';
 export * from './privacy';
 export * from './weights';
-export { matchForVacancy, searchBank } from './matching';
+export * from './compare';
+export { matchForVacancy, searchBank, compareForVacancy } from './matching';
 export { listVacancies, getVacancy, createVacancy, updateVacancy, setVacancyArchived } from './vacancies';
 export type { VacancyView } from './vacancies';
 export {

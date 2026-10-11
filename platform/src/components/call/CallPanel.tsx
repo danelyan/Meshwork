@@ -14,6 +14,7 @@ import { StateChip } from '../avatar/Speaking';
 import { useCompanionVoice } from '../avatar/voice';
 import { Criteria, ResultCard, Stages } from '../interview/InterviewPage';
 import { SKIP_ANSWER, summaryOf, turnsOf } from '../interview/helpers';
+import { useFaceTracking } from '../interview/useFaceTracking';
 import { Spinner, cx } from '../ui';
 
 import styles from './CallPanel.module.css';
@@ -247,6 +248,8 @@ export function CallPanel() {
     deniedText: 'Нет доступа к камере - разреши её в настройках браузера. Созвон идёт без видео.',
   });
   const startCamera = camera.start;
+  // Голова Киры поворачивается за лицом кандидата с камеры (как в комнате интервью); только на его экране.
+  useFaceTracking(camera.getVideo, camera.state === 'on' && phase === 'live');
   useEffect(() => {
     if (phase !== 'live' || !id || !wantCamera.current || !cameraAllowed) return;
     wantCamera.current = false;

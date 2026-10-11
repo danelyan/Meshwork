@@ -2,7 +2,6 @@
 import type { Specialization } from '@/lib/directions';
 import { ApiError, postJson, readError, request } from './api';
 import type { Grade } from '@/lib/grades';
-import type { LiveDefenseView } from '@/server/live-defense/service';
 
 export interface VacancyBody {
   title: string;
@@ -52,6 +51,9 @@ export const askQuestionApi = (candidateId: string, text: string) => postJson<Em
 /** lane hired: работодатель отмечает найм по принятому приглашению (accepted → hired). */
 export const markHiredApi = (id: string) =>
   postJson<{ id: string; status: 'hired'; hiredAt: string }>(`/api/employer/invitations/${encodeURIComponent(id)}/hire`, {});
+export type ComplaintReasonValue = 'spam' | 'salary_mismatch' | 'offensive' | 'fake_company' | 'other';
+export const complainInvitationApi = (id: string, reason: ComplaintReasonValue, comment: string) =>
+  postJson<{ id: string; reason: string; createdAt: string }>(`/api/invitations/${encodeURIComponent(id)}/complaint`, { reason, comment });
 export const respondInvitationApi = (id: string, action: 'accept' | 'decline', disclosureVersion?: string) =>
   postJson<{ id: string; status: string }>(`/api/invitations/${encodeURIComponent(id)}`, { action, ...(disclosureVersion ? { disclosureVersion } : {}) });
 export const setContactApi = (contact: string) => postJson<{ contact: string | null }>('/api/profile/contact', { contact });
@@ -123,15 +125,3 @@ export async function updateCompanyApi(body: Partial<CompanyBody>): Promise<Comp
   }
   throw await readError(res);
 }
-
-// lane live-slots (ADR 0008): слоты живой защиты.
-export const proposeLiveSlotsApi = (invitationId: string, body: { slots: string[]; durationMin: 30 | 45; comment?: string }) =>
-  postJson<LiveDefenseView>(`/api/employer/invitations/${encodeURIComponent(invitationId)}/live-defense`, body);
-export const cancelLiveDefenseEmployerApi = (invitationId: string, reason: string) =>
-  postJson<LiveDefenseView>(`/api/employer/invitations/${encodeURIComponent(invitationId)}/live-defense/cancel`, { reason });
-export const chooseLiveSlotApi = (invitationId: string, slotId: string, recordingConsentVersion?: string) =>
-  postJson<LiveDefenseView>(`/api/invitations/${encodeURIComponent(invitationId)}/live-defense/choose`, { slotId, ...(recordingConsentVersion ? { recordingConsentVersion } : {}) });
-export const noneFitLiveSlotsApi = (invitationId: string, comment: string) =>
-  postJson<LiveDefenseView>(`/api/invitations/${encodeURIComponent(invitationId)}/live-defense/none-fit`, { comment });
-export const cancelLiveDefenseCandidateApi = (invitationId: string, reason: string) =>
-  postJson<LiveDefenseView>(`/api/invitations/${encodeURIComponent(invitationId)}/live-defense/cancel`, { reason });

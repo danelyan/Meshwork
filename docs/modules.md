@@ -241,7 +241,7 @@
   `GET /api/project-submissions/:id`, `POST /api/employer/needs/:id/project`, `GET /api/employer/project-templates`,
   `GET /api/employer/project-submissions`, `POST …/:id/invite-to-defense`.
 - **Env:** `RUNNER_URL`, `RUNNER_TOKEN`, `GITHUB_TOKEN` (приватные репозитории).
-- **Ограничения:** 53 шаблона, покрыты все 51 категория (17 подкатегорий × 3 грейда; Junior по два в web-api и ui-app); открытая лента
+- **Ограничения:** 56 шаблонов, покрыты все 54 категории (18 подкатегорий × 3 грейда; Junior по два в web-api и ui-app); открытая лента
   показывает направление кандидата и грейды не выше его категории; порядок: взятые, подкатегория кандидата (`preferredSubcategoryId`:
   категория из теста, иначе онбординг), соседние подкатегории того же направления; балл — доля пройденных скрытых тестов, рубрика LLM — пояснение и флаги, не балл; статанализ в отчёте
   «не выполнялся» (статанализ `lint` runner не выполняет, поле помечено `skipped`); без `RUNNER_URL` работает stub-runner (счёт по шаблону, не по коду); только публичный GitHub.
@@ -329,7 +329,7 @@
   голос — работодатель). «Говорящая голова» (`components/head/`) и `CallPanel` — клиентские.
 - **Модели:** —
 - **Маршруты:** `GET|POST /api/stt` (LPCM 16 бит моно 16 кГц, ≤ 1 МБ), `/api/tts`.
-- **Env:** `STT_PROVIDER` (`auto|yandex|browser|off`), `TTS_PROVIDER` (`auto|yandex|off`), `TTS_VOICE`, `TTS_VOICE_EMPLOYER`, `TTS_EMOTION`,
+- **Env:** `STT_PROVIDER` (`auto|yandex|openai|browser|off`; openai - запасной whisper через OpenAI-совместимый `/audio/transcriptions`, нужны `STT_OPENAI_BASE_URL`, `STT_OPENAI_API_KEY`, опц. `STT_OPENAI_MODEL`), `TTS_PROVIDER` (`auto|yandex|off`), `TTS_VOICE`, `TTS_VOICE_EMPLOYER`, `TTS_EMOTION`,
   `TTS_SPEED`, `TTS_FORMAT`, `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`.
 - **Ограничения:** аудио ввода не хранится (аудио созвона хранит `call` с согласия); без ключей озвучки реплики остаются текстом.
 

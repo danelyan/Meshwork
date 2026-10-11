@@ -151,6 +151,7 @@ export const API_ACCESS = {
   '/api/sources/[id]': 'candidate',
   '/api/invitations': 'candidate',
   '/api/invitations/[id]': 'candidate',
+  '/api/invitations/[id]/complaint': 'candidate',
   '/api/recommendations': 'candidate',
   '/api/consultant/messages': 'candidate',
   '/api/consultant/conversations': 'candidate',

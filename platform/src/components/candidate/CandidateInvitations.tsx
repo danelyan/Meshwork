@@ -10,16 +10,16 @@ import { formatDate } from '@/lib/labels';
 import type { CandidateInvitationView } from '@/server/employer/invitations';
 
 import { ContactForm } from '../employer/ContactForm';
-import { CandidateLiveDefense, LiveSubStatus } from '../live-defense/LiveDefense';
 import { INVITATION_STATUS_LABEL, NO_COMPANY_CONTACT, salaryRange } from '../employer/labels';
 import { Button, Kicker, Notice, Panel, Tag } from '../ui';
 import styles from './Candidate.module.css';
+import { ComplaintForm } from './ComplaintForm';
 
 type Filter = 'all' | 'open' | 'done';
 const FILTERS: { id: Filter; label: string }[] = [{ id: 'all', label: 'Все' }, { id: 'open', label: 'Жду ответа' }, { id: 'done', label: 'Отвеченные' }];
 const isOpen = (status: CandidateInvitationView['status']) => status === 'sent' || status === 'viewed';
 
-export function CandidateInvitations({ invitations, contact, hasRecordingConsent = false }: { invitations: CandidateInvitationView[]; contact: string | null; hasRecordingConsent?: boolean }) {
+export function CandidateInvitations({ invitations, contact }: { invitations: CandidateInvitationView[]; contact: string | null }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>('all');
   const [local, setLocal] = useState<Record<string, CandidateInvitationView['status']>>({});
@@ -65,7 +65,7 @@ export function CandidateInvitations({ invitations, contact, hasRecordingConsent
     <div className={styles.twoColumns}>
       <div className={styles.stack}>
         {!visible.length ? <Panel className={styles.empty}><h2>Здесь пока пусто.</h2><p>{invitations.length ? 'Приглашений с этим статусом пока нет.' : 'Подтверждайте опыт и навыки: компании смогут найти ваш профиль и отправить предложение.'}</p><Button href="/profile">Открыть профиль</Button></Panel> : visible.map((inv) => <Panel key={inv.id} as="article" className={styles.card} aria-labelledby={`inv-${inv.id}`}>
-          <div className={styles.cardHead}><div><span className={styles.letter} aria-hidden="true">{inv.company.name.slice(0, 1)}</span><div><Kicker>{inv.company.name}</Kicker><h2 id={`inv-${inv.id}`}>{inv.vacancy?.title ?? 'Предложение компании'}</h2></div></div><div><Tag className={styles.invitationStatus} data-status={inv.status}>{INVITATION_STATUS_LABEL[inv.status]}</Tag> <LiveSubStatus live={inv.liveDefense} /></div></div>
+          <div className={styles.cardHead}><div><span className={styles.letter} aria-hidden="true">{inv.company.name.slice(0, 1)}</span><div><Kicker>{inv.company.name}</Kicker><h2 id={`inv-${inv.id}`}>{inv.vacancy?.title ?? 'Предложение компании'}</h2></div></div><Tag className={styles.invitationStatus} data-status={inv.status}>{INVITATION_STATUS_LABEL[inv.status]}</Tag></div>
           <div><p className={styles.salary}>{salaryRange(inv.salaryFrom, inv.salaryTo)}</p><span className={styles.meta}>в месяц{inv.vacancy ? ` · ${inv.vacancy.grade}` : ''}</span></div>
           {inv.redFlags && inv.redFlags.length > 0 && <Notice tone="error" role="note" aria-label="Признаки фиктивного предложения">{inv.redFlags.map((f) => f.candidateNote).join(' ')}</Notice>}
           <div><h3>Почему именно вы</h3><p>{inv.message || 'Компания не добавила сообщение к приглашению.'}</p></div>
@@ -75,7 +75,7 @@ export function CandidateInvitations({ invitations, contact, hasRecordingConsent
           {inv.company.trust && <p className={styles.meta}>Индекс доверия компании: {inv.company.trust.index} из 100 (концепция: по заполненности профиля, ИНН, возрасту аккаунта и доле отклонений; не гарантия).</p>}
           <div className={styles.timeline}><span data-done="true">Отправлено<b>{formatDate(inv.createdAt)}</b></span><span data-done={inv.status !== 'sent'}>Просмотрено<b>{inv.status === 'sent' ? 'Ожидает просмотра' : 'Приглашение открыто'}</b></span><span data-done={!isOpen(inv.status)}>Ответ<b>{inv.respondedAt ? formatDate(inv.respondedAt) : isOpen(inv.status) ? 'Ждёт решения' : INVITATION_STATUS_LABEL[inv.status]}</b></span>{inv.status === 'hired' && <span data-done="true">Нанят<b>{inv.hiredAt ? formatDate(inv.hiredAt) : 'Компания отметила найм'}</b></span>}</div>
           {isOpen(inv.status) ? <><label className={styles.fine} data-testid="disclosure-check"><input type="checkbox" checked={Boolean(disclose[inv.id])} onChange={(e) => setDisclose((v) => ({ ...v, [inv.id]: e.target.checked }))} /> {disclosure.label} ({inv.company.name}). {disclosure.paragraphs.join(' ')}</label><div className={styles.actions}><Button variant="primary" disabled={busy !== null || !disclose[inv.id]} loading={busy === inv.id} onClick={() => void respond(inv.id, 'accept')}>Принять</Button><Button disabled={busy !== null} onClick={() => void respond(inv.id, 'decline')}>Отклонить</Button></div><p className={styles.fine}>Принять можно только с подтверждением раскрытия. Остальные компании ваше имя и контакт не увидят.</p></> : inv.status === 'hired' ? <p role="status">Компания отметила найм: вы наняты в {inv.company.name}. {inv.disclosed ? 'Она видит ваше имя и способ связи.' : 'Раскрытие отозвано: компания видит псевдоним.'}</p> : inv.status === 'accepted' ? (inv.disclosed ? <div role="status"><p>Контакты открыты: эта компания видит ваше имя и способ связи.</p><Button size="sm" disabled={busy !== null} onClick={() => void revokeDisclosure(inv.id)}>Отозвать раскрытие</Button><p className={styles.fine}>После отзыва компания снова видит псевдоним. Данные, которые она уже получила, отозвать невозможно.</p></div> : <p role="status">Раскрытие отозвано: компания видит псевдоним. Данные, которые она уже получила, отозвать невозможно.</p>) : <p role="status">Вы отклонили приглашение. Компания видит только статус.</p>}
-          <CandidateLiveDefense invitationId={inv.id} live={inv.liveDefense} hasRecordingConsent={hasRecordingConsent} />
+          <ComplaintForm invitationId={inv.id} filed={Boolean(inv.complaint)} />
         </Panel>)}
       </div>
       <aside className={styles.stack}>

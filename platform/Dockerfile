@@ -28,6 +28,32 @@ RUN groupadd --system --gid 1001 nodejs && useradd --system --uid 1001 --gid nod
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Разбор DOCX (collector/parse-worker.ts) грузит mammoth через createRequire в worker-потоке: трассировка
+# standalone его не видит, и в образе пакета не было (DOCX на стенде падал MODULE_NOT_FOUND). Копируем пакет
+# с полным деревом зависимостей (node -e обход package.json, 11.10).
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/mammoth ./node_modules/mammoth
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@xmldom/xmldom ./node_modules/@xmldom/xmldom
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/sprintf-js ./node_modules/sprintf-js
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/base64-js ./node_modules/base64-js
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dingbat-to-unicode ./node_modules/dingbat-to-unicode
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/jszip ./node_modules/jszip
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/lie ./node_modules/lie
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/immediate ./node_modules/immediate
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pako ./node_modules/pako
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/readable-stream ./node_modules/readable-stream
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/core-util-is ./node_modules/core-util-is
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/inherits ./node_modules/inherits
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/isarray ./node_modules/isarray
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/process-nextick-args ./node_modules/process-nextick-args
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/safe-buffer ./node_modules/safe-buffer
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/string_decoder ./node_modules/string_decoder
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/util-deprecate ./node_modules/util-deprecate
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/setimmediate ./node_modules/setimmediate
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/lop ./node_modules/lop
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/duck ./node_modules/duck
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/underscore ./node_modules/underscore
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/option ./node_modules/option
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/xmlbuilder ./node_modules/xmlbuilder
 # lane call: аудио созвонов (CALL_DATA_DIR=./data). Папка своя у nextjs — том app-data наследует владельца.
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 USER nextjs

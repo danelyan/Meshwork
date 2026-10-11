@@ -168,7 +168,7 @@ function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
   );
 }
 
-export function JuryResultPlate({ jury }: { jury: JuryResult }) {
+function JuryResultPlate({ jury }: { jury: JuryResult }) {
   const LEVEL = { low: 'низкий', medium: 'средний', high: 'высокий' } as const;
   return (
     <JuryPlate>
@@ -337,25 +337,14 @@ function IntroScreen({
   );
 }
 
-/** Экран задания. `apiBase` — префикс API сигналов: кандидат `/api/test` (по умолчанию), режим эксперта `/api/expert`. */
-export function ItemScreen({
-  attempt,
-  onAnswer,
-  onFinish,
-  apiBase,
-}: {
-  attempt: AttemptView;
-  onAnswer: (a: string) => Promise<void>;
-  onFinish: () => Promise<void>;
-  apiBase?: string;
-}) {
+function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onAnswer: (a: string) => Promise<void>; onFinish: () => Promise<void> }) {
   const item = attempt.current!;
   const [answer, setAnswer] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fieldId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const signals = useIntegritySignals(attempt.id, item.index, true, apiBase);
+  const signals = useIntegritySignals(attempt.id, item.index);
 
   useEffect(() => {
     setAnswer('');
@@ -594,7 +583,7 @@ function ResultScreen({
           В профиль
         </Button>
         <Button href="/profile#claims" title="Защита - подтверждающий слой: флаг к утверждению, категорию не меняет">
-          Защитить утверждение
+          Разобрать утверждение
         </Button>
         <Button onClick={onRetry}>Пройти ещё раз</Button>
         <Button size="sm" onClick={() => setShowItems((v) => !v)} aria-expanded={showItems}>
@@ -619,7 +608,7 @@ function ResultScreen({
         </ol>
       )}
       <p className={ui.muted} style={{ fontSize: 'var(--fs-sm)' }}>
-        Попытка от {formatDate(attempt.startedAt)}. Защита утверждения после теста - подтверждающий флаг, категорию она не меняет.
+        Попытка от {formatDate(attempt.startedAt)}. Разбор утверждения с консультантом после теста - подтверждающий флаг, категорию она не меняет.
       </p>
     </div>
   );

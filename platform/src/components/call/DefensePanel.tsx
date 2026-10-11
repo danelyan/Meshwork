@@ -113,7 +113,7 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
             {!finished && (
               <span className={styles.chip}>
                 <span className={styles.rec} aria-hidden="true" />
-                {s.mode === 'project' ? 'Защита проекта' : 'Вопросы работодателей'} · {s.progress.asked}/{s.progress.total}
+                {s.mode === 'project' ? 'ИИ-защита проекта' : 'Вопросы работодателей'} · {s.progress.asked}/{s.progress.total}
               </span>
             )}
             {employer && <span className={cx(styles.chip, styles.chipOn)}>Подключился работодатель · {employer.companyName}</span>}

@@ -123,7 +123,7 @@ export function DefenseDialog({ claimId }: { claimId: string }) {
   return (
     <div className={styles.page}>
       <div>
-        <h1 style={{ fontSize: 'clamp(24px, 3vw, 34px)' }}>Защита утверждения</h1>
+        <h1 style={{ fontSize: 'clamp(24px, 3vw, 34px)' }}>Разбор утверждения с консультантом</h1>
         <p className={ui.muted} style={{ fontSize: 'var(--fs-md)', marginTop: 6 }}>
           Несколько вопросов по вашему утверждению и его источнику.{' '}
           <Link href="/profile" style={{ textDecoration: 'underline' }}>

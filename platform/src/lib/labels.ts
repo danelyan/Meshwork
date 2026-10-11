@@ -4,7 +4,7 @@ export { LEVELS_TOP_DOWN } from '@/server/claims/levels';
 
 export const LEVEL_LABEL: Record<EvidenceLevel, string> = {
   self_reported: 'со слов',
-  artifact: 'артефакт',
+  artifact: 'есть ссылка на работу',
   third_party: 'третья сторона',
   platform: 'платформа',
 };

@@ -69,7 +69,7 @@ const claim = (id: string, status: string, catalogId = 'be.cache') => ({
   id, catalogId, statement: `Утв ${id}`, level: 'self_reported', quote: 'q', sourceRef: 'r', sourceKind: 'resume', limits: 'Не доказывает: x', suggestedProof: [], status, createdAt: '2026-10-01T00:00:00Z', confirmedAt: null,
 });
 
-describe('ProfilePage: решения по черновикам и карта пробелов', () => {
+describe('ProfilePage: решения по черновикам', () => {
   it('Да → POST confirm, список обновляется без перезагрузки', async () => {
     let status = 'proposed';
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
@@ -84,8 +84,8 @@ describe('ProfilePage: решения по черновикам и карта п
     });
     vi.stubGlobal('fetch', fetchMock);
     render(<ProfilePage />);
-    await screen.findByText('ждёт подтверждения'); // карта пробелов: черновик ≠ «нет утверждения»
-    expect(screen.queryByText('нет утверждения')).toBeNull();
+    await screen.findByText('Утв c1');
+    expect(screen.queryByText('нет утверждения')).toBeNull(); // карта пробелов живёт в «Навыки и грейд»
     fireEvent.click(await screen.findByRole('button', { name: 'Да' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Да' })).toBeNull());
     expect(fetchMock.mock.calls.some(([u, i]) => String(u) === '/api/claims/c1/confirm' && (i as RequestInit).method === 'POST')).toBe(true);
@@ -103,6 +103,5 @@ describe('ProfilePage: решения по черновикам и карта п
     render(<ProfilePage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Нет' }));
     await waitFor(() => expect(screen.queryByText('Утв c1')).toBeNull());
-    expect(await screen.findByText('нет утверждения')).toBeDefined();
   });
 });

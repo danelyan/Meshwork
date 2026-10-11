@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { ProfilePage } from '@/components/ProfilePage';
 
@@ -24,28 +24,16 @@ function stub(claims: unknown[], recs: unknown) {
   );
 }
 
-describe('ProfilePage: вакансии', () => {
-  it('нет подтверждённых утверждений → объясняет, почему вакансий нет', async () => {
-    stub([claim('proposed')], { targets: [], gaps: [], tasks: [] });
+describe('ProfilePage: у блоков один дом', () => {
+  it('карта глубины, пробелы и вакансии не дублируются, вместо них ссылки на дом', async () => {
+    stub([claim('confirmed')], { targets: [{ vacancyId: 'v1', companyName: 'Альфа', title: 'Backend', reason: 'r' }], gaps: [], tasks: [] });
     render(<ProfilePage />);
-    const note = await screen.findByTestId('targets-empty');
-    expect(note.textContent).toContain('пока подтверждённых нет');
-    expect(note.textContent).toContain('Подтвердите карточки');
-  });
-
-  it('утверждения подтверждены, вакансий нет → другая фраза', async () => {
-    stub([claim('confirmed')], { targets: [], gaps: [], tasks: [] });
-    render(<ProfilePage />);
-    const note = await screen.findByTestId('targets-empty');
-    expect(note.textContent).toContain('подходящих вакансий пока нет');
-    expect(note.textContent).not.toContain('пока подтверждённых нет');
-  });
-
-  it('есть цели → список вакансий', async () => {
-    stub([claim('confirmed')], { targets: [{ vacancyId: 'v1', companyName: 'Альфа', title: 'Backend', reason: 'закрываешь 4 из 6' }], gaps: [], tasks: [] });
-    render(<ProfilePage />);
-    await waitFor(() => expect(screen.getByText('Альфа, Backend')).toBeDefined());
-    expect(screen.queryByTestId('targets-empty')).toBeNull();
+    await screen.findByText('Писал эндпоинты');
+    expect(screen.queryByText('Альфа, Backend')).toBeNull();
+    expect(screen.queryByText('Карта пробелов к цели')).toBeNull();
+    expect(screen.getByRole('link', { name: /Карта глубины и пробелы/ }).getAttribute('href')).toBe('/skills');
+    expect(screen.getByRole('link', { name: /Подходящие вакансии/ }).getAttribute('href')).toBe('/career');
+    expect(screen.getByText('Что видят компании')).toBeDefined();
   });
 
   it('сохраняет пользовательскую формулировку через API и обновляет профиль', async () => {

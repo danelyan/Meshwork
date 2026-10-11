@@ -15,7 +15,7 @@ const EVIDENCE: Record<string, string> = { self_reported: 'Со слов', artif
 export function proofLabels(proofs: string[]): string {
   const labels = proofs.map((proof) => {
     if (proof.startsWith('task:')) return 'Практическое задание';
-    if (proof.startsWith('interview:')) return 'Защита у консультанта';
+    if (proof.startsWith('interview:')) return 'Разбор утверждения с консультантом';
     if (proof.startsWith('registry:fsp')) return 'Достижения ФСП';
     if (proof.startsWith('registry:')) return 'Подтверждение внешним источником';
     if (proof.startsWith('artifact:') || proof.startsWith('repo:') || proof.startsWith('link:')) return 'Артефакт: код или материал работы';

@@ -22,9 +22,10 @@ it('keeps the consultant full width and hides role navigation from guests', () =
 });
 
 it('marks only current dashboard route and keeps employer routes out of candidate navigation', () => {
-  nav.pathname = '/projects/task-1';
+  nav.pathname = '/skills';
   render(<DashboardFrame account={account}><p>Задание</p></DashboardFrame>);
-  expect(screen.getByRole('link', { name: 'Проекты' }).getAttribute('aria-current')).toBe('page');
+  expect(screen.getByRole('link', { name: 'Навыки и грейд' }).getAttribute('aria-current')).toBe('page');
+  expect(screen.queryByRole('link', { name: 'Проекты' })).toBeNull();
   expect(screen.queryByRole('link', { name: 'Вакансии' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Моя карта' }).getAttribute('href')).toBe('/career');
 });
@@ -33,13 +34,13 @@ it('sidebar: candidate order follows the journey stages, employer labels match t
   nav.pathname = '/career';
   const view = render(<DashboardFrame account={account}><p>x</p></DashboardFrame>);
   const names = () => within(screen.getByRole('navigation', { name: 'Разделы кабинета' })).getAllByRole('link').map((a) => a.textContent?.replace(/^\S\s?/, ''));
-  expect(names().slice(0, 5)).toEqual(['Консультант', 'Тест на грейд', 'Навыки и грейд', 'Проекты', 'Приглашения']);
+  // Пункты шапки (header: true) в сайдбаре не повторяются.
+  expect(names()).toEqual(['Навыки и грейд', 'Моя карта', 'ИИнтервью', 'Избранное', 'Настройки']);
   expect(screen.getByRole('link', { name: 'Моя карта' }).getAttribute('aria-current')).toBe('page');
   view.unmount();
   nav.pathname = '/employer/needs/n1';
   render(<DashboardFrame account={{ ...account, roles: { ...account.roles!, role: 'employer' } }}><p>x</p></DashboardFrame>);
-  expect(screen.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');
-  expect(names()).toEqual(['ИИ-помощник', 'Подборка', 'Поиск по базе', 'Вакансии', 'Избранное', 'Приглашения', 'Собеседования', 'Компания']);
+  expect(names()).toEqual(['Избранное', 'Компания']);
 });
 
 it('draft edits use actual step IDs; privacy view does not repeat personal answers', async () => {

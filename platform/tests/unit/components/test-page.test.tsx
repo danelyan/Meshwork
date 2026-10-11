@@ -214,7 +214,7 @@ describe('TestPage', () => {
     expect(screen.queryByTestId('junior-offer')).toBeNull();
     // Кнопки навигации и защита как флаг
     expect(screen.getByRole('link', { name: 'В профиль' })).toBeDefined();
-    expect(screen.getByRole('link', { name: 'Защитить утверждение' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Разобрать утверждение' })).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Разбор заданий' }));
     expect(screen.getByText(/верный: 4/)).toBeDefined();
   });

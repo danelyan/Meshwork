@@ -54,7 +54,7 @@ describe('EventFeed: все типы AgentEvent', () => {
     expect(screen.getByText('Утверждение 2')).toBeDefined();
     expect(screen.getByText(/2 без цитаты/)).toBeDefined();
     expect(screen.getByText(/скрытый текст/)).toBeDefined();
-    expect(screen.getAllByText('артефакт').length).toBe(2);
+    expect(screen.getAllByText('есть ссылка на работу').length).toBe(2);
   });
 
   it('claims: без скрытого текста плашки нет; пустой список объяснён', () => {

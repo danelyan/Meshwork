@@ -26,6 +26,8 @@ export function DashboardFrame({ account, children, employerSummary, bare = fals
   const isEmployer = account.roles.role === 'employer';
   const links = isEmployer ? EMPLOYER_NAV : CANDIDATE_NAV;
   const active = activeLinkHref(pathname, links);
+  // Пункты шапки в сайдбаре не повторяем; шапка видна и на телефоне (прокрутка), разделы не пропадают.
+  const sideLinks = links.filter((l) => !l.header);
   return <div className={styles.frame} data-dashboard data-bare={bare || undefined}>
     {!bare && <aside className={styles.sidebar} aria-label="Ваш кабинет">
       <div className={styles.identity}>
@@ -35,7 +37,7 @@ export function DashboardFrame({ account, children, employerSummary, bare = fals
       {!isEmployer && <div className={styles.summary}><CandidateSidebarSummary /></div>}
       {isEmployer && <Link className={styles.create} href="/employer/needs/new">+ Новая вакансия</Link>}
       <nav className={styles.nav} aria-label="Разделы кабинета">
-        {links.map(({ href, icon, label }) => <Link key={href} href={href} aria-current={href === active ? 'page' : undefined}>
+        {sideLinks.map(({ href, icon, label }) => <Link key={href} href={href} aria-current={href === active ? 'page' : undefined}>
           <span aria-hidden="true">{icon}</span>{label}
         </Link>)}
       </nav>

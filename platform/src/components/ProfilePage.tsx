@@ -2,20 +2,17 @@
 
 import Link from 'next/link';
 import { specLabel } from '@/lib/directions';
-import { claimTopics } from '@/lib/claim-topics';
 import { shownWording } from '@/lib/claims-view';
 import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
 
-import { ApiError, type AttemptSummary, claimAction, getProfile, getRecommendations, listTestAttemptsApi, type RecommendationsView, request } from '@/lib/api';
+import { ApiError, type AttemptSummary, claimAction, getProfile, listTestAttemptsApi, request } from '@/lib/api';
 import { formatDate, LEVEL_HINT, LEVELS_TOP_DOWN } from '@/lib/labels';
 import type { ProfileClaim, ProfileView } from '@/server/claims/types';
-import type { Gap } from '@/server/recommend/types';
 
 import { ProfileBasics, ProfilePublicPreview } from './candidate/ProfileCards';
 import { ResumeFieldsCard } from '@/components/candidate/ResumeFields';
 import type { ProfileDetails } from '@/server/claims/profile-details';
-import { DepthMapSection } from './call/DepthMapSection';
 import { LevelBadge } from './LevelBadge';
 import { Button, Kicker, Notice } from './ui';
 import styles from './ProfilePage.module.css';
@@ -28,7 +25,6 @@ function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?
   const [err, setErr] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const shown = shownWording(claim);
-  const topics = claim.wording && claim.status !== 'edited' && claim.statement !== shown ? claimTopics([{ statement: claim.statement, quote: claim.quote ?? '' }]) : '';
   const [statement, setStatement] = useState(shown);
   async function save() {
     if (!onEdit || !statement.trim()) return;
@@ -61,7 +57,7 @@ function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?
       {claim.quote && <p className={styles.quote}>«{claim.quote}»</p>}
       <div className={styles.meta}>
         <span>Источник: {claim.sourceRef || claim.sourceKind}</span>
-        {topics && <span>На созвоне спросим про: {topics}</span>}
+        {claim.wording && claim.status !== 'edited' && claim.statement !== shown && <span>Проверим на созвоне: {claim.statement}</span>}
         <span>Дата: {formatDate(claim.confirmedAt ?? claim.createdAt)}</span>
         {(claim.status === 'proposed' || claim.status === 'edited') && <span>{STATUS_NOTE[claim.status]}</span>}
       </div>
@@ -83,45 +79,13 @@ function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?
       {provable && (
         <div className={`${styles.actions} ${styles.noPrint}`}>
           <Link className={`${ui.btn} ${ui.small}`} href={`/defense/${encodeURIComponent(claim.id)}`}>
-            Доказать защитой
+            Разобрать с консультантом
           </Link>
         </div>
       )}
       {onEdit && !editing && <div className={`${styles.actions} ${styles.noPrint}`}><Button size="sm" onClick={() => setEditing(true)}>Изменить формулировку</Button></div>}
       {err && <Notice tone="error">{err}</Notice>}
     </li>
-  );
-}
-
-function GapMap({ gaps, pending }: { gaps: Gap[]; pending: Set<string> }) {
-  return (
-    <div className={styles.tableWrap}>
-      <table className={styles.gaps}>
-        <caption className={ui.srOnly}>Карта пробелов к цели</caption>
-        <thead>
-          <tr>
-            <th scope="col">Что нужно</th>
-            <th scope="col">Сейчас</th>
-            <th scope="col">Чем доказать</th>
-          </tr>
-        </thead>
-        <tbody>
-          {gaps.map((g) => (
-            <tr key={g.id}>
-              <td>{g.statement}</td>
-              <td>{g.currentLevel ? (
-                  <LevelBadge level={g.currentLevel} />
-                ) : pending.has(g.catalogId) ? (
-                  <span className={ui.muted}>ждёт подтверждения</span>
-                ) : (
-                  <span className={ui.muted}>нет утверждения</span>
-                )}</td>
-              <td>{g.suggestedProof.length ? g.suggestedProof.join('; ') : '-'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 
@@ -157,8 +121,7 @@ function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
 export function ProfilePage() {
   const [details, setDetails] = useState<ProfileDetails | null>(null);
   const [profile, setProfile] = useState<ProfileView | null>(null);
-  const [recs, setRecs] = useState<RecommendationsView | null>(null);
-  const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
+    const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
   const [error, setError] = useState<ApiError | Error | null>(null);
 
   useEffect(() => {
@@ -168,11 +131,6 @@ export function ProfilePage() {
       (e: Error) => alive && setError(e),
     );
     request<ProfileDetails>('/api/profile/details').then((value) => { if (alive && value.employerPreview) setDetails(value); }, () => undefined);
-    // карта пробелов — необязательная часть: API рекомендаций может быть недоступен
-    getRecommendations().then(
-      (r) => alive && setRecs(r),
-      () => alive && setRecs({}),
-    );
     listTestAttemptsApi().then(
       (a) => alive && setAttempts(a),
       () => undefined,
@@ -185,25 +143,23 @@ export function ProfilePage() {
   /** Да / Нет на черновике: действие на сервере, затем обновляем список и карту пробелов без перезагрузки. */
   async function decide(id: string, action: 'confirm' | 'reject') {
     await claimAction(id, action);
-    const [p, r, d] = await Promise.all([getProfile(), getRecommendations().catch(() => null), request<ProfileDetails>('/api/profile/details').catch(() => null)]);
+    const [p, d] = await Promise.all([getProfile(), request<ProfileDetails>('/api/profile/details').catch(() => null)]);
     setProfile(p);
-    if (r) setRecs(r);
     setDetails(d?.employerPreview ? d : null);
   }
 
   async function editClaim(id: string, statement: string) {
     await claimAction(id, 'edit', statement);
-    const [p, r, d] = await Promise.all([getProfile(), getRecommendations().catch(() => null), request<ProfileDetails>('/api/profile/details').catch(() => null)]);
+    const [p, d] = await Promise.all([getProfile(), request<ProfileDetails>('/api/profile/details').catch(() => null)]);
     setProfile(p);
-    if (r) setRecs(r);
     setDetails(d?.employerPreview ? d : null);
   }
 
   // ?print=1 (ссылка render_profile_pdf консультанта) — открыть печать, когда профиль загружен.
   useEffect(() => {
-    if (!profile || recs === null) return;
+    if (!profile) return;
     if (new URLSearchParams(window.location.search).get('print') === '1') window.print();
-  }, [profile, recs]);
+  }, [profile]);
 
   if (error) {
     const unauth = error instanceof ApiError && error.status === 401;
@@ -229,11 +185,6 @@ export function ProfilePage() {
   }
 
   const claims = profile.claims.filter((c) => c.status !== 'rejected');
-  const pending = new Set(claims.filter((c) => c.status === 'proposed').map((c) => c.catalogId));
-  const gaps = recs?.gaps ?? [];
-  const tasks = recs?.tasks ?? [];
-  const targets = recs?.targets ?? [];
-  const confirmedCount = claims.filter((c) => c.status === 'confirmed' || c.status === 'edited').length;
 
 
 
@@ -284,70 +235,11 @@ export function ProfilePage() {
         })
       )}
       </section>
-      <details className={styles.extraEvidence}><summary>Рекомендации и история проверок</summary><DepthMapSection /><TestHistory attempts={attempts} />
-      <section className={styles.section} aria-labelledby="targets-title">
-        <h2 id="targets-title">Подходящие вакансии</h2>
-        <div className={styles.noPrint}><Button size="sm" href="/career">Все вакансии на карте ↗</Button></div>
-        {recs === null ? (
-          <p className={ui.muted} role="status">
-            Загружаю…
-          </p>
-        ) : targets.length > 0 ? (
-          <ul className={styles.list}>
-            {targets.map((v) => (
-              <li key={v.vacancyId} className={`${ui.panel} ${styles.claim}`}>
-                <p className={styles.statement}>
-                  {v.companyName}, {v.title}
-                </p>
-                <p className={styles.quote}>{v.reason}</p>
-                <div
-                  className={ui.meter}
-                  role="img"
-                  aria-label={`Закрыто ${v.covered} из ${v.total} требований`}
-                >
-                  {Array.from({ length: v.total }, (_, i) => (
-                    <i key={i} className={i < v.covered ? ui.meterOn : undefined} />
-                  ))}
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className={ui.muted} data-testid="targets-empty">
-            {confirmedCount === 0
-              ? 'Вакансии подбираются по подтверждённым утверждениям, а пока подтверждённых нет. Подтвердите карточки в чате с консультантом - и здесь появятся вакансии.'
-              : 'По подтверждённым утверждениям подходящих вакансий пока нет. Добавьте источники или закройте пробелы из карты ниже.'}
-          </p>
-        )}
-      </section>
-
-      <section className={styles.section} aria-labelledby="gap-title">
-        <h2 id="gap-title">Карта пробелов к цели</h2>
-        {recs === null ? (
-          <p className={ui.muted} role="status">
-            Загружаю…
-          </p>
-        ) : gaps.length === 0 ? (
-          <p className={ui.muted}>Карта появится, когда будет выбрана цель: категория или вакансия. Попросите консультанта подобрать цель.</p>
-        ) : (
-          <GapMap gaps={gaps} pending={pending} />
-        )}
-        {tasks.length > 0 && (
-          <div id="tasks">
-            <h3 style={{ fontSize: 'var(--fs-md)', marginBottom: 8 }}>Задания, которые закроют пробелы</h3>
-            <ul className={styles.list}>
-              {tasks.map((t) => (
-                <li key={t.taskId} className={`${ui.panel} ${styles.claim}`}>
-                  <p className={styles.statement}>{t.title}</p>
-                  <p className={styles.quote}>{t.reason}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
-
-      </details>
+      <details className={styles.extraEvidence}><summary>История проверок</summary><TestHistory attempts={attempts} /></details>
+      <div className={`${styles.noPrint} ${styles.homeLinks}`}>
+        <Link href="/skills">Карта глубины и пробелы → Навыки и грейд</Link>
+        <Link href="/career">Подходящие вакансии → Моя карта</Link>
+      </div>
       <div className={`${styles.visibility} ${styles.noPrint}`}>
         <h2>Что видят компании</h2>
         <p className={ui.muted}>Имя, контакт и цитаты из резюме скрыты. После принятия приглашения имя и контакт открываются только этой компании.</p>

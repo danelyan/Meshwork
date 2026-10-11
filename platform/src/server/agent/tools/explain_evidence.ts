@@ -28,7 +28,7 @@ const Output = z.object({
 
 export const LEVEL_LABEL: Record<EvidenceLevel, string> = {
   self_reported: 'со слов',
-  artifact: 'артефакт',
+  artifact: 'есть ссылка на работу',
   platform: 'проверено платформой',
   third_party: 'подтверждено третьей стороной',
 };

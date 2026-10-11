@@ -101,7 +101,7 @@ export function EmployerLiveDefense({ invitationId, live: initial }: { invitatio
 
   const canPropose = !live || live.status !== 'scheduled';
   return <div className={styles.box} data-testid="live-defense-employer">
-    <div className={styles.head}><h3>Живая защита</h3><LiveSubStatus live={live} /></div>
+    <div className={styles.head}><h3>Живая защита с компанией</h3><LiveSubStatus live={live} /></div>
     {live && <Summary live={live} role="employer" />}
     {live?.status === 'slots_proposed' && <ul className={styles.slots}>{live.slots.map((s) => <li key={s.id} className={styles.slot} data-available={s.available}>{formatMsk(s.startsAt)}{!s.available && ' · занято'}</li>)}</ul>}
     {error && <p className={styles.error} role="alert">{error}</p>}
@@ -153,7 +153,7 @@ export function CandidateLiveDefense({ invitationId, live: initial, hasRecording
 
   const choosing = live.status === 'slots_proposed';
   return <div className={styles.box} data-testid="live-defense-candidate">
-    <div className={styles.head}><h3>Живая защита проекта</h3><LiveSubStatus live={live} /></div>
+    <div className={styles.head}><h3>Живая защита с компанией</h3><LiveSubStatus live={live} /></div>
     <Summary live={live} role="candidate" />
     {choosing && <>
       {live.comment && <p className={styles.meta}>Комментарий компании: {live.comment}</p>}

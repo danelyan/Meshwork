@@ -11,7 +11,7 @@ it('labels actual category target and handles absent target without inventing cu
   expect(recommendationTargetLabel({})).toBe('Цель не выбрана');
 });
 it('translates machine proof identifiers and deduplicates generic types', () => {
-  expect(proofLabels(['task:find-bug', 'task:code-output', 'interview:defend', 'registry:fsp-algo', 'artifact:repo'])).toBe('Практическое задание, Защита у консультанта, Достижения ФСП, Артефакт: код или материал работы');
+  expect(proofLabels(['task:find-bug', 'task:code-output', 'interview:defend', 'registry:fsp-algo', 'artifact:repo'])).toBe('Практическое задание, Разбор утверждения с консультантом, Достижения ФСП, Артефакт: код или материал работы');
   expect(proofLabels(['other:opaque'])).toBe('Подтверждающий материал');
   expect(proofLabels([])).toBe('Обсудить с консультантом');
 });

@@ -107,7 +107,7 @@ export function ProjectBlock({ project }: { project: NonNullable<Explanation['pr
 export function DefenseBlock({ defense }: { defense: NonNullable<Explanation['defense']> }) {
   return (
     <section className={styles.stage} aria-label="Защита">
-      <h4 className={styles.stageTitle}>{defense.ai ? 'ИИ-защита проекта' : 'Защита проекта'}</h4>
+      <h4 className={styles.stageTitle}>{defense.ai ? 'ИИ-защита проекта' : 'Живая защита с компанией'}</h4>
       {defense.ai && <p className={styles.note}>Без работодателя, до приглашения: видны только баллы и флаги; транскрипт и запись - после принятия приглашения.</p>}
       <p className={styles.text}>
         {defense.score === null

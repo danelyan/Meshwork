@@ -14,7 +14,7 @@ import type { EmployerTool } from './tools/shared';
 import { saveEmployerMessage } from './store';
 import type { AssistantCandidate, CandidatesBlock, EmployerToolContext, InvitationDraft, NeedDraft } from './types';
 
-const LEVEL_TEXT = { self_reported: 'со слов', artifact: 'артефакт', platform: 'проверено платформой', third_party: 'третья сторона' } as const;
+const LEVEL_TEXT = { self_reported: 'со слов', artifact: 'есть ссылка на работу', platform: 'проверено платформой', third_party: 'третья сторона' } as const;
 const ORDINAL: Record<string, number> = { перв: 0, втор: 1, трет: 2, четв: 3, пят: 4 };
 
 interface Shown {

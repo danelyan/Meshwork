@@ -25,6 +25,12 @@ export async function countRecentComplaints(db: Db, companyId: string, now = new
   return db.complaint.count({ where: { companyId, status: { not: 'dismissed' }, createdAt: { gt: complaintWindowStart(now, days) } } });
 }
 
+/** Параметры санкций из настроек платформы (E-08, фаза 4) — один источник для отправки, кабинета и модерации. */
+export async function sanctionConfig(): Promise<{ baseLimit: number; sanctions: Awaited<ReturnType<typeof getSetting<'employer.complaintSanctions'>>>; windowDays: number }> {
+  const [baseLimit, sanctions, windowDays] = await Promise.all([getSetting('employer.dailyInvitationLimit'), getSetting('employer.complaintSanctions'), getSetting('employer.complaintWindowDays')]);
+  return { baseLimit, sanctions, windowDays };
+}
+
 /** Текущая санкция компании — для показа в кабинете. Решение при отправке принимается заново внутри транзакции. */
 export async function companySanction(companyId: string, baseLimit?: number): Promise<InvitationSanction> {
   const [complaints, limit, sanctions] = await Promise.all([countRecentComplaints(prisma, companyId), baseLimit ?? getSetting('employer.dailyInvitationLimit'), getSetting('employer.complaintSanctions')]);

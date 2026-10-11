@@ -108,6 +108,55 @@ localhost/127.0.0.1/[::1], `DEVTOOLS` не `false`); письмо в этом р
 (проверить настоящее письмо локально — `DEVTOOLS=false`). Код сброса пароля в ответе не
 отдаётся никогда. Смена пароля отзывает выданные сессии (версия пароля в куке `cid`).
 
+## Вход через Яндекс ID
+
+На стенде ключи можно передать без локального SSH-доступа: сохранить
+`YANDEX_CLIENT_ID` и `YANDEX_CLIENT_SECRET` в GitHub Actions Secrets и запустить
+`Deploy stand` с `configure_yandex_only=true`. Настройки остальных сервисов
+сохраняются; подробности — [развёртывание](../docs/deploy.md#автодеплой).
+
+OAuth-клиент уже реализован в `src/server/auth/yandex.ts`: authorization code,
+PKCE S256 и подписанная кука `state` на 10 минут. Токены Яндекса после получения
+профиля не сохраняются; аккаунты разных способов входа по email не объединяются.
+
+Для включения:
+
+1. В [кабинете Яндекс OAuth](https://oauth.yandex.ru/) создать приложение
+   **для авторизации пользователей**, указать название «MESHWORK», иконку
+   `public/assets/yandex-oauth-icon.png` и контактную почту. У этой иконки есть
+   поля вокруг знака, чтобы круглая рамка Яндекса не обрезала его края.
+2. Выбрать «Веб-сервисы». Redirect URI стенда —
+   `https://fsp2.ru/api/auth/yandex/callback`; для локальной разработки добавить
+   `http://localhost:3000/api/auth/yandex/callback`. Suggest Hostname — `https://fsp2.ru`.
+3. Выбрать только `login:info` и `login:email`. Сохранение приложения требует
+   принятия [условий API Яндекс ID](https://yandex.ru/legal/authid_api/).
+4. Передать серверу `YANDEX_CLIENT_ID` и `YANDEX_CLIENT_SECRET` из карточки
+   приложения. Секреты не выводить в журнал и не добавлять в git; локальное
+   хранение — scrt4 или macOS Keychain. `APP_URL` на стенде должен быть `https://fsp2.ru`:
+   callback вычисляется из него, и адрес должен совпадать с настройкой Яндекса.
+5. После обновления окружения пересоздать только контейнер приложения из
+   `/opt/fsp/platform`: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --no-build app`.
+   Пересборка образа не нужна: настройки входа читаются на сервере при запросе.
+6. На `/auth` отметить согласие на обработку персональных данных и нажать
+   «Войти через Яндекс ID». Новый аккаунт попадает в `/consultant` для знакомства;
+   повторный вход использует прежний аккаунт. Пока приложение не верифицировано
+   Яндексом, на его экране входа может появляться предупреждение.
+
+Без обеих OAuth-переменных кнопка неактивна. Демо-вход управляется отдельно
+флагом `DEMO_LOGIN`. Порядок регистрации приложения —
+[документация Яндекса](https://yandex.ru/dev/id/doc/ru/register-auth),
+проектное решение — [ADR 0001](../docs/decisions/0001-auth-yandex-id.md).
+
+Проверки без обращений к настоящему Яндексу:
+
+```bash
+npx vitest run --project unit --project components tests/unit/auth/yandex.test.ts tests/unit/components/auth-screen.test.tsx tests/unit/components/auth-entry.test.tsx
+npx vitest run --project integration tests/integration/auth/yandex-callback.test.ts
+```
+
+Для второй команды нужен `TEST_DATABASE_URL` с именем базы, содержащим `test`;
+тесты очищают эту базу.
+
 ## Дебаг-панель (только localhost)
 
 Плавающая кнопка `dev` справа внизу (`Ctrl+Shift+D`, Esc - закрыть): кто я, путь, быстрые действия - «Начать диалог заново», «Очистить онбординг» (с галкой «и ответы профиля»), «Очистить аккаунт» (с подтверждением), «Новый пользователь», «Сбросить попытки теста», «Войти как…», «Выйти». Действия - `POST /api/dev/<действие>` над пользователем из сессии (`src/app/api/dev/`, логика - `src/server/devtools/`).
@@ -132,6 +181,11 @@ localhost/127.0.0.1/[::1], `DEVTOOLS` не `false`); письмо в этом р
   `POST /api/auth/password/forgot` (всегда 200) и `POST /api/auth/password/reset`. Логика —
   `src/server/auth/email.ts`, пароль — scrypt (`password.ts`), коды — `codes.ts`,
   лимиты — `rate-limit.ts` (в памяти процесса).
+- Переключение роли (ADR 0004): `POST /api/auth/role/switch` `{ role }` — у учётки может быть и профиль
+  кандидата, и профиль работодателя; активна одна роль (`User.role`), кука `cid` несёт id профиля только
+  активной роли. Нет профиля — создаётся (работодателю нужна `companyName`), знакомство новой роли идёт в
+  ленте `/consultant`. Метка роли и переключатель — в шапке (`shell/RoleSwitch`). На общих демо-аккаунтах
+  из сида вторую роль не создать (403) — для показа берите «Новый пользователь» на `/demo`.
 - `/api/health` — 200 `{ ok, db, llm }`; 503, если БД недоступна.
 - `src/styles/tokens.css` — токены тёмной темы прототипа, JetBrains Mono из `public/assets/fonts`.
 

@@ -5,10 +5,9 @@ import type { SanctionAppealStatus } from '@prisma/client';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
 import { complaintWindowStart, invitationSanction, type InvitationSanction } from '@/server/employer/antifraud';
-import { countRecentComplaints } from '@/server/employer/complaints';
+import { countRecentComplaints, sanctionConfig } from '@/server/employer/complaints';
 import { lockCompanyInvites } from '@/server/employer/invite-lock';
 import { pseudonym } from '@/server/employer/privacy';
-import { DAILY_INVITATION_LIMIT } from '@/server/employer/weights';
 
 import { audit, requireReason } from '../audit';
 import type { StaffContext } from '../session';
@@ -50,12 +49,13 @@ export async function listCompanyAppeals(companyId: string): Promise<CompanyAppe
 
 /** Оспорить санкцию. Санкции нет — 409; уже есть открытая апелляция — 409. Проверка и вставка под lock компании. */
 export async function createSanctionAppeal(ctx: { companyId: string; employerProfileId: string }, rawText: string): Promise<CompanyAppealView> {
+  const cfg = await sanctionConfig();
   const text = rawText.trim();
   if (text.length < APPEAL_TEXT.min) throw errors.badRequest(`Опишите, почему вы не согласны (от ${APPEAL_TEXT.min} символов)`);
   if (text.length > APPEAL_TEXT.max) throw errors.badRequest('Текст апелляции слишком длинный');
   return prisma.$transaction(async (tx) => {
     await lockCompanyInvites(tx, ctx.companyId);
-    const sanction = invitationSanction(await countRecentComplaints(tx, ctx.companyId), DAILY_INVITATION_LIMIT);
+    const sanction = invitationSanction(await countRecentComplaints(tx, ctx.companyId), cfg.baseLimit, cfg.sanctions);
     if (sanction.level === 'none') throw errors.conflict('Ограничений нет - оспаривать нечего');
     const open = await tx.sanctionAppeal.count({ where: { companyId: ctx.companyId, status: 'open' } });
     if (open > 0) throw errors.conflict('Апелляция уже на рассмотрении');
@@ -71,6 +71,7 @@ export interface AppealQueueItem extends CompanyAppealView {
 }
 
 export async function listAppeals(status: SanctionAppealStatus | 'all' = 'open'): Promise<AppealQueueItem[]> {
+  const cfg = await sanctionConfig();
   const rows = await prisma.sanctionAppeal.findMany({
     where: status === 'all' ? {} : { status },
     orderBy: status === 'open' ? { createdAt: 'asc' } : { createdAt: 'desc' },
@@ -80,14 +81,14 @@ export async function listAppeals(status: SanctionAppealStatus | 'all' = 'open')
   const out: AppealQueueItem[] = [];
   for (const r of rows) {
     const complaints = await prisma.complaint.findMany({
-      where: { companyId: r.companyId, status: { not: 'dismissed' }, createdAt: { gt: complaintWindowStart() } },
+      where: { companyId: r.companyId, status: { not: 'dismissed' }, createdAt: { gt: complaintWindowStart(new Date(), cfg.windowDays) } },
       orderBy: { createdAt: 'asc' },
       select: { id: true, status: true, reason: true, comment: true, candidateId: true, createdAt: true },
     });
     out.push({
       ...view(r),
       company: r.company,
-      sanction: invitationSanction(complaints.length, DAILY_INVITATION_LIMIT),
+      sanction: invitationSanction(complaints.length, cfg.baseLimit, cfg.sanctions),
       complaints: complaints.map((c) => ({ id: c.id, status: c.status, reason: c.reason, comment: c.comment, candidate: pseudonym(c.candidateId), createdAt: c.createdAt.toISOString() })),
     });
   }
@@ -108,6 +109,7 @@ export interface AppealResolution {
  * Журнал: строка на апелляцию и строка на каждую отклонённую жалобу. Письма — после COMMIT.
  */
 export async function resolveAppeal(staff: StaffContext, id: string, decision: 'upheld' | 'rejected', rawReason: string, complaintIds?: string[]): Promise<AppealResolution> {
+  const cfg = await sanctionConfig();
   const reason = requireReason(rawReason);
   const head = await prisma.sanctionAppeal.findUnique({ where: { id }, select: { companyId: true } });
   if (!head) throw errors.notFound('Апелляция не найдена');
@@ -115,10 +117,10 @@ export async function resolveAppeal(staff: StaffContext, id: string, decision: '
     await lockCompanyInvites(tx, head.companyId);
     const before = await tx.sanctionAppeal.findUniqueOrThrow({ where: { id } });
     if (before.status !== 'open') throw errors.conflict('Апелляция уже рассмотрена');
-    const sanctionBefore = invitationSanction(await countRecentComplaints(tx, head.companyId), DAILY_INVITATION_LIMIT);
+    const sanctionBefore = invitationSanction(await countRecentComplaints(tx, head.companyId), cfg.baseLimit, cfg.sanctions);
     let dismissed: string[] = [];
     if (decision === 'upheld') {
-      const openIds = (await tx.complaint.findMany({ where: { companyId: head.companyId, status: 'open', createdAt: { gt: complaintWindowStart() } }, select: { id: true } })).map((c) => c.id);
+      const openIds = (await tx.complaint.findMany({ where: { companyId: head.companyId, status: 'open', createdAt: { gt: complaintWindowStart(new Date(), cfg.windowDays) } }, select: { id: true } })).map((c) => c.id);
       const chosen = complaintIds ?? openIds;
       const foreign = chosen.filter((c) => !openIds.includes(c));
       if (foreign.length) throw errors.badRequest('Апелляцией можно отклонить только открытые жалобы этой компании за окно');
@@ -132,7 +134,7 @@ export async function resolveAppeal(staff: StaffContext, id: string, decision: '
       dismissed = chosen;
     }
     const after = await tx.sanctionAppeal.update({ where: { id }, data: { status: decision, resolvedById: staff.staffId, resolvedAt: new Date(), resolution: reason } });
-    const sanctionAfter = invitationSanction(await countRecentComplaints(tx, head.companyId), DAILY_INVITATION_LIMIT);
+    const sanctionAfter = invitationSanction(await countRecentComplaints(tx, head.companyId), cfg.baseLimit, cfg.sanctions);
     await audit({ actor: staff, action: `resolve_appeal.${decision}`, target: { type: 'appeal', id }, reason, before: { ...before, sanction: sanctionBefore }, after: { ...after, sanction: sanctionAfter, dismissedComplaintIds: dismissed } }, tx);
     return { id, status: decision, dismissedComplaintIds: dismissed, sanctionBefore, sanctionAfter, authorId: before.authorId };
   });

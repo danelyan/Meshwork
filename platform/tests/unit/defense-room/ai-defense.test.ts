@@ -128,12 +128,11 @@ describe('созвон-защита через /api/call/{id} до accepted', ()
   it('kind=defense без раскрытия — 404 (не карта глубины, не запись); после accepted — полный доступ', async () => {
     db.employerProfile.findUnique.mockResolvedValue({ companyId: 'co-1' });
     db.callParticipant.count.mockResolvedValue(0);
+    db.callSession.count.mockResolvedValue(1);
     db.candidate.findUnique.mockResolvedValue({ hiddenFromEmployers: false });
     accepted(false);
     await expect(resolveCallAccess(employer, { id: 'cs-ai', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).rejects.toMatchObject({ status: 404 });
     accepted(true);
-    // Защита видна компании: ИИ-защита или своя живая (defenseOwnedOrAi считает callSession по visibility).
-    db.callSession.count.mockResolvedValue(1);
     await expect(resolveCallAccess(employer, { id: 'cs-ai', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).resolves.toEqual({ role: 'employer', access: 'full', recording: true });
   });
 });

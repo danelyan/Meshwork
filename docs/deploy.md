@@ -67,13 +67,12 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 
 Если сборка упала, прежние контейнеры продолжают работать, а запуск в Actions красный.
 
-Проверки кода (типы, lint, unit и integration-тесты) идут отдельным workflow [`checks.yml`](../.github/workflows/checks.yml) на push в `main` и `lane/**` и на pull request. Деплой его не ждёт: красный запуск `Checks` на коммите виден в Actions и в истории коммитов, но стенд при этом уже обновлён. Поэтому локальная проверка перед push (`npm run typecheck && npm run lint && npm run test:unit`) остаётся обязательной.
-
 Настройки репозитория (Settings → Secrets and variables → Actions):
 
 | Имя | Вид | Значение |
 | --- | --- | --- |
 | `DEPLOY_SSH_KEY` | секрет | Закрытый ключ пользователя `deploy` |
+| `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET` | секреты | Ключи приложения MESHWORK в Яндекс OAuth; используются только в ручном режиме настройки Яндекс ID |
 | `DEPLOY_HOST` | переменная | Адрес сервера |
 | `DEPLOY_USER` | переменная | `deploy` |
 | `DEPLOY_PATH` | переменная | `/opt/fsp/platform` |
@@ -81,6 +80,20 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | `APP_URL` | переменная | `https://<домен>` — для проверки после деплоя |
 
 Сид выполняется при каждом деплое. Он идемпотентен: демо-аккаунты обновляются по фиксированным id, у синтетического пула кандидатов работодателя утверждения пересоздаются; данные остальных пользователей не затрагиваются.
+
+Для подключения или замены ключей Яндекс ID сохранить обе переменные в GitHub
+Actions Secrets и запустить `Deploy stand` с `configure_yandex_only=true`:
+
+```bash
+gh workflow run deploy.yml -f configure_yandex_only=true
+```
+
+Этот режим передаёт ключи через stdin SSH, атомарно обновляет только две строки
+в серверном `.env` с правами 600 и пересоздаёт только `app` без сборки. Исходники,
+миграции и сид не запускаются; остальные настройки `.env` сохраняются. Значения
+ключей не выводятся в журнал. Скрипт обновления —
+[`configure-yandex.sh`](../platform/scripts/configure-yandex.sh); ручная настройка
+приложения Яндекса — [README платформы](../platform/README.md#вход-через-яндекс-id).
 
 ## Обслуживание
 

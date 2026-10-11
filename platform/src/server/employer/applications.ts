@@ -13,9 +13,9 @@ import type { ApplicationStatus } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import type { z } from 'zod';
 
-import { notBlockedVacancyWhere } from '../admin/accounts/state';
 import { consentRequired, disclosedApplicationIds, userIdForCandidate } from '../consent/service';
 import { consentVersion } from '../consent/texts';
+import { hiddenVacancyIds } from '../admin/moderation/red-flags';
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 import { notifyInBackground } from '../mail';
@@ -65,8 +65,9 @@ export interface EmployerApplicationView {
  * или не подтверждено раскрытие (consent_required); 429 — лимит за сутки. Лимит — под advisory-lock кандидата.
  */
 export async function createApplication(candidateId: string, vacancyId: string, input: z.infer<typeof ApplicationInput>, limit = DAILY_APPLICATION_LIMIT) {
-  const vacancy = await prisma.vacancy.findFirst({ where: { id: vacancyId, archivedAt: null, ...notBlockedVacancyWhere() }, select: { id: true } });
-  if (!vacancy) throw errors.notFound('Вакансия не найдена или закрыта');
+  const vacancy = await prisma.vacancy.findFirst({ where: { id: vacancyId, archivedAt: null }, select: { id: true } });
+  // lane admin (E-08, фаза 2): скрытая модератором вакансия для кандидата не существует.
+  if (!vacancy || (await hiddenVacancyIds()).includes(vacancyId)) throw errors.notFound('Вакансия не найдена или закрыта');
   if (!input.disclosureVersion) {
     throw consentRequired('identity_disclosure', 'Чтобы откликнуться, подтвердите раскрытие имени и контактов этой компании, если она примет отклик.');
   }

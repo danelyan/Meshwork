@@ -5,10 +5,9 @@ import type { ComplaintReason, ComplaintStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
 import { invitationSanction, type InvitationSanction } from '@/server/employer/antifraud';
-import { countRecentComplaints } from '@/server/employer/complaints';
+import { countRecentComplaints, sanctionConfig } from '@/server/employer/complaints';
 import { lockCompanyInvites } from '@/server/employer/invite-lock';
 import { pseudonym } from '@/server/employer/privacy';
-import { DAILY_INVITATION_LIMIT } from '@/server/employer/weights';
 
 import { audit, requireReason } from '../audit';
 import type { StaffContext } from '../session';
@@ -55,6 +54,7 @@ const select = {
 } satisfies Prisma.ComplaintSelect;
 
 export async function listComplaints(status: ComplaintStatus | 'all' = 'open', limit = 100): Promise<ComplaintQueueItem[]> {
+  const cfg = await sanctionConfig();
   const rows = await prisma.complaint.findMany({
     where: status === 'all' ? {} : { status },
     orderBy: status === 'open' ? { createdAt: 'asc' } : { createdAt: 'desc' },
@@ -67,7 +67,7 @@ export async function listComplaints(status: ComplaintStatus | 'all' = 'open', l
     prisma.complaint.findMany({ where: { companyId: { in: companyIds } }, select: { companyId: true, candidateId: true, reason: true } }),
   ]);
   const sanctions = new Map<string, InvitationSanction>();
-  for (const id of companyIds) sanctions.set(id, invitationSanction(await countRecentComplaints(prisma, id), DAILY_INVITATION_LIMIT));
+  for (const id of companyIds) sanctions.set(id, invitationSanction(await countRecentComplaints(prisma, id), cfg.baseLimit, cfg.sanctions));
   return rows.map((r) => {
     const n = (s: ComplaintStatus) => byStatus.find((x) => x.companyId === r.companyId && x.status === s)?._count._all ?? 0;
     return {
@@ -112,6 +112,7 @@ export interface ComplaintResolution {
  * (как createInvitation) → условный update → журнал с санкцией до/после. Письмо кандидату — после COMMIT.
  */
 export async function resolveComplaint(staff: StaffContext, id: string, decision: ComplaintDecision, rawReason: string): Promise<ComplaintResolution> {
+  const cfg = await sanctionConfig();
   const reason = requireReason(rawReason);
   const head = await prisma.complaint.findUnique({ where: { id }, select: { companyId: true } });
   if (!head) throw errors.notFound('Жалоба не найдена');
@@ -119,9 +120,9 @@ export async function resolveComplaint(staff: StaffContext, id: string, decision
     await lockCompanyInvites(tx, head.companyId);
     const before = await tx.complaint.findUniqueOrThrow({ where: { id } });
     if (before.status !== 'open') throw errors.conflict('Жалоба уже рассмотрена');
-    const sanctionBefore = invitationSanction(await countRecentComplaints(tx, head.companyId), DAILY_INVITATION_LIMIT);
+    const sanctionBefore = invitationSanction(await countRecentComplaints(tx, head.companyId), cfg.baseLimit, cfg.sanctions);
     const after = await tx.complaint.update({ where: { id }, data: { status: decision, resolvedById: staff.staffId, resolvedAt: new Date(), resolution: reason } });
-    const sanctionAfter = invitationSanction(await countRecentComplaints(tx, head.companyId), DAILY_INVITATION_LIMIT);
+    const sanctionAfter = invitationSanction(await countRecentComplaints(tx, head.companyId), cfg.baseLimit, cfg.sanctions);
     await audit({ actor: staff, action: `resolve_complaint.${decision}`, target: { type: 'complaint', id }, reason, before: { ...before, sanction: sanctionBefore }, after: { ...after, sanction: sanctionAfter } }, tx);
     return { id, status: decision, sanctionBefore, sanctionAfter };
   });

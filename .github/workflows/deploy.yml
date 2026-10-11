@@ -11,6 +11,11 @@ on:
       - platform/**
       - .github/workflows/deploy.yml
   workflow_dispatch:
+    inputs:
+      configure_yandex_only:
+        description: Configure Yandex OAuth from repository secrets and restart app only
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -20,7 +25,7 @@ permissions:
 # у которых условие if остаётся истинным, — и новый запуск ждёт его конца.
 concurrency:
   group: deploy-stand
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !inputs.configure_yandex_only }}
 
 env:
   DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
@@ -34,6 +39,7 @@ env:
 jobs:
   build:
     name: Build images
+    if: ${{ !inputs.configure_yandex_only }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -95,6 +101,8 @@ jobs:
         id: restart
         if: ${{ always() && steps.ssh.outcome == 'success' }}
         run: |
+          # Пути и команда Compose раскрываются на runner, ключи здесь не передаются.
+          # shellcheck disable=SC2029
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' \
             && flock -w 600 '$DEPLOY_LOCK' $COMPOSE up -d --no-build --remove-orphans \
             && docker image prune -f \
@@ -102,6 +110,65 @@ jobs:
 
       - name: Check health
         if: ${{ always() && steps.restart.outcome == 'success' }}
+        run: |
+          curl --fail --silent --show-error --max-time 10 \
+            --retry 20 --retry-delay 6 --retry-all-errors \
+            "$APP_URL/api/health"
+
+  configure-yandex:
+    name: Configure Yandex OAuth
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.configure_yandex_only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload configuration script
+        id: upload
+        run: |
+          scp platform/scripts/configure-yandex.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/fsp-yandex-$GITHUB_RUN_ID.sh"
+
+      # SSH передаёт ключи через stdin; в удалённой командной строке их нет.
+      # always() доводит начатый перезапуск до конца, как в job release.
+      - name: Configure and restart app
+        id: configure
+        if: ${{ always() && steps.upload.outcome == 'success' }}
+        env:
+          YANDEX_CLIENT_ID: ${{ secrets.YANDEX_CLIENT_ID }}
+          YANDEX_CLIENT_SECRET: ${{ secrets.YANDEX_CLIENT_SECRET }}
+        run: |
+          test -n "$YANDEX_CLIENT_ID" && test -n "$YANDEX_CLIENT_SECRET"
+          # Публичные пути раскрываются на runner; секреты передаются только через stdin.
+          # shellcheck disable=SC2029
+          printf '%s\n' "$YANDEX_CLIENT_ID" "$YANDEX_CLIENT_SECRET" | \
+            ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' \
+              && flock -w 600 '$DEPLOY_LOCK' bash -c \
+              'bash /tmp/fsp-yandex-$GITHUB_RUN_ID.sh .env \
+                && $COMPOSE up -d --no-deps --no-build app'"
+
+      - name: Remove configuration script
+        if: ${{ always() && steps.upload.outcome == 'success' }}
+        run: |
+          # shellcheck disable=SC2029
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "rm -f /tmp/fsp-yandex-$GITHUB_RUN_ID.sh"
+
+      - name: Check health
+        if: ${{ always() && steps.configure.outcome == 'success' }}
         run: |
           curl --fail --silent --show-error --max-time 10 \
             --retry 20 --retry-delay 6 --retry-all-errors \

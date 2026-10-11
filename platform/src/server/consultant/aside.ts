@@ -228,6 +228,14 @@ export interface CandidateFacts {
 }
 
 /** Знакомство → тест → квалифицирующий созвон → проект → ИИ-защита → приглашения → живая защита → нанят. */
+/** Шаги вне порядка (приглашение, живая защита, найм) приоритетнее по journeyState.nextStep: «сейчас» - у них, чтобы путь и блок шага показывали одно. */
+const PRIORITY_STEP: Partial<Record<string, string>> = { invitations: 'invites', live_defense: 'live_defense', hired: 'hired' };
+export function promoteNow(steps: JourneyStep[], nextStep: string): JourneyStep[] {
+  const id = PRIORITY_STEP[nextStep];
+  if (!id || !steps.some((s) => s.id === id)) return steps;
+  return steps.map((s) => (s.id === id ? { ...s, state: 'now' } : s.state === 'now' ? { ...s, state: 'next' } : s));
+}
+
 export function candidateSteps(f: CandidateFacts): JourneyStep[] {
   const hired = f.hired ?? null;
   const answered = hired !== null || (f.accepted ?? 0) > 0;
@@ -371,7 +379,10 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
   ]);
   const intro = introDone(view);
   const hired = hiredInv ? { company: hiredInv.company?.name ?? hiredInv.vacancy?.company.name ?? 'компанию' } : null;
-  const steps = candidateSteps({ intro, introNote: introNote(view, intro, false), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations });
+  const steps = promoteNow(
+    candidateSteps({ intro, introNote: introNote(view, intro, false), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations }),
+    journey.nextStep,
+  );
   const market = vacancies ? marketRows(vacancies, (spec, grade) => category?.specialization === spec && category.grade === grade) : undefined;
   const stats = candidateStats({ confirmed: profileClaims, category });
   // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).

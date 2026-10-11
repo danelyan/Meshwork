@@ -6,7 +6,7 @@
   "title": "Инкрементальная агрегация: повторы, опоздания, водяной знак",
   "summary": "Микробатчи «как минимум один раз»: валидация с причинами, дедупликация с ограниченной памятью, водяной знак и поздние события, идемпотентность и чистое состояние; DESIGN.md",
   "stack": ["python312", "pytest"],
-  "catalogIds": ["common.algo-complexity", "common.unit-tests", "common.sql-queries"],
+  "catalogIds": ["common.algo-complexity", "common.unit-tests", "common.sql-queries", "eng.data-platform"],
   "image": "python312",
   "contractRef": "contract.md",
   "starterRef": "starter",

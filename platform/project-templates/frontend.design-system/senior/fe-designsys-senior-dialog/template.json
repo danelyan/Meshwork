@@ -6,7 +6,7 @@
   "title": "Модальный Dialog: focus trap, возврат фокуса, вложенность",
   "summary": "Compound-компонент Dialog по WAI-ARIA APG: ловушка фокуса, стек вложенных окон, возврат фокуса, блокировка прокрутки, скрытие фона от скринридеров, контролируемый и неконтролируемый режим, DESIGN.md",
   "stack": ["react19", "typescript", "testing-library", "vitest"],
-  "catalogIds": ["fe.components", "fe.a11y", "fe.dom-events", "fe.render-lifecycle", "fe.architecture"],
+  "catalogIds": ["fe.components", "fe.a11y", "fe.dom-events", "fe.render-lifecycle", "fe.architecture", "fe.design-system-governance"],
   "image": "node20",
   "testEnvironment": "jsdom",
   "contractRef": "contract.md",

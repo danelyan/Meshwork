@@ -6,7 +6,7 @@
   "title": "Очередь фоновых задач с backpressure",
   "summary": "Ограниченная очередь с отказом при переполнении, приоритеты, лимит конкурентности, ретраи с backoff и таймаутом попытки, идемпотентность по ключу, DESIGN.md с компромиссами",
   "stack": ["node20", "typescript", "vitest"],
-  "catalogIds": ["be.concurrency", "be.background-jobs", "be.retries-timeouts", "be.idempotency"],
+  "catalogIds": ["be.concurrency", "be.background-jobs", "be.retries-timeouts", "be.idempotency", "be.reliability-design", "be.system-design"],
   "image": "node20",
   "testEnvironment": "node",
   "contractRef": "contract.md",

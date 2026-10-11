@@ -6,7 +6,7 @@
   "title": "Когортное удержание, LTV и CUPED для A/B по выручке",
   "summary": "Когортная таблица удержания и накопленного LTV с учётом цензурирования справа, CUPED-поправка по предпериодной выручке, сравнение групп с доверительным интервалом; обязательный DESIGN.md",
   "stack": ["python312", "pandas", "numpy", "pytest"],
-  "catalogIds": ["ai.ab-testing", "ai.pandas-sql", "common.unit-tests"],
+  "catalogIds": ["ai.ab-testing", "ai.pandas-sql", "common.unit-tests", "common.architecture-decisions"],
   "image": "python312",
   "contractRef": "contract.md",
   "starterRef": "starter",

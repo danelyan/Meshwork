@@ -6,7 +6,7 @@
   "title": "Поиск с подсказками: гонки, кэш, доступность",
   "summary": "Combobox по WAI-ARIA: дребезг, отмена и защита от устаревших ответов, LRU-кэш, ошибки с повтором, клавиатура; DESIGN.md с компромиссами",
   "stack": ["react19", "typescript", "testing-library", "vitest"],
-  "catalogIds": ["fe.server-state", "fe.api-client", "fe.a11y", "fe.event-loop"],
+  "catalogIds": ["fe.server-state", "fe.api-client", "fe.a11y", "fe.event-loop", "common.architecture-decisions"],
   "image": "node20",
   "testEnvironment": "jsdom",
   "contractRef": "contract.md",

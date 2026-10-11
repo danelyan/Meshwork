@@ -13,7 +13,8 @@
     "fe.realtime-client",
     "fe.state-mgmt",
     "fe.event-loop",
-    "common.unit-tests"
+    "common.unit-tests",
+    "common.architecture-decisions"
   ],
   "image": "node20",
   "testEnvironment": "node",

@@ -6,7 +6,7 @@
   "title": "Оркестратор выкатки: батчи, проверка здоровья, автооткат, повтор",
   "summary": "Поэтапная выкатка версии на парк хостов: расширяющиеся батчи, ожидание здоровья на виртуальных часах, автооткат при сбое, журнал для безопасного повтора после обрыва; DESIGN.md",
   "stack": ["python312", "pytest"],
-  "catalogIds": ["eng.deploy-rollback", "eng.k8s-probes", "eng.retries-resilience"],
+  "catalogIds": ["eng.deploy-rollback", "eng.k8s-probes", "eng.retries-resilience", "eng.platform-design"],
   "image": "python312",
   "contractRef": "contract.md",
   "starterRef": "starter",

@@ -6,7 +6,7 @@
   "title": "Клиент к нестабильной зависимости: breaker, ретраи с бюджетом, load shedding",
   "summary": "Circuit breaker с окном ошибок и half-open, повторы с экспоненциальной паузой и бюджетом, приём по приоритетам на фейковых часах; DESIGN.md",
   "stack": ["python312", "pytest"],
-  "catalogIds": ["eng.retries-resilience", "eng.observability", "eng.capacity-planning", "common.unit-tests"],
+  "catalogIds": ["eng.retries-resilience", "eng.observability", "eng.capacity-planning", "common.unit-tests", "eng.reliability-program"],
   "image": "python312",
   "contractRef": "contract.md",
   "starterRef": "starter",

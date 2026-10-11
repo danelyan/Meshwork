@@ -6,7 +6,7 @@
   "title": "Лимитер запросов публичного API",
   "summary": "Token bucket с дробным пополнением и стоимостью запроса, LRU-память O(1), заголовки RateLimit/Retry-After, DESIGN.md с компромиссами и масштабированием",
   "stack": ["node20", "typescript", "express", "vitest", "supertest"],
-  "catalogIds": ["be.rate-limit", "be.performance", "be.layering", "common.unit-tests"],
+  "catalogIds": ["be.rate-limit", "be.performance", "be.layering", "common.unit-tests", "be.system-design", "common.architecture-decisions"],
   "image": "node20",
   "testEnvironment": "node",
   "contractRef": "contract.md",

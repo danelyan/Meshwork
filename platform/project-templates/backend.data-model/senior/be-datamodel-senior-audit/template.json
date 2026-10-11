@@ -6,7 +6,7 @@
   "title": "Версионируемые записи: аудит, оптимистичная блокировка, состояние на дату",
   "summary": "Каталог позиций поверх SQLite: мягкое удаление и восстановление, оптимистичная блокировка по версии под конкурентными записями, неизменяемый журнал изменений, откат к версии, запрос «состояние на дату»; DESIGN.md",
   "stack": ["python312", "sqlite3", "pytest"],
-  "catalogIds": ["be.sql-schema", "be.transactions", "be.concurrency", "common.sql-queries"],
+  "catalogIds": ["be.sql-schema", "be.transactions", "be.concurrency", "common.sql-queries", "be.data-scale", "common.architecture-decisions"],
   "image": "python312",
   "contractRef": "contract.md",
   "starterRef": "starter",

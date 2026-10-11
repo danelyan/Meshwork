@@ -6,7 +6,7 @@
   "title": "Охранный шлюз вызовов LLM: ПДн, бюджет, кэш, запасная модель",
   "summary": "Маскирование ПДн до отправки и обратная подстановка, кэш масканного ответа, бюджет токенов на пользователя и период (фейковые часы), переход на запасную модель, аудит без ПДн; DESIGN.md",
   "stack": ["node20", "typescript", "llm", "vitest"],
-  "catalogIds": ["ai.pii-masking", "ai.llm-cost", "ai.llm-api"],
+  "catalogIds": ["ai.pii-masking", "ai.llm-cost", "ai.llm-api", "ai.ai-risk", "ai.llm-system-design"],
   "image": "node20",
   "testEnvironment": "node",
   "contractRef": "contract.md",

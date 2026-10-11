@@ -1,0 +1,230 @@
+{
+  "startedAt": "2026-10-11T13:31:50.736Z",
+  "base": "http://127.0.0.1:3000",
+  "employerId": "demo-employer",
+  "vacancyId": "demo-vac-be-m-1",
+  "think": [
+    1000,
+    4000
+  ],
+  "abortRate": 0.05,
+  "stages": [
+    {
+      "vus": 10,
+      "sec": 120,
+      "aborted": false,
+      "endpoints": {
+        "login": {
+          "requests": 10,
+          "rps": 0.08,
+          "p50": 64,
+          "p95": 67,
+          "p99": 67,
+          "max": 67,
+          "errorPct": 0,
+          "codes": {
+            "200": 10
+          }
+        },
+        "health": {
+          "requests": 161,
+          "rps": 1.34,
+          "p50": 7,
+          "p95": 48,
+          "p99": 135,
+          "max": 141,
+          "errorPct": 0,
+          "codes": {
+            "200": 161
+          }
+        },
+        "search": {
+          "requests": 157,
+          "rps": 1.31,
+          "p50": 69,
+          "p95": 112,
+          "p99": 145,
+          "max": 146,
+          "errorPct": 0,
+          "codes": {
+            "200": 157
+          }
+        },
+        "matches": {
+          "requests": 154,
+          "rps": 1.28,
+          "p50": 93,
+          "p95": 142,
+          "p99": 177,
+          "max": 198,
+          "errorPct": 0,
+          "codes": {
+            "200": 154
+          }
+        }
+      }
+    },
+    {
+      "vus": 25,
+      "sec": 120,
+      "aborted": false,
+      "endpoints": {
+        "login": {
+          "requests": 25,
+          "rps": 0.21,
+          "p50": 110,
+          "p95": 344,
+          "p99": 350,
+          "max": 350,
+          "errorPct": 0,
+          "codes": {
+            "200": 25
+          }
+        },
+        "health": {
+          "requests": 405,
+          "rps": 3.38,
+          "p50": 6,
+          "p95": 36,
+          "p99": 58,
+          "max": 301,
+          "errorPct": 0,
+          "codes": {
+            "200": 405
+          }
+        },
+        "search": {
+          "requests": 395,
+          "rps": 3.29,
+          "p50": 80,
+          "p95": 181,
+          "p99": 258,
+          "max": 267,
+          "errorPct": 0,
+          "codes": {
+            "200": 395
+          }
+        },
+        "matches": {
+          "requests": 388,
+          "rps": 3.23,
+          "p50": 97,
+          "p95": 194,
+          "p99": 257,
+          "max": 290,
+          "errorPct": 0,
+          "codes": {
+            "200": 388
+          }
+        }
+      }
+    },
+    {
+      "vus": 50,
+      "sec": 120,
+      "aborted": false,
+      "endpoints": {
+        "login": {
+          "requests": 50,
+          "rps": 0.42,
+          "p50": 191,
+          "p95": 308,
+          "p99": 336,
+          "max": 336,
+          "errorPct": 0,
+          "codes": {
+            "200": 50
+          }
+        },
+        "health": {
+          "requests": 797,
+          "rps": 6.64,
+          "p50": 11,
+          "p95": 70,
+          "p99": 191,
+          "max": 283,
+          "errorPct": 0,
+          "codes": {
+            "200": 797
+          }
+        },
+        "search": {
+          "requests": 781,
+          "rps": 6.51,
+          "p50": 118,
+          "p95": 291,
+          "p99": 543,
+          "max": 648,
+          "errorPct": 0,
+          "codes": {
+            "200": 781
+          }
+        },
+        "matches": {
+          "requests": 764,
+          "rps": 6.37,
+          "p50": 141,
+          "p95": 337,
+          "p99": 434,
+          "max": 676,
+          "errorPct": 0,
+          "codes": {
+            "200": 764
+          }
+        }
+      }
+    }
+  ],
+  "aborted": false,
+  "total": {
+    "login": {
+      "requests": 85,
+      "rps": 0.24,
+      "p50": 185,
+      "p95": 321,
+      "p99": 350,
+      "max": 350,
+      "errorPct": 0,
+      "codes": {
+        "200": 85
+      }
+    },
+    "health": {
+      "requests": 1363,
+      "rps": 3.79,
+      "p50": 8,
+      "p95": 61,
+      "p99": 185,
+      "max": 301,
+      "errorPct": 0,
+      "codes": {
+        "200": 1363
+      }
+    },
+    "search": {
+      "requests": 1333,
+      "rps": 3.7,
+      "p50": 94,
+      "p95": 261,
+      "p99": 389,
+      "max": 648,
+      "errorPct": 0,
+      "codes": {
+        "200": 1333
+      }
+    },
+    "matches": {
+      "requests": 1306,
+      "rps": 3.63,
+      "p50": 115,
+      "p95": 289,
+      "p99": 403,
+      "max": 676,
+      "errorPct": 0,
+      "codes": {
+        "200": 1306
+      }
+    }
+  },
+  "finishedAt": "2026-10-11T13:39:04.893Z"
+}

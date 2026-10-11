@@ -12,6 +12,8 @@
 
 .head { position: relative; flex: 1; min-height: 200px; }
 .body { flex: none; display: grid; gap: 10px; width: min(680px, 100%); margin: 0 auto; padding: 8px 24px 12px; max-height: 50%; overflow-y: auto; }
+/* На проверке устройств тело - весь экран: две карточки с превью камеры в полэкрана не влезают. */
+.panel[data-phase='devices'] .body { max-height: none; flex: 1 1 auto; }
 .line { font-size: var(--fs-lg); line-height: 1.5; text-align: center; text-wrap: balance; color: var(--call-on-stage); }
 .mine { font-size: var(--fs); line-height: 1.5; text-align: center; color: var(--call-on-stage-soft); font-style: italic; }
 .hint { font-size: var(--fs-sm); text-align: center; color: var(--call-on-stage-soft); }

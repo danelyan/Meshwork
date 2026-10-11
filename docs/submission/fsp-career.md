@@ -8,6 +8,7 @@
 | | |
 |---|---|
 | Стенд | https://fsp2.ru (проверка — `GET /api/health`) |
+| Пароль стенда | `oXKPEAxv0t45CgoX` — один раз на https://fsp2.ru/site-access (без логина; кука на 30 дней), затем открывается весь сайт |
 | Вход для жюри | https://fsp2.ru/demo — готовые кандидаты, работодатель и «Новый пользователь» (онбординг с нуля) |
 | API | Swagger UI — https://fsp2.ru/api-docs, спецификация — `GET /api/openapi`, файл — [`docs/openapi.yaml`](../openapi.yaml) (89 путей, 109 операций) |
 | Запуск | `docker compose up --build` в `platform/` (раздел 8) |
@@ -960,7 +961,7 @@ push в main (platform/**) → GitHub Actions → rsync platform/ на серв�
 
 ## Приложение А. Сквозной сценарий для жюри (ТЗ 3.3)
 
-Вход: https://fsp2.ru/demo (ссылка «Демо для жюри» есть в подвале главной и в окне входа).
+Вход: пароль стенда `oXKPEAxv0t45CgoX` на https://fsp2.ru/site-access, затем https://fsp2.ru/demo (ссылка «Демо для жюри» есть в подвале главной и в окне входа).
 
 | # | Шаг ТЗ 3.3 | Что сделать на стенде | Требования |
 |---|---|---|---|

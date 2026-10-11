@@ -1,0 +1,20 @@
+{
+  "id": "eng-qaauto-middle-orders-api",
+  "subcategoryId": "engineering.qa-automation",
+  "specialization": "engineering",
+  "grade": "middle",
+  "title": "Проверка HTTP API по контракту: коды, валидация, идемпотентность",
+  "summary": "Кандидат пишет verify(createApp) на supertest, который проверяет API заказов по описанному контракту; качество измеряется числом пойманных нарушений контракта (мутантов)",
+  "stack": ["node20", "typescript", "supertest", "vitest"],
+  "catalogIds": ["eng.contract-tests", "be.api-contract", "be.api-validation", "eng.test-isolation"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

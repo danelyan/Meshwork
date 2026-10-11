@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 
 import { getRecommendations, type RecommendationsView } from '@/lib/api';
 import { getCareerVacancies } from '@/lib/career';
+import { chooseGapCta, type GapCategory } from '@/lib/career-gap';
 import { specLabel } from '@/lib/directions';
 import { getFavorites, setFavorite } from '@/lib/favorites';
 import type { TargetRec } from '@/server/recommend/types';
@@ -34,6 +35,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
   const [data, setData] = useState<RecommendationsView | null>(null);
   const [vacancies, setVacancies] = useState<CareerVacancy[]>([]);
   const [truncated, setTruncated] = useState(false);
+  const [categories, setCategories] = useState<GapCategory[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [expanded, setExpanded] = useState(false);
@@ -65,6 +67,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
       if (!alive) return;
       setVacancies(rows);
       setTruncated(catalog.truncated);
+      setCategories(catalog.categories ?? []);
       setData({});
       setSaved(favorites.kind === 'vacancy' ? favorites.ids : []);
       if (requested) setSelectedId(requested);
@@ -101,7 +104,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
   }
 
   const filterCount = Object.values(filters).filter(Boolean).length;
-  if (savedOnly && data && !error) return <SavedVacancies vacancies={filtered} saving={saving} error={storageError} onRemove={(id) => void toggleSave(id)} />;
+  if (savedOnly && data && !error) return <SavedVacancies vacancies={filtered} categories={categories} saving={saving} error={storageError} onRemove={(id) => void toggleSave(id)} />;
   return <div className={styles.page}>
     <header className={styles.heading}>
       <h1>{savedOnly ? 'Избранное' : <>Найдите своё<br />место на карте</>}<i>.</i></h1>
@@ -166,6 +169,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
           {detailError && <Notice tone="error">Не удалось загрузить рекомендации: {detailError}</Notice>}
           {details?.tasks?.length ? <div><h3>Как приблизиться к цели</h3><ul className={styles.requirements}>{details.tasks.map((task) => <li key={task.taskId}><span>{task.title}</span></li>)}</ul></div> : null}
           <details className={styles.vacancyDescription}><summary>Смотреть вакансию ↗</summary><h3>{selected.title}</h3><p>{selected.description || 'Компания пока не добавила описание.'}</p><p>{selected.teamDescription}</p><p>{selected.stack.join(', ')}</p></details>
+          {(() => { const cta = chooseGapCta(selected, categories); return <div className={styles.gapCta}>{cta.href ? <Button variant="cta" href={cta.href}>{cta.label}</Button> : <Notice>{cta.label}</Notice>}<p className={styles.fine}>{cta.hint}</p></div>; })()}
           <Button loading={saving} onClick={() => void toggleSave(selected.vacancyId)}>{saved.includes(selected.vacancyId) ? 'Убрать из избранного' : 'Сохранить вакансию'}</Button>
           <p className={styles.fine}>Совпадение по требованиям, а не вероятность найма.</p>
         </Panel>}

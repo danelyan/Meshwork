@@ -11,7 +11,7 @@ const refresh = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
 vi.mock('next/link', () => ({ default: ({ href, children, ...rest }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => <a href={href} {...rest}>{children}</a> }));
 
-const target = (id: string, extra: Partial<TargetRec> = {}): CareerVacancy => ({ vacancyId: id, companyId: 'company', companyName: 'Альфа', title: 'Разработчик API', specialization: 'backend', grade: 'middle', salaryFrom: 150000, salaryTo: 200000, covered: 3, total: 5, reason: 'Закрыто 3 из 5 требований', missing: [{ catalogId: 'sql', statement: 'Оптимизация SQL' }], description: null, teamDescription: null, stack: [], matched: [], ...extra });
+const target = (id: string, extra: Partial<TargetRec> = {}): CareerVacancy => ({ vacancyId: id, companyId: 'company', companyName: 'Альфа', title: 'Разработчик API', specialization: 'backend', grade: 'middle', salaryFrom: 150000, salaryTo: 200000, covered: 3, total: 5, reason: 'Закрыто 3 из 5 требований', missing: [{ catalogId: 'sql', statement: 'Оптимизация SQL' }], description: null, teamDescription: null, stack: [], matched: [], projectTaskId: null, ...extra });
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); localStorage.clear(); refresh.mockClear(); });
 

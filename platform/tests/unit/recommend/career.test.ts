@@ -3,14 +3,15 @@ import { recommendTargets } from '@/server/recommend/targets';
 import type { CatalogEntry } from '@/server/claims/types';
 
 const db = vi.hoisted(() => ({ findMany: vi.fn() }));
-vi.mock('@/server/db', () => ({ prisma: { vacancy: db } }));
+const cats = vi.hoisted(() => ({ findMany: vi.fn().mockResolvedValue([]) }));
+vi.mock('@/server/db', () => ({ prisma: { vacancy: db, candidateCategory: cats } }));
 vi.mock('@/server/recommend/evidence', async (original) => {
   const source = await original<typeof import('@/server/recommend/evidence')>();
   return { ...source, assertCandidate: vi.fn().mockResolvedValue({ id: 'candidate' }), loadCatalog: vi.fn().mockResolvedValue(new Map([['sql', { id: 'sql', statement: 'SQL', adjacent: [] } as unknown as CatalogEntry]])), loadConfirmedIndex: vi.fn().mockResolvedValue(new Map()) };
 });
 
 const vacancy = (id: string) => ({ id, companyId: 'c', company: { name: 'Company' }, title: id, specialization: 'backend', grade: 'middle', salaryFrom: 100000, salaryTo: 200000, needs: [{ catalogId: 'sql', weight: 1 }], description: 'API development', teamDescription: null, stack: ['Python'] });
-afterEach(() => vi.clearAllMocks());
+afterEach(() => { vi.clearAllMocks(); cats.findMany.mockResolvedValue([]); });
 
 it('keeps saved vacancies with zero evidence and applies own saved IDs before limiting', async () => {
   db.findMany.mockResolvedValue([vacancy('low-match')]);
@@ -40,4 +41,17 @@ it('excludes archived vacancies in the original recommendation query too', async
   db.findMany.mockResolvedValue([]);
   await recommendTargets('candidate', 5);
   expect(db.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { archivedAt: null } }));
+});
+
+it('exposes categories and only a project task the candidate can take', async () => {
+  cats.findMany.mockResolvedValue([{ specialization: 'backend', grade: 'middle' }]);
+  const task = (id: string, visibility: string, specialization: string, grade: string) => ({ id, visibility, specialization, grade });
+  db.findMany.mockResolvedValue([
+    { ...vacancy('ok'), projectTasks: [task('t-ok', 'open', 'backend', 'middle')] },
+    { ...vacancy('senior'), projectTasks: [task('t-senior', 'open', 'backend', 'senior')] },
+    { ...vacancy('invited'), projectTasks: [task('t-inv', 'invited', 'backend', 'junior')] },
+  ]);
+  const result = await careerVacancies('candidate');
+  expect(result.categories).toEqual([{ specialization: 'backend', grade: 'middle' }]);
+  expect(Object.fromEntries(result.targets.map((t) => [t.vacancyId, t.projectTaskId]))).toEqual({ ok: 't-ok', senior: null, invited: null });
 });

@@ -50,7 +50,7 @@ export function HeaderBar({ signedIn, links, account = null }: { signedIn: boole
         )}
         <div className={styles.action}>
           {account?.roles && <Notifications role={account.roles.role} />}
-          {/* Тема пока действует только на экран консультанта — иконка там, где она что-то меняет. */}
+          {/* Тема действует в разделах кабинета (THEMED_PATHS) — иконка там, где она что-то меняет; на лендинге, входе и юридических её нет. */}
           {isThemedPath(pathname) && <ThemeToggle />}
           {account ? (
             <AccountMenu account={account} />

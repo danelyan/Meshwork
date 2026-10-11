@@ -72,7 +72,7 @@ export const SYNTHETIC: SyntheticRow[] = [
   { population: 'legacy', specialization: 'frontend', falseConfirm: 0.069, falseReject: 0.521, retest: 0.775, kappa: 0.425, length: 8.73, leak30: 0.145, bestOf3: 0.288, aucMiddleJunior: 0.886 },
 ];
 
-/** Цели из плана проверки (docs/validation-plan.md) — подпись столбцов. */
+/** Цели из плана проверки (docs/validation-results.md, раздел теста на грейд) — подпись столбцов. */
 export const TARGETS = {
   falseConfirm: '≤ 10 %',
   falseReject: '≤ 20 %',

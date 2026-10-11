@@ -90,26 +90,6 @@ describe('метрики и выгрузка (owner)', () => {
       expect(csv).toContain('<5');
     }
   });
-  it('доля принятых по рангу в подборке: ≤ 3 входит в ≤ 10, > 10 и без ранга отдельно', async () => {
-    const { cookie } = await sessionFor('owner');
-    const company = await prisma.company.create({ data: { name: 'Acme' } });
-    const rows: { rank: number | null; status: 'accepted' | 'hired' | 'declined' | 'sent' }[] = [
-      { rank: 1, status: 'accepted' }, { rank: 3, status: 'declined' }, { rank: 7, status: 'hired' },
-      { rank: 25, status: 'sent' }, { rank: null, status: 'accepted' },
-    ];
-    for (const [n, r] of rows.entries()) {
-      const c = await prisma.candidate.create({ data: { email: `r${n}@example.ru`, name: `Р${n}` } });
-      await prisma.invitation.create({ data: { candidateId: c.id, companyId: company.id, status: r.status, salaryFrom: 1, salaryTo: 2, matchRank: r.rank, matchSource: r.rank ? 'matching' : null } });
-    }
-    const body = await (await matchingGet(jsonRequest('/api/admin/metrics/matching', 'GET', undefined, cookie))).json();
-    expect(body.byRank).toEqual([
-      { bucket: 'top3', sent: 2, accepted: 1, acceptedShare: 0.5 },
-      { bucket: 'top10', sent: 3, accepted: 2, acceptedShare: 2 / 3 },
-      { bucket: 'over10', sent: 1, accepted: 0, acceptedShare: 0 },
-      { bucket: 'unknown', sent: 1, accepted: 1, acceptedShare: 1 },
-    ]);
-  });
-
   it('монитор теста: доля верных, корреляция с θ и пометка перекалибровки', async () => {
     const { cookie } = await sessionFor('owner');
     await prisma.taskTemplate.create({ data: { id: 'be.t1', taskId: 't1', title: 'Задание', specialization: 'backend', grade: 'junior', catalogIds: [], format: 'single', irtA: 1, irtB: 0 } });

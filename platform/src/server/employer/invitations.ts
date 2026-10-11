@@ -23,7 +23,7 @@ import { detectRedFlags, invitationSanction, type RedFlag } from './antifraud';
 import { countRecentComplaints } from './complaints';
 import { loadCompanyTrusts } from './company';
 import { loadPool } from './matching';
-import { contactEmail, toCandidateCard, type CandidateCard } from './privacy';
+import { companyInviteContact, toCandidateCard, type CandidateCard } from './privacy';
 import type { InvitationInput } from './schemas';
 import { isDisclosableStatus } from './invitation-status';
 import { getSetting } from '@/server/admin/settings';
@@ -131,9 +131,33 @@ export async function invitationsSentToday(companyId: string, now = new Date()):
 }
 
 /**
+ * Способ связи, который увидит кандидат в приглашении от этого представителя компании (E05): Company.contact,
+ * иначе почта его аккаунта, если она не служебная; null — отправлять нельзя (company_contact_required).
+ */
+export async function companyInviteContactFor(employerProfileId: string): Promise<string | null> {
+  const p = await prisma.employerProfile.findUnique({
+    where: { id: employerProfileId },
+    select: { user: { select: { email: true } }, company: { select: { contact: true } } },
+  });
+  if (!p) throw errors.forbidden('Профиль работодателя не найден');
+  return companyInviteContact({ contact: p.company.contact, senderEmail: p.user.email });
+}
+
+/** 422 company_contact_required: у компании нет контакта, а почта отправителя служебная — кандидату некуда ответить. */
+export function companyContactRequired(): AppError {
+  return new AppError(
+    'company_contact_required',
+    'Укажите способ связи компании (почта или Telegram) на странице «Компания»: кандидат видит его в приглашении ещё до ответа',
+    422,
+    { companyUrl: '/employer/company' },
+  );
+}
+
+/**
  * Отправить приглашение. 404 — кандидата нет или он скрыт настройкой приватности;
  * 404 — чужая или архивная потребность; 409 — уже есть открытое приглашение этой
- * компании; 429 — лимит за сутки; 403 company_blocked — отправка закрыта из-за жалоб.
+ * компании; 422 company_contact_required — ни контакта компании, ни пригодной почты отправителя (E05: кандидат должен
+ * видеть способ связи до ответа); 429 — лимит за сутки; 403 company_blocked — отправка закрыта из-за жалоб.
  * Лимит, жалобы и дубль проверяются под advisory-lock компании, чтобы параллельные
  * запросы не обошли счётчик. Жалобы кандидатов за 30 дней снижают лимит (antifraud.invitationSanction).
  */
@@ -144,7 +168,10 @@ export async function createInvitation(
 ): Promise<{ id: string; status: InvitationStatus }> {
   const [baseLimit, sanctions, windowDays] = await Promise.all([limit ?? getSetting('employer.dailyInvitationLimit'), getSetting('employer.complaintSanctions'), getSetting('employer.complaintWindowDays')]);
   // Приглашения — только после оферты и обязательства по данным кандидатов (ADR 0005).
-  const sender = await prisma.employerProfile.findUnique({ where: { id: ctx.employerProfileId }, select: { userId: true, user: { select: { email: true } }, company: { select: { contact: true } } } });
+  const sender = await prisma.employerProfile.findUnique({
+    where: { id: ctx.employerProfileId },
+    select: { userId: true, user: { select: { email: true } }, company: { select: { contact: true } } },
+  });
   if (!sender) throw errors.forbidden('Профиль работодателя не найден');
   await assertEmployerConsents(sender.userId);
   const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false, AND: [notBlockedCandidateWhere()] }, select: { id: true } });
@@ -153,10 +180,8 @@ export async function createInvitation(
     const v = await prisma.vacancy.findFirst({ where: { id: input.vacancyId, companyId: ctx.companyId, archivedAt: null }, select: { id: true } });
     if (!v) throw errors.notFound('Потребность не найдена');
   }
-  // ТЗ 2.2 п. 2: приглашение содержит способ связи с компанией; без него кандидату не с кем договариваться.
-  if (!sender.company?.contact?.trim() && !(sender.user.email && contactEmail(sender.user.email))) {
-    throw new AppError('company_contact_required', 'Укажите способ связи в профиле компании — кандидат должен видеть его в приглашении', 422);
-  }
+  // E05: кандидат видит способ связи до ответа — без контакта компании и пригодной почты отправителя не отправляем.
+  if (!companyInviteContact({ contact: sender.company.contact, senderEmail: sender.user.email })) throw companyContactRequired();
   const created = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${ctx.companyId}`}))`;
     await assertCompanyNotBlocked(tx, ctx.companyId); // E-08 фаза 3: блокировка модератором, тем же tx
@@ -204,8 +229,6 @@ export async function createInvitation(
         message: input.message,
         salaryFrom: input.salaryFrom,
         salaryTo: input.salaryTo,
-        matchRank: input.matchRank ?? null,
-        matchSource: input.matchSource ?? null,
       },
       select: { id: true, status: true },
     });
@@ -367,7 +390,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
     const company = {
       name: co.name,
       description: co.description,
-      contact: co.contact?.trim() || (senderEmail ? contactEmail(senderEmail) : null),
+      contact: companyInviteContact({ contact: co.contact, senderEmail }),
       trust: t ? { index: t.index, band: t.band, concept: t.concept } : null,
       verified: !!co.verifiedAt,
     };

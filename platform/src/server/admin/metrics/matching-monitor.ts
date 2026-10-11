@@ -65,36 +65,3 @@ export async function matchingFunnel(days: number, now: Date = new Date()): Prom
     ORDER BY f.sent DESC, f.spec, f.grade`);
   return rows.map((r) => ({ ...r, acceptedShare: r.sent > 0 ? r.accepted / r.sent : null }));
 }
-
-/**
- * Доля принятых по рангу кандидата в подборке/поиске на момент отправки (`Invitation.matchRank`, 1 = первый).
- * Корзины пересекаются так, как их читает владелец: «≤ 3» входит в «≤ 10». Ранг — подсказка клиента, только для метрики.
- * Все приглашения периода (в том числе кандидатам без категории); «принято» — как в воронке (accepted + hired).
- */
-export type RankBucket = 'top3' | 'top10' | 'over10' | 'unknown';
-export interface RankRow {
-  bucket: RankBucket;
-  sent: number;
-  accepted: number;
-  acceptedShare: number | null;
-}
-
-export async function acceptedByRank(days: number, now: Date = new Date()): Promise<RankRow[]> {
-  const since = sinceFor(days, now);
-  const [r] = await prisma.$queryRaw<Record<`${RankBucket}_${'sent' | 'accepted'}`, number>[]>(Prisma.sql`
-    SELECT
-      (count(*) FILTER (WHERE "matchRank" <= 3))::int AS top3_sent,
-      (count(*) FILTER (WHERE "matchRank" <= 3 AND "status" IN ('accepted', 'hired')))::int AS top3_accepted,
-      (count(*) FILTER (WHERE "matchRank" <= 10))::int AS top10_sent,
-      (count(*) FILTER (WHERE "matchRank" <= 10 AND "status" IN ('accepted', 'hired')))::int AS top10_accepted,
-      (count(*) FILTER (WHERE "matchRank" > 10))::int AS over10_sent,
-      (count(*) FILTER (WHERE "matchRank" > 10 AND "status" IN ('accepted', 'hired')))::int AS over10_accepted,
-      (count(*) FILTER (WHERE "matchRank" IS NULL))::int AS unknown_sent,
-      (count(*) FILTER (WHERE "matchRank" IS NULL AND "status" IN ('accepted', 'hired')))::int AS unknown_accepted
-    FROM "Invitation" WHERE "createdAt" >= ${since}`);
-  return (['top3', 'top10', 'over10', 'unknown'] as const).map((bucket) => {
-    const sent = r?.[`${bucket}_sent`] ?? 0; // агрегат без GROUP BY всегда отдаёт одну строку
-    const accepted = r?.[`${bucket}_accepted`] ?? 0;
-    return { bucket, sent, accepted, acceptedShare: sent > 0 ? accepted / sent : null };
-  });
-}

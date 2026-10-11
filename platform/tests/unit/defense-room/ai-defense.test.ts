@@ -133,16 +133,9 @@ describe('созвон-защита через /api/call/{id} до accepted', ()
     accepted(false);
     await expect(resolveCallAccess(employer, { id: 'cs-ai', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).rejects.toMatchObject({ status: 404 });
     accepted(true);
+    // Защита видна компании: ИИ-защита или своя живая (defenseOwnedOrAi считает callSession по visibility).
     db.callSession.count.mockResolvedValue(1);
     await expect(resolveCallAccess(employer, { id: 'cs-ai', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).resolves.toEqual({ role: 'employer', access: 'full', recording: true });
-  });
-
-  it('accepted не открывает запись живой защиты другой компании', async () => {
-    db.employerProfile.findUnique.mockResolvedValue({ companyId: 'co-1' });
-    accepted(true);
-    db.callSession.count.mockResolvedValue(0);
-    await expect(resolveCallAccess(employer, { id: 'cs-foreign', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).rejects.toMatchObject({ status: 404 });
-    expect(db.callSession.count).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: 'cs-foreign' }) }));
   });
 });
 

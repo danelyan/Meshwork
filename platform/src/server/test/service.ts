@@ -63,6 +63,7 @@ import {
   type Step,
 } from './policy';
 import { juryResult } from './jury';
+import { rankingHoldOf } from './ranking-hold';
 import { createRng, deriveSeed, randomSeed } from './rng';
 import type {
   AnsweredItemView,
@@ -447,9 +448,12 @@ export async function startAttempt(
  */
 export async function startConfirmAttempt(candidateId: string, sourceAttemptId: string, now: Date = new Date(), opts: { seed?: number } = {}): Promise<StartResult> {
   const src = await loadAttempt(candidateId, sourceAttemptId);
-  if (src.status !== 'needs_confirmation') throw new AppError('confirm_not_needed', 'Эта попытка не требует подтверждения.', 409);
   const integrity = storedIntegrity(src.integrity);
   if (integrity?.confirmedBy) throw new AppError('already_confirmed', 'Грейд по этой попытке уже подтверждён.', 409);
+  // Режим silent: категория выдана, но выдача работодателя её не учитывает (ranking-hold.ts) - подтверждающий тест
+  // снимает это так же, как в режиме confirm.
+  const held = src.status === 'passed' && (await rankingHoldOf(candidateId))?.attemptId === src.id;
+  if (src.status !== 'needs_confirmation' && !held) throw new AppError('confirm_not_needed', 'Эта попытка не требует подтверждения.', 409);
   await prisma.testAttempt.updateMany({ where: { candidateId, status: 'active', expiresAt: { lte: now } }, data: { status: 'abandoned', finishedAt: now } });
   const active = await prisma.testAttempt.findFirst({ where: { candidateId, status: 'active' } });
   if (active) {
@@ -515,19 +519,24 @@ function explainResult(a: AttemptWithItems, d: Parameters<typeof explainDecision
   return explainDecision(d, a.grade, answered, correct);
 }
 
-function integrityView(a: AttemptWithItems, integrity: StoredIntegrity | null, confirmAttemptId: string | null): IntegrityView | null {
+/**
+ * Что кандидат видит об индексе. Уровня и причин нет никогда. Режим silent: null, кроме попыток, уже ждущих
+ * подтверждающего теста, и попытки, чью категорию выдача работодателя пока не учитывает (rankingHold, аудит 11.10):
+ * о таком ограничении кандидату говорят прямо и дают способ его снять.
+ */
+export function integrityView(a: Pick<TestAttempt, 'status'>, integrity: StoredIntegrity | null, confirmAttemptId: string | null, rankingHold = false): IntegrityView | null {
   if (!integrity) return null;
-  // Режим silent: кандидату об индексе ничего (null), кроме попыток, уже ждущих подтверждающего теста.
-  if (!integrityBlocks() && a.status !== 'needs_confirmation' && !integrity.confirmedBy && confirmAttemptId === null) return null;
+  if (!integrityBlocks() && a.status !== 'needs_confirmation' && !integrity.confirmedBy && confirmAttemptId === null && !rankingHold) return null;
   return {
     needsConfirmation: a.status === 'needs_confirmation' && !integrity.confirmedBy,
     confirmGrade: integrity.confirmGrade ?? null,
     confirmAttemptId,
     confirmedBy: integrity.confirmedBy ?? null,
+    rankingHold,
   };
 }
 
-function resultView(a: AttemptWithItems, byId: Map<string, SelectableTemplate & { generator: TaskGenerator }>, confirmAttemptId: string | null = null): AttemptResult | null {
+function resultView(a: AttemptWithItems, byId: Map<string, SelectableTemplate & { generator: TaskGenerator }>, confirmAttemptId: string | null = null, rankingHold = false): AttemptResult | null {
   if (a.status === 'active' || a.theta === null || a.pPass === null || a.pJunior === null || a.se === null) return null;
   const answered = a.items.filter((i) => i.correct !== null);
   const correct = answered.filter((i) => i.correct).length;
@@ -567,12 +576,12 @@ function resultView(a: AttemptWithItems, byId: Map<string, SelectableTemplate & 
     confirmedCatalogIds: [...new Set(items.filter((i) => i.correct).flatMap((i) => i.catalogIds))].sort(),
     items,
     finishedAt: (a.finishedAt ?? new Date()).toISOString(),
-    integrity: integrityView(a, integrity, confirmAttemptId),
+    integrity: integrityView(a, integrity, confirmAttemptId, rankingHold),
   };
 }
 
 /** Слой жюри на итоге (JURY_INSIGHTS): разбор индекса и что видят кандидат и работодатель. */
-async function juryOf(a: AttemptWithItems): Promise<JuryResult | null> {
+async function juryOf(a: AttemptWithItems, rankingHold: boolean): Promise<JuryResult | null> {
   const integrity = storedIntegrity(a.integrity);
   if (!integrity) return null;
   const issued = a.status === 'passed';
@@ -585,7 +594,7 @@ async function juryOf(a: AttemptWithItems): Promise<JuryResult | null> {
       employer = publicIntegrity(a.integrity, Boolean(integrity.confirmedBy));
     }
   }
-  return juryResult(integrity, employer, issued);
+  return juryResult(integrity, employer, issued, rankingHold ? 'уведомление: категория записана, в подборке и поиске не учитывается до подтверждающего теста или созвона' : undefined);
 }
 
 async function view(a: AttemptWithItems): Promise<AttemptView> {
@@ -601,12 +610,16 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     : a.status === 'active'
       ? stepOf(a, byId)
       : { phase: 'main' as const, maxItems: MAX_ITEMS };
+  // Режим silent: категория выдана, но выдача работодателя её не учитывает - кандидату об этом говорят (ranking-hold.ts).
+  const rankingHold = !confirm && a.status === 'passed' && (await rankingHoldOf(a.candidateId))?.attemptId === a.id;
+  // Подтверждающая попытка показывается и после снятия ограничения: кандидат видит, чем подтвердил категорию.
+  // Брошенная (abandoned) не считается: startConfirmAttempt разрешает новую, и экран должен её предложить (Codex-ревью 11.10).
   const confirmAttempt =
-    !confirm && a.status === 'needs_confirmation'
-      ? await prisma.testAttempt.findFirst({ where: { candidateId: a.candidateId, kind: 'confirm', confirmsAttemptId: a.id }, orderBy: { startedAt: 'desc' }, select: { id: true } })
+    !confirm && (a.status === 'needs_confirmation' || rankingHold || Boolean(storedIntegrity(a.integrity)?.confirmedBy))
+      ? await prisma.testAttempt.findFirst({ where: { candidateId: a.candidateId, kind: 'confirm', confirmsAttemptId: a.id, status: { not: 'abandoned' } }, orderBy: { startedAt: 'desc' }, select: { id: true } })
       : null;
-  const result = resultView(a, byId, confirmAttempt?.id ?? null);
-  const jury = result && getEnv().JURY_INSIGHTS ? await juryOf(a) : null;
+  const result = resultView(a, byId, confirmAttempt?.id ?? null, rankingHold);
+  const jury = result && getEnv().JURY_INSIGHTS ? await juryOf(a, rankingHold) : null;
   return {
     id: a.id,
     specialization: a.specialization,
@@ -730,7 +743,9 @@ async function finalizeConfirm(a: AttemptWithItems, now: Date): Promise<AttemptW
   if (!source) throw errors.notFound('Исходная попытка не найдена');
   const est = estimateTheta([...source.clean, ...own]);
   const index = assessAttempt(observationsOf(a.items, byId), est.theta, parseSignals(a.signals));
-  const d = decideConfirm(source.clean, own, a.grade, integrityBlocks() ? index.level : 'low');
+  // Собственный индекс подтверждающей попытки учитывается в любом режиме: в silent она снимает ограничение выдачи
+  // (ranking-hold.ts), и high у неё самой не должен это ограничение снимать (Codex-ревью 11.10).
+  const d = decideConfirm(source.clean, own, a.grade, index.level);
   const integrity: StoredIntegrity = { ...index, blocking: d.blockedByRisk, confirmGrade: null, confirmedBy: null, computedAt: now.toISOString() };
   const ops: Prisma.PrismaPromise<unknown>[] = [
     prisma.testAttempt.update({
@@ -742,10 +757,15 @@ async function finalizeConfirm(a: AttemptWithItems, now: Date): Promise<AttemptW
     const srcIntegrity = { ...(source.integrity ?? riskFallback(now)), confirmedBy: a.id };
     const flagged = new Set(source.integrity?.flaggedItems ?? []);
     const cleanSourceItems = source.attempt.items.filter((i) => !flagged.has(i.index));
+    // Режим silent: исходная попытка уже выдала категорию - вторую не создаём, confirmedBy снимает ограничение выдачи.
+    if (source.attempt.status !== 'passed') {
+      ops.push(
+        prisma.candidateCategory.create({
+          data: { candidateId: a.candidateId, specialization: a.specialization, subcategoryId: a.subcategoryId, grade: a.grade, source: 'test', confirmedAt: now },
+        }),
+      );
+    }
     ops.push(
-      prisma.candidateCategory.create({
-        data: { candidateId: a.candidateId, specialization: a.specialization, subcategoryId: a.subcategoryId, grade: a.grade, source: 'test', confirmedAt: now },
-      }),
       prisma.testAttempt.update({ where: { id: source.attempt.id }, data: { integrity: asJson(srcIntegrity) } }),
       ...upgradeClaims(a.candidateId, [...new Set([...solvedCatalogIdsOf(a.items, byId), ...solvedCatalogIdsOf(cleanSourceItems, byId)])]),
     );
@@ -820,11 +840,14 @@ export async function confirmJunior(candidateId: string, attemptId: string, now:
 
 /** История попыток (R-C-07), новые сверху. */
 export async function listAttempts(candidateId: string): Promise<AttemptSummary[]> {
-  const rows = await prisma.testAttempt.findMany({
-    where: { candidateId },
-    orderBy: { startedAt: 'desc' },
-    include: { items: { select: { correct: true } } },
-  });
+  const [rows, hold] = await Promise.all([
+    prisma.testAttempt.findMany({
+      where: { candidateId },
+      orderBy: { startedAt: 'desc' },
+      include: { items: { select: { correct: true } } },
+    }),
+    rankingHoldOf(candidateId),
+  ]);
   return rows.map((a) => ({
     id: a.id,
     specialization: a.specialization,
@@ -838,6 +861,7 @@ export async function listAttempts(candidateId: string): Promise<AttemptSummary[
     juniorConfirmedAt: a.juniorConfirmedAt?.toISOString() ?? null,
     kind: kindOf(a),
     confirmsAttemptId: a.confirmsAttemptId,
+    rankingHold: hold?.attemptId === a.id,
     startedAt: a.startedAt.toISOString(),
     finishedAt: a.finishedAt?.toISOString() ?? null,
   }));

@@ -1,7 +1,7 @@
 import { Button, Meter, Tag } from '@/components/ui';
 import { toCsvHref } from '@/server/admin/metrics/links';
 import { NEAR_CEILING_SHARE, llmByDay, llmByPurpose, nearCeiling } from '@/server/admin/metrics/llm-monitor';
-import { acceptedByRank, matchingFunnel, type RankBucket } from '@/server/admin/metrics/matching-monitor';
+import { matchingFunnel } from '@/server/admin/metrics/matching-monitor';
 import { parseDays } from '@/server/admin/metrics/period';
 import { RECALIBRATION_RULES as R, testItemStats } from '@/server/admin/metrics/test-monitor';
 import { requirePageStaff } from '@/server/admin/session';
@@ -15,7 +15,6 @@ export const dynamic = 'force-dynamic';
 const PERIODS = [7, 30, 90] as const;
 const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`);
 const int = (x: number | null) => (x === null ? '—' : Math.round(x).toLocaleString('ru-RU'));
-const RANK_LABEL: Record<RankBucket, string> = { top3: 'Ранг ≤ 3', top10: 'Ранг ≤ 10', over10: 'Ранг > 10', unknown: 'Без ранга' };
 const bar = (share: number | null, max = 20) => (
   <div className={m.cell}>
     <Meter value={Math.round((share ?? 0) * max)} max={max} label={pct(share)} />
@@ -27,7 +26,7 @@ const bar = (share: number | null, max = 20) => (
 export default async function AdminMetricsPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   await requirePageStaff('/admin/metrics', 'view_metrics');
   const days = parseDays((await searchParams).days);
-  const [items, funnel, byRank, byPurpose, byDay, ceiling] = await Promise.all([testItemStats(days), matchingFunnel(days), acceptedByRank(days), llmByPurpose(days), llmByDay(days), nearCeiling()]);
+  const [items, funnel, byPurpose, byDay, ceiling] = await Promise.all([testItemStats(days), matchingFunnel(days), llmByPurpose(days), llmByDay(days), nearCeiling()]);
   const budget = getEnv().LLM_DAILY_TOKEN_BUDGET;
   const maxDay = Math.max(1, ...byDay.map((d) => d.inputTokens + d.outputTokens));
   const flagged = items.filter((i) => i.flags.length > 0);
@@ -88,7 +87,7 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
         <h2 className={m.h2}>Подбор: воронка приглашений по категориям</h2>
         <p className={styles.muted}>
           Категория — последняя категория кандидата. «Принято» = принято + нанят. Время до первого приглашения — от выдачи категории,
-          медиана по кандидатам.
+          медиана по кандидатам. Доли принятых из топ-N подборки здесь нет: ранг кандидата в момент приглашения не сохраняется.
         </p>
         <div className={m.scroll}>
           <table className={styles.table}>
@@ -112,28 +111,6 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
           </table>
         </div>
         {funnel.length === 0 && <p className={styles.muted}>За период приглашений нет.</p>}
-        <h3 className={m.h2}>Доля принятых по месту в подборке</h3>
-        <p className={styles.muted}>
-          Ранг — место кандидата в подборке, поиске или ленте помощника в момент отправки (1 = первый). «≤ 3» входит в «≤ 10».
-          Без ранга — избранное, черновик помощника, приглашение на защиту и приглашения до появления поля.
-        </p>
-        <div className={m.scroll}>
-          <table className={styles.table}>
-            <thead>
-              <tr><th>Место</th><th>Отправлено</th><th>Принято</th><th>Доля принятых</th></tr>
-            </thead>
-            <tbody>
-              {byRank.map((r) => (
-                <tr key={r.bucket}>
-                  <td>{RANK_LABEL[r.bucket]}</td>
-                  <td className={m.num}>{r.sent}</td>
-                  <td className={m.num}>{r.accepted}</td>
-                  <td>{bar(r.acceptedShare)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </section>
 
       <section className={m.section}>

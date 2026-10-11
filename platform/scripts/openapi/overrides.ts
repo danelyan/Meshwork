@@ -55,6 +55,7 @@ export const ERROR_RESPONSES: Record<number, { name: string; description: string
   409: { name: 'Conflict', description: 'Конфликт состояния: повторное действие, занятый ресурс, устаревшая версия (`conflict` и специальные коды операции)' },
   413: { name: 'PayloadTooLarge', description: 'Слишком большой запрос (`payload_too_large`)' },
   415: { name: 'UnsupportedMediaType', description: 'Неподдерживаемый тип содержимого (`unsupported_media_type`)' },
+  422: { name: 'UnprocessableEntity', description: 'Запрос корректен, но действие невозможно из-за состояния данных: у компании нет способа связи (`company_contact_required`) или у кандидата нет теста для выбранной категории (`no_test`, `subcategory_required`)' },
   429: { name: 'TooManyRequests', description: 'Превышен лимит запросов или суточный лимит (`rate_limited`)' },
   500: { name: 'InternalError', description: 'Внутренняя ошибка (`internal`); текст исключения наружу не отдаётся' },
   503: { name: 'ServiceUnavailable', description: 'Внешняя служба недоступна, например SMTP (`mail_unavailable`); повторить позже' },
@@ -213,7 +214,8 @@ const FILTER_QUERY = [
   { name: 'grade', description: 'Грейд', schema: en('junior', 'middle') },
   { name: 'stack', description: 'Технологии через запятую, не больше 10', schema: str() },
   { name: 'fsp', description: '`1` — только с достижениями ФСП', schema: en('1') },
-  { name: 'category', description: '`1` — только кандидаты с подтверждённой категорией', schema: en('1') },
+  { name: 'pool', description: '`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)', schema: en('all') },
+  { name: 'category', description: 'Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`', schema: en('1') },
   { name: 'limit', description: 'Размер выдачи; неверное значение заменяется значением по умолчанию', schema: int() },
 ];
 
@@ -599,7 +601,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Пригласить кандидата',
     description: 'Приглашение: описание задачи и зарплата обязательны, потребность — нет (R-E-05). Контакты кандидата до принятия скрыты.',
     success: { status: 201, description: 'Приглашение создано', schema: free('Созданное приглашение') },
-    errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)', 429: 'Суточный лимит приглашений исчерпан' },
+    errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)', 422: 'У компании нет способа связи (`company_contact_required`, `details.companyUrl`)', 429: 'Суточный лимит приглашений исчерпан' },
   },
   'GET /api/employer/search': {
     summary: 'Поиск по базе кандидатов',
@@ -614,16 +616,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Подборка с обоснованием (R-E-03, R-M-03); фильтры — query (R-M-04). Контакты скрыты до принятия приглашения (R-E-07).',
     success: JSON_OK('Ранжированные карточки с обоснованием', MATCHES),
     errors: { 404: 'Потребность не найдена или чужая', 409: 'Не приняты оферта или обязательство по данным (`consent_required`)' },
-  },
-  'GET /api/employer/vacancies/{id}/compare': {
-    summary: 'Сравнение двух кандидатов подборки («Почему A выше B»)',
-    query: [
-      { name: 'a', description: 'id первого кандидата', schema: str(), required: true },
-      { name: 'b', description: 'id второго кандидата', schema: str(), required: true },
-    ],
-    description: 'Разница итогового балла (в п. = балл × 100) по факторам формулы ранжирования: покрытие, категория, ФСП, стек, проект, темы созвона. Новых весов нет - берутся вклады из подборки (R-M-03).',
-    success: JSON_OK('Таблица факторов и строка «Разница … Преимущество: …»', free('Comparison: aScore, bScore, diff, factors[{key,label,a,b,diff}], advantage[], headline')),
-    errors: { 400: 'Не заданы два разных кандидата', 404: 'Потребность чужая или кандидата нет в подборке', 409: 'Не приняты оферта или обязательство по данным (`consent_required`)' },
   },
   'GET /api/employer/vacancies/{id}': {
     summary: 'Потребность компании', success: JSON_OK('Потребность компании', free('Потребность: поля VacancyInput, id, archived, даты')), errors: { 404: 'Потребность не найдена или чужая' } },
@@ -641,12 +633,12 @@ export const OVERRIDES: Record<string, OpOverride> = {
 
   'GET /api/employer/company': {
     summary: 'Профиль своей компании',
-    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании; `inviteContact` — способ связи в приглашениях от этого представителя (контакт компании, иначе его почта), null — приглашения не отправятся (422 company_contact_required)', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
   },
   'PATCH /api/employer/company': {
     summary: 'Изменить профиль своей компании',
     description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.',
-    success: JSON_OK('Профиль компании после правки', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+    success: JSON_OK('Профиль компании после правки, с `inviteContact`', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
   },
 
   'GET /api/invitations': {
@@ -764,6 +756,11 @@ export const OVERRIDES: Record<string, OpOverride> = {
     errors: { 409: 'Шаг недоступен в текущем состоянии' },
   },
 
+  'GET /api/profile/pdf': {
+    summary: 'Скачать PDF-профиль',
+    description: 'Стандартизированный PDF-профиль текущего кандидата, формируется сервером (pdfkit): категория из теста с датой и версией политики, основное из анкеты и резюме, подтверждённые утверждения с уровнем доказанности (без цитат), статус ФСП, ступени проверки. Всегда `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, без кеширования. Только свои данные.',
+    success: { description: 'PDF-файл профиля', contentType: 'application/pdf', schema: { type: 'string', format: 'binary' } },
+  },
   'GET /api/profile/privacy': {
     summary: 'Видимость кандидата для работодателей', success: JSON_OK('Видят ли кандидата работодатели (R-C-13)', obj({ hiddenFromEmployers: bool() })) },
   'POST /api/profile/privacy': { summary: 'Скрыть или показать себя работодателям', success: JSON_OK('Новое значение', obj({ hiddenFromEmployers: bool() })) },

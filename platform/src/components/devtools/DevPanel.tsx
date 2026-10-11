@@ -270,7 +270,7 @@ export function DevPanel() {
                   title="Аватар в чате произносит тестовую фразу (на странице консультанта или онбординга)"
                   onClick={() =>
                     window.dispatchEvent(
-                      new CustomEvent(COMPANION_SAY_EVENT, { detail: { text: 'Привет! Я компаньон ФСП Карьеры. Так звучит озвучка ответов: текст синтезирует SpeechKit, а рот двигается по громкости.' } }),
+                      new CustomEvent(COMPANION_SAY_EVENT, { detail: { text: 'Привет! Я компаньон MESHWORK. Так звучит озвучка ответов: текст синтезирует SpeechKit, а рот двигается по громкости.' } }),
                     )
                   }
                 >

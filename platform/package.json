@@ -1,8 +1,8 @@
 {
-  "name": "fsp-career-platform",
+  "name": "meshwork-platform",
   "version": "0.1.0",
   "private": true,
-  "description": "ФСП Карьера: платформа и карьерный консультант (E-01)",
+  "description": "MESHWORK: платформа и карьерный консультант",
   "engines": {
     "node": ">=22"
   },

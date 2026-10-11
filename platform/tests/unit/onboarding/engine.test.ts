@@ -171,7 +171,7 @@ describe('движок: переходы, пропуски, восстановл
     expect(ids(c)).toEqual(['role', 'summary']);
     expect(currentStep(c, { stepId: null, answers: {}, skipped: [] }).id).toBe('role');
     const lead = templateLead(step('role'), c, null);
-    expect(lead).toMatch(/^Привет, Иван! Я Кира, помощница ФСП Карьеры\./);
+    expect(lead).toMatch(/^Привет, Иван! Я Кира, помощница MESHWORK\./);
     expect(lead).not.toMatch(/согласи|данн/i);
     // Страховка: аккаунт без записанного согласия видит шаг согласия первым.
     expect(ids(ctx())[0]).toBe('consent');

@@ -2,10 +2,10 @@ import { CONTACT, LEGAL_DATE, OPERATOR, type LegalDoc } from './types';
 
 export const TERMS: LegalDoc = {
   slug: 'terms',
-  title: 'Пользовательское соглашение для кандидата',
+  title: 'Пользовательское соглашение кандидата MESHWORK',
   version: '2026-10-11-draft',
   date: LEGAL_DATE,
-  lead: 'Правила пользования платформой. Согласия на обработку персональных данных в это соглашение не входят: они даются отдельно.',
+  lead: 'Правила пользования платформой MESHWORK. Согласия на обработку персональных данных в это соглашение не входят: они даются отдельно.',
   sections: [
     {
       id: 'parties',

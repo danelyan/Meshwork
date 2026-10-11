@@ -10,7 +10,7 @@ import { requirePageEmployer } from '@/server/auth/page';
 import { listEmployerCalls } from '@/server/defense-room';
 import { loadEmployerContext } from '@/server/employer';
 
-export const metadata: Metadata = { title: 'Защиты проектов - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Защиты проектов - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 const FLAG = {

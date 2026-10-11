@@ -7,7 +7,7 @@ import { Container } from '@/components/shell/Container';
 
 import styles from './consent.module.css';
 
-export const metadata: Metadata = { title: 'Согласие на обработку данных - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Согласие на обработку данных - MESHWORK' };
 
 /** Текст согласия (R-C-14) — ссылка из шага согласия онбординга. */
 export default function ConsentPage() {

@@ -118,7 +118,7 @@ export function renderMailHtml(view: MailView): string {
     ...blocks,
     '</td></tr>',
     `<tr><td style="padding:16px 0 0;font-size:12px;line-height:1.5;color:${C.muted};">` +
-      `ФСП Карьера · <a href="${site}" style="color:${C.muted};text-decoration:underline;">${host}</a><br>` +
+      `MESHWORK · <a href="${site}" style="color:${C.muted};text-decoration:underline;">${host}</a><br>` +
       'Если вы не запрашивали это письмо, просто проигнорируйте его.</td></tr>',
     '</table>',
     '</td></tr></table>',

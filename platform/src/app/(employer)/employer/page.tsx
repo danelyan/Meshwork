@@ -5,7 +5,7 @@ import { requirePageEmployer } from '@/server/auth/page';
 import { listVacancies, loadEmployerContext } from '@/server/employer';
 import NeedMatchesPage from './needs/[id]/page';
 
-export const metadata: Metadata = { title: 'Подборка - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Подборка - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 export default async function EmployerPage({ searchParams = Promise.resolve({}) }: { searchParams?: Promise<Record<string, string | string[] | undefined>> } = {}) {

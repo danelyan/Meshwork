@@ -71,7 +71,7 @@ export const REGIONS: Array<Region & { weight: number }> = [
 export const PARTNERS: Partner[] = [
   {
     client_id: 'fsp-career',
-    name: 'ФСП Карьера',
+    name: 'MESHWORK',
     description: 'Карьерная платформа команды (ЛЦТ 2026): связь профиля с ФСП ID и чтение достижений с согласия спортсмена.',
   },
   {

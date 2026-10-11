@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 import { requirePageEmployer } from '@/server/auth/page';
 import { listVacancies, loadEmployerContext } from '@/server/employer';
 
-export const metadata: Metadata = { title: 'Вакансии - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Вакансии - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 export default async function EmployerPage() {

@@ -9,7 +9,7 @@ import { employerConsentsMissing } from '@/server/consent/service';
 import { loadEmployerContext, searchBank } from '@/server/employer';
 import { parseFilters } from '@/server/employer/schemas';
 
-export const metadata: Metadata = { title: 'Поиск по базе - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Поиск по базе - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 /** Поиск по всему банку кандидатов (R-E-04): та же выдача без привязки к потребности. */

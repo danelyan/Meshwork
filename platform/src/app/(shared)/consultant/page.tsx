@@ -14,7 +14,7 @@ import { EmployerHome } from './EmployerHome';
 import { warn } from './warn';
 import { COMPANION_NAME } from '@/lib/persona';
 
-export const metadata: Metadata = { title: 'Консультант - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Консультант - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 /** Подпись у головы без роли - консультант (у ролей - в CandidateHome / EmployerHome). */

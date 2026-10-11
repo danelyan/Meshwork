@@ -48,7 +48,7 @@ describe('SiteHeader', () => {
     const h = await renderHeader(null, '/auth');
     expect(h.queryByRole('link', { name: 'Компании' })).toBeNull();
     expect(h.queryByText('№ 01 · осень 2026')).toBeNull();
-    expect(h.getByRole('link', { name: 'ФСП Карьера, на главную' }).getAttribute('href')).toBe('/');
+    expect(h.getByRole('link', { name: 'MESHWORK, на главную' }).getAttribute('href')).toBe('/');
     expect(h.getByRole('link', { name: 'Войти' })).toBeDefined();
   });
 

@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-FSP Career (LCT 2026, FSP track): candidates get a verified category (specialization x grade) through an
+MESHWORK (LCT 2026, FSP track): candidates get a verified category (specialization x grade) through an
 AI consultant and an adaptive grade test; employers search the categorized base and send invitations with
 a salary. Product docs are in Russian; start from `docs/README.md`.
 

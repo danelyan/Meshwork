@@ -5,7 +5,7 @@ import { getEnv } from '@/server/env';
 import { bankInformation, methodPolicy, simulatedCandidates } from '@/server/validation/method';
 import { simulatorSubcategories } from '@/server/validation/simulator';
 
-export const metadata: Metadata = { title: 'Как устроена проверка - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Как устроена проверка - MESHWORK' };
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 

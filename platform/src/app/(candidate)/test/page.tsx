@@ -5,7 +5,7 @@ import { TestPage } from '@/components/TestPage';
 import { requirePageCandidate } from '@/server/auth/page';
 import { activeItemLimits } from '@/server/test/limits';
 
-export const metadata: Metadata = { title: 'Тест на грейд - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Тест на грейд - MESHWORK' };
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 

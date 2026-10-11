@@ -24,7 +24,7 @@ export function LandingHeader({ signedIn, juryEnabled = false }: { signedIn: boo
 
 export function LandingFooter() {
   return <footer className={styles.footer}>
-    <span>MESHWORK · ФСП Карьера, 2026</span>
+    <span>MESHWORK, 2026</span>
     <nav aria-label="Сведения о платформе"><Link href="/consent">Согласие</Link><Link href="/privacy">Политика данных</Link><Link href="/ai">Как работает ИИ</Link><a href="https://fsp-russia.ru/" target="_blank" rel="noopener noreferrer">ФСП</a></nav>
     <small>Демонстрационный стенд · ФСП ID и реестр достижений: симулятор</small>
   </footer>;

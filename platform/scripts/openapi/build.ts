@@ -402,7 +402,7 @@ export async function buildSpec(opts: BuildOptions = {}): Promise<Record<string,
   return {
     openapi: '3.1.0',
     info: {
-      title: 'ФСП Карьера - API платформы',
+      title: 'MESHWORK - API платформы',
       version: pkg.version ?? '0.0.0',
       description: [
         'REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.',

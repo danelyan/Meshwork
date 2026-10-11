@@ -59,7 +59,7 @@ describe('GET /api/profile/pdf (БД)', () => {
     const res = await get(cookieOf('owner'));
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('application/pdf');
-    expect(res.headers.get('content-disposition')).toBe('attachment; filename="fsp-career-profile.pdf"');
+    expect(res.headers.get('content-disposition')).toBe('attachment; filename="meshwork-profile.pdf"');
     expect(res.headers.get('x-content-type-options')).toBe('nosniff');
     expect(res.headers.get('cache-control')).toContain('no-store');
     const body = Buffer.from(await res.arrayBuffer());

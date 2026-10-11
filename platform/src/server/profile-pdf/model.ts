@@ -77,7 +77,7 @@ const FSP_LABEL: Record<string, string> = {
 const YEARS = ['год', 'года', 'лет'] as const;
 const money = new Intl.NumberFormat('ru-RU');
 
-export const PDF_FILENAME = 'fsp-career-profile.pdf';
+export const PDF_FILENAME = 'meshwork-profile.pdf';
 
 const isShown = (c: ProfileClaim) => c.status === 'confirmed' || c.status === 'edited';
 
@@ -163,12 +163,12 @@ export function buildProfileDocument(input: ProfileDocumentInput): ProfileDocume
   const spec = input.profile.candidate.specialization;
   const generatedAt = formatDateTime(input.generatedAt);
   return {
-    brand: 'ФСП Карьера',
+    brand: 'MESHWORK',
     title: 'Профиль кандидата',
     name: input.profile.candidate.name,
     headline: [spec ? specLabel(spec) : 'Направление не выбрано', input.basics?.city].filter(Boolean).join(' · '),
     generatedAt,
     sections: [categorySection(input), basicsSection(input), claimsSection(skillClaims), fspSection(input, fspClaims), stagesSection(input.stages)],
-    footer: `Сформировано автоматически, ФСП Карьера, ${generatedAt}. Данные — из профиля кандидата на момент формирования; у каждого утверждения на платформе есть источник и уровень доказанности.`,
+    footer: `Сформировано автоматически, MESHWORK, ${generatedAt}. Данные — из профиля кандидата на момент формирования; у каждого утверждения на платформе есть источник и уровень доказанности.`,
   };
 }

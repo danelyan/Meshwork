@@ -6,7 +6,7 @@ import { requirePageCandidate } from '@/server/auth/page';
 import { buildSnapshot, ICE_SERVERS } from '@/server/defense-room';
 import { prisma } from '@/server/db';
 
-export const metadata: Metadata = { title: 'Защита проекта - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Защита проекта - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 export default async function DefenseRoomPage({ params }: { params: Promise<{ sessionId: string }> }) {

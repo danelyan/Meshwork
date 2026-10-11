@@ -7,7 +7,7 @@ import { getCandidateContact, getPrivacy } from '@/server/employer';
 import { fspDemoHint, fspProviderMode } from '@/server/fsp-id/client';
 import { fspLinkView } from '@/server/fsp-id/link';
 
-export const metadata: Metadata = { title: 'Настройки - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Настройки - MESHWORK' };
 
 /** Итог возврата от ФСП ID (`/api/fsp-id/callback` → `?fsp=`): только известные коды, остальное игнорируем. */
 const FSP_RESULTS = new Set(['linked', 'no_achievements', 'unavailable', 'error_denied', 'error_state', 'error_session', 'error_exchange', 'error_token', 'error_unavailable', 'error_internal']);

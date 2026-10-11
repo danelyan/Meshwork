@@ -7,7 +7,7 @@ import { OPENAPI_JSON } from '@/server/openapi/spec.generated';
 import styles from './api-docs.module.css';
 import { SwaggerUiLoader } from './SwaggerUiLoader';
 
-export const metadata: Metadata = { title: 'Документация API - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Документация API - MESHWORK' };
 
 interface Operation {
   tags?: string[];

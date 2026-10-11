@@ -7,7 +7,7 @@ import { safeNext } from '@/server/auth/redirect';
 import { enterSite } from './actions';
 import styles from './site-access.module.css';
 
-export const metadata: Metadata = { title: 'Доступ к стенду - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Доступ к стенду - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 type Search = Promise<Record<string, string | string[] | undefined>>;

@@ -161,7 +161,7 @@ export function buildRealm(dataset: Dataset): Record<string, unknown> {
     clients: [
       {
         clientId: 'fsp-career',
-        name: 'ФСП Карьера (платформа команды)',
+        name: 'MESHWORK (платформа команды)',
         description: 'Confidential-клиент: вход спортсмена по OIDC (authorization code + PKCE) и client_credentials для чтения реестра.',
         enabled: true,
         protocol: 'openid-connect',

@@ -6,7 +6,7 @@ description: Use when writing or reviewing a git commit message in this reposito
 # Commit messages
 
 One format for everyone, people and agents. It follows the existing history
-(`Add FSP Career interactive prototype`, `Document FSP expert meeting and organizer answers`).
+(`Add interactive design prototype`, `Document FSP expert meeting and organizer answers`).
 
 ## Subject line
 

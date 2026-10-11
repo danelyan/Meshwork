@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { MechanicsView } from '@/components/mechanics/MechanicsView';
 import { buildMechanicsData } from '@/server/mechanics/page-data';
 
-export const metadata: Metadata = { title: 'Механика - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Механика - MESHWORK' };
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 

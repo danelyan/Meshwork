@@ -13,7 +13,7 @@ import { loadEmployerContext } from '@/server/employer/context';
 import { listVacancies } from '@/server/employer/vacancies';
 import { salaryRange } from '@/components/employer/labels';
 
-export const metadata: Metadata = { title: 'Профиль компании - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Профиль компании - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 /** Профиль компании работодателя (R-E-01): просмотр и правка. Guard - роль employer. */

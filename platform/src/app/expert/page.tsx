@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { ExpertTest } from '@/components/expert/ExpertTest';
 import { getEnv } from '@/server/env';
 
-export const metadata: Metadata = { title: 'Режим эксперта - ФСП Карьера', robots: { index: false } };
+export const metadata: Metadata = { title: 'Режим эксперта - MESHWORK', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
 /** Режим эксперта: тест на грейд без регистрации, грейд не присваивается. Только при DEMO_LOGIN=true; иначе 404. */

@@ -17,7 +17,7 @@ export async function getText(url: string, opts: GetOptions): Promise<{ status: 
   let res: Response;
   try {
     res = await fetch(url, {
-      headers: { 'user-agent': 'FSP-Career-Collector/1.0', ...opts.headers },
+      headers: { 'user-agent': 'MESHWORK-Collector/1.0', ...opts.headers },
       signal: AbortSignal.timeout(opts.timeoutMs ?? 8_000),
       redirect: 'follow',
     });

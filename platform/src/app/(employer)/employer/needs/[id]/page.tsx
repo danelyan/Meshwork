@@ -14,7 +14,7 @@ import { parseFilters } from '@/server/employer/schemas';
 import { AppError } from '@/server/errors';
 import { projectBlockData } from '@/server/project/page-data';
 
-export const metadata: Metadata = { title: 'Подборка - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Подборка - MESHWORK' };
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 export default async function NeedMatchesPage({ params, searchParams }: Props) {

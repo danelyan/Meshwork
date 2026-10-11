@@ -1,4 +1,4 @@
-# platform — ФСП Карьера: карьерный консультант (E-01)
+# platform — MESHWORK: карьерный консультант (E-01)
 
 Next.js 15 (App Router) + TypeScript strict + Prisma 6 / PostgreSQL 16 + Zod 4.
 Стек — `../docs/stack.md`. Карта модулей, маршрутов и общих файлов — [`../docs/modules.md`](../docs/modules.md).
@@ -113,7 +113,7 @@ Integration-тесты: перед прогоном `globalSetup` применя
 | Переменная | По умолчанию | Смысл |
 |---|---|---|
 | `MAIL_PROVIDER` | `smtp` | `smtp` — боевой режим: письма на реальные ящики через SMTP-провайдера (локально — Mailpit, веб-ящик :8025); `log` — только локально и в тестах: письмо в лог сервера и журнал в памяти, без сети (тесты ставят `log` в `vitest.config.mts`) |
-| `MAIL_FROM` | `ФСП Карьера <no-reply@fsp-career.local>` | отправитель |
+| `MAIL_FROM` | `MESHWORK <no-reply@meshwork.local>` | отправитель |
 | `SMTP_HOST`, `SMTP_PORT` | `localhost`, `1025` | SMTP-сервер (в compose — `mailpit:1025`) |
 | `SMTP_SECURE` | `false` | `true` — TLS с первого байта (порт 465); STARTTLS не поддерживается |
 | `SMTP_USER`, `SMTP_PASSWORD` | пусто | AUTH PLAIN; пусто — без авторизации (Mailpit) |

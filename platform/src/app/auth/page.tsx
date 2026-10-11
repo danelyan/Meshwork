@@ -8,7 +8,7 @@ import { yandexConfig } from '@/server/auth/yandex';
 import { getEnv } from '@/server/env';
 import { fspDemoHint } from '@/server/fsp-id/client';
 
-export const metadata: Metadata = { title: 'Вход - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Вход - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 type Search = Promise<Record<string, string | string[] | undefined>>;

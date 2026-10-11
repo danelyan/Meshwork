@@ -4,7 +4,7 @@ import { ProjectFeed } from '@/components/project/ProjectFeed';
 import { requirePageCandidate } from '@/server/auth/page';
 import { listFeed, preferredSubcategoryId } from '@/server/project/service';
 
-export const metadata: Metadata = { title: 'Проекты - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Проекты - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 /** Лента проектных заданий (ADR 0003, ступень 2): обезличенные задачи работодателей направления кандидата. */

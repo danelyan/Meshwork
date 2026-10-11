@@ -8,7 +8,7 @@ import { requirePageCandidate } from '@/server/auth/page';
 import { getCompanyDetail } from '@/server/companies/catalog';
 import { careerVacancies } from '@/server/recommend/career';
 
-export const metadata: Metadata = { title: 'Компании - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Компании - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ id: string }> };

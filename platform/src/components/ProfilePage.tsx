@@ -283,7 +283,7 @@ export function ProfilePage() {
           </> : <p>Готово. Следующий шаг - тест на грейд.</p>}
           <Link href="/consultant" className={styles.kiraLink}>Открыть чат ↗</Link>
         </div>
-        <a className={`${ui.btn} ${styles.noPrint}`} href="/api/profile/pdf" download="fsp-career-profile.pdf" aria-label="PDF-профиль">↓ PDF-профиль</a>
+        <a className={`${ui.btn} ${styles.noPrint}`} href="/api/profile/pdf" download="meshwork-profile.pdf" aria-label="PDF-профиль">↓ PDF-профиль</a>
         <details className={styles.previewDisclosure}><summary>Как видит компания</summary><ProfilePublicPreview details={details} /></details>
       </aside>
 

@@ -11,7 +11,7 @@ import { getStaffPageSession } from '@/server/admin/session';
 
 import styles from './admin.module.css';
 
-export const metadata: Metadata = { title: 'ФСП Карьера - админка', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'MESHWORK - админка', robots: { index: false, follow: false } };
 
 /**
  * Раскладка админки (E-08): меню из реестра `lib/admin-nav.ts` по правам роли. Доступ здесь не проверяется —
@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <div className={styles.shell}>
       <aside className={styles.side}>
-        <div className={styles.brand}>ФСП Карьера · админка</div>
+        <div className={styles.brand}>MESHWORK · админка</div>
         <AdminNav groups={navFor(staff.role)} />
         <div className={styles.who}>
           <span>{staff.name}</span>

@@ -1,5 +1,5 @@
 /*
- * Токены ФСП Карьера. Источник: docs/design-spec.md (вариант «основной»), docs/design-system.md, раздел «2. Токены».
+ * Токены MESHWORK. Источник: docs/design-spec.md (вариант «основной»), docs/design-system.md, раздел «2. Токены».
  * Шрифты подключает app/layout.tsx через next/font (переменные --font-golos, --font-mono).
  * Astra: кандидат синий, работодатель бордовый; красный отмечает пробелы и опасные действия.
  *

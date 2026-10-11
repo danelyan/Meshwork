@@ -5,7 +5,7 @@ import { DemoScreen } from '@/components/DemoScreen';
 import { safeNext } from '@/server/auth/redirect';
 import { getEnv } from '@/server/env';
 
-export const metadata: Metadata = { title: 'Демо для жюри - ФСП Карьера', robots: { index: false } };
+export const metadata: Metadata = { title: 'Демо для жюри - MESHWORK', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
 type Search = Promise<Record<string, string | string[] | undefined>>;

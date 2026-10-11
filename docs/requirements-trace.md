@@ -124,7 +124,7 @@
 | R-N-08 Desktop-браузеры, независимость от ОС | не проверено | — | Сквозные тесты Playwright — только Chromium | Firefox и Safari не проверялись |
 | R-N-09 Десятки пользователей, приемлемое время | готово (подбор, поиск) | `platform/loadtest/run.mjs` | 11.10: 50 VU на стенде, 0 ошибок из 4 087, p95 подборки 337 мс, поиска 291 мс ([validation/load.md](validation/load.md); генератор в контейнере, сеть не входит). Ход консультанта на DeepSeek: p95 18,9 с ([validation-results.md](validation-results.md)) | LLM-ход: цель p95 ≤ 15 с не достигнута; stress выше 50 VU не искали |
 | R-N-10 Комментарии, код соответствует документации | частично | Короткие JSDoc в модулях; [modules.md](modules.md) | `unit/openapi/openapi.test.ts` и `unit/agent/prompts.test.ts` сверяют документы с кодом | Полное соответствие остальных документов коду не проверялось; часть документов устарела (например, [demo-script.md](demo-script.md) описывает прежний сценарий) |
-| R-N-11 Цвета ФСП | готово | `styles/tokens.css` (светлые токены «ФСП Карьера»), [design-system.md](design-system.md) | `unit/design-tokens.test.ts` | Соответствие брендбуку проверено глазами по [design-spec.md](design-spec.md), автоматически — только использование токенов |
+| R-N-11 Цвета ФСП | готово | `styles/tokens.css` (светлые токены «MESHWORK»), [design-system.md](design-system.md) | `unit/design-tokens.test.ts` | Соответствие брендбуку проверено глазами по [design-spec.md](design-spec.md), автоматически — только использование токенов |
 
 ### Итог по статусам (54 требования без R-D-05)
 

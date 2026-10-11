@@ -59,7 +59,7 @@ export function renderLoginPage(req: AuthorizeRequest, action: string): string {
 <span class="demo">демо-данные · мок провайдера</span>
 <h1>Вход в ФСП ID</h1>
 <p>Это демонстрационный провайдер ФСП ID внутри платформы (OIDC, пути как у Keycloak). Настоящий реестр ФСП не подключён: выберите демо-участника. Люди и результаты выдуманы.</p>
-<p>Приложение «ФСП Карьера» получит ваш идентификатор участника и имя, чтобы связать профиль с достижениями.</p>
+<p>Приложение «MESHWORK» получит ваш идентификатор участника и имя, чтобы связать профиль с достижениями.</p>
 ${options}
 <form method="post" action="${esc(action)}">${h}<input type="hidden" name="cancel" value="1"><button type="submit" class="cancel">Отмена</button></form>
 </main></body></html>`;

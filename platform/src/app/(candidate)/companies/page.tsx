@@ -6,7 +6,7 @@ import { specLabel } from '@/lib/directions';
 import { requirePageCandidate } from '@/server/auth/page';
 import { listCompanyCards } from '@/server/companies/catalog';
 
-export const metadata: Metadata = { title: 'Компании - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Компании - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 const money = new Intl.NumberFormat('ru-RU');

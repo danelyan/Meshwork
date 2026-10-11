@@ -210,7 +210,7 @@
 
 ### Лента чата
 
-Онбординг (`onboarding/OnboardingChat`), карьерный консультант (`Chat`, `EventFeed`) и помощник работодателя (`employer/AssistantChat`; выдача в сообщении — компактная `employer/AssistantCandidateCard` внутри `MessageCard`, черновик приглашения — открытая `InviteForm`) — одна сущность «помощник ФСП Карьеры» и один вид ленты. Примитивы — `platform/src/components/chat/Thread.tsx` (импорт `@/components/chat/Thread`: на macOS путь `components/chat` без файла совпадает с `Chat.tsx` по регистру), стили — `chat/thread.module.css`, появление — `chat/motion.ts`, автоскролл — `chat/scroll.ts`.
+Онбординг (`onboarding/OnboardingChat`), карьерный консультант (`Chat`, `EventFeed`) и помощник работодателя (`employer/AssistantChat`; выдача в сообщении — компактная `employer/AssistantCandidateCard` внутри `MessageCard`, черновик приглашения — открытая `InviteForm`) — одна сущность «помощник MESHWORK» и один вид ленты. Примитивы — `platform/src/components/chat/Thread.tsx` (импорт `@/components/chat/Thread`: на macOS путь `components/chat` без файла совпадает с `Chat.tsx` по регистру), стили — `chat/thread.module.css`, появление — `chat/motion.ts`, автоскролл — `chat/scroll.ts`.
 
 | Примитив | Назначение |
 |---|---|

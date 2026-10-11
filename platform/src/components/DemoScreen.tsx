@@ -60,7 +60,7 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
   return (
     <Container size="wide" className={styles.wrap}>
       <PageTitle
-        kicker="ФСП Карьера · демо для жюри"
+        kicker="MESHWORK · демо для жюри"
         title="Что умеет платформа"
         lead="Вымышленные люди и компании. Выбери возможность и войди тем, у кого она видна сразу, без пароля."
       />

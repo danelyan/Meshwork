@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/labels';
 import { requirePageCandidate } from '@/server/auth/page';
 import { listCandidateSubmissions, pendingEmployerQuestions } from '@/server/defense-room';
 
-export const metadata: Metadata = { title: 'Защита проекта - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Защита проекта - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 /**

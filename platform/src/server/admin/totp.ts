@@ -13,7 +13,7 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 export const TOTP_STEP_SEC = 30;
 export const TOTP_DIGITS = 6;
 export const TOTP_WINDOW = 1;
-export const TOTP_ISSUER = 'ФСП Карьера Админ';
+export const TOTP_ISSUER = 'MESHWORK Админ';
 
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 

@@ -7,7 +7,7 @@ import { parseNeedPrefill } from '@/server/agent/employer/prefill';
 import { requirePageEmployer } from '@/server/auth/page';
 import { getCatalog } from '@/server/claims/catalog';
 
-export const metadata: Metadata = { title: 'Новая вакансия - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Новая вакансия - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 /** `?spec=…&grade=…&needs=…` — черновик помощника (create_need_draft): форма предзаполнена, сохраняет человек. */

@@ -5,7 +5,7 @@ export const AI_DOC: LegalDoc = {
   title: 'Как работает ИИ',
   version: '2026-10-11-draft',
   date: LEGAL_DATE,
-  lead: 'Что на платформе делает языковая модель, что нет и как это оспорить.',
+  lead: 'Что на платформе MESHWORK делает языковая модель, что нет и как это оспорить.',
   sections: [
     {
       id: 'does',

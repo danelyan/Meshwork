@@ -11,7 +11,7 @@ import { requirePageEmployer } from '@/server/auth/page';
 import { companySanction, invitationsSentToday, listCompanyInvitations, loadEmployerContext } from '@/server/employer';
 import { getSetting } from '@/server/admin/settings';
 
-export const metadata: Metadata = { title: 'Приглашения - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Приглашения - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 export default async function EmployerInvitationsPage() {

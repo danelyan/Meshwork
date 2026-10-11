@@ -8,7 +8,7 @@ import { type MailView, renderMailHtml } from '@/server/mail/layout';
  * Письма по итогам модерации (E-08, фаза 2) — в оболочке существующих шаблонов `server/mail` (renderMailHtml).
  * Отправляются после COMMIT решения и в фоне: сбой почты решение не откатывает (как письма о приглашениях).
  */
-const sign = () => `\n\n—\nФСП Карьера · ${getEnv().APP_URL}`;
+const sign = () => `\n\n—\nMESHWORK · ${getEnv().APP_URL}`;
 const html = (view: Omit<MailView, 'siteUrl'>) => renderMailHtml({ ...view, siteUrl: getEnv().APP_URL });
 
 export function complaintOutcomeMail(to: string, p: { companyName: string; upheld: boolean; resolution: string }): MailMessage {

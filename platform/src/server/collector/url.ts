@@ -28,7 +28,7 @@ export type HttpGet = (target: CheckedTarget, signal: AbortSignal) => Promise<Ht
 
 export const fetchFailed = (message: string, status = 502) => new AppError('fetch_failed', message, status);
 
-const USER_AGENT = 'FSP-Career-Collector/1.0 (+candidate-provided link reader)';
+const USER_AGENT = 'MESHWORK-Collector/1.0 (+candidate-provided link reader)';
 
 /** lookup, который всегда возвращает заранее проверенный адрес — DNS-rebinding между проверкой и connect невозможен. */
 export function pinnedLookup(target: Pick<CheckedTarget, 'address' | 'family'>) {

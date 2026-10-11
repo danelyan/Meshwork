@@ -10,7 +10,7 @@ import { getCatalog } from '@/server/claims/catalog';
 import { getVacancy, loadEmployerContext } from '@/server/employer';
 import { AppError } from '@/server/errors';
 
-export const metadata: Metadata = { title: 'Изменить вакансию - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Изменить вакансию - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 export default async function EditNeedPage({ params }: { params: Promise<{ id: string }> }) {

@@ -43,8 +43,8 @@ export const metadata: Metadata = {
     icon: [{ url: '/assets/favicon.png?v=transparent-2', type: 'image/png', sizes: '64x64' }, { url: '/assets/favicon.svg?v=transparent-2', type: 'image/svg+xml', sizes: 'any' }],
     apple: { url: '/assets/apple-touch-icon.png', sizes: '180x180' },
   },
-  title: 'ФСП Карьера - консультант',
-  description: 'Карьерный консультант платформы ФСП Карьера',
+  title: 'MESHWORK - консультант',
+  description: 'Карьерный консультант платформы MESHWORK',
 };
 
 // Клавиатура на мобильном уменьшает область вёрстки (Chrome Android): dvh и липкий ввод остаются видны. Safari параметр игнорирует.

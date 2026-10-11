@@ -136,9 +136,9 @@ describe('buildProfileDocument: утверждения, ФСП, ступени',
 
   it('шапка и подвал: бренд, дата по Москве, «сформировано автоматически»; детерминизм', () => {
     const doc = buildProfileDocument(input());
-    expect(doc.brand).toBe('ФСП Карьера');
+    expect(doc.brand).toBe('MESHWORK');
     expect(doc.generatedAt).toBe('11.10.2026, 18:00 МСК');
-    expect(doc.footer).toMatch(/^Сформировано автоматически, ФСП Карьера, 11\.10\.2026, 18:00 МСК\./);
+    expect(doc.footer).toMatch(/^Сформировано автоматически, MESHWORK, 11\.10\.2026, 18:00 МСК\./);
     expect(buildProfileDocument(input())).toEqual(doc);
   });
 });

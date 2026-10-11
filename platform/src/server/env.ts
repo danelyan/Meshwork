@@ -236,7 +236,7 @@ export const envSchema = z
     /** lane email-auth: smtp — письма через SMTP (Mailpit на стенде); log — только в лог сервера и журнал в памяти (тесты, локально без Mailpit). */
     MAIL_PROVIDER: z.enum(['smtp', 'log']).default('smtp'),
     /** Отправитель писем: `Имя <адрес>` или просто адрес. */
-    MAIL_FROM: z.string().min(3).default('ФСП Карьера <no-reply@fsp-career.local>'),
+    MAIL_FROM: z.string().min(3).default('MESHWORK <no-reply@meshwork.local>'),
     /** true — TLS с первого байта (порт 465). Mailpit — false. STARTTLS не поддерживается. */
     SMTP_SECURE: z.stringbool().default(false),
     /** Логин SMTP (AUTH PLAIN); пусто — без авторизации, как у Mailpit. */

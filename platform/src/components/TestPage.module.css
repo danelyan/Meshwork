@@ -68,7 +68,7 @@
 @media(max-width:650px) { .introPage { padding: 20px 16px 32px; } .example { padding: 18px; } .exampleLabel { flex-wrap: wrap; } }
 
 .condition { display: grid; gap: 14px; position: relative; }
-/* Правила перед стартом (как на hh.ru) */
+/* Правила перед стартом (как на крупных площадках) */
 .rulesPanel { display: grid; gap: 18px; }
 .ruleStep { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 14px; align-items: start; }
 .ruleNum { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-input); display: grid; place-items: center; font: 600 14px var(--mono); }

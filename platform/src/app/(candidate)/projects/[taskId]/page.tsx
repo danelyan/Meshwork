@@ -6,7 +6,7 @@ import { requirePageCandidate } from '@/server/auth/page';
 import { AppError } from '@/server/errors';
 import { getTaskForCandidate } from '@/server/project/service';
 
-export const metadata: Metadata = { title: 'Проектное задание - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Проектное задание - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ taskId: string }> };

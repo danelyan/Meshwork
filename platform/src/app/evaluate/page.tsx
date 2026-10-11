@@ -6,7 +6,7 @@ import { getEnv } from '@/server/env';
 import { EVAL_LIMITS, evalCatalog } from '@/server/validation/evaluate';
 import { sampleDataset } from '@/server/validation/sample';
 
-export const metadata: Metadata = { title: 'Проверить подбор - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Проверить подбор - MESHWORK' };
 
 /** Прогон нашего ранжирования на наборе пользователя (POST /api/evaluate). Публичная, без записи в БД. */
 export default function EvaluatePage() {

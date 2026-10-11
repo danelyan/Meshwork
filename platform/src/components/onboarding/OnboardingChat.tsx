@@ -67,7 +67,7 @@ const extraOf = (s: StepView) => (s.kind === 'chips' ? multiOf(s).filter((v) => 
 const draftOf = (s: StepView) => (s.kind === 'text' && typeof s.value === 'string' ? s.value : '');
 
 /**
- * Онбординг — лента-чат помощника ФСП Карьеры (E-02, решение владельца 09.10): реплика появляется
+ * Онбординг — лента-чат помощника MESHWORK (E-02, решение владельца 09.10): реплика появляется
  * с «печатает», варианты — чипами под ней, ответ становится пузырём справа, текст — полем внизу.
  * Без «Далее» и счётчика шагов: прогресс — тонкая полоса. После итога та же лента продолжается
  * карьерным консультантом (Chat embedded). Логика шагов — на сервере; клиент показывает OnboardingView.
@@ -424,7 +424,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
       <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>
         {!inConsultant && (
           <VisuallyHidden>
-            <h1>Знакомство с помощником ФСП Карьеры</h1>
+            <h1>Знакомство с помощником MESHWORK</h1>
           </VisuallyHidden>
         )}
         {!inConsultant && <CompanionStage className={styles.stage} />}

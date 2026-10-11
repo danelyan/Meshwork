@@ -49,8 +49,8 @@ function fakeServer(opts: { rejectRcpt?: boolean } = {}) {
 describe('SMTP-клиент', () => {
   it('EHLO → AUTH PLAIN → MAIL → RCPT → DATA → QUIT; тело UTF-8 в base64', async () => {
     const srv = await fakeServer();
-    const msg = buildMessage({ from: 'ФСП Карьера <no-reply@fsp.test>', to: 'ivan@example.test', subject: 'Код: 123456', text: 'Привет, код 123456' });
-    await smtpSend({ host: '127.0.0.1', port: srv.port, secure: false, user: 'u', password: 'p' }, 'ФСП Карьера <no-reply@fsp.test>', 'ivan@example.test', msg);
+    const msg = buildMessage({ from: 'MESHWORK <no-reply@fsp.test>', to: 'ivan@example.test', subject: 'Код: 123456', text: 'Привет, код 123456' });
+    await smtpSend({ host: '127.0.0.1', port: srv.port, secure: false, user: 'u', password: 'p' }, 'MESHWORK <no-reply@fsp.test>', 'ivan@example.test', msg);
     srv.close();
     expect(srv.commands.map((c) => c.split(' ')[0])).toEqual(['EHLO', 'AUTH', 'MAIL', 'RCPT', 'DATA', 'QUIT']);
     expect(srv.commands).toContain('MAIL FROM:<no-reply@fsp.test>');

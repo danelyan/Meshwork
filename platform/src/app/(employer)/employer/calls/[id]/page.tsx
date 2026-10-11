@@ -11,7 +11,7 @@ import { prisma } from '@/server/db';
 import { buildSnapshot, redactSnapshot, resolveViewer } from '@/server/defense-room';
 import { AppError } from '@/server/errors';
 
-export const metadata: Metadata = { title: 'Комната защиты - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Комната защиты - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 /** Комната работодателя (ADR 0003): только при принятом приглашении кандидата, иначе 404. */

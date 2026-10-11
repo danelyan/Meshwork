@@ -94,12 +94,12 @@ export async function downloadGithubTarball(repo: GithubRepo, commitSha: string,
     }
     const agent = new Agent({ connect: { lookup: pinnedLookup(target), timeout: 10_000 }, maxResponseSize: MAX_TARBALL_BYTES + 1 });
     try {
-      const headers = target.url.hostname === 'api.github.com' ? githubHeaders() : { 'user-agent': 'FSP-Career-Runner/1.0' };
+      const headers = target.url.hostname === 'api.github.com' ? githubHeaders() : { 'user-agent': 'MESHWORK-Runner/1.0' };
       const res = await request(target.url, {
         method: 'GET',
         dispatcher: agent,
         signal,
-        headers: { 'user-agent': 'FSP-Career-Runner/1.0', ...headers, accept: 'application/vnd.github+json' },
+        headers: { 'user-agent': 'MESHWORK-Runner/1.0', ...headers, accept: 'application/vnd.github+json' },
       });
       if (res.statusCode >= 300 && res.statusCode < 400) {
         const location = res.headers.location;

@@ -7,7 +7,7 @@ import { getEnv } from '@/server/env';
 import { SESSION_COOKIE, parseSession } from '@/server/session';
 
 export const metadata: Metadata = {
-  title: 'MESHWORK - не ищи работу, пусть найдут тебя | ФСП Карьера',
+  title: 'MESHWORK - не ищи работу, пусть найдут тебя',
   description: 'Профиль с доказательствами навыков, адаптивный тест и приглашения с зарплатной вилкой. ИИ-консультант для специалиста и работодателя.',
 };
 

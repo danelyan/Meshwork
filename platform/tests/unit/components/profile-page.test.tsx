@@ -144,7 +144,7 @@ it('downloads the server PDF from every profile PDF action', async () => {
   const links = await screen.findAllByRole('link', { name: 'PDF-профиль' });
   for (const link of links) {
     expect(link.getAttribute('href')).toBe('/api/profile/pdf');
-    expect(link.getAttribute('download')).toBe('fsp-career-profile.pdf');
+    expect(link.getAttribute('download')).toBe('meshwork-profile.pdf');
   }
   expect(screen.queryByRole('button', { name: /PDF-профиль/ })).toBeNull();
 });

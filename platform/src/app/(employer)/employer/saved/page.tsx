@@ -8,7 +8,7 @@ import { requirePageEmployer } from '@/server/auth/page';
 import { listCompanyInvitations, loadEmployerContext } from '@/server/employer';
 import { savedCandidateCards } from '@/server/favorites';
 
-export const metadata: Metadata = { title: 'Избранные кандидаты - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Избранные кандидаты - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
 export default async function SavedCandidatesPage() {

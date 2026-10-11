@@ -1,0 +1,42 @@
+.page { display: flex; flex-direction: column; gap: 28px; font-size: var(--fs-md); line-height: 1.55; }
+.section { display: flex; flex-direction: column; gap: 14px; }
+.section h2 { margin: 0; font-size: var(--fs-xl); letter-spacing: -0.02em; }
+.soft { color: var(--text-soft); margin: 0; }
+.list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.form { display: flex; flex-direction: column; gap: 16px; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.select, .number { width: 100%; }
+.slider { width: 100%; accent-color: var(--accent-fill); }
+.marks { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--text-soft); }
+.zone { margin: 0; font-size: var(--fs-sm); color: var(--text-soft); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--line); background: var(--surface-input); }
+.statValue { font-size: var(--fs-2xl); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+.statLabel { font-size: var(--fs-sm); color: var(--text-soft); }
+
+.tableWrap { overflow-x: auto; max-width: 100%; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs); }
+.table th, .table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table th { font-weight: 600; color: var(--text-soft); font-size: var(--fs-sm); }
+.table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mono { font-family: var(--mono); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.miss { color: var(--error); font-weight: 600; }
+.hit { font-weight: 600; }
+
+.chart { width: 100%; height: auto; max-width: 720px; }
+.grid { stroke: var(--line); stroke-width: 1; }
+.axis { fill: var(--text-soft); font-size: var(--fs-xs); }
+.cut { stroke: var(--text-soft); stroke-width: 1; stroke-dasharray: 5 4; }
+.cutLabel { fill: var(--text-soft); font-size: var(--fs-xs); }
+.truth { stroke: var(--error); stroke-width: 1; stroke-dasharray: 2 3; }
+.truthLabel { fill: var(--error); font-size: var(--fs-xs); }
+.band { fill: var(--accent-fill); opacity: 0.18; }
+.thetaLine { stroke: var(--accent-fill); stroke-width: 2; }
+.dotOk { fill: var(--accent-fill); stroke: var(--accent-fill); stroke-width: 2; }
+.dotBad { fill: var(--bg); stroke: var(--error); stroke-width: 2; }
+.dotStart { fill: var(--bg); stroke: var(--text-soft); stroke-width: 2; }
+.legend { font-size: var(--fs-sm); color: var(--text-soft); margin: 0; }

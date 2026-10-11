@@ -39,8 +39,8 @@ export const PAGE_ACCESS = {
   // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе — жюри без регистрации.
   '/validation': 'public',
   '/evaluate': 'public',
-  // Лаборатория вариантов заданий: генерация из реестра по seed, без данных пользователей.
-  '/mechanics': 'public',
+  // Симулятор адаптивного теста для жюри: виртуальный кандидат, без БД.
+  '/simulator': 'public',
   // Флаг DEMO_LOGIN проверяет сама страница (выключен → 404).
   '/demo': 'public',
   // Прежние адреса: только редирект на /consultant, данных нет.
@@ -213,6 +213,7 @@ export const API_ACCESS = {
   '/api/openapi': 'public',
   // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
   '/api/evaluate': { POST: 'public' },
+  '/api/simulator': { POST: 'public' },
   '/api/dev/delete-account': 'dev',
   // Ответ оператора на возражения против оценки (ст. 16, ADR 0005).
   '/api/dev/objections': 'dev',

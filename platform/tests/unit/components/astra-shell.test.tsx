@@ -39,7 +39,7 @@ it('sidebar: candidate order follows the journey stages, employer labels match t
   nav.pathname = '/employer/needs/n1';
   render(<DashboardFrame account={{ ...account, roles: { ...account.roles!, role: 'employer' } }}><p>x</p></DashboardFrame>);
   expect(screen.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');
-  expect(names()).toEqual(['Подборка', 'Поиск по базе', 'Вакансии', 'Избранное', 'Приглашения', 'Собеседования', 'ИИ-помощник', 'Компания']);
+  expect(names()).toEqual(['ИИ-помощник', 'Подборка', 'Поиск по базе', 'Вакансии', 'Избранное', 'Приглашения', 'Собеседования', 'Компания']);
 });
 
 it('draft edits use actual step IDs; privacy view does not repeat personal answers', async () => {

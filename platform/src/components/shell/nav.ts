@@ -30,14 +30,14 @@ export const CANDIDATE_NAV: NavItem[] = [
 ];
 
 export const EMPLOYER_NAV: NavItem[] = [
+  // Помощник по подбору - дом работодателя, лента /consultant; первым (решение владельца 10.10).
+  { href: '/consultant', icon: '◆', label: 'ИИ-помощник', header: true },
   { href: '/employer', icon: '◇', label: 'Подборка', exact: true, header: true },
   { href: '/employer/search', icon: '⌕', label: 'Поиск по базе', header: true },
   { href: '/employer/vacancies', icon: '▤', label: 'Вакансии', header: true },
   { href: '/employer/saved', icon: '☆', label: 'Избранное' },
   { href: '/employer/invitations', icon: '✉', label: 'Приглашения', header: true },
   { href: '/employer/calls', icon: '▷', label: 'Собеседования', header: true },
-  // Помощник по подбору - лента /consultant (решение владельца 10.10).
-  { href: '/consultant', icon: '◆', label: 'ИИ-помощник', header: true },
   // «Компания» - в сайдбаре и в меню аккаунта (AccountMenu).
   { href: '/employer/company', icon: '○', label: 'Компания' },
 ];

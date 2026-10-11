@@ -38,7 +38,7 @@ beforeEach(() => {
     callSession: {
       count: (a?: { where?: Record<string, unknown> }) => {
         seen.call.push(a?.where);
-        return a?.where?.kind === 'qualifying' ? w.qualifying : w.aiDefense;
+        return a?.where?.kind !== 'defense' ? w.qualifying : w.aiDefense;
       },
     },
     projectSubmission: { count: (a?: { where?: Record<string, unknown> }) => { seen.project.push(a?.where); return w.checkedProjects; } },
@@ -91,12 +91,12 @@ describe('journeyState: порядок шагов (ADR 0008)', () => {
     expect(stepHint(s)).toBe(STEP_HINT.call);
   });
 
-  it('завершённый квалифицирующий созвон → проект; запрос берёт kind qualifying и finished', async () => {
+  it('завершённый квалифицирующий созвон → проект; запрос берёт qualifying или interview (ИИнтервью после теста) и finished', async () => {
     w.category = true;
     w.claims = { confirmed: 1 };
     w.qualifying = 1;
     expect(await next()).toBe('project');
-    expect(seen.call[0]).toMatchObject({ kind: 'qualifying', status: 'finished' });
+    expect(seen.call[0]).toMatchObject({ kind: { in: ['qualifying', 'interview'] }, status: 'finished' });
   });
 
   it('проект считается только проверенным (checked с результатом)', async () => {

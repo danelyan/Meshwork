@@ -61,7 +61,7 @@ export async function journeyState(candidateId: string): Promise<JourneyState> {
     prisma.upload.count({ where: { candidateId } }),
     prisma.claim.groupBy({ by: ['status'], where: { candidateId }, _count: { _all: true } }),
     prisma.candidateCategory.findFirst({ where: { candidateId }, select: { id: true } }),
-    prisma.callSession.count({ where: { candidateId, kind: 'qualifying', status: 'finished' } }),
+    prisma.callSession.count({ where: { candidateId, kind: { in: ['qualifying', 'interview'] }, status: 'finished' } }),
     prisma.projectSubmission.count({ where: { candidateId, status: 'checked', resultJson: { not: Prisma.DbNull } } }),
     // ИИ-защита до приглашения (lane/ai-defense): завершённая защита сабмита, на который работодатель не звал.
     // Пока таких сессий нет, запрос даёт 0, шаг не пройден.

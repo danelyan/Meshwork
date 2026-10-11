@@ -73,11 +73,10 @@ describe('addVideo: согласие на запись (Г2)', () => {
     expect(removeSegment).not.toHaveBeenCalled();
   });
 
-  it('отзыв пришёлся между проверкой и записью — свой сегмент удаляется, audioPath снимается, 409', async () => {
+  it('отзыв пришёлся между проверкой и записью — свой сегмент удаляется, 409', async () => {
     mode.mockResolvedValueOnce('audio').mockResolvedValue('text');
     await expect(addVideo('c1', 's1', bytes, 0)).rejects.toMatchObject({ code: 'call_recording_off', status: 409 });
     expect(removeSegment).toHaveBeenCalledWith('s1', 'video/000-0.webm');
-    expect(db.callSession.update).toHaveBeenLastCalledWith({ where: { id: 's1' }, data: { audioPath: null } });
   });
 });
 

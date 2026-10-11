@@ -46,6 +46,11 @@ export interface CompanionVoice {
   speakingKey: string | null;
   /** Прогресс воспроизведения звучащей реплики 0…1 (по часам AudioContext); 0 — тишина или загрузка. */
   getProgress: () => number;
+  /**
+   * Короткий клип (ack «Угу…») по URL: играет через тот же граф (рот аватара двигается), не трогает очередь реплик.
+   * Не играет, если звук не разблокирован или сейчас звучит/грузится реплика; ошибки глотает. Резолвится по окончании клипа.
+   */
+  playClip: (url: string) => Promise<void>;
 }
 
 export { COMPANION_SAY_EVENT };
@@ -95,6 +100,9 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
   const runningRef = useRef(false);
   const startedAtRef = useRef(0);
   const durationRef = useRef(0);
+  const clipSrcRef = useRef<AudioBufferSourceNode | null>(null);
+  const clipCacheRef = useRef(new Map<string, Promise<AudioBuffer | null>>());
+  const [clipping, setClipping] = useState(false);
 
   /** Создать/разбудить AudioContext. Только синхронно из жеста пользователя (политика автозапуска). */
   const unlock = useCallback((): boolean => {
@@ -193,6 +201,11 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
     (raw: string, key?: string) => {
       const text = speechText(raw);
       if (!text || availableRef.current === false) return;
+      try {
+        clipSrcRef.current?.stop(); // ack «Угу…» не должен накладываться на ответ
+      } catch {
+        /* уже остановлен */
+      }
       queueRef.current.push({ ...fetchAudio(text), text: raw, key });
       void pump();
     },
@@ -204,9 +217,12 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
     queueRef.current = [];
     const src = sourceRef.current;
     sourceRef.current = null;
-    if (src) {
+    const clip = clipSrcRef.current;
+    clipSrcRef.current = null;
+    for (const s of [src, clip]) {
+      if (!s) continue;
       try {
-        src.stop();
+        s.stop();
       } catch {
         /* уже остановлен */
       }
@@ -277,7 +293,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
   const getLevel = useCallback(() => {
     const analyser = analyserRef.current;
     const buf = bufRef.current;
-    if (!analyser || !buf || !sourceRef.current) return 0;
+    if (!analyser || !buf || !(sourceRef.current || clipSrcRef.current)) return 0;
     analyser.getFloatTimeDomainData(buf);
     return rms(buf);
   }, []);
@@ -287,7 +303,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
     const analyser = analyserRef.current;
     const freq = freqRef.current;
     const lip = lipRef.current;
-    if (!analyser || !freq || !lip || !sourceRef.current) return null;
+    if (!analyser || !freq || !lip || !(sourceRef.current || clipSrcRef.current)) return null;
     const now = performance.now();
     if (now - lipAtRef.current >= 8) {
       const dt = lipAtRef.current ? Math.min((now - lipAtRef.current) / 1000, 0.1) : 1 / 60;
@@ -334,10 +350,45 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
     [stop],
   );
 
-  const status: VoiceStatus = playing ?? (thinking ? 'thinking' : 'idle');
+  const playClip = useCallback(async (url: string): Promise<void> => {
+    const ctx = ctxRef.current;
+    const analyser = analyserRef.current;
+    if (!ctx || !analyser || ctx.state !== 'running' || !enabledRef.current) return;
+    if (queueRef.current.length > 0 || sourceRef.current || clipSrcRef.current) return;
+    let p = clipCacheRef.current.get(url);
+    if (!p) {
+      p = (async () => {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        return ctx.decodeAudioData(await res.arrayBuffer());
+      })().catch(() => null);
+      clipCacheRef.current.set(url, p);
+    }
+    const buffer = await p;
+    // За время загрузки могла зазвучать реплика или клип — тогда молчим.
+    if (!buffer || ctxRef.current !== ctx || queueRef.current.length > 0 || sourceRef.current || clipSrcRef.current) return;
+    await new Promise<void>((resolve) => {
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(analyser);
+      src.onended = () => resolve();
+      clipSrcRef.current = src;
+      lipRef.current?.reset();
+      setClipping(true);
+      try {
+        src.start();
+      } catch {
+        resolve();
+      }
+    });
+    clipSrcRef.current = null;
+    setClipping(false);
+  }, []);
+
+  const status: VoiceStatus = playing ?? (clipping ? 'speaking' : thinking ? 'thinking' : 'idle');
   const value = useMemo<CompanionVoice>(
-    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress }),
-    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress],
+    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress, playClip }),
+    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress, playClip],
   );
   return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;
 }

@@ -1,5 +1,13 @@
 # Дизайн-система платформы
 
+Главная, 11 октября: `CompanyLogo` использует локальные оригинальные цветные
+логотипы из публичных профилей компаний. По умолчанию `grayscale(1)`, на hover
+и клавиатурном фокусе карточки `grayscale(0)`. Лента и граф показывают примеры
+ИТ-компаний, без заявления об их участии в платформе, чужих вакансий и зарплат.
+Общая подпись об иллюстрации и вымышленные показатели удалены; шесть правил
+включают ИИ-помощника и связь ФСП ID с явной пометкой демореестра.
+Фавикон: чёрная звёздочка ФСП на белом фоне, SVG 128×128, `/assets/favicon.svg`.
+
 Правила кода для `platform/`. Визуал и размеры из мокапа - в [design-spec.md](design-spec.md) (спека Карины, источник визуала); здесь - как это собрано в коде и что обязательно. Расхождение спеки и этого документа - находка: чинить здесь, спеку не править молча.
 
 Обязательное правило (решение владельца 09.10): новые экраны собираются из `platform/src/components/ui`; цвета только через токены `platform/src/styles/tokens.css`; новый токен или компонент сначала описывается в этом документе. Правило продублировано в `AGENTS.md` и `.claude/skills/fullstack-dev/SKILL.md`; сырые цвета ловит тест `platform/tests/unit/design-tokens.test.ts`.
@@ -360,10 +368,10 @@ The glass portrait may blink and deform at the neck while its shoulder base stay
 и ограничения 740px. Единственная сетка здесь — поверхность WebGL2.
 # Граф главной: исходный мокап
 
-Декоративный граф в hero сохраняет исходные North, Vector, Forma, Orbit,
-Atlas и дальние Kernel / Tensor, связи 92 / 84 / 68 / 61 / 46 процентов и
-положение узлов из `site/index.html`. Это иллюстрация, скрытая от скринридера;
-проценты не являются оценкой кандидата. Карточки витрины ниже независимы.
+Декоративный граф в hero сохраняет положение узлов и анимацию связей из
+`site/index.html`. С 11 октября используются те же восемь реальных логотипов,
+что и в ленте ИТ-компаний. Вымышленные проценты соответствия удалены.
+Граф скрыт от скринридера; доступные названия и ссылки находятся в ленте.
 # Голова консультанта
 
 Правая колонка консультанта показывает `HeadView` с фиксированным `weave6`
@@ -483,3 +491,17 @@ Astra 02 uses `SceneSlots` to render the onboarding-owned header and profile dra
 ### Astra employer: exact glass surfaces (10.10.2026)
 
 Employer-scoped tokens copied from the employer HTML: `--employer-panel` (white, .72 opacity) for match stage, candidate and catalog cards; `--employer-ring` (burgundy, .08 opacity) for selected graph nodes/company center; `--employer-modal` (white, .82 opacity) for the invitation dialog. Existing role accent `--employer-accent` is #A3343F. Employer components use a 620px radial matching stage with a separate 380px candidate card, compact list rows, and a native modal invitation form. CandidateSilhouette is an anonymous SVG mark, never an invented personal photo. VacancySwitcher preserves the real server-ranked vacancy selection; CompanyProfile wraps the existing persisted edit form with a read-only profile view.
+
+### Entry and FSP note (11.10.2026)
+
+The FSP ID/achievement mention belongs to the short list immediately below the blue Приступим button. The list identifies the registry as a demo. It is removed from the benefit cards: five cards, three above two on desktop, two columns on medium screens and one on mobile. The arrow is one filled polygon, avoiding overlapping stroke caps at its tip.
+
+The entry modal has two email modes (sign-in and registration); password recovery is a lower text action with its existing email/code/new-password flow. One parent-controlled consent checkbox is shared by registration, external ID and fresh-demo creation. Existing email sign-in, verification and recovery do not ask for duplicate consent. A grey chevron immediately follows the consent label; expanding it does not toggle acceptance. The complete draft text and its link live in the disclosure.
+
+Federation details are used only for the concept's presumed operator, as explicitly confirmed by the owner. Sources are linked in docs/consent.md and on /consent. The consent version changes with the wording; recording consent remains separate and unchanged.
+
+### Candidate intake scene (11.10.2026)
+
+IntakeScene is a presentation of the first acquaintance, distinct from the regular career consultant. It accepts header, draft, children, stepLabel and busy slots: a full-width roadmap above the question feed, live draft in the middle and the existing animated HeadView on the right. It never mounts the market, instructions, permanent document drop area, stats or call controls. The feed scrolls in its own data-feed-scroll pane on desktop; the draft can scroll independently. On narrow screens the draft becomes a an expandable summary with aria-expanded and the portrait is compact, keeping the current question and composer reachable. Existing colour, typography, glass and avatar tokens are reused.
+
+Initial candidate onboarding renders this scene automatically; a completed or paused account uses the regular consultant. An explicit acquaintance view is available from the consultant's mode link without overwriting answers. Draft values come only from server history; presumed grade and new self-reported experience/industry details remain private. Confirmed category comes from testing; contact privacy still follows invitation acceptance. Completing or pausing returns to the regular consultant. Existing employer flow and the approved head material/motion remain unchanged.

@@ -82,7 +82,7 @@ export function looksLikeQuestion(text: string): boolean {
  * и на итоге — нет: там заготовленный ответ без модели.
  */
 export function asideToModel(role: Role, kind: StepKind): boolean {
-  return role === 'candidate' && kind !== 'consent' && kind !== 'consents' && kind !== 'role' && kind !== 'summary';
+  return role === 'candidate' && kind !== 'consent' && kind !== 'role' && kind !== 'summary';
 }
 
 /** Маркер шага в тексте хода консультанта: по нему лента онбординга восстанавливает вопросы после перезагрузки. */

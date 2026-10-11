@@ -27,14 +27,18 @@ export function dashboardPath(pathname: string): boolean {
   return pathname === '/test' || pathname.startsWith('/test/') || candidate.some(([href]) => href !== '/consultant' && (pathname === href || pathname.startsWith(`${href}/`))) || pathname === '/employer' || pathname.startsWith('/employer/');
 }
 
-/** Only the navigation is client-side; each destination retains its own server access guard. */
-export function DashboardFrame({ account, children, employerSummary }: { account?: HeaderAccount | null; children: ReactNode; employerSummary?: ReactNode }) {
+/**
+ * Only the navigation is client-side; each destination retains its own server access guard.
+ * `bare` прячет боковую панель, но не меняет дерево вокруг `children`: иначе страница перемонтируется,
+ * а TestPage, включающий bare после загрузки попытки, уходит в бесконечную перезагрузку.
+ */
+export function DashboardFrame({ account, children, employerSummary, bare = false }: { account?: HeaderAccount | null; children: ReactNode; employerSummary?: ReactNode; bare?: boolean }) {
   const pathname = usePathname();
   if (!account?.roles || !dashboardPath(pathname)) return children;
   const isEmployer = account.roles.role === 'employer';
   const links = isEmployer ? employer : candidate;
-  return <div className={styles.frame} data-dashboard>
-    <aside className={styles.sidebar} aria-label="Ваш кабинет">
+  return <div className={styles.frame} data-dashboard data-bare={bare || undefined}>
+    {!bare && <aside className={styles.sidebar} aria-label="Ваш кабинет">
       <div className={styles.identity}>
         <span className={styles.monogram} data-employer={isEmployer || undefined} aria-hidden="true">{((isEmployer ? account.roles.companyName : account.userName)?.trim() || 'Ф').slice(0, 1).toUpperCase()}</span>
         <div><strong>{(isEmployer ? account.roles.companyName : account.userName) || 'Ваш кабинет'}</strong><small>{isEmployer ? 'Работодатель' : 'Кандидат'}</small></div>
@@ -51,8 +55,8 @@ export function DashboardFrame({ account, children, employerSummary }: { account
         <p>{isEmployer ? 'Имя и контакт кандидата откроются после принятия приглашения.' : 'Контакты доступны компании только после вашего согласия на приглашение.'}</p>
         <LogoutButton className={styles.logout} />
       </div>
-    </aside>
+    </aside>}
     <div className={styles.content}>{children}</div>
-    {isEmployer && <EmployerConsultantDock />}
+    {isEmployer && !bare && <EmployerConsultantDock />}
   </div>;
 }

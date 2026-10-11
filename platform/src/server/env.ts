@@ -67,8 +67,6 @@ export const envSchema = z
     UPLOAD_DIR: z.string().min(1).default('./data/uploads'),
     /** lane call: лимит квалификационных созвонов кандидата за 24 часа; 0 — без лимита (так на стенде). */
     CALL_DAILY_LIMIT: z.coerce.number().int().min(0).default(5),
-    /** lane consent (ADR 0005): сколько дней хранится аудио созвона; потом файлы и audioPath удаляются (транскрипт и оценки остаются). */
-    CALL_RECORDING_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
     /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
     WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
 
@@ -93,22 +91,6 @@ export const envSchema = z
     COLLECTOR_FIXTURES: z.stringbool().default(false),
     /** lane test: интервалы теста на грейд в минутах вместо дней (стенд жюри, ADR-0002). */
     TEST_DEMO_INTERVALS: z.stringbool().default(false),
-    /**
-     * lane integrity: индекс честности теста блокирует выдачу категории при high (needs_confirmation → подтверждающий тест).
-     * false — индекс считается и пишется в попытку, но категорию не задерживает (ADR-0002, дополнение 11.10).
-     */
-    TEST_INTEGRITY: z.stringbool().default(true),
-    /**
-     * lane jury: что делает high при включённом TEST_INTEGRITY. silent (по умолчанию, решение владельца 11.10) -
-     * индекс считается и виден работодателю, кандидату ничего не раскрывается и категория не задерживается;
-     * confirm - high задерживает категорию до подтверждающего теста (ADR-0002).
-     */
-    TEST_INTEGRITY_ACTION: z.enum(['silent', 'confirm']).default('silent'),
-    /**
-     * lane jury: слой «только для жюри» - живые счётчики сигналов, сдвиг ловушки и разбор индекса на итоге.
-     * Как DEMO_LOGIN: на стенде true, на проде false. Проверяется на сервере, данные без флага не отдаются.
-     */
-    JURY_INSIGHTS: z.stringbool().default(false),
     /** lane runner: адрес сервиса автопроверки проектов (compose: http://runner:8090). Не задан — проверка проектов недоступна. */
     RUNNER_URL: optionalString.pipe(z.url().optional()),
     /**

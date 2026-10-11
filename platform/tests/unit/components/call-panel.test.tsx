@@ -154,6 +154,16 @@ describe('CallPanel — режим звонка в сцене консульта
     rerender(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callKind="interview" />);
     expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('ИИнтервью');
   });
+
+  it('созвон недоступен (readiness): кнопка disabled, причина в title; готовая — с подсказкой про смысл', () => {
+    const { rerender } = render(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callBlocked="ИИнтервью откроется после теста" />);
+    const btn = screen.getByTestId('call-button') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(btn.title).toBe('ИИнтервью откроется после теста');
+    rerender(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} />);
+    expect((screen.getByTestId('call-button') as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByTestId('call-button').title).toContain('проверено платформой');
+  });
 });
 
 const iq = (index: number, text: string): TranscriptEntry => ({

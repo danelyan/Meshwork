@@ -40,7 +40,7 @@ export function ShellFrame({ header, footer, children, account, employerSummary 
         К содержимому
       </a>
       {!bare && header}
-      <div className={styles.page}>{bare ? children : <DashboardFrame account={account} employerSummary={employerSummary}>{children}</DashboardFrame>}</div>
+      <div className={styles.page}><DashboardFrame account={account} employerSummary={employerSummary} bare={bare}>{children}</DashboardFrame></div>
       {!bare && footer}
       </div>
     </BareContext.Provider>

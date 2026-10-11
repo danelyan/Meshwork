@@ -1,4 +1,5 @@
 .frame { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: calc(100svh - var(--landing-header-h)); }
+.frame[data-bare] { display: block; min-height: 100svh; }
 .sidebar { align-self: start; position: sticky; top: var(--landing-header-h); padding: 22px 16px; background: var(--glass); border-right: 1px solid var(--line); height: calc(100dvh - var(--landing-header-h)); overflow-y: auto; backdrop-filter: var(--blur); }
 .identity { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
 .monogram { display: grid; place-items: center; width: 48px; height: 48px; flex: none; border: 1px solid var(--line); background: var(--ink); color: var(--on-ink); font: 600 24px var(--font); }

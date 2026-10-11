@@ -62,11 +62,7 @@ test('E-02: работодатель → подборка → приглашен
   // до принятия: вилка и способ связи компании (ТЗ 2.2)
   await expect(page.getByText(/Связь с компанией: /).first()).toBeVisible();
   const accept = page.getByRole('button', { name: 'Принять' }).first();
-  // Г5 (ADR 0005): принять можно только с отдельной галочкой раскрытия имени и контактов этой компании.
-  if (await accept.isVisible()) {
-    await page.getByLabel(/Раскрыть этому работодателю/).first().check();
-    await accept.click();
-  }
+  if (await accept.isVisible()) await accept.click();
   await expect(page.getByText(/Контакты открыты/).first()).toBeVisible();
 
   // 4. работодатель видит имя и контакты

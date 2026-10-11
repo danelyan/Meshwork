@@ -72,10 +72,9 @@ describe('ротация семейств (seenBefore)', () => {
 });
 
 describe('правила остановки по версии', () => {
-  it('текущая версия — v6 (индекс честности), правила v5 и v6 совпадают с v4 (7–10)', () => {
-    expect(POLICY_VERSION).toBe('adr-0002-v7');
+  it('текущая версия — v5, правила v5 совпадают с v4 (7–10)', () => {
+    expect(POLICY_VERSION).toBe('adr-0002-v5');
     expect(RULES_BY_VERSION['adr-0002-v5']).toEqual({ min: MIN_ITEMS, max: MAX_ITEMS });
-    expect(RULES_BY_VERSION['adr-0002-v6']).toEqual({ min: MIN_ITEMS, max: MAX_ITEMS });
     expect(rulesFor('adr-0002-v4')).toEqual({ min: MIN_ITEMS, max: MAX_ITEMS });
   });
 

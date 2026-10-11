@@ -9,3 +9,4 @@ export { resolveCallAccess, hasAcceptedInvitation, publicVerdict, eventForAccess
 export { hasCallConsent, recordCallConsent, CALL_RECORDING_CONSENT_VERSION, CALL_RECORDING_CONSENT_PARAGRAPHS } from './consent';
 export { callPrincipal } from './principal';
 export { CALL_LIMITS, routeLevel, planNext, heuristicSignal } from './plan';
+export { callReadiness, type CallReadiness } from './readiness';

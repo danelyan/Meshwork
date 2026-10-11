@@ -99,6 +99,13 @@ export const API_ACCESS = {
   '/api/auth/password/reset': 'public',
   '/api/auth/yandex': 'public',
   '/api/auth/yandex/callback': 'public',
+  // ФСП ID (R-FSP-01): привязка к профилю через внешний OIDC-провайдер (старт и возврат) — только кандидату.
+  '/api/fsp-id/link': 'candidate',
+  // Возврат обслуживает и привязку (requireCandidate внутри), и вход на платформу через ФСП ID (без сессии).
+  '/api/fsp-id/callback': 'public',
+  '/api/fsp-id/login': 'public',
+  // Мок провайдера ФСП ID (страница входа «чужого» сервиса; без внешнего провайдера в env) — без входа на платформу.
+  '/api/fsp-id/realms/fsp/protocol/openid-connect/auth': 'public',
   '/api/auth/stale': 'public',
   // `{ user: null }` для гостя — отвечает всем.
   '/api/auth/me': 'public',

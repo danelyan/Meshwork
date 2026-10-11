@@ -5,7 +5,6 @@ import { useState } from 'react';
 
 import type { AsideDoc, JourneyStep, MarketRow, SceneAsideData } from '@/server/consultant/aside';
 
-import { fieldVisibility } from '../onboarding/OnboardingDraft';
 import { useAsideData } from './aside-refresh';
 import { FilesCard } from './FilesCard';
 import { MemoryCard } from './MemoryCard';
@@ -104,38 +103,9 @@ function Market({ market, role }: { market: NonNullable<SceneAsideData['market']
   );
 }
 
-/** Знакомство: таймлайн заполнения анкеты и цифры — сколько сохранено, что увидит компания. */
-function ProfileProgress({ progress, known }: { progress: NonNullable<SceneAsideData['onboarding']>; known: SceneAsideData['known'] }) {
-  const answers = (known ?? []).filter((f) => f.source === 'onboarding' && f.stepId);
-  const seen = answers.filter((f) => fieldVisibility(f.stepId!) === 'в анонимной карточке').length;
-  const left = Math.max(0, progress.total - progress.done);
-  return (
-    <Card id="progress" title={`Заполнение профиля · ${progress.done} из ${progress.total}`}>
-      <div className={styles.progressBar} role="progressbar" aria-valuenow={progress.done} aria-valuemin={0} aria-valuemax={progress.total} aria-label={`Заполнено ${progress.done} из ${progress.total}`}>
-        {Array.from({ length: progress.total }, (_, i) => <i key={i} data-done={i < progress.done || undefined} />)}
-      </div>
-      <dl className={styles.progressStats}>
-        <div><dt>сохранено</dt><dd>{progress.done}</dd></div>
-        <div><dt>осталось</dt><dd>{left}</dd></div>
-        <div><dt>видит компания</dt><dd>{seen}</dd></div>
-      </dl>
-      {progress.current && <p className={styles.muted}>Сейчас: {progress.current.toLowerCase()} - вопрос в чате слева.</p>}
-    </Card>
-  );
-}
-
 /** Правая колонка под головой: роадмап с подсказкой по текущему шагу, что уже известно, рынок, документы (кандидат). */
 export function SceneAside({ data: initial, className }: { data: SceneAsideData; className?: string }) {
   const data = useAsideData() ?? initial;
-  if (data.onboarding)
-    return (
-      <div className={`${styles.box} ${className ?? ''}`} data-testid="scene-aside">
-        <div className={styles.aside} data-role={data.role} data-mode="onboarding">
-          <ProfileProgress progress={data.onboarding} known={data.known} />
-          <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} fill={data.fill} minimal />
-        </div>
-      </div>
-    );
   return (
     // внешний блок — контейнер размера (@container aside), внутренний — сетка: запрос не стилизует сам контейнер
     <div className={`${styles.box} ${className ?? ''}`} data-testid="scene-aside">

@@ -102,28 +102,6 @@ export interface SceneAsideData {
   hint: { title: string; text: string };
   /** Кандидату — как работает его консультант (скиллы и свои инструкции); у работодателя нет. */
   instructions?: ConsultantSettingsData;
-  /** Идёт знакомство: колонка — только «Заполнение профиля» и «Что я о тебе знаю», остального нет. */
-  onboarding?: { done: number; total: number; current: string | null };
-}
-
-/**
- * Знакомство не завершено (до итога) — и когда вопрос открыт, и когда необязательные вопросы ждут в чате
- * (пауза `later`). Владелец 11.10: «надо минимализм держать весь онбординг… две карточки только сделать и
- * все справа в нижней части и больше ничего».
- */
-export const onboardingMode = (view: OnboardingView | undefined): boolean => !!view && !view.onboarded;
-
-/** Колонка на время знакомства: прогресс анкеты и ответы (мой вид / для компании), без рынка, файлов и метрик. */
-export function onboardingAside(role: SceneAsideData['role'], view: OnboardingView, known: Pick<SceneAsideData, 'known' | 'memoryPending' | 'memoryLimit'>): SceneAsideData {
-  const current = view.current.kind === 'summary' ? null : view.current.label;
-  // Пауза: следующий вопрос — пункт «+ дополнить» в «Что я о тебе знаю», как в полной колонке.
-  const fill = view.later && current ? { stepId: view.current.id, label: current } : undefined;
-  return { role, steps: [], ...known, docs: null, hint: { title: '', text: '' }, onboarding: { done: view.progress.done, total: view.progress.total, current: view.later ? null : current }, ...(fill ? { fill } : {}) };
-}
-
-/** Аккаунт без роли (первый вопрос знакомства): та же урезанная колонка, только из ответов знакомства. */
-export function guestAside(view: OnboardingView): SceneAsideData {
-  return onboardingAside(view.role === 'employer' ? 'employer' : 'candidate', view, { known: knownFacts(view) });
 }
 
 type StepDraft = Omit<JourneyStep, 'state'> & { done: boolean };
@@ -299,7 +277,6 @@ export async function loadCandidateDocs(candidateId: string): Promise<AsideDoc[]
 }
 
 export async function loadCandidateAside(candidateId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {
-  if (view && onboardingMode(view)) return onboardingAside('candidate', view, await knownWithMemory({ candidateId }, view));
   const [profileClaims, category, invitations, docs, vacancies, known, instructions] = await Promise.all([
     prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } }),
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' }, select: { specialization: true, grade: true } }),
@@ -320,7 +297,6 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
 }
 
 export async function loadEmployerAside(employerProfileId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {
-  if (view && onboardingMode(view)) return onboardingAside('employer', view, await knownWithMemory({ employerProfileId }, view));
   const ctx = await loadEmployerContext(employerProfileId);
   const [vacancies, invitations, categories, known] = await Promise.all([
     listVacancies(ctx.companyId),

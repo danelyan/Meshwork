@@ -1,4 +1,5 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { useEffect, useState } from 'react';
 
 import { ShellFrame, useBareShell } from '@/components/shell/ShellFrame';
 import { SiteFooter } from '@/components/shell/SiteFooter';
@@ -170,5 +171,30 @@ describe('ShellFrame', () => {
     expect(screen.queryByText('шапка')).toBeNull();
     rerender(frame(<Attempt active={false} />));
     expect(screen.getByText('шапка')).toBeDefined();
+  });
+
+  it('вошедший кандидат на /test: включение bare не перемонтирует страницу (иначе бесконечная загрузка попытки)', async () => {
+    nav.pathname = '/test';
+    const account = { userName: 'Анна', userEmail: 'a@x.ru', roles: { role: 'candidate', otherExists: false, canCreateOther: true, companyName: null } } as never;
+    let mounts = 0;
+    function Attempt() {
+      const [active, setActive] = useState(false);
+      useEffect(() => {
+        mounts += 1;
+        setActive(true); // как TestPage: попытка загрузилась → active
+      }, []);
+      useBareShell(active);
+      return <main id="main">тест</main>;
+    }
+    render(
+      <ShellFrame header={<header>шапка</header>} footer={<footer>подвал</footer>} account={account}>
+        <Attempt />
+      </ShellFrame>,
+    );
+    await act(async () => undefined);
+    expect(mounts).toBe(1);
+    expect(screen.queryByText('шапка')).toBeNull();
+    expect(screen.queryByLabelText('Ваш кабинет')).toBeNull();
+    expect(screen.getByText('тест')).toBeDefined();
   });
 });

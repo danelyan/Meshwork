@@ -35,6 +35,8 @@ async function seed() {
   await prisma.candidate.create({ data: { id: A, email: 'a@example.test', name: 'А', specialization: 'backend', subcategoryId: 'backend.web-api' } });
   await prisma.user.create({ data: { id: 'user-a', role: 'candidate', name: 'А', candidateId: A } });
   await prisma.candidateProfile.create({ data: { candidateId: A, claimedGrade: 'middle' } });
+  // ИИнтервью открывается после теста: категория из теста (call/readiness.ts).
+  await prisma.candidateCategory.create({ data: { candidateId: A, specialization: 'backend', grade: 'middle', source: 'test', subcategoryId: 'backend.web-api' } });
   await prisma.claimCatalog.createMany({
     data: [
       { id: 'be.layering', specialization: 'backend', statement: 'Разделял код сервиса на слои', grades: ['junior', 'middle'], weight: 3, proof: [], markers: [], limits: '' },

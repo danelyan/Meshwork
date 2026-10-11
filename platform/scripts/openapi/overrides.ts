@@ -68,6 +68,7 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   defense: 'Защита утверждения: короткое интервью, повышающее уровень до «платформа»',
   'defense-room': 'Защита проекта (ADR 0003, ступень 3): вопросы по коду, ходы, SSE звонка, итог слепого оценщика',
   demo: 'Демо-вход и демо-резюме (только при DEMO_LOGIN)',
+  'fsp-id': 'ФСП ID (R-FSP-01): привязка ФСП ID к профилю кандидата через OIDC-провайдер (Keycloak; сейчас — симулятор ФСП ID команды) и загрузка достижений',
   directions: 'Справочник направлений и подкатегорий (Subcategory, R-T-05)',
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
@@ -341,6 +342,41 @@ export const OVERRIDES: Record<string, OpOverride> = {
     ],
     description: 'Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка — на /auth?error=<код>, без подробностей и токенов.',
     success: { description: 'Редирект 303: незавершённый онбординг → /consultant (лента знакомства), иначе `next` или кабинет роли; при ошибке /auth?error=<код>' },
+  },
+  // lane fsp-oidc: привязка ФСП ID к профилю (R-FSP-01..04, R-C-15).
+  'GET /api/fsp-id/link': {
+    summary: 'Начать привязку ФСП ID',
+    description: 'Кнопка в настройках кандидата: state, nonce и PKCE verifier — в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата — на /auth.',
+    success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
+  },
+  'GET /api/fsp-id/login': {
+    summary: 'Войти через ФСП ID',
+    query: [
+      { name: 'consent', description: 'Версия согласия с галки на /auth; иначе — /auth?error=consent_required', schema: str() },
+      { name: 'next', description: 'Куда вернуть после входа (только свой путь)', schema: str() },
+    ],
+    description: 'Вход на платформу через ФСП ID (кандидат): state, nonce, PKCE verifier, согласие и next — в подписанной httpOnly-куке на 10 минут, редирект на страницу входа провайдера (симулятор ФСП ID по env или встроенный мок).',
+    success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
+  },
+  'GET /api/fsp-id/callback': {
+    summary: 'Возврат из ФСП ID',
+    query: [
+      { name: 'code', description: 'Код авторизации', schema: str() },
+      { name: 'state', description: 'Должен совпасть со state из куки старта', schema: str() },
+      { name: 'error', description: 'Присутствует при отказе', schema: str() },
+    ],
+    description: 'Проверка state, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce). Привязка (кука потока mode=link): кандидат сессии = кандидат потока, участник привязывается к профилю. Вход (mode=login): аккаунт по ФСП ID (новый — сразу кандидат), согласие, привязка, кука сессии. Токены в URL не попадают.',
+    success: { status: 303, description: 'Привязка: /settings или /consultant с ?fsp=linked|no_achievements|unavailable|error_<код>. Вход: /consultant или next; ошибка — /auth?error=fsp_<код>' },
+  },
+  'GET /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
+    summary: 'Мок ФСП ID: страница входа',
+    description: 'Authorization endpoint встроенного мока ФСП ID (путь как у Keycloak); только пока внешний провайдер не настроен, иначе 404. Проверяет client_id и redirect_uri по белому списку, PKCE S256, state и nonce; отдаёт HTML-страницу выбора демо-участника.',
+    success: { description: 'HTML-страница входа; ошибка запроса — редирект на redirect_uri с error или страница ошибки' },
+  },
+  'POST /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
+    summary: 'Мок ФСП ID: выбор демо-участника',
+    description: 'Форма страницы входа мока: одноразовый код на 60 секунд и редирект на redirect_uri с code и state; «Отмена» — error=access_denied.',
+    success: { status: 303, description: 'Редирект на /api/fsp-id/callback' },
   },
   // lane email-auth: вход по почте и паролю (R-D-04). Все формы — same-origin и лимит попыток на клиента (429).
   'POST /api/auth/register': {

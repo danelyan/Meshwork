@@ -13,7 +13,6 @@ import { seedEmployer } from '../../../prisma/seed/employer';
 import { seedRecommend } from '../../../prisma/seed/recommend';
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
-import { discloseAccepted } from '../../helpers/consents';
 
 const EMP = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: DEMO_EMPLOYER.profileId })}`;
 const params = <T extends Record<string, string>>(p: T) => ({ params: Promise.resolve(p) });
@@ -164,7 +163,6 @@ describe('подборка со ступенями ADR 0003 (БД)', () => {
     // Кандидат принимает приглашение; создана ожидающая защита по его сабмиту.
     const inv = await createInvitation(PROFILE, { candidateId: 'ec-proj', vacancyId: NEED, message: 'Приглашаем на защиту проекта', salaryFrom: 100000, salaryTo: 120000 });
     await prisma.invitation.update({ where: { id: inv.id }, data: { status: 'accepted' } });
-    await discloseAccepted(); // Г5 (ADR 0005)
     const pending = await prisma.callSession.create({ data: { candidateId: 'ec-proj', kind: 'defense', status: 'pending', projectSubmissionId: sub.id, policyVersion: 'v', transcriptJson: [] } });
     // Ожидающая защита по сабмиту другой компании кнопкой не становится.
     const foreignSub = await prisma.projectSubmission.findFirstOrThrow({ where: { candidateId: 'ec-other' } });

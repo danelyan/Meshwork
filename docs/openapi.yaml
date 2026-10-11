@@ -45,6 +45,9 @@ tags:
     name: favorites
     description: favorites
   -
+    name: fsp-id
+    description: "ФСП ID (R-FSP-01): привязка ФСП ID к профилю кандидата через OIDC-провайдер (Keycloak; сейчас — симулятор ФСП ID команды) и загрузка достижений"
+  -
     name: health
     description: "Проверка живости"
   -
@@ -4099,6 +4102,150 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/fsp-id/callback":
+    get:
+      operationId: getFspIdCallback
+      tags:
+        - fsp-id
+      summary: "Возврат из ФСП ID"
+      description: "Проверка state, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce). Привязка (кука потока mode=link): кандидат сессии = кандидат потока, участник привязывается к профилю. Вход (mode=login): аккаунт по ФСП ID (новый — сразу кандидат), согласие, привязка, кука сессии. Токены в URL не попадают.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: code
+          in: query
+          required: false
+          description: "Код авторизации"
+          schema:
+            type: string
+        -
+          name: state
+          in: query
+          required: false
+          description: "Должен совпасть со state из куки старта"
+          schema:
+            type: string
+        -
+          name: error
+          in: query
+          required: false
+          description: "Присутствует при отказе"
+          schema:
+            type: string
+      responses:
+        "303":
+          description: "Привязка: /settings или /consultant с ?fsp=linked|no_achievements|unavailable|error_<код>. Вход: /consultant или next; ошибка — /auth?error=fsp_<код>"
+          headers:
+            Location:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/fsp-id/link":
+    get:
+      operationId: getFspIdLink
+      tags:
+        - fsp-id
+      summary: "Начать привязку ФСП ID"
+      description: "Кнопка в настройках кандидата: state, nonce и PKCE verifier — в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата — на /auth.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: return
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "303":
+          description: "Редирект на страницу входа ФСП ID"
+          headers:
+            Location:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/fsp-id/login":
+    get:
+      operationId: getFspIdLogin
+      tags:
+        - fsp-id
+      summary: "Войти через ФСП ID"
+      description: "Вход на платформу через ФСП ID (кандидат): state, nonce, PKCE verifier, согласие и next — в подписанной httpOnly-куке на 10 минут, редирект на страницу входа провайдера (симулятор ФСП ID по env или встроенный мок).\n\nВход не нужен."
+      security: []
+      parameters:
+        -
+          name: consent
+          in: query
+          required: false
+          description: "Версия согласия с галки на /auth; иначе — /auth?error=consent_required"
+          schema:
+            type: string
+        -
+          name: next
+          in: query
+          required: false
+          description: "Куда вернуть после входа (только свой путь)"
+          schema:
+            type: string
+      responses:
+        "303":
+          description: "Редирект на страницу входа ФСП ID"
+          headers:
+            Location:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/fsp-id/realms/fsp/protocol/openid-connect/auth":
+    get:
+      operationId: getFspIdRealmsFspProtocolOpenidConnectAuth
+      tags:
+        - fsp-id
+      summary: "Мок ФСП ID: страница входа"
+      description: "Authorization endpoint встроенного мока ФСП ID (путь как у Keycloak); только пока внешний провайдер не настроен, иначе 404. Проверяет client_id и redirect_uri по белому списку, PKCE S256, state и nonce; отдаёт HTML-страницу выбора демо-участника.\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "HTML-страница входа; ошибка запроса — редирект на redirect_uri с error или страница ошибки"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postFspIdRealmsFspProtocolOpenidConnectAuth
+      tags:
+        - fsp-id
+      summary: "Мок ФСП ID: выбор демо-участника"
+      description: "Форма страницы входа мока: одноразовый код на 60 секунд и редирект на redirect_uri с code и state; «Отмена» — error=access_denied.\n\nВход не нужен."
+      security: []
+      responses:
+        "303":
+          description: "Редирект на /api/fsp-id/callback"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
         "403":
           $ref: "#/components/responses/Forbidden"
         "500":

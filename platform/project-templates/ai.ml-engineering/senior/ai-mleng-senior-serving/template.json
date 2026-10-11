@@ -1,0 +1,19 @@
+{
+  "id": "ai-mleng-senior-serving",
+  "subcategoryId": "ai.ml-engineering",
+  "specialization": "ai",
+  "grade": "senior",
+  "title": "Пакетный инференс с версиями модели: совместимость схемы и откат",
+  "summary": "Реестр версий линейных моделей: валидация и неизменяемость, активация с проверкой совместимости признаков, откат, пакетный инференс с построчными ошибками и закреплением версии на пачку, сохранение состояния; DESIGN.md",
+  "stack": ["python312", "pytest"],
+  "catalogIds": ["ai.model-serving", "ai.model-versioning", "ai.validation"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

@@ -7,6 +7,7 @@ import { prisma } from '../db';
 import { responseJsonSchema } from '../llm/schema';
 import type { ChatMessage, LlmProvider } from '../llm/types';
 import { GRADE_CUT } from '../test/policy';
+import { rankingHoldOf } from '../test/ranking-hold';
 import type { Grade } from '../../lib/grades';
 import { INTERVIEWER_TIMEOUT_MS, withRefusal } from './plan';
 import { contextBlock, loadCallPrompt } from './prompt-utils';
@@ -83,16 +84,19 @@ export function pickReviewItems(rows: readonly AnsweredRow[], grade: Grade): Rev
 
 /** Задания последней завершённой попытки теста по той же подкатегории; нет попытки — []. */
 export async function loadTestReview(candidateId: string, specialization: string, subcategoryId: string | null): Promise<ReviewItem[]> {
-  const attempt = await prisma.testAttempt.findFirst({
-    where: {
-      candidateId,
-      status: { in: ['passed', 'not_confirmed'] },
-      specialization: specialization as never,
-      ...(subcategoryId ? { subcategoryId } : {}),
-    },
-    orderBy: [{ finishedAt: { sort: 'desc', nulls: 'last' } }, { startedAt: 'desc' }],
-    select: { id: true, grade: true },
-  });
+  const scope = { candidateId, specialization: specialization as never, ...(subcategoryId ? { subcategoryId } : {}) };
+  // Если категория не учитывается в выдаче из-за индекса (test/ranking-hold.ts), разбираем именно ту попытку, которая
+  // её держит: «объяснил сам» снимает ограничение только по ней, а последней завершённой может оказаться проваленная
+  // подтверждающая попытка (Codex-ревью 11.10). Иначе — последняя завершённая попытка.
+  const hold = await rankingHoldOf(candidateId);
+  const held = hold ? await prisma.testAttempt.findFirst({ where: { ...scope, id: hold.attemptId }, select: { id: true, grade: true } }) : null;
+  const attempt =
+    held ??
+    (await prisma.testAttempt.findFirst({
+      where: { ...scope, status: { in: ['passed', 'not_confirmed'] } },
+      orderBy: [{ finishedAt: { sort: 'desc', nulls: 'last' } }, { startedAt: 'desc' }],
+      select: { id: true, grade: true },
+    }));
   if (!attempt) return [];
   const items = await prisma.testItem.findMany({
     where: { attemptId: attempt.id, answer: { not: null } },

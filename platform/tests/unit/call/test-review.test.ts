@@ -8,6 +8,8 @@ import { clearStubResponses, createStubProvider, registerStubResponse } from '@/
 
 const { findFirst } = vi.hoisted(() => ({ findFirst: vi.fn() }));
 vi.mock('@/server/db', () => ({ prisma: { testAttempt: { findFirst }, testItem: { findMany: vi.fn() } } }));
+// Ограничения выдачи по индексу в этих сценариях нет: разбирается последняя завершённая попытка.
+vi.mock('@/server/test/ranking-hold', () => ({ rankingHoldOf: vi.fn().mockResolvedValue(null) }));
 
 const row = (index: number, irtB: number, correct: boolean | null, answer: string | null = 'ответ'): AnsweredRow => ({
   index,

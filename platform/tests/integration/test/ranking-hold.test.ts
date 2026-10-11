@@ -7,6 +7,7 @@ import { GET as historyRoute } from '@/app/api/test/attempts/route';
 import { resetEnvCache } from '@/server/env';
 import { signSession, signUserSession } from '@/server/session';
 import { listAttempts } from '@/server/test';
+import { loadTestReview } from '@/server/call/test-review';
 import { rankingHoldOf } from '@/server/test/ranking-hold';
 
 import { DEMO_EMPLOYER, seedAuth } from '../../../prisma/seed/auth';
@@ -98,6 +99,22 @@ describe('rankingHold: кандидат видит то же ограничен�
     // Начатая подтверждающая попытка ограничение ещё не снимает.
     expect((await rankingHoldOf('rh-high'))?.attemptId).toBe('att-rh-high');
     await prisma.testAttempt.deleteMany({ where: { candidateId: 'rh-high', kind: 'confirm' } });
+  });
+
+  it('созвон разбирает попытку, которая держит категорию, а не проваленную подтверждающую', async () => {
+    await prisma.taskTemplate.create({ data: { id: `${TPL}-conf`, taskId: 't2', title: 'T2', specialization: 'backend', grade: 'junior', catalogIds: [], format: 'number', irtA: 1, irtB: 0 } });
+    await prisma.testAttempt.create({
+      data: {
+        id: 'att-rh-high-conf', candidateId: 'rh-high', specialization: 'backend', grade: 'junior', subcategoryId: 'backend.web-api', status: 'not_confirmed', kind: 'confirm', confirmsAttemptId: 'att-rh-high', seed: 2,
+        policyVersion: 'adr-0002-v7', startedAt: new Date('2026-10-11T09:50:00Z'), expiresAt: new Date('2026-10-11T10:00:00Z'), finishedAt: new Date('2026-10-11T10:00:00Z'), integrity: HIGH,
+        items: { create: [{ index: 0, templateId: `${TPL}-conf`, instanceSeed: 1, params: {}, prompt: 'p2', answerHint: '', answerKey: '2', explanation: '', answer: '2', correct: true }] },
+      },
+    });
+    expect((await rankingHoldOf('rh-high'))?.attemptId).toBe('att-rh-high');
+    // Последняя завершённая - проваленная подтверждающая, но разбор идёт по исходной: только её «объяснил сам» снимает ограничение.
+    expect((await loadTestReview('rh-high', 'backend', 'backend.web-api')).map((i) => i.templateId)).toEqual([TPL]);
+    await prisma.testAttempt.deleteMany({ where: { id: 'att-rh-high-conf' } });
+    await prisma.taskTemplate.deleteMany({ where: { id: `${TPL}-conf` } });
   });
 
   it('TEST_INTEGRITY_RANKING=false: пометки нет ни у кого, поиск показывает всех', async () => {

@@ -1,0 +1,19 @@
+{
+  "id": "be-datamodel-middle-migrations",
+  "subcategoryId": "backend.data-model",
+  "specialization": "backend",
+  "grade": "middle",
+  "title": "Миграции схемы: версии, откат шага, индексы",
+  "summary": "Раннер миграций SQLite по user_version: пошаговое применение, атомарность шага (DDL + данные + версия), пересборка таблицы без потери связей, проверка внешних ключей, безопасный повторный и параллельный запуск, индексы под запросы (проверка по EXPLAIN QUERY PLAN)",
+  "stack": ["python312", "sqlite3", "pytest"],
+  "catalogIds": ["be.migrations", "be.sql-indexes", "be.transactions", "be.sql-schema"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

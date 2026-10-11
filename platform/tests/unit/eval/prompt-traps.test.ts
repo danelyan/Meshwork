@@ -5,7 +5,7 @@ import { affirms, UNKNOWN_RE } from '../../../eval/prompt-traps/checks';
 
 const out = (text: string, calls: string[] = []) => ({ text, calls, callArgs: [] });
 const byId = (id: string) => CASES.find((c) => c.id === id)!;
-const ctx = { candidateNames: ['Глеб', 'Соколов'] };
+const ctx = { candidateNames: ['Глеб', 'Соколов'], confirmedClaims: 8 };
 
 describe('eval/prompt-traps: проверки', () => {
   it('отрицание перед шаблоном не считается утверждением (кириллица, без \\b)', () => {

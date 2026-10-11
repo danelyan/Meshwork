@@ -19,7 +19,7 @@ const Item = z.object({
   sourceRef: z.string().min(1).max(200).describe('Координата строки с цитатой: `cv.pdf#p2:l14`, `github:user/repo#README:l3`'),
   confidence: z.enum(['low', 'medium', 'high']).default('medium'),
 });
-const Input = z.object({ items: z.array(Item).min(1).max(30) });
+const Input = z.object({ items: z.array(Item).min(1).max(30).describe('Утверждения для карточек: каждое из каталога и с дословной цитатой из источника, присланного кандидатом.') });
 const Output = z.object({
   proposed: z.array(z.object({ id: z.string(), catalogId: z.string(), statement: z.string(), wording: z.string().nullable(), level: z.string(), quote: z.string(), sourceRef: z.string() })),
   rejected: z.array(z.object({ catalogId: z.string(), reason: z.enum(['no_quote', 'unknown_catalog_id', 'duplicate', 'hidden_text', 'quote_too_short']) })),

@@ -21,7 +21,7 @@ const GapInput = z.object({
   target: z.object({
     kind: z.enum(['category', 'vacancy']).describe('category — «backend:middle»-подобный id категории; vacancy — id вакансии'),
     id: z.string().min(1).max(64),
-  }),
+  }).describe('Цель: категория вида «backend:middle» или id вакансии из recommend_targets. Нет цели - сначала ask_user.'),
 });
 export const getGapMap: AgentTool<z.infer<typeof GapInput>, { gaps: z.infer<typeof GapSchema>[] }> = {
   name: 'get_gap_map',
@@ -69,7 +69,7 @@ const TasksInput = z.object({
 });
 export const recommendTasksTool: AgentTool<z.infer<typeof TasksInput>, { tasks: z.infer<typeof TaskSchema>[] }> = {
   name: 'recommend_tasks',
-  description: 'Задания из банка платформы на указанные пробелы (детерминированно). Вызывай после get_gap_map с catalogId пробелов. Других заданий, курсов и ресурсов не предлагай.',
+  description: 'Задания из банка платформы на указанные пробелы (детерминированно). Вызывай после get_gap_map с catalogId пробелов. Возвращает до limit заданий из банка с темой и ссылкой. Не вызывай без пробелов из get_gap_map: задания подбираются только под их catalogId. Других заданий, курсов и ресурсов не предлагай.',
   input: TasksInput,
   output: z.object({ tasks: z.array(TaskSchema) }),
   async handler(ctx, { gapIds, limit }) {
@@ -117,7 +117,7 @@ const CoverageOutput = z.object({
   explanation: z.string(),
   note: z.string(),
 });
-const InvitationInput = z.object({ invitationId: z.string().min(1).max(64) });
+const InvitationInput = z.object({ invitationId: z.string().min(1).max(64).describe('id приглашения из get_invitations этого разговора; не придумывай.') });
 export const explainInvitationTool: AgentTool<z.infer<typeof InvitationInput>, z.infer<typeof CoverageOutput>> = {
   name: 'explain_invitation',
   description:

@@ -28,7 +28,7 @@ import { ONBOARDING_PROMPT_VERSION } from '../../src/server/onboarding/prompt';
 import { findStep } from '../../src/server/onboarding/scenario';
 import type { StepContext } from '../../src/server/onboarding/types';
 
-import { CASES, type TrapCase, type ToolOverride } from './cases';
+import { CASES, type CheckContext, type TrapCase, type ToolOverride } from './cases';
 import type { TurnOutput, Verdict } from './checks';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -162,13 +162,13 @@ interface Run {
   ms: number;
 }
 
-async function runOne(c: TrapCase, repeat: number, names: string[]): Promise<Run> {
+async function runOne(c: TrapCase, repeat: number, ctx: CheckContext): Promise<Run> {
   const t0 = Date.now();
   let out: TurnOutput;
   let v: Verdict;
   try {
     out = c.agent === 'consultant' ? await consultantTurn(c) : c.agent === 'employer' ? await employerTurn(c) : await onboardingTurn(c);
-    v = c.check(out, { candidateNames: names });
+    v = c.check(out, ctx);
   } catch (err) {
     out = { text: '', calls: [], callArgs: [] };
     v = { pass: false, why: `сбой прогона: ${err instanceof Error ? err.message : String(err)}` };
@@ -201,9 +201,16 @@ async function candidateNames(): Promise<string[]> {
   });
 }
 
+async function checkContext(): Promise<CheckContext> {
+  return {
+    candidateNames: await candidateNames(),
+    confirmedClaims: await prisma.claim.count({ where: { candidateId: CANDIDATE_ID, status: 'confirmed' } }),
+  };
+}
+
 async function main() {
   if (RESCORE) {
-    rescore(RESCORE, await candidateNames());
+    rescore(RESCORE, await checkContext());
     return;
   }
   if (getEnv().LLM_PROVIDER === 'stub') {
@@ -211,12 +218,12 @@ async function main() {
     return;
   }
   const cases = ONLY ? CASES.filter((c) => ONLY.split(',').includes(c.id)) : CASES;
-  const names = await candidateNames();
+  const ctx = await checkContext();
   const claimsBefore = new Set((await prisma.claim.findMany({ where: { candidateId: CANDIDATE_ID }, select: { id: true } })).map((r) => r.id));
 
   const jobs = cases.flatMap((c) => Array.from({ length: REPEATS }, (_, r) => ({ c, r: r + 1 })));
   console.log(`prompts: ${CONSULTANT_PROMPT_VERSION}, ${EMPLOYER_PROMPT_VERSION}, ${ONBOARDING_PROMPT_VERSION}; ${cases.length} случаев × ${REPEATS}, параллельно ${PARALLEL}`);
-  const runs = await pool(jobs, PARALLEL, ({ c, r }) => runOne(c, r, names));
+  const runs = await pool(jobs, PARALLEL, ({ c, r }) => runOne(c, r, ctx));
 
   const created = await prisma.claim.findMany({ where: { candidateId: CANDIDATE_ID }, select: { id: true } });
   const extra = created.map((r) => r.id).filter((id) => !claimsBefore.has(id));
@@ -224,13 +231,13 @@ async function main() {
   report(cases, runs, LABEL, { consultant: CONSULTANT_PROMPT_VERSION, employer: EMPLOYER_PROMPT_VERSION, onboarding: ONBOARDING_PROMPT_VERSION });
 }
 
-function rescore(file: string, names: string[]) {
+function rescore(file: string, ctx: CheckContext) {
   const saved = JSON.parse(readFileSync(file, 'utf8')) as { label: string; prompts: Record<string, string>; runs: Run[] };
   const cases = CASES.filter((c) => saved.runs.some((r) => r.id === c.id));
   const runs = saved.runs.map((r) => {
     const c = cases.find((x) => x.id === r.id)!;
     const out = { text: r.text, calls: r.calls, callArgs: r.callArgs ?? [], ...(r.fallback ? { fallback: true } : {}) };
-    const v = c.check(out, { candidateNames: names });
+    const v = c.check(out, ctx);
     if (!v.pass) console.log(`FAIL ${r.id} #${r.repeat} — ${v.why}`);
     return { ...r, pass: v.pass, why: v.why, violation: Boolean(c.violates?.(out)) };
   });

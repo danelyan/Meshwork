@@ -218,7 +218,7 @@ ATS уже имеет концепт подписанного webhook о ста�
 | 4. Индекс честности влияет скрытно | **Исправлено частично.** Кандидат уведомлён и видит пути подтверждения; карточка и объяснение согласованы; индекс остаётся эвристикой | `server/test/ranking-hold.ts`, `TestPage.tsx`, `ProfilePage.tsx`, `matching.ts` |
 | 5. Нет автоматического PDF | **Исправлено.** `GET /api/profile/pdf`, pdfkit (стек обновлён), стандартный состав; полнота на реальных резюме не измерена | `server/profile-pdf/*`, [stack.md](stack.md) |
 | 6. Качество на синтетике | **Без изменений по сути**: перемер v7 подтвердил цифры v5; живой разметки нет, это записано | [validation-results.md](validation-results.md) |
-| 7. Приглашение без способа связи | **Исправлено.** `409 company_contact_required`, форма и помощник ведут на «Компанию» | `server/employer/invitations.ts`, `privacy.ts` |
+| 7. Приглашение без способа связи | **Исправлено.** `422 company_contact_required`, форма и помощник ведут на «Компанию» | `server/employer/invitations.ts`, `privacy.ts` |
 | C05 История опроса | **Исправлено.** `OnboardingAnswerRevision`, `GET /api/onboarding/history`, список в профиле | `server/onboarding/service.ts` |
 | UX: «предварительная калибровка», обязательность ступеней | **Исправлено** в текстах теста, `/validation`, демо и промпта консультанта | `TestPage.tsx`, `ValidationView.tsx`, `DemoScreen.tsx` |
 | CI без test gate | **Частично.** Отдельный workflow `checks.yml`; деплой его не ждёт | `.github/workflows/checks.yml` |

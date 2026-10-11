@@ -87,7 +87,7 @@ describe('приглашение: вилка, контакт компании и
     expect(await trackedContacts(PAY.id)).toBeNull();
   });
 
-  it('способ связи компании: нет Company.contact — почта отправителя; служебная почта и нет контакта — 409 company_contact_required (E05)', async () => {
+  it('способ связи компании: нет Company.contact — почта отправителя; служебная почта и нет контакта — 422 company_contact_required (E05)', async () => {
     await prisma.company.update({ where: { id: ctx.companyId }, data: { contact: null } });
     await createInvitation(ctx, { candidateId: PAY.id, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 });
     let mine = await (await myInvites(jsonRequest('/x', 'GET', undefined, candCookie(PAY.id)))).json();
@@ -100,7 +100,7 @@ describe('приглашение: вилка, контакт компании и
     await prisma.user.update({ where: { id: DEMO_EMPLOYER.userId }, data: { email: 'user-x@users.invalid' } });
     expect((await (await getCompany(jsonRequest('/x', 'GET', undefined, EMP))).json()).inviteContact).toBeNull();
     const refused = await post({ candidateId: JUN.id, salaryFrom: 200000, salaryTo: 260000 });
-    expect(refused.status).toBe(409);
+    expect(refused.status).toBe(422);
     expect(await refused.json()).toMatchObject({ error: { code: 'company_contact_required', details: { companyUrl: '/employer/company' } } });
     expect(await prisma.invitation.count()).toBe(0);
     // помощник работодателя говорит то же до формы

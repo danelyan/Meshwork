@@ -13,6 +13,7 @@ import type { CareerVacancy } from '@/server/recommend/career';
 import { Button, Field, Kicker, Notice, Panel, Tag } from '../ui';
 import ui from '../ui.module.css';
 import styles from './Candidate.module.css';
+import { ApplyPanel } from './ApplyPanel';
 import { SavedVacancies } from './SavedVacancies';
 
 type Filters = { query: string; specialization: string; grade: string; salary: string; fit?: string };
@@ -170,6 +171,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
           {details?.tasks?.length ? <div><h3>Как приблизиться к цели</h3><ul className={styles.requirements}>{details.tasks.map((task) => <li key={task.taskId}><span>{task.title}</span></li>)}</ul></div> : null}
           <details className={styles.vacancyDescription}><summary>Смотреть вакансию ↗</summary><h3>{selected.title}</h3><p>{selected.description || 'Компания пока не добавила описание.'}</p><p>{selected.teamDescription}</p><p>{selected.stack.join(', ')}</p></details>
           {(() => { const cta = chooseGapCta(selected, categories); return <div className={styles.gapCta}>{cta.href ? <Button variant="cta" href={cta.href}>{cta.label}</Button> : <Notice>{cta.label}</Notice>}<p className={styles.fine}>{cta.hint}</p></div>; })()}
+          <ApplyPanel key={selected.vacancyId} vacancyId={selected.vacancyId} companyName={selected.companyName} />
           <Button loading={saving} onClick={() => void toggleSave(selected.vacancyId)}>{saved.includes(selected.vacancyId) ? 'Убрать из избранного' : 'Сохранить вакансию'}</Button>
           <p className={styles.fine}>Совпадение по требованиям, а не вероятность найма.</p>
         </Panel>}

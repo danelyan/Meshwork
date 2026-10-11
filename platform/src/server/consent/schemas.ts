@@ -12,8 +12,8 @@ export const GrantConsentBody = z.object({
   context: z.object({ invitationId: z.string().min(1).max(64).optional() }).nullish(),
 });
 
-/** DELETE /api/consents/{kind}?invitationId= */
-export const RevokeConsentQuery = z.object({ invitationId: z.string().min(1).max(64).optional() });
+/** DELETE /api/consents/{kind}?invitationId= | ?applicationId= (раскрытие по самоотклику) */
+export const RevokeConsentQuery = z.object({ invitationId: z.string().min(1).max(64).optional(), applicationId: z.string().min(1).max(64).optional() });
 
 export const ObjectionSubjectSchema = z.enum(['grade_test', 'call', 'defense']);
 

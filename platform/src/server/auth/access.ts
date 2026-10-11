@@ -39,8 +39,6 @@ export const PAGE_ACCESS = {
   // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе — жюри без регистрации.
   '/validation': 'public',
   '/evaluate': 'public',
-  // Лаборатория вариантов заданий: генерация из реестра по seed, без данных пользователей.
-  '/mechanics': 'public',
   // Флаг DEMO_LOGIN проверяет сама страница (выключен → 404).
   '/demo': 'public',
   // Прежние адреса: только редирект на /consultant, данных нет.
@@ -95,6 +93,8 @@ export const API_ACCESS = {
   '/api/favorites': 'account',
   '/api/notifications': 'account',
   '/api/career/vacancies': 'candidate',
+  '/api/career/vacancies/[id]/apply': 'candidate',
+  '/api/career/applications': 'candidate',
   // Вход, регистрация, пароль, Яндекс ID — до входа.
   '/api/auth/login': 'public',
   '/api/auth/logout': 'public',
@@ -167,6 +167,8 @@ export const API_ACCESS = {
   '/api/employer/vacancies': 'employer',
   '/api/employer/vacancies/[id]': 'employer',
   '/api/employer/vacancies/[id]/matches': 'employer',
+  '/api/employer/vacancies/[id]/applications': 'employer',
+  '/api/employer/applications/[id]': 'employer',
   // Звонок с аватаром (ADR 0003): ведёт кандидат; запись и события видят обе стороны по правилам server/call/access.ts.
   '/api/call': 'candidate',
   '/api/call/start': 'candidate',

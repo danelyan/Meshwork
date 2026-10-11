@@ -34,6 +34,12 @@ const invitationOf = (context: unknown): string | null => {
   return typeof v === 'string' ? v : null;
 };
 
+/** Раскрытие по самоотклику (R-C-12, R-E-07): context { applicationId }. Путь приглашения его не видит — invitationOf даёт null. */
+const applicationOf = (context: unknown): string | null => {
+  const v = (context as { applicationId?: unknown } | null)?.applicationId;
+  return typeof v === 'string' ? v : null;
+};
+
 /** Чистая логика: активная строка — последняя по acceptedAt без revokedAt (и с нужным приглашением). */
 export function pickActive<R extends Pick<ConsentRow, 'acceptedAt' | 'revokedAt' | 'context'>>(rows: readonly R[], invitationId?: string): R | null {
   let best: R | null = null;
@@ -181,13 +187,14 @@ export async function ensureConsents(userId: string, kinds: readonly ConsentKind
  * call_recording: сохранённые аудио кандидата удаляются сразу. employer_visibility: профиль скрывается.
  * identity_disclosure: по конкретному приглашению — работодатель снова видит псевдоним.
  */
-export async function revokeConsent(userId: string, kind: ConsentKindName, opts: { invitationId?: string } = {}): Promise<{ kind: ConsentKindName; revokedAt: string; deletedRecordings?: number }> {
+export async function revokeConsent(userId: string, kind: ConsentKindName, opts: { invitationId?: string; applicationId?: string } = {}): Promise<{ kind: ConsentKindName; revokedAt: string; deletedRecordings?: number }> {
   if (CONSENT_TEXTS[kind].revoke === 'erase') {
     throw new AppError('consent_revoke_is_erase', 'Отзыв согласия на обработку данных - это удаление аккаунта: кнопка «Отозвать согласие и удалить данные» в настройках.', 409);
   }
-  if (kind === 'identity_disclosure' && !opts.invitationId) throw errors.badRequest('Укажите приглашение: ?invitationId=');
+  if (kind === 'identity_disclosure' && !opts.invitationId && !opts.applicationId) throw errors.badRequest('Укажите приглашение или отклик: ?invitationId= или ?applicationId=');
   const rows = await rowsOf(userId, [kind]);
-  const targets = rows.filter((r) => !r.revokedAt && (kind !== 'identity_disclosure' || invitationOf(r.context) === opts.invitationId));
+  const sameRef = (context: unknown) => (opts.invitationId ? invitationOf(context) === opts.invitationId : applicationOf(context) === opts.applicationId);
+  const targets = rows.filter((r) => !r.revokedAt && (kind !== 'identity_disclosure' || sameRef(r.context)));
   if (targets.length === 0) throw errors.notFound('Действующего согласия нет');
   const now = new Date();
   await prisma.consent.updateMany({ where: { id: { in: targets.map((t) => t.id) } }, data: { revokedAt: now } });
@@ -240,6 +247,17 @@ export async function disclosedInvitationIds(invitationIds: readonly string[]): 
   });
   const want = new Set(invitationIds);
   return new Set(consents.map((c) => invitationOf(c.context)).filter((v): v is string => !!v && want.has(v)));
+}
+
+/** Раскрыта ли личность по самоотклику (R-C-12, R-E-07): действующее раскрытие с context.applicationId. Статус accepted проверяет вызывающий. */
+export async function disclosedApplicationIds(applicationIds: readonly string[]): Promise<Set<string>> {
+  if (applicationIds.length === 0) return new Set();
+  const consents = await prisma.consent.findMany({
+    where: { kind: 'identity_disclosure', revokedAt: null, user: { candidate: { applications: { some: { id: { in: [...applicationIds] } } } } } },
+    select: { context: true },
+  });
+  const want = new Set(applicationIds);
+  return new Set(consents.map((c) => applicationOf(c.context)).filter((v): v is string => !!v && want.has(v)));
 }
 
 // --- кабинет «Мои согласия» ---

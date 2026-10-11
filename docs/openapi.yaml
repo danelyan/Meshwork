@@ -45,9 +45,6 @@ tags:
     name: evaluate
     description: "Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД"
   -
-    name: expert
-    description: expert
-  -
     name: favorites
     description: favorites
   -
@@ -1698,6 +1695,30 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/career/applications":
+    get:
+      operationId: getCareerApplications
+      tags:
+        - career
+      summary: "Мои отклики и их статусы (только свои, R-C-12, R-C-16)."
+      description: "мои отклики и их статусы (только свои, R-C-12, R-C-16).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Мои отклики и их статусы (только свои, R-C-12, R-C-16)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/career/vacancies":
     get:
       operationId: getCareerVacancies
@@ -1732,6 +1753,47 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/career/vacancies/{id}/apply":
+    post:
+      operationId: postCareerVacanciesIdApply
+      tags:
+        - career
+      summary: "Самоотклик на открытую вакансию (R-C-12)."
+      description: "самоотклик на открытую вакансию (R-C-12). Без `disclosureVersion` — 409 `consent_required` (раскрытие имени и контактов этой компании после принятия, R-E-07). Архивная или несуществующая — 404, повтор — 409, больше 20 откликов за сутки — 429.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/ApplicationInput"
+      responses:
+        "201":
+          description: "Создано. Самоотклик на открытую вакансию (R-C-12)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/claims/{id}/{action}":
@@ -2656,45 +2718,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/defense-room/ai":
-    post:
-      operationId: postDefenseRoomAi
-      tags:
-        - defense-room
-      summary: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п."
-      description: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же комната `/defense-room/{sessionId}`, только вопросы по коду. Не чаще раза в сутки на сабмит (429 `ai_defense_limit`, демо-кандидатов не ограничивает); идущая возвращается (`resumed: true`). Нужно согласие на запись (403 `call_consent_required`). Работодатель до принятия приглашения видит только баллы и флаги.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/AiDefenseStartInput"
-      responses:
-        "200":
-          description: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "201":
-          description: "Создано. POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/defense-room/pending":
     get:
       operationId: getDefenseRoomPending
@@ -3109,6 +3132,47 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/applications/{id}":
+    patch:
+      operationId: patchEmployerApplicationsId
+      tags:
+        - employer
+      summary: "Ответ на отклик (R-C-12)."
+      description: "ответ на отклик (R-C-12). Чужой — 404, повторный ответ — 409.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/ApplicationAnswer"
+      responses:
+        "200":
+          description: "Ответ на отклик (R-C-12). Чужой — 404, повторный ответ — 409."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/assistant/messages":
@@ -3713,39 +3777,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/employer/project-submissions/{id}/ai-defense":
-    get:
-      operationId: getEmployerProjectSubmissionsIdAiDefense
-      tags:
-        - employer
-      summary: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п."
-      description: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п. 1). До принятого приглашения — псевдоним, баллы по рубрике A-02 и флаги; без транскрипта, записи и ссылки на репозиторий. После accepted с действующим раскрытием — ещё `sessionId`, `transcript`, `hasRecording` (запись — `/api/call/{sessionId}/recording`) и `repoUrl`. Сдача чужой вакансии или скрытого кандидата — 404.\n\nНужна сессия работодателя (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п. 1). До принятого приглашения — псевдоним, баллы по рубрике A-02 и флаги;"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/employer/project-submissions/{id}/invite-to-defense":
     post:
       operationId: postEmployerProjectSubmissionsIdInviteToDefense
@@ -4184,6 +4215,45 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/employer/vacancies/{id}/applications":
+    get:
+      operationId: getEmployerVacanciesIdApplications
+      tags:
+        - employer
+      summary: "Отклики на свою потребность (R-C-12)."
+      description: "отклики на свою потребность (R-C-12). Карточка — как в подборке: псевдоним до принятия, имя и контакты — после accepted и действующего раскрытия (R-E-07). Чужая — 404. `?view=1` отмечает просмотр.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: view
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Отклики на свою потребность (R-C-12). Карточка — как в подборке:"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/employer/vacancies/{id}/matches":
     get:
       operationId: getEmployerVacanciesIdMatches
@@ -4455,195 +4525,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/attempt/{id}":
-    get:
-      operationId: getExpertAttemptId
-      tags:
-        - expert
-      summary: "Попытка эксперта (только своя, по куке fsp_expert); после итога — разбор."
-      description: "попытка эксперта (только своя, по куке fsp_expert); после итога — разбор.\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Попытка эксперта (только своя, по куке fsp_expert); после итога — разбор."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/attempt/{id}/answer":
-    post:
-      operationId: postExpertAttemptIdAnswer
-      tags:
-        - expert
-      summary: "Ответ эксперта → следующее задание или итог с разбором (категория не пишется)."
-      description: "ответ эксперта → следующее задание или итог с разбором (категория не пишется).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                answer:
-                  type: string
-                  maxLength: 2000
-              required:
-                - answer
-      responses:
-        "200":
-          description: "Ответ эксперта → следующее задание или итог с разбором (категория не пишется)."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/attempt/{id}/finish":
-    post:
-      operationId: postExpertAttemptIdFinish
-      tags:
-        - expert
-      summary: "Досрочный итог попытки эксперта с разбором (категория не пишется)."
-      description: "досрочный итог попытки эксперта с разбором (категория не пишется).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Досрочный итог попытки эксперта с разбором (категория не пишется)."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/attempt/{id}/signal":
-    post:
-      operationId: postExpertAttemptIdSignal
-      tags:
-        - expert
-      summary: "Сигналы браузера к активной попытке эксперта (индекс честности)."
-      description: "сигналы браузера к активной попытке эксперта (индекс честности). Тело — JSON текстом (sendBeacon).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Сигналы браузера к активной попытке эксперта (индекс честности). Тело — JSON текстом (sendBeacon)."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/start":
-    get:
-      operationId: getExpertStart
-      tags:
-        - expert
-      summary: "Направления и подкатегории, по которым тест эксперта доступен (банк заданий собран)."
-      description: "направления и подкатегории, по которым тест эксперта доступен (банк заданий собран). Флаг DEMO_LOGIN.\n\nВход не нужен."
-      security: []
-      responses:
-        "200":
-          description: "Направления и подкатегории, по которым тест эксперта доступен (банк заданий собран). Флаг DEMO_LOGIN."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postExpertStart
-      tags:
-        - expert
-      summary: "Режим эксперта: новый одноразовый эксперт (без"
-      description: "режим эксперта: новый одноразовый эксперт (без регистрации, скрыт от работодателей) и попытка теста на грейд тем же сервисом, что у кандидата. Кука `fsp_expert` (path /api/expert). Лимиты: адрес клиента и суточный потолок (429). Флаг DEMO_LOGIN выключен → 404.\n\nВход не нужен."
-      security: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                specialization:
-                  type: string
-                  enum:
-                    - backend
-                    - frontend
-                    - ai
-                    - engineering
-                grade:
-                  type: string
-                  enum:
-                    - junior
-                    - middle
-                    - senior
-                subcategoryId:
-                  type: string
-                  minLength: 1
-                  maxLength: 64
-              required:
-                - specialization
-                - grade
-                - subcategoryId
-      responses:
-        "201":
-          description: "Создано. Режим эксперта: новый одноразовый эксперт (без"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/favorites":
@@ -5452,61 +5333,6 @@ paths:
                     type: boolean
                 required:
                   - hiddenFromEmployers
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/profile/resume-fields":
-    get:
-      operationId: getProfileResumeFields
-      tags:
-        - profile
-      summary: "Что в профиле взято из резюме и где резюме расходится с профилем (R-C-01/02)."
-      description: "что в профиле взято из резюме и где резюме расходится с профилем (R-C-01/02). Только кандидату.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Что в профиле взято из резюме и где резюме расходится с профилем (R-C-01/02). Только кандидату."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postProfileResumeFields
-      tags:
-        - profile
-      summary: "POST `{ action: 'accept' | 'dismiss', key }` — принять или отклонить «в резюме указано иначе»;"
-      description: "POST `{ action: 'accept' | 'dismiss', key }` — принять или отклонить «в резюме указано иначе»; `{ action: 'set', key: 'name' | 'experienceYears' | 'roles' | 'softSkills', value }` — поправить поле самому. Контакт правится через POST /api/profile/contact.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/ResumeFieldAction"
-      responses:
-        "200":
-          description: "POST `{ action: 'accept' | 'dismiss', key }` — принять или отклонить «в резюме указано иначе»;"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -6643,16 +6469,30 @@ components:
       name: cid
       description: "Подписанная сессионная кука платформы"
   schemas:
-    AiDefenseStartInput:
+    ApplicationAnswer:
       type: object
       properties:
-        projectSubmissionId:
+        action:
+          type: string
+          enum:
+            - accept
+            - decline
+      required:
+        - action
+    ApplicationInput:
+      type: object
+      properties:
+        message:
+          anyOf:
+            -
+              type: string
+              maxLength: 1000
+            -
+              type: "null"
+        disclosureVersion:
           type: string
           minLength: 1
           maxLength: 64
-          pattern: "^[A-Za-z0-9_-]+$"
-      required:
-        - projectSubmissionId
     CallConsentBody:
       type: object
       properties:
@@ -7535,60 +7375,6 @@ components:
               maximum: 30
             -
               type: "null"
-    ResumeFieldAction:
-      oneOf:
-        -
-          type: object
-          properties:
-            action:
-              type: string
-              const: accept
-            key:
-              type: string
-              enum:
-                - name
-                - contact
-                - experienceYears
-                - roles
-                - softSkills
-          required:
-            - action
-            - key
-        -
-          type: object
-          properties:
-            action:
-              type: string
-              const: dismiss
-            key:
-              type: string
-              enum:
-                - name
-                - contact
-                - experienceYears
-                - roles
-                - softSkills
-          required:
-            - action
-            - key
-        -
-          type: object
-          properties:
-            action:
-              type: string
-              const: set
-            key:
-              type: string
-              enum:
-                - name
-                - experienceYears
-                - roles
-                - softSkills
-            value: {}
-          required:
-            - action
-            - key
-            - value
     SayInput:
       type: object
       properties:

@@ -51,6 +51,9 @@ export const askQuestionApi = (candidateId: string, text: string) => postJson<Em
 /** lane hired: работодатель отмечает найм по принятому приглашению (accepted → hired). */
 export const markHiredApi = (id: string) =>
   postJson<{ id: string; status: 'hired'; hiredAt: string }>(`/api/employer/invitations/${encodeURIComponent(id)}/hire`, {});
+export type ComplaintReasonValue = 'spam' | 'salary_mismatch' | 'offensive' | 'fake_company' | 'other';
+export const complainInvitationApi = (id: string, reason: ComplaintReasonValue, comment: string) =>
+  postJson<{ id: string; reason: string; createdAt: string }>(`/api/invitations/${encodeURIComponent(id)}/complaint`, { reason, comment });
 export const respondInvitationApi = (id: string, action: 'accept' | 'decline', disclosureVersion?: string) =>
   postJson<{ id: string; status: string }>(`/api/invitations/${encodeURIComponent(id)}`, { action, ...(disclosureVersion ? { disclosureVersion } : {}) });
 export const setContactApi = (contact: string) => postJson<{ contact: string | null }>('/api/profile/contact', { contact });

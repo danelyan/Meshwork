@@ -1,4 +1,4 @@
-import { companyTrust, detectRedFlags, riskLevel } from '@/server/employer/antifraud';
+import { COMPLAINT_SANCTIONS, companyTrust, complaintWindowStart, detectRedFlags, invitationSanction, riskLevel } from '@/server/employer/antifraud';
 
 const GOOD =
   'Команда платежей ищет разработчика на Go: проектировать сервисы переводов, дежурить по очереди, ревьюить код, работать с PostgreSQL и Kafka.';
@@ -95,5 +95,39 @@ describe('companyTrust', () => {
     const bad = companyTrust({ ...full, invitationsSent: 10, invitationsDeclined: 9 }).index;
     expect(base - bad).toBe(Math.round(0.9 * 25));
     expect(companyTrust({ ...full, invitationsSent: 4, invitationsDeclined: 4 }).index).toBe(base - 25 + 12);
+  });
+});
+
+describe('invitationSanction: жалобы кандидатов (ПРЕДЛОЖЕНИЕ, не калибровано)', () => {
+  it('0–2 жалобы — обычный лимит', () => {
+    expect(invitationSanction(0, 20)).toEqual({ level: 'none', complaints: 0, limit: 20 });
+    expect(invitationSanction(2, 20)).toEqual({ level: 'none', complaints: 2, limit: 20 });
+  });
+  it('3–4 жалобы — лимит 20 → 5, меньший базовый не повышается', () => {
+    expect(invitationSanction(3, 20)).toEqual({ level: 'reduced', complaints: 3, limit: COMPLAINT_SANCTIONS.reducedLimit });
+    expect(invitationSanction(4, 20).limit).toBe(5);
+    expect(invitationSanction(3, 2).limit).toBe(2);
+  });
+  it('от 5 жалоб — блок отправки, лимит 0', () => {
+    expect(invitationSanction(5, 20)).toEqual({ level: 'blocked', complaints: 5, limit: 0 });
+    expect(invitationSanction(12, 20).level).toBe('blocked');
+  });
+  it('окно — 30 суток', () => {
+    const now = new Date('2026-10-11T12:00:00Z');
+    expect(complaintWindowStart(now).toISOString()).toBe('2026-09-11T12:00:00.000Z');
+  });
+});
+
+describe('companyTrust: штраф за жалобы', () => {
+  const now = new Date('2026-10-10T12:00:00Z');
+  const full = { name: 'ООО Пример', description: 'О компании', industry: 'Финтех', innValid: true, contact: '@hr', createdAt: new Date('2026-08-01T00:00:00Z'), invitationsSent: 2, invitationsDeclined: 0, now };
+  it('без жалоб — как раньше; 2 жалобы — минус 20; штраф ограничен 40 и индекс не ниже 0', () => {
+    const base = companyTrust(full).index;
+    expect(companyTrust({ ...full, complaints: 0 }).index).toBe(base);
+    const two = companyTrust({ ...full, complaints: 2 });
+    expect(two.index).toBe(base - 20);
+    expect(two.signals.find((x) => x.code === 'complaints')).toMatchObject({ earned: -20, points: 0 });
+    expect(companyTrust({ ...full, complaints: 10 }).index).toBe(base - 40);
+    expect(companyTrust({ name: 'ОО', description: null, industry: null, innValid: false, contact: null, createdAt: now, invitationsSent: 0, invitationsDeclined: 0, complaints: 9, now }).index).toBe(0);
   });
 });

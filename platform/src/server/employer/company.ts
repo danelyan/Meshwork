@@ -5,7 +5,7 @@ import { prisma } from '../db';
 import { errors } from '../errors';
 import { checkInn } from '../onboarding/inn';
 
-import { companyTrust, type CompanyTrust } from './antifraud';
+import { companyTrust, complaintWindowStart, type CompanyTrust } from './antifraud';
 
 /** Пределы совпадают с шагами онбординга работодателя (scenario.ts), чтобы одни и те же данные проходили оба пути. */
 export const COMPANY_LIMITS = { name: 120, description: 600, industry: 80 } as const;
@@ -84,17 +84,19 @@ export async function updateCompany(companyId: string, patch: CompanyPatch): Pro
 
 /**
  * Индекс доверия компаний (R-X-01, КОНЦЕПЦИЯ) из имеющихся данных: профиль, ИНН, возраст первого представителя,
- * доля отклонённых приглашений. Два запроса на весь список.
+ * доля отклонённых приглашений, жалобы кандидатов за 30 дней. Три запроса на весь список.
  */
 export async function loadCompanyTrusts(companyIds: string[], now = new Date()): Promise<Map<string, CompanyTrust>> {
   const ids = [...new Set(companyIds)];
   if (ids.length === 0) return new Map();
-  const [companies, stats] = await Promise.all([
+  const [companies, stats, complaints] = await Promise.all([
     prisma.company.findMany({
       where: { id: { in: ids } },
       select: { id: true, name: true, description: true, industry: true, inn: true, contact: true, employers: { select: { createdAt: true }, orderBy: { createdAt: 'asc' }, take: 1 } },
     }),
     prisma.invitation.groupBy({ by: ['companyId', 'status'], where: { companyId: { in: ids } }, _count: { _all: true } }),
+    // lane complaints: жалобы кандидатов за 30 дней, кроме dismissed.
+    prisma.complaint.groupBy({ by: ['companyId'], where: { companyId: { in: ids }, status: { not: 'dismissed' }, createdAt: { gt: complaintWindowStart(now) } }, _count: { _all: true } }),
   ]);
   const out = new Map<string, CompanyTrust>();
   for (const c of companies) {
@@ -110,6 +112,7 @@ export async function loadCompanyTrusts(companyIds: string[], now = new Date()):
         createdAt: c.employers[0]?.createdAt ?? now,
         invitationsSent: mine.reduce((s, x) => s + x._count._all, 0),
         invitationsDeclined: mine.filter((x) => x.status === 'declined').reduce((s, x) => s + x._count._all, 0),
+        complaints: complaints.find((x) => x.companyId === c.id)?._count._all ?? 0,
         now,
       }),
     );

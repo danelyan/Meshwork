@@ -13,6 +13,7 @@ import { ContactForm } from '../employer/ContactForm';
 import { INVITATION_STATUS_LABEL, NO_COMPANY_CONTACT, salaryRange } from '../employer/labels';
 import { Button, Kicker, Notice, Panel, Tag } from '../ui';
 import styles from './Candidate.module.css';
+import { ComplaintForm } from './ComplaintForm';
 
 type Filter = 'all' | 'open' | 'done';
 const FILTERS: { id: Filter; label: string }[] = [{ id: 'all', label: 'Все' }, { id: 'open', label: 'Жду ответа' }, { id: 'done', label: 'Отвеченные' }];
@@ -74,6 +75,7 @@ export function CandidateInvitations({ invitations, contact }: { invitations: Ca
           {inv.company.trust && <p className={styles.meta}>Индекс доверия компании: {inv.company.trust.index} из 100 (концепция: по заполненности профиля, ИНН, возрасту аккаунта и доле отклонений; не гарантия).</p>}
           <div className={styles.timeline}><span data-done="true">Отправлено<b>{formatDate(inv.createdAt)}</b></span><span data-done={inv.status !== 'sent'}>Просмотрено<b>{inv.status === 'sent' ? 'Ожидает просмотра' : 'Приглашение открыто'}</b></span><span data-done={!isOpen(inv.status)}>Ответ<b>{inv.respondedAt ? formatDate(inv.respondedAt) : isOpen(inv.status) ? 'Ждёт решения' : INVITATION_STATUS_LABEL[inv.status]}</b></span>{inv.status === 'hired' && <span data-done="true">Нанят<b>{inv.hiredAt ? formatDate(inv.hiredAt) : 'Компания отметила найм'}</b></span>}</div>
           {isOpen(inv.status) ? <><label className={styles.fine} data-testid="disclosure-check"><input type="checkbox" checked={Boolean(disclose[inv.id])} onChange={(e) => setDisclose((v) => ({ ...v, [inv.id]: e.target.checked }))} /> {disclosure.label} ({inv.company.name}). {disclosure.paragraphs.join(' ')}</label><div className={styles.actions}><Button variant="primary" disabled={busy !== null || !disclose[inv.id]} loading={busy === inv.id} onClick={() => void respond(inv.id, 'accept')}>Принять</Button><Button disabled={busy !== null} onClick={() => void respond(inv.id, 'decline')}>Отклонить</Button></div><p className={styles.fine}>Принять можно только с подтверждением раскрытия. Остальные компании ваше имя и контакт не увидят.</p></> : inv.status === 'hired' ? <p role="status">Компания отметила найм: вы наняты в {inv.company.name}. {inv.disclosed ? 'Она видит ваше имя и способ связи.' : 'Раскрытие отозвано: компания видит псевдоним.'}</p> : inv.status === 'accepted' ? (inv.disclosed ? <div role="status"><p>Контакты открыты: эта компания видит ваше имя и способ связи.</p><Button size="sm" disabled={busy !== null} onClick={() => void revokeDisclosure(inv.id)}>Отозвать раскрытие</Button><p className={styles.fine}>После отзыва компания снова видит псевдоним. Данные, которые она уже получила, отозвать невозможно.</p></div> : <p role="status">Раскрытие отозвано: компания видит псевдоним. Данные, которые она уже получила, отозвать невозможно.</p>) : <p role="status">Вы отклонили приглашение. Компания видит только статус.</p>}
+          <ComplaintForm invitationId={inv.id} filed={Boolean(inv.complaint)} />
         </Panel>)}
       </div>
       <aside className={styles.stack}>

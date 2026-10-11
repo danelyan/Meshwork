@@ -18,3 +18,5 @@ export {
 } from './invitations';
 export type { EmployerInvitationView, CandidateInvitationView } from './invitations';
 export { loadEmployerContext } from './context';
+export { companySanction, fileComplaint } from './complaints';
+export type { ComplaintView } from './complaints';

@@ -156,13 +156,15 @@ export interface CompanyTrustInput {
   createdAt: Date;
   invitationsSent: number;
   invitationsDeclined: number;
+  /** Жалобы кандидатов за COMPLAINT_WINDOW_DAYS, кроме отклонённых (dismissed). Нет данных — 0. */
+  complaints?: number;
   now?: Date;
 }
 
 export interface TrustSignal {
-  code: 'profile' | 'inn' | 'age' | 'declines';
+  code: 'profile' | 'inn' | 'age' | 'declines' | 'complaints';
   label: string;
-  /** Вклад в индекс, 0..points. */
+  /** Вклад в индекс, 0..points; у штрафа complaints — от -COMPLAINT_TRUST_PENALTY.max до 0 при points = 0. */
   earned: number;
   points: number;
 }
@@ -175,13 +177,45 @@ export interface CompanyTrust {
   concept: true;
 }
 
+// --- Жалобы кандидатов и санкции (R-X-01, доп. функционал) ---
+// ПРЕДЛОЖЕНИЕ агента, не калибровано: реальных жалоб в данных нет. Модерации и апелляции нет (R-D-05),
+// поэтому считаются все жалобы, кроме вручную отклонённых (status = dismissed).
+
+/** Окно подсчёта жалоб, дней. */
+export const COMPLAINT_WINDOW_DAYS = 30;
+/** Пороги санкций. ПРЕДЛОЖЕНИЕ агента, не калибровано. */
+export const COMPLAINT_SANCTIONS = { reducedAt: 3, reducedLimit: 5, blockedAt: 5 } as const;
+/** Штраф индексу доверия за жалобу. ПРЕДЛОЖЕНИЕ агента, не калибровано. */
+export const COMPLAINT_TRUST_PENALTY = { perComplaint: 10, max: 40 } as const;
+
+export interface InvitationSanction {
+  /** none — обычный лимит; reduced — сниженный суточный лимит; blocked — отправка закрыта. */
+  level: 'none' | 'reduced' | 'blocked';
+  complaints: number;
+  /** Действующий лимит приглашений за сутки (0 при блоке). */
+  limit: number;
+}
+
+/** Санкция по числу жалоб за окно: ≥ reducedAt — лимит не больше reducedLimit, ≥ blockedAt — блок отправки. */
+export function invitationSanction(complaints: number, baseLimit: number): InvitationSanction {
+  if (complaints >= COMPLAINT_SANCTIONS.blockedAt) return { level: 'blocked', complaints, limit: 0 };
+  if (complaints >= COMPLAINT_SANCTIONS.reducedAt) return { level: 'reduced', complaints, limit: Math.min(baseLimit, COMPLAINT_SANCTIONS.reducedLimit) };
+  return { level: 'none', complaints, limit: baseLimit };
+}
+
+/** Начало окна подсчёта жалоб. */
+export function complaintWindowStart(now = new Date()): Date {
+  return new Date(now.getTime() - COMPLAINT_WINDOW_DAYS * DAY_MS);
+}
+
 /** Мало приглашений — долю отклонений не считаем: на малой выборке она случайна. */
 export const TRUST_MIN_INVITATIONS = 5;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Индекс доверия из уже имеющихся данных: заполненность профиля (35), ИНН с верной контрольной цифрой (25),
- * возраст аккаунта (15, полные баллы с 30 дней), доля отклонённых приглашений (25; без данных — половина).
+ * возраст аккаунта (15, полные баллы с 30 дней), доля отклонённых приглашений (25; без данных — половина),
+ * минус штраф за жалобы кандидатов за 30 дней (COMPLAINT_TRUST_PENALTY), не ниже 0.
  */
 export function companyTrust(c: CompanyTrustInput): CompanyTrust {
   const filled = [c.name.trim().length >= 2, !!c.description?.trim(), !!c.industry?.trim(), !!c.contact?.trim()].filter(Boolean).length;
@@ -198,6 +232,15 @@ export function companyTrust(c: CompanyTrustInput): CompanyTrust {
       points: 25,
     },
   ];
-  const index = signals.reduce((s, x) => s + x.earned, 0);
+  const complaints = Math.max(0, c.complaints ?? 0);
+  if (complaints > 0) {
+    signals.push({
+      code: 'complaints',
+      label: `Жалобы кандидатов за ${COMPLAINT_WINDOW_DAYS} дней: ${complaints}`,
+      earned: -Math.min(COMPLAINT_TRUST_PENALTY.max, complaints * COMPLAINT_TRUST_PENALTY.perComplaint),
+      points: 0,
+    });
+  }
+  const index = Math.max(0, signals.reduce((s, x) => s + x.earned, 0));
   return { index, band: index >= 70 ? 'high' : index >= 40 ? 'medium' : 'low', signals, concept: true };
 }

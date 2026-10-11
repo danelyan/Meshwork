@@ -168,7 +168,7 @@ function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
   );
 }
 
-export function JuryResultPlate({ jury }: { jury: JuryResult }) {
+function JuryResultPlate({ jury }: { jury: JuryResult }) {
   const LEVEL = { low: 'низкий', medium: 'средний', high: 'высокий' } as const;
   return (
     <JuryPlate>
@@ -337,25 +337,14 @@ function IntroScreen({
   );
 }
 
-/** Экран задания. `apiBase` — префикс API сигналов: кандидат `/api/test` (по умолчанию), режим эксперта `/api/expert`. */
-export function ItemScreen({
-  attempt,
-  onAnswer,
-  onFinish,
-  apiBase,
-}: {
-  attempt: AttemptView;
-  onAnswer: (a: string) => Promise<void>;
-  onFinish: () => Promise<void>;
-  apiBase?: string;
-}) {
+function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onAnswer: (a: string) => Promise<void>; onFinish: () => Promise<void> }) {
   const item = attempt.current!;
   const [answer, setAnswer] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fieldId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const signals = useIntegritySignals(attempt.id, item.index, true, apiBase);
+  const signals = useIntegritySignals(attempt.id, item.index);
 
   useEffect(() => {
     setAnswer('');
@@ -571,6 +560,30 @@ function ResultScreen({
                 Пройти подтверждающий тест
               </Button>
             )}
+          </div>
+        )}
+        {r.integrity?.rankingHold && !needsConfirmation && (
+          <div className={styles.offer} data-testid="ranking-hold">
+            <p>
+              <b>Категория записана, но в подборках и поиске компаний пока не учитывается.</b> В этой попытке есть признаки, которые мы просим
+              подтвердить отдельно. Это не обвинение и не снятие грейда: категория в профиле остаётся. Подтвердить её можно двумя способами:
+              короткий подтверждающий тест из 6–8 новых заданий или созвон с ИИ с разбором заданий этой попытки. Не согласны с оценкой -
+              оспорьте её выше, ответит человек.
+            </p>
+            <div className={styles.actions}>
+              {r.integrity.confirmAttemptId ? (
+                <Button variant="cta" href={`/test?attempt=${encodeURIComponent(r.integrity.confirmAttemptId)}`} data-testid="confirm-open">
+                  Открыть подтверждающий тест
+                </Button>
+              ) : (
+                <Button variant="cta" onClick={() => void startConfirm()} loading={pending} data-testid="confirm-start">
+                  Пройти подтверждающий тест
+                </Button>
+              )}
+              <Button href="/interview" data-testid="ranking-hold-call">
+                Созвон с ИИ
+              </Button>
+            </div>
           </div>
         )}
         {r.juniorOffered && !needsConfirmation && (

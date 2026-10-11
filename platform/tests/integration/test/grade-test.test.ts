@@ -423,7 +423,7 @@ describe('индекс честности и подтверждающий тес
     expect(v.status).toBe('needs_confirmation');
     expect(v.result?.confirmed).toBe(false);
     expect(v.result?.juniorOffered).toBe(false);
-    expect(v.result?.integrity).toEqual({ needsConfirmation: true, confirmGrade: 'middle', confirmAttemptId: null, confirmedBy: null });
+    expect(v.result?.integrity).toEqual({ needsConfirmation: true, confirmGrade: 'middle', confirmAttemptId: null, confirmedBy: null, rankingHold: false });
     expect(JSON.stringify(v.result)).not.toContain('canary_hit');
     expect(v.result?.items.every((i) => i.canary === null)).toBe(true);
     expect(await prisma.candidateCategory.count({ where: { candidateId: A } })).toBe(0);
@@ -494,7 +494,7 @@ describe('индекс честности и подтверждающий тес
     expect(await prisma.candidateCategory.count({ where: { candidateId: A, grade: 'middle' } })).toBe(1);
   });
 
-  it('silent (по умолчанию): high не блокирует, кандидату об индексе ничего - ни уровня, ни причин, ни слоя жюри', async () => {
+  it('silent (по умолчанию): high не блокирует; кандидат видит только то, что выдача категорию пока не учитывает - без уровня, причин и слоя жюри', async () => {
     vi.unstubAllEnvs();
     resetEnvCache();
     const { attemptId } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
@@ -503,10 +503,50 @@ describe('индекс честности и подтверждающий тес
     expect(await prisma.candidateCategory.count({ where: { candidateId: A, grade: 'middle' } })).toBe(1);
     const stored = await prisma.testAttempt.findUniqueOrThrow({ where: { id: attemptId } });
     expect(stored.integrity).toMatchObject({ level: 'high', blocking: false });
-    expect(v.result?.integrity).toBeNull();
+    // Аудит 11.10, п. 4: TEST_INTEGRITY_RANKING держит категорию вне выдачи - кандидату об этом говорят прямо.
+    expect(v.result?.integrity).toEqual({ needsConfirmation: false, confirmGrade: null, confirmAttemptId: null, confirmedBy: null, rankingHold: true });
     expect(v.result?.jury).toBeUndefined();
     const json = JSON.stringify(v);
     for (const leak of ['canary_hit', 'reasons', 'canaryShift', '"level"', 'jury', 'подтверждающ']) expect(json).not.toContain(leak);
+    const hist = (await (await historyRoute(jsonRequest('/api/test/attempts', 'GET', undefined, cookie(A)))).json()) as { attempts: { id: string; rankingHold: boolean }[] };
+    expect(hist.attempts).toEqual([expect.objectContaining({ id: attemptId, rankingHold: true })]);
+  });
+
+  it('silent: подтверждающий тест снимает ограничение выдачи - confirmedBy у исходной, вторая категория не создаётся', async () => {
+    vi.unstubAllEnvs();
+    resetEnvCache();
+    const { attemptId: src } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
+    const fast = await playTimed(A, src, 0, 4, shifted);
+    expect(fast.v.status).toBe('passed');
+    expect(fast.v.result?.integrity?.rankingHold).toBe(true);
+    // Чужой кандидат не запускает подтверждающий тест по этой попытке.
+    expect((await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(B)), ctx(src))).status).toBe(404);
+    const started = await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(A)), ctx(src));
+    expect(started.status).toBe(201);
+    const { attemptId: conf } = (await started.json()) as { attemptId: string };
+    expect((await getAttempt(A, src)).result?.integrity).toMatchObject({ rankingHold: true, confirmAttemptId: conf });
+
+    const done = await playTimed(A, conf, fast.endSec + 600, 60, (key) => key);
+    expect(done.v.status).toBe('passed');
+    expect(await prisma.candidateCategory.count({ where: { candidateId: A, grade: 'middle', source: 'test' } })).toBe(1);
+    const srcView = await getAttempt(A, src);
+    expect(srcView.result?.integrity).toMatchObject({ needsConfirmation: false, confirmedBy: conf, confirmAttemptId: conf, rankingHold: false });
+    const hist = (await (await historyRoute(jsonRequest('/api/test/attempts', 'GET', undefined, cookie(A)))).json()) as { attempts: { kind: string; status: string; rankingHold: boolean }[] };
+    expect(hist.attempts.map((a) => [a.kind, a.status, a.rankingHold])).toEqual([['confirm', 'passed', false], ['grade', 'passed', false]]);
+    expect((await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(A)), ctx(src))).status).toBe(409);
+  });
+
+  it('silent, TEST_INTEGRITY_RANKING=false: выдача категорию учитывает - уведомления нет, подтверждающий тест не нужен', async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('TEST_INTEGRITY_RANKING', 'false');
+    resetEnvCache();
+    const { attemptId } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
+    const { v } = await playTimed(A, attemptId, 0, 4, shifted);
+    expect(v.status).toBe('passed');
+    expect(v.result?.integrity).toBeNull();
+    const res = await confirmStartRoute(jsonRequest(`/api/test/attempt/${attemptId}/confirm-start`, 'POST', undefined, cookie(A)), ctx(attemptId));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('confirm_not_needed');
   });
 
   it('JURY_INSIGHTS: без флага в ответе нет сдвига ловушки и разбора; с флагом - есть, ключ не раскрыт', async () => {

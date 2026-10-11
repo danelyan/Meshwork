@@ -73,3 +73,34 @@ it('refreshes anonymous employer preview immediately after confirming a claim', 
   expect(await screen.findByText('Публичный навык')).toBeDefined();
   expect(fetcher.mock.calls.filter(([url]) => url === '/api/profile/details')).toHaveLength(2);
 });
+
+describe('ProfilePage: индекс честности и история опроса (аудит 11.10)', () => {
+  const attempt = (over: Record<string, unknown>) => ({
+    id: 'att-held', specialization: 'backend', subcategoryId: 'backend.web-api', grade: 'middle', status: 'passed', theta: 0.4, pPass: 0.86,
+    answered: 8, correct: 7, juniorConfirmedAt: null, kind: 'grade', confirmsAttemptId: null, rankingHold: false, startedAt: '2026-10-10T09:00:00Z', finishedAt: '2026-10-10T09:20:00Z', ...over,
+  });
+  function stubAll(attempts: unknown[], revisions: unknown[]) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const body = url === '/api/profile'
+          ? { candidate: { id: 'x', name: 'Тест', specialization: 'backend', fspState: 'not_linked' }, category: null, claims: [claim('confirmed')], byLevel: {} }
+          : url === '/api/test/attempts' ? { attempts }
+          : url === '/api/onboarding/history' ? { revisions }
+          : { targets: [], gaps: [], tasks: [], calls: [] };
+        return { ok: true, status: 200, json: async () => body };
+      }),
+    );
+  }
+
+  it('категория с rankingHold: уведомление без уровня и причин ведёт к попытке; строка истории помечена', async () => {
+    stubAll([attempt({ rankingHold: true })], []);
+    render(<ProfilePage />);
+    const note = await screen.findByTestId('ranking-hold-notice');
+    expect(note.textContent).toContain('в подборках и поиске компаний пока не учитывается');
+    expect(note.textContent).toContain('Это не снятие грейда');
+    expect(note.textContent).not.toMatch(/списыва|высокий|индекс/i);
+    expect(screen.getByRole('link', { name: 'Открыть попытку и подтвердить' }).getAttribute('href')).toBe('/test?attempt=att-held');
+    expect(screen.getByTestId('test-history').textContent).toContain('в подборках пока не учитывается');
+  });
+});

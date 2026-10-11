@@ -18,7 +18,7 @@ export const JURY_REASON_LABEL: Record<IntegrityCode, string> = {
 };
 
 /** Разбор индекса для жюри. `employer` - метка, которую увидит работодатель; `issued` - категория выдана этой попыткой (иначе работодатель не видит ничего). */
-export function juryResult(index: Pick<IntegrityIndex, 'level' | 'reasons' | 'flaggedItems' | 'lzStar' | 'notes'>, employer: PublicTestIntegrity | null, issued: boolean): JuryResult {
+export function juryResult(index: Pick<IntegrityIndex, 'level' | 'reasons' | 'flaggedItems' | 'lzStar' | 'notes'>, employer: PublicTestIntegrity | null, issued: boolean, candidateSees = 'ничего'): JuryResult {
   return {
     level: index.level,
     reasons: index.reasons.map((r) => ({
@@ -30,7 +30,7 @@ export function juryResult(index: Pick<IntegrityIndex, 'level' | 'reasons' | 'fl
     flaggedItems: index.flaggedItems.map((i) => i + 1),
     lzStar: index.lzStar,
     notes: index.notes,
-    candidateSees: 'ничего',
+    candidateSees,
     employerSees: !issued ? 'ничего (категория этой попыткой не выдана)' : (integrityLabel(employer) ?? 'метки нет'),
   };
 }

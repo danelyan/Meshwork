@@ -157,7 +157,8 @@ export interface JuryResult {
 }
 
 /**
- * Что видит кандидат об индексе честности: только нужен ли подтверждающий тест (режим confirm).
+ * Что видит кандидат об индексе честности: нужен ли подтверждающий тест (режим confirm) и держит ли индекс
+ * категорию вне выдачи работодателя (rankingHold, режим silent + TEST_INTEGRITY_RANKING; ranking-hold.ts).
  * Уровня и причин здесь нет никогда - они только в JuryResult при JURY_INSIGHTS.
  */
 export interface IntegrityView {
@@ -169,6 +170,11 @@ export interface IntegrityView {
   confirmAttemptId: string | null;
   /** Подтверждающая попытка, по которой категория выдана; null — нет. */
   confirmedBy: string | null;
+  /**
+   * Категория по этой попытке записана, но подборка и поиск работодателя её пока не учитывают: нужен
+   * подтверждающий тест или созвон с разбором этой попытки (аудит 11.10, п. 4). Без индекса - false.
+   */
+  rankingHold: boolean;
 }
 
 export interface AttemptView {
@@ -214,6 +220,8 @@ export interface AttemptSummary {
   juniorConfirmedAt: string | null;
   kind: AttemptKind;
   confirmsAttemptId: string | null;
+  /** Категория по этой попытке записана, но выдача работодателя её пока не учитывает (IntegrityView.rankingHold). */
+  rankingHold: boolean;
   startedAt: string;
   finishedAt: string | null;
 }

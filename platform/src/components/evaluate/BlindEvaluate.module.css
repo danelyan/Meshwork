@@ -1,0 +1,33 @@
+/* Слепая оценка на /evaluate. Токены - styles/tokens.css. */
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 0; }
+.tab { font: 600 var(--fs-sm) var(--font); padding: 8px 14px; background: var(--surface-ghost); color: var(--ink); border: 1px solid var(--border-soft); cursor: pointer; }
+.tab[aria-selected='true'] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.tab:focus-visible, .choice:focus-visible, .rate:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.page { display: grid; gap: 16px; padding-block: 16px 32px; }
+.lead { margin: 0; font-size: var(--fs-md); line-height: 1.5; color: var(--text-soft); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.choice { display: grid; gap: 6px; width: 100%; text-align: left; padding: 16px; background: var(--surface-card); border: 1px solid var(--border-soft); color: var(--ink); cursor: pointer; font: inherit; }
+.choice:hover { border-color: var(--ink); }
+.choiceTitle { font-size: var(--fs-lg); font-weight: 600; letter-spacing: -.02em; }
+.meta { font: var(--fs-xs) var(--mono); color: var(--muted); letter-spacing: .04em; }
+.need { position: sticky; top: 0; z-index: 1; display: grid; gap: 6px; padding: 12px 16px; background: var(--glass-strong); border: 1px solid var(--border-soft); }
+.needTitle { margin: 0; font-size: var(--fs-md); font-weight: 600; }
+.needList { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-sm); color: var(--text-soft); }
+.progress { font: 600 var(--fs-sm) var(--mono); color: var(--ink); }
+.card { display: grid; gap: 12px; padding: 16px; background: var(--surface-card); border: 1px solid var(--border-soft); }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--fs-sm); }
+.group { display: grid; gap: 4px; }
+.groupTitle { font: 600 var(--fs-xs) var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.claims { margin: 0; padding-left: 18px; font-size: var(--fs-sm); line-height: 1.5; }
+.rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 8px; }
+.rate { display: grid; gap: 2px; padding: 12px; text-align: left; background: var(--surface-ghost); border: 1px solid var(--border-soft); color: var(--ink); cursor: pointer; font: inherit; }
+.rate[aria-pressed='true'] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.rateNum { font: 600 var(--fs-xl) var(--mono); }
+.rateLabel { font-size: var(--fs-sm); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.table th, .table td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; }
+.table th:first-child, .table td:first-child { text-align: left; }
+.verdict { margin: 0; font-size: var(--fs-2xl); font-weight: 600; letter-spacing: -.02em; line-height: 1.25; }
+.note { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.5; }
+.link { font-weight: 600; font-size: var(--fs-sm); color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }

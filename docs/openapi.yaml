@@ -7802,6 +7802,106 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/evaluate/blind/score":
+    post:
+      operationId: postEvaluateBlindScore
+      tags:
+        - evaluate
+      summary: "Чей порядок лучше по оценкам жюри: meanRating, P@3 (оценка ≥ 2), nDCG@3."
+      description: "чей порядок лучше по оценкам жюри: meanRating, P@3 (оценка ≥ 2), nDCG@3.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  minLength: 1
+                  maxLength: 8192
+                ratings:
+                  type: object
+                  propertyNames:
+                    type: string
+                    pattern: "^c\\d{1,2}$"
+                  additionalProperties:
+                    type: integer
+                    minimum: 0
+                    maximum: 3
+              required:
+                - token
+                - ratings
+      responses:
+        "200":
+          description: "Чей порядок лучше по оценкам жюри: meanRating, P@3 (оценка ≥ 2), nDCG@3."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/evaluate/blind/start":
+    post:
+      operationId: postEvaluateBlindStart
+      tags:
+        - evaluate
+      summary: "8 анонимных карточек вслепую (наш топ-3, BM25 топ-3, случайные),"
+      description: "8 анонимных карточек вслепую (наш топ-3, BM25 топ-3, случайные), перемешаны; источник каждой — в подписанном токене (1 час). Ничего не сохраняется.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                vacancyId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+              required:
+                - vacancyId
+      responses:
+        "200":
+          description: "8 анонимных карточек вслепую (наш топ-3, BM25 топ-3, случайные),"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/evaluate/blind/vacancies":
+    get:
+      operationId: getEvaluateBlindVacancies
+      tags:
+        - evaluate
+      summary: "Демо-вакансии для слепой разметки жюри (вход не нужен)."
+      description: "демо-вакансии для слепой разметки жюри (вход не нужен).\n\nВход не нужен."
+      security: []
+      responses:
+        "200":
+          description: "Демо-вакансии для слепой разметки жюри (вход не нужен)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/expert/attempt/{id}":
     get:
       operationId: getExpertAttemptId

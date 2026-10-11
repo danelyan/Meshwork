@@ -254,6 +254,10 @@ export const API_ACCESS = {
   '/api/openapi': 'public',
   // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
   '/api/evaluate': { POST: 'public' },
+  // Слепая разметка жюри (validation/blind.ts): в памяти, источник карточек — в подписанном токене.
+  '/api/evaluate/blind/vacancies': { GET: 'public' },
+  '/api/evaluate/blind/start': { POST: 'public' },
+  '/api/evaluate/blind/score': { POST: 'public' },
   '/api/simulator': { POST: 'public' },
   '/api/dev/delete-account': 'dev',
   // Ответ оператора на возражения против оценки (ст. 16, ADR 0005).

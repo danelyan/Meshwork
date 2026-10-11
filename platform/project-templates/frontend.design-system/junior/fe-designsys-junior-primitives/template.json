@@ -1,0 +1,20 @@
+{
+  "id": "fe-designsys-junior-primitives",
+  "subcategoryId": "frontend.design-system",
+  "specialization": "frontend",
+  "grade": "junior",
+  "title": "Базовые компоненты дизайн-системы: Button, Badge, TextField",
+  "summary": "Три компонента с вариантами и состояниями disabled/loading, доступными именами, связью label–input и сообщениями об ошибке",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.components", "fe.a11y", "fe.forms"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 150,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

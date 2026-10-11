@@ -1,0 +1,20 @@
+{
+  "id": "fe-designsys-middle-combobox",
+  "subcategoryId": "frontend.design-system",
+  "specialization": "frontend",
+  "grade": "middle",
+  "title": "Доступный Combobox и токены темы",
+  "summary": "Выбор из списка с фильтром по WAI-ARIA (клавиатура, aria-activedescendant, контролируемый и неконтролируемый режим) и провайдер токенов темы",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.components", "fe.a11y", "fe.forms", "fe.css-architecture"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

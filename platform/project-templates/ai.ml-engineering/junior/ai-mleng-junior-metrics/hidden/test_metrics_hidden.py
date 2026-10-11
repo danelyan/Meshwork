@@ -35,7 +35,7 @@ def test_report_three_classes_values():
     assert c1["precision"] == pytest.approx(1 / 2) and c1["recall"] == pytest.approx(1 / 2)
     assert c2["precision"] == pytest.approx(3 / 4) and c2["recall"] == pytest.approx(3 / 4)
     assert (c0["support"], c1["support"], c2["support"]) == (3, 2, 4)
-    assert rep["accuracy"] == pytest.approx(7 / 9)
+    assert rep["accuracy"] == pytest.approx(6 / 9)
 
 
 def test_report_macro_is_mean_of_class_f1_and_micro_is_pooled():

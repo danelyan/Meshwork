@@ -2,7 +2,7 @@ import { AppError } from '../errors';
 import { buildDoc, type RawLine } from './doc';
 import { pdfPagesToLines } from './hidden-text';
 import { LIMITS } from './limits';
-import { recognizeText } from './ocr';
+import { recognizePdfScan, recognizeText } from './ocr';
 import { parseInWorker } from './parse-worker';
 import type { ExtractedDoc, SourceKind } from './types';
 
@@ -225,7 +225,7 @@ export async function extractFile(
   }
   if (lines.length === 0 && res.kind === 'pdf') {
     // Скан без текстового слоя → OCR. Синхронный Vision принимает PDF только из одной страницы;
-    // многостраничный скан и сбой OCR — прежнее поведение (meta.empty) + meta.ocrFailed.
+    // многостраничный — по картинке страницы (recognizePdfScan); сбой OCR — meta.empty + meta.ocrFailed.
     if (res.numPages === 1) {
       try {
         lines = await recognizeText(buf, 'application/pdf', name, { signal: opts.signal, page: 1 });
@@ -235,8 +235,17 @@ export async function extractFile(
         meta.ocrFailed = true;
       }
     } else {
-      meta.ocrFailed = true;
-      meta.ocrReason = 'multipage';
+      // Многостраничный скан: картинки страниц → PNG → синхронный Vision, по странице (recognizePdfScan).
+      try {
+        const scan = await recognizePdfScan(buf, name, res.numPages, { signal: opts.signal });
+        lines = scan.lines;
+        meta.ocr = true;
+        if (scan.pagesFailed > 0) meta.ocrPartial = true;
+      } catch (e) {
+        console.warn('ocr: многостраничный скан не распознан', e instanceof AppError ? e.code : 'error');
+        meta.ocrFailed = true;
+        meta.ocrReason = 'multipage';
+      }
     }
   }
   if (lines.length === 0) meta.empty = true;

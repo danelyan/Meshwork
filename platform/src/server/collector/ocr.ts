@@ -1,3 +1,5 @@
+import { deflateSync } from 'node:zlib';
+
 import { getEnv } from '@/server/env';
 import { AppError } from '../errors';
 import type { RawLine } from './doc';
@@ -127,6 +129,7 @@ export async function recognizeText(
   return visionToLines(body, name, opts.page ?? 1);
 }
 
+/* REST async Vision (recognizePdfAsync) на нашем аккаунте 11.10.2026 отвечает 404 — не вызывается, см. recognizePdfScan. */
 export const OCR_ASYNC_TIMEOUT_MS = 45_000;
 export const OCR_ASYNC_POLL_MS = 1_000;
 
@@ -240,4 +243,109 @@ function pagedLines(body: string, name: string, maxPages: number): RawLine[] {
       .join('\n'),
     name,
   );
+}
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(buf: Buffer): number {
+  let c = 0xffffffff;
+  for (const b of buf) c = CRC_TABLE[(c ^ b) & 0xff]! ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const head = Buffer.alloc(8);
+  head.writeUInt32BE(data.length, 0);
+  head.write(type, 4, 'ascii');
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(Buffer.concat([head.subarray(4), data])), 0);
+  return Buffer.concat([head, data, crc]);
+}
+
+/** Минимальный PNG-энкодер (8 бит, фильтр 0): сырые пиксели Gray/RGB/RGBA → PNG. */
+export function encodePng(data: Uint8Array | Uint8ClampedArray, width: number, height: number, channels: 1 | 3 | 4): Buffer {
+  const stride = width * channels;
+  if (data.length < stride * height) throw new Error('png: мало данных');
+  const raw = Buffer.alloc((stride + 1) * height);
+  for (let y = 0; y < height; y++) {
+    raw[y * (stride + 1)] = 0;
+    raw.set(data.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = channels === 1 ? 0 : channels === 3 ? 2 : 6;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', deflateSync(raw)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+export const OCR_SCAN_TIMEOUT_MS = 60_000;
+export const OCR_SCAN_CONCURRENCY = 3;
+
+export interface PdfScanResult {
+  lines: RawLine[];
+  pagesOk: number;
+  pagesFailed: number;
+}
+
+/**
+ * Запасной путь для многостраничного скана без текстового слоя: из каждой страницы (≤ maxPages) берём самую
+ * большую встроенную картинку (unpdf extractImages → сырые пиксели), кодируем в PNG и шлём в синхронный
+ * recognizeText; ≤ 3 страниц параллельно, общий таймаут 60 с. Страница без картинки, больше 20 Мпикс или
+ * с ошибкой OCR считается упавшей. Если упали все — бросает последнюю ошибку; иначе отдаёт распознанное.
+ */
+export async function recognizePdfScan(
+  buf: Buffer,
+  name: string,
+  numPages: number,
+  opts: { signal?: AbortSignal; timeoutMs?: number; maxPages?: number; maxPixels?: number } = {},
+): Promise<PdfScanResult> {
+  if (!ocrConfig()) throw ocrUnavailable('Распознавание текста выключено');
+  const total = Math.min(numPages, opts.maxPages ?? LIMITS.pdfMaxPages);
+  const maxPixels = opts.maxPixels ?? LIMITS.ocrMaxPixels;
+  const timeout = AbortSignal.timeout(opts.timeoutMs ?? OCR_SCAN_TIMEOUT_MS);
+  const signal = opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;
+  const { getDocumentProxy, extractImages } = await import('unpdf');
+  const pdf = await getDocumentProxy(new Uint8Array(buf));
+  const perPage: RawLine[][] = Array.from({ length: total }, () => []);
+  let next = 1;
+  let ok = 0;
+  let failed = 0;
+  let lastErr: unknown;
+  const worker = async () => {
+    for (;;) {
+      const page = next++;
+      if (page > total) return;
+      try {
+        if (signal.aborted) throw ocrUnavailable('Распознавание текста не уложилось во время');
+        const images = await extractImages(pdf, page);
+        const best = images.sort((a, b) => b.width * b.height - a.width * a.height)[0];
+        if (!best) throw new AppError('ocr_failed', 'На странице нет картинки', 422);
+        if (best.width * best.height > maxPixels) throw new AppError('ocr_failed', 'Картинка страницы больше 20 Мпикс', 422);
+        const png = encodePng(best.data, best.width, best.height, best.channels);
+        perPage[page - 1] = await recognizeText(png, 'image/png', name, { signal, page });
+        ok++;
+      } catch (e) {
+        failed++;
+        lastErr = e;
+        console.warn('ocr: страница скана не распознана', page, e instanceof AppError ? e.code : 'error');
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(OCR_SCAN_CONCURRENCY, total) }, worker));
+  if (ok === 0) throw lastErr instanceof AppError ? lastErr : ocrUnavailable();
+  return { lines: perPage.flat(), pagesOk: ok, pagesFailed: failed };
 }

@@ -36,7 +36,7 @@ it('/demo: маршрут, карточки страниц жюри и вход 
   await waitFor(() => expect(assign).toHaveBeenCalledWith('/employer/search'));
   const pages = screen.getByRole('heading', { name: 'Проверить наши цифры и механику' }).closest('section')!;
   for (const p of JURY_PAGES) expect(within(pages).getByRole('link', { name: `${p.title} →` }).getAttribute('href')).toBe(p.href);
-  expect(JURY_PAGES.map((p) => p.href)).toEqual(['/validation', '/evaluate', '/mechanics', '/simulator', '/expert']);
+  expect(JURY_PAGES.map((p) => p.href)).toEqual(['/method', '/validation', '/evaluate', '/mechanics', '/simulator', '/expert']);
 });
 
 it('лендинг: «Для жюри» только при demoEnabled', () => {

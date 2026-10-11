@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/server/db';
 
+import { activeBlockWhere } from '../accounts/state';
 import { objectionDeadline } from './cards';
 import { DAY_MS } from './lib';
 
@@ -31,7 +32,7 @@ export async function loadDashboard(now = new Date()) {
     prisma.candidate.count(),
     prisma.company.count(),
     prisma.company.count({ where: { verifiedAt: { not: null } } }),
-    prisma.company.count({ where: { blockedAt: { not: null } } }),
+    prisma.company.count({ where: activeBlockWhere() }),
     prisma.invitation.groupBy({ by: ['status'], _count: { _all: true } }),
     prisma.invitation.count({ where: { viewedAt: { not: null } } }),
     prisma.complaint.count({ where: { status: 'open' } }),

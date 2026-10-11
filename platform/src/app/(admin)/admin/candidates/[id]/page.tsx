@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { CandidateActions, UserActions } from '@/components/admin/actions';
 import { RevealPii } from '@/components/admin/RevealPii';
 import {
   ATTEMPT_STATUS_LABEL,
@@ -19,6 +20,7 @@ import {
   fmtMoney,
 } from '@/components/admin/labels';
 import { Panel, Tag } from '@/components/ui';
+import { isHiddenByModerator } from '@/server/admin/accounts/state';
 import { getCandidateCard, objectionDeadline } from '@/server/admin/overview/cards';
 import { can } from '@/server/admin/permissions';
 import { requirePageStaff } from '@/server/admin/session';
@@ -37,6 +39,7 @@ export default async function AdminCandidatePage({ params }: { params: Promise<{
   const staff = await requirePageStaff(`/admin/candidates/${id}`, 'view_candidates');
   const c = await orNotFound(getCandidateCard(id));
   const cat = c.currentCategory;
+  const hiddenByModerator = await isHiddenByModerator(c.id);
   return (
     <>
       <h1 className={styles.title}>{c.pseudonym}</h1>
@@ -217,11 +220,16 @@ export default async function AdminCandidatePage({ params }: { params: Promise<{
         </ul>
       </Panel>
 
-      {/* Действия (фаза 3 E-08): скрыть профиль, сбросить кулдаун, заблокировать вход, удалить по запросу субъекта.
-          Кнопки и логику добавляет лейн фазы 3. Категорию и грейд вручную менять нельзя (принцип 2). */}
       <Panel className={styles.actions}>
         <h2 className={styles.sectionTitle}>Действия</h2>
-        <p className={styles.muted}>Появятся в фазе 3.</p>
+        <CandidateActions candidateId={c.id} hiddenByModerator={hiddenByModerator} can={{ hide: can(staff.role, 'hide_candidate'), resetCooldown: can(staff.role, 'reset_cooldown') }} />
+        {c.account && (
+          <UserActions
+            userId={c.account.id}
+            block={{ blockedAt: c.account.blockedAt?.toISOString() ?? null, blockedUntil: c.account.blockedUntil?.toISOString() ?? null, blockedReason: c.account.blockedReason }}
+            can={{ block: can(staff.role, 'block_user'), unblock: can(staff.role, 'unblock_user'), erase: can(staff.role, 'erase_account') }}
+          />
+        )}
       </Panel>
     </>
   );

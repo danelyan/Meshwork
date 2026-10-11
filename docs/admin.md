@@ -50,6 +50,18 @@ export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id:
 
 Персонал (управление ролями, приглашение, отключение, сброс 2FA) сделан в фазе 0, в фазе 3 его не дублировать.
 
+## Итог по фазам (после слияния 0–5)
+
+- Меню (`src/lib/admin-nav.ts`): к фундаменту добавлены `/admin/applications` («База», `view_invitations`) и `/admin/demo` («Платформа», `manage_demo`, только owner).
+- `/admin/applications` и `GET /api/admin/applications`: самоотклики кандидатов на вакансии (фаза 1, `server/admin/overview/lists.ts`), только чтение.
+- `GET /api/admin/users/[id]/pii` (и `candidates`, `companies`): раскрытие ПДн по причине, запись в журнал (`reveal_pii`, фаза 0/1).
+- `/admin/demo`, `/api/admin/demo` (фаза 3, owner): демо-аккаунты, чистка мусора e2e по маркерам, переключатель показа демо в подборке.
+- Настройка `matching.show_demo_candidates` (boolean, умолчание `true`) лежит в реестре `server/admin/settings/registry.ts` как `internal` (на `/admin/settings` не показывается — правится на `/admin/demo`); читать `getSetting`, писать `setDemoSetting` (версия + журнал `manage_demo.show_in_matching`).
+- `POST /api/admin/vacancies/[id]/hide` `{ hidden, reason }` (`hide_vacancy`, owner/moderator): скрытие хранится как `RedFlagReview` со статусом `hidden` (`server/admin/moderation/red-flags.ts`: `setVacancyHidden`, `hiddenVacancyIds`, `isVacancyHidden`); возврат переводит ревью в `ok`. Журнал `hide_vacancy.hidden` / `hide_vacancy.shown`. Повтор того же состояния — 409.
+- «Заблокирован сейчас» везде решает `isBlockedNow` / `activeBlockWhere` (`server/admin/accounts/state.ts`), не `blockedAt != null`: разблокировка ставит `blockedUntil = now`.
+- Заблокированный кандидат для работодателя (404 как у скрытого): подборка/поиск, избранное, приглашение, черновик приглашения агентом, созвон без accepted, список сдач проекта, ИИ-защита сдачи.
+- Кнопки действий в карточках: `components/admin/actions/` (`UserActions`, `CompanyActions`, `CandidateActions`, `VacancyActions`); права передаются флагами `can` с сервера.
+
 ## Вход и персонал
 
 - Первый owner: `printf '%s' "$PASS" | npx tsx scripts/admin-create.ts --email … --name … --role owner`

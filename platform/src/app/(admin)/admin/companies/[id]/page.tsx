@@ -1,8 +1,10 @@
 import Link from 'next/link';
 
+import { CompanyActions } from '@/components/admin/actions';
 import { RevealPii } from '@/components/admin/RevealPii';
 import { COMPLAINT_REASON_LABEL, COMPLAINT_STATUS_LABEL, GRADE_LABEL, INVITATION_STATUS_LABEL, SPEC_LABEL, fmtDate, fmtDateTime, pct } from '@/components/admin/labels';
 import { Panel, Tag } from '@/components/ui';
+import { isBlockedNow } from '@/server/admin/accounts/state';
 import { getCompanyCard } from '@/server/admin/overview/cards';
 import { can } from '@/server/admin/permissions';
 import { requirePageStaff } from '@/server/admin/session';
@@ -36,7 +38,7 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
           <dt>Проверка модератором</dt>
           <dd>{c.verifiedAt ? `проверена ${fmtDateTime(c.verifiedAt)}${c.verificationNote ? `: ${c.verificationNote}` : ''}` : c.verificationRequestedAt ? `запрошена ${fmtDateTime(c.verificationRequestedAt)}` : 'не проверена'}</dd>
           <dt>Блокировка</dt>
-          <dd>{c.blockedAt ? `с ${fmtDateTime(c.blockedAt)}${c.blockedUntil ? ` до ${fmtDateTime(c.blockedUntil)}` : ' бессрочно'}: ${c.blockedReason ?? ''}` : 'нет'}</dd>
+          <dd>{isBlockedNow(c) && c.blockedAt ? `с ${fmtDateTime(c.blockedAt)}${c.blockedUntil ? ` до ${fmtDateTime(c.blockedUntil)}` : ' бессрочно'}: ${c.blockedReason ?? ''}` : 'нет'}</dd>
           <dt>Санкция по жалобам</dt>
           <dd>
             {LEVEL[c.sanction.level]}: жалоб за 30 дней {c.sanction.complaints}, лимит приглашений в сутки {c.sanction.limit}. Апелляций: {c.appeals}.
@@ -120,11 +122,13 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
         {c.complaints.length === 0 && <p className={styles.muted}>Жалоб нет.</p>}
       </Panel>
 
-      {/* Действия (фаза 3 E-08): блокировка и разблокировка компании. Кнопки и логику добавляет лейн фазы 3;
-          верификация — фаза 2 (/admin/verification). */}
       <Panel className={styles.actions}>
         <h2 className={styles.sectionTitle}>Действия</h2>
-        <p className={styles.muted}>Появятся в фазе 3.</p>
+        <CompanyActions
+          companyId={c.id}
+          block={{ blockedAt: c.blockedAt?.toISOString() ?? null, blockedUntil: c.blockedUntil?.toISOString() ?? null, blockedReason: c.blockedReason }}
+          canBlock={can(staff.role, 'block_company')}
+        />
       </Panel>
     </>
   );

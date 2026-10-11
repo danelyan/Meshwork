@@ -1,4 +1,5 @@
-import { listCompanies, CompanyListQuery } from '@/server/admin/overview/lists';
+import { listCompanies } from '@/server/admin/overview/lists';
+import { CompanyListQuery } from '@/server/admin/overview/queries';
 import { requireStaff } from '@/server/admin/session';
 import { withErrors } from '@/server/errors';
 

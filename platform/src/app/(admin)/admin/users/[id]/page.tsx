@@ -1,8 +1,10 @@
 import Link from 'next/link';
 
+import { UserActions } from '@/components/admin/actions';
 import { RevealPii } from '@/components/admin/RevealPii';
 import { CONSENT_LABEL, USER_ROLE_LABEL, fmtDateTime } from '@/components/admin/labels';
 import { Panel, Tag } from '@/components/ui';
+import { isBlockedNow } from '@/server/admin/accounts/state';
 import { getUserCard } from '@/server/admin/overview/cards';
 import { can } from '@/server/admin/permissions';
 import { requirePageStaff } from '@/server/admin/session';
@@ -41,7 +43,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
             {!u.candidate && !u.employerProfile && '—'}
           </dd>
           <dt>Блокировка</dt>
-          <dd>{u.blockedAt ? `с ${fmtDateTime(u.blockedAt)}${u.blockedUntil ? ` до ${fmtDateTime(u.blockedUntil)}` : ' бессрочно'}: ${u.blockedReason ?? ''}` : 'нет'}</dd>
+          <dd>{isBlockedNow(u) && u.blockedAt ? `с ${fmtDateTime(u.blockedAt)}${u.blockedUntil ? ` до ${fmtDateTime(u.blockedUntil)}` : ' бессрочно'}: ${u.blockedReason ?? ''}` : 'нет'}</dd>
         </dl>
         <RevealPii url={`/api/admin/users/${u.id}/pii`} canReveal={can(staff.role, 'reveal_pii')} />
         {u.isDemo && <Tag>демо</Tag>}
@@ -62,10 +64,13 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
         </table>
         {u.consents.length === 0 && <p className={styles.muted}>Согласий нет.</p>}
       </Panel>
-      {/* Действия (фаза 3 E-08): блокировка и разблокировка входа, удаление по запросу субъекта ПДн — кнопки добавляет лейн фазы 3. */}
       <Panel className={styles.actions}>
         <h2 className={styles.sectionTitle}>Действия</h2>
-        <p className={styles.muted}>Появятся в фазе 3.</p>
+        <UserActions
+          userId={u.id}
+          block={{ blockedAt: u.blockedAt?.toISOString() ?? null, blockedUntil: u.blockedUntil?.toISOString() ?? null, blockedReason: u.blockedReason }}
+          can={{ block: can(staff.role, 'block_user'), unblock: can(staff.role, 'unblock_user'), erase: can(staff.role, 'erase_account') }}
+        />
       </Panel>
     </>
   );

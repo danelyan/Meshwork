@@ -7,7 +7,11 @@ import { prisma } from '@/server/db';
 import { loadCompanyTrusts } from '@/server/employer/company';
 import { pseudonym } from '@/server/employer/privacy';
 
-import { ListBase, PAGE_SIZE, type Paged, maskEmail, maskName, oneOf, paged, parsePseudonym, skipOf } from './lib';
+import { activeBlockWhere, isBlockedNow } from '../accounts/state';
+import { PAGE_SIZE, type Paged, maskEmail, maskName, paged, parsePseudonym, skipOf } from './lib';
+import { ApplicationListQuery, CandidateListQuery, CompanyListQuery, InvitationListQuery, UserListQuery, VacancyListQuery } from './queries';
+
+export { ApplicationListQuery, CandidateListQuery, CompanyListQuery, InvitationListQuery, UserListQuery, VacancyListQuery };
 
 /**
  * Списки обзора (E-08, фаза 1). Принципы:
@@ -18,22 +22,13 @@ import { ListBase, PAGE_SIZE, type Paged, maskEmail, maskName, oneOf, paged, par
  *    по маске стал бы способом узнать почту в обход журнала.
  */
 
-const SPECS = ['backend', 'frontend', 'ai', 'engineering'] as const;
-const GRADES = ['junior', 'middle', 'senior'] as const;
-const TRI = ['yes', 'no'] as const;
 
 // --- пользователи ---
-
-export const UserListQuery = ListBase.extend({
-  role: oneOf(['pending', 'candidate', 'employer'] as const),
-  blocked: oneOf(TRI),
-  demo: oneOf(TRI),
-});
 
 export async function listUsers(q: z.infer<typeof UserListQuery>, canSearchPii: boolean) {
   const and: Prisma.UserWhereInput[] = [];
   if (q.role) and.push({ role: q.role });
-  if (q.blocked) and.push(q.blocked === 'yes' ? { blockedAt: { not: null } } : { blockedAt: null });
+  if (q.blocked) and.push(q.blocked === 'yes' ? activeBlockWhere() : { NOT: activeBlockWhere() });
   if (q.demo) and.push({ isDemo: q.demo === 'yes' });
   if (q.q) {
     const or: Prisma.UserWhereInput[] = [{ id: q.q }, { candidateId: q.q }];
@@ -47,7 +42,7 @@ export async function listUsers(q: z.infer<typeof UserListQuery>, canSearchPii: 
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       skip: skipOf(q.page),
       take: PAGE_SIZE,
-      select: { id: true, role: true, name: true, email: true, isDemo: true, onboardedAt: true, createdAt: true, blockedAt: true, candidateId: true, employerProfile: { select: { companyId: true } } },
+      select: { id: true, role: true, name: true, email: true, isDemo: true, onboardedAt: true, createdAt: true, blockedAt: true, blockedUntil: true, candidateId: true, employerProfile: { select: { companyId: true } } },
     }),
     prisma.user.count({ where }),
   ]);
@@ -59,7 +54,7 @@ export async function listUsers(q: z.infer<typeof UserListQuery>, canSearchPii: 
       email: maskEmail(u.email),
       isDemo: u.isDemo,
       onboarded: !!u.onboardedAt,
-      blocked: !!u.blockedAt,
+      blocked: isBlockedNow(u),
       createdAt: u.createdAt,
       candidateId: u.candidateId,
       companyId: u.employerProfile?.companyId ?? null,
@@ -70,14 +65,6 @@ export async function listUsers(q: z.infer<typeof UserListQuery>, canSearchPii: 
 }
 
 // --- кандидаты ---
-
-export const CandidateListQuery = ListBase.extend({
-  specialization: oneOf(SPECS),
-  grade: oneOf(GRADES),
-  fsp: oneOf(['not_linked', 'no_achievements', 'unavailable', 'linked'] as const),
-  hidden: oneOf(TRI),
-  demo: oneOf(TRI),
-});
 
 /** Идентификаторы кандидатов с этим псевдонимом: он считается из id хэшем, в БД не хранится — сверяем в коде. */
 async function idsByPseudonym(tag: string): Promise<string[]> {
@@ -138,17 +125,12 @@ export async function listCandidates(q: z.infer<typeof CandidateListQuery>, canS
 
 // --- компании ---
 
-export const CompanyListQuery = ListBase.extend({
-  verified: oneOf(['yes', 'no', 'requested'] as const),
-  blocked: oneOf(TRI),
-});
-
 export async function listCompanies(q: z.infer<typeof CompanyListQuery>) {
   const and: Prisma.CompanyWhereInput[] = [];
   if (q.verified === 'yes') and.push({ verifiedAt: { not: null } });
   if (q.verified === 'no') and.push({ verifiedAt: null });
   if (q.verified === 'requested') and.push({ verifiedAt: null, verificationRequestedAt: { not: null } });
-  if (q.blocked) and.push(q.blocked === 'yes' ? { blockedAt: { not: null } } : { blockedAt: null });
+  if (q.blocked) and.push(q.blocked === 'yes' ? activeBlockWhere() : { NOT: activeBlockWhere() });
   if (q.q) and.push({ OR: [{ id: q.q }, { name: { contains: q.q, mode: 'insensitive' } }, { inn: { contains: q.q } }] });
   const where: Prisma.CompanyWhereInput = and.length ? { AND: and } : {};
   const [rows, total] = await Promise.all([
@@ -166,6 +148,7 @@ export async function listCompanies(q: z.infer<typeof CompanyListQuery>) {
         verifiedAt: true,
         verificationRequestedAt: true,
         blockedAt: true,
+        blockedUntil: true,
         _count: { select: { vacancies: true, invitations: true, employers: true } },
       },
     }),
@@ -182,7 +165,7 @@ export async function listCompanies(q: z.infer<typeof CompanyListQuery>) {
       isDemo: c.isDemo,
       verified: !!c.verifiedAt,
       verificationRequested: !!c.verificationRequestedAt && !c.verifiedAt,
-      blocked: !!c.blockedAt,
+      blocked: isBlockedNow(c),
       vacancies: c._count.vacancies,
       invitations: c._count.invitations,
       representatives: c._count.employers,
@@ -195,13 +178,6 @@ export async function listCompanies(q: z.infer<typeof CompanyListQuery>) {
 }
 
 // --- потребности и вакансии ---
-
-export const VacancyListQuery = ListBase.extend({
-  specialization: oneOf(SPECS),
-  grade: oneOf(GRADES),
-  state: oneOf(['active', 'archived'] as const),
-  companyId: z.string().max(64).optional().catch(undefined),
-});
 
 export async function listVacancies(q: z.infer<typeof VacancyListQuery>) {
   const and: Prisma.VacancyWhereInput[] = [];
@@ -253,14 +229,6 @@ export async function listVacancies(q: z.infer<typeof VacancyListQuery>) {
 
 // --- приглашения ---
 
-const INV_STATUSES = ['sent', 'viewed', 'accepted', 'declined', 'hired', 'withdrawn', 'closed_hired'] as const;
-
-export const InvitationListQuery = ListBase.extend({
-  status: oneOf(INV_STATUSES),
-  complaint: oneOf(['yes'] as const),
-  companyId: z.string().max(64).optional().catch(undefined),
-  candidateId: z.string().max(64).optional().catch(undefined),
-});
 
 export async function listInvitations(q: z.infer<typeof InvitationListQuery>) {
   const and: Prisma.InvitationWhereInput[] = [];
@@ -309,11 +277,6 @@ export async function listInvitations(q: z.infer<typeof InvitationListQuery>) {
 }
 
 // --- самоотклики ---
-
-export const ApplicationListQuery = ListBase.extend({
-  status: oneOf(['sent', 'viewed', 'accepted', 'declined', 'closed'] as const),
-  vacancyId: z.string().max(64).optional().catch(undefined),
-});
 
 export async function listApplications(q: z.infer<typeof ApplicationListQuery>) {
   const and: Prisma.ApplicationWhereInput[] = [];

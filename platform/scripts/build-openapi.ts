@@ -4,10 +4,20 @@
 // Запуск из platform/ после любого изменения маршрутов: npx tsx scripts/build-openapi.ts
 // Тест tests/unit/api/openapi.test.ts сверяет, что файлы совпадают с кодом.
 import { writeFileSync } from 'node:fs';
+import Module from 'node:module';
 import { join } from 'node:path';
 
 import { buildSpec } from './openapi/build';
 import { toYaml } from './openapi/yaml';
+
+// `server-only` — пакета нет, Next подставляет его сам (как алиас в vitest.config.mts). Без заглушки модули со схемами
+// (consultant/memory, favorites, admin/overview…) не импортируются, схемы тел и query выпадают из спецификации,
+// и тест актуальности (он гоняет генератор под vitest, где алиас есть) расходится с файлом.
+const nodeModule = Module as unknown as { _resolveFilename: (request: string, ...rest: unknown[]) => string };
+const resolveOrig = nodeModule._resolveFilename;
+nodeModule._resolveFilename = function (request: string, ...rest: unknown[]) {
+  return request === 'server-only' ? join(process.cwd(), 'node_modules/next/dist/compiled/server-only/empty.js') : resolveOrig.call(this, request, ...rest);
+};
 
 async function main() {
   const root = process.cwd();

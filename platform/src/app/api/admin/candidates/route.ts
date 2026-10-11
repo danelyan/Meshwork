@@ -1,4 +1,5 @@
-import { listCandidates, CandidateListQuery } from '@/server/admin/overview/lists';
+import { listCandidates } from '@/server/admin/overview/lists';
+import { CandidateListQuery } from '@/server/admin/overview/queries';
 import { requireStaff } from '@/server/admin/session';
 import { withErrors } from '@/server/errors';
 import { can } from '@/server/admin/permissions';

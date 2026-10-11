@@ -8,6 +8,7 @@ import { prisma } from '../db';
 import { defenseVisibleTo } from '../defense-room/visibility';
 import { errors } from '../errors';
 import { type CallAccess, type CallEvent, type CallVerdict, depthStatus, type PublicCallVerdict } from './types';
+import { isBlockedNow } from '@/server/admin/accounts/state';
 
 export interface CallPrincipal {
   role: 'candidate' | 'employer';
@@ -68,8 +69,8 @@ export async function resolveCallAccess(
   // Защита проекта до accepted: вердикт — только через /api/employer/project-submissions/{id}/ai-defense (свои вакансии,
   // баллы и флаги, ADR 0008 п. 1); карта глубины созвона (publicVerdict) к вердикту защиты не применима.
   if (call.kind === 'defense') throw errors.notFound('Созвон не найден');
-  const cand = await prisma.candidate.findUnique({ where: { id: call.candidateId }, select: { hiddenFromEmployers: true } });
-  if (!cand || cand.hiddenFromEmployers) throw errors.notFound('Созвон не найден');
+  const cand = await prisma.candidate.findUnique({ where: { id: call.candidateId }, select: { hiddenFromEmployers: true, user: { select: { blockedAt: true, blockedUntil: true } } } });
+  if (!cand || cand.hiddenFromEmployers || isBlockedNow(cand.user)) throw errors.notFound('Созвон не найден');
   return { role: 'employer', access: 'summary', recording: false };
 }
 

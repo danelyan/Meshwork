@@ -103,6 +103,37 @@ export async function listRedFlags(status: RedFlagReviewStatus | 'all' = 'open')
   });
 }
 
+/** Скрыта ли вакансия модератором (статус hidden в очереди флагов). */
+export async function isVacancyHidden(vacancyId: string, db: Prisma.TransactionClient | typeof prisma = prisma): Promise<boolean> {
+  const r = await db.redFlagReview.findUnique({ where: { targetType_targetId: { targetType: 'vacancy', targetId: vacancyId } }, select: { status: true } });
+  return r?.status === 'hidden';
+}
+
+/**
+ * Скрыть вакансию от кандидатов (`hidden: true`) или вернуть (`false`) без красных флагов (hide_vacancy).
+ * Хранится в `RedFlagReview` со статусом hidden: работодатель не обойдёт разархивированием. Возврат переводит
+ * ревью в ok (флаги не стираются). Причина обязательна, журнал — в той же транзакции; повтор того же состояния — 409.
+ */
+export async function setVacancyHidden(staff: StaffContext, vacancyId: string, input: { hidden: boolean; reason: string | null | undefined }): Promise<{ id: string; hidden: boolean }> {
+  const reason = requireReason(input.reason);
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hide-vacancy:${vacancyId}`}))`;
+    if (!(await tx.vacancy.findUnique({ where: { id: vacancyId }, select: { id: true } }))) throw errors.notFound('Вакансия не найдена');
+    const key = { targetType_targetId: { targetType: 'vacancy' as const, targetId: vacancyId } };
+    const before = await tx.redFlagReview.findUnique({ where: key });
+    if (before) await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`red-flag:${before.id}`}))`;
+    const cur = before ? await tx.redFlagReview.findUnique({ where: key }) : null;
+    const isHidden = cur?.status === 'hidden';
+    if (input.hidden === isHidden) throw errors.conflict(isHidden ? 'Вакансия уже скрыта' : 'Вакансия не скрыта модератором');
+    const data = { status: input.hidden ? ('hidden' as const) : ('ok' as const), resolvedById: staff.staffId, resolvedAt: new Date(), resolution: reason };
+    const after = cur
+      ? await tx.redFlagReview.update({ where: { id: cur.id }, data })
+      : await tx.redFlagReview.create({ data: { targetType: 'vacancy', targetId: vacancyId, flags: [], ...data } });
+    await audit({ actor: staff, action: input.hidden ? 'hide_vacancy.hidden' : 'hide_vacancy.shown', target: { type: 'vacancy', id: vacancyId }, reason, before: cur ?? { status: 'none' }, after }, tx);
+  });
+  return { id: vacancyId, hidden: input.hidden };
+}
+
 export type RedFlagDecision = 'ok' | 'hidden' | 'warned';
 
 /** Решение по флагу: только из open (409), причина обязательна; hidden — только для вакансии (400). Письмо при warned — после COMMIT. */

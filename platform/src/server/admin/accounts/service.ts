@@ -7,8 +7,9 @@ import { errors } from '@/server/errors';
 
 import { audit, requireReason } from '../audit';
 import type { StaffContext } from '../session';
+import { getSetting, setDemoSetting } from '../settings';
 
-import { SHOW_DEMO_SETTING, cooldownResetAt, isBlockedNow, isHiddenByModerator, showDemoInMatching } from './state';
+import { cooldownResetAt, isBlockedNow, isHiddenByModerator } from './state';
 
 /**
  * Действия фазы 3 E-08 над пользователями, компаниями и кандидатами. Каждое изменение — с причиной и строкой журнала
@@ -190,7 +191,7 @@ export async function listDemo() {
       take: 300,
     }),
     prisma.company.findMany({ where: { isDemo: true }, select: { id: true, name: true, _count: { select: { vacancies: true } } }, orderBy: { name: 'asc' }, take: 300 }),
-    showDemoInMatching(),
+    getSetting('matching.show_demo_candidates'),
     findJunk(),
   ]);
   return {
@@ -253,14 +254,8 @@ export async function cleanupJunk(actor: StaffContext, input: { reason: string |
   return { vacancies: vacancyIds.length, companies: companies.length, users: erasedUsers };
 }
 
-/** Переключатель «показывать демо-кандидатов в подборке и поиске» (PlatformSetting + версия + журнал). */
+/** Переключатель «показывать демо-кандидатов в подборке и поиске» (настройка с версией и журналом). */
 export async function setShowDemo(actor: StaffContext, input: { value: boolean; reason: string | null | undefined }) {
-  const reason = requireReason(input.reason);
-  return prisma.$transaction(async (tx) => {
-    const before = await showDemoInMatching(tx);
-    await tx.platformSetting.upsert({ where: { key: SHOW_DEMO_SETTING }, create: { key: SHOW_DEMO_SETTING, value: input.value, updatedById: actor.staffId }, update: { value: input.value, updatedById: actor.staffId } });
-    await tx.platformSettingVersion.create({ data: { key: SHOW_DEMO_SETTING, value: input.value, updatedById: actor.staffId, reason } });
-    await audit({ actor, action: 'manage_demo.show_in_matching', target: { type: 'setting', id: SHOW_DEMO_SETTING }, reason, before: { value: before }, after: { value: input.value } }, tx);
-    return { showDemo: input.value };
-  });
+  await setDemoSetting(input.value, actor, input.reason);
+  return { showDemo: input.value };
 }

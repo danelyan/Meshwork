@@ -2,6 +2,9 @@
 // Загрузка из БД + чистое ранжирование (ranking.ts) + проекция приватности (privacy.ts).
 import type { InvitationStatus } from '@prisma/client';
 
+import { notBlockedCandidateWhere } from '@/server/admin/accounts/state';
+import { getSetting } from '@/server/admin/settings';
+
 import type { CatalogEntry } from '../claims/types';
 import { demoAchievements } from '../collector/fsp-demo';
 import { disclosedCandidateIds } from '../consent/service';
@@ -22,7 +25,6 @@ import {
   type MatchFilters,
   type MatchTarget,
   type RankedCandidate,
-  withTestedDefault,
 } from './ranking';
 import type { FspAchievementInput } from './fsp-weight';
 import { relaxationHints, type RelaxHint } from './relax';
@@ -71,11 +73,15 @@ interface PoolRow {
  * `companyId` — чья выдача: от него зависит, какие защиты видны (ADR 0008); null — только ИИ-защиты.
  */
 export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: string | null = null): Promise<PoolRow[]> {
+  const showDemo = await getSetting('matching.show_demo_candidates');
   const rows = await prisma.candidate.findMany({
     where: {
       hiddenFromEmployers: false,
       // Режим эксперта (server/expert): одноразовые эксперты жюри в поиск и подборку не попадают никогда.
       ...NOT_EXPERT_CANDIDATE,
+      // E-08 фаза 3: аккаунт заблокирован модератором — не в выдаче; демо — по переключателю админки.
+      AND: [notBlockedCandidateWhere()],
+      ...(showDemo ? {} : { isDemo: false }),
       OR: [{ claims: { some: { status: { in: ['confirmed', 'edited'] } } } }, { categories: { some: {} } }],
     },
     select: {
@@ -199,8 +205,7 @@ async function run(
     : pool.map((p) => p.evidence);
   // ПРЕДЛОЖЕНИЕ агента (fullstack): та же формула, кандидат в виде «backend на меньшем из двух грейдов» (fullstack.ts).
   const evidence = filters.fullstack ? withIntegrity.map(asFullstackEvidence) : withIntegrity;
-  const resolved = withTestedDefault(filters);
-  const all = rankCandidates(evidence, target, catalog, resolved, opts);
+  const all = rankCandidates(evidence, target, catalog, filters, opts);
   const ranked = requireCoverage ? dropUncovered(all) : all;
   const top = ranked.slice(0, limit);
   const ids = top.map((r) => r.candidateId);
@@ -232,7 +237,7 @@ async function run(
     return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null };
   });
   // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
-  const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(evidence, target, catalog, resolved, opts) : undefined;
+  const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(evidence, target, catalog, filters, opts) : undefined;
   return { total: ranked.length, items, ...(hints ? { hints } : {}) };
 }
 

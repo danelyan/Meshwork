@@ -7,3 +7,4 @@ export type { BlockView } from './BlockState';
 export { ReasonAction } from './ReasonAction';
 export { UserActions } from './UserActions';
 export type { UserActionsProps } from './UserActions';
+export { VacancyActions } from './VacancyActions';

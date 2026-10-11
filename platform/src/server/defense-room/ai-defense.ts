@@ -9,6 +9,7 @@ import { startDefenseRoom, type StartDeps, type StartResult } from './session';
 import { asTranscript, asVerdict } from './store';
 import type { DefenseFlag, DefenseRoomVerdict, QlcType, TranscriptEntry } from './types';
 import { QLC_LABEL } from './verdict';
+import { isBlockedNow } from '@/server/admin/accounts/state';
 
 /**
  * ИИ-защита проекта до приглашения (ADR 0008 п. 1). Кандидат сам запускает защиту своего проверенного сабмита:
@@ -150,11 +151,11 @@ export async function getEmployerAiDefense(companyId: string, submissionId: stri
       id: true,
       candidateId: true,
       repoUrl: true,
-      candidate: { select: { name: true, hiddenFromEmployers: true } },
+      candidate: { select: { name: true, hiddenFromEmployers: true, user: { select: { blockedAt: true, blockedUntil: true } } } },
       projectTask: { select: { vacancy: { select: { companyId: true } } } },
     },
   });
-  if (!s || s.projectTask.vacancy.companyId !== companyId || s.candidate.hiddenFromEmployers) throw errors.notFound('Сдача не найдена');
+  if (!s || s.projectTask.vacancy.companyId !== companyId || s.candidate.hiddenFromEmployers || isBlockedNow(s.candidate.user)) throw errors.notFound('Сдача не найдена');
   const disclosed = (await disclosedCandidateIds(companyId, [s.candidateId])).has(s.candidateId);
   const row = (await latestAiDefenses([s.id])).get(s.id) ?? null;
   const view: EmployerAiDefenseView = {

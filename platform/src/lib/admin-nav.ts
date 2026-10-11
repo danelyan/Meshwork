@@ -32,6 +32,7 @@ export const ADMIN_NAV: readonly AdminNavGroup[] = [
       { href: '/admin/companies', label: 'Компании', action: 'view_companies', phase: 1 },
       { href: '/admin/vacancies', label: 'Вакансии', action: 'view_vacancies', phase: 1 },
       { href: '/admin/invitations', label: 'Приглашения', action: 'view_invitations', phase: 1 },
+      { href: '/admin/applications', label: 'Самоотклики', action: 'view_invitations', phase: 1 },
     ],
   },
   {
@@ -51,6 +52,7 @@ export const ADMIN_NAV: readonly AdminNavGroup[] = [
       { href: '/admin/catalogs', label: 'Справочники', action: 'edit_catalogs', phase: 4 },
       { href: '/admin/metrics', label: 'Метрики', action: 'view_metrics', phase: 5 },
       { href: '/admin/audit', label: 'Журнал', action: 'view_audit', phase: 0 },
+      { href: '/admin/demo', label: 'Демо-данные', action: 'manage_demo', phase: 3 },
       { href: '/admin/staff', label: 'Персонал', action: 'manage_staff', phase: 0 },
     ],
   },

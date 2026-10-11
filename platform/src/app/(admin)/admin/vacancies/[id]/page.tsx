@@ -1,8 +1,11 @@
 import Link from 'next/link';
 
+import { VacancyActions } from '@/components/admin/actions';
 import { APPLICATION_STATUS_LABEL, GRADE_LABEL, INVITATION_STATUS_LABEL, SPEC_LABEL, fmtDate, fmtDateTime, fmtMoney } from '@/components/admin/labels';
 import { Panel } from '@/components/ui';
 import { getVacancyCard } from '@/server/admin/overview/cards';
+import { isVacancyHidden } from '@/server/admin/moderation/red-flags';
+import { can } from '@/server/admin/permissions';
 import { requirePageStaff } from '@/server/admin/session';
 
 import styles from '../../admin.module.css';
@@ -11,8 +14,9 @@ import { orNotFound } from '../../listing';
 /** Карточка потребности: условия, стек, приглашения и самоотклики (кандидаты под псевдонимами). */
 export default async function AdminVacancyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requirePageStaff(`/admin/vacancies/${id}`, 'view_vacancies');
+  const staff = await requirePageStaff(`/admin/vacancies/${id}`, 'view_vacancies');
   const v = await orNotFound(getVacancyCard(id));
+  const hidden = await isVacancyHidden(id);
   return (
     <>
       <h1 className={styles.title}>{v.title}</h1>
@@ -60,10 +64,9 @@ export default async function AdminVacancyPage({ params }: { params: Promise<{ i
           ))}
         </ul>
       </Panel>
-      {/* Действия (фаза 3 E-08): скрыть вакансию. Кнопку и логику добавляет лейн фазы 3. */}
       <Panel className={styles.actions}>
         <h2 className={styles.sectionTitle}>Действия</h2>
-        <p className={styles.muted}>Появятся в фазе 3.</p>
+        <VacancyActions vacancyId={v.id} hidden={hidden} canHide={can(staff.role, 'hide_vacancy')} />
       </Panel>
     </>
   );

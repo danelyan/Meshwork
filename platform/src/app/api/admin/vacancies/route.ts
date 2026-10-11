@@ -1,4 +1,5 @@
-import { listVacancies, VacancyListQuery } from '@/server/admin/overview/lists';
+import { listVacancies } from '@/server/admin/overview/lists';
+import { VacancyListQuery } from '@/server/admin/overview/queries';
 import { requireStaff } from '@/server/admin/session';
 import { withErrors } from '@/server/errors';
 

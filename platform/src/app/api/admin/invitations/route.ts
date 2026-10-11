@@ -1,4 +1,5 @@
-import { listInvitations, InvitationListQuery } from '@/server/admin/overview/lists';
+import { listInvitations } from '@/server/admin/overview/lists';
+import { InvitationListQuery } from '@/server/admin/overview/queries';
 import { requireStaff } from '@/server/admin/session';
 import { withErrors } from '@/server/errors';
 

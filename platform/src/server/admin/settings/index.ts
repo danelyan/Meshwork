@@ -84,7 +84,7 @@ async function writeSetting(
   value: unknown,
   actor: Actor,
   reason: string,
-  action: 'edit_settings' | 'edit_settings.rollback' | 'edit_catalogs.templates',
+  action: 'edit_settings' | 'edit_settings.rollback' | 'edit_catalogs.templates' | 'manage_demo.show_in_matching',
 ): Promise<void> {
   const next = parseValue(key, value);
   await prisma.$transaction(async (tx) => {
@@ -112,6 +112,11 @@ export async function setSetting<K extends SettingKey>(key: K, value: unknown, a
 /** Служебная запись для справочников (скрытые шаблоны): то же, что setSetting, но с другим действием журнала. */
 export async function setCatalogSetting<K extends SettingKey>(key: K, value: unknown, actor: Actor, reason: string | null | undefined): Promise<void> {
   await writeSetting(key, value, actor, requireReason(reason), 'edit_catalogs.templates');
+}
+
+/** Переключатель показа демо-кандидатов в подборке (страница «Демо-данные»): то же, что setSetting, действие журнала — своё. */
+export async function setDemoSetting(value: boolean, actor: Actor, reason: string | null | undefined): Promise<void> {
+  await writeSetting('matching.show_demo_candidates', value, actor, requireReason(reason), 'manage_demo.show_in_matching');
 }
 
 /** Откат на версию из истории: значение версии снова становится текущим (новая версия + журнал). */

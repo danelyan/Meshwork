@@ -91,11 +91,3 @@ export async function cooldownResetAt(candidateId: string, db: Db = prisma): Pro
   });
   return last?.createdAt ?? null;
 }
-
-/** Ключ PlatformSetting: показывать ли демо-кандидатов в подборке и поиске работодателей. Умолчание — да. */
-export const SHOW_DEMO_SETTING = 'matching.show_demo_candidates';
-
-export async function showDemoInMatching(db: Db = prisma): Promise<boolean> {
-  const row = await db.platformSetting.findUnique({ where: { key: SHOW_DEMO_SETTING }, select: { value: true } });
-  return row ? row.value !== false : true;
-}

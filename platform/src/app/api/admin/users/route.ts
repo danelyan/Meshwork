@@ -1,4 +1,5 @@
-import { listUsers, UserListQuery } from '@/server/admin/overview/lists';
+import { listUsers } from '@/server/admin/overview/lists';
+import { UserListQuery } from '@/server/admin/overview/queries';
 import { requireStaff } from '@/server/admin/session';
 import { withErrors } from '@/server/errors';
 import { can } from '@/server/admin/permissions';

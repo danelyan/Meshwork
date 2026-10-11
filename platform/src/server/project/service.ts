@@ -41,6 +41,7 @@ import {
   type SubmissionInput,
 } from './schemas';
 import { composeRubric, generateSpec, maskEmployer } from './spec';
+import { notBlockedCandidateWhere } from '@/server/admin/accounts/state';
 import {
   checkPlatformOwned,
   countTests,
@@ -743,7 +744,7 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
   const task = await getEmployerTask(companyId, vacancyId);
   if (!task) return { task: null, items: [] };
   const subs = await prisma.projectSubmission.findMany({
-    where: { projectTaskId: task.id, candidate: { hiddenFromEmployers: false } },
+    where: { projectTaskId: task.id, candidate: { hiddenFromEmployers: false, AND: [notBlockedCandidateWhere()] } },
     orderBy: { submittedAt: 'desc' },
     include: { candidate: { select: { id: true, name: true, categories: { orderBy: { confirmedAt: 'desc' }, take: 1, select: { specialization: true, grade: true } } } } },
   });

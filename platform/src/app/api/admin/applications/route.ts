@@ -1,4 +1,5 @@
-import { listApplications, ApplicationListQuery } from '@/server/admin/overview/lists';
+import { listApplications } from '@/server/admin/overview/lists';
+import { ApplicationListQuery } from '@/server/admin/overview/queries';
 import { requireStaff } from '@/server/admin/session';
 import { withErrors } from '@/server/errors';
 

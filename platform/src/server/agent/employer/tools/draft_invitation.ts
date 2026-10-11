@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { notBlockedCandidateWhere } from '@/server/admin/accounts/state';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
 import { invitationsSentToday, loadEmployerContext } from '@/server/employer';
@@ -47,7 +48,7 @@ export const draftInvitation: EmployerTool = {
   input: Input,
   output: Output,
   async handler(ctx, input: z.infer<typeof Input>) {
-    const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false }, select: { id: true } });
+    const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false, AND: [notBlockedCandidateWhere()] }, select: { id: true } });
     if (!cand) throw errors.notFound('Кандидат не найден');
     let vacancy = null;
     try {

@@ -7,6 +7,7 @@ import { loadCompanyTrusts } from '@/server/employer/company';
 import { pseudonym } from '@/server/employer/privacy';
 import { checkInn } from '@/server/onboarding/inn';
 
+import { isBlockedNow } from '../accounts/state';
 import { DAY_MS, maskEmail, maskName } from './lib';
 
 /**
@@ -57,7 +58,7 @@ export async function getCandidateCard(id: string) {
     ...rest,
     pseudonym: pseudonym(c.id),
     email: maskEmail(email),
-    account: user ? { id: user.id, role: user.role, blocked: !!user.blockedAt, blockedUntil: user.blockedUntil, blockedReason: user.blockedReason } : null,
+    account: user ? { id: user.id, role: user.role, blocked: isBlockedNow(user), blockedAt: user.blockedAt, blockedUntil: user.blockedUntil, blockedReason: user.blockedReason } : null,
     consents: (user?.consents ?? []).map((k) => ({ ...k, active: !k.revokedAt })),
     claims,
     claimsByLevel,
@@ -118,7 +119,7 @@ export async function getCompanyCard(id: string) {
       blockedAt: true,
       blockedUntil: true,
       blockedReason: true,
-      employers: { orderBy: { createdAt: 'asc' }, select: { id: true, createdAt: true, user: { select: { id: true, name: true, email: true, blockedAt: true } } } },
+      employers: { orderBy: { createdAt: 'asc' }, select: { id: true, createdAt: true, user: { select: { id: true, name: true, email: true, blockedAt: true, blockedUntil: true } } } },
       vacancies: { orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, title: true, grade: true, specialization: true, archivedAt: true, createdAt: true } },
       complaints: { orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, reason: true, status: true, createdAt: true, invitationId: true } },
     },
@@ -138,7 +139,7 @@ export async function getCompanyCard(id: string) {
     ...rest,
     inn,
     innCheck: inn ? { valid: checkInn(inn).ok, note: 'Проверена только контрольная цифра; реестры ФНС не сверяются (демо).' } : null,
-    representatives: employers.map((e) => ({ id: e.id, userId: e.user.id, name: maskName(e.user.name), email: maskEmail(e.user.email), blocked: !!e.user.blockedAt, createdAt: e.createdAt })),
+    representatives: employers.map((e) => ({ id: e.id, userId: e.user.id, name: maskName(e.user.name), email: maskEmail(e.user.email), blocked: isBlockedNow(e.user), createdAt: e.createdAt })),
     invitationStats: { sent, byStatus: Object.fromEntries(byStatus.map((x) => [x.status, x._count._all])), declined, declineShare: sent > 0 ? declined / sent : null },
     trust: trusts.get(id) ?? null,
     sanction,

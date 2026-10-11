@@ -141,6 +141,14 @@ export const SETTINGS = {
     default: () => getEnv().CALL_RECORDING_RETENTION_DAYS,
     unit: 'дней',
   }),
+  'matching.show_demo_candidates': def({
+    group: 'employer',
+    title: 'Демо-кандидаты в подборке',
+    description: 'Показывать ли демо-кандидатов работодателям в подборке и поиске. Переключается на странице «Демо-данные».',
+    schema: z.boolean(),
+    default: () => true,
+    internal: true,
+  }),
   'catalog.hiddenTaskTemplates': def({
     group: 'catalog',
     title: 'Снятые с публикации шаблоны заданий теста',

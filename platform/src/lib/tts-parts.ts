@@ -1,12 +1,12 @@
 /**
  * Реплика ИИ → части для озвучки (/api/tts): общий модуль комнаты ИИнтервью (useSentenceSpeech) и панели созвона
- * консультанта (components/call/useReplySpeech). Разбиение — то же, что у сервера (splitSentences по сырому
- * тексту), чтобы счёт услышанного сходился с POST /interrupt; чистка для синтеза — по каждому предложению.
+ * консультанта (components/call/useReplySpeech). Разбиение – то же, что у сервера (splitSentences по сырому
+ * тексту), чтобы счёт услышанного сходился с POST /interrupt; чистка для синтеза – по каждому предложению.
  */
 import { splitSentences } from './sentences';
 import { speechText } from './speech-text';
 
-/** Предложений на реплику в очереди TTS — не больше: лимит /api/tts — 20 запросов в минуту на сессию. */
+/** Предложений на реплику в очереди TTS – не больше: лимит /api/tts – 20 запросов в минуту на сессию. */
 export const MAX_TTS_PARTS = 4;
 
 export interface TtsPart {

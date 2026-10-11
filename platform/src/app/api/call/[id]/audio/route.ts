@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST /api/call/{id}/audio — сегмент голоса кандидата (LPCM 16 бит моно 16 кГц, `audio/l16`, до 3 МБ):
+ * POST /api/call/{id}/audio – сегмент голоса кандидата (LPCM 16 бит моно 16 кГц, `audio/l16`, до 3 МБ):
  * сохраняется файлом созвона; при STT=yandex сразу распознаётся. Ответ `{audioRef, text}` → `/turn`.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {

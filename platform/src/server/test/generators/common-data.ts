@@ -1,5 +1,5 @@
-// Общие семейства: SQL, алгоритмы, структуры данных (ADR 0003, дополнение 11.10). a, b — ПРЕДЛОЖЕНИЕ (экспертные):
-// Junior b ≤ −0,4, Middle b 0,3…0,8, Senior b 1,0…1,7, a 1,0…1,4 — как у семейств подкатегорий.
+// Общие семейства: SQL, алгоритмы, структуры данных (ADR 0003, дополнение 11.10). a, b – ПРЕДЛОЖЕНИЕ (экспертные):
+// Junior b ≤ −0,4, Middle b 0,3…0,8, Senior b 1,0…1,7, a 1,0…1,4 – как у семейств подкатегорий.
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 
@@ -137,7 +137,7 @@ export const sqlNotInNull: TaskGenerator = commonFamily({
     const why =
       kind === 0
         ? hasNull
-          ? 'NOT IN со списком, где есть NULL, никогда не даёт TRUE: id <> NULL — UNKNOWN, и запрос возвращает 0. Анти-соединение пишут через NOT EXISTS.'
+          ? 'NOT IN со списком, где есть NULL, никогда не даёт TRUE: id <> NULL – UNKNOWN, и запрос возвращает 0. Анти-соединение пишут через NOT EXISTS.'
           : 'NULL в подзапросе нет, NOT IN работает как анти-соединение: клиенты минус заблокированные.'
         : 'NOT EXISTS, IN и LEFT JOIN … IS NULL не ломаются от NULL в blocked: NULL просто ни с чем не совпадает.';
     return {
@@ -241,16 +241,16 @@ export const loopCount: TaskGenerator = commonFamily({
     } else if (kind === 1) {
       for (let i = 1; i < n; i *= k) count++;
       code = `n = ${n}\ni = 1\nwhile i < n:\n    op()\n    i *= ${k}`;
-      why = `i растёт как ${k}^t, цикл идёт, пока ${k}^t < n: ${count} раз — O(log n).`;
+      why = `i растёт как ${k}^t, цикл идёт, пока ${k}^t < n: ${count} раз – O(log n).`;
     } else if (kind === 2) {
       for (let i = 1; i <= n; i++) for (let j = i; j < n; j *= 2) count++;
       code = `n = ${n}\nfor i in range(1, n + 1):\n    j = i\n    while j < n:\n        op()\n        j *= 2`;
-      why = `Для каждого i внутренний цикл удваивает j от i до n; сумма по i даёт ${count} — O(n log n) в худшем случае.`;
+      why = `Для каждого i внутренний цикл удваивает j от i до n; сумма по i даёт ${count} – O(n log n) в худшем случае.`;
     } else {
       const m = rng.int(3, 7);
       for (let i = 0; i < n; i += k) for (let j = 0; j < m; j++) count++;
       code = `n, m = ${n}, ${m}\nfor i in range(0, n, ${k}):\n    for j in range(m):\n        op()`;
-      why = `Внешний цикл — ⌈n/${k}⌉ = ${Math.ceil(n / k)} итераций, внутренний — m = ${m}: ${count}.`;
+      why = `Внешний цикл – ⌈n/${k}⌉ = ${Math.ceil(n / k)} итераций, внутренний – m = ${m}: ${count}.`;
     }
     return {
       prompt: 'Сколько раз будет вызвана op() (Python)?',
@@ -301,7 +301,7 @@ export const amortizedGrowth: TaskGenerator = commonFamily({
       ].join('\n'),
       answerHint: 'число копирований',
       answerKey: String(copies),
-      explanation: `Расширений — ${grows}, на каждом копируются все элементы. ${additive ? 'При аддитивном росте копирований Θ(n²/шаг): добавление в среднем O(n).' : 'При геометрическом росте копирований < n·k/(k−1): амортизированно O(1) на добавление.'}`,
+      explanation: `Расширений – ${grows}, на каждом копируются все элементы. ${additive ? 'При аддитивном росте копирований Θ(n²/шаг): добавление в среднем O(n).' : 'При геометрическом росте копирований < n·k/(k−1): амортизированно O(1) на добавление.'}`,
       params: { cap0, additive, step, n },
     };
   },
@@ -346,11 +346,11 @@ export const stackQueue: TaskGenerator = commonFamily({
       ops.push(isStack ? 'pop()' : 'dequeue()');
     }
     return {
-      prompt: `Над ${isStack ? 'пустым стеком' : 'пустой очередью'} выполнены операции по порядку. Какие значения вернули ${isStack ? 'pop()' : 'dequeue()'}? Ответ — в порядке вызовов.`,
+      prompt: `Над ${isStack ? 'пустым стеком' : 'пустой очередью'} выполнены операции по порядку. Какие значения вернули ${isStack ? 'pop()' : 'dequeue()'}? Ответ – в порядке вызовов.`,
       code: ops.join('\n'),
       answerHint: 'значения через запятую, по порядку',
       answerKey: out.join(','),
-      explanation: isStack ? 'Стек — LIFO: pop() возвращает последний добавленный из оставшихся.' : 'Очередь — FIFO: dequeue() возвращает самый ранний из оставшихся.',
+      explanation: isStack ? 'Стек – LIFO: pop() возвращает последний добавленный из оставшихся.' : 'Очередь – FIFO: dequeue() возвращает самый ранний из оставшихся.',
       params: { isStack, ops: ops.length },
     };
   },
@@ -382,11 +382,11 @@ export const hashBuckets: TaskGenerator = commonFamily({
       if (kind === 0) {
         key = Math.max(...chains);
         prompt = 'Какой длины самая длинная цепочка?';
-        why = 'Ключ попадает в корзину k mod m; длина цепочки — сколько ключей дали один остаток.';
+        why = 'Ключ попадает в корзину k mod m; длина цепочки – сколько ключей дали один остаток.';
       } else {
         key = chains.filter((c) => c === 0).length;
         prompt = 'Сколько корзин останутся пустыми?';
-        why = 'Пустые корзины — остатки, которые не дал ни один ключ.';
+        why = 'Пустые корзины – остатки, которые не дал ни один ключ.';
       }
       prompt = `Хеш-таблица с цепочками, ${m} корзин, h(k) = k mod ${m}. Вставлены ключи по порядку. ${prompt}`;
     } else {
@@ -399,7 +399,7 @@ export const hashBuckets: TaskGenerator = commonFamily({
       const last = keys[keys.length - 1]!;
       key = slots.indexOf(last);
       prompt = `Хеш-таблица с открытой адресацией (линейное пробирование, шаг 1, по кругу), ${m} ячеек с номерами 0…${m - 1}, h(k) = k mod ${m}. Вставлены ключи по порядку. В какой ячейке окажется последний ключ ${last}?`;
-      why = 'Ключ кладётся в ячейку h(k), а если она занята — в следующую свободную по кругу.';
+      why = 'Ключ кладётся в ячейку h(k), а если она занята – в следующую свободную по кругу.';
     }
     return {
       prompt,
@@ -450,7 +450,7 @@ export const cacheEviction: TaskGenerator = commonFamily({
       code: seq.join(' '),
       answerHint: 'число промахов',
       answerKey: String(misses),
-      explanation: lru ? 'LRU: попадание переносит ключ в «свежий» конец, вытесняется самый старый по обращению.' : 'FIFO: порядок вытеснения — порядок загрузки, попадания его не меняют.',
+      explanation: lru ? 'LRU: попадание переносит ключ в «свежий» конец, вытесняется самый старый по обращению.' : 'FIFO: порядок вытеснения – порядок загрузки, попадания его не меняют.',
       params: { cap, lru, seq },
     };
   },

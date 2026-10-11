@@ -5,12 +5,12 @@ import { answerRevisions, revisionRows } from '@/server/onboarding/service';
 import type { Answers } from '@/server/onboarding/types';
 import type { SessionPrincipal } from '@/server/session';
 
-/** Действия дебаг-панели (только localhost, гейт — guard.ts). Работают над пользователем из сессии. */
+/** Действия дебаг-панели (только localhost, гейт – guard.ts). Работают над пользователем из сессии. */
 
 export type DevSession = SessionPrincipal & { userId: string };
 
 /**
- * Новый пустой разговор активной роли (`s.role`; ADR 0004 — у учётки могут быть оба профиля); старые остаются,
+ * Новый пустой разговор активной роли (`s.role`; ADR 0004 – у учётки могут быть оба профиля); старые остаются,
  * новый становится последним (его открывает страница).
  */
 export async function startNewConversation(s: SessionPrincipal): Promise<{ conversationId: string; next: string }> {
@@ -58,7 +58,7 @@ export async function clearOnboarding(s: DevSession, alsoProfile: boolean): Prom
 }
 
 /**
- * Удалить аккаунт и всё его — оба профиля, если учётка переключала роль (ids берём из БД, не из куки). Кандидат: Candidate (каскадом - категории, загрузки, утверждения,
+ * Удалить аккаунт и всё его – оба профиля, если учётка переключала роль (ids берём из БД, не из куки). Кандидат: Candidate (каскадом - категории, загрузки, утверждения,
  * разговоры, попытки теста, приглашения, защита, анкета) и его AgentRun. Работодатель: приглашения,
  * разговоры помощника, профиль; компания с вакансиями - если в ней больше никого нет. Всё в одной транзакции.
  */

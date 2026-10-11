@@ -1,4 +1,4 @@
-/* Кнопки внешнего входа (auth/YandexSignIn) и галка согласия (auth/ConsentCheck). Токены — styles/tokens.css. */
+/* Кнопки внешнего входа (auth/YandexSignIn) и галка согласия (auth/ConsentCheck). Токены – styles/tokens.css. */
 .yandex { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 22px; font-weight: 600; text-decoration: none; }
 .yandex[aria-disabled='true'] { opacity: 0.5; pointer-events: none; }
 .fsp { background: var(--ink); border-color: var(--ink); color: var(--on-ink); margin-bottom: 10px; }

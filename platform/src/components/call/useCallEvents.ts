@@ -6,8 +6,8 @@ import type { CallEvent, CallSnapshot, SignalPayload, TranscriptEntry } from '@/
 
 /**
  * SSE звонка защиты (`GET /api/defense-room/{id}/events`, EventSource сам переподключается).
- * Имена событий — как у лейна call. Держит снимок: транскрипт без дублей (по index), участники, mute, вердикт. Сигналы WebRTC
- * отдаёт колбэку `onSignal` — их не хранит.
+ * Имена событий – как у лейна call. Держит снимок: транскрипт без дублей (по index), участники, mute, вердикт. Сигналы WebRTC
+ * отдаёт колбэку `onSignal` – их не хранит.
  */
 export const CALL_EVENTS = ['snapshot', 'status', 'utterance', 'ai_state', 'participant', 'mute', 'question', 'verdict', 'signal', 'error'] as const;
 
@@ -21,7 +21,7 @@ export function mergeEntries(list: TranscriptEntry[], add: TranscriptEntry[]): T
 export interface CallEventsState {
   snapshot: CallSnapshot | null;
   connected: boolean;
-  /** Новые реплики в порядке прихода — чтобы озвучить только свежие. */
+  /** Новые реплики в порядке прихода – чтобы озвучить только свежие. */
   lastEntry: TranscriptEntry | null;
   /** ИИ готовит реплику (`ai_state`). */
   aiThinking: boolean;

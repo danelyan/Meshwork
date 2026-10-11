@@ -10,7 +10,7 @@
 
   const $ = (id) => document.getElementById(id);
 
-  /** h('div', { class: 'x', onclick }, 'текст', узел) — узел DOM без innerHTML. */
+  /** h('div', { class: 'x', onclick }, 'текст', узел) – узел DOM без innerHTML. */
   function h(tag, attrs, ...kids) {
     const el = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs || {})) {
@@ -76,10 +76,10 @@
       btn.textContent = 'скопировано ✓';
       btn.classList.add('is-done');
       setTimeout(() => { btn.textContent = 'копировать'; btn.classList.remove('is-done'); }, 1500);
-    } catch { toast('Не удалось скопировать — выделите текст вручную', true); }
+    } catch { toast('Не удалось скопировать – выделите текст вручную', true); }
   }
 
-  /** Плавное появление содержимого карточки — только при смене участника, не после каждой правки. */
+  /** Плавное появление содержимого карточки – только при смене участника, не после каждой правки. */
   let cardTimer = 0;
   function animateCard() {
     const card = $('card');
@@ -137,7 +137,7 @@
         view = { ...view, access_token: `${view.access_token.slice(0, 24)}… (сокращено)` };
         for (const k of ['refresh_token', 'id_token']) if (view[k]) view[k] = '… (сокращено)';
       }
-      pre.firstChild.textContent = r.status === 204 ? '204 No Content — тела нет' : JSON.stringify(view, null, 2);
+      pre.firstChild.textContent = r.status === 204 ? '204 No Content – тела нет' : JSON.stringify(view, null, 2);
       return r;
     }
 
@@ -226,12 +226,12 @@
       id: 'protocol', title: 'Открытый протокол', text: 'Без токена, только фамилия и инициалы',
       async run(run) {
         const list = await run.step('Список соревнований', 'GET', `${API}/events?per_page=10`, { collapsed: true });
-        // У соревнования, заведённого вручную, протокола нет — берём последнее из набора.
+        // У соревнования, заведённого вручную, протокола нет – берём последнее из набора.
         const ev = list.body.data.find((e) => !e.manual) || list.body.data[0];
         const r = await run.step('Протокол результатов', 'GET', `${API}/events/${ev.event_id}/results`);
         const rows = r.body.data.results;
         const first = rows[0]?.entrant;
-        run.done(`«${ev.name}»: ${plural(rows.length, 'строка', 'строки', 'строк')}${first ? `, первое место — ${first.name || first.display_name}` : ''}. Протоколы открыты, личных данных в них нет.`);
+        run.done(`«${ev.name}»: ${plural(rows.length, 'строка', 'строки', 'строк')}${first ? `, первое место – ${first.name || first.display_name}` : ''}. Протоколы открыты, личных данных в них нет.`);
       },
     },
     {
@@ -253,7 +253,7 @@
     try {
       await sc.run(run, state.card);
     } catch (err) {
-      run.done(`Не получилось: ${err.message}. Проверьте /api/v1/health — возможно, ФСП ID перезапускается.`, 'error');
+      run.done(`Не получилось: ${err.message}. Проверьте /api/v1/health – возможно, ФСП ID перезапускается.`, 'error');
     } finally {
       for (const b of buttons) { b.removeAttribute('aria-busy'); b.disabled = false; }
       // Сценарии с согласиями меняют карточку участника.
@@ -396,7 +396,7 @@
       h('div', { class: 'actions wide' }, h('button', { class: 'btn btn-primary' }, 'Создать участника'),
         h('button', { type: 'button', class: 'btn', onclick: () => { state.creating = false; renderCard(); markCurrent(); } }, 'Отмена')));
     $('card').replaceChildren(
-      h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Новый участник'), h('p', {}, 'Получит номер ФСП ID и логин для входа. Имя — любое вымышленное.'))),
+      h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Новый участник'), h('p', {}, 'Получит номер ФСП ID и логин для входа. Имя – любое вымышленное.'))),
       h('div', { class: 'block' }, form));
     animateCard();
     form.querySelector('input').focus();
@@ -558,7 +558,7 @@
     const first = state.card?.athlete.fsp_id || 'FSP-10001';
     const user = state.card?.login.username || 'fsp-10001';
     $('dev-curl').textContent = [
-      '# Токен спортсмена (приложения используют код авторизации; password grant — только для отладки)',
+      '# Токен спортсмена (приложения используют код авторизации; password grant – только для отладки)',
       `TOKEN=$(curl -s ${m.token_url} \\`,
       `  -d grant_type=password -d client_id=${m.athlete_demo_client} \\`,
       `  -d username=${user} -d password='${m.demo_password}' | jq -r .access_token)`,

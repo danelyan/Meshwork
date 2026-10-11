@@ -1,4 +1,4 @@
-/* Онбординг — лента-чат на весь экран (E-02). Примитивы ленты — components/chat; здесь — шапка и карточки шагов. Только токены. */
+/* Онбординг – лента-чат на весь экран (E-02). Примитивы ленты – components/chat; здесь – шапка и карточки шагов. Только токены. */
 .shell { min-height: 100svh; display: flex; flex-direction: column; }
 
 .top { position: sticky; top: 0; z-index: 20; background: var(--glass); border-bottom: 1px solid var(--line); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); }
@@ -31,7 +31,7 @@
   .inScene .topRow > button { padding-inline: 10px; }
     }
 .end { scroll-margin-bottom: 140px; }
-/* «Пропустить вопрос» — над полем ввода, справа */
+/* «Пропустить вопрос» – над полем ввода, справа */
 .skipRow { display: flex; justify-content: flex-end; }
 /* аватар компаньона: на широком экране закреплён слева под шапкой онбординга (60px) */
 .stage { --dock-top: 84px; }
@@ -66,7 +66,7 @@
 .answer { display: grid; justify-items: end; gap: 5px; padding-left: 44px; }
 .answer > div { max-width: 90%; padding: 12px 16px; background: var(--ink); color: var(--on-ink); font-size: var(--fs-md); line-height: 1.5; overflow-wrap: anywhere; }
 .answer button { border: 0; background: transparent; min-height: 32px; padding: 6px 4px 6px 16px; font: var(--fs-xs) var(--mono); color: var(--muted); cursor: pointer; }
-/* сенсорный экран: «изменить» под ответом — зона нажатия около 44px при той же подписи */
+/* сенсорный экран: «изменить» под ответом – зона нажатия около 44px при той же подписи */
 @media (pointer: coarse) { .answer button { min-height: 44px; padding: 12px 4px 12px 20px; } }
 .options { display: grid; gap: 8px; }
 .option { min-height: 60px; display: flex; align-items: center; gap: 14px; padding: 10px 14px; width: 100%; border: 1px solid var(--border-faint); background: var(--glass); color: var(--ink); text-align: left; cursor: pointer; }
@@ -84,7 +84,7 @@
 .inScene { --chat-avatar-size: 32px; --chat-send-bg: var(--ink); --chat-control-size: 44px; --chat-composer-bg: linear-gradient(transparent, var(--paper) 30%); --chat-composer-pad: 8px 0 12px; }
 .inScene .topRow h1 { font-size: var(--fs-lg); }
 @media (max-width: 680px) { .inScene .topRow > a { display: none; } }
-/* телефон: поле ввода липнет к низу окна поверх ленты — фон сплошной, иначе реплики просвечивали сквозь верх поля */
+/* телефон: поле ввода липнет к низу окна поверх ленты – фон сплошной, иначе реплики просвечивали сквозь верх поля */
 @media (max-width: 1050px) { .inScene { --chat-composer-bg: var(--paper); } }
 .documentControls { display: grid; gap: 10px; width: 100%; }
 .dropZone { position: relative; min-height: 150px; padding: 20px; border: 1px dashed var(--border-soft); background: var(--glass); display: grid; justify-items: center; align-content: center; gap: 7px; cursor: pointer; }
@@ -112,7 +112,7 @@
 .inScene .feed { gap: 14px; padding-top: 16px; }
 .end { scroll-margin-bottom: 110px; }
 
-/* --- согласия: карточки с заметной галочкой, главная кнопка — согласиться --- */
+/* --- согласия: карточки с заметной галочкой, главная кнопка – согласиться --- */
 .consentList { display: grid; gap: 8px; }
 .consentItem { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border-faint); background: var(--glass); cursor: pointer; font-size: var(--fs); line-height: 1.5; color: var(--text-soft); }
 .consentItem:hover, .consentItem[data-checked] { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }

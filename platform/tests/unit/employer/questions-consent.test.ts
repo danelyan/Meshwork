@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 
 describe('/api/employer/questions: согласия работодателя', () => {
-  it('без оферты и обязательства GET и POST — 409 consent_required, до сервиса дело не доходит', async () => {
+  it('без оферты и обязательства GET и POST – 409 consent_required, до сервиса дело не доходит', async () => {
     consentsAccepted = false;
     for (const call of [get, post]) {
       const res = await call();

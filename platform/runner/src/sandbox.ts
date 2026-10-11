@@ -11,15 +11,15 @@ import type { RunnerConfig } from './config';
  * Запуск одного задания: короткоживущий процесс с жёсткими рамками.
  *
  * Всегда: пустое окружение (только наш фиксированный набор, без секретов сервиса), своя группа
- * процессов (по таймауту — SIGKILL всей группе), rlimit через `ulimit` в обёртке `sh`
+ * процессов (по таймауту – SIGKILL всей группе), rlimit через `ulimit` в обёртке `sh`
  * (CPU-секунды, размер файла, дескрипторы; в контейнере ещё число процессов и для python
- * адресное пространство), oom_score_adj=1000 — при нехватке памяти ядро убьёт задание, не сервис.
- * В контейнере сервис — непривилегированный uid 1001; задание запускает setuid-помощник
+ * адресное пространство), oom_score_adj=1000 – при нехватке памяти ядро убьёт задание, не сервис.
+ * В контейнере сервис – непривилегированный uid 1001; задание запускает setuid-помощник
  * `fsp-sandbox` (sandbox/helper/fsp-sandbox.c) под uid 2000 без capabilities и с no_new_privs.
- * Тем же помощником (от имени uid 2000) добиваются все процессы задания и чистятся его tmp/out —
+ * Тем же помощником (от имени uid 2000) добиваются все процессы задания и чистятся его tmp/out –
  * сервис сам сигнал чужому uid послать не может. Сеть режется на уровне контейнера (internal-сеть).
  * Локально на macOS (`RUNNER_LOCAL=1`): тот же uid, а сеть наружу и запись вне tmp/out режет
- * `sandbox-exec`. На Linux без Docker локальный режим сеть не режет — только для разработки.
+ * `sandbox-exec`. На Linux без Docker локальный режим сеть не режет – только для разработки.
  */
 
 export interface JobPaths {
@@ -40,7 +40,7 @@ export interface SandboxCommand {
   args: string[];
   env: Record<string, string>;
   cwd: string;
-  /** Путь к fsp-sandbox, если задание идёт под отдельным uid (контейнер): им же — killall. */
+  /** Путь к fsp-sandbox, если задание идёт под отдельным uid (контейнер): им же – killall. */
   helper?: string;
   reportFile: string;
   reportKind: 'vitest-json' | 'junit-xml';
@@ -59,7 +59,7 @@ const FILE_SIZE_MB = 64;
 const NOFILE = 512;
 const NPROC = 256;
 
-/** Обёртка: rlimit и oom_score_adj, затем exec в команду. Аргументы позиционные — окружение чистое. */
+/** Обёртка: rlimit и oom_score_adj, затем exec в команду. Аргументы позиционные – окружение чистое. */
 export const LIMIT_WRAPPER = [
   'cpu=$1 fs=$2 nf=$3 np=$4 vm=$5; shift 5',
   'ulimit -t "$cpu" && ulimit -f "$fs" && ulimit -n "$nf" || { echo "fsp-runner: ulimit failed" >&2; exit 97; }',
@@ -69,7 +69,7 @@ export const LIMIT_WRAPPER = [
   'exec "$@"',
 ].join('\n');
 
-/** Профиль sandbox-exec для локального режима macOS: наружу только localhost, запись — только tmp/out. */
+/** Профиль sandbox-exec для локального режима macOS: наружу только localhost, запись – только tmp/out. */
 export function macSandboxProfile(writable: string[]): string {
   const allow = writable.map((p) => `(subpath ${JSON.stringify(p)})`).join(' ');
   return [
@@ -159,7 +159,7 @@ export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { conta
       PYTHONNOUSERSITE: '1',
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1',
       // numpy/pandas: OpenBLAS заводит пул потоков по числу CPU хоста и резервирует под каждый
-      // буферы — под RLIMIT_AS это лишнее адресное пространство. Один поток на задание.
+      // буферы – под RLIMIT_AS это лишнее адресное пространство. Один поток на задание.
       OPENBLAS_NUM_THREADS: '1',
       OMP_NUM_THREADS: '1',
       MKL_NUM_THREADS: '1',
@@ -168,8 +168,8 @@ export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { conta
 
   const cpu = String(spec.timeoutSec + 5);
   const fsize = String((FILE_SIZE_MB * 1024 * 1024) / 512); // POSIX sh: блоки по 512 байт
-  const nproc = linuxContainer ? String(NPROC) : '-'; // на macOS RLIMIT_NPROC — на всего пользователя
-  // RLIMIT_AS ломает V8 (резервирует адресное пространство) — node ограничивается кучей и памятью контейнера.
+  const nproc = linuxContainer ? String(NPROC) : '-'; // на macOS RLIMIT_NPROC – на всего пользователя
+  // RLIMIT_AS ломает V8 (резервирует адресное пространство) – node ограничивается кучей и памятью контейнера.
   const vmem = spec.image === 'python312' && opts.platform === 'linux' ? String(cfg.memMb * 1024) : '-';
   const wrapped = ['/bin/sh', '-c', LIMIT_WRAPPER, 'fsp-job', cpu, fsize, String(NOFILE), nproc, vmem, ...argv];
 
@@ -199,7 +199,7 @@ export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { conta
 
 const execFileP = promisify(execFile);
 
-/** Через помощник: от имени uid задания kill(-1) — все его процессы (setsid не спасает). false — ошибка (залогирована). */
+/** Через помощник: от имени uid задания kill(-1) – все его процессы (setsid не спасает). false – ошибка (залогирована). */
 export async function helperKillAll(helper: string): Promise<boolean> {
   try {
     await execFileP(helper, ['killall'], { env: {} as NodeJS.ProcessEnv, timeout: 10_000 });
@@ -259,7 +259,7 @@ export function runSandboxed(cmd: SandboxCommand, timeoutSec: number): Promise<S
     const killGroup = () => {
       if (child.pid === undefined) return;
       try {
-        process.kill(-child.pid, 'SIGKILL'); // в контейнере EPERM (чужой uid) — там работает helperKillAll
+        process.kill(-child.pid, 'SIGKILL'); // в контейнере EPERM (чужой uid) – там работает helperKillAll
       } catch {
         /* группа уже пуста */
       }

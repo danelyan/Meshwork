@@ -2,21 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** Длина сегмента видео: отдельный MediaRecorder на каждый — файлы воспроизводимы по одному. */
+/** Длина сегмента видео: отдельный MediaRecorder на каждый – файлы воспроизводимы по одному. */
 export const VIDEO_SEGMENT_MS = 60_000;
 const VIDEO_BITRATE = 300_000;
 
 export type CameraState = 'off' | 'starting' | 'on' | 'denied';
 
 /**
- * Камера кандидата в комнате звонка: превью в плитке и запись сегментами WebM (без звука — звук пишет микрофон)
+ * Камера кандидата в комнате звонка: превью в плитке и запись сегментами WebM (без звука – звук пишет микрофон)
  * на `POST /api/call/{id}/video?startMs=`. По умолчанию выключена; включается кнопкой после согласия (пункт о камере).
  * Никакого анализа видео на клиенте нет: только запись как материал созвона.
  */
 export function useCamera(opts: {
   getCallId: () => string | null;
   getStartedAt: () => number | null;
-  /** Подсказка при отказе в доступе (по умолчанию — про интервью); созвон в любом случае идёт без видео. */
+  /** Подсказка при отказе в доступе (по умолчанию – про интервью); созвон в любом случае идёт без видео. */
   deniedText?: string;
 }) {
   const [state, setState] = useState<CameraState>('off');
@@ -31,7 +31,7 @@ export function useCamera(opts: {
   const live = useRef(false);
   /** Поколение запуска: stop() обесценивает запрос разрешения, который ещё не вернулся. */
   const gen = useRef(0);
-  /** Незавершённые загрузки сегментов — stop() ждёт их, чтобы последний сегмент не потерялся. */
+  /** Незавершённые загрузки сегментов – stop() ждёт их, чтобы последний сегмент не потерялся. */
   const uploads = useRef(new Set<Promise<void>>());
 
   const supported = typeof window !== 'undefined' && typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function' && typeof MediaRecorder !== 'undefined';
@@ -55,7 +55,7 @@ export function useCamera(opts: {
         });
         if (res.ok) setSegments((n) => n + 1);
       } catch {
-        /* сегмент потерян — созвон не ломаем */
+        /* сегмент потерян – созвон не ломаем */
       }
     })().finally(() => uploads.current.delete(p));
     uploads.current.add(p);
@@ -154,7 +154,7 @@ export function useCamera(opts: {
     [stop],
   );
 
-  /** Элемент превью — источник кадров для слежения за лицом. */
+  /** Элемент превью – источник кадров для слежения за лицом. */
   const getVideo = useCallback(() => video.current, []);
 
   return { supported, state, error, segments, start, stop, attach, getVideo };

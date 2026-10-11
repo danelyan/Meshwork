@@ -23,7 +23,7 @@ for (const t of targets) {
   const md = readFileSync(join(dir, t.md), 'utf8');
   const text = assemblePrompt(md, facts);
   const src = [
-    `// Сгенерировано scripts/build-prompts.ts из ${t.from} и prompts/platform-facts.md — руками не править.`,
+    `// Сгенерировано scripts/build-prompts.ts из ${t.from} и prompts/platform-facts.md – руками не править.`,
     '// Файл .md не читается с диска в рантайме: в standalone-сборке Next.js его нет в бандле.',
     '',
     `export const ${t.name}_PROMPT_VERSION = '${promptVersion(md)}';`,

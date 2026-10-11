@@ -16,7 +16,7 @@ const RESUME_QUOTE = 'Сделал идемпотентный приём пла�
 const ANSWERS = [
   'Ключ идемпотентности в заголовке, храню в Postgres с unique-индексом 24 часа.',
   'Redis рассматривал, но потеря ключей при рестарте дала бы двойные списания.',
-  'Точно не знаю, думаю упрёмся в индекс — проверил бы нагрузочным тестом.',
+  'Точно не знаю, думаю упрёмся в индекс – проверил бы нагрузочным тестом.',
   'Дубли платежей ушли в ноль по логам за месяц, отвечал за это я.',
   'Ещё один ответ.',
 ];
@@ -101,7 +101,7 @@ afterAll(async () => {
 });
 
 describe('startDefense', () => {
-  it('первый вопрос — по цитате (шаблон, если модель не дала валидный)', async () => {
+  it('первый вопрос – по цитате (шаблон, если модель не дала валидный)', async () => {
     await seed();
     const r = await startDefense(A, 'claim-1', llm);
     expect(r.resumed).toBe(false);
@@ -130,7 +130,7 @@ describe('startDefense', () => {
     await expect(startDefense(A, 'claim-1', llm)).resolves.toMatchObject({ resumed: false });
   });
 
-  it('статус edited и уровень self_reported — допустимы', async () => {
+  it('статус edited и уровень self_reported – допустимы', async () => {
     await seed({ status: 'edited', level: 'self_reported' });
     await expect(startDefense(A, 'claim-1', llm)).resolves.toMatchObject({ resumed: false });
   });
@@ -177,7 +177,7 @@ describe('answerDefense и вердикт', () => {
     expect(r2.next?.index).toBe(2);
     expect(await level()).toBe('artifact'); // без вердикта уровень не меняется
     const r3 = await answerDefense(A, s.sessionId, ANSWERS[2]!, llm);
-    expect(r3.next?.index).toBe(3); // stub-интервьюер не говорит enough — идём до максимума
+    expect(r3.next?.index).toBe(3); // stub-интервьюер не говорит enough – идём до максимума
     await answerDefense(A, s.sessionId, ANSWERS[3]!, llm);
     const r5 = await answerDefense(A, s.sessionId, ANSWERS[4]!, llm);
     expect(r5.verdict).toMatchObject({
@@ -270,7 +270,7 @@ describe('answerDefense и вердикт', () => {
     await expect(answerDefense(A, s.sessionId, 'я'.repeat(4000), llm)).resolves.toHaveProperty('next');
   });
 
-  it('Г3 (ADR 0005): без согласия старт — 409; отзыв посреди защиты — ответ 409, оценщик не запускается', async () => {
+  it('Г3 (ADR 0005): без согласия старт – 409; отзыв посреди защиты – ответ 409, оценщик не запускается', async () => {
     await seed();
     const s = await startDefense(A, 'claim-1', llm);
     let evaluated = 0;

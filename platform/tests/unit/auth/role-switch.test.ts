@@ -2,7 +2,7 @@ import { type RoleSwitchState, planRoleSwitch, swapRoleOnboarding } from '@/serv
 import { AppError } from '@/server/errors';
 import { parseSession, requireCandidate, requireEmployer, signUserSession } from '@/server/session';
 
-// ADR 0004: переключение роли — чистое решение (что сделать, отметки знакомства) и кука после переключения.
+// ADR 0004: переключение роли – чистое решение (что сделать, отметки знакомства) и кука после переключения.
 
 const base: RoleSwitchState = {
   role: 'candidate',
@@ -24,7 +24,7 @@ function statusOf(fn: () => unknown): number {
 }
 
 describe('planRoleSwitch', () => {
-  it('та же роль — ничего не меняем (идемпотентно)', () => {
+  it('та же роль – ничего не меняем (идемпотентно)', () => {
     expect(planRoleSwitch(base, 'candidate')).toEqual({ kind: 'same' });
     expect(planRoleSwitch({ ...base, role: 'employer', hasEmployer: true }, 'employer')).toEqual({ kind: 'same' });
   });
@@ -49,12 +49,12 @@ describe('planRoleSwitch', () => {
     expect(planRoleSwitch(back, 'candidate')).toEqual({ kind: 'activate', onboardedRoles: ['candidate', 'employer'], targetOnboarded: true });
   });
 
-  it('знакомство активной роли не завершено (или сброшено) — уходя, снимаем её отметку', () => {
+  it('знакомство активной роли не завершено (или сброшено) – уходя, снимаем её отметку', () => {
     const s: RoleSwitchState = { ...base, onboardedAt: null, hasEmployer: true, onboardedRoles: ['candidate'] };
     expect(planRoleSwitch(s, 'employer')).toEqual({ kind: 'activate', onboardedRoles: [], targetOnboarded: false });
   });
 
-  it('ошибки: роль не выбрана — 409; общий демо без второй роли — 403; работодатель без компании — 400', () => {
+  it('ошибки: роль не выбрана – 409; общий демо без второй роли – 403; работодатель без компании – 400', () => {
     expect(statusOf(() => planRoleSwitch({ ...base, role: 'pending', hasCandidate: false }, 'candidate'))).toBe(409);
     expect(statusOf(() => planRoleSwitch({ ...base, sharedDemo: true }, 'employer', { companyName: 'ООО' }))).toBe(403);
     expect(statusOf(() => planRoleSwitch(base, 'employer', { companyName: '   ' }))).toBe(400);
@@ -87,7 +87,7 @@ describe('кука после переключения: только профи�
   });
 });
 
-describe('swapRoleOnboarding: шаг, пауза и итог — свои у каждой роли', () => {
+describe('swapRoleOnboarding: шаг, пауза и итог – свои у каждой роли', () => {
   const st = { stepId: 'summary', lines: { goal: 'цель', summary: 'итог кандидата' }, meta: { later: true, vacancies: {} } };
 
   it('новая роль: прежняя прячется в byRole, новая начинает с первого шага без паузы и итога', () => {
@@ -115,7 +115,7 @@ describe('swapRoleOnboarding: шаг, пауза и итог — свои у к�
     expect(again.stepId).toBe('inn');
   });
 
-  it('роль без сохранённого состояния — с первого шага', () => {
+  it('роль без сохранённого состояния – с первого шага', () => {
     const next = swapRoleOnboarding({ stepId: 'goal', lines: {}, meta: {} }, 'candidate', 'employer', { fresh: false, doneRoles: [] });
     expect(next.stepId).toBeNull();
   });

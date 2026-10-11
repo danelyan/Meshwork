@@ -42,7 +42,7 @@ function itemsJson(req: { messages: { content: string }[] }, levels: Level[]) {
 }
 
 describe('пары для слепого оценщика', () => {
-  it('ответ кандидата — с вопросами ИИ перед ним; живые реплики работодателя и завершение не попадают', () => {
+  it('ответ кандидата – с вопросами ИИ перед ним; живые реплики работодателя и завершение не попадают', () => {
     const turns = transcriptTurns(transcript);
     expect(turns).toHaveLength(3);
     expect(turns[0]!.answer).toBe(`${ANSWER1}\nОчередь тоже вариант, но тогда клиент ждёт дольше.`);
@@ -75,7 +75,7 @@ describe('медиана и флаги', () => {
 });
 
 describe('evaluateDefenseRoom: балл по вопросу', () => {
-  it('каждый вопрос — свой балл; общий — среднее; без слова «фейк»', async () => {
+  it('каждый вопрос – свой балл; общий – среднее; без слова «фейк»', async () => {
     const purposes: string[] = [];
     registerStubResponse('call_evaluator', (req) => {
       purposes.push(req.purpose);
@@ -97,7 +97,7 @@ describe('evaluateDefenseRoom: балл по вопросу', () => {
     expect(JSON.stringify(v)).not.toMatch(/фейк|fake|списал/i);
   });
 
-  it('частичное понимание — неровные баллы по вопросам; ровно средние ответы — без флага', async () => {
+  it('частичное понимание – неровные баллы по вопросам; ровно средние ответы – без флага', async () => {
     registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, ['high', 'high', 'low']) }));
     const partial = await evaluateDefenseRoom({ projectTitle: 'p', transcript, projectScore: 0.95, employerAsked: 0, employerAnswered: 0 }, llm);
     clearStubResponses();
@@ -118,7 +118,7 @@ describe('evaluateDefenseRoom: балл по вопросу', () => {
     expect(v.flags).toContain('evaluator_disagreement');
   });
 
-  it('оценщик не видит кода и ожидаемых пунктов — только вопросы и ответы', async () => {
+  it('оценщик не видит кода и ожидаемых пунктов – только вопросы и ответы', async () => {
     let content = '';
     registerStubResponse('call_evaluator', (req) => {
       content = req.messages.map((m) => m.content).join('\n');
@@ -130,7 +130,7 @@ describe('evaluateDefenseRoom: балл по вопросу', () => {
     expect(v.flags).toEqual(['no_project_result']);
   });
 
-  it('подписи вопросов — из плана: тип QLC и файл', async () => {
+  it('подписи вопросов – из плана: тип QLC и файл', async () => {
     registerStubResponse('call_evaluator', (req) => ({ json: itemsJson(req, ['high']) }));
     const plan: PlanItem[] = [
       { source: 'qlc', id: 'q1', type: 'why', question: 'Почему экспонента?', ref: 'src/retry.ts:L1-L9', expectedPoints: ['секрет'], answered: true, followUps: 0 },
@@ -152,7 +152,7 @@ describe('evaluateDefenseRoom: балл по вопросу', () => {
     ];
     registerStubResponse('call_evaluator', (req) => {
       const items = parseContextBlock<{ items: { id: string; qa: { answer: string }[] }[] }>(req.messages[0]!.content)!.items;
-      // Оценщик приложил дословную цитату к нулевому баллу — показывать её как доказательство нельзя.
+      // Оценщик приложил дословную цитату к нулевому баллу – показывать её как доказательство нельзя.
       return { json: { items: items.map((it) => ({ id: it.id, depth: crit(0, ANSWER2.slice(0, 30)), why: crit(0, ''), boundary: crit(0, ''), completion: crit(0, '') })) } };
     });
     const v = await evaluateDefenseRoom({ projectTitle: 'p', transcript: silent, projectScore: 0.9, employerAsked: 0, employerAnswered: 0 }, llm);
@@ -163,7 +163,7 @@ describe('evaluateDefenseRoom: балл по вопросу', () => {
     expect(v.quotes).toEqual([]);
   });
 
-  it('нет ответов — оценки нет, флаг short_defense', async () => {
+  it('нет ответов – оценки нет, флаг short_defense', async () => {
     const v = await evaluateDefenseRoom({ projectTitle: 'p', transcript: [transcript[0]!], projectScore: 0.9, employerAsked: 0, employerAnswered: 0 }, llm);
     expect(v.total).toBeNull();
     expect(v.items).toEqual([]);

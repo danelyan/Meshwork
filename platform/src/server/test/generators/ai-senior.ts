@@ -1,6 +1,6 @@
 // Senior-задания AI (ADR 0003, дополнение 10.10 16:15): по 4 на подкатегорию. Проектные решения, компромиссы,
-// диагностика по неполным данным, границы применимости — но ответ по-прежнему считает код (R-T-02): выбор
-// варианта под ограничения, расчёт ёмкости и бюджета, поиск причины в логе. b 1,0…1,7, a 1,0…1,4 — ПРЕДЛОЖЕНИЕ,
+// диагностика по неполным данным, границы применимости – но ответ по-прежнему считает код (R-T-02): выбор
+// варианта под ограничения, расчёт ёмкости и бюджета, поиск причины в логе. b 1,0…1,7, a 1,0…1,4 – ПРЕДЛОЖЕНИЕ,
 // проверено персонами на подкатегорию (eval/test/subcategory-personas.ts).
 import { createRng, type Rng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
@@ -437,7 +437,7 @@ export const costThreshold: TaskGenerator = {
       const cost = (r: (typeof rows)[number]) => (pos - r.tp) * fnCost + r.fp * fpCost;
       const ranked = [...rows].sort((a, b) => cost(a) - cost(b));
       if (cost(ranked[1]!) - cost(ranked[0]!) < fpCost * 3) continue;
-      // Ловушка: F1-оптимальный порог — не тот, что по стоимости (проверяем, что они чаще различаются).
+      // Ловушка: F1-оптимальный порог – не тот, что по стоимости (проверяем, что они чаще различаются).
       const f1 = (r: (typeof rows)[number]) => (2 * r.tp) / (2 * r.tp + r.fp + (pos - r.tp));
       const byF1 = [...rows].sort((a, b) => f1(b) - f1(a))[0]!;
       if (byF1.t === ranked[0]!.t && rng.next() < 0.7) continue;
@@ -822,7 +822,7 @@ export const noveltyEffect: TaskGenerator = {
       const stable = rng.int(1, 8); // %
       const novelty = rng.int(3, 6); // дней всплеска
       const series = Array.from({ length: days }, (_, i) => (i < novelty ? stable + rng.int(4, 12) - i : stable + rng.int(-2, 2)));
-      // Правило: стабильный период — с первого дня, после которого 3 дня подряд аплифт в пределах ±2 п.п. от медианы второй недели.
+      // Правило: стабильный период – с первого дня, после которого 3 дня подряд аплифт в пределах ±2 п.п. от медианы второй недели.
       const tail = series.slice(7).sort((a, b) => a - b);
       const med = tail[3]!;
       let start = -1;
@@ -866,7 +866,7 @@ export const guardrailChoice: TaskGenerator = {
     for (;;) {
       const users = rng.pick([10000, 20000, 50000]);
       const aov = rng.pick([1500, 2000, 3000]);
-      const refundMax = rng.pick([3, 4, 5]); // % возвратов — guardrail
+      const refundMax = rng.pick([3, 4, 5]); // % возвратов – guardrail
       const variants = ['контроль', 'скидка 5 %', 'бесплатная доставка', 'персональная подборка', 'таймер акции'].map((name, i) => ({
         name,
         conv: i === 0 ? 4 : Number((4 + rng.int(-5, 20) / 10).toFixed(1)),

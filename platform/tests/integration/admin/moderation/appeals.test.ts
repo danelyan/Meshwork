@@ -1,4 +1,4 @@
-// E-08, фаза 2: апелляция работодателя на санкцию — кабинет → очередь → решение (под lock отправки), журнал, письма.
+// E-08, фаза 2: апелляция работодателя на санкцию – кабинет → очередь → решение (под lock отправки), журнал, письма.
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { GET as listGet } from '@/app/api/admin/appeals/route';
@@ -22,7 +22,7 @@ describe('admin: апелляции на санкцию', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('работодатель: без санкции — 409; с санкцией — 201; вторая открытая — 409; короткий текст — 400; видит свои', async () => {
+  it('работодатель: без санкции – 409; с санкцией – 201; вторая открытая – 409; короткий текст – 400; видит свои', async () => {
     expect((await appeal()).status).toBe(409);
     await seedComplaints(3);
     expect((await appeal('коротко')).status).toBe(400);
@@ -35,7 +35,7 @@ describe('admin: апелляции на санкцию', () => {
     expect(await prisma.sanctionAppeal.findFirstOrThrow()).toMatchObject({ companyId: ctxEmp.companyId, authorId: DEMO_EMPLOYER.profileId });
   });
 
-  it('support — 403 на очередь и решение', async () => {
+  it('support – 403 на очередь и решение', async () => {
     await seedComplaints(3);
     const { id } = await (await appeal()).json();
     expect((await listGet(jsonRequest('/api/admin/appeals', 'GET', undefined, staff.support.cookie))).status).toBe(403);

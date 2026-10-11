@@ -53,7 +53,7 @@ export default async function DefenseRoomIndex() {
                 {sub.lastDefense?.verdict?.total != null ? ` · последняя защита: ${sub.lastDefense.verdict.total} из 8` : ''}
               </span>
               <div>
-                <DefenseEntry projectSubmissionId={sub.id} label={sub.lastDefense?.status === 'active' ? 'Продолжить защиту' : sub.lastDefense?.status === 'pending' ? 'Работодатель ждёт защиту — начать' : 'Защитить проект'} />
+                <DefenseEntry projectSubmissionId={sub.id} label={sub.lastDefense?.status === 'active' ? 'Продолжить защиту' : sub.lastDefense?.status === 'pending' ? 'Работодатель ждёт защиту – начать' : 'Защитить проект'} />
               </div>
             </li>
           ))}

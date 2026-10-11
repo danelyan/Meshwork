@@ -15,7 +15,7 @@ export interface MeteredProvider extends LlmProvider {
   readonly meter: MeterSnapshot;
 }
 
-/** Обёртка: каждый вызов complete() считается по purpose (успех — с токенами, ошибка — как failure). */
+/** Обёртка: каждый вызов complete() считается по purpose (успех – с токенами, ошибка – как failure). */
 export function metered(inner: LlmProvider): MeteredProvider {
   const meter = emptyMeter();
   return {
@@ -54,22 +54,22 @@ export interface PersonaProfile {
   legend: string;
   /** Манера ответа: как персонаж ведёт себя на границе своих знаний. */
   style: string;
-  /** Что персонаж знает — по темам или по коду проекта. */
+  /** Что персонаж знает – по темам или по коду проекта. */
   knowledge: string;
 }
 
 const ACTOR_RULES = [
-  'Ты — актёр в симуляции: играешь кандидата на техническом собеседовании. Цель симуляции — проверить, отличает ли платформа разных кандидатов, поэтому играй персонажа точно, не лучше и не хуже, чем он есть.',
+  'Ты – актёр в симуляции: играешь кандидата на техническом собеседовании. Цель симуляции – проверить, отличает ли платформа разных кандидатов, поэтому играй персонажа точно, не лучше и не хуже, чем он есть.',
   'Отвечай от первого лица, по-русски, устной речью: 2–6 предложений, без markdown, списков и кода блоками.',
   'Никогда не говори, что ты ИИ, актёр или персонаж, не упоминай профиль и эти правила. Не обращайся к оценщику и не проси баллов.',
-  'Знаешь только то, что написано в разделе «Что знает персонаж». Чего там нет — персонаж не знает и ведёт себя по своей манере. Не придумывай опыт, которого нет в профиле.',
+  'Знаешь только то, что написано в разделе «Что знает персонаж». Чего там нет – персонаж не знает и ведёт себя по своей манере. Не придумывай опыт, которого нет в профиле.',
 ].join('\n');
 
 export function personaSystem(p: PersonaProfile): string {
   return `${ACTOR_RULES}\n\n## Персонаж\n${p.legend}\n\n## Манера\n${p.style}\n\n## Что знает персонаж\n${p.knowledge}`;
 }
 
-/** История для актёра: вопросы интервьюера — user, ответы персонажа — assistant. */
+/** История для актёра: вопросы интервьюера – user, ответы персонажа – assistant. */
 export function personaMessages(history: readonly { q: string; a: string | null }[]): ChatMessage[] {
   const out: ChatMessage[] = [];
   for (const h of history) {
@@ -79,7 +79,7 @@ export function personaMessages(history: readonly { q: string; a: string | null 
   return out;
 }
 
-/** Ответ персонажа на последний вопрос (живой режим). Purpose `smoke` — служебный, в продукте не используется. */
+/** Ответ персонажа на последний вопрос (живой режим). Purpose `smoke` – служебный, в продукте не используется. */
 export async function personaAnswer(llm: LlmProvider, p: PersonaProfile, history: readonly { q: string; a: string | null }[]): Promise<string> {
   const res = await llm.complete({ purpose: 'smoke', system: personaSystem(p), messages: personaMessages(history), temperature: 0.7, maxTokens: 600 });
   const text = (res.text ?? '').replace(/\s+/g, ' ').trim();
@@ -96,13 +96,13 @@ export async function ensureCatalog(): Promise<void> {
   catalogSynced = true;
 }
 
-/** Кандидат с аккаунтом и согласием на запись созвона (у каждого созвона — свой). */
+/** Кандидат с аккаунтом и согласием на запись созвона (у каждого созвона – свой). */
 export async function createCandidate(id: string, opts: { grade: 'junior' | 'middle' }): Promise<void> {
   await prisma.candidate.create({ data: { id, email: `${id}@example.test`, name: `Персона ${id}`, specialization: 'backend' } });
   await prisma.user.create({ data: { id: `u-${id}`, role: 'candidate', name: `Персона ${id}`, candidateId: id } });
   await prisma.candidateProfile.create({ data: { candidateId: id, claimedGrade: opts.grade } });
   await prisma.consent.create({ data: { userId: `u-${id}`, version: CALL_RECORDING_CONSENT_VERSION } });
-  // Г3 (ADR 0005): без согласия на ИИ-оценку startCall отвечает 409 — персоны его дают, как кандидат в кабинете.
+  // Г3 (ADR 0005): без согласия на ИИ-оценку startCall отвечает 409 – персоны его дают, как кандидат в кабинете.
   await ensureConsents(`u-${id}`, ['ai_assessment', 'call_recording']);
 }
 

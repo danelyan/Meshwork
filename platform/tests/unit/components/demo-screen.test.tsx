@@ -44,7 +44,7 @@ it('показывает 6 пунктов и быстрый вход персо�
 it('работодатель ведёт по ссылке next в /employer, кандидат с таким next - в свой кабинет', async () => {
   const fetchFn = stubFetch({ employer: { id: 'demo-employer', name: 'x' }, candidate: { id: 'c', name: 'y' }, next: '/consultant' });
   render(<DemoScreen next="/employer/search" />);
-  // первый такой чип — шаг маршрута жюри со своим `to` (/employer); чип карточки фич ниже идёт по общему next
+  // первый такой чип – шаг маршрута жюри со своим `to` (/employer); чип карточки фич ниже идёт по общему next
   fireEvent.click((await screen.findAllByRole('button', { name: 'Войти как Анна Кравец · Т-Банк' })).at(-1)!);
   await waitFor(() => expect(push).toHaveBeenCalledWith('/employer/search'));
   expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ employerUserId: 'demo-employer' });

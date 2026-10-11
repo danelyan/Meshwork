@@ -17,7 +17,7 @@ function setup(script: Record<string, Reply[]> = {}, o: Partial<OutboxOptions> =
 }
 
 describe('очередь и доставка', () => {
-  it('2xx — доставлено; stats', async () => {
+  it('2xx – доставлено; stats', async () => {
     const { p, box } = setup({ b: [{ status: 204 }] });
     box.enqueue(ev('a'));
     box.enqueue(ev('b'));
@@ -26,7 +26,7 @@ describe('очередь и доставка', () => {
     expect(box.stats()).toEqual({ pending: 0, delivered: 2, dead: 0, breaker: 'closed' });
   });
 
-  it('дубликат id — false и не отправляется, в том числе после доставки', async () => {
+  it('дубликат id – false и не отправляется, в том числе после доставки', async () => {
     const { p, box } = setup();
     expect(box.enqueue(ev('a'))).toBe(true);
     expect(box.enqueue(ev('a'))).toBe(false);
@@ -36,7 +36,7 @@ describe('очередь и доставка', () => {
     expect(p.calls).toHaveLength(1);
   });
 
-  it('порядок по ключу: следующее событие ключа — только после доставки предыдущего', async () => {
+  it('порядок по ключу: следующее событие ключа – только после доставки предыдущего', async () => {
     const { p, box } = setup();
     box.enqueue(ev('k1', 'order-1'));
     box.enqueue(ev('k2', 'order-1'));
@@ -62,7 +62,7 @@ describe('очередь и доставка', () => {
     expect(p.ids()).toEqual(['k1', 'm1', 'k1', 'k2']);
   });
 
-  it('пул отправок: не больше concurrency одновременно, все готовые — за один tick', async () => {
+  it('пул отправок: не больше concurrency одновременно, все готовые – за один tick', async () => {
     const { p, box } = setup({}, { concurrency: 3 });
     for (let i = 0; i < 10; i++) box.enqueue(ev(`e${i}`));
     await box.tick();
@@ -70,7 +70,7 @@ describe('очередь и доставка', () => {
     expect(p.maxInFlight()).toBe(3);
   });
 
-  it('повторный tick() во время работы — тот же промис, без двойных отправок', async () => {
+  it('повторный tick() во время работы – тот же промис, без двойных отправок', async () => {
     const { p, box } = setup();
     for (let i = 0; i < 5; i++) box.enqueue(ev(`e${i}`));
     const a = box.tick();
@@ -80,7 +80,7 @@ describe('очередь и доставка', () => {
     expect(p.calls).toHaveLength(5);
   });
 
-  it('неверные параметры — RangeError', () => {
+  it('неверные параметры – RangeError', () => {
     const base = { send: async () => ({ status: 200 }), now: () => 0, maxAttempts: 3, baseDelayMs: 10, maxDelayMs: 100, breaker: { failureThreshold: 3, cooldownMs: 10 } };
     expect(() => createOutbox({ ...base, maxAttempts: 0 })).toThrow(RangeError);
     expect(() => createOutbox({ ...base, maxDelayMs: 5 })).toThrow(RangeError);
@@ -123,7 +123,7 @@ describe('ретраи', () => {
     expect(box.stats().delivered).toBe(1);
   });
 
-  it('временные ошибки: 5xx, 408, 429, исключение — повтор', async () => {
+  it('временные ошибки: 5xx, 408, 429, исключение – повтор', async () => {
     const { p, box } = setup({ a: [{ status: 503 }], b: [{ status: 408 }], c: [{ status: 429 }], d: ['throw'] }, { baseDelayMs: 0, maxDelayMs: 0 });
     for (const id of ['a', 'b', 'c', 'd']) box.enqueue(ev(id));
     await box.tick();
@@ -133,7 +133,7 @@ describe('ретраи', () => {
     expect(box.stats()).toMatchObject({ pending: 0, delivered: 4 });
   });
 
-  it('постоянная ошибка — сразу dead letter http_<статус>; очередь ключа идёт дальше', async () => {
+  it('постоянная ошибка – сразу dead letter http_<статус>; очередь ключа идёт дальше', async () => {
     const { p, box } = setup({ a: [{ status: 404 }], b: [{ status: 422 }] });
     box.enqueue(ev('a', 'k'));
     box.enqueue(ev('a2', 'k'));
@@ -148,7 +148,7 @@ describe('ретраи', () => {
     expect(box.stats()).toMatchObject({ pending: 0, delivered: 1, dead: 2 });
   });
 
-  it('попытки исчерпаны — retries_exhausted', async () => {
+  it('попытки исчерпаны – retries_exhausted', async () => {
     const { box } = setup({ a: [{ status: 500 }, { status: 500 }] }, { maxAttempts: 2, baseDelayMs: 0, maxDelayMs: 0 });
     box.enqueue(ev('a'));
     await box.tick();
@@ -157,7 +157,7 @@ describe('ретраи', () => {
     expect(box.stats().pending).toBe(0);
   });
 
-  it('429 с retryAfterMs больше задержки — ждём сколько просит партнёр', async () => {
+  it('429 с retryAfterMs больше задержки – ждём сколько просит партнёр', async () => {
     const { c, p, box } = setup({ a: [{ status: 429, retryAfterMs: 5000 }] });
     box.enqueue(ev('a'));
     await box.tick();
@@ -198,7 +198,7 @@ describe('предохранитель', () => {
     expect(box.stats()).toMatchObject({ delivered: 4, pending: 0 });
   });
 
-  it('half_open: временная ошибка пробы — снова open с новым отсчётом', async () => {
+  it('half_open: временная ошибка пробы – снова open с новым отсчётом', async () => {
     const { c, p, box } = setup({ a: [{ status: 500 }, { status: 503 }], b: [{ status: 500 }], c: [{ status: 500 }] }, opts);
     for (const id of ['a', 'b', 'c']) box.enqueue(ev(id));
     await box.tick();
@@ -225,7 +225,7 @@ describe('предохранитель', () => {
 
 describe('DESIGN.md', () => {
   it('разделы «Решения», «Компромиссы», «Границы применимости» не короче 200 символов', () => {
-    // new URL(…) в jsdom — URL из jsdom; путь считаем от файла теста.
+    // new URL(…) в jsdom – URL из jsdom; путь считаем от файла теста.
     const file = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../DESIGN.md');
     expect(existsSync(file)).toBe(true);
     const text = readFileSync(file, 'utf8');

@@ -28,11 +28,11 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           <dt>Роль</dt>
           <dd>{USER_ROLE_LABEL[u.role]}</dd>
           <dt>Имя</dt>
-          <dd>{u.name ?? '—'}</dd>
+          <dd>{u.name ?? '–'}</dd>
           <dt>Почта</dt>
-          <dd className={styles.mono}>{u.email ?? '—'}</dd>
+          <dd className={styles.mono}>{u.email ?? '–'}</dd>
           <dt>Вход через</dt>
-          <dd>{u.providers.join(', ') || (u.isDemo ? 'демо' : '—')}</dd>
+          <dd>{u.providers.join(', ') || (u.isDemo ? 'демо' : '–')}</dd>
           <dt>Создана</dt>
           <dd>{fmtDateTime(u.createdAt)}</dd>
           <dt>Онбординг</dt>
@@ -41,7 +41,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           <dd>
             {u.candidate && <Link href={`/admin/candidates/${u.candidate.id}`}>{u.candidate.pseudonym}</Link>}
             {u.employerProfile && <Link href={`/admin/companies/${u.employerProfile.company.id}`}>{companyDisplayName(u.employerProfile.company.name)}</Link>}
-            {!u.candidate && !u.employerProfile && '—'}
+            {!u.candidate && !u.employerProfile && '–'}
           </dd>
           <dt>Блокировка</dt>
           <dd>{isBlockedNow(u) && u.blockedAt ? `с ${fmtDateTime(u.blockedAt)}${u.blockedUntil ? ` до ${fmtDateTime(u.blockedUntil)}` : ' бессрочно'}: ${u.blockedReason ?? ''}` : 'нет'}</dd>

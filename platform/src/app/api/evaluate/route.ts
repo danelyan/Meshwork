@@ -6,11 +6,11 @@ import { EVAL_LIMITS, EvalInputError, evaluate, readJsonLimited } from '@/server
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-/** Прогонов с одного адреса: вычисление ограничено лимитами входа, лимит частоты — от перебора. */
+/** Прогонов с одного адреса: вычисление ограничено лимитами входа, лимит частоты – от перебора. */
 const EVAL_RATE: RateRule = { limit: 30, windowMs: 10 * 60_000 };
 
 /**
- * POST /api/evaluate {vacancies, candidates, relevance, k?} — прогон нашего ранжирования и базовой линии на наборе
+ * POST /api/evaluate {vacancies, candidates, relevance, k?} – прогон нашего ранжирования и базовой линии на наборе
  * пользователя: P@k, nDCG@k, MRR по каждой вакансии и в среднем, топ с объяснениями. Вход не нужен (жюри),
  * ничего не сохраняется. Тело ≤ 1 МБ, ≤ 50 вакансий, ≤ 1000 кандидатов.
  */

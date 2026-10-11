@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST `{ kind?: 'code' | 'approach', repoUrl?, approachText?, aiLogText, commitSha? }` — сдать проект. `code` (по умолчанию):
- * публичный репозиторий GitHub (без commitSha — HEAD ветки по умолчанию), автотесты и рубрика. `approach` — текст подхода к
+ * POST `{ kind?: 'code' | 'approach', repoUrl?, approachText?, aiLogText, commitSha? }` – сдать проект. `code` (по умолчанию):
+ * публичный репозиторий GitHub (без commitSha – HEAD ветки по умолчанию), автотесты и рубрика. `approach` – текст подхода к
  * решению (200–8000 символов) без кода: только рубрика по критериям работодателя, без балла и без защиты по коду (ТЗ: «решить
  * её или предложить подход»). Проверка идёт в фоне: submitted → running → checked | failed (GET /api/project-submissions/:id).
  */

@@ -4,7 +4,7 @@
   "specialization": "ai",
   "grade": "junior",
   "title": "Метрики классификации и стратифицированное разбиение",
-  "summary": "Confusion matrix, precision/recall/F1 по классам и macro/micro, ROC AUC с учётом ничьих и воспроизводимый стратифицированный train/test split — на чистом Python",
+  "summary": "Confusion matrix, precision/recall/F1 по классам и macro/micro, ROC AUC с учётом ничьих и воспроизводимый стратифицированный train/test split – на чистом Python",
   "stack": ["python312", "pytest"],
   "catalogIds": ["ai.ml-metrics", "ai.validation", "common.unit-tests"],
   "image": "python312",

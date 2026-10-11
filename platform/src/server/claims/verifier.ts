@@ -5,26 +5,26 @@ import { docHasRef, findQuote, indexDoc, type IndexedDoc, type QuoteMatch } from
 import { wordingFor } from './wording';
 import type { CatalogEntry, Confidence, ProposedClaim, RejectReason, VerifiedClaim, VerifyResult } from './types';
 
-/** Цитата короче — не доказательство умения («Kafka», «SQL»), а слово-технология (каталог § 1 п. 1). */
+/** Цитата короче – не доказательство умения («Kafka», «SQL»), а слово-технология (каталог § 1 п. 1). */
 export const MIN_QUOTE_WORDS = 2;
 
 const CONF_RANK: Record<Confidence, number> = { low: 0, medium: 1, high: 2 };
 
 export interface VerifyOptions {
-  /** Владение аккаунтом подтверждено (codeforces/fsp → third_party). По умолчанию — нет. */
+  /** Владение аккаунтом подтверждено (codeforces/fsp → third_party). По умолчанию – нет. */
   ownershipVerified?: (doc: ExtractedDoc) => boolean;
 }
 
 /**
  * Программная проверка черновика утверждений (research/10 § 4.5):
- *  1. ID есть в каталоге — иначе `unknown_catalog_id`;
- *  2. нормализованная цитата — подстрока нормализованного источника, иначе `no_quote`;
- *     короче MIN_QUOTE_WORDS слов — `quote_too_short`;
- *     найдена только в строках, помеченных скрытыми, — `hidden_text`;
- *  3. один catalogId — одно утверждение (лучшее по уверенности, затем по уровню), остальные `duplicate`.
+ *  1. ID есть в каталоге – иначе `unknown_catalog_id`;
+ *  2. нормализованная цитата – подстрока нормализованного источника, иначе `no_quote`;
+ *     короче MIN_QUOTE_WORDS слов – `quote_too_short`;
+ *     найдена только в строках, помеченных скрытыми, – `hidden_text`;
+ *  3. один catalogId – одно утверждение (лучшее по уверенности, затем по уровню), остальные `duplicate`.
  * Формулировку для кандидата (`wording`) берёт от модели, только если она в границах цитаты (`wordingFor`),
- * иначе строит из самой цитаты. Каталожную формулировку, ограничения и пути доказательства берёт из каталога, уровень — из типа источника
- * (`maxLevelFor`), цитату и ссылку — из найденного фрагмента источника. От LLM остаются только
+ * иначе строит из самой цитаты. Каталожную формулировку, ограничения и пути доказательства берёт из каталога, уровень – из типа источника
+ * (`maxLevelFor`), цитату и ссылку – из найденного фрагмента источника. От LLM остаются только
  * выбор ID, место цитаты и уверенность.
  */
 export function verifyClaims(

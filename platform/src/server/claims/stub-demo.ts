@@ -13,9 +13,9 @@ import { extractByMarkers } from './markers';
 export const extractorDictionaryStub: StubFixture = (req) => {
   const user = req.messages.find((m) => m.role === 'user')?.content ?? '';
   const block = /<document[^>]*>\n([\s\S]*?)\n<\/document>/.exec(user)?.[1] ?? '';
-  // kind из тега: у резюме первые строки — шапка, у профиля GitHub — нет (как в extractByMarkers).
+  // kind из тега: у резюме первые строки – шапка, у профиля GitHub – нет (как в extractByMarkers).
   const kind = (/<document[^>]*\skind="([a-z]+)"/.exec(user)?.[1] ?? 'resume') as SourceKind;
-  // часть > 1 — продолжение документа, шапки в ней нет.
+  // часть > 1 – продолжение документа, шапки в ней нет.
   const part = Number(/<document[^>]*\spart="(\d+)\//.exec(user)?.[1] ?? '1');
   const rows = block
     .split('\n')

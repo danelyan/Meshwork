@@ -2,8 +2,8 @@
 //   npx tsx eval/matching/export-blind.ts             # 1) выгрузка blind/items.json для размечающих
 //   (два ИИ-агента разных моделей размечают 0/1/2 → blind/labels-a.json, blind/labels-b.json)
 //   npx tsx eval/matching/blind-eval.ts [--no-write]  # 2) κ, P@5/nDCG@10 по A, B, консенсусу; ключ blind в results.json
-// Пул разметки — top-30 объединения выдач ours и BM25; кандидаты вне пула считаются нерелевантными (стандартное
-// допущение пулинга, как в TREC). У ours и BM25 первые 10 мест всегда внутри пула; у базовой линии — нет, это занижает её.
+// Пул разметки – top-30 объединения выдач ours и BM25; кандидаты вне пула считаются нерелевантными (стандартное
+// допущение пулинга, как в TREC). У ours и BM25 первые 10 мест всегда внутри пула; у базовой линии – нет, это занижает её.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,7 +32,7 @@ const { items, key, syn } = buildBlindSet();
 const A = readLabels('labels-a.json');
 const B = readLabels('labels-b.json');
 
-// пары в одном порядке; пропуски — ошибка
+// пары в одном порядке; пропуски – ошибка
 const pairs: { v: string; c: string; pid: string; a: number; b: number; g: number }[] = [];
 for (const it of items) for (const c of it.candidates) {
   const a = A[it.vacancyId]?.[c.candidateId], b = B[it.vacancyId]?.[c.candidateId];
@@ -105,7 +105,7 @@ if (!process.argv.includes('--no-write')) {
   const path = join(here, 'results.json');
   const prev = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
   prev.blind = {
-    note: 'Независимая слепая разметка 0/1/2: два ИИ-агента разных моделей (A — Claude Sonnet, B — Claude Opus), не люди; видели только текст вакансии и профиля (eval/matching/blind/items.json), без скрытой истины генератора и баллов. Пул — top-30 объединения выдач ours и BM25, вне пула — 0. Консенсус — среднее A и B, округлённое (половина вверх). Интервалы — бутстреп по 6 вакансиям, 1000 повторов, 95 %: широкие.',
+    note: 'Независимая слепая разметка 0/1/2: два ИИ-агента разных моделей (A – Claude Sonnet, B – Claude Opus), не люди; видели только текст вакансии и профиля (eval/matching/blind/items.json), без скрытой истины генератора и баллов. Пул – top-30 объединения выдач ours и BM25, вне пула – 0. Консенсус – среднее A и B, округлённое (половина вверх). Интервалы – бутстреп по 6 вакансиям, 1000 повторов, 95 %: широкие.',
     vacancies: items.length, pool: BLIND_POOL, pairs: pairs.length,
     labelers: { a: 'Claude Sonnet', b: 'Claude Opus' },
     kappa, exactAgreementAB,

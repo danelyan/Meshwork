@@ -9,7 +9,7 @@ import type { EvidenceLevel } from './types';
  */
 export const LEVEL_ORDER: readonly EvidenceLevel[] = ['self_reported', 'artifact', 'third_party', 'platform'];
 
-/** Уровни сверху вниз — для показа (профиль, карточка кандидата). */
+/** Уровни сверху вниз – для показа (профиль, карточка кандидата). */
 export const LEVELS_TOP_DOWN: readonly EvidenceLevel[] = [...LEVEL_ORDER].reverse();
 
 export function levelRank(level: EvidenceLevel): number {
@@ -18,16 +18,16 @@ export function levelRank(level: EvidenceLevel): number {
 
 /**
  * Что тест и защита поднимают до `platform`: всё ниже платформы, включая third_party
- * (решение 09.10: ФСП и референс тоже можно перепроверить на платформе). Только `platform` — финальный.
+ * (решение 09.10: ФСП и референс тоже можно перепроверить на платформе). Только `platform` – финальный.
  */
 export const PLATFORM_UPGRADABLE: ReadonlySet<EvidenceLevel> = new Set(['self_reported', 'artifact', 'third_party']);
 
 /**
  * Максимальный уровень доказанности по типу источника (ADR-0001 п. 2, E-01 § 4.2, план claims).
  * Уровень ставит код, не LLM и не кандидат.
- *  - resume / document / chat — со слов кандидата → self_reported;
- *  - github / url / stackoverflow — публичный артефакт → artifact;
- *  - codeforces / fsp — третья сторона, но только при подтверждённом владении аккаунтом,
+ *  - resume / document / chat – со слов кандидата → self_reported;
+ *  - github / url / stackoverflow – публичный артефакт → artifact;
+ *  - codeforces / fsp – третья сторона, но только при подтверждённом владении аккаунтом,
  *    иначе это просто публичная страница → artifact.
  * `platform` отсюда не выдаётся никогда: его дают только тест и защита (свои модули).
  * Неизвестный kind (данные из Json/БД в обход типов) → самый низкий уровень.

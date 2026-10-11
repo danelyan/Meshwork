@@ -53,7 +53,7 @@ describe('завершение сессии участника у внешнег
     warn.mockRestore();
   });
 
-  it('провайдер без end_session_endpoint, без refresh token или встроенный мок — запроса нет', async () => {
+  it('провайдер без end_session_endpoint, без refresh token или встроенный мок – запроса нет', async () => {
     let calls = provider(() => new Response(null, { status: 204 }), discoveryDoc({ end_session_endpoint: undefined }));
     await endProviderSession(httpTransport(cfg), 'refresh-token-value');
     expect(calls.filter((c) => c.url === `${OIDC}/logout`)).toHaveLength(0);

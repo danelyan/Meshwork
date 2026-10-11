@@ -45,7 +45,7 @@ function send(url: string, body: string): void {
  * Ничего не блокирует: preventDefault не вызывается; ответы сервера (в т.ч. 409) игнорируются.
  * Возвращает обработчики для поля ответа (onPaste) и блока условия (onCopy).
  */
-/** `base` — префикс API попыток: кандидат `/api/test`, режим эксперта `/api/expert`. */
+/** `base` – префикс API попыток: кандидат `/api/test`, режим эксперта `/api/expert`. */
 export function useIntegritySignals(attemptId: string, itemIndex: number, enabled = true, base = '/api/test') {
   const acc = useRef<Deltas>(empty());
   const hiddenSince = useRef<number | null>(null);

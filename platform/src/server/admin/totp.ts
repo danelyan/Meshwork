@@ -3,10 +3,10 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 /**
  * TOTP для входа персонала (ADR 0009) на `node:crypto`, без новых зависимостей.
  * RFC 6238: T = floor((unix - T0) / X), T0 = 0, X = 30 с, HMAC-SHA1 (по умолчанию в RFC и во всех
- * приложениях-аутентификаторах), 6 цифр; HOTP и динамическое усечение — RFC 4226 §5.3.
+ * приложениях-аутентификаторах), 6 цифр; HOTP и динамическое усечение – RFC 4226 §5.3.
  * Окно приёма ±1 шаг (рассинхрон часов, RFC 6238 §5.2); повтор уже принятого шага отклоняет вызывающий
  * код по `StaffMember.totpLastStep`.
- * Секрет — 20 случайных байт (160 бит, RFC 4226 §4), в otpauth-URI — base32 без '=' (RFC 4648 §6).
+ * Секрет – 20 случайных байт (160 бит, RFC 4226 §4), в otpauth-URI – base32 без '=' (RFC 4648 §6).
  * Без `server-only`: модуль берёт CLI.
  */
 
@@ -51,7 +51,7 @@ export function base32Decode(s: string): Buffer {
   return Buffer.from(out);
 }
 
-/** HOTP (RFC 4226 §5.3) для счётчика; `algo` и `digits` — для векторов RFC 6238 в тестах. */
+/** HOTP (RFC 4226 §5.3) для счётчика; `algo` и `digits` – для векторов RFC 6238 в тестах. */
 export function hotp(key: Buffer, counter: number, digits = TOTP_DIGITS, algo: 'sha1' | 'sha256' | 'sha512' = 'sha1'): string {
   const msg = Buffer.alloc(8);
   msg.writeBigUInt64BE(BigInt(counter));
@@ -94,7 +94,7 @@ export function otpauthUri(secretB32: string, account: string): string {
 }
 
 // --- хранение секрета: AES-256-GCM, ключ из SESSION_SECRET с отдельным доменом ---
-// Утечка дампа БД без env не раскрывает секреты TOTP. Смена SESSION_SECRET делает их нечитаемыми — тогда
+// Утечка дампа БД без env не раскрывает секреты TOTP. Смена SESSION_SECRET делает их нечитаемыми – тогда
 // владелец сбрасывает 2FA (`/admin/staff` или CLI), сотрудник настраивает заново.
 
 function keyOf(secret: string): Buffer {

@@ -8,7 +8,7 @@ interface Entry {
   exp: number;
 }
 
-/** Эталон: Map хранит порядок использования (первый — самый давний). defect включает один известный баг. */
+/** Эталон: Map хранит порядок использования (первый – самый давний). defect включает один известный баг. */
 export function makeFactory(defect?: VisibleDefect): CacheFactory {
   const d = (x: VisibleDefect) => defect === x;
   return ({ capacity, ttlMs, now }: CacheOptions): Cache => {

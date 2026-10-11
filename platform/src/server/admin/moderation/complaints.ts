@@ -108,8 +108,8 @@ export interface ComplaintResolution {
 }
 
 /**
- * Решение по жалобе: только из `open` (повтор — 409), причина обязательна. Транзакция: advisory-lock компании
- * (как createInvitation) → условный update → журнал с санкцией до/после. Письмо кандидату — после COMMIT.
+ * Решение по жалобе: только из `open` (повтор – 409), причина обязательна. Транзакция: advisory-lock компании
+ * (как createInvitation) → условный update → журнал с санкцией до/после. Письмо кандидату – после COMMIT.
  */
 export async function resolveComplaint(staff: StaffContext, id: string, decision: ComplaintDecision, rawReason: string): Promise<ComplaintResolution> {
   const cfg = await sanctionConfig();

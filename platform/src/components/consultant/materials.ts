@@ -13,11 +13,11 @@ export const MATERIALS_EVENT = 'consultant:materials';
 export interface Materials {
   uploadIds: string[];
   urls: string[];
-  /** Имена файлов — подписи вложений в реплике пользователя. */
+  /** Имена файлов – подписи вложений в реплике пользователя. */
   names: string[];
 }
 
-/** sent — ход начат; busy — консультант ещё отвечает; none — ленты консультанта на экране нет. */
+/** sent – ход начат; busy – консультант ещё отвечает; none – ленты консультанта на экране нет. */
 export type MaterialsOutcome = 'sent' | 'busy' | 'none';
 
 type Detail = Materials & { outcome: MaterialsOutcome };

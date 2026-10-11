@@ -1,5 +1,5 @@
 // ADR 0008 п. 3: запись живой защиты пишет обе стороны. Подтверждение записи работодателем при входе,
-// загрузка его дорожки только своей компанией и только в свою живую защиту, доступ — как к записи защиты.
+// загрузка его дорожки только своей компанией и только в свою живую защиту, доступ – как к записи защиты.
 import { existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
@@ -43,8 +43,8 @@ const upload = (id: string, cookie: string, startMs = 1500) =>
 const get = (url: string, cookie: string) => new Request(`http://localhost${url}`, { headers: { cookie } });
 
 /**
- * Кандидат принял приглашения A и B (обе раскрыты), C — только отправлено. Проект сдан под вакансию A:
- * живая защита принадлежит A, B её не видит (ADR 0008), C — без accepted.
+ * Кандидат принял приглашения A и B (обе раскрыты), C – только отправлено. Проект сдан под вакансию A:
+ * живая защита принадлежит A, B её не видит (ADR 0008), C – без accepted.
  */
 async function seed() {
   await prisma.candidate.create({ data: { id: CAND, email: 'c@example.com', name: 'Кандидат' } });
@@ -97,7 +97,7 @@ describe('голос работодателя в записи живой защ�
     await prisma.$disconnect();
   });
 
-  it('без подтверждения записи в эфир не пускает; с подтверждением — сохраняет его в участнике', async () => {
+  it('без подтверждения записи в эфир не пускает; с подтверждением – сохраняет его в участнике', async () => {
     const id = await startLive();
     const refused = await joinRoute(post('/x', {}, EMP_A), params(id));
     expect(refused.status).toBe(409);
@@ -122,7 +122,7 @@ describe('голос работодателя в записи живой защ�
     const row = await prisma.callSession.findUniqueOrThrow({ where: { id } });
     expect(row.employerAudioPath).toBe(`calls/${id}/employer`);
 
-    // Аудио кандидата — прежним механизмом, в свою папку; в его WAV дорожка работодателя не попадает.
+    // Аудио кандидата – прежним механизмом, в свою папку; в его WAV дорожка работодателя не попадает.
     const pcm = new Uint8Array(16000 * 2 * 0.5);
     const cand = await candAudioRoute(new Request(`http://localhost/api/call/${id}/audio`, { method: 'POST', headers: { cookie: CAND_COOKIE, 'content-type': 'audio/l16' }, body: pcm }), params(id));
     expect(cand.status).toBe(201);
@@ -135,13 +135,13 @@ describe('голос работодателя в записи живой защ�
 
   it('загружает только своя компания и только в свою живую защиту, подключённым участником', async () => {
     const id = await startLive();
-    // B принят, но живая защита по вакансии A — 404; C без accepted — 404.
+    // B принят, но живая защита по вакансии A – 404; C без accepted – 404.
     expect((await joinRoute(post('/x', { recordingConsent: true }, EMP_B), params(id))).status).toBe(404);
     expect((await upload(id, EMP_B)).status).toBe(404);
     expect((await upload(id, EMP_C)).status).toBe(404);
     // Кандидату маршрут работодателя закрыт.
     expect((await upload(id, CAND_COOKIE)).status).toBe(403);
-    // A не подключён — 409.
+    // A не подключён – 409.
     expect((await upload(id, EMP_A)).status).toBe(409);
     await joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(id));
     expect((await upload(id, EMP_A)).status).toBe(201);
@@ -150,7 +150,7 @@ describe('голос работодателя в записи живой защ�
     expect(existsSync(path.join(dataDir, 'calls', id, 'employer'))).toBe(true);
   });
 
-  it('участник без подтверждения записи (старый вход) — дорожка не принимается', async () => {
+  it('участник без подтверждения записи (старый вход) – дорожка не принимается', async () => {
     const id = await startLive();
     await prisma.callParticipant.create({ data: { callSessionId: id, userId: 'u-emp-a', role: 'employer' } });
     const res = await upload(id, EMP_A);
@@ -161,7 +161,7 @@ describe('голос работодателя в записи живой защ�
     expect((await upload(id, EMP_A)).status).toBe(201);
   });
 
-  it('кандидат отозвал согласие на запись — голос работодателя тоже не пишется', async () => {
+  it('кандидат отозвал согласие на запись – голос работодателя тоже не пишется', async () => {
     const id = await startLive();
     await joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(id));
     await prisma.consent.updateMany({ where: { userId: 'u-cand', kind: 'call_recording' }, data: { revokedAt: new Date() } });
@@ -178,7 +178,7 @@ describe('голос работодателя в записи живой защ�
     expect((await listRoute(get(`/api/call/${id}/employer-audio`, CAND_COOKIE), params(id))).status).toBe(404);
   });
 
-  it('доступ к дорожке — как к записи защиты: кандидат и компания-владелец с раскрытием', async () => {
+  it('доступ к дорожке – как к записи защиты: кандидат и компания-владелец с раскрытием', async () => {
     const id = await startLive();
     await joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(id));
     await upload(id, EMP_A, 0);
@@ -193,13 +193,13 @@ describe('голос работодателя в записи живой защ�
     expect(new Uint8Array(await a.arrayBuffer())).toEqual(WEBM);
     expect((await fileRoute(get(`/api/call/${id}/employer-audio/file?segment=000-0.webm`, CAND_COOKIE), params(id))).status).toBe(200);
 
-    // Чужая компания (даже с accepted) и компания без accepted — 404.
+    // Чужая компания (даже с accepted) и компания без accepted – 404.
     expect((await listRoute(get(`/api/call/${id}/employer-audio`, EMP_B), params(id))).status).toBe(404);
     expect((await fileRoute(get(`/api/call/${id}/employer-audio/file?segment=000-0.webm`, EMP_C), params(id))).status).toBe(404);
-    // Неверное имя сегмента — 400 (без обхода пути).
+    // Неверное имя сегмента – 400 (без обхода пути).
     expect((await fileRoute(get(`/api/call/${id}/employer-audio/file?segment=../x.webm`, EMP_A), params(id))).status).toBe(400);
 
-    // Кандидат отозвал раскрытие (Г5) — запись компании закрыта, как запись кандидата.
+    // Кандидат отозвал раскрытие (Г5) – запись компании закрыта, как запись кандидата.
     await prisma.consent.updateMany({ where: { kind: 'identity_disclosure' }, data: { revokedAt: new Date() } });
     const closed = await listRoute(get(`/api/call/${id}/employer-audio`, EMP_A), params(id));
     expect([403, 404]).toContain(closed.status);

@@ -13,8 +13,8 @@ const clampW = (w: number, total: number) => Math.round(Math.min(Math.max(w, MIN
 
 /**
  * Разделитель между чатом и сценой (владелец 11.10: «разделитель надо иметь возможность тянуть»).
- * Ширина — CSS-переменная --panel-w на сцене, запоминается в браузере (только удобство: без хранилища — по умолчанию).
- * Двойной клик — сброс. Клавиатура: стрелки влево/вправо.
+ * Ширина – CSS-переменная --panel-w на сцене, запоминается в браузере (только удобство: без хранилища – по умолчанию).
+ * Двойной клик – сброс. Клавиатура: стрелки влево/вправо.
  */
 export function PanelSplitter({ scene }: { scene: RefObject<HTMLDivElement | null> }) {
   const [width, setWidth] = useState<number | null>(null);
@@ -24,7 +24,7 @@ export function PanelSplitter({ scene }: { scene: RefObject<HTMLDivElement | nul
       const saved = Number(localStorage.getItem(KEY));
       if (saved > 0) setWidth(saved);
     } catch {
-      /* без хранилища — ширина по умолчанию */
+      /* без хранилища – ширина по умолчанию */
     }
   }, []);
 
@@ -79,7 +79,7 @@ export function PanelSplitter({ scene }: { scene: RefObject<HTMLDivElement | nul
       aria-valuenow={Math.round(width ?? current())}
       aria-valuemin={MIN}
       tabIndex={0}
-      title="Потяни, чтобы изменить ширину чата; двойной клик — по умолчанию"
+      title="Потяни, чтобы изменить ширину чата; двойной клик – по умолчанию"
       onPointerDown={onPointerDown}
       onDoubleClick={() => save(null)}
       onKeyDown={onKey}

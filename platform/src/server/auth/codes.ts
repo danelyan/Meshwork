@@ -5,7 +5,7 @@ import type { AuthCodePurpose } from '@prisma/client';
 import { prisma } from '@/server/db';
 import { getEnv } from '@/server/env';
 
-/** Код живёт 15 минут, на один код — 5 попыток ввода. */
+/** Код живёт 15 минут, на один код – 5 попыток ввода. */
 export const CODE_TTL_MS = 15 * 60_000;
 export const CODE_MAX_ATTEMPTS = 5;
 
@@ -15,7 +15,7 @@ export function generateCode(): string {
 }
 
 /**
- * HMAC-хэш кода. Ключ — SESSION_SECRET, в сообщении назначение и пользователь: утёкшая
+ * HMAC-хэш кода. Ключ – SESSION_SECRET, в сообщении назначение и пользователь: утёкшая
  * таблица без секрета не даёт перебрать миллион кодов офлайн, а код сброса не подходит
  * для подтверждения и чужого аккаунта.
  */
@@ -45,7 +45,7 @@ export type CodeCheck = 'ok' | 'invalid' | 'expired' | 'exhausted';
 
 /**
  * Проверить и погасить код. Берётся последний живой код назначения; неверный ввод
- * увеличивает счётчик попыток, после 5-й код сгорает. Погашение — условным update,
+ * увеличивает счётчик попыток, после 5-й код сгорает. Погашение – условным update,
  * чтобы два параллельных запроса с верным кодом не прошли оба.
  */
 export async function consumeCode(userId: string, purpose: AuthCodePurpose, code: string, now = new Date()): Promise<CodeCheck> {

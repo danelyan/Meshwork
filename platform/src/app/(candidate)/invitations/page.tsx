@@ -19,6 +19,6 @@ export default async function CandidateInvitationsPage() {
     hasCallConsent(s.candidateId),
     listCandidateApplications(s.candidateId),
   ]);
-  // R-C-12: свои отклики — на той же странице, что входящие приглашения.
+  // R-C-12: свои отклики – на той же странице, что входящие приглашения.
   return <><CandidateInvitations invitations={invitations} contact={contact.contact} hasRecordingConsent={recording} /><CandidateApplications applications={applications} /></>;
 }

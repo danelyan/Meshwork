@@ -95,7 +95,7 @@ export async function readJson(req: http.IncomingMessage): Promise<unknown> {
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
-    throw new ApiError(400, 'bad_request', 'Тело запроса — не JSON');
+    throw new ApiError(400, 'bad_request', 'Тело запроса – не JSON');
   }
 }
 
@@ -117,7 +117,7 @@ export function createHttpServer(router: Router, log: (line: string) => void = (
     const method = (req.method ?? 'GET').toUpperCase();
     let url: URL | null = null;
     try {
-      // Некорректная цель запроса (например, `//[`) бросает в конструкторе URL — это 400, а не падение процесса.
+      // Некорректная цель запроса (например, `//[`) бросает в конструкторе URL – это 400, а не падение процесса.
       try {
         url = new URL(req.url ?? '/', 'http://fsp-sim');
       } catch {

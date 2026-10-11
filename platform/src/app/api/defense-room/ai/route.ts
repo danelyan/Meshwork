@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же
+ * POST `{ projectSubmissionId }` – ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же
  * комната `/defense-room/{sessionId}`, только вопросы по коду. Не чаще раза в сутки на сабмит (429 `ai_defense_limit`,
  * демо-кандидатов не ограничивает); идущая возвращается (`resumed: true`). Нужно согласие на запись (403 `call_consent_required`).
  * Работодатель до принятия приглашения видит только баллы и флаги.

@@ -17,9 +17,9 @@ describe('ApplicationInput', () => {
     expect(ApplicationInput.safeParse({ message: 'x'.repeat(APPLICATION_MESSAGE_MAX + 1) }).success).toBe(false);
     expect(ApplicationInput.parse({ message: '  привет  ' }).message).toBe('привет');
   });
-  it('ответ работодателя — только accept | decline', () => {
+  it('ответ работодателя – только accept | decline', () => {
     expect(ApplicationAnswer.safeParse({ action: 'accept' }).success).toBe(true);
     expect(ApplicationAnswer.safeParse({ action: 'hire' }).success).toBe(false);
   });
-  it('лимит в сутки — положительный', () => expect(DAILY_APPLICATION_LIMIT).toBeGreaterThan(0));
+  it('лимит в сутки – положительный', () => expect(DAILY_APPLICATION_LIMIT).toBeGreaterThan(0));
 });

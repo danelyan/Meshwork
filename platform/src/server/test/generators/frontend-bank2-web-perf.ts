@@ -1,6 +1,6 @@
 // Расширенный банк frontend.web-perf: +3 Junior, +5 Middle, +4 Senior (решение владельца 11.10).
 // Закрывает пробел «SSR и гидрация ниже Senior» (docs/research/competitors/test-banks.md).
-// Ключ считает код генератора по модели из условия; a, b — ПРЕДЛОЖЕНИЕ.
+// Ключ считает код генератора по модели из условия; a, b – ПРЕДЛОЖЕНИЕ.
 import { createRng } from '../rng';
 import type { TaskInstance } from '../types';
 import { fam, WP } from './frontend-bank2-util';
@@ -33,7 +33,7 @@ export const lazyImages = fam({
       code: imgs.map((im, i) => `img${i + 1}: top=${im.top}px${im.lazy ? ' loading="lazy"' : ''}`).join('\n'),
       answerHint: 'число',
       answerKey: String(loaded),
-      explanation: `Без lazy загружаются все такие картинки, а lazy — только те, что начинаются выше ${H}px. Итого ${loaded}.`,
+      explanation: `Без lazy загружаются все такие картинки, а lazy – только те, что начинаются выше ${H}px. Итого ${loaded}.`,
       params: { H, imgs: imgs.map((i) => `${i.top}${i.lazy ? 'L' : ''}`).join(',') },
     };
   },
@@ -65,7 +65,7 @@ export const ssrVsCsr = fam({
     const ask = rng.pick(['ssr', 'csr', 'gap'] as const);
     const ans = ask === 'ssr' ? ssr : ask === 'csr' ? csr : csr - ssr;
     return {
-      prompt: `Время в мс. SSR: ответ сервера начинается через ${ttfb}, сервер ждёт данные ${dataApi} и рендерит HTML ${render}, затем HTML скачивается ${htmlFull}; контент виден сразу после загрузки HTML. Клиентский рендер: ответ начинается через ${ttfb}, оболочка скачивается ${htmlShell}, скрипт — ${js}, исполняется ${exec}, затем запрос данных ${dataApi} и отрисовка ${render}. Все шаги идут последовательно. ${ask === 'ssr' ? 'Через сколько мс появится контент при SSR?' : ask === 'csr' ? 'Через сколько мс появится контент при клиентском рендере?' : 'На сколько мс раньше появится контент при SSR, чем при клиентском рендере?'}`,
+      prompt: `Время в мс. SSR: ответ сервера начинается через ${ttfb}, сервер ждёт данные ${dataApi} и рендерит HTML ${render}, затем HTML скачивается ${htmlFull}; контент виден сразу после загрузки HTML. Клиентский рендер: ответ начинается через ${ttfb}, оболочка скачивается ${htmlShell}, скрипт – ${js}, исполняется ${exec}, затем запрос данных ${dataApi} и отрисовка ${render}. Все шаги идут последовательно. ${ask === 'ssr' ? 'Через сколько мс появится контент при SSR?' : ask === 'csr' ? 'Через сколько мс появится контент при клиентском рендере?' : 'На сколько мс раньше появится контент при SSR, чем при клиентском рендере?'}`,
       answerHint: 'миллисекунды',
       answerKey: String(ans),
       explanation: `SSR: ${ttfb} + ${dataApi} + ${render} + ${htmlFull} = ${ssr}. Клиентский рендер: ${ttfb} + ${htmlShell} + ${js} + ${exec} + ${dataApi} + ${render} = ${csr}.`,
@@ -140,7 +140,7 @@ export const hydrationMismatch = fam({
     const picks = Array.from({ length: rng.int(6, 18) }, () => rng.pick(HYDRATION_LINES));
     const bad = picks.filter((p) => p.bad).length;
     return {
-      prompt: 'Компоненты рендерятся на сервере, а затем гидрируются в браузере с теми же пропсами. Сколько из строк разметки (в каждой — отдельный компонент; на сервере нет window и localStorage, поэтому обращения к ним защищены проверкой typeof) выведут при первом рендере на клиенте не то, что вывел сервер, то есть вызовут ошибку гидрации?',
+      prompt: 'Компоненты рендерятся на сервере, а затем гидрируются в браузере с теми же пропсами. Сколько из строк разметки (в каждой – отдельный компонент; на сервере нет window и localStorage, поэтому обращения к ним защищены проверкой typeof) выведут при первом рендере на клиенте не то, что вывел сервер, то есть вызовут ошибку гидрации?',
       code: picks.map((p, i) => `${i + 1}. ${p.line}`).join('\n'),
       answerHint: 'число',
       answerKey: String(bad),
@@ -175,11 +175,11 @@ export const serverAwaits = fam({
     const total = base + groups.reduce((s, g) => s + Math.max(...g.map((k) => dur[k]!)), 0);
     const code = groups.map((g) => (g.length === 1 ? `const ${names[g[0]!]} = await get('${names[g[0]!]}'); // ${dur[g[0]!]} мс` : `const [${g.map((k) => names[k]).join(', ')}] = await Promise.all([${g.map((k) => `get('${names[k]}')`).join(', ')}]); // ${g.map((k) => dur[k]).join(', ')} мс`)).join('\n');
     return {
-      prompt: `Серверный компонент выполняет код ниже; каждый запрос get занимает указанное время, остальной рендер — ${base} мс, HTML отправляется после завершения всего. Через сколько мс браузер получит первый байт ответа?`,
+      prompt: `Серверный компонент выполняет код ниже; каждый запрос get занимает указанное время, остальной рендер – ${base} мс, HTML отправляется после завершения всего. Через сколько мс браузер получит первый байт ответа?`,
       code,
       answerHint: 'миллисекунды',
       answerKey: String(total),
-      explanation: `Отдельные await идут друг за другом, а запросы внутри Promise.all — параллельно (берётся самый долгий). Сумма по группам плюс ${base} мс рендера: ${total}.`,
+      explanation: `Отдельные await идут друг за другом, а запросы внутри Promise.all – параллельно (берётся самый долгий). Сумма по группам плюс ${base} мс рендера: ${total}.`,
       params: { dur: dur.join(','), groups: groups.map((g) => g.join('+')).join('|'), base },
     };
   },
@@ -281,17 +281,17 @@ export const resourceHints = fam({
     const preconnect = rng.int(0, 1) === 1;
     // HTML получен на html; <link> в голове известен сразу
     const cssReady = html + css;
-    // Шрифт: без preload запрос стартует, когда CSS получен и разобран; с preload — сразу после HTML.
+    // Шрифт: без preload запрос стартует, когда CSS получен и разобран; с preload – сразу после HTML.
     const start = preload ? html : cssReady;
     // Соединение со шрифтовым хостом: с preconnect открывается параллельно с CSS, начиная с html.
     const connReady = preconnect ? html + conn : start + conn;
     const fontReady = Math.max(start, connReady) + font;
     const ready = Math.max(fontReady, cssReady);
     return {
-      prompt: `Все значения в мс. HTML загружен к ${html}. Затем качается CSS (${css} мс, из того же источника). Шрифт лежит на отдельном домене, его описание — в CSS; открытие соединения к домену занимает ${conn}, загрузка шрифта — ${font}. ${preconnect ? 'В <head> есть preconnect к домену шрифтов: соединение открывается сразу после получения HTML.' : 'Предварительного соединения нет: оно открывается в момент запроса шрифта.'} ${preload ? 'Есть <link rel="preload" as="font">: запрос шрифта идёт сразу после HTML.' : 'Шрифт запрашивается, когда браузер получил CSS.'} Страница готова, когда получены CSS и шрифт. Когда?`,
+      prompt: `Все значения в мс. HTML загружен к ${html}. Затем качается CSS (${css} мс, из того же источника). Шрифт лежит на отдельном домене, его описание – в CSS; открытие соединения к домену занимает ${conn}, загрузка шрифта – ${font}. ${preconnect ? 'В <head> есть preconnect к домену шрифтов: соединение открывается сразу после получения HTML.' : 'Предварительного соединения нет: оно открывается в момент запроса шрифта.'} ${preload ? 'Есть <link rel="preload" as="font">: запрос шрифта идёт сразу после HTML.' : 'Шрифт запрашивается, когда браузер получил CSS.'} Страница готова, когда получены CSS и шрифт. Когда?`,
       answerHint: 'миллисекунды',
       answerKey: String(ready),
-      explanation: `CSS готов к ${cssReady}. Запрос шрифта стартует в ${start}, соединение готово к ${connReady}, шрифт — к ${fontReady}. Страница готова к ${ready}.`,
+      explanation: `CSS готов к ${cssReady}. Запрос шрифта стартует в ${start}, соединение готово к ${connReady}, шрифт – к ${fontReady}. Страница готова к ${ready}.`,
       params: { html, css, font, conn, preload, preconnect },
     };
   },
@@ -327,7 +327,7 @@ export const srIslandsTti = fam({
       code: names.map((n, i) => `${n}${interactive.includes(i) ? ' *' : ''}: ${cost[i]} мс`).join('\n'),
       answerHint: 'миллисекунды',
       answerKey: String(ans),
-      explanation: `Полная: ${html} + ${base} + ${cost.reduce((a, b) => a + b, 0)} = ${full}. Острова: ${html} + ${base} + ${interactive.reduce((s, i) => s + cost[i]!, 0)} = ${part}. Выигрыш ${full - part}. Цена — сложнее общее состояние между островами и риск расхождений при вложенных островах.`,
+      explanation: `Полная: ${html} + ${base} + ${cost.reduce((a, b) => a + b, 0)} = ${full}. Острова: ${html} + ${base} + ${interactive.reduce((s, i) => s + cost[i]!, 0)} = ${part}. Выигрыш ${full - part}. Цена – сложнее общее состояние между островами и риск расхождений при вложенных островах.`,
       params: { cost: cost.join(','), interactive: interactive.join(','), base, html, ask },
     };
   },
@@ -352,7 +352,7 @@ export const srCdnVary = fam({
     const reqs = Array.from({ length: rng.int(6, 14) }, () => ({ p: rng.pick(paths), l: rng.pick(langs), c: rng.pick(cookies) }));
     const keys = new Set(reqs.map((r) => `${r.p}|${vary.includes('accept-language') ? r.l : ''}|${vary.includes('cookie') ? r.c : ''}`));
     return {
-      prompt: `CDN кэширует ответы SSR-страниц на час (время ожидания не истекает за наше окно). Ключ кэша — URL плюс значения заголовков из Vary: ${vary.length ? vary.join(', ') : 'заголовок Vary отсутствует'}. Сколько запросов из списка дойдёт до origin (первый запрос с новым ключом — промах, остальные — попадание)?`,
+      prompt: `CDN кэширует ответы SSR-страниц на час (время ожидания не истекает за наше окно). Ключ кэша – URL плюс значения заголовков из Vary: ${vary.length ? vary.join(', ') : 'заголовок Vary отсутствует'}. Сколько запросов из списка дойдёт до origin (первый запрос с новым ключом – промах, остальные – попадание)?`,
       code: reqs.map((r, i) => `${i + 1}. GET ${r.p}  Accept-Language: ${r.l}  Cookie: ${r.c}`).join('\n'),
       answerHint: 'число',
       answerKey: String(keys.size),
@@ -384,7 +384,7 @@ export const srPerfBudget = fam({
     const free = budget - rtts * rtt - rest;
     const kb = Math.floor(free / (net + cpu));
     return {
-      prompt: `Целевой TTI — ${budget} мс на медленном устройстве. На задержки сети уходит ${rtts} круга по ${rtt} мс, прочая работа вне JS-бандла — ${rest} мс. Загрузка бандла: ${mbps} Мбит/с (1 КБ = 8 кбит), разбор и выполнение — ${cpu} мс на КБ, всё последовательно. Какой максимальный размер бандла (КБ, целое, округлить вниз) укладывается в бюджет?`,
+      prompt: `Целевой TTI – ${budget} мс на медленном устройстве. На задержки сети уходит ${rtts} круга по ${rtt} мс, прочая работа вне JS-бандла – ${rest} мс. Загрузка бандла: ${mbps} Мбит/с (1 КБ = 8 кбит), разбор и выполнение – ${cpu} мс на КБ, всё последовательно. Какой максимальный размер бандла (КБ, целое, округлить вниз) укладывается в бюджет?`,
       answerHint: 'КБ, целое число',
       answerKey: String(kb),
       explanation: `На бандл остаётся ${free} мс. Один КБ стоит ${net} мс сети и ${cpu} мс процессора, всего ${net + cpu}; ${free} / ${net + cpu} округляем вниз до ${kb}. Бюджет в КБ придётся пересматривать, когда меняется профиль устройств.`,
@@ -431,11 +431,11 @@ export const srClsWindow = fam({
     windows.push(cur);
     const cls = Math.max(...windows) / 100;
     return {
-      prompt: 'Оценка сдвига = доля затронутой области × доля сдвига (в долях единицы). CLS — наибольшая сумма по «окну сессии»: окно закрывается, если между соседними сдвигами прошло больше 1000 мс или длительность окна дошла до 5000 мс (следующий сдвиг открывает новое окно). Чему равен CLS (две цифры после запятой)?',
+      prompt: 'Оценка сдвига = доля затронутой области × доля сдвига (в долях единицы). CLS – наибольшая сумма по «окну сессии»: окно закрывается, если между соседними сдвигами прошло больше 1000 мс или длительность окна дошла до 5000 мс (следующий сдвиг открывает новое окно). Чему равен CLS (две цифры после запятой)?',
       code: shifts.map((s, i) => `${i + 1}. t=${s.t} мс, затронуто ${s.imp} %, сдвиг ${s.dist} %`).join('\n'),
       answerHint: 'число, например 0.12',
       answerKey: cls.toFixed(2),
-      explanation: `Окна: ${windows.map((w) => (w / 100).toFixed(2)).join('; ')}. Берём наибольшее — ${cls.toFixed(2)}. Это не сумма всех сдвигов за жизнь страницы, как считалось раньше.`,
+      explanation: `Окна: ${windows.map((w) => (w / 100).toFixed(2)).join('; ')}. Берём наибольшее – ${cls.toFixed(2)}. Это не сумма всех сдвигов за жизнь страницы, как считалось раньше.`,
       params: { shifts: shifts.map((s) => `${s.t}/${s.imp}/${s.dist}`).join(',') },
     };
   },

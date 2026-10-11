@@ -44,7 +44,7 @@ import {
   type IntegrityIndex,
   type ItemObservation,
 } from './integrity';
-import { estimateTheta, probCorrect, type Response } from './irt';
+import { estimateTheta, type Response } from './irt';
 import {
   decide,
   CONFIRM_PROB,
@@ -75,10 +75,9 @@ import type {
   JuryResult,
   StartResult,
   TaskGenerator,
-  JuryLiveView,
 } from './types';
 
-/** Версия политики и правила остановки по версии — policy.ts (POLICY_VERSION, rulesFor). */
+/** Версия политики и правила остановки по версии – policy.ts (POLICY_VERSION, rulesFor). */
 export { POLICY_VERSION };
 /** Версии с дозадаванием Junior (v3 и новее): правило фазы не меняется задним числом для v1–v2. */
 const PROBE_VERSIONS = new Set(['adr-0002-v3', 'adr-0002-v4', 'adr-0002-v5', 'adr-0002-v6', 'adr-0002-v7']);
@@ -88,15 +87,15 @@ const ROTATION_VERSIONS = new Set(['adr-0002-v5', 'adr-0002-v6', 'adr-0002-v7'])
 const INTEGRITY_VERSIONS = new Set(['adr-0002-v6', 'adr-0002-v7']);
 /**
  * Версии с общими компетенциями в пуле подкатегории (v7, ADR 0003, дополнение 11.10). Попытки v6 и старше доигрываются
- * по пулу из своих семейств — общие не появляются в них задним числом.
+ * по пулу из своих семейств – общие не появляются в них задним числом.
  */
 const COMMON_VERSIONS = new Set(['adr-0002-v7']);
 const COMMON_IDS = new Set(COMMON_GENERATORS.map((g) => g.id));
 
 /**
- * ПРЕДЛОЖЕНИЕ (R-C-09, решение владельца 09.10): смена грейда — раз в 30 дней
- * (GRADE_CHANGE_INTERVAL_DAYS), пересдача того же грейда — через 14 дней.
- * В демо-режиме (TEST_DEMO_INTERVALS=true) — минуты, чтобы жюри увидело правило и повтор.
+ * ПРЕДЛОЖЕНИЕ (R-C-09, решение владельца 09.10): смена грейда – раз в 30 дней
+ * (GRADE_CHANGE_INTERVAL_DAYS), пересдача того же грейда – через 14 дней.
+ * В демо-режиме (TEST_DEMO_INTERVALS=true) – минуты, чтобы жюри увидело правило и повтор.
  */
 export { RETAKE_SAME_GRADE_DAYS };
 export const DEMO_GRADE_CHANGE_MIN = 2;
@@ -151,8 +150,8 @@ export async function ensureTemplates(db: Prisma.TransactionClient | typeof pris
 }
 
 /**
- * Пул попытки. С подкатегорией — семейства подкатегории (poolFor; переходное направление — всё направление), у попыток
- * v7 и новее — плюс общие семейства по карте common-map.ts; без подкатегории (попытки до v4) — всё направление, как при
+ * Пул попытки. С подкатегорией – семейства подкатегории (poolFor; переходное направление – всё направление), у попыток
+ * v7 и новее – плюс общие семейства по карте common-map.ts; без подкатегории (попытки до v4) – всё направление, как при
  * их старте. Общие семейства ищутся по id, а не по направлению: в БД у них «домашнее» направление.
  */
 async function loadPool(spec: Specialization, subcategoryId: string | null, common = false): Promise<(SelectableTemplate & { generator: TaskGenerator })[]> {
@@ -162,14 +161,14 @@ async function loadPool(spec: Specialization, subcategoryId: string | null, comm
   const out: (SelectableTemplate & { generator: TaskGenerator })[] = [];
   for (const r of rows) {
     const generator = getGenerator(r.id);
-    if (!generator) continue; // шаблон выведен из кода — из оборота
-    if (generator.shared && !ids) continue; // пул направления (до v4) — без общих
+    if (!generator) continue; // шаблон выведен из кода – из оборота
+    if (generator.shared && !ids) continue; // пул направления (до v4) – без общих
     out.push({ id: r.id, a: r.irtA, b: r.irtB, catalogIds: r.catalogIds, grade: r.grade, exposure: r.exposure, common: Boolean(generator.shared), generator });
   }
   return out;
 }
 
-/** Пул попытки по её версии политики: общие семейства — только у COMMON_VERSIONS. */
+/** Пул попытки по её версии политики: общие семейства – только у COMMON_VERSIONS. */
 function loadAttemptPool(a: Pick<TestAttempt, 'specialization' | 'subcategoryId' | 'policyVersion'>): ReturnType<typeof loadPool> {
   return loadPool(a.specialization, a.subcategoryId, COMMON_VERSIONS.has(a.policyVersion));
 }
@@ -178,16 +177,16 @@ function loadAttemptPool(a: Pick<TestAttempt, 'specialization' | 'subcategoryId'
 // Допуск к попытке (R-C-08, R-C-09)
 // ---------------------------------------------------------------------------
 
-/** Подкатегория теста: явная (из запроса) или из профиля кандидата; чужая направлению — null. */
+/** Подкатегория теста: явная (из запроса) или из профиля кандидата; чужая направлению – null. */
 async function resolveSubcategory(candidateId: string, spec: Specialization, explicit?: string | null): Promise<string | null> {
   const id = explicit ?? (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { subcategoryId: true } }))?.subcategoryId ?? null;
   return getSubcategory(id)?.specialization === spec ? id : null;
 }
 
 /**
- * Допуск к попытке. Тест — на подкатегорию (ADR 0003, дополнение 10.10 15:50): без выбранной подкатегории
- * направления — subcategory_required; подкатегория без банка (< 8 семейств) — no_test. `subcategoryId`
- * не передан — берётся из профиля кандидата.
+ * Допуск к попытке. Тест – на подкатегорию (ADR 0003, дополнение 10.10 15:50): без выбранной подкатегории
+ * направления – subcategory_required; подкатегория без банка (< 8 семейств) – no_test. `subcategoryId`
+ * не передан – берётся из профиля кандидата.
  */
 export async function checkEligibility(
   candidateId: string,
@@ -212,11 +211,11 @@ export async function checkEligibility(
       where: { candidateId, specialization: spec, subcategoryId: sub, grade, kind: 'grade', status: { in: ['passed', 'not_confirmed', 'needs_confirmation'] } },
       orderBy: { finishedAt: 'desc' },
     }),
-    // E-08 фаза 3: сброс кулдауна поддержкой — интервалы, начатые до сброса, не действуют. Категория не меняется.
+    // E-08 фаза 3: сброс кулдауна поддержкой – интервалы, начатые до сброса, не действуют. Категория не меняется.
     cooldownResetAt(candidateId),
   ]);
   const waived = (at: Date) => resetAt !== null && at <= resetAt;
-  // Смена грейда (категория есть и целевой грейд другой) — не чаще интервала. Понижение после
+  // Смена грейда (категория есть и целевой грейд другой) – не чаще интервала. Понижение после
   // провала тоже смена: уже подтверждённая категория не снимается, но менять её часто нельзя.
   if (category && category.grade !== grade && !waived(category.confirmedAt)) {
     const next = new Date(category.confirmedAt.getTime() + iv.gradeChangeMs);
@@ -235,7 +234,7 @@ export async function checkEligibility(
 
 /**
  * Пересдача последнего грейда закрыта интервалом (то же правило, что retake_too_soon в checkEligibility):
- * для «Твоего пути», когда категории нет. null — интервала нет или он снят поддержкой. Другой грейд интервалом не закрыт.
+ * для «Твоего пути», когда категории нет. null – интервала нет или он снят поддержкой. Другой грейд интервалом не закрыт.
  */
 export async function retakeCooldown(candidateId: string, now: Date = new Date()): Promise<{ grade: Grade; nextAllowedAt: Date; demo: boolean } | null> {
   const [last, resetAt, iv] = await Promise.all([
@@ -262,7 +261,7 @@ type AttemptWithItems = TestAttempt & { items: TestItem[] };
 export interface StoredIntegrity extends IntegrityIndex {
   /** Индекс задержал выдачу категории (TEST_INTEGRITY, политика v6, high и по ответам грейд выдаётся). */
   blocking: boolean;
-  /** Грейд, который выдался бы без индекса; его проверяет подтверждающий тест. null — не задерживали. */
+  /** Грейд, который выдался бы без индекса; его проверяет подтверждающий тест. null – не задерживали. */
   confirmGrade: Grade | null;
   /** Подтверждающая попытка, по которой выдана категория. */
   confirmedBy: string | null;
@@ -304,7 +303,7 @@ function responsesOf(items: TestItem[], pool: Map<string, SelectableTemplate>): 
 /**
  * Решение о продолжении по отвеченным заданиям попытки (фаза выводится из ответов, в БД не хранится).
  * Попытка другой версии политики (policyVersion ≠ POLICY_VERSION) дозадавания не получает: только
- * основная фаза, как при её старте, — иначе обновление политики меняло бы длину и фазу задним числом.
+ * основная фаза, как при её старте, – иначе обновление политики меняло бы длину и фазу задним числом.
  */
 function stepOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>): Step {
   const shown: SelectableTemplate[] = [];
@@ -326,11 +325,11 @@ async function poolMap(a: Pick<TestAttempt, 'specialization' | 'subcategoryId' |
 /**
  * Шаблоны, показанные кандидату в прошлых попытках того же направления и подкатегории (adr-0002-v5): после попытки
  * он видит разбор и ключи, поэтому пересдача по возможности идёт на других семействах (selectNext, SEEN_BEFORE_WEIGHT).
- * Попытки старых версий доигрываются без ротации — как начались.
+ * Попытки старых версий доигрываются без ротации – как начались.
  */
 async function seenInPreviousAttempts(attempt: AttemptWithItems): Promise<Set<string>> {
   if (!ROTATION_VERSIONS.has(attempt.policyVersion)) return new Set();
-  // Общие семейства (v7) кандидат видит и в попытках других подкатегорий — они тоже «виденные».
+  // Общие семейства (v7) кандидат видит и в попытках других подкатегорий – они тоже «виденные».
   const common = COMMON_VERSIONS.has(attempt.policyVersion) && COMMON_IDS.size > 0;
   const samePool = { candidateId: attempt.candidateId, specialization: attempt.specialization, subcategoryId: attempt.subcategoryId, id: { not: attempt.id } };
   const rows = await prisma.testItem.findMany({
@@ -365,7 +364,7 @@ async function confirmSourceOf(a: TestAttempt, byId: Map<string, SelectableTempl
   };
 }
 
-/** Сгенерировать и записать следующее задание попытки; null — банк исчерпан. */
+/** Сгенерировать и записать следующее задание попытки; null – банк исчерпан. */
 async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: AttemptPhase = 'main', now: Date = new Date()): Promise<TestItem | null> {
   const pool = await loadAttemptPool(attempt);
   const byId = new Map(pool.map((t) => [t.id, t]));
@@ -384,7 +383,7 @@ async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: Att
   const generator = byId.get(next.id)!.generator;
   const instanceSeed = deriveSeed(attempt.seed, index);
   const inst = generator.generate(instanceSeed);
-  // Ловушка (v6): места — по seed попытки среди первых заданий, ставится на задание с числовым ответом.
+  // Ловушка (v6): места – по seed попытки среди первых заданий, ставится на задание с числовым ответом.
   let canaryShift: number | null = null;
   if (INTEGRITY_VERSIONS.has(attempt.policyVersion)) {
     const slotRng = createRng(deriveSeed(attempt.seed, 5000));
@@ -425,9 +424,9 @@ export async function startAttempt(
 ): Promise<StartResult> {
   const candidate = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { id: true } });
   if (!candidate) throw errors.notFound('Кандидат не найден');
-  // Г3 (ADR 0005): тест оценивают автоматические правила и ИИ — без согласия на ИИ-оценку не начинаем.
+  // Г3 (ADR 0005): тест оценивают автоматические правила и ИИ – без согласия на ИИ-оценку не начинаем.
   await assertAiAssessmentConsent(candidateId);
-  // Просроченные активные попытки — в abandoned (не провал, интервалы не запускают).
+  // Просроченные активные попытки – в abandoned (не провал, интервалы не запускают).
   await prisma.testAttempt.updateMany({ where: { candidateId, status: 'active', expiresAt: { lte: now } }, data: { status: 'abandoned', finishedAt: now } });
   const active = await prisma.testAttempt.findFirst({ where: { candidateId, status: 'active' } });
   if (active) {
@@ -462,7 +461,7 @@ export async function startAttempt(
 /**
  * Подтверждающий тест к попытке в статусе needs_confirmation (ADR-0002, дополнение 11.10): 6–8 заданий, сначала
  * семейства, которых не было в исходной попытке; лимит времени ×0,7; одна ловушка. Интервалы пересдачи не проверяются
- * и не запускаются. Активная подтверждающая попытка к той же исходной — продолжение (resumed). Одна на исходную попытку.
+ * и не запускаются. Активная подтверждающая попытка к той же исходной – продолжение (resumed). Одна на исходную попытку.
  */
 export async function startConfirmAttempt(candidateId: string, sourceAttemptId: string, now: Date = new Date(), opts: { seed?: number } = {}): Promise<StartResult> {
   const src = await loadAttempt(candidateId, sourceAttemptId);
@@ -479,7 +478,7 @@ export async function startConfirmAttempt(candidateId: string, sourceAttemptId: 
     throw new AppError('active_attempt', 'Сначала завершите текущую попытку.', 409, { attemptId: active.id });
   }
   const used = await prisma.testAttempt.findFirst({ where: { candidateId, kind: 'confirm', confirmsAttemptId: src.id, status: { not: 'abandoned' } } });
-  if (used) throw new AppError('confirm_used', 'Подтверждающий тест по этой попытке уже пройден. Дальше — обычная пересдача по интервалам.', 409, { attemptId: used.id });
+  if (used) throw new AppError('confirm_used', 'Подтверждающий тест по этой попытке уже пройден. Дальше – обычная пересдача по интервалам.', 409, { attemptId: used.id });
   const grade = integrity?.confirmGrade ?? src.grade;
   const attempt = await prisma.testAttempt.create({
     data: {
@@ -504,7 +503,7 @@ export async function startConfirmAttempt(candidateId: string, sourceAttemptId: 
   return { attemptId: attempt.id, resumed: false };
 }
 
-function itemView(it: TestItem, title: string, format: TaskGenerator['format'], timeLimitSec: number, withCanary = true, juryExtra: Omit<JuryLiveView, 'canaryShift'> = {}): ItemView {
+function itemView(it: TestItem, title: string, format: TaskGenerator['format'], timeLimitSec: number, withCanary = true): ItemView {
   return {
     index: it.index,
     templateId: it.templateId,
@@ -517,23 +516,7 @@ function itemView(it: TestItem, title: string, format: TaskGenerator['format'], 
     askedAt: it.askedAt.toISOString(),
     canary: withCanary && it.canaryShift !== null ? canaryText(it.canaryShift) : null,
     // Слой жюри: сдвиг ловушки (ключ не раскрывается). Без флага поля нет вовсе.
-    ...(withCanary && getEnv().JURY_INSIGHTS ? { jury: { canaryShift: it.canaryShift ?? null, ...juryExtra } } : {}),
-  };
-}
-
-/** Слой жюри на текущем задании: θ̂/SE после последнего ответа, параметры задания и шанс верного ответа. Ключ не раскрывается. */
-function juryLiveOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>, current: TestItem, phase: AttemptPhase): Omit<JuryLiveView, 'canaryShift'> {
-  const answered = a.items.filter((i) => i.correct !== null).sort((x, y) => x.index - y.index);
-  const last = answered.at(-1);
-  const theta = last?.thetaAfter ?? null;
-  const se = last?.seAfter ?? null;
-  const t = byId.get(current.templateId);
-  return {
-    theta,
-    se,
-    ...(t ? { itemB: t.b, itemA: t.a, itemGrade: t.grade, pCorrect: probCorrect(theta ?? 0, { a: t.a, b: t.b }) } : {}),
-    phase,
-    answered: answered.length,
+    ...(withCanary && getEnv().JURY_INSIGHTS ? { jury: { canaryShift: it.canaryShift ?? null } } : {}),
   };
 }
 
@@ -542,7 +525,7 @@ function explainResult(a: AttemptWithItems, d: Parameters<typeof explainDecision
   if (a.kind === 'confirm') {
     const base = `Подтверждающий тест: решено ${correct} из ${answered}. Уверенность по обеим попыткам (без отмеченных заданий), что уровень не ниже ${gradeLabel(a.grade)}: ${Math.round(d.pPass * 100)}% (нужно не меньше ${Math.round(CONFIRM_PROB * 100)}%).`;
     if (a.status === 'passed') return `${base} Грейд ${gradeLabel(a.grade)} подтверждён, категория выдана.`;
-    if (integrity?.blocking && integrityBlocks()) return `${base} Порог пройден, но и в подтверждающем тесте есть признаки, которые не дают выдать категорию автоматически. Дальше — обычная пересдача по интервалам или разбор теста на созвоне.`;
+    if (integrity?.blocking && integrityBlocks()) return `${base} Порог пройден, но и в подтверждающем тесте есть признаки, которые не дают выдать категорию автоматически. Дальше – обычная пересдача по интервалам или разбор теста на созвоне.`;
     return `${base} Грейд ${gradeLabel(a.grade)} не подтверждён. Уже подтверждённая категория не снимается.`;
   }
   if (a.status === 'needs_confirmation') {
@@ -637,7 +620,7 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
   const current = a.status === 'active' ? a.items.find((i) => i.correct === null) : undefined;
   const g = current ? byId.get(current.templateId)?.generator : undefined;
   const confirm = a.kind === 'confirm';
-  // Фаза и потолок нужны только для прогресса активной попытки; у завершённой — основные значения,
+  // Фаза и потолок нужны только для прогресса активной попытки; у завершённой – основные значения,
   // чтобы итог старой версии не показывал «дополнительное, всего до 13».
   const step = confirm
     ? { phase: 'main' as const, maxItems: CONFIRM_MAX_ITEMS }
@@ -669,7 +652,7 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     maxItems: step.maxItems,
     startedAt: a.startedAt.toISOString(),
     expiresAt: a.expiresAt.toISOString(),
-    current: current && g ? itemView(current, g.title, g.format, g.timeLimitSec, true, juryLiveOf(a, byId, current, step.phase)) : null,
+    current: current && g ? itemView(current, g.title, g.format, g.timeLimitSec) : null,
     result: result && jury ? { ...result, jury } : result,
   };
 }
@@ -712,7 +695,7 @@ function solvedCatalogIdsOf(items: readonly TestItem[], byId: PoolById): string[
   return [...new Set(items.filter((i) => i.correct).flatMap((i) => byId.get(i.templateId)?.catalogIds ?? []))];
 }
 
-/** Решённое на платформе задание — доказательство уровня «платформа» для утверждений кандидата (ADR-0001 уровни). */
+/** Решённое на платформе задание – доказательство уровня «платформа» для утверждений кандидата (ADR-0001 уровни). */
 function upgradeClaims(candidateId: string, catalogIds: string[]): Prisma.PrismaPromise<unknown>[] {
   if (catalogIds.length === 0) return [];
   return [
@@ -732,7 +715,7 @@ async function abandon(a: AttemptWithItems, now: Date): Promise<AttemptWithItems
 /**
  * Завершить попытку по ответам: решение, индекс честности, категория, уровень утверждений.
  * v6: грейд по ответам выдаётся (подтверждён или предложен грейд ниже), но индекс high и TEST_INTEGRITY → статус
- * needs_confirmation, категория не создаётся, утверждения не поднимаются; дальше — подтверждающий тест.
+ * needs_confirmation, категория не создаётся, утверждения не поднимаются; дальше – подтверждающий тест.
  */
 async function finalize(a: AttemptWithItems, now: Date): Promise<AttemptWithItems> {
   if (a.kind === 'confirm') return finalizeConfirm(a, now);
@@ -767,7 +750,7 @@ async function finalize(a: AttemptWithItems, now: Date): Promise<AttemptWithItem
 
 /**
  * Завершить подтверждающую попытку: P(θ > порог) по объединению чистых ответов исходной и ответов подтверждающей.
- * Пройдена и её собственный индекс не high → категория (source test), в integrity исходной — confirmedBy.
+ * Пройдена и её собственный индекс не high → категория (source test), в integrity исходной – confirmedBy.
  */
 async function finalizeConfirm(a: AttemptWithItems, now: Date): Promise<AttemptWithItems> {
   const byId = await poolMap(a);
@@ -824,13 +807,13 @@ export async function answerAttempt(candidateId: string, attemptId: string, rawA
   const answer = rawAnswer.slice(0, MAX_ANSWER_CHARS);
   const correct = checkAnswer(g.format, answer, current.answerKey);
   const answeredItems = [...a.items.filter((i) => i.correct !== null), { ...current, correct }];
-  // Время не блокирует ответ (решение владельца 11.10): превышение лимита — только сигнал индекса.
+  // Время не блокирует ответ (решение владельца 11.10): превышение лимита – только сигнал индекса.
   const source = a.kind === 'confirm' ? await confirmSourceOf(a, byId) : null;
   const own = responsesOf(answeredItems, byId);
   const combined = source ? [...source.clean, ...own] : own;
   const est = estimateTheta(combined);
   // Два параллельных ответа на одно задание: записывается первый, второй получает 409 и следующее задание не
-  // создаёт (иначе оба дошли бы до pushNextItem с одним index — нарушение уникальности [attemptId, index], 500).
+  // создаёт (иначе оба дошли бы до pushNextItem с одним index – нарушение уникальности [attemptId, index], 500).
   const written = await prisma.testItem.updateMany({ where: { id: current.id, correct: null }, data: { answer, correct, thetaAfter: est.theta, seAfter: est.se, answeredAt: now } });
   if (written.count === 0) throw errors.conflict('Ответ на это задание уже принят.');
   const updated = await loadAttempt(candidateId, attemptId);
@@ -848,7 +831,7 @@ export async function answerAttempt(candidateId: string, attemptId: string, rawA
   return view(await loadAttempt(candidateId, attemptId));
 }
 
-/** Досрочное завершение: решение по уже данным ответам; без ответов — abandoned. */
+/** Досрочное завершение: решение по уже данным ответам; без ответов – abandoned. */
 export async function finishAttempt(candidateId: string, attemptId: string, now: Date = new Date()): Promise<AttemptView> {
   const a = await loadAttempt(candidateId, attemptId);
   assertActive(a, now);
@@ -857,7 +840,7 @@ export async function finishAttempt(candidateId: string, attemptId: string, now:
 }
 
 /**
- * R-C-08: заявленный грейд не подтверждён, грейд ниже (Middle → Junior, Senior → Middle) — по согласию кандидата, в один клик.
+ * R-C-08: заявленный грейд не подтверждён, грейд ниже (Middle → Junior, Senior → Middle) – по согласию кандидата, в один клик.
  * Индекс честности учтён при финализации: при high попытка уже в needs_confirmation, и грейд ниже выдаёт только
  * подтверждающий тест (integrity.confirmGrade).
  */

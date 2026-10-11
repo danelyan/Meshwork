@@ -6,7 +6,7 @@ describe('acquireConversationLock (advisory xact lock)', () => {
   beforeEach(() => resetDb());
   afterAll(() => prisma.$disconnect());
 
-  it('второй захват того же разговора → null; после release — снова можно', async () => {
+  it('второй захват того же разговора → null; после release – снова можно', async () => {
     const a = await acquireConversationLock('conv-1');
     expect(a).not.toBeNull();
     expect(await acquireConversationLock('conv-1')).toBeNull();

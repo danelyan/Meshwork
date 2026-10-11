@@ -5,7 +5,7 @@ import type { SceneAsideData } from '@/server/consultant/aside';
 import { useAsideData } from './aside-refresh';
 import styles from './SceneStats.module.css';
 
-/** Сводка кандидата на сцене рядом с головой; данные — те же, что у правой колонки, и обновляются вместе с ней. */
+/** Сводка кандидата на сцене рядом с головой; данные – те же, что у правой колонки, и обновляются вместе с ней. */
 export function SceneStats({ initial, className }: { initial?: SceneAsideData; className?: string }) {
   const stats = (useAsideData() ?? initial)?.stats;
   if (!stats?.length) return null;

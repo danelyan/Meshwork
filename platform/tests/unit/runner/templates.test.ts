@@ -14,7 +14,7 @@ describe('runner: поиск шаблона', () => {
     expect(await bundleDir(root, nested!, 'visible')).toBe(path.join(root, 'backend.web-api/junior/be-webapi-junior-booking/visible'));
   });
 
-  it('неизвестный и небезопасный id — null', async () => {
+  it('неизвестный и небезопасный id – null', async () => {
     expect(await loadTemplate(root, 'no-such-template')).toBeNull();
     expect(await resolveTemplateDir(root, '../etc')).toBeNull();
   });

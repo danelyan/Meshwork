@@ -8,8 +8,8 @@ import { requireEmployer } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** PATCH /api/employer/applications/:id `{ action: accept | decline }` — ответ на отклик (R-C-12). Чужой — 404, повторный ответ — 409.
- * accept создаёт приглашение accepted (`invitationId` в ответе) — дальше слоты живой защиты и найм как у приглашения. */
+/** PATCH /api/employer/applications/:id `{ action: accept | decline }` – ответ на отклик (R-C-12). Чужой – 404, повторный ответ – 409.
+ * accept создаёт приглашение accepted (`invitationId` в ответе) – дальше слоты живой защиты и найм как у приглашения. */
 export const PATCH = withErrors(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   assertSameOrigin(req);
   const { employerProfileId, userId } = requireEmployer(req);

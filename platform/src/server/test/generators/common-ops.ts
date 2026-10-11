@@ -1,4 +1,4 @@
-// Общие семейства: Git, Linux/shell, тестирование, конкурентность (ADR 0003, дополнение 11.10). a, b — ПРЕДЛОЖЕНИЕ (экспертные).
+// Общие семейства: Git, Linux/shell, тестирование, конкурентность (ADR 0003, дополнение 11.10). a, b – ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 
@@ -90,7 +90,7 @@ export const gitLogRange: TaskGenerator = commonFamily({
     const base = rng.int(2, 4);
     const mainAfter = rng.int(0, 4);
     const feat = rng.int(1, 5);
-    // git merge main без новых коммитов в main — «Already up to date», merge-коммита нет: сливаем только при mainAfter > 0.
+    // git merge main без новых коммитов в main – «Already up to date», merge-коммита нет: сливаем только при mainAfter > 0.
     const merged = mainAfter > 0 && rng.int(0, 2) === 0;
     const kind = rng.int(0, 2);
     const mainCommits = Array.from({ length: base + mainAfter }, (_, i) => `M${i + 1}`);
@@ -110,11 +110,11 @@ export const gitLogRange: TaskGenerator = commonFamily({
     ];
     const r = ranges[kind]!;
     return {
-      prompt: 'История репозитория описана ниже (слева направо — от старых к новым). Сколько строк выведет команда?',
+      prompt: 'История репозитория описана ниже (слева направо – от старых к новым). Сколько строк выведет команда?',
       code: [...lines, '', r.cmd].join('\n'),
       answerHint: 'число коммитов',
       answerKey: String(r.key),
-      explanation: 'A..B — коммиты, достижимые из B и недостижимые из A; A...B — симметричная разность. После git merge main все коммиты main достижимы из feature, а merge-коммит есть только в feature.',
+      explanation: 'A..B – коммиты, достижимые из B и недостижимые из A; A...B – симметричная разность. После git merge main все коммиты main достижимы из feature, а merge-коммит есть только в feature.',
       params: { base, mainAfter, feat, merged, kind },
     };
   },
@@ -152,13 +152,13 @@ export const gitResetModes: TaskGenerator = commonFamily({
     const key = ask === 'staged' ? staged.size : unstaged.size;
     return {
       prompt: [
-        `Последние ${k} коммит(а) ветки меняли файлы, как указано ниже (каждый файл в каждом коммите менялся по-новому, ничего не откатывалось). Перед командой в индексе были изменения ${preStaged.join(', ') || '(нет)'}, а в рабочей копии вне индекса — ${preUnstaged.join(', ') || '(нет)'}.`,
+        `Последние ${k} коммит(а) ветки меняли файлы, как указано ниже (каждый файл в каждом коммите менялся по-новому, ничего не откатывалось). Перед командой в индексе были изменения ${preStaged.join(', ') || '(нет)'}, а в рабочей копии вне индекса – ${preUnstaged.join(', ') || '(нет)'}.`,
         `Выполнено: git reset --${mode} HEAD~${k}. Сколько файлов git status покажет в разделе «${ask === 'staged' ? 'Changes to be committed' : 'Changes not staged for commit'}»?`,
       ].join('\n'),
       code: commits.map((c) => `${c.name}: ${c.files.join(', ')}`).join('\n'),
       answerHint: 'число файлов',
       answerKey: String(key),
-      explanation: '--soft двигает только HEAD: изменения отменённых коммитов и прежний индекс остаются в индексе. --mixed сбрасывает и индекс: всё становится неиндексированными изменениями. --hard сбрасывает индекс и рабочую копию — изменений не остаётся.',
+      explanation: '--soft двигает только HEAD: изменения отменённых коммитов и прежний индекс остаются в индексе. --mixed сбрасывает и индекс: всё становится неиндексированными изменениями. --hard сбрасывает индекс и рабочую копию – изменений не остаётся.',
       params: { k, mode, ask },
     };
   },
@@ -213,7 +213,7 @@ export const chmodOctal: TaskGenerator = commonFamily({
       code,
       answerHint: 'например, 750',
       answerKey: result.join(''),
-      explanation: `r = 4, w = 2, x = 1; цифры — владелец, группа, остальные: ${result.map(RWX).join('')} = ${result.join('')}.`,
+      explanation: `r = 4, w = 2, x = 1; цифры – владелец, группа, остальные: ${result.map(RWX).join('')} = ${result.join('')}.`,
       params: { digits, kind },
     };
   },
@@ -313,7 +313,7 @@ export const shellExitStatus: TaskGenerator = commonFamily({
       answerHint: 'число',
       answerKey: String(key),
       explanation:
-        'В bash && и || одного приоритета и группируются слева: x || y && z = (x || y) && z; $? — код последней выполненной команды. Код конвейера — код последней команды, а с pipefail — последней ненулевой; ! инвертирует код конвейера.',
+        'В bash && и || одного приоритета и группируются слева: x || y && z = (x || y) && z; $? – код последней выполненной команды. Код конвейера – код последней команды, а с pipefail – последней ненулевой; ! инвертирует код конвейера.',
       params: { codes, kind, pipefail },
     };
   },
@@ -401,7 +401,7 @@ export const branchCoverage: TaskGenerator = commonFamily({
       `# тесты: ${inputs.map((x) => `fee(${x})`).join(', ')}`,
     ].join('\n');
     return {
-      prompt: 'В функции три if, у каждого две ветви (истина и ложь) — всего 6. Сколько ветвей НЕ покрыто тестами?',
+      prompt: 'В функции три if, у каждого две ветви (истина и ложь) – всего 6. Сколько ветвей НЕ покрыто тестами?',
       code,
       answerHint: 'число ветвей',
       answerKey: String(6 - covered.size),
@@ -480,7 +480,7 @@ export const lostUpdate: TaskGenerator = commonFamily({
     const dB = rng.int(10, 30);
     const nA = rng.int(1, 2);
     const nB = rng.int(1, 2);
-    // Каждое обновление — два шага: чтение в локальную r, запись x = r + d.
+    // Каждое обновление – два шага: чтение в локальную r, запись x = r + d.
     const steps: { th: 'A' | 'B'; op: 'read' | 'write' }[] = [];
     const left = { A: nA * 2, B: nB * 2 };
     const phase = { A: 0, B: 0 };
@@ -498,7 +498,7 @@ export const lostUpdate: TaskGenerator = commonFamily({
     }
     return {
       prompt: [
-        `Общая переменная x = ${x0}. Поток A ${nA} раз(а) прибавляет ${dA}, поток B ${nB} раз(а) прибавляет ${dB}; каждое прибавление — два шага без блокировки: r = x, затем x = r + d (r — локальная у потока).`,
+        `Общая переменная x = ${x0}. Поток A ${nA} раз(а) прибавляет ${dA}, поток B ${nB} раз(а) прибавляет ${dB}; каждое прибавление – два шага без блокировки: r = x, затем x = r + d (r – локальная у потока).`,
         'Планировщик выполнил шаги в порядке ниже. Чему равно x в конце?',
       ].join('\n'),
       code: steps.map((s, i) => `${i + 1}. ${s.th}: ${s.op === 'read' ? 'r = x' : `x = r + ${s.th === 'A' ? dA : dB}`}`).join('\n'),
@@ -528,7 +528,7 @@ export const deadlockSchedule: TaskGenerator = commonFamily({
     const nThreads = rng.int(2, 3);
     const threads = Array.from({ length: nThreads }, (_, i) => ({ name: `T${i + 1}`, order: rng.sample(locks, 2) }));
     const schedule = Array.from({ length: rng.int(4, 6) }, () => rng.int(0, nThreads - 1));
-    // Шаг потока: взять первый замок → взять второй → отпустить оба и завершиться. Занятый замок — поток ждёт (шаг не выполнен).
+    // Шаг потока: взять первый замок → взять второй → отпустить оба и завершиться. Занятый замок – поток ждёт (шаг не выполнен).
     const owner = new Map<string, number>();
     const pc = threads.map(() => 0);
     const step = (t: number): boolean => {
@@ -561,7 +561,7 @@ export const deadlockSchedule: TaskGenerator = commonFamily({
       code: [...threads.map((t) => `${t.name}: lock(${t.order[0]}); lock(${t.order[1]}); unlock all`), '', `шаги: ${schedule.map((t) => threads[t]!.name).join(', ')}`].join('\n'),
       answerHint: 'число потоков (0, если все завершатся)',
       answerKey: String(stuck),
-      explanation: 'Взаимная блокировка — цикл ожидания: каждый поток держит замок, который нужен следующему. Единый порядок взятия замков для всех потоков исключает такой цикл.',
+      explanation: 'Взаимная блокировка – цикл ожидания: каждый поток держит замок, который нужен следующему. Единый порядок взятия замков для всех потоков исключает такой цикл.',
       params: { threads: threads.map((t) => t.order.join('>')), schedule },
     };
   },

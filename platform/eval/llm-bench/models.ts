@@ -10,7 +10,7 @@ export interface ModelDef {
   /** env, без которых модель пропускается */
   requiredEnv: string[];
   make(planB: boolean): LlmProvider;
-  /** $ за 1M токенов вход/выход (research/12 § 2), null — не известно */
+  /** $ за 1M токенов вход/выход (research/12 § 2), null – не известно */
   price: { in: number; out: number } | null;
 }
 export const env = (k: string) => process.env[k]?.trim() || '';
@@ -92,7 +92,7 @@ export function makeModels(TIMEOUT_MS: number): Record<string, ModelDef> {
       },
     },
     // Selectel Dedicated Inference (vLLM, OpenAI-совместимый, Bearer; ключ на сервис). Оплата за GPU-час,
-    // не за токены — стоимость в таблице 0, считать по времени работы сервиса (research/31).
+    // не за токены – стоимость в таблице 0, считать по времени работы сервиса (research/31).
     ...selectelModel('qwen', 'SELECTEL_QWEN', 'qwen3-8-flash-next (Selectel)', TIMEOUT_MS),
     ...selectelModel('qwen2', 'SELECTEL_QWEN2', 'qwen3-8-27b (Selectel)', TIMEOUT_MS),
     ...selectelModel('qwen-big', 'SELECTEL_QWENBIG', 'qwen3-vl-235b-a22b (Selectel)', TIMEOUT_MS),

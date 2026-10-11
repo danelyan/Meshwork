@@ -19,7 +19,7 @@ async function ensureCandidate(candidateId: string) {
   return c;
 }
 
-/** ClaimCatalog пуст (сид не прогнан) — загрузить из файла: иначе FK на catalogId роняет запись. */
+/** ClaimCatalog пуст (сид не прогнан) – загрузить из файла: иначе FK на catalogId роняет запись. */
 async function ensureCatalog(): Promise<Set<string>> {
   let rows = await prisma.claimCatalog.findMany({ select: { id: true } });
   if (rows.length === 0) {
@@ -32,11 +32,11 @@ async function ensureCatalog(): Promise<Set<string>> {
 /**
  * Черновики карточек (status proposed) из проверенных утверждений.
  *  - catalogId, который кандидат раньше отклонил, не предлагается снова;
- *  - уже есть активное утверждение с уровнем не ниже — пропуск;
- *  - новое доказательство выше уровнем: есть черновик — он обновляется, иначе создаётся новый
+ *  - уже есть активное утверждение с уровнем не ниже – пропуск;
+ *  - новое доказательство выше уровнем: есть черновик – он обновляется, иначе создаётся новый
  *    черновик (подтверждённое не меняется без клика кандидата);
  *  - уровень `platform` сюда не принимается (его дают только тест и защита), а уровень выше
- *    максимума для типа источника — ошибка вызывающего.
+ *    максимума для типа источника – ошибка вызывающего.
  * Возвращает созданные и обновлённые черновики.
  */
 export async function proposeClaims(
@@ -100,7 +100,7 @@ async function ownClaim(candidateId: string, claimId: string): Promise<Claim> {
 
 /**
  * Переход атомарно: updateMany с условием на владельца и исходный статус, затем чтение.
- * Отклонённое не оживает (409); повторный confirm/reject — идемпотентен.
+ * Отклонённое не оживает (409); повторный confirm/reject – идемпотентен.
  */
 export async function confirmClaim(candidateId: string, claimId: string): Promise<Claim> {
   assertClaimId(claimId);
@@ -151,8 +151,8 @@ export async function confirmClaimsBatch(candidateId: string, ids: string[]): Pr
 }
 
 /**
- * Меняется только формулировка (и статус → edited); уровень, цитата и источник — нет. Правка = подтверждение.
- * Кандидат правит то, что видит (`wording`); `statement` получает тот же текст, как и до появления wording —
+ * Меняется только формулировка (и статус → edited); уровень, цитата и источник – нет. Правка = подтверждение.
+ * Кандидат правит то, что видит (`wording`); `statement` получает тот же текст, как и до появления wording –
  * ранжирование, созвон и работодатель видят правку так же, как раньше.
  */
 export async function editClaim(candidateId: string, claimId: string, statement: string): Promise<Claim> {
@@ -204,7 +204,7 @@ const byLevelThenNewest = (a: Claim, b: Claim) =>
 
 /**
  * Профиль для самого кандидата: подтверждённые и черновики (status показывает, что ждёт клика).
- * По catalogId — лучшее подтверждённое (выше уровень, новее) и черновик, только если он выше уровнем.
+ * По catalogId – лучшее подтверждённое (выше уровень, новее) и черновик, только если он выше уровнем.
  */
 export async function getProfile(candidateId: string): Promise<ProfileView> {
   const cand = await ensureCandidate(candidateId);
@@ -237,7 +237,7 @@ export async function getProfile(candidateId: string): Promise<ProfileView> {
 }
 
 /**
- * Только подтверждённые кандидатом (confirmed | edited) — то, что можно показывать работодателю
+ * Только подтверждённые кандидатом (confirmed | edited) – то, что можно показывать работодателю
  * и считать в покрытии. Черновики сюда не попадают никогда («ни одного в профиле без клика»).
  */
 export async function getConfirmedClaims(candidateId: string): Promise<ProfileClaim[]> {

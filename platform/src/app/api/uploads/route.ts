@@ -16,12 +16,12 @@ import { saveOriginal } from '@/server/uploads/storage';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-/** Запас на границы и заголовки multipart (Next.js docs: serverActions.bodySizeLimit — 10–20 КБ). */
+/** Запас на границы и заголовки multipart (Next.js docs: serverActions.bodySizeLimit – 10–20 КБ). */
 const MULTIPART_OVERHEAD = 64 * 1024;
 const MAX_BODY = LIMITS.fileMaxBytes + MULTIPART_OVERHEAD;
 
 /**
- * У Route Handler нет своего лимита тела, а `request.formData()` буферизует всё —
+ * У Route Handler нет своего лимита тела, а `request.formData()` буферизует всё –
  * читаем поток сами и обрываем на лимите, затем разбираем multipart из буфера.
  */
 async function readFormData(req: Request): Promise<FormData> {
@@ -53,15 +53,15 @@ async function readFormData(req: Request): Promise<FormData> {
 }
 
 /**
- * Антиспам: не больше `uploads.dailyLimit` новых файлов за 24 ч (0 — без лимита; демо-кандидаты общие для жюри — без лимита).
- * Каждая новая картинка/скан — платный вызов OCR; повтор того же файла (sha256) сюда не доходит.
+ * Антиспам: не больше `uploads.dailyLimit` новых файлов за 24 ч (0 – без лимита; демо-кандидаты общие для жюри – без лимита).
+ * Каждая новая картинка/скан – платный вызов OCR; повтор того же файла (sha256) сюда не доходит.
  */
 async function assertUploadQuota(candidateId: string, isDemo: boolean): Promise<void> {
   const limit = await getSetting('uploads.dailyLimit');
   if (limit <= 0 || isDemo) return;
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const recent = await prisma.upload.count({ where: { candidateId, createdAt: { gte: dayAgo } } });
-  if (recent >= limit) throw errors.rateLimited(`Не больше ${limit} новых файлов в сутки — попробуй завтра или вставь текст в чат`);
+  if (recent >= limit) throw errors.rateLimited(`Не больше ${limit} новых файлов в сутки – попробуй завтра или вставь текст в чат`);
 }
 
 function brief(doc: ExtractedDoc) {
@@ -76,10 +76,10 @@ function brief(doc: ExtractedDoc) {
 }
 
 /**
- * Загрузка резюме/документа: PDF, DOCX, MD, TXT, CSV, JPG или PNG ≤ 5 МБ (PDF ≤ 20 стр.; картинки и сканы — через OCR). Хранится извлечённый текст
- * с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>; скачать и удалить —
+ * Загрузка резюме/документа: PDF, DOCX, MD, TXT, CSV, JPG или PNG ≤ 5 МБ (PDF ≤ 20 стр.; картинки и сканы – через OCR). Хранится извлечённый текст
+ * с координатами и оригинал файла (<UPLOAD_DIR>/<candidateId>/<sha256>; скачать и удалить –
  * GET /api/uploads/:id/file, DELETE /api/uploads/:id). Оригинал пишется только после
- * успешного разбора. Повтор того же файла (sha256) у того же кандидата — прежняя запись, без копии.
+ * успешного разбора. Повтор того же файла (sha256) у того же кандидата – прежняя запись, без копии.
  */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
@@ -103,7 +103,7 @@ export const POST = withErrors(async (req: Request) => {
     select: { id: true, extracted: true, storageKey: true },
   });
   if (prev?.extracted) {
-    // Запись из времени до хранения оригиналов — дописать файл к ней.
+    // Запись из времени до хранения оригиналов – дописать файл к ней.
     if (!prev.storageKey) {
       const storageKey = await saveOriginal(candidateId, sha256, buf);
       await prisma.upload.update({ where: { id: prev.id }, data: { storageKey } });
@@ -128,7 +128,7 @@ export const POST = withErrors(async (req: Request) => {
     update: data,
     select: { id: true },
   });
-  // R-C-01/02: ФИО, контакт, стаж, роли, софт-скиллы — в пустые поля профиля, иначе предложение. Сбой разбора не валит загрузку.
+  // R-C-01/02: ФИО, контакт, стаж, роли, софт-скиллы – в пустые поля профиля, иначе предложение. Сбой разбора не валит загрузку.
   let profileFields: ApplySummary | null = null;
   if (sourceKind === 'resume') {
     profileFields = await applyFromUpload(candidateId, row.id, doc).catch((err: unknown) => {

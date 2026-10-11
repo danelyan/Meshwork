@@ -6,10 +6,10 @@ import { requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/objections — мои возражения против оценки (ст. 16 152-ФЗ) со сроком ответа. Работодателю недоступно. */
+/** GET /api/objections – мои возражения против оценки (ст. 16 152-ФЗ) со сроком ответа. Работодателю недоступно. */
 export const GET = withErrors(async (req: Request) => Response.json({ objections: await listObjections(requireCandidate(req)) }));
 
-/** POST /api/objections `{ subject: grade_test|call|defense, subjectId, text }` — оспорить оценку; ответ в течение 30 дней. */
+/** POST /api/objections `{ subject: grade_test|call|defense, subjectId, text }` – оспорить оценку; ответ в течение 30 дней. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

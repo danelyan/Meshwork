@@ -21,7 +21,7 @@ describe('session: подпись куки cid', () => {
     expect(verifySession(`${id}.${Number(exp) + 999999}.${sig}`, SECRET, NOW)).toBeNull();
   });
 
-  it('чужой секрет, мусор, пустое — null', () => {
+  it('чужой секрет, мусор, пустое – null', () => {
     const token = signSession('cand_123', SECRET, NOW);
     expect(verifySession(token, 'y'.repeat(40), NOW)).toBeNull();
     expect(verifySession('cand_123', SECRET, NOW)).toBeNull();
@@ -30,7 +30,7 @@ describe('session: подпись куки cid', () => {
     expect(verifySession(undefined, SECRET, NOW)).toBeNull();
   });
 
-  it('истёкший токен — null', () => {
+  it('истёкший токен – null', () => {
     const token = signSession('cand_123', SECRET, NOW, 60);
     expect(verifySession(token, SECRET, NOW + 59)).toBe('cand_123');
     expect(verifySession(token, SECRET, NOW + 60)).toBeNull();

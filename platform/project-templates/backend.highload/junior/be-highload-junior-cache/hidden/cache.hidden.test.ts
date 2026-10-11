@@ -14,7 +14,7 @@ const make = (o: Partial<{ maxEntries: number; ttlMs: number }> = {}, c = clock(
 });
 
 describe('параметры и значения', () => {
-  it('неверные параметры — RangeError', () => {
+  it('неверные параметры – RangeError', () => {
     const now = () => 0;
     expect(() => createCache({ maxEntries: 0, ttlMs: 1, now })).toThrow(RangeError);
     expect(() => createCache({ maxEntries: 1.5, ttlMs: 1, now })).toThrow(RangeError);
@@ -25,7 +25,7 @@ describe('параметры и значения', () => {
     expect(() => cache.set('a', 1, -1)).toThrow(RangeError);
   });
 
-  it('значения 0, пустая строка, false, null — попадания; undefined запрещён', () => {
+  it('значения 0, пустая строка, false, null – попадания; undefined запрещён', () => {
     const { cache } = make({ maxEntries: 10 });
     for (const [k, v] of [['z', 0], ['s', ''], ['f', false], ['n', null]] as const) {
       cache.set(k, v);
@@ -167,7 +167,7 @@ describe('загрузчик', () => {
     return { c, calls, cache, loader, failNext: (v: boolean) => (fail = v) };
   };
 
-  it('промах грузит и кладёт в кеш, повтор — попадание без вызова источника', async () => {
+  it('промах грузит и кладёт в кеш, повтор – попадание без вызова источника', async () => {
     const { loader, calls, cache } = setup();
     expect(await loader.get('a')).toBe('v1:a');
     expect(await loader.get('a')).toBe('v1:a');
@@ -193,7 +193,7 @@ describe('загрузчик', () => {
     expect(calls).toEqual(['a', 'a']);
   });
 
-  it('синхронное исключение источника — тоже отказ get', async () => {
+  it('синхронное исключение источника – тоже отказ get', async () => {
     const cache = createCache<string>({ maxEntries: 5, ttlMs: 1000, now: () => 0 });
     const loader = createCachedLoader({
       cache,

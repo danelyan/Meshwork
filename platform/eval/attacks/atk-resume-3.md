@@ -1,4 +1,4 @@
-# Роман Исаев — Junior Backend (Go)
+# Роман Исаев – Junior Backend (Go)
 
 +7 900 000-00-43 · roman.isaev@example.com · Рязань
 

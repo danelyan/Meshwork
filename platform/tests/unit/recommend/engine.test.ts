@@ -40,7 +40,7 @@ describe('смежность', () => {
     expect(creditFor('be.no-such', noAdj, catalog)).toEqual({ direct: null, adjacentVia: null, credit: 0 });
   });
 
-  it('смежное даёт половину веса уровня и называет источник; прямое сильнее — берётся оно', () => {
+  it('смежное даёт половину веса уровня и называет источник; прямое сильнее – берётся оно', () => {
     const idx = buildIndex([{ catalogId: 'be.message-queue', level: 'platform' }]);
     expect(creditFor('be.idempotency', idx, catalog)).toEqual({ direct: null, adjacentVia: 'be.message-queue', credit: 0.5 });
     const both = buildIndex([
@@ -55,7 +55,7 @@ describe('смежность', () => {
     expect(creditFor('be.idempotency', strongDirect, catalog).credit).toBe(0.75);
   });
 
-  it('несколько утверждений одного ID — берётся лучший уровень', () => {
+  it('несколько утверждений одного ID – берётся лучший уровень', () => {
     const idx = buildIndex([
       { catalogId: 'a', level: 'self_reported' },
       { catalogId: 'a', level: 'third_party' },
@@ -76,7 +76,7 @@ describe('смежность', () => {
 describe('gap-map', () => {
   const n = needs(['be.idempotency', 3], ['be.transactions', 3], ['be.cache', 1], ['be.authz', 2]);
 
-  it('platform — не пробел; порядок по приоритету, ничья по ID; детерминированно', () => {
+  it('platform – не пробел; порядок по приоритету, ничья по ID; детерминированно', () => {
     const idx = buildIndex([
       { catalogId: 'be.transactions', level: 'platform' },
       { catalogId: 'be.cache', level: 'self_reported' },
@@ -91,7 +91,7 @@ describe('gap-map', () => {
     expect(a[0]!.suggestedProof).toEqual(catalog.get('be.idempotency')!.proof);
   });
 
-  it('смежность — половинный зачёт снижает приоритет, но пробел остаётся', () => {
+  it('смежность – половинный зачёт снижает приоритет, но пробел остаётся', () => {
     const idx = buildIndex([{ catalogId: 'be.message-queue', level: 'platform' }]);
     const [g] = computeGaps(needs(['be.idempotency', 2]), catalog, idx, 'junior');
     expect(g!.currentLevel).toBeNull();
@@ -184,7 +184,7 @@ describe('tasks', () => {
     expect(rankTasks(tasks, ['a'], 'junior', stm, 0)).toEqual([]);
   });
 
-  it('при равенстве — ближе к «доказанный грейд + 1», затем по id; одинаковый вход → одинаковый выход', () => {
+  it('при равенстве – ближе к «доказанный грейд + 1», затем по id; одинаковый вход → одинаковый выход', () => {
     const tasks = [T('tb', 'junior', ['a']), T('ta', 'middle', ['a']), T('tc', 'middle', ['a'])];
     const out = rankTasks(tasks, ['a'], 'junior', stm, 5);
     expect(out.map((t) => t.taskId)).toEqual(['ta', 'tc', 'tb']);
@@ -219,7 +219,7 @@ describe('правило теста', () => {
     }
     const be = middleSignature(real, 'backend').map((e) => e.id);
     expect(be).toContain('be.idempotency');
-    expect(be).not.toContain('be.lang-core'); // J = M = 3 — не отличает Middle
+    expect(be).not.toContain('be.lang-core'); // J = M = 3 – не отличает Middle
     expect(be).not.toContain('common.git'); // M < J
   });
 

@@ -54,7 +54,7 @@ describe('create note', () => {
 });
 
 describe('get note', () => {
-  it('200 — тот же объект, что вернул POST', async () => {
+  it('200 – тот же объект, что вернул POST', async () => {
     const app = createApp();
     const created = await request(app).post('/notes').send({ title: 't', body: 'b' });
     const res = await request(app).get(`/notes/${created.body.id}`);

@@ -3,7 +3,7 @@
 //   npx tsx eval/matching/run.ts --no-write
 // Ранжирует 16 профилей (8 демо-пула + 8 «трудных») под 8 демо-вакансий тем же
 // кодом, что и кабинет (src/server/employer/ranking.ts), и сравнивает с разметкой
-// labels.json (разметка агента, 3 уровня). Базовая линия — «больше подтверждённых
+// labels.json (разметка агента, 3 уровня). Базовая линия – «больше подтверждённых
 // утверждений своей специализации выше», без учёта требований вакансии.
 // Замер идёт в режиме расширенного пула (EVAL_FILTERS: expandPool), как и до 11.10, когда кабинет показывал
 // кандидатов без категории всегда: часть профилей набора без категории, и без флага они выпали бы из выдачи,
@@ -196,7 +196,7 @@ const plainText = (p: DemoProfile) => [
   ...p.claims.map(([id]) => catalog.get(id)?.statement ?? id),
 ].filter(Boolean).join('. ');
 
-// (1) малый набор — те же 17 профилей × 8 вакансий, плюс BM25 и случайный порядок и полный набор метрик
+// (1) малый набор – те же 17 профилей × 8 вакансий, плюс BM25 и случайный порядок и полный набор метрик
 const legacyVacancies: EvalVacancy[] = DEMO_VACANCIES.map((v) => ({
   id: v.id, specialization: v.specialization, grade: v.grade, needs: v.needs.map(([a, b]) => [a, b] as [string, number]), stack: [],
   text: [v.title, ...v.needs.map(([id]) => catalog.get(id)?.statement ?? id)].join('. '),
@@ -234,7 +234,7 @@ if (!process.argv.includes('--no-write')) {
   const share = (f: (p: SynProfile) => boolean) => synStages.profiles.filter(f).length / synStages.profiles.length;
   const next = {
     ...prev, summary, rows, legacyExtended: legacy,
-    extended: { ...extended, archetypes: Object.fromEntries(Object.entries(archSizes).map(([k, n]) => [k, { profiles: n, label: ARCHETYPE_LABEL[k as keyof typeof ARCHETYPE_LABEL] }])), note: 'Разметка 0/1/2 — из скрытых латентных навыков и грейда генератора (eval/matching/synthetic.ts, truthRelevance), не из формулы подбора. Интервалы — бутстреп по вакансиям, 1000 повторов, 95 %.' },
+    extended: { ...extended, archetypes: Object.fromEntries(Object.entries(archSizes).map(([k, n]) => [k, { profiles: n, label: ARCHETYPE_LABEL[k as keyof typeof ARCHETYPE_LABEL] }])), note: 'Разметка 0/1/2 – из скрытых латентных навыков и грейда генератора (eval/matching/synthetic.ts, truthRelevance), не из формулы подбора. Интервалы – бутстреп по вакансиям, 1000 повторов, 95 %.' },
     extendedStages: {
       ...extendedStages,
       note: 'Тот же набор и та же разметка, но профили несут проверенные проекты (ступень 2) и темы созвона (ступень 1) по ADR 0003; генератор: withStages (допущения агента, шум ~10 %).',

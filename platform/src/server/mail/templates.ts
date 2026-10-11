@@ -5,11 +5,11 @@ import type { MailMessage } from './index';
 import { type MailView, renderMailHtml } from './layout';
 
 /**
- * Письма платформы: текст и HTML-вариант одного содержания. Текст — для клиентов без HTML и для журнала;
+ * Письма платформы: текст и HTML-вариант одного содержания. Текст – для клиентов без HTML и для журнала;
  * HTML собирает `renderMailHtml`: поля передаются туда обычным текстом и экранируются в оболочке,
  * поэтому пользовательский текст (компания, вакансия) разметкой не становится.
  */
-const sign = () => `\n\n—\nMESHWORK · ${getEnv().APP_URL}\nЕсли вы не запрашивали это письмо, просто проигнорируйте его.`;
+const sign = () => `\n\n–\nMESHWORK · ${getEnv().APP_URL}\nЕсли вы не запрашивали это письмо, просто проигнорируйте его.`;
 
 const html = (view: Omit<MailView, 'siteUrl'>) => renderMailHtml({ ...view, siteUrl: getEnv().APP_URL });
 
@@ -38,7 +38,7 @@ export function resetCodeMail(to: string, code: string): MailMessage {
     kind: 'reset',
     to,
     subject,
-    text: `Код для смены пароля на MESHWORK: ${code}\n\nКод действует 15 минут. Если вы не просили сменить пароль, ничего не делайте — пароль останется прежним.${sign()}`,
+    text: `Код для смены пароля на MESHWORK: ${code}\n\nКод действует 15 минут. Если вы не просили сменить пароль, ничего не делайте – пароль останется прежним.${sign()}`,
     html: html({
       subject,
       preheader: `Код ${code} действует 15 минут.`,
@@ -59,7 +59,7 @@ export function alreadyRegisteredMail(to: string): MailMessage {
     kind: 'already_registered',
     to,
     subject,
-    text: `Кто-то пытался зарегистрироваться на MESHWORK с этой почтой, но аккаунт уже есть.\n\nВойдите: ${loginUrl}\nЗабыли пароль — на странице входа выберите «Забыли пароль».${sign()}`,
+    text: `Кто-то пытался зарегистрироваться на MESHWORK с этой почтой, но аккаунт уже есть.\n\nВойдите: ${loginUrl}\nЗабыли пароль – на странице входа выберите «Забыли пароль».${sign()}`,
     html: html({
       subject,
       preheader: 'Кто-то пытался зарегистрироваться с вашей почтой. Войдите или восстановите пароль.',
@@ -90,7 +90,7 @@ export function invitationMail(to: string, p: { companyName: string; vacancyTitl
       preheader: `Зарплата: ${range} в месяц. Ответьте в кабинете.`,
       kicker: 'Приглашение',
       title: `Вас приглашает «${p.companyName}»`,
-      // Компания и позиция — в заголовке и в таблице; абзац говорит, что делать, а не повторяет их.
+      // Компания и позиция – в заголовке и в таблице; абзац говорит, что делать, а не повторяет их.
       lead: [`На MESHWORK вам пришло приглашение${p.vacancyTitle ? '' : ' к разговору о работе'}. Посмотрите условия и ответьте в кабинете.`],
       facts: [
         { label: 'Компания', value: p.companyName },
@@ -104,7 +104,7 @@ export function invitationMail(to: string, p: { companyName: string; vacancyTitl
   };
 }
 
-/** lane invite-cancel: компания отозвала приглашение — кандидату, с причиной. */
+/** lane invite-cancel: компания отозвала приглашение – кандидату, с причиной. */
 export function invitationWithdrawnMail(to: string, p: { companyName: string; vacancyTitle: string | null; reason: string }): MailMessage {
   const what = p.vacancyTitle ? ` на позицию «${p.vacancyTitle}»` : '';
   const subject = `«${p.companyName}» отозвала приглашение`;
@@ -138,7 +138,7 @@ export function invitationAnswerMail(to: string, p: { accepted: boolean; vacancy
     subject,
     text: p.accepted
       ? `Кандидат принял ваше приглашение${what}. Имя и почта кандидата открыты в кабинете: ${cabinetUrl}${sign()}`
-      : `Кандидат отклонил ваше приглашение${what}. Подборка других кандидатов — в кабинете: ${cabinetUrl}${sign()}`,
+      : `Кандидат отклонил ваше приглашение${what}. Подборка других кандидатов – в кабинете: ${cabinetUrl}${sign()}`,
     html: html({
       subject,
       preheader: p.accepted ? 'Имя и почта кандидата открыты в кабинете.' : 'Подборка других кандидатов - в кабинете.',
@@ -155,7 +155,7 @@ export function invitationAnswerMail(to: string, p: { accepted: boolean; vacancy
   };
 }
 
-/** lane live-slots (ADR 0008 п. 4): живая защита назначена — время по МСК и ссылка на комнату. */
+/** lane live-slots (ADR 0008 п. 4): живая защита назначена – время по МСК и ссылка на комнату. */
 export function liveDefenseMail(
   to: string,
   p: { audience: 'candidate' | 'employer'; startsAt: Date; durationMin: number; companyName: string; vacancyTitle: string | null; roomUrl: string },

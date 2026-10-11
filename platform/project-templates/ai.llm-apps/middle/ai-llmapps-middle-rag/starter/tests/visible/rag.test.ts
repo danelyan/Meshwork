@@ -19,7 +19,7 @@ describe('rag (visible)', () => {
   });
 
   it('answer: цитаты из контекста', async () => {
-    const llm = { complete: async () => 'Отпуск — 28 дней [vacation.md#0].' };
+    const llm = { complete: async () => 'Отпуск – 28 дней [vacation.md#0].' };
     const res = await answer('Сколько дней отпуск?', { index: buildIndex(DOCS), llm });
     expect(res).toMatchObject({ refused: false, citations: ['vacation.md#0'] });
   });

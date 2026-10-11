@@ -81,7 +81,7 @@ export async function verify(createApp: CreateApp): Promise<void> {
   await request(fresh).post(`/orders/${ids[0]}/cancel`);
   await request(fresh).post(`/orders/${ids[1]}/pay`);
   const def = await request(fresh).get('/orders');
-  check(def.status === 200 && def.body.items.length === 10 && def.body.total === 12, 'список: по умолчанию limit 10, total — всего');
+  check(def.status === 200 && def.body.items.length === 10 && def.body.total === 12, 'список: по умолчанию limit 10, total – всего');
   const page = await request(fresh).get('/orders').query({ limit: 5, offset: 8 });
   check(page.body.items.length === 4 && page.body.total === 12, 'список: offset/limit, total до пагинации');
   check(page.body.items.map((o: { id: string }) => o.id).join() === ids.slice(8).join(), 'список: порядок создания');

@@ -13,6 +13,7 @@ import { seedEmployer } from '../../../prisma/seed/employer';
 import { seedRecommend } from '../../../prisma/seed/recommend';
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
+import { discloseAccepted } from '../../helpers/consents';
 
 const EMP = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: DEMO_EMPLOYER.profileId })}`;
 const params = <T extends Record<string, string>>(p: T) => ({ params: Promise.resolve(p) });
@@ -114,13 +115,13 @@ describe('подборка со ступенями ADR 0003 (БД)', () => {
     expect(proj.rank).toBeLessThan(plain.rank);
     expect(proj.explanation.project.own!.score).toBe(1);
     expect(foreign.score).toBe(plain.score);
-    // Чужой проект — только подкатегория и балл, без критериев и вакансии.
+    // Чужой проект – только подкатегория и балл, без критериев и вакансии.
     expect(foreign.explanation.project.own).toBeNull();
     expect(foreign.explanation.project.others).toHaveLength(1);
     expect(JSON.stringify(foreign.explanation)).not.toMatch(/тайна чужой|v-x|co-x/);
   });
 
-  it('до принятого приглашения доказательства рубрики маскируются, цитат созвона нет; после — e-mail виден, есть комната защиты', async () => {
+  it('до принятого приглашения доказательства рубрики маскируются, цитат созвона нет; после – e-mail виден, есть комната защиты', async () => {
     await prisma.callSession.create({
       data: {
         candidateId: 'ec-proj',
@@ -163,6 +164,7 @@ describe('подборка со ступенями ADR 0003 (БД)', () => {
     // Кандидат принимает приглашение; создана ожидающая защита по его сабмиту.
     const inv = await createInvitation(PROFILE, { candidateId: 'ec-proj', vacancyId: NEED, message: 'Приглашаем на защиту проекта', salaryFrom: 100000, salaryTo: 120000 });
     await prisma.invitation.update({ where: { id: inv.id }, data: { status: 'accepted' } });
+    await discloseAccepted(); // Г5 (ADR 0005)
     const pending = await prisma.callSession.create({ data: { candidateId: 'ec-proj', kind: 'defense', status: 'pending', projectSubmissionId: sub.id, policyVersion: 'v', transcriptJson: [] } });
     // Ожидающая защита по сабмиту другой компании кнопкой не становится.
     const foreignSub = await prisma.projectSubmission.findFirstOrThrow({ where: { candidateId: 'ec-other' } });

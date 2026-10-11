@@ -10,14 +10,14 @@ export const dynamic = 'force-dynamic';
 
 const Body = z.object({ method: z.enum(['egrul', 'email_domain']), text: z.string().max(2000).default('') });
 
-/** GET /api/employer/company/verification — статус ручной проверки своей компании. */
+/** GET /api/employer/company/verification – статус ручной проверки своей компании. */
 export const GET = withErrors(async (req: Request) => {
   const { employerProfileId } = requireEmployer(req);
   const ctx = await loadEmployerContext(employerProfileId);
   return Response.json(await companyVerification(ctx.companyId));
 });
 
-/** POST /api/employer/company/verification `{ method: egrul|email_domain, text }` — запросить проверку модератором. */
+/** POST /api/employer/company/verification `{ method: egrul|email_domain, text }` – запросить проверку модератором. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { employerProfileId } = requireEmployer(req);

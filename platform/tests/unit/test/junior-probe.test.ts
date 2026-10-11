@@ -73,7 +73,7 @@ describe('Дозадавание Junior', () => {
     expect(pJ).toBeGreaterThan(1 - CONFIRM_PROB);
     expect(pJ).toBeLessThan(CONFIRM_PROB);
     expect(needsJuniorProbe(mixed, 'middle', 3)).toBe(true);
-    expect(needsJuniorProbe(mixed, 'junior', 3)).toBe(true); // заявка Junior — тоже (решение владельца 10.10, adr-0002-v3)
+    expect(needsJuniorProbe(mixed, 'junior', 3)).toBe(true); // заявка Junior – тоже (решение владельца 10.10, adr-0002-v3)
     expect(needsJuniorProbe(mixed, 'middle', 0)).toBe(false); // Junior-шаблоны кончились
     const none = estimateTheta(weakPool.slice(0, 10).map((t) => ({ a: t.a, b: t.b, correct: false })));
     expect(probAbove(none, GRADE_CUT.junior)).toBeLessThanOrEqual(1 - CONFIRM_PROB);
@@ -100,7 +100,7 @@ describe('Дозадавание Junior', () => {
   });
 
   it('потолок: P(Junior) неуверенная и после дозадавания → стоп на mainLength + JUNIOR_PROBE_MAX, задания только Junior', () => {
-    // Основная — 10 Middle-заданий (верно 2), дозадавание — слабые Junior-задания через одно.
+    // Основная – 10 Middle-заданий (верно 2), дозадавание – слабые Junior-задания через одно.
     const shown: SelectableTemplate[] = [];
     const responses: Response[] = [];
     let step: Step | null = null;
@@ -144,7 +144,7 @@ describe('Дозадавание Junior', () => {
     expect(pJ).toBeGreaterThan(1 - EARLY_STOP_PROB);
   });
 
-  it('probe: false (другая версия политики) — только основная фаза', () => {
+  it('probe: false (другая версия политики) – только основная фаза', () => {
     const order = weakPool.slice(0, 10);
     const responses = order.map((t, i) => ({ a: t.a, b: t.b, correct: i % 5 === 0 }));
     expect(nextStep({ pool: weakPool, shown: order, responses, grade: 'middle' })).toMatchObject({ stop: false, phase: 'junior_probe' });
@@ -161,7 +161,7 @@ describe('Дозадавание Junior', () => {
         const probeIdx = run.phases.flatMap((p, i) => (p === 'junior_probe' ? [i] : []));
         expect(run.shown.length).toBeLessThanOrEqual(MAX_ITEMS_TOTAL);
         expect(probeIdx.length).toBeLessThanOrEqual(JUNIOR_PROBE_MAX);
-        // Дозаданные — только Junior и без повторов шаблонов.
+        // Дозаданные – только Junior и без повторов шаблонов.
         for (const i of probeIdx) expect(run.shown[i]!.grade).toBe('junior');
         expect(new Set(run.shown.map((t) => t.id)).size).toBe(run.shown.length);
         if (probeIdx.length > 0) probed++;
@@ -177,7 +177,7 @@ describe('Дозадавание Junior', () => {
     expect(probedTotal).toBeGreaterThan(0);
   });
 
-  it('заявка Junior, боевой банк, «все Junior верно, Middle неверно»: Junior подтверждается, дозаданные — только Junior', () => {
+  it('заявка Junior, боевой банк, «все Junior верно, Middle неверно»: Junior подтверждается, дозаданные – только Junior', () => {
     let probedTotal = 0;
     for (const gens of bankPools()) {
       const pool = gens.map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
@@ -199,7 +199,7 @@ describe('Дозадавание Junior', () => {
     expect(probedTotal).toBeGreaterThan(0);
   });
 
-  it('заявка Junior: всё неверно или всё верно — фаза не включается', () => {
+  it('заявка Junior: всё неверно или всё верно – фаза не включается', () => {
     const bank = generatorsFor('frontend').map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
     for (const answer of [() => false, () => true]) {
       const run = play(bank, 'junior', 3, answer);

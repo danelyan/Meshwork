@@ -14,9 +14,9 @@ import styles from './admin.module.css';
 export const metadata: Metadata = { title: 'MESHWORK - админка', robots: { index: false, follow: false } };
 
 /**
- * Раскладка админки (E-08): меню из реестра `lib/admin-nav.ts` по правам роли. Доступ здесь не проверяется —
+ * Раскладка админки (E-08): меню из реестра `lib/admin-nav.ts` по правам роли. Доступ здесь не проверяется –
  * гвард `requirePageStaff` в каждой странице (layout не перерисовывается при клиентской навигации).
- * Без сессии персонала (страница входа) — только содержимое.
+ * Без сессии персонала (страница входа) – только содержимое.
  */
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const staff = await getStaffPageSession();

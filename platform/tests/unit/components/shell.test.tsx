@@ -17,7 +17,7 @@ const page = vi.hoisted(() => ({ session: null as unknown }));
 vi.mock('@/server/auth/page', () => ({ getPageSession: async () => page.session }));
 vi.mock('@/components/candidate/CandidateSidebarSummary', () => ({ CandidateSidebarSummary: () => null }));
 vi.mock('@/lib/api', () => ({ logout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
-// Меню роли (ADR 0004) читает БД — в тестах шапки подставляем готовое.
+// Меню роли (ADR 0004) читает БД – в тестах шапки подставляем готовое.
 const menu = vi.hoisted(() => ({ value: null as unknown }));
 vi.mock('@/server/auth/role-switch', () => ({ headerAccountFor: async () => menu.value }));
 
@@ -34,7 +34,7 @@ async function renderHeader(session: SessionPrincipal | null, pathname: string, 
 afterEach(cleanup);
 
 describe('SiteHeader', () => {
-  it('гость на главной: своих якорей у шапки нет (на «/» её прячет ShellFrame, якоря — в LandingChrome), «Войти» → /auth', async () => {
+  it('гость на главной: своих якорей у шапки нет (на «/» её прячет ShellFrame, якоря – в LandingChrome), «Войти» → /auth', async () => {
     const h = await renderHeader(null, '/');
     expect(h.queryByRole('navigation')).toBeNull();
     expect(h.queryByRole('link', { name: 'Компании' })).toBeNull();
@@ -52,7 +52,7 @@ describe('SiteHeader', () => {
     expect(h.getByRole('link', { name: 'Войти' })).toBeDefined();
   });
 
-  it('кандидат: Консультант / Тест на грейд / Проекты / Приглашения / Профиль, активная — по пути, гость-кнопки нет', async () => {
+  it('кандидат: Консультант / Тест на грейд / Проекты / Приглашения / Профиль, активная – по пути, гость-кнопки нет', async () => {
     const h = await renderHeader(principal('candidate'), '/profile');
     const links = h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/' && !a.getAttribute('href')?.startsWith('https://'));
     expect(links.map((a) => a.textContent)).toEqual(['Консультант', 'Тест на грейд', 'Проекты', 'Приглашения', 'Профиль']);
@@ -129,7 +129,7 @@ describe('SiteHeader', () => {
     expect(h.queryByRole('button', { name: 'Выйти' })).toBeNull();
   });
 
-  it('иконка темы — в разделах кабинета, не на главной', async () => {
+  it('иконка темы – в разделах кабинета, не на главной', async () => {
     const account = { userName: 'Иван Петров', userEmail: 'i@p.ru', roles: null };
     let h = await renderHeader(principal('pending'), '/consultant', account);
     expect(h.getByRole('button', { name: 'Тёмная тема' })).toBeDefined();

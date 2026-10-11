@@ -9,17 +9,17 @@ import { readVoiceMode, speechRecognitionCtor, toPcm16, type VoiceMode } from '.
 
 /**
  * Микрофон комнаты звонка: открыт всё время (как в Zoom), фразы режет детектор речи (lib/vad.ts), а не
- * кнопка. Порог выше, пока ИИ говорит, — так кандидат перебивает голосом, а эхо из колонок нет.
- * Звук фразы (с преролом) уходит сегментом на сервер — это запись созвона и, при STT=yandex, текст.
+ * кнопка. Порог выше, пока ИИ говорит, – так кандидат перебивает голосом, а эхо из колонок нет.
+ * Звук фразы (с преролом) уходит сегментом на сервер – это запись созвона и, при STT=yandex, текст.
  * При STT=browser текст даёт непрерывный Web Speech: берутся финальные результаты между speech_start и
- * speech_end (+ небольшая пауза на дозревание). Принцип — moko CallRoom + audio/gate.ts.
+ * speech_end (+ небольшая пауза на дозревание). Принцип – moko CallRoom + audio/gate.ts.
  */
 export type RoomMicState = 'off' | 'listening' | 'speaking' | 'processing';
 
 export interface RoomUtterance {
-  /** PCM 16 кГц фразы (null — звук не писался, только Web Speech). */
+  /** PCM 16 кГц фразы (null – звук не писался, только Web Speech). */
   pcm: Uint8Array | null;
-  /** Текст от браузера (Web Speech); null — распознаёт сервер. */
+  /** Текст от браузера (Web Speech); null – распознаёт сервер. */
   browserText: string | null;
   durationMs: number;
 }
@@ -30,7 +30,7 @@ export interface RoomMicOptions {
   /** Детектор подтвердил речь кандидата (перебивание решает вызывающий). */
   onSpeechStart: () => void;
   onUtterance: (u: RoomUtterance) => void | Promise<void>;
-  /** Потолок фразы, мс: дольше — фраза закрывается и уходит как есть (лимит STT). По умолчанию — только MAX_PHRASE_MS детектора. */
+  /** Потолок фразы, мс: дольше – фраза закрывается и уходит как есть (лимит STT). По умолчанию – только MAX_PHRASE_MS детектора. */
   maxPhraseMs?: number;
 }
 
@@ -49,7 +49,7 @@ const RATE = 16_000;
 const BUFFER = 2048;
 /** Сколько ждать финальный результат Web Speech после конца фразы. */
 const BROWSER_GRACE_MS = 1500;
-/** Фраза короче — не ответ (щелчок, вдох). */
+/** Фраза короче – не ответ (щелчок, вдох). */
 const MIN_PHRASE_MS = 300;
 
 function audioCtor(): (new () => AudioContext) | null {
@@ -69,7 +69,7 @@ export function useRoomMic(opts: RoomMicOptions) {
   optsRef.current = opts;
   const mutedRef = useRef(false);
   const stopRef = useRef<() => void>(() => {});
-  /** Поколение запуска: stop() во время ожидания getUserMedia отменяет запуск — поток не остаётся открытым. */
+  /** Поколение запуска: stop() во время ожидания getUserMedia отменяет запуск – поток не остаётся открытым. */
   const genRef = useRef(0);
   const levelRef = useRef(0);
 
@@ -107,7 +107,7 @@ export function useRoomMic(opts: RoomMicOptions) {
       return;
     }
     const ctx = new (audioCtor()!)();
-    // Контекст, созданный не в обработчике клика, браузер может оставить suspended (autoplay policy, MDN) — будим.
+    // Контекст, созданный не в обработчике клика, браузер может оставить suspended (autoplay policy, MDN) – будим.
     if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
     const source = ctx.createMediaStreamSource(stream);
     // ScriptProcessorNode устарел, но работает везде без отдельного модуля worklet (как в useCallMic).
@@ -141,7 +141,7 @@ export function useRoomMic(opts: RoomMicOptions) {
       rec.onerror = (e) => {
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') setError('Нет доступа к микрофону - разреши его в настройках браузера.');
       };
-      // Chrome закрывает распознавание после паузы — пока слушаем, запускаем снова.
+      // Chrome закрывает распознавание после паузы – пока слушаем, запускаем снова.
       rec.onend = () => {
         if (listening) {
           try {

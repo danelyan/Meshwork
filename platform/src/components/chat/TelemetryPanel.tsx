@@ -34,7 +34,7 @@ const LABEL: Record<Kind, string> = {
 const ROWS = 200;
 const STATUS = { idle: 'ждёт', running: 'идёт', done: 'готов', error: 'ошибка', stop: 'стоп' } as const;
 
-const ms = (v?: number) => (v === undefined ? '—' : v >= 1000 ? `${(v / 1000).toFixed(2)}с` : `${Math.round(v)}мс`);
+const ms = (v?: number) => (v === undefined ? '–' : v >= 1000 ? `${(v / 1000).toFixed(2)}с` : `${Math.round(v)}мс`);
 
 function describe(e: Stamped): string {
   switch (e.k) {
@@ -125,7 +125,7 @@ export function TelemetryPanel() {
         <header className={styles.head}>
           <span className={styles.title}>
             <span className={styles.dot} data-live={s.status === 'running' || undefined} aria-hidden="true" />
-            Телеметрия · ход {s.turn || '—'} · {STATUS[s.status]}
+            Телеметрия · ход {s.turn || '–'} · {STATUS[s.status]}
           </span>
           <span className={styles.actions}>
             <button type="button" onClick={() => setPaused(!paused)} aria-pressed={paused}>
@@ -133,7 +133,7 @@ export function TelemetryPanel() {
             </button>
             <button type="button" onClick={clear}>очистить</button>
             <button type="button" onClick={() => void copy()}>{copied ? 'скопировано' : 'json'}</button>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Свернуть">—</button>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Свернуть">–</button>
             <button type="button" onClick={() => setTelemetryEnabled(false)} aria-label="Выключить телеметрию">×</button>
           </span>
         </header>
@@ -179,7 +179,7 @@ export function TelemetryPanel() {
                   <span className={styles.text}>{describe(e)}</span>
                 </li>
               ))}
-              {rows.length === 0 && <li className={styles.empty}>Отправь сообщение — ход появится здесь.</li>}
+              {rows.length === 0 && <li className={styles.empty}>Отправь сообщение – ход появится здесь.</li>}
             </ol>
           </>
         ) : (

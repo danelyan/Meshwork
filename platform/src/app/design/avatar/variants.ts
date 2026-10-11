@@ -8,9 +8,9 @@ export type Variant =
   | { id: string; label: string; hint: string; kind: 'grid'; source: string };
 
 export const GRID_VARIANTS: readonly Extract<Variant, { kind: 'grid' }>[] = [
-  { id: 'grid-v1', label: 'Карина · сетка v1', kind: 'grid', source: '/design/consultant-grid-v1/index.html', hint: 'Iframe-макет Карины: следит за курсором сам, вращения и губ нет — у файла нет канала речи.' },
-  { id: 'grid-v2', label: 'Карина · сетка v2', kind: 'grid', source: '/design/consultant-grid-v2/index.html', hint: 'Iframe-макет Карины: следит за курсором сам, вращения и губ нет — у файла нет канала речи.' },
-  { id: 'grid-v3', label: 'Карина · сетка v3 (принятая)', kind: 'grid', source: '/design/consultant-grid-v3/head.html', hint: 'Iframe-голова из чата: следит за курсором (через её канал pointer), вращения и губ нет — у файла нет канала речи.' },
+  { id: 'grid-v1', label: 'Карина · сетка v1', kind: 'grid', source: '/design/consultant-grid-v1/index.html', hint: 'Iframe-макет Карины: следит за курсором сам, вращения и губ нет – у файла нет канала речи.' },
+  { id: 'grid-v2', label: 'Карина · сетка v2', kind: 'grid', source: '/design/consultant-grid-v2/index.html', hint: 'Iframe-макет Карины: следит за курсором сам, вращения и губ нет – у файла нет канала речи.' },
+  { id: 'grid-v3', label: 'Карина · сетка v3 (принятая)', kind: 'grid', source: '/design/consultant-grid-v3/head.html', hint: 'Iframe-голова из чата: следит за курсором (через её канал pointer), вращения и губ нет – у файла нет канала речи.' },
 ];
 
 /** Все варианты: список строится из HEAD_STYLES, поэтому новые стили подхватываются сами. */
@@ -21,9 +21,9 @@ export const ALL_VARIANTS: readonly Variant[] = [
 ];
 
 /**
- * На экране сейчас только семейство «Плетения» (решение владельца 10.10: основной стиль — `weave6`,
- * версии 2–4 скрыты, рядом с ним — его развитие `weave9`). Остальные стили и головы Карины не
- * удалены — чтобы вернуть их на экран, замените фильтр на `ALL_VARIANTS` (или добавьте id в `SHOWN`).
+ * На экране сейчас только семейство «Плетения» (решение владельца 10.10: основной стиль – `weave6`,
+ * версии 2–4 скрыты, рядом с ним – его развитие `weave9`). Остальные стили и головы Карины не
+ * удалены – чтобы вернуть их на экран, замените фильтр на `ALL_VARIANTS` (или добавьте id в `SHOWN`).
  */
 const SHOWN = new Set(['three-weave', 'three-weave5', 'three-weave6', 'three-weave7', 'three-weave8', 'three-weave9']);
 export const VARIANTS: readonly Variant[] = ALL_VARIANTS.filter((v) => SHOWN.has(v.id));
@@ -33,7 +33,7 @@ export function variantById(id: string): Variant {
 }
 
 export type MouthSink = (shape: MouthShape) => void;
-/** Один источник формы рта (озвучка или ползунок) — на все панели, которые умеют губы. */
+/** Один источник формы рта (озвучка или ползунок) – на все панели, которые умеют губы. */
 export interface MouthBus {
   subscribe(sink: MouthSink): () => void;
 }

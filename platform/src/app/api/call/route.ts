@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * GET /api/call?kind= — свои созвоны (свежие первыми) и состояние согласия на запись. `consent.mode`: audio — запись
- * идёт; text — согласие отозвано, созвон без записи голоса (ADR 0005); ask — спросить перед созвоном.
+ * GET /api/call?kind= – свои созвоны (свежие первыми) и состояние согласия на запись. `consent.mode`: audio – запись
+ * идёт; text – согласие отозвано, созвон без записи голоса (ADR 0005); ask – спросить перед созвоном.
  */
 export const GET = withErrors(async (req: Request) => {
   const candidateId = requireCandidate(req);

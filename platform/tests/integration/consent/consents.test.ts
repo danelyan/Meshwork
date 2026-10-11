@@ -43,7 +43,7 @@ const DATA = path.join(tmpdir(), `fsp-consent-${process.pid}`);
 async function seedPair() {
   await prisma.candidate.create({ data: { id: CAND, name: 'Анна Кандидатова', email: 'anna@example.test', specialization: 'backend', contact: '@anna' } });
   await prisma.user.create({ data: { id: 'u-cand', name: 'Анна', role: 'candidate', candidateId: CAND } });
-  // E05: приглашение уходит только при способе связи компании — фикстура задаёт контакт
+  // E05: приглашение уходит только при способе связи компании – фикстура задаёт контакт
   await prisma.company.create({ data: { id: 'co-c', name: 'Компания', isDemo: false, contact: 'hr-c@example.test' } });
   await prisma.user.create({ data: { id: 'u-emp', name: 'HR', role: 'employer' } });
   await prisma.employerProfile.create({ data: { id: 'p-emp', userId: 'u-emp', companyId: 'co-c' } });
@@ -77,7 +77,7 @@ describe('согласия (ADR 0005)', () => {
     expect(rows).toEqual([{ kind: 'pd_processing', version: CONSENT_VERSION }]);
   });
 
-  it('онбординг кандидата: шаг согласий после роли; без Г3 тест закрыт, без Г4 профиль скрыт; с Г3/Г4 — открыто', async () => {
+  it('онбординг кандидата: шаг согласий после роли; без Г3 тест закрыт, без Г4 профиль скрыт; с Г3/Г4 – открыто', async () => {
     await prisma.user.create({ data: { id: 'u1', name: 'Иван', email: 'ivan@example.test', consents: { create: { version: CONSENT_VERSION } } } });
     let c = `cid=${signUserSession({ userId: 'u1', role: 'pending' })}`;
     const act = (body: unknown) => onboarding(local('/api/onboarding', 'POST', body, c));
@@ -90,7 +90,7 @@ describe('согласия (ADR 0005)', () => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: 'u1' } });
     expect((await prisma.candidate.findUniqueOrThrow({ where: { id: user.candidateId! } })).hiddenFromEmployers).toBe(true);
 
-    // Ни одной галочки — можно продолжить; профиль скрыт, тест закрыт понятной ошибкой со ссылкой на кабинет.
+    // Ни одной галочки – можно продолжить; профиль скрыт, тест закрыт понятной ошибкой со ссылкой на кабинет.
     expect((await act({ action: 'answer', stepId: 'candidateConsents', value: [] })).status).toBe(200);
     const blocked = await startTest(local('/api/test/start', 'POST', { specialization: 'backend', grade: 'junior' }, c));
     expect(blocked.status).toBe(409);
@@ -105,7 +105,7 @@ describe('согласия (ADR 0005)', () => {
     expect((await after.json().catch(() => ({}))).error?.code).not.toBe('consent_required');
   });
 
-  it('онбординг: отмеченные галочки — согласия текущих версий, Г4 открывает профиль', async () => {
+  it('онбординг: отмеченные галочки – согласия текущих версий, Г4 открывает профиль', async () => {
     await prisma.user.create({ data: { id: 'u2', name: 'Пётр', consents: { create: { version: CONSENT_VERSION } } } });
     let c = `cid=${signUserSession({ userId: 'u2', role: 'pending' })}`;
     const r = await onboarding(local('/api/onboarding', 'POST', { action: 'answer', stepId: 'role', value: 'candidate' }, c));
@@ -117,7 +117,7 @@ describe('согласия (ADR 0005)', () => {
     expect((await prisma.candidate.findUniqueOrThrow({ where: { id: u.candidateId! } })).hiddenFromEmployers).toBe(false);
   });
 
-  it('работодатель без оферты и обязательства: нет поиска и приглашений; после принятия — есть', async () => {
+  it('работодатель без оферты и обязательства: нет поиска и приглашений; после принятия – есть', async () => {
     await seedPair();
     const s = await search(jsonRequest('/api/employer/search', 'GET', undefined, emp));
     expect(s.status).toBe(409);
@@ -181,7 +181,7 @@ describe('согласия (ADR 0005)', () => {
     expect((await grant(local('/api/consents', 'POST', { kind: 'identity_disclosure', version, context: { invitationId: 'inv-zz' } }, cand))).status).toBe(404);
   });
 
-  it('принятие приглашения: без раскрытия — 409, с раскрытием — контакты; отзыв раскрытия возвращает псевдоним', async () => {
+  it('принятие приглашения: без раскрытия – 409, с раскрытием – контакты; отзыв раскрытия возвращает псевдоним', async () => {
     await seedPair();
     await grantEmployer();
     await sentInvitation();
@@ -202,7 +202,7 @@ describe('согласия (ADR 0005)', () => {
     const d = await prisma.consent.findFirstOrThrow({ where: { userId: 'u-cand', kind: 'identity_disclosure' } });
     expect(d.context).toEqual({ invitationId: 'inv-1' });
 
-    // Отзыв без приглашения — 400; с приглашением — псевдоним снова, приглашение остаётся принятым.
+    // Отзыв без приглашения – 400; с приглашением – псевдоним снова, приглашение остаётся принятым.
     expect((await revoke(local('/api/consents/identity_disclosure', 'DELETE', undefined, cand), params({ kind: 'identity_disclosure' }))).status).toBe(400);
     expect((await revoke(local('/api/consents/identity_disclosure?invitationId=inv-1', 'DELETE', undefined, cand), params({ kind: 'identity_disclosure' }))).status).toBe(200);
     expect(await contactsSeenByEmployer()).toBeNull();
@@ -213,7 +213,7 @@ describe('согласия (ADR 0005)', () => {
     expect(list.items.find((i: { kind: string }) => i.kind === 'identity_disclosure')).toMatchObject({ invitationId: 'inv-1', company: 'Компания', state: 'revoked' });
   });
 
-  it('Г1 отзывается только удалением аккаунта (409); устаревшая версия — 409', async () => {
+  it('Г1 отзывается только удалением аккаунта (409); устаревшая версия – 409', async () => {
     await seedPair();
     await prisma.consent.create({ data: { userId: 'u-cand', version: CONSENT_VERSION } });
     const r = await revoke(local('/api/consents/pd_processing', 'DELETE', undefined, cand), params({ kind: 'pd_processing' }));
@@ -246,7 +246,7 @@ describe('согласия (ADR 0005)', () => {
     expect((await prisma.callSession.count({ where: { candidateId: CAND } }))).toBe(2); // транскрипт и оценки остаются
   });
 
-  it('возражение: своё — 201 со сроком 30 дней, чужое — 404, повтор открытого — 409; ответ через dev-панель', async () => {
+  it('возражение: своё – 201 со сроком 30 дней, чужое – 404, повтор открытого – 409; ответ через dev-панель', async () => {
     await seedPair();
     await prisma.callSession.create({ data: { id: 'call-1', candidateId: CAND, kind: 'qualifying', status: 'finished', policyVersion: 'v' } });
     const text = 'Оценка по теме транзакций занижена: я ответил про изоляцию.';

@@ -90,7 +90,7 @@ const revokeConsent = (kind: string, cookie = cookieA(), query = '') => {
 };
 
 describe('согласия посреди созвона (ADR 0005)', () => {
-  it('Г3: без согласия на оценку ИИ старт — 409 consent_required', async () => {
+  it('Г3: без согласия на оценку ИИ старт – 409 consent_required', async () => {
     await prisma.consent.updateMany({ where: { userId: 'user-a', kind: 'ai_assessment' }, data: { revokedAt: new Date() } });
     await consentRoute(jsonRequest('/api/call/consent', 'POST', { version: CALL_RECORDING_CONSENT_VERSION }, cookieA()));
     const res = await startRoute(jsonRequest('/api/call/start', 'POST', { kind: 'qualifying' }, cookieA()));
@@ -98,7 +98,7 @@ describe('согласия посреди созвона (ADR 0005)', () => {
     expect((await json<{ error: { code: string; details: { kind: string } } }>(res)).error).toMatchObject({ code: 'consent_required', details: { kind: 'ai_assessment' } });
   });
 
-  it('Г3 отозван посреди созвона: turn и finish — 409, оценщик не запускается', async () => {
+  it('Г3 отозван посреди созвона: turn и finish – 409, оценщик не запускается', async () => {
     const { sessionId: id } = await consentAndStart();
     let evaluated = 0;
     registerStubResponse('call_evaluator', () => { evaluated += 1; return { text: '{}' }; });
@@ -114,7 +114,7 @@ describe('согласия посреди созвона (ADR 0005)', () => {
     expect(row.verdictJson).toBeNull();
   });
 
-  it('Г2 отозван посреди созвона: аудио — 409 call_recording_off, файл не пишется, audioPath не ставится', async () => {
+  it('Г2 отозван посреди созвона: аудио – 409 call_recording_off, файл не пишется, audioPath не ставится', async () => {
     const { sessionId: id } = await consentAndStart();
     expect((await revokeConsent('call_recording')).status).toBe(200);
     const pcm = new Uint8Array(16_000 * 2);
@@ -126,7 +126,7 @@ describe('согласия посреди созвона (ADR 0005)', () => {
     expect(list.consent.mode).toBe('text');
   });
 
-  it('участник комнаты: пока созвон идёт — транскрипт; после завершения и отзыва Г5 — только оценки', async () => {
+  it('участник комнаты: пока созвон идёт – транскрипт; после завершения и отзыва Г5 – только оценки', async () => {
     await prisma.callSession.create({
       data: { id: 'room-1', candidateId: A, kind: 'qualifying', status: 'active', policyVersion: 'v', transcriptJson: [{ index: 0, role: 'candidate', text: 'мой ответ про индексы', at: new Date().toISOString(), tMs: 0 }] },
     });
@@ -152,7 +152,7 @@ describe('согласия посреди созвона (ADR 0005)', () => {
 });
 
 describe('квалифицирующий созвон: start → 2 turn → finish → вердикт → platform (stub)', () => {
-  it('без согласия на запись старт — 409 call_consent_required', async () => {
+  it('без согласия на запись старт – 409 call_consent_required', async () => {
     const res = await startRoute(jsonRequest('/api/call/start', 'POST', { kind: 'qualifying' }, cookieA()));
     expect(res.status).toBe(409);
     expect((await json<{ error: { code: string } }>(res)).error.code).toBe('call_consent_required');
@@ -169,12 +169,12 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     expect(first.meta).toMatchObject({ topic: 'Подбирает индексы под запросы', catalogId: 'be.sql-indexes', level: 1 });
     expect(started.call.progress).toMatchObject({ awaitingAnswer: true, answered: 0, minQuestions: 4, maxQuestions: 6 });
 
-    // повторный старт — тот же созвон
+    // повторный старт – тот же созвон
     const again = await startRoute(jsonRequest('/api/call/start', 'POST', { kind: 'qualifying' }, cookieA()));
     expect(again.status).toBe(200);
     expect((await json<{ sessionId: string }>(again)).sessionId).toBe(id);
 
-    // ответ 1: голосом (сегмент аудио + текст из браузера) — сильный → глубже по той же теме
+    // ответ 1: голосом (сегмент аудио + текст из браузера) – сильный → глубже по той же теме
     const pcm = new Uint8Array(16_000 * 2); // 1 с тишины
     const audioRes = await audioRoute(new Request(`http://localhost/api/call/${id}/audio`, { method: 'POST', headers: { cookie: cookieA(), 'content-type': 'audio/l16' }, body: pcm }), ctx(id));
     expect(audioRes.status).toBe(201);
@@ -186,7 +186,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     expect(t1.done).toBe(false);
     expect(t1.ai.meta).toMatchObject({ topic: 'Подбирает индексы под запросы', level: 2, routedBy: 'strong' });
 
-    // ответ 2 текстом — сильный, но два вопроса по теме: следующая тема
+    // ответ 2 текстом – сильный, но два вопроса по теме: следующая тема
     const t2 = await json<{ ai: { meta: { level: number; topic: string } } }>(
       await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG2 }, cookieA()), ctx(id)),
     );
@@ -199,7 +199,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     const verdict = view.verdict as CallVerdict;
     expect(verdict.runs).toBe(3);
     expect(verdict.validRuns).toBe(3);
-    // Вторая тема спрошена, но без ответа — «не проверено», не входит в оценку.
+    // Вторая тема спрошена, но без ответа – «не проверено», не входит в оценку.
     expect(verdict.depthMap).toHaveLength(2);
     expect(verdict.depthMap[0]).toMatchObject({ topic: 'Подбирает индексы под запросы', catalogId: 'be.sql-indexes', claimed: true, probed: 2, maxLevel: 2, confirmed: true, status: 'confirmed' });
     expect(verdict.depthMap[1]).toMatchObject({ catalogId: 'be.idempotency', status: 'not_probed', confirmed: false, probed: 0 });
@@ -215,13 +215,13 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     expect(tr[1]!.audioRef).toBe('000.wav');
     expect(tr.every((e) => typeof e.tMs === 'number')).toBe(true);
 
-    // повторный finish — тот же вердикт, без пересчёта
+    // повторный finish – тот же вердикт, без пересчёта
     const fin2 = await json<CallView>(await finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id)));
     expect((fin2.verdict as CallVerdict).evaluatedAt).toBe(verdict.evaluatedAt);
     // после завершения реплики не принимаются
     expect((await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: 'ещё' }, cookieA()), ctx(id))).status).toBe(409);
 
-    // запись: кандидату — WAV; работодателю без accepted — 403 и только оценки
+    // запись: кандидату – WAV; работодателю без accepted – 403 и только оценки
     const rec = await recordingRoute(jsonRequest(`/api/call/${id}/recording`, 'GET', undefined, cookieA()), ctx(id));
     expect(rec.status).toBe(200);
     expect(rec.headers.get('content-type')).toBe('audio/wav');
@@ -232,9 +232,9 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     expect(empView.transcript).toBeNull();
     expect(JSON.stringify(empView.verdict)).not.toContain('quote');
 
-    // после принятого приглашения — всё
+    // после принятого приглашения – всё
     await prisma.invitation.create({ data: { candidateId: A, companyId: 'co-1', status: 'accepted', salaryFrom: 1, salaryTo: 2 } });
-    await discloseAccepted(); // Г5 (ADR 0005): контакты и запись — по принятому приглашению с раскрытием
+    await discloseAccepted(); // Г5 (ADR 0005): контакты и запись – по принятому приглашению с раскрытием
     expect((await recordingRoute(jsonRequest(`/api/call/${id}/recording`, 'GET', undefined, cookieEmp()), ctx(id))).status).toBe(200);
     const full = await json<CallView>(await viewRoute(jsonRequest(`/api/call/${id}`, 'GET', undefined, cookieEmp()), ctx(id)));
     expect(full.access).toBe('full');
@@ -248,7 +248,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     const c = (score: 0 | 1 | 2) => ({ quote: q, rationale: 'r', score });
     const pass = { topic: 'Подбирает индексы под запросы', depth: c(2), why: c(2), boundary: c(1), completion: c(1) };
     const fail = { topic: 'Подбирает индексы под запросы', depth: c(1), why: c(0), boundary: c(1), completion: c(1) };
-    // Промежуточная оценка: 3 прогона pass/fail/pass → ещё 2: fail/pass → 3 из 5 — «не определено».
+    // Промежуточная оценка: 3 прогона pass/fail/pass → ещё 2: fail/pass → 3 из 5 – «не определено».
     const seq = [pass, fail, pass, fail, pass, pass, pass, pass];
     let n = 0;
     registerStubResponse('call_evaluator', () => ({ json: { topics: [seq[n++]!] } }));
@@ -275,7 +275,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     expect(v.upgradedCatalogIds).toEqual(['be.sql-indexes']);
   });
 
-  it('тема остаётся «не определено» и после дополнительного вопроса — уровень не поднимается', async () => {
+  it('тема остаётся «не определено» и после дополнительного вопроса – уровень не поднимается', async () => {
     const { sessionId: id } = await consentAndStart();
     await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG }, cookieA()), ctx(id));
     const q = 'Составной индекс по status и created_at';
@@ -312,7 +312,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     await reader.cancel();
   });
 
-  it('чужой созвон — 404; finish без ответов отменяет созвон без вердикта', async () => {
+  it('чужой созвон – 404; finish без ответов отменяет созвон без вердикта', async () => {
     const { sessionId: id } = await consentAndStart();
     await prisma.candidate.create({ data: { id: 'cand-b', email: 'b@example.test', name: 'Б' } });
     await prisma.user.create({ data: { id: 'user-b', role: 'candidate', name: 'Б', candidateId: 'cand-b' } });
@@ -323,7 +323,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     expect(v.verdict).toBeNull();
   });
 
-  it('finish: повторы после 503 ограничены — третий сбой оценщика закрывает созвон без оценки', async () => {
+  it('finish: повторы после 503 ограничены – третий сбой оценщика закрывает созвон без оценки', async () => {
     const { sessionId: id } = await consentAndStart();
     expect((await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG }, cookieA()), ctx(id))).status).toBe(200);
     let calls = 0;
@@ -345,7 +345,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
   });
 
   // Лимиты по умолчанию сняты (решение владельца 11.10): env больше не задаёт лимит, тест надо перевести на setSetting.
-  it.skip('CALL_DAILY_LIMIT: 1 — второй созвон за сутки 429; 0 — без лимита', async () => {
+  it.skip('CALL_DAILY_LIMIT: 1 – второй созвон за сутки 429; 0 – без лимита', async () => {
     const prev = process.env.CALL_DAILY_LIMIT;
     try {
       process.env.CALL_DAILY_LIMIT = '1';
@@ -392,7 +392,7 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     expect(await err('qualifying')).toMatchObject({ code: 'call_not_ready', details: { reason: expect.stringContaining('будет о чём поговорить') } });
   });
 
-  it('turn без текста (только audioRef) — 400: /turn второй раз STT не зовёт', async () => {
+  it('turn без текста (только audioRef) – 400: /turn второй раз STT не зовёт', async () => {
     const { sessionId: id } = await consentAndStart();
     const pcm = new Uint8Array(3200);
     const a = await audioRoute(new Request(`http://localhost/api/call/${id}/audio`, { method: 'POST', headers: { cookie: cookieA(), 'content-type': 'audio/l16' }, body: pcm }), ctx(id));

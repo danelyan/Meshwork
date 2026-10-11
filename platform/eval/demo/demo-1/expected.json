@@ -5,8 +5,8 @@
   "expect": {
     "claimsMinCount": 8,
     "evidence": {
-      "be.idempotency": "artifact (резюме self_reported + фикстура GitHub с кодом и README; максимум по источнику GitHub — artifact)",
-      "common.algo-complexity": "third_party только при подтверждении записью реестра ФСП (демо); в одном резюме — self_reported"
+      "be.idempotency": "artifact (резюме self_reported + фикстура GitHub с кодом и README; максимум по источнику GitHub – artifact)",
+      "common.algo-complexity": "third_party только при подтверждении записью реестра ФСП (демо); в одном резюме – self_reported"
     },
     "fsp": "достижение ФСП (демо) показано в профиле как отдельный блок; не повышает уровень утверждений, кроме алгоритмического направления",
     "mustNot": ["присвоить Senior", "поставить platform/third_party без проверки"]

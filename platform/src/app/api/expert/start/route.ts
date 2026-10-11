@@ -17,7 +17,7 @@ const Body = z.object({
   subcategoryId: z.string().min(1).max(64),
 });
 
-/** GET /api/expert/start — направления и подкатегории, по которым тест эксперта доступен (банк заданий собран). Флаг DEMO_LOGIN. */
+/** GET /api/expert/start – направления и подкатегории, по которым тест эксперта доступен (банк заданий собран). Флаг DEMO_LOGIN. */
 export const GET = withErrors(async () => {
   assertExpertEnabled();
   const directions = SPECIALIZATIONS.map((spec) => ({
@@ -28,7 +28,7 @@ export const GET = withErrors(async () => {
 });
 
 /**
- * POST /api/expert/start {specialization, grade, subcategoryId} — режим эксперта: новый одноразовый эксперт (без
+ * POST /api/expert/start {specialization, grade, subcategoryId} – режим эксперта: новый одноразовый эксперт (без
  * регистрации, скрыт от работодателей) и попытка теста на грейд тем же сервисом, что у кандидата. Кука `fsp_expert`
  * (path /api/expert). Лимиты: адрес клиента и суточный потолок (429). Флаг DEMO_LOGIN выключен → 404.
  */

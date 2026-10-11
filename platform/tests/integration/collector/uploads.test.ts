@@ -24,7 +24,7 @@ function uploadRequest(file: Blob | null, opts: { cookie?: string; name?: string
 const pdfBlob = (buf: Buffer) => new Blob([new Uint8Array(buf)], { type: 'application/pdf' });
 
 describe('api/uploads', () => {
-  // Оригиналы файлов — во временный каталог, не в ./data/uploads.
+  // Оригиналы файлов – во временный каталог, не в ./data/uploads.
   const dir = mkdtempSync(join(tmpdir(), 'fsp-uploads-'));
   beforeAll(() => {
     process.env.UPLOAD_DIR = dir;
@@ -76,7 +76,7 @@ describe('api/uploads', () => {
     expect(extracted.lines.some((l) => l.hidden)).toBe(true);
   });
 
-  it('тот же файл повторно → та же запись (дедуп по sha256); у другого кандидата — своя', async () => {
+  it('тот же файл повторно → та же запись (дедуп по sha256); у другого кандидата – своя', async () => {
     const buf = resumePdf(['Same file']);
     const r1 = await (await POST(uploadRequest(pdfBlob(buf), { cookie: cookieFor('cand-a') }))).json();
     const res2 = await POST(uploadRequest(pdfBlob(buf), { cookie: cookieFor('cand-a') }));

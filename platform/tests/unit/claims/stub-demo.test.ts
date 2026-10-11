@@ -23,7 +23,7 @@ describe('демо-заглушка извлекателя (LLM_STUB_DEMO)', () 
     expect(await extractClaims(resume, catalogFromFile(), createStubProvider())).toEqual([]);
   });
 
-  it('с регистрацией — утверждения словарём каталога с координатой строки', async () => {
+  it('с регистрацией – утверждения словарём каталога с координатой строки', async () => {
     registerExtractorDemoStub();
     const out = await extractClaims(resume, catalogFromFile(), createStubProvider());
     expect(out.map((c) => c.catalogId)).toContain('be.idempotency');

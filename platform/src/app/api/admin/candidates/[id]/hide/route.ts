@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 const HideBody = z.object({ hidden: z.boolean(), reason: z.string().max(1000) });
 
 /**
- * Скрыть кандидата из подборки и поиска (`hidden: true`) или вернуть (`false`) — owner, moderator. Скрытый
- * модератором профиль сам кандидат не возвращает; при возврате видимость — по его согласию Г4.
+ * Скрыть кандидата из подборки и поиска (`hidden: true`) или вернуть (`false`) – owner, moderator. Скрытый
+ * модератором профиль сам кандидат не возвращает; при возврате видимость – по его согласию Г4.
  */
 export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {
   const staff = await requireStaff(req, 'hide_candidate');

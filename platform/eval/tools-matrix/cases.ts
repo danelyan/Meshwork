@@ -87,8 +87,8 @@ export const SCENARIOS: Scenario[] = [
   { id: 't18-pdf', user: 'mid', turns: [{ text: 'Скачай мой профиль в PDF.', expect: ['render_profile_pdf'] }] },
   { id: 't19-pdf-empty', user: 'empty', turns: [{ text: 'Дай мой профиль в PDF.', expect: ['render_profile_pdf', 'get_profile'] }] },
   { id: 't20-ambiguous', user: 'empty', turns: [{ text: 'Подбери мне что-нибудь.', expect: ['ask_user', 'get_onboarding_status', 'recommend_targets', 'recommend_test', 'get_profile'] }] },
-  { id: 't21-github', user: 'newbie', turns: [{ text: 'Вот мой GitHub: https://github.com/demo-ryabinin — посмотри, что там можно использовать в профиле.', expect: ['fetch_profile', 'fetch_url'] }] },
-  { id: 't22-codeforces', user: 'mid', turns: [{ text: 'Мой Codeforces: https://codeforces.com/profile/tourist — что оттуда можно учесть?', expect: ['fetch_profile', 'fetch_url'], allowToolErrors: true }] },
+  { id: 't21-github', user: 'newbie', turns: [{ text: 'Вот мой GitHub: https://github.com/demo-ryabinin – посмотри, что там можно использовать в профиле.', expect: ['fetch_profile', 'fetch_url'] }] },
+  { id: 't22-codeforces', user: 'mid', turns: [{ text: 'Мой Codeforces: https://codeforces.com/profile/tourist – что оттуда можно учесть?', expect: ['fetch_profile', 'fetch_url'], allowToolErrors: true }] },
   { id: 't23-fetch-url', user: 'fejr', turns: [{ text: 'Прочитай страницу https://go.dev/doc/effective_go и скажи, подойдёт ли она как подтверждение моих навыков.', expect: ['fetch_url', 'fetch_profile'] }] },
   { id: 't24-propose', user: 'empty', turns: [{ text: 'Я три года пишу на Go, делала сервис платежей с идемпотентными ключами на PostgreSQL. Оформи это карточками.', expect: ['propose_claims'] }] },
   {
@@ -167,7 +167,7 @@ export const SCENARIOS: Scenario[] = [
   },
 ];
 
-/** Все инструменты реестра — для таблицы «ожидали / вызвали». */
+/** Все инструменты реестра – для таблицы «ожидали / вызвали». */
 export const ALL_TOOLS = [
   'get_onboarding_status', 'search_knowledge', 'read_upload', 'fetch_url', 'fetch_profile', 'catalog_search', 'propose_claims',
   'get_profile', 'explain_evidence', 'get_gap_map', 'get_test_status', 'recommend_test', 'recommend_tasks', 'recommend_targets',

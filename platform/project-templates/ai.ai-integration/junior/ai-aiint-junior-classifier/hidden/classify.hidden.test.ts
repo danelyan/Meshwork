@@ -51,7 +51,7 @@ describe('parseReply', () => {
     expect(parseReply('Конечно! {"label":"bug","confidence":1,"why":"x"} Надеюсь, помогло.', labels)).toEqual({ label: 'bug', confidence: 1 });
   });
 
-  it('нет объекта и битый JSON — ReplyError', () => {
+  it('нет объекта и битый JSON – ReplyError', () => {
     for (const raw of ['', 'bug', '["bug", 1]', '{"label":"bug",', '{}']) {
       expect(() => parseReply(raw, labels), raw).toThrow(ReplyError);
     }
@@ -63,7 +63,7 @@ describe('parseReply', () => {
     }
   });
 
-  it('confidence — число от 0 до 1', () => {
+  it('confidence – число от 0 до 1', () => {
     for (const c of ['0.9', -0.1, 1.01, null]) {
       expect(() => parseReply(JSON.stringify({ label: 'bug', confidence: c }), labels)).toThrow(ReplyError);
     }
@@ -98,7 +98,7 @@ describe('classify', () => {
     expect((await classify(llm, input)).attempts).toBe(3);
   });
 
-  it('исчерпание попыток — invalid_output с числом попыток', async () => {
+  it('исчерпание попыток – invalid_output с числом попыток', async () => {
     const llm = scripted(['a', 'b', 'c', 'd']);
     const e = await fail(classify(llm, input));
     expect(e.code).toBe('invalid_output');
@@ -115,7 +115,7 @@ describe('classify', () => {
     expect((await classify(llm2, input, { maxAttempts: 5 })).attempts).toBe(5);
   });
 
-  it('ошибка модели — llm_failed без повтора, причина в cause', async () => {
+  it('ошибка модели – llm_failed без повтора, причина в cause', async () => {
     const boom = new Error('timeout');
     const llm = scripted(['мусор', boom]);
     const e = await fail(classify(llm, input));
@@ -125,7 +125,7 @@ describe('classify', () => {
     expect(llm.prompts).toHaveLength(2);
   });
 
-  it('некорректный вход — bad_request, модель не вызывается', async () => {
+  it('некорректный вход – bad_request, модель не вызывается', async () => {
     const bad = [
       { text: '   ', labels },
       { text: 'x', labels: ['one'] },

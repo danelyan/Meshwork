@@ -6,7 +6,7 @@ import type { AgentTool } from '../types';
 
 const Input = z.object({
   claimId: z.string().min(1).max(64).describe('id утверждения из get_profile'),
-  kind: z.enum(['task', 'interview', 'link_account']).describe('task — задание из банка; interview — защита утверждения в чате; link_account — привязать GitHub / Codeforces / ФСП'),
+  kind: z.enum(['task', 'interview', 'link_account']).describe('task – задание из банка; interview – защита утверждения в чате; link_account – привязать GitHub / Codeforces / ФСП'),
 });
 const Output = z.object({
   claimId: z.string(),
@@ -20,12 +20,12 @@ const Output = z.object({
 /**
  * Предложение способа доказать утверждение: ссылка, по которой кандидат сам
  * начинает задание / защиту / привязку. Сессий и проверок инструмент не
- * создаёт — это делает клик кандидата (ТЗ § 2: «предложение»).
+ * создаёт – это делает клик кандидата (ТЗ § 2: «предложение»).
  */
 export const startVerification: AgentTool<z.infer<typeof Input>, z.infer<typeof Output>> = {
   name: 'start_verification',
   description:
-    'Дать кандидату ссылку, чтобы поднять уровень утверждения: защита утверждения (короткое интервью в чате) или привязка аккаунта; task — только тема задания для практики (решение платформа пока не проверяет, уровень оно не поднимает). Вызывай, когда кандидат выбрал путь (обычно после explain_evidence). Ничего не запускает само — кандидат переходит по ссылке.',
+    'Дать кандидату ссылку, чтобы поднять уровень утверждения: задание из банка, защита утверждения (короткое интервью в чате) или привязка аккаунта. Вызывай, когда кандидат выбрал путь (обычно после explain_evidence). Ничего не запускает само – кандидат переходит по ссылке.',
   input: Input,
   output: Output,
   async handler(ctx, { claimId, kind }) {
@@ -37,8 +37,8 @@ export const startVerification: AgentTool<z.infer<typeof Input>, z.infer<typeof 
     if (claim.status === 'rejected') throw errors.conflict('Утверждение отклонено кандидатом - проверять нечего');
     const proof = Array.isArray(claim.suggestedProof) ? (claim.suggestedProof as unknown[]).map(String) : [];
     const taskId = proof.find((p) => p.startsWith('task:'))?.slice('task:'.length);
-    // Ссылки — только на существующие экраны UI. Отдельного экрана задания и
-    // привязки аккаунта нет: задания — список в профиле, привязка — ссылкой в чат.
+    // Ссылки – только на существующие экраны UI. Отдельного экрана задания и
+    // привязки аккаунта нет: задания – список в профиле, привязка – ссылкой в чат.
     const url =
       kind === 'interview'
         ? `/defense/${claim.id}`
@@ -49,7 +49,7 @@ export const startVerification: AgentTool<z.infer<typeof Input>, z.infer<typeof 
       kind === 'interview'
         ? 'Защита проверяет понимание сейчас, не подлинность истории; уровень поднимает код по вердикту оценщика.'
         : kind === 'task'
-          ? 'Задание из банка - тема для практики: экрана сдачи и проверки решения на платформе пока нет, уровень оно не поднимает. Поднять до «проверено платформой» сейчас можно защитой утверждения (kind=interview) или созвоном с ИИ.'
+          ? 'Задание из банка платформы - в списке заданий профиля; уровень ставит код по результату проверки.'
           : 'Пришли ссылку на профиль (GitHub, Codeforces, ФСП) в чат. Уровень «артефакт» или «третья сторона» - только после проверки владения.';
     return { claimId: claim.id, kind, url, statement: claim.statement, currentLevel: claim.level, note };
   },

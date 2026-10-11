@@ -6,7 +6,7 @@ export function stripThinking(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^[\s\S]*?<\/think>/i, '').trim();
 }
 
-/** Конец сбалансированного JSON-значения от `start` (`{` или `[`), с учётом строк; -1 — не закрыт. */
+/** Конец сбалансированного JSON-значения от `start` (`{` или `[`), с учётом строк; -1 – не закрыт. */
 function balancedEnd(text: string, start: number): number {
   let depth = 0;
   let inStr = false;
@@ -122,7 +122,7 @@ export async function completeJson<T>(
     { role: 'assistant', content: c1.raw.slice(0, 8_000) },
     {
       role: 'user',
-      content: `Ответ не принят: ${c1.error}. Верни исправленный ответ — только JSON по схеме «${req.schema.name}», без пояснений.`,
+      content: `Ответ не принят: ${c1.error}. Верни исправленный ответ – только JSON по схеме «${req.schema.name}», без пояснений.`,
     },
   ];
   const second = await llm.complete({ ...req, messages: repairMessages }, signal);

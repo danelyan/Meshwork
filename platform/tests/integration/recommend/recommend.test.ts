@@ -86,7 +86,7 @@ describe('recommend (БД)', () => {
     expect(await recommendTasks('c1', ['be.unknown'], 5)).toEqual([]);
   });
 
-  it('explainInvitation: объяснение по каталогу; чужое приглашение — 404', async () => {
+  it('explainInvitation: объяснение по каталогу; чужое приглашение – 404', async () => {
     await claim('c1', 'be.idempotency', 'artifact');
     const inv = await prisma.invitation.create({ data: { vacancyId: 'demo-vac-be-m-1', candidateId: 'c1', salaryFrom: 250000, salaryTo: 250000 } });
     const cov = await explainInvitation('c1', inv.id);
@@ -102,7 +102,7 @@ describe('recommend (БД)', () => {
     const NOW = new Date('2026-10-09T12:00:00Z');
     const strong = ['be.idempotency', 'be.transactions', 'be.message-queue', 'be.retries-timeouts', 'be.sql-indexes', 'be.rest-design', 'be.cache', 'be.authz', 'be.concurrency', 'be.integration-tests', 'be.observability', 'be.distributed-consistency', 'be.sql-schema', 'be.orm', 'be.framework', 'be.api-validation', 'be.authn-impl', 'be.config-secrets', 'be.lang-core', 'be.error-handling', 'be.background-jobs', 'common.sql-queries', 'common.http', 'common.debugging', 'common.git', 'common.security-basics', 'common.auth-flow', 'common.unit-tests'];
 
-    it('без утверждений — Junior, разрешён, причина: подтверди карточки', async () => {
+    it('без утверждений – Junior, разрешён, причина: подтверди карточки', async () => {
       expect(await recommendTest('c1', NOW)).toMatchObject({ specialization: 'backend', grade: 'junior', allowed: true, reason: NO_CONFIRMED_REASON });
     });
 
@@ -120,7 +120,7 @@ describe('recommend (БД)', () => {
       expect((await recommendTest('c1', NOW)).reason).toBe(NO_CONFIRMED_REASON);
     });
 
-    it('R-C-09: смена грейда раньше 30 дней запрещена, nextAllowedAt = +30 дней; после — разрешена', async () => {
+    it('R-C-09: смена грейда раньше 30 дней запрещена, nextAllowedAt = +30 дней; после – разрешена', async () => {
       for (const id of strong) await claim('c1', id, 'self_reported');
       const confirmedAt = new Date(NOW.getTime() - 10 * DAY);
       await prisma.candidateCategory.create({ data: { candidateId: 'c1', specialization: 'backend', grade: 'junior', confirmedAt } });
@@ -138,7 +138,7 @@ describe('recommend (БД)', () => {
       expect(r.reason).toContain('понижение не навязываем');
     });
 
-    it('чужой/несуществующий кандидат — 404', async () => {
+    it('чужой/несуществующий кандидат – 404', async () => {
       await expect(recommendTest('ghost', NOW)).rejects.toMatchObject({ status: 404 });
     });
   });
@@ -146,7 +146,7 @@ describe('recommend (БД)', () => {
   describe('GET /api/recommendations', () => {
     const cookie = (id: string) => `cid=${signSession(id)}`;
 
-    it('без сессии — 401', async () => {
+    it('без сессии – 401', async () => {
       expect((await GET(jsonRequest('/api/recommendations', 'GET'))).status).toBe(401);
     });
 
@@ -161,7 +161,7 @@ describe('recommend (БД)', () => {
       expect(Array.isArray(body.tasks)).toBe(true);
       const other = await (await GET(jsonRequest('/api/recommendations', 'GET', undefined, cookie('c2')))).json();
       expect(other.targets).toEqual([]);
-      // Без target и без вакансий в целях — цель по правилу теста; пробелы только из каталога, без чужих уровней.
+      // Без target и без вакансий в целях – цель по правилу теста; пробелы только из каталога, без чужих уровней.
       expect(other.target).toBe(`category:${other.test.specialization}:${other.test.grade}`);
       expect(other.gaps.length).toBeGreaterThan(0);
       expect(other.gaps.every((g: { currentLevel: unknown }) => g.currentLevel === null)).toBe(true);
@@ -176,7 +176,7 @@ describe('recommend (БД)', () => {
       expect(withCat.target).toBe('category:frontend:junior');
     });
 
-    it('плохие параметры — 400, неизвестная вакансия — 404, кука несуществующего кандидата — 401 session_stale', async () => {
+    it('плохие параметры – 400, неизвестная вакансия – 404, кука несуществующего кандидата – 401 session_stale', async () => {
       expect((await GET(jsonRequest('/api/recommendations?target=evil', 'GET', undefined, cookie('c1')))).status).toBe(400);
       expect((await GET(jsonRequest('/api/recommendations?limit=999', 'GET', undefined, cookie('c1')))).status).toBe(400);
       expect((await GET(jsonRequest('/api/recommendations?target=vacancy:nope', 'GET', undefined, cookie('c1')))).status).toBe(404);

@@ -44,7 +44,7 @@ describe('openai-chat: стриминг (stream: true)', () => {
     expect(deltas).toEqual([]);
   });
 
-  it('без onDelta — обычный запрос без stream', async () => {
+  it('без onDelta – обычный запрос без stream', async () => {
     const seen: Record<string, unknown>[] = [];
     const p = createOpenAiChatProvider({
       baseUrl: 'https://llm.example/v1',
@@ -59,7 +59,7 @@ describe('openai-chat: стриминг (stream: true)', () => {
     expect(seen[0]!.stream).toBeUndefined();
   });
 
-  it('collectStream: обрыв без usage — нули, не падение', async () => {
+  it('collectStream: обрыв без usage – нули, не падение', async () => {
     async function* gen() {
       yield chunk({ content: 'a' });
     }

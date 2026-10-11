@@ -34,7 +34,7 @@ describe('admin: красные флаги', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('приглашение с флагом попадает в очередь; чистое — нет; повторная постановка идемпотентна', async () => {
+  it('приглашение с флагом попадает в очередь; чистое – нет; повторная постановка идемпотентна', async () => {
     const clean = await createInvitation(ctxEmp, { candidateId: DEMO_POOL[0]!.id, message: 'Платёжная команда, Go и Kafka, высокая нагрузка, код-ревью и дежурства', salaryFrom: 200000, salaryTo: 260000 });
     const bad = await createInvitation(ctxEmp, { candidateId: DEMO_POOL[1]!.id, message: SCAM, salaryFrom: 200000, salaryTo: 260000 });
     expect(await prisma.redFlagReview.count({ where: { targetId: clean.id } })).toBe(0);
@@ -45,7 +45,7 @@ describe('admin: красные флаги', () => {
     expect(await prisma.redFlagReview.count({ where: { targetId: bad.id } })).toBe(1);
   });
 
-  it('support — 403; hidden для приглашения — 400; warned — письмо представителю и журнал', async () => {
+  it('support – 403; hidden для приглашения – 400; warned – письмо представителю и журнал', async () => {
     const bad = await createInvitation(ctxEmp, { candidateId: DEMO_POOL[1]!.id, message: SCAM, salaryFrom: 200000, salaryTo: 260000 });
     const { id } = await prisma.redFlagReview.findFirstOrThrow({ where: { targetId: bad.id } });
     expect((await listGet(jsonRequest('/api/admin/red-flags', 'GET', undefined, staff.support.cookie))).status).toBe(403);
@@ -60,7 +60,7 @@ describe('admin: красные флаги', () => {
     expect((await review(id, staff.moderator.cookie, { decision: 'ok', reason: 'Повторное решение' })).status).toBe(409);
   });
 
-  it('вакансия с флагом → hidden: пропадает из каталога кандидата, отклик — 404; журнал', async () => {
+  it('вакансия с флагом → hidden: пропадает из каталога кандидата, отклик – 404; журнал', async () => {
     const v = await scamVacancy();
     const rv = await prisma.redFlagReview.findUniqueOrThrow({ where: { targetType_targetId: { targetType: 'vacancy', targetId: v.id } } });
     const cand = DEMO_POOL[2]!.id;

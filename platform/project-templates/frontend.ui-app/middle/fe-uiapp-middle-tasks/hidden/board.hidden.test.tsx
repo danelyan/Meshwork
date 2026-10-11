@@ -38,7 +38,7 @@ describe('загрузка', () => {
     expect(remaining()).toBe('Осталось: 2');
   });
 
-  it('ошибка загрузки — alert и «Повторить» вызывает list снова', async () => {
+  it('ошибка загрузки – alert и «Повторить» вызывает list снова', async () => {
     const c = controlledApi();
     render(<TaskBoard api={c.api} />);
     await act(async () => c.last('list').d.reject(new Error('500')));
@@ -68,7 +68,7 @@ describe('оптимистичное обновление', () => {
     expect(box('Купить молоко').checked).toBe(true);
   });
 
-  it('ошибка — откат и alert', async () => {
+  it('ошибка – откат и alert', async () => {
     const c = await loaded();
     await act(async () => {
       fireEvent.click(box('Позвонить маме'));
@@ -109,7 +109,7 @@ describe('создание', () => {
     expect(remaining()).toBe('Осталось: 3');
   });
 
-  it('ошибка создания — alert, текст остаётся', async () => {
+  it('ошибка создания – alert, текст остаётся', async () => {
     const c = await loaded();
     await typeAndSubmit('Отчёт');
     await act(async () => c.last('create').d.reject(new Error('500')));

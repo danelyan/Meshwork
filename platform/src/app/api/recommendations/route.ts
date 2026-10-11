@@ -12,7 +12,7 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 const Query = z.object({
-  /** vacancy:<id> или category:<spec>:<grade>; без него — цель по умолчанию (см. defaultTarget) */
+  /** vacancy:<id> или category:<spec>:<grade>; без него – цель по умолчанию (см. defaultTarget) */
   target: z
     .string()
     .max(100)

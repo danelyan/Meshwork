@@ -17,7 +17,7 @@ import styles from './SceneAside.module.css';
 
 const STATE_LABEL = { done: 'готово', now: 'сейчас', next: 'дальше' } as const;
 
-/** «Твой путь»: шаги с состоянием; текущий подсвечен, каждый — ссылка на раздел; под шагами — подсказка к текущему. Узкий экран — горизонтальная полоса. */
+/** «Твой путь»: шаги с состоянием; текущий подсвечен, каждый – ссылка на раздел; под шагами – подсказка к текущему. Узкий экран – горизонтальная полоса. */
 function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint?: SceneAsideData['hint'] }) {
   return (
     <nav className={styles.road} aria-label="Твой путь">
@@ -36,7 +36,7 @@ function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint?: SceneAsideData[
                 </span>
                 <span className={styles.stepNote}>{s.note}</span>
               </span>
-              <span className={styles.vh}> — {STATE_LABEL[s.state]}</span>
+              <span className={styles.vh}> – {STATE_LABEL[s.state]}</span>
               {s.locked && <span id={`journey-lock-${s.id}`} role="tooltip" className={styles.lock} data-testid={`journey-lock-${s.id}`}>{s.locked}</span>}
             </Link>
           </li>
@@ -79,7 +79,7 @@ function Docs({ docs }: { docs: AsideDoc[] }) {
 
 const MARKET_ROWS = 6;
 
-/** Живые цифры базы: кандидату — активные потребности компаний, работодателю — кандидаты с категорией по тесту. */
+/** Живые цифры базы: кандидату – активные потребности компаний, работодателю – кандидаты с категорией по тесту. */
 function Market({ market, role }: { market: NonNullable<SceneAsideData['market']>; role: SceneAsideData['role'] }) {
   const employer = role === 'employer';
   const rows: MarketRow[] = market.rows.slice(0, MARKET_ROWS);
@@ -111,8 +111,8 @@ function Market({ market, role }: { market: NonNullable<SceneAsideData['market']
 }
 
 /**
- * Знакомство: таймлайн анкеты и цифры. `progress.done` — пройденные вопросы (отвеченные и пропущенные, engine.ts),
- * «ответов сохранено» — только ответы (пропуск ответом не считается), поэтому числа могут отличаться.
+ * Знакомство: таймлайн анкеты и цифры. `progress.done` – пройденные вопросы (отвеченные и пропущенные, engine.ts),
+ * «ответов сохранено» – только ответы (пропуск ответом не считается), поэтому числа могут отличаться.
  */
 function ProfileProgress({ progress, known, role }: { progress: NonNullable<SceneAsideData['onboarding']>; known: SceneAsideData['known']; role: SceneAsideData['role'] }) {
   const answers = (known ?? []).filter((f) => f.source === 'onboarding' && f.stepId);
@@ -143,7 +143,7 @@ const invitesWord = (n: number) => `${n} ${plural(n, 'приглашение', '
 const vacanciesWord = (n: number) => `${n} ${plural(n, 'вакансия', 'вакансии', 'вакансий')}`;
 const PROJECT_STATUS = { submitted: 'сдан, ждёт проверки', running: 'проверяется', checked: 'проверен', failed: 'проверка не прошла' } as const;
 
-/** Блокер шага: что мешает и как снять. Согласие на оценку ИИ даётся здесь же (POST /api/consents), после — колонка перечитывается. */
+/** Блокер шага: что мешает и как снять. Согласие на оценку ИИ даётся здесь же (POST /api/consents), после – колонка перечитывается. */
 function BlockerView({ id, blocker }: { id: string; blocker: StepBlocker }) {
   const refresh = useAsideRefresh();
   const [busy, setBusy] = useState(false);
@@ -174,7 +174,7 @@ function BlockerView({ id, blocker }: { id: string; blocker: StepBlocker }) {
   );
 }
 
-/** Карточка шага: короткий текст и одна кнопка-ссылка; при блокере — сначала он, кнопка шага вторичная (или её нет). */
+/** Карточка шага: короткий текст и одна кнопка-ссылка; при блокере – сначала он, кнопка шага вторичная (или её нет). */
 function StepCard({ id, title, text, extra, href, cta, blocker }: { id: string; title: string; text: string; extra?: string; href?: string; cta?: string; blocker?: StepBlocker }) {
   return (
     <Card id={id} title={title}>
@@ -186,7 +186,7 @@ function StepCard({ id, title, text, extra, href, cta, blocker }: { id: string; 
   );
 }
 
-/** Блок под текущий шаг пути кандидата (решение владельца 12.10: панель меняется по шагу). Нет данных — ничего не рисуем. */
+/** Блок под текущий шаг пути кандидата (решение владельца 12.10: панель меняется по шагу). Нет данных – ничего не рисуем. */
 function StepBlockView({ block, market, docs, role }: { block: StepBlock; market: SceneAsideData['market']; docs: SceneAsideData['docs']; role: SceneAsideData['role'] }) {
   switch (block.step) {
     case 'onboarding':
@@ -245,7 +245,7 @@ export function SceneAside({ data: initial, className }: { data: SceneAsideData;
       </div>
     );
   return (
-    // внешний блок — контейнер размера (@container aside), внутренний — сетка: запрос не стилизует сам контейнер
+    // внешний блок – контейнер размера (@container aside), внутренний – сетка: запрос не стилизует сам контейнер
     <div className={`${styles.box} ${className ?? ''}`} data-testid="scene-aside">
       <div className={styles.aside} data-role={data.role}>
         {/* путь → главное действие шага → память; подсказка под путём только без блока шага (иначе тот же текст трижды) */}

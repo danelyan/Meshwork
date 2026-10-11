@@ -19,7 +19,7 @@ import type {
 /**
  * Защита утверждения коротким текстовым интервью (фаза 5 E-01).
  * Единственный путь, кроме задания, поднять уровень утверждения до `platform`.
- * Уровень меняет только `finishWithVerdict` — после вердикта оценщика и порога в коде.
+ * Уровень меняет только `finishWithVerdict` – после вердикта оценщика и порога в коде.
  */
 
 export const DEFENSE_LIMITS: DefenseLimits = {
@@ -113,7 +113,7 @@ export async function startDefense(
   llm: LlmProvider,
 ): Promise<{ sessionId: string; question: DefenseQuestion; resumed: boolean }> {
   const claim = await prisma.claim.findUnique({ where: { id: claimId }, select: claimSelect });
-  // Чужое утверждение — 404, не раскрываем, что оно существует.
+  // Чужое утверждение – 404, не раскрываем, что оно существует.
   if (!claim || claim.candidateId !== candidateId) throw errors.notFound('Утверждение не найдено');
   assertEligible(claim);
   await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): защиту оценивает ИИ
@@ -202,7 +202,7 @@ async function loadOwnSession(candidateId: string, sessionId: string) {
 
 /**
  * Сохраняет ответ на текущий вопрос и возвращает следующий вопрос или вердикт.
- * Пустой ответ и «не знаю» допустимы — оцениваются честно.
+ * Пустой ответ и «не знаю» допустимы – оцениваются честно.
  * Если все вопросы отвечены, а вердикта нет (оценщик упал), вызов повторяет
  * оценку; `answer` в этом случае не используется.
  */
@@ -249,7 +249,7 @@ export async function answerDefense(
 }
 
 // ---------------------------------------------------------------------------
-// Вердикт — единственное место, где меняется уровень утверждения
+// Вердикт – единственное место, где меняется уровень утверждения
 // ---------------------------------------------------------------------------
 async function finishWithVerdict(candidateId: string, sessionId: string, llm: LlmProvider): Promise<DefenseVerdict> {
   const session = await loadOwnSession(candidateId, sessionId);

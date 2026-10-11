@@ -81,7 +81,7 @@ class ModelRegistry:
             raise ValueError("stage")
         rec = self._find(name, version)
         if rec["stage"] == "archived":
-            raise TransitionError("archived — конечная стадия")
+            raise TransitionError("archived – конечная стадия")
         if rec["stage"] == stage:
             raise TransitionError("уже в этой стадии")
         if stage == "production":

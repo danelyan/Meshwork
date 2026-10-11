@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 export const GET = withErrors(async () => Response.json({ mode: sttMode(), sampleRate: STT_SAMPLE_RATE, maxBytes: STT_MAX_BYTES }));
 
 /**
- * Голос → текст через Yandex SpeechKit или OpenAI-совместимый whisper (STT_PROVIDER). Тело — LPCM 16 бит моно 16 кГц (`audio/l16`), до 1 МБ (≈ 30 с).
+ * Голос → текст через Yandex SpeechKit или OpenAI-совместимый whisper (STT_PROVIDER). Тело – LPCM 16 бит моно 16 кГц (`audio/l16`), до 1 МБ (≈ 30 с).
  * Только для вошедших, лимит запросов на сессию (STT_RATE). Аудио не сохраняется: читаем поток в память, отдаём SpeechKit, забываем.
  */
 export const POST = withErrors(async (req: Request) => {

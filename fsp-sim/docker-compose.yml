@@ -1,8 +1,8 @@
-# Симулятор ФСП: ФСП ID (Keycloak 26 + PostgreSQL) и API реестра за Caddy. Настройки — .env (.env.example).
+# Симулятор ФСП: ФСП ID (Keycloak 26 + PostgreSQL) и API реестра за Caddy. Настройки – .env (.env.example).
 #   docker compose up -d --build        затем ${PUBLIC_URL}/ (стартовая), /docs, /auth/admin/
-# Реалм импортируется только при первом старте (пустая база). Обновить клиентов реалма — пересоздать
+# Реалм импортируется только при первом старте (пустая база). Обновить клиентов реалма – пересоздать
 # базу Keycloak (README, «Стенд»); пользователей API сам сверяет с реестром при старте.
-# Тома: db-data — база Keycloak, api-state — ручные правки песочницы, caddy-data — сертификаты.
+# Тома: db-data – база Keycloak, api-state – ручные правки песочницы, caddy-data – сертификаты.
 services:
   db:
     image: postgres:16-alpine
@@ -82,7 +82,7 @@ services:
     image: caddy:2.11-alpine
     environment:
       PUBLIC_URL: ${PUBLIC_URL}
-      # Имена, с которых Caddy перенаправляет на PUBLIC_URL. Не заданы — служебное имя, на которое никто не придёт.
+      # Имена, с которых Caddy перенаправляет на PUBLIC_URL. Не заданы – служебное имя, на которое никто не придёт.
       REDIRECT_FROM: ${REDIRECT_FROM:-http://redirect.invalid}
     ports:
       - "80:80"

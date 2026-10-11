@@ -7,22 +7,22 @@ import { getEnv } from './env';
 import { errors } from './errors';
 
 /**
- * Сессия — подписанная HMAC-SHA256 кука `cid`, без хранения на сервере.
+ * Сессия – подписанная HMAC-SHA256 кука `cid`, без хранения на сервере.
  * Два формата (docs/decisions/0001-auth-yandex-id.md):
  *
  *  - старый, кандидатский (демо-вход до lane auth):
- *      `<candidateId>.<exp>.<sig>` — 3 части;
+ *      `<candidateId>.<exp>.<sig>` – 3 части;
  *  - аккаунт (User):
- *      `u.<userId>.<role>.<candidateId>.<employerProfileId>.<exp>.<sig>` — 7 частей,
- *      пустые id — пустая строка;
+ *      `u.<userId>.<role>.<candidateId>.<employerProfileId>.<exp>.<sig>` – 7 частей,
+ *      пустые id – пустая строка;
  *  - аккаунт с паролем (lane email-auth, ADR 0001 «Дополнение 10.10»):
- *      `u.<userId>.<role>.<candidateId>.<employerProfileId>.<pv>.<exp>.<sig>` — 8 частей,
- *      `pv` — версия пароля (`passwordVersionOf`). Смена пароля меняет версию, и старые
+ *      `u.<userId>.<role>.<candidateId>.<employerProfileId>.<pv>.<exp>.<sig>` – 8 частей,
+ *      `pv` – версия пароля (`passwordVersionOf`). Смена пароля меняет версию, и старые
  *      куки считаются протухшими (`sessionExists`). Аккаунты без пароля (Яндекс, демо)
  *      получают прежний 7-частный формат.
  *
  * Роль и id профиля в куке, чтобы `requireCandidate` оставался синхронным и не
- * ходил в БД. Гварды решают по активной роли (`role`), id профиля — второе условие
+ * ходил в БД. Гварды решают по активной роли (`role`), id профиля – второе условие
  * (`server/auth/access.ts`). `parseSession` к тому же отдаёт только id профиля активной роли (ADR 0004,
  * защита в глубину): у учётки с двумя ролями id неактивного профиля из куки недоступен, даже если гвард ошибся.
  * Выбор и переключение роли (`/api/auth/role`, `/api/auth/role/switch`) перевыпускают куку (`userSessionCookie`).
@@ -40,7 +40,7 @@ export { passwordVersionOf } from './auth/password-version';
 export const USER_ROLES = ['pending', 'candidate', 'employer'] as const;
 export type SessionRole = (typeof USER_ROLES)[number];
 
-/** Кто вошёл. `userId = null` — старая кука демо-кандидата без аккаунта. */
+/** Кто вошёл. `userId = null` – старая кука демо-кандидата без аккаунта. */
 export interface SessionPrincipal {
   userId: string | null;
   role: SessionRole;
@@ -55,7 +55,7 @@ export interface UserSessionInput {
   role: SessionRole;
   candidateId?: string | null;
   employerProfileId?: string | null;
-  /** `passwordVersionOf(user.passwordHash)`; пусто — аккаунт без пароля, кука старого формата. */
+  /** `passwordVersionOf(user.passwordHash)`; пусто – аккаунт без пароля, кука старого формата. */
   passwordVersion?: string | null;
 }
 
@@ -101,7 +101,7 @@ export function signUserSession(
   return `${payload}.${hmac(payload, secret)}`;
 }
 
-/** Разбор любой из двух форм куки; null — нет подписи, подделка, истёк срок. */
+/** Разбор любой из двух форм куки; null – нет подписи, подделка, истёк срок. */
 export function parseSession(
   token: string | undefined | null,
   secret: string = getEnv().SESSION_SECRET,
@@ -146,7 +146,7 @@ export function verifySession(
   return parseSession(token, secret, nowSec)?.candidateId ?? null;
 }
 
-/** Значение куки из заголовка Cookie (без зависимости от next/headers — работает и в тестах). */
+/** Значение куки из заголовка Cookie (без зависимости от next/headers – работает и в тестах). */
 export function readCookie(req: Request, name: string): string | undefined {
   const header = req.headers.get('cookie');
   if (!header) return undefined;
@@ -171,8 +171,8 @@ export function getSession(req: Request): SessionPrincipal | null {
 }
 
 /**
- * Кандидат по активной роли: 401 — нет сессии; 403 — активна другая роль (работодатель, pending) или нет
- * профиля кандидата. Чистая функция (тесты без запроса). Старая демо-кука (userId = null) — кандидат.
+ * Кандидат по активной роли: 401 – нет сессии; 403 – активна другая роль (работодатель, pending) или нет
+ * профиля кандидата. Чистая функция (тесты без запроса). Старая демо-кука (userId = null) – кандидат.
  */
 export function candidateFrom(s: SessionPrincipal | null): string {
   if (!s) throw errors.unauthorized();
@@ -180,7 +180,7 @@ export function candidateFrom(s: SessionPrincipal | null): string {
   return s.candidateId!;
 }
 
-/** Работодатель по активной роли: 401 — нет сессии; 403 — другая роль, нет аккаунта или профиля работодателя. */
+/** Работодатель по активной роли: 401 – нет сессии; 403 – другая роль, нет аккаунта или профиля работодателя. */
 export function employerFrom(s: SessionPrincipal | null): { userId: string; employerProfileId: string } {
   if (!s) throw errors.unauthorized();
   if (!allowsLevel('employer', s)) throw errors.forbidden('Доступно только работодателю');
@@ -202,7 +202,7 @@ export function requireUser(req: Request): SessionPrincipal & { userId: string }
   return s as SessionPrincipal & { userId: string };
 }
 
-/** Работодатель: 401 — нет входа, 403 — другая активная роль (см. `employerFrom`). Уровень `employer`. */
+/** Работодатель: 401 – нет входа, 403 – другая активная роль (см. `employerFrom`). Уровень `employer`. */
 export function requireEmployer(req: Request): { userId: string; employerProfileId: string } {
   return employerFrom(getSession(req));
 }

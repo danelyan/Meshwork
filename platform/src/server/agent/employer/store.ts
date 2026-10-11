@@ -19,7 +19,7 @@ export async function saveEmployerMessage(conversationId: string, m: ChatMessage
   await prisma.employerConversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } });
 }
 
-/** Версия промпта — системной строкой в разговоре (как у консультанта). */
+/** Версия промпта – системной строкой в разговоре (как у консультанта). */
 export async function ensureEmployerPromptVersion(conversationId: string): Promise<void> {
   const marker = `prompt:${EMPLOYER_PROMPT_VERSION}`;
   const last = await prisma.employerMessage.findFirst({
@@ -33,8 +33,8 @@ export async function ensureEmployerPromptVersion(conversationId: string): Promi
 
 /**
  * Суточный бюджет токенов работодателя: AgentRun его разговоров за скользящие 24 часа.
- * У AgentRun нет ссылки на работодателя — связь через conversationId (id разговоров
- * EmployerConversation и Conversation — разные cuid, не пересекаются).
+ * У AgentRun нет ссылки на работодателя – связь через conversationId (id разговоров
+ * EmployerConversation и Conversation – разные cuid, не пересекаются).
  */
 export async function employerTokensUsedLast24h(employerProfileId: string, now: Date = new Date()): Promise<number> {
   const convs = await prisma.employerConversation.findMany({ where: { employerProfileId }, select: { id: true } });

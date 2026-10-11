@@ -15,7 +15,7 @@ function outcome(factory: Parameters<typeof verify>[0]): Error | null {
 }
 
 describe('проверка кэша (visible)', () => {
-  it('verify — функция, не бросающая на эталонной реализации', () => {
+  it('verify – функция, не бросающая на эталонной реализации', () => {
     expect(typeof verify).toBe('function');
     expect(outcome(makeFactory())?.message).toBeUndefined();
   });

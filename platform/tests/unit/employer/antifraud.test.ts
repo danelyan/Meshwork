@@ -5,7 +5,7 @@ const GOOD =
 const codes = (texts: (string | null)[], from = 200_000, to = 280_000) => detectRedFlags({ texts, salaryFrom: from, salaryTo: to }).map((f) => f.code);
 
 describe('detectRedFlags', () => {
-  it('нормальное предложение — без флагов', () => {
+  it('нормальное предложение – без флагов', () => {
     expect(codes([GOOD])).toEqual([]);
     expect(riskLevel(detectRedFlags({ texts: [GOOD], salaryFrom: 200_000, salaryTo: 280_000 }))).toBe('none');
   });
@@ -35,7 +35,7 @@ describe('detectRedFlags', () => {
     }
   });
 
-  it('оплата за счёт компании и «оплачиваемая стажировка» — не флаг', () => {
+  it('оплата за счёт компании и «оплачиваемая стажировка» – не флаг', () => {
     expect(codes([`${GOOD} Оплата обучения за счёт компании. Оплачиваемая стажировка, бесплатные курсы.`])).toEqual([]);
     expect(codes([`${GOOD} Достойная оплата труда и компенсация расходов.`])).toEqual([]);
   });
@@ -77,14 +77,14 @@ describe('companyTrust', () => {
   const now = new Date('2026-10-10T12:00:00Z');
   const full = { name: 'ООО Пример', description: 'О компании', industry: 'Финтех', innValid: true, contact: '@hr', createdAt: new Date('2026-08-01T00:00:00Z'), now };
 
-  it('полный профиль, ИНН, старый аккаунт, мало приглашений — высокий индекс, помечен концепцией', () => {
+  it('полный профиль, ИНН, старый аккаунт, мало приглашений – высокий индекс, помечен концепцией', () => {
     const t = companyTrust({ ...full, invitationsSent: 2, invitationsDeclined: 2 });
     expect(t.concept).toBe(true);
     expect(t.index).toBe(35 + 25 + 15 + 12);
     expect(t.band).toBe('high');
   });
 
-  it('новый пустой аккаунт — низкий', () => {
+  it('новый пустой аккаунт – низкий', () => {
     const t = companyTrust({ name: 'ОО', description: null, industry: null, innValid: false, contact: null, createdAt: now, invitationsSent: 0, invitationsDeclined: 0, now });
     expect(t.band).toBe('low');
     expect(t.index).toBeLessThan(40);
@@ -99,20 +99,20 @@ describe('companyTrust', () => {
 });
 
 describe('invitationSanction: жалобы кандидатов (ПРЕДЛОЖЕНИЕ, не калибровано)', () => {
-  it('0–2 жалобы — обычный лимит', () => {
+  it('0–2 жалобы – обычный лимит', () => {
     expect(invitationSanction(0, 20)).toEqual({ level: 'none', complaints: 0, limit: 20 });
     expect(invitationSanction(2, 20)).toEqual({ level: 'none', complaints: 2, limit: 20 });
   });
-  it('3–4 жалобы — лимит 20 → 5, меньший базовый не повышается', () => {
+  it('3–4 жалобы – лимит 20 → 5, меньший базовый не повышается', () => {
     expect(invitationSanction(3, 20)).toEqual({ level: 'reduced', complaints: 3, limit: COMPLAINT_SANCTIONS.reducedLimit });
     expect(invitationSanction(4, 20).limit).toBe(5);
     expect(invitationSanction(3, 2).limit).toBe(2);
   });
-  it('от 5 жалоб — блок отправки, лимит 0', () => {
+  it('от 5 жалоб – блок отправки, лимит 0', () => {
     expect(invitationSanction(5, 20)).toEqual({ level: 'blocked', complaints: 5, limit: 0 });
     expect(invitationSanction(12, 20).level).toBe('blocked');
   });
-  it('окно — 30 суток', () => {
+  it('окно – 30 суток', () => {
     const now = new Date('2026-10-11T12:00:00Z');
     expect(complaintWindowStart(now).toISOString()).toBe('2026-09-11T12:00:00.000Z');
   });
@@ -121,7 +121,7 @@ describe('invitationSanction: жалобы кандидатов (ПРЕДЛОЖ�
 describe('companyTrust: штраф за жалобы', () => {
   const now = new Date('2026-10-10T12:00:00Z');
   const full = { name: 'ООО Пример', description: 'О компании', industry: 'Финтех', innValid: true, contact: '@hr', createdAt: new Date('2026-08-01T00:00:00Z'), invitationsSent: 2, invitationsDeclined: 0, now };
-  it('без жалоб — как раньше; 2 жалобы — минус 20; штраф ограничен 40 и индекс не ниже 0', () => {
+  it('без жалоб – как раньше; 2 жалобы – минус 20; штраф ограничен 40 и индекс не ниже 0', () => {
     const base = companyTrust(full).index;
     expect(companyTrust({ ...full, complaints: 0 }).index).toBe(base);
     const two = companyTrust({ ...full, complaints: 2 });

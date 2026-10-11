@@ -10,7 +10,7 @@ import { CLOSED, LipSync, type MouthShape, type SpectrumFeatures, type Viseme } 
 
 /**
  * Голос компаньона: озвучка ответов через `/api/tts` (SpeechKit) и Web Audio. Аудио идёт через
- * AnalyserNode — аватар читает громкость (`getLevel`) в своём кадре и открывает рот.
+ * AnalyserNode – аватар читает громкость (`getLevel`) в своём кадре и открывает рот.
  *
  * Озвучка выключена по умолчанию: iOS/Chrome пускают звук только после жеста, поэтому AudioContext
  * создаётся и `resume()`-ится на клике «Озвучивать ответы» или «Озвучить» у сообщения. Дальше
@@ -21,32 +21,32 @@ export type VoiceStatus = 'idle' | 'thinking' | 'loading' | 'speaking';
 export interface CompanionVoice {
   enabled: boolean;
   status: VoiceStatus;
-  /** null — ещё не спрашивали сервер; false — озвучка выключена на стенде. */
+  /** null – ещё не спрашивали сервер; false – озвучка выключена на стенде. */
   available: boolean | null;
   notice: string | null;
   /** Включить/выключить автоозвучку. Вызывать из обработчика клика (разблокирует звук). */
   toggle: () => void;
   /** Завершённый ответ компаньона: озвучить, если автоозвучка включена. */
   speak: (text: string, key?: string) => void;
-  /** Озвучить по клику (повтор сообщения, тест) — независимо от переключателя. */
+  /** Озвучить по клику (повтор сообщения, тест) – независимо от переключателя. */
   replay: (text: string, key?: string) => void;
   stop: () => void;
   /** Приглушить (on) или вернуть громкость текущей реплики линейной рампой, не останавливая её (duck вместо kill). */
   duck: (on: boolean, gain?: number, rampMs?: number) => void;
   setThinking: (thinking: boolean) => void;
-  /** Текущая громкость (RMS 0…1) звучащей реплики; 0 — тишина. */
+  /** Текущая громкость (RMS 0…1) звучащей реплики; 0 – тишина. */
   getLevel: () => number;
-  /** Форма рта по спектру звучащей реплики (lipsync.ts); в тишине — закрыт. Считать раз в кадр. */
+  /** Форма рта по спектру звучащей реплики (lipsync.ts); в тишине – закрыт. Считать раз в кадр. */
   getMouth: () => MouthShape;
-  /** Текущая висема — для отладки и демо-страницы. */
+  /** Текущая висема – для отладки и демо-страницы. */
   getViseme: () => Viseme;
-  /** Признаки спектра последнего кадра — для калибровки на демо-странице. */
+  /** Признаки спектра последнего кадра – для калибровки на демо-странице. */
   getFeatures: () => SpectrumFeatures | null;
-  /** Исходный текст реплики, которую сейчас готовят или произносят; null — тишина. */
+  /** Исходный текст реплики, которую сейчас готовят или произносят; null – тишина. */
   speakingText: string | null;
   /** Ключ звучащей реплики (id потока), если вызывающий его передал: по нему пузырь отличает одинаковые тексты. */
   speakingKey: string | null;
-  /** Прогресс воспроизведения звучащей реплики 0…1 (по часам AudioContext); 0 — тишина или загрузка. */
+  /** Прогресс воспроизведения звучащей реплики 0…1 (по часам AudioContext); 0 – тишина или загрузка. */
   getProgress: () => number;
   /**
    * Короткий клип (ack «Угу…») по URL: играет через тот же граф (рот аватара двигается), не трогает очередь реплик.
@@ -61,7 +61,7 @@ export { COMPANION_SAY_EVENT };
 
 const VoiceContext = createContext<CompanionVoice | null>(null);
 
-/** Голос компаньона из ближайшего провайдера; null — вне чата (кнопок озвучки нет). */
+/** Голос компаньона из ближайшего провайдера; null – вне чата (кнопок озвучки нет). */
 export function useCompanionVoice(): CompanionVoice | null {
   return useContext(VoiceContext);
 }
@@ -69,7 +69,7 @@ export function useCompanionVoice(): CompanionVoice | null {
 type AudioCtor = typeof AudioContext;
 
 interface Pending {
-  /** Исходный текст реплики (как пришёл от агента) — по нему лента находит звучащий пузырь. */
+  /** Исходный текст реплики (как пришёл от агента) – по нему лента находит звучащий пузырь. */
   text: string;
   key?: string;
   ctrl: AbortController;
@@ -77,13 +77,13 @@ interface Pending {
 }
 
 /**
- * `autoEnable` — озвучка включается сама на первом действии пользователя (клик, касание, клавиша):
+ * `autoEnable` – озвучка включается сама на первом действии пользователя (клик, касание, клавиша):
  * это снимает запрет autoplay, и ответы звучат без «Озвучивать ответы». Клик по кнопке с
- * `data-voice-toggle` (переключатель «без звука») автоматику не запускает — решает сам переключатель.
+ * `data-voice-toggle` (переключатель «без звука») автоматику не запускает – решает сам переключатель.
  * Без флага (онбординг) озвучка включается только кнопкой.
  */
 export function CompanionVoiceProvider({ children, autoEnable = false, realtime = false }: { children: ReactNode; autoEnable?: boolean; realtime?: boolean }) {
-  // Созвон (защита, комната интервью): синтез с быстрой моделью — см. /api/tts `realtime`.
+  // Созвон (защита, комната интервью): синтез с быстрой моделью – см. /api/tts `realtime`.
   const realtimeRef = useRef(realtime);
   const [enabled, setEnabled] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -97,7 +97,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false, realtime 
   const availableRef = useRef<boolean | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  /** Громкость выхода: источники → analyser → gain → destination (analyser видит полный сигнал — lipsync не глохнет при duck). */
+  /** Громкость выхода: источники → analyser → gain → destination (analyser видит полный сигнал – lipsync не глохнет при duck). */
   const gainRef = useRef<GainNode | null>(null);
   const bufRef = useRef<Float32Array<ArrayBuffer> | null>(null);
   const freqRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
@@ -124,7 +124,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false, realtime 
       const ctx = new Ctor();
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 1024;
-      // Без GainNode (усечённые реализации, подделки в тестах) — прямой выход, duck не действует.
+      // Без GainNode (усечённые реализации, подделки в тестах) – прямой выход, duck не действует.
       if (typeof ctx.createGain === 'function') {
         const gain = ctx.createGain();
         analyser.connect(gain);
@@ -234,7 +234,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false, realtime 
     (raw: string, key?: string) => {
       const text = speechText(raw);
       if (!text || availableRef.current === false) return;
-      if (!runningRef.current) rampGain(1, 0); // новая реплика — полная громкость
+      if (!runningRef.current) rampGain(1, 0); // новая реплика – полная громкость
       try {
         clipSrcRef.current?.stop(); // ack «Угу…» не должен накладываться на ответ
       } catch {
@@ -296,7 +296,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false, realtime 
       if (ok) return;
       enabledRef.current = false;
       setEnabled(false);
-      setNotice('Озвучка на этом стенде выключена — ответы остаются текстом');
+      setNotice('Озвучка на этом стенде выключена – ответы остаются текстом');
     });
   }, [unlock, stop, checkAvailable]);
 
@@ -313,7 +313,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false, realtime 
       stop();
       void checkAvailable().then((ok) => {
         if (ok) enqueue(text, key);
-        else setNotice('Озвучка на этом стенде выключена — ответы остаются текстом');
+        else setNotice('Озвучка на этом стенде выключена – ответы остаются текстом');
       });
     },
     [unlock, stop, checkAvailable, enqueue],
@@ -400,7 +400,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false, realtime 
       clipCacheRef.current.set(url, p);
     }
     const buffer = await p;
-    // За время загрузки могла зазвучать реплика или клип — тогда молчим.
+    // За время загрузки могла зазвучать реплика или клип – тогда молчим.
     if (!buffer || ctxRef.current !== ctx || queueRef.current.length > 0 || sourceRef.current || clipSrcRef.current) return;
     await new Promise<void>((resolve) => {
       const src = ctx.createBufferSource();

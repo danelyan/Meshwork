@@ -1,7 +1,7 @@
-// Слепая разметка жюри на /evaluate («Разметить самому», R-M-*, критерий 1): 8 анонимных карточек под демо-вакансию —
+// Слепая разметка жюри на /evaluate («Разметить самому», R-M-*, критерий 1): 8 анонимных карточек под демо-вакансию –
 // 3 из верха нашего ранжирования, 3 из верха BM25 по тексту профиля, остальные случайные; перемешаны. Жюри ставит 0–3,
-// сервер считает, чей порядок лучше. Ничего не сохраняется: источник каждой карточки — в подписанном токене (HMAC-SHA256).
-// Чистые функции, без БД; загрузка — в route.ts.
+// сервер считает, чей порядок лучше. Ничего не сохраняется: источник каждой карточки – в подписанном токене (HMAC-SHA256).
+// Чистые функции, без БД; загрузка – в route.ts.
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export const BLIND_METHODS = ['ours', 'bm25', 'random'] as const;
@@ -44,7 +44,7 @@ function shuffle<T>(xs: T[], rng: Rng): T[] {
 
 /**
  * Выбор карточек: топ-3 нашего порядка, топ-3 BM25, случайные из остального пула (не меньше 2, добор до 8, если
- * топы пересеклись). Карточка в обоих топах — одна, с двумя источниками. Пул меньше — карточек меньше.
+ * топы пересеклись). Карточка в обоих топах – одна, с двумя источниками. Пул меньше – карточек меньше.
  * Ключи c1…cN выдаются после перемешивания.
  */
 export function selectBlindCards(ours: string[], bm25: string[], pool: string[], rng: Rng = Math.random): BlindPick[] {
@@ -72,7 +72,7 @@ export function signBlindToken(payload: BlindTokenPayload, secret: string): stri
 
 export class BlindTokenError extends Error {}
 
-/** Проверка подписи и срока. Подделка, мусор или просрочка — BlindTokenError (route отвечает 400). */
+/** Проверка подписи и срока. Подделка, мусор или просрочка – BlindTokenError (route отвечает 400). */
 export function verifyBlindToken(token: string, secret: string, now = Date.now()): BlindTokenPayload {
   const [body, sig, extra] = token.split('.');
   if (!body || !sig || extra !== undefined) throw new BlindTokenError('Токен разметки повреждён');
@@ -98,7 +98,7 @@ export interface MethodScore {
   meanRating: number;
   /** Доля карточек метода с оценкой ≥ 2. */
   p3: number;
-  /** nDCG@3 по оценкам 0–3 в порядке выдачи метода; идеал — 3 лучшие оценки среди всех карточек сессии. */
+  /** nDCG@3 по оценкам 0–3 в порядке выдачи метода; идеал – 3 лучшие оценки среди всех карточек сессии. */
   ndcg3: number;
   cards: number;
 }
@@ -116,7 +116,7 @@ const ru = (x: number) => x.toFixed(1).replace('.', ',');
 
 /**
  * Оценки жюри против источников из токена. Учитываются только карточки с оценкой; карточка в двух топах
- * засчитывается обоим методам. Оценки вне 0..3 или ключи не из токена — ошибка ввода (BlindTokenError → 400).
+ * засчитывается обоим методам. Оценки вне 0..3 или ключи не из токена – ошибка ввода (BlindTokenError → 400).
  */
 export function scoreBlind(cards: Record<string, BlindSource[]>, ratings: Record<string, number>): BlindScore {
   for (const [k, v] of Object.entries(ratings)) {
@@ -140,7 +140,7 @@ export function scoreBlind(cards: Record<string, BlindSource[]>, ratings: Record
   }
   const verdict =
     rated.length === 0
-      ? 'Оценок нет — поставьте 0–3 хотя бы нескольким карточкам.'
+      ? 'Оценок нет – поставьте 0–3 хотя бы нескольким карточкам.'
       : `Ваши оценки: наш порядок ${ru(methods.ours.meanRating)} из 3, BM25 ${ru(methods.bm25.meanRating)}, случайный ${ru(methods.random.meanRating)}`;
   return { n: rated.length, methods, verdict };
 }

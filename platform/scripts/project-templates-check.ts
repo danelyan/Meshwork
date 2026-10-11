@@ -1,11 +1,11 @@
 // Прогон скрытых тестов шаблонов проектов (lane project, ADR 0003) так же, как это делает runner:
-// репозиторий = starter (+ reference поверх для эталона), тесты платформы — в .platform-tests/.
-// Ожидание: эталон проходит весь скрытый набор, пустой starter — нет.
+// репозиторий = starter (+ reference поверх для эталона), тесты платформы – в .platform-tests/.
+// Ожидание: эталон проходит весь скрытый набор, пустой starter – нет.
 //
 //   npx tsx scripts/project-templates-check.ts [--only <templateId>] [--suite hidden|visible]
 //
-// Окружение: TEMPLATE_NODE_DEPS — node_modules предустановленного набора runner (по умолчанию
-// runner/sandbox/node/node_modules: `npm ci` в runner/sandbox/node); TEMPLATE_PYTHON — python с pytest
+// Окружение: TEMPLATE_NODE_DEPS – node_modules предустановленного набора runner (по умолчанию
+// runner/sandbox/node/node_modules: `npm ci` в runner/sandbox/node); TEMPLATE_PYTHON – python с pytest
 // (по умолчанию runner/sandbox/python/.venv/bin/python, иначе python3).
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';

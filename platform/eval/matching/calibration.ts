@@ -1,7 +1,7 @@
 // Калибровка балла подбора: балл формулы (ranking.ts, scoreCandidate) → вероятность «кандидат подходит».
 //   npx tsx eval/matching/calibration.ts [--no-write]     # таблица + ключ calibration в eval/matching/results.json
-// Без БД и сети. Разметка — СИНТЕТИЧЕСКАЯ (скрытая истина генератора, synthetic.ts), не исходы реальных приглашений:
-// таблица честно калибрует балл против этой разметки; реальные исходы — outcomes.ts.
+// Без БД и сети. Разметка – СИНТЕТИЧЕСКАЯ (скрытая истина генератора, synthetic.ts), не исходы реальных приглашений:
+// таблица честно калибрует балл против этой разметки; реальные исходы – outcomes.ts.
 // Пары: все (вакансия, профиль), которые видит работодатель (rankCandidates + dropUncovered, как в кабинете).
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -70,7 +70,7 @@ function block(ps: Pair[]) {
 const relevant = block(rel);
 const strongBlock = block(strong);
 const result = {
-  note: 'Калибровка на СИНТЕТИЧЕСКОЙ разметке (скрытая истина генератора, eval/matching/synthetic.ts), не на исходах реальных приглашений. Брир «до» — сам балл формулы, обрезанный в [0;1], как вероятность. Проверка: калибровка на чётных вакансиях — оценка на нечётных, и наоборот. Пары — те, что видит работодатель (после dropUncovered).',
+  note: 'Калибровка на СИНТЕТИЧЕСКОЙ разметке (скрытая истина генератора, eval/matching/synthetic.ts), не на исходах реальных приглашений. Брир «до» – сам балл формулы, обрезанный в [0;1], как вероятность. Проверка: калибровка на чётных вакансиях – оценка на нечётных, и наоборот. Пары – те, что видит работодатель (после dropUncovered).',
   profiles: syn.profiles.length, vacancies: syn.vacancies.length, pairsTotal: allPairs, pairsShown: rel.length, maxScore,
   relevant, strong: strongBlock,
 };

@@ -3,7 +3,7 @@ import { useRef } from 'react';
 
 import { PanelSplitter } from '@/components/avatar/PanelSplitter';
 
-// Разделитель чата и сцены (владелец 11.10): ширина в --panel-w, запоминается, двойной клик — сброс.
+// Разделитель чата и сцены (владелец 11.10): ширина в --panel-w, запоминается, двойной клик – сброс.
 function Host() {
   const ref = useRef<HTMLDivElement>(null);
   return (

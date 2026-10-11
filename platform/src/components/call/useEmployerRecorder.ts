@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-/** Длина сегмента: отдельный MediaRecorder на каждый — каждый файл воспроизводим сам по себе (как видео кандидата). */
+/** Длина сегмента: отдельный MediaRecorder на каждый – каждый файл воспроизводим сам по себе (как видео кандидата). */
 export const EMPLOYER_AUDIO_SEGMENT_MS = 60_000;
 const AUDIO_BITRATE = 32_000;
 
@@ -18,14 +18,14 @@ function mimeType(): string | undefined {
  * Запись голоса работодателя в живой защите (ADR 0008 п. 3: пишутся обе стороны). Пишет тот же микрофон, что уходит
  * кандидату по P2P, сегментами WebM/Opus на `POST /api/employer/call/{id}/audio?startMs=`.
  * Любая ошибка записи или загрузки только логируется: звонок не падает и не прерывается. Сервер отказал
- * (`recording_consent_required`, `call_recording_off`, защита завершена) — запись останавливается до следующего входа.
+ * (`recording_consent_required`, `call_recording_off`, защита завершена) – запись останавливается до следующего входа.
  */
 export function useEmployerRecorder(opts: { sessionId: string; stream: MediaStream | null; enabled: boolean; getStartedAt: () => number }): { state: EmployerRecState; error: string | null } {
   const [state, setState] = useState<EmployerRecState>('off');
   const [error, setError] = useState<string | null>(null);
   const optsRef = useRef(opts);
   optsRef.current = opts;
-  /** Сервер запретил запись — не перезапускать до смены потока или нового входа. */
+  /** Сервер запретил запись – не перезапускать до смены потока или нового входа. */
   const refused = useRef(false);
 
   const { stream, enabled, sessionId } = opts;
@@ -91,7 +91,7 @@ export function useEmployerRecorder(opts: { sessionId: string; stream: MediaStre
         if (e.data.size > 0) chunks.push(e.data);
       };
       r.onerror = (e) => console.warn('[employer-audio] recorder error', e);
-      // stop приходит и по stop(), и когда трек кончился (MDN: перед ним — последний dataavailable).
+      // stop приходит и по stop(), и когда трек кончился (MDN: перед ним – последний dataavailable).
       r.onstop = () => {
         if (timer) clearTimeout(timer);
         timer = null;

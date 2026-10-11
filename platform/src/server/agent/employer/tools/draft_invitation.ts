@@ -14,9 +14,9 @@ import { resolveVacancy, type EmployerTool } from './shared';
 
 const Input = z.object({
   candidateId: z.string().min(1).max(64),
-  vacancyId: z.string().min(1).max(64).optional().describe('Потребность; не указана — единственная активная, если она есть'),
-  salaryFrom: z.number().int().min(1).max(10_000_000).optional().describe('Вилка «от», ₽ в месяц; не указано — из потребности'),
-  salaryTo: z.number().int().min(1).max(10_000_000).optional().describe('Вилка «до», ₽ в месяц; не указано — из потребности'),
+  vacancyId: z.string().min(1).max(64).optional().describe('Потребность; не указана – единственная активная, если она есть'),
+  salaryFrom: z.number().int().min(1).max(10_000_000).optional().describe('Вилка «от», ₽ в месяц; не указано – из потребности'),
+  salaryTo: z.number().int().min(1).max(10_000_000).optional().describe('Вилка «до», ₽ в месяц; не указано – из потребности'),
   message: z.string().trim().min(10).max(2000).optional().describe('Текст предложения: задачи, команда, формат'),
 });
 const Output = z
@@ -37,14 +37,14 @@ const Output = z
 const fmtRub = (n: number) => `${n.toLocaleString('ru-RU').replace(/ /g, ' ')} ₽`;
 
 /**
- * Черновик приглашения (R-E-05). НЕ отправляет: отправка — кнопка в карточке, решает
- * человек. Лимит 20/сутки и открытое приглашение — сообщаются, не обходятся
- * (повторная проверка — в createInvitation под advisory-lock при отправке).
+ * Черновик приглашения (R-E-05). НЕ отправляет: отправка – кнопка в карточке, решает
+ * человек. Лимит 20/сутки и открытое приглашение – сообщаются, не обходятся
+ * (повторная проверка – в createInvitation под advisory-lock при отправке).
  */
 export const draftInvitation: EmployerTool = {
   name: 'draft_invitation',
   description:
-    'Подготовить черновик приглашения кандидату: вилка зарплаты от–до и текст предложения. Ничего не отправляет — черновик появляется в ленте формой, отправляет работодатель кнопкой. Сообщает, сколько приглашений осталось на сутки и можно ли пригласить (лимит, открытое приглашение, нет способа связи компании).',
+    'Подготовить черновик приглашения кандидату: вилка зарплаты от–до и текст предложения. Ничего не отправляет – черновик появляется в ленте формой, отправляет работодатель кнопкой. Сообщает, сколько приглашений осталось на сутки и можно ли пригласить (лимит, открытое приглашение, нет способа связи компании).',
   input: Input,
   output: Output,
   async handler(ctx, input: z.infer<typeof Input>) {
@@ -91,7 +91,7 @@ export const draftInvitation: EmployerTool = {
       salaryTo: to,
       message,
       limit: { sent, limit: dailyLimit, left },
-      // E05: без способа связи компании createInvitation ответит 422 — говорим об этом до формы.
+      // E05: без способа связи компании createInvitation ответит 422 – говорим об этом до формы.
       blocked: inviteContact === null ? 'no_company_contact' : open ? 'open_invitation' : left === 0 ? 'daily_limit' : null,
     };
     ctx.emit({ type: 'invitation_draft', draft });

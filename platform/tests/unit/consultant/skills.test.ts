@@ -18,11 +18,11 @@ describe('каталог скиллов', () => {
 });
 
 describe('preferencesBlock', () => {
-  it('ничего не выбрано — блока нет', () => {
+  it('ничего не выбрано – блока нет', () => {
     expect(preferencesBlock(null)).toBeNull();
     expect(preferencesBlock({ skills: [], custom: '   ' })).toBeNull();
   });
-  it('фрагменты скиллов — в порядке каталога, неизвестные id отброшены', () => {
+  it('фрагменты скиллов – в порядке каталога, неизвестные id отброшены', () => {
     const b = preferencesBlock({ skills: ['wording', 'nope', 'brief'], custom: '' })!;
     expect(b.indexOf('Коротко и по делу')).toBeLessThan(b.indexOf('Помогай с формулировками'));
     expect(b).not.toContain('nope');

@@ -5,7 +5,7 @@ import { getSession } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** Поправить свою заметку; после правки она «добавлена вручную». Чужая или нет такой — 404. */
+/** Поправить свою заметку; после правки она «добавлена вручную». Чужая или нет такой – 404. */
 export const PATCH = withErrors(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   assertSameOrigin(req);
   const s = getSession(req); if (!s) throw errors.unauthorized();
@@ -15,7 +15,7 @@ export const PATCH = withErrors(async (req: Request, { params }: { params: Promi
   return Response.json({ item });
 });
 
-/** Удалить свою заметку. Чужая или нет такой — 404. */
+/** Удалить свою заметку. Чужая или нет такой – 404. */
 export const DELETE = withErrors(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   assertSameOrigin(req);
   const s = getSession(req); if (!s) throw errors.unauthorized();

@@ -25,7 +25,7 @@ export function createProvider(env: Env): LlmProvider {
       let model = env.OPENAI_CHAT_MODEL as string;
       let headers: Record<string, string> | undefined;
       // OpenAI-совместимый эндпоинт Yandex AI Studio (DeepSeek, Qwen): Api-Key вместо
-      // Bearer, каталог в OpenAI-Project, модель — URI gpt://<folder>/<model>.
+      // Bearer, каталог в OpenAI-Project, модель – URI gpt://<folder>/<model>.
       if (isYandexHost(baseUrl) && env.YANDEX_FOLDER_ID) {
         model = yandexModelUri(env.YANDEX_FOLDER_ID, model);
         headers = { Authorization: yandexAuthHeader(apiKey), 'OpenAI-Project': env.YANDEX_FOLDER_ID };
@@ -47,7 +47,7 @@ export function createProvider(env: Env): LlmProvider {
 
 /**
  * Запасная модель (LLM_FALLBACK_*): OpenAI-совместимый Chat Completions, получает запрос, если основная не ответила
- * (client.ts). Для Yandex AI Studio каталог — LLM_FALLBACK_FOLDER_ID (облако модели может быть другим, чем у голоса и
+ * (client.ts). Для Yandex AI Studio каталог – LLM_FALLBACK_FOLDER_ID (облако модели может быть другим, чем у голоса и
  * поиска), иначе YANDEX_FOLDER_ID. Без LLM_FALLBACK_BASE_URL запасной нет; при LLM_PROVIDER=stub не включается.
  */
 export function createFallbackProvider(env: Env): LlmProvider | undefined {
@@ -60,7 +60,7 @@ export function createFallbackProvider(env: Env): LlmProvider | undefined {
 }
 
 /**
- * Модель для созвонов (LLM_CALL_*): та же схема, что у запасной. Без LLM_CALL_BASE_URL/API_KEY/MODEL — undefined
+ * Модель для созвонов (LLM_CALL_*): та же схема, что у запасной. Без LLM_CALL_BASE_URL/API_KEY/MODEL – undefined
  * (созвоны идут на основной); при LLM_PROVIDER=stub не включается.
  */
 export function createCallProvider(env: Env): LlmProvider | undefined {
@@ -81,7 +81,7 @@ interface SecondaryProviderConfig {
   extraBody?: Env['LLM_FALLBACK_EXTRA_BODY'];
 }
 
-/** OpenAI-совместимый провайдер из тройки BASE_URL/API_KEY/MODEL; на хосте Yandex — Api-Key, URI модели и каталог. */
+/** OpenAI-совместимый провайдер из тройки BASE_URL/API_KEY/MODEL; на хосте Yandex – Api-Key, URI модели и каталог. */
 function createSecondaryProvider(cfg: SecondaryProviderConfig, defaultName: string, env: Env): LlmProvider | undefined {
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) return undefined;
   const { baseUrl, apiKey } = cfg;

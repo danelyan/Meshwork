@@ -47,7 +47,7 @@ function findStarts(lines: string[]): Start[] {
   return out;
 }
 
-/** Конец блока: баланс фигурных скобок (C-подобные) или отступ (Python). Не нашли — null. */
+/** Конец блока: баланс фигурных скобок (C-подобные) или отступ (Python). Не нашли – null. */
 function blockEnd(lines: string[], start: number, python: boolean): number | null {
   if (python) {
     const indent = (lines[start] ?? '').search(/\S/);
@@ -101,7 +101,7 @@ export function extractFragments(files: RepoFile[]): CodeFragment[] {
       });
     }
   }
-  // Больше ветвлений и строк — больше, о чём спросить; при равенстве — по пути и строке (детерминизм).
+  // Больше ветвлений и строк – больше, о чём спросить; при равенстве – по пути и строке (детерминизм).
   const ranked = all
     .filter((x) => x.complexity > 0 || x.endLine - x.startLine >= 6)
     .sort(

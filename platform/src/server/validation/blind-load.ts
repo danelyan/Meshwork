@@ -71,7 +71,7 @@ export async function startBlind(vacancyId: string, secret: string): Promise<Bli
   const bm25 = bm25Rank(docs, vacancyText({ title: vacancy.title, needs: needs.map((n) => n.statement), stack: vacancy.stack }))
     .filter((r) => r.score > 0)
     .map((r) => r.id);
-  // Наш топ — только кандидаты, которые есть в пуле (matchForVacancy дополнительно убирает нанятых другой компанией).
+  // Наш топ – только кандидаты, которые есть в пуле (matchForVacancy дополнительно убирает нанятых другой компанией).
   const oursIds = ours.items.map((i) => i.candidateId).filter((id) => byId.has(id));
   const picks = selectBlindCards(oursIds, bm25, [...byId.keys()]);
   if (picks.length === 0) throw errors.notFound('Для этой вакансии нет кандидатов для разметки');

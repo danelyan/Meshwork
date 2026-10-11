@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST `{ to?, sdp? , ice? }` — сигналинг WebRTC (ADR 0003): описание сессии или ICE-кандидат
- * доставляется собеседнику через его SSE (`signal`). Работодатель — подключённый участник, адресат —
- * кандидат; кандидат указывает `to: "employer:<userId>"`. Собеседник не на связи — 409 `peer_offline`.
+ * POST `{ to?, sdp? , ice? }` – сигналинг WebRTC (ADR 0003): описание сессии или ICE-кандидат
+ * доставляется собеседнику через его SSE (`signal`). Работодатель – подключённый участник, адресат –
+ * кандидат; кандидат указывает `to: "employer:<userId>"`. Собеседник не на связи – 409 `peer_offline`.
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   if (!getSession(req)) throw errors.unauthorized();

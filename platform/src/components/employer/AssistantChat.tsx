@@ -42,7 +42,7 @@ export interface AssistantEmbedded {
   beforeSend?: () => Promise<void>;
 }
 
-/** Типы событий потока помощника (server/agent/employer/types.ts) — остальное парсер отбрасывает. */
+/** Типы событий потока помощника (server/agent/employer/types.ts) – остальное парсер отбрасывает. */
 const EMPLOYER_EVENT_TYPES: ReadonlySet<EmployerAgentEvent['type']> = new Set([
   'conversation', 'step', 'queue', 'ask', 'candidates', 'invitation_draft', 'need_draft', 'message', 'delta', 'discard', 'error', 'done',
 ] as const);
@@ -52,8 +52,8 @@ const nextId = () => `e${++seq}`;
 
 /**
  * Помощник работодателя (решение владельца 09.10): лента на примитивах components/chat.
- * Самостоятельно — страница /employer/assistant; `embedded` — продолжение онбординга
- * работодателя. Карточки кандидатов — компактные, с кнопкой «Пригласить»: отправляет человек.
+ * Самостоятельно – страница /employer/assistant; `embedded` – продолжение онбординга
+ * работодателя. Карточки кандидатов – компактные, с кнопкой «Пригласить»: отправляет человек.
  */
 export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: EmployerRestoredChat; embedded?: AssistantEmbedded; demoNoLlm?: boolean }) {
   const refreshAside = useAsideRefresh();

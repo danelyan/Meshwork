@@ -25,7 +25,7 @@ export interface CandidateMatchCardProps {
   defaultSalary?: { from: number; to: number };
   favoriteScope?: string;
   compact?: boolean;
-  /** lane admin (E-08): откуда показана карточка — уходит в приглашение вместе с item.rank. */
+  /** lane admin (E-08): откуда показана карточка – уходит в приглашение вместе с item.rank. */
   matchSource?: 'matching' | 'search';
 }
 
@@ -39,7 +39,7 @@ function yearsLabel(n: number): string {
   return `${n} ${m10 === 1 && m100 !== 11 ? 'год' : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? 'года' : 'лет'}`;
 }
 
-/** Стаж, роли (без компаний) и софт-скиллы из профиля — видны и до принятия, личность не раскрывают (R-C-01/02). */
+/** Стаж, роли (без компаний) и софт-скиллы из профиля – видны и до принятия, личность не раскрывают (R-C-01/02). */
 export function ExperienceLine({ experience }: { experience?: PublicExperience }) {
   if (!experience) return null;
   const parts = [

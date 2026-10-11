@@ -1,6 +1,6 @@
 // Согласия (ADR 0005, R-C-13, R-C-14, R-C-16): выдача, отзыв, проверка «активно ли», список для кабинета.
-// Строка Consent — один акт согласия; отзыв ставит revokedAt, история не удаляется.
-// Активное согласие — последнее по kind без revokedAt, на текущую версию текста (кроме раскрытия по приглашению:
+// Строка Consent – один акт согласия; отзыв ставит revokedAt, история не удаляется.
+// Активное согласие – последнее по kind без revokedAt, на текущую версию текста (кроме раскрытия по приглашению:
 // у него версия фиксирует, что видел кандидат в момент принятия, и переподтверждать её задним числом нечего).
 import type { Prisma } from '@prisma/client';
 
@@ -15,7 +15,7 @@ import { getEnv } from '../env';
 
 import { CONSENT_TEXTS, type ConsentKindName, type ConsentText, callRecordingParagraphs, consentVersion } from './texts';
 
-/** Текст для показа: у Г2 срок хранения аудио — фактический (настройка call.recordingRetentionDays; умолчание - env CALL_RECORDING_RETENTION_DAYS). */
+/** Текст для показа: у Г2 срок хранения аудио – фактический (настройка call.recordingRetentionDays; умолчание - env CALL_RECORDING_RETENTION_DAYS). */
 export function consentTextFor(kind: ConsentKindName, retentionDays: number = getEnv().CALL_RECORDING_RETENTION_DAYS): ConsentText {
   const t = CONSENT_TEXTS[kind];
   return kind === 'call_recording' ? { ...t, paragraphs: callRecordingParagraphs(retentionDays) } : t;
@@ -37,13 +37,13 @@ const invitationOf = (context: unknown): string | null => {
   return typeof v === 'string' ? v : null;
 };
 
-/** Раскрытие по самоотклику (R-C-12, R-E-07): context { applicationId }. Путь приглашения его не видит — invitationOf даёт null. */
+/** Раскрытие по самоотклику (R-C-12, R-E-07): context { applicationId }. Путь приглашения его не видит – invitationOf даёт null. */
 const applicationOf = (context: unknown): string | null => {
   const v = (context as { applicationId?: unknown } | null)?.applicationId;
   return typeof v === 'string' ? v : null;
 };
 
-/** Чистая логика: активная строка — последняя по acceptedAt без revokedAt (и с нужным приглашением). */
+/** Чистая логика: активная строка – последняя по acceptedAt без revokedAt (и с нужным приглашением). */
 export function pickActive<R extends Pick<ConsentRow, 'acceptedAt' | 'revokedAt' | 'context'>>(rows: readonly R[], invitationId?: string): R | null {
   let best: R | null = null;
   for (const r of rows) {
@@ -55,8 +55,8 @@ export function pickActive<R extends Pick<ConsentRow, 'acceptedAt' | 'revokedAt'
 }
 
 /**
- * Состояние вида согласия по его строкам: active — есть действующее на текущую версию; outdated — действующее на
- * прежнюю версию текста (спросить заново); revoked — последнее действие кандидата — отзыв; none — не давал.
+ * Состояние вида согласия по его строкам: active – есть действующее на текущую версию; outdated – действующее на
+ * прежнюю версию текста (спросить заново); revoked – последнее действие кандидата – отзыв; none – не давал.
  */
 export function consentState(rows: readonly Pick<ConsentRow, 'kind' | 'version' | 'acceptedAt' | 'revokedAt' | 'context'>[], kind: ConsentKindName, invitationId?: string): ConsentState {
   const own = rows.filter((r) => r.kind === kind && (invitationId === undefined || invitationOf(r.context) === invitationId));
@@ -115,7 +115,7 @@ export async function assertAiAssessmentConsent(candidateId: string): Promise<vo
   );
 }
 
-/** Работодатель: поиск кандидатов и приглашения — только после оферты и обязательства по данным. */
+/** Работодатель: поиск кандидатов и приглашения – только после оферты и обязательства по данным. */
 export async function employerConsentsMissing(userId: string): Promise<ConsentKindName[]> {
   const rows = await rowsOf(userId, ['employer_offer', 'employer_data_obligation']);
   return (['employer_offer', 'employer_data_obligation'] as const).filter((k) => consentState(rows, k) !== 'active');
@@ -150,8 +150,8 @@ async function applyGranted(userId: string, kind: ConsentKindName, at: Date): Pr
 }
 
 /**
- * Дать согласие: только текущая версия текста (иначе 409). Повтор действующего — без дубля.
- * identity_disclosure — только с `context.invitationId` своего принятого приглашения.
+ * Дать согласие: только текущая версия текста (иначе 409). Повтор действующего – без дубля.
+ * identity_disclosure – только с `context.invitationId` своего принятого приглашения.
  */
 export async function grantConsent(userId: string, input: GrantInput): Promise<ConsentRow> {
   const { kind, version } = input;
@@ -187,9 +187,9 @@ export async function ensureConsents(userId: string, kinds: readonly ConsentKind
 }
 
 /**
- * Отозвать согласие. Г1 (pd_processing) отзывается только удалением аккаунта — 409 с подсказкой.
+ * Отозвать согласие. Г1 (pd_processing) отзывается только удалением аккаунта – 409 с подсказкой.
  * call_recording: сохранённые аудио кандидата удаляются сразу. employer_visibility: профиль скрывается.
- * identity_disclosure: по конкретному приглашению — работодатель снова видит псевдоним.
+ * identity_disclosure: по конкретному приглашению – работодатель снова видит псевдоним.
  */
 export async function revokeConsent(userId: string, kind: ConsentKindName, opts: { invitationId?: string; applicationId?: string } = {}): Promise<{ kind: ConsentKindName; revokedAt: string; deletedRecordings?: number }> {
   if (CONSENT_TEXTS[kind].revoke === 'erase') {
@@ -206,7 +206,7 @@ export async function revokeConsent(userId: string, kind: ConsentKindName, opts:
   let deletedRecordings: number | undefined;
   if (candidateId && kind === 'employer_visibility') await prisma.candidate.update({ where: { id: candidateId }, data: { hiddenFromEmployers: true } });
   // revokedAt уже стоит: новые сегменты не пишутся (addAudio перепроверяет режим после записи). Сбой удаления файлов
-  // не отменяет отзыв и не превращается в 500 — removeAudio логирует и всё равно обнуляет audioPath.
+  // не отменяет отзыв и не превращается в 500 – removeAudio логирует и всё равно обнуляет audioPath.
   if (candidateId && kind === 'call_recording') {
     try {
       deletedRecordings = await deleteCandidateRecordings(candidateId);
@@ -217,7 +217,7 @@ export async function revokeConsent(userId: string, kind: ConsentKindName, opts:
     }
   }
   if (kind === 'identity_disclosure' && opts.invitationId) {
-    // ATS (R-X-02): событие «контакты закрыты». Импорт динамический — ats-webhook сам читает раскрытия отсюда.
+    // ATS (R-X-02): событие «контакты закрыты». Импорт динамический – ats-webhook сам читает раскрытия отсюда.
     const invitationId = opts.invitationId;
     void import('../employer/ats-webhook')
       .then((m) => m.notifyAtsStatusChanged(invitationId))
@@ -254,7 +254,7 @@ export async function disclosedInvitationIds(invitationIds: readonly string[]): 
 }
 
 /**
- * lane invite-cancel: работодатель отозвал приглашение — раскрытие по нему прекращается так же, как при отзыве
+ * lane invite-cancel: работодатель отозвал приглашение – раскрытие по нему прекращается так же, как при отзыве
  * кандидатом (revokedAt): новые данные компания не получает. Уже полученное отозвать невозможно.
  */
 export async function revokeDisclosureForInvitation(db: Prisma.TransactionClient | typeof prisma, candidateId: string, invitationId: string, now = new Date()): Promise<number> {
@@ -282,7 +282,7 @@ export interface ConsentItemView {
   title: string;
   label: string;
   state: ConsentState;
-  /** Версия действующего (или последнего) согласия; null — не давал. */
+  /** Версия действующего (или последнего) согласия; null – не давал. */
   version: string | null;
   currentVersion: string;
   acceptedAt: string | null;

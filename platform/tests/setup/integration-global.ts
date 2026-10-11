@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 
 import { resolveTestDatabaseUrl } from '../helpers/test-db-url';
 
-/** Один раз на прогон: применить миграции к тестовой БД (создать её — scripts/db-local.sh create). */
+/** Один раз на прогон: применить миграции к тестовой БД (создать её – scripts/db-local.sh create). */
 export default function setup() {
   const url = resolveTestDatabaseUrl();
   execSync('npx prisma migrate deploy', {

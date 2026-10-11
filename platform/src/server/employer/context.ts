@@ -8,7 +8,7 @@ export interface EmployerContext {
   companyDescription: string | null;
 }
 
-/** Компания работодателя по профилю из куки. Профиль удалён — 403 (кука устарела). */
+/** Компания работодателя по профилю из куки. Профиль удалён – 403 (кука устарела). */
 export async function loadEmployerContext(employerProfileId: string): Promise<EmployerContext> {
   const p = await prisma.employerProfile.findUnique({
     where: { id: employerProfileId },

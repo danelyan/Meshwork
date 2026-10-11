@@ -54,7 +54,7 @@ export async function dispatchToolCall<C extends { signal?: AbortSignal } = Tool
       ok: false,
       terminal: false,
       errorCode: 'invalid_arguments',
-      content: errorJson('invalid_arguments', `Аргументы ${call.name} не прошли проверку — исправь и вызови снова`, issues),
+      content: errorJson('invalid_arguments', `Аргументы ${call.name} не прошли проверку – исправь и вызови снова`, issues),
     };
   }
   if (ctx.signal?.aborted) {

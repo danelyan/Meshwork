@@ -16,7 +16,7 @@ import {
 
 // Deny by default (E-05, фаза 1; R-N-07, R-C-16): у каждой страницы, обработчика API и server action есть
 // запись в матрице доступа И вызов гварда её уровня. Запись без вызова оставила бы путь открытым при зелёном
-// тесте полноты — поэтому проверяем оба условия статически, по исходникам.
+// тесте полноты – поэтому проверяем оба условия статически, по исходникам.
 
 const SRC = resolve(__dirname, '../../../src');
 const APP = join(SRC, 'app');
@@ -43,7 +43,7 @@ function sampleOf(pattern: string): string {
 
 /**
  * Код без комментариев: гвард в `//…` или `/*…*​/` не считается вызовом. Строки и шаблоны не разбираем
- * (`//` внутри строки `https://…` вырезать нельзя) — сначала прячем литералы, потом режем комментарии.
+ * (`//` внутри строки `https://…` вырезать нельзя) – сначала прячем литералы, потом режем комментарии.
  */
 export function stripComments(src: string): string {
   const lits: string[] = [];
@@ -61,7 +61,7 @@ function sourceWithLocalImports(file: string): string {
       try {
         if (statSync(base + ext).isFile()) return [stripComments(readFileSync(base + ext, 'utf8'))];
       } catch {
-        // нет такого файла — пробуем следующее расширение
+        // нет такого файла – пробуем следующее расширение
       }
     }
     return [];
@@ -72,7 +72,7 @@ function sourceWithLocalImports(file: string): string {
 const files = walk(APP);
 const allPages = files.filter((f) => f.endsWith(`${sep}page.tsx`)).map((f) => ({ file: f, route: routeOf(f) }));
 const allRoutes = files.filter((f) => f.endsWith(`${sep}route.ts`)).map((f) => ({ file: f, route: routeOf(f) }));
-// Админка (E-08, ADR 0009) — свой контур: кука персонала, гвард requirePageStaff / requireStaff (отдельный блок ниже).
+// Админка (E-08, ADR 0009) – свой контур: кука персонала, гвард requirePageStaff / requireStaff (отдельный блок ниже).
 const pages = allPages.filter((p) => !isAdminRoute(p.route));
 const routes = allRoutes.filter((r) => !isAdminRoute(r.route));
 const adminPages = allPages.filter((p) => isAdminRoute(p.route));
@@ -88,8 +88,8 @@ const ANY_PAGE_GUARD = /\brequirePage(Account|Candidate|Employer|Access|User|Sta
 
 /**
  * Каждый вызов `requirePageAccess(...)` обязан получать строковый литерал с адресом этой страницы:
- * статичный маршрут — его же (до query), динамический — строку, начинающуюся со статичного префикса.
- * `requirePageAccess('/')` на чужой странице или переменная вместо адреса — ошибка. Возвращает причины.
+ * статичный маршрут – его же (до query), динамический – строку, начинающуюся со статичного префикса.
+ * `requirePageAccess('/')` на чужой странице или переменная вместо адреса – ошибка. Возвращает причины.
  */
 export function pageAccessArgProblems(code: string, route: string): string[] {
   const staticPrefix = route.split('/[')[0]!;
@@ -125,7 +125,7 @@ const REEXPORT_RE = /^export \{([^}]*)\}/gm;
 /**
  * Код каждого экспортированного обработчика: от его `export` до следующего. Хелпер после последнего
  * обработчика (то, что идёт после закрытия функции на уровне колонки 0) ему не засчитывается.
- * Реэкспорт `export { h as POST }` — обработчик с кодом всего файла; если метод так и не распознан
+ * Реэкспорт `export { h as POST }` – обработчик с кодом всего файла; если метод так и не распознан
  * (экспорт неведомой формы), `unrecognizedExports` это ловит.
  */
 export function handlers(code: string): Array<[HttpMethod, string]> {
@@ -133,7 +133,7 @@ export function handlers(code: string): Array<[HttpMethod, string]> {
   const own = starts.map((s, i): [HttpMethod, string] => {
     let end = starts[i + 1]?.at ?? code.length;
     if (i === starts.length - 1) {
-      // Тело последнего обработчика кончается закрытием на нулевой колонке; дальше — хелперы.
+      // Тело последнего обработчика кончается закрытием на нулевой колонке; дальше – хелперы.
       const close = /^[})]/m.exec(code.slice(s.at + 1));
       const closeAt = close ? s.at + 1 + close.index : -1;
       const next = closeAt >= 0 ? /^(?:export |async function |function |const |let |class )/m.exec(code.slice(closeAt)) : null;
@@ -168,7 +168,7 @@ describe('матрица страниц: полнота', () => {
     expect(routes.length).toBeGreaterThan(40);
   });
 
-  it.each(pages.map((p) => [p.route, p] as const))('%s — есть запись в PAGE_ACCESS, и адрес находит именно её', (route) => {
+  it.each(pages.map((p) => [p.route, p] as const))('%s – есть запись в PAGE_ACCESS, и адрес находит именно её', (route) => {
     expect(Object.keys(PAGE_ACCESS)).toContain(route);
     expect(matchRoute(PAGE_ACCESS, sampleOf(route))).toBe(route);
   });
@@ -188,7 +188,7 @@ describe('матрица страниц: вызов гварда своего у
     const code = sourceWithLocalImports(file);
     if (level === 'public') return;
     expect(code, `${route}: нужен гвард уровня ${level}`).toMatch(PAGE_GUARD[level]);
-    // Гварды других уровней на странице — ошибка (страница кандидата с requirePageAccount пустила бы всех).
+    // Гварды других уровней на странице – ошибка (страница кандидата с requirePageAccount пустила бы всех).
     const others = (Object.keys(PAGE_GUARD) as Array<keyof typeof PAGE_GUARD>).filter((l) => l !== level);
     for (const other of others) {
       const wrapper = new RegExp(`\\brequirePage${other[0]!.toUpperCase()}${other.slice(1)}\\(`);
@@ -201,7 +201,7 @@ describe('матрица страниц: вызов гварда своего у
     expect(code, `${route}: гварду передан адрес страницы`).toMatch(new RegExp(`['"\`]${staticPrefix.replace(/[/]/g, '\\/')}`));
   });
 
-  it('public-страницы без гварда — только явные записи таблицы (у прочих гвард есть)', () => {
+  it('public-страницы без гварда – только явные записи таблицы (у прочих гвард есть)', () => {
     const unguarded = pages.filter((p) => !ANY_PAGE_GUARD.test(sourceWithLocalImports(p.file))).map((p) => p.route);
     for (const r of unguarded) expect(PAGE_ACCESS[r as keyof typeof PAGE_ACCESS], r).toBe('public');
   });
@@ -224,7 +224,7 @@ describe('матрица API: полнота и вызов гварда', () => 
     }
   });
 
-  it('dev-уровень — ровно маршруты /api/dev/*', () => {
+  it('dev-уровень – ровно маршруты /api/dev/*', () => {
     for (const [route, rule] of Object.entries(API_ACCESS)) {
       expect(rule === 'dev', route).toBe(route.startsWith('/api/dev/'));
     }
@@ -247,7 +247,7 @@ describe('админка: каждый маршрут под гвардом пе
     expect(ADMIN_PUBLIC_ROUTES.filter((r) => !existing.has(r))).toEqual([]);
   });
 
-  it('демо-вход — публичный bootstrap с CSRF, флагом и сессией только для чтения', () => {
+  it('демо-вход – публичный bootstrap с CSRF, флагом и сессией только для чтения', () => {
     const route = '/api/admin/auth/demo';
     expect(ADMIN_PUBLIC_ROUTES).toContain(route);
     const entry = adminRoutes.find((r) => r.route === route)!;
@@ -267,18 +267,18 @@ describe('админка: каждый маршрут под гвардом пе
     expect(session).toMatch(/return new URL\(req\.url\)\.pathname === '\/api\/admin\/auth\/logout'/);
   });
 
-  it.each(adminPages.filter((p) => !ADMIN_PUBLIC_ROUTES.includes(p.route)).map((p) => [p.route, p] as const))('страница %s — requirePageStaff со своим адресом', (route, { file }) => {
+  it.each(adminPages.filter((p) => !ADMIN_PUBLIC_ROUTES.includes(p.route)).map((p) => [p.route, p] as const))('страница %s – requirePageStaff со своим адресом', (route, { file }) => {
     const code = sourceWithLocalImports(file);
     const staticPrefix = route.split('/[')[0]!;
     const m = /\brequirePageStaff\(\s*(['"`])([^'"`]*)/.exec(code);
     expect(m, `${route}: нужен requirePageStaff('<адрес>', '<право>')`).not.toBeNull();
     const value = m![2]!;
     expect(route.includes('/[') ? value.startsWith(`${staticPrefix}/`) : value.split(/[?#]/, 1)[0] === route, `${route}: адрес ${value}`).toBe(true);
-    // Пользовательские гварды на странице админки — ошибка: пустили бы по cid.
+    // Пользовательские гварды на странице админки – ошибка: пустили бы по cid.
     expect(code).not.toMatch(/\brequirePage(Account|Candidate|Employer|Access|User)\(/);
   });
 
-  it.each(adminRoutes.map((r) => [r.route, r] as const))('API %s — requireStaff(req…) в каждом обработчике', (route, { file }) => {
+  it.each(adminRoutes.map((r) => [r.route, r] as const))('API %s – requireStaff(req…) в каждом обработчике', (route, { file }) => {
     const src = stripComments(readFileSync(file, 'utf8'));
     const hs = handlers(src);
     expect(unrecognizedExports(src)).toEqual([]);
@@ -291,7 +291,7 @@ describe('админка: каждый маршрут под гвардом пе
 describe('server actions', () => {
   const actionFiles = walk(SRC).filter((f) => /\.tsx?$/.test(f) && /^\s*['"]use server['"]/m.test(readFileSync(f, 'utf8')));
 
-  it('каждый файл с "use server" — в ACTION_ACCESS, с проверкой уровня внутри', () => {
+  it('каждый файл с "use server" – в ACTION_ACCESS, с проверкой уровня внутри', () => {
     expect(actionFiles.length).toBeGreaterThan(0);
     for (const file of actionFiles) {
       const key = relative(SRC, file).split(sep).join('/');
@@ -323,7 +323,7 @@ describe('мутационные проверки самого теста (фи�
     expect(pageAccessArgProblems(`await requirePageAccess('/profile')`, '/profile')).toEqual([]);
     expect(pageAccessArgProblems(`await requirePageAccess(path)`, '/profile')).not.toEqual([]);
   });
-  it('динамический маршрут: адрес со статичным префиксом принимается, чужой — нет', () => {
+  it('динамический маршрут: адрес со статичным префиксом принимается, чужой – нет', () => {
     expect(pageAccessArgProblems('await requirePageAccess(`/employer/needs/${id}`)', '/employer/needs/[id]')).toEqual([]);
     expect(pageAccessArgProblems(`await requirePageAccess('/employer')`, '/employer/needs/[id]')).not.toEqual([]);
   });

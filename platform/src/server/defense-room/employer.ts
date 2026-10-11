@@ -8,7 +8,6 @@ import { employerMayAccess, redactSnapshot, resolveViewer, type Viewer } from '.
 import { assertLiveRoomOpen } from '../live-defense/service';
 import { publish } from './bus';
 import { EMPLOYER_RECORDING_NOTICE_VERSION } from './employer-audio';
-import { ethicsNotice, rejectMessage, sensitiveTopics } from './ethics';
 import { buildSnapshot, employerItem, ICE_SERVERS, resumeAi } from './session';
 import { appendEntries, asVerdict, isAiMuted, loadPlan, savePlan, tryLockPlan, unlockPlan } from './store';
 import type { CallSnapshot, DefenseFlag, TranscriptEntry } from './types';
@@ -16,7 +15,7 @@ import { defenseVisibleTo } from './visibility';
 
 /**
  * Работодатель в защите проекта: подключиться к живой сессии, замьютить ИИ, сказать реплику,
- * оставить вопрос в очереди. Всё — только при принятом приглашении (access.ts).
+ * оставить вопрос в очереди. Всё – только при принятом приглашении (access.ts).
  */
 
 export const EMPLOYER_QUESTION_LIMITS = { minChars: 5, maxChars: 1000, maxQueuedPerCandidate: 10, maxSayChars: 1000 } as const;
@@ -40,14 +39,14 @@ export interface JoinResult {
 }
 
 /**
- * Вход в живую защиту. ADR 0008 п. 3: запись обязательна и пишет обе стороны — без подтверждения записи
+ * Вход в живую защиту. ADR 0008 п. 3: запись обязательна и пишет обе стороны – без подтверждения записи
  * (`recordingConsent: true`, текст EMPLOYER_RECORDING_NOTICE) работодатель в эфир не входит: 409 `recording_consent_required`.
  * Подтверждение сохраняется в строке участника (recordingConsentAt/Version), по нему принимается дорожка его голоса.
  */
 export async function joinCall(principal: SessionPrincipal | null, sessionId: string, opts: { recordingConsent?: boolean } = {}): Promise<JoinResult> {
   const { viewer, session } = await employerViewer(principal, sessionId);
   if (session.aiDefense) throw errors.conflict('Это ИИ-защита без работодателя - доступен транскрипт');
-  await assertLiveRoomOpen([sessionId]); // ADR 0008 п. 5: комната живой защиты — за 10 минут до начала
+  await assertLiveRoomOpen([sessionId]); // ADR 0008 п. 5: комната живой защиты – за 10 минут до начала
   if (session.status === 'pending') throw errors.conflict('Кандидат ещё не начал защиту');
   if (session.status !== 'active') throw errors.conflict('Защита уже завершена - доступен транскрипт');
   if (opts.recordingConsent !== true) {
@@ -108,28 +107,15 @@ export async function muteAi(principal: SessionPrincipal | null, sessionId: stri
   return { muted, aiText: resumed?.text ?? null };
 }
 
-/**
- * Реплика работодателя в транскрипт; кандидат слышит её вторым голосом TTS (или вживую, если поднялось P2P-аудио).
- * Работодатель взял слово — ИИ уступает (мьют его строки участника): иначе после первого же ответа кандидата
- * Кира перебила бы разговор «Вернёмся к вопросу». Вернуть ИИ — «ИИ говорит» или выход из комнаты.
- * Реплика на защищённую тему (ethics.ts) не блокируется, но Кира сразу делает ремарку — даже при мьюте.
- */
-export async function employerSay(principal: SessionPrincipal | null, sessionId: string, rawText: string): Promise<{ entry: TranscriptEntry; notice: TranscriptEntry | null }> {
+/** Реплика работодателя в транскрипт; кандидат слышит её вторым голосом TTS (или вживую, если поднялось P2P-аудио). */
+export async function employerSay(principal: SessionPrincipal | null, sessionId: string, rawText: string): Promise<{ entry: TranscriptEntry }> {
   const { viewer, session } = await employerViewer(principal, sessionId);
-  const p = await requireJoined(viewer, sessionId, session.status);
+  await requireJoined(viewer, sessionId, session.status);
   const text = rawText.trim();
   if (!text) throw errors.badRequest('Пустая реплика');
   if (text.length > EMPLOYER_QUESTION_LIMITS.maxSayChars) throw errors.payloadTooLarge(`Реплика длиннее ${EMPLOYER_QUESTION_LIMITS.maxSayChars} символов`);
-  const topics = sensitiveTopics(text);
-  const [entry, notice] = await appendEntries(sessionId, [
-    { role: 'employer', text, userId: viewer.userId, defense: { speaker: viewer.companyName, companyId: viewer.companyId } },
-    ...(topics.length ? [{ role: 'ai' as const, text: ethicsNotice(topics), defense: { kind: 'notice' as const, companyId: viewer.companyId } }] : []),
-  ]);
-  if (!p.aiMuted) {
-    await prisma.callParticipant.update({ where: { id: p.id }, data: { aiMuted: true } });
-    publish(sessionId, { type: 'mute', aiMuted: true, userId: viewer.userId });
-  }
-  return { entry: entry!, notice: notice ?? null };
+  const [entry] = await appendEntries(sessionId, [{ role: 'employer', text, userId: viewer.userId, defense: { speaker: viewer.companyName, companyId: viewer.companyId } }]);
+  return { entry: entry! };
 }
 
 // ---------------------------------------------------------------------------
@@ -153,9 +139,6 @@ export async function createEmployerQuestion(
   if (!(await employerMayAccess(ctx.companyId, input.candidateId))) throw errors.notFound('Кандидат не найден');
   const text = input.text.trim();
   if (text.length < EMPLOYER_QUESTION_LIMITS.minChars) throw errors.badRequest('Вопрос слишком короткий');
-  // Вопрос из очереди зачитывает Кира от имени компании: вопрос на защищённую тему в очередь не встаёт.
-  const topics = sensitiveTopics(text);
-  if (topics.length) throw new AppError('question_not_job_related', rejectMessage(topics), 400);
   const queued = await prisma.employerQuestion.count({ where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: ['queued', 'asked'] } } });
   if (queued >= EMPLOYER_QUESTION_LIMITS.maxQueuedPerCandidate) {
     throw errors.rateLimited(`В очереди уже ${queued} вопросов этому кандидату - дождись ответов`);
@@ -163,7 +146,7 @@ export async function createEmployerQuestion(
   if (input.projectSubmissionId) {
     const sub = await prisma.projectSubmission.findUnique({ where: { id: input.projectSubmissionId }, select: { candidateId: true, projectTask: { select: { vacancy: { select: { companyId: true } } } } } });
     if (!sub || sub.candidateId !== input.candidateId) throw errors.notFound('Сабмит не найден');
-    // ADR 0008 (visibility.ts): живая защита проекта принадлежит компании вакансии сабмита — вопрос к проекту,
+    // ADR 0008 (visibility.ts): живая защита проекта принадлежит компании вакансии сабмита – вопрос к проекту,
     // сданному под вакансию другой компании, не принимается (иначе он попал бы в чужую защиту или не был бы задан).
     if (sub.projectTask.vacancy.companyId !== ctx.companyId) {
       throw new AppError('submission_not_owned', 'Вопрос можно привязать только к проекту, сданному под вакансию вашей компании', 404);
@@ -176,15 +159,15 @@ export async function createEmployerQuestion(
   return toView(q, null);
 }
 
-/** Кандидат сейчас на защите — вопрос встаёт в конец её плана (если ход свободен; иначе ждёт следующего входа). */
+/** Кандидат сейчас на защите – вопрос встаёт в конец её плана (если ход свободен; иначе ждёт следующего входа). */
 async function attachToLiveSession(q: { id: string; text: string; companyId: string; candidateId: string; projectSubmissionId: string | null }, companyName: string) {
   const live = await prisma.callSession.findFirst({
     where: {
       candidateId: q.candidateId,
       kind: 'defense',
       status: 'active',
-      aiDefense: false, // ИИ-защита — только вопросы по коду (ADR 0008 п. 1)
-      // Живая защита проекта — только компании-владельца (ADR 0008); защита без сабмита — общая.
+      aiDefense: false, // ИИ-защита – только вопросы по коду (ADR 0008 п. 1)
+      // Живая защита проекта – только компании-владельца (ADR 0008); защита без сабмита – общая.
       OR: [
         { projectSubmissionId: null },
         { projectSubmission: { projectTask: { vacancy: { companyId: q.companyId } } }, ...(q.projectSubmissionId ? { projectSubmissionId: q.projectSubmissionId } : {}) },
@@ -219,7 +202,7 @@ function toView(
   };
 }
 
-/** Ответ кандидата — реплики кандидата после вопроса ИИ с этим пунктом плана, до следующего вопроса. */
+/** Ответ кандидата – реплики кандидата после вопроса ИИ с этим пунктом плана, до следующего вопроса. */
 export function answerFor(transcript: TranscriptEntry[], questionId: string): string | null {
   const itemId = `e-${questionId}`;
   const out: string[] = [];
@@ -236,7 +219,7 @@ export async function listEmployerQuestions(ctx: EmployerContext, candidateId: s
   const rows = await prisma.employerQuestion.findMany({ where: { companyId: ctx.companyId, candidateId }, orderBy: [{ askedAt: 'desc' }, { id: 'asc' }], take: 50 });
   const sessionIds = [...new Set(rows.map((r) => r.answeredInCallSessionId).filter((x): x is string => !!x))];
   // Ответ отдаётся только из защиты, которую компания видит (ADR 0008): ответ из живой защиты чужой компании
-  // (старые данные до фильтра очереди) не раскрывается — ни текст, ни id сессии.
+  // (старые данные до фильтра очереди) не раскрывается – ни текст, ни id сессии.
   const sessions = await prisma.callSession.findMany({ where: { id: { in: sessionIds }, AND: [defenseVisibleTo(ctx.companyId)] }, select: { id: true, transcriptJson: true } });
   const t = new Map(sessions.map((s) => [s.id, (s.transcriptJson as unknown as TranscriptEntry[]) ?? []]));
   return rows.map((r) => {
@@ -263,7 +246,7 @@ export interface EmployerCallRow {
 /** Защиты кандидатов, принявших приглашение компании и не отозвавших раскрытие: идущие сверху. */
 export async function listEmployerCalls(ctx: EmployerContext): Promise<EmployerCallRow[]> {
   const accepted = await prisma.invitation.findMany({ where: { companyId: ctx.companyId, status: { in: ['accepted', 'hired'] } }, select: { candidateId: true } });
-  // Имя и защиты — только при действующем раскрытии по принятому приглашению (Г5, ADR 0005): отзыв закрывает список.
+  // Имя и защиты – только при действующем раскрытии по принятому приглашению (Г5, ADR 0005): отзыв закрывает список.
   const ids = [...(await disclosedCandidateIds(ctx.companyId, [...new Set(accepted.map((a) => a.candidateId))]))];
   if (!ids.length) return [];
   const rows = await prisma.callSession.findMany({

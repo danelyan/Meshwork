@@ -1,4 +1,4 @@
-// R-C-01/02: пустые поля заполняются из резюме, заполненные кандидатом не перетираются — предложение.
+// R-C-01/02: пустые поля заполняются из резюме, заполненные кандидатом не перетираются – предложение.
 import { actOnResumeField, applyResumeFields, resumeFieldsView, type ParsedResumeField } from '@/server/resume-fields';
 
 type Row = { id: string; candidateId: string; key: string; value: unknown; quote: string; sourceRef: string; status: string; uploadId: string | null };
@@ -35,10 +35,10 @@ function fakeDb(init: { name: string; email: string; contact: string | null; pro
 }
 
 const FIELDS: ParsedResumeField[] = [
-  { key: 'name', value: 'Дмитрий Рябинин', quote: '# Дмитрий Рябинин — Backend', sourceRef: 'L1' },
+  { key: 'name', value: 'Дмитрий Рябинин', quote: '# Дмитрий Рябинин – Backend', sourceRef: 'L1' },
   { key: 'contact', value: 'dmitry@example.com', quote: 'dmitry@example.com · Москва', sourceRef: 'L3' },
-  { key: 'experienceYears', value: 6, quote: '### «ПэйФлоу», Backend Engineer (2022 — 2026)', sourceRef: 'L9' },
-  { key: 'roles', value: ['Backend Engineer'], quote: '### «ПэйФлоу», Backend Engineer (2022 — 2026)', sourceRef: 'L9' },
+  { key: 'experienceYears', value: 6, quote: '### «ПэйФлоу», Backend Engineer (2022 – 2026)', sourceRef: 'L9' },
+  { key: 'roles', value: ['Backend Engineer'], quote: '### «ПэйФлоу», Backend Engineer (2022 – 2026)', sourceRef: 'L9' },
   { key: 'softSkills', value: ['Наставничество'], quote: 'Наставник двух стажёров', sourceRef: 'L12' },
 ];
 
@@ -74,7 +74,7 @@ describe('applyResumeFields', () => {
     expect(again.suggested).not.toContain('name');
   });
 
-  it('правка кандидатом снимает пометку «из резюме»; роль — без компании', async () => {
+  it('правка кандидатом снимает пометку «из резюме»; роль – без компании', async () => {
     const { db, cand } = fakeDb({ name: '', email: 'a@b.ru', contact: null });
     await applyResumeFields('c1', 'u1', FIELDS, { db });
     const view = await actOnResumeField('c1', { action: 'set', key: 'roles', value: ['Тимлид в Яндексе'] }, db);

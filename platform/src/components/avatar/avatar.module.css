@@ -54,7 +54,7 @@
   .dock .screen { width: 184px; }
 }
 
-/* ПКМ по голове — меню вида */
+/* ПКМ по голове – меню вида */
 .menu { position: fixed; z-index: 50; margin: 0; padding: 4px; list-style: none; background: var(--on-ink); color: var(--ink); border: 1px solid var(--border-soft); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); min-width: 160px; } /* raw-ok: всплывающее ПКМ-меню вида, белый фон и тень */
 .menu button { color: inherit; display: block; width: 100%; padding: 7px 12px; text-align: left; background: none; border: 0; font-size: var(--fs-sm); cursor: pointer; }
 .menu button:hover { background: var(--surface-ghost); }

@@ -42,7 +42,7 @@ describe('уведомления о приглашениях (lane email-auth)',
     expect(await waitForMail('invitation_accepted')).toMatchObject({ to: 'hr@romashka.test' });
   });
 
-  it('отклонение → письмо «отклонил»; служебный адрес кандидата — письма нет', async () => {
+  it('отклонение → письмо «отклонил»; служебный адрес кандидата – письма нет', async () => {
     const inv = await createInvitation(ctx, { candidateId, message: 'Платёжная команда, бэкенд', salaryFrom: 100_000, salaryTo: 100_000 });
     await waitForMail('invitation');
     await respondInvitation(candidateId, inv.id, 'decline');

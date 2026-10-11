@@ -6,7 +6,7 @@ import type { StepOption } from '@/server/onboarding/types';
 const step = (id: string) => CANDIDATE_STEPS.find((s) => s.id === id)!;
 const opts = (id: string) => step(id).options as StepOption[];
 
-describe('matchStepText — текст как ответ на шаг', () => {
+describe('matchStepText – текст как ответ на шаг', () => {
   it('нормализация: регистр, ё, пунктуация и пробелы', () => {
     expect(normalizeAnswer('  Ищу   РАБОТУ! ')).toBe('ищу работу');
     expect(normalizeAnswer('Ещё «да»')).toBe('еще да');
@@ -15,17 +15,17 @@ describe('matchStepText — текст как ответ на шаг', () => {
   it('«один из»: по подписи, значению и тексту ответа; недоступный вариант не засчитывается', () => {
     expect(matchStepText({ kind: 'one', options: opts('goal') }, 'ищу работу')).toEqual({ value: 'job_search', text: 'Ищу работу' });
     expect(matchStepText({ kind: 'one', options: opts('goal') }, 'job_search')).toMatchObject({ value: 'job_search' });
-    // «Войти через ФСП ID» — переход, текстом не выбирается; «нет истории» — обычный ответ.
+    // «Войти через ФСП ID» – переход, текстом не выбирается; «нет истории» – обычный ответ.
     expect(matchStepText({ kind: 'one', options: opts('fsp') }, 'Войти через ФСП ID')).toBeNull();
     expect(matchStepText({ kind: 'one', options: opts('fsp') }, 'Нет истории ФСП')).toMatchObject({ value: 'not_linked' });
     expect(matchStepText({ kind: 'one', options: DIRECTIONS }, 'FRONTEND')).toMatchObject({ value: 'frontend' });
     expect(matchStepText({ kind: 'one', options: DIRECTIONS }, 'mobile')).toBeNull();
     expect(matchStepText({ kind: 'one', options: opts('goal') }, 'а зачем это?')).toBeNull();
-    // Точное имя варианта со знаком вопроса — всё равно ответ (решение интегратора): «?» срезает нормализация.
+    // Точное имя варианта со знаком вопроса – всё равно ответ (решение интегратора): «?» срезает нормализация.
     expect(matchStepText({ kind: 'one', options: opts('goal') }, 'Ищу работу?')).toMatchObject({ value: 'job_search' });
   });
 
-  it('роль — по подписи; согласие текстом не даётся', () => {
+  it('роль – по подписи; согласие текстом не даётся', () => {
     const role = [
       { value: 'candidate', label: 'Я специалист' },
       { value: 'employer', label: 'Я работодатель' },
@@ -34,13 +34,13 @@ describe('matchStepText — текст как ответ на шаг', () => {
     expect(matchStepText({ kind: 'consent' }, 'согласен')).toBeNull();
   });
 
-  it('«несколько»: перечисление через запятую или «и» — все части должны совпасть', () => {
+  it('«несколько»: перечисление через запятую или «и» – все части должны совпасть', () => {
     expect(matchStepText({ kind: 'many', options: opts('formats') }, 'удалённо, гибрид')).toEqual({ value: ['remote', 'hybrid'], text: 'Удалённо, Гибрид' });
     expect(matchStepText({ kind: 'many', options: opts('formats') }, 'офис и удаленно')).toMatchObject({ value: ['office', 'remote'] });
     expect(matchStepText({ kind: 'many', options: opts('formats') }, 'офис и бассейн')).toBeNull();
   });
 
-  it('вопрос — по знаку вопроса; граница доверия — только кандидат после согласия и роли', () => {
+  it('вопрос – по знаку вопроса; граница доверия – только кандидат после согласия и роли', () => {
     expect(looksLikeQuestion('Казань?')).toBe(true);
     expect(looksLikeQuestion('Казань')).toBe(false);
     expect(asideToModel('candidate', 'one')).toBe(true);

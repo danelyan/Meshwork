@@ -24,14 +24,14 @@ it('с моделью: реплика от модели, системный пр
   expect(JSON.parse(req.messages[0]!.content)).toMatchObject({ name: 'Иван', previous: { answer: 'Ищу работу' } });
 });
 
-it('ошибка модели или негодный текст — шаблон', async () => {
+it('ошибка модели или негодный текст – шаблон', async () => {
   complete.mockRejectedValue(new Error('timeout'));
   expect(await leadFor(findStep('documents')!, ctx, prev)).toMatch(/компании найдут тебя сами/);
   complete.mockResolvedValue({ kind: 'text', text: '## Список\n\n- раз' });
   expect(await leadFor(findStep('documents')!, ctx, prev)).toMatch(/компании найдут тебя сами/);
 });
 
-it('stub (демо) — модель не вызывается', async () => {
+it('stub (демо) – модель не вызывается', async () => {
   provider = 'stub';
   expect(await leadFor(findStep('documents')!, ctx, prev)).toMatch(/компании найдут тебя сами/);
   expect(complete).not.toHaveBeenCalled();

@@ -10,7 +10,7 @@ import { MarkFallback } from './MarkFallback';
 import type { CompanionVoice } from './voice';
 import { hasWebGL, resetWebGLCache } from './webgl';
 
-// three.js (~0.5 МБ) — только в браузере и только там, где есть аватар.
+// three.js (~0.5 МБ) – только в браузере и только там, где есть аватар.
 /** Сколько раз пробовать включить WebGL самим, прежде чем оставить только кнопку. */
 const AUTO_RETRIES = 3;
 
@@ -18,7 +18,7 @@ const Head3D = dynamic(() => import('./Head3D'), { ssr: false, loading: () => nu
 
 /**
  * Граница ошибок вокруг `<Canvas>`: R3F не создаёт WebGL-контекст (лимит ~16 контекстов на вкладки
- * браузера, отключённый GPU) — бросает ошибку при рендере. Проп `fallback` у `<Canvas>` для этого
+ * браузера, отключённый GPU) – бросает ошибку при рендере. Проп `fallback` у `<Canvas>` для этого
  * не годится: он вложен в сам `<canvas>` и виден только браузеру без поддержки элемента.
  */
 class CanvasGuard extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
@@ -37,10 +37,10 @@ class CanvasGuard extends Component<{ onError: () => void; children: ReactNode }
 /**
  * Голова компаньона с запасным знаком: пробует WebGL при каждом монтировании (отрицательный результат
  * не кэшируется), ловит ошибку создания контекста и `webglcontextlost`, в запасном режиме даёт кнопку
- * «обновить» — повторная проба и новая голова. `onLive` сообщает, рисуется ли сейчас голова.
+ * «обновить» – повторная проба и новая голова. `onLive` сообщает, рисуется ли сейчас голова.
  */
 export function HeadSurface({ voice, reduced, style, onLive }: { voice: CompanionVoice; reduced: boolean; style: HeadStyle; onLive?: (live: boolean) => void }) {
-  // До монтирования (SSR и первый кадр) — знак: проба нужна браузеру, а разметка должна совпасть.
+  // До монтирования (SSR и первый кадр) – знак: проба нужна браузеру, а разметка должна совпасть.
   const [mode, setMode] = useState<'pending' | 'gl' | 'mark'>('pending');
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -58,7 +58,7 @@ export function HeadSurface({ voice, reduced, style, onLive }: { voice: Companio
     setMode('pending');
     setAttempt((a) => a + 1);
   }, []);
-  // Контекст не дали (лимит ~16 на все вкладки Chrome): пробуем снова сами — через паузу и когда вкладка
+  // Контекст не дали (лимит ~16 на все вкладки Chrome): пробуем снова сами – через паузу и когда вкладка
   // снова в фокусе, до AUTO_RETRIES раз; дальше остаётся кнопка «обновить».
   useEffect(() => {
     if (mode !== 'mark' || attempt >= AUTO_RETRIES) return;

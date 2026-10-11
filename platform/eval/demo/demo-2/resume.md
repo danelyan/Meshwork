@@ -1,4 +1,4 @@
-# Юлия Власова — Junior Frontend (React)
+# Юлия Власова – Junior Frontend (React)
 
 +7 900 000-00-52 · yulia.vlasova@example.com · Омск · GitHub: demo-vlasova (вымышленный профиль)
 

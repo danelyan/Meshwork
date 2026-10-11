@@ -5,15 +5,15 @@ import { AppError } from '@/server/errors';
 
 /**
  * Состояние модерации аккаунтов (E-08, фаза 3), которое читают сервисы платформы: вход, подборка, приглашения,
- * тест. Без `server-only`: модуль берут `auth/stale.ts` и `auth/users.ts`, а их — консольные прогоны вне Next.js.
+ * тест. Без `server-only`: модуль берут `auth/stale.ts` и `auth/users.ts`, а их – консольные прогоны вне Next.js.
  *
- * Блокировка — флаг с причиной и сроком (`blockedAt`, `blockedUntil`; null — бессрочно). Действует, пока
- * `blockedAt` задан и срок не прошёл. Разблокировка ставит `blockedUntil = now` и `blockedAt` не стирает: он —
+ * Блокировка – флаг с причиной и сроком (`blockedAt`, `blockedUntil`; null – бессрочно). Действует, пока
+ * `blockedAt` задан и срок не прошёл. Разблокировка ставит `blockedUntil = now` и `blockedAt` не стирает: он –
  * эпоха отзыва сессий (`sessionVersionOf`). Поэтому «заблокирован ли сейчас» решает только `isBlockedNow`,
  * а не `blockedAt != null`.
  *
  * Скрытие кандидата модератором и сброс кулдауна хранятся в журнале `AdminAuditLog` (только INSERT, индекс
- * targetType+targetId): последняя строка действия — текущее состояние. Поля схемы для них не заводили.
+ * targetType+targetId): последняя строка действия – текущее состояние. Поля схемы для них не заводили.
  */
 
 export interface BlockFields {
@@ -47,7 +47,7 @@ export function notBlockedVacancyWhere(now: Date = new Date()): Prisma.VacancyWh
 /** Сообщение заблокированному при входе: без причины модерации (она внутренняя), со сроком. */
 export function blockedMessage(x: BlockFields): string {
   const until = x.blockedUntil ? ` до ${x.blockedUntil.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })} МСК` : '';
-  return `Аккаунт заблокирован модератором${until}. Если это ошибка — напишите в поддержку.`;
+  return `Аккаунт заблокирован модератором${until}. Если это ошибка – напишите в поддержку.`;
 }
 
 export function userBlockedError(x: BlockFields): AppError {
@@ -69,7 +69,7 @@ export async function assertCompanyNotBlocked(db: Db, companyId: string, now: Da
 
 export const HIDE_CANDIDATE_ACTIONS = ['hide_candidate.hidden', 'hide_candidate.shown'] as const;
 
-/** Профиль скрыт модератором (последнее решение — «скрыть»): сам кандидат его не возвращает в поиск. */
+/** Профиль скрыт модератором (последнее решение – «скрыть»): сам кандидат его не возвращает в поиск. */
 export async function isHiddenByModerator(candidateId: string, db: Db = prisma): Promise<boolean> {
   const last = await db.adminAuditLog.findFirst({
     where: { targetType: 'candidate', targetId: candidateId, action: { in: [...HIDE_CANDIDATE_ACTIONS] } },

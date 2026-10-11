@@ -5,10 +5,10 @@ import { deliverable, notifyInBackground, sendMail, type MailMessage } from '@/s
 import { type MailView, renderMailHtml } from '@/server/mail/layout';
 
 /**
- * Письма по итогам модерации (E-08, фаза 2) — в оболочке существующих шаблонов `server/mail` (renderMailHtml).
+ * Письма по итогам модерации (E-08, фаза 2) – в оболочке существующих шаблонов `server/mail` (renderMailHtml).
  * Отправляются после COMMIT решения и в фоне: сбой почты решение не откатывает (как письма о приглашениях).
  */
-const sign = () => `\n\n—\nMESHWORK · ${getEnv().APP_URL}`;
+const sign = () => `\n\n–\nMESHWORK · ${getEnv().APP_URL}`;
 const html = (view: Omit<MailView, 'siteUrl'>) => renderMailHtml({ ...view, siteUrl: getEnv().APP_URL });
 
 export function complaintOutcomeMail(to: string, p: { companyName: string; upheld: boolean; resolution: string }): MailMessage {
@@ -42,7 +42,7 @@ export function objectionAnswerMail(to: string, p: { answer: string; annulled: b
 export function appealOutcomeMail(to: string, p: { upheld: boolean; resolution: string; dismissed: number }): MailMessage {
   const subject = p.upheld ? 'Апелляция на ограничение удовлетворена' : 'Апелляция на ограничение отклонена';
   const lead = p.upheld
-    ? `Модератор удовлетворил апелляцию: отклонено жалоб — ${p.dismissed}. Ограничение пересчитано.`
+    ? `Модератор удовлетворил апелляцию: отклонено жалоб – ${p.dismissed}. Ограничение пересчитано.`
     : 'Модератор отклонил апелляцию: ограничение действует по прежним правилам.';
   const url = `${getEnv().APP_URL}/employer/invitations`;
   return {
@@ -67,7 +67,7 @@ export function redFlagWarningMail(to: string, p: { what: string; resolution: st
   };
 }
 
-/** Отправить после решения: недоставляемые адреса пропускаются, ошибка SMTP — только в лог. */
+/** Отправить после решения: недоставляемые адреса пропускаются, ошибка SMTP – только в лог. */
 export function sendAfterDecision(kind: string, to: string | null | undefined, build: (to: string) => MailMessage): Promise<void> {
   if (!deliverable(to)) return Promise.resolve();
   return notifyInBackground(kind, () => sendMail(build(to)));

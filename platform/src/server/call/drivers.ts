@@ -1,5 +1,5 @@
 // Драйверы видов созвона: что спрашивает ИИ и как оценивается результат. Общее (транскрипт, SSE,
-// запись, доступ, согласие) — в service.ts. Ступень 1 — qualifying (здесь); ИИнтервью регистрирует свой драйвер
+// запись, доступ, согласие) – в service.ts. Ступень 1 – qualifying (здесь); ИИнтервью регистрирует свой драйвер
 // в interview/driver.ts. У защиты проекта (kind=defense) драйвера нет: её ведёт defense-room своим API.
 import type { Prisma } from '@prisma/client';
 
@@ -32,7 +32,7 @@ export interface DriverQuestion {
 
 export interface CallDriver {
   kind: CallKind;
-  /** hardMaxQuestions — потолок с дополнительными вопросами по неопределённым темам (без него их нет). */
+  /** hardMaxQuestions – потолок с дополнительными вопросами по неопределённым темам (без него их нет). */
   limits: { minQuestions: number; maxQuestions: number; hardMaxQuestions?: number };
   /** Закрывающая реплика ИИ, когда вопросы закончились (по умолчанию CLOSING_LINE созвона). */
   closingLine?: string;
@@ -40,17 +40,17 @@ export interface CallDriver {
   disclaimer?: string;
   /** Проверка перед стартом (например, сабмит проекта принадлежит кандидату). */
   assertCanStart?(candidateId: string, projectSubmissionId: string | null): Promise<void>;
-  /** maxQuestions — потолок обычных вопросов на этот созвон (сервис урезает его под этап разбора теста). */
-  /** stream — потоковый режим (CALL_STREAMING): драйвер, который его не умеет, просто игнорирует. */
+  /** maxQuestions – потолок обычных вопросов на этот созвон (сервис урезает его под этап разбора теста). */
+  /** stream – потоковый режим (CALL_STREAMING): драйвер, который его не умеет, просто игнорирует. */
   nextQuestion(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; force?: { topic: string; level: QuestionLevel }; maxQuestions?: number; stream?: InterviewerStream }): Promise<DriverQuestion>;
-  /** Сколько реплик этапа «разбор задания теста» ещё впереди (0 — этапа нет). Нужен для общего лимита реплик ИИ. */
+  /** Сколько реплик этапа «разбор задания теста» ещё впереди (0 – этапа нет). Нужен для общего лимита реплик ИИ. */
   reviewRemaining?(session: DriverSession): Promise<number>;
   /**
    * Этап «разбор решённого задания теста» (только qualifying): следующий вопрос этапа или null, если этапа нет
    * (у кандидата нет завершённой попытки теста), он уже пройден или шаг ещё не наступил.
    */
   nextReviewQuestion?(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; allowStart?: boolean }): Promise<DriverQuestion | null>;
-  /** interim — промежуточная оценка этого же созвона: досчитываются только темы с дополнительными вопросами. */
+  /** interim – промежуточная оценка этого же созвона: досчитываются только темы с дополнительными вопросами. */
   evaluate(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; interim?: CallVerdict | null }): Promise<Omit<CallVerdict, 'upgradedCatalogIds' | 'evaluatedAt'>>;
   /** Последствия вердикта в той же транзакции, что и завершение (уровни утверждений). Возвращает поднятые catalogId. */
   applyVerdict?(tx: Prisma.TransactionClient, candidateId: string, verdict: Omit<CallVerdict, 'upgradedCatalogIds' | 'evaluatedAt'>): Promise<string[]>;
@@ -109,7 +109,7 @@ export function summaryOf(depthMap: CallVerdict['depthMap']): string {
   const head = `Подтверждено тем: ${ok.length} из ${probed.length} проверенных.`;
   const list = ok.length ? ` Подтвердились: ${ok.map((d) => `«${d.topic}»`).join(', ')}.` : '';
   const tail = [
-    // «После дополнительного вопроса» — только если он был: общий лимит реплик (maxAiTurns) может его не оставить.
+    // «После дополнительного вопроса» – только если он был: общий лимит реплик (maxAiTurns) может его не оставить.
     unsure.length
       ? ` Не определено (оценщик разошёлся${unsure.every((d) => d.extraProbe) ? ' и после дополнительного вопроса' : ''}): ${unsure.map((d) => `«${d.topic}»`).join(', ')}.`
       : '',
@@ -174,7 +174,7 @@ const qualifying: CallDriver = {
     }
     const redact = [...ctx.resumeFacts, ...ctx.topics.flatMap((t) => (t.claimStatement ? [t.claimStatement] : []))];
     const interim = opts.interim?.interim ? opts.interim : null;
-    // После дополнительных вопросов досчитываются только эти темы; решения по остальным — из промежуточной оценки.
+    // После дополнительных вопросов досчитываются только эти темы; решения по остальным – из промежуточной оценки.
     const toEval = interim ? [...byTopic.values()].filter((t) => t.extraProbe) : [...byTopic.values()];
     const ev = toEval.length
       ? await evaluateCall(ctx.specialization, toEval, llm, { redact, signal: opts.signal })

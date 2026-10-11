@@ -7,7 +7,7 @@ import { computeCoverage, describeCoverage } from './matcher';
 import type { TargetRec } from './types';
 
 /**
- * Обратный прогон матчера по всем вакансиям платформы. Формулировки — «по
+ * Обратный прогон матчера по всем вакансиям платформы. Формулировки – «по
  * вакансиям на платформе»: рыночных цифр и вероятности приглашения нет.
  */
 export async function recommendTargets(candidateId: string, limit: number): Promise<TargetRec[]> {

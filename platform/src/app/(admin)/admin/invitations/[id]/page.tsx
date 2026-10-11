@@ -9,7 +9,7 @@ import { requirePageStaff } from '@/server/admin/session';
 import styles from '../../admin.module.css';
 import { orNotFound } from '../../listing';
 
-/** Карточка приглашения: условия, ход статусов, жалоба и защиты. Решение по жалобе — в очереди модерации (фаза 2). */
+/** Карточка приглашения: условия, ход статусов, жалоба и защиты. Решение по жалобе – в очереди модерации (фаза 2). */
 export default async function AdminInvitationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await requirePageStaff(`/admin/invitations/${id}`, 'view_invitations');
@@ -32,7 +32,7 @@ export default async function AdminInvitationPage({ params }: { params: Promise<
           <dt>Вилка</dt>
           <dd>{fmtMoney(i.salaryFrom, i.salaryTo)}</dd>
           <dt>Сообщение</dt>
-          <dd>{i.message ?? '—'}</dd>
+          <dd>{i.message ?? '–'}</dd>
           <dt>Статус</dt>
           <dd>{INVITATION_STATUS_LABEL[i.status]}</dd>
           <dt>Отправлено</dt>
@@ -45,7 +45,7 @@ export default async function AdminInvitationPage({ params }: { params: Promise<
             <>
               <dt>Отозвано</dt>
               <dd>
-                {fmtDateTime(i.withdrawnAt)}: {i.withdrawReason ?? '—'}
+                {fmtDateTime(i.withdrawnAt)}: {i.withdrawReason ?? '–'}
               </dd>
             </>
           )}

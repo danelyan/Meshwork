@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST /api/call/{id}/interrupt {index, heardSentences} — кандидат заговорил, пока ИИ говорил (режим звонка).
+ * POST /api/call/{id}/interrupt {index, heardSentences} – кандидат заговорил, пока ИИ говорил (режим звонка).
  * Реплика ИИ в транскрипте обрезается до услышанных предложений, хвост остаётся интервьюеру как недосказанное.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {

@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
-/** POST /api/expert/attempt/[id]/finish — досрочный итог попытки эксперта с разбором (категория не пишется). */
+/** POST /api/expert/attempt/[id]/finish – досрочный итог попытки эксперта с разбором (категория не пишется). */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);
   assertExpertEnabled();

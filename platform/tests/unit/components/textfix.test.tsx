@@ -30,7 +30,7 @@ describe('плашки отказов', () => {
     expect(n[0]).toContain('Объединено повторов: 3');
     expect(n.join(' ')).not.toContain('отброшено');
   });
-  it('разные причины — отдельные плашки', () => {
+  it('разные причины – отдельные плашки', () => {
     const n = rejectNotesOf(ev({ rejected: 3, rejectedByReason: { no_quote: 1, unknown_catalog_id: 1, hidden_text: 1 } }));
     expect(n.join('|')).toMatch(/без цитаты.*\|.*вне каталога.*\|.*скрытого текста/);
   });

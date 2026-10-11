@@ -1,10 +1,10 @@
 // Отличает ли поиск по категории Senior от Middle (колонка S каталога, scripts/catalog-senior.json). Без БД и сети.
 //   npx tsx eval/matching/senior-category.ts
 // Демо-пул по категориям (prisma/seed/pool-*.ts): в каждой подкатегории Middle и Senior ранжируются под потребности
-// категории Senior (categoryNeeds) БЕЗ категории теста — только по утверждениям. «До» — каталог без Senior-only записей
-// и с весом Senior = Middle (как до 11.10). Оговорка: профили и их Senior-навыки написали мы — это проверка механики,
+// категории Senior (categoryNeeds) БЕЗ категории теста – только по утверждениям. «До» – каталог без Senior-only записей
+// и с весом Senior = Middle (как до 11.10). Оговорка: профили и их Senior-навыки написали мы – это проверка механики,
 // не независимая валидация.
-// Второй блок — расширенная синтетика (synthetic.ts): генератор написан до колонки S и её не знает; истина — латентный
+// Второй блок – расширенная синтетика (synthetic.ts): генератор написан до колонки S и её не знает; истина – латентный
 // грейд генератора (Senior против Middle), категория теста скрыта. Меряем, поднимают ли веса S истинных Senior выше.
 import { DEMO_POOL_CATEGORIES } from '../../prisma/seed/pool-categories';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
@@ -14,7 +14,7 @@ import type { CatalogEntry } from '../../src/server/claims/types';
 
 import { generateSynthetic, SYN_SEED } from './synthetic';
 
-/** Профили здесь без категории теста — ранжируем в расширенном пуле (иначе основной режим их не показывает). */
+/** Профили здесь без категории теста – ранжируем в расширенном пуле (иначе основной режим их не показывает). */
 const EVAL_FILTERS: MatchFilters = { expandPool: true };
 
 const full = catalogFromFile();

@@ -1,5 +1,5 @@
 // Вариант 2a в кабинете (11.10): при индексе честности high категория из теста не учитывается в подборке и в банке,
-// пока её не подтвердит созвон с разбором ЭТОЙ попытки («объяснил сам»). partial / нет созвона — понижение остаётся.
+// пока её не подтвердит созвон с разбором ЭТОЙ попытки («объяснил сам»). partial / нет созвона – понижение остаётся.
 import { GET as search } from '@/app/api/employer/search/route';
 import { GET as matches } from '@/app/api/employer/vacancies/[id]/matches/route';
 import { CATEGORY_WITHHELD_TEXT } from '@/server/employer/ranking';
@@ -77,12 +77,12 @@ describe('индекс честности в порядке выдачи (2a, Б
   });
   afterAll(() => prisma.$disconnect());
 
-  it('подборка: high без «объяснил сам» теряет категорию (виден только в расширенном пуле, карточка помечена), с ним — сохраняет', async () => {
+  it('подборка: high без «объяснил сам» теряет категорию (виден только в расширенном пуле, карточка помечена), с ним – сохраняет', async () => {
     const main = new Map((await vacancyItems()).map((i) => [i.candidateId, i]));
     expect(main.get('ir-low')?.categoryMatch).toBe(true);
     expect(main.get('ir-call')?.categoryMatch).toBe(true);
     expect(main.get('ir-call')?.candidate.category).toEqual({ specialization: 'backend', grade: 'junior', subcategoryId: 'backend.web-api', label: 'Backend · Junior' });
-    // основной режим — только учитываемые категории: не подтверждённый high в подборке отсутствует
+    // основной режим – только учитываемые категории: не подтверждённый high в подборке отсутствует
     expect(main.has('ir-high')).toBe(false);
     expect(main.has('ir-partial')).toBe(false);
     const by = new Map((await vacancyItems('pool=all')).map((i) => [i.candidateId, i]));
@@ -104,7 +104,7 @@ describe('индекс честности в порядке выдачи (2a, Б
     }
   });
 
-  it('TEST_INTEGRITY_RANKING=false — порядок без индекса', async () => {
+  it('TEST_INTEGRITY_RANKING=false – порядок без индекса', async () => {
     vi.stubEnv('TEST_INTEGRITY_RANKING', 'false');
     resetEnvCache();
     expect(await bankIds()).toEqual(expect.arrayContaining(['ir-low', 'ir-call', 'ir-high', 'ir-partial']));

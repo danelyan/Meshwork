@@ -24,7 +24,7 @@ export function NotFoundScene() {
 
   return (
     <main id="main" className={styles.scene} data-not-found>
-      <Link href="/" className={styles.brand} aria-label="MESHWORK — на главную">MESHWORK</Link>
+      <Link href="/" className={styles.brand} aria-label="MESHWORK – на главную">MESHWORK</Link>
       <div className={styles.code} aria-hidden="true">404</div>
       <div className={styles.head}>
         <OvalHead reducedMotion={reduced} avoidPointer />

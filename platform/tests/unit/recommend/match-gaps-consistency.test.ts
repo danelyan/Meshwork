@@ -16,7 +16,7 @@ const common = (id: string, junior: number): CatalogEntry => ({
   ...be(id, null), specialization: 'common', weights: { backend: { junior, middle: 2, senior: 2 }, frontend: { junior: 1, middle: 1, senior: 1 } },
 } as unknown as CatalogEntry);
 
-// Срез реального каталога backend:junior: шесть требований вакансии «Гранит Софт — Backend (Junior)» + то,
+// Срез реального каталога backend:junior: шесть требований вакансии «Гранит Софт – Backend (Junior)» + то,
 // что у demo-accepted на /skills было «Нет» (SQL с JOIN, IDOR, ошибки, N+1).
 const catalog = new Map<string, CatalogEntry>([
   be('be.framework', 3), be('be.api-validation', 2), be('be.authn-impl', 2), be('be.config-secrets', 2), be('be.lang-core', 3),

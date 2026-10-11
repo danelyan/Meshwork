@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import styles from './shell.module.css';
 
-/** Единый подвал. Ссылка «Демо для жюри» — только при DEMO_LOGIN (флаг приходит из лэйаута). */
+/** Единый подвал. Ссылка «Демо для жюри» – только при DEMO_LOGIN (флаг приходит из лэйаута). */
 export function SiteFooter({ demo = false }: { demo?: boolean }) {
   return (
     <footer className={styles.footer}>

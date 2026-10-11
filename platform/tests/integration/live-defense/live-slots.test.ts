@@ -46,7 +46,7 @@ async function seed() {
     await prisma.candidate.create({ data: { id: `c${n}`, email: `c${n}@example.com`, name: `Кандидат ${n}` } });
     await prisma.user.create({ data: { id: `u-c${n}`, name: `c${n}`, role: 'candidate', candidateId: `c${n}` } });
   }
-  // c1, c2 — согласие на запись есть; c3 — нет.
+  // c1, c2 – согласие на запись есть; c3 – нет.
   await grantConsents('u-c1', ['call_recording', 'ai_assessment']);
   await grantConsents('u-c2', ['call_recording', 'ai_assessment']);
   const mk = async (candidateId: string, companyId: string, status: 'accepted' | 'sent', ep: string) =>
@@ -60,7 +60,7 @@ async function seed() {
     b1: await mk('c1', 'co-b', 'accepted', 'ep-b'),
   };
   await discloseAccepted();
-  // c1 сдал проект под потребность компании A — к нему привяжется сессия живой защиты.
+  // c1 сдал проект под потребность компании A – к нему привяжется сессия живой защиты.
   await prisma.projectTemplate.create({ data: { id: 'tpl-1', subcategoryId: 'backend.integrations', specialization: 'backend', grade: 'middle', title: 'Платежи', contractMd: '#', dirRef: 'x', hiddenTestsRef: 'hidden', visibleTestsRef: 'visible', image: 'node20', timeBudgetMin: 240 } });
   await prisma.vacancy.create({ data: { id: 'vac-1', companyId: 'co-a', title: 'Backend', specialization: 'backend', grade: 'middle', salaryFrom: 200000, salaryTo: 250000, needs: [] } });
   await prisma.projectTask.create({ data: { id: 'task-1', vacancyId: 'vac-1', templateId: 'tpl-1', specialization: 'backend', grade: 'middle', specJson: {}, rubricJson: { criteria: [] } } });
@@ -77,7 +77,7 @@ describe('lane live-slots: назначение живой защиты (БД)',
   });
   afterAll(() => prisma.$disconnect());
 
-  it('права: чужая компания — 404, не accepted — 409, кандидат чужого приглашения — 404', async () => {
+  it('права: чужая компания – 404, не accepted – 409, кандидат чужого приглашения – 404', async () => {
     const slots = [hoursFromNow(3), hoursFromNow(5)];
     expect((await propose(INV.a1!, slots, EMP_B)).status).toBe(404);
     const notAccepted = await propose(INV.aSent!, slots);
@@ -91,7 +91,7 @@ describe('lane live-slots: назначение живой защиты (БД)',
     expect((await noneFitRoute(post({ comment: 'неудобно' }, cand(2)), params(INV.a1!))).status).toBe(404);
   });
 
-  it('лимит 2–5 и окно [now+2ч, now+14д] — 400', async () => {
+  it('лимит 2–5 и окно [now+2ч, now+14д] – 400', async () => {
     expect((await propose(INV.a1!, [hoursFromNow(3)])).status).toBe(400);
     expect((await propose(INV.a1!, [3, 4, 5, 6, 7, 8].map(hoursFromNow))).status).toBe(400);
     const early = await propose(INV.a1!, [hoursFromNow(1), hoursFromNow(5)]);
@@ -111,7 +111,7 @@ describe('lane live-slots: назначение живой защиты (БД)',
     expect((await choose(INV.a1!, first.slots[0].id, cand(1))).status).toBe(404);
   });
 
-  it('без согласия на запись — 409 recording_consent_required; с версией — согласие записано и слот выбран', async () => {
+  it('без согласия на запись – 409 recording_consent_required; с версией – согласие записано и слот выбран', async () => {
     const view = await (await propose(INV.a3!, [hoursFromNow(3), hoursFromNow(5)])).json();
     const r = await choose(INV.a3!, view.slots[0].id, cand(3));
     expect(r.status).toBe(409);
@@ -124,7 +124,7 @@ describe('lane live-slots: назначение живой защиты (БД)',
     expect(await prisma.consent.count({ where: { userId: 'u-c3', kind: 'call_recording', revokedAt: null } })).toBe(1);
   });
 
-  it('гонка: два кандидата одновременно выбирают одно время компании — один 200, второй 409 slot_taken', async () => {
+  it('гонка: два кандидата одновременно выбирают одно время компании – один 200, второй 409 slot_taken', async () => {
     const t = hoursFromNow(4);
     const v1 = await (await propose(INV.a1!, [t, hoursFromNow(6)])).json();
     const v2 = await (await propose(INV.a2!, [t, hoursFromNow(8)])).json();
@@ -136,7 +136,7 @@ describe('lane live-slots: назначение живой защиты (БД)',
     expect(await prisma.liveDefense.count({ where: { status: 'scheduled' } })).toBe(1);
   });
 
-  it('пересечение (не то же время) тоже занято; слот проигравшего виден как недоступный, второй слот — выбирается', async () => {
+  it('пересечение (не то же время) тоже занято; слот проигравшего виден как недоступный, второй слот – выбирается', async () => {
     const v1 = await (await propose(INV.a1!, [hoursFromNow(4), hoursFromNow(6)])).json();
     const v2 = await (await propose(INV.a2!, [new Date(Date.parse(hoursFromNow(4)) + 30 * 60_000).toISOString(), hoursFromNow(8)])).json();
     expect((await choose(INV.a1!, v1.slots[0].id, cand(1))).status).toBe(200);
@@ -168,13 +168,13 @@ describe('lane live-slots: назначение живой защиты (БД)',
     const emp = await (await employerList(jsonRequest('/x', 'GET', undefined, EMP_A))).json();
     const row = emp.invitations.find((i: { id: string }) => i.id === INV.a1);
     expect(row.liveDefense).toMatchObject({ status: 'scheduled', scheduled: { roomHref: `/employer/calls/${call.id}` } });
-    // Повторный выбор — 409, второе предложение поверх назначенной — 409.
+    // Повторный выбор – 409, второе предложение поверх назначенной – 409.
     expect((await choose(INV.a1!, v.slots[0].id, cand(1))).status).toBe(409);
     const again = await propose(INV.a1!, [hoursFromNow(7), hoursFromNow(9)]);
     expect((await again.json()).error.code).toBe('live_defense_scheduled');
   });
 
-  it('«ни один не подходит» — работодатель видит комментарий и уведомление, затем предлагает новые', async () => {
+  it('«ни один не подходит» – работодатель видит комментарий и уведомление, затем предлагает новые', async () => {
     await propose(INV.a1!, [hoursFromNow(3), hoursFromNow(5)]);
     const r = await noneFitRoute(post({ comment: 'Удобно после 19:00 МСК' }, cand(1)), params(INV.a1!));
     expect(r.status).toBe(200);
@@ -190,7 +190,7 @@ describe('lane live-slots: назначение живой защиты (БД)',
     const v = await proposeSlots({ companyId: 'co-a', userId: 'u-emp-a' }, INV.a1!, { slots: [hoursFromNow(3), hoursFromNow(5)], durationMin: 30 }, now);
     await chooseSlot('c1', INV.a1!, { slotId: v.slots[0]!.id }, now);
     const startsAt = new Date(v.slots[0]!.startsAt);
-    // За 59 минут — поздно.
+    // За 59 минут – поздно.
     await expect(cancelLiveDefense({ role: 'candidate', candidateId: 'c1' }, INV.a1!, 'Заболел', new Date(startsAt.getTime() - 59 * 60_000))).rejects.toMatchObject({ code: 'cancel_too_late' });
     expect((await candidateCancelRoute(post({ reason: '' }, cand(1)), params(INV.a1!))).status).toBe(400);
     expect((await employerCancelRoute(post({ reason: 'Интервьюер заболел' }, EMP_B), params(INV.a1!))).status).toBe(404);
@@ -202,7 +202,7 @@ describe('lane live-slots: назначение живой защиты (БД)',
     expect((await choose(INV.a2!, v2.slots[0].id, cand(2))).status).toBe(200);
   });
 
-  it('комната: открывается за 10 минут до начала — раньше 409 room_not_open (и кандидату, и работодателю)', async () => {
+  it('комната: открывается за 10 минут до начала – раньше 409 room_not_open (и кандидату, и работодателю)', async () => {
     const now = new Date();
     const v = await proposeSlots({ companyId: 'co-a', userId: 'u-emp-a' }, INV.a1!, { slots: [hoursFromNow(3), hoursFromNow(5)], durationMin: 45 }, now);
     const chosen = await chooseSlot('c1', INV.a1!, { slotId: v.slots[0]!.id }, now);

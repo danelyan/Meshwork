@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** POST /api/project-tasks/:id/take — взять задание (идемпотентно); не больше PROJECT_MAX_ACTIVE несданных — иначе 429. */
+/** POST /api/project-tasks/:id/take – взять задание (идемпотентно); не больше PROJECT_MAX_ACTIVE несданных – иначе 429. */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

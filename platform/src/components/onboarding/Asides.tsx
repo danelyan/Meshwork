@@ -22,7 +22,7 @@ const nextId = () => `as${++seq}`;
 /** Реплики свободных вопросов по шагам онбординга (stepId → лента). */
 export type AsidesByStep = Record<string, FeedItem[]>;
 
-/** Восстановленные после перезагрузки вопросы (RestoredItem со stepId) — по шагам. */
+/** Восстановленные после перезагрузки вопросы (RestoredItem со stepId) – по шагам. */
 export function groupAsides(items: RestoredItem[]): AsidesByStep {
   const out: AsidesByStep = {};
   for (const it of items) {
@@ -36,8 +36,8 @@ export function groupAsides(items: RestoredItem[]): AsidesByStep {
 /**
  * Свободный вопрос посреди онбординга (решение владельца 09.10): текст, не совпавший с вариантом
  * шага, уходит карьерному консультанту (POST /api/consultant/messages с onboardingStep, SSE) в тот же
- * разговор, что после итога станет консультантом. Ответ — под текущим шагом; без модели (заглушка,
- * сбой) сервер отвечает заготовкой. `local` — заготовка без сервера (до роли «специалист»).
+ * разговор, что после итога станет консультантом. Ответ – под текущим шагом; без модели (заглушка,
+ * сбой) сервер отвечает заготовкой. `local` – заготовка без сервера (до роли «специалист»).
  */
 export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<string | undefined>, onConversation: (id: string) => void) {
   const refreshAside = useAsideRefresh();
@@ -107,7 +107,7 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
     [apply, conversation, push, refreshAside],
   );
 
-  /** Заготовка без модели: вопрос остаётся в ленте, ответ — фиксированный текст (в БД не пишется). */
+  /** Заготовка без модели: вопрос остаётся в ленте, ответ – фиксированный текст (в БД не пишется). */
   const local = useCallback(
     (stepId: string, text: string, reply: string) => {
       push(stepId, { id: nextId(), role: 'user', text });

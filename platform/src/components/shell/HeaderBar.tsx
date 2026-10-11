@@ -17,8 +17,8 @@ import { Notifications } from './Notifications';
 import styles from './shell.module.css';
 
 /**
- * Шапка: знак слева, навигация роли (на «/» шапку прячет ShellFrame, якоря главной — в LandingChrome), справа меню аккаунта (`account`, ADR 0004:
- * роли, профиль компании, «Выйти») или «Войти». Сессия без учётки в БД (старая демо-кука) — просто «Выйти».
+ * Шапка: знак слева, навигация роли (на «/» шапку прячет ShellFrame, якоря главной – в LandingChrome), справа меню аккаунта (`account`, ADR 0004:
+ * роли, профиль компании, «Выйти») или «Войти». Сессия без учётки в БД (старая демо-кука) – просто «Выйти».
  */
 export function HeaderBar({ signedIn, links, account = null, jury = false }: { signedIn: boolean; links: NavLink[]; account?: HeaderAccount | null; jury?: boolean }) {
   const pathname = usePathname();
@@ -51,7 +51,7 @@ export function HeaderBar({ signedIn, links, account = null, jury = false }: { s
             </span>
           )}
           {account?.roles && <Notifications role={account.roles.role} />}
-          {/* Тема действует в разделах кабинета (THEMED_PATHS) — иконка там, где она что-то меняет; на лендинге, входе и юридических её нет. */}
+          {/* Тема действует в разделах кабинета (THEMED_PATHS) – иконка там, где она что-то меняет; на лендинге, входе и юридических её нет. */}
           {isThemedPath(pathname) && <ThemeToggle />}
           {account ? (
             <AccountMenu account={account} />

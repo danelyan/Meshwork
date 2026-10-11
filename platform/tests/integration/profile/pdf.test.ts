@@ -68,7 +68,7 @@ describe('GET /api/profile/pdf (БД)', () => {
     expect(Number(res.headers.get('content-length'))).toBe(body.length);
   });
 
-  it('принятый грейд ниже из старой попытки при более новой passed: версия — по событию выдачи, а не по последней попытке', async () => {
+  it('принятый грейд ниже из старой попытки при более новой passed: версия – по событию выдачи, а не по последней попытке', async () => {
     // Старая попытка (v4) с принятым Junior ровно в момент выдачи категории; новая passed (v7) была раньше по времени выдачи.
     await prisma.testAttempt.update({ where: { id: 'att-owner' }, data: { status: 'not_confirmed', juniorConfirmedAt: new Date('2026-10-05T10:00:00.000Z') } });
     await prisma.testAttempt.create({ data: { id: 'att-newer', candidateId: 'owner', specialization: 'backend', grade: 'middle', status: 'passed', policyVersion: 'adr-0002-v7', seed: 2, expiresAt: new Date('2026-10-05T09:50:00.000Z'), startedAt: new Date('2026-10-05T09:40:00.000Z'), finishedAt: new Date('2026-10-05T09:59:30.000Z') } });

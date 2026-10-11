@@ -50,7 +50,7 @@ export default async function AdminCandidatesPage({ searchParams }: { searchPara
               <td>
                 <Link href={`/admin/candidates/${c.id}`}>{c.pseudonym}</Link>
               </td>
-              <td className={styles.mono}>{c.email ?? '—'}</td>
+              <td className={styles.mono}>{c.email ?? '–'}</td>
               <td>{c.category ? `${SPEC_LABEL[c.category.specialization]} · ${GRADE_LABEL[c.category.grade]}` : (c.specialization ? `${SPEC_LABEL[c.specialization]} · без категории` : 'без категории')}</td>
               <td>{FSP_LABEL[c.fspState]}</td>
               <td className={styles.mono}>{fmtDate(c.createdAt)}</td>

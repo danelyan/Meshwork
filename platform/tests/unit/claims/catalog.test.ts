@@ -35,7 +35,7 @@ describe('каталог из prisma/seed/claims-catalog.json', () => {
     }
   });
 
-  it('веса J/M, stack и смежность — в meta; смежность симметрична', () => {
+  it('веса J/M, stack и смежность – в meta; смежность симметрична', () => {
     expect(getCatalogMeta('be.idempotency')).toMatchObject({ weights: { junior: 1, middle: 3, senior: 3 }, stack: null });
     expect(getCatalogMeta('common.sql-queries')?.weights).toEqual({
       backend: { junior: 3, middle: 2, senior: 2 },

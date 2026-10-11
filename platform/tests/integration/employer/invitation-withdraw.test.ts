@@ -1,4 +1,4 @@
-// lane invite-cancel: отзыв приглашения работодателем (ТЗ 2.2 п. 3 — статус видят обе стороны; ADR 0008 п. 6 — отмена
+// lane invite-cancel: отзыв приглашения работодателем (ТЗ 2.2 п. 3 – статус видят обе стороны; ADR 0008 п. 6 – отмена
 // приглашения закрывает слоты живой защиты) и запрет вопроса к сабмиту чужой компании (ADR 0008, visibility.ts).
 import { POST as questionRoute } from '@/app/api/employer/questions/route';
 import { POST as proposeRoute } from '@/app/api/employer/invitations/[id]/live-defense/route';
@@ -65,7 +65,7 @@ describe('lane invite-cancel: отзыв приглашения работода
   });
   afterAll(() => prisma.$disconnect());
 
-  it('чужая компания — 404; hired и declined — 409; причина обязательна и до 300 знаков — 400', async () => {
+  it('чужая компания – 404; hired и declined – 409; причина обязательна и до 300 знаков – 400', async () => {
     expect((await withdraw(INV.accepted!, 'Позиция закрыта', EMP_B)).status).toBe(404);
     for (const id of [INV.hired!, INV.declined!]) {
       const r = await withdraw(id, 'Позиция закрыта');
@@ -77,15 +77,15 @@ describe('lane invite-cancel: отзыв приглашения работода
     expect(await prisma.invitation.count({ where: { status: 'withdrawn' } })).toBe(0);
   });
 
-  it('sent → withdrawn: повторный отзыв — 409, лимит за сутки не возвращается', async () => {
+  it('sent → withdrawn: повторный отзыв – 409, лимит за сутки не возвращается', async () => {
     const before = await prisma.invitation.count({ where: { companyId: 'co-a' } });
     const r = await withdraw(INV.sent!, 'Позиция закрыта');
     expect(r.status).toBe(200);
     expect(await r.json()).toMatchObject({ status: 'withdrawn', withdrawn: { reason: 'Позиция закрыта' } });
     expect((await withdraw(INV.sent!, 'Ещё раз')).status).toBe(409);
-    // Счётчик лимита — по createdAt всех приглашений компании, отозванное в нём остаётся.
+    // Счётчик лимита – по createdAt всех приглашений компании, отозванное в нём остаётся.
     expect(await prisma.invitation.count({ where: { companyId: 'co-a', createdAt: { gt: new Date(Date.now() - 86_400_000) } } })).toBe(before);
-    // lane lifecycle: после отзыва — пауза 14 дней (409 invite_cooldown), по её истечении можно пригласить снова.
+    // lane lifecycle: после отзыва – пауза 14 дней (409 invite_cooldown), по её истечении можно пригласить снова.
     const blocked = await inviteRoute(post({ candidateId: 'c1', message: 'Вернулись к вакансии, приглашаем снова', salaryFrom: 200000, salaryTo: 250000 }, EMP_A));
     expect(blocked.status).toBe(409);
     expect((await blocked.json()).error).toMatchObject({ code: 'invite_cooldown', details: { nextAt: expect.any(String) } });
@@ -94,7 +94,7 @@ describe('lane invite-cancel: отзыв приглашения работода
     expect(again.status).toBe(201);
   });
 
-  it('accepted → withdrawn: слоты закрыты, выбор слота — 409, ожидающая сессия отменена, вход в комнату — 404, раскрытие отозвано', async () => {
+  it('accepted → withdrawn: слоты закрыты, выбор слота – 409, ожидающая сессия отменена, вход в комнату – 404, раскрытие отозвано', async () => {
     const view = await (await proposeRoute(post({ slots: [hoursFromNow(3), hoursFromNow(5)], durationMin: 45 }, EMP_A), params(INV.accepted!))).json();
     expect((await chooseRoute(post({ slotId: view.slots[0].id }, CAND), params(INV.accepted!))).status).toBe(200);
     const live = await prisma.liveDefense.findFirstOrThrow({ where: { invitationId: INV.accepted! } });
@@ -110,7 +110,7 @@ describe('lane invite-cancel: отзыв приглашения работода
     const chosen = await chooseRoute(post({ slotId: view.slots[1].id }, CAND), params(INV.accepted!));
     expect(chosen.status).toBe(409);
     await expect(joinCall({ userId: 'u-emp-a', role: 'employer', candidateId: null, employerProfileId: 'ep-a' }, live.callSessionId!)).rejects.toMatchObject({ status: 404 });
-    // Раскрытие по этому приглашению отозвано, по приглашению компании B — действует.
+    // Раскрытие по этому приглашению отозвано, по приглашению компании B – действует.
     const disclosures = await prisma.consent.findMany({ where: { userId: 'u-c1', kind: 'identity_disclosure' }, select: { context: true, revokedAt: true } });
     const byInv = new Map(disclosures.map((d) => [(d.context as { invitationId?: string }).invitationId, d.revokedAt]));
     expect(byInv.get(INV.accepted!)).not.toBeNull();
@@ -134,7 +134,7 @@ describe('lane invite-cancel: отзыв приглашения работода
   });
 });
 
-describe('lane invite-cancel: вопрос с привязкой к сабмиту — только своей компании (БД)', () => {
+describe('lane invite-cancel: вопрос с привязкой к сабмиту – только своей компании (БД)', () => {
   beforeEach(async () => {
     await resetDb();
     await seed();
@@ -142,7 +142,7 @@ describe('lane invite-cancel: вопрос с привязкой к сабмит
 
   const ask = (projectSubmissionId?: string) => questionRoute(post({ candidateId: 'c1', text: 'Почему выбрали такую схему ретраев?', ...(projectSubmissionId ? { projectSubmissionId } : {}) }, EMP_A));
 
-  it('к сабмиту под вакансию другой компании — 404 submission_not_owned; к своему и без привязки — 201', async () => {
+  it('к сабмиту под вакансию другой компании – 404 submission_not_owned; к своему и без привязки – 201', async () => {
     const foreign = await ask('sub-b');
     expect(foreign.status).toBe(404);
     expect((await foreign.json()).error.code).toBe('submission_not_owned');

@@ -4,7 +4,7 @@ import type { OnboardingView } from '../onboarding/types';
 
 // Полоса этапов знакомства над чатом консультанта (макет Astra v2, docs/design-spec.md): пять этапов и
 // «Заполнено X из N». Состояния считаются по ответам знакомства и фактам профиля; чистые функции, без БД.
-// Грейд в полосе — предполагаемый: категорию даёт только тест (последний этап).
+// Грейд в полосе – предполагаемый: категорию даёт только тест (последний этап).
 
 export type StageState = 'done' | 'now' | 'next';
 
@@ -28,13 +28,13 @@ export interface StageDraft {
   id: string;
   label: string;
   done: boolean;
-  /** Подпись закрытого этапа; без неё — «готово». */
+  /** Подпись закрытого этапа; без неё – «готово». */
   doneNote?: string;
-  /** Подпись этапа, до которого ещё не дошли; без неё — «дальше». */
+  /** Подпись этапа, до которого ещё не дошли; без неё – «дальше». */
   nextNote?: string;
 }
 
-/** Закрытые этапы — «готово» (где бы ни стояли), первый незакрытый — «сейчас», остальные — «дальше». */
+/** Закрытые этапы – «готово» (где бы ни стояли), первый незакрытый – «сейчас», остальные – «дальше». */
 export function markStages(drafts: StageDraft[]): IntroStage[] {
   const nowIdx = drafts.findIndex((d) => !d.done);
   return drafts.map((d, i) => {
@@ -44,7 +44,7 @@ export function markStages(drafts: StageDraft[]): IntroStage[] {
   });
 }
 
-/** Ответ шага знакомства: из итога, если он показан, иначе из ленты; пропущенный шаг — null. */
+/** Ответ шага знакомства: из итога, если он показан, иначе из ленты; пропущенный шаг – null. */
 export function stageAnswer(view: OnboardingView | undefined, stepId: string): string | null {
   if (!view) return null;
   const fromSummary = view.summary?.items.find((i) => i.stepId === stepId)?.value;
@@ -53,8 +53,8 @@ export function stageAnswer(view: OnboardingView | undefined, stepId: string): s
 }
 
 /**
- * Сохранённый ответ шага (OnboardingState.answers) — когда ленты знакомства уже нет: после итога ответы про опыт
- * лежат только там. Пустая строка, пустой список и отсутствие ключа — ответа нет.
+ * Сохранённый ответ шага (OnboardingState.answers) – когда ленты знакомства уже нет: после итога ответы про опыт
+ * лежат только там. Пустая строка, пустой список и отсутствие ключа – ответа нет.
  */
 export function hasSavedAnswer(answers: unknown, stepId: string): boolean {
   if (!answers || typeof answers !== 'object' || Array.isArray(answers)) return false;
@@ -69,7 +69,7 @@ export interface Progress {
   total: number;
 }
 
-/** Заполненность по списку «поле заполнено / нет» — для аккаунта без ленты знакомства. */
+/** Заполненность по списку «поле заполнено / нет» – для аккаунта без ленты знакомства. */
 export function checklistProgress(checks: boolean[]): Progress {
   return { done: checks.filter(Boolean).length, total: checks.length };
 }
@@ -83,7 +83,7 @@ export interface CandidateStageFacts {
   materials: boolean;
   /** Указаны условия: формат работы, город или зарплатные ожидания. */
   terms: boolean;
-  /** Категория по тесту («Backend · Middle»); null — тест не пройден. */
+  /** Категория по тесту («Backend · Middle»); null – тест не пройден. */
   category: string | null;
   progress: Progress;
 }
@@ -110,7 +110,7 @@ export interface EmployerStageFacts {
   needs: number;
   /** Отправлено приглашений. */
   invitations: number;
-  /** Нет ленты знакомства — заполненность считается по этапам. */
+  /** Нет ленты знакомства – заполненность считается по этапам. */
   progress?: Progress;
 }
 

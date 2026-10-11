@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { resetEnvCache } from '@/server/env';
 import { signSession, signUserSession } from '@/server/session';
 
-// Доступ к страницам группы (candidate) и /employer/* (E-02, граница доверия; R-C-14 — без входа данных не показываем).
+// Доступ к страницам группы (candidate) и /employer/* (E-02, граница доверия; R-C-14 – без входа данных не показываем).
 const cookie = vi.hoisted(() => ({ value: undefined as string | undefined }));
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: (name: string) => (name === 'cid' && cookie.value ? { name, value: cookie.value } : undefined) }),
@@ -77,7 +77,7 @@ afterEach(() => {
   cleanup();
 });
 
-// Чистая матрица редиректов (foreignPageRedirect) — tests/unit/auth/access-redirects.test.ts; здесь — сами страницы.
+// Чистая матрица редиректов (foreignPageRedirect) – tests/unit/auth/access-redirects.test.ts; здесь – сами страницы.
 
 describe.each(PAGES)('страница %s', (_name, next, run) => {
   it('гость → /auth?next=<путь>', async () => {
@@ -105,7 +105,7 @@ describe.each(PAGES)('страница %s', (_name, next, run) => {
   });
 });
 
-describe('/onboarding — только редирект на /consultant (один адрес с чатом, решение владельца 10.10)', () => {
+describe('/onboarding – только редирект на /consultant (один адрес с чатом, решение владельца 10.10)', () => {
   const run = async () => (await import('@/app/onboarding/page')).default();
   it.each(['guest', 'candidate', 'employer', 'pending'] as const)('%s → /consultant', async (who) => {
     cookie.value = who === 'guest' ? undefined : SESS[who]();
@@ -113,14 +113,14 @@ describe('/onboarding — только редирект на /consultant (оди
   });
 });
 
-describe('/consultant: общий адрес — гость на вход, роли решает страница (tests/unit/app/consultant-feed.test.tsx)', () => {
+describe('/consultant: общий адрес – гость на вход, роли решает страница (tests/unit/app/consultant-feed.test.tsx)', () => {
   const run = async () => (await import('@/app/(shared)/consultant/page')).default();
   it('гость → /auth?next=/consultant; поддельная кука = гость', async () => {
     expect(await outcome(run)).toBe('/auth?next=%2Fconsultant');
     cookie.value = `${SESS.candidate().slice(0, -2)}xx`;
     expect(await outcome(run)).toBe('/auth?next=%2Fconsultant');
   });
-  it('работодатель → рендер (дом работодателя — лента с помощником по подбору)', async () => {
+  it('работодатель → рендер (дом работодателя – лента с помощником по подбору)', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     cookie.value = SESS.employer();
     expect(await outcome(run)).toBe('ok');
@@ -154,8 +154,8 @@ describe.each(EMPLOYER_PAGES)('страница работодателя %s', (n
   });
 });
 
-describe('requirePageLevel: нет записи или не тот уровень — 404, а не 500', () => {
-  it('id с «/» (%2F): адрес кодируется, остаётся одним сегментом — гвард не падает ошибкой уровня', async () => {
+describe('requirePageLevel: нет записи или не тот уровень – 404, а не 500', () => {
+  it('id с «/» (%2F): адрес кодируется, остаётся одним сегментом – гвард не падает ошибкой уровня', async () => {
     cookie.value = SESS.employer();
     const page = async () => (await import('@/app/(employer)/employer/needs/[id]/page')).default({ params: Promise.resolve({ id: 'a/b' }), searchParams: Promise.resolve({}) });
     const edit = async () => (await import('@/app/(employer)/employer/needs/[id]/edit/page')).default({ params: Promise.resolve({ id: 'a/b' }) });
@@ -183,7 +183,7 @@ describe('requirePageLevel: нет записи или не тот уровен�
   });
 });
 
-describe('/employer/assistant — прежний адрес, любой вход → /consultant', () => {
+describe('/employer/assistant – прежний адрес, любой вход → /consultant', () => {
   it.each(['guest', 'candidate', 'employer', 'pending'] as const)('%s', async (who) => {
     cookie.value = who === 'guest' ? undefined : SESS[who]();
     expect(await outcome(async () => (await import('@/app/(employer)/employer/assistant/page')).default())).toBe('/consultant');

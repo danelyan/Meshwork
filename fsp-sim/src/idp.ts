@@ -96,7 +96,7 @@ export function createKeycloakAdmin(config: Pick<Config, 'adminBase' | 'internal
       return await fn();
     } catch (err) {
       if (err instanceof ApiError) throw err;
-      console.warn(`[fsp-sim] ФСП ID: ${what} — ${err instanceof Error ? err.message : 'unknown'}`);
+      console.warn(`[fsp-sim] ФСП ID: ${what} – ${err instanceof Error ? err.message : 'unknown'}`);
       throw unavailable(what);
     }
   };

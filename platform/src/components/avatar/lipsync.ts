@@ -1,8 +1,8 @@
 /**
- * Висемы из спектра звучащей реплики — без таймингов фонем (SpeechKit их не отдаёт) и без ML.
+ * Висемы из спектра звучащей реплики – без таймингов фонем (SpeechKit их не отдаёт) и без ML.
  * Схема как у wawa-lipsync (MIT, wass08): 7 частотных полос, спектральный центроид, громкость,
  * история ~10 кадров → один из 15 висем Oculus (sil, PP, FF, …, aa, E, I, O, U) по правилам на
- * соотношениях полос. Правила и пороги — наши, подобраны под голос SpeechKit `marina` (см.
+ * соотношениях полос. Правила и пороги – наши, подобраны под голос SpeechKit `marina` (см.
  * docs/research/20). Висема → форма рта из четырёх параметров для вершинного шейдера Head3D.
  */
 
@@ -74,7 +74,7 @@ export function spectrumFeatures(freq: ArrayLike<number>, binWidth: number): Spe
   return { bands, volume: bands.reduce((s, v) => s + v, 0) / bands.length, centroid: amp > 0 ? weighted / amp : 0 };
 }
 
-/** Пороги. Громкость полос у SpeechKit (getByteFrequencyData — дБ-шкала) почти не меняется, информативны отношения. */
+/** Пороги. Громкость полос у SpeechKit (getByteFrequencyData – дБ-шкала) почти не меняется, информативны отношения. */
 const SILENCE = 0.08;
 
 /**
@@ -97,7 +97,7 @@ export function classifyViseme(cur: SpectrumFeatures, avg: SpectrumFeatures, nor
   if (r7 > 1.6 && cur.centroid > 4300) return dCentroid > 600 ? 'FF' : 'SS';
   // огубленные: только низ (есть F1), центроид низкий; без F1 это затухание слога, не гласная
   if (cur.centroid < 1700 && r5 < 0.6 && r3 >= 0.75) return r4 < 0.7 ? 'U' : 'O';
-  // затухание слога: все полосы ниже среднего — губы смыкаются
+  // затухание слога: все полосы ниже среднего – губы смыкаются
   if (cur.volume < 0.25 && r4 < 0.7 && r5 < 0.7) return 'nn';
   if (r5 > 1.3) return r4 > 1.3 ? 'E' : 'I';
   if (r4 > 1.15 && r5 < 1.1) return 'aa';
@@ -122,9 +122,9 @@ export function smoothShape(prev: MouthShape, target: MouthShape, dtSec: number,
  */
 export class LipSync {
   viseme: Viseme = 'sil';
-  /** Последний кадр признаков — для отладки/калибровки. */
+  /** Последний кадр признаков – для отладки/калибровки. */
   last: SpectrumFeatures | null = null;
-  /** Бегущее среднее полос по реплике — нормировка для classifyViseme. */
+  /** Бегущее среднее полос по реплике – нормировка для classifyViseme. */
   norm: number[] = [...BAND_PRIOR];
   private history: SpectrumFeatures[] = [];
   private since = 0;

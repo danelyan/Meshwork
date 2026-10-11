@@ -1,4 +1,4 @@
-/* Демо-персоны: компактный список в окне входа и на /demo. Токены — styles/tokens.css. */
+/* Демо-персоны: компактный список в окне входа и на /demo. Токены – styles/tokens.css. */
 .groups { display: grid; gap: 18px; min-width: 0; }
 .group { display: grid; gap: 8px; min-width: 0; }
 .groupTitle { margin: 0; font: 600 var(--fs-xs) var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }

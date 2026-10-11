@@ -19,7 +19,7 @@ function rgbOf(token: string, fallback: string): string {
   return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
 }
 
-/** Фон-сетка: узлы расходятся от курсора и плывущих карточек компаний. Декор; на мобильном и при reduced-motion — статика/выключено. */
+/** Фон-сетка: узлы расходятся от курсора и плывущих карточек компаний. Декор; на мобильном и при reduced-motion – статика/выключено. */
 export function Background() {
   const ref = useRef<HTMLCanvasElement>(null);
 

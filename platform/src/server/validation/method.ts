@@ -1,6 +1,6 @@
 // Данные страницы /method «Как устроена проверка» для жюри: константы политики теста, информационная функция банка
 // подкатегории и агрегат прогонов simulate() на смоделированных кандидатах. Без БД и LLM, детерминированно.
-// Числа политики и весов не дублируются — читаются из policy.ts и weights.ts.
+// Числа политики и весов не дублируются – читаются из policy.ts и weights.ts.
 import { GRADES, type Grade } from '@/lib/grades';
 import { getSubcategory } from '@/lib/directions';
 import { poolFor } from '@/server/test/generators';
@@ -56,7 +56,7 @@ export interface BankInformation {
   /** Сколько заданий каждого грейда в банке. */
   counts: Record<Grade, number>;
   /**
-   * Потолок точности одной попытки: при каждом θ — сумма информации MAX_ITEMS самых информативных заданий банка
+   * Потолок точности одной попытки: при каждом θ – сумма информации MAX_ITEMS самых информативных заданий банка
    * (адаптивный тест длиной MAX_ITEMS в идеале). SE = 1/√I.
    */
   best: number[];
@@ -106,17 +106,17 @@ export function bankInformation(subcategoryId: string): BankInformation | null {
   };
 }
 
-/** Строка карточек: «истинная» θ в середине зоны грейда или в верхней трети («уверенный»; новичок — глубже в своей зоне). */
+/** Строка карточек: «истинная» θ в середине зоны грейда или в верхней трети («уверенный»; новичок – глубже в своей зоне). */
 export type PersonaRow = 'mid' | 'confident';
 export const PERSONA_ROWS: readonly PersonaRow[] = ['mid', 'confident'];
 
-/** Верхняя треть зоны [от; до] — середина этой трети: от + (до − от) × 5/6. */
+/** Верхняя треть зоны [от; до] – середина этой трети: от + (до − от) × 5/6. */
 const upperThird = (from: number, to: number) => Number((from + ((to - from) * 5) / 6).toFixed(2));
 
 /**
- * Смоделированные кандидаты, заявка — свой грейд (новичок заявляет Junior). Середина зоны: −1,3 / −0,4 / 0,35 / 1,3.
- * Уверенный: Junior и Middle — середина верхней трети зоны между порогами GRADE_CUT; у открытых зон (новичок ниже
- * порога Junior, Senior выше своего) — на 0,7 дальше от порога, чем середина (−2,0 и 2,0 при текущих порогах).
+ * Смоделированные кандидаты, заявка – свой грейд (новичок заявляет Junior). Середина зоны: −1,3 / −0,4 / 0,35 / 1,3.
+ * Уверенный: Junior и Middle – середина верхней трети зоны между порогами GRADE_CUT; у открытых зон (новичок ниже
+ * порога Junior, Senior выше своего) – на 0,7 дальше от порога, чем середина (−2,0 и 2,0 при текущих порогах).
  */
 export const PERSONAS: readonly { id: string; row: PersonaRow; title: string; theta: number; claimed: Grade; expect: string }[] = [
   { id: 'novice', row: 'mid', title: 'Новичок', theta: -1.3, claimed: 'junior', expect: 'Junior не должен подтвердиться' },
@@ -129,7 +129,7 @@ export const PERSONAS: readonly { id: string; row: PersonaRow; title: string; th
   { id: 'senior-confident', row: 'confident', title: 'Senior', theta: Number((GRADE_CUT.senior + 1.2).toFixed(2)), claimed: 'senior', expect: 'Senior должен подтвердиться' },
 ];
 
-/** Прогонов на кандидата (seed 1…N). 8 × 200 прогонов — около 0,6 с на подкатегорию (первый расчёт, дальше кэш). */
+/** Прогонов на кандидата (seed 1…N). 8 × 200 прогонов – около 0,6 с на подкатегорию (первый расчёт, дальше кэш). */
 export const SIM_RUNS = 200;
 
 export interface PersonaStats {
@@ -150,7 +150,7 @@ export interface PersonaStats {
   verdicts: Record<Grade | 'none', number>;
   /** Средняя |θ̂ − θ|. */
   meanAbsError: number;
-  /** Грейд по «истинной» θ и порогам GRADE_CUT; none — ниже Junior. */
+  /** Грейд по «истинной» θ и порогам GRADE_CUT; none – ниже Junior. */
   truth: Grade | 'none';
   /** Доля вердиктов выше истинного грейда (завышение) и ниже (занижение). */
   overRate: number;
@@ -159,7 +159,7 @@ export interface PersonaStats {
 
 const RANK: Record<Grade | 'none', number> = { none: 0, junior: 1, middle: 2, senior: 3 };
 
-/** Грейд по θ: старший, чей порог θ превышает; ниже порога Junior — none. */
+/** Грейд по θ: старший, чей порог θ превышает; ниже порога Junior – none. */
 export function gradeOfTheta(theta: number): Grade | 'none' {
   let out: Grade | 'none' = 'none';
   for (const g of GRADES) if (theta > GRADE_CUT[g]) out = g;

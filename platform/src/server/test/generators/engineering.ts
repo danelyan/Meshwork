@@ -1,8 +1,8 @@
-// Генераторы заданий направления engineering (ADR-0003, дополнение 10.10; ADR-0002 — формат теста).
-// Подкатегории (research/25 § 3.4): data-eng, devops, qa-automation, sre — по 8 семейств (позже 14, затем 26: пакет engineering-bank2-*)
-// (4 Junior + 4 Middle), тест — на подкатегорию (ADR-0003, дополнение 10.10 15:50; поле subcategoryId).
+// Генераторы заданий направления engineering (ADR-0003, дополнение 10.10; ADR-0002 – формат теста).
+// Подкатегории (research/25 § 3.4): data-eng, devops, qa-automation, sre – по 8 семейств (позже 14, затем 26: пакет engineering-bank2-*)
+// (4 Junior + 4 Middle), тест – на подкатегорию (ADR-0003, дополнение 10.10 15:50; поле subcategoryId).
 // Ключ ответа считает код генератора, не LLM (R-T-02); несущественные параметры (имена, числа,
-// порядок, позиции строк) — от seed (R-T-01), сложность задаётся семейством. a, b — ПРЕДЛОЖЕНИЕ
+// порядок, позиции строк) – от seed (R-T-01), сложность задаётся семейством. a, b – ПРЕДЛОЖЕНИЕ
 // (экспертные, по образцу backend/frontend), калибруются персонами по подкатегориям
 // (eval/test/personas.ts --spec engineering) и затем разметкой (docs/test-calibration.md).
 //
@@ -10,7 +10,7 @@
 // документацией (kubernetes.io, docs.docker.com) 10.10, как и rolling update (округление maxSurge/
 // maxUnavailable), правила when/allow_failure GitLab CI и stacked parametrize в pytest. Без сверки,
 // по знанию агента: приведение типов и partition pruning PostgreSQL, unittest.mock (call_count при
-// исключении из side_effect) — помечено в docs/validation-results.md.
+// исключении из side_effect) – помечено в docs/validation-results.md.
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 import { DATA_BANK2 } from './engineering-bank2-data';
@@ -67,7 +67,7 @@ export const dedupCount: TaskGenerator = {
     const ds = rng.pick(DATASETS);
     const nEvents = rng.int(4, 6);
     const base = rng.int(10, 89) * 100;
-    // Каждое событие доставлено 1–3 раза; повтор — тот же event_id, позже loaded_at, иногда исправленная сумма.
+    // Каждое событие доставлено 1–3 раза; повтор – тот же event_id, позже loaded_at, иногда исправленная сумма.
     type Row = { id: number; user: string; amount: number; loaded: number };
     const rows: Row[] = [];
     let t = rng.int(8 * 60, 10 * 60);
@@ -106,7 +106,7 @@ export const dedupCount: TaskGenerator = {
     } else if (kind === 1) {
       sql = `SELECT COUNT(*) FROM (\n  SELECT DISTINCT * FROM raw_${ds.table}\n) t;`;
       answer = ordered.length;
-      explanation = 'DISTINCT * сравнивает строки целиком, а loaded_at у повторов разный — ни одна строка не схлопнется.';
+      explanation = 'DISTINCT * сравнивает строки целиком, а loaded_at у повторов разный – ни одна строка не схлопнется.';
     } else {
       sql = [
         'SELECT SUM(amount) FROM (',
@@ -169,12 +169,12 @@ export const schemaTypes: TaskGenerator = {
       { apply: (c) => (c.day = `2026-13-${String(rng.int(1, 28)).padStart(2, '0')}`), why: '13-го месяца нет' },
       { apply: (c) => (c.qty = `${rng.int(1, 9)}.5`), why: 'дробное значение не приводится к INTEGER' },
       { apply: (c) => (c.qty = `${rng.int(1, 40)}шт`), why: 'текст в INTEGER' },
-      { apply: (c) => (c.price = `${rng.int(1, 9)} ${rng.int(100, 999)}.00`), why: 'пробел-разделитель тысяч — не NUMERIC' },
+      { apply: (c) => (c.price = `${rng.int(1, 9)} ${rng.int(100, 999)}.00`), why: 'пробел-разделитель тысяч – не NUMERIC' },
     ];
     const benign: { apply: (c: Cell) => void; why: string }[] = [
       { apply: (c) => (c.qty = ''), why: 'пустое qty → NULL, колонка допускает NULL' },
-      { apply: (c) => (c.day = '2024-02-29'), why: '2024 — високосный, дата корректна' },
-      { apply: (c) => (c.price = String(rng.int(1, 999))), why: 'целое число — корректный NUMERIC' },
+      { apply: (c) => (c.day = '2024-02-29'), why: '2024 – високосный, дата корректна' },
+      { apply: (c) => (c.price = String(rng.int(1, 999))), why: 'целое число – корректный NUMERIC' },
     ];
     const idx = rng.shuffle(Array.from({ length: n }, (_, k) => k));
     const nBad = rng.int(2, 3);
@@ -201,7 +201,7 @@ export const schemaTypes: TaskGenerator = {
       code: `${ddl}\n\n${csv}`,
       answerHint: 'номера через запятую',
       answerKey: listKey(bad.map((k) => k + 1)),
-      explanation: `Отклоняются: ${notes.sort().join('; ')}. Пустое qty, 29.02.2024 и целая цена — допустимые значения.`,
+      explanation: `Отклоняются: ${notes.sort().join('; ')}. Пустое qty, 29.02.2024 и целая цена – допустимые значения.`,
       params: { n, bad: listKey(bad.map((k) => k + 1)), dataset: ds.table },
     };
   },
@@ -300,7 +300,7 @@ export const secretsLeak: TaskGenerator = {
         'CMD ["node", "dist/server.js"]',
       ];
       leaks = [
-        { line: `ENV DATABASE_URL=postgres://${svc}:${pass}@db:5432/${svc}`, why: 'пароль БД записан в ENV и остаётся в метаданных образа — его видит любой, кто может скачать образ' },
+        { line: `ENV DATABASE_URL=postgres://${svc}:${pass}@db:5432/${svc}`, why: 'пароль БД записан в ENV и остаётся в метаданных образа – его видит любой, кто может скачать образ' },
         { line: 'COPY .env /app/.env', why: '.env с секретами копируется в слой образа' },
       ];
     } else if (carrier === 'compose') {
@@ -339,8 +339,8 @@ export const secretsLeak: TaskGenerator = {
       ];
     }
     const leak = rng.pick(leaks);
-    // Секрет вставляется после первых строк (не в заголовок), позиция — от seed.
-    // Позиция вставки: Dockerfile — после WORKDIR, compose — внутри environment, CI — внутри script.
+    // Секрет вставляется после первых строк (не в заголовок), позиция – от seed.
+    // Позиция вставки: Dockerfile – после WORKDIR, compose – внутри environment, CI – внутри script.
     const pos = carrier === 'compose' ? rng.int(6, 7) : carrier === 'ci' ? rng.int(4, 7) : rng.int(3, 8);
     const lines = [...safe.slice(0, pos), leak.line, ...safe.slice(pos)];
     return {
@@ -362,7 +362,7 @@ const TEST_POOL: { kind: 'unit' | 'integration' | 'e2e'; text: string }[] = [
   { kind: 'unit', text: 'передаёт в validateEmail сто строк из таблицы граничных случаев' },
   { kind: 'unit', text: 'рендерит функцию formatPrice({sum}) и сравнивает строку с «{sum} ₽»' },
   { kind: 'integration', text: 'поднимает PostgreSQL в Testcontainers и проверяет, что репозиторий сохраняет и читает заказ' },
-  { kind: 'integration', text: 'стартует HTTP-сервер {svc} в процессе теста и шлёт POST /orders через supertest, БД — тестовая' },
+  { kind: 'integration', text: 'стартует HTTP-сервер {svc} в процессе теста и шлёт POST /orders через supertest, БД – тестовая' },
   { kind: 'integration', text: 'публикует сообщение в локальный Kafka-контейнер и ждёт, что консьюмер запишет строку в БД' },
   { kind: 'e2e', text: 'Playwright открывает сайт на стенде, входит под тестовым пользователем и оформляет заказ' },
   { kind: 'e2e', text: 'Selenium проходит регистрацию в браузере на стенде со всеми сервисами и реальной БД' },
@@ -398,11 +398,11 @@ export const testPyramid: TaskGenerator = {
     const ru = { unit: 'модульные (unit)', integration: 'интеграционные', e2e: 'сквозные (end-to-end)' }[ask];
     const nums = tests.flatMap((t, i) => (t.kind === ask ? [i + 1] : []));
     return {
-      prompt: `Шесть тестов сервиса ${svc}. Какие из них — ${ru}? Перечислите номера.`,
+      prompt: `Шесть тестов сервиса ${svc}. Какие из них – ${ru}? Перечислите номера.`,
       code: tests.map((t, i) => `${i + 1}. ${t.text}`).join('\n'),
       answerHint: 'номера через запятую',
       answerKey: listKey(nums),
-      explanation: `Модульный тест проверяет код без внешних процессов (зависимости подменены); интеграционный — вместе с настоящей БД, брокером или HTTP-сервером; сквозной — через интерфейс пользователя на развёрнутой системе. Здесь ${ru}: ${listKey(nums)}.`,
+      explanation: `Модульный тест проверяет код без внешних процессов (зависимости подменены); интеграционный – вместе с настоящей БД, брокером или HTTP-сервером; сквозной – через интерфейс пользователя на развёрнутой системе. Здесь ${ru}: ${listKey(nums)}.`,
       params: { ask, nums: listKey(nums) },
     };
   },
@@ -451,7 +451,7 @@ export const fixtureIsolation: TaskGenerator = {
     const why: Record<typeof variant, string> = {
       'function-new': 'фикстура по умолчанию function-scope и создаёт новый список на каждый тест',
       'module-new': 'scope="module": один список на весь модуль, тесты видят добавления предыдущих',
-      'function-global': 'фикстура вызывается на каждый тест, но возвращает один и тот же глобальный список — состояние течёт между тестами',
+      'function-global': 'фикстура вызывается на каждый тест, но возвращает один и тот же глобальный список – состояние течёт между тестами',
       'yield-clear': 'после yield фикстура очищает общий список, каждый тест начинает с пустого',
     };
     return {
@@ -510,13 +510,13 @@ export const errorBudget: TaskGenerator = {
     let explanation: string;
     if (ask === 'remaining') {
       answer = Number((budget - impact).toFixed(2));
-      question = `Сколько минут бюджета ошибок останется в окне после ${nInc === 1 ? 'этого инцидента' : 'этих инцидентов'}? (Может быть отрицательным; дробное — через точку.)`;
+      question = `Сколько минут бюджета ошибок останется в окне после ${nInc === 1 ? 'этого инцидента' : 'этих инцидентов'}? (Может быть отрицательным; дробное – через точку.)`;
       explanation = `Бюджет = ${days}·24·60·(1 − ${slo.pct} %) = ${budget} мин. Простой считается от начала влияния до его устранения (mitigated), а не до полного разрешения: ${incs.map((x) => x.mitigate - x.start).join(' + ')} = ${impact} мин. Остаток ${answer}.`;
     } else if (ask === 'ttd') {
       const x = incs[k - 1]!;
       answer = x.detect - x.start;
       question = `Каково время обнаружения (TTD) инцидента №${k}, в минутах?`;
-      explanation = `TTD — от начала влияния на пользователей до обнаружения: ${hhmm(x.detect)} − ${hhmm(x.start)} = ${answer} мин.`;
+      explanation = `TTD – от начала влияния на пользователей до обнаружения: ${hhmm(x.detect)} − ${hhmm(x.start)} = ${answer} мин.`;
     } else {
       const x = incs[k - 1]!;
       answer = x.mitigate - x.start;
@@ -585,11 +585,11 @@ export const symptomAlert: TaskGenerator = {
     ]);
     const nums = items.flatMap((x, i) => (x.symptom ? [i + 1] : []));
     return {
-      prompt: 'Команда переделывает дежурства: будить человека ночью (page) должны только алерты по симптомам — тому, что прямо видит пользователь. Остальное — в тикет или на дашборд. Какие правила оставить как page?',
+      prompt: 'Команда переделывает дежурства: будить человека ночью (page) должны только алерты по симптомам – тому, что прямо видит пользователь. Остальное – в тикет или на дашборд. Какие правила оставить как page?',
       code: items.map((x, i) => `${i + 1}. ${x.text}`).join('\n'),
       answerHint: 'номера через запятую',
       answerKey: listKey(nums),
-      explanation: `Симптомы — ошибки, задержки и недоступность глазами пользователя (в т. ч. скорость сгорания бюджета SLO): ${listKey(nums)}. Загрузка CPU, рестарт одного пода, заполнение диска, GC — причины или ранние сигналы: пользователь от них может не пострадать.`,
+      explanation: `Симптомы – ошибки, задержки и недоступность глазами пользователя (в т. ч. скорость сгорания бюджета SLO): ${listKey(nums)}. Загрузка CPU, рестарт одного пода, заполнение диска, GC – причины или ранние сигналы: пользователь от них может не пострадать.`,
       params: { nums: listKey(nums) },
     };
   },
@@ -620,7 +620,7 @@ export const idempotentLoad: TaskGenerator = {
     const strategy = rng.pick(['append', 'replace', 'upsert'] as const);
     const d1 = rng.int(3, 9);
     const day = (d: number) => `2026-10-0${d}`;
-    // Файлы: день 1 — v1 и исправленный v2 (часть строк убрана, часть добавлена); день 2 — один файл.
+    // Файлы: день 1 – v1 и исправленный v2 (часть строк убрана, часть добавлена); день 2 – один файл.
     const base1 = rng.int(1, 4) * 100;
     const n1 = rng.int(4, 6);
     const f1v1 = Array.from({ length: n1 }, (_, i) => base1 + i);
@@ -637,7 +637,7 @@ export const idempotentLoad: TaskGenerator = {
       { d: d1 + 1, file: f2, label: `${day(d1 + 1)}.csv (строк: ${f2.length}), перезапуск`, failAfter: null },
       { d: d1, file: f1v2, label: `${day(d1)}.csv, исправленный источником (строк: ${f1v2.length}; убран ${ds.key} ${removed[0]}, добавлены ${added.join(', ')})`, failAfter: null },
     ];
-    // Симуляция: таблица — мультимножество (ключ, день).
+    // Симуляция: таблица – мультимножество (ключ, день).
     let rows: { id: number; d: number }[] = [];
     for (const r of runs) {
       if (strategy === 'append') {
@@ -654,13 +654,13 @@ export const idempotentLoad: TaskGenerator = {
     const sql = {
       append: [`-- без транзакции, строки вставляются по одной`, `INSERT INTO ${ds.table} (${ds.key}, day, ...) VALUES (...);  -- для каждой строки файла`],
       replace: ['BEGIN;', `DELETE FROM ${ds.table} WHERE day = :day;`, `INSERT INTO ${ds.table} (${ds.key}, day, ...) SELECT ... FROM file;`, 'COMMIT;  -- при ошибке ROLLBACK'],
-      upsert: [`-- без транзакции, строки вставляются по одной; ${ds.key} — PRIMARY KEY`, `INSERT INTO ${ds.table} (${ds.key}, day, ...) VALUES (...)`, `ON CONFLICT (${ds.key}) DO NOTHING;`],
+      upsert: [`-- без транзакции, строки вставляются по одной; ${ds.key} – PRIMARY KEY`, `INSERT INTO ${ds.table} (${ds.key}, day, ...) VALUES (...)`, `ON CONFLICT (${ds.key}) DO NOTHING;`],
     }[strategy];
     const log = runs.map((r, i) => `${i + 1}. ${r.label}: ${r.failAfter === null ? 'успех' : `упал на строке ${r.failAfter + 1} (до ошибки обработано строк: ${r.failAfter})`}`);
     const why = {
       append: 'Вставка без ключа и транзакции не идемпотентна: упавший запуск оставил часть строк, перезапуск и повторная загрузка дня дописали дубли.',
       replace: 'DELETE + INSERT дня в одной транзакции идемпотентен: упавший запуск откатился, перезагрузка дня заменяет его строки целиком (убранная строка тоже исчезает).',
-      upsert: 'ON CONFLICT DO NOTHING защищает от дублей, но не удаляет строки, убранные из исправленного файла, — она остаётся в таблице.',
+      upsert: 'ON CONFLICT DO NOTHING защищает от дублей, но не удаляет строки, убранные из исправленного файла, – она остаётся в таблице.',
     }[strategy];
     return {
       prompt: `Таблица ${ds.table} изначально пуста. Ежедневная задача грузит файл дня так:`,
@@ -694,7 +694,7 @@ export const incrementalWatermark: TaskGenerator = {
     const op = rng.pick(['>', '>='] as const);
     const wmMode = rng.pick(['max', 'now'] as const);
     const runs = [10 * 60, 10 * 60 + 15, 10 * 60 + 30, 10 * 60 + 45];
-    // Строки: updated_at — время изменения, commit — когда строка стала видна (длинная транзакция → позже).
+    // Строки: updated_at – время изменения, commit – когда строка стала видна (длинная транзакция → позже).
     const n = rng.int(6, 8);
     type R = { id: number; upd: number; commit: number };
     const rows: R[] = [];
@@ -727,10 +727,10 @@ export const incrementalWatermark: TaskGenerator = {
       '',
       `-- запуски в ${runs.slice(1).map(hhmm).join(', ')}; начальный :wm = ${hhmm(9 * 60 + 45)}`,
       `SELECT * FROM ${ds.table} WHERE updated_at ${op} :wm;`,
-      wmMode === 'max' ? '-- после успешной выгрузки: :wm = MAX(updated_at) выгруженных строк (если строк нет — не меняется)' : '-- после выгрузки: :wm = время запуска (now())',
+      wmMode === 'max' ? '-- после успешной выгрузки: :wm = MAX(updated_at) выгруженных строк (если строк нет – не меняется)' : '-- после выгрузки: :wm = время запуска (now())',
     ].join('\n');
     return {
-      prompt: `Задача раз в 15 минут выгружает изменённые строки ${ds.table} в хранилище. Запрос видит только закоммиченные строки (закоммиченная в минуту запуска — видна); updated_at ставится в момент изменения, а коммит может прийти позже (длинная транзакция). ${ask === 'lost' ? 'Сколько строк так и не попадут в хранилище после трёх запусков?' : 'Сколько строк в сумме будет выгружено за три запуска (повторная выгрузка одной строки считается заново)?'}`,
+      prompt: `Задача раз в 15 минут выгружает изменённые строки ${ds.table} в хранилище. Запрос видит только закоммиченные строки (закоммиченная в минуту запуска – видна); updated_at ставится в момент изменения, а коммит может прийти позже (длинная транзакция). ${ask === 'lost' ? 'Сколько строк так и не попадут в хранилище после трёх запусков?' : 'Сколько строк в сумме будет выгружено за три запуска (повторная выгрузка одной строки считается заново)?'}`,
       code,
       answerHint: 'число строк',
       answerKey: String(answer),
@@ -777,7 +777,7 @@ export const partitionPrune: TaskGenerator = {
     if (kind === 0) {
       where = `created_at >= '2026-${mm(m)}-01' AND created_at < '2026-${mm(m + 2)}-01'`;
       parts = [m, m + 1].filter((x) => months.includes(x));
-      why = 'полуоткрытый диапазон ровно по границам секций — читаются только они';
+      why = 'полуоткрытый диапазон ровно по границам секций – читаются только они';
     } else if (kind === 1) {
       where = `created_at BETWEEN '2026-${mm(m)}-01' AND '2026-${mm(m + 1)}-01'`;
       parts = [m, m + 1].filter((x) => months.includes(x));
@@ -793,7 +793,7 @@ export const partitionPrune: TaskGenerator = {
     } else {
       where = `user_id = ${rng.int(10, 999)} AND amount > ${rng.int(1, 9) * 100}`;
       parts = months;
-      why = 'в условии нет ключа секционирования — читаются все секции';
+      why = 'в условии нет ключа секционирования – читаются все секции';
     }
     return {
       prompt: `PostgreSQL, отсечение секций (partition pruning) включено. Какие секции прочитает запрос SELECT * FROM ${ds.table} WHERE ${where}? Перечислите имена секций.`,
@@ -859,8 +859,8 @@ export const k8sProbes: TaskGenerator = {
       answerKey: String(answer),
       explanation:
         kind === 'restart'
-          ? `Перезапуск делает liveness: первая неуспешная проба в t = ${firstFailing(live)}, ${live.fail}-я подряд — в t = ${tLive}. Readiness контейнер не перезапускает.`
-          : `Из endpoints Service под убирает readiness: первая неуспешная проба в t = ${firstFailing(ready)}, ${ready.fail}-я подряд — в t = ${tReady}. Liveness отвечает за перезапуск, а не за трафик.`,
+          ? `Перезапуск делает liveness: первая неуспешная проба в t = ${firstFailing(live)}, ${live.fail}-я подряд – в t = ${tLive}. Readiness контейнер не перезапускает.`
+          : `Из endpoints Service под убирает readiness: первая неуспешная проба в t = ${firstFailing(ready)}, ${ready.fail}-я подряд – в t = ${tReady}. Liveness отвечает за перезапуск, а не за трафик.`,
       params: { kind, hang, live: `${live.delay}/${live.period}/${live.fail}`, ready: `${ready.delay}/${ready.period}/${ready.fail}` },
     };
   },
@@ -908,7 +908,7 @@ export const k8sCapacity: TaskGenerator = {
       ].join('\n'),
       answerHint: 'число подов',
       answerKey: String(answer),
-      explanation: `Планировщик складывает requests, а не limits и не фактическое потребление: по CPU (${allocCpu} − ${usedCpuReq}) / ${reqCpu} = ${byCpu}, по памяти (${allocMem} − ${usedMemReq}) / ${reqMem} = ${byMem}; берётся минимум — ${answer}.`,
+      explanation: `Планировщик складывает requests, а не limits и не фактическое потребление: по CPU (${allocCpu} − ${usedCpuReq}) / ${reqCpu} = ${byCpu}, по памяти (${allocMem} − ${usedMemReq}) / ${reqMem} = ${byMem}; берётся минимум – ${answer}.`,
       params: { kind, allocCpu, allocMem, usedCpuReq, usedMemReq, reqCpu, reqMem },
     };
   },
@@ -964,7 +964,7 @@ export const deployRollback: TaskGenerator = {
     const nums = [...revs.keys()].sort((x, y) => x - y);
     const current = revs.get(nums[nums.length - 1]!)!;
     return {
-      prompt: `Деплоймент ${svc} обновляли командами ниже, каждое развёртывание успешно. Образ с каким тегом будет работать после последней команды? (Ответ — тег, например 1.2.3.)`,
+      prompt: `Деплоймент ${svc} обновляли командами ниже, каждое развёртывание успешно. Образ с каким тегом будет работать после последней команды? (Ответ – тег, например 1.2.3.)`,
       code: [...cmds, ...history, ...ops].join('\n'),
       answerHint: 'тег образа',
       answerKey: `${current}|${svc}:${current}|registry.local/${svc}:${current}`,
@@ -999,7 +999,7 @@ export const flakyLine: TaskGenerator = {
       {
         safe: "  const email = `user-${randomUUID()}@test.ru`;",
         flaky: "  const email = `user${Math.floor(Math.random() * 100)}@test.ru`;",
-        why: 'email из 100 вариантов при параллельных тестах на общей БД иногда совпадает — уникальный индекс падает',
+        why: 'email из 100 вариантов при параллельных тестах на общей БД иногда совпадает – уникальный индекс падает',
       },
       {
         safe: `  await waitFor(async () => expect(await getStatus(${ent}.id)).toBe('done'), { timeout: 5000 });`,
@@ -1077,7 +1077,7 @@ export const contractTest: TaskGenerator = {
       { text: 'переименовать поле amount в total_amount', breaks: true },
       { text: 'отдавать amount строкой ("1500.00") вместо числа', breaks: true },
       { text: 'разрешить status быть null для черновиков, которые тоже попадают в этот ответ', breaks: true },
-      { text: 'сделать query-параметр ?region обязательным (без него — 400)', breaks: true },
+      { text: 'сделать query-параметр ?region обязательным (без него – 400)', breaks: true },
     ];
     const nBreak = rng.int(1, 3);
     const picked = rng.shuffle([...rng.sample(changes.filter((c) => c.breaks), nBreak), ...rng.sample(changes.filter((c) => !c.breaks), 6 - nBreak)]);
@@ -1126,7 +1126,7 @@ export const retryAmplification: TaskGenerator = {
     const hops = chain.slice(0, nHops + 1).concat(['PostgreSQL']);
     // Каждое звено, кроме последнего, делает до attempts[i] попыток вызвать следующее.
     const attempts = Array.from({ length: hops.length - 1 }, () => rng.int(1, 4));
-    // Минимум два звена с ретраями — иначе нечего перемножать.
+    // Минимум два звена с ретраями – иначе нечего перемножать.
     if (attempts.filter((x) => x > 1).length < 2) {
       attempts[0] = Math.max(2, attempts[0]!);
       attempts[attempts.length - 1] = Math.max(3, attempts[attempts.length - 1]!);
@@ -1143,7 +1143,7 @@ export const retryAmplification: TaskGenerator = {
       code: code.join('\n'),
       answerHint: 'число запросов',
       answerKey: String(answer),
-      explanation: `Ретраи на каждом уровне перемножаются: до звеньев доходит ${reach.slice(1).join(', ')} запросов; ${ask === 'db' ? `в БД — ${db}` : `в сумме ${total}`}. Поэтому ретраи делают на одном уровне, с бэкоффом, джиттером и бюджетом ретраев.`,
+      explanation: `Ретраи на каждом уровне перемножаются: до звеньев доходит ${reach.slice(1).join(', ')} запросов; ${ask === 'db' ? `в БД – ${db}` : `в сумме ${total}`}. Поэтому ретраи делают на одном уровне, с бэкоффом, джиттером и бюджетом ретраев.`,
       params: { attempts: attempts.join(','), ask, nHops },
     };
   },
@@ -1273,7 +1273,7 @@ export const joinFanout: TaskGenerator = {
       ].join('\n'),
       answerHint: 'число',
       answerKey: String(answer),
-      explanation: `Клиент ${dup.id} записан в справочник дважды — его заказы после JOIN размножаются; заказа клиента ${ghost} в справочнике нет — ${kind === 2 ? 'LEFT JOIN его сохраняет' : 'INNER JOIN его отбрасывает'}. Итог: ${answer}.`,
+      explanation: `Клиент ${dup.id} записан в справочник дважды – его заказы после JOIN размножаются; заказа клиента ${ghost} в справочнике нет – ${kind === 2 ? 'LEFT JOIN его сохраняет' : 'INNER JOIN его отбрасывает'}. Итог: ${answer}.`,
       params: { kind, nCust, nOrders, dup: dup.id },
     };
   },
@@ -1298,7 +1298,7 @@ export const scd2AsOf: TaskGenerator = {
     const rng = createRng(seed);
     const cities = rng.sample(['Казань', 'Самара', 'Тверь', 'Омск', 'Пермь'], 3);
     const who = rng.pick(NAMES);
-    // Версии клиента: город и дата начала действия (valid_from включительно, valid_to — исключительно).
+    // Версии клиента: город и дата начала действия (valid_from включительно, valid_to – исключительно).
     const d1 = rng.int(3, 9);
     const d2 = d1 + rng.int(5, 9);
     const versions = [
@@ -1315,7 +1315,7 @@ export const scd2AsOf: TaskGenerator = {
     const answer = orders.filter((o) => cityAt(o.d) === target).reduce((acc, o) => acc + o.amount, 0);
     const naive = target === cities[2] ? orders.reduce((acc, o) => acc + o.amount, 0) : 0;
     return {
-      prompt: `Измерение клиентов хранится как SCD2: valid_from включительно, valid_to не включительно, NULL — текущая версия. Отчёт относит каждый заказ к городу клиента на дату заказа. Какую сумму заказов отчёт отнесёт к городу «${target}»?`,
+      prompt: `Измерение клиентов хранится как SCD2: valid_from включительно, valid_to не включительно, NULL – текущая версия. Отчёт относит каждый заказ к городу клиента на дату заказа. Какую сумму заказов отчёт отнесёт к городу «${target}»?`,
       code: [
         table('dim_customer', ['customer_id', 'name', 'city', 'valid_from', 'valid_to'], versions.map((v) => [42, who, v.city, day(v.from), v.to === null ? 'NULL' : day(v.to)])),
         '',
@@ -1323,7 +1323,7 @@ export const scd2AsOf: TaskGenerator = {
       ].join('\n'),
       answerHint: 'сумма',
       answerKey: String(answer),
-      explanation: `Заказ в день смены (${day(d1)}) уже относится к новой версии (valid_from включительно). Сумма по «${target}» — ${answer}${naive ? `; по текущему городу без истории вышло бы ${naive}` : ''}.`,
+      explanation: `Заказ в день смены (${day(d1)}) уже относится к новой версии (valid_from включительно). Сумма по «${target}» – ${answer}${naive ? `; по текущему городу без истории вышло бы ${naive}` : ''}.`,
       params: { d1, d2, target, n: orders.length },
     };
   },
@@ -1367,13 +1367,13 @@ export const portMapping: TaskGenerator = {
       '    # ports не опубликованы',
     ].join('\n');
     const q = {
-      'browser-web': ['Разработчик открывает фронтенд в браузере на своей машине: http://localhost:<порт>. Какой порт?', webHost, `слева в "${webHost}:${webCont}" — порт хоста`],
+      'browser-web': ['Разработчик открывает фронтенд в браузере на своей машине: http://localhost:<порт>. Какой порт?', webHost, `слева в "${webHost}:${webCont}" – порт хоста`],
       'web-to-api': ['Сервер web из своего контейнера ходит в API по адресу http://api:<порт>. Какой порт?', apiCont, `внутри сети compose обращаются по имени сервиса и порту контейнера (${apiCont}), проброс на хост не участвует`],
-      'host-to-api': ['Разработчик вызывает API curl-ом со своей машины: http://localhost:<порт>. Какой порт?', apiHost, `с хоста доступен опубликованный порт — левая часть "${apiHost}:${apiCont}"`],
+      'host-to-api': ['Разработчик вызывает API curl-ом со своей машины: http://localhost:<порт>. Какой порт?', apiHost, `с хоста доступен опубликованный порт – левая часть "${apiHost}:${apiCont}"`],
       'api-to-db': ['Сервис api подключается к базе: postgres://db:<порт>/app. Какой порт?', dbPort, 'внутри сети compose база доступна по имени сервиса и своему порту 5432, публикация на хост для этого не нужна'],
     }[ask];
     return {
-      prompt: `Все сервисы — в одном docker-compose.yml, в общей сети по умолчанию. ${q[0]}`,
+      prompt: `Все сервисы – в одном docker-compose.yml, в общей сети по умолчанию. ${q[0]}`,
       code,
       answerHint: 'номер порта',
       answerKey: String(q[1]),
@@ -1416,7 +1416,7 @@ export const ciStages: TaskGenerator = {
     ];
     const failing = rng.pick(jobs.slice(0, 4)).name;
     const order = ['build', 'test', 'deploy'];
-    // Симуляция по правилам GitLab: on_success — нет неразрешённых падений в прошлых стадиях; on_failure — есть; always — всегда.
+    // Симуляция по правилам GitLab: on_success – нет неразрешённых падений в прошлых стадиях; on_failure – есть; always – всегда.
     const ran: string[] = [];
     let failedBefore = false;
     for (const st of order) {
@@ -1441,7 +1441,7 @@ export const ciStages: TaskGenerator = {
       code: yaml.join('\n'),
       answerHint: 'имена через запятую',
       answerKey: answer.join(','),
-      explanation: `Задачи одной стадии идут параллельно и запускаются независимо от соседа; on_success в следующих стадиях ждёт отсутствия падений (allow_failure считается успехом), on_failure — наоборот, always — всегда. Выполнятся: ${answer.join(', ')}.`,
+      explanation: `Задачи одной стадии идут параллельно и запускаются независимо от соседа; on_success в следующих стадиях ждёт отсутствия падений (allow_failure считается успехом), on_failure – наоборот, always – всегда. Выполнятся: ${answer.join(', ')}.`,
       params: { failing, lintAllow, e2eAllow },
     };
   },
@@ -1486,7 +1486,7 @@ export const rollingUpdate: TaskGenerator = {
       code: [`spec:`, `  replicas: ${replicas}`, `  strategy:`, `    type: RollingUpdate`, `    rollingUpdate:`, `      maxSurge: ${surge.text}`, `      maxUnavailable: ${unavail.text}`].join('\n'),
       answerHint: 'число подов',
       answerKey: String(answer),
-      explanation: `Проценты считаются от replicas: maxSurge округляется вверх (${s}), maxUnavailable — вниз (${u}). ${ask === 'max' ? `Максимум ${replicas} + ${s} = ${answer}` : `Минимум доступных ${replicas} − ${u} = ${answer}`}.`,
+      explanation: `Проценты считаются от replicas: maxSurge округляется вверх (${s}), maxUnavailable – вниз (${u}). ${ask === 'max' ? `Максимум ${replicas} + ${s} = ${answer}` : `Минимум доступных ${replicas} − ${u} = ${answer}`}.`,
       params: { replicas, surge: surge.text, unavail: unavail.text, ask },
     };
   },
@@ -1591,7 +1591,7 @@ export const mockCalls: TaskGenerator = {
   generate(seed): TaskInstance {
     const rng = createRng(seed);
     const attempts = rng.int(2, 4);
-    // side_effect по вызовам: T — TimeoutError (ретраится), C — ConnectionError (не ловится), OK — ответ.
+    // side_effect по вызовам: T – TimeoutError (ретраится), C – ConnectionError (не ловится), OK – ответ.
     const len = attempts + rng.int(0, 1);
     const effects: ('T' | 'C' | 'OK')[] = Array.from({ length: len }, () => rng.pick(['T', 'T', 'C', 'OK'] as const));
     let calls = 0;
@@ -1635,7 +1635,7 @@ export const mockCalls: TaskGenerator = {
       code,
       answerHint: 'число',
       answerKey: String(calls),
-      explanation: `Вызов считается и тогда, когда мок выбрасывает исключение. TimeoutError ретраится, ConnectionError улетает сразу, ответ завершает цикл; итог — ${outcome}, вызовов ${calls}.`,
+      explanation: `Вызов считается и тогда, когда мок выбрасывает исключение. TimeoutError ретраится, ConnectionError улетает сразу, ответ завершает цикл; итог – ${outcome}, вызовов ${calls}.`,
       params: { attempts, effects: effects.join(','), calls },
     };
   },
@@ -1684,7 +1684,7 @@ export const branchCoverage: TaskGenerator = {
       ...tests.map((t, i) => `def test_${i + 1}(): assert shipping(${t.total}, ${t.items}, ${t.promo ? 'True' : 'False'}) is not None`),
     ].join('\n');
     return {
-      prompt: 'Покрытие по ветвям: у каждого if две ветви — условие истинно и ложно (всего 6). Сколько ветвей тесты ниже НЕ покрывают?',
+      prompt: 'Покрытие по ветвям: у каждого if две ветви – условие истинно и ложно (всего 6). Сколько ветвей тесты ниже НЕ покрывают?',
       code,
       answerHint: 'число ветвей',
       answerKey: String(answer),
@@ -1721,11 +1721,11 @@ export const latencyPercentile: TaskGenerator = {
     const rank = Math.ceil((p / 100) * n);
     const answer = sorted[rank - 1]!;
     return {
-      prompt: `Время ответа ${n} запросов, мс. Перцентиль считаем методом ближайшего ранга: p-й перцентиль — значение с номером ⌈p/100 · N⌉ в отсортированном по возрастанию списке. Чему равен p${p}?`,
+      prompt: `Время ответа ${n} запросов, мс. Перцентиль считаем методом ближайшего ранга: p-й перцентиль – значение с номером ⌈p/100 · N⌉ в отсортированном по возрастанию списке. Чему равен p${p}?`,
       code: vals.join(', '),
       answerHint: 'миллисекунды',
       answerKey: String(answer),
-      explanation: `Ранг ⌈${p}/100 · ${n}⌉ = ${rank}; ${rank}-е значение по возрастанию — ${answer} мс. Среднее здесь не подходит: его тянут вверх редкие медленные запросы.`,
+      explanation: `Ранг ⌈${p}/100 · ${n}⌉ = ${rank}; ${rank}-е значение по возрастанию – ${answer} мс. Среднее здесь не подходит: его тянут вверх редкие медленные запросы.`,
       params: { p, rank },
     };
   },
@@ -1768,7 +1768,7 @@ export const logCount: TaskGenerator = {
       code: lines.map((l) => `${ts(l.t)} ${l.method.padEnd(4)} ${l.path.padEnd(12)} ${l.status} ${l.ms}ms`).join('\n'),
       answerHint: 'число',
       answerKey: String(answer),
-      explanation: `Считаются только статусы 500–599 по ${target} в окне; 4xx (включая 499 — клиент закрыл соединение) — ошибки клиента. Итог: ${answer}.`,
+      explanation: `Считаются только статусы 500–599 по ${target} в окне; 4xx (включая 499 – клиент закрыл соединение) – ошибки клиента. Итог: ${answer}.`,
       params: { target, n, answer },
     };
   },
@@ -1819,10 +1819,10 @@ export const burnRate: TaskGenerator = {
       answer = first;
       explanation = first
         ? `Короткое окно (≥ 14,4) срабатывает раньше, но правило ждёт и длинное окно (≥ 6): оба выполнены впервые в интервале ${first}.`
-        : 'Длинное окно так и не дошло до 6 — правило не сработало (0).';
+        : 'Длинное окно так и не дошло до 6 – правило не сработало (0).';
     }
     return {
-      prompt: `SLO доступности ${svc}: 99,9 %. В каждом 5-минутном интервале — 1000 запросов, в таблице — ошибки. Скорость сгорания = доля ошибок / 0,1 %. ${ask === 'hour' ? 'Чему равна скорость сгорания за весь час?' : 'Алерт: скорость в текущем интервале ≥ 14,4 И средняя скорость с начала часа по текущий интервал включительно ≥ 6. В каком по номеру интервале алерт сработает впервые? (0 — не сработает.)'}`,
+      prompt: `SLO доступности ${svc}: 99,9 %. В каждом 5-минутном интервале – 1000 запросов, в таблице – ошибки. Скорость сгорания = доля ошибок / 0,1 %. ${ask === 'hour' ? 'Чему равна скорость сгорания за весь час?' : 'Алерт: скорость в текущем интервале ≥ 14,4 И средняя скорость с начала часа по текущий интервал включительно ≥ 6. В каком по номеру интервале алерт сработает впервые? (0 – не сработает.)'}`,
       code: ['интервал | ошибок', ...errors.map((e, i) => `${String(i + 1).padStart(8)} | ${e}`)].join('\n'),
       answerHint: 'число',
       answerKey: String(answer),
@@ -1859,7 +1859,7 @@ export const littlesLaw: TaskGenerator = {
         prompt: `Очередь сервиса ${svc}: приходит ${lambda} задач в секунду, обработчик держит одну задачу ${w} мс и берёт следующую. Сколько обработчиков минимум нужно, чтобы очередь не росла бесконечно (пропускная способность ≥ потоку)?`,
         answerHint: 'число обработчиков',
         answerKey: String(need),
-        explanation: `По закону Литтла в работе одновременно λ·W = ${lambda} · ${w / 1000} = ${((lambda * w) / 1000).toFixed(2)} задач; округление вверх — ${need}.`,
+        explanation: `По закону Литтла в работе одновременно λ·W = ${lambda} · ${w / 1000} = ${((lambda * w) / 1000).toFixed(2)} задач; округление вверх – ${need}.`,
         params: { lambda, w, ask },
       };
     }
@@ -1964,7 +1964,7 @@ export const csvFields: TaskGenerator = {
     const nLines = rng.int(3, 4);
     const lines = Array.from({ length: nLines }, () => Array.from({ length: rng.int(3, 5) }, cell).join(','));
     const target = rng.int(1, nLines);
-    // Число полей по правилам RFC 4180: запятые внутри кавычек не делят поле, "" внутри кавычек — это кавычка.
+    // Число полей по правилам RFC 4180: запятые внутри кавычек не делят поле, "" внутри кавычек – это кавычка.
     let fields = 1;
     let inQ = false;
     const s = lines[target - 1]!;
@@ -1977,7 +1977,7 @@ export const csvFields: TaskGenerator = {
       else if (ch === ',') fields++;
     }
     return {
-      prompt: `CSV по правилам RFC 4180 (поле в двойных кавычках может содержать запятые; "" внутри кавычек — это сама кавычка). Сколько полей в строке ${target}? (Номер строки с двоеточием в начале — не часть CSV.)`,
+      prompt: `CSV по правилам RFC 4180 (поле в двойных кавычках может содержать запятые; "" внутри кавычек – это сама кавычка). Сколько полей в строке ${target}? (Номер строки с двоеточием в начале – не часть CSV.)`,
       code: lines.map((l, i) => `${i + 1}: ${l}`).join('\n'),
       answerHint: 'число полей',
       answerKey: String(fields),
@@ -2036,7 +2036,7 @@ export const envPrecedence: TaskGenerator = {
       code,
       answerHint: 'значение',
       answerKey: answer,
-      explanation: `Приоритет (сверху вниз): атрибут environment в compose, затем env_file, затем ENV из образа. Здесь — ${answer}.`,
+      explanation: `Приоритет (сверху вниз): атрибут environment в compose, затем env_file, затем ENV из образа. Здесь – ${answer}.`,
       params: { present: present.map(Number).join(''), v },
     };
   },
@@ -2078,17 +2078,17 @@ export const cronRuns: TaskGenerator = {
       { expr: '*', days: [0, 1, 2, 3, 4, 5, 6] },
       { expr: '6,0', days: [6, 0] },
     ]);
-    // Октябрь 2026: 1-е — четверг.
+    // Октябрь 2026: 1-е – четверг.
     const date = rng.int(1, 14);
     const wd = (4 + date - 1) % 7;
     const names = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
     const answer = dow.days.includes(wd) ? minute.n * hour.n : 0;
     return {
-      prompt: `Задача в crontab (поля: минута, час, день месяца, месяц, день недели; 0 — воскресенье). Сколько раз она запустится ${date} октября 2026 года (${names[wd]})?`,
+      prompt: `Задача в crontab (поля: минута, час, день месяца, месяц, день недели; 0 – воскресенье). Сколько раз она запустится ${date} октября 2026 года (${names[wd]})?`,
       code: `${minute.expr} ${hour.expr} * * ${dow.expr}  /opt/jobs/export.sh`,
       answerHint: 'число запусков',
       answerKey: String(answer),
-      explanation: `Минуты «${minute.expr}» — ${minute.n} в час, часы «${hour.expr}» — ${hour.n}, день недели «${dow.expr}» ${dow.days.includes(wd) ? 'подходит' : 'не подходит'}: ${answer}.`,
+      explanation: `Минуты «${minute.expr}» – ${minute.n} в час, часы «${hour.expr}» – ${hour.n}, день недели «${dow.expr}» ${dow.days.includes(wd) ? 'подходит' : 'не подходит'}: ${answer}.`,
       params: { minute: minute.expr, hour: hour.expr, dow: dow.expr, date },
     };
   },
@@ -2164,7 +2164,7 @@ export const rerunReport: TaskGenerator = {
     const ask = rng.pick(['flaky', 'red'] as const);
     const answer = ask === 'flaky' ? flaky : red;
     return {
-      prompt: `CI перезапускает упавший тест до ${retries} раз и останавливается на первом успешном запуске. Тест «нестабильный», если упал, а на перезапуске прошёл; «красный», если не прошёл ни разу. В таблице — что вернул бы каждый запуск. ${ask === 'flaky' ? 'Сколько тестов отчёт пометит нестабильными?' : 'Сколько тестов останутся красными?'}`,
+      prompt: `CI перезапускает упавший тест до ${retries} раз и останавливается на первом успешном запуске. Тест «нестабильный», если упал, а на перезапуске прошёл; «красный», если не прошёл ни разу. В таблице – что вернул бы каждый запуск. ${ask === 'flaky' ? 'Сколько тестов отчёт пометит нестабильными?' : 'Сколько тестов останутся красными?'}`,
       code: ['тест          | запуск 1..' + (retries + 1), ...names.map((nm, i) => `${nm.padEnd(13)} | ${outcomes[i]!.join(' ')}`)].join('\n'),
       answerHint: 'число тестов',
       answerKey: String(answer),
@@ -2203,11 +2203,11 @@ export const counterReset: TaskGenerator = {
     let inc = 0;
     for (let i = 1; i < n; i++) inc += vals[i]! >= vals[i - 1]! ? vals[i]! - vals[i - 1]! : vals[i]!;
     return {
-      prompt: 'Счётчик http_requests_total снимается раз в минуту. Между какими-то отсчётами процесс перезапустился. Сколько запросов обработано за интервал от первого до последнего отсчёта? (Уменьшение значения — сброс счётчика: после сброса прирост равен новому значению, как это учитывают rate() и increase() без экстраполяции.)',
+      prompt: 'Счётчик http_requests_total снимается раз в минуту. Между какими-то отсчётами процесс перезапустился. Сколько запросов обработано за интервал от первого до последнего отсчёта? (Уменьшение значения – сброс счётчика: после сброса прирост равен новому значению, как это учитывают rate() и increase() без экстраполяции.)',
       code: vals.map((x, i) => `t+${i} мин  ${x}`).join('\n'),
       answerHint: 'число запросов',
       answerKey: String(inc),
-      explanation: `Складываем приросты; на сбросе (${vals[resetAt - 1]} → ${vals[resetAt]}) прирост — ${vals[resetAt]}, а не отрицательная разность. Итог ${inc}.`,
+      explanation: `Складываем приросты; на сбросе (${vals[resetAt - 1]} → ${vals[resetAt]}) прирост – ${vals[resetAt]}, а не отрицательная разность. Итог ${inc}.`,
       params: { n, resetAt },
     };
   },
@@ -2236,14 +2236,14 @@ export const escalation: TaskGenerator = {
     const who = rng.pick(['primary', 'secondary', 'none'] as const);
     let ackAt: number | null = who === 'primary' ? rng.int(a1 + 1, a1 + 10) : who === 'secondary' ? rng.int(a1 + 1, a1 + a2 - 1) : null;
     if (ackAt === a1 + a2) ackAt += 1; // без ничьей на границе
-    // Если primary «подтвердил» после своего таймаута — эскалация уже ушла на secondary.
+    // Если primary «подтвердил» после своего таймаута – эскалация уже ушла на secondary.
     const answer = ackAt === null || ackAt >= a1 + a2 ? a1 + a2 : 0;
     const ackText = who === 'none' ? 'Алерт никто не подтвердил.' : `Алерт подтвердил ${who === 'primary' ? 'основной' : 'резервный'} дежурный на ${ackAt}-й минуте.`;
     return {
-      prompt: `Политика: в момент алерта (минута 0) уведомляется основной дежурный; если он не подтвердил за ${a1} мин — уведомляется резервный; если алерт не подтверждён и через ${a2} мин после этого — уведомляется руководитель. Подтверждение любым уведомлённым останавливает эскалацию. ${ackText} На какой минуте уведомят руководителя? (0 — не уведомят.)`,
+      prompt: `Политика: в момент алерта (минута 0) уведомляется основной дежурный; если он не подтвердил за ${a1} мин – уведомляется резервный; если алерт не подтверждён и через ${a2} мин после этого – уведомляется руководитель. Подтверждение любым уведомлённым останавливает эскалацию. ${ackText} На какой минуте уведомят руководителя? (0 – не уведомят.)`,
       answerHint: 'минута или 0',
       answerKey: String(answer),
-      explanation: answer ? `Подтверждения до минуты ${a1 + a2} не было — руководитель уведомлён на ${answer}-й минуте.` : `Подтверждение пришло раньше минуты ${a1 + a2} — эскалация остановилась.`,
+      explanation: answer ? `Подтверждения до минуты ${a1 + a2} не было – руководитель уведомлён на ${answer}-й минуте.` : `Подтверждение пришло раньше минуты ${a1 + a2} – эскалация остановилась.`,
       params: { a1, a2, who, ackAt },
     };
   },
@@ -2279,7 +2279,7 @@ function diagnosis(seed: number, d: DiagDomain): TaskInstance {
   const answer = order.indexOf(0) + 1;
   const symptoms = rng.shuffle(comps).map((c) => `${c.padEnd(18)} ${degraded.includes(c) ? `деградация с ${hhmm(onset + (c === degraded[0] ? 0 : rng.int(1, 4)))}` : c === noData ? 'нет данных (метрики не собираются)' : 'в норме'}`);
   return {
-    prompt: `Разбор инцидента (${d.what}) по неполным данным. Правило разбора: причина — событие, которое (1) произошло не раньше чем за 30 минут до первого симптома и не позже него, (2) затрагивает все деградировавшие компоненты, (3) не затрагивает ни одного компонента «в норме». Компонент без данных ничего не исключает и не подтверждает. Номер какого события остаётся причиной?`,
+    prompt: `Разбор инцидента (${d.what}) по неполным данным. Правило разбора: причина – событие, которое (1) произошло не раньше чем за 30 минут до первого симптома и не позже него, (2) затрагивает все деградировавшие компоненты, (3) не затрагивает ни одного компонента «в норме». Компонент без данных ничего не исключает и не подтверждает. Номер какого события остаётся причиной?`,
     code: [
       'Состояние компонентов:',
       ...symptoms,
@@ -2291,7 +2291,7 @@ function diagnosis(seed: number, d: DiagDomain): TaskInstance {
     answerKey: String(answer),
     explanation: `Остаётся событие ${answer}. Остальные отпадают: ${order
       .filter((i) => i !== 0)
-      .map((i) => `${order.indexOf(i) + 1} — ${evs[i]!.why}`)
+      .map((i) => `${order.indexOf(i) + 1} – ${evs[i]!.why}`)
       .join('; ')}. Затронутый компонент без данных его не исключает.`,
     params: { nDeg, onset, answer },
   };
@@ -2411,14 +2411,14 @@ export const backfillNights: TaskGenerator = {
     const perNight = Math.floor((window * rate) / gb);
     const nights = Math.ceil(days / (lanes * perNight));
     return {
-      prompt: `Нужно перезалить ${days} дневных партиций по ${gb} ГБ из источника в хранилище. Каждый воркер читает одну партицию целиком (партиция не делится и не переносится через утро). Окно — ${window} ч каждую ночь. Сколько ночей потребуется?`,
+      prompt: `Нужно перезалить ${days} дневных партиций по ${gb} ГБ из источника в хранилище. Каждый воркер читает одну партицию целиком (партиция не делится и не переносится через утро). Окно – ${window} ч каждую ночь. Сколько ночей потребуется?`,
       code: [
         `воркеров: ${workers}, каждый обрабатывает до ${workerRate} ГБ/ч`,
-        `источник: не больше ${readers} одновременных читателей, каждый читатель — до ${readerRate} ГБ/ч`,
+        `источник: не больше ${readers} одновременных читателей, каждый читатель – до ${readerRate} ГБ/ч`,
       ].join('\n'),
       answerHint: 'число ночей',
       answerKey: String(nights),
-      explanation: `Параллельно работают min(${workers}, ${readers}) = ${lanes} потока со скоростью min(${workerRate}, ${readerRate}) = ${rate} ГБ/ч; партиция — ${perPart.toFixed(2)} ч, за ночь поток успевает ${perNight} целых партиций; ночей ⌈${days} / (${lanes} · ${perNight})⌉ = ${nights}.`,
+      explanation: `Параллельно работают min(${workers}, ${readers}) = ${lanes} потока со скоростью min(${workerRate}, ${readerRate}) = ${rate} ГБ/ч; партиция – ${perPart.toFixed(2)} ч, за ночь поток успевает ${perNight} целых партиций; ночей ⌈${days} / (${lanes} · ${perNight})⌉ = ${nights}.`,
       params: { days, gb, workers, workerRate, readers, readerRate, window },
     };
   },
@@ -2464,12 +2464,12 @@ export const consumerDuplicates: TaskGenerator = {
     }
     const answer = upsert ? 0 : rows - total;
     return {
-      prompt: `Консьюмер читает топик из ${total} сообщений (у каждого уникальный ключ), пишет каждое в БД и коммитит смещение после каждого ${batch}-го сообщения и после последнего. Процесс падает сразу после обработки (записи в БД) ${crashes.join('-й, ')}-й по счёту обработки (повторные обработки тоже считаются); если на этом сообщении положен коммит, он успевает пройти. После рестарта чтение идёт с последнего закоммиченного смещения. Запись в БД — ${upsert ? 'UPSERT по ключу сообщения' : 'обычный INSERT без ключа'}. Сколько лишних строк (дублей) будет в БД после того, как весь топик обработан?`,
+      prompt: `Консьюмер читает топик из ${total} сообщений (у каждого уникальный ключ), пишет каждое в БД и коммитит смещение после каждого ${batch}-го сообщения и после последнего. Процесс падает сразу после обработки (записи в БД) ${crashes.join('-й, ')}-й по счёту обработки (повторные обработки тоже считаются); если на этом сообщении положен коммит, он успевает пройти. После рестарта чтение идёт с последнего закоммиченного смещения. Запись в БД – ${upsert ? 'UPSERT по ключу сообщения' : 'обычный INSERT без ключа'}. Сколько лишних строк (дублей) будет в БД после того, как весь топик обработан?`,
       answerHint: 'число дублей',
       answerKey: String(answer),
       explanation: upsert
         ? 'UPSERT по ключу делает повторную обработку идемпотентной: дублей 0 при любых падениях.'
-        : `Всего обработок ${rows} при ${total} сообщениях: всё, что обработано после последнего коммита до падения, записывается повторно — дублей ${answer}. Цена большого батча коммита — больше дублей.`,
+        : `Всего обработок ${rows} при ${total} сообщениях: всё, что обработано после последнего коммита до падения, записывается повторно – дублей ${answer}. Цена большого батча коммита – больше дублей.`,
       params: { total, batch, crashes: crashes.join(','), upsert },
     };
   },
@@ -2519,7 +2519,7 @@ export const lateWindow: TaskGenerator = {
       code: evs.join(', '),
       answerHint: 'число событий',
       answerKey: String(answer),
-      explanation: `Отброшено ${dropped}; в окне [0;10) — ${counts.get(0) ?? 0}. Больше допуск опоздания — меньше потерь, но позже результат: это компромисс, а не настройка «по умолчанию».`,
+      explanation: `Отброшено ${dropped}; в окне [0;10) – ${counts.get(0) ?? 0}. Больше допуск опоздания – меньше потерь, но позже результат: это компромисс, а не настройка «по умолчанию».`,
       params: { lateness, n, ask },
     };
   },
@@ -2551,10 +2551,10 @@ export const zoneCapacity: TaskGenerator = {
     const perZone = Math.ceil(need / (zones - 1));
     const total = perZone * zones;
     return {
-      prompt: `Сервис ${svc}: пик ${peak} RPS, один под выдерживает ${perPod} RPS, загрузка пода в пике — не выше ${util} %. Поды размещены поровну в ${zones} зонах доступности. Сколько подов нужно всего, чтобы при отказе любой одной зоны оставшиеся выдержали пик?`,
+      prompt: `Сервис ${svc}: пик ${peak} RPS, один под выдерживает ${perPod} RPS, загрузка пода в пике – не выше ${util} %. Поды размещены поровну в ${zones} зонах доступности. Сколько подов нужно всего, чтобы при отказе любой одной зоны оставшиеся выдержали пик?`,
       answerHint: 'число подов',
       answerKey: String(total),
-      explanation: `Без одной зоны нужно ⌈${peak} / (${perPod} · ${util} %)⌉ = ${need} подов на ${zones - 1} зонах → ⌈${need} / ${zones - 1}⌉ = ${perZone} в зоне; всего ${perZone} · ${zones} = ${total}. Запас — плата за отказоустойчивость.`,
+      explanation: `Без одной зоны нужно ⌈${peak} / (${perPod} · ${util} %)⌉ = ${need} подов на ${zones - 1} зонах → ⌈${need} / ${zones - 1}⌉ = ${perZone} в зоне; всего ${perZone} · ${zones} = ${total}. Запас – плата за отказоустойчивость.`,
       params: { peak, perPod, util, zones },
     };
   },
@@ -2609,7 +2609,7 @@ export const rolloutBlast: TaskGenerator = {
       }
     } while ([rpm, bake, fail, threshold, ...stages].includes(errors));
     return {
-      prompt: `Новая версия выкатывается ступенями ${stages.join(' % → ')} % трафика, каждая ступень длится ${bake} мин (последняя — до отката). Поток — ${rpm} запросов в минуту. В новой версии баг: ${fail} % её запросов падают. Алерт срабатывает в конце минуты, когда накопленное с начала выкатки число ошибок достигает ${threshold}, и откат мгновенный. Сколько запросов пользователей завершится ошибкой?`,
+      prompt: `Новая версия выкатывается ступенями ${stages.join(' % → ')} % трафика, каждая ступень длится ${bake} мин (последняя – до отката). Поток – ${rpm} запросов в минуту. В новой версии баг: ${fail} % её запросов падают. Алерт срабатывает в конце минуты, когда накопленное с начала выкатки число ошибок достигает ${threshold}, и откат мгновенный. Сколько запросов пользователей завершится ошибкой?`,
       answerHint: 'число запросов',
       answerKey: String(errors),
       explanation: `Ошибок в минуту на ступени p %: ${rpm} · p % · ${fail} %. Порог достигнут на ${detectedAt}-й минуте, накоплено ${errors}. Мелкие первые ступени ограничивают ущерб, но медленнее доставляют релиз.`,
@@ -2649,7 +2649,7 @@ export const hpaReplicas: TaskGenerator = {
       replicas = Math.min(max, Math.max(min, Math.ceil((replicas * cur) / target)));
     }
     return {
-      prompt: `HPA по CPU: цель ${target} %, minReplicas ${min}, maxReplicas ${max}, допуск 10 % (при |текущее/цель − 1| ≤ 0,1 масштаб не меняется). Сейчас ${start} реплик. Последовательно приходят три замера средней загрузки CPU по подам (каждый — уже при числе реплик после предыдущего шага): ${readings.join(' %, ')} %. Сколько реплик будет после третьего шага? (Окна стабилизации не учитывать.)`,
+      prompt: `HPA по CPU: цель ${target} %, minReplicas ${min}, maxReplicas ${max}, допуск 10 % (при |текущее/цель − 1| ≤ 0,1 масштаб не меняется). Сейчас ${start} реплик. Последовательно приходят три замера средней загрузки CPU по подам (каждый – уже при числе реплик после предыдущего шага): ${readings.join(' %, ')} %. Сколько реплик будет после третьего шага? (Окна стабилизации не учитывать.)`,
       answerHint: 'число реплик',
       answerKey: String(replicas),
       explanation: `desired = ⌈текущие реплики · текущее / цель⌉ с ограничением [${min}; ${max}] и допуском 10 %. Итог ${replicas}.`,
@@ -2685,7 +2685,7 @@ export const retryBudget: TaskGenerator = {
       prompt: `В наборе тестов ${svc} ${n} нестабильных тестов, каждый независимо падает с вероятностью ${p} % на запуск (настоящих багов нет). CI перезапускает упавший тест до r раз. Какое наименьшее r даёт вероятность «ложно красного» пайплайна не выше ${target} %?`,
       answerHint: 'число перезапусков',
       answerKey: String(r),
-      explanation: `Тест остаётся красным с вероятностью p^(r+1); пайплайн ложно красный с вероятностью 1 − (1 − p^(r+1))^${n}. Наименьшее r — ${r}. Каждый перезапуск маскирует и настоящие нестабильные баги: это компромисс.`,
+      explanation: `Тест остаётся красным с вероятностью p^(r+1); пайплайн ложно красный с вероятностью 1 − (1 − p^(r+1))^${n}. Наименьшее r – ${r}. Каждый перезапуск маскирует и настоящие нестабильные баги: это компромисс.`,
       params: { n, p, target, r },
     };
   },
@@ -2722,16 +2722,16 @@ export const ciSharding: TaskGenerator = {
     let k = 1;
     while (makespan(k) > limit) k++;
     return {
-      prompt: `Набор тестов из ${files.length} файлов (длительность, мин): ${files.join(', ')}. Файлы раздаются раннерам так: по убыванию длительности, каждый — раннеру с наименьшей текущей загрузкой (при равенстве — с меньшим номером). Какое наименьшее число раннеров уложит прогон в ${limit} мин?`,
+      prompt: `Набор тестов из ${files.length} файлов (длительность, мин): ${files.join(', ')}. Файлы раздаются раннерам так: по убыванию длительности, каждый – раннеру с наименьшей текущей загрузкой (при равенстве – с меньшим номером). Какое наименьшее число раннеров уложит прогон в ${limit} мин?`,
       answerHint: 'число раннеров',
       answerKey: String(k),
-      explanation: `Перебором числа раннеров по этому правилу: при ${k} раннерах прогон занимает ${makespan(k)} мин${k > 1 ? `, при ${k - 1} — ${makespan(k - 1)} мин` : ''}. Самый длинный файл (${Math.max(...files)} мин) — нижняя граница, которую раннеры не сократят.`,
+      explanation: `Перебором числа раннеров по этому правилу: при ${k} раннерах прогон занимает ${makespan(k)} мин${k > 1 ? `, при ${k - 1} – ${makespan(k - 1)} мин` : ''}. Самый длинный файл (${Math.max(...files)} мин) – нижняя граница, которую раннеры не сократят.`,
       params: { files: files.join(','), limit, k },
     };
   },
 };
 
-// --- Senior qa: границы покрытия — выжившие мутанты -----------------------------------------------------------
+// --- Senior qa: границы покрытия – выжившие мутанты -----------------------------------------------------------
 
 export const mutationSurvivors: TaskGenerator = {
   id: 'eng.mutation-survivors',
@@ -2782,7 +2782,7 @@ export const mutationSurvivors: TaskGenerator = {
       ].join('\n'),
       answerHint: 'число мутантов',
       answerKey: String(survived),
-      explanation: `Выжило ${survived} из ${mutants.length}. Покрытие строк у всех наборов одинаково стопроцентное, а мутантов убивают только тесты на границах (age = ${A}, income = ${I}) и на связку условий — это предел метрики покрытия.`,
+      explanation: `Выжило ${survived} из ${mutants.length}. Покрытие строк у всех наборов одинаково стопроцентное, а мутантов убивают только тесты на границах (age = ${A}, income = ${I}) и на связку условий – это предел метрики покрытия.`,
       params: { A, I, nTests: tests.length, survived },
     };
   },
@@ -2827,7 +2827,7 @@ export const dependencyBudget: TaskGenerator = {
     const used = deps.reduce((a, d) => a + month * d.frac, 0);
     const answer = Number((budget - used - own).toFixed(2));
     return {
-      prompt: `SLO доступности ${svc}: ${slo.pct} % за 30 дней. Сервис синхронно зависит от каждой из зависимостей ниже: любая недоступна — недоступен и он. Считаем, что простои не перекрываются (недоступности складываются). На собственные релизы и сбои закладываем ${own} мин в месяц. Сколько минут в месяц может быть недоступна новая синхронная зависимость, чтобы SLO сохранился? (Может быть отрицательным; дробное — через запятую или точку.)`,
+      prompt: `SLO доступности ${svc}: ${slo.pct} % за 30 дней. Сервис синхронно зависит от каждой из зависимостей ниже: любая недоступна – недоступен и он. Считаем, что простои не перекрываются (недоступности складываются). На собственные релизы и сбои закладываем ${own} мин в месяц. Сколько минут в месяц может быть недоступна новая синхронная зависимость, чтобы SLO сохранился? (Может быть отрицательным; дробное – через запятую или точку.)`,
       code: deps.map((d) => `${d.name}: SLO ${d.pct} %`).join('\n'),
       answerHint: 'минуты',
       answerKey: String(answer),
@@ -2918,10 +2918,10 @@ export const redundancyNodes: TaskGenerator = {
     while (pUp(n) < target) n++;
     const pct = (x: number) => String(Math.round(x * 100));
     return {
-      prompt: `Сервису ${svc} нужно не меньше ${k} работающих узлов. Узлы отказывают независимо, доступность узла — ${pct(a)} %. Какое наименьшее число узлов даёт доступность сервиса не ниже ${tgt.label} %?`,
+      prompt: `Сервису ${svc} нужно не меньше ${k} работающих узлов. Узлы отказывают независимо, доступность узла – ${pct(a)} %. Какое наименьшее число узлов даёт доступность сервиса не ниже ${tgt.label} %?`,
       answerHint: 'число узлов',
       answerKey: String(n),
-      explanation: `P(работает ≥ ${k} из n) = Σ C(n, r)·a^r·(1 − a)^(n − r) по r ≥ ${k}; впервые ≥ ${tgt.label} % при n = ${n}. Каждый лишний узел — прямая цена надёжности.`,
+      explanation: `P(работает ≥ ${k} из n) = Σ C(n, r)·a^r·(1 − a)^(n − r) по r ≥ ${k}; впервые ≥ ${tgt.label} % при n = ${n}. Каждый лишний узел – прямая цена надёжности.`,
       params: { k, a, target, n },
     };
   },
@@ -2985,9 +2985,9 @@ export const circuitBreaker: TaskGenerator = {
       prompt: `Клиент вызывает ${svc} раз в секунду, t = 0, 1, …, ${T - 1}. Зависимость отвечает ошибкой при ${downFrom} ≤ t < ${downTo}, иначе успешно. ${ask === 'reached' ? 'Сколько вызовов дойдёт до зависимости?' : 'Сколько вызовов выключатель отклонит, не обращаясь к зависимости?'}`,
       code: [
         `circuit breaker:`,
-        `  closed: после ${threshold} ошибок подряд — open (успех обнуляет счётчик)`,
+        `  closed: после ${threshold} ошибок подряд – open (успех обнуляет счётчик)`,
         `  open: ${openSec} с отклоняет все вызовы сразу (с момента открытия t₀ до t₀ + ${openSec} не включительно)`,
-        '  затем half-open: следующий вызов пробный — успех → closed, ошибка → снова open на тот же срок',
+        '  затем half-open: следующий вызов пробный – успех → closed, ошибка → снова open на тот же срок',
       ].join('\n'),
       answerHint: 'число вызовов',
       answerKey: String(answer),

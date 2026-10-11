@@ -18,13 +18,13 @@ import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 import styles from './AuthEntry.module.css';
 
 type Mode = 'login' | 'register' | 'forgot';
-/** form — ввод почты/пароля; verify — код подтверждения почты; reset — код сброса + новый пароль. */
+/** form – ввод почты/пароля; verify – код подтверждения почты; reset – код сброса + новый пароль. */
 type Stage = 'form' | 'verify' | 'reset';
 
 /**
  * Вход и регистрация по почте (R-D-04): переключение «Регистрация» / «Уже есть аккаунт», ссылка сброса пароля
  * и шаг ввода 6-значного кода из письма. При локальной разработке сервер возвращает код
- * подтверждения (`devCode`) — он показывается здесь; на стенде кода в ответе нет, только письмо.
+ * подтверждения (`devCode`) – он показывается здесь; на стенде кода в ответе нет, только письмо.
  */
 export function EmailAuth({ next, navigate, agreed, consent }: { next: string | null; navigate: (path: string) => void; agreed: boolean; consent?: ReactNode }) {
   const [mode, setMode] = useState<Mode>('login');

@@ -14,7 +14,7 @@ describe('информационная функция', () => {
     expect(information(item.b, item)).toBeCloseTo((item.a * item.a) / 4, 10);
   });
 
-  it('сумма по банку ≥ 0, кривая грейда — у своих b, потолок попытки — не больше суммы и не меньше любых MAX_ITEMS заданий', () => {
+  it('сумма по банку ≥ 0, кривая грейда – у своих b, потолок попытки – не больше суммы и не меньше любых MAX_ITEMS заданий', () => {
     const info = bankInformation(sub)!;
     expect(info).not.toBeNull();
     expect(info.thetas).toHaveLength(61);
@@ -23,7 +23,7 @@ describe('информационная функция', () => {
       for (const v of info.byGrade[g]) expect(v).toBeGreaterThanOrEqual(0);
     }
     const argmax = (ys: number[]) => info.thetas[ys.indexOf(Math.max(...ys))]!;
-    // Junior-задания лёгкие, Senior — трудные: пики идут по порядку грейдов.
+    // Junior-задания лёгкие, Senior – трудные: пики идут по порядку грейдов.
     expect(argmax(info.byGrade.junior)).toBeLessThan(argmax(info.byGrade.middle));
     expect(argmax(info.byGrade.middle)).toBeLessThan(argmax(info.byGrade.senior));
     info.best.forEach((v, i) => {
@@ -40,7 +40,7 @@ describe('информационная функция', () => {
     expect(topInformation(0, items, 3)).toBeCloseTo(testInformation(0, items), 12);
   });
 
-  it('неизвестная подкатегория — null', () => {
+  it('неизвестная подкатегория – null', () => {
     expect(bankInformation('nope.nope')).toBeNull();
     expect(simulatedCandidates('nope.nope')).toBeNull();
   });
@@ -90,7 +90,7 @@ it('две строки по 4 кандидата: уверенный глубж
     const c = conf[i]!;
     expect(c.claimed).toBe(m.claimed);
     expect(gradeOfTheta(c.theta)).toBe(gradeOfTheta(m.theta));
-    // Новичок — ниже, остальные — выше середины зоны.
+    // Новичок – ниже, остальные – выше середины зоны.
     if (gradeOfTheta(m.theta) === 'none') expect(c.theta).toBeLessThan(m.theta);
     else expect(c.theta).toBeGreaterThan(m.theta);
   });

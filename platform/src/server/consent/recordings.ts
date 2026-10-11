@@ -29,7 +29,7 @@ async function removeAudio(ids: readonly string[]): Promise<number> {
   return ids.length;
 }
 
-/** Удалить один сегмент (запись пришлась на момент отзыва Г2). Ошибка ФС — только в лог. */
+/** Удалить один сегмент (запись пришлась на момент отзыва Г2). Ошибка ФС – только в лог. */
 export async function removeSegment(sessionId: string, name: string): Promise<void> {
   const root = resolve(getEnv().CALL_DATA_DIR, 'calls');
   try {
@@ -39,7 +39,7 @@ export async function removeSegment(sessionId: string, name: string): Promise<vo
   }
 }
 
-/** Все аудиозаписи кандидата (отзыв Г2). Каталог удаляется и у созвонов без audioPath — на случай гонки записи. */
+/** Все аудиозаписи кандидата (отзыв Г2). Каталог удаляется и у созвонов без audioPath – на случай гонки записи. */
 export async function deleteCandidateRecordings(candidateId: string): Promise<number> {
   const calls = await prisma.callSession.findMany({ where: { candidateId }, select: { id: true, audioPath: true } });
   await removeAudio(calls.map((c) => c.id));
@@ -65,7 +65,7 @@ type JobState = { timer: ReturnType<typeof setInterval> | null; running: boolean
 const KEY = Symbol.for('fsp.recordingRetentionJob');
 const g = globalThis as unknown as Record<symbol, JobState | undefined>;
 
-/** Один прогон с защитой от наложения (прошлый ещё идёт — пропускаем). */
+/** Один прогон с защитой от наложения (прошлый ещё идёт – пропускаем). */
 export async function runRetentionOnce(now = new Date()): Promise<number | null> {
   const st = (g[KEY] ??= { timer: null, running: false });
   if (st.running) return null;
@@ -83,8 +83,8 @@ export async function runRetentionOnce(now = new Date()): Promise<number | null>
 }
 
 /**
- * Фоновая очистка: при старте сервера и раз в сутки (вызов — src/instrumentation.ts). Повторный вызов в том же
- * процессе (HMR, второй register) второй таймер не заводит. Таймер unref — не держит процесс.
+ * Фоновая очистка: при старте сервера и раз в сутки (вызов – src/instrumentation.ts). Повторный вызов в том же
+ * процессе (HMR, второй register) второй таймер не заводит. Таймер unref – не держит процесс.
  */
 export function startRecordingRetentionJob(intervalMs = DAY_MS): boolean {
   const st = (g[KEY] ??= { timer: null, running: false });

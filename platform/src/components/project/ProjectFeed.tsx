@@ -59,13 +59,13 @@ export function ProjectFeed({ items, limit, hasCategory = false }: ProjectFeedPr
             <Notice>Сейчас нет открытых заданий для твоей категории. Они появляются, когда работодатели твоего направления публикуют проект. Загляни позже.</Notice>
             <div className={styles.actions}>
               <Button href="/consultant" variant="primary">
-                Следующий шаг — у консультанта
+                Следующий шаг – у консультанта
               </Button>
             </div>
           </>
         ) : (
           <>
-            <Notice>Пока нет открытых заданий для твоего направления. Без категории из теста видны только задания уровня Junior — пройди тест на грейд, чтобы открыть остальные.</Notice>
+            <Notice>Пока нет открытых заданий для твоего направления. Без категории из теста видны только задания уровня Junior – пройди тест на грейд, чтобы открыть остальные.</Notice>
             <div className={styles.actions}>
               <Button href="/test" variant="cta">
                 Пройти тест на грейд

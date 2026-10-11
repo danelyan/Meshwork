@@ -18,7 +18,7 @@ const STATUS_LABEL: Record<EmployerQuestionDto['status'], string> = {
 
 /**
  * «Вопросы кандидату» (ADR 0003, ступень 3): работодатель оставляет вопрос, кандидат отвечает ИИ-интервьюеру в
- * защите — сразу, если сейчас на ней, иначе при следующем входе. Только после принятого приглашения (сервер).
+ * защите – сразу, если сейчас на ней, иначе при следующем входе. Только после принятого приглашения (сервер).
  */
 export function CandidateQuestions({ candidateId }: { candidateId: string }) {
   const [items, setItems] = useState<EmployerQuestionDto[] | null>(null);

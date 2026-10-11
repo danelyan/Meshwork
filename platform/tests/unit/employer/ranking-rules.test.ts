@@ -13,7 +13,7 @@ import { fixtureCatalog } from '../../helpers/recommend-fixtures';
 const catalog = fixtureCatalog();
 const YEAR = 2026;
 const opts = { year: YEAR };
-/** Расширенный пул: тесты формулы ранжируют и кандидатов без категории (основной режим — ranking.test.ts). */
+/** Расширенный пул: тесты формулы ранжируют и кандидатов без категории (основной режим – ranking.test.ts). */
 const POOL = { expandPool: true } as const;
 const target: MatchTarget = {
   specialization: 'backend',
@@ -42,7 +42,7 @@ function cand(id: string, claims: [string, Level][], extra: Partial<CandidateEvi
 const CUP = { event: 'Кубок России по спортивному программированию (продуктовое программирование)', year: 2025, result: 'призёр, 2 место' };
 
 describe('вес достижений ФСП (R-M-02)', () => {
-  it('место и уровень разбираются по ключевым словам, неизвестное — без падения', () => {
+  it('место и уровень разбираются по ключевым словам, неизвестное – без падения', () => {
     expect(fspPlace('победитель трека')).toBe('winner');
     expect(fspPlace('призёр, 2 место')).toBe('prize');
     expect(fspPlace('финалист')).toBe('finalist');
@@ -53,7 +53,7 @@ describe('вес достижений ФСП (R-M-02)', () => {
     expect(fspWeight([{ event: 'Новое событие', year: YEAR, result: '???' }], YEAR).boost).toBeGreaterThan(0);
   });
 
-  it('свежее достижение весомее старого, победа весомее участия, отборочный этап — вполовину', () => {
+  it('свежее достижение весомее старого, победа весомее участия, отборочный этап – вполовину', () => {
     const fresh = fspWeight([CUP], YEAR).boost;
     const old = fspWeight([{ ...CUP, year: 2021 }], YEAR).boost;
     const part = fspWeight([{ ...CUP, result: 'участник' }], YEAR).boost;
@@ -104,7 +104,7 @@ describe('вес достижений ФСП (R-M-02)', () => {
 describe('частичный зачёт близких технологий', () => {
   const t: MatchTarget = { ...target, stack: ['Kafka'] };
 
-  it('коэффициенты карты — 0,3…0,6', () => {
+  it('коэффициенты карты – 0,3…0,6', () => {
     for (const [, , c] of TECH_PROXIMITY) {
       expect(c).toBeGreaterThanOrEqual(0.3);
       expect(c).toBeLessThanOrEqual(0.6);
@@ -151,19 +151,19 @@ describe('подсказки ослабления (R-M-04)', () => {
     expect(hints.map((h) => h.gain)).toEqual([...hints.map((h) => h.gain)].sort((a, b) => b - a));
   });
 
-  it('грейд потребности на ступень ниже — кандидат с категорией Junior; в основном режиме первой идёт «расширьте пул»', () => {
+  it('грейд потребности на ступень ниже – кандидат с категорией Junior; в основном режиме первой идёт «расширьте пул»', () => {
     const hints = relaxationHints(pool, target, catalog, POOL, opts);
     expect(hints).toEqual([{ kind: 'vacancyGrade', label: 'Рассмотрите Junior вместо Middle', gain: 1, filters: null, grade: 'junior' }]);
     expect(relaxationHints(pool, target, catalog, {}, opts)[0]).toMatchObject({ kind: 'expandPool', gain: 4, filters: { expandPool: true } });
   });
 
-  it('ничего не добавляет — подсказок нет; текущая подборка не меняется', () => {
+  it('ничего не добавляет – подсказок нет; текущая подборка не меняется', () => {
     const before = rankCandidates(pool, { ...target, grade: 'junior' }, catalog, POOL, opts);
     expect(relaxationHints(pool, { ...target, grade: 'junior' }, catalog, POOL, opts)).toEqual([]);
     expect(rankCandidates(pool, { ...target, grade: 'junior' }, catalog, POOL, opts)).toEqual(before);
   });
 
-  it('вывод: ссылки на ту же подборку с новыми фильтрами, грейд — на правку потребности', () => {
+  it('вывод: ссылки на ту же подборку с новыми фильтрами, грейд – на правку потребности', () => {
     const html = renderToStaticMarkup(
       createElement(RelaxHints, {
         basePath: '/employer/needs/v1',

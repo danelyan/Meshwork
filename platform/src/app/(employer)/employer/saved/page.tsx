@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function SavedCandidatesPage() {
   const s = await requirePageEmployer('/employer/saved');
-  // ADR 0005: без оферты и обязательства по данным — вместо данных кандидатов форма принятия условий.
+  // ADR 0005: без оферты и обязательства по данным – вместо данных кандидатов форма принятия условий.
   if ((await employerConsentsMissing(s.userId)).length) return <div className={styles.page}><h1>Избранное</h1><EmployerConsentGate /></div>;
   const [ctx, result] = await Promise.all([loadEmployerContext(s.employerProfileId), savedCandidateCards(s)]);
   const invitations = await listCompanyInvitations(ctx.companyId);

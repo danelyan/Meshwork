@@ -1,6 +1,6 @@
 // Дополнительные Junior-семейства frontend (по 2 на подкатегорию): пул подкатегории ≥ 6 Junior
 // (ADR 0003, дополнение 10.10 16:15). Ключ считает код генератора; тест сверяет независимым решением
-// (исполнение кода, dom-accessibility-api, jsdom, отдельная модель). a, b — ПРЕДЛОЖЕНИЕ.
+// (исполнение кода, dom-accessibility-api, jsdom, отдельная модель). a, b – ПРЕДЛОЖЕНИЕ.
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 

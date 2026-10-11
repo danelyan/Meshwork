@@ -1,6 +1,6 @@
 // Приглашения (R-E-05, R-C-11, R-C-16, R-E-07). Статусы: sent → viewed → accepted | declined; accepted → hired (lane hired: работодатель отметил найм);
 // sent | viewed | accepted → withdrawn (lane invite-cancel: работодатель отозвал с причиной).
-// Контакты работодатель видит только после accepted — решает matching/privacy на сервере.
+// Контакты работодатель видит только после accepted – решает matching/privacy на сервере.
 import type { InvitationStatus, Prisma } from '@prisma/client';
 import type { z } from 'zod';
 
@@ -31,9 +31,9 @@ import { getSetting } from '@/server/admin/settings';
 const OPEN: InvitationStatus[] = ['sent', 'viewed'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** lane lifecycle: пауза после отказа кандидата или отзыва компанией — столько дней компания не может пригласить его снова. */
+/** lane lifecycle: пауза после отказа кандидата или отзыва компанией – столько дней компания не может пригласить его снова. */
 export const INVITE_COOLDOWN_DAYS = 14;
-/** lane lifecycle: причина отзыва при закрытии вакансии; такой отзыв паузу не запускает — это не отказ кандидату лично. */
+/** lane lifecycle: причина отзыва при закрытии вакансии; такой отзыв паузу не запускает – это не отказ кандидату лично. */
 export const VACANCY_CLOSED_REASON = 'Вакансия закрыта';
 /** lane lifecycle: причина закрытия при найме другой компанией (имя нанявшей компании не раскрывается). */
 export const HIRED_ELSEWHERE_REASON = 'Кандидат принял предложение другой компании';
@@ -43,8 +43,8 @@ export const CLOSED_BY_HIRE: InvitationStatus[] = ['sent', 'viewed', 'accepted']
 const COUNTS_TO_LIMIT = { sourceApplicationId: null } as const;
 
 /**
- * lane lifecycle: дата, с которой компания снова может пригласить кандидата; null — пауза не действует.
- * Пауза — 14 дней от последнего отказа кандидата (declined, respondedAt) или отзыва компанией (withdrawn, withdrawnAt),
+ * lane lifecycle: дата, с которой компания снова может пригласить кандидата; null – пауза не действует.
+ * Пауза – 14 дней от последнего отказа кандидата (declined, respondedAt) или отзыва компанией (withdrawn, withdrawnAt),
  * кроме отзыва из-за закрытия вакансии. Чистая функция.
  */
 export function inviteCooldownUntil(rows: readonly { status: InvitationStatus; respondedAt: Date | null; withdrawnAt: Date | null; withdrawReason: string | null }[], now = new Date()): Date | null {
@@ -70,11 +70,11 @@ export interface EmployerInvitationView {
   respondedAt: string | null;
   /** lane hired: когда отмечен найм (status = hired). */
   hiredAt?: string | null;
-  /** lane invite-cancel: отзыв работодателем (status = withdrawn) — когда и почему. */
+  /** lane invite-cancel: отзыв работодателем (status = withdrawn) – когда и почему. */
   withdrawn?: { at: string; reason: string } | null;
   vacancy: { id: string; title: string } | null;
   candidate: CandidateCard;
-  /** lane live-slots (ADR 0008): активное предложение слотов живой защиты и его подстатус; null — не назначалась. */
+  /** lane live-slots (ADR 0008): активное предложение слотов живой защиты и его подстатус; null – не назначалась. */
   liveDefense?: LiveDefenseView | null;
   /** lane defense-rules (ADR 0008): у кандидата есть проверенный проект - только тогда можно предлагать слоты живой защиты. */
   projectReady?: boolean;
@@ -89,13 +89,13 @@ export interface CandidateInvitationView {
   message: string | null;
   createdAt: string;
   respondedAt: string | null;
-  /** lane hired: когда компания отметила найм (status = hired) — финальный этап пути. */
+  /** lane hired: когда компания отметила найм (status = hired) – финальный этап пути. */
   hiredAt?: string | null;
-  /** lane invite-cancel: компания отозвала приглашение (status = withdrawn) — когда и причина. */
+  /** lane invite-cancel: компания отозвала приглашение (status = withdrawn) – когда и причина. */
   withdrawn?: { at: string; reason: string } | null;
   /**
-   * Компания и способ связи — до принятия (ТЗ 2.2: «кандидат видит условия до начала общения»).
-   * contact: Company.contact, иначе почта отправителя; null — не указан (интерфейс пишет NO_COMPANY_CONTACT).
+   * Компания и способ связи – до принятия (ТЗ 2.2: «кандидат видит условия до начала общения»).
+   * contact: Company.contact, иначе почта отправителя; null – не указан (интерфейс пишет NO_COMPANY_CONTACT).
    */
   company: {
     name: string;
@@ -105,13 +105,13 @@ export interface CandidateInvitationView {
     /** lane admin (E-08, фаза 2): метка «компания проверена» модератором (ручная верификация, без API ФНС). */
     verified?: boolean;
   };
-  /** Антифрод (R-X-01): красные флаги текста и вилки; пустой — ничего не найдено. Интерфейс пишет «Проверьте: …». */
+  /** Антифрод (R-X-01): красные флаги текста и вилки; пустой – ничего не найдено. Интерфейс пишет «Проверьте: …». */
   redFlags?: Pick<RedFlag, 'code' | 'severity' | 'candidateNote'>[];
-  /** lane complaints: жалоба кандидата на это приглашение; null — не подавалась. */
+  /** lane complaints: жалоба кандидата на это приглашение; null – не подавалась. */
   complaint?: { reason: string; createdAt: string } | null;
-  /** Принято и раскрытие имени и контактов действует (Г5, ADR 0005); false после отзыва — компания видит псевдоним. */
+  /** Принято и раскрытие имени и контактов действует (Г5, ADR 0005); false после отзыва – компания видит псевдоним. */
   disclosed?: boolean;
-  /** lane live-slots (ADR 0008): слоты живой защиты и подстатус; null — компания ещё не предлагала. */
+  /** lane live-slots (ADR 0008): слоты живой защиты и подстатус; null – компания ещё не предлагала. */
   liveDefense?: LiveDefenseView | null;
   /** lane defense-rules: у кандидата есть проверенный проект (иначе живую защиту назначить нельзя - сдайте его в «Проектах»). */
   projectReady?: boolean;
@@ -132,7 +132,7 @@ export async function invitationsSentToday(companyId: string, now = new Date()):
 
 /**
  * Способ связи, который увидит кандидат в приглашении от этого представителя компании (E05): Company.contact,
- * иначе почта его аккаунта, если она не служебная; null — отправлять нельзя (company_contact_required).
+ * иначе почта его аккаунта, если она не служебная; null – отправлять нельзя (company_contact_required).
  */
 export async function companyInviteContactFor(employerProfileId: string): Promise<string | null> {
   const p = await prisma.employerProfile.findUnique({
@@ -143,7 +143,7 @@ export async function companyInviteContactFor(employerProfileId: string): Promis
   return companyInviteContact({ contact: p.company.contact, senderEmail: p.user.email });
 }
 
-/** 422 company_contact_required: у компании нет контакта, а почта отправителя служебная — кандидату некуда ответить. */
+/** 422 company_contact_required: у компании нет контакта, а почта отправителя служебная – кандидату некуда ответить. */
 export function companyContactRequired(): AppError {
   return new AppError(
     'company_contact_required',
@@ -154,10 +154,10 @@ export function companyContactRequired(): AppError {
 }
 
 /**
- * Отправить приглашение. 404 — кандидата нет или он скрыт настройкой приватности;
- * 404 — чужая или архивная потребность; 409 — уже есть открытое приглашение этой
- * компании; 422 company_contact_required — ни контакта компании, ни пригодной почты отправителя (E05: кандидат должен
- * видеть способ связи до ответа); 429 — лимит за сутки; 403 company_blocked — отправка закрыта из-за жалоб.
+ * Отправить приглашение. 404 – кандидата нет или он скрыт настройкой приватности;
+ * 404 – чужая или архивная потребность; 409 – уже есть открытое приглашение этой
+ * компании; 422 company_contact_required – ни контакта компании, ни пригодной почты отправителя (E05: кандидат должен
+ * видеть способ связи до ответа); 429 – лимит за сутки; 403 company_blocked – отправка закрыта из-за жалоб.
  * Лимит, жалобы и дубль проверяются под advisory-lock компании, чтобы параллельные
  * запросы не обошли счётчик. Жалобы кандидатов за 30 дней снижают лимит (antifraud.invitationSanction).
  */
@@ -167,7 +167,7 @@ export async function createInvitation(
   limit?: number,
 ): Promise<{ id: string; status: InvitationStatus }> {
   const [baseLimit, sanctions, windowDays] = await Promise.all([limit ?? getSetting('employer.dailyInvitationLimit'), getSetting('employer.complaintSanctions'), getSetting('employer.complaintWindowDays')]);
-  // Приглашения — только после оферты и обязательства по данным кандидатов (ADR 0005).
+  // Приглашения – только после оферты и обязательства по данным кандидатов (ADR 0005).
   const sender = await prisma.employerProfile.findUnique({
     where: { id: ctx.employerProfileId },
     select: { userId: true, user: { select: { email: true } }, company: { select: { contact: true } } },
@@ -180,7 +180,7 @@ export async function createInvitation(
     const v = await prisma.vacancy.findFirst({ where: { id: input.vacancyId, companyId: ctx.companyId, archivedAt: null }, select: { id: true } });
     if (!v) throw errors.notFound('Потребность не найдена');
   }
-  // E05: кандидат видит способ связи до ответа — без контакта компании и пригодной почты отправителя не отправляем.
+  // E05: кандидат видит способ связи до ответа – без контакта компании и пригодной почты отправителя не отправляем.
   if (!companyInviteContact({ contact: sender.company.contact, senderEmail: sender.user.email })) throw companyContactRequired();
   const created = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${ctx.companyId}`}))`;
@@ -190,7 +190,7 @@ export async function createInvitation(
       select: { id: true },
     });
     if (open) throw errors.conflict('Кандидат ещё не ответил на прошлое приглашение компании');
-    // lane lifecycle: пауза 14 дней после отказа кандидата или отзыва компанией — под тем же lock, что и дубль.
+    // lane lifecycle: пауза 14 дней после отказа кандидата или отзыва компанией – под тем же lock, что и дубль.
     const past = await tx.invitation.findMany({
       where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: ['declined', 'withdrawn'] }, OR: [{ respondedAt: { gt: new Date(Date.now() - INVITE_COOLDOWN_DAYS * DAY_MS) } }, { withdrawnAt: { gt: new Date(Date.now() - INVITE_COOLDOWN_DAYS * DAY_MS) } }] },
       select: { status: true, respondedAt: true, withdrawnAt: true, withdrawReason: true },
@@ -204,7 +204,7 @@ export async function createInvitation(
         { nextAt: nextAt.toISOString() },
       );
     }
-    // lane complaints: санкция читается тем же tx под тем же lock — решение и вставка в одной транзакции.
+    // lane complaints: санкция читается тем же tx под тем же lock – решение и вставка в одной транзакции.
     const sanction = invitationSanction(await countRecentComplaints(tx, ctx.companyId, new Date(), windowDays), baseLimit, sanctions);
     if (sanction.level === 'blocked') {
       throw new AppError(
@@ -235,15 +235,15 @@ export async function createInvitation(
       select: { id: true, status: true },
     });
   });
-  // lane admin (E-08, фаза 2): сработавшие красные флаги — в очередь модератора; сбой очереди отправку не роняет.
+  // lane admin (E-08, фаза 2): сработавшие красные флаги – в очередь модератора; сбой очереди отправку не роняет.
   await queueInvitationRedFlags(created.id);
-  // lane: email-auth — письмо кандидату, не задерживая ответ работодателю.
+  // lane: email-auth – письмо кандидату, не задерживая ответ работодателю.
   void notifyInBackground('invitation', () => notifyCandidateInvited(created.id));
   void notifyInBackground('ats', () => notifyAtsStatusChanged(created.id));
   return created;
 }
 
-/** Письмо кандидату о новом приглашении (компания, позиция, зарплата). Служебный адрес — пропуск. */
+/** Письмо кандидату о новом приглашении (компания, позиция, зарплата). Служебный адрес – пропуск. */
 export async function notifyCandidateInvited(invitationId: string): Promise<void> {
   const inv = await prisma.invitation.findUnique({
     where: { id: invitationId },
@@ -260,7 +260,7 @@ export async function notifyCandidateInvited(invitationId: string): Promise<void
   await sendMail(invitationMail(inv.candidate.email, { companyName, vacancyTitle: inv.vacancy?.title ?? null, salaryFrom: inv.salaryFrom, salaryTo: inv.salaryTo }));
 }
 
-/** Письмо работодателю-отправителю об ответе кандидата. Нет отправителя или почты — пропуск. */
+/** Письмо работодателю-отправителю об ответе кандидата. Нет отправителя или почты – пропуск. */
 export async function notifyEmployerAnswered(invitationId: string, accepted: boolean): Promise<void> {
   const inv = await prisma.invitation.findUnique({
     where: { id: invitationId },
@@ -271,7 +271,7 @@ export async function notifyEmployerAnswered(invitationId: string, accepted: boo
   await sendMail(invitationAnswerMail(to, { accepted, vacancyTitle: inv.vacancy?.title ?? null }));
 }
 
-/** Приглашения компании с карточкой кандидата: контакты — только у принятых. */
+/** Приглашения компании с карточкой кандидата: контакты – только у принятых. */
 export async function listCompanyInvitations(companyId: string): Promise<EmployerInvitationView[]> {
   const rows = await prisma.invitation.findMany({
     where: { companyId },
@@ -306,7 +306,7 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
   if (rows.length === 0) return [];
   const catalog = await loadCatalog();
   const pool = new Map((await loadPool(catalog)).map((p) => [p.evidence.id, p.claimsPublic]));
-  // Имя и контакты — только по принятому приглашению с действующим раскрытием (Г5, ADR 0005): отзыв возвращает псевдоним.
+  // Имя и контакты – только по принятому приглашению с действующим раскрытием (Г5, ADR 0005): отзыв возвращает псевдоним.
   const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
   const accepted = new Set(rows.filter((r) => disclosed.has(r.id)).map((r) => r.candidateId));
   const live = await liveDefenseViews(rows.map((r) => r.id), 'employer');
@@ -342,7 +342,7 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
 }
 
 /**
- * Входящие приглашения кандидата (R-C-11, R-C-16: только свои). `markViewed` —
+ * Входящие приглашения кандидата (R-C-11, R-C-16: только свои). `markViewed` –
  * открытие страницы переводит sent → viewed.
  */
 export async function listCandidateInvitations(candidateId: string, markViewed = false): Promise<CandidateInvitationView[]> {
@@ -426,9 +426,9 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
 }
 
 /**
- * Ответ кандидата. Чужое — 404; уже отвеченное — 409. Условный update — без гонки двойного ответа.
+ * Ответ кандидата. Чужое – 404; уже отвеченное – 409. Условный update – без гонки двойного ответа.
  * accept требует отдельного подтверждения раскрытия имени и контактов этому работодателю (Г5, ADR 0005):
- * без `disclosureVersion` — 409 consent_required, приглашение остаётся открытым. Статус и согласие — одной транзакцией.
+ * без `disclosureVersion` – 409 consent_required, приглашение остаётся открытым. Статус и согласие – одной транзакцией.
  */
 export async function respondInvitation(candidateId: string, invitationId: string, action: 'accept' | 'decline', disclosureVersion?: string) {
   const inv = await prisma.invitation.findFirst({ where: { id: invitationId, candidateId }, select: { id: true } });
@@ -459,8 +459,8 @@ export async function respondInvitation(candidateId: string, invitationId: strin
 
 /**
  * lane hired: работодатель отмечает найм по своему принятому приглашению (accepted → hired).
- * Чужое или несуществующее — 404; уже hired — идемпотентно возвращает текущее состояние; иной статус — 409.
- * Условный update — без гонки с отзывом/повторной отметкой.
+ * Чужое или несуществующее – 404; уже hired – идемпотентно возвращает текущее состояние; иной статус – 409.
+ * Условный update – без гонки с отзывом/повторной отметкой.
  */
 export async function markInvitationHired(companyId: string, invitationId: string): Promise<{ id: string; status: InvitationStatus; hiredAt: string }> {
   const inv = await prisma.invitation.findFirst({ where: { id: invitationId, companyId }, select: { status: true, hiredAt: true, candidateId: true } });
@@ -468,8 +468,8 @@ export async function markInvitationHired(companyId: string, invitationId: strin
   if (inv.status === 'hired') return { id: invitationId, status: 'hired', hiredAt: (inv.hiredAt ?? new Date()).toISOString() };
   if (inv.status !== 'accepted') throw errors.conflict('Отметить найм можно только по принятому приглашению');
   const now = new Date();
-  // lane lifecycle: найм, закрытие открытых приглашений и самооткликов других компаний — одной транзакцией под lock
-  // кандидата: две компании не наймут одного кандидата одновременно (вторая получит 409 — её приглашение уже closed_hired).
+  // lane lifecycle: найм, закрытие открытых приглашений и самооткликов других компаний – одной транзакцией под lock
+  // кандидата: две компании не наймут одного кандидата одновременно (вторая получит 409 – её приглашение уже closed_hired).
   const closed = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hire:${inv.candidateId}`}))`;
     const r = await tx.invitation.updateMany({ where: { id: invitationId, companyId, status: 'accepted' }, data: { status: 'hired', hiredAt: now } });
@@ -489,8 +489,8 @@ export async function markInvitationHired(companyId: string, invitationId: strin
 }
 
 /**
- * lane lifecycle: кандидат нанят компанией `companyId` — его открытые приглашения других компаний (sent/viewed/accepted)
- * становятся closed_hired (closedAt), открытые самоотклики к другим компаниям (sent/viewed) — closed с причиной.
+ * lane lifecycle: кандидат нанят компанией `companyId` – его открытые приглашения других компаний (sent/viewed/accepted)
+ * становятся closed_hired (closedAt), открытые самоотклики к другим компаниям (sent/viewed) – closed с причиной.
  * Раскрытие по закрытым приглашениям прекращается (как при отзыве). Компании B видят уведомление без имени A.
  */
 async function closeOthersOnHire(tx: Prisma.TransactionClient, companyId: string, candidateId: string, now: Date): Promise<{ invitationIds: string[]; applicationIds: string[] }> {
@@ -515,10 +515,10 @@ async function closeOthersOnHire(tx: Prisma.TransactionClient, companyId: string
 }
 
 /**
- * lane lifecycle: вакансия закрыта (архив) — открытые приглашения на неё (sent/viewed) отзываются через withdrawInvitation
+ * lane lifecycle: вакансия закрыта (архив) – открытые приглашения на неё (sent/viewed) отзываются через withdrawInvitation
  * с причиной «Вакансия закрыта» (пауза 14 дней от такого отзыва не действует), accepted не трогаются (контакт уже есть);
  * открытые самоотклики (sent/viewed) закрываются с той же причиной. Гонка с ответом кандидата: отзыв уже принятого
- * в этот момент приглашения — тоже отзыв (withdrawInvitation допускает accepted), поэтому выбираем только sent/viewed
+ * в этот момент приглашения – тоже отзыв (withdrawInvitation допускает accepted), поэтому выбираем только sent/viewed
  * и пропускаем те, что за это время ушли в финальный статус (409).
  */
 export async function closeVacancyPipelines(
@@ -553,9 +553,9 @@ export const WITHDRAW_REASON = { minChars: 3, maxChars: 300 } as const;
 
 /**
  * lane invite-cancel: работодатель отзывает приглашение своей компании с причиной (sent | viewed | accepted → withdrawn).
- * Чужое — 404; hired, declined, уже отозванное — 409 `invitation_not_withdrawable`. Одной транзакцией: статус, закрытие
+ * Чужое – 404; hired, declined, уже отозванное – 409 `invitation_not_withdrawable`. Одной транзакцией: статус, закрытие
  * слотов живой защиты и ожидающей сессии (live-defense), отзыв раскрытия по этому приглашению (как отзыв кандидатом).
- * Лимит приглашений в сутки считается по createdAt — отзыв его не возвращает. Кандидату — уведомление в ленте
+ * Лимит приглашений в сутки считается по createdAt – отзыв его не возвращает. Кандидату – уведомление в ленте
  * (notifications.ts по withdrawnAt) и письмо.
  */
 export async function withdrawInvitation(
@@ -563,7 +563,7 @@ export async function withdrawInvitation(
   invitationId: string,
   rawReason: string,
   now = new Date(),
-  /** lane lifecycle: из каких статусов отзывать (архив вакансии — только sent/viewed, принятое не трогает). */
+  /** lane lifecycle: из каких статусов отзывать (архив вакансии – только sent/viewed, принятое не трогает). */
   from: readonly InvitationStatus[] = WITHDRAWABLE,
 ): Promise<{ id: string; status: InvitationStatus; withdrawn: { at: string; reason: string } }> {
   const reason = rawReason.trim();
@@ -589,7 +589,7 @@ export async function withdrawInvitation(
   return { id: invitationId, status: 'withdrawn', withdrawn: { at: now.toISOString(), reason } };
 }
 
-/** Письмо кандидату об отзыве приглашения. Служебный адрес — пропуск. */
+/** Письмо кандидату об отзыве приглашения. Служебный адрес – пропуск. */
 export async function notifyCandidateWithdrawn(invitationId: string): Promise<void> {
   const inv = await prisma.invitation.findUnique({
     where: { id: invitationId },
@@ -612,7 +612,7 @@ export async function getCandidateContact(candidateId: string): Promise<{ contac
   return c;
 }
 
-/** contact уже нормализован ContactSchema; null — убрать (останется почта аккаунта, если она не служебная). */
+/** contact уже нормализован ContactSchema; null – убрать (останется почта аккаунта, если она не служебная). */
 export async function setCandidateContact(candidateId: string, contact: string | null): Promise<{ contact: string | null }> {
   const r = await prisma.candidate.updateMany({ where: { id: candidateId }, data: { contact } });
   if (r.count === 0) throw errors.notFound('Кандидат не найден');
@@ -621,9 +621,9 @@ export async function setCandidateContact(candidateId: string, contact: string |
 
 /** Настройка приватности (R-C-13): скрыть себя из подборок и поиска работодателей. */
 export async function setPrivacy(candidateId: string, hiddenFromEmployers: boolean) {
-  // Показ работодателям — согласие Г4 (ADR 0005): переключатель даёт или отзывает его. Профиль без аккаунта
-  // (демо-пул сида) согласий не хранит — у него меняется только флаг.
-  // E-08 фаза 3: профиль скрыт модератором (фейк, жалоба) — вернуть в поиск может только модератор.
+  // Показ работодателям – согласие Г4 (ADR 0005): переключатель даёт или отзывает его. Профиль без аккаунта
+  // (демо-пул сида) согласий не хранит – у него меняется только флаг.
+  // E-08 фаза 3: профиль скрыт модератором (фейк, жалоба) – вернуть в поиск может только модератор.
   if (!hiddenFromEmployers && (await isHiddenByModerator(candidateId))) throw errors.forbidden('Профиль скрыт модератором платформы. Чтобы вернуть его в поиск, напишите в поддержку.');
   const userId = await userIdForCandidate(candidateId);
   if (userId && !hiddenFromEmployers) await grantConsent(userId, { kind: 'employer_visibility', version: consentVersion('employer_visibility') });

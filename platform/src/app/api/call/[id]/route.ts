@@ -8,8 +8,8 @@ export const runtime = 'nodejs';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * GET /api/call/{id} — статус, транскрипт и вердикт с учётом роли: кандидату — всё; работодателю до
- * принятого приглашения — только оценки по темам (`access: summary`), после — всё.
+ * GET /api/call/{id} – статус, транскрипт и вердикт с учётом роли: кандидату – всё; работодателю до
+ * принятого приглашения – только оценки по темам (`access: summary`), после – всё.
  */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   if (!getSession(req)) throw errors.unauthorized();

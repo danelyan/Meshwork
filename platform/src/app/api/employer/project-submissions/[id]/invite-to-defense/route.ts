@@ -11,13 +11,13 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST `{ message, salaryFrom, salaryTo }` — позвать автора сдачи на защиту: приглашение с вилкой по потребности
- * задания (R-E-05) и сессия защиты (lane call). Только проверенная сдача; повторно — 409.
+ * POST `{ message, salaryFrom, salaryTo }` – позвать автора сдачи на защиту: приглашение с вилкой по потребности
+ * задания (R-E-05) и сессия защиты (lane call). Только проверенная сдача; повторно – 409.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);
   const { employerProfileId, userId } = requireEmployer(req);
-  await assertEmployerConsents(userId); // ADR 0005: данные кандидатов — после оферты и обязательства
+  await assertEmployerConsents(userId); // ADR 0005: данные кандидатов – после оферты и обязательства
   const { id } = await params;
   const input = InviteToDefenseInput.parse(await req.json().catch(() => ({})));
   const ctx = await loadEmployerContext(employerProfileId);

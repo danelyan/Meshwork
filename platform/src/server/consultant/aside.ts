@@ -37,7 +37,7 @@ export interface AsideDoc {
   kind: 'file' | 'link';
   /** «разобран, 3 утверждения» / «разбирается». */
   status: string;
-  /** Файл: оригинал сохранён — можно скачать (GET /api/uploads/:id/file). У ссылок и старых загрузок нет. */
+  /** Файл: оригинал сохранён – можно скачать (GET /api/uploads/:id/file). У ссылок и старых загрузок нет. */
   hasFile?: boolean;
 }
 
@@ -45,21 +45,21 @@ export interface AsideDoc {
 export type KnownSource = 'onboarding' | 'chat' | 'user';
 
 /**
- * Пункт карточки «Что я о тебе знаю». Знакомство — производное (ответ шага; поправить = вернуться к шагу
- * в ленте, удалить нельзя); chat/user — строки ConsultantMemory (поправить и удалить через /api/consultant/memory).
+ * Пункт карточки «Что я о тебе знаю». Знакомство – производное (ответ шага; поправить = вернуться к шагу
+ * в ленте, удалить нельзя); chat/user – строки ConsultantMemory (поправить и удалить через /api/consultant/memory).
  */
 export interface KnownFact {
-  /** Знакомство — `step:<stepId>`, память — id строки. */
+  /** Знакомство – `step:<stepId>`, память – id строки. */
   id: string;
   source: KnownSource;
   /** Только у знакомства: шаг, к которому ведёт «изменить». */
   stepId?: string;
-  /** Знакомство — имя шага; память — пусто (подпись источника рисует карточка). */
+  /** Знакомство – имя шага; память – пусто (подпись источника рисует карточка). */
   label: string;
   value: string;
-  /** Можно поправить: у знакомства — шаг открывается в ленте; у памяти — всегда. */
+  /** Можно поправить: у знакомства – шаг открывается в ленте; у памяти – всегда. */
   editable: boolean;
-  /** Когда запомнено (только память) — для подсветки «новое». */
+  /** Когда запомнено (только память) – для подсветки «новое». */
   createdAt?: string;
 }
 
@@ -70,16 +70,16 @@ export interface SceneStat {
   note: string;
 }
 
-/** Сводка кандидата — только факты из базы, без оценок и прогнозов (F13: вероятность приглашения не считаем). Две плитки (решение владельца 12.10). */
+/** Сводка кандидата – только факты из базы, без оценок и прогнозов (F13: вероятность приглашения не считаем). Две плитки (решение владельца 12.10). */
 export function candidateStats(f: { confirmed: number; category: { specialization: string; grade: string } | null }): SceneStat[] {
   const cat = f.category;
   return [
     { label: 'Навыков подтверждено', value: String(f.confirmed), note: f.confirmed ? 'видны работодателям в карточке' : 'пришли резюме или ссылку' },
-    { label: 'Категория', value: cat ? `${SPEC_LABEL[cat.specialization as keyof typeof SPEC_LABEL] ?? cat.specialization} · ${gradeLabel(cat.grade)}` : '—', note: cat ? 'по тесту платформы' : 'даёт только тест' },
+    { label: 'Категория', value: cat ? `${SPEC_LABEL[cat.specialization as keyof typeof SPEC_LABEL] ?? cat.specialization} · ${gradeLabel(cat.grade)}` : '–', note: cat ? 'по тесту платформы' : 'даёт только тест' },
   ];
 }
 
-/** Строка «рынка»: категория (специализация × грейд) и сколько в ней; mine — совпадает с категорией/потребностью пользователя. */
+/** Строка «рынка»: категория (специализация × грейд) и сколько в ней; mine – совпадает с категорией/потребностью пользователя. */
 export interface MarketRow {
   key: string;
   label: string;
@@ -87,10 +87,10 @@ export interface MarketRow {
   mine: boolean;
 }
 
-/** Данные блока под текущий шаг пути кандидата. Нет данных — блок не рисуется. */
+/** Данные блока под текущий шаг пути кандидата. Нет данных – блок не рисуется. */
 /**
  * Что мешает сделать шаг прямо сейчас (другое правило платформы): путь показывает блокер и ведёт к его снятию,
- * а не к кнопке, которая ответит ошибкой. href — куда идти; action — действие кнопкой в колонке.
+ * а не к кнопке, которая ответит ошибкой. href – куда идти; action – действие кнопкой в колонке.
  */
 export interface StepBlocker {
   text: string;
@@ -99,22 +99,22 @@ export interface StepBlocker {
 }
 
 /** Без согласия на оценку ИИ тест, созвон и защиты отвечают 409 (consent/service.ts, assertAiAssessmentConsent). */
-export const AI_CONSENT_BLOCKER: StepBlocker = { text: 'Сначала — согласие на оценку ИИ: без него тест, созвон и защита не запустятся', action: 'grant_ai_assessment' };
+export const AI_CONSENT_BLOCKER: StepBlocker = { text: 'Сначала – согласие на оценку ИИ: без него тест, созвон и защита не запустятся', action: 'grant_ai_assessment' };
 /** Скрытый профиль (флаг или нет согласия employer_visibility) в поиске работодателей не показывается. */
-export const HIDDEN_BLOCKER: StepBlocker = { text: 'Профиль скрыт — компании тебя не видят', href: '/settings' };
+export const HIDDEN_BLOCKER: StepBlocker = { text: 'Профиль скрыт – компании тебя не видят', href: '/settings' };
 
 const AI_CONSENT_KEYS: readonly JourneyKey[] = ['test', 'call', 'project', 'ai_defense', 'live_defense'];
 /** id шага пути колонки по шагу journeyState. */
 const ASIDE_ID: Partial<Record<JourneyKey, string>> = { onboarding: 'intro', test: 'test', call: 'call', project: 'project', ai_defense: 'ai_defense', waiting: 'invites', invitations: 'invites', live_defense: 'live_defense', hired: 'hired' };
 
-/** Блокер текущего шага по фактам: согласие на ИИ — для оцениваемых шагов, скрытость — для приглашений. */
+/** Блокер текущего шага по фактам: согласие на ИИ – для оцениваемых шагов, скрытость – для приглашений. */
 export function stepBlocker(step: JourneyKey, f: { aiConsent: boolean; hidden: boolean }): StepBlocker | undefined {
   if (!f.aiConsent && AI_CONSENT_KEYS.includes(step)) return AI_CONSENT_BLOCKER;
   if (f.hidden && (step === 'waiting' || step === 'invitations')) return HIDDEN_BLOCKER;
   return undefined;
 }
 
-/** Нота шага в пути отражает блокер: скрытый профиль — у «Приглашений», нет согласия — у текущего оцениваемого шага. */
+/** Нота шага в пути отражает блокер: скрытый профиль – у «Приглашений», нет согласия – у текущего оцениваемого шага. */
 export function blockerNotes(steps: JourneyStep[], step: JourneyKey, f: { aiConsent: boolean; hidden: boolean }): JourneyStep[] {
   const nowId = !f.aiConsent && AI_CONSENT_KEYS.includes(step) ? ASIDE_ID[step] : undefined;
   return steps.map((s) => {
@@ -131,7 +131,7 @@ export interface CooldownCopy {
   note: string;
 }
 
-/** Тест: пересдача того же грейда закрыта интервалом (retake_too_soon); другой грейд открыт — так и пишем. */
+/** Тест: пересдача того же грейда закрыта интервалом (retake_too_soon); другой грейд открыт – так и пишем. */
 export function retakeCopy(c: { grade: string; nextAllowedAt: Date; demo: boolean }, now: Date = new Date()): CooldownCopy {
   const ms = Math.max(0, c.nextAllowedAt.getTime() - now.getTime());
   const wait = c.demo ? `${Math.max(1, Math.ceil(ms / 60_000))} мин` : `${Math.max(1, Math.ceil(ms / 86_400_000))} дн.`;
@@ -172,17 +172,17 @@ export interface StepBlock {
   blocker?: StepBlocker;
   /** waiting / invitations / live_defense: счётчики приглашений. */
   invitations?: { pending: number; accepted: number; total: number };
-  /** project / ai_defense: сдача (последняя; для ИИ-защиты — последняя проверенная); null — сдач ещё нет. */
+  /** project / ai_defense: сдача (последняя; для ИИ-защиты – последняя проверенная); null – сдач ещё нет. */
   project?: { taskId: string; title: string; status: 'submitted' | 'running' | 'checked' | 'failed' } | null;
   /** hired: компания, отметившая найм. */
   hired?: { company: string } | null;
-  /** live_defense: подстатус живой защиты по принятому приглашению (нет записи — 'none'). */
+  /** live_defense: подстатус живой защиты по принятому приглашению (нет записи – 'none'). */
   live?: LiveStepInfo;
-  /** project: приглашение принято, а проверенного проекта нет — компания ждёт проект, без него защиту не назначить. */
+  /** project: приглашение принято, а проверенного проекта нет – компания ждёт проект, без него защиту не назначить. */
   forLive?: boolean;
   /**
    * test: спрос в направлении кандидата (из знакомства) - одна строка вместо таблицы по всем направлениям (владелец 11.10:
-   * «какой смысл … если у пользователя и так один определённый стек»). Направление не выбрано — таблица market помогает выбрать.
+   * «какой смысл … если у пользователя и так один определённый стек»). Направление не выбрано – таблица market помогает выбрать.
    */
   demand?: { direction: string; total: number; detail: string };
 }
@@ -194,27 +194,27 @@ export interface SceneAsideData {
   known?: KnownFact[];
   /** Кандидату: сводка на сцене рядом с головой (владелец 11.10: «часть свободного места метриками залить»). */
   stats?: SceneStat[];
-  /** Кандидату: следующий незаполненный вопрос анкеты — открывается в чате кнопкой «дополнить». */
+  /** Кандидату: следующий незаполненный вопрос анкеты – открывается в чате кнопкой «дополнить». */
   fill?: { stepId: string; label: string };
-  /** Идёт извлечение фактов из последней реплики — колонка перечитает данные ещё раз. */
+  /** Идёт извлечение фактов из последней реплики – колонка перечитает данные ещё раз. */
   memoryPending?: boolean;
   /** Лимит пунктов памяти (chat + user). */
   memoryLimit?: number;
-  /** Кандидату — активные потребности компаний по категориям; работодателю — кандидаты с категорией по тесту. */
+  /** Кандидату – активные потребности компаний по категориям; работодателю – кандидаты с категорией по тесту. */
   market?: { total: number; rows: MarketRow[] };
   /** Загруженное кандидатом; у работодателя null (блок не показывается). */
   docs: AsideDoc[] | null;
   hint: { title: string; text: string };
   /** Кандидату: блок под текущий шаг пути (journeyState.nextStep); у работодателя нет. */
   stepBlock?: StepBlock;
-  /** Идёт знакомство: колонка — только «Заполнение профиля» и «Что я о тебе знаю», остального нет. */
+  /** Идёт знакомство: колонка – только «Заполнение профиля» и «Что я о тебе знаю», остального нет. */
   onboarding?: { done: number; total: number; current: string | null };
-  /** Полоса этапов знакомства над чатом (stages.ts); нет — полоса не рисуется. */
+  /** Полоса этапов знакомства над чатом (stages.ts); нет – полоса не рисуется. */
   stages?: IntroStages;
 }
 
 /**
- * Знакомство не завершено (до итога) — и когда вопрос открыт, и когда необязательные вопросы ждут в чате
+ * Знакомство не завершено (до итога) – и когда вопрос открыт, и когда необязательные вопросы ждут в чате
  * (пауза `later`). Владелец 11.10: «надо минимализм держать весь онбординг… две карточки только сделать и
  * все справа в нижней части и больше ничего».
  */
@@ -223,7 +223,7 @@ export const onboardingMode = (view: OnboardingView | undefined): boolean => !!v
 /** Колонка на время знакомства: прогресс анкеты и ответы (мой вид / для компании), без рынка, файлов и метрик. */
 export function onboardingAside(role: SceneAsideData['role'], view: OnboardingView, known: Pick<SceneAsideData, 'known' | 'memoryPending' | 'memoryLimit'>): SceneAsideData {
   const current = view.current.kind === 'summary' ? null : view.current.label;
-  // Пауза: следующий вопрос — пункт «+ дополнить» в «Что я о тебе знаю», как в полной колонке.
+  // Пауза: следующий вопрос – пункт «+ дополнить» в «Что я о тебе знаю», как в полной колонке.
   const fill = view.later && current ? { stepId: view.current.id, label: current } : undefined;
   return { role, steps: [], ...known, docs: null, hint: { title: '', text: '' }, onboarding: { done: view.progress.done, total: view.progress.total, current: view.later ? null : current }, ...(fill ? { fill } : {}) };
 }
@@ -233,11 +233,11 @@ export function guestAside(view: OnboardingView): SceneAsideData {
   return onboardingAside(view.role === 'employer' ? 'employer' : 'candidate', view, { known: knownFacts(view) });
 }
 
-/** final — завершающий шаг пути (lane hired: «Нанят»): может быть «готов», тогда весь путь пройден. */
+/** final – завершающий шаг пути (lane hired: «Нанят»): может быть «готов», тогда весь путь пройден. */
 type StepDraft = Omit<JourneyStep, 'state'> & { done: boolean; final?: boolean; /** Своё условие вместо цепочки предыдущих шагов. */ lockedNote?: string };
 
 /**
- * Первый незавершённый шаг — «сейчас», до него — «готово», после — «дальше».
+ * Первый незавершённый шаг – «сейчас», до него – «готово», после – «дальше».
  * Последний шаг («приглашения») не бывает «готов»: если все предыдущие пройдены, он «сейчас».
  */
 export function markStates(drafts: StepDraft[]): JourneyStep[] {
@@ -286,7 +286,7 @@ export function memoryFacts(items: MemoryItem[]): KnownFact[] {
   return items.map((m) => ({ id: m.id, source: m.source, label: '', value: m.text, editable: true, createdAt: m.createdAt }));
 }
 
-/** Знакомство + память; сбой чтения памяти — только знакомство (колонка не ломается). */
+/** Знакомство + память; сбой чтения памяти – только знакомство (колонка не ломается). */
 async function knownWithMemory(owner: MemoryOwner, view: OnboardingView | undefined): Promise<Pick<SceneAsideData, 'known' | 'memoryPending' | 'memoryLimit'>> {
   const memory = await listMemory(owner).catch((err: unknown) => {
     console.warn('[aside] memory failed', err instanceof Error ? err.message : err);
@@ -321,20 +321,20 @@ export interface CandidateFacts {
   confirmed: number;
   category: { specialization: string; grade: string } | null;
   invitations: number;
-  /** Порядок пути — решение владельца 11.10 (ADR 0008), считает agent/journey.ts. Не заданы — шаг не пройден. */
+  /** Порядок пути – решение владельца 11.10 (ADR 0008), считает agent/journey.ts. Не заданы – шаг не пройден. */
   call?: boolean;
   project?: boolean;
   aiDefense?: boolean;
   /** Принятых приглашений: ответ дан, дальше живая защита. */
   accepted?: number;
-  /** lane hired: компания отметила найм по принятому приглашению — финальный этап пути. */
+  /** lane hired: компания отметила найм по принятому приглашению – финальный этап пути. */
   hired?: { company: string } | null;
 }
 
 /** Знакомство → тест → квалифицирующий созвон → проект → ИИ-защита → приглашения → живая защита → нанят. */
 /** Шаги вне порядка (приглашение, живая защита, найм) приоритетнее по journeyState.nextStep: «сейчас» - у них, чтобы путь и блок шага показывали одно. */
 const PRIORITY_STEP: Partial<Record<string, string>> = { invitations: 'invites', live_defense: 'live_defense', hired: 'hired' };
-/** liveWaitsProject: приглашение принято, проекта нет — «сейчас» у проекта (без него компания не назначит защиту). */
+/** liveWaitsProject: приглашение принято, проекта нет – «сейчас» у проекта (без него компания не назначит защиту). */
 export function promoteNow(steps: JourneyStep[], nextStep: string, liveWaitsProject = false): JourneyStep[] {
   const id = PRIORITY_STEP[nextStep] ?? (nextStep === 'project' && liveWaitsProject ? 'project' : undefined);
   if (!id || !steps.some((s) => s.id === id)) return steps;
@@ -397,16 +397,16 @@ export function employerSteps(f: EmployerFacts): JourneyStep[] {
       done: f.needs > 0,
     },
     { id: 'search', label: 'Поиск по базе', short: 'Поиск', note: 'подборка с обоснованием по каждому кандидату', href: '/employer/search', done: f.invitations > 0 },
-    { id: 'invites', label: 'Приглашения', short: 'Приглашения', note: f.invitations > 0 ? `отправлено: ${f.invitations}` : 'вилка и способ связи — в самом приглашении', href: '/employer/invitations', done: false },
+    { id: 'invites', label: 'Приглашения', short: 'Приглашения', note: f.invitations > 0 ? `отправлено: ${f.invitations}` : 'вилка и способ связи – в самом приглашении', href: '/employer/invitations', done: false },
   ]);
 }
 
-// Кандидату знакомство — вопросы в чате, «паузы» нет (решение владельца 11.10); у работодателя пауза осталась.
+// Кандидату знакомство – вопросы в чате, «паузы» нет (решение владельца 11.10); у работодателя пауза осталась.
 const introNote = (view: OnboardingView | undefined, done: boolean, paused = true, answers = 1) =>
   // Пройдено без единого ответа (аккаунт без ленты, пропущенные вопросы): говорим это прямо, а не «пройдено» рядом с «Пока ничего».
   done || !view ? (answers > 0 ? 'пройдено' : 'без ответов - расскажи о себе в чате') : `${view.progress.done} из ${view.progress.total}${paused && view.later ? ', на паузе' : ''}`;
 
-/** Подсказка по текущему шагу. Тексты — из существующих описаний экранов и шагов знакомства. */
+/** Подсказка по текущему шагу. Тексты – из существующих описаний экранов и шагов знакомства. */
 export function hintFor(role: 'candidate' | 'employer', steps: JourneyStep[], view: OnboardingView | undefined): { title: string; text: string } {
   const now = steps.find((s) => s.state === 'now');
   if (now?.id === 'intro' && view) {
@@ -439,7 +439,7 @@ export async function loadCandidateDocs(candidateId: string): Promise<AsideDoc[]
     const n = claims.filter((c) => c.sourceRef.startsWith(`${u.filename}#`)).length;
     return { id: u.id, name: u.filename, kind: 'file', status: u.extracted ? status(n) : 'разбирается', hasFile: Boolean(u.storageKey) };
   });
-  // Как у файлов — по sourceRef: связь Claim.sourceId конвейер не заполняет. Строки источника — `origin#…`,
+  // Как у файлов – по sourceRef: связь Claim.sourceId конвейер не заполняет. Строки источника – `origin#…`,
   // у GitHub ещё и `github:логин/репозиторий#…` (collector/github.ts).
   const fromSource = (s: { kind: string; origin: string }, ref: string) => ref.startsWith(`${s.origin}#`) || (s.kind === 'github' && ref.startsWith(`${s.origin}/`));
   const links = sources.map((s): AsideDoc => ({ id: s.id, name: s.origin.replace(/^https?:\/\//, ''), kind: 'link', status: status(claims.filter((c) => fromSource(s, c.sourceRef)).length) }));
@@ -458,7 +458,7 @@ async function loadLatestSubmissions(candidateId: string) {
   return { latest: latest ? view(latest) : null, checked: checked ? view(checked) : null };
 }
 
-/** Спрос в направлении кандидата: «4 вакансии · Junior 2 · Middle 2». Вакансий в направлении нет — undefined (строка не рисуется). */
+/** Спрос в направлении кандидата: «4 вакансии · Junior 2 · Middle 2». Вакансий в направлении нет – undefined (строка не рисуется). */
 export function demandFor(vacancies: { specialization: string; grade: string }[], spec: string | null | undefined): StepBlock['demand'] {
   if (!spec) return undefined;
   const { total, rows } = marketRows(vacancies.filter((v) => v.specialization === spec), () => false);
@@ -466,7 +466,7 @@ export function demandFor(vacancies: { specialization: string; grade: string }[]
   return { direction: SPEC[spec] ?? spec, total, detail: rows.map((r) => `${r.label.replace(/^.* · /, '')} ${r.count}`).join(' · ') };
 }
 
-/** Живая защита по принятым приглашениям: подстатус, время (МСК — при показе), компания. */
+/** Живая защита по принятым приглашениям: подстатус, время (МСК – при показе), компания. */
 async function loadLive(candidateId: string): Promise<LiveStepInfo> {
   const accepted = await prisma.invitation.findMany({
     where: { candidateId, status: 'accepted' },
@@ -485,14 +485,14 @@ async function loadLive(candidateId: string): Promise<LiveStepInfo> {
   return pickLive(items) ?? { status: 'none' };
 }
 
-/** Нота шага «Живая защита» в пути — по подстатусу (то же, что в карточке, коротко). */
+/** Нота шага «Живая защита» в пути – по подстатусу (то же, что в карточке, коротко). */
 export function liveNote(steps: JourneyStep[], live: LiveStepInfo | undefined): JourneyStep[] {
   if (!live) return steps;
   const note = liveStepCopy(live).note;
   return steps.map((s) => (s.id === 'live_defense' && s.state !== 'done' ? { ...s, note } : s));
 }
 
-/** Блок под текущий шаг: что нужно для отрисовки; проект — только там, где он нужен. */
+/** Блок под текущий шаг: что нужно для отрисовки; проект – только там, где он нужен. */
 async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<typeof journeyState>>, invitations: number, demand?: StepBlock['demand']): Promise<StepBlock> {
   const step = journey.nextStep;
   if (step === 'test') return demand ? { step, demand } : { step };
@@ -507,16 +507,16 @@ async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<ty
   return { step };
 }
 
-/** Полоса этапов — украшение над чатом: сбой чтения не ломает колонку, полосы просто нет. */
+/** Полоса этапов – украшение над чатом: сбой чтения не ломает колонку, полосы просто нет. */
 const warnStages = (err: unknown): undefined => {
   console.warn('[aside] stages failed', err instanceof Error ? err.message : err);
   return undefined;
 };
 
 /**
- * Этапы знакомства кандидата: ответы ленты, а где её нет — сохранённые ответы и поля профиля. Категория — только из теста.
+ * Этапы знакомства кандидата: ответы ленты, а где её нет – сохранённые ответы и поля профиля. Категория – только из теста.
  * «Резюме и опыт»: файл, ссылка, рассказ в чате, подтверждённые утверждения или ответ про опыт. Привязка ФСП ID создаёт
- * источник и без достижений (fsp-id/link.ts) — материалом об опыте она не считается.
+ * источник и без достижений (fsp-id/link.ts) – материалом об опыте она не считается.
  */
 async function loadCandidateStages(candidateId: string, view: OnboardingView | undefined, f: { specialization: string | null | undefined; category: { specialization: string; grade: string } | null; claims: number }): Promise<IntroStages> {
   const [profile, uploads, sources, saved] = await Promise.all([
@@ -574,8 +574,8 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
     prisma.candidate.findUnique({ where: { id: candidateId }, select: { specialization: true } }),
   ]);
   const step = journey.nextStep;
-  // Блоки шага: файлы — на знакомстве, спрос компаний — на тесте (строка по направлению кандидата; таблица по всем — только
-  // пока направление не выбрано); остальное — в stepBlock.
+  // Блоки шага: файлы – на знакомстве, спрос компаний – на тесте (строка по направлению кандидата; таблица по всем – только
+  // пока направление не выбрано); остальное – в stepBlock.
   const [docs, vacancies] = await Promise.all([
     step === 'onboarding' ? loadCandidateDocs(candidateId) : Promise.resolve(null),
     step === 'test' ? prisma.vacancy.findMany({ where: { archivedAt: null }, select: { specialization: true, grade: true } }) : Promise.resolve(null),
@@ -596,7 +596,7 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
   ), stepBlock.live), cooldown), step, facts);
   const market = vacancies && !cand?.specialization ? marketRows(vacancies, () => false) : undefined;
   const stats = candidateStats({ confirmed: profileClaims, category });
-  // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).
+  // Следующий незаполненный вопрос анкеты – пункт «дополнить» в «Что я о тебе знаю» (только пока лента – разговор).
   const fill = view?.later && view.current.kind !== 'summary' ? { stepId: view.current.id, label: view.current.label } : undefined;
   const stages = await loadCandidateStages(candidateId, view, { specialization: cand?.specialization, category, claims: profileClaims }).catch(warnStages);
   return { role: 'candidate', steps, ...known, ...(market ? { market } : {}), docs, hint: hintFor('candidate', steps, view), stepBlock, stats, ...(fill ? { fill } : {}), ...(stages ? { stages } : {}) };
@@ -625,7 +625,7 @@ export async function loadEmployerAside(employerProfileId: string, view: Onboard
   const active = vacancies.filter((v) => !v.archived);
   const intro = introDone(view);
   const steps = employerSteps({ intro, introNote: introNote(view, intro), needs: active.length, invitations });
-  // категория кандидата — последняя по тесту; пересдачи не считаем дважды
+  // категория кандидата – последняя по тесту; пересдачи не считаем дважды
   const latest = new Map<string, { specialization: string; grade: string }>();
   for (const c of categories) if (!latest.has(c.candidateId)) latest.set(c.candidateId, c);
   const market = marketRows([...latest.values()], (spec, grade) => active.some((v) => v.specialization === spec && v.grade === grade));

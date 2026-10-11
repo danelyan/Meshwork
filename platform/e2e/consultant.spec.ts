@@ -5,7 +5,7 @@ import { signInAsDemoCandidate } from './helpers';
 // Сценарий С1 «Первый вход: собери мне профиль» (E-01-career-consultant.md § 3).
 // Запускает интегратор: нужны сид демо-кандидатов, collector/agent/claims и LLM_PROVIDER=stub.
 // Резюме: по умолчанию крошечный PDF из кода; своё можно задать E2E_RESUME=/path/cv.pdf
-// (синтетические резюме лежат в eval/resumes/*.md — их надо сначала сконвертировать в PDF).
+// (синтетические резюме лежат в eval/resumes/*.md – их надо сначала сконвертировать в PDF).
 const RESUME: string | { name: string; mimeType: string; buffer: Buffer } = process.env.E2E_RESUME ?? {
   name: 'cv.pdf',
   mimeType: 'application/pdf',

@@ -7,7 +7,7 @@ const SECRET = 'x'.repeat(32);
 const NOW = 1_800_000_000;
 
 describe('кука эксперта', () => {
-  it('подпись и проверка; подделка, чужой секрет и срок — null', () => {
+  it('подпись и проверка; подделка, чужой секрет и срок – null', () => {
     const t = signExpertToken('cand1', SECRET, NOW);
     expect(verifyExpertToken(t, SECRET, NOW + 10)).toBe('cand1');
     expect(verifyExpertToken(t.replace('cand1', 'cand2'), SECRET, NOW)).toBeNull();

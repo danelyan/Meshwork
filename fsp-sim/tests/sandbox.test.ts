@@ -105,7 +105,7 @@ describe('песочница: участники', () => {
     const me = await call('GET', '/me', undefined, 'athlete:FSP-20001');
     expect(me.body!.data.full_name).toBe('Стендов Пётр Ильич');
     expect((await call('GET', '/me/achievements', undefined, 'athlete:FSP-20001')).body!.data).toEqual([]);
-    // Платформе команды согласие дано сразу, демо-партнёру — нет.
+    // Платформе команды согласие дано сразу, демо-партнёру – нет.
     expect((await call('GET', '/athletes/FSP-20001', undefined, 'partner:fsp-career')).status).toBe(200);
     expect((await call('GET', '/athletes/FSP-20001', undefined, 'partner:fsp-partner-demo')).status).toBe(403);
 
@@ -125,7 +125,7 @@ describe('песочница: участники', () => {
     expect((await call('DELETE', `/sandbox/athletes/${id}`)).status).toBe(204);
   });
 
-  it('неверные поля — 400, произвольный текст в имени не проходит', async () => {
+  it('неверные поля – 400, произвольный текст в имени не проходит', async () => {
     for (const bad of [
       { ...person, last_name: '<script>alert(1)</script>' },
       { ...person, first_name: '' },
@@ -184,7 +184,7 @@ describe('песочница: достижения и разряды', () => {
     expect((await call('GET', `/achievements/${manualId}/verify`)).body!.data).toMatchObject({ valid: true, fsp_id: 'FSP-20001', place: 1 });
   });
 
-  it('достижение по соревнованию из набора: место в пределах числа участников, повтор — 409', async () => {
+  it('достижение по соревнованию из набора: место в пределах числа участников, повтор – 409', async () => {
     const ev = dataset.events.find((e) => e.entrant_type === 'individual')!;
     const r = await call('POST', '/sandbox/athletes/FSP-20001/achievements', { event_id: ev.event_id, place: 2 });
     expect(r.status).toBe(201);
@@ -197,7 +197,7 @@ describe('песочница: достижения и разряды', () => {
     expect((await call('POST', '/sandbox/athletes/FSP-20001/achievements', { event_id: 'EV-1999-001', place: 1 })).status).toBe(404);
   });
 
-  it('неверное тело достижения — 400', async () => {
+  it('неверное тело достижения – 400', async () => {
     for (const bad of [
       { place: 1 },
       { event_id: dataset.events[0]!.event_id, event: newEvent, place: 1 },
@@ -213,7 +213,7 @@ describe('песочница: достижения и разряды', () => {
     expect(dq.body!.data).toMatchObject({ status: 'disqualified', place: null });
   });
 
-  it('разряд вносится и удаляется; срок действия — по правилу набора', async () => {
+  it('разряд вносится и удаляется; срок действия – по правилу набора', async () => {
     const r = await call('POST', '/sandbox/athletes/FSP-20001/ranks', { discipline: 'product', rank: 'КМС', assigned_on: '2026-10-01' });
     expect(r.status).toBe(201);
     expect(r.body!.data).toMatchObject({ rank: 'КМС', valid_until: '2029-10-01', basis_achievement_id: null, manual: true });
@@ -224,7 +224,7 @@ describe('песочница: достижения и разряды', () => {
     expect((await call('GET', '/me/ranks', undefined, 'athlete:FSP-20001')).body!.data).toEqual([]);
   });
 
-  it('удаление записи убирает её из API, а соревнование, заведённое вручную, — вместе с последней записью', async () => {
+  it('удаление записи убирает её из API, а соревнование, заведённое вручную, – вместе с последней записью', async () => {
     const eventId = registry.achievementsById.get(manualId)!.event_id;
     expect((await call('DELETE', `/sandbox/achievements/${manualId}`)).status).toBe(204);
     expect((await call('GET', `/achievements/${manualId}/verify`)).body!.data.valid).toBe(false);
@@ -274,7 +274,7 @@ describe('песочница: состояние, удаление и сброс
     expect((await call('DELETE', `/sandbox/athletes/${victim.fsp_id}`)).status).toBe(404);
   });
 
-  it('предел ручных участников — 409 limit_reached', async () => {
+  it('предел ручных участников – 409 limit_reached', async () => {
     const have = registry.changes().manual_athletes;
     for (let i = have; i < SANDBOX_LIMITS.manual_athletes; i += 1) expect((await call('POST', '/sandbox/athletes', person)).status).toBe(201);
     const over = await call('POST', '/sandbox/athletes', person);

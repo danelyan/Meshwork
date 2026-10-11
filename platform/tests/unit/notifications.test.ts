@@ -27,7 +27,7 @@ describe('notification role scopes and read watermarks', () => {
     db.invitation.findMany.mockResolvedValueOnce([{ id: 'i1', createdAt: new Date('2026-10-10T14:00:00Z'), company: { name: 'Компания' }, vacancy: null, salaryFrom: 100000, salaryTo: 200000 }]);
     db.invitation.count.mockResolvedValueOnce(1);
     const feed = await notifications(candidate);
-    // lane invite-cancel: отозванные приглашения — тоже только свои, по времени отзыва.
+    // lane invite-cancel: отозванные приглашения – тоже только свои, по времени отзыва.
     expect(db.invitation.findMany.mock.calls[1]![0].where).toEqual({ candidateId: 'candidate-c', withdrawnAt: { not: null, lte: now } });
     expect(db.invitation.count.mock.calls[1]![0].where).toEqual({ candidateId: 'candidate-c', withdrawnAt: { gt: read, lte: now } });
     expect(db.user.findUnique.mock.calls[0]![0].where).toEqual({ id: 'user-c' });
@@ -36,7 +36,7 @@ describe('notification role scopes and read watermarks', () => {
     expect(feed).toMatchObject({ unread: 1, through: now.toISOString(), items: [{ href: '/invitations', unread: true }] });
   });
 
-  it('lane invite-cancel: отзыв приглашения — уведомление кандидату с причиной', async () => {
+  it('lane invite-cancel: отзыв приглашения – уведомление кандидату с причиной', async () => {
     const read = new Date('2026-10-10T12:00:00Z');
     db.user.findUnique.mockResolvedValue({ role: 'candidate', candidateNotificationsReadAt: read, employerNotificationsReadAt: null });
     db.invitation.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 'i9', withdrawnAt: new Date('2026-10-10T14:30:00Z'), withdrawReason: 'Позиция закрыта', company: { name: 'Альфа' } }]);
@@ -53,7 +53,7 @@ describe('notification role scopes and read watermarks', () => {
     expect(feed.items[0]!).toMatchObject({ text: 'Кандидат принял приглашение', href: '/employer/invitations', unread: true });
   });
 
-  it('lane live-slots: события живой защиты — только своей стороне, в общей ленте и счётчике', async () => {
+  it('lane live-slots: события живой защиты – только своей стороне, в общей ленте и счётчике', async () => {
     const read = new Date('2026-10-10T12:00:00Z');
     db.user.findUnique.mockResolvedValue({ role: 'employer', candidateNotificationsReadAt: null, employerNotificationsReadAt: read });
     db.invitation.findMany.mockResolvedValueOnce([{ id: 'i2', respondedAt: new Date('2026-10-10T11:00:00Z'), status: 'accepted', vacancy: null }]);
@@ -65,7 +65,7 @@ describe('notification role scopes and read watermarks', () => {
     expect(feed.items.map((i) => i.id)).toEqual(['live-e1', 'i2']);
   });
 
-  it('lane lifecycle: кандидат нанят другой компанией — приглашение компании закрыто, имя нанявшей не раскрывается', async () => {
+  it('lane lifecycle: кандидат нанят другой компанией – приглашение компании закрыто, имя нанявшей не раскрывается', async () => {
     db.user.findUnique.mockResolvedValue({ role: 'employer', candidateNotificationsReadAt: null, employerNotificationsReadAt: null });
     db.invitation.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 'i3', closedAt: new Date('2026-10-10T14:40:00Z'), vacancy: { title: 'Backend' } }]);
     db.invitation.count.mockResolvedValueOnce(0).mockResolvedValueOnce(1);

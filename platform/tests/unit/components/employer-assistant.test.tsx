@@ -90,7 +90,7 @@ describe('лента помощника работодателя', () => {
     expect(document.body.style.overflow).toBe(overflow);
   });
 
-  it('карточка принятого кандидата показывает имя (с псевдонимом), непринятого — только псевдоним; почты нет', () => {
+  it('карточка принятого кандидата показывает имя (с псевдонимом), непринятого – только псевдоним; почты нет', () => {
     const block: CandidatesBlockView = { ...BLOCK, items: [CAND, { ...CAND, candidateId: 'c2', alias: 'Кандидат #DEF456', rank: 2, invitation: 'accepted', name: 'Мария Секретова' }] };
     render(<AssistantChat initial={{ conversationId: 'conv', items: [{ id: '2', role: 'agent', event: { type: 'candidates', block } }] }} />);
     const cards = screen.getAllByTestId('assistant-candidate');
@@ -101,7 +101,7 @@ describe('лента помощника работодателя', () => {
     expect(document.body.textContent).not.toMatch(/@/);
   });
 
-  it('выдача карточками в сообщении: псевдоним, покрытие, «Пригласить»; у принявшего — ссылка на «Приглашения», без контактов', () => {
+  it('выдача карточками в сообщении: псевдоним, покрытие, «Пригласить»; у принявшего – ссылка на «Приглашения», без контактов', () => {
     render(
       <AssistantChat
         initial={{
@@ -122,11 +122,11 @@ describe('лента помощника работодателя', () => {
     expect(within(block).queryByRole('button', { name: 'Пригласить: Кандидат #DEF456' })).toBeNull();
     expect(within(block).getByRole('link', { name: '«Приглашения»' }).getAttribute('href')).toBe('/employer/invitations');
     expect(screen.getByText(/нашлось 6/)).toBeDefined();
-    // до первого сообщения — подсказки; после — нет
+    // до первого сообщения – подсказки; после – нет
     expect(screen.queryByRole('group', { name: 'С чего начать' })).toBeNull();
   });
 
-  it('черновик приглашения — открытая форма с текстом и зарплатой; отправляет человек кнопкой', async () => {
+  it('черновик приглашения – открытая форма с текстом и зарплатой; отправляет человек кнопкой', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: 'i1', status: 'sent' }), { status: 201 }));
     vi.stubGlobal('fetch', fetchMock);
     render(<AssistantChat initial={{ conversationId: 'conv', items: [{ id: '1', role: 'agent', event: { type: 'invitation_draft', draft: DRAFT } }] }} />);
@@ -141,13 +141,13 @@ describe('лента помощника работодателя', () => {
     expect(JSON.parse(init.body as string)).toMatchObject({ candidateId: 'c1', vacancyId: 'v1', salaryFrom: 200000, salaryTo: 260000 });
   });
 
-  it('черновик при исчерпанном лимите — без формы, с пояснением', () => {
+  it('черновик при исчерпанном лимите – без формы, с пояснением', () => {
     render(<AssistantChat initial={{ conversationId: null, items: [{ id: '1', role: 'agent', event: { type: 'invitation_draft', draft: { ...DRAFT, blocked: 'daily_limit' } } }] }} />);
     expect(screen.queryByRole('form', { name: /Приглашение/ })).toBeNull();
     expect(screen.getByText(/Лимит приглашений на сутки исчерпан/)).toBeDefined();
   });
 
-  it('черновик потребности — требования и ссылка на форму', () => {
+  it('черновик потребности – требования и ссылка на форму', () => {
     render(<AssistantChat initial={{ conversationId: null, items: [{ id: '1', role: 'agent', event: { type: 'need_draft', draft: NEED } }] }} />);
     expect(screen.getByText('Делал идемпотентную обработку')).toBeDefined();
     expect(screen.getByRole('link', { name: 'Открыть форму и сохранить' }).getAttribute('href')).toBe(NEED.formHref);

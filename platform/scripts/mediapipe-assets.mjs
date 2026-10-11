@@ -1,6 +1,6 @@
 // Ресурсы MediaPipe для детекции лица в комнате звонка (docs/stack.md): WASM-рантайм копируется из
-// node_modules/@mediapipe/tasks-vision, модель Face Landmarker скачивается один раз. Всё — в public/mediapipe
-// (в .gitignore: 25 МБ бинарей в репозитории не нужны). Запуск: prebuild/predev; без сети модель не скачается —
+// node_modules/@mediapipe/tasks-vision, модель Face Landmarker скачивается один раз. Всё – в public/mediapipe
+// (в .gitignore: 25 МБ бинарей в репозитории не нужны). Запуск: prebuild/predev; без сети модель не скачается –
 // слежение за лицом в комнате просто выключено, остальное приложение не страдает.
 import { copyFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,7 +16,7 @@ for (const f of files) {
   const from = join(src, f);
   const to = join(wasmOut, f);
   if (!existsSync(from)) {
-    console.warn(`mediapipe: нет ${from} — пропуск`);
+    console.warn(`mediapipe: нет ${from} – пропуск`);
     continue;
   }
   if (!existsSync(to) || statSync(to).size !== statSync(from).size) copyFileSync(from, to);
@@ -31,7 +31,7 @@ if (!existsSync(model) || statSync(model).size < 1_000_000) {
     writeFileSync(model, Buffer.from(await res.arrayBuffer()));
     console.log(`mediapipe: модель скачана, ${statSync(model).size} байт`);
   } catch (err) {
-    console.warn(`mediapipe: модель не скачана (${err instanceof Error ? err.message : err}) — слежение за лицом будет выключено`);
+    console.warn(`mediapipe: модель не скачана (${err instanceof Error ? err.message : err}) – слежение за лицом будет выключено`);
   }
 } else {
   console.log('mediapipe: ресурсы на месте');

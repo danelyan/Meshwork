@@ -14,7 +14,7 @@ import {
   siteAccessToken,
 } from '@/server/site-access';
 
-/** Проверка пароля стенда: верный — кука доступа и переход на next, неверный — та же страница с ошибкой. */
+/** Проверка пароля стенда: верный – кука доступа и переход на next, неверный – та же страница с ошибкой. */
 export async function enterSite(formData: FormData): Promise<void> {
   const env = getEnv();
   const next = safeNext(String(formData.get('next') ?? '')) ?? '/';

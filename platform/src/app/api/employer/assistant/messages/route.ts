@@ -19,26 +19,18 @@ export const dynamic = 'force-dynamic';
 const Body = z.object({
   conversationId: z.string().min(1).max(64).optional(),
   text: z.string().trim().min(1, 'Напиши сообщение').max(4_000),
-  // Откуда пишет работодатель (плавающий чат): экран и вакансия на нём. Чужой vacancyId цикл игнорирует молча.
-  page: z
-    .object({
-      path: z.string().max(200).startsWith('/employer'),
-      vacancyId: z.string().min(1).max(64).nullable().optional(),
-    })
-    .nullable()
-    .optional(),
 });
 
 
 /**
  * Ход помощника работодателя: POST → SSE-поток EmployerAgentEvent, как у консультанта
  * (app/api/consultant/messages). Только роль employer (requireEmployer: 401/403);
- * разговор — свой EmployerConversation, чужой → 404; один ход на разговор — иначе 409.
+ * разговор – свой EmployerConversation, чужой → 404; один ход на разговор – иначе 409.
  */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { employerProfileId, userId } = requireEmployer(req);
-  await assertEmployerConsents(userId); // ADR 0005: помощник ищет кандидатов — после оферты и обязательства по данным
+  await assertEmployerConsents(userId); // ADR 0005: помощник ищет кандидатов – после оферты и обязательства по данным
   const body = Body.parse(await req.json().catch(() => ({})));
 
   let conversationId: string;
@@ -95,8 +87,8 @@ export const POST = withErrors(async (req: Request) => {
       }, 15_000);
       try {
         emit({ type: 'conversation', id: conversationId });
-        await runEmployerTurn({ employerProfileId, conversationId, text: body.text, ...(body.page ? { page: body.page } : {}) }, emit, signal);
-        // Память помощника: факты из реплики — фоном, после завершённого хода; в демо и на заглушке — нет.
+        await runEmployerTurn({ employerProfileId, conversationId, text: body.text }, emit, signal);
+        // Память помощника: факты из реплики – фоном, после завершённого хода; в демо и на заглушке – нет.
         if (!signal.aborted && memoryExtractionEnabled()) {
           void scheduleMemoryExtraction({ owner: { employerProfileId }, text: body.text, llm: getLlm({ conversationId }) });
         }

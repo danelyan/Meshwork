@@ -5,13 +5,13 @@ import { AppError } from '@/server/errors';
 import { yandexAuthHeader } from '@/server/llm/providers/yandex-responses';
 
 /**
- * Озвучка ответов компаньона (3D-аватар в чате). Режим — env TTS_PROVIDER:
- *  - yandex — SpeechKit, REST v1 `tts:synthesize` (form-urlencoded: text, lang, voice, emotion, speed, format;
- *    лимит SpeechKit — 5000 знаков, у нас 1000);
+ * Озвучка ответов компаньона (3D-аватар в чате). Режим – env TTS_PROVIDER:
+ *  - yandex – SpeechKit, REST v1 `tts:synthesize` (form-urlencoded: text, lang, voice, emotion, speed, format;
+ *    лимит SpeechKit – 5000 знаков, у нас 1000);
 
- *  - elevenlabs — ElevenLabs REST `text-to-speech/{voice}/stream` (mp3), только по явному TTS_PROVIDER=elevenlabs;
- *  - off — кнопки озвучки нет;
- *  - auto (по умолчанию) — yandex при YANDEX_API_KEY + YANDEX_FOLDER_ID, иначе off.
+ *  - elevenlabs – ElevenLabs REST `text-to-speech/{voice}/stream` (mp3), только по явному TTS_PROVIDER=elevenlabs;
+ *  - off – кнопки озвучки нет;
+ *  - auto (по умолчанию) – yandex при YANDEX_API_KEY + YANDEX_FOLDER_ID, иначе off.
  * Аудио не хранится и не пишется в журнал: ответ SpeechKit сразу уходит клиенту.
  */
 export type TtsMode = 'yandex' | 'elevenlabs' | 'off';
@@ -42,7 +42,7 @@ export async function synthesizeYandex(text: string, opts: SynthesizeOptions): P
   const auth = yandexAuthHeader(opts.apiKey);
   const form = new URLSearchParams({ text, lang: 'ru-RU', voice: opts.voice, speed: opts.speed.toFixed(2), format: opts.format });
   if (opts.emotion) form.set('emotion', opts.emotion);
-  // folderId — только при пользовательском IAM-токене; с ключом сервисного аккаунта не указывается (docs SpeechKit v1).
+  // folderId – только при пользовательском IAM-токене; с ключом сервисного аккаунта не указывается (docs SpeechKit v1).
   if (auth.startsWith('Bearer') && opts.folderId) form.set('folderId', opts.folderId);
   const timeout = AbortSignal.timeout(15_000);
   let res: Response;
@@ -104,7 +104,7 @@ export async function synthesizeElevenLabs(text: string, opts: ElevenLabsOptions
         model_id: opts.model || 'eleven_multilingual_v2',
         voice_settings: { speed: Math.min(1.2, Math.max(0.7, opts.speed)) },
       }),
-      redirect: 'manual', // 302 на страницу гео-блокировки — это отказ, а не аудио
+      redirect: 'manual', // 302 на страницу гео-блокировки – это отказ, а не аудио
       signal: opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout,
     });
   } catch {

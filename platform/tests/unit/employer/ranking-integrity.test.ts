@@ -1,4 +1,4 @@
-// Параметр integrityPenalty (вариант 2 индекса честности, eval/matching/integrity.ts): выключен — порядок прежний.
+// Параметр integrityPenalty (вариант 2 индекса честности, eval/matching/integrity.ts): выключен – порядок прежний.
 import { applyIntegrity, CATEGORY_WITHHELD_TEXT, rankCandidates, scoreCandidate, type CandidateEvidence, type MatchTarget } from '@/server/employer/ranking';
 
 import { fixtureCatalog } from '../../helpers/recommend-fixtures';
@@ -28,7 +28,7 @@ function cand(id: string, claims: string[], extra: Partial<CandidateEvidence> = 
   };
 }
 
-// «Списал»: категория Middle, одно требование; честный: два требования, без категории; ещё один — категория без утверждений.
+// «Списал»: категория Middle, одно требование; честный: два требования, без категории; ещё один – категория без утверждений.
 const pool = [
   cand('cheat', ['be.idempotency'], { category: middle, testIntegrity: { level: 'high' } }),
   cand('honest', ['be.idempotency', 'be.transactions']),
@@ -41,7 +41,7 @@ const ids = (opts?: Parameters<typeof rankCandidates>[4]) => rankCandidates(pool
 const stripped = pool.map((c) => ({ ...c, testIntegrity: undefined }));
 
 describe('integrityPenalty в ранжировании', () => {
-  it('выключен (нет опции) — порядок и баллы те же, что без индекса', () => {
+  it('выключен (нет опции) – порядок и баллы те же, что без индекса', () => {
     expect(ids()).toEqual(rankCandidates(stripped, target, catalog, POOL).map((r) => `${r.candidateId}:${r.score}`));
     expect(ids({})).toEqual(ids());
     expect(ids()[0]).toMatch(/^cheat:/); // категория Middle сейчас поднимает его выше честного

@@ -10,9 +10,9 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST `{ text }` — ответ кандидата (голос распознаётся заранее через /api/stt). Ответ:
- * `{ text, muted, done }` — реплика ИИ (null, если работодатель замьютил ИИ). Реплики уходят и в SSE.
- * `done: true` — вопросы кончились, клиент вызывает finish. Второй ход параллельно — 409 busy.
+ * POST `{ text }` – ответ кандидата (голос распознаётся заранее через /api/stt). Ответ:
+ * `{ text, muted, done }` – реплика ИИ (null, если работодатель замьютил ИИ). Реплики уходят и в SSE.
+ * `done: true` – вопросы кончились, клиент вызывает finish. Второй ход параллельно – 409 busy.
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);

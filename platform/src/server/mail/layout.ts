@@ -1,8 +1,8 @@
 /**
  * HTML-оболочка писем (docs/design-system.md, «Письма»). Почтовые клиенты не понимают CSS-переменные,
- * подключаемые шрифты и SVG, поэтому здесь таблицы, инлайн-стили и цвета — копии токенов из
+ * подключаемые шрифты и SVG, поэтому здесь таблицы, инлайн-стили и цвета – копии токенов из
  * `src/styles/tokens.css` (совпадение проверяет tests/unit/mail/templates.test.ts).
- * Все поля `MailView` — обычный текст: оболочка экранирует их сама, так что пользовательский текст
+ * Все поля `MailView` – обычный текст: оболочка экранирует их сама, так что пользовательский текст
  * (название компании, вакансии) в разметку не попадает. Картинок и внешних ресурсов нет: письмо
  * выглядит одинаково при заблокированных изображениях.
  */
@@ -23,7 +23,7 @@ const FONT = "'Golos Text', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
 const MONO = "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 
 export interface MailView {
-  /** Тема письма — уходит в `<title>`. */
+  /** Тема письма – уходит в `<title>`. */
   subject: string;
   /** Строка предпросмотра в списке писем (в теле скрыта). */
   preheader: string;
@@ -37,7 +37,7 @@ export interface MailView {
   action?: { label: string; href: string };
   /** Мелкий текст под основным блоком: срок действия кода, оговорки. */
   notes?: string[];
-  /** Цвет акцента по адресату (Astra): кандидат — синий, работодатель — бордовый. */
+  /** Цвет акцента по адресату (Astra): кандидат – синий, работодатель – бордовый. */
   accent?: 'candidate' | 'employer';
   /** Адрес платформы для подписи. */
   siteUrl: string;
@@ -80,7 +80,7 @@ export function renderMailHtml(view: MailView): string {
 
   if (view.action) {
     const href = e(view.action.href);
-    // Кнопка — ячейка с заливкой: отступы у строчной ссылки десктопный Outlook игнорирует.
+    // Кнопка – ячейка с заливкой: отступы у строчной ссылки десктопный Outlook игнорирует.
     blocks.push(
       `<table ${TABLE} style="margin:20px 0 12px;"><tr><td bgcolor="${C.ink}" style="background:${C.ink};">` +
         `<a href="${href}" style="display:inline-block;padding:14px 24px;font-size:15px;line-height:20px;font-weight:600;color:${C.white};text-decoration:none;">${e(view.action.label)}</a>` +

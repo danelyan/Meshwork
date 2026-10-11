@@ -13,9 +13,9 @@ import { redFlagWarningMail, sendAfterDecision } from './mails';
 
 /**
  * Очередь красных флагов (E-08, фаза 2; R-X-01). detectRedFlags отправку и сохранение не блокирует; сработавший флаг
- * ставит приглашение или вакансию в очередь «посмотреть» (RedFlagReview, уникальность по target — идемпотентно).
+ * ставит приглашение или вакансию в очередь «посмотреть» (RedFlagReview, уникальность по target – идемпотентно).
  * `vague_text` (меньше 8 слов) в очередь не ставит: это шум, а не признак обмана.
- * Решения: ok — норм; hidden — скрыть вакансию от кандидатов (для приглашения нельзя); warned — предупредить компанию
+ * Решения: ok – норм; hidden – скрыть вакансию от кандидатов (для приглашения нельзя); warned – предупредить компанию
  * письмом. Скрытие хранится в статусе ревью (поля «скрыта» у Vacancy в схеме нет): hiddenVacancyIds().
  */
 
@@ -24,8 +24,8 @@ const QUEUED = (f: RedFlag) => f.code !== 'vague_text';
 type Flag = Pick<RedFlag, 'code' | 'severity' | 'reason'>;
 
 /**
- * Поставить в очередь (системно, без журнала персонала). Нет флагов — ничего. Уже есть открытое ревью — обновить флаги.
- * Есть закрытое (ok/warned) и появились новые коды — открыть заново; hidden остаётся hidden до решения модератора.
+ * Поставить в очередь (системно, без журнала персонала). Нет флагов – ничего. Уже есть открытое ревью – обновить флаги.
+ * Есть закрытое (ok/warned) и появились новые коды – открыть заново; hidden остаётся hidden до решения модератора.
  */
 export async function queueRedFlags(targetType: RedFlagTarget, targetId: string, all: readonly RedFlag[]): Promise<void> {
   const flags: Flag[] = all.filter(QUEUED).map(({ code, severity, reason }) => ({ code, severity, reason }));
@@ -51,14 +51,14 @@ export async function queueRedFlagsSafely(targetType: RedFlagTarget, targetId: s
   }
 }
 
-/** Флаги приглашения — те же тексты, что видит кандидат (listCandidateInvitations). */
+/** Флаги приглашения – те же тексты, что видит кандидат (listCandidateInvitations). */
 export async function queueInvitationRedFlags(invitationId: string): Promise<void> {
   const inv = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { message: true, salaryFrom: true, salaryTo: true, vacancy: { select: { title: true, teamDescription: true } } } });
   if (!inv) return;
   await queueRedFlagsSafely('invitation', invitationId, detectRedFlags({ texts: [inv.message, inv.vacancy?.title, inv.vacancy?.teamDescription], salaryFrom: inv.salaryFrom, salaryTo: inv.salaryTo }));
 }
 
-/** Флаги вакансии — как в форме вакансии (VacancyForm): заголовок, команда, описание, вилка. */
+/** Флаги вакансии – как в форме вакансии (VacancyForm): заголовок, команда, описание, вилка. */
 export async function queueVacancyRedFlags(vacancyId: string): Promise<void> {
   const v = await prisma.vacancy.findUnique({ where: { id: vacancyId }, select: { title: true, teamDescription: true, description: true, salaryFrom: true, salaryTo: true } });
   if (!v) return;
@@ -96,10 +96,10 @@ export async function listRedFlags(status: RedFlagReviewStatus | 'all' = 'open')
     const base = { id: r.id, targetType: r.targetType, targetId: r.targetId, status: r.status, flags: (r.flags ?? []) as unknown as Flag[], createdAt: r.createdAt.toISOString(), resolution: r.resolution };
     if (r.targetType === 'invitation') {
       const i = invs.find((x) => x.id === r.targetId);
-      return { ...base, company: i?.company ?? null, title: i?.vacancy?.title ?? null, text: i?.message ?? null, salary: i ? `${i.salaryFrom}–${i.salaryTo} ₽` : '—' };
+      return { ...base, company: i?.company ?? null, title: i?.vacancy?.title ?? null, text: i?.message ?? null, salary: i ? `${i.salaryFrom}–${i.salaryTo} ₽` : '–' };
     }
     const v = vacs.find((x) => x.id === r.targetId);
-    return { ...base, company: v?.company ?? null, title: v?.title ?? null, text: [v?.teamDescription, v?.description].filter(Boolean).join('\n') || null, salary: v ? `${v.salaryFrom}–${v.salaryTo} ₽` : '—' };
+    return { ...base, company: v?.company ?? null, title: v?.title ?? null, text: [v?.teamDescription, v?.description].filter(Boolean).join('\n') || null, salary: v ? `${v.salaryFrom}–${v.salaryTo} ₽` : '–' };
   });
 }
 
@@ -112,7 +112,7 @@ export async function isVacancyHidden(vacancyId: string, db: Prisma.TransactionC
 /**
  * Скрыть вакансию от кандидатов (`hidden: true`) или вернуть (`false`) без красных флагов (hide_vacancy).
  * Хранится в `RedFlagReview` со статусом hidden: работодатель не обойдёт разархивированием. Возврат переводит
- * ревью в ok (флаги не стираются). Причина обязательна, журнал — в той же транзакции; повтор того же состояния — 409.
+ * ревью в ok (флаги не стираются). Причина обязательна, журнал – в той же транзакции; повтор того же состояния – 409.
  */
 export async function setVacancyHidden(staff: StaffContext, vacancyId: string, input: { hidden: boolean; reason: string | null | undefined }): Promise<{ id: string; hidden: boolean }> {
   const reason = requireReason(input.reason);
@@ -136,7 +136,7 @@ export async function setVacancyHidden(staff: StaffContext, vacancyId: string, i
 
 export type RedFlagDecision = 'ok' | 'hidden' | 'warned';
 
-/** Решение по флагу: только из open (409), причина обязательна; hidden — только для вакансии (400). Письмо при warned — после COMMIT. */
+/** Решение по флагу: только из open (409), причина обязательна; hidden – только для вакансии (400). Письмо при warned – после COMMIT. */
 export async function reviewRedFlag(staff: StaffContext, id: string, decision: RedFlagDecision, rawReason: string): Promise<{ id: string; status: RedFlagDecision }> {
   const reason = requireReason(rawReason);
   const before = await prisma.$transaction(async (tx) => {

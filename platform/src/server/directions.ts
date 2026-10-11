@@ -1,6 +1,6 @@
 // Справочник направлений и подкатегорий из БД (Subcategory, lane directions; ADR 0003, дополнение 10.10).
 // Код и UI берут тот же список из src/lib/directions.ts (из него сидится таблица); этот модуль отдаёт
-// таблицу как есть — правка статуса в БД видна в API без деплоя. Пустая таблица (сид не прогнан) — список из кода.
+// таблицу как есть – правка статуса в БД видна в API без деплоя. Пустая таблица (сид не прогнан) – список из кода.
 import { SPEC_LABEL, SPECIALIZATIONS, SUBCATEGORIES, type Specialization, type SubcategoryDef } from '@/lib/directions';
 
 import { prisma } from './db';

@@ -10,11 +10,11 @@ function fakeVoice(enabled = true) {
 }
 
 describe('озвучка по мере стриминга', () => {
-  it('готовое предложение звучит до конца реплики, остаток — по реплике целиком', () => {
+  it('готовое предложение звучит до конца реплики, остаток – по реплике целиком', () => {
     const { voice, speak } = fakeVoice();
     const on = createStreamSpeech(() => voice);
     on({ type: 'delta', id: 'm1', text: 'Я Кира, помогаю с карьерой. ' });
-    expect(speak).not.toHaveBeenCalled(); // хвост ещё короткий — предложение может склеиться
+    expect(speak).not.toHaveBeenCalled(); // хвост ещё короткий – предложение может склеиться
     on({ type: 'delta', id: 'm1', text: 'Работаю на твоей стороне' });
     expect(speak).toHaveBeenCalledWith('Я Кира, помогаю с карьерой.', 'm1#s0');
     on({ type: 'message', id: 'm1', text: 'Я Кира, помогаю с карьерой. Работаю на твоей стороне.' });

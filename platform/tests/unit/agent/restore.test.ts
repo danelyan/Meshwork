@@ -11,7 +11,7 @@ describe('humanizeUserText', () => {
     expect(humanizeUserText('[вложения: файл zzz]', names)).toBe('Вложения: файл');
   });
 
-  it('ссылки — обычным текстом', () => {
+  it('ссылки – обычным текстом', () => {
     expect(humanizeUserText('глянь\n[ссылки: https://a.dev https://b.dev]', names)).toBe('глянь\nСсылки: https://a.dev https://b.dev');
   });
 

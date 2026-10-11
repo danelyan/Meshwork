@@ -1,7 +1,7 @@
 # Сервис runner: автопроверка проектов кандидатов скрытыми тестами (ADR 0003, runner/README.md).
-# Сборка из каталога platform/: docker build -f runner/Dockerfile .  (в compose — сервис runner)
+# Сборка из каталога platform/: docker build -f runner/Dockerfile .  (в compose – сервис runner)
 # Один образ на оба «образа» контракта: node20 (Node 20 + vitest/supertest/testing-library/express)
-# и python312 (Python 3.12 + pytest/fastapi/httpx/numpy/pandas; numpy/pandas — колёса musllinux, без сборки). Docker внутри не нужен и недоступен.
+# и python312 (Python 3.12 + pytest/fastapi/httpx/numpy/pandas; numpy/pandas – колёса musllinux, без сборки). Docker внутри не нужен и недоступен.
 
 FROM node:20-alpine3.21 AS build
 WORKDIR /build
@@ -29,7 +29,7 @@ COPY runner/sandbox/python/requirements.txt /tmp/requirements.txt
 RUN python3 -m venv /opt/runner-py \
   && /opt/runner-py/bin/pip install --no-cache-dir --disable-pip-version-check -r /tmp/requirements.txt \
   && rm /tmp/requirements.txt
-# Сервис — runner (1001), задание — sandbox (2000). runner входит в группу sandbox: отдаёт заданию
+# Сервис – runner (1001), задание – sandbox (2000). runner входит в группу sandbox: отдаёт заданию
 # tmp/ и out/ (setgid-каталоги) и читает его отчёт. sandbox ни в какие группы сервиса не входит.
 RUN addgroup -S -g 1001 runner && adduser -S -D -H -u 1001 -G runner -s /sbin/nologin runner \
   && addgroup -S -g 2000 sandbox && adduser -S -D -H -u 2000 -G sandbox -s /sbin/nologin sandbox \
@@ -55,7 +55,7 @@ ENV NODE_ENV=production \
     RUNNER_PYTEST_INI=/opt/runner/pytest.job.ini \
     RUNNER_SANDBOX_HELPER=/opt/runner/bin/fsp-sandbox \
     RUNNER_SANDBOX_GID=2000
-# Сервис — непривилегированный uid; capabilities в контейнере — только SETUID/SETGID в bounding set
+# Сервис – непривилегированный uid; capabilities в контейнере – только SETUID/SETGID в bounding set
 # (их получает лишь setuid-помощник на время смены uid). См. runner/README.md «Изоляция».
 USER 1001:1001
 EXPOSE 8090

@@ -1,4 +1,4 @@
-// E-08, фаза 2: возражения против автоматической оценки (152-ФЗ, ст. 16) — перенос из dev-панели в админку.
+// E-08, фаза 2: возражения против автоматической оценки (152-ФЗ, ст. 16) – перенос из dev-панели в админку.
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { GET as listGet } from '@/app/api/admin/objections/route';
@@ -32,7 +32,7 @@ describe('admin: возражения (ст. 16 152-ФЗ)', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('модератор без права — 403 на очередь и ответ; поддержка видит открытые по сроку с предметом', async () => {
+  it('модератор без права – 403 на очередь и ответ; поддержка видит открытые по сроку с предметом', async () => {
     const { a } = await attemptWithCategory();
     const late = await objection('grade_test', a.id, new Date(Date.now() - 2 * 86_400_000));
     const early = await objection('grade_test', a.id, new Date(Date.now() - 29 * 86_400_000));
@@ -46,7 +46,7 @@ describe('admin: возражения (ст. 16 152-ФЗ)', () => {
     expect(body.objections[0].candidate).toMatch(/^Кандидат #/);
   });
 
-  it('answer: статус answered, answeredById, журнал, письмо кандидату; повтор — 409; без текста — 400', async () => {
+  it('answer: статус answered, answeredById, журнал, письмо кандидату; повтор – 409; без текста – 400', async () => {
     const o = await objection('call', 'missing-call');
     expect((await decide(o.id, staff.support.cookie, { decision: 'answer', text: '' })).status).toBe(400);
     const r = await decide(o.id, staff.support.cookie, { decision: 'answer', text: 'Оценку созвона перепроверили, она верна' });
@@ -58,7 +58,7 @@ describe('admin: возражения (ст. 16 152-ФЗ)', () => {
     expect((await decide(o.id, staff.support.cookie, { decision: 'answer', text: 'Ещё один ответ' })).status).toBe(409);
   });
 
-  it('review: остаётся открытым, итог от того же сотрудника — 409, от другого — 200', async () => {
+  it('review: остаётся открытым, итог от того же сотрудника – 409, от другого – 200', async () => {
     const o = await objection('defense', 'missing-defense');
     const r = await decide(o.id, staff.support.cookie, { decision: 'review', text: 'Прошу коллегу пересмотреть вердикт' });
     expect(r.status).toBe(200);
@@ -72,7 +72,7 @@ describe('admin: возражения (ст. 16 152-ФЗ)', () => {
     expect((await auditRows(o.id)).map((x) => x.action)).toEqual(['answer_objection.review', 'answer_objection.answer']);
   });
 
-  it('annul: попытка abandoned с отметкой, категория по попытке снята (старая осталась), журнал; не тест — 409', async () => {
+  it('annul: попытка abandoned с отметкой, категория по попытке снята (старая осталась), журнал; не тест – 409', async () => {
     const { a, cat, older } = await attemptWithCategory();
     const o = await objection('grade_test', cat.id);
     const r = await decide(o.id, staff.support.cookie, { decision: 'annul', text: 'Задания выдались не по подкатегории, попытка аннулирована' });

@@ -1,4 +1,4 @@
-DejaVu Sans (DejaVuSans.ttf, DejaVuSans-Bold.ttf) — шрифт для серверного PDF-профиля (src/server/profile-pdf).
+DejaVu Sans (DejaVuSans.ttf, DejaVuSans-Bold.ttf) – шрифт для серверного PDF-профиля (src/server/profile-pdf).
 Источник: https://dejavu-fonts.github.io/ ; пакет Debian fonts-dejavu-core, файл copyright ниже без изменений.
 
 Files: *

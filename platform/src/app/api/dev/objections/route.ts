@@ -4,7 +4,7 @@ import { devRoute, requireDevPrincipal } from '@/server/devtools/route';
 
 export const dynamic = 'force-dynamic';
 
-/** Открытые возражения против оценки (ст. 16) — для оператора. Только dev-хост. */
+/** Открытые возражения против оценки (ст. 16) – для оператора. Только dev-хост. */
 export const GET = devRoute(async (req) => {
   requireDevPrincipal(req);
   return Response.json({ objections: await listOpenObjections() });

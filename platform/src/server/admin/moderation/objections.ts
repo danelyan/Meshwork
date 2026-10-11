@@ -13,7 +13,7 @@ import type { StaffContext } from '../session';
 import { objectionAnswerMail, sendAfterDecision } from './mails';
 
 /**
- * Возражения кандидатов против автоматической оценки (152-ФЗ, ст. 16; срок ответа 30 дней) — очередь поддержки.
+ * Возражения кандидатов против автоматической оценки (152-ФЗ, ст. 16; срок ответа 30 дней) – очередь поддержки.
  * Решения: ответить; назначить пересмотр (повтор оценки другим сотрудником: возражение остаётся открытым, итоговый
  * ответ даёт только другой сотрудник); аннулировать попытку теста с объяснением. Категорию вручную не ставим
  * (R-C-06, принцип 2 E-08): аннулирование только снимает результат попытки.
@@ -40,13 +40,13 @@ export interface ObjectionQueueItem {
   answer: string | null;
   createdAt: string;
   dueAt: string;
-  /** Часы до срока (отрицательные — просрочено). */
+  /** Часы до срока (отрицательные – просрочено). */
   hoursLeft: number;
   review: { assignedById: string | null; assignedAt: string; note: string | null } | null;
   preview: SubjectPreview;
 }
 
-const fmt = (d: Date | null | undefined) => (d ? d.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) : '—');
+const fmt = (d: Date | null | undefined) => (d ? d.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) : '–');
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -70,8 +70,8 @@ async function preview(candidateId: string, subject: ObjectionSubject, subjectId
       attemptId: a.id,
       lines: [
         `${a.specialization} · заявлен ${a.grade} · статус ${a.status}${integrity?.annulled ? ' (аннулирована)' : ''}`,
-        `θ ${a.theta?.toFixed(2) ?? '—'} · SE ${a.se?.toFixed(2) ?? '—'} · P(грейд) ${a.pPass?.toFixed(2) ?? '—'}`,
-        `Индекс честности: ${integrity?.level ?? '—'} · завершена ${fmt(a.finishedAt)}`,
+        `θ ${a.theta?.toFixed(2) ?? '–'} · SE ${a.se?.toFixed(2) ?? '–'} · P(грейд) ${a.pPass?.toFixed(2) ?? '–'}`,
+        `Индекс честности: ${integrity?.level ?? '–'} · завершена ${fmt(a.finishedAt)}`,
       ],
     };
   }
@@ -94,7 +94,7 @@ async function reviewMarks(ids: string[]): Promise<Map<string, ObjectionQueueIte
   return m;
 }
 
-/** Очередь: открытые — по сроку (раньше срок — выше); остальные — новые сверху. */
+/** Очередь: открытые – по сроку (раньше срок – выше); остальные – новые сверху. */
 export async function listObjectionQueue(status: ObjectionStatus | 'all' = 'open', now = new Date()): Promise<ObjectionQueueItem[]> {
   const rows = await prisma.assessmentObjection.findMany({ where: status === 'all' ? {} : { status }, orderBy: { createdAt: status === 'open' ? 'asc' : 'desc' }, take: 100 });
   const marks = await reviewMarks(rows.map((r) => r.id));
@@ -130,8 +130,8 @@ export interface ObjectionDecisionResult {
 }
 
 /**
- * Решение по возражению (право `answer_objection`). `text` — ответ кандидату (answer, annul) или заметка для пересмотра
- * (review); обязателен. Закрытое — 409. После назначенного пересмотра итог (answer/annul) даёт только другой сотрудник — 409.
+ * Решение по возражению (право `answer_objection`). `text` – ответ кандидату (answer, annul) или заметка для пересмотра
+ * (review); обязателен. Закрытое – 409. После назначенного пересмотра итог (answer/annul) даёт только другой сотрудник – 409.
  */
 export async function decideObjection(staff: StaffContext, id: string, decision: ObjectionDecision, rawText: string): Promise<ObjectionDecisionResult> {
   const text = requireReason(rawText);

@@ -11,7 +11,7 @@ export const GRADE_RU: Record<string, string> = { junior: 'Junior', middle: 'Mid
 export const FLAG_RU: Record<string, string> = {
   evidence_unverified: 'ссылка на файл не подтвердилась',
   no_evidence: 'нет доказательства',
-  possible_prompt_injection: 'в коде или журнале — попытка повлиять на проверку',
+  possible_prompt_injection: 'в коде или журнале – попытка повлиять на проверку',
   not_evaluated: 'не оценено',
 };
 

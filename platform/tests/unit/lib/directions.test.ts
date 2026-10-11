@@ -15,7 +15,7 @@ describe('справочник направлений (ADR 0003, дополне�
     expect(subcategoriesFor('engineering')).toHaveLength(4);
   });
 
-  it('статус active ⇔ банк подкатегории полон (6 J + 4 M + 4 S; переходное направление — по объявлению)', () => {
+  it('статус active ⇔ банк подкатегории полон (6 J + 4 M + 4 S; переходное направление – по объявлению)', () => {
     for (const s of SUBCATEGORIES) {
       const marked = generatorsFor(s.specialization).some((g) => g.subcategoryId);
       if (!marked && hasTestFor(s.specialization)) continue; // переходный пул всего направления: статус объявляет справочник
@@ -43,8 +43,8 @@ describe('фильтры поиска и потребность: подкате�
     expect(parseFilters({ spec: 'engineering' }).filters).toEqual({ specialization: 'engineering' });
   });
 
-  it('passesFilters: без подкатегории или с другой — не проходит', () => {
-    // профили здесь без категории из теста — проверяем в расширенном пуле (M05: в основном режиме их нет)
+  it('passesFilters: без подкатегории или с другой – не проходит', () => {
+    // профили здесь без категории из теста – проверяем в расширенном пуле (M05: в основном режиме их нет)
     expect(passesFilters(cand('ai.llm-apps'), { subcategory: 'ai.llm-apps', expandPool: true })).toBe(true);
     expect(passesFilters(cand('ai.mlops'), { subcategory: 'ai.llm-apps', expandPool: true })).toBe(false);
     expect(passesFilters(cand(null), { subcategory: 'ai.llm-apps', expandPool: true })).toBe(false);

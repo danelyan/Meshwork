@@ -25,7 +25,7 @@ describe('пул подтверждающего теста', () => {
     expect(confirmSelectionPool(pool, source, new Set(['c'])).map((x) => x.id)).toEqual(['c', 'd']);
   });
 
-  it('новые кончились — шаблоны исходной попытки (новые числа генератора)', () => {
+  it('новые кончились – шаблоны исходной попытки (новые числа генератора)', () => {
     expect(confirmSelectionPool(pool, source, new Set(['c', 'd'])).map((x) => x.id)).toEqual(['a', 'b']);
     expect(confirmRemaining(pool, new Set(['c', 'd']))).toBe(2);
   });
@@ -44,13 +44,13 @@ describe('остановка подтверждающего теста', () => {
     expect(confirmShouldStop(CONFIRM_MIN_ITEMS - 1, strong, 'middle', 5)).toBe(false);
   });
 
-  it(`с ${CONFIRM_MIN_ITEMS} — стоп при уверенном решении; неуверенное — до ${CONFIRM_MAX_ITEMS}`, () => {
+  it(`с ${CONFIRM_MIN_ITEMS} – стоп при уверенном решении; неуверенное – до ${CONFIRM_MAX_ITEMS}`, () => {
     expect(confirmShouldStop(CONFIRM_MIN_ITEMS, strong, 'middle', 5)).toBe(true);
     expect(confirmShouldStop(CONFIRM_MIN_ITEMS, unsure, 'middle', 5)).toBe(false);
     expect(confirmShouldStop(CONFIRM_MAX_ITEMS, unsure, 'middle', 5)).toBe(true);
   });
 
-  it('пул исчерпан — стоп', () => {
+  it('пул исчерпан – стоп', () => {
     expect(confirmShouldStop(3, unsure, 'middle', 0)).toBe(true);
   });
 });
@@ -77,7 +77,7 @@ describe('решение подтверждающего теста', () => {
     expect(d.blockedByRisk).toBe(true);
   });
 
-  it('исходные ответы сильные, подтверждающие — провал → не подтверждён', () => {
+  it('исходные ответы сильные, подтверждающие – провал → не подтверждён', () => {
     const src = Array.from({ length: 5 }, () => r(0.3, true));
     const own = Array.from({ length: 6 }, () => r(-0.3, false));
     const d = decideConfirm(src, own, 'middle', 'low');
@@ -85,12 +85,12 @@ describe('решение подтверждающего теста', () => {
     expect(d.blockedByRisk).toBe(false);
   });
 
-  it('без ответов подтверждающей — не подтверждён (одних исходных мало)', () => {
+  it('без ответов подтверждающей – не подтверждён (одних исходных мало)', () => {
     const src = Array.from({ length: 10 }, () => r(0.5, true));
     expect(decideConfirm(src, [], 'middle', 'low').confirmed).toBe(false);
   });
 
-  it('D: несогласованные ответы (исходные сильные, подтверждающие средние) — не пройден, даже если P по объединению ≥ порога', () => {
+  it('D: несогласованные ответы (исходные сильные, подтверждающие средние) – не пройден, даже если P по объединению ≥ порога', () => {
     const src = Array.from({ length: 10 }, (_, i) => r(1 + (i % 3) * 0.3, true));
     const own = [r(-0.2, true), r(0, false), r(-0.4, true), r(0.2, false), r(-0.6, true), r(0.1, false)];
     const d = decideConfirm(src, own, 'middle', 'low');
@@ -100,7 +100,7 @@ describe('решение подтверждающего теста', () => {
     expect(d.blockedByRisk).toBe(false);
   });
 
-  it('D: порог — CONSISTENCY_Z · SE разности, как в eval/test/integrity.ts', () => {
+  it('D: порог – CONSISTENCY_Z · SE разности, как в eval/test/integrity.ts', () => {
     const src = [r(0, true), r(0.3, true), r(-0.5, true), r(0.6, true)];
     const own = [r(0.2, true), r(0.5, true), r(0.4, true), r(-0.2, true), r(0.7, true), r(0.1, true)];
     const eS = estimateTheta(src);

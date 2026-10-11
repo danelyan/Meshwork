@@ -19,7 +19,7 @@ export interface StepControlsProps {
   step: StepView;
   busy: boolean;
   consentVersion: string;
-  /** Выбор мультишагов (many, chips) — у родителя: свой вариант приходит из поля ввода внизу. */
+  /** Выбор мультишагов (many, chips) – у родителя: свой вариант приходит из поля ввода внизу. */
   sel: string[];
   extra: string[];
   onToggle: (value: string) => void;
@@ -28,8 +28,8 @@ export interface StepControlsProps {
 }
 
 /**
- * Интерактив под репликой помощника по типу шага (StepKind): чипы и тогглы с «Готово» — это ответ
- * в чат, не форма. Текст, документы (файлы и ссылки) и зарплата числом — в общем композере внизу.
+ * Интерактив под репликой помощника по типу шага (StepKind): чипы и тогглы с «Готово» – это ответ
+ * в чат, не форма. Текст, документы (файлы и ссылки) и зарплата числом – в общем композере внизу.
  * Проверку ответа повторяет сервер (engine.validateAnswer).
  */
 export function StepControls(props: StepControlsProps) {
@@ -72,8 +72,8 @@ export function StepControls(props: StepControlsProps) {
       );
     }
     case 'consents': {
-      // Согласия (ADR 0005): карточки-галочки с полным текстом. Главная кнопка — согласиться (со всем или с отмеченным),
-      // «без согласий» — второстепенная ссылка (владелец 11.10: «не видно, как согласиться»).
+      // Согласия (ADR 0005): карточки-галочки с полным текстом. Главная кнопка – согласиться (со всем или с отмеченным),
+      // «без согласий» – второстепенная ссылка (владелец 11.10: «не видно, как согласиться»).
       const labelOf = (v: string) => opts.find((o) => o.value === v)?.label ?? v;
       const all = opts.map((o) => o.value);
       const n = props.sel.length;
@@ -121,7 +121,7 @@ export function StepControls(props: StepControlsProps) {
       );
     }
     case 'files':
-      return null; // файлы и ссылки — в композере, разбор — в ленте (DocumentsRun)
+      return null; // файлы и ссылки – в композере, разбор – в ленте (DocumentsRun)
     case 'consent':
       return <QuickReplies items={[{ value: 'yes', label: 'Согласен(на)' }]} disabled={busy} onPick={() => onAnswer({ version: props.consentVersion }, 'Согласен(на)')} />;
     default:

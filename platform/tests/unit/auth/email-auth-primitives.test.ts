@@ -13,7 +13,7 @@ describe('пароль: scrypt', () => {
     expect(await verifyPassword('', a)).toBe(false);
   });
 
-  it('битая или чужая строка хэша — false, без исключения', async () => {
+  it('битая или чужая строка хэша – false, без исключения', async () => {
     expect(await verifyPassword('x', 'bcrypt$whatever')).toBe(false);
     expect(await verifyPassword('x', 'scrypt$abc$8$1$c2FsdA$aGFzaA')).toBe(false);
     expect(await verifyPassword('x', 'scrypt$16384$8$1$$')).toBe(false);
@@ -25,7 +25,7 @@ describe('одноразовые коды', () => {
     for (let i = 0; i < 200; i++) expect(generateCode()).toMatch(/^\d{6}$/);
   });
 
-  it('хэш зависит от назначения, пользователя и секрета; срок — 15 минут', () => {
+  it('хэш зависит от назначения, пользователя и секрета; срок – 15 минут', () => {
     const base = hashCode('123456', 'verify', 'u1', 's'.repeat(32));
     expect(hashCode('123456', 'verify', 'u1', 's'.repeat(32))).toBe(base);
     expect(hashCode('123456', 'reset', 'u1', 's'.repeat(32))).not.toBe(base);
@@ -39,7 +39,7 @@ describe('одноразовые коды', () => {
 describe('ограничитель частоты', () => {
   beforeEach(() => resetRateLimits());
 
-  it('пускает limit событий в окне, дальше отказ; новое окно — снова пускает', () => {
+  it('пускает limit событий в окне, дальше отказ; новое окно – снова пускает', () => {
     const rule = { limit: 3, windowMs: 1000 };
     expect([1, 2, 3].map(() => hit('k', rule, 0))).toEqual([true, true, true]);
     expect(hit('k', rule, 500)).toBe(false);
@@ -50,7 +50,7 @@ describe('ограничитель частоты', () => {
 
 describe('версия пароля в куке сессии', () => {
   const secret = 'x'.repeat(32);
-  it('с паролем — 8 частей и passwordVersion; без пароля — прежние 7 частей', async () => {
+  it('с паролем – 8 частей и passwordVersion; без пароля – прежние 7 частей', async () => {
     const { parseSession, passwordVersionOf, signUserSession } = await import('@/server/session');
     const pv = passwordVersionOf('scrypt$32768$8$1$salt$hash');
     expect(pv).toMatch(/^[\w-]{8}$/);

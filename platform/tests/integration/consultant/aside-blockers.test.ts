@@ -18,7 +18,7 @@ describe('loadCandidateAside: блокеры шага', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('без согласий: тест — блокер «Дать согласие», нота теста и «Приглашений» — про блокеры; в journey — aiConsent/hidden', async () => {
+  it('без согласий: тест – блокер «Дать согласие», нота теста и «Приглашений» – про блокеры; в journey – aiConsent/hidden', async () => {
     const j = await journeyState(C);
     expect([j.nextStep, j.aiConsent, j.hidden]).toEqual(['test', false, true]);
     const a = await loadCandidateAside(C, undefined);
@@ -28,7 +28,7 @@ describe('loadCandidateAside: блокеры шага', () => {
     expect(note(a, 'invites')).toBe('профиль скрыт');
   });
 
-  it('согласия даны: блокера нет; флаг hiddenFromEmployers — снова «профиль скрыт»', async () => {
+  it('согласия даны: блокера нет; флаг hiddenFromEmployers – снова «профиль скрыт»', async () => {
     await grantConsents(U, ['ai_assessment', 'employer_visibility']);
     let a = await loadCandidateAside(C, undefined);
     expect(a.stepBlock?.blocker).toBeUndefined();
@@ -39,7 +39,7 @@ describe('loadCandidateAside: блокеры шага', () => {
     expect((await journeyState(C)).hidden).toBe(true);
   });
 
-  it('приглашение принято, проекта нет: «сейчас» — проект, компания ждёт проект; защита — после сданного проекта', async () => {
+  it('приглашение принято, проекта нет: «сейчас» – проект, компания ждёт проект; защита – после сданного проекта', async () => {
     await grantConsents(U, ['ai_assessment', 'employer_visibility']);
     await prisma.candidateCategory.create({ data: { candidateId: C, specialization: 'backend', grade: 'middle' } });
     await prisma.invitation.create({ data: { candidateId: C, status: 'accepted', salaryFrom: 200000, salaryTo: 250000 } });

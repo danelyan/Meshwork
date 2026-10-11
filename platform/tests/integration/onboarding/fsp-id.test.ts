@@ -69,7 +69,7 @@ describe('ФСП ID из шага знакомства', () => {
     expect(v.history.find((h) => h.stepId === 'fsp')?.answer).toBe('ФСП ID привязан');
   });
 
-  it('участник без истории — шаг закрыт состоянием no_achievements', async () => {
+  it('участник без истории – шаг закрыт состоянием no_achievements', async () => {
     const c = await asCandidate('u1');
     await act(c, { action: 'goto', stepId: 'fsp' });
     await loginFromStep(c, FSP_DEMO_PARTICIPANTS[1]!.sub);
@@ -94,14 +94,14 @@ describe('Вход на платформу через ФСП ID', () => {
     return { done, location: new URL(done.headers.get('location')!) };
   }
 
-  it('без галки согласия — назад на /auth, аккаунт не создаётся', async () => {
+  it('без галки согласия – назад на /auth, аккаунт не создаётся', async () => {
     const { location } = await loginViaFsp(FSP_DEMO_PARTICIPANTS[0]!.sub, 'old');
     expect(location.pathname).toBe('/auth');
     expect(location.searchParams.get('error')).toBe('consent_required');
     expect(await prisma.user.count()).toBe(0);
   });
 
-  it('первый вход: аккаунт кандидата, согласие, привязка ФСП, кука сессии; повторный вход — тот же аккаунт', async () => {
+  it('первый вход: аккаунт кандидата, согласие, привязка ФСП, кука сессии; повторный вход – тот же аккаунт', async () => {
     const p = FSP_DEMO_PARTICIPANTS[0]!;
     const { done, location } = await loginViaFsp(p.sub);
     expect(location.pathname).toBe('/consultant');

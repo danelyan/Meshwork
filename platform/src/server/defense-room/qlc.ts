@@ -12,8 +12,8 @@ import { QLC_TYPES, type CodeFragment, type QlcQuestion, type QlcType, type Repo
 /**
  * Генератор вопросов по коду кандидата (QLC, ADR 0003 ступень 3). Код выделяет фрагменты, модель
  * (`LlmPurpose.defense_qlc`) выбирает 3–5 и формулирует вопросы четырёх типов + один «смени
- * ограничение». Ответ модели проверяет код: id фрагмента должен существовать, тип — из списка,
- * вопрос — по-русски. Модель недоступна или ответ не прошёл проверку → детерминированные вопросы
+ * ограничение». Ответ модели проверяет код: id фрагмента должен существовать, тип – из списка,
+ * вопрос – по-русски. Модель недоступна или ответ не прошёл проверку → детерминированные вопросы
  * по тем же фрагментам (stub-провайдер всегда попадает сюда).
  */
 
@@ -31,7 +31,7 @@ const QLC_JSON_SCHEMA = responseJsonSchema(QlcOutput) as object;
 
 /** Сводка проверки проекта для модели и вердикта: доля тестов, упавшие тесты, замечания. */
 export interface ProjectResultSummary {
-  /** Доля пройденных скрытых тестов 0…1; null — тестов в результате нет. */
+  /** Доля пройденных скрытых тестов 0…1; null – тестов в результате нет. */
   score: number | null;
   passed: number;
   total: number;
@@ -41,13 +41,13 @@ export interface ProjectResultSummary {
 
 /**
  * resultJson сабмита: формат lane project `tests: {passed, total, score}` (score 0…100, сводка 0…1 тоже
- * читается) — имена упавших только из visibleTests; старый формат `tests: [{name, passed}]`, `score`
+ * читается) – имена упавших только из visibleTests; старый формат `tests: [{name, passed}]`, `score`
  * 0…1 или 0…100, `rubric/lint` как замечания. Читаем терпимо.
  */
 export function summarizeProjectResult(result: unknown): ProjectResultSummary | null {
   if (!result || typeof result !== 'object') return null;
   const r = result as Record<string, unknown>;
-  // Формат lane project (project/schemas.ts ResultJson): tests = {passed, total, score 0…100}, имена — только
+  // Формат lane project (project/schemas.ts ResultJson): tests = {passed, total, score 0…100}, имена – только
   // видимых тестов (имена скрытых в вопросах кандидату раскрыли бы набор).
   if (r.tests && typeof r.tests === 'object' && !Array.isArray(r.tests)) {
     const t = r.tests as { passed?: unknown; total?: unknown; score?: unknown };
@@ -116,7 +116,7 @@ function commitRefs(snapshot: RepoSnapshot): CommitRef[] {
     }));
 }
 
-/** Значение атрибута тега: путь файла — данные из репозитория кандидата, кавычка и `<`/`>` не должны закрыть атрибут или тег. */
+/** Значение атрибута тега: путь файла – данные из репозитория кандидата, кавычка и `<`/`>` не должны закрыть атрибут или тег. */
 function attr(text: string): string {
   return escapeData(text).replace(/"/g, '&quot;');
 }
@@ -143,7 +143,7 @@ export function buildQlcMessages(input: QlcInput, fragments: CodeFragment[], com
   return [
     {
       role: 'user',
-      content: `<fragments>\n${frag || '(фрагментов нет)'}\n</fragments>\n\n<commits>\n${com || '(нет)'}\n</commits>\n\n${result}\n\n${log}\n\nСоставь вопросы. Ответ — только JSON по схеме.`,
+      content: `<fragments>\n${frag || '(фрагментов нет)'}\n</fragments>\n\n<commits>\n${com || '(нет)'}\n</commits>\n\n${result}\n\n${log}\n\nСоставь вопросы. Ответ – только JSON по схеме.`,
     },
   ];
 }
@@ -188,7 +188,7 @@ const CONSTRAINTS: { question: string; points: string[] }[] = [
     points: ['измерение до правки', 'узкое место по коду', 'кэш, очередь или пакетная обработка'],
   },
   {
-    question: 'Смени ограничение: внешней базы больше нет, процесс перезапускается раз в час. Как ты сохранишь корректность — что потеряется и как это компенсировать?',
+    question: 'Смени ограничение: внешней базы больше нет, процесс перезапускается раз в час. Как ты сохранишь корректность – что потеряется и как это компенсировать?',
     points: ['что хранится в памяти', 'потеря при перезапуске', 'журнал, снимки или повтор'],
   },
   {
@@ -222,7 +222,7 @@ const TEMPLATES: Record<Exclude<QlcType, 'constraint'>, (name: string, ref: stri
 };
 const ROTATION: Exclude<QlcType, 'constraint'>[] = ['what', 'why', 'what_breaks', 'change'];
 
-/** Детерминированные вопросы: лучшие фрагменты (по одному на файл, пока хватает), типы по кругу, коммит — «почему». */
+/** Детерминированные вопросы: лучшие фрагменты (по одному на файл, пока хватает), типы по кругу, коммит – «почему». */
 export function fallbackQlc(snapshot: RepoSnapshot, fragments: CodeFragment[], commits: CommitRef[]): QlcQuestion[] {
   const chosen: CodeFragment[] = [];
   const files = new Set<string>();
@@ -251,7 +251,7 @@ export function fallbackQlc(snapshot: RepoSnapshot, fragments: CodeFragment[], c
       expectedPoints: ['проблема до коммита', 'почему такое исправление', 'как проверил'],
     });
   }
-  // Кода почти нет (пустой репозиторий) — вопросы по проекту в целом, чтобы защита всё равно состоялась.
+  // Кода почти нет (пустой репозиторий) – вопросы по проекту в целом, чтобы защита всё равно состоялась.
   while (out.length < QLC_LIMITS.minCode) {
     const generic = [
       'Расскажи, как устроен твой проект: из каких частей он состоит и как они связаны между собой?',

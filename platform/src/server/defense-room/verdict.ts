@@ -11,11 +11,11 @@ import type { DefenseFlag, DefenseItemVerdict, DefenseRoomVerdict, PlanItem, Qlc
 
 /**
  * Вердикт защиты проекта: слепой оценщик по рубрике A-02 **по каждому вопросу** (пункту плана QLC или
- * вопросу работодателя), прогоны адаптивные (3, при расхождении — ещё 2), медиана по каждому признаку
- * внутри вопроса; общий балл — среднее по вопросам. Так «понимает часть проекта» отличается от «не
+ * вопросу работодателя), прогоны адаптивные (3, при расхождении – ещё 2), медиана по каждому признаку
+ * внутри вопроса; общий балл – среднее по вопросам. Так «понимает часть проекта» отличается от «не
  * понимает ничего» (валидация 10.10: при одном балле на весь транскрипт AUC (b)/(c) был 0,67).
  * Оценщик видит только вопросы и ответы кандидата: ни кода, ни результата тестов, ни ожидаемых пунктов.
- * Слабая защита при сильном проекте — флаг работодателю, не понижение; вердикта «фейк» нет
+ * Слабая защита при сильном проекте – флаг работодателю, не понижение; вердикта «фейк» нет
  * (ст. 16 152-ФЗ: решение, порождающее последствия, не принимается только автоматически).
  */
 
@@ -24,18 +24,18 @@ export const VERDICT_EXTRA_RUNS = 2;
 export const VERDICT_RULES = {
   /** Проект «сильный»: доля скрытых тестов не ниже. Валидация 10.10: разделяет полностью, оставлен. */
   strongProjectScore: 0.8,
-  /** Ответов меньше — флаг short_defense. */
+  /** Ответов меньше – флаг short_defense. */
   minAnswers: 3,
-  /** Разброс общего балла прогонов не меньше — флаг evaluator_disagreement. */
+  /** Разброс общего балла прогонов не меньше – флаг evaluator_disagreement. */
   disagreementSpread: 3,
-  /** Разброс суммы по вопросу между прогонами больше — добавочные прогоны. */
+  /** Разброс суммы по вопросу между прогонами больше – добавочные прогоны. */
   extraRunsSpread: 2,
-  /** Доля прогонов, согласных с медианой по решению порога вопроса; меньше — вопрос «разошёлся». */
+  /** Доля прогонов, согласных с медианой по решению порога вопроса; меньше – вопрос «разошёлся». */
   minAgreement: 0.75,
   /**
    * uneven_understanding: разброс сумм по вопросам ≥ unevenSpread, либо ≥ unevenSpread − 1 при вопросе с суммой
    * ≤ lowItemTotal. Подобрано на 9 транскриптах валидации 10.10 (переоценка): «понимает частично» 3/3, «сделал сам»
-   * и «ИИ целиком» 0/3; выборка маленькая — порог предварительный.
+   * и «ИИ целиком» 0/3; выборка маленькая – порог предварительный.
    */
   unevenSpread: 3,
   lowItemTotal: 2,
@@ -76,15 +76,7 @@ export function itemTurns(transcript: TranscriptEntry[]): ItemTurns[] {
   let askedItem: string | null = null;
   let askedTopic = '';
   let lastGroup: ItemTurns | null = null;
-  // После ремарки Киры о личном вопросе работодателя ответ кандидата оценщику не отдаётся (личные данные).
-  let personal = false;
   for (const e of transcript) {
-    if (e.role === 'employer') personal = false;
-    if (e.role === 'ai' && e.defense?.kind === 'notice') {
-      personal = true;
-      continue;
-    }
-    if (e.role === 'candidate' && personal) continue;
     if (e.role === 'candidate') {
       if (asked.length) {
         const id = askedItem ?? `t${groups.length + 1}`;
@@ -102,7 +94,6 @@ export function itemTurns(transcript: TranscriptEntry[]): ItemTurns[] {
       }
       asked = [];
     } else if (e.role === 'ai' && e.defense?.kind !== 'closing') {
-      personal = false;
       asked.push(e.text);
       askedItem = e.defense?.itemId ?? askedItem;
       askedTopic = e.meta?.topic ?? askedTopic;
@@ -188,7 +179,7 @@ export const DefenseItemsOutput = z.object({
 export type DefenseItemsOutput = z.infer<typeof DefenseItemsOutput>;
 const ITEMS_JSON_SCHEMA = responseJsonSchema(DefenseItemsOutput) as object;
 
-/** Что видит оценщик: название проекта и вопросы с ответами; тип вопроса и место в коде — только подписи. */
+/** Что видит оценщик: название проекта и вопросы с ответами; тип вопроса и место в коде – только подписи. */
 export interface DefenseEvaluatorPayload {
   kind: 'defense';
   project: string;
@@ -208,7 +199,7 @@ interface EvalItem {
   qa: { question: string; answer: string }[];
 }
 
-/** Вопросы с ответами → пункты оценки (подписи из плана; без плана — из meta реплики). */
+/** Вопросы с ответами → пункты оценки (подписи из плана; без плана – из meta реплики). */
 export function evalItems(transcript: TranscriptEntry[], plan: readonly PlanItem[] = []): EvalItem[] {
   return itemTurns(transcript).map((g) => {
     const p = plan.find((x) => x.id === g.itemId);
@@ -257,7 +248,7 @@ function tryParse(text: string | undefined): unknown {
 /** Один прогон по всем вопросам: вызов + один ремонт при невалидном JSON; цитаты проверяются по ответам этого вопроса. */
 async function oneItemsRun(payload: DefenseEvaluatorPayload, items: readonly EvalItem[], llm: LlmProvider, signal?: AbortSignal): Promise<RunItem[]> {
   const system = loadRoomPrompt('evaluator');
-  const messages: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\nОцени каждый вопрос по рубрике. Ответ — только JSON по схеме.` }];
+  const messages: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\nОцени каждый вопрос по рубрике. Ответ – только JSON по схеме.` }];
   let parsed: DefenseItemsOutput | undefined;
   let lastError = '';
   for (let i = 0; i < 2 && !parsed; i++) {
@@ -304,14 +295,14 @@ export function itemsNeedExtraRuns(runs: readonly RunItem[][]): boolean {
   return false;
 }
 
-/** Сведение прогонов: медиана по признаку внутри вопроса; общий балл — среднее по вопросам. */
+/** Сведение прогонов: медиана по признаку внутри вопроса; общий балл – среднее по вопросам. */
 export function aggregateItems(items: readonly EvalItem[], runs: readonly RunItem[][]): { items: DefenseItemVerdict[]; scores: DefenseScores; totalMean: number; runTotals: number[] } {
   const out: DefenseItemVerdict[] = items.map((it, i) => {
     const per = runs.map((r) => r[i]!);
     const runScores = per.map(scoresOf);
     const scores = medianScores(runScores);
     const passed = decidePassed(scores);
-    // Цитата-доказательство — только у признака с баллом > 0: цитата к нулю ничего не доказывает.
+    // Цитата-доказательство – только у признака с баллом > 0: цитата к нулю ничего не доказывает.
     const quoteRun = scores.depth > 0 ? per.find((p) => p.depth.valid && p.depth.score === scores.depth) : undefined;
     const anyValid = per.flatMap((p) => CRITERIA.map((c) => p[c])).find((x) => x.valid && x.score > 0);
     return {
@@ -345,7 +336,7 @@ export function decideOverall(scores: DefenseScores, totalMean: number): boolean
 export interface VerdictInput {
   projectTitle: string;
   transcript: TranscriptEntry[];
-  /** Пункты плана — подписи вопросов (тип, файл); без плана — из meta реплик. */
+  /** Пункты плана – подписи вопросов (тип, файл); без плана – из meta реплик. */
   plan?: readonly PlanItem[];
   projectScore: number | null;
   employerAsked: number;

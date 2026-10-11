@@ -2,7 +2,7 @@
 // Дорожка работодателя пишется в его браузере (MediaRecorder по его же микрофону, который уходит в P2P) сегментами
 // WebM/Opus и грузится сюда: <CALL_DATA_DIR>/calls/<sessionId>/employer/NNN-<startMs>.webm. Отдельно от аудио кандидата
 // (calls/<id>/NNN.wav): сбой дорожки работодателя не трогает запись кандидата. Не в БД (ADR 0003 п. 4);
-// в CallSession.employerAudioPath — только папка, признак «дорожка есть».
+// в CallSession.employerAudioPath – только папка, признак «дорожка есть».
 // Принимается только от участника комнаты, подтвердившего при входе предупреждение о записи (CallParticipant.recordingConsentAt).
 import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -92,7 +92,7 @@ async function readEmployerAudioSegment(sessionId: string, name: string): Promis
 const RECORDING_OFF = () => new AppError('call_recording_off', 'Кандидат отозвал согласие на запись - защита идёт без записи голоса', 409);
 
 export async function addEmployerAudio(principal: SessionPrincipal | null, sessionId: string, bytes: Uint8Array, startMs: number): Promise<EmployerAudioSegment> {
-  // resolveViewer: чужая компания, живая защита по чужой вакансии, нет accepted — 404 (как вход в комнату).
+  // resolveViewer: чужая компания, живая защита по чужой вакансии, нет accepted – 404 (как вход в комнату).
   const { viewer, session } = await resolveViewer(principal, sessionId);
   if (viewer.role !== 'employer') throw errors.forbidden('Доступно только работодателю');
   if (session.aiDefense) throw errors.conflict('Это ИИ-защита без работодателя');
@@ -100,7 +100,7 @@ export async function addEmployerAudio(principal: SessionPrincipal | null, sessi
   const p = await prisma.callParticipant.findFirst({ where: { callSessionId: sessionId, userId: viewer.userId, leftAt: null }, select: { recordingConsentAt: true } });
   if (!p) throw errors.conflict('Сначала подключись к защите');
   if (!p.recordingConsentAt) throw new AppError('recording_consent_required', 'Подтверди запись разговора при входе в защиту', 409);
-  // Кандидат отозвал Г2 (ADR 0005): защита идёт без записи голоса — и его, и работодателя (в дорожку работодателя
+  // Кандидат отозвал Г2 (ADR 0005): защита идёт без записи голоса – и его, и работодателя (в дорожку работодателя
   // через динамики попадает и голос кандидата).
   const candidateOn = async () => (await callRecordingMode(session.candidateId)) === 'audio';
   if (!(await candidateOn())) throw RECORDING_OFF();
@@ -118,9 +118,9 @@ export async function addEmployerAudio(principal: SessionPrincipal | null, sessi
 // Чтение: те же правила, что у записи защиты
 // ---------------------------------------------------------------------------
 /**
- * Кандидат — своя защита. Работодатель — только компания-владелец живой защиты (resolveViewer: accepted + vacancy
- * сабмита, ADR 0008) и только при действующем раскрытии (Г5, resolveCallAccess.recording) — как запись кандидата.
- * ИИ-защита дорожки работодателя не имеет — 404.
+ * Кандидат – своя защита. Работодатель – только компания-владелец живой защиты (resolveViewer: accepted + vacancy
+ * сабмита, ADR 0008) и только при действующем раскрытии (Г5, resolveCallAccess.recording) – как запись кандидата.
+ * ИИ-защита дорожки работодателя не имеет – 404.
  */
 async function assertMayRead(principal: SessionPrincipal | null, sessionId: string): Promise<void> {
   const { viewer, session } = await resolveViewer(principal, sessionId);

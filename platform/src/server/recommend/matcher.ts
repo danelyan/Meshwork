@@ -72,7 +72,7 @@ export function computeCoverage(needs: Need[], catalog: Map<string, CatalogEntry
   };
 }
 
-/** «закрываешь k из n, не хватает: …» — только формулировки каталога. */
+/** «закрываешь k из n, не хватает: …» – только формулировки каталога. */
 export function describeCoverage(r: CoverageResult, subject: 'candidate' | 'you' | 'formal' = 'you'): string {
   // 'formal' - обращение на «вы» (кабинет кандидата, /career); 'you' - на «ты» (консультант, лента)
   const verb = subject === 'you' ? 'закрываешь' : subject === 'formal' ? 'закрываете' : 'закрыто';
@@ -88,10 +88,10 @@ export function describeCoverage(r: CoverageResult, subject: 'candidate' | 'you'
 export async function explainInvitation(candidateId: string, invitationId: string): Promise<Coverage> {
   await assertCandidate(candidateId);
   const inv = await prisma.invitation.findUnique({ where: { id: invitationId }, include: { vacancy: true } });
-  // чужое приглашение — 404, не раскрываем существование
+  // чужое приглашение – 404, не раскрываем существование
   if (!inv || inv.candidateId !== candidateId) throw errors.notFound('Приглашение не найдено');
   const [catalog, index] = await Promise.all([loadCatalog(), loadConfirmedIndex(candidateId)]);
-  // Приглашение без потребности (R-E-05, lane employer): требований нет — покрытие пустое.
+  // Приглашение без потребности (R-E-05, lane employer): требований нет – покрытие пустое.
   const r = computeCoverage(parseNeeds(inv.vacancy?.needs ?? []), catalog, index);
   return {
     invitationId: inv.id,

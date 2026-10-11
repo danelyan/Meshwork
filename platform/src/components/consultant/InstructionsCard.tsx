@@ -10,8 +10,8 @@ type Status = 'idle' | 'saving' | 'saved' | 'error';
 
 /**
  * «Как мне работать»: кандидат включает готовые режимы консультанта и пишет свои инструкции (до 500 символов).
- * Сохраняет PUT /api/consultant/settings. Меняется только стиль и фокус ответов консультанта — не подборка и не тест.
- * Начальные данные — из колонки (SceneAsideData.instructions); дальше состояние своё, обновление колонки его не сбрасывает.
+ * Сохраняет PUT /api/consultant/settings. Меняется только стиль и фокус ответов консультанта – не подборка и не тест.
+ * Начальные данные – из колонки (SceneAsideData.instructions); дальше состояние своё, обновление колонки его не сбрасывает.
  */
 export function InstructionsCard({ initial }: { initial?: ConsultantSettingsData }) {
   const [skills, setSkills] = useState<string[]>(initial?.skills ?? []);

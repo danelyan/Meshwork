@@ -10,7 +10,7 @@ import styles from './speaking.module.css';
 import { phraseAt, splitPhrases } from './phrases';
 import { type CompanionVoice, useCompanionVoice, type VoiceStatus } from './voice';
 
-/** В покое — «на связи»: микрофон в чате не слушает, «слушает» вводило в заблуждение (владелец 11.10). */
+/** В покое – «на связи»: микрофон в чате не слушает, «слушает» вводило в заблуждение (владелец 11.10). */
 export const STATE_LABEL: Record<VoiceStatus, string> = { idle: 'на связи', thinking: 'думает', loading: 'готовит голос', speaking: 'говорит' };
 
 /** Сколько символов субтитров помещается в две-три строки сцены. */
@@ -47,15 +47,15 @@ function SpeakerIcon() {
 
 /**
  * Пузырь реплики консультанта в ленте. Пока именно эта реплика звучит: пульс рамки, значок динамика
- * и полоска фраз (активная светлее). Вне провайдера голоса — обычный пузырь.
+ * и полоска фраз (активная светлее). Вне провайдера голоса – обычный пузырь.
  * Реплику узнаём по `speakKey` (id потока), а не по тексту: две одинаковые реплики не мигают вместе.
- * Без ключа (восстановленная история) — по тексту, и только у `latest` (последней с таким текстом).
+ * Без ключа (восстановленная история) – по тексту, и только у `latest` (последней с таким текстом).
  */
 export function SpeakingBubble({ text, speakKey, latest = true, children }: { text: string; speakKey?: string; latest?: boolean; children: React.ReactNode }) {
   const voice = useCompanionVoice();
   const sameReply = voice?.speakingKey != null ? speakKey != null && isSpeakKeyOf(voice.speakingKey, speakKey) : voice?.speakingText === text && latest;
   const mine = voice?.status === 'speaking' && sameReply;
-  // Реплика звучит частями (стриминг, components/chat/stream-speech.ts): полоска — по фразам звучащей части.
+  // Реплика звучит частями (стриминг, components/chat/stream-speech.ts): полоска – по фразам звучащей части.
   const shown = voice?.speakingKey?.includes('#') && voice.speakingText ? voice.speakingText : text;
   const phrases = useMemo(() => (mine ? splitPhrases(shown) : []), [mine, shown]);
   const active = useActivePhrase(voice, phrases, mine);
@@ -127,18 +127,18 @@ export function StateChip({ className }: { className?: string }) {
   );
 }
 
-/** Переключатель «Озвучивать всегда»: подпись постоянная, состояние — aria-pressed (тёмная кнопка с галочкой = включено). */
+/** Переключатель «Озвучивать всегда»: подпись постоянная, состояние – aria-pressed (тёмная кнопка с галочкой = включено). */
 export function MuteToggle({ className }: { className?: string }) {
   const voice = useCompanionVoice();
   if (!voice || voice.available === false) return null;
   return (
-    <button type="button" data-voice-toggle className={cx(styles.mute, className)} aria-pressed={voice.enabled} title={voice.enabled ? 'Ответы Киры озвучиваются — нажми, чтобы выключить' : 'Нажми, чтобы ответы Киры озвучивались сами'} onClick={voice.toggle}>
+    <button type="button" data-voice-toggle className={cx(styles.mute, className)} aria-pressed={voice.enabled} title={voice.enabled ? 'Ответы Киры озвучиваются – нажми, чтобы выключить' : 'Нажми, чтобы ответы Киры озвучивались сами'} onClick={voice.toggle}>
       {voice.enabled ? '✓ Озвучивать всегда' : 'Озвучивать всегда'}
     </button>
   );
 }
 
-/** Кнопка «стоп» — только пока звучит. */
+/** Кнопка «стоп» – только пока звучит. */
 export function StopButton({ className }: { className?: string }) {
   const voice = useCompanionVoice();
   if (!voice || (voice.status !== 'speaking' && voice.status !== 'loading')) return null;

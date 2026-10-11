@@ -246,7 +246,7 @@ describe('ретраи', () => {
     expect(log).toEqual(['a#1', 'b#1', 'a#2', 'c#1']);
   });
 
-  it('синхронное исключение в job — обычная неудачная попытка', async () => {
+  it('синхронное исключение в job – обычная неудачная попытка', async () => {
     const clock = manualClock();
     const q = mk(clock, { maxAttempts: 2 });
     let calls = 0;

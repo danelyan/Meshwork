@@ -1,4 +1,4 @@
-// Контракты модуля project (ADR 0003, ступень 2; «Дополнение 10.10» — лента заданий).
+// Контракты модуля project (ADR 0003, ступень 2; «Дополнение 10.10» – лента заданий).
 import { z } from 'zod';
 
 /** Сколько взятых и ещё не сданных заданий может держать кандидат одновременно (ADR 0003, п. 6). */
@@ -26,7 +26,7 @@ export type SpecJson = z.infer<typeof SpecJson>;
 export interface StoredSpec extends SpecJson {
   /** contract.md шаблона дословно на момент генерации: модель контракт не пересказывает. */
   contractMd: string;
-  /** llm — легенда и требования от модели; fallback — детерминированная сборка (stub или сбой модели). */
+  /** llm – легенда и требования от модели; fallback – детерминированная сборка (stub или сбой модели). */
   source: 'llm' | 'fallback';
 }
 
@@ -86,12 +86,12 @@ export interface TestOutcome {
 }
 
 export interface ResultJson {
-  /** approach — сдача подходом: автотестов нет (tests 0/0), оценка только рубрикой. Нет поля — код. */
+  /** approach – сдача подходом: автотестов нет (tests 0/0), оценка только рубрикой. Нет поля – код. */
   kind?: 'code' | 'approach';
   tests: { passed: number; total: number; score: number };
-  /** Видимые тесты — кандидату можно показать имена и статус. */
+  /** Видимые тесты – кандидату можно показать имена и статус. */
   visibleTests: TestOutcome[];
-  /** Скрытые тесты — только работодателю (имена раскрывают набор). */
+  /** Скрытые тесты – только работодателю (имена раскрывают набор). */
   hiddenTests: TestOutcome[];
   lint: { status: 'skipped' | 'done'; note: string; details?: unknown };
   rubric: { source: 'llm' | 'fallback'; results: RubricResult[]; injectionSuspected: boolean };
@@ -111,7 +111,7 @@ const optText = (max: number) =>
     .transform((v) => (v ? v : null));
 
 export const ProjectTaskInput = z.object({
-  /** Не задан — первый шаблон под направление/грейд/подкатегорию потребности. */
+  /** Не задан – первый шаблон под направление/грейд/подкатегорию потребности. */
   templateId: z.string().min(3).max(64).optional(),
   subcategoryId: z.string().max(64).optional(),
   requiredCatalogIds: z.array(z.string().min(1).max(64)).max(MAX_REQUIRED_CRITERIA).default([]),
@@ -125,8 +125,8 @@ export const APPROACH_MIN = 200;
 export const APPROACH_MAX = 8_000;
 
 /**
- * Сдача: кодом (`kind: 'code'`, по умолчанию — репозиторий GitHub, автотесты и рубрика) или подходом
- * (`kind: 'approach'` — текст решения без кода; оценивается только рубрикой, ТЗ: «решить её или предложить подход»).
+ * Сдача: кодом (`kind: 'code'`, по умолчанию – репозиторий GitHub, автотесты и рубрика) или подходом
+ * (`kind: 'approach'` – текст решения без кода; оценивается только рубрикой, ТЗ: «решить её или предложить подход»).
  */
 export const SubmissionInput = z
   .object({
@@ -134,7 +134,7 @@ export const SubmissionInput = z
     repoUrl: z.string().trim().min(10).max(300).optional(),
     approachText: z.string().trim().max(APPROACH_MAX).optional(),
     aiLogText: z.string().trim().max(AI_LOG_MAX).default(''),
-    /** Не задан — последний коммит ветки по умолчанию на момент сдачи. */
+    /** Не задан – последний коммит ветки по умолчанию на момент сдачи. */
     commitSha: z
       .string()
       .trim()

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Локальный PostgreSQL 16 для разработки без Docker и без brew services.
 # Кластер общий для всех лейнов: fsp/.pgdata (рядом с основным клоном), порт 54329, пользователь postgres, trust.
-# Другое место — PGDATA_LOCAL=/путь (им же разрешается первичный initdb).
+# Другое место – PGDATA_LOCAL=/путь (им же разрешается первичный initdb).
 #   db-local.sh start | stop | status | create <dbname> | drop <dbname> | url <dbname>
 set -euo pipefail
 # macOS: без валидной локали postmaster падает «became multithreaded during startup».
@@ -10,7 +10,7 @@ export LC_ALL="${LC_ALL:-en_US.UTF-8}" LANG="${LANG:-en_US.UTF-8}"
 PG_BIN="${PG_BIN:-/opt/homebrew/opt/postgresql@16/bin}"
 PORT="${PGPORT_LOCAL:-54329}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Корень кластера: fsp/.pgdata, где fsp/ — родитель основного клона (fsp/fsp-lct-2026).
+# Корень кластера: fsp/.pgdata, где fsp/ – родитель основного клона (fsp/fsp-lct-2026).
 # `git rev-parse --git-common-dir` общий и для основного клона, и для его worktree'ов (.wt/<lane>),
 # поэтому путь не зависит от глубины, на которой лежит скрипт.
 default_pgdata() {

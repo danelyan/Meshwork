@@ -42,7 +42,7 @@ describe('шаблоны проектов на диске', () => {
     }
   });
 
-  it('catalogIds — реальные id каталога навыков', () => {
+  it('catalogIds – реальные id каталога навыков', () => {
     const raw = readFileSync(path.resolve(__dirname, '../../../prisma/seed/claims-catalog.json'), 'utf8');
     const known = new Set([...raw.matchAll(/"id":\s*"([a-z]+\.[a-z0-9.-]+)"/g)].map((m) => m[1]));
     for (const t of all) for (const id of t.manifest.catalogIds) expect(known.has(id), `${t.manifest.id}: ${id}`).toBe(true);
@@ -70,11 +70,11 @@ describe('PLATFORM-OWNED: сверка файлов платформы в реп
   const expected = ownedFileHashes(files);
   const enc = (s: string) => new TextEncoder().encode(s);
 
-  it('файлы с маркером — под контролем, код кандидата — нет', () => {
+  it('файлы с маркером – под контролем, код кандидата – нет', () => {
     expect([...expected.keys()]).toEqual(['contract.md', 'tests/visible/a.test.ts']);
   });
 
-  it('без правок (и с CRLF) — чисто; изменён или удалён — нарушение', () => {
+  it('без правок (и с CRLF) – чисто; изменён или удалён – нарушение', () => {
     const same = new Map([
       ['contract.md', enc('<!-- PLATFORM-OWNED -->\r\n# Контракт')],
       ['tests/visible/a.test.ts', enc('// PLATFORM-OWNED: тест\nit()')],

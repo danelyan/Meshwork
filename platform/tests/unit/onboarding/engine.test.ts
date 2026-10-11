@@ -23,7 +23,7 @@ import { assemblePrompt } from '@/server/agent/prompts/assemble';
 import { BASE_STEPS, CANDIDATE_STEPS, EMPLOYER_STEPS, findStep } from '@/server/onboarding/scenario';
 import type { Answers, Facts, StepContext } from '@/server/onboarding/types';
 
-// Согласия онбординга (ADR 0005) по умолчанию уже решены: проверки порядка шагов — без шага consents.
+// Согласия онбординга (ADR 0005) по умолчанию уже решены: проверки порядка шагов – без шага consents.
 const facts = (f: Partial<Facts> = {}): Facts => ({ role: 'pending', consent: false, candidateConsents: true, employerConsents: true, name: 'Иван Петров', fspState: null, specialization: null, ...f });
 const ctx = (answers: Answers = {}, f: Partial<Facts> = {}): StepContext => ({ answers, facts: facts(f) });
 const ids = (c: StepContext) => visibleSteps(c).map((s) => s.id);
@@ -56,14 +56,14 @@ describe('сценарий онбординга', () => {
     }
   });
 
-  it('до выбора роли — только согласие и роль; роль выбирает ветку', () => {
+  it('до выбора роли – только согласие и роль; роль выбирает ветку', () => {
     expect(ids(ctx())).toEqual(['consent', 'role', 'summary']);
     expect(ids(ctx({ role: 'candidate' }))).toContain('goal');
     expect(ids(ctx({}, { role: 'employer' }))).toContain('needSalary');
     expect(ids(ctx({}, { role: 'employer' }))).not.toContain('goal');
   });
 
-  it('согласия (ADR 0005): шаг consents первым у кандидата и после названия компании у работодателя; ноль галочек — ответ', () => {
+  it('согласия (ADR 0005): шаг consents первым у кандидата и после названия компании у работодателя; ноль галочек – ответ', () => {
     const c = ctx({}, { consent: true, role: 'candidate', candidateConsents: false });
     expect(nextOpen(c, [], null).id).toBe('candidateConsents');
     expect(validateAnswer(step('candidateConsents'), [], c)).toEqual([]);
@@ -75,7 +75,7 @@ describe('сценарий онбординга', () => {
     expect(isClosed(step('candidateConsents'), ctx({}, { role: 'candidate', candidateConsents: true }), [])).toBe(true);
   });
 
-  it('условия: город — только при офисе или гибриде; участие в ФСП — если ФСП ID не привязан', () => {
+  it('условия: город – только при офисе или гибриде; участие в ФСП – если ФСП ID не привязан', () => {
     const base = { role: 'candidate' };
     expect(ids(ctx({ ...base, formats: ['remote'] }))).not.toContain('city');
     expect(ids(ctx({ ...base, formats: ['remote', 'hybrid'] }))).toContain('city');
@@ -117,13 +117,13 @@ describe('движок: переходы, пропуски, восстановл
     expect(nextOpen(c, [], null).id).toBe('goal');
   });
 
-  it('следующий — первый незакрытый после текущего; пропуск закрывает шаг', () => {
+  it('следующий – первый незакрытый после текущего; пропуск закрывает шаг', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
     expect(nextOpen(c, [], 'goal').id).toBe('documents');
     expect(nextOpen(c, ['documents'], 'goal').id).toBe('fsp');
   });
 
-  it('из итога вернулись к пропущенному и ответили — снова итог', () => {
+  it('из итога вернулись к пропущенному и ответили – снова итог', () => {
     const answers: Answers = Object.fromEntries(
       CANDIDATE_STEPS.filter((s) => s.id !== 'city').map((s) => [s.id, 'x']),
     );
@@ -140,7 +140,7 @@ describe('движок: переходы, пропуски, восстановл
     expect(nextOpen(c, [], 'fspParticipation').id).toBe('documents');
   });
 
-  it('восстановление: сохранённый шаг продолжается после перезагрузки; закрытый фактом — пропускается', () => {
+  it('восстановление: сохранённый шаг продолжается после перезагрузки; закрытый фактом – пропускается', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
     expect(currentStep(c, { stepId: 'grade', answers: c.answers, skipped: [] }).id).toBe('grade');
     expect(currentStep(c, { stepId: 'consent', answers: c.answers, skipped: [] }).id).toBe('documents');
@@ -149,7 +149,7 @@ describe('движок: переходы, пропуски, восстановл
     expect(currentStep(c, { stepId: 'summary', answers: c.answers, skipped: [] }).id).toBe('documents');
   });
 
-  it('прогресс: пока роль не выбрана — по длине сценария кандидата; пропуск считается пройденным', () => {
+  it('прогресс: пока роль не выбрана – по длине сценария кандидата; пропуск считается пройденным', () => {
     const p0 = progress(ctx(), []);
     expect(p0.done).toBe(0);
     expect(p0.total).toBe(visibleSteps(ctx({ role: 'candidate' })).length - 1);
@@ -166,7 +166,7 @@ describe('движок: переходы, пропуски, восстановл
     expect(progress(c2, []).done).toBe(2); // роль и шаг согласий (по умолчанию в фикстуре решён)
   });
 
-  it('согласие взято при регистрации: шага согласия в чате нет, первый вопрос — роль с приветствием без модели', () => {
+  it('согласие взято при регистрации: шага согласия в чате нет, первый вопрос – роль с приветствием без модели', () => {
     const c = ctx({}, { consent: true });
     expect(ids(c)).toEqual(['role', 'summary']);
     expect(currentStep(c, { stepId: null, answers: {}, skipped: [] }).id).toBe('role');
@@ -177,7 +177,7 @@ describe('движок: переходы, пропуски, восстановл
     expect(ids(ctx())[0]).toBe('consent');
   });
 
-  it('лента — закрытые шаги без текущего', () => {
+  it('лента – закрытые шаги без текущего', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
     const h = historyOf(c, { stepId: 'goal', answers: c.answers, skipped: [] }, step('goal'));
     expect(h.map((s) => s.id)).toEqual(['role', 'candidateConsents']);
@@ -188,7 +188,7 @@ describe('проверка ответов', () => {
   const cand = ctx({ role: 'candidate' }, { role: 'candidate', consent: true });
   const bad = (id: string, v: unknown, c = cand) => expect(() => validateAnswer(step(id), v, c)).toThrow(AnswerError);
 
-  it('one: вариант из списка; недоступный «скоро» и чужой — отказ; свой — где разрешён', () => {
+  it('one: вариант из списка; недоступный «скоро» и чужой – отказ; свой – где разрешён', () => {
     expect(validateAnswer(step('specialization'), 'backend', cand)).toBe('backend');
     bad('specialization', 'mobile');
     bad('goal', 'whatever');
@@ -216,14 +216,14 @@ describe('проверка ответов', () => {
     bad('salary', { from: 100.5, to: 200 });
   });
 
-  it('text: длина; ИНН — по контрольной сумме', () => {
+  it('text: длина; ИНН – по контрольной сумме', () => {
     const emp = ctx({}, { role: 'employer', consent: true });
     expect(validateAnswer(step('inn'), '7707083893', emp)).toBe('7707083893');
     expect(() => validateAnswer(step('inn'), '7707083894', emp)).toThrow(/контрольная/);
     expect(() => validateAnswer(step('about'), '', emp)).toThrow(AnswerError);
   });
 
-  it('контакт (Q-35): шаг кандидата после зарплаты, почта или Telegram, служебная почта — отказ', () => {
+  it('контакт (Q-35): шаг кандидата после зарплаты, почта или Telegram, служебная почта – отказ', () => {
     const order = ids(ctx({ role: 'candidate' }, { fspState: 'not_linked' }));
     expect(order.indexOf('candidateContact')).toBe(order.indexOf('salary') + 1);
     expect(order.indexOf('candidateContact')).toBeLessThan(order.indexOf('fspParticipation'));
@@ -242,7 +242,7 @@ describe('проверка ответов', () => {
     expect(() => validateAnswer(step('contact'), 'звоните', emp)).toThrow(AnswerError);
   });
 
-  it('files: нужен хотя бы файл или ссылка, ссылка — URL', () => {
+  it('files: нужен хотя бы файл или ссылка, ссылка – URL', () => {
     expect(validateAnswer(step('documents'), { uploadIds: ['u1'], claims: 3 }, cand)).toEqual({ uploadIds: ['u1'], urls: [], claims: 3 });
     bad('documents', { uploadIds: [], urls: [] });
     bad('documents', { urls: ['not a url'] });
@@ -262,7 +262,7 @@ describe('проверка ответов', () => {
 });
 
 describe('ИНН', () => {
-  it('10 и 12 цифр с верной контрольной суммой проходят, опечатка — нет', () => {
+  it('10 и 12 цифр с верной контрольной суммой проходят, опечатка – нет', () => {
     expect(checkInn('7707083893')).toEqual({ ok: true, kind: 'legal' });
     expect(checkInn('500100732259')).toEqual({ ok: true, kind: 'individual' });
     expect(checkInn('500100732258').ok).toBe(false);
@@ -309,7 +309,7 @@ describe('тексты вариантов', () => {
 });
 
 describe('реплики помощника', () => {
-  it('имя из аккаунта: без «Демо:» и скобок; мусор — пусто', () => {
+  it('имя из аккаунта: без «Демо:» и скобок; мусор – пусто', () => {
     expect(firstName('Демо: Анна Кравец (HR, работодатель)')).toBe('Анна');
     expect(firstName('Иван Петров')).toBe('Иван');
     expect(firstName('user_123')).toBe('');
@@ -338,7 +338,7 @@ describe('реплики помощника', () => {
       }
     }
   });
-  it('ответ модели: короткий текст без разметки, иначе — шаблон', () => {
+  it('ответ модели: короткий текст без разметки, иначе – шаблон', () => {
     expect(cleanLead('«Отлично, Иван.»')).toBe('Отлично, Иван.');
     expect(cleanLead('# Заголовок')).toBeNull();
     expect(cleanLead('x'.repeat(300))).toBeNull();
@@ -359,7 +359,7 @@ describe('реплики помощника', () => {
   });
 });
 
-it('ФСП: в ленте — состояние, а не действие кнопки', () => {
+it('ФСП: в ленте – состояние, а не действие кнопки', () => {
   const c = { answers: {}, facts: { role: 'candidate' as const, consent: true, name: '', fspState: null, specialization: null } };
   expect(answerLabel(findStep('fsp')!, 'linked', c)).toBe('ФСП ID привязан');
   expect(answerLabel(findStep('fsp')!, 'no_achievements', c)).toBe('ФСП ID привязан, достижений пока нет');
@@ -367,7 +367,7 @@ it('ФСП: в ленте — состояние, а не действие кн�
   expect(answerLabel(findStep('fsp')!, 'not_linked', c)).toBe('Нет истории ФСП');
 });
 
-it('ФСП: «Войти через ФСП ID» — ссылка на OIDC-вход, ответом через API не принимается', () => {
+it('ФСП: «Войти через ФСП ID» – ссылка на OIDC-вход, ответом через API не принимается', () => {
   const c = { answers: {}, facts: { role: 'candidate' as const, consent: true, name: '', fspState: null, specialization: null } };
   const step = findStep('fsp')!;
   expect((step.options as { value: string; href?: string }[]).find((o) => o.value === 'linked')?.href).toBe('/api/fsp-id/link?return=consultant');

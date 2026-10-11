@@ -3,14 +3,14 @@ import { AppError } from '@/server/errors';
 import { yandexAuthHeader } from '@/server/llm/providers/yandex-responses';
 
 /**
- * Распознавание голоса для композера чата. Режим — env STT_PROVIDER:
- *  - yandex — SpeechKit, синхронный REST v1 `stt:recognize` (короткое аудио: ≤ 30 с, ≤ 1 МБ, 1 канал;
- *    форматы lpcm/oggopus — webm не принимает, поэтому клиент пишет LPCM 16 кГц через Web Audio);
- *  - openai — OpenAI-совместимый `POST {STT_OPENAI_BASE_URL}/audio/transcriptions` (vLLM whisper-large-v3 в Selectel):
+ * Распознавание голоса для композера чата. Режим – env STT_PROVIDER:
+ *  - yandex – SpeechKit, синхронный REST v1 `stt:recognize` (короткое аудио: ≤ 30 с, ≤ 1 МБ, 1 канал;
+ *    форматы lpcm/oggopus – webm не принимает, поэтому клиент пишет LPCM 16 кГц через Web Audio);
+ *  - openai – OpenAI-совместимый `POST {STT_OPENAI_BASE_URL}/audio/transcriptions` (vLLM whisper-large-v3 в Selectel):
  *    LPCM заворачивается в WAV, тот же лимит 30 с / 1 МБ, что и у yandex; включается только явно, `auto` его не выбирает;
- *  - browser — распознаёт браузер (Web Speech API), сервер не участвует;
- *  - off — кнопки микрофона нет;
- *  - auto (по умолчанию) — yandex при YANDEX_API_KEY + YANDEX_FOLDER_ID, иначе browser.
+ *  - browser – распознаёт браузер (Web Speech API), сервер не участвует;
+ *  - off – кнопки микрофона нет;
+ *  - auto (по умолчанию) – yandex при YANDEX_API_KEY + YANDEX_FOLDER_ID, иначе browser.
  * Аудио на сервере не хранится и не пишется в журнал: тело запроса уходит в SpeechKit и забывается.
  */
 export type SttMode = 'yandex' | 'openai' | 'browser' | 'off';
@@ -40,7 +40,7 @@ export async function recognizeYandex(
   if (audio.byteLength > STT_MAX_BYTES) throw new AppError('payload_too_large', `Запись длиннее ${STT_MAX_SECONDS} секунд - скажи короче`, 413);
   const auth = yandexAuthHeader(opts.apiKey);
   const params = new URLSearchParams({ lang: 'ru-RU', format: 'lpcm', sampleRateHertz: String(STT_SAMPLE_RATE) });
-  // folderId нужен только при авторизации пользовательским IAM-токеном; с ключом сервисного аккаунта — нельзя (docs SpeechKit v1).
+  // folderId нужен только при авторизации пользовательским IAM-токеном; с ключом сервисного аккаунта – нельзя (docs SpeechKit v1).
   if (auth.startsWith('Bearer') && opts.folderId) params.set('folderId', opts.folderId);
   let res: Response;
   try {
@@ -124,7 +124,7 @@ export async function recognizeServer(audio: Uint8Array, signal?: AbortSignal, e
 
 /**
  * Лимит запросов распознавания на сессию: скользящее окно в памяти процесса (один инстанс на стенде), как у
- * озвучки (`ttsRateLimit`). Запись — до 30 с, диктовка в чате и в защите даёт единицы запросов в минуту; 30 в минуту —
+ * озвучки (`ttsRateLimit`). Запись – до 30 с, диктовка в чате и в защите даёт единицы запросов в минуту; 30 в минуту –
  * только цикл на клиенте. Защищает платный сервис распознавания, не замена квоте облака.
  */
 export const STT_RATE = { windowMs: 60_000, max: 30 };

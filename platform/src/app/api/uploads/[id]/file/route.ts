@@ -6,7 +6,7 @@ import { contentDisposition, readOriginal } from '@/server/uploads/storage';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-/** Отдаём только то, что принимает загрузка; остальное — как бинарник, без шанса на inline HTML/SVG. */
+/** Отдаём только то, что принимает загрузка; остальное – как бинарник, без шанса на inline HTML/SVG. */
 const SAFE_TYPES = new Set(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/markdown', 'text/csv', 'image/jpeg', 'image/png']);
 
 /**

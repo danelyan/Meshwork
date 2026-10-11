@@ -25,7 +25,7 @@ function stub(claims: unknown[], recs: unknown) {
 }
 
 describe('ProfilePage: у блоков один дом', () => {
-  it('карта глубины, пробелы и вакансии не дублируются; профиль по макету Astra v2 — форма и «Как видит компания»', async () => {
+  it('карта глубины, пробелы и вакансии не дублируются; профиль по макету Astra v2 – форма и «Как видит компания»', async () => {
     stub([claim('confirmed')], { targets: [{ vacancyId: 'v1', companyName: 'Альфа', title: 'Backend', reason: 'r' }], gaps: [], tasks: [] });
     render(<ProfilePage />);
     await screen.findByText('Писал эндпоинты');

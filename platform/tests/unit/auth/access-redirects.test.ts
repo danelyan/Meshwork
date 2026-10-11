@@ -29,7 +29,7 @@ const stale = (path: string) => `/api/auth/stale?next=${encodeURIComponent(path)
 const C = '/consultant';
 const CO = '/employer/company';
 
-/** Ожидание для класса страниц: null — пускать. */
+/** Ожидание для класса страниц: null – пускать. */
 type Row = Record<Exclude<Who, 'guest' | 'stale'>, string | null>;
 const PUBLIC: Row = { pending: null, candidate: null, employer: null, legacy: null, bothAsCandidate: null, bothAsEmployer: null, employerNoProfile: null, candidateNoProfile: null };
 const ACCOUNT: Row = PUBLIC;
@@ -64,7 +64,7 @@ const PATHS: Array<[string, Row, 'public' | 'closed']> = [
   ['/employer/needs/new', EMPLOYER, 'closed'],
   ['/employer/needs/n1', EMPLOYER, 'closed'],
   ['/employer/needs/n1/edit', EMPLOYER, 'closed'],
-  // Нет записи — закрыто для всех (deny by default).
+  // Нет записи – закрыто для всех (deny by default).
   ['/no-such-page', UNKNOWN, 'closed'],
   ['/employer/needs/n1/delete', UNKNOWN, 'closed'],
 ];
@@ -80,15 +80,15 @@ describe.each(PATHS)('foreignPageRedirect: %s', (path, row, kind) => {
 });
 
 describe('таблица и сопоставление путей', () => {
-  it('статичный сегмент точнее динамического: /employer/needs/new — не [id]', () => {
+  it('статичный сегмент точнее динамического: /employer/needs/new – не [id]', () => {
     expect(matchRoute(PAGE_ACCESS, '/employer/needs/new')).toBe('/employer/needs/new');
     expect(matchRoute(PAGE_ACCESS, '/employer/needs/new-1')).toBe('/employer/needs/[id]');
   });
-  it('query и hash не влияют; лишний сегмент — нет записи', () => {
+  it('query и hash не влияют; лишний сегмент – нет записи', () => {
     expect(pageLevelFor('/test?grade=middle#q')).toBe('candidate');
     expect(pageLevelFor('/profile/extra')).toBeNull();
   });
-  it('API по методу: GET /api/stt публичный, POST — с входом; неизвестный метод закрыт', () => {
+  it('API по методу: GET /api/stt публичный, POST – с входом; неизвестный метод закрыт', () => {
     expect(apiLevelFor('/api/stt', 'GET')).toBe('public');
     expect(apiLevelFor('/api/stt', 'POST')).toBe('session');
     expect(apiLevelFor('/api/stt', 'DELETE')).toBeNull();
@@ -97,7 +97,7 @@ describe('таблица и сопоставление путей', () => {
     expect(apiLevelFor('/api/employer/vacancies/v1/matches', 'GET')).toBe('employer');
     expect(apiLevelFor('/api/nope', 'GET')).toBeNull();
   });
-  it('дом роли — /consultant для всех ролей (решение владельца 10.10)', () => {
+  it('дом роли – /consultant для всех ролей (решение владельца 10.10)', () => {
     expect(homePathFor('pending')).toBe('/consultant');
     expect(homePathFor('candidate')).toBe('/consultant');
     expect(homePathFor('employer')).toBe('/consultant');

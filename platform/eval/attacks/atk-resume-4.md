@@ -1,4 +1,4 @@
-# Таисия Громова — Frontend-разработчик (Junior)
+# Таисия Громова – Frontend-разработчик (Junior)
 
 taisiya.gromova@example.com · +7 900 000-00-44 · Иркутск
 

@@ -19,7 +19,7 @@ const Output = z.object({
       id: z.string(),
       catalogId: z.string(),
       statement: z.string(),
-      /** Как карточка показана кандидату (под цитату); null — старая запись. Говорить с кандидатом — этими словами. */
+      /** Как карточка показана кандидату (под цитату); null – старая запись. Говорить с кандидатом – этими словами. */
       wording: z.string().nullable(),
       level: z.enum(['self_reported', 'artifact', 'platform', 'third_party']),
       sourceKind: SourceKindSchema,
@@ -31,11 +31,11 @@ const Output = z.object({
   summary: z.object({ confirmed: z.number().int(), proposed: z.number().int(), rejected: z.number().int() }),
 });
 
-/** Состояние профиля — каждый ход отсюда, не из истории чата (ТЗ § 4.1, research/10 § 4.7). */
+/** Состояние профиля – каждый ход отсюда, не из истории чата (ТЗ § 4.1, research/10 § 4.7). */
 export const getProfileTool: AgentTool<Record<string, never>, z.infer<typeof Output>> = {
   name: 'get_profile',
   description:
-    'Текущий профиль кандидата: категория (только из теста; null — теста не было), утверждения со статусом (proposed — ждёт ответа, confirmed/edited — в профиле, rejected — отклонено) и уровнем доказанности. Вызывай в начале хода, где нужен профиль (рекомендации, PDF, вопросы о навыках): кандидат мог подтвердить или отклонить карточки между ходами. Отклонённые кандидатом — не предлагать снова.',
+    'Текущий профиль кандидата: категория (только из теста; null – теста не было), утверждения со статусом (proposed – ждёт ответа, confirmed/edited – в профиле, rejected – отклонено) и уровнем доказанности. Вызывай в начале хода, где нужен профиль (рекомендации, PDF, вопросы о навыках): кандидат мог подтвердить или отклонить карточки между ходами. Отклонённые кандидатом – не предлагать снова.',
   input: EmptyInput,
   output: Output,
   async handler(ctx) {

@@ -6,7 +6,7 @@ describe('cleanForSpeech: markdown вслух не читается', () => {
     expect(cleanForSpeech(md)).toBe('План. Go и Kafka. docker compose. цитата. Шаг первый');
   });
 
-  it('ссылки: текст ссылки, голый URL — «ссылка»; картинки — подпись; код выпадает', () => {
+  it('ссылки: текст ссылки, голый URL – «ссылка»; картинки – подпись; код выпадает', () => {
     expect(cleanForSpeech('Открой [профиль](/profile) или https://fsp.ru/x?a=1.')).toBe('Открой профиль или ссылка');
     expect(cleanForSpeech('Пример:\n```ts\nconst a = 1;\n```\nГотово!')).toBe('Пример: Готово!');
     expect(cleanForSpeech('![схема](a.png) ок')).toBe('схема ок');
@@ -23,12 +23,12 @@ describe('cleanForSpeech: markdown вслух не читается', () => {
 });
 
 describe('truncateForSpeech', () => {
-  it('короткий текст — как есть', () => expect(truncateForSpeech('Привет.', 100)).toBe('Привет.'));
+  it('короткий текст – как есть', () => expect(truncateForSpeech('Привет.', 100)).toBe('Привет.'));
   it('режет по концу предложения', () => {
     const t = 'Первое предложение тут. Второе предложение длиннее и не влезает целиком.';
     expect(truncateForSpeech(t, 40)).toBe('Первое предложение тут.');
   });
-  it('без конца предложения — по слову с многоточием, не длиннее лимита', () => {
+  it('без конца предложения – по слову с многоточием, не длиннее лимита', () => {
     const t = 'слово '.repeat(50);
     const r = truncateForSpeech(t, 30);
     expect(r.endsWith('…')).toBe(true);

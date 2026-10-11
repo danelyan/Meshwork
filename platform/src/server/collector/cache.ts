@@ -4,7 +4,7 @@ import { prisma } from '../db';
 import type { ExtractedDoc, ProfileKind } from './types';
 
 /**
- * Кэш профилей на 24 ч: память процесса + таблица Source (снимок — тот же
+ * Кэш профилей на 24 ч: память процесса + таблица Source (снимок – тот же
  * ExtractedDoc). Публичные данные профиля, поэтому снимок одного кандидата годится
  * как кэш для того же origin у другого; в Source пишем только с candidateId.
  */
@@ -31,7 +31,7 @@ export async function readCache(kind: ProfileKind, origin: string, now = Date.no
     memory.set(k, { doc, at: row.fetchedAt.getTime() });
     return doc;
   } catch {
-    return null; // БД недоступна — читаем из сети
+    return null; // БД недоступна – читаем из сети
   }
 }
 

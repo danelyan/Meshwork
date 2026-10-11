@@ -29,7 +29,7 @@ const post = (body: string, headers: Record<string, string> = {}) =>
 beforeEach(() => resetRateLimits());
 
 describe('метрики', () => {
-  it('MRR: обратный ранг первого релевантного, нет — 0', () => {
+  it('MRR: обратный ранг первого релевантного, нет – 0', () => {
     expect(reciprocalRank(['a', 'b', 'c'], { b: 1 })).toBe(0.5);
     expect(reciprocalRank(['a'], { z: 2 })).toBe(0);
   });
@@ -42,7 +42,7 @@ describe('метрики', () => {
     expect(r.scored).toBe(1);
   });
 
-  it('вакансия без релевантных — предупреждение и не входит в среднее', () => {
+  it('вакансия без релевантных – предупреждение и не входит в среднее', () => {
     const r = evaluate({ ...small(), vacancies: [vac('v1'), vac('v2')] });
     expect(r.scored).toBe(1);
     expect(r.warnings.join()).toMatch(/v2/);
@@ -153,7 +153,7 @@ describe('results.json для /validation', () => {
     expect(withExtra.legacyExtended).toBeNull();
   });
 
-  it('без обязательных полей — ошибка', () => {
+  it('без обязательных полей – ошибка', () => {
     expect(() => parseMatchingResults({ rows: [] })).toThrow();
   });
 });

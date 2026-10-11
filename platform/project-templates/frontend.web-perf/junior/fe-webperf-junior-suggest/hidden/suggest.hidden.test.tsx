@@ -95,7 +95,7 @@ describe('throttle', () => {
 });
 
 describe('запросы', () => {
-  it('быстрый ввод — один запрос с последним значением; до паузы fetch не вызывается', async () => {
+  it('быстрый ввод – один запрос с последним значением; до паузы fetch не вызывается', async () => {
     const f = installFakeFetch();
     render(<SuggestInput />);
     type('re');
@@ -145,7 +145,7 @@ describe('запросы', () => {
     expect(f.queries()).toEqual(['abcd']);
   });
 
-  it('загрузка, затем список; пустой ответ — «Ничего не найдено»', async () => {
+  it('загрузка, затем список; пустой ответ – «Ничего не найдено»', async () => {
     const f = installFakeFetch();
     render(<SuggestInput />);
     type('кот');
@@ -173,7 +173,7 @@ describe('запросы', () => {
     await advance(300);
     expect(f.calls[0]!.signal.aborted).toBe(true);
     expect(f.calls[1]!.signal.aborted).toBe(false);
-    expect(screen.queryByRole('alert')).toBeNull(); // отмена — не ошибка
+    expect(screen.queryByRole('alert')).toBeNull(); // отмена – не ошибка
     expect(status()).toBe('Загрузка…');
     await act(async () => f.calls[1]!.respond(['Второй']));
     expect(titles()).toEqual(['Второй']);
@@ -240,7 +240,7 @@ describe('запросы', () => {
 });
 
 describe('ошибки и размонтирование', () => {
-  it('res.ok === false и сетевая ошибка — alert; следующий успешный запрос его убирает', async () => {
+  it('res.ok === false и сетевая ошибка – alert; следующий успешный запрос его убирает', async () => {
     const f = installFakeFetch();
     render(<SuggestInput />);
     type('aa');

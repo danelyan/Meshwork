@@ -17,13 +17,13 @@ FAILED=0
 expect() {
   local what="$1" want="$2"; shift 2
   local got; got="$(code "$@")"
-  if [ "$got" = "$want" ]; then echo "$what: $got"; else echo "$what: $got (ожидалось $want) — FAIL"; FAILED=1; fi
+  if [ "$got" = "$want" ]; then echo "$what: $got"; else echo "$what: $got (ожидалось $want) – FAIL"; FAILED=1; fi
 }
 
 expect "discovery" 200 "$PUBLIC_URL/auth/realms/fsp-id/.well-known/openid-configuration"
 HEALTH="$(curl -s "$API/health")"
 echo "health: $(printf '%s' "$HEALTH" | field 'd["data"]["ok"], d["data"]["idp"], d["data"]["athletes"], d["data"]["achievements"]')"
-printf '%s' "$HEALTH" | field 'd["data"]["ok"] and d["data"]["idp"]=="up"' | grep -q True || { echo "health: idp не up — FAIL"; FAILED=1; }
+printf '%s' "$HEALTH" | field 'd["data"]["ok"] and d["data"]["idp"]=="up"' | grep -q True || { echo "health: idp не up – FAIL"; FAILED=1; }
 expect "landing" 200 "$PUBLIC_URL/"
 expect "docs" 200 "$PUBLIC_URL/docs"
 expect "openapi" 200 "$PUBLIC_URL/openapi.json"
@@ -36,7 +36,7 @@ ATHLETE_TOKEN=$(curl -s "$TOKEN_URL" -d grant_type=password -d client_id=fsp-car
 echo "athlete token: ok"
 ME="$(curl -s "$API/me" -H "Authorization: Bearer $ATHLETE_TOKEN")"
 echo "me: $(printf '%s' "$ME" | field 'd["data"]["fsp_id"], d["data"]["display_name"], d["data"]["achievements_total"]')"
-printf '%s' "$ME" | field 'd["data"]["fsp_id"]=="FSP-10001"' | grep -q True || { echo "me: не FSP-10001 — FAIL"; FAILED=1; }
+printf '%s' "$ME" | field 'd["data"]["fsp_id"]=="FSP-10001"' | grep -q True || { echo "me: не FSP-10001 – FAIL"; FAILED=1; }
 expect "me/achievements" 200 "$API/me/achievements" -H "Authorization: Bearer $ATHLETE_TOKEN"
 echo "me/consents: $(curl -s "$API/me/consents" -H "Authorization: Bearer $ATHLETE_TOKEN" | field '[c["client_id"] for c in d["data"]]')"
 
@@ -77,14 +77,14 @@ else
     echo "sandbox athlete token (fsp-athlete-demo): ok"
     MINE="$(curl -s "$API/me/achievements" -H "Authorization: Bearer $NEW_TOKEN" | field '[a["event_name"] for a in d.get("data",[])]')"
     echo "sandbox me/achievements: $MINE"
-    [ "$MINE" = "['Проверочный хакатон стенда']" ] || { echo "sandbox me/achievements: не та запись — FAIL"; FAILED=1; }
+    [ "$MINE" = "['Проверочный хакатон стенда']" ] || { echo "sandbox me/achievements: не та запись – FAIL"; FAILED=1; }
   else
     echo "sandbox athlete token: FAIL"; FAILED=1
   fi
   expect "sandbox delete athlete" 204 -X DELETE "$API/sandbox/athletes/$NEW_ID"
-  [ -z "$(demo_token)" ] && echo "deleted athlete cannot sign in: ok" || { echo "deleted athlete still signs in — FAIL"; FAILED=1; }
+  [ -z "$(demo_token)" ] && echo "deleted athlete cannot sign in: ok" || { echo "deleted athlete still signs in – FAIL"; FAILED=1; }
   echo "sandbox changes after cleanup: $(curl -s "$API/sandbox/meta" | field 'd["data"]["changes"]["manual_athletes"], d["data"]["changes"]["manual_achievements"]')"
 fi
-curl -s -I "$API/disciplines" | grep -qi '^x-fsp-simulator: true' && echo "simulator header: ok" || { echo "simulator header: отсутствует — FAIL"; FAILED=1; }
+curl -s -I "$API/disciplines" | grep -qi '^x-fsp-simulator: true' && echo "simulator header: ok" || { echo "simulator header: отсутствует – FAIL"; FAILED=1; }
 if [ "$FAILED" -ne 0 ]; then echo "smoke: FAIL"; exit 1; fi
 echo "smoke: OK"

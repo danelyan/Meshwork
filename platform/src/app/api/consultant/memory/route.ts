@@ -12,7 +12,7 @@ export const GET = withErrors(async (req: Request) => {
   return Response.json({ items, limit: MEMORY_LIMIT });
 });
 
-/** Добавить заметку вручную (source user). Лимит или дубль — 409. */
+/** Добавить заметку вручную (source user). Лимит или дубль – 409. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const s = getSession(req); if (!s) throw errors.unauthorized();

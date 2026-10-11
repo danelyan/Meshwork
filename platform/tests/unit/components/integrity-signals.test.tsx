@@ -61,7 +61,7 @@ describe('useIntegritySignals', () => {
     act(() => {
       vi.advanceTimersByTime(10_000);
     });
-    // Первая отправка может нести только extendedScreen (jsdom свойства isExtended не даёт) — тогда её нет вовсе.
+    // Первая отправка может нести только extendedScreen (jsdom свойства isExtended не даёт) – тогда её нет вовсе.
     expect(beacon).not.toHaveBeenCalled();
     const prevent = vi.fn();
     act(() => {

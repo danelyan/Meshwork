@@ -59,7 +59,7 @@ describe('шаблоны писем', () => {
     }
   });
 
-  it('код подтверждения и сброса — в теме, в тексте и в HTML отдельным блоком', () => {
+  it('код подтверждения и сброса – в теме, в тексте и в HTML отдельным блоком', () => {
     for (const [mail, code] of [[verifyCodeMail('a@b.test', '123456'), '123456'], [resetCodeMail('a@b.test', '654321'), '654321']] as const) {
       expect(mail.subject).toContain(code);
       expect(mail.text).toContain(code);
@@ -83,7 +83,7 @@ describe('шаблоны писем', () => {
     expect(visible(noVacancy.html!)).toContain('к разговору о работе');
   });
 
-  it('ответ на приглашение — работодателю: бордовый акцент и ссылка в его кабинет', () => {
+  it('ответ на приглашение – работодателю: бордовый акцент и ссылка в его кабинет', () => {
     const accepted = invitationAnswerMail('hr@romashka.test', { accepted: true, vacancyTitle: 'Бэкенд-разработчик' });
     expect(accepted.html).toContain(`href="${APP_URL}/employer/invitations"`);
     expect(accepted.html).toContain(MAIL_COLORS.employer);

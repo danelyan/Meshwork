@@ -41,7 +41,7 @@ export default async function AppealsPage({ searchParams }: { searchParams: Prom
               <li>Открытых: {a.complaints.filter((c) => c.status === 'open').length}, подтверждённых: {a.complaints.filter((c) => c.status === 'upheld').length}</li>
             </ul>
             <ul className={m.facts}>
-              {a.complaints.map((c) => <li key={c.id}>{c.candidate}: {c.reason} ({c.status}){c.comment ? ` — ${c.comment}` : ''}</li>)}
+              {a.complaints.map((c) => <li key={c.id}>{c.candidate}: {c.reason} ({c.status}){c.comment ? ` – ${c.comment}` : ''}</li>)}
             </ul>
             {a.status === 'open' && canResolve ? (
               <ModerationDecision url={`/api/admin/appeals/${a.id}`} options={[{ value: 'upheld', label: 'Удовлетворить', variant: 'primary' }, { value: 'rejected', label: 'Отклонить' }]} />

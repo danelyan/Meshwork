@@ -1,6 +1,6 @@
-// Перебор лимитов длины основной фазы (MIN…MAX заданий) — ретест κ, длина, ранние остановки. Дефолты policy.ts не меняются:
-// каждый вариант — отдельный прогон eval/test/run.ts с --min/--max (StopLimits), тот же seed и те же популяции.
-// Модель ошибки — «экземпляр» (σ = 0,2), как строка «Мы» в docs/validation-results.md; --retest-only (без утечки и пересдач:
+// Перебор лимитов длины основной фазы (MIN…MAX заданий) – ретест κ, длина, ранние остановки. Дефолты policy.ts не меняются:
+// каждый вариант – отдельный прогон eval/test/run.ts с --min/--max (StopLimits), тот же seed и те же популяции.
+// Модель ошибки – «экземпляр» (σ = 0,2), как строка «Мы» в docs/validation-results.md; --retest-only (без утечки и пересдач:
 // на ретест и длину не влияют, их попытки идут раньше на том же rng).
 //
 // Запуск из platform/:
@@ -38,7 +38,7 @@ for (const [min, max] of VARIANTS) {
   if (r.status !== 0) throw new Error(`run.ts ${min}–${max}: код ${r.status}`);
   const v = parseLengthSweepRun(JSON.parse(readFileSync(file, 'utf8')), { min, max, current: min === MIN_ITEMS && max === MAX_ITEMS });
   variants.push(v);
-  const f = (x: number | null) => (x === null ? '—' : x.toFixed(3));
+  const f = (x: number | null) => (x === null ? '–' : x.toFixed(3));
   console.log(`${min}–${max}: κ ${f(v.strict.kappa)} (конк. ${f(v.competitor.kappa)}), длина ${f(v.strict.lengthMean)} / ${f(v.competitor.lengthMean)}, ранние ${f(v.strict.earlyStopShare)}, ложн. подтв. ${f(v.strict.falsePass)} / ${f(v.competitor.falsePass)}, ${((Date.now() - t0) / 1000).toFixed(0)} с`);
 }
 

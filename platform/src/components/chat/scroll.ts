@@ -9,7 +9,7 @@ const NEAR = 200;
 
 /**
  * Панель с собственной прокруткой, помеченная `data-feed-scroll` (панель чата в сцене звонка);
- * null — лента прокручивается вместе с окном. Явная метка, а не поиск по overflow: остальные экраны не меняются.
+ * null – лента прокручивается вместе с окном. Явная метка, а не поиск по overflow: остальные экраны не меняются.
  */
 export function nearestScrollPane(el: Element | null): HTMLElement | null {
   const pane = el?.closest<HTMLElement>('[data-feed-scroll]') ?? null;
@@ -19,7 +19,7 @@ export function nearestScrollPane(el: Element | null): HTMLElement | null {
 
 /**
  * Показать конец ленты. Если лента внутри панели с собственной прокруткой (сцена звонка), крутим только
- * панель: scrollIntoView двигал бы ещё и окно. Без панели — как раньше, scrollIntoView.
+ * панель: scrollIntoView двигал бы ещё и окно. Без панели – как раньше, scrollIntoView.
  */
 export function scrollToEnd(end: Element | null | undefined, behavior: ScrollBehavior = 'smooth') {
   if (!end) return;
@@ -55,7 +55,7 @@ export function useStickToBottom(ref: RefObject<HTMLElement | null>, enabled = t
       lastHeight = h;
       if (grew && stick) {
         target.scrollTo({ top: pane?.scrollHeight ?? doc.scrollHeight, behavior: 'smooth' });
-        // Автоскролл срабатывает на каждый рост ленты — в телеметрию не чаще раза в 500 мс.
+        // Автоскролл срабатывает на каждый рост ленты – в телеметрию не чаще раза в 500 мс.
         if (telemetryOn() && performance.now() - lastAuto > 500) {
           lastAuto = performance.now();
           track({ k: 'scroll', what: 'auto' });

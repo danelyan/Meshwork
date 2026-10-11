@@ -1,6 +1,6 @@
 // Возражения против автоматической оценки (ст. 16 152-ФЗ, ADR 0005). Кандидат оспаривает категорию из теста,
-// оценку созвона или защиты; срок ответа — OBJECTION_ANSWER_DAYS дней. Работодатель возражений не видит:
-// их нет ни в одной выдаче работодателю. Ответ — поддержка в админке (/api/admin/objections, E-08 фаза 2); dev-панель (/api/dev/objections) оставлена для localhost.
+// оценку созвона или защиты; срок ответа – OBJECTION_ANSWER_DAYS дней. Работодатель возражений не видит:
+// их нет ни в одной выдаче работодателю. Ответ – поддержка в админке (/api/admin/objections, E-08 фаза 2); dev-панель (/api/dev/objections) оставлена для localhost.
 import type { ObjectionSubject } from '@prisma/client';
 
 import { prisma } from '../db';
@@ -51,7 +51,7 @@ async function assertOwnSubject(candidateId: string, subject: ObjectionSubject, 
   if (n === 0) throw errors.notFound('Результат не найден');
 }
 
-/** Оспорить оценку. Повтор по тому же результату, пока прошлое возражение открыто, — 409. */
+/** Оспорить оценку. Повтор по тому же результату, пока прошлое возражение открыто, – 409. */
 export async function createObjection(candidateId: string, input: { subject: ObjectionSubject; subjectId: string; text: string }): Promise<ObjectionView> {
   await assertOwnSubject(candidateId, input.subject, input.subjectId);
   const open = await prisma.assessmentObjection.count({ where: { candidateId, subject: input.subject, subjectId: input.subjectId, status: 'open' } });

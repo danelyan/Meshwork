@@ -29,7 +29,7 @@ describe('eval/matching: слепая разметка', () => {
     expect(text).not.toMatch(/syn-|latent|trueGrade|archetype|faked|score/);
     expect(Object.keys(key.V1!.candidates)).toHaveLength(30);
   });
-  it('results.json: блок blind разбирается, мусор — null', () => {
+  it('results.json: блок blind разбирается, мусор – null', () => {
     const file = JSON.parse(readFileSync(join(__dirname, '../../../eval/matching/results.json'), 'utf8')) as Record<string, unknown>;
     const iv = { mean: 0.5, lo: 0.3, hi: 0.7 };
     const m = { p5: iv, p5strict: iv, ndcg10: iv };

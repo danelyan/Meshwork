@@ -64,7 +64,7 @@ describe('yandex-responses: запрос', () => {
     expect(calls[0]?.body.tool_choice).toBe('auto');
   });
 
-  it('schema → text.format json_schema; без нативной схемы — инструкция в instructions', async () => {
+  it('schema → text.format json_schema; без нативной схемы – инструкция в instructions', async () => {
     const schema = { name: 'claims', jsonSchema: { type: 'object', properties: { claims: { type: 'array' } }, required: ['claims'] } };
     const a = make([{ body: fixture('yandex-json') }]);
     await a.provider.complete({ ...base, purpose: 'extractor', schema });
@@ -99,7 +99,7 @@ describe('yandex-responses: ответ', () => {
   it('текст из message/output_text', async () => {
     const { provider } = make([{ body: fixture('yandex-text') }]);
     const r = await provider.complete(base);
-    expect(r).toMatchObject({ kind: 'text', text: 'Привет! Пришли резюме — соберу профиль.', usage: { inputTokens: 120, outputTokens: 14 } });
+    expect(r).toMatchObject({ kind: 'text', text: 'Привет! Пришли резюме – соберу профиль.', usage: { inputTokens: 120, outputTokens: 14 } });
   });
 
   it('json по схеме → kind json', async () => {
@@ -109,7 +109,7 @@ describe('yandex-responses: ответ', () => {
     expect(r.json).toEqual({ claims: [{ catalogId: 'be.cache', quote: 'Добавил кэширование справочников в Redis' }] });
   });
 
-  it('невалидный JSON при схеме → kind text с сырым текстом (ремонт — у вызывающего)', async () => {
+  it('невалидный JSON при схеме → kind text с сырым текстом (ремонт – у вызывающего)', async () => {
     const body = fixture('yandex-text');
     const { provider } = make([{ body }]);
     const r = await provider.complete({ ...base, schema: { name: 'x', jsonSchema: { type: 'object' } } });

@@ -22,7 +22,7 @@ const cases: [string, AiStatus, InterruptDecision][] = [
   ['да, я с этим работал', 'speaking', 'interrupt'],
 ];
 
-describe('decideInterrupt — семантический фильтр перебивания', () => {
+describe('decideInterrupt – семантический фильтр перебивания', () => {
   it.each(cases)('%j при %s → %s', (text, aiStatus, want) => {
     expect(decideInterrupt({ text, aiStatus })).toBe(want);
   });

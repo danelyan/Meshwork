@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { signInAsDemoCandidate } from './helpers';
 
-// Граница доверия E-02: страницы кандидата без входа не рендерятся — guard ведёт на /auth?next=…
+// Граница доверия E-02: страницы кандидата без входа не рендерятся – guard ведёт на /auth?next=…
 // (окно входа над главной), демо-вход в окне возвращает на исходную страницу. Чужой next (open redirect) игнорируется.
 for (const path of ['/consultant', '/profile', '/test']) {
   test(`гость на ${path} → /auth?next → окно входа → обратно на ${path}`, async ({ page }) => {
@@ -21,7 +21,7 @@ test('кандидат на /employer → /consultant', async ({ page }) => {
   await page.waitForURL('**/consultant');
 });
 
-test('open redirect: /auth?next=//evil.com игнорируется — вход ведёт на /consultant', async ({ page }) => {
+test('open redirect: /auth?next=//evil.com игнорируется – вход ведёт на /consultant', async ({ page }) => {
   await page.goto('/auth?next=//evil.com');
   await signInAsDemoCandidate(page);
   await page.waitForURL('**/consultant');

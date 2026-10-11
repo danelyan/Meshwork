@@ -6,7 +6,7 @@ import { requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** POST `{ reason }` — отменить назначенную живую защиту не позднее чем за 1 час (ADR 0008 п. 6), иначе 409 `cancel_too_late`. */
+/** POST `{ reason }` – отменить назначенную живую защиту не позднее чем за 1 час (ADR 0008 п. 6), иначе 409 `cancel_too_late`. */
 export const POST = withErrors(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

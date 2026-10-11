@@ -1,4 +1,4 @@
-/* Карточка «Что я о тебе знаю» (MemoryCard): тёмная сцена, только токены. Оболочка карточки — SceneAside.module.css. */
+/* Карточка «Что я о тебе знаю» (MemoryCard): тёмная сцена, только токены. Оболочка карточки – SceneAside.module.css. */
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
 .item { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 2px; align-items: baseline; padding: 10px 12px; border-bottom: 1px solid var(--avatar-stage-line); border-left: 2px solid var(--stage-track); transition: border-color 400ms var(--ease), background-color 400ms var(--ease); }
 .item[data-source='chat'] { border-left-color: var(--stage-accent-track); }

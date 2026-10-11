@@ -13,7 +13,7 @@ import aside from './SceneAside.module.css';
 import styles from './MemoryCard.module.css';
 
 const SOURCE_LABEL = { onboarding: 'знакомство', chat: 'из чата', user: 'добавлено вручную' } as const;
-/** Короткие метки видимости для узкой карточки; полная формулировка — в title. */
+/** Короткие метки видимости для узкой карточки; полная формулировка – в title. */
 const SEEN_SHORT: Record<string, string> = { 'только тебе': 'только тебе', 'в анонимной карточке': 'видит компания', 'после принятия приглашения': 'после «да»' };
 /** Сколько держится подсветка «новое» у пункта, который консультант запомнил из чата. */
 export const NEW_HIGHLIGHT_MS = 6_000;
@@ -21,7 +21,7 @@ export const NEW_HIGHLIGHT_MS = 6_000;
 export const PENDING_POLL_MS = 1_500;
 export const MAX_PENDING_POLLS = 8;
 const TEXT_MAX = 200;
-/** «4 факта»: ответы знакомства и заметки памяти вместе (пропущенные вопросы сюда не попадают — knownFacts). */
+/** «4 факта»: ответы знакомства и заметки памяти вместе (пропущенные вопросы сюда не попадают – knownFacts). */
 const factsWord = (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'факт' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'факта' : 'фактов'}`;
 
 const json = { 'content-type': 'application/json' };
@@ -34,7 +34,7 @@ async function removeMemory(id: string): Promise<void> {
 
 /**
  * «Изменить» у ответа знакомства и «+ дополнить»: шаг открывается в ленте (тот же goto, что «изменить» у ответа
- * в ленте). На /consultant — мягкое обновление без перезагрузки (владелец 11.10: «почему страница перезагружается?»).
+ * в ленте). На /consultant – мягкое обновление без перезагрузки (владелец 11.10: «почему страница перезагружается?»).
  */
 async function gotoStep(stepId: string, go: (path: string) => void) {
   await onboardingAct({ action: 'goto', stepId });
@@ -74,7 +74,7 @@ function Editor({ initial, label, onSave, onCancel }: { initial: string; label: 
 }
 
 /**
- * «Что я о тебе знаю»: ответы знакомства (изменить = вернуться к шагу в ленте) и память консультанта —
+ * «Что я о тебе знаю»: ответы знакомства (изменить = вернуться к шагу в ленте) и память консультанта –
  * то, что он запомнил из чата, и добавленное вручную (изменить и удалить здесь же). Новый пункт из чата
  * коротко подсвечен. Пока сервер извлекает факты из последней реплики (memoryPending), колонка
  * перечитывается ещё несколько раз через AsideProvider.
@@ -92,7 +92,7 @@ export function MemoryCard({ facts, role, pending, limit, fill, minimal = false 
   const seen = useRef<Set<string> | null>(null);
   const polls = useRef(0);
 
-  // Подсветка «новое»: пункты из чата, которых не было при прошлом рендере (первый рендер — всё «старое»).
+  // Подсветка «новое»: пункты из чата, которых не было при прошлом рендере (первый рендер – всё «старое»).
   useEffect(() => {
     const ids = new Set(facts.map((f) => f.id));
     if (seen.current === null) {
@@ -147,12 +147,12 @@ export function MemoryCard({ facts, role, pending, limit, fill, minimal = false 
         </button>
       </h2>
       <div id="aside-known-body" className={aside.cardBody}>
-        {/* «Для компании» — превью из ответов знакомства; без них вкладки не о чем */}
+        {/* «Для компании» – превью из ответов знакомства; без них вкладки не о чем */}
         {visible.some((f) => f.source === 'onboarding') && <ViewTabs employer={role === 'employer'} company={company} onChange={setCompany} compact />}
         {company ? (
           <CompanyPreview employer={role === 'employer'} answer={(id) => visible.find((f) => f.source === 'onboarding' && f.stepId === id)?.value} />
         ) : visible.length === 0 && !adding ? (
-          // Пустой блок — это заметки из разговора, а не профиль: навыки, категория, компания и вакансии лежат в своих разделах.
+          // Пустой блок – это заметки из разговора, а не профиль: навыки, категория, компания и вакансии лежат в своих разделах.
           <p className={aside.muted} data-testid="memory-empty">
             Заметок из разговора пока нет.{' '}
             {role === 'employer' ? (

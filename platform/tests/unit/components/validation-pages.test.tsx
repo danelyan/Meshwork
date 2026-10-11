@@ -45,7 +45,7 @@ describe('ValidationView', () => {
   it('«Длина теста и надёжность»: перебор лимитов и ширина банка из results.json; без данных блока нет', () => {
     render(<ValidationView grade={grade} matching={matching} length={LENGTH_BLOCK} itemLimits={{ min: 9, max: 12 }} />);
     expect(screen.getByText('Длина теста и надёжность')).toBeDefined();
-    expect(screen.getByText(/Сейчас основная фаза — 9–12 заданий/)).toBeDefined();
+    expect(screen.getByText(/Сейчас основная фаза – 9–12 заданий/)).toBeDefined();
     expect(screen.getByText(/7–10 \(сейчас\)/)).toBeDefined();
     expect(screen.getByText('12–16')).toBeDefined();
     expect(screen.getByText(/Ширина банка/)).toBeDefined();
@@ -83,7 +83,7 @@ const REPORT: EvaluateReport = {
 describe('EvaluateScreen', () => {
   const view = () => render(<EvaluateScreen sample={SAMPLE} catalog={[{ id: 'be.idempotency', statement: 'Идемпотентность', specialization: 'backend' }]} limits={EVAL_LIMITS} />);
 
-  it('«Загрузить пример» → POST /api/evaluate → метрики и топ; текст из ответа — как текст, не HTML', async () => {
+  it('«Загрузить пример» → POST /api/evaluate → метрики и топ; текст из ответа – как текст, не HTML', async () => {
     const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => REPORT }));
     vi.stubGlobal('fetch', fetchMock);
     view();
@@ -97,7 +97,7 @@ describe('EvaluateScreen', () => {
     expect(within(top).getByText('подходит')).toBeDefined();
   });
 
-  it('не JSON — ошибка без запроса; ошибка сервера — его текст', async () => {
+  it('не JSON – ошибка без запроса; ошибка сервера – его текст', async () => {
     const fetchMock = vi.fn(async () => ({ ok: false, status: 400, json: async () => ({ error: { message: 'Нет в каталоге утверждений: x' } }) }));
     vi.stubGlobal('fetch', fetchMock);
     view();

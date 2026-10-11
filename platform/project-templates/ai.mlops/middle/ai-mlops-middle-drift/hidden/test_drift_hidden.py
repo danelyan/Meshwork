@@ -133,7 +133,7 @@ def test_report_structure_order_and_types():
     assert list(feats) == ["age", "country", "flag"]
     assert feats["age"]["type"] == "numeric" and feats["age"]["ks"] == pytest.approx(0.0)
     assert feats["country"]["type"] == "categorical" and feats["country"]["ks"] is None
-    assert feats["flag"]["type"] == "categorical"      # bool — не числовой
+    assert feats["flag"]["type"] == "categorical"      # bool – не числовой
     assert rep["windows"][0]["status"] == "ok"
     assert rep["summary"] == {"alert_windows": [], "first_alert": None}
 

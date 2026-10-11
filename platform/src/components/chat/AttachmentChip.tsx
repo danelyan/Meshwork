@@ -5,7 +5,7 @@ import { Spinner } from '../ui';
 import { type Attachment, formatSize } from './attachments';
 import styles from './thread.module.css';
 
-/** Имя длиннее — с многоточием посередине: видно и начало, и расширение. */
+/** Имя длиннее – с многоточием посередине: видно и начало, и расширение. */
 const NAME_MAX = 28;
 export function shortName(name: string): string {
   if (name.length <= NAME_MAX) return name;
@@ -14,7 +14,7 @@ export function shortName(name: string): string {
   return `${name.slice(0, NAME_MAX - ext.length - 1)}…${ext}`;
 }
 
-/** Вложение в композере: имя, размер, состояние загрузки, «убрать». Ошибка — текстом в чипе. */
+/** Вложение в композере: имя, размер, состояние загрузки, «убрать». Ошибка – текстом в чипе. */
 export function AttachmentChip({ file, onRemove, disabled }: { file: Attachment; onRemove?: () => void; disabled?: boolean }) {
   return (
     <li className={styles.attach} data-status={file.status} title={file.error ?? file.name}>
@@ -34,7 +34,7 @@ export function AttachmentChip({ file, onRemove, disabled }: { file: Attachment;
   );
 }
 
-/** Что можно прикрепить — подсказка у скрепки (наведение / фокус) и под чипами. */
+/** Что можно прикрепить – подсказка у скрепки (наведение / фокус) и под чипами. */
 export function AttachmentLimitsHint({ id, text }: { id?: string; text: string }) {
   return (
     <span id={id} className={styles.limits} role="note">

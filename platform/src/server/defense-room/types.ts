@@ -1,5 +1,5 @@
 // Защита проекта (ступень 3, ADR 0003 docs/decisions/0003-three-stage-assessment.md).
-// Сессия — CallSession.kind = defense; здесь — типы плана, транскрипта, вопросов по коду и вердикта.
+// Сессия – CallSession.kind = defense; здесь – типы плана, транскрипта, вопросов по коду и вердикта.
 
 import type { CallKind } from '../call/types';
 import type { DefenseScores } from '../defense/types';
@@ -7,12 +7,12 @@ import type { DefenseScores } from '../defense/types';
 /** Роли реплик транскрипта (контракт ADR 0003). */
 export type SpeakerRole = 'ai' | 'candidate' | 'employer';
 
-/** Служебные пометки реплики ИИ — та же форма, что `AiUtteranceMeta` лейна call (server/call/types.ts). */
+/** Служебные пометки реплики ИИ – та же форма, что `AiUtteranceMeta` лейна call (server/call/types.ts). */
 export interface AiUtteranceMeta {
   /** Тема: тип вопроса QLC и место в коде (`why · src/a.ts:L1-L9`) или «вопрос работодателя». */
   topic: string;
   catalogId: string | null;
-  /** 1 — вопрос плана, 2 — уточнение/возврат, 3 — «смени ограничение». */
+  /** 1 – вопрос плана, 2 – уточнение/возврат, 3 – «смени ограничение». */
   level: 1 | 2 | 3;
   routedBy: null;
   fallback?: boolean;
@@ -20,23 +20,22 @@ export interface AiUtteranceMeta {
   employerQuestionId?: string;
 }
 
-/** Расширение реплики защиты проекта (лейн call хранит его как есть; интегратору — добавить поле в TranscriptEntry). */
+/** Расширение реплики защиты проекта (лейн call хранит его как есть; интегратору – добавить поле в TranscriptEntry). */
 export interface DefenseEntryExt {
   /** Пункт плана, к которому относится реплика ИИ. */
   itemId?: string;
-  /** notice — ремарка Киры (этика) после реплики работодателя: не вопрос плана, ответ на неё оценщику не идёт. */
-  kind?: 'question' | 'followup' | 'return' | 'closing' | 'greeting' | 'notice';
+  kind?: 'question' | 'followup' | 'return' | 'closing' | 'greeting';
   /**
    * Компания, чья это реплика (живая реплика работодателя или вопрос из её очереди). Другим
    * компаниям реплика отдаётся скрытой (access.ts redactEntry): кандидат может общаться с несколькими.
    */
   companyId?: string;
-  /** Название компании — у реплик работодателя. */
+  /** Название компании – у реплик работодателя. */
   speaker?: string;
 }
 
 /**
- * Реплика транскрипта (CallSession.transcriptJson). Форма — как `TranscriptEntry` лейна call
+ * Реплика транскрипта (CallSession.transcriptJson). Форма – как `TranscriptEntry` лейна call
  * (index, role, text, at, tMs, userId, meta) плюс расширение `defense`.
  */
 export interface TranscriptEntry {
@@ -63,9 +62,9 @@ export interface QlcQuestion {
   id: string;
   type: QlcType;
   question: string;
-  /** Где в коде: `path:L10-L42` или `commit:abc1234`; у «смени ограничение» — null. */
+  /** Где в коде: `path:L10-L42` или `commit:abc1234`; у «смени ограничение» – null. */
   ref: string | null;
-  /** Что должен затронуть хороший ответ — только для интервьюера, оценщик этого не видит. */
+  /** Что должен затронуть хороший ответ – только для интервьюера, оценщик этого не видит. */
   expectedPoints: string[];
 }
 
@@ -113,11 +112,11 @@ export interface RepoSnapshot {
   /** Прочитанные файлы кода (после фильтра и лимитов). */
   files: RepoFile[];
   commits: RepoCommit[];
-  /** Что отрезали лимиты — для честного отчёта. */
+  /** Что отрезали лимиты – для честного отчёта. */
   truncated: { treeEntries: number; files: number };
 }
 
-/** Фрагмент кода-кандидат для вопроса (функция, метод, класс) — выделяет код, не модель. */
+/** Фрагмент кода-кандидат для вопроса (функция, метод, класс) – выделяет код, не модель. */
 export interface CodeFragment {
   id: string;
   path: string;
@@ -134,29 +133,29 @@ export interface CodeFragment {
 // ---------------------------------------------------------------------------
 
 export const DEFENSE_FLAGS = [
-  /** Проект сильный (скрытые тесты), защита ниже порога — флаг работодателю, не понижение. */
+  /** Проект сильный (скрытые тесты), защита ниже порога – флаг работодателю, не понижение. */
   'strong_project_weak_defense',
   /** Ответов слишком мало для устойчивой оценки. */
   'short_defense',
-  /** Прогоны оценщика разошлись сильно (разброс суммы ≥ 3) — смотреть транскрипт. */
+  /** Прогоны оценщика разошлись сильно (разброс суммы ≥ 3) – смотреть транскрипт. */
   'evaluator_disagreement',
   /** Остались вопросы работодателя без ответа. */
   'employer_questions_unanswered',
-  /** Результата проверки проекта нет — сравнить проект и защиту нельзя. */
+  /** Результата проверки проекта нет – сравнить проект и защиту нельзя. */
   'no_project_result',
-  /** Понимание неровное: часть вопросов прошла порог, часть — почти нулевая (баллы по вопросам, items). */
+  /** Понимание неровное: часть вопросов прошла порог, часть – почти нулевая (баллы по вопросам, items). */
   'uneven_understanding',
 ] as const;
 export type DefenseFlag = (typeof DEFENSE_FLAGS)[number];
 
 /** Балл по одному вопросу защиты (пункту плана): медиана прогонов по каждому признаку A-02. */
 export interface DefenseItemVerdict {
-  /** id пункта плана (QLC — `q1`…, вопрос работодателя — `e-<id>`). */
+  /** id пункта плана (QLC – `q1`…, вопрос работодателя – `e-<id>`). */
   itemId: string;
   source: 'qlc' | 'employer';
-  /** Тип QLC-вопроса; у вопроса работодателя — employer. */
+  /** Тип QLC-вопроса; у вопроса работодателя – employer. */
   type: QlcType | 'employer';
-  /** Где в коде (`path:L1-L9`); null — без привязки. */
+  /** Где в коде (`path:L1-L9`); null – без привязки. */
   ref: string | null;
   /** Подпись для карты: «почему так · src/a.ts:L1-L9». */
   label: string;
@@ -176,26 +175,26 @@ export interface DefenseItemVerdict {
 
 export interface DefenseRoomVerdict {
   /**
-   * Общий балл по признакам: среднее по вопросам (items), округлённое до 0–2; null — ответов нет.
-   * В вердиктах до 10.10 — медиана трёх прогонов по всему транскрипту.
+   * Общий балл по признакам: среднее по вопросам (items), округлённое до 0–2; null – ответов нет.
+   * В вердиктах до 10.10 – медиана трёх прогонов по всему транскрипту.
    */
   scores: DefenseScores | null;
   /** Среднее сумм по вопросам, округлённое (0–8). */
   total: number | null;
   /** Среднее сумм по вопросам с одним знаком (0–8); нет в вердиктах до 10.10. */
   totalMean?: number | null;
-  /** Баллы по каждому вопросу/файлу — «карта» защиты; нет в вердиктах до 10.10. */
+  /** Баллы по каждому вопросу/файлу – «карта» защиты; нет в вердиктах до 10.10. */
   items?: DefenseItemVerdict[];
-  /** Порог защиты утверждения (defense/evaluator THRESHOLD) — тот же. */
+  /** Порог защиты утверждения (defense/evaluator THRESHOLD) – тот же. */
   passed: boolean | null;
   /** Общий балл (среднее по вопросам) в каждом прогоне оценщика. */
   runs: number[];
   flags: DefenseFlag[];
-  /** Текст для работодателя и кандидата — строит код. Слова «фейк» и вердикта о подлинности нет. */
+  /** Текст для работодателя и кандидата – строит код. Слова «фейк» и вердикта о подлинности нет. */
   summary: string;
   /** Принятые цитаты (из прогона, ближайшего к медиане). */
   quotes: string[];
-  /** Доля пройденных скрытых тестов проекта 0…1; null — нет результата. */
+  /** Доля пройденных скрытых тестов проекта 0…1; null – нет результата. */
   projectScore: number | null;
   answered: number;
   employerQuestions: { asked: number; answered: number };
@@ -204,7 +203,7 @@ export interface DefenseRoomVerdict {
 }
 
 // ---------------------------------------------------------------------------
-// SSE — имена событий лейна call (server/call/types.ts CALL_EVENT_TYPES)
+// SSE – имена событий лейна call (server/call/types.ts CALL_EVENT_TYPES)
 // ---------------------------------------------------------------------------
 
 export const CALL_EVENT_NAMES = ['snapshot', 'status', 'utterance', 'ai_state', 'participant', 'mute', 'question', 'verdict', 'signal', 'error'] as const;
@@ -229,7 +228,7 @@ export interface SignalPayload {
 }
 
 /**
- * События звонка защиты. Имена и формы — как у лейна call; отличия: `snapshot.call` — CallSnapshot
+ * События звонка защиты. Имена и формы – как у лейна call; отличия: `snapshot.call` – CallSnapshot
  * защиты; `participant`/`question` несут companyId (по нему скрываем чужие компании).
  */
 export type CallEvent =

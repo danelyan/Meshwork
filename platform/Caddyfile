@@ -1,5 +1,5 @@
 # Обратный прокси стенда (docker-compose.prod.yml). Для домена Caddy сам получает и продлевает
-# сертификат Let's Encrypt; SITE_ADDRESS=:80 — без HTTPS, для локальной проверки.
+# сертификат Let's Encrypt; SITE_ADDRESS=:80 – без HTTPS, для локальной проверки.
 # Сжатие не включаем: его делает Next.js, а ответы чата (SSE) должны идти без буферизации.
 {$SITE_ADDRESS} {
 	reverse_proxy app:3000

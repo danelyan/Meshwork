@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 export default async function SearchPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const s = await requirePageEmployer('/employer/search');
   const ctx = await loadEmployerContext(s.employerProfileId);
-  // ADR 0005: без оферты и обязательства по данным — вместо выдачи форма принятия условий.
+  // ADR 0005: без оферты и обязательства по данным – вместо выдачи форма принятия условий.
   if ((await employerConsentsMissing(s.userId)).length) return <div className={styles.page}><h1>Поиск по базе<span className={styles.accent}>.</span></h1><EmployerConsentGate /></div>;
   // «Показать ещё» растит limit в адресе - потолок страницы выше, чем у API.
   const { filters, limit } = parseFilters(await searchParams, SEARCH_PAGE_MAX_LIMIT);

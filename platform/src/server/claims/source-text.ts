@@ -60,7 +60,7 @@ export function rangeRef(lines: SourceLine[], a: number, b: number): string {
 }
 
 /**
- * Все вхождения нормализованной цитаты в документ по границам слов; видимые — первыми.
+ * Все вхождения нормализованной цитаты в документ по границам слов; видимые – первыми.
  * Сначала обычная нормализация, затем вариант со склейкой переносов слов.
  */
 export function findQuote(idx: IndexedDoc, normQuote: string): QuoteMatch[] {

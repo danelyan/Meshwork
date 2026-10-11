@@ -15,7 +15,7 @@ const envSchema = z.object({
   FSP_PARTNER_DEMO_SECRET: z.string().min(1).default('fsp-partner-demo-secret'),
   /** Секрет клиента fsp-registry-admin: им API заводит пользователей ФСП ID для участников из песочницы. */
   FSP_REGISTRY_ADMIN_SECRET: z.string().min(1).default('fsp-registry-admin-secret'),
-  /** Файл с правками песочницы (переживает рестарт). Не задан — правки живут в памяти. */
+  /** Файл с правками песочницы (переживает рестарт). Не задан – правки живут в памяти. */
   FSP_STATE_FILE: z.string().min(1).optional(),
   /** Каталог со стартовой страницей стенда (index.html, app.css, app.js). */
   FSP_PUBLIC_DIR: z.string().min(1).default('public'),

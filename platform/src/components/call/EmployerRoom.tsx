@@ -28,7 +28,7 @@ function startedAtOf(s: CallSnapshot): number | null {
 
 /**
  * Комната работодателя (ADR 0003): транскрипт в реальном времени, «Подключиться», «ИИ молчит/говорит»,
- * реплика текстом или голосом (STT → текст) и живое P2P-аудио с кандидатом; не поднялось — текст.
+ * реплика текстом или голосом (STT → текст) и живое P2P-аудио с кандидатом; не поднялось – текст.
  * Вопрос «на потом» встаёт в очередь и задаётся при следующем входе кандидата.
  */
 export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { sessionId: string; initial: CallSnapshot; candidateId: string; selfUserId: string }) {
@@ -46,7 +46,7 @@ export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { 
   const [recordingOk, setRecordingOk] = useState(false);
   const [joinedAt, setJoinedAt] = useState<number | null>(null);
   const getStartedAt = useCallback(() => startedAtOf(s) ?? joinedAt ?? Date.now(), [s, joinedAt]);
-  // ADR 0008 п. 3: пишутся обе стороны — работодатель пишет свою дорожку сам; ошибки записи звонок не роняют.
+  // ADR 0008 п. 3: пишутся обе стороны – работодатель пишет свою дорожку сам; ошибки записи звонок не роняют.
   const rec = useEmployerRecorder({ sessionId, stream: rtc.micStream, enabled: joined && active, getStartedAt });
   const [ownAudio, setOwnAudio] = useState<{ name: string; startMs: number }[]>([]);
   useEffect(() => {
@@ -77,7 +77,7 @@ export function EmployerRoom({ sessionId, initial, candidateId, selfUserId }: { 
       const r = await joinCallApi(sessionId, recordingOk);
       setJoinedAt(Date.now());
       setIce(r.webrtc.iceServers);
-      // Звонит работодатель: offer уходит кандидату через сигналинг, ответ — через SSE.
+      // Звонит работодатель: offer уходит кандидату через сигналинг, ответ – через SSE.
       rtc.connect('candidate');
     });
   const leave = () =>

@@ -32,7 +32,7 @@ describe('контекст ИИнтервью: пометки по тесту и
     expect(plan.team.map((c) => c.id)).toEqual(['common.teamwork']);
   });
 
-  it('без подкатегории и теста — порядок модели', () => {
+  it('без подкатегории и теста – порядок модели', () => {
     const tech = competenciesFor('frontend').filter((c) => c.axis === 'technical');
     expect(orderTestBlock(tech, []).map((c) => c.id)).toEqual(tech.map((c) => c.id));
     expect(buildBlockPlan('frontend', null, []).test.map((c) => c.id)).toEqual(tech.map((c) => c.id));

@@ -16,7 +16,7 @@ const BareContext = createContext<(on: boolean) => void>(() => undefined);
 
 /**
  * Страница прячет шапку и подвал, пока `active` (тест в процессе: уйти случайно нельзя).
- * Для целых маршрутов (онбординг) список — BARE_PATHS.
+ * Для целых маршрутов (онбординг) список – BARE_PATHS.
  */
 export function useBareShell(active: boolean): void {
   const set = useContext(BareContext);
@@ -29,9 +29,9 @@ export function useBareShell(active: boolean): void {
 /**
  * Каркас сайта: ссылка «К содержимому», шапка, страница, подвал. Шапка и подвал приходят готовыми серверными
  * элементами; здесь только решается, показывать ли их. Лэйаут не знает путь на сервере (не перерисовывается
- * при навигации), поэтому решение — на клиенте по `usePathname()`.
+ * при навигации), поэтому решение – на клиенте по `usePathname()`.
  */
-export function ShellFrame({ header, footer, children, account, employerSummary, employerDock }: { header: ReactNode; footer: ReactNode; children: ReactNode; account?: HeaderAccount | null; employerSummary?: ReactNode; employerDock?: ReactNode }) {
+export function ShellFrame({ header, footer, children, account, employerSummary }: { header: ReactNode; footer: ReactNode; children: ReactNode; account?: HeaderAccount | null; employerSummary?: ReactNode }) {
   const pathname = usePathname();
   // тёмная тема только на /consultant: атрибут на <html> снимается при уходе со страницы
   useThemeRoot(pathname);
@@ -46,7 +46,7 @@ export function ShellFrame({ header, footer, children, account, employerSummary,
         К содержимому
       </a>
       {!bare && header}
-      <div className={styles.page}><DashboardFrame account={account} employerSummary={employerSummary} employerDock={employerDock} bare={bare}>{children}</DashboardFrame></div>
+      <div className={styles.page}><DashboardFrame account={account} employerSummary={employerSummary} bare={bare}>{children}</DashboardFrame></div>
       {!bare && footer}
       </div>
     </BareContext.Provider>

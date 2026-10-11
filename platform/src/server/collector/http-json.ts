@@ -2,7 +2,7 @@ import { AppError } from '../errors';
 
 /**
  * GET к фиксированным публичным API (GitHub, Codeforces, Stack Exchange): хост задан
- * кодом, не пользователем, поэтому SSRF-фильтр не нужен; таймаут и лимит размера — да.
+ * кодом, не пользователем, поэтому SSRF-фильтр не нужен; таймаут и лимит размера – да.
  */
 export interface GetOptions {
   headers?: Record<string, string>;
@@ -29,7 +29,7 @@ export async function getText(url: string, opts: GetOptions): Promise<{ status: 
     throw new AppError('rate_limited', `${opts.source} временно ограничил запросы, попробуйте позже`, 503);
   }
   if (res.status >= 400) {
-    // Codeforces отвечает 400 с JSON {status:'FAILED'} — отдаём тело наверх
+    // Codeforces отвечает 400 с JSON {status:'FAILED'} – отдаём тело наверх
     if (res.status !== 400) throw new AppError('fetch_failed', `${opts.source} ответил ${res.status}`, 502);
   }
   const max = opts.maxBytes ?? 1024 * 1024;

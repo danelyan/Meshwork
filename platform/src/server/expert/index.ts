@@ -3,16 +3,16 @@ import 'server-only';
 // Режим эксперта (/expert): жюри проходит настоящий тест на грейд без регистрации, грейд никому не присваивается.
 //
 // Граница доверия (публичный вход):
-//  - эксперт — одноразовый Candidate + User без входа (AuthAccount provider = 'expert'), почта `…@expert.invalid`;
+//  - эксперт – одноразовый Candidate + User без входа (AuthAccount provider = 'expert'), почта `…@expert.invalid`;
 //  - сессии `cid` у эксперта нет: своя кука `fsp_expert` (другой формат и домен подписи, path=/api/expert), её нельзя
-//    подставить вместо `cid` — parseSession такой токен не примет. Значит, остальные API (консультант, профиль,
+//    подставить вместо `cid` – parseSession такой токен не примет. Значит, остальные API (консультант, профиль,
 //    согласия, приватность, загрузки) эксперту закрыты, он видит только свои попытки через /api/expert/*;
-//  - в подборку и поиск не попадает: hiddenFromEmployers = true (переключить его некому — нет сессии) и явный фильтр
-//    почты эксперта в employer/matching.ts (loadPool — общий источник поиска и подборки);
-//  - категорию сервис теста (finalize) пишет как обычно — её удаляет scrubExpertCategories сразу после итога;
-//  - лимиты: на адрес клиента (RATE_PER_CLIENT), общий потолок за сутки (DAILY_CAP), TTL сутки — старые эксперты
+//  - в подборку и поиск не попадает: hiddenFromEmployers = true (переключить его некому – нет сессии) и явный фильтр
+//    почты эксперта в employer/matching.ts (loadPool – общий источник поиска и подборки);
+//  - категорию сервис теста (finalize) пишет как обычно – её удаляет scrubExpertCategories сразу после итога;
+//  - лимиты: на адрес клиента (RATE_PER_CLIENT), общий потолок за сутки (DAILY_CAP), TTL сутки – старые эксперты
 //    удаляются при создании нового.
-// Флаг — DEMO_LOGIN (как /demo): выключен → 404.
+// Флаг – DEMO_LOGIN (как /demo): выключен → 404.
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 
 import { clientKey, hit, type RateRule } from '@/server/auth/rate-limit';
@@ -52,7 +52,7 @@ function sign(payload: string, secret: string): string {
   return createHmac('sha256', secret).update(`expert:${payload}`).digest('base64url');
 }
 
-/** Токен куки эксперта: `x.<candidateId>.<exp>.<sig>` — 4 части, parseSession (`cid`) его не принимает. */
+/** Токен куки эксперта: `x.<candidateId>.<exp>.<sig>` – 4 части, parseSession (`cid`) его не принимает. */
 export function signExpertToken(candidateId: string, secret: string = getEnv().SESSION_SECRET, nowSec = Math.floor(Date.now() / 1000), ttlSec = EXPERT_TTL_SEC): string {
   if (!ID_RE.test(candidateId)) throw new Error('signExpertToken: недопустимый id');
   const payload = `x.${candidateId}.${nowSec + ttlSec}`;
@@ -84,7 +84,7 @@ export function expertCookie(candidateId: string) {
   };
 }
 
-/** candidateId эксперта из куки; кука подписана нами, и запись — именно эксперт (защита в глубину). Иначе 401. */
+/** candidateId эксперта из куки; кука подписана нами, и запись – именно эксперт (защита в глубину). Иначе 401. */
 export async function requireExpert(req: Request): Promise<string> {
   const id = verifyExpertToken(readCookie(req, EXPERT_COOKIE));
   if (!id) throw errors.unauthorized('Сессия эксперта не найдена или истекла. Начните тест эксперта заново.');
@@ -93,7 +93,7 @@ export async function requireExpert(req: Request): Promise<string> {
   return c.id;
 }
 
-/** Удалить экспертов старше TTL (попытки, задания и категории — каскадом). Ошибка уборки не мешает созданию. */
+/** Удалить экспертов старше TTL (попытки, задания и категории – каскадом). Ошибка уборки не мешает созданию. */
 export async function purgeExpiredExperts(now: Date = new Date()): Promise<number> {
   const before = new Date(now.getTime() - EXPERT_TTL_SEC * 1000);
   const old = await prisma.candidate.findMany({ where: { email: { endsWith: EXPERT_EMAIL_SUFFIX }, createdAt: { lt: before } }, select: { id: true }, take: 500 });
@@ -108,7 +108,7 @@ export async function purgeExpiredExperts(now: Date = new Date()): Promise<numbe
 
 /**
  * Новый одноразовый эксперт: Candidate (скрыт от работодателей) + User без входа с согласием Г3 (тест оценивается
- * автоматически; нажатие «Начать тест эксперта» — это согласие, ПДн нет). Лимиты: адрес клиента и суточный потолок.
+ * автоматически; нажатие «Начать тест эксперта» – это согласие, ПДн нет). Лимиты: адрес клиента и суточный потолок.
  */
 export async function createExpert(req: Request, now: Date = new Date()): Promise<string> {
   if (!hit(`expert:${clientKey(req)}`, EXPERT_RATE_PER_CLIENT, now.getTime())) throw errors.rateLimited('Слишком много тестов эксперта подряд. Подождите несколько минут.');
@@ -150,13 +150,13 @@ export async function deleteExpert(candidateId: string): Promise<void> {
   ]);
 }
 
-/** Категория эксперту не присваивается: сервис теста записал её при итоге — удаляем. Только у эксперта. */
+/** Категория эксперту не присваивается: сервис теста записал её при итоге – удаляем. Только у эксперта. */
 export async function scrubExpertCategories(candidateId: string): Promise<void> {
   await prisma.candidateCategory.deleteMany({ where: { candidateId, candidate: { email: { endsWith: EXPERT_EMAIL_SUFFIX } } } });
 }
 
 export interface ExpertOutcome {
-  /** Грейд по ответам: заявленный или грейд ниже (R-C-08); null — по ответам не выдаётся. */
+  /** Грейд по ответам: заявленный или грейд ниже (R-C-08); null – по ответам не выдаётся. */
   wouldGrant: Grade | null;
   /** Индекс честности задержал бы выдачу кандидату (needs_confirmation → подтверждающий тест). */
   heldByIntegrity: boolean;
@@ -168,11 +168,11 @@ export interface ExpertOutcome {
 export interface ExpertAttemptView {
   attempt: AttemptView;
   outcome: ExpertOutcome | null;
-  /** Разбор индекса честности (jury.ts) — в режиме эксперта всегда, без флага JURY_INSIGHTS. */
+  /** Разбор индекса честности (jury.ts) – в режиме эксперта всегда, без флага JURY_INSIGHTS. */
   jury: JuryResult | null;
 }
 
-/** Ответ API эксперта: вид попытки + итог для разбора. После итога — убрать категорию. */
+/** Ответ API эксперта: вид попытки + итог для разбора. После итога – убрать категорию. */
 export async function expertView(candidateId: string, attempt: AttemptView): Promise<ExpertAttemptView> {
   const r = attempt.result;
   if (!r) return { attempt, outcome: null, jury: null };

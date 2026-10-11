@@ -62,7 +62,7 @@ describe('proposeClaims', () => {
     await expectStatus(proposeClaims('ghost', [v('be.cache')]), 404);
   });
 
-  it('уровень platform и уровень выше максимума источника — отказ', async () => {
+  it('уровень platform и уровень выше максимума источника – отказ', async () => {
     await expectStatus(proposeClaims(A, [v('be.cache', { level: 'platform' })]), 400);
     await expectStatus(proposeClaims(A, [v('be.cache', { level: 'third_party', sourceKind: 'resume' })]), 400);
     await expectStatus(proposeClaims(A, [v('be.cache', { level: 'artifact', sourceKind: 'chat' })]), 400);
@@ -74,11 +74,11 @@ describe('proposeClaims', () => {
     await rejectClaim(A, row!.id);
     expect(await proposeClaims(A, [v('be.cache')])).toEqual([]);
     expect(await proposeClaims(A, [v('be.cache', { level: 'artifact', sourceKind: 'github' })])).toEqual([]);
-    // другой кандидат — не затронут
+    // другой кандидат – не затронут
     expect(await proposeClaims(B, [v('be.cache')])).toHaveLength(1);
   });
 
-  it('тот же уровень повторно — пропуск; выше уровнем — черновик обновляется', async () => {
+  it('тот же уровень повторно – пропуск; выше уровнем – черновик обновляется', async () => {
     const [first] = await proposeClaims(A, [v('be.cache')]);
     expect(await proposeClaims(A, [v('be.cache', { quote: 'другая' })])).toEqual([]);
     const [upd] = await proposeClaims(A, [v('be.cache', { level: 'artifact', sourceKind: 'github', quote: 'из README' })]);
@@ -87,7 +87,7 @@ describe('proposeClaims', () => {
     expect(await prisma.claim.count({ where: { candidateId: A } })).toBe(1);
   });
 
-  it('подтверждённое не меняется без клика: более сильное доказательство — отдельный черновик', async () => {
+  it('подтверждённое не меняется без клика: более сильное доказательство – отдельный черновик', async () => {
     const [first] = await proposeClaims(A, [v('be.cache')]);
     await confirmClaim(A, first!.id);
     const [draft] = await proposeClaims(A, [v('be.cache', { level: 'artifact', sourceKind: 'github' })]);
@@ -100,7 +100,7 @@ describe('proposeClaims', () => {
     ]);
   });
 
-  it('wording сохраняется рядом с каталожной statement и уходит в профиль; без wording — null', async () => {
+  it('wording сохраняется рядом с каталожной statement и уходит в профиль; без wording – null', async () => {
     const [w, n] = await proposeClaims(A, [v('be.cache', { wording: 'Кэшировала справочники в Redis' }), v('common.git')]);
     expect(w).toMatchObject({ statement: 'Формулировка be.cache', wording: 'Кэшировала справочники в Redis' });
     expect(n?.wording).toBeNull();
@@ -108,7 +108,7 @@ describe('proposeClaims', () => {
     expect(p.claims.find((c) => c.catalogId === 'be.cache')?.wording).toBe('Кэшировала справочники в Redis');
   });
 
-  it('один вызов с дублями ID — одна запись', async () => {
+  it('один вызов с дублями ID – одна запись', async () => {
     const rows = await proposeClaims(A, [v('be.cache'), v('be.cache')]);
     expect(rows).toHaveLength(1);
   });
@@ -121,7 +121,7 @@ describe('confirm / edit / reject', () => {
     id = rows[0]?.id ?? '';
   });
 
-  it('confirm: proposed → confirmed с датой; повторно — идемпотентно', async () => {
+  it('confirm: proposed → confirmed с датой; повторно – идемпотентно', async () => {
     const c = await confirmClaim(A, id);
     expect(c.status).toBe('confirmed');
     expect(c.confirmedAt).toBeInstanceOf(Date);
@@ -129,7 +129,7 @@ describe('confirm / edit / reject', () => {
     expect(again.confirmedAt?.getTime()).toBe(c.confirmedAt?.getTime());
   });
 
-  it('edit меняет только формулировку: уровень, цитата, источник, ID — прежние; статус edited с датой', async () => {
+  it('edit меняет только формулировку: уровень, цитата, источник, ID – прежние; статус edited с датой', async () => {
     const before = await prisma.claim.findUniqueOrThrow({ where: { id } });
     const c = await editClaim(A, id, '  Кэшировал справочники в Redis  ');
     expect(c).toMatchObject({
@@ -153,7 +153,7 @@ describe('confirm / edit / reject', () => {
     await expect(editClaim(A, id, 'x'.repeat(301))).rejects.toMatchObject({ name: 'ZodError' });
   });
 
-  it('reject из confirmed; после reject confirm/edit → 409, reject — идемпотентно', async () => {
+  it('reject из confirmed; после reject confirm/edit → 409, reject – идемпотентно', async () => {
     await confirmClaim(A, id);
     expect((await rejectClaim(A, id)).status).toBe('rejected');
     await expectStatus(confirmClaim(A, id), 409);
@@ -174,7 +174,7 @@ describe('confirm / edit / reject', () => {
 });
 
 describe('getProfile', () => {
-  it('по уровням (выше — первыми), с датой и источником; отклонённые не показываются; категория только из теста', async () => {
+  it('по уровням (выше – первыми), с датой и источником; отклонённые не показываются; категория только из теста', async () => {
     const rows = await proposeClaims(A, [
       v('be.cache'),
       v('common.git', { level: 'artifact', sourceKind: 'github', sourceRef: 'github:a/r#README:l3' }),
@@ -196,7 +196,7 @@ describe('getProfile', () => {
     expect((await getProfile(A)).category).toMatchObject({ specialization: 'backend', grade: 'junior' });
   });
 
-  it('getConfirmedClaims — только подтверждённые кликом', async () => {
+  it('getConfirmedClaims – только подтверждённые кликом', async () => {
     const rows = await proposeClaims(A, [v('be.cache'), v('common.git')]);
     await editClaim(A, rows[1]!.id, 'Работал с ветками');
     expect((await getConfirmedClaims(A)).map((c) => [c.catalogId, c.status])).toEqual([['common.git', 'edited']]);

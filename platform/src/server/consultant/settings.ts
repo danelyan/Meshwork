@@ -11,7 +11,7 @@ export async function loadConsultantSettings(candidateId: string): Promise<Consu
   return { skills: normalizeSkills(row.skills), custom: row.custom ?? '' };
 }
 
-/** Сохраняет как есть (без экранирования — экранирует блок хода); пустой текст — null. */
+/** Сохраняет как есть (без экранирования – экранирует блок хода); пустой текст – null. */
 export async function saveConsultantSettings(candidateId: string, input: { skills: string[]; custom?: string | null }): Promise<ConsultantSettingsData> {
   const skills = normalizeSkills(input.skills);
   const custom = (input.custom ?? '').replace(/\r\n?/g, '\n').trim() || null;
@@ -24,7 +24,7 @@ export async function saveConsultantSettings(candidateId: string, input: { skill
   return { skills: row.skills, custom: row.custom ?? '' };
 }
 
-/** Для хода: сбой чтения не ломает ответ — консультант работает по умолчанию. */
+/** Для хода: сбой чтения не ломает ответ – консультант работает по умолчанию. */
 export async function settingsForTurn(candidateId: string): Promise<ConsultantSettingsData | null> {
   return loadConsultantSettings(candidateId).catch(() => null);
 }

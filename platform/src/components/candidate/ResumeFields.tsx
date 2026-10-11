@@ -15,7 +15,7 @@ const KEYS: Key[] = ['name', 'contact', 'experienceYears', 'roles', 'softSkills'
 const show = (v: Value) => (v === null || v === undefined || (Array.isArray(v) && v.length === 0) ? null : Array.isArray(v) ? v.join(', ') : String(v));
 
 /**
- * R-C-01/02: поля, распознанные в резюме. Пометка «из резюме» у взятых в пустые поля; «в резюме указано иначе» —
+ * R-C-01/02: поля, распознанные в резюме. Пометка «из резюме» у взятых в пустые поля; «в резюме указано иначе» –
  * предложение, если кандидат заполнил поле сам. ФИО и контакт компаниям не видны до принятия приглашения.
  */
 export function ResumeFieldsCard({ details, onChange }: { details: ProfileDetails | null; onChange?: () => void }) {
@@ -76,6 +76,6 @@ export function ResumeFieldsCard({ details, onChange }: { details: ProfileDetail
         </dd>
       </div>;
     })}</dl>
-    <p className={styles.meta}>Стаж, роли (без названий компаний) и софт-скиллы компании видят в анонимной карточке; ФИО и контакт — только после принятия приглашения.</p>
+    <p className={styles.meta}>Стаж, роли (без названий компаний) и софт-скиллы компании видят в анонимной карточке; ФИО и контакт – только после принятия приглашения.</p>
   </Panel>;
 }

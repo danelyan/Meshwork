@@ -14,8 +14,8 @@ import styles from './Employer.module.css';
 import { NO_CANDIDATE_CONTACT } from './labels';
 
 /**
- * Отклики на потребность (R-C-12). Карточка — та же, что в подборке (toCandidateCard): псевдоним и публичные
- * утверждения до принятия; имя и контакт — после «Принять», если кандидат не отозвал раскрытие (R-E-07).
+ * Отклики на потребность (R-C-12). Карточка – та же, что в подборке (toCandidateCard): псевдоним и публичные
+ * утверждения до принятия; имя и контакт – после «Принять», если кандидат не отозвал раскрытие (R-E-07).
  */
 export function VacancyApplications({ vacancyId }: { vacancyId: string }) {
   const [items, setItems] = useState<EmployerApplicationView[] | null>(null);
@@ -43,7 +43,7 @@ export function VacancyApplications({ vacancyId }: { vacancyId: string }) {
   return <Panel as="section" aria-labelledby="vacancy-applications" data-testid="vacancy-applications">
     <Kicker>Кандидаты сами</Kicker><h2 id="vacancy-applications">Отклики{items ? ` · ${items.length}` : ''}</h2>
     {error && <Notice tone="error">{error}</Notice>}
-    {!items ? (!error && <p role="status">Загружаем отклики…</p>) : !items.length ? <p className={styles.meta}>Откликов пока нет. Основной путь — подборка и приглашения выше.</p> : <ul className={styles.list}>{items.map((a) => {
+    {!items ? (!error && <p role="status">Загружаем отклики…</p>) : !items.length ? <p className={styles.meta}>Откликов пока нет. Основной путь – подборка и приглашения выше.</p> : <ul className={styles.list}>{items.map((a) => {
       const card = a.candidate;
       const open = a.status === 'sent' || a.status === 'viewed';
       return <li key={a.id} className={styles.candidateRow}>

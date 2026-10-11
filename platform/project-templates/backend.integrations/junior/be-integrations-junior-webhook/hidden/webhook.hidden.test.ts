@@ -42,7 +42,7 @@ describe('подпись', () => {
     expect(res.status).toBe(200);
   });
 
-  it('нет заголовка подписи или времени — 401 invalid_signature', async () => {
+  it('нет заголовка подписи или времени – 401 invalid_signature', async () => {
     const app = make();
     for (const omit of ['sig', 'ts'] as const) {
       const res = await post(app, evt('e-miss'), { omit });
@@ -56,7 +56,7 @@ describe('подпись', () => {
     }
   });
 
-  it('подпись с другим секретом, чужая длина и без префикса — 401, без падения', async () => {
+  it('подпись с другим секретом, чужая длина и без префикса – 401, без падения', async () => {
     const app = make();
     const raw = evt('e-bad');
     for (const signature of [hmac('чужой', TS, raw), 'sha256=abc', 'abc', hmac(SECRET, TS, raw).slice(7), hmac(SECRET, TS, raw) + '00', '']) {
@@ -76,7 +76,7 @@ describe('подпись', () => {
 });
 
 describe('окно времени', () => {
-  it('ровно toleranceSec допустимо, на секунду больше — stale_timestamp (в обе стороны)', async () => {
+  it('ровно toleranceSec допустимо, на секунду больше – stale_timestamp (в обе стороны)', async () => {
     const app = make({ toleranceSec: 60 });
     expect((await post(app, evt('t-1'), { ts: String(NOW / 1000 - 60) })).status).toBe(200);
     expect((await post(app, evt('t-2'), { ts: String(NOW / 1000 + 60) })).status).toBe(200);
@@ -100,7 +100,7 @@ describe('окно времени', () => {
 });
 
 describe('разбор тела', () => {
-  it('не JSON, не объект, нет id/type — 400 invalid_payload', async () => {
+  it('не JSON, не объект, нет id/type – 400 invalid_payload', async () => {
     const app = make();
     for (const raw of ['not json', '', '[1,2]', '"str"', '42', 'null', '{"type":"payment.failed"}', '{"id":"x"}', '{"id":"","type":"payment.failed"}', '{"id":1,"type":"payment.failed"}', '{"id":"x","type":5}']) {
       const res = await post(app, raw);
@@ -109,7 +109,7 @@ describe('разбор тела', () => {
     }
   });
 
-  it('неизвестный тип — ignored, обработчик не вызывается и id не запоминается', async () => {
+  it('неизвестный тип – ignored, обработчик не вызывается и id не запоминается', async () => {
     const seen: string[] = [];
     const app = make({ onEvent: (e: { type: string }) => void seen.push(e.type) });
     const res = await post(app, evt('u-1', 'customer.created'));
@@ -135,7 +135,7 @@ describe('обработка и повторы', () => {
     ]);
   });
 
-  it('асинхронный обработчик ждётся; повтор того же id — duplicate без вызова', async () => {
+  it('асинхронный обработчик ждётся; повтор того же id – duplicate без вызова', async () => {
     let calls = 0;
     const app = make({
       onEvent: async () => {
@@ -151,7 +151,7 @@ describe('обработка и повторы', () => {
     expect(calls).toBe(1);
   });
 
-  it('сбой обработчика (sync и async) — 500, событие не запоминается, повтор обрабатывается', async () => {
+  it('сбой обработчика (sync и async) – 500, событие не запоминается, повтор обрабатывается', async () => {
     let attempt = 0;
     const app = make({
       onEvent: async () => {

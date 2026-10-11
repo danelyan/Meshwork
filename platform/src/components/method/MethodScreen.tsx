@@ -67,8 +67,8 @@ function Flow({ p }: { p: MethodPolicy }) {
         <div>
           <p className={styles.flowTitle}>Старт по заявленному грейду</p>
           <p className={styles.flowText}>
-            Кандидат выбирает подкатегорию и грейд. Пул — задания своей подкатегории и общие (не больше {pct(p.maxCommonShare)} попытки). Стартовая оценка θ₀:
-            Junior и Middle — {dec(p.startTheta.junior, 1)}, Senior — {dec(p.startTheta.senior, 1)}; у Senior основная фаза только по Senior-заданиям, не больше{' '}
+            Кандидат выбирает подкатегорию и грейд. Пул – задания своей подкатегории и общие (не больше {pct(p.maxCommonShare)} попытки). Стартовая оценка θ₀:
+            Junior и Middle – {dec(p.startTheta.junior, 1)}, Senior – {dec(p.startTheta.senior, 1)}; у Senior основная фаза только по Senior-заданиям, не больше{' '}
             {p.seniorMainMax}.
           </p>
           <div className={styles.flowConst}>
@@ -103,7 +103,7 @@ function Flow({ p }: { p: MethodPolicy }) {
               <p className={styles.flowTitle}>Оценка θ по сетке</p>
               <p className={styles.flowText}>
                 Модель 2PL: P(верно) = 1 / (1 + e<sup>−a(θ − b)</sup>). После ответа апостериорное распределение θ пересчитывается на сетке из {p.grid.size}{' '}
-                узла от {p.grid.min} до {p.grid.max} с априорным N(0, 1): θ̂ — среднее, SE — стандартное отклонение.
+                узла от {p.grid.min} до {p.grid.max} с априорным N(0, 1): θ̂ – среднее, SE – стандартное отклонение.
               </p>
             </div>
           </li>
@@ -115,7 +115,7 @@ function Flow({ p }: { p: MethodPolicy }) {
               <p className={styles.flowTitle}>Остановка</p>
               <p className={styles.flowText}>
                 Не раньше {p.minItems} заданий. Стоп, если P(θ &gt; порог заявленного грейда) ≥ {dec(p.earlyStop, 1)} или ≤ {dec(1 - p.earlyStop, 1)}, или SE ≤{' '}
-                {dec(p.seStop, 1)}, или показано {p.maxItems} заданий. Иначе — снова шаг 2.
+                {dec(p.seStop, 1)}, или показано {p.maxItems} заданий. Иначе – снова шаг 2.
               </p>
               <div className={styles.flowConst}>
                 <Const>MIN_ITEMS = {p.minItems}</Const>
@@ -134,7 +134,7 @@ function Flow({ p }: { p: MethodPolicy }) {
         <div>
           <p className={styles.flowTitle}>Дозадавание</p>
           <p className={styles.flowText}>
-            Если по грейду ниже заявленного решение неуверенное, тест добирает до {p.juniorProbeMax} Junior-заданий (у заявки Senior — до {p.middleProbeMax}{' '}
+            Если по грейду ниже заявленного решение неуверенное, тест добирает до {p.juniorProbeMax} Junior-заданий (у заявки Senior – до {p.middleProbeMax}{' '}
             Middle). Так «Junior в один клик» и «Middle в один клик» опираются на достаточное число наблюдений.
           </p>
           <div className={styles.flowConst}>
@@ -151,7 +151,7 @@ function Flow({ p }: { p: MethodPolicy }) {
           <p className={styles.flowTitle}>Вердикт: категория = специализация × грейд</p>
           <p className={styles.flowText}>
             Грейд подтверждён, если P(θ &gt; порог) ≥ {dec(p.confirmProb, 1)} по всем ответам попытки. Пороги на шкале θ: {GRADES.map(cut).join(', ')}. Не
-            подтвердился — предлагается грейд ниже, если он подтверждается той же попыткой. Подозрение на помощь нейросети (индекс честности high) отправляет на
+            подтвердился – предлагается грейд ниже, если он подтверждается той же попыткой. Подозрение на помощь нейросети (индекс честности high) отправляет на
             короткий подтверждающий тест.
           </p>
           <div className={styles.flowConst}>
@@ -195,11 +195,11 @@ function Bank({ info, policy }: { info: BankInformation; policy: MethodPolicy })
       <SeChart info={info} cuts={policy.cuts} seStop={policy.seStop} />
       <p className={styles.soft}>
         {range
-          ? `SE ≤ ${dec(policy.seStop, 1)} достижима при θ от ${dec(range[0], 1)} до ${dec(range[1], 1)}: у порогов грейдов оценка точнее всего, по краям шкалы — грубее, но там и решение о грейде однозначное.`
+          ? `SE ≤ ${dec(policy.seStop, 1)} достижима при θ от ${dec(range[0], 1)} до ${dec(range[1], 1)}: у порогов грейдов оценка точнее всего, по краям шкалы – грубее, но там и решение о грейде однозначное.`
           : `SE ≤ ${dec(policy.seStop, 1)} за ${policy.maxItems} заданий не достигается ни при каком θ: тест останавливается по уверенности решения о грейде (P ≥ ${dec(policy.earlyStop, 1)}), а не по точности θ.`}
       </p>
       <p className={styles.note}>
-        Кривые — по параметрам a и b заданий банка этой подкатегории (свои семейства и общие). Параметры экспертные, на людях не откалиброваны.
+        Кривые – по параметрам a и b заданий банка этой подкатегории (свои семейства и общие). Параметры экспертные, на людях не откалиброваны.
       </p>
     </>
   );
@@ -214,8 +214,8 @@ const VERDICTS: { key: Grade | 'none'; label: string; cls: string }[] = [
 
 const ROW_TITLE: Record<PersonaRow, string> = { mid: 'Середина зоны грейда', confident: 'Уверенный: верхняя треть зоны' };
 const ROW_TEXT: Record<PersonaRow, string> = {
-  mid: 'θ посередине между порогами своего грейда; у новичка и Senior — на 0,6 и 0,5 от порога.',
-  confident: 'θ в верхней трети зоны своего грейда; новичок — глубже в своей зоне, Senior — дальше от порога.',
+  mid: 'θ посередине между порогами своего грейда; у новичка и Senior – на 0,6 и 0,5 от порога.',
+  confident: 'θ в верхней трети зоны своего грейда; новичок – глубже в своей зоне, Senior – дальше от порога.',
 };
 
 function Personas({ personas }: { personas: PersonaStats[] }) {
@@ -276,7 +276,7 @@ function Weights() {
     {
       name: 'Категория из теста',
       value: categoryMax,
-      text: `(покрытие + ${dec(CATEGORY_BASE, 2)}) × (1 + множитель) − покрытие: грейд равен требуемому — × ${dec(1 + CATEGORY_MULT_EXACT, 1)}, выше — × ${dec(1 + CATEGORY_MULT_ABOVE, 1)}, ниже — без прибавки. До +${dec(categoryMax, 3)} при полном покрытии.`,
+      text: `(покрытие + ${dec(CATEGORY_BASE, 2)}) × (1 + множитель) − покрытие: грейд равен требуемому – × ${dec(1 + CATEGORY_MULT_EXACT, 1)}, выше – × ${dec(1 + CATEGORY_MULT_ABOVE, 1)}, ниже – без прибавки. До +${dec(categoryMax, 3)} при полном покрытии.`,
     },
     {
       name: 'Проект под потребность',
@@ -291,12 +291,12 @@ function Weights() {
     {
       name: 'Достижения ФСП',
       value: FSP_BOOST_MAX,
-      text: `Σ место × уровень соревнования × 0,5^(давность / ${FSP_HALF_LIFE_YEARS} года) × ${dec(FSP_PER_POINT, 2)}, потолок ${dec(FSP_BOOST_MAX, 2)}. Нет истории ФСП — 0, не штраф.`,
+      text: `Σ место × уровень соревнования × 0,5^(давность / ${FSP_HALF_LIFE_YEARS} года) × ${dec(FSP_PER_POINT, 2)}, потолок ${dec(FSP_BOOST_MAX, 2)}. Нет истории ФСП – 0, не штраф.`,
     },
     {
       name: 'Стек в цитатах',
       value: STACK_BOOST_MAX,
-      text: `+${dec(STACK_BOOST_PER_TAG, 2)} за метку стека в подтверждённых цитатах; близкая технология — доля до ${dec(STACK_PARTIAL_MAX_COEF, 1)}; потолок ${dec(STACK_BOOST_MAX, 2)}.`,
+      text: `+${dec(STACK_BOOST_PER_TAG, 2)} за метку стека в подтверждённых цитатах; близкая технология – доля до ${dec(STACK_PARTIAL_MAX_COEF, 1)}; потолок ${dec(STACK_BOOST_MAX, 2)}.`,
     },
     {
       name: 'Другая специализация',
@@ -323,24 +323,24 @@ function Weights() {
       </ul>
       <ul className={styles.list}>
         <li>
-          Порядок выдачи: сначала кандидаты точной подкатегории, затем соседней; внутри — по баллу, при равенстве — больше закрытых и доказанных требований.
+          Порядок выдачи: сначала кандидаты точной подкатегории, затем соседней; внутри – по баллу, при равенстве – больше закрытых и доказанных требований.
         </li>
-        <li>Без единого закрытого требования кандидат не показывается — кроме того, чья категория из теста совпала с потребностью.</li>
+        <li>Без единого закрытого требования кандидат не показывается – кроме того, чья категория из теста совпала с потребностью.</li>
         <li>
           Флаг честности: если у попытки, давшей категорию, индекс честности high и она не подтверждена ни подтверждающим тестом, ни созвоном, категория в балл
-          не идёт — кандидат ранжируется только по доказанным требованиям.
+          не идёт – кандидат ранжируется только по доказанным требованиям.
         </li>
         <li>
           Слагаемые ФСП, стека и созвона намеренно меньше одного закрытого требования: они уточняют порядок среди близких, но не поднимают над тем, кто
           доказанно закрыл больше.
         </li>
       </ul>
-      <p className={styles.note}>Веса — наши предложения, калибруются прогоном на размеченном наборе (/evaluate, /validation).</p>
+      <p className={styles.note}>Веса – наши предложения, калибруются прогоном на размеченном наборе (/evaluate, /validation).</p>
     </>
   );
 }
 
-/** /method — «Как устроена проверка»: этапы теста, информация банка, смоделированные кандидаты, формула подбора. */
+/** /method – «Как устроена проверка»: этапы теста, информация банка, смоделированные кандидаты, формула подбора. */
 export function MethodScreen({ policy, subcategories, selected, info, personas, juryLink }: MethodScreenProps) {
   const runs = personas?.[0]?.runs ?? 0;
   const avgSe = personas?.length ? personas.reduce((s, p) => s + p.meanSe, 0) / personas.length : 0;
@@ -357,7 +357,7 @@ export function MethodScreen({ policy, subcategories, selected, info, personas, 
         <section className={styles.section} aria-labelledby="m-flow">
           <h2 id="m-flow">1. Этапы теста</h2>
           <p className={styles.soft}>
-            Политика <span className={styles.mono}>{policy.version}</span>. Длина попытки — от {policy.minItems} до {policy.maxItems} заданий плюс дозадавание.
+            Политика <span className={styles.mono}>{policy.version}</span>. Длина попытки – от {policy.minItems} до {policy.maxItems} заданий плюс дозадавание.
           </p>
           <Flow p={policy} />
         </section>
@@ -377,7 +377,7 @@ export function MethodScreen({ policy, subcategories, selected, info, personas, 
           <h2 id="m-personas">3. Смоделированные кандидаты</h2>
           <p className={styles.soft}>
             Две четвёрки виртуальных кандидатов с заданным «истинным» уровнем θ, по {runs} прогонов каждый (seed 1…{runs}) через тот же движок, что и боевой
-            тест. Подкатегория — выбранная выше.
+            тест. Подкатегория – выбранная выше.
           </p>
           {personas ? (
             PERSONA_ROWS.map((row) => (
@@ -394,20 +394,20 @@ export function MethodScreen({ policy, subcategories, selected, info, personas, 
             <p className={styles.note}>
               Тест осторожный: грейд подтверждается только при P(θ &gt; порог) ≥ {dec(policy.confirmProb, 1)}, поэтому ошибается он чаще в сторону занижения,
               чем завышения. Зона Junior узкая ({dec(policy.cuts.middle - policy.cuts.junior, 1)} по θ) при итоговом SE около {dec(avgSe, 1)}, и кандидат в
-              середине зоны подтверждается не всегда, а уверенный — заметно чаще. Разница между двумя строками и есть осторожность теста: сомнение решается в пользу
-              грейда ниже. Те же выводы — в цифрах валидации.
+              середине зоны подтверждается не всегда, а уверенный – заметно чаще. Разница между двумя строками и есть осторожность теста: сомнение решается в пользу
+              грейда ниже. Те же выводы – в цифрах валидации.
             </p>
           )}
           <p className={styles.note}>
             Это симуляция по модели, не люди: ответы порождает логистическая модель IRT с параметрами, которые заданы экспертно и на людях не откалиброваны. Без
-            шума, утечки приёмов и проверки честности — эти режимы есть в симуляторе и в цифрах валидации.
+            шума, утечки приёмов и проверки честности – эти режимы есть в симуляторе и в цифрах валидации.
           </p>
         </section>
 
         <section className={styles.section} aria-labelledby="m-ranking">
           <h2 id="m-ranking">4. Подбор работодателю</h2>
           <p className={styles.soft}>
-            Компания сама ищет в базе, разложенной по категориям из теста. Под каждую потребность кандидат получает балл из доказанного, и рядом — обоснование
+            Компания сама ищет в базе, разложенной по категориям из теста. Под каждую потребность кандидат получает балл из доказанного, и рядом – обоснование
             словами.
           </p>
           <Weights />

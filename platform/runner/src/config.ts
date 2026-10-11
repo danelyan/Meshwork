@@ -6,7 +6,7 @@ import path from 'node:path';
  * локально (`RUNNER_LOCAL=1`, macOS без Docker) пути по умолчанию считаются от `platform/`.
  */
 export interface RunnerConfig {
-  /** Общий секрет с app. Не задан — все запросы, кроме /health, получают 503. */
+  /** Общий секрет с app. Не задан – все запросы, кроме /health, получают 503. */
   token?: string;
   host: string;
   port: number;
@@ -20,7 +20,7 @@ export interface RunnerConfig {
   pythonBin: string;
   pytestIni: string;
   /**
-   * setuid-помощник смены uid задания (контейнер, runner/sandbox/helper). Не задан — задания идут
+   * setuid-помощник смены uid задания (контейнер, runner/sandbox/helper). Не задан – задания идут
    * под uid сервиса (только локальный режим). uid/gid задания зашиты в помощник при сборке.
    */
   sandboxHelper?: string;
@@ -33,7 +33,7 @@ export interface RunnerConfig {
   maxQueue: number;
   /**
    * Сколько байт архивов может ждать на tmpfs одновременно (загрузки + задания в очереди).
-   * Больше — 429 на /uploads. По умолчанию 200 МБ при tmpfs /work 768 МБ.
+   * Больше – 429 на /uploads. По умолчанию 200 МБ при tmpfs /work 768 МБ.
    */
   maxPendingBytes: number;
   /** Сколько завершённых заданий держать в памяти. */
@@ -52,7 +52,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   const local = env.RUNNER_LOCAL === '1' || env.RUNNER_LOCAL === 'true';
   const base = path.resolve(cwd, env.RUNNER_BASE_DIR ?? 'runner');
   const token = env.RUNNER_TOKEN?.trim();
-  if (token !== undefined && token !== '' && token.length < 32) throw new Error('RUNNER_TOKEN — не короче 32 символов');
+  if (token !== undefined && token !== '' && token.length < 32) throw new Error('RUNNER_TOKEN – не короче 32 символов');
   return {
     token: token || undefined,
     host: env.RUNNER_HOST ?? (local ? '127.0.0.1' : '0.0.0.0'),

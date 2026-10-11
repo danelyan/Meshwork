@@ -55,7 +55,7 @@ describe('runner auth', () => {
     expect(tokenMatches(undefined, `Bearer ${token}`)).toBe(false);
   });
 
-  it('короткий RUNNER_TOKEN — ошибка конфигурации', () => {
+  it('короткий RUNNER_TOKEN – ошибка конфигурации', () => {
     expect(() => loadConfig({ RUNNER_TOKEN: 'short' })).toThrow(/32/);
   });
 });

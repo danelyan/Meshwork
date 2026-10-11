@@ -168,7 +168,7 @@ def test_split_sizes_cover_and_determinism():
 def test_split_bounds_and_positional_rows():
     df = make_df(10)
     assert len(train_and_evaluate(df, "y", ["x1"], test_size=0.01)["test_idx"]) == 1
-    with pytest.raises(ValueError):  # в train остаётся одна строка — один класс
+    with pytest.raises(ValueError):  # в train остаётся одна строка – один класс
         train_and_evaluate(df, "y", ["x1"], test_size=0.99)
     shuffled = df.iloc[::-1].copy()
     shuffled.index = [100 + i * 7 for i in range(10)]  # метки индекса не совпадают с позициями

@@ -1,16 +1,16 @@
 // Индекс честности теста в подборе (11.10): вариант 1 (только метка у работодателя) против варианта 2
-// (кандидат с high опускается: 2a — категория не учитывается, 2b — балл × factor). Без БД и сети.
+// (кандидат с high опускается: 2a – категория не учитывается, 2b – балл × factor). Без БД и сети.
 //   npx tsx eval/matching/integrity.ts            # таблицы + ключ integrityRanking в eval/matching/results.json
 //   npx tsx eval/matching/integrity.ts --no-write [--reps 1000]
 //   npx tsx eval/matching/integrity.ts --call     # 1 vs 2a vs 2a + снятие созвоном → ключ integrityRankingCall
-// Уровни индекса — жребий по долям из симуляции теста (eval/test/integrity-results.json), не из живых людей.
+// Уровни индекса – жребий по долям из симуляции теста (eval/test/integrity-results.json), не из живых людей.
 // Набор профилей фиксирован (seed); в каждом повторе перетягивается индекс (и, для «малого пула», подвыборка профилей).
 // Метрики по запросу усредняются по повторам, затем бутстреп по запросам, как в run.ts.
 //
 // Два режима запросов, как в кабинете (matching.ts):
 //  - подборка под вакансию: rankCandidates + dropUncovered, 24 вакансии synthetic.ts, разметка truthRelevance;
-//  - поиск по банку с фильтром категории (searchBank, фильтр специализация + грейд): 12 запросов; разметка — «категория
-//    заслужена»: у кандидата категория фильтра и латентный грейд не ниже — 2, иначе 0 (покрытие полной сигнатуры категории
+//  - поиск по банку с фильтром категории (searchBank, фильтр специализация + грейд): 12 запросов; разметка – «категория
+//    заслужена»: у кандидата категория фильтра и латентный грейд не ниже – 2, иначе 0 (покрытие полной сигнатуры категории
 //    у синтетики почти всегда ниже порога, поэтому truthRelevance здесь вырождается в 0).
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -36,7 +36,7 @@ const argReps = process.argv.indexOf('--reps');
 const REPS = argReps > 0 ? Number(process.argv[argReps + 1]) : 1000;
 const BOOT_REPS = 1000;
 const BASE_PROFILES = 247;
-/** «Малый пул»: размер подвыборки (закрытый набор жюри неизвестен — допущение). */
+/** «Малый пул»: размер подвыборки (закрытый набор жюри неизвестен – допущение). */
 const THIN_POOL = 60;
 const catalog = new Map(catalogFromFile().map((e) => [e.id, e]));
 const simulation = JSON.parse(readFileSync(join(here, '../test/integrity-results.json'), 'utf8')) as Parameters<typeof integrityRatesFromSimulation>[0];
@@ -44,7 +44,7 @@ const simulation = JSON.parse(readFileSync(join(here, '../test/integrity-results
 /**
  * Снятие понижения созвоном (режим --call, решение владельца 11.10): у кандидата с high созвон с разбором теста случился с
  * вероятностью share и дал «объяснил сам» с вероятностью honest / cheat. Чисел из живых данных нет (validation-results.md:
- * «Точность оценщика „решил сам“ на людях и на подсказках нейросети не измерена») — сценарии-допущения.
+ * «Точность оценщика „решил сам“ на людях и на подсказках нейросети не измерена») – сценарии-допущения.
  */
 interface Lift { share: number; honest: number; cheat: number }
 interface Variant { name: string; label: string; opts: RankOptions; lift?: Lift }
@@ -116,7 +116,7 @@ function buildQueries(set: SynSet, mode: 'vacancy' | 'bank'): Query[] {
   for (const spec of ['backend', 'frontend', 'engineering', 'ai'] as const) {
     for (const grade of ['junior', 'middle', 'senior'] as const) {
       const rel: Record<string, number> = {};
-      // Разметка банка: среди получивших категорию «spec × grade» — заслужил ли (латентный грейд не ниже). Остальные — 0:
+      // Разметка банка: среди получивших категорию «spec × grade» – заслужил ли (латентный грейд не ниже). Остальные – 0:
       // фильтр их не выдаёт ни при одном варианте, идеальная выдача из них не строится.
       for (const p of ps) rel[p.id] = p.category?.specialization === spec && p.category.grade === grade && GRADE_RANK[p.trueGrade] >= GRADE_RANK[grade] ? 2 : 0;
       out.push(mk(`bank-${spec}-${grade}`, rel, { specialization: spec, grade, needs: categoryNeeds(catalog, spec, grade), stack: [] }, { specialization: spec, grade, expandPool: true }, false));
@@ -129,7 +129,7 @@ interface HonestCost { events: number; inTop10V1: number; top10SlotsV1: number; 
 interface VariantStats {
   metrics: Record<MetricName, Interval>;
   deltaVsV1: Record<MetricName, Interval>;
-  /** Доля мест топ-5 / топ-10, занятых «списанными» (среднее по запросам и повторам; пустые места — не списанные). */
+  /** Доля мест топ-5 / топ-10, занятых «списанными» (среднее по запросам и повторам; пустые места – не списанные). */
   fakedShareTop5: number;
   fakedShareTop10: number;
   /** Сколько «списанных» с категорией под запрос попадали в выдачу вообще (среднее на запрос). */
@@ -225,7 +225,7 @@ function evaluate(set: SynSet, queries: Query[], rates: IntegrityRates, thin: { 
   };
 }
 
-/** Цена одного ложного high (детерминированно, полный пул): каждый честный с категорией по очереди — единственный с high. */
+/** Цена одного ложного high (детерминированно, полный пул): каждый честный с категорией по очереди – единственный с high. */
 function costPerFalseHigh(set: SynSet, queries: Query[]) {
   const ps = set.profiles;
   const honest = ps.map((p, i) => (p.category && p.archetype !== 'category_faked' ? i : -1)).filter((i) => i >= 0);
@@ -274,7 +274,7 @@ function runScenario(sc: Scenario) {
   };
 }
 
-// Малый набор: индекса нет ни у кого (демо-профили без попыток) — проверяем, что любой вариант даёт тот же порядок.
+// Малый набор: индекса нет ни у кого (демо-профили без попыток) – проверяем, что любой вариант даёт тот же порядок.
 const legacyEv: CandidateEvidence[] = [...DEMO_POOL, ...EXTRA_PROFILES].map((p) => ({
   id: p.id, specialization: p.specialization, fspState: p.fspState, category: p.category,
   claims: p.claims.map(([catalogId, level]) => ({ catalogId, level, statement: catalog.get(catalogId)?.statement ?? catalogId, quote: p.stack.join(', ') })),
@@ -316,8 +316,8 @@ if (!process.argv.includes('--no-write')) {
   const path = join(here, 'results.json');
   const prev = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
   prev[CALL_MODE ? 'integrityRankingCall' : 'integrityRanking'] = {
-    note: 'Индекс честности в подборе (11.10): вариант 1 — только метка; 2a — при high категория из теста не учитывается; 2b — балл × factor. Уровни индекса — жребий по долям симуляции теста (eval/test/integrity-results.json, персоны, не люди); reps повторов жребия (и подвыборки для пула 60), метрики по запросу усреднены по повторам, интервалы — бутстреп по запросам, 1000 повторов, 95 %. Банк: разметка «категория фильтра и латентный грейд не ниже» (2), иначе 0. Скрипт eval/matching/integrity.ts.',
-    ...(CALL_MODE ? { callNote: 'Режим --call: 2a + снятие понижения созвоном «объяснил сам»; доля созвона и доли «объяснил сам» у честных/списавших — допущения (не измерены).' } : {}),
+    note: 'Индекс честности в подборе (11.10): вариант 1 – только метка; 2a – при high категория из теста не учитывается; 2b – балл × factor. Уровни индекса – жребий по долям симуляции теста (eval/test/integrity-results.json, персоны, не люди); reps повторов жребия (и подвыборки для пула 60), метрики по запросу усреднены по повторам, интервалы – бутстреп по запросам, 1000 повторов, 95 %. Банк: разметка «категория фильтра и латентный грейд не ниже» (2), иначе 0. Скрипт eval/matching/integrity.ts.',
+    ...(CALL_MODE ? { callNote: 'Режим --call: 2a + снятие понижения созвоном «объяснил сам»; доля созвона и доли «объяснил сам» у честных/списавших – допущения (не измерены).' } : {}),
     seed: SYN_SEED, reps: REPS, thinPool: THIN_POOL, legacySmallSetUnchanged: legacySame, scenarios: out,
   };
   writeFileSync(path, `${JSON.stringify(prev, null, 2)}\n`);

@@ -20,7 +20,7 @@ export const blockedUrl = (reason: string) =>
 
 // ---------- IPv4 ----------
 
-/** Разбор IPv4 в любой записи inet_aton: 127.1, 0x7f000001, 2130706433, 0177.0.0.1. null — не IPv4. */
+/** Разбор IPv4 в любой записи inet_aton: 127.1, 0x7f000001, 2130706433, 0177.0.0.1. null – не IPv4. */
 export function parseIPv4(host: string): number | null {
   const parts = host.split('.');
   if (parts.length === 0 || parts.length > 4) return null;
@@ -74,7 +74,7 @@ export function formatIPv4(v: number): string {
 
 // ---------- IPv6 ----------
 
-/** IPv6 → 8 хекстетов (с поддержкой `::` и хвоста-IPv4). null — не IPv6. */
+/** IPv6 → 8 хекстетов (с поддержкой `::` и хвоста-IPv4). null – не IPv6. */
 export function parseIPv6(input: string): number[] | null {
   let s = input.replace(/^\[|\]$/g, '');
   const zone = s.indexOf('%');
@@ -101,11 +101,11 @@ export function isBlockedIPv6(h: number[]): boolean {
   const [a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, hh = 0] = h;
   const embedded = g * 65536 + hh;
   if (a === 0 && b === 0 && c === 0 && d === 0 && e === 0) {
-    if (f === 0xffff) return isBlockedIPv4(embedded); // ::ffff:a.b.c.d — IPv4-mapped
-    if (f === 0) return true; // ::, ::1, ::a.b.c.d (compat, устарело) — не пускаем
+    if (f === 0xffff) return isBlockedIPv4(embedded); // ::ffff:a.b.c.d – IPv4-mapped
+    if (f === 0) return true; // ::, ::1, ::a.b.c.d (compat, устарело) – не пускаем
   }
-  if (a === 0x64 && b === 0xff9b) return true; // NAT64 64:ff9b::/96 и /48 — ведёт во внутреннюю сеть шлюза
-  if (a === 0x2002) return true; // 6to4 2002::/16 — встроенный IPv4 может быть внутренним, не пускаем
+  if (a === 0x64 && b === 0xff9b) return true; // NAT64 64:ff9b::/96 и /48 – ведёт во внутреннюю сеть шлюза
+  if (a === 0x2002) return true; // 6to4 2002::/16 – встроенный IPv4 может быть внутренним, не пускаем
   if (a === 0x2001 && b === 0) return true; // Teredo
   if (a === 0x2001 && b === 0xdb8) return true; // документация
   if (a === 0x100 && b === 0 && c === 0 && d === 0) return true; // discard 100::/64
@@ -119,7 +119,7 @@ export function isBlockedIPv6(h: number[]): boolean {
 
 export type IpCheck = { ip: string; family: 4 | 6; blocked: boolean } | null;
 
-/** Строка — IP-литерал (в любой записи)? Возвращает нормализованный адрес и вердикт. */
+/** Строка – IP-литерал (в любой записи)? Возвращает нормализованный адрес и вердикт. */
 export function classifyIpLiteral(host: string): IpCheck {
   const h = host.replace(/^\[|\]$/g, '');
   if (h.includes(':')) {
@@ -140,7 +140,7 @@ const BLOCKED_NAMES = new Set(['localhost', 'metadata', 'metadata.google.interna
 export function isBlockedHostname(name: string): boolean {
   const h = name.toLowerCase().replace(/\.$/, '');
   if (BLOCKED_NAMES.has(h)) return true;
-  if (!h.includes('.')) return true; // односложные имена — внутренние
+  if (!h.includes('.')) return true; // односложные имена – внутренние
   return BLOCKED_SUFFIXES.some((s) => h.endsWith(s));
 }
 

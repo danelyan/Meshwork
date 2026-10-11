@@ -11,7 +11,7 @@ import type { ExternalProfile } from './users';
  * Доки: yandex.ru/dev/id/doc/ru/codes/code-url (authorize, token, PKCE S256),
  * yandex.ru/dev/id/doc/ru/user-information (login.yandex.ru/info, заголовок
  * `Authorization: OAuth <token>`). Токен Яндекса живёт только в памяти этого
- * запроса: получили профиль — забыли. Не логируем ни токен, ни code.
+ * запроса: получили профиль – забыли. Не логируем ни токен, ни code.
  */
 export const YANDEX_AUTHORIZE_URL = 'https://oauth.yandex.ru/authorize';
 export const YANDEX_TOKEN_URL = 'https://oauth.yandex.ru/token';
@@ -118,7 +118,7 @@ export class YandexAuthError extends Error {
 
 const TokenResponse = z.object({ access_token: z.string().min(1) });
 
-/** Обмен кода на access_token. Ошибка — YandexAuthError без тела ответа (там может быть секрет). */
+/** Обмен кода на access_token. Ошибка – YandexAuthError без тела ответа (там может быть секрет). */
 export async function exchangeCode(cfg: YandexConfig, code: string, verifier: string): Promise<string> {
   const body = new URLSearchParams({
     grant_type: 'authorization_code',

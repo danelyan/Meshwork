@@ -31,7 +31,7 @@ describe('env интеграции и createProvider', () => {
     expect(p.supportsTools).toBe(false);
   });
 
-  it('запасная модель: нет тройки LLM_FALLBACK_* или stub — нет запасной; неполная тройка — ошибка env', () => {
+  it('запасная модель: нет тройки LLM_FALLBACK_* или stub – нет запасной; неполная тройка – ошибка env', () => {
     const openai = { ...base, LLM_PROVIDER: 'openai-chat', OPENAI_CHAT_BASE_URL: 'https://llm.example.test/v1', OPENAI_CHAT_API_KEY: 'k', OPENAI_CHAT_MODEL: 'm' };
     const spare = { LLM_FALLBACK_BASE_URL: 'https://llm.api.cloud.yandex.net/v1', LLM_FALLBACK_API_KEY: 'k2', LLM_FALLBACK_MODEL: 'qwen3.6-35b-a3b' };
     expect(createFallbackProvider(parseEnv(openai))).toBeUndefined();
@@ -48,7 +48,7 @@ describe('env интеграции и createProvider', () => {
     expect(createFallbackProvider(parseEnv({ ...openai, ...spare }))?.model).toBe('gpt://b1voice/qwen3.6-35b-a3b');
   });
 
-  it('модель созвонов: не задана или stub — нет; неполная тройка — ошибка; Yandex — URI из LLM_CALL_FOLDER_ID, имя по умолчанию call', () => {
+  it('модель созвонов: не задана или stub – нет; неполная тройка – ошибка; Yandex – URI из LLM_CALL_FOLDER_ID, имя по умолчанию call', () => {
     const openai = { ...base, LLM_PROVIDER: 'openai-chat', OPENAI_CHAT_BASE_URL: 'https://llm.example.test/v1', OPENAI_CHAT_API_KEY: 'k', OPENAI_CHAT_MODEL: 'm', YANDEX_FOLDER_ID: 'b1voice' };
     const call = { LLM_CALL_BASE_URL: 'https://llm.api.cloud.yandex.net/v1', LLM_CALL_API_KEY: 'k3', LLM_CALL_MODEL: 'qwen3.6-35b-a3b' };
     expect(createCallProvider(parseEnv(openai))).toBeUndefined();

@@ -25,8 +25,8 @@ export interface PersonasState {
 }
 
 /**
- * Загрузка курированных персон и вход выбранной. `next` — уже проверенный путь возврата: кандидату
- * он годится, если не ведёт в /employer, работодателю — наоборот. «Новый пользователь» требует согласия (`agreed`).
+ * Загрузка курированных персон и вход выбранной. `next` – уже проверенный путь возврата: кандидату
+ * он годится, если не ведёт в /employer, работодателю – наоборот. «Новый пользователь» требует согласия (`agreed`).
  * Полная навигация (assign): push+refresh на холодном dev-сервере давали гонку.
  */
 export function useDemoPersonas({ next = null, agreed, navigate = assign, enabled = true }: { next?: string | null; agreed: boolean; navigate?: (path: string) => void; enabled?: boolean }): PersonasState {
@@ -126,7 +126,7 @@ export function PersonaGroups({ state, agreed, columns = false }: { state: Perso
   );
 }
 
-/** Компактная кнопка входа для /demo: имя и метка этапа, «что увидишь» — в подсказке (title). */
+/** Компактная кнопка входа для /demo: имя и метка этапа, «что увидишь» – в подсказке (title). */
 export function PersonaChip({ persona, state, agreed, to }: { persona: DemoPersona; state: PersonasState; agreed: boolean; to?: string }) {
   const blocked = persona.kind === 'fresh' && !agreed;
   return (

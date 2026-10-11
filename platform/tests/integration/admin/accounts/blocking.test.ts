@@ -1,4 +1,4 @@
-// E-08 фаза 3: блокировка пользователя и компании — граница доверия. Каждый путь входа, отзыв сессий, выдача
+// E-08 фаза 3: блокировка пользователя и компании – граница доверия. Каждый путь входа, отзыв сессий, выдача
 // работодателю, отправка приглашений, права ролей и журнал.
 import { DELETE as companyUnblock, POST as companyBlock } from '@/app/api/admin/companies/[id]/block/route';
 import { DELETE as userUnblock, POST as userBlock } from '@/app/api/admin/users/[id]/block/route';
@@ -62,7 +62,7 @@ describe('E-08 фаза 3: блокировка пользователя и ко
   });
   beforeEach(async () => {
     resetRateLimits();
-    // Журнал защищён триггером от DELETE — между тестами чистим TRUNCATE (как resetDb).
+    // Журнал защищён триггером от DELETE – между тестами чистим TRUNCATE (как resetDb).
     await prisma.$executeRawUnsafe('TRUNCATE TABLE "AdminAuditLog", "AdminSession", "StaffMember" CASCADE');
     await prisma.invitation.deleteMany();
     await prisma.vacancy.deleteMany();
@@ -92,12 +92,12 @@ describe('E-08 фаза 3: блокировка пользователя и ко
 
     const support = await staffCookie('support');
     expect((await unblockU(userId, support.cookie)).status).toBe(200);
-    expect((await candidateRequest(cid)).status).toBe(401); // выданная до блокировки — отозвана навсегда
+    expect((await candidateRequest(cid)).status).toBe(401); // выданная до блокировки – отозвана навсегда
     const fresh = await loginCookie(userId);
     expect((await candidateRequest(fresh)).status).toBe(200); // новый вход после разблокировки работает
   });
 
-  it('срок блокировки истёк — вход снова открыт; срок в прошлом при блокировке — 400', async () => {
+  it('срок блокировки истёк – вход снова открыт; срок в прошлом при блокировке – 400', async () => {
     const owner = await staffCookie('owner');
     const userId = (await prisma.user.findUniqueOrThrow({ where: { candidateId: A.id } })).id;
     expect((await blockU(userId, owner.cookie, { reason: 'Временная блокировка', until: new Date(Date.now() - 60_000).toISOString() })).status).toBe(400);
@@ -107,7 +107,7 @@ describe('E-08 фаза 3: блокировка пользователя и ко
     expect((await candidateRequest(await loginCookie(userId))).status).toBe(200);
   });
 
-  it('вход по почте и паролю заблокированным — 403 account_blocked, кука не выдана', async () => {
+  it('вход по почте и паролю заблокированным – 403 account_blocked, кука не выдана', async () => {
     const owner = await staffCookie('owner');
     const email = 'blocked.user@example.test';
     const u = await prisma.user.create({ data: { name: 'Почта', email, passwordHash: await hashPassword('very-secret-1'), emailVerifiedAt: new Date(), accounts: { create: { provider: 'email', providerAccountId: email } } } });
@@ -124,7 +124,7 @@ describe('E-08 фаза 3: блокировка пользователя и ко
     expect(me.status).toBe(401);
   });
 
-  it('вход через Яндекс заблокированным — редирект /auth?error=account_blocked без куки сессии', async () => {
+  it('вход через Яндекс заблокированным – редирект /auth?error=account_blocked без куки сессии', async () => {
     const saved = { ...process.env };
     process.env.YANDEX_CLIENT_ID = 'test-client-id';
     process.env.YANDEX_CLIENT_SECRET = 'test-client-secret';
@@ -153,7 +153,7 @@ describe('E-08 фаза 3: блокировка пользователя и ко
     }
   });
 
-  it('демо-вход за кандидата с заблокированным аккаунтом — 403, кука не выдана', async () => {
+  it('демо-вход за кандидата с заблокированным аккаунтом – 403, кука не выдана', async () => {
     const u = await prisma.user.findUniqueOrThrow({ where: { candidateId: A.id } });
     await prisma.user.update({ where: { id: u.id }, data: { blockedAt: new Date() } });
     const res = await demoLogin(jsonRequest('/api/demo/login', 'POST', { candidateId: A.id }));
@@ -200,7 +200,7 @@ describe('E-08 фаза 3: блокировка пользователя и ко
     expect(await prisma.invitation.count({ where: { companyId: empCtx.companyId } })).toBe(0);
   });
 
-  it('права: блокировка пользователя — только owner, разблокировка — owner/support, компания — owner/moderator; без сессии 401', async () => {
+  it('права: блокировка пользователя – только owner, разблокировка – owner/support, компания – owner/moderator; без сессии 401', async () => {
     const userId = (await prisma.user.findUniqueOrThrow({ where: { candidateId: A.id } })).id;
     const mod = await staffCookie('moderator');
     const sup = await staffCookie('support');
@@ -211,12 +211,12 @@ describe('E-08 фаза 3: блокировка пользователя и ко
     await prisma.user.update({ where: { id: userId }, data: { blockedAt: new Date() } });
     expect((await unblockU(userId, mod.cookie)).status).toBe(403);
     expect(await prisma.adminAuditLog.count({ where: { NOT: { action: { startsWith: 'staff.' } } } })).toBe(0);
-    // Пользовательская кука вместо админской — 401.
+    // Пользовательская кука вместо админской – 401.
     const userCid = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: DEMO_EMPLOYER.profileId })}`;
     expect((await blockU(userId, userCid)).status).toBe(401);
   });
 
-  it('причина обязательна; общий демо-аккаунт не блокируется; повторная разблокировка — 409', async () => {
+  it('причина обязательна; общий демо-аккаунт не блокируется; повторная разблокировка – 409', async () => {
     const owner = await staffCookie('owner');
     const userId = (await prisma.user.findUniqueOrThrow({ where: { candidateId: A.id } })).id;
     expect((await blockU(userId, owner.cookie, { reason: '' })).status).toBe(400);
@@ -226,7 +226,7 @@ describe('E-08 фаза 3: блокировка пользователя и ко
     expect((await blockU('nope', owner.cookie)).status).toBe(404);
   });
 
-  it('журнал: блокировка и разблокировка пишут действие, причину, до/после, исполнителя — без ПДн', async () => {
+  it('журнал: блокировка и разблокировка пишут действие, причину, до/после, исполнителя – без ПДн', async () => {
     const owner = await staffCookie('owner');
     const userId = (await prisma.user.findUniqueOrThrow({ where: { candidateId: A.id } })).id;
     await blockU(userId, owner.cookie);

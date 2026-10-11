@@ -23,7 +23,7 @@ export interface StaffSession {
   cookie: string;
 }
 
-/** Сотрудник с включённым TOTP и живой сессией — без прохода входа. */
+/** Сотрудник с включённым TOTP и живой сессией – без прохода входа. */
 export async function staffSession(role: Role, n = 1): Promise<StaffSession> {
   const { staff } = await createStaff(null, { email: `${role}${n}@example.ru`, name: `${role} ${n}`, role, password: 'staff-pass-123' });
   await prisma.staffMember.update({ where: { id: staff.id }, data: { totpEnabledAt: new Date() } });
@@ -46,7 +46,7 @@ export async function setupWorld(): Promise<Record<Role, StaffSession>> {
   return { owner: await staffSession('owner'), moderator: await staffSession('moderator'), support: await staffSession('support') };
 }
 
-/** n жалоб на демо-компанию — по одной на отдельное приглашение (unique invitationId). */
+/** n жалоб на демо-компанию – по одной на отдельное приглашение (unique invitationId). */
 export async function seedComplaints(n: number, status: 'open' | 'upheld' | 'dismissed' = 'open', offset = 0): Promise<string[]> {
   const ids: string[] = [];
   for (let i = 0; i < n; i++) {
@@ -62,5 +62,5 @@ export async function seedComplaints(n: number, status: 'open' | 'upheld' | 'dis
 
 export const auditRows = (targetId: string) => prisma.adminAuditLog.findMany({ where: { targetId }, orderBy: { createdAt: 'asc' } });
 
-/** Фоновые письма (notifyInBackground) — дождаться микрозадач. */
+/** Фоновые письма (notifyInBackground) – дождаться микрозадач. */
 export const flush = () => new Promise((r) => setTimeout(r, 20));

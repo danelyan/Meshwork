@@ -127,11 +127,11 @@ export function buildInterviewerMessages(input: InterviewerInput, correction?: s
   const payload = buildInterviewerPayload(input);
   const n = payload.next.questionNumber;
   const instruction = input.force
-    ? `Задай дополнительный вопрос №${n} по компетенции «${input.force.competency.title}» уровня ${input.force.level}: по ответам пока нельзя понять глубину. Спроси о другой стороне компетенции, не повторяя заданные вопросы. answerSignal — по последнему ответу.`
+    ? `Задай дополнительный вопрос №${n} по компетенции «${input.force.competency.title}» уровня ${input.force.level}: по ответам пока нельзя понять глубину. Спроси о другой стороне компетенции, не повторяя заданные вопросы. answerSignal – по последнему ответу.`
     : n === 1
       ? 'Задай первый вопрос: короткое приветствие, фраза про четыре блока и вопрос по next.ifNone.'
-      : 'Задай следующий вопрос: сначала answerSignal по последнему ответу, затем вопрос по плану для этого сигнала (next.ifStrong / next.ifWeak / next.ifNone): его block, competencyId, level и focus. Если план говорит block = summary — верни done: true.';
-  const msgs: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\n${instruction} Ответ — только JSON по схеме.` }];
+      : 'Задай следующий вопрос: сначала answerSignal по последнему ответу, затем вопрос по плану для этого сигнала (next.ifStrong / next.ifWeak / next.ifNone): его block, competencyId, level и focus. Если план говорит block = summary – верни done: true.';
+  const msgs: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\n${instruction} Ответ – только JSON по схеме.` }];
   if (correction) msgs.push({ role: 'user', content: correction });
   return msgs;
 }
@@ -141,7 +141,7 @@ const INVALID_CORRECTION =
 const OFF_PLAN_CORRECTION =
   'competencyId не совпадает с планом для твоего answerSignal (next.ifStrong / next.ifWeak / next.ifNone): возьми competencyId, block и level из плана и верни JSON заново.';
 const RETELL_CORRECTION =
-  'Вопрос повторяет текст из профиля кандидата — так нельзя: транскрипт читает слепой оценщик. Переформулируй вопрос своими словами, не повторяя ни одной фразы профиля, и верни JSON заново.';
+  'Вопрос повторяет текст из профиля кандидата – так нельзя: транскрипт читает слепой оценщик. Переформулируй вопрос своими словами, не повторяя ни одной фразы профиля, и верни JSON заново.';
 
 export interface NextInterviewQuestion {
   question: string;
@@ -166,7 +166,7 @@ function interviewGate(input: InterviewerInput, titles: readonly string[], strea
       const routed: AnswerSignal | null = input.turns.length ? (f.answerSignal as AnswerSignal) : null;
       const planned = plannedFor(input, routed);
       if (f.competencyId.trim() !== planned.competency.id) return 'stop';
-      // План закончился (summary), а минимум набран — сервис заменит вопрос итогом: заранее не озвучиваем.
+      // План закончился (summary), а минимум набран – сервис заменит вопрос итогом: заранее не озвучиваем.
       if (planned.done && stream.closable) return 'stop';
       closingTurn = planned.done;
       onPlan({ planned, meta: metaOf(planned, routed, input.force ? { probe: 'inconclusive', fallback: false } : {}) });
@@ -185,7 +185,7 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
   const gate = stream ? interviewGate(input, titles, stream, (p) => (streamPlan = p)) : null;
   let correction: string | undefined;
   try {
-    // В потоковом режиме повтор — только пока ничего не прозвучало (gate.started).
+    // В потоковом режиме повтор – только пока ничего не прозвучало (gate.started).
     for (let attempt = 0; attempt < 2 && !gate?.started; attempt++) {
       gate?.reset();
       const res = await llm.complete(
@@ -201,7 +201,7 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
         signal,
       );
       const parsed = InterviewerOutput.safeParse(res.kind === 'json' ? res.json : undefined);
-      // Невалидный вывод — одна повторная попытка с подсказкой, затем шаблон.
+      // Невалидный вывод – одна повторная попытка с подсказкой, затем шаблон.
       if (!parsed.success || !/[а-яё]/i.test(parsed.data.question)) {
         correction = INVALID_CORRECTION;
         continue;
@@ -209,7 +209,7 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
       const out = parsed.data;
       const routed: AnswerSignal | null = input.turns.length ? out.answerSignal : null;
       const planned = plannedFor(input, routed);
-      // Компетенцию держит код: вопрос не по плану — переформулировка, затем шаблон.
+      // Компетенцию держит код: вопрос не по плану – переформулировка, затем шаблон.
       if (out.competencyId.trim() !== planned.competency.id) {
         correction = OFF_PLAN_CORRECTION;
         continue;
@@ -226,7 +226,7 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
       }
       const meta = metaOf(planned, routed, input.force ? { probe: 'inconclusive', fallback: false } : {});
       if (composed?.usedChosen) return { question: composed.text, meta, done: false };
-      if (gate?.started) break; // прозвучало не то, что вышло в итоге — собираем ниже из прозвучавшего
+      if (gate?.started) break; // прозвучало не то, что вышло в итоге – собираем ниже из прозвучавшего
       return { question: withRefusal(out.question.trim(), lastAnswer), meta, done: false };
     }
   } catch (err) {

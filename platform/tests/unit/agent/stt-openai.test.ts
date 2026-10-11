@@ -5,7 +5,7 @@ const base = { DATABASE_URL: 'postgresql://x@localhost/db', SESSION_SECRET: 'x'.
 const keys = { STT_OPENAI_BASE_URL: 'https://w.example/v1/', STT_OPENAI_API_KEY: 'sk-test' };
 
 describe('stt openai: режим и env', () => {
-  it('openai с ключами — openai; без — ошибка env; auto openai не выбирает', () => {
+  it('openai с ключами – openai; без – ошибка env; auto openai не выбирает', () => {
     expect(sttMode(parseEnv({ ...base, STT_PROVIDER: 'openai', ...keys }))).toBe('openai');
     expect(() => parseEnv({ ...base, STT_PROVIDER: 'openai' })).toThrow(/STT_OPENAI_BASE_URL/);
     expect(sttMode(parseEnv({ ...base, ...keys }))).toBe('browser');
@@ -52,7 +52,7 @@ describe('stt openai: запрос (fetch замокан)', () => {
     expect(file.size).toBe(3244);
   });
 
-  it('пустой ответ — пустая строка; своя модель', async () => {
+  it('пустой ответ – пустая строка; своя модель', async () => {
     const fetchImpl = (async () => new Response('{}', { status: 200 })) as unknown as typeof fetch;
     expect(await recognizeOpenai(new Uint8Array(10), { baseUrl: 'http://x/v1', apiKey: 'k', model: 'm', fetchImpl })).toBe('');
   });

@@ -79,7 +79,7 @@ describe('singleflight', () => {
     expect(await sf.do('k', async () => 5)).toBe(5);
   });
 
-  it('синхронное исключение fn — отклонённый промис, ключ свободен', async () => {
+  it('синхронное исключение fn – отклонённый промис, ключ свободен', async () => {
     const sf = createSingleflight();
     const err = new Error('sync');
     const r = await settle(
@@ -118,14 +118,14 @@ describe('батчер', () => {
     return { src, batcher };
   };
 
-  it('неверные параметры — RangeError', () => {
+  it('неверные параметры – RangeError', () => {
     const fetchMany = async () => new Map<string, number>();
     expect(() => createBatcher({ fetchMany, maxBatchSize: 0, maxConcurrency: 1 })).toThrow(RangeError);
     expect(() => createBatcher({ fetchMany, maxBatchSize: 1, maxConcurrency: 0 })).toThrow(RangeError);
     expect(() => createBatcher({ fetchMany, maxBatchSize: 1.5, maxConcurrency: 1 })).toThrow(RangeError);
   });
 
-  it('синхронные load — одна пачка, ключи в порядке запроса, каждому своё значение', async () => {
+  it('синхронные load – одна пачка, ключи в порядке запроса, каждому своё значение', async () => {
     const { src, batcher } = make();
     const ps = ['c', 'a', 'b'].map((k) => batcher.load(k));
     await tick();
@@ -171,7 +171,7 @@ describe('батчер', () => {
     expect(src.maxActive()).toBeLessThanOrEqual(2);
   });
 
-  it('ключ, уже запрошенный и не завершённый, не уходит в источник повторно; после завершения — уходит', async () => {
+  it('ключ, уже запрошенный и не завершённый, не уходит в источник повторно; после завершения – уходит', async () => {
     const { src, batcher } = make();
     const first = batcher.load('a');
     await tick();
@@ -200,7 +200,7 @@ describe('батчер', () => {
     expect(await Promise.all([a, b, b2])).toEqual([1, 2, 2]);
   });
 
-  it('ключа нет в ответе — KeyNotFoundError только у его ожидающих', async () => {
+  it('ключа нет в ответе – KeyNotFoundError только у его ожидающих', async () => {
     const { src, batcher } = make();
     const ok = settle(batcher.load('a'));
     const gone1 = settle(batcher.load('gone'));
@@ -237,7 +237,7 @@ describe('батчер', () => {
     expect(await again).toBe(1);
   });
 
-  it('синхронное исключение fetchMany — тот же отказ, батчер продолжает работать', async () => {
+  it('синхронное исключение fetchMany – тот же отказ, батчер продолжает работать', async () => {
     let n = 0;
     const err = new Error('sync');
     const batcher = createBatcher<number>({
@@ -270,7 +270,7 @@ describe('HTTP', () => {
     return { app: createApp({ batcher }), batches };
   };
 
-  it('GET /items/:id — 200, 404, 502', async () => {
+  it('GET /items/:id – 200, 404, 502', async () => {
     const ok = build();
     expect((await request(ok.app).get('/items/a')).body).toEqual(db.a);
     const nf = await request(ok.app).get('/items/nope');
@@ -281,7 +281,7 @@ describe('HTTP', () => {
     expect(bad.body).toEqual({ error: 'upstream_failed' });
   });
 
-  it('GET /items?ids — порядок запроса, без повторов, missing отдельно, одна пачка в источник', async () => {
+  it('GET /items?ids – порядок запроса, без повторов, missing отдельно, одна пачка в источник', async () => {
     const { app, batches } = build();
     const res = await request(app).get('/items?ids=c,x,a,c,,b,y');
     expect(res.status).toBe(200);
@@ -289,7 +289,7 @@ describe('HTTP', () => {
     expect(batches).toEqual([['c', 'x', 'a', 'b', 'y']]);
   });
 
-  it('GET /items без ids или с пустыми — 400', async () => {
+  it('GET /items без ids или с пустыми – 400', async () => {
     const { app } = build();
     for (const url of ['/items', '/items?ids=', '/items?ids=,,']) {
       const res = await request(app).get(url);
@@ -298,7 +298,7 @@ describe('HTTP', () => {
     }
   });
 
-  it('ошибка источника по любому ключу — 502 на весь запрос', async () => {
+  it('ошибка источника по любому ключу – 502 на весь запрос', async () => {
     const { app } = build({ failOn: 'b' });
     const res = await request(app).get('/items?ids=a,b,c');
     expect(res.status).toBe(502);

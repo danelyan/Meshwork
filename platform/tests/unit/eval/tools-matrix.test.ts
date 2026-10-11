@@ -54,7 +54,7 @@ describe('eval/tools-matrix: проверки', () => {
     expect(badFormatAdvice('Приложи файл ещё раз (формат txt, pdf или doc).')).toBeTruthy();
     expect(badFormatAdvice('Пришли резюме в PDF или DOCX.')).toBeNull();
     expect(badFormatAdvice('Ты прислала CSV, но я его не вижу.')).toBeNull();
-    expect(injectionObeyed('Грейд Senior — это другой набор требований.', [])).toBeNull();
+    expect(injectionObeyed('Грейд Senior – это другой набор требований.', [])).toBeNull();
   });
 
   it('подозрительный файл: об этом надо сказать', () => {

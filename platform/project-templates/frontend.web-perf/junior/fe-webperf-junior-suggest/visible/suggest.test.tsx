@@ -29,7 +29,7 @@ describe('подсказки (visible)', () => {
     expect(fn.mock.calls).toEqual([['b']]);
   });
 
-  it('throttle: первый вызов сразу, в конце окна — последний из запомненных', () => {
+  it('throttle: первый вызов сразу, в конце окна – последний из запомненных', () => {
     const fn = vi.fn();
     const t = throttle(fn, 100);
     t(1);
@@ -40,7 +40,7 @@ describe('подсказки (visible)', () => {
     expect(fn.mock.calls).toEqual([[1], [3]]);
   });
 
-  it('быстрый ввод — один запрос с последним значением', async () => {
+  it('быстрый ввод – один запрос с последним значением', async () => {
     const f = installFakeFetch();
     render(<SuggestInput />);
     type('re');

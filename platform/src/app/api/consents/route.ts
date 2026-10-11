@@ -6,15 +6,15 @@ import { requireUser } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/consents — мои согласия (ADR 0005): вид, версия, дата, состояние; раскрытия — по приглашениям. */
+/** GET /api/consents – мои согласия (ADR 0005): вид, версия, дата, состояние; раскрытия – по приглашениям. */
 export const GET = withErrors(async (req: Request) => {
   const { userId } = requireUser(req);
   return Response.json(await listConsents(userId));
 });
 
 /**
- * POST /api/consents `{ kind, version, context? }` — дать согласие текущей версии текста (повтор — без дубля).
- * identity_disclosure — с `context.invitationId` своего принятого приглашения. Устаревшая версия → 409.
+ * POST /api/consents `{ kind, version, context? }` – дать согласие текущей версии текста (повтор – без дубля).
+ * identity_disclosure – с `context.invitationId` своего принятого приглашения. Устаревшая версия → 409.
  */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);

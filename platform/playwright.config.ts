@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Сквозные сценарии (С1 и др.). Запуск — интегратор: `npm run build && npm run e2e`.
-// Локально поднимает `next dev`, в CI — `next start` (по default-config Next.js testmode).
+// Сквозные сценарии (С1 и др.). Запуск – интегратор: `npm run build && npm run e2e`.
+// Локально поднимает `next dev`, в CI – `next start` (по default-config Next.js testmode).
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const isCI = process.env.CI === 'true';
 

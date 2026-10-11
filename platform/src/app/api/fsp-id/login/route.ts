@@ -8,9 +8,9 @@ import { buildAuthorizeUrl, FSP_OAUTH_COOKIE, FSP_OAUTH_COOKIE_PATH, FSP_OAUTH_T
 export const dynamic = 'force-dynamic';
 
 /**
- * Старт входа на платформу через ФСП ID (кнопка на /auth рядом с Яндекс ID): согласие — галкой до входа,
- * как у Яндекса; state, nonce, PKCE verifier, согласие и next — в подписанной httpOnly-куке на 10 минут.
- * Провайдер — симулятор ФСП ID по env или встроенный мок. Возврат — /api/fsp-id/callback.
+ * Старт входа на платформу через ФСП ID (кнопка на /auth рядом с Яндекс ID): согласие – галкой до входа,
+ * как у Яндекса; state, nonce, PKCE verifier, согласие и next – в подписанной httpOnly-куке на 10 минут.
+ * Провайдер – симулятор ФСП ID по env или встроенный мок. Возврат – /api/fsp-id/callback.
  */
 export async function GET(req: Request) {
   const env = getEnv();

@@ -61,7 +61,7 @@ export interface JobManagerDeps {
 
 /**
  * Очередь в памяти, одно задание за раз. Рестарт сервиса теряет очередь и результаты:
- * клиент получает 404 и решает сам (lane project — пометить сабмит failed и предложить повтор).
+ * клиент получает 404 и решает сам (lane project – пометить сабмит failed и предложить повтор).
  */
 export class JobManager {
   private readonly jobs = new Map<string, Job>();
@@ -109,7 +109,7 @@ export class JobManager {
     return sum;
   }
 
-  /** Принять tarball потоком в свой каталог, не больше 50 МБ; общий объём ожидающих — не больше maxPendingBytes. */
+  /** Принять tarball потоком в свой каталог, не больше 50 МБ; общий объём ожидающих – не больше maxPendingBytes. */
   async receiveUpload(body: Readable, declaredLength: number | undefined): Promise<UploadResponse> {
     if (declaredLength !== undefined && declaredLength > MAX_TARBALL_BYTES) {
       throw new RunnerError('payload_too_large', `Архив больше ${MAX_TARBALL_BYTES / 1024 / 1024} МБ`, 413);
@@ -161,7 +161,7 @@ export class JobManager {
     }
   }
 
-  /** Поставить задание в очередь. При любом отказе загрузка удаляется: повтор — с новой загрузкой. */
+  /** Поставить задание в очередь. При любом отказе загрузка удаляется: повтор – с новой загрузкой. */
   async submit(req: RunRequest): Promise<{ jobId: string }> {
     try {
       return await this.enqueue(req);
@@ -282,7 +282,7 @@ export class JobManager {
     const outDir = path.join(jobDir, 'out');
     const container = isContainerMode(this.cfg);
     try {
-      // 1. Архив → repo/ (владелец — сервис; заданию только чтение).
+      // 1. Архив → repo/ (владелец – сервис; заданию только чтение).
       let parsed;
       try {
         parsed = parseTarGz(await readFile(job.uploadFile));
@@ -302,7 +302,7 @@ export class JobManager {
         return this.fail(job, 'bad_archive', `fsp-runner: архив не распаковался: ${(err as Error).message}`);
       }
 
-      // 2. Пути платформы в копии кандидата удаляются; тесты платформы — только из образа.
+      // 2. Пути платформы в копии кандидата удаляются; тесты платформы – только из образа.
       for (const pattern of [...job.template.platformOwned, `${PLATFORM_TESTS_DIR}/**`]) {
         const prefix = ownedPrefix(pattern);
         if (prefix) await rm(path.join(repoDir, prefix), { recursive: true, force: true });
@@ -313,7 +313,7 @@ export class JobManager {
       const testsDir = path.join(repoDir, PLATFORM_TESTS_DIR);
       await mkdir(testsDir, { mode: 0o755 });
       await cp(bundle, job.suite === 'hidden' ? testsDir : path.join(testsDir, 'visible'), { recursive: true, dereference: false, verbatimSymlinks: true });
-      // cp переносит режимы из образа (шаблоны там 0700/0600 у uid сервиса) — заданию нужно чтение.
+      // cp переносит режимы из образа (шаблоны там 0700/0600 у uid сервиса) – заданию нужно чтение.
       await makeReadable(testsDir);
 
       // 3. Пакеты платформы: вверх по дереву от repo/ лежит node_modules → предустановленный набор.
@@ -323,7 +323,7 @@ export class JobManager {
       await mkdir(tmpDir, { mode: 0o700 });
       await mkdir(outDir, { mode: 0o700 });
       if (container) {
-        // Владелец — сервис, группа — задание (setgid-каталог): задание пишет, сервис читает отчёт.
+        // Владелец – сервис, группа – задание (setgid-каталог): задание пишет, сервис читает отчёт.
         for (const dir of [tmpDir, outDir]) {
           await chown(dir, process.getuid!(), this.cfg.sandboxGid);
           await chmod(dir, 0o2770);
@@ -384,10 +384,10 @@ export class JobManager {
       });
     } finally {
       if (container && this.cfg.sandboxHelper) {
-        // Файлы задания принадлежат uid 2000 — удалить их может только он (через помощник).
+        // Файлы задания принадлежат uid 2000 – удалить их может только он (через помощник).
         await helperClean(this.cfg.sandboxHelper, tmpDir);
         await helperClean(this.cfg.sandboxHelper, outDir);
-        await helperClean(this.cfg.sandboxHelper, '/dev/shm'); // общая для всех заданий — не переносить между кандидатами
+        await helperClean(this.cfg.sandboxHelper, '/dev/shm'); // общая для всех заданий – не переносить между кандидатами
         const left = await processesOfUid(this.cfg.sandboxUid);
         if (left.length) console.error(`runner: после задания ${jobId} живы процессы uid ${this.cfg.sandboxUid}: ${left.join(', ')}`);
       }
@@ -407,7 +407,7 @@ export async function readReportSafe(file: string, maxBytes = REPORT_MAX_BYTES, 
   const handle = await open(file, fsc.O_RDONLY | fsc.O_NOFOLLOW | fsc.O_NONBLOCK);
   try {
     const st = await handle.stat();
-    if (!st.isFile()) throw new Error('отчёт — не обычный файл');
+    if (!st.isFile()) throw new Error('отчёт – не обычный файл');
     if (st.size > maxBytes) throw new Error('отчёт больше лимита');
     const buf = Buffer.alloc(Math.min(st.size, maxBytes));
     let timer: NodeJS.Timeout | undefined;

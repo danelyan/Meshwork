@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** GET /api/employer/vacancies/:id — своя потребность; чужая — 404. */
+/** GET /api/employer/vacancies/:id – своя потребность; чужая – 404. */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   const { employerProfileId } = requireEmployer(req);
   const { id } = await params;
@@ -16,7 +16,7 @@ export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   return Response.json(await getVacancy(ctx.companyId, id));
 });
 
-/** PUT — заменить поля потребности (форма редактирования). */
+/** PUT – заменить поля потребности (форма редактирования). */
 export const PUT = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);
   const { employerProfileId } = requireEmployer(req);
@@ -27,8 +27,8 @@ export const PUT = withErrors(async (req: Request, { params }: Ctx) => {
 });
 
 /**
- * PATCH `{ archived }` — закрыть / вернуть потребность. Закрытие отзывает открытые приглашения на неё и закрывает
- * открытые самоотклики (причина «Вакансия закрыта»); принятые приглашения остаются, их число — в `closed`.
+ * PATCH `{ archived }` – закрыть / вернуть потребность. Закрытие отзывает открытые приглашения на неё и закрывает
+ * открытые самоотклики (причина «Вакансия закрыта»); принятые приглашения остаются, их число – в `closed`.
  */
 export const PATCH = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);

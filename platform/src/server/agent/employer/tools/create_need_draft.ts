@@ -11,7 +11,7 @@ import type { NeedDraft } from '../types';
 import { GradeSchema, SpecSchema, type EmployerTool } from './shared';
 import { GRADE_LABEL } from '@/lib/grades';
 
-/** Сколько требований каталога предвыбрать — как форма потребности (VacancyForm DEFAULT_PICK). */
+/** Сколько требований каталога предвыбрать – как форма потребности (VacancyForm DEFAULT_PICK). */
 export const NEED_DRAFT_PICK = 6;
 
 /** Метки стека, которые узнаём в описании словами (регистр не важен). */
@@ -21,7 +21,7 @@ const STACK_WORDS = [
   'Spring', 'React', 'Vue', 'Angular', 'Next.js', 'Redux', 'Webpack', 'Vite', 'CSS', 'Jest', 'Playwright',
 ];
 
-/** Слова, по которым направление узнаётся в описании (нижний регистр). Порядок — как в справочнике направлений. */
+/** Слова, по которым направление узнаётся в описании (нижний регистр). Порядок – как в справочнике направлений. */
 const SPEC_WORDS: [Specialization, RegExp][] = [
   ['backend', /(бэкенд|бекенд|backend|back-end|серверн)/],
   ['frontend', /(фронтенд|фронт|frontend|front-end|верстк|react|vue|angular)/],
@@ -29,7 +29,7 @@ const SPEC_WORDS: [Specialization, RegExp][] = [
   ['engineering', /(devops|data engineer|engineering|инженер\S* данных|дата[- ]инженер|автотест|тестировщик|\b(sre|qa|etl|dwh)\b)/],
 ];
 
-/** Направление, названное в описании первым: «ML-инженер, сервис на backend-стеке» — AI, а не Backend. */
+/** Направление, названное в описании первым: «ML-инженер, сервис на backend-стеке» – AI, а не Backend. */
 export function parseSpecialization(text: string): Specialization | null {
   const t = text.toLowerCase();
   let best: { spec: Specialization; at: number } | null = null;
@@ -52,13 +52,13 @@ export function parseStack(text: string): string[] {
   const out: string[] = [];
   for (const w of STACK_WORDS) {
     const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // «Go» — только отдельным словом латиницей, иначе ловит «Google», «good».
+    // «Go» – только отдельным словом латиницей, иначе ловит «Google», «good».
     if (new RegExp(`(^|[^\\p{L}\\d])${esc}($|[^\\p{L}\\d])`, 'iu').test(text)) out.push(w);
   }
   return out;
 }
 
-/** «200–260 тыс», «от 150к», «180 000 – 220 000 ₽» → вилка; одно число — только нижняя граница. */
+/** «200–260 тыс», «от 150к», «180 000 – 220 000 ₽» → вилка; одно число – только нижняя граница. */
 export function parseSalary(text: string): { from: number | null; to: number | null } {
   const nums: number[] = [];
   const re = /(\d[\d\s]{0,9}\d|\d)\s*(тыс|к\b|k\b|т\.р)?/giu;
@@ -112,13 +112,13 @@ export function needFormHref(d: Omit<NeedDraft, 'formHref'>): string {
 
 /**
  * Черновик потребности из описания словами (R-E-02): специализация, грейд, стек, вилка;
- * требования — сигнатура категории из каталога (как поиск по базе). Не сохраняет:
+ * требования – сигнатура категории из каталога (как поиск по базе). Не сохраняет:
  * ссылка ведёт в форму с предзаполнением, сохраняет человек.
  */
 export const createNeedDraft: EmployerTool = {
   name: 'create_need_draft',
   description:
-    'Предзаполнить потребность из описания словами: название, специализация, грейд, стек, вилка, требования из каталога. Ничего не сохраняет — в ленте появляется черновик со ссылкой на форму, сохраняет работодатель. Поля, которые ты понял из разговора, передай явно; остальное инструмент попробует распознать в описании.',
+    'Предзаполнить потребность из описания словами: название, специализация, грейд, стек, вилка, требования из каталога. Ничего не сохраняет – в ленте появляется черновик со ссылкой на форму, сохраняет работодатель. Поля, которые ты понял из разговора, передай явно; остальное инструмент попробует распознать в описании.',
   input: Input,
   output: Output,
   async handler(ctx, input: z.infer<typeof Input>) {

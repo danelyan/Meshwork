@@ -19,7 +19,7 @@ const STATE_LABEL: Record<ConsentItemView['state'], string> = {
 /**
  * «Мои согласия» (ADR 0005): вид, версия, дата и состояние каждого согласия; «Отозвать» у отзываемых, «Дать» у
  * недействующих. Г1 отзывается только удалением аккаунта (кнопка «Отозвать согласие и удалить данные» на этой же странице).
- * `onChange` — родитель обновляет связанные переключатели (показ профиля).
+ * `onChange` – родитель обновляет связанные переключатели (показ профиля).
  */
 export function ConsentsPanel({ onChange, title = 'Мои согласия' }: { onChange?: (kind: ConsentKindName, active: boolean) => void; title?: string }) {
   const [items, setItems] = useState<ConsentItemView[] | null>(null);

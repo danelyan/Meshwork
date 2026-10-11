@@ -85,7 +85,7 @@ const REASON_TEXT: Record<string, (n: number) => string> = {
   quote_too_short: (n) => `${n} со слишком короткой цитатой - отброшено.`,
 };
 
-/** Плашки по реальным причинам: дубли — не отказ, а слияние повторов. */
+/** Плашки по реальным причинам: дубли – не отказ, а слияние повторов. */
 export function rejectNotesOf(event: Extract<AgentEvent, { type: 'claims' }>): string[] {
   const by = event.rejectedByReason;
   if (!by) return event.rejected > 0 ? [REASON_TEXT.no_quote!(event.rejected)] : [];
@@ -117,7 +117,7 @@ function ClaimsBlock({
     .filter((c): c is CardClaim => c !== null)
     .map((c) => ({ ...c, ...overrides[c.id] }));
   const open = claims.filter((c) => c.status === 'proposed');
-  // «Со слов» — только self_reported: артефакты (код, README) кандидат подтверждает по одному.
+  // «Со слов» – только self_reported: артефакты (код, README) кандидат подтверждает по одному.
   const bulkable = open.filter((c) => c.level === 'self_reported');
 
   const rejectNotes = rejectNotesOf(event);
@@ -218,7 +218,7 @@ export function EventFeed({ lead, label = 'Переписка с консуль�
   );
 }
 
-/** Строки ленты без обёртки `Thread` — для вставки в чужую ленту (документы в онбординге). */
+/** Строки ленты без обёртки `Thread` – для вставки в чужую ленту (документы в онбординге). */
 export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmAll, onAnswer, locked, onRetry, onResend }: Omit<EventFeedProps, 'lead' | 'label'>) {
   const blocks = toBlocks(items);
   const lastBlock = blocks.at(-1);
@@ -283,7 +283,7 @@ export function FeedRows({ items, claimOverrides = {}, onClaimAction, onConfirmA
   );
 }
 
-/** Предложение созвона от агента (suggest_call): кнопка открывает режим звонка в сцене. Вне сцены — подсказка. */
+/** Предложение созвона от агента (suggest_call): кнопка открывает режим звонка в сцене. Вне сцены – подсказка. */
 function CallOffer({ reason }: { reason: string }) {
   const call = useCallMode();
   return (

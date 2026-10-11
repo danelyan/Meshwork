@@ -1,6 +1,6 @@
 // Сборка системных промптов из .md (источник правды) и общего файла фактов о платформе.
 // Используется генератором scripts/build-prompts.ts и тестами; в рантайме .md не читаются
-// (в standalone-сборке Next.js их нет) — рантайм берёт сгенерированные prompt.ts.
+// (в standalone-сборке Next.js их нет) – рантайм берёт сгенерированные prompt.ts.
 
 /** Место, куда подставляются факты из platform-facts.md. */
 export const FACTS_PLACEHOLDER = '{{platform_facts}}';
@@ -41,7 +41,7 @@ const SUBSET_RE = /\{\{platform_facts:([F\d,\s]+)\}\}/g;
 
 /**
  * Промпт = .md без комментариев, с фактами вместо плейсхолдера (ровно один раз):
- * `{{platform_facts}}` — весь блок, `{{platform_facts:F1,F4}}` — только эти пункты.
+ * `{{platform_facts}}` – весь блок, `{{platform_facts:F1,F4}}` – только эти пункты.
  */
 export function assemblePrompt(md: string, factsMd: string): string {
   const body = stripComments(md);

@@ -23,7 +23,7 @@ export interface VacancyFormProps {
   catalog: CatalogOption[];
   /** Редактирование: id и текущие значения. */
   vacancyId?: string;
-  /** Черновик (подсказка ассистента) может прийти без подкатегории — её выбирают в форме. */
+  /** Черновик (подсказка ассистента) может прийти без подкатегории – её выбирают в форме. */
   initial?: Omit<VacancyBody, 'subcategoryId'> & { subcategoryId?: string | null };
 }
 
@@ -72,7 +72,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
     setSpec(nextSpec);
     setGrade(nextGrade);
     if (nextSpec !== spec) setSubcategory('');
-    // Смена специализации — требования другого каталога: подставляем самые весомые заново.
+    // Смена специализации – требования другого каталога: подставляем самые весомые заново.
     if (nextSpec !== spec || picked.size === 0) setPicked(new Set(optionsFor(catalog, nextSpec, nextGrade).slice(0, DEFAULT_PICK).map((x) => x.e.id)));
   }
 

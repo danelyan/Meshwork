@@ -16,7 +16,7 @@ interface Draft {
 
 const SAVE_DELAY_MS = 300;
 
-/** Ключ черновика: по разговору; до первого хода разговора нет — «new». */
+/** Ключ черновика: по разговору; до первого хода разговора нет – «new». */
 export const draftKey = (conversationId?: string | null) => `fsp:chat-draft:${conversationId ?? 'new'}`;
 
 function read(key: string): Draft | null {

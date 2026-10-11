@@ -30,7 +30,7 @@ describe('подписанная кука state', () => {
     expect(verifyOAuthState(signOAuthState(s, SECRET), SECRET, NOW)).toEqual(s);
   });
 
-  it('подмена содержимого, чужой секрет, истёкший срок, мусор — null', () => {
+  it('подмена содержимого, чужой секрет, истёкший срок, мусор – null', () => {
     const t = signOAuthState(s, SECRET);
     const [payload, sig] = t.split('.') as [string, string];
     const forged = Buffer.from(JSON.stringify({ ...s, next: 'https://evil.example' })).toString('base64url');

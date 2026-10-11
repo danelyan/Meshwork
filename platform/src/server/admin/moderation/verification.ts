@@ -8,14 +8,14 @@ import { audit, requireReason } from '../audit';
 import type { StaffContext } from '../session';
 
 /**
- * Ручная верификация компании модератором (E-08, фаза 2; R-D-05 — вне MVP, решение владельца 11.10). Без API ФНС:
+ * Ручная верификация компании модератором (E-08, фаза 2; R-D-05 – вне MVP, решение владельца 11.10). Без API ФНС:
  * представитель присылает реквизиты выписки ЕГРЮЛ (ОГРН, дата, ссылка) или подтверждает домен корпоративной почты
  * (домен берётся из своей подтверждённой почты, не из ввода). Модератор сверяет ИНН и название и ставит метку.
  * Метка видна кандидату на приглашении (listCandidateInvitations → company.verified).
- * Отклонение: verificationRequestedAt снимается, причина — в verificationNote (видна представителю).
+ * Отклонение: verificationRequestedAt снимается, причина – в verificationNote (видна представителю).
  */
 
-/** Бесплатные почтовые домены — не подтверждают принадлежность к компании. */
+/** Бесплатные почтовые домены – не подтверждают принадлежность к компании. */
 export const FREE_MAIL = new Set(['gmail.com', 'yandex.ru', 'ya.ru', 'mail.ru', 'bk.ru', 'inbox.ru', 'list.ru', 'rambler.ru', 'outlook.com', 'hotmail.com', 'icloud.com', 'yahoo.com', 'proton.me', 'protonmail.com']);
 
 export type VerificationMethod = 'egrul' | 'email_domain';
@@ -58,8 +58,8 @@ export async function companyVerification(companyId: string): Promise<CompanyVer
 }
 
 /**
- * Запрос верификации от представителя. Уже проверена — 409; без ИНН — 409 (модератору нечего сверять);
- * email_domain с бесплатной или неподтверждённой почтой — 400. Повторный запрос перезаписывает основание.
+ * Запрос верификации от представителя. Уже проверена – 409; без ИНН – 409 (модератору нечего сверять);
+ * email_domain с бесплатной или неподтверждённой почтой – 400. Повторный запрос перезаписывает основание.
  */
 export async function requestVerification(ctx: { companyId: string; employerProfileId: string }, input: { method: VerificationMethod; text: string }): Promise<CompanyVerificationView> {
   const text = input.text.trim();
@@ -94,7 +94,7 @@ export interface VerificationQueueItem {
   representatives: number;
 }
 
-/** pending — ждут решения; verified — проверенные. */
+/** pending – ждут решения; verified – проверенные. */
 export async function listVerification(filter: 'pending' | 'verified' = 'pending'): Promise<VerificationQueueItem[]> {
   const rows = await prisma.company.findMany({
     where: filter === 'pending' ? { verificationRequestedAt: { not: null }, verifiedAt: null } : { verifiedAt: { not: null } },
@@ -118,7 +118,7 @@ export async function listVerification(filter: 'pending' | 'verified' = 'pending
 
 export type VerificationDecision = 'verify' | 'reject' | 'revoke';
 
-/** verify/reject — только при открытом запросе (409); revoke — только у проверенной (409). Причина обязательна. */
+/** verify/reject – только при открытом запросе (409); revoke – только у проверенной (409). Причина обязательна. */
 export async function decideVerification(staff: StaffContext, companyId: string, decision: VerificationDecision, rawReason: string): Promise<CompanyVerificationView> {
   const reason = requireReason(rawReason);
   await prisma.$transaction(async (tx) => {

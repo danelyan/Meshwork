@@ -23,7 +23,7 @@ describe('render', () => {
     expect(box().getAttribute('placeholder')).toBe('Город');
   });
 
-  it('пустой запрос — все элементы в исходном порядке', () => {
+  it('пустой запрос – все элементы в исходном порядке', () => {
     render(<FilterList items={ITEMS} />);
     expect(texts()).toEqual(ITEMS);
   });
@@ -49,7 +49,7 @@ describe('filter', () => {
     expect(screen.getByRole('status').textContent).toBe('Найдено: 2');
   });
 
-  it('нет совпадений — текст и нет списка', () => {
+  it('нет совпадений – текст и нет списка', () => {
     render(<FilterList items={ITEMS} />);
     type('Тверь');
     expect(screen.getByText('Ничего не найдено')).toBeTruthy();

@@ -1,7 +1,7 @@
 /**
  * Банк «мгновенных реакций» Киры: public/ack/<kind>_NN.<ext> + manifest.json.
- * Запуск: npx tsx scripts/gen-ack.mts. Провайдер — по TTS_PROVIDER из .env: elevenlabs (ELEVENLABS_API_KEY/VOICE/MODEL, mp3)
- * или yandex (YANDEX_API_KEY, YANDEX_FOLDER_ID; голос/скорость — TTS_VOICE/TTS_SPEED/TTS_FORMAT). Голос тот же, что у реплик Киры.
+ * Запуск: npx tsx scripts/gen-ack.mts. Провайдер – по TTS_PROVIDER из .env: elevenlabs (ELEVENLABS_API_KEY/VOICE/MODEL, mp3)
+ * или yandex (YANDEX_API_KEY, YANDEX_FOLDER_ID; голос/скорость – TTS_VOICE/TTS_SPEED/TTS_FORMAT). Голос тот же, что у реплик Киры.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

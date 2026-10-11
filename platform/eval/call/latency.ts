@@ -1,16 +1,16 @@
 // Задержка созвона «конец речи → первый звук ответа» по шагам (лейн call-speed, 11.10). Один квалифицирующий
 // созвон через сервисный слой, как персоны (startCall → addAudio → submitTurn), N ходов на живых сервисах:
-//   STT  — addAudio с WAV-фразой (SpeechKit v1, синхронный REST), Server-Timing `stt` в проде;
-//   LLM  — submitTurn: до первого предложения (CALL_STREAMING=true) и до конца;
-//   TTS  — synthesizeYandex: вся реплика одним запросом (как панель консультанта до 11.10) и первое предложение.
+//   STT  – addAudio с WAV-фразой (SpeechKit v1, синхронный REST), Server-Timing `stt` в проде;
+//   LLM  – submitTurn: до первого предложения (CALL_STREAMING=true) и до конца;
+//   TTS  – synthesizeYandex: вся реплика одним запросом (как панель консультанта до 11.10) и первое предложение.
 // «Первый звук» на сервере = STT + LLM (до конца или до первого предложения) + TTS (всей реплики или первой части).
-// Сеть до браузера и decodeAudioData сюда не входят — их видно только в браузере (window.__fspCallLatency).
+// Сеть до браузера и decodeAudioData сюда не входят – их видно только в браузере (window.__fspCallLatency).
 //
 // Запуск из platform/ (отдельная БД, как у персон; uptime перед запуском, вызовы последовательные):
 //   CALL_STREAMING=false npx tsx eval/call/latency.ts --out before   # ответ модели целиком
 //   CALL_STREAMING=true  npx tsx eval/call/latency.ts --out stream   # поток + синтез по предложениям
 //   ... --turns 5
-// Ответы кандидата — заготовленные тексты (смысл для интервьюера), WAV одной фразы — только для замера STT
+// Ответы кандидата – заготовленные тексты (смысл для интервьюера), WAV одной фразы – только для замера STT
 // (фраза синтезирована SpeechKit, lpcm 16 кГц: не живой голос, распознаётся легче).
 import { STUB } from '../stages/boot';
 
@@ -51,7 +51,7 @@ async function phrasePcm(): Promise<Uint8Array> {
   return new Uint8Array(await res.arrayBuffer());
 }
 
-/** Время синтеза, мс; сбой SpeechKit — NaN (в таблицу не идёт, ход считается дальше). */
+/** Время синтеза, мс; сбой SpeechKit – NaN (в таблицу не идёт, ход считается дальше). */
 async function tts(text: string): Promise<number> {
   const env = getEnv();
   const t0 = Date.now();
@@ -100,12 +100,12 @@ async function main(): Promise<void> {
   await prisma.claim.createMany({
     data: TOPICS.map((t, i) => ({ id: `${id}-cl${i + 1}`, candidateId: id, catalogId: t.catalogId, statement: t.statement, level: 'self_reported' as const, quote: t.quote, sourceRef: `cv#${i + 1}`, sourceKind: 'resume' as const, limits: '', suggestedProof: [], status: 'confirmed' as const })),
   });
-  // SpeechKit недоступен — секунда тишины: STT тогда вернёт сбой (NaN), остальные шаги меряются.
+  // SpeechKit недоступен – секунда тишины: STT тогда вернёт сбой (NaN), остальные шаги меряются.
   const pcm = await phrasePcm().catch((err: unknown) => {
     console.warn('  фраза не синтезирована:', err instanceof Error ? err.message : err);
     return new Uint8Array(32000);
   });
-  console.log(`latency — ${llm.platform.name}/${llm.platform.model}, CALL_STREAMING=${streaming}, ходов ${turns}, фраза ${(pcm.byteLength / 32000).toFixed(1)} с`);
+  console.log(`latency – ${llm.platform.name}/${llm.platform.model}, CALL_STREAMING=${streaming}, ходов ${turns}, фраза ${(pcm.byteLength / 32000).toFixed(1)} с`);
   const started = await startCall(id, { kind: 'qualifying' }, llm.platform);
   const sessionId = started.sessionId;
   let current: TranscriptEntry | undefined = started.call.transcript?.at(-1);
@@ -138,7 +138,7 @@ async function main(): Promise<void> {
       firstSoundStream: t.firstSentenceMs !== null ? sttMs + t.firstSentenceMs + ttsFirstMs : null,
     };
     samples.push(s);
-    console.log(`  ход ${s.turn}: STT ${s.sttMs} · LLM ${s.llmMs} (1-е предл. ${s.firstSentenceMs ?? '—'}) · TTS всё ${s.ttsFullMs} / 1-е ${s.ttsFirstMs} · ${s.replyChars} зн.${s.fallback ? ' · шаблон' : ''}${s.streamCut ? ' · обрезано' : ''}`);
+    console.log(`  ход ${s.turn}: STT ${s.sttMs} · LLM ${s.llmMs} (1-е предл. ${s.firstSentenceMs ?? '–'}) · TTS всё ${s.ttsFullMs} / 1-е ${s.ttsFirstMs} · ${s.replyChars} зн.${s.fallback ? ' · шаблон' : ''}${s.streamCut ? ' · обрезано' : ''}`);
     current = res.done ? undefined : (res.ai ?? undefined);
   }
   const col = (k: keyof TurnSample) => samples.map((x) => x[k]).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));

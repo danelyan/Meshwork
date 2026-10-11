@@ -6,7 +6,7 @@ import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from '../call/conse
 import { assertAiAssessmentConsent, hasAiAssessmentConsent } from '../consent/service';
 import { CALL_LIMITS } from '../call/plan';
 import { prisma } from '../db';
-import { getSetting } from '../admin/settings';
+import { getEnv } from '../env';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
 import { assertLiveRoomOpen } from '../live-defense/service';
@@ -31,14 +31,14 @@ import { evaluateDefenseRoom } from './verdict';
 
 /**
  * Сессия защиты проекта (ступень 3 ADR 0003): CallSession.kind = defense.
- * Интервьюер ведёт по плану — вопросы по коду (QLC) и вопросы работодателя из очереди; кандидат
+ * Интервьюер ведёт по плану – вопросы по коду (QLC) и вопросы работодателя из очереди; кандидат
  * отвечает текстом (голос → /api/stt → текст); работодатель может подключиться, говорить и
- * замьютить ИИ. Завершение — слепой оценщик ×3 (verdict.ts). Уровни утверждений не меняются:
+ * замьютить ИИ. Завершение – слепой оценщик ×3 (verdict.ts). Уровни утверждений не меняются:
  * защита проекта даёт работодателю оценку и флаги, категорию задаёт только тест (ADR 0002).
  */
 
 export const DEFENSE_POLICY_VERSION = 'defense-room-v1-2026-10-10';
-/** Публичный STUN, без TURN (ADR 0003): за симметричным NAT аудио не поднимется — клиент уходит в текст. */
+/** Публичный STUN, без TURN (ADR 0003): за симметричным NAT аудио не поднимется – клиент уходит в текст. */
 export const ICE_SERVERS: { urls: string }[] = [{ urls: 'stun:stun.l.google.com:19302' }];
 export const DEFENSE_ROOM_LIMITS = {
   /** Завершённых защит одного сабмита (ПРЕДЛОЖЕНИЕ). */
@@ -76,9 +76,9 @@ function repoTitle(url: string): string {
 }
 
 /**
- * Вопросы работодателей в план живой защиты. Защита проекта принадлежит одной компании — владельцу вакансии
+ * Вопросы работодателей в план живой защиты. Защита проекта принадлежит одной компании – владельцу вакансии
  * задания (ADR 0008, visibility.ts): в её план попадают только вопросы этой компании, иначе чужая компания
- * получила бы ответ кандидата из защиты, которую не видит. Защита без сабмита — вопросы всех компаний.
+ * получила бы ответ кандидата из защиты, которую не видит. Защита без сабмита – вопросы всех компаний.
  */
 async function queuedQuestions(candidateId: string, project: { id: string; ownerCompanyId: string } | null) {
   const rows = await prisma.employerQuestion.findMany({
@@ -104,7 +104,7 @@ export function itemSpeech(item: PlanItem): string {
   return item.source === 'employer' ? `Вопрос от компании «${item.companyName}»: ${item.question}` : item.question;
 }
 
-/** Пометки вопроса ИИ в форме лейна call (meta) — по ним работает и `questionTurns` лейна call. */
+/** Пометки вопроса ИИ в форме лейна call (meta) – по ним работает и `questionTurns` лейна call. */
 export function itemMeta(item: PlanItem, level: 1 | 2 | 3): AiUtteranceMeta {
   if (item.source === 'employer') return { topic: `вопрос работодателя · ${item.companyName}`, catalogId: null, level, routedBy: null, employerQuestionId: item.employerQuestionId };
   return { topic: item.ref ? `${item.type} · ${item.ref}` : item.type, catalogId: null, level: item.type === 'constraint' ? 3 : level, routedBy: null };
@@ -139,15 +139,15 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
       })
     : null;
   if (submissionId && (!submission || submission.candidateId !== candidateId)) throw errors.notFound('Сабмит проекта не найден');
-  // Защита — разбор кода и коммитов; у сдачи подходом кода нет.
+  // Защита – разбор кода и коммитов; у сдачи подходом кода нет.
   if (submission?.kind === 'approach') throw errors.conflict('Защита проводится по сдаче с кодом: подход без репозитория не защищается');
   // Живая защита по слоту (ADR 0008 п. 5): ожидающая сессия, привязанная к назначенному времени, открывается за 10 минут до начала.
   if (submissionId && input.ai !== true) {
     const pendingIds = await prisma.callSession.findMany({ where: { candidateId, kind: 'defense', status: 'pending', projectSubmissionId: submissionId }, select: { id: true } });
     await assertLiveRoomOpen(pendingIds.map((p) => p.id));
   }
-  // Защита — тоже созвон: то же отдельное согласие на запись, что у лейна call (ADR 0003, п. 4).
-  // Г3 (ADR 0005): защиту оценивает ИИ. Г2: согласия на запись не было — спросить; отозвано — защита текстом.
+  // Защита – тоже созвон: то же отдельное согласие на запись, что у лейна call (ADR 0003, п. 4).
+  // Г3 (ADR 0005): защиту оценивает ИИ. Г2: согласия на запись не было – спросить; отозвано – защита текстом.
   await assertAiAssessmentConsent(candidateId);
   if ((await callRecordingMode(candidateId)) === 'ask') {
     throw new AppError('call_consent_required', 'Перед защитой нужно согласие на запись созвона', 403, { version: CALL_RECORDING_CONSENT_VERSION });
@@ -161,12 +161,11 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   if (active) return { sessionId: active.id, resumed: true, webrtc: { iceServers: ICE_SERVERS }, snapshot: await buildSnapshot(active.id) };
 
   // Общий суточный лимит с созвонами лейна call: защита и квалифицирующий созвон считаются вместе.
-  // Настройка админки, как в call/service.ts (решение владельца 11.10: по умолчанию 0 — без лимита).
-  const dailyLimit = await getSetting('call.dailyLimit');
-  // Демо-кандидаты общие для жюри и команды — лимит на них не действует (как в call/service.ts).
+  const dailyLimit = getEnv().CALL_DAILY_LIMIT;
+  // Демо-кандидаты общие для жюри и команды – лимит на них не действует (как в call/service.ts).
   const demo = dailyLimit > 0 && (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { isDemo: true } }))?.isDemo === true;
   if (dailyLimit > 0 && !demo) {
-    // pending — приглашение работодателя, а не созвон: в лимит не считается.
+    // pending – приглашение работодателя, а не созвон: в лимит не считается.
     const recent = await prisma.callSession.count({ where: { candidateId, status: { not: 'pending' }, startedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } });
     if (recent >= dailyLimit) throw new AppError('call_limit', `Не больше ${dailyLimit} созвонов и защит в сутки - попробуй завтра`, 429);
   }
@@ -178,12 +177,12 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
     }
   }
 
-  // ИИ-защита — только вопросы по коду: вердикт сравним между компаниями и не несёт вопросов конкретной компании.
+  // ИИ-защита – только вопросы по коду: вердикт сравним между компаниями и не несёт вопросов конкретной компании.
   const queue = ai ? [] : await queuedQuestions(candidateId, submission ? { id: submission.id, ownerCompanyId: submission.projectTask.vacancy.companyId } : null);
   let items: PlanItem[];
   let source: SourceInfo;
   if (submission) {
-    // Репозиторий и LLM — вне транзакции (медленно); ошибка чтения репозитория — понятный 4xx/5xx из collector.
+    // Репозиторий и LLM – вне транзакции (медленно); ошибка чтения репозитория – понятный 4xx/5xx из collector.
     const snapshot = await (deps.loadSnapshot ?? loadRepoSnapshot)(submission.repoUrl, submission.commitSha);
     const qlc = await generateQlc(
       { snapshot, projectResult: summarizeProjectResult(submission.resultJson), aiLogText: submission.aiLogText },
@@ -216,7 +215,7 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
       : `Привет! У работодателей есть к тебе вопросы: ${items.length}. Отвечай своими словами. `;
 
   const session = await prisma.$transaction(async (tx) => {
-    // Ожидающая защита по приглашению работодателя (pending.ts) — её и начинаем, а не заводим вторую.
+    // Ожидающая защита по приглашению работодателя (pending.ts) – её и начинаем, а не заводим вторую.
     const pending = submissionId && !ai
       ? await tx.callSession.findFirst({ where: { candidateId, kind: 'defense', status: 'pending', projectSubmissionId: submissionId }, orderBy: { startedAt: 'asc' }, select: { id: true } })
       : null;
@@ -247,7 +246,7 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
 // Ход кандидата и реакция ИИ
 // ---------------------------------------------------------------------------
 export interface TurnResult {
-  /** Реплика ИИ (null — ИИ замьючен или ждёт работодателя). */
+  /** Реплика ИИ (null – ИИ замьючен или ждёт работодателя). */
   text: string | null;
   muted: boolean;
   /** План исчерпан: клиент вызывает finish. */
@@ -324,7 +323,7 @@ async function respond(
     current.answered = true;
   }
   if (current && !current.answered) {
-    // Кандидат отвечал работодателю (или ИИ был замьючен) — вернуть разговор к открытому вопросу.
+    // Кандидат отвечал работодателю (или ИИ был замьючен) – вернуть разговор к открытому вопросу.
     const [e] = await appendEntries(sessionId, [itemEntry(current, 'Спасибо. Вернёмся к вопросу. ', 'return')]);
     return { text: e!.text, muted: false, done: false };
   }
@@ -360,12 +359,12 @@ async function respond(
 
 /**
  * ИИ снова говорит (размьют): если последним говорил кандидат, ИИ продолжает по плану без
- * уточнений. Ход занят — ничего не делаем: продолжение случится на следующем ответе кандидата.
+ * уточнений. Ход занят – ничего не делаем: продолжение случится на следующем ответе кандидата.
  */
 export async function resumeAi(sessionId: string, llm: LlmProvider): Promise<TurnResult | null> {
   const s = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { status: true, transcriptJson: true, candidateId: true } });
   if (!s || s.status !== 'active') return null;
-  if (!(await hasAiAssessmentConsent(s.candidateId))) return null; // Г3 отозван — ИИ в комнате не отвечает
+  if (!(await hasAiAssessmentConsent(s.candidateId))) return null; // Г3 отозван – ИИ в комнате не отвечает
   const t = asTranscript(s.transcriptJson);
   if (t[t.length - 1]?.role !== 'candidate') return null;
   if (await isAiMuted(sessionId)) return null;
@@ -461,7 +460,7 @@ async function finishLocked(sessionId: string, llm: LlmProvider): Promise<Defens
     }
     throw err;
   }
-  // Режим «только вопросы работодателя»: сравнивать с проектом нечего — флаг no_project_result не нужен.
+  // Режим «только вопросы работодателя»: сравнивать с проектом нечего – флаг no_project_result не нужен.
   if (plan.source.mode === 'questions') verdict.flags = verdict.flags.filter((f) => f !== 'no_project_result');
 
   const now = new Date();
@@ -481,7 +480,7 @@ async function finishLocked(sessionId: string, llm: LlmProvider): Promise<Defens
   return verdict;
 }
 
-/** Участники выходят; заданные, но не отвеченные вопросы работодателя возвращаются в очередь — до следующего входа кандидата. */
+/** Участники выходят; заданные, но не отвеченные вопросы работодателя возвращаются в очередь – до следующего входа кандидата. */
 async function closeRoom(tx: Prisma.TransactionClient, sessionId: string, requeue: string[], now: Date): Promise<void> {
   await tx.callParticipant.updateMany({ where: { callSessionId: sessionId, leftAt: null }, data: { leftAt: now } });
   if (requeue.length) await tx.employerQuestion.updateMany({ where: { id: { in: requeue }, status: 'asked' }, data: { status: 'queued' } });

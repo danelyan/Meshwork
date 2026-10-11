@@ -40,7 +40,7 @@ describe('getLlm({ purpose: "call" })', () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it('LLM_CALL_* задан: созвон идёт на call-модели, чат — на основной; имя call-провайдера в журнале', async () => {
+  it('LLM_CALL_* задан: созвон идёт на call-модели, чат – на основной; имя call-провайдера в журнале', async () => {
     const main = provider('main');
     const call = provider('call-qwen');
     state.main = main;
@@ -52,7 +52,7 @@ describe('getLlm({ purpose: "call" })', () => {
     expect(state.runs).toMatchObject([{ provider: 'call-qwen', ok: true }, { provider: 'main', ok: true }]);
   });
 
-  it('call-модель отвечает 5xx — запрос уходит на основную', async () => {
+  it('call-модель отвечает 5xx – запрос уходит на основную', async () => {
     const main = provider('main');
     const call = provider('call-qwen', true);
     state.main = main;

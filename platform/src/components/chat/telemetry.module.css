@@ -1,5 +1,5 @@
-/* Панель телеметрии чата — инструмент отладки, не для жюри (docs/platform.md, «Телеметрия чата»).
-   position: fixed — в ленту не встраивается и layout-shift в ней не порождает. */
+/* Панель телеметрии чата – инструмент отладки, не для жюри (docs/platform.md, «Телеметрия чата»).
+   position: fixed – в ленту не встраивается и layout-shift в ней не порождает. */
 .dock {
   position: fixed; right: 16px; bottom: 160px; z-index: 899;
   display: flex; justify-content: flex-end;
@@ -73,7 +73,7 @@
 .text { color: var(--text-soft); word-break: break-word; }
 .empty { padding: 16px 12px; color: var(--muted); }
 
-/* Цвет метки — смысл события, без неона: синий — поток, тёмный — ход, оранжевый — вёрстка, красный — флейк. */
+/* Цвет метки – смысл события, без неона: синий – поток, тёмный – ход, оранжевый – вёрстка, красный – флейк. */
 .tag[data-k='turn'] { color: var(--ink); font-weight: 600; }
 .tag[data-k='sse'], .tag[data-k='stream'] { color: var(--blue); }
 .tag[data-k='layout'], .tag[data-k='longtask'] { color: var(--jury); }

@@ -14,7 +14,7 @@ export default async function AdminDemoPage() {
   return (
     <>
       <h1 className={styles.title}>Демо-данные</h1>
-      <p className={styles.muted}>Удаляется только мусор e2e по явным маркерам и только то, что показано на экране. Каждое действие — в журнале с причиной.</p>
+      <p className={styles.muted}>Удаляется только мусор e2e по явным маркерам и только то, что показано на экране. Каждое действие – в журнале с причиной.</p>
       <DemoManager initial={data} />
     </>
   );

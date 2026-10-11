@@ -36,7 +36,7 @@ describe('протухшая кука: подпись верна, аккаунт
     expect(await getPageSession()).toBeNull();
   });
 
-  it('API: 401 session_stale и стёртая кука; /api/auth/me — user null, не 401', async () => {
+  it('API: 401 session_stale и стёртая кука; /api/auth/me – user null, не 401', async () => {
     const res = await profile(jsonRequest('/api/profile', 'GET', undefined, `cid=${ghost}`));
     expect(res.status).toBe(401);
     expect((await res.json()).error.code).toBe('session_stale');
@@ -62,7 +62,7 @@ describe('протухшая кука: подпись верна, аккаунт
     await prisma.candidate.create({ data: { id: 'demo-old', email: 'o@example.test', name: 'Старый', isDemo: true } });
     const res = await profile(jsonRequest('/api/profile', 'GET', undefined, `cid=${signSession('demo-old')}`));
     expect(res.status).toBe(200);
-    // старая кука с удалённым кандидатом — протухла
+    // старая кука с удалённым кандидатом – протухла
     const gone = await profile(jsonRequest('/api/profile', 'GET', undefined, `cid=${signSession('nobody')}`));
     expect((await gone.json()).error.code).toBe('session_stale');
   });

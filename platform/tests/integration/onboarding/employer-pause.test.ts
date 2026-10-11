@@ -49,7 +49,7 @@ describe('пауза знакомства работодателя', () => {
     await prisma.user.create({ data: { id: 'u1', name: 'Анна Смирнова', email: 'anna@example.test' } });
   });
 
-  it('«настроить позже» — пауза на /consultant, ответ и возврат к шагу снимают её, до роли пауза не ставится', async () => {
+  it('«настроить позже» – пауза на /consultant, ответ и возврат к шагу снимают её, до роли пауза не ставится', async () => {
     const { cookie } = await asEmployer('u1');
     const later = await act(cookie, { action: 'later' });
     expect(later.json.next).toBe('/consultant');

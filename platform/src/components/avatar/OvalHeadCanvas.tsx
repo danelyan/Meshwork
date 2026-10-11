@@ -8,7 +8,7 @@ import { buildHeadGeometry, JAW_OPEN } from './head-geometry';
 import { easeToward, pointerPose, trackPointer } from './head-motion';
 
 /**
- * «Овальный болванчик» — первая версия головы компаньона (процедурная, коммит ca1c7ca2, 09.10) для страницы 404.
+ * «Овальный болванчик» – первая версия головы компаньона (процедурная, коммит ca1c7ca2, 09.10) для страницы 404.
  * Металл MeshStandardMaterial + квадратная сетка по `gridUv` в фрагментном шейдере, как в первой версии Head3D.
  * Поза: рот приоткрыт, голова покачивается и время от времени мотает «нет». Грузится только через next/dynamic({ ssr: false }).
  */
@@ -88,7 +88,7 @@ function Head({ reducedMotion, avoidPointer }: { reducedMotion: boolean; avoidPo
     if (!g) return;
     const t = state.clock.elapsedTime;
     const motion = reducedMotion ? 0 : 1;
-    // каждые 6 с — короткое «нет»: затухающее покачивание по Y длиной 1.4 с
+    // каждые 6 с – короткое «нет»: затухающее покачивание по Y длиной 1.4 с
     const phase = t % 6;
     const shake = phase < 1.4 ? Math.sin(phase * 14) * 0.22 * (1 - phase / 1.4) : 0;
     const goal = pointerPose(pointer.current[0], pointer.current[1], 'avoid');

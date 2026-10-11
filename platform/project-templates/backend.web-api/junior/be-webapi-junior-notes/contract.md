@@ -6,16 +6,16 @@
 порт открывает тест.
 
 Окружение проверки: Node.js 20, без установки зависимостей. Доступны встроенные модули Node.js и
-`express` 5. Сети наружу нет. Данные — в памяти процесса; каждый вызов `createApp()` начинает с
+`express` 5. Сети наружу нет. Данные – в памяти процесса; каждый вызов `createApp()` начинает с
 пустого хранилища.
 
 | Метод и путь | Успех | Ошибки |
 | --- | --- | --- |
-| `GET /health` | `200 {"status":"ok"}` | — |
-| `POST /notes` с телом `{"title": string, "body"?: string}` | `201 {"id": string, "title", "body", "createdAt": ISO-8601}`; `body` по умолчанию `""` | `400 {"error": "validation"}` — `title` не строка, пустой после обрезки пробелов или длиннее 200 символов; тело не JSON |
-| `GET /notes/:id` | `200` — заметка в том же виде | `404 {"error": "not_found"}` |
+| `GET /health` | `200 {"status":"ok"}` | – |
+| `POST /notes` с телом `{"title": string, "body"?: string}` | `201 {"id": string, "title", "body", "createdAt": ISO-8601}`; `body` по умолчанию `""` | `400 {"error": "validation"}` – `title` не строка, пустой после обрезки пробелов или длиннее 200 символов; тело не JSON |
+| `GET /notes/:id` | `200` – заметка в том же виде | `404 {"error": "not_found"}` |
 
-Все ответы — `Content-Type: application/json`. Неизвестный путь — `404 {"error": "not_found"}`.
+Все ответы – `Content-Type: application/json`. Неизвестный путь – `404 {"error": "not_found"}`.
 `title` сохраняется обрезанным по краям.
 
 Видимые тесты лежат в `tests/visible/` (запуск: `npx vitest run tests/visible`). Платформа

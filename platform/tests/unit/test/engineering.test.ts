@@ -1,5 +1,5 @@
 // Генераторы направления engineering (ADR-0003, дополнение 10.10): 300 seed на семейство,
-// детерминизм, ключ принимается проверкой, и для семейств с вычисляемым ответом — независимое
+// детерминизм, ключ принимается проверкой, и для семейств с вычисляемым ответом – независимое
 // решение по тексту условия (как schema-constraint.test.ts): ключ должен совпасть с ним.
 import { catalogFromFile } from '@/server/claims/catalog-file';
 import { checkAnswer, normalizeAnswer } from '@/server/test/answers';
@@ -104,7 +104,7 @@ function tableRows(code: string, name: string): string[][] {
 }
 
 describe('банк engineering', () => {
-  it('104 семейства eng.*, зарегистрированы; на каждую из 4 подкатегорий — 9 Junior + 9 Middle + 8 Senior', () => {
+  it('104 семейства eng.*, зарегистрированы; на каждую из 4 подкатегорий – 9 Junior + 9 Middle + 8 Senior', () => {
     expect(ENGINEERING_GENERATORS.map((g) => g.id).sort()).toEqual([...EXPECTED_IDS].sort());
     expect(generatorsFor('engineering').map((g) => g.id).sort()).toEqual([...EXPECTED_IDS].sort());
     for (const [sub, { junior, middle, senior }] of Object.entries(BY_SUB)) {
@@ -118,7 +118,7 @@ describe('банк engineering', () => {
     expect(new Set(GENERATORS.map((g) => g.id)).size).toBe(GENERATORS.length);
     // taskId engineering не пересекаются между собой. С другими направлениями общий taskId допустим (как у backend и
     // frontend: «тип задания», а не семейство), но только из явного списка: при интеграции 10.10 совпали задания на
-    // одну и ту же тему у ai (SLO/латентность сервиса модели) и backend (circuit breaker). Новое совпадение — в список.
+    // одну и ту же тему у ai (SLO/латентность сервиса модели) и backend (circuit breaker). Новое совпадение – в список.
     const SHARED = new Set(['task:error-budget', 'task:latency-percentile', 'task:circuit-breaker']);
     const others = new Set(GENERATORS.filter((g) => g.specialization !== 'engineering').map((g) => g.taskId));
     const engTasks = ENGINEERING_GENERATORS.map((g) => g.taskId);
@@ -126,7 +126,7 @@ describe('банк engineering', () => {
     for (const t of engTasks) expect(others.has(t) && !SHARED.has(t), t).toBe(false);
   });
 
-  it('a/b: Junior легче порога Junior−Middle, Middle тяжелее; Senior — b 1.0–1.7, a 1.0–1.4 (дополнение 10.10 16:15)', () => {
+  it('a/b: Junior легче порога Junior−Middle, Middle тяжелее; Senior – b 1.0–1.7, a 1.0–1.4 (дополнение 10.10 16:15)', () => {
     for (const g of ENGINEERING_GENERATORS) {
       expect(g.a, g.id).toBeGreaterThanOrEqual(0.8);
       expect(g.a, g.id).toBeLessThanOrEqual(1.6);
@@ -143,7 +143,7 @@ describe('банк engineering', () => {
     }
   });
 
-  it('каталог: каждое catalogId генератора — запись eng.*, и task:<id> генератора указан в её proof', () => {
+  it('каталог: каждое catalogId генератора – запись eng.*, и task:<id> генератора указан в её proof', () => {
     const cat = new Map(catalogFromFile().map((c) => [c.id, c]));
     for (const g of ENGINEERING_GENERATORS) {
       for (const id of g.catalogIds) {
@@ -157,9 +157,9 @@ describe('банк engineering', () => {
         `${g.taskId} не указан в proof ни одной своей записи`,
       ).toBe(true);
     }
-    // Грейд S (конвертер понимает «+S»): senior в grades у eng.* — ровно там, где proof даёт Senior-семейство.
+    // Грейд S (конвертер понимает «+S»): senior в grades у eng.* – ровно там, где proof даёт Senior-семейство.
     const seniorTasks = new Set(ENGINEERING_GENERATORS.filter((g) => g.grade === 'senior').map((g) => g.taskId));
-    // Записи только для Senior (scripts/catalog-senior.json) доказываются защитой, а не тестом — вне правила.
+    // Записи только для Senior (scripts/catalog-senior.json) доказываются защитой, а не тестом – вне правила.
     const seniorOnly = (c: { grades: string[] }) => c.grades.length === 1 && c.grades[0] === 'senior';
     for (const c of cat.values())
       if (c.specialization === 'engineering' && !seniorOnly(c)) {
@@ -193,7 +193,7 @@ for (const g of ENGINEERING_GENERATORS) {
           expect(n).toBeLessThanOrEqual(inst.code!.split('\n').length);
         }
         if (g.format === 'number') expect(Number.isFinite(Number(inst.answerKey)), `${seed}`).toBe(true);
-        // Ответ не утекает в условие дословно (для list/line он неочевиден по тексту, для number — число не в prompt).
+        // Ответ не утекает в условие дословно (для list/line он неочевиден по тексту, для number – число не в prompt).
         if (g.format === 'number' && inst.answerKey.length >= 3)
           expect(new RegExp(`(^|[^0-9.,])${inst.answerKey.replace('.', '[.,]')}([^0-9]|$)`).test(inst.prompt), `${g.id} ${seed}`).toBe(false);
         prompts.add(`${inst.prompt}\n${inst.code ?? ''}`);
@@ -539,7 +539,7 @@ describe('независимые решения: семейства добора
     }
   });
 
-  it('eng.port-mapping: хост — левая часть ports, сеть compose — порт контейнера', () => {
+  it('eng.port-mapping: хост – левая часть ports, сеть compose – порт контейнера', () => {
     for (const seed of SEEDS) {
       const t = portMapping.generate(seed);
       const ports = [...t.code!.matchAll(/"(\d+):(\d+)"/g)].map((m) => ({ host: Number(m[1]), cont: Number(m[2]) }));
@@ -770,7 +770,7 @@ describe('независимые решения: добор Junior до 6 и Sen
       const t = csvFields.generate(seed);
       const target = num(/в строке (\d+)\?/, t.prompt);
       const line = t.code!.split('\n')[target - 1]!.replace(/^\d+: /, '');
-      // Лексер: поле — либо "..." с "" внутри, либо текст без запятых; дальше запятая или конец строки.
+      // Лексер: поле – либо "..." с "" внутри, либо текст без запятых; дальше запятая или конец строки.
       const re = /("(?:[^"]|"")*"|[^,"]*)(,|$)/y;
       let fields = 0;
       for (;;) {
@@ -840,7 +840,7 @@ describe('независимые решения: добор Junior до 6 и Sen
     }
   });
 
-  it('eng.counter-reset: сумма приростов, уменьшение — сброс', () => {
+  it('eng.counter-reset: сумма приростов, уменьшение – сброс', () => {
     for (const seed of SEEDS) {
       const t = counterReset.generate(seed);
       const v = t.code!.split('\n').map((l) => Number(l.split(/\s+/).pop()));
@@ -905,9 +905,9 @@ describe('независимые решения: добор Junior до 6 и Sen
       const t = backfillNights.generate(seed);
       const days = num(/перезалить (\d+) дневных/, t.prompt);
       const gb = num(/партиций по (\d+) ГБ/, t.prompt);
-      const window = num(/Окно — (\d+) ч/, t.prompt);
+      const window = num(/Окно – (\d+) ч/, t.prompt);
       const [workers, wRate] = [num(/воркеров: (\d+)/, t.code!), num(/каждый обрабатывает до (\d+)/, t.code!)];
-      const [readers, rRate] = [num(/не больше (\d+) одновременных/, t.code!), num(/читатель — до (\d+)/, t.code!)];
+      const [readers, rRate] = [num(/не больше (\d+) одновременных/, t.code!), num(/читатель – до (\d+)/, t.code!)];
       const lanes = Math.min(workers, readers);
       const hours = (gb * 60) / Math.min(wRate, rRate); // минуты на партицию
       let left = days;
@@ -980,7 +980,7 @@ describe('независимые решения: добор Junior до 6 и Sen
       const t = rolloutBlast.generate(seed);
       const stages = /ступенями ([\d % →]+) трафика/.exec(t.prompt)![1]!.match(/\d+/g)!.map(Number);
       const bake = num(/длится (\d+) мин/, t.prompt);
-      const rpm = num(/Поток — (\d+) запросов/, t.prompt);
+      const rpm = num(/Поток – (\d+) запросов/, t.prompt);
       const fail = num(/баг: (\d+) % её/, t.prompt);
       const threshold = num(/достигает (\d+)/, t.prompt);
       let errors = 0;
@@ -1088,9 +1088,9 @@ describe('независимые решения: добор Junior до 6 и Sen
     for (const seed of SEEDS) {
       const t = redundancyNodes.generate(seed);
       const k = num(/не меньше (\d+) работающих/, t.prompt);
-      const a = num(/доступность узла — ([\d,]+) %/, t.prompt) / 100;
+      const a = num(/доступность узла – ([\d,]+) %/, t.prompt) / 100;
       const target = num(/не ниже ([\d,]+) %\?/, t.prompt) / 100;
-      // P(отказ) = P(работает < k) — считаем через дополнение, а не прямую сумму.
+      // P(отказ) = P(работает < k) – считаем через дополнение, а не прямую сумму.
       const pFail = (n: number) => {
         let s = 0;
         let c = 1; // C(n, r)

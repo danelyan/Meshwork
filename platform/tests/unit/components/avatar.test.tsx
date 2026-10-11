@@ -75,7 +75,7 @@ describe('детектор WebGL', () => {
   const win = (getContext: () => unknown, ctor = true) =>
     ({ WebGLRenderingContext: ctor ? function () {} : undefined, document: { createElement: () => ({ getContext }) } }) as never;
 
-  it('нет окна, нет WebGLRenderingContext, контекст не создался или бросил — нет', () => {
+  it('нет окна, нет WebGLRenderingContext, контекст не создался или бросил – нет', () => {
     expect(detectWebGL(undefined)).toBe(false);
     expect(detectWebGL(win(() => ({}), false))).toBe(false);
     expect(detectWebGL(win(() => null))).toBe(false);
@@ -88,13 +88,13 @@ describe('детектор WebGL', () => {
     ).toBe(false);
   });
 
-  it('контекст создался — да (и пробный контекст освобождается)', () => {
+  it('контекст создался – да (и пробный контекст освобождается)', () => {
     const lose = vi.fn();
     expect(detectWebGL(win(() => ({ getExtension: () => ({ loseContext: lose }) })))).toBe(true);
     expect(lose).toHaveBeenCalled();
   });
 
-  it('jsdom без WebGL — сцена рисует запасной знак ФСП', () => {
+  it('jsdom без WebGL – сцена рисует запасной знак ФСП', () => {
     render(
       <CompanionVoiceProvider>
         <CompanionStage />
@@ -134,7 +134,7 @@ describe('кнопка «Озвучивать ответы»', () => {
     expect(btn.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('озвучка выключена на стенде — кнопка отжимается, пояснение текстом', async () => {
+  it('озвучка выключена на стенде – кнопка отжимается, пояснение текстом', async () => {
     stubFetch('off');
     render(
       <CompanionVoiceProvider>

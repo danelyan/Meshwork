@@ -22,7 +22,7 @@ describe('orders api (visible)', () => {
     expect(b.headers['idempotent-replayed']).toBe('true');
   });
 
-  it('PATCH без If-Match — 428', async () => {
+  it('PATCH без If-Match – 428', async () => {
     const app = createApp();
     const a = await request(app).post('/orders').set('Idempotency-Key', 'k-2').send(order);
     const res = await request(app).patch(`/orders/${a.body.id}`).send({ status: 'paid' });

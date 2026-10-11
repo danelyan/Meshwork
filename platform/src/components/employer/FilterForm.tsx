@@ -7,7 +7,7 @@ import { GRADE_LABEL, GRADES } from '@/lib/grades';
 
 export interface FilterFormProps { action: string; filters: MatchFilters; }
 /**
- * Native GET controls keep filtered results bookmarkable and work without JavaScript. Выдача по умолчанию — только
+ * Native GET controls keep filtered results bookmarkable and work without JavaScript. Выдача по умолчанию – только
  * кандидаты с категорией из теста (M05); «Расширить» (pool=all) добавляет кандидатов без категории с пометкой.
  */
 export function FilterForm({ action, filters }: FilterFormProps) {

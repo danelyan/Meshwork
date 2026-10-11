@@ -16,7 +16,7 @@ describe('collector/injection', () => {
     expect(detectInjection(meta.hiddenText)).toBe(true);
   });
 
-  it('все обычные резюме eval (30) — без подозрения', () => {
+  it('все обычные резюме eval (30) – без подозрения', () => {
     const dir = path.join(process.cwd(), 'eval/resumes');
     const files = readdirSync(dir).filter((f) => f.endsWith('.md'));
     expect(files.length).toBeGreaterThanOrEqual(30);

@@ -10,7 +10,7 @@ import type { PlanItem } from './types';
  * Интервьюер защиты проекта: после ответа кандидата решает, нужно ли одно уточнение по текущему
  * вопросу (`LlmPurpose.call_interviewer`). Ничего не оценивает. Вопросы плана задаёт код по списку,
  * модель только уточняет. Модель недоступна или ответ невалиден → без уточнения, нейтральный переход
- * (так работает и stub-провайдер — детерминированно).
+ * (так работает и stub-провайдер – детерминированно).
  */
 
 export const MAX_FOLLOWUPS = 1;
@@ -45,11 +45,10 @@ export async function decideFollowUp(item: PlanItem, answer: string, seq: number
             role: 'user',
             content: [
               tag('current_question', item.question),
-              tag('question_source', item.source === 'employer' ? 'employer' : 'code'),
               tag('expected_points', expected.join('; ') || '(нет)'),
               tag('answer', answer.trim() || '(кандидат промолчал)'),
               tag('followups_used', String(item.followUps)),
-              'Ответ — только JSON по схеме.',
+              'Ответ – только JSON по схеме.',
             ].join('\n'),
           },
         ],

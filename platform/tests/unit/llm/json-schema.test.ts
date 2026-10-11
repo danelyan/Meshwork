@@ -29,7 +29,7 @@ describe('Zod → JSON Schema', () => {
     expect(schemaSpec('claims v1.0', z.object({ a: z.string() })).name).toBe('claims_v1_0');
   });
 
-  it('непредставимый тип (date) — ошибка, а не молча пустая схема', () => {
+  it('непредставимый тип (date) – ошибка, а не молча пустая схема', () => {
     expect(() => zodToJsonSchema(z.object({ at: z.date() }))).toThrow();
   });
 });

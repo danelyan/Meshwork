@@ -78,7 +78,7 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
           <Tag tone="outline">{GRADE_RU[task.grade] ?? task.grade}</Tag>
           <span>{hours(task.timeBudgetMin)}</span>
           <span>{task.stack.join(', ')}</span>
-          {task.my.expiresAt && (new Date(task.my.expiresAt).getTime() > Date.now() ? <span>сдать до {new Date(task.my.expiresAt).toLocaleDateString('ru-RU')}</span> : <span>срок истёк — сдать можно, работодатель увидит пометку «после срока»</span>)}
+          {task.my.expiresAt && (new Date(task.my.expiresAt).getTime() > Date.now() ? <span>сдать до {new Date(task.my.expiresAt).toLocaleDateString('ru-RU')}</span> : <span>срок истёк – сдать можно, работодатель увидит пометку «после срока»</span>)}
         </div>
       </div>
       {error && <Notice tone="error">{error}</Notice>}
@@ -99,7 +99,7 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
         </ul>
         {spec.notes && <p className={styles.prose}>{spec.notes}</p>}
         <details className={styles.details}>
-          <summary>Контракт (contract.md, дословно) — при расхождении с условием прав он</summary>
+          <summary>Контракт (contract.md, дословно) – при расхождении с условием прав он</summary>
           <pre className={styles.code}>{task.contractMd}</pre>
         </details>
         <details className={styles.details}>
@@ -130,10 +130,10 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
           <fieldset className={styles.kindSwitch}>
             <legend className={emp.status}>Формат сдачи</legend>
             <label className={styles.kindOption}>
-              <input type="radio" name="kind" value="code" checked={kind === 'code'} onChange={() => setKind('code')} /> Код в репозитории — автотесты дают балл, работодатель может позвать на защиту
+              <input type="radio" name="kind" value="code" checked={kind === 'code'} onChange={() => setKind('code')} /> Код в репозитории – автотесты дают балл, работодатель может позвать на защиту
             </label>
             <label className={styles.kindOption}>
-              <input type="radio" name="kind" value="approach" checked={kind === 'approach'} onChange={() => setKind('approach')} /> Подход к решению текстом — без кода и балла, только критерии работодателя
+              <input type="radio" name="kind" value="approach" checked={kind === 'approach'} onChange={() => setKind('approach')} /> Подход к решению текстом – без кода и балла, только критерии работодателя
             </label>
           </fieldset>
           {kind === 'code' ? (
@@ -179,10 +179,10 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
               {s.result && (
                 <>
                   {s.result.kind === 'approach' ? (
-                    <p className={emp.status}>Сдача подходом: автотестов нет, оценка — по критериям работодателя.</p>
+                    <p className={emp.status}>Сдача подходом: автотестов нет, оценка – по критериям работодателя.</p>
                   ) : (
                     <div>
-                      <span className={styles.scoreBig}>{s.result.tests.score}</span> / 100 — скрытые тесты: {s.result.tests.passed} из {s.result.tests.total}
+                      <span className={styles.scoreBig}>{s.result.tests.score}</span> / 100 – скрытые тесты: {s.result.tests.passed} из {s.result.tests.total}
                     </div>
                   )}
                   {s.result.visibleTests.length > 0 && (

@@ -47,7 +47,7 @@ describe('Combobox: разметка и фильтр', () => {
     expect(screen.getByRole('option', { name: 'Россия' }).hasAttribute('aria-disabled')).toBe(false);
   });
 
-  it('фильтр по подстроке без учёта регистра, порядок исходный; пусто — «Ничего не найдено»', () => {
+  it('фильтр по подстроке без учёта регистра, порядок исходный; пусто – «Ничего не найдено»', () => {
     render(<Combobox label="Страна" options={OPTIONS} />);
     fireEvent.change(combo(), { target: { value: 'СТАН' } });
     expect(labels()).toEqual(['Казахстан']);
@@ -71,7 +71,7 @@ describe('Combobox: разметка и фильтр', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
-  it('скрытое поле name хранит значение; неизвестное значение — пустая строка', () => {
+  it('скрытое поле name хранит значение; неизвестное значение – пустая строка', () => {
     const { container, rerender } = render(<Combobox label="Страна" name="country" options={OPTIONS} defaultValue="kz" />);
     const hidden = () => container.querySelector('input[type="hidden"][name="country"]') as HTMLInputElement;
     expect(hidden().value).toBe('kz');
@@ -112,7 +112,7 @@ describe('Combobox: клавиатура', () => {
     expect(activeText()).toBe('Армения');
   });
 
-  it('ввод сбрасывает активный пункт, активный пункт — только из показанных', () => {
+  it('ввод сбрасывает активный пункт, активный пункт – только из показанных', () => {
     render(<Combobox label="Страна" options={OPTIONS} />);
     key('ArrowDown');
     expect(activeText()).toBe('Россия');
@@ -127,7 +127,7 @@ describe('Combobox: клавиатура', () => {
     expect(activeText()).toBe('Армения');
   });
 
-  it('Enter выбирает активный: onChange, текст, закрытие; без активного — ничего, но событие погашено', () => {
+  it('Enter выбирает активный: onChange, текст, закрытие; без активного – ничего, но событие погашено', () => {
     const onChange = vi.fn();
     render(<Combobox label="Страна" options={OPTIONS} onChange={onChange} />);
     fireEvent.click(combo());
@@ -282,7 +282,7 @@ describe('theme', () => {
     expect(outer.style.getPropertyValue('--ds-color-primary')).toBe('#111111');
   });
 
-  it('вне провайдера — светлая тема; неизвестный токен — Error', () => {
+  it('вне провайдера – светлая тема; неизвестный токен – Error', () => {
     render(<Probe token="color.text" />);
     expect(probe('color.text')).toBe('#111827');
     cleanup();

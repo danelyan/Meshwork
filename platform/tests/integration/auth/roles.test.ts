@@ -30,13 +30,13 @@ describe('аккаунт: роль, согласие, онбординг', () =>
     await prisma.user.create({ data: { id: 'u-new', name: 'Новый', email: 'new@example.test' } });
   });
 
-  it('me: pending, не онбордирован, без согласия; без входа — user null', async () => {
+  it('me: pending, не онбордирован, без согласия; без входа – user null', async () => {
     const res = await me(jsonRequest('/api/auth/me', 'GET', undefined, userCookie('u-new')));
     expect((await res.json()).user).toMatchObject({ id: 'u-new', role: 'pending', onboarded: false, consent: false });
     expect(await (await me(jsonRequest('/api/auth/me', 'GET'))).json()).toEqual({ user: null });
   });
 
-  it('согласие: фиксируется версия и время; устаревшая версия — 409; без входа — 401', async () => {
+  it('согласие: фиксируется версия и время; устаревшая версия – 409; без входа – 401', async () => {
     const ok = await consent(jsonRequest('/api/auth/consent', 'POST', { version: CONSENT_VERSION }, userCookie('u-new')));
     expect(ok.status).toBe(200);
     const rows = await prisma.consent.findMany({ where: { userId: 'u-new' } });
@@ -45,7 +45,7 @@ describe('аккаунт: роль, согласие, онбординг', () =>
     expect((await consent(jsonRequest('/api/auth/consent', 'POST', { version: CONSENT_VERSION }))).status).toBe(401);
   });
 
-  it('роль candidate: создаёт Candidate (consentAt из согласия), перевыпускает куку; второй раз — 409', async () => {
+  it('роль candidate: создаёт Candidate (consentAt из согласия), перевыпускает куку; второй раз – 409', async () => {
     await recordConsent('u-new');
     const res = await role(jsonRequest('/api/auth/role', 'POST', { role: 'candidate' }, userCookie('u-new')));
     expect(res.status).toBe(200);
@@ -64,7 +64,7 @@ describe('аккаунт: роль, согласие, онбординг', () =>
     expect((await prisma.candidate.findUniqueOrThrow({ where: { id } })).email).toBe('user-u-new@users.invalid');
   });
 
-  it('роль employer: новая компания, requireEmployer проходит, requireCandidate — 403', async () => {
+  it('роль employer: новая компания, requireEmployer проходит, requireCandidate – 403', async () => {
     const res = await role(jsonRequest('/api/auth/role', 'POST', { role: 'employer', companyName: 'ООО Ромашка' }, userCookie('u-new')));
     const cookie = cookieFrom(res)!;
     const { employerProfileId } = requireEmployer(jsonRequest('/x', 'GET', undefined, cookie));
@@ -73,7 +73,7 @@ describe('аккаунт: роль, согласие, онбординг', () =>
     expect(() => requireCandidate(jsonRequest('/x', 'GET', undefined, cookie))).toThrow(expect.objectContaining({ status: 403 }));
   });
 
-  it('завершение онбординга: без роли/согласия — 409, затем next по роли', async () => {
+  it('завершение онбординга: без роли/согласия – 409, затем next по роли', async () => {
     const c = userCookie('u-new');
     expect((await complete(jsonRequest('/x', 'POST', {}, c))).status).toBe(409);
     const roled = cookieFrom(await role(jsonRequest('/x', 'POST', { role: 'candidate' }, c)))!;
@@ -84,7 +84,7 @@ describe('аккаунт: роль, согласие, онбординг', () =>
     expect((await prisma.user.findUniqueOrThrow({ where: { id: 'u-new' } })).onboardedAt).toBeInstanceOf(Date);
   });
 
-  it('CSRF: POST с чужим Origin — 403', async () => {
+  it('CSRF: POST с чужим Origin – 403', async () => {
     const req = new Request('http://localhost/api/auth/role', {
       method: 'POST',
       headers: { cookie: userCookie('u-new'), origin: 'https://evil.example', 'content-type': 'application/json' },
@@ -138,7 +138,7 @@ describe('демо-вход: кандидаты и работодатель', ()
     expect(await prisma.user.count({ where: { candidateId: 'demo-a', isDemo: true, role: 'candidate' } })).toBe(1);
   });
 
-  it('вход за работодателя → requireEmployer; не-демо работодатель — 404', async () => {
+  it('вход за работодателя → requireEmployer; не-демо работодатель – 404', async () => {
     const res = await demoLogin(jsonRequest('/api/demo/login', 'POST', { employerUserId: 'demo-employer' }));
     expect(await res.json()).toMatchObject({ next: '/consultant' });
     expect(requireEmployer(jsonRequest('/x', 'GET', undefined, cookieFrom(res)))).toEqual({ userId: 'demo-employer', employerProfileId: 'demo-employer-northstream' });
@@ -148,7 +148,7 @@ describe('демо-вход: кандидаты и работодатель', ()
 });
 
 // Матрица API (E-05, фаза 1; R-N-07, R-C-16, R-E-07): по запросу от каждой роли в каждую группу API.
-// Группы и уровни — `API_ACCESS` в src/server/auth/access.ts. «пускает» = гвард пройден (не 401/403 и не 5xx):
+// Группы и уровни – `API_ACCESS` в src/server/auth/access.ts. «пускает» = гвард пройден (не 401/403 и не 5xx):
 // дальше обработчик может ответить 400/404 по своим причинам (например, распознавание речи выключено).
 describe('матрица API: роль × группа → 401/403/пускает', () => {
   afterAll(() => prisma.$disconnect());

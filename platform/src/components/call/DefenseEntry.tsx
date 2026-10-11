@@ -16,7 +16,7 @@ export function DefenseEntry(props: { projectSubmissionId: string; label?: strin
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Согласие на запись созвона — тот же пункт и тот же текст, что у CallPanel (lane call, /api/call/consent).
+  // Согласие на запись созвона – тот же пункт и тот же текст, что у CallPanel (lane call, /api/call/consent).
   const [consent, setConsent] = useState<{ version: string; text: string[] } | null>(null);
   const start = async () => {
     setBusy(true);

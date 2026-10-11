@@ -26,7 +26,7 @@ describe('api/demo/login', () => {
     });
   });
 
-  it('GET — только демо-кандидаты', async () => {
+  it('GET – только демо-кандидаты', async () => {
     const res = await listDemo();
     expect(res.status).toBe(200);
     const body = await res.json();

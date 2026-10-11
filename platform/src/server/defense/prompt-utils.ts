@@ -30,7 +30,7 @@ export function tag(name: string, text: string): string {
   return `<${name}>${escapeData(text)}</${name}>`;
 }
 
-/** Схлопнуть пробелы — для сравнения цитат (переносы строк в JSON модели). */
+/** Схлопнуть пробелы – для сравнения цитат (переносы строк в JSON модели). */
 export function normalizeWs(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
 }

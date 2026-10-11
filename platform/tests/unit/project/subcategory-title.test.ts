@@ -4,10 +4,10 @@ import { SUBCATEGORIES } from '@/lib/directions';
 import { templateView } from '@/server/project/service';
 import { getTemplates } from '@/server/project/templates';
 
-// Название подкатегории в ленте заданий и карточке работодателя — из справочника src/lib/directions.ts.
+// Название подкатегории в ленте заданий и карточке работодателя – из справочника src/lib/directions.ts.
 // Раньше была заглушка на 5 подкатегорий из 18: для остальных показывался сырой id («backend.highload»).
 describe('название подкатегории проектного задания', () => {
-  it('для каждой подкатегории справочника — её название, а не id', () => {
+  it('для каждой подкатегории справочника – её название, а не id', () => {
     const base = getTemplates()[0]!;
     expect(SUBCATEGORIES.length).toBeGreaterThanOrEqual(18);
     for (const s of SUBCATEGORIES) {

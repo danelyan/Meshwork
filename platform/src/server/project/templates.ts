@@ -1,5 +1,5 @@
 // Шаблоны проектов на диске (ADR 0003, ступень 2): platform/project-templates/<subcategory>/<grade>/<id>/.
-// Манифест — формат лейна runner (runner/src/templates.ts: templateManifestSchema) плюс поля лейна
+// Манифест – формат лейна runner (runner/src/templates.ts: templateManifestSchema) плюс поля лейна
 // project: subcategoryId, timeBudgetMin, summary, catalogIds, referenceRef. Лишние поля runner
 // пропускает (z.object не strict), поэтому один template.json читают оба.
 import { createHash } from 'node:crypto';
@@ -56,7 +56,7 @@ export function templatesRoot(cwd = process.cwd()): string {
   return path.resolve(process.env.PROJECT_TEMPLATES_DIR ?? path.join(cwd, 'project-templates'));
 }
 
-/** Все template.json на глубине <subcategory>/<grade>/<id>/. Каталог не совпал с id или подкатегорией — ошибка. */
+/** Все template.json на глубине <subcategory>/<grade>/<id>/. Каталог не совпал с id или подкатегорией – ошибка. */
 export function listTemplateManifests(root = templatesRoot()): LoadedTemplate[] {
   if (!existsSync(root)) return [];
   const out: LoadedTemplate[] = [];
@@ -110,7 +110,7 @@ export function readTree(dir: string, prefix = ''): TemplateFile[] {
   return out;
 }
 
-/** Видимые тесты — так, как они лежат в репозитории кандидата (tests/visible/...). */
+/** Видимые тесты – так, как они лежат в репозитории кандидата (tests/visible/...). */
 export function readVisibleTests(t: LoadedTemplate): TemplateFile[] {
   return readTree(path.join(t.dir, t.manifest.visibleTestsRef)).map((f) => ({ path: `tests/visible/${f.path}`, content: f.content }));
 }
@@ -138,7 +138,7 @@ export function ownedFileHashes(files: TemplateFile[]): Map<string, string> {
   return out;
 }
 
-/** CRLF → LF: правка окончаний строк git-клиентом на Windows — не нарушение. */
+/** CRLF → LF: правка окончаний строк git-клиентом на Windows – не нарушение. */
 export function normalizeEol(text: string): string {
   return text.replace(/\r\n/g, '\n');
 }
@@ -149,7 +149,7 @@ export interface OwnedViolation {
 }
 
 /**
- * Сверка файлов платформы с репозиторием кандидата: изменён или удалён — нарушение.
+ * Сверка файлов платформы с репозиторием кандидата: изменён или удалён – нарушение.
  * Это флаг работодателю, не балл: runner всё равно подменяет тесты своими копиями.
  */
 export function checkPlatformOwned(expected: Map<string, string>, repoFiles: Map<string, string | Uint8Array>): OwnedViolation[] {
@@ -162,7 +162,7 @@ export function checkPlatformOwned(expected: Map<string, string>, repoFiles: Map
   return out;
 }
 
-/** Число тестов в каталоге (it/test в JS/TS, def test_ в Python) — для stub-runner и подсказок. */
+/** Число тестов в каталоге (it/test в JS/TS, def test_ в Python) – для stub-runner и подсказок. */
 export function countTests(t: LoadedTemplate, which: 'hidden' | 'visible'): number {
   const files = readTree(path.join(t.dir, which === 'hidden' ? t.manifest.hiddenTestsRef : t.manifest.visibleTestsRef));
   let n = 0;

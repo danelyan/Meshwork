@@ -10,7 +10,7 @@ type Ctx = { params: Promise<{ id: string }> };
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 /**
- * POST /api/test/attempt/[id]/confirm-start — подтверждающий тест к попытке в статусе needs_confirmation
+ * POST /api/test/attempt/[id]/confirm-start – подтверждающий тест к попытке в статусе needs_confirmation
  * (ADR-0002, дополнение 11.10): новая попытка kind=confirm (201) или продолжение активной (200).
  * 409: confirm_not_needed, already_confirmed, confirm_used, active_attempt.
  */

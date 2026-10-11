@@ -1,4 +1,4 @@
-// Потоковый JSON по схеме (onJsonDelta) — для вопроса интервьюера созвона (лейн call-speed, 11.10).
+// Потоковый JSON по схеме (onJsonDelta) – для вопроса интервьюера созвона (лейн call-speed, 11.10).
 import { createLlmClient } from '@/server/llm/client';
 import { createOpenAiChatProvider } from '@/server/llm/providers/openai-chat';
 import { LlmError, type CompleteRequest, type CompleteResult, type LlmProvider } from '@/server/llm/types';
@@ -25,7 +25,7 @@ function provider(body: string, seen: Record<string, unknown>[] = [], stream?: b
 }
 
 describe('openai-chat: JSON по схеме потоком (onJsonDelta)', () => {
-  it('с onJsonDelta — stream + response_format, куски сырого JSON по порядку, итог разобран как json', async () => {
+  it('с onJsonDelta – stream + response_format, куски сырого JSON по порядку, итог разобран как json', async () => {
     const seen: Record<string, unknown>[] = [];
     const body = sse([chunk({ content: '{"quest' }), chunk({ content: 'ion":"Привет. ' }), chunk({ content: 'Как дела?"}' }), chunk({}, 'stop')]);
     const got: string[] = [];
@@ -35,7 +35,7 @@ describe('openai-chat: JSON по схеме потоком (onJsonDelta)', () =>
     expect(seen[0]).toMatchObject({ stream: true, response_format: { type: 'json_schema' } });
   });
 
-  it('без onJsonDelta или со stream: false — обычный запрос целиком (фолбэк)', async () => {
+  it('без onJsonDelta или со stream: false – обычный запрос целиком (фолбэк)', async () => {
     const seen: Record<string, unknown>[] = [];
     await provider('', seen).complete(req);
     const got: string[] = [];
@@ -65,7 +65,7 @@ describe('llm client: onJsonDelta', () => {
     expect(seen[1]).toBeUndefined();
   });
 
-  it('обрыв после начала потока (503) — без повтора: кандидат уже слышит начало', async () => {
+  it('обрыв после начала потока (503) – без повтора: кандидат уже слышит начало', async () => {
     let n = 0;
     const impl: LlmProvider['complete'] = async (r) => {
       n++;
@@ -77,7 +77,7 @@ describe('llm client: onJsonDelta', () => {
     expect(n).toBe(1);
   });
 
-  it('503 до первого куска — обычный повтор', async () => {
+  it('503 до первого куска – обычный повтор', async () => {
     let n = 0;
     const impl: LlmProvider['complete'] = async () => {
       n++;
@@ -89,7 +89,7 @@ describe('llm client: onJsonDelta', () => {
     expect(n).toBe(2);
   });
 
-  it('таймаут посреди потока — LlmError timeout, поток не висит', async () => {
+  it('таймаут посреди потока – LlmError timeout, поток не висит', async () => {
     const impl: LlmProvider['complete'] = (r, signal) =>
       new Promise((_, reject) => {
         r.onJsonDelta?.('{"question":"Начало. ');

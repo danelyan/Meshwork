@@ -17,7 +17,7 @@ import { gitLogRange, gitResetModes, gitStaged, shellExitStatus, shellPipeline }
 const SEEDS = Array.from({ length: 200 }, (_, i) => i * 7919 + 101);
 
 describe('общие семейства: состав', () => {
-  it('24–30 семейств, id `cm.*` уникальны во всём банке, taskId — свои, все три грейда', () => {
+  it('24–30 семейств, id `cm.*` уникальны во всём банке, taskId – свои, все три грейда', () => {
     expect(COMMON_GENERATORS.length).toBeGreaterThanOrEqual(24);
     expect(COMMON_GENERATORS.length).toBeLessThanOrEqual(30);
     for (const g of COMMON_GENERATORS) expect(g.id).toMatch(/^cm\./);
@@ -37,7 +37,7 @@ describe('общие семейства: состав', () => {
     }
   });
 
-  it('a, b — в диапазонах грейда, лимит времени задан, утверждения есть в каталоге (common.*)', () => {
+  it('a, b – в диапазонах грейда, лимит времени задан, утверждения есть в каталоге (common.*)', () => {
     const catalog = new Set(catalogFromFile().map((c) => c.id));
     for (const g of COMMON_GENERATORS) {
       expect(g.a, g.id).toBeGreaterThanOrEqual(1.0);
@@ -155,7 +155,7 @@ describe.runIf(has('git'))('ключи Git совпадают с настоящ�
           for (const f of line.split(': ')[1]!.split(', ')) g.write(f, `v${++n}\n`);
           g.run(['commit', '-qam', line.split(':')[0]!]);
         }
-        const pre = inst.prompt.match(/в индексе были изменения (.+?), а в рабочей копии вне индекса — (.+?)\.\n/)!;
+        const pre = inst.prompt.match(/в индексе были изменения (.+?), а в рабочей копии вне индекса – (.+?)\.\n/)!;
         const list = (s: string) => (s === '(нет)' ? [] : s.split(', '));
         for (const f of list(pre[1]!)) {
           g.write(f, `s${++n}\n`);

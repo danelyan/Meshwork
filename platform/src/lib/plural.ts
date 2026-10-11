@@ -21,7 +21,7 @@ export const FORMS = {
   card: ['карточка', 'карточки', 'карточек'],
 } as const satisfies Record<string, readonly [string, string, string]>;
 
-/** Поле каталога `limits` исторически начинается с «Не доказывает:» — UI добавляет свой префикс, поэтому свой убираем. */
+/** Поле каталога `limits` исторически начинается с «Не доказывает:» – UI добавляет свой префикс, поэтому свой убираем. */
 export function stripLimitsPrefix(s: string): string {
   return s.replace(/^\s*Не доказывает\s*:\s*/i, '').trim();
 }

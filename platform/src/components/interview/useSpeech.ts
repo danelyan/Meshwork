@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Озвучка реплик интервьюера через `/api/tts` (SpeechKit): каскад «текст → речь» без аватара. Звук
- * разрешается жестом (кнопка «Начать»), дальше новые реплики играют сами; «Повторить вопрос» — replay.
- * Озвучка выключена на стенде (`mode: off`) — реплики остаются текстом.
+ * разрешается жестом (кнопка «Начать»), дальше новые реплики играют сами; «Повторить вопрос» – replay.
+ * Озвучка выключена на стенде (`mode: off`) – реплики остаются текстом.
  */
 export function useSpeech() {
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -50,7 +50,7 @@ export function useSpeech() {
         const res = await fetch('/api/tts', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, realtime: true }), signal: ac.signal });
         if (!res.ok || my !== gen.current) return;
         const blob = await res.blob();
-        // Пока грузили — остановили или заказали другую реплику: этот звук не играет.
+        // Пока грузили – остановили или заказали другую реплику: этот звук не играет.
         if (my !== gen.current) return;
         const src = URL.createObjectURL(blob);
         url.current = src;

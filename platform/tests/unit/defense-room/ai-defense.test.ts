@@ -75,7 +75,7 @@ beforeEach(() => {
 });
 
 describe('вердикт ИИ-защиты для работодателя', () => {
-  it('до accepted — псевдоним, баллы и флаги; без транскрипта, записи, repoUrl и текста кандидата', async () => {
+  it('до accepted – псевдоним, баллы и флаги; без транскрипта, записи, repoUrl и текста кандидата', async () => {
     db.projectSubmission.findUnique.mockResolvedValue(submission());
     accepted(false);
     const v = await getEmployerAiDefense('co-1', 'sub-1');
@@ -90,7 +90,7 @@ describe('вердикт ИИ-защиты для работодателя', () 
     for (const leak of ['Иван', 'ivan-petrov', 'secret-name', 'cs-ai', 'calls/']) expect(json).not.toContain(leak);
   });
 
-  it('после accepted с раскрытием — транскрипт, запись и репозиторий', async () => {
+  it('после accepted с раскрытием – транскрипт, запись и репозиторий', async () => {
     db.projectSubmission.findUnique.mockResolvedValue(submission());
     accepted(true);
     const v = await getEmployerAiDefense('co-1', 'sub-1');
@@ -98,24 +98,24 @@ describe('вердикт ИИ-защиты для работодателя', () 
     expect(v.transcript).toEqual(transcript);
   });
 
-  it('сдача вакансии чужой компании — 404', async () => {
+  it('сдача вакансии чужой компании – 404', async () => {
     db.projectSubmission.findUnique.mockResolvedValue(submission({ companyId: 'co-2' }));
     accepted(true);
     await expect(getEmployerAiDefense('co-1', 'sub-1')).rejects.toMatchObject({ status: 404 });
   });
 
-  it('скрытый кандидат — 404, даже при accepted', async () => {
+  it('скрытый кандидат – 404, даже при accepted', async () => {
     db.projectSubmission.findUnique.mockResolvedValue(submission({ hidden: true }));
     accepted(true);
     await expect(getEmployerAiDefense('co-1', 'sub-1')).rejects.toMatchObject({ status: 404 });
   });
 
-  it('несуществующая сдача — 404', async () => {
+  it('несуществующая сдача – 404', async () => {
     db.projectSubmission.findUnique.mockResolvedValue(null);
     await expect(getEmployerAiDefense('co-1', 'nope')).rejects.toMatchObject({ status: 404 });
   });
 
-  it('публичный вердикт — без формулировок вопросов, мест в коде, цитат и summary', () => {
+  it('публичный вердикт – без формулировок вопросов, мест в коде, цитат и summary', () => {
     const p = publicAiDefenseVerdict(verdict);
     expect(p.items).toEqual([{ type: 'why', label: 'почему так', total: 6, passed: true }]);
     expect(p).not.toHaveProperty('quotes');
@@ -126,7 +126,7 @@ describe('вердикт ИИ-защиты для работодателя', () 
 
 describe('созвон-защита через /api/call/{id} до accepted', () => {
   const employer = { role: 'employer' as const, userId: 'u-emp', employerProfileId: 'ep-1' };
-  it('kind=defense без раскрытия — 404 (не карта глубины, не запись); после accepted — полный доступ', async () => {
+  it('kind=defense без раскрытия – 404 (не карта глубины, не запись); после accepted – полный доступ', async () => {
     db.employerProfile.findUnique.mockResolvedValue({ companyId: 'co-1' });
     db.callParticipant.count.mockResolvedValue(0);
     db.callSession.count.mockResolvedValue(1);
@@ -172,7 +172,7 @@ describe('запуск ИИ-защиты кандидатом', () => {
     candidate: { isDemo: over.isDemo ?? false },
   });
 
-  it('свой проверенный сабмит — старт с ai: true', async () => {
+  it('свой проверенный сабмит – старт с ai: true', async () => {
     db.projectSubmission.findUnique.mockResolvedValue(sub());
     db.callSession.findFirst.mockResolvedValue(null);
     start.mockResolvedValue({ sessionId: 'cs-new', resumed: false });
@@ -180,7 +180,7 @@ describe('запуск ИИ-защиты кандидатом', () => {
     expect(start).toHaveBeenCalledWith('cand-1', { mode: 'project', projectSubmissionId: 'sub-1', ai: true }, llm, {});
   });
 
-  it('чужой сабмит — 404; не проверенный — 409', async () => {
+  it('чужой сабмит – 404; не проверенный – 409', async () => {
     db.projectSubmission.findUnique.mockResolvedValue(sub({ candidateId: 'cand-2' }));
     await expect(startAiDefense('cand-1', 'sub-1', llm)).rejects.toMatchObject({ status: 404 });
     db.projectSubmission.findUnique.mockResolvedValue(sub({ status: 'running' }));
@@ -188,7 +188,7 @@ describe('запуск ИИ-защиты кандидатом', () => {
     expect(start).not.toHaveBeenCalled();
   });
 
-  it('второй запуск за сутки — 429; демо-кандидата не ограничиваем', async () => {
+  it('второй запуск за сутки – 429; демо-кандидата не ограничиваем', async () => {
     db.projectSubmission.findUnique.mockResolvedValue(sub());
     db.callSession.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({ startedAt: new Date(Date.now() - 60_000) });
     await expect(startAiDefense('cand-1', 'sub-1', llm)).rejects.toMatchObject({ status: 429, code: 'ai_defense_limit' });

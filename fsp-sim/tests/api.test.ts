@@ -50,7 +50,7 @@ describe('открытые маршруты', () => {
     expect(body.data).toHaveLength(5);
   });
 
-  it('список соревнований с фильтром и постраничностью; неверный фильтр — 400', async () => {
+  it('список соревнований с фильтром и постраничностью; неверный фильтр – 400', async () => {
     const body = await json(await get('/api/v1/events?discipline=algorithmic&per_page=3&page=2'));
     expect(body.data).toHaveLength(3);
     expect(body.meta).toMatchObject({ page: 2, per_page: 3 });
@@ -59,7 +59,7 @@ describe('открытые маршруты', () => {
     expect((await get('/api/v1/events?discipline=chess')).status).toBe(400);
   });
 
-  it('протокол: места по порядку, у команд — состав с инициалами, без полных имён', async () => {
+  it('протокол: места по порядку, у команд – состав с инициалами, без полных имён', async () => {
     const ev = dataset.events.find((e) => e.entrant_type === 'team')!;
     const body = await json(await get(`/api/v1/events/${ev.event_id}/results`));
     expect(body.data.event.event_id).toBe(ev.event_id);
@@ -86,7 +86,7 @@ describe('открытые маршруты', () => {
     expect((await fetch(`${base}/api/v1/events`, { method: 'DELETE' })).status).toBe(405);
   });
 
-  it('некорректная цель запроса (`//[`) — 400, процесс живёт', async () => {
+  it('некорректная цель запроса (`//[`) – 400, процесс живёт', async () => {
     const { createConnection } = await import('node:net');
     const port = (server.address() as AddressInfo).port;
     const raw = await new Promise<string>((resolve, reject) => {
@@ -115,7 +115,7 @@ describe('открытые маршруты', () => {
 });
 
 describe('спортсмен', () => {
-  it('без токена — 401 с WWW-Authenticate; с чужим — 401', async () => {
+  it('без токена – 401 с WWW-Authenticate; с чужим – 401', async () => {
     const r = await get('/api/v1/me');
     expect(r.status).toBe(401);
     expect(r.headers.get('www-authenticate')).toContain('fsp-id');
@@ -140,13 +140,13 @@ describe('спортсмен', () => {
     expect((await get('/api/v1/athletes', `athlete:${first.fsp_id}`)).status).toBe(403);
   });
 
-  it('партнёрский токен к /me — 403', async () => {
+  it('партнёрский токен к /me – 403', async () => {
     expect((await get('/api/v1/me', 'partner:fsp-career')).status).toBe(403);
   });
 });
 
 describe('партнёр и согласия', () => {
-  it('fsp-career читает всех (исходные согласия), demo-партнёр — только давших согласие', async () => {
+  it('fsp-career читает всех (исходные согласия), demo-партнёр – только давших согласие', async () => {
     const all = await json(await get('/api/v1/athletes?per_page=100', 'partner:fsp-career'));
     expect(all.meta.total).toBe(dataset.athletes.length);
     expect(all.data[0]).not.toHaveProperty('first_name');
@@ -162,7 +162,7 @@ describe('партнёр и согласия', () => {
     for (const a of byRegion.data) expect(a.region.code).toBe('77');
   });
 
-  it('без согласия — 403 consent_required, с согласием — профиль и достижения; несуществующий id неотличим', async () => {
+  it('без согласия – 403 consent_required, с согласием – профиль и достижения; несуществующий id неотличим', async () => {
     const r = await get(`/api/v1/athletes/${notConsentedToDemo}`, 'partner:fsp-partner-demo');
     expect(r.status).toBe(403);
     expect((await json(r)).error?.code).toBe('consent_required');

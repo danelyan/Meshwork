@@ -1,5 +1,5 @@
 // ADR 0008 «Что работодатель видит и когда»: до accepted из защит виден только вердикт ИИ-защиты; живая защита
-// видна только компании, по чьему приглашению прошла (X), и не видна чужой (Y) — ни в подборке, ни в карточке,
+// видна только компании, по чьему приглашению прошла (X), и не видна чужой (Y) – ни в подборке, ни в карточке,
 // ни через ассистента, ни в списке защит, ни в комнате. Порядок выдачи от живой защиты не зависит.
 import { GET as matches } from '@/app/api/employer/vacancies/[id]/matches/route';
 import { employerTools } from '@/server/agent/employer/tools';
@@ -76,7 +76,7 @@ describe('видимость защит работодателю (ADR 0008)', ()
     });
     subId = (await prisma.projectSubmission.create({ data: { projectTaskId: task.id, candidateId: CAND, repoUrl: 'https://github.com/dv/solution', status: 'submitted' } })).id;
 
-    // ИИ-защита (старше) и живая защита по приглашению X (свежее): раньше в выдачу шла самая свежая — живая.
+    // ИИ-защита (старше) и живая защита по приглашению X (свежее): раньше в выдачу шла самая свежая – живая.
     aiId = (await prisma.callSession.create({
       data: { candidateId: CAND, kind: 'defense', aiDefense: true, status: 'finished', finishedAt: new Date('2026-10-05T10:00:00Z'), projectSubmissionId: subId, policyVersion: 'v', transcriptJson: [], verdictJson: verdict(3, ['short_defense'], 'ИИ', '2026-10-05T10:00:00.000Z') },
     })).id;
@@ -95,7 +95,7 @@ describe('видимость защит работодателю (ADR 0008)', ()
     expect(item.score).toBe(scoreBefore);
   });
 
-  it('загрузчик ступеней: Y и общий срез — ИИ-защита, X — своя живая (свежее)', async () => {
+  it('загрузчик ступеней: Y и общий срез – ИИ-защита, X – своя живая (свежее)', async () => {
     expect((await loadStageEvidence([CAND], Y.companyId)).get(CAND)?.calls?.defense).toMatchObject({ score: 3, ai: true });
     expect((await loadStageEvidence([CAND])).get(CAND)?.calls?.defense).toMatchObject({ score: 3, ai: true });
     const own = (await loadStageEvidence([CAND], X.companyId)).get(CAND)?.calls?.defense;
@@ -113,7 +113,7 @@ describe('видимость защит работодателю (ADR 0008)', ()
     for (const out of [explain, match, search]) expect(JSON.stringify(out)).not.toMatch(/7 из 8|ВЫВОД ЖИВОЙ/);
   });
 
-  it('после accepted у Y: по-прежнему только ИИ-защита — в подборке, в списке защит и в комнате', async () => {
+  it('после accepted у Y: по-прежнему только ИИ-защита – в подборке, в списке защит и в комнате', async () => {
     const inv = await createInvitation(Y, { candidateId: CAND, vacancyId: NEED_Y, message: 'Приглашаем на собеседование', salaryFrom: 100000, salaryTo: 120000 });
     await prisma.invitation.update({ where: { id: inv.id }, data: { status: 'accepted' } });
     await discloseAccepted();

@@ -28,7 +28,7 @@ async function code(p: Promise<unknown>): Promise<string> {
 }
 
 describe('запрос и ответ', () => {
-  it('неверный запрос — bad_request без вызова провайдера', async () => {
+  it('неверный запрос – bad_request без вызова провайдера', async () => {
     const p = fake('p');
     const g = createGateway({ providers: [p.provider], budgetTokens: 100_000 });
     expect(await code(g.extract({ ...REQ, text: '   ' }))).toBe('bad_request');
@@ -48,7 +48,7 @@ describe('запрос и ответ', () => {
     expect(g.spent()).toBe(120);
   });
 
-  it('необязательное поле отсутствует или null — null', async () => {
+  it('необязательное поле отсутствует или null – null', async () => {
     const p = fake('p', ['{"name":"Иван","age":30}', '{"name":"Иван","age":30,"remote":null}']);
     const g = createGateway({ providers: [p.provider], budgetTokens: 100_000, maxTokens: 64 });
     expect((await g.extract(REQ)).data).toEqual({ name: 'Иван', age: 30, remote: null });
@@ -56,7 +56,7 @@ describe('запрос и ответ', () => {
     expect(p.requests[0]!.maxTokens).toBe(64);
   });
 
-  it('ремонт: невалидный ответ — одна повторная попытка у того же провайдера с прежним ответом', async () => {
+  it('ремонт: невалидный ответ – одна повторная попытка у того же провайдера с прежним ответом', async () => {
     const p = fake('p', ['не знаю', VALID]);
     const p2 = fake('p2', [VALID]);
     const g = createGateway({ providers: [p.provider, p2.provider], budgetTokens: 100_000 });
@@ -67,14 +67,14 @@ describe('запрос и ответ', () => {
     expect(p2.requests).toHaveLength(0);
   });
 
-  it('строгие типы: число строкой и нет обязательного поля — ремонт', async () => {
+  it('строгие типы: число строкой и нет обязательного поля – ремонт', async () => {
     const p = fake('p', ['{"name":"Иван","age":"30"}', '{"age":30}', VALID]);
     const g = createGateway({ providers: [p.provider], budgetTokens: 100_000 });
     expect(await code(g.extract(REQ))).toBe('invalid_output');
     expect(p.requests).toHaveLength(2);
   });
 
-  it('ремонт не помог — invalid_output, следующий провайдер не вызывается', async () => {
+  it('ремонт не помог – invalid_output, следующий провайдер не вызывается', async () => {
     const p = fake('p', ['{oops', '[1,2]']);
     const p2 = fake('p2', [VALID]);
     const g = createGateway({ providers: [p.provider, p2.provider], budgetTokens: 100_000 });
@@ -84,7 +84,7 @@ describe('запрос и ответ', () => {
 });
 
 describe('провайдеры', () => {
-  it('timeout, rate_limit, server — фолбэк на следующего по порядку', async () => {
+  it('timeout, rate_limit, server – фолбэк на следующего по порядку', async () => {
     const a = fake('a', [new ProviderError('timeout')]);
     const b = fake('b', [new ProviderError('rate_limit')]);
     const c = fake('c', [new ProviderError('server')]);
@@ -93,14 +93,14 @@ describe('провайдеры', () => {
     expect((await g.extract(REQ)).provider).toBe('d');
   });
 
-  it('все упали — all_providers_failed', async () => {
+  it('все упали – all_providers_failed', async () => {
     const a = fake('a', [new ProviderError('server')]);
     const b = fake('b', [new ProviderError('timeout')]);
     const g = createGateway({ providers: [a.provider, b.provider], budgetTokens: 100_000 });
     expect(await code(g.extract(REQ))).toBe('all_providers_failed');
   });
 
-  it('auth и bad_request — provider_rejected, без перехода к следующему', async () => {
+  it('auth и bad_request – provider_rejected, без перехода к следующему', async () => {
     for (const kind of ['auth', 'bad_request'] as const) {
       const a = fake('a', [new ProviderError(kind)]);
       const b = fake('b', [VALID]);
@@ -112,7 +112,7 @@ describe('провайдеры', () => {
 });
 
 describe('персональные данные', () => {
-  it('email и телефоны не уходят в модель; плейсхолдеры по порядку; в результате — исходные значения', async () => {
+  it('email и телефоны не уходят в модель; плейсхолдеры по порядку; в результате – исходные значения', async () => {
     const text = 'Пишите на ivan.petrov@mail.ru или звоните +7 (912) 345-67-89, запасной 8 916 000 11 22. Ещё раз: ivan.petrov@mail.ru';
     const fields: Field[] = [
       { name: 'email', type: 'string', required: true },
@@ -136,7 +136,7 @@ describe('персональные данные', () => {
 });
 
 describe('бюджет', () => {
-  it('оценка больше бюджета — budget_exceeded без вызова', async () => {
+  it('оценка больше бюджета – budget_exceeded без вызова', async () => {
     const p = fake('p', [VALID]);
     const g = createGateway({ providers: [p.provider], budgetTokens: 100 });
     expect(await code(g.extract(REQ))).toBe('budget_exceeded');
@@ -162,7 +162,7 @@ describe('бюджет', () => {
 });
 
 describe('кэш', () => {
-  it('повтор — из кэша: cached, 0 токенов, без вызова; изменение результата не портит кэш', async () => {
+  it('повтор – из кэша: cached, 0 токенов, без вызова; изменение результата не портит кэш', async () => {
     const p = fake('p', [VALID]);
     const g = createGateway({ providers: [p.provider], budgetTokens: 100_000 });
     const a = await g.extract(REQ);
@@ -180,7 +180,7 @@ describe('кэш', () => {
     expect((await g.extract(REQ)).cached).toBe(false);
   });
 
-  it('одновременные одинаковые запросы — один вызов провайдера', async () => {
+  it('одновременные одинаковые запросы – один вызов провайдера', async () => {
     let release!: () => void;
     const gate = new Promise<void>((r) => (release = r));
     const p = fake('p', [async () => (await gate, { text: VALID, inputTokens: 10, outputTokens: 5 })]);
@@ -196,7 +196,7 @@ describe('кэш', () => {
 
 describe('DESIGN.md', () => {
   it('разделы «Решения», «Компромиссы», «Границы применимости» не короче 200 символов', () => {
-    // new URL(…) в jsdom — URL из jsdom; путь считаем от файла теста.
+    // new URL(…) в jsdom – URL из jsdom; путь считаем от файла теста.
     const file = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../DESIGN.md');
     expect(existsSync(file)).toBe(true);
     const text = readFileSync(file, 'utf8');

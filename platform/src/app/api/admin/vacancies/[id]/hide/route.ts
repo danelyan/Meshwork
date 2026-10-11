@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 const HideBody = z.object({ hidden: z.boolean(), reason: z.string().max(1000) });
 
 /**
- * Скрыть вакансию от кандидатов (`hidden: true`) или вернуть (`false`) — owner, moderator. Скрытие держится
+ * Скрыть вакансию от кандидатов (`hidden: true`) или вернуть (`false`) – owner, moderator. Скрытие держится
  * в очереди красных флагов (hidden), поэтому разархивирование вакансии работодателем его не снимает.
  */
 export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {

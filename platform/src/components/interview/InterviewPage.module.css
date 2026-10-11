@@ -1,4 +1,4 @@
-/* ИИнтервью — порт interview.html мокапа (docs/design-spec.md § 11) на токены дизайн-системы. */
+/* ИИнтервью – порт interview.html мокапа (docs/design-spec.md § 11) на токены дизайн-системы. */
 .page { display: flex; flex-direction: column; min-height: calc(100vh - 80px); color: var(--ink); }
 .top { display: flex; align-items: center; gap: 20px; padding: 14px var(--page-pad); border-bottom: 1px solid var(--line); background: var(--glass); backdrop-filter: var(--blur); position: sticky; top: 0; z-index: 5; }
 .title { display: flex; flex-direction: column; gap: 2px; }

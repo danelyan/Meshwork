@@ -9,10 +9,10 @@ import { type AuditAction, DEMO_READONLY_MESSAGE, can } from './permissions';
 import type { StaffContext } from './session';
 
 /**
- * Журнал действий персонала (ADR 0009, принцип 3 E-08): только INSERT. Строки не правятся и не удаляются —
- * в коде нет update/delete модели, в БД — триггер `AdminAuditLog_immutable`.
+ * Журнал действий персонала (ADR 0009, принцип 3 E-08): только INSERT. Строки не правятся и не удаляются –
+ * в коде нет update/delete модели, в БД – триггер `AdminAuditLog_immutable`.
  *
- * Вызов внутри транзакции действия — тогда строка журнала и само действие коммитятся или откатываются вместе:
+ * Вызов внутри транзакции действия – тогда строка журнала и само действие коммитятся или откатываются вместе:
  *
  *   await prisma.$transaction(async (tx) => {
  *     const before = await tx.complaint.findUniqueOrThrow({ where: { id } });
@@ -30,7 +30,7 @@ export interface AuditTarget {
 }
 
 export interface AuditInput {
-  /** Сотрудник (`requireStaff`/`requirePageStaff`); null — системное действие (CLI). */
+  /** Сотрудник (`requireStaff`/`requirePageStaff`); null – системное действие (CLI). */
   actor: Pick<StaffContext, 'staffId' | 'ip'> | null;
   action: AuditAction;
   target?: AuditTarget | null;
@@ -42,7 +42,7 @@ export interface AuditInput {
 function json(v: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
   if (v === undefined) return undefined;
   if (v === null) return Prisma.JsonNull;
-  // Date, Decimal и т.п. — в JSON как при ответе API.
+  // Date, Decimal и т.п. – в JSON как при ответе API.
   return JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
 }
 
@@ -77,13 +77,13 @@ export interface RevealInput {
   actor: StaffContext;
   target: AuditTarget;
   reason: string | null | undefined;
-  /** Какие поля раскрыты: ['email', 'phone', 'name'] — пишутся в журнал (значения — нет). */
+  /** Какие поля раскрыты: ['email', 'phone', 'name'] – пишутся в журнал (значения – нет). */
   fields: string[];
 }
 
 /**
  * Раскрыть ПДн (принцип 4 E-08): право `reveal_pii`, обязательная причина, строка журнала до чтения данных.
- * `load` читает сами данные — его результат возвращается вызывающему и в журнал не попадает.
+ * `load` читает сами данные – его результат возвращается вызывающему и в журнал не попадает.
  *
  *   const pii = await revealPii({ actor: staff, target: { type: 'candidate', id }, reason, fields: ['email', 'phone'] },
  *     () => prisma.candidate.findUniqueOrThrow({ where: { id }, select: { email: true, phone: true } }));

@@ -72,7 +72,7 @@ describe('extractClaims (stub LLM)', () => {
     const v = verifyClaims(out, [d], CATALOG);
     const byId = new Map(v.accepted.map((c) => [c.catalogId, c]));
     expect(byId.get('be.cache')?.wording).toBe('Кэшировала справочники в Redis');
-    // «GitLab CI» в цитате нет — формулировка из самой цитаты; statement — каталожная
+    // «GitLab CI» в цитате нет – формулировка из самой цитаты; statement – каталожная
     expect(byId.get('common.git')?.wording).toBe('Работала в Git с ветками');
     expect(byId.get('common.git')?.statement).toBe(CATALOG.find((e) => e.id === 'common.git')?.statement);
   });
@@ -82,7 +82,7 @@ describe('extractClaims (stub LLM)', () => {
     expect(s.properties.claims.items.required).toContain('wording');
   });
 
-  it('JSON Schema провайдеру: catalogId — enum только показанных ID', () => {
+  it('JSON Schema провайдеру: catalogId – enum только показанных ID', () => {
     const s = JSON.stringify(extractorJsonSchema(['be.cache', 'common.git']));
     expect(s).toContain('"enum":["be.cache","common.git"]');
   });
@@ -177,7 +177,7 @@ describe('extractClaims (stub LLM)', () => {
     expect(user).not.toContain('Ignore previous');
   });
 
-  it('длинный документ — по частям, нумерация строк общая, ref верный', async () => {
+  it('длинный документ – по частям, нумерация строк общая, ref верный', async () => {
     const cap = capture();
     registerStubResponse('extractor', (req) => {
       cap.push(req);
@@ -196,7 +196,7 @@ describe('extractClaims (stub LLM)', () => {
     const catalog = catalogFromFile();
     registerStubResponse('extractor', honestFixture(catalog));
     const base = [
-      '# Иван — Backend',
+      '# Иван – Backend',
       '## Опыт',
       '- Добавил кэширование справочников в Redis с инвалидацией по событию',
       '- Писал SQL-запросы с JOIN и GROUP BY для отчётов',

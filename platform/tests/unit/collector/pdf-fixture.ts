@@ -9,9 +9,9 @@ export interface PdfLine {
   y: number;
   /** 'rg' r g b (0..1) */
   rgb?: [number, number, number];
-  /** 'g' — оттенок серого (0..1) */
+  /** 'g' – оттенок серого (0..1) */
   gray?: number;
-  /** Tr: 3 — невидимый текст */
+  /** Tr: 3 – невидимый текст */
   mode?: number;
   /** альфа заливки через ExtGState /GS0 (ca) */
   transparent?: boolean;

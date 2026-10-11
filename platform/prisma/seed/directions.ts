@@ -8,10 +8,10 @@ import { DEMO_POOL_CATEGORIES } from './pool-categories';
 
 /**
  * Сид lane directions (ADR 0003, дополнение 10.10):
- * 1. Справочник Subcategory — 17 подкатегорий из src/lib/directions.ts (единый источник для кода и UI);
- *    статус active — по подкатегории есть тест (≥ 8 семейств), остальные planned.
- * 2. Демо-кандидаты направления ai — по одному на грейд и ещё по одному, без и с ФСП (вымышленные, isDemo).
- *    Категории — ДЕМО (поставлены сидом, тест не проходили), как в employer-pool.ts. Утверждения — из ai.*
+ * 1. Справочник Subcategory – 17 подкатегорий из src/lib/directions.ts (единый источник для кода и UI);
+ *    статус active – по подкатегории есть тест (≥ 8 семейств), остальные planned.
+ * 2. Демо-кандидаты направления ai – по одному на грейд и ещё по одному, без и с ФСП (вымышленные, isDemo).
+ *    Категории – ДЕМО (поставлены сидом, тест не проходили), как в employer-pool.ts. Утверждения – из ai.*
  *    и common.* каталога. Идемпотентно: upsert по стабильным id `demo-ai-<grade>-<n>`; префикс не demo-pool-,
  *    чтобы счётчики пула в тестах employer не менялись.
  */
@@ -44,8 +44,8 @@ export const DEMO_POOL_AI: DemoProfile[] = [
 
 /**
  * Подкатегории демо-данных Backend/Frontend (сиды до теста на подкатегорию их не знали): потребность и
- * подборка идут по подкатегории (ADR 0003, дополнение 10.10 15:50). Явные — по смыслу профиля
- * (платежи, очереди → integrations); остальные — первая подкатегория направления. ДЕМО, как и сами профили.
+ * подборка идут по подкатегории (ADR 0003, дополнение 10.10 15:50). Явные – по смыслу профиля
+ * (платежи, очереди → integrations); остальные – первая подкатегория направления. ДЕМО, как и сами профили.
  */
 export const DEMO_SUBCATEGORY: Record<string, string> = {
   'demo-vac-be-m-1': 'backend.integrations',
@@ -69,7 +69,7 @@ async function backfillDemoSubcategories(prisma: PrismaClient): Promise<number> 
     await prisma.candidate.update({ where: { id: c.id }, data: { subcategoryId: sub } });
     n++;
   }
-  // Демо-категории — той же подкатегории, что профиль (категория = направление × подкатегория × грейд).
+  // Демо-категории – той же подкатегории, что профиль (категория = направление × подкатегория × грейд).
   const cats = await prisma.candidateCategory.findMany({ where: { subcategoryId: null, candidate: { isDemo: true } }, select: { id: true, specialization: true, candidate: { select: { subcategoryId: true } } } });
   for (const c of cats) {
     const sub = c.candidate.subcategoryId;

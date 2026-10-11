@@ -34,13 +34,13 @@ describe('devtools guard: только localhost', () => {
     expect(isDevHostFor('localhost', { ...dev, DEVTOOLS: v })).toBe(false);
   });
 
-  it('DEVTOOLS=true или не задан — не мешает', () => {
+  it('DEVTOOLS=true или не задан – не мешает', () => {
     expect(isDevHostFor('localhost', { ...dev, DEVTOOLS: 'true' })).toBe(true);
     expect(isDevHostFor('localhost', {})).toBe(true);
   });
 });
 
-describe('devtools guard: DEVTOOLS — через схему окружения (env.ts)', () => {
+describe('devtools guard: DEVTOOLS – через схему окружения (env.ts)', () => {
   const base = { DATABASE_URL: 'postgresql://x@localhost/db', SESSION_SECRET: 'x'.repeat(32) };
   afterEach(() => {
     vi.unstubAllEnvs();

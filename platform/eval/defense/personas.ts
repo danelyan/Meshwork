@@ -1,4 +1,4 @@
-// Валидация ступени 3 ADR 0003 — защита проекта: три персоны-кандидата защищают свои репозитории-фикстуры
+// Валидация ступени 3 ADR 0003 – защита проекта: три персоны-кандидата защищают свои репозитории-фикстуры
 // (tests/fixtures/defense/*) через сервисный слой defense-room (startDefenseRoom → candidateTurn →
 // finishDefenseRoom). Вопросы QLC строятся из кода фикстуры, оценщик делает 3 прогона и берёт медиану.
 // Сабмит проекта «сильный»: resultJson в формате lane project, tests.score = 0.95. Метрики: балл рубрики,
@@ -9,7 +9,7 @@
 //   npm run eval:defense                  # живая модель из .env; uptime перед запуском
 //   npm run eval:defense -- --defenses 1 --persona own
 //
-// Честная граница: персоны — LLM-актёры, не люди; три разных репозитория (персона и проект не разделены);
+// Честная граница: персоны – LLM-актёры, не люди; три разных репозитория (персона и проект не разделены);
 // n = 3 защиты на персону.
 import { STUB } from '../stages/boot';
 
@@ -22,7 +22,7 @@ import { defenseTables, defenseTuningTable, diffMeter, summarizeDefensePersona, 
 import { argValue, createCandidate, personaAnswer, prisma, providers, runTag, snapshot, writeResult, type PersonaProfile } from '../stages/runtime';
 
 const FIXTURES = path.join(process.cwd(), 'tests/fixtures/defense');
-/** Доля скрытых тестов проекта — «сильный проект» (порог флага в verdict.ts — 0.8). */
+/** Доля скрытых тестов проекта – «сильный проект» (порог флага в verdict.ts – 0.8). */
 const PROJECT_SCORE = 0.95;
 
 interface Fixture {
@@ -88,7 +88,7 @@ function stubAnswer(f: Fixture, question: string): string {
 
 const MAX_TURNS = 14;
 
-/** Задание-потребность под сабмит (FK ProjectSubmission → ProjectTask): компания, потребность и шаблон — служебные. */
+/** Задание-потребность под сабмит (FK ProjectSubmission → ProjectTask): компания, потребность и шаблон – служебные. */
 async function ensureEvalTask(fixtureId: string): Promise<string> {
   const taskId = `eval-task-${fixtureId}`;
   await prisma.company.upsert({ where: { id: 'eval-co' }, update: {}, create: { id: 'eval-co', name: 'Eval Co' } });
@@ -126,7 +126,7 @@ async function runDefense(f: Fixture, snap: RepoSnapshot, n: number, tag: string
         commitSha: f.commitSha,
         aiLogText: f.aiLog,
         status: 'checked',
-        // Формат lane project (project/schemas.ts ResultJson): tests — сводка, скрытые тесты — списком.
+        // Формат lane project (project/schemas.ts ResultJson): tests – сводка, скрытые тесты – списком.
         resultJson: { tests: { passed: 19, total: 20, score: PROJECT_SCORE }, hiddenTests: hidden, visibleTests: [], lint: { status: 'skipped', note: '' } },
       },
     });
@@ -176,7 +176,7 @@ async function main(): Promise<void> {
   const personas = PERSONAS.filter((p) => !only || only.split(',').includes(p.id));
   const tag = `${STUB ? 's' : 'l'}${runTag()}`;
   const llm = providers();
-  console.log(`eval:defense — провайдер ${llm.platform.name}/${llm.platform.model}, персон ${personas.length}, защит на персону ${defenses}`);
+  console.log(`eval:defense – провайдер ${llm.platform.name}/${llm.platform.model}, персон ${personas.length}, защит на персону ${defenses}`);
   const obs: DefenseObs[] = [];
   for (const p of personas) {
     const { fixture, snapshot: snap } = loadFixture(p.id);
@@ -185,7 +185,7 @@ async function main(): Promise<void> {
       const o = await runDefense(fixture, snap, n, tag, llm);
       obs.push(o);
       console.log(
-        `  ${p.id}${n}: ${o.error ? `ОШИБКА ${o.error}` : `сумма ${o.total} (прогоны ${o.runs.join('/')}) ${o.passed ? 'прошёл' : 'не прошёл'} · флаги ${o.flags.join(',') || '—'} · ответов ${o.answered}, уточнений ${o.followUps}, QLC ${o.generator}`} · LLM ${o.platform.calls}+${o.persona_llm.calls} · ${Math.round((Date.now() - t0) / 1000)} с`,
+        `  ${p.id}${n}: ${o.error ? `ОШИБКА ${o.error}` : `сумма ${o.total} (прогоны ${o.runs.join('/')}) ${o.passed ? 'прошёл' : 'не прошёл'} · флаги ${o.flags.join(',') || '–'} · ответов ${o.answered}, уточнений ${o.followUps}, QLC ${o.generator}`} · LLM ${o.platform.calls}+${o.persona_llm.calls} · ${Math.round((Date.now() - t0) / 1000)} с`,
       );
     }
   }

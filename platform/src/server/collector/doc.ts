@@ -23,7 +23,7 @@ export interface BuildDocInput {
 }
 
 /**
- * lane resume-fields: строки с контактами ДО маскирования — только в памяти процесса (WeakMap, в JSON и БД
+ * lane resume-fields: строки с контактами ДО маскирования – только в памяти процесса (WeakMap, в JSON и БД
  * не попадают). Нужны, чтобы при загрузке резюме предложить кандидату его же контакт (server/resume-fields).
  */
 const RAW_CONTACT_LINES = new WeakMap<ExtractedDoc, RawLine[]>();

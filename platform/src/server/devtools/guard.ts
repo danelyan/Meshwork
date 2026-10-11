@@ -19,7 +19,7 @@ export function hostnameOf(host: string | null | undefined): string | null {
 
 /**
  * Проверка без обращения к запросу: окружение и значение Host. Выключатель DEVTOOLS берётся из проверенного
- * окружения (`getEnv()`, схема в env.ts); явный `env` — сырые значения для тестов, разбор тот же.
+ * окружения (`getEnv()`, схема в env.ts); явный `env` – сырые значения для тестов, разбор тот же.
  * NODE_ENV читается напрямую: в production выходим раньше, не обращаясь к схеме окружения.
  */
 export function isDevHostFor(host: string | null | undefined, env?: Record<string, string | undefined>): boolean {
@@ -31,7 +31,7 @@ export function isDevHostFor(host: string | null | undefined, env?: Record<strin
 }
 
 /**
- * Дебаг-инструменты (панель и /api/dev/*) только на localhost: не production, Host — localhost / 127.0.0.1 / [::1],
+ * Дебаг-инструменты (панель и /api/dev/*) только на localhost: не production, Host – localhost / 127.0.0.1 / [::1],
  * выключатель env DEVTOOLS=false. Для server components (Next 15: `headers()` асинхронная).
  * На проде возвращается до `headers()`, чтобы не переводить страницы в динамические.
  */

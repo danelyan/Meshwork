@@ -31,7 +31,7 @@ import { orNotFound } from '../../listing';
 
 function integrityLevel(v: unknown): string {
   const lvl = (v as { level?: unknown } | null)?.level;
-  return typeof lvl === 'string' ? lvl : '—';
+  return typeof lvl === 'string' ? lvl : '–';
 }
 
 /** Карточка кандидата. Категорию и грейд админ не меняет вообще (принцип 2 E-08): их ставит только тест. */
@@ -49,11 +49,11 @@ export default async function AdminCandidatePage({ params }: { params: Promise<{
           <dt>id</dt>
           <dd className={styles.mono}>{c.id}</dd>
           <dt>Почта</dt>
-          <dd className={styles.mono}>{c.email ?? '—'}</dd>
+          <dd className={styles.mono}>{c.email ?? '–'}</dd>
           <dt>Категория</dt>
-          <dd>{cat ? `${SPEC_LABEL[cat.specialization]} · ${GRADE_LABEL[cat.grade]} (с ${fmtDate(cat.confirmedAt)})` : 'нет — категорию даёт только тест'}</dd>
+          <dd>{cat ? `${SPEC_LABEL[cat.specialization]} · ${GRADE_LABEL[cat.grade]} (с ${fmtDate(cat.confirmedAt)})` : 'нет – категорию даёт только тест'}</dd>
           <dt>Направление</dt>
-          <dd>{c.specialization ? SPEC_LABEL[c.specialization] : '—'}</dd>
+          <dd>{c.specialization ? SPEC_LABEL[c.specialization] : '–'}</dd>
           <dt>ФСП</dt>
           <dd>{FSP_LABEL[c.fspState]}</dd>
           <dt>Приватность</dt>
@@ -81,15 +81,15 @@ export default async function AdminCandidatePage({ params }: { params: Promise<{
           <h2 className={styles.sectionTitle}>Анкета</h2>
           <dl className={styles.kv}>
             <dt>Цель</dt>
-            <dd>{c.profile.goal ?? '—'}</dd>
+            <dd>{c.profile.goal ?? '–'}</dd>
             <dt>Заявленный грейд</dt>
-            <dd>{c.profile.claimedGrade ? GRADE_LABEL[c.profile.claimedGrade] : '—'}</dd>
+            <dd>{c.profile.claimedGrade ? GRADE_LABEL[c.profile.claimedGrade] : '–'}</dd>
             <dt>Стек</dt>
-            <dd>{c.profile.stack.join(', ') || '—'}</dd>
+            <dd>{c.profile.stack.join(', ') || '–'}</dd>
             <dt>Город</dt>
-            <dd>{c.profile.city ?? '—'}</dd>
+            <dd>{c.profile.city ?? '–'}</dd>
             <dt>Стаж</dt>
-            <dd>{c.profile.experienceYears ?? '—'}</dd>
+            <dd>{c.profile.experienceYears ?? '–'}</dd>
           </dl>
         </Panel>
       )}
@@ -129,7 +129,7 @@ export default async function AdminCandidatePage({ params }: { params: Promise<{
       <Panel className={styles.section}>
         <h2 className={styles.sectionTitle}>Утверждения ({c.claims.length})</h2>
         <p className={styles.muted}>
-          Уровни доказательности: {Object.entries(c.claimsByLevel).map(([k, n]) => `${EVIDENCE_LABEL[k] ?? k} ${n}`).join(', ') || '—'}
+          Уровни доказательности: {Object.entries(c.claimsByLevel).map(([k, n]) => `${EVIDENCE_LABEL[k] ?? k} ${n}`).join(', ') || '–'}
         </p>
         <table className={styles.table}>
           <tbody>

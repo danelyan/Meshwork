@@ -26,8 +26,7 @@ export const CANDIDATE_NAV: NavItem[] = [
   { href: '/career', icon: 'vacancies', label: 'Вакансии' },
   { href: '/companies', icon: 'companies', label: 'Компании' },
   { href: '/profile', icon: 'profile', label: 'Профиль', header: true },
-  // Созвон с ИИ живёт в окне консультанта (единая точка, решение владельца 12.10): пункт открывает его сразу в режиме созвона.
-  { href: '/consultant?call=1', icon: 'call', label: 'Созвон с ИИ' },
+  { href: '/interview', icon: 'call', label: 'Созвон с ИИ' },
   { href: '/saved', icon: 'saved', label: 'Избранное' },
   { href: '/settings', icon: 'settings', label: 'Настройки' },
 ];
@@ -56,7 +55,7 @@ export function navFor(role: SessionRole | null): NavItem[] {
   return [];
 }
 
-/** Ссылки роли; гость и `pending` (роль ещё не выбрана) — без ссылок. */
+/** Ссылки роли; гость и `pending` (роль ещё не выбрана) – без ссылок. */
 export function linksFor(role: SessionRole | null): NavLink[] {
   if (role === 'candidate') return CANDIDATE_LINKS;
   if (role === 'employer') return EMPLOYER_LINKS;
@@ -78,7 +77,7 @@ const under = (pathname: string, href: string) => pathname === href || pathname.
 
 /**
  * `href` вкладки, активной на маршруте: прямое совпадение (самое длинное), иначе псевдоним подраздела.
- * `sections` — все разделы роли (сайдбар): у раздела со своим пунктом псевдонима нет, иначе шапка и сайдбар
+ * `sections` – все разделы роли (сайдбар): у раздела со своим пунктом псевдонима нет, иначе шапка и сайдбар
  * подсвечивали бы разное («Профиль» и «Вакансии» на одном экране).
  */
 export function activeLinkHref(pathname: string, links: NavLink[], sections: NavLink[] = []): string | undefined {
@@ -95,4 +94,15 @@ export function activeLinkHref(pathname: string, links: NavLink[], sections: Nav
 export function dashboardPath(pathname: string): boolean {
   return pathname === '/employer' || pathname.startsWith('/employer/')
     || CANDIDATE_NAV.some(({ href }) => (pathname === href || pathname.startsWith(`${href}/`)));
+}
+
+/**
+ * Полоса разделов кабинета на узком экране прокручивается внутри себя. Возвращает `scrollLeft`, при котором пункт
+ * (`linkLeft`, `linkWidth` - в координатах содержимого полосы) стоит по центру видимой части; значение зажато
+ * в пределы прокрутки. Полоса помещается целиком - 0.
+ */
+export function navScrollToShow(nav: { clientWidth: number; scrollWidth: number }, linkLeft: number, linkWidth: number): number {
+  const max = nav.scrollWidth - nav.clientWidth;
+  if (max <= 0) return 0;
+  return Math.min(max, Math.max(0, Math.round(linkLeft - (nav.clientWidth - linkWidth) / 2)));
 }

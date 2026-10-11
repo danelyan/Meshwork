@@ -27,9 +27,9 @@ const STATUS: Record<DepthStatus, string> = {
 };
 
 /**
- * Карта глубины созвона (ADR 0003): тема → заявлено → копнули → подтвердилось. Баллы — медиана прогонов
- * слепого оценщика по рубрике A-02 (0–2 по каждому признаку). «Не определено» — прогоны разошлись даже
- * после дополнительного вопроса; «не проверено» — по теме не спрашивали. Цитата — только для full-доступа.
+ * Карта глубины созвона (ADR 0003): тема → заявлено → копнули → подтвердилось. Баллы – медиана прогонов
+ * слепого оценщика по рубрике A-02 (0–2 по каждому признаку). «Не определено» – прогоны разошлись даже
+ * после дополнительного вопроса; «не проверено» – по теме не спрашивали. Цитата – только для full-доступа.
  */
 export function DepthMap({ verdict, dark = false }: { verdict: CallVerdict | PublicCallVerdict; dark?: boolean }) {
   const items = verdict.depthMap as Item[];
@@ -60,15 +60,15 @@ export function DepthMap({ verdict, dark = false }: { verdict: CallVerdict | Pub
                   ) : (
                     <>
                       <span>
-                        {d.probed} {d.probed === 1 ? 'вопрос' : d.probed < 5 ? 'вопроса' : 'вопросов'}, уровень «{LEVEL[d.maxLevel] ?? d.maxLevel}»
+                        копнули: {d.probed} {d.probed === 1 ? 'вопрос' : d.probed < 5 ? 'вопроса' : 'вопросов'}, до уровня «{LEVEL[d.maxLevel] ?? d.maxLevel}»
                         {d.extraProbe ? ', с дополнительным' : ''}
                       </span>
-                      <span>{d.total} из 8 баллов</span>
+                      <span>{d.total} из 8</span>
                     </>
                   )}
                 </div>
                 {status === 'inconclusive' && (
-                  <p className={styles.note}>Оценка по теме осталась неоднозначной и после дополнительного вопроса - тема не засчитана и уровень утверждения не поднимает.</p>
+                  <p className={styles.note}>Прогоны оценщика разошлись и после дополнительного вопроса - тема не засчитана и не поднимает уровень утверждения.</p>
                 )}
                 {!skipped && (
                   <div className={styles.scores} aria-label="Баллы по рубрике">

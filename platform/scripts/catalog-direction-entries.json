@@ -1,5 +1,5 @@
 {
-  "_comment": "Записи каталога направлений (lane directions, ADR 0003 дополнение 10.10) поверх личного каталога-Markdown владельца. scripts/catalog-to-json.mjs добавляет entries в конец и дописывает веса common.* для направлений из commonWeights. Предложение агента, не каталог владельца: ревью владельцем — до сдачи.",
+  "_comment": "Записи каталога направлений (lane directions, ADR 0003 дополнение 10.10) поверх личного каталога-Markdown владельца. scripts/catalog-to-json.mjs добавляет entries в конец и дописывает веса common.* для направлений из commonWeights. Предложение агента, не каталог владельца: ревью владельцем – до сдачи.",
   "entries": [
     {
       "id": "ai.prompting",
@@ -311,7 +311,7 @@
     {
       "id": "ai.ml-metrics",
       "specialization": "ai",
-      "statement": "Выбирал и считал метрики модели: precision, recall, F1, ROC-AUC, MAE — и объяснял, какая важна для задачи",
+      "statement": "Выбирал и считал метрики модели: precision, recall, F1, ROC-AUC, MAE – и объяснял, какая важна для задачи",
       "grades": [
         "junior",
         "middle"

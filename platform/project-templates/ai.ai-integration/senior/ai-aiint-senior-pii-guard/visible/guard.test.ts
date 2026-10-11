@@ -36,7 +36,7 @@ describe('охранный шлюз (visible)', () => {
     expect(m.seen).toHaveLength(1);
   });
 
-  it('бюджет исчерпан — budget_exceeded без вызова модели', async () => {
+  it('бюджет исчерпан – budget_exceeded без вызова модели', async () => {
     const m = model('main', 'ответ', 900);
     const guard = createGuard({ primary: m, now: () => 1000, budget: { tokens: 1000, periodMs: 3_600_000 }, maxTokens: 100 });
     await guard.ask({ userId: 'u1', prompt: 'первый' });

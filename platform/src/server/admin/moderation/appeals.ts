@@ -16,9 +16,9 @@ import { notifyComplaintOutcome } from './complaints';
 import { appealOutcomeMail, sendAfterDecision } from './mails';
 
 /**
- * Апелляция работодателя на санкцию (E-08, фаза 2). Санкция — производная от жалоб за окно (antifraud.invitationSanction),
+ * Апелляция работодателя на санкцию (E-08, фаза 2). Санкция – производная от жалоб за окно (antifraud.invitationSanction),
  * своего поля «снять санкцию» в схеме нет. Поэтому удовлетворённая апелляция = модератор отклоняет (dismissed) выбранные
- * открытые жалобы, на которых держится санкция, — тот же механизм, что и решение по одной жалобе, в одной транзакции
+ * открытые жалобы, на которых держится санкция, – тот же механизм, что и решение по одной жалобе, в одной транзакции
  * под advisory-lock отправки. Подтверждённые модератором жалобы (upheld) апелляцией не снимаются.
  */
 
@@ -47,7 +47,7 @@ export async function listCompanyAppeals(companyId: string): Promise<CompanyAppe
   return (await prisma.sanctionAppeal.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 20 })).map(view);
 }
 
-/** Оспорить санкцию. Санкции нет — 409; уже есть открытая апелляция — 409. Проверка и вставка под lock компании. */
+/** Оспорить санкцию. Санкции нет – 409; уже есть открытая апелляция – 409. Проверка и вставка под lock компании. */
 export async function createSanctionAppeal(ctx: { companyId: string; employerProfileId: string }, rawText: string): Promise<CompanyAppealView> {
   const cfg = await sanctionConfig();
   const text = rawText.trim();
@@ -66,7 +66,7 @@ export async function createSanctionAppeal(ctx: { companyId: string; employerPro
 export interface AppealQueueItem extends CompanyAppealView {
   company: { id: string; name: string };
   sanction: InvitationSanction;
-  /** Жалобы за окно, на которых держится санкция (кроме dismissed): кандидаты — псевдонимы. */
+  /** Жалобы за окно, на которых держится санкция (кроме dismissed): кандидаты – псевдонимы. */
   complaints: { id: string; status: string; reason: string; comment: string | null; candidate: string; createdAt: string }[];
 }
 
@@ -104,9 +104,9 @@ export interface AppealResolution {
 }
 
 /**
- * Решение по апелляции. upheld — отклонить жалобы `complaintIds` (по умолчанию все открытые жалобы компании за окно);
- * в списке можно указать только открытые жалобы этой компании за окно, иначе 400. rejected — санкция не меняется.
- * Журнал: строка на апелляцию и строка на каждую отклонённую жалобу. Письма — после COMMIT.
+ * Решение по апелляции. upheld – отклонить жалобы `complaintIds` (по умолчанию все открытые жалобы компании за окно);
+ * в списке можно указать только открытые жалобы этой компании за окно, иначе 400. rejected – санкция не меняется.
+ * Журнал: строка на апелляцию и строка на каждую отклонённую жалобу. Письма – после COMMIT.
  */
 export async function resolveAppeal(staff: StaffContext, id: string, decision: 'upheld' | 'rejected', rawReason: string, complaintIds?: string[]): Promise<AppealResolution> {
   const cfg = await sanctionConfig();

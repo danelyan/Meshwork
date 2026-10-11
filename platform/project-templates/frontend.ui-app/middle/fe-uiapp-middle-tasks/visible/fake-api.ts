@@ -17,7 +17,7 @@ export function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-/** API, каждый вызов которого возвращает Deferred из очереди — тест сам решает, когда и чем ответить. */
+/** API, каждый вызов которого возвращает Deferred из очереди – тест сам решает, когда и чем ответить. */
 export function controlledApi() {
   const calls: { method: keyof TasksApi; args: unknown[]; d: Deferred<unknown> }[] = [];
   const make = (method: keyof TasksApi) => (...args: unknown[]) => {

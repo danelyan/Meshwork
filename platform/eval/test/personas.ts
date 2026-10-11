@@ -1,5 +1,5 @@
 // Персоны-тестировщики через боевой движок теста на грейд (ADR-0002, дополнение 10.10), без LLM и без БД.
-// Персона — легенда и заранее заданная модель знаний: по каждому из 12 шаблонов специализации
+// Персона – легенда и заранее заданная модель знаний: по каждому из 12 шаблонов специализации
 // «решит» (1), «монета» (0,5) или «не решит» (0). Цикл тот же, что в service.ts и eval/test/run.ts:
 // policy.selectNext по пулу фазы / nextStep (основная фаза + дозадавание Junior) / decide, параметры a, b
 // из кода (экспертные).
@@ -12,10 +12,10 @@
 //   npm run eval:test-personas -- --spec ai                     # только персоны направления (ADR 0003, 10.10)
 //   npx tsx eval/test/personas.ts --subcategory backend.web-api  # персоны одной подкатегории (ADR-0003, 10.10 15:50)
 //   npx tsx eval/test/personas.ts --spec engineering            # все персоны направления, включая подкатегорийные
-//   npx tsx eval/test/personas.ts --sub engineering.devops      # --sub — синоним --subcategory
+//   npx tsx eval/test/personas.ts --sub engineering.devops      # --sub – синоним --subcategory
 //
-// Честная граница: это симуляция моделей знаний персон агентом, не живые люди. Матрицы знаний —
-// наша гипотеза (легенды: fsp/docs/research/22-persona-calibration.md владельца), a и b — экспертные.
+// Честная граница: это симуляция моделей знаний персон агентом, не живые люди. Матрицы знаний –
+// наша гипотеза (легенды: fsp/docs/research/22-persona-calibration.md владельца), a и b – экспертные.
 // В отличие от run.ts, вероятность ответа зависит не от θ, а от профиля знаний: так видно, что
 // порог пропускает «узкий» профиль, которого синтетика по θ не видит.
 import { generatorsFor } from '../../src/server/test/generators';
@@ -32,16 +32,16 @@ const argStr = (name: string): string | undefined => {
 const N = Number(argStr('n') ?? 2000);
 const SEED = Number(argStr('seed') ?? 1);
 const BASE_JUNIOR_CUT = GRADE_CUT.junior;
-/** --no-probe: только основная фаза (shouldStop), как до дозадавания Junior — для сравнения «до/после». */
+/** --no-probe: только основная фаза (shouldStop), как до дозадавания Junior – для сравнения «до/после». */
 const PROBE = !args.includes('--no-probe');
 /**
  * --spec <направление>[,<направление>]: прогнать только персоны этих направлений (seed персон не сдвигаются).
- * Для сравнения с цифрами до 10.10 (суммы ошибок и свип порога по backend + frontend) — --spec backend,frontend.
+ * Для сравнения с цифрами до 10.10 (суммы ошибок и свип порога по backend + frontend) – --spec backend,frontend.
  */
 const SPEC_ARG = argStr('spec');
 const SPEC_FILTER = SPEC_ARG ? new Set(SPEC_ARG.split(',') as Specialization[]) : null;
 const inFilter = (p: { spec: Specialization }) => !SPEC_FILTER || SPEC_FILTER.has(p.spec);
-/** --subcategory <id>: только персоны подкатегории; пул заданий — семейства этой подкатегории (поле subcategoryId). */
+/** --subcategory <id>: только персоны подкатегории; пул заданий – семейства этой подкатегории (поле subcategoryId). */
 const SUB = argStr('subcategory') ?? argStr('sub');
 
 /** Истинный уровень по легенде: ниже Junior, Junior, Middle. */
@@ -50,11 +50,11 @@ type Truth = 'below' | 'junior' | 'middle' | 'senior';
 interface Persona {
   id: string;
   spec: Specialization;
-  /** Подкатегория: пул — её семейства; без неё пул — шаблоны из knows (прежние персоны направления). */
+  /** Подкатегория: пул – её семейства; без неё пул – шаблоны из knows (прежние персоны направления). */
   sub?: string;
   truth: Truth;
   legend: string;
-  /** P(верно) по шаблону: 1 — решит, 0,5 — монета, 0 — не решит (типичная ошибка). */
+  /** P(верно) по шаблону: 1 – решит, 0,5 – монета, 0 – не решит (типичная ошибка). */
   knows: Record<string, number>;
 }
 
@@ -62,7 +62,7 @@ const Y = 1;
 const H = 0.5;
 const X = 0;
 const BE = ['http-semantics', 'sql-rowcount', 'n-plus-one', 'find-bug-idor', 'shell-output', 'schema-constraint', 'retry-policy', 'delivery-semantics', 'payment-retry', 'cache-consistency', 'index-choice', 'isolation-anomaly'].map((s) => `be.${s}`);
-// Engineering — тест на подкатегорию (ADR-0003, дополнение 10.10 16:15): по 14 семейств —
+// Engineering – тест на подкатегорию (ADR-0003, дополнение 10.10 16:15): по 14 семейств –
 // 6 Junior, 4 Middle, 4 Senior, внутри грейда по возрастанию b.
 const ENG_SUB: Record<string, string[]> = {
   'engineering.data-eng': ['group-having', 'dedup-count', 'null-aggregates', 'csv-fields', 'join-fanout', 'schema-types', 'idempotent-load', 'scd2-as-of', 'partition-prune', 'incremental-watermark', 'backfill-nights', 'diag-data', 'late-window', 'consumer-duplicates'],
@@ -77,7 +77,7 @@ const matrix = (ids: string[], row: number[]): Record<string, number> => {
   return Object.fromEntries(ids.map((id, i) => [id, row[i]!]));
 };
 
-// Порядок колонок — BE / FE выше (по возрастанию b внутри грейда).
+// Порядок колонок – BE / FE выше (по возрастанию b внутри грейда).
 const PERSONAS: Persona[] = [
   { id: 'B1', spec: 'backend', truth: 'below', legend: 'не из ИТ, логист', knows: matrix(BE, [H, X, X, X, X, X, H, X, X, H, X, X]) },
   { id: 'B2', spec: 'backend', truth: 'below', legend: 'курсы Python 3 мес.', knows: matrix(BE, [Y, H, H, X, H, H, H, X, X, H, X, X]) },
@@ -88,15 +88,15 @@ const PERSONAS: Persona[] = [
   { id: 'F2', spec: 'frontend', truth: 'middle', legend: 'Middle с перекосом в вёрстку', knows: matrix(FE, [Y, Y, Y, H, Y, Y, H, Y, X, X, H, H]) },
   { id: 'F3', spec: 'frontend', truth: 'below', legend: 'верстальщик без JS, курсы 3 мес.', knows: matrix(FE, [H, Y, Y, X, Y, X, X, X, X, X, H, X]) },
   { id: 'Z0', spec: 'backend', truth: 'below', legend: 'контроль: не решает ничего', knows: matrix(BE, BE.map(() => X)) },
-  // Идеальные контроли (10.10, ADR-0002 «Дозадавание Junior-заданий»): все Junior-задания верно, все Middle — неверно.
+  // Идеальные контроли (10.10, ADR-0002 «Дозадавание Junior-заданий»): все Junior-задания верно, все Middle – неверно.
   // Не легенды, в суммы ошибок не входят. Стоят после Z0, чтобы seed прежних персон не сдвинулись.
   { id: 'JB', spec: 'backend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(BE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
   { id: 'JF', spec: 'frontend', truth: 'junior', legend: 'контроль: все Junior верно, Middle неверно', knows: matrix(FE, [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X]) },
   // Engineering (тест на подкатегорию, ADR-0003, дополнение 10.10 16:15): на каждую подкатегорию 8 типов
-  // из ADR — новичок (N), пограничный новичок (NB), Junior (J), Junior с одной слабой темой (JW), Middle (M),
-  // Middle с одной слабой темой (MW), Senior (S), идеальный Junior (I, контроль), пограничный Junior (JB, без цели). Пул попытки — 14 семейств
-  // подкатегории (поле sub). Колонки — ENG_SUB: 6 Junior | 4 Middle | 4 Senior. Легенды — гипотеза агента
-  // по research/25 § 3.4, не люди. «Слабая тема» — одно семейство своего грейда целиком не решено.
+  // из ADR – новичок (N), пограничный новичок (NB), Junior (J), Junior с одной слабой темой (JW), Middle (M),
+  // Middle с одной слабой темой (MW), Senior (S), идеальный Junior (I, контроль), пограничный Junior (JB, без цели). Пул попытки – 14 семейств
+  // подкатегории (поле sub). Колонки – ENG_SUB: 6 Junior | 4 Middle | 4 Senior. Легенды – гипотеза агента
+  // по research/25 § 3.4, не люди. «Слабая тема» – одно семейство своего грейда целиком не решено.
   { id: 'DN', spec: 'engineering', sub: 'engineering.data-eng', truth: 'below', legend: 'Excel-аналитик, курсы SQL 3 мес.', knows: eng('data-eng', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
   { id: 'DNB', spec: 'engineering', sub: 'engineering.data-eng', truth: 'below', legend: 'аналитик, 6 мес. SQL-отчётов', knows: eng('data-eng', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
   { id: 'DJ', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'Junior data-инженер, 1 год ETL на SQL', knows: eng('data-eng', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },
@@ -133,8 +133,8 @@ const PERSONAS: Persona[] = [
   { id: 'SMW', spec: 'engineering', sub: 'engineering.sre', truth: 'middle', legend: 'Middle SRE без расчёта очередей', knows: eng('sre', [Y, Y, Y, Y, Y, Y, Y, X, Y, Y, H, X, X, X]) },
   { id: 'SS', spec: 'engineering', sub: 'engineering.sre', truth: 'senior', legend: 'Senior SRE, 7 лет, ёмкость и надёжность', knows: eng('sre', [Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, H]) },
   { id: 'SI', spec: 'engineering', sub: 'engineering.sre', truth: 'junior', legend: 'контроль: все Junior верно, Middle и Senior неверно', knows: eng('sre', [Y, Y, Y, Y, Y, Y, X, X, X, X, X, X, X, X]) },
-  // AI-персоны A1–A5, JA сняты 10.10: у ai тест по подкатегориям (ADR 0003), банк 66 семейств, пул попытки —
-  // семейства одной подкатегории. Персоны на подкатегорию — eval/test/subcategory-personas.ts.
+  // AI-персоны A1–A5, JA сняты 10.10: у ai тест по подкатегориям (ADR 0003), банк 66 семейств, пул попытки –
+  // семейства одной подкатегории. Персоны на подкатегорию – eval/test/subcategory-personas.ts.
 ];
 
 /** Семейства подкатегории в порядке «Junior по возрастанию b, затем Middle, затем Senior». */
@@ -169,15 +169,15 @@ for (const { sub, tag, ru } of BE_SUBS) {
   );
 }
 /**
- * Персоны прогона. Индекс seed — по полному списку.
+ * Персоны прогона. Индекс seed – по полному списку.
  * --subcategory: только её персоны; --spec без подкатегории: все персоны направлений (и подкатегорийные);
- * без флагов — прежние персоны направлений (без подкатегории), как до 10.10.
+ * без флагов – прежние персоны направлений (без подкатегории), как до 10.10.
  */
 const ACTIVE = SUB ? PERSONAS.filter((p) => p.sub === SUB) : SPEC_FILTER ? PERSONAS.filter(inFilter) : PERSONAS.filter((p) => !p.sub);
 /** Есть ли в прогоне персоны подкатегорий: тогда считается и заявка Senior. */
 const WITH_SENIOR = ACTIVE.some((p) => p.sub);
-/** Контроли — не легенды: в суммы ошибок не входят. */
-// *JB у engineering — пограничный Junior, без цели.
+/** Контроли – не легенды: в суммы ошибок не входят. */
+// *JB у engineering – пограничный Junior, без цели.
 const CONTROLS = new Set(['Z0', 'JB', 'JF', ...BE_SUBS.map((x) => `${x.tag}P`), 'DI', 'OI', 'QI', 'SI', 'DJB', 'OJB', 'QJB', 'SJB']);
 
 interface Outcome {
@@ -238,9 +238,9 @@ interface PersonaStats {
 }
 
 /**
- * Прогон всех персон при пороге Junior = cut. GRADE_CUT — общий объект движка: на время прогона
+ * Прогон всех персон при пороге Junior = cut. GRADE_CUT – общий объект движка: на время прогона
  * значение подменяется и восстанавливается (так свип идёт через тот же код, что в проде).
- * Одни и те же seed попыток и ответов при любом cut — сравнение порогов честное.
+ * Одни и те же seed попыток и ответов при любом cut – сравнение порогов честное.
  */
 function runAll(cut: number): PersonaStats[] {
   GRADE_CUT.junior = cut;
@@ -286,7 +286,7 @@ function runAll(cut: number): PersonaStats[] {
 
 /**
  * Ошибки по легенде при данном пороге (для свипа):
- * ложное Junior — «ниже Junior» подтвердил Junior; ложный отказ Junior — Junior/Middle не подтвердил Junior
+ * ложное Junior – «ниже Junior» подтвердил Junior; ложный отказ Junior – Junior/Middle не подтвердил Junior
  * (контроли Z0, JB, JF в сумму не входят). Middle-тест от порога Junior не зависит, кроме предложения Junior.
  */
 function errors(stats: PersonaStats[]) {

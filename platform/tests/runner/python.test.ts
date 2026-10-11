@@ -15,7 +15,7 @@ import { dirEntries, makeTarGz } from '../helpers/tar';
 /**
  * Образ python312 в локальном режиме: нужен venv с runner/sandbox/python/requirements.txt
  * (`python3 -m venv runner/sandbox/python/.venv && runner/sandbox/python/.venv/bin/pip install -r …`).
- * Без него тест пропускается. Шаблон — тестовый, из tests/fixtures/runner/templates.
+ * Без него тест пропускается. Шаблон – тестовый, из tests/fixtures/runner/templates.
  */
 const PY = path.resolve('runner/sandbox/python/.venv/bin/python');
 const FIXTURES = path.resolve('tests/fixtures/runner');

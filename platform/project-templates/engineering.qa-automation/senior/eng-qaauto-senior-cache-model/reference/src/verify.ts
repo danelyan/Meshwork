@@ -82,7 +82,7 @@ function runSequence(createCache: CacheFactory, seed: number, capacity: number, 
   const pick = <T,>(xs: T[]) => xs[Math.floor(rand() * xs.length)]!;
   for (let i = 0; i < steps; i++) {
     const r = rand();
-    // время: чаще стоит на месте, иногда шаг ровно в ttl или на единицу меньше/больше — граничные случаи
+    // время: чаще стоит на месте, иногда шаг ровно в ttl или на единицу меньше/больше – граничные случаи
     if (r < 0.35) {
       t += pick([0, 1, ttlMs - 1, ttlMs, ttlMs + 1, Math.floor(ttlMs / 3), 2 * ttlMs]);
       trace.push(`t=${t}`);

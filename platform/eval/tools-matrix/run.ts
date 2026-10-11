@@ -1,5 +1,5 @@
 // Матрица инструментов консультанта на живой модели: пользователи × ситуации × файлы в чате.
-// Ход идёт через тот же runTurn, файлы — через POST-обработчик /api/uploads (тот же код, что у браузера:
+// Ход идёт через тот же runTurn, файлы – через POST-обработчик /api/uploads (тот же код, что у браузера:
 // подписанная кука, разбор, хранение оригинала, дедупликация).
 //
 //   cd platform && set -a && . ./.env && set +a && export LLM_DAILY_TOKEN_BUDGET=0
@@ -209,7 +209,7 @@ async function runScenario(s: Scenario): Promise<TurnRecord[]> {
         filesText += plainText(f);
         const u = await upload(candidateId, f);
         uploads.push(u);
-        // Композер не даёт отправить файл, не прошедший его проверку; с сервера — только успешные.
+        // Композер не даёт отправить файл, не прошедший его проверку; с сервера – только успешные.
         if (u.uploadId && u.status < 300 && !u.uiBlocked) ids.push(u.uploadId);
       }
       if (t.confirmClaims) await prisma.claim.updateMany({ where: { candidateId, status: 'proposed' }, data: { status: 'confirmed', confirmedAt: new Date() } });
@@ -246,7 +246,7 @@ async function runScenario(s: Scenario): Promise<TurnRecord[]> {
       obs.outTokens = runs.reduce((a, r) => a + r.outputTokens, 0);
       if (crashed) obs.crashed = crashed;
       if (timedOut) obs.timedOut = true;
-      // Корпус: что платформа знает — включая карточки, которые конвейер только что создал.
+      // Корпус: что платформа знает – включая карточки, которые конвейер только что создал.
       const claims = await prisma.claim.findMany({ where: { candidateId }, select: { statement: true, quote: true, catalogId: true, sourceRef: true } });
       const uploadsDb = ids.length ? await prisma.upload.findMany({ where: { id: { in: ids } }, select: { extracted: true } }) : [];
       obs.corpus += `\n${claims.map((c) => `${c.statement} ${c.quote} ${c.catalogId} ${c.sourceRef}`).join('\n')}\n${uploadsDb.map((u) => JSON.stringify(u.extracted)).join('\n')}`;
@@ -254,7 +254,7 @@ async function runScenario(s: Scenario): Promise<TurnRecord[]> {
       const verdict = evaluateTurn(t, obs);
       const rec: TurnRecord = { scenario: s.id, user: s.user, turn: ti + 1, text: t.text, fmt: (t.files ?? []).map((f) => f.fmt), expect: t.expect ?? [], none: Boolean(t.none), injection: Boolean(t.injection), obs: { ...obs, corpus: '' }, verdict };
       records.push(rec);
-      console.log(`${verdict.pass ? 'PASS' : 'FAIL'} ${s.id}#${ti + 1} ${ms}ms [${obs.calls.map((c) => c.name).join(',') || '—'}] ${obs.inTokens + obs.outTokens}tok${verdict.pass ? '' : ` — ${verdict.fails.join(' | ').slice(0, 300)}`}`);
+      console.log(`${verdict.pass ? 'PASS' : 'FAIL'} ${s.id}#${ti + 1} ${ms}ms [${obs.calls.map((c) => c.name).join(',') || '–'}] ${obs.inTokens + obs.outTokens}tok${verdict.pass ? '' : ` – ${verdict.fails.join(' | ').slice(0, 300)}`}`);
     }
   } finally {
     await prisma.conversation.delete({ where: { id: conv.id } }).catch(() => undefined);
@@ -280,7 +280,7 @@ function collect(rows: Row[], events: { type: string; [k: string]: unknown }[], 
       calls.push({ name: meta?.name ?? '?', args: meta?.args ?? '', ok: !err, ...(err ? { errorCode: err[1], errorMessage: err[2]?.slice(0, 200) } : {}) });
     }
   }
-  // Вызовы без записанного результата (terminal: ask_user) — тоже вызовы.
+  // Вызовы без записанного результата (terminal: ask_user) – тоже вызовы.
   const withResult = new Set(rows.filter((r) => r.role === 'tool').map((r) => r.toolCallId));
   for (const [id, m] of names) if (!withResult.has(id)) calls.push({ name: m.name, args: m.args, ok: true });
   const asks = events.filter((e) => e.type === 'ask').map((e) => [e.question, ...((e.options as string[] | undefined) ?? [])].join(' | '));
@@ -318,7 +318,7 @@ async function main() {
     const scen = new Map(SCENARIOS.map((s) => [s.id, s]));
     const records = saved.records.map((r) => {
       const t: Turn | undefined = scen.get(r.scenario)?.turns[r.turn - 1];
-      // corpus не сохраняется (размер) — проверку «нет в данных» при пересчёте пропускаем.
+      // corpus не сохраняется (размер) – проверку «нет в данных» при пересчёте пропускаем.
       const v = ev({ ...(t ?? {}) }, { ...r.obs, corpus: r.obs.text });
       return { ...r, verdict: v };
     });
@@ -326,7 +326,7 @@ async function main() {
     return;
   }
   if (getEnv().LLM_PROVIDER === 'stub') {
-    console.log('LLM_PROVIDER=stub — матрица проверяет живую модель, прогон пропущен.');
+    console.log('LLM_PROVIDER=stub – матрица проверяет живую модель, прогон пропущен.');
     return;
   }
   let list = SCENARIOS;

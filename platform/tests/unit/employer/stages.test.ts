@@ -96,7 +96,7 @@ describe('свидетельства ступеней: сжатие вердик
 });
 
 describe('балл: проект под ЭТУ потребность и темы созвона', () => {
-  it('проект под эту потребность даёт PROJECT_BONUS_PER_SCORE × балл; проект под чужую — нет', () => {
+  it('проект под эту потребность даёт PROJECT_BONUS_PER_SCORE × балл; проект под чужую – нет', () => {
     const plain = scoreCandidate(cand('a'), target, catalog)!;
     const own = scoreCandidate(cand('a', { projects: [project({ score: 0.8 })] }), target, catalog)!;
     const foreign = scoreCandidate(cand('a', { projects: [project({ vacancyId: 'v-other' })] }), target, catalog)!;
@@ -153,7 +153,7 @@ describe('балл: проект под ЭТУ потребность и тем�
   });
 });
 
-describe('защита: флаг — пометка, не штраф', () => {
+describe('защита: флаг – пометка, не штраф', () => {
   it('флаг strong_project_weak_defense не меняет балл и порядок, но виден в объяснении', () => {
     const clean = cand('a', { calls: { defense: defense({ flags: [], passed: true, score: 7 }) }, projects: [project()] });
     const flagged = cand('b', { calls: { defense: defense() }, projects: [project()] });
@@ -167,7 +167,7 @@ describe('защита: флаг — пометка, не штраф', () => {
     expect(rf.explanation.defense?.notes[0]).toMatch(/не штраф/);
     expect(rf.explanation.summary).toMatch(/защита: 3 из 8 \(флаг: сильный проект при слабой защите\)/);
     expect(rc.explanation.defense?.flags).toEqual([]);
-    // Порядок определяют только прежние слагаемые: равный балл — по id, а не по флагу.
+    // Порядок определяют только прежние слагаемые: равный балл – по id, а не по флагу.
     expect(rankCandidates([flagged, clean], target, catalog, { expandPool: true }).map((x) => x.candidateId)).toEqual(['a', 'b']);
     expect(rankCandidates([clean, flagged], target, catalog, { expandPool: true }).map((x) => x.candidateId)).toEqual(['a', 'b']);
   });
@@ -180,7 +180,7 @@ describe('защита: флаг — пометка, не штраф', () => {
 });
 
 describe('объяснение: проект своей и чужой потребности', () => {
-  it('своя — таблица критериев; чужая — только подкатегория и балл, без критериев и вакансии', () => {
+  it('своя – таблица критериев; чужая – только подкатегория и балл, без критериев и вакансии', () => {
     const c = cand('a', { projects: [project(), project({ vacancyId: 'v-other', taskId: 't2', submissionId: 's2', subcategoryId: 'backend.web-api', score: 0.55, criteria: [{ id: 'z', text: 'ТАЙНА чужой потребности', source: 'wish', passed: true, evidence: 'эвиденс' }] })] });
     const ex = scoreCandidate(c, target, catalog)!.explanation;
     expect(ex.project?.own?.criteria).toHaveLength(1);

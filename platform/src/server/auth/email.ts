@@ -13,7 +13,7 @@ import { RATE, hit } from './rate-limit';
 import { loadUser } from './users';
 
 /**
- * Вход по почте и паролю (R-D-04, ADR 0001 «Дополнение 10.10»). Почта — внешний ключ
+ * Вход по почте и паролю (R-D-04, ADR 0001 «Дополнение 10.10»). Почта – внешний ключ
  * `AuthAccount(provider = "email", providerAccountId = почта в нижнем регистре)`: уникальна
  * среди email-аккаунтов, а Яндекс-аккаунты с той же почтой остаются отдельными (по почте
  * аккаунты не склеиваем, п. 6 ADR).
@@ -23,13 +23,13 @@ export const EMAIL_PROVIDER = 'email';
 export const EmailSchema = z.string().trim().max(254).pipe(z.email('Некорректная почта')).transform((v) => v.toLowerCase());
 export const PasswordSchema = z
   .string()
-  .min(PASSWORD_MIN, `Пароль — не короче ${PASSWORD_MIN} символов`)
-  .max(PASSWORD_MAX, `Пароль — не длиннее ${PASSWORD_MAX} символов`);
-export const CodeSchema = z.string().trim().regex(/^\d{6}$/, 'Код — 6 цифр');
+  .min(PASSWORD_MIN, `Пароль – не короче ${PASSWORD_MIN} символов`)
+  .max(PASSWORD_MAX, `Пароль – не длиннее ${PASSWORD_MAX} символов`);
+export const CodeSchema = z.string().trim().regex(/^\d{6}$/, 'Код – 6 цифр');
 
 /**
- * Ответ на отправку кода. `devCode` — только при локальной разработке (`isDevRequest`: не production,
- * Host — localhost, DEVTOOLS не выключен). На стенде код никогда не отдаётся: регистрация — только
+ * Ответ на отправку кода. `devCode` – только при локальной разработке (`isDevRequest`: не production,
+ * Host – localhost, DEVTOOLS не выключен). На стенде код никогда не отдаётся: регистрация – только
  * через реальное письмо (решение владельца 10.10).
  */
 export interface CodeSent {
@@ -37,7 +37,7 @@ export interface CodeSent {
   devCode?: string;
 }
 
-/** Показать код в ответе — решает маршрут по `isDevRequest(req)`. */
+/** Показать код в ответе – решает маршрут по `isDevRequest(req)`. */
 export interface RevealOption {
   revealCode?: boolean;
 }
@@ -58,8 +58,8 @@ function limitOrThrow(key: string, rule: (typeof RATE)[keyof typeof RATE]) {
 }
 
 /**
- * Отправка кода. Локальная разработка (`reveal`) — письмо не отправляется, код уходит в ответ
- * (проверить настоящее письмо локально — DEVTOOLS=false). Иначе ошибка SMTP — 503.
+ * Отправка кода. Локальная разработка (`reveal`) – письмо не отправляется, код уходит в ответ
+ * (проверить настоящее письмо локально – DEVTOOLS=false). Иначе ошибка SMTP – 503.
  */
 async function deliverCode(mail: MailMessage, code: string, reveal: boolean): Promise<CodeSent> {
   if (reveal) return { sent: true, devCode: code };
@@ -81,9 +81,9 @@ export interface RegisterInput {
 
 /**
  * Регистрация: аккаунт (роль pending), согласие на ПДн, хэш пароля, код подтверждения в письме.
- * Почта уже подтверждена у другого — ответ тот же (не раскрываем, что аккаунт есть), владельцу
+ * Почта уже подтверждена у другого – ответ тот же (не раскрываем, что аккаунт есть), владельцу
  * ящика уходит письмо «аккаунт уже есть». Неподтверждённую регистрацию можно повторить:
- * пароль перезаписывается, старый код гаснет — иначе кто угодно занял бы чужую почту навсегда.
+ * пароль перезаписывается, старый код гаснет – иначе кто угодно занял бы чужую почту навсегда.
  */
 export async function registerWithEmail(input: RegisterInput, opts: RevealOption = {}): Promise<CodeSent> {
   const version = assertConsentVersion(input.consent);
@@ -116,7 +116,7 @@ export async function registerWithEmail(input: RegisterInput, opts: RevealOption
       });
       userId = user.id;
     } catch (err) {
-      // Две регистрации одной почты одновременно: вторая получает тот же ответ, код — у первой.
+      // Две регистрации одной почты одновременно: вторая получает тот же ответ, код – у первой.
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return { sent: true };
       throw err;
     }
@@ -139,7 +139,7 @@ function codeError(check: Exclude<CodeCheck, 'ok'>): AppError {
 export async function verifyEmail(email: string, code: string) {
   limitOrThrow(`code:${email}`, RATE.codePerEmail);
   const user = await findEmailUser(email);
-  // Нет аккаунта — тот же ответ, что на неверный код.
+  // Нет аккаунта – тот же ответ, что на неверный код.
   if (!user) throw codeError('invalid');
   const check = await consumeCode(user.id, 'verify', code);
   if (check !== 'ok') throw codeError(check);
@@ -163,8 +163,8 @@ export class EmailNotVerifiedError extends AppError {
 }
 
 /**
- * Вход по паролю. Неверная почта и неверный пароль — одинаковый ответ 401 и одинаковое
- * время (scrypt против хэша-пустышки). Пароль верный, почта не подтверждена — 403 и новый код.
+ * Вход по паролю. Неверная почта и неверный пароль – одинаковый ответ 401 и одинаковое
+ * время (scrypt против хэша-пустышки). Пароль верный, почта не подтверждена – 403 и новый код.
  */
 export async function loginWithEmail(email: string, password: string, opts: RevealOption = {}) {
   limitOrThrow(`login:${email}`, RATE.loginPerEmail);
@@ -197,7 +197,7 @@ export async function requestPasswordReset(email: string): Promise<{ sent: true 
 }
 
 /**
- * Новый пароль по коду сброса. Код из письма доказывает владение ящиком — почта считается
+ * Новый пароль по коду сброса. Код из письма доказывает владение ящиком – почта считается
  * подтверждённой. Неиспользованные коды подтверждения гасятся.
  */
 export async function resetPassword(email: string, code: string, password: string) {

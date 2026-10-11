@@ -23,7 +23,7 @@ vi.mock('@/components/employer/AssistantChat', () => ({
 }));
 
 const push = vi.fn();
-// мягкое обновление (soft-nav.ts): на том же адресе — router.refresh, без перезагрузки
+// мягкое обновление (soft-nav.ts): на том же адресе – router.refresh, без перезагрузки
 const refresh = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
 beforeEach(() => {
@@ -60,20 +60,20 @@ const restored = {
   ],
 };
 
-it('шаги — начало ленты, текущий вопрос не задаётся; разговор — тот же, без завершения онбординга', () => {
+it('шаги – начало ленты, текущий вопрос не задаётся; разговор – тот же, без завершения онбординга', () => {
   render(<PausedFeed view={view} restored={restored} />);
   expect(screen.getByText('Ищу работу')).toBeDefined();
   expect(screen.getByText('Зачем цель?')).toBeDefined();
   // Кандидату нет режима «паузы» (решение владельца 11.10): ни плашки, ни кнопки возврата вверху.
   expect(screen.queryByTestId('ob-paused')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Вернуться к знакомству' })).toBeNull();
-  // Прошлая пауза — под своим шагом (хронология), разговор этой паузы — в чате.
+  // Прошлая пауза – под своим шагом (хронология), разговор этой паузы – в чате.
   expect(screen.getByText('Разговор прошлой паузы')).toBeDefined();
   expect(chatProps.last?.initial).toEqual({ conversationId: 'conv-1', items: [restored.items[2]] });
   expect((chatProps.last?.embedded as { beforeSend?: unknown }).beforeSend).toBeUndefined();
 });
 
-it('«Дополнить профиль» в чате — goto на следующий вопрос и перерисовка ленты; подпись совпадает с напоминанием консультанта', async () => {
+it('«Дополнить профиль» в чате – goto на следующий вопрос и перерисовка ленты; подпись совпадает с напоминанием консультанта', async () => {
   expect(FILL_LABEL).toBe(RESUME_BUTTON);
   const fetchFn = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ...view, later: false }) }));
   vi.stubGlobal('fetch', fetchFn);
@@ -103,7 +103,7 @@ it('работодатель: чат паузы - помощник по подб
   expect((assistantProps.last?.embedded as { beforeSend?: unknown }).beforeSend).toBeUndefined();
 });
 
-it('кандидату знакомство — таймлайн над чатом: «Продолжить» открывает вопрос в этой же ленте', async () => {
+it('кандидату знакомство – таймлайн над чатом: «Продолжить» открывает вопрос в этой же ленте', async () => {
   const fetchFn = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ...view, later: false }) }));
   vi.stubGlobal('fetch', fetchFn);
   render(<PausedFeed view={view} restored={restored} />);

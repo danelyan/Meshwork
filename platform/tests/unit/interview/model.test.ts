@@ -28,7 +28,7 @@ describe('модель компетенций (docs/competency-model.md)', () =>
     }
   });
 
-  it('ядро подкатегорий — только существующие подкатегории своего направления; у каждой активной подкатегории есть ядро', () => {
+  it('ядро подкатегорий – только существующие подкатегории своего направления; у каждой активной подкатегории есть ядро', () => {
     const sub = new Map(SUBCATEGORIES.map((s) => [s.id, s.specialization]));
     for (const c of COMPETENCIES) for (const s of c.core) expect(sub.get(s), `${c.id}: ${s}`).toBe(c.specialization);
     for (const s of SUBCATEGORIES.filter((x) => x.status === 'active')) {
@@ -55,7 +55,7 @@ describe('модель компетенций (docs/competency-model.md)', () =>
     }
   });
 
-  it('ядро подкатегории — первым в порядке технических компетенций', () => {
+  it('ядро подкатегории – первым в порядке технических компетенций', () => {
     const o = orderTechnical('backend', 'backend.highload');
     expect(o[0]!.id).toBe('backend.performance');
     expect(orderTechnical('backend', null).map((c) => c.id)).toEqual(competenciesFor('backend').filter((c) => c.axis === 'technical').map((c) => c.id));
@@ -67,7 +67,7 @@ describe('модель компетенций (docs/competency-model.md)', () =>
     expect(first.catalogIds).toEqual(catalog.entries.filter((entry) => entry.id.startsWith('ai.bi-')).map((entry) => entry.id));
   });
 
-  it('оси, веса и блоки — как в документе', () => {
+  it('оси, веса и блоки – как в документе', () => {
     expect(AXES).toEqual(['technical', 'systems', 'communication', 'grade_fit']);
     expect(Object.values(AXIS_WEIGHTS).reduce((s, w) => s + w, 0)).toBeCloseTo(1);
     expect(BLOCK_DEFS.map((b) => b.id)).toEqual(['intro', 'test', 'systems', 'team', 'summary']);

@@ -35,17 +35,17 @@ describe('привязка созвона к попытке', () => {
 
   it('вердикт с id попытки привязывается к ней, даже если шаблоны есть и в более поздней попытке', () => {
     expect(reviewedAttemptId({ startedAt: d('06T00:00:00'), status: 'explained', templateIds: ['t3'], attemptId: 'a1' }, [a1, a2])).toBe('a1');
-    // Незнакомый или ещё не завершённый id — по шаблонам.
+    // Незнакомый или ещё не завершённый id – по шаблонам.
     expect(reviewedAttemptId({ startedAt: d('06T00:00:00'), status: 'explained', templateIds: ['t3'], attemptId: 'a9' }, [a1, a2])).toBe('a2');
   });
 
-  it('созвон до попытки, без разбора или с чужими заданиями — ни к какой попытке', () => {
+  it('созвон до попытки, без разбора или с чужими заданиями – ни к какой попытке', () => {
     expect(reviewedAttemptId({ startedAt: d('04T00:00:00'), status: 'explained', templateIds: ['t4'] }, [a1, a2])).toBeNull();
     expect(reviewedAttemptId({ startedAt: d('06T00:00:00'), status: 'explained', templateIds: [] }, [a1, a2])).toBeNull();
     expect(reviewedAttemptId({ startedAt: d('06T00:00:00'), status: 'explained', templateIds: ['t9'] }, [a1, a2])).toBeNull();
   });
 
-  it('итог — последний созвон по этой попытке; созвон по другой попытке не считается', () => {
+  it('итог – последний созвон по этой попытке; созвон по другой попытке не считается', () => {
     const calls = [
       { startedAt: d('02T00:00:00'), status: 'failed' as const, templateIds: ['t1'] },
       { startedAt: d('03T00:00:00'), status: 'explained' as const, templateIds: ['t2'] },
@@ -56,7 +56,7 @@ describe('привязка созвона к попытке', () => {
     expect(ownershipForAttempt('a1', [calls[2]!], [a1, a2])).toBeNull();
   });
 
-  it('parseOwnership: статус и шаблоны из сырого вердикта, мусор — null', () => {
+  it('parseOwnership: статус и шаблоны из сырого вердикта, мусор – null', () => {
     expect(parseOwnership({ depthMap: [], testOwnership: { status: 'partial', reason: 'x', items: [{ templateId: 't1', title: 'A', correct: true }] } })).toEqual({ status: 'partial', templateIds: ['t1'], attemptId: null });
     expect(parseOwnership({ testOwnership: { status: 'explained', attemptId: 'a1', items: [] } })).toEqual({ status: 'explained', templateIds: [], attemptId: 'a1' });
     expect(parseOwnership({ depthMap: [] })).toBeNull();
@@ -81,7 +81,7 @@ describe('loadRankingIntegrity: пакетно по пулу', () => {
     callFind.mockResolvedValue(calls);
   }
 
-  it('три запроса на весь пул (без N+1); explained по этой попытке снимает понижение, partial/failed/чужая попытка — нет', async () => {
+  it('три запроса на весь пул (без N+1); explained по этой попытке снимает понижение, partial/failed/чужая попытка – нет', async () => {
     mockDb([
       { candidateId: 'x', startedAt: d('03T00:00:00'), verdictJson: { testOwnership: { status: 'explained', items: [{ templateId: 't2' }] } } },
       { candidateId: 'y', startedAt: d('03T00:00:00'), verdictJson: { testOwnership: { status: 'partial', items: [{ templateId: 't1' }] } } },
@@ -100,14 +100,14 @@ describe('loadRankingIntegrity: пакетно по пулу', () => {
     expect(m.has('nocat')).toBe(false);
   });
 
-  it('нет high — созвоны и задания не запрашиваются', async () => {
+  it('нет high – созвоны и задания не запрашиваются', async () => {
     attemptFind.mockResolvedValue([graded('a-ok', 'ok', low)]);
     await loadRankingIntegrity(new Map([['ok', cat]]));
     expect(attemptFind).toHaveBeenCalledTimes(1);
     expect(callFind).not.toHaveBeenCalled();
   });
 
-  it('в ранжировании: снятый созвоном high сохраняет категорию, оставшийся — нет; выключатель возвращает прежний порядок', async () => {
+  it('в ранжировании: снятый созвоном high сохраняет категорию, оставшийся – нет; выключатель возвращает прежний порядок', async () => {
     mockDb([{ candidateId: 'x', startedAt: d('03T00:00:00'), verdictJson: { testOwnership: { status: 'explained', items: [{ templateId: 't1' }] } } }]);
     const catalog = fixtureCatalog();
     const pool: CandidateEvidence[] = ['x', 'y'].map((id) => ({
@@ -116,7 +116,7 @@ describe('loadRankingIntegrity: пакетно по пулу', () => {
     }));
     const ev = withRankingIntegrity(pool, await loadRankingIntegrity(new Map(pool.map((c) => [c.id, c.category]))));
     const target = { specialization: 'backend' as const, grade: 'middle' as const, needs: [{ catalogId: 'be.idempotency', weight: 3 }, { catalogId: 'be.transactions', weight: 3 }], stack: [] };
-    // основной режим: не учитываемая категория — как будто теста не было, y в выдаче нет; в расширенном пуле — есть, без категории
+    // основной режим: не учитываемая категория – как будто теста не было, y в выдаче нет; в расширенном пуле – есть, без категории
     const on = rankCandidates(ev, target, catalog, {}, rankingIntegrityOptions(true));
     expect(on.map((r) => [r.candidateId, r.categoryMatch])).toEqual([['x', true]]);
     const expanded = rankCandidates(ev, target, catalog, { expandPool: true }, rankingIntegrityOptions(true));

@@ -8,7 +8,7 @@ import { withErrors } from '@/server/errors';
 export const dynamic = 'force-dynamic';
 
 /**
- * Демо-вход жюри в админку: только при DEMO_LOGIN (иначе 403). Без пароля и TOTP — сотрудник-owner
+ * Демо-вход жюри в админку: только при DEMO_LOGIN (иначе 403). Без пароля и TOTP – сотрудник-owner
  * `demo-owner@admin.demo` с правом только на чтение; изменения и раскрытие ПДн отвечают 403.
  */
 export const POST = withErrors(async (req: Request) => {

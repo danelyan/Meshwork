@@ -9,7 +9,7 @@ import { resumeFor } from './resumes';
 /**
  * Сид lane employer: синтетические демо-кандидаты с подтверждёнными утверждениями
  * (чтобы подборка работодателя была непустой) и поля потребностей демо-компании.
- * Все люди вымышлены, isDemo = true. Категории у части профилей — ДЕМО: тест они
+ * Все люди вымышлены, isDemo = true. Категории у части профилей – ДЕМО: тест они
  * не проходили (теста пока нет, его делает лейн test), категория поставлена сидом,
  * чтобы было видно влияние категории на ранжирование. Вызывать после seedClaims
  * и seedRecommend. Идемпотентен: утверждения и категории пула пересоздаются.
@@ -27,12 +27,12 @@ export interface DemoProfile {
   category: { specialization: Spec; grade: Grade; subcategoryId?: string } | null;
   /** ПРЕДЛОЖЕНИЕ агента (fullstack): дополнительные ДЕМО-категории в других направлениях (основная - category). */
   extraCategories?: { specialization: Spec; grade: Grade }[];
-  /** Контакт для принятого приглашения; без него — производный от id. */
+  /** Контакт для принятого приглашения; без него – производный от id. */
   contact?: string;
-  /** Технологии — попадают в цитаты (по ним работает фильтр «стек»). */
+  /** Технологии – попадают в цитаты (по ним работает фильтр «стек»). */
   stack: string[];
   claims: [catalogId: string, level: Level][];
-  /** lane directions: подкатегория из справочника (src/lib/directions.ts); не задана — null. */
+  /** lane directions: подкатегория из справочника (src/lib/directions.ts); не задана – null. */
   subcategoryId?: string;
 }
 
@@ -95,7 +95,7 @@ export const DEMO_NEED_DETAILS: Record<string, { teamDescription: string; stack:
 };
 
 const SOURCE_FOR: Record<Level, { kind: 'resume' | 'github' | 'codeforces'; ref: (id: string) => string }> = {
-  // Источник — резюме кандидата (prisma/seed/resumes.ts); имя файла подставляет seedPoolProfiles.
+  // Источник – резюме кандидата (prisma/seed/resumes.ts); имя файла подставляет seedPoolProfiles.
   self_reported: { kind: 'resume', ref: (id) => `${id}-resume.md#p1` },
   artifact: { kind: 'github', ref: (id) => `github:demo/${id}#README` },
   third_party: { kind: 'codeforces', ref: () => 'codeforces:demo' },
@@ -131,13 +131,13 @@ export async function seedPoolProfiles(prisma: PrismaClient, profiles: DemoProfi
       const entry = catalog.get(catalogId);
       if (!entry) throw new Error(`seed(employer): нет записи каталога ${catalogId}`);
       const src = SOURCE_FOR[level];
-      // С опорой на резюме цитата — дословная строка резюме; у остальных уровней прежний демо-текст.
+      // С опорой на резюме цитата – дословная строка резюме; у остальных уровней прежний демо-текст.
       const quote = level === 'self_reported' ? resume.lines[catalogId] : demoQuote(p, entry.statement);
       if (!quote) throw new Error(`seed(employer): у ${p.id} нет строки резюме для ${catalogId}`);
       await prisma.claim.create({
         data: {
           candidateId: p.id, catalogId, statement: entry.statement, level, quote,
-          // Кандидату — формулировка под цитату (строка резюме уже в его роде); у демо-текста других уровней — каталожная.
+          // Кандидату – формулировка под цитату (строка резюме уже в его роде); у демо-текста других уровней – каталожная.
           wording: level === 'self_reported' ? wordingFromQuote(quote) : null,
           sourceRef: src.ref(p.id), sourceKind: src.kind, confidence: 'high', limits: entry.limits,
           suggestedProof: entry.proof, status: 'confirmed', confirmedAt: now,
@@ -151,7 +151,7 @@ export async function seedPoolProfiles(prisma: PrismaClient, profiles: DemoProfi
 }
 
 /**
- * lane resume-fields (R-C-01/02): стаж, роли и софт-скиллы демо-профиля — тем же разбором, что при загрузке резюме,
+ * lane resume-fields (R-C-01/02): стаж, роли и софт-скиллы демо-профиля – тем же разбором, что при загрузке резюме,
  * с цитатой-источником (ResumeField, status applied → в профиле пометка «из резюме»). ФИО и контакт сид задаёт сам.
  */
 async function seedResumeFields(prisma: PrismaClient, candidateId: string, text: string, fileName: string): Promise<void> {

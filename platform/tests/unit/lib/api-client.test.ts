@@ -15,7 +15,7 @@ describe('клиент API ↔ реальные роуты', () => {
     expect((call(f)[1]?.body as FormData).get('file')).toBeInstanceOf(File);
   });
 
-  it('recommendations: target уходит в query, без него — без query', async () => {
+  it('recommendations: target уходит в query, без него – без query', async () => {
     const f = vi.fn(async () => json({ target: 'category:backend:junior', test: {}, gaps: [], tasks: [], targets: [] }));
     vi.stubGlobal('fetch', f);
     expect((await getRecommendations()).target).toBe('category:backend:junior');

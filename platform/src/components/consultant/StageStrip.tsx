@@ -10,7 +10,7 @@ const STATE_LABEL = { done: 'готово', now: 'сейчас', next: 'даль
 
 /**
  * Полоса этапов знакомства над чатом консультанта (макет Astra v2): чёрная линия, квадратные номера,
- * «светлячок» в цвет роли бежит до текущего этапа, справа — «Заполнено X из N». Данные считает сервер
+ * «светлячок» в цвет роли бежит до текущего этапа, справа – «Заполнено X из N». Данные считает сервер
  * (server/consultant/stages.ts) и обновляет вместе с правой колонкой.
  */
 export function StageStrip({ data }: { data: IntroStages }) {
@@ -35,7 +35,7 @@ export function StageStrip({ data }: { data: IntroStages }) {
               </span>
               <span className={styles.name}>{s.label}</span>
               <span className={styles.note}>{s.note}</span>
-              <span className={styles.vh}> — {STATE_LABEL[s.state]}</span>
+              <span className={styles.vh}> – {STATE_LABEL[s.state]}</span>
             </li>
           ))}
         </ol>

@@ -1,10 +1,10 @@
 // Сравнение моделей на боевом извлекателе (research/12 § 6.2, шаг 3, «точность извлечения»):
 // тот же промпт (src/server/claims/prompts/extractor.md), каталог (prisma/seed/claims-catalog.json),
-// схема и проверка цитат (verifyClaims), что на стенде. Эталон — eval/labels (30 резюме + 3 демо),
-// атаки — eval/attacks. Дополняет run.ts: там диалог консультанта с инструментами, здесь — качество
+// схема и проверка цитат (verifyClaims), что на стенде. Эталон – eval/labels (30 резюме + 3 демо),
+// атаки – eval/attacks. Дополняет run.ts: там диалог консультанта с инструментами, здесь – качество
 // извлечения, доля JSON-ошибок, латентность и стоимость на одном и том же наборе.
 //
-//   npx tsx eval/llm-bench/compare.ts                         # alice, giga, deepseek — у кого есть ключи
+//   npx tsx eval/llm-bench/compare.ts                         # alice, giga, deepseek – у кого есть ключи
 //   npx tsx eval/llm-bench/compare.ts --models alice,deepseek --repeats 2
 //   npx tsx eval/llm-bench/compare.ts --models stub            # самопроверка без сети
 //
@@ -32,7 +32,7 @@ const opt = (n: string, d: string) => {
 const MODEL_ARG = opt('models', 'alice,giga,deepseek').split(',');
 const REPEATS = Number(opt('repeats', '1'));
 const TIMEOUT_MS = Number(opt('timeout', '60000'));
-/** Резюме, строки которых взяты в few-shot промпта извлекателя, — вне метрик (иначе утечка эталона). */
+/** Резюме, строки которых взяты в few-shot промпта извлекателя, – вне метрик (иначе утечка эталона). */
 export const FEW_SHOT_IDS = ['b02', 'f03'];
 
 interface Call { ms: number; ok: boolean; inTok: number; outTok: number; repair: boolean; status?: number }
@@ -158,13 +158,13 @@ async function main() {
     }
     const missing = def.requiredEnv.filter((k) => !env(k));
     if (missing.length) {
-      console.log(`${id}: ключ не задан: ${missing.join(', ')} — модель пропущена`);
+      console.log(`${id}: ключ не задан: ${missing.join(', ')} – модель пропущена`);
       continue;
     }
     selected.push(def);
   }
   if (!selected.length) {
-    console.log('Нет ни одной модели с ключами — сравнение не запускалось. Env — eval/llm-bench/README.md.');
+    console.log('Нет ни одной модели с ключами – сравнение не запускалось. Env – eval/llm-bench/README.md.');
     return;
   }
   const results = [];
@@ -174,13 +174,13 @@ async function main() {
     console.log(' готово');
   }
   const md = [
-    `# Сравнение LLM на боевом извлекателе — ${msk()} МСК`,
+    `# Сравнение LLM на боевом извлекателе – ${msk()} МСК`,
     '',
-    `Набор: eval/labels (без few-shot ${FEW_SHOT_IDS.join(', ')}), атаки eval/attacks; повторов: ${REPEATS}. P/R/F1 — по catalogId после verifyClaims.`,
+    `Набор: eval/labels (без few-shot ${FEW_SHOT_IDS.join(', ')}), атаки eval/attacks; повторов: ${REPEATS}. P/R/F1 – по catalogId после verifyClaims.`,
     '',
     table(results),
     '',
-    'JSON: ремонт — доля частей документа, где первый ответ не прошёл схему; отказ — доля документов, где не помог и ремонт. Стоимость — по прайсу из env (BENCH_*_PRICE_IN/OUT, $ за 1M токенов).',
+    'JSON: ремонт – доля частей документа, где первый ответ не прошёл схему; отказ – доля документов, где не помог и ремонт. Стоимость – по прайсу из env (BENCH_*_PRICE_IN/OUT, $ за 1M токенов).',
   ].join('\n');
   console.log(`\n${md}`);
   const dir = join(here, '..', 'results');

@@ -12,7 +12,7 @@ describe('лента: порядок feedRank', () => {
     expect(sorted[0]!.my.taken).toBe(true);
   });
 
-  it('без подкатегории кандидата — только направление; без направления — всё в одном ранге', () => {
+  it('без подкатегории кандидата – только направление; без направления – всё в одном ранге', () => {
     expect(feedRank(item('backend.web-api'), scope, null)).toBe(2);
     expect(feedRank(item(null), scope, 'backend.web-api')).toBe(2);
     expect(feedRank(item('backend.web-api'), { specialization: null }, null)).toBe(3);

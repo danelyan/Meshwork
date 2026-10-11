@@ -3,13 +3,13 @@
 # каталог приложения, swap, файрвол и стартовый .env демо-режима без ключей.
 # Запуск от root, идемпотентен:
 #   DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=stand.example.ru bash stand-bootstrap.sh
-# Дальше — docs/deploy.md.
+# Дальше – docs/deploy.md.
 set -euo pipefail
 
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/fsp/platform}"
-: "${DEPLOY_PUBKEY:?задайте DEPLOY_PUBKEY — открытый ключ, с которым ходит деплой}"
-: "${STAND_DOMAIN:?задайте STAND_DOMAIN — домен стенда, например 203-0-113-10.sslip.io}"
+: "${DEPLOY_PUBKEY:?задайте DEPLOY_PUBKEY – открытый ключ, с которым ходит деплой}"
+: "${STAND_DOMAIN:?задайте STAND_DOMAIN – домен стенда, например 203-0-113-10.sslip.io}"
 
 [ "$(id -u)" -eq 0 ] || { echo "Нужен root" >&2; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
@@ -37,13 +37,13 @@ if [ ! -f /etc/docker/daemon.json ]; then
 fi
 
 # Кеш сборки растёт примерно на 1 ГБ за деплой и при частых деплоях забивает диск вместе с базой.
-# Деплой урезает его сам; расписание — страховка на случай, когда деплой до очистки не дошёл.
+# Деплой урезает его сам; расписание – страховка на случай, когда деплой до очистки не дошёл.
 cat > /etc/cron.d/fsp-docker-prune <<'CRON'
 */30 * * * * root /usr/bin/docker builder prune -f --max-used-space 3gb >/dev/null 2>&1
 CRON
 chmod 644 /etc/cron.d/fsp-docker-prune
 
-# Сборка Next.js на небольшом сервере упирается в память — подстраховка swap-файлом.
+# Сборка Next.js на небольшом сервере упирается в память – подстраховка swap-файлом.
 if [ "$(swapon --noheadings | wc -l)" -eq 0 ]; then
   fallocate -l 2G /swapfile
   chmod 600 /swapfile
@@ -65,7 +65,7 @@ chmod 600 "$ssh_dir/authorized_keys"
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$DEPLOY_PATH"
 
 # Стартовый .env: демо без ключей (platform/README.md, «Запуск демо без ключей»).
-# Существующий файл не трогаем — в нём могут быть ключи модели и Яндекс ID.
+# Существующий файл не трогаем – в нём могут быть ключи модели и Яндекс ID.
 if [ ! -f "$DEPLOY_PATH/.env" ]; then
   umask 077
   cat > "$DEPLOY_PATH/.env" <<EOF

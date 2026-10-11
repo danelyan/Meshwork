@@ -40,7 +40,7 @@ function Basic(props: { onOpenChange?: (o: boolean) => void; open?: boolean; def
 }
 
 describe('Dialog: разметка', () => {
-  it('триггер: aria-controls и aria-expanded только по состоянию; окно — role, aria-modal, tabindex', () => {
+  it('триггер: aria-controls и aria-expanded только по состоянию; окно – role, aria-modal, tabindex', () => {
     render(<Basic />);
     const t = openBtn();
     expect(t.hasAttribute('aria-controls')).toBe(false);
@@ -151,7 +151,7 @@ describe('Dialog: состояние', () => {
     expect(onOpenChange.mock.calls).toEqual([[false]]);
   });
 
-  it('клик по оверлею закрывает, клик по содержимому — нет; alertdialog по оверлею не закрывается, по Escape — закрывается', () => {
+  it('клик по оверлею закрывает, клик по содержимому – нет; alertdialog по оверлею не закрывается, по Escape – закрывается', () => {
     const { unmount } = render(<Basic />);
     fireEvent.click(openBtn());
     fireEvent.click(dialogEl());
@@ -180,7 +180,7 @@ describe('Dialog: фокус', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Главная' }));
   });
 
-  it('начальный фокус пропускает disabled, tabindex=-1, hidden и input[type=hidden]; без табулируемых — на самом окне', () => {
+  it('начальный фокус пропускает disabled, tabindex=-1, hidden и input[type=hidden]; без табулируемых – на самом окне', () => {
     const { unmount } = render(
       <Basic defaultOpen>
         <button disabled>Отключена</button>
@@ -226,7 +226,7 @@ describe('Dialog: фокус', () => {
   });
 
 
-  it('без табулируемых Tab гасится, фокус остаётся на окне; с body — Tab уводит внутрь', () => {
+  it('без табулируемых Tab гасится, фокус остаётся на окне; с body – Tab уводит внутрь', () => {
     const { unmount } = render(
       <Basic defaultOpen>
         <p>текст</p>

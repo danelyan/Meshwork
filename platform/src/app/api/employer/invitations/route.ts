@@ -8,17 +8,17 @@ import { requireEmployer } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/employer/invitations — трекинг статусов (R-E-05) и остаток лимита за сутки; `limit.sanction` — снижение/блок из-за жалоб кандидатов. */
+/** GET /api/employer/invitations – трекинг статусов (R-E-05) и остаток лимита за сутки; `limit.sanction` – снижение/блок из-за жалоб кандидатов. */
 export const GET = withErrors(async (req: Request) => {
   const { employerProfileId, userId } = requireEmployer(req);
-  await assertEmployerConsents(userId); // ADR 0005: данные кандидатов — после оферты и обязательства
+  await assertEmployerConsents(userId); // ADR 0005: данные кандидатов – после оферты и обязательства
   const ctx = await loadEmployerContext(employerProfileId);
   const [invitations, sent, sanction] = await Promise.all([listCompanyInvitations(ctx.companyId), invitationsSentToday(ctx.companyId), companySanction(ctx.companyId)]);
   return Response.json({ invitations, limit: { perDay: sanction.limit, base: await getSetting('employer.dailyInvitationLimit'), sentToday: sent, sanction } });
 });
 
-/** POST `{ candidateId, vacancyId?, message, salaryFrom, salaryTo }` — пригласить (вилка обязательна, to ≥ from).
- * 409 `invite_cooldown` (`details.nextAt`) — 14 дней после отказа кандидата или отзыва компанией. */
+/** POST `{ candidateId, vacancyId?, message, salaryFrom, salaryTo }` – пригласить (вилка обязательна, to ≥ from).
+ * 409 `invite_cooldown` (`details.nextAt`) – 14 дней после отказа кандидата или отзыва компанией. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { employerProfileId } = requireEmployer(req);

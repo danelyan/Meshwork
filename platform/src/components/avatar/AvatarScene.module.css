@@ -1,4 +1,4 @@
-/* Сцены консультанта с нашей головой. Только токены (цвета — tokens.css). */
+/* Сцены консультанта с нашей головой. Только токены (цвета – tokens.css). */
 
 /* --- A: портрет-собеседник, сетка 44/56 как у ConsultantScene --- */
 .portraitScene { display: grid; grid-template-columns: minmax(0, 44fr) minmax(0, 56fr); align-items: start; background: var(--paper); }
@@ -31,19 +31,19 @@
 /* Лента-«готовый узел» (слитая лента /consultant) в сценах B и C: свой скролл вместо высоты Chat */
 .feedBox { max-height: min(60svh, 560px); overflow-y: auto; background: var(--surface-input); }
 
-/* --- D: звонок + чат слева. Сцена в теме страницы (tokens.css, [data-scene]), тёмная только панель звонка (.sideStage[data-call]), корень и чат — тема страницы ([data-in-call] — режим звонка); слева панель 440px на всю высоту --- */
+/* --- D: звонок + чат слева. Сцена в теме страницы (tokens.css, [data-scene]), тёмная только панель звонка (.sideStage[data-call]), корень и чат – тема страницы ([data-in-call] – режим звонка); слева панель 440px на всю высоту --- */
 .sideScene { display: grid; grid-template-columns: minmax(420px, 460px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; position: relative; isolation: isolate; height: var(--scene-h, calc(100svh - var(--landing-header-h))); min-height: var(--scene-min-h, 560px); background: var(--avatar-stage); }
 .sideScene:not([data-in-call]) { background-image: var(--glow), linear-gradient(var(--landing-grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--landing-grid-line) 1px, transparent 1px); background-size: auto, 46px 46px, 46px 46px; }
 .sideScene:not([data-in-call]) .sidePanel { background: var(--glass); backdrop-filter: var(--blur); }
 .sideScene.withAside { grid-template-rows: clamp(200px, 30vh, 340px) minmax(0, 1fr); grid-template-areas: 'panel stage' 'panel aside'; }
 .withAside .sideStage { border-bottom: 1px solid var(--avatar-stage-line); }
 .sideAside { grid-area: aside; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 20px 16px; }
-/* колонка — контейнер по размеру: карточки подстраиваются под её ширину и высоту (SceneAside.module.css, @container aside) */
+/* колонка – контейнер по размеру: карточки подстраиваются под её ширину и высоту (SceneAside.module.css, @container aside) */
 @media (min-width: 1051px) { .sideAside { container: aside / size; } }
 .sideStage[data-call] { background: var(--avatar-stage); }
 .sideStage { grid-area: stage; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .sideHead { position: relative; flex: 1; min-height: 240px; }
-/* Голова слева, справа сводка кандидата (владелец 11.10: «лицо сдвинуть, свободное место — метриками»). */
+/* Голова слева, справа сводка кандидата (владелец 11.10: «лицо сдвинуть, свободное место – метриками»). */
 .headBox { position: absolute; inset: 0; }
 .sideStats { display: none; }
 @media (min-width: 1051px) {
@@ -92,13 +92,14 @@
 }
 @media print { .portrait { display: none; } .portraitScene { display: block; } }
 .sideScene { grid-template-columns: var(--panel-w, minmax(0, 44fr)) minmax(0, 56fr); }
-/* Перетаскиваемая граница чата и сцены (PanelSplitter); на узком экране сцена — колонка, разделителя нет. */
+/* Перетаскиваемая граница чата и сцены (PanelSplitter); на узком экране сцена – колонка, разделителя нет. */
 .splitter { position: absolute; z-index: 40; top: 0; bottom: 0; left: calc(var(--panel-w, 44%) - 4px); width: 8px; cursor: col-resize; touch-action: none; }
 .splitter::after { content: ''; position: absolute; inset: 0 3px; background: transparent; transition: background 150ms var(--ease); }
 .splitter:hover::after, .splitter:focus-visible::after { background: var(--blue); }
 .splitter:focus-visible { outline: none; }
+.sideScene[data-in-call] .splitter { display: none; }
 @media (max-width: 1050px) { .splitter { display: none; } }
-/* Созвон: панель звонка на всю высоту справа, колонка «Твой путь»/карточки прячется — иначе карточка согласия налезает на неё. */
+/* Созвон: панель звонка на всю высоту справа, колонка «Твой путь»/карточки прячется – иначе карточка согласия налезает на неё. */
 .sideScene.withAside[data-in-call] { grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; }
 .sideScene[data-in-call] .sideAside { display: none; }
 
@@ -147,3 +148,12 @@
 .sideHead .callTop > :last-child { display: none; }
 @media (max-width: 1050px) { .sidePanel { overflow: visible; } .panelFeed { overflow: visible; } }
 @media (max-width: 640px) { .sideToolbar { padding: 12px 16px; gap: 8px; } .sideTitle { min-width: 120px; } }
+
+/* Astra v2: полоса этапов знакомства (StageStrip) над сценой. Размер окна держит обёртка, сцена занимает остаток;
+   уже 1050px – обычная страница: полоса сверху, сцена ниже прежней высоты. */
+.sideWrap { display: flex; flex-direction: column; height: var(--scene-h, calc(100svh - var(--landing-header-h))); min-height: var(--scene-min-h, 560px); }
+.sideWrap > .sideScene { flex: 1 1 auto; height: auto; min-height: 0; }
+@media (max-width: 1050px) {
+  .sideWrap { height: auto; min-height: 0; }
+  .sideWrap > .sideScene { flex: none; min-height: calc(100svh - var(--landing-header-h)); }
+}

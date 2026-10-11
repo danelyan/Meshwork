@@ -1,6 +1,6 @@
 // Генераторы AI, добавленные под тест на подкатегорию (ADR 0003, дополнение 10.10 15:50): до 8 семейств на
 // каждую из llm-apps, ai-integration, ml-engineering, mlops, data-science. Правила те же, что в ai.ts: ключ
-// считает код (R-T-02), несущественные параметры — от seed (R-T-01), a и b — ПРЕДЛОЖЕНИЕ (экспертные).
+// считает код (R-T-02), несущественные параметры – от seed (R-T-01), a и b – ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 
@@ -77,7 +77,7 @@ export const rrfFusion: TaskGenerator = {
       dense.forEach((d, i) => score.set(d, (score.get(d) ?? 0) + 1 / (60 + i + 1)));
       const ranked = [...score.entries()].sort((a, b) => b[1] - a[1]);
       if (ranked[0]![1] - ranked[1]![1] < 1e-5) continue;
-      // Ловушка: лидер RRF не совпадает с первым местом ни одной из выдач — в половине seed это так.
+      // Ловушка: лидер RRF не совпадает с первым местом ни одной из выдач – в половине seed это так.
       return {
         prompt: 'Гибридный поиск сливает выдачу BM25 и векторную через Reciprocal Rank Fusion: score(d) = Σ 1 / (60 + rank), rank с 1; документ, которого нет в выдаче, слагаемого не получает. Какой документ будет первым?',
         code: [`BM25:    ${bm25.join(', ')}`, `векторы: ${dense.join(', ')}`].join('\n'),
@@ -112,7 +112,7 @@ export const retryBackoff: TaskGenerator = {
     const rng = createRng(seed);
     const base = rng.pick([1, 2, 3]);
     const retries = rng.int(3, 5);
-    const okAt = rng.int(2, retries + 2); // номер попытки, на которой придёт 200; > retries + 1 — не придёт
+    const okAt = rng.int(2, retries + 2); // номер попытки, на которой придёт 200; > retries + 1 – не придёт
     const attempts = Math.min(okAt, retries + 1);
     let wait = 0;
     for (let k = 1; k < attempts; k++) wait += base * 2 ** (k - 1);
@@ -259,7 +259,7 @@ export const circuitBreaker: TaskGenerator = {
       t += rng.int(1, 8);
       return { t, ok: rng.next() < 0.45 };
     });
-    // Модель: closed → после failN подряд ошибок open на `open` с; по истечении — half-open: один пробный вызов;
+    // Модель: closed → после failN подряд ошибок open на `open` с; по истечении – half-open: один пробный вызов;
     // успех закрывает, ошибка снова открывает.
     let state: 'closed' | 'open' | 'half' = 'closed';
     let fails = 0;
@@ -911,7 +911,7 @@ export const simpson: TaskGenerator = {
   generate(seed): TaskInstance {
     const rng = createRng(seed);
     for (;;) {
-      // Два сегмента: в каждом X лучше, но Y чаще показывали в «лёгком» сегменте — суммарно Y может обогнать.
+      // Два сегмента: в каждом X лучше, но Y чаще показывали в «лёгком» сегменте – суммарно Y может обогнать.
       const segs = rng.shuffle(['мобильные', 'десктоп']);
       const nx = [rng.int(1, 4) * 50, rng.int(8, 16) * 50];
       const ny = [rng.int(8, 16) * 50, rng.int(1, 4) * 50];

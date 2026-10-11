@@ -1,8 +1,8 @@
 /**
  * Моки контрактов других лейнов (claims, collector, recommend) для интеграционных
- * тестов агента: реализации там — заглушки `not implemented`. Поведение
+ * тестов агента: реализации там – заглушки `not implemented`. Поведение
  * моков близко к контракту: проверяющий требует дословную цитату из видимой
- * строки и id из каталога; уровень — по типу источника; proposeClaims пишет
+ * строки и id из каталога; уровень – по типу источника; proposeClaims пишет
  * реальные строки Claim (нужны start_verification и get_profile).
  */
 import { vi } from 'vitest';
@@ -86,7 +86,7 @@ function verify(p: ProposedClaim[], docs: ExtractedDoc[], catalog: CatalogEntry[
 }
 
 export const claimsMock = {
-  // План В — настоящая реализация claims (чистая функция, без БД).
+  // План В – настоящая реализация claims (чистая функция, без БД).
   extractByMarkers: vi.fn(realExtractByMarkers),
   getCatalog: vi.fn(async () => CATALOG),
   maxLevelFor: vi.fn((kind: SourceKind) => LEVEL_BY_KIND[kind]),

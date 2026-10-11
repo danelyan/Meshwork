@@ -6,7 +6,7 @@ import { requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** POST `{ comment }` — «ни один слот не подходит» (ADR 0008 п. 3): работодатель получает уведомление и предлагает новые. */
+/** POST `{ comment }` – «ни один слот не подходит» (ADR 0008 п. 3): работодатель получает уведомление и предлагает новые. */
 export const POST = withErrors(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

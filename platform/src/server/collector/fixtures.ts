@@ -7,7 +7,7 @@ import type { ExtractedDoc, ProfileKind, SourceKind } from './types';
 
 /**
  * Фикстуры демо-кандидатов (eval/demo/*\/links.json): вымышленные профили отдаются
- * без сети — на стенде не уходим на github.com за чужим реальным аккаунтом с тем же
+ * без сети – на стенде не уходим на github.com за чужим реальным аккаунтом с тем же
  * логином. Импорт статический, чтобы файлы попали в сборку Next.
  */
 interface FixtureLink {
@@ -37,7 +37,7 @@ export function fixtureDoc(kind: ProfileKind, handle: string): ExtractedDoc | nu
 }
 
 /**
- * COLLECTOR_FIXTURES включён — сеть для профилей выключена: только фикстуры. Значение — из проверенного
+ * COLLECTOR_FIXTURES включён – сеть для профилей выключена: только фикстуры. Значение – из проверенного
  * окружения (env.ts, `z.stringbool`): «1», «true», «yes», «on» читаются одинаково здесь и при старте.
  */
 export function fixturesOnly(): boolean {

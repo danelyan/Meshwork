@@ -150,7 +150,7 @@ def test_best_directions_ties_and_missing_metric(reg):
     reg.register("a", {"auc": 0.9, "latency": 50})
     reg.register("a", {"auc": 0.9, "latency": 30})
     reg.register("a", {"latency": 10})
-    assert reg.best("a", "auc")["version"] == 2          # ничья — больший номер
+    assert reg.best("a", "auc")["version"] == 2          # ничья – больший номер
     assert reg.best("a", "latency", higher_is_better=False)["version"] == 3
     assert reg.best("a", "latency")["version"] == 1
     assert reg.best("a", "f1") is None

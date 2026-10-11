@@ -50,7 +50,7 @@ function replyReader(socket: net.Socket) {
     poke();
   });
 
-  /** Ответ сервера целиком: строки `250-…` продолжаются, `250 …` — последняя. */
+  /** Ответ сервера целиком: строки `250-…` продолжаются, `250 …` – последняя. */
   return async function read(): Promise<Reply> {
     for (;;) {
       let start = 0;
@@ -84,7 +84,7 @@ function assertNoCrlf(...values: string[]) {
   for (const v of values) if (/[\r\n]/.test(v)) throw new SmtpError('SMTP: перевод строки в адресе или заголовке');
 }
 
-/** Отправить готовое RFC 5322-сообщение (`data` — заголовки + тело, строки через CRLF). */
+/** Отправить готовое RFC 5322-сообщение (`data` – заголовки + тело, строки через CRLF). */
 export async function smtpSend(cfg: SmtpConfig, from: string, to: string, data: string): Promise<void> {
   assertNoCrlf(from, to);
   const timeout = cfg.timeoutMs ?? 10_000;
@@ -97,7 +97,7 @@ export async function smtpSend(cfg: SmtpConfig, from: string, to: string, data: 
     if (line !== null) socket.write(`${line}\r\n`);
     const r = await read();
     if (!ok.includes(r.code)) {
-      // Текст ответа без команды: в AUTH команде — учётные данные.
+      // Текст ответа без команды: в AUTH команде – учётные данные.
       throw new SmtpError(`SMTP: ответ ${r.code} на ${line?.split(' ')[0] ?? 'приветствие'}`, r.code);
     }
     return r;
@@ -112,7 +112,7 @@ export async function smtpSend(cfg: SmtpConfig, from: string, to: string, data: 
     await command(`MAIL FROM:<${addressOf(from)}>`, [250]);
     await command(`RCPT TO:<${addressOf(to)}>`, [250, 251]);
     await command('DATA', [354]);
-    // Тело в base64 — строк, начинающихся с точки, не бывает; dot-stuffing всё равно делаем.
+    // Тело в base64 – строк, начинающихся с точки, не бывает; dot-stuffing всё равно делаем.
     const body = data.replace(/\r?\n/g, '\r\n').replace(/^\./gm, '..');
     await command(`${body}\r\n.`, [250]);
     await command('QUIT', [221]).catch(() => undefined);
@@ -137,8 +137,8 @@ function textPart(subtype: 'plain' | 'html', content: string): string[] {
 }
 
 /**
- * Письмо UTF-8: заголовки + тело. Без `html` — одно текстовое тело; с `html` — multipart/alternative
- * (RFC 2046): сначала текст, затем HTML — клиент показывает последний вариант, который умеет.
+ * Письмо UTF-8: заголовки + тело. Без `html` – одно текстовое тело; с `html` – multipart/alternative
+ * (RFC 2046): сначала текст, затем HTML – клиент показывает последний вариант, который умеет.
  */
 export function buildMessage(p: {
   from: string;
@@ -162,7 +162,7 @@ export function buildMessage(p: {
     'MIME-Version: 1.0',
   ];
   if (!p.html) return [...headers, ...textPart('plain', p.text)].join('\r\n');
-  // Тела частей в base64, а в его алфавите нет «_» — граница внутри части не встретится.
+  // Тела частей в base64, а в его алфавите нет «_» – граница внутри части не встретится.
   const boundary = p.boundary ?? `fsp_${unique()}`;
   if (!/^[A-Za-z0-9_.]{1,70}$/.test(boundary)) throw new SmtpError('SMTP: недопустимая граница частей письма');
   return [

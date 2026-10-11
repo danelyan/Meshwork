@@ -87,7 +87,7 @@ describe('генератор набора данных', () => {
     }
   });
 
-  it('разряды: взрослый победитель чемпионата — МС, юниор — КМС, хакатон разряда не даёт', () => {
+  it('разряды: взрослый победитель чемпионата – МС, юниор – КМС, хакатон разряда не даёт', () => {
     const adult: Athlete = { ...ds.athletes[0]!, birth_year: 1999 };
     const junior: Athlete = { ...ds.athletes[0]!, birth_year: 2009 };
     const base = ds.achievements.find((a) => a.kind === 'championship')!;
@@ -159,7 +159,7 @@ describe('реалм Keycloak', () => {
     expect(admin['directAccessGrantsEnabled']).toBe(false);
   });
 
-  it('плейсхолдеры ${…} только у секретов и пароля — иначе Keycloak подставит переменные окружения в текст', () => {
+  it('плейсхолдеры ${…} только у секретов и пароля – иначе Keycloak подставит переменные окружения в текст', () => {
     const text = JSON.stringify(realm);
     const placeholders = [...text.matchAll(/\$\{([A-Z_]+)(?::[^}]*)?\}/g)].map((m) => m[1]);
     expect(new Set(placeholders)).toEqual(new Set(['FSP_DEMO_PASSWORD', 'FSP_CAREER_CLIENT_SECRET', 'FSP_PARTNER_DEMO_SECRET', 'FSP_REGISTRY_ADMIN_SECRET']));

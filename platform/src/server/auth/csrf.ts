@@ -3,7 +3,7 @@ import { errors } from '@/server/errors';
 
 /**
  * Защита POST от CSRF поверх SameSite=Lax: если браузер прислал Origin, он должен
- * совпадать с APP_URL или с адресом самого запроса. Нет Origin (curl, тесты) — пропускаем:
+ * совпадать с APP_URL или с адресом самого запроса. Нет Origin (curl, тесты) – пропускаем:
  * кука с SameSite=Lax на межсайтовый POST всё равно не уходит.
  */
 export function assertSameOrigin(req: Request): void {

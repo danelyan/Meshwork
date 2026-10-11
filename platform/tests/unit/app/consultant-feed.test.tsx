@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 
-// /consultant — один адрес с чатом (решения владельца 10.10): знакомство любой роли, консультант кандидата,
-// пауза «Настроить позже». Гварды и куки — tests/unit/app/candidate-guard.test.tsx.
+// /consultant – один адрес с чатом (решения владельца 10.10): знакомство любой роли, консультант кандидата,
+// пауза «Настроить позже». Гварды и куки – tests/unit/app/candidate-guard.test.tsx.
 const m = vi.hoisted(() => ({
   session: { userId: 'u1', candidateId: 'c1', employerProfileId: null, role: 'candidate' } as Record<string, unknown>,
   inFeed: vi.fn(async () => true),
@@ -69,7 +69,7 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe('кандидат', () => {
-  it('знакомство не завершено или пройдено в чате — лента онбординга с разговором консультанта', async () => {
+  it('знакомство не завершено или пройдено в чате – лента онбординга с разговором консультанта', async () => {
     const { OnboardingChat } = await import('@/components/onboarding/OnboardingChat');
     const el = await inner();
     expect(el.type).toBe(OnboardingChat);
@@ -81,7 +81,7 @@ describe('кандидат', () => {
     expect(m.loadEmployerAside).not.toHaveBeenCalled();
   });
 
-  it('«Настроить позже» (view.later) — пауза: шаги + свободный разговор', async () => {
+  it('«Настроить позже» (view.later) – пауза: шаги + свободный разговор', async () => {
     m.getView.mockResolvedValueOnce({ current: { kind: 'one' }, onboarded: false, later: true });
     const { PausedFeed } = await import('@/components/onboarding/PausedFeed');
     const el = await inner();
@@ -89,14 +89,14 @@ describe('кандидат', () => {
     expect(el.props.restored).toEqual({ conversationId: 'conv-1', items: [] });
   });
 
-  it('аккаунт без чата-знакомства (сид демо) — обычный чат, состояние онбординга не создаётся', async () => {
+  it('аккаунт без чата-знакомства (сид демо) – обычный чат, состояние онбординга не создаётся', async () => {
     m.inFeed.mockResolvedValueOnce(false);
     const { Chat } = await import('@/components/Chat');
     expect((await inner()).type).toBe(Chat);
     expect(m.getView).not.toHaveBeenCalled();
   });
 
-  it('сбой онбординга не закрывает консультанта — обычный чат', async () => {
+  it('сбой онбординга не закрывает консультанта – обычный чат', async () => {
     m.getView.mockRejectedValueOnce(new Error('db down'));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { Chat } = await import('@/components/Chat');
@@ -104,7 +104,7 @@ describe('кандидат', () => {
     warn.mockRestore();
   });
 
-  it('старая кука демо-кандидата без аккаунта — обычный чат', async () => {
+  it('старая кука демо-кандидата без аккаунта – обычный чат', async () => {
     m.session = { userId: null, candidateId: 'c1', employerProfileId: null, role: 'candidate' };
     const { Chat } = await import('@/components/Chat');
     expect((await inner()).type).toBe(Chat);
@@ -130,7 +130,7 @@ describe('работодатель', () => {
     m.session = { userId: 'u2', candidateId: null, employerProfileId: 'e1', role: 'employer' };
   });
 
-  it('знакомство в ленте; после итога — помощник по подбору; данные кандидата не грузятся', async () => {
+  it('знакомство в ленте; после итога – помощник по подбору; данные кандидата не грузятся', async () => {
     m.getView.mockResolvedValueOnce({ current: { kind: 'summary' }, onboarded: true });
     const { OnboardingChat } = await import('@/components/onboarding/OnboardingChat');
     const el = await inner();
@@ -143,7 +143,7 @@ describe('работодатель', () => {
     expect(m.loadCandidateAside).not.toHaveBeenCalled();
   });
 
-  it('завершил без чата (сид демо) — сразу помощник по подбору с последним разговором, без редиректа', async () => {
+  it('завершил без чата (сид демо) – сразу помощник по подбору с последним разговором, без редиректа', async () => {
     m.inFeed.mockResolvedValueOnce(false);
     expect(await redirected()).toBe('ok');
     const { AssistantChat } = await import('@/components/employer/AssistantChat');
@@ -154,14 +154,14 @@ describe('работодатель', () => {
     expect(m.loadLastChat).not.toHaveBeenCalled();
   });
 
-  it('знакомство не завершено — шаги; разговор помощника грузится (реплики прежних пауз стоят под своими шагами)', async () => {
+  it('знакомство не завершено – шаги; разговор помощника грузится (реплики прежних пауз стоят под своими шагами)', async () => {
     m.getView.mockResolvedValueOnce({ current: { kind: 'one' }, onboarded: false });
     const el = await inner();
     expect(el.props.employerAssistant).toEqual({ demoNoLlm: true, restored: { conversationId: 'e-conv', items: [] } });
     expect(m.loadLastEmployerChat).toHaveBeenCalledWith('e1');
   });
 
-  it('«Настроить позже» (view.later) — пауза с помощником по подбору, как у кандидата', async () => {
+  it('«Настроить позже» (view.later) – пауза с помощником по подбору, как у кандидата', async () => {
     m.getView.mockResolvedValueOnce({ current: { kind: 'one' }, onboarded: false, later: true });
     const { PausedFeed } = await import('@/components/onboarding/PausedFeed');
     const el = await inner();

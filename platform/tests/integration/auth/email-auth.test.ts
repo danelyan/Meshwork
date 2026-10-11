@@ -19,7 +19,7 @@ const lastCode = (to: string, kind: string) => {
   const m = [...mailOutbox()].reverse().find((x) => x.to === to && x.kind === kind);
   return /(\d{6})/.exec(m?.subject ?? '')?.[1];
 };
-/** По умолчанию — запрос к стенду (не localhost): код в ответ не попадает, только в письмо. */
+/** По умолчанию – запрос к стенду (не localhost): код в ответ не попадает, только в письмо. */
 const STAND = 'https://fsp.example.test';
 const post = (handler: (r: Request) => Promise<Response>, url: string, body: unknown, base = STAND) =>
   handler(jsonRequest(`${base}${url}`, 'POST', body));
@@ -75,14 +75,14 @@ describe('вход по почте: регистрация, подтвержде
     expect(parseSession(cookieFrom(in2)!.slice(4))?.userId).toBe(user.id);
   });
 
-  it('без согласия аккаунт не создаётся; короткий пароль и кривая почта — 400', async () => {
+  it('без согласия аккаунт не создаётся; короткий пароль и кривая почта – 400', async () => {
     expect((await post(register, '/api/auth/register', { email: 'a@example.test', password: PASS, consent: 'old' })).status).toBe(409);
     expect((await post(register, '/api/auth/register', { email: 'a@example.test', password: 'short', consent: CONSENT_VERSION })).status).toBe(400);
     expect((await post(register, '/api/auth/register', { email: 'not-email', password: PASS, consent: CONSENT_VERSION })).status).toBe(400);
     expect(await prisma.user.count()).toBe(0);
   });
 
-  it('неверный пароль и неизвестная почта — одинаковый 401', async () => {
+  it('неверный пароль и неизвестная почта – одинаковый 401', async () => {
     await registerAndVerify('ivan@example.test');
     const wrong = await post(login, '/api/auth/login', { email: 'ivan@example.test', password: 'nope-nope-nope' });
     const unknown = await post(login, '/api/auth/login', { email: 'ghost@example.test', password: PASS });
@@ -108,7 +108,7 @@ describe('вход по почте: регистрация, подтвержде
     expect((await prisma.user.findFirstOrThrow({ where: { email: 'a@example.test' } })).emailVerifiedAt).toBeNull();
   });
 
-  it('просроченный код — отказ', async () => {
+  it('просроченный код – отказ', async () => {
     await post(register, '/api/auth/register', { email: 'a@example.test', password: PASS, consent: CONSENT_VERSION });
     await prisma.authCode.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
     const res = await post(verify, '/api/auth/verify', { email: 'a@example.test', code: lastCode('a@example.test', 'verify') });
@@ -130,7 +130,7 @@ describe('вход по почте: регистрация, подтвержде
     expect(await prisma.user.count({ where: { email: 'ivan@example.test' } })).toBe(2);
   });
 
-  it('forgot → reset: ответ одинаковый для любой почты, новый пароль работает, старый — нет', async () => {
+  it('forgot → reset: ответ одинаковый для любой почты, новый пароль работает, старый – нет', async () => {
     await registerAndVerify('ivan@example.test');
     const known = await post(forgot, '/api/auth/password/forgot', { email: 'ivan@example.test' });
     const unknown = await post(forgot, '/api/auth/password/forgot', { email: 'ghost@example.test' });
@@ -160,7 +160,7 @@ describe('вход по почте: регистрация, подтвержде
     expect(lastCode('jury@example.test', 'verify')).toMatch(/^\d{6}$/);
   });
 
-  it('локальная разработка (Host localhost): код в ответе, письмо не уходит; DEVTOOLS=false — как на стенде', async () => {
+  it('локальная разработка (Host localhost): код в ответе, письмо не уходит; DEVTOOLS=false – как на стенде', async () => {
     const res = await post(register, '/api/auth/register', { email: 'dev@example.test', password: PASS, consent: CONSENT_VERSION }, 'http://localhost:3000');
     const body = await res.json();
     expect(body.devCode).toMatch(/^\d{6}$/);
@@ -170,7 +170,7 @@ describe('вход по почте: регистрация, подтвержде
     expect(await (await post(forgot, '/api/auth/password/forgot', { email: 'dev@example.test' }, 'http://localhost:3000')).json()).toEqual({ sent: true });
 
     process.env.DEVTOOLS = 'false';
-    resetEnvCache(); // DEVTOOLS читается через getEnv() — сбросить кэш окружения
+    resetEnvCache(); // DEVTOOLS читается через getEnv() – сбросить кэш окружения
     try {
       const off = await post(register, '/api/auth/register', { email: 'dev2@example.test', password: PASS, consent: CONSENT_VERSION }, 'http://localhost:3000');
       expect(await off.json()).toEqual({ sent: true });
@@ -180,7 +180,7 @@ describe('вход по почте: регистрация, подтвержде
     }
   });
 
-  it('смена пароля отзывает старые сессии: старая кука — протухшая, новая работает', async () => {
+  it('смена пароля отзывает старые сессии: старая кука – протухшая, новая работает', async () => {
     const first = cookieFrom(await registerAndVerify('ivan@example.test'))!;
     const second = cookieFrom(await post(login, '/api/auth/login', { email: 'ivan@example.test', password: PASS }))!;
     const meOf = async (cookie: string) => (await (await me(jsonRequest(`${STAND}/api/auth/me`, 'GET', undefined, cookie))).json()).user;
@@ -207,7 +207,7 @@ describe('вход по почте: регистрация, подтвержде
     expect(codes.at(-1)).toBe(429);
   });
 
-  it('запрос с чужого Origin — 403', async () => {
+  it('запрос с чужого Origin – 403', async () => {
     const req = new Request(`${STAND}/api/auth/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', origin: 'https://evil.test' },

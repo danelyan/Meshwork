@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 
 // Сид лейна recommend: 3 вымышленные компании, 8 вакансий, 16 заданий банка.
-// catalogId — из docs/product/claims-catalog.md (черновик). Идемпотентен (upsert по id).
+// catalogId – из docs/product/claims-catalog.md (черновик). Идемпотентен (upsert по id).
 
 type Need = [catalogId: string, weight: 1 | 2 | 3];
 
@@ -58,7 +58,7 @@ export const DEMO_VACANCIES: {
     needs: [['fe.render-lifecycle', 3], ['fe.architecture', 2], ['fe.ssr', 2], ['fe.e2e-tests', 2], ['fe.bundler', 2], ['fe.api-client', 3]] },
 ];
 
-// По 2 задания на кластер пробелов. family — имена из каталога (колонка «Доказывается»).
+// По 2 задания на кластер пробелов. family – имена из каталога (колонка «Доказывается»).
 export const DEMO_TASKS: { id: string; title: string; family: string; grade: 'junior' | 'middle'; catalogIds: string[]; description: string }[] = [
   { id: 'task:payment-retry', title: 'Один платёж, два запроса', family: 'payment-retry', grade: 'middle', catalogIds: ['be.idempotency', 'be.retries-timeouts'], description: 'Найти, где повтор запроса создаёт второй платёж.' },
   { id: 'task:delivery-semantics', title: 'Сообщение пришло дважды', family: 'delivery-semantics', grade: 'middle', catalogIds: ['be.message-queue', 'be.idempotency'], description: 'Выбрать семантику доставки и подтверждения.' },

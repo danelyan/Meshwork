@@ -5,9 +5,9 @@ import { requireCandidate } from '@/server/session';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/profile/pdf — стандартизированный PDF-профиль текущего кандидата (R-C-03): категория из теста,
+ * GET /api/profile/pdf – стандартизированный PDF-профиль текущего кандидата (R-C-03): категория из теста,
  * основное, подтверждённые утверждения с уровнем доказанности, ФСП, ступени проверки. Формируется сервером,
- * отдаётся файлом (`attachment`). Только свои данные — candidateId из сессии.
+ * отдаётся файлом (`attachment`). Только свои данные – candidateId из сессии.
  */
 export const GET = withErrors(async (req: Request) => {
   const candidateId = requireCandidate(req);

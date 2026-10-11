@@ -33,11 +33,11 @@ export interface BankWidthRow {
   title: string;
   /** Свои семейства подкатегории по грейду. */
   own: { junior: number; middle: number; senior: number };
-  /** Общие семейства (common-map) — в пул попытки идут с долей ≤ 30 %. */
+  /** Общие семейства (common-map) – в пул попытки идут с долей ≤ 30 %. */
   common: number;
   /** Сколько заданий достижимо в одной попытке Junior/Middle без повторов (reachableSize). */
   reachable: number;
-  /** Для каждого max варианта: сколько не хватает до max + дозадавание (0 — хватает). */
+  /** Для каждого max варианта: сколько не хватает до max + дозадавание (0 – хватает). */
   shortBy: Record<string, number>;
   /** Для каждого max: сколько не хватает на две попытки без общих семейств (ретест без повторов). */
   shortByRetest: Record<string, number>;
@@ -56,7 +56,7 @@ type Summary = Record<string, { mean: number | null; min: number | null; max: nu
 
 const num = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null);
 
-/** Строка варианта из JSON одного прогона run.ts (summary.instance). Нет summary.instance — исключение. */
+/** Строка варианта из JSON одного прогона run.ts (summary.instance). Нет summary.instance – исключение. */
 export function parseLengthSweepRun(run: unknown, v: { min: number; max: number; current: boolean }): LengthSweepVariant {
   const summary = (run as { summary?: Record<string, Summary> })?.summary?.instance;
   if (!summary) throw new Error('run.ts JSON: нет summary.instance (нужен --error instance)');
@@ -76,8 +76,8 @@ export function parseLengthSweepRun(run: unknown, v: { min: number; max: number;
 }
 
 /**
- * Разбор results.json для блока /validation: lengthSweep и bankWidth необязательны (null — блок не показывается),
- * но если ключ есть и не сходится по форме — исключение (тест ловит до стенда).
+ * Разбор results.json для блока /validation: lengthSweep и bankWidth необязательны (null – блок не показывается),
+ * но если ключ есть и не сходится по форме – исключение (тест ловит до стенда).
  */
 export function parseLengthBlock(raw: unknown): { sweep: LengthSweep | null; bank: BankWidth | null } {
   const r = raw as { lengthSweep?: unknown; bankWidth?: unknown };
@@ -102,7 +102,7 @@ export function parseLengthBlock(raw: unknown): { sweep: LengthSweep | null; ban
 
 /**
  * Правило выбора дефолта (задача 11.10): вариант с κ (строгая) ≥ kappaTarget при средней длине ≤ maxMeanLength,
- * для которого банк позволяет max без нехватки во всех подкатегориях. Из подходящих — самый короткий. null — нет такого.
+ * для которого банк позволяет max без нехватки во всех подкатегориях. Из подходящих – самый короткий. null – нет такого.
  */
 export function pickDefaultLimits(
   sweep: LengthSweep,

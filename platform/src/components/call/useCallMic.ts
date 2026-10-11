@@ -7,9 +7,9 @@ import { readVoiceMode, speechRecognitionCtor, toPcm16, type VoiceMode } from '.
 
 /**
  * Микрофон созвона. Голос всегда пишется через Web Audio в LPCM 16 кГц (SpeechKit v1 не принимает webm
- * из MediaRecorder; тот же путь, что у композера — chat/voice.ts) и уходит сегментом на сервер: это
- * запись созвона. Текст: при STT=yandex распознаёт сервер, при STT=browser — Web Speech API по ходу
- * речи (interim показывается в панели). Нет микрофона — только текст.
+ * из MediaRecorder; тот же путь, что у композера – chat/voice.ts) и уходит сегментом на сервер: это
+ * запись созвона. Текст: при STT=yandex распознаёт сервер, при STT=browser – Web Speech API по ходу
+ * речи (interim показывается в панели). Нет микрофона – только текст.
  */
 export const CALL_MAX_RECORD_MS = 90_000;
 const RATE = 16_000;
@@ -17,9 +17,9 @@ const RATE = 16_000;
 export type MicState = 'idle' | 'recording' | 'processing';
 
 export interface MicResult {
-  /** PCM 16 кГц (null — звук не записан, только Web Speech). */
+  /** PCM 16 кГц (null – звук не записан, только Web Speech). */
   pcm: Uint8Array | null;
-  /** Текст от браузера (Web Speech); null — распознаёт сервер. */
+  /** Текст от браузера (Web Speech); null – распознаёт сервер. */
   browserText: string | null;
 }
 

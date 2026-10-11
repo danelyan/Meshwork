@@ -6,7 +6,7 @@ describe('splitPhrases', () => {
   it('режет по предложениям и снимает markdown', () => {
     expect(splitPhrases('**Привет!** Как дела? Расскажи про опыт.')).toEqual(['Привет!', 'Как дела?', 'Расскажи про опыт.']);
   });
-  it('пустой текст — нет фраз', () => expect(splitPhrases('')).toEqual([]));
+  it('пустой текст – нет фраз', () => expect(splitPhrases('')).toEqual([]));
   it('без точки в конце остаётся одной фразой', () => expect(splitPhrases('Просто текст')).toEqual(['Просто текст']));
 });
 
@@ -18,5 +18,5 @@ describe('phraseAt', () => {
     expect(phraseAt(ph, 0.9)).toBe(2);
     expect(phraseAt(ph, 1)).toBe(2);
   });
-  it('нет фраз — -1', () => expect(phraseAt([], 0.5)).toBe(-1));
+  it('нет фраз – -1', () => expect(phraseAt([], 0.5)).toBe(-1));
 });

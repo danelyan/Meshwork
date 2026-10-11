@@ -22,7 +22,7 @@ export interface StaffRow {
 
 type Patch = { role: StaffRoleName } | { disabled: boolean } | { resetTotp: true };
 
-/** Управление персоналом (owner). Причина — через prompt: она обязательна и уходит в журнал. */
+/** Управление персоналом (owner). Причина – через prompt: она обязательна и уходит в журнал. */
 export function StaffManager({ initial, meId }: { initial: StaffRow[]; meId: string }) {
   const [rows, setRows] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +133,7 @@ export function StaffManager({ initial, meId }: { initial: StaffRow[]; meId: str
         </form>
         {created && (
           <Notice>
-            Временный пароль для {created.email} показан один раз — передайте его лично: <code className={styles.secret}>{created.password}</code> Сотрудник меняет его и настраивает 2FA при первом входе.
+            Временный пароль для {created.email} показан один раз – передайте его лично: <code className={styles.secret}>{created.password}</code> Сотрудник меняет его и настраивает 2FA при первом входе.
           </Notice>
         )}
       </Panel>

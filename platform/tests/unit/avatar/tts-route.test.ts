@@ -35,12 +35,12 @@ describe('/api/tts', () => {
     expect(await (await GET()).json()).toEqual({ mode: 'yandex', maxChars: 1000 });
   });
 
-  it('режим: auto без ключей и off — выключено', () => {
+  it('режим: auto без ключей и off – выключено', () => {
     expect(ttsMode(parseEnv({ DATABASE_URL: 'postgresql://x@l/db', SESSION_SECRET: 'x'.repeat(32) }))).toBe('off');
     expect(ttsMode({ ...baseEnv, TTS_PROVIDER: 'off' })).toBe('off');
   });
 
-  it('POST: очищенный текст уходит в SpeechKit v1 формой, в ответ — mp3 без кэша', async () => {
+  it('POST: очищенный текст уходит в SpeechKit v1 формой, в ответ – mp3 без кэша', async () => {
     const fetchMock = okAudio();
     vi.stubGlobal('fetch', fetchMock);
     const res = await POST(post('**Привет!** Смотри [профиль](https://x.ru/p)'));
@@ -57,7 +57,7 @@ describe('/api/tts', () => {
     expect(form.has('folderId')).toBe(false); // с API-ключом folderId не передаётся
   });
 
-  it('без входа — 401, без ключей — 400, длиннее 1000 знаков — 413; SpeechKit не вызывается', async () => {
+  it('без входа – 401, без ключей – 400, длиннее 1000 знаков – 413; SpeechKit не вызывается', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     session = null;
@@ -71,7 +71,7 @@ describe('/api/tts', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('лимит на сессию: 21-й запрос за минуту — 429', async () => {
+  it('лимит на сессию: 21-й запрос за минуту – 429', async () => {
     vi.stubGlobal('fetch', okAudio());
     for (let i = 0; i < TTS_RATE.max; i++) expect((await POST(post(`фраза ${i}`))).status).toBe(200);
     expect((await POST(post('ещё'))).status).toBe(429);
@@ -122,7 +122,7 @@ describe('/api/tts', () => {
       expect((fetchMock.mock.calls[1] as unknown as [string])[0]).toContain('/text-to-speech/voiceB/stream');
     });
 
-    it('ELEVENLABS_BASE_URL (прокси) и скорость снизу; 302 гео-блокировки и сбой — 503', async () => {
+    it('ELEVENLABS_BASE_URL (прокси) и скорость снизу; 302 гео-блокировки и сбой – 503', async () => {
       env = { ...elEnv(), ELEVENLABS_BASE_URL: 'https://proxy.example.com/', TTS_SPEED: 0.5, ELEVENLABS_VOICE_EMPLOYER: undefined };
       const fetchMock = okAudio();
       vi.stubGlobal('fetch', fetchMock);
@@ -136,7 +136,7 @@ describe('/api/tts', () => {
       expect((await POST(postVoice())).status).toBe(429);
     });
 
-    it('realtime → ELEVENLABS_MODEL_CALL; ELEVENLABS_PROXY_URL — запрос через ProxyAgent, глобальный fetch не трогается', async () => {
+    it('realtime → ELEVENLABS_MODEL_CALL; ELEVENLABS_PROXY_URL – запрос через ProxyAgent, глобальный fetch не трогается', async () => {
       env = { ...elEnv(), ELEVENLABS_MODEL: 'eleven_v4', ELEVENLABS_MODEL_CALL: 'eleven_flash_v2_5', ELEVENLABS_PROXY_URL: 'http://u:p@proxy.test:3128' };
       const globalFetch = okAudio();
       vi.stubGlobal('fetch', globalFetch);

@@ -1,6 +1,6 @@
 // Импортируется первым в eval/call/personas.ts и eval/defense/personas.ts (до db.ts и env.ts):
 // грузит .env, включает stub по флагу --stub, ставит одновременность LLM = 1 (вызовы строго
-// последовательные — машина слабая) и не даёт писать персоны в рабочую БД.
+// последовательные – машина слабая) и не даёт писать персоны в рабочую БД.
 import { existsSync } from 'node:fs';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
@@ -15,7 +15,7 @@ process.env.LLM_MAX_CONCURRENCY = '1';
 const url = process.env.EVAL_DATABASE_URL ?? process.env.DATABASE_URL ?? '';
 const dbName = url.split('?')[0]!.split('/').pop() ?? '';
 if (!/(validation|eval|test)/i.test(dbName)) {
-  console.error(`eval: БД «${dbName || '(не задана)'}» не похожа на отдельную. Задай EVAL_DATABASE_URL (имя с validation/eval/test) — персоны пишут в БД кандидатов и созвоны.`);
+  console.error(`eval: БД «${dbName || '(не задана)'}» не похожа на отдельную. Задай EVAL_DATABASE_URL (имя с validation/eval/test) – персоны пишут в БД кандидатов и созвоны.`);
   process.exit(2);
 }
 process.env.DATABASE_URL = url;

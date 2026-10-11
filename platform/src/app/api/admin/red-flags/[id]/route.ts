@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const Body = z.object({ decision: z.enum(['ok', 'hidden', 'warned']), reason: z.string().max(1000) });
 
-/** Решение по флагу `{ decision: ok|hidden|warned, reason }`: hidden скрывает вакансию от кандидатов, warned — письмо компании. */
+/** Решение по флагу `{ decision: ok|hidden|warned, reason }`: hidden скрывает вакансию от кандидатов, warned – письмо компании. */
 export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {
   const staff = await requireStaff(req, 'review_red_flag');
   const { id } = await ctx.params;

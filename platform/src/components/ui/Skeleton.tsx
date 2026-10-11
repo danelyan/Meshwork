@@ -7,9 +7,9 @@ import { cx } from './cx';
 export type SkeletonShape = 'block' | 'line' | 'circle';
 
 export interface SkeletonProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {
-  /** `line` — строка текста (по умолчанию), `block` — прямоугольник (карточка), `circle` — аватар. */
+  /** `line` – строка текста (по умолчанию), `block` – прямоугольник (карточка), `circle` – аватар. */
   shape?: SkeletonShape;
-  /** CSS-размер: число — px, строка — как есть («60%»). */
+  /** CSS-размер: число – px, строка – как есть («60%»). */
   width?: number | string;
   height?: number | string;
 }

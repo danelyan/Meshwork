@@ -16,7 +16,7 @@ export const JURY_PAGES: JuryPage[] = [
 export const JURY_HINT =
   'Оранжевым отмечено всё, что сделано только для демонстрации жюри: демо-входы, расчёты, симулятор, режим эксперта. Вне демо-режима это скрыто.';
 
-/** Хаб жюри или одна из его страниц — подсветка кнопки «Для жюри» в шапке. */
+/** Хаб жюри или одна из его страниц – подсветка кнопки «Для жюри» в шапке. */
 export function isJuryPath(pathname: string): boolean {
   return [JURY_HOME, ...JURY_PAGES.map((p) => p.href)].some((h) => pathname === h || pathname.startsWith(`${h}/`));
 }

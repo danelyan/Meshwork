@@ -2,17 +2,17 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 # Наружу смотрит только Caddy (80/443): он получает сертификат Let's Encrypt для SITE_ADDRESS
 # и проксирует в app. В .env рядом дополнительно: SITE_ADDRESS=<домен>, APP_URL=https://<домен>.
-# Развёртывание и автодеплой — ../docs/deploy.md.
+# Развёртывание и автодеплой – ../docs/deploy.md.
 services:
   db:
-    # В общем файле политики перезапуска нет — без неё база не поднимется после перезагрузки сервера.
+    # В общем файле политики перезапуска нет – без неё база не поднимется после перезагрузки сервера.
     restart: unless-stopped
 
   app:
     # Без порта на хосте: приложение доступно только через Caddy.
     ports: !reset []
     # Пароль на сайт (страница /site-access, src/server/site-access.ts) снят 11.10 23:40 решением владельца:
-    # стенд открыт жюри без пароля. Вернуть — SITE_PASSWORD_SHA256 (SHA-256 пароля, сам пароль не в Git)
+    # стенд открыт жюри без пароля. Вернуть – SITE_PASSWORD_SHA256 (SHA-256 пароля, сам пароль не в Git)
     # в environment здесь или SITE_PASSWORD в .env сервера; см. ../docs/deploy.md и ../docs/product-decisions.md.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
@@ -22,15 +22,15 @@ services:
       start_period: 10s
 
   mailpit:
-    # Веб-ящик без пароля — только с самого сервера (ssh -L 8025:127.0.0.1:8025).
+    # Веб-ящик без пароля – только с самого сервера (ssh -L 8025:127.0.0.1:8025).
     ports: !override
       - "127.0.0.1:8025:8025"
 
   caddy:
     image: caddy:2.11-alpine
     environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:?в .env нужен SITE_ADDRESS — домен стенда}
-      # Имена, с которых Caddy перенаправляет на SITE_ADDRESS. Не заданы — служебное имя, на которое никто не придёт.
+      SITE_ADDRESS: ${SITE_ADDRESS:?в .env нужен SITE_ADDRESS – домен стенда}
+      # Имена, с которых Caddy перенаправляет на SITE_ADDRESS. Не заданы – служебное имя, на которое никто не придёт.
       SITE_REDIRECT_FROM: ${SITE_REDIRECT_FROM:-http://redirect.invalid}
     ports:
       - "80:80"

@@ -1,5 +1,5 @@
 {
-  "_why": "Общие слова-технологии (PostgreSQL, pull request, GitHub) не доказывают умение: давали ложные карточки на демо. Владельцу — перенести в docs/product/claims-catalog.md.",
+  "_why": "Общие слова-технологии (PostgreSQL, pull request, GitHub) не доказывают умение: давали ложные карточки на демо. Владельцу – перенести в docs/product/claims-catalog.md.",
   "common.sql-queries": [
     "SQL",
     "запросы SQL",

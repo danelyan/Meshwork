@@ -8,14 +8,14 @@ import { DIRECTIONS } from './scenario';
 import type { StepContext, StepDef } from './types';
 
 /**
- * Реплики помощника. Вопрос и варианты всегда из сценария (scenario.ts) — их
+ * Реплики помощника. Вопрос и варианты всегда из сценария (scenario.ts) – их
  * не генерирует модель. Модель (если она есть) пишет только короткую связку
- * перед вопросом; без модели (stub, демо) и при любой её ошибке — шаблон.
+ * перед вопросом; без модели (stub, демо) и при любой её ошибке – шаблон.
  */
 
 export interface PrevAnswer {
   step: StepDef;
-  /** undefined — шаг пропущен или закрыт фактом. */
+  /** undefined – шаг пропущен или закрыт фактом. */
   value: unknown;
   label: string | null;
 }
@@ -36,9 +36,9 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
   if (step.id === 'consent') {
     return `Привет${name ? `, ${name}` : ''}! Прежде чем начнём, нужно согласие на работу с твоими данными.`;
   }
-  // Первая реплика чата — приветствие и сразу к делу (согласие уже взято при регистрации).
+  // Первая реплика чата – приветствие и сразу к делу (согласие уже взято при регистрации).
   if (step.id === 'role' && prev === null) {
-    return `Привет${name ? `, ${name}` : ''}! Я ${COMPANION_NAME}, помощница ФСП Карьеры. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут - и настроим всё под тебя; любой вопрос можно пропустить.`;
+    return `Привет${name ? `, ${name}` : ''}! Я ${COMPANION_NAME}, помощница MESHWORK. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут - и настроим всё под тебя; любой вопрос можно пропустить.`;
   }
   if (step.kind === 'summary') {
     return ctx.answers.role === 'employer' || ctx.facts.role === 'employer'
@@ -135,14 +135,14 @@ export async function leadFor(
   opts: { candidateId?: string | null; signal?: AbortSignal } = {},
 ): Promise<string> {
   const template = templateLead(step, ctx, prev);
-  // Первая реплика (приветствие) и согласие — всегда шаблон: тон и смысл первого экрана не отдаём модели.
+  // Первая реплика (приветствие) и согласие – всегда шаблон: тон и смысл первого экрана не отдаём модели.
   if (!llmEnabled() || step.id === 'consent' || step.kind === 'consents' || (step.id === 'role' && prev === null)) return template;
   try {
     const llm = getLlm({ candidateId: opts.candidateId ?? undefined });
     const input = {
       name: firstName(ctx.facts.name),
       role: ctx.facts.role === 'pending' ? (ctx.answers.role ?? 'pending') : ctx.facts.role,
-      step: { eyebrow: step.eyebrow, question: step.question, ...(step.sub ? { sub: step.sub } : {}) },
+      step: { eyebrow: step.eyebrow, question: step.question },
       previous: prev ? { question: prev.step.question, answer: maskContacts(prev.label ?? 'пропущено').text } : null,
     };
     const res = await llm.complete(

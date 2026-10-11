@@ -147,7 +147,7 @@ export function BlindEvaluate() {
 
   return (
     <Container size="default" className={styles.page}>
-      <PageTitle kicker="Слепая оценка" title="Разметьте кандидатов сами" lead="Чья карточка — не видно. Оцените 0–3, затем сравните порядок с нашим подбором." />
+      <PageTitle kicker="Слепая оценка" title="Разметьте кандидатов сами" lead="Чья карточка – не видно. Оцените 0–3, затем сравните порядок с нашим подбором." />
       {error && (
         <Notice tone="error" role="alert">
           {error}{' '}
@@ -157,7 +157,7 @@ export function BlindEvaluate() {
       {!session && (
         <>
           <p className={styles.lead}>
-            Покажем до 8 кандидатов по одному, вслепую: часть из верха нашего подбора, часть из верха BM25 по тексту, часть случайных. Чья карточка — не видно.
+            Покажем до 8 кандидатов по одному, вслепую: часть из верха нашего подбора, часть из верха BM25 по тексту, часть случайных. Чья карточка – не видно.
             Оцените 0–3. Ничего не сохраняется, займёт 2–3 минуты.
           </p>
           {vacancies === null && !error && <p className={styles.meta} role="status">Загрузка потребностей…</p>}
@@ -212,7 +212,7 @@ export function BlindEvaluate() {
                   })}
                 </tbody>
               </table>
-              <p className={styles.note}>BM25 — та же базовая линия, что на /validation; карточка могла попасть в топ двух методов — тогда засчитана обоим.</p>
+              <p className={styles.note}>BM25 – та же базовая линия, что на /validation; карточка могла попасть в топ двух методов – тогда засчитана обоим.</p>
               <div className={styles.row}>
                 <Button variant="primary" onClick={reset}>Другая потребность</Button>
                 <Button onClick={again} loading={busy}>Повторить</Button>

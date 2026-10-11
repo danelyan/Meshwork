@@ -14,7 +14,7 @@ export interface AuditFilter {
   limit?: number;
 }
 
-/** Лента журнала (новые сверху) с именем сотрудника. Только чтение — журнал не правится. */
+/** Лента журнала (новые сверху) с именем сотрудника. Только чтение – журнал не правится. */
 export async function listAudit(f: AuditFilter) {
   const take = f.limit ?? 50;
   const where: Prisma.AdminAuditLogWhereInput = {

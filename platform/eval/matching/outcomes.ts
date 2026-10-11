@@ -1,10 +1,10 @@
 // Brier калиброванной вероятности по РЕАЛЬНЫМ исходам приглашений (читает БД из DATABASE_URL, ничего не пишет).
 //   npx tsx eval/matching/outcomes.ts [--min 30]
 // Для каждого приглашения по потребности: балл подбора пересчитывается по текущему профилю кандидата
-// (scoreCandidate, как в кабинете) -> scoreToProbability -> сравнение с исходом. Пока приглашений мало — «нет данных».
+// (scoreCandidate, как в кабинете) -> scoreToProbability -> сравнение с исходом. Пока приглашений мало – «нет данных».
 // ОГРАНИЧЕНИЕ: балл на момент отправки в БД не хранится (нет колонки Invitation.matchScore), поэтому берётся
 // текущий; профиль мог измениться после приглашения. Исход «принял» зависит и от зарплаты, а не только от соответствия,
-// поэтому это ПРОКСИ для P(подойдёт), а не она сама; сильнее всего сигнал — «созвон состоялся» и «вышел».
+// поэтому это ПРОКСИ для P(подойдёт), а не она сама; сильнее всего сигнал – «созвон состоялся» и «вышел».
 import { prisma } from '../../src/server/db';
 import { loadCatalog } from '../../src/server/recommend/evidence';
 import { scoreToProbability } from '../../src/server/employer/calibration';
@@ -41,7 +41,7 @@ async function main() {
       const v = await getVacancy(inv.companyId!, inv.vacancyId!);
       if (!poolCache.has(inv.companyId!)) poolCache.set(inv.companyId!, await loadPool(catalog, inv.companyId!));
       const row = poolCache.get(inv.companyId!)!.find((p) => p.evidence.id === inv.candidateId);
-      if (!row) continue; // кандидат скрыт или нанят другой компанией — балла нет
+      if (!row) continue; // кандидат скрыт или нанят другой компанией – балла нет
       const r = scoreCandidate(row.evidence, { vacancyId: v.id, specialization: v.specialization, subcategoryId: v.subcategoryId, grade: v.grade, needs: v.needs, stack: v.stack }, catalog);
       if (!r || dropUncovered([r]).length === 0) continue;
       rows.push({ status: inv.status, callDone: inv.liveDefenses.some((d) => d.status === 'done'), p: scoreToProbability(r.score) });

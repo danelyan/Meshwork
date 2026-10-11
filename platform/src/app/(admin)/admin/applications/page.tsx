@@ -10,7 +10,7 @@ import { requirePageStaff } from '@/server/admin/session';
 import styles from '../admin.module.css';
 import { flatParams, withoutPage } from '../listing';
 
-/** Самоотклики кандидатов на вакансии (R-C-12). Доступ — право просмотра приглашений. */
+/** Самоотклики кандидатов на вакансии (R-C-12). Доступ – право просмотра приглашений. */
 export default async function AdminApplicationsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requirePageStaff('/admin/applications', 'view_invitations');
   const raw = flatParams(await searchParams);

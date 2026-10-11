@@ -16,15 +16,15 @@ import { stubInterviewInterviewer } from './stub-interview';
  * Порядок решения (первое сработавшее):
  *  1. Фикстура `registerStubResponse(purpose, fn)` вернула не undefined.
  *  2. Маркер `[[error 429]]` / `[[error 503 текст]]` в последнем сообщении user → LlmError с этим статусом.
- *  3. Есть tools, toolChoice ≠ 'none', последнее сообщение — от user и в нём
+ *  3. Есть tools, toolChoice ≠ 'none', последнее сообщение – от user и в нём
  *     `[[tool:name {json}]]` (можно несколько) → kind 'tool_calls'.
  *     toolChoice {name} без маркера → вызов этого инструмента с `{}`.
  *  3a. purpose call_interviewer / call_evaluator → детерминированный ответ по `<call_context>` (stub-call.ts).
  *  4. Есть schema → kind 'json': маркер `[[json {...}]]` или минимально валидный
  *     объект, сгенерированный по JSON Schema.
- *  5. Иначе — kind 'text': маркер `[[reply текст]]`; после результатов
- *     инструментов — сводка; иначе ответ по ключевым словам или эхо.
- * Маркер `[[delay 300]]` — задержка ответа (мс), уважает AbortSignal.
+ *  5. Иначе – kind 'text': маркер `[[reply текст]]`; после результатов
+ *     инструментов – сводка; иначе ответ по ключевым словам или эхо.
+ * Маркер `[[delay 300]]` – задержка ответа (мс), уважает AbortSignal.
  */
 
 export type StubFixture = (
@@ -36,7 +36,7 @@ export type StubFixture = (
 
 const fixtures = new Map<LlmPurpose, StubFixture[]>();
 
-/** Подменить ответ заглушки для purpose. Последняя зарегистрированная — первой. Возвращает «снять». */
+/** Подменить ответ заглушки для purpose. Последняя зарегистрированная – первой. Возвращает «снять». */
 export function registerStubResponse(purpose: LlmPurpose, fn: StubFixture): () => void {
   const list = fixtures.get(purpose) ?? [];
   list.unshift(fn);
@@ -252,7 +252,7 @@ export function createStubProvider(opts: StubOptions = {}): LlmProvider {
           try {
             return { kind: 'json', json: JSON.parse(balancedJson(userText, start)) };
           } catch {
-            /* невалидный JSON в маркере — генерируем по схеме */
+            /* невалидный JSON в маркере – генерируем по схеме */
           }
         }
       }

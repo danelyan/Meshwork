@@ -34,7 +34,7 @@ describe('классификатор (visible)', () => {
     expect(llm.prompts[1]).toContain('не знаю');
   });
 
-  it('пустой текст — bad_request', async () => {
+  it('пустой текст – bad_request', async () => {
     await expect(classify(scripted([]), { text: '  ', labels })).rejects.toBeInstanceOf(ClassifyError);
   });
 });

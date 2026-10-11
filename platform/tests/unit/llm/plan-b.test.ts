@@ -18,7 +18,7 @@ const res = (over: Partial<CompleteResult>): CompleteResult => ({
 });
 
 describe('plan B: запрос', () => {
-  it('tools уходят в system, схема действия — в schema, tools не передаются', () => {
+  it('tools уходят в system, схема действия – в schema, tools не передаются', () => {
     const r = toPlanBRequest(req);
     expect(r.tools).toBeUndefined();
     expect(r.toolChoice).toBeUndefined();
@@ -88,7 +88,7 @@ describe('plan B: разбор', () => {
     expect(p.ok && p.result.toolCalls?.map((c) => c.name)).toEqual(['read_document', 'fetch_url']);
   });
 
-  it('reply → text; при schema — json из text', () => {
+  it('reply → text; при schema – json из text', () => {
     const p = parsePlanB(res({ kind: 'json', json: { action: 'reply', text: 'Готово' } }), req);
     expect(p).toEqual({ ok: true, result: { kind: 'text', text: 'Готово' } });
     const withSchema = { ...req, schema: { name: 's', jsonSchema: {} } };
@@ -96,7 +96,7 @@ describe('plan B: разбор', () => {
     expect(q).toEqual({ ok: true, result: { kind: 'json', json: { a: 1 } } });
   });
 
-  it('проза без JSON → reply; при принудительном инструменте — ошибка', () => {
+  it('проза без JSON → reply; при принудительном инструменте – ошибка', () => {
     expect(parsePlanB(res({ text: 'Привет! Пришли резюме.' }), req)).toEqual({ ok: true, result: { kind: 'text', text: 'Привет! Пришли резюме.' } });
     expect(parsePlanB(res({ text: 'Привет' }), { ...req, toolChoice: { name: 'fetch_url' } }).ok).toBe(false);
   });
@@ -120,7 +120,7 @@ describe('plan B: разбор', () => {
 });
 
 describe('plan B: ремонт', () => {
-  it('валидный с первого раза — один вызов', async () => {
+  it('валидный с первого раза – один вызов', async () => {
     const call = vi.fn(async () => res({ kind: 'json', json: { action: 'reply', text: 'ok' } }));
     const r = await runPlanB(req, call);
     expect(call).toHaveBeenCalledTimes(1);
@@ -160,7 +160,7 @@ describe('plan B через client', () => {
     return { name: 'giga', model: 'g-1', supportsTools: false, supportsJsonSchema: true, complete: impl };
   }
 
-  it('провайдер без tools получает протокол, вызывающий — tool_calls; журнал один', async () => {
+  it('провайдер без tools получает протокол, вызывающий – tool_calls; журнал один', async () => {
     const seen: CompleteRequest[] = [];
     const runs: AgentRunRecord[] = [];
     const client = createLlmClient({

@@ -34,7 +34,7 @@ describe('chunkText', () => {
     expect(chunkText('короткий', { size: 800, overlap: 100 })).toEqual(['короткий']);
   });
 
-  it('по умолчанию 800/100; пустой текст — []', () => {
+  it('по умолчанию 800/100; пустой текст – []', () => {
     const text = 'x'.repeat(1500);
     const chunks = chunkText(text);
     expect(chunks.map((c) => c.length)).toEqual([800, 800]);
@@ -42,7 +42,7 @@ describe('chunkText', () => {
     expect(chunkText('   \n ')).toEqual([]);
   });
 
-  it('overlap ≥ size или size < 1 — RangeError', () => {
+  it('overlap ≥ size или size < 1 – RangeError', () => {
     expect(() => chunkText('abc', { size: 3, overlap: 3 })).toThrow(RangeError);
     expect(() => chunkText('abc', { size: 0, overlap: 0 })).toThrow(RangeError);
   });
@@ -85,7 +85,7 @@ describe('retrieve', () => {
     expect(retrieve(idx, 'кто выдаёт ноутбук')[0]!.docId).toBe('it/laptop.md');
   });
 
-  it('без общих токенов — пусто; не больше k; оценки по убыванию', () => {
+  it('без общих токенов – пусто; не больше k; оценки по убыванию', () => {
     expect(retrieve(idx, 'квантовая хромодинамика')).toEqual([]);
     const hits = retrieve(idx, 'дней работать отпуск пароль', 2);
     expect(hits).toHaveLength(2);
@@ -109,7 +109,7 @@ describe('answer', () => {
     idx = buildIndex(DOCS);
   });
 
-  it('нет опоры — отказ без вызова модели', async () => {
+  it('нет опоры – отказ без вызова модели', async () => {
     const f = fakeLlm('что-то');
     const res = await answer('квантовая хромодинамика', { index: idx, llm: f.llm });
     expect(res).toEqual({ answer: 'Не нашёл ответа в документах.', citations: [], refused: true });
@@ -138,7 +138,7 @@ describe('answer', () => {
     expect(res.answer).toContain('[secret/fake.md#3]');
   });
 
-  it('модель без валидных ссылок — отказ', async () => {
+  it('модель без валидных ссылок – отказ', async () => {
     const f = fakeLlm('Отпуск 35 дней, источник [made/up.md#0].');
     const res = await answer('Сколько дней длится ежегодный отпуск?', { index: idx, llm: f.llm });
     expect(res).toEqual({ answer: 'Не нашёл ответа в документах.', citations: [], refused: true });

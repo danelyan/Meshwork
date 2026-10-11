@@ -54,7 +54,7 @@ class TestCheckEvents:
         assert rep["rows_in"] == rep["rows_out"] + sum(rep[k] for k in ISSUES)
 
     def test_priority_first_category_wins(self):
-        # пустой пользователь с битой датой и неизвестным событием — только no_user
+        # пустой пользователь с битой датой и неизвестным событием – только no_user
         _, rep = rt.check_events(ev([["", "weird", "bad"], ["u", "weird", "bad"], ["u", "weird", "2099-01-01"]]), "2026-02-01")
         assert (rep["no_user"], rep["bad_ts"], rep["unknown_event"], rep["future"]) == (1, 1, 1, 0)
 
@@ -120,9 +120,9 @@ class TestRetention:
     def test_censoring_is_nan_not_zero(self):
         r = rt.weekly_retention(ev(self.rows()), "2026-01-19", weeks=3)
         a, b = r.iloc[0], r.iloc[1]
-        # когорта A (05.01): окна 0 (05.01), 1 (12.01), 2 (19.01) наблюдаемы, окно 3 (26.01) — нет
+        # когорта A (05.01): окна 0 (05.01), 1 (12.01), 2 (19.01) наблюдаемы, окно 3 (26.01) – нет
         assert a["week_2"] == 0.5 and math.isnan(a["week_3"])
-        # когорта B (12.01): окна 0, 1 (19.01) наблюдаемы, окно 2 (26.01) — нет
+        # когорта B (12.01): окна 0, 1 (19.01) наблюдаемы, окно 2 (26.01) – нет
         assert b["week_1"] == 0.0 and math.isnan(b["week_2"]) and math.isnan(b["week_3"])
 
     def test_as_of_partial_week_observed(self):

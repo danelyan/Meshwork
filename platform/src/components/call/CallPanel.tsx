@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ApiError } from '@/lib/api';
 import { callApi, subscribeCallEvents } from '@/lib/call-api';
-import { telemetryOn } from '../chat/telemetry';
 import type { CallVerdict, CallView, TranscriptEntry } from '@/server/call/types';
 import { blockDef, competencyById } from '@/server/interview/model';
 import { INTERVIEW_LIMITS, clarificationHint, stageOf } from '@/server/interview/plan';
@@ -15,7 +14,6 @@ import { StateChip } from '../avatar/Speaking';
 import { useCompanionVoice } from '../avatar/voice';
 import { Criteria, ResultCard, Stages } from '../interview/InterviewPage';
 import { SKIP_ANSWER, summaryOf, turnsOf } from '../interview/helpers';
-import { useFaceTracking } from '../interview/useFaceTracking';
 import { Spinner, cx } from '../ui';
 
 import styles from './CallPanel.module.css';
@@ -24,32 +22,16 @@ import { DepthMap } from './DepthMap';
 import { DevicePreflight } from './DevicePreflight';
 import { useAck } from './useAck';
 import { TALK_LABEL, useCallTalk } from './useCallTalk';
-import { type LatencySample, useReplySpeech } from './useReplySpeech';
+import { useReplySpeech } from './useReplySpeech';
 import { ObjectionButton } from '../consent/ObjectionButton';
 import { useCamera } from '../interview/useCamera';
 
 type Phase = 'loading' | 'consent' | 'devices' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
-/** Лимит созвона по времени: подсказка и автозавершение (владелец 11.10). */
-export const CALL_SOFT_LIMIT_MS = 12 * 60_000;
-export const CALL_HARD_LIMIT_MS = 15 * 60_000;
 
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
-
-/** Строка телеметрии хода: «речь→текст 0,8 с · поток 1,4 с · реплика 2,1 с · звук 2,3 с · угу 0,2 с». */
-export function timingLine(t: LatencySample): string {
-  const sec = (ms: number) => `${(ms / 1000).toFixed(1).replace('.', ',')} с`;
-  const parts = [
-    t.uploadMs !== null ? `речь→текст ${sec(t.uploadMs)}` : 'текстом',
-    t.endToFirstDeltaMs !== null ? `поток ${sec(t.endToFirstDeltaMs)}` : null,
-    t.endToReplyMs !== null ? `реплика ${sec(t.endToReplyMs)}` : null,
-    `звук ${sec(t.endToSoundMs)}`,
-    t.ackMs !== null ? `угу ${sec(t.ackMs)}` : null,
-  ];
-  return parts.filter((p): p is string => Boolean(p)).join(' · ');
-}
 
 function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined)[]): TranscriptEntry[] {
   const byIndex = new Map(list.map((e) => [e.index, e]));
@@ -59,7 +41,7 @@ function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined
 
 /**
  * Режим звонка в сцене консультанта (ADR 0003, ступень 1). Согласие на запись перед первым звонком,
- * затем: голова говорит вопрос ИИ (тот же голос и липсинк — /api/tts), текст реплики снизу, микрофон
+ * затем: голова говорит вопрос ИИ (тот же голос и липсинк – /api/tts), текст реплики снизу, микрофон
  * (запись сегмента + распознавание), «Текстом», индикатор записи, «Завершить» → карта глубины.
  */
 export function CallPanel() {
@@ -86,12 +68,13 @@ export function CallPanel() {
   /** Согласие на запись отозвано (ADR 0005): созвон без записи голоса, ответы только текстом. */
   const [textOnly, setTextOnly] = useState(false);
   /** Причина текстового режима: отозванное согласие или выбор/отказ на шаге проверки устройств. */
+  const [textWhy, setTextWhy] = useState<'consent' | 'devices'>('consent');
   const textOnlyRef = useRef(false);
   /** Шаг проверки устройств пройден в этой панели (повторно перед «Пройти ещё раз» не показываем). */
   const devicesDone = useRef(false);
   /** Микрофон вообще не нужен (голос выключен на сервере или нет поддержки) - проверку пропускаем. */
   const micUnneeded = useRef(false);
-  /** Камера в созвоне: выбор со шага проверки устройств (по умолчанию выключена) — включается, когда созвон пошёл. */
+  /** Камера в созвоне: выбор со шага проверки устройств (по умолчанию выключена) – включается, когда созвон пошёл. */
   const wantCamera = useRef(false);
   /** Согласие на запись действует (Г2): без него видео не пишем, кнопки камеры нет (сервер тоже отвергает). */
   const [recordingConsent, setRecordingConsent] = useState(true);
@@ -103,8 +86,6 @@ export function CallPanel() {
   const [hint, setHint] = useState<{ index: number; text: string } | null>(null);
   const replays = useRef(0);
   const [now, setNow] = useState(() => Date.now());
-  /** Телеметрия последнего хода (водопад из useReplySpeech) — строка в панели при включённой телеметрии. */
-  const [lastTiming, setLastTiming] = useState<LatencySample | null>(null);
   const spoken = useRef(new Set<string>());
 
   const begin = useCallback(async () => {
@@ -171,25 +152,14 @@ export function CallPanel() {
 
   // События созвона: реплики из других вкладок и (позже) работодателя в комнате.
   const id = call?.id;
-  const idRef = useRef(id);
-  idRef.current = id;
-  const onSample = useCallback((sample: LatencySample) => {
-    setLastTiming(sample);
-    const cid = idRef.current;
-    if (!cid || sample.index < 0) return;
-    const { index, ...client } = sample;
-    void callApi.telemetry(cid, { index, client }).catch(() => undefined); // замер, не ход: сбой не показываем
-  }, []);
-  const reply = useReplySpeech(voice, id, onSample);
+  const reply = useReplySpeech(voice, id);
   const onDelta = reply.onDelta;
   const markSpeechEnd = reply.markSpeechEnd;
-  const markUploaded = reply.markUploaded;
-  const markAck = reply.markAck;
 
   // Свободный разговор: микрофон открыт весь созвон, фразы режет детектор речи (useCallTalk).
   const busyRef = useRef(false);
   busyRef.current = busy;
-  const sendRef = useRef<(input: { text?: string; audioRef?: string; sttMs?: number }) => Promise<void>>(async () => {});
+  const sendRef = useRef<(input: { text?: string; audioRef?: string }) => Promise<void>>(async () => {});
   const pending = useRef<{ text: string; audioRef?: string } | null>(null);
   const talk = useCallTalk({
     active: phase === 'live' && !textOnly,
@@ -199,22 +169,19 @@ export function CallPanel() {
       if (!id) return false;
       markSpeechEnd();
       let audioRef: string | undefined;
-      let sttMs: number | undefined;
       let text = browserText ?? '';
       if (pcm) {
         try {
           const a = await callApi.audio(id, pcm);
-          markUploaded();
           audioRef = a.audioRef;
-          sttMs = a.sttMs;
           if (!text) text = a.text ?? '';
         } catch (e) {
           if (!text) setError(e instanceof Error ? e.message : 'Запись не сохранилась - ответь текстом');
         }
       }
-      // Шум без слов — не ответ: молча слушаем дальше.
+      // Шум без слов – не ответ: молча слушаем дальше.
       if (!text.trim()) return false;
-      // Семантический фильтр (lib/interrupt.ts): поддакивание поверх Киры и команда «стоп» — не ход.
+      // Семантический фильтр (lib/interrupt.ts): поддакивание поверх Киры и команда «стоп» – не ход.
       const d = decide(text);
       if (d === 'ignore' || d === 'hard') return false;
       if (busyRef.current || d === 'queue') {
@@ -223,11 +190,11 @@ export function CallPanel() {
         pending.current = { text: p ? `${p.text} ${text}` : text, ...((p?.audioRef ?? audioRef) ? { audioRef: p?.audioRef ?? audioRef } : {}) };
         return true;
       }
-      await sendRef.current({ text, ...(audioRef ? { audioRef } : {}), ...(sttMs !== undefined ? { sttMs } : {}) });
+      await sendRef.current({ text, ...(audioRef ? { audioRef } : {}) });
       return true;
     },
   });
-  const ack = useAck({ voice, enabled: phase === 'live' && !textOnly, userSpeaking: talk.state === 'user', onPlayed: markAck });
+  const ack = useAck({ voice, enabled: phase === 'live' && !textOnly, userSpeaking: talk.state === 'user' });
   const onAckTurn = ack.onTurn;
   const hushed = talk.hushed;
   const unhush = talk.unhush;
@@ -243,7 +210,7 @@ export function CallPanel() {
     });
   }, [id, onDelta, hushed]);
 
-  // Новая реплика ИИ — озвучить один раз (ключ = созвон + номер реплики), по предложениям (useReplySpeech).
+  // Новая реплика ИИ – озвучить один раз (ключ = созвон + номер реплики), по предложениям (useReplySpeech).
   const speakEntry = reply.speakEntry;
   const lastAi = [...transcript].reverse().find((e) => e.role === 'ai');
   const lastAiRef = useRef(lastAi);
@@ -253,7 +220,7 @@ export function CallPanel() {
     const key = `call-${id}-${lastAi.index}`;
     if (spoken.current.has(key)) return;
     spoken.current.add(key);
-    if (hushed()) return; // кандидат перебил — ответ виден текстом, но не звучит поверх него
+    if (hushed()) return; // кандидат перебил – ответ виден текстом, но не звучит поверх него
     speakEntry(lastAi);
   }, [lastAi, id, speakEntry, hushed]);
 
@@ -277,8 +244,6 @@ export function CallPanel() {
     deniedText: 'Нет доступа к камере - разреши её в настройках браузера. Созвон идёт без видео.',
   });
   const startCamera = camera.start;
-  // Голова Киры поворачивается за лицом кандидата с камеры (как в комнате интервью); только на его экране.
-  useFaceTracking(camera.getVideo, camera.state === 'on' && phase === 'live');
   useEffect(() => {
     if (phase !== 'live' || !id || !wantCamera.current || !cameraAllowed) return;
     wantCamera.current = false;
@@ -286,9 +251,9 @@ export function CallPanel() {
   }, [phase, id, cameraAllowed, startCamera]);
 
   const send = useCallback(
-    async (input: { text?: string; audioRef?: string; sttMs?: number }) => {
+    async (input: { text?: string; audioRef?: string }) => {
       if (!id) return;
-      if (!input.audioRef) markSpeechEnd(); // текстом: конец «речи» — отправка
+      if (!input.audioRef) markSpeechEnd(); // текстом: конец «речи» – отправка
       unhush();
       setBusy(true);
       setError(null);
@@ -321,7 +286,6 @@ export function CallPanel() {
     try {
       const v = await callApi.finish(id);
       setCall(v);
-      mode?.markFinished();
       if (v.status === 'active') {
         // Оценщик разошёлся по какой-то теме: созвон продолжается дополнительным вопросом.
         setTranscript((t) => merge(t, v.transcript ?? []));
@@ -363,14 +327,9 @@ export function CallPanel() {
   const lastCandidate = [...transcript].reverse().find((e) => e.role === 'candidate');
   const startedAt = call ? new Date(call.startedAt).getTime() : now;
   const canFinish = answered > 0 && !busy;
-  // Лимит по времени (решение владельца 11.10): с 12 минут - подсказка завершить, в 15 завершаем сами,
-  // когда кандидат не говорит и Кира не думает; оценка строится по уже данным ответам.
-  const elapsedMs = now - startedAt;
-  const overSoft = phase === 'live' && elapsedMs > CALL_SOFT_LIMIT_MS;
-  const overHard = phase === 'live' && elapsedMs > CALL_HARD_LIMIT_MS;
   const canAnswer = Boolean(last && last.role === 'ai' && last.meta) && !closing && phase === 'live';
   // Фраза, сказанная пока Кира думала, уходит, когда ответ пришёл и прозвучал (send() останавливает озвучку).
-  // Пауза — чтобы озвучка ответа успела начаться (статус loading), прежде чем решить, что Кира молчит.
+  // Пауза – чтобы озвучка ответа успела начаться (статус loading), прежде чем решить, что Кира молчит.
   const voiceStatus = voice?.status;
   useEffect(() => {
     if (busy || !canAnswer || !pending.current) return;
@@ -384,13 +343,6 @@ export function CallPanel() {
     }, 150);
     return () => clearTimeout(t);
   }, [busy, canAnswer, send, voiceStatus]);
-  const talkState = talk.state;
-  useEffect(() => {
-    if (!overHard || !canFinish || busy || talkState === 'user') return;
-    void finish();
-    // finish стабилен по id созвона; зависимости - только условия
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overHard, canFinish, busy, talkState]);
   const progress = call?.progress;
   const summary = interview ? summaryOf(call?.verdict) : null;
   const stage = phase === 'done' ? 'summary' : stageOf(turnsOf(transcript), closing);
@@ -414,7 +366,7 @@ export function CallPanel() {
           <span className={styles.rec} role="status" data-testid="call-rec">
             {/* Текстовый режим: аудио не сохраняется (подсказка ниже) - только таймер, без точки и слова «Запись». */}
             {!textOnly && <i className={styles.recDot} aria-hidden="true" />}
-            {textOnly ? mmss(now - startedAt) : `Запись ${mmss(now - startedAt)}`} / {mmss(CALL_HARD_LIMIT_MS)}
+            {textOnly ? mmss(now - startedAt) : `Запись ${mmss(now - startedAt)}`}
           </span>
         )}
         {phase === 'live' && interview && (
@@ -453,7 +405,6 @@ export function CallPanel() {
           <DevicePreflight
             withCamera={cameraAllowed}
             cameraJoinsCall
-            cameraRequired={cameraAllowed}
             primaryClass={styles.primary}
             ghostClass={styles.ghost}
             onReady={(o) => {
@@ -461,7 +412,14 @@ export function CallPanel() {
               devicesDone.current = true;
               void begin();
             }}
-            textFallback={false}
+            onTextOnly={() => {
+              devicesDone.current = true;
+              textOnlyRef.current = true;
+              setTextWhy('devices');
+              setTextOnly(true);
+              setTyping(true);
+              void begin();
+            }}
             onCancel={mode?.close}
           />
         )}
@@ -470,10 +428,10 @@ export function CallPanel() {
           <div className={styles.consent} data-testid="call-consent">
             <b>{interview ? 'Перед созвоном с ИИ - согласие на запись' : 'Перед первым созвоном - согласие на запись'}</b>
             {mode?.reason && <p className={styles.reason}>{mode.reason}</p>}
-            {/* Коротко — суть; полный текст свёрнут (владелец 11.10: «компактно и просто ссылки на оферту») */}
+            {/* Коротко – суть; полный текст свёрнут (владелец 11.10: «компактно и просто ссылки на оферту») */}
             <ul className={styles.consentList}>
               <li>Голос и расшифровка записываются только для оценки ответов; по голосу личность не определяется.</li>
-              <li>Работодатель до принятого приглашения видит только оценки по темам; запись и транскрипт — после твоего «да».</li>
+              <li>Работодатель до принятого приглашения видит только оценки по темам; запись и транскрипт – после твоего «да».</li>
               <li>Аудио хранится 90 дней; согласие можно отозвать в настройках («Мои согласия»).</li>
             </ul>
             <div className={styles.consentLinks}>
@@ -530,11 +488,6 @@ export function CallPanel() {
             ) : lastCandidate && !awaiting && busy ? (
               <p className={styles.mine}>{lastCandidate.text}</p>
             ) : null}
-            {lastTiming && telemetryOn() && (
-              <p className={styles.hint} data-testid="call-timing" title="Телеметрия хода: конец речи → загрузка/STT → первое предложение → реплика → первый звук">
-                {timingLine(lastTiming)}
-              </p>
-            )}
             {camera.error && (
               <p className={styles.hint} role="status" data-testid="call-camera-error">
                 {camera.error}
@@ -542,14 +495,9 @@ export function CallPanel() {
             )}
             {extra && !closing && <p className={styles.hint}>Ещё вопрос: по одной из тем ответы пока не дают однозначной оценки.</p>}
             {closing && <p className={styles.hint}>Вопросы закончились - нажми «Завершить».</p>}
-            {overSoft && !closing && (
-              <p className={styles.hint} role="status" data-testid="call-time-hint">
-                Созвон идёт дольше {Math.round(CALL_SOFT_LIMIT_MS / 60000)} минут - лучше завершить: оценка строится по уже данным ответам. В {Math.round(CALL_HARD_LIMIT_MS / 60000)} минут завершу сама.
-              </p>
-            )}
             {phase === 'finishing' && (
               <p className={styles.wait}>
-                <Spinner /> Подвожу итоги созвона - обычно это меньше минуты…
+                <Spinner /> {interview ? 'Собираю оценку по компетенциям…' : 'Оценщик разбирает ответы (три независимых прогона, при расхождении - пять)…'}
               </p>
             )}
           </>
@@ -584,7 +532,7 @@ export function CallPanel() {
         )}
         {phase === 'done' && !interview && call?.verdict && (
           <div className={styles.result}>
-            <b>Созвон завершён - карта глубины</b>
+            <b>Карта глубины</b>
             <DepthMap verdict={call.verdict as CallVerdict} dark />
             {(call.verdict as CallVerdict).upgradedCatalogIds?.length ? (
               <p className={styles.hint}>Подтверждённые утверждения получили уровень «проверено платформой».</p>
@@ -606,7 +554,7 @@ export function CallPanel() {
 
         {textOnly && (phase === 'live' || phase === 'starting') && (
           <p className={styles.hint} data-testid="call-text-mode">
-            Запись голоса отключена в «Моих согласиях» - созвон идёт текстом, аудио не сохраняется.
+            {textWhy === 'consent' ? 'Запись голоса отключена в «Моих согласиях» - созвон идёт текстом, аудио не сохраняется.' : 'Созвон идёт текстом: микрофон не проверен или недоступен. Голос можно включить, начав созвон заново.'}
           </p>
         )}
         {(error || talk.error) && (
@@ -680,19 +628,23 @@ export function CallPanel() {
                 <span>{talk.muted ? 'Микрофон выкл' : 'Микрофон вкл'}</span>
               </button>
             )}
-            {/* Созвон строго голосом (владелец 12.10): клавиатура только когда голос невозможен - согласие на запись отозвано или браузер без микрофона/распознавания. */}
-            {(textOnly || !talk.available) && (
-              <button type="button" className={cx(styles.ctl, typing && styles.ctlOn)} onClick={() => setTyping((v) => !v)} aria-pressed={typing}>
-                <KeyboardIcon />
-                <span>Текстом</span>
-              </button>
-            )}
-            {/* Созвон строго с видео (владелец 12.10): камера включена с шага проверки устройств, выключателя нет; статус - индикатор. */}
+            <button type="button" className={cx(styles.ctl, typing && styles.ctlOn)} onClick={() => setTyping((v) => !v)} aria-pressed={typing}>
+              <KeyboardIcon />
+              <span>Текстом</span>
+            </button>
             {cameraAllowed && camera.supported && (
-              <span className={cx(styles.ctl, styles.ctlOn)} role="status" title="Видео записывается вместе с аудио созвона; никакая модель его не анализирует" data-testid="call-camera" data-state={camera.state}>
+              <button
+                type="button"
+                className={cx(styles.ctl, camera.state === 'on' && styles.ctlOn)}
+                onClick={() => void (camera.state === 'on' ? camera.stop() : camera.start())}
+                disabled={camera.state === 'starting' || phase !== 'live'}
+                aria-pressed={camera.state === 'on'}
+                title="Видео записывается вместе с аудио созвона; никакая модель его не анализирует"
+                data-testid="call-camera"
+              >
                 <CameraIcon />
-                <span>{camera.state === 'on' ? 'Камера вкл' : camera.state === 'starting' ? 'Камера…' : 'Камера выкл'}</span>
-              </span>
+                <span>{camera.state === 'on' ? 'Камера вкл' : 'Камера'}</span>
+              </button>
             )}
             <button type="button" className={cx(styles.ctl, styles.end)} onClick={() => void finish()} disabled={!canFinish || phase === 'finishing'} data-testid="call-finish">
               <EndIcon />

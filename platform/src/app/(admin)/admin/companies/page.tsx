@@ -46,8 +46,8 @@ export default async function AdminCompaniesPage({ searchParams }: { searchParam
               <td>
                 <Link href={`/admin/companies/${c.id}`}>{companyDisplayName(c.name)}</Link>
               </td>
-              <td className={styles.mono}>{c.inn ?? '—'}</td>
-              <td>{c.trust === null ? '—' : `${c.trust} (${BAND[c.trustBand!]})`}</td>
+              <td className={styles.mono}>{c.inn ?? '–'}</td>
+              <td>{c.trust === null ? '–' : `${c.trust} (${BAND[c.trustBand!]})`}</td>
               <td>{c.vacancies}</td>
               <td>{c.invitations}</td>
               <td className={styles.row}>

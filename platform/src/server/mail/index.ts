@@ -4,8 +4,8 @@ import { buildMessage, smtpSend } from './smtp';
 
 /**
  * Почта платформы (R-D-04: подтверждение адреса; уведомления о приглашениях).
- * MAIL_PROVIDER=smtp — SMTP из env (на стенде Mailpit, веб-ящик :8025);
- * MAIL_PROVIDER=log — письмо целиком в лог сервера и в журнал в памяти (`mailOutbox`),
+ * MAIL_PROVIDER=smtp – SMTP из env (на стенде Mailpit, веб-ящик :8025);
+ * MAIL_PROVIDER=log – письмо целиком в лог сервера и в журнал в памяти (`mailOutbox`),
  * без сети: тесты и локальный запуск без Mailpit.
  */
 export interface MailMessage {
@@ -35,12 +35,12 @@ export function clearMailOutbox(): void {
   outbox.length = 0;
 }
 
-/** Служебные адреса (`user-<id>@users.invalid`) и пустые — писать некуда. */
+/** Служебные адреса (`user-<id>@users.invalid`) и пустые – писать некуда. */
 export function deliverable(email: string | null | undefined): email is string {
   return !!email && !/\.invalid$/i.test(email.trim());
 }
 
-/** Отправить письмо. Ошибка SMTP — исключение: вызывающий решает, ронять ли запрос. */
+/** Отправить письмо. Ошибка SMTP – исключение: вызывающий решает, ронять ли запрос. */
 export async function sendMail(msg: MailMessage): Promise<void> {
   const env = getEnv();
   if (env.MAIL_PROVIDER === 'log') {

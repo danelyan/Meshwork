@@ -14,7 +14,7 @@ const fmt = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeStyle: 'sh
 
 /**
  * Карта глубины последнего квалифицирующего созвона в профиле кандидата (ADR 0003, ступень 1).
- * Созвона не было — короткое приглашение созвониться из чата. Запись своих ответов доступна всегда.
+ * Созвона не было – короткое приглашение созвониться из чата. Запись своих ответов доступна всегда.
  */
 export function DepthMapSection() {
   const [call, setCall] = useState<CallView | null | undefined>(undefined);

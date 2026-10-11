@@ -30,6 +30,8 @@ function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined
 
 /** Вход в ИИнтервью: консультант с сразу открытым режимом созвона. */
 export const CONSULTANT_CALL_HREF = '/consultant?call=1';
+/** Старая комната звонка (components/interview/InterviewRoom): перебивание голосом теперь есть в созвоне с Кирой, с заставки не ведём. */
+export const ROOM_HREF = '/interview/room';
 
 const QUESTION_BLOCKS = BLOCK_DEFS.filter((b) => b.questions.max > 0);
 
@@ -49,7 +51,7 @@ export function Stages({ current }: { current: BlockId }) {
   );
 }
 
-/** Четыре критерия с полосками: до вердикта — «—», после — проценты по осям. */
+/** Четыре критерия с полосками: до вердикта – «–», после – проценты по осям. */
 export function Criteria({ summary }: { summary: InterviewSummary | null }) {
   return (
     <div className={styles.crit}>
@@ -59,7 +61,7 @@ export function Criteria({ summary }: { summary: InterviewSummary | null }) {
           <div key={axis}>
             <span>
               {AXIS_LABEL[axis]}
-              <em>{score === null ? '—' : `${score}%`}</em>
+              <em>{score === null ? '–' : `${score}%`}</em>
             </span>
             <i role="img" aria-label={`${AXIS_LABEL[axis]}: ${score === null ? 'не проверено' : `${score} из 100`}`}>
               <u style={{ width: `${score ?? 0}%` }} />
@@ -140,13 +142,13 @@ export function InterviewPage() {
   const id = call?.id ?? null;
   const summary = summaryOf(call?.verdict);
 
-  // Без интервью страница не нужна: созвон идёт в консультанте (решение владельца 10.10 и 11.10) —
+  // Без интервью страница не нужна: созвон идёт в консультанте (решение владельца 10.10 и 11.10) –
   // сразу туда; карточка ниже остаётся на мгновение загрузки и для браузеров без JS-перехода.
   useEffect(() => {
     if (phase !== 'intro' || process.env.NODE_ENV === 'test') return;
     window.location.replace(CONSULTANT_CALL_HREF);
   }, [phase]);
-  // Открытие: прошлые интервью и согласие; активное — продолжаем сразу, иначе стартовая карточка.
+  // Открытие: прошлые интервью и согласие; активное – продолжаем сразу, иначе стартовая карточка.
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -191,7 +193,7 @@ export function InterviewPage() {
     });
   }, [id, phase]);
 
-  // Новая реплика ИИ — озвучить один раз; при открытии уже идущего интервью старые не читаем.
+  // Новая реплика ИИ – озвучить один раз; при открытии уже идущего интервью старые не читаем.
   const lastAi = [...transcript].reverse().find((e) => e.role === 'ai');
   useEffect(() => {
     if (!lastAi || !id || phase !== 'live') return;

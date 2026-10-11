@@ -71,7 +71,7 @@ describe('инструменты «ведёт по платформе»', () => 
     expect(await prisma.candidateCategory.count({ where: { candidateId: CAND } })).toBe(0);
   });
 
-  it('get_onboarding_status: онбординг пройден, карточки ждут ответа, но первым идёт тест; приглашение — вне очереди', async () => {
+  it('get_onboarding_status: онбординг пройден, карточки ждут ответа, но первым идёт тест; приглашение – вне очереди', async () => {
     await prisma.user.create({ data: { name: 'К', role: 'candidate', candidateId: CAND, onboardedAt: new Date() } });
     await seedClaim('proposed');
     let r = await call('get_onboarding_status');
@@ -89,12 +89,12 @@ describe('инструменты «ведёт по платформе»', () => 
     await seedClaim('confirmed');
     const r = await call('get_onboarding_status');
     expect(r.json.nextStep).toBe('test');
-    // Демо-кандидат без аккаунта — анкету не требуем
+    // Демо-кандидат без аккаунта – анкету не требуем
     expect((r.json.steps as Record<string, boolean>).onboarding).toBe(true);
     expect(r.json).toMatchObject({ profileAvailable: true, profile: null });
   });
 
-  it('get_test_status: категория из теста и рекомендация; экран теста — /test', async () => {
+  it('get_test_status: категория из теста и рекомендация; экран теста – /test', async () => {
     await prisma.candidateCategory.create({ data: { candidateId: CAND, specialization: 'backend', grade: 'junior' } });
     const r = await call('get_test_status');
     expect(r.json).toMatchObject({
@@ -106,7 +106,7 @@ describe('инструменты «ведёт по платформе»', () => 
     expect(events.some((e) => e.type === 'recommendations')).toBe(true);
   });
 
-  it('get_invitations: только свои, сообщение работодателя — в external_data, контактов нет', async () => {
+  it('get_invitations: только свои, сообщение работодателя – в external_data, контактов нет', async () => {
     await seedCandidate('cand-other', 'Другой');
     const company = await prisma.company.create({ data: { name: 'Тест-Банк' } });
     const vacancy = await prisma.vacancy.create({ data: { companyId: company.id, title: 'Go-разработчик', specialization: 'backend', grade: 'middle', salaryFrom: 200_000, salaryTo: 300_000, needs: [] } });
@@ -127,7 +127,7 @@ describe('инструменты «ведёт по платформе»', () => 
     expect((await call('get_invitations', { status: 'sent' })).json.invitations).toEqual([]);
   });
 
-  it('explain_evidence: свой claim — уровень, почему и пути; чужой — not_found', async () => {
+  it('explain_evidence: свой claim – уровень, почему и пути; чужой – not_found', async () => {
     const c = await seedClaim('confirmed');
     const r = await call('explain_evidence', { claimId: c.id });
     expect(r.json).toMatchObject({ level: 'self_reported', levelLabel: 'со слов', defense: null });

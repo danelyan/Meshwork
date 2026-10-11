@@ -1,9 +1,9 @@
 // Панель созвона консультанта: озвучка реплики по предложениям и из потока (лейн call-speed, 11.10).
-// Очередь — голос компаньона (voice.tsx); каждая часть играет через тот же AnalyserNode, что читает липсинк.
+// Очередь – голос компаньона (voice.tsx); каждая часть играет через тот же AnalyserNode, что читает липсинк.
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { CompanionVoiceProvider, useCompanionVoice } from '@/components/avatar/voice';
-import { type LatencySample, planRest, useReplySpeech } from '@/components/call/useReplySpeech';
+import { planRest, useReplySpeech } from '@/components/call/useReplySpeech';
 import type { TranscriptEntry } from '@/server/call/types';
 
 const analysers: object[] = [];
@@ -27,8 +27,7 @@ class FakeAudioContext {
       onended: null as null | (() => void),
       connect: vi.fn(),
       stop: vi.fn(() => src.onended?.()),
-      // Звук длится чуть-чуть: статус «speaking» должен успеть отрендериться (замер в useReplySpeech).
-      start: vi.fn(() => setTimeout(() => src.onended?.(), 5)),
+      start: vi.fn(() => queueMicrotask(() => src.onended?.())),
     };
     sources.push(src);
     return src;
@@ -38,7 +37,6 @@ class FakeAudioContext {
 let posts: string[] = [];
 beforeEach(() => {
   posts = [];
-  samples = [];
   analysers.length = 0;
   sources.length = 0;
   vi.stubGlobal('AudioContext', FakeAudioContext);
@@ -58,16 +56,11 @@ afterEach(() => {
 
 const entry = (index: number, text: string): TranscriptEntry => ({ index, role: 'ai', text, at: '2026-10-11T00:00:00Z', tMs: 0 }) as TranscriptEntry;
 
-let samples: LatencySample[] = [];
-
 function Harness({ text }: { text: string }) {
   const voice = useCompanionVoice();
-  const reply = useReplySpeech(voice, 'c1', (s) => samples.push(s));
+  const reply = useReplySpeech(voice, 'c1');
   return (
     <>
-      <button onClick={() => reply.markSpeechEnd()}>конец речи</button>
-      <button onClick={() => reply.markUploaded()}>загружено</button>
-      <button onClick={() => reply.markAck()}>угу</button>
       <button onClick={() => voice?.toggle()}>звук</button>
       <button onClick={() => reply.onDelta(3, 0, 'Хорошо, понял тебя.')}>d0</button>
       <button onClick={() => reply.onDelta(3, 1, 'Теперь про кэш.')}>d1</button>
@@ -130,38 +123,5 @@ describe('planRest', () => {
     const p = planRest(six, ['Первое предложение реплики.', 'Второе предложение реплики.']);
     expect(p.parts.length).toBeLessThanOrEqual(2);
     expect(p.parts.reduce((s, x) => s + x.sentences, 0)).toBe(4);
-  });
-});
-
-describe('useReplySpeech: телеметрия хода', () => {
-  it('водопад от конца речи до первого звука: index реплики, загрузка, реплика, ack; отдаётся один раз', async () => {
-    render(<CompanionVoiceProvider><Harness text={TEXT} /></CompanionVoiceProvider>);
-    fireEvent.click(screen.getByText('звук'));
-    await waitFor(() => expect(screen.getByTestId('status').textContent).toBe('idle'));
-    fireEvent.click(screen.getByText('конец речи'));
-    fireEvent.click(screen.getByText('загружено'));
-    fireEvent.click(screen.getByText('угу'));
-    await act(async () => fireEvent.click(screen.getByText('реплика')));
-    await waitFor(() => expect(samples).toHaveLength(1));
-    const s = samples[0]!;
-    expect(s.index).toBe(4);
-    expect(s.streamed).toBe(false);
-    expect(s.endToFirstDeltaMs).toBeNull();
-    for (const k of ['uploadMs', 'endToReplyMs', 'ackMs'] as const) expect(typeof s[k]).toBe('number');
-    expect(s.endToSoundMs).toBeGreaterThanOrEqual(s.endToReplyMs!);
-    expect(window.__fspCallLatency).toHaveLength(1);
-    await waitFor(() => expect(sources.length).toBe(3));
-    expect(samples).toHaveLength(1); // следующие части той же реплики замер не повторяют
-  });
-
-  it('с потоком: index берётся из дельты (реплика ИИ сразу за репликой кандидата), streamed=true', async () => {
-    render(<CompanionVoiceProvider><Harness text={TEXT} /></CompanionVoiceProvider>);
-    fireEvent.click(screen.getByText('звук'));
-    await waitFor(() => expect(screen.getByTestId('status').textContent).toBe('idle'));
-    fireEvent.click(screen.getByText('конец речи'));
-    await act(async () => fireEvent.click(screen.getByText('d0')));
-    await waitFor(() => expect(samples).toHaveLength(1));
-    expect(samples[0]).toMatchObject({ index: 4, streamed: true, uploadMs: null, endToReplyMs: null });
-    expect(typeof samples[0]!.endToFirstDeltaMs).toBe('number');
   });
 });

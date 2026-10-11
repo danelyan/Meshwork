@@ -5,10 +5,10 @@ import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 const push = vi.fn();
-// мягкое обновление (soft-nav.ts): на том же адресе — router.refresh, без перезагрузки
+// мягкое обновление (soft-nav.ts): на том же адресе – router.refresh, без перезагрузки
 const refresh = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
-// Вход и переходы — полная навигация (window.location.assign), см. DemoScreen.enter.
+// Вход и переходы – полная навигация (window.location.assign), см. DemoScreen.enter.
 beforeEach(() => {
   Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, pathname: '/consultant', assign: push } });
   refresh.mockReset();
@@ -87,7 +87,7 @@ it('чип: ответ становится пузырём справа, чип�
   expect(sent(fetchFn as never)).toEqual({ action: 'answer', stepId: 'specialization', value: 'backend' });
 });
 
-it('«Пропустить вопрос» — тихая ссылка над полем ввода, шлёт skip; у обязательного шага её нет', async () => {
+it('«Пропустить вопрос» – тихая ссылка над полем ввода, шлёт skip; у обязательного шага её нет', async () => {
   const fetchFn = stubFetch(makeView({ id: 'grade', question: 'Грейд?' }));
   const { unmount } = render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
   fireEvent.click(screen.getByRole('button', { name: 'Пропустить вопрос' }));
@@ -116,7 +116,7 @@ it('«изменить» на прошлом ответе возвращает �
   expect(sent(fetchFn)).toEqual({ action: 'goto', stepId: 'goal' });
 });
 
-it('«Настроить позже» — пауза без завершения, лента обновляется без перезагрузки страницы', async () => {
+it('«Настроить позже» – пауза без завершения, лента обновляется без перезагрузки страницы', async () => {
   const fetchFn = stubFetch({ next: '/consultant' });
   render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
   fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));
@@ -125,7 +125,7 @@ it('«Настроить позже» — пауза без завершения
   expect(sent(fetchFn)).toEqual({ action: 'later' });
 });
 
-it('мультивыбор: чипы-тогглы, своё — из поля ввода, тихое «Готово» отправляет всё', async () => {
+it('мультивыбор: чипы-тогглы, своё – из поля ввода, тихое «Готово» отправляет всё', async () => {
   const fetchFn = stubFetch(makeView({ id: 'formats', question: 'Формат?' }));
   render(
     <OnboardingChat
@@ -142,7 +142,7 @@ it('мультивыбор: чипы-тогглы, своё — из поля в
   expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'stack', value: ['Go', 'Erlang'] });
 });
 
-it('текстовый шаг: Enter отправляет; ИНН с опечаткой — реплика помощника, на сервер не уходит', async () => {
+it('текстовый шаг: Enter отправляет; ИНН с опечаткой – реплика помощника, на сервер не уходит', async () => {
   const fetchFn = stubFetch(makeView({ id: 'company', question: 'Компания?' }));
   render(<OnboardingChat initial={makeView({ id: 'inn', kind: 'text', eyebrow: 'Компания', label: 'ИНН', question: 'ИНН компании', maxLength: 12 })} consentText={[]} />);
   const input = screen.getByLabelText('ИНН');
@@ -176,7 +176,7 @@ const summaryView = (over: Partial<OnboardingView> = {}) =>
     { summary: { items: [{ stepId: 'grade', label: 'Предполагаемый грейд', value: 'Middle' }], skipped: [{ stepId: 'stack', label: 'Стек' }], warnings: [] }, ...over },
   );
 
-it('итог: сводка — обычная реплика помощника (без карточки), пропущенное — чипом «Ответить», без «Настроить позже»', async () => {
+it('итог: сводка – обычная реплика помощника (без карточки), пропущенное – чипом «Ответить», без «Настроить позже»', async () => {
   const fetchFn = stubFetch(makeView({ id: 'stack', kind: 'chips', question: 'Стек?', options: [] }));
   render(<OnboardingChat initial={summaryView()} consentText={[]} />);
   expect(screen.getByText('Предполагаемый грейд: Middle')).toBeDefined();
@@ -188,7 +188,7 @@ it('итог: сводка — обычная реплика помощника 
   expect(sent(fetchFn)).toEqual({ action: 'goto', stepId: 'stack' });
 });
 
-it('итог: чип теста завершает онбординг и ведёт по адресу теста (пока роута нет — в профиль)', async () => {
+it('итог: чип теста завершает онбординг и ведёт по адресу теста (пока роута нет – в профиль)', async () => {
   const fetchFn = stubFetch({ onboarded: true, next: '/consultant' });
   render(<OnboardingChat initial={summaryView()} consentText={[]} />);
   fireEvent.click(screen.getByTestId('ob-test-cta'));
@@ -196,7 +196,7 @@ it('итог: чип теста завершает онбординг и вед�
   expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/auth/onboarding/complete');
 });
 
-it('итог: главная кнопка — «Пройти тест на грейд →» по рекомендации, «Профиль» второстепенна', async () => {
+it('итог: главная кнопка – «Пройти тест на грейд →» по рекомендации, «Профиль» второстепенна', async () => {
   const fetchFn = stubFetch({ onboarded: true, next: '/consultant' });
   const href = '/test?specialization=backend&grade=middle';
   render(<OnboardingChat initial={summaryView({ test: { href, ready: true } })} consentText={[]} />);
@@ -242,14 +242,14 @@ it('итог кандидата: знакомство завершается п�
   expect(screen.queryByRole('button', { name: 'Открыть профиль' })).toBeNull();
 });
 
-it('работодатель: консультант не подключается, дальше — «Открыть подборку»', () => {
+it('работодатель: консультант не подключается, дальше – «Открыть подборку»', () => {
   stubFetch();
   render(<OnboardingChat initial={summaryView({ scenario: 'employer', role: 'employer' })} consentText={[]} consultant={{}} />);
   expect(screen.getByRole('button', { name: 'Открыть подборку' })).toBeDefined();
   expect(screen.queryByLabelText('Сообщение')).toBeNull();
 });
 
-it('работодатель: та же лента продолжается помощником по подбору; «Открыть подборку» — переход, текст — ход помощника', async () => {
+it('работодатель: та же лента продолжается помощником по подбору; «Открыть подборку» – переход, текст – ход помощника', async () => {
   const enc = new TextEncoder();
   const calls: string[] = [];
   vi.stubGlobal(
@@ -272,7 +272,7 @@ it('работодатель: та же лента продолжается по
 
 const RANGE = { min: 40, max: 600, step: 10, unit: 'тыс ₽ / мес', scale: 1000, fromLabel: 'Минимум', toLabel: 'Ожидаю', defaults: { from: 120, to: 180 } };
 
-it('зарплата: чипы вилок вместо ползунков, свой вариант — числом в композере', async () => {
+it('зарплата: чипы вилок вместо ползунков, свой вариант – числом в композере', async () => {
   const fetchFn = stubFetch(makeView({ id: 'fspParticipation', question: 'Участвовал?' }));
   render(<OnboardingChat initial={makeView({ id: 'salary', kind: 'range', question: 'Сколько хочешь получать?', range: RANGE })} consentText={[]} />);
   expect(screen.queryByRole('slider')).toBeNull();
@@ -281,7 +281,7 @@ it('зарплата: чипы вилок вместо ползунков, св�
   expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'salary', value: { from: 150, to: 200 } });
 });
 
-it('зарплата текстом: «от 180 до 250 тыс» уходит диапазоном, «5 млн» — реплика об ошибке без запроса', async () => {
+it('зарплата текстом: «от 180 до 250 тыс» уходит диапазоном, «5 млн» – реплика об ошибке без запроса', async () => {
   const fetchFn = stubFetch(makeView({ id: 'fspParticipation', question: 'Участвовал?' }));
   render(<OnboardingChat initial={makeView({ id: 'salary', kind: 'range', question: 'Сколько?', range: RANGE })} consentText={[]} />);
   const box = screen.getByLabelText('Ответ');
@@ -344,7 +344,7 @@ describe('появление реплики', () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
   });
 
-  it('сначала «печатает», затем текст раскрывается по словам; чипы — только после реплики', () => {
+  it('сначала «печатает», затем текст раскрывается по словам; чипы – только после реплики', () => {
     stubFetch();
     render(<OnboardingChat initial={makeView({ options: OPTS, lead: '', question: 'Кто ты?' }, { history: [], progress: { done: 0, total: 10 } })} consentText={[]} />);
     expect(screen.getAllByTestId('typing')).toHaveLength(1);
@@ -378,7 +378,7 @@ describe('появление реплики', () => {
     expect(screen.getByTestId('quick-replies')).toBeDefined();
   });
 
-  it('prefers-reduced-motion — без анимации', () => {
+  it('prefers-reduced-motion – без анимации', () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener() {}, removeEventListener() {} }));
     stubFetch();
     render(<OnboardingChat initial={makeView({ options: OPTS }, { history: [], progress: { done: 0, total: 10 } })} consentText={[]} />);
@@ -392,7 +392,7 @@ describe('свободный текст посреди онбординга', ()
   const sse = (events: unknown[]) =>
     new Response(new ReadableStream({ start: (c) => (c.enqueue(enc.encode(events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join(''))), c.close()) }), { status: 200 });
 
-  it('текст совпал с вариантом шага (без регистра) — ответ тем же путём, что клик', async () => {
+  it('текст совпал с вариантом шага (без регистра) – ответ тем же путём, что клик', async () => {
     const fetchFn = stubFetch(makeView({ id: 'grade', question: 'Грейд?' }));
     render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
     const box = screen.getByLabelText('Ответ') as HTMLTextAreaElement;
@@ -404,7 +404,7 @@ describe('свободный текст посреди онбординга', ()
     expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'specialization', value: 'backend' });
   });
 
-  it('не совпал — вопрос консультанту в ту же ленту (тот же разговор), под ответом фраза-возврат и снова кнопки шага', async () => {
+  it('не совпал – вопрос консультанту в ту же ленту (тот же разговор), под ответом фраза-возврат и снова кнопки шага', async () => {
     const bodies: Record<string, unknown>[] = [];
     vi.stubGlobal(
       'fetch',
@@ -412,8 +412,8 @@ describe('свободный текст посреди онбординга', ()
         bodies.push({ url, ...JSON.parse(String(init?.body)) });
         return sse([
           { type: 'conversation', id: 'conv-1' },
-          { type: 'delta', id: 'm1', text: 'Fullstack — выбери, где сильнее.' },
-          { type: 'message', id: 'm1', text: 'Fullstack — выбери, где сильнее.' },
+          { type: 'delta', id: 'm1', text: 'Fullstack – выбери, где сильнее.' },
+          { type: 'message', id: 'm1', text: 'Fullstack – выбери, где сильнее.' },
           { type: 'done' },
         ]);
       }),
@@ -422,7 +422,7 @@ describe('свободный текст посреди онбординга', ()
     const box = screen.getByLabelText('Ответ');
     fireEvent.change(box, { target: { value: 'А если я fullstack?' } });
     fireEvent.keyDown(box, { key: 'Enter' });
-    await waitFor(() => expect(screen.getByText('Fullstack — выбери, где сильнее.')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Fullstack – выбери, где сильнее.')).toBeDefined());
     expect(bodies[0]).toEqual({ url: '/api/consultant/messages', text: 'А если я fullstack?', onboardingStep: 'specialization', conversationId: 'conv-1' });
     expect(screen.getByText('А если я fullstack?')).toBeDefined();
     expect(screen.getByTestId('ob-return').textContent).toContain('Вернёмся к вопросу: В каком направлении работаешь?');
@@ -430,7 +430,7 @@ describe('свободный текст посреди онбординга', ()
     expect(question()).toBe('В каком направлении работаешь?');
   });
 
-  it('граница доверия: на согласии поле выключено; на роли — совпадение отвечает, иначе заготовка без запроса', async () => {
+  it('граница доверия: на согласии поле выключено; на роли – совпадение отвечает, иначе заготовка без запроса', async () => {
     const fetchFn = stubFetch(makeView({ id: 'goal', question: 'Зачем ты здесь?' }));
     const { unmount } = render(<OnboardingChat initial={makeView({ id: 'consent', kind: 'consent', required: true, question: 'Согласие?' }, { role: 'pending', scenario: null })} consentText={[]} />);
     expect((screen.getByLabelText('Ответ') as HTMLTextAreaElement).disabled).toBe(true);
@@ -448,7 +448,7 @@ describe('свободный текст посреди онбординга', ()
     expect(fetchFn).not.toHaveBeenCalled();
     fireEvent.change(box, { target: { value: 'я специалист' } });
     fireEvent.keyDown(box, { key: 'Enter' });
-    // Роль выбрана — /consultant перерисовывается под роль (решение владельца 10.10).
+    // Роль выбрана – /consultant перерисовывается под роль (решение владельца 10.10).
     await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
     expect(sent(fetchFn)).toEqual({ action: 'answer', stepId: 'role', value: 'candidate' });
   });
@@ -483,15 +483,15 @@ describe('свободный текст посреди онбординга', ()
     expect(screen.getAllByText('Зачем цель?')).toHaveLength(1);
     expect(screen.getAllByText('Чтобы подстроить шаги.')).toHaveLength(1);
     expect(screen.getAllByText('Обычный вопрос консультанту')).toHaveLength(1);
-    // Вопрос — между репликой шага «Зачем ты здесь?» и ответом «Ищу работу».
+    // Вопрос – между репликой шага «Зачем ты здесь?» и ответом «Ищу работу».
     const text = screen.getByRole('list', { name: 'Переписка с помощником' }).textContent ?? '';
     expect(text.indexOf('Зачем ты здесь?')).toBeLessThan(text.indexOf('Зачем цель?'));
     expect(text.indexOf('Чтобы подстроить шаги.')).toBeLessThan(text.indexOf('Ищу работу'));
   });
 });
 
-describe('лента внутри /consultant (онбординг и консультант — одна страница, решение владельца 10.10)', () => {
-  it('роль «работодатель» в ленте /consultant — перерисовка под роль; у работодателя свой заголовок', async () => {
+describe('лента внутри /consultant (онбординг и консультант – одна страница, решение владельца 10.10)', () => {
+  it('роль «работодатель» в ленте /consultant – перерисовка под роль; у работодателя свой заголовок', async () => {
     const ROLE = [
       { value: 'candidate', label: 'Я специалист' },
       { value: 'employer', label: 'Я работодатель' },
@@ -506,7 +506,7 @@ describe('лента внутри /consultant (онбординг и консу�
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Помощник по подбору');
   });
 
-  it('заголовок консультанта, без своей шапки сайта и второго main; «Скрыть» на таймлайне знакомства — вопрос закрывается, лента снова разговор без перезагрузки', async () => {
+  it('заголовок консультанта, без своей шапки сайта и второго main; «Скрыть» на таймлайне знакомства – вопрос закрывается, лента снова разговор без перезагрузки', async () => {
     const fetchFn = stubFetch({ next: '/consultant' });
     render(<OnboardingChat variant="consultant" initial={makeView({ options: OPTS })} consentText={[]} />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Карьерный консультант');
@@ -554,7 +554,7 @@ it('completed profile editor summary exits without edit query or onboarding comp
   expect(fetcher).not.toHaveBeenCalled();
 });
 
-it('согласия: главная кнопка «Согласиться со всем», с отметкой — «с отмеченным · N», ссылка «без согласий» отдельно', () => {
+it('согласия: главная кнопка «Согласиться со всем», с отметкой – «с отмеченным · N», ссылка «без согласий» отдельно', () => {
   const fetchFn = stubFetch({ next: '/consultant' }, { next: '/consultant' });
   const CONSENTS = [
     { value: 'ai_assessment', label: 'Согласен(на), что мои ответы оценивает ИИ', note: 'Нужно для теста' },
@@ -566,7 +566,7 @@ it('согласия: главная кнопка «Согласиться со 
   expect(sent(fetchFn).value).toEqual(['ai_assessment', 'employer_visibility']);
 });
 
-it('согласия: отмечена одна — кнопка «Согласиться с отмеченным · 1» шлёт только её', () => {
+it('согласия: отмечена одна – кнопка «Согласиться с отмеченным · 1» шлёт только её', () => {
   const fetchFn = stubFetch({ next: '/consultant' });
   const CONSENTS = [
     { value: 'ai_assessment', label: 'Оценка ИИ' },

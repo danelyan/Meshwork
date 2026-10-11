@@ -92,7 +92,7 @@ describe('useMicPress: hold', () => {
     expect(onStop).toHaveBeenCalledTimes(2);
   });
 
-  it('отпустили раньше, чем началась запись — остановка сразу после старта', () => {
+  it('отпустили раньше, чем началась запись – остановка сразу после старта', () => {
     const onStop = vi.fn();
     const { rerender } = render(<Probe recording={false} onStart={vi.fn()} onStop={onStop} />);
     const mic = screen.getByTestId('mic');
@@ -145,7 +145,7 @@ describe('меню настроек микрофона', () => {
     render(<Probe recording={false} onStart={vi.fn()} onStop={vi.fn()} />);
     fireEvent.contextMenu(screen.getByTestId('mic'));
     expect(screen.getByRole('dialog', { name: 'Настройки микрофона' })).toBeDefined();
-    fireEvent.click(screen.getByLabelText('Клик — начать, клик — остановить'));
+    fireEvent.click(screen.getByLabelText('Клик – начать, клик – остановить'));
     expect(readMicMode()).toBe('click');
     expect(screen.getByTestId('mode').textContent).toBe('click');
     fireEvent.keyDown(document, { key: 'Escape' });

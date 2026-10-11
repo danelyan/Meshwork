@@ -16,6 +16,6 @@ export default async function HomePage() {
   // гостевые «Приступим» и «Войти» (модалка входа поверх входа). Без БД: протухшую куку отсеет гвард /consultant.
   const signedIn = parseSession((await cookies()).get(SESSION_COOKIE)?.value) !== null;
   // Реальные логотипы на графе и отдельная демонстрационная лента из экспорта.
-  // Ссылка «Для жюри» (lane jury-all) — только при DEMO_LOGIN.
+  // Ссылка «Для жюри» (lane jury-all) – только при DEMO_LOGIN.
   return <Landing data={SHOWCASE} signedIn={signedIn} demoEnabled={getEnv().DEMO_LOGIN} />;
 }

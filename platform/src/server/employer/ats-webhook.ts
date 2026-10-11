@@ -20,7 +20,7 @@ export interface AtsStatusChange {
   companyId: string;
   vacancyId: string | null;
   candidateId: string;
-  /** Контакты открыты: accepted/hired и действующее раскрытие (Г5). Не задано — по статусу (accepted/hired). */
+  /** Контакты открыты: accepted/hired и действующее раскрытие (Г5). Не задано – по статусу (accepted/hired). */
   contactsOpen?: boolean;
 }
 
@@ -31,7 +31,7 @@ export interface AtsWebhook {
   headers: Record<string, string>;
 }
 
-/** `sha256=<hex>` — HMAC-SHA256 по телу запроса. */
+/** `sha256=<hex>` – HMAC-SHA256 по телу запроса. */
 export function signBody(body: string, secret: string): string {
   return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
 }
@@ -39,7 +39,7 @@ export function signBody(body: string, secret: string): string {
 /** Тело и заголовки вебхука (X-FSP-Event, X-FSP-Signature, X-FSP-Event-Id). Чистая функция. */
 export function buildAtsWebhook(change: AtsStatusChange, secret: string, now = new Date()): AtsWebhook {
   const contactsOpen = change.contactsOpen ?? isDisclosableStatus(change.status);
-  // Отзыв раскрытия при прежнем статусе accepted — отдельное событие со своим id (иначе ATS отбросит его как повтор).
+  // Отзыв раскрытия при прежнем статусе accepted – отдельное событие со своим id (иначе ATS отбросит его как повтор).
   const revoked = isDisclosableStatus(change.status) && !contactsOpen ? ':disclosure_revoked' : '';
   const id = `evt_${createHash('sha256').update(`${ATS_EVENT}:${change.invitationId}:${change.status}${revoked}`).digest('hex').slice(0, 32)}`;
   const body = JSON.stringify({
@@ -74,7 +74,7 @@ export function verifySignature(body: string, signature: string, secret: string)
   return expected.length === got.length && timingSafeEqual(expected, got);
 }
 
-/** Отправка. Без url или секрета — no-op (false). Сбой сети не бросает: вебхук не должен ломать ответ кандидату. */
+/** Отправка. Без url или секрета – no-op (false). Сбой сети не бросает: вебхук не должен ломать ответ кандидату. */
 export async function sendAtsWebhook(
   change: AtsStatusChange,
   cfg: { url?: string; secret?: string },
@@ -91,7 +91,7 @@ export async function sendAtsWebhook(
   }
 }
 
-/** Вебхук по приглашению из БД. Окружение не настроено — выходит до запроса к БД. */
+/** Вебхук по приглашению из БД. Окружение не настроено – выходит до запроса к БД. */
 export async function notifyAtsStatusChanged(invitationId: string): Promise<void> {
   const { ATS_WEBHOOK_URL: url, ATS_WEBHOOK_SECRET: secret } = getEnv();
   if (!url || !secret) return;

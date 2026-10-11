@@ -24,7 +24,7 @@ describe('цикл инструментов (visible)', () => {
     expect(r.steps).toEqual([{ step: 1, tool: 'add', args: { a: 2, b: 3 }, ok: true, result: 5 }]);
   });
 
-  it('неверные аргументы — ошибка инструмента, а не исключение', async () => {
+  it('неверные аргументы – ошибка инструмента, а не исключение', async () => {
     const out = await createRegistry([add]).call('add', { a: '2', b: 3 });
     expect(out).toMatchObject({ ok: false, error: { code: 'invalid_arguments' } });
   });

@@ -12,7 +12,7 @@ export function toCsv(header: string[], rows: (string | number | null | undefine
   return `﻿${[header, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n')}\r\n`;
 }
 
-/** k-анонимность: группы меньше порога не раскрываем (мало людей — можно узнать по категории). */
+/** k-анонимность: группы меньше порога не раскрываем (мало людей – можно узнать по категории). */
 export const MIN_GROUP = 5;
 export const maskSmall = (n: number): string | number => (n < MIN_GROUP ? `<${MIN_GROUP}` : n);
 

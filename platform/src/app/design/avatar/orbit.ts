@@ -1,4 +1,4 @@
-/** Ручной поворот головы мышью: drag меняет yaw/pitch, после отпускания — инерция с затуханием. */
+/** Ручной поворот головы мышью: drag меняет yaw/pitch, после отпускания – инерция с затуханием. */
 export interface OrbitAngles {
   yaw: number;
   pitch: number;
@@ -46,7 +46,7 @@ export class OrbitState {
   }
 
   end(now: number): void {
-    // курсор стоял перед отпусканием — инерции нет
+    // курсор стоял перед отпусканием – инерции нет
     if (now - this.lastT > 80) {
       this.vYaw = 0;
       this.vPitch = 0;
@@ -64,7 +64,7 @@ export class OrbitState {
     this.yaw = this.pitch = this.vYaw = this.vPitch = 0;
   }
 
-  /** Текущие углы; вызывается каждый кадр — применяет инерцию, если голову не держат. */
+  /** Текущие углы; вызывается каждый кадр – применяет инерцию, если голову не держат. */
   read(now: number): OrbitAngles {
     if (!this.dragging && (Math.abs(this.vYaw) > 0.01 || Math.abs(this.vPitch) > 0.01)) {
       const dt = Math.min(0.1, Math.max(0, (now - this.lastT) / 1000));

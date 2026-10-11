@@ -84,9 +84,9 @@ describe('режим эксперта (/api/expert)', () => {
     expect(body.outcome).toMatchObject({ wouldGrant: 'middle' });
     expect(Number.isFinite(body.outcome!.theta)).toBe(true);
     expect(body.outcome!.se).toBeGreaterThan(0);
-    // Сервис теста записал категорию при итоге — режим эксперта её убрал.
+    // Сервис теста записал категорию при итоге – режим эксперта её убрал.
     expect(await prisma.candidateCategory.count({ where: { candidateId } })).toBe(0);
-    // Даже если бы категория и видимость появились — пул поиска и подборки эксперта не берёт.
+    // Даже если бы категория и видимость появились – пул поиска и подборки эксперта не берёт.
     await prisma.candidate.update({ where: { id: candidateId }, data: { hiddenFromEmployers: false } });
     await prisma.candidateCategory.create({ data: { candidateId, specialization: 'backend', grade: 'middle', source: 'test' } });
     await prisma.candidate.create({ data: { id: 'real', email: 'real@example.test', name: 'Реальный', categories: { create: { specialization: 'backend', grade: 'middle', source: 'test' } } } });

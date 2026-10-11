@@ -72,7 +72,7 @@ describe('eval/stages: ступень 1 (созвон)', () => {
     expect(s.calls).toBe(3);
     expect(s.failedCalls).toBe(1);
     expect(s.confirmedShare).toBe(2 / 4);
-    // be.a ✓ (ожид. да) ×2, be.c ✗ (нет) — совпало; be.b ✗ (да) — нет.
+    // be.a ✓ (ожид. да) ×2, be.c ✗ (нет) – совпало; be.b ✗ (да) – нет.
     expect(s.matched).toBe(3);
     expect(s.judged).toBe(4);
     expect(s.matchRate).toBe(0.75);

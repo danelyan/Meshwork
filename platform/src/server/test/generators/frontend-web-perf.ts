@@ -1,6 +1,6 @@
 // Генераторы frontend.web-perf (критический путь, кэш, порядок скриптов, CLS, мемоизация, бандл).
 // Ключ считает код генератора, не LLM (R-T-02); юнит-тест сверяет его независимым решением
-// (tests/unit/test/frontend-subcategories.test.ts). a, b — ПРЕДЛОЖЕНИЕ, калибруются персонами.
+// (tests/unit/test/frontend-subcategories.test.ts). a, b – ПРЕДЛОЖЕНИЕ, калибруются персонами.
 // Сверено с MDN через Context7 10.10: defer/module выполняются после разбора документа по порядку,
 // Cache-Control (max-age, no-store, no-cache, stale-while-revalidate), React.memo сравнивает props по Object.is.
 import { createRng } from '../rng';

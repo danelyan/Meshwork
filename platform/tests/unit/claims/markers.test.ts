@@ -9,7 +9,7 @@ const catalog = catalogFromFile();
 
 describe('extractByMarkers (план В)', () => {
   const resume = doc([
-    '# Анна — Backend-разработчик',
+    '# Анна – Backend-разработчик',
     'anna@example.com',
     '## Опыт',
     '- Внедрила кэширование справочников в Redis с инвалидацией по событию.',
@@ -41,17 +41,17 @@ describe('extractByMarkers (план В)', () => {
 
   it('специализация угадывается и ограничивает каталог', () => {
     expect(guessSpecialization(resume, catalog)).toBe('backend');
-    const fe = doc(['# Вера — Frontend (React)', '## Опыт', '- Делала SSR на Next.js для каталога, гидратация без ошибок']);
+    const fe = doc(['# Вера – Frontend (React)', '## Опыт', '- Делала SSR на Next.js для каталога, гидратация без ошибок']);
     expect(guessSpecialization(fe, catalog)).toBe('frontend');
     expect(extractByMarkers(fe, catalog).map((c) => c.catalogId)).toContain('fe.ssr');
     expect(extractByMarkers(fe, catalog, { specialization: 'backend' }).map((c) => c.catalogId)).not.toContain('fe.ssr');
   });
 
   it('специализация: AI / ML и Engineering считаются сами, а не как Frontend', () => {
-    const ai = doc(['# Олег — ML-инженер', '## Опыт', '- Собрал RAG-поиск по базе знаний: чанкинг, эмбеддинги, pgvector.', '- Настроил function calling и structured output с проверкой по JSON Schema.']);
+    const ai = doc(['# Олег – ML-инженер', '## Опыт', '- Собрал RAG-поиск по базе знаний: чанкинг, эмбеддинги, pgvector.', '- Настроил function calling и structured output с проверкой по JSON Schema.']);
     expect(guessSpecialization(ai, catalog)).toBe('ai');
     expect(extractByMarkers(ai, catalog).map((c) => c.catalogId).every((id) => /^(ai|common)\./.test(id))).toBe(true);
-    const eng = doc(['# Ира — инженер данных', '## Опыт', '- Построила ETL-пайплайн на Airflow: инкрементальная загрузка по watermark, дедупликация.', '- Спроектировала DWH: SCD2 и партиционирование.']);
+    const eng = doc(['# Ира – инженер данных', '## Опыт', '- Построила ETL-пайплайн на Airflow: инкрементальная загрузка по watermark, дедупликация.', '- Спроектировала DWH: SCD2 и партиционирование.']);
     expect(guessSpecialization(eng, catalog)).toBe('engineering');
   });
 
@@ -79,7 +79,7 @@ describe('extractByMarkers (план В)', () => {
   it('короткий профиль GitHub без шапки: строки не считаются шапкой резюме', () => {
     const gh = doc(['payments-idempotency: Go-сервис приёма платежей', 'README: ключ идемпотентности в заголовке Idempotency-Key'], { kind: 'github', origin: 'github:demo' });
     expect(extractByMarkers(gh, catalog).map((c) => c.catalogId)).toContain('be.idempotency');
-    // то же как резюме — первые строки шапка, утверждений нет
+    // то же как резюме – первые строки шапка, утверждений нет
     expect(extractByMarkers(doc(gh.lines.map((l) => l.text)), catalog)).toEqual([]);
   });
 

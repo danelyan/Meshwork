@@ -7,8 +7,8 @@ import { LIMITS } from './limits';
 
 /**
  * Yandex Vision OCR, синхронный REST `recognizeText` (дока: aistudio.yandex.ru/docs/ru/vision/ocr/api-ref/TextRecognition/recognize).
- * Форматы — JPEG, PNG, PDF; файл ≤ 10 МБ, картинка ≤ 20 Мпикс; PDF в синхронном режиме — только одна страница.
- * Распознанный текст — недоверенные данные: дальше он идёт через buildDoc (маскирование, детектор инъекций).
+ * Форматы – JPEG, PNG, PDF; файл ≤ 10 МБ, картинка ≤ 20 Мпикс; PDF в синхронном режиме – только одна страница.
+ * Распознанный текст – недоверенные данные: дальше он идёт через buildDoc (маскирование, детектор инъекций).
  */
 export const OCR_TIMEOUT_MS = 20_000;
 
@@ -48,7 +48,7 @@ export const ocrUnavailable = (message = 'Распознавание текст�
 
 /**
  * Строки распознанного текста в порядке блоков и строк ответа → `file#p<page>:l<n>`.
- * Ответ может прийти одним объектом или потоком JSON-объектов по строке (по одному на страницу) — разбираем оба.
+ * Ответ может прийти одним объектом или потоком JSON-объектов по строке (по одному на страницу) – разбираем оба.
  */
 export function visionToLines(body: string, name: string, defaultPage = 1): RawLine[] {
   const objs: VisionResponse[] = [];
@@ -87,8 +87,8 @@ export function visionToLines(body: string, name: string, defaultPage = 1): RawL
 }
 
 /**
- * Распознать текст картинки или одностраничного PDF. Ошибки — AppError с русским текстом; ключ в сообщения
- * и логи не попадает. 401/403 (нет роли ai.vision.user, неверный ключ) и выключенный OCR — `ocr_unavailable`.
+ * Распознать текст картинки или одностраничного PDF. Ошибки – AppError с русским текстом; ключ в сообщения
+ * и логи не попадает. 401/403 (нет роли ai.vision.user, неверный ключ) и выключенный OCR – `ocr_unavailable`.
  */
 export async function recognizeText(
   buf: Buffer,
@@ -129,7 +129,7 @@ export async function recognizeText(
   return visionToLines(body, name, opts.page ?? 1);
 }
 
-/* REST async Vision (recognizePdfAsync) на нашем аккаунте 11.10.2026 отвечает 404 — не вызывается, см. recognizePdfScan. */
+/* REST async Vision (recognizePdfAsync) на нашем аккаунте 11.10.2026 отвечает 404 – не вызывается, см. recognizePdfScan. */
 export const OCR_ASYNC_TIMEOUT_MS = 45_000;
 export const OCR_ASYNC_POLL_MS = 1_000;
 
@@ -147,9 +147,9 @@ const sleep = (ms: number, signal: AbortSignal) =>
 
 /**
  * Многостраничный PDF через асинхронный Vision: `POST …/recognizeTextAsync` → операция `{id}` →
- * `GET …/getRecognition?operationId=<id>`; готовность — HTTP 200 с непустым телом (JSON Lines, по объекту на страницу).
+ * `GET …/getRecognition?operationId=<id>`; готовность – HTTP 200 с непустым телом (JSON Lines, по объекту на страницу).
  * Лимиты доки: файл ≤ 10 МБ, ≤ 200 страниц; мы берём не больше LIMITS.pdfMaxPages. Опрос раз в ~1 с, общий таймаут 45 с.
- * Номера страниц ответа нормализуются к 1-based (если Vision отдал 0-based). Ошибки — те же коды, что у recognizeText.
+ * Номера страниц ответа нормализуются к 1-based (если Vision отдал 0-based). Ошибки – те же коды, что у recognizeText.
  */
 export async function recognizePdfAsync(
   buf: Buffer,
@@ -305,7 +305,7 @@ export interface PdfScanResult {
  * Запасной путь для многостраничного скана без текстового слоя: из каждой страницы (≤ maxPages) берём самую
  * большую встроенную картинку (unpdf extractImages → сырые пиксели), кодируем в PNG и шлём в синхронный
  * recognizeText; ≤ 3 страниц параллельно, общий таймаут 60 с. Страница без картинки, больше 20 Мпикс или
- * с ошибкой OCR считается упавшей. Если упали все — бросает последнюю ошибку; иначе отдаёт распознанное.
+ * с ошибкой OCR считается упавшей. Если упали все – бросает последнюю ошибку; иначе отдаёт распознанное.
  */
 export async function recognizePdfScan(
   buf: Buffer,

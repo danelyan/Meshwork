@@ -15,8 +15,8 @@ const STATE_LABEL: Record<VoiceStatus, string> = { idle: '', thinking: 'дума
 /**
  * Аватар компаньона у ленты: серебристая голова-сетка (WebGL) или знак ФСП (без WebGL) и
  * переключатель «Озвучивать ответы» (выключен по умолчанию; первый клик разблокирует звук).
- * ПКМ по голове — меню вида головы (head-styles.ts), выбор запоминается в localStorage.
- * `dock` — на широком экране закреплён слева от колонки ленты, на узком стоит в потоке над лентой.
+ * ПКМ по голове – меню вида головы (head-styles.ts), выбор запоминается в localStorage.
+ * `dock` – на широком экране закреплён слева от колонки ленты, на узком стоит в потоке над лентой.
  * Без провайдера голоса (`CompanionVoiceProvider`) ничего не рисует.
  */
 export function CompanionStage({ dock = true, className }: { dock?: boolean; className?: string }) {
@@ -26,7 +26,7 @@ export function CompanionStage({ dock = true, className }: { dock?: boolean; cla
 }
 
 function Stage({ voice, className }: { voice: CompanionVoice; className?: string }) {
-  // До монтирования (SSR и первый кадр) — знак: детектор WebGL нужен браузеру, а разметка должна совпасть.
+  // До монтирования (SSR и первый кадр) – знак: детектор WebGL нужен браузеру, а разметка должна совпасть.
   const [gl, setGl] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [style, setStyle] = useState<HeadStyle>(DEFAULT_HEAD_STYLE);
@@ -60,7 +60,7 @@ function Stage({ voice, className }: { voice: CompanionVoice; className?: string
 
   return (
     <aside className={cx(styles.stage, className)} aria-label="Компаньон" data-testid="companion-stage">
-      <div className={styles.screen} data-status={status} onContextMenu={openMenu} title={gl ? 'Правый клик — вид головы' : undefined}>
+      <div className={styles.screen} data-status={status} onContextMenu={openMenu} title={gl ? 'Правый клик – вид головы' : undefined}>
         <HeadSurface voice={voice} reduced={reduced} style={style} onLive={setGl} />
       </div>
       {menu && (
@@ -93,7 +93,7 @@ function Stage({ voice, className }: { voice: CompanionVoice; className?: string
   );
 }
 
-/** «Озвучить» у реплики компаньона: повтор по клику, работает и при выключенной автоозвучке. Пока звучит эта реплика — «стоп». */
+/** «Озвучить» у реплики компаньона: повтор по клику, работает и при выключенной автоозвучке. Пока звучит эта реплика – «стоп». */
 export function ReplayButton({ text, speakKey }: { text: string; speakKey?: string }) {
   const voice = useCompanionVoice();
   if (!voice || voice.available === false || !text.trim()) return null;

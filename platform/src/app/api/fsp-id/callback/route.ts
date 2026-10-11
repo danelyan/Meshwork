@@ -18,9 +18,9 @@ export const dynamic = 'force-dynamic';
  * Возврат от ФСП ID: проверка state, обмен кода с PKCE, проверка ID-токена (подпись RS256 по JWKS, iss,
  * aud, exp, nonce), достижения из реестра (симулятор по токену участника или демо-реестр мока).
  * Два режима из подписанной куки потока:
- *  - `link` — привязка к вошедшему кандидату (кандидат сессии = кандидат потока), итог — /settings или
+ *  - `link` – привязка к вошедшему кандидату (кандидат сессии = кандидат потока), итог – /settings или
  *    чат знакомства с `?fsp=<результат>`;
- *  - `login` — вход на платформу: аккаунт по `AuthAccount(fsp, <ФСП ID>)` (по почте не склеиваем), новый —
+ *  - `login` – вход на платформу: аккаунт по `AuthAccount(fsp, <ФСП ID>)` (по почте не склеиваем), новый –
  *    сразу кандидат (ФСП ID есть только у спортсменов), согласие с галки /auth, привязка, кука сессии.
  * Токены и код в URL и логи не попадают, кука потока стирается.
  */
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
     const { claims, accessToken, refreshToken } = await completeFlow(transport, new URL(req.url).searchParams, saved, candidateId);
     const who = fspIdentity(claims);
     const registry = await registryFor(who.fspId, { apiUrl: fspOidcConfig()?.apiUrl ?? null, accessToken });
-    // Личность и достижения получены — сессия у провайдера больше не нужна (иначе следующий вход будет тем же участником).
+    // Личность и достижения получены – сессия у провайдера больше не нужна (иначе следующий вход будет тем же участником).
     await endProviderSession(transport, refreshToken);
 
     if (!login) {

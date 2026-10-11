@@ -7,10 +7,10 @@ import { requireCandidate } from '@/server/session';
 export const dynamic = 'force-dynamic';
 
 /**
- * Старт привязки ФСП ID (кнопка в настройках кандидата): state, nonce и PKCE verifier — в подписанной
+ * Старт привязки ФСП ID (кнопка в настройках кандидата): state, nonce и PKCE verifier – в подписанной
  * httpOnly-куке на 10 минут (только для /api/fsp-id), редирект на authorization endpoint провайдера.
- * Провайдер — внешний симулятор ФСП ID по env или встроенный мок. Провайдер не отвечает — на /settings с ошибкой.
- * Без сессии кандидата — на вход.
+ * Провайдер – внешний симулятор ФСП ID по env или встроенный мок. Провайдер не отвечает – на /settings с ошибкой.
+ * Без сессии кандидата – на вход.
  */
 export async function GET(req: Request) {
   const env = getEnv();
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   } catch {
     return NextResponse.redirect(new URL('/auth?next=/settings', env.APP_URL), 303);
   }
-  // `?return=consultant` — старт из шага знакомства: вернём в чат. Иначе — в настройки.
+  // `?return=consultant` – старт из шага знакомства: вернём в чат. Иначе – в настройки.
   const ret = new URL(req.url).searchParams.get('return') === 'consultant' ? 'consultant' : 'settings';
   const flow = newFlow(candidateId, undefined, ret);
   let authorizeUrl: string;
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     name: FSP_OAUTH_COOKIE,
     value: signFlowState(flow),
     httpOnly: true,
-    // Lax: кука уходит на верхнеуровневый GET-возврат от провайдера (в проде — другой домен).
+    // Lax: кука уходит на верхнеуровневый GET-возврат от провайдера (в проде – другой домен).
     sameSite: 'lax',
     secure: env.APP_URL.startsWith('https://'),
     path: FSP_OAUTH_COOKIE_PATH,

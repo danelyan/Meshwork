@@ -1,9 +1,9 @@
 import { defineProjects } from './types';
 
 /**
- * Проектные задания к 8 вакансиям из seed/recommend.ts (ключ — id вакансии). Подкатегории этих вакансий ставит
+ * Проектные задания к 8 вакансиям из seed/recommend.ts (ключ – id вакансии). Подкатегории этих вакансий ставит
  * бэкфилл seed/directions.ts: backend.integrations у be-m-1, иначе backend.web-api / frontend.ui-app.
- * Легенда — в домене компании, без её названия и цифр зарплаты (кандидат видит задание анонимно).
+ * Легенда – в домене компании, без её названия и цифр зарплаты (кандидат видит задание анонимно).
  */
 export const EXISTING_PROJECTS = defineProjects({
   'demo-vac-be-j-1': {

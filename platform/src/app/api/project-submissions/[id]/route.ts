@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** GET /api/project-submissions/:id — статус и результат своей сдачи: балл скрытых тестов, видимые тесты, рубрика (без имён скрытых тестов). */
+/** GET /api/project-submissions/:id – статус и результат своей сдачи: балл скрытых тестов, видимые тесты, рубрика (без имён скрытых тестов). */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   const candidateId = requireCandidate(req);
   const { id } = await params;

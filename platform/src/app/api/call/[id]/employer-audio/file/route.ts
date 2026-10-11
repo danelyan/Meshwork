@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** GET /api/call/{id}/employer-audio/file?segment=NNN-<startMs>.webm — один сегмент голоса работодателя (доступ как к списку). */
+/** GET /api/call/{id}/employer-audio/file?segment=NNN-<startMs>.webm – один сегмент голоса работодателя (доступ как к списку). */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   const s = getSession(req);
   if (!s) throw errors.unauthorized();

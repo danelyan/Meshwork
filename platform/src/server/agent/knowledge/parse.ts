@@ -1,12 +1,12 @@
 // Разбор документов базы знаний (md → секции). Чистые функции: их зовут генератор
-// scripts/build-prompts.ts (собирает corpus.ts) и тесты. В рантайме .md не читаются —
+// scripts/build-prompts.ts (собирает corpus.ts) и тесты. В рантайме .md не читаются –
 // в standalone-сборке Next.js их нет, рантайм берёт сгенерированный corpus.ts.
 import { factsBlock, stripComments } from '../prompts/assemble';
 
 export interface KnowledgeSection {
   docId: string;
   sectionId: string;
-  /** Заголовок секции; для фактов — раздел списка фактов. */
+  /** Заголовок секции; для фактов – раздел списка фактов. */
   title: string;
   text: string;
 }
@@ -45,7 +45,7 @@ export function parseDoc(docId: string, md: string): KnowledgeDoc {
 }
 
 /**
- * platform-facts.md как документ базы: каждый пункт F<n> — секция с id F<n>, заголовок —
+ * platform-facts.md как документ базы: каждый пункт F<n> – секция с id F<n>, заголовок –
  * раздел списка («Подбор и приглашения»…). Номер факта в тексте не дублируется.
  */
 export function parseFacts(factsMd: string): KnowledgeDoc {

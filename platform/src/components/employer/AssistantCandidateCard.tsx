@@ -11,7 +11,7 @@ import { INVITATION_STATUS_LABEL, SOURCE_TYPE_LABEL } from './labels';
  * Компактная карточка кандидата в ленте помощника: та же публичная часть, что
  * CandidateMatchCard (R-E-07, R-M-03), но из карточки помощника: имя показывается
  * только если сервер прислал `name` (у компании есть принятое приглашение), иначе
- * псевдоним. Контакты — по-прежнему только в «Приглашениях».
+ * псевдоним. Контакты – по-прежнему только в «Приглашениях».
  */
 export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: AssistantCandidateView; vacancyId: string | null; defaultSalary?: { from: number; to: number } }) {
   const open = c.invitation === 'sent' || c.invitation === 'viewed';

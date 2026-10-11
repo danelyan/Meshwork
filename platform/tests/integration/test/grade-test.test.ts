@@ -23,14 +23,14 @@ const B = 'cand-b';
 const cookie = (id: string) => `cid=${signSession(id)}`;
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
-/** Ключ текущего задания — из БД (клиенту он не отдаётся). */
+/** Ключ текущего задания – из БД (клиенту он не отдаётся). */
 async function currentKey(attemptId: string): Promise<{ key: string; grade: string }> {
   const it = await prisma.testItem.findFirstOrThrow({ where: { attemptId, correct: null }, include: { template: true } });
   return { key: it.answerKey.split('|')[0]!, grade: it.template.grade };
 }
 
 /** Пройти попытку сервисом: answerFor решает, что отвечать по грейду шаблона. */
-/** `now` — часы попытки: попытка, начатая на фиксированную дату, отвечает в своём времени, а не в реальном (TTL 24 ч). */
+/** `now` – часы попытки: попытка, начатая на фиксированную дату, отвечает в своём времени, а не в реальном (TTL 24 ч). */
 async function play(candidateId: string, attemptId: string, answerFor: (grade: string, key: string) => string, now?: Date): Promise<AttemptView> {
   let v = await getAttempt(candidateId, attemptId);
   let guard = 0;
@@ -54,7 +54,7 @@ beforeEach(async () => {
 
 describe('API теста на грейд', () => {
   // Эти сценарии отвечают мгновенно (время ответа ≈ 0): с индексом честности v2 это серия быстрых верных → high.
-  // Индекс здесь не проверяется — он выключен; его сценарии — в describe «индекс честности и подтверждающий тест».
+  // Индекс здесь не проверяется – он выключен; его сценарии – в describe «индекс честности и подтверждающий тест».
   beforeEach(() => {
     vi.stubEnv('TEST_INTEGRITY', 'false');
     resetEnvCache();
@@ -77,7 +77,7 @@ describe('API теста на грейд', () => {
     expect(JSON.stringify(view)).not.toContain('answerKey');
     expect(view.result).toBeNull();
 
-    // Повторный start той же категории — продолжение (200), другой категории — 409.
+    // Повторный start той же категории – продолжение (200), другой категории – 409.
     const again = await startRoute(jsonRequest('/api/test/start', 'POST', { specialization: 'backend', grade: 'middle' }, cookie(A)));
     expect(again.status).toBe(200);
     expect(((await again.json()) as { resumed: boolean }).resumed).toBe(true);
@@ -101,7 +101,7 @@ describe('API теста на грейд', () => {
     const cat = await prisma.candidateCategory.findFirst({ where: { candidateId: A } });
     expect(cat).toMatchObject({ specialization: 'backend', grade: 'middle', source: 'test' });
 
-    // Ответ на завершённую — 409; история — одна запись passed.
+    // Ответ на завершённую – 409; история – одна запись passed.
     const late = await answerRoute(jsonRequest(`/api/test/attempt/${attemptId}/answer`, 'POST', { answer: '1' }, cookie(A)), ctx(attemptId));
     expect(late.status).toBe(409);
     const hist = (await (await historyRoute(jsonRequest('/api/test/attempts', 'GET', undefined, cookie(A)))).json()) as { attempts: { status: string }[] };
@@ -128,7 +128,7 @@ describe('API теста на грейд', () => {
     for (const c of after) expect(c.level).toBe(solved.has(c.catalogId) ? 'platform' : 'third_party');
   });
 
-  it('тест на подкатегорию: ai.mlops — задания только её семейств, категория ai × mlops × junior (ADR 0003, 15:50)', async () => {
+  it('тест на подкатегорию: ai.mlops – задания только её семейств, категория ai × mlops × junior (ADR 0003, 15:50)', async () => {
     const { attemptId } = await startAttempt(B, 'ai', 'junior', new Date(), { subcategoryId: 'ai.mlops' });
     const v = await play(B, attemptId, (_g, key) => key);
     expect(v.status).toBe('passed');
@@ -141,7 +141,7 @@ describe('API теста на грейд', () => {
     expect(await prisma.candidateCategory.findFirst({ where: { candidateId: B } })).toMatchObject({ specialization: 'ai', subcategoryId: 'ai.mlops', grade: 'junior' });
   });
 
-  it('Senior (ADR 0003, 16:15): основная фаза — только Senior-задания; всё верно → категория ai × mlops × senior', async () => {
+  it('Senior (ADR 0003, 16:15): основная фаза – только Senior-задания; всё верно → категория ai × mlops × senior', async () => {
     const { attemptId } = await startAttempt(B, 'ai', 'senior', new Date(), { seed: 7, subcategoryId: 'ai.mlops' });
     const v = await play(B, attemptId, (_g, key) => key);
     expect(v.status).toBe('passed');
@@ -164,7 +164,7 @@ describe('API теста на грейд', () => {
     expect(await prisma.candidateCategory.findFirst({ where: { candidateId: B } })).toMatchObject({ grade: 'middle', subcategoryId: 'ai.mlops' });
   });
 
-  it('без подкатегории направления — subcategory_required и 422; подкатегория из профиля подхватывается', async () => {
+  it('без подкатегории направления – subcategory_required и 422; подкатегория из профиля подхватывается', async () => {
     const elig = await checkEligibility(B, 'ai', 'junior');
     expect(elig).toMatchObject({ allowed: false, code: 'subcategory_required' });
     const started = await startRoute(jsonRequest('/api/test/start', 'POST', { specialization: 'ai', grade: 'junior' }, cookie(B)));
@@ -175,7 +175,7 @@ describe('API теста на грейд', () => {
     expect(await checkEligibility(B, 'ai', 'junior')).toMatchObject({ allowed: true, subcategoryId: 'ai.data-science' });
   });
 
-  it('engineering (банк 6/4/4 на подкатегорию): без своей подкатегории — subcategory_required, с подкатегорией — попытка по её семействам', async () => {
+  it('engineering (банк 6/4/4 на подкатегорию): без своей подкатегории – subcategory_required, с подкатегорией – попытка по её семействам', async () => {
     const elig = await eligibilityRoute(jsonRequest('/api/test/start?specialization=engineering&grade=junior', 'GET', undefined, cookie(A)));
     expect(await elig.json()).toMatchObject({ allowed: false, code: 'subcategory_required' });
     const { attemptId } = await startAttempt(A, 'engineering', 'junior', new Date(), { seed: 3, subcategoryId: 'engineering.devops' });
@@ -185,7 +185,7 @@ describe('API теста на грейд', () => {
     expect(items.every((i) => own.has(i.templateId))).toBe(true);
   });
 
-  it('чужая попытка — 404; без сессии — 401', async () => {
+  it('чужая попытка – 404; без сессии – 401', async () => {
     const { attemptId } = await startAttempt(A, 'backend', 'junior');
     const res = await getRoute(jsonRequest(`/api/test/attempt/${attemptId}`, 'GET', undefined, cookie(B)), ctx(attemptId));
     expect(res.status).toBe(404);
@@ -215,23 +215,23 @@ describe('API теста на грейд', () => {
     expect(`${items3[0]!.prompt}\n${items3[0]!.code}`).not.toBe(`${same?.prompt}\n${same?.code}`);
   });
 
-  it('интервалы R-C-09: пересдача того же грейда и смена грейда — не раньше срока; abandoned не считается', async () => {
+  it('интервалы R-C-09: пересдача того же грейда и смена грейда – не раньше срока; abandoned не считается', async () => {
     const t0 = new Date('2026-10-10T10:00:00Z');
     const a1 = await startAttempt(A, 'backend', 'junior', t0, { seed: 1 });
     const v = await play(A, a1.attemptId, (_g, key) => key, t0);
     expect(v.status).toBe('passed');
-    // Пересдача того же грейда сразу — нельзя.
+    // Пересдача того же грейда сразу – нельзя.
     const retake = await startRoute(jsonRequest('/api/test/start', 'POST', { specialization: 'backend', grade: 'junior' }, cookie(A)));
     expect(retake.status).toBe(409);
     expect(((await retake.json()) as { error: { code: string } }).error.code).toBe('retake_too_soon');
-    // Смена грейда сразу после подтверждения — нельзя (30 дней), через 31 день — можно.
+    // Смена грейда сразу после подтверждения – нельзя (30 дней), через 31 день – можно.
     expect((await checkEligibility(A, 'backend', 'middle', new Date(t0.getTime() + 24 * 3600e3))).code).toBe('grade_change_too_soon');
     expect((await checkEligibility(A, 'backend', 'middle', new Date(t0.getTime() + 31 * 24 * 3600e3))).allowed).toBe(true);
     expect((await checkEligibility(A, 'backend', 'junior', new Date(t0.getTime() + 15 * 24 * 3600e3))).allowed).toBe(true);
     const elig = await eligibilityRoute(jsonRequest('/api/test/start?specialization=backend&grade=junior', 'GET', undefined, cookie(A)));
     expect(((await elig.json()) as { allowed: boolean; rules: string }).rules.length).toBeGreaterThan(10);
 
-    // Попытка без ответов, завершённая досрочно, — abandoned и интервалы не трогает.
+    // Попытка без ответов, завершённая досрочно, – abandoned и интервалы не трогает.
     const t1 = new Date(t0.getTime() + 40 * 24 * 3600e3);
     const a2 = await startAttempt(A, 'backend', 'middle', t1, { seed: 2 });
     const fin = await finishRoute(jsonRequest(`/api/test/attempt/${a2.attemptId}/finish`, 'POST', {}, cookie(A)), ctx(a2.attemptId));
@@ -241,8 +241,8 @@ describe('API теста на грейд', () => {
     expect(await prisma.candidateCategory.count({ where: { candidateId: A } })).toBe(1);
   });
 
-  it('Middle не сдан, Junior решён → предложение и подтверждение Junior в один клик (R-C-08); повторно — 409', async () => {
-    // seed 1: 4 Junior-задания из 10, P(θ > −0,7) ≈ 0,92 — предложение без дозадавания. Случай с дозадаванием — ниже (seed 4242).
+  it('Middle не сдан, Junior решён → предложение и подтверждение Junior в один клик (R-C-08); повторно – 409', async () => {
+    // seed 1: 4 Junior-задания из 10, P(θ > −0,7) ≈ 0,92 – предложение без дозадавания. Случай с дозадаванием – ниже (seed 4242).
     const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 1 });
     const v = await play(A, attemptId, (grade, key) => (grade === 'junior' ? key : 'нет'));
     expect(v.status).toBe('not_confirmed');
@@ -262,9 +262,9 @@ describe('API теста на грейд', () => {
   });
 
   it('Middle не сдан, P(Junior) неуверенная → дозадаются Junior-задания в той же попытке, затем Junior в один клик (R-C-08, 10.10)', async () => {
-    // Пул — подкатегория backend.web-api (после bank2: 9 J + 9 M + 8 S и общие). seed 3 подобран перебором после bank2 (11.10);
+    // Пул – подкатегория backend.web-api (после bank2: 9 J + 9 M + 8 S и общие). seed 3 подобран перебором после bank2 (11.10);
     // прежде seed 1 подобран симуляцией цикла сервиса после калибровки backend (политика v4)
-    // (10.10): основная фаза кончается при неуверенной P(Junior), дальше — дозадавание. Прежний seed 4242 был для пула
+    // (10.10): основная фаза кончается при неуверенной P(Junior), дальше – дозадавание. Прежний seed 4242 был для пула
     // всего направления из 12 семейств; в пулах integrations/highload/data-model дозадавание при таком профиле не возникает.
     const { attemptId } = await startAttempt(A, 'backend', 'middle', new Date(), { seed: 3, subcategoryId: 'backend.web-api' });
     let v = await getAttempt(A, attemptId);
@@ -295,7 +295,7 @@ describe('API теста на грейд', () => {
     }
     expect(probe.length).toBeGreaterThan(0);
     expect(probe.length).toBeLessThanOrEqual(JUNIOR_PROBE_MAX);
-    // Потолок фазы — не больше оставшихся Junior-шаблонов подкатегории (общих в дозадавании нет), а не всегда 13.
+    // Потолок фазы – не больше оставшихся Junior-шаблонов подкатегории (общих в дозадавании нет), а не всегда 13.
     const juniorFamilies = generatorsForSubcategory('backend.web-api').filter((g) => g.grade === 'junior').length;
     const probeMax = MAX_ITEMS + Math.min(JUNIOR_PROBE_MAX, juniorFamilies - mainJunior);
     expect(probe.every((p) => p.grade === 'junior' && p.index >= MAX_ITEMS && p.maxItems === probeMax)).toBe(true);
@@ -303,7 +303,7 @@ describe('API теста на грейд', () => {
     expect(v.result?.answered).toBeLessThanOrEqual(probeMax);
     expect(v.status).toBe('not_confirmed');
     expect(v.result?.juniorOffered).toBe(true);
-    // Завершённая попытка: фаза и потолок — основные (прогресс больше не нужен).
+    // Завершённая попытка: фаза и потолок – основные (прогресс больше не нужен).
     const res = await getRoute(jsonRequest(`/api/test/attempt/${attemptId}`, 'GET', undefined, cookie(A)), ctx(attemptId));
     expect(await res.json()).toMatchObject({ phase: 'main', maxItems: MAX_ITEMS });
     const ok = await confirmJuniorRoute(jsonRequest(`/api/test/attempt/${attemptId}/confirm-junior`, 'POST', {}, cookie(A)), ctx(attemptId));
@@ -347,7 +347,7 @@ describe('API теста на грейд', () => {
 // ---------------------------------------------------------------------------
 
 describe('индекс честности и подтверждающий тест', () => {
-  // Реальное «сейчас»: роуты (confirm-start) берут new Date(), время ответов — от него вперёд.
+  // Реальное «сейчас»: роуты (confirm-start) берут new Date(), время ответов – от него вперёд.
   let T0 = new Date();
   const at = (sec: number) => new Date(T0.getTime() + sec * 1000);
   beforeEach(() => {
@@ -357,7 +357,7 @@ describe('индекс честности и подтверждающий тес
     resetEnvCache();
   });
 
-  /** Пройти попытку сервисом со своим временем: answerFor(ключ, сдвиг ловушки) → ответ; stepSec — секунд на ответ. */
+  /** Пройти попытку сервисом со своим временем: answerFor(ключ, сдвиг ловушки) → ответ; stepSec – секунд на ответ. */
   async function playTimed(candidateId: string, attemptId: string, startSec: number, stepSec: number, answerFor: (key: string, canaryShift: number | null) => string): Promise<{ v: AttemptView; endSec: number }> {
     let v = await getAttempt(candidateId, attemptId);
     let sec = startSec;
@@ -393,7 +393,7 @@ describe('индекс честности и подтверждающий тес
     expect(await prisma.candidateCategory.count({ where: { candidateId: A, grade: 'middle' } })).toBe(1);
   });
 
-  it('ловушка «ключ + сдвиг» и быстрые ответы → needs_confirmation: категории нет, Junior в один клик закрыт; сигналы — text/plain', async () => {
+  it('ловушка «ключ + сдвиг» и быстрые ответы → needs_confirmation: категории нет, Junior в один клик закрыт; сигналы – text/plain', async () => {
     const { attemptId } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
     // Пока попытка активна, ловушка видна в текущем задании, когда на него попадает.
     const sig = await signalRoute(
@@ -437,7 +437,7 @@ describe('индекс честности и подтверждающий тес
     expect((await checkEligibility(A, 'backend', 'middle', at(sec + 60))).code).toBe('retake_too_soon');
   });
 
-  it('подтверждающий тест: другие семейства, лимит ×0,7, верные ответы → категория, confirmedBy у исходной; повтор — 409', async () => {
+  it('подтверждающий тест: другие семейства, лимит ×0,7, верные ответы → категория, confirmedBy у исходной; повтор – 409', async () => {
     const { attemptId: src } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
     const cheat = await playTimed(A, src, 0, 4, shifted);
     expect(cheat.v.status).toBe('needs_confirmation');
@@ -476,7 +476,7 @@ describe('индекс честности и подтверждающий тес
     expect(hist.attempts.map((a) => [a.kind, a.status])).toEqual([['confirm', 'passed'], ['grade', 'needs_confirmation']]);
   });
 
-  it('confirm-start к обычной попытке — 409 confirm_not_needed', async () => {
+  it('confirm-start к обычной попытке – 409 confirm_not_needed', async () => {
     const { attemptId } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
     await playTimed(A, attemptId, 0, 70, (key) => key);
     const res = await confirmStartRoute(jsonRequest(`/api/test/attempt/${attemptId}/confirm-start`, 'POST', undefined, cookie(A)), ctx(attemptId));
@@ -616,11 +616,7 @@ describe('индекс честности и подтверждающий тес
     const second = await startAttempt(B, 'backend', 'middle', T0, { seed: 1, subcategoryId: 'backend.web-api' });
     const cur = (await getAttempt(B, second.attemptId)).current!;
     const row = await prisma.testItem.findFirstOrThrow({ where: { attemptId: second.attemptId, correct: null } });
-    expect(cur.jury).toMatchObject({ canaryShift: row.canaryShift, phase: 'main' });
-    // адаптивный слой: параметры задания и шанс верного, ключа ответа нет
-    expect(typeof cur.jury?.itemB).toBe('number');
-    expect(cur.jury?.pCorrect).toBeGreaterThan(0);
-    expect(JSON.stringify(cur.jury)).not.toContain('answerKey');
+    expect(cur.jury).toEqual({ canaryShift: row.canaryShift });
     expect(JSON.stringify(cur)).not.toContain(row.answerKey.split('|')[0]! + '"');
   });
 });

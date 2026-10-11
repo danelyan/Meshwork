@@ -87,7 +87,7 @@ export function spread(xs: readonly number[]): number {
 
 /**
  * Разведение двух групп: вероятность, что случайный балл группы a выше случайного балла группы b
- * (ничья — половина). 1 — разведены полностью, 0,5 — не различаются. Это AUC Манна — Уитни.
+ * (ничья – половина). 1 – разведены полностью, 0,5 – не различаются. Это AUC Манна – Уитни.
  */
 export function separation(a: readonly number[], b: readonly number[]): number | null {
   if (!a.length || !b.length) return null;
@@ -130,7 +130,7 @@ export interface CallObs {
   retoldQuestions?: number;
   /** Дополнительные вопросы по неопределённым темам. */
   probeQuestions?: number;
-  /** Прогонов оценщика всего (3, 5, с досчётом — больше). */
+  /** Прогонов оценщика всего (3, 5, с досчётом – больше). */
   evaluatorRuns?: number;
   validRuns: number;
   topics: CallTopicObs[];
@@ -143,7 +143,7 @@ export interface CallTopicSummary {
   catalogId: string;
   topic: string;
   expected: boolean | null;
-  /** По созвонам: true/false — подтверждено/нет, 'inconclusive' — не определено, null — тему не спросили. */
+  /** По созвонам: true/false – подтверждено/нет, 'inconclusive' – не определено, null – тему не спросили. */
   got: (boolean | 'inconclusive' | null)[];
   totals: (number | null)[];
 }
@@ -162,7 +162,7 @@ export interface CallPersonaSummary {
   coverage: number | null;
   /** Тем со статусом «не определено» (из всех спрошенных). */
   inconclusive: number;
-  /** Ошибок решения среди спрошенных тем с ожиданием: ✓ при «нет» или ✗ при «да» (не определено — не ошибка). */
+  /** Ошибок решения среди спрошенных тем с ожиданием: ✓ при «нет» или ✗ при «да» (не определено – не ошибка). */
   wrongDecisions: number;
   /** Пересказов профиля в вопросах (всего) и дополнительных вопросов (среднее на созвон). */
   retoldQuestions: number;
@@ -258,7 +258,7 @@ export interface DefenseObs {
   persona: string;
   defense: number;
   sessionId: string;
-  /** Общий балл (0–8): после 10.10 — среднее по вопросам с одним знаком; до — медиана по транскрипту. */
+  /** Общий балл (0–8): после 10.10 – среднее по вопросам с одним знаком; до – медиана по транскрипту. */
   total: number | null;
   passed: boolean | null;
   /** Баллы по вопросам (после 10.10). */
@@ -355,8 +355,8 @@ export function defenseSeparation(summaries: readonly DefensePersonaSummary[]): 
 // ---------------------------------------------------------------------------
 // Таблицы markdown (для docs/validation-stages.md)
 // ---------------------------------------------------------------------------
-const pct = (x: number | null): string => (x === null ? '—' : `${Math.round(x * 100)} %`);
-const num = (x: number | null, d = 1): string => (x === null ? '—' : x.toFixed(d).replace('.', ','));
+const pct = (x: number | null): string => (x === null ? '–' : `${Math.round(x * 100)} %`);
+const num = (x: number | null, d = 1): string => (x === null ? '–' : x.toFixed(d).replace('.', ','));
 const mark = (g: boolean | 'inconclusive' | null): string => (g === null ? '·' : g === 'inconclusive' ? '?' : g ? '✓' : '✗');
 
 export function callTables(summaries: readonly CallPersonaSummary[], legends: Record<string, string>): string {
@@ -370,7 +370,7 @@ export function callTables(summaries: readonly CallPersonaSummary[], legends: Re
   );
   const maps = summaries.map((s) => {
     const lines = s.topics.map(
-      (t) => `| ${s.persona} | \`${t.catalogId}\` | ${t.expected === null ? '—' : t.expected ? 'да' : 'нет'} | ${t.got.map(mark).join(' ')} | ${t.totals.map((x) => (x === null ? '·' : String(x))).join(' / ')} |`,
+      (t) => `| ${s.persona} | \`${t.catalogId}\` | ${t.expected === null ? '–' : t.expected ? 'да' : 'нет'} | ${t.got.map(mark).join(' ')} | ${t.totals.map((x) => (x === null ? '·' : String(x))).join(' / ')} |`,
     );
     return lines.join('\n');
   });
@@ -393,10 +393,10 @@ export function defenseTables(summaries: readonly DefensePersonaSummary[], legen
   ];
   const rows = summaries.map(
     (s) =>
-      `| ${s.persona} ${legends[s.persona] ?? ''} | ${s.defenses - s.failed}/${s.defenses} | ${s.totals.join(' / ') || '—'} | ${num(s.meanTotal)} | ${pct(s.passRate)} | ${pct(s.flagRate)} | ${num(s.withinSpreadMean)} / ${s.withinSpreadMax} | ${s.betweenSpread} | ${num(s.avgAnswered)} | ${num(s.avgPlatformCalls)} + ${num(s.avgPersonaCalls)} | ${num(s.avgPlatformTokens, 0)} |`,
+      `| ${s.persona} ${legends[s.persona] ?? ''} | ${s.defenses - s.failed}/${s.defenses} | ${s.totals.join(' / ') || '–'} | ${num(s.meanTotal)} | ${pct(s.passRate)} | ${pct(s.flagRate)} | ${num(s.withinSpreadMean)} / ${s.withinSpreadMax} | ${s.betweenSpread} | ${num(s.avgAnswered)} | ${num(s.avgPlatformCalls)} + ${num(s.avgPersonaCalls)} | ${num(s.avgPlatformTokens, 0)} |`,
   );
-  const sep = defenseSeparation(summaries).map((x) => `| ${x.a} над ${x.b} | ${x.auc === null ? '—' : x.auc.toFixed(2).replace('.', ',')} |`);
-  return [...head, ...rows, '', '| Разведение (AUC по сумме; 1 — полностью, 0,5 — не различает) | AUC |', '|---|---|', ...sep].join('\n');
+  const sep = defenseSeparation(summaries).map((x) => `| ${x.a} над ${x.b} | ${x.auc === null ? '–' : x.auc.toFixed(2).replace('.', ',')} |`);
+  return [...head, ...rows, '', '| Разведение (AUC по сумме; 1 – полностью, 0,5 – не различает) | AUC |', '|---|---|', ...sep].join('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -414,16 +414,16 @@ export function callTuningTable(summaries: readonly CallPersonaSummary[], legend
 }
 
 export function defenseTuningTable(summaries: readonly DefensePersonaSummary[], legends: Record<string, string>): string {
-  const sep = defenseSeparation(summaries).map((x) => `| ${x.a} над ${x.b} | ${x.auc === null ? '—' : x.auc.toFixed(2).replace('.', ',')} |`);
+  const sep = defenseSeparation(summaries).map((x) => `| ${x.a} над ${x.b} | ${x.auc === null ? '–' : x.auc.toFixed(2).replace('.', ',')} |`);
   return [
     '| Персона | Защит | Общий балл по защитам (среднее по вопросам, 0–8) | Средняя | Прошли порог | strong_project_weak_defense | uneven_understanding | Балл вопросов по «своим» / остальным файлам | Разброс суммы вопроса между прогонами | Прогонов оценщика | Вызовов платформы на защиту | Токенов платформы |',
     '|---|---|---|---|---|---|---|---|---|---|---|---|',
     ...summaries.map(
       (s) =>
-        `| ${s.persona} ${legends[s.persona] ?? ''} | ${s.defenses - s.failed}/${s.defenses} | ${s.totals.map((t) => num(t)).join(' / ') || '—'} | ${num(s.meanTotal)} | ${pct(s.passRate)} | ${pct(s.flagRate)} | ${pct(s.unevenRate)} | ${num(s.knownItemMean)} / ${num(s.unknownItemMean)} | ${num(s.itemSpreadMean)} | ${num(s.avgEvaluatorRuns)} | ${num(s.avgPlatformCalls)} | ${num(s.avgPlatformTokens, 0)} |`,
+        `| ${s.persona} ${legends[s.persona] ?? ''} | ${s.defenses - s.failed}/${s.defenses} | ${s.totals.map((t) => num(t)).join(' / ') || '–'} | ${num(s.meanTotal)} | ${pct(s.passRate)} | ${pct(s.flagRate)} | ${pct(s.unevenRate)} | ${num(s.knownItemMean)} / ${num(s.unknownItemMean)} | ${num(s.itemSpreadMean)} | ${num(s.avgEvaluatorRuns)} | ${num(s.avgPlatformCalls)} | ${num(s.avgPlatformTokens, 0)} |`,
     ),
     '',
-    '| Разведение (AUC по общему баллу; 1 — полностью, 0,5 — не различает) | AUC |',
+    '| Разведение (AUC по общему баллу; 1 – полностью, 0,5 – не различает) | AUC |',
     '|---|---|',
     ...sep,
   ].join('\n');

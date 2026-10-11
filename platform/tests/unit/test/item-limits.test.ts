@@ -11,12 +11,12 @@ import raw from '../../../eval/test/results.json';
 const valid = { DATABASE_URL: 'postgresql://postgres@127.0.0.1:54329/fsp_x', SESSION_SECRET: 's'.repeat(32) };
 
 describe('TEST_ITEM_LIMITS', () => {
-  it('дефолт policy — из lib/test-limits (его же показывает страница теста)', () => {
+  it('дефолт policy – из lib/test-limits (его же показывает страница теста)', () => {
     expect({ min: MIN_ITEMS, max: MAX_ITEMS }).toEqual(DEFAULT_ITEM_LIMITS);
     expect(formatItemRange(DEFAULT_ITEM_LIMITS)).toBe(`${MIN_ITEMS}–${MAX_ITEMS}`);
     expect(formatItemRange({ min: 10, max: 10 })).toBe('10');
   });
-  it('разбор «min,max»: пусто — null, пробелы допустимы, ошибки формата и границ — исключение', () => {
+  it('разбор «min,max»: пусто – null, пробелы допустимы, ошибки формата и границ – исключение', () => {
     expect(parseItemLimits(undefined)).toBeNull();
     expect(parseItemLimits('  ')).toBeNull();
     expect(parseItemLimits('9,12')).toEqual({ min: 9, max: 12 });
@@ -26,7 +26,7 @@ describe('TEST_ITEM_LIMITS', () => {
     expect(() => parseItemLimits('3,9')).toThrow(/5…20/);
     expect(() => parseItemLimits('9,25')).toThrow(/5…20/);
   });
-  it('getEnv: не задано — undefined/null; задано — объект; мусор — EnvError при старте', () => {
+  it('getEnv: не задано – undefined/null; задано – объект; мусор – EnvError при старте', () => {
     expect(parseEnv(valid).TEST_ITEM_LIMITS ?? null).toBeNull();
     expect(parseEnv({ ...valid, TEST_ITEM_LIMITS: '9,12' }).TEST_ITEM_LIMITS).toEqual({ min: 9, max: 12 });
     expect(() => parseEnv({ ...valid, TEST_ITEM_LIMITS: 'nine,12' })).toThrow(EnvError);
@@ -59,7 +59,7 @@ describe('«Длина теста и надёжность»: разбор рез
     'competitor.retest.kappaBinary': { mean: k - 0.02, min: 0, max: 1 },
     'competitor.length.mean': { mean: len + 0.5, min: 0, max: 99 },
   });
-  it('parseLengthSweepRun: берёт summary.instance, нет метрики — null; без instance — исключение', () => {
+  it('parseLengthSweepRun: берёт summary.instance, нет метрики – null; без instance – исключение', () => {
     const v = parseLengthSweepRun({ summary: { instance: summary(0.42, 8.5) } }, { min: 7, max: 10, current: true });
     expect(v).toMatchObject({ min: 7, max: 10, current: true, strict: { kappa: 0.42, kappaMin: 0.37, lengthMean: 8.5, earlyStopShare: 0.3 } });
     expect(v.competitor.earlyStopShare).toBeNull();
@@ -86,7 +86,7 @@ describe('«Длина теста и надёжность»: разбор рез
     expect(pickDefaultLimits(sweepOf([[12, 16, 0.5, 11.9]]), bankOf(2))).toBeNull();
     expect(pickDefaultLimits(sweep, null)).toBeNull();
   });
-  it('parseLengthBlock: ключей нет — null; не той формы — исключение', () => {
+  it('parseLengthBlock: ключей нет – null; не той формы – исключение', () => {
     expect(parseLengthBlock({})).toEqual({ sweep: null, bank: null });
     expect(() => parseLengthBlock({ lengthSweep: { variants: [{ min: 7 }] } })).toThrow(/lengthSweep/);
     expect(() => parseLengthBlock({ bankWidth: { rows: [{}], maxes: [] } })).toThrow(/bankWidth/);

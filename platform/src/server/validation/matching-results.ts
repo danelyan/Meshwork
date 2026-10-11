@@ -1,7 +1,7 @@
-// Цифры подбора для /validation — из закоммиченного eval/matching/results.json (пишет eval/matching/run.ts).
+// Цифры подбора для /validation – из закоммиченного eval/matching/results.json (пишет eval/matching/run.ts).
 // JSON попадает в серверный бандл при сборке: страница показывает ровно то, что лежит в репозитории.
-// Старые поля обязательны, новые (расширенный набор, BM25, бутстреп-интервалы) — по возможности:
-// не разобрался блок — блок не показываем, страница не падает.
+// Старые поля обязательны, новые (расширенный набор, BM25, бутстреп-интервалы) – по возможности:
+// не разобрался блок – блок не показываем, страница не падает.
 import { z } from 'zod';
 
 import raw from '../../../eval/matching/results.json';
@@ -26,7 +26,7 @@ const Row = z.object({
 });
 
 const Interval = z.object({ mean: z.number(), lo: z.number(), hi: z.number() });
-// run.ts пишет метрики методов интервалами {mean, lo, hi} (бутстреп), старые прогоны — числом; блоку нужна точка.
+// run.ts пишет метрики методов интервалами {mean, lo, hi} (бутстреп), старые прогоны – числом; блоку нужна точка.
 const Metric = z.union([z.number(), Interval.transform((i) => i.mean)]);
 const MethodMetrics = z.object({
   p5: Metric.optional(),
@@ -131,7 +131,7 @@ const parseBlind = (v: unknown): MatchingBlind | null => {
   return v !== undefined && r.success ? r.data : null;
 };
 
-/** Разбор results.json; обязательная часть не сошлась — исключение (тест это ловит до стенда). */
+/** Разбор results.json; обязательная часть не сошлась – исключение (тест это ловит до стенда). */
 export function parseMatchingResults(json: unknown): MatchingResults {
   const base = z.object({ summary: Summary, rows: z.array(Row) }).parse(json);
   const o = json as Record<string, unknown>;

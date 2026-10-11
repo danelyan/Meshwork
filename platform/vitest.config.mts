@@ -4,17 +4,17 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 // Четыре проекта (docs: vitest guide/projects):
-//  - unit        — tests/unit/**/*.test.ts, Node, без БД;
-//  - components  — tests/unit/**/*.test.tsx, jsdom + Testing Library;
-//  - runner      — tests/runner/**/*.test.ts, Node, файлы последовательно (npm run test:runner);
-//  - integration — tests/integration/**, реальный Postgres (TEST_DATABASE_URL), файлы последовательно.
+//  - unit        – tests/unit/**/*.test.ts, Node, без БД;
+//  - components  – tests/unit/**/*.test.tsx, jsdom + Testing Library;
+//  - runner      – tests/runner/**/*.test.ts, Node, файлы последовательно (npm run test:runner);
+//  - integration – tests/integration/**, реальный Postgres (TEST_DATABASE_URL), файлы последовательно.
 export default defineConfig({
   plugins: [react()],
   // Алиас @/* из tsconfig: встроенный resolve.tsconfigPaths Vite 8 вместо плагина vite-tsconfig-paths из доки Next.js.
   resolve: {
     tsconfigPaths: true,
     // `server-only` (session.ts, auth/page.ts, auth/access.ts): Next.js подставляет его сам, пакета в
-    // зависимостях нет (docs Next.js: установка необязательна). В тестах — пустой модуль из сборки Next,
+    // зависимостях нет (docs Next.js: установка необязательна). В тестах – пустой модуль из сборки Next,
     // тот же, что Next отдаёт серверному коду (условие react-server).
     alias: { 'server-only': fileURLToPath(new URL('./node_modules/next/dist/compiled/server-only/empty.js', import.meta.url)) },
   },
@@ -44,7 +44,7 @@ export default defineConfig({
       },
       {
         // lane runner: сервис автопроверки в локальном режиме (настоящие процессы vitest, ~30 с).
-        // Нужен npm ci в runner/sandbox/node; запуск — npm run test:runner.
+        // Нужен npm ci в runner/sandbox/node; запуск – npm run test:runner.
         extends: true,
         test: {
           name: 'runner',

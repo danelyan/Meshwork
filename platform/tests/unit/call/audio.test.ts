@@ -28,7 +28,7 @@ describe('сегменты аудио созвона', () => {
     for (const f of failed) expect(f.reason).toMatchObject({ status: 409 });
   });
 
-  it('assertSegment: есть — ок, нет — 404, чужое имя — 400', async () => {
+  it('assertSegment: есть – ок, нет – 404, чужое имя – 400', async () => {
     const name = await saveSegment('exists', new Uint8Array(3200));
     await expect(assertSegment('exists', name)).resolves.toBeUndefined();
     await expect(assertSegment('exists', '099.wav')).rejects.toMatchObject({ status: 404 });

@@ -8,7 +8,7 @@ describe('eval/matching: метрики', () => {
   const rel = { a: 2, b: 1, c: 0, d: 1 };
   it('P@k, Recall@k, MRR на ручном примере', () => {
     expect(precisionAtK(['c', 'a', 'b', 'x'], rel, 2)).toBe(0.5);
-    expect(precisionAtK(['a'], rel, 5)).toBe(0.2); // пустые места — промах
+    expect(precisionAtK(['a'], rel, 5)).toBe(0.2); // пустые места – промах
     expect(recallAtK(['a', 'c', 'b'], rel, 3)).toBeCloseTo(2 / 3);
     expect(recallAtK(['a'], { a: 0 }, 3)).toBeNull();
     expect(reciprocalRank(['c', 'x', 'b'], rel)).toBeCloseTo(1 / 3);
@@ -37,7 +37,7 @@ describe('eval/matching: BM25', () => {
     expect(tokenize('Писал сервис на C# и Node.js.')).toEqual(['писал', 'сервис', 'на', 'c#', 'node.j']);
     expect(tokenize('транзакциями')).toEqual(['транза']);
   });
-  it('игрушечный корпус: редкий термин весит больше, длинный документ — меньше', () => {
+  it('игрушечный корпус: редкий термин весит больше, длинный документ – меньше', () => {
     const docs = [
       { id: 'a', text: 'kafka kafka postgres' },
       { id: 'b', text: 'postgres postgres postgres' },

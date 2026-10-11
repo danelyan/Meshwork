@@ -68,7 +68,7 @@ describe('кабинет работодателя (БД)', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('потребности: список своей компании, создание, правка, архив; чужая — 404; кандидат — 403; без входа — 401', async () => {
+  it('потребности: список своей компании, создание, правка, архив; чужая – 404; кандидат – 403; без входа – 401', async () => {
     const list = await (await listVac(jsonRequest('/x', 'GET', undefined, EMP))).json();
     expect(list.company.name).toBe('Северный Поток');
     expect(list.vacancies.map((v: { id: string }) => v.id).sort()).toEqual(['demo-vac-be-j-1', 'demo-vac-be-m-1', 'demo-vac-fe-j-2']);
@@ -90,7 +90,7 @@ describe('кабинет работодателя (БД)', () => {
     expect((await listVac(jsonRequest('/x', 'GET'))).status).toBe(401);
   });
 
-  it('потребность: требование не из каталога или другой специализации — 400; перевёрнутая вилка — 400', async () => {
+  it('потребность: требование не из каталога или другой специализации – 400; перевёрнутая вилка – 400', async () => {
     const bad = await createVac(jsonRequest('/x', 'POST', { ...VAC_BODY, needs: [{ catalogId: 'fe.a11y', weight: 2 }] }, EMP));
     expect(bad.status).toBe(400);
     const nope = await createVac(jsonRequest('/x', 'POST', { ...VAC_BODY, needs: [{ catalogId: 'none.x', weight: 2 }] }, EMP));
@@ -114,7 +114,7 @@ describe('кабинет работодателя (БД)', () => {
     }
     // цитаты резюме наружу не уходят
     expect(raw).not.toContain('Go, PostgreSQL, Kafka:');
-    // тип источника — да (R-E-07), но без ссылок, ссылок на репозитории и цитат
+    // тип источника – да (R-E-07), но без ссылок, ссылок на репозитории и цитат
     const claims = body.items[0].candidate.claims as { level: string; sourceType: string | null }[];
     const artifact = claims.filter((c) => c.level === 'artifact');
     expect(artifact.length).toBeGreaterThan(0);
@@ -124,7 +124,7 @@ describe('кабинет работодателя (БД)', () => {
     for (const key of ['sourceRef', 'sourceKind', '"quote"', '"wording"', 'github:demo', 'codeforces:demo', 'cv-demo.pdf']) expect(raw).not.toContain(key);
   });
 
-  it('подборка скрывает кандидата с нулевым покрытием; поиск по банку — нет (решение владельца 09.10); без категории — только в расширенном пуле (M05)', async () => {
+  it('подборка скрывает кандидата с нулевым покрытием; поиск по банку – нет (решение владельца 09.10); без категории – только в расширенном пуле (M05)', async () => {
     await prisma.candidate.create({
       data: { id: 'zero-cov', name: 'Нулевой', email: 'zero-cov@example.test', specialization: 'backend', fspState: 'not_linked', consentAt: new Date() },
     });
@@ -140,7 +140,7 @@ describe('кабинет работодателя (БД)', () => {
     expect(m.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('zero-cov');
     // без закрытых требований в подборке только кандидаты с совпавшей категорией из теста (Q-36)
     expect(m.items.every((i: { covered: number; categoryMatch: boolean }) => i.covered >= 1 || i.categoryMatch)).toBe(true);
-    // основной режим — только подтверждённые категории: кандидата без теста в банке нет; pool=all показывает его с пометкой
+    // основной режим – только подтверждённые категории: кандидата без теста в банке нет; pool=all показывает его с пометкой
     const main = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go', 'GET', undefined, EMP))).json();
     expect(main.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('zero-cov');
     expect(main.items.every((i: { candidate: { category: unknown } }) => i.candidate.category !== null)).toBe(true);
@@ -150,13 +150,13 @@ describe('кабинет работодателя (БД)', () => {
     expect(zero.candidate.category).toBeNull();
     expect(zero.explanation.category).toBe('без категории из теста - расширенный пул');
     expect(bank.filters).toEqual({ specialization: 'backend', stack: ['Go'], expandPool: true });
-    // прежний category=1 — no-op: совпадает с режимом по умолчанию
+    // прежний category=1 – no-op: совпадает с режимом по умолчанию
     const legacy = await (await search(jsonRequest('/api/employer/search?spec=backend&stack=Go&category=1', 'GET', undefined, EMP))).json();
     expect(legacy.items.map((i: { candidateId: string }) => i.candidateId)).toEqual(main.items.map((i: { candidateId: string }) => i.candidateId));
     await prisma.candidate.delete({ where: { id: 'zero-cov' } }); // не мешать соседним тестам
   });
 
-  it('подборка: кандидат только с категорией из теста виден, чужая специализация — нет, порядок трёх типов (Q-36)', async () => {
+  it('подборка: кандидат только с категорией из теста виден, чужая специализация – нет, порядок трёх типов (Q-36)', async () => {
     const mk = (id: string, extra: Record<string, unknown> = {}) =>
       prisma.candidate.create({ data: { id, name: id, email: `${id}@example.test`, specialization: 'backend', fspState: 'not_linked', consentAt: new Date(), ...extra } });
     const claim = (candidateId: string) =>
@@ -177,7 +177,7 @@ describe('кабинет работодателя (БД)', () => {
     await claim('q36-claims');
     const created = await (await createVac(jsonRequest('/api/employer/vacancies', 'POST', { ...VAC_BODY, stack: [], needs: [{ catalogId: 'be.idempotency', weight: 3 }, { catalogId: 'be.transactions', weight: 3 }] }, EMP))).json();
     const vacId = created.id ?? created.vacancy?.id;
-    // q36-claims без категории: в основном режиме его нет, подсказка предлагает расширить пул; в расширенном — ниже q36-both
+    // q36-claims без категории: в основном режиме его нет, подсказка предлагает расширить пул; в расширенном – ниже q36-both
     const main = await (await matches(jsonRequest(`/x/${vacId}/matches`, 'GET', undefined, EMP), params({ id: vacId }))).json();
     expect(main.items.map((i: { candidateId: string }) => i.candidateId)).not.toContain('q36-claims');
     expect(main.hints.find((h: { kind: string }) => h.kind === 'expandPool')).toMatchObject({ gain: expect.any(Number), filters: { expandPool: true } });
@@ -193,7 +193,7 @@ describe('кабинет работодателя (БД)', () => {
     await prisma.candidate.deleteMany({ where: { id: { startsWith: 'q36-' } } });
   });
 
-  it('фильтры — query (R-M-04): ФСП, стек, грейд категории; чужая потребность — 404', async () => {
+  it('фильтры – query (R-M-04): ФСП, стек, грейд категории; чужая потребность – 404', async () => {
     const url = (q: string) => jsonRequest(`/api/employer/vacancies/${PAY_VAC}/matches?${q}`, 'GET', undefined, EMP);
     const fsp = await (await matches(url('fsp=1'), params({ id: PAY_VAC }))).json();
     expect(fsp.items.every((i: { candidate: { fsp: { hasAchievements: boolean } } }) => i.candidate.fsp.hasAchievements)).toBe(true);
@@ -201,7 +201,7 @@ describe('кабинет работодателя (БД)', () => {
     expect(stack.items.map((i: { candidateId: string }) => i.candidateId)).toEqual([PAY.id]);
     const fe = (q: string) => jsonRequest(`/x?${q}`, 'GET', undefined, EMP);
     const all = await (await matches(fe('pool=all'), params({ id: 'demo-vac-fe-j-2' }))).json();
-    expect(all.items.map((i: { candidateId: string }) => i.candidateId)).toContain('demo-pool-fe-j-2'); // без категории — расширенный пул
+    expect(all.items.map((i: { candidateId: string }) => i.candidateId)).toContain('demo-pool-fe-j-2'); // без категории – расширенный пул
     const grade = await (await matches(fe('grade=junior'), params({ id: 'demo-vac-fe-j-2' }))).json();
     expect(grade.items.map((i: { candidateId: string }) => i.candidateId)).toEqual(['demo-pool-fe-j-1']);
     // кандидаты другой специализации в выдачу по потребности не попадают (балл ≤ 0)
@@ -242,7 +242,7 @@ describe('кабинет работодателя (БД)', () => {
     expect(JSON.stringify(tracked)).not.toContain(`${PAY.id}@example.test`);
     expect(JSON.stringify(tracked)).not.toContain('candidate.be-m-pay@example.com');
 
-    // чужой кандидат не может ответить: 404; работодатель — 403
+    // чужой кандидат не может ответить: 404; работодатель – 403
     expect((await respond(jsonRequest('/x', 'POST', { action: 'accept' }, candCookie('demo-pool-be-j-1')), params({ id }))).status).toBe(404);
     expect((await respond(jsonRequest('/x', 'POST', { action: 'accept' }, EMP), params({ id }))).status).toBe(403);
 
@@ -261,7 +261,7 @@ describe('кабинет работодателя (БД)', () => {
     expect((await (await listInvites(jsonRequest('/x', 'GET', undefined, OTHER))).json()).invitations).toEqual([]);
   });
 
-  it('без привязки к потребности (R-E-05); зарплата обязательна; чужая потребность — 404; дубль открытого — 409', async () => {
+  it('без привязки к потребности (R-E-05); зарплата обязательна; чужая потребность – 404; дубль открытого – 409', async () => {
     const free = await sendInvite(PAY.id, EMP, { vacancyId: null });
     expect(free.status).toBe(201);
     const mine = await (await myInvites(jsonRequest('/x', 'GET', undefined, candCookie(PAY.id)))).json();
@@ -273,7 +273,7 @@ describe('кабинет работодателя (БД)', () => {
     expect((await sendInvite('nope')).status).toBe(404);
   });
 
-  it('ранг в подборке (E-08, метрика): сохраняется matchRank/matchSource; вне 1..1000 или чужой источник — 400; без ранга — null', async () => {
+  it('ранг в подборке (E-08, метрика): сохраняется matchRank/matchSource; вне 1..1000 или чужой источник – 400; без ранга – null', async () => {
     expect((await sendInvite(PAY.id, EMP, { matchRank: 0 })).status).toBe(400);
     expect((await sendInvite(PAY.id, EMP, { matchRank: 1001 })).status).toBe(400);
     expect((await sendInvite(PAY.id, EMP, { matchRank: 2.5 })).status).toBe(400);
@@ -284,7 +284,7 @@ describe('кабинет работодателя (БД)', () => {
     expect(await prisma.invitation.findUniqueOrThrow({ where: { id: plain.id }, select: { matchRank: true, matchSource: true } })).toEqual({ matchRank: null, matchSource: null });
   });
 
-  it('лимит приглашений компании за сутки — 429', async () => {
+  it('лимит приглашений компании за сутки – 429', async () => {
     const ctx = { companyId: DEMO_EMPLOYER.companyId, employerProfileId: DEMO_EMPLOYER.profileId };
     const ids = DEMO_POOL.slice(0, 3).map((p) => p.id);
     await createInvitation(ctx, { candidateId: ids[0]!, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 }, 2);

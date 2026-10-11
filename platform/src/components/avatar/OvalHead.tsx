@@ -10,7 +10,7 @@ const OvalHeadCanvas = dynamic(() => import('./OvalHeadCanvas'), { ssr: false })
 
 const silent = () => 0;
 
-/** Болванчик для 404: three.js грузится лениво; без WebGL — знак ФСП. */
+/** Болванчик для 404: three.js грузится лениво; без WebGL – знак ФСП. */
 export function OvalHead({ avoidPointer = false, reducedMotion: fixedReduced }: { avoidPointer?: boolean; reducedMotion?: boolean } = {}) {
   const [mode, setMode] = useState<'pending' | 'webgl' | 'fallback'>('pending');
   const [reducedMotion, setReducedMotion] = useState(false);

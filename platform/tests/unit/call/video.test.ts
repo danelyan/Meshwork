@@ -31,7 +31,7 @@ describe('сегменты видео с камеры', () => {
     expect(await listVideoSegments('nope')).toEqual([]);
   });
 
-  it('пустой сегмент — 400, чужое имя — 400, нет файла — 404, лимит сегментов — 409', async () => {
+  it('пустой сегмент – 400, чужое имя – 400, нет файла – 404, лимит сегментов – 409', async () => {
     await expect(saveVideoSegment('s2', new Uint8Array(0), 0)).rejects.toMatchObject({ status: 400 });
     await expect(readVideoSegment('s2', '../x.webm')).rejects.toMatchObject({ status: 400 });
     await expect(readVideoSegment('s2', '000-0.webm')).rejects.toMatchObject({ status: 404 });

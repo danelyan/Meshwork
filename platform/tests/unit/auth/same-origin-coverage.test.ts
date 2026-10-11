@@ -11,11 +11,11 @@ const API = path.join(process.cwd(), 'src/app/api');
 
 /** Вне этой проверки: вход и регистрация (`auth`), локальные дебаг-маршруты (`dev`), контур админки (`admin`). */
 const SKIPPED_PREFIXES = ['auth/', 'dev/', 'admin/'];
-/** Обработчики без проверки — каждый с причиной. */
+/** Обработчики без проверки – каждый с причиной. */
 const EXCEPTIONS: Record<string, string> = {
   'demo/login DELETE': 'только сбрасывает куку сессии; обработчик без параметра запроса',
 };
-/** Маршруты, где проверка — первое действие обработчика (до чтения сессии и тела). */
+/** Маршруты, где проверка – первое действие обработчика (до чтения сессии и тела). */
 const FIRST_STATEMENT_PREFIXES = ['test/', 'claims/', 'consultant/', 'defense/', 'uploads/', 'sources/', 'stt/', 'tts/', 'employer/assistant/', 'expert/', 'demo/login/'];
 
 interface Handler {
@@ -57,7 +57,7 @@ describe('проверка Origin в изменяющих обработчика
     expect(missing).toEqual([]);
   });
 
-  it('тест, утверждения, консультант, защита, файлы, источники, голос, эксперт, демо-вход: проверка — первым действием', () => {
+  it('тест, утверждения, консультант, защита, файлы, источники, голос, эксперт, демо-вход: проверка – первым действием', () => {
     const late = handlers
       .filter((h) => FIRST_STATEMENT_PREFIXES.some((p) => h.route.startsWith(p)) && !(keyOf(h) in EXCEPTIONS))
       .filter((h) => h.body.split('\n')[1]?.trim() !== 'assertSameOrigin(req);')
@@ -77,7 +77,7 @@ describe('assertSameOrigin', () => {
     }
   };
 
-  it('без Origin (сервер, тесты) и со своим Origin — пропускает; чужой сайт — 403', () => {
+  it('без Origin (сервер, тесты) и со своим Origin – пропускает; чужой сайт – 403', () => {
     expect(statusOf()).toBe(200);
     expect(statusOf('http://localhost:3000')).toBe(200);
     expect(statusOf('https://evil.example')).toBe(403);

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * Промпты созвона — `src/server/call/prompts/*.md`, читаются от process.cwd() (как defense);
+ * Промпты созвона – `src/server/call/prompts/*.md`, читаются от process.cwd() (как defense);
  * standalone-сборка включает их через outputFileTracingIncludes (`./src/server/**\/prompts/*.md`).
  */
 const cache = new Map<string, string>();

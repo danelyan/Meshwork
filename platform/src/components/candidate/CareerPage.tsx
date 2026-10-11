@@ -24,7 +24,7 @@ const EMPTY: Filters = { query: '', specialization: '', grade: '', salary: '' };
 const VIEW_KEY = 'career:view';
 const money = new Intl.NumberFormat('ru-RU');
 export const coveragePercent = (target: TargetRec) => target.total > 0 ? Math.round(Math.min(1, target.covered / target.total) * 100) : 0;
-/** Доказано — уровень выше «со слов» (ссылка на работу, третья сторона, платформа). */
+/** Доказано – уровень выше «со слов» (ссылка на работу, третья сторона, платформа). */
 export const provenCount = (target: CareerVacancy) => target.matched.filter((item) => item.level !== null && item.level !== 'self_reported').length;
 
 export function filterTargets<T extends TargetRec>(targets: T[], filters: Filters): T[] {
@@ -156,7 +156,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
         <Field label="Соответствие"><select className={ui.input} value={filters.fit ?? ''} onChange={(e) => setFilters({ ...filters, fit: e.target.value })}><option value="">Любое</option><option value="40">от 40%</option><option value="60">от 60%</option><option value="80">от 80%</option></select></Field>
         <Button onClick={() => setFilters(EMPTY)}>Сбросить всё</Button>
       </Panel>}
-      {!savedOnly && targets.length > 0 && targets.every((t) => coveragePercent(t) === 0) && <Notice>Совпадений пока нет: <a href="/test">пройди тест на грейд</a> и подтверди навыки — карта покажет, какие вакансии ближе.</Notice>}
+      {!savedOnly && targets.length > 0 && targets.every((t) => coveragePercent(t) === 0) && <Notice>Совпадений пока нет: <a href="/test">пройди тест на грейд</a> и подтверди навыки – карта покажет, какие вакансии ближе.</Notice>}
       {storageError && <Notice tone="error">{storageError}</Notice>}
       {requestedMissing && <Notice>Вакансия по ссылке недоступна в текущем каталоге. Возможно, она закрыта. <Button size="sm" onClick={() => setSelectedId(null)}>Выбрать другую вакансию</Button></Notice>}
       {truncated && <Notice>Показаны первые 200 активных вакансий. В избранном сохранённые предложения загружаются отдельно.</Notice>}

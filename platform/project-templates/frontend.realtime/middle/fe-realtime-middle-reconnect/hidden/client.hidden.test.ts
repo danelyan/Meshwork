@@ -23,7 +23,7 @@ function setup(base?: number, max?: number) {
 }
 
 describe('соединение', () => {
-  it('до start — closed и connect не вызывается; start даёт connecting и connect(null), onopen — open', () => {
+  it('до start – closed и connect не вызывается; start даёт connecting и connect(null), onopen – open', () => {
     const { net, client, statuses } = setup();
     expect(client.status()).toBe('closed');
     expect(net.list).toHaveLength(0);

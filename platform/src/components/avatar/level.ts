@@ -1,7 +1,7 @@
 /**
  * Рот аватара по громкости: RMS окна AnalyserNode → сглаживание (быстро открывается, медленнее
  * закрывается) → открытие рта 0…1 с порогом тишины. Это не фонемный липсинк: рот двигается
- * в ритм слогов (у SpeechKit нет таймингов фонем — docs/research/19, вывод 1).
+ * в ритм слогов (у SpeechKit нет таймингов фонем – docs/research/19, вывод 1).
  */
 
 /** Среднеквадратичная амплитуда окна (float-отсчёты −1…1). */
@@ -27,7 +27,7 @@ export function smoothLevel(prev: number, target: number, dtSec: number, attackS
   return prev + (target - prev) * k;
 }
 
-/** RMS → открытие рта: ниже порога — закрыт; речь SpeechKit даёт RMS ≈ 0.05–0.25. */
+/** RMS → открытие рта: ниже порога – закрыт; речь SpeechKit даёт RMS ≈ 0.05–0.25. */
 export function mouthOpen(level: number, gate = 0.015, full = 0.2): number {
   if (!(level > gate)) return 0;
   const x = Math.min(1, (level - gate) / (full - gate));

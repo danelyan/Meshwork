@@ -55,7 +55,7 @@ describe('генераторы ai.* (ADR 0003, дополнение 10.10)', () 
     expect(AI_GENERATORS.filter((g) => g.grade === 'middle').length).toBeGreaterThanOrEqual(6);
   });
 
-  it('пять подкатегорий ai — банк 6 Junior + 4 Middle + 4 Senior (MIN_FAMILIES_BY_GRADE, ADR 0003 16:15)', () => {
+  it('пять подкатегорий ai – банк 6 Junior + 4 Middle + 4 Senior (MIN_FAMILIES_BY_GRADE, ADR 0003 16:15)', () => {
     for (const sub of ['ai.llm-apps', 'ai.ai-integration', 'ai.ml-engineering', 'ai.mlops', 'ai.data-science']) {
       const n = familyCounts(sub);
       expect(n.junior, sub).toBeGreaterThanOrEqual(MIN_FAMILIES_BY_GRADE.junior);
@@ -71,7 +71,7 @@ describe('генераторы ai.* (ADR 0003, дополнение 10.10)', () 
     }
   });
 
-  it('каждый catalogId — запись каталога ai.* или common.*, и запись ссылается на задание (proof task:)', () => {
+  it('каждый catalogId – запись каталога ai.* или common.*, и запись ссылается на задание (proof task:)', () => {
     const cat = new Map(catalogFromFile().map((e) => [e.id, e]));
     for (const g of AI_GENERATORS) {
       for (const id of g.catalogIds) {
@@ -232,7 +232,7 @@ describe('ключи ai-extra совпадают с независимым пе�
     }
   });
 
-  it('ai.early-stopping: лучшая эпоха — минимум val_loss до остановки', () => {
+  it('ai.early-stopping: лучшая эпоха – минимум val_loss до остановки', () => {
     for (const seed of SEEDS) {
       const t = earlyStopping.generate(seed);
       const val = [...t.code!.matchAll(/^\s*\d+\s*\|\s*[\d.]+\s*\|\s*([\d.]+)\s*$/gm)].map((m) => Number(m[1]));
@@ -288,7 +288,7 @@ describe('Senior ai.* (ADR 0003, 16:15): ключи совпадают с нез
     }
   });
 
-  it('ai.agent-loop-diagnosis: ответ — первая строка повторяющегося вызова', () => {
+  it('ai.agent-loop-diagnosis: ответ – первая строка повторяющегося вызова', () => {
     for (const seed of SEEDS) {
       const t = agentLoopDiagnosis.generate(seed);
       const lines = t.code!.split('\n');
@@ -299,7 +299,7 @@ describe('Senior ai.* (ADR 0003, 16:15): ключи совпадают с нез
 });
 
 describe('банки всех направлений (интеграция лейнов 10.10)', () => {
-  it('engineering: тест есть — банк направления и полный банк 6/4/4 в каждой подкатегории', () => {
+  it('engineering: тест есть – банк направления и полный банк 6/4/4 в каждой подкатегории', () => {
     for (const spec of ['backend', 'frontend', 'ai', 'engineering'] as const) expect(hasTestFor(spec), spec).toBe(true);
     expect(requireGenerators('engineering').length).toBeGreaterThanOrEqual(MIN_GENERATORS_PER_SPEC);
     for (const sub of ['engineering.data-eng', 'engineering.devops', 'engineering.qa-automation', 'engineering.sre']) {

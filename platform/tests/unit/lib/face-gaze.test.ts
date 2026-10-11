@@ -23,7 +23,7 @@ function face(o: { cx?: number; cy?: number; w?: number; h?: number; noseDx?: nu
 }
 
 describe('лицо и взгляд по точкам Face Landmarker (только показ)', () => {
-  it('лицо прямо, зрачки в центре — «на экран»; нет точек — null', () => {
+  it('лицо прямо, зрачки в центре – «на экран»; нет точек – null', () => {
     const r = readFace(face())!;
     expect(r.gaze).toBe('screen');
     expect(Math.abs(r.yaw)).toBeLessThan(0.05);
@@ -32,7 +32,7 @@ describe('лицо и взгляд по точкам Face Landmarker (тольк
     expect(readFace(face().slice(0, 100))).toBeNull();
   });
 
-  it('поворот головы или уход зрачков за порог — «в сторону»; закрытые глаза — тоже', () => {
+  it('поворот головы или уход зрачков за порог – «в сторону»; закрытые глаза – тоже', () => {
     expect(readFace(face({ noseDx: GAZE_THRESHOLDS.headYaw + 0.2 }))!.gaze).toBe('away');
     expect(readFace(face({ noseDy: 0.15 + GAZE_THRESHOLDS.headPitch + 0.2 }))!.gaze).toBe('away');
     expect(readFace(face({ irisDx: GAZE_THRESHOLDS.iris + 0.3 }))!.gaze).toBe('away');
@@ -41,7 +41,7 @@ describe('лицо и взгляд по точкам Face Landmarker (тольк
   });
 
   it('цель для головы: лицо слева в зеркальном превью → голова смотрит влево (X < 0), выше центра → вверх', () => {
-    // Человек сдвинулся влево от себя: в кадре камеры лицо правее центра, в зеркале — левее.
+    // Человек сдвинулся влево от себя: в кадре камеры лицо правее центра, в зеркале – левее.
     const r = readFace(face({ cx: 0.7, cy: 0.3 }))!;
     const [x, y] = lookTargetFrom(r, true);
     expect(x).toBeLessThan(-0.3);
@@ -49,7 +49,7 @@ describe('лицо и взгляд по точкам Face Landmarker (тольк
     expect(lookTargetFrom(r, false)[0]).toBeGreaterThan(0.3);
   });
 
-  it('сглаживание: «в сторону» показывается после 700 мс непрерывно, моргание и потеря лица на кадр — нет; возврат — сразу', () => {
+  it('сглаживание: «в сторону» показывается после 700 мс непрерывно, моргание и потеря лица на кадр – нет; возврат – сразу', () => {
     let s: SettledGaze = { state: 'screen', pending: null, pendingSince: 0 };
     s = settleGaze(s, 'away', 100);
     expect(s.state).toBe('screen');

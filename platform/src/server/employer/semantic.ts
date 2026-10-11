@@ -1,9 +1,9 @@
-// Семантический сигнал подбора (R-N-02): «смежные навыки» — требования потребности, которые кандидат не закрыл
+// Семантический сигнал подбора (R-N-02): «смежные навыки» – требования потребности, которые кандидат не закрыл
 // точно, но закрыл близким по смыслу утверждением. Локально и детерминированно, без внешних моделей и сети:
 // TF-IDF по символьным 3–4-граммам (ловит словоформы и написания: «Postgres» ~ «PostgreSQL», «очереди» ~ «очередь»)
 // + связи adjacent из каталога навыков (claims-catalog.json).
 //
-// ПРЕДЛОЖЕНИЕ агента: порог SEMANTIC_MIN_SIM, доля ADJACENT_SIM и вес сигнала (weights.ts, SEMANTIC_WEIGHT) —
+// ПРЕДЛОЖЕНИЕ агента: порог SEMANTIC_MIN_SIM, доля ADJACENT_SIM и вес сигнала (weights.ts, SEMANTIC_WEIGHT) –
 // калибровка на eval/matching (docs/validation-results.md, «Абляция подбора»), не на реальных данных.
 import type { CatalogEntry } from '../claims/types';
 import type { Need } from '../recommend/evidence';
@@ -83,7 +83,7 @@ function cosine(a: Vec, b: Vec): number {
   return dot;
 }
 
-/** Косинус TF-IDF по символьным n-граммам двух текстов (IDF — по каталогу). Пустой текст — 0. */
+/** Косинус TF-IDF по символьным n-граммам двух текстов (IDF – по каталогу). Пустой текст – 0. */
 export function textSimilarity(a: string, b: string, catalog: Map<string, CatalogEntry>): number {
   const idf = idfOf(catalog);
   return cosine(vec(a, idf), vec(b, idf));
@@ -92,9 +92,9 @@ export function textSimilarity(a: string, b: string, catalog: Map<string, Catalo
 export interface SemanticClaim { catalogId: string; statement: string; quote: string }
 
 /**
- * Смежные навыки: для каждого требования, не закрытого точно (`coveredIds`), — лучшее сходство с утверждениями
- * кандидата (TF-IDF n-грамм; связь adjacent каталога — не ниже ADJACENT_SIM); для метки стека, не найденной
- * в утверждениях, — то же по тексту метки. score = Σ вес × сходство / Σ всех весов (метка стека весит 1).
+ * Смежные навыки: для каждого требования, не закрытого точно (`coveredIds`), – лучшее сходство с утверждениями
+ * кандидата (TF-IDF n-грамм; связь adjacent каталога – не ниже ADJACENT_SIM); для метки стека, не найденной
+ * в утверждениях, – то же по тексту метки. score = Σ вес × сходство / Σ всех весов (метка стека весит 1).
  * Точно закрытое здесь не учитывается: его уже засчитало покрытие.
  */
 export function semanticSignal(
@@ -143,7 +143,7 @@ export function semanticSignal(
   return { score: Math.min(1, sum / totalW), matches: matches.slice(0, 3).map((m) => ({ ...m, sim: Math.round(m.sim * 100) / 100 })) };
 }
 
-/** «Postgres ≈ Проектировал схему БД… (0,69)» — строка фактора «Смежные навыки». */
+/** «Postgres ≈ Проектировал схему БД… (0,69)» – строка фактора «Смежные навыки». */
 export function semanticText(m: SemanticMatch): string {
   return `${m.need} ≈ ${m.via} (${String(m.sim).replace('.', ',')})`;
 }

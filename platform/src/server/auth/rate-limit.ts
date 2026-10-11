@@ -30,7 +30,7 @@ export const RATE = {
   roleSwitch: { limit: 30, windowMs: 15 * 60_000 },
 } satisfies Record<string, RateRule>;
 
-/** true — событие разрешено и учтено; false — лимит исчерпан. */
+/** true – событие разрешено и учтено; false – лимит исчерпан. */
 export function hit(key: string, rule: RateRule, now = Date.now()): boolean {
   const b = buckets.get(key);
   if (!b || b.resetAt <= now) {

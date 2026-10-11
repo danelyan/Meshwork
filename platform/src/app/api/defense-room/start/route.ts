@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * POST `{ mode: "project", projectSubmissionId }` | `{ mode: "questions" }` — начать защиту проекта
+ * POST `{ mode: "project", projectSubmissionId }` | `{ mode: "questions" }` – начать защиту проекта
  * (CallSession.kind = defense, ADR 0003 ступень 3) или мини-сессию ответов на вопросы работодателей.
- * Читает репозиторий и готовит вопросы по коду (QLC) — до ~30 с. Активная сессия того же сабмита
+ * Читает репозиторий и готовит вопросы по коду (QLC) – до ~30 с. Активная сессия того же сабмита
  * возвращается (`resumed: true`). Ответ: `{ sessionId, resumed, webrtc: { iceServers }, snapshot }`.
  */
 export const POST = withErrors(async (req: Request) => {

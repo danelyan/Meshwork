@@ -4,7 +4,7 @@ import type { CatalogEntry } from '@/server/claims/types';
 
 const db = vi.hoisted(() => ({ findMany: vi.fn() }));
 const cats = vi.hoisted(() => ({ findMany: vi.fn().mockResolvedValue([]) }));
-// lane admin (E-08, фаза 2): скрытые модератором вакансии — redFlagReview(status = hidden); здесь их нет.
+// lane admin (E-08, фаза 2): скрытые модератором вакансии – redFlagReview(status = hidden); здесь их нет.
 vi.mock('@/server/db', () => ({ prisma: { vacancy: db, candidateCategory: cats, redFlagReview: { findMany: vi.fn().mockResolvedValue([]) } } }));
 vi.mock('@/server/recommend/evidence', async (original) => {
   const source = await original<typeof import('@/server/recommend/evidence')>();

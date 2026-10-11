@@ -1,7 +1,7 @@
-// Отрисовка ProfileDocument в PDF через pdfkit (docs: pdfkit.org/docs/text.html — встроенные TTF-шрифты,
-// getting_started — опция `font` конструктора и сбор вывода через события потока).
+// Отрисовка ProfileDocument в PDF через pdfkit (docs: pdfkit.org/docs/text.html – встроенные TTF-шрифты,
+// getting_started – опция `font` конструктора и сбор вывода через события потока).
 // Кириллица требует встроенного шрифта: DejaVu Sans из public/assets/fonts (лицензия рядом, DejaVu-LICENSE.txt).
-// Путь — от process.cwd(): в Docker runner копирует public/ в /app, в vitest cwd = platform/.
+// Путь – от process.cwd(): в Docker runner копирует public/ в /app, в vitest cwd = platform/.
 import { join } from 'node:path';
 
 import PDFDocument from 'pdfkit';
@@ -40,14 +40,14 @@ function section(pdf: PDFKit.PDFDocument, s: DocSection, width: number): void {
   }
 }
 
-/** PDF целиком в памяти: профиль — одна-две страницы, потоковая отдача не нужна. */
+/** PDF целиком в памяти: профиль – одна-две страницы, потоковая отдача не нужна. */
 export function renderProfilePdf(doc: ProfileDocument): Promise<Buffer> {
   const pdf = new PDFDocument({
     size: 'A4',
     margin: 48,
     // Свой шрифт по умолчанию: pdfkit не трогает AFM-файлы стандартных шрифтов (их нет в standalone-сборке).
     font: FONT_REGULAR,
-    info: { Title: `${doc.title} — ${doc.brand}`, Author: doc.brand, Producer: doc.brand, CreationDate: new Date() },
+    info: { Title: `${doc.title} – ${doc.brand}`, Author: doc.brand, Producer: doc.brand, CreationDate: new Date() },
     pdfVersion: '1.5',
     lang: 'ru-RU',
   });

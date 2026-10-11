@@ -28,7 +28,7 @@ describe('шина телеметрии чата', () => {
     __resetTelemetry();
   });
 
-  it('выключена — ничего не пишет', () => {
+  it('выключена – ничего не пишет', () => {
     track({ k: 'longtask', ms: 80 });
     diffItems([], [reply('i1', 'a')]);
     expect(events()).toHaveLength(0);
@@ -68,7 +68,7 @@ describe('шина телеметрии чата', () => {
     expect(events().filter((e) => e.k === 'turn').map((e) => (e as { phase: string }).phase)).toEqual(['start', 'first-event', 'first-delta', 'done']);
   });
 
-  it('diff ленты: appear/disappear, мелькание и повторный mount — флейки', () => {
+  it('diff ленты: appear/disappear, мелькание и повторный mount – флейки', () => {
     setTelemetryEnabled(true, false);
     const a = [reply('i1', 'привет')];
     diffItems([], a);
@@ -79,7 +79,7 @@ describe('шина телеметрии чата', () => {
     expect(itemSpans()[0]).toMatchObject({ id: 'i1', kind: 'reply' });
   });
 
-  it('текст реплики заменился, а не продолжился — флейк replaced; рост — нет', () => {
+  it('текст реплики заменился, а не продолжился – флейк replaced; рост – нет', () => {
     setTelemetryEnabled(true, false);
     const a = [reply('i1', 'При')];
     const b = [reply('i1', 'Привет')];
@@ -92,7 +92,7 @@ describe('шина телеметрии чата', () => {
     expect(itemSpans()[0]?.updates).toBe(2);
   });
 
-  it('сэмплер стрима: не чаще 200 мс, скорость и отставание; откат показа — reveal-jump', () => {
+  it('сэмплер стрима: не чаще 200 мс, скорость и отставание; откат показа – reveal-jump', () => {
     setTelemetryEnabled(true, false);
     const s = createStreamSampler('r1');
     s.tick(100, 0, 0);

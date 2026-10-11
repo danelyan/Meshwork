@@ -3,7 +3,7 @@ import { MAX_FRAME_DT_MS, revealRateCps, stepReveal, visibleCut } from '@/compon
 import { extractUrls } from '@/lib/links';
 
 describe('smooth-text: раскрытие текста', () => {
-  it('скорость: человеческий темп 45–110 зн/с, отставание не больше 6 с; paced — около 4 с в пределах 70–140', () => {
+  it('скорость: человеческий темп 45–110 зн/с, отставание не больше 6 с; paced – около 4 с в пределах 70–140', () => {
     expect(revealRateCps('streaming', 100, 100)).toBe(45);
     expect(revealRateCps('streaming', 200, 200)).toBe(80);
     expect(revealRateCps('streaming', 500, 500)).toBe(110);
@@ -21,7 +21,7 @@ describe('smooth-text: раскрытие текста', () => {
     expect(a).toBe(b);
   });
 
-  it('граница по словам; хвост — только когда поток закончен; длинный токен — по символам', () => {
+  it('граница по словам; хвост – только когда поток закончен; длинный токен – по символам', () => {
     const t = 'Привет, мир';
     expect(visibleCut(t, 3, false)).toBe(0);
     expect(visibleCut(t, 9, false)).toBe(8);
@@ -53,7 +53,7 @@ describe('stream-items: сборка ленты', () => {
 });
 
 describe('extractUrls: ссылки в тексте сообщения', () => {
-  it('схема, путь, частые зоны; «Node.js» и почта — не ссылки; хвостовая пунктуация срезается', () => {
+  it('схема, путь, частые зоны; «Node.js» и почта – не ссылки; хвостовая пунктуация срезается', () => {
     expect(extractUrls('код: github.com/demo-ryabinin, статья https://habr.com/ru/articles/1/. Node.js, Vue.js, a@b.com, habr.com')).toEqual([
       'https://github.com/demo-ryabinin',
       'https://habr.com/ru/articles/1/',
@@ -68,7 +68,7 @@ describe('extractUrls: ссылки в тексте сообщения', () => {
       vi.unstubAllGlobals();
     }
   });
-  it('без ссылок — пусто; повторы схлопываются', () => {
+  it('без ссылок – пусто; повторы схлопываются', () => {
     expect(extractUrls('Пишу на Go и TypeScript')).toEqual([]);
     expect(extractUrls('github.com/x github.com/x')).toEqual(['https://github.com/x']);
   });

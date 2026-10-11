@@ -12,8 +12,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Сигнатура Middle (claims-catalog § 7): записи специализации и общие, у которых
- * вес M ≥ 2 и вес M больше веса J (J нет — считается 0). В возвращаемых записях
- * `weight` — вес M: по нему считается покрытие сигнатуры.
+ * вес M ≥ 2 и вес M больше веса J (J нет – считается 0). В возвращаемых записях
+ * `weight` – вес M: по нему считается покрытие сигнатуры.
  */
 export function middleSignature(catalog: Map<string, CatalogEntry>, spec: Specialization): CatalogEntry[] {
   const out: CatalogEntry[] = [];
@@ -28,10 +28,10 @@ export function middleSignature(catalog: Map<string, CatalogEntry>, spec: Specia
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-/** Префикс ID каталога → направление (prisma/seed/claims-catalog.json: be, fe, ai, eng; common — общие). */
+/** Префикс ID каталога → направление (prisma/seed/claims-catalog.json: be, fe, ai, eng; common – общие). */
 const ID_PREFIX: Record<Specialization, string> = { backend: 'be.', frontend: 'fe.', ai: 'ai.', engineering: 'eng.' };
 
-/** Направление, у которого больше всего заявленных утверждений; пусто или ничья лидеров — null. */
+/** Направление, у которого больше всего заявленных утверждений; пусто или ничья лидеров – null. */
 export function inferSpecialization(catalogIds: string[]): Specialization | null {
   let best: Specialization | null = null;
   let max = 0;
@@ -79,7 +79,7 @@ export async function recommendTest(candidateId: string, now: Date = new Date())
     prisma.claim.findMany({ where: { candidateId, status: { in: ['confirmed', 'edited'] } }, select: { catalogId: true } }),
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' } }),
   ]);
-  // В профиль пишет только кандидат: черновики proposed — ещё не его утверждения, в покрытие не идут.
+  // В профиль пишет только кандидат: черновики proposed – ещё не его утверждения, в покрытие не идут.
   const claimed = new Set(claims.map((c) => c.catalogId));
   const specialization =
     candidate.specialization ?? last?.specialization ?? inferSpecialization([...claimed]) ?? 'backend';
@@ -90,13 +90,13 @@ export async function recommendTest(candidateId: string, now: Date = new Date())
 
   let grade = decision.grade;
   let reason = decision.reason;
-  // R-C-08: рекомендация не понижает уже подтверждённый тестом грейд; пересдача — выбор кандидата.
+  // R-C-08: рекомендация не понижает уже подтверждённый тестом грейд; пересдача – выбор кандидата.
   if (last && last.grade === 'middle' && grade === 'junior') {
     grade = 'middle';
     reason = `Текущая категория - Middle, понижение не навязываем; пересдать можно в любой грейд. ${decision.reason}`;
   }
 
-  // R-C-09 [предложение: 30 дней]: смена грейда не чаще интервала; пересдача того же грейда — без ограничения.
+  // R-C-09 [предложение: 30 дней]: смена грейда не чаще интервала; пересдача того же грейда – без ограничения.
   let allowed = true;
   let nextAllowedAt: string | undefined;
   if (last && last.grade !== grade) {

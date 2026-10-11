@@ -26,7 +26,7 @@ function paxPath(data: Uint8Array): string | null {
 
 /**
  * Обычные файлы из .tar.gz → путь (без первого каталога, как в GitHub tarball `owner-repo-sha/`) → содержимое.
- * Ссылки, каталоги и служебные записи пропускаются; размер распакованного — до 200 МБ.
+ * Ссылки, каталоги и служебные записи пропускаются; размер распакованного – до 200 МБ.
  */
 export function readTarGz(gz: Uint8Array, opts: { stripFirst?: boolean } = {}): Map<string, Uint8Array> {
   let tar: Buffer;

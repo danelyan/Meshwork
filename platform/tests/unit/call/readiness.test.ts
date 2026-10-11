@@ -21,20 +21,20 @@ beforeEach(() => {
 });
 
 describe('callReadiness: созвон только когда есть о чём говорить', () => {
-  it('qualifying: нет утверждений — не готов, есть — готов', async () => {
+  it('qualifying: нет утверждений – не готов, есть – готов', async () => {
     db.claim.count.mockResolvedValue(0);
     expect(await callReadiness('c', 'qualifying', now)).toMatchObject({ ready: false, reason: expect.stringContaining('будет о чём поговорить') });
     db.claim.count.mockResolvedValue(2);
     expect(await callReadiness('c', 'qualifying', now)).toEqual({ ready: true });
   });
 
-  it('interview: нет категории из теста — «после теста»', async () => {
+  it('interview: нет категории из теста – «после теста»', async () => {
     db.candidateCategory.count.mockResolvedValue(0);
     expect(await callReadiness('c', 'interview', now)).toEqual({ ready: false, reason: 'Созвон с ИИ откроется после теста' });
     expect(db.candidateCategory.count.mock.calls[0]![0].where).toMatchObject({ source: 'test' });
   });
 
-  it('пауза: завершённый созвон с вердиктом <24 ч — отказ с retryAt, ≥24 ч — можно', async () => {
+  it('пауза: завершённый созвон с вердиктом <24 ч – отказ с retryAt, ≥24 ч – можно', async () => {
     db.callSession.findMany.mockResolvedValue([{ finishedAt: hoursAgo(5), verdictJson: { x: 1 } }]);
     const r = await callReadiness('c', 'qualifying', now);
     expect(r).toMatchObject({ ready: false, reason: 'Повторный созвон - через 19 ч', retryAt: new Date(now + 19 * 3_600_000).toISOString() });

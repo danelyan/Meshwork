@@ -7,7 +7,7 @@ import { SIM_LIMITS, SimInputError, simulate } from '@/server/validation/simulat
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-/** Прогон дешёвый (≤ 14 шагов по сетке из 81 узла), лимит частоты — от перебора. */
+/** Прогон дешёвый (≤ 14 шагов по сетке из 81 узла), лимит частоты – от перебора. */
 const SIM_RATE: RateRule = { limit: 120, windowMs: 10 * 60_000 };
 
 /**

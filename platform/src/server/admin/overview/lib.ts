@@ -29,7 +29,7 @@ export const ListBase = z.object({
   page: z.coerce.number().int().min(1).max(10_000).catch(1).default(1),
 });
 
-/** Значение фильтра из перечня; всё остальное (в том числе пустая строка «любое») — undefined. */
+/** Значение фильтра из перечня; всё остальное (в том числе пустая строка «любое») – undefined. */
 export function oneOf<const T extends readonly string[]>(values: T) {
   return z
     .string()

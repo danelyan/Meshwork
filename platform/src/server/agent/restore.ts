@@ -5,17 +5,17 @@ import { ASIDE_MARK_RE, PAUSE_MARK_RE } from '@/server/onboarding/match';
 import type { AgentEvent } from './types';
 
 /**
- * Элемент ленты в сериализуемом виде (совпадает с FeedItem компонента). `stepId` — реплика
+ * Элемент ленты в сериализуемом виде (совпадает с FeedItem компонента). `stepId` – реплика
  * свободного вопроса посреди шага онбординга (маркер в тексте хода) и ответ на неё: лента
- * онбординга показывает их под своим шагом, встроенный консультант — без них (без дублей).
- * `paused` — реплика свободного разговора, пока знакомство было на паузе («Настроить позже»):
- * `stepId` — шаг паузы; лента показывает её под ним, лента паузы — в чате.
+ * онбординга показывает их под своим шагом, встроенный консультант – без них (без дублей).
+ * `paused` – реплика свободного разговора, пока знакомство было на паузе («Настроить позже»):
+ * `stepId` – шаг паузы; лента показывает её под ним, лента паузы – в чате.
  */
 export type RestoredItem =
   | { id: string; role: 'user'; text: string; stepId?: string; paused?: true }
   | { id: string; role: 'agent'; event: AgentEvent; stepId?: string; paused?: true };
 
-/** Шаг паузы из маркера в тексте хода; null — не на паузе. */
+/** Шаг паузы из маркера в тексте хода; null – не на паузе. */
 export function pauseStepOf(content: string): string | null {
   for (const line of content.split('\n')) {
     const m = PAUSE_MARK_RE.exec(line.trim());
@@ -24,7 +24,7 @@ export function pauseStepOf(content: string): string | null {
   return null;
 }
 
-/** Шаг онбординга из маркера в тексте хода кандидата; null — обычная реплика. */
+/** Шаг онбординга из маркера в тексте хода кандидата; null – обычная реплика. */
 export function asideStepOf(content: string): string | null {
   for (const line of content.split('\n')) {
     const m = ASIDE_MARK_RE.exec(line.trim());
@@ -38,8 +38,8 @@ const LINKS_RE = /^\[ссылки: (.+)\]$/;
 
 /**
  * Служебные строки хода («[вложения: файл <id>]», «[ссылки: …]») нужны модели
- * (id — для read_upload), но не кандидату: при показе id заменяются именами файлов,
- * скобки уходят. names — имена по id; неизвестный id показывается как «файл».
+ * (id – для read_upload), но не кандидату: при показе id заменяются именами файлов,
+ * скобки уходят. names – имена по id; неизвестный id показывается как «файл».
  */
 export function humanizeUserText(content: string, names: Map<string, string>): string {
   return content
@@ -59,7 +59,7 @@ export function humanizeUserText(content: string, names: Map<string, string>): s
 }
 
 /**
- * Вопрос `ask_user` без ответа: последняя запись разговора — результат этого инструмента
+ * Вопрос `ask_user` без ответа: последняя запись разговора – результат этого инструмента
  * (ответ кандидата был бы позже user-сообщением). Вопрос лежит в аргументах вызова у assistant.
  */
 export function pendingAskOf(rows: { role: string; toolCalls: unknown }[]): Extract<AgentEvent, { type: 'ask' }> | null {

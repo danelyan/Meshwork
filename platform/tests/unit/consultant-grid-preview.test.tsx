@@ -8,7 +8,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 function setup() {
   render(<ConsultantGridPreview />);
-  const frame = screen.getByTitle('Карьерный консультант — тестовый макет') as HTMLIFrameElement;
+  const frame = screen.getByTitle('Карьерный консультант – тестовый макет') as HTMLIFrameElement;
   const send = vi.spyOn(frame.contentWindow!, 'postMessage');
   const ready = (source: MessageEventSource | null = frame.contentWindow, origin = location.origin) => act(() => {
     window.dispatchEvent(new MessageEvent('message', { source, origin, data: { type: 'fsp-grid-ready' } }));
@@ -44,12 +44,12 @@ it('resets all parameters without replacing the iframe or losing the chat', () =
   expect((screen.getByRole('slider', { name: /Выпуклость/i }) as HTMLInputElement).value).toBe('1.6');
   fireEvent.click(screen.getByRole('button', { name: 'Как в оригинале' }));
   expect(send).toHaveBeenLastCalledWith({ type: 'fsp-grid-settings', settings: { step: 46, relief: 1, angle: 0.5 } }, location.origin);
-  expect(screen.getByTitle('Карьерный консультант — тестовый макет')).toBe(frame);
+  expect(screen.getByTitle('Карьерный консультант – тестовый макет')).toBe(frame);
 });
 
 it('waits for each renderer after switching versions and reapplies the current settings', () => {
   const view = render(<ConsultantGridPreview source="/design/consultant-grid-v1/index.html" />);
-  const frame = screen.getByTitle('Карьерный консультант — тестовый макет') as HTMLIFrameElement;
+  const frame = screen.getByTitle('Карьерный консультант – тестовый макет') as HTMLIFrameElement;
   const ready = () => act(() => window.dispatchEvent(new MessageEvent('message', {
     source: frame.contentWindow, origin: location.origin, data: { type: 'fsp-grid-ready' },
   })));

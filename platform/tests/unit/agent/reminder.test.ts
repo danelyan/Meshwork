@@ -21,7 +21,7 @@ describe('withQuestionReminder', () => {
     expect(base[2]!.content).toBe('{"category":null}');
   });
 
-  it('без вызовов инструментов и без текста вопроса — ничего не меняет', () => {
+  it('без вызовов инструментов и без текста вопроса – ничего не меняет', () => {
     const first = base.slice(0, 1);
     expect(withQuestionReminder(first, 'Есть премиум?')).toBe(first);
     expect(withQuestionReminder(base, '   ')).toBe(base);

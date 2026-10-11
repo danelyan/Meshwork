@@ -3,7 +3,7 @@ import { ProviderError, type Provider, type ProviderRequest, type ProviderRespon
 
 export type Reply = string | ProviderError | ProviderResponse | (() => Promise<ProviderResponse>);
 
-/** Провайдер по сценарию: ответы по очереди; строка — текст с 100/20 токенами. Пишет все запросы. */
+/** Провайдер по сценарию: ответы по очереди; строка – текст с 100/20 токенами. Пишет все запросы. */
 export function fake(name: string, replies: Reply[] = []) {
   const requests: ProviderRequest[] = [];
   const provider: Provider = {

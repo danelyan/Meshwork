@@ -1,5 +1,5 @@
 // Детерминированный ответ заглушки для ИИнтервью (purpose interview_interviewer): разбирает тот же JSON
-// `<call_context>`, что видит модель; сигнал — эвристика по длине ответа, вопрос — шаблон по плану кода.
+// `<call_context>`, что видит модель; сигнал – эвристика по длине ответа, вопрос – шаблон по плану кода.
 import type { InterviewerPayload } from '../../interview/interviewer';
 import { templateInterviewQuestion } from '../../interview/plan';
 import { competencyById } from '../../interview/model';

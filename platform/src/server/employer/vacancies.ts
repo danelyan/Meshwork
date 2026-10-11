@@ -92,7 +92,7 @@ export async function getVacancy(companyId: string, id: string): Promise<Vacancy
   return toView(v);
 }
 
-/** Требования — только из каталога и только своей специализации или общие. */
+/** Требования – только из каталога и только своей специализации или общие. */
 async function checkNeeds(input: VacancyInput): Promise<Need[]> {
   const catalog = await loadCatalog();
   const bad = input.needs.filter((n) => {
@@ -122,7 +122,7 @@ function data(input: VacancyInput, needs: Need[]) {
 export async function createVacancy(companyId: string, input: VacancyInput): Promise<VacancyView> {
   const needs = await checkNeeds(input);
   const v = await prisma.vacancy.create({ data: { companyId, ...data(input, needs) }, select });
-  await queueVacancyRedFlags(v.id); // lane admin (E-08, фаза 2): красные флаги — в очередь модератора
+  await queueVacancyRedFlags(v.id); // lane admin (E-08, фаза 2): красные флаги – в очередь модератора
   return toView(v);
 }
 
@@ -136,7 +136,7 @@ export async function updateVacancy(companyId: string, id: string, input: Vacanc
 
 /**
  * Закрыть / вернуть потребность. lane lifecycle: при закрытии (`userId` передан) открытые приглашения на неё
- * отзываются, открытые самоотклики закрываются с причиной «Вакансия закрыта»; принятые приглашения не трогаются —
+ * отзываются, открытые самоотклики закрываются с причиной «Вакансия закрыта»; принятые приглашения не трогаются –
  * их число в `closed.acceptedInvitations`.
  */
 export async function setVacancyArchived(

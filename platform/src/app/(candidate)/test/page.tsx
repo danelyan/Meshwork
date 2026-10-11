@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Тест на грейд - MESHWORK'
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
-/** /test?specialization=&grade=&attempt= — вход из онбординга и профиля (ADR-0002). Guard — только кандидат. */
+/** /test?specialization=&grade=&attempt= – вход из онбординга и профиля (ADR-0002). Guard – только кандидат. */
 export default async function Page({ searchParams }: { searchParams: Search }) {
   const sp = await searchParams;
   const qs = new URLSearchParams();

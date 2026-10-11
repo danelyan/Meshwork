@@ -17,7 +17,7 @@ describe('buildAtsWebhook', () => {
     expect(verifySignature(h.body + ' ', h.headers['X-FSP-Signature']!, SECRET)).toBe(false);
     expect(buildAtsWebhook(change, SECRET, new Date('2027-01-01')).id).toBe(h.id);
     expect(buildAtsWebhook({ ...change, status: 'declined' }, SECRET, NOW).id).not.toBe(h.id);
-    // lane hired: найм — отдельное событие, контакты по-прежнему открыты
+    // lane hired: найм – отдельное событие, контакты по-прежнему открыты
     const hired = buildAtsWebhook({ ...change, status: 'hired' }, SECRET, NOW);
     expect(hired.id).not.toBe(h.id);
     expect(JSON.parse(hired.body).data).toMatchObject({ status: 'hired', contactsOpen: true });
@@ -28,7 +28,7 @@ describe('buildAtsWebhook', () => {
     expect(body.data).toMatchObject({ invitationId: 'inv1', status: 'accepted', contactsOpen: true, candidate: expect.stringMatching(/^Кандидат #[0-9A-F]{6}$/) });
     expect(JSON.stringify(body)).not.toContain('cand-secret-id');
     expect(buildAtsWebhook({ ...change, status: 'sent' }, SECRET).body).toContain('"contactsOpen":false');
-    // ADR 0005: отзыв раскрытия при accepted — contactsOpen false и отдельный id события
+    // ADR 0005: отзыв раскрытия при accepted – contactsOpen false и отдельный id события
     const revoked = buildAtsWebhook({ ...change, contactsOpen: false }, SECRET, NOW);
     expect(JSON.parse(revoked.body).data.contactsOpen).toBe(false);
     expect(revoked.id).not.toBe(buildAtsWebhook(change, SECRET, NOW).id);
@@ -36,7 +36,7 @@ describe('buildAtsWebhook', () => {
 });
 
 describe('sendAtsWebhook', () => {
-  it('без url или секрета — no-op, сеть не трогается', async () => {
+  it('без url или секрета – no-op, сеть не трогается', async () => {
     const f = vi.fn();
     expect(await sendAtsWebhook(change, {}, f as never)).toBe(false);
     expect(await sendAtsWebhook(change, { url: 'https://ats.example/hook' }, f as never)).toBe(false);

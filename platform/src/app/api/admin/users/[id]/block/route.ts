@@ -10,7 +10,7 @@ const BlockBody = z.object({ reason: z.string().max(1000), until: z.iso.datetime
 const UnblockBody = z.object({ reason: z.string().max(1000) });
 type Ctx = { params: Promise<{ id: string }> };
 
-/** Заблокировать пользователя (owner): вход закрыт, активные сессии отклоняются. Причина обязательна, `until` — срок. */
+/** Заблокировать пользователя (owner): вход закрыт, активные сессии отклоняются. Причина обязательна, `until` – срок. */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   const staff = await requireStaff(req, 'block_user');
   const { id } = await ctx.params;
@@ -18,7 +18,7 @@ export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   return Response.json({ block: await blockUser(staff, id, body) });
 });
 
-/** Снять блокировку (owner, support). Сессии, выданные до блокировки, не оживают — нужен новый вход. */
+/** Снять блокировку (owner, support). Сессии, выданные до блокировки, не оживают – нужен новый вход. */
 export const DELETE = withErrors(async (req: Request, ctx: Ctx) => {
   const staff = await requireStaff(req, 'unblock_user');
   const { id } = await ctx.params;

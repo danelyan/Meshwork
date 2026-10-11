@@ -4,7 +4,7 @@ import { MAX_TTS_PARTS, keyOf, parseKey, sentencesHeard, ttsParts } from '@/comp
 describe('озвучка по предложениям: части TTS ↔ предложения сервера', () => {
   const six = 'Первое предложение реплики. Второе предложение реплики! Третье предложение реплики? Четвёртое предложение реплики. Пятое предложение реплики. Шестое предложение реплики.';
 
-  it('до четырёх предложений — часть на предложение, счёт совпадает с сервером', () => {
+  it('до четырёх предложений – часть на предложение, счёт совпадает с сервером', () => {
     const text = 'Привет! Начнём со знакомства. Расскажи про последний проект: за что отвечал лично ты?';
     const parts = ttsParts(text);
     expect(parts.map((p) => p.sentences)).toEqual(splitSentences(text).map(() => 1));
@@ -12,7 +12,7 @@ describe('озвучка по предложениям: части TTS ↔ пр�
     expect(sentencesHeard(parts, 9)).toBe(splitSentences(text).length);
   });
 
-  it('больше четырёх предложений — соседние склеиваются, но услышанные предложения считаются по группам', () => {
+  it('больше четырёх предложений – соседние склеиваются, но услышанные предложения считаются по группам', () => {
     expect(splitSentences(six)).toHaveLength(6);
     const parts = ttsParts(six);
     expect(parts.length).toBeLessThanOrEqual(MAX_TTS_PARTS);

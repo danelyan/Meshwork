@@ -38,7 +38,7 @@ interface GhRepo {
   topics?: string[];
 }
 
-/** Заголовки GitHub REST (токен из env, если есть). Экспорт — для чтения репозитория защитой проекта (lane defense-room). */
+/** Заголовки GitHub REST (токен из env, если есть). Экспорт – для чтения репозитория защитой проекта (lane defense-room). */
 export function githubHeaders(raw = false): Record<string, string> {
   const h: Record<string, string> = {
     accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json',
@@ -106,7 +106,7 @@ export async function fetchGithub(handle: string): Promise<ExtractedDoc> {
     try {
       langs = (await getJson<Record<string, number>>(`${GITHUB_API}/repos/${repo.full_name}/languages`, { headers: githubHeaders(), source: src })).json;
     } catch {
-      /* языки — необязательная деталь */
+      /* языки – необязательная деталь */
     }
     lines.push({
       ref: `${m}:l1`,
@@ -135,7 +135,7 @@ export async function fetchGithub(handle: string): Promise<ExtractedDoc> {
         suspect.push(...raw.suspect);
         hidden.push(...raw.hidden);
       } catch {
-        /* README нет — не ошибка */
+        /* README нет – не ошибка */
       }
     }
   }

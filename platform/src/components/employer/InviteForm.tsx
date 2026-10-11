@@ -19,13 +19,13 @@ export interface InviteFormProps {
   candidateId: string;
   candidateName: string;
   vacancyId: string | null;
-  /** Подстановка вилки — из потребности или черновика помощника. */
+  /** Подстановка вилки – из потребности или черновика помощника. */
   defaultSalaryFrom?: number;
   defaultSalaryTo?: number;
   /** Черновик помощника: текст предложения и форма сразу открыта. */
   initialMessage?: string;
   defaultOpen?: boolean;
-  /** lane admin (E-08): позиция кандидата в подборке/поиске (1 = первый) и откуда отправлено — для метрики «принятые из топ-N». */
+  /** lane admin (E-08): позиция кандидата в подборке/поиске (1 = первый) и откуда отправлено – для метрики «принятые из топ-N». */
   matchRank?: number | null;
   matchSource?: InviteBody['matchSource'];
 }
@@ -51,7 +51,7 @@ export const NO_COMPANY_CONTACT_NOTICE = 'Кандидат должен виде
 
 /**
  * Приглашение конкретному кандидату (R-E-05, ТЗ 2.2): описание и вилка «от–до» обязательны. Без способа связи компании
- * (InviteContactContext: null) кнопка отправки закрыта — сервер в этом случае всё равно ответит 422 company_contact_required.
+ * (InviteContactContext: null) кнопка отправки закрыта – сервер в этом случае всё равно ответит 422 company_contact_required.
  */
 export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalaryFrom, defaultSalaryTo, initialMessage, defaultOpen, matchRank, matchSource }: InviteFormProps) {
   const router = useRouter();

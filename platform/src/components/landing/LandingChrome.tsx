@@ -15,7 +15,7 @@ export function LandingHeader({ signedIn, juryEnabled = false }: { signedIn: boo
     </div>
     <nav className={styles.nav} aria-label="Разделы главной"><a href="#companies">Компании</a><a href="#path">Путь</a><a href="#employer">Работодателю</a><a href="#why">Почему это работает</a></nav>
     <div className={styles.actions}>
-      {/* «Для жюри» — вход в хаб /demo, как в шапке кабинета (HeaderBar); только при DEMO_LOGIN, иначе /demo отдаёт 404. */}
+      {/* «Для жюри» – вход в хаб /demo, как в шапке кабинета (HeaderBar); только при DEMO_LOGIN, иначе /demo отдаёт 404. */}
       {juryEnabled && <Link className={styles.jury} href={JURY_HOME}>Для жюри</Link>}
       <Link className={styles.enter} href={signedIn ? '/consultant' : '/auth'}>{signedIn ? 'В кабинет' : 'Войти'}</Link>
     </div>

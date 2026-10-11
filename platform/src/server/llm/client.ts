@@ -33,11 +33,11 @@ export interface LlmClientOptions {
   maxConcurrency: number;
   /** Таймаут одной попытки, если в запросе нет timeoutMs. */
   timeoutMs: number;
-  /** Ретраи сверх первой попытки — только на 429 и 5xx. */
+  /** Ретраи сверх первой попытки – только на 429 и 5xx. */
   maxRetries: number;
   /** Журнал; ошибки записи глотаются (журнал не должен ронять ответ). */
   recordRun?: (run: AgentRunRecord) => Promise<void> | void;
-  /** Пауза перед ретраем, мс; по умолчанию 500 · 2^(n-1), для тестов — 0. */
+  /** Пауза перед ретраем, мс; по умолчанию 500 · 2^(n-1), для тестов – 0. */
   backoffMs?: (attempt: number) => number;
   /** Запасная модель: получает запрос, если основная не ответила (после своих ретраев), и все запросы следующие FALLBACK_COOLDOWN_MS. */
   fallback?: LlmProvider;
@@ -75,8 +75,8 @@ export const RETRY_AFTER_CAP_MS = 10_000;
 
 /**
  * `Retry-After` из ответа 429/503 (секунды или HTTP-дата), если провайдер его
- * прислал: заголовки лежат у APIError SDK openai — у самой ошибки или в `cause`
- * LlmError. Нет заголовка — undefined, берётся экспоненциальная пауза.
+ * прислал: заголовки лежат у APIError SDK openai – у самой ошибки или в `cause`
+ * LlmError. Нет заголовка – undefined, берётся экспоненциальная пауза.
  */
 export function retryAfterMs(err: unknown, now = Date.now()): number | undefined {
   for (let e: unknown = err, depth = 0; e && typeof e === 'object' && depth < 3; e = (e as { cause?: unknown }).cause, depth++) {
@@ -94,7 +94,7 @@ export function retryAfterMs(err: unknown, now = Date.now()): number | undefined
 
 /**
  * Текст ошибки для журнала AgentRun без ПДн: провайдер может процитировать
- * кусок запроса (резюме) в 400-й ошибке — почты, телефоны и длинные числа
+ * кусок запроса (резюме) в 400-й ошибке – почты, телефоны и длинные числа
  * маскируются, длина ограничена.
  */
 export function redactPii(text: string): string {
@@ -170,7 +170,7 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
     }
   }
 
-  // Основная модель упала — следующие FALLBACK_COOLDOWN_MS запросы сразу идут в запасную,
+  // Основная модель упала – следующие FALLBACK_COOLDOWN_MS запросы сразу идут в запасную,
   // чтобы каждый ход не ждал таймаут лежащего сервиса.
   let primaryDownUntil = 0;
   const now = opts.now ?? Date.now;
@@ -181,17 +181,17 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
     const queueWaitMs = Date.now() - queuedAt;
     const startedAt = Date.now();
     const timeoutMs = req.timeoutMs ?? opts.timeoutMs;
-    // Дельты — только для свободного текста: в плане В и по JSON-схеме модель пишет служебный JSON.
-    // После неудачной попытки, успевшей что-то показать: есть onDiscard — показанное убирается и повтор стримит заново;
-    // нет — повтор идёт без дельт, итог придёт событием message.
+    // Дельты – только для свободного текста: в плане В и по JSON-схеме модель пишет служебный JSON.
+    // После неудачной попытки, успевшей что-то показать: есть onDiscard – показанное убирается и повтор стримит заново;
+    // нет – повтор идёт без дельт, итог придёт событием message.
     let streamed = false;
-    // Сырой JSON по схеме (интервьюер созвона): поток уже ушёл кандидату — повтор дал бы другой текст.
+    // Сырой JSON по схеме (интервьюер созвона): поток уже ушёл кандидату – повтор дал бы другой текст.
     let jsonStreamed = false;
     const { onDelta: _drop, onJsonDelta: _dropJson, onDiscard, ...bare } = req;
     void _drop;
     void _dropJson;
 
-    /** Попытки на одном провайдере: ретраи на 429/5xx; успех пишется в журнал, неудача — бросается наверх. */
+    /** Попытки на одном провайдере: ретраи на 429/5xx; успех пишется в журнал, неудача – бросается наверх. */
     async function run(p: LlmProvider): Promise<CompleteResult> {
       const planB = Boolean(req.tools?.length) && !p.supportsTools;
       const userDelta = planB || req.schema ? undefined : req.onDelta;
@@ -221,7 +221,7 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
       while (attempts <= opts.maxRetries) {
         attempts++;
         try {
-          // План В: разбор JSON-действия и один ремонт — внутри попытки (у каждого вызова свой таймаут).
+          // План В: разбор JSON-действия и один ремонт – внутри попытки (у каждого вызова свой таймаут).
           const result = planB
             ? await runPlanB(bare, (r) => attemptWithTimeout(p, r, timeoutMs, signal))
             : await attemptWithTimeout(p, reqFor(), timeoutMs, signal);
@@ -245,7 +245,7 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
         } catch (err) {
           lastErr = err;
           if (attempts > opts.maxRetries || !isRetryable(err) || signal?.aborted || jsonStreamed) break;
-          // Показанный кусок неудачной попытки — не ответ: убрать (иначе он замрёт, а потом «прыгнет»).
+          // Показанный кусок неудачной попытки – не ответ: убрать (иначе он замрёт, а потом «прыгнет»).
           if (streamed && onDiscard) {
             onDiscard();
             streamed = false;
@@ -287,7 +287,7 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
         try {
           return await run(provider);
         } catch (err) {
-          // Отмена вызывающим и уже ушедший кандидату JSON-поток — не повод звать запасную.
+          // Отмена вызывающим и уже ушедший кандидату JSON-поток – не повод звать запасную.
           if (signal?.aborted || jsonStreamed) throw err;
           primaryDownUntil = now() + FALLBACK_COOLDOWN_MS;
           console.warn(`[llm] ${provider.name} недоступна (${errorText(err)}), запрос уходит в запасную ${fallback.name}`);
@@ -344,7 +344,7 @@ let callClient: LlmClient | undefined;
 
 /**
  * Клиент созвонов: модель LLM_CALL_* с запасной = основная (LLM_PROVIDER); те же семафор, таймаут, ретраи и журнал.
- * LLM_CALL_* не задан — тот же клиент, что у getLlmClient().
+ * LLM_CALL_* не задан – тот же клиент, что у getLlmClient().
  */
 export function getCallLlmClient(): LlmClient {
   if (callClient) return callClient;
@@ -366,7 +366,7 @@ export function getCallLlmClient(): LlmClient {
 
 /**
  * Главная точка входа для лейнов: `const llm = getLlm({ candidateId, conversationId, onQueue })`.
- * Возвращает LlmProvider — тот же интерфейс, что у сырых провайдеров.
+ * Возвращает LlmProvider – тот же интерфейс, что у сырых провайдеров.
  */
 export function getLlm(ctx?: LlmCallContext): LlmProvider {
   return (ctx?.purpose === 'call' ? getCallLlmClient() : getLlmClient()).forContext(ctx);

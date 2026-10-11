@@ -24,7 +24,7 @@ const stages: IntroStages = {
   ],
 };
 
-describe('StageStrip — полоса этапов знакомства', () => {
+describe('StageStrip – полоса этапов знакомства', () => {
   it('показывает этапы, заполненность и отмечает текущий этап', () => {
     render(<StageStrip data={stages} />);
     expect(screen.getByRole('region', { name: 'Знакомство с Кирой' })).toBeTruthy();
@@ -51,7 +51,7 @@ describe('StageStrip — полоса этапов знакомства', () => 
   });
 });
 
-describe('AvatarScene call-side — полоса над сценой', () => {
+describe('AvatarScene call-side – полоса над сценой', () => {
   const aside = (over: Partial<SceneAsideData>): SceneAsideData => ({ role: 'candidate', steps: [], docs: null, hint: { title: '', text: '' }, ...over });
 
   it('с этапами полоса стоит перед сценой и не попадает в панель чата', () => {

@@ -68,7 +68,7 @@ describe('runner client: submitRun / getRun', () => {
     });
   });
 
-  it('не на GitHub — 400 до скачивания', async () => {
+  it('не на GitHub – 400 до скачивания', async () => {
     await expect(
       submitRun(
         { source: { kind: 'github', repoUrl: 'https://evil.example/x' }, commitSha: 'abcdef1', testsBundleRef: 'be-webapi-junior-notes', image: 'node20' },
@@ -77,7 +77,7 @@ describe('runner client: submitRun / getRun', () => {
     ).rejects.toMatchObject({ code: 'bad_request', status: 400 });
   });
 
-  it('без настройки — runner_unavailable 503', async () => {
+  it('без настройки – runner_unavailable 503', async () => {
     await expect(getRun('b'.repeat(32), { baseUrl: '', token: '' })).rejects.toMatchObject({ code: 'runner_unavailable', status: 503 });
     await expect(getRun('b'.repeat(32), { baseUrl: 'http://r', token: 'short' })).rejects.toMatchObject({ status: 503 });
   });

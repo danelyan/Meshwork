@@ -11,7 +11,7 @@ describe('лимитер (visible)', () => {
     expect(l.take('a')).toMatchObject({ allowed: true, limit: 3, remaining: 2, retryAfterMs: 0 });
   });
 
-  it('после исчерпания — 429 с Retry-After', async () => {
+  it('после исчерпания – 429 с Retry-After', async () => {
     const app = createApp({ limiter: createLimiter({ capacity: 1, refillPerSec: 1, maxKeys: 10, now: () => 0 }) });
     expect((await request(app).get('/api/items').set('X-Api-Key', 'k')).status).toBe(200);
     const res = await request(app).get('/api/items').set('X-Api-Key', 'k');

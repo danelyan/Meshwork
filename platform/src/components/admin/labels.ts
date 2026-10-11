@@ -43,14 +43,14 @@ const dt = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'short', timeStyle: 'sh
 const d = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'short', timeZone: 'Europe/Moscow' });
 
 export function fmtDateTime(v: Date | string | null | undefined): string {
-  return v ? dt.format(new Date(v)) : '—';
+  return v ? dt.format(new Date(v)) : '–';
 }
 export function fmtDate(v: Date | string | null | undefined): string {
-  return v ? d.format(new Date(v)) : '—';
+  return v ? d.format(new Date(v)) : '–';
 }
 export function fmtMoney(from: number, to: number): string {
   return `${from.toLocaleString('ru-RU')}–${to.toLocaleString('ru-RU')} ₽`;
 }
 export function pct(share: number | null | undefined): string {
-  return share === null || share === undefined ? '—' : `${Math.round(share * 100)}%`;
+  return share === null || share === undefined ? '–' : `${Math.round(share * 100)}%`;
 }

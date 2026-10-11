@@ -34,7 +34,7 @@ class FakeRecognition {
 const result = (text: string, isFinal: boolean) => ({ resultIndex: 0, results: [Object.assign([{ transcript: text }], { isFinal })] });
 
 describe('голосовой ввод: Web Speech API (распознаёт браузер)', () => {
-  it('первый клик — объяснение; запись дописывает текст в поле по ходу речи; сам не отправляет', () => {
+  it('первый клик – объяснение; запись дописывает текст в поле по ходу речи; сам не отправляет', () => {
     vi.stubGlobal('webkitSpeechRecognition', FakeRecognition);
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', { name: 'Надиктовать голосом' }));
@@ -66,7 +66,7 @@ describe('голосовой ввод: Web Speech API (распознаёт бр
     expect(FakeRecognition.last!.stop).toHaveBeenCalled();
   });
 
-  it('нет доступа к микрофону — понятная ошибка', () => {
+  it('нет доступа к микрофону – понятная ошибка', () => {
     vi.stubGlobal('webkitSpeechRecognition', FakeRecognition);
     localStorage.setItem('fsp.voice.ok', '1');
     render(<Harness />);
@@ -75,7 +75,7 @@ describe('голосовой ввод: Web Speech API (распознаёт бр
     expect(screen.getByRole('alert').textContent).toContain('Нет доступа к микрофону');
   });
 
-  it('браузер без распознавания — кнопка неактивна с объяснением; STT_PROVIDER=off — кнопки нет', () => {
+  it('браузер без распознавания – кнопка неактивна с объяснением; STT_PROVIDER=off – кнопки нет', () => {
     const { unmount } = render(<Harness />);
     const btn = screen.getByRole('button', { name: 'Голосовой ввод недоступен' }) as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
@@ -135,7 +135,7 @@ describe('voice: чистые функции', () => {
     expect(view.getInt16(2, true)).toBe(-0x8000);
     expect(view.getInt16(4, true)).toBe(0);
   });
-  it('effectiveMode: off остаётся off; browser без API — off с причиной', () => {
+  it('effectiveMode: off остаётся off; browser без API – off с причиной', () => {
     expect(effectiveMode('off')).toEqual({ mode: 'off' });
     expect(effectiveMode('browser').mode).toBe('off');
   });

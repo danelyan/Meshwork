@@ -50,7 +50,7 @@ describe('llm client: запасная модель', () => {
   beforeEach(() => vi.spyOn(console, 'warn').mockImplementation(() => {}));
   afterEach(() => vi.restoreAllMocks());
 
-  it('основная отвечает — запасная не вызывается', async () => {
+  it('основная отвечает – запасная не вызывается', async () => {
     const main = provider('selectel', async () => result('selectel'));
     const spare = provider('yandex-qwen', async () => result('yandex-qwen'));
     const { llm } = setup(main, spare);
@@ -58,7 +58,7 @@ describe('llm client: запасная модель', () => {
     expect(spare.calls).toBe(0);
   });
 
-  it('5xx после всех ретраев — ответ запасной, оба исхода в журнале', async () => {
+  it('5xx после всех ретраев – ответ запасной, оба исхода в журнале', async () => {
     const main = provider('selectel', down);
     const spare = provider('yandex-qwen', async () => result('yandex-qwen'));
     const { llm, runs } = setup(main, spare);

@@ -8,12 +8,12 @@ import type { Answers, StepContext, StepDef, StepOption } from './types';
 
 /**
  * Движок шагов онбординга: чистые функции над сценарием (scenario.ts) и
- * состоянием (ответы + пропуски + текущий шаг). БД не трогает — её пишет service.ts.
+ * состоянием (ответы + пропуски + текущий шаг). БД не трогает – её пишет service.ts.
  *
  * Правила:
  *  - шаг виден, если нет `when` или оно истинно (условие пересчитывается на каждом ответе);
  *  - шаг закрыт, если на него есть ответ, он пропущен или закрыт фактом (`doneBy`);
- *  - следующий шаг — первый незакрытый после текущего; незакрытых нет — итог;
+ *  - следующий шаг – первый незакрытый после текущего; незакрытых нет – итог;
  *  - обязательный шаг (`required`) пропустить нельзя.
  */
 
@@ -41,7 +41,7 @@ export function isClosed(step: StepDef, ctx: StepContext, skipped: string[]): bo
   return isAnswered(step, ctx.answers) || skipped.includes(step.id) || Boolean(step.doneBy?.(ctx));
 }
 
-/** Первый незакрытый шаг после `fromId` (или с начала); нет — итог. */
+/** Первый незакрытый шаг после `fromId` (или с начала); нет – итог. */
 export function nextOpen(ctx: StepContext, skipped: string[], fromId: string | null): StepDef {
   const steps = visibleSteps(ctx);
   const start = fromId ? steps.findIndex((s) => s.id === fromId) + 1 : 0;
@@ -55,7 +55,7 @@ export function nextOpen(ctx: StepContext, skipped: string[], fromId: string | n
 }
 
 /**
- * Текущий шаг. Сохранённый `stepId` — если он виден и не закрыт фактом (согласие
+ * Текущий шаг. Сохранённый `stepId` – если он виден и не закрыт фактом (согласие
  * могли дать в другой вкладке); иначе первый незакрытый.
  */
 export function currentStep(ctx: StepContext, state: EngineState): StepDef {
@@ -71,7 +71,7 @@ export function currentStep(ctx: StepContext, state: EngineState): StepDef {
 
 /**
  * Шаги, закрытые в порядке сценария. Шаг, закрытый только фактом из аккаунта
- * (роль, компания), считается и показывается в ленте не раньше своей очереди —
+ * (роль, компания), считается и показывается в ленте не раньше своей очереди –
  * после первого реально открытого шага он «ещё не наступил».
  */
 function passedSteps(ctx: StepContext, skipped: string[], layout: StepContext = ctx): StepDef[] {
@@ -120,7 +120,7 @@ export function validateAnswer(step: StepDef, value: unknown, ctx: StepContext):
       return r.success ? r.data : fail('Нужна версия текста согласия');
     }
     case 'consents': {
-      // Ноль галочек — допустимый ответ: каждое согласие необязательно для продолжения (ADR 0005).
+      // Ноль галочек – допустимый ответ: каждое согласие необязательно для продолжения (ADR 0005).
       const r = z.array(z.string()).max(enabled.length).safeParse(value);
       if (!r.success) return fail('Отметь согласия из списка');
       const uniq = [...new Set(r.data)];

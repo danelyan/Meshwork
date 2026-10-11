@@ -1,4 +1,4 @@
-# Матвей Лисицын — Junior Backend (Java)
+# Матвей Лисицын – Junior Backend (Java)
 
 +7 900 000-00-53 · matvey.lisitsyn@example.com · Курск · GitHub: demo-lisitsyn (вымышленный профиль)
 
@@ -9,4 +9,4 @@
 - Работал через ветки и pull request'ы, разрешал конфликты слияния.
 
 ## Навыки
-Java, Spring Boot, PostgreSQL, Git. Kafka и Kubernetes — знаю названия.
+Java, Spring Boot, PostgreSQL, Git. Kafka и Kubernetes – знаю названия.

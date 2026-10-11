@@ -7,9 +7,9 @@ import type { ExtractedDoc, SourceKind } from './types';
  * Основной текст HTML-страницы: без script/style/шаблонов/форм, с разбиением на
  * строки по блочным элементам. Невидимое человеку (`hidden`, `aria-hidden`,
  * `display:none`, `visibility:hidden`, `opacity:0`, `font-size:0`/< 4px, прозрачный
- * цвет, вынос за экран, `clip`, правила из `<style>` по классу/id) — строки с
- * `hidden: true`; HTML-комментарии — во флаг скрытого текста. meta description,
- * атрибуты title/alt — только в проверку на инъекцию.
+ * цвет, вынос за экран, `clip`, правила из `<style>` по классу/id) – строки с
+ * `hidden: true`; HTML-комментарии – во флаг скрытого текста. meta description,
+ * атрибуты title/alt – только в проверку на инъекцию.
  */
 
 const SKIP = new Set([
@@ -110,7 +110,7 @@ const BREAK: Seg = { text: '\n', hidden: false };
 
 export interface HtmlExtractOptions {
   sourceKind?: SourceKind;
-  /** Префикс ссылок на строки; по умолчанию — сам URL. */
+  /** Префикс ссылок на строки; по умолчанию – сам URL. */
   refPrefix?: string;
   title?: string;
 }
@@ -212,13 +212,13 @@ export function extractHtml(html: string, origin: string, opts: HtmlExtractOptio
 export interface MarkdownRaw {
   lines: RawLine[];
   suspect: string[];
-  /** HTML-комментарии со смыслом (≥ 3 слов) — скрытый текст. */
+  /** HTML-комментарии со смыслом (≥ 3 слов) – скрытый текст. */
   hidden: string[];
 }
 
 /**
- * Markdown (README) → строки `refPrefix:lN`. HTML-комментарии — скрытый текст (во флаг),
- * HTML-скрытое в строке — отдельная строка `…h` с hidden, title ссылок — только в
+ * Markdown (README) → строки `refPrefix:lN`. HTML-комментарии – скрытый текст (во флаг),
+ * HTML-скрытое в строке – отдельная строка `…h` с hidden, title ссылок – только в
  * проверку на инъекцию. Разметка снимается.
  */
 export function markdownToRaw(md: string, refPrefix: string): MarkdownRaw {

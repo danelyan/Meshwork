@@ -3,7 +3,7 @@
    (13-16" ноутбук): путь сверху, карточки одним рядом тянутся на остаток высоты, длинный список прокручивается
    внутри своей карточки. Узкая или совсем низкая: карточки своей высоты в две колонки, прокручивается колонка. */
 .aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto; grid-auto-rows: auto; gap: 12px; align-items: stretch; align-content: start; min-height: 100%; }
-/* align-content: start — свободная высота не раздаёт пустоту карточкам (путь растягивался на полэкрана) */
+/* align-content: start – свободная высота не раздаёт пустоту карточкам (путь растягивался на полэкрана) */
 .road { grid-column: 1 / -1; }
 /* Колонка живёт на сцене: общие компоненты внутри (переключатель вида, предпросмотр карточки, поля) читают смысловые
    токены страницы, а сцена в тёмной теме тёмная при светлой странице. Сводим их к токенам сцены (в светлой они равны). */
@@ -13,13 +13,13 @@
   --surface-input: var(--stage-card); --surface-hover: var(--stage-accent-fill); --surface-notice: var(--stage-card); --surface-quote: var(--stage-card);
   --border-input: var(--stage-ring); --border-soft: var(--stage-ring); --border-faint: var(--avatar-stage-line);
   --silhouette: var(--stage-track); --blue: var(--stage-accent); --on-ink: var(--stage-on-accent);
-  /* переключатель вида: активный сегмент — акцент сцены, неактивный — прозрачный */
+  /* переключатель вида: активный сегмент – акцент сцены, неактивный – прозрачный */
   --seg-text: var(--stage-ink-dim); --seg-text-on: var(--stage-text); --seg-line: var(--stage-ring); --seg-hover: var(--stage-accent-fill);
   --seg-on: var(--stage-accent); --seg-on-text: var(--stage-on-accent);
 }
 .aside > :last-child:nth-child(even) { grid-column: 1 / -1; }
 .box { min-height: 100%; display: grid; }
-/* широкая колонка (каждой карточке от ~300px, владелец 11.10: «слишком узко»): все в один ряд; у работодателя две — по половине */
+/* широкая колонка (каждой карточке от ~300px, владелец 11.10: «слишком узко»): все в один ряд; у работодателя две – по половине */
 @container aside (width >= 1240px) and (height >= 380px) {
   /* один ряд на всю высоту: длинный список прокручивается внутри своей карточки */
   .aside { grid-auto-rows: minmax(0, 1fr); align-content: normal; }
@@ -30,7 +30,7 @@
   /* память и рынок уже, файлы и настройки шире: у них поля ввода и чипы */
   .aside { grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.3fr); }
   .aside > :last-child:nth-child(even) { grid-column: auto; }
-  /* карточек под путём обычно две (блок шага и память) — по половине; три — по трети; четыре — по четверти */
+  /* карточек под путём обычно две (блок шага и память) – по половине; три – по трети; четыре – по четверти */
   .aside > .card { grid-column: span 2; }
   .aside:has(> :nth-child(4)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .aside:has(> :nth-child(4)) > .card { grid-column: auto; }
@@ -40,7 +40,7 @@
 .title { margin-bottom: 10px; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* --- роадмап: четыре колонки-«полоски прогресса»: готово — приглушённый акцент, сейчас — яркий --- */
+/* --- роадмап: четыре колонки-«полоски прогресса»: готово – приглушённый акцент, сейчас – яркий --- */
 .road { padding: 14px 16px 16px; border: 1px solid var(--avatar-stage-line); background: var(--stage-card); }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .step { border-top: 3px solid var(--stage-track); padding: 10px 8px 8px; }
@@ -58,7 +58,7 @@
 .stepNote { font-size: var(--fs-sm); line-height: 1.4; color: var(--stage-ink-faint); overflow-wrap: anywhere; }
 .step[data-state='done'] { border-top-color: var(--stage-accent-track); }
 .step[data-state='done'] .marker { background: var(--stage-accent-fill); border-color: var(--stage-accent); color: var(--stage-ink); }
-/* «сейчас» — подложка акцента, чтобы текущий шаг читался с первого взгляда; «дальше» — пунктирный маркер */
+/* «сейчас» – подложка акцента, чтобы текущий шаг читался с первого взгляда; «дальше» – пунктирный маркер */
 .step[data-state='now'] { border-top-color: var(--stage-accent); background: var(--stage-accent-fill); }
 .step[data-state='now'] .marker { background: var(--stage-accent); border-color: var(--stage-accent); color: var(--stage-on-accent); }
 .step[data-state='now'] .stepName { color: var(--stage-text); }
@@ -85,7 +85,7 @@
 .hintTitle { font-weight: 600; color: var(--stage-text); }
 .hintTitle::after { content: ' ·'; color: var(--stage-ink-faint); }
 
-/* --- что я знаю: пары «шаг — ответ»; рынок: категории с полосками --- */
+/* --- что я знаю: пары «шаг – ответ»; рынок: категории с полосками --- */
 .muted { margin: 0; font-size: var(--fs); line-height: 1.5; color: var(--stage-ink-faint); }
 .facts { margin: 0; display: grid; gap: 8px; }
 .fact { display: grid; grid-template-columns: minmax(84px, 38%) minmax(0, 1fr); gap: 10px; align-items: baseline; }
@@ -118,7 +118,7 @@
   .marketNote { display: none; }
 }
 
-/* --- узкий экран: порядок задаёт сцена (display: contents у колонки), роадмап — горизонтальная полоса, карточки — аккордеон --- */
+/* --- узкий экран: порядок задаёт сцена (display: contents у колонки), роадмап – горизонтальная полоса, карточки – аккордеон --- */
 @media (max-width: 1050px) {
   .box, .aside { display: contents; }
   .road { order: 1; padding: 8px var(--page-pad) 10px; border-width: 0 0 1px; background: var(--avatar-stage); }

@@ -34,18 +34,18 @@ import type { AnswerRevisionSource, AnswerRevisionView, Answers, Facts, Onboardi
 import { GRADE_LABEL } from '@/lib/grades';
 
 /**
- * Онбординг-чат: состояние в OnboardingState, ответы — сразу в целевые модели
- * (Candidate, CandidateProfile, Company, Vacancy). Контракт роутов —
+ * Онбординг-чат: состояние в OnboardingState, ответы – сразу в целевые модели
+ * (Candidate, CandidateProfile, Company, Vacancy). Контракт роутов –
  * app/api/onboarding/route.ts. «Настроить позже» не вызывает markOnboarded.
  */
 
-/** Роут теста на грейд (лейн test). null — роута ещё нет: ведём в профиль с пометкой. */
+/** Роут теста на грейд (лейн test). null – роута ещё нет: ведём в профиль с пометкой. */
 export const GRADE_TEST_PATH: string | null = '/test';
 
 const CABINET = { candidate: '/consultant', employer: '/employer' } as const;
 
 /**
- * Служебное состояние: вакансии работодателя; `later` — пауза знакомства («Настроить позже»); `doneRoles` — роли
+ * Служебное состояние: вакансии работодателя; `later` – пауза знакомства («Настроить позже»); `doneRoles` – роли
  * учётки с завершённым знакомством (пишет переключение роли, ADR 0004; правки meta здесь его сохраняют).
  */
 type Meta = {
@@ -56,7 +56,7 @@ type Meta = {
   byRole?: Record<string, unknown>;
 };
 
-/** Шаг онбординга сделан (ответ, пропуск, возврат) — пауза «Настроить позже» снята. */
+/** Шаг онбординга сделан (ответ, пропуск, возврат) – пауза «Настроить позже» снята. */
 function resumed(meta: Meta): Meta {
   if (!meta.later) return meta;
   const rest = { ...meta };
@@ -344,7 +344,7 @@ function stepOr409(l: Loaded, stepId: string): StepDef {
 }
 
 export interface MutationResult {
-  /** Роль сменилась — перевыпустить куку сессии (userSessionCookie(sessionInputFor(user))). */
+  /** Роль сменилась – перевыпустить куку сессии (userSessionCookie(sessionInputFor(user))). */
   sessionChanged: boolean;
 }
 
@@ -377,7 +377,7 @@ async function apply(l: Loaded, step: StepDef, value: unknown): Promise<boolean>
       return false;
     case 'candidateConsents':
     case 'employerConsents': {
-      // ADR 0005: каждая отмеченная галочка — своё согласие текущей версии. Без Г4 профиль скрыт от работодателей.
+      // ADR 0005: каждая отмеченная галочка – своё согласие текущей версии. Без Г4 профиль скрыт от работодателей.
       for (const kind of value as ConsentKindName[]) await grantConsent(userId, { kind, version: consentVersion(kind) });
       if (step.id === 'candidateConsents' && !(value as string[]).includes('employer_visibility')) {
         await prisma.candidate.update({ where: { id: candidateIdOf(l) }, data: { hiddenFromEmployers: true } });
@@ -521,7 +521,7 @@ export async function answerStep(userId: string, stepId: string, value: unknown)
   const skipped = l.state.skipped.filter((s) => s !== step.id);
   let meta = resumed(l.meta);
   if (step.id.startsWith('need')) meta = await syncVacancies(userId, answers, meta);
-  // Факты могли измениться (согласие, роль, ФСП) — следующий шаг считаем по свежим.
+  // Факты могли измениться (согласие, роль, ФСП) – следующий шаг считаем по свежим.
   const fresh = await load(userId);
   const ctx = { ...fresh.ctx, answers };
   const next = nextOpen(ctx, skipped, step.id);
@@ -531,9 +531,9 @@ export async function answerStep(userId: string, stepId: string, value: unknown)
 }
 
 /**
- * Итог входа в ФСП ID из шага знакомства (`/api/fsp-id/callback`, `return=consultant`): ответ шага `fsp` —
+ * Итог входа в ФСП ID из шага знакомства (`/api/fsp-id/callback`, `return=consultant`): ответ шага `fsp` –
  * состояние, которое уже записала привязка (`Candidate.fspState`), и переход к следующему шагу, как после
- * обычного ответа. Через `answerStep` нельзя: вариант «Войти через ФСП ID» — ссылка, не ответ.
+ * обычного ответа. Через `answerStep` нельзя: вариант «Войти через ФСП ID» – ссылка, не ответ.
  */
 export async function recordFspLink(userId: string): Promise<void> {
   const l = await load(userId);
@@ -568,7 +568,7 @@ export async function skipStep(userId: string, stepId: string): Promise<Mutation
   return { sessionChanged: false };
 }
 
-/** Вернуться к шагу (из итога — к пропущенному, или поправить ответ). */
+/** Вернуться к шагу (из итога – к пропущенному, или поправить ответ). */
 export async function gotoStep(userId: string, stepId: string): Promise<MutationResult> {
   const l = await load(userId);
   const step = stepOr409(l, stepId);
@@ -577,12 +577,12 @@ export async function gotoStep(userId: string, stepId: string): Promise<Mutation
   return { sessionChanged: false };
 }
 
-/** Пауза знакомства имеет смысл у кандидата и работодателя с незавершённым онбордингом (до выбора роли — нет). */
+/** Пауза знакомства имеет смысл у кандидата и работодателя с незавершённым онбордингом (до выбора роли – нет). */
 function isPaused(l: Loaded): boolean {
   return l.meta.later === true && (l.ctx.facts.role === 'candidate' || l.ctx.facts.role === 'employer') && l.user.onboardedAt === null;
 }
 
-/** Роль, у которой «Настроить позже» — пауза в ленте /consultant, а не уход со страницы. */
+/** Роль, у которой «Настроить позже» – пауза в ленте /consultant, а не уход со страницы. */
 function pausable(l: Loaded): boolean {
   return (l.ctx.facts.role === 'candidate' || l.ctx.facts.role === 'employer') && l.ctx.facts.consent && l.user.onboardedAt === null;
 }
@@ -590,8 +590,8 @@ function pausable(l: Loaded): boolean {
 /**
  * «Настроить позже»: ответы уже сохранены; онбординг не завершаем. Кандидат (решение владельца
  * 10.10) и работодатель (решение владельца 10.10, тот же механизм) остаются на /consultant: шаги на
- * паузе (meta.later), лента — свободный разговор с консультантом / помощником по подбору; вернуться —
- * ответить, пропустить или открыть шаг (goto). Остальным — куда вести, как раньше.
+ * паузе (meta.later), лента – свободный разговор с консультантом / помощником по подбору; вернуться –
+ * ответить, пропустить или открыть шаг (goto). Остальным – куда вести, как раньше.
  */
 export async function finishLater(userId: string): Promise<{ next: string }> {
   const l = await load(userId);
@@ -608,8 +608,6 @@ export interface OnboardingStepBrief {
   question: string;
   /** Пояснение под вопросом (зачем спрашиваем). */
   sub?: string;
-  /** Обязательный шаг: кнопки «Пропустить вопрос» нет. */
-  required?: boolean;
   /** Доступные варианты с пояснением из сценария: «Ищу работу (хочу приглашения от компаний)». */
   options: string[];
 }
@@ -620,7 +618,6 @@ function briefOf(step: StepDef, ctx: StepContext): OnboardingStepBrief | null {
     stepId: step.id,
     question: step.question,
     ...(step.sub ? { sub: step.sub } : {}),
-    ...(step.required ? { required: true } : {}),
     options: optionsOf(step, ctx)
       .filter((o) => !o.disabled)
       .map((o) => (o.note ? `${o.label} (${o.note})` : o.label)),
@@ -628,8 +625,8 @@ function briefOf(step: StepDef, ctx: StepContext): OnboardingStepBrief | null {
 }
 
 /**
- * Контекст свободного вопроса посреди онбординга: согласие и роль (граница доверия — до них
- * текст в модель не уходит) и шаг, на котором человек сейчас. step = null — человек на итоге.
+ * Контекст свободного вопроса посреди онбординга: согласие и роль (граница доверия – до них
+ * текст в модель не уходит) и шаг, на котором человек сейчас. step = null – человек на итоге.
  */
 export async function asideContext(userId: string): Promise<{ consent: boolean; role: Facts['role']; step: OnboardingStepBrief | null }> {
   const l = await load(userId);
@@ -637,8 +634,8 @@ export async function asideContext(userId: string): Promise<{ consent: boolean; 
 }
 
 /**
- * Онбординг кандидата не закончен («Настроить позже» или ушёл посреди) — шаг, с которого
- * продолжить (/onboarding откроется на нём). null — закончен или аккаунта входа нет.
+ * Онбординг кандидата не закончен («Настроить позже» или ушёл посреди) – шаг, с которого
+ * продолжить (/onboarding откроется на нём). null – закончен или аккаунта входа нет.
  */
 export async function pendingOnboarding(candidateId: string): Promise<OnboardingStepBrief | null> {
   const user = await prisma.user.findUnique({ where: { candidateId }, select: { id: true, onboardedAt: true } });
@@ -649,7 +646,7 @@ export async function pendingOnboarding(candidateId: string): Promise<Onboarding
 }
 
 /**
- * Знакомство работодателя на паузе («Настроить позже») — шаг, на котором остановился; null — не на
+ * Знакомство работодателя на паузе («Настроить позже») – шаг, на котором остановился; null – не на
  * паузе. По нему ход помощника ставит маркер паузы (pauseMark) и сообщения видны под этим шагом.
  */
 export async function pausedOnboardingOf(userId: string): Promise<OnboardingStepBrief | null> {
@@ -661,10 +658,10 @@ export async function pausedOnboardingOf(userId: string): Promise<OnboardingStep
 
 /**
  * Показывать ли шаги онбординга в ленте /consultant (решения владельца 10.10: один адрес с чатом).
- * Да — роль не выбрана, знакомство не завершено или завершено в чате (состояние стоит на итоге:
- * шаги — начало ленты, дальше разговор). Нет — аккаунт завершён без чата (сид демо) или со старым
- * состоянием посреди шагов (открывал прежнюю /onboarding после завершения): такому кандидату —
- * обычный чат, работодателю — кабинет; иначе жюри под демо-аккаунтом увидело бы вопросы.
+ * Да – роль не выбрана, знакомство не завершено или завершено в чате (состояние стоит на итоге:
+ * шаги – начало ленты, дальше разговор). Нет – аккаунт завершён без чата (сид демо) или со старым
+ * состоянием посреди шагов (открывал прежнюю /onboarding после завершения): такому кандидату –
+ * обычный чат, работодателю – кабинет; иначе жюри под демо-аккаунтом увидело бы вопросы.
  */
 export async function onboardingInFeed(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, onboardedAt: true, onboarding: { select: { stepId: true } } } });
@@ -674,7 +671,7 @@ export async function onboardingInFeed(userId: string): Promise<boolean> {
 
 /**
  * Сколько шагов знакомства закрыто и сколько их в сценарии роли (для плашки «заполнено N из M»).
- * Пропущенный шаг считается закрытым. Без побочных эффектов — реплики помощника не генерируются.
+ * Пропущенный шаг считается закрытым. Без побочных эффектов – реплики помощника не генерируются.
  */
 export async function onboardingProgress(userId: string): Promise<{ done: number; total: number }> {
   const l = await load(userId);

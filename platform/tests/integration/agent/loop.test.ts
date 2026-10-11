@@ -211,7 +211,7 @@ describe('runTurn (stub LLM, моки модулей)', () => {
   });
 
   it('модель недоступна в конвейере → извлечение по маркерам, план В, стенд отвечает', async () => {
-    // Шапка резюме (до заголовка раздела) план В claims пропускает — как в настоящем резюме.
+    // Шапка резюме (до заголовка раздела) план В claims пропускает – как в настоящем резюме.
     const doc = makeDoc({ lines: ['Глеб Рябинин, разработчик', 'Опыт:', 'Писал эндпоинты на Flask', 'Добавил Idempotency-Key в платежи'] });
     const up = await seedUpload(CAND, doc);
     claimsMock.extractClaims.mockRejectedValue(new LlmError('unavailable', '[503] down', 503));
@@ -221,7 +221,7 @@ describe('runTurn (stub LLM, моки модулей)', () => {
     const claims = events.find((e) => e.type === 'claims') as { proposed: { catalogId: string }[] };
     expect(claims.proposed.map((c) => c.catalogId).sort()).toEqual(['be.framework', 'be.idempotency']);
     const msg = lastMessage(events)?.text ?? '';
-    expect(msg).toContain('Нашла 2 утверждения');
+    expect(msg).toContain('Нашёл 2 утверждения');
     expect(msg).toContain('Backend, Middle');
     expect(await prisma.agentRun.count({ where: { purpose: 'consultant' } })).toBe(0);
   });
@@ -251,7 +251,7 @@ describe('runTurn (stub LLM, моки модулей)', () => {
     expect(await prisma.message.count({ where: { role: 'assistant' } })).toBe(0);
   });
 
-  it('состояние профиля — через get_profile на этом ходу (отклонённое видно как rejected)', async () => {
+  it('состояние профиля – через get_profile на этом ходу (отклонённое видно как rejected)', async () => {
     await prisma.claim.create({ data: { candidateId: CAND, catalogId: 'fe.forms', statement: 's', level: 'self_reported', quote: 'q', sourceRef: 'r', sourceKind: 'resume', limits: '', suggestedProof: [], status: 'rejected' } });
     await turn({ text: '[[tool:get_profile {}]]' });
     const row = await prisma.message.findFirstOrThrow({ where: { role: 'tool' } });

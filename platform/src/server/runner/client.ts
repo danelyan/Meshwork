@@ -22,9 +22,9 @@ import { AppError } from '../errors';
  * Клиент app → runner (lane runner, ADR 0003). У runner нет интернета, поэтому tarball репозитория
  * скачивает app: GitHub REST `/repos/{o}/{r}/tarball/{sha}` → редирект на codeload; каждый хоп
  * через SSRF-проверку (collector/ssrf.ts) с пиннингом адреса (collector/url.ts), ≤ 50 МБ, таймаут.
- * Дальше `POST /uploads` (тело — архив) и `POST /run {repoTarballUrl: "upload:<id>"}`.
+ * Дальше `POST /uploads` (тело – архив) и `POST /run {repoTarballUrl: "upload:<id>"}`.
  *
- * Результат runner — данные из процесса, где исполнялся код кандидата: `logTail` и `tests[].error`
+ * Результат runner – данные из процесса, где исполнялся код кандидата: `logTail` и `tests[].error`
  * не показывать кандидату как есть (раскрывают скрытые тесты) и не подавать в LLM как инструкции.
  */
 
@@ -64,7 +64,7 @@ const RUNNER_TIMEOUT_MS = 30_000;
 
 const runnerUnavailable = (message: string) => new AppError('runner_unavailable', message, 503);
 
-/** `https://github.com/<owner>/<repo>(.git)` → {owner, repo}. Другие хосты — null. */
+/** `https://github.com/<owner>/<repo>(.git)` → {owner, repo}. Другие хосты – null. */
 export function parseGithubRepoUrl(raw: string): GithubRepo | null {
   let url: URL;
   try {
@@ -223,7 +223,7 @@ export async function submitRun(input: SubmitRunInput, deps: RunnerClientDeps = 
   );
 }
 
-/** Статус и результат задания. 404 `not_found` — задания нет (в том числе после рестарта runner). */
+/** Статус и результат задания. 404 `not_found` – задания нет (в том числе после рестарта runner). */
 export async function getRun(jobId: string, deps: RunnerClientDeps = {}): Promise<RunResult> {
   if (!/^[0-9a-f]{32}$/.test(jobId)) throw new AppError('bad_request', 'Некорректный jobId', 400);
   return callRunner(runnerConfig(deps), `/run/${jobId}`, { method: 'GET' }, runResultSchema);

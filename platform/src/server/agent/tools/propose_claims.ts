@@ -8,13 +8,13 @@ import type { AgentTool } from '../types';
 
 const Item = z.object({
   catalogId: z.string().min(1).max(64).describe('id из каталога (catalog_search)'),
-  statement: z.string().min(1).max(300).optional().describe('Формулировка; по умолчанию — из каталога'),
+  statement: z.string().min(1).max(300).optional().describe('Формулировка; по умолчанию – из каталога'),
   wording: z
     .string()
     .min(1)
     .max(160)
     .optional()
-    .describe('Формулировка для кандидата строго в границах цитаты, в его роде или безличная; ничего сверх цитаты. Нет — строится из цитаты'),
+    .describe('Формулировка для кандидата строго в границах цитаты, в его роде или безличная; ничего сверх цитаты. Нет – строится из цитаты'),
   quote: z.string().min(3).max(600).describe('Дословная цитата из источника, подтверждающая утверждение'),
   sourceRef: z.string().min(1).max(200).describe('Координата строки с цитатой: `cv.pdf#p2:l14`, `github:user/repo#README:l3`'),
   confidence: z.enum(['low', 'medium', 'high']).default('medium'),
@@ -33,7 +33,7 @@ const Output = z.object({
 export const proposeClaimsTool: AgentTool<z.infer<typeof Input>, z.infer<typeof Output>> = {
   name: 'propose_claims',
   description:
-    'Предложить кандидату утверждения карточками. Каждое — id из каталога + дословная цитата из прочитанного источника + координата строки. Вызывай после read_upload / fetch_url / fetch_profile, когда нашла фразы о сделанной работе. Не вызывай для источников, которые уже разобрал конвейер хода, и для отклонённых кандидатом id. Без цитаты в источнике утверждение отбрасывается кодом. Уровень доказанности задаёт код, не ты. В профиль попадает только после «да» кандидата.',
+    'Предложить кандидату утверждения карточками. Каждое – id из каталога + дословная цитата из прочитанного источника + координата строки. Вызывай после read_upload / fetch_url / fetch_profile, когда нашёл фразы о сделанной работе. Не вызывай для источников, которые уже разобрал конвейер хода, и для отклонённых кандидатом id. Без цитаты в источнике утверждение отбрасывается кодом. Уровень доказанности задаёт код, не ты. В профиль попадает только после «да» кандидата.',
   input: Input,
   output: Output,
   async handler(ctx, { items }) {
@@ -79,7 +79,7 @@ export function countByReason(reasons: string[]): Record<string, number> {
   return out;
 }
 
-/** Причины отказа без дублей: дубль — не отказ, а слияние одинаковых утверждений. */
+/** Причины отказа без дублей: дубль – не отказ, а слияние одинаковых утверждений. */
 export function describeRejects(reasons: string[]): string {
   const c = countByReason(reasons);
   const parts: string[] = [];
@@ -90,7 +90,7 @@ export function describeRejects(reasons: string[]): string {
   return parts.join(', ');
 }
 
-/** Шаг ленты и сводка: «нашёл 2, отбросил 1 — …, объединил 3 повтора». */
+/** Шаг ленты и сводка: «нашёл 2, отбросил 1 – …, объединил 3 повтора». */
 export function claimsStepText(found: number, reasons: string[]): string {
   const c = countByReason(reasons);
   const merged = c.duplicate ?? 0;

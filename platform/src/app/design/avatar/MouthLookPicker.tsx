@@ -5,7 +5,7 @@ import { createContext, type ReactNode, useContext, useState } from 'react';
 import { DEFAULT_MOUTH_LOOK, isMouthLook, MOUTH_LOOKS, type MouthLook } from '@/components/avatar/mouth-looks';
 import { Field } from '@/components/ui';
 
-/** Вид открытого рта — общий для всех панелей с нашей головой, выбирается одним select'ом под ползунком рта. */
+/** Вид открытого рта – общий для всех панелей с нашей головой, выбирается одним select'ом под ползунком рта. */
 const MouthLookContext = createContext<{ look: MouthLook; setLook: (look: MouthLook) => void }>({
   look: DEFAULT_MOUTH_LOOK,
   setLook: () => {},

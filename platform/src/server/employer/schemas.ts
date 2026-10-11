@@ -51,10 +51,10 @@ export type VacancyInput = z.infer<typeof VacancyInput>;
 export const VacancyPatch = z.object({ archived: z.boolean() });
 
 /**
- * Приглашение (R-E-05, ТЗ 2.2): описание и вилка «от–до» в ₽ обязательны, потребность — нет.
+ * Приглашение (R-E-05, ТЗ 2.2): описание и вилка «от–до» в ₽ обязательны, потребность – нет.
  * Способ связи компании берётся из Company.contact, в теле не передаётся.
  */
-/** lane admin (E-08, фаза 5): откуда работодатель отправил приглашение — для метрики «доля принятых из топ-N». */
+/** lane admin (E-08, фаза 5): откуда работодатель отправил приглашение – для метрики «доля принятых из топ-N». */
 export const MATCH_SOURCES = ['matching', 'search', 'favorites', 'assistant', 'other'] as const;
 export type MatchSource = (typeof MATCH_SOURCES)[number];
 
@@ -71,12 +71,12 @@ export const InvitationInput = z
   })
   .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Зарплата «до» меньше «от»', path: ['salaryTo'] });
 
-/** lane invite-cancel: отзыв приглашения работодателем — причина обязательна, до 300 знаков (видна кандидату). */
+/** lane invite-cancel: отзыв приглашения работодателем – причина обязательна, до 300 знаков (видна кандидату). */
 export const WithdrawInvitationInput = z.object({ reason: z.string().trim().min(3, 'Напиши причину отзыва').max(300, 'Причина - до 300 знаков') });
 
 /**
- * Ответ на приглашение. accept — только с `disclosureVersion`: кандидат отдельно подтверждает раскрытие имени и
- * контактов этому работодателю (Г5, ADR 0005; версия — CONSENT_TEXTS.identity_disclosure.version).
+ * Ответ на приглашение. accept – только с `disclosureVersion`: кандидат отдельно подтверждает раскрытие имени и
+ * контактов этому работодателю (Г5, ADR 0005; версия – CONSENT_TEXTS.identity_disclosure.version).
  */
 export const InvitationAction = z.object({ action: z.enum(['accept', 'decline']), disclosureVersion: z.string().min(1).max(64).optional() });
 
@@ -107,10 +107,10 @@ export function parseFilters(raw: Raw, maxLimit: number = MAX_RESULT_LIMIT): { f
   if (grade.success) filters.grade = grade.data;
   if (stack.length) filters.stack = stack;
   if (first(raw.fsp) === '1') filters.fsp = true;
-  // pool=all — явное расширение пула кандидатами без категории (M05). Прежний category=1 («только с категорией»)
+  // pool=all – явное расширение пула кандидатами без категории (M05). Прежний category=1 («только с категорией»)
   // совпадает с режимом по умолчанию и принимается как no-op, чтобы старые ссылки не ломались.
-  if (first(raw.pool) === 'all' || first(raw.untested) === '1') filters.expandPool = true; // untested=1 — синоним из main 11.10
-  // Подкатегория — только из справочника и только вместе со своим направлением (иначе отбрасывается).
+  if (first(raw.pool) === 'all' || first(raw.untested) === '1') filters.expandPool = true; // untested=1 – синоним из main 11.10
+  // Подкатегория – только из справочника и только вместе со своим направлением (иначе отбрасывается).
   const sub = getSubcategory(first(raw.sub));
   if (sub && !fullstack && (!filters.specialization || filters.specialization === sub.specialization)) {
     filters.specialization = sub.specialization;

@@ -58,7 +58,7 @@ describe('openai-chat: запрос', () => {
     ]);
   });
 
-  it('schema → response_format json_schema; без поддержки — в system', async () => {
+  it('schema → response_format json_schema; без поддержки – в system', async () => {
     const schema = { name: 'grade', jsonSchema: { type: 'object', properties: { grade: { type: 'string' } } } };
     const a = make([{ body: fixture('chat-json-fenced') }]);
     await a.provider.complete({ ...base, schema });

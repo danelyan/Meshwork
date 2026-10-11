@@ -47,7 +47,7 @@ describe('site access: пароль на публичный стенд', () => {
     expect(siteAccessDecision({ ...base, pathname: '/site-access/x' })).toBe('redirect');
   });
 
-  it('кука от верного пароля и секрета пускает; от другого пароля, без секрета, сам пароль или хеш — нет', () => {
+  it('кука от верного пароля и секрета пускает; от другого пароля, без секрета, сам пароль или хеш – нет', () => {
     expect(siteAccessDecision({ ...base, pathname: '/api/me', cookie: siteAccessToken(KEY, SECRET) })).toBe('allow');
     const oldKey = siteAccessKey({ SITE_PASSWORD: 'old-password' })!;
     expect(siteAccessDecision({ ...base, cookie: siteAccessToken(oldKey, SECRET) })).toBe('redirect');
@@ -116,7 +116,7 @@ describe('middleware', () => {
     expect(re.test('/api/me')).toBe(true);
   });
 
-  it('страницы /design/* проходят через гейт, файлы public/design/** — нет', () => {
+  it('страницы /design/* проходят через гейт, файлы public/design/** – нет', () => {
     const re = new RegExp(`^${config.matcher[0]}$`);
     const walk = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
@@ -128,7 +128,7 @@ describe('middleware', () => {
       .map((f) => urlOf(appRoot, path.dirname(f)));
     expect(pages).toEqual(expect.arrayContaining(['/design/avatar', '/design/fonts', '/design/head-motion-preview', '/design/consultant-grid-v1']));
     for (const page of pages) expect(re.test(page), page).toBe(true);
-    // Со слэшем на конце и с query (matcher видит только путь) — тоже через гейт.
+    // Со слэшем на конце и с query (matcher видит только путь) – тоже через гейт.
     for (const page of pages) expect(re.test(`${page}/`), `${page}/`).toBe(true);
     expect(re.test('/design')).toBe(true);
 

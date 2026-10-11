@@ -103,12 +103,12 @@ describe('кабинет работодателя: компоненты', () => 
     expect(screen.getByTestId('test-integrity').textContent).toMatch(/На созвоне решения теста: объяснил сам/);
   });
 
-  it('карточка после принятия: контакты, без кнопки; открытое приглашение — статус', () => {
+  it('карточка после принятия: контакты, без кнопки; открытое приглашение – статус', () => {
     const accepted = { ...ITEM, candidate: { ...ITEM.candidate, displayName: 'Иван', contacts: { name: 'Иван', contact: '@ivan_dev' } } };
     render(<ol><CandidateMatchCard item={accepted} vacancyId="v1" /></ol>);
     expect(screen.getByText('@ivan_dev')).toBeDefined();
     cleanup();
-    // контакта нет — явный текст, а не пустое место (Q-35)
+    // контакта нет – явный текст, а не пустое место (Q-35)
     render(<ol><CandidateMatchCard item={{ ...accepted, candidate: { ...accepted.candidate, contacts: { name: 'Иван', contact: null } } }} vacancyId="v1" /></ol>);
     expect(screen.getByText('Кандидат не указал контакт')).toBeDefined();
     expect(screen.queryByRole('button', { name: /Пригласить/ })).toBeNull();
@@ -117,7 +117,7 @@ describe('кабинет работодателя: компоненты', () => 
     expect(screen.getByText('просмотрено')).toBeDefined();
   });
 
-  it('приглашение: без описания и вилки не уходит, «до» меньше «от» — ошибка; с ними — POST с потребностью', async () => {
+  it('приглашение: без описания и вилки не уходит, «до» меньше «от» – ошибка; с ними – POST с потребностью', async () => {
     const fetchFn = stubFetch({ id: 'inv', status: 'sent' });
     render(<InviteForm candidateId="c1" candidateName="Кандидат #A" vacancyId="v1" />);
     fireEvent.click(screen.getByRole('button', { name: 'Пригласить: Кандидат #A' }));
@@ -156,7 +156,7 @@ describe('кабинет работодателя: компоненты', () => 
     expect((screen.getByRole('radio', { name: 'Frontend' }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText(/Стек/) as HTMLInputElement).value).toBe('React');
     expect((screen.getByLabelText('Достижения ФСП') as HTMLInputElement).checked).toBe(true);
-    // M05: расширение пула — отдельная явная галочка, по умолчанию выключена
+    // M05: расширение пула – отдельная явная галочка, по умолчанию выключена
     const pool = screen.getByLabelText('Расширить: кандидаты без категории из теста') as HTMLInputElement;
     expect(pool.checked).toBe(false);
     expect(pool.name).toBe('pool');
@@ -166,7 +166,7 @@ describe('кабинет работодателя: компоненты', () => 
     expect((screen.getByLabelText('Расширить: кандидаты без категории из теста') as HTMLInputElement).checked).toBe(true);
   });
 
-  it('приглашение без способа связи компании (E05): заметка со ссылкой на «Компанию», кнопка отправки закрыта; с контактом — открыта', () => {
+  it('приглашение без способа связи компании (E05): заметка со ссылкой на «Компанию», кнопка отправки закрыта; с контактом – открыта', () => {
     const fetchFn = stubFetch({ id: 'inv', status: 'sent' });
     render(<InviteContactProvider value={null}><InviteForm candidateId="c1" candidateName="Кандидат #A" vacancyId="v1" /></InviteContactProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Пригласить: Кандидат #A' }));

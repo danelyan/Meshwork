@@ -8,8 +8,8 @@ import { HeadSurface } from './HeadSurface';
 import { useCompanionVoice } from './voice';
 
 /**
- * Голова компаньона без рамки и кнопок — для сцен, где вокруг свой интерфейс. Читает ближайший
- * `CompanionVoiceProvider`; без WebGL — знак ФСП. Заполняет родителя (родитель задаёт размер).
+ * Голова компаньона без рамки и кнопок – для сцен, где вокруг свой интерфейс. Читает ближайший
+ * `CompanionVoiceProvider`; без WebGL – знак ФСП. Заполняет родителя (родитель задаёт размер).
  */
 export function HeadView({ style: fixedStyle }: { style?: HeadStyle } = {}) {
   const voice = useCompanionVoice();

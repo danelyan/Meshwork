@@ -7,8 +7,8 @@ import styles from './avatar.module.css';
 import type { VoiceStatus } from './voice';
 
 /**
- * Запасной аватар без WebGL: знак ФСП на тёмном фоне. Говорит — знак пульсирует по громкости
- * (CSS-переменная --level из кадра), думает — медленно «дышит». Только CSS и requestAnimationFrame.
+ * Запасной аватар без WebGL: знак ФСП на тёмном фоне. Говорит – знак пульсирует по громкости
+ * (CSS-переменная --level из кадра), думает – медленно «дышит». Только CSS и requestAnimationFrame.
  */
 export function MarkFallback({ status, getLevel }: { status: VoiceStatus; getLevel: () => number }) {
   const ref = useRef<HTMLSpanElement>(null);

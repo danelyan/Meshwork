@@ -10,7 +10,7 @@ const MAX = 6;
 export interface RefinementHistoryProps {
   /** Путь выдачи без query (/employer/needs/:id или /employer/search). */
   basePath: string;
-  /** Текущая query-строка фильтров ('' — без фильтров). */
+  /** Текущая query-строка фильтров ('' – без фильтров). */
   query: string;
   /** Подпись текущих фильтров. */
   label: string;
@@ -27,8 +27,8 @@ function read(key: string): { query: string; label: string }[] {
 }
 
 /**
- * Прежние выдачи (R-M-04): каждое уточнение — свой URL, ранжирование детерминировано,
- * поэтому ссылка восстанавливает выдачу. Список — в sessionStorage вкладки.
+ * Прежние выдачи (R-M-04): каждое уточнение – свой URL, ранжирование детерминировано,
+ * поэтому ссылка восстанавливает выдачу. Список – в sessionStorage вкладки.
  */
 export function RefinementHistory({ basePath, query, label }: RefinementHistoryProps) {
   const key = `employer-history:${basePath}`;
@@ -39,7 +39,7 @@ export function RefinementHistory({ basePath, query, label }: RefinementHistoryP
     try {
       sessionStorage.setItem(key, JSON.stringify(next));
     } catch {
-      /* приватный режим — история только в браузере «назад» */
+      /* приватный режим – история только в браузере «назад» */
     }
     setItems(prev.slice(0, MAX - 1));
   }, [key, query, label]);

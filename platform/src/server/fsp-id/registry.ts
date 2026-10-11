@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { fspRegistryLookup, type FspAchievement, type FspState } from '@/server/collector/fsp-demo';
 
 /**
- * Достижения привязанного участника. Внешний провайдер — API реестра симулятора команды
- * (`GET <FSP_API_URL>/me/achievements` по токену участника, контракт — openapi.json симулятора);
- * мок — демо-реестр по `sub` (`fspRegistryLookup`). Сбой реестра — `unavailable`, без штрафа (R-FSP-03).
+ * Достижения привязанного участника. Внешний провайдер – API реестра симулятора команды
+ * (`GET <FSP_API_URL>/me/achievements` по токену участника, контракт – openapi.json симулятора);
+ * мок – демо-реестр по `sub` (`fspRegistryLookup`). Сбой реестра – `unavailable`, без штрафа (R-FSP-03).
  */
 
 export interface FspRegistryResult {
@@ -72,7 +72,7 @@ export async function fetchRegistryAchievements(apiUrl: string, accessToken: str
   return achievements.length ? { state: 'linked', achievements } : { state: 'no_achievements', achievements: [] };
 }
 
-/** Внешний провайдер с API реестра — HTTP; иначе (мок или реестр не настроен) — демо-реестр по `sub`. */
+/** Внешний провайдер с API реестра – HTTP; иначе (мок или реестр не настроен) – демо-реестр по `sub`. */
 export async function registryFor(sub: string, opts: { apiUrl: string | null; accessToken: string | null }): Promise<FspRegistryResult> {
   if (opts.apiUrl && opts.accessToken) return fetchRegistryAchievements(opts.apiUrl, opts.accessToken);
   return fspRegistryLookup(sub);

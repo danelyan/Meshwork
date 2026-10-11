@@ -28,12 +28,12 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
           <dt>id</dt>
           <dd className={styles.mono}>{c.id}</dd>
           <dt>Отрасль</dt>
-          <dd>{c.industry ?? '—'}</dd>
+          <dd>{c.industry ?? '–'}</dd>
           <dt>Описание</dt>
           <dd>{companyDisplayDescription(c.name, c.description) ?? '–'}</dd>
           <dt>ИНН</dt>
           <dd>
-            <span className={styles.mono}>{c.inn ?? '—'}</span>
+            <span className={styles.mono}>{c.inn ?? '–'}</span>
             {c.innCheck && <> {c.innCheck.valid ? <Tag tone="outline">контрольная цифра верна</Tag> : <Tag tone="dashed">контрольная цифра не сходится</Tag>} <span className={styles.muted}>{c.innCheck.note}</span></>}
           </dd>
           <dt>Проверка модератором</dt>
@@ -75,7 +75,7 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
                 <td>
                   <Link href={`/admin/users/${r.userId}`}>{r.name ?? r.userId}</Link>
                 </td>
-                <td className={styles.mono}>{r.email ?? '—'}</td>
+                <td className={styles.mono}>{r.email ?? '–'}</td>
                 <td className={styles.mono}>{fmtDate(r.createdAt)}</td>
                 <td>{r.blocked ? <Tag tone="dashed">заблокирован</Tag> : ''}</td>
               </tr>

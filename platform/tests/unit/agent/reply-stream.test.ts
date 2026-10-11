@@ -4,7 +4,7 @@ type Ev = { type: string; id?: string; text?: string };
 
 describe('reply-stream: дельты реплики', () => {
   it('splitChunks: куски по словам, склейка = исходный текст', () => {
-    const t = 'Нашёл в резюме три навыка: Go, PostgreSQL и Kafka. Подтверди карточки — покажу вакансии.';
+    const t = 'Нашёл в резюме три навыка: Go, PostgreSQL и Kafka. Подтверди карточки – покажу вакансии.';
     const parts = splitChunks(t);
     expect(parts.length).toBeGreaterThan(3);
     expect(parts.join('')).toBe(t);
@@ -21,7 +21,7 @@ describe('reply-stream: дельты реплики', () => {
     expect(deltas.every((d) => d.id === msg.id)).toBe(true);
   });
 
-  it('дельты провайдера идут как есть; после discard — новый id и повторная нарезка не нужна', async () => {
+  it('дельты провайдера идут как есть; после discard – новый id и повторная нарезка не нужна', async () => {
     const evs: Ev[] = [];
     const s = createReplyStream((e) => evs.push(e), undefined, () => 0);
     s.onDelta('думаю…');
@@ -39,7 +39,7 @@ describe('reply-stream: дельты реплики', () => {
     ]);
   });
 
-  it('discard без показанного текста ничего не шлёт; отмена — без message', async () => {
+  it('discard без показанного текста ничего не шлёт; отмена – без message', async () => {
     const evs: Ev[] = [];
     const ctrl = new AbortController();
     const s = createReplyStream((e) => evs.push(e), ctrl.signal, () => 0);
@@ -49,7 +49,7 @@ describe('reply-stream: дельты реплики', () => {
     expect(evs).toEqual([]);
   });
 
-  it('стоп посреди дельт модели: показанный кусок — message, его и сохранять', () => {
+  it('стоп посреди дельт модели: показанный кусок – message, его и сохранять', () => {
     const evs: Ev[] = [];
     const s = createReplyStream((e) => evs.push(e), undefined, () => 0);
     s.onDelta('Начало ');
@@ -59,7 +59,7 @@ describe('reply-stream: дельты реплики', () => {
     expect(evs.at(-1)).toEqual({ type: 'message', id, text: 'Начало ответа' });
   });
 
-  it('стоп без дельт — ничего не сохранять и не слать', () => {
+  it('стоп без дельт – ничего не сохранять и не слать', () => {
     const evs: Ev[] = [];
     const s = createReplyStream((e) => evs.push(e), undefined, () => 0);
     expect(s.stop()).toBeNull();
@@ -90,7 +90,7 @@ describe('reply-stream: дельты реплики', () => {
     expect(evs).toEqual([{ type: 'message', id: expect.any(String), text: 'раз два три четыре пять шесть' }]);
   });
 
-  it('стоп посреди нарезки: message и сохранение — только показанный кусок', async () => {
+  it('стоп посреди нарезки: message и сохранение – только показанный кусок', async () => {
     const evs: Ev[] = [];
     const stop = new AbortController();
     let n = 0;

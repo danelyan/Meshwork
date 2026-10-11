@@ -45,7 +45,7 @@ describe('selectBlindCards', () => {
     expect(picks.filter((p) => p.sources.some((s) => s.method === 'random'))).toHaveLength(3);
   });
 
-  it('маленький пул — карточек сколько есть', () => {
+  it('маленький пул – карточек сколько есть', () => {
     const picks = selectBlindCards(['a', 'b'], ['b', 'c'], ['a', 'b', 'c', 'd'], seeded(7));
     expect(picks.map((p) => p.candidateId).sort()).toEqual(['a', 'b', 'c', 'd']);
     expect(selectBlindCards([], [], [])).toEqual([]);
@@ -72,7 +72,7 @@ describe('scoreBlind', () => {
     expect(r.methods.bm25.meanRating).toBe(1);
     expect(r.methods.bm25.p3).toBe(0.333);
     expect(r.methods.random).toMatchObject({ meanRating: 1, p3: 0.5, cards: 2 });
-    // Идеал — три лучшие оценки сессии 3,3,2: 7 + 7/log2(3) + 3/2.
+    // Идеал – три лучшие оценки сессии 3,3,2: 7 + 7/log2(3) + 3/2.
     const ideal = 7 + 7 / Math.log2(3) + 3 / 2;
     expect(r.methods.ours.ndcg3).toBeCloseTo((7 + 3 / Math.log2(3) + 7 / 2) / ideal, 3);
     expect(r.methods.bm25.ndcg3).toBeCloseTo((0 + 1 / Math.log2(3) + 3 / 2) / ideal, 3);
@@ -80,12 +80,12 @@ describe('scoreBlind', () => {
     expect(r.verdict).toBe('Ваши оценки: наш порядок 2,7 из 3, BM25 1,0, случайный 1,0');
   });
 
-  it('идеальный порядок — ndcg3 = 1; все нули — 0', () => {
+  it('идеальный порядок – ndcg3 = 1; все нули – 0', () => {
     expect(scoreBlind(cards, { c1: 3, c2: 3, c3: 2 }).methods.ours.ndcg3).toBe(1);
     expect(scoreBlind(cards, { c1: 0, c4: 0 }).methods.ours.ndcg3).toBe(0);
   });
 
-  it('чужой ключ и оценка вне 0..3 — ошибка ввода', () => {
+  it('чужой ключ и оценка вне 0..3 – ошибка ввода', () => {
     expect(() => scoreBlind(cards, { c9: 1 })).toThrow(BlindTokenError);
     expect(() => scoreBlind(cards, { c1: 4 })).toThrow(BlindTokenError);
   });
@@ -102,12 +102,12 @@ describe('токен разметки', () => {
     expect(p.exp).toBe(now + BLIND_TTL_MS);
   });
 
-  it('просрочен — ошибка', () => {
+  it('просрочен – ошибка', () => {
     const t = blindTokenFor('vac1', picks, SECRET, 0);
     expect(() => verifyBlindToken(t, SECRET, BLIND_TTL_MS + 1)).toThrow(/истекла/);
   });
 
-  it('подделка тела, чужой секрет и мусор — ошибка', () => {
+  it('подделка тела, чужой секрет и мусор – ошибка', () => {
     const t = signBlindToken({ vacancyId: 'v', cards: { c1: [{ method: 'random', rank: 1 }] }, exp: Date.now() + 1000 }, SECRET);
     const [, sig] = t.split('.');
     const forged = Buffer.from(JSON.stringify({ vacancyId: 'v', cards: { c1: [{ method: 'ours', rank: 1 }] }, exp: Date.now() + 1000 })).toString('base64url');

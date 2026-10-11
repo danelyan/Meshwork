@@ -18,7 +18,7 @@ describe('runner report: vitest json', () => {
     ],
   };
 
-  it('тесты, длительность, первая строка ошибки без ANSI; упавший файл — красный тест', () => {
+  it('тесты, длительность, первая строка ошибки без ANSI; упавший файл – красный тест', () => {
     const tests = parseVitestJson(JSON.stringify(report), '/w/repo')!;
     expect(tests).toEqual([
       { name: 'api health', passed: true, ms: 13 },

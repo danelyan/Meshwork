@@ -10,9 +10,9 @@ import { LIMITS } from './limits';
  * памяти: зависший или «тяжёлый» файл убивается `terminate()`, а не вешает
  * event loop сервера.
  *
- * Код потока — строка (`eval: true`), а пакеты (`unpdf`, `mammoth`) он грузит
+ * Код потока – строка (`eval: true`), а пакеты (`unpdf`, `mammoth`) он грузит
  * через `createRequire(<cwd>/package.json)`: так не нужен отдельный бандл
- * worker-файла в Next. Оба пакета — в `serverExternalPackages` (next.config.ts),
+ * worker-файла в Next. Оба пакета – в `serverExternalPackages` (next.config.ts),
  * поэтому лежат в `node_modules` и в standalone-сборке.
  */
 
@@ -22,7 +22,7 @@ export interface RawPdfItem {
   /** transform [a,b,c,d,e,f] */
   t: number[];
   eol: boolean;
-  /** доля «невидимых» глифов, сопоставленных этому элементу по операторам, 0..1; -1 — сопоставить не удалось */
+  /** доля «невидимых» глифов, сопоставленных этому элементу по операторам, 0..1; -1 – сопоставить не удалось */
   inv: number;
 }
 export interface RawPdfPage {

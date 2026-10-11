@@ -50,7 +50,7 @@ def test_register_validation():
 def test_versions_are_immutable_and_order_kept():
     r = make(("v2", M2), ("v1", M1))
     assert r.versions() == ["v2", "v1"]
-    r.register("v1", copy.deepcopy(M1))  # равная модель — без эффекта
+    r.register("v1", copy.deepcopy(M1))  # равная модель – без эффекта
     assert r.versions() == ["v2", "v1"]
     with pytest.raises(ValueError):
         r.register("v1", {**M1, "bias": 1.0})

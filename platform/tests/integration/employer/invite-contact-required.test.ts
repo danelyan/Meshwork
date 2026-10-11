@@ -3,7 +3,7 @@ import { createInvitation } from '@/server/employer/invitations';
 import { grantEmployerConsents } from '../../helpers/consents';
 import { prisma, resetDb } from '../../helpers/db';
 
-/** ТЗ 2.2 п. 2: приглашение содержит способ связи с компанией — без него отправка запрещена. */
+/** ТЗ 2.2 п. 2: приглашение содержит способ связи с компанией – без него отправка запрещена. */
 describe('приглашение требует контакт компании', () => {
   afterAll(() => prisma.$disconnect());
   beforeEach(() => resetDb());

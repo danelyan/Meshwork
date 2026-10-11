@@ -54,7 +54,7 @@ describe('реестр', () => {
     expect(list[1].parameters.a).toEqual({ type: 'number', required: true });
   });
 
-  it('повтор и недопустимое имя — Error при создании', () => {
+  it('повтор и недопустимое имя – Error при создании', () => {
     expect(() => createRegistry([add, greet])).not.toThrow();
     expect(() => createRegistry([add, add])).toThrow();
     for (const name of ['Add', '1add', 'a-b', '', 'a b']) expect(() => createRegistry([{ ...add, name }])).toThrow();
@@ -99,7 +99,7 @@ describe('реестр', () => {
     expect(await reg.call('greet', { name: 'x', loud: 'yes' })).toMatchObject({ ok: false, error: { code: 'invalid_arguments' } });
   });
 
-  it('исключение и отклонённый промис — tool_error с исходным сообщением', async () => {
+  it('исключение и отклонённый промис – tool_error с исходным сообщением', async () => {
     const reg = createRegistry([
       { ...add, name: 'boom', run: () => { throw new Error('склад недоступен'); } },
       { ...add, name: 'later', run: async () => { throw new Error('таймаут'); } },
@@ -108,7 +108,7 @@ describe('реестр', () => {
     expect(await reg.call('later', { a: 1, b: 1 })).toEqual({ ok: false, error: { code: 'tool_error', message: 'таймаут' } });
   });
 
-  it('несериализуемый результат — tool_error', async () => {
+  it('несериализуемый результат – tool_error', async () => {
     const cyc: Record<string, unknown> = {};
     cyc.self = cyc;
     const reg = createRegistry([{ ...add, run: () => cyc }]);
@@ -191,7 +191,7 @@ describe('цикл', () => {
     expect(e.steps).toHaveLength(5);
   });
 
-  it('сбой модели — model_failed с cause и накопленным журналом', async () => {
+  it('сбой модели – model_failed с cause и накопленным журналом', async () => {
     const boom = new Error('503');
     const { model } = scripted([call('c1', 'add', { a: 1, b: 1 }), boom]);
     const e = await agentErr(runAgent({ model, registry: createRegistry([add]), prompt: 'x' }));
@@ -200,7 +200,7 @@ describe('цикл', () => {
     expect(e.steps).toHaveLength(1);
   });
 
-  it('шаг неправильной формы — bad_model_output', async () => {
+  it('шаг неправильной формы – bad_model_output', async () => {
     const bad = [{ type: 'think' }, { type: 'tool_call', id: '', name: 'add', args: {} }, { type: 'tool_call', id: 'c', name: 5, args: {} }, { type: 'final', text: 42 }, null];
     for (const b of bad) {
       const e = await agentErr(runAgent({ model: scripted([b as unknown as ModelStep]).model, registry: createRegistry([add]), prompt: 'x' }));
@@ -208,7 +208,7 @@ describe('цикл', () => {
     }
   });
 
-  it('некорректный вход — bad_request, модель не вызывается', async () => {
+  it('некорректный вход – bad_request, модель не вызывается', async () => {
     for (const o of [{ prompt: '  ' }, { prompt: 'x', maxSteps: 0 }, { prompt: 'x', maxSteps: 2.5 }]) {
       const { model, seen } = scripted([final('x')]);
       const e = await agentErr(runAgent({ model, registry: createRegistry([add]), ...o }));

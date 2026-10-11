@@ -6,7 +6,7 @@ import type { RunnerConfig } from './config';
 import { JobManager, RunnerError } from './jobs';
 
 /**
- * HTTP API runner (контракт — contract.ts, ADR 0003):
+ * HTTP API runner (контракт – contract.ts, ADR 0003):
  *   GET  /health            без токена → {ok, mode, configured, queued, running}
  *   POST /uploads           тело .tar.gz (≤ 50 МБ) → 201 {uploadId, bytes, sha256}
  *   POST /run               JSON RunRequest → 202 {jobId}
@@ -44,7 +44,7 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
-    throw new RunnerError('bad_request', 'Тело — не JSON', 400);
+    throw new RunnerError('bad_request', 'Тело – не JSON', 400);
   }
 }
 

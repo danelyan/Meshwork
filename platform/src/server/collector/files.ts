@@ -8,7 +8,7 @@ import type { ExtractedDoc, SourceKind } from './types';
 
 export type FileKind = 'pdf' | 'docx' | 'text' | 'image';
 
-/** Картинка, которую принимает Vision OCR (JPEG, PNG — по магическим байтам). */
+/** Картинка, которую принимает Vision OCR (JPEG, PNG – по магическим байтам). */
 export type ImageMime = 'image/jpeg' | 'image/png';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -34,7 +34,7 @@ export function imageMime(buf: Buffer): ImageMime | null {
 }
 
 /**
- * Ширина и высота из заголовка PNG (IHDR) или JPEG (маркер SOFn) — без декодирования картинки.
+ * Ширина и высота из заголовка PNG (IHDR) или JPEG (маркер SOFn) – без декодирования картинки.
  * null, если заголовок не разобран (тогда решает сам Vision).
  */
 export function imageSize(buf: Buffer): { width: number; height: number } | null {
@@ -65,7 +65,7 @@ export function imageSize(buf: Buffer): { width: number; height: number } | null
   return null;
 }
 
-/** WebP / HEIC / GIF / BMP / TIFF — Vision OCR их не принимает (только JPEG, PNG, PDF). */
+/** WebP / HEIC / GIF / BMP / TIFF – Vision OCR их не принимает (только JPEG, PNG, PDF). */
 function otherImage(buf: Buffer): boolean {
   const ascii = buf.subarray(0, 16).toString('latin1');
   if (ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP') return true;
@@ -75,7 +75,7 @@ function otherImage(buf: Buffer): boolean {
 
 /**
  * Тип файла по содержимому, а не по заявленному mime: `%PDF-`, ZIP + `.docx` или текст (.md/.txt/.csv)
- * (+ наличие `word/document.xml` в первых байтах не гарантировано — проверит mammoth).
+ * (+ наличие `word/document.xml` в первых байтах не гарантировано – проверит mammoth).
  */
 export function detectFileKind(buf: Buffer, filename: string, mime: string): FileKind | null {
   const head = buf.subarray(0, 1024).toString('latin1');
@@ -83,7 +83,7 @@ export function detectFileKind(buf: Buffer, filename: string, mime: string): Fil
   if (imageMime(buf)) return 'image';
   const isZip = buf.length >= 4 && buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
   if (isZip && (/\.docx$/i.test(filename) || mime === DOCX_MIME)) return 'docx';
-  // текст — по расширению, но без NUL-байтов: бинарник с чужим расширением сюда не пройдёт
+  // текст – по расширению, но без NUL-байтов: бинарник с чужим расширением сюда не пройдёт
   if (TEXT_EXT.test(filename) && !buf.subarray(0, 8192).includes(0)) return 'text';
   return null;
 }
@@ -100,7 +100,7 @@ export function safeFilename(name: string): string {
   return clean || 'file';
 }
 
-/** UTF-8 (с BOM или без), иначе Windows-1251 — так сохраняют «Блокнот» и Excel в русской Windows. */
+/** UTF-8 (с BOM или без), иначе Windows-1251 – так сохраняют «Блокнот» и Excel в русской Windows. */
 export function decodeText(buf: Buffer): string {
   let text: string;
   try {
@@ -113,7 +113,7 @@ export function decodeText(buf: Buffer): string {
 
 /**
  * Строки текстового файла с исходной нумерацией (`file#p1:lN` совпадает с номером строки в редакторе).
- * Комментарии HTML в Markdown (`<!-- … -->`) при показе не видны — помечаются скрытыми, как невидимый
+ * Комментарии HTML в Markdown (`<!-- … -->`) при показе не видны – помечаются скрытыми, как невидимый
  * текст PDF, и в `text` не входят.
  */
 export function textLines(text: string, name: string, markdown: boolean): RawLine[] {
@@ -147,7 +147,7 @@ export function textLines(text: string, name: string, markdown: boolean): RawLin
 
 /**
  * PDF (unpdf) и DOCX (mammoth) ≤ 5 МБ, ≤ 20 стр.; координаты `file#pN:lM`.
- * Разбор — в worker_threads с таймаутом. Скрытый текст PDF помечается и не входит в `text`.
+ * Разбор – в worker_threads с таймаутом. Скрытый текст PDF помечается и не входит в `text`.
  */
 export async function extractFile(
   buf: Buffer,
@@ -163,23 +163,23 @@ export async function extractFile(
   const kind = detectFileKind(buf, name, mime);
   if (!kind) {
     if (otherImage(buf)) {
-      throw new AppError('unsupported_media_type', 'Этот формат изображения не поддерживается — сохрани его в JPG или PNG', 415);
+      throw new AppError('unsupported_media_type', 'Этот формат изображения не поддерживается – сохрани его в JPG или PNG', 415);
     }
     throw new AppError('unsupported_media_type', 'Поддерживаются PDF, DOCX, MD, TXT, CSV, JPG и PNG', 415);
   }
   const base = { sourceKind: opts.sourceKind ?? 'resume', title: name, origin: opts.origin ?? name } as const;
 
   if (kind === 'image') {
-    // До платного вызова Vision: лимит 20 Мпикс по заголовку — понятная ошибка вместо отказа сервиса,
+    // До платного вызова Vision: лимит 20 Мпикс по заголовку – понятная ошибка вместо отказа сервиса,
     // и «бомба» (огромные размеры в заголовке маленького файла) не уходит в OCR.
     const size = imageSize(buf);
     if (size && (size.width === 0 || size.height === 0)) {
-      throw new AppError('unsupported_media_type', 'Изображение повреждено — сохрани его заново в JPG или PNG', 415);
+      throw new AppError('unsupported_media_type', 'Изображение повреждено – сохрани его заново в JPG или PNG', 415);
     }
     if (size && size.width * size.height > LIMITS.ocrMaxPixels) {
       throw new AppError(
         'payload_too_large',
-        `Изображение ${size.width}×${size.height} больше 20 Мпикс — уменьши его или пришли PDF/DOCX`,
+        `Изображение ${size.width}×${size.height} больше 20 Мпикс – уменьши его или пришли PDF/DOCX`,
         413,
       );
     }
@@ -188,7 +188,7 @@ export async function extractFile(
       lines = await recognizeText(buf, imageMime(buf)!, name, { signal: opts.signal });
     } catch (e) {
       console.warn('ocr: картинка не распознана', e instanceof AppError ? e.code : 'error');
-      throw new AppError('ocr_failed', 'Не удалось распознать текст на изображении — пришли PDF/DOCX или вставь текст', 422);
+      throw new AppError('ocr_failed', 'Не удалось распознать текст на изображении – пришли PDF/DOCX или вставь текст', 422);
     }
     const meta: Record<string, unknown> = { fileKind: kind, ocr: true };
     if (lines.length === 0) meta.empty = true;
@@ -216,7 +216,7 @@ export async function extractFile(
     lines = pdfPagesToLines(res.pages, name);
     meta.pages = res.numPages;
   } else {
-    // DOCX: страниц нет в модели документа — всё на «странице 1», строки по абзацам.
+    // DOCX: страниц нет в модели документа – всё на «странице 1», строки по абзацам.
     lines = res.text
       .split(/\r?\n/)
       .map((t) => t.trim())
@@ -225,7 +225,7 @@ export async function extractFile(
   }
   if (lines.length === 0 && res.kind === 'pdf') {
     // Скан без текстового слоя → OCR. Синхронный Vision принимает PDF только из одной страницы;
-    // многостраничный — по картинке страницы (recognizePdfScan); сбой OCR — meta.empty + meta.ocrFailed.
+    // многостраничный – по картинке страницы (recognizePdfScan); сбой OCR – meta.empty + meta.ocrFailed.
     if (res.numPages === 1) {
       try {
         lines = await recognizeText(buf, 'application/pdf', name, { signal: opts.signal, page: 1 });

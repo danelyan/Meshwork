@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 const EraseBody = z.object({ confirm: z.string().max(64), reason: z.string().max(1000) });
 
 /**
- * Удалить аккаунт по запросу субъекта ПДн (owner, support) через `eraseOwnAccount`. `confirm` — id пользователя,
- * введённый вручную (второе подтверждение). В журнал — id и факт удаления, без ПДн.
+ * Удалить аккаунт по запросу субъекта ПДн (owner, support) через `eraseOwnAccount`. `confirm` – id пользователя,
+ * введённый вручную (второе подтверждение). В журнал – id и факт удаления, без ПДн.
  */
 export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {
   const staff = await requireStaff(req, 'erase_account');

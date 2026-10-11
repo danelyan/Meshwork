@@ -1,5 +1,5 @@
 // Лексический поиск по базе знаний без эмбеддингов: нормализация, лёгкий стемминг русских
-// окончаний, BM25 по секциям (заголовок весит вдвое). Корпус — десятки секций, индекс
+// окончаний, BM25 по секциям (заголовок весит вдвое). Корпус – десятки секций, индекс
 // строится один раз при первом запросе.
 import { KNOWLEDGE_DOCS } from './corpus';
 import type { KnowledgeDoc, KnowledgeSection } from './parse';
@@ -90,7 +90,7 @@ export function buildIndex(docs: KnowledgeDoc[]): Index {
   const df = new Map<string, number>();
   for (const d of docs) {
     for (const s of d.sections) {
-      // Заголовок секции и документа — дважды: попадание в заголовок важнее упоминания в тексте.
+      // Заголовок секции и документа – дважды: попадание в заголовок важнее упоминания в тексте.
       const toks = [...tokens(s.title), ...tokens(s.title), ...tokens(d.title), ...tokens(s.text)];
       const tf = new Map<string, number>();
       for (const t of toks) tf.set(t, (tf.get(t) ?? 0) + 1);

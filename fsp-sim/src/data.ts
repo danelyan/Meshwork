@@ -50,7 +50,7 @@ export interface NewEventInput {
 }
 
 export interface AchievementInput {
-  /** Существующее соревнование либо описание нового — ровно одно из двух. */
+  /** Существующее соревнование либо описание нового – ровно одно из двух. */
   event_id?: string;
   event?: NewEventInput;
   place: number | null;
@@ -79,7 +79,7 @@ function contentPrint(d: Dataset): string {
 
 /**
  * Реестр в памяти: индексы по набору данных, согласия спортсменов и ручные правки песочницы стенда.
- * Исходный набор (`base`) не меняется — к нему возвращает `reset()`. Рабочая копия пишется в файл
+ * Исходный набор (`base`) не меняется – к нему возвращает `reset()`. Рабочая копия пишется в файл
  * состояния, если он задан; после смены исходного набора файл состояния отбрасывается.
  */
 export class Registry {
@@ -170,7 +170,7 @@ export class Registry {
   }
 
   private commit(): void {
-    // Создали и удалили — реестр снова равен исходному, пометка «изменён» не нужна.
+    // Создали и удалили – реестр снова равен исходному, пометка «изменён» не нужна.
     this.modified = contentPrint(this.dataset) !== this.baseContent;
     this.reindex();
     this.persist();
@@ -286,7 +286,7 @@ export class Registry {
 
   insertAthlete(athlete: Athlete): Athlete {
     this.dataset.athletes.push(athlete);
-    // Как и у остальных участников набора: согласие платформе команды дано сразу, партнёру — нет.
+    // Как и у остальных участников набора: согласие платформе команды дано сразу, партнёру – нет.
     this.setConsent({ fsp_id: athlete.fsp_id, client_id: 'fsp-career', scopes: [...CONSENT_SCOPES], granted_at: new Date().toISOString() });
     this.commit();
     return athlete;
@@ -377,7 +377,7 @@ export class Registry {
       throw new ApiError(409, 'conflict', 'У участника уже есть запись об этом соревновании: удалите её, чтобы внести другую');
     }
     const ev = existing ?? this.createEvent(input.event!);
-    // Баллы — как у строки протокола с тем же местом, если она есть: вручную их не вводят.
+    // Баллы – как у строки протокола с тем же местом, если она есть: вручную их не вводят.
     const sameplace = place === null ? undefined : this.resultsOf(ev.event_id).find((r) => r.place === place);
     this.counters.achievement += 1;
     const team = ev.entrant_type === 'team';
@@ -433,7 +433,7 @@ export class Registry {
       throw new ApiError(409, 'limit_reached', `У участника не больше ${SANDBOX_LIMITS.ranks_per_athlete} записей о разрядах`);
     }
     const year = Number(input.assigned_on.slice(0, 4));
-    // Срок действия — как в генераторе набора: МС бессрочно, КМС три года, остальные два.
+    // Срок действия – как в генераторе набора: МС бессрочно, КМС три года, остальные два.
     const years = input.rank === 'МС' ? null : input.rank === 'КМС' ? 3 : 2;
     this.counters.rank += 1;
     const rank: Rank = {

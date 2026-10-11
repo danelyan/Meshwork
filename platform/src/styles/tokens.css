@@ -4,10 +4,10 @@
  * Astra: кандидат синий, работодатель бордовый; красный отмечает пробелы и опасные действия.
  *
  * Три слоя:
- *  1. Примитивы `--p-*` — палитра, от темы не зависят. Компоненты их НЕ читают.
- *  2. Смысловые (`--ink`, `--paper`, `--muted`, `--glass*`, `--surface-*`, `--border-*`, `--blue`, `--on-ink`…) —
- *     светлые значения здесь, тёмные — в блоке `:root[data-theme='dark']` ниже. Компоненты читают только их.
- *  3. Компонентные (`--stage-*`, `--avatar-stage*`, `--call-*`, `--role-*`, `--landing-*`) — производные от смысловых.
+ *  1. Примитивы `--p-*` – палитра, от темы не зависят. Компоненты их НЕ читают.
+ *  2. Смысловые (`--ink`, `--paper`, `--muted`, `--glass*`, `--surface-*`, `--border-*`, `--blue`, `--on-ink`…) –
+ *     светлые значения здесь, тёмные – в блоке `:root[data-theme='dark']` ниже. Компоненты читают только их.
+ *  3. Компонентные (`--stage-*`, `--avatar-stage*`, `--call-*`, `--role-*`, `--landing-*`) – производные от смысловых.
  * Тема: атрибут data-theme='dark' на <html> (components/shell/theme.ts); сейчас только на /consultant.
  */
 :root {
@@ -93,7 +93,7 @@
   --error: var(--p-red-700);
   --danger-border: var(--p-red-700);
   --danger-text: var(--p-red-700);
-  --danger-accent: var(--astra-red); /* красный акцент (кнопка/статус «нет»): в тёмной — светлый красный, контраст ≥ 4,5:1 */
+  --danger-accent: var(--astra-red); /* красный акцент (кнопка/статус «нет»): в тёмной – светлый красный, контраст ≥ 4,5:1 */
   --tag-red-border: var(--ink);
   --tag-red-text: var(--ink);
   --backdrop: rgba(17, 17, 17, 0.42);
@@ -230,7 +230,7 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --stage-text: #ffffff;
   --stage-text-soft: rgba(255, 255, 255, 0.8);
 
-  /* lane call: режим звонка на тёмной сцене (CallPanel) — не зависят от темы страницы, сцена всегда тёмная */
+  /* lane call: режим звонка на тёмной сцене (CallPanel) – не зависят от темы страницы, сцена всегда тёмная */
   --call-on-stage: #ffffff;
   --call-on-stage-soft: rgba(255, 255, 255, 0.72);
   --call-control: rgba(255, 255, 255, 0.08);
@@ -270,8 +270,8 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
 
 /*
  * Тёмная тема (лейн theme, решение владельца 11.10): data-theme='dark' на <html> ставит components/shell/theme.ts
- * и инлайн-скрипт в app/layout.tsx — только на /consultant. Панель созвона ([data-call] на .sideStage, не на корне сцены: чат слева в теме страницы) тёмная
- * всегда, поэтому тот же блок применяется и к нему. Material dark: тёмно-серая бумага (не чёрная), глубина —
+ * и инлайн-скрипт в app/layout.tsx – только на /consultant. Панель созвона ([data-call] на .sideStage, не на корне сцены: чат слева в теме страницы) тёмная
+ * всегда, поэтому тот же блок применяется и к нему. Material dark: тёмно-серая бумага (не чёрная), глубина –
  * более светлыми поверхностями (стекло = белый .05 поверх бумаги), акцент обесцвечен (#8a7dff), текст ≥ 4,5:1.
  * Алиасы (--bg, --text, --focus, --accent-*, --meter-*, --role-*) переобъявлены: var() на :root уже вычислен
  * в светлые значения. Новый смысловой токен добавлять в ОБА блока.
@@ -386,7 +386,7 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --stage-text-soft: var(--text-soft);
 }
 
-/* Движение: длительности и кривая для CSS; те же значения в секундах — components/ui/motion.ts.
+/* Движение: длительности и кривая для CSS; те же значения в секундах – components/ui/motion.ts.
    При prefers-reduced-motion JS-анимации Motion отключает MotionProvider (reducedMotion="user"). */
 :root {
   --motion-fast: 120ms;

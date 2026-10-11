@@ -1,6 +1,6 @@
 // Подтверждающий тест (ADR-0002, дополнение 11.10): короткая попытка после индекса честности high.
 // Чистые функции: пул, остановка, решение. Грейд по нему считается по объединению ответов исходной попытки
-// (без заданий с флагами времени и ловушки) и подтверждающей. Числа — ПРЕДЛОЖЕНИЕ, на людях не оценены.
+// (без заданий с флагами времени и ловушки) и подтверждающей. Числа – ПРЕДЛОЖЕНИЕ, на людях не оценены.
 import type { Grade } from '../types';
 
 import type { IntegrityLevel } from './integrity';
@@ -9,14 +9,14 @@ import { CONFIRM_PROB, EARLY_STOP_PROB, GRADE_CUT, type SelectableTemplate } fro
 
 export const CONFIRM_MIN_ITEMS = 6;
 export const CONFIRM_MAX_ITEMS = 8;
-/** Лимит времени подтверждающего теста — 0,7 обычного (для флага overtime). */
+/** Лимит времени подтверждающего теста – 0,7 обычного (для флага overtime). */
 export const CONFIRM_TIME_FACTOR = 0.7;
 /** Ловушек: в обычной попытке 2, в подтверждающей 1. */
 export const GRADE_CANARIES = 2;
 export const CONFIRM_CANARIES = 1;
 /**
  * Согласованность (11.10, решение владельца по симуляции лейна D): |θ̂(чистые исходные) − θ̂(подтверждающие)| ≤
- * CONSISTENCY_Z · sqrt(SE_исх² + SE_подтв²) — SE разности. Без неё читер без помощи проходил 52–58 % (персоны).
+ * CONSISTENCY_Z · sqrt(SE_исх² + SE_подтв²) – SE разности. Без неё читер без помощи проходил 52–58 % (персоны).
  */
 export const CONSISTENCY_Z = 2;
 
@@ -26,7 +26,7 @@ export function confirmTimeLimit(timeLimitSec: number): number {
 
 /**
  * Пул выбора следующего задания подтверждающего теста: сначала шаблоны, которых не было в исходной попытке.
- * Когда они кончились (в подкатегории 14 семейств, исходная попытка берёт 7–13), — шаблоны исходной попытки
+ * Когда они кончились (в подкатегории 14 семейств, исходная попытка берёт 7–13), – шаблоны исходной попытки
  * с новыми числами (генератор, другой seed). Уже показанные в этой попытке исключает selectNext.
  */
 export function confirmSelectionPool<T extends SelectableTemplate>(pool: readonly T[], sourceTemplateIds: ReadonlySet<string>, shownIds: ReadonlySet<string>): T[] {
@@ -41,7 +41,7 @@ export function confirmRemaining(pool: readonly SelectableTemplate[], shownIds: 
 }
 
 /**
- * Остановка подтверждающего теста: CONFIRM_MAX_ITEMS или пул исчерпан; с CONFIRM_MIN_ITEMS — как только решение по
+ * Остановка подтверждающего теста: CONFIRM_MAX_ITEMS или пул исчерпан; с CONFIRM_MIN_ITEMS – как только решение по
  * объединённым ответам уверенное (P ≥ 0,9 или ≤ 0,1).
  */
 export function confirmShouldStop(answered: number, combined: readonly Response[], grade: Grade, remaining: number): boolean {

@@ -41,8 +41,8 @@ function AblationBlock({ ab }: { ab: NonNullable<MatchingResults['ablation']> })
     <>
       <h3>Абляция: что даёт каждый сигнал формулы</h3>
       <p className={styles.soft}>
-        {ab.vacancies} вакансий × {ab.profiles} профилей. Сигнал выключаем по одному, остальная формула прежняя; Δ — разница с полной формулой
-        (минус — сигнал помогает), в скобках 95 % интервал (парный бутстреп по вакансиям). Разметку сделал один генератор, а не независимые эксперты, —
+        {ab.vacancies} вакансий × {ab.profiles} профилей. Сигнал выключаем по одному, остальная формула прежняя; Δ – разница с полной формулой
+        (минус – сигнал помогает), в скобках 95 % интервал (парный бутстреп по вакансиям). Разметку сделал один генератор, а не независимые эксперты, –
         цифры показывают вклад в этом наборе, а не в жизни.
         {ab.rows.some((r) => r.signal === 'project' && r.measured) &&
           ' Проекты и созвоны в наборе смоделированы (у ~30 % и ~40 % профилей, с шумом ~10 %): это допущения, а не живые данные, поэтому их строки показывают механику, а не доказанный эффект.'}
@@ -64,8 +64,8 @@ function AblationBlock({ ab }: { ab: NonNullable<MatchingResults['ablation']> })
                 <td>{r.signal === 'full' ? r.label : `без: ${r.label}`}</td>
                 <td className={styles.num}>{dec(r.p5.mean)}</td>
                 <td className={styles.num}>{dec(r.ndcg10.mean)}</td>
-                <td className={styles.num}>{!r.measured ? 'нет данных' : r.dP5 ? `${sign(r.dP5.mean)} (${sign(r.dP5.lo)}; ${sign(r.dP5.hi)})` : '—'}</td>
-                <td className={styles.num}>{!r.measured ? 'нет данных' : r.dNdcg10 ? `${sign(r.dNdcg10.mean)} (${sign(r.dNdcg10.lo)}; ${sign(r.dNdcg10.hi)})` : '—'}</td>
+                <td className={styles.num}>{!r.measured ? 'нет данных' : r.dP5 ? `${sign(r.dP5.mean)} (${sign(r.dP5.lo)}; ${sign(r.dP5.hi)})` : '–'}</td>
+                <td className={styles.num}>{!r.measured ? 'нет данных' : r.dNdcg10 ? `${sign(r.dNdcg10.mean)} (${sign(r.dNdcg10.lo)}; ${sign(r.dNdcg10.hi)})` : '–'}</td>
               </tr>
             ))}
           </tbody>
@@ -81,7 +81,7 @@ function CalibrationBlock({ cal }: { cal: NonNullable<MatchingResults['calibrati
     <>
       <h3>Калибровка: балл подбора и вероятность</h3>
       <p className={styles.soft}>
-        Сам балл формулы — не вероятность: в бине «0,4–0,5» подходят ~90 % профилей, в бине «0,0–0,1» — 13 %. Мы пересчитываем балл в вероятность
+        Сам балл формулы – не вероятность: в бине «0,4–0,5» подходят ~90 % профилей, в бине «0,0–0,1» – 13 %. Мы пересчитываем балл в вероятность
         «кандидат релевантен» (изотоническая регрессия, кусочно-линейная таблица в коде). Разметка здесь синтетическая ({cal.profiles} профилей ×{' '}
         {cal.vacancies} вакансий, {cal.pairsShown} показанных пар, скрытая истина генератора), а не исходы реальных приглашений: цифры показывают,
         что механика работает, а не что вероятности верны в жизни. Таблица пересчитывается по исходам приглашений (eval/matching/outcomes.ts).
@@ -95,8 +95,8 @@ function CalibrationBlock({ cal }: { cal: NonNullable<MatchingResults['calibrati
             {r.curveBefore.map((b) => (
               <tr key={b.lo}>
                 <td>{dec(b.lo)}–{dec(b.hi)}</td>
-                <td className={styles.num}>{b.meanScore === null ? '—' : dec(b.meanScore)}</td>
-                <td className={styles.num}>{b.share === null ? '—' : pct(b.share)}</td>
+                <td className={styles.num}>{b.meanScore === null ? '–' : dec(b.meanScore)}</td>
+                <td className={styles.num}>{b.share === null ? '–' : pct(b.share)}</td>
                 <td className={styles.num}>{b.n}</td>
               </tr>
             ))}
@@ -122,8 +122,8 @@ function CalibrationBlock({ cal }: { cal: NonNullable<MatchingResults['calibrati
         </table>
       </div>
       <p className={styles.soft}>
-        Brier после: калибровка подобрана на половине вакансий, оценена на другой (и наоборот). ECE после — на всех парах, без отложенной выборки,
-        поэтому оптимистична. Для цели «сильный» выигрыша на отложенной половине нет — показываем вероятность только для «релевантен».
+        Brier после: калибровка подобрана на половине вакансий, оценена на другой (и наоборот). ECE после – на всех парах, без отложенной выборки,
+        поэтому оптимистична. Для цели «сильный» выигрыша на отложенной половине нет – показываем вероятность только для «релевантен».
       </p>
     </>
   );
@@ -144,9 +144,9 @@ function BlindBlock({ bl }: { bl: NonNullable<MatchingResults['blind']> }) {
       <h3>Независимая разметка (слепая)</h3>
       <p className={styles.soft}>
         Оговорка: размечали два ИИ-агента разных моделей ({bl.labelers.a} и {bl.labelers.b}), не люди. {bl.vacancies} вакансий × {bl.pool} кандидатов
-        ({bl.pairs} пар) — первые места объединённой выдачи нашего подбора и BM25. Размечающие видели только текст вакансии и профиля, без скрытой истины
-        генератора и без баллов; кандидаты вне пула считаются нерелевантными. Согласие A и B — взвешенная κ Коэна {dec(bl.kappa.ab)}; с разметкой
-        генератора: A {dec(bl.kappa.aVsGenerator)}, B {dec(bl.kappa.bVsGenerator)}. Интервалы — бутстреп по {bl.vacancies} вакансиям, поэтому широкие.
+        ({bl.pairs} пар) – первые места объединённой выдачи нашего подбора и BM25. Размечающие видели только текст вакансии и профиля, без скрытой истины
+        генератора и без баллов; кандидаты вне пула считаются нерелевантными. Согласие A и B – взвешенная κ Коэна {dec(bl.kappa.ab)}; с разметкой
+        генератора: A {dec(bl.kappa.aVsGenerator)}, B {dec(bl.kappa.bVsGenerator)}. Интервалы – бутстреп по {bl.vacancies} вакансиям, поэтому широкие.
       </p>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
@@ -195,7 +195,7 @@ function ExtendedBlock({ title, ext }: { title: string; ext: MatchingExtended })
       <h3>{title}</h3>
       {(ext.vacancies || ext.profiles) && (
         <p className={styles.soft}>
-          {ext.vacancies ?? '—'} вакансий × {ext.profiles ?? '—'} профилей.
+          {ext.vacancies ?? '–'} вакансий × {ext.profiles ?? '–'} профилей.
         </p>
       )}
       <div className={styles.tableWrap}>
@@ -218,7 +218,7 @@ function ExtendedBlock({ title, ext }: { title: string; ext: MatchingExtended })
                   const x = v[m as keyof typeof v];
                   return (
                     <td key={m} className={styles.num}>
-                      {typeof x === 'number' ? dec(x) : '—'}
+                      {typeof x === 'number' ? dec(x) : '–'}
                     </td>
                   );
                 })}
@@ -245,16 +245,16 @@ function ExtendedBlock({ title, ext }: { title: string; ext: MatchingExtended })
 /** «Длина теста и надёжность»: перебор лимитов длины (ретест κ) и ширина банка по подкатегориям. */
 function LengthBlock({ sweep, bank, itemLimits }: { sweep: LengthSweep | null; bank: BankWidth | null; itemLimits: ItemLimits }) {
   if (!sweep && !bank) return null;
-  const opt = (x: number | null, f: (v: number) => string) => (x === null ? '—' : f(x));
+  const opt = (x: number | null, f: (v: number) => string) => (x === null ? '–' : f(x));
   const len = (x: number) => x.toFixed(1).replace('.', ',');
   const short = bank ? bank.rows.filter((r) => bank.maxes.some((m) => (r.shortBy[String(m)] ?? 0) > 0 || (r.shortByRetest[String(m)] ?? 0) > 0)) : [];
   return (
     <>
       <h3 id="length">Длина теста и надёжность</h3>
       <p className={styles.soft}>
-        Сейчас основная фаза — {formatItemRange(itemLimits)} заданий (+ дозадавание до 3). Длиннее тест — выше повторяемость, но жюри и кандидаты
-        проходят его сами. Ниже — тот же движок с другими лимитами длины, остальное без изменений
-        {sweep ? `: seed ${sweep.config.seed}, ${sweep.config.n} кандидатов на подкатегорию, модель ошибки «экземпляр»` : ''}. Ранняя остановка —
+        Сейчас основная фаза – {formatItemRange(itemLimits)} заданий (+ дозадавание до 3). Длиннее тест – выше повторяемость, но жюри и кандидаты
+        проходят его сами. Ниже – тот же движок с другими лимитами длины, остальное без изменений
+        {sweep ? `: seed ${sweep.config.seed}, ${sweep.config.n} кандидатов на подкатегорию, модель ошибки «экземпляр»` : ''}. Ранняя остановка –
         основная фаза кончилась по уверенному решению раньше лимита.
       </p>
       {sweep && (
@@ -301,7 +301,7 @@ function LengthBlock({ sweep, bank, itemLimits }: { sweep: LengthSweep | null; b
           любой вариант выше вместе с дозадаванием во всех {bank.rows.length} подкатегориях.{' '}
           {short.length > 0
             ? `Две попытки подряд без единого повторного семейства не помещаются в: ${short
-                .map((r) => `${r.title} (${r.reachable}; при ${bank.maxes.filter((m) => (r.shortByRetest[String(m)] ?? 0) > 0).map((m) => `${m} — не хватает ${r.shortByRetest[String(m)]}`).join(', ')})`)
+                .map((r) => `${r.title} (${r.reachable}; при ${bank.maxes.filter((m) => (r.shortByRetest[String(m)] ?? 0) > 0).map((m) => `${m} – не хватает ${r.shortByRetest[String(m)]}`).join(', ')})`)
                 .join('; ')}. Это не блокирует тест: ротация между попытками мягкая, растёт только доля повторённых семейств.`
             : 'Две попытки подряд без повторов помещаются везде.'}
         </p>
@@ -320,7 +320,7 @@ export function ValidationView({
   grade: GradeTestData;
   matching: MatchingResults;
   juryLink?: boolean;
-  /** Блок «Длина теста и надёжность» (results.json: lengthSweep, bankWidth); не передан — блока нет. */
+  /** Блок «Длина теста и надёжность» (results.json: lengthSweep, bankWidth); не передан – блока нет. */
   length?: { sweep: LengthSweep | null; bank: BankWidth | null };
   itemLimits?: ItemLimits;
 }) {
@@ -342,17 +342,17 @@ export function ValidationView({
         />
 
         <Panel as="section" className={styles.section} aria-labelledby="caveats">
-          <h2 id="caveats">Оговорки — читать до цифр</h2>
+          <h2 id="caveats">Оговорки – читать до цифр</h2>
           <ul className={styles.list}>
             <li>
-              <b>Все числа — синтетика и симуляция,</b> не измерение на людях. Живой разметки нет: тест не показывали реальным кандидатам.
+              <b>Все числа – синтетика и симуляция,</b> не измерение на людях. Живой разметки нет: тест не показывали реальным кандидатам.
             </li>
             <li>
-              <b>Параметры заданий теста (a, b) — экспертные,</b> на людях не оценены. Симуляция проверяет механику при этих параметрах, а не то, что
+              <b>Параметры заданий теста (a, b) – экспертные,</b> на людях не оценены. Симуляция проверяет механику при этих параметрах, а не то, что
               задания измеряют умение.
             </li>
             <li>
-              <b>Разметку релевантности для подбора делал агент,</b> второго оценщика нет. Правило разметки близко к формуле подбора, поэтому цифры — проверка
+              <b>Разметку релевантности для подбора делал агент,</b> второго оценщика нет. Правило разметки близко к формуле подбора, поэтому цифры – проверка
               согласованности, а не независимая валидация.
             </li>
             <li>
@@ -372,7 +372,7 @@ export function ValidationView({
           <ul className={styles.list}>
             <li>
               <b>Тест не защищён от нейросети в соседнем окне.</b> Задание с числовым ответом решает любая современная модель, и мы не измеряли, насколько
-              это ломает категорию. Поэтому категория из теста — результат короткого адаптивного теста, а не доказательство умения на практике.
+              это ломает категорию. Поэтому категория из теста – результат короткого адаптивного теста, а не доказательство умения на практике.
             </li>
             <li>
               <b>Защищает он от слива ответов:</b> уникальные экземпляры каждого задания (генераторы) и ротация заданий между попытками. Подсмотренный у
@@ -384,7 +384,7 @@ export function ValidationView({
             </li>
           </ul>
           <div className={styles.links}>
-            <Button href="/consultant?call=1" size="sm">
+            <Button href="/interview" size="sm">
               Созвон с ИИ-интервьюером
             </Button>
             <Button href="/projects" size="sm">
@@ -395,7 +395,7 @@ export function ValidationView({
 
         <section className={styles.section} aria-labelledby="grade">
           <h2 id="grade">Тест на грейд</h2>
-          <p className={styles.soft}>Политика {grade.policy}. Источник чисел — {grade.doc}.</p>
+          <p className={styles.soft}>Политика {grade.policy}. Источник чисел – {grade.doc}.</p>
           <div className={styles.stats}>
             <Stat value={range(persona.map((r) => r.retest), pct)} label={`совпадение исхода двух попыток (цель ${grade.targets.retest})`} />
             <Stat value={range(persona.map((r) => r.kappa), dec)} label={`κ Коэна, test-retest (цель ${grade.targets.kappa})`} />
@@ -404,12 +404,12 @@ export function ValidationView({
           </div>
           <p className={styles.soft}>
             Цели по повторяемости и разделению <b>не достигнуты</b>: короткий тест (SE оценки ≈ 0,45) не даёт 90 % совпадения. Повторяемость при тех же
-            ответах — 100 % по построению (seed → задания, код → проверка).
+            ответах – 100 % по построению (seed → задания, код → проверка).
           </p>
 
           <h3>Персоны по подкатегориям: вымышленные кандидаты, модель знаний задана агентом</h3>
           <p className={styles.soft}>
-            Seed 1, 1000 попыток на персону и заявленный грейд в каждой из 18 подкатегорий, боевой движок теста без LLM и БД; в таблице — среднее по
+            Seed 1, 1000 попыток на персону и заявленный грейд в каждой из 18 подкатегорий, боевой движок теста без LLM и БД; в таблице – среднее по
             подкатегориям.
           </p>
           <div className={styles.tableWrap}>
@@ -427,7 +427,7 @@ export function ValidationView({
                 {grade.personas.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      {p.id} — {p.legend}
+                      {p.id} – {p.legend}
                     </td>
                     <td>{p.truth}</td>
                     <td className={styles.num}>{dec(p.pJunior, 2)}</td>
@@ -442,7 +442,7 @@ export function ValidationView({
 
           <h3>θ-синтетика: 2000 кандидатов на подкатегорию, среднее по специализации</h3>
           <p className={styles.soft}>
-            Две популяции: persona — подобрана по персонам, legacy — исходные допущения. Какая ближе к людям, неизвестно без живой разметки.
+            Две популяции: persona – подобрана по персонам, legacy – исходные допущения. Какая ближе к людям, неизвестно без живой разметки.
           </p>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
@@ -477,7 +477,7 @@ export function ValidationView({
             </table>
           </div>
           <p className={styles.soft}>
-            * κ и AUC посчитаны на текущей механике с дозадаванием (политика v7). «Утечка трюка» — атака: кандидат заранее знает решение 30 % шаблонов;
+            * κ и AUC посчитаны на текущей механике с дозадаванием (политика v7). «Утечка трюка» – атака: кандидат заранее знает решение 30 % шаблонов;
             ложное подтверждение растёт, защита держится на разных экземплярах заданий и ротации семейств между попытками.
           </p>
           {length && <LengthBlock sweep={length.sweep} bank={length.bank} itemLimits={itemLimits} />}
@@ -488,8 +488,8 @@ export function ValidationView({
         <section className={styles.section} aria-labelledby="matching">
           <h2 id="matching">Подбор кандидатов работодателю</h2>
           <p className={styles.soft}>
-            Тот же код ранжирования, что в кабинете работодателя, на {s.profiles} синтетических профилях × {s.vacancies} демо-вакансиях. Базовая линия —
-            «больше подтверждённых утверждений своей специализации — выше», без учёта требований вакансии. Числа читаются из закоммиченного
+            Тот же код ранжирования, что в кабинете работодателя, на {s.profiles} синтетических профилях × {s.vacancies} демо-вакансиях. Базовая линия –
+            «больше подтверждённых утверждений своей специализации – выше», без учёта требований вакансии. Числа читаются из закоммиченного
             eval/matching/results.json.
           </p>
           <div className={styles.stats}>
@@ -499,7 +499,7 @@ export function ValidationView({
             <Stat value={dec(s.baseline.ndcgAt5)} label={`nDCG@${s.k}: базовая линия`} />
           </div>
           <p className={styles.soft}>
-            Потолок P@{s.k} ниже 1: у части вакансий релевантных меньше {s.k}. Релевантность 0/1/2 — nDCG учитывает степень.
+            Потолок P@{s.k} ниже 1: у части вакансий релевантных меньше {s.k}. Релевантность 0/1/2 – nDCG учитывает степень.
           </p>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
@@ -535,7 +535,7 @@ export function ValidationView({
           <h3>Как повторить (из platform/, без БД и сети)</h3>
           <pre className={styles.code}>{'npx tsx eval/matching/run.ts --no-write\nnpx tsx eval/matching/ablation.ts --no-write\nnpx tsx eval/matching/blind-eval.ts --no-write\nnpx tsx eval/matching/calibration.ts --no-write'}</pre>
           <p className={styles.soft}>
-            Свой набор вакансий, кандидатов и разметки можно прогнать через то же ранжирование прямо на сайте — страница «Проверить на своих данных» (/evaluate)
+            Свой набор вакансий, кандидатов и разметки можно прогнать через то же ранжирование прямо на сайте – страница «Проверить на своих данных» (/evaluate)
             или POST /api/evaluate.
           </p>
         </section>

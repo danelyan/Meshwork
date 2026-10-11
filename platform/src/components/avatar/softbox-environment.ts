@@ -5,8 +5,8 @@ import type { SoftboxEnvironment } from './lighting';
 /**
  * Сцена-окружение «фотостудия» для PMREMGenerator.fromScene: тёмная комната (BackSide) и светящиеся
  * панели-софтбоксы, развёрнутые к центру. Металл отражает прежде всего окружение, а не направленные
- * лампы, поэтому тень на металле получается только если в окружении есть тёмная сторона —
- * RoomEnvironment светлый со всех сторон. Приём тот же, что в RoomEnvironment: яркость панели —
+ * лампы, поэтому тень на металле получается только если в окружении есть тёмная сторона –
+ * RoomEnvironment светлый со всех сторон. Приём тот же, что в RoomEnvironment: яркость панели –
  * цвет MeshBasicMaterial больше единицы.
  */
 export function buildSoftboxScene(spec: SoftboxEnvironment): {

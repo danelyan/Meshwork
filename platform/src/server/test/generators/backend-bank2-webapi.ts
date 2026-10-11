@@ -1,5 +1,5 @@
 // Банк-2 backend.web-api: +3 Junior, +5 Middle, +4 Senior. Пробелы: тесты API, коды ошибок, CORS, согласование
-// содержимого, merge-patch. Ответ считает код (R-T-02); a, b — ПРЕДЛОЖЕНИЕ (экспертные).
+// содержимого, merge-patch. Ответ считает код (R-T-02); a, b – ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator } from '../types';
 import { fam, notHalf, until } from './backend-bank2-util';

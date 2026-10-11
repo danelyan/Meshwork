@@ -17,7 +17,7 @@ const AsideContext = createContext<AsideState>({ data: undefined, refresh: () =>
 /**
  * Правая колонка сцены («Твой путь», «Документы», «Подсказка») держит данные здесь. Начальные приходят
  * с сервера страницы; `refresh()` из ленты (конец хода консультанта, подтверждение утверждений, шаг
- * знакомства) через 500 мс перечитывает GET /api/consultant/aside. Ошибка запроса — колонка остаётся
+ * знакомства) через 500 мс перечитывает GET /api/consultant/aside. Ошибка запроса – колонка остаётся
  * прежней. Таймера-опроса нет.
  */
 export function AsideProvider({ initial, children }: { initial?: SceneAsideData; children: ReactNode }) {
@@ -25,7 +25,7 @@ export function AsideProvider({ initial, children }: { initial?: SceneAsideData;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ctrl = useRef<AbortController | null>(null);
   const enabled = initial !== undefined;
-  // Страница перерисовалась на сервере (мягкое обновление: «Скрыть», выбор роли, итог знакомства) — взять её данные.
+  // Страница перерисовалась на сервере (мягкое обновление: «Скрыть», выбор роли, итог знакомства) – взять её данные.
   useEffect(() => {
     if (initial !== undefined) setData(initial);
   }, [initial]);
@@ -62,7 +62,7 @@ export function useAsideData(): SceneAsideData | undefined {
   return useContext(AsideContext).data;
 }
 
-/** Перечитать колонку: вызывать после события ленты. Вне сцены — пустая функция. */
+/** Перечитать колонку: вызывать после события ленты. Вне сцены – пустая функция. */
 export function useAsideRefresh(): () => void {
   return useContext(AsideContext).refresh;
 }

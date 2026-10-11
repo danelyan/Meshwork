@@ -18,7 +18,7 @@ export const GET = withErrors(async (req: Request) => {
   return Response.json(await listDemo());
 });
 
-/** `cleanup` — удалить показанный мусор e2e; `show_demo` — показывать ли демо-кандидатов в подборке и поиске. */
+/** `cleanup` – удалить показанный мусор e2e; `show_demo` – показывать ли демо-кандидатов в подборке и поиске. */
 export const POST = withErrors(async (req: Request) => {
   const staff = await requireStaff(req, 'manage_demo');
   const body = DemoBody.parse(await req.json().catch(() => ({})));

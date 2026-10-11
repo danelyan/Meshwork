@@ -9,8 +9,8 @@ import type { RunResult } from '../../runner/src/contract';
 import { dirEntries, makeTarGz, type TarSpec } from '../helpers/tar';
 
 /**
- * runner в настоящем контейнере (compose-сервис runner): uid 1001, задания — uid 2000 через setuid-
- * помощник, сеть internal. Тяжёлый (сборка образа ~1,5 мин) — только по RUNNER_DOCKER=1:
+ * runner в настоящем контейнере (compose-сервис runner): uid 1001, задания – uid 2000 через setuid-
+ * помощник, сеть internal. Тяжёлый (сборка образа ~1,5 мин) – только по RUNNER_DOCKER=1:
  *   RUNNER_DOCKER=1 npx vitest run --project runner tests/runner/docker.test.ts
  */
 const PROJECT = 'fsp-runner-it';

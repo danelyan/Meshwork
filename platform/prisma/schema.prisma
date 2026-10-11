@@ -12,10 +12,10 @@ datasource db {
 }
 
 // =============================================================================
-// lane: foundation — кандидат, категория, журнал вызовов LLM
+// lane: foundation – кандидат, категория, журнал вызовов LLM
 // =============================================================================
 
-/// Направления (ADR 0003, дополнение 10.10): ai и engineering — lane directions.
+/// Направления (ADR 0003, дополнение 10.10): ai и engineering – lane directions.
 enum Specialization {
   backend
   frontend
@@ -54,10 +54,10 @@ enum LlmPurpose {
   /// lane call: интервьюер и слепой оценщик квалифицирующего созвона (ADR 0003, ступень 1)
   call_interviewer
   call_evaluator
-  /// lane interview: интервьюер ИИнтервью (docs/competency-model.md); оценщик — call_evaluator
+  /// lane interview: интервьюер ИИнтервью (docs/competency-model.md); оценщик – call_evaluator
   interview_interviewer
   /// Зарезервировано лейном call для соседей (ADR 0003), чтобы не делать вторую enum-миграцию:
-  /// defense-room — вопросы по коду кандидата (QLC); project — условие проекта и рубрика пожеланий.
+  /// defense-room – вопросы по коду кандидата (QLC); project – условие проекта и рубрика пожеланий.
   defense_qlc
   project_spec
   project_rubric
@@ -96,14 +96,14 @@ model Candidate {
   memories            ConsultantMemory[]
   /// lane auth: аккаунт входа (null у старых демо-кандидатов до первого демо-входа)
   user                User?
-  /// lane employer: настройка приватности (R-C-13) — true: не показывать в подборке и поиске работодателей
+  /// lane employer: настройка приватности (R-C-13) – true: не показывать в подборке и поиске работодателей
   hiddenFromEmployers Boolean               @default(false)
   /// lane onboarding: анкета онбординга (цель, грейд, стек, формат, зарплата)
   profile             CandidateProfile?
   /// lane test: попытки теста на грейд
   testAttempts        TestAttempt[]
-  /// lane invite-contact: способ связи для работодателя — почта или Telegram (server/contact.ts).
-  /// Открывается компании только после accepted; null — показываем почту аккаунта, если она не служебная.
+  /// lane invite-contact: способ связи для работодателя – почта или Telegram (server/contact.ts).
+  /// Открывается компании только после accepted; null – показываем почту аккаунта, если она не служебная.
   contact             String?
   /// lane call: созвоны (квалифицирующий и защита проекта) и вопросы работодателей кандидату
   callSessions        CallSession[]
@@ -111,7 +111,7 @@ model Candidate {
   /// lane instructions: как работает консультант кандидата (скиллы и свои инструкции)
   consultantSettings  ConsultantSettings?
   /// lane directions: подкатегория направления из справочника Subcategory ("ai.llm-apps"), выбор в
-  /// онбординге необязателен. Без FK — справочник проверяется кодом (server/directions).
+  /// онбординге необязателен. Без FK – справочник проверяется кодом (server/directions).
   subcategoryId       String?
   /// lane astra-favorites: private employer bookmarks
   savedByUsers        UserSavedCandidate[]
@@ -130,7 +130,7 @@ model CandidateCategory {
   source         CategorySource @default(test)
   confirmedAt    DateTime       @default(now())
   /// Подкатегория (Subcategory.id, lane directions; ADR 0003, дополнение 10.10 15:50): категория =
-  /// направление × подкатегория × грейд. null — категория до теста на подкатегорию (демо, старые попытки).
+  /// направление × подкатегория × грейд. null – категория до теста на подкатегорию (демо, старые попытки).
   subcategoryId  String?
 
   @@index([candidateId])
@@ -146,7 +146,7 @@ model AgentRun {
   inputTokens    Int        @default(0)
   outputTokens   Int        @default(0)
   ok             Boolean
-  /// null — запрос без schema; true/false — прошёл ли JSON валидацию.
+  /// null – запрос без schema; true/false – прошёл ли JSON валидацию.
   jsonValid      Boolean?
   error          String?
   /// Сколько попыток ушло (1 + ретраи).
@@ -162,7 +162,7 @@ model AgentRun {
 }
 
 // =============================================================================
-// lane: collector — загрузки и внешние источники
+// lane: collector – загрузки и внешние источники
 // =============================================================================
 
 enum SourceKind {
@@ -188,7 +188,7 @@ model Upload {
   extracted    Json?
   /// ExtractedDoc.flags
   flags        Json?
-  /// Оригинал файла: <UPLOAD_DIR>/<storageKey>, ключ = "<candidateId>/<sha256>" (только серверные id). null — загружен до хранения оригиналов.
+  /// Оригинал файла: <UPLOAD_DIR>/<storageKey>, ключ = "<candidateId>/<sha256>" (только серверные id). null – загружен до хранения оригиналов.
   storageKey   String?
   createdAt    DateTime      @default(now())
   /// lane resume-fields: поля профиля, распознанные в этом резюме (удаляются вместе с ним)
@@ -198,8 +198,8 @@ model Upload {
 }
 
 /// lane resume-fields (R-C-01/02): поле профиля, распознанное в резюме, с цитатой-источником.
-/// applied — значение записано в пустое поле профиля («из резюме»); suggested — у кандидата своё значение,
-/// резюме предлагает другое («в резюме указано иначе»); dismissed — предложение отклонено.
+/// applied – значение записано в пустое поле профиля («из резюме»); suggested – у кандидата своё значение,
+/// резюме предлагает другое («в резюме указано иначе»); dismissed – предложение отклонено.
 /// Код: server/resume-fields. ФИО и контакт работодателю до принятия приглашения не отдаются (employer/privacy.ts).
 model ResumeField {
   id          String            @id @default(cuid())
@@ -235,7 +235,7 @@ model Source {
   kind              SourceKind
   /// URL или handle профиля
   origin            String
-  /// ExtractedDoc — снимок на момент чтения (он же кэш GitHub/Codeforces)
+  /// ExtractedDoc – снимок на момент чтения (он же кэш GitHub/Codeforces)
   snapshot          Json
   /// Подтверждено ли владение аккаунтом (для third_party у codeforces/fsp)
   ownershipVerified Boolean    @default(false)
@@ -247,7 +247,7 @@ model Source {
 }
 
 // =============================================================================
-// lane: claims — каталог и утверждения профиля
+// lane: claims – каталог и утверждения профиля
 // =============================================================================
 
 enum CatalogSpecialization {
@@ -291,9 +291,9 @@ model ClaimCatalog {
   proof          String[]
   markers        String[]
   limits         String
-  /// Веса по грейдам {"J":1,"M":2,"S":3} (каталог § 7: сигнатура Middle — M ≥ 2 и M > J)
+  /// Веса по грейдам {"J":1,"M":2,"S":3} (каталог § 7: сигнатура Middle – M ≥ 2 и M > J)
   weights        Json?
-  /// Стек/технологии записи (массив строк или объект — как в claims-catalog.json)
+  /// Стек/технологии записи (массив строк или объект – как в claims-catalog.json)
   stack          Json?
   /// ID смежных записей каталога
   adjacent       String[]              @default([])
@@ -311,7 +311,7 @@ model Claim {
   catalog        ClaimCatalog  @relation(fields: [catalogId], references: [id])
   /// Каталожная формулировка (или правка кандидата): ранжирование, созвон, работодатель.
   statement      String
-  /// Формулировка для кандидата в границах цитаты и в его роде (или безличная). null — старые записи: показывается statement.
+  /// Формулировка для кандидата в границах цитаты и в его роде (или безличная). null – старые записи: показывается statement.
   wording        String?
   /// Ставит код по типу источника (ADR-0001), не LLM и не кандидат.
   level          EvidenceLevel
@@ -337,7 +337,7 @@ model Claim {
 }
 
 // =============================================================================
-// lane: agent — диалог консультанта
+// lane: agent – диалог консультанта
 // =============================================================================
 
 enum MessageRole {
@@ -366,7 +366,7 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           MessageRole
   content        String
-  /// ToolCall[] (server/llm/types.ts) — у assistant
+  /// ToolCall[] (server/llm/types.ts) – у assistant
   toolCalls      Json?
   /// у tool
   toolCallId     String?
@@ -376,7 +376,7 @@ model Message {
 }
 
 // =============================================================================
-// lane: recommend — рекомендации, компании, вакансии, банк заданий, приглашения
+// lane: recommend – рекомендации, компании, вакансии, банк заданий, приглашения
 // =============================================================================
 
 enum RecommendationKind {
@@ -395,7 +395,7 @@ enum InvitationStatus {
   hired
   /// lane invite-cancel: работодатель отозвал приглашение (из sent/viewed/accepted) с причиной; финальный статус
   withdrawn
-  /// lane lifecycle: кандидат нанят другой компанией — открытые приглашения (sent/viewed/accepted) закрываются при найме; финальный
+  /// lane lifecycle: кандидат нанят другой компанией – открытые приглашения (sent/viewed/accepted) закрываются при найме; финальный
   closed_hired
 }
 
@@ -422,7 +422,7 @@ model Company {
   employers         EmployerProfile[]
   /// lane employer
   invitations       Invitation[]
-  /// lane onboarding: ИНН (проверен по контрольной сумме; реестр — демо), отрасль, контакт (R-E-01)
+  /// lane onboarding: ИНН (проверен по контрольной сумме; реестр – демо), отрасль, контакт (R-E-01)
   inn               String?
   industry          String?
   contact           String?
@@ -431,9 +431,9 @@ model Company {
   /// lane complaints: жалобы кандидатов на приглашения компании
   complaints        Complaint[]
 
-  // lane: admin (E-08, ADR 0009) — верификация модератором (фаза 2) и блокировка (фаза 3).
-  // *ById — StaffMember.id без FK: сотрудника не удаляют (disabledAt), журнал хранит историю.
-  /// Метка «компания проверена»: когда и кто поставил; null — не проверена.
+  // lane: admin (E-08, ADR 0009) – верификация модератором (фаза 2) и блокировка (фаза 3).
+  // *ById – StaffMember.id без FK: сотрудника не удаляют (disabledAt), журнал хранит историю.
+  /// Метка «компания проверена»: когда и кто поставил; null – не проверена.
   verifiedAt              DateTime?
   verifiedById            String?
   /// Причина/основание решения модератора (что сверено).
@@ -442,7 +442,7 @@ model Company {
   verificationRequestedAt DateTime?
   /// Основание: текст или id загрузки (Upload) с выпиской ЕГРЮЛ.
   verificationEvidence    String?
-  /// Блокировка компании: не отправляет приглашения. blockedUntil null — бессрочно.
+  /// Блокировка компании: не отправляет приглашения. blockedUntil null – бессрочно.
   blockedAt               DateTime?
   blockedUntil            DateTime?
   blockedReason           String?
@@ -467,12 +467,12 @@ model Vacancy {
   createdAt       DateTime       @default(now())
   /// lane employer + onboarding: чем занимается команда (R-E-02)
   teamDescription String?
-  /// lane employer + onboarding: стек свободными метками ("Go", "PostgreSQL"); needs — проекция на каталог
+  /// lane employer + onboarding: стек свободными метками ("Go", "PostgreSQL"); needs – проекция на каталог
   stack           String[]       @default([])
-  /// lane employer: потребность закрыта/в архиве — в кабинете отдельно, подборка не строится
+  /// lane employer: потребность закрыта/в архиве – в кабинете отдельно, подборка не строится
   archivedAt      DateTime?
   updatedAt       DateTime?      @updatedAt
-  /// lane directions: подкатегория потребности ("backend.web-api"), необязательна. Без FK — см. Candidate.
+  /// lane directions: подкатегория потребности ("backend.web-api"), необязательна. Без FK – см. Candidate.
   subcategoryId   String?
 
   invitations  Invitation[]
@@ -499,7 +499,7 @@ model Task {
 
 model Invitation {
   id                  String           @id @default(cuid())
-  /// lane employer: null — приглашение без привязки к потребности (R-E-05)
+  /// lane employer: null – приглашение без привязки к потребности (R-E-05)
   vacancyId           String?
   vacancy             Vacancy?         @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
   candidateId         String
@@ -529,13 +529,13 @@ model Invitation {
   sourceApplicationId String?          @unique
   sourceApplication   Application?     @relation(fields: [sourceApplicationId], references: [id], onDelete: SetNull)
   /// lane admin (E-08, фаза 5): позиция кандидата в подборке/поиске работодателя на момент отправки (1 = первый).
-  /// Подсказка клиента (валидируется 1..1000), только для метрики «доля принятых из топ-N»; null — ранг неизвестен.
+  /// Подсказка клиента (валидируется 1..1000), только для метрики «доля принятых из топ-N»; null – ранг неизвестен.
   matchRank           Int?
-  /// lane admin (E-08, фаза 5): откуда отправлено — matching | search | favorites | assistant | other; null — неизвестно.
+  /// lane admin (E-08, фаза 5): откуда отправлено – matching | search | favorites | assistant | other; null – неизвестно.
   matchSource         String?
   /// lane complaints: жалоба кандидата на это приглашение (не больше одной)
   complaint           Complaint?
-  /// lane live-slots: предложения слотов живой защиты (ADR 0008); активное — activeKey = id приглашения
+  /// lane live-slots: предложения слотов живой защиты (ADR 0008); активное – activeKey = id приглашения
   liveDefenses        LiveDefense[]
 
   @@index([candidateId, status])
@@ -543,7 +543,7 @@ model Invitation {
 }
 
 // =============================================================================
-// lane: defense — защита утверждения
+// lane: defense – защита утверждения
 // =============================================================================
 
 enum DefenseStatus {
@@ -582,17 +582,17 @@ model DefenseTurn {
 }
 
 // =============================================================================
-// lane: auth — аккаунты, внешние входы, роль, согласие (docs/decisions/0001-auth-yandex-id.md)
+// lane: auth – аккаунты, внешние входы, роль, согласие (docs/decisions/0001-auth-yandex-id.md)
 // =============================================================================
 
-/// pending — вошёл, роль ещё не выбрана в онбординге.
+/// pending – вошёл, роль ещё не выбрана в онбординге.
 enum UserRole {
   pending
   candidate
   employer
 }
 
-/// Аккаунт входа. Профиль роли — отдельной записью (Candidate или EmployerProfile),
+/// Аккаунт входа. Профиль роли – отдельной записью (Candidate или EmployerProfile),
 /// чтобы не трогать связи Candidate с остальными таблицами.
 model User {
   id          String     @id @default(cuid())
@@ -618,9 +618,9 @@ model User {
   /// lane call: участие в созвонах (работодатель в комнате защиты)
   callParticipations CallParticipant[]
 
-  // lane: email-auth — вход по почте и паролю (R-D-04; ADR 0001, дополнение 10.10).
-  // Уникальность почты — через AuthAccount(provider = "email", providerAccountId = почта в нижнем регистре).
-  /// scrypt-хэш пароля `scrypt$N$r$p$salt$hash`; null — аккаунт без пароля (Яндекс, демо).
+  // lane: email-auth – вход по почте и паролю (R-D-04; ADR 0001, дополнение 10.10).
+  // Уникальность почты – через AuthAccount(provider = "email", providerAccountId = почта в нижнем регистре).
+  /// scrypt-хэш пароля `scrypt$N$r$p$salt$hash`; null – аккаунт без пароля (Яндекс, демо).
   passwordHash                 String?
   /// Почта подтверждена кодом из письма. Без этого вход по паролю закрыт.
   emailVerifiedAt              DateTime?
@@ -632,7 +632,7 @@ model User {
   savedVacancies               UserSavedVacancy[]
   savedCandidates              UserSavedCandidate[]
 
-  // lane: admin (E-08, ADR 0009, фаза 3) — блокировка учётки. blockedUntil null — бессрочно.
+  // lane: admin (E-08, ADR 0009, фаза 3) – блокировка учётки. blockedUntil null – бессрочно.
   blockedAt     DateTime?
   blockedUntil  DateTime?
   blockedReason String?
@@ -641,7 +641,7 @@ model User {
 }
 
 // =============================================================================
-// lane: astra-favorites — persistent private bookmarks for both account roles
+// lane: astra-favorites – persistent private bookmarks for both account roles
 // =============================================================================
 model UserSavedVacancy {
   userId    String
@@ -697,19 +697,19 @@ model EmployerProfile {
 }
 
 /// Факт согласия на обработку ПДн (R-C-14, 152-ФЗ): версия текста + время. Записи не удаляются.
-/// lane consent (ADR 0005): вид согласия. Одна строка — один акт согласия; отзыв — revokedAt.
+/// lane consent (ADR 0005): вид согласия. Одна строка – один акт согласия; отзыв – revokedAt.
 enum ConsentKind {
   /// Г1: обработка ПДн для подбора (регистрация). Отзыв = удаление аккаунта.
   pd_processing
   /// Г2: запись голоса и транскрипта ИИ-созвона
   call_recording
-  /// Г3: оценка ответов ИИ (ст. 16 152-ФЗ, с правом возражения) — нужна для теста, созвона, защиты
+  /// Г3: оценка ответов ИИ (ст. 16 152-ФЗ, с правом возражения) – нужна для теста, созвона, защиты
   ai_assessment
   /// Г4: показ профиля работодателям под псевдонимом (без него hiddenFromEmployers = true)
   employer_visibility
   /// Г6: обезличенные данные для проверки качества теста и оценщика
   research
-  /// Г7: рассылки (рассылок нет — галочка хранится и ни на что не влияет)
+  /// Г7: рассылки (рассылок нет – галочка хранится и ни на что не влияет)
   marketing
   /// Г5: раскрытие имени и контактов конкретному работодателю (context.invitationId)
   identity_disclosure
@@ -726,7 +726,7 @@ model Consent {
   kind       ConsentKind @default(pd_processing)
   version    String
   acceptedAt DateTime    @default(now())
-  /// Отзыв: строка остаётся в истории. Активное согласие — последнее по kind без revokedAt.
+  /// Отзыв: строка остаётся в истории. Активное согласие – последнее по kind без revokedAt.
   revokedAt  DateTime?
   /// Привязка согласия (identity_disclosure: { invitationId }).
   context    Json?
@@ -746,7 +746,7 @@ enum ObjectionStatus {
   answered
 }
 
-/// lane consent (ст. 16 152-ФЗ): возражение кандидата против автоматической оценки. Срок ответа — 30 дней.
+/// lane consent (ст. 16 152-ФЗ): возражение кандидата против автоматической оценки. Срок ответа – 30 дней.
 /// Работодателю не показывается.
 model AssessmentObjection {
   id           String           @id @default(cuid())
@@ -760,7 +760,7 @@ model AssessmentObjection {
   answer       String?
   createdAt    DateTime         @default(now())
   answeredAt   DateTime?
-  /// lane admin (E-08, фаза 2): кто из персонала ответил (StaffMember.id без FK); null — ответ из dev-панели
+  /// lane admin (E-08, фаза 2): кто из персонала ответил (StaffMember.id без FK); null – ответ из dev-панели
   answeredById String?
 
   @@index([candidateId, createdAt])
@@ -768,7 +768,7 @@ model AssessmentObjection {
 }
 
 // =============================================================================
-// lane: onboarding — анкета кандидата и состояние онбординг-чата (E-02)
+// lane: onboarding – анкета кандидата и состояние онбординг-чата (E-02)
 // =============================================================================
 
 /// Цель кандидата (R-C-04).
@@ -792,7 +792,7 @@ enum FspParticipation {
   none
 }
 
-/// Анкета онбординга, 1–1 с Candidate. Специализация — в Candidate.specialization.
+/// Анкета онбординга, 1–1 с Candidate. Специализация – в Candidate.specialization.
 model CandidateProfile {
   candidateId      String            @id
   candidate        Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
@@ -806,7 +806,7 @@ model CandidateProfile {
   salaryExpected   Int?
   fspParticipation FspParticipation?
   city             String?
-  /// lane resume-fields: стаж в годах, роли (должности без компаний) и софт-скиллы — из резюме или от кандидата
+  /// lane resume-fields: стаж в годах, роли (должности без компаний) и софт-скиллы – из резюме или от кандидата
   experienceYears  Int?
   roles            String[]          @default([])
   softSkills       String[]          @default([])
@@ -814,16 +814,16 @@ model CandidateProfile {
 }
 
 /// Состояние онбординг-чата: текущий шаг, ответы, пропуски. «Настроить позже» и
-/// перезагрузка продолжают с места. Сценарий — server/onboarding/scenario.ts.
+/// перезагрузка продолжают с места. Сценарий – server/onboarding/scenario.ts.
 model OnboardingState {
   userId    String   @id
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// id шага, на котором человек сейчас (null — первый незакрытый)
+  /// id шага, на котором человек сейчас (null – первый незакрытый)
   stepId    String?
   /// { [stepId]: значение ответа }
   answers   Json     @default("{}")
   skipped   String[] @default([])
-  /// Сгенерированные реплики помощника { [stepId]: текст } — чтобы перезагрузка не звала LLM повторно
+  /// Сгенерированные реплики помощника { [stepId]: текст } – чтобы перезагрузка не звала LLM повторно
   lines     Json     @default("{}")
   /// Служебное: id созданных вакансий работодателя { [grade]: vacancyId }
   meta      Json     @default("{}")
@@ -851,7 +851,7 @@ model OnboardingAnswerRevision {
 }
 
 // =============================================================================
-// lane: test — адаптивный тест на грейд (docs/decisions/0002-grade-test.md)
+// lane: test – адаптивный тест на грейд (docs/decisions/0002-grade-test.md)
 // =============================================================================
 
 enum TestAttemptStatus {
@@ -863,7 +863,7 @@ enum TestAttemptStatus {
   needs_confirmation
 }
 
-/// Шаблон-генератор задания. Код генератора — src/server/test/generators; здесь —
+/// Шаблон-генератор задания. Код генератора – src/server/test/generators; здесь –
 /// рабочие параметры IRT (стартовые экспертные, правятся калибровкой) и экспозиция.
 model TaskTemplate {
   /// ID генератора: "be.sql-rowcount"
@@ -910,16 +910,16 @@ model TestAttempt {
   juniorConfirmedAt DateTime?
   /// Версия правил (пороги, остановка) на момент попытки
   policyVersion     String
-  /// Подкатегория попытки (lane directions): пул — только её семейства. null — попытка до adr-0002-v4.
+  /// Подкатегория попытки (lane directions): пул – только её семейства. null – попытка до adr-0002-v4.
   subcategoryId     String?
   startedAt         DateTime          @default(now())
   expiresAt         DateTime
   finishedAt        DateTime?
-  /// Агрегаты браузера за попытку (уходы со вкладки, вставки, копирования) — только счётчики, без содержимого (152-ФЗ)
+  /// Агрегаты браузера за попытку (уходы со вкладки, вставки, копирования) – только счётчики, без содержимого (152-ФЗ)
   signals           Json?
   /// Индекс честности при финализации: уровень, причины, версия (src/server/test/integrity.ts)
   integrity         Json?
-  /// grade — обычная попытка; confirm — подтверждающий тест к попытке confirmsAttemptId
+  /// grade – обычная попытка; confirm – подтверждающий тест к попытке confirmsAttemptId
   kind              String            @default("grade")
   confirmsAttemptId String?
 
@@ -942,7 +942,7 @@ model TestItem {
   prompt       String
   code         String?
   answerHint   String
-  /// Ключ ответа — только на сервере, клиенту до завершения не отдаётся
+  /// Ключ ответа – только на сервере, клиенту до завершения не отдаётся
   answerKey    String
   explanation  String
   answer       String?
@@ -951,7 +951,7 @@ model TestItem {
   seAfter      Float?
   askedAt      DateTime     @default(now())
   answeredAt   DateTime?
-  /// Сдвиг ловушки для нейросети (скрытая строка «прибавь N»); null — без ловушки
+  /// Сдвиг ловушки для нейросети (скрытая строка «прибавь N»); null – без ловушки
   canaryShift  Int?
   /// Мягкий лимит времени, зафиксированный при показе (сек)
   timeLimitSec Int?
@@ -983,7 +983,7 @@ model EmployerMessage {
   conversation   EmployerConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           MessageRole
   content        String
-  /// ToolCall[] (server/llm/types.ts) — у assistant
+  /// ToolCall[] (server/llm/types.ts) – у assistant
   toolCalls      Json?
   /// у tool
   toolCallId     String?
@@ -993,7 +993,7 @@ model EmployerMessage {
 }
 
 // =============================================================================
-// lane: email-auth — одноразовые коды подтверждения почты и сброса пароля (R-D-04)
+// lane: email-auth – одноразовые коды подтверждения почты и сброса пароля (R-D-04)
 // =============================================================================
 
 enum AuthCodePurpose {
@@ -1017,7 +1017,7 @@ model AuthCode {
 }
 
 // =============================================================================
-// lane: call — созвоны: квалифицирующий (ступень 1) и защита проекта (ступень 3), ADR 0003
+// lane: call – созвоны: квалифицирующий (ступень 1) и защита проекта (ступень 3), ADR 0003
 // =============================================================================
 
 enum CallKind {
@@ -1045,8 +1045,8 @@ enum EmployerQuestionStatus {
   answered
 }
 
-/// Созвон кандидата с ИИ. Реплики — в transcriptJson (роли ai | candidate | employer, таймкоды),
-/// аудио кандидата — файлы на диске (CALL_DATA_DIR/<audioPath>), не в БД.
+/// Созвон кандидата с ИИ. Реплики – в transcriptJson (роли ai | candidate | employer, таймкоды),
+/// аудио кандидата – файлы на диске (CALL_DATA_DIR/<audioPath>), не в БД.
 model CallSession {
   id                  String             @id @default(cuid())
   candidateId         String
@@ -1060,19 +1060,19 @@ model CallSession {
   finishedAt          DateTime?
   /// TranscriptEntry[] (server/call/types.ts)
   transcriptJson      Json               @default("[]")
-  /// Папка с аудио кандидата относительно CALL_DATA_DIR: "calls/<id>"; null — аудио не записывалось
+  /// Папка с аудио кандидата относительно CALL_DATA_DIR: "calls/<id>"; null – аудио не записывалось
   audioPath           String?
-  /// Живая защита (ADR 0008 п. 3): папка с дорожкой работодателя относительно CALL_DATA_DIR — "calls/<id>/employer"
-  /// (сегменты WebM/Opus с его микрофона); null — голос работодателя не записывался
+  /// Живая защита (ADR 0008 п. 3): папка с дорожкой работодателя относительно CALL_DATA_DIR – "calls/<id>/employer"
+  /// (сегменты WebM/Opus с его микрофона); null – голос работодателя не записывался
   employerAudioPath   String?
-  /// Вердикт оценщика (qualifying — карта глубины, server/call/types.ts CallVerdict)
+  /// Вердикт оценщика (qualifying – карта глубины, server/call/types.ts CallVerdict)
   verdictJson         Json?
   /// Версия согласия на запись созвона, под которой шёл звонок
   policyVersion       String
-  /// Сколько раз запускался оценщик (finish): каждый запуск — 3–6 вызовов LLM, повторы после 503 ограничены
+  /// Сколько раз запускался оценщик (finish): каждый запуск – 3–6 вызовов LLM, повторы после 503 ограничены
   finishAttempts      Int                @default(0)
-  /// kind=defense: ИИ-защита проекта до приглашения (ADR 0008 п. 1) — кандидат запускает сам, работодателей в комнате нет;
-  /// работодатель до accepted видит только вердикт под псевдонимом. false — живая защита (по приглашению / после accepted).
+  /// kind=defense: ИИ-защита проекта до приглашения (ADR 0008 п. 1) – кандидат запускает сам, работодателей в комнате нет;
+  /// работодатель до accepted видит только вердикт под псевдонимом. false – живая защита (по приглашению / после accepted).
   aiDefense           Boolean            @default(false)
 
   participants CallParticipant[]
@@ -1124,10 +1124,10 @@ model EmployerQuestion {
 }
 
 // =============================================================================
-// lane: project — ступень 2 «проект под работодателя» (ADR 0003, «Дополнение 10.10»: лента заданий).
+// lane: project – ступень 2 «проект под работодателя» (ADR 0003, «Дополнение 10.10»: лента заданий).
 // Шаблоны лежат на диске (platform/project-templates/<subcategory>/<grade>/<id>/template.json),
-// ProjectTemplate — их снимок для связей и выборок. subcategoryId — строка без relation
-// (модель Subcategory у лейна directions, связывает интегратор); specialization — строка, не enum,
+// ProjectTemplate – их снимок для связей и выборок. subcategoryId – строка без relation
+// (модель Subcategory у лейна directions, связывает интегратор); specialization – строка, не enum,
 // чтобы не конфликтовать с расширением enum Specialization (ai, engineering).
 // =============================================================================
 
@@ -1152,9 +1152,9 @@ enum ProjectSubmissionStatus {
 }
 
 enum ProjectAssignmentStatus {
-  /// Взято, сдачи ещё нет — считается в лимит PROJECT_MAX_ACTIVE.
+  /// Взято, сдачи ещё нет – считается в лимит PROJECT_MAX_ACTIVE.
   active
-  /// Сдано (есть сабмит) — в лимит не считается.
+  /// Сдано (есть сабмит) – в лимит не считается.
   submitted
 }
 
@@ -1181,7 +1181,7 @@ model ProjectTemplate {
 
 model ProjectTask {
   id                 String                @id @default(cuid())
-  /// Одна потребность — одно задание (перегенерация меняет условие, пока нет сабмитов).
+  /// Одна потребность – одно задание (перегенерация меняет условие, пока нет сабмитов).
   vacancyId          String                @unique
   vacancy            Vacancy               @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
   templateId         String
@@ -1192,7 +1192,7 @@ model ProjectTask {
   visibility         ProjectTaskVisibility @default(open)
   /// { title, domainStory, requirements[], acceptance[], notes, source: llm|fallback }
   specJson           Json
-  /// Обязательные критерии работодателя — ID каталога утверждений
+  /// Обязательные критерии работодателя – ID каталога утверждений
   requiredCatalogIds String[]              @default([])
   wishesText         String?
   /// { criteria: [{ id, text, catalogId?, source: required|wish }] }
@@ -1207,7 +1207,7 @@ model ProjectTask {
   @@index([specialization, grade, visibility])
 }
 
-/// Кандидат взял задание из ленты (лимит активных — PROJECT_MAX_ACTIVE).
+/// Кандидат взял задание из ленты (лимит активных – PROJECT_MAX_ACTIVE).
 model ProjectAssignment {
   id            String                  @id @default(cuid())
   projectTaskId String
@@ -1229,9 +1229,9 @@ model ProjectSubmission {
   projectTask         ProjectTask             @relation(fields: [projectTaskId], references: [id], onDelete: Cascade)
   candidateId         String
   candidate           Candidate               @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  /// code — репозиторий и автотесты; approach — текст подхода, только рубрика (без балла автотестов, без защиты по коду).
+  /// code – репозиторий и автотесты; approach – текст подхода, только рубрика (без балла автотестов, без защиты по коду).
   kind                ProjectSubmissionKind   @default(code)
-  /// Текст подхода (kind = approach); у сдачи кодом null. repoUrl при approach — пустая строка.
+  /// Текст подхода (kind = approach); у сдачи кодом null. repoUrl при approach – пустая строка.
   approachText        String?
   repoUrl             String
   commitSha           String?
@@ -1239,13 +1239,13 @@ model ProjectSubmission {
   status              ProjectSubmissionStatus @default(submitted)
   /// { tests: {passed, total, score}, lint, rubric, platformOwnedViolations[] }
   resultJson          Json?
-  /// Задание runner (GET /run/{jobId}); null — stub-режим
+  /// Задание runner (GET /run/{jobId}); null – stub-режим
   runnerJobId         String?
-  /// Почему failed — для кандидата, без деталей скрытых тестов
+  /// Почему failed – для кандидата, без деталей скрытых тестов
   error               String?
   /// Приглашение «на защиту» (POST /api/employer/project-submissions/{id}/invite-to-defense)
   defenseInvitationId String?
-  /// Сдано после срока задания (ProjectAssignment.expiresAt) — сдавать можно, работодатель видит пометку.
+  /// Сдано после срока задания (ProjectAssignment.expiresAt) – сдавать можно, работодатель видит пометку.
   late                Boolean                 @default(false)
   submittedAt         DateTime                @default(now())
   checkedAt           DateTime?
@@ -1257,7 +1257,7 @@ model ProjectSubmission {
 }
 
 // =============================================================================
-// lane: defense-room — защита проекта (ступень 3, ADR 0003): план QLC-вопросов сессии.
+// lane: defense-room – защита проекта (ступень 3, ADR 0003): план QLC-вопросов сессии.
 // =============================================================================
 
 /// План защиты проекта: вопросы из кода (QLC) и вопросы работодателя, курсор, блокировка хода.
@@ -1275,7 +1275,7 @@ model DefenseRoomPlan {
 }
 
 // =============================================================================
-// lane: memory — память консультанта («Что я о тебе знаю», решение владельца 10.10)
+// lane: memory – память консультанта («Что я о тебе знаю», решение владельца 10.10)
 // =============================================================================
 
 enum MemorySource {
@@ -1285,7 +1285,7 @@ enum MemorySource {
   user
 }
 
-/// Заметка о собеседнике. Владелец — ровно один из candidateId / employerProfileId (проверяет код).
+/// Заметка о собеседнике. Владелец – ровно один из candidateId / employerProfileId (проверяет код).
 /// Ответы знакомства сюда не копируются: они производные (OnboardingState), source «onboarding» только в UI.
 model ConsultantMemory {
   id                String           @id @default(cuid())
@@ -1309,13 +1309,13 @@ model ConsultantSettings {
   candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   /// id из server/consultant/skills.ts
   skills      String[]  @default([])
-  /// Свои инструкции кандидата, ≤ 500 символов (проверка — в API)
+  /// Свои инструкции кандидата, ≤ 500 символов (проверка – в API)
   custom      String?   @db.VarChar(500)
   updatedAt   DateTime  @updatedAt
 }
 
 // =============================================================================
-// lane: directions — справочник подкатегорий направлений (ADR 0003, дополнение 10.10; R-T-05)
+// lane: directions – справочник подкатегорий направлений (ADR 0003, дополнение 10.10; R-T-05)
 // =============================================================================
 
 enum SubcategoryStatus {
@@ -1326,7 +1326,7 @@ enum SubcategoryStatus {
 }
 
 /// Подкатегория направления. id вида "backend.web-api" (направление.подкатегория).
-/// Сид — prisma/seed/directions.ts из src/lib/directions.ts (карта research/25 владельца).
+/// Сид – prisma/seed/directions.ts из src/lib/directions.ts (карта research/25 владельца).
 model Subcategory {
   id             String            @id
   specialization Specialization
@@ -1345,7 +1345,7 @@ enum ApplicationStatus {
   viewed
   accepted
   declined
-  /// lane lifecycle: закрыт системой — вакансия закрыта или кандидат нанят другой компанией; причина в closeReason
+  /// lane lifecycle: закрыт системой – вакансия закрыта или кандидат нанят другой компанией; причина в closeReason
   closed
 }
 
@@ -1398,7 +1398,7 @@ model Complaint {
   comment      String?
   status       ComplaintStatus @default(open)
   createdAt    DateTime        @default(now())
-  /// lane admin (E-08, фаза 2): решение модератора — кто (StaffMember.id без FK), когда, причина
+  /// lane admin (E-08, фаза 2): решение модератора – кто (StaffMember.id без FK), когда, причина
   resolvedById String?
   resolvedAt   DateTime?
   resolution   String?
@@ -1408,7 +1408,7 @@ model Complaint {
 }
 
 // =============================================================================
-// lane: live-slots — назначение живой защиты через слоты (ADR 0008, «Назначение живой защиты: слоты»).
+// lane: live-slots – назначение живой защиты через слоты (ADR 0008, «Назначение живой защиты: слоты»).
 // Время хранится в UTC, показывается по МСК. done / no_show выводятся при чтении (server/live-defense/rules.ts).
 // =============================================================================
 
@@ -1432,7 +1432,7 @@ model LiveDefense {
   invitation       Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   companyId        String
   candidateId      String
-  /// = invitationId, пока предложение активно; null — заменено новым. Уникальность — одно активное на приглашение.
+  /// = invitationId, пока предложение активно; null – заменено новым. Уникальность – одно активное на приглашение.
   activeKey        String?           @unique
   status           LiveDefenseStatus @default(slots_proposed)
   /// 30 или 45 минут
@@ -1448,7 +1448,7 @@ model LiveDefense {
   startsAt         DateTime?
   endsAt           DateTime?
   scheduledAt      DateTime?
-  /// CallSession kind=defense, aiDefense=false (defense-room/pending.ts); null — у кандидата нет сданного проекта
+  /// CallSession kind=defense, aiDefense=false (defense-room/pending.ts); null – у кандидата нет сданного проекта
   callSessionId    String?
   cancelledAt      DateTime?
   cancelledBy      LiveDefenseActor?
@@ -1476,7 +1476,7 @@ model LiveDefenseSlot {
   @@index([liveDefenseId])
 }
 
-/// Уведомление на платформе о живой защите (лента /api/notifications): кому — audience.
+/// Уведомление на платформе о живой защите (лента /api/notifications): кому – audience.
 model LiveDefenseEvent {
   id            String           @id @default(cuid())
   liveDefenseId String
@@ -1495,9 +1495,9 @@ model LiveDefenseEvent {
 }
 
 // =============================================================================
-// lane: admin — админка владельцев платформы (E-08, docs/decisions/0009-admin-staff.md)
+// lane: admin – админка владельцев платформы (E-08, docs/decisions/0009-admin-staff.md)
 // Схема всех фаз 0–5 заведена одной миграцией фазы 0; лейны фаз пишут только в свои модели/поля
-// (карта — docs/admin.md). Персонал — не UserRole (ADR 0001 не меняется).
+// (карта – docs/admin.md). Персонал – не UserRole (ADR 0001 не меняется).
 // =============================================================================
 
 enum StaffRole {
@@ -1516,11 +1516,11 @@ model StaffMember {
   role          StaffRole
   /// scrypt `scrypt$N$r$p$salt$hash` (server/auth/password.ts)
   passwordHash  String
-  /// Секрет TOTP, зашифрован (server/admin/totp.ts: `enc1.…`); null — ещё не выдан.
+  /// Секрет TOTP, зашифрован (server/admin/totp.ts: `enc1.…`); null – ещё не выдан.
   totpSecret    String?
   /// TOTP подтверждён первым верным кодом; до этого вход только через настройку TOTP.
   totpEnabledAt DateTime?
-  /// Номер 30-секундного шага последнего принятого кода — повтор того же кода отклоняется (RFC 6238 §5.2).
+  /// Номер 30-секундного шага последнего принятого кода – повтор того же кода отклоняется (RFC 6238 §5.2).
   totpLastStep  Int?
   disabledAt    DateTime?
   createdAt     DateTime       @default(now())
@@ -1528,7 +1528,7 @@ model StaffMember {
   sessions      AdminSession[]
 }
 
-/// Сессия персонала (кука fsp_admin хранит id сессии): отзыв — revokedAt (выход, смена роли, отключение, сброс 2FA).
+/// Сессия персонала (кука fsp_admin хранит id сессии): отзыв – revokedAt (выход, смена роли, отключение, сброс 2FA).
 model AdminSession {
   id        String      @id @default(cuid())
   staffId   String
@@ -1545,7 +1545,7 @@ model AdminSession {
 /// Журнал действий персонала. Только INSERT (server/admin/audit.ts); в коде нет update/delete этой модели.
 model AdminAuditLog {
   id         String   @id @default(cuid())
-  /// StaffMember.id без FK; null — системное действие (CLI admin-create)
+  /// StaffMember.id без FK; null – системное действие (CLI admin-create)
   actorId    String?
   /// Действие из каталога server/admin/permissions.ts или событие входа (staff.login, …)
   action     String
@@ -1618,7 +1618,7 @@ model RedFlagReview {
   @@index([status, createdAt])
 }
 
-/// Фаза 4: продуктовые параметры без деплоя. Умолчания — в коде, строка БД перекрывает (getSetting()).
+/// Фаза 4: продуктовые параметры без деплоя. Умолчания – в коде, строка БД перекрывает (getSetting()).
 model PlatformSetting {
   key         String                   @id
   value       Json
@@ -1628,7 +1628,7 @@ model PlatformSetting {
   versions    PlatformSettingVersion[]
 }
 
-/// Фаза 4: история значений для отката (каждое изменение — новая строка).
+/// Фаза 4: история значений для отката (каждое изменение – новая строка).
 model PlatformSettingVersion {
   id          String          @id @default(cuid())
   key         String

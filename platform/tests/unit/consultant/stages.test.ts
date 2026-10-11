@@ -4,8 +4,8 @@ import type { OnboardingView } from '@/server/onboarding/types';
 const view = (over: Partial<OnboardingView>): OnboardingView => ({ history: [], summary: null, progress: { done: 0, total: 0 }, ...over }) as OnboardingView;
 const row = (stepId: string, answer: string | null) => ({ stepId, lead: '', question: '', answer, editable: true });
 
-describe('markStages — состояния этапов знакомства', () => {
-  it('первый незакрытый этап — «сейчас», закрытые — «готово», остальные — «дальше»', () => {
+describe('markStages – состояния этапов знакомства', () => {
+  it('первый незакрытый этап – «сейчас», закрытые – «готово», остальные – «дальше»', () => {
     const s = markStages([
       { id: 'a', label: 'А', done: true, doneNote: 'Backend' },
       { id: 'b', label: 'Б', done: false, nextNote: 'потом' },
@@ -15,7 +15,7 @@ describe('markStages — состояния этапов знакомства', 
     expect(s.map((x) => x.note)).toEqual(['Backend', 'сейчас', 'подтверждает грейд']);
   });
 
-  it('закрытый этап после текущего остаётся закрытым; без подписей — «готово» и «дальше»', () => {
+  it('закрытый этап после текущего остаётся закрытым; без подписей – «готово» и «дальше»', () => {
     const s = markStages([
       { id: 'a', label: 'А', done: false },
       { id: 'b', label: 'Б', done: true },
@@ -26,8 +26,8 @@ describe('markStages — состояния этапов знакомства', 
   });
 });
 
-describe('stageAnswer — ответ шага знакомства', () => {
-  it('берёт ответ из ленты, пропущенный шаг и неизвестный шаг — null', () => {
+describe('stageAnswer – ответ шага знакомства', () => {
+  it('берёт ответ из ленты, пропущенный шаг и неизвестный шаг – null', () => {
     const v = view({ history: [row('grade', 'Middle'), row('city', null)] });
     expect(stageAnswer(v, 'grade')).toBe('Middle');
     expect(stageAnswer(v, 'city')).toBeNull();
@@ -41,7 +41,7 @@ describe('stageAnswer — ответ шага знакомства', () => {
   });
 });
 
-describe('candidateStages — полоса кандидата', () => {
+describe('candidateStages – полоса кандидата', () => {
   const base = { specialization: null, claimedGrade: null, materials: false, terms: false, category: null, progress: { done: 0, total: 8 } };
 
   it('пять этапов в порядке макета; пустой профиль начинается со специализации', () => {
@@ -68,7 +68,7 @@ describe('candidateStages — полоса кандидата', () => {
   });
 });
 
-describe('employerStages — полоса работодателя', () => {
+describe('employerStages – полоса работодателя', () => {
   it('без ленты знакомства заполненность считается по этапам', () => {
     const s = employerStages({ company: 'Гранит Софт', industry: 'Финтех', contact: true, needs: 2, invitations: 0 });
     expect(s.title).toBe('Знакомство с компанией');
@@ -77,7 +77,7 @@ describe('employerStages — полоса работодателя', () => {
     expect({ done: s.done, total: s.total }).toEqual({ done: 4, total: 5 });
   });
 
-  it('с лентой знакомства заполненность — её прогресс', () => {
+  it('с лентой знакомства заполненность – её прогресс', () => {
     const s = employerStages({ company: 'Гранит Софт', industry: null, contact: false, needs: 0, invitations: 0, progress: { done: 2, total: 11 } });
     expect({ done: s.done, total: s.total }).toEqual({ done: 2, total: 11 });
     expect(s.items[1]).toMatchObject({ id: 'industry', state: 'now' });
@@ -90,7 +90,7 @@ describe('checklistProgress', () => {
   });
 });
 
-describe('hasSavedAnswer — сохранённые ответы знакомства без ленты', () => {
+describe('hasSavedAnswer – сохранённые ответы знакомства без ленты', () => {
   it('ответ есть: непустая строка, непустой список, объект', () => {
     expect(hasSavedAnswer({ experience: 'oneToThree' }, 'experience')).toBe(true);
     expect(hasSavedAnswer({ formats: ['remote'] }, 'formats')).toBe(true);

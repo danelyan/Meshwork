@@ -14,7 +14,7 @@ import ui from './ui.module.css';
 export interface ClaimCardProps {
   claim: CardClaim;
   /**
-   * Склеенная карточка: все утверждения группы с одной цитатой и статусом (claim — первое).
+   * Склеенная карточка: все утверждения группы с одной цитатой и статусом (claim – первое).
    * «Да/Нет» применяются ко всем; «Поправить» скрыто (одна формулировка не заменит несколько).
    */
   group?: CardClaim[];
@@ -30,11 +30,11 @@ const STATE_TEXT = { confirmed: 'Подтверждено', edited: 'Испра�
 
 export function ClaimCard({ claim, group, onAction, busy = false }: ClaimCardProps) {
   const { status } = claim;
-  // Крупно — формулировка под цитату (в роде кандидата); каталожная — мелко, как тема созвона.
+  // Крупно – формулировка под цитату (в роде кандидата); каталожная – мелко, как тема созвона.
   const statement = shownWording(claim);
   const all = group && group.length > 1 ? group : [claim];
   const merged = all.length > 1;
-  // Темы созвона: каталожные утверждения без глагола в роде; у исправленных вручную — не показываем.
+  // Темы созвона: каталожные утверждения без глагола в роде; у исправленных вручную – не показываем.
   const topics = status === 'edited' ? '' : claimTopics(all.filter((c) => c.wording && c.statement !== shownWording(c)).map((c) => ({ statement: c.statement, quote: claim.quote })));
   const sameAsQuote = norm(statement) === norm(claim.quote);
   const [editing, setEditing] = useState(false);
@@ -138,7 +138,7 @@ export function ClaimCard({ claim, group, onAction, busy = false }: ClaimCardPro
   );
 }
 
-/** Источник — картинка (OCR, server/collector/ocr.ts): текст распознан, а не взят из текстового слоя. */
+/** Источник – картинка (OCR, server/collector/ocr.ts): текст распознан, а не взят из текстового слоя. */
 function fromImage(ref: string | null | undefined): boolean {
   return /\.(jpe?g|png)#/i.test(ref ?? '');
 }

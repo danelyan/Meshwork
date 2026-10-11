@@ -1,4 +1,4 @@
-// Общие семейства между подкатегориями (ADR 0003, дополнение 11.10): TaskGenerator.shared, в пул — по common-map.ts.
+// Общие семейства между подкатегориями (ADR 0003, дополнение 11.10): TaskGenerator.shared, в пул – по common-map.ts.
 import type { TaskGenerator } from '../types';
 
 import { COMMON_DATA_GENERATORS } from './common-data';

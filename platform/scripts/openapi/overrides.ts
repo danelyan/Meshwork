@@ -1,7 +1,7 @@
 // Описания, которых нет в коде маршрутов: формы ответов, пояснения к ошибкам, события SSE.
 // Метод, путь, JSDoc, роль доступа, Zod-схемы тела и query генератор берёт из самих route.ts;
-// здесь — только то, что выводить неоткуда. Новый маршрут без записи здесь попадает в спецификацию
-// с автоматическим описанием (ответ — «объект»), запись добавляют, когда нужна форма ответа.
+// здесь – только то, что выводить неоткуда. Новый маршрут без записи здесь попадает в спецификацию
+// с автоматическим описанием (ответ – «объект»), запись добавляют, когда нужна форма ответа.
 
 export type JsonSchema = Record<string, unknown>;
 
@@ -41,14 +41,14 @@ const obj = (props: Record<string, JsonSchema>, required: string[] = Object.keys
   required,
   ...(description ? { description } : {}),
 });
-/** Форма известна только по описанию: ключи названы словами, схема — произвольный объект. */
+/** Форма известна только по описанию: ключи названы словами, схема – произвольный объект. */
 const free = (description: string): JsonSchema => ({ type: 'object', additionalProperties: true, description });
 const ref = (name: string): JsonSchema => ({ $ref: `#/components/schemas/${name}` });
 
 const DT = (d?: string) => str(d, { format: 'date-time' });
 
 export const ERROR_RESPONSES: Record<number, { name: string; description: string }> = {
-  400: { name: 'BadRequest', description: 'Некорректный запрос: тело или query не прошли проверку (`validation_failed`, `details` — список полей) либо иная ошибка запроса (`bad_request`)' },
+  400: { name: 'BadRequest', description: 'Некорректный запрос: тело или query не прошли проверку (`validation_failed`, `details` – список полей) либо иная ошибка запроса (`bad_request`)' },
   401: { name: 'Unauthorized', description: 'Нет входа (`unauthorized`) или кука подписана верно, а аккаунта в БД нет (`session_stale`, клиент ведёт на /auth)' },
   403: { name: 'Forbidden', description: 'Нет доступа: другая роль (`forbidden`) или чужой Origin у изменяющего запроса' },
   404: { name: 'NotFound', description: 'Объект не найден; для чужих объектов тоже 404, чтобы не раскрывать их существование (`not_found`)' },
@@ -65,13 +65,13 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   admin: 'Админка владельцев платформы (E-08, ADR 0009): вход персонала (пароль + TOTP), персонал, журнал; разделы фаз 1–5',
   auth: 'Вход, сессия, согласие на обработку ПДн, роль',
   call: 'Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события, сигналинг WebRTC',
-  consents: 'Согласия (ADR 0005): список «Мои согласия», дать, отозвать; раскрытие — по приглашению',
+  consents: 'Согласия (ADR 0005): список «Мои согласия», дать, отозвать; раскрытие – по приглашению',
   claims: 'Карточки утверждений кандидата: подтвердить, поправить, отклонить',
   consultant: 'Чат с консультантом (SSE) и история разговоров',
   defense: 'Защита утверждения: короткое интервью, повышающее уровень до «платформа»',
   'defense-room': 'Защита проекта (ADR 0003, ступень 3): вопросы по коду, ходы, SSE звонка, итог слепого оценщика',
   demo: 'Демо-вход и демо-резюме (только при DEMO_LOGIN)',
-  'fsp-id': 'ФСП ID (R-FSP-01): привязка ФСП ID к профилю кандидата через OIDC-провайдер (Keycloak; сейчас — симулятор ФСП ID команды) и загрузка достижений',
+  'fsp-id': 'ФСП ID (R-FSP-01): привязка ФСП ID к профилю кандидата через OIDC-провайдер (Keycloak; сейчас – симулятор ФСП ID команды) и загрузка достижений',
   directions: 'Справочник направлений и подкатегорий (Subcategory, R-T-05)',
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
@@ -91,10 +91,10 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
 
 export const SSE_EVENTS_DOC = [
   '### События SSE',
-  'Звонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).',
-  'Эндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.',
+  'Звонок защиты проекта `GET /api/defense-room/{id}/events` – EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC – только адресату).',
+  'Эндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр – `data: <json>` и пустая строка; тип события – поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` – итог реплики, авторитетный. Схемы кадров – `ConsultantEvent` и `EmployerEvent`.',
   'Второй ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.',
-  'Пока ход идёт, сервер раз в 15 с шлёт комментарий `: ping` (строка без `data:`, клиент её пропускает). Разрыв соединения ход не прерывает: реплика дописывается и сохраняется в историю. Остановить ход — `POST /api/consultant/messages/stop`.',
+  'Пока ход идёт, сервер раз в 15 с шлёт комментарий `: ping` (строка без `data:`, клиент её пропускает). Разрыв соединения ход не прерывает: реплика дописывается и сохраняется в историю. Остановить ход – `POST /api/consultant/messages/stop`.',
 ].join('\n\n');
 
 const ev = (type: string, props: Record<string, JsonSchema>, description: string, required: string[] = Object.keys(props)): JsonSchema =>
@@ -120,7 +120,7 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
       durationMin: int('30 или 45'),
       comment: nullable(str()),
       createdAt: DT(),
-      slots: arr(obj({ id: str(), startsAt: DT('UTC; интерфейс показывает по МСК'), endsAt: DT(), available: bool('false — время занято другим кандидатом компании или прошло') })),
+      slots: arr(obj({ id: str(), startsAt: DT('UTC; интерфейс показывает по МСК'), endsAt: DT(), available: bool('false – время занято другим кандидатом компании или прошло') })),
       noneFit: nullable(obj({ at: DT(), comment: str() })),
       scheduled: nullable(obj({ slotId: str(), startsAt: DT(), endsAt: DT(), roomOpensAt: DT('за 10 минут до начала'), roomOpen: bool(), callSessionId: nullable(str()), roomHref: nullable(str('/defense-room/:id кандидату, /employer/calls/:id работодателю')) })),
       cancelled: nullable(obj({ at: DT(), by: en('candidate', 'employer'), reason: str() })),
@@ -139,8 +139,8 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
     {
       id: str(),
       catalogId: str('Запись каталога навыков'),
-      statement: str('Формулировка утверждения из каталога (или правка кандидата) — то, что проверяется на созвоне'),
-      wording: nullable(str('Формулировка для кандидата в границах цитаты; null — старая запись, показывать statement')),
+      statement: str('Формулировка утверждения из каталога (или правка кандидата) – то, что проверяется на созвоне'),
+      wording: nullable(str('Формулировка для кандидата в границах цитаты; null – старая запись, показывать statement')),
       level: en('self_reported', 'artifact', 'third_party', 'platform'),
       quote: nullable(str('Цитата из источника')),
       sourceRef: nullable(str()),
@@ -152,7 +152,7 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
     'Утверждение кандидата с уровнем доказанности',
   ),
   ConsultantEvent: {
-    description: 'Кадр SSE хода консультанта (`type` — различитель)',
+    description: 'Кадр SSE хода консультанта (`type` – различитель)',
     oneOf: [
       ...COMMON_EVENTS,
       ev('claims', { proposed: arr({ type: 'object' }), rejected: int(), rejectedByReason: { type: 'object', additionalProperties: int() }, hiddenText: int(), alreadyKnown: int() }, 'Карточки утверждений, извлечённые из вложений', ['proposed', 'rejected']),
@@ -162,10 +162,10 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
     discriminator: { propertyName: 'type' },
   },
   EmployerEvent: {
-    description: 'Кадр SSE хода помощника работодателя (`type` — различитель). Имя кандидата добавляется карточке только после принятия приглашения',
+    description: 'Кадр SSE хода помощника работодателя (`type` – различитель). Имя кандидата добавляется карточке только после принятия приглашения',
     oneOf: [
       ...COMMON_EVENTS,
-      ev('candidates', { block: free('Подборка: vacancy (id, title, salaryFrom) | null, total, items — карточки с псевдонимом, рангом, категорией, покрытием и обоснованием') }, 'Блок карточек кандидатов'),
+      ev('candidates', { block: free('Подборка: vacancy (id, title, salaryFrom) | null, total, items – карточки с псевдонимом, рангом, категорией, покрытием и обоснованием') }, 'Блок карточек кандидатов'),
       ev('invitation_draft', { draft: free('Черновик приглашения: candidateId, alias, vacancyId, salaryFrom, salaryTo, message, limit {sent, limit, left}, blocked') }, 'Черновик приглашения; отправляет человек'),
       ev('need_draft', { draft: free('Черновик потребности: title, specialization, grade, stack, salaryFrom/To, needs, formHref') }, 'Черновик потребности; подтверждает человек'),
     ],
@@ -173,12 +173,12 @@ export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
   },
   CallView: free(
     'Созвон глазами роли: id, kind (qualifying | defense), status (active | finished | cancelled), projectSubmissionId, startedAt, finishedAt, access (full | summary), ' +
-      'transcript — реплики {index, role: ai | candidate | employer, text, at, tMs, audioRef?, meta?} или null при summary, verdict (карта глубины; при summary — без цитат), ' +
+      'transcript – реплики {index, role: ai | candidate | employer, text, at, tMs, audioRef?, meta?} или null при summary, verdict (карта глубины; при summary – без цитат), ' +
       'hasRecording, progress {answered, minQuestions, maxQuestions, canFinish, awaitingAnswer}, participants, policyVersion, disclaimer',
   ),
   CallEvent: {
     description:
-      'Кадр SSE созвона: `event: <type>` + `data: <json>`; `type` — различитель. Enum типов — CALL_EVENT_TYPES (server/call/types.ts); participant / mute / question / signal шлёт lane defense-room. Работодатель без доступа к записи получает только status, participant и verdict (без цитат)',
+      'Кадр SSE созвона: `event: <type>` + `data: <json>`; `type` – различитель. Enum типов – CALL_EVENT_TYPES (server/call/types.ts); participant / mute / question / signal шлёт lane defense-room. Работодатель без доступа к записи получает только status, participant и verdict (без цитат)',
     oneOf: [
       ev('snapshot', { call: ref('CallView') }, 'Первый кадр: состояние созвона для этой роли'),
       ev('status', { status: en('active', 'finished', 'cancelled') }, 'Сменился статус'),
@@ -206,16 +206,16 @@ const SESSION_USER = obj({
   employerProfileId: nullable(str()),
   onboarded: bool(),
   consent: bool('Согласие текущей версии дано'),
-  onboardingProgress: nullable(obj({ done: int(), total: int() }, ['done', 'total'], 'Закрыто шагов знакомства из скольки (пропуск считается закрытым); null — знакомство завершено или не посчитать')),
+  onboardingProgress: nullable(obj({ done: int(), total: int() }, ['done', 'total'], 'Закрыто шагов знакомства из скольки (пропуск считается закрытым); null – знакомство завершено или не посчитать')),
 });
 
 const FILTER_QUERY = [
   { name: 'spec', description: 'Специализация или fullstack (есть категории и в backend, и в frontend; грейд - меньший из двух)', schema: en('backend', 'frontend', 'ai', 'engineering', 'fullstack') },
   { name: 'grade', description: 'Грейд', schema: en('junior', 'middle') },
   { name: 'stack', description: 'Технологии через запятую, не больше 10', schema: str() },
-  { name: 'fsp', description: '`1` — только с достижениями ФСП', schema: en('1') },
-  { name: 'pool', description: '`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)', schema: en('all') },
-  { name: 'category', description: 'Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`', schema: en('1') },
+  { name: 'fsp', description: '`1` – только с достижениями ФСП', schema: en('1') },
+  { name: 'pool', description: '`all` – расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)', schema: en('all') },
+  { name: 'category', description: 'Устарело: игнорируется – выдача и так только с категорией; расширение пула – `pool=all`', schema: en('1') },
   { name: 'limit', description: 'Размер выдачи; неверное значение заменяется значением по умолчанию', schema: int() },
 ];
 
@@ -228,7 +228,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'GET /api/openapi': {
     role: 'public',
     summary: 'Спецификация OpenAPI',
-    query: [{ name: 'format', description: '`json` — вернуть JSON (то же даёт `Accept: application/json`); иначе YAML', schema: en('json', 'yaml') }],
+    query: [{ name: 'format', description: '`json` – вернуть JSON (то же даёт `Accept: application/json`); иначе YAML', schema: en('json', 'yaml') }],
     success: {
       description: 'Документ OpenAPI 3.1: YAML (`application/yaml`) или JSON',
       contentType: 'application/yaml',
@@ -241,7 +241,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     role: 'public',
     summary: 'Проверить подбор на своём наборе',
     description:
-      'Наше ранжирование (то же, что подборка под потребность в кабинете) и базовая линия на наборе пользователя: P@k, nDCG@k, MRR по каждой вакансии и в среднем, топ-k с объяснениями. Считается в памяти, в БД ничего не пишется. Лимиты: тело ≤ 1 МБ, ≤ 50 вакансий, ≤ 1000 кандидатов, ≤ 60 требований и ≤ 200 утверждений на объект, k ≤ 20; id утверждений — из каталога. Лимит частоты — 30 прогонов за 10 минут с адреса.',
+      'Наше ранжирование (то же, что подборка под потребность в кабинете) и базовая линия на наборе пользователя: P@k, nDCG@k, MRR по каждой вакансии и в среднем, топ-k с объяснениями. Считается в памяти, в БД ничего не пишется. Лимиты: тело ≤ 1 МБ, ≤ 50 вакансий, ≤ 1000 кандидатов, ≤ 60 требований и ≤ 200 утверждений на объект, k ≤ 20; id утверждений – из каталога. Лимит частоты – 30 прогонов за 10 минут с адреса.',
     body: {
       description: 'Набор: вакансии, кандидаты, разметка релевантности 0/1/2',
       schema: obj(
@@ -273,7 +273,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
               ['id', 'claims'],
             ),
           ),
-          relevance: free('relevance[id вакансии][id кандидата] = 0 | 1 | 2; кого нет — 0'),
+          relevance: free('relevance[id вакансии][id кандидата] = 0 | 1 | 2; кого нет – 0'),
         },
         ['vacancies', 'candidates', 'relevance'],
       ),
@@ -334,7 +334,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     role: 'public',
     optionalAuth: true,
     success: JSON_OK(
-      'Текущий вход. `user: null` — не вошёл; `legacyCandidateId` — старая кука демо-кандидата без аккаунта',
+      'Текущий вход. `user: null` – не вошёл; `legacyCandidateId` – старая кука демо-кандидата без аккаунта',
       obj({ user: nullable(SESSION_USER), legacyCandidateId: str() }, ['user']),
     ),
   },
@@ -352,7 +352,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'POST /api/auth/role/switch': {
     summary: 'Переключить активную роль (вторая роль на той же учётке)',
     description:
-      'ADR 0004. Профиль целевой роли есть — переключает; нет — создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль — идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.',
+      'ADR 0004. Профиль целевой роли есть – переключает; нет – создаёт (работодателю нужна `companyName`, создаётся новая компания) и запускает знакомство этой роли в ленте /consultant. Та же роль – идемпотентно (`changed: false`). Перевыпускает куку cid: в ней id профиля только активной роли. Клиент переходит на `next` полной навигацией.',
     success: JSON_OK(
       'Роль активна; выставлена новая кука cid',
       obj({ role: str(), next: str('Дом роли (путь интерфейса)'), created: bool(), changed: bool() }),
@@ -361,7 +361,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
       400: 'Нет названия компании, когда профиль работодателя надо создать (`bad_request`), или тело не прошло схему (`validation_failed`)',
       401: 'Нет входа (`unauthorized`)',
       403: 'Старая демо-кука без аккаунта, общий демо-аккаунт без второй роли или запрос с чужого сайта (`forbidden`)',
-      409: 'Роль ещё не выбрана — сначала знакомство (`conflict`)',
+      409: 'Роль ещё не выбрана – сначала знакомство (`conflict`)',
       429: 'Слишком много переключений (`rate_limited`)',
     },
   },
@@ -379,7 +379,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
       { name: 'consent', description: 'Версия текста согласия, отмеченная галкой на /auth (из GET /api/auth/consent); без неё в Яндекс не ведём', schema: str(), required: true },
       { name: 'next', description: 'Куда вернуть после входа; только внутренние пути', schema: str() },
     ],
-    description: 'Старт входа через Яндекс ID: state и PKCE verifier в короткоживущей подписанной куке (10 минут), редирект на oauth.yandex.ru. Не настроен или нет согласия — обратно на /auth?error=… .',
+    description: 'Старт входа через Яндекс ID: state и PKCE verifier в короткоживущей подписанной куке (10 минут), редирект на oauth.yandex.ru. Не настроен или нет согласия – обратно на /auth?error=… .',
     success: { description: 'Редирект 303 на oauth.yandex.ru или на /auth?error=yandex_not_configured|consent_required' },
   },
   'GET /api/auth/yandex/callback': {
@@ -390,22 +390,22 @@ export const OVERRIDES: Record<string, OpOverride> = {
       { name: 'state', description: 'Должен совпасть со state из куки старта', schema: str() },
       { name: 'error', description: 'Присутствует, если пользователь отказал', schema: str() },
     ],
-    description: 'Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка — на /auth?error=<код>, без подробностей и токенов.',
+    description: 'Возврат с oauth.yandex.ru: проверка state, обмен кода (PKCE), профиль, создание или поиск аккаунта, новая кука сессии, редирект. Любая ошибка – на /auth?error=<код>, без подробностей и токенов.',
     success: { description: 'Редирект 303: незавершённый онбординг → /consultant (лента знакомства), иначе `next` или кабинет роли; при ошибке /auth?error=<код>' },
   },
   // lane fsp-oidc: привязка ФСП ID к профилю (R-FSP-01..04, R-C-15).
   'GET /api/fsp-id/link': {
     summary: 'Начать привязку ФСП ID',
-    description: 'Кнопка в настройках кандидата: state, nonce и PKCE verifier — в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата — на /auth.',
+    description: 'Кнопка в настройках кандидата: state, nonce и PKCE verifier – в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата – на /auth.',
     success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
   },
   'GET /api/fsp-id/login': {
     summary: 'Войти через ФСП ID',
     query: [
-      { name: 'consent', description: 'Версия согласия с галки на /auth; иначе — /auth?error=consent_required', schema: str() },
+      { name: 'consent', description: 'Версия согласия с галки на /auth; иначе – /auth?error=consent_required', schema: str() },
       { name: 'next', description: 'Куда вернуть после входа (только свой путь)', schema: str() },
     ],
-    description: 'Вход на платформу через ФСП ID (кандидат): state, nonce, PKCE verifier, согласие и next — в подписанной httpOnly-куке на 10 минут, редирект на страницу входа провайдера (симулятор ФСП ID по env или встроенный мок).',
+    description: 'Вход на платформу через ФСП ID (кандидат): state, nonce, PKCE verifier, согласие и next – в подписанной httpOnly-куке на 10 минут, редирект на страницу входа провайдера (симулятор ФСП ID по env или встроенный мок).',
     success: { status: 303, description: 'Редирект на страницу входа ФСП ID' },
   },
   'GET /api/fsp-id/callback': {
@@ -415,20 +415,20 @@ export const OVERRIDES: Record<string, OpOverride> = {
       { name: 'state', description: 'Должен совпасть со state из куки старта', schema: str() },
       { name: 'error', description: 'Присутствует при отказе', schema: str() },
     ],
-    description: 'Проверка state, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce). Привязка (кука потока mode=link): кандидат сессии = кандидат потока, участник привязывается к профилю. Вход (mode=login): аккаунт по ФСП ID (новый — сразу кандидат), согласие, привязка, кука сессии. Токены в URL не попадают.',
-    success: { status: 303, description: 'Привязка: /settings или /consultant с ?fsp=linked|no_achievements|unavailable|error_<код>. Вход: /consultant или next; ошибка — /auth?error=fsp_<код>' },
+    description: 'Проверка state, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce). Привязка (кука потока mode=link): кандидат сессии = кандидат потока, участник привязывается к профилю. Вход (mode=login): аккаунт по ФСП ID (новый – сразу кандидат), согласие, привязка, кука сессии. Токены в URL не попадают.',
+    success: { status: 303, description: 'Привязка: /settings или /consultant с ?fsp=linked|no_achievements|unavailable|error_<код>. Вход: /consultant или next; ошибка – /auth?error=fsp_<код>' },
   },
   'GET /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
     summary: 'Мок ФСП ID: страница входа',
     description: 'Authorization endpoint встроенного мока ФСП ID (путь как у Keycloak); только пока внешний провайдер не настроен, иначе 404. Проверяет client_id и redirect_uri по белому списку, PKCE S256, state и nonce; отдаёт HTML-страницу выбора демо-участника.',
-    success: { description: 'HTML-страница входа; ошибка запроса — редирект на redirect_uri с error или страница ошибки' },
+    success: { description: 'HTML-страница входа; ошибка запроса – редирект на redirect_uri с error или страница ошибки' },
   },
   'POST /api/fsp-id/realms/fsp/protocol/openid-connect/auth': {
     summary: 'Мок ФСП ID: выбор демо-участника',
-    description: 'Форма страницы входа мока: одноразовый код на 60 секунд и редирект на redirect_uri с code и state; «Отмена» — error=access_denied.',
+    description: 'Форма страницы входа мока: одноразовый код на 60 секунд и редирект на redirect_uri с code и state; «Отмена» – error=access_denied.',
     success: { status: 303, description: 'Редирект на /api/fsp-id/callback' },
   },
-  // lane email-auth: вход по почте и паролю (R-D-04). Все формы — same-origin и лимит попыток на клиента (429).
+  // lane email-auth: вход по почте и паролю (R-D-04). Все формы – same-origin и лимит попыток на клиента (429).
   'POST /api/auth/register': {
     summary: 'Регистрация по почте',
     role: 'public',
@@ -443,7 +443,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
         ['email', 'password', 'consent'],
       ),
     },
-    success: JSON_OK('Код подтверждения отправлен. Ответ одинаковый и для занятой почты; `devCode` — только на локальном стенде', obj({ sent: { const: true }, devCode: str() }, ['sent'])),
+    success: JSON_OK('Код подтверждения отправлен. Ответ одинаковый и для занятой почты; `devCode` – только на локальном стенде', obj({ sent: { const: true }, devCode: str() }, ['sent'])),
     errors: { 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток с клиента или писем на почту (`rate_limited`)', 503: 'Письмо не ушло: SMTP недоступен (`mail_unavailable`)' },
   },
   'POST /api/auth/verify': {
@@ -457,7 +457,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Выслать код подтверждения заново',
     role: 'public',
     body: { schema: obj({ email: str(undefined, { format: 'email' }) }) },
-    success: JSON_OK('Ответ одинаковый для любой почты; `devCode` — только на локальном стенде', obj({ sent: { const: true }, devCode: str() }, ['sent'])),
+    success: JSON_OK('Ответ одинаковый для любой почты; `devCode` – только на локальном стенде', obj({ sent: { const: true }, devCode: str() }, ['sent'])),
     errors: { 403: 'Чужой Origin (`forbidden`)', 429: 'Слишком много попыток (`rate_limited`)', 503: 'Письмо не ушло (`mail_unavailable`)' },
   },
   'POST /api/auth/login': {
@@ -466,8 +466,8 @@ export const OVERRIDES: Record<string, OpOverride> = {
     body: { schema: obj({ email: str(undefined, { format: 'email' }), password: str(), next: nullable(str('Куда вести после входа; только внутренние пути')) }, ['email', 'password']) },
     success: JSON_OK('Вход выполнен, выставлена кука cid', obj({ next: str('Куда вести: /consultant (лента знакомства) или кабинет роли') })),
     errors: {
-      401: 'Неверная почта или пароль — одинаковый ответ (`invalid_credentials`)',
-      403: 'Почта не подтверждена, новый код отправлен (`email_not_verified`; `details.devCode` — только на локальном стенде) или чужой Origin',
+      401: 'Неверная почта или пароль – одинаковый ответ (`invalid_credentials`)',
+      403: 'Почта не подтверждена, новый код отправлен (`email_not_verified`; `details.devCode` – только на локальном стенде) или чужой Origin',
       429: 'Слишком много попыток (`rate_limited`)',
     },
   },
@@ -495,7 +495,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'POST /api/claims/{id}/{action}': {
     summary: 'Подтвердить, поправить или отклонить утверждение',
     pathParams: { action: en('confirm', 'edit', 'reject') },
-    description: 'Карточка «да / поправить / нет». `action` — `confirm`, `edit` или `reject`; другое значение — 404. Только владелец: чужое и несуществующее — 404. Тело нужно только для `edit` и меняет лишь формулировку (3–300 символов); отклонённое не оживает (409).',
+    description: 'Карточка «да / поправить / нет». `action` – `confirm`, `edit` или `reject`; другое значение – 404. Только владелец: чужое и несуществующее – 404. Тело нужно только для `edit` и меняет лишь формулировку (3–300 символов); отклонённое не оживает (409).',
     body: { description: 'Только для action = edit', schema: obj({ statement: str('Новая формулировка, 3–300 символов; меняет и wording, и statement') }) },
     success: JSON_OK('Обновлённое утверждение', obj({ claim: ref('Claim') })),
     errors: { 409: 'Утверждение уже отклонено или в неподходящем статусе (`conflict`)' },
@@ -518,14 +518,14 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'POST /api/consultant/messages': {
     summary: 'Ход консультанта (SSE)',
-    description: 'Ход консультанта: тело — текст, вложения (id из /api/uploads) и ссылки; ответ — поток событий `ConsultantEvent`, заканчивается `done`. Один ход на разговор одновременно. Первый ход с вложениями запускает конвейер: сборщик → извлекатель → проверяющий → черновики утверждений (события `step`, `claims`). Не больше 6 вызовов инструментов за ход. В теле должен быть текст, вложение или ссылка (иначе 400); `onboardingStep` — свободный вопрос посреди онбординга, нужен вход, согласие и роль кандидата.',
-    success: { schema: { type: 'string', description: 'Кадры `data: <json>`; схема кадра — ConsultantEvent', 'x-event-schema': ref('ConsultantEvent') } },
+    description: 'Ход консультанта: тело – текст, вложения (id из /api/uploads) и ссылки; ответ – поток событий `ConsultantEvent`, заканчивается `done`. Один ход на разговор одновременно. Первый ход с вложениями запускает конвейер: сборщик → извлекатель → проверяющий → черновики утверждений (события `step`, `claims`). Не больше 6 вызовов инструментов за ход. В теле должен быть текст, вложение или ссылка (иначе 400); `onboardingStep` – свободный вопрос посреди онбординга, нужен вход, согласие и роль кандидата.',
+    success: { schema: { type: 'string', description: 'Кадры `data: <json>`; схема кадра – ConsultantEvent', 'x-event-schema': ref('ConsultantEvent') } },
     errors: { ...SSE_ERRORS, 403: 'Вопрос посреди онбординга без входа или не кандидатом' },
   },
 
   'POST /api/consultant/messages/stop': {
     summary: 'Остановить ход консультанта',
-    description: 'Кнопка «Стоп»: отменяет активный ход разговора (работу модели). Показанный кусок реплики сохраняется ответом ассистента и уходит в поток хода событием `message`, затем `done`; ответ приходит после этого (не дольше 5 с). Разрыв соединения ход не останавливает — только этот вызов или таймаут хода. Реестр ходов — в памяти процесса (стенд — один процесс приложения).',
+    description: 'Кнопка «Стоп»: отменяет активный ход разговора (работу модели). Показанный кусок реплики сохраняется ответом ассистента и уходит в поток хода событием `message`, затем `done`; ответ приходит после этого (не дольше 5 с). Разрыв соединения ход не останавливает – только этот вызов или таймаут хода. Реестр ходов – в памяти процесса (стенд – один процесс приложения).',
     success: { ...JSON_OK('Ход остановлен', obj({ stopped: bool() })), extra: [{ status: 204, description: 'Активного хода нет (стоп идемпотентен)' }] },
     errors: { 404: 'Разговор не найден или чужой' },
   },
@@ -535,7 +535,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Начать (или продолжить активную) защиту утверждения: короткое интервью из 3–5 вопросов, оценщик по рубрике, порог и уровень решает код.',
     success: {
       status: 201,
-      schema: free('Сессия защиты: id, утверждение, первый вопрос, лимиты, оговорка; `resumed` — продолжена активная сессия'),
+      schema: free('Сессия защиты: id, утверждение, первый вопрос, лимиты, оговорка; `resumed` – продолжена активная сессия'),
       description: 'Новая сессия защиты и первый вопрос',
       extra: [{ status: 200, description: 'Продолжена активная сессия (`resumed: true`)', schema: free('Та же форма, что у 201') }],
     },
@@ -545,7 +545,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Состояние защиты', success: JSON_OK('Состояние: вопросы, ответы, вердикт, лимиты, оговорка', free('Состояние сессии защиты')) },
   'POST /api/defense/{sessionId}': {
     summary: 'Ответить на вопрос защиты',
-    description: 'Ответ на текущий вопрос. Пустой ответ допустим («не знаю» оценивается честно). Результат — следующий вопрос или вердикт.',
+    description: 'Ответ на текущий вопрос. Пустой ответ допустим («не знаю» оценивается честно). Результат – следующий вопрос или вердикт.',
     success: JSON_OK('Следующий вопрос или вердикт', free('Следующий вопрос либо вердикт с итоговым уровнем')),
     errors: { 409: 'Сессия уже завершена' },
   },
@@ -553,7 +553,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'GET /api/demo/login': {
     summary: 'Список демо-аккаунтов',
     role: 'public',
-    description: 'Список демо-кандидатов и демо-работодателей для экрана выбора. При выключенном DEMO_LOGIN — 404.',
+    description: 'Список демо-кандидатов и демо-работодателей для экрана выбора. При выключенном DEMO_LOGIN – 404.',
     success: JSON_OK(
       'Демо-аккаунты',
       obj({
@@ -566,17 +566,17 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'POST /api/demo/login': {
     summary: 'Войти в демо-аккаунт',
     role: 'public',
-    description: 'Вход за демо-аккаунт: новый пользователь (`fresh` с версией согласия), перезапуск онбординга, готовый демо-кандидат или демо-работодатель. Выставляет куку cid. Не-демо аккаунты — 404.',
-    success: JSON_OK('Вход выполнен; в ответе `next` — куда вести', obj({ next: str() }, ['next'])),
+    description: 'Вход за демо-аккаунт: новый пользователь (`fresh` с версией согласия), перезапуск онбординга, готовый демо-кандидат или демо-работодатель. Выставляет куку cid. Не-демо аккаунты – 404.',
+    success: JSON_OK('Вход выполнен; в ответе `next` – куда вести', obj({ next: str() }, ['next'])),
     errors: { 404: 'Демо-вход выключен или аккаунт не демо' },
   },
   'DELETE /api/demo/login': {
     summary: 'Выйти из демо', role: 'public', description: 'Выход: стирает куку cid.', success: JSON_OK('Кука стёрта', obj({ ok: bool() })), errors: {} },
   'GET /api/demo/resume': {
     summary: 'Демо-резюме текущего демо-кандидата',
-    description: 'Демо-резюме текущего демо-кандидата (PDF), чтобы жюри не искало файлы. Только при DEMO_LOGIN и только для демо-кандидатов. `?info=1` — метаданные вместо файла.',
+    description: 'Демо-резюме текущего демо-кандидата (PDF), чтобы жюри не искало файлы. Только при DEMO_LOGIN и только для демо-кандидатов. `?info=1` – метаданные вместо файла.',
     success: {
-      description: 'PDF-файл демо-резюме (при `info=1` — JSON с метаданными)',
+      description: 'PDF-файл демо-резюме (при `info=1` – JSON с метаданными)',
       contentType: 'application/pdf',
       schema: { type: 'string', format: 'binary' },
       extra: [{ status: 200, description: 'При `info=1`: имя файла и ссылка для вставки', schema: obj({ fileName: str(), link: str() }) }],
@@ -586,20 +586,20 @@ export const OVERRIDES: Record<string, OpOverride> = {
 
   'POST /api/employer/assistant/messages': {
     summary: 'Ход помощника работодателя (SSE)',
-    description: 'Ход помощника работодателя: поток событий `EmployerEvent`, как у консультанта. Разговор — свой, чужой — 404. Один ход на разговор одновременно. Помощник видит только публичную часть кандидатов (псевдоним, категория, покрытие); имя — только у принявших приглашение.',
-    success: { schema: { type: 'string', description: 'Кадры `data: <json>`; схема кадра — EmployerEvent', 'x-event-schema': ref('EmployerEvent') } },
+    description: 'Ход помощника работодателя: поток событий `EmployerEvent`, как у консультанта. Разговор – свой, чужой – 404. Один ход на разговор одновременно. Помощник видит только публичную часть кандидатов (псевдоним, категория, покрытие); имя – только у принявших приглашение.',
+    success: { schema: { type: 'string', description: 'Кадры `data: <json>`; схема кадра – EmployerEvent', 'x-event-schema': ref('EmployerEvent') } },
     errors: { 409: `${SSE_ERRORS[409]}; не приняты оферта или обязательство по данным (\`consent_required\`)` },
   },
   'GET /api/employer/invitations': {
     summary: 'Трекинг приглашений и остаток лимита',
     description: 'Статусы приглашений компании (R-E-05) и остаток суточного лимита.',
-    success: JSON_OK('Приглашения компании и лимит', obj({ invitations: arr(free('Приглашение: кандидат, потребность, зарплата, статус, даты; контакты — только после принятия')), limit: obj({ perDay: int(), sentToday: int() }) })),
+    success: JSON_OK('Приглашения компании и лимит', obj({ invitations: arr(free('Приглашение: кандидат, потребность, зарплата, статус, даты; контакты – только после принятия')), limit: obj({ perDay: int(), sentToday: int() }) })),
 
     errors: { 409: 'Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)' },
   },
   'POST /api/employer/invitations': {
     summary: 'Пригласить кандидата',
-    description: 'Приглашение: описание задачи и зарплата обязательны, потребность — нет (R-E-05). Контакты кандидата до принятия скрыты.',
+    description: 'Приглашение: описание задачи и зарплата обязательны, потребность – нет (R-E-05). Контакты кандидата до принятия скрыты.',
     success: { status: 201, description: 'Приглашение создано', schema: free('Созданное приглашение') },
     errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)', 422: 'У компании нет способа связи (`company_contact_required`, `details.companyUrl`)', 429: 'Суточный лимит приглашений исчерпан' },
   },
@@ -613,7 +613,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'GET /api/employer/vacancies/{id}/matches': {
     summary: 'Подборка кандидатов под потребность',
     query: FILTER_QUERY,
-    description: 'Подборка с обоснованием (R-E-03, R-M-03); фильтры — query (R-M-04). Контакты скрыты до принятия приглашения (R-E-07).',
+    description: 'Подборка с обоснованием (R-E-03, R-M-03); фильтры – query (R-M-04). Контакты скрыты до принятия приглашения (R-E-07).',
     success: JSON_OK('Ранжированные карточки с обоснованием', MATCHES),
     errors: { 404: 'Потребность не найдена или чужая', 409: 'Не приняты оферта или обязательство по данным (`consent_required`)' },
   },
@@ -637,24 +637,24 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'POST /api/employer/vacancies': {
     summary: 'Создать потребность',
-    description: 'Создать потребность. Требования — только из каталога своей специализации или общие.',
+    description: 'Создать потребность. Требования – только из каталога своей специализации или общие.',
     success: { status: 201, description: 'Потребность создана', schema: free('Созданная потребность') },
   },
 
   'GET /api/employer/company': {
     summary: 'Профиль своей компании',
-    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании; `inviteContact` — способ связи в приглашениях от этого представителя (контакт компании, иначе его почта), null — приглашения не отправятся (422 company_contact_required)', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
+    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании; `inviteContact` – способ связи в приглашениях от этого представителя (контакт компании, иначе его почта), null – приглашения не отправятся (422 company_contact_required)', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
   },
   'PATCH /api/employer/company': {
     summary: 'Изменить профиль своей компании',
-    description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.',
+    description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт – почта или Telegram.',
     success: JSON_OK('Профиль компании после правки, с `inviteContact`', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
   },
 
   'GET /api/invitations': {
-    query: [{ name: 'view', description: '`1` — отметить просмотр: статус sent → viewed', schema: en('1') }],
+    query: [{ name: 'view', description: '`1` – отметить просмотр: статус sent → viewed', schema: en('1') }],
     summary: 'Входящие приглашения кандидата',
-    success: JSON_OK('Приглашения кандидата, только свои (R-C-16)', obj({ invitations: arr(free('Приглашение: компания, потребность, зарплата, сообщение, статус, даты; `disclosed` — действует раскрытие имени и контактов (Г5)')) })),
+    success: JSON_OK('Приглашения кандидата, только свои (R-C-16)', obj({ invitations: arr(free('Приглашение: компания, потребность, зарплата, сообщение, статус, даты; `disclosed` – действует раскрытие имени и контактов (Г5)')) })),
   },
   'POST /api/employer/invitations/{id}/hire': {
     summary: 'Отметить найм',
@@ -673,17 +673,17 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Предложить слоты живой защиты',
     description: 'Только по принятому приглашению своей компании: 2–5 слотов (ISO 8601, интерфейс вводит по МСК), 30 или 45 минут, не раньше чем через 2 часа и не позже 14 дней, комментарий до 300 знаков. Одно активное предложение на приглашение: новое заменяет старое. Кандидат получает уведомление.',
     success: { status: 201, description: 'Предложение и подстатус живой защиты', schema: ref('LiveDefense') },
-    errors: { 400: 'Число слотов, длительность, окно времени или пересечение слотов (`slot_count`, `slot_duration`, `slot_window`, `slot_overlap`)', 404: 'Приглашение чужое или не существует', 409: 'Приглашение не принято (`invitation_not_accepted`); время занято защитой другого кандидата (`slot_taken`); защита уже назначена — сначала отмена (`live_defense_scheduled`)' },
+    errors: { 400: 'Число слотов, длительность, окно времени или пересечение слотов (`slot_count`, `slot_duration`, `slot_window`, `slot_overlap`)', 404: 'Приглашение чужое или не существует', 409: 'Приглашение не принято (`invitation_not_accepted`); время занято защитой другого кандидата (`slot_taken`); защита уже назначена – сначала отмена (`live_defense_scheduled`)' },
   },
   'POST /api/employer/invitations/{id}/live-defense/cancel': {
     summary: 'Отменить живую защиту (работодатель)',
-    description: 'С причиной; назначенную — не позднее чем за 1 час до начала. Время компании освобождается, кандидат получает уведомление.',
+    description: 'С причиной; назначенную – не позднее чем за 1 час до начала. Время компании освобождается, кандидат получает уведомление.',
     success: JSON_OK('Предложение со статусом cancelled', ref('LiveDefense')),
     errors: { 404: 'Приглашение чужое или защита не назначалась', 409: 'Поздно отменять (`cancel_too_late`) или уже отменено (`not_scheduled`)' },
   },
   'POST /api/invitations/{id}/live-defense/choose': {
     summary: 'Выбрать слот живой защиты',
-    description: 'Живая защита записывается (ADR 0008 п. 3): нужен действующее согласие на запись `call_recording` (ADR 0005). Без него — 409 `recording_consent_required` с `details: { version, paragraphs }`; с `recordingConsentVersion` согласие даётся тем же действием. Выбор создаёт или привязывает ожидающую сессию защиты (`CallSession kind=defense`), письма и уведомления — обеим сторонам.',
+    description: 'Живая защита записывается (ADR 0008 п. 3): нужен действующее согласие на запись `call_recording` (ADR 0005). Без него – 409 `recording_consent_required` с `details: { version, paragraphs }`; с `recordingConsentVersion` согласие даётся тем же действием. Выбор создаёт или привязывает ожидающую сессию защиты (`CallSession kind=defense`), письма и уведомления – обеим сторонам.',
     success: JSON_OK('Назначенная защита', ref('LiveDefense')),
     errors: { 404: 'Приглашение чужое, предложения нет или слот не из него', 409: '`recording_consent_required`; время занято другим кандидатом компании (`slot_taken`); слот уже выбран или предложение отменено (`slot_already_chosen`); время прошло (`slot_past`)' },
   },
@@ -701,14 +701,14 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'POST /api/invitations/{id}': {
     summary: 'Принять или отклонить приглашение',
-    description: 'Ответ кандидата на приглашение (R-C-11). Принятие требует `disclosureVersion` — версию текста согласия на раскрытие (Г5, ADR 0005): работодатель видит имя и контакты, пока раскрытие не отозвано.',
+    description: 'Ответ кандидата на приглашение (R-C-11). Принятие требует `disclosureVersion` – версию текста согласия на раскрытие (Г5, ADR 0005): работодатель видит имя и контакты, пока раскрытие не отозвано.',
     success: JSON_OK('Приглашение с новым статусом', free('Приглашение')),
-    errors: { 403: 'У кандидата нет аккаунта — раскрытие записать некому', 404: 'Приглашение чужое или не существует', 409: 'На приглашение уже отвечено; при accept без `disclosureVersion` — `consent_required`; версия текста устарела — `conflict`' },
+    errors: { 403: 'У кандидата нет аккаунта – раскрытие записать некому', 404: 'Приглашение чужое или не существует', 409: 'На приглашение уже отвечено; при accept без `disclosureVersion` – `consent_required`; версия текста устарела – `conflict`' },
   },
 
   'GET /api/consents': {
     summary: 'Мои согласия',
-    description: 'Все согласия своей роли (ADR 0005): вид, текущая версия текста, данная версия, даты, состояние; раскрытия — по каждому приглашению с названием компании.',
+    description: 'Все согласия своей роли (ADR 0005): вид, текущая версия текста, данная версия, даты, состояние; раскрытия – по каждому приглашению с названием компании.',
     success: JSON_OK('Согласия аккаунта', obj({ items: arr(obj({
       kind: str('Вид согласия'), title: str(), label: str(), paragraphs: arr(str()), currentVersion: str(), version: nullable(str()),
       acceptedAt: nullable(DT()), revokedAt: nullable(DT()), state: en('active', 'outdated', 'revoked', 'none'),
@@ -717,13 +717,13 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'POST /api/consents': {
     summary: 'Дать согласие',
-    description: 'Записать согласие на текущую версию текста. Повтор при действующем не создаёт дубля. Показ профиля снимает скрытие; раскрытие (`identity_disclosure`) — только по своему принятому приглашению (`context.invitationId`).',
+    description: 'Записать согласие на текущую версию текста. Повтор при действующем не создаёт дубля. Показ профиля снимает скрытие; раскрытие (`identity_disclosure`) – только по своему принятому приглашению (`context.invitationId`).',
     success: { status: 201, description: 'Согласие записано', schema: obj({ kind: str(), version: str(), acceptedAt: DT() }) },
     errors: { 400: 'Раскрытие без `context.invitationId`', 404: 'Приглашение для раскрытия не найдено или чужое', 409: 'Версия текста устарела или приглашение не принято (`conflict`)' },
   },
   'DELETE /api/consents/{kind}': {
     summary: 'Отозвать согласие',
-    description: 'Ставит `revokedAt` у действующих строк. Запись созвона — аудио удаляется сразу, новые созвоны идут текстом. Показ — профиль скрывается. Раскрытие — по `invitationId`. Согласие на обработку ПДн отзывается только удалением аккаунта.',
+    description: 'Ставит `revokedAt` у действующих строк. Запись созвона – аудио удаляется сразу, новые созвоны идут текстом. Показ – профиль скрывается. Раскрытие – по `invitationId`. Согласие на обработку ПДн отзывается только удалением аккаунта.',
     query: [{ name: 'invitationId', description: 'Для `identity_disclosure`: приглашение, по которому отозвать раскрытие', schema: str() }],
     success: JSON_OK('Согласие отозвано', obj({ kind: str(), revokedAt: DT(), deletedRecordings: int('Удалено аудиозаписей (только call_recording)') }, ['kind', 'revokedAt'])),
     errors: { 400: 'Неизвестный вид согласия', 409: 'Согласие на обработку ПДн отзывается удалением аккаунта (`consent_revoke_is_erase`)' },
@@ -734,7 +734,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'POST /api/objections': {
     summary: 'Оспорить автоматическую оценку',
-    description: 'Возражение по ст. 16 152-ФЗ против оценки теста, созвона или защиты. Срок ответа — 30 дней; работодатель возражений не видит.',
+    description: 'Возражение по ст. 16 152-ФЗ против оценки теста, созвона или защиты. Срок ответа – 30 дней; работодатель возражений не видит.',
     success: { status: 201, description: 'Возражение принято', schema: free('Возражение со сроком ответа `dueAt`') },
     errors: { 404: 'Оценка не найдена или чужая', 409: 'Открытое возражение по этой оценке уже есть' },
   },
@@ -761,8 +761,8 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Состояние онбординга', success: JSON_OK('Текущий шаг, лента, прогресс, итог', ref('OnboardingView')) },
   'POST /api/onboarding': {
     summary: 'Действие онбординга',
-    description: 'Ответить на шаг (`answer`), пропустить (`skip`), вернуться (`goto`) или отложить (`later`: у кандидата шаги встают на паузу, лента /consultant продолжается свободным разговором; снимает паузу любой `answer`/`skip`/`goto`). После `answer`/`skip`/`goto` — новое состояние; при смене роли выставляется новая кука cid. Завершение — `POST /api/auth/onboarding/complete`.',
-    success: { description: 'Новое состояние онбординга (`later` — `{ next }` без завершения)', schema: { oneOf: [ref('OnboardingView'), obj({ next: str() })] } },
+    description: 'Ответить на шаг (`answer`), пропустить (`skip`), вернуться (`goto`) или отложить (`later`: у кандидата шаги встают на паузу, лента /consultant продолжается свободным разговором; снимает паузу любой `answer`/`skip`/`goto`). После `answer`/`skip`/`goto` – новое состояние; при смене роли выставляется новая кука cid. Завершение – `POST /api/auth/onboarding/complete`.',
+    success: { description: 'Новое состояние онбординга (`later` – `{ next }` без завершения)', schema: { oneOf: [ref('OnboardingView'), obj({ next: str() })] } },
     errors: { 409: 'Шаг недоступен в текущем состоянии' },
   },
 
@@ -780,7 +780,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'GET /api/recommendations': {
     summary: 'Рекомендации кандидату',
-    description: 'Тест, пробелы к выбранной цели, задания под пробелы и цели-вакансии. Всё детерминированно и считается по подтверждённым утверждениям. Цель `vacancy:<id>` или `category:<spec>:<grade>`; по умолчанию — категория из теста, иначе лучшая вакансия.',
+    description: 'Тест, пробелы к выбранной цели, задания под пробелы и цели-вакансии. Всё детерминированно и считается по подтверждённым утверждениям. Цель `vacancy:<id>` или `category:<spec>:<grade>`; по умолчанию – категория из теста, иначе лучшая вакансия.',
     success: JSON_OK(
       'Рекомендации',
       obj({ target: str(), test: free('Рекомендация теста: специализация, грейд, покрытие, пояснение'), gaps: arr(free('Пробел: запись каталога, приоритет')), tasks: arr(free('Задание из банка')), targets: arr(free('Вакансия: «закрываешь k из n»')) }),
@@ -795,12 +795,12 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'GET /api/call': {
     summary: 'Мои созвоны и согласие на запись',
-    success: JSON_OK('Состояние согласия на запись и созвоны кандидата (свежие первыми, до 10)', obj({ consent: obj({ given: bool(), mode: { ...en('audio', 'text', 'ask'), description: '`audio` — запись разрешена; `text` — согласие отозвано, созвон идёт текстом без записи голоса; `ask` — согласия не было, спросить' }, version: str(), text: arr(str()) }), calls: arr(ref('CallView')) })),
+    success: JSON_OK('Состояние согласия на запись и созвоны кандидата (свежие первыми, до 10)', obj({ consent: obj({ given: bool(), mode: { ...en('audio', 'text', 'ask'), description: '`audio` – запись разрешена; `text` – согласие отозвано, созвон идёт текстом без записи голоса; `ask` – согласия не было, спросить' }, version: str(), text: arr(str()) }), calls: arr(ref('CallView')) })),
   },
   'POST /api/call/consent': {
     summary: 'Согласие на запись созвона',
     success: JSON_OK('Согласие записано (повтор не создаёт дубля)', obj({ version: str(), acceptedAt: DT() })),
-    errors: { 409: 'Версия текста устарела — обновить страницу' },
+    errors: { 409: 'Версия текста устарела – обновить страницу' },
   },
   'POST /api/call/start': {
     summary: 'Начать созвон',
@@ -810,21 +810,21 @@ export const OVERRIDES: Record<string, OpOverride> = {
       schema: obj({ sessionId: str(), resumed: bool(), webrtc: obj({ iceServers: arr({ type: 'object' }) }), call: ref('CallView') }),
       extra: [{ status: 200, description: 'Продолжен активный созвон (`resumed: true`)', schema: free('Та же форма, что у 201') }],
     },
-    errors: { 409: 'Нет согласия на оценку ИИ (`consent_required`, kind ai_assessment) или на запись (`call_consent_required`, `details.version`)', 429: 'Лимит созвонов в сутки (`call_limit`, env CALL_DAILY_LIMIT; 0 — без лимита)' },
+    errors: { 409: 'Нет согласия на оценку ИИ (`consent_required`, kind ai_assessment) или на запись (`call_consent_required`, `details.version`)', 429: 'Лимит созвонов в сутки (`call_limit`, env CALL_DAILY_LIMIT; 0 – без лимита)' },
   },
   'GET /api/call/{id}': { summary: 'Созвон: статус, транскрипт, вердикт', role: 'session', success: JSON_OK('Созвон с учётом роли', ref('CallView')), errors: { 404: 'Нет созвона или нет доступа' } },
   'POST /api/call/{id}/turn': {
     summary: 'Реплика кандидата',
     success: JSON_OK(
-      'Реплика кандидата и следующая реплика ИИ (`ai: null` — ИИ выключен работодателем); `done: true` — вопросы закончились, дальше finish',
-      obj({ candidate: free('Реплика кандидата'), ai: nullable(free('Реплика ИИ')), text: nullable(str()), audioUrl: str('Зарезервировано; озвучка — через /api/tts'), done: bool() }, ['candidate', 'ai', 'text', 'done']),
+      'Реплика кандидата и следующая реплика ИИ (`ai: null` – ИИ выключен работодателем); `done: true` – вопросы закончились, дальше finish',
+      obj({ candidate: free('Реплика кандидата'), ai: nullable(free('Реплика ИИ')), text: nullable(str()), audioUrl: str('Зарезервировано; озвучка – через /api/tts'), done: bool() }, ['candidate', 'ai', 'text', 'done']),
     ),
     errors: { 400: 'Пустой текст ответа: распознаёт /audio или браузер, /turn сам STT не зовёт', 404: 'Чужой созвон или сегмент аудио', 409: 'Созвон завершён или ответ уже принят' },
   },
   'POST /api/call/{id}/interrupt': {
     summary: 'Кандидат перебил реплику ИИ',
     success: JSON_OK(
-      'Реплика ИИ обрезана до услышанного (пометка «…(перебит)»), хвост — в `meta.interrupted.tail`; повтор идемпотентен, полностью услышанная реплика не меняется',
+      'Реплика ИИ обрезана до услышанного (пометка «…(перебит)»), хвост – в `meta.interrupted.tail`; повтор идемпотентен, полностью услышанная реплика не меняется',
       free('Реплика транскрипта (TranscriptEntry)'),
     ),
     errors: { 404: 'Нет такой реплики ИИ', 409: 'Созвон завершён или это не текущий вопрос' },
@@ -832,19 +832,19 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'POST /api/call/{id}/audio': {
     summary: 'Сегмент голоса кандидата',
     body: { contentType: 'audio/l16', description: 'LPCM 16 бит, моно, 16 кГц, до 3 МБ (~90 с)', schema: { type: 'string', format: 'binary' } },
-    success: { status: 201, description: 'Сегмент сохранён (WAV на диске); `text` — распознано SpeechKit или null (распознаёт браузер)', schema: obj({ audioRef: str('Имя сегмента NNN.wav'), text: nullable(str()) }) },
+    success: { status: 201, description: 'Сегмент сохранён (WAV на диске); `text` – распознано SpeechKit или null (распознаёт браузер)', schema: obj({ audioRef: str('Имя сегмента NNN.wav'), text: nullable(str()) }) },
     errors: { 409: 'Созвон завершён, лимит сегментов, параллельная загрузка или согласие на запись отозвано (`call_recording_off`: созвон идёт текстом)', 413: 'Сегмент длиннее ~90 секунд' },
   },
   'POST /api/call/{id}/finish': {
     summary: 'Завершить созвон и получить карту глубины',
-    success: JSON_OK('Созвон с вердиктом (без ответов — cancelled без вердикта)', ref('CallView')),
-    errors: { 409: 'Оценка уже идёт или созвон закрыт без оценки', 503: 'Оценщик недоступен (`llm_unavailable`); ответы сохранены. Запусков оценщика на созвон не больше 3 — после третьего сбоя созвон закрывается (cancelled)' },
+    success: JSON_OK('Созвон с вердиктом (без ответов – cancelled без вердикта)', ref('CallView')),
+    errors: { 409: 'Оценка уже идёт или созвон закрыт без оценки', 503: 'Оценщик недоступен (`llm_unavailable`); ответы сохранены. Запусков оценщика на созвон не больше 3 – после третьего сбоя созвон закрывается (cancelled)' },
   },
   'POST /api/call/{id}/video': {
     summary: 'Сегмент видео с камеры кандидата',
     query: [{ name: 'startMs', description: 'Смещение начала сегмента от начала созвона, мс' }],
     body: { contentType: 'video/webm', description: 'WebM с камеры (комната звонка), до 8 МБ (~60 с при 300 кбит/с)', schema: { type: 'string', format: 'binary' } },
-    success: { status: 201, description: 'Сегмент сохранён файлом созвона; в БД — ничего. Видео не анализируется', schema: obj({ name: str('Имя сегмента NNN-<startMs>.webm'), startMs: { type: 'integer' } }) },
+    success: { status: 201, description: 'Сегмент сохранён файлом созвона; в БД – ничего. Видео не анализируется', schema: obj({ name: str('Имя сегмента NNN-<startMs>.webm'), startMs: { type: 'integer' } }) },
     errors: { 409: 'Созвон завершён, лимит сегментов, параллельная загрузка или нет согласия на запись (`call_recording_off`)', 413: 'Сегмент больше 8 МБ' },
   },
   'GET /api/call/{id}/video': {
@@ -852,7 +852,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     role: 'session',
     query: [{ name: 'segment', description: 'Имя сегмента из CallView.videoSegments' }],
     success: { description: 'WebM', contentType: 'video/webm', schema: { type: 'string', format: 'binary' } },
-    errors: { 403: 'Работодателю — только после принятого приглашения', 404: 'Нет сегмента' },
+    errors: { 403: 'Работодателю – только после принятого приглашения', 404: 'Нет сегмента' },
   },
   'GET /api/call/{id}/employer-audio': {
     summary: 'Сегменты голоса работодателя в живой защите',
@@ -870,19 +870,19 @@ export const OVERRIDES: Record<string, OpOverride> = {
   'GET /api/call/{id}/recording': {
     summary: 'Аудио ответов кандидата',
     role: 'session',
-    query: [{ name: 'segment', description: 'Один сегмент NNN.wav; без параметра — все сегменты одним WAV' }],
+    query: [{ name: 'segment', description: 'Один сегмент NNN.wav; без параметра – все сегменты одним WAV' }],
     success: { description: 'WAV (PCM 16 бит, 16 кГц)', contentType: 'audio/wav', schema: { type: 'string', format: 'binary' } },
     errors: { 403: 'Работодатель без принятого приглашения', 404: 'Нет созвона, нет доступа или аудио не записывалось' },
   },
   'GET /api/call/{id}/events': {
     summary: 'События созвона (SSE)',
     role: 'session',
-    success: { description: 'Поток `text/event-stream`: кадры `event: <type>` + `data: <json>` (схема CallEvent), первым — snapshot; пинг-комментарий раз в 15 с', schema: ref('CallEvent') },
+    success: { description: 'Поток `text/event-stream`: кадры `event: <type>` + `data: <json>` (схема CallEvent), первым – snapshot; пинг-комментарий раз в 15 с', schema: ref('CallEvent') },
   },
 
   'POST /api/stt': {
     summary: 'Распознать речь',
-    description: 'Голос в текст через Yandex SpeechKit. Тело — LPCM 16 бит, моно, 16 кГц (`audio/l16`), до 1 МБ (около 30 секунд). Только для вошедших. Аудио не сохраняется. Если режим не `yandex` — 400.',
+    description: 'Голос в текст через Yandex SpeechKit. Тело – LPCM 16 бит, моно, 16 кГц (`audio/l16`), до 1 МБ (около 30 секунд). Только для вошедших. Аудио не сохраняется. Если режим не `yandex` – 400.',
     body: { contentType: 'audio/l16', description: 'Сырое аудио', schema: { type: 'string', format: 'binary' } },
     success: JSON_OK('Распознанный текст', obj({ text: str() })),
     errors: { 400: 'Серверное распознавание выключено или запись пустая', 413: 'Запись длиннее 30 секунд' },
@@ -896,7 +896,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'POST /api/test/attempt/{id}/confirm-junior': {
     summary: 'Подтвердить Junior вместо Middle',
-    description: 'Middle не подтверждён — Junior по той же попытке по согласию кандидата (R-C-08).',
+    description: 'Middle не подтверждён – Junior по той же попытке по согласию кандидата (R-C-08).',
     success: JSON_OK('Итог попытки с категорией Junior', free('Итог попытки')),
     errors: { 409: 'Попытка не в состоянии «Middle не подтверждён»' },
   },
@@ -917,7 +917,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description:
       'Дельты агрегатов браузера с прошлой отправки; сервер суммирует их в попытке для индекса честности. Только счётчики, без содержимого вставок и копий (152-ФЗ). Принимает `application/json` и `text/plain` с JSON (navigator.sendBeacon). Только активная попытка своего кандидата.',
     body: {
-      description: 'Дельты; отсутствующее поле — 0',
+      description: 'Дельты; отсутствующее поле – 0',
       schema: obj(
         {
           tabHidden: int('Уходов со вкладки, 0–100'),
@@ -940,7 +940,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
   },
   'GET /api/test/attempt/{id}': {
     summary: 'Состояние попытки теста',
-    description: 'Состояние попытки: текущее задание без ключа и прогресс; после завершения — итог с разбором. Чужая попытка — 404.',
+    description: 'Состояние попытки: текущее задание без ключа и прогресс; после завершения – итог с разбором. Чужая попытка – 404.',
     success: JSON_OK('Задание или итог', free('Состояние попытки')),
   },
   'GET /api/test/attempts': {
@@ -952,7 +952,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
       { name: 'grade', required: true, schema: en('junior', 'middle') },
     ],
     description: 'Допуск по интервалам пересдачи (R-C-09) и текст правил.',
-    success: JSON_OK('Допуск и правила', free('Решение о допуске (`nextAllowedAt`, причина) и `rules` — текст интервалов')),
+    success: JSON_OK('Допуск и правила', free('Решение о допуске (`nextAllowedAt`, причина) и `rules` – текст интервалов')),
   },
   'POST /api/test/start': {
     summary: 'Начать попытку теста',
@@ -963,12 +963,12 @@ export const OVERRIDES: Record<string, OpOverride> = {
       schema: free('Попытка: id, категория, первое задание без ключа; `resumed`'),
       extra: [{ status: 200, description: 'Продолжена активная попытка той же категории (`resumed: true`)', schema: free('Та же форма, что у 201') }],
     },
-    errors: { 409: 'Нет согласия на оценку ИИ (`consent_required`); нельзя начать: активная попытка другой категории (`active_attempt`), смена грейда раньше срока (`grade_change_too_soon`) или пересдача раньше срока (`retake_too_soon`); в `details` — `nextAllowedAt`' },
+    errors: { 409: 'Нет согласия на оценку ИИ (`consent_required`); нельзя начать: активная попытка другой категории (`active_attempt`), смена грейда раньше срока (`grade_change_too_soon`) или пересдача раньше срока (`retake_too_soon`); в `details` – `nextAllowedAt`' },
   },
 
   'GET /api/uploads/{id}/file': {
     summary: 'Скачать оригинал загруженного файла',
-    description: 'Оригинал файла владельцу: всегда `Content-Disposition: attachment` (filename* по RFC 5987), `X-Content-Type-Options: nosniff`, тип — только PDF/DOCX, иначе application/octet-stream.',
+    description: 'Оригинал файла владельцу: всегда `Content-Disposition: attachment` (filename* по RFC 5987), `X-Content-Type-Options: nosniff`, тип – только PDF/DOCX, иначе application/octet-stream.',
     success: { description: 'Файл PDF, DOCX, MD, TXT или CSV', contentType: 'application/octet-stream', schema: { type: 'string', format: 'binary' } },
     errors: { 404: 'Нет файла, чужой или загружен до хранения оригиналов' },
   },
@@ -990,7 +990,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     body: {
       contentType: 'multipart/form-data',
       schema: obj({ file: str('Файл PDF, DOCX, MD, TXT или CSV', { format: 'binary' }), kind: en('resume', 'document') }, ['file']),
-      description: '`kind` по умолчанию — resume',
+      description: '`kind` по умолчанию – resume',
     },
     success: {
       status: 201,

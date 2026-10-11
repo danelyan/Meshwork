@@ -4,7 +4,7 @@ import path from 'node:path';
 /**
  * Демо-кандидаты ↔ демо-резюме (eval/demo/demo-N). Имена в сиде совпадают с именами
  * в резюме; PDF сгенерированы `node eval/scripts/make-pdfs.mjs` (шрифт DejaVu Sans) и лежат
- * в src/server/demo/pdf — их подхватывает standalone-сборка (outputFileTracingIncludes).
+ * в src/server/demo/pdf – их подхватывает standalone-сборка (outputFileTracingIncludes).
  */
 export interface DemoResume {
   /** Номер eval/demo/demo-N. */

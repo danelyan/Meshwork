@@ -59,7 +59,7 @@ afterEach(() => {
 
 const props = () => ({ onReady: vi.fn(), onTextOnly: vi.fn(), onCancel: vi.fn() });
 
-describe('DevicePreflight — проверка устройств перед созвоном', () => {
+describe('DevicePreflight – проверка устройств перед созвоном', () => {
   it('разрешено: состояние «разрешён», выбор устройства, «начать» закрывает поток и зовёт onReady', async () => {
     const { stream, track: t } = fakeStream('mic-1');
     gum.mockResolvedValue(stream);
@@ -123,7 +123,7 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(gum).not.toHaveBeenCalled();
   });
 
-  it('permissions.query бросает (Safari/Firefox) — всё равно спрашиваем микрофон', async () => {
+  it('permissions.query бросает (Safari/Firefox) – всё равно спрашиваем микрофон', async () => {
     Object.defineProperty(navigator, 'permissions', { configurable: true, value: { query: vi.fn(async () => { throw new TypeError('microphone'); }) } });
     gum.mockResolvedValue(fakeStream().stream);
     render(<DevicePreflight {...props()} />);
@@ -158,7 +158,7 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(screen.getByText(/Короткий сигнал/)).toBeTruthy();
   });
 
-  it('камера — только с withCamera; без cameraJoinsCall по умолчанию выключена', async () => {
+  it('камера – только с withCamera; без cameraJoinsCall по умолчанию выключена', async () => {
     gum.mockResolvedValue(fakeStream().stream);
     const { unmount } = render(<DevicePreflight {...props()} />);
     expect(screen.queryByTestId('call-devices-camera')).toBeNull();
@@ -170,7 +170,7 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(gum.mock.calls[0]![0].video).toBeUndefined();
   });
 
-  it('cameraJoinsCall: галочка по умолчанию стоит, камеру просим сразу → onReady({ camera: true }); снята — camera: false', async () => {
+  it('cameraJoinsCall: галочка по умолчанию стоит, камеру просим сразу → onReady({ camera: true }); снята – camera: false', async () => {
     gum.mockImplementation(async () => fakeStream().stream);
     const p = props();
     const { unmount } = render(<DevicePreflight {...p} withCamera cameraJoinsCall />);
@@ -192,7 +192,7 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(p2.onReady).toHaveBeenCalledWith({ camera: false });
   });
 
-  it('cameraJoinsCall: камера запрещена (NotAllowedError) — подсказка «без видео», onReady({ camera: false })', async () => {
+  it('cameraJoinsCall: камера запрещена (NotAllowedError) – подсказка «без видео», onReady({ camera: false })', async () => {
     gum.mockImplementation(async (c: MediaStreamConstraints) => {
       if (c.video) throw Object.assign(new Error('x'), { name: 'NotAllowedError' });
       return fakeStream().stream;
@@ -218,59 +218,5 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(micErrorState({ name: 'NotAllowedError' })).toBe('denied');
     expect(micErrorState({ name: 'NotFoundError' })).toBe('nodevice');
     expect(micErrorState({ name: 'NotReadableError' })).toBe('busy');
-  });
-});
-
-describe('DevicePreflight — textFallback=false (созвон строго голосом)', () => {
-  it('нет «Продолжить текстом» ни при разрешении, ни при отказе; «Не сейчас» остаётся', async () => {
-    gum.mockRejectedValue(Object.assign(new Error('x'), { name: 'NotAllowedError' }));
-    const p = props();
-    const { unmount } = render(<DevicePreflight {...p} textFallback={false} />);
-    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('denied'));
-    expect(screen.queryByTestId('call-devices-text')).toBeNull();
-    expect(screen.getByTestId('call-devices-retry')).toBeTruthy();
-    expect(screen.getByText('Не сейчас')).toBeTruthy();
-    unmount();
-
-    gum.mockResolvedValue(fakeStream().stream);
-    render(<DevicePreflight {...p} textFallback={false} />);
-    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
-    expect(screen.queryByTestId('call-devices-text')).toBeNull();
-    expect(screen.getByTestId('call-devices-go')).toBeTruthy();
-  });
-});
-
-describe('DevicePreflight — cameraRequired (созвон строго с видео)', () => {
-  it('тумблера нет, камера запрашивается сразу; «начать» только когда камера включена → onReady({ camera: true })', async () => {
-    gum.mockImplementation(async () => fakeStream().stream);
-    const p = props();
-    render(<DevicePreflight {...p} withCamera cameraJoinsCall cameraRequired textFallback={false} />);
-    expect(screen.queryByTestId('call-devices-camera')).toBeNull();
-    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
-    await waitFor(() => expect(gum.mock.calls.some((c) => c[0].video)).toBe(true));
-    await waitFor(() => expect(screen.getByTestId('call-devices-go')).toBeTruthy());
-    expect(screen.queryByTestId('call-devices-text')).toBeNull();
-    fireEvent.click(screen.getByTestId('call-devices-go'));
-    expect(p.onReady).toHaveBeenCalledWith({ camera: true });
-  });
-
-  it('камера запрещена: инструкция, «Повторить камеру», кнопки «начать» нет; после разрешения - появляется', async () => {
-    let camOk = false;
-    gum.mockImplementation(async (c: MediaStreamConstraints) => {
-      if (c.video && !camOk) throw Object.assign(new Error('x'), { name: 'NotAllowedError' });
-      return fakeStream().stream;
-    });
-    const p = props();
-    render(<DevicePreflight {...p} withCamera cameraJoinsCall cameraRequired textFallback={false} />);
-    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
-    expect((await screen.findByTestId('call-devices-camera-denied')).textContent).toContain('Без камеры созвон не начать');
-    expect(screen.queryByTestId('call-devices-go')).toBeNull();
-    expect(screen.getByTestId('call-devices-wait-camera').textContent).toContain('Разреши камеру');
-    camOk = true;
-    fireEvent.click(screen.getByTestId('call-devices-camera-retry'));
-    await waitFor(() => expect(screen.getByTestId('call-devices-go')).toBeTruthy());
-    expect(screen.queryByTestId('call-devices-camera-denied')).toBeNull();
-    fireEvent.click(screen.getByTestId('call-devices-go'));
-    expect(p.onReady).toHaveBeenCalledWith({ camera: true });
   });
 });

@@ -1,11 +1,11 @@
-// Модель компетенций ИИнтервью (docs/competency-model.md). Чистый модуль без серверных импортов — его читают
+// Модель компетенций ИИнтервью (docs/competency-model.md). Чистый модуль без серверных импортов – его читают
 // клиентские компоненты (этапы и критерии на экране). Юнит-тест tests/unit/interview/model.test.ts сверяет
 // привязку к каталогу утверждений и к подкатегориям справочника.
 import type { Specialization } from '../../lib/directions';
 import type { Grade } from '../../lib/grades';
 import type { QuestionLevel } from '../call/types';
 
-/** Оси результата — четыре критерия мокапа (design-spec § 11). grade_fit не спрашивается, считается кодом. */
+/** Оси результата – четыре критерия мокапа (design-spec § 11). grade_fit не спрашивается, считается кодом. */
 export const AXES = ['technical', 'systems', 'communication', 'grade_fit'] as const;
 export type Axis = (typeof AXES)[number];
 /** Оси, по которым задаются вопросы (компетенция принадлежит одной из них). */
@@ -28,9 +28,9 @@ export type BlockId = (typeof BLOCKS)[number];
 export interface BlockDef {
   id: BlockId;
   title: string;
-  /** Вопросов в блоке: минимум и максимум (summary — 0: закрывающая реплика). */
+  /** Вопросов в блоке: минимум и максимум (summary – 0: закрывающая реплика). */
   questions: { min: number; max: number };
-  /** Ось компетенций блока; summary — null. */
+  /** Ось компетенций блока; summary – null. */
   axis: QuestionAxis | null;
 }
 
@@ -62,7 +62,7 @@ export interface CompetencyDef {
   axis: QuestionAxis;
   /** Утверждения каталога, которые подтверждает компетенция (поднимаются до platform). */
   catalogIds: readonly string[];
-  /** Подкатегории, где компетенция — ядро (приоритет в блоке «Разбор теста»). */
+  /** Подкатегории, где компетенция – ядро (приоритет в блоке «Разбор теста»). */
   core: readonly string[];
   /** О чём спросить на уровне грейда. Оценщику не передаётся. */
   focus: Record<Grade, string>;
@@ -160,7 +160,7 @@ const backend: readonly CompetencyDef[] = [
     focus: {
       junior: 'Что кэшировал и как инвалидировал; как по логам нашёл проблему',
       middle: 'Как нашёл узкое место профилировщиком или нагрузочным тестом и чем подтвердил улучшение; гонки и блокировки',
-      senior: 'Лавина промахов кэша, рост нагрузки ×10, деградация под отказом зависимости — что проектировал заранее',
+      senior: 'Лавина промахов кэша, рост нагрузки ×10, деградация под отказом зависимости – что проектировал заранее',
     },
   },
   {
@@ -525,7 +525,7 @@ export function competenciesFor(specialization: Specialization): CompetencyDef[]
   return COMPETENCIES.filter((c) => c.specialization === specialization);
 }
 
-/** Компетенция блока по порядку: intro/team — общие, systems — ось systems направления. */
+/** Компетенция блока по порядку: intro/team – общие, systems – ось systems направления. */
 export function blockCompetencies(block: BlockId, specialization: Specialization): CompetencyDef[] {
   if (block === 'intro') return [BY_ID.get('common.context')!];
   if (block === 'team') return [BY_ID.get('common.teamwork')!];
@@ -534,7 +534,7 @@ export function blockCompetencies(block: BlockId, specialization: Specialization
   return [];
 }
 
-/** Технические компетенции направления: ядро подкатегории — первыми, остальные — по порядку модели. */
+/** Технические компетенции направления: ядро подкатегории – первыми, остальные – по порядку модели. */
 export function orderTechnical(specialization: Specialization, subcategoryId: string | null): CompetencyDef[] {
   const tech = competenciesFor(specialization).filter((c) => c.axis === 'technical');
   if (!subcategoryId) return tech;

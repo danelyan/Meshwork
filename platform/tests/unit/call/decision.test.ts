@@ -12,12 +12,12 @@ const out = (d: 0 | 1 | 2, w: 0 | 1 | 2, b: 0 | 1 | 2, c: 0 | 1 | 2) => ({ topic
 afterEach(() => clearStubResponses());
 
 describe('решение по теме: согласие прогонов (валидация 10.10)', () => {
-  it('3 из 3 согласны — решение принято', () => {
+  it('3 из 3 согласны – решение принято', () => {
     expect(decideStatus(sc(2, 1, 1, 1), [sc(2, 1, 1, 1), sc(2, 2, 1, 1), sc(1, 1, 1, 2)]).status).toBe('confirmed');
     expect(decideStatus(sc(1, 0, 1, 1), [sc(1, 0, 1, 1), sc(1, 1, 0, 1), sc(0, 0, 1, 1)]).status).toBe('not_confirmed');
   });
 
-  it('2 из 3 — inconclusive; 4 из 5 — решение; 3 из 5 — inconclusive', () => {
+  it('2 из 3 – inconclusive; 4 из 5 – решение; 3 из 5 – inconclusive', () => {
     expect(decideStatus(sc(2, 1, 1, 1), [sc(2, 1, 1, 1), sc(2, 1, 1, 1), sc(1, 1, 1, 0)]).status).toBe('inconclusive');
     const pass = sc(2, 1, 1, 1);
     const fail = sc(1, 1, 1, 0);
@@ -31,7 +31,7 @@ describe('решение по теме: согласие прогонов (ва�
     expect(needsExtraRuns([[sc(1, 0, 1, 1)], [sc(1, 1, 0, 1)], [sc(0, 0, 1, 1)]])).toBe(false);
   });
 
-  it('evaluateCall: 3 прогона при согласии, 5 — при расхождении 8/5/5', async () => {
+  it('evaluateCall: 3 прогона при согласии, 5 – при расхождении 8/5/5', async () => {
     registerStubResponse('call_evaluator', () => ({ json: out(2, 1, 1, 1) }));
     expect((await evaluateCall('backend', topics, createStubProvider())).runs).toBe(3);
     clearStubResponses();
@@ -43,7 +43,7 @@ describe('решение по теме: согласие прогонов (ва�
     expect(ev.depthMap[0]!.runs).toHaveLength(5);
   });
 
-  it('тема без вопросов — not_probed, не подтверждена', () => {
+  it('тема без вопросов – not_probed, не подтверждена', () => {
     const d = notProbedItem({ topic: 'Кэш', catalogId: 'be.cache', claimStatement: 'Кэшировал в Redis' });
     expect(d).toMatchObject({ status: 'not_probed', confirmed: false, probed: 0, claimed: true });
   });
@@ -52,7 +52,7 @@ describe('решение по теме: согласие прогонов (ва�
 describe('слепота: пересказ профиля (n-граммы ≥ 4 слов)', () => {
   const claim = 'Кэшировал курсы валют в Redis с TTL пять минут';
   it('ловит пересказ близко к тексту, не ловит вопрос о теме своими словами', () => {
-    expect(retellsProfile('Ты писал, что кэшировал курсы валют в Redis — как выбирал TTL?', [claim])).toBe(true);
+    expect(retellsProfile('Ты писал, что кэшировал курсы валют в Redis – как выбирал TTL?', [claim])).toBe(true);
     expect(retellsProfile('Как ты решаешь, что и на сколько класть в кэш?', [claim])).toBe(false);
     expect(retellsProfile('Почему Redis, а не кэш в памяти процесса?', [claim])).toBe(false);
   });
@@ -74,7 +74,7 @@ describe('покрытие тем', () => {
   const turn = (topic: string, level: 1 | 2 | 3 = 2) => ({ question: 'Вопрос?', answer: 'длинный ответ '.repeat(20), topic, catalogId: null, level });
 
   it('непроверенных тем столько же, сколько осталось вопросов → обязательно новая тема', () => {
-    // 6 вопросов, 4 темы: после двух вопросов по A осталось 4 вопроса и 3 темы — ещё можно; после A,A,B — 3 и 2.
+    // 6 вопросов, 4 темы: после двух вопросов по A осталось 4 вопроса и 3 темы – ещё можно; после A,A,B – 3 и 2.
     expect(coverage(seeds, [turn('A'), turn('A')], 6).mustSwitch).toBe(false);
     expect(coverage(seeds, [turn('A'), turn('B'), turn('B')], 4).mustSwitch).toBe(true);
     const plan = planNext({ topics: seeds, turns: [turn('A', 1), turn('B', 1), turn('C', 1), turn('C', 1)], grade: 'junior', signal: 'strong', maxQuestions: 5 });

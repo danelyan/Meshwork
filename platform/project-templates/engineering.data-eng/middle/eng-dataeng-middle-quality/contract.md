@@ -2,7 +2,7 @@
 # Контракт: проверки качества данных с карантином (engineering.data-eng, middle)
 
 Модуль `quality.py` в корне репозитория. Окружение: Python 3.12, `pandas`, стандартная библиотека, без сети.
-Проверка — pytest. Входные `DataFrame` функция **не изменяет**.
+Проверка – pytest. Входные `DataFrame` функция **не изменяет**.
 
 ```python
 def check(orders: pd.DataFrame, customers: pd.DataFrame, max_amount: float = 1_000_000) -> tuple[pd.DataFrame, pd.DataFrame, dict]
@@ -11,16 +11,16 @@ def run(orders_csv: str, customers_csv: str, out_dir: str) -> dict
 
 ## Вход
 
-`orders` — обязательные колонки `order_id, customer_id, amount, status, created_at` (порядок любой, лишние колонки
-разрешены и сохраняются как есть). `customers` — обязательная колонка `customer_id` (остальные игнорируются).
+`orders` – обязательные колонки `order_id, customer_id, amount, status, created_at` (порядок любой, лишние колонки
+разрешены и сохраняются как есть). `customers` – обязательная колонка `customer_id` (остальные игнорируются).
 Нет обязательной колонки → `ValueError("missing column: <имя>")`; проверяются сначала `orders` (в порядке перечисления
-выше), затем `customers`. Значения — строки, числа или пропуски (`None`, `NaN`); индекс может быть любым.
+выше), затем `customers`. Значения – строки, числа или пропуски (`None`, `NaN`); индекс может быть любым.
 
-## Правила (для строки применяются по порядку; первое нарушенное — её причина)
+## Правила (для строки применяются по порядку; первое нарушенное – её причина)
 
 | Код | Нарушение |
 | --- | --- |
-| `missing_required` | любое из пяти полей — пропуск или пустая строка после обрезки пробелов |
+| `missing_required` | любое из пяти полей – пропуск или пустая строка после обрезки пробелов |
 | `bad_amount` | `amount` не число (`float(str(v).strip())` не удаётся), не конечное, `<= 0` или `> max_amount` |
 | `bad_status` | `status` после обрезки и нижнего регистра не из `new`, `paid`, `shipped`, `cancelled` |
 | `bad_date` | `created_at` после обрезки не `YYYY-MM-DD` или такой даты не существует |
@@ -31,13 +31,13 @@ def run(orders_csv: str, customers_csv: str, out_dir: str) -> dict
 
 ## Выход `check`: `(clean, quarantine, report)`
 
-- `clean` — строки, прошедшие все правила, в исходном порядке, колонки как во входе (и в том же порядке), индекс `0..n-1`.
-  Значения пяти полей **нормализованы**: `order_id`, `customer_id` — обрезаны; `status` — обрезан и в нижнем регистре;
-  `created_at` — обрезан; `amount` — `float` (dtype `float64`). Остальные колонки не тронуты.
-- `quarantine` — отклонённые строки в исходном порядке, колонки: `row` (позиция строки во входе, с нуля), `reason`
+- `clean` – строки, прошедшие все правила, в исходном порядке, колонки как во входе (и в том же порядке), индекс `0..n-1`.
+  Значения пяти полей **нормализованы**: `order_id`, `customer_id` – обрезаны; `status` – обрезан и в нижнем регистре;
+  `created_at` – обрезан; `amount` – `float` (dtype `float64`). Остальные колонки не тронуты.
+- `quarantine` – отклонённые строки в исходном порядке, колонки: `row` (позиция строки во входе, с нуля), `reason`
   (код причины), затем колонки входа **с исходными значениями** (без нормализации). Индекс `0..m-1`.
-- `report` — `{"total": N, "clean": C, "quarantined": Q, "by_rule": {...}}`; `by_rule` содержит **все шесть** кодов
-  в порядке таблицы (нулевые — со значением 0); `total = clean + quarantined`, сумма `by_rule` равна `quarantined`.
+- `report` – `{"total": N, "clean": C, "quarantined": Q, "by_rule": {...}}`; `by_rule` содержит **все шесть** кодов
+  в порядке таблицы (нулевые – со значением 0); `total = clean + quarantined`, сумма `by_rule` равна `quarantined`.
 - Пустой `orders` допустим: пустые `clean` и `quarantine` с теми же колонками, отчёт из нулей.
 
 ## `run(orders_csv, customers_csv, out_dir)`
@@ -47,4 +47,4 @@ def run(orders_csv: str, customers_csv: str, out_dir: str) -> dict
 (тот же `report`), и возвращает `report`. Повторный запуск с теми же входами даёт тот же результат, прежние файлы
 перезаписываются. При ошибке входа (`ValueError`) в `out_dir` ничего не создаётся и не меняется.
 
-Пример — `data/`. Видимые тесты — `tests/visible/` (`python -m pytest tests/visible`).
+Пример – `data/`. Видимые тесты – `tests/visible/` (`python -m pytest tests/visible`).

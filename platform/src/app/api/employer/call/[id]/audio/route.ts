@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST /api/employer/call/{id}/audio?startMs= — сегмент голоса работодателя в живой защите (WebM/Opus, до 4 МБ;
+ * POST /api/employer/call/{id}/audio?startMs= – сегмент голоса работодателя в живой защите (WebM/Opus, до 4 МБ;
  * ADR 0008 п. 3: пишутся обе стороны). Только участник комнаты своей компании, подтвердивший запись при входе.
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {

@@ -20,7 +20,7 @@ export type UserWithProfiles = User & { employerProfile: { id: string } | null }
 
 /**
  * Общий демо-аккаунт из сида: `isDemo` без своего входа. У «Нового пользователя» с /demo тоже `isDemo`, но есть вход
- * `demo` — это личный аккаунт гостя (после «Стать работодателем» в нём профиль кандидата с ПДн), его не показываем в
+ * `demo` – это личный аккаунт гостя (после «Стать работодателем» в нём профиль кандидата с ПДн), его не показываем в
  * списках /demo и не пускаем в него по id (ADR 0004).
  */
 export const SHARED_DEMO_USER = { isDemo: true, accounts: { none: { provider: 'demo' } } } satisfies Prisma.UserWhereInput;
@@ -42,7 +42,7 @@ export function sessionInputFor(user: UserWithProfiles): UserSessionInput {
   };
 }
 
-/** Онбординг не завершён (или роль не выбрана): после входа — только в ленту знакомства, `next` не важен. */
+/** Онбординг не завершён (или роль не выбрана): после входа – только в ленту знакомства, `next` не важен. */
 export function needsOnboarding(user: Pick<User, 'role' | 'onboardedAt'>): boolean {
   return !user.onboardedAt || user.role === 'pending';
 }
@@ -51,14 +51,14 @@ export interface ExternalProfile {
   provider: 'yandex' | 'fsp';
   providerAccountId: string;
   name: string;
-  /** null — провайдер почту не отдал (нет права или скрыта). */
+  /** null – провайдер почту не отдал (нет права или скрыта). */
   email: string | null;
 }
 
 /**
  * Найти или создать аккаунт по внешнему входу (provider + providerAccountId).
  * По почте аккаунты не склеиваем: иначе чужой аккаунт с той же почтой у другого
- * провайдера получил бы доступ. Гонка двух одновременных первых входов —
+ * провайдера получил бы доступ. Гонка двух одновременных первых входов –
  * уникальный индекс + повторное чтение.
  */
 export async function upsertExternalUser(p: ExternalProfile): Promise<UserWithProfiles> {
@@ -67,7 +67,7 @@ export async function upsertExternalUser(p: ExternalProfile): Promise<UserWithPr
   if (existing) {
     await prisma.authAccount.update({ where: key, data: { lastLoginAt: new Date() } });
     const user = await prisma.user.findUniqueOrThrow({ where: { id: existing.userId }, include: withProfiles });
-    // Почту дополняем, если раньше её не было; имя не перетираем — его мог поправить сам человек.
+    // Почту дополняем, если раньше её не было; имя не перетираем – его мог поправить сам человек.
     if (!user.email && p.email) {
       return prisma.user.update({ where: { id: user.id }, data: { email: p.email }, include: withProfiles });
     }
@@ -94,11 +94,11 @@ export async function upsertExternalUser(p: ExternalProfile): Promise<UserWithPr
 export type RoleChoice = { role: 'candidate' } | { role: 'employer'; companyName: string };
 
 /**
- * Выбор первой роли в онбординге — один раз (pending → candidate | employer); вторая роль на той же
- * учётке — `switchRole` (ADR 0004).
+ * Выбор первой роли в онбординге – один раз (pending → candidate | employer); вторая роль на той же
+ * учётке – `switchRole` (ADR 0004).
  * Кандидату создаёт Candidate (email обязателен и уникален в Candidate: если
- * почты нет или она занята — служебный адрес `user-<id>@users.invalid`).
- * Работодателю — новую Company (isDemo = false) и EmployerProfile. Присоединиться
+ * почты нет или она занята – служебный адрес `user-<id>@users.invalid`).
+ * Работодателю – новую Company (isDemo = false) и EmployerProfile. Присоединиться
  * к чужой компании нельзя: верификации компаний в MVP нет (R-D-05).
  * После вызова перевыпусти куку: `userSessionCookie(sessionInputFor(user))`.
  */
@@ -121,15 +121,15 @@ export async function chooseRole(userId: string, choice: RoleChoice): Promise<Us
 }
 
 /**
- * Профиль кандидата для аккаунта (выбор роли и вторая роль, ADR 0004). Почта — аккаунта, если она есть и не
- * занята другим кандидатом, иначе служебная; `consentAt` — из последнего согласия аккаунта (повторно не спрашиваем).
+ * Профиль кандидата для аккаунта (выбор роли и вторая роль, ADR 0004). Почта – аккаунта, если она есть и не
+ * занята другим кандидатом, иначе служебная; `consentAt` – из последнего согласия аккаунта (повторно не спрашиваем).
  * Связь `User.candidateId` ставит вызывающий.
  */
 export async function createCandidateProfile(tx: Prisma.TransactionClient, user: Pick<User, 'id' | 'name' | 'email'>): Promise<string> {
   const taken = user.email ? await tx.candidate.findUnique({ where: { email: user.email }, select: { id: true } }) : null;
   const email = user.email && !taken ? user.email : `user-${user.id}@users.invalid`;
   const consent = await tx.consent.findFirst({ where: { userId: user.id, kind: 'pd_processing' }, orderBy: { acceptedAt: 'desc' } });
-  // Показ работодателям — только по согласию Г4 (ADR 0005): до него новый профиль скрыт из поиска.
+  // Показ работодателям – только по согласию Г4 (ADR 0005): до него новый профиль скрыт из поиска.
   const visible = await tx.consent.count({ where: { userId: user.id, kind: 'employer_visibility', revokedAt: null } });
   const candidate = await tx.candidate.create({ data: { name: user.name, email, consentAt: consent?.acceptedAt ?? null, hiddenFromEmployers: visible === 0 }, select: { id: true } });
   return candidate.id;
@@ -157,7 +157,7 @@ export async function markOnboarded(userId: string): Promise<UserWithProfiles> {
 
 /**
  * Аккаунт для демо-кандидата (создаётся при первом демо-входе): роль candidate,
- * онбординг считается пройденным — жюри сразу попадает в кабинет.
+ * онбординг считается пройденным – жюри сразу попадает в кабинет.
  */
 export async function ensureDemoCandidateUser(candidate: { id: string; name: string; email: string }) {
   const user = await prisma.user.upsert({
@@ -173,7 +173,7 @@ export async function ensureDemoCandidateUser(candidate: { id: string; name: str
     },
     include: withProfiles,
   });
-  // Готовые демо-кандидаты считаются согласившимися (сид ставит Candidate.consentAt) — пишем и Consent:
+  // Готовые демо-кандидаты считаются согласившимися (сид ставит Candidate.consentAt) – пишем и Consent:
   // Г1 и согласия онбординга Г3 (тест, созвон, защита) и Г4 (показ работодателям), ADR 0005.
   await ensureConsent(user.id);
   await ensureConsents(user.id, DEMO_CANDIDATE_CONSENTS);
@@ -182,11 +182,11 @@ export async function ensureDemoCandidateUser(candidate: { id: string; name: str
 
 /**
  * Новый демо-гость: pending без `onboardedAt`, чтобы пройти весь онбординг-чат (только
- * DEMO_LOGIN, решает вызывающий). Согласие — галкой «Новый пользователь» на /demo, версия
+ * DEMO_LOGIN, решает вызывающий). Согласие – галкой «Новый пользователь» на /demo, версия
  * приходит сюда и пишется вместе с аккаунтом. Создаётся при каждом нажатии; сид их не трогает.
  */
 export async function createFreshDemoUser(consentVersion: string | null | undefined) {
-  // Без галки согласия пользователь не создаётся (решение владельца 09.10: согласие — при регистрации).
+  // Без галки согласия пользователь не создаётся (решение владельца 09.10: согласие – при регистрации).
   const version = assertConsentVersion(consentVersion);
   const n = await prisma.authAccount.count({ where: { provider: 'demo' } });
   return prisma.user.create({

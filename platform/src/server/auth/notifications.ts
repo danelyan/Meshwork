@@ -18,7 +18,7 @@ export async function notifications(s: SessionPrincipal & { userId: string }): P
       prisma.invitation.count({ where: { ...where, createdAt: { gt: read, lte: through } } }),
     ]);
     const items = rows.map((r) => ({ id: r.id, text: `Приглашение от ${r.company?.name ?? 'компании'}`, detail: `${r.vacancy?.title ?? 'Предложение'} · ${r.salaryFrom.toLocaleString('ru-RU')}-${r.salaryTo.toLocaleString('ru-RU')} ₽`, href: '/invitations', at: r.createdAt.toISOString(), unread: r.createdAt > read }));
-    // lane invite-cancel: компания отозвала приглашение — отдельное уведомление со временем отзыва и причиной.
+    // lane invite-cancel: компания отозвала приглашение – отдельное уведомление со временем отзыва и причиной.
     const ww = { candidateId: s.candidateId, withdrawnAt: { not: null, lte: through } };
     const [wRows, wUnread] = await Promise.all([
       prisma.invitation.findMany({ where: ww, orderBy: { withdrawnAt: 'desc' }, take: 20, select: { id: true, withdrawnAt: true, withdrawReason: true, company: { select: { name: true } } } }),
@@ -44,7 +44,7 @@ export async function notifications(s: SessionPrincipal & { userId: string }): P
 }
 
 /**
- * lane lifecycle: кандидат нанят другой компанией — приглашения и самоотклики этой компании закрыты (closedAt).
+ * lane lifecycle: кандидат нанят другой компанией – приглашения и самоотклики этой компании закрыты (closedAt).
  * Имя нанявшей компании не раскрывается.
  */
 async function closedByHire(companyId: string, read: Date, through: Date) {
@@ -63,7 +63,7 @@ async function closedByHire(companyId: string, read: Date, through: Date) {
   return { items, unread: iUnread + aUnread };
 }
 
-/** lane live-slots (ADR 0008 п. 3–4, 6): события живой защиты — предложены слоты, выбрано время, не подошло, отмена. */
+/** lane live-slots (ADR 0008 п. 3–4, 6): события живой защиты – предложены слоты, выбрано время, не подошло, отмена. */
 async function liveEvents(where: { candidateId: string; audience: 'candidate' } | { companyId: string; audience: 'employer' }, read: Date, through: Date, href: string) {
   const w = { ...where, createdAt: { lte: through } };
   const [rows, unread] = await Promise.all([

@@ -1,10 +1,10 @@
 import { candidateStats } from '@/server/consultant/aside';
 
-describe('candidateStats — сводка на сцене', () => {
+describe('candidateStats – сводка на сцене', () => {
   it('две плитки: навыки и категория; без вакансий, приглашений и прогнозов', () => {
     const s = candidateStats({ confirmed: 0, category: null });
     expect(s.map((x) => x.label)).toEqual(['Навыков подтверждено', 'Категория']);
-    expect(s[1]).toMatchObject({ value: '—', note: 'даёт только тест' });
+    expect(s[1]).toMatchObject({ value: '–', note: 'даёт только тест' });
     expect(s.map((x) => x.note).join(' ')).not.toMatch(/вероятн|шанс/);
   });
 

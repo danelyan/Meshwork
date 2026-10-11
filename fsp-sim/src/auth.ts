@@ -5,8 +5,8 @@ import { ApiError, type Ctx } from './http.js';
 /**
  * Проверка токенов ФСП ID (Keycloak). Токен должен быть выпущен реалмом (`iss`) для API (`aud`),
  * подписан ключом из JWKS реалма. Кто вызывает:
- *  - athlete — пользователь с claim `fsp_id` и ролью athlete (вход через браузер или password grant);
- *  - partner — сервисный аккаунт клиента с ролью partner (client_credentials).
+ *  - athlete – пользователь с claim `fsp_id` и ролью athlete (вход через браузер или password grant);
+ *  - partner – сервисный аккаунт клиента с ролью partner (client_credentials).
  */
 export interface Principal {
   kind: 'athlete' | 'partner';
@@ -43,7 +43,7 @@ export function createKeycloakVerifier(opts: { issuer: string; jwksUrl: string; 
       if (err instanceof joseErrors.JWTClaimValidationFailed) {
         throw new ApiError(401, 'invalid_token', `Токен не для этого API: ${err.claim} (${err.reason})`, BEARER_HEADER);
       }
-      // Не ошибка JOSE (например, сетевой сбой fetch) или таймаут JWKS — ключи реалма не получены.
+      // Не ошибка JOSE (например, сетевой сбой fetch) или таймаут JWKS – ключи реалма не получены.
       if (err instanceof joseErrors.JWKSTimeout || !(err instanceof joseErrors.JOSEError)) {
         throw new ApiError(503, 'idp_unavailable', 'ФСП ID (Keycloak) недоступен, ключи подписи не получены');
       }

@@ -1,6 +1,6 @@
 // Справочник направлений и подкатегорий (ADR 0003, дополнение 10.10; R-T-05). Один источник для кода,
-// UI и сида таблицы Subcategory (prisma/seed/directions.ts). Чистый модуль без серверных импортов —
-// его читают и клиентские компоненты. Карта — ресёрч владельца research/25 (§ 3 — описания, § 4 — что к сдаче).
+// UI и сида таблицы Subcategory (prisma/seed/directions.ts). Чистый модуль без серверных импортов –
+// его читают и клиентские компоненты. Карта – ресёрч владельца research/25 (§ 3 – описания, § 4 – что к сдаче).
 
 /** Порядок направлений в UI и сводках. Совпадает с enum Specialization (prisma/schema.prisma). */
 export const SPECIALIZATIONS = ['backend', 'frontend', 'ai', 'engineering'] as const;
@@ -41,23 +41,23 @@ export function specLabel(v: string | null | undefined): string {
 export type SubcategoryStatus = 'active' | 'planned';
 
 export interface SubcategoryDef {
-  /** "backend.web-api" — направление.подкатегория. */
+  /** "backend.web-api" – направление.подкатегория. */
   id: string;
   specialization: Specialization;
   title: string;
   description: string;
   /**
-   * active — по подкатегории есть тест на грейд: банк полон по грейдам — 6 Junior + 4 Middle + 4 Senior
-   * (MIN_FAMILIES_BY_GRADE, ADR 0003, дополнение 10.10 16:15); planned — запись справочника, «тест пока недоступен». Сверяется с реестром
-   * генераторов юнит-тестом (tests/unit/lib/directions.test.ts) — лейн генераторов меняет статус вместе с семействами.
+   * active – по подкатегории есть тест на грейд: банк полон по грейдам – 6 Junior + 4 Middle + 4 Senior
+   * (MIN_FAMILIES_BY_GRADE, ADR 0003, дополнение 10.10 16:15); planned – запись справочника, «тест пока недоступен». Сверяется с реестром
+   * генераторов юнит-тестом (tests/unit/lib/directions.test.ts) – лейн генераторов меняет статус вместе с семействами.
    */
   status: SubcategoryStatus;
   order: number;
 }
 
 /**
- * 18 подкатегорий (17 карты research/25 + ai.bi-analytics, 11.10). Статус — по банку теста (см. SubcategoryDef.status): active ⇔ банк подкатегории
- * полон (bankComplete, 6 Junior + 4 Middle + 4 Senior); направление без разметки семейств — переходный режим,
+ * 18 подкатегорий (17 карты research/25 + ai.bi-analytics, 11.10). Статус – по банку теста (см. SubcategoryDef.status): active ⇔ банк подкатегории
+ * полон (bankComplete, 6 Junior + 4 Middle + 4 Senior); направление без разметки семейств – переходный режим,
  * статус по объявлению. Сверяет tests/unit/lib/directions.test.ts.
  */
 export const SUBCATEGORIES: readonly SubcategoryDef[] = [
@@ -94,7 +94,7 @@ export function subcategoriesFor(spec: Specialization | null | undefined): Subca
   return SUBCATEGORIES.filter((s) => s.specialization === spec);
 }
 
-/** Подкатегория принадлежит направлению (null/undefined — подкатегория не выбрана; обязательность проверяет вызывающий). */
+/** Подкатегория принадлежит направлению (null/undefined – подкатегория не выбрана; обязательность проверяет вызывающий). */
 export function subcategoryMatches(spec: Specialization, id: string | null | undefined): boolean {
   if (!id) return true;
   return getSubcategory(id)?.specialization === spec;

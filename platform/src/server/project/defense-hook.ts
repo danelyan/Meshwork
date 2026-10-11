@@ -1,6 +1,6 @@
 // Точка стыка lane project → defense-room (ADR 0003, «Дополнение 10.10»): «Пригласить на защиту» создаёт
-// приглашение (Invitation) и ожидающую защиту — CallSession kind=defense, status=pending
-// (defense-room/pending.ts). Кандидат начинает её сам на /defense-room: согласие на запись и вопросы по коду —
+// приглашение (Invitation) и ожидающую защиту – CallSession kind=defense, status=pending
+// (defense-room/pending.ts). Кандидат начинает её сам на /defense-room: согласие на запись и вопросы по коду –
 // в момент старта (startDefenseRoom). Интерфейс оставлен, чтобы тесты могли подменить реализацию.
 import { requestProjectDefense } from '../defense-room/pending';
 

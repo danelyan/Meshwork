@@ -29,7 +29,7 @@ describe('simulate', () => {
     expect(lo.confirmed).toBe(false);
   });
 
-  it('длина — в пределах политики, шаги согласованы', () => {
+  it('длина – в пределах политики, шаги согласованы', () => {
     const rules = rulesFor(POLICY_VERSION);
     for (const claimed of ['junior', 'middle', 'senior'] as const) {
       for (const theta of [-2, 0, 2]) {
@@ -93,7 +93,7 @@ describe('simulate', () => {
     expect(() => simulate({ ...base, subcategoryId: 'nope.x' })).toThrow(SimInputError);
   });
 
-  it('список подкатегорий — из справочника и реестра генераторов', () => {
+  it('список подкатегорий – из справочника и реестра генераторов', () => {
     const subs = simulatorSubcategories();
     expect(subs.length).toBeGreaterThan(0);
     for (const s of subs) expect(SUBCATEGORIES.some((d) => d.id === s.id)).toBe(true);

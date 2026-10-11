@@ -12,7 +12,7 @@ const ASSETS = '/mediapipe';
 const INTERVAL_MS = 100;
 
 /**
- * Слежение за лицом по видеопотоку камеры (MediaPipe Face Landmarker, WASM в браузере, ресурсы — public/mediapipe,
+ * Слежение за лицом по видеопотоку камеры (MediaPipe Face Landmarker, WASM в браузере, ресурсы – public/mediapipe,
  * scripts/mediapipe-assets.mjs). Даёт состояние взгляда для значка и двигает цель взгляда головы ИИ
  * (components/avatar/look-target.ts). Никуда не отправляется: только экран кандидата.
  */

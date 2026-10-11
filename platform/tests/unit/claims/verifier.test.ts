@@ -30,7 +30,7 @@ describe('verifyClaims', () => {
     });
   });
 
-  it('цитата через перенос строки: склеивается, ref — диапазон строк, цитата — текст источника', () => {
+  it('цитата через перенос строки: склеивается, ref – диапазон строк, цитата – текст источника', () => {
     const d = doc(['Добавил ключ идемпотентности', 'в платёжный API']);
     const r = verifyClaims([p('be.idempotency', 'ключ идемпотентности в платёжный')], [d], CATALOG);
     expect(r.accepted[0]?.sourceRef).toBe('cv.pdf#l1..cv.pdf#l2');
@@ -38,10 +38,10 @@ describe('verifyClaims', () => {
   });
 
   it('регистр, ё/е, кавычки, тире, неразрывные пробелы, мягкий перенос', () => {
-    const d = doc(['Настроил «Redis» — кэш для каталога, ещё за­держку снизил']);
+    const d = doc(['Настроил «Redis» – кэш для каталога, ещё за­держку снизил']);
     const r = verifyClaims([p('be.cache', 'НАСТРОИЛ "redis" - кэш для каталога, еще задержку снизил')], [d], CATALOG);
     expect(r.rejected).toEqual([]);
-    expect(r.accepted[0]?.quote).toBe('Настроил «Redis» — кэш для каталога, ещё за­держку снизил'.replace(/\s+/g, ' '));
+    expect(r.accepted[0]?.quote).toBe('Настроил «Redis» – кэш для каталога, ещё за­держку снизил'.replace(/\s+/g, ' '));
   });
 
   it('перенос слова по слогам в PDF («разра-\\nботка») склеивается', () => {
@@ -63,7 +63,7 @@ describe('verifyClaims', () => {
   });
 
   it('подделка цитаты (пересказ, склейка мест, «Java» вместо «JavaScript», обрезанное слово) → no_quote', () => {
-    // соседние строки склеиваются (перенос строки в PDF), несмежные места — нет
+    // соседние строки склеиваются (перенос строки в PDF), несмежные места – нет
     const d = doc(['Писал на JavaScript', 'Учился в вузе', 'Кэш делала соседняя команда']);
     const forged = [
       p('be.cache', 'Делал кэш на Redis'),
@@ -112,7 +112,7 @@ describe('verifyClaims', () => {
     expect(r.rejected[0]?.reason).toBe('unknown_catalog_id');
   });
 
-  it('дубли: один catalogId — одно утверждение, лучшее по уверенности', () => {
+  it('дубли: один catalogId – одно утверждение, лучшее по уверенности', () => {
     const d = doc(['Кэшировал справочники в Redis', 'Добавил кэш ответов API в Redis']);
     const r = verifyClaims(
       [
@@ -135,7 +135,7 @@ describe('verifyClaims', () => {
     expect(r.rejected.map((x) => x.reason)).toEqual(['no_quote']);
   });
 
-  it('несколько документов: уровень по документу, где найдена цитата; ownership — через опцию', () => {
+  it('несколько документов: уровень по документу, где найдена цитата; ownership – через опцию', () => {
     const cv = doc(['Работал в Git: ветки и rebase'], { origin: 'cv.pdf' });
     const gh = doc(['Ведёт pull request в Git с rebase'], { kind: 'github', origin: 'github:u/r#README' });
     const cf = doc(['Решил задачи на Codeforces через Git rebase'], { kind: 'codeforces', origin: 'cf:u' });

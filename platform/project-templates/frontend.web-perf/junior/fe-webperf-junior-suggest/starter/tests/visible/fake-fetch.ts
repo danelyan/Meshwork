@@ -16,7 +16,7 @@ interface FakeResponse {
   json: () => Promise<unknown>;
 }
 
-/** Подменяет глобальный fetch. Каждый вызов ждёт решения теста. ignoreAbort — «плохой» fetch, не реагирующий на отмену. */
+/** Подменяет глобальный fetch. Каждый вызов ждёт решения теста. ignoreAbort – «плохой» fetch, не реагирующий на отмену. */
 export function installFakeFetch(opts: { ignoreAbort?: boolean } = {}) {
   const calls: FakeCall[] = [];
   const fetchMock = vi.fn((input: unknown, init?: { signal?: AbortSignal }) => {

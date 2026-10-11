@@ -8,14 +8,14 @@ import { generateSigningKey, signJwt, type Jwks, type SigningKey } from '../jwt'
 
 /**
  * МОК провайдера ФСП ID. Работает, пока внешний симулятор ФСП ID команды (Keycloak) не настроен в env:
- * у клиента `fsp-career` там конфиденциальный доступ, а секрета у нас нет (11.10). Страница входа —
- * `app/api/fsp-id/realms/fsp/protocol/openid-connect/auth`, обмен кода и JWKS — в процессе
- * (`mockTransport`), тот же клиент проверяет подпись и claims, что и для внешнего. Пути и форма ответов —
+ * у клиента `fsp-career` там конфиденциальный доступ, а секрета у нас нет (11.10). Страница входа –
+ * `app/api/fsp-id/realms/fsp/protocol/openid-connect/auth`, обмен кода и JWKS – в процессе
+ * (`mockTransport`), тот же клиент проверяет подпись и claims, что и для внешнего. Пути и форма ответов –
  * как у Keycloak (`/realms/<realm>/protocol/openid-connect/...`), чтобы в проде клиент переключился
- * на настоящий реалм сменой issuer. Поток — Authorization Code + PKCE S256, публичный клиент.
+ * на настоящий реалм сменой issuer. Поток – Authorization Code + PKCE S256, публичный клиент.
  *
- * Состояние (ключ подписи, коды, access-токены) — в памяти процесса на `globalThis`: один контейнер
- * приложения; после перезапуска ключ новый, недоиспользованные коды теряются — это мок. Приватный
+ * Состояние (ключ подписи, коды, access-токены) – в памяти процесса на `globalThis`: один контейнер
+ * приложения; после перезапуска ключ новый, недоиспользованные коды теряются – это мок. Приватный
  * ключ генерируется при первом обращении и никуда не пишется.
  */
 
@@ -30,7 +30,7 @@ export function fspIssuer(appUrl: string = getEnv().APP_URL): string {
   return new URL(FSP_ID_REALM_PATH, appUrl).toString();
 }
 
-/** Белый список redirect_uri клиента — точное совпадение строки (никаких префиксов и шаблонов). */
+/** Белый список redirect_uri клиента – точное совпадение строки (никаких префиксов и шаблонов). */
 export function allowedRedirectUris(appUrl: string = getEnv().APP_URL): string[] {
   return [new URL(FSP_ID_CALLBACK_PATH, appUrl).toString()];
 }
@@ -103,7 +103,7 @@ export interface AuthorizeRequest {
   codeChallenge: string;
 }
 
-/** Ошибка, о которой нельзя сообщить редиректом: redirect_uri не проверен — показываем страницу. */
+/** Ошибка, о которой нельзя сообщить редиректом: redirect_uri не проверен – показываем страницу. */
 export type AuthorizeResult =
   | { ok: true; req: AuthorizeRequest }
   | { ok: false; fatal: true; message: string }
@@ -113,7 +113,7 @@ const B64URL = /^[A-Za-z0-9_-]+$/;
 
 /**
  * Проверка запроса авторизации. Сначала client_id и redirect_uri (белый список): до этого ошибку
- * нельзя отправлять редиректом — иначе open redirect. Потом response_type, scope, state, nonce, PKCE.
+ * нельзя отправлять редиректом – иначе open redirect. Потом response_type, scope, state, nonce, PKCE.
  */
 export function validateAuthorize(p: URLSearchParams, appUrl: string = getEnv().APP_URL): AuthorizeResult {
   const clientId = p.get('client_id') ?? '';
@@ -156,7 +156,7 @@ function pkceMatches(verifier: string, challenge: string): boolean {
 }
 
 /**
- * Token endpoint (RFC 6749 § 4.1.3 + RFC 7636 § 4.6): код одноразовый (удаляется до проверок —
+ * Token endpoint (RFC 6749 § 4.1.3 + RFC 7636 § 4.6): код одноразовый (удаляется до проверок –
  * повтор не пройдёт), совпадение client_id и redirect_uri с запросом авторизации, PKCE S256.
  */
 export function exchangeToken(form: URLSearchParams, issuer: string = fspIssuer(), nowSec = Math.floor(Date.now() / 1000)): TokenResult {
@@ -192,7 +192,7 @@ export function exchangeToken(form: URLSearchParams, issuer: string = fspIssuer(
   return { status: 200, body: { access_token: accessToken, token_type: 'Bearer', expires_in: TOKEN_TTL_SEC, id_token: idToken, scope: 'openid profile' } };
 }
 
-/** UserInfo по Bearer-токену; null — токен неизвестен или истёк. */
+/** UserInfo по Bearer-токену; null – токен неизвестен или истёк. */
 export function userInfo(authorization: string | null, nowSec = Math.floor(Date.now() / 1000)): Record<string, unknown> | null {
   const m = /^Bearer ([A-Za-z0-9_-]{20,})$/.exec(authorization ?? '');
   if (!m) return null;

@@ -18,12 +18,12 @@ export function GET(req: Request) {
   if (!cfg) return NextResponse.redirect(new URL('/auth?error=yandex_not_configured', env.APP_URL), 303);
   const params = new URL(req.url).searchParams;
   const next = safeNext(params.get('next'));
-  // Согласие — галкой на /auth до входа (решение владельца 09.10): без неё и при устаревшей версии
+  // Согласие – галкой на /auth до входа (решение владельца 09.10): без неё и при устаревшей версии
   // в Яндекс не ведём, пользователь не создаётся.
   const consent = params.get('consent');
   if (consent !== CONSENT_VERSION) return NextResponse.redirect(new URL('/auth?error=consent_required', env.APP_URL), 303);
   const state = randomToken(24);
-  const verifier = randomToken(48); // 64 символа base64url — в пределах 43..128 (RFC 7636)
+  const verifier = randomToken(48); // 64 символа base64url – в пределах 43..128 (RFC 7636)
   const res = NextResponse.redirect(authorizeUrl(cfg, state, verifier), 303);
   res.cookies.set({
     name: OAUTH_COOKIE,

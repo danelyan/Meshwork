@@ -75,7 +75,7 @@ describe('buildProfileDocument: категория', () => {
 });
 
 describe('buildProfileDocument: основное и контакт', () => {
-  it('контакт — ровно тот, что передан для владельца профиля; поля резюме и анкеты в фактах', () => {
+  it('контакт – ровно тот, что передан для владельца профиля; поля резюме и анкеты в фактах', () => {
     const doc = buildProfileDocument(input());
     expect(doc.name).toBe('Анна Петрова');
     expect(doc.headline).toBe(`${specLabel('backend')} · Казань`);
@@ -110,7 +110,7 @@ describe('buildProfileDocument: утверждения, ФСП, ступени',
         claim({ id: 'e', statement: 'Призёр хакатона ФСП', sourceKind: 'fsp', level: 'third_party', status: 'confirmed' }),
       ],
     }) }));
-    expect(section(doc, 'Утверждения о навыках').items).toEqual(['Проверено платформой — платформа', 'Со слов — со слов']);
+    expect(section(doc, 'Утверждения о навыках').items).toEqual(['Проверено платформой – платформа', 'Со слов – со слов']);
     expect(JSON.stringify(doc)).not.toMatch(/Черновик|Отклонено|Кэшировал справочники/);
     expect(fact(doc, 'Достижения ФСП', 'Статус')).toMatch(/привязан, достижения/);
     expect(section(doc, 'Достижения ФСП').items).toEqual(['Призёр хакатона ФСП']);
@@ -123,7 +123,7 @@ describe('buildProfileDocument: утверждения, ФСП, ступени',
     expect(section(doc, 'Достижения ФСП').items).toEqual([]);
   });
 
-  it('ступени: пусто → «не проводился»; с данными — счётчики и дата созвона', () => {
+  it('ступени: пусто → «не проводился»; с данными – счётчики и дата созвона', () => {
     const empty = buildProfileDocument(input());
     expect(fact(empty, 'Ступени проверки сверх теста', 'Созвон с ИИ')).toBe('не проводился');
     expect(fact(empty, 'Ступени проверки сверх теста', 'Проектные задания')).toBe('не сдавались');

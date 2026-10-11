@@ -101,7 +101,7 @@ describe('parseReply', () => {
     expect(parseReply('{"category":"bug","priority":"normal","summary":"' + 'я'.repeat(200) + '"}').ok).toBe(true);
   });
 
-  it('refusal: строковое поле refusal, detail — причина; нестроковое — invalid_schema', () => {
+  it('refusal: строковое поле refusal, detail – причина; нестроковое – invalid_schema', () => {
     expect(parseReply('{"refusal":"в обращении нет просьбы"}')).toEqual({ ok: false, reason: 'refusal', detail: 'в обращении нет просьбы' });
     expect(parseReply('```json\n{"refusal":"нет"}\n```')).toMatchObject({ ok: false, reason: 'refusal' });
     expect(parseReply('{"refusal":true}')).toEqual({ ok: false, reason: 'invalid_schema' });
@@ -131,7 +131,7 @@ describe('triage', () => {
     expect(b.calls).toHaveLength(2);
   });
 
-  it('попытки исчерпаны — причина последней неудачи; maxAttempts 1 без повторов', async () => {
+  it('попытки исчерпаны – причина последней неудачи; maxAttempts 1 без повторов', async () => {
     const a = fake('{"category":"x"}', 'проза');
     expect(await triage('вопрос', a.llm)).toEqual({ ok: false, reason: 'not_json', attempts: 2 });
     const b = fake('проза', OK);
@@ -139,14 +139,14 @@ describe('triage', () => {
     expect(b.calls).toHaveLength(1);
   });
 
-  it('отказ модели — без повторов, detail сохраняется', async () => {
+  it('отказ модели – без повторов, detail сохраняется', async () => {
     const { llm, calls } = fake('{"refusal":"недостаточно данных"}', OK);
     const res = await triage('...', llm, { maxAttempts: 5 });
     expect(res).toEqual({ ok: false, reason: 'refusal', attempts: 1, detail: 'недостаточно данных' });
     expect(calls).toHaveLength(1);
   });
 
-  it('исключение клиента — llm_error без повторов, не пробрасывается', async () => {
+  it('исключение клиента – llm_error без повторов, не пробрасывается', async () => {
     const { llm, calls } = fake(new Error('rate limited'), OK);
     const res = await triage('вопрос', llm, { maxAttempts: 4 });
     expect(res).toEqual({ ok: false, reason: 'llm_error', attempts: 1, detail: 'rate limited' });

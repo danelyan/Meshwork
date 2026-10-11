@@ -44,10 +44,10 @@ export interface MatchItem extends RankedCandidate {
   invitation: { id: string; status: InvitationStatus; vacancyId: string | null } | null;
   /**
    * Активная или ожидающая защита (кнопка «Комната защиты»). Только у кандидата, принявшего приглашение
-   * (до этого страница комнаты отвечает 404); нет сессии — поля нет.
+   * (до этого страница комнаты отвечает 404); нет сессии – поля нет.
    */
   defenseRoom?: DefenseRoomLink | null;
-  /** Проверка честности попытки, давшей категорию (только уровень и группы); нет попытки или индекса — null. Порядок меняет не эта метка, а integrity-ranking.ts (2a). */
+  /** Проверка честности попытки, давшей категорию (только уровень и группы); нет попытки или индекса – null. Порядок меняет не эта метка, а integrity-ranking.ts (2a). */
   testIntegrity?: PublicTestIntegrity | null;
   /** Уверенность теста в грейде категории, 0..1 (P(θ выше порога), policy.ts probAbove). Не вероятность найма. Нет пройденного теста - null. */
   gradeConfidence?: number | null;
@@ -56,7 +56,7 @@ export interface MatchItem extends RankedCandidate {
 }
 
 export interface MatchResult {
-  /** null — поиск по банку без потребности. */
+  /** null – поиск по банку без потребности. */
   vacancy: VacancyView | null;
   filters: MatchFilters;
   total: number;
@@ -71,7 +71,7 @@ interface PoolRow {
   email: string;
   contact: string | null;
   claimsPublic: PublicClaim[];
-  /** lane resume-fields: стаж, роли, софт-скиллы (публичная проекция — employer/privacy.ts publicExperience) */
+  /** lane resume-fields: стаж, роли, софт-скиллы (публичная проекция – employer/privacy.ts publicExperience) */
   experience: { experienceYears: number | null; roles: string[]; softSkills: string[] } | null;
 }
 
@@ -80,7 +80,7 @@ interface PoolRow {
  * утверждениями или категорией. Черновики (`proposed`) и отклонённые не считаются. Кандидаты без категории из теста
  * загружаются всегда: в выдачу их пускает только MatchFilters.expandPool (ranking.ts passesFilters), а подсказка
  * «расширьте пул» (relax.ts) считает по ним прибавку.
- * `companyId` — чья выдача: от него зависит, какие защиты видны (ADR 0008); null — только ИИ-защиты.
+ * `companyId` – чья выдача: от него зависит, какие защиты видны (ADR 0008); null – только ИИ-защиты.
  */
 export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: string | null = null): Promise<PoolRow[]> {
   const showDemo = await getSetting('matching.show_demo_candidates');
@@ -89,7 +89,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: st
       hiddenFromEmployers: false,
       // Режим эксперта (server/expert): одноразовые эксперты жюри в поиск и подборку не попадают никогда.
       ...NOT_EXPERT_CANDIDATE,
-      // E-08 фаза 3: аккаунт заблокирован модератором — не в выдаче; демо — по переключателю админки.
+      // E-08 фаза 3: аккаунт заблокирован модератором – не в выдаче; демо – по переключателю админки.
       AND: [notBlockedCandidateWhere()],
       ...(showDemo ? {} : { isDemo: false }),
       OR: [{ claims: { some: { status: { in: ['confirmed', 'edited'] } } } }, { categories: { some: {} } }],
@@ -112,7 +112,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: st
     },
     orderBy: { id: 'asc' },
   });
-  // Защита — только видимая этой компании (ADR 0008): ИИ-защита или своя живая; чужая живая не попадает в evidence.
+  // Защита – только видимая этой компании (ADR 0008): ИИ-защита или своя живая; чужая живая не попадает в evidence.
   const stages = await loadStageEvidence(rows.map((r) => r.id), companyId);
   const fsp = await loadFspAchievements(rows.filter((r) => r.fspState === 'linked').map((r) => r.id));
   return rows.map((r) => ({
@@ -148,8 +148,8 @@ function parseAchievements(snapshot: unknown): FspAchievementInput[] | null {
 }
 
 /**
- * Достижения ФСП из последнего снимка ФСП-источника (Source.snapshot.meta.achievements — форма collector/fsp-demo.ts).
- * Снимка нет — вызывающий берёт тот же детерминированный демо-набор, что выдаёт ФСП-источник по id кандидата.
+ * Достижения ФСП из последнего снимка ФСП-источника (Source.snapshot.meta.achievements – форма collector/fsp-demo.ts).
+ * Снимка нет – вызывающий берёт тот же детерминированный демо-набор, что выдаёт ФСП-источник по id кандидата.
  */
 async function loadFspAchievements(candidateIds: string[]): Promise<Map<string, FspAchievementInput[]>> {
   const out = new Map<string, FspAchievementInput[]>();
@@ -203,12 +203,12 @@ async function run(
   limit: number,
   requireCoverage = false,
 ): Promise<{ total: number; items: MatchItem[]; hints?: RelaxHint[] }> {
-  // lane hired: кандидат, нанятый другой компанией, уходит из выдачи до ранжирования (у нанявшей — остаётся).
+  // lane hired: кандидат, нанятый другой компанией, уходит из выдачи до ранжирования (у нанявшей – остаётся).
   const hiredElsewhere = await hiredByOtherCompanies(companyId);
   const pool = (await loadPool(catalog, companyId)).filter((p) => !hiredElsewhere.has(p.evidence.id));
   const byId = new Map(pool.map((p) => [p.evidence.id, p]));
-  // Вариант 2a (11.10): индекс честности всего пула до ранжирования; high без подтверждения тестом или созвоном —
-  // категория не учитывается (ranking.ts integrityPenalty). Выключатель — TEST_INTEGRITY_RANKING.
+  // Вариант 2a (11.10): индекс честности всего пула до ранжирования; high без подтверждения тестом или созвоном –
+  // категория не учитывается (ranking.ts integrityPenalty). Выключатель – TEST_INTEGRITY_RANKING.
   const opts = rankingIntegrityOptions();
   const withIntegrity = opts.integrityPenalty
     ? withRankingIntegrity(pool.map((p) => p.evidence), await loadRankingIntegrity(new Map(pool.map((p) => [p.evidence.id, p.evidence.category]))))
@@ -250,12 +250,12 @@ async function run(
     if (fs) explanation = { ...explanation, category: `${fullstackLabel(fs)} (тест)` };
     return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null, gradeConfidence: confidence.get(r.candidateId) ?? null, ...(requireCoverage ? { matchProbability: scoreToProbability(r.score) } : {}) };
   });
-  // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
+  // R-M-04: подсказки ослабления – только для подборки под потребность (одна цель на всех).
   const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(evidence, target, catalog, filters, opts) : undefined;
   return { total: ranked.length, items, ...(hints ? { hints } : {}) };
 }
 
-/** Подборка под свою потребность. Чужая — 404. */
+/** Подборка под свою потребность. Чужая – 404. */
 export async function matchForVacancy(companyId: string, vacancyId: string, filters: MatchFilters, limit: number): Promise<MatchResult> {
   const vacancy = await getVacancy(companyId, vacancyId);
   const catalog = await loadCatalog();
@@ -272,9 +272,9 @@ export async function matchForVacancy(companyId: string, vacancyId: string, filt
 }
 
 /**
- * Поиск по всему банку без потребности: цель — сигнатура категории из каталога
- * (специализация и грейд из фильтра, иначе — свои у каждого кандидата; без
- * категории грейд — Junior).
+ * Поиск по всему банку без потребности: цель – сигнатура категории из каталога
+ * (специализация и грейд из фильтра, иначе – свои у каждого кандидата; без
+ * категории грейд – Junior).
  */
 export async function searchBank(companyId: string, filters: MatchFilters, limit: number): Promise<MatchResult> {
   const catalog = await loadCatalog();

@@ -5,14 +5,14 @@ import type { CatalogEntry, CatalogMeta } from './types';
 export { CATALOG_VERSION, catalogFor, catalogFromFile, getCatalogMeta } from './catalog-file';
 
 /**
- * Каталог утверждений из БД (ClaimCatalog). Если таблица пуста (сид не прогнан) —
+ * Каталог утверждений из БД (ClaimCatalog). Если таблица пуста (сид не прогнан) –
  * из файла, чтобы стенд не терял извлечение.
  */
 export async function getCatalog(): Promise<CatalogEntry[]> {
   const rows = await prisma.claimCatalog.findMany({ orderBy: { id: 'asc' } });
   if (rows.length === 0) return catalogFromFile();
   return rows.map((r) => {
-    // Строка, загруженная до миграции integrate_lanes (weights = null), — мета из файла.
+    // Строка, загруженная до миграции integrate_lanes (weights = null), – мета из файла.
     const fileMeta = r.weights === null ? getCatalogMeta(r.id) : undefined;
     return {
     id: r.id,

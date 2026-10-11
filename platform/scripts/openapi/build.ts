@@ -27,7 +27,7 @@ export interface RouteOp {
   method: Method;
   doc: string;
   text: string;
-  /** Локальные Zod-константы файла и импорты — для разбора схем. */
+  /** Локальные Zod-константы файла и импорты – для разбора схем. */
   scope: FileScope;
 }
 
@@ -139,7 +139,7 @@ async function importName(scope: FileScope, name: string): Promise<unknown> {
     const mod = (await import(pathToFileURL(file).href)) as Record<string, unknown>;
     return mod[name];
   } catch {
-    // модуль тянет окружение (БД, env) — берём числовую/строковую константу прямо из текста
+    // модуль тянет окружение (БД, env) – берём числовую/строковую константу прямо из текста
     const m = new RegExp(`export const ${name}\\b[^=]*=\\s*(\\d[\\d_]*|'[^']*')\\s*;`).exec(readFileSync(file, 'utf8'));
     if (m) return Function(`return ${m[1]!.replace(/_/g, '')}`)();
     return undefined;
@@ -217,7 +217,7 @@ const ROLE_TEXT: Record<Role, string> = {
   employer: 'Нужна сессия работодателя (кука cid).',
   user: 'Нужна сессия аккаунта любой роли (кука cid).',
   session: 'Нужна любая сессия (кука cid).',
-  staff: 'Нужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403.',
+  staff: 'Нужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право – по матрице server/admin/permissions.ts, иначе 403.',
 };
 
 function successStatuses(op: RouteOp): number[] {
@@ -230,9 +230,9 @@ function successStatuses(op: RouteOp): number[] {
 
 function firstLine(doc: string): string {
   let line = (doc.split('\n').find((l) => l.trim()) ?? '').trim();
-  // «POST /api/x?a=&b= {тело} — смысл» → «Смысл»
+  // «POST /api/x?a=&b= {тело} – смысл» → «Смысл»
   line = line.replace(/^(?:GET|POST|PUT|PATCH|DELETE)(?:\/[A-Z]+)*\s+\/api\S*\s*/, '');
-  line = line.replace(/^(?:\{[^}]*\}|`[^`]*`|\([^)]*\))\s*/, '').replace(/^(?:—|-)\s*/, '');
+  line = line.replace(/^(?:\{[^}]*\}|`[^`]*`|\([^)]*\))\s*/, '').replace(/^(?:–|-)\s*/, '');
   return line ? line[0]!.toUpperCase() + line.slice(1) : '';
 }
 
@@ -349,7 +349,7 @@ export async function buildSpec(opts: BuildOptions = {}): Promise<Record<string,
       }
     }
 
-    // ошибки: выводятся из исходника, подробности (коды `busy`, `blocked_url` …) — из overrides
+    // ошибки: выводятся из исходника, подробности (коды `busy`, `blocked_url` …) – из overrides
     const errs = new Set<number>(Object.keys(ov.errors ?? {}).map(Number));
     if (requestBody || zodQuery || /\.parse\(|badRequest\(/.test(text)) errs.add(400);
     if (role !== 'public') errs.add(401);
@@ -371,7 +371,7 @@ export async function buildSpec(opts: BuildOptions = {}): Promise<Record<string,
     const doc = op.doc
       .replace(/\s+/g, ' ')
       .trim()
-      .replace(/^(?:GET|POST|PUT|PATCH|DELETE)(?:[/ ][A-Z]+)*\s+\/api\S*[^—]{0,80}?—\s*/, '');
+      .replace(/^(?:GET|POST|PUT|PATCH|DELETE)(?:[/ ][A-Z]+)*\s+\/api\S*[^–]{0,80}?–\s*/, '');
     const operation: Record<string, unknown> = {
       operationId: ov.operationId ?? `${op.method.toLowerCase()}${op.path
         .split('/')
@@ -406,8 +406,8 @@ export async function buildSpec(opts: BuildOptions = {}): Promise<Record<string,
       version: pkg.version ?? '0.0.0',
       description: [
         'REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.',
-        'Вход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.',
-        'Все ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).',
+        'Вход – подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.',
+        'Все ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` – машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).',
         'Служебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.',
         SSE_EVENTS_DOC,
       ].join('\n\n'),

@@ -1,5 +1,5 @@
-// Драйвер вида созвона `interview` (ИИнтервью): вопросы по блокам модели компетенций, оценка — тот же слепой
-// оценщик A-02 ×3 (call/evaluator.ts), компетенция = «тема» карты глубины; сверху — оси, соответствие грейду,
+// Драйвер вида созвона `interview` (ИИнтервью): вопросы по блокам модели компетенций, оценка – тот же слепой
+// оценщик A-02 ×3 (call/evaluator.ts), компетенция = «тема» карты глубины; сверху – оси, соответствие грейду,
 // итог (verdict.ts). Подтверждённые компетенции поднимают их утверждения до platform тем же путём, что созвон.
 import type { ClaimStatus, Prisma } from '@prisma/client';
 
@@ -57,7 +57,7 @@ export const interviewDriver: CallDriver = {
   closingLine: INTERVIEW_CLOSING_LINE,
   disclaimer: INTERVIEW_DISCLAIMER,
 
-  // ИИнтервью — только после теста (есть категория из теста; то же правило, что resolveCallKind).
+  // ИИнтервью – только после теста (есть категория из теста; то же правило, что resolveCallKind).
   async assertCanStart(candidateId) {
     await assertContentReady(candidateId, 'interview');
   },
@@ -90,7 +90,7 @@ export const interviewDriver: CallDriver = {
     return { text: q.question, meta: q.meta, done: q.done };
   },
 
-  // Разбор задания теста (11.10) — и в ИИнтервью: после теста сцена консультанта открывает именно его, а не
+  // Разбор задания теста (11.10) – и в ИИнтервью: после теста сцена консультанта открывает именно его, а не
   // квалифицирующий созвон, иначе этап до кандидата с пройденным тестом не доходит.
   async reviewRemaining(session) {
     const ctx = await loadInterviewContext(session.candidateId);
@@ -136,7 +136,7 @@ export const interviewDriver: CallDriver = {
     const evaluated = interim ? interim.depthMap.filter((d) => d.status !== 'not_probed').map((d) => fresh.get(d.topic) ?? d) : [...fresh.values()];
     for (const d of fresh.values()) if (!evaluated.some((x) => x.topic === d.topic)) evaluated.push(d);
     const asked = new Set(evaluated.map((d) => d.topic));
-    // «Не проверено» — технические и системные компетенции направления, до которых интервью не дошло.
+    // «Не проверено» – технические и системные компетенции направления, до которых интервью не дошло.
     const rest = [...ctx.plan.test, ...ctx.plan.systems].filter((c) => !asked.has(c.title)).map((c) => notProbedItem({ topic: c.title, catalogId: null, claimStatement: null }));
     const depthMap = [...evaluated, ...rest];
     const blocks = [...new Set(turns.map((t) => t.block))];

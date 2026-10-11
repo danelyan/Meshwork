@@ -8,8 +8,8 @@ import { CANDIDATE_PEER, employerPeer, type PeerId } from './bus';
 import type { CallEvent, CallSnapshot, TranscriptEntry } from './types';
 
 /**
- * Кто смотрит звонок. Кандидат — владелец сессии. Работодатель — только если кандидат принял
- * приглашение его компании (R-C-16, ADR 0003 «Запись»: до контакта — псевдоним, транскрипта нет);
+ * Кто смотрит звонок. Кандидат – владелец сессии. Работодатель – только если кандидат принял
+ * приглашение его компании (R-C-16, ADR 0003 «Запись»: до контакта – псевдоним, транскрипта нет);
  * иначе 404, как для чужого объекта. Реплики и вопросы других компаний работодателю отдаются скрытыми:
  * кандидат может общаться с несколькими компаниями, и одна не должна видеть другую.
  */
@@ -32,9 +32,9 @@ export async function employerMayAccess(companyId: string, candidateId: string):
 }
 
 /**
- * ADR 0008: живая защита проекта видна только компании вакансии, по чьей задаче сдан проект; чужой — 404, даже
+ * ADR 0008: живая защита проекта видна только компании вакансии, по чьей задаче сдан проект; чужой – 404, даже
  * при собственном accepted. ИИ-защита и защита без сабмита (ответы на вопросы нескольких компаний, реплики чужих
- * скрываются redactTranscript) — как раньше.
+ * скрываются redactTranscript) – как раньше.
  */
 async function liveDefenseVisible(companyId: string, s: { id: string; aiDefense: boolean }): Promise<boolean> {
   if (s.aiDefense) return true;
@@ -51,7 +51,7 @@ export async function resolveViewer(principal: SessionPrincipal | null, sessionI
     return { viewer: { role: 'candidate', candidateId: s.candidateId, peer: CANDIDATE_PEER }, session: s };
   }
   if (principal.userId && principal.employerProfileId) {
-    await assertEmployerConsents(principal.userId); // ADR 0005: комната — данные кандидата, нужна оферта
+    await assertEmployerConsents(principal.userId); // ADR 0005: комната – данные кандидата, нужна оферта
     const ctx = await loadEmployerContext(principal.employerProfileId);
     if ((await employerMayAccess(ctx.companyId, s.candidateId)) && (await liveDefenseVisible(ctx.companyId, s))) {
       return {
@@ -87,7 +87,7 @@ export function redactEntry(entry: TranscriptEntry, viewer: Viewer): TranscriptE
 
 /**
  * Транскрипт для зрителя. Ответ кандидата скрывается вместе с вопросом чужой компании: по метке
- * `defense.companyId` у ответа, а у записей без метки — по связке с предыдущей репликой-вопросом.
+ * `defense.companyId` у ответа, а у записей без метки – по связке с предыдущей репликой-вопросом.
  */
 export function redactTranscript(transcript: TranscriptEntry[], viewer: Viewer): TranscriptEntry[] {
   if (viewer.role === 'candidate') return transcript;
@@ -111,7 +111,7 @@ export function redactSnapshot(s: CallSnapshot, viewer: Viewer): CallSnapshot {
   };
 }
 
-/** Событие для конкретного зрителя: null — не показывать. */
+/** Событие для конкретного зрителя: null – не показывать. */
 export function redactEvent(e: CallEvent, viewer: Viewer): CallEvent | null {
   if (viewer.role === 'candidate') return e;
   switch (e.type) {

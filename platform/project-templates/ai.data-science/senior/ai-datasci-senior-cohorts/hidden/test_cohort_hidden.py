@@ -223,7 +223,7 @@ class TestAbLtv:
             "order_date": ["2026-02-18", "2026-02-19", "2026-02-28", "2026-03-01", "2026-03-10", "2026-03-11"],
             "amount": [1000.0, 1.0, 2.0, 4.0, 8.0, 16.0],
         })
-        # окна: pre [02-19, 03-01), post [03-01, 03-11); заказ 03-11 — вне окна
+        # окна: pre [02-19, 03-01), post [03-01, 03-11); заказ 03-11 – вне окна
         r = cohort.ab_ltv(users, orders, "2026-03-01", pre_days=10, post_days=10)
         assert r["raw"]["mean_control"] == pytest.approx(12.0)
         assert r["raw"]["mean_treatment"] == pytest.approx(0.0)

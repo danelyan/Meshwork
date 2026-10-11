@@ -14,10 +14,10 @@ export interface StepOption {
   note?: string;
   /** Показан, но выбрать нельзя («скоро»). */
   disabled?: boolean;
-  /** Как ответ звучит в ленте и сводке, если label — действие («Привязать» → «привязан»). */
+  /** Как ответ звучит в ленте и сводке, если label – действие («Привязать» → «привязан»). */
   answered?: string;
   /**
-   * Вариант — переход, а не ответ (вход во внешний сервис): кнопка ведёт по ссылке, ответ записывает
+   * Вариант – переход, а не ответ (вход во внешний сервис): кнопка ведёт по ссылке, ответ записывает
    * сервер по возврату (ФСП ID: `/api/fsp-id/callback`). Через POST /api/onboarding такой вариант не выбрать.
    */
   href?: string;
@@ -55,7 +55,7 @@ export interface StepContext {
   facts: Facts;
 }
 
-/** Текстовая проверка (кроме длины): ИНН по контрольной сумме; контакт — почта или Telegram (server/contact.ts). */
+/** Текстовая проверка (кроме длины): ИНН по контрольной сумме; контакт – почта или Telegram (server/contact.ts). */
 export type TextCheck = 'inn' | 'contact';
 
 export interface StepDef {
@@ -80,7 +80,7 @@ export interface StepDef {
   required?: boolean;
   /** Показывать шаг, только если условие истинно. */
   when?: (ctx: StepContext) => boolean;
-  /** Шаг закрыт фактом из БД (согласие уже дано, роль выбрана) — без ответа в состоянии. */
+  /** Шаг закрыт фактом из БД (согласие уже дано, роль выбрана) – без ответа в состоянии. */
   doneBy?: (ctx: StepContext) => boolean;
   range?: RangeSpec;
   maxLength?: number;
@@ -106,7 +106,7 @@ export interface StepView {
   options?: StepOption[];
   allowCustom: boolean;
   required: boolean;
-  /** Прежний ответ — при возврате к шагу. */
+  /** Прежний ответ – при возврате к шагу. */
   value?: unknown;
   range?: RangeSpec;
   maxLength?: number;
@@ -117,11 +117,11 @@ export interface StepView {
 
 export interface HistoryItem {
   stepId: string;
-  /** Короткое имя шага (как в сводке) — для «Что я уже знаю» в правой колонке консультанта. */
+  /** Короткое имя шага (как в сводке) – для «Что я уже знаю» в правой колонке консультанта. */
   label?: string;
   lead: string;
   question: string;
-  /** null — шаг пропущен. */
+  /** null – шаг пропущен. */
   answer: string | null;
   /** Можно вернуться и поправить (не согласие и не роль). */
   editable: boolean;
@@ -156,18 +156,18 @@ export interface OnboardingView {
   consent: { version: string; docUrl: string };
   progress: { done: number; total: number };
   history: HistoryItem[];
-  /** Текущий шаг; при kind = 'summary' — итог. */
+  /** Текущий шаг; при kind = 'summary' – итог. */
   current: StepView;
   summary: SummaryView | null;
   /** «Настроить позже» уведёт в кабинет (роль и согласие есть) или на главную. */
   laterTarget: string;
-  /** Куда ведёт «Пройти тест на грейд»; testReady = false — роута теста ещё нет. */
+  /** Куда ведёт «Пройти тест на грейд»; testReady = false – роута теста ещё нет. */
   test: { href: string; ready: boolean };
   /** Онбординг уже завершён (человек вернулся настроить). */
   onboarded: boolean;
   /**
    * Кандидат нажал «Настроить позже» (решение владельца 10.10): на /consultant шаги на паузе,
-   * лента — свободный разговор с консультантом; любой ответ, пропуск или возврат к шагу снимает паузу.
+   * лента – свободный разговор с консультантом; любой ответ, пропуск или возврат к шагу снимает паузу.
    */
   later?: boolean;
 }

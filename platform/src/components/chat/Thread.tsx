@@ -10,7 +10,7 @@ import styles from './thread.module.css';
 
 /**
  * Примитивы ленты помощника MESHWORK: одна визуальная сущность для онбординга и консультанта
- * (docs/design-system.md, «Лента чата»). Помощник — знак ФСП без имени; пользователь — синий пузырь справа.
+ * (docs/design-system.md, «Лента чата»). Помощник – знак ФСП без имени; пользователь – синий пузырь справа.
  */
 
 export function Thread({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
@@ -23,7 +23,7 @@ export function Thread({ label, children, className }: { label: string; children
 
 /**
  * Аватар помощника в ленте: статичный рендер лица 6 (public/avatar/face-6.png, 96px под retina).
- * Звезда ФСП остаётся в шапке. Декоративный: смысл — в тексте реплики.
+ * Звезда ФСП остаётся в шапке. Декоративный: смысл – в тексте реплики.
  */
 export function AssistantMark() {
   return (
@@ -32,8 +32,8 @@ export function AssistantMark() {
 }
 
 /**
- * Строка помощника. `bare` — содержимое без пузыря (карточки, шаги разбора) в той же колонке;
- * `mark = false` — без знака (продолжение предыдущей реплики).
+ * Строка помощника. `bare` – содержимое без пузыря (карточки, шаги разбора) в той же колонке;
+ * `mark = false` – без знака (продолжение предыдущей реплики).
  */
 export function AssistantRow({ children, mark = true, testId }: { children: ReactNode; mark?: boolean; testId?: string }) {
   return (
@@ -72,7 +72,7 @@ export interface ReplyLine {
 /**
  * Реплика помощника с появлением: «печатает» 400–700 мс → плавное раскрытие по словам
  * (тот же движок, что у стрима, StreamingText) → целиком. Тап по реплике показывает её сразу;
- * prefers-reduced-motion — без анимации. `extra` (детали в пузыре) и `onDone` — только когда
+ * prefers-reduced-motion – без анимации. `extra` (детали в пузыре) и `onDone` – только когда
  * текст показан целиком.
  */
 export function Reply({
@@ -148,7 +148,7 @@ function ReplyBubble({
   );
 }
 
-/** «Помощник печатает»: три точки; для скринридера — текст. */
+/** «Помощник печатает»: три точки; для скринридера – текст. */
 export function Typing({ onClick }: { onClick?: () => void }) {
   return (
     <div className={styles.typing} role="status" onClick={onClick} data-testid="typing">
@@ -161,7 +161,7 @@ export function Typing({ onClick }: { onClick?: () => void }) {
 }
 
 /**
- * Ожидание ответа сервера: на месте будущей реплики — пузырь-скелет из двух строк.
+ * Ожидание ответа сервера: на месте будущей реплики – пузырь-скелет из двух строк.
  * Дальше приходит настоящая реплика (`Reply`: «печатает…» → текст).
  */
 export function ReplySkeleton({ label = 'Помощник готовит ответ…' }: { label?: string }) {
@@ -208,7 +208,7 @@ export function ThreadSkeleton() {
   );
 }
 
-/** Ответ пользователя справа. `quiet` — пропуск («пропущу»); `action` — «изменить». */
+/** Ответ пользователя справа. `quiet` – пропуск («пропущу»); `action` – «изменить». */
 export function UserBubble({
   children,
   quiet,
@@ -249,7 +249,7 @@ export interface QuickReply {
   pressed?: boolean;
 }
 
-/** Быстрые ответы — чипы под последней репликой. */
+/** Быстрые ответы – чипы под последней репликой. */
 export function QuickReplies({
   items,
   onPick,
@@ -285,7 +285,7 @@ export function DoneLink({ children = 'Готово', disabled, onClick }: { chi
   );
 }
 
-/** Композер — отдельный модуль (вложения, drag-n-drop, голос); реэкспорт для старых импортов. */
+/** Композер – отдельный модуль (вложения, drag-n-drop, голос); реэкспорт для старых импортов. */
 export { Composer, type ComposerProps } from './Composer';
 
 /** Тихая ссылка-действие рядом с полем ввода («Пропустить»). */
@@ -297,7 +297,7 @@ export function QuietAction({ children, onClick, disabled }: { children: ReactNo
   );
 }
 
-/** Тонкая полоса прогресса без цифр (число — для скринридера). */
+/** Тонкая полоса прогресса без цифр (число – для скринридера). */
 export function ProgressLine({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = max > 0 ? Math.round((Math.min(value, max) / max) * 100) : 0;
   return (

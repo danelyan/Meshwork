@@ -11,9 +11,9 @@ type Ctx = { params: Promise<{ id: string }> };
 const HEARTBEAT_MS = 15_000;
 
 /**
- * GET /api/call/{id}/events — поток событий созвона (SSE, `text/event-stream`): первым `snapshot`,
+ * GET /api/call/{id}/events – поток событий созвона (SSE, `text/event-stream`): первым `snapshot`,
  * дальше `utterance`, `status`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error`.
- * Кадр — `event: <type>` + `data: <json>`. Работодатель без доступа к записи получает только статус и оценки.
+ * Кадр – `event: <type>` + `data: <json>`. Работодатель без доступа к записи получает только статус и оценки.
  */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   if (!getSession(req)) throw errors.unauthorized();
@@ -33,7 +33,7 @@ export const GET = withErrors(async (req: Request, { params }: Ctx) => {
       };
       send(encodeCallEvent({ type: 'snapshot', call: view }));
       const unsubscribe = subscribeCall(id, (ev) => {
-        // Работодатель без доступа к записи — только статус, участники и вердикт без цитат.
+        // Работодатель без доступа к записи – только статус, участники и вердикт без цитат.
         const out = eventForAccess(ev, access.access);
         if (out) send(encodeCallEvent(out));
       });

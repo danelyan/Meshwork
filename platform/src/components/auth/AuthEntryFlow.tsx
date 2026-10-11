@@ -49,7 +49,7 @@ export function AuthEntryFlow({ yandexEnabled, fspHint = null, demoEnabled, next
           <div className={styles.sso}>
             <YandexSignIn enabled={yandexEnabled} next={destination} fsp agreed={agreed} hideWhenOff />
           </div>
-          {/* Чем войти в симулятор — под рядом кнопок: внутри ряда подсказка сжимает кнопку ФСП ID до полоски. */}
+          {/* Чем войти в симулятор – под рядом кнопок: внутри ряда подсказка сжимает кнопку ФСП ID до полоски. */}
           {fspHint && <p className={styles.hint}>Вход в симулятор ФСП ID: {fspHint}</p>}
           <p className={styles.hint} title="ФСП ID - вход спортсмена ФСП: аккаунт специалиста. Реестр ФСП на стенде - симулятор с синтетическими участниками. Пароль Яндекса платформе не передаётся.">ФСП ID - достижения сразу в профиле</p>
           <p className={styles.or}>или</p>

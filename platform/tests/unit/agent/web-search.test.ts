@@ -47,7 +47,7 @@ describe('PII-фильтр запроса веб-поиска', () => {
   });
 
   it.each(['вопросы на собеседовании Backend Middle PostgreSQL', 'как настроить GitHub Actions', 'socket.io vs websocket', 'Next.js 15 server actions', 'Codeforces рейтинг 1800 это много', 'Яндекс Практикум курсы', 'Kafka exactly once'])(
-    '«%s» — обезличенный, проходит',
+    '«%s» – обезличенный, проходит',
     (q) => expect(checkQuery(q)).toEqual({ ok: true }),
   );
 
@@ -184,7 +184,7 @@ describe('инструмент web_search', () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it(`не больше ${WEB_SEARCH_PER_TURN} вызовов за ход (счётчик — на контекст хода)`, async () => {
+  it(`не больше ${WEB_SEARCH_PER_TURN} вызовов за ход (счётчик – на контекст хода)`, async () => {
     const f = okFetch();
     const tool = makeWebSearchTool(role(1), { fetch: f as unknown as typeof fetch });
     const ctx = {};
@@ -204,12 +204,12 @@ describe('инструмент web_search', () => {
     expect(f).toHaveBeenCalledTimes(1);
   });
 
-  it('перенос строки в запросе — ошибка аргументов', async () => {
+  it('перенос строки в запросе – ошибка аргументов', async () => {
     const tool = makeWebSearchTool(role(), { fetch: okFetch() as unknown as typeof fetch });
     expect((await dispatchToolCall([tool], {}, call('a\nb c'))).errorCode).toBe('invalid_arguments');
   });
 
-  it('WEB_SEARCH=off или нет ключей — инструмента нет в реестре', () => {
+  it('WEB_SEARCH=off или нет ключей – инструмента нет в реестре', () => {
     const reg = [{ name: 'search_knowledge' }, { name: 'web_search' }];
     expect(webSearchEnabled()).toBe(true);
     expect(withWebSearchGate(reg)).toHaveLength(2);

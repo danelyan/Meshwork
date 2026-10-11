@@ -1,4 +1,4 @@
-# Глеб Шестаков — Junior Backend (Python)
+# Глеб Шестаков – Junior Backend (Python)
 
 +7 900 000-00-41 · gleb.shestakov@example.com · Тверь
 

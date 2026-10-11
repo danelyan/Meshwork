@@ -39,7 +39,7 @@ export default function ApiDocsPage() {
       <Container size="default" className={styles.page}>
         <h1>Документация API</h1>
         <p className={styles.lead}>
-          Все методы описаны по OpenAPI 3.1: запросы, ответы и коды ошибок. Формат ошибки везде один: <code>{'{ error: { code, message } }'}</code>. Вход — кука сессии.
+          Все методы описаны по OpenAPI 3.1: запросы, ответы и коды ошибок. Формат ошибки везде один: <code>{'{ error: { code, message } }'}</code>. Вход – кука сессии.
         </p>
         <div className={styles.links}>
           <a href="/api/openapi">openapi.yaml</a>

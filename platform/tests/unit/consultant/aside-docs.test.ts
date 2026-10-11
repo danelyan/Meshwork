@@ -10,7 +10,7 @@ beforeEach(() => vi.resetAllMocks());
 describe('документы в колонке консультанта: статус ссылки', () => {
   it('утверждения ссылки считаются по sourceRef, как у файлов (Claim.sourceId не заполняется)', async () => {
     db.uploads.mockResolvedValue([{ id: 'u1', filename: 'cv.pdf', extracted: {}, storageKey: 'k' }]);
-    // claims: [] — так отвечает база: связь Claim.sourceId конвейер не пишет
+    // claims: [] – так отвечает база: связь Claim.sourceId конвейер не пишет
     db.sources.mockResolvedValue([
       { id: 's-gh', kind: 'github', origin: 'github:octo', claims: [] },
       { id: 's-url', kind: 'url', origin: 'https://example.test/cv', claims: [] },

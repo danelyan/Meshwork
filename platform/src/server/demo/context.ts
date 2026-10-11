@@ -11,7 +11,7 @@ import { demoResumeFor } from './resumes';
 export interface ChatDemoContext {
   /** LLM_PROVIDER=stub + LLM_STUB_DEMO=true: ответы по шаблонам, языковой модели нет. */
   noLlm: boolean;
-  /** Резюме демо-кандидата; null — кандидат не демо или демо-вход выключен. */
+  /** Резюме демо-кандидата; null – кандидат не демо или демо-вход выключен. */
   resume: { fileName: string; link: string } | null;
 }
 

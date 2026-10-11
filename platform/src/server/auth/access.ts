@@ -4,15 +4,15 @@ import type { SessionPrincipal, SessionRole } from '@/server/session';
 
 /**
  * Матрица доступа (E-05, фаза 1): одна таблица для страниц, API и server actions.
- * Ключ — шаблон маршрута, как в `src/app` без групп в скобках (`/defense/[claimId]`).
+ * Ключ – шаблон маршрута, как в `src/app` без групп в скобках (`/defense/[claimId]`).
  * Deny by default: путь без записи закрыт, а тесты `tests/unit/auth/access-*.test.ts`
  * падают, если у `page.tsx`, `route.ts` или `'use server'` нет записи или гварда нужного уровня.
  *
- * Решает **активная роль** (`session.role`), наличие профиля роли в куке — второе условие:
+ * Решает **активная роль** (`session.role`), наличие профиля роли в куке – второе условие:
  * с переключением ролей в учётке будут оба профиля, и пускать по одному наличию id нельзя.
  */
 
-/** Уровни страниц: public — без входа; account — любой вход (в т.ч. pending и старая демо-кука). */
+/** Уровни страниц: public – без входа; account – любой вход (в т.ч. pending и старая демо-кука). */
 export type PageLevel = 'public' | 'account' | 'candidate' | 'employer';
 
 /**
@@ -23,7 +23,7 @@ export type PageLevel = 'public' | 'account' | 'candidate' | 'employer';
  */
 export type ApiLevel = 'public' | 'session' | 'account' | 'candidate' | 'employer' | 'dev';
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-/** Уровень для всех методов файла или по методам (метода нет в записи — закрыт). */
+/** Уровень для всех методов файла или по методам (метода нет в записи – закрыт). */
 export type ApiRule = ApiLevel | Partial<Record<HttpMethod, ApiLevel>>;
 
 export const PAGE_ACCESS = {
@@ -36,7 +36,7 @@ export const PAGE_ACCESS = {
   '/ai': 'public',
   '/site-access': 'public',
   '/api-docs': 'public',
-  // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе — жюри без регистрации.
+  // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе – жюри без регистрации.
   '/validation': 'public',
   '/evaluate': 'public',
   // Лаборатория вариантов заданий: генерация из реестра по seed, без данных пользователей.
@@ -47,7 +47,7 @@ export const PAGE_ACCESS = {
   '/method': 'public',
   // Флаг DEMO_LOGIN проверяет сама страница (выключен → 404).
   '/demo': 'public',
-  // Режим эксперта: тест на грейд без регистрации, грейд не присваивается. Флаг DEMO_LOGIN — в странице (выключен → 404).
+  // Режим эксперта: тест на грейд без регистрации, грейд не присваивается. Флаг DEMO_LOGIN – в странице (выключен → 404).
   '/expert': 'public',
   // Прежние адреса: только редирект на /consultant, данных нет.
   '/onboarding': 'public',
@@ -74,7 +74,7 @@ export const PAGE_ACCESS = {
   '/projects/[taskId]': 'candidate',
   '/employer': 'employer',
   '/employer/vacancies': 'employer',
-  // Профиль компании (R-E-01) — страницу делает лейн company; сюда ведём работодателя с чужих страниц.
+  // Профиль компании (R-E-01) – страницу делает лейн company; сюда ведём работодателя с чужих страниц.
   '/employer/company': 'employer',
   '/employer/search': 'employer',
   '/employer/saved': 'employer',
@@ -84,7 +84,7 @@ export const PAGE_ACCESS = {
   '/employer/needs/[id]/edit': 'employer',
   '/employer/calls': 'employer',
   '/employer/calls/[id]': 'employer',
-  // Витрины дизайна. Варианты экрана консультанта показывают живую ленту кандидата — как /consultant у кандидата.
+  // Витрины дизайна. Варианты экрана консультанта показывают живую ленту кандидата – как /consultant у кандидата.
   '/design/avatar': 'public',
   '/design/fonts': 'public',
   '/design/head-motion-preview': 'public',
@@ -105,7 +105,7 @@ export const API_ACCESS = {
   '/api/career/vacancies': 'candidate',
   '/api/career/vacancies/[id]/apply': 'candidate',
   '/api/career/applications': 'candidate',
-  // Вход, регистрация, пароль, Яндекс ID — до входа.
+  // Вход, регистрация, пароль, Яндекс ID – до входа.
   '/api/auth/login': 'public',
   '/api/auth/logout': 'public',
   '/api/auth/register': 'public',
@@ -115,22 +115,22 @@ export const API_ACCESS = {
   '/api/auth/password/reset': 'public',
   '/api/auth/yandex': 'public',
   '/api/auth/yandex/callback': 'public',
-  // ФСП ID (R-FSP-01): привязка к профилю через внешний OIDC-провайдер (старт и возврат) — только кандидату.
+  // ФСП ID (R-FSP-01): привязка к профилю через внешний OIDC-провайдер (старт и возврат) – только кандидату.
   '/api/fsp-id/link': 'candidate',
   // Возврат обслуживает и привязку (requireCandidate внутри), и вход на платформу через ФСП ID (без сессии).
   '/api/fsp-id/callback': 'public',
   '/api/fsp-id/login': 'public',
-  // Мок провайдера ФСП ID (страница входа «чужого» сервиса; без внешнего провайдера в env) — без входа на платформу.
+  // Мок провайдера ФСП ID (страница входа «чужого» сервиса; без внешнего провайдера в env) – без входа на платформу.
   '/api/fsp-id/realms/fsp/protocol/openid-connect/auth': 'public',
   '/api/auth/stale': 'public',
-  // `{ user: null }` для гостя — отвечает всем.
+  // `{ user: null }` для гостя – отвечает всем.
   '/api/auth/me': 'public',
   '/api/auth/consent': { GET: 'public', POST: 'account' },
   '/api/auth/role': 'account',
   // Мои согласия (ADR 0005): у кандидата и работодателя.
   '/api/consents': 'account',
   '/api/consents/[kind]': 'account',
-  // Возражение против оценки (ст. 16 152-ФЗ) — только кандидат, работодатель их не видит.
+  // Возражение против оценки (ст. 16 152-ФЗ) – только кандидат, работодатель их не видит.
   '/api/objections': 'candidate',
   // Переключение активной роли и вторая роль на той же учётке (ADR 0004).
   '/api/auth/role/switch': 'account',
@@ -141,8 +141,8 @@ export const API_ACCESS = {
   // Флаг DEMO_LOGIN проверяет обработчик (выключен → 404).
   '/api/demo/login': 'public',
   '/api/demo/resume': 'candidate',
-  // Режим эксперта (server/expert): вход — своя кука fsp_expert (requireExpert в обработчике), не сессия cid;
-  // флаг DEMO_LOGIN, лимиты создания — там же.
+  // Режим эксперта (server/expert): вход – своя кука fsp_expert (requireExpert в обработчике), не сессия cid;
+  // флаг DEMO_LOGIN, лимиты создания – там же.
   '/api/expert/start': 'public',
   '/api/expert/attempt/[id]': 'public',
   '/api/expert/attempt/[id]/answer': 'public',
@@ -211,7 +211,6 @@ export const API_ACCESS = {
   '/api/call/[id]/events': 'session',
   '/api/call/[id]/recording': 'session',
   '/api/call/[id]/video': 'session',
-  '/api/call/[id]/telemetry': 'candidate',
   '/api/call/[id]/employer-audio': 'session',
   '/api/call/[id]/employer-audio/file': 'session',
   '/api/call/[id]/signal': 'session',
@@ -221,7 +220,7 @@ export const API_ACCESS = {
   '/api/call/[id]/finish': 'candidate',
   // Справочник направлений и подкатегорий (ADR 0003): общий, без персональных данных.
   '/api/directions': 'public',
-  // Проектная ступень (ADR 0003, лента заданий): кандидат — лента, задание, сдача; работодатель — задание потребности и сабмиты.
+  // Проектная ступень (ADR 0003, лента заданий): кандидат – лента, задание, сдача; работодатель – задание потребности и сабмиты.
   '/api/project-tasks/feed': 'candidate',
   '/api/project-tasks/[id]': 'candidate',
   '/api/project-tasks/[id]/take': 'candidate',
@@ -248,14 +247,14 @@ export const API_ACCESS = {
   '/api/employer/call/[id]/mute-ai': 'employer',
   '/api/employer/call/[id]/say': 'employer',
   '/api/employer/call/[id]/audio': 'employer',
-  // GET — режим распознавания/озвучки для композера; POST — только с входом (тратит квоту SpeechKit).
+  // GET – режим распознавания/озвучки для композера; POST – только с входом (тратит квоту SpeechKit).
   '/api/stt': { GET: 'public', POST: 'session' },
   '/api/tts': { GET: 'public', POST: 'session' },
   '/api/health': 'public',
   '/api/openapi': 'public',
   // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
   '/api/evaluate': { POST: 'public' },
-  // Слепая разметка жюри (validation/blind.ts): в памяти, источник карточек — в подписанном токене.
+  // Слепая разметка жюри (validation/blind.ts): в памяти, источник карточек – в подписанном токене.
   '/api/evaluate/blind/vacancies': { GET: 'public' },
   '/api/evaluate/blind/start': { POST: 'public' },
   '/api/evaluate/blind/score': { POST: 'public' },
@@ -272,25 +271,25 @@ export const API_ACCESS = {
 } as const satisfies Record<string, ApiRule>;
 
 /**
- * Server actions — POST-точки мимо страницы, проверка роли обязана быть внутри action (Next.js: Data Security).
- * Ключ — файл с `'use server'` от `src/`; уровень — как у страниц.
+ * Server actions – POST-точки мимо страницы, проверка роли обязана быть внутри action (Next.js: Data Security).
+ * Ключ – файл с `'use server'` от `src/`; уровень – как у страниц.
  */
 export const ACTION_ACCESS = {
-  // Пароль стенда (SITE_PASSWORD) — до входа.
+  // Пароль стенда (SITE_PASSWORD) – до входа.
   'app/site-access/actions.ts': 'public',
 } as const satisfies Record<string, PageLevel>;
 
 /**
- * Админка (E-08, docs/decisions/0009-admin-staff.md) — отдельный контур доступа: кука персонала `fsp_admin`,
+ * Админка (E-08, docs/decisions/0009-admin-staff.md) – отдельный контур доступа: кука персонала `fsp_admin`,
  * не роль сессии `cid`. Таблицы выше её не описывают: всё под префиксами закрыто гвардом персонала
- * (`requirePageStaff` в каждой page.tsx, `requireStaff(req…)` в каждом обработчике — проверяет
+ * (`requirePageStaff` в каждой page.tsx, `requireStaff(req…)` в каждом обработчике – проверяет
  * `tests/unit/auth/access-coverage.test.ts`), открыты только шаги входа. Лейны админки таблицы не правят.
  */
 export const ADMIN_PAGE_PREFIX = '/admin';
 export const ADMIN_API_PREFIX = '/api/admin';
 export const ADMIN_PUBLIC_ROUTES: readonly string[] = ['/admin/login', '/api/admin/auth/login', '/api/admin/auth/totp', '/api/admin/auth/demo'];
 
-/** Маршрут админки (страница или API) — доступ решает гвард персонала, не PAGE_ACCESS/API_ACCESS. */
+/** Маршрут админки (страница или API) – доступ решает гвард персонала, не PAGE_ACCESS/API_ACCESS. */
 export function isAdminRoute(path: string): boolean {
   const p = path.split(/[?#]/, 1)[0] ?? '';
   return [ADMIN_PAGE_PREFIX, ADMIN_API_PREFIX].some((x) => p === x || p.startsWith(`${x}/`));
@@ -304,22 +303,22 @@ const LEVEL_ROLES: Record<Exclude<PageLevel, 'public'>, readonly SessionRole[]> 
 };
 
 /**
- * Куда вести вошедшего с чужой страницы (решения владельца 10.10): работодателя со страниц кандидата —
- * в профиль компании; кандидата из кабинета работодателя и pending — в ленту /consultant (это `HOME`, отдельной записи не нужно).
- * Роль совпала, но профиля роли в куке нет — в дом роли (`homePathFor`).
+ * Куда вести вошедшего с чужой страницы (решения владельца 10.10): работодателя со страниц кандидата –
+ * в профиль компании; кандидата из кабинета работодателя и pending – в ленту /consultant (это `HOME`, отдельной записи не нужно).
+ * Роль совпала, но профиля роли в куке нет – в дом роли (`homePathFor`).
  */
 const FOREIGN_REDIRECT: Partial<Record<'candidate' | 'employer', Partial<Record<SessionRole, string>>>> = {
   candidate: { employer: '/employer/company' },
 };
 
-/** Дом роли после входа и для чужих страниц. Пока у всех ролей — лента /consultant (решение владельца 10.10). */
+/** Дом роли после входа и для чужих страниц. Пока у всех ролей – лента /consultant (решение владельца 10.10). */
 const HOME: Record<SessionRole, string> = { pending: '/consultant', candidate: '/consultant', employer: '/consultant' };
 
 export function homePathFor(role: SessionRole): string {
   return HOME[role];
 }
 
-/** Есть ли в сессии профиль для её активной роли (кандидат — candidateId, работодатель — аккаунт и профиль). */
+/** Есть ли в сессии профиль для её активной роли (кандидат – candidateId, работодатель – аккаунт и профиль). */
 export function hasActiveProfile(s: SessionPrincipal): boolean {
   if (s.role === 'candidate') return s.candidateId !== null;
   if (s.role === 'employer') return s.userId !== null && s.employerProfileId !== null;
@@ -339,7 +338,7 @@ function segments(path: string): string[] {
 /**
  * Запись таблицы для конкретного пути: `[param]` совпадает с любым одним сегментом, статичный сегмент
  * точнее динамического. Catch-all (`[...x]`) маршрутов в приложении нет и таблица их не поддерживает:
- * такой маршрут не найдёт записи, и тест полноты упадёт. null — записи нет.
+ * такой маршрут не найдёт записи, и тест полноты упадёт. null – записи нет.
  */
 export function matchRoute<T extends string>(table: Readonly<Record<T, unknown>>, path: string): T | null {
   const segs = segments(path);
@@ -362,13 +361,13 @@ export function matchRoute<T extends string>(table: Readonly<Record<T, unknown>>
   return best;
 }
 
-/** Уровень страницы по пути (query и hash игнорируются); null — записи нет (закрыто). */
+/** Уровень страницы по пути (query и hash игнорируются); null – записи нет (закрыто). */
 export function pageLevelFor(path: string): PageLevel | null {
   const key = matchRoute(PAGE_ACCESS, path);
   return key ? PAGE_ACCESS[key] : null;
 }
 
-/** Уровень API по пути и методу; null — записи нет или метод не разрешён (закрыто). */
+/** Уровень API по пути и методу; null – записи нет или метод не разрешён (закрыто). */
 export function apiLevelFor(path: string, method: HttpMethod): ApiLevel | null {
   const key = matchRoute(API_ACCESS, path);
   if (!key) return null;
@@ -382,7 +381,7 @@ export function authRedirect(next: string, stale: boolean): string {
 }
 
 /**
- * Куда отправить со страницы `path`; null — пускать. Чистая функция (тесты без Next).
+ * Куда отправить со страницы `path`; null – пускать. Чистая функция (тесты без Next).
  * Гость → /auth?next=…; протухшая кука (`stale`: подпись верна, аккаунта нет) → /api/auth/stale?next=…,
  * который стирает куку (в Server Component куки менять нельзя). Вошедший без права → `FOREIGN_REDIRECT`
  * или дом роли. Пути без записи закрыты для всех.

@@ -15,7 +15,7 @@ async function outcome(createApp: Parameters<typeof verify>[0]): Promise<Error |
 }
 
 describe('проверка API заказов (visible)', () => {
-  it('verify — функция, не бросающая на эталонном сервисе', async () => {
+  it('verify – функция, не бросающая на эталонном сервисе', async () => {
     expect(typeof verify).toBe('function');
     expect((await outcome(makeCreateApp()))?.message).toBeUndefined();
   });

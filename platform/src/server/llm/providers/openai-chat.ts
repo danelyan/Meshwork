@@ -177,9 +177,9 @@ interface ChatChunk {
 }
 
 /**
- * Собирает поток в обычный ChatBody (дальше — тот же fromChatBody): content копится и уходит в
- * onDelta по мере прихода, аргументы tool_calls склеиваются по `index`, usage — из последнего
- * чанка (`stream_options.include_usage`; при обрыве его может не быть — тогда 0).
+ * Собирает поток в обычный ChatBody (дальше – тот же fromChatBody): content копится и уходит в
+ * onDelta по мере прихода, аргументы tool_calls склеиваются по `index`, usage – из последнего
+ * чанка (`stream_options.include_usage`; при обрыве его может не быть – тогда 0).
  */
 export async function collectStream(stream: AsyncIterable<unknown>, onDelta: (text: string) => void): Promise<ChatBody> {
   let content = '';
@@ -197,7 +197,7 @@ export async function collectStream(stream: AsyncIterable<unknown>, onDelta: (te
     if (!d) continue;
     if (d.content) {
       content += d.content;
-      // Пока модель не начала вызывать инструменты, текст — кандидат в ответ.
+      // Пока модель не начала вызывать инструменты, текст – кандидат в ответ.
       if (!calls.length) onDelta(d.content);
     }
     if (d.refusal) refusal += d.refusal;

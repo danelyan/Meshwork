@@ -3,7 +3,7 @@
 // Перегенерировать после каждой правки каталога владельцем:
 //   node scripts/catalog-to-json.mjs [путь/к/claims-catalog.md] [--check]
 // По умолчанию ищет fsp/docs/product/claims-catalog.md выше по дереву.
-// --check — не писать файл, а упасть, если JSON устарел (для CI/интегратора).
+// --check – не писать файл, а упасть, если JSON устарел (для CI/интегратора).
 // Падает, если в таблице битая строка, повтор ID, неизвестный грейд/вес или
 // ребро смежности ведёт на несуществующий ID.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -39,7 +39,7 @@ const cells = (line) => {
 const unTick = (s) => s.replace(/`/g, '').trim();
 const ticks = (s) => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim());
 
-// Грейды через «+» в порядке J, M, S (S — Senior, ADR-0003, дополнение 10.10 16:15): J, M, S, J+M, M+S, J+M+S.
+// Грейды через «+» в порядке J, M, S (S – Senior, ADR-0003, дополнение 10.10 16:15): J, M, S, J+M, M+S, J+M+S.
 const GRADE_LETTER = { J: 'junior', M: 'middle', S: 'senior' };
 function parseGrades(s, id) {
   const letters = s.split('+').map((x) => x.trim());
@@ -49,9 +49,9 @@ function parseGrades(s, id) {
   return letters.map((l) => GRADE_LETTER[l]);
 }
 function parseWeightPair(s, id) {
-  const m = /^(—|-|[1-3])\s*\/\s*(—|-|[1-3])$/.exec(s);
+  const m = /^(–|-|[1-3])\s*\/\s*(–|-|[1-3])$/.exec(s);
   if (!m) return fail(`${id}: вес «${s}» не вида J/M`);
-  const v = (x) => (x === '—' || x === '-' ? null : Number(x));
+  const v = (x) => (x === '–' || x === '-' ? null : Number(x));
   return { junior: v(m[1]), middle: v(m[2]) };
 }
 function parseStatement(s) {
@@ -80,11 +80,11 @@ function parseMarkers(s) {
 function parseLimits(s) {
   const t = unTick(s).trim();
   if (!t) return '';
-  // «Не доказывает: …» — колонка таблицы так и называется; первую букву строчной, кроме аббревиатур/латиницы
+  // «Не доказывает: …» – колонка таблицы так и называется; первую букву строчной, кроме аббревиатур/латиницы
   const first = t[0];
   const second = t[1] ?? '';
   const keepCase = /[A-Za-z]/.test(first) || second === second.toUpperCase();
-  // Префикс «Не доказывает:» добавляет UI — в данных его нет.
+  // Префикс «Не доказывает:» добавляет UI – в данных его нет.
   return keepCase ? t : first.toLowerCase() + t.slice(1);
 }
 
@@ -119,7 +119,7 @@ for (const line of lines) {
   const isCommon = header.length === 8;
   if (c.length !== header.length) fail(`${id}: ${c.length} колонок вместо ${header.length}`);
   const prefix = id.split('.')[0];
-  // eng.* — раздел «Engineering» каталога-Markdown (лейн engineering, ADR 0003 дополнение 10.10).
+  // eng.* – раздел «Engineering» каталога-Markdown (лейн engineering, ADR 0003 дополнение 10.10).
   const specialization = { be: 'backend', fe: 'frontend', common: 'common', eng: 'engineering' }[prefix];
   if (!specialization) fail(`${id}: неизвестный префикс`);
   if (isCommon !== (specialization === 'common')) fail(`${id}: в таблице не своей специализации (${section})`);
@@ -149,7 +149,7 @@ for (const line of lines) {
     specialization,
     statement,
     grades,
-    // CatalogEntry.weight (одно число 1..3) — максимум по грейдам и специализациям; полная форма — в weights
+    // CatalogEntry.weight (одно число 1..3) – максимум по грейдам и специализациям; полная форма – в weights
     weight: Math.max(...nums),
     weights,
     proof,
@@ -166,7 +166,7 @@ for (const e of entries) {
   byId.set(e.id, e);
 }
 for (const [a, b] of adjacency) {
-  if (!byId.has(a) || !byId.has(b)) fail(`ребро смежности ${a} — ${b}: ID нет в каталоге`);
+  if (!byId.has(a) || !byId.has(b)) fail(`ребро смежности ${a} – ${b}: ID нет в каталоге`);
   // рёбра «в обе стороны» (каталог § 6)
   if (!byId.get(a).adjacent.includes(b)) byId.get(a).adjacent.push(b);
   if (!byId.get(b).adjacent.includes(a)) byId.get(b).adjacent.push(a);
@@ -192,8 +192,8 @@ if (existsSync(OVERRIDES)) {
 }
 
 // Записи направлений (lane directions, ADR 0003 дополнение 10.10: ai.*, позже eng.*) поверх каталога-Markdown
-// владельца: scripts/catalog-direction-entries.json. entries — в конец; commonWeights — веса common.* для
-// новых направлений (у common веса по специализациям; направление без ключа — запись для него не ожидается).
+// владельца: scripts/catalog-direction-entries.json. entries – в конец; commonWeights – веса common.* для
+// новых направлений (у common веса по специализациям; направление без ключа – запись для него не ожидается).
 const DIRECTION_ENTRIES = join(here, 'catalog-direction-entries.json');
 if (existsSync(DIRECTION_ENTRIES)) {
   const extra = JSON.parse(readFileSync(DIRECTION_ENTRIES, 'utf8'));
@@ -210,25 +210,25 @@ if (existsSync(DIRECTION_ENTRIES)) {
   for (const e of extra.entries ?? []) {
     for (const a of e.adjacent) {
       if (!byId.has(a)) fail(`${e.id}: смежность на несуществующий ${a}`);
-      if (!byId.get(a).adjacent.includes(e.id)) fail(`${e.id} — ${a}: смежность не симметрична`);
+      if (!byId.get(a).adjacent.includes(e.id)) fail(`${e.id} – ${a}: смежность не симметрична`);
     }
   }
   for (const [id, bySpec] of Object.entries(extra.commonWeights ?? {})) {
     const c = byId.get(id);
-    if (!c || c.specialization !== 'common') fail(`commonWeights: ${id} — не запись common`);
+    if (!c || c.specialization !== 'common') fail(`commonWeights: ${id} – не запись common`);
     Object.assign(c.weights, bySpec);
   }
 }
 
 // Колонка S (ADR 0003, дополнение 10.10 16:15) поверх каталога-Markdown: scripts/catalog-senior.json.
-// Вес Senior = вес Middle, если не переопределён в seniorWeights; entries — записи только для Senior;
-// commonWeightsEngineering — веса J/M общих записей для Engineering. Смежность новых записей — в обе стороны.
+// Вес Senior = вес Middle, если не переопределён в seniorWeights; entries – записи только для Senior;
+// commonWeightsEngineering – веса J/M общих записей для Engineering. Смежность новых записей – в обе стороны.
 const SENIOR = join(here, 'catalog-senior.json');
 if (existsSync(SENIOR)) {
   const sen = JSON.parse(readFileSync(SENIOR, 'utf8'));
   for (const [id, bySpec] of Object.entries(sen.commonWeightsEngineering ?? {})) {
     const c = byId.get(id);
-    if (!c || c.specialization !== 'common') fail(`commonWeightsEngineering: ${id} — не запись common`);
+    if (!c || c.specialization !== 'common') fail(`commonWeightsEngineering: ${id} – не запись common`);
     c.weights.engineering = bySpec;
   }
   for (const e of sen.entries ?? []) {
@@ -253,7 +253,7 @@ if (existsSync(SENIOR)) {
     for (const [spec, t] of tables) {
       if ('senior' in t && o === undefined) continue;
       const v = o === undefined ? t.middle : typeof o === 'number' ? o : o[spec];
-      // переопределение не включает Senior там, где Middle не ожидается (у common — по специализации)
+      // переопределение не включает Senior там, где Middle не ожидается (у common – по специализации)
       t.senior = v === undefined || t.middle === null ? (t.senior ?? t.middle ?? null) : v;
     }
     const nums = tables.flatMap(([, t]) => Object.values(t)).filter((x) => x !== null);

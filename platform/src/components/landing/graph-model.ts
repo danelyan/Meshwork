@@ -11,7 +11,7 @@ export interface GraphNode {
   logoSrc?: string;
   /** Позиция на десктопе, % (как в мокапе: x масштабируется 6 + x*0.8, кроме узлов x*). */
   pos: [number, number];
-  /** Позиция на мобильном (≤640px); нет — узел скрыт. */
+  /** Позиция на мобильном (≤640px); нет – узел скрыт. */
   mobile?: [number, number];
 }
 
@@ -22,7 +22,7 @@ export interface GraphEdge {
   mine?: boolean;
 }
 
-// Слоты компаний: [десктоп x, y], мобильная позиция — из мокапа (heroPositions).
+// Слоты компаний: [десктоп x, y], мобильная позиция – из мокапа (heroPositions).
 const SLOTS: Array<{ pos: [number, number]; mobile: [number, number] }> = [
   { pos: [50, 15], mobile: [50, 12] },
   { pos: [84, 33], mobile: [83, 34] },
@@ -33,7 +33,7 @@ const SLOTS: Array<{ pos: [number, number]; mobile: [number, number] }> = [
 
 const scale = (p: [number, number]): [number, number] => [6 + p[0] * 0.8, p[1]];
 
-// Анонимные «соседи» графа — декоративные силуэты (ники из мокапа, не реальные люди).
+// Анонимные «соседи» графа – декоративные силуэты (ники из мокапа, не реальные люди).
 const STRANGERS: Array<[string, string | undefined, [number, number]]> = [
   ['s1', 'Happy Panda', [33, 12]], ['s2', 'Quiet Fox', [68, 10]], ['s3', 'Blue Otter', [94, 56]], ['s4', 'Lucky Koala', [60, 91]],
   ['s5', 'Swift Falcon', [6, 55]], ['s6', 'Brave Penguin', [38, 91]], ['s7', undefined, [72, 58]], ['s8', undefined, [30, 52]], ['s9', undefined, [58, 30]],
@@ -44,7 +44,7 @@ const FAR: Array<[string, [number, number]]> = [
   ['x7', [112, 6]], ['x8', [116, 60]], ['x9', [124, 30]], ['x10', [110, 93]], ['x11', [130, 48]],
 ];
 
-// Связи соседей (c0..c4 — слоты компаний; отсутствующие слоты отбрасываются).
+// Связи соседей (c0..c4 – слоты компаний; отсутствующие слоты отбрасываются).
 const LINKS: Array<[string, string]> = [
   ['s1', 'c0'], ['s1', 'c3'], ['s2', 'c0'], ['s2', 'c1'], ['s3', 'c1'], ['s3', 'c2'], ['s4', 'c2'], ['s4', 'c4'], ['s5', 'c3'], ['s5', 'c4'],
   ['s6', 'c4'], ['s6', 'c2'], ['s7', 'c1'], ['s7', 'c2'], ['s8', 'c3'], ['s8', 'c4'], ['s9', 'c0'], ['s9', 'c1'], ['s2', 'x1'], ['s2', 'x2'],

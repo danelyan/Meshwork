@@ -217,7 +217,7 @@ describe('collector/profiles: Stack Overflow', () => {
   });
 });
 
-describe('collector/profiles: ФСП (демо) — четыре состояния', () => {
+describe('collector/profiles: ФСП (демо) – четыре состояния', () => {
   it.each([
     ['demo-not-linked', 'not_linked', /не привязан/],
     ['demo-no-achievements', 'no_achievements', /достижений пока нет/],
@@ -257,7 +257,7 @@ describe('collector/profiles: фикстуры демо-кандидатов', (
     },
   );
 
-  it.each(links.flatMap((l) => l.links).map((l) => [l.handle, l]))('%s — из фикстуры, без сети', async (_h, link) => {
+  it.each(links.flatMap((l) => l.links).map((l) => [l.handle, l]))('%s – из фикстуры, без сети', async (_h, link) => {
     const calls = mockFetch(() => undefined);
     const doc = await fetchProfile(link.kind, link.handle);
     expect(calls).toHaveLength(0);

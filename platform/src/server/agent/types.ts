@@ -11,13 +11,13 @@ export type AgentEvent =
   | { type: 'claims'; proposed: unknown[]; rejected: number; rejectedByReason?: Record<string, number>; hiddenText?: number; alreadyKnown?: number }
   | { type: 'ask'; question: string; options?: string[] }
   | { type: 'recommendations'; items: unknown[] }
-  /** lane call: агент предлагает созвон (инструмент suggest_call) — в ленте кнопка «Созвониться». */
+  /** lane call: агент предлагает созвон (инструмент suggest_call) – в ленте кнопка «Созвониться». */
   | { type: 'call_offer'; reason: string }
   /** Итог реплики; `id` связывает его с дельтами (reply-stream.ts), текст авторитетный. */
   | { type: 'message'; text: string; id?: string }
   /** Кусок текста реплики `id` по мере генерации (docs/platform.md, «События SSE»). */
   | { type: 'delta'; id: string; text: string }
-  /** Показанный текст реплики `id` — не ответ (модель ушла в инструменты): убрать. */
+  /** Показанный текст реплики `id` – не ответ (модель ушла в инструменты): убрать. */
   | { type: 'discard'; id: string }
   | { type: 'error'; code: string; message: string }
   | { type: 'done' }
@@ -35,7 +35,7 @@ export interface ToolContext {
   pace?: AbortSignal;
 }
 
-/** C — контекст роли: кандидат (ToolContext) или работодатель (employer/types.ts). */
+/** C – контекст роли: кандидат (ToolContext) или работодатель (employer/types.ts). */
 export interface AgentTool<I, O, C = ToolContext> {
   name: string;
   description: string;
@@ -68,19 +68,14 @@ export interface TurnInput {
    * разовую инструкцию «поприветствуй и предложи следующий шаг из <journey>» (loop.ts, KICKOFF_INSTRUCTION).
    */
   kickoff?: boolean;
-  /**
-   * Ход сразу после завершённого созвона с ИИ (кнопка «Вернуться в чат»): сообщения кандидата нет и не
-   * сохраняется, модель получает инструкцию «подведи итог созвона из <last_call>» (loop.ts, AFTER_CALL_INSTRUCTION).
-   */
-  afterCall?: boolean;
 }
 
-/** Зависимости хода, подменяемые в тестах (по умолчанию — getLlm и реестр tools/index). */
+/** Зависимости хода, подменяемые в тестах (по умолчанию – getLlm и реестр tools/index). */
 export interface TurnOptions {
   llm?: LlmProvider;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools?: AgentTool<any, any>[];
-  /** Суточный бюджет токенов; по умолчанию env LLM_DAILY_TOKEN_BUDGET. 0 — без лимита. */
+  /** Суточный бюджет токенов; по умолчанию env LLM_DAILY_TOKEN_BUDGET. 0 – без лимита. */
   dailyTokenBudget?: number;
   now?: () => Date;
   /** Клиент ушёл или стоп: нарезку реплики не ждать, но `message` отдать и сохранить. */

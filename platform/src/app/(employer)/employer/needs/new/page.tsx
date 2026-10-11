@@ -10,7 +10,7 @@ import { getCatalog } from '@/server/claims/catalog';
 export const metadata: Metadata = { title: 'Новая вакансия - MESHWORK' };
 export const dynamic = 'force-dynamic';
 
-/** `?spec=…&grade=…&needs=…` — черновик помощника (create_need_draft): форма предзаполнена, сохраняет человек. */
+/** `?spec=…&grade=…&needs=…` – черновик помощника (create_need_draft): форма предзаполнена, сохраняет человек. */
 export default async function NewNeedPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requirePageEmployer('/employer/needs/new');
   const catalog = (await getCatalog()).map(({ id, specialization, statement, grades, weight, weights }) => ({ id, specialization, statement, grades, weight, weights }));

@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Голосовой ввод композера. Режим приходит с сервера (`<body data-stt>`, env STT_PROVIDER; то же — GET /api/stt):
- *  - yandex — запись через Web Audio в LPCM 16 бит 16 кГц (SpeechKit v1 не принимает webm, который
+ * Голосовой ввод композера. Режим приходит с сервера (`<body data-stt>`, env STT_PROVIDER; то же – GET /api/stt):
+ *  - yandex – запись через Web Audio в LPCM 16 бит 16 кГц (SpeechKit v1 не принимает webm, который
  *    отдаёт MediaRecorder в Chrome), стоп → POST /api/stt → текст в поле;
- *  - browser — Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`, ru-RU): текст
- *    появляется в поле по ходу речи, распознаёт браузер (в Chrome — облако Google), так и подписываем;
- *  - off — кнопки нет. Браузер без нужного API — кнопка неактивна с объяснением.
- * Микрофон спрашиваем только по клику. Текст не отправляется сам — человек правит и жмёт «Отправить».
+ *  - browser – Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`, ru-RU): текст
+ *    появляется в поле по ходу речи, распознаёт браузер (в Chrome – облако Google), так и подписываем;
+ *  - off – кнопки нет. Браузер без нужного API – кнопка неактивна с объяснением.
+ * Микрофон спрашиваем только по клику. Текст не отправляется сам – человек правит и жмёт «Отправить».
  */
 export type VoiceMode = 'yandex' | 'browser' | 'off';
 export type VoiceState = 'idle' | 'recording' | 'processing';
@@ -17,11 +17,11 @@ export type VoiceState = 'idle' | 'recording' | 'processing';
 export const MAX_RECORD_MS = 30_000;
 const TARGET_RATE = 16_000;
 
-/** Режим с сервера: `<body data-stt>` (app/layout.tsx); без атрибута — browser (поведение STT_PROVIDER=auto без ключей). */
+/** Режим с сервера: `<body data-stt>` (app/layout.tsx); без атрибута – browser (поведение STT_PROVIDER=auto без ключей). */
 export function readVoiceMode(): VoiceMode {
   if (typeof document === 'undefined') return 'off';
   const v = document.body?.dataset.stt;
-  // openai (whisper) — тоже серверное распознавание, клиент пишет тот же LPCM, что и для yandex
+  // openai (whisper) – тоже серверное распознавание, клиент пишет тот же LPCM, что и для yandex
   if (v === 'openai') return 'yandex';
   return v === 'yandex' || v === 'off' ? v : 'browser';
 }
@@ -85,8 +85,8 @@ export function toPcm16(chunks: Float32Array[], inRate: number, outRate = TARGET
 }
 
 /**
- * Хук кнопки микрофона. `onText(text, final)` — распознанный текст (в browser-режиме — по ходу речи).
- * `level` 0..1 — уровень сигнала для простой визуализации (yandex-режим), в browser-режиме — null.
+ * Хук кнопки микрофона. `onText(text, final)` – распознанный текст (в browser-режиме – по ходу речи).
+ * `level` 0..1 – уровень сигнала для простой визуализации (yandex-режим), в browser-режиме – null.
  */
 export function useVoiceInput(onText: (text: string, final: boolean) => void) {
   const [server, setServer] = useState<VoiceMode | null>(null);

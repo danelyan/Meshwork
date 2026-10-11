@@ -1,7 +1,7 @@
 // Абляция подбора: выключаем по одному сигналу формулы (RankOptions.ablate в ranking.ts) и смотрим, на сколько
-// падают P@5 и nDCG@10 на расширенном наборе (247 профилей × 24 вакансии, разметка — скрытая истина генератора).
+// падают P@5 и nDCG@10 на расширенном наборе (247 профилей × 24 вакансии, разметка – скрытая истина генератора).
 //   npx tsx eval/matching/ablation.ts [--no-write]     # таблица + ключ ablation в eval/matching/results.json
-// Без БД и сети. Разметка — одним агентом/генератором: цифры показывают вклад сигнала в ЭТОМ наборе, не в мире.
+// Без БД и сети. Разметка – одним агентом/генератором: цифры показывают вклад сигнала в ЭТОМ наборе, не в мире.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -54,11 +54,11 @@ function table(withStages: boolean): { syn: ReturnType<typeof generateSynthetic>
   const rows: AblationRow[] = [{ signal: 'full', label: 'полная формула', p5: bootstrapMean(full.p5, REPS, SYN_SEED + 1), ndcg10: bootstrapMean(full.ndcg10, REPS, SYN_SEED + 2), dP5: null, dNdcg10: null, measured: true }];
   ABLATION_SIGNALS.forEach((s, i) => {
     // Семантика по умолчанию выключена (weights.ts): её вклад меряем как «формула + семантика» против формулы по умолчанию,
-    // знак тот же — Δ = без сигнала − с сигналом.
+    // знак тот же – Δ = без сигнала − с сигналом.
     const semOff = s === 'semantic' && !SEMANTIC_DEFAULT_ON;
     const withSig = semOff ? run([], { semantic: true }) : full;
     const a = semOff ? full : run([s]);
-    // Δ = без сигнала − полная формула (отрицательная — сигнал помогает); парный бутстреп по вакансиям.
+    // Δ = без сигнала − полная формула (отрицательная – сигнал помогает); парный бутстреп по вакансиям.
     rows.push({
       signal: s, label: semOff ? `${SIGNAL_LABEL[s]}, дефолт выкл.` : SIGNAL_LABEL[s], p5: bootstrapMean(a.p5, REPS, SYN_SEED + 10 + i), ndcg10: bootstrapMean(a.ndcg10, REPS, SYN_SEED + 40 + i),
       dP5: bootstrapDiff(a.p5, withSig.p5, REPS, SYN_SEED + 70 + i), dNdcg10: bootstrapDiff(a.ndcg10, withSig.ndcg10, REPS, SYN_SEED + 100 + i), measured: withStages || !STAGE_SIGNALS.includes(s),

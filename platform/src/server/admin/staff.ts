@@ -33,8 +33,8 @@ export function normalizeEmail(email: string): string {
 export type LoginStep = { step: 'totp'; staffId: string; pv: string } | { step: 'setup'; staffId: string; pv: string; secret: string; otpauthUri: string };
 
 /**
- * Шаг 1: почта + пароль. Неверная пара, нет такого или отключён — одинаковый 401 за одинаковое время (scrypt по
- * пустышке). TOTP ещё не настроен — выдаём секрет (создаём при первом входе), сотрудник подтверждает его кодом.
+ * Шаг 1: почта + пароль. Неверная пара, нет такого или отключён – одинаковый 401 за одинаковое время (scrypt по
+ * пустышке). TOTP ещё не настроен – выдаём секрет (создаём при первом входе), сотрудник подтверждает его кодом.
  */
 export async function passwordStep(req: Request, emailRaw: string, password: string): Promise<LoginStep> {
   const email = normalizeEmail(emailRaw);
@@ -46,7 +46,7 @@ export async function passwordStep(req: Request, emailRaw: string, password: str
   if (!staff || !ok || staff.disabledAt) throw errors.unauthorized(BAD_LOGIN);
   const pv = passwordVersionOf(staff.passwordHash);
   if (staff.totpEnabledAt && staff.totpSecret) return { step: 'totp', staffId: staff.id, pv };
-  // Секрет, выданный при прошлой попытке настройки, переиспользуем; нечитаемый (сменили SESSION_SECRET) — новый.
+  // Секрет, выданный при прошлой попытке настройки, переиспользуем; нечитаемый (сменили SESSION_SECRET) – новый.
   const opened = staff.totpSecret ? openTotpSecret(staff.totpSecret, getEnv().SESSION_SECRET) : null;
   const secret = opened ?? generateTotpSecret();
   if (!opened || staff.totpEnabledAt) {
@@ -56,8 +56,8 @@ export async function passwordStep(req: Request, emailRaw: string, password: str
 }
 
 /**
- * Шаг 2: код TOTP по промежуточной куке. Верный код → (при настройке — включаем TOTP) новая AdminSession.
- * Повтор уже принятого шага отклоняется атомарно (`totpLastStep`), пароль, сменённый после шага 1, — тоже.
+ * Шаг 2: код TOTP по промежуточной куке. Верный код → (при настройке – включаем TOTP) новая AdminSession.
+ * Повтор уже принятого шага отклоняется атомарно (`totpLastStep`), пароль, сменённый после шага 1, – тоже.
  */
 export async function totpStep(req: Request, pre: { staffId: string; pv: string }, code: string, now = new Date()): Promise<{ sessionId: string; staffId: string }> {
   if (!hit(`admin:totp:${pre.staffId}`, ADMIN_RATE.totpPerStaff) || !hit(`admin:client:${clientKey(req)}`, ADMIN_RATE.perClient)) {
@@ -88,7 +88,7 @@ export async function totpStep(req: Request, pre: { staffId: string; pv: string 
 }
 
 /**
- * Демо-вход жюри: при DEMO_LOGIN — сессия сотрудника `DEMO_STAFF_EMAIL` (owner, только чтение) без пароля и TOTP.
+ * Демо-вход жюри: при DEMO_LOGIN – сессия сотрудника `DEMO_STAFF_EMAIL` (owner, только чтение) без пароля и TOTP.
  * Сотрудник заводится при первом нажатии; пароль у него непроверяемый (не scrypt), поэтому войти им через форму
  * нельзя. Права режет `requireStaff` (session.demoAllows), а не роль: экраны owner видны целиком.
  */
@@ -151,8 +151,8 @@ export function temporaryPassword(): string {
 }
 
 /**
- * Создать сотрудника. `actor` null — CLI (первый owner). Пароль: заданный (CLI) или временный (приглашение
- * в /admin/staff — показывается владельцу один раз, сотрудник меняет его после входа).
+ * Создать сотрудника. `actor` null – CLI (первый owner). Пароль: заданный (CLI) или временный (приглашение
+ * в /admin/staff – показывается владельцу один раз, сотрудник меняет его после входа).
  */
 export async function createStaff(actor: StaffContext | null, input: { email: string; name: string; role: StaffRole; password?: string }) {
   const email = normalizeEmail(input.email);

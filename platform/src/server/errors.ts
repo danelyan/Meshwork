@@ -41,7 +41,7 @@ export const errors = {
   /** Кука подписана верно, но аккаунта в БД нет; клиент (`lib/api.ts`) ведёт на /auth. */
   sessionStale: () => new AppError('session_stale', 'Сессия устарела. Войдите заново.', 401),
   forbidden: (message = 'Нет доступа') => new AppError('forbidden', message, 403),
-  /** Для чужих объектов тоже 404 — не раскрываем, что объект существует. */
+  /** Для чужих объектов тоже 404 – не раскрываем, что объект существует. */
   notFound: (message = 'Не найдено') => new AppError('not_found', message, 404),
   conflict: (message: string) => new AppError('conflict', message, 409),
   payloadTooLarge: (message = 'Слишком большой запрос') =>
@@ -58,8 +58,8 @@ export function jsonError(code: ErrorCode, message: string, status: number, deta
 }
 
 /**
- * Любая ошибка → Response. AppError — как есть, ZodError — 400 validation_failed
- * с issues, остальное — 500 без текста исключения наружу.
+ * Любая ошибка → Response. AppError – как есть, ZodError – 400 validation_failed
+ * с issues, остальное – 500 без текста исключения наружу.
  */
 export function toErrorResponse(err: unknown): Response {
   if (err instanceof AppError) return jsonError(err.code, err.message, err.status, err.details);
@@ -74,7 +74,7 @@ export function toErrorResponse(err: unknown): Response {
 /** Пути, где протухшая кука не должна давать 401: выход, проверка входа, сам вход. */
 const STALE_CHECK_SKIP = ['/api/auth/logout', '/api/auth/me', '/api/auth/stale', '/api/auth/yandex', '/api/auth/register', '/api/auth/verify', '/api/auth/login', '/api/auth/password/', '/api/demo/login', '/api/dev/', '/api/admin/'];
 
-/** Обёртка route handler'а: бросай AppError/ZodError — получишь правильный ответ. */
+/** Обёртка route handler'а: бросай AppError/ZodError – получишь правильный ответ. */
 export function withErrors<A extends unknown[]>(
   handler: (...args: A) => Promise<Response> | Response,
 ): (...args: A) => Promise<Response> {

@@ -17,14 +17,14 @@ describe('loadCandidateAside: полоса этапов знакомства', (
   });
   afterAll(() => prisma.$disconnect());
 
-  it('пустой профиль: пять этапов, первый — «сейчас», заполнено 0 из 8', async () => {
+  it('пустой профиль: пять этапов, первый – «сейчас», заполнено 0 из 8', async () => {
     const a = await loadCandidateAside(C, undefined);
     expect(a.stages?.title).toBe('Знакомство с Кирой');
     expect(states(a)).toEqual({ specialization: 'now', grade: 'next', materials: 'next', terms: 'next', test: 'next' });
     expect([a.stages?.done, a.stages?.total]).toEqual([0, 8]);
   });
 
-  it('грейд со слов и условия закрывают свои этапы, но не тест; привязка ФСП ID — не материал об опыте', async () => {
+  it('грейд со слов и условия закрывают свои этапы, но не тест; привязка ФСП ID – не материал об опыте', async () => {
     await prisma.candidate.update({ where: { id: C }, data: { specialization: 'backend' } });
     await prisma.candidateProfile.create({ data: { candidateId: C, claimedGrade: 'middle', workFormats: ['remote'], salaryExpected: 200000 } });
     await prisma.source.create({ data: { candidateId: C, kind: 'fsp', origin: 'fsp-id:1', snapshot: {}, ownershipVerified: true } });
@@ -41,7 +41,7 @@ describe('loadCandidateAside: полоса этапов знакомства', (
     expect(stage(a, 'materials')?.state).toBe('done');
   });
 
-  it('ссылка на GitHub — материал об опыте; категория из теста закрывает этап «Тест»', async () => {
+  it('ссылка на GitHub – материал об опыте; категория из теста закрывает этап «Тест»', async () => {
     await prisma.source.create({ data: { candidateId: C, kind: 'github', origin: 'https://github.com/example', snapshot: {} } });
     await prisma.candidateCategory.create({ data: { candidateId: C, specialization: 'backend', grade: 'middle' } });
     const a = await loadCandidateAside(C, undefined);
@@ -59,14 +59,14 @@ describe('loadEmployerAside: полоса этапов знакомства', ()
     await prisma.employerProfile.create({ data: { id: 'ep-st', userId: 'u-emp-st', companyId: 'co-st' } });
   });
 
-  it('компания и отрасль есть, контакта и вакансий нет: «сейчас» — контакты; заполненность — по этапам', async () => {
+  it('компания и отрасль есть, контакта и вакансий нет: «сейчас» – контакты; заполненность – по этапам', async () => {
     const a = await loadEmployerAside('ep-st', undefined);
     expect(a.stages?.title).toBe('Знакомство с компанией');
     expect(a.stages?.items.map((s) => [s.id, s.state])).toEqual([['company', 'done'], ['industry', 'done'], ['contact', 'now'], ['need', 'next'], ['selection', 'next']]);
     expect([a.stages?.done, a.stages?.total]).toEqual([2, 5]);
   });
 
-  it('контакт и активная вакансия: «сейчас» — подборка', async () => {
+  it('контакт и активная вакансия: «сейчас» – подборка', async () => {
     await prisma.company.update({ where: { id: 'co-st' }, data: { contact: 'hr@example.com' } });
     await prisma.vacancy.create({ data: { id: 'vac-st', companyId: 'co-st', title: 'Backend', specialization: 'backend', grade: 'middle', salaryFrom: 200000, salaryTo: 250000, needs: [] } });
     const a = await loadEmployerAside('ep-st', undefined);

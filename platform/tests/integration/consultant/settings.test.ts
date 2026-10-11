@@ -36,7 +36,7 @@ describe('/api/consultant/settings', () => {
     expect(await (await get(cookie(B))).json()).toEqual({ skills: [], custom: '' });
   });
 
-  it('неизвестный скилл и текст длиннее 500 — 400, ничего не пишется', async () => {
+  it('неизвестный скилл и текст длиннее 500 – 400, ничего не пишется', async () => {
     expect((await put({ skills: ['raise_grade'] })).status).toBe(400);
     expect((await put({ skills: [], custom: 'x'.repeat(501) })).status).toBe(400);
     expect(await prisma.consultantSettings.count()).toBe(0);

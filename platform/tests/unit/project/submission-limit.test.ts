@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Лимит сдач и проверка сабмита (аудит 11.10): сбой сервиса проверки (503 от runner) в лимит не идёт,
-// сбой прогона видимых тестов пишется в лог. Без БД: prisma подменён, runner — тестовый.
+// сбой прогона видимых тестов пишется в лог. Без БД: prisma подменён, runner – тестовый.
 const db = vi.hoisted(() => ({ projectSubmission: { findUnique: vi.fn(), update: vi.fn() } }));
 vi.mock('@/server/db', () => ({ prisma: db }));
 vi.mock('@/server/consent/service', async (orig) => ({ ...(await orig<typeof import('@/server/consent/service')>()), hasAiAssessmentConsent: vi.fn(async () => false) }));
@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 describe('лимит сдач: сбой сервиса проверки не засчитывается', () => {
-  it('countedSubmissions: failed из-за недоступного сервиса проверки не в счёт, остальные сдачи — в счёт', () => {
+  it('countedSubmissions: failed из-за недоступного сервиса проверки не в счёт, остальные сдачи – в счёт', () => {
     const rows = [
       { status: 'checked' as const, error: null },
       { status: 'failed' as const, error: RUNNER_UNAVAILABLE_ERROR },
@@ -52,7 +52,7 @@ describe('лимит сдач: сбой сервиса проверки не з�
     expect(MAX_SUBMISSION_ROWS_PER_TASK).toBeGreaterThan(MAX_SUBMISSIONS_PER_TASK);
   });
 
-  it('503 от runner сохраняется как RUNNER_UNAVAILABLE_ERROR — по нему сдача и исключается из лимита', async () => {
+  it('503 от runner сохраняется как RUNNER_UNAVAILABLE_ERROR – по нему сдача и исключается из лимита', async () => {
     useRunner(async () => {
       throw new AppError('runner_unavailable', 'runner down', 503);
     });
@@ -61,7 +61,7 @@ describe('лимит сдач: сбой сервиса проверки не з�
     expect(countedSubmissions([{ status: 'failed', error: RUNNER_UNAVAILABLE_ERROR }])).toBe(0);
   });
 
-  it('другой сбой runner — другая причина, сдача засчитывается', async () => {
+  it('другой сбой runner – другая причина, сдача засчитывается', async () => {
     useRunner(async () => {
       throw new AppError('bad_request', 'bad archive', 400);
     });

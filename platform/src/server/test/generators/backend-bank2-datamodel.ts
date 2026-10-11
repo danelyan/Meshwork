@@ -1,5 +1,5 @@
 // Банк-2 backend.data-model: +3 Junior, +5 Middle, +4 Senior. Пробел: миграции ниже Senior.
-// Ответ считает код (R-T-02); a, b — ПРЕДЛОЖЕНИЕ (экспертные).
+// Ответ считает код (R-T-02); a, b – ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator } from '../types';
 import { fam, until } from './backend-bank2-util';

@@ -22,7 +22,7 @@ const item = (topic: string, extra: Partial<DepthMapItem>): DepthMapItem => ({
 });
 
 describe('карта глубины: статусы тем', () => {
-  it('подтверждено / не определено / не проверено; старый вердикт без status — по confirmed', () => {
+  it('подтверждено / не определено / не проверено; старый вердикт без status – по confirmed', () => {
     const verdict: CallVerdict = {
       kind: 'qualifying',
       depthMap: [

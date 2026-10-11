@@ -94,7 +94,7 @@ async function loadPredictor(spec: string): Promise<{ name: string; fn: Predict 
   if (spec === 'keyword') return { name: 'keyword-baseline', fn: keywordBaseline };
   if (spec === 'gullible') return { name: 'gullible-stub', fn: gullible };
   if (spec === 'empty') return { name: 'empty', fn: emptyPredict };
-  // именованные предсказатели из predictors/ (импортируют src — запускать через tsx):
+  // именованные предсказатели из predictors/ (импортируют src – запускать через tsx):
   //   npx tsx eval/run.ts --predictor catalog-keywords | claims-stub
   const named = join(root, 'predictors', `${spec}.ts`);
   if (/^[a-z0-9-]+$/.test(spec) && existsSync(named)) {

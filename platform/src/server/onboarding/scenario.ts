@@ -7,8 +7,8 @@ import type { RangeSpec, StepContext, StepDef, StepOption } from './types';
 /**
  * Декларативные сценарии онбординга (решение владельца 09.10: «проактивный
  * помощник задаёт вопросы по одному, всё можно пропустить или настроить позже»).
- * Порядок массива = порядок вопросов. Поведение — engine.ts, запись в БД — service.ts.
- * Направления — четыре из enum Specialization (ADR 0003, дополнение 10.10: backend, frontend, ai,
+ * Порядок массива = порядок вопросов. Поведение – engine.ts, запись в БД – service.ts.
+ * Направления – четыре из enum Specialization (ADR 0003, дополнение 10.10: backend, frontend, ai,
  * engineering; справочник src/lib/directions.ts); Mobile, Gamedev, Security показаны как «скоро».
  * Data/ML, DevOps и QA вошли в ai и engineering подкатегориями.
  */
@@ -20,7 +20,7 @@ export const DIRECTIONS: StepOption[] = [
   { value: 'security', label: 'Security', note: 'информационная безопасность · скоро', disabled: true },
 ];
 
-/** Подкатегории выбранного направления (справочник Subcategory). planned — с пометкой, но выбрать можно. */
+/** Подкатегории выбранного направления (справочник Subcategory). planned – с пометкой, но выбрать можно. */
 export function subcategoryOptions(spec: unknown): StepOption[] {
   if (!isSpecialization(spec)) return [];
   return subcategoriesFor(spec).map((s) => ({
@@ -36,7 +36,7 @@ export const GRADES: StepOption[] = [
   { value: 'senior', label: 'Senior', note: 'проектные решения и компромиссы' },
 ];
 
-/** Чипы стека — имена совпадают с маркерами каталога утверждений (по ним считается потребность). */
+/** Чипы стека – имена совпадают с маркерами каталога утверждений (по ним считается потребность). */
 export const STACK: Record<Specialization, string[]> = {
   backend: ['Python', 'Java', 'Go', 'Kotlin', 'C#', 'Node.js', 'PHP', 'Spring', 'Django', 'FastAPI', 'NestJS', 'SQL', 'Redis', 'Kafka', 'RabbitMQ', 'Docker', 'gRPC', 'Linux'],
   frontend: ['JavaScript', 'TypeScript', 'React', 'Vue', 'Angular', 'Next.js', 'Redux', 'CSS', 'Tailwind', 'Vite', 'Webpack', 'Jest', 'Playwright', 'Figma'],
@@ -77,7 +77,7 @@ const consentStep: StepDef = {
   target: 'Consent (recordConsent), Candidate.consentAt',
   req: 'R-C-14',
   required: true,
-  // Согласие берётся при регистрации одной галкой (/auth, /demo — решение владельца 09.10), в чате
+  // Согласие берётся при регистрации одной галкой (/auth, /demo – решение владельца 09.10), в чате
   // его нет. Шаг остаётся страховкой для аккаунта без записанного согласия (старые аккаунты):
   // без согласия дальше ни шагу и в модель ничего не уходит.
   when: (ctx) => !ctx.facts.consent,
@@ -108,7 +108,7 @@ const consentOption = (kind: keyof typeof CONSENT_TEXTS): StepOption => {
 };
 
 /**
- * Согласия кандидата (ADR 0005): Г3 ИИ-оценка, Г4 показ работодателям, Г6 исследования, Г7 рассылки —
+ * Согласия кандидата (ADR 0005): Г3 ИИ-оценка, Г4 показ работодателям, Г6 исследования, Г7 рассылки –
  * отдельные неотмеченные галочки. Продолжить можно без любой из них: без Г3 закрыты тест, созвон и защита,
  * без Г4 профиль скрыт (hiddenFromEmployers). Всё меняется позже в настройках («Мои согласия»).
  */
@@ -126,7 +126,7 @@ export const CANDIDATE_CONSENTS_STEP: StepDef = {
   doneBy: (ctx) => Boolean(ctx.facts.candidateConsents),
 };
 
-/** Согласия работодателя (ADR 0005): оферта и обязательство по данным — обе нужны для поиска и приглашений. */
+/** Согласия работодателя (ADR 0005): оферта и обязательство по данным – обе нужны для поиска и приглашений. */
 export const EMPLOYER_CONSENTS_STEP: StepDef = {
   id: 'employerConsents',
   kind: 'consents',
@@ -313,7 +313,7 @@ export const CANDIDATE_STEPS: StepDef[] = [
     range: SALARY,
   },
   {
-    // Q-35: служебная почта онбординга (`user-…@users.invalid`) — не контакт; без этого шага
+    // Q-35: служебная почта онбординга (`user-…@users.invalid`) – не контакт; без этого шага
     // работодатель после принятия приглашения видел пустые контакты.
     id: 'candidateContact',
     kind: 'text',
@@ -363,7 +363,7 @@ export const EMPLOYER_STEPS: StepDef[] = [
     required: true,
     maxLength: 120,
     placeholder: 'ООО «Пример»',
-    // Роль employer уже выбрана — компания создана, шаг закрыт (название правится в кабинете).
+    // Роль employer уже выбрана – компания создана, шаг закрыт (название правится в кабинете).
     doneBy: hasRole,
   },
   EMPLOYER_CONSENTS_STEP,
@@ -503,7 +503,7 @@ export const SUMMARY_STEP: StepDef = {
 
 export const BASE_STEPS: StepDef[] = [consentStep, roleStep];
 
-/** Все шаги сценария: роль из БД, иначе выбранная в шаге role, иначе — пока только знакомство. */
+/** Все шаги сценария: роль из БД, иначе выбранная в шаге role, иначе – пока только знакомство. */
 export function scenarioSteps(ctx: StepContext): { scenario: 'candidate' | 'employer' | null; steps: StepDef[] } {
   const role = ctx.facts.role !== 'pending' ? ctx.facts.role : ctx.answers.role;
   if (role === 'candidate') return { scenario: 'candidate', steps: [...BASE_STEPS, ...CANDIDATE_STEPS, SUMMARY_STEP] };

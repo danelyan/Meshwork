@@ -4,7 +4,7 @@ import type { Dataset } from '../types.js';
  * Реалм Keycloak «fsp-id» (симулятор ФСП ID) для `start --import-realm`.
  * Плейсхолдеры `${VAR:default}` Keycloak подставляет из переменных окружения при импорте
  * (docs/guides/server/importExport: «Using Environment Variables within the Realm Configuration Files»).
- * Текст `${…}` в других местах файла недопустим — он тоже будет подставлен.
+ * Текст `${…}` в других местах файла недопустим – он тоже будет подставлен.
  */
 
 export const REALM_NAME = 'fsp-id';

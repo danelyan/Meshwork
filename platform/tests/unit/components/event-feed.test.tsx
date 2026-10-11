@@ -75,7 +75,7 @@ describe('EventFeed: все типы AgentEvent', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Подтвердить все со слов \(3\)/ }));
     await waitFor(() => expect(confirmed).toEqual(['1', '2', '3']));
-    // родитель обновил статусы через overrides — кнопка «все» исчезает
+    // родитель обновил статусы через overrides – кнопка «все» исчезает
     rerender(
       <EventFeed
         items={[ag({ type: 'claims', proposed: [claim('1'), claim('2'), claim('3')], rejected: 0 })]}
@@ -88,7 +88,7 @@ describe('EventFeed: все типы AgentEvent', () => {
     expect(screen.getAllByText('Подтверждено').length).toBe(3);
   });
 
-  it('«подтвердить все со слов» берёт только self_reported; артефакты — по одному', async () => {
+  it('«подтвердить все со слов» берёт только self_reported; артефакты – по одному', async () => {
     const got: string[][] = [];
     render(
       <EventFeed
@@ -101,7 +101,7 @@ describe('EventFeed: все типы AgentEvent', () => {
     await waitFor(() => expect(got).toEqual([['1', '2']]));
   });
 
-  it('если со слов одно, а остальные артефакты — кнопки «все» нет', () => {
+  it('если со слов одно, а остальные артефакты – кнопки «все» нет', () => {
     render(
       <EventFeed
         items={[ag({ type: 'claims', proposed: [claim('1'), claim('2', 'a', 'artifact'), claim('3', 'b', 'artifact')], rejected: 0 })]}
@@ -121,7 +121,7 @@ describe('EventFeed: все типы AgentEvent', () => {
     expect((screen.getByRole('button', { name: 'Junior' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('ask без вариантов — только вопрос', () => {
+  it('ask без вариантов – только вопрос', () => {
     render(<EventFeed items={[ag({ type: 'ask', question: 'Какая цель?' })]} />);
     expect(screen.getByText('Какая цель?')).toBeDefined();
     expect(screen.queryByRole('button')).toBeNull();

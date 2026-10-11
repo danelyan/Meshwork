@@ -11,7 +11,7 @@ const TG_LINK = /^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\/([a-zA-Z][a-
 
 const Email = z.email();
 
-/** null — не похоже ни на почту, ни на Telegram. */
+/** null – не похоже ни на почту, ни на Telegram. */
 export function normalizeContact(raw: string): string | null {
   const v = raw.trim();
   if (!v || v.length > 120) return null;
@@ -39,7 +39,7 @@ export const ContactSchema = z
     return out;
   });
 
-/** POST /api/profile/contact: пустая строка или null — убрать контакт. */
+/** POST /api/profile/contact: пустая строка или null – убрать контакт. */
 export const CandidateContactInput = z.object({
   contact: z.union([z.literal('').transform(() => null), z.null(), ContactSchema]),
 });

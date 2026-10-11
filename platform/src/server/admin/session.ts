@@ -17,12 +17,12 @@ import { type Action, DEMO_READONLY_MESSAGE, DEMO_STAFF_ACTIONS, DEMO_STAFF_EMAI
 
 /**
  * Сессия персонала (ADR 0009). Граница доверия:
- *  - своя кука `fsp_admin` = `a.<adminSessionId>.<exp>.<sig>`, HMAC с доменом `admin:` — подпись не совпадёт
+ *  - своя кука `fsp_admin` = `a.<adminSessionId>.<exp>.<sig>`, HMAC с доменом `admin:` – подпись не совпадёт
  *    с `cid` (домен без префикса) и `fsp_expert` (`expert:`) даже на тех же байтах; parseSession её не примет,
  *    а `cid` не примет `verifyAdminToken` (другое число частей и префикс);
- *  - id в куке — строка AdminSession: отзыв (выход, смена роли, отключение, сброс 2FA) действует сразу;
+ *  - id в куке – строка AdminSession: отзыв (выход, смена роли, отключение, сброс 2FA) действует сразу;
  *  - каждый запрос сверяет сессию (не отозвана, не истекла) и сотрудника (не отключён, TOTP включён);
- *  - мутации — CSRF-проверка Origin внутри `requireStaff` (как у остальных POST, `auth/csrf.ts`);
+ *  - мутации – CSRF-проверка Origin внутри `requireStaff` (как у остальных POST, `auth/csrf.ts`);
  *  - промежуточная кука `fsp_admin_pre` (пароль верен, ждём TOTP) живёт 5 минут на path /api/admin/auth
  *    и привязана к версии пароля сотрудника.
  */
@@ -53,7 +53,7 @@ export function signAdminToken(sessionId: string, secret = getEnv().SESSION_SECR
   return `${payload}.${sign('admin', payload, secret)}`;
 }
 
-/** id AdminSession из куки; null — нет, подделка, чужой формат (`cid`, `fsp_expert`), истёк срок. */
+/** id AdminSession из куки; null – нет, подделка, чужой формат (`cid`, `fsp_expert`), истёк срок. */
 export function verifyAdminToken(token: string | null | undefined, secret = getEnv().SESSION_SECRET, nowSec = Math.floor(Date.now() / 1000)): string | null {
   if (!token) return null;
   const parts = token.split('.');
@@ -85,7 +85,7 @@ function secure(): boolean {
   return getEnv().APP_URL.startsWith('https://');
 }
 
-/** Кука сессии персонала. path=/ — её читают и страницы /admin, и /api/admin; SameSite=Strict. */
+/** Кука сессии персонала. path=/ – её читают и страницы /admin, и /api/admin; SameSite=Strict. */
 export function adminCookie(sessionId: string) {
   return { name: ADMIN_COOKIE, value: signAdminToken(sessionId), httpOnly: true, sameSite: 'strict' as const, secure: secure(), path: '/', maxAge: ADMIN_SESSION_TTL_SEC };
 }
@@ -111,11 +111,11 @@ export interface StaffContext {
   email: string;
   /** Демо-сотрудник жюри (`DEMO_STAFF_EMAIL`): только чтение, см. permissions.ts. */
   demo: boolean;
-  /** Адрес клиента (X-Forwarded-For) — для журнала; null на страницах. */
+  /** Адрес клиента (X-Forwarded-For) – для журнала; null на страницах. */
   ip: string | null;
 }
 
-/** Демо-сотруднику — только чтение: право из `DEMO_STAFF_ACTIONS` и никаких мутаций, кроме выхода. */
+/** Демо-сотруднику – только чтение: право из `DEMO_STAFF_ACTIONS` и никаких мутаций, кроме выхода. */
 export function demoAllows(req: Request, action?: Action): boolean {
   if (action && !DEMO_STAFF_ACTIONS.has(action)) return false;
   if (req.method === 'GET' || req.method === 'HEAD') return true;
@@ -131,14 +131,14 @@ async function loadStaffSession(sessionId: string, now = new Date()): Promise<Om
   if (!s || s.revokedAt || s.expiresAt <= now) return null;
   if (s.staff.disabledAt || !s.staff.totpEnabledAt) return null;
   const demo = s.staff.email === DEMO_STAFF_EMAIL;
-  // Демо-сессии живут только пока на стенде включён DEMO_LOGIN: выключили флаг — они сразу недействительны.
+  // Демо-сессии живут только пока на стенде включён DEMO_LOGIN: выключили флаг – они сразу недействительны.
   if (demo && !getEnv().DEMO_LOGIN) return null;
   return { staffId: s.staff.id, sessionId: s.id, role: s.staff.role, name: s.staff.name, email: s.staff.email, demo };
 }
 
 /**
  * Гвард route handler'ов `/api/admin/*`: 401 без живой сессии персонала (пользовательская `cid` не подходит),
- * 403 без права `action`. Для мутаций (не GET/HEAD) — CSRF-проверка Origin. Без `action` — любой сотрудник.
+ * 403 без права `action`. Для мутаций (не GET/HEAD) – CSRF-проверка Origin. Без `action` – любой сотрудник.
  * Тест матрицы доступа требует вызова именно в форме `requireStaff(req…)`.
  */
 export async function requireStaff(req: Request, action?: Action): Promise<StaffContext> {
@@ -151,7 +151,7 @@ export async function requireStaff(req: Request, action?: Action): Promise<Staff
   return { ...ctx, ip: clientKey(req) };
 }
 
-/** Сессия персонала в Server Component (одна выборка на запрос). null — не вошёл. */
+/** Сессия персонала в Server Component (одна выборка на запрос). null – не вошёл. */
 export const getStaffPageSession = cache(async (): Promise<StaffContext | null> => {
   const id = verifyAdminToken((await cookies()).get(ADMIN_COOKIE)?.value);
   const ctx = id ? await loadStaffSession(id) : null;
@@ -159,9 +159,9 @@ export const getStaffPageSession = cache(async (): Promise<StaffContext | null> 
 });
 
 /**
- * Гвард страниц `/admin/*` (вызывать в каждой `page.tsx`, не в layout — layout не перерисовывается при
+ * Гвард страниц `/admin/*` (вызывать в каждой `page.tsx`, не в layout – layout не перерисовывается при
  * клиентской навигации; docs Next.js «Layouts and auth checks»). Не вошёл → /admin/login?next=…;
- * нет права → /admin (обзор доступен всем ролям). `path` — адрес этой страницы.
+ * нет права → /admin (обзор доступен всем ролям). `path` – адрес этой страницы.
  */
 export async function requirePageStaff(path: string, action?: Action): Promise<StaffContext> {
   const ctx = await getStaffPageSession();

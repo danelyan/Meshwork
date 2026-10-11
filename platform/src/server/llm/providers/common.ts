@@ -12,9 +12,9 @@ export function parseToolArguments(raw: unknown): unknown {
 }
 
 /**
- * Итог по тексту ответа: при запрошенной схеме — kind 'json', если текст
+ * Итог по тексту ответа: при запрошенной схеме – kind 'json', если текст
  * разбирается как JSON; иначе kind 'text' с сырым текстом (jsonValid=false
- * в журнале, ремонт делает вызывающий — см. completeJson).
+ * в журнале, ремонт делает вызывающий – см. completeJson).
  */
 export function textOrJson(
   text: string,

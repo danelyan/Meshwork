@@ -1,8 +1,8 @@
-// Слепой оценщик созвона (ADR 0003): видит только специализацию и пары вопрос-ответ по темам —
+// Слепой оценщик созвона (ADR 0003): видит только специализацию и пары вопрос-ответ по темам –
 // без резюме, утверждений профиля, уровней вопросов и сигналов интервьюера. Рубрика A-02 (0–2 по
-// четырём признакам) на каждую тему; прогоны адаптивные (3, при разбросе — ещё 2), итог — медиана;
+// четырём признакам) на каждую тему; прогоны адаптивные (3, при разбросе – ещё 2), итог – медиана;
 // баллы без дословной цитаты обнуляет код (defense/evaluator checkQuoteLoose). Тема, где прогоны разошлись
-// в решении порога, получает статус inconclusive (интервьюер задаёт по ней ещё вопрос — service.ts).
+// в решении порога, получает статус inconclusive (интервьюер задаёт по ней ещё вопрос – service.ts).
 import { CRITERIA, type Criterion, type Score } from '../defense/types';
 import { checkQuoteLoose, decidePassed, THRESHOLD } from '../defense/evaluator';
 import { responseJsonSchema } from '../llm/schema';
@@ -22,7 +22,7 @@ export const MIN_VALID_RUNS = 2;
  * Правила решения по теме (валидация 10.10, docs/validation-stages.md):
  * - разброс суммы между прогонами > extraRunsSpread или разные решения порога → ещё EXTRA_RUNS прогонов;
  * - решение темы принято, если с медианой согласны ≥ minAgreement прогонов (3 из 3, 4 из 5);
- *   иначе — inconclusive. Полосу «медиана 4–5» валидация отвергла как слишком широкую (13 из 36 тем),
+ *   иначе – inconclusive. Полосу «медиана 4–5» валидация отвергла как слишком широкую (13 из 36 тем),
  *   оставлена выключенной (inconclusiveBand = null).
  */
 export const DECISION_RULES = {
@@ -33,10 +33,10 @@ export const DECISION_RULES = {
 } as const;
 
 /**
- * Что оценщик видит вместо текста вопроса: `question` — сам вопрос (пересказ профиля интервьюером
- * вырезается redactFacts); `type` — только уровень вопроса («база / практика / глубина»).
+ * Что оценщик видит вместо текста вопроса: `question` – сам вопрос (пересказ профиля интервьюером
+ * вырезается redactFacts); `type` – только уровень вопроса («база / практика / глубина»).
  * Выбран `type`: на 12 сохранённых созвонах валидации (переоценка 10.10) совпадение с ожиданием 35/35
- * против 34/35, «почему так» у сильных тем не просело (1,3 в обоих видах); цена — больше добавочных
+ * против 34/35, «почему так» у сильных тем не просело (1,3 в обоих видах); цена – больше добавочных
  * прогонов (4,2 против 3,3 на созвон). docs/validation-stages.md, раздел «после доработки 10.10».
  */
 export type EvaluatorView = 'question' | 'type';
@@ -51,7 +51,7 @@ export interface EvalTopic {
   qa: { question: string; answer: string; level?: QuestionLevel }[];
 }
 
-/** Что видит оценщик: только темы и пары вопрос-ответ (catalogId, утверждения, сигналы — нет). */
+/** Что видит оценщик: только темы и пары вопрос-ответ (catalogId, утверждения, сигналы – нет). */
 export interface EvaluatorPayload {
   specialization: string;
   topics: { topic: string; qa: { question?: string; questionType?: string; answer: string }[] }[];
@@ -78,7 +78,7 @@ export function sharedNgramSpans(
   text: string,
   sources: readonly (string | null | undefined)[],
   n = RETELL_NGRAM,
-  /** Тексты, которые произносить можно (название темы — оценщик его и так видит): их n-граммы не считаются. */
+  /** Тексты, которые произносить можно (название темы – оценщик его и так видит): их n-граммы не считаются. */
   allow: readonly string[] = [],
 ): [number, number][] {
   const gramsOf = (src: string) => {
@@ -152,10 +152,10 @@ export function buildEvaluatorPayload(
 }
 
 export function buildCallEvaluatorMessages(payload: EvaluatorPayload): ChatMessage[] {
-  return [{ role: 'user', content: `${contextBlock(payload)}\n\nОцени каждую тему по рубрике. Ответ — только JSON по схеме.` }];
+  return [{ role: 'user', content: `${contextBlock(payload)}\n\nОцени каждую тему по рубрике. Ответ – только JSON по схеме.` }];
 }
 
-/** Медиана баллов; при чётном числе — нижняя из средних (консервативно: сомнение не в пользу повышения). */
+/** Медиана баллов; при чётном числе – нижняя из средних (консервативно: сомнение не в пользу повышения). */
 export function medianScore(values: readonly Score[]): Score {
   if (values.length === 0) return 0;
   const s = [...values].sort((a, b) => a - b);
@@ -194,7 +194,7 @@ async function oneRun(
   if (!parsed) throw new LlmError('invalid_output', `Оценщик созвона вернул невалидный ответ: ${lastError.slice(0, 300)}`);
   const out = parsed;
   return topics.map((t, i) => {
-    // Тема по имени, иначе по позиции; не нашлась — нули (оценщик её пропустил).
+    // Тема по имени, иначе по позиции; не нашлась – нули (оценщик её пропустил).
     const row = out.topics.find((x) => x.topic.trim() === t.topic) ?? out.topics[i];
     const answers = t.qa.map((p) => p.answer);
     return Object.fromEntries(
@@ -245,7 +245,7 @@ export function decideStatus(median: TopicScores, runs: readonly TopicScores[]):
   return { status: passed ? 'confirmed' : 'not_confirmed', same };
 }
 
-/** Сведение прогонов в карту глубины: медиана по каждому признаку, порог — как у защиты утверждения. */
+/** Сведение прогонов в карту глубины: медиана по каждому признаку, порог – как у защиты утверждения. */
 export function aggregateRuns(topics: readonly EvalTopic[], runs: readonly RunTopic[][]): DepthMapItem[] {
   return topics.map((t, i) => {
     const per = runs.map((r) => r[i]!);
@@ -253,8 +253,8 @@ export function aggregateRuns(topics: readonly EvalTopic[], runs: readonly RunTo
     const total = CRITERIA.reduce((s, c) => s + scores[c], 0);
     const runScores = per.map((p) => Object.fromEntries(CRITERIA.map((c) => [c, p[c].score])) as unknown as TopicScores);
     const { status, same } = decideStatus(scores, runScores);
-    // Цитата — из прогона, где глубина совпала с медианой; иначе любая принятая.
-    // Цитата-доказательство — только у признака с баллом > 0: цитата к нулю ничего не доказывает.
+    // Цитата – из прогона, где глубина совпала с медианой; иначе любая принятая.
+    // Цитата-доказательство – только у признака с баллом > 0: цитата к нулю ничего не доказывает.
     const depthRun = scores.depth > 0 ? per.find((p) => p.depth.valid && p.depth.score === scores.depth) : undefined;
     const anyValid = per.flatMap((p) => CRITERIA.map((c) => p[c])).find((x) => x.valid && x.score > 0);
     return {
@@ -306,7 +306,7 @@ async function runBatch(n: number, payload: EvaluatorPayload, topics: readonly E
 
 /**
  * 3 независимых прогона параллельно (семафор клиента LLM ограничивает одновременность); при разбросе
- * суммы > 2 или расхождении в решении по какой-то теме — ещё 2. Валидных меньше двух → LlmError:
+ * суммы > 2 или расхождении в решении по какой-то теме – ещё 2. Валидных меньше двух → LlmError:
  * ответы сохранены, finish можно повторить.
  */
 export async function evaluateCall(

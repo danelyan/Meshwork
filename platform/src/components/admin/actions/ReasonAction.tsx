@@ -12,24 +12,24 @@ import { adminFetch } from '../adminFetch';
 export interface ReasonActionProps {
   /** Текст кнопки, открывающей форму. */
   label: string;
-  /** Что произойдёт — показывается над формой. */
+  /** Что произойдёт – показывается над формой. */
   description: string;
   url: string;
   method: 'POST' | 'DELETE';
   /** Дополнительные поля тела запроса (кроме reason/until/confirm). */
   body?: Record<string, unknown>;
   danger?: boolean;
-  /** Поле «срок» (datetime-local, пусто — бессрочно). */
+  /** Поле «срок» (datetime-local, пусто – бессрочно). */
   withUntil?: boolean;
-  /** Второе подтверждение: нужно вручную ввести эту строку (например, id пользователя) — уходит как `confirm`. */
+  /** Второе подтверждение: нужно вручную ввести эту строку (например, id пользователя) – уходит как `confirm`. */
   confirmText?: string;
   submitLabel?: string;
   onDone?: (result: unknown) => void;
 }
 
 /**
- * Действие админки с обязательной причиной (уходит в журнал): кнопка → форма → запрос. Первое подтверждение —
- * открыть форму и нажать «Подтвердить», второе (если `confirmText`) — ввести строку вручную.
+ * Действие админки с обязательной причиной (уходит в журнал): кнопка → форма → запрос. Первое подтверждение –
+ * открыть форму и нажать «Подтвердить», второе (если `confirmText`) – ввести строку вручную.
  */
 export function ReasonAction({ label, description, url, method, body, danger, withUntil, confirmText, submitLabel = 'Подтвердить', onDone }: ReasonActionProps) {
   const [open, setOpen] = useState(false);
@@ -81,7 +81,7 @@ export function ReasonAction({ label, description, url, method, body, danger, wi
           <textarea className={ui.input} required minLength={5} maxLength={1000} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
         {withUntil && (
-          <Field label="Срок" hint="Пусто — бессрочно">
+          <Field label="Срок" hint="Пусто – бессрочно">
             <input className={ui.input} type="datetime-local" value={until} onChange={(e) => setUntil(e.target.value)} />
           </Field>
         )}

@@ -33,7 +33,7 @@ export interface InviteBody {
   /** Вилка, ₽ в месяц; salaryTo ≥ salaryFrom. */
   salaryFrom: number;
   salaryTo: number;
-  /** Позиция в подборке/поиске на момент отправки (1..1000) и откуда отправлено — только для метрики админки. */
+  /** Позиция в подборке/поиске на момент отправки (1..1000) и откуда отправлено – только для метрики админки. */
   matchRank?: number | null;
   matchSource?: 'matching' | 'search' | 'favorites' | 'assistant' | 'other' | null;
 }
@@ -51,7 +51,7 @@ export const listQuestionsApi = async (candidateId: string) =>
   (await request<{ questions: EmployerQuestionDto[] }>(`/api/employer/questions?candidateId=${encodeURIComponent(candidateId)}`)).questions;
 export const askQuestionApi = (candidateId: string, text: string) => postJson<EmployerQuestionDto>('/api/employer/questions', { candidateId, text });
 
-/** accept — с версией согласия на раскрытие имени и контактов этому работодателю (Г5, ADR 0005). */
+/** accept – с версией согласия на раскрытие имени и контактов этому работодателю (Г5, ADR 0005). */
 /** lane hired: работодатель отмечает найм по принятому приглашению (accepted → hired). */
 export const markHiredApi = (id: string) =>
   postJson<{ id: string; status: 'hired'; hiredAt: string }>(`/api/employer/invitations/${encodeURIComponent(id)}/hire`, {});
@@ -68,7 +68,7 @@ export const setPrivacyApi = (hiddenFromEmployers: boolean) =>
   postJson<{ hiddenFromEmployers: boolean }>('/api/profile/privacy', { hiddenFromEmployers });
 
 /** Ход помощника работодателя: SSE-поток EmployerAgentEvent (app/api/employer/assistant/messages). */
-export async function openEmployerAssistantStream(input: { text: string; conversationId?: string; page?: { path: string; vacancyId?: string | null } }, signal: AbortSignal): Promise<ReadableStream<Uint8Array>> {
+export async function openEmployerAssistantStream(input: { text: string; conversationId?: string }, signal: AbortSignal): Promise<ReadableStream<Uint8Array>> {
   let res: Response;
   try {
     res = await fetch('/api/employer/assistant/messages', {
@@ -94,7 +94,7 @@ export interface CompanyBody {
   industry: string | null;
   inn: string | null;
   contact: string | null;
-  /** Способ связи в приглашениях от этого представителя: контакт компании, иначе его почта; null — приглашения не отправятся (E05). */
+  /** Способ связи в приглашениях от этого представителя: контакт компании, иначе его почта; null – приглашения не отправятся (E05). */
   inviteContact?: string | null;
 }
 /** Отказ валидации с текстами по полям (`validation_failed`, details = [{ path, message }]). */

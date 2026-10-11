@@ -12,9 +12,9 @@ command + result; a skipped step is reported as skipped, with the reason.
 
 ## 1. Before push
 
-1. Time: `TZ=Europe/Moscow date`. Past 23:59 on 11 October — stop, do not commit.
+1. Time: `TZ=Europe/Moscow date`. Past 23:59 on 11 October – stop, do not commit.
 2. Branch state: `git fetch && git status -sb`. Must not be behind `origin/main`; nothing
-   staged or untracked that you did not mean to ship. Diverged — merge `origin/main` first.
+   staged or untracked that you did not mean to ship. Diverged – merge `origin/main` first.
 3. Diff review: `git diff origin/main...HEAD --stat`, then the diff itself. No `.env`, keys,
    tokens, personal data, `console.log` debugging, `.only` in tests.
 4. Load: `uptime`. If the 1-minute load is above 1.5x `sysctl -n hw.ncpu`, wait.
@@ -44,6 +44,6 @@ command + result; a skipped step is reported as skipped, with the reason.
 - [ ] Experts can open the repository and the stand (repo is private: confirm their access
       the way organizers require).
 - [ ] Stand runs in demo mode (`DEMO_LOGIN=true`) and survives a container restart.
-- [ ] Submission document (DOCX/PDF) is built — see the `submission-doc` skill.
+- [ ] Submission document (DOCX/PDF) is built – see the `submission-doc` skill.
 - [ ] Presentation and backup demo video are uploaded.
 - [ ] Tick the boxes in `docs/delivery.md`.

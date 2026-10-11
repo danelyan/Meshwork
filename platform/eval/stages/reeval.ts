@@ -1,10 +1,10 @@
-// Повторная оценка сохранённых транскриптов валидации 10.10 (eval:call / eval:defense) новыми оценщиками —
+// Повторная оценка сохранённых транскриптов валидации 10.10 (eval:call / eval:defense) новыми оценщиками –
 // на тех же ответах, без новых созвонов: так сравнение «до/после» не смешивается с разбросом актёра.
 //   ступень 1: вид оценщика `question` (текст вопроса, пересказ профиля вырезан) против `type` (только уровень);
 //   ступень 3: балл по каждому вопросу (defense-room/verdict.ts) против одного балла на транскрипт.
 // Запуск из platform/ (БД, где лежат созвоны валидации; читается, не пишется):
 //   EVAL_DATABASE_URL=…/fsp_validation npx tsx eval/stages/reeval.ts [--stage call|defense] [--views question,type]
-//   [--from defense-live-tuned.json] [--from-call call-live-tuned.json] — переоценить защиты другого замера (его БД — в EVAL_DATABASE_URL); [--out метка]
+//   [--from defense-live-tuned.json] [--from-call call-live-tuned.json] – переоценить защиты другого замера (его БД – в EVAL_DATABASE_URL); [--out метка]
 import { STUB } from './boot';
 
 import { readFileSync } from 'node:fs';
@@ -20,8 +20,8 @@ import { mean, separation, spread } from './metrics';
 import { argValue, prisma, providers, writeResult } from './runtime';
 
 const RESULTS = path.join(process.cwd(), 'eval/results/stages');
-const r2 = (x: number | null) => (x === null ? '—' : x.toFixed(2).replace('.', ','));
-const n1 = (x: number | null) => (x === null ? '—' : x.toFixed(1).replace('.', ','));
+const r2 = (x: number | null) => (x === null ? '–' : x.toFixed(2).replace('.', ','));
+const n1 = (x: number | null) => (x === null ? '–' : x.toFixed(1).replace('.', ','));
 
 interface CallLiveObs {
   persona: string;
@@ -73,7 +73,7 @@ async function reevalCalls(llm: ReturnType<typeof providers>['platform'], views:
   const before = rows.filter((r) => r.view === views[0]);
   const bJudged = before.filter((r) => r.expected !== null);
   lines.push(
-    `| до доработки (один прогон × 3, сохранённое решение) | ${bJudged.filter((r) => r.before === r.expected).length}/${bJudged.length} | ${bJudged.filter((r) => r.before !== r.expected).length} | — | — | — | ${n1(mean(bJudged.filter((r) => r.expected).map((r) => r.beforeTotal)))} / ${n1(mean(bJudged.filter((r) => r.expected === false).map((r) => r.beforeTotal)))} | 3 |`,
+    `| до доработки (один прогон × 3, сохранённое решение) | ${bJudged.filter((r) => r.before === r.expected).length}/${bJudged.length} | ${bJudged.filter((r) => r.before !== r.expected).length} | – | – | – | ${n1(mean(bJudged.filter((r) => r.expected).map((r) => r.beforeTotal)))} / ${n1(mean(bJudged.filter((r) => r.expected === false).map((r) => r.beforeTotal)))} | 3 |`,
   );
   for (const view of views) {
     const v = rows.filter((r) => r.view === view && r.expected !== null);
@@ -139,7 +139,7 @@ async function main(): Promise<void> {
   const stage = argValue('stage') ?? 'all';
   const views = (argValue('views') ?? 'question,type').split(',') as EvaluatorView[];
   const llm = providers();
-  console.log(`reeval — провайдер ${llm.platform.name}/${llm.platform.model}${STUB ? ' (stub)' : ''}`);
+  console.log(`reeval – провайдер ${llm.platform.name}/${llm.platform.model}${STUB ? ' (stub)' : ''}`);
   const result: Record<string, unknown> = { runAt: new Date().toISOString(), provider: `${llm.platform.name}/${llm.platform.model}` };
   if (stage === 'all' || stage === 'defense') {
     const d = await reevalDefense(llm.platform, argValue('from') ?? undefined);

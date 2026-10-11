@@ -6,7 +6,7 @@
 #   SELECTEL_API_KEY=… PUBKEY="$(cat ~/.ssh/fsp-id.pub)" bash scripts/selectel-server.sh
 #   На macOS без SELECTEL_API_KEY ключ берётся из Keychain: security find-generic-password -s SELECTEL_API_KEY -w
 #
-# Идентификаторы ниже сняты с проекта 2026-10-10 (docs/deploy.md); при смене проекта — обновить.
+# Идентификаторы ниже сняты с проекта 2026-10-10 (docs/deploy.md); при смене проекта – обновить.
 set -euo pipefail
 
 PROJECT_ID="${SELECTEL_PROJECT_ID:-742c1289e92f460095accfdded8a2799}"
@@ -20,7 +20,7 @@ SECGROUP="${SELECTEL_SECGROUP:-fsp-stand}"
 VOLUME_TYPE="${SELECTEL_VOLUME_TYPE:-basicssd.ru-7a}"
 DISK_GB="${SELECTEL_DISK_GB:-30}"
 NAME="${SERVER_NAME:-fsp-id}"
-: "${PUBKEY:?PUBKEY — открытый ключ SSH для root}"
+: "${PUBKEY:?PUBKEY – открытый ключ SSH для root}"
 
 if [ -z "${SELECTEL_API_KEY:-}" ]; then
   SELECTEL_API_KEY="$(security find-generic-password -s SELECTEL_API_KEY -w)"
@@ -46,7 +46,7 @@ os() { # os METHOD PATH [JSON]
 
 # Повторный запуск не должен создать второй сервер.
 if os GET /compute/v2.1/servers | json "any(s['name']=='$NAME' for s in d['servers'])" | grep -q True; then
-  echo "Сервер $NAME уже существует — выхожу" >&2
+  echo "Сервер $NAME уже существует – выхожу" >&2
   exit 2
 fi
 

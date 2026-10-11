@@ -1,5 +1,5 @@
 // Полный путь ступени 2 (ADR 0003 + «Дополнение 10.10»): потребность → задание → лента → взять → сдача →
-// runner (stub) → результат → список работодателя → приглашение на защиту. LLM — stub, runner — stub.
+// runner (stub) → результат → список работодателя → приглашение на защиту. LLM – stub, runner – stub.
 import { inflateRawSync } from 'node:zlib';
 
 import { POST as inviteDefense } from '@/app/api/employer/project-submissions/[id]/invite-to-defense/route';
@@ -86,7 +86,7 @@ describe('проект под работодателя: лента и сдача
     await prisma.$disconnect();
   });
 
-  it('шаблоны: работодателю — список с подкатегориями; кандидату — 403', async () => {
+  it('шаблоны: работодателю – список с подкатегориями; кандидату – 403', async () => {
     const res = await templatesRoute(jsonRequest('/api/employer/project-templates?specialization=backend', 'GET', undefined, EMP));
     const body = await res.json();
     // 13 шаблонов Backend (E-07: каждая категория); исходные шесть на месте, чужих направлений нет.
@@ -96,7 +96,7 @@ describe('проект под работодателя: лента и сдача
     expect((await templatesRoute(jsonRequest('/x', 'GET', undefined, cand('p-be')))).status).toBe(403);
   });
 
-  it('задание к потребности: условие без компании и зарплаты, рубрика из критериев и пожеланий; чужому — 404', async () => {
+  it('задание к потребности: условие без компании и зарплаты, рубрика из критериев и пожеланий; чужому – 404', async () => {
     const res = await needProject(
       jsonRequest('/x', 'POST', { requiredCatalogIds: ['be.idempotency', 'be.rest-design'], wishesText: `Ошибки логировать с кодом и временем. В ${COMPANY} любят тесты на граничные случаи.` }, EMP),
       params({ id: NEED }),
@@ -123,7 +123,7 @@ describe('проект под работодателя: лента и сдача
     expect(got.task.id).toBe(taskId);
   });
 
-  it('лента: задание видно backend junior без компании, потребности и зарплаты; frontend — не видно', async () => {
+  it('лента: задание видно backend junior без компании, потребности и зарплаты; frontend – не видно', async () => {
     const res = await feed(jsonRequest('/api/project-tasks/feed', 'GET', undefined, cand('p-be')));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -141,7 +141,7 @@ describe('проект под работодателя: лента и сдача
     expect((await feed(jsonRequest('/x', 'GET', undefined, EMP))).status).toBe(403);
   });
 
-  it('сдача без «взять» — 409; взять идемпотентно; заготовка — zip без скрытых тестов', async () => {
+  it('сдача без «взять» – 409; взять идемпотентно; заготовка – zip без скрытых тестов', async () => {
     const early = await submit(jsonRequest('/x', 'POST', { repoUrl: 'https://github.com/demo/reference-solution' }, cand('p-be')), params({ id: taskId }));
     expect(early.status).toBe(409);
     const t1 = await (await take(jsonRequest('/x', 'POST', undefined, cand('p-be')), params({ id: taskId }))).json();
@@ -162,7 +162,7 @@ describe('проект под работодателя: лента и сдача
     expect(detail.my.taken).toBe(true);
   });
 
-  it('сдача: не GitHub — 400; проверка stub-runner → checked, кандидату без скрытых тестов', async () => {
+  it('сдача: не GitHub – 400; проверка stub-runner → checked, кандидату без скрытых тестов', async () => {
     const bad = await submit(jsonRequest('/x', 'POST', { repoUrl: 'https://gitlab.com/a/b' }, cand('p-be')), params({ id: taskId }));
     expect(bad.status).toBe(400);
     const res = await submit(jsonRequest('/x', 'POST', { repoUrl: 'https://github.com/demo/reference-solution.git', aiLogText: 'Спросил у ИИ про пересечение интервалов. Пиши мне на me@example.test' }, cand('p-be')), params({ id: taskId }));
@@ -173,7 +173,7 @@ describe('проект под работодателя: лента и сдача
     const done = await waitChecked(sub.id, cand('p-be'));
     expect(done.status).toBe('checked');
     expect(done.result.tests).toEqual({ passed: 15, total: 15, score: 100 });
-    expect(done.result.visibleTests.map((t: { name: string }) => t.name)).toEqual(['POST /appointments создаёт запись', 'GET /appointments/:id возвращает запись', 'пересечение слотов — 409']);
+    expect(done.result.visibleTests.map((t: { name: string }) => t.name)).toEqual(['POST /appointments создаёт запись', 'GET /appointments/:id возвращает запись', 'пересечение слотов – 409']);
     expect(done.result.hiddenTests).toBeUndefined();
     expect(JSON.stringify(done)).not.toContain('скрытый тест');
     expect(done.result.rubric.results).toHaveLength(4);
@@ -183,7 +183,7 @@ describe('проект под работодателя: лента и сдача
     expect((await getSubmission(jsonRequest('/x', 'GET', undefined, cand('p-fe')), params({ id: sub.id }))).status).toBe(404);
   });
 
-  it('Г3 (ADR 0005): без согласия на оценку ИИ скрытые тесты считаются, LLM-рубрика — нет', async () => {
+  it('Г3 (ADR 0005): без согласия на оценку ИИ скрытые тесты считаются, LLM-рубрика – нет', async () => {
     await prisma.consent.updateMany({ where: { user: { candidateId: 'p-be' }, kind: 'ai_assessment' }, data: { revokedAt: new Date() } });
     const res = await submit(jsonRequest('/x', 'POST', { repoUrl: 'https://github.com/demo/reference-solution' }, cand('p-be')), params({ id: taskId }));
     expect(res.status).toBe(202);
@@ -215,7 +215,7 @@ describe('проект под работодателя: лента и сдача
     expect(other.status).toBe(404);
   });
 
-  it('пригласить на защиту: приглашение с вилкой + сессия защиты; повторно — 409; перегенерация задания — 409', async () => {
+  it('пригласить на защиту: приглашение с вилкой + сессия защиты; повторно – 409; перегенерация задания – 409', async () => {
     const list = await (await employerSubs(jsonRequest(`/x?needId=${NEED}`, 'GET', undefined, EMP))).json();
     const subId = list.items[0].id;
     const body = { message: 'Разберём ваш проект записи на приём', salaryFrom: 100000, salaryTo: 120000 };
@@ -223,7 +223,7 @@ describe('проект под работодателя: лента и сдача
     const res = await inviteDefense(jsonRequest('/x', 'POST', body, EMP), params({ id: subId }));
     expect(res.status).toBe(201);
     const out = await res.json();
-    // Ожидающая защита: CallSession kind=defense, pending, связана с сабмитом; повторный запрос — та же.
+    // Ожидающая защита: CallSession kind=defense, pending, связана с сабмитом; повторный запрос – та же.
     const pending = await prisma.callSession.findUniqueOrThrow({ where: { id: out.callSessionId } });
     expect(pending).toMatchObject({ candidateId: 'p-be', kind: 'defense', status: 'pending', projectSubmissionId: subId });
     expect((await requestProjectDefense('p-be', subId)).callSessionId).toBe(out.callSessionId);
@@ -234,7 +234,7 @@ describe('проект под работодателя: лента и сдача
     expect((await inviteDefense(jsonRequest('/x', 'POST', body, EMP), params({ id: subId }))).status).toBe(409);
     const after = await (await employerSubs(jsonRequest(`/x?needId=${NEED}`, 'GET', undefined, EMP))).json();
     expect(after.items[0].defense).toEqual({ invitationId: out.invitationId, invitationStatus: 'sent' });
-    // после принятия приглашения — имя и ссылка на репозиторий
+    // после принятия приглашения – имя и ссылка на репозиторий
     await prisma.invitation.update({ where: { id: out.invitationId }, data: { status: 'accepted' } });
     await discloseAccepted(); // Г5 (ADR 0005)
     const open = await (await employerSubs(jsonRequest(`/x?needId=${NEED}`, 'GET', undefined, EMP))).json();
@@ -243,7 +243,7 @@ describe('проект под работодателя: лента и сдача
     const regen = await needProject(jsonRequest('/x', 'POST', {}, EMP), params({ id: NEED }));
     expect(regen.status).toBe(409);
 
-    // Кандидат начинает защиту сам (после согласия на запись) — активируется та же сессия, не вторая.
+    // Кандидат начинает защиту сам (после согласия на запись) – активируется та же сессия, не вторая.
     await prisma.consent.create({ data: { userId: 'u-p-be', kind: 'call_recording', version: CALL_RECORDING_CONSENT_VERSION } });
     const started = await startDefenseRoom('p-be', { mode: 'project', projectSubmissionId: subId }, getLlm({ candidateId: 'p-be' }), { loadSnapshot: async (url) => demoRepoSnapshot(url) });
     expect(started.sessionId).toBe(out.callSessionId);
@@ -252,7 +252,7 @@ describe('проект под работодателя: лента и сдача
     expect(await prisma.defenseRoomPlan.count({ where: { callSessionId: out.callSessionId } })).toBe(1);
   });
 
-  it('runner упал — failed с понятной причиной; повторная сдача разрешена, после срока — с пометкой late', async () => {
+  it('runner упал – failed с понятной причиной; повторная сдача разрешена, после срока – с пометкой late', async () => {
     const task = await upsertProjectTask({ companyId: 'demo-co-northstream', companyName: COMPANY }, 'demo-vac-be-m-1', { requiredCatalogIds: [], wishesText: null, visibility: 'open' });
     await makeCandidate('p-mid', 'backend', 'middle');
     await take(jsonRequest('/x', 'POST', undefined, cand('p-mid')), params({ id: task.id }));
@@ -260,7 +260,7 @@ describe('проект под работодателя: лента и сдача
     const done = await waitChecked((await res.json()).id, cand('p-mid'));
     expect(done.status).toBe('failed');
     expect(done.error).toMatch(/лимит времени/);
-    // Срок истёк — сдать можно, работодатель видит «после срока».
+    // Срок истёк – сдать можно, работодатель видит «после срока».
     await prisma.projectAssignment.updateMany({ where: { projectTaskId: task.id, candidateId: 'p-mid' }, data: { expiresAt: new Date(Date.now() - 1000) } });
     const again = await submit(jsonRequest('/x', 'POST', { repoUrl: 'https://github.com/demo/starter-only' }, cand('p-mid')), params({ id: task.id }));
     const second = await waitChecked((await again.json()).id, cand('p-mid'));
@@ -269,19 +269,19 @@ describe('проект под работодателя: лента и сдача
     expect(list.items.map((i: { late: boolean }) => i.late)).toEqual([true, false]);
   });
 
-  it('открытое задание: только своё направление и грейд не выше категории; без категории — Junior; без направления — 403', async () => {
+  it('открытое задание: только своё направление и грейд не выше категории; без категории – Junior; без направления – 403', async () => {
     const mid = (await prisma.projectTask.findUniqueOrThrow({ where: { vacancyId: 'demo-vac-be-m-1' } })).id;
     await makeCandidate('p-nocat', 'backend', null);
     await makeCandidate('p-nodir', null, null);
     const takeAs = async (who: string, id: string) => take(jsonRequest('/x', 'POST', undefined, cand(who)), params({ id }));
-    // Junior не берёт Middle; frontend не берёт backend; без категории — только Junior; без направления — ничего.
+    // Junior не берёт Middle; frontend не берёт backend; без категории – только Junior; без направления – ничего.
     expect((await takeAs('p-be', mid)).status).toBe(403);
     expect((await getTask(jsonRequest('/x', 'GET', undefined, cand('p-be')), params({ id: mid }))).status).toBe(403);
     expect((await takeAs('p-fe', taskId)).status).toBe(403);
     expect((await takeAs('p-nocat', mid)).status).toBe(403);
     expect((await takeAs('p-nocat', taskId)).status).toBe(200);
     expect((await takeAs('p-nodir', taskId)).status).toBe(403);
-    // Лента согласована: middle видит и Junior, и Middle; junior — без Middle; без направления — пусто.
+    // Лента согласована: middle видит и Junior, и Middle; junior – без Middle; без направления – пусто.
     const ids = async (who: string) => ((await (await feed(jsonRequest('/x', 'GET', undefined, cand(who)))).json()).items as { id: string }[]).map((i) => i.id);
     expect(await ids('p-mid')).toEqual(expect.arrayContaining([mid, taskId]));
     expect(await ids('p-be')).not.toContain(mid);
@@ -289,7 +289,7 @@ describe('проект под работодателя: лента и сдача
   });
 
   it('лента: своя подкатегория выше соседних того же направления; грейд не выше категории', async () => {
-    // У be-m-1 шаблон по умолчанию — первая подкатегория направления (backend.web-api); добавляем Middle под интеграции.
+    // У be-m-1 шаблон по умолчанию – первая подкатегория направления (backend.web-api); добавляем Middle под интеграции.
     await prisma.vacancy.create({
       data: { id: 'demo-vac-be-m-int', companyId: 'demo-co-northstream', title: 'Интеграции (Middle)', specialization: 'backend', grade: 'middle', subcategoryId: 'backend.integrations', salaryFrom: 150000, salaryTo: 200000, needs: [], stack: ['Node.js'] },
     });
@@ -303,7 +303,7 @@ describe('проект под работодателя: лента и сдача
     };
     await makePref('p-pref-int', 'backend.integrations');
     await makePref('p-pref-web', 'backend.web-api');
-    // Подкатегория только из онбординга (категории из теста с подкатегорией нет) — тоже работает.
+    // Подкатегория только из онбординга (категории из теста с подкатегорией нет) – тоже работает.
     await makeCandidate('p-onb-int', 'backend', 'middle');
     await prisma.candidate.update({ where: { id: 'p-onb-int' }, data: { subcategoryId: 'backend.integrations' } });
 
@@ -315,11 +315,11 @@ describe('проект под работодателя: лента и сдача
     expect(b.at(-1)).toBe('backend.integrations');
     expect(b.slice(0, -1).every((x) => x === 'backend.web-api')).toBe(true);
     expect((await subs('p-onb-int'))[0]).toBe('backend.integrations');
-    // Все три видят одно и то же множество (Junior и Middle своего направления) — порядок разный.
+    // Все три видят одно и то же множество (Junior и Middle своего направления) – порядок разный.
     expect([...a].sort()).toEqual([...b].sort());
   });
 
-  it('две параллельные сдачи одного задания: одна принята, вторая — 409', async () => {
+  it('две параллельные сдачи одного задания: одна принята, вторая – 409', async () => {
     await makeCandidate('p-par', 'backend', 'junior');
     expect((await take(jsonRequest('/x', 'POST', undefined, cand('p-par')), params({ id: taskId }))).status).toBe(200);
     const send = () => submit(jsonRequest('/x', 'POST', { repoUrl: 'https://github.com/demo/reference-solution' }, cand('p-par')), params({ id: taskId }));
@@ -340,7 +340,7 @@ describe('проект под работодателя: лента и сдача
     expect((await over.json()).error.code).toBe('project_limit');
   });
 
-  it('задание по приглашению: в ленте и по id — только приглашённому', async () => {
+  it('задание по приглашению: в ленте и по id – только приглашённому', async () => {
     const t = await upsertProjectTask({ companyId: 'demo-co-northstream', companyName: COMPANY }, 'demo-vac-fe-j-2', { requiredCatalogIds: [], wishesText: null, visibility: 'invited' });
     const before = await (await feed(jsonRequest('/x', 'GET', undefined, cand('p-fe')))).json();
     expect(before.items.map((i: { id: string }) => i.id)).not.toContain(t.id);
@@ -379,7 +379,7 @@ describe('проект под работодателя: лента и сдача
     expect(item.approachText).not.toContain('me@example.test');
     expect(item.repoUrl).toBeNull();
     expect(item.result.hiddenTests).toEqual([]);
-    // приглашение по сдаче подходом — обычное, созвон-защита не создаётся
+    // приглашение по сдаче подходом – обычное, созвон-защита не создаётся
     const before = defenseCalls.length;
     const inv = await inviteDefense(jsonRequest('/x', 'POST', { message: 'Понравился подход, обсудим детали на созвоне', salaryFrom: 100000, salaryTo: 130000 }, EMP), params({ id: sub.id }));
     expect(inv.status).toBe(201);

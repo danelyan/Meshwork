@@ -27,7 +27,7 @@ describe('webgl probe', () => {
     probe.ok = true;
     expect(hasWebGL()).toBe(true);
     probe.ok = false;
-    expect(hasWebGL()).toBe(true); // положительный — кэшируется
+    expect(hasWebGL()).toBe(true); // положительный – кэшируется
   });
 });
 

@@ -12,8 +12,8 @@ export const maxDuration = 180;
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST /api/call/{id}/finish — завершить созвон: слепой оценщик (3 прогона, медиана) строит карту
- * глубины; подтверждённые темы поднимают утверждения до platform. Повтор после 503 — пересчёт.
+ * POST /api/call/{id}/finish – завершить созвон: слепой оценщик (3 прогона, медиана) строит карту
+ * глубины; подтверждённые темы поднимают утверждения до platform. Повтор после 503 – пересчёт.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);

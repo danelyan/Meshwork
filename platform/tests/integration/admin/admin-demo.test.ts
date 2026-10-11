@@ -42,7 +42,7 @@ describe('демо-вход жюри в админку', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('кнопка даёт сессию owner без пароля; повторный вход — тот же сотрудник; вход пишется в журнал', async () => {
+  it('кнопка даёт сессию owner без пароля; повторный вход – тот же сотрудник; вход пишется в журнал', async () => {
     const cookie = await demoCookie();
     const me = await meGet(jsonRequest('/api/admin/auth/me', 'GET', undefined, cookie));
     expect(me.status).toBe(200);
@@ -53,7 +53,7 @@ describe('демо-вход жюри в админку', () => {
     expect(logins).toHaveLength(2);
   });
 
-  it('чтение доступно; изменение настроек и раскрытие ПДн — 403 без записи в журнал', async () => {
+  it('чтение доступно; изменение настроек и раскрытие ПДн – 403 без записи в журнал', async () => {
     const cookie = await demoCookie();
     expect((await settingsGet(jsonRequest('/api/admin/settings', 'GET', undefined, cookie))).status).toBe(200);
     const put = await settingPut(jsonRequest('/api/admin/settings/employer.dailyInvitationLimit', 'PUT', { value: 1, reason: 'проверка демо-входа' }, cookie), {

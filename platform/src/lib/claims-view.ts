@@ -5,11 +5,11 @@ import type { ClaimStatus, EvidenceLevel } from '@/server/claims/types';
 import { isLevel } from './labels';
 
 export interface CardClaim {
-  /** id сохранённого утверждения — нужен для POST /api/claims/[id]/[action] */
+  /** id сохранённого утверждения – нужен для POST /api/claims/[id]/[action] */
   id: string;
-  /** Каталожная формулировка — что проверим на созвоне. */
+  /** Каталожная формулировка – что проверим на созвоне. */
   statement: string;
-  /** Формулировка под цитату для кандидата; пусто — старая запись, показывается statement. */
+  /** Формулировка под цитату для кандидата; пусто – старая запись, показывается statement. */
   wording?: string;
   quote: string;
   sourceRef: string;
@@ -41,7 +41,7 @@ export function normalizeClaim(raw: unknown): CardClaim | null {
   };
 }
 
-/** Что показать кандидату крупно: формулировку под цитату, а у старых записей — каталожную. */
+/** Что показать кандидату крупно: формулировку под цитату, а у старых записей – каталожную. */
 export function shownWording(c: { statement: string; wording?: string | null }): string {
   return c.wording?.trim() || c.statement;
 }
@@ -62,7 +62,7 @@ export interface CardRecommendation {
 
 const GRADE_LABEL: Record<string, string> = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
 const gradeLabel = (g: string) => GRADE_LABEL[g.toLowerCase()] ?? g;
-/** Хвост причины рекомендации теста (server/recommend/test.ts) — отдельным списком, а не одной строкой. */
+/** Хвост причины рекомендации теста (server/recommend/test.ts) – отдельным списком, а не одной строкой. */
 const LACK_RE = /\s*Для Middle не хватает заявленных:\s*(.+?)\.?\s*$/u;
 
 export function normalizeRecommendation(raw: unknown, index: number): CardRecommendation | null {
@@ -75,7 +75,8 @@ export function normalizeRecommendation(raw: unknown, index: number): CardRecomm
       title: str(r.title) || 'Задание',
       meta: [str(r.family), r.grade ? gradeLabel(str(r.grade)) : ''].filter(Boolean).join(' · ') || undefined,
       reason: str(r.reason) || undefined,
-      // Задание банка — тема для практики: своей страницы у него нет (/projects/:id — задания компаний), ссылки не даём.
+      href: `/projects/${encodeURIComponent(r.taskId)}`,
+      cta: 'Открыть задание',
     };
   }
   if (typeof r.vacancyId === 'string') {

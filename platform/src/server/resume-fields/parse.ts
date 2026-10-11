@@ -1,6 +1,6 @@
-// lane resume-fields (R-C-01/02): распознавание полей профиля в резюме — ФИО, контакт, стаж, роли, софт-скиллы.
+// lane resume-fields (R-C-01/02): распознавание полей профиля в резюме – ФИО, контакт, стаж, роли, софт-скиллы.
 // Детерминированные правила, без LLM: одинаково работают на стенде с ключом и в демо без ключей (LLM_PROVIDER=stub).
-// У каждого поля — дословная строка-источник (quote) и её ref, как у утверждений claims.
+// У каждого поля – дословная строка-источник (quote) и её ref, как у утверждений claims.
 import { maskContacts } from '../collector/mask';
 import { normalizeContact } from '../contact';
 import type { DocLine, ExtractedDoc } from '../collector/types';
@@ -26,9 +26,9 @@ const NAME_WORD = /^[А-ЯЁA-Z][а-яёa-z]+(?:-[А-ЯЁA-Z][а-яёa-z]+)?$/u;
 const ROLE_WORD =
   /(разработчи|программист|инженер|архитектор|аналитик|тестировщик|developer|engineer|architect|analyst|\bqa\b|devops|\bsre\b|тимлид|team\s?lead|tech\s?lead|техлид|руководител|data\s?scientist|\bml\b|дизайнер|designer|менеджер|manager|стаж[её]р|intern|backend|frontend|fullstack|full-stack|бэкенд|фронтенд)/iu;
 const YEAR_RANGE =
-  /((?:19|20)\d{2})\s*[—–-]\s*((?:19|20)\d{2}|н\.\s?в\.|наст(?:оящее)?(?:\s*время)?|по\s+наст[а-я.]*(?:\s*время)?|сейчас|present|now|current)/giu;
+  /((?:19|20)\d{2})\s*[––-]\s*((?:19|20)\d{2}|н\.\s?в\.|наст(?:оящее)?(?:\s*время)?|по\s+наст[а-я.]*(?:\s*время)?|сейчас|present|now|current)/giu;
 
-/** Софт-скиллы — фиксированный словарь: наружу уходит только метка словаря, а не текст кандидата. */
+/** Софт-скиллы – фиксированный словарь: наружу уходит только метка словаря, а не текст кандидата. */
 export const SOFT_SKILLS: ReadonlyArray<{ label: string; re: RegExp }> = [
   { label: 'Наставничество', re: /наставни|ментор|mentor|онбординг\s+(?:новичк|стаж|джун)|обучал[аи]?\s+(?:новичк|стаж|джун|коллег)/iu },
   { label: 'Код-ревью и обратная связь', re: /ревью|code\s?review/iu },
@@ -44,14 +44,14 @@ export const SOFT_SKILLS: ReadonlyArray<{ label: string; re: RegExp }> = [
 const visible = (doc: ExtractedDoc): DocLine[] => doc.lines.filter((l) => !l.hidden && l.text.trim());
 const strip = (s: string) => s.replace(/^[#>*\-•\s]+/, '').trim();
 
-/** «Дмитрий Рябинин — Backend…» / «ФИО: Иванов Иван Иванович» → имя; 2–3 слова с заглавной. */
+/** «Дмитрий Рябинин – Backend…» / «ФИО: Иванов Иван Иванович» → имя; 2–3 слова с заглавной. */
 function nameFrom(lines: DocLine[]): ParsedResumeField | null {
   const candidates = [
     ...lines.flatMap((l) => {
-      const m = /^(?:фио|имя)\s*[:—-]\s*(.+)$/iu.exec(strip(l.text));
+      const m = /^(?:фио|имя)\s*[:–-]\s*(.+)$/iu.exec(strip(l.text));
       return m ? [{ l, part: m[1] as string }] : [];
     }),
-    ...lines.slice(0, 3).map((l) => ({ l, part: strip(l.text).split(/\s+[—–|-]\s+|,|\s·\s/u)[0] ?? '' })),
+    ...lines.slice(0, 3).map((l) => ({ l, part: strip(l.text).split(/\s+[––|-]\s+|,|\s·\s/u)[0] ?? '' })),
   ];
   for (const { l, part } of candidates) {
     const words = part.replace(/^Демо:\s*/u, '').trim().split(/\s+/);
@@ -68,7 +68,7 @@ function contactFrom(raw: RawContactLine[]): ParsedResumeField | null {
     const tokens = [
       ...(l.text.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []),
       ...(l.text.match(/(?:https?:\/\/)?(?:t\.me|telegram\.me)\/[A-Za-z0-9_]{5,32}/gi) ?? []),
-      ...(l.text.match(/(?:telegram|телеграм|tg|тг)\s*[:—-]?\s*@[A-Za-z0-9_]{5,32}/giu)?.map((t) => t.slice(t.indexOf('@'))) ?? []),
+      ...(l.text.match(/(?:telegram|телеграм|tg|тг)\s*[:–-]?\s*@[A-Za-z0-9_]{5,32}/giu)?.map((t) => t.slice(t.indexOf('@'))) ?? []),
     ];
     for (const t of tokens) {
       const c = normalizeContact(t);
@@ -91,7 +91,7 @@ function explicitYears(text: string): number | null {
   return null;
 }
 
-/** Стаж: явная фраза («опыт 5 лет», «полтора года пишу») или объединение периодов «2020 — 2022». */
+/** Стаж: явная фраза («опыт 5 лет», «полтора года пишу») или объединение периодов «2020 – 2022». */
 function experienceFrom(lines: DocLine[], now: Date): ParsedResumeField | null {
   for (const l of lines) {
     const y = explicitYears(l.text);
@@ -115,7 +115,7 @@ function experienceFrom(lines: DocLine[], now: Date): ParsedResumeField | null {
 
 /**
  * Роль без компании и периода: убираем «кавычки» с названием, скобки, « в …»/« at …», контакты.
- * null — в остатке нет слова должности. Используется и для того, что кандидат ввёл сам (employer/privacy).
+ * null – в остатке нет слова должности. Используется и для того, что кандидат ввёл сам (employer/privacy).
  */
 export function cleanRole(raw: string): string | null {
   let s = raw
@@ -124,7 +124,7 @@ export function cleanRole(raw: string): string | null {
     .replace(YEAR_RANGE, ' ')
     .replace(/\s+(?:в|во|at|@)\s+.*$/iu, '');
   s = maskContacts(s).text.replace(/\[скрыто\]/g, ' ');
-  s = s.replace(/[|·]+/g, ' ').replace(/\s+/g, ' ').replace(/^[\s,;:—–-]+|[\s,;:—–-]+$/gu, '').trim();
+  s = s.replace(/[|·]+/g, ' ').replace(/\s+/g, ' ').replace(/^[\s,;:––-]+|[\s,;:––-]+$/gu, '').trim();
   if (!s || s.length > 60 || !ROLE_WORD.test(s)) return null;
   return s;
 }
@@ -140,12 +140,12 @@ function rolesFrom(lines: DocLine[]): ParsedResumeField | null {
   for (const l of lines) {
     if (!l.text.match(YEAR_RANGE)) continue;
     const body = strip(l.text).replace(/\([^)]*\)/g, ' ').replace(YEAR_RANGE, ' ');
-    for (const seg of body.split(/,|\s[—–|]\s/u)) push(cleanRole(seg), l);
+    for (const seg of body.split(/,|\s[––|]\s/u)) push(cleanRole(seg), l);
   }
-  // Заголовок резюме «Имя — Должность, грейд», если периодов с должностями нет.
+  // Заголовок резюме «Имя – Должность, грейд», если периодов с должностями нет.
   if (out.length === 0) {
     for (const l of lines.slice(0, 3)) {
-      const parts = strip(l.text).split(/\s+[—–|]\s+/u);
+      const parts = strip(l.text).split(/\s+[––|]\s+/u);
       for (const seg of parts.slice(1).flatMap((p) => p.split(/,|\s·\s/u))) push(cleanRole(seg), l);
     }
   }
@@ -166,7 +166,7 @@ function softSkillsFrom(lines: DocLine[]): ParsedResumeField | null {
   return { key: 'softSkills', value: out, quote: quotes.map((q) => q.text).join('\n'), sourceRef: quotes.map((q) => q.ref).join(',') };
 }
 
-/** Все распознанные поля резюме. rawContacts — немаскированные строки с контактами (только при свежей загрузке). */
+/** Все распознанные поля резюме. rawContacts – немаскированные строки с контактами (только при свежей загрузке). */
 export function parseResumeFields(doc: ExtractedDoc, rawContacts: RawContactLine[] = [], now = new Date()): ParsedResumeField[] {
   const lines = visible(doc);
   return [nameFrom(lines), contactFrom(rawContacts), experienceFrom(lines, now), rolesFrom(lines), softSkillsFrom(lines)].filter(

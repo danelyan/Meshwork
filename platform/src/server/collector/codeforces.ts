@@ -4,7 +4,7 @@ import { getJson } from './http-json';
 import type { ExtractedDoc } from './types';
 
 /**
- * Codeforces API: `user.info`, `user.rating`. Правило API — не чаще 1 запроса в 2 с:
+ * Codeforces API: `user.info`, `user.rating`. Правило API – не чаще 1 запроса в 2 с:
  * общий на процесс троттлинг (очередь промисов).
  */
 export const CF_API = 'https://codeforces.com/api';
@@ -77,7 +77,7 @@ export async function fetchCodeforces(handle: string): Promise<ExtractedDoc> {
       ref: `${p}#info:l1`,
       text:
         user.rating !== undefined
-          ? `Codeforces: ${user.handle}, рейтинг ${user.rating} (${user.rank ?? '—'}), максимум ${user.maxRating ?? user.rating} (${user.maxRank ?? '—'})`
+          ? `Codeforces: ${user.handle}, рейтинг ${user.rating} (${user.rank ?? '–'}), максимум ${user.maxRating ?? user.rating} (${user.maxRank ?? '–'})`
           : `Codeforces: ${user.handle}, без рейтинга`,
     },
     { ref: `${p}#info:l2`, text: `Зарегистрирован ${day(user.registrationTimeSeconds)}` },

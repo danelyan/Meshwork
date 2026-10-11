@@ -5,7 +5,7 @@ import { createContext, type ReactNode, useContext, useState } from 'react';
 import { HEAD_MOTION_MODES, type HeadMotionMode, isHeadMotionMode } from '@/components/avatar/head-motion';
 import { Field } from '@/components/ui';
 
-/** Движение наших голов — общее для всех панелей; по умолчанию то же, что в чате (слежение включено). */
+/** Движение наших голов – общее для всех панелей; по умолчанию то же, что в чате (слежение включено). */
 const DEMO_DEFAULT: HeadMotionMode = 'alive';
 
 const MotionContext = createContext<{ motion: HeadMotionMode; setMotion: (m: HeadMotionMode) => void }>({

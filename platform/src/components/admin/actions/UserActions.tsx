@@ -18,7 +18,7 @@ export interface UserActionsProps {
 export function UserActions({ userId, block: initial, can }: UserActionsProps) {
   const [block, setBlock] = useState(initial);
   const [erased, setErased] = useState(false);
-  if (erased) return <p className={styles.muted}>Аккаунт удалён по запросу субъекта ПДн. Запись — в журнале.</p>;
+  if (erased) return <p className={styles.muted}>Аккаунт удалён по запросу субъекта ПДн. Запись – в журнале.</p>;
   const blocked = blockedNow(block);
   const onBlock = (r: unknown) => {
     const b = (r as { block: { blockedAt: string | null; blockedUntil: string | null } }).block;
@@ -34,7 +34,7 @@ export function UserActions({ userId, block: initial, can }: UserActionsProps) {
           <ReasonAction label="Заблокировать" danger withUntil url={`/api/admin/users/${userId}/block`} method="POST" description="Вход будет закрыт, все активные сессии пользователя отозваны сразу. Кандидат выпадет из подборки и поиска." onDone={onBlock} />
         )}
         {blocked && can.unblock && (
-          <ReasonAction label="Разблокировать" url={`/api/admin/users/${userId}/block`} method="DELETE" description="Вход снова откроется. Старые сессии не вернутся — пользователь войдёт заново." onDone={onBlock} />
+          <ReasonAction label="Разблокировать" url={`/api/admin/users/${userId}/block`} method="DELETE" description="Вход снова откроется. Старые сессии не вернутся – пользователь войдёт заново." onDone={onBlock} />
         )}
         {can.erase && (
           <ReasonAction

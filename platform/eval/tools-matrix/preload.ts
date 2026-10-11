@@ -1,4 +1,4 @@
-// `server-only` подставляет Next.js; вне него пакета нет (в vitest — alias, vitest.config.mts). Здесь — то же самое для tsx.
+// `server-only` подставляет Next.js; вне него пакета нет (в vitest – alias, vitest.config.mts). Здесь – то же самое для tsx.
 // Импортировать первым, до модулей из src/.
 import Module from 'node:module';
 import { join } from 'node:path';

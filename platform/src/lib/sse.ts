@@ -47,11 +47,11 @@ export interface SseParser<E = AgentEvent> {
 }
 
 export interface SseParserOptions {
-  /** Каждый завершённый кадр (телеметрия чата): тип события (`invalid` — мусор), длина в символах, heartbeat `: ping`. */
+  /** Каждый завершённый кадр (телеметрия чата): тип события (`invalid` – мусор), длина в символах, heartbeat `: ping`. */
   onFrame?: (type: string, bytes: number, heartbeat: boolean) => void;
 }
 
-/** `types` — допустимые типы событий (по умолчанию консультанта; помощник работодателя передаёт свои). */
+/** `types` – допустимые типы событий (по умолчанию консультанта; помощник работодателя передаёт свои). */
 export function createSseParser<E = AgentEvent>(types: ReadonlySet<string> = EVENT_TYPES, opts: SseParserOptions = {}): SseParser<E> {
   let buffer = '';
   const { onFrame } = opts;

@@ -1,13 +1,13 @@
-// Завести сотрудника админки (E-08, ADR 0009). Единственный способ создать первого owner — на сервере:
+// Завести сотрудника админки (E-08, ADR 0009). Единственный способ создать первого owner – на сервере:
 //
 //   printf '%s' "$PASS" | npx tsx scripts/admin-create.ts --email owner@example.ru --name "Иван" --role owner
 //   ADMIN_PASSWORD=… npx tsx scripts/admin-create.ts --email … --name … --role moderator
 //
-// Пароль — из stdin или env ADMIN_PASSWORD, никогда из аргументов (их видно в `ps` и истории shell).
+// Пароль – из stdin или env ADMIN_PASSWORD, никогда из аргументов (их видно в `ps` и истории shell).
 // TOTP сотрудник настраивает при первом входе на /admin/login.
-// Восстановление доступа (потерян телефон или сменён SESSION_SECRET): `--reset-totp --email …` — сбросить 2FA
+// Восстановление доступа (потерян телефон или сменён SESSION_SECRET): `--reset-totp --email …` – сбросить 2FA
 // и отозвать сессии; при следующем входе будет выдан новый секрет. Оба действия пишутся в AdminAuditLog (actor = null).
-// БД — DATABASE_URL или platform/.env (scripts/load-env.mjs).
+// БД – DATABASE_URL или platform/.env (scripts/load-env.mjs).
 import { PrismaClient } from '@prisma/client';
 
 import { PASSWORD_MAX, PASSWORD_MIN, hashPassword } from '../src/server/auth/password';
@@ -63,7 +63,7 @@ async function main(): Promise<void> {
       return s;
     });
     const url = new URL(process.env.DATABASE_URL ?? 'postgresql://unset');
-    console.log(`создан ${role} ${email} (${staff.id}) в БД ${url.hostname}:${url.port}${url.pathname}; вход — /admin/login, TOTP настраивается при первом входе`);
+    console.log(`создан ${role} ${email} (${staff.id}) в БД ${url.hostname}:${url.port}${url.pathname}; вход – /admin/login, TOTP настраивается при первом входе`);
   } finally {
     await db.$disconnect();
   }

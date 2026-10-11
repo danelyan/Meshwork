@@ -14,7 +14,7 @@ const smooth = (e0: number, e1: number, x: number) => {
 };
 const gauss = (d: number, s: number) => Math.exp(-(d * d) / (2 * s * s));
 
-/** Радиальная добавка рельефа лица в точке единичной сферы (x, y, z), лицо — +Z. */
+/** Радиальная добавка рельефа лица в точке единичной сферы (x, y, z), лицо – +Z. */
 function relief(x: number, y: number, z: number): number {
   const front = smooth(0.35, 0.9, z);
   let d = 0;
@@ -51,7 +51,7 @@ function sculpt(x: number, y: number, z: number): [number, number, number] {
   const low = smooth(0.15, -0.95, y);
   X *= 1 - 0.3 * low;
   if (z > 0) Z *= 1 - 0.12 * low;
-  // лицо — плоскости, а не шар: бока лица отступают назад
+  // лицо – плоскости, а не шар: бока лица отступают назад
   if (z > 0) Z *= 1 - 0.1 * smooth(0.3, 0.75, Math.abs(x)) * smooth(0.1, 0.6, z) * smooth(0.45, -0.1, y);
   // затылок чуть выше и объёмнее
   if (z < 0 && y > 0) Y *= 1 + 0.06 * -z;
@@ -89,7 +89,7 @@ export interface HeadGeometries {
   neck: BufferGeometry;
 }
 
-/** Атрибут `gridUv` — копия uv для шейдера сетки (не зависит от того, включает ли three свой USE_UV). */
+/** Атрибут `gridUv` – копия uv для шейдера сетки (не зависит от того, включает ли three свой USE_UV). */
 function withGridUv(g: BufferGeometry, scaleU = 1, scaleV = 1): BufferGeometry {
   const uv = g.getAttribute('uv') as BufferAttribute;
   const arr = new Float32Array(uv.count * 2);
@@ -103,7 +103,7 @@ function withGridUv(g: BufferGeometry, scaleU = 1, scaleV = 1): BufferGeometry {
 
 export function buildHeadGeometry(widthSegments = 96, heightSegments = 72): HeadGeometries {
   const head = new SphereGeometry(1, widthSegments, heightSegments);
-  head.rotateY(-Math.PI / 2); // шов сферы — на затылок
+  head.rotateY(-Math.PI / 2); // шов сферы – на затылок
   const pos = head.getAttribute('position') as BufferAttribute;
   const base = new Float32Array(pos.count * 3);
   const open = new Float32Array(pos.count * 3);
@@ -117,7 +117,7 @@ export function buildHeadGeometry(widthSegments = 96, heightSegments = 72): Head
   head.setAttribute('position', new Float32BufferAttribute(base, 3));
   head.computeVertexNormals();
 
-  // нормали открытого рта — чтобы впадина темнела при свете
+  // нормали открытого рта – чтобы впадина темнела при свете
   const morph = new BufferGeometry();
   morph.setIndex(head.getIndex());
   morph.setAttribute('position', new Float32BufferAttribute(open, 3));
@@ -133,7 +133,7 @@ export function buildHeadGeometry(widthSegments = 96, heightSegments = 72): Head
   withGridUv(head);
 
   const neck = new CylinderGeometry(0.34, 0.42, 1.1, 64, 12, true);
-  neck.rotateY(Math.PI); // шов цилиндра — назад
+  neck.rotateY(Math.PI); // шов цилиндра – назад
   neck.translate(0, -1.02, -0.12);
   // клетка шеи примерно того же размера, что на голове (окружность шеи вдвое меньше)
   withGridUv(neck, 0.55, 0.36);

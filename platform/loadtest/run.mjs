@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // Нагрузочный прогон только на чтение, без зависимостей (Node 20+, встроенный fetch).
 // Запуск: LOAD_SITE_COOKIE='<значение куки site_access>' node platform/loadtest/run.mjs out.json
-// Переменные: BASE_URL, STAGES ("10:120,25:120,50:120" = VU:секунды), WARMUP ("5:60", "" — без прогрева),
+// Переменные: BASE_URL, STAGES ("10:120,25:120,50:120" = VU:секунды), WARMUP ("5:60", "" – без прогрева),
 //   THINK_MIN/THINK_MAX (мс, 1000/4000), ABORT_RATE (0.05), EMPLOYER_ID (demo-employer), VACANCY_ID (demo-vac-be-m-1),
 //   LOAD_SITE_COOKIE (значение куки site_access; без неё закрытый стенд отвечает 401).
 // Пишет в БД стенда: только при первом входе демо-работодателя, если нет согласий (Consent: оферта и обязательство
-// по данным; ensureConsents идемпотентен). Сессия — подписанная кука, строк сессии в БД нет. Поиск и подборка — чтение.
+// по данным; ensureConsents идемпотентен). Сессия – подписанная кука, строк сессии в БД нет. Поиск и подборка – чтение.
 
 const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 const COOKIE_NAME = 'site_access';
@@ -120,7 +120,7 @@ async function vu(stats, stopAt) {
   }
 }
 
-/** Одна ступень; false — прервано из-за доли ошибок выше порога. */
+/** Одна ступень; false – прервано из-за доли ошибок выше порога. */
 async function runStage(label, { vus, sec }) {
   const stats = new Stats();
   const stopAt = Date.now() + sec * 1000;

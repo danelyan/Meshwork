@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * Демо-резюме текущего демо-кандидата (PDF) — чтобы жюри не искало файлы на диске.
+ * Демо-резюме текущего демо-кандидата (PDF) – чтобы жюри не искало файлы на диске.
  * Только при DEMO_LOGIN и только для isDemo; чужого резюме по параметру не отдаём.
- * `?info=1` — метаданные (имя файла, ссылка для вставки) вместо файла.
+ * `?info=1` – метаданные (имя файла, ссылка для вставки) вместо файла.
  */
 export const GET = withErrors(async (req: Request) => {
   if (!getEnv().DEMO_LOGIN) throw new AppError('forbidden', 'Демо-вход выключен', 403);

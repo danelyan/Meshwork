@@ -31,7 +31,7 @@ export function Transcript({ entries, selfRole }: { entries: TranscriptEntry[]; 
 
 const CRITERION = { depth: 'Глубина', why: '«Почему так»', boundary: 'Граница знаний', completion: 'Доведение' } as const;
 
-/** Итог защиты: балл по каждому вопросу (карта «вопрос/файл → балл»), общий — среднее; флаги, пояснение. Без вердикта о подлинности. */
+/** Итог защиты: балл по каждому вопросу (карта «вопрос/файл → балл»), общий – среднее; флаги, пояснение. Без вердикта о подлинности. */
 export function VerdictView({ verdict }: { verdict: DefenseRoomVerdict }) {
   const exact = verdict.totalMean ?? verdict.total;
   const items = verdict.items ?? [];

@@ -28,7 +28,7 @@ export interface CandidateActionsProps {
 
 /**
  * Действия в карточке кандидата (E-08 фаза 3): скрыть/вернуть в поиске, сбросить кулдаун теста (R-C-09).
- * Категорию и грейд админ не меняет (R-C-06) — такой кнопки нет намеренно.
+ * Категорию и грейд админ не меняет (R-C-06) – такой кнопки нет намеренно.
  */
 export function CandidateActions({ candidateId, hiddenByModerator: initialHidden, can }: CandidateActionsProps) {
   const [hidden, setHidden] = useState(initialHidden);

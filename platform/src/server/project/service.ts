@@ -20,7 +20,7 @@ import { loadCatalog } from '../recommend/evidence';
 import { downloadGithubTarball, parseGithubRepoUrl, type GithubRepo } from '../runner/client';
 import type { Grade as CategoryGrade, Specialization } from '../types';
 
-/** Грейд в модуле project: junior | middle | senior (Senior — ADR 0003 «Дополнение 16:15»). */
+/** Грейд в модуле project: junior | middle | senior (Senior – ADR 0003 «Дополнение 16:15»). */
 type Grade = PrismaGrade;
 
 import { readTarGz, writeZip } from './archive';
@@ -81,7 +81,7 @@ export async function syncTemplates(force = false): Promise<void> {
       image: m.image,
       timeBudgetMin: m.timeBudgetMin,
     };
-    // Senior-шаблоны пишутся наравне с остальными: enum Grade с senior — миграция 20261010181000_grade_senior.
+    // Senior-шаблоны пишутся наравне с остальными: enum Grade с senior – миграция 20261010181000_grade_senior.
     await prisma.projectTemplate.upsert({ where: { id: m.id }, update: data, create: { id: m.id, ...data } });
   }
   synced = true;
@@ -125,7 +125,7 @@ export function listTemplateViews(filter: { specialization?: string; grade?: str
     .map(templateView);
 }
 
-/** Порядок подкатегорий направления (lib/directions): без подкатегории берём шаблон первой — Web API, UI-приложение …, а не первой по алфавиту. */
+/** Порядок подкатегорий направления (lib/directions): без подкатегории берём шаблон первой – Web API, UI-приложение …, а не первой по алфавиту. */
 const SUB_ORDER = new Map(SUBCATEGORIES.map((s) => [s.id, s.order]));
 
 function pickTemplate(spec: string, grade: string, subcategoryId?: string | null, hidden: ReadonlySet<string> = new Set()): LoadedTemplate | null {
@@ -192,7 +192,7 @@ export async function getEmployerTask(companyId: string, vacancyId: string): Pro
 
 /**
  * Создать или перегенерировать задание потребности. Перегенерация после первого сабмита запрещена (409):
- * условие поменялось бы у тех, кто уже сдал. Шаблон — указанный или первый под направление/грейд.
+ * условие поменялось бы у тех, кто уже сдал. Шаблон – указанный или первый под направление/грейд.
  */
 export async function upsertProjectTask(
   ctx: { companyId: string; companyName: string },
@@ -228,7 +228,7 @@ export async function upsertProjectTask(
     wishes: input.wishesText,
   };
   const [rawSpec, rubric] = await Promise.all([generateSpec(specCtx, [ctx.companyName], { contractMd: readContract(template) }), composeRubric(required, input.wishesText)]);
-  // Фильтр пересказа контракта мог выбросить все требования модели — тогда показываем критерии рубрики.
+  // Фильтр пересказа контракта мог выбросить все требования модели – тогда показываем критерии рубрики.
   const spec = fillRequirementsFromRubric(rawSpec, maskEmployer(rubric.criteria, [ctx.companyName]));
   const data = {
     templateId: m.id,
@@ -267,7 +267,7 @@ async function candidateScope(candidateId: string): Promise<CandidateScope> {
 
 const GRADE_ORDER: Grade[] = ['junior', 'middle', 'senior'];
 
-/** Грейды открытых заданий, доступные кандидату: не выше категории из теста; без категории — только Junior. */
+/** Грейды открытых заданий, доступные кандидату: не выше категории из теста; без категории – только Junior. */
 function allowedGrades(scope: CandidateScope): Grade[] {
   if (!scope.grade) return ['junior'];
   return GRADE_ORDER.slice(0, GRADE_ORDER.indexOf(scope.grade) + 1);
@@ -354,7 +354,7 @@ async function myState(candidateId: string, taskIds: string[], now = new Date())
 
 /**
  * Подкатегория кандидата для сортировки ленты: подтверждённая категория (последняя), иначе выбранная в
- * онбординге (Candidate.subcategoryId). Ничего нет — null, лента сортируется только по направлению.
+ * онбординге (Candidate.subcategoryId). Ничего нет – null, лента сортируется только по направлению.
  */
 export async function preferredSubcategoryId(candidateId: string): Promise<string | null> {
   const [cat, cand] = await Promise.all([
@@ -373,10 +373,10 @@ export function feedRank(item: { my: { taken: boolean }; subcategoryId: string |
 }
 
 /**
- * Лента (ADR 0003, п. 6): открытые задания направления кандидата (из теста, иначе заявленного), грейд —
- * по категории из теста, не выше; задания по приглашению — только приглашённым. Порядок — feedRank:
+ * Лента (ADR 0003, п. 6): открытые задания направления кандидата (из теста, иначе заявленного), грейд –
+ * по категории из теста, не выше; задания по приглашению – только приглашённым. Порядок – feedRank:
  * подкатегория кандидата (opts.preferredSubcategoryId, см. preferredSubcategoryId) важнее соседних
- * подкатегорий того же направления; внутри уровня — новые выше.
+ * подкатегорий того же направления; внутри уровня – новые выше.
  */
 export async function listFeed(candidateId: string, opts: { preferredSubcategoryId?: string | null } = {}): Promise<{ items: FeedItem[]; scope: CandidateScope; limit: { maxActive: number; active: number } }> {
   const scope = await candidateScope(candidateId);
@@ -385,7 +385,7 @@ export async function listFeed(candidateId: string, opts: { preferredSubcategory
     where: {
       vacancy: { archivedAt: null },
       OR: [
-        // Открытые — только своего направления и грейда не выше категории; без направления — ничего открытого.
+        // Открытые – только своего направления и грейда не выше категории; без направления – ничего открытого.
         ...(scope.specialization ? [{ visibility: 'open' as const, specialization: scope.specialization, grade: { in: allowedGrades(scope) } }] : []),
         { vacancyId: { in: invitedVacancies } },
         { assignments: { some: { candidateId } } },
@@ -411,7 +411,7 @@ async function countActive(candidateId: string, now = new Date(), tx: Prisma.Tra
 
 /**
  * Задание доступно кандидату: уже взятое; по приглашению на эту потребность; открытое (потребность не в
- * архиве) своего направления и грейда не выше категории из теста (без категории — только Junior).
+ * архиве) своего направления и грейда не выше категории из теста (без категории – только Junior).
  */
 async function loadAccessibleTask(candidateId: string, taskId: string): Promise<TaskWithTemplate> {
   const t = await prisma.projectTask.findUnique({ where: { id: taskId }, include: { vacancy: { select: { archivedAt: true } } } });
@@ -422,32 +422,32 @@ async function loadAccessibleTask(candidateId: string, taskId: string): Promise<
   if (t.visibility === 'invited') {
     const inv = await prisma.invitation.findFirst({ where: { candidateId, vacancyId: t.vacancyId }, select: { id: true } });
     if (!inv) throw errors.notFound('Задание не найдено');
-    // Приглашение — решение работодателя: направление и грейд не проверяем.
+    // Приглашение – решение работодателя: направление и грейд не проверяем.
     return t;
   }
   const scope = await candidateScope(candidateId);
-  if (!scope.specialization) throw errors.forbidden('Сначала выбери направление — открытые задания подбираются по нему');
+  if (!scope.specialization) throw errors.forbidden('Сначала выбери направление – открытые задания подбираются по нему');
   if (t.specialization !== scope.specialization) throw errors.forbidden('Задание другого направления');
   if (!allowedGrades(scope).includes(t.grade)) {
-    throw errors.forbidden(scope.grade ? 'Грейд задания выше твоей категории' : 'Пока нет категории из теста — доступны только задания Junior');
+    throw errors.forbidden(scope.grade ? 'Грейд задания выше твоей категории' : 'Пока нет категории из теста – доступны только задания Junior');
   }
   return t;
 }
 
-/** Взять задание: идемпотентно; лимит активных — PROJECT_MAX_ACTIVE (под advisory-lock кандидата). */
+/** Взять задание: идемпотентно; лимит активных – PROJECT_MAX_ACTIVE (под advisory-lock кандидата). */
 export async function takeTask(candidateId: string, taskId: string, now = new Date()): Promise<{ taskId: string; expiresAt: string; active: number; maxActive: number }> {
   const t = await loadAccessibleTask(candidateId, taskId);
   const days = t.deadlineDays ?? DEFAULT_DEADLINE_DAYS;
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`project-take:${candidateId}`}))`;
     const existing = await tx.projectAssignment.findUnique({ where: { projectTaskId_candidateId: { projectTaskId: taskId, candidateId } } });
-    // Уже взято — срок не продлевается повторным «взять»: сдать после срока можно, но с пометкой late.
+    // Уже взято – срок не продлевается повторным «взять»: сдать после срока можно, но с пометкой late.
     if (existing) {
       return { taskId, expiresAt: existing.expiresAt.toISOString(), active: await countActive(candidateId, now, tx), maxActive: PROJECT_MAX_ACTIVE };
     }
     const active = await countActive(candidateId, now, tx);
     if (active >= PROJECT_MAX_ACTIVE) {
-      throw new AppError('project_limit', `Одновременно можно держать не больше ${PROJECT_MAX_ACTIVE} несданных заданий — сдай одно из взятых`, 429, { maxActive: PROJECT_MAX_ACTIVE, active });
+      throw new AppError('project_limit', `Одновременно можно держать не больше ${PROJECT_MAX_ACTIVE} несданных заданий – сдай одно из взятых`, 429, { maxActive: PROJECT_MAX_ACTIVE, active });
     }
     const expiresAt = new Date(now.getTime() + days * DAY_MS);
     await tx.projectAssignment.upsert({
@@ -472,7 +472,7 @@ export async function getTaskForCandidate(candidateId: string, taskId: string): 
   const subs = await prisma.projectSubmission.findMany({ where: { candidateId, projectTaskId: taskId }, orderBy: { submittedAt: 'desc' } });
   return {
     ...feedItem(t, invited, my),
-    // Контракт из условия (снимок на момент генерации); у старых заданий его нет — с диска.
+    // Контракт из условия (снимок на момент генерации); у старых заданий его нет – с диска.
     contractMd: (t.specJson as unknown as Partial<StoredSpec>).contractMd ?? readContract(requireTemplate(t.templateId)),
     skeletonUrl: `/api/project-tasks/${encodeURIComponent(t.id)}/skeleton.zip`,
     submissions: subs.map(candidateSubmissionView),
@@ -514,7 +514,7 @@ export interface CandidateSubmissionView {
   id: string;
   taskId: string;
   status: ProjectSubmissionStatus;
-  /** code — репозиторий; approach — текст подхода (repoUrl пустой). */
+  /** code – репозиторий; approach – текст подхода (repoUrl пустой). */
   kind: 'code' | 'approach';
   approachText: string | null;
   repoUrl: string;
@@ -522,7 +522,7 @@ export interface CandidateSubmissionView {
   submittedAt: string;
   checkedAt: string | null;
   error: string | null;
-  /** Кандидату — без имён скрытых тестов (они раскрывают набор). */
+  /** Кандидату – без имён скрытых тестов (они раскрывают набор). */
   result: Omit<ResultJson, 'hiddenTests'> | null;
 }
 
@@ -554,7 +554,7 @@ export async function resolveHeadSha(repo: GithubRepo): Promise<string> {
   const { text } = await getText(`https://api.github.com/repos/${repo.owner}/${repo.repo}/commits/HEAD`, {
     headers: { ...githubHeaders(), accept: 'application/vnd.github.sha' },
     source: 'GitHub',
-    notFound: 'Репозиторий не найден или приватный — нужен публичный репозиторий GitHub',
+    notFound: 'Репозиторий не найден или приватный – нужен публичный репозиторий GitHub',
     maxBytes: 1024,
   });
   const sha = text.trim().toLowerCase();
@@ -563,11 +563,11 @@ export async function resolveHeadSha(repo: GithubRepo): Promise<string> {
 }
 
 export interface SubmitDeps {
-  /** false — не запускать проверку в фоне (тесты вызывают processSubmission сами). */
+  /** false – не запускать проверку в фоне (тесты вызывают processSubmission сами). */
   background?: boolean;
 }
 
-/** Сервис проверки не ответил (503 от runner) — сбой не по вине кандидата. Текст хранится в ProjectSubmission.error. */
+/** Сервис проверки не ответил (503 от runner) – сбой не по вине кандидата. Текст хранится в ProjectSubmission.error. */
 export const RUNNER_UNAVAILABLE_ERROR = 'Сервис проверки недоступен, попробуй позже.';
 /** Потолок всех сдач задания вместе с незасчитанными: пока сервис проверки лежит, сдачи не идут без конца. */
 export const MAX_SUBMISSION_ROWS_PER_TASK = MAX_SUBMISSIONS_PER_TASK * 3;
@@ -575,7 +575,7 @@ export const MAX_SUBMISSION_ROWS_PER_TASK = MAX_SUBMISSIONS_PER_TASK * 3;
 /**
  * Сдачи, которые идут в лимит MAX_SUBMISSIONS_PER_TASK: все, кроме упавших из-за недоступного сервиса проверки.
  * Остальные причины failed (таймаут, архив, структура проекта, прочие сбои) по сохранённым данным от ошибок
- * кандидата надёжно не отличить — они засчитываются, как раньше.
+ * кандидата надёжно не отличить – они засчитываются, как раньше.
  */
 export function countedSubmissions(prev: readonly { status: ProjectSubmissionStatus; error: string | null }[]): number {
   return prev.filter((p) => !(p.status === 'failed' && p.error === RUNNER_UNAVAILABLE_ERROR)).length;
@@ -614,16 +614,16 @@ export async function submitProject(candidateId: string, taskId: string, input: 
   if (!repo) throw new AppError('bad_request', 'Нужна ссылка на публичный репозиторий GitHub: https://github.com/<владелец>/<репозиторий>', 400);
   const repoUrl = `https://github.com/${repo.owner}/${repo.repo}`;
   const runner = getProjectRunner();
-  // Ранний отказ без сети; окончательная проверка — ниже под блокировкой.
+  // Ранний отказ без сети; окончательная проверка – ниже под блокировкой.
   await assertCanSubmit(prisma, candidateId, taskId);
-  // Сеть — до транзакции, чтобы не держать блокировку на запросе к GitHub.
+  // Сеть – до транзакции, чтобы не держать блокировку на запросе к GitHub.
   const headSha = input.commitSha ?? (runner.mode === 'stub' ? null : await resolveHeadSha(repo));
   const sub = await prisma.$transaction(async (tx) => {
     // Две параллельные сдачи одного задания: вторая ждёт первую и получает 409 «ещё проверяется».
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`project-submit:${candidateId}:${taskId}`}))`;
     const prevCount = await assertCanSubmit(tx, candidateId, taskId);
     const commitSha = headSha ?? createHash('sha1').update(`${repoUrl}#${prevCount}`).digest('hex');
-    // Срок истёк — сдать можно, но работодатель видит пометку «после срока».
+    // Срок истёк – сдать можно, но работодатель видит пометку «после срока».
     const late = assignment.expiresAt.getTime() < Date.now();
     const created = await tx.projectSubmission.create({ data: { projectTaskId: taskId, candidateId, repoUrl, commitSha, aiLogText: input.aiLogText, late } });
     await tx.projectAssignment.update({ where: { id: assignment.id }, data: { status: 'submitted' } });
@@ -639,7 +639,7 @@ const FAIL_REASON_RU: Record<string, string> = {
   timeout: 'Проверка не уложилась в лимит времени (зацикливание или слишком долгие тесты).',
   bad_archive: 'Архив репозитория не читается.',
   commit_mismatch: 'Коммит в архиве не совпал с указанным.',
-  no_report: 'Тесты не запустились — проверь, что структура проекта совпадает с заготовкой.',
+  no_report: 'Тесты не запустились – проверь, что структура проекта совпадает с заготовкой.',
   bundle_not_found: 'Шаблон не найден в сервисе проверки.',
   internal: 'Сбой сервиса проверки, попробуй сдать ещё раз.',
 };
@@ -650,7 +650,7 @@ async function fail(id: string, message: string): Promise<void> {
 
 /**
  * Проверка сабмита: (скачать tarball) → сверка файлов платформы → скрытые тесты (балл) → видимые тесты
- * (обратная связь кандидату) → LLM-рубрика (пояснения, не балл) → resultJson. Ошибка — status failed
+ * (обратная связь кандидату) → LLM-рубрика (пояснения, не балл) → resultJson. Ошибка – status failed
  * с понятной причиной; детали скрытых тестов кандидату не уходят.
  */
 export async function processSubmission(id: string): Promise<void> {
@@ -663,7 +663,7 @@ export async function processSubmission(id: string): Promise<void> {
     if (!tpl) return fail(id, 'Шаблон задания недоступен.');
     if (sub.kind === 'approach') return await processApproach(sub.id, sub.candidateId, sub.approachText ?? '', sub.aiLogText ?? '', sub.projectTask.rubricJson);
     const resumeJob = sub.status === 'running' ? sub.runnerJobId : null;
-    // Сабмиты lane project всегда с commitSha; null — запись не из этого модуля (схема допускает).
+    // Сабмиты lane project всегда с commitSha; null – запись не из этого модуля (схема допускает).
     const commitSha = sub.commitSha;
     if (!commitSha) return fail(id, 'Не указан коммит сдачи.');
     await prisma.projectSubmission.update({ where: { id }, data: { status: 'running' } });
@@ -678,7 +678,7 @@ export async function processSubmission(id: string): Promise<void> {
         tarball = await downloadGithubTarball(repo, commitSha);
         files = readTarGz(tarball);
       } catch (err) {
-        const msg = err instanceof AppError && err.status === 404 ? 'Репозиторий или коммит не найден — нужен публичный репозиторий GitHub.' : err instanceof AppError ? err.message : 'Не удалось скачать репозиторий.';
+        const msg = err instanceof AppError && err.status === 404 ? 'Репозиторий или коммит не найден – нужен публичный репозиторий GitHub.' : err instanceof AppError ? err.message : 'Не удалось скачать репозиторий.';
         return fail(id, msg);
       }
     }
@@ -699,7 +699,7 @@ export async function processSubmission(id: string): Promise<void> {
     try {
       visible = await runner.run({ ...runInput, suite: 'visible' });
     } catch (err) {
-      // Видимые тесты — только обратная связь кандидату: их сбой сдачу не роняет, но в лог попадает.
+      // Видимые тесты – только обратная связь кандидату: их сбой сдачу не роняет, но в лог попадает.
       console.warn('[project] visible tests run failed', id, err instanceof Error ? err.message : err);
       visible = null;
     }
@@ -707,7 +707,7 @@ export async function processSubmission(id: string): Promise<void> {
     const score = hidden.total ? Math.round((hidden.passed / hidden.total) * 100) : 0;
     const tests = { passed: hidden.passed, total: hidden.total, score };
     const rubricDef = RubricJson.safeParse(sub.projectTask.rubricJson);
-    // Г3 (ADR 0005): LLM-рубрика — оценка ИИ, без действующего согласия не запускается. Скрытые тесты runner — не ИИ.
+    // Г3 (ADR 0005): LLM-рубрика – оценка ИИ, без действующего согласия не запускается. Скрытые тесты runner – не ИИ.
     const criteria = rubricDef.success ? rubricDef.data.criteria : [];
     const review = (await hasAiAssessmentConsent(sub.candidateId))
       ? await reviewRubric({ criteria, files, tests, aiLog: sub.aiLogText ?? '' })
@@ -734,7 +734,7 @@ export async function processSubmission(id: string): Promise<void> {
 }
 
 /**
- * Проверка сдачи подходом: автотестов нет (tests 0/0, балла нет), только рубрика по тексту подхода — с тем же
+ * Проверка сдачи подходом: автотестов нет (tests 0/0, балла нет), только рубрика по тексту подхода – с тем же
  * согласием на оценку ИИ (Г3), что и у кода. Результат сравним с кодовой сдачей по критериям работодателя, не по баллу.
  */
 async function processApproach(id: string, candidateId: string, approachText: string, aiLog: string, rubricJson: Prisma.JsonValue): Promise<void> {
@@ -750,7 +750,7 @@ async function processApproach(id: string, candidateId: string, approachText: st
     tests,
     visibleTests: [],
     hiddenTests: [],
-    lint: { status: 'skipped', note: 'Сдача подходом: автотесты не запускаются, оценка — по критериям работодателя.' },
+    lint: { status: 'skipped', note: 'Сдача подходом: автотесты не запускаются, оценка – по критериям работодателя.' },
     rubric: review,
     platformOwnedViolations: [],
     runner: { mode: 'stub' },
@@ -758,7 +758,7 @@ async function processApproach(id: string, candidateId: string, approachText: st
   await prisma.projectSubmission.update({ where: { id }, data: { status: 'checked', resultJson: result as unknown as Prisma.InputJsonValue, checkedAt: new Date(), error: null } });
 }
 
-/** Сабмит «застрял» (рестарт приложения посреди проверки) — продолжить в фоне. */
+/** Сабмит «застрял» (рестарт приложения посреди проверки) – продолжить в фоне. */
 function resumeIfStale(s: { id: string; status: ProjectSubmissionStatus; submittedAt: Date }): void {
   if ((s.status === 'submitted' || s.status === 'running') && !inFlight.has(s.id) && Date.now() - s.submittedAt.getTime() > 60_000) {
     void processSubmission(s.id);
@@ -783,16 +783,16 @@ export interface EmployerSubmissionView {
   checkedAt: string | null;
   error: string | null;
   candidate: { id: string; displayName: string; category: string | null };
-  /** code — репозиторий; approach — текст подхода (контакты в нём замаскированы). */
+  /** code – репозиторий; approach – текст подхода (контакты в нём замаскированы). */
   kind: 'code' | 'approach';
   approachText: string | null;
-  /** Ссылка на репозиторий раскрывает личность (логин GitHub) — только после принятого приглашения. */
+  /** Ссылка на репозиторий раскрывает личность (логин GitHub) – только после принятого приглашения. */
   repoUrl: string | null;
   commitSha: string | null;
   aiLogText: string;
   result: ResultJson | null;
   defense: { invitationId: string; invitationStatus: string } | null;
-  /** ИИ-защита сдачи (ADR 0008 п. 1): до принятия — только баллы и флаги. */
+  /** ИИ-защита сдачи (ADR 0008 п. 1): до принятия – только баллы и флаги. */
   aiDefense: AiDefenseSummary | null;
 }
 
@@ -806,7 +806,7 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
   });
   const candidateIds = [...new Set(subs.map((s) => s.candidateId))];
   const invitations = await prisma.invitation.findMany({ where: { companyId, candidateId: { in: candidateIds } }, select: { id: true, candidateId: true, status: true } });
-  // Открыто — только при принятом приглашении с действующим раскрытием (Г5, ADR 0005).
+  // Открыто – только при принятом приглашении с действующим раскрытием (Г5, ADR 0005).
   const accepted = await disclosedCandidateIds(companyId, candidateIds);
   for (const s of subs) resumeIfStale(s);
   const aiDefense = await aiDefenseSummaries(subs.map((s) => s.id));
@@ -864,7 +864,7 @@ export async function inviteToDefense(
     matchSource: 'other', // из проверенной сдачи задания: ранга подборки нет
   });
   await prisma.projectSubmission.update({ where: { id: s.id }, data: { defenseInvitationId: inv.id } });
-  // Сдача подходом: кода для защиты нет — обычное приглашение с вилкой, созвон-защита не создаётся.
+  // Сдача подходом: кода для защиты нет – обычное приглашение с вилкой, созвон-защита не создаётся.
   if (s.kind === 'approach') return { invitationId: inv.id, callSessionId: null };
   const { callSessionId } = await getDefenseHook().requestDefense({ submissionId: s.id, candidateId: s.candidateId, invitationId: inv.id, companyId: ctx.companyId });
   return { invitationId: inv.id, callSessionId };

@@ -1,6 +1,6 @@
 // Демо и план В помощника работодателя: без языковой модели решения «какой инструмент
-// вызвать» принимает код по ключевым словам, а инструменты — те же, что у модели
-// (тот же dispatch, те же события и сообщения в БД). Ответ — шаблоны по их выходу.
+// вызвать» принимает код по ключевым словам, а инструменты – те же, что у модели
+// (тот же dispatch, те же события и сообщения в БД). Ответ – шаблоны по их выходу.
 import { prisma } from '@/server/db';
 import { listVacancies } from '@/server/employer';
 import { categoryLabel } from '@/server/employer/ranking';
@@ -12,7 +12,7 @@ import { dispatchToolCall } from '../dispatch';
 import { parseGrade, parseSpecialization, parseStack } from './tools/create_need_draft';
 import type { EmployerTool } from './tools/shared';
 import { saveEmployerMessage } from './store';
-import type { AssistantCandidate, CandidatesBlock, EmployerToolContext, EmployerTurnInput, InvitationDraft, NeedDraft } from './types';
+import type { AssistantCandidate, CandidatesBlock, EmployerToolContext, InvitationDraft, NeedDraft } from './types';
 
 const LEVEL_TEXT = { self_reported: 'со слов', artifact: 'есть ссылка на работу', platform: 'проверено платформой', third_party: 'третья сторона' } as const;
 const ORDINAL: Record<string, number> = { перв: 0, втор: 1, трет: 2, четв: 3, пят: 4 };
@@ -55,32 +55,8 @@ function pickCandidate(text: string, shown: Shown): AssistantCandidate | { candi
   return null;
 }
 
-type Page = EmployerTurnInput['page'];
-type Plan = { name: string; arguments: Record<string, unknown> };
-
-/** Значение после метки («описание: …»); до конца строки или до следующей метки через «;». */
-function labelled(text: string, label: RegExp): string | null {
-  const m = new RegExp(`(?:${label.source})[^:\\n]{0,20}:\\s*([^\\n;]+)`, 'i').exec(text);
-  const v = m?.[1]?.trim();
-  return v ? v : null;
-}
-
-/** Поля профиля компании из реплики; «null» = не нашли, поле не меняем. */
-export function extractCompanyFields(text: string): { name?: string; industry?: string; description?: string; contact?: string } {
-  const out: { name?: string; industry?: string; description?: string; contact?: string } = {};
-  const name = labelled(text, /назван/);
-  const industry = labelled(text, /отрасл/);
-  const description = labelled(text, /описани/);
-  const contact = labelled(text, /контакт|связь|связи/) ?? /[\w.+-]+@[\w-]+\.[\w.-]+|@[A-Za-z][\w]{3,}/.exec(text)?.[0] ?? null;
-  if (name && name.length >= 2) out.name = name.slice(0, 120);
-  if (industry && industry.length >= 2) out.industry = industry.slice(0, 80);
-  if (description && description.length >= 20) out.description = description.slice(0, 2000);
-  if (contact && contact.length >= 3) out.contact = contact.slice(0, 200);
-  return out;
-}
-
 /** Решение без модели: какой инструмент вызвать на эту реплику. */
-export async function planDemoCall(ctx: EmployerToolContext, text: string, page?: Page): Promise<Plan> {
+export async function planDemoCall(ctx: EmployerToolContext, text: string): Promise<{ name: string; arguments: Record<string, unknown> }> {
   const t = text.toLowerCase();
   const shown = await shownInConversation(ctx.conversationId);
   const who = pickCandidate(text, shown);
@@ -93,30 +69,7 @@ export async function planDemoCall(ctx: EmployerToolContext, text: string, page?
     return { name: 'explain_candidate', arguments: { candidateId: who.candidateId, ...(vacancyId ? { vacancyId } : {}) } };
   }
   const active = (await listVacancies(ctx.companyId)).filter((v) => !v.archived);
-  // Вакансия со страницы: только своя и активная, чужой id молча игнорируется.
-  const pageVac = page?.vacancyId ? active.find((v) => v.id === page.vacancyId) : undefined;
   const byTitle = active.find((v) => t.includes(v.title.toLowerCase()));
-
-  if (/(задани|тестов|проект)/.test(t) && !/потребност/.test(t)) {
-    const vac = byTitle ?? pageVac ?? (active.length === 1 ? active[0] : undefined);
-    if (!vac) {
-      if (active.length > 1) return { name: 'ask_user', arguments: { question: 'Для какой вакансии сделать задание?', options: active.slice(0, 4).map((v) => v.title.slice(0, 80)) } };
-      return { name: 'get_employer_context', arguments: {} };
-    }
-    const wishes = labelled(text, /пожелани/);
-    const visibility = /(только приглашённ|только приглашенн|только тем, кого приглас)/.test(t) ? 'invited' : /(в ленте|всем кандидат)/.test(t) ? 'feed' : null;
-    return {
-      name: 'create_project_task_draft',
-      arguments: { vacancyId: vac.id, ...(wishes ? { wishes } : {}), ...(visibility ? { visibility } : {}), rationale: `Проверка навыков проектом по вакансии «${vac.title}»` },
-    };
-  }
-  if (/(компан|описани|контакт|отрасл)/.test(t) && !/(потребност|вакан)/.test(t)) {
-    const fields = extractCompanyFields(text);
-    if (!Object.keys(fields).length) {
-      return { name: 'ask_user', arguments: { question: 'Что поправить в профиле компании?', options: ['Описание', 'Контакт для кандидатов', 'Отрасль'] } };
-    }
-    return { name: 'draft_company_profile', arguments: { ...fields, rationale: 'Изменения со слов работодателя' } };
-  }
   if (byTitle) return { name: 'match_for_need', arguments: { vacancyId: byTitle.id } };
   const spec = parseSpecialization(text);
   const grade = parseGrade(text);
@@ -131,9 +84,7 @@ export async function planDemoCall(ctx: EmployerToolContext, text: string, page?
     };
   }
   if (/(подбер|подборк|потребност|кандидат|кого|покажи)/.test(t) || spec || grade) {
-    // Страница вакансии - подсказка: без уточнений в реплике подбираем по ней.
-    if (pageVac && !spec && !grade) return { name: 'match_for_need', arguments: { vacancyId: pageVac.id } };
-    // Несколько потребностей и ни одной подсказки в реплике — спросить, а не брать первую.
+    // Несколько потребностей и ни одной подсказки в реплике – спросить, а не брать первую.
     if (!spec && !grade && active.length > 1) {
       return { name: 'ask_user', arguments: { question: 'Под какую потребность подобрать?', options: active.slice(0, 4).map((v) => v.title.slice(0, 80)) } };
     }
@@ -242,10 +193,6 @@ function describe(name: string, out: unknown): string {
       return describeDraft(out as InvitationDraft);
     case 'create_need_draft':
       return describeNeed(out as NeedDraft);
-    case 'draft_company_profile':
-      return 'Черновик изменений профиля компании ниже: проверь и нажми кнопку применения - сохраняешь ты, не я.';
-    case 'create_project_task_draft':
-      return 'Черновик проектного задания ниже: проверь шаблон и критерии, сохранить и сформировать задание можно кнопкой.';
     case 'get_employer_context':
       return describeContext(out as ContextOut);
     default:
@@ -257,10 +204,10 @@ let seq = 0;
 
 /**
  * Ход без модели: один инструмент по ключевым словам → те же события и записи в БД →
- * ответ шаблоном. Возвращает текст (ask_user — пустая строка: вопрос уже в ленте).
+ * ответ шаблоном. Возвращает текст (ask_user – пустая строка: вопрос уже в ленте).
  */
-export async function runScriptedTurn(ctx: EmployerToolContext, registry: EmployerTool[], text: string, page?: Page): Promise<string> {
-  const plan = await planDemoCall(ctx, text, page);
+export async function runScriptedTurn(ctx: EmployerToolContext, registry: EmployerTool[], text: string): Promise<string> {
+  const plan = await planDemoCall(ctx, text);
   const call: ToolCall = { id: `demo-${Date.now().toString(36)}-${++seq}`, name: plan.name, arguments: plan.arguments };
   await saveEmployerMessage(ctx.conversationId, { role: 'assistant', content: '', toolCalls: [call] });
   const r = await dispatchToolCall(registry, ctx, call);

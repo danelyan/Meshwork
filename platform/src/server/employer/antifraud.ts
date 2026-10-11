@@ -1,6 +1,6 @@
 // Антифрод (R-X-01, концепт): красные флаги в тексте потребности и приглашения и «индекс доверия» компании.
-// Чистые функции без БД. Правила и пороги — наше предложение без калибровки на реальных обманах;
-// флаг — повод присмотреться, а не вердикт: отправку и сохранение он не блокирует.
+// Чистые функции без БД. Правила и пороги – наше предложение без калибровки на реальных обманах;
+// флаг – повод присмотреться, а не вердикт: отправку и сохранение он не блокирует.
 import { maskContacts } from '../collector/mask';
 
 export type RedFlagCode = 'no_salary' | 'salary_unrealistic' | 'contacts_in_text' | 'payment_request' | 'self_employed_required' | 'vague_text' | 'easy_money';
@@ -18,19 +18,19 @@ export interface RedFlag {
 export interface TextCheckInput {
   /** Все тексты, которые увидит кандидат: заголовок, описание, команда, сообщение приглашения. */
   texts: readonly (string | null | undefined)[];
-  /** ₽ в месяц; 0 или null — не указана. */
+  /** ₽ в месяц; 0 или null – не указана. */
   salaryFrom?: number | null;
   salaryTo?: number | null;
 }
 
-/** Пороги вилки, ₽ в месяц (предложение): ниже нижнего — вряд ли штатная ИТ-работа, выше верхнего — нереальное обещание. */
+/** Пороги вилки, ₽ в месяц (предложение): ниже нижнего – вряд ли штатная ИТ-работа, выше верхнего – нереальное обещание. */
 export const SALARY_LIMITS: SalaryLimits = { minFrom: 25_000, maxTo: 1_000_000, maxRatio: 3 };
 export interface SalaryLimits {
   minFrom: number;
   maxTo: number;
   maxRatio: number;
 }
-/** Меньше слов — описание размытое. */
+/** Меньше слов – описание размытое. */
 export const MIN_WORDS = 8;
 
 const SEVERITY_WEIGHT: Record<RedFlagSeverity, number> = { low: 1, medium: 2, high: 3 };
@@ -44,7 +44,7 @@ const PAYMENT = [
   /платн\p{L}*\s+(?:обучени\p{L}*|стажировк\p{L}*|курс\p{L}*)/iu,
   /за\s+свой\s+сч[её]т/iu,
 ];
-/** Предложение с этим оборотом — компания платит сама, флаг не ставим. */
+/** Предложение с этим оборотом – компания платит сама, флаг не ставим. */
 const PAYMENT_SAFE = /за\s+(?:наш|сч[её]т\s+компании|сч[её]т\s+работодателя|сч[её]т\s+нашей)|бесплатн\p{L}*|оплачиваем\p{L}*|компенсиру\p{L}*/iu;
 
 const SELF_EMPLOYED = [
@@ -68,7 +68,7 @@ function sentences(text: string): string[] {
   return text.split(/(?<=[.!?\n])\s+/u).filter(Boolean);
 }
 
-/** Красные флаги текста и вилки. Пустой массив — ничего подозрительного (это не гарантия добросовестности). */
+/** Красные флаги текста и вилки. Пустой массив – ничего подозрительного (это не гарантия добросовестности). */
 export function detectRedFlags(input: TextCheckInput, salaryLimits: SalaryLimits = SALARY_LIMITS): RedFlag[] {
   const text = input.texts
     .map((t) => (t ?? '').trim())
@@ -142,7 +142,7 @@ export function detectRedFlags(input: TextCheckInput, salaryLimits: SalaryLimits
   return flags;
 }
 
-/** Суммарная оценка: none — чисто, warn — присмотреться, high — есть серьёзный флаг или сумма от 3. */
+/** Суммарная оценка: none – чисто, warn – присмотреться, high – есть серьёзный флаг или сумма от 3. */
 export function riskLevel(flags: readonly RedFlag[]): 'none' | 'warn' | 'high' {
   const score = flags.reduce((s, f) => s + SEVERITY_WEIGHT[f.severity], 0);
   if (flags.some((f) => f.severity === 'high') || score >= 3) return 'high';
@@ -155,13 +155,13 @@ export interface CompanyTrustInput {
   name: string;
   description: string | null;
   industry: string | null;
-  /** Контрольная сумма ИНН сходится (checkInn); реестры ФНС не проверяются — демо-метка. */
+  /** Контрольная сумма ИНН сходится (checkInn); реестры ФНС не проверяются – демо-метка. */
   innValid: boolean;
   contact: string | null;
   createdAt: Date;
   invitationsSent: number;
   invitationsDeclined: number;
-  /** Жалобы кандидатов за COMPLAINT_WINDOW_DAYS, кроме отклонённых (dismissed). Нет данных — 0. */
+  /** Жалобы кандидатов за COMPLAINT_WINDOW_DAYS, кроме отклонённых (dismissed). Нет данных – 0. */
   complaints?: number;
   /** Неявки работодателя на назначенные живые защиты за NO_SHOW_WINDOW_DAYS (опоздание > 15 минут). Нет данных - 0. */
   noShows?: number;
@@ -214,14 +214,14 @@ export interface NoShowTrustPenalty {
 }
 
 export interface InvitationSanction {
-  /** none — обычный лимит; reduced — сниженный суточный лимит; blocked — отправка закрыта. */
+  /** none – обычный лимит; reduced – сниженный суточный лимит; blocked – отправка закрыта. */
   level: 'none' | 'reduced' | 'blocked';
   complaints: number;
   /** Действующий лимит приглашений за сутки (0 при блоке). */
   limit: number;
 }
 
-/** Санкция по числу жалоб за окно: ≥ reducedAt — лимит не больше reducedLimit, ≥ blockedAt — блок отправки. */
+/** Санкция по числу жалоб за окно: ≥ reducedAt – лимит не больше reducedLimit, ≥ blockedAt – блок отправки. */
 export function invitationSanction(complaints: number, baseLimit: number, sanctions: ComplaintSanctions = COMPLAINT_SANCTIONS): InvitationSanction {
   if (complaints >= sanctions.blockedAt) return { level: 'blocked', complaints, limit: 0 };
   if (complaints >= sanctions.reducedAt) return { level: 'reduced', complaints, limit: Math.min(baseLimit, sanctions.reducedLimit) };
@@ -233,7 +233,7 @@ export function complaintWindowStart(now = new Date(), windowDays = COMPLAINT_WI
   return new Date(now.getTime() - windowDays * DAY_MS);
 }
 
-/** Мало приглашений — долю отклонений не считаем: на малой выборке она случайна. */
+/** Мало приглашений – долю отклонений не считаем: на малой выборке она случайна. */
 export const TRUST_MIN_INVITATIONS = 5;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -246,7 +246,7 @@ export interface TrustWeights {
 /** Максимум баллов по сигналам индекса доверия (сумма 100). Настройка employer.trustWeights перекрывает. */
 export const TRUST_WEIGHTS: TrustWeights = { profile: 35, inn: 25, age: 15, declines: 25 };
 
-/** Параметры индекса доверия из настроек платформы; не заданное — умолчания из кода. */
+/** Параметры индекса доверия из настроек платформы; не заданное – умолчания из кода. */
 export interface TrustConfig {
   weights?: TrustWeights;
   complaintPenalty?: ComplaintTrustPenalty;
@@ -256,7 +256,7 @@ export interface TrustConfig {
 
 /**
  * Индекс доверия из уже имеющихся данных: заполненность профиля (35), ИНН с верной контрольной цифрой (25),
- * возраст аккаунта (15, полные баллы с 30 дней), доля отклонённых приглашений (25; без данных — половина),
+ * возраст аккаунта (15, полные баллы с 30 дней), доля отклонённых приглашений (25; без данных – половина),
  * минус штраф за жалобы кандидатов за 30 дней (COMPLAINT_TRUST_PENALTY) и за неявки на назначенные защиты
  * за 30 дней (NO_SHOW_TRUST_PENALTY: 15 за неявку, не больше 30), не ниже 0.
  */

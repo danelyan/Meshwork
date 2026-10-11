@@ -1,4 +1,4 @@
-// Серверный PDF-профиль кандидата (R-C-03, аудит 11.10 C02): данные — те же загрузчики, что у экрана
+// Серверный PDF-профиль кандидата (R-C-03, аудит 11.10 C02): данные – те же загрузчики, что у экрана
 // профиля (getProfile, profileDetails), плюс ступени проверки; документ собирает model.ts, рисует render.ts.
 import { latestQualifyingVerdict } from '@/server/call';
 import { getProfile } from '@/server/claims';
@@ -34,8 +34,8 @@ const PROVENANCE_WINDOW_MS = 60_000;
 /**
  * Подкатегория и версия политики теста, по которой выдана текущая категория. Категория не хранит id попытки,
  * поэтому ищем попытку того же направления, чьё событие выдачи ближе всего к дате категории: для passed это
- * finishedAt, для принятого грейда ниже — juniorConfirmedAt (confirmJunior оставляет попытку not_confirmed).
- * Попытки нет у категорий из сида (демоданные) — тогда версия не сохранена, и PDF так и пишет, а не подставляет текущую.
+ * finishedAt, для принятого грейда ниже – juniorConfirmedAt (confirmJunior оставляет попытку not_confirmed).
+ * Попытки нет у категорий из сида (демоданные) – тогда версия не сохранена, и PDF так и пишет, а не подставляет текущую.
  */
 export async function loadCategoryProvenance(candidateId: string): Promise<{ subcategoryId: string | null; policyVersion: string | null }> {
   const category = await prisma.candidateCategory.findFirst({
@@ -51,7 +51,7 @@ export async function loadCategoryProvenance(candidateId: string): Promise<{ sub
   const issuedAt = category.confirmedAt.getTime();
   let best: { policyVersion: string; distance: number } | null = null;
   for (const a of attempts) {
-    // Попытка должна относиться к этой категории: та же подкатегория (если категория её хранит) и тот же грейд —
+    // Попытка должна относиться к этой категории: та же подкатегория (если категория её хранит) и тот же грейд –
     // пройденная попытка на этот грейд или принятый грейд ниже после попытки на старший (confirmJunior).
     if (category.subcategoryId && a.subcategoryId !== category.subcategoryId) continue;
     const passedHere = a.status === 'passed' && a.grade === category.grade;
@@ -65,7 +65,7 @@ export async function loadCategoryProvenance(candidateId: string): Promise<{ sub
   return { subcategoryId: category.subcategoryId, policyVersion: best?.policyVersion ?? null };
 }
 
-/** PDF собственного профиля кандидата: только его данные (candidateId — из сессии). */
+/** PDF собственного профиля кандидата: только его данные (candidateId – из сессии). */
 export async function profilePdf(candidateId: string, now = new Date()): Promise<{ filename: string; data: Buffer }> {
   const [profile, details, provenance, stages] = await Promise.all([getProfile(candidateId), profileDetails(candidateId), loadCategoryProvenance(candidateId), loadStages(candidateId)]);
   const doc = buildProfileDocument({

@@ -57,7 +57,7 @@ describe('обзор админки (фаза 1): чтение, права, ПД
     await resetDb();
   });
 
-  it('без сессии персонала — 401, пользовательская кука не подходит', async () => {
+  it('без сессии персонала – 401, пользовательская кука не подходит', async () => {
     expect((await candidatesGet(get('/api/admin/candidates'))).status).toBe(401);
     expect((await dashboardGet(get('/api/admin/dashboard', 'cid=abc'))).status).toBe(401);
   });
@@ -71,7 +71,7 @@ describe('обзор админки (фаза 1): чтение, права, ПД
     expect((await vacanciesGet(get('/api/admin/vacancies', sup.cookie))).status).toBe(403);
     expect((await invitationsGet(get('/api/admin/invitations', sup.cookie))).status).toBe(403);
     expect((await applicationsGet(get('/api/admin/applications', sup.cookie))).status).toBe(403);
-    // moderator видит карточку кандидата, но раскрыть ПДн не может — и журнал при этом остаётся пустым
+    // moderator видит карточку кандидата, но раскрыть ПДн не может – и журнал при этом остаётся пустым
     expect((await candidateGet(get(`/api/admin/candidates/${d.cand.id}`, mod.cookie), ctx(d.cand.id))).status).toBe(200);
     const res = await candidatePii(jsonRequest(`/api/admin/candidates/${d.cand.id}/pii`, 'POST', { reason: 'проверка жалобы' }, mod.cookie), ctx(d.cand.id));
     expect(res.status).toBe(403);
@@ -119,7 +119,7 @@ describe('обзор админки (фаза 1): чтение, права, ПД
     expect(byCat.items.map((c: { id: string }) => c.id)).toEqual([d.cand.id]);
   });
 
-  it('пагинация: 25 строк на страницу, страница 2 — остаток', async () => {
+  it('пагинация: 25 строк на страницу, страница 2 – остаток', async () => {
     await prisma.candidate.createMany({ data: Array.from({ length: 27 }, (_, i) => ({ email: `c${i}@example.ru`, name: `Имя ${i}` })) });
     const { cookie } = await sessionFor('support');
     const p1 = await (await candidatesGet(get('/api/admin/candidates', cookie))).json();

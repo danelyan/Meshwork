@@ -5,7 +5,7 @@ import { createContext, type ReactNode, useContext, useState } from 'react';
 import { isLightingPreset, LIGHTING_PRESETS, type LightingPreset } from '@/components/avatar/lighting';
 import { Field } from '@/components/ui';
 
-/** Свет сцены — общий для всех панелей с нашей головой; на демо по умолчанию «Студия», чтобы сравнивать с референсом. */
+/** Свет сцены – общий для всех панелей с нашей головой; на демо по умолчанию «Студия», чтобы сравнивать с референсом. */
 const DEMO_DEFAULT: LightingPreset = 'studio';
 
 const LightingContext = createContext<{

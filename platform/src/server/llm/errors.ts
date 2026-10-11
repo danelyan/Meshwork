@@ -13,7 +13,7 @@ export function codeForStatus(status: number): LlmErrorCode {
 /**
  * Признак «не влезло в контекст» в тексте 400-й ошибки. OpenAI: код
  * `context_length_exceeded` / «maximum context length»; vLLM: «maximum context
- * length … tokens»; у Yandex точной формулировки в доке нет — ловим общие
+ * length … tokens»; у Yandex точной формулировки в доке нет – ловим общие
  * слова про лимит токенов (инференс, проверить на живом ключе).
  */
 export const CONTEXT_LENGTH_RE =
@@ -33,7 +33,7 @@ function short(text: string): string {
  *  - таймаут соединения SDK → 'timeout';
  *  - сетевой сбой без ответа → 'server_error' без статуса (client его ретраит);
  *  - HTTP-ошибка → код по статусу, статус сохраняется.
- * Ключ в сообщение не попадает: SDK его в тексте ошибок не печатает, мы — тоже.
+ * Ключ в сообщение не попадает: SDK его в тексте ошибок не печатает, мы – тоже.
  */
 export function toLlmError(err: unknown, provider: string, signal?: AbortSignal): LlmError {
   if (err instanceof LlmError) return err;

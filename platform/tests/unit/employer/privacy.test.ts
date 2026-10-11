@@ -25,7 +25,7 @@ describe('toCandidateCard', () => {
     expect(leaks(card)).toEqual([]);
   });
 
-  it('после принятия: имя и ровно один способ связи — указанный кандидатом, а не почта аккаунта', () => {
+  it('после принятия: имя и ровно один способ связи – указанный кандидатом, а не почта аккаунта', () => {
     const card = toCandidateCard(src, true);
     expect(card.displayName).toBe(src.name);
     expect(card.contacts).toEqual({ name: src.name, contact: '@petr_ivanov' });
@@ -95,18 +95,18 @@ describe('maskSubmissionForEmployer (сдачи проектов)', () => {
     expect(result?.lint.details).toBeUndefined();
   });
 
-  it('после принятия — без изменений', () => {
+  it('после принятия – без изменений', () => {
     const r = maskSubmissionForEmployer(dirty, 'e', true);
     expect(r.result).toBe(dirty);
     expect(r.error).toBe('e');
   });
 
-  it('нет результата — null', () => {
+  it('нет результата – null', () => {
     expect(maskSubmissionForEmployer(null, null, false)).toEqual({ result: null, error: null });
   });
 });
 
-// lane resume-fields (R-C-01/02, R-E-07, ТЗ 2.2 п. 2): ФИО и контакт из резюме — только после принятия;
+// lane resume-fields (R-C-01/02, R-E-07, ТЗ 2.2 п. 2): ФИО и контакт из резюме – только после принятия;
 // стаж, роли (без компаний) и софт-скиллы (метки словаря) видны и до принятия.
 describe('toCandidateCard: поля из резюме', () => {
   const withResume: CardSource = {
@@ -114,7 +114,7 @@ describe('toCandidateCard: поля из резюме', () => {
     experience: { experienceYears: 6, roles: ['Backend Engineer', 'Тимлид в Сбере', 'petr.ivanov@example.com'], softSkills: ['Наставничество', 'Иванов Пётр Сергеевич'] },
   };
 
-  it('до принятия: ни ФИО, ни контакт не сериализуются; стаж, роли без компаний и софт-скиллы словаря — видны', () => {
+  it('до принятия: ни ФИО, ни контакт не сериализуются; стаж, роли без компаний и софт-скиллы словаря – видны', () => {
     const card = toCandidateCard(withResume, false);
     expect(leaks(card)).toEqual([]);
     expect(card.contacts).toBeNull();
@@ -128,7 +128,7 @@ describe('toCandidateCard: поля из резюме', () => {
     expect(card.experience?.years).toBe(6);
   });
 
-  it('нет данных — поля experience нет', () => {
+  it('нет данных – поля experience нет', () => {
     expect(toCandidateCard({ ...src, experience: { experienceYears: null, roles: [], softSkills: [] } }, false)).not.toHaveProperty('experience');
     expect(toCandidateCard(src, false)).not.toHaveProperty('experience');
   });

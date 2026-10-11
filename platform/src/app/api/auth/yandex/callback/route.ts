@@ -51,7 +51,7 @@ export async function GET(req: Request) {
     const token = await exchangeCode(cfg, code, saved.verifier);
     const profile = await fetchProfile(token);
     user = await upsertExternalUser(profile);
-    // Галка согласия была на /auth (версия в подписанной куке state) — пишем так же, как раньше шаг чата.
+    // Галка согласия была на /auth (версия в подписанной куке state) – пишем так же, как раньше шаг чата.
     await ensureConsent(user.id, saved.consent);
   } catch (err) {
     if (err instanceof YandexAuthError) {
@@ -62,7 +62,7 @@ export async function GET(req: Request) {
     return back('internal');
   }
 
-  // E-08 фаза 3: заблокированный аккаунт куку не получает (sessionInputFor бросил бы 403 JSON — здесь редирект).
+  // E-08 фаза 3: заблокированный аккаунт куку не получает (sessionInputFor бросил бы 403 JSON – здесь редирект).
   if (isBlockedNow(user)) return back('account_blocked');
   const home = homePathFor(user.role);
   const target = needsOnboarding(user) ? home : (safeNext(saved.next) ?? home);

@@ -17,7 +17,7 @@ import { parseSession, signSession, signUserSession } from '@/server/session';
 import { prisma, resetDb } from '../../helpers/db';
 import { cookieFrom, jsonRequest } from '../../helpers/requests';
 
-// ADR 0004: переключение роли на одной учётке — API, вторая роль, знакомство второй роли, кука.
+// ADR 0004: переключение роли на одной учётке – API, вторая роль, знакомство второй роли, кука.
 
 const URL = '/api/auth/role/switch';
 const candCookie = () => `cid=${signUserSession({ userId: 'u1', role: 'candidate', candidateId: 'c1' })}`;
@@ -57,7 +57,7 @@ describe('POST /api/auth/role/switch', () => {
     expect(view.current.id).not.toBe('consent');
     expect(view.current.id).not.toBe('companyName');
 
-    // Данные неактивной роли через API недоступны, своей — доступны.
+    // Данные неактивной роли через API недоступны, своей – доступны.
     expect((await profile(jsonRequest('/api/profile', 'GET', undefined, cookie))).status).toBe(403);
     expect((await employerVacancies(jsonRequest('/api/employer/vacancies', 'GET', undefined, cookie))).status).toBe(200);
   });
@@ -77,7 +77,7 @@ describe('POST /api/auth/role/switch', () => {
     expect((await employerVacancies(jsonRequest('/api/employer/vacancies', 'GET', undefined, cookie))).status).toBe(403);
   });
 
-  it('та же роль — идемпотентно: 200, changed=false, ничего не создано', async () => {
+  it('та же роль – идемпотентно: 200, changed=false, ничего не создано', async () => {
     const res = await post({ role: 'candidate' }, candCookie());
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ role: 'candidate', created: false, changed: false });
@@ -85,7 +85,7 @@ describe('POST /api/auth/role/switch', () => {
     expect(await prisma.employerProfile.count()).toBe(0);
   });
 
-  it('работодатель → кандидат без профиля: Candidate с consentAt из согласия; занятая почта — служебная', async () => {
+  it('работодатель → кандидат без профиля: Candidate с consentAt из согласия; занятая почта – служебная', async () => {
     await prisma.company.create({ data: { id: 'co', name: 'Компания', isDemo: false } });
     await prisma.user.create({ data: { id: 'u2', name: 'Олег', email: 'ivan@example.test', role: 'employer', onboardedAt: new Date() } });
     await prisma.employerProfile.create({ data: { id: 'e2', userId: 'u2', companyId: 'co' } });
@@ -109,7 +109,7 @@ describe('POST /api/auth/role/switch', () => {
     expect((await post({ role: 'admin' }, candCookie())).status).toBe(400);
   });
 
-  it('CSRF: чужой Origin — 403, ничего не создано', async () => {
+  it('CSRF: чужой Origin – 403, ничего не создано', async () => {
     const res = await switchRoute(
       new Request(`http://localhost${URL}`, {
         method: 'POST',
@@ -121,14 +121,14 @@ describe('POST /api/auth/role/switch', () => {
     expect(await prisma.employerProfile.count()).toBe(0);
   });
 
-  it('общий демо-аккаунт из сида: вторую роль не создать (403); «Новый пользователь» с /demo — можно', async () => {
+  it('общий демо-аккаунт из сида: вторую роль не создать (403); «Новый пользователь» с /demo – можно', async () => {
     await prisma.user.update({ where: { id: 'u1' }, data: { isDemo: true } });
     expect((await post({ role: 'employer', companyName: 'ООО' }, candCookie())).status).toBe(403);
     await prisma.authAccount.create({ data: { userId: 'u1', provider: 'demo', providerAccountId: 'guest-1' } });
     expect((await post({ role: 'employer', companyName: 'ООО' }, candCookie())).status).toBe(200);
   });
 
-  it('два одновременных перехода — один профиль и одна компания', async () => {
+  it('два одновременных перехода – один профиль и одна компания', async () => {
     const results = await Promise.all([
       switchRole('u1', { role: 'employer', companyName: 'ООО Один' }),
       switchRole('u1', { role: 'employer', companyName: 'ООО Два' }),
@@ -138,13 +138,13 @@ describe('POST /api/auth/role/switch', () => {
     expect(await prisma.company.count()).toBe(1);
   });
 
-  it('companyName: "" при существующем профиле работодателя — как отсутствие (200)', async () => {
+  it('companyName: "" при существующем профиле работодателя – как отсутствие (200)', async () => {
     const toEmp = cookieFrom(await post({ role: 'employer', companyName: 'ООО Ромашка' }, candCookie()))!;
     const toCand = cookieFrom(await post({ role: 'candidate' }, toEmp))!;
     const res = await post({ role: 'employer', companyName: '' }, toCand);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ role: 'employer', created: false });
-    // Профиля нет и название пустое — 400.
+    // Профиля нет и название пустое – 400.
     await prisma.user.create({ data: { id: 'u4', name: 'Пётр', role: 'candidate', onboardedAt: new Date() } });
     const c4 = await prisma.candidate.create({ data: { name: 'Пётр', email: 'p@example.test' } });
     await prisma.user.update({ where: { id: 'u4' }, data: { candidateId: c4.id } });
@@ -185,7 +185,7 @@ describe('POST /api/auth/role/switch', () => {
     expect((await prisma.onboardingState.findUniqueOrThrow({ where: { userId: 'u1' } })).stepId).toBe('grade');
   });
 
-  it('кука другого устройства в прежней роли — протухшая: API и онбординг отвечают 401 session_stale', async () => {
+  it('кука другого устройства в прежней роли – протухшая: API и онбординг отвечают 401 session_stale', async () => {
     const old = candCookie();
     await post({ role: 'employer', companyName: 'ООО Ромашка' }, old);
     expect(await isSessionStale(jsonRequest('/api/profile', 'GET', undefined, old))).toBe(true);
@@ -223,12 +223,12 @@ describe('демо: личные аккаунты «Нового пользов�
     await switchRole('guest', { role: 'employer', companyName: 'ООО Гость' });
   });
 
-  it('GET-список работодателей — только общие сид-аккаунты', async () => {
+  it('GET-список работодателей – только общие сид-аккаунты', async () => {
     const body = await (await listDemo()).json();
     expect(body.employers.map((e: { id: string }) => e.id)).toEqual(['shared-emp']);
   });
 
-  it('вход по employerUserId и «пройти заново» по restartUserId гостя — 404', async () => {
+  it('вход по employerUserId и «пройти заново» по restartUserId гостя – 404', async () => {
     expect((await demoLogin(jsonRequest('/api/demo/login', 'POST', { employerUserId: 'guest' }))).status).toBe(404);
     expect((await demoLogin(jsonRequest('/api/demo/login', 'POST', { restartUserId: 'guest' }))).status).toBe(404);
     expect((await demoLogin(jsonRequest('/api/demo/login', 'POST', { employerUserId: 'shared-emp' }))).status).toBe(200);
@@ -263,7 +263,7 @@ describe('дебаг-панель и учётка с двумя профилям
     expect(await prisma.company.count()).toBe(0);
   });
 
-  it('сброс знакомства с профилем — только активной роли', async () => {
+  it('сброс знакомства с профилем – только активной роли', async () => {
     const emp = cookieFrom(await switchRoute(jsonRequest(URL, 'POST', { role: 'employer', companyName: 'ООО Ромашка' }, candCookie())))!;
     await prisma.company.updateMany({ data: { industry: 'Финтех' } });
     expect((await resetOnboardingRoute(dev('/api/dev/reset-onboarding', { alsoProfile: true }, emp))).status).toBe(200);

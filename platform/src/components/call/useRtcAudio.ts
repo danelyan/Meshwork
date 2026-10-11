@@ -7,11 +7,11 @@ import { signalApi } from '@/lib/defense-room-api';
 import type { SignalPayload } from '@/server/defense-room/types';
 
 /**
- * P2P-аудио защиты (ADR 0003): WebRTC между кандидатом и подключившимся работодателем, сигналинг —
+ * P2P-аудио защиты (ADR 0003): WebRTC между кандидатом и подключившимся работодателем, сигналинг –
  * POST /api/call/{id}/signal и SSE `signal`. Паттерн «perfect negotiation» (MDN, WebRTC API):
- * кандидат — вежливая сторона (уступает при встречных offer), работодатель — нет.
+ * кандидат – вежливая сторона (уступает при встречных offer), работодатель – нет.
  * Только публичный STUN, TURN нет: если ICE не соединился за ICE_TIMEOUT_MS, ушёл в failed или
- * после `disconnected` не восстановился за ICE_TIMEOUT_MS — состояние `failed`, интерфейс пишет
+ * после `disconnected` не восстановился за ICE_TIMEOUT_MS – состояние `failed`, интерфейс пишет
  * «аудио недоступно, текст» и разговор идёт текстом/TTS.
  * Микрофон кандидата запрашивается только по его клику (`enableMic`), не на входящий offer: до клика
  * кандидат только слушает (ответ recvonly), после клика трек добавляется и соединение пересогласуется.
@@ -27,14 +27,14 @@ interface Peer {
   makingOffer: boolean;
   ignoreOffer: boolean;
   /** ICE-кандидаты, пришедшие раньше SDP: сигналы идут отдельными POST без гарантии порядка, а addIceCandidate
-   *  без remoteDescription отклоняется с InvalidStateError (MDN) — копим и добавляем после setRemoteDescription. */
+   *  без remoteDescription отклоняется с InvalidStateError (MDN) – копим и добавляем после setRemoteDescription. */
   pendingIce: RTCIceCandidateInit[];
   timer: ReturnType<typeof setTimeout> | null;
   audio: HTMLAudioElement;
 }
 
 export interface RtcAudio {
-  /** Состояние по собеседникам: ключ — peerId (`candidate` или `employer:<userId>`). */
+  /** Состояние по собеседникам: ключ – peerId (`candidate` или `employer:<userId>`). */
   states: Record<string, RtcState>;
   /** Есть ли хотя бы одно поднятое аудио. */
   anyConnected: boolean;
@@ -47,7 +47,7 @@ export interface RtcAudio {
   enableMic: () => void;
   /** Входящий сигнал из SSE. */
   onSignal: (from: string, payload: SignalPayload) => void;
-  /** Поднять соединение с собеседником (работодатель зовёт для `candidate`; кандидат — на participant_joined). */
+  /** Поднять соединение с собеседником (работодатель зовёт для `candidate`; кандидат – на participant_joined). */
   connect: (peer: string) => void;
   close: (peer: string) => void;
   closeAll: () => void;
@@ -83,12 +83,12 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
   const send = useCallback(
     (peer: string, body: { sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit | null }) =>
       signalApi(sessionId, { ...(role === 'candidate' ? { to: peer } : {}), ...body }).catch(() => {
-        /* собеседник не на связи — таймаут ICE переведёт в текст */
+        /* собеседник не на связи – таймаут ICE переведёт в текст */
       }),
     [sessionId, role],
   );
 
-  /** Последний peer закрыт — остановить треки микрофона (индикатор записи в браузере гаснет). */
+  /** Последний peer закрыт – остановить треки микрофона (индикатор записи в браузере гаснет). */
   const stopMicIfIdle = useCallback(() => {
     if (peers.current.size > 0 || !streamRef.current) return;
     void streamRef.current.then((st) => st?.getTracks().forEach((t) => t.stop()));
@@ -148,7 +148,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
           setState(peer, 'connected');
         } else if (s === 'failed') fail(peer);
         else if (s === 'disconnected') {
-          // Обрыв может пройти сам; не прошёл за ICE_TIMEOUT_MS — уходим в текст.
+          // Обрыв может пройти сам; не прошёл за ICE_TIMEOUT_MS – уходим в текст.
           setState(peer, 'connecting');
           arm();
         }
@@ -165,7 +165,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
         }
       };
       // Звонит работодатель (невежливая сторона): его addTrack запускает negotiationneeded → offer.
-      // Кандидат добавляет трек, только если сам включил микрофон (enableMic) — тогда пересогласует.
+      // Кандидат добавляет трек, только если сам включил микрофон (enableMic) – тогда пересогласует.
       if (!polite) {
         void mic().then((stream) => {
           if (!stream || pc.signalingState === 'closed') return;
@@ -191,7 +191,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
           await pc.setRemoteDescription(d as RTCSessionDescriptionInit);
           for (const c of p.pendingIce.splice(0)) await pc.addIceCandidate(c).catch(() => undefined);
           if (d.type === 'offer') {
-            // Микрофон уже включён кликом — трек до ответа (sendrecv); иначе ответ recvonly, без запроса доступа.
+            // Микрофон уже включён кликом – трек до ответа (sendrecv); иначе ответ recvonly, без запроса доступа.
             const stream = polite ? await (streamRef.current ?? Promise.resolve(null)) : await mic();
             if (stream) addTracks(pc, stream);
             await pc.setLocalDescription();

@@ -29,7 +29,7 @@ export default async function ObjectionsPage({ searchParams }: { searchParams: P
   return (
     <>
       <h1 className={styles.title}>Возражения</h1>
-      <p className={styles.muted}>Срок ответа — 30 дней (ст. 16 152-ФЗ). Пересмотр: итоговый ответ даёт другой сотрудник. Аннулирование снимает категорию по попытке, новую не выдаёт.</p>
+      <p className={styles.muted}>Срок ответа – 30 дней (ст. 16 152-ФЗ). Пересмотр: итоговый ответ даёт другой сотрудник. Аннулирование снимает категорию по попытке, новую не выдаёт.</p>
       <nav className={m.tabs} aria-label="Статус">
         {STATUSES.map((s) => <Button key={s} href={`/admin/objections?status=${s}`} size="sm" variant={s === status ? 'primary' : 'ghost'}>{LABEL[s]}</Button>)}
       </nav>
@@ -52,7 +52,7 @@ export default async function ObjectionsPage({ searchParams }: { searchParams: P
               <ModerationDecision
                 url={`/api/admin/objections/${o.id}`}
                 field="text"
-                label="Ответ кандидату (для пересмотра — заметка коллеге)"
+                label="Ответ кандидату (для пересмотра – заметка коллеге)"
                 options={[
                   { value: 'answer', label: 'Ответить', variant: 'primary' },
                   ...(o.review ? [] : [{ value: 'review', label: 'Назначить пересмотр' }]),

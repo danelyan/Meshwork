@@ -34,11 +34,11 @@ export default async function AdminVacancyPage({ params }: { params: Promise<{ i
           <dt>Вилка</dt>
           <dd>{fmtMoney(v.salaryFrom, v.salaryTo)}</dd>
           <dt>Стек</dt>
-          <dd>{v.stack.join(', ') || '—'}</dd>
+          <dd>{v.stack.join(', ') || '–'}</dd>
           <dt>Описание</dt>
-          <dd>{v.description ?? '—'}</dd>
+          <dd>{v.description ?? '–'}</dd>
           <dt>Команда</dt>
-          <dd>{v.teamDescription ?? '—'}</dd>
+          <dd>{v.teamDescription ?? '–'}</dd>
           <dt>Состояние</dt>
           <dd>{v.archivedAt ? `в архиве с ${fmtDateTime(v.archivedAt)}` : 'активна'}</dd>
           <dt>Создана</dt>

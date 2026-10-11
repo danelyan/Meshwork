@@ -15,14 +15,14 @@ const run = (d: 0 | 1 | 2, w: 0 | 1 | 2, b: 0 | 1 | 2, c: 0 | 1 | 2, quote = 'С
 afterEach(() => clearStubResponses());
 
 describe('медиана прогонов', () => {
-  it('нечётное — середина, чётное — нижняя из средних (консервативно)', () => {
+  it('нечётное – середина, чётное – нижняя из средних (консервативно)', () => {
     expect(medianScore([2, 0, 1])).toBe(1);
     expect(medianScore([2, 2, 0])).toBe(2);
     expect(medianScore([2, 1])).toBe(1);
     expect(medianScore([])).toBe(0);
   });
 
-  it('итог по теме — медиана каждого критерия; прогоны разошлись в решении → ещё 2 прогона', async () => {
+  it('итог по теме – медиана каждого критерия; прогоны разошлись в решении → ещё 2 прогона', async () => {
     const outs = [run(2, 2, 1, 0), run(1, 2, 2, 2), run(2, 0, 2, 1)];
     let i = 0;
     registerStubResponse('call_evaluator', () => ({ json: outs[i++ % 3] }));
@@ -50,7 +50,7 @@ describe('медиана прогонов', () => {
         },
       ],
     ]);
-    // aggregateRuns получает уже проверенные баллы; проверка — в oneRun (следующий тест).
+    // aggregateRuns получает уже проверенные баллы; проверка – в oneRun (следующий тест).
     expect(per[0]!.scores.depth).toBe(2);
   });
 

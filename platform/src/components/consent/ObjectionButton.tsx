@@ -8,7 +8,7 @@ import type { ObjectionView } from '@/server/consent/objections';
 import { OBJECTION_ANSWER_DAYS } from '@/server/consent/texts';
 
 /**
- * «Оспорить» рядом с результатом (ст. 16 152-ФЗ, ADR 0005): кандидат пишет, с чем не согласен; ответ — в течение
+ * «Оспорить» рядом с результатом (ст. 16 152-ФЗ, ADR 0005): кандидат пишет, с чем не согласен; ответ – в течение
  * 30 дней. Работодатель возражений не видит.
  */
 export function ObjectionButton({ subject, subjectId }: { subject: ObjectionView['subject']; subjectId: string }) {

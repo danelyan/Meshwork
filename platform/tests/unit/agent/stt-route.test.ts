@@ -20,7 +20,7 @@ describe('/api/stt', () => {
     expect(await res.json()).toMatchObject({ mode: 'yandex', sampleRate: 16000 });
   });
 
-  it('POST: аудио уходит в SpeechKit как есть, в ответе — текст', async () => {
+  it('POST: аудио уходит в SpeechKit как есть, в ответе – текст', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ result: 'привет' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     const res = await POST(post(new Uint8Array(3200)));
@@ -29,7 +29,7 @@ describe('/api/stt', () => {
     expect(String((fetchMock.mock.calls[0] as unknown as [string])[0])).toContain('stt.api.cloud.yandex.net');
   });
 
-  it('POST без входа — 401, больше 1 МБ — 413, без запроса к SpeechKit', async () => {
+  it('POST без входа – 401, больше 1 МБ – 413, без запроса к SpeechKit', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     session = null;

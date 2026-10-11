@@ -26,7 +26,7 @@ export const GET = withErrors(async (req: Request) => {
 
 /**
  * Действие онбординга. answer/skip/goto → новый OnboardingView (+ новая кука, если
- * сменилась роль); later → { next } без завершения. Завершение — существующий
+ * сменилась роль); later → { next } без завершения. Завершение – существующий
  * POST /api/auth/onboarding/complete (markOnboarded).
  */
 export const POST = withErrors(async (req: Request) => {

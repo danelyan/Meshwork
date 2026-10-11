@@ -17,7 +17,7 @@ import { getTemplate, readContract } from '../../../src/server/project/templates
 
 /**
  * Контент работодательской стороны (prisma/seed/content/) проверяется без БД: иначе ошибка автора всплывёт
- * только при сиде на стенде. Границы — из server/employer/schemas.ts (вакансия) и server/project/schemas.ts (условие).
+ * только при сиде на стенде. Границы – из server/employer/schemas.ts (вакансия) и server/project/schemas.ts (условие).
  */
 
 const catalog = new Map(
@@ -93,7 +93,7 @@ describe('seed/content: компании', () => {
     expect(new Set(EMPLOYER_PERSONAS.map((p) => p.id)).size).toBe(EMPLOYER_PERSONAS.length);
   });
 
-  it('у каждой компании есть вакансии (у новых — не меньше двух)', () => {
+  it('у каждой компании есть вакансии (у новых – не меньше двух)', () => {
     for (const c of ALL_COMPANIES) {
       const own = ALL_VACANCIES.filter((v) => v.companySlug === c.slug).length + DEMO_VACANCIES.filter((v) => v.companyId === companyId(c.slug)).length;
       expect(own, `${c.slug}`).toBeGreaterThanOrEqual(c.employer ? 2 : 1);
@@ -156,7 +156,7 @@ describe('seed/content: вакансии', () => {
 });
 
 describe('seed/content: задания к старым вакансиям', () => {
-  it('ключи — ровно 8 вакансий seed/recommend.ts', () => {
+  it('ключи – ровно 8 вакансий seed/recommend.ts', () => {
     expect(Object.keys(EXISTING_PROJECTS).sort()).toEqual(DEMO_VACANCIES.map((v) => v.id).sort());
   });
 

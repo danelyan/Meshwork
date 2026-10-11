@@ -11,9 +11,9 @@ import styles from './shell.module.css';
 const HIDE_KEY = 'onboarding-banner-hidden';
 
 /**
- * Аккаунт вошёл, но онбординг не завершён («Настроить позже») — плашка с прогрессом и ссылкой.
+ * Аккаунт вошёл, но онбординг не завершён («Настроить позже») – плашка с прогрессом и ссылкой.
  * Крестик скрывает её до следующего входа (sessionStorage), онбординг не трогает. Ошибки сети молча игнорируем.
- * Знакомство любой роли идёт в ленте /consultant (решение владельца 10.10) — там плашка не нужна.
+ * Знакомство любой роли идёт в ленте /consultant (решение владельца 10.10) – там плашка не нужна.
  */
 export function OnboardingBanner() {
   const pathname = usePathname();
@@ -23,7 +23,7 @@ export function OnboardingBanner() {
     try {
       if (window.sessionStorage.getItem(HIDE_KEY) === '1') setHidden(true);
     } catch {
-      /* хранилище недоступно — плашка просто остаётся */
+      /* хранилище недоступно – плашка просто остаётся */
     }
   }, []);
   if (!pending || hidden || pathname === pending.href) return null;
@@ -39,7 +39,7 @@ export function OnboardingBanner() {
   return (
     <div className={styles.banner} role="status">
       <p className={styles.bannerText}>
-        {progress ? `Знакомство: заполнено ${progress.done} из ${progress.total} — ` : 'Онбординг не завершён: '}
+        {progress ? `Знакомство: заполнено ${progress.done} из ${progress.total} – ` : 'Онбординг не завершён: '}
         <Link href={pending.href}>продолжить</Link>
       </p>
       <button type="button" className={styles.bannerClose} aria-label="Скрыть" onClick={hide}>
@@ -54,7 +54,7 @@ interface Pending {
   progress: { done: number; total: number } | null;
 }
 
-/** Куда продолжать незавершённый онбординг и сколько шагов закрыто; null — завершён или неизвестно. */
+/** Куда продолжать незавершённый онбординг и сколько шагов закрыто; null – завершён или неизвестно. */
 function useOnboardingPending(): Pending | null {
   const [pending, setPending] = useState<Pending | null>(null);
   useEffect(() => {

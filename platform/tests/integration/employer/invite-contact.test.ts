@@ -57,7 +57,7 @@ describe('приглашение: вилка, контакт компании и
   });
   afterAll(() => prisma.$disconnect());
 
-  it('вилка: оба конца обязательны, «до» не меньше «от» — иначе 400; сохраняется как есть', async () => {
+  it('вилка: оба конца обязательны, «до» не меньше «от» – иначе 400; сохраняется как есть', async () => {
     expect((await post({ salaryFrom: 250000, salaryTo: 200000 })).status).toBe(400);
     expect((await post({ salaryFrom: 200000 })).status).toBe(400);
     expect((await post({ salaryTo: 200000 })).status).toBe(400);
@@ -73,7 +73,7 @@ describe('приглашение: вилка, контакт компании и
     expect(tracked.invitations[0]).toMatchObject({ salaryFrom: 200000, salaryTo: 260000 });
   });
 
-  it('кандидат видит компанию, описание, вилку и способ связи до принятия; работодатель контакт кандидата — нет', async () => {
+  it('кандидат видит компанию, описание, вилку и способ связи до принятия; работодатель контакт кандидата – нет', async () => {
     const { id } = await createInvitation(ctx, { candidateId: PAY.id, vacancyId: PAY_VAC, message: 'Платёжная команда', salaryFrom: 200000, salaryTo: 260000 });
     const mine = await (await myInvites(jsonRequest('/x', 'GET', undefined, candCookie(PAY.id)))).json();
     expect(mine.invitations[0]).toMatchObject({
@@ -87,7 +87,7 @@ describe('приглашение: вилка, контакт компании и
     expect(await trackedContacts(PAY.id)).toBeNull();
   });
 
-  it('способ связи компании: нет Company.contact — почта отправителя; служебная почта и нет контакта — 422 company_contact_required (E05)', async () => {
+  it('способ связи компании: нет Company.contact – почта отправителя; служебная почта и нет контакта – 422 company_contact_required (E05)', async () => {
     await prisma.company.update({ where: { id: ctx.companyId }, data: { contact: null } });
     await createInvitation(ctx, { candidateId: PAY.id, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 });
     let mine = await (await myInvites(jsonRequest('/x', 'GET', undefined, candCookie(PAY.id)))).json();
@@ -95,7 +95,7 @@ describe('приглашение: вилка, контакт компании и
     // профиль компании сообщает тот же способ связи
     expect((await (await getCompany(jsonRequest('/x', 'GET', undefined, EMP))).json()).inviteContact).toBe(DEMO_EMPLOYER.email);
 
-    // служебная почта отправителя и нет контакта компании: отправить нельзя — кандидату некуда ответить
+    // служебная почта отправителя и нет контакта компании: отправить нельзя – кандидату некуда ответить
     await prisma.invitation.deleteMany();
     await prisma.user.update({ where: { id: DEMO_EMPLOYER.userId }, data: { email: 'user-x@users.invalid' } });
     expect((await (await getCompany(jsonRequest('/x', 'GET', undefined, EMP))).json()).inviteContact).toBeNull();
@@ -107,7 +107,7 @@ describe('приглашение: вилка, контакт компании и
     const draft = (await tool('draft_invitation').handler(agentCtx, { candidateId: JUN.id, vacancyId: PAY_VAC })) as { blocked: string | null };
     expect(draft.blocked).toBe('no_company_contact');
 
-    // контакт компании указан — приглашение уходит, кандидат видит контакт компании
+    // контакт компании указан – приглашение уходит, кандидат видит контакт компании
     await prisma.company.update({ where: { id: ctx.companyId }, data: { contact: '@northstream_hr' } });
     expect((await post({ candidateId: JUN.id, salaryFrom: 200000, salaryTo: 260000 })).status).toBe(201);
     mine = await (await myInvites(jsonRequest('/x', 'GET', undefined, candCookie(JUN.id)))).json();
@@ -115,7 +115,7 @@ describe('приглашение: вилка, контакт компании и
     expect(((await tool('draft_invitation').handler(agentCtx, { candidateId: PAY.id, vacancyId: PAY_VAC })) as { blocked: string | null }).blocked).toBeNull();
   });
 
-  it('контакт кандидата после accepted: указанный кандидатом; не указан — почта; служебная почта — null, не пустая строка', async () => {
+  it('контакт кандидата после accepted: указанный кандидатом; не указан – почта; служебная почта – null, не пустая строка', async () => {
     const { id } = await createInvitation(ctx, { candidateId: PAY.id, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 });
     await accept(PAY.id, id);
     expect(await trackedContacts(PAY.id)).toEqual({ name: PAY.name, contact: 'candidate.be-m-pay@example.com' });
@@ -127,7 +127,7 @@ describe('приглашение: вилка, контакт компании и
     expect(await trackedContacts(PAY.id)).toEqual({ name: PAY.name, contact: null });
   });
 
-  it('/api/profile/contact: почта и Telegram нормализуются, мусор — 400, пусто — убрать', async () => {
+  it('/api/profile/contact: почта и Telegram нормализуются, мусор – 400, пусто – убрать', async () => {
     const save = (contact: unknown) => setContact(jsonRequest('/api/profile/contact', 'POST', { contact }, candCookie(JUN.id)));
     expect(await (await save('https://t.me/Artem_Koval')).json()).toEqual({ contact: '@Artem_Koval' });
     expect(await (await save(' artem@example.com ')).json()).toEqual({ contact: 'artem@example.com' });

@@ -1,4 +1,4 @@
-// Банк-2 backend.integrations: +3 Junior, +5 Middle, +4 Senior. Ответ считает код (R-T-02); a, b — ПРЕДЛОЖЕНИЕ.
+// Банк-2 backend.integrations: +3 Junior, +5 Middle, +4 Senior. Ответ считает код (R-T-02); a, b – ПРЕДЛОЖЕНИЕ.
 import { createRng } from '../rng';
 import type { TaskGenerator } from '../types';
 import { fam } from './backend-bank2-util';

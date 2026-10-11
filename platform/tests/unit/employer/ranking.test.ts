@@ -19,7 +19,7 @@ import { maxPrecisionAtK, ndcgAtK, precisionAtK } from '../../../eval/matching/m
 import { fixtureCatalog } from '../../helpers/recommend-fixtures';
 
 const catalog = fixtureCatalog();
-/** Тесты формулы ранжируют и кандидатов без категории — расширенный пул (основной режим — describe «только подтверждённые категории»). */
+/** Тесты формулы ранжируют и кандидатов без категории – расширенный пул (основной режим – describe «только подтверждённые категории»). */
 const POOL = { expandPool: true } as const;
 const target: MatchTarget = {
   specialization: 'backend',
@@ -67,7 +67,7 @@ describe('ранжирование работодателя', () => {
     expect(r.explanation.stackMatched).toEqual(['Go']);
   });
 
-  it('категория — множитель покрытия: без закрытых требований не поднимает', () => {
+  it('категория – множитель покрытия: без закрытых требований не поднимает', () => {
     const base = cand('a', [['be.idempotency', 'artifact']]);
     const withCat = { ...base, id: 'b', category: { specialization: 'backend' as const, grade: 'middle' as const } };
     const a = scoreCandidate(base, { ...target, stack: [] }, catalog)!;
@@ -78,14 +78,14 @@ describe('ранжирование работодателя', () => {
     const e = scoreCandidate(empty, target, catalog)!;
     expect(e.score).toBeCloseTo(CATEGORY_BASE * (1 + CATEGORY_MULT_EXACT), 4);
     expect(e.explanation.category).toBe('Backend · Middle (тест)');
-    // грейд ниже требуемого — без множителя и с пометкой
+    // грейд ниже требуемого – без множителя и с пометкой
     const low = scoreCandidate({ ...base, category: { specialization: 'backend', grade: 'junior' } }, target, catalog)!;
     expect(low.boosts.category).toBe(0);
     expect(low.categoryMatch).toBe(false);
     expect(low.explanation.category).toMatch(/ниже требуемого/);
   });
 
-  it('ФСП — небольшая прибавка, отсутствие ФСП не штрафуется (R-FSP-03)', () => {
+  it('ФСП – небольшая прибавка, отсутствие ФСП не штрафуется (R-FSP-03)', () => {
     const t = { ...target, stack: [] };
     const no = scoreCandidate(cand('a', [['be.idempotency', 'artifact']], { fspState: 'no_achievements' }), t, catalog)!;
     const yes = scoreCandidate(cand('b', [['be.idempotency', 'artifact']], { fspState: 'linked' }), t, catalog)!;
@@ -93,7 +93,7 @@ describe('ранжирование работодателя', () => {
     expect(no.boosts.fsp).toBe(0);
   });
 
-  it('другая специализация — штраф; без утверждений и категории — не в выдаче', () => {
+  it('другая специализация – штраф; без утверждений и категории – не в выдаче', () => {
     const fe = cand('fe', [['be.idempotency', 'artifact']], { specialization: 'frontend' });
     const r = scoreCandidate(fe, { ...target, stack: [] }, catalog)!;
     expect(r.boosts.specPenalty).toBe(SPEC_MISMATCH_PENALTY);
@@ -101,7 +101,7 @@ describe('ранжирование работодателя', () => {
     expect(scoreCandidate(cand('z', []), target, catalog)).toBeNull();
   });
 
-  it('подкатегория потребности: своя выше соседней даже при меньшем балле; соседняя помечена; фильтр — по категории теста', () => {
+  it('подкатегория потребности: своя выше соседней даже при меньшем балле; соседняя помечена; фильтр – по категории теста', () => {
     const t = { ...target, subcategoryId: 'backend.integrations' };
     const strongNeighbour = cand('n', [['be.idempotency', 'artifact'], ['be.transactions', 'artifact'], ['be.message-queue', 'artifact']], { subcategoryId: 'backend.web-api' });
     const weakOwn = cand('o', [['be.idempotency', 'self_reported']], { subcategoryId: 'backend.integrations' });
@@ -121,13 +121,13 @@ describe('ранжирование работодателя', () => {
     expect(n.explanation.subcategory).toMatch(/^соседняя подкатегория: Web API/);
     expect(n.explanation.summary).toContain('подкатегория: соседняя');
     expect(ranked[0]!.explanation.subcategory).toBe('Интеграции');
-    // Без подкатегории у потребности — порядок только по баллу, пометки нет.
+    // Без подкатегории у потребности – порядок только по баллу, пометки нет.
     expect(rankCandidates([strongNeighbour, weakOwn], target, catalog, POOL)[0]!.explanation.subcategory).toBe('');
     expect(passesFilters(byTest, { subcategory: 'backend.integrations' })).toBe(true);
     expect(passesFilters(byTest, { subcategory: 'backend.web-api' })).toBe(false);
   });
 
-  it('детерминированно: равный балл — по id', () => {
+  it('детерминированно: равный балл – по id', () => {
     const a = cand('b', [['be.idempotency', 'artifact']]);
     const b = cand('a', [['be.idempotency', 'artifact']]);
     const r1 = rankCandidates([a, b], target, catalog, POOL).map((x) => x.candidateId);
@@ -144,7 +144,7 @@ describe('ранжирование работодателя', () => {
     expect(passesFilters(c, { stack: ['go', 'PostgreSQL'] })).toBe(true);
     expect(passesFilters(c, { stack: ['Go', 'Rust'] })).toBe(false);
     expect(passesFilters(c, { fsp: true })).toBe(false);
-    // M05: по умолчанию только с категорией; без категории — только при явном расширении пула
+    // M05: по умолчанию только с категорией; без категории – только при явном расширении пула
     expect(passesFilters(c, {})).toBe(true);
     expect(passesFilters(cand('b', []), {})).toBe(false);
     expect(passesFilters(cand('b', []), { expandPool: true })).toBe(true);
@@ -159,10 +159,10 @@ describe('ранжирование работодателя', () => {
   });
 });
 
-describe('подборка под потребность: категория из теста — самостоятельное основание показа (Q-36, 10.10)', () => {
+describe('подборка под потребность: категория из теста – самостоятельное основание показа (Q-36, 10.10)', () => {
   const mid = { specialization: 'backend' as const, grade: 'middle' as const };
 
-  it('только категория (0 закрытых) остаётся в подборке; без категории и с нулём закрытых — нет', () => {
+  it('только категория (0 закрытых) остаётся в подборке; без категории и с нулём закрытых – нет', () => {
     const catOnly = cand('cat', [], { category: mid });
     const zero = cand('z', [['be.background-jobs', 'self_reported']]);
     const one = cand('o', [['be.idempotency', 'self_reported']]);
@@ -171,12 +171,12 @@ describe('подборка под потребность: категория и�
     expect(dropUncovered(ranked).map((x) => x.candidateId)).not.toContain('z');
   });
 
-  it('категория другой специализации или ниже требуемого грейда — не основание', () => {
+  it('категория другой специализации или ниже требуемого грейда – не основание', () => {
     const fe = cand('fe', [], { specialization: 'frontend', category: { specialization: 'frontend', grade: 'middle' } });
     const low = cand('low', [], { category: { specialization: 'backend', grade: 'junior' } });
     const ranked = dropUncovered(rankCandidates([fe, low], target, catalog));
     expect(ranked).toEqual([]);
-    // грейд выше требуемого — основание есть
+    // грейд выше требуемого – основание есть
     const high = cand('high', [], { category: mid });
     const jTarget = { ...target, grade: 'junior' as const };
     expect(dropUncovered(rankCandidates([high], jTarget, catalog)).map((x) => x.candidateId)).toEqual(['high']);
@@ -209,12 +209,12 @@ describe('подборка под потребность: категория и�
   });
 });
 
-describe('основной режим подбора — только подтверждённые категории (M05, аудит 11.10)', () => {
+describe('основной режим подбора – только подтверждённые категории (M05, аудит 11.10)', () => {
   const mid = { specialization: 'backend' as const, grade: 'middle' as const };
   const withCat = cand('cat', [['be.idempotency', 'artifact']], { category: mid });
   const noCat = cand('nocat', [['be.idempotency', 'artifact'], ['be.transactions', 'artifact']]);
 
-  it('без фильтров кандидат без категории из теста в выдачу не попадает; расширение пула — явный флаг с пометкой в объяснении', () => {
+  it('без фильтров кандидат без категории из теста в выдачу не попадает; расширение пула – явный флаг с пометкой в объяснении', () => {
     expect(rankCandidates([withCat, noCat], target, catalog).map((r) => r.candidateId)).toEqual(['cat']);
     const expanded = rankCandidates([withCat, noCat], target, catalog, { expandPool: true });
     expect(expanded.map((r) => r.candidateId)).toEqual(['nocat', 'cat']);
@@ -230,7 +230,7 @@ describe('основной режим подбора — только подтв
     expect(relaxationHints([withCat, noCat], target, catalog, { expandPool: true }).map((h) => h.kind)).not.toContain('expandPool');
   });
 
-  it('query: pool=all включает расширение и возвращается в ссылку; прежний category=1 — no-op', () => {
+  it('query: pool=all включает расширение и возвращается в ссылку; прежний category=1 – no-op', () => {
     expect(parseFilters({ pool: 'all' }).filters).toEqual({ expandPool: true });
     expect(parseFilters({ category: '1' }).filters).toEqual({});
     expect(parseFilters({ pool: 'nope' }).filters).toEqual({});
@@ -253,7 +253,7 @@ describe('приватность карточки (R-E-07)', () => {
       { catalogId: 'c', statement: 'C', level: 'third_party' as const, sourceType: 'fsp' as const },
     ],
   };
-  it('до принятия: псевдоним, контактов нет; после — имя и контакт (указанный, иначе почта)', () => {
+  it('до принятия: псевдоним, контактов нет; после – имя и контакт (указанный, иначе почта)', () => {
     const hidden = toCandidateCard(src, false);
     expect(hidden.displayName).toBe(pseudonym('cand-1'));
     expect(hidden.displayName).toMatch(/^Кандидат #[0-9A-F]{6}$/);
@@ -265,7 +265,7 @@ describe('приватность карточки (R-E-07)', () => {
     expect(open.contacts).toEqual({ name: 'Иван Петров', contact: 'ivan@example.test' });
     expect(toCandidateCard({ ...src, contact: '@ivan_petrov' }, true).contacts).toEqual({ name: 'Иван Петров', contact: '@ivan_petrov' });
     expect(JSON.stringify(toCandidateCard({ ...src, contact: '@ivan_petrov' }, false))).not.toContain('ivan_petrov');
-    // служебная почта онбординга и нет контакта — null (интерфейс пишет «Кандидат не указал контакт»)
+    // служебная почта онбординга и нет контакта – null (интерфейс пишет «Кандидат не указал контакт»)
     expect(toCandidateCard({ ...src, email: 'user-1@users.invalid' }, true).contacts).toEqual({ name: 'Иван Петров', contact: null });
     expect(toCandidateCard({ ...src, email: 'user-1@users.invalid', contact: '  ' }, true).contacts?.contact).toBeNull();
   });
@@ -284,7 +284,7 @@ describe('приватность карточки (R-E-07)', () => {
       { catalogId: 'y', level: 'third_party', statement: 'y', sourceType: 'codeforces' },
     ]);
   });
-  it('служебный адрес онбординга — не контакт', () => {
+  it('служебный адрес онбординга – не контакт', () => {
     expect(contactEmail('user-x@users.invalid')).toBeNull();
     expect(contactEmail('a@b.ru')).toBe('a@b.ru');
   });
@@ -301,7 +301,7 @@ describe('схемы', () => {
   it('фильтр грейда принимает Senior', () => {
     expect(parseFilters({ spec: 'ai', grade: 'senior' }).filters).toMatchObject({ specialization: 'ai', grade: 'senior' });
   });
-  it('приглашение: вилка «от–до» и описание обязательны, потребность — нет', () => {
+  it('приглашение: вилка «от–до» и описание обязательны, потребность – нет', () => {
     const base = { candidateId: 'c', message: 'Платёжная команда, Go' };
     expect(InvitationInput.safeParse(base).success).toBe(false);
     expect(InvitationInput.safeParse({ ...base, message: 'коротко', salaryFrom: 1, salaryTo: 1 }).success).toBe(false);
@@ -333,7 +333,7 @@ describe('метрики eval подбора', () => {
 });
 
 describe('тип источника для работодателя (R-E-07)', () => {
-  it('только у artifact/third_party; резюме, документ, чат и платформа — null', () => {
+  it('только у artifact/third_party; резюме, документ, чат и платформа – null', () => {
     expect(publicSourceType('github', 'artifact')).toBe('github');
     expect(publicSourceType('url', 'artifact')).toBe('article');
     expect(publicSourceType('stackoverflow', 'artifact')).toBe('stackoverflow');

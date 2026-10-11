@@ -23,7 +23,7 @@ const Body = z.object({
   extendedScreen: z.boolean().optional(),
 });
 
-/** POST /api/expert/attempt/[id]/signal — сигналы браузера к активной попытке эксперта (индекс честности). Тело — JSON текстом (sendBeacon). */
+/** POST /api/expert/attempt/[id]/signal – сигналы браузера к активной попытке эксперта (индекс честности). Тело – JSON текстом (sendBeacon). */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);
   assertExpertEnabled();

@@ -15,7 +15,7 @@ export const GET = withErrors(async (req: Request) => {
   return Response.json({ staff: await listStaff() });
 });
 
-/** Пригласить сотрудника (только owner): создаётся учётка с временным паролем — он в ответе один раз. TOTP — при первом входе. */
+/** Пригласить сотрудника (только owner): создаётся учётка с временным паролем – он в ответе один раз. TOTP – при первом входе. */
 export const POST = withErrors(async (req: Request) => {
   const actor = await requireStaff(req, 'manage_staff');
   const body = StaffInviteBody.parse(await req.json().catch(() => ({})));

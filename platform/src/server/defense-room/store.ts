@@ -7,7 +7,7 @@ import type { DefenseMode, DefenseRoomVerdict, PlanItem, TranscriptEntry } from 
 
 /**
  * Хранение состояния звонка: транскрипт (CallSession.transcriptJson, дописывается под блокировкой
- * строки — реплики приходят из разных маршрутов одновременно), план (DefenseRoomPlan) и блокировка
+ * строки – реплики приходят из разных маршрутов одновременно), план (DefenseRoomPlan) и блокировка
  * хода ИИ (один ход за раз, протухает через PLAN_LOCK_MS).
  */
 
@@ -24,7 +24,7 @@ export interface SourceInfo {
   files: number;
   fragments: number;
   truncated?: { treeEntries: number; files: number };
-  /** Версия правил защиты (DEFENSE_POLICY_VERSION); CallSession.policyVersion — версия согласия на запись, как у лейна call. */
+  /** Версия правил защиты (DEFENSE_POLICY_VERSION); CallSession.policyVersion – версия согласия на запись, как у лейна call. */
   policyVersion?: string;
 }
 

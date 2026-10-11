@@ -57,14 +57,14 @@ describe('token bucket', () => {
     expect(l.take('a', 7)).toMatchObject({ allowed: false, remaining: 6, retryAfterMs: 500 });
   });
 
-  it('неверная стоимость и стоимость больше ёмкости — RangeError', () => {
+  it('неверная стоимость и стоимость больше ёмкости – RangeError', () => {
     const { l } = make();
     expect(() => l.take('a', 6)).toThrow(RangeError);
     expect(() => l.take('a', 0)).toThrow(RangeError);
     expect(() => l.take('a', 1.5)).toThrow(RangeError);
   });
 
-  it('неверные параметры — RangeError', () => {
+  it('неверные параметры – RangeError', () => {
     const now = () => 0;
     expect(() => createLimiter({ capacity: 0, refillPerSec: 1, maxKeys: 1, now })).toThrow(RangeError);
     expect(() => createLimiter({ capacity: 2.5, refillPerSec: 1, maxKeys: 1, now })).toThrow(RangeError);
@@ -103,7 +103,7 @@ describe('память', () => {
     expect(l.take('b').allowed).toBe(true); // b вытеснен: новое полное ведро
   });
 
-  it('100 000 ключей при maxKeys 10 000 — быстро (O(1) на запрос)', () => {
+  it('100 000 ключей при maxKeys 10 000 – быстро (O(1) на запрос)', () => {
     const { l } = make({ maxKeys: 10_000 });
     const started = performance.now();
     for (let i = 0; i < 100_000; i++) l.take(`k${i}`);
@@ -141,7 +141,7 @@ describe('HTTP', () => {
     expect((await request(a).get('/api/items').set('X-Api-Key', 'k')).status).toBe(200);
   });
 
-  it('тяжёлый запрос стоит 5; стоимость больше ёмкости — 400', async () => {
+  it('тяжёлый запрос стоит 5; стоимость больше ёмкости – 400', async () => {
     const { app: a } = app();
     expect((await request(a).post('/api/reports').set('X-Api-Key', 'r')).status).toBe(202);
     expect((await request(a).post('/api/reports').set('X-Api-Key', 'r')).body).toEqual({ queued: true });
@@ -152,7 +152,7 @@ describe('HTTP', () => {
     expect(res.body).toEqual({ error: 'cost_exceeds_capacity' });
   });
 
-  it('без ключа — 401 без заголовков лимита; /health без лимита', async () => {
+  it('без ключа – 401 без заголовков лимита; /health без лимита', async () => {
     const { app: a } = app({ capacity: 1 });
     const res = await request(a).get('/api/items');
     expect(res.status).toBe(401);
@@ -168,7 +168,7 @@ describe('HTTP', () => {
 
 describe('DESIGN.md', () => {
   it('разделы «Решения», «Компромиссы», «Границы применимости» не короче 200 символов', () => {
-    // new URL(…) в jsdom — URL из jsdom; путь считаем от файла теста.
+    // new URL(…) в jsdom – URL из jsdom; путь считаем от файла теста.
     const file = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../DESIGN.md');
     expect(existsSync(file)).toBe(true);
     const text = readFileSync(file, 'utf8');

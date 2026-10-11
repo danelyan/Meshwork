@@ -51,17 +51,17 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'Реестр ФСП — симулятор API',
+      title: 'Реестр ФСП – симулятор API',
       version: '1.0.0',
       summary: 'Синтетический реестр достижений Федерации спортивного программирования и ФСП ID на Keycloak.',
       description: [
-        '**Это симулятор команды для ЛЦТ 2026, а не сервис ФСП.** Организатор API и схему реестра не выдаёт; этот контракт — предложение команды.',
+        '**Это симулятор команды для ЛЦТ 2026, а не сервис ФСП.** Организатор API и схему реестра не выдаёт; этот контракт – предложение команды.',
         'Все спортсмены, команды, соревнования, протоколы и разряды синтетические (детерминированный генератор). Каждый ответ помечен `meta.simulator=true` и заголовком `X-FSP-Simulator: true`.',
         '',
-        'Доступ: публичные справочники и протоколы — без токена; `/me/*` — токен спортсмена (вход через ФСП ID, claim `fsp_id`, роль `athlete`);',
-        '`/athletes/*` — токен сервисного аккаунта партнёра (`client_credentials`, роль `partner`) **в пределах согласий спортсмена** (`profile`, `achievements`, `ranks`). Согласия спортсмен меняет в `/me/consents`.',
+        'Доступ: публичные справочники и протоколы – без токена; `/me/*` – токен спортсмена (вход через ФСП ID, claim `fsp_id`, роль `athlete`);',
+        '`/athletes/*` – токен сервисного аккаунта партнёра (`client_credentials`, роль `partner`) **в пределах согласий спортсмена** (`profile`, `achievements`, `ranks`). Согласия спортсмен меняет в `/me/consents`.',
         '',
-        '`/sandbox/*` — **песочница стенда**: ручная правка реестра без токена (участники, достижения, разряды). Она есть только в симуляторе, чтобы проверяющий мог изменить данные и увидеть их в ответах API и на платформе.',
+        '`/sandbox/*` – **песочница стенда**: ручная правка реестра без токена (участники, достижения, разряды). Она есть только в симуляторе, чтобы проверяющий мог изменить данные и увидеть их в ответах API и на платформе.',
         '',
         `Discovery OIDC: ${config.issuer}/.well-known/openid-configuration`,
       ].join('\n'),
@@ -75,7 +75,7 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
       { name: 'Проверка', description: 'Проверка записи о достижении по идентификатору' },
       { name: 'Спортсмен', description: 'Собственный профиль, достижения, разряды и согласия' },
       { name: 'Партнёр', description: 'Чтение реестра партнёром в пределах согласий' },
-      { name: 'Песочница стенда', description: 'Ручная правка реестра без токена: участники, достижения, разряды, возврат к исходному набору. Есть только в симуляторе — в настоящем реестре записи вносит федерация по протоколам. Участник, созданный здесь, получает пользователя ФСП ID и может войти на платформе.' },
+      { name: 'Песочница стенда', description: 'Ручная правка реестра без токена: участники, достижения, разряды, возврат к исходному набору. Есть только в симуляторе – в настоящем реестре записи вносит федерация по протоколам. Участник, созданный здесь, получает пользователя ФСП ID и может войти на платформе.' },
       { name: 'Служебное' },
     ],
     paths: {
@@ -127,7 +127,7 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
       '/achievements/{achievement_id}/verify': {
         get: {
           tags: ['Проверка'], operationId: 'verifyAchievement', summary: 'Проверить запись о достижении',
-          description: 'По идентификатору из профиля кандидата: существует ли запись, кому принадлежит, какое место и соревнование. Контрольная сумма — SHA-256 ключевых полей, не электронная подпись.',
+          description: 'По идентификатору из профиля кандидата: существует ли запись, кому принадлежит, какое место и соревнование. Контрольная сумма – SHA-256 ключевых полей, не электронная подпись.',
           parameters: [{ name: 'achievement_id', in: 'path', required: true, schema: { type: 'string' }, example: 'ACH-2025-0001' }],
           responses: { 200: ok(envelope(ref('Verification'))) },
         },
@@ -230,7 +230,7 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
       securitySchemes: {
         fspId: {
           type: 'oauth2',
-          description: 'ФСП ID (Keycloak, реалм fsp-id). Код авторизации с PKCE для спортсмена; client_credentials — для партнёра.',
+          description: 'ФСП ID (Keycloak, реалм fsp-id). Код авторизации с PKCE для спортсмена; client_credentials – для партнёра.',
           flows: {
             authorizationCode: { authorizationUrl: `${oidc}/auth`, tokenUrl: `${oidc}/token`, scopes: { openid: 'Вход', profile: 'Имя', email: 'Почта' } },
             clientCredentials: { tokenUrl: `${oidc}/token`, scopes: {} },
@@ -280,7 +280,7 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
         },
         Achievement: {
           type: 'object',
-          description: 'Подтверждённое реестром участие в соревновании. Личная роль в команде, ссылка на проект и стек — вне реестра: их сообщает сам кандидат.',
+          description: 'Подтверждённое реестром участие в соревновании. Личная роль в команде, ссылка на проект и стек – вне реестра: их сообщает сам кандидат.',
           properties: {
             achievement_id: { type: 'string' }, fsp_id: { type: 'string' }, event_id: { type: 'string' }, event_name: { type: 'string' }, discipline: { type: 'string', enum: disciplineEnum },
             level: { type: 'string', enum: ['regional', 'national'] }, kind: { type: 'string', enum: kindEnum }, season: { type: 'integer' }, date: { type: 'string', format: 'date' },
@@ -294,7 +294,7 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
         Rank: { type: 'object', properties: { rank_id: { type: 'string' }, fsp_id: { type: 'string' }, discipline: { type: 'string', enum: disciplineEnum }, rank: { type: 'string', enum: rankEnum }, order_no: { type: 'string' }, assigned_on: { type: 'string', format: 'date' }, valid_until: { type: ['string', 'null'], format: 'date' }, basis_achievement_id: { type: ['string', 'null'] }, manual: { type: 'boolean', description: 'Внесён вручную через песочницу стенда' } } },
         SandboxAthleteInput: {
           type: 'object',
-          description: 'При создании обязательны все поля, кроме middle_name и sex; при изменении — любое подмножество.',
+          description: 'При создании обязательны все поля, кроме middle_name и sex; при изменении – любое подмножество.',
           properties: {
             last_name: { type: 'string', maxLength: 40, description: 'Буквы, пробел, дефис, апостроф' },
             first_name: { type: 'string', maxLength: 40 },

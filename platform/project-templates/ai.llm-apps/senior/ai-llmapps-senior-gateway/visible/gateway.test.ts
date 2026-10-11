@@ -22,7 +22,7 @@ describe('шлюз (visible)', () => {
     expect(r).toMatchObject({ data: { city: 'Казань', days: 3 }, provider: 'demo', cached: false, tokens: 60 });
   });
 
-  it('пустой текст — bad_request', async () => {
+  it('пустой текст – bad_request', async () => {
     const g = createGateway({ providers: [provider], budgetTokens: 10_000 });
     await expect(g.extract({ instruction: 'x', text: ' ', fields })).rejects.toBeInstanceOf(GatewayError);
   });

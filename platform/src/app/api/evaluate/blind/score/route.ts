@@ -13,7 +13,7 @@ const Body = z.object({
   ratings: z.record(z.string().regex(/^c\d{1,2}$/), z.number().int().min(0).max(3)),
 });
 
-/** POST /api/evaluate/blind/score {token, ratings} — чей порядок лучше по оценкам жюри: meanRating, P@3 (оценка ≥ 2), nDCG@3. */
+/** POST /api/evaluate/blind/score {token, ratings} – чей порядок лучше по оценкам жюри: meanRating, P@3 (оценка ≥ 2), nDCG@3. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { token, ratings } = Body.parse(await req.json().catch(() => null));

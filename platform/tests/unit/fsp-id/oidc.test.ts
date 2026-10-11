@@ -61,7 +61,7 @@ describe('мок ФСП ID: discovery и поток Authorization Code + PKCE', 
     expect(d.id_token_signing_alg_values_supported).toEqual(['RS256']);
   });
 
-  it('JWKS — только публичная часть ключа', () => {
+  it('JWKS – только публичная часть ключа', () => {
     const [k] = jwks().keys;
     expect(k).toMatchObject({ kty: 'RSA', alg: 'RS256', use: 'sig' });
     expect(k).not.toHaveProperty('d');
@@ -137,7 +137,7 @@ describe('мок ФСП ID: discovery и поток Authorization Code + PKCE', 
     expect(exchangeToken(form2, ISSUER)).toMatchObject({ status: 401, body: { error: 'invalid_client' } });
   });
 
-  it('userinfo по access_token; без токена — null', async () => {
+  it('userinfo по access_token; без токена – null', async () => {
     const { flow, params } = await runToCallback(NONE);
     const res = exchangeToken(new URLSearchParams({ grant_type: 'authorization_code', code: params.get('code')!, client_id: 'fsp-career', redirect_uri: `${APP}/api/fsp-id/callback`, code_verifier: flow.verifier }), ISSUER);
     expect(res.status).toBe(200);
@@ -153,7 +153,7 @@ describe('мок ФСП ID: проверка запроса авторизаци
     return new URL(await buildAuthorizeUrl(t, newFlow('c'))).searchParams;
   };
 
-  it('чужой redirect_uri — страница ошибки, без редиректа', async () => {
+  it('чужой redirect_uri – страница ошибки, без редиректа', async () => {
     const p = await base();
     p.set('redirect_uri', 'https://evil.example/api/fsp-id/callback');
     expect(validateAuthorize(p, APP)).toMatchObject({ ok: false, fatal: true });
@@ -161,13 +161,13 @@ describe('мок ФСП ID: проверка запроса авторизаци
     expect(validateAuthorize(p, APP)).toMatchObject({ ok: false, fatal: true });
   });
 
-  it('неизвестный client_id — страница ошибки', async () => {
+  it('неизвестный client_id – страница ошибки', async () => {
     const p = await base();
     p.set('client_id', 'evil');
     expect(validateAuthorize(p, APP)).toMatchObject({ ok: false, fatal: true });
   });
 
-  it('plain PKCE, нет nonce или openid — ошибка редиректом на свой redirect_uri', async () => {
+  it('plain PKCE, нет nonce или openid – ошибка редиректом на свой redirect_uri', async () => {
     for (const [k, v] of [['code_challenge_method', 'plain'], ['nonce', ''], ['scope', 'profile'], ['response_type', 'token']] as const) {
       const p = await base();
       p.set(k, v);
@@ -231,7 +231,7 @@ describe('проверка ID-токена (verifyIdToken)', () => {
 });
 
 describe('кука потока ФСП ID', () => {
-  it('подпись проверяется; подмена и срок — null', () => {
+  it('подпись проверяется; подмена и срок – null', () => {
     const f = newFlow('cand-1', 1000);
     const token = signFlowState(f, SECRET);
     expect(verifyFlowState(token, SECRET, 1001)).toEqual(f);
@@ -245,7 +245,7 @@ describe('кука потока ФСП ID', () => {
 });
 
 describe('демо-реестр и привязка к профилю', () => {
-  it('три демо-участника — три состояния; неизвестный sub — без достижений', () => {
+  it('три демо-участника – три состояния; неизвестный sub – без достижений', () => {
     expect(fspRegistryLookup(WITH.sub).state).toBe('linked');
     expect(fspRegistryLookup(WITH.sub).achievements.length).toBeGreaterThan(0);
     expect(fspRegistryLookup(NONE.sub)).toEqual({ state: 'no_achievements', achievements: [] });
@@ -277,12 +277,12 @@ describe('демо-реестр и привязка к профилю', () => {
     expect(view).toMatchObject({ state: 'unavailable', achievements: [] });
   });
 
-  it('fspLinkView: без привязки — только состояние, источник не читается', async () => {
+  it('fspLinkView: без привязки – только состояние, источник не читается', async () => {
     expect(await fspLinkView('cand-1', 'not_linked')).toEqual({ state: 'not_linked', subject: null, name: null, achievements: [] });
     expect(prisma.source.findFirst).not.toHaveBeenCalled();
   });
 
-  it('fspLinkView: привязанный участник — достижения из снимка привязки', async () => {
+  it('fspLinkView: привязанный участник – достижения из снимка привязки', async () => {
     vi.mocked(prisma.source.findFirst).mockResolvedValueOnce({ snapshot: { meta: { fspSubject: WITH.sub, fspName: WITH.name, achievements: WITH.achievements } } } as never);
     const v = await fspLinkView('cand-1', 'linked');
     expect(v).toMatchObject({ subject: WITH.sub, name: WITH.name });
@@ -321,11 +321,11 @@ describe('реестр симулятора ФСП (внешний провай�
     }
   });
 
-  it('без API реестра — демо-реестр мока по sub', async () => {
+  it('без API реестра – демо-реестр мока по sub', async () => {
     expect(await registryFor(WITH.sub, { apiUrl: null, accessToken: 'tok' })).toEqual(fspRegistryLookup(WITH.sub));
   });
 
-  it('идентификатор участника — claim fsp_id, иначе sub', () => {
+  it('идентификатор участника – claim fsp_id, иначе sub', () => {
     const base = { iss: ISSUER, sub: 'kc-uuid', aud: 'fsp-career', exp: 1, iat: 1 };
     expect(fspIdentity({ ...base, fsp_id: 'FSP-000123', name: 'Иван' })).toMatchObject({ fspId: 'FSP-000123', name: 'Иван' });
     expect(fspIdentity({ ...base, preferred_username: 'ivan' })).toMatchObject({ fspId: 'kc-uuid', name: 'ivan' });

@@ -159,7 +159,7 @@ export async function seedContent(prisma: PrismaClient): Promise<void> {
   const projects: [VacancyRow, ProjectContent][] = ALL_VACANCIES.map((v) => [v, v.project]);
   for (const [vacancyId, p] of Object.entries(EXISTING_PROJECTS)) {
     const row = await prisma.vacancy.findUnique({ where: { id: vacancyId }, select: { id: true, title: true, description: true, teamDescription: true, stack: true } });
-    if (!row) throw new Error(`seed(content): вакансия ${vacancyId} из existing-projects не найдена — порядок сидов?`);
+    if (!row) throw new Error(`seed(content): вакансия ${vacancyId} из existing-projects не найдена – порядок сидов?`);
     projects.push([row, p]);
   }
   for (const [v, p] of projects) {

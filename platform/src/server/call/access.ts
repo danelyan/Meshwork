@@ -1,8 +1,8 @@
-// Кто что видит в созвоне (ADR 0003, п. 4; R-C-16, образец — employer/privacy.ts):
-//  - кандидат — свой созвон целиком и запись всегда;
-//  - работодатель — до принятого приглашения только оценки по темам (без цитат, транскрипта и записи);
-//    после accepted с действующим раскрытием (Г5, ADR 0005) — всё; участник комнаты (defense-room) — транскрипт
-//    вживую, пока созвон идёт; после завершения или отзыва Г5 — как прочие работодатели (полный доступ только по Г5).
+// Кто что видит в созвоне (ADR 0003, п. 4; R-C-16, образец – employer/privacy.ts):
+//  - кандидат – свой созвон целиком и запись всегда;
+//  - работодатель – до принятого приглашения только оценки по темам (без цитат, транскрипта и записи);
+//    после accepted с действующим раскрытием (Г5, ADR 0005) – всё; участник комнаты (defense-room) – транскрипт
+//    вживую, пока созвон идёт; после завершения или отзыва Г5 – как прочие работодатели (полный доступ только по Г5).
 import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
 import { defenseVisibleTo } from '../defense-room/visibility';
@@ -40,7 +40,7 @@ async function defenseOwnedOrAi(employerProfileId: string, callId: string): Prom
 }
 
 /**
- * Решение по доступу. Чужой кандидату созвон и созвон скрытого кандидата без accepted — 404
+ * Решение по доступу. Чужой кандидату созвон и созвон скрытого кандидата без accepted – 404
  * (не раскрываем существование).
  */
 export async function resolveCallAccess(
@@ -60,13 +60,13 @@ export async function resolveCallAccess(
     return { role: 'employer', access: 'full', recording: true };
   }
   // Участник комнаты защиты видит транскрипт только пока звонок идёт (иначе комната не работает); после
-  // завершения его доступ такой же, как у прочих работодателей: полный — только при действующем раскрытии (Г5).
+  // завершения его доступ такой же, как у прочих работодателей: полный – только при действующем раскрытии (Г5).
   const live = call.status === 'active' || call.status === 'pending';
   const participant = live && who.userId
     ? (await prisma.callParticipant.count({ where: { callSessionId: call.id, userId: who.userId } })) > 0
     : false;
   if (participant) return { role: 'employer', access: 'full', recording: false };
-  // Защита проекта до accepted: вердикт — только через /api/employer/project-submissions/{id}/ai-defense (свои вакансии,
+  // Защита проекта до accepted: вердикт – только через /api/employer/project-submissions/{id}/ai-defense (свои вакансии,
   // баллы и флаги, ADR 0008 п. 1); карта глубины созвона (publicVerdict) к вердикту защиты не применима.
   if (call.kind === 'defense') throw errors.notFound('Созвон не найден');
   const cand = await prisma.candidate.findUnique({ where: { id: call.candidateId }, select: { hiddenFromEmployers: true, user: { select: { blockedAt: true, blockedUntil: true } } } });
@@ -74,7 +74,7 @@ export async function resolveCallAccess(
   return { role: 'employer', access: 'summary', recording: false };
 }
 
-/** Вердикт без цитат и формулировок кандидата — для работодателя до принятого приглашения. */
+/** Вердикт без цитат и формулировок кандидата – для работодателя до принятого приглашения. */
 export function publicVerdict(v: CallVerdict): PublicCallVerdict {
   return {
     kind: v.kind,
@@ -101,7 +101,7 @@ export function publicVerdict(v: CallVerdict): PublicCallVerdict {
 /** Что видит зритель с access=summary в SSE: только статус, участники и оценки (вердикт без цитат). */
 const SUMMARY_EVENTS = new Set<CallEvent['type']>(['status', 'participant', 'verdict']);
 
-/** Событие шины → что можно отдать этому зрителю; null — не отдавать. */
+/** Событие шины → что можно отдать этому зрителю; null – не отдавать. */
 export function eventForAccess(ev: CallEvent, access: CallAccess): CallEvent | null {
   if (access === 'full') return ev;
   if (!SUMMARY_EVENTS.has(ev.type)) return null;

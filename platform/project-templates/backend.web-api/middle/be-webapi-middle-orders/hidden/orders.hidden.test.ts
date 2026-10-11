@@ -24,7 +24,7 @@ describe('создание и идемпотентность', () => {
     expect(Number.isNaN(Date.parse(res.body.createdAt))).toBe(false);
   });
 
-  it('без ключа или с плохим ключом — 400 idempotency_key_required', async () => {
+  it('без ключа или с плохим ключом – 400 idempotency_key_required', async () => {
     const app = createApp(slowDb());
     const a = await request(app).post('/orders').send(order);
     expect(a.status).toBe(400);
@@ -43,7 +43,7 @@ describe('создание и идемпотентность', () => {
     expect(a.headers['idempotent-replayed']).toBeUndefined();
   });
 
-  it('тот же ключ, другое тело — 422', async () => {
+  it('тот же ключ, другое тело – 422', async () => {
     const app = createApp(slowDb());
     await create(app, 'm-1');
     const res = await create(app, 'm-1', { ...order, customerId: 'c-2' });
@@ -60,7 +60,7 @@ describe('создание и идемпотентность', () => {
     expect(list.body.items).toHaveLength(1);
   });
 
-  it('400 validation: поля по алфавиту, позиция с ошибкой — items', async () => {
+  it('400 validation: поля по алфавиту, позиция с ошибкой – items', async () => {
     const app = createApp(slowDb());
     const a = await create(app, 'v-1', { customerId: '', items: [{ sku: 'A', qty: 0, priceKop: 10 }] });
     expect(a.status).toBe(400);
@@ -101,7 +101,7 @@ describe('пагинация', () => {
     expect([...p1.body.items, ...p2.body.items].map((o: { id: string }) => o.id)).toEqual(ids);
   });
 
-  it('limit по умолчанию 20, вне 1…100 — 400; плохой курсор — 400 invalid_cursor', async () => {
+  it('limit по умолчанию 20, вне 1…100 – 400; плохой курсор – 400 invalid_cursor', async () => {
     const app = createApp(slowDb());
     await seed(app, 22);
     const all = await request(app).get('/orders');
@@ -127,7 +127,7 @@ describe('пагинация', () => {
 });
 
 describe('версии и статусы', () => {
-  it('GET отдаёт ETag; PATCH с верной версией — 200 и version+1; кавычки необязательны', async () => {
+  it('GET отдаёт ETag; PATCH с верной версией – 200 и version+1; кавычки необязательны', async () => {
     const app = createApp(slowDb());
     const { body } = await create(app, 'e-1');
     const g = await request(app).get(`/orders/${body.id}`);
@@ -140,7 +140,7 @@ describe('версии и статусы', () => {
     expect(s.body).toMatchObject({ status: 'shipped', version: 3 });
   });
 
-  it('устаревшая версия — 412; без If-Match — 428', async () => {
+  it('устаревшая версия – 412; без If-Match – 428', async () => {
     const app = createApp(slowDb());
     const { body } = await create(app, 'e-2');
     await request(app).patch(`/orders/${body.id}`).set('If-Match', '"1"').send({ status: 'paid' });
@@ -161,7 +161,7 @@ describe('версии и статусы', () => {
     expect((await request(app).get(`/orders/${body.id}`)).body.version).toBe(2);
   });
 
-  it('недопустимый переход — 409 без смены версии; неизвестный статус — 400; неизвестный заказ — 404', async () => {
+  it('недопустимый переход – 409 без смены версии; неизвестный статус – 400; неизвестный заказ – 404', async () => {
     const app = createApp(slowDb());
     const { body } = await create(app, 'e-4');
     const bad = await request(app).patch(`/orders/${body.id}`).set('If-Match', '"1"').send({ status: 'shipped' });

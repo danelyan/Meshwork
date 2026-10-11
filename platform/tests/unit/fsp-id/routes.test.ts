@@ -64,7 +64,7 @@ describe('ФСП ID через маршруты (встроенный мок)', 
     expect(res.headers.getSetCookie().find((c) => c.startsWith(`${FSP_OAUTH_COOKIE}=`))).toMatch(/HttpOnly/i);
   });
 
-  it('без сессии — на вход', async () => {
+  it('без сессии – на вход', async () => {
     const res = await link(new Request(`${APP}/api/fsp-id/link`));
     expect(new URL(res.headers.get('location')!).pathname).toBe('/auth');
   });
@@ -84,7 +84,7 @@ describe('ФСП ID через маршруты (встроенный мок)', 
     expect(tx.source.create).toHaveBeenCalledWith({ data: expect.objectContaining({ origin: `fsp:${p.sub}`, ownershipVerified: true }) });
   });
 
-  it('старт из шага знакомства (?return=consultant) — возврат в чат консультанта', async () => {
+  it('старт из шага знакомства (?return=consultant) – возврат в чат консультанта', async () => {
     const { target, result } = await runFlow(FSP_DEMO_PARTICIPANTS[0]!.sub, { from: '?return=consultant' });
     expect(target.pathname).toBe('/consultant');
     expect(result).toBe('linked');
@@ -109,7 +109,7 @@ describe('ФСП ID через маршруты (встроенный мок)', 
     expect(page.headers.get('referrer-policy')).toBe('same-origin');
   });
 
-  it('POST формы входа с чужого сайта — 403', async () => {
+  it('POST формы входа с чужого сайта – 403', async () => {
     const res = await authChoose(new Request(`${APP}/api/fsp-id/realms/fsp/protocol/openid-connect/auth`, { method: 'POST', body: 'participant=x', headers: { origin: 'https://evil.example' } }));
     expect(res.status).toBe(403);
   });

@@ -1,8 +1,8 @@
-/* Оболочка сайта: шапка, подвал, колонка страницы. Токены — styles/tokens.css. */
+/* Оболочка сайта: шапка, подвал, колонка страницы. Токены – styles/tokens.css. */
 .frame { min-height: 100svh; display: flex; flex-direction: column; }
 .consultant { background: var(--paper); }
-/* /consultant на широком экране: шапка + сцена + подвал ровно в окне, страница не прокручивается (лента — внутри панели).
-   Уже 1050px — обычная страница: голова липкая сверху, подвал после ленты. */
+/* /consultant на широком экране: шапка + сцена + подвал ровно в окне, страница не прокручивается (лента – внутри панели).
+   Уже 1050px – обычная страница: голова липкая сверху, подвал после ленты. */
 @media (min-width: 1051px) {
   .consultant { height: 100svh; height: 100dvh; min-height: 520px; overflow: hidden; --scene-h: 100%; --scene-min-h: 0px; }
   .consultant .page { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
@@ -10,7 +10,7 @@
   .consultant .footer { padding-top: 12px; padding-bottom: 12px; flex: none; }
 }
 .page { flex: 1 0 auto; min-width: 0; }
-/* одна шапка на весь кабинет: консультант (полноэкранная сцена) — те же 72px, поля и кнопка аккаунта, что у страниц с боковым меню */
+/* одна шапка на весь кабинет: консультант (полноэкранная сцена) – те же 72px, поля и кнопка аккаунта, что у страниц с боковым меню */
 .frame:has([data-dashboard]), .consultant { --page-pad: 32px; --landing-header-h: 72px; }
 .frame:has([data-dashboard]) .accountBtn, .consultant .accountBtn { border: 0; }
 .frame:has([data-dashboard]) .avatar, .consultant .avatar { border-radius: 0; width: 36px; height: 36px; }
@@ -28,8 +28,8 @@
   position: sticky; top: 0; z-index: 20; min-height: var(--landing-header-h); display: flex; align-items: center; padding: 0 var(--page-pad);
   background: var(--role-bar-bg); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-bottom: var(--role-rule-w) solid var(--role-rule);
 }
-/* Созвон (тёмная сцена при любой теме) заходит под полупрозрачную шапку и серит её — тогда шапка сплошная.
-   Тёмная тема страницы шапку не трогает: её стекло и рамка — смысловые токены (tokens.css, data-theme на <html>). */
+/* Созвон (тёмная сцена при любой теме) заходит под полупрозрачную шапку и серит её – тогда шапка сплошная.
+   Тёмная тема страницы шапку не трогает: её стекло и рамка – смысловые токены (tokens.css, data-theme на <html>). */
 .frame:has([data-call]) .header { background: var(--paper); }
 .brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 18px; }
 .wordmark { font: 700 var(--fs-2xl)/1 var(--mono); letter-spacing: -.02em; }
@@ -53,7 +53,7 @@
   background: var(--ink); color: var(--on-ink); font-weight: 600; font-size: var(--fs-md); white-space: nowrap;
 }
 .login:hover { background: var(--blue); color: var(--on-ink); }
-/* «ДЛЯ ЖЮРИ»: вход в хаб /demo (только при DEMO_LOGIN). Оранжевый (--jury) — общий знак «только для демонстрации», подсказка объясняет это при наведении. */
+/* «ДЛЯ ЖЮРИ»: вход в хаб /demo (только при DEMO_LOGIN). Оранжевый (--jury) – общий знак «только для демонстрации», подсказка объясняет это при наведении. */
 .juryWrap { position: relative; display: flex; }
 .jury {
   height: 44px; padding: 0 16px; display: flex; align-items: center; white-space: nowrap;
@@ -67,7 +67,7 @@
   opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .12s;
 }
 .juryWrap:hover .juryHint, .jury:focus-visible + .juryHint { opacity: 1; visibility: visible; }
-/* ссылка «Демо для жюри» в подвале — тем же оранжевым */
+/* ссылка «Демо для жюри» в подвале – тем же оранжевым */
 .footLinks a.demoLink { color: var(--jury); font-weight: 600; opacity: 1; }
 /* меню аккаунта (AccountMenu, ADR 0004) */
 .account { position: relative; display: flex; }
@@ -105,7 +105,7 @@
 .radio[data-on] { background: radial-gradient(circle, var(--role-nav-active) 40%, transparent 45%); border-color: var(--role-nav-active); }
 .menuQuiet { font-size: var(--fs-sm); color: var(--text-soft); }
 .menuSep { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--line); }
-/* без пунктов между шапкой и «Выйти» (гость, знакомство) линия шапки уже отделяет — второй не рисуем */
+/* без пунктов между шапкой и «Выйти» (гость, знакомство) линия шапки уже отделяет – второй не рисуем */
 .menuHead + .menuSep { display: none; }
 .rolePanel {
   display: grid; gap: 12px; padding: 12px 16px 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);

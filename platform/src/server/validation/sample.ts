@@ -1,5 +1,5 @@
-// Пример для /evaluate («Загрузить пример»): тот же набор, что eval/matching/run.ts — демо-пул сида,
-// «трудные» профили eval и демо-вакансии, разметка агента labels.json. Формат — вход POST /api/evaluate.
+// Пример для /evaluate («Загрузить пример»): тот же набор, что eval/matching/run.ts – демо-пул сида,
+// «трудные» профили eval и демо-вакансии, разметка агента labels.json. Формат – вход POST /api/evaluate.
 import { DEMO_POOL, type DemoProfile } from '../../../prisma/seed/employer';
 import { DEMO_VACANCIES } from '../../../prisma/seed/recommend';
 import labels from '../../../eval/matching/labels.json';

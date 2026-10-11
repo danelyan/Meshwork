@@ -1,5 +1,5 @@
 // Аудио кандидата: сегменты LPCM 16 бит моно 16 кГц → WAV-файлы в <CALL_DATA_DIR>/calls/<sessionId>/NNN.wav.
-// Не в БД (ADR 0003, п. 4). Распознавание — Yandex SpeechKit кусками ≤ 1 МБ (лимит синхронного v1).
+// Не в БД (ADR 0003, п. 4). Распознавание – Yandex SpeechKit кусками ≤ 1 МБ (лимит синхронного v1).
 import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -49,7 +49,7 @@ export async function listSegments(sessionId: string): Promise<string[]> {
 
 /** Сохранить сегмент; вернуть имя файла. Чётная длина PCM обязательна (16 бит). */
 /**
- * `mayWrite` — перепроверка права на запись (Г2, ADR 0005) прямо перед записью файла: отзыв согласия,
+ * `mayWrite` – перепроверка права на запись (Г2, ADR 0005) прямо перед записью файла: отзыв согласия,
  * пришедший во время загрузки, не должен оставить файл.
  */
 export async function saveSegment(sessionId: string, pcm: Uint8Array, mayWrite?: () => Promise<boolean>): Promise<string> {
@@ -95,7 +95,7 @@ export async function readSegmentPcm(sessionId: string, name: string): Promise<B
   }
 }
 
-/** Вся запись кандидата одним WAV: сегменты подряд (формат у всех один). null — записи нет. */
+/** Вся запись кандидата одним WAV: сегменты подряд (формат у всех один). null – записи нет. */
 export async function concatRecording(sessionId: string, only?: string): Promise<Buffer | null> {
   const names = only ? [only] : await listSegments(sessionId);
   if (names.length === 0) return null;
@@ -105,8 +105,8 @@ export async function concatRecording(sessionId: string, only?: string): Promise
 }
 
 /**
- * Распознать сегмент: при STT=yandex|openai — SpeechKit/whisper кусками ≤ 1 МБ подряд (граница куска может разрезать
- * слово — допустимо для созвона); иначе null — текст пришлёт клиент (Web Speech в браузере).
+ * Распознать сегмент: при STT=yandex|openai – SpeechKit/whisper кусками ≤ 1 МБ подряд (граница куска может разрезать
+ * слово – допустимо для созвона); иначе null – текст пришлёт клиент (Web Speech в браузере).
  */
 export async function recognizeSegment(pcm: Uint8Array, signal?: AbortSignal): Promise<string | null> {
   const mode = sttMode();

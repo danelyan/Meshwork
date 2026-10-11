@@ -14,7 +14,7 @@ describe('добавление и порядок', () => {
     expect(f.unreadCount()).toBe(0);
   });
 
-  it('порядок по sentAt, при равенстве — по id', () => {
+  it('порядок по sentAt, при равенстве – по id', () => {
     const f = createFeed();
     [add(msg('c', 5)), add(msg('b', 5)), add(msg('z', 1)), add(msg('a', 9))].forEach((e) => f.apply(e));
     expect(ids(f)).toEqual(['z', 'b', 'c', 'a']);

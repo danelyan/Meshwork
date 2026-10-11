@@ -14,12 +14,12 @@ export type EmployerTool = AgentTool<any, any, EmployerToolContext>;
 
 export const SpecSchema = z.enum(SPECIALIZATIONS);
 export const GradeSchema = z.enum(GRADES);
-/** Выдача в ленту — коротко: подробности и полный список — в кабинете. */
+/** Выдача в ленту – коротко: подробности и полный список – в кабинете. */
 export const AGENT_RESULT_LIMIT = 10;
 
 /**
- * Потребность для подбора: явная (своя, иначе 404 — чужая неотличима от несуществующей)
- * или единственная активная. Активных несколько — ошибка со списком: модель уточнит.
+ * Потребность для подбора: явная (своя, иначе 404 – чужая неотличима от несуществующей)
+ * или единственная активная. Активных несколько – ошибка со списком: модель уточнит.
  */
 export async function resolveVacancy(companyId: string, vacancyId?: string | null): Promise<VacancyView> {
   const all = await listVacancies(companyId);
@@ -30,9 +30,9 @@ export async function resolveVacancy(companyId: string, vacancyId?: string | nul
   }
   const active = all.filter((v) => !v.archived);
   if (active.length === 1) return active[0]!;
-  if (active.length === 0) throw errors.notFound('Активных потребностей нет — предложи описать потребность (create_need_draft) или искать по всей базе (search_candidates)');
+  if (active.length === 0) throw errors.notFound('Активных потребностей нет – предложи описать потребность (create_need_draft) или искать по всей базе (search_candidates)');
   throw errors.badRequest(
-    `Потребностей несколько — уточни, какую: ${active.map((v) => `${v.id} «${v.title}»`).join('; ')}`,
+    `Потребностей несколько – уточни, какую: ${active.map((v) => `${v.id} «${v.title}»`).join('; ')}`,
     active.map((v) => ({ id: v.id, title: v.title })),
   );
 }

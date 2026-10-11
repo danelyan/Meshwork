@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
-/** Тело — несколько счётчиков; больше — мусор. */
+/** Тело – несколько счётчиков; больше – мусор. */
 const MAX_BODY_CHARS = 2048;
 const count = (max: number) => z.number().int().min(0).max(max).default(0);
 
@@ -26,7 +26,7 @@ const Body = z.object({
 });
 
 /**
- * POST /api/test/attempt/[id]/signal {tabHidden, hiddenMs, pastes, pasteChars, copies, extendedScreen?} — дельты сигналов
+ * POST /api/test/attempt/[id]/signal {tabHidden, hiddenMs, pastes, pasteChars, copies, extendedScreen?} – дельты сигналов
  * браузера к активной попытке своего кандидата; сервер суммирует в TestAttempt.signals (индекс честности, ADR-0002 11.10).
  * Тело читается текстом и разбирается как JSON: так принимается и navigator.sendBeacon (Content-Type text/plain).
  */

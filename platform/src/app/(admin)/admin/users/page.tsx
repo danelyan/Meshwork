@@ -11,7 +11,7 @@ import { requirePageStaff } from '@/server/admin/session';
 import styles from '../admin.module.css';
 import { flatParams, withoutPage } from '../listing';
 
-/** Пользователи: учётные записи с масками имени и почты. Раскрытие — в карточке. */
+/** Пользователи: учётные записи с масками имени и почты. Раскрытие – в карточке. */
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const staff = await requirePageStaff('/admin/users', 'view_users');
   const raw = flatParams(await searchParams);
@@ -48,8 +48,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
               <td className={styles.mono}>
                 <Link href={`/admin/users/${u.id}`}>{u.id}</Link>
               </td>
-              <td>{u.name ?? '—'}</td>
-              <td className={styles.mono}>{u.email ?? '—'}</td>
+              <td>{u.name ?? '–'}</td>
+              <td className={styles.mono}>{u.email ?? '–'}</td>
               <td>{USER_ROLE_LABEL[u.role]}</td>
               <td className={styles.mono}>{fmtDate(u.createdAt)}</td>
               <td className={styles.row}>

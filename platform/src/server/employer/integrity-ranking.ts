@@ -1,6 +1,6 @@
 // Индекс честности в порядке выдачи (вариант 2a, решение владельца 11.10): при high категория из теста не учитывается,
 // пока её не подтвердит подтверждающий тест (confirmedAgain) или созвон с разбором ЭТОЙ попытки («объяснил сам»).
-// Оценка вариантов — eval/matching/integrity.ts, docs/validation-results.md § «Индекс честности в подборе, 11.10».
+// Оценка вариантов – eval/matching/integrity.ts, docs/validation-results.md § «Индекс честности в подборе, 11.10».
 // Метка работодателю (test-integrity.ts) отсюда не меняется. Загрузка пакетная: 1 запрос на пул + 2 только при high.
 import type { Prisma } from '@prisma/client';
 
@@ -45,11 +45,11 @@ export interface OwnershipCall {
 /**
  * Какую попытку разбирал созвон. loadTestReview берёт последнюю завершённую попытку направления на момент созвона, а в
  * вердикт пишет только шаблоны заданий, поэтому восстанавливаем так: последняя попытка, завершённая до начала созвона и
- * содержащая все разобранные шаблоны. Нет разобранных заданий — созвон ни к какой попытке не относится.
+ * содержащая все разобранные шаблоны. Нет разобранных заданий – созвон ни к какой попытке не относится.
  */
 export function reviewedAttemptId(call: OwnershipCall, attempts: readonly AttemptRef[]): string | null {
-  // Вердикт знает разобранную попытку — она и есть ответ (подтверждающая попытка может повторять шаблоны исходной,
-  // и по шаблонам созвон приписался бы ей). Старые вердикты без attemptId — по шаблонам.
+  // Вердикт знает разобранную попытку – она и есть ответ (подтверждающая попытка может повторять шаблоны исходной,
+  // и по шаблонам созвон приписался бы ей). Старые вердикты без attemptId – по шаблонам.
   if (call.attemptId) {
     const named = attempts.find((a) => a.id === call.attemptId && a.finishedAt !== null && a.finishedAt <= call.startedAt);
     if (named) return named.id;
@@ -65,7 +65,7 @@ export function reviewedAttemptId(call: OwnershipCall, attempts: readonly Attemp
 }
 
 /**
- * Итог разбора для попытки: статус последнего созвона, который разбирал именно её. Нет такого — null
+ * Итог разбора для попытки: статус последнего созвона, который разбирал именно её. Нет такого – null
  * (созвон по другой попытке или без разбора теста понижение не снимает).
  */
 export function ownershipForAttempt(attemptId: string, calls: readonly OwnershipCall[], attempts: readonly AttemptRef[]): TestOwnershipStatus | null {
@@ -89,7 +89,7 @@ export function parseOwnership(verdict: Prisma.JsonValue | null): { status: Test
  * Индекс честности для ранжирования по всему пулу: попытка, давшая текущую категорию (как в loadTestIntegrity), её
  * публичный уровень, confirmedAgain и ownershipExplained (созвон разобрал эту попытку и кандидат «объяснил сам»).
  * Запросы: попытки всех кандидатов с категорией (1) и источники подтверждающих (≤ 1); только у кандидатов с high без
- * подтверждения — их попытки с ответами (1) и созвоны (1). Без N+1: везде `in` по списку.
+ * подтверждения – их попытки с ответами (1) и созвоны (1). Без N+1: везде `in` по списку.
  */
 export async function loadRankingIntegrity(categories: ReadonlyMap<string, CategoryKey | null>): Promise<Map<string, RankingIntegrity>> {
   const out = new Map<string, RankingIntegrity>();
@@ -109,7 +109,7 @@ export async function loadRankingIntegrity(categories: ReadonlyMap<string, Categ
   const sourceIds = [...new Set([...picked.values()].map((a) => a.confirmsAttemptId).filter((x): x is string => Boolean(x)))];
   const sources = sourceIds.length ? await prisma.testAttempt.findMany({ where: { id: { in: sourceIds } }, select: { id: true, integrity: true } }) : [];
   const sourceById = new Map(sources.map((s) => [s.id, s.integrity]));
-  /** Попытка, чей индекс показан (для подтверждающей — исходная): её и должен был разобрать созвон. */
+  /** Попытка, чей индекс показан (для подтверждающей – исходная): её и должен был разобрать созвон. */
   const indexAttempt = new Map<string, string>();
   for (const [candidateId, a] of picked) {
     const isConfirm = a.kind === 'confirm' && a.confirmsAttemptId;
@@ -145,7 +145,7 @@ export async function loadRankingIntegrity(categories: ReadonlyMap<string, Categ
   return out;
 }
 
-/** Кандидаты пула с индексом для ранжирования (копии evidence; без индекса — как были). */
+/** Кандидаты пула с индексом для ранжирования (копии evidence; без индекса – как были). */
 export function withRankingIntegrity(evidence: CandidateEvidence[], integrity: ReadonlyMap<string, RankingIntegrity>): CandidateEvidence[] {
   return evidence.map((c) => (integrity.has(c.id) ? { ...c, testIntegrity: integrity.get(c.id)! } : c));
 }

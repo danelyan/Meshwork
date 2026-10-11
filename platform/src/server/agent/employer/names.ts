@@ -20,7 +20,7 @@ export async function withAcceptedNames(companyId: string, block: CandidatesBloc
   return { ...block, items: block.items.map((c) => ({ ...c, ...(names.has(c.candidateId) ? { name: names.get(c.candidateId)! } : {}) })) };
 }
 
-/** Событие для клиента: карточки подборки обогащаются именем принявших, остальное — как есть. */
+/** Событие для клиента: карточки подборки обогащаются именем принявших, остальное – как есть. */
 export async function enrichEvent(companyId: string, e: EmployerAgentEvent): Promise<EmployerAgentEvent> {
   return e.type === 'candidates' ? { type: 'candidates', block: await withAcceptedNames(companyId, e.block) } : e;
 }

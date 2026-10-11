@@ -7,7 +7,7 @@ import styles from '@/app/(admin)/admin/admin.module.css';
 import { BlockBadge, type BlockView, blockedNow } from './BlockState';
 import { ReasonAction } from './ReasonAction';
 
-/** Действия в карточке компании (E-08 фаза 3): блокировка — приглашения не отправляются, вакансии скрыты. Право block_company. */
+/** Действия в карточке компании (E-08 фаза 3): блокировка – приглашения не отправляются, вакансии скрыты. Право block_company. */
 export function CompanyActions({ companyId, block: initial, canBlock }: { companyId: string; block: BlockView; canBlock: boolean }) {
   const [block, setBlock] = useState(initial);
   const blocked = blockedNow(block);

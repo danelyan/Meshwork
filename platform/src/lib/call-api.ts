@@ -1,10 +1,10 @@
-// Клиент API созвона (lane call). Ошибки — ApiError из lib/api.ts.
-import type { CallEvent, CallKind, CallView, ClientTurnTiming, TranscriptEntry, TurnResult } from '@/server/call/types';
+// Клиент API созвона (lane call). Ошибки – ApiError из lib/api.ts.
+import type { CallEvent, CallKind, CallView, TranscriptEntry, TurnResult } from '@/server/call/types';
 
 import { ApiError, postJson, readError, request } from './api';
 
 export interface CallListResponse {
-  /** mode (ADR 0005): audio — запись идёт; text — согласие на запись отозвано, созвон текстом; ask — спросить. */
+  /** mode (ADR 0005): audio – запись идёт; text – согласие на запись отозвано, созвон текстом; ask – спросить. */
   consent: { given: boolean; mode?: 'audio' | 'text' | 'ask'; version: string; text: string[] };
   calls: CallView[];
   /** Готовность к созвону по видам (server/call/readiness.ts); у старых ответов поля нет. */
@@ -23,14 +23,12 @@ export const callApi = {
   consent: (version: string) => postJson<{ version: string; acceptedAt: string }>('/api/call/consent', { version }),
   start: (kind: CallKind = 'qualifying') => postJson<CallStartResponse>('/api/call/start', { kind }),
   get: (id: string) => request<CallView>(`/api/call/${encodeURIComponent(id)}`),
-  turn: (id: string, body: { text?: string; audioRef?: string; sttMs?: number }) => postJson<TurnResult>(`/api/call/${encodeURIComponent(id)}/turn`, body),
-  /** Телеметрия хода из браузера (useReplySpeech): водопад «конец речи → первый звук» к реплике ИИ index. */
-  telemetry: (id: string, body: { index: number; client: ClientTurnTiming }) => postJson<TranscriptEntry>(`/api/call/${encodeURIComponent(id)}/telemetry`, body),
+  turn: (id: string, body: { text?: string; audioRef?: string }) => postJson<TurnResult>(`/api/call/${encodeURIComponent(id)}/turn`, body),
   finish: (id: string) => postJson<CallView>(`/api/call/${encodeURIComponent(id)}/finish`, {}),
   /** Кандидат перебил реплику ИИ: сколько её предложений прозвучало. */
   interrupt: (id: string, body: { index: number; heardSentences: number }) => postJson<TranscriptEntry>(`/api/call/${encodeURIComponent(id)}/interrupt`, body),
-  /** Сегмент голоса LPCM 16 кГц → сохранён на сервере; text — если распознал SpeechKit; sttMs — из Server-Timing. */
-  async audio(id: string, pcm: Uint8Array): Promise<{ audioRef: string; text: string | null; sttMs?: number }> {
+  /** Сегмент голоса LPCM 16 кГц → сохранён на сервере; text – если распознал SpeechKit. */
+  async audio(id: string, pcm: Uint8Array): Promise<{ audioRef: string; text: string | null }> {
     let res: Response;
     try {
       res = await fetch(`/api/call/${encodeURIComponent(id)}/audio`, {
@@ -43,27 +41,10 @@ export const callApi = {
       throw new ApiError('Нет связи с сервером. Проверьте сеть и повторите.', 0, 'network');
     }
     if (!res.ok) throw await readError(res);
-    const out = (await res.json()) as { audioRef: string; text: string | null; sttMs?: number };
-    const stt = serverTiming(res.headers.get('server-timing'), 'stt');
-    if (stt !== null) out.sttMs = stt;
-    return out;
+    return (await res.json()) as { audioRef: string; text: string | null };
   },
   recordingUrl: (id: string) => `/api/call/${encodeURIComponent(id)}/recording`,
 };
-
-/** Длительность метрики из заголовка Server-Timing (`stt;dur=812`), мс; нет — null. */
-export function serverTiming(header: string | null, name: string): number | null {
-  if (!header) return null;
-  for (const part of header.split(',')) {
-    const [metric, ...params] = part.trim().split(';');
-    if (metric?.trim() !== name) continue;
-    for (const p of params) {
-      const [k, v] = p.trim().split('=');
-      if (k === 'dur' && v !== undefined && Number.isFinite(Number(v))) return Math.round(Number(v));
-    }
-  }
-  return null;
-}
 
 /** Подписка на события созвона (EventSource, именованные события). Возвращает «отписаться». */
 export function subscribeCallEvents(id: string, onEvent: (e: CallEvent) => void): () => void {

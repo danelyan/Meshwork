@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 /**
  * Как работает консультант кандидата (решение владельца 10.10): готовые переключатели-«скиллы» и свои
- * инструкции до 500 символов. Граница: меняют только стиль и фокус ответов консультанта — не подборку
+ * инструкции до 500 символов. Граница: меняют только стиль и фокус ответов консультанта – не подборку
  * работодателю, не категорию, грейд и тест, не факты о платформе; чужие данные и правила промпта не
- * открывают. Правило приоритета — в prompts/consultant.md (<preferences>), блок хода — preferencesBlock().
+ * открывают. Правило приоритета – в prompts/consultant.md (<preferences>), блок хода – preferencesBlock().
  */
 
 export interface ConsultantSkill {
@@ -58,7 +58,7 @@ export const SKILL_IDS = SKILLS.map((s) => s.id) as [string, ...string[]];
 /** Лимит своих инструкций (символов). */
 export const CUSTOM_MAX = 500;
 
-/** Тело PUT /api/consultant/settings: неизвестный id скилла или длинный текст — 400. */
+/** Тело PUT /api/consultant/settings: неизвестный id скилла или длинный текст – 400. */
 export const SettingsInput = z.strictObject({
   skills: z.array(z.enum(SKILL_IDS)).max(SKILLS.length).describe('id включённых скиллов'),
   custom: z.string().max(CUSTOM_MAX).nullable().optional().describe(`Свои инструкции, до ${CUSTOM_MAX} символов`),
@@ -91,8 +91,8 @@ export function sanitizeCustom(text: string | null | undefined): string {
 export const PREFS_TAG = 'candidate_preferences';
 
 /**
- * Блок хода с предпочтениями кандидата или null (ничего не выбрано). Фрагменты скиллов — текст
- * платформы; свои инструкции — данные кандидата внутри блока, приоритет ниже правил промпта.
+ * Блок хода с предпочтениями кандидата или null (ничего не выбрано). Фрагменты скиллов – текст
+ * платформы; свои инструкции – данные кандидата внутри блока, приоритет ниже правил промпта.
  */
 export function preferencesBlock(settings: ConsultantSettingsData | null | undefined): string | null {
   if (!settings) return null;

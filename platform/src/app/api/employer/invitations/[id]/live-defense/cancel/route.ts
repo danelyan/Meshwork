@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST `{ reason }` — отменить живую защиту или предложение слотов (ADR 0008 п. 6). Назначенную — не позднее чем за 1 час
+ * POST `{ reason }` – отменить живую защиту или предложение слотов (ADR 0008 п. 6). Назначенную – не позднее чем за 1 час
  * (иначе 409 `cancel_too_late`). Кандидат получает уведомление; затем можно предложить новые слоты.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {

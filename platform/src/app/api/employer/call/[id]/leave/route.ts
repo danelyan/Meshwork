@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** POST — выйти из защиты. Если работодатель держал ИИ замьюченным — ИИ снова говорит. */
+/** POST – выйти из защиты. Если работодатель держал ИИ замьюченным – ИИ снова говорит. */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);
   requireEmployer(req);

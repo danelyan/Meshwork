@@ -6,7 +6,7 @@ import { speechText } from '@/lib/speech-text';
 
 /**
  * Второй голос (TTS_VOICE_EMPLOYER): реплики работодателя кандидату, когда P2P-аудио не поднялось.
- * Очередь по одной реплике; озвучка выключена на стенде — молча остаётся текст.
+ * Очередь по одной реплике; озвучка выключена на стенде – молча остаётся текст.
  */
 export function useEmployerVoice() {
   const queue = useRef<Promise<void>>(Promise.resolve());
@@ -26,7 +26,7 @@ export function useEmployerVoice() {
         });
         URL.revokeObjectURL(url);
       } catch {
-        /* озвучка недоступна — текст остаётся */
+        /* озвучка недоступна – текст остаётся */
       }
     });
   }, []);

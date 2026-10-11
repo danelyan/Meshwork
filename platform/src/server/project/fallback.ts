@@ -32,7 +32,7 @@ export type ProjectContext = SpecContext | ComposeContext | EvaluateContext;
 export const CONTEXT_TAG = 'project_context';
 
 /**
- * JSON внутри тега: `<` и `>` экранируются как \u003c / \u003e (как в call/prompt-utils.ts) — файлы репозитория и
+ * JSON внутри тега: `<` и `>` экранируются как \u003c / \u003e (как в call/prompt-utils.ts) – файлы репозитория и
  * журнал ИИ кандидата не могут закрыть тег и открыть свой блок, а JSON остаётся валидным (parseContextBlock).
  */
 export function contextBlock(ctx: ProjectContext): string {
@@ -63,10 +63,10 @@ export function fallbackSpecOut(ctx: SpecContext): SpecLlmOut {
   };
 }
 
-/** Число-«код» (1xx–5xx), если за ним не единица измерения: «200 мс», «500 руб», «300 символов» — не коды. */
+/** Число-«код» (1xx–5xx), если за ним не единица измерения: «200 мс», «500 руб», «300 символов» – не коды. */
 const CODE_NUM = /(?<![\p{L}\p{N}])([1-5]\d\d)(?![\p{N}]|[.,]\d|\s*(?:мс|ms|сек|с(?![\p{L}])|мин|ч(?![\p{L}])|руб|₽|%|кб|мб|гб|kb|mb|gb|символ|строк|запрос|раз|шт|пользовател|клиент|элемент|запис))/giu;
-/** Слова, рядом с которыми трёхзначное число — HTTP-статус. */
-const CODE_CONTEXT = /(?:статус|код|http|ответ)\S*\s*[:=—-]?\s*(?:\S+\s+){0,2}?[1-5]\d\d(?![\p{N}])/iu;
+/** Слова, рядом с которыми трёхзначное число – HTTP-статус. */
+const CODE_CONTEXT = /(?:статус|код|http|ответ)\S*\s*[:=–-]?\s*(?:\S+\s+){0,2}?[1-5]\d\d(?![\p{N}])/iu;
 
 /**
  * Требования модели, которые пересказывают контракт (имена из `…`, коды ошибок в кавычках, HTTP-статусы,
@@ -75,7 +75,12 @@ const CODE_CONTEXT = /(?:статус|код|http|ответ)\S*\s*[:=—-]?\s*(
  */
 export function dropContractEcho(items: string[], contractMd: string): string[] {
   const idents = new Set<string>();
-  for (const m of contractMd.matchAll(/`([^`\n]{3,80})`/g)) idents.add(m[1]!.trim());
+  // Только идентификаторы (латиница/цифры): контракт в обратных кавычках может выделять и русское слово
+  // (« `и` »), и тогда отброшенным оказалось бы любое требование на русском.
+  for (const m of contractMd.matchAll(/`([^`\n]{3,80})`/g)) {
+    const id = m[1]!.trim();
+    if (id.length >= 3 && /[A-Za-z0-9_]/.test(id)) idents.add(id);
+  }
   for (const m of contractMd.matchAll(/['"]([a-z][a-z0-9_]{2,40})['"]/g)) idents.add(m[1]!);
   const contractCodes = new Set([...contractMd.matchAll(CODE_NUM)].map((m) => m[1]!));
   return items.filter((r) => {
@@ -88,10 +93,10 @@ export function dropContractEcho(items: string[], contractMd: string): string[] 
 }
 
 /** Первая строка требований: ссылка на приложенный контракт. */
-export const CONTRACT_REQUIREMENT = 'Реализовать контракт платформы — он приложен ниже дословно (contract.md). Имена модулей, функций, маршрутов, полей и коды ошибок — только оттуда.';
+export const CONTRACT_REQUIREMENT = 'Реализовать контракт платформы – он приложен ниже дословно (contract.md). Имена модулей, функций, маршрутов, полей и коды ошибок – только оттуда.';
 
 /**
- * Фильтр выбросил все требования модели — показываем критерии рубрики (обязательные и пожелания),
+ * Фильтр выбросил все требования модели – показываем критерии рубрики (обязательные и пожелания),
  * чтобы кандидат видел, чего ждёт работодатель.
  */
 export function fillRequirementsFromRubric(spec: StoredSpec, criteria: RubricCriterion[]): StoredSpec {
@@ -102,7 +107,7 @@ export function fillRequirementsFromRubric(spec: StoredSpec, criteria: RubricCri
   };
 }
 
-/** Итоговое условие: заголовок шаблона, легенда и требования (модель или fallback), остальное — кодом. */
+/** Итоговое условие: заголовок шаблона, легенда и требования (модель или fallback), остальное – кодом. */
 export function assembleSpec(ctx: SpecContext, out: SpecLlmOut, contractMd: string, source: StoredSpec['source']): StoredSpec {
   const t = ctx.template;
   const hours = Math.round((t.timeBudgetMin / 60) * 10) / 10;
@@ -114,12 +119,12 @@ export function assembleSpec(ctx: SpecContext, out: SpecLlmOut, contractMd: stri
       ...dropContractEcho(out.requirements, contractMd).map((r) => r.slice(0, 400)),
     ].slice(0, 15),
     acceptance: [
-      'Скрытые автотесты платформы по контракту: балл — доля пройденных.',
+      'Скрытые автотесты платформы по контракту: балл – доля пройденных.',
       'Видимые тесты tests/visible проходят локально.',
       ...ctx.required.map((r) => `Критерий работодателя (${r.catalogId}): ${r.statement}`),
-      ...(ctx.wishes?.trim() ? ['Пожелания работодателя проверяются по коду и журналу ИИ — отдельной таблицей критериев.'] : []),
+      ...(ctx.wishes?.trim() ? ['Пожелания работодателя проверяются по коду и журналу ИИ – отдельной таблицей критериев.'] : []),
     ].slice(0, 12),
-    notes: `ИИ-ассистенты разрешены — приложи журнал работы с ИИ. Если текст условия расходится с контрактом, прав контракт. Ориентир по времени — около ${hours} ч.${ctx.need.stack.length ? ` Стек команды для контекста: ${ctx.need.stack.join(', ')}.` : ''}`,
+    notes: `ИИ-ассистенты разрешены – приложи журнал работы с ИИ. Если текст условия расходится с контрактом, прав контракт. Ориентир по времени – около ${hours} ч.${ctx.need.stack.length ? ` Стек команды для контекста: ${ctx.need.stack.join(', ')}.` : ''}`,
     contractMd,
     source,
   };
@@ -134,7 +139,7 @@ export function fallbackSpec(ctx: SpecContext, contractMd = ctx.template.contrac
 export function splitWishes(text: string): string[] {
   return text
     .split(/\n|;|(?<=[.!?])\s+/)
-    .map((s) => s.replace(/^[\s\-–—*•\d.)]+/, '').trim().replace(/[.;]+$/, ''))
+    .map((s) => s.replace(/^[\s\-––*•\d.)]+/, '').trim().replace(/[.;]+$/, ''))
     .filter((s) => s.length >= 8)
     .slice(0, MAX_WISH_CRITERIA)
     .map((s) => s.slice(0, 300));
@@ -167,7 +172,7 @@ export function fallbackVerdicts(ctx: EvaluateContext): { id: string; passed: bo
   });
 }
 
-/** Модель недоступна — критерии без оценки (не «не прошёл»: это не вина кандидата). */
+/** Модель недоступна – критерии без оценки (не «не прошёл»: это не вина кандидата). */
 export function notEvaluated(criteria: RubricCriterion[]): RubricResult[] {
-  return criteria.map((c) => ({ ...c, passed: null, evidence: 'Проверка моделью недоступна — смотри код на защите.', flag: 'not_evaluated' as const }));
+  return criteria.map((c) => ({ ...c, passed: null, evidence: 'Проверка моделью недоступна – смотри код на защите.', flag: 'not_evaluated' as const }));
 }

@@ -13,8 +13,8 @@ import m from './metrics.module.css';
 export const dynamic = 'force-dynamic';
 
 const PERIODS = [7, 30, 90] as const;
-const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`);
-const int = (x: number | null) => (x === null ? '—' : Math.round(x).toLocaleString('ru-RU'));
+const pct = (x: number | null) => (x === null ? '–' : `${Math.round(x * 100)}%`);
+const int = (x: number | null) => (x === null ? '–' : Math.round(x).toLocaleString('ru-RU'));
 const RANK_LABEL: Record<RankBucket, string> = { top3: 'Ранг ≤ 3', top10: 'Ранг ≤ 10', over10: 'Ранг > 10', unknown: 'Без ранга' };
 const bar = (share: number | null, max = 20) => (
   <div className={m.cell}>
@@ -49,7 +49,7 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
       <section className={m.section}>
         <h2 className={m.h2}>Тест на грейд: задания</h2>
         <p className={styles.muted}>
-          Дискриминация — корреляция «ответ верен ↔ итоговая θ попытки» (грубая точечно-бисериальная; не 2PL-калибровка).
+          Дискриминация – корреляция «ответ верен ↔ итоговая θ попытки» (грубая точечно-бисериальная; не 2PL-калибровка).
           Учитываются полные попытки, не демо. Нужна перекалибровка в списке ниже ({flagged.length} из {items.length}).
         </p>
         <ul className={m.rules}>
@@ -70,7 +70,7 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
                   <td className={m.num}>{i.shown}</td>
                   <td className={m.num}>{i.answered}</td>
                   <td>{bar(i.correctShare)}</td>
-                  <td className={m.num}>{i.discrimination === null ? '—' : i.discrimination.toFixed(2)}</td>
+                  <td className={m.num}>{i.discrimination === null ? '–' : i.discrimination.toFixed(2)}</td>
                   <td className={m.num}>{int(i.medianSec)} / {int(i.avgSec)}</td>
                   <td className={styles.mono}>{i.paramsSource}</td>
                   <td>
@@ -88,7 +88,7 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
       <section className={m.section}>
         <h2 className={m.h2}>Подбор: воронка приглашений по категориям</h2>
         <p className={styles.muted}>
-          Категория — последняя категория кандидата. «Принято» = принято + нанят. Время до первого приглашения — от выдачи категории,
+          Категория – последняя категория кандидата. «Принято» = принято + нанят. Время до первого приглашения – от выдачи категории,
           медиана по кандидатам.
         </p>
         <div className={m.scroll}>
@@ -106,7 +106,7 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
                   <td className={m.num}>{r.declined}</td>
                   <td>{bar(r.acceptedShare)}</td>
                   <td className={m.num}>{r.invitedCandidates}</td>
-                  <td className={m.num}>{r.medianHoursToFirst === null ? '—' : r.medianHoursToFirst.toFixed(1)}</td>
+                  <td className={m.num}>{r.medianHoursToFirst === null ? '–' : r.medianHoursToFirst.toFixed(1)}</td>
                 </tr>
               ))}
             </tbody>
@@ -115,8 +115,8 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
         {funnel.length === 0 && <p className={styles.muted}>За период приглашений нет.</p>}
         <h3 className={m.h2}>Доля принятых по месту в подборке</h3>
         <p className={styles.muted}>
-          Ранг — место кандидата в подборке, поиске или ленте помощника в момент отправки (1 = первый). «≤ 3» входит в «≤ 10».
-          Без ранга — избранное, черновик помощника, приглашение на защиту и приглашения до появления поля.
+          Ранг – место кандидата в подборке, поиске или ленте помощника в момент отправки (1 = первый). «≤ 3» входит в «≤ 10».
+          Без ранга – избранное, черновик помощника, приглашение на защиту и приглашения до появления поля.
         </p>
         <div className={m.scroll}>
           <table className={styles.table}>

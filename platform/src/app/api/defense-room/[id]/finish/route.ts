@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST — завершить защиту: слепой оценщик по рубрике A-02, три прогона, медиана → `verdictJson`
+ * POST – завершить защиту: слепой оценщик по рубрике A-02, три прогона, медиана → `verdictJson`
  * `{ scores, total, passed, flags, summary, … }`. Повторный вызов возвращает сохранённый вердикт;
- * оценщик недоступен — 503, транскрипт сохранён, можно повторить.
+ * оценщик недоступен – 503, транскрипт сохранён, можно повторить.
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);

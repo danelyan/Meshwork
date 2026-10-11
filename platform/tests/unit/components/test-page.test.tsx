@@ -118,7 +118,7 @@ describe('TestPage', () => {
     expect((screen.getByTestId('start') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('четыре направления; для направления без генераторов — «тест пока недоступен», старт выключен', async () => {
+  it('четыре направления; для направления без генераторов – «тест пока недоступен», старт выключен', async () => {
     stubFetch((url) => {
       if (url.startsWith('/api/test/start?specialization=engineering'))
         return { allowed: false, code: 'no_test', reason: 'Тест на грейд для направления Engineering пока недоступен: нет генераторов заданий.', rules: 'r' };
@@ -135,7 +135,7 @@ describe('TestPage', () => {
     expect(screen.getByTestId('start').textContent).toContain('AI / ML');
   });
 
-  it('подкатегория: из профиля через допуск, выбор чипом уходит в запрос; без подкатегории — подсказка выбрать', async () => {
+  it('подкатегория: из профиля через допуск, выбор чипом уходит в запрос; без подкатегории – подсказка выбрать', async () => {
     const calls = stubFetch((url) => {
       if (url.startsWith('/api/test/start?specialization=ai') && !url.includes('subcategoryId'))
         return { allowed: false, code: 'subcategory_required', reason: 'Выберите подкатегорию направления AI / ML.', subcategoryId: null, rules: 'r' };
@@ -274,21 +274,9 @@ describe('TestPage: честность', () => {
     search = '';
     render(<TestPage />);
     expect(await screen.findByText(/Нельзя покидать вкладку с заданием и копировать текст/)).toBeDefined();
-    expect(screen.getByText(/Если не получится — работодатель не увидит/)).toBeDefined();
+    expect(screen.getByText(/Если не получится – работодатель не увидит/)).toBeDefined();
     expect(screen.getByText(/Отключите расширения браузера/)).toBeDefined();
     expect(screen.queryByText(/Мы отмечаем/)).toBeNull();
-  });
-
-  it('слой жюри: адаптивный блок (θ̂, сложность, шанс верного, фаза) только когда сервер прислал параметры задания', async () => {
-    stubFetch((url) => (url === '/api/test/attempt/att1' ? { ...active(0), current: { ...item(0)!, jury: { canaryShift: null, theta: 0.42, se: 0.55, itemB: 0.8, itemA: 1.1, itemGrade: 'middle', pCorrect: 0.4, phase: 'main', answered: 3 } } } : {}));
-    search = 'attempt=att1';
-    render(<TestPage />);
-    const block = await screen.findByTestId('jury-adaptive');
-    expect(block.textContent).toContain('+0.42 ± 0.55');
-    expect(block.textContent).toContain('b = +0.80');
-    expect(block.textContent).toContain('40 %');
-    expect(block.textContent).toContain('основная');
-    expect(screen.queryByTestId('jury-canary')).toBeNull();
   });
 
   it('слой жюри: плашка со счётчиками и сдвигом ловушки только когда сервер прислал item.jury', async () => {
@@ -342,7 +330,7 @@ describe('TestPage: честность', () => {
     expect(note.textContent).toContain('в подборках и поиске компаний пока не учитывается');
     expect(note.textContent).toContain('не обвинение и не снятие грейда');
     expect(note.textContent).not.toMatch(/списыва|высокий|индекс/i);
-    expect(screen.getByRole('link', { name: 'Созвон с ИИ' }).getAttribute('href')).toBe('/consultant?call=1');
+    expect(screen.getByRole('link', { name: 'Созвон с ИИ' }).getAttribute('href')).toBe('/interview');
     expect(screen.getByTestId('objection-open')).toBeDefined();
     expect(screen.queryByTestId('confirm-needed')).toBeNull();
     fireEvent.click(screen.getByTestId('confirm-start'));

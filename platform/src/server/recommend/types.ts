@@ -1,5 +1,5 @@
 // Контракт подбора (лейн recommend). Типы Gap/TaskRec/TargetRec/Coverage в плане
-// не были расписаны — это предложение foundation, лейн recommend может расширять.
+// не были расписаны – это предложение foundation, лейн recommend может расширять.
 import type { EvidenceLevel } from '../claims/types';
 import type { Grade, Specialization } from '../types';
 
@@ -11,9 +11,9 @@ export interface Gap {
   catalogId: string;
   statement: string;
   weight: 1 | 2 | 3;
-  /** Текущий лучший уровень по утверждению; null — утверждения нет */
+  /** Текущий лучший уровень по утверждению; null – утверждения нет */
   currentLevel: EvidenceLevel | null;
-  /** вес × (1 − уровень) × посильность; больше — важнее */
+  /** вес × (1 − уровень) × посильность; больше – важнее */
   priority: number;
   suggestedProof: string[];
 }

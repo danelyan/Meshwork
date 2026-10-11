@@ -13,7 +13,7 @@ export const DefenseTurnInput = z.object({ text: z.string().max(4000) });
 
 export const SignalInput = z
   .object({
-    /** Кандидат указывает работодателя: `employer:<userId>`; работодателю не нужно (адресат — кандидат). */
+    /** Кандидат указывает работодателя: `employer:<userId>`; работодателю не нужно (адресат – кандидат). */
     to: z.string().max(80).optional(),
     sdp: z
       .object({ type: z.enum(['offer', 'answer', 'pranswer', 'rollback']), sdp: z.string().max(20_000).optional() })

@@ -32,7 +32,7 @@ async function typed(v: string) {
 }
 
 describe('запросы', () => {
-  it('дребезг: быстрый ввод — один запрос с последним значением, без пробелов по краям', async () => {
+  it('дребезг: быстрый ввод – один запрос с последним значением, без пробелов по краям', async () => {
     const { s } = setup();
     type('r');
     type('re');
@@ -55,7 +55,7 @@ describe('запросы', () => {
     expect(box().getAttribute('aria-autocomplete')).toBe('list');
   });
 
-  it('пустой ответ — «Ничего не найдено», список закрыт', async () => {
+  it('пустой ответ – «Ничего не найдено», список закрыт', async () => {
     const { s } = setup();
     await typed('zzz');
     await act(async () => s.last().resolve([]));
@@ -100,7 +100,7 @@ describe('запросы', () => {
     expect(options()).toEqual(['Б']);
   });
 
-  it('ошибка — alert и «Повторить» сразу повторяет тот же запрос', async () => {
+  it('ошибка – alert и «Повторить» сразу повторяет тот же запрос', async () => {
     const { s } = setup();
     await typed('ёж');
     await act(async () => s.last().reject(new Error('500')));
@@ -112,7 +112,7 @@ describe('запросы', () => {
     expect(options()).toEqual(['Ёжик']);
   });
 
-  it('кэш: повтор запроса — без вызова search и без «Загрузка…»', async () => {
+  it('кэш: повтор запроса – без вызова search и без «Загрузка…»', async () => {
     const { s } = setup();
     await typed('go');
     await act(async () => s.last().resolve(items('Go')));
@@ -174,7 +174,7 @@ describe('combobox и клавиатура', () => {
     expect(new Set(ids).size).toBe(3);
   });
 
-  it('Enter выбирает активный пункт, клик — пункт под курсором', async () => {
+  it('Enter выбирает активный пункт, клик – пункт под курсором', async () => {
     const { onSelect } = await withList();
     fireEvent.keyDown(box(), { key: 'ArrowDown' });
     fireEvent.keyDown(box(), { key: 'ArrowDown' });
@@ -195,7 +195,7 @@ describe('combobox и клавиатура', () => {
 
 describe('DESIGN.md', () => {
   it('разделы «Решения», «Компромиссы», «Границы применимости» не короче 200 символов', () => {
-    // new URL(…) в jsdom — URL из jsdom; путь считаем от файла теста.
+    // new URL(…) в jsdom – URL из jsdom; путь считаем от файла теста.
     const file = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../DESIGN.md');
     expect(existsSync(file)).toBe(true);
     const text = readFileSync(file, 'utf8');

@@ -244,7 +244,7 @@ describe('collector/url: редиректы', () => {
     }
   });
 
-  it('3 редиректа можно, 4-й — blocked_url', async () => {
+  it('3 редиректа можно, 4-й – blocked_url', async () => {
     const hops = (k: number) => Array.from({ length: k }, (_, i) => `https://hop.example.net/${i}`);
     const ok = chainHttp(hops(3));
     await expect(createUrlFetcher({ resolve: resolver, httpGet: ok.get })('https://public.example.net/')).resolves.toBeTruthy();
@@ -282,7 +282,7 @@ describe('collector/url: ответ', () => {
     expect((await errorOf(fetcher(() => htmlResponse('', 404))('https://example.com/'))).code).toBe('fetch_failed');
   });
 
-  it('тело больше лимита: html усечён с флагом, по content-length — сразу', async () => {
+  it('тело больше лимита: html усечён с флагом, по content-length – сразу', async () => {
     const big = `<p>${'a'.repeat(5000)}</p>`;
     const doc = await fetcher(() => htmlResponse(big), { maxBytes: 1000 })('https://example.com/');
     expect(doc.flags.truncated).toBe(true);
@@ -312,7 +312,7 @@ describe('collector/url: ответ', () => {
   });
 });
 
-describe('collector/url: настоящий undici — пиннинг адреса, лимит, таймаут', () => {
+describe('collector/url: настоящий undici – пиннинг адреса, лимит, таймаут', () => {
   let server: Server;
   let port = 0;
   beforeAll(async () => {
@@ -337,14 +337,14 @@ describe('collector/url: настоящий undici — пиннинг адрес
   });
   afterAll(() => new Promise<void>((r) => server.close(() => r())));
 
-  // Подменяем только адрес/порт соединения: имя хоста в URL — несуществующее публичное.
+  // Подменяем только адрес/порт соединения: имя хоста в URL – несуществующее публичное.
   const pinnedToLocal: HttpGet = (target, signal) => {
     const url = new URL(target.url);
     url.port = String(port);
     return undiciGet({ ...target, url, address: '127.0.0.1', family: 4 }, signal);
   };
 
-  it('соединение идёт на запиненный IP, Host — исходное имя', async () => {
+  it('соединение идёт на запиненный IP, Host – исходное имя', async () => {
     const fetchUrl = createUrlFetcher({ resolve: resolver, httpGet: pinnedToLocal });
     const doc = await fetchUrl('http://public.example.net/');
     expect(doc.text).toBe(`host=public.example.net:${port}`);

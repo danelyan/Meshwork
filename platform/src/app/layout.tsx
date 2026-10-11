@@ -15,7 +15,6 @@ import { bodyRole } from '@/components/shell/bodyRole';
 import { SiteHeader } from '@/components/shell/SiteHeader';
 import { THEME_SCRIPT } from '@/components/shell/theme-script';
 import { EmployerSidebarSummary } from '@/components/employer/EmployerSidebarSummary';
-import { EmployerConsultantDock } from '@/components/employer/EmployerConsultantDock';
 import { getEnv } from '@/server/env';
 import { sttMode } from '@/server/stt';
 
@@ -44,8 +43,8 @@ export const metadata: Metadata = {
     icon: [{ url: '/assets/favicon.png?v=transparent-2', type: 'image/png', sizes: '64x64' }, { url: '/assets/favicon.svg?v=transparent-2', type: 'image/svg+xml', sizes: 'any' }],
     apple: { url: '/assets/apple-touch-icon.png', sizes: '180x180' },
   },
-  title: 'ФСП Карьера - консультант',
-  description: 'Карьерный консультант платформы ФСП Карьера',
+  title: 'MESHWORK - консультант',
+  description: 'Карьерный консультант платформы MESHWORK',
 };
 
 // Клавиатура на мобильном уменьшает область вёрстки (Chrome Android): dvh и липкий ввод остаются видны. Safari параметр игнорирует.
@@ -61,10 +60,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      {/* data-stt — режим голосового ввода для композера чата (server/stt, env STT_PROVIDER) */}
+      {/* data-stt – режим голосового ввода для композера чата (server/stt, env STT_PROVIDER) */}
       <body data-stt={sttMode()} data-role={role}>
         <AuthEntry yandexEnabled={yandexConfig() !== null} fspHint={fspDemoHint()} demoEnabled={getEnv().DEMO_LOGIN}>
-        <ShellFrame account={account} employerSummary={session?.role === 'employer' && session.employerProfileId ? <EmployerSidebarSummary employerProfileId={session.employerProfileId} /> : null} employerDock={session?.role === 'employer' && session.employerProfileId ? <EmployerConsultantDock employerProfileId={session.employerProfileId} /> : null} header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
+        <ShellFrame account={account} employerSummary={session?.role === 'employer' && session.employerProfileId ? <EmployerSidebarSummary employerProfileId={session.employerProfileId} /> : null} header={<SiteHeader />} footer={<SiteFooter demo={getEnv().DEMO_LOGIN} />}>
           {children}
         </ShellFrame>
         </AuthEntry>

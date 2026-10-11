@@ -3,9 +3,9 @@ import catalogFile from '../../../prisma/seed/claims-catalog.json';
 import type { CatalogEntry, CatalogMeta } from './types';
 
 /**
- * Каталог утверждений. Источник — prisma/seed/claims-catalog.json, сгенерированный
+ * Каталог утверждений. Источник – prisma/seed/claims-catalog.json, сгенерированный
  * scripts/catalog-to-json.mjs из fsp/docs/product/claims-catalog.md (правит владелец).
- * В БД (ClaimCatalog) — все поля CatalogEntry, включая веса по грейдам, stack,
+ * В БД (ClaimCatalog) – все поля CatalogEntry, включая веса по грейдам, stack,
  * смежность и версию каталога (миграция integrate_lanes).
  */
 interface FileEntry extends Omit<CatalogEntry, 'weights' | 'stack' | 'adjacent'>, Omit<CatalogMeta, 'id'> {}
@@ -48,7 +48,7 @@ export function getCatalogMeta(id: string): CatalogMeta | undefined {
   return META.get(id);
 }
 
-/** Записи для специализации кандидата: свои + общие. Без специализации — весь каталог. */
+/** Записи для специализации кандидата: свои + общие. Без специализации – весь каталог. */
 export function catalogFor(catalog: CatalogEntry[], specialization?: Specialization | null): CatalogEntry[] {
   if (!specialization) return catalog;
   return catalog.filter((c) => c.specialization === specialization || c.specialization === 'common');

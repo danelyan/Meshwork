@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { RUNNER_IMAGES } from './contract';
 
-/** Манифест шаблона проекта `project-templates/<id>/template.json` (формат — README шаблонов). */
+/** Манифест шаблона проекта `project-templates/<id>/template.json` (формат – README шаблонов). */
 export const templateManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/),
   specialization: z.string().min(1),
@@ -93,7 +93,7 @@ export async function bundleDir(templatesDir: string, manifest: TemplateManifest
 
 /**
  * Glob платформенных путей (`tests/visible/**`, `contract.md`) → префикс для удаления.
- * Поддерживается только «точный путь» и «каталог/**» — этого хватает манифестам.
+ * Поддерживается только «точный путь» и «каталог/**» – этого хватает манифестам.
  */
 export function ownedPrefix(pattern: string): string | null {
   const p = pattern.replace(/\/\*\*$/, '');

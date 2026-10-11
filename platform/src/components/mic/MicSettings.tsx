@@ -7,7 +7,7 @@ import styles from './mic.module.css';
 
 const OPTIONS: { mode: MicMode; label: string }[] = [
   { mode: 'hold', label: 'Удерживать для записи' },
-  { mode: 'click', label: 'Клик — начать, клик — остановить' },
+  { mode: 'click', label: 'Клик – начать, клик – остановить' },
 ];
 
 /** Поповер «Настройки микрофона»; родитель задаёт позицию (position: relative). Esc и клик вне закрывают. */

@@ -1,14 +1,14 @@
-// Самоотклик кандидата (R-C-12, «желательно») — дополнение к обратной механике, не замена: основной путь — поиск
+// Самоотклик кандидата (R-C-12, «желательно») – дополнение к обратной механике, не замена: основной путь – поиск
 // работодателем и приглашение с вилкой. Статусы: sent → viewed (работодатель открыл список) → accepted | declined.
 //
 // Приватность (R-E-07, ADR 0005): до accepted работодатель видит отклик той же карточкой, что в подборке
-// (toCandidateCard: псевдоним «Кандидат #…», категория, публичные утверждения). Имя и контакты — только при
+// (toCandidateCard: псевдоним «Кандидат #…», категория, публичные утверждения). Имя и контакты – только при
 // accepted И действующем согласии identity_disclosure с context { applicationId }. Согласие кандидат даёт при отправке
-// отклика (галочка обязательна), отзывает — DELETE /api/consents/identity_disclosure?applicationId=.
+// отклика (галочка обязательна), отзывает – DELETE /api/consents/identity_disclosure?applicationId=.
 //
-// hiddenFromEmployers (Г4 отозвано) не мешает откликнуться: отклик — адресное действие кандидата, его карточку видит
+// hiddenFromEmployers (Г4 отозвано) не мешает откликнуться: отклик – адресное действие кандидата, его карточку видит
 // только компания этой потребности и только в списке откликов этой потребности. В поиск и подборки кандидат не
-// возвращается, другие компании его не видят — ничего сверх R-E-07 не раскрывается.
+// возвращается, другие компании его не видят – ничего сверх R-E-07 не раскрывается.
 import type { ApplicationStatus } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import type { z } from 'zod';
@@ -54,16 +54,16 @@ export interface EmployerApplicationView {
   createdAt: string;
   viewedAt: string | null;
   respondedAt: string | null;
-  /** lane lifecycle: закрыт системой (status = closed) — когда и почему. */
+  /** lane lifecycle: закрыт системой (status = closed) – когда и почему. */
   closed?: { at: string; reason: string } | null;
-  /** lane lifecycle: приглашение, созданное при принятии отклика (слоты живой защиты, отметка найма — там). */
+  /** lane lifecycle: приглашение, созданное при принятии отклика (слоты живой защиты, отметка найма – там). */
   invitationId?: string | null;
   candidate: CandidateCard;
 }
 
 /**
- * Откликнуться на открытую потребность. 404 — нет или архивная; 409 — уже откликался (уникальность vacancyId+candidateId)
- * или не подтверждено раскрытие (consent_required); 429 — лимит за сутки. Лимит — под advisory-lock кандидата.
+ * Откликнуться на открытую потребность. 404 – нет или архивная; 409 – уже откликался (уникальность vacancyId+candidateId)
+ * или не подтверждено раскрытие (consent_required); 429 – лимит за сутки. Лимит – под advisory-lock кандидата.
  */
 export async function createApplication(candidateId: string, vacancyId: string, input: z.infer<typeof ApplicationInput>, limit = DAILY_APPLICATION_LIMIT) {
   const vacancy = await prisma.vacancy.findFirst({ where: { id: vacancyId, archivedAt: null, ...notBlockedVacancyWhere() }, select: { id: true } });
@@ -93,7 +93,7 @@ export async function createApplication(candidateId: string, vacancyId: string, 
       return app;
     });
   } catch (err) {
-    // Параллельный отклик на ту же вакансию: lock по кандидату это уже исключает, уникальный индекс — последняя линия.
+    // Параллельный отклик на ту же вакансию: lock по кандидату это уже исключает, уникальный индекс – последняя линия.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') throw errors.conflict('Вы уже откликались на эту вакансию');
     throw err;
   }
@@ -123,8 +123,8 @@ export async function listCandidateApplications(candidateId: string): Promise<Ca
 }
 
 /**
- * Отклики по своей потребности (работодатель). Чужая потребность — 404 (не раскрываем существование).
- * markViewed — открытие списка переводит sent → viewed.
+ * Отклики по своей потребности (работодатель). Чужая потребность – 404 (не раскрываем существование).
+ * markViewed – открытие списка переводит sent → viewed.
  */
 export async function listVacancyApplications(companyId: string, vacancyId: string, markViewed = false): Promise<EmployerApplicationView[]> {
   const v = await prisma.vacancy.findFirst({ where: { id: vacancyId, companyId }, select: { id: true } });
@@ -169,12 +169,12 @@ export async function listVacancyApplications(companyId: string, vacancyId: stri
 }
 
 /**
- * Ответ работодателя. Чужой отклик — 404; уже отвеченный — 409. Условный update — без гонки двойного ответа.
+ * Ответ работодателя. Чужой отклик – 404; уже отвеченный – 409. Условный update – без гонки двойного ответа.
  * lane lifecycle: accept в той же транзакции создаёт приглашение `accepted` (та же компания и вакансия, вилка вакансии,
- * sourceApplicationId) — дальше тот же путь, что у приглашения: слоты живой защиты, отметка найма. Раскрытие не
- * создаётся заново: действующее согласие кандидата по отклику получает в context ещё и invitationId — одна запись,
+ * sourceApplicationId) – дальше тот же путь, что у приглашения: слоты живой защиты, отметка найма. Раскрытие не
+ * создаётся заново: действующее согласие кандидата по отклику получает в context ещё и invitationId – одна запись,
  * отзыв по applicationId или по invitationId прекращает раскрытие для обоих. Отозванное до принятия согласие не
- * переносится — компания видит псевдоним. Лимит 20 приглашений в сутки такое приглашение не расходует.
+ * переносится – компания видит псевдоним. Лимит 20 приглашений в сутки такое приглашение не расходует.
  */
 export async function respondApplication(companyId: string, applicationId: string, action: 'accept' | 'decline', employerProfileId?: string) {
   const app = await prisma.application.findFirst({
@@ -215,7 +215,7 @@ export async function respondApplication(companyId: string, applicationId: strin
   return { id: applicationId, status, invitationId };
 }
 
-/** Действующее раскрытие по отклику дополняется invitationId (та же запись согласия; отзыв по любому id — для обоих). */
+/** Действующее раскрытие по отклику дополняется invitationId (та же запись согласия; отзыв по любому id – для обоих). */
 async function linkDisclosureToInvitation(tx: Prisma.TransactionClient, candidateId: string, applicationId: string, invitationId: string): Promise<void> {
   const rows = await tx.consent.findMany({ where: { kind: 'identity_disclosure', revokedAt: null, user: { candidateId } }, select: { id: true, context: true } });
   for (const r of rows) {

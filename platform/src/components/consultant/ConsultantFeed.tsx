@@ -8,7 +8,7 @@ import { getView, onboardingInFeed } from '@/server/onboarding/service';
 import type { OnboardingView } from '@/server/onboarding/types';
 
 /**
- * Слитая лента /consultant (онбординг + консультант в одном потоке) как серверный компонент —
+ * Слитая лента /consultant (онбординг + консультант в одном потоке) как серверный компонент –
  * чтобы сцена с головой (AvatarScene) принимала её как `children`. Данные и логика те же, что в
  * app/(candidate)/consultant/page.tsx; при подмене страницы page.tsx вызывает этот компонент.
  * Guard (requirePageCandidate) остаётся на странице: сюда приходит уже проверенная сессия.

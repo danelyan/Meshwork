@@ -4,7 +4,7 @@ import { demoRepoSnapshot } from '@/server/defense-room/fixtures/demo-repo';
 import type { CodeFragment } from '@/server/defense-room/types';
 import { buildQlcMessages } from '@/server/defense-room/qlc';
 
-// Путь файла — данные из репозитория кандидата: в атрибуте ref="…" он не должен закрыть атрибут или тег.
+// Путь файла – данные из репозитория кандидата: в атрибуте ref="…" он не должен закрыть атрибут или тег.
 describe('QLC: атрибуты фрагмента в промпте', () => {
   const snapshot = demoRepoSnapshot('https://github.com/fsp-demo/payments');
 

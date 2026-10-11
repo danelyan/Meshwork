@@ -1,19 +1,19 @@
 /*
- * fsp-sandbox — маленький setuid-root помощник runner (только контейнер).
+ * fsp-sandbox – маленький setuid-root помощник runner (только контейнер).
  *
  * Сервис runner работает под непривилегированным uid (RUNNER_UID, 1001) и не может сам сменить uid
- * задания. Этот помощник (владелец root, группа runner, режим 4750 — запускать может только группа
+ * задания. Этот помощник (владелец root, группа runner, режим 4750 – запускать может только группа
  * runner) делает ровно три вещи и всегда сначала необратимо сбрасывает себя в uid/gid задания
- * (SANDBOX_UID, 2000) — зашитые при сборке, из аргументов не берутся:
+ * (SANDBOX_UID, 2000) – зашитые при сборке, из аргументов не берутся:
  *
- *   fsp-sandbox exec <path> [args...]  — стать uid 2000, PR_SET_NO_NEW_PRIVS, execv(path, args)
- *   fsp-sandbox killall                — стать uid 2000, kill(-1, SIGKILL): все процессы задания
- *   fsp-sandbox clean <dir>            — стать uid 2000, удалить содержимое dir (под /work/jobs/ или /dev/shm)
+ *   fsp-sandbox exec <path> [args...]  – стать uid 2000, PR_SET_NO_NEW_PRIVS, execv(path, args)
+ *   fsp-sandbox killall                – стать uid 2000, kill(-1, SIGKILL): все процессы задания
+ *   fsp-sandbox clean <dir>            – стать uid 2000, удалить содержимое dir (под /work/jobs/ или /dev/shm)
  *
  * После setresuid(2000,2000,2000) из euid 0 ядро очищает permitted/effective/ambient capabilities
  * (capabilities(7), «Effect of user ID changes on capabilities»), поэтому задание не получает ни одной.
  * В контейнере bounding set ограничен cap_add [SETUID, SETGID]: даже euid 0 здесь умеет только менять
- * uid/gid. Окружение передаёт сервис (уже очищенное); статическая сборка — LD_* не действуют.
+ * uid/gid. Окружение передаёт сервис (уже очищенное); статическая сборка – LD_* не действуют.
  */
 #define _GNU_SOURCE
 #include <errno.h>
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
   }
   if (argc == 2 && strcmp(argv[1], "killall") == 0) {
     drop_to_sandbox();
-    /* kill(-1) — все процессы, которым можно послать сигнал (uid 2000), кроме себя. */
+    /* kill(-1) – все процессы, которым можно послать сигнал (uid 2000), кроме себя. */
     if (kill(-1, SIGKILL) != 0 && errno != ESRCH) die("kill");
     return 0;
   }

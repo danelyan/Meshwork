@@ -11,7 +11,7 @@ import { adminFetch } from './adminFetch';
 
 type Step = { kind: 'password' } | { kind: 'totp' } | { kind: 'setup'; secret: string; otpauthUri: string };
 
-/** Форма входа персонала: шаг 1 — пароль, шаг 2 — код TOTP (или настройка при первом входе). */
+/** Форма входа персонала: шаг 1 – пароль, шаг 2 – код TOTP (или настройка при первом входе). */
 export function AdminLoginForm({ next, demo = false }: { next: string; demo?: boolean }) {
   const [step, setStep] = useState<Step>({ kind: 'password' });
   const [email, setEmail] = useState('');

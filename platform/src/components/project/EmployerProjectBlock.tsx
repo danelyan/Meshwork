@@ -57,7 +57,7 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
     if (task) void load();
   }, [task, load]);
 
-  // Опрос, пока есть сдачи на проверке. После ошибки сети — повтор с бэкоффом (×2 до POLL_MAX_MS), на успехе снова
+  // Опрос, пока есть сдачи на проверке. После ошибки сети – повтор с бэкоффом (×2 до POLL_MAX_MS), на успехе снова
   // SUBS_POLL_MS. Раньше эффект зависел от `subs`: первая ошибка список не меняла, и опрос вставал (как было в useSubmissionPolling).
   const [poll, setPoll] = useState({ delay: SUBS_POLL_MS, attempt: 0 });
   const running = subs.some((s) => s.status === 'submitted' || s.status === 'running');
@@ -102,7 +102,7 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
         <h2 className={emp.sectionTitle}>Проектное задание</h2>
         <p className={emp.lead}>
           Шаблон платформы задаёт контракт и скрытые тесты (балл воспроизводим). Ты добавляешь обязательные критерии из каталога и
-          пожелания — ИИ пишет условие в домене твоей команды и рубрику. Кандидаты видят задание в ленте без названия компании и зарплаты.
+          пожелания – ИИ пишет условие в домене твоей команды и рубрику. Кандидаты видят задание в ленте без названия компании и зарплаты.
         </p>
       </div>
       {!archived && !locked && (
@@ -111,7 +111,7 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
             <select className={ui.input} value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
               {props.templates.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.subcategoryTitle} · {GRADE_RU[t.grade] ?? t.grade} — {t.title}
+                  {t.subcategoryTitle} · {GRADE_RU[t.grade] ?? t.grade} – {t.title}
                 </option>
               ))}
             </select>
@@ -129,7 +129,7 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
               </label>
             ))}
           </fieldset>
-          <Field label="Пожелания свободным текстом" hint="Что ещё хочешь увидеть в решении. Каждое пожелание станет пунктом рубрики; проверка — пояснением, не баллом.">
+          <Field label="Пожелания свободным текстом" hint="Что ещё хочешь увидеть в решении. Каждое пожелание станет пунктом рубрики; проверка – пояснением, не баллом.">
             <textarea className={`${ui.input} ${styles.textarea}`} value={wishes} maxLength={2000} onChange={(e) => setWishes(e.target.value)} />
           </Field>
           <Field label="Кому видно">
@@ -146,13 +146,13 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
           </div>
         </Panel>
       )}
-      {locked && <Notice>Задание уже сдают — условие зафиксировано, чтобы всех проверяли по одному тексту.</Notice>}
+      {locked && <Notice>Задание уже сдают – условие зафиксировано, чтобы всех проверяли по одному тексту.</Notice>}
 
       {task && (
         <Panel className={emp.card} aria-label="Условие задания">
           <div className={emp.cardHead}>
             <h3>{task.spec.title}</h3>
-            <Tag tone="outline">{task.spec.source === 'llm' ? 'условие — ИИ' : 'условие — шаблон'}</Tag>
+            <Tag tone="outline">{task.spec.source === 'llm' ? 'условие – ИИ' : 'условие – шаблон'}</Tag>
           </div>
           <div className={emp.meta}>
             <span>{task.template.subcategoryTitle}</span>
@@ -184,7 +184,7 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
           </details>
           {task.spec.contractMd && (
             <details className={styles.details}>
-              <summary>Контракт шаблона — кандидат получает его дословно</summary>
+              <summary>Контракт шаблона – кандидат получает его дословно</summary>
               <pre className={styles.code}>{task.spec.contractMd}</pre>
             </details>
           )}
@@ -203,7 +203,7 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
   );
 }
 
-/** Вердикт ИИ-защиты (ADR 0008 п. 1): баллы по рубрике A-02 и флаги; текст кандидата и запись — после принятия приглашения. */
+/** Вердикт ИИ-защиты (ADR 0008 п. 1): баллы по рубрике A-02 и флаги; текст кандидата и запись – после принятия приглашения. */
 function AiDefenseBlock({ d, open }: { d: NonNullable<EmployerSubmissionView['aiDefense']>; open: boolean }) {
   const v = d.verdict;
   return (
@@ -273,7 +273,7 @@ function SubmissionCard({ s, salaryFrom, salaryTo, onInvited }: { s: EmployerSub
         {s.candidate.category && <Tag tone="solid">{s.candidate.category}</Tag>}
         <span>{new Date(s.submittedAt).toLocaleString('ru-RU')}</span>
         {s.late && <Tag>сдано после срока</Tag>}
-        {s.kind === 'approach' ? <Tag>подход без кода</Tag> : s.repoUrl ? <a href={s.repoUrl}>{s.repoUrl}</a> : <span>репозиторий — после принятия приглашения</span>}
+        {s.kind === 'approach' ? <Tag>подход без кода</Tag> : s.repoUrl ? <a href={s.repoUrl}>{s.repoUrl}</a> : <span>репозиторий – после принятия приглашения</span>}
       </div>
       {s.error && <Notice tone="error">{s.error}</Notice>}
       {s.kind === 'approach' && s.approachText && (
@@ -285,10 +285,10 @@ function SubmissionCard({ s, salaryFrom, salaryTo, onInvited }: { s: EmployerSub
       {r && (
         <>
           {r.kind === 'approach' ? (
-            <p className={emp.status}>Сдача подходом: автотестов и балла нет, ниже — оценка по вашим критериям.</p>
+            <p className={emp.status}>Сдача подходом: автотестов и балла нет, ниже – оценка по вашим критериям.</p>
           ) : (
             <div>
-              <span className={styles.scoreBig}>{r.tests.score}</span> / 100 — скрытые тесты {r.tests.passed} из {r.tests.total}
+              <span className={styles.scoreBig}>{r.tests.score}</span> / 100 – скрытые тесты {r.tests.passed} из {r.tests.total}
               {r.runner.mode === 'stub' && <span className={emp.status}> · демо-проверка без песочницы</span>}
             </div>
           )}

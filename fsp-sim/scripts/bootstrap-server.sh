@@ -2,12 +2,12 @@
 # Подготовка чистого Ubuntu 24.04 под симулятор: Docker Engine, пользователь deploy, каталог,
 # swap, ufw. Запуск от root, идемпотентен:
 #   DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' bash bootstrap-server.sh
-# Дальше — scripts/deploy.sh с рабочей машины.
+# Дальше – scripts/deploy.sh с рабочей машины.
 set -euo pipefail
 
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/fsp/fsp-sim}"
-: "${DEPLOY_PUBKEY:?задайте DEPLOY_PUBKEY — открытый ключ, с которым ходит деплой}"
+: "${DEPLOY_PUBKEY:?задайте DEPLOY_PUBKEY – открытый ключ, с которым ходит деплой}"
 [ "$(id -u)" -eq 0 ] || { echo "Нужен root" >&2; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
 
@@ -31,7 +31,7 @@ if [ ! -f /etc/docker/daemon.json ]; then
   systemctl restart docker
 fi
 
-# Keycloak на старте и сборка образа API требуют памяти — swap как подстраховка.
+# Keycloak на старте и сборка образа API требуют памяти – swap как подстраховка.
 if [ "$(swapon --noheadings | wc -l)" -eq 0 ]; then
   fallocate -l 2G /swapfile
   chmod 600 /swapfile

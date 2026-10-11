@@ -1,5 +1,5 @@
-// Вызов runner из lane project: обёртка над клиентом лейна runner (server/runner/client.ts — submitRun,
-// getRun; контракт runner/src/contract.ts). Без RUNNER_URL/RUNNER_TOKEN — stub-режим: детерминированный
+// Вызов runner из lane project: обёртка над клиентом лейна runner (server/runner/client.ts – submitRun,
+// getRun; контракт runner/src/contract.ts). Без RUNNER_URL/RUNNER_TOKEN – stub-режим: детерминированный
 // результат по имени шаблона и маркерам в адресе репозитория, без сети (тесты, демо без песочницы).
 import { createHash } from 'node:crypto';
 
@@ -38,7 +38,7 @@ export interface ProjectRunner {
 }
 
 const POLL_MS = 2_000;
-/** runner держит одно задание за раз — ждём с запасом на очередь. */
+/** runner держит одно задание за раз – ждём с запасом на очередь. */
 const WAIT_MS = 10 * 60_000;
 
 function fromRunResult(r: RunResult): RunOutcome {
@@ -87,9 +87,9 @@ function hashInt(s: string): number {
 }
 
 /**
- * Stub: сколько тестов в наборе шаблона, столько и в отчёте. Адрес с `reference`/`solved` — всё зелёное,
- * с `starter`/`empty` — всё красное, `runner-fail` — failed(timeout); иначе не проходит 0–2 теста
- * (по хешу id шаблона — одно и то же для одного шаблона).
+ * Stub: сколько тестов в наборе шаблона, столько и в отчёте. Адрес с `reference`/`solved` – всё зелёное,
+ * с `starter`/`empty` – всё красное, `runner-fail` – failed(timeout); иначе не проходит 0–2 теста
+ * (по хешу id шаблона – одно и то же для одного шаблона).
  */
 export function createStubRunner(): ProjectRunner {
   return {

@@ -1,5 +1,5 @@
 <!--meta spec=backend grade=middle-->
-# Дмитрий Рябинин — Backend-разработчик (Python / Go), Middle
+# Дмитрий Рябинин – Backend-разработчик (Python / Go), Middle
 
 +7 900 000-00-51 · dmitry.ryabinin@example.com · Москва · GitHub: demo-ryabinin (вымышленный профиль)
 
@@ -8,7 +8,7 @@
 
 ## Опыт
 
-### «ПэйФлоу», Backend Engineer (2022 — 2026)
+### «ПэйФлоу», Backend Engineer (2022 – 2026)
 - Разработал [[be.idempotency|идемпотентный приём платёжных запросов: ключ идемпотентности и уникальное ограничение в PostgreSQL]], двойные списания при ретраях прекратились.
 - Перевёл переводы между счетами на [[be.transactions|транзакции с уровнем изоляции SERIALIZABLE и повтором при конфликте сериализации]].
 - Реализовал [[be.distributed-consistency|transactional outbox для публикации событий о платеже в Kafka]], чтобы не терять события при сбое между записью и отправкой.
@@ -18,7 +18,7 @@
 - [[be.integration-tests|Интеграционные тесты сервиса с PostgreSQL в Testcontainers]].
 - Провёл [[common.code-review|около 150 ревью pull request'ов]], веду чек-лист ревью.
 
-### «Лавка Софт», Junior → Middle (2020 — 2022)
+### «Лавка Софт», Junior → Middle (2020 – 2022)
 - [[be.migrations|Миграции без простоя: добавление колонки в три шага с обратной совместимостью]].
 - [[be.cache|Кэш справочников в Redis с TTL и сбросом по событию]].
 

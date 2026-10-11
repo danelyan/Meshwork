@@ -6,7 +6,7 @@ import { requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** POST /api/call/consent {version} — согласие на запись созвона (транскрипт и аудио). Повтор — без дубля. */
+/** POST /api/call/consent {version} – согласие на запись созвона (транскрипт и аудио). Повтор – без дубля. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

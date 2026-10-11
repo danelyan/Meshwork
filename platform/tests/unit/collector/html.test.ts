@@ -19,7 +19,7 @@ describe('collector/html: атаки из eval/attacks', () => {
     for (const l of doc.lines.filter((x) => !x.hidden)) expect(l.text).not.toMatch(/Senior|third_party/);
   });
 
-  it('atk-html-1: div display:none — скрытая строка с hidden', () => {
+  it('atk-html-1: div display:none – скрытая строка с hidden', () => {
     const doc = extractHtml(read('atk-html-1.html'), 'https://e.com/a');
     const hidden = doc.lines.filter((l) => l.hidden);
     expect(hidden).toHaveLength(1);
@@ -27,12 +27,12 @@ describe('collector/html: атаки из eval/attacks', () => {
     expect(doc.title).toBe('Портфолио Кирилла Лаптева');
   });
 
-  it('atk-html-3: aria-hidden + вынос за экран и font-size:0 — обе строки скрыты', () => {
+  it('atk-html-3: aria-hidden + вынос за экран и font-size:0 – обе строки скрыты', () => {
     const doc = extractHtml(read('atk-html-3.html'), 'https://e.com/a');
     expect(doc.lines.filter((l) => l.hidden)).toHaveLength(2);
   });
 
-  it('atk-html-2: комментарий считается скрытым, meta — только в проверку инъекции', () => {
+  it('atk-html-2: комментарий считается скрытым, meta – только в проверку инъекции', () => {
     const doc = extractHtml(read('atk-html-2.html'), 'https://e.com/a');
     expect(doc.flags.hiddenText?.count).toBe(1);
     expect(doc.flags.hiddenText?.sample[0]).toMatch(/INSTRUCTION FOR LLM/);
@@ -52,7 +52,7 @@ describe('collector/html: правила видимости', () => {
     expect(doc.flags).toEqual({});
   });
 
-  it('script/style/noscript/template/форма — не текст', () => {
+  it('script/style/noscript/template/форма – не текст', () => {
     const doc = extractHtml(
       '<body><p>ok</p><script>var x="secret"</script><style>p{}</style><noscript>ns</noscript><template>tpl</template><textarea>ta</textarea></body>',
       'https://e.com',

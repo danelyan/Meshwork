@@ -18,10 +18,10 @@ export interface CareerVacancy extends TargetRec {
   stack: string[];
   matched: { catalogId: string; statement: string; level: string | null }[];
   /**
-   * Покрытие полной категории вакансии (`<spec>:<grade>`) — тот же список, что «Карта пробелов»
+   * Покрытие полной категории вакансии (`<spec>:<grade>`) – тот же список, что «Карта пробелов»
    * на /skills. `missing` = строки карты со «Сейчас: Нет». Вакансия может требовать меньше
-   * категории: «6 из 6» по вакансии и пробелы по категории — не противоречие, а разные списки.
-   * null — категории нет в каталоге (senior, ai, …).
+   * категории: «6 из 6» по вакансии и пробелы по категории – не противоречие, а разные списки.
+   * null – категории нет в каталоге (senior, ai, …).
    */
   category?: { id: string; label: string; covered: number; total: number; missing: { catalogId: string; statement: string }[] } | null;
   /** Открытое задание вакансии, которое кандидат может взять сейчас (направление и грейд по его категории), иначе null. */

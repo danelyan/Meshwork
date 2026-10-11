@@ -5,7 +5,7 @@ import { hostnameOf } from '@/server/devtools/guard';
 /**
  * Закрытый стенд: при заданном пароле публичный адрес пускает только после его ввода (без логина).
  * Пароль задаётся SITE_PASSWORD или его SHA-256 в SITE_PASSWORD_SHA256 (хеш можно держать в конфиге
- * репозитория, сам пароль — нет). localhost / 127.0.0.1 / [::1] не закрываются. Проверка — src/middleware.ts.
+ * репозитория, сам пароль – нет). localhost / 127.0.0.1 / [::1] не закрываются. Проверка – src/middleware.ts.
  */
 export const SITE_ACCESS_COOKIE = 'site_access';
 export const SITE_ACCESS_PATH = '/site-access';
@@ -18,7 +18,7 @@ const OPEN_PATHS = new Set(['/api/health', SITE_ACCESS_PATH]);
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest();
 
-/** Ключ гейта — SHA-256 пароля в hex; undefined — стенд открыт. */
+/** Ключ гейта – SHA-256 пароля в hex; undefined – стенд открыт. */
 export function siteAccessKey(env: { SITE_PASSWORD?: string; SITE_PASSWORD_SHA256?: string }): string | undefined {
   if (env.SITE_PASSWORD_SHA256) return env.SITE_PASSWORD_SHA256.toLowerCase();
   if (env.SITE_PASSWORD) return sha256(env.SITE_PASSWORD).toString('hex');
@@ -48,7 +48,7 @@ function sameString(a: string, b: string): boolean {
 
 export type SiteAccessDecision = 'allow' | 'redirect' | 'deny';
 
-/** Чистое решение гейта: deny — для /api/* (401 JSON), redirect — страницы ведут на ввод пароля. */
+/** Чистое решение гейта: deny – для /api/* (401 JSON), redirect – страницы ведут на ввод пароля. */
 export function siteAccessDecision(input: {
   key: string | undefined;
   secret: string;

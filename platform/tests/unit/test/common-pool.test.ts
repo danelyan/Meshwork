@@ -53,7 +53,7 @@ function play(pool: readonly SelectableTemplate[], grade: Grade, seed: number) {
 }
 
 describe('лимит доли общих (MAX_COMMON_SHARE)', () => {
-  it('префиксное правило: первое общее — не раньше 4-го задания, при 10 — не больше 3', () => {
+  it('префиксное правило: первое общее – не раньше 4-го задания, при 10 – не больше 3', () => {
     expect(MAX_COMMON_SHARE).toBe(0.3);
     const own = (n: number) => Array.from({ length: n }, (_, i) => tpl(`o${i}`, 'junior', 0));
     expect(commonAllowed(own(2))).toBe(false);
@@ -62,7 +62,7 @@ describe('лимит доли общих (MAX_COMMON_SHARE)', () => {
     expect(commonAllowed([...own(7), tpl('c1', 'junior', 0, true), tpl('c2', 'junior', 0, true)])).toBe(true); // на 10-м: floor(3) = 3
   });
 
-  it('reachableSize: своих 4 + общих 3 → 5 (Senior-пул), без общих — размер пула', () => {
+  it('reachableSize: своих 4 + общих 3 → 5 (Senior-пул), без общих – размер пула', () => {
     const senior = SYNTH.filter((t) => t.grade === 'senior');
     expect(reachableSize(senior)).toBe(5);
     expect(reachableSize(senior.filter((t) => !t.common))).toBe(4);
@@ -76,7 +76,7 @@ describe('лимит доли общих (MAX_COMMON_SHARE)', () => {
   });
 
   for (const grade of GRADES) {
-    it(`синтетический пул, заявка ${grade}: 1000 попыток — доля общих ≤ 30 % в каждой, в дозадавании общих нет`, () => {
+    it(`синтетический пул, заявка ${grade}: 1000 попыток – доля общих ≤ 30 % в каждой, в дозадавании общих нет`, () => {
       let withCommon = 0;
       for (let s = 1; s <= 1000; s++) {
         const { shown, phases } = play(SYNTH, grade, s * 7919 + 3);
@@ -125,7 +125,7 @@ describe('карта и пул подкатегории', () => {
     expect(new Set(GENERATORS.map((g) => g.id)).size).toBe(GENERATORS.length);
   });
 
-  it('poolFor: без opts.common — только свои (v6 и eval), с common — свои + общие по карте; полнота — по своим', () => {
+  it('poolFor: без opts.common – только свои (v6 и eval), с common – свои + общие по карте; полнота – по своим', () => {
     for (const sub of SUBCATEGORIES) {
       const own = poolFor(sub.specialization, sub.id);
       if (!own) continue;
@@ -140,7 +140,7 @@ describe('карта и пул подкатегории', () => {
     }
   });
 
-  it('реальные пулы v7 по каждой подкатегории: 1000 попыток (грейды по кругу) — доля общих ≤ 30 %', () => {
+  it('реальные пулы v7 по каждой подкатегории: 1000 попыток (грейды по кругу) – доля общих ≤ 30 %', () => {
     for (const sub of SUBCATEGORIES) {
       const p = poolFor(sub.specialization, sub.id, { common: true });
       if (!p) continue;
@@ -153,7 +153,7 @@ describe('карта и пул подкатегории', () => {
     }
   }, 120_000);
 
-  it('версия политики v7, правила остановки — как v6', () => {
+  it('версия политики v7, правила остановки – как v6', () => {
     expect(POLICY_VERSION).toBe('adr-0002-v7');
     expect(RULES_BY_VERSION['adr-0002-v7']).toEqual(RULES_BY_VERSION['adr-0002-v6']);
   });

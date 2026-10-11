@@ -1,11 +1,11 @@
 /**
  * Реестр активных ходов в памяти процесса: conversationId → AbortController хода.
  * Нужен для кнопки «Стоп» (`POST …/messages/stop`): разрыв соединения ход не прерывает
- * (AI SDK «chatbot-resume-streams»: disconnect ≠ stop), а явный стоп — отменяет работу модели.
+ * (AI SDK «chatbot-resume-streams»: disconnect ≠ stop), а явный стоп – отменяет работу модели.
  *
- * Ограничение: реестр живёт в одном процессе. Стенд — один процесс приложения (docker compose,
+ * Ограничение: реестр живёт в одном процессе. Стенд – один процесс приложения (docker compose,
  * один контейнер app), поэтому этого достаточно. При нескольких репликах стоп, пришедший в
- * другой процесс, ход не найдёт (204) — нужен общий канал (Redis pub/sub или флаг в БД).
+ * другой процесс, ход не найдёт (204) – нужен общий канал (Redis pub/sub или флаг в БД).
  */
 export interface ActiveTurn {
   controller: AbortController;
@@ -35,7 +35,7 @@ export function activeTurn(conversationId: string): ActiveTurn | undefined {
 
 /**
  * Остановить ход: отменить работу и дождаться, пока он сохранит частичный ответ и отдаст
- * `message` + `done` (не дольше waitMs). false — активного хода нет.
+ * `message` + `done` (не дольше waitMs). false – активного хода нет.
  */
 export async function stopTurn(conversationId: string, waitMs = 5_000): Promise<boolean> {
   const entry = turns.get(conversationId);

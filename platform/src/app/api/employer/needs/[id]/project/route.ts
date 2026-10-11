@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** GET /api/employer/needs/:id/project — проектное задание потребности (условие, рубрика, шаблон) или `{ task: null }`. */
+/** GET /api/employer/needs/:id/project – проектное задание потребности (условие, рубрика, шаблон) или `{ task: null }`. */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   const { employerProfileId } = requireEmployer(req);
   const { id } = await params;
@@ -18,9 +18,9 @@ export const GET = withErrors(async (req: Request, { params }: Ctx) => {
 });
 
 /**
- * POST `{ templateId?, subcategoryId?, requiredCatalogIds[], wishesText?, visibility?, deadlineDays? }` — создать или
+ * POST `{ templateId?, subcategoryId?, requiredCatalogIds[], wishesText?, visibility?, deadlineDays? }` – создать или
  * перегенерировать задание (ADR 0003, ступень 2): ИИ пишет условие в домене потребности поверх фиксированного контракта
- * шаблона, рубрика — из обязательных критериев каталога и пожеланий. После первого сабмита — 409.
+ * шаблона, рубрика – из обязательных критериев каталога и пожеланий. После первого сабмита – 409.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);

@@ -16,9 +16,9 @@ export { ApplicationListQuery, CandidateListQuery, CompanyListQuery, InvitationL
 /**
  * Списки обзора (E-08, фаза 1). Принципы:
  *  - только чтение, смещённая пагинация по `page` (25 строк), сортировка «новые сверху»;
- *  - ПДн в строках нет: у кандидата — псевдоним, у учётки — маска почты и имени. Полные значения — только
+ *  - ПДн в строках нет: у кандидата – псевдоним, у учётки – маска почты и имени. Полные значения – только
  *    через `revealPii` (карточка, кнопка «Показать» с причиной);
- *  - поиск по почте и имени — только тем, у кого есть право раскрытия (`canSearchPii`): иначе поиск
+ *  - поиск по почте и имени – только тем, у кого есть право раскрытия (`canSearchPii`): иначе поиск
  *    по маске стал бы способом узнать почту в обход журнала.
  */
 
@@ -66,7 +66,7 @@ export async function listUsers(q: z.infer<typeof UserListQuery>, canSearchPii: 
 
 // --- кандидаты ---
 
-/** Идентификаторы кандидатов с этим псевдонимом: он считается из id хэшем, в БД не хранится — сверяем в коде. */
+/** Идентификаторы кандидатов с этим псевдонимом: он считается из id хэшем, в БД не хранится – сверяем в коде. */
 async function idsByPseudonym(tag: string): Promise<string[]> {
   const all = await prisma.candidate.findMany({ select: { id: true } });
   return all.filter((c) => pseudonym(c.id).endsWith(tag)).map((c) => c.id);
@@ -154,7 +154,7 @@ export async function listCompanies(q: z.infer<typeof CompanyListQuery>) {
     }),
     prisma.company.count({ where }),
   ]);
-  // Индекс доверия считает существующий loadCompanyTrusts (server/employer/company.ts) — формулу не дублируем.
+  // Индекс доверия считает существующий loadCompanyTrusts (server/employer/company.ts) – формулу не дублируем.
   const trusts = await loadCompanyTrusts(rows.map((c) => c.id));
   return paged(
     rows.map((c) => ({

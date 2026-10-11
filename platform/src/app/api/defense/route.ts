@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 const StartBody = z.object({ claimId: z.string().min(1).max(64) });
 
-/** POST /api/defense {claimId} — начать (или продолжить активную) защиту утверждения. */
+/** POST /api/defense {claimId} – начать (или продолжить активную) защиту утверждения. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

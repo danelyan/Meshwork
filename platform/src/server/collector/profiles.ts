@@ -53,7 +53,7 @@ export async function fetchProfile(kind: ProfileKind, handle: string, opts: Fetc
   let doc: ExtractedDoc | null = fixtureDoc(kind, h);
   if (!doc && kind === 'fsp') {
     const state = await fspState(h, opts.candidateId);
-    // Привязан через ФСП ID (OIDC) — достижения этого участника из демо-реестра, иначе прежний демо-набор.
+    // Привязан через ФСП ID (OIDC) – достижения этого участника из демо-реестра, иначе прежний демо-набор.
     const subject = opts.candidateId && state !== 'not_linked' ? await linkedFspSubject(opts.candidateId) : null;
     doc = fspDemoDoc(opts.candidateId ?? h, state, subject ? { sub: subject.sub, name: subject.name ?? undefined, achievements: subject.achievements } : undefined);
   }
@@ -73,7 +73,7 @@ export async function fetchProfile(kind: ProfileKind, handle: string, opts: Fetc
       default:
         throw new AppError('bad_request', 'Неизвестный тип профиля', 400);
     }
-    // Ключ кэша — по запрошенному хэндлу (origin источника может отличаться регистром)
+    // Ключ кэша – по запрошенному хэндлу (origin источника может отличаться регистром)
     writeMemory(kind, originOf(kind, h), doc);
   }
   if (opts.candidateId) await saveSource(opts.candidateId, kind, doc.origin, doc);

@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 
-// Режим кнопок микрофона (решение владельца 11.10): по умолчанию «удерживать» (push-to-talk), «клик» —
+// Режим кнопок микрофона (решение владельца 11.10): по умолчанию «удерживать» (push-to-talk), «клик» –
 // клик начинает запись, клик заканчивает. Один выбор на все кнопки (чат, созвон); хранится в localStorage.
 
 export type MicMode = 'hold' | 'click';
@@ -23,7 +23,7 @@ export function setMicMode(mode: MicMode) {
     if (mode === 'click') window.localStorage.setItem(MIC_MODE_KEY, 'click');
     else window.localStorage.removeItem(MIC_MODE_KEY);
   } catch {
-    /* хранилище недоступно — режим действует до перезагрузки только в этом вызове */
+    /* хранилище недоступно – режим действует до перезагрузки только в этом вызове */
   }
   window.dispatchEvent(new Event(EVENT));
 }
@@ -37,7 +37,7 @@ function subscribe(onChange: () => void) {
   };
 }
 
-/** Текущий режим; на сервере и при гидрации — `hold`. */
+/** Текущий режим; на сервере и при гидрации – `hold`. */
 export function useMicMode(): MicMode {
   return useSyncExternalStore(subscribe, readMicMode, () => 'hold');
 }

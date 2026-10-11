@@ -29,7 +29,7 @@ describe('результат ИИнтервью: оси, соответстви�
   ];
   const s = buildInterviewSummary({ depthMap, competencyOf: byTitle, claimedGrade: 'middle', blocks: ['intro', 'test', 'systems'] });
 
-  it('продемонстрированный уровень — по глубине вопроса, только у подтверждённых', () => {
+  it('продемонстрированный уровень – по глубине вопроса, только у подтверждённых', () => {
     const c = Object.fromEntries(s.competencies.map((x) => [x.id, x]));
     expect(c['backend.code']!.demonstrated).toBe('senior');
     expect(c['backend.data']!.demonstrated).toBe('junior');
@@ -37,7 +37,7 @@ describe('результат ИИнтервью: оси, соответстви�
     expect(c['common.teamwork']!.status).toBe('not_probed');
   });
 
-  it('оси: среднее total/8 по проверенным; непроверенная ось — null', () => {
+  it('оси: среднее total/8 по проверенным; непроверенная ось – null', () => {
     const ax = Object.fromEntries(s.axes.map((a) => [a.axis, a]));
     expect(ax.technical!.score).toBe(Math.round(((7 + 5) / 16) * 100));
     expect(ax.systems!.score).toBe(Math.round((3 / 8) * 100));
@@ -61,7 +61,7 @@ describe('результат ИИнтервью: оси, соответстви�
     expect(gradeFitLabel(null)).toBe('unknown');
   });
 
-  it('итог — взвешенное среднее доступных осей; сильные стороны и зона роста — по названиям', () => {
+  it('итог – взвешенное среднее доступных осей; сильные стороны и зона роста – по названиям', () => {
     expect(s.overall).toBe(overallScore(s.axes));
     expect(s.overall).toBeGreaterThan(0);
     expect(s.strengths).toEqual(['Код и язык', 'Контекст и роль', 'Данные и хранение']);

@@ -31,7 +31,7 @@ describe('stub provider', () => {
     ]);
   });
 
-  it('после результатов инструментов не зацикливается — отвечает текстом', async () => {
+  it('после результатов инструментов не зацикливается – отвечает текстом', async () => {
     const res = await llm.complete({
       purpose: 'consultant',
       system: 's',

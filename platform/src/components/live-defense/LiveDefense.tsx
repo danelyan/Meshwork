@@ -64,7 +64,7 @@ function CancelForm({ onCancel, busy }: { onCancel: (reason: string) => Promise<
 // ---------------------------------------------------------------------------
 
 function defaultSlots(): string[] {
-  // Завтра 11:00 и 15:00 по МСК — удобная заготовка, всегда позже чем через 2 часа.
+  // Завтра 11:00 и 15:00 по МСК – удобная заготовка, всегда позже чем через 2 часа.
   const tomorrow = isoToMskLocal(new Date(Date.now() + 24 * 60 * 60 * 1000)).slice(0, 10);
   return [`${tomorrow}T11:00`, `${tomorrow}T15:00`];
 }
@@ -107,7 +107,7 @@ export function EmployerLiveDefense({ invitationId, live: initial, projectReady 
     {live && <Summary live={live} role="employer" />}
     {live?.status === 'slots_proposed' && <ul className={styles.slots}>{live.slots.map((s) => <li key={s.id} className={styles.slot} data-available={s.available}>{formatMsk(s.startsAt)}{!s.available && ' · занято'}</li>)}</ul>}
     {error && <p className={styles.error} role="alert">{error}</p>}
-    {waitingProject && <p className={styles.fine} data-testid="live-project-missing">Кандидат ещё не сдал проект — назначить защиту можно после сдачи.</p>}
+    {waitingProject && <p className={styles.fine} data-testid="live-project-missing">Кандидат ещё не сдал проект – назначить защиту можно после сдачи.</p>}
     {formOpen && projectReady ? <div className={styles.box}>
       <p className={styles.fine}>От 2 до 5 слотов по МСК, не раньше чем через 2 часа и не позже 14 дней. Одно активное предложение: новое заменит старое.</p>
       <ul className={styles.slots}>{slots.map((v, i) => <li key={i} className={styles.slot}>

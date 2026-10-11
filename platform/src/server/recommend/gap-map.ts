@@ -20,7 +20,7 @@ import { GRADE_INDEX, gradeWeight, REACH_PENALTY } from './weights';
 
 /**
  * Посильность [предложение]: грейд, с которого ожидается утверждение, не выше
- * доказанного + 1. Доказанного нет (теста не было) — считаем «ниже junior» (-1).
+ * доказанного + 1. Доказанного нет (теста не было) – считаем «ниже junior» (-1).
  */
 export function reachFactor(entry: CatalogEntry, provenGrade: Grade | null): number {
   const proven = provenGrade ? GRADE_INDEX[provenGrade] : -1;
@@ -43,7 +43,7 @@ export function computeGaps(
     if (!entry || seen.has(need.catalogId)) continue; // несуществующий ID не выдумываем
     seen.add(need.catalogId);
     // Та же оценка требования, что в совпадении с вакансией (matcher.computeCoverage):
-    // «закрыто» там ⇔ currentLevel ≠ null здесь. Смежность — половинный зачёт.
+    // «закрыто» там ⇔ currentLevel ≠ null здесь. Смежность – половинный зачёт.
     const { direct: current, credit } = creditFor(need.catalogId, index, catalog);
     if (current === 'platform') continue; // не пробел
     const priority = need.weight * (1 - credit) * reachFactor(entry, provenGrade);

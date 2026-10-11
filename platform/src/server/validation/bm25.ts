@@ -1,5 +1,5 @@
 // Baseline BM25 (Okapi, вариант Lucene: idf = ln(1 + (N − df + 0,5)/(df + 0,5)) ≥ 0). Без зависимостей.
-// Токены: нижний регистр, буквы/цифры/«.#+» (C#, Node.js), «стемминг» — обрезка до 6 знаков (грубо снимает русские окончания).
+// Токены: нижний регистр, буквы/цифры/«.#+» (C#, Node.js), «стемминг» – обрезка до 6 знаков (грубо снимает русские окончания).
 
 export const BM25_K1 = 1.2;
 export const BM25_B = 0.75;
@@ -15,7 +15,7 @@ export function tokenize(text: string): string[] {
 
 export interface Bm25Doc { id: string; text: string }
 
-/** Ранжирует документы по запросу: по убыванию балла, равные — по id. Документы с нулевым баллом остаются в хвосте. */
+/** Ранжирует документы по запросу: по убыванию балла, равные – по id. Документы с нулевым баллом остаются в хвосте. */
 export function bm25Rank(docs: Bm25Doc[], query: string, k1 = BM25_K1, b = BM25_B): { id: string; score: number }[] {
   const toks = docs.map((d) => tokenize(d.text));
   const N = docs.length;

@@ -31,7 +31,7 @@ export function GlassHead({ orbit, bus }: { orbit: OrbitState; bus: MouthBus }) 
       raf = requestAnimationFrame(spin);
     };
     void import('@/components/head/renderer')
-      .then(({ createHeadRenderer }) => createHeadRenderer(el, abort.signal, reduced, () => setError('WebGL-контекст потерян — обновите страницу.')))
+      .then(({ createHeadRenderer }) => createHeadRenderer(el, abort.signal, reduced, () => setError('WebGL-контекст потерян – обновите страницу.')))
       .then((r) => {
         if (abort.signal.aborted) {
           r.dispose();

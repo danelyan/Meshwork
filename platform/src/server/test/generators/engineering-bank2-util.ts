@@ -1,5 +1,5 @@
 // Общие помощники второго пакета семейств engineering (решение владельца 11.10: ~26 семейств на подкатегорию).
-// Ответ — всегда результат кода генератора; параметры a, b — экспертные, как в engineering.ts.
+// Ответ – всегда результат кода генератора; параметры a, b – экспертные, как в engineering.ts.
 import type { Rng } from '../rng';
 import { createRng } from '../rng';
 import type { AnswerFormat, TaskGenerator, TaskInstance } from '../types';
@@ -68,7 +68,7 @@ export const NAMES = ['Анна', 'Борис', 'Вера', 'Глеб', 'Дар�
 
 /**
  * Случайный DAG из n узлов: узел i зависит от 1–2 более ранних (индексы по возрастанию = топологический порядок).
- * parents[i] — индексы родителей.
+ * parents[i] – индексы родителей.
  */
 export function randomDag(rng: Rng, n: number, maxParents = 2): number[][] {
   const parents: number[][] = [[]];

@@ -18,7 +18,7 @@ export function buildIndex(claims: { catalogId: string; level: EvidenceLevel }[]
 }
 
 export interface Credit {
-  /** Лучший прямой уровень (null — прямого утверждения нет). */
+  /** Лучший прямой уровень (null – прямого утверждения нет). */
   direct: EvidenceLevel | null;
   /** Смежное утверждение, давшее зачёт, если прямого нет или оно слабее. */
   adjacentVia: string | null;
@@ -26,7 +26,7 @@ export interface Credit {
 }
 
 /**
- * Зачёт по утверждению: прямой уровень или половина лучшего смежного. Смежность —
+ * Зачёт по утверждению: прямой уровень или половина лучшего смежного. Смежность –
  * из каталога (`adjacent`, каталог § 6). Детерминированно.
  */
 export function creditFor(catalogId: string, index: EvidenceIndex, catalog: Map<string, CatalogEntry>): Credit {
@@ -50,7 +50,7 @@ export async function loadCatalog(): Promise<Map<string, CatalogEntry>> {
   return new Map(entries.map((e) => [e.id, e]));
 }
 
-/** Подтверждённые кандидатом утверждения (confirmed | edited) — основа покрытия и пробелов. */
+/** Подтверждённые кандидатом утверждения (confirmed | edited) – основа покрытия и пробелов. */
 export async function loadConfirmedIndex(candidateId: string): Promise<EvidenceIndex> {
   const claims = await prisma.claim.findMany({
     where: { candidateId, status: { in: ['confirmed', 'edited'] } },

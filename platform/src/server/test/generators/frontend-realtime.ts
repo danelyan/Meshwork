@@ -1,6 +1,6 @@
 // Генераторы frontend.realtime (WebSocket/SSE, переподключение, порядок сообщений, оптимистичные
 // обновления, конфликты). Ключ считает код генератора, не LLM (R-T-02); юнит-тест сверяет его
-// независимым решением (tests/unit/test/frontend-subcategories.test.ts). a, b — ПРЕДЛОЖЕНИЕ.
+// независимым решением (tests/unit/test/frontend-subcategories.test.ts). a, b – ПРЕДЛОЖЕНИЕ.
 // readyState и send() сверены с MDN через Context7 10.10; поведение close() до открытия и семантика
 // Last-Event-ID (id применяется на dispatch, события без id его не сбрасывают) - по спецификации WHATWG
 // HTML (SSE) по знанию агента; MDN подтверждает только назначение поля id. Помечено в validation-results.md.

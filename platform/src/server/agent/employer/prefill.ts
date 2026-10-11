@@ -1,5 +1,5 @@
 // Предзаполнение формы потребности из ссылки черновика помощника (create_need_draft → formHref).
-// Всё из query — недоверенное: значения режутся, требования — только из каталога своей специализации.
+// Всё из query – недоверенное: значения режутся, требования – только из каталога своей специализации.
 import { isSpecialization, type Specialization } from '@/lib/directions';
 import type { CatalogEntry } from '@/server/claims/types';
 import { normalizeStack } from '@/server/employer/ranking';
@@ -24,7 +24,7 @@ const money = (v: string) => {
   return Number.isInteger(n) && n >= 0 && n <= 10_000_000 ? n : 0;
 };
 
-/** null — ссылки черновика нет (обычная «Новая потребность»). */
+/** null – ссылки черновика нет (обычная «Новая потребность»). */
 export function parseNeedPrefill(raw: Raw, catalog: Pick<CatalogEntry, 'id' | 'specialization'>[]): NeedPrefill | null {
   const spec = first(raw.spec);
   if (!isSpecialization(spec)) return null;

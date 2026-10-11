@@ -10,9 +10,9 @@ import { mockTransport } from './mock/provider';
 
 /**
  * Наш клиент (relying party) ФСП ID по OIDC: Authorization Code + PKCE S256, state, nonce.
- * Провайдер задаётся env (FSP_OIDC_ISSUER …): сейчас — симулятор ФСП ID команды на Keycloak, в проде —
+ * Провайдер задаётся env (FSP_OIDC_ISSUER …): сейчас – симулятор ФСП ID команды на Keycloak, в проде –
  * реалм Keycloak ФСП. Без env привязка выключена, ФСП остаётся демо-источником (R-FSP-03 не меняется).
- * Транспорт к провайдеру отделён (`FspIdTransport`): в тестах — мок в процессе, на стенде — HTTP.
+ * Транспорт к провайдеру отделён (`FspIdTransport`): в тестах – мок в процессе, на стенде – HTTP.
  */
 
 export const FSP_OAUTH_COOKIE = 'fspoidc';
@@ -28,7 +28,7 @@ export interface FspIdTransport {
   redirectUri: string;
   authorizationEndpoint(): Promise<string>;
   token(form: URLSearchParams): Promise<{ status: number; body: unknown }>;
-  /** `refresh` — перечитать JWKS мимо кэша (ротация ключа: kid не найден). */
+  /** `refresh` – перечитать JWKS мимо кэша (ротация ключа: kid не найден). */
   jwks(opts?: { refresh?: boolean }): Promise<Jwks>;
   /** Завершить сессию участника у провайдера (есть только у внешнего; у мока сессий нет). */
   endSession?(refreshToken: string): Promise<void>;
@@ -58,7 +58,7 @@ export function fspOidcConfig(): FspOidcConfig | null {
   };
 }
 
-/** Внешний провайдер (симулятор ФСП ID на Keycloak) или встроенный мок — если внешний не настроен. */
+/** Внешний провайдер (симулятор ФСП ID на Keycloak) или встроенный мок – если внешний не настроен. */
 export type FspProviderMode = 'external' | 'mock';
 
 export function fspProviderMode(): FspProviderMode {
@@ -67,7 +67,7 @@ export function fspProviderMode(): FspProviderMode {
 
 /**
  * Чем войти в симулятор ФСП ID (env `FSP_OIDC_DEMO_HINT`): показываем у кнопок входа и привязки. Только при
- * внешнем провайдере — у встроенного мока вместо логина и пароля выбор демо-участника.
+ * внешнем провайдере – у встроенного мока вместо логина и пароля выбор демо-участника.
  */
 export function fspDemoHint(): string | null {
   return fspOidcConfig() ? (getEnv().FSP_OIDC_DEMO_HINT ?? null) : null;
@@ -132,7 +132,7 @@ async function discover(issuer: string): Promise<DiscoveryDoc> {
   return parsed.data;
 }
 
-/** HTTP-транспорт к настоящему провайдеру (Keycloak). Секрет клиента — только в теле запроса токена. */
+/** HTTP-транспорт к настоящему провайдеру (Keycloak). Секрет клиента – только в теле запроса токена. */
 export function httpTransport(cfg: FspOidcConfig): FspIdTransport {
   return {
     issuer: cfg.issuer,
@@ -192,7 +192,7 @@ export function httpTransport(cfg: FspOidcConfig): FspIdTransport {
  * Платформа берёт у провайдера личность один раз и его сессию дальше не использует, поэтому сразу её завершает.
  * Иначе SSO-сессия Keycloak (до 30 минут) привязывает браузер к прежнему участнику: после выхода нельзя войти
  * другим спортсменом, а «Привязать другой ФСП ID» привязывает того же (проверено на симуляторе 11.10).
- * Сбой завершения вход не отменяет: тогда сработает `prompt=login` — провайдер переспросит пароль того же участника.
+ * Сбой завершения вход не отменяет: тогда сработает `prompt=login` – провайдер переспросит пароль того же участника.
  */
 export async function endProviderSession(t: FspIdTransport, refreshToken: string | null): Promise<void> {
   if (!t.endSession || !refreshToken) return;
@@ -207,11 +207,11 @@ export interface FspFlowState {
   state: string;
   nonce: string;
   verifier: string;
-  /** Чей поток: callback сверяет с кандидатом текущей сессии. Пусто — вход на платформу (`mode: login`). */
+  /** Чей поток: callback сверяет с кандидатом текущей сессии. Пусто – вход на платформу (`mode: login`). */
   candidateId: string;
   /** Куда вернуть: настройки или чат знакомства (шаг ФСП). */
   ret?: FspReturn;
-  /** `link` — привязка к вошедшему кандидату; `login` — вход на платформу через ФСП ID (/auth). */
+  /** `link` – привязка к вошедшему кандидату; `login` – вход на платформу через ФСП ID (/auth). */
   mode?: 'link' | 'login';
   /** Вход: версия согласия с галки на /auth и куда вести после входа. */
   consent?: string;
@@ -282,13 +282,13 @@ export async function buildAuthorizeUrl(t: FspIdTransport, flow: FspFlowState): 
   u.searchParams.set('code_challenge', pkceChallenge(flow.verifier));
   u.searchParams.set('code_challenge_method', 'S256');
   // Страховка к `endProviderSession`: если сессия у провайдера осталась, он не впустит молча, а переспросит
-  // пароль (OpenID Connect Core § 3.1.2.1). Сменить участника это не даёт — Keycloak подтверждает того же.
-  // Мок параметр не читает. В целевой интеграции с единым входом ФСП — убрать вместе с завершением сессии.
+  // пароль (OpenID Connect Core § 3.1.2.1). Сменить участника это не даёт – Keycloak подтверждает того же.
+  // Мок параметр не читает. В целевой интеграции с единым входом ФСП – убрать вместе с завершением сессии.
   u.searchParams.set('prompt', 'login');
   return u.toString();
 }
 
-/** Код ошибки возврата — уходит в `/settings?fsp=<код>`; ни токенов, ни кода авторизации в URL. */
+/** Код ошибки возврата – уходит в `/settings?fsp=<код>`; ни токенов, ни кода авторизации в URL. */
 export type FspCallbackError = 'denied' | 'state' | 'session' | 'exchange' | 'token' | 'unavailable';
 
 export class FspCallbackFailed extends Error {
@@ -316,7 +316,7 @@ export interface FspFlowResult {
   claims: IdTokenClaims;
   /** Токен пользователя для API реестра (/me/achievements); живёт только в памяти запроса. */
   accessToken: string;
-  /** Только чтобы завершить сессию у провайдера (`endProviderSession`); не хранится. null — провайдер его не выдал. */
+  /** Только чтобы завершить сессию у провайдера (`endProviderSession`); не хранится. null – провайдер его не выдал. */
   refreshToken: string | null;
 }
 
@@ -328,7 +328,7 @@ export async function completeFlow(
   t: FspIdTransport,
   params: URLSearchParams,
   saved: FspFlowState | null,
-  /** Кандидат сессии для привязки; `null` — поток входа (`mode: login`), кандидата ещё нет. */
+  /** Кандидат сессии для привязки; `null` – поток входа (`mode: login`), кандидата ещё нет. */
   candidateId: string | null,
   opts: { nowSec?: number } = {},
 ): Promise<FspFlowResult> {
@@ -358,7 +358,7 @@ export async function completeFlow(
     try {
       claims = verify(await t.jwks());
     } catch (err) {
-      // Ротация ключа у провайдера: kid не найден в кэше — перечитываем JWKS один раз.
+      // Ротация ключа у провайдера: kid не найден в кэше – перечитываем JWKS один раз.
       if (!(err instanceof IdTokenInvalid && err.reason === 'kid')) throw err;
       claims = verify(await t.jwks({ refresh: true }));
     }
@@ -373,7 +373,7 @@ export async function completeFlow(
 
 /**
  * Идентификатор участника ФСП из claims: `fsp_id` (claim симулятора и предполагаемого реалма ФСП),
- * иначе `sub`. Регион и роли — для отображения, на подбор не влияют.
+ * иначе `sub`. Регион и роли – для отображения, на подбор не влияют.
  */
 export function fspIdentity(claims: IdTokenClaims): { fspId: string; name: string | null; region: string | null } {
   const raw = claims.fsp_id;

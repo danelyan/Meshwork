@@ -1,4 +1,4 @@
-# API реестра ФСП (симулятор). Сборка: docker build -t fsp-sim-api .  (в compose — сервис api)
+# API реестра ФСП (симулятор). Сборка: docker build -t fsp-sim-api .  (в compose – сервис api)
 FROM node:24-alpine AS build
 WORKDIR /build
 COPY package.json package-lock.json ./

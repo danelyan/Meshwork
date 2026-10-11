@@ -4,9 +4,9 @@ import { useLayoutEffect, useSyncExternalStore } from 'react';
 
 import { THEME_KEY, isThemedPath } from './theme-script';
 
-// Тема страницы (лейн theme, решение владельца 11.10): по умолчанию светлая, тёмная — переключателем в шапке
+// Тема страницы (лейн theme, решение владельца 11.10): по умолчанию светлая, тёмная – переключателем в шапке
 // (ThemeToggle) или в dev-панели. Действует только на THEMED_PATHS (разделы кабинета): там на <html> ставится
-// data-theme='dark' (токены — styles/tokens.css), на остальных страницах атрибут снимается. Выбор хранится в
+// data-theme='dark' (токены – styles/tokens.css), на остальных страницах атрибут снимается. Выбор хранится в
 // localStorage; до гидрации его ставит инлайн-скрипт THEME_SCRIPT в app/layout.tsx, поэтому мигания нет.
 
 export type Theme = 'light' | 'dark';
@@ -30,7 +30,7 @@ function subscribe(onChange: () => void) {
   };
 }
 
-/** Выбранная тема (не зависит от страницы); на сервере и при гидрации — светлая. */
+/** Выбранная тема (не зависит от страницы); на сервере и при гидрации – светлая. */
 export function useTheme(): Theme {
   return useSyncExternalStore(subscribe, readTheme, () => 'light');
 }
@@ -47,7 +47,7 @@ export function setTheme(theme: Theme) {
     if (theme === 'dark') window.localStorage.setItem(THEME_KEY, 'dark');
     else window.localStorage.removeItem(THEME_KEY);
   } catch {
-    /* хранилище недоступно — тема не запоминается, но применяется до перезагрузки */
+    /* хранилище недоступно – тема не запоминается, но применяется до перезагрузки */
   }
   applyTheme(window.location.pathname, theme);
   window.dispatchEvent(new Event(EVENT));

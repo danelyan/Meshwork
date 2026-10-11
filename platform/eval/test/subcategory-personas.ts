@@ -1,22 +1,22 @@
 // Персоны на подкатегорию через боевой движок теста (ADR 0003, дополнение 10.10 16:15; ADR-0002 «Senior и пул по
-// подкатегориям»). Без LLM и без БД: тот же цикл, что в service.ts — пул poolFor(подкатегория), старт START_THETA,
-// phasePool (заявка Senior — только Senior-пул, затем дозадавание Middle; дозадавание Junior), nextStep, decide.
+// подкатегориям»). Без LLM и без БД: тот же цикл, что в service.ts – пул poolFor(подкатегория), старт START_THETA,
+// phasePool (заявка Senior – только Senior-пул, затем дозадавание Middle; дозадавание Junior), nextStep, decide.
 //
-// Персона — профиль знаний по семействам подкатегории, построенный по шаблону от уровня (не легенда человека):
+// Персона – профиль знаний по семействам подкатегории, построенный по шаблону от уровня (не легенда человека):
 // семейства каждого грейда упорядочены по b, «решит» (1), «монета» (0,5), «не решит» (0). Так один и тот же
 // профиль прогоняется на каждой подкатегории, и видно, какая из них калибрована хуже.
 //
 //   новичок                J: ½ ½ 0 0 0 0 | M: 0 0 0 0 | S: 0 0 0 0
 //   пограничный новичок    J: 1 1 ½ ½ 0 0 | M: ½ 0 0 0 | S: 0 0 0 0
 //   Junior                 J: 1 1 1 1 1 ½ | M: ½ ½ 0 0 | S: 0 0 0 0
-//   Junior, слабая тема    Junior, но одно Junior-семейство — 0 (перебираются все 6; в таблице — худшее и среднее)
+//   Junior, слабая тема    Junior, но одно Junior-семейство – 0 (перебираются все 6; в таблице – худшее и среднее)
 //   Middle                 J: все 1       | M: 1 1 1 ½ | S: ½ 0 0 0
-//   Middle, слабая тема    Middle, но одно Middle-семейство — 0 (перебираются все 4)
+//   Middle, слабая тема    Middle, но одно Middle-семейство – 0 (перебираются все 4)
 //   Senior                 J: все 1       | M: все 1   | S: 1 1 1 ½
 //   идеальный Junior       J: все 1       | M: все 0   | S: все 0 (контроль)
 //
-// Цели (ADR 0003, 16:15): ложное подтверждение ≤ 10 % (новичок и пограничный — Junior; Junior — Middle;
-// Middle — Senior), уверенный грейд ≥ 90 % (Junior — Junior, Middle — Middle, Senior — Senior),
+// Цели (ADR 0003, 16:15): ложное подтверждение ≤ 10 % (новичок и пограничный – Junior; Junior – Middle;
+// Middle – Senior), уверенный грейд ≥ 90 % (Junior – Junior, Middle – Middle, Senior – Senior),
 // «с одной слабой темой» ≥ 85 %.
 //
 // Запуск из platform/:
@@ -25,11 +25,11 @@
 //   npx tsx eval/test/subcategory-personas.ts --senior-cut 0.8      # другой порог Senior
 //   npx tsx eval/test/subcategory-personas.ts --spec frontend --profiles frontend   # профили лейна gen-frontend
 //
-// --profiles frontend — набор профилей лейна gen-frontend (был в eval/test/personas-subcategory.ts, слит сюда при
+// --profiles frontend – набор профилей лейна gen-frontend (был в eval/test/personas-subcategory.ts, слит сюда при
 // интеграции 10.10): N, NB, J, JS, M, MS, S, SS (Senior с одной слабой темой), JI. Отличается от набора ADR
-// шаблонами строк (у JS слабая тема — самая трудная Junior-тема наполовину, а не перебор всех).
+// шаблонами строк (у JS слабая тема – самая трудная Junior-тема наполовину, а не перебор всех).
 //
-// Честная граница: симуляция профилей знаний, не живые люди; a и b — экспертные.
+// Честная граница: симуляция профилей знаний, не живые люди; a и b – экспертные.
 import { SUBCATEGORIES } from '../../src/lib/directions';
 import { GRADES, type Grade } from '../../src/lib/grades';
 import { poolFor } from '../../src/server/test/generators';
@@ -62,12 +62,12 @@ const SPEC_ARG = argStr('spec') ?? 'ai';
 /** --pad last: прежняя модель профиля (лишние семейства = последнее значение строки), для сравнения с замерами до 11.10. */
 const PAD_LAST = argStr('pad') === 'last';
 if (argStr('senior-cut') !== undefined) GRADE_CUT.senior = Number(argStr('senior-cut'));
-/** Эксперимент калибровки: --a-junior 1.3 / --b-junior-shift −0.2 — подменить a / сдвинуть b Junior-шаблонов (без правки кода). */
+/** Эксперимент калибровки: --a-junior 1.3 / --b-junior-shift −0.2 – подменить a / сдвинуть b Junior-шаблонов (без правки кода). */
 const A_JUNIOR = argStr('a-junior') !== undefined ? Number(argStr('a-junior')) : null;
 const B_JUNIOR_SHIFT = Number(argStr('b-junior-shift') ?? 0);
 const A_SENIOR = argStr('a-senior') !== undefined ? Number(argStr('a-senior')) : null;
 const B_MIDDLE_SHIFT = Number(argStr('b-middle-shift') ?? 0);
-/** Эксперимент: --set "n-plus-one=1.1,-1.2;pool-capacity=,-1" — подменить a и/или b семейства по хвосту id (пусто — не менять). */
+/** Эксперимент: --set "n-plus-one=1.1,-1.2;pool-capacity=,-1" – подменить a и/или b семейства по хвосту id (пусто – не менять). */
 const SET_ARG = new Map<string, [number | null, number | null]>(
   (argStr('set') ?? '')
     .split(';')
@@ -79,7 +79,7 @@ const SET_ARG = new Map<string, [number | null, number | null]>(
     }),
 );
 const A_MIDDLE = argStr('a-middle') !== undefined ? Number(argStr('a-middle')) : null;
-/** Правила остановки: --rules <версия политики> (по умолчанию текущая), поверх — --min / --max / --early (эксперименты). */
+/** Правила остановки: --rules <версия политики> (по умолчанию текущая), поверх – --min / --max / --early (эксперименты). */
 const CONFIRM = argStr('confirm') !== undefined ? Number(argStr('confirm')) : CONFIRM_PROB;
 const RULES_NAME = argStr('rules') ?? POLICY_VERSION;
 const RULES: StopLimits = {
@@ -94,7 +94,7 @@ interface Profile {
   id: string;
   name: string;
   truth: Truth;
-  /** Строки J (6) | M (4) | S (4); weak — номер семейства грейда, которое персона не решает. */
+  /** Строки J (6) | M (4) | S (4); weak – номер семейства грейда, которое персона не решает. */
   j: number[];
   m: number[];
   s: number[];
@@ -118,7 +118,7 @@ const PROFILES: Profile[] = [
   { id: 'JI', name: 'идеальный Junior (контроль)', truth: 'junior', j: [Y, Y, Y, Y, Y, Y], m: [X, X, X, X], s: [X, X, X, X], control: true },
 ];
 
-/** Набор лейна gen-frontend (личные профили; короче строки — добивается последним значением). */
+/** Набор лейна gen-frontend (личные профили; короче строки – добивается последним значением). */
 const NONE = [X, X, X, X, X, X];
 const FRONTEND_PROFILES: Profile[] = [
   { id: 'N', name: 'новичок: курсы 3 мес., знает самое лёгкое', truth: 'below', j: [H, H, X, X, X, X], m: NONE, s: NONE },
@@ -131,7 +131,7 @@ const FRONTEND_PROFILES: Profile[] = [
   { id: 'SS', name: 'Senior с одной слабой темой (сверх списка ADR): три Senior-темы верно, самая трудная наполовину', truth: 'senior', j: [Y, Y, Y, Y, Y, Y], m: [Y, Y, Y, Y, Y, Y], s: [Y, Y, Y, H], slack: true },
   { id: 'JI', name: 'контроль: все Junior верно, остальное неверно', truth: 'junior', j: [Y, Y, Y, Y, Y, Y], m: NONE, s: NONE, control: true },
 ];
-/** Эксперимент: --j-mid "0.5,0,0,0" — строка Middle у Junior и «Junior со слабой темой» (по умолчанию ½ ½ 0 0). */
+/** Эксперимент: --j-mid "0.5,0,0,0" – строка Middle у Junior и «Junior со слабой темой» (по умолчанию ½ ½ 0 0). */
 if (argStr('j-mid') !== undefined) {
   const row = argStr('j-mid')!.split(',').map(Number);
   for (const p of PROFILES) if (p.id === 'J' || p.id === 'Jw') p.m = row;
@@ -149,7 +149,7 @@ interface Outcome {
  * Профиль → P(верно) по id семейства: внутри грейда по возрастанию b. Строка профиля задана на минимальный пул (6/4/4);
  * при банке больше минимума значение берётся по относительной позиции семейства (линейная интерполяция по строке).
  * До 11.10 лишние семейства получали последнее (самое трудное) значение строки: на банке 26–27 семейств персона
- * становилась слабее задуманной, и честные персоны проваливались из-за модели, а не политики (`--pad last` — прежнее).
+ * становилась слабее задуманной, и честные персоны проваливались из-за модели, а не политики (`--pad last` – прежнее).
  */
 function knowsFor(pool: readonly SelectableTemplate[], p: Profile, weakIndex: number | null): Map<string, number> {
   const out = new Map<string, number>();
@@ -231,7 +231,7 @@ const verdicts: string[] = [];
 for (const sub of subs) {
   const tp = poolFor(sub.specialization, sub.id);
   if (!tp || tp.legacy) {
-    console.log(`## ${sub.id}: банка нет — пропуск\n`);
+    console.log(`## ${sub.id}: банка нет – пропуск\n`);
     continue;
   }
   const pool: SelectableTemplate[] = tp.generators.map((g) => {
@@ -246,7 +246,7 @@ for (const sub of subs) {
   console.log('|---|---|---|---|---|---|---|---|---|');
   ACTIVE_PROFILES.forEach((p, pi) => {
     const runs = p.weak ? Array.from({ length: p.weak.count }, (_, w) => runProfile(pool, p, pi, w)) : [runProfile(pool, p, pi, null)];
-    // Для «слабой темы» — худший вариант по своему грейду (и среднее в скобках).
+    // Для «слабой темы» – худший вариант по своему грейду (и среднее в скобках).
     const own: Grade = p.truth === 'below' ? 'junior' : p.truth;
     const worst = runs.reduce((a, b) => (b[own].confirm < a[own].confirm ? b : a));
     const mean = (g: Grade, k: keyof Cell) => runs.reduce((s, x) => s + x[g][k], 0) / runs.length;

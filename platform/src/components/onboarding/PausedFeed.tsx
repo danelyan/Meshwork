@@ -21,7 +21,7 @@ import styles from './Onboarding.module.css';
 
 /** Подпись кнопки возврата работодателя; её же называет помощник в напоминании (server/agent/employer/loop.ts). */
 export const RESUME_LABEL = 'Вернуться к знакомству';
-/** Кандидату знакомство — вопросы-подсказки в чате (решение владельца 11.10); подпись называет и консультант (onboarding-aside.ts). */
+/** Кандидату знакомство – вопросы-подсказки в чате (решение владельца 11.10); подпись называет и консультант (onboarding-aside.ts). */
 export const FILL_LABEL = 'Дополнить профиль';
 
 export interface PausedFeedProps {
@@ -42,12 +42,12 @@ function splitFeed<T extends Tagged>(items: T[], curId: string): { aside: T[]; r
 
 /**
  * Знакомство на паузе («Настроить позже» на /consultant, решение владельца 10.10): пройденные шаги
- * остаются началом ленты, дальше — свободный разговор с консультантом, онбординг не завершается.
- * «Вернуться к знакомству» открывает текущий шаг (goto снимает паузу на сервере) — лента
+ * остаются началом ленты, дальше – свободный разговор с консультантом, онбординг не завершается.
+ * «Вернуться к знакомству» открывает текущий шаг (goto снимает паузу на сервере) – лента
  * перерисовывается лентой шагов мягким обновлением (soft-nav.ts), без перезагрузки страницы. Пауза хранится на сервере (OnboardingState.meta) и переживает перезагрузку.
  */
 export function PausedFeed(props: PausedFeedProps) {
-  // Свой провайдер голоса — только если снаружи его нет (как у Chat).
+  // Свой провайдер голоса – только если снаружи его нет (как у Chat).
   const outer = useCompanionVoice();
   if (outer) return <PausedFeedBody {...props} />;
   return (
@@ -62,8 +62,8 @@ function PausedFeedBody({ view, demo, restored, employer }: PausedFeedProps) {
   const [error, setError] = useState<string | null>(null);
   const softGo = useSoftGo();
   const cur = view.current;
-  // Разговор этой паузы (на текущем шаге) — в чате ниже; вопросы посреди шагов и разговоры прежних
-  // пауз — под своими шагами (хронология ленты).
+  // Разговор этой паузы (на текущем шаге) – в чате ниже; вопросы посреди шагов и разговоры прежних
+  // пауз – под своими шагами (хронология ленты).
   const [split] = useState(() => splitFeed<RestoredItem>(restored?.items ?? [], cur.id));
   const [asides] = useState(() => groupAsides(split.aside));
   const rest = split.rest;

@@ -15,7 +15,7 @@ describe('collector/mask', () => {
     ['wa.me/79991234567'],
     ['Telegram: @ivan_petrov'],
     ['tg @ivan_petrov'],
-    ['Телеграм — ivan_petrov'],
+    ['Телеграм – ivan_petrov'],
     ['ул. Ленина, д. 5, кв. 12'],
     ['проспект Мира 10'],
     ['д. 5, корп. 2, кв. 7'],

@@ -1,6 +1,6 @@
 import { base32Decode, base32Encode, generateTotpSecret, hotp, openTotpSecret, otpauthUri, sealTotpSecret, totpAt, verifyTotp } from '@/server/admin/totp';
 
-// RFC 6238, Appendix B: ключ — ASCII "12345678901234567890" (SHA1), 8 цифр, шаг 30 с, T0 = 0.
+// RFC 6238, Appendix B: ключ – ASCII "12345678901234567890" (SHA1), 8 цифр, шаг 30 с, T0 = 0.
 const KEY = Buffer.from('12345678901234567890', 'ascii');
 const VECTORS: Array<[number, string]> = [
   [59, '94287082'],
@@ -29,7 +29,7 @@ describe('TOTP (RFC 6238 / RFC 4226)', () => {
     expect(base32Decode(s)).toHaveLength(20);
   });
 
-  it('окно ±1 шаг, шаг за окном и мусор — отказ; возвращает номер шага', () => {
+  it('окно ±1 шаг, шаг за окном и мусор – отказ; возвращает номер шага', () => {
     const secret = base32Encode(KEY);
     const now = 1_700_000_000_000;
     const code = totpAt(KEY, now);

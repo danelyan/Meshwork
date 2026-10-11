@@ -2,7 +2,7 @@ import { type Action, type StaffRoleName, can } from '@/server/admin/permissions
 
 /**
  * Меню админки (E-08): все разделы фаз 0–5 заведены фундаментом. Лейн фазы создаёт страницу по уже заданному
- * `href` (`src/app/(admin)/admin/<раздел>/page.tsx`) с гвардом `requirePageStaff('<href>', '<action>')` —
+ * `href` (`src/app/(admin)/admin/<раздел>/page.tsx`) с гвардом `requirePageStaff('<href>', '<action>')` –
  * раскладку и этот реестр не трогает. Пункт скрыт, если у роли нет права `action`.
  */
 export interface AdminNavItem {

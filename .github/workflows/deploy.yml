@@ -1,5 +1,5 @@
 # Автодеплой стенда: push в master с изменениями platform/ выкладывает их на сервер и
-# пересобирает контейнеры там же. Настройка сервера и переменных — docs/deploy.md.
+# пересобирает контейнеры там же. Настройка сервера и переменных – docs/deploy.md.
 # Переменные репозитория: DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, DEPLOY_KNOWN_HOSTS, APP_URL.
 # Секрет: DEPLOY_SSH_KEY (закрытый ключ пользователя деплоя). Файл .env живёт только на сервере.
 name: Deploy stand
@@ -21,8 +21,8 @@ permissions:
   contents: read
 
 # Новый запуск отменяет предыдущий, пока тот собирает образы (job build): сборка работающий стенд
-# не трогает. Начатый перезапуск (job release) не отменяется — GitHub не прерывает job и шаги,
-# у которых условие if остаётся истинным, — и новый запуск ждёт его конца.
+# не трогает. Начатый перезапуск (job release) не отменяется – GitHub не прерывает job и шаги,
+# у которых условие if остаётся истинным, – и новый запуск ждёт его конца.
 concurrency:
   group: deploy-stand
   cancel-in-progress: ${{ !inputs.configure_yandex_only }}
@@ -64,7 +64,7 @@ jobs:
             --exclude='/.env' --exclude='/node_modules' --exclude='/.next' \
             platform/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
 
-      # Сборка падает — прежние контейнеры продолжают работать. -tt: при отмене запуска обрыв
+      # Сборка падает – прежние контейнеры продолжают работать. -tt: при отмене запуска обрыв
       # соединения завершает клиент сборки на сервере (SIGHUP), BuildKit снимает сборку и образы
       # не перетегирует.
       - name: Build images
@@ -76,7 +76,7 @@ jobs:
     name: Migrate and restart
     needs: build
     # always() держит job и его шаги при отмене запуска: миграции и пересоздание контейнеров
-    # доходят до конца. Отмена во время сборки сюда не попадает — результат build не success.
+    # доходят до конца. Отмена во время сборки сюда не попадает – результат build не success.
     if: ${{ always() && needs.build.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15

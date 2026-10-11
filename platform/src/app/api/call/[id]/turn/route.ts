@@ -12,8 +12,8 @@ export const runtime = 'nodejs';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST /api/call/{id}/turn {text?, audioRef?} — реплика кандидата; в ответе следующая реплика ИИ
- * `{text, done}` (озвучивает клиент через /api/tts). Без text — сервер распознаёт сегмент audioRef.
+ * POST /api/call/{id}/turn {text?, audioRef?} – реплика кандидата; в ответе следующая реплика ИИ
+ * `{text, done}` (озвучивает клиент через /api/tts). Без text – сервер распознаёт сегмент audioRef.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);

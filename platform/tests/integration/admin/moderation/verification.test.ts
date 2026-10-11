@@ -1,4 +1,4 @@
-// E-08, фаза 2: ручная верификация компании — запрос из кабинета → очередь → решение, метка на приглашении кандидата.
+// E-08, фаза 2: ручная верификация компании – запрос из кабинета → очередь → решение, метка на приглашении кандидата.
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { GET as listGet } from '@/app/api/admin/verification/route';
@@ -23,7 +23,7 @@ describe('admin: верификация компаний', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('кабинет: без ИНН — 409; короткие реквизиты — 400; бесплатная почта — 400; выписка — запрос принят', async () => {
+  it('кабинет: без ИНН – 409; короткие реквизиты – 400; бесплатная почта – 400; выписка – запрос принят', async () => {
     expect((await ask(EGRUL)).status).toBe(409);
     await prisma.company.update({ where: { id: CO }, data: { inn: '7707083893' } });
     expect((await ask({ method: 'egrul', text: 'коротко' })).status).toBe(400);
@@ -44,7 +44,7 @@ describe('admin: верификация компаний', () => {
     expect((await r.json()).evidence).toMatchObject({ method: 'email_domain', domain: 'northstream.ru' });
   });
 
-  it('support — 403; модератор: verify → метка у кандидата на приглашении, журнал; повтор — 409; revoke снимает', async () => {
+  it('support – 403; модератор: verify → метка у кандидата на приглашении, журнал; повтор – 409; revoke снимает', async () => {
     await prisma.company.update({ where: { id: CO }, data: { inn: '7707083893' } });
     await ask(EGRUL);
     expect((await listGet(jsonRequest('/api/admin/verification', 'GET', undefined, staff.support.cookie))).status).toBe(403);

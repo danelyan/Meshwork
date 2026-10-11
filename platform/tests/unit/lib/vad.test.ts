@@ -15,7 +15,7 @@ function run(levels: number[], playing = false, cfg = DEFAULT_VAD) {
 }
 
 describe('детектор речи: кандидат, подтверждение, hangover', () => {
-  it('тишина адаптирует пол и не даёт событий; короткий щелчок — false_start', () => {
+  it('тишина адаптирует пол и не даёт событий; короткий щелчок – false_start', () => {
     const quiet = run(Array(30).fill(QUIET));
     expect(quiet.events).toEqual([]);
     expect(quiet.state.noiseFloor).toBeLessThan(initialVad().noiseFloor);
@@ -29,7 +29,7 @@ describe('детектор речи: кандидат, подтверждени�
     expect((r.events[0] as { utteranceId: string }).utteranceId).toBe('u-1');
   });
 
-  it('пока ИИ говорит: порог выше и подтверждение дольше (bargeInMs) — короткое «ага» не перебивает', () => {
+  it('пока ИИ говорит: порог выше и подтверждение дольше (bargeInMs) – короткое «ага» не перебивает', () => {
     const s = initialVad();
     expect(vadThreshold(s, true, DEFAULT_VAD)).toBeCloseTo(vadThreshold(s, false, DEFAULT_VAD) * DEFAULT_VAD.playbackMargin);
     const short = run([...Array(3).fill(QUIET), ...Array(8).fill(LOUD), ...Array(20).fill(QUIET)], true);
@@ -40,7 +40,7 @@ describe('детектор речи: кандидат, подтверждени�
 });
 
 describe('ворота микрофона: прерол и кадры фразы', () => {
-  it('speech_start отдаёт прерол и кадры кандидата, фраза — кадры до speech_end, шум — ничего', () => {
+  it('speech_start отдаёт прерол и кадры кандидата, фраза – кадры до speech_end, шум – ничего', () => {
     const gate = new MicGate<number>();
     const sent: number[] = [];
     let i = 0;

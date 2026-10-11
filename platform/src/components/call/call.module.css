@@ -1,4 +1,4 @@
-/* Режим звонка защиты проекта (ADR 0003): аватар сверху, реплики, микрофон. Цвета — только токены. */
+/* Режим звонка защиты проекта (ADR 0003): аватар сверху, реплики, микрофон. Цвета – только токены. */
 .page { max-width: 960px; margin: 0 auto; padding: 24px var(--page-pad) 48px; display: grid; gap: 20px; }
 .stage { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
 .head { position: relative; width: 220px; height: 220px; background: var(--surface-dim); border: 1px solid var(--border-faint); }

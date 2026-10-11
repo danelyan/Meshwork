@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 const fmt = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Moscow' });
 
-/** Ручная верификация компаний (E-08, фаза 2; R-D-05 — вне MVP): сверить ИНН и название по выписке или домену почты. */
+/** Ручная верификация компаний (E-08, фаза 2; R-D-05 – вне MVP): сверить ИНН и название по выписке или домену почты. */
 export default async function VerificationPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   const staff = await requirePageStaff('/admin/verification', 'view_verification');
   const q = await searchParams;
@@ -31,11 +31,11 @@ export default async function VerificationPage({ searchParams }: { searchParams:
           <article key={c.companyId} className={m.item}>
             <div className={m.head}>
               <strong>{c.name}</strong>
-              <span className={styles.mono}>ИНН {c.inn ?? '—'} {c.innValid ? '(контрольная цифра верна)' : '(не проходит проверку)'}</span>
+              <span className={styles.mono}>ИНН {c.inn ?? '–'} {c.innValid ? '(контрольная цифра верна)' : '(не проходит проверку)'}</span>
               {c.verifiedAt && <Tag>проверена {fmt.format(new Date(c.verifiedAt))}</Tag>}
             </div>
             <ul className={m.facts}>
-              <li>Отрасль: {c.industry ?? '—'}</li>
+              <li>Отрасль: {c.industry ?? '–'}</li>
               <li>Представителей: {c.representatives}</li>
               {c.requestedAt && <li>Запрос: {fmt.format(new Date(c.requestedAt))}</li>}
               {c.evidence && <li>Основание: {c.evidence.method === 'egrul' ? 'выписка ЕГРЮЛ' : `домен почты ${c.evidence.domain ?? ''}`}</li>}

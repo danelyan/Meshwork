@@ -6,7 +6,7 @@ import { gunzipSync } from 'node:zlib';
  * Безопасная распаковка .tar.gz без внешних утилит и зависимостей.
  * Отказ всего архива: симлинки и жёсткие ссылки, устройства и FIFO, абсолютные пути, `..`,
  * `\` и NUL в именах, битая контрольная сумма, превышение лимитов (gzip-бомба режется
- * `maxOutputLength`). Пропускаются (не отказ): `node_modules/` и `.git/` — зависимости
+ * `maxOutputLength`). Пропускаются (не отказ): `node_modules/` и `.git/` – зависимости
  * кандидату не ставятся, история не нужна.
  */
 
@@ -172,7 +172,7 @@ export function parseTar(tar: Buffer, limits: ExtractLimits = DEFAULT_EXTRACT_LI
     if (raw.length > limits.maxFiles * 2) throw new ArchiveError('слишком много файлов');
   }
 
-  // GitHub кладёт всё в <owner>-<repo>-<sha>/ — снимаем общий верхний каталог.
+  // GitHub кладёт всё в <owner>-<repo>-<sha>/ – снимаем общий верхний каталог.
   const tops = new Set(raw.map((e) => e.parts[0]));
   const strip = tops.size === 1 && raw.some((e) => e.parts.length > 1) && raw.every((e) => e.parts.length > 1 || e.type === 'dir');
 

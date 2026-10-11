@@ -57,7 +57,7 @@ describe('фильтры', () => {
     expect(norm(items()[0]!.textContent)).toContain('Турка медная');
   });
 
-  it('пусто — «Ничего не найдено» и сброс фильтров', () => {
+  it('пусто – «Ничего не найдено» и сброс фильтров', () => {
     render(<ProductCatalog products={P} />);
     category('Чай');
     search('кофе');
@@ -83,7 +83,7 @@ describe('корзина', () => {
     expect(cart()).toContain('Сумма: 0 ₽');
   });
 
-  it('каждое нажатие — штука; сумма в формате ru-RU', () => {
+  it('каждое нажатие – штука; сумма в формате ru-RU', () => {
     render(<ProductCatalog products={P} />);
     fireEvent.click(addButton('Какао'));
     fireEvent.click(addButton('Какао'));
@@ -92,7 +92,7 @@ describe('корзина', () => {
     expect(cart()).toContain('Сумма: 25 750 ₽');
   });
 
-  it('не в наличии — выключенная кнопка «Нет в наличии»', () => {
+  it('не в наличии – выключенная кнопка «Нет в наличии»', () => {
     render(<ProductCatalog products={P} />);
     const btn = addButton('Кофе молотый') as HTMLButtonElement;
     expect(norm(btn.textContent)).toBe('Нет в наличии');

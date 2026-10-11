@@ -1,5 +1,5 @@
 // Проверка честности теста для работодателя: только уровень и короткие группы причин, без деталей (время ответа
-// по заданию, числа, тексты). Ранжирование — через integrity-ranking.ts (вариант 2a). Индекс считает src/server/test/integrity.ts.
+// по заданию, числа, тексты). Ранжирование – через integrity-ranking.ts (вариант 2a). Индекс считает src/server/test/integrity.ts.
 import { prisma } from '../db';
 import type { Grade, Specialization } from '../types';
 import type { PublicIntegrityGroup, PublicTestIntegrity } from './test-integrity-label';
@@ -18,7 +18,7 @@ interface StoredLike {
 /**
  * Проекция сохранённого индекса. Превышение лимита времени (`overtime`) само по себе замечанием не считается: оно
  * не блокирует ответ (решение владельца 11.10) и у честных медленных встречается чаще половины попыток (eval/test/integrity.ts).
- * Нет индекса или мусор — null: «проверка не проводилась», а не «без замечаний».
+ * Нет индекса или мусор – null: «проверка не проводилась», а не «без замечаний».
  */
 export function publicIntegrity(raw: unknown, confirmedAgain = false): PublicTestIntegrity | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -38,9 +38,9 @@ interface CategoryKey {
 }
 
 /**
- * Для каждого кандидата — индекс попытки, давшей его текущую категорию: последняя пройденная попытка с той же
+ * Для каждого кандидата – индекс попытки, давшей его текущую категорию: последняя пройденная попытка с той же
  * специализацией, грейдом и подкатегорией. Подтверждающая попытка (kind = confirm) отдаёт индекс исходной.
- * Категория без попытки (демо, старые данные) — нет записи в результате.
+ * Категория без попытки (демо, старые данные) – нет записи в результате.
  */
 export async function loadTestIntegrity(categories: ReadonlyMap<string, CategoryKey | null>): Promise<Map<string, PublicTestIntegrity>> {
   const ids = [...categories].filter(([, c]) => c !== null).map(([id]) => id);

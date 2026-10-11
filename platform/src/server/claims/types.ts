@@ -15,7 +15,7 @@ export interface CatalogEntry {
   proof: string[];
   markers: string[];
   limits: string;
-  /** Веса по грейдам (каталог § 7); нет — используется `weight` для грейдов из `grades`. */
+  /** Веса по грейдам (каталог § 7); нет – используется `weight` для грейдов из `grades`. */
   weights?: CatalogMeta['weights'];
   /** Квалификатор stack (каталог § 2.2). */
   stack?: CatalogMeta['stack'];
@@ -27,7 +27,7 @@ export interface ProposedClaim {
   catalogId: string;
   /** Каталожная формулировка: ранжирование, созвон, работодатель. */
   statement: string;
-  /** Формулировка для кандидата в границах цитаты (от модели); нет — строится из цитаты в verifyClaims. */
+  /** Формулировка для кандидата в границах цитаты (от модели); нет – строится из цитаты в verifyClaims. */
   wording?: string;
   quote: string;
   sourceRef: string;
@@ -43,8 +43,8 @@ export interface VerifiedClaim extends ProposedClaim {
 }
 
 /**
- * no_quote — цитаты нет в источнике; unknown_catalog_id — ID вне каталога; duplicate — второй раз тот же ID;
- * hidden_text — цитата только из строк, помеченных сборщиком скрытыми; quote_too_short — меньше 2 слов.
+ * no_quote – цитаты нет в источнике; unknown_catalog_id – ID вне каталога; duplicate – второй раз тот же ID;
+ * hidden_text – цитата только из строк, помеченных сборщиком скрытыми; quote_too_short – меньше 2 слов.
  */
 export type RejectReason = 'no_quote' | 'unknown_catalog_id' | 'duplicate' | 'hidden_text' | 'quote_too_short';
 
@@ -53,12 +53,12 @@ export interface VerifyResult {
   rejected: { claim: ProposedClaim; reason: RejectReason }[];
 }
 
-/** Утверждение в профиле — то, что отдают api/profile и инструмент get_profile. */
+/** Утверждение в профиле – то, что отдают api/profile и инструмент get_profile. */
 export interface ProfileClaim {
   id: string;
   catalogId: string;
   statement: string;
-  /** Формулировка для кандидата (под цитату); null — старая запись, показывать statement. Работодателю не отдаётся. */
+  /** Формулировка для кандидата (под цитату); null – старая запись, показывать statement. Работодателю не отдаётся. */
   wording?: string | null;
   level: EvidenceLevel;
   quote: string;
@@ -73,7 +73,7 @@ export interface ProfileClaim {
 
 export interface ProfileView {
   candidate: { id: string; name: string; specialization: Specialization | null; fspState: FspState };
-  /** Категория — только из теста (R-M-01); null, пока теста не было. */
+  /** Категория – только из теста (R-M-01); null, пока теста не было. */
   category: { specialization: Specialization; grade: Grade; confirmedAt: string } | null;
   /** Все не отклонённые утверждения: сначала выше уровень, затем новее. */
   claims: ProfileClaim[];
@@ -81,15 +81,15 @@ export interface ProfileView {
   byLevel: Record<EvidenceLevel, ProfileClaim[]>;
 }
 
-/** Полная запись каталога из prisma/seed/claims-catalog.json — поля, которых нет в схеме ClaimCatalog. */
+/** Полная запись каталога из prisma/seed/claims-catalog.json – поля, которых нет в схеме ClaimCatalog. */
 export interface CatalogMeta {
   id: string;
-  /** Вес по грейдам; у common — отдельно по специализациям. null — в грейде не ожидается. */
+  /** Вес по грейдам; у common – отдельно по специализациям. null – в грейде не ожидается. */
   weights:
     | { junior: number | null; middle: number | null; senior?: number | null }
-    /** Общие записи: по специализациям. Направление без ключа — запись для него не ожидается (lane directions). */
+    /** Общие записи: по специализациям. Направление без ключа – запись для него не ожидается (lane directions). */
     | Partial<Record<Specialization, { junior: number | null; middle: number | null; senior?: number | null }>>;
-  /** Квалификатор stack (каталог § 2.2): кандидат указывает технологию. null — нет. */
+  /** Квалификатор stack (каталог § 2.2): кандидат указывает технологию. null – нет. */
   stack: { kind: string | null } | null;
   /** Смежные утверждения (половинный зачёт, каталог § 6), в обе стороны. */
   adjacent: string[];

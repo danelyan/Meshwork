@@ -1,6 +1,6 @@
 // Загрузка свидетельств ступеней 1–3 (ADR 0003) для пула кандидатов: пакетно, по трём запросам на весь пул.
 // Приватность: вердикт созвона проходит через `publicVerdict` лейна call (темы и баллы, без цитат и формулировок
-// кандидата — то, что работодатель видит до принятого приглашения, call/access.ts), защита — только баллы и флаги.
+// кандидата – то, что работодатель видит до принятого приглашения, call/access.ts), защита – только баллы и флаги.
 import { Prisma } from '@prisma/client';
 
 import { publicVerdict } from '../call/access';
@@ -27,7 +27,7 @@ const isObject = (v: unknown): v is Record<string, unknown> => Boolean(v) && typ
 
 /**
  * Свидетельства созвонов и проектов кандидатов пула; кандидата без ступеней в карте нет.
- * Защита — только видимая компании `companyId` (ADR 0008, defense-room/visibility.ts): ИИ-защита или своя живая.
+ * Защита – только видимая компании `companyId` (ADR 0008, defense-room/visibility.ts): ИИ-защита или своя живая.
  * Чужая живая защита сюда не попадает вовсе, поэтому не влияет ни на карточку, ни на текст пояснения.
  */
 export async function loadStageEvidence(candidateIds: string[], companyId: string | null = null): Promise<Map<string, StageEvidence>> {
@@ -39,12 +39,12 @@ export async function loadStageEvidence(candidateIds: string[], companyId: strin
     return e;
   };
 
-  // Последний завершённый созвон каждого вида с вердиктом (distinct по кандидату и виду). Защиты — отдельным
+  // Последний завершённый созвон каждого вида с вердиктом (distinct по кандидату и виду). Защиты – отдельным
   // запросом с фильтром видимости: иначе distinct взял бы самую свежую защиту любого вида, в том числе чужую живую.
   // Пустой вердикт (DB NULL или JSON null) не должен затенять более старый валидный: distinct берёт первую строку.
   const finished = { candidateId: { in: candidateIds }, status: 'finished', NOT: { verdictJson: { equals: Prisma.AnyNull } } } satisfies Prisma.CallSessionWhereInput;
   const order = [{ finishedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }] satisfies Prisma.CallSessionOrderByWithRelationInput[];
-  const select = { id: true, candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true, aiDefense: true } as const;
+  const select = { candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true, aiDefense: true } as const;
   const [talks, defenses] = await Promise.all([
     prisma.callSession.findMany({ where: { ...finished, kind: { in: ['qualifying', 'interview'] } }, orderBy: order, distinct: ['candidateId', 'kind'], select }),
     prisma.callSession.findMany({ where: { ...finished, kind: 'defense', AND: [defenseVisibleTo(companyId)] }, orderBy: order, distinct: ['candidateId'], select }),
@@ -53,12 +53,12 @@ export async function loadStageEvidence(candidateIds: string[], companyId: strin
     if (!isObject(c.verdictJson)) continue;
     if (c.kind === 'qualifying' || c.kind === 'interview') {
       // ИИнтервью (kind=interview, открывается после теста) строит ту же карту глубины, что и квалифицирующий созвон;
-      // для работодателя это одна ступень 1. Если есть оба — берём более свежий вердикт.
+      // для работодателя это одна ступень 1. Если есть оба – берём более свежий вердикт.
       const v = c.verdictJson as unknown as CallVerdict;
       if (!Array.isArray(v.depthMap)) continue;
       const prev = slot(c.candidateId).calls?.qualifying;
       if (prev && prev.evaluatedAt >= (v.evaluatedAt ?? '')) continue;
-      slot(c.candidateId).calls = { ...slot(c.candidateId).calls, qualifying: { ...summarizeQualifying(publicVerdict(v)), callId: c.id } };
+      slot(c.candidateId).calls = { ...slot(c.candidateId).calls, qualifying: summarizeQualifying(publicVerdict(v)) };
     } else {
       const v = c.verdictJson as unknown as DefenseRoomVerdict;
       if (!Array.isArray(v.flags)) continue;
@@ -66,7 +66,7 @@ export async function loadStageEvidence(candidateIds: string[], companyId: strin
     }
   }
 
-  // Проверенные сабмиты: по одному на задание — последний проверенный (повторная сдача заменяет прежнюю).
+  // Проверенные сабмиты: по одному на задание – последний проверенный (повторная сдача заменяет прежнюю).
   const subs = await prisma.projectSubmission.findMany({
     where: { candidateId: { in: candidateIds }, status: 'checked', NOT: { resultJson: { equals: Prisma.AnyNull } } },
     orderBy: [{ checkedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],

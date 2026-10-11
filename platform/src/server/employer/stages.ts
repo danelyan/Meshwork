@@ -1,5 +1,5 @@
 // Ступени 1–3 ADR 0003 в ранжировании и карточке работодателя (lane employer-card): чистые типы и функции,
-// без БД. Загрузка из БД — stages-load.ts. Цитат транскрипта и кода здесь нет по построению: в свидетельства
+// без БД. Загрузка из БД – stages-load.ts. Цитат транскрипта и кода здесь нет по построению: в свидетельства
 // попадают темы, баллы, флаги и текст пояснений рубрики проекта (его маскирует maskExplanation до принятия).
 import { subcategoryLabel } from '@/lib/directions';
 
@@ -23,19 +23,17 @@ export interface DepthTopic {
 export interface QualifyingEvidence {
   confirmedTopics: string[];
   probedTopics: string[];
-  /** catalogId подтверждённых тем (только привязанные к каталогу) — для бонуса под потребность. */
+  /** catalogId подтверждённых тем (только привязанные к каталогу) – для бонуса под потребность. */
   confirmedCatalogIds: string[];
   scoresByTopic: DepthTopic[];
   /** Решения теста (связь теста и созвона, 11.10): сигнал для работодателя, в балл ранжирования не входит. */
   testOwnership?: TestOwnershipStatus;
   evaluatedAt: string;
-  /** Созвон-источник: по нему работодатель после принятого приглашения открывает транскрипт и запись. */
-  callId?: string;
 }
 
 /** Результат ступени 3 (последняя завершённая защита проекта). Баллы и флаги; цитат нет. */
 export interface DefenseEvidence {
-  /** Сумма рубрики A-02, 0…8; null — кандидат не ответил ни на один вопрос. */
+  /** Сумма рубрики A-02, 0…8; null – кандидат не ответил ни на один вопрос. */
   score: number | null;
   passed: boolean | null;
   flags: DefenseFlag[];
@@ -150,10 +148,8 @@ export interface DepthBlock {
   confirmed: number;
   /** Подтверждённых тем, совпавших с требованиями потребности (дали бонус). */
   matchedNeed: number;
-  /** «Решения теста»: объяснил сам / частично / не смог объяснить; нет — не проверялось. */
+  /** «Решения теста»: объяснил сам / частично / не смог объяснить; нет – не проверялось. */
   testOwnership?: TestOwnershipStatus;
-  /** Созвон, по которому карта: после принятого приглашения работодатель открывает транскрипт и запись (GET /api/call/{id}). */
-  callId?: string;
 }
 
 export interface ProjectOwnBlock {
@@ -173,7 +169,7 @@ export interface ProjectOtherBlock {
 }
 
 export interface ProjectBlock {
-  /** Проект под ЭТУ потребность — таблица критериев целиком. */
+  /** Проект под ЭТУ потребность – таблица критериев целиком. */
   own: ProjectOwnBlock | null;
   /** Чужие проекты: только подкатегория и балл. */
   others: ProjectOtherBlock[];
@@ -196,7 +192,6 @@ export function buildDepthBlock(q: QualifyingEvidence, needIds: ReadonlySet<stri
     confirmed: topics.filter((d) => d.confirmed).length,
     matchedNeed: new Set(topics.filter((d) => d.confirmed && d.forNeed).map((d) => d.catalogId)).size,
     ...(q.testOwnership ? { testOwnership: q.testOwnership } : {}),
-    ...(q.callId ? { callId: q.callId } : {}),
   };
 }
 
@@ -248,7 +243,7 @@ export function stagesSentence(parts: { depth?: DepthBlock; project?: ProjectBlo
 /**
  * Пояснения рубрики цитируют код кандидата и могут содержать имя, e-mail, ссылки и ники. До принятого приглашения
  * они проходят `maskContacts` (контакты → «[скрыто]»). Имена людей `maskContacts` не ловит: он маскирует
- * контакты, а не персональные данные в целом — это известное ограничение.
+ * контакты, а не персональные данные в целом – это известное ограничение.
  */
 export function maskProjectBlock(block: ProjectBlock): ProjectBlock {
   if (!block.own) return block;

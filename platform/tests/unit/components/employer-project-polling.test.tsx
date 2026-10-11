@@ -77,7 +77,7 @@ describe('EmployerProjectBlock: опрос сдач', () => {
     expect(screen.getByText('проверяется')).toBeDefined();
     await tick(POLL_MS);
     expect(m.list).toHaveBeenCalledTimes(2);
-    // Вторая попытка после ошибки — через 2×POLL_MS, не раньше.
+    // Вторая попытка после ошибки – через 2×POLL_MS, не раньше.
     await tick(POLL_MS * 2 - 1);
     expect(m.list).toHaveBeenCalledTimes(2);
     await tick(1);
@@ -85,7 +85,7 @@ describe('EmployerProjectBlock: опрос сдач', () => {
     await tick(POLL_MS * 4);
     expect(m.list).toHaveBeenCalledTimes(4);
     expect(screen.getByText('проверено')).toBeDefined();
-    // Проверено — опрос остановлен.
+    // Проверено – опрос остановлен.
     await tick(POLL_MAX_MS * 2);
     expect(m.list).toHaveBeenCalledTimes(4);
   });

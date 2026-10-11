@@ -35,7 +35,7 @@ describe('демо-персоны по этапам пути', () => {
   it('GET отдаёт все персоны, кроме тех, чьих записей нет, и пул подборки в них не входит', async () => {
     const body = await (await list()).json();
     const ids: string[] = body.personas.map((p: { id: string }) => p.id);
-    // Представители компаний из seed/content сидятся отдельно (seedContent), здесь их записей нет — route их скрывает.
+    // Представители компаний из seed/content сидятся отдельно (seedContent), здесь их записей нет – route их скрывает.
     const contentEmployers = new Set(ALL_COMPANIES.filter((c) => c.employer).map((c) => employerUserId(c.slug)));
     expect(ids).toEqual(ALL_PERSONAS.map((p) => p.id).filter((id) => !contentEmployers.has(id)));
     expect(ids.some((id) => id.startsWith('demo-pool-') || id.startsWith('demo-ai-'))).toBe(false);

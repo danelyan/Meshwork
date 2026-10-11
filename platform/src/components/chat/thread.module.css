@@ -66,7 +66,7 @@
 .iconBtn:hover:not(:disabled) { color: var(--ink); border-color: var(--border-soft); }
 .iconBtn:disabled { opacity: 0.5; cursor: default; }
 .iconBtn[aria-pressed='true'] { color: var(--on-ink); background: var(--blue); }
-/* «Отправить» — основная кнопка (ui/Button primary); здесь только размер под поле ввода. Disabled: нейтральная плашка, не полупрозрачный блок */
+/* «Отправить» – основная кнопка (ui/Button primary); здесь только размер под поле ввода. Disabled: нейтральная плашка, не полупрозрачный блок */
 button.send { flex: none; height: var(--chat-control-size, 40px); min-height: 0; padding: 0 18px; }
 button.send:disabled { opacity: 1; background: var(--surface-ghost); border-color: var(--border-faint); color: var(--muted); cursor: default; }
 button.send[aria-busy='true'] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
@@ -136,7 +136,7 @@ button.send[aria-busy='true'] > span { border-color: var(--on-ink-soft); border-
 .voiceGo:hover { background: var(--ink); }
 @keyframes pulse { 50% { box-shadow: 0 0 0 6px var(--line); } }
 
-/* меньше движения — без всплывания и проявления (текст раскрывается так же, но без анимаций) */
+/* меньше движения – без всплывания и проявления (текст раскрывается так же, но без анимаций) */
 @media (prefers-reduced-motion: reduce) {
   .assistant, .userBubble, .fresh, .chipIn { animation: none; }
 }

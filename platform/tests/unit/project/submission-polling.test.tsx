@@ -39,7 +39,7 @@ describe('useSubmissionPolling', () => {
     const { result } = renderHook(() => useSubmissionPolling([sub('running')]));
     await tick(POLL_MS);
     expect(m.get).toHaveBeenCalledTimes(1);
-    // Вторая попытка — через 2×POLL_MS, не раньше.
+    // Вторая попытка – через 2×POLL_MS, не раньше.
     await tick(POLL_MS * 2 - 1);
     expect(m.get).toHaveBeenCalledTimes(1);
     await tick(1);
@@ -47,7 +47,7 @@ describe('useSubmissionPolling', () => {
     await tick(POLL_MS * 4);
     expect(m.get).toHaveBeenCalledTimes(3);
     expect(result.current[0][0]!.status).toBe('checked');
-    // Проверено — опрос остановлен.
+    // Проверено – опрос остановлен.
     await tick(POLL_MAX_MS * 2);
     expect(m.get).toHaveBeenCalledTimes(3);
   });

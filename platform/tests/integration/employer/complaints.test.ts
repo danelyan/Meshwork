@@ -1,4 +1,4 @@
-// lane complaints: жалоба кандидата на приглашение и санкции компании (R-X-01, пороги — ПРЕДЛОЖЕНИЕ, не калибровано).
+// lane complaints: жалоба кандидата на приглашение и санкции компании (R-X-01, пороги – ПРЕДЛОЖЕНИЕ, не калибровано).
 import { POST as complain } from '@/app/api/invitations/[id]/complaint/route';
 import { GET as myInvites } from '@/app/api/invitations/route';
 import { GET as listInvites } from '@/app/api/employer/invitations/route';
@@ -24,7 +24,7 @@ const file = (id: string, cookie: string, body: unknown = { reason: 'spam', comm
 const invite = (candidateId: string) =>
   createInvitation(ctx, { candidateId, message: 'Платёжная команда, Go и Kafka, высокая нагрузка', salaryFrom: 200000, salaryTo: 260000 });
 
-/** n жалоб на компанию напрямую в БД — по одной на отдельное приглашение (unique invitationId). */
+/** n жалоб на компанию напрямую в БД – по одной на отдельное приглашение (unique invitationId). */
 async function seedComplaints(n: number, status: 'open' | 'dismissed' = 'open', createdAt = new Date()) {
   for (let i = 0; i < n; i++) {
     const inv = await prisma.invitation.create({
@@ -54,7 +54,7 @@ describe('lane complaints: жалобы на приглашения (БД)', () 
   });
   afterAll(() => prisma.$disconnect());
 
-  it('кандидат жалуется на своё приглашение: 201, статус не меняется, повтор — 409, видно в списке', async () => {
+  it('кандидат жалуется на своё приглашение: 201, статус не меняется, повтор – 409, видно в списке', async () => {
     const { id } = await invite(A.id);
     const r = await file(id, candCookie(A.id));
     expect(r.status).toBe(201);
@@ -71,7 +71,7 @@ describe('lane complaints: жалобы на приглашения (БД)', () 
     expect(mine.invitations[0].complaint).toMatchObject({ reason: 'spam' });
   });
 
-  it('чужое приглашение — 404, работодатель — 403, неизвестная причина и длинный комментарий — 400', async () => {
+  it('чужое приглашение – 404, работодатель – 403, неизвестная причина и длинный комментарий – 400', async () => {
     const { id } = await invite(A.id);
     expect((await file(id, candCookie(B.id))).status).toBe(404);
     expect((await file(id, EMP)).status).toBe(403);
@@ -80,7 +80,7 @@ describe('lane complaints: жалобы на приглашения (БД)', () 
     expect(await prisma.complaint.count()).toBe(0);
   });
 
-  it('3 жалобы за 30 дней — лимит 5 в сутки, кабинет видит сниженный лимит; dismissed и старые не считаются', async () => {
+  it('3 жалобы за 30 дней – лимит 5 в сутки, кабинет видит сниженный лимит; dismissed и старые не считаются', async () => {
     await seedComplaints(2);
     await seedComplaints(3, 'dismissed');
     await seedComplaints(3, 'open', new Date(Date.now() - 31 * 86_400_000));
@@ -97,7 +97,7 @@ describe('lane complaints: жалобы на приглашения (БД)', () 
     await expect(invite(pool[5]!.id)).rejects.toMatchObject({ status: 429, code: 'rate_limited' });
   });
 
-  it('5 жалоб — отправка блокируется 403 company_blocked, приглашение не создаётся', async () => {
+  it('5 жалоб – отправка блокируется 403 company_blocked, приглашение не создаётся', async () => {
     await seedComplaints(5);
     const before = await prisma.invitation.count();
     await expect(invite(A.id)).rejects.toMatchObject({ status: 403, code: 'company_blocked' });

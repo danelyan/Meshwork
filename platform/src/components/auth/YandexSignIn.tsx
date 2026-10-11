@@ -7,8 +7,8 @@ import ui from '../ui.module.css';
 
 /**
  * Кнопки внешнего входа под одной галкой согласия: версия текста уходит в старт входа.
- * «Войти через ФСП ID» (/api/fsp-id/login) — только кандидату: ФСП ID есть у спортсменов; провайдер всегда
- * доступен (симулятор по env или встроенный мок). «Войти через Яндекс ID» (/api/auth/yandex) — если настроен.
+ * «Войти через ФСП ID» (/api/fsp-id/login) – только кандидату: ФСП ID есть у спортсменов; провайдер всегда
+ * доступен (симулятор по env или встроенный мок). «Войти через Яндекс ID» (/api/auth/yandex) – если настроен.
  */
 type SignInProps = { enabled: boolean; next: string | null; fsp?: boolean; fspHint?: string | null; agreed: boolean; hideWhenOff?: boolean };
 

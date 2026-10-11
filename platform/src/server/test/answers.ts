@@ -13,7 +13,7 @@ export function normalizeText(s: string): string {
     .toLowerCase();
 }
 
-/** Число: «3», «3.0», «3,0», «три»? — нет, только цифры; запятая как десятичный разделитель допустима. */
+/** Число: «3», «3.0», «3,0», «три»? – нет, только цифры; запятая как десятичный разделитель допустима. */
 export function normalizeNumber(s: string): string | null {
   const t = s.trim().replace(/\s+/g, '').replace(',', '.').replace(/^\+/, '');
   if (!/^-?\d+(\.\d+)?$/.test(t)) return null;
@@ -40,7 +40,7 @@ export function normalizeSequence(s: string): string {
     .join(',');
 }
 
-/** Нормализация по формату; null — ответ не разбирается (считается неверным). */
+/** Нормализация по формату; null – ответ не разбирается (считается неверным). */
 export function normalizeAnswer(format: AnswerFormat, raw: string): string | null {
   const s = raw.slice(0, MAX_ANSWER_CHARS);
   switch (format) {

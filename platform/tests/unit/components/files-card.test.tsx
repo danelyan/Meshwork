@@ -96,7 +96,7 @@ describe('FilesCard', () => {
     expect(click).toHaveBeenCalled();
   });
 
-  it('ссылка уходит в ленту; не ссылка и нет ленты — ошибка', () => {
+  it('ссылка уходит в ленту; не ссылка и нет ленты – ошибка', () => {
     render(<FilesCard docs={[]} />);
     const input = screen.getByPlaceholderText(/Вставь ссылку/);
     fireEvent.change(input, { target: { value: 'просто текст' } });
@@ -114,7 +114,7 @@ describe('FilesCard', () => {
     feed.off();
   });
 
-  it('список: «скачать» только при сохранённом оригинале; «удалить» — после подтверждения', async () => {
+  it('список: «скачать» только при сохранённом оригинале; «удалить» – после подтверждения', async () => {
     vi.mocked(deleteMaterial).mockResolvedValue({ deletedClaims: 1, keptClaims: 0 });
     render(
       <FilesCard

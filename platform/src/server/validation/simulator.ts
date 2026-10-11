@@ -1,9 +1,9 @@
 // Симулятор адаптивного теста для жюри (/simulator): виртуальный кандидат с заданной «истинной» θ проходит тот же
 // движок, что и боевой тест, шаг за шагом. Без БД и без LLM, детерминированно по seed. Движок (irt/policy/rng/генераторы)
-// не меняется — здесь только цикл, повторяющий service.ts (pushNextItem + nextStep) и eval/test/run.ts (runAttempt).
-// Режимы ответов взяты из eval/test/run.ts: ideal — 2PL по экспертным a, b; noise — b каждого показа с шумом σ = 0,2
-// («instance» в run.ts); leak — кандидат знает трюк по 30 % семейств (+0,3 к P, «утечка», атака из run.ts).
-// Угадывания (c-параметра) в движке и в eval нет — режима «с угадыванием» нет сознательно.
+// не меняется – здесь только цикл, повторяющий service.ts (pushNextItem + nextStep) и eval/test/run.ts (runAttempt).
+// Режимы ответов взяты из eval/test/run.ts: ideal – 2PL по экспертным a, b; noise – b каждого показа с шумом σ = 0,2
+// («instance» в run.ts); leak – кандидат знает трюк по 30 % семейств (+0,3 к P, «утечка», атака из run.ts).
+// Угадывания (c-параметра) в движке и в eval нет – режима «с угадыванием» нет сознательно.
 import { z } from 'zod';
 
 import { getSubcategory, SPEC_LABEL, SUBCATEGORIES } from '@/lib/directions';
@@ -30,7 +30,7 @@ export type SimMode = (typeof SIM_MODES)[number];
 
 export const SIM_LIMITS = { bodyBytes: 2048, thetaMin: -3, thetaMax: 3, seedMax: 0x7fffffff } as const;
 
-/** Параметры режимов — как в eval/test/run.ts (NOISE, доля шаблонов с трюком и прибавка к P). */
+/** Параметры режимов – как в eval/test/run.ts (NOISE, доля шаблонов с трюком и прибавка к P). */
 const NOISE_SD = 0.2;
 const LEAK_SHARE = 0.3;
 const LEAK_BONUS = 0.3;
@@ -102,7 +102,7 @@ export function simulatorSubcategories(): SimSubcategory[] {
 
 export class SimInputError extends Error {}
 
-/** Нормальное распределение (Бокс–Мюллер) на детерминированном rng — как в eval/test/run.ts. */
+/** Нормальное распределение (Бокс–Мюллер) на детерминированном rng – как в eval/test/run.ts. */
 function gauss(rng: Rng): number {
   const u = 1 - rng.next();
   const v = rng.next();

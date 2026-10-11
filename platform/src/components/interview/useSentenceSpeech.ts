@@ -11,9 +11,9 @@ export { MAX_TTS_PARTS, keyOf, parseKey, sentencesHeard, ttsParts, type TtsPart 
 
 /**
  * Озвучка реплик ИИ по предложениям поверх голоса компаньона (/api/tts, тот же липсинк головы): каждое
- * предложение — отдельная озвучка в очереди, так перебивание режет реплику по предложениям и сервер
+ * предложение – отдельная озвучка в очереди, так перебивание режет реплику по предложениям и сервер
  * получает, сколько их прозвучало (POST /api/call/{id}/interrupt). Ложное перебивание (поддакивание)
- * продолжает с первого непрозвучавшего предложения. Принцип — moko pipeline.py + player.ts.
+ * продолжает с первого непрозвучавшего предложения. Принцип – moko pipeline.py + player.ts.
  */
 export function useSentenceSpeech(voice: CompanionVoice | null) {
   const parts = useRef(new Map<number, TtsPart[]>());
@@ -52,7 +52,7 @@ export function useSentenceSpeech(voice: CompanionVoice | null) {
 
   /**
    * Продолжить реплику после ложного перебивания. Часть, на которой остановились, уже посчитана начатой,
-   * но не доиграна — её повторяем целиком, дальше по очереди.
+   * но не доиграна – её повторяем целиком, дальше по очереди.
    */
   const resume = useCallback(
     (index: number, text: string) => {
@@ -64,9 +64,9 @@ export function useSentenceSpeech(voice: CompanionVoice | null) {
     [say],
   );
 
-  /** Сколько частей начало звучать (как moko: начатый чанк — услышанный). */
+  /** Сколько частей начало звучать (как moko: начатый чанк – услышанный). */
   const heardOf = useCallback((index: number) => heard.current.get(index) ?? 0, []);
-  /** Сколько предложений сервера прозвучало — для POST /interrupt. */
+  /** Сколько предложений сервера прозвучало – для POST /interrupt. */
   const heardSentencesOf = useCallback((index: number) => sentencesHeard(parts.current.get(index) ?? [], heard.current.get(index) ?? 0), []);
   const partsOf = useCallback((index: number) => parts.current.get(index)?.length ?? 0, []);
   const isPlaying = useCallback(() => {

@@ -19,10 +19,10 @@ export interface InterviewContext {
   subcategoryId: string | null;
   claimedGrade: Grade | null;
   plan: BlockPlan;
-  /** catalogId утверждений кандидата (confirmed | edited) — компетенция «заявлена», если покрывает хотя бы одно. */
+  /** catalogId утверждений кандидата (confirmed | edited) – компетенция «заявлена», если покрывает хотя бы одно. */
   claimedCatalogIds: Set<string>;
   testHints: TestHint[];
-  /** Факты резюме (цитаты утверждений) — вырезаются из вопросов перед оценщиком. */
+  /** Факты резюме (цитаты утверждений) – вырезаются из вопросов перед оценщиком. */
   resumeFacts: string[];
 }
 
@@ -107,8 +107,8 @@ export async function loadInterviewContext(candidateId: string): Promise<Intervi
 }
 
 /**
- * Вид режима созвона в сцене консультанта: после теста на грейд (есть категория из теста) — ИИнтервью,
- * до него — квалифицирующий созвон. Категория создаётся только по итогам теста (CategorySource.test).
+ * Вид режима созвона в сцене консультанта: после теста на грейд (есть категория из теста) – ИИнтервью,
+ * до него – квалифицирующий созвон. Категория создаётся только по итогам теста (CategorySource.test).
  */
 export async function resolveCallKind(candidateId: string): Promise<'interview' | 'qualifying'> {
   const n = await prisma.candidateCategory.count({ where: { candidateId, source: 'test' } });

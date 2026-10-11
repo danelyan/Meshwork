@@ -35,7 +35,7 @@ export function CandidateInvitations({ invitations, contact, hasRecordingConsent
   const current = invitations.map((inv) => ({ ...inv, status: local[inv.id] ?? inv.status, disclosed: revoked[inv.id] ? false : (inv.disclosed ?? local[inv.id] === 'accepted') }));
   const matches = (inv: CandidateInvitationView, value: Filter) => value === 'all' || (value === 'open' ? isOpen(inv.status) : !isOpen(inv.status));
   const visible = current.filter((inv) => matches(inv, filter));
-  // lane hired: компания отметила найм — финальный этап пути, показываем сверху.
+  // lane hired: компания отметила найм – финальный этап пути, показываем сверху.
   const hiredIn = current.find((inv) => inv.status === 'hired');
 
   async function respond(id: string, action: 'accept' | 'decline') {

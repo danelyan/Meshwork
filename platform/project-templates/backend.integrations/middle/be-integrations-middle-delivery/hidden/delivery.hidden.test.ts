@@ -46,7 +46,7 @@ describe('маппинг', () => {
     }
   });
 
-  it('невалидный ответ — invalid_response без повторов', async () => {
+  it('невалидный ответ – invalid_response без повторов', async () => {
     const bad = [
       { ...QUOTE, price: { amount: '12,50', currency: 'RUB' } },
       { ...QUOTE, price: { amount: '1.234', currency: 'RUB' } },
@@ -86,14 +86,14 @@ describe('ретраи', () => {
     expect(sleeps).toEqual([2000, 5000]);
   });
 
-  it('попытки кончились — unavailable, attempts и status последнего ответа', async () => {
+  it('попытки кончились – unavailable, attempts и status последнего ответа', async () => {
     mock.script('/v2/quotes', { status: 503 });
     const e = await caught(client({ maxRetries: 2 }).quote(REQ));
     expect(e).toMatchObject({ code: 'unavailable', attempts: 3, status: 503 });
     expect(mock.requests).toHaveLength(3);
   });
 
-  it('4xx не повторяются: 400/422 — bad_request, 404 — not_found', async () => {
+  it('4xx не повторяются: 400/422 – bad_request, 404 – not_found', async () => {
     for (const [status, code] of [[400, 'bad_request'], [422, 'bad_request'], [404, 'not_found']] as const) {
       mock.requests.length = 0;
       mock.script('/v2/quotes', { status, body: { error: 'x' } });
@@ -112,7 +112,7 @@ describe('ретраи', () => {
     expect(Date.now() - started).toBeLessThan(380);
   });
 
-  it('обрыв соединения повторяется; все таймауты — unavailable', async () => {
+  it('обрыв соединения повторяется; все таймауты – unavailable', async () => {
     mock.script('/v2/quotes', { status: 0, destroy: true }, { status: 200, body: QUOTE });
     await expect(client().quote(REQ)).resolves.toMatchObject({ priceKop: 123450 });
     mock.requests.length = 0;

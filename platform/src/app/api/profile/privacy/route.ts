@@ -6,7 +6,7 @@ import { requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/profile/privacy — видят ли кандидата работодатели (R-C-13). */
+/** GET /api/profile/privacy – видят ли кандидата работодатели (R-C-13). */
 export const GET = withErrors(async (req: Request) => Response.json(await getPrivacy(requireCandidate(req))));
 
 /** POST `{ hiddenFromEmployers }`. */

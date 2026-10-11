@@ -2,7 +2,7 @@ import type { ActivityContent } from './types';
 
 /**
  * Отклики и приглашения вокруг новых компаний (1–2 на компанию), чтобы кабинеты работодателей и страницы
- * вакансий не были пустыми. Кандидаты — из пула подборки (demo-pool-*, demo-cat-*, demo-ai-*), не персоны пути
+ * вакансий не были пустыми. Кандидаты – из пула подборки (demo-pool-*, demo-cat-*, demo-ai-*), не персоны пути
  * /demo: их статусы зафиксированы сценариями. Даты считаются от «сегодня» при сиде.
  */
 export const ACTIVITY: ActivityContent[] = [
@@ -10,7 +10,7 @@ export const ACTIVITY: ActivityContent[] = [
   { kind: 'application', id: 'demo-app-yasen-retail-1', vacancyId: 'demo-vac-yasen-retail-1', candidateId: 'demo-pool-be-j-3', status: 'viewed', ageDays: 3,
     message: 'Здравствуйте! Прошёл тест на Junior backend, делал кеш и очереди в учебных проектах. Хочу попробовать себя в нагрузке перед распродажами.' },
   { kind: 'invitation', id: 'demo-inv-yasen-retail-1', vacancyId: 'demo-vac-yasen-retail-11', candidateId: 'demo-pool-fe-m-3', status: 'sent', salaryFrom: 220000, salaryTo: 300000, ageDays: 1,
-    message: 'Здравствуйте! Ваш профиль подтверждён на Middle frontend с акцентом на производительность. У нас каталог на миллионы позиций и команда витрины — расскажем подробнее на коротком созвоне.' },
+    message: 'Здравствуйте! Ваш профиль подтверждён на Middle frontend с акцентом на производительность. У нас каталог на миллионы позиций и команда витрины – расскажем подробнее на коротком созвоне.' },
   // Вектор Логистика
   { kind: 'invitation', id: 'demo-inv-vektor-logistics-1', vacancyId: 'demo-vac-vektor-logistics-31', candidateId: 'demo-cat-sre-m-1', status: 'viewed', salaryFrom: 240000, salaryTo: 320000, ageDays: 4,
     message: 'Здравствуйте! Увидели вашу категорию SRE Middle и подтверждённые навыки по алертингу. Ищем человека в группу надёжности биржи заказов, вилка в приглашении.' },
@@ -38,7 +38,7 @@ export const ACTIVITY: ActivityContent[] = [
     message: 'Здравствуйте! Ищем junior-аналитика в команду аналитики обучения. Ваш профиль подтверждён тестом, вилка указана, расскажем о задачах на созвоне.' },
   // Пульс Геймс
   { kind: 'invitation', id: 'demo-inv-pulse-games-1', vacancyId: 'demo-vac-pulse-games-1', candidateId: 'demo-pool-be-m-3', status: 'sent', salaryFrom: 240000, salaryTo: 320000, ageDays: 1,
-    message: 'Здравствуйте! Игровые серверы под пиковой нагрузкой матчей — наша главная задача. Ваш профиль Middle backend с подтверждённой конкурентностью нам подходит.' },
+    message: 'Здравствуйте! Игровые серверы под пиковой нагрузкой матчей – наша главная задача. Ваш профиль Middle backend с подтверждённой конкурентностью нам подходит.' },
   { kind: 'application', id: 'demo-app-pulse-games-1', vacancyId: 'demo-vac-pulse-games-31', candidateId: 'demo-cat-qa-automation-m-1', status: 'accepted', ageDays: 7,
     message: 'Добрый день! Автоматизирую проверки API по контракту, есть опыт с нагрузочными сценариями. Хочу в игровую студию.' },
 ];

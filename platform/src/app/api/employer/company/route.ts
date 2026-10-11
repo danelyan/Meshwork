@@ -8,8 +8,8 @@ import { requireEmployer } from '@/server/session';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/employer/company — профиль своей компании (R-E-01). `inviteContact` — способ связи, который увидит
- * кандидат в приглашении от этого представителя (Company.contact, иначе его почта); null — приглашения не отправятся.
+ * GET /api/employer/company – профиль своей компании (R-E-01). `inviteContact` – способ связи, который увидит
+ * кандидат в приглашении от этого представителя (Company.contact, иначе его почта); null – приглашения не отправятся.
  */
 export const GET = withErrors(async (req: Request) => {
   const { employerProfileId } = requireEmployer(req);
@@ -18,7 +18,7 @@ export const GET = withErrors(async (req: Request) => {
   return Response.json({ ...company, inviteContact });
 });
 
-/** PATCH /api/employer/company — частичная правка своей компании. */
+/** PATCH /api/employer/company – частичная правка своей компании. */
 export const PATCH = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { employerProfileId } = requireEmployer(req);

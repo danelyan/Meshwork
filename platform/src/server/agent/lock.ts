@@ -9,10 +9,10 @@ import { prisma } from '@/server/db';
  * соединение из пула на каждый запрос, и session-состояние (в т.ч. advisory
  * lock) не привязано к следующему запросу (docs Prisma: connection pooling,
  * «advisory locks are lost after each transaction boundary»). Почему не
- * строка-флаг с TTL: в схеме нет колонки, а главное — после падения процесса
+ * строка-флаг с TTL: в схеме нет колонки, а главное – после падения процесса
  * флаг висит до TTL, а транзакционный lock снимается вместе с соединением.
  * Цена: одно соединение пула на активный ход (их не больше, чем параллельных
- * диалогов; семафор LLM — 8).
+ * диалогов; семафор LLM – 8).
  */
 const LOCK_NAMESPACE = 0x4653_5001; // «FSP» + 1: ключ 1 advisory lock
 
@@ -22,7 +22,7 @@ export interface ConversationLock {
 
 export const LOCK_MAX_HOLD_MS = 10 * 60 * 1000;
 
-/** null — разговор уже занят другим ходом. */
+/** null – разговор уже занят другим ходом. */
 export async function acquireConversationLock(
   conversationId: string,
   opts: { maxHoldMs?: number } = {},
@@ -52,7 +52,7 @@ export async function acquireConversationLock(
     )
     .catch((err: unknown) => {
       rejectAcquired(err);
-      // После acquire таймаут транзакции лишь снимает lock раньше хода — ход продолжается.
+      // После acquire таймаут транзакции лишь снимает lock раньше хода – ход продолжается.
       console.error('[agent] conversation lock transaction ended with error', err);
     });
 

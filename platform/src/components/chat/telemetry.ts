@@ -1,6 +1,6 @@
 /**
- * Телеметрия чата консультанта — инструмент отладки UX (docs/platform.md, «Телеметрия чата»).
- * Чистый TS без React. Выключена по умолчанию: `track` тогда — одна проверка флага и выход.
+ * Телеметрия чата консультанта – инструмент отладки UX (docs/platform.md, «Телеметрия чата»).
+ * Чистый TS без React. Выключена по умолчанию: `track` тогда – одна проверка флага и выход.
  * Включение: localStorage['fsp:telemetry'] = '1', `?telemetry=1` в URL или переключатель в дебаг-панели.
  */
 
@@ -18,7 +18,7 @@ export type TelemetryEvent =
   | { k: 'scroll'; what: 'auto' | 'away' | 'back' }
   | { k: 'flake'; what: 'blink' | 'replaced' | 'discard' | 'remount' | 'reveal-jump'; id?: string; detail?: string };
 
-/** `n` — сквозной номер (ключ строки в панели), `t` — performance.now(), `turn` — номер хода. */
+/** `n` – сквозной номер (ключ строки в панели), `t` – performance.now(), `turn` – номер хода. */
 export type Stamped = TelemetryEvent & { n: number; t: number; turn: number };
 
 export interface TurnStats {
@@ -57,7 +57,7 @@ export interface ItemSpan {
 const STORE_KEY = 'fsp:telemetry';
 export const TELEMETRY_EVENT = 'fsp:telemetry';
 const CAP = 500;
-/** Появился и исчез быстрее — «мелькнул». */
+/** Появился и исчез быстрее – «мелькнул». */
 export const BLINK_MS = 300;
 const SAMPLE_MS = 200;
 
@@ -81,7 +81,7 @@ function emptyStats(turn: number, start: number): TurnStats {
   return { turn, start, status: turn ? 'running' : 'idle', frames: 0, heartbeats: 0, bytes: 0, deltas: 0, discards: 0, cls: 0, longtasks: 0, renders: 0, flakes: 0, maxLag: 0, maxLagMs: 0, showCps: 0, inCps: 0 };
 }
 
-/** Одна проверка — для горячих путей (кадр rAF, рендер). */
+/** Одна проверка – для горячих путей (кадр rAF, рендер). */
 export const telemetryOn = () => enabled;
 
 export function track(e: TelemetryEvent): void {
@@ -277,7 +277,7 @@ export function diffItems(prev: readonly FeedLike[], next: readonly FeedLike[], 
       // Текст реплики не продолжился, а заменился (авторитетный `message` ≠ накопленным дельтам).
       if (a && b !== undefined && a !== b && !b.startsWith(a)) track({ k: 'flake', what: 'replaced', id: it.id, detail: `${a.length}→${b.length} зн` });
       if (was !== it && (sig(was) !== sig(it) || was.event?.type !== it.event?.type)) {
-        // Обновления дельт идут десятками: в ленту событий — только счётчик в таймлайне.
+        // Обновления дельт идут десятками: в ленту событий – только счётчик в таймлайне.
         const sp = spans.get(it.id);
         if (sp) sp.updates++;
         else track({ k: 'item', op: 'update', id: it.id, kind: kindOf(it), reason });
@@ -321,7 +321,7 @@ export interface StreamSampler {
 
 /**
  * Сэмплер раскрытия одной реплики: не чаще раза в SAMPLE_MS отправляет `stream`
- * (накоплено/показано/отставание/скорости). Показанное уменьшилось — флейк `reveal-jump`.
+ * (накоплено/показано/отставание/скорости). Показанное уменьшилось – флейк `reveal-jump`.
  */
 export function createStreamSampler(id: string): StreamSampler {
   let lastT = -1;
@@ -334,7 +334,7 @@ export function createStreamSampler(id: string): StreamSampler {
     const showCps = dt > 0 ? Math.round((shown - lastShown) / dt) : 0;
     const inCps = dt > 0 ? Math.round((acc - lastAcc) / dt) : 0;
     const lag = Math.max(0, acc - shown);
-    // Отставание в мс — по сглаженной скорости показа: раскрытие идёт по словам, мгновенная скорость скачет.
+    // Отставание в мс – по сглаженной скорости показа: раскрытие идёт по словам, мгновенная скорость скачет.
     ema = ema ? ema * 0.6 + showCps * 0.4 : showCps;
     const lagMs = ema > 0 ? Math.round((lag / ema) * 1000) : 0;
     lastT = t;
@@ -378,7 +378,7 @@ export function setTelemetryEnabled(v: boolean, persist = true) {
       if (v) window.localStorage.setItem(STORE_KEY, '1');
       else window.localStorage.removeItem(STORE_KEY);
     } catch {
-      /* хранилище недоступно — флаг живёт до перезагрузки */
+      /* хранилище недоступно – флаг живёт до перезагрузки */
     }
   }
   if (enabled === v) return;
@@ -401,7 +401,7 @@ export function initTelemetry() {
     if (q === '0') on = false;
     if (q !== null) setTelemetryEnabled(on);
   } catch {
-    /* без URL — только localStorage */
+    /* без URL – только localStorage */
   }
   if (on) setTelemetryEnabled(true, false);
   window.addEventListener('storage', (e) => {

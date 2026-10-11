@@ -1,4 +1,4 @@
-// E-08, фаза 2: очередь жалоб — права, причина, журнал, пересчёт санкции, письмо кандидату.
+// E-08, фаза 2: очередь жалоб – права, причина, журнал, пересчёт санкции, письмо кандидату.
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { GET as listGet } from '@/app/api/admin/complaints/route';
@@ -21,7 +21,7 @@ describe('admin: очередь жалоб', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('support без права: GET и POST — 403, без сессии — 401; жалоба не меняется', async () => {
+  it('support без права: GET и POST – 403, без сессии – 401; жалоба не меняется', async () => {
     const [id] = await seedComplaints(1);
     expect((await listGet(jsonRequest('/api/admin/complaints', 'GET', undefined, staff.support.cookie))).status).toBe(403);
     expect((await decide(id!, staff.support.cookie, { decision: 'dismissed', reason: 'Проверено, жалоба ложная' })).status).toBe(403);
@@ -30,7 +30,7 @@ describe('admin: очередь жалоб', () => {
     expect(await prisma.adminAuditLog.count({ where: { targetId: id! } })).toBe(0);
   });
 
-  it('модератор видит очередь с историей компании; без причины — 400', async () => {
+  it('модератор видит очередь с историей компании; без причины – 400', async () => {
     const [id] = await seedComplaints(3);
     const body = await (await listGet(jsonRequest('/api/admin/complaints', 'GET', undefined, staff.moderator.cookie))).json();
     expect(body.complaints).toHaveLength(3);
@@ -39,7 +39,7 @@ describe('admin: очередь жалоб', () => {
     expect((await decide(id!, staff.moderator.cookie, { decision: 'dismissed', reason: '' })).status).toBe(400);
   });
 
-  it('dismissed при блоке: санкция пересчитана сразу, отправка открылась, журнал и письмо; повтор — 409', async () => {
+  it('dismissed при блоке: санкция пересчитана сразу, отправка открылась, журнал и письмо; повтор – 409', async () => {
     const ids = await seedComplaints(5);
     expect((await companySanction(ctxEmp.companyId)).level).toBe('blocked');
     await expect(invite(6)).rejects.toMatchObject({ code: 'company_blocked' });

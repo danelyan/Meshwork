@@ -1,7 +1,7 @@
 import { ACTIONS, type Action, ROLE_ACTIONS, STAFF_ROLES, type StaffRoleName, can } from '@/server/admin/permissions';
 import { ADMIN_NAV, navFor } from '@/lib/admin-nav';
 
-// Матрица прав персонала (E-08, ADR 0009): ожидание записано здесь независимо от permissions.ts —
+// Матрица прав персонала (E-08, ADR 0009): ожидание записано здесь независимо от permissions.ts –
 // каждая пара «роль × действие» проверяется отдельно. Новое действие без строки здесь роняет тест полноты.
 const O = 'owner';
 const M = 'moderator';

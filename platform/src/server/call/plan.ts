@@ -1,19 +1,19 @@
-// Маршрут интервьюера по уровню и выбор темы — чистые функции (без БД и LLM). Их же использует
+// Маршрут интервьюера по уровню и выбор темы – чистые функции (без БД и LLM). Их же использует
 // детерминированный stub (llm/providers/stub-call.ts) и запасной вопрос, когда модель не ответила.
 import type { AnswerSignal, QuestionLevel } from './types';
 import type { Grade } from '../../lib/grades';
 
-/** Лимиты квалифицирующего созвона (ADR 0003: 4–6 вопросов; до 8 — с дополнительными по неопределённым темам). */
+/** Лимиты квалифицирующего созвона (ADR 0003: 4–6 вопросов; до 8 – с дополнительными по неопределённым темам). */
 export const CALL_LIMITS = {
   minQuestions: 4,
   maxQuestions: 6,
   /** Потолок с дополнительными вопросами по темам, где прогоны оценщика разошлись (status=inconclusive). */
   hardMaxQuestions: 8,
-  /** На одну тему — не больше стольких вопросов. */
+  /** На одну тему – не больше стольких вопросов. */
   maxPerTopic: 2,
   /** Тем в плане созвона. */
   maxTopics: 5,
-  /** Запусков оценщика на созвон (первый + повторы после 503); исчерпаны — созвон закрывается без оценки. */
+  /** Запусков оценщика на созвон (первый + повторы после 503); исчерпаны – созвон закрывается без оценки. */
   maxFinishAttempts: 3,
   /**
    * Реплик ИИ на созвон всего (решение владельца 11.10): обычные вопросы, этап разбора теста, дополнительные
@@ -25,7 +25,7 @@ export const CALL_LIMITS = {
 
 /**
  * Таймаут одного вызова интервьюера (вопрос созвона, вопрос разбора теста, ИИнтервью). Кандидат ждёт в тишине:
- * дольше 20 с — лучше запасной вопрос из шаблона, чем общий LLM_TIMEOUT_MS (40 с; с повтором после пересказа — 80 с).
+ * дольше 20 с – лучше запасной вопрос из шаблона, чем общий LLM_TIMEOUT_MS (40 с; с повтором после пересказа – 80 с).
  * Живой замер 11.10: обычный ход 1–3 с.
  */
 export const INTERVIEWER_TIMEOUT_MS = 20_000;
@@ -34,7 +34,7 @@ export const INTERVIEWER_TIMEOUT_MS = 20_000;
 export interface TopicSeed {
   topic: string;
   catalogId: string | null;
-  /** Формулировка утверждения кандидата (null — тема от платформы, не заявлена кандидатом). */
+  /** Формулировка утверждения кандидата (null – тема от платформы, не заявлена кандидатом). */
   claimStatement: string | null;
   /** Короткий факт из резюме (цитата утверждения), если есть. Оценщику не передаётся. */
   resumeFact: string | null;
@@ -48,12 +48,12 @@ export interface PlanTurn {
   level: QuestionLevel;
 }
 
-/** Стартовый уровень: заявленный middle — с рабочего вопроса, senior — с глубокого, junior — с базового. */
+/** Стартовый уровень: заявленный middle – с рабочего вопроса, senior – с глубокого, junior – с базового. */
 export function startLevel(grade: Grade | null | undefined): QuestionLevel {
   return grade === 'senior' ? 3 : grade === 'middle' ? 2 : 1;
 }
 
-/** После сильного ответа — глубже, после слабого — проще, без ответа — тот же уровень. */
+/** После сильного ответа – глубже, после слабого – проще, без ответа – тот же уровень. */
 export function routeLevel(prev: QuestionLevel, signal: AnswerSignal): QuestionLevel {
   if (signal === 'strong') return Math.min(3, prev + 1) as QuestionLevel;
   if (signal === 'weak') return Math.max(1, prev - 1) as QuestionLevel;
@@ -64,7 +64,7 @@ const DONT_KNOW_RE = /(не\s+знаю|не\s+помню|не\s+сталкива
 
 /**
  * Кандидат прямо сказал, что не знает (коротко, без попытки рассуждать). Такой ответ не штрафуется как ложь,
- * но закрывает тему: переспрашивать то же глубже или проще — давить, вопрос уходит на другую тему.
+ * но закрывает тему: переспрашивать то же глубже или проще – давить, вопрос уходит на другую тему.
  */
 export function saysDontKnow(answer: string | null | undefined): boolean {
   if (!answer) return false;
@@ -81,16 +81,16 @@ export function asksForAnswer(answer: string | null | undefined): boolean {
   return Boolean(answer && ASKS_ANSWER_RE.test(answer));
 }
 
-/** Вежливый отказ одной фразой (если модель сама не отказала) — перед следующим вопросом. */
-export const REFUSAL_LINE = 'Подсказать не могу — ответы разбирает отдельный оценщик.';
+/** Вежливый отказ одной фразой (если модель сама не отказала) – перед следующим вопросом. */
+export const REFUSAL_LINE = 'Подсказать не могу – ответы разбирает отдельный оценщик.';
 
 export function withRefusal(question: string, answer: string | null | undefined, line = REFUSAL_LINE): string {
   return asksForAnswer(answer) && !REFUSED_RE.test(question) ? `${line} ${question}` : question;
 }
 
 /**
- * Эвристика сигнала для stub и запасного пути (без модели): пусто, «не знаю», очень коротко — слабый;
- * развёрнутый ответ — сильный; остальное — без сдвига. Не оценка: в вердикт не попадает.
+ * Эвристика сигнала для stub и запасного пути (без модели): пусто, «не знаю», очень коротко – слабый;
+ * развёрнутый ответ – сильный; остальное – без сдвига. Не оценка: в вердикт не попадает.
  */
 export function heuristicSignal(answer: string | null): AnswerSignal {
   if (answer === null) return 'none';
@@ -102,7 +102,7 @@ export function heuristicSignal(answer: string | null): AnswerSignal {
 
 /**
  * Покрытие тем: сколько вопросов осталось (включая следующий) и какие темы ещё не спрошены. Если
- * непроверенных тем не меньше, чем оставшихся вопросов, следующий вопрос обязан открыть новую тему —
+ * непроверенных тем не меньше, чем оставшихся вопросов, следующий вопрос обязан открыть новую тему –
  * иначе заявленная тема в конце списка не спрашивается никогда (валидация 10.10: покрытие 75 %).
  */
 export function coverage(topics: readonly TopicSeed[], turns: readonly PlanTurn[], maxQuestions: number): { remaining: number; unprobed: string[]; mustSwitch: boolean } {
@@ -116,14 +116,14 @@ export interface PlannedQuestion {
   topicIndex: number;
   level: QuestionLevel;
   signal: AnswerSignal | null;
-  /** true — переход к новой теме. */
+  /** true – переход к новой теме. */
   switched: boolean;
 }
 
 /**
- * Следующая тема и уровень по истории (сигнал — от модели или эвристики).
+ * Следующая тема и уровень по истории (сигнал – от модели или эвристики).
  * Остаёмся на теме, пока ответы сильные и уровень 3 не пройден; после слабого ответа на уровне 1,
- * после вопроса уровня 3 или после maxPerTopic вопросов — следующая непроверенная тема со стартового уровня.
+ * после вопроса уровня 3 или после maxPerTopic вопросов – следующая непроверенная тема со стартового уровня.
  */
 export function planNext(args: {
   topics: readonly TopicSeed[];
@@ -146,13 +146,13 @@ export function planNext(args: {
   const asked = new Set(turns.map((t) => t.topic));
   const fresh = topics.findIndex((t) => !asked.has(t.topic));
   const nextIdx = fresh === -1 ? (curIdx + 1) % topics.length : fresh;
-  // Новая тема — со стартового уровня, но после слабого ответа не выше базового+0.
+  // Новая тема – со стартового уровня, но после слабого ответа не выше базового+0.
   const level = signal === 'weak' ? (Math.max(1, base - 1) as QuestionLevel) : base;
   return { topicIndex: nextIdx, level, signal, switched: true };
 }
 
 /**
- * Запасной вопрос по уровню: формулировка от темы, тип вопроса фиксирован. Название темы — формулировка каталога
+ * Запасной вопрос по уровню: формулировка от темы, тип вопроса фиксирован. Название темы – формулировка каталога
  * («Проверял права доступа…»), поэтому она идёт отдельной цитатой, а не в «что такое …» (было неграмотно).
  */
 export function templateQuestion(topic: TopicSeed, level: QuestionLevel, first: boolean): string {
@@ -167,7 +167,7 @@ export function templateQuestion(topic: TopicSeed, level: QuestionLevel, first: 
 
 /** Последняя реплика ИИ при завершении (без LLM). */
 export const CLOSING_LINE =
-  'Спасибо, на этом вопросы закончились. Нажми «Завершить» — отдельный оценщик разберёт ответы, и карта глубины появится в профиле.';
+  'Спасибо, на этом вопросы закончились. Нажми «Завершить» – отдельный оценщик разберёт ответы, и карта глубины появится в профиле.';
 
 const plural = (n: number, one: string, few: string, many: string) => {
   const d = n % 10;
@@ -179,7 +179,7 @@ const plural = (n: number, one: string, few: string, many: string) => {
 
 /**
  * Итоговая реплика с кратким итогом для кандидата: сколько тем прошли и был ли разбор задания теста. Оценок не
- * называет (их ставит слепой оценщик после «Завершить»). `base` — закрывающая реплика вида созвона; её первое
+ * называет (их ставит слепой оценщик после «Завершить»). `base` – закрывающая реплика вида созвона; её первое
  * предложение заменяется итогом, остальное (что делать дальше) сохраняется.
  */
 export function closingWithRecap(base: string, recap: { topics: number; testReview: boolean }): string {

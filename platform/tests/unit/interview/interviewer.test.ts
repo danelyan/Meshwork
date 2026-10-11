@@ -13,12 +13,12 @@ const base: InterviewerInput = {
   turns: [],
   limits: INTERVIEW_LIMITS,
 };
-const long = 'Я отвечал за сервис платежей: переписал обработку очереди, добавил идемпотентность по ключу запроса, измерил задержку до и после — она упала вдвое, потому что убрали синхронный вызов.';
+const long = 'Я отвечал за сервис платежей: переписал обработку очереди, добавил идемпотентность по ключу запроса, измерил задержку до и после – она упала вдвое, потому что убрали синхронный вызов.';
 
 afterEach(() => clearStubResponses());
 
 describe('интервьюер ИИнтервью на stub-провайдере', () => {
-  it('первый вопрос — знакомство, meta с компетенцией и блоком, озвучиваемый русский текст', async () => {
+  it('первый вопрос – знакомство, meta с компетенцией и блоком, озвучиваемый русский текст', async () => {
     const r = await nextInterviewQuestion(base, createStubProvider());
     expect(r.meta).toMatchObject({ competencyId: 'common.context', block: 'intro', level: 2, routedBy: null, catalogId: null, topic: 'Контекст и роль' });
     expect(r.question).toMatch(/[а-яё]/i);
@@ -39,7 +39,7 @@ describe('интервьюер ИИнтервью на stub-провайдере
     expect(turns.length).toBeLessThanOrEqual(INTERVIEW_LIMITS.maxQuestions);
     const blocks = [...new Set(turns.map((t) => t.block))];
     expect(blocks).toEqual(['intro', 'test', 'systems', 'team']);
-    // Пометка по тесту: компетенция с ошибками идёт первой среди не-ядра — после ядра web-api.
+    // Пометка по тесту: компетенция с ошибками идёт первой среди не-ядра – после ядра web-api.
     const payload = buildInterviewerPayload(base);
     expect(payload.blocks.find((b) => b.id === 'test')!.competencies.find((c) => c.id === 'backend.data')!.test).toEqual({ wrong: 1, right: 0 });
   });
@@ -68,7 +68,7 @@ describe('интервьюер ИИнтервью на stub-провайдере
 
   it('пересказ резюме → одна переформулировка, затем шаблон', async () => {
     const outs = [
-      { json: { answerSignal: 'none', competencyId: 'common.context', question: 'Привет! Ты переписал очередь платежей на Kafka и снизил задержку вдвое — расскажи, как?', done: false } },
+      { json: { answerSignal: 'none', competencyId: 'common.context', question: 'Привет! Ты переписал очередь платежей на Kafka и снизил задержку вдвое – расскажи, как?', done: false } },
       { json: { answerSignal: 'none', competencyId: 'common.context', question: 'Привет! Расскажи про последний проект: за что отвечал лично ты?', done: false } },
     ];
     let n = 0;

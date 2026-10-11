@@ -1,5 +1,5 @@
 // Фикстуры файлов для матрицы инструментов. Запуск из platform/: node eval/tools-matrix/make-fixtures.mjs
-// PDF берём готовые из eval/pdf, DOCX — textutil (macOS), XLSX — python3+openpyxl, PNG — sharp (SVG -> PNG).
+// PDF берём готовые из eval/pdf, DOCX – textutil (macOS), XLSX – python3+openpyxl, PNG – sharp (SVG -> PNG).
 import { copyFileSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';

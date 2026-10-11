@@ -49,7 +49,7 @@ export function MechanicsView({ data }: { data: MechanicsData }) {
       <PageTitle
         kicker="Механика теста"
         title="Лаборатория вариантов заданий"
-        lead="Задание — не фиксированный вопрос, а семейство-генератор. Один seed даёт один вариант, ключ считает код, не нейросеть. Выберите семейство и сравните варианты."
+        lead="Задание – не фиксированный вопрос, а семейство-генератор. Один seed даёт один вариант, ключ считает код, не нейросеть. Выберите семейство и сравните варианты."
       />
 
       <Panel as="section" className={styles.section} aria-labelledby="pick">
@@ -108,7 +108,7 @@ export function MechanicsView({ data }: { data: MechanicsData }) {
             <Stat value={nf.format(family.irt.paramSpace)} label="экземпляров в семействе (порядок)" />
           </div>
           <p className={styles.soft}>
-            Параметры a и b — стартовые экспертные, на людях не откалиброваны. Семейство: <span className={styles.mono}>{family.id}</span>.
+            Параметры a и b – стартовые экспертные, на людях не откалиброваны. Семейство: <span className={styles.mono}>{family.id}</span>.
           </p>
           <div className={styles.variants}>
             {family.variants.map((v, i) => (

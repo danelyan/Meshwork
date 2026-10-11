@@ -1,5 +1,5 @@
 // Клиент форм входа по почте (/api/auth/register|verify|login|password/*). Свой fetch, а не
-// lib/api.ts: там 401 переписывается в «Сессия закончилась», а здесь 401 — «неверный пароль»,
+// lib/api.ts: там 401 переписывается в «Сессия закончилась», а здесь 401 – «неверный пароль»,
 // и нужен `details.devCode` из ответа 403.
 
 export class AuthFormError extends Error {

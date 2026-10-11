@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * POST /api/call/start {kind, projectSubmissionId?} — начать созвон с ИИ (или продолжить активный).
- * Перед первым созвоном нужно согласие на запись (409 `call_consent_required`). kind=defense — lane defense-room.
+ * POST /api/call/start {kind, projectSubmissionId?} – начать созвон с ИИ (или продолжить активный).
+ * Перед первым созвоном нужно согласие на запись (409 `call_consent_required`). kind=defense – lane defense-room.
  */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);

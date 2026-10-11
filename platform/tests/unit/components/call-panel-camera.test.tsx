@@ -1,5 +1,5 @@
-// Камера в созвоне с Кирой (kind=qualifying): созвон строго с видео (владелец 12.10) — разрешение запрашивается на шаге проверки
-// устройств, без камеры не начать, выключателя в созвоне нет; сегменты уходят на POST /api/call/{id}/video до finish.
+// Камера в созвоне с Кирой (kind=qualifying): по умолчанию включена (разрешение запрашивается на шаге проверки устройств), галочка снимается
+// или кнопкой в панели; отказ в доступе – созвон идёт без видео; сегменты уходят на POST /api/call/{id}/video до finish.
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { AvatarScene } from '@/components/avatar/AvatarScene';
@@ -18,7 +18,7 @@ const view = (over: Partial<CallView> = {}): CallView => ({
   startedAt: new Date().toISOString(),
   finishedAt: null,
   access: 'full',
-  // Один ответ уже есть — «Завершить» доступна сразу.
+  // Один ответ уже есть – «Завершить» доступна сразу.
   transcript: [q(0, 'Как устроен индекс?'), { index: 1, role: 'candidate', text: 'B-дерево', at: 'x', tMs: 1 }, q(2, 'Привет! Что такое индекс?')],
   verdict: null,
   hasRecording: false,
@@ -154,17 +154,29 @@ async function toDevices() {
   await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
 }
 
-describe('CallPanel — камера в созвоне с Кирой (строго с видео)', () => {
-  it('шаг устройств: тумблера нет, камера запрашивается сразу; в созвоне превью и индикатор, выключателя нет; finish сначала отправляет сегмент видео', async () => {
+describe('CallPanel – камера в созвоне с Кирой', () => {
+  it('галочка снята: после старта камеру не просим, кнопка «Камера» есть', async () => {
     await toDevices();
-    expect(screen.queryByTestId('call-devices-camera')).toBeNull();
-    await waitFor(() => expect(videoCalls()).toHaveLength(1)); // превью на шаге проверки
-    fireEvent.click(await screen.findByTestId('call-devices-go'));
+    const box = screen.getByTestId('call-devices-camera') as HTMLInputElement;
+    expect(box.checked).toBe(true); // по умолчанию включена – разрешение запрашивается сразу
+    await waitFor(() => expect(videoCalls()).toHaveLength(1));
+    fireEvent.click(box);
+    expect(box.checked).toBe(false);
+    fireEvent.click(screen.getByTestId('call-devices-go'));
+    expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
+    expect(videoCalls()).toHaveLength(1); // только превью на шаге устройств, в созвоне не просили
+    expect(screen.queryByTestId('call-camera-preview')).toBeNull();
+    const btn = screen.getByTestId('call-camera');
+    expect(btn.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('камера по умолчанию → превью на шаге устройств, камера включается в созвоне; finish сначала отправляет сегмент видео', async () => {
+    await toDevices();
+    await waitFor(() => expect(videoCalls()).toHaveLength(1)); // превью на шаге проверки (галочка стоит по умолчанию)
+    fireEvent.click(screen.getByTestId('call-devices-go'));
     expect(await screen.findByTestId('call-camera-preview')).toBeTruthy();
     expect(videoCalls()).toHaveLength(2);
-    const cam = screen.getByTestId('call-camera');
-    expect(cam.tagName).not.toBe('BUTTON');
-    expect(cam.dataset.state).toBe('on');
+    expect(screen.getByTestId('call-camera').getAttribute('aria-pressed')).toBe('true');
     expect(FakeRecorder.made).toHaveLength(1);
 
     await act(async () => {
@@ -180,21 +192,29 @@ describe('CallPanel — камера в созвоне с Кирой (строг
     expect(up.body).toBeInstanceOf(Blob);
   });
 
-  it('камера запрещена на шаге устройств: созвон не начать, инструкция и «Повторить камеру»; после разрешения - старт с видео', async () => {
-    camDenied = true;
+  it('включение кнопкой в панели; отказ в разрешении (NotAllowedError) – подсказка, созвон идёт без видео', async () => {
     await toDevices();
-    expect((await screen.findByTestId('call-devices-camera-denied')).textContent).toContain('Без камеры созвон не начать');
-    expect(screen.queryByTestId('call-devices-go')).toBeNull();
-    expect(screen.queryByTestId('call-devices-text')).toBeNull();
-    expect(calls.some((c) => c.key === 'POST /api/call/start')).toBe(false);
-    camDenied = false;
-    fireEvent.click(screen.getByTestId('call-devices-camera-retry'));
-    fireEvent.click(await screen.findByTestId('call-devices-go'));
-    expect(await screen.findByTestId('call-camera-preview')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('call-devices-camera')); // снять галочку: созвон начинается без камеры
+    fireEvent.click(screen.getByTestId('call-devices-go'));
+    expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
+    camDenied = true;
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('call-camera'));
+    });
+    expect((await screen.findByTestId('call-camera-error')).textContent).toContain('Созвон идёт без видео');
+    expect(screen.queryByTestId('call-camera-preview')).toBeNull();
     expect(screen.getByTestId('call-panel').dataset.phase).toBe('live');
+    expect(calls.some((c) => c.key === 'POST /api/call/call-1/video')).toBe(false);
+
+    camDenied = false;
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('call-camera'));
+    });
+    expect(await screen.findByTestId('call-camera-preview')).toBeTruthy();
+    expect(screen.getByTestId('call-camera').getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('согласие на запись отозвано (созвон текстом): ни шага камеры, ни индикатора', async () => {
+  it('согласие на запись отозвано (созвон текстом): ни галочки, ни кнопки камеры', async () => {
     routes['GET /api/call'] = () => ({ consent: { given: false, mode: 'text', version: 'cv-1', text: [] }, calls: [] });
     renderScene();
     fireEvent.click(screen.getByText('открыть'));

@@ -20,7 +20,7 @@ export async function parseAuthForm<S extends z.ZodType>(req: Request, schema: S
 }
 
 /**
- * Успешный вход: новая кука сессии (ротация) и куда идти — незавершённый онбординг →
+ * Успешный вход: новая кука сессии (ротация) и куда идти – незавершённый онбординг →
  * лента знакомства /consultant, иначе безопасный `next` или кабинет роли (как в callback Яндекса).
  */
 export function signedIn(user: LoadedUser, next: string | null | undefined): Response {

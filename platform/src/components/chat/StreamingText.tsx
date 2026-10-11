@@ -21,9 +21,9 @@ interface Mark {
 export interface Reveal {
   /** Видимая длина текста. */
   shown: number;
-  /** Отметки «к этому моменту было видно len знаков» за последние FRESH_MS — для проявления. */
+  /** Отметки «к этому моменту было видно len знаков» за последние FRESH_MS – для проявления. */
   marks: Mark[];
-  /** Длина, уже проявившаяся полностью (до неё — обычный текст). */
+  /** Длина, уже проявившаяся полностью (до неё – обычный текст). */
   stable: number;
   /** Весь текст показан и поток закончен. */
   done: boolean;
@@ -33,11 +33,11 @@ export interface Reveal {
 
 /**
  * Плавное раскрытие растущего текста: курсор в requestAnimationFrame догоняет цель
- * (smooth-text.ts), граница — по словам. `animate=false` и prefers-reduced-motion — сразу
+ * (smooth-text.ts), граница – по словам. `animate=false` и prefers-reduced-motion – сразу
  * целиком, без потери текста. Снятие `animate` на лету дописывает остаток мгновенно.
  */
 export function useSmoothReveal(text: string, { animate, streaming = false, paced = false }: { animate: boolean; streaming?: boolean; paced?: boolean }): Reveal {
-  // Решение о prefers-reduced-motion — в эффекте: в рендере оно расходится с сервером (гидрация).
+  // Решение о prefers-reduced-motion – в эффекте: в рендере оно расходится с сервером (гидрация).
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
     if (prefersReducedMotion()) setReduced(true);
@@ -50,7 +50,7 @@ export function useSmoothReveal(text: string, { animate, streaming = false, pace
   const [shown, setShown] = useState(on ? 0 : text.length);
   const streamingRef = useRef(streaming);
   streamingRef.current = streaming;
-  // Телеметрия: сэмплер заводится лениво, только когда флаг включён (иначе — одна проверка за кадр).
+  // Телеметрия: сэмплер заводится лениво, только когда флаг включён (иначе – одна проверка за кадр).
   const samplerRef = useRef<StreamSampler | null>(null);
   const startRef = useRef(0);
 
@@ -63,7 +63,7 @@ export function useSmoothReveal(text: string, { animate, streaming = false, pace
     let raf = 0;
     let last = -1;
     const frame = (now: number) => {
-      // Первый кадр — как обычный (16 мс): отметка rAF и performance.now() бывают из разных часов.
+      // Первый кадр – как обычный (16 мс): отметка rAF и performance.now() бывают из разных часов.
       const dt = last < 0 ? 16 : now - last;
       last = now;
       const mode: RevealMode = paced ? 'paced' : streamingRef.current ? 'streaming' : 'settling';
@@ -139,7 +139,7 @@ export function renderReveal(text: string, from: number, to: number, r: Reveal, 
 
 /**
  * Текст реплики, который растёт плавно (стрим `delta` или готовая реплика в режиме `paced`).
- * Пока идёт раскрытие — каретка; для скринридера весь текст сразу, видимое — aria-hidden.
+ * Пока идёт раскрытие – каретка; для скринридера весь текст сразу, видимое – aria-hidden.
  */
 export function StreamingText({
   text,

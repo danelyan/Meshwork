@@ -35,7 +35,7 @@ describe('lighting presets', () => {
     expect(fill.position[0]).toBeLessThan(0);
     expect(fill.intensity).toBeLessThan(key.intensity / 5);
     expect(rim.position[2]).toBeLessThan(0);
-    // окружение — тёмная студия: стены почти чёрные, самый яркий софтбокс сверху-справа-спереди
+    // окружение – тёмная студия: стены почти чёрные, самый яркий софтбокс сверху-справа-спереди
     expect(rig.softbox?.wall).toBeLessThan(0.05);
     const brightest = [...(rig.softbox?.softboxes ?? [])].sort((a, b) => b.intensity - a.intensity)[0];
     expect(brightest?.position.every((v) => v > 0)).toBe(true);

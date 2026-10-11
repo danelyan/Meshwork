@@ -31,20 +31,20 @@ afterEach(() => {
 });
 
 describe('pickReviewItems', () => {
-  it('первое — верное, ближайшее по сложности к порогу грейда; второе — неверное', () => {
+  it('первое – верное, ближайшее по сложности к порогу грейда; второе – неверное', () => {
     // порог middle = -0.1
     const items = pickReviewItems([row(0, -1.2, true), row(1, 0.0, true), row(2, 1.5, false), row(3, -0.3, false)], 'middle');
     expect(items.map((i) => i.templateId)).toEqual(['t1', 't3']);
     expect(items[0]!.correct).toBe(true);
     expect(items[0]!.prompt.length).toBeLessThanOrEqual(500);
   });
-  it('нет неверных — второе верное; нет верных — первое неверное; детерминированно при ничьей', () => {
+  it('нет неверных – второе верное; нет верных – первое неверное; детерминированно при ничьей', () => {
     expect(pickReviewItems([row(0, 0, true), row(1, 0.5, true)], 'junior').map((i) => i.templateId)).toEqual(['t0', 't1']);
     expect(pickReviewItems([row(0, 2, false)], 'junior').map((i) => i.templateId)).toEqual(['t0']);
     const tie = [row(1, 0.3, true), row(0, -0.5, true)];
     expect(pickReviewItems(tie, 'middle')).toEqual(pickReviewItems([...tie].reverse(), 'middle'));
   });
-  it('без ответов — пусто (блок пропускается)', () => {
+  it('без ответов – пусто (блок пропускается)', () => {
     expect(pickReviewItems([], 'middle')).toEqual([]);
     expect(pickReviewItems([row(0, 0, null, null)], 'middle')).toEqual([]);
   });
@@ -104,7 +104,7 @@ describe('evaluateOwnership', () => {
   const dialog = [{ question: 'Разбор?', answer: 'Сначала я отфильтровал строки, потом посчитал группы и получилось сорок два.' }];
   const out = (status: string, quote: string) => ({ json: { quote, reason: 'потому что', status } });
 
-  it('объяснил с дословной цитатой — explained; без цитаты — partial', async () => {
+  it('объяснил с дословной цитатой – explained; без цитаты – partial', async () => {
     registerStubResponse('call_evaluator', () => out('explained', 'отфильтровал строки, потом посчитал группы'));
     expect((await evaluateOwnership(items, dialog, createStubProvider())).status).toBe('explained');
     registerStubResponse('call_evaluator', () => out('explained', 'выдуманная цитата которой нет в ответе'));
@@ -118,7 +118,7 @@ describe('evaluateOwnership', () => {
     });
     expect((await evaluateOwnership(items, dialog, createStubProvider())).status).toBe('not_checked');
   });
-  it('failed проходит как есть; в items — название и верность', async () => {
+  it('failed проходит как есть; в items – название и верность', async () => {
     registerStubResponse('call_evaluator', () => out('failed', ''));
     const r = await evaluateOwnership(items, dialog, createStubProvider());
     expect(r.status).toBe('failed');
@@ -142,7 +142,7 @@ describe('итог созвона', () => {
     expect(publicVerdict(verdict).testOwnership).toEqual({ status: 'failed', items: [{ title: 'Задание 0' }] });
     expect(JSON.stringify(publicVerdict(verdict))).not.toContain('Не помнит');
   });
-  it('карточка работодателя: статус из публичного вердикта; not_checked и отсутствие — без поля', () => {
+  it('карточка работодателя: статус из публичного вердикта; not_checked и отсутствие – без поля', () => {
     expect(summarizeQualifying(publicVerdict(verdict) as never).testOwnership).toBe('failed');
     const nc = { ...verdict, testOwnership: { ...verdict.testOwnership!, status: 'not_checked' } } as CallVerdict;
     expect(summarizeQualifying(publicVerdict(nc) as never)).not.toHaveProperty('testOwnership');

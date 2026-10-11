@@ -13,8 +13,8 @@ const START_RATE: RateRule = { limit: 30, windowMs: 10 * 60_000 };
 const Body = z.object({ vacancyId: z.string().min(1).max(64) });
 
 /**
- * POST /api/evaluate/blind/start {vacancyId} — 8 анонимных карточек вслепую (наш топ-3, BM25 топ-3, случайные),
- * перемешаны; источник каждой — в подписанном токене (1 час). Ничего не сохраняется.
+ * POST /api/evaluate/blind/start {vacancyId} – 8 анонимных карточек вслепую (наш топ-3, BM25 топ-3, случайные),
+ * перемешаны; источник каждой – в подписанном токене (1 час). Ничего не сохраняется.
  */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);

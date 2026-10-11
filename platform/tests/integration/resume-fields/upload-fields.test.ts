@@ -53,7 +53,7 @@ describe('api/uploads → поля профиля из резюме', () => {
     expect(d.employerPreview.experience).toMatchObject({ years: 6, roles: ['Backend Engineer'] });
   });
 
-  it('заполненное кандидатом не перетирается — предложение «в резюме указано иначе»', async () => {
+  it('заполненное кандидатом не перетирается – предложение «в резюме указано иначе»', async () => {
     const body = await (await POST(upload('filled'))).json();
     expect(body.profileFields.suggested).toEqual(expect.arrayContaining(['name', 'contact', 'experienceYears']));
     const c = await prisma.candidate.findUniqueOrThrow({ where: { id: 'filled' }, include: { profile: true } });

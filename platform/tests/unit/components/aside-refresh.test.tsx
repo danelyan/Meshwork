@@ -4,7 +4,7 @@ import { ASIDE_DEBOUNCE_MS, AsideProvider, useAsideRefresh } from '@/components/
 import { SceneAside } from '@/components/consultant/SceneAside';
 import { candidateSteps, type SceneAsideData } from '@/server/consultant/aside';
 
-// MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
+// MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) – в тестах роутера нет.
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));

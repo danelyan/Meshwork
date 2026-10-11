@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST `{ muted }` — «ИИ молчит / говорит»: пока замьючен, ИИ не вступает после ответов кандидата.
+ * POST `{ muted }` – «ИИ молчит / говорит»: пока замьючен, ИИ не вступает после ответов кандидата.
  * Размьют: если последним говорил кандидат, ИИ продолжает по плану (`aiText`). Нужно подключиться (join).
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {

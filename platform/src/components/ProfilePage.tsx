@@ -121,7 +121,7 @@ function RankingHoldNotice({ attempts }: { attempts: AttemptSummary[] }) {
   );
 }
 
-/** История попыток теста (R-C-07, lane test). Данные — /api/test/attempts; недоступны → блок пустой. */
+/** История попыток теста (R-C-07, lane test). Данные – /api/test/attempts; недоступны → блок пустой. */
 function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
   if (attempts.length === 0) return null;
   return (
@@ -143,7 +143,7 @@ function TestHistory({ attempts }: { attempts: AttemptSummary[] }) {
   );
 }
 
-/** История ответов опроса (C05): «было → стало» по шагам. Данные — /api/onboarding/history; недоступны → блок пустой. */
+/** История ответов опроса (C05): «было → стало» по шагам. Данные – /api/onboarding/history; недоступны → блок пустой. */
 function OnboardingHistory({ revisions }: { revisions: AnswerRevisionView[] }) {
   if (revisions.length === 0) return null;
   return (
@@ -211,7 +211,7 @@ export function ProfilePage() {
     setDetails(d?.employerPreview ? d : null);
   }
 
-  // ?print=1 — запасная печать страницы браузером, когда профиль загружен (основной PDF — файл /api/profile/pdf).
+  // ?print=1 – запасная печать страницы браузером, когда профиль загружен (основной PDF – файл /api/profile/pdf).
   useEffect(() => {
     if (!profile) return;
     if (new URLSearchParams(window.location.search).get('print') === '1') window.print();

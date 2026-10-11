@@ -1,6 +1,6 @@
 // Проверка подбора на чужом наборе (критерий 1, R-M-01…R-M-04): вакансии, кандидаты и разметка 0/1/2 →
 // НАШЕ ранжирование (тот же rankCandidates + dropUncovered, что подборка под потребность в кабинете) и
-// базовая линия → P@k, nDCG@k, MRR. Всё в памяти, без БД и сети; вход — граница доверия (Zod + лимиты).
+// базовая линия → P@k, nDCG@k, MRR. Всё в памяти, без БД и сети; вход – граница доверия (Zod + лимиты).
 import { z } from 'zod';
 
 import { GRADES } from '@/lib/grades';
@@ -11,7 +11,7 @@ import { catalogFromFile } from '../claims/catalog-file';
 import type { CatalogEntry } from '../claims/types';
 import { dropUncovered, rankCandidates, type CandidateEvidence } from '../employer/ranking';
 
-/** Лимиты входа: тело, число объектов, длины строк. Вычисление ≤ 50 × 1000 оценок — доли секунды. */
+/** Лимиты входа: тело, число объектов, длины строк. Вычисление ≤ 50 × 1000 оценок – доли секунды. */
 export const EVAL_LIMITS = {
   bodyBytes: 1024 * 1024,
   vacancies: 50,
@@ -63,7 +63,7 @@ export const EvaluateInput = z.object({
   k: z.number().int().min(1).max(EVAL_LIMITS.kMax).default(5),
   vacancies: z.array(Vacancy).min(1).max(EVAL_LIMITS.vacancies),
   candidates: z.array(Candidate).min(1).max(EVAL_LIMITS.candidates),
-  /** relevance[vacancyId][candidateId] = 0 | 1 | 2; кого нет — 0. */
+  /** relevance[vacancyId][candidateId] = 0 | 1 | 2; кого нет – 0. */
   relevance: z.record(Id, z.record(Id, z.union([z.literal(0), z.literal(1), z.literal(2)]))),
 });
 export type EvaluateInput = z.input<typeof EvaluateInput>;
@@ -85,7 +85,7 @@ export interface VacancyReport {
   title: string | null;
   specialization: string;
   grade: string;
-  /** Сколько кандидатов размечено релевантными (1 или 2). 0 — вакансия в среднее не входит. */
+  /** Сколько кандидатов размечено релевантными (1 или 2). 0 – вакансия в среднее не входит. */
   relevantCount: number;
   /** Сколько кандидатов наше ранжирование показало (после отсева, как в кабинете). */
   shown: number;
@@ -110,13 +110,13 @@ export interface EvaluateReport {
 /** Ошибка входа: текст для человека, без стека. */
 export class EvalInputError extends Error {}
 
-/** Обратный ранг первого релевантного (rel ≥ 1) в выдаче; не нашёлся — 0. */
+/** Обратный ранг первого релевантного (rel ≥ 1) в выдаче; не нашёлся – 0. */
 export function reciprocalRank(ranked: string[], rel: Record<string, number>): number {
   const i = ranked.findIndex((id) => (rel[id] ?? 0) > 0);
   return i < 0 ? 0 : 1 / (i + 1);
 }
 
-/** Базовая линия (как eval/matching/run.ts): своя специализация, больше утверждений — выше, без учёта требований. */
+/** Базовая линия (как eval/matching/run.ts): своя специализация, больше утверждений – выше, без учёта требований. */
 export function baselineRanking(candidates: CandidateEvidence[], spec: string): string[] {
   return candidates
     .filter((c) => c.specialization === spec)
@@ -164,7 +164,7 @@ export function parseInput(raw: unknown, catalog: Map<string, CatalogEntry>): Pa
   for (const c of data.candidates) for (const cl of c.claims) if (!catalog.has(cl.catalogId)) unknown.add(cl.catalogId);
   if (unknown.size) {
     const list = [...unknown].slice(0, 10).join(', ');
-    throw new EvalInputError(`Нет в каталоге утверждений: ${list}${unknown.size > 10 ? ` и ещё ${unknown.size - 10}` : ''}. Список id — на странице ниже`);
+    throw new EvalInputError(`Нет в каталоге утверждений: ${list}${unknown.size > 10 ? ` и ещё ${unknown.size - 10}` : ''}. Список id – на странице ниже`);
   }
   const vIds = new Set(data.vacancies.map((v) => v.id));
   const cIds = new Set(data.candidates.map((c) => c.id));
@@ -249,7 +249,7 @@ export function evaluate(raw: unknown, catalog = evalCatalog()): EvaluateReport 
   };
 }
 
-/** Тело запроса потоком с потолком в байтах; больше — 413, не JSON — понятная ошибка. */
+/** Тело запроса потоком с потолком в байтах; больше – 413, не JSON – понятная ошибка. */
 export async function readJsonLimited(req: Request, maxBytes = EVAL_LIMITS.bodyBytes): Promise<{ ok: true; value: unknown } | { ok: false; tooLarge: boolean }> {
   const declared = Number(req.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > maxBytes) return { ok: false, tooLarge: true };

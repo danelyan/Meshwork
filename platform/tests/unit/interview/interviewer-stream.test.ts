@@ -29,7 +29,7 @@ function llm(raws: string[]): LlmProvider & { n: number } {
 }
 
 describe('nextInterviewQuestion: потоковый режим', () => {
-  it('компетенция по плану — предложения уходят, реплика начинается с них', async () => {
+  it('компетенция по плану – предложения уходят, реплика начинается с них', async () => {
     const id = plannedFor(base, null).competency.id;
     const got: string[] = [];
     const r = await nextInterviewQuestion(base, llm([JSON.stringify({ answerSignal: 'none', competencyId: id, question: 'Привет, я интервьюер, у нас четыре блока. Расскажи про свой последний проект: за что отвечал лично ты?', done: false })]), undefined, { closable: false, onSentence: (t) => got.push(t) });
@@ -38,7 +38,7 @@ describe('nextInterviewQuestion: потоковый режим', () => {
     expect(r.meta.competencyId).toBe(id);
   });
 
-  it('компетенция не по плану — молчит, переформулировка; вторая попытка стримится', async () => {
+  it('компетенция не по плану – молчит, переформулировка; вторая попытка стримится', async () => {
     const id = plannedFor(base, null).competency.id;
     const got: string[] = [];
     const p = llm([

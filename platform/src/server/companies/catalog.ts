@@ -21,7 +21,7 @@ export async function listCompanyCards(): Promise<CompanyCard[]> {
   return buildCatalog(rows as CompanyRow[]);
 }
 
-/** null — компании нет или у неё нет открытых вакансий. */
+/** null – компании нет или у неё нет открытых вакансий. */
 export async function getCompanyDetail(id: string): Promise<CompanyDetail | null> {
   const row = await prisma.company.findUnique({ where: { id }, select: SELECT });
   if (!row || !row.vacancies.length) return null;

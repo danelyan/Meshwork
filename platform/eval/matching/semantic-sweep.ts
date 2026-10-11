@@ -1,5 +1,5 @@
 // Подбор веса семантического сигнала (semantic.ts, R-N-02) на расширенном наборе: P@5, nDCG@10, Recall@50 и число
-// вакансий, где наш подбор хуже BM25 больше чем на 0,05 (P@10 или nDCG@10) — тот же критерий, что в run.ts.
+// вакансий, где наш подбор хуже BM25 больше чем на 0,05 (P@10 или nDCG@10) – тот же критерий, что в run.ts.
 //   npx tsx eval/matching/semantic-sweep.ts [веса через запятую] [--write]   # --write: ключ semantic в results.json
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -47,7 +47,7 @@ if (process.argv[1]?.endsWith('semantic-sweep.ts')) {
     const path = join(dirname(fileURLToPath(import.meta.url)), 'results.json');
     const prev = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
     prev.semantic = {
-      note: 'Семантический сигнал (semantic.ts): вес 0 = формула по умолчанию (сигнал выключен). Расширенный набор, без бутстрепа; «хуже BM25» — вакансий, где P@10 или nDCG@10 ниже BM25 больше чем на 0,05 (как в run.ts).',
+      note: 'Семантический сигнал (semantic.ts): вес 0 = формула по умолчанию (сигнал выключен). Расширенный набор, без бутстрепа; «хуже BM25» – вакансий, где P@10 или nDCG@10 ниже BM25 больше чем на 0,05 (как в run.ts).',
       seed: SYN_SEED, profiles: syn.profiles.length, vacancies: syn.vacancies.length, rows,
     };
     writeFileSync(path, `${JSON.stringify(prev, null, 2)}\n`);

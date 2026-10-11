@@ -6,19 +6,19 @@ import { parseToolArguments, textOrJson, toolNameIndex, type Fetch } from './com
 
 /**
  * Yandex AI Studio, Responses API (`https://ai.api.cloud.yandex.net/v1/responses`)
- * через пакет `openai` с `baseURL` — так в quickstart Yandex (JS: `openai.responses.create`,
+ * через пакет `openai` с `baseURL` – так в quickstart Yandex (JS: `openai.responses.create`,
  * Python: `OpenAI(api_key, project=folder, base_url)`).
  *
  * Формат (Responses API, по доке OpenAI и курсу Yandex AI Studio):
  *  - модель `gpt://<folderId>/<model>`;
- *  - `instructions` = system; история — `input` из сообщений, вызовов `function_call`
+ *  - `instructions` = system; история – `input` из сообщений, вызовов `function_call`
  *    и результатов `function_call_output` (без `previous_response_id`: держим
- *    историю у себя, `store: false` — ПДн из резюме не хранятся у провайдера);
+ *    историю у себя, `store: false` – ПДн из резюме не хранятся у провайдера);
  *  - tools плоские: `{ type: 'function', name, description, parameters, strict }`;
- *  - строгий JSON — `text.format = { type: 'json_schema', name, schema, strict }`
- *    (курс AI Studio: `responses.parse(text_format=…)`); вместе с `tools` не шлём —
+ *  - строгий JSON – `text.format = { type: 'json_schema', name, schema, strict }`
+ *    (курс AI Studio: `responses.parse(text_format=…)`); вместе с `tools` не шлём –
  *    дока «Структурированный вывод» запрещает совмещать, схема уходит в instructions.
- * Авторизация: `Authorization: Api-Key <ключ>`; IAM-токен (`t1.…`) — `Bearer`.
+ * Авторизация: `Authorization: Api-Key <ключ>`; IAM-токен (`t1.…`) – `Bearer`.
  */
 export interface YandexResponsesConfig {
   apiKey: string;
@@ -59,7 +59,7 @@ export function toResponsesInput(req: CompleteRequest): InputItem[] {
   for (const m of req.messages) {
     if (m.role === 'tool') {
       if (!m.toolCallId) throw new LlmError('bad_request', 'Сообщение tool без toolCallId');
-      // Результат без предшествующего вызова Responses API не примет — подстрахуемся текстом.
+      // Результат без предшествующего вызова Responses API не примет – подстрахуемся текстом.
       if (!names.has(m.toolCallId)) {
         items.push({ role: 'user', content: `Результат инструмента (${m.toolCallId}):\n${toolContent(m)}` });
       } else {
@@ -86,7 +86,7 @@ export function toResponsesBody(
 ) {
   const strict = cfg.strict ?? false;
   // Дока AI Studio «Структурированный вывод»: параметры формата ответа не совмещать с `tools`
-  // в одном запросе. Если вызывающий прислал и то и другое — схема уходит текстом в instructions.
+  // в одном запросе. Если вызывающий прислал и то и другое – схема уходит текстом в instructions.
   const nativeSchema = (cfg.supportsJsonSchema ?? true) && !req.tools?.length;
   const body: Record<string, unknown> = {
     model,
@@ -161,7 +161,7 @@ export function createYandexResponsesProvider(cfg: YandexResponsesConfig): LlmPr
     baseURL: cfg.baseUrl,
     project: cfg.folderId,
     defaultHeaders: { Authorization: yandexAuthHeader(cfg.apiKey) },
-    maxRetries: 0, // ретраи — в client.ts (только 429/5xx, с журналом)
+    maxRetries: 0, // ретраи – в client.ts (только 429/5xx, с журналом)
     timeout: cfg.timeoutMs ?? 120_000,
     ...(cfg.fetch ? { fetch: cfg.fetch } : {}),
   });
@@ -175,7 +175,7 @@ export function createYandexResponsesProvider(cfg: YandexResponsesConfig): LlmPr
       const started = Date.now();
       let raw: ResponsesBody;
       try {
-        // Тело собираем сами (Yandex-совместимое подмножество) — типы SDK шире, чем нужно.
+        // Тело собираем сами (Yandex-совместимое подмножество) – типы SDK шире, чем нужно.
         const body = toResponsesBody(req, model, cfg) as unknown as OpenAI.Responses.ResponseCreateParamsNonStreaming;
         raw = (await client.responses.create(body, { signal })) as unknown as ResponsesBody;
       } catch (err) {

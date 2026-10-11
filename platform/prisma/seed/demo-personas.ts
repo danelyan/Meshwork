@@ -160,7 +160,7 @@ async function seedGranitEmployer(prisma: PrismaClient): Promise<void> {
   }
 }
 
-/** Приглашение компании «Гранит Софт» (фиксированный id — повторный сид обновляет, а не плодит). */
+/** Приглашение компании «Гранит Софт» (фиксированный id – повторный сид обновляет, а не плодит). */
 async function seedInvitation(prisma: PrismaClient, id: string, candidateId: string, status: 'sent' | 'accepted' | 'hired', ageDays: number): Promise<void> {
   const created = daysAgo(ageDays);
   const base = {
@@ -173,8 +173,8 @@ async function seedInvitation(prisma: PrismaClient, id: string, candidateId: str
   };
   await prisma.invitation.upsert({ where: { id }, update: base, create: { id, ...base } });
   // Принятое приглашение раскрывает имя и контакт только при согласии identity_disclosure с context.invitationId
-  // (consent/service.disclosedInvitationIds) — без него работодатель на демо видит «контакт откроется после принятия».
-  // Согласие живёт у User, а он у демо-персоны появляется только при первом входе (auth/users.ensureDemoCandidateUser) —
+  // (consent/service.disclosedInvitationIds) – без него работодатель на демо видит «контакт откроется после принятия».
+  // Согласие живёт у User, а он у демо-персоны появляется только при первом входе (auth/users.ensureDemoCandidateUser) –
   // поэтому сид заводит пользователя сам, теми же полями; вход потом найдёт его по candidateId и ничего не перепишет.
   if (status !== 'sent') {
     const c = await prisma.candidate.findUniqueOrThrow({ where: { id: candidateId }, select: { name: true, email: true } });
@@ -197,7 +197,7 @@ async function seedInvitation(prisma: PrismaClient, id: string, candidateId: str
 
 /**
  * Персоны этапов 3–8 показывают путь после знакомства. Общий демо-аккаунт могли сбросить («пройти онбординг заново»,
- * dev-панель) — тогда вместо этапа жюри видит знакомство с начала. Каждый сид (и деплой) возвращает их в «знакомство пройдено».
+ * dev-панель) – тогда вместо этапа жюри видит знакомство с начала. Каждый сид (и деплой) возвращает их в «знакомство пройдено».
  */
 async function healOnboardedPersonas(prisma: PrismaClient): Promise<void> {
   const ids = CANDIDATE_PERSONAS.filter((p) => (p.stage ?? 0) >= 3).map((p) => p.id);

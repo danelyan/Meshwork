@@ -34,7 +34,7 @@ export async function listCandidateSubmissions(candidateId: string): Promise<Can
 export interface PendingQuestions {
   total: number;
   byCompany: { companyName: string; count: number }[];
-  /** Идёт сессия «только вопросы» — продолжить её. */
+  /** Идёт сессия «только вопросы» – продолжить её. */
   activeSessionId: string | null;
 }
 

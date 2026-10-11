@@ -1,5 +1,5 @@
 // Видео с камеры в созвоне с Кирой (kind=qualifying): тот же механизм хранения, что в комнате интервью
-// (<CALL_DATA_DIR>/calls/<id>/video), тот же доступ (работодателю — после принятого приглашения с раскрытием Г5),
+// (<CALL_DATA_DIR>/calls/<id>/video), тот же доступ (работодателю – после принятого приглашения с раскрытием Г5),
 // удаление при отзыве Г2 и по сроку хранения вместе с аудио; без действующего Г2 видео не принимается.
 import { existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
@@ -87,7 +87,7 @@ afterAll(async () => {
 });
 
 describe('видео в созвоне с Кирой (qualifying)', () => {
-  it('хранится файлом рядом с аудио; кандидату — всегда, работодателю — только после принятого приглашения с раскрытием', async () => {
+  it('хранится файлом рядом с аудио; кандидату – всегда, работодателю – только после принятого приглашения с раскрытием', async () => {
     const id = await startQualifying();
     const up = await upload(id);
     expect(up.status).toBe(201);
@@ -113,7 +113,7 @@ describe('видео в созвоне с Кирой (qualifying)', () => {
     expect((await json<CallView>(await viewRoute(jsonRequest(`/api/call/${id}`, 'GET', undefined, cookieEmp()), ctx(id)))).videoSegments).toEqual([seg]);
   });
 
-  it('отзыв согласия на запись (Г2) удаляет видео вместе с аудио; новые сегменты после отзыва — 409', async () => {
+  it('отзыв согласия на запись (Г2) удаляет видео вместе с аудио; новые сегменты после отзыва – 409', async () => {
     const id = await startQualifying();
     expect((await upload(id)).status).toBe(201);
     expect(existsSync(videoDir(id))).toBe(true);

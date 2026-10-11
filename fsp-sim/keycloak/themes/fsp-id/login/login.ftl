@@ -4,7 +4,7 @@
 <#import "social-providers.ftl" as identityProviders>
 <#import "passkeys.ftl" as passkeys>
 <#--
-  Страница входа симулятора ФСП ID. Основа — login.ftl темы keycloak.v2 (Keycloak 26.5); добавлен блок
+  Страница входа симулятора ФСП ID. Основа – login.ftl темы keycloak.v2 (Keycloak 26.5); добавлен блок
   для жюри: что это за страница и вход выбранным участником в одно нажатие (resources/js/quick-login.js
   берёт участников и общий демо-пароль у API реестра на том же адресе). Флажок «Запомнить меня» убран:
   платформа каждый раз просит войти заново.

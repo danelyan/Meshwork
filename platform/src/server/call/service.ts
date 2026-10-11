@@ -1,5 +1,5 @@
 // Сервис созвона (lane call, ADR 0003): старт, реплики, завершение с вердиктом, чтение по роли,
-// аудио кандидата. Транскрипт — CallSession.transcriptJson; запись в него — под блокировкой строки.
+// аудио кандидата. Транскрипт – CallSession.transcriptJson; запись в него – под блокировкой строки.
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '../db';
@@ -21,7 +21,7 @@ import { listVideoSegments, readVideoSegment, saveVideoSegment, type VideoSegmen
 import type { InterruptBody } from './schemas';
 import { REVIEW_QUESTIONS, reviewState } from './test-review';
 import { MAX_UTTERANCE_CHARS, type StartCallBody } from './schemas';
-import type { CallKind, CallStatus, CallVerdict, CallView, ClientTurnTiming, QuestionLevel, TranscriptEntry, TurnResult } from './types';
+import type { CallKind, CallStatus, CallVerdict, CallView, QuestionLevel, TranscriptEntry, TurnResult } from './types';
 
 /** Публичный STUN для WebRTC (defense-room; ADR 0003: P2P, сигналинг через наш API). */
 export const ICE_SERVERS = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }] as const;
@@ -62,7 +62,7 @@ function driverSession(row: Row, transcript = transcriptOf(row)): DriverSession 
   return { id: row.id, candidateId: row.candidateId, kind: row.kind, projectSubmissionId: row.projectSubmissionId, transcript };
 }
 
-/** Ждёт ли созвон ответа кандидата: последняя реплика — вопрос ИИ (с meta). */
+/** Ждёт ли созвон ответа кандидата: последняя реплика – вопрос ИИ (с meta). */
 export function awaitingAnswer(transcript: readonly TranscriptEntry[]): boolean {
   const last = transcript[transcript.length - 1];
   return Boolean(last && last.role === 'ai' && last.meta);
@@ -88,7 +88,7 @@ function answeredCount(transcript: readonly TranscriptEntry[]): number {
   return questionTurns(transcript).filter((t) => t.answer !== null).length;
 }
 
-/** Вопросы ИИ в транскрипте (обычные, этап разбора теста, дополнительные) — для общего лимита реплик. */
+/** Вопросы ИИ в транскрипте (обычные, этап разбора теста, дополнительные) – для общего лимита реплик. */
 export function aiQuestionCount(transcript: readonly TranscriptEntry[]): number {
   return transcript.filter((e) => e.role === 'ai' && e.meta).length;
 }
@@ -101,7 +101,7 @@ export function closingFor(driver: { closingLine?: string }, transcript: readonl
 
 /**
  * Потолок обычных вопросов: лимит вида созвона, но так, чтобы вместе с этапом разбора теста (если у кандидата есть
- * попытка) и итоговой репликой реплик ИИ было не больше CALL_LIMITS.maxAiTurns. Сбой подсчёта этапа — считаем,
+ * попытка) и итоговой репликой реплик ИИ было не больше CALL_LIMITS.maxAiTurns. Сбой подсчёта этапа – считаем,
  * что этапа нет (созвон не ломается).
  */
 async function regularCapOf(driver: CallDriver, session: DriverSession): Promise<number> {
@@ -198,10 +198,10 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
   const driver = callDriver(body.kind);
   const projectSubmissionId = body.projectSubmissionId ?? null;
   // Сабмит проекта нужен только защите: у остальных видов чужой или несуществующий id упирался бы во внешний ключ (500).
-  if (body.kind !== 'defense' && projectSubmissionId) throw errors.badRequest('projectSubmissionId — только для защиты проекта');
-  // Г3 (ADR 0005): созвон и защиту оценивает ИИ — без согласия на ИИ-оценку не начинаем.
+  if (body.kind !== 'defense' && projectSubmissionId) throw errors.badRequest('projectSubmissionId – только для защиты проекта');
+  // Г3 (ADR 0005): созвон и защиту оценивает ИИ – без согласия на ИИ-оценку не начинаем.
   await assertAiAssessmentConsent(candidateId);
-  // Г2: согласия на запись не было — спросить; отозвано — созвон идёт текстом без записи голоса (addAudio закрыт).
+  // Г2: согласия на запись не было – спросить; отозвано – созвон идёт текстом без записи голоса (addAudio закрыт).
   if ((await callRecordingMode(candidateId)) === 'ask') {
     throw new AppError('call_consent_required', 'Перед первым созвоном нужно согласие на запись', 409, { version: CALL_RECORDING_CONSENT_VERSION });
   }
@@ -232,7 +232,7 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
     data: { candidateId, kind: body.kind, projectSubmissionId, policyVersion: CALL_RECORDING_CONSENT_VERSION, transcriptJson: [] },
     select: rowSelect,
   });
-  // Первый вопрос — вне транзакции (LLM медленная); пишется под блокировкой.
+  // Первый вопрос – вне транзакции (LLM медленная); пишется под блокировкой.
   const q = await driver.nextQuestion(driverSession(created as Row, []), llm);
   const row = await prisma.$transaction(async (tx) => {
     const cur = await lockCall(tx, created.id);
@@ -256,7 +256,7 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
 export interface TurnTiming {
   /** Генерация реплики ИИ целиком (вопрос, этап разбора или итог), мс. */
   llmMs: number;
-  /** От начала генерации до первого предложения, отданного клиенту (utterance_delta), мс; нет — не стримилось. */
+  /** От начала генерации до первого предложения, отданного клиенту (utterance_delta), мс; нет – не стримилось. */
   firstSentenceMs: number | null;
   /** Сколько предложений ушло потоком. */
   sentences: number;
@@ -267,7 +267,7 @@ export interface TurnTiming {
 export async function submitTurn(
   candidateId: string,
   sessionId: string,
-  input: { text?: string; audioRef?: string; sttMs?: number },
+  input: { text?: string; audioRef?: string },
   llm: LlmProvider,
   obs?: { timing?: TurnTiming },
 ): Promise<TurnResult> {
@@ -275,7 +275,7 @@ export async function submitTurn(
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
   await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её
   const text = (input.text ?? '').replace(/\r\n/g, '\n').trim();
-  // Сегмент должен существовать. Текст уже распознан в /audio или браузером — второй раз STT не зовём.
+  // Сегмент должен существовать. Текст уже распознан в /audio или браузером – второй раз STT не зовём.
   if (input.audioRef) await assertSegment(sessionId, input.audioRef);
   if (!text) throw new AppError('empty_answer', 'Не удалось разобрать ответ - скажи ещё раз или напиши текстом', 400);
   if (text.length > MAX_UTTERANCE_CHARS) throw new AppError('answer_too_long', `Ответ длиннее ${MAX_UTTERANCE_CHARS} символов`, 400);
@@ -285,15 +285,10 @@ export async function submitTurn(
     const cur = await lockCall(tx, sessionId);
     if (cur.status !== 'active') throw errors.conflict('Созвон уже завершён');
     const t = transcriptOf(cur);
-    // Ждём ответа на вопрос ИИ; если ИИ не успел ответить на прошлую реплику (сбой) — реплика дописывается,
+    // Ждём ответа на вопрос ИИ; если ИИ не успел ответить на прошлую реплику (сбой) – реплика дописывается,
     // и вопрос генерируется заново. После закрывающей реплики (без meta) отвечать некому.
     if (!awaitingAnswer(t) && t[t.length - 1]?.role !== 'candidate') throw errors.conflict('Ответ на этот вопрос уже принят');
-    const e = entry(t, cur.startedAt, {
-      role: 'candidate',
-      text,
-      ...(input.audioRef ? { audioRef: input.audioRef } : {}),
-      ...(input.audioRef && input.sttMs !== undefined ? { timing: { sttMs: input.sttMs } } : {}),
-    });
+    const e = entry(t, cur.startedAt, { role: 'candidate', text, ...(input.audioRef ? { audioRef: input.audioRef } : {}) });
     const next = [...t, e];
     const upd = (await tx.callSession.update({
       where: { id: sessionId },
@@ -318,10 +313,10 @@ export async function submitTurn(
   const hardMax = driver.limits.hardMaxQuestions ?? driver.limits.maxQuestions;
   const asked = aiQuestionCount(transcript);
   // Общий лимит реплик ИИ (CALL_LIMITS.maxAiTurns): обычных вопросов не больше, чем остаётся после этапа разбора
-  // теста и итоговой реплики. Сбой подсчёта этапа созвон не ломает — считаем, что этапа нет.
+  // теста и итоговой реплики. Сбой подсчёта этапа созвон не ломает – считаем, что этапа нет.
   const regularCap = interim ? driver.limits.maxQuestions : await regularCapOf(driver, driverSession(saved.row, transcript));
   const closing = () => closingFor(driver, transcript);
-  // Этап «разбор задания теста» (11.10): после обычных вопросов — до 2 реплик ИИ; сбой этапа созвон не ломает.
+  // Этап «разбор задания теста» (11.10): после обычных вопросов – до 2 реплик ИИ; сбой этапа созвон не ломает.
   const review = async (allowStart: boolean) => {
     if (interim || !driver.nextReviewQuestion) return null;
     publishCall(sessionId, { type: 'ai_state', state: 'thinking' });
@@ -352,14 +347,14 @@ export async function submitTurn(
     aiText = closing();
     done = true;
   } else if (interim && (!probe || answered >= hardMax || asked + 1 >= CALL_LIMITS.maxAiTurns)) {
-    // Дополнительные вопросы по неопределённым темам заданы — дальше finish досчитает только их.
+    // Дополнительные вопросы по неопределённым темам заданы – дальше finish досчитает только их.
     aiText = closing();
     done = true;
   } else if (!interim && answered >= regularCap) {
     await closeOrReview();
   } else {
     publishCall(sessionId, { type: 'ai_state', state: 'thinking' });
-    // Потоковый режим: предложения вопроса уходят по SSE до конца генерации (stream.ts). closable — этот ход
+    // Потоковый режим: предложения вопроса уходят по SSE до конца генерации (stream.ts). closable – этот ход
     // может закрыть созвон ответом модели «достаточно» (тогда вопрос заранее не озвучивается).
     const afterIndex = saved.entry.index;
     const stream = getEnv().CALL_STREAMING
@@ -393,9 +388,9 @@ export async function submitTurn(
     const cur = await lockCall(tx, sessionId);
     const t = transcriptOf(cur);
     if (cur.status !== 'active') throw errors.conflict('Созвон уже завершён');
-    // Пока ИИ думал, мог вступить работодатель — вопрос всё равно добавляется после его реплики.
+    // Пока ИИ думал, мог вступить работодатель – вопрос всё равно добавляется после его реплики.
     if (awaitingAnswer(t)) throw errors.conflict('Следующий вопрос уже задан');
-    const e = entry(t, cur.startedAt, { role: 'ai', text: aiText, ...(meta ? { meta } : {}), timing: { ...timing } });
+    const e = entry(t, cur.startedAt, { role: 'ai', text: aiText, ...(meta ? { meta } : {}) });
     await tx.callSession.update({ where: { id: sessionId }, data: { transcriptJson: [...t, e] as unknown as Prisma.InputJsonValue } });
     return e;
   });
@@ -408,9 +403,9 @@ export async function submitTurn(
 // ---------------------------------------------------------------------------
 /**
  * Клиент остановил озвучку и сообщает, сколько предложений реплики ИИ прозвучало. В транскрипте остаётся
- * только услышанное (как в moko: история = реально услышанное), хвост — в meta.interrupted.tail: интервьюер
+ * только услышанное (как в moko: история = реально услышанное), хвост – в meta.interrupted.tail: интервьюер
  * знает, что мысль не договорена, оценщик видит вопрос таким, каким его услышал кандидат. Перебивать можно
- * только текущий вопрос (последняя реплика — ИИ с meta); повтор — идемпотентен.
+ * только текущий вопрос (последняя реплика – ИИ с meta); повтор – идемпотентен.
  */
 export async function interruptAi(candidateId: string, sessionId: string, body: InterruptBody): Promise<TranscriptEntry> {
   const row = await loadOwn(candidateId, sessionId);
@@ -444,7 +439,7 @@ export async function interruptAi(candidateId: string, sessionId: string, body: 
 // ---------------------------------------------------------------------------
 // Идущие завершения по созвону: двойной клик «Завершить» или повтор запроса ждут ту же оценку, а не запускают
 // оценщик второй раз (раньше оба запроса проходили счётчик попыток и делали по 3–5 вызовов LLM; отладка 11.10).
-// В памяти процесса: стенд — один инстанс; между процессами защищает счётчик finishAttempts.
+// В памяти процесса: стенд – один инстанс; между процессами защищает счётчик finishAttempts.
 const FINISH_KEY = Symbol.for('fsp.call.finishing');
 const finishing: Map<string, Promise<CallView>> = ((globalThis as unknown as Record<symbol, Map<string, Promise<CallView>> | undefined>)[FINISH_KEY] ??= new Map());
 
@@ -454,7 +449,7 @@ export async function finishCall(candidateId: string, sessionId: string, llm: Ll
     await running.catch(() => undefined);
     return buildView(await loadOwn(candidateId, sessionId), CANDIDATE_ACCESS);
   }
-  await loadOwn(candidateId, sessionId); // чужой созвон — 404 раньше, чем 409 о согласии
+  await loadOwn(candidateId, sessionId); // чужой созвон – 404 раньше, чем 409 о согласии
   await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её: оценщик не запускается
   const p = finishCallOnce(candidateId, sessionId, llm);
   finishing.set(sessionId, p);
@@ -473,13 +468,13 @@ async function finishCallOnce(candidateId: string, sessionId: string, llm: LlmPr
   const transcript = transcriptOf(row);
 
   if (answeredCount(transcript) === 0) {
-    // Ни одного ответа — оценивать нечего: созвон отменён, без вердикта.
+    // Ни одного ответа – оценивать нечего: созвон отменён, без вердикта.
     const upd = await prisma.callSession.updateMany({ where: { id: sessionId, status: 'active' }, data: { status: 'cancelled', finishedAt: new Date() } });
     if (upd.count === 1) publishCall(sessionId, { type: 'status', status: 'cancelled' });
     return buildView(await loadOwn(candidateId, sessionId), CANDIDATE_ACCESS);
   }
 
-  // Каждый запуск оценщика — 3–6 вызовов LLM: запуски считаются атомарно, повторы после 503 ограничены.
+  // Каждый запуск оценщика – 3–6 вызовов LLM: запуски считаются атомарно, повторы после 503 ограничены.
   const max = CALL_LIMITS.maxFinishAttempts;
   const claimed = await prisma.callSession.updateMany({
     where: { id: sessionId, status: 'active', finishAttempts: { lt: max } },
@@ -530,7 +525,7 @@ async function finishCallOnce(candidateId: string, sessionId: string, llm: LlmPr
         const e = entry(t, cur.startedAt, { role: 'ai', text: probeText(q.text), meta: q.meta });
         const upd = (await tx.callSession.update({
           where: { id: sessionId },
-          // Промежуточная оценка — не попытка завершения: попытка возвращается, иначе созвон с дополнительным
+          // Промежуточная оценка – не попытка завершения: попытка возвращается, иначе созвон с дополнительным
           // вопросом мог бы упереться в maxFinishAttempts при первом же сбое оценщика на итоговом завершении.
           data: {
             transcriptJson: [...t, e] as unknown as Prisma.InputJsonValue,
@@ -585,7 +580,7 @@ export async function getCallForViewer(who: CallPrincipal, sessionId: string): P
 /**
  * Созвоны кандидата, свежие первыми (профиль: карта глубины последнего завершённого). Только виды с драйвером:
  * строки защиты проекта (в том числе ожидающие, defense-room/pending.ts) отдаёт свой API defense-room, вид для них
- * здесь не строится — иначе весь список (и блок согласия в GET /api/call) падал с 501.
+ * здесь не строится – иначе весь список (и блок согласия в GET /api/call) падал с 501.
  */
 export async function listCalls(candidateId: string, kind?: CallKind): Promise<CallView[]> {
   const kinds = callDriverKinds();
@@ -599,7 +594,7 @@ export async function listCalls(candidateId: string, kind?: CallKind): Promise<C
   return Promise.all(rows.map((r) => buildView(r as Row, CANDIDATE_ACCESS)));
 }
 
-/** Последний вердикт квалифицирующего созвона — для профиля и (позже) карточки работодателя. */
+/** Последний вердикт квалифицирующего созвона – для профиля и (позже) карточки работодателя. */
 export async function latestQualifyingVerdict(candidateId: string): Promise<CallVerdict | null> {
   const row = await prisma.callSession.findFirst({
     where: { candidateId, kind: 'qualifying', status: 'finished' },
@@ -607,26 +602,6 @@ export async function latestQualifyingVerdict(candidateId: string): Promise<Call
     select: { verdictJson: true },
   });
   return (row?.verdictJson as unknown as CallVerdict | null) ?? null;
-}
-
-/**
- * Телеметрия хода из браузера (POST /api/call/{id}/telemetry): водопад «конец речи → первый звук» дописывается
- * в `timing.client` реплики ИИ с этим index. Повтор — перезаписывает. Созвон может быть уже завершён: замер
- * последней реплики приходит после finish.
- */
-export async function recordTurnTelemetry(candidateId: string, sessionId: string, body: { index: number; client: ClientTurnTiming }): Promise<TranscriptEntry> {
-  await loadOwn(candidateId, sessionId);
-  return prisma.$transaction(async (tx) => {
-    const cur = await lockCall(tx, sessionId);
-    const t = transcriptOf(cur);
-    const i = t.findIndex((e) => e.index === body.index && e.role === 'ai');
-    if (i < 0) throw errors.notFound('Реплика ИИ не найдена');
-    const e: TranscriptEntry = { ...t[i]!, timing: { ...(t[i]!.timing ?? {}), client: body.client } };
-    const next = [...t.slice(0, i), e, ...t.slice(i + 1)];
-    await tx.callSession.update({ where: { id: sessionId }, data: { transcriptJson: next as unknown as Prisma.InputJsonValue } });
-    console.info('[call] client timing', JSON.stringify({ sessionId, index: body.index, ...body.client }));
-    return e;
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -642,7 +617,7 @@ export async function addAudio(candidateId: string, sessionId: string, pcm: Uint
   const recordingOn = async () => (await callRecordingMode(candidateId)) === 'audio';
   const audioRef = await saveSegment(sessionId, pcm, recordingOn);
   if (!row.audioPath) await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: callAudioDir(sessionId).rel } });
-  // Гонка с отзывом Г2: отзыв ставит revokedAt, затем удаляет файлы. Если он пришёлся между проверкой и записью —
+  // Гонка с отзывом Г2: отзыв ставит revokedAt, затем удаляет файлы. Если он пришёлся между проверкой и записью –
   // убираем свой сегмент сами и снимаем audioPath (порядок «записать → audioPath → перепроверить» закрывает окно).
   if (!(await recordingOn())) {
     await removeSegment(sessionId, audioRef);
@@ -663,17 +638,17 @@ export async function addAudio(candidateId: string, sessionId: string, pcm: Uint
   return { audioRef, text };
 }
 
-/** Сегмент видео с камеры (комната звонка): сохраняется файлом созвона, в БД — ничего. */
+/** Сегмент видео с камеры (комната звонка): сохраняется файлом созвона, в БД – ничего. */
 export async function addVideo(candidateId: string, sessionId: string, bytes: Uint8Array, startMs: number): Promise<VideoSegment> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
-  // Видео — часть записи созвона (Г2, пункт о камере): без действующего согласия не сохраняем, как и аудио.
+  // Видео – часть записи созвона (Г2, пункт о камере): без действующего согласия не сохраняем, как и аудио.
   const recordingOn = async () => (await callRecordingMode(candidateId)) === 'audio';
   if (!(await recordingOn())) throw new AppError('call_recording_off', 'Запись созвона отключена в «Моих согласиях» - видео не сохраняется', 409);
   const seg = await saveVideoSegment(sessionId, bytes, startMs);
   // audioPath помечает «у созвона есть файлы»: по нему работают очистка по сроку и отзыв Г2 (каталог calls/<id> целиком).
   if (!row.audioPath) await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: callAudioDir(sessionId).rel } });
-  // Гонка с отзывом Г2 (как в addAudio): отзыв пришёлся между проверкой и записью — убираем свой сегмент сами.
+  // Гонка с отзывом Г2 (как в addAudio): отзыв пришёлся между проверкой и записью – убираем свой сегмент сами.
   if (!(await recordingOn())) {
     await removeSegment(sessionId, `video/${seg.name}`);
     throw new AppError('call_recording_off', 'Запись созвона отключена в «Моих согласиях» - видео не сохраняется', 409);
@@ -681,7 +656,7 @@ export async function addVideo(candidateId: string, sessionId: string, bytes: Ui
   return seg;
 }
 
-/** Сегмент видео: кандидату — всегда, работодателю — после принятого приглашения (как аудио). */
+/** Сегмент видео: кандидату – всегда, работодателю – после принятого приглашения (как аудио). */
 export async function getVideo(who: CallPrincipal, sessionId: string, segment: string): Promise<Buffer> {
   const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, kind: true } });
   if (!row) throw errors.notFound('Созвон не найден');

@@ -5,5 +5,5 @@
 .option { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
 .gear { display: none; place-items: center; width: 24px; height: 24px; background: none; border: 0; color: var(--muted); cursor: pointer; }
 @media (pointer: coarse) { .gear { display: inline-grid; } }
-/* Кнопка записи: касание — не прокрутка, долгое нажатие — не выделение и не системное меню. */
+/* Кнопка записи: касание – не прокрутка, долгое нажатие – не выделение и не системное меню. */
 .pressable { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }

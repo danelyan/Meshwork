@@ -52,7 +52,7 @@ export interface Athlete {
   disciplines: DisciplineCode[];
   member_since: string;
   status: 'active';
-  /** Логин и почта пользователя ФСП ID (Keycloak); почта — example.com, писем никто не получает. */
+  /** Логин и почта пользователя ФСП ID (Keycloak); почта – example.com, писем никто не получает. */
   username: string;
   email: string;
   /** Запись внесена вручную через песочницу стенда (а не генератором набора). */

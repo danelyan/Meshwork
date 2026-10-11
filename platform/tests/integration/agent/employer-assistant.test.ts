@@ -24,9 +24,9 @@ async function conversation(profileId = PROFILE) {
   return (await prisma.employerConversation.create({ data: { employerProfileId: profileId } })).id;
 }
 
-async function turn(text: string, conversationId: string, opts = {}, page?: { path: string; vacancyId?: string | null }) {
+async function turn(text: string, conversationId: string, opts = {}) {
   const events: EmployerAgentEvent[] = [];
-  await runEmployerTurn({ employerProfileId: PROFILE, conversationId, text, ...(page ? { page } : {}) }, (e) => events.push(e), undefined, opts);
+  await runEmployerTurn({ employerProfileId: PROFILE, conversationId, text }, (e) => events.push(e), undefined, opts);
   const msg = events.filter((e) => e.type === 'message').at(-1) as { text: string } | undefined;
   return { events, text: msg?.text ?? '' };
 }
@@ -84,7 +84,7 @@ describe('помощник работодателя (БД)', () => {
     await prisma.$disconnect();
   });
 
-  it('граница приватности: выдача и разбор без имён, почт и цитат — и до, и после принятия приглашения', async () => {
+  it('граница приватности: выдача и разбор без имён, почт и цитат – и до, и после принятия приглашения', async () => {
     const pay = DEMO_POOL[0]!;
     await prisma.invitation.create({
       data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: pay.id, vacancyId: PAY_VAC, message: 'Платёжная команда', salaryFrom: 230000, salaryTo: 230000, status: 'accepted' },
@@ -111,7 +111,7 @@ describe('помощник работодателя (БД)', () => {
     await expect(tool('draft_invitation').handler(ctx(), { candidateId: pay.id })).rejects.toMatchObject({ status: 404 });
   });
 
-  it('черновик приглашения не отправляет; лимит 20/сутки — сообщает, не обходит', async () => {
+  it('черновик приглашения не отправляет; лимит 20/сутки – сообщает, не обходит', async () => {
     const pay = DEMO_POOL[0]!;
     const d = (await tool('draft_invitation').handler(ctx(), { candidateId: pay.id, vacancyId: PAY_VAC })) as InvitationDraft & { sent: false };
     expect(d).toMatchObject({ blocked: null, sent: false, vacancyId: PAY_VAC, limit: { sent: 0, limit: 20, left: 20 } });
@@ -129,7 +129,7 @@ describe('помощник работодателя (БД)', () => {
     expect(d2.limit.left).toBe(0);
   });
 
-  it('чужая потребность — 404; несколько активных без id — ошибка со списком для уточнения', async () => {
+  it('чужая потребность – 404; несколько активных без id – ошибка со списком для уточнения', async () => {
     await expect(tool('match_for_need').handler({ ...ctx(), companyId: 'co-other' }, { vacancyId: PAY_VAC, limit: 5 })).rejects.toMatchObject({ status: 404 });
     await expect(tool('match_for_need').handler(ctx(), { limit: 5 })).rejects.toMatchObject({ status: 400, message: expect.stringContaining(PAY_VAC) });
   });
@@ -143,13 +143,13 @@ describe('помощник работодателя (БД)', () => {
     expect(await prisma.vacancy.count()).toBe(before);
   });
 
-  it('цикл с моделью (stub): инструменты помощника, purpose employer_assistant; кандидатский инструмент — unknown_tool', async () => {
+  it('цикл с моделью (stub): инструменты помощника, purpose employer_assistant; кандидатский инструмент – unknown_tool', async () => {
     const purposes: string[] = [];
     registerStubResponse('employer_assistant', (req) => {
       purposes.push(req.purpose);
       const last = req.messages.at(-1);
       if (last?.role === 'user') return { kind: 'tool_calls', toolCalls: [{ id: 't1', name: 'get_profile', arguments: {} }, { id: 't2', name: 'match_for_need', arguments: { vacancyId: PAY_VAC, limit: 3 } }] };
-      return { kind: 'text', text: 'Под потребность нашлись кандидаты — карточки ниже.' };
+      return { kind: 'text', text: 'Под потребность нашлись кандидаты – карточки ниже.' };
     });
     const conv = await conversation();
     const { events, text } = await turn('Подбери под Backend платежей', conv);
@@ -206,7 +206,7 @@ describe('помощник работодателя (БД)', () => {
     expect(kinds).toEqual(['user', 'candidates', 'message', 'user', 'invitation_draft', 'message', 'user', 'message']);
   });
 
-  it('демо: несколько потребностей и нет подсказки — вопрос с вариантами, а не первая попавшаяся; ответ вариантом — подборка', async () => {
+  it('демо: несколько потребностей и нет подсказки – вопрос с вариантами, а не первая попавшаяся; ответ вариантом – подборка', async () => {
     process.env.LLM_STUB_DEMO = 'true';
     resetEnvCache();
     const conv = await conversation();
@@ -246,7 +246,7 @@ describe('помощник работодателя (БД)', () => {
     expect(sseNames(before).every(([, n]) => n === undefined)).toBe(true);
     expect(before).not.toContain(pay.name);
 
-    // приглашение отправлено, но не принято — по-прежнему псевдоним
+    // приглашение отправлено, но не принято – по-прежнему псевдоним
     const inv = await prisma.invitation.create({
       data: { companyId: COMPANY, employerProfileId: PROFILE, candidateId: pay.id, vacancyId: PAY_VAC, message: 'Платёжная команда', salaryFrom: 230000, salaryTo: 230000, status: 'sent' },
     });
@@ -262,7 +262,7 @@ describe('помощник работодателя (БД)', () => {
     expect(after).not.toContain(other.name);
     expect(after).not.toContain(`${pay.id}@example.test`);
 
-    // восстановление ленты — то же правило
+    // восстановление ленты – то же правило
     const restored = await loadLastEmployerChat(PROFILE);
     const cards = restored.items.flatMap((i) => (i.role === 'agent' && i.event.type === 'candidates' ? i.event.block.items : []));
     expect(cards.find((c) => c.candidateId === pay.id)?.name).toBe(pay.name);
@@ -274,49 +274,6 @@ describe('помощник работодателя (БД)', () => {
       expect(history, secret).not.toContain(secret);
       expect(modelSaw.join('\n'), secret).not.toContain(secret);
     }
-  });
-
-  it('демо: профиль компании и проектное задание выбирают свои инструменты; страница вакансии снимает переспрос', async () => {
-    process.env.LLM_STUB_DEMO = 'true';
-    resetEnvCache();
-    const plan = async (text: string, page?: { path: string; vacancyId?: string | null }) =>
-      (await import('@/server/agent/employer/demo')).planDemoCall({ ...ctx(), conversationId: await conversation() }, text, page);
-    const desc = 'Описание: Мы делаем платёжные сервисы для малого бизнеса';
-    const company = await plan(`Поправь описание компании. ${desc}`);
-    expect(company.name).toBe('draft_company_profile');
-    expect((company.arguments as { description: string }).description).toContain('платёжные сервисы');
-    expect((await plan('Поправь контакт компании')).name).toBe('ask_user');
-    expect((await plan('Контакт компании: hr@example.com')).arguments).toMatchObject({ contact: 'hr@example.com' });
-    // Несколько активных вакансий: без страницы - вопрос, со страницей - сразу задание по ней.
-    expect((await plan('Сделай тестовое задание')).name).toBe('ask_user');
-    const withPage = await plan('Сделай задание', { path: '/employer/vacancies/x', vacancyId: PAY_VAC });
-    expect(withPage).toMatchObject({ name: 'create_project_task_draft', arguments: { vacancyId: PAY_VAC } });
-    // Чужой id молча игнорируется.
-    expect((await plan('Сделай задание', { path: '/employer', vacancyId: 'no-such' })).name).toBe('ask_user');
-    // Подбор без уточнений на странице вакансии идёт по ней.
-    expect(await plan('Покажи кандидатов', { path: '/employer', vacancyId: PAY_VAC })).toMatchObject({ name: 'match_for_need', arguments: { vacancyId: PAY_VAC } });
-  });
-
-  it('page в ходе: чужая вакансия не попадает в системный блок, своя - попадает по названию', async () => {
-    const { employerPageNote } = await import('@/server/agent/employer/loop');
-    const own = await employerPageNote(COMPANY, { path: '/employer', vacancyId: PAY_VAC });
-    expect(own).toContain(PAY_VAC);
-    expect(own).toContain('Страница работодателя');
-    expect(await employerPageNote(COMPANY, { path: '/employer', vacancyId: 'other-company-vac' })).not.toContain('other-company-vac');
-    expect(await employerPageNote(COMPANY, null)).toBeNull();
-  });
-
-  it('API: page валидируется (путь /employer, длина), без page ход работает как раньше', async () => {
-    process.env.LLM_STUB_DEMO = 'true';
-    resetEnvCache();
-    const emp = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: PROFILE })}`;
-    const post = (page: unknown) => assistantPost(jsonRequest('/x', 'POST', { text: 'что у меня есть?', page }, emp));
-    expect((await post({ path: '/employer/vacancies/v1', vacancyId: PAY_VAC })).status).toBe(200);
-    expect((await post({ path: '/employer' })).status).toBe(200);
-    expect((await post(null)).status).toBe(200);
-    expect((await post({ path: '/admin' })).status).toBe(400);
-    expect((await post({ path: `/employer/${'a'.repeat(200)}` })).status).toBe(400);
-    expect((await post({ path: '/employer', vacancyId: 'v'.repeat(65) })).status).toBe(400);
   });
 
   it('API: только работодатель (401/403), SSE c conversation и done', async () => {

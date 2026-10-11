@@ -7,12 +7,12 @@ import { AssistantCandidateSchema, toAssistantCandidate } from '../cards';
 
 import { resolveVacancy, type EmployerTool } from './shared';
 
-/** Сколько кандидатов просматриваем, чтобы найти позицию (весь пул демо-стенда — десятки). */
+/** Сколько кандидатов просматриваем, чтобы найти позицию (весь пул демо-стенда – десятки). */
 const EXPLAIN_SCAN = 1_000;
 
 const Input = z.object({
   candidateId: z.string().min(1).max(64).describe('candidateId из карточки подборки'),
-  vacancyId: z.string().min(1).max(64).optional().describe('Потребность; не указана — единственная активная, иначе поиск по базе'),
+  vacancyId: z.string().min(1).max(64).optional().describe('Потребность; не указана – единственная активная, иначе поиск по базе'),
 });
 const Output = z.discriminatedUnion('inSelection', [
   z
@@ -21,7 +21,7 @@ const Output = z.discriminatedUnion('inSelection', [
       target: z.string(),
       total: z.number().int(),
       candidate: AssistantCandidateSchema,
-      /** Из чего сложился балл (ranking.ts, веса — weights.ts). */
+      /** Из чего сложился балл (ranking.ts, веса – weights.ts). */
       breakdown: z.object({ coverage: z.number(), category: z.number(), fsp: z.number(), stack: z.number(), specPenalty: z.number() }),
       provenCount: z.number().int(),
       leader: z.object({ alias: z.string(), score: z.number(), covered: z.number().int(), total: z.number().int() }).nullable(),
@@ -32,7 +32,7 @@ const Output = z.discriminatedUnion('inSelection', [
 
 /**
  * Почему кандидат в подборке и почему на этом месте: покрытие требований, уровни
- * доказательств, прибавки за категорию, ФСП и стек. Ничего не пересчитывает —
+ * доказательств, прибавки за категорию, ФСП и стек. Ничего не пересчитывает –
  * читает RankedCandidate из той же выдачи, что кабинет.
  */
 export const explainCandidate: EmployerTool = {

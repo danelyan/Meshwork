@@ -7,12 +7,12 @@ import type { FspProviderMode } from './client';
 import type { FspRegistryResult } from './registry';
 
 /**
- * Привязка ФСП ID к профилю без изменения схемы: состояние — `Candidate.fspState` (как раньше),
- * идентичность участника — источник `Source(kind = fsp, origin = "fsp:<sub>", ownershipVerified = true)`
+ * Привязка ФСП ID к профилю без изменения схемы: состояние – `Candidate.fspState` (как раньше),
+ * идентичность участника – источник `Source(kind = fsp, origin = "fsp:<sub>", ownershipVerified = true)`
  * со снимком `ExtractedDoc` (в `meta`: fspSubject, fspName, achievements на момент привязки). Владение подтверждено
- * проверенным ID-токеном — поэтому `ownershipVerified`. Прежние ФСП-источники кандидата теряют этот флаг.
+ * проверенным ID-токеном – поэтому `ownershipVerified`. Прежние ФСП-источники кандидата теряют этот флаг.
  *
- * Уникальность «один sub — один кандидат» на стенде намеренно не вводится: три демо-участника общие
+ * Уникальность «один sub – один кандидат» на стенде намеренно не вводится: три демо-участника общие
  * для всех, кто проверяет стенд. В проде её нужно включить (иначе чужую историю можно привязать дважды).
  */
 
@@ -60,7 +60,7 @@ export async function linkedFspSubject(candidateId: string): Promise<{ sub: stri
   return { sub: meta.fspSubject, name: typeof meta.fspName === 'string' ? meta.fspName : null, achievements };
 }
 
-/** Что показать в настройках кандидата. Без привязки через ФСП ID — только состояние. */
+/** Что показать в настройках кандидата. Без привязки через ФСП ID – только состояние. */
 export async function fspLinkView(candidateId: string, state: FspState): Promise<FspLinkView> {
   const linked = state === 'not_linked' ? null : await linkedFspSubject(candidateId);
   if (!linked) return { state, subject: null, name: null, achievements: [] };

@@ -1,4 +1,4 @@
-// Г2 — запись созвона (ADR 0003, п. 4; ADR 0005): `Consent.kind = call_recording`, версия — CALL_RECORDING_CONSENT_VERSION.
+// Г2 – запись созвона (ADR 0003, п. 4; ADR 0005): `Consent.kind = call_recording`, версия – CALL_RECORDING_CONSENT_VERSION.
 // Решение по отзыву (ADR 0005): после отзыва новые созвоны идут в текстовом режиме без записи голоса
 // (сервер не принимает аудио), а сохранённые записи удаляются сразу (consent/service.revokeConsent).
 import { getSetting } from '../admin/settings';
@@ -8,12 +8,12 @@ import { CALL_RECORDING_CONSENT_PARAGRAPHS, CALL_RECORDING_CONSENT_VERSION } fro
 
 export { CALL_RECORDING_CONSENT_PARAGRAPHS, CALL_RECORDING_CONSENT_VERSION, userIdForCandidate };
 
-/** Текст Г2 для показа перед созвоном — с фактическим сроком хранения аудио (env). */
+/** Текст Г2 для показа перед созвоном – с фактическим сроком хранения аудио (env). */
 export const callRecordingConsentText = async (): Promise<readonly string[]> => consentTextFor('call_recording', await getSetting('call.recordingRetentionDays')).paragraphs;
 
 /**
- * Режим записи: `audio` — согласие действует; `text` — кандидат отозвал согласие, созвон без записи голоса;
- * `ask` — согласия не было (или текст обновился): перед созвоном спросить.
+ * Режим записи: `audio` – согласие действует; `text` – кандидат отозвал согласие, созвон без записи голоса;
+ * `ask` – согласия не было (или текст обновился): перед созвоном спросить.
  */
 export type CallRecordingMode = 'audio' | 'text' | 'ask';
 
@@ -28,7 +28,7 @@ export async function hasCallConsent(candidateId: string): Promise<boolean> {
   return (await callRecordingMode(candidateId)) === 'audio';
 }
 
-/** Записать согласие на запись созвона: только текущая версия текста. Повтор — без дубля. */
+/** Записать согласие на запись созвона: только текущая версия текста. Повтор – без дубля. */
 export async function recordCallConsent(candidateId: string, version: string): Promise<{ version: string; acceptedAt: string }> {
   if (version !== CALL_RECORDING_CONSENT_VERSION) throw errors.conflict('Текст согласия на запись обновился - обнови страницу');
   const userId = await userIdForCandidate(candidateId);

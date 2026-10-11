@@ -1,5 +1,5 @@
 // Готовность к созвону («созвон только когда есть о чём говорить», решение владельца 11.10):
-// qualifying — есть утверждения о навыках; interview — есть категория из теста; повтор того же вида —
+// qualifying – есть утверждения о навыках; interview – есть категория из теста; повтор того же вида –
 // не раньше чем через сутки после последнего завершённого созвона с вердиктом. defense не затрагивается.
 import { prisma } from '../db';
 import { AppError } from '../errors';
@@ -16,7 +16,7 @@ export interface CallReadiness {
   retryAt?: string;
 }
 
-/** Есть о чём говорить: qualifying — утверждения (не отклонённые), interview — категория из теста. */
+/** Есть о чём говорить: qualifying – утверждения (не отклонённые), interview – категория из теста. */
 export async function contentReadiness(candidateId: string, kind: CallKind): Promise<CallReadiness> {
   if (kind === 'qualifying') {
     const n = await prisma.claim.count({ where: { candidateId, status: { not: 'rejected' } } });

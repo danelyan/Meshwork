@@ -19,8 +19,8 @@ function assertEnabled() {
 }
 
 /**
- * Список демо-аккаунтов. `personas` — курированный набор для окна входа и /demo (server/demo/personas.ts):
- * только те персоны, чьи записи есть в БД. `candidates`/`employers` — все демо-аккаунты (пул подборки и
+ * Список демо-аккаунтов. `personas` – курированный набор для окна входа и /demo (server/demo/personas.ts):
+ * только те персоны, чьи записи есть в БД. `candidates`/`employers` – все демо-аккаунты (пул подборки и
  * валидации в списки входа не попадает, но остаётся для API и тестов).
  */
 export const GET = withErrors(async () => {
@@ -49,7 +49,7 @@ export const GET = withErrors(async () => {
 });
 
 const LoginBody = z.union([
-  // Новый пользователь — только с галкой согласия (версия текста; решение владельца 09.10).
+  // Новый пользователь – только с галкой согласия (версия текста; решение владельца 09.10).
   z.object({ fresh: z.literal(true), consent: z.string().min(1).max(64) }),
   z.object({ restartUserId: z.string().min(1).max(64) }),
   z.object({ restartCandidateId: z.string().min(1).max(64) }),
@@ -60,7 +60,7 @@ const LoginBody = z.union([
 /**
  * Вход за демо-кандидата (`{ candidateId }`) или демо-работодателя
  * (`{ employerUserId }`): подписанная кука `cid` аккаунта (lane auth). Демо-кандидату
- * аккаунт создаётся при первом входе. Не-демо — 404.
+ * аккаунт создаётся при первом входе. Не-демо – 404.
  */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);

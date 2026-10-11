@@ -1,4 +1,4 @@
-// Общие семейства: HTTP, безопасность, регулярные выражения (ADR 0003, дополнение 11.10). a, b — ПРЕДЛОЖЕНИЕ (экспертные).
+// Общие семейства: HTTP, безопасность, регулярные выражения (ADR 0003, дополнение 11.10). a, b – ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 
@@ -49,7 +49,7 @@ export const httpMethodProps: TaskGenerator = commonFamily({
       answerKey: numbers(key),
       explanation:
         prop === 'idempotent'
-          ? 'Идемпотентны GET, HEAD, OPTIONS, PUT, DELETE; POST и PATCH — нет (их повтор может создать или изменить ресурс ещё раз).'
+          ? 'Идемпотентны GET, HEAD, OPTIONS, PUT, DELETE; POST и PATCH – нет (их повтор может создать или изменить ресурс ещё раз).'
           : 'Безопасны GET, HEAD, OPTIONS (и TRACE); PUT и DELETE идемпотентны, но не безопасны.',
       params: { prop, methods: reqs.map((r) => r.m) },
     };
@@ -146,7 +146,7 @@ export const idempotencyKey: TaskGenerator = commonFamily({
         continue;
       }
       const saved = store.get(e.key);
-      if (saved && e.t - saved.at < ttl) continue; // повтор (тот же ответ) или 422 при другом теле — без списания
+      if (saved && e.t - saved.at < ttl) continue; // повтор (тот же ответ) или 422 при другом теле – без списания
       store.set(e.key, { at: e.t, body: e.body });
       charges++;
     }
@@ -154,14 +154,14 @@ export const idempotencyKey: TaskGenerator = commonFamily({
       prompt: [
         'Платёжный API обрабатывает POST /payments так:',
         `• ключ Idempotency-Key хранится ${ttl} мин с момента первой обработки; повтор с тем же ключом в этот срок возвращает сохранённый ответ без нового списания;`,
-        '• тот же ключ с другим телом в этот срок — ответ 422 без списания;',
+        '• тот же ключ с другим телом в этот срок – ответ 422 без списания;',
         '• после истечения срока ключ забыт, запрос обрабатывается как новый; запрос без ключа всегда списывает.',
-        'Клиент отправил запросы ниже (часть — повторы после таймаута). Сколько списаний произойдёт?',
+        'Клиент отправил запросы ниже (часть – повторы после таймаута). Сколько списаний произойдёт?',
       ].join('\n'),
       code: lines.join('\n'),
       answerHint: 'число списаний',
       answerKey: String(charges),
-      explanation: `Списание — при первом ключе, при ключе после ${ttl} мин и при каждом запросе без ключа; повторы и конфликтующие тела в срок хранения не списывают.`,
+      explanation: `Списание – при первом ключе, при ключе после ${ttl} мин и при каждом запросе без ключа; повторы и конфликтующие тела в срок хранения не списывают.`,
       params: { ttl, events: events.length },
     };
   },
@@ -257,8 +257,8 @@ export const sameSiteCookies: TaskGenerator = commonFamily({
         mode === 'Strict'
           ? 'Strict: cookie только в запросах, инициированных с того же сайта.'
           : mode === 'Lax'
-            ? 'Lax: тот же сайт плюс переходы верхнего уровня безопасным методом (GET-ссылка) с другого сайта; кросс-сайтовые POST, картинки, iframe и fetch — без cookie.'
-            : 'None (с Secure): cookie во всех запросах, включая кросс-сайтовые — защита от CSRF ложится на токены.',
+            ? 'Lax: тот же сайт плюс переходы верхнего уровня безопасным методом (GET-ссылка) с другого сайта; кросс-сайтовые POST, картинки, iframe и fetch – без cookie.'
+            : 'None (с Secure): cookie во всех запросах, включая кросс-сайтовые – защита от CSRF ложится на токены.',
       params: { mode, n: reqs.length },
     };
   },
@@ -282,8 +282,8 @@ export const jwtValidation: TaskGenerator = commonFamily({
     const good = () => ({ alg: 'RS256', sig: 'верна', iss: 'https://id.example', aud: 'orders-api', exp: now + rng.int(60, 3600), nbf: now - rng.int(0, 600) });
     type Tok = ReturnType<typeof good>;
     const defects: ((t: Tok) => Tok)[] = [
-      (t) => ({ ...t, alg: 'none', sig: '—' }),
-      (t) => ({ ...t, alg: 'HS256', sig: 'верна (ключ — публичный ключ RS256)' }),
+      (t) => ({ ...t, alg: 'none', sig: '–' }),
+      (t) => ({ ...t, alg: 'HS256', sig: 'верна (ключ – публичный ключ RS256)' }),
       (t) => ({ ...t, sig: 'не сходится' }),
       (t) => ({ ...t, exp: now - rng.int(1, 600) }),
       (t) => ({ ...t, nbf: now + rng.int(60, 600) }),
@@ -389,11 +389,11 @@ export const regexCaptures: TaskGenerator = commonFamily({
       got = [...text.matchAll(new RegExp(c.re, 'g'))].map((m) => m[1]!);
     }
     return {
-      prompt: 'Что выведет код (JavaScript)? Ответ — значения через запятую, в порядке вывода.',
+      prompt: 'Что выведет код (JavaScript)? Ответ – значения через запятую, в порядке вывода.',
       code: [`const text = ${JSON.stringify(text)};`, `for (const m of text.matchAll(/${c.re}/g)) console.log(m[1]);`].join('\n'),
       answerHint: 'значения через запятую, по порядку',
       answerKey: got.join(','),
-      explanation: 'matchAll с флагом g перебирает все непересекающиеся совпадения слева направо; m[1] — первая группа. \\b — граница слова, регистр учитывается.',
+      explanation: 'matchAll с флагом g перебирает все непересекающиеся совпадения слева направо; m[1] – первая группа. \\b – граница слова, регистр учитывается.',
       params: { re: c.re, text },
     };
   },
@@ -434,12 +434,12 @@ export const regexGreedy: TaskGenerator = commonFamily({
     return {
       prompt:
         ask === 'count'
-          ? 'Сколько элементов в массиве, который вернёт text.match(re) (JavaScript)? Если вернётся null — ответьте 0.'
-          : 'Какой длины (в символах) первое совпадение text.match(re)[0] (JavaScript)? Если совпадений нет — 0.',
+          ? 'Сколько элементов в массиве, который вернёт text.match(re) (JavaScript)? Если вернётся null – ответьте 0.'
+          : 'Какой длины (в символах) первое совпадение text.match(re)[0] (JavaScript)? Если совпадений нет – 0.',
       code: [`const text = ${JSON.stringify(text)};`, `const re = /${re}/g;`].join('\n'),
       answerHint: 'число',
       answerKey: String(key),
-      explanation: `Совпадения: ${ms.map((m) => JSON.stringify(m)).join(', ') || 'нет'}. Жадный квантификатор (+, *) захватывает максимум и откатывается; ленивый (+?, *?) — минимум; \\d* даёт и пустые совпадения.`,
+      explanation: `Совпадения: ${ms.map((m) => JSON.stringify(m)).join(', ') || 'нет'}. Жадный квантификатор (+, *) захватывает максимум и откатывается; ленивый (+?, *?) – минимум; \\d* даёт и пустые совпадения.`,
       params: { kind, re, ask },
     };
   },

@@ -23,10 +23,10 @@ const FLAG = {
   uneven_understanding: 'понимание неровное',
 } as const;
 
-/** Защиты кандидатов, принявших приглашение компании (ADR 0003): идущие — подключиться, завершённые — транскрипт и оценка. */
+/** Защиты кандидатов, принявших приглашение компании (ADR 0003): идущие – подключиться, завершённые – транскрипт и оценка. */
 export default async function EmployerCallsPage() {
   const s = await requirePageEmployer('/employer/calls');
-  // ADR 0005: без оферты и обязательства по данным — вместо данных кандидатов форма принятия условий.
+  // ADR 0005: без оферты и обязательства по данным – вместо данных кандидатов форма принятия условий.
   if ((await employerConsentsMissing(s.userId)).length) return <div className={styles.page}><h1>Защиты проектов</h1><EmployerConsentGate /></div>;
   const ctx = await loadEmployerContext(s.employerProfileId);
   const calls = await listEmployerCalls(ctx);

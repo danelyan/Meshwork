@@ -7,13 +7,13 @@ import { recalibrationFlags } from '@/server/admin/metrics/test-monitor';
 const base = { answered: 100, correctShare: 0.5, discrimination: 0.4, pairs: 100, irtA: 1, irtB: 0 };
 
 describe('правило перекалибровки', () => {
-  it('нормальное задание — без флагов', () => expect(recalibrationFlags(base)).toEqual([]));
-  it('мало ответов — выводов нет', () => expect(recalibrationFlags({ ...base, answered: 10, correctShare: 1 })).toEqual([]));
+  it('нормальное задание – без флагов', () => expect(recalibrationFlags(base)).toEqual([]));
+  it('мало ответов – выводов нет', () => expect(recalibrationFlags({ ...base, answered: 10, correctShare: 1 })).toEqual([]));
   it('слишком лёгкое и слишком трудное', () => {
     expect(recalibrationFlags({ ...base, correctShare: 0.98 }).join()).toContain('слишком лёгкое');
     expect(recalibrationFlags({ ...base, correctShare: 0.02 }).join()).toContain('слишком трудное');
   });
-  it('слабая корреляция — только при достаточном числе пар', () => {
+  it('слабая корреляция – только при достаточном числе пар', () => {
     expect(recalibrationFlags({ ...base, discrimination: 0.02 }).join()).toContain('слабо различает');
     expect(recalibrationFlags({ ...base, discrimination: 0.02, pairs: 5 })).toEqual([]);
   });

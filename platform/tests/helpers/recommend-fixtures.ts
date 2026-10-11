@@ -4,7 +4,7 @@ import { DEMO_TASKS, DEMO_VACANCIES } from '../../prisma/seed/recommend';
 
 /**
  * Каталог-фикстура: все catalogId из сида, формулировка «Утверждение <id>», один вес 2
- * (без weights по грейдам), смежность — из файла каталога.
+ * (без weights по грейдам), смежность – из файла каталога.
  */
 export function fixtureEntries(overrides: Record<string, Partial<CatalogEntry>> = {}): CatalogEntry[] {
   const ids = new Set<string>([

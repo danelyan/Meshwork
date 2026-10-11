@@ -11,7 +11,7 @@ import { Rng } from './rng.js';
 /**
  * Генератор синтетического реестра. Детерминирован: один seed → байт в байт тот же набор
  * (tests/generator.test.ts сверяет data/dataset.json с повторной генерацией).
- * Правила присвоения разрядов — упрощённая условность для демо, не ЕВСК.
+ * Правила присвоения разрядов – упрощённая условность для демо, не ЕВСК.
  */
 
 export const DEFAULT_SEED = 20261010;
@@ -365,7 +365,7 @@ function buildEvents(ctx: Ctx): void {
       specs.push({ kind: 'cup_final', season, discipline: d.code, regionCode: null });
       specs.push({ kind: 'championship', season, discipline: d.code, regionCode: null });
       specs.push({ kind: 'junior_championship', season, discipline: d.code, regionCode: null });
-      // Региональный чемпионат — в регионе, где по дисциплине достаточно спортсменов.
+      // Региональный чемпионат – в регионе, где по дисциплине достаточно спортсменов.
       const counts = new Map<string, number>();
       for (const a of ctx.athletes) if (a.disciplines.includes(d.code)) counts.set(a.region_code, (counts.get(a.region_code) ?? 0) + 1);
       const candidates = [...counts.entries()].filter(([, n]) => n >= (d.entrant_type === 'team' ? 7 : 5)).map(([code]) => code).sort();

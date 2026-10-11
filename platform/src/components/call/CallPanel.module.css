@@ -12,8 +12,6 @@
 
 .head { position: relative; flex: 1; min-height: 200px; }
 .body { flex: none; display: grid; gap: 10px; width: min(680px, 100%); margin: 0 auto; padding: 8px 24px 12px; max-height: 50%; overflow-y: auto; }
-/* На проверке устройств тело - весь экран: две карточки с превью камеры в полэкрана не влезают. */
-.panel[data-phase='devices'] .body { max-height: none; flex: 1 1 auto; align-content: start; }
 .line { font-size: var(--fs-lg); line-height: 1.5; text-align: center; text-wrap: balance; color: var(--call-on-stage); }
 .mine { font-size: var(--fs); line-height: 1.5; text-align: center; color: var(--call-on-stage-soft); font-style: italic; }
 .hint { font-size: var(--fs-sm); text-align: center; color: var(--call-on-stage-soft); }
@@ -70,5 +68,5 @@
   .ctl { min-width: 72px; }
 }
 
-/* Превью своей камеры (созвон с Кирой): угол сцены, зеркально — как в комнате интервью. */
+/* Превью своей камеры (созвон с Кирой): угол сцены, зеркально – как в комнате интервью. */
 .selfView { position: absolute; right: 12px; bottom: 12px; width: min(180px, 32%); aspect-ratio: 4 / 3; object-fit: cover; transform: scaleX(-1); border: 1px solid var(--call-on-stage-soft); background: var(--code-bg); }

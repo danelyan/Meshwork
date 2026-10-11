@@ -9,7 +9,7 @@ import styles from './consent.module.css';
 
 export const metadata: Metadata = { title: 'Согласие на обработку данных - MESHWORK' };
 
-/** Текст согласия (R-C-14) — ссылка из шага согласия онбординга. */
+/** Текст согласия (R-C-14) – ссылка из шага согласия онбординга. */
 export default function ConsentPage() {
   const { version, paragraphs } = CONSENT_TEXTS.pd_processing;
   return (

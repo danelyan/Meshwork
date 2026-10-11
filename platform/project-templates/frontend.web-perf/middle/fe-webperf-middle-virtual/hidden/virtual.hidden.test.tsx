@@ -117,7 +117,7 @@ describe('VirtualList', () => {
     expect(renderRow.mock.calls.map((c) => c[0]).sort((a, b) => a - b)).toEqual([7, 8, 9]);
   });
 
-  it('строка, оставшаяся в окне, сохраняет DOM-узел и локальное состояние; вернувшаяся — создаётся заново', () => {
+  it('строка, оставшаяся в окне, сохраняет DOM-узел и локальное состояние; вернувшаяся – создаётся заново', () => {
     setup({ renderRow: (i: number) => <input type="checkbox" aria-label={`отметка ${i}`} /> });
     const before = row(4);
     fireEvent.click(screen.getByLabelText('отметка 4'));

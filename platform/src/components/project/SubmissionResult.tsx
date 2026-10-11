@@ -25,7 +25,7 @@ export function RubricTable({ results }: { results: RubricResult[] }) {
                 {r.text}
                 <div className={emp.status}>{r.source === 'required' ? `обязательный${r.catalogId ? ` · ${r.catalogId}` : ''}` : 'пожелание'}</div>
               </td>
-              <td className={r.passed ? styles.pass : styles.fail}>{r.passed === null ? '—' : r.passed ? 'да' : 'нет'}</td>
+              <td className={r.passed ? styles.pass : styles.fail}>{r.passed === null ? '–' : r.passed ? 'да' : 'нет'}</td>
               <td>
                 {r.evidence}
                 {r.file && <div className={emp.status}>{r.file}</div>}

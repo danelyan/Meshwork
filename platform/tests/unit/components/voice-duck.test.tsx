@@ -5,7 +5,7 @@ import { CompanionVoiceProvider, useCompanionVoice } from '@/components/avatar/v
 
 /** duck вместо kill: рампа громкости на GainNode между analyser и выходом; stop возвращает полную громкость. */
 describe('CompanionVoice.duck', () => {
-  it('рампа к 0.12 за 120 мс, обратно к 1 за 250 мс; stop — сразу 1', () => {
+  it('рампа к 0.12 за 120 мс, обратно к 1 за 250 мс; stop – сразу 1', () => {
     const calls: unknown[][] = [];
     const gain = {
       value: 1,

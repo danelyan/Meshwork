@@ -26,7 +26,7 @@ describe('сгенерированные prompt.ts совпадают с .md (sc
 });
 
 describe('общий файл фактов о платформе', () => {
-  it('факты попадают во все три промпта подмножествами; остальное — в базе знаний (search_knowledge)', () => {
+  it('факты попадают во все три промпта подмножествами; остальное – в базе знаний (search_knowledge)', () => {
     expect(block.startsWith('<platform_facts>')).toBe(true);
     expect(block.endsWith('</platform_facts>')).toBe(true);
     expect(CONSULTANT_PROMPT).toContain(factsSubset(facts, ['F1', 'F4', 'F5', 'F7', 'F8', 'F10', 'F11', 'F12', 'F13', 'F15']));
@@ -50,19 +50,19 @@ describe('общий файл фактов о платформе', () => {
     }
   });
 
-  it('консультант и работодатель: сначала search_knowledge, веб-поиск — крайний случай и обезличенно', () => {
+  it('консультант и работодатель: сначала search_knowledge, веб-поиск – крайний случай и обезличенно', () => {
     for (const p of [CONSULTANT_PROMPT, EMPLOYER_PROMPT]) {
       expect(p).toContain('search_knowledge');
-      expect(p).toMatch(/web_search — только крайний случай/);
+      expect(p).toMatch(/web_search – только крайний случай/);
       expect(p).toMatch(/обезличенн/);
       expect(p).toMatch(/не инструкции/);
     }
   });
 
-  it('ключевые факты: цель анкеты ни на что не влияет, имя скрыто, нет истории ФСП — без штрафа', () => {
+  it('ключевые факты: цель анкеты ни на что не влияет, имя скрыто, нет истории ФСП – без штрафа', () => {
     expect(block).toMatch(/цель[^\n]*не влияют ни на подборку, ни на видимость профиля, ни на приглашения/);
     expect(block).toContain('Имени, контакта, цитат и резюме он не видит');
-    expect(block).toContain('Нет истории ФСП — без штрафа');
+    expect(block).toContain('Нет истории ФСП – без штрафа');
   });
 
   it('числа, которые возвращают инструменты, в промпты не зашиты', () => {
@@ -85,7 +85,7 @@ describe('правило «не знаю» и примеры', () => {
     }
   });
 
-  it('помощник работодателя с первого ответа объясняет, что нужно от работодателя (дом работодателя — чат, решение владельца 10.10)', () => {
+  it('помощник работодателя с первого ответа объясняет, что нужно от работодателя (дом работодателя – чат, решение владельца 10.10)', () => {
     expect(EMPLOYER_PROMPT).toContain('Первый ответ в разговоре');
     expect(EMPLOYER_PROMPT).toMatch(/направление, грейд, стек и вилку зарплаты/);
     expect(EMPLOYER_PROMPT).toMatch(/приглашение с зарплатой/);
@@ -134,13 +134,5 @@ describe('сборка промпта', () => {
   it('версия берётся из первой строки .md', () => {
     expect(promptVersion('<!-- version: consultant-v4 -->\n…')).toBe('consultant-v4');
     expect(() => promptVersion('без версии')).toThrow();
-  });
-
-  it('employer-v10: инструменты профиля компании и проектного задания, правило про страницу', () => {
-    expect(EMPLOYER_PROMPT_VERSION).toBe('employer-v10');
-    expect(EMPLOYER_PROMPT).toContain('draft_company_profile');
-    expect(EMPLOYER_PROMPT).toContain('create_project_task_draft');
-    expect(EMPLOYER_PROMPT).toContain('Страница работодателя');
-    expect(EMPLOYER_PROMPT).toMatch(/без переспроса/);
   });
 });

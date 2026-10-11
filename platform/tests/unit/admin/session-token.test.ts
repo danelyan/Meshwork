@@ -6,7 +6,7 @@ const SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
 const NOW = 1_800_000_000;
 
 describe('кука персонала fsp_admin: отдельный домен подписи', () => {
-  it('своя подпись принимается, истёкшая и подделанная — нет', () => {
+  it('своя подпись принимается, истёкшая и подделанная – нет', () => {
     const t = signAdminToken('sess1', SECRET, NOW);
     expect(verifyAdminToken(t, SECRET, NOW + 1)).toBe('sess1');
     expect(verifyAdminToken(t, SECRET, NOW + 13 * 3600)).toBeNull();
@@ -18,7 +18,7 @@ describe('кука персонала fsp_admin: отдельный домен �
     const cid = signUserSession({ userId: 'u1', role: 'employer', employerProfileId: 'e1' }, SECRET, NOW);
     expect(verifyAdminToken(cid, SECRET, NOW + 1)).toBeNull();
     expect(verifyAdminToken(signExpertToken('c1', SECRET, NOW), SECRET, NOW + 1)).toBeNull();
-    // и наоборот: кука персонала — не сессия пользователя
+    // и наоборот: кука персонала – не сессия пользователя
     expect(parseSession(signAdminToken('sess1', SECRET, NOW), SECRET, NOW + 1)).toBeNull();
   });
 

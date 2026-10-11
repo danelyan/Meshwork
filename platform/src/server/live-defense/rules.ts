@@ -1,4 +1,4 @@
-// Правила слотов живой защиты (ADR 0008, «Назначение живой защиты: слоты»). Чистые функции — без БД.
+// Правила слотов живой защиты (ADR 0008, «Назначение живой защиты: слоты»). Чистые функции – без БД.
 import { AppError } from '../errors';
 
 export const LIVE_SLOT_RULES = {
@@ -12,9 +12,9 @@ export const LIVE_SLOT_RULES = {
   maxCommentChars: 300,
   /** Комната открывается за 10 минут до начала. */
   roomOpensBeforeMs: 10 * 60 * 1000,
-  /** Опоздание больше 15 минут — no_show. */
+  /** Опоздание больше 15 минут – no_show. */
   noShowAfterMs: 15 * 60 * 1000,
-  /** Отмена — не позднее чем за 1 час. */
+  /** Отмена – не позднее чем за 1 час. */
   cancelBeforeMs: 60 * 60 * 1000,
   minReasonChars: 3,
   maxReasonChars: 300,
@@ -76,13 +76,13 @@ export interface DeriveInput {
   startsAt: Date | null;
   /** Сессия живой защиты: статус и когда кандидат начал (pending → active). */
   call: { status: 'active' | 'finished' | 'cancelled' | 'pending'; startedAt: Date } | null;
-  /** Когда работодатель компании впервые вошёл в комнату; null — не входил. */
+  /** Когда работодатель компании впервые вошёл в комнату; null – не входил. */
   employerJoinedAt: Date | null;
 }
 
 /**
  * Подстатус при чтении (без крона): scheduled → done, когда сессия защиты завершена;
- * опоздание больше 15 минут — флаг no_show у не пришедшей стороны.
+ * опоздание больше 15 минут – флаг no_show у не пришедшей стороны.
  */
 export function deriveSubStatus(d: DeriveInput, now: Date): { status: LiveDefenseSubStatus; noShow: LiveActor[] } {
   if (d.status !== 'scheduled' || !d.startsAt) return { status: d.status, noShow: [] };

@@ -21,7 +21,7 @@ export interface Recorded {
 export interface MockProvider {
   baseUrl: string;
   requests: Recorded[];
-  /** Ответы по очереди; когда очередь пуста — последний повторяется. */
+  /** Ответы по очереди; когда очередь пуста – последний повторяется. */
   script(path: string, ...responses: Scripted[]): void;
   close(): Promise<void>;
 }
@@ -38,7 +38,7 @@ export async function startMockProvider(): Promise<MockProvider> {
       try {
         body = raw ? JSON.parse(raw) : undefined;
       } catch {
-        /* не JSON — сохраняем строкой */
+        /* не JSON – сохраняем строкой */
       }
       requests.push({ method: req.method ?? '', url: req.url ?? '', headers: req.headers, body });
       const queue = scripts.get(req.url ?? '') ?? [];

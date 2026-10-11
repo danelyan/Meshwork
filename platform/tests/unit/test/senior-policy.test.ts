@@ -22,7 +22,7 @@ import type { Grade } from '@/server/types';
 
 const basePool: SelectableTemplate[] = poolFor('ai', 'ai.mlops')!.generators.map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
 /**
- * Расширенный банк (11.10): Senior-пул вдвое больше — копии Senior-шаблонов с другими id и b + 0,1. Основная фаза Senior
+ * Расширенный банк (11.10): Senior-пул вдвое больше – копии Senior-шаблонов с другими id и b + 0,1. Основная фаза Senior
  * всё равно ≤ SENIOR_MAIN_MAX, иначе Senior с неверными Senior-ответами не получает Middle в 1 клик.
  */
 const expandedPool: SelectableTemplate[] = [
@@ -67,7 +67,7 @@ describe(`Senior (${label})`, () => {
     expect(probeGrade('junior')).toBe('junior');
   });
 
-  it('заявка Senior: основная фаза — только Senior-задания, не дольше Senior-пула; Middle — весь пул', () => {
+  it('заявка Senior: основная фаза – только Senior-задания, не дольше Senior-пула; Middle – весь пул', () => {
     const seniorCount = pool.filter((t) => t.grade === 'senior').length;
     for (let seed = 1; seed <= 50; seed++) {
       for (const answer of [() => true, () => false, (t: SelectableTemplate) => t.grade !== 'senior']) {
@@ -77,7 +77,7 @@ describe(`Senior (${label})`, () => {
         });
         expect(r.phases.filter((p) => p === 'main').length).toBeLessThanOrEqual(Math.min(seniorCount, SENIOR_MAIN_MAX));
       }
-      // Middle-заявка видит и Junior-, и Middle-задания, Senior — тоже (пул подкатегории целиком).
+      // Middle-заявка видит и Junior-, и Middle-задания, Senior – тоже (пул подкатегории целиком).
       expect(new Set(play('middle', seed, () => true).shown.map((t) => t.grade)).size).toBeGreaterThan(1);
     }
     expect(nextStep({ pool, shown: [], responses: [], grade: 'senior' }).maxItems).toBe(Math.min(seniorCount, SENIOR_MAIN_MAX));
@@ -102,7 +102,7 @@ describe(`Senior (${label})`, () => {
   it('дозадавание Senior → только Middle-задания; объяснение называет Middle', () => {
     let probed = 0;
     for (let seed = 1; seed <= 200; seed++) {
-      // Неуверенный профиль: Senior неверно, Middle — через одно.
+      // Неуверенный профиль: Senior неверно, Middle – через одно.
       let k = 0;
       const r = play('senior', seed, (t) => (t.grade === 'senior' ? false : t.grade === 'middle' ? k++ % 2 === 0 : true));
       r.phases.forEach((p, i) => {

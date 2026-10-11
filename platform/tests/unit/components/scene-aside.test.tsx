@@ -6,7 +6,7 @@ import { AI_CONSENT_BLOCKER, HIDDEN_BLOCKER, type SceneAsideData, blockerNotes, 
 import type { OnboardingView } from '@/server/onboarding/types';
 import { liveStepCopy, pickLive } from '@/lib/live-step';
 
-// MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
+// MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) – в тестах роутера нет.
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 // MemoryCard uses the App Router for soft updates after editing onboarding facts.
@@ -31,28 +31,28 @@ describe('journey steps', () => {
     expect(s[4]!.note).toBe('после проверки проекта');
     expect(hintFor('candidate', s, undefined).title).toBe('ИИ-защита проекта');
   });
-  it('нет утверждений — шаг созвона просит приложить резюме или ссылки', () => {
+  it('нет утверждений – шаг созвона просит приложить резюме или ссылки', () => {
     const s = candidateSteps({ ...base, intro: true, category: { specialization: 'backend', grade: 'middle' } });
     expect(s[2]!.state).toBe('now');
     expect(s[2]!.note).toMatch(/резюме или ссылки/);
   });
-  it('принятое приглашение: «Приглашения» пройдено, «Живая защита» — сейчас', () => {
+  it('принятое приглашение: «Приглашения» пройдено, «Живая защита» – сейчас', () => {
     const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, project: true, aiDefense: true, invitations: 2, accepted: 1 });
     expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'done', 'done', 'done', 'now']);
     expect(hintFor('candidate', s, undefined).title).toBe('Живая защита');
   });
-  it('приглашение принято, проекта нет: «сейчас» — проект, защита ждёт сданного проекта', () => {
+  it('приглашение принято, проекта нет: «сейчас» – проект, защита ждёт сданного проекта', () => {
     const f = { ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, invitations: 1, accepted: 1 };
     const s = promoteNow(candidateSteps(f), 'project', true);
     expect(s.find((x) => x.id === 'project')!.state).toBe('now');
     expect(s.find((x) => x.id === 'live_defense')!.state).toBe('next');
     expect(s.find((x) => x.id === 'live_defense')!.note).toBe('после сданного проекта компания предложит слоты');
-    // созвона нет, приглашение принято — «сейчас» всё равно у проекта (так считает journeyState)
+    // созвона нет, приглашение принято – «сейчас» всё равно у проекта (так считает journeyState)
     const t = promoteNow(candidateSteps({ ...f, call: false }), 'project', true);
     expect(t.filter((x) => x.state === 'now').map((x) => x.id)).toEqual(['project']);
     expect(promoteNow(candidateSteps({ ...f, call: false }), 'project').find((x) => x.id === 'call')!.state).toBe('now');
   });
-  it('lane hired: найм — финальный этап «Нанят в …», весь путь пройден, подсказка про найм', () => {
+  it('lane hired: найм – финальный этап «Нанят в …», весь путь пройден, подсказка про найм', () => {
     const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, project: true, aiDefense: true, invitations: 1, accepted: 1, hired: { company: 'Северный Поток' } });
     expect(s.map((x) => x.id)).toEqual(['intro', 'test', 'call', 'project', 'ai_defense', 'invites', 'live_defense', 'hired']);
     expect(s.every((x) => x.state === 'done')).toBe(true);
@@ -136,7 +136,7 @@ describe('блок под текущий шаг', () => {
     expect(href({ stepBlock: { step: 'invitations', invitations: { pending: 1, accepted: 0, total: 1 } } }, /Открыть приглашения/)).toBe('/invitations');
   });
 
-  it('нет данных для блока — карточки нет', () => {
+  it('нет данных для блока – карточки нет', () => {
     render(<SceneAside data={{ ...base, stepBlock: { step: 'ai_defense', project: null } }} />);
     for (const id of STEP_CARDS) expect(screen.queryByTestId(id)).toBeNull();
     cleanup();
@@ -227,7 +227,7 @@ describe('колонка на время знакомства', () => {
     ({ role: 'candidate', later: false, onboarded: false, progress: { done: 2, total: 11 }, current: { id: 'grade', kind: 'one', label: 'Грейд' }, summary: null,
       history: [{ stepId: 'goal', label: 'Цель', answer: 'Подтвердить грейд' }, { stepId: 'specialization', label: 'Направление', answer: 'Engineering' }], ...over }) as unknown as OnboardingView;
 
-  it('режим знакомства — до итога, в том числе на паузе (необязательные вопросы ждут в чате)', () => {
+  it('режим знакомства – до итога, в том числе на паузе (необязательные вопросы ждут в чате)', () => {
     expect(onboardingMode(view({}))).toBe(true);
     expect(onboardingMode(view({ later: true }))).toBe(true);
     expect(onboardingMode(view({ onboarded: true }))).toBe(false);
@@ -245,7 +245,7 @@ describe('колонка на время знакомства', () => {
     expect(screen.queryByRole('navigation', { name: 'Твой путь' })).toBeNull();
   });
 
-  it('на паузе — «+ дополнить» следующим вопросом вместо строки «сейчас»', () => {
+  it('на паузе – «+ дополнить» следующим вопросом вместо строки «сейчас»', () => {
     render(<SceneAside data={guestAside(view({ later: true }))} />);
     expect(screen.getByRole('button', { name: '+ дополнить: грейд' })).toBeDefined();
     expect(screen.getByTestId('aside-progress').textContent).not.toContain('Сейчас');
@@ -256,7 +256,7 @@ describe('блокер шага', () => {
   const hint = { title: 'x', text: 'y' };
   const base: SceneAsideData = { role: 'candidate', steps: candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0 }), docs: null, hint };
 
-  it('stepBlocker: нет согласия на ИИ — у теста, созвона, проекта, защит; скрытый профиль — у приглашений', () => {
+  it('stepBlocker: нет согласия на ИИ – у теста, созвона, проекта, защит; скрытый профиль – у приглашений', () => {
     for (const step of ['test', 'call', 'project', 'ai_defense', 'live_defense'] as const) expect(stepBlocker(step, { aiConsent: false, hidden: false })).toBe(AI_CONSENT_BLOCKER);
     expect(stepBlocker('onboarding', { aiConsent: false, hidden: true })).toBeUndefined();
     expect(stepBlocker('waiting', { aiConsent: false, hidden: true })).toBe(HIDDEN_BLOCKER);
@@ -265,7 +265,7 @@ describe('блокер шага', () => {
     expect(HIDDEN_BLOCKER.href).toBe('/settings');
   });
 
-  it('blockerNotes: нота текущего шага — про согласие, «Приглашения» — «профиль скрыт»', () => {
+  it('blockerNotes: нота текущего шага – про согласие, «Приглашения» – «профиль скрыт»', () => {
     const steps = candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0 });
     const out = blockerNotes(steps, 'test', { aiConsent: false, hidden: true });
     expect(out.find((s) => s.id === 'test')!.note).toMatch(/согласие на оценку ИИ/);
@@ -284,7 +284,7 @@ describe('блокер шага', () => {
         <SceneAside data={data} />
       </AsideProvider>,
     );
-    expect(screen.getByTestId('step-test-blocker').textContent).toMatch(/Сначала — согласие на оценку ИИ/);
+    expect(screen.getByTestId('step-test-blocker').textContent).toMatch(/Сначала – согласие на оценку ИИ/);
     expect(screen.getByTestId('step-test-cta').className).toMatch(/ctaSecondary/);
     fireEvent.click(screen.getByRole('button', { name: 'Дать согласие' }));
     await vi.waitFor(() => expect(consentApi.grant).toHaveBeenCalledWith('ai_assessment', expect.any(String)));
@@ -294,7 +294,7 @@ describe('блокер шага', () => {
 
   it('скрытый профиль: блокер со ссылкой на /settings', () => {
     render(<SceneAside data={{ ...base, stepBlock: { step: 'waiting', invitations: { pending: 0, accepted: 0, total: 0 }, blocker: HIDDEN_BLOCKER } }} />);
-    expect(screen.getByTestId('step-invitations-blocker').textContent).toMatch(/Профиль скрыт — компании тебя не видят/);
+    expect(screen.getByTestId('step-invitations-blocker').textContent).toMatch(/Профиль скрыт – компании тебя не видят/);
     expect(screen.getByRole('link', { name: 'Открыть настройки' }).getAttribute('href')).toBe('/settings');
   });
 });
@@ -312,31 +312,31 @@ describe('живая защита: подстатусы', () => {
     return { text, links };
   };
 
-  it('нет предложения — компания предложит время, кнопка «Открыть приглашения»', () => {
+  it('нет предложения – компания предложит время, кнопка «Открыть приглашения»', () => {
     const c = card({ status: 'none' });
     expect(c.text).toMatch(/Компания предложит время; ты выберешь слот/);
     expect(c.links).toEqual([['Открыть приглашения', '/invitations']]);
   });
-  it('slots_proposed — выбрать слот', () => {
+  it('slots_proposed – выбрать слот', () => {
     const c = card({ status: 'slots_proposed', company: 'Северный Поток' });
-    expect(c.text).toMatch(/Компания предложила слоты — выбери время/);
+    expect(c.text).toMatch(/Компания предложила слоты – выбери время/);
     expect(c.text).toMatch(/Северный Поток/);
     expect(c.links).toEqual([['Выбрать слот', '/invitations']]);
   });
-  it('scheduled — дата и время по МСК; комната открыта — «Открыть комнату»', () => {
+  it('scheduled – дата и время по МСК; комната открыта – «Открыть комнату»', () => {
     let c = card({ status: 'scheduled', scheduledAt: at });
     expect(c.text).toMatch(/Защита назначена на .*12\.10 14:30 МСК/);
     expect(c.links).toEqual([['Открыть приглашения', '/invitations']]);
     c = card({ status: 'scheduled', scheduledAt: at, roomHref: '/defense-room/x' });
     expect(c.links).toEqual([['Открыть комнату', '/defense-room/x']]);
   });
-  it('done — ждём решение, без главной кнопки; no_show — компания может назначить новую', () => {
+  it('done – ждём решение, без главной кнопки; no_show – компания может назначить новую', () => {
     const d = card({ status: 'done' });
-    expect(d.text).toMatch(/Защита прошла — ждём решение компании/);
+    expect(d.text).toMatch(/Защита прошла – ждём решение компании/);
     expect(d.links).toEqual([]);
-    expect(card({ status: 'no_show' }).text).toMatch(/Защита не состоялась — компания может назначить новую/);
+    expect(card({ status: 'no_show' }).text).toMatch(/Защита не состоялась – компания может назначить новую/);
   });
-  it('нота шага в пути — коротко по подстатусу; из нескольких приглашений — самое живое', () => {
+  it('нота шага в пути – коротко по подстатусу; из нескольких приглашений – самое живое', () => {
     const steps = promoteNow(candidateSteps({ intro: true, introNote: '', confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, project: true, aiDefense: true, invitations: 1, accepted: 1 }), 'live_defense');
     expect(liveNote(steps, { status: 'slots_proposed' }).find((s) => s.id === 'live_defense')!.note).toBe('выбери слот');
     expect(liveNote(steps, { status: 'scheduled', scheduledAt: at }).find((s) => s.id === 'live_defense')!.note).toMatch(/назначена: .*14:30 МСК/);
@@ -350,7 +350,7 @@ describe('кулдауны теста и созвона', () => {
   const base: SceneAsideData = { role: 'candidate', steps: candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0 }), docs: null, hint };
   const now = new Date('2026-10-11T12:00:00Z');
 
-  it('тест: пересдача того же грейда через N дн., другой грейд — сейчас; нота шага', () => {
+  it('тест: пересдача того же грейда через N дн., другой грейд – сейчас; нота шага', () => {
     const c = retakeCopy({ grade: 'middle', nextAllowedAt: new Date('2026-10-20T10:00:00Z'), demo: false }, now);
     expect(c.note).toBe('пересдача Middle через 9 дн.');
     expect(c.blocker.text).toMatch(/^Пересдать Middle можно через 9 дн\. \(с .*МСК\)\. Другой грейд можно сдать уже сейчас\.$/);
@@ -362,7 +362,7 @@ describe('кулдауны теста и созвона', () => {
     expect(cooldownNote(base.steps, undefined)).toEqual(base.steps);
   });
 
-  it('созвон: «повторный созвон через N ч» — нота и блокер без кнопки', () => {
+  it('созвон: «повторный созвон через N ч» – нота и блокер без кнопки', () => {
     const c = callCooldownCopy('Повторный созвон - через 5 ч');
     expect(c.note).toBe('повторный созвон через 5 ч');
     render(<SceneAside data={{ ...base, stepBlock: { step: 'call', blocker: c.blocker } }} />);

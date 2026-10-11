@@ -1,6 +1,6 @@
 import type { Discipline, DisciplineCode, Partner, Region } from '../types.js';
 
-/** Пять дисциплин ФСП с сайта федерации (docs/fsp-overview.md). Критерии — условные названия. */
+/** Пять дисциплин ФСП с сайта федерации (docs/fsp-overview.md). Критерии – условные названия. */
 export const DISCIPLINES: Discipline[] = [
   {
     code: 'product',
@@ -48,7 +48,7 @@ export const DISCIPLINE_BY_CODE: Record<DisciplineCode, Discipline> = Object.fro
   DISCIPLINES.map((d) => [d.code, d]),
 ) as Record<DisciplineCode, Discipline>;
 
-/** Регионы с кодами субъектов РФ; веса — доля спортсменов в синтетическом наборе. */
+/** Регионы с кодами субъектов РФ; веса – доля спортсменов в синтетическом наборе. */
 export const REGIONS: Array<Region & { weight: number }> = [
   { code: '77', name: 'Москва', city: 'Москва', weight: 18 },
   { code: '78', name: 'Санкт-Петербург', city: 'Санкт-Петербург', weight: 12 },

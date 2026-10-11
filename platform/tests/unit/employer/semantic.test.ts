@@ -14,14 +14,14 @@ const target: MatchTarget = {
   needs: [{ catalogId: 'be.lang-core', weight: 3 }],
   stack: ['PostgreSQL'],
 };
-// «Postgres» в цитате: точная метка «PostgreSQL» не найдена (matchStack ищет подстроку метки), смежность — по n-граммам.
+// «Postgres» в цитате: точная метка «PostgreSQL» не найдена (matchStack ищет подстроку метки), смежность – по n-граммам.
 const cand: CandidateEvidence = {
   id: 'c1', specialization: 'backend', fspState: 'not_linked', category: null,
   claims: [{ catalogId: 'be.lang-core', level: 'artifact', statement: stmt('be.lang-core'), quote: 'Go, Postgres' }],
 };
 
 describe('семантический сигнал (смежные навыки)', () => {
-  it('пустой текст и пустой профиль — 0', () => {
+  it('пустой текст и пустой профиль – 0', () => {
     expect(textSimilarity('', 'PostgreSQL', catalog)).toBe(0);
     expect(semanticSignal([], target.needs, target.stack, new Set(), [], catalog)).toEqual({ score: 0, matches: [] });
   });
@@ -42,7 +42,7 @@ describe('семантический сигнал (смежные навыки)'
     expect(r.score).toBe(0);
   });
 
-  it('выключается абляцией и флагом; дефолт — по замеру eval', () => {
+  it('выключается абляцией и флагом; дефолт – по замеру eval', () => {
     expect(ABLATION_SIGNALS).toContain('semantic');
     expect(scoreCandidate(cand, target, catalog, { semantic: true, ablate: ['semantic'] })!.boosts.semantic).toBeUndefined();
     expect(scoreCandidate(cand, target, catalog)!.boosts.semantic !== undefined).toBe(SEMANTIC_DEFAULT_ON);

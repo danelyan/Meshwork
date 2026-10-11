@@ -68,7 +68,7 @@ function parse(raw: string, fields: Field[]): { ok: true; data: Record<string, V
   try {
     obj = JSON.parse(raw.slice(a, b + 1));
   } catch {
-    return { ok: false, error: 'ответ — невалидный JSON' };
+    return { ok: false, error: 'ответ – невалидный JSON' };
   }
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { ok: false, error: 'нужен JSON-объект' };
   const src = obj as Record<string, unknown>;

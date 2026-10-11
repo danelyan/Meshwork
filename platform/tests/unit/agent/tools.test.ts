@@ -26,7 +26,7 @@ const EXPECTED = [
   'render_profile_pdf',
   'ask_user',
 ];
-/** Сверх ТЗ § 4.1 — только чтение, для «ведёт по платформе» (E-02, лейн agentq). */
+/** Сверх ТЗ § 4.1 – только чтение, для «ведёт по платформе» (E-02, лейн agentq). */
 const EXTRA = ['get_onboarding_status', 'get_test_status', 'get_invitations', 'explain_evidence'];
 /** База знаний и веб-поиск (решения владельца 09.10): чтение, без записи. */
 const KNOWLEDGE = ['search_knowledge', 'web_search'];
@@ -68,14 +68,14 @@ describe('реестр инструментов (ТЗ § 4.1, § 2)', () => {
     expect(propose.properties.items.items.required).toEqual(expect.arrayContaining(['catalogId', 'quote', 'sourceRef']));
   });
 
-  it('только ask_user завершает ход; untrusted — ровно читающие внешний текст', () => {
+  it('только ask_user завершает ход; untrusted – ровно читающие внешний текст', () => {
     expect(tools.filter((t) => t.terminal).map((t) => t.name)).toEqual(['ask_user']);
     expect(tools.filter((t) => t.untrusted).map((t) => t.name).sort()).toEqual(['fetch_profile', 'fetch_url', 'get_invitations', 'get_onboarding_status', 'read_upload', 'web_search']);
   });
 });
 
 describe('системный промпт', () => {
-  it('prompt.ts собран из prompts/consultant.md и platform-facts.md (источник правды — .md)', () => {
+  it('prompt.ts собран из prompts/consultant.md и platform-facts.md (источник правды – .md)', () => {
     const md = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/consultant.md'), 'utf8');
     const facts = readFileSync(path.join(process.cwd(), 'src/server/agent/prompts/platform-facts.md'), 'utf8');
     expect(CONSULTANT_PROMPT).toBe(assemblePrompt(md, facts));
@@ -101,7 +101,7 @@ describe('catalog_search: scoreEntry', () => {
     markers: ['идемпотентн', 'Idempotency-Key', 'повтор запроса'],
     limits: '',
   };
-  it('маркер целиком весит больше, чем слово из формулировки; пустой запрос — 0', () => {
+  it('маркер целиком весит больше, чем слово из формулировки; пустой запрос – 0', () => {
     expect(scoreEntry(entry, 'реализовал повтор запроса через Idempotency-Key')).toBeGreaterThan(scoreEntry(entry, 'обработку'));
     expect(scoreEntry(entry, 'ё')).toBe(0);
     expect(scoreEntry(entry, 'Kafka consumer')).toBe(0);

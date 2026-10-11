@@ -44,7 +44,7 @@ function Preview() {
   const [variants, setVariants] = useState<string[]>(DEFAULT_VARIANTS);
   const level = useRef(0);
   level.current = mouth;
-  // пока звучит озвучка — громкость и состояние берём у голоса, иначе — ручные ползунок и select
+  // пока звучит озвучка – громкость и состояние берём у голоса, иначе – ручные ползунок и select
   const live = voice != null && voice.status !== 'idle';
   const getLevel = live ? voice.getLevel : () => level.current;
   const shown: VoiceStatus = live ? voice.status : status;
@@ -70,7 +70,7 @@ function Preview() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // текущая висема — для калибровки липсинка (обновляется ~20 раз в секунду, пока звучит)
+  // текущая висема – для калибровки липсинка (обновляется ~20 раз в секунду, пока звучит)
   const [viseme, setViseme] = useState('sil');
   const bandsRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -87,7 +87,7 @@ function Preview() {
   return (
     <main id="main" className={styles.page}>
       <h1>Аватар компаньона: сравнение вариантов</h1>
-      <p className={styles.hint}>Тяните голову мышью, чтобы повернуть (двойной клик или Home — сброс). «Проговорить» запускает озвучку один раз, губы двигаются во всех панелях, где они есть.</p>
+      <p className={styles.hint}>Тяните голову мышью, чтобы повернуть (двойной клик или Home – сброс). «Проговорить» запускает озвучку один раз, губы двигаются во всех панелях, где они есть.</p>
       <div className={styles.row} role="group" aria-label="Число панелей">
         <Kicker>Панелей</Kicker>
         {Array.from({ length: MAX_PANELS }, (_, i) => i + 1).map((n) => (
@@ -123,7 +123,7 @@ function Preview() {
             {voice?.notice ?? (live ? `${voice?.status} · висема ${viseme}` : '')}
           </span>
         </div>
-        <Field label={`Громкость (RMS) ${mouth.toFixed(2)} — вручную, когда озвучка молчит или недоступна`}>
+        <Field label={`Громкость (RMS) ${mouth.toFixed(2)} – вручную, когда озвучка молчит или недоступна`}>
           <input type="range" min={0} max={0.3} step={0.01} value={mouth} onChange={(e) => setMouth(Number(e.target.value))} />
         </Field>
         <MouthLookPicker />

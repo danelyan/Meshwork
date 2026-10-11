@@ -5,17 +5,17 @@ import { loadConfig } from '../src/config.js';
 import { ApiError } from '../src/http.js';
 
 describe('principalFromClaims', () => {
-  it('пользователь с fsp_id и ролью athlete — спортсмен', () => {
+  it('пользователь с fsp_id и ролью athlete – спортсмен', () => {
     const p = principalFromClaims({ sub: 'u1', azp: 'fsp-career', fsp_id: 'FSP-10001', realm_access: { roles: ['athlete', 'default-roles-fsp-id'] } });
     expect(p).toMatchObject({ kind: 'athlete', fspId: 'FSP-10001', clientId: 'fsp-career' });
   });
 
-  it('сервисный аккаунт с ролью partner — партнёр без fsp_id', () => {
+  it('сервисный аккаунт с ролью partner – партнёр без fsp_id', () => {
     const p = principalFromClaims({ sub: 'sa', azp: 'fsp-partner-demo', realm_access: { roles: ['partner'] } });
     expect(p).toMatchObject({ kind: 'partner', fspId: null, clientId: 'fsp-partner-demo' });
   });
 
-  it('без нужной роли — 403', () => {
+  it('без нужной роли – 403', () => {
     expect(() => principalFromClaims({ sub: 'x', realm_access: { roles: ['uma_authorization'] } })).toThrow(ApiError);
     expect(() => principalFromClaims({ sub: 'x', fsp_id: 'FSP-10001' })).toThrow(/athlete/);
   });

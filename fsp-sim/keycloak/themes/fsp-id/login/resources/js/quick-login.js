@@ -49,6 +49,6 @@ if (form && form.elements.username && quick && list) {
       document.getElementById('fsp-sim-manual').hidden = false;
     }
   } catch {
-    // Реестр недоступен — подсказка со ссылкой на главную страницу уже на экране.
+    // Реестр недоступен – подсказка со ссылкой на главную страницу уже на экране.
   }
 }

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { telemetryOn, track } from './telemetry';
 
-/** Пользователь просит без анимации или среды без matchMedia (тесты, старые браузеры) — показываем сразу. */
+/** Пользователь просит без анимации или среды без matchMedia (тесты, старые браузеры) – показываем сразу. */
 export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -16,7 +16,7 @@ export type ReplyPhase = 'typing' | 'writing' | 'done';
 
 /**
  * Фаза реплики: «печатает» (typingMs) → раскрытие (StreamingText, paced) → целиком.
- * `animate = false` — сразу целиком (история, перезагрузка), prefers-reduced-motion — тоже.
+ * `animate = false` – сразу целиком (история, перезагрузка), prefers-reduced-motion – тоже.
  * Таймер чистится в cleanup: StrictMode-повтор эффекта безопасен.
  */
 export function useReplyPhase(total: number, animate: boolean) {

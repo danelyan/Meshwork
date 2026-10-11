@@ -1,6 +1,6 @@
 // Генераторы заданий Backend (E-03, ADR-0002). Ключ ответа считает код генератора,
-// не LLM (R-T-02). Несущественные параметры (имена, числа, порядок) — от seed; параметры,
-// задающие сложность, — зафиксированы в семействе. a, b — ПРЕДЛОЖЕНИЕ (экспертные).
+// не LLM (R-T-02). Несущественные параметры (имена, числа, порядок) – от seed; параметры,
+// задающие сложность, – зафиксированы в семействе. a, b – ПРЕДЛОЖЕНИЕ (экспертные).
 import { createRng } from '../rng';
 import type { TaskGenerator, TaskInstance } from '../types';
 import { DATAMODEL_BANK2 } from './backend-bank2-datamodel';
@@ -46,7 +46,7 @@ export const sqlRowcount: TaskGenerator = {
     const nUsers = rng.int(4, 6);
     const users = rng.sample(NAMES, nUsers).map((name, i) => ({ id: i + 1, name, city: rng.pick(CITIES) }));
     const nOrders = rng.int(5, 8);
-    // Часть пользователей без записей — чтобы LEFT JOIN и NULL были содержательны.
+    // Часть пользователей без записей – чтобы LEFT JOIN и NULL были содержательны.
     const withOrders = rng.sample(users, Math.max(2, nUsers - rng.int(1, 2)));
     const orders = Array.from({ length: nOrders }, (_, i) => ({
       id: 100 + i,
@@ -668,8 +668,8 @@ export const retryPolicy: TaskGenerator = {
 
 // ===========================================================================
 // Подкатегории backend (ADR-0003, дополнение 10.10 15:50): отдельный тест на подкатегорию,
-// по 8 семейств (4 Junior + 4 Middle). Семейства ниже — расширение под это требование.
-// a, b — ПРЕДЛОЖЕНИЕ (экспертные), калибруются персонами (eval/test/personas.ts --subcategory).
+// по 8 семейств (4 Junior + 4 Middle). Семейства ниже – расширение под это требование.
+// a, b – ПРЕДЛОЖЕНИЕ (экспертные), калибруются персонами (eval/test/personas.ts --subcategory).
 // ===========================================================================
 
 // ---------------------------------------------------------------------------

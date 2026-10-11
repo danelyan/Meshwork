@@ -102,7 +102,7 @@ export function EvaluateScreen({ sample, catalog, limits, juryLink = false }: { 
         <Panel as="form" className={styles.form} onSubmit={submit} aria-label="Набор для проверки">
           <Field
             label="Набор в JSON"
-            hint={`До ${Math.round(limits.bodyBytes / 1024)} КБ, ${limits.vacancies} вакансий, ${limits.candidates} кандидатов; k от 1 до ${limits.kMax}. Формат — как в примере.`}
+            hint={`До ${Math.round(limits.bodyBytes / 1024)} КБ, ${limits.vacancies} вакансий, ${limits.candidates} кандидатов; k от 1 до ${limits.kMax}. Формат – как в примере.`}
           >
             <textarea className={styles.textarea} value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} placeholder='{"k": 5, "vacancies": [...], "candidates": [...], "relevance": {...}}' />
           </Field>
@@ -198,7 +198,7 @@ export function EvaluateScreen({ sample, catalog, limits, juryLink = false }: { 
                   <p className={styles.soft}>Наш подбор никого не показал: никто не закрыл требований и ни у кого не совпала категория.</p>
                 )}
                 <p className={styles.soft}>
-                  Базовая линия, топ-{k}: <span className={styles.mono}>{r.baselineTop.join(', ') || '—'}</span>
+                  Базовая линия, топ-{k}: <span className={styles.mono}>{r.baselineTop.join(', ') || '–'}</span>
                 </p>
               </Panel>
             ))}
@@ -209,18 +209,18 @@ export function EvaluateScreen({ sample, catalog, limits, juryLink = false }: { 
           <h2 id="format">Формат набора</h2>
           <ul className={styles.list}>
             <li>
-              <b>vacancies</b> — id, title, specialization (backend, frontend, ai, engineering), grade (junior, middle, senior), needs — требования из каталога
+              <b>vacancies</b> – id, title, specialization (backend, frontend, ai, engineering), grade (junior, middle, senior), needs – требования из каталога
               утверждений с весом 1–3, необязательно stack.
             </li>
             <li>
-              <b>candidates</b> — id, specialization, category из теста (specialization + grade) или null, fspState (linked — есть подтверждённые достижения
-              ФСП), claims — подтверждённые утверждения с уровнем доказанности: self_reported (со слов), artifact, third_party, platform.
+              <b>candidates</b> – id, specialization, category из теста (specialization + grade) или null, fspState (linked – есть подтверждённые достижения
+              ФСП), claims – подтверждённые утверждения с уровнем доказанности: self_reported (со слов), artifact, third_party, platform.
             </li>
             <li>
-              <b>relevance</b> — ваша разметка: relevance[id вакансии][id кандидата] = 0, 1 или 2; кого нет — 0.
+              <b>relevance</b> – ваша разметка: relevance[id вакансии][id кандидата] = 0, 1 или 2; кого нет – 0.
             </li>
             <li>
-              Базовая линия — кандидаты своей специализации по числу утверждений, без учёта требований. MRR — обратный ранг первого релевантного.
+              Базовая линия – кандидаты своей специализации по числу утверждений, без учёта требований. MRR – обратный ранг первого релевантного.
             </li>
           </ul>
           <details className={styles.details}>
@@ -228,7 +228,7 @@ export function EvaluateScreen({ sample, catalog, limits, juryLink = false }: { 
             <ul className={styles.catalog}>
               {catalog.map((c) => (
                 <li key={c.id}>
-                  <span className={styles.mono}>{c.id}</span> — {c.statement}
+                  <span className={styles.mono}>{c.id}</span> – {c.statement}
                 </li>
               ))}
             </ul>

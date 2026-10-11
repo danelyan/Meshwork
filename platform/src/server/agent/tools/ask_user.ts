@@ -8,7 +8,7 @@ const Input = z.object({
 });
 const Output = z.object({ asked: z.literal(true) });
 
-/** Уточняющий вопрос с вариантами; ход на этом заканчивается — ответ придёт следующим сообщением кандидата. */
+/** Уточняющий вопрос с вариантами; ход на этом заканчивается – ответ придёт следующим сообщением кандидата. */
 export const askUser: AgentTool<z.infer<typeof Input>, z.infer<typeof Output>> = {
   name: 'ask_user',
   description:

@@ -1,6 +1,6 @@
 // Генераторы frontend.ui-app (SPA из макета: состояние, формы, роутинг, серверное состояние).
 // Ключ считает код генератора, не LLM (R-T-02); юнит-тест сверяет его независимым решением
-// (tests/unit/test/frontend-subcategories.test.ts). a, b — ПРЕДЛОЖЕНИЕ, калибруются персонами.
+// (tests/unit/test/frontend-subcategories.test.ts). a, b – ПРЕДЛОЖЕНИЕ, калибруются персонами.
 // Поведение React (батчинг setState, сравнение зависимостей эффекта через Object.is) и ранжирование
 // маршрутов React Router v6 сверено с документацией через Context7 10.10.
 import { createRng } from '../rng';

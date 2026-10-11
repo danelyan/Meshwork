@@ -14,8 +14,8 @@ import { linksFor } from './nav';
 export async function SiteHeader() {
   const session = await getPageSession();
   const role = session ? session.role : null;
-  // Меню аккаунта (ADR 0004): роль — активная из куки, имя, профили и компания — из БД.
+  // Меню аккаунта (ADR 0004): роль – активная из куки, имя, профили и компания – из БД.
   const account = session ? await headerAccountFor(session.userId, session.role) : null;
-  // «Для жюри» — вход в хаб /demo на каждой странице, только при DEMO_LOGIN (как сама страница).
+  // «Для жюри» – вход в хаб /demo на каждой странице, только при DEMO_LOGIN (как сама страница).
   return <HeaderBar signedIn={session !== null} links={linksFor(role)} account={account} jury={getEnv().DEMO_LOGIN} />;
 }

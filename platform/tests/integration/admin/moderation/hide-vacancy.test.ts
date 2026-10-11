@@ -23,7 +23,7 @@ describe('admin: скрыть вакансию (hide_vacancy)', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('support — 403; без причины — 400; скрыть → не видна кандидату → повтор 409 → вернуть → видна; журнал', async () => {
+  it('support – 403; без причины – 400; скрыть → не видна кандидату → повтор 409 → вернуть → видна; журнал', async () => {
     const v = await mkVacancy();
     const cand = DEMO_POOL[2]!.id;
     expect((await careerVacancies(cand)).targets.some((t) => t.vacancyId === v.id)).toBe(true);
@@ -50,7 +50,7 @@ describe('admin: скрыть вакансию (hide_vacancy)', () => {
     expect(rows).toHaveLength(2);
   });
 
-  it('заблокированный кандидат: созвон для работодателя без accepted — 404 как для скрытого', async () => {
+  it('заблокированный кандидат: созвон для работодателя без accepted – 404 как для скрытого', async () => {
     const cand = DEMO_POOL[3]!.id;
     const who = { userId: 'x', role: 'employer' as const, employerProfileId: ctxEmp.employerProfileId };
     const call = { id: 'call-x', candidateId: cand, status: 'finished', kind: 'interview' };

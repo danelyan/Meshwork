@@ -6,7 +6,7 @@ const valid = {
 };
 
 describe('env', () => {
-  it('OPENAI_CHAT_EXTRA_BODY: JSON-объект разбирается, не объект — ошибка', () => {
+  it('OPENAI_CHAT_EXTRA_BODY: JSON-объект разбирается, не объект – ошибка', () => {
     expect(parseEnv({ ...valid, OPENAI_CHAT_EXTRA_BODY: '{"chat_template_kwargs":{"enable_thinking":false}}' }).OPENAI_CHAT_EXTRA_BODY).toEqual({ chat_template_kwargs: { enable_thinking: false } });
     expect(parseEnv(valid).OPENAI_CHAT_EXTRA_BODY).toBeUndefined();
     expect(() => parseEnv({ ...valid, OPENAI_CHAT_EXTRA_BODY: '[1]' })).toThrow(EnvError);
@@ -31,7 +31,7 @@ describe('env', () => {
     expect(() => parseEnv({ ...valid, TEST_INTEGRITY_ACTION: 'loud' })).toThrow(EnvError);
   });
 
-  it('строки приводятся к числам и булевым, пустые строки — undefined', () => {
+  it('строки приводятся к числам и булевым, пустые строки – undefined', () => {
     const env = parseEnv({ ...valid, LLM_MAX_CONCURRENCY: '3', DEMO_LOGIN: 'false', GITHUB_TOKEN: '' });
     expect(env.LLM_MAX_CONCURRENCY).toBe(3);
     expect(env.DEMO_LOGIN).toBe(false);
@@ -55,7 +55,7 @@ describe('env', () => {
     expect(() => parseEnv({ ...valid, LLM_MAX_CONCURRENCY: '0' })).toThrow(/LLM_MAX_CONCURRENCY/);
   });
 
-  it('yandex без ключей → ошибка по каждому ключу; с ключами — ок', () => {
+  it('yandex без ключей → ошибка по каждому ключу; с ключами – ок', () => {
     try {
       parseEnv({ ...valid, LLM_PROVIDER: 'yandex' });
       expect.unreachable();

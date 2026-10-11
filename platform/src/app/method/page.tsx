@@ -11,8 +11,8 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 
 /**
  * «Как устроена проверка» для жюри: этапы теста, информация банка, смоделированные кандидаты, формула подбора.
- * Публичная, без БД и LLM. Подкатегория — `?sub=` (GET-форма); неизвестная — первая из списка. Прогоны кэшируются
- * по подкатегории в памяти процесса (simulatedCandidates), первый расчёт — около 0,3 с.
+ * Публичная, без БД и LLM. Подкатегория – `?sub=` (GET-форма); неизвестная – первая из списка. Прогоны кэшируются
+ * по подкатегории в памяти процесса (simulatedCandidates), первый расчёт – около 0,3 с.
  */
 export default async function MethodPage({ searchParams }: { searchParams: Search }) {
   const subcategories = simulatorSubcategories();

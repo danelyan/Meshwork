@@ -80,7 +80,7 @@ export function buildReport(records: TurnRecord[], allTools: string[], users: Re
 export function renderMarkdown(label: string, model: string, prompt: string, rep: Report, records: TurnRecord[]): string {
   const L: string[] = [];
   const cell = (s: string) => s.replace(/\|/g, '/').replace(/\n/g, ' ');
-  L.push(`# Матрица инструментов — ${label}`, '', `Модель ${model}, промпт ${prompt}. Ходов ${rep.turns}, прошли ${rep.pass} (${rep.turns ? Math.round((100 * rep.pass) / rep.turns) : 0} %). Токены: ${rep.inTokens} вход / ${rep.outTokens} выход. Время ходов: ${Math.round(rep.ms / 1000)} с (среднее ${rep.turns ? Math.round(rep.ms / rep.turns / 100) / 10 : 0} с).`, '');
+  L.push(`# Матрица инструментов – ${label}`, '', `Модель ${model}, промпт ${prompt}. Ходов ${rep.turns}, прошли ${rep.pass} (${rep.turns ? Math.round((100 * rep.pass) / rep.turns) : 0} %). Токены: ${rep.inTokens} вход / ${rep.outTokens} выход. Время ходов: ${Math.round(rep.ms / 1000)} с (среднее ${rep.turns ? Math.round(rep.ms / rep.turns / 100) / 10 : 0} с).`, '');
   L.push('## Инструменты', '', '| инструмент | ожидали (ходов) | вызвали и ожидали | вызвали всего | ошибки |', '|---|---|---|---|---|');
   for (const [t, r] of Object.entries(rep.byTool)) L.push(`| ${t} | ${r.expected} | ${r.hit} | ${r.called} | ${r.errors} |`);
   L.push('', 'Ожидание мягкое: ход засчитан, если вызван хотя бы один инструмент из списка хода; «ожидали» считает ходы, где инструмент в списке.', '');
@@ -91,7 +91,7 @@ export function renderMarkdown(label: string, model: string, prompt: string, rep
   const bad = records.filter((r) => !r.verdict.pass);
   L.push('', `## Провалы (${bad.length})`, '');
   for (const r of bad) {
-    L.push(`### ${r.scenario} #${r.turn} (${r.user})`, `- реплика: ${r.text}`, `- вызвано: ${r.obs.calls.map((c) => c.name).join(', ') || '—'}`, ...r.verdict.fails.map((f) => `- ${f}`), `- ответ: «${r.obs.text.replace(/\s+/g, ' ').slice(0, 400)}»`, '');
+    L.push(`### ${r.scenario} #${r.turn} (${r.user})`, `- реплика: ${r.text}`, `- вызвано: ${r.obs.calls.map((c) => c.name).join(', ') || '–'}`, ...r.verdict.fails.map((f) => `- ${f}`), `- ответ: «${r.obs.text.replace(/\s+/g, ' ').slice(0, 400)}»`, '');
   }
   return L.join('\n');
 }

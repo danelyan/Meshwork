@@ -33,7 +33,7 @@ const item = { templateId: 't1', title: 'Задание' } as ReviewItem;
 describe('итоговая реплика с кратким итогом', () => {
   it('число тем со склонением и разбор теста; «что дальше» сохраняется', () => {
     expect(closingWithRecap(CLOSING_LINE, { topics: 5, testReview: true })).toBe(
-      'Спасибо, на этом всё: мы прошли 5 тем и разобрали задание из теста. Нажми «Завершить» — отдельный оценщик разберёт ответы, и карта глубины появится в профиле.',
+      'Спасибо, на этом всё: мы прошли 5 тем и разобрали задание из теста. Нажми «Завершить» – отдельный оценщик разберёт ответы, и карта глубины появится в профиле.',
     );
     expect(closingWithRecap(CLOSING_LINE, { topics: 1, testReview: false })).toContain('мы прошли 1 тему.');
     expect(closingWithRecap(CLOSING_LINE, { topics: 3, testReview: false })).toContain('3 темы.');
@@ -42,18 +42,18 @@ describe('итоговая реплика с кратким итогом', () =>
 });
 
 describe('«не знаю» закрывает тему', () => {
-  it('короткое «не знаю» — да, рассуждение с «не уверен» на 200+ символов — нет', () => {
+  it('короткое «не знаю» – да, рассуждение с «не уверен» на 200+ символов – нет', () => {
     expect(saysDontKnow('Не знаю, честно, с этим не сталкивался.')).toBe(true);
     expect(saysDontKnow(`Не уверен, но рассуждал бы так: ${'сначала замерил бы, потом сравнил варианты. '.repeat(5)}`)).toBe(false);
   });
-  it('план уходит на другую тему даже на уровне 2 (раньше — оставался и спрашивал проще)', () => {
+  it('план уходит на другую тему даже на уровне 2 (раньше – оставался и спрашивал проще)', () => {
     const plan = planNext({ topics, turns: [turn(topics[1]!.topic, 2, 'Не знаю.')], grade: 'middle', signal: 'weak', maxQuestions: 6 });
     expect(plan.switched).toBe(true);
     expect(topics[plan.topicIndex]!.topic).not.toBe(topics[1]!.topic);
   });
 });
 
-describe('попытка выведать эталон или оценку — вежливый отказ', () => {
+describe('попытка выведать эталон или оценку – вежливый отказ', () => {
   it('распознаёт просьбы и не дублирует отказ модели', () => {
     expect(asksForAnswer('А какой ответ ты ожидаешь услышать? Подскажи правильный')).toBe(true);
     expect(asksForAnswer('Какую оценку ты мне сейчас ставишь?')).toBe(true);
@@ -83,7 +83,7 @@ describe('запасной вопрос (модель недоступна)', ()
 });
 
 describe('этап разбора задания теста', () => {
-  it('шаг 1 — только по allowStart, шаг 2 — после ответа на шаг 1, потом ничего', () => {
+  it('шаг 1 – только по allowStart, шаг 2 – после ответа на шаг 1, потом ничего', () => {
     expect(reviewStepDue([], false)).toBeNull();
     expect(reviewStepDue([], true)).toBe(1);
     const one = [ai(0, 'q1', reviewMeta(1))];
@@ -92,13 +92,13 @@ describe('этап разбора задания теста', () => {
     expect(reviewStepDue(answered, false)).toBe(2);
     expect(reviewStepDue([...answered, ai(2, 'q2', reviewMeta(2)), cand(3, 'a2')], true)).toBeNull();
   });
-  it('сколько реплик этапа впереди: нет заданий — 0', () => {
+  it('сколько реплик этапа впереди: нет заданий – 0', () => {
     expect(reviewRemaining([], [])).toBe(0);
     expect(reviewRemaining([item], [])).toBe(2);
     expect(reviewRemaining([item], [ai(0, 'q1', reviewMeta(1))])).toBe(1);
   });
   it('шаг 2 не повторяет связку шага 1', () => {
-    const s1 = 'Теперь вернёмся к тесту. В задании про список — как ты рассуждал?';
+    const s1 = 'Теперь вернёмся к тесту. В задании про список – как ты рассуждал?';
     expect(dropRepeatedLead('Теперь вернёмся к тесту. А если ключ повторится, что изменится?', s1)).toBe('А если ключ повторится, что изменится?');
     expect(dropRepeatedLead('А если ключ повторится, что изменится?', s1)).toBe('А если ключ повторится, что изменится?');
   });
@@ -116,7 +116,7 @@ describe('этап разбора задания теста', () => {
 describe('итог созвона', () => {
   const d = (topic: string, status: DepthMapItem['status'], extraProbe?: boolean) =>
     ({ topic, catalogId: null, claimed: true, claimStatement: null, probed: 1, maxLevel: 2, confirmed: status === 'confirmed', status, scores: { depth: 0, why: 0, boundary: 0, completion: 0 }, total: 0, quote: '', runs: [], ...(extraProbe ? { extraProbe } : {}) }) as DepthMapItem;
-  it('«после дополнительного вопроса» — только если он был', () => {
+  it('«после дополнительного вопроса» – только если он был', () => {
     expect(summaryOf([d('A', 'inconclusive')])).toContain('Не определено (оценщик разошёлся): «A».');
     expect(summaryOf([d('A', 'inconclusive', true)])).toContain('и после дополнительного вопроса');
   });

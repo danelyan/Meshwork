@@ -77,7 +77,7 @@ class Dedup(unittest.TestCase):
         ra, rb = pipeline.report(a), pipeline.report(b)
         self.assertEqual(rb["days"], ra["days"])
         self.assertEqual(rb["watermark"], ra["watermark"])
-        # события старше нового водяного знака теперь поздние, остальные — повторы
+        # события старше нового водяного знака теперь поздние, остальные – повторы
         self.assertEqual((rb["late"], rb["duplicates"]), (8, 12))
 
 

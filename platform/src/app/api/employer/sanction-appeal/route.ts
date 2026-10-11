@@ -10,14 +10,14 @@ export const dynamic = 'force-dynamic';
 
 const Body = z.object({ text: z.string().max(4000) });
 
-/** GET /api/employer/sanction-appeal — апелляции своей компании на санкцию (новые сверху). */
+/** GET /api/employer/sanction-appeal – апелляции своей компании на санкцию (новые сверху). */
 export const GET = withErrors(async (req: Request) => {
   const { employerProfileId } = requireEmployer(req);
   const ctx = await loadEmployerContext(employerProfileId);
   return Response.json({ appeals: await listCompanyAppeals(ctx.companyId) });
 });
 
-/** POST /api/employer/sanction-appeal `{ text }` — оспорить санкцию. Санкции нет или апелляция уже открыта — 409. */
+/** POST /api/employer/sanction-appeal `{ text }` – оспорить санкцию. Санкции нет или апелляция уже открыта – 409. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { employerProfileId } = requireEmployer(req);

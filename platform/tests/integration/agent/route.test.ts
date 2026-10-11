@@ -47,7 +47,7 @@ describe('POST /api/consultant/messages (SSE)', () => {
     expect(badUrl.status).toBe(400);
   });
 
-  it('новый разговор: заголовки SSE, первый кадр conversation, последний — done, Message сохранены', async () => {
+  it('новый разговор: заголовки SSE, первый кадр conversation, последний – done, Message сохранены', async () => {
     const res = await POST(jsonRequest('/api/consultant/messages', 'POST', { text: 'Привет [[reply Привет! Пришли резюме.]]' }, cookie(CAND)));
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toMatch(/^text\/event-stream/);
@@ -60,7 +60,7 @@ describe('POST /api/consultant/messages (SSE)', () => {
     expect(events.at(-1)).toEqual({ type: 'done' });
     const msg = events.find((e) => e.type === 'message') as Extract<AgentEvent, { type: 'message' }>;
     expect(msg).toEqual({ type: 'message', id: expect.any(String), text: 'Привет! Пришли резюме.' });
-    // стрим: перед итогом — дельты той же реплики, склейка = итоговый текст
+    // стрим: перед итогом – дельты той же реплики, склейка = итоговый текст
     const deltas = events.filter((e): e is Extract<AgentEvent, { type: 'delta' }> => e.type === 'delta');
     expect(deltas.length).toBeGreaterThan(0);
     expect(deltas.every((d) => d.id === msg.id)).toBe(true);
@@ -72,7 +72,7 @@ describe('POST /api/consultant/messages (SSE)', () => {
     expect(await prisma.message.count({ where: { conversationId: convId!, role: { in: ['user', 'assistant'] } } })).toBe(2);
   });
 
-  it('продолжение разговора — тем же id; чужой id → 404', async () => {
+  it('продолжение разговора – тем же id; чужой id → 404', async () => {
     const first = await POST(jsonRequest('/api/consultant/messages', 'POST', { text: '[[reply раз]]' }, cookie(CAND)));
     const convId = first.headers.get('x-conversation-id')!;
     await readAll(first);
@@ -84,7 +84,7 @@ describe('POST /api/consultant/messages (SSE)', () => {
     expect(foreign.status).toBe(404);
   });
 
-  it('два одновременных хода в одном разговоре → второй 409 busy; после окончания — снова можно', async () => {
+  it('два одновременных хода в одном разговоре → второй 409 busy; после окончания – снова можно', async () => {
     const conv = await prisma.conversation.create({ data: { candidateId: CAND } });
     const slow = await POST(jsonRequest('/api/consultant/messages', 'POST', { conversationId: conv.id, text: '[[delay 400]] [[reply медленно]]' }, cookie(CAND)));
     expect(slow.status).toBe(200);

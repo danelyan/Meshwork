@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/server/db';
 
 /**
- * ExtractedDoc из Json-колонок (Upload.extracted, Source.snapshot) — проверяем форму, а не доверяем.
+ * ExtractedDoc из Json-колонок (Upload.extracted, Source.snapshot) – проверяем форму, а не доверяем.
  * Zod срезает ключи, которых нет в схеме, поэтому здесь перечислены все поля `ExtractedDoc`:
  * без `hidden` у строки скрытый текст после чтения из базы стал бы обычным и годился бы в цитаты.
  */
@@ -33,7 +33,7 @@ export function parseExtractedDoc(json: unknown): ExtractedDoc | null {
   return r.success ? (r.data as ExtractedDoc) : null;
 }
 
-/** Все документы кандидата (загрузки с разбором + снимки источников) — для проверяющего. */
+/** Все документы кандидата (загрузки с разбором + снимки источников) – для проверяющего. */
 export async function loadCandidateDocs(candidateId: string): Promise<ExtractedDoc[]> {
   const [uploads, sources] = await Promise.all([
     prisma.upload.findMany({ where: { candidateId, extracted: { not: Prisma.DbNull } }, select: { extracted: true } }),
@@ -57,7 +57,7 @@ export async function loadCandidateDocs(candidateId: string): Promise<ExtractedD
 
 /**
  * Снимок прочитанного источника (он же кэш): Source.snapshot. Одна строка на
- * (кандидат, kind, origin) — как в collector: fetchProfile с candidateId уже
+ * (кандидат, kind, origin) – как в collector: fetchProfile с candidateId уже
  * записал Source, здесь он только обновится, без дубля.
  */
 export async function saveSource(candidateId: string, doc: ExtractedDoc): Promise<string> {

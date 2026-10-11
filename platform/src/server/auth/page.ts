@@ -12,7 +12,7 @@ import { SESSION_COOKIE, type SessionPrincipal, parseSession } from '@/server/se
 const checkSession = cache(async (value: string | undefined): Promise<{ session: SessionPrincipal | null; stale: boolean }> => {
   const p = parseSession(value);
   if (!p) return { session: null, stale: false };
-  // Одна выборка по id на запрос (React cache). Нет субъекта в БД — гость.
+  // Одна выборка по id на запрос (React cache). Нет субъекта в БД – гость.
   return (await sessionExists(p)) ? { session: p, stale: false } : { session: null, stale: true };
 });
 
@@ -36,7 +36,7 @@ async function guestRedirect(next: string, stale: boolean): Promise<never> {
 
 /**
  * Нужен аккаунт (любая роль, не старая демо-кука). Иначе → /auth?next=…. Вне таблицы `PAGE_ACCESS`:
- * для `page.tsx` не использовать (тест вызова гвардов его не принимает) — там `requirePageAccess` и обёртки.
+ * для `page.tsx` не использовать (тест вызова гвардов его не принимает) – там `requirePageAccess` и обёртки.
  */
 export async function requirePageUser(next: string): Promise<SessionPrincipal & { userId: string }> {
   const { session: s, stale } = await getCheckedPageSession();
@@ -47,8 +47,8 @@ export async function requirePageUser(next: string): Promise<SessionPrincipal & 
 /**
  * Единый гвард страниц: правило берётся из `PAGE_ACCESS` по пути (`foreignPageRedirect`), решает активная
  * роль. Вызывать в каждой `page.tsx`, не в layout: layout не перерисовывается при клиентской навигации
- * между дочерними страницами (docs Next.js: Authentication → Layouts and auth checks). `path` — адрес
- * страницы с query: он же уходит в `next` после входа. Возвращает сессию (null — только на public-странице).
+ * между дочерними страницами (docs Next.js: Authentication → Layouts and auth checks). `path` – адрес
+ * страницы с query: он же уходит в `next` после входа. Возвращает сессию (null – только на public-странице).
  */
 export async function requirePageAccess(path: string): Promise<SessionPrincipal | null> {
   const { session, stale } = await getCheckedPageSession();
@@ -58,15 +58,15 @@ export async function requirePageAccess(path: string): Promise<SessionPrincipal 
 }
 
 /**
- * Типизированный гвард уровня. Нет записи для пути (например, id с `/` дал адрес глубже таблицы) — 404:
- * закрыто, но не 500. Запись есть, а уровень не тот — ошибка разработчика (не тот гвард): вне production
+ * Типизированный гвард уровня. Нет записи для пути (например, id с `/` дал адрес глубже таблицы) – 404:
+ * закрыто, но не 500. Запись есть, а уровень не тот – ошибка разработчика (не тот гвард): вне production
  * исключение, в production 404; статический тест ловит то же до запуска.
  */
 async function requirePageLevel(level: Exclude<PageLevel, 'public'>, path: string): Promise<SessionPrincipal> {
   const actual = pageLevelFor(path);
   if (actual === null) notFound();
   if (actual !== level) {
-    if (process.env.NODE_ENV !== 'production') throw new Error(`Гвард уровня ${level} на странице ${path}: в PAGE_ACCESS — ${actual}`);
+    if (process.env.NODE_ENV !== 'production') throw new Error(`Гвард уровня ${level} на странице ${path}: в PAGE_ACCESS – ${actual}`);
     notFound();
   }
   return (await requirePageAccess(path)) as SessionPrincipal;
@@ -78,8 +78,8 @@ export async function requirePageCandidate(next: string): Promise<SessionPrincip
 }
 
 /**
- * /consultant — общий адрес ленты (решение владельца 10.10): знакомство (согласие, роль, шаги) для любой
- * роли и дом обеих ролей. Пускает любой вход; что показать роли — решает страница.
+ * /consultant – общий адрес ленты (решение владельца 10.10): знакомство (согласие, роль, шаги) для любой
+ * роли и дом обеих ролей. Пускает любой вход; что показать роли – решает страница.
  */
 export async function requirePageAccount(next: string): Promise<SessionPrincipal> {
   return requirePageLevel('account', next);

@@ -55,7 +55,7 @@ describe('создание', () => {
 });
 
 describe('слоты', () => {
-  it('стык интервалов — не пересечение', async () => {
+  it('стык интервалов – не пересечение', async () => {
     const app = createApp();
     await post(app, base);
     expect((await post(app, { ...base, startsAt: '2026-11-02T10:30:00Z' })).status).toBe(201);
@@ -82,7 +82,7 @@ describe('слоты', () => {
 });
 
 describe('чтение и отмена', () => {
-  it('GET неизвестной записи и неизвестного пути — 404 not_found', async () => {
+  it('GET неизвестной записи и неизвестного пути – 404 not_found', async () => {
     const app = createApp();
     const a = await request(app).get('/appointments/nope');
     expect(a.status).toBe(404);
@@ -92,7 +92,7 @@ describe('чтение и отмена', () => {
     expect(b.body).toEqual({ error: 'not_found' });
   });
 
-  it('повторная отмена — 409 already_cancelled; отмена неизвестной — 404', async () => {
+  it('повторная отмена – 409 already_cancelled; отмена неизвестной – 404', async () => {
     const app = createApp();
     const a = await post(app, base);
     await request(app).post(`/appointments/${a.body.id}/cancel`);

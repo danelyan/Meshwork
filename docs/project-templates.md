@@ -1,33 +1,33 @@
 # Шаблоны проектов (ступень 2, ADR 0003)
 
-Шаблон — фиксированный контракт и скрытые автотесты к нему. Работодатель выбирает шаблон под потребность,
+Шаблон – фиксированный контракт и скрытые автотесты к нему. Работодатель выбирает шаблон под потребность,
 модель (`project_spec`) переписывает условие в его домен, но **проверка всегда идёт по контракту шаблона**:
-скрытые тесты от вакансии не зависят, поэтому балл сравним между кандидатами. Код — `platform/src/server/project/`,
-шаблоны — `platform/project-templates/`.
+скрытые тесты от вакансии не зависят, поэтому балл сравним между кандидатами. Код – `platform/src/server/project/`,
+шаблоны – `platform/project-templates/`.
 
 ## Раскладка
 
 ```
 project-templates/<subcategoryId>/<grade>/<templateId>/
   template.json      манифест (ниже)
-  contract.md        контракт: имена модулей, функций, маршрутов, полей; первая строка — маркер PLATFORM-OWNED
+  contract.md        контракт: имена модулей, функций, маршрутов, полей; первая строка – маркер PLATFORM-OWNED
   starter/           заготовка, которую кандидат скачивает (skeleton.zip): пустые реализации + tests/visible/
-  visible/           видимые тесты (копия starter/tests/visible/ — должна совпадать байт в байт)
-  hidden/            скрытые тесты — кандидату не выдаются никогда
+  visible/           видимые тесты (копия starter/tests/visible/ – должна совпадать байт в байт)
+  hidden/            скрытые тесты – кандидату не выдаются никогда
   reference/         эталонное решение; накладывается поверх starter при проверке шаблона
 ```
 
-`subcategoryId` — подкатегория из карты направлений (`backend.web-api`, `frontend.ui-app`, …), `grade` — `junior | middle | senior`.
+`subcategoryId` – подкатегория из карты направлений (`backend.web-api`, `frontend.ui-app`, …), `grade` – `junior | middle | senior`.
 
 ## Манифест `template.json`
 
 | Поле | Что это |
 |---|---|
 | `id` | Уникальный id, совпадает с именем каталога: `<спец>-<подкат>-<грейд>-<тема>` |
-| `subcategoryId`, `specialization`, `grade` | Куда шаблон относится; `specialization` — строка (`backend`, `frontend`, `ai`, `engineering`) |
+| `subcategoryId`, `specialization`, `grade` | Куда шаблон относится; `specialization` – строка (`backend`, `frontend`, `ai`, `engineering`) |
 | `title`, `summary` | Заголовок и одна строка о сути (видит работодатель; заголовок идёт в ленту кандидата) |
 | `stack` | Теги стека для карточки |
-| `catalogIds` | Навыки каталога (`claims`), которые проверяет шаблон; из них работодатель выбирает обязательные критерии. Только реальные id каталога — проверяет unit-тест |
+| `catalogIds` | Навыки каталога (`claims`), которые проверяет шаблон; из них работодатель выбирает обязательные критерии. Только реальные id каталога – проверяет unit-тест |
 | `image` | Образ runner: `node20` или `python312` |
 | `testEnvironment` | `node` или `jsdom` (для UI-шаблонов) |
 | `contractRef`, `starterRef`, `visibleTestsRef`, `hiddenTestsRef`, `referenceRef` | Относительные пути внутри каталога шаблона |
@@ -46,14 +46,14 @@ project-templates/<subcategoryId>/<grade>/<templateId>/
 
 - **Эталон зелёный:** `starter` + `reference` проходит весь скрытый и весь видимый набор.
 - **Заготовка красная:** чистый `starter` не проходит ни одного скрытого теста. Тесты должны падать проверками,
-  а не ошибкой сбора (иначе runner вернёт 0/0): тяжёлую подготовку — в `beforeAll`.
-- Скрытых тестов больше, чем видимых; видимые — подмножество по смыслу, не по тексту.
+  а не ошибкой сбора (иначе runner вернёт 0/0): тяжёлую подготовку – в `beforeAll`.
+- Скрытых тестов больше, чем видимых; видимые – подмножество по смыслу, не по тексту.
 - Тесты проверяют только то, что записано в `contract.md`. Детали, которых нет в контракте, не проверять.
 - Без сети наружу: моки поднимать на `127.0.0.1` внутри теста.
-- Зависимости — только предустановленные в песочнице runner (express, supertest, react, testing-library, jsdom,
-  vitest; для Python — pytest, fastapi, httpx, numpy, pandas). Новая зависимость — правка образа runner.
+- Зависимости – только предустановленные в песочнице runner (express, supertest, react, testing-library, jsdom,
+  vitest; для Python – pytest, fastapi, httpx, numpy, pandas). Новая зависимость – правка образа runner.
 - **Скрытые тесты опубликованного шаблона не меняются.** Иначе баллы уже сданных работ несравнимы.
-  Исправление — новый шаблон с новым id, старый оставить.
+  Исправление – новый шаблон с новым id, старый оставить.
 
 ## Senior
 
@@ -86,14 +86,14 @@ Senior-шаблон (ADR 0003, «Дополнение 16:15») проверяе�
    Ожидаемый вывод: эталон N/N, заготовка 0/N. Нужен набор зависимостей песочницы:
    `TEMPLATE_NODE_DEPS` (по умолчанию `runner/sandbox/node/node_modules`) и `TEMPLATE_PYTHON`
    (по умолчанию `runner/sandbox/python/.venv/bin/python`).
-5. `npx vitest run tests/unit/project` — проверяет манифесты, маркеры, совпадение видимых тестов и id каталога.
+5. `npx vitest run tests/unit/project` – проверяет манифесты, маркеры, совпадение видимых тестов и id каталога.
 6. Шаблоны синхронизируются в таблицу `ProjectTemplate` при первом обращении к заданиям (`syncTemplates`); миграция не нужна.
 
 ## Выкладка
 
 - Все шаблоны лежат во вложенной раскладке. runner ищет шаблон по id в ней и в плоской `<id>/` (`runner/src/templates.ts`,
   `resolveTemplateDir`), загрузчик приложения читает только вложенную; id уникален во всём дереве. Два учебных Junior-шаблона
-  runner (`be-webapi-junior-notes`, `fe-uiapp-junior-widget`; эталоны — `tests/fixtures/runner/`, а не `reference/`) перенесены
+  runner (`be-webapi-junior-notes`, `fe-uiapp-junior-widget`; эталоны – `tests/fixtures/runner/`, а не `reference/`) перенесены
   туда 10.10 из плоской раскладки; они вторые Junior в своих подкатегориях и при автовыборе уступают `…-booking` и `…-catalog`
   (порядок по id).
 
@@ -122,7 +122,7 @@ Senior-шаблон (ADR 0003, «Дополнение 16:15») проверяе�
 | `frontend.ui-app` | `fe-uiapp-junior-catalog`<br>`fe-uiapp-junior-widget` | `fe-uiapp-middle-tasks` | `fe-uiapp-senior-search` |
 | `frontend.web-perf` | `fe-webperf-junior-suggest` | `fe-webperf-middle-virtual` | `fe-webperf-senior-dashboard` |
 
-Особый случай: `eng-qaauto-*` — кандидат пишет `verify(impl)`, скрытые тесты проверяют, что он пропускает эталон и ловит мутантов (мутационное тестирование). Senior-шаблоны требуют `DESIGN.md`. Шаблоны `ai-bi-junior-salesmart`, `ai-bi-middle-retention`, `ai-bi-senior-metriclayer`, `ai-datasci-junior-eda`, `ai-datasci-middle-abtest`, `ai-datasci-senior-cohorts`, `ai-mleng-junior-metrics`, `ai-mleng-middle-leakfree`, `ai-mlops-middle-drift`, `eng-dataeng-middle-quality` используют numpy/pandas из песочницы runner (numpy 2.3.3, pandas 2.3.3, BLAS в один поток, образ linux/amd64).
+Особый случай: `eng-qaauto-*` – кандидат пишет `verify(impl)`, скрытые тесты проверяют, что он пропускает эталон и ловит мутантов (мутационное тестирование). Senior-шаблоны требуют `DESIGN.md`. Шаблоны `ai-bi-junior-salesmart`, `ai-bi-middle-retention`, `ai-bi-senior-metriclayer`, `ai-datasci-junior-eda`, `ai-datasci-middle-abtest`, `ai-datasci-senior-cohorts`, `ai-mleng-junior-metrics`, `ai-mleng-middle-leakfree`, `ai-mlops-middle-drift`, `eng-dataeng-middle-quality` используют numpy/pandas из песочницы runner (numpy 2.3.3, pandas 2.3.3, BLAS в один поток, образ linux/amd64).
 
 - `reference/` исключён из обоих образов (`platform/.dockerignore`), приложение получает шаблоны через
   `outputFileTracingIncludes` в `next.config.ts` (standalone-сборка сама файлы с диска не трассирует).

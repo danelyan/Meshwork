@@ -18,7 +18,7 @@ const Input = z.object({
 });
 const Output = CandidatesBlockSchema;
 
-/** Поиск по всей базе (R-E-04) тем же ранжированием, что кабинет; карточки — в ленту. */
+/** Поиск по всей базе (R-E-04) тем же ранжированием, что кабинет; карточки – в ленту. */
 export const searchCandidates: EmployerTool = {
   name: 'search_candidates',
   description:

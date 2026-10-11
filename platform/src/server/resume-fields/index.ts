@@ -1,8 +1,8 @@
 // lane resume-fields (R-C-01/02): поля профиля из резюме.
-//  - пустое поле профиля заполняется само (status applied, в профиле — пометка «из резюме»);
+//  - пустое поле профиля заполняется само (status applied, в профиле – пометка «из резюме»);
 //  - заполненное кандидатом не перетирается: остаётся предложение «в резюме указано иначе» (suggested);
 //  - кандидат принимает или отклоняет предложение и правит любое поле сам (POST /api/profile/resume-fields).
-// ФИО и контакт — только кандидату; работодатель до принятия приглашения их не видит (employer/privacy.ts).
+// ФИО и контакт – только кандидату; работодатель до принятия приглашения их не видит (employer/privacy.ts).
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 
@@ -69,7 +69,7 @@ export interface ApplySummary {
 }
 
 /**
- * Применить распознанные поля к профилю. Пустое — записать (applied); совпадает — ничего; отличается —
+ * Применить распознанные поля к профилю. Пустое – записать (applied); совпадает – ничего; отличается –
  * предложение (suggested), если кандидат не отклонил ровно это значение раньше.
  */
 export async function applyResumeFields(
@@ -121,9 +121,9 @@ export interface ResumeFieldView {
   resume: ResumeFieldValue;
   quote: string;
   sourceRef: string;
-  /** true — значение профиля взято из резюме и не менялось (пометка «из резюме») */
+  /** true – значение профиля взято из резюме и не менялось (пометка «из резюме») */
   fromResume: boolean;
-  /** true — в резюме указано иначе, ждёт решения кандидата */
+  /** true – в резюме указано иначе, ждёт решения кандидата */
   suggestion: boolean;
 }
 
@@ -149,7 +149,7 @@ const List = z.array(z.string().trim().min(1).max(60)).max(10);
 export const ResumeFieldAction = z.discriminatedUnion('action', [
   z.object({ action: z.literal('accept'), key: z.enum(RESUME_FIELD_KEYS) }),
   z.object({ action: z.literal('dismiss'), key: z.enum(RESUME_FIELD_KEYS) }),
-  /** Правка кандидатом. Контакт — через POST /api/profile/contact (та же нормализация). */
+  /** Правка кандидатом. Контакт – через POST /api/profile/contact (та же нормализация). */
   z.object({ action: z.literal('set'), key: z.enum(['name', 'experienceYears', 'roles', 'softSkills']), value: z.unknown() }),
 ]);
 export type ResumeFieldActionInput = z.infer<typeof ResumeFieldAction>;
@@ -163,7 +163,7 @@ function validated(key: ResumeFieldKey, value: unknown): ResumeFieldValue | null
     return c;
   }
   const list = List.parse(value);
-  // Роль — без компании: «Backend в Яндексе» → «Backend» (то же правило, что при разборе резюме).
+  // Роль – без компании: «Backend в Яндексе» → «Backend» (то же правило, что при разборе резюме).
   return key === 'roles' ? list.map((r) => cleanRole(r) ?? r.replace(/\s+(?:в|во|at)\s+.*$/iu, '').trim()).filter(Boolean) : list;
 }
 

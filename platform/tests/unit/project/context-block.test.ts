@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { CONTEXT_TAG, contextBlock, parseContextBlock, type EvaluateContext } from '@/server/project/fallback';
 
-// В блок <project_context> идут файлы репозитория кандидата и его журнал ИИ — это данные, а не инструкции:
+// В блок <project_context> идут файлы репозитория кандидата и его журнал ИИ – это данные, а не инструкции:
 // текст не должен закрыть тег и открыть свой блок.
 describe('contextBlock (project): экранирование', () => {
   const ctx: EvaluateContext = {

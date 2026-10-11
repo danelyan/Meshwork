@@ -1,4 +1,4 @@
-// Самоотклик (R-C-12) и граница приватности (R-E-07): контакты — только при accepted и действующем раскрытии по отклику.
+// Самоотклик (R-C-12) и граница приватности (R-E-07): контакты – только при accepted и действующем раскрытии по отклику.
 import { GET as myApplications } from '@/app/api/career/applications/route';
 import { POST as apply } from '@/app/api/career/vacancies/[id]/apply/route';
 import { DELETE as revoke } from '@/app/api/consents/[kind]/route';
@@ -52,7 +52,7 @@ describe('самоотклик (R-C-12, R-E-07)', () => {
   });
   afterAll(() => prisma.$disconnect());
 
-  it('архивная или несуществующая вакансия — 404, без галочки раскрытия — 409 consent_required, длинное сообщение — 400', async () => {
+  it('архивная или несуществующая вакансия – 404, без галочки раскрытия – 409 consent_required, длинное сообщение – 400', async () => {
     await seed();
     expect((await doApply('vac-old')).status).toBe(404);
     expect((await doApply('nope')).status).toBe(404);
@@ -62,7 +62,7 @@ describe('самоотклик (R-C-12, R-E-07)', () => {
     expect(await prisma.application.count()).toBe(0);
   });
 
-  it('повтор — 409, лимит за сутки — 429', async () => {
+  it('повтор – 409, лимит за сутки – 429', async () => {
     await seed();
     expect((await doApply('vac-a')).status).toBe(201);
     expect((await doApply('vac-a')).status).toBe(409);
@@ -78,7 +78,7 @@ describe('самоотклик (R-C-12, R-E-07)', () => {
     expect((await prisma.application.findUniqueOrThrow({ where: { id } })).status).toBe('sent');
   });
 
-  it('до accepted — псевдоним без контактов; после — имя и контакт; отзыв раскрытия снова закрывает', async () => {
+  it('до accepted – псевдоним без контактов; после – имя и контакт; отзыв раскрытия снова закрывает', async () => {
     await seed();
     const { id } = await (await doApply('vac-a')).json();
     const before = (await (await listFor(empA)).json()).applications;
@@ -127,7 +127,7 @@ describe('самоотклик (R-C-12, R-E-07)', () => {
     expect((await prisma.candidate.findUniqueOrThrow({ where: { id: CAND } })).hiddenFromEmployers).toBe(true);
   });
 
-  it('работодатель без оферты — 409 consent_required', async () => {
+  it('работодатель без оферты – 409 consent_required', async () => {
     await seed();
     await prisma.consent.updateMany({ where: { userId: 'u-a' }, data: { revokedAt: new Date() } });
     expect(await errCode(await listFor(empA))).toEqual([409, 'consent_required']);

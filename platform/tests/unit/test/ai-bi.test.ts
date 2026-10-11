@@ -16,7 +16,7 @@ describe('AI: подкатегория BI-аналитика (ai-bi)', () => {
     expect(pool.generators).toHaveLength(18);
   });
 
-  it('catalogId — записи каталога, и каждое task: генератора есть в proof его записи; id и taskId уникальны', () => {
+  it('catalogId – записи каталога, и каждое task: генератора есть в proof его записи; id и taskId уникальны', () => {
     const cat = new Map(catalogFromFile().map((e) => [e.id, e]));
     expect(new Set(AI_BI_GENERATORS.map((g) => g.id)).size).toBe(18);
     expect(new Set(AI_BI_GENERATORS.map((g) => g.taskId)).size).toBe(18);

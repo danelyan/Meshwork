@@ -70,7 +70,7 @@ describe('runner очередь и лимиты', () => {
     await expect(jobs.receiveUpload(body(tarball()), undefined)).rejects.toMatchObject({ code: 'queue_full', status: 429 });
   });
 
-  it('объявленный размер сверх свободного объёма — 429 до чтения тела', async () => {
+  it('объявленный размер сверх свободного объёма – 429 до чтения тела', async () => {
     await jobs.receiveUpload(body(tarball()), undefined);
     await expect(jobs.receiveUpload(body(Buffer.alloc(1)), 50 * 1024 * 1024)).rejects.toMatchObject({ code: 'queue_full' });
   });

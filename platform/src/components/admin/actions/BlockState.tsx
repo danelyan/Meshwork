@@ -1,6 +1,6 @@
 import { Tag } from '@/components/ui';
 
-/** Состояние блокировки для карточки (даты — ISO-строки). Разблокированный: blockedUntil в прошлом. */
+/** Состояние блокировки для карточки (даты – ISO-строки). Разблокированный: blockedUntil в прошлом. */
 export interface BlockView {
   blockedAt: string | null;
   blockedUntil: string | null;

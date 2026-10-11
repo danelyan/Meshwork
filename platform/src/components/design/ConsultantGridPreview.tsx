@@ -78,7 +78,7 @@ export function ConsultantGridPreview({ source = GRID_PREVIEW_SOURCE, initialSet
   const Container = portrait ? 'div' : 'main';
   return (
     <Container id={portrait ? undefined : 'main'} className={`${styles.preview} ${portrait ? styles.portrait : ''}`}>
-      <iframe ref={frame} src={source} title={portrait ? 'Сеточная голова консультанта' : 'Карьерный консультант — тестовый макет'} className={styles.frame}
+      <iframe ref={frame} src={source} title={portrait ? 'Сеточная голова консультанта' : 'Карьерный консультант – тестовый макет'} className={styles.frame}
         onLoad={() => frame.current?.contentWindow?.postMessage({ type: 'fsp-grid-connect' }, window.location.origin)} />
       <section className={`${styles.tools} ${version === 'v3' ? styles.toolsRight : ''}`} aria-label="Настройки тестового экрана">
         <div className={styles.toolbar}>
@@ -94,7 +94,7 @@ export function ConsultantGridPreview({ source = GRID_PREVIEW_SOURCE, initialSet
             <Button href="/design/consultant-grid-v2" size="sm" aria-current={version === 'v2' ? 'page' : undefined}>Тест v2</Button>
             <Button href="/design/consultant-grid-v3" size="sm" aria-current={version === 'v3' ? 'page' : undefined}>Зеркальный v3</Button>
           </div>}
-          <Field label={`Шаг сетки · ${settings.step} px`} hint="Меньше шаг — плотнее сетка.">
+          <Field label={`Шаг сетки · ${settings.step} px`} hint="Меньше шаг – плотнее сетка.">
             <input type="range" min="16" max="80" step="1" value={settings.step}
               onChange={(e) => setSettings({ ...settings, step: Number(e.target.value) })} />
           </Field>

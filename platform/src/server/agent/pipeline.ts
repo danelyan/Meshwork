@@ -13,8 +13,8 @@ import { shortUrl } from './tools/fetch_url';
 import type { ToolContext, TurnInput } from './types';
 
 /**
- * Первый ход с вложениями — детерминированный конвейер в коде (research/10
- * § 4.1: предсказуемое — конвейером): сборщик → извлекатель (LLM, JSON) →
+ * Первый ход с вложениями – детерминированный конвейер в коде (research/10
+ * § 4.1: предсказуемое – конвейером): сборщик → извлекатель (LLM, JSON) →
  * проверяющий (код) → карточки. Модель получает только сводку результата и
  * пишет короткий ответ; повторно читать источники ей не нужно.
  */
@@ -24,7 +24,7 @@ export interface PipelineResult {
   proposed: { id: string; catalogId: string; statement: string; level: string; sourceRef: string }[];
   /** Настоящие отказы (без дублей). */
   rejected: number;
-  /** Объединено повторов (дубли — не отказ). */
+  /** Объединено повторов (дубли – не отказ). */
   merged: number;
   /** Найдено, но отсечено как уже лежащее в профиле (не отказ и не дубль внутри запуска). */
   alreadyKnown: number;
@@ -57,7 +57,7 @@ function maskDoc(doc: ExtractedDoc): ExtractedDoc {
     return {
       ...doc,
       text: maskContacts(doc.text).text,
-      // `...l` — сохранить флаг hidden: скрытые строки извлекатель не должен видеть как обычные.
+      // `...l` – сохранить флаг hidden: скрытые строки извлекатель не должен видеть как обычные.
       lines: doc.lines.map((l) => ({ ...l, text: maskContacts(l.text).text })),
     };
   } catch (err) {
@@ -71,7 +71,7 @@ export function docLabel(doc: ExtractedDoc): string {
   const kind = doc.sourceKind === 'resume' ? 'резюме' : doc.sourceKind === 'github' ? 'GitHub' : doc.sourceKind === 'codeforces' ? 'Codeforces' : doc.sourceKind === 'fsp' ? 'ФСП' : 'документ';
   const name = doc.sourceKind === 'url' ? shortUrl(doc.origin) : doc.title || doc.origin;
   const shown = escapeExternal(name).slice(0, 80);
-  // Название источника уже может начинаться с вида («github demo-x») — не дублируем.
+  // Название источника уже может начинаться с вида («github demo-x») – не дублируем.
   const label = shown.toLowerCase().startsWith(kind.toLowerCase()) ? shown : `${kind} ${shown}`;
   return `${label}${n ? ` (${countOf(n, FORMS.line)})` : ''}`;
 }

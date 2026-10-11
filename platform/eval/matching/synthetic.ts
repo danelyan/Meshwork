@@ -1,9 +1,9 @@
-// Генератор синтетического набора для оценки подбора (лейн match-eval, 10.10). Детерминирован: один seed — один набор.
+// Генератор синтетического набора для оценки подбора (лейн match-eval, 10.10). Детерминирован: один seed – один набор.
 // Без БД и сети. Вымышленные профили и вакансии.
 //
 // Идея разметки: у каждого профиля есть СКРЫТЫЕ латентные навыки (степень владения 0…1 по каждому
 // утверждению каталога) и латентный грейд. То, что видит подбор (утверждения, уровни доказанности, категория,
-// текст), — зашумлённое наблюдение этой истины: кто-то знает больше, чем заявил; кто-то заявил больше, чем знает.
+// текст), – зашумлённое наблюдение этой истины: кто-то знает больше, чем заявил; кто-то заявил больше, чем знает.
 // Релевантность 0/1/2 считается из латентных навыков и грейда, а НЕ из наблюдаемых утверждений и не из формулы подбора.
 import type { DemoProfile } from '../../prisma/seed/employer';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
@@ -21,7 +21,7 @@ const GRADE_NAME: Record<SynGrade, string> = { junior: 'Junior', middle: 'Middle
 const SPEC_NAME: Record<Spec, string> = { backend: 'Backend', frontend: 'Frontend', engineering: 'Инженерия', ai: 'ИИ' };
 const WINDOW = 12;
 
-/** Порядок утверждений в каталоге тематический (соседние — одна тема); вакансия и «фокус» профиля — окно в этом порядке. */
+/** Порядок утверждений в каталоге тематический (соседние – одна тема); вакансия и «фокус» профиля – окно в этом порядке. */
 const STACK_POOL: Record<Spec, string[]> = {
   backend: ['Go', 'Java', 'Kotlin', 'Python', 'C#', 'Node.js', 'PHP'],
   frontend: ['React', 'Vue', 'Angular', 'TypeScript', 'Svelte', 'Next.js'],
@@ -77,11 +77,11 @@ export interface SynProfile extends DemoProfile {
   cheat?: CheatKind;
   /** Только при withStages (ADR 0003, ступень 2): проверенные проекты под вакансии. Скрытая истина не меняется. */
   projects?: SynProject[];
-  /** Только при withStages (ступень 1): темы созвона с ИИ-интервьюером. Есть поле — созвон был (темы могут быть пустыми). */
+  /** Только при withStages (ступень 1): темы созвона с ИИ-интервьюером. Есть поле – созвон был (темы могут быть пустыми). */
   callTopics?: SynCallTopic[];
 }
 
-/** Проверенный проект: доля пройденных скрытых тестов под одну вакансию. falseConfirm — шум: тесты прошёл без владения. */
+/** Проверенный проект: доля пройденных скрытых тестов под одну вакансию. falseConfirm – шум: тесты прошёл без владения. */
 export interface SynProject { vacancyId: string; score: number; falseConfirm: boolean }
 /** Тема созвона: проверялась ли, подтвердил ли интервьюер (с шумом относительно латентного владения). */
 export interface SynCallTopic { catalogId: string; claimed: boolean; confirmed: boolean; noisy: boolean }
@@ -106,7 +106,7 @@ export const DEFAULT_STAGES: StagesOptions = { projectShare: 0.3, callShare: 0.4
 export interface SynSet {
   vacancies: SynVacancy[];
   profiles: SynProfile[];
-  /** Релевантность 0/1/2 по скрытой истине: vacancyId → profileId → rel (только ненулевые не опускаются — храним все). */
+  /** Релевантность 0/1/2 по скрытой истине: vacancyId → profileId → rel (только ненулевые не опускаются – храним все). */
   relevance: Record<string, Record<string, number>>;
 }
 
@@ -116,10 +116,10 @@ const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 export const TRUTH = { rel2: 0.7, rel1: 0.45, mastery: [0.3, 0.8] as const, oneBelow: 0.7, twoBelow: 0.4 };
 
 /**
- * ПРАВИЛО РАЗМЕТКИ по скрытой истине. mastery(навык) = clamp((prof − 0,3)/0,5): ≤ 0,3 — не владеет, ≥ 0,8 — владеет.
- * truthCov = Σ вес × mastery / Σ вес по требованиям вакансии. Грейд: латентный не ниже вакансии — как есть; на ступень
- * ниже — truthCov × 0,7; на две — × 0,4. rel 2: truthCov ≥ 0,7; rel 1: ≥ 0,45; иначе 0.
- * Это тоже «покрытие требований», как и формула подбора; отличие — оно считается по латентным навыкам, а не по
+ * ПРАВИЛО РАЗМЕТКИ по скрытой истине. mastery(навык) = clamp((prof − 0,3)/0,5): ≤ 0,3 – не владеет, ≥ 0,8 – владеет.
+ * truthCov = Σ вес × mastery / Σ вес по требованиям вакансии. Грейд: латентный не ниже вакансии – как есть; на ступень
+ * ниже – truthCov × 0,7; на две – × 0,4. rel 2: truthCov ≥ 0,7; rel 1: ≥ 0,45; иначе 0.
+ * Это тоже «покрытие требований», как и формула подбора; отличие – оно считается по латентным навыкам, а не по
  * заявленным утверждениям с весом доказанности, и учитывает грейд. Специализация, категория, ФСП и стек в разметке не участвуют.
  */
 export function truthRelevance(latent: Record<string, number>, trueGrade: SynGrade, v: Pick<SynVacancy, 'needs' | 'grade'>): { cov: number; rel: 0 | 1 | 2 } {
@@ -138,7 +138,7 @@ export function truthRelevance(latent: Record<string, number>, trueGrade: SynGra
 }
 
 type GradeW = { junior: number | null; middle: number | null; senior?: number | null };
-/** Вес утверждения для грейда; у общих утверждений веса заданы по специализациям — берём backend (оценка — по любому). Senior — как Middle. */
+/** Вес утверждения для грейда; у общих утверждений веса заданы по специализациям – берём backend (оценка – по любому). Senior – как Middle. */
 function weightFor(e: CatalogEntry, grade: SynGrade, spec: Spec = 'backend'): number {
   const w = e.weights as GradeW | Partial<Record<Spec, GradeW>>;
   const g = ('junior' in w ? w : (w[spec] ?? w.backend ?? Object.values(w)[0])) as GradeW | undefined;
@@ -192,7 +192,7 @@ const PARAMS: Record<Archetype, ArchParams> = {
 
 /**
  * Набор «категория списана» (11.10): count профилей, подвиды в долях mix (по умолчанию 60 % копирует условие в нейросеть,
- * 25 % нейросеть на втором устройстве, 15 % слитые ключи — допущение агента, в живых данных не измерено).
+ * 25 % нейросеть на втором устройстве, 15 % слитые ключи – допущение агента, в живых данных не измерено).
  * Генерируются отдельным ГПСЧ (seed + FAKED_SALT) после основного набора: прежние 247 профилей и вакансии не меняются.
  */
 export interface FakedOptions { count: number; mix?: Record<CheatKind, number> }
@@ -204,7 +204,7 @@ function trueGradeFor(a: number, rnd: () => number): SynGrade {
   return x < 0.45 ? 'junior' : x < 0.78 ? 'middle' : 'senior';
 }
 
-/** Как поставил бы навык латентный уровень: в фокусе — ability, вне — ×0,35; средний грейд навыка выше грейда человека — ×0,5. */
+/** Как поставил бы навык латентный уровень: в фокусе – ability, вне – ×0,35; средний грейд навыка выше грейда человека – ×0,5. */
 function profFor(e: CatalogEntry, a: number, g: SynGrade, inFocus: boolean, rnd: () => number): number {
   let p = a * (inFocus ? 1 : 0.35);
   if (!e.grades.some((x) => GRADE_RANK[x as SynGrade] <= GRADE_RANK[g])) p *= 0.5;
@@ -213,7 +213,7 @@ function profFor(e: CatalogEntry, a: number, g: SynGrade, inFocus: boolean, rnd:
 
 /**
  * Проекты и созвоны. Проект: score = доля скрытых тестов; у владеющего (покрытие вакансии по латентным навыкам, без штрафа
- * грейда) — 0,15 + 0,85 × покрытие ± 0,08; с вероятностью projectNoise проект «пройден» без владения (score 0,7…0,95).
+ * грейда) – 0,15 + 0,85 × покрытие ± 0,08; с вероятностью projectNoise проект «пройден» без владения (score 0,7…0,95).
  * Созвон: до 6 заявленных тем + до 2 незаявленных с высоким латентным владением; интервьюер подтверждает при владении ≥ 0,6,
  * ошибается в callNoise случаев (подтвердил при владении < 0,45 либо не подтвердил при ≥ 0,6).
  */
@@ -305,7 +305,7 @@ export function generateSynthetic(seed = SYN_SEED, opts: { faked?: FakedOptions;
   const pickSpec = (): Spec => { let x = rnd(); for (const [s, w] of specWeights) { if ((x -= w) < 0) return s; } return 'backend'; };
   const profiles: SynProfile[] = [];
   let seq = 0;
-  // Профиль строится из текущего rnd; основной набор — тот же порядок вызовов, что до 11.10 (набор воспроизводится).
+  // Профиль строится из текущего rnd; основной набор – тот же порядок вызовов, что до 11.10 (набор воспроизводится).
   const build = (archetype: Archetype, cheat?: CheatKind): SynProfile => {
     const P = PARAMS[archetype];
     {
@@ -313,7 +313,7 @@ export function generateSynthetic(seed = SYN_SEED, opts: { faked?: FakedOptions;
       const spec: Spec | null = archetype === 'no_spec' ? null : archetype === 'fullstack' ? 'backend' : pickSpec();
       const ability = P.ability[0] + rnd() * (P.ability[1] - P.ability[0]);
       const g = trueGradeFor(ability, rnd);
-      // фокус: окно вокруг случайного центра; у «соседнего стека» — сдвиг от центра случайной вакансии той же специализации
+      // фокус: окно вокруг случайного центра; у «соседнего стека» – сдвиг от центра случайной вакансии той же специализации
       const focus: { spec: Spec; center: number }[] = [];
       if (spec) {
         const L = bySpec.get(spec)!;
@@ -411,8 +411,8 @@ export function generateSynthetic(seed = SYN_SEED, opts: { faked?: FakedOptions;
 export type LevelShares = Record<IntegrityLevel, number>;
 
 /**
- * Доли уровней индекса по персонам — из симуляции теста `eval/test/integrity-results.json` (боевой код integrity-v2,
- * 4000 попыток на персону). Это модели персон, а не живые люди. copy_llm — по p подчинения ловушке (0,3 / 0,6 / 0,9).
+ * Доли уровней индекса по персонам – из симуляции теста `eval/test/integrity-results.json` (боевой код integrity-v2,
+ * 4000 попыток на персону). Это модели персон, а не живые люди. copy_llm – по p подчинения ловушке (0,3 / 0,6 / 0,9).
  */
 export interface IntegrityRates { honest: Record<SynGrade, LevelShares>; copy_llm: LevelShares; second_device: LevelShares; leaked_keys: LevelShares }
 
@@ -446,8 +446,8 @@ export function withHonestHigh(r: IntegrityRates, highPct: Record<SynGrade, numb
 }
 
 /**
- * Жребий уровня индекса для профилей с категорией из теста. Честный — по грейду своей категории; category_faked — по
- * подвиду. Профиль без категории — нет записи (теста не было). rnd — отдельный ГПСЧ: набор профилей не меняется.
+ * Жребий уровня индекса для профилей с категорией из теста. Честный – по грейду своей категории; category_faked – по
+ * подвиду. Профиль без категории – нет записи (теста не было). rnd – отдельный ГПСЧ: набор профилей не меняется.
  */
 export function drawIntegrity(profiles: SynProfile[], rates: IntegrityRates, rnd: () => number): Map<string, IntegrityLevel> {
   const out = new Map<string, IntegrityLevel>();

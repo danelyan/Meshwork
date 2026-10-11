@@ -1,7 +1,7 @@
 // Связь теста и созвона (11.10): текстовый тест от нейросети защитить нельзя (docs/research/competitors/anti-ai.md,
 // раздел 5), поэтому в конце квалифицирующего созвона интервьюер просит объяснить 1–2 задания, которые кандидат
-// решал в тесте. Выбор заданий и состояние этапа — чистые функции; чтение попытки из БД — loadTestReview.
-// Результат — сигнал testOwnership в вердикте (не меняет категорию; «объяснил сам» снимает понижение категории при индексе high — employer/integrity-ranking.ts).
+// решал в тесте. Выбор заданий и состояние этапа – чистые функции; чтение попытки из БД – loadTestReview.
+// Результат – сигнал testOwnership в вердикте (не меняет категорию; «объяснил сам» снимает понижение категории при индексе high – employer/integrity-ranking.ts).
 import { checkQuoteLoose } from '../defense/evaluator';
 import { prisma } from '../db';
 import { responseJsonSchema } from '../llm/schema';
@@ -19,7 +19,7 @@ export const REVIEW_QUESTIONS = 2;
 const PROMPT_CHARS = 500;
 const CODE_CHARS = 600;
 
-/** Задание теста для разбора: условие коротко, ответ кандидата, верно ли, эталон (эталон — только модели). */
+/** Задание теста для разбора: условие коротко, ответ кандидата, верно ли, эталон (эталон – только модели). */
 export interface ReviewItem {
   /** Попытка, из которой взято задание: вердикт хранит её id, чтобы разбор не приписали другой попытке с теми же шаблонами. */
   attemptId?: string;
@@ -55,10 +55,10 @@ const clip = (t: string, n: number) => {
 };
 
 /**
- * Детерминированный выбор ≤ 2 заданий. Первое — верно решённое, ближайшее по сложности (b) к порогу заявленного
- * грейда (самое показательное: «почему именно так»); нет верных — ближайшее к порогу из решённых неверно.
- * Второе — любое другое: сначала неверное (объяснить свою ошибку), затем верное; снова ближайшее к порогу.
- * Ничья — по порядку показа. Без ответов — пустой список.
+ * Детерминированный выбор ≤ 2 заданий. Первое – верно решённое, ближайшее по сложности (b) к порогу заявленного
+ * грейда (самое показательное: «почему именно так»); нет верных – ближайшее к порогу из решённых неверно.
+ * Второе – любое другое: сначала неверное (объяснить свою ошибку), затем верное; снова ближайшее к порогу.
+ * Ничья – по порядку показа. Без ответов – пустой список.
  */
 export function pickReviewItems(rows: readonly AnsweredRow[], grade: Grade): ReviewItem[] {
   const cut = GRADE_CUT[grade];
@@ -82,12 +82,12 @@ export function pickReviewItems(rows: readonly AnsweredRow[], grade: Grade): Rev
   }));
 }
 
-/** Задания последней завершённой попытки теста по той же подкатегории; нет попытки — []. */
+/** Задания последней завершённой попытки теста по той же подкатегории; нет попытки – []. */
 export async function loadTestReview(candidateId: string, specialization: string, subcategoryId: string | null): Promise<ReviewItem[]> {
   const scope = { candidateId, specialization: specialization as never, ...(subcategoryId ? { subcategoryId } : {}) };
   // Если категория не учитывается в выдаче из-за индекса (test/ranking-hold.ts), разбираем именно ту попытку, которая
   // её держит: «объяснил сам» снимает ограничение только по ней, а последней завершённой может оказаться проваленная
-  // подтверждающая попытка (Codex-ревью 11.10). Иначе — последняя завершённая попытка.
+  // подтверждающая попытка (Codex-ревью 11.10). Иначе – последняя завершённая попытка.
   const hold = await rankingHoldOf(candidateId);
   const held = hold ? await prisma.testAttempt.findFirst({ where: { ...scope, id: hold.attemptId }, select: { id: true, grade: true } }) : null;
   const attempt =
@@ -140,8 +140,8 @@ export function reviewState(transcript: readonly TranscriptEntry[]): { asked: nu
 }
 
 /**
- * Какой шаг этапа задавать сейчас: шаг 1 — только когда обычные вопросы закончились (allowStart), шаг 2 — сразу
- * после ответа на шаг 1; null — этап пройден или шаг ещё не наступил. Общая логика видов qualifying и interview.
+ * Какой шаг этапа задавать сейчас: шаг 1 – только когда обычные вопросы закончились (allowStart), шаг 2 – сразу
+ * после ответа на шаг 1; null – этап пройден или шаг ещё не наступил. Общая логика видов qualifying и interview.
  */
 export function reviewStepDue(transcript: readonly TranscriptEntry[], allowStart: boolean): 1 | 2 | null {
   const st = reviewState(transcript);
@@ -150,7 +150,7 @@ export function reviewStepDue(transcript: readonly TranscriptEntry[], allowStart
   return st.answered >= st.asked ? ((st.asked + 1) as 1 | 2) : null;
 }
 
-/** Сколько реплик ИИ этапа ещё впереди (0 — этапа нет или он пройден). */
+/** Сколько реплик ИИ этапа ещё впереди (0 – этапа нет или он пройден). */
 export function reviewRemaining(items: readonly ReviewItem[], transcript: readonly TranscriptEntry[]): number {
   return items.length === 0 ? 0 : Math.max(0, REVIEW_QUESTIONS - reviewState(transcript).asked);
 }
@@ -218,7 +218,7 @@ export async function nextReviewQuestion(
       {
         purpose: 'call_interviewer', timeoutMs: INTERVIEWER_TIMEOUT_MS,
         system: loadCallPrompt('test-review'),
-        messages: [{ role: 'user', content: `${contextBlock(payload)}\n\nЗадай вопрос этапа, шаг ${step}. Ответ — только JSON по схеме.` }],
+        messages: [{ role: 'user', content: `${contextBlock(payload)}\n\nЗадай вопрос этапа, шаг ${step}. Ответ – только JSON по схеме.` }],
         schema: { name: 'call_review_question', jsonSchema: responseJsonSchema(CallReviewQuestionOutput) as object },
         temperature: 0.4,
         maxTokens: 300,
@@ -248,7 +248,7 @@ export interface OwnershipPayload {
   dialog: ReviewPayload['dialog'];
 }
 
-/** id разобранной попытки — в вердикт: по нему employer/integrity-ranking.ts привязывает созвон, шаблоны — запасной путь для старых вердиктов. */
+/** id разобранной попытки – в вердикт: по нему employer/integrity-ranking.ts привязывает созвон, шаблоны – запасной путь для старых вердиктов. */
 const reviewedAttempt = (items: readonly ReviewItem[]): { attemptId?: string } => (items[0]?.attemptId ? { attemptId: items[0].attemptId } : {});
 const NOT_CHECKED = (items: ReviewItem[], reason: string): TestOwnership => ({ status: 'not_checked', reason, ...reviewedAttempt(items), items: items.map((i) => ({ templateId: i.templateId, title: i.title, correct: i.correct })) });
 
@@ -268,7 +268,7 @@ export async function evaluateOwnership(items: readonly ReviewItem[], dialog: Re
     explanations: list.map((i) => ({ title: i.title, explanation: i.explanation })),
     dialog: dialog.map((d) => ({ question: d.question, answer: d.answer ?? '(кандидат не ответил)' })),
   };
-  const messages: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\nОцени, объяснил ли кандидат решение сам. Ответ — только JSON по схеме.` }];
+  const messages: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\nОцени, объяснил ли кандидат решение сам. Ответ – только JSON по схеме.` }];
   try {
     const res = await llm.complete(
       {

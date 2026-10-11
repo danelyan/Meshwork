@@ -33,7 +33,7 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
   const sayEmployer = useEmployerVoice();
   const rtc = useRtcAudio(sessionId, 'candidate', iceServers, true);
   const { close: closePeer } = rtc;
-  // Вход и выход работодателя (и повторный вход) — старое соединение с ним закрывается: новое придёт новым offer.
+  // Вход и выход работодателя (и повторный вход) – старое соединение с ним закрывается: новое придёт новым offer.
   const onParticipant = useCallback((userId: string) => closePeer(`employer:${userId}`), [closePeer]);
   const { snapshot, lastEntry, connected, aiThinking } = useCallEvents(sessionId, initial, rtc.onSignal, onParticipant);
 
@@ -51,7 +51,7 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
   const finished = s.status !== 'active' || verdict !== null;
   const employer = s.participants[0];
 
-  // Озвучить свежие реплики: ИИ — голосом аватара, работодателя — вторым голосом, если нет живого аудио.
+  // Озвучить свежие реплики: ИИ – голосом аватара, работодателя – вторым голосом, если нет живого аудио.
   useEffect(() => {
     if (!lastEntry || spoken.current.has(lastEntry.index)) return;
     spoken.current.add(lastEntry.index);
@@ -60,7 +60,7 @@ function Panel({ sessionId, initial, iceServers }: { sessionId: string; initial:
     if (lastEntry.defense?.kind === 'closing') setDone(true);
   }, [lastEntry, voice, sayEmployer, rtc.anyConnected]);
 
-  // Работодатель вышел — закрыть его аудио.
+  // Работодатель вышел – закрыть его аудио.
   const peersKey = s.participants.map((p) => p.userId).join(',');
   useEffect(() => {
     for (const [peer, st] of Object.entries(rtc.states)) if (st !== 'off' && peer.startsWith('employer:') && !peersKey.split(',').includes(peer.slice(9))) rtc.close(peer);

@@ -5,7 +5,7 @@ import { withErrors } from '@/server/errors';
 import { can } from '@/server/admin/permissions';
 export const dynamic = 'force-dynamic';
 
-/** Список кандидатов: псевдоним вместо ФИО, текущая категория; поиск по id и псевдониму (по почте и имени — тем, кто вправе раскрывать ПДн). */
+/** Список кандидатов: псевдоним вместо ФИО, текущая категория; поиск по id и псевдониму (по почте и имени – тем, кто вправе раскрывать ПДн). */
 export const GET = withErrors(async (req: Request) => {
   const staff = await requireStaff(req, 'view_candidates');
   const q = CandidateListQuery.parse(Object.fromEntries(new URL(req.url).searchParams));

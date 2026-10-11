@@ -12,13 +12,13 @@ export const dynamic = 'force-dynamic';
 const Body = z.object({
   specialization: z.enum(SPECIALIZATIONS),
   grade: z.enum(GRADES),
-  /** Подкатегория теста (Subcategory.id); не передана — из профиля кандидата. Тест идёт по подкатегории. */
+  /** Подкатегория теста (Subcategory.id); не передана – из профиля кандидата. Тест идёт по подкатегории. */
   subcategoryId: z.string().max(64).nullish(),
 });
 
 /**
- * POST /api/test/start {specialization, grade, subcategoryId?} — новая попытка (201) или активная той же категории (200).
- * Без подкатегории направления — 422 subcategory_required; подкатегория без банка заданий — 422 no_test. R-C-05, R-C-06, R-C-09.
+ * POST /api/test/start {specialization, grade, subcategoryId?} – новая попытка (201) или активная той же категории (200).
+ * Без подкатегории направления – 422 subcategory_required; подкатегория без банка заданий – 422 no_test. R-C-05, R-C-06, R-C-09.
  */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
@@ -28,7 +28,7 @@ export const POST = withErrors(async (req: Request) => {
   return Response.json(result, { status: result.resumed ? 200 : 201 });
 });
 
-/** GET /api/test/start?specialization=&grade=&subcategoryId= — можно ли начать (подкатегория, банк, интервалы R-C-09) и правила. */
+/** GET /api/test/start?specialization=&grade=&subcategoryId= – можно ли начать (подкатегория, банк, интервалы R-C-09) и правила. */
 export const GET = withErrors(async (req: Request) => {
   const candidateId = requireCandidate(req);
   const url = new URL(req.url);

@@ -3,7 +3,7 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // Штатная сборка для Docker (docs: next.config.js/output).
   output: 'standalone',
-  // Нативные/тяжёлые серверные пакеты — без бандлинга, через require Node.js
+  // Нативные/тяжёлые серверные пакеты – без бандлинга, через require Node.js
   // (docs: next.config.js/serverExternalPackages).
   serverExternalPackages: ['unpdf', 'mammoth', 'pdfkit'],
   poweredByHeader: false,
@@ -11,12 +11,12 @@ const nextConfig: NextConfig = {
   // на 2 vCPU стенда этот шаг занимал ~3.5 из ~11 минут выкатки (docs: next.config.js/typescript, eslint).
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
-  // Второй локальный dev-сервер из той же папки — со своим каталогом сборки, иначе общий .next ломает оба
+  // Второй локальный dev-сервер из той же папки – со своим каталогом сборки, иначе общий .next ломает оба
   // (docs: next.config.js/distDir). По умолчанию .next.
   distDir: process.env.NEXT_DIST_DIR || '.next',
-  // Промпты defense/claims читаются с диска через process.cwd() — трассировщик их
-  // не видит, без этого standalone-сборка останется без промптов. Ключ — glob
-  // маршрута (picomatch), значение — glob файлов от корня проекта
+  // Промпты defense/claims читаются с диска через process.cwd() – трассировщик их
+  // не видит, без этого standalone-сборка останется без промптов. Ключ – glob
+  // маршрута (picomatch), значение – glob файлов от корня проекта
   // (docs: next.config.js/output, outputFileTracingIncludes).
   outputFileTracingIncludes: {
     '/*': ['./src/server/**/prompts/*.md'],

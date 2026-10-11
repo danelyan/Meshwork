@@ -6,7 +6,7 @@ import { getSubcategory, type Specialization } from '@/lib/directions';
 import type { CommonCompetency } from '../types';
 
 /**
- * Компетенции по направлению — то, без чего специалист подкатегории не работает в любой её роли (обоснование —
+ * Компетенции по направлению – то, без чего специалист подкатегории не работает в любой её роли (обоснование –
  * в ADR). Backend: данные (SQL), протокол (HTTP), алгоритмы и структуры, Git, безопасность, конкурентность.
  * Frontend: HTTP, алгоритмы и структуры, Git, безопасность, регулярные выражения (валидация, парсинг строк).
  * AI: алгоритмы и структуры, SQL (выборки данных), Linux (обучение и сервинг на серверах), тестирование.
@@ -19,10 +19,10 @@ export const COMMON_BY_SPEC: Readonly<Record<Specialization, readonly CommonComp
   engineering: ['common.linux', 'common.git', 'common.sql', 'common.testing', 'common.http'],
 };
 
-/** Точечные поправки по подкатегории (полная замена списка направления). Пусто — все подкатегории берут список направления. */
+/** Точечные поправки по подкатегории (полная замена списка направления). Пусто – все подкатегории берут список направления. */
 export const COMMON_BY_SUBCATEGORY: Readonly<Partial<Record<string, readonly CommonCompetency[]>>> = {};
 
-/** Общие компетенции подкатегории; неизвестная подкатегория — пусто. */
+/** Общие компетенции подкатегории; неизвестная подкатегория – пусто. */
 export function commonCompetenciesFor(subcategoryId: string | null | undefined): readonly CommonCompetency[] {
   const sub = getSubcategory(subcategoryId);
   if (!sub) return [];

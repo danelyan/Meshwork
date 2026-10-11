@@ -1,21 +1,21 @@
 // Нормализация текста для сверки цитаты с источником (verifier, extractByMarkers).
-// Сравнение — по нормализованной форме, но каждый символ помнит позицию в оригинале,
+// Сравнение – по нормализованной форме, но каждый символ помнит позицию в оригинале,
 // чтобы вернуть дословный фрагмент источника и строки, из которых он взят.
 
 const DROP = new Set([
   '­', // мягкий перенос
   '​', '‌', '‍', '⁠', '﻿', // нулевой ширины
-  '*', '`', // разметка Markdown: **жирный**, `код` — модель её часто опускает
+  '*', '`', // разметка Markdown: **жирный**, `код` – модель её часто опускает
 ]);
 const QUOTES = new Set(['«', '»', '„', '“', '”', '‟', '"', '‹', '›', "'", '‘', '’', '‚', '‛', '´', '＂']);
-const DASHES = new Set(['-', '‐', '‑', '‒', '–', '—', '―', '−', '﹣', '－']);
+const DASHES = new Set(['-', '‐', '‑', '‒', '–', '–', '―', '−', '﹣', '－']);
 const isSpace = (ch: string) => /\s/u.test(ch); // \s в JS включает NBSP, U+202F, U+2028 и т. п.
 const isLetter = (ch: string | undefined) => ch !== undefined && /\p{L}/u.test(ch);
 const isLower = (ch: string | undefined) => ch !== undefined && /\p{Ll}/u.test(ch);
 
 export interface Normalized {
   text: string;
-  /** map[i] — индекс в оригинале символа text[i] */
+  /** map[i] – индекс в оригинале символа text[i] */
   map: number[];
 }
 
@@ -68,7 +68,7 @@ export function normalizeWithMap(src: string, opts?: { dehyphenate?: boolean }):
     if (QUOTES.has(ch)) c = '"';
     else if (DASHES.has(ch)) c = '-';
     else c = ch.toLowerCase().replace(/ё/g, 'е');
-    // по кодовым единицам UTF-16: text[i] и map[i] должны совпадать по индексам (эмодзи — 2 единицы)
+    // по кодовым единицам UTF-16: text[i] и map[i] должны совпадать по индексам (эмодзи – 2 единицы)
     for (let k = 0; k < c.length; k++) {
       out.push(c[k] as string);
       map.push(at + Math.min(k, ch.length - 1));
@@ -84,7 +84,7 @@ export function normalize(src: string, opts?: { dehyphenate?: boolean }): string
 /** Цитата для поиска: нормализованная, без маркера списка в начале и знаков препинания по краям. */
 export function normalizeQuote(quote: string): string {
   return normalize(quote)
-    .replace(/^[\s\-•·–—>#+]+/u, '')
+    .replace(/^[\s\-•·––>#+]+/u, '')
     .replace(/[\s.,;:!?…]+$/u, '')
     .trim();
 }

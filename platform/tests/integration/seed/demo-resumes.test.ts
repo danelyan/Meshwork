@@ -1,4 +1,4 @@
-// Цитаты утверждений демо-кандидатов — дословные строки их резюме; выдуманного источника cv-demo.pdf больше нет.
+// Цитаты утверждений демо-кандидатов – дословные строки их резюме; выдуманного источника cv-demo.pdf больше нет.
 import { seedClaims } from '../../../prisma/seed/claims';
 import { PERSONA_PROFILES } from '../../../prisma/seed/demo-personas';
 import { DEMO_POOL, seedPoolProfiles } from '../../../prisma/seed/employer';
@@ -39,8 +39,8 @@ describe('резюме демо-кандидатов (БД)', () => {
     expect(checked).toBeGreaterThan(200);
   });
 
-  // lane resume-fields (R-C-01/02): стаж/роли/софт-скиллы демо-профилей — тем же разбором, с цитатой из их резюме.
-  it('поля профиля из резюме: цитата — дословные строки резюме, значения записаны в профиль', async () => {
+  // lane resume-fields (R-C-01/02): стаж/роли/софт-скиллы демо-профилей – тем же разбором, с цитатой из их резюме.
+  it('поля профиля из резюме: цитата – дословные строки резюме, значения записаны в профиль', async () => {
     const catalog = new Map(catalogFromFile().map((e) => [e.id, e.statement]));
     const byId = new Map(ALL.map((p) => [p.id, p]));
     const fields = await prisma.resumeField.findMany({ where: { candidate: { isDemo: true } } });

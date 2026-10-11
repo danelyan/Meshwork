@@ -1,6 +1,6 @@
-// Реестр генераторов: Backend и Frontend (ADR-0002), AI и Engineering (ADR 0003, дополнения 10.10). Тест — на подкатегорию
-// (дополнение 10.10 15:50): пул попытки — семейства подкатегории, не меньше MIN_FAMILIES_PER_SUBCATEGORY.
-// Направление без генераторов — явная ошибка NoGeneratorsError, а не пустой банк. Параметры a, b здесь — стартовые экспертные; рабочие
+// Реестр генераторов: Backend и Frontend (ADR-0002), AI и Engineering (ADR 0003, дополнения 10.10). Тест – на подкатегорию
+// (дополнение 10.10 15:50): пул попытки – семейства подкатегории, не меньше MIN_FAMILIES_PER_SUBCATEGORY.
+// Направление без генераторов – явная ошибка NoGeneratorsError, а не пустой банк. Параметры a, b здесь – стартовые экспертные; рабочие
 // значения читаются из TaskTemplate (БД), куда их переносит сид и правит калибровка (docs/test-calibration.md).
 import { getSubcategory, SPEC_LABEL, subcategoriesFor } from '@/lib/directions';
 import { GRADE_LABEL, GRADES, type Grade } from '@/lib/grades';
@@ -24,7 +24,7 @@ export function getGenerator(id: string): TaskGenerator | undefined {
   return BY_ID.get(id);
 }
 
-/** Собственные семейства направления (без общих: их `specialization` — только строка в БД). */
+/** Собственные семейства направления (без общих: их `specialization` – только строка в БД). */
 export function generatorsFor(spec: Specialization): TaskGenerator[] {
   return GENERATORS.filter((g) => g.specialization === spec && !g.shared);
 }
@@ -75,8 +75,8 @@ export function generatorsForSubcategory(subcategoryId: string): TaskGenerator[]
 export interface TestPool {
   generators: TaskGenerator[];
   /**
-   * true — переходный режим: у направления ещё не размечено ни одно семейство (лейн генераторов не влит),
-   * пул — всё направление, как до теста на подкатегорию. false — пул подкатегории.
+   * true – переходный режим: у направления ещё не размечено ни одно семейство (лейн генераторов не влит),
+   * пул – всё направление, как до теста на подкатегорию. false – пул подкатегории.
    */
   legacy: boolean;
   /** Сколько в generators общих семейств (0 без opts.common). */
@@ -92,9 +92,9 @@ export interface PoolOptions {
 }
 
 /**
- * Пул попытки для направления и подкатегории. Направление с размеченными семействами — только семейства
+ * Пул попытки для направления и подкатегории. Направление с размеченными семействами – только семейства
  * подкатегории, и только если банк полон по MIN_FAMILIES_BY_GRADE (6 J + 4 M + 4 S); иначе null («тест пока недоступен»).
- * Направление без единой разметки — переходный пул направления (legacy), если банк направления есть.
+ * Направление без единой разметки – переходный пул направления (legacy), если банк направления есть.
  */
 export function poolFor(spec: Specialization, subcategoryId: string | null | undefined, opts: PoolOptions = {}): TestPool | null {
   const all = generatorsFor(spec);
@@ -102,15 +102,15 @@ export function poolFor(spec: Specialization, subcategoryId: string | null | und
   if (!marked) return all.length >= MIN_GENERATORS_PER_SPEC ? { generators: all, legacy: true, commonCount: 0 } : null;
   if (!subcategoryId) return null;
   const own = all.filter((g) => g.subcategoryId === subcategoryId);
-  // Полнота банка — только по своим семействам: общие не размывают минимумы MIN_FAMILIES_BY_GRADE.
+  // Полнота банка – только по своим семействам: общие не размывают минимумы MIN_FAMILIES_BY_GRADE.
   if (!bankComplete(own)) return null;
   const common = opts.common ? commonGeneratorsFor(subcategoryId) : [];
   return { generators: [...own, ...common], legacy: false, commonCount: common.length };
 }
 
 /**
- * Почему теста для подкатегории нет (текст для кандидата); null — тест есть. Подкатегория чужого
- * направления или не выбрана — тоже причина.
+ * Почему теста для подкатегории нет (текст для кандидата); null – тест есть. Подкатегория чужого
+ * направления или не выбрана – тоже причина.
  */
 export function unavailableReason(spec: Specialization, subcategoryId: string | null | undefined): string | null {
   if (!hasTestFor(spec)) return new NoGeneratorsError(spec).message.replace(/ \(src\/.*\)\.$/, '.');

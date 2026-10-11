@@ -1,4 +1,4 @@
-// lane hired: финальный этап «нанят через компанию» — переход accepted → hired, права и поиск других компаний.
+// lane hired: финальный этап «нанят через компанию» – переход accepted → hired, права и поиск других компаний.
 import { POST as hire } from '@/app/api/employer/invitations/[id]/hire/route';
 import { GET as listInvites } from '@/app/api/employer/invitations/route';
 import { GET as search } from '@/app/api/employer/search/route';
@@ -84,7 +84,7 @@ describe('lane hired: отметка найма (БД)', () => {
     expect(journey.hired?.company).toBe('Северный Поток');
   });
 
-  it('права: чужой работодатель — 404, кандидат — 403, не принятое — 409, отклонённое — 409', async () => {
+  it('права: чужой работодатель – 404, кандидат – 403, не принятое – 409, отклонённое – 409', async () => {
     const { id: sent } = await createInvitation(ctx, { candidateId: PAY.id, message: 'Платёжная команда, Go и Kafka', salaryFrom: 1, salaryTo: 1 });
     expect((await markHired(sent)).status).toBe(409);
     expect((await markHired('nope')).status).toBe(404);
@@ -93,7 +93,7 @@ describe('lane hired: отметка найма (БД)', () => {
     await respond(jsonRequest('/x', 'POST', { action: 'decline' }, candCookie(PAY.id)), params(sent));
     expect((await markHired(sent)).status).toBe(409);
 
-    // lane lifecycle: после отказа — пауза 14 дней; сдвигаем отказ в прошлое, чтобы пригласить снова.
+    // lane lifecycle: после отказа – пауза 14 дней; сдвигаем отказ в прошлое, чтобы пригласить снова.
     await prisma.invitation.update({ where: { id: sent }, data: { respondedAt: new Date(Date.now() - 15 * 86_400_000) } });
     const id = await accepted();
     expect((await markHired(id, OTHER)).status).toBe(404);

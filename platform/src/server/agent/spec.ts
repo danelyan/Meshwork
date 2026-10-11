@@ -3,9 +3,9 @@ import type { ToolSpec } from '@/server/llm/types';
 import type { AgentTool } from './types';
 
 /**
- * JSON Schema инструментов для провайдера: режим `input` (модель присылает вход —
+ * JSON Schema инструментов для провайдера: режим `input` (модель присылает вход –
  * поля с `.default()` необязательны), без `$schema` (часть OpenAI-совместимых
- * бэкендов его не принимает). Общий хелпер LLM-слоя — llm/schema.ts.
+ * бэкендов его не принимает). Общий хелпер LLM-слоя – llm/schema.ts.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toolSpecs(tools: AgentTool<any, any, any>[]): ToolSpec[] {

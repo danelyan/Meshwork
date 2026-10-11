@@ -25,7 +25,7 @@ describe('webhook (visible)', () => {
     expect(sign(SECRET, '1', '{}')).toBe('sha256=' + createHmac('sha256', SECRET).update('1.{}').digest('hex'));
   });
 
-  it('верная подпись: событие обработано, повтор — duplicate', async () => {
+  it('верная подпись: событие обработано, повтор – duplicate', async () => {
     const seen: string[] = [];
     const app = createApp({ secret: SECRET, now: () => NOW, onEvent: (e) => void seen.push(e.id) });
     const raw = '{"id":"evt_1","type":"payment.succeeded","data":{"amount":100}}';
@@ -37,14 +37,14 @@ describe('webhook (visible)', () => {
     expect(seen).toEqual(['evt_1']);
   });
 
-  it('неверная подпись — 401', async () => {
+  it('неверная подпись – 401', async () => {
     const app = createApp({ secret: SECRET, now: () => NOW });
     const res = await post(app, '{"id":"e","type":"payment.failed"}', { signature: 'sha256=00' });
     expect(res.status).toBe(401);
     expect(res.body).toEqual({ error: 'invalid_signature' });
   });
 
-  it('устаревший timestamp — 401 stale_timestamp', async () => {
+  it('устаревший timestamp – 401 stale_timestamp', async () => {
     const app = createApp({ secret: SECRET, now: () => NOW });
     const res = await post(app, '{"id":"e","type":"payment.failed"}', { ts: String(NOW / 1000 - 301) });
     expect(res.body).toEqual({ error: 'stale_timestamp' });

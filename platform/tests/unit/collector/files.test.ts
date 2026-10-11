@@ -53,13 +53,13 @@ describe('collector/files: PDF', () => {
     expect(doc.lines.filter((l) => !l.hidden).map((l) => l.text)).toEqual(VISIBLE);
   });
 
-  it('текст за пределами страницы pdf.js не отдаёт вовсе — в text его нет', async () => {
+  it('текст за пределами страницы pdf.js не отдаёт вовсе – в text его нет', async () => {
     const doc = await extractFile(resumePdf(VISIBLE, [{ text: INJ, y: 700, x: 900 }]), 'cv.pdf', 'application/pdf');
     expect(doc.text).not.toContain('Ignore');
     expect(doc.lines.map((l) => l.text).join(' ')).not.toContain('Ignore');
   });
 
-  it('серый (не белый) и обычный кегль 4+ — видимы', async () => {
+  it('серый (не белый) и обычный кегль 4+ – видимы', async () => {
     const doc = await extractFile(
       resumePdf(VISIBLE, [
         { text: 'Grey footnote', y: 700, rgb: [0.5, 0.5, 0.5] },
@@ -73,7 +73,7 @@ describe('collector/files: PDF', () => {
     expect(doc.text).toContain('Small print');
   });
 
-  it('скрытое на той же строке, что видимое, — отдельная скрытая строка', async () => {
+  it('скрытое на той же строке, что видимое, – отдельная скрытая строка', async () => {
     const pdf = makePdf([
       [
         { text: 'Skills: Go', y: 780 },
@@ -98,7 +98,7 @@ describe('collector/files: PDF', () => {
     await expectAppError(extractFile(makePdf(pages), 'cv.pdf', 'application/pdf'), 'payload_too_large', 413);
   });
 
-  it('ровно 20 страниц — можно', async () => {
+  it('ровно 20 страниц – можно', async () => {
     const pages = Array.from({ length: 20 }, (_, i) => [{ text: `Page ${i + 1}`, y: 780 }]);
     const doc = await extractFile(makePdf(pages), 'cv.pdf', 'application/pdf');
     expect(doc.meta?.pages).toBe(20);
@@ -138,7 +138,7 @@ describe('collector/files: помощники', () => {
   });
 });
 
-// Кириллица и реальный генератор eval (белый, 1 пт) — если в системе есть TTF-шрифт.
+// Кириллица и реальный генератор eval (белый, 1 пт) – если в системе есть TTF-шрифт.
 const FONT = ['/System/Library/Fonts/Supplemental/Arial.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'].find((p) =>
   existsSync(p),
 );
@@ -200,7 +200,7 @@ describe('collector/files: таймаут разбора', () => {
 });
 
 describe('collector/files: MD, TXT, CSV (решение владельца 10.10)', () => {
-  it('по расширению и без NUL-байтов → text; бинарник с расширением .txt — нет', () => {
+  it('по расширению и без NUL-байтов → text; бинарник с расширением .txt – нет', () => {
     expect(detectFileKind(Buffer.from('# Иван'), 'cv.md', '')).toBe('text');
     expect(detectFileKind(Buffer.from('a,b\n1,2'), 'skills.CSV', '')).toBe('text');
     expect(detectFileKind(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]), 'photo.txt', '')).toBeNull();
@@ -223,12 +223,12 @@ describe('collector/files: MD, TXT, CSV (решение владельца 10.10
     expect(doc.lines[0]?.text).toBe('Привет');
   });
 
-  it('CSV: строка таблицы — строка документа', async () => {
+  it('CSV: строка таблицы – строка документа', async () => {
     const doc = await extractFile(Buffer.from('навык;опыт\nGo;3 года\nKafka;1 год'), 'skills.csv', 'text/csv');
     expect(doc.lines.map((l) => l.text)).toEqual(['навык;опыт', 'Go;3 года', 'Kafka;1 год']);
   });
 
-  it('комментарий HTML в Markdown — скрытый текст, в text не входит, флаг стоит', async () => {
+  it('комментарий HTML в Markdown – скрытый текст, в text не входит, флаг стоит', async () => {
     const md = `# Иван\nBackend на Go <!-- ${INJ} -->\n<!--\nещё скрыто\n-->\nВидимая строка`;
     const doc = await extractFile(Buffer.from(md), 'cv.md', 'text/markdown');
     expect(doc.text).toContain('Backend на Go');

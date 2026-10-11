@@ -1,6 +1,6 @@
 // Созвон в потоковом режиме (лейн call-speed, 11.10): вопрос интервьюера уходит по SSE предложениями
-// (utterance_delta) до ответа /turn; транскрипт и ответ /turn — реплика целиком и начинается с них.
-// LLM — stub, обёрнутый в «потоковый» провайдер: отдаёт JSON stub-а кусками через onJsonDelta.
+// (utterance_delta) до ответа /turn; транскрипт и ответ /turn – реплика целиком и начинается с них.
+// LLM – stub, обёрнутый в «потоковый» провайдер: отдаёт JSON stub-а кусками через onJsonDelta.
 import { rmSync } from 'node:fs';
 
 const dataDir = vi.hoisted(() => {
@@ -121,7 +121,7 @@ describe('созвон: потоковый вопрос интервьюера (
     expect(deltas.map((d) => d.n)).toEqual(deltas.map((_, i) => i));
     const aiAt = frames.findIndex((f) => f.type === 'utterance' && (f.data.entry as TranscriptEntry).role === 'ai');
     expect(frames.findIndex((f) => f.type === 'utterance_delta')).toBeLessThan(aiAt);
-    // Итог — целиком и начинается с отданных предложений; в БД то же самое.
+    // Итог – целиком и начинается с отданных предложений; в БД то же самое.
     expect(splitSentences(body.text!).slice(0, deltas.length)).toEqual(deltas.map((d) => d.text));
     const row = await prisma.callSession.findUniqueOrThrow({ where: { id }, select: { transcriptJson: true } });
     const ai = (row.transcriptJson as unknown as TranscriptEntry[]).at(-1)!;
@@ -129,7 +129,7 @@ describe('созвон: потоковый вопрос интервьюера (
     expect(ai.meta?.streamCut).toBeUndefined();
   });
 
-  it('CALL_STREAMING=false — без utterance_delta, ответ как раньше', async () => {
+  it('CALL_STREAMING=false – без utterance_delta, ответ как раньше', async () => {
     process.env.CALL_STREAMING = 'false';
     resetEnvCache();
     const id = await start();

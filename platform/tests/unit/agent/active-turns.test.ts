@@ -11,7 +11,7 @@ const post = (body: unknown) => new Request('http://localhost/api/consultant/mes
 afterEach(() => findFirst.mockReset());
 
 describe('реестр активных ходов', () => {
-  it('stopTurn отменяет ход и ждёт его завершения; после снятия хода — false', async () => {
+  it('stopTurn отменяет ход и ждёт его завершения; после снятия хода – false', async () => {
     const ctrl = new AbortController();
     const unregister = registerTurn('c1', ctrl);
     ctrl.signal.addEventListener('abort', () => setTimeout(unregister, 5));
@@ -32,7 +32,7 @@ describe('реестр активных ходов', () => {
 });
 
 describe('POST /api/consultant/messages/stop', () => {
-  it('чужой или несуществующий разговор — 404, ход не трогается', async () => {
+  it('чужой или несуществующий разговор – 404, ход не трогается', async () => {
     const ctrl = new AbortController();
     const unregister = registerTurn('foreign', ctrl);
     findFirst.mockResolvedValue(null);
@@ -43,7 +43,7 @@ describe('POST /api/consultant/messages/stop', () => {
     unregister();
   });
 
-  it('нет активного хода — 204; есть — 200 и ход отменён', async () => {
+  it('нет активного хода – 204; есть – 200 и ход отменён', async () => {
     findFirst.mockResolvedValue({ id: 'c3' });
     expect((await POST(post({ conversationId: 'c3' }))).status).toBe(204);
     const ctrl = new AbortController();
@@ -55,7 +55,7 @@ describe('POST /api/consultant/messages/stop', () => {
     expect(ctrl.signal.aborted).toBe(true);
   });
 
-  it('без conversationId — 400', async () => {
+  it('без conversationId – 400', async () => {
     expect((await POST(post({}))).status).toBeGreaterThanOrEqual(400);
   });
 });

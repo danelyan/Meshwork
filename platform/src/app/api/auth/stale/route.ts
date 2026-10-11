@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Страничный guard шлёт сюда, когда кука подписана верно, а аккаунта в БД нет: в Server Component
- * куки менять нельзя (docs Next.js 15: cookies().delete — только Server Action/Route Handler).
+ * куки менять нельзя (docs Next.js 15: cookies().delete – только Server Action/Route Handler).
  * GET безопасен для CSRF: куку стирает, только если она и вправду протухла; живую сессию не трогает.
  */
 export const GET = withErrors(async (req: Request) => {

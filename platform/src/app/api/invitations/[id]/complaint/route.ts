@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/invitations/:id/complaint `{ reason: spam | salary_mismatch | offensive | fake_company | other, comment? }` (R-X-01).
- * Жалоба кандидата на полученное приглашение: чужое — 404, повторная — 409, комментарий до 1000 символов.
+ * Жалоба кандидата на полученное приглашение: чужое – 404, повторная – 409, комментарий до 1000 символов.
  * Статус приглашения не меняется; жалобы за 30 дней снижают лимит приглашений компании.
  */
 export const POST = withErrors(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {

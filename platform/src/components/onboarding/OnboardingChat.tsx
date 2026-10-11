@@ -7,7 +7,7 @@ import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 import { checkInn } from '@/server/onboarding/inn';
-import { asideToModel, looksLikeQuestion, looksLikeSkip, matchStepText } from '@/server/onboarding/match';
+import { asideToModel, looksLikeQuestion, matchStepText } from '@/server/onboarding/match';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { CompanionStage } from '../avatar/CompanionStage';
@@ -38,21 +38,21 @@ export interface OnboardingChatProps {
   /** Абзацы текста согласия (server/onboarding/consent-text.ts). */
   consentText: string[];
   /**
-   * Консультант кандидата: свободные вопросы посреди шагов и продолжение ленты после итога — один
-   * разговор. `restored` — последний разговор (реплики со stepId — вопросы посреди шагов).
+   * Консультант кандидата: свободные вопросы посреди шагов и продолжение ленты после итога – один
+   * разговор. `restored` – последний разговор (реплики со stepId – вопросы посреди шагов).
    */
   consultant?: { demo?: ChatDemoContext; restored?: RestoredChat };
   /** После итога работодателя лента продолжается помощником по подбору. */
   employerAssistant?: { demoNoLlm?: boolean; restored?: EmployerRestoredChat };
   /**
-   * `consultant` — лента внутри /consultant (решение владельца 10.10: онбординг и консультант —
-   * одна страница): без своей шапки сайта и аватара (голова — в ConsultantScene), заголовок
-   * консультанта. `page` — отдельная /onboarding (аккаунт без роли, работодатель).
+   * `consultant` – лента внутри /consultant (решение владельца 10.10: онбординг и консультант –
+   * одна страница): без своей шапки сайта и аватара (голова – в ConsultantScene), заголовок
+   * консультанта. `page` – отдельная /onboarding (аккаунт без роли, работодатель).
    */
   variant?: 'page' | 'consultant';
 }
 
-/** Адрес ленты кандидата: онбординг и консультация — на одной странице. */
+/** Адрес ленты кандидата: онбординг и консультация – на одной странице. */
 export const CANDIDATE_FEED_PATH = '/consultant';
 
 /** Заготовки без модели: до роли «специалист» свободный текст в модель не уходит (граница доверия). */
@@ -67,10 +67,10 @@ const extraOf = (s: StepView) => (s.kind === 'chips' ? multiOf(s).filter((v) => 
 const draftOf = (s: StepView) => (s.kind === 'text' && typeof s.value === 'string' ? s.value : '');
 
 /**
- * Онбординг — лента-чат помощника ФСП Карьеры (E-02, решение владельца 09.10): реплика появляется
- * с «печатает», варианты — чипами под ней, ответ становится пузырём справа, текст — полем внизу.
- * Без «Далее» и счётчика шагов: прогресс — тонкая полоса. После итога та же лента продолжается
- * карьерным консультантом (Chat embedded). Логика шагов — на сервере; клиент показывает OnboardingView.
+ * Онбординг – лента-чат помощника MESHWORK (E-02, решение владельца 09.10): реплика появляется
+ * с «печатает», варианты – чипами под ней, ответ становится пузырём справа, текст – полем внизу.
+ * Без «Далее» и счётчика шагов: прогресс – тонкая полоса. После итога та же лента продолжается
+ * карьерным консультантом (Chat embedded). Логика шагов – на сервере; клиент показывает OnboardingView.
  */
 export function OnboardingChat(props: OnboardingChatProps) {
   // Сцена с головой (AvatarScene, /design/consultant-*) держит провайдер голоса сама: лента подхватывает его.
@@ -86,7 +86,7 @@ export function OnboardingChat(props: OnboardingChatProps) {
 function OnboardingChatBody({ initial, consentText, consultant, employerAssistant, variant = 'page' }: OnboardingChatProps) {
   const inConsultant = variant === 'consultant';
   const [view, setView] = useState(initial);
-  // Шаг знакомства сменился (ответ, пропуск, возврат) — «Твой путь» и «Подсказка» в колонке перечитываются.
+  // Шаг знакомства сменился (ответ, пропуск, возврат) – «Твой путь» и «Подсказка» в колонке перечитываются.
   const refreshAside = useAsideRefresh();
   const stepKey = `${view.current.id}:${view.progress.done}`;
   const firstStep = useRef(stepKey);
@@ -100,7 +100,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const [pending, setPending] = useState<{ text: string; quiet?: boolean } | null>(null);
   const [turn, setTurn] = useState(0);
   // Вернулся к завершённому знакомству (это и есть лента /consultant после итога): сводку не
-  // перепечатываем, разговор и поле ввода — сразу.
+  // перепечатываем, разговор и поле ввода – сразу.
   const settled = initial.onboarded && initial.current.kind === 'summary';
   const [ready, setReady] = useState(settled);
   const [draft, setDraft] = useState(() => draftOf(initial.current));
@@ -120,7 +120,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const [convId, setConvId] = useState(convRef.current);
   const docs = useDocumentsRun({ conversation: convRef, onConversation: setConvId });
   const asides = useAsides(groupAsides(consultant?.restored?.items ?? []), convRef, setConvId);
-  // Обычные реплики разговора — встроенному консультанту, только если человек вернулся к завершённому знакомству.
+  // Обычные реплики разговора – встроенному консультанту, только если человек вернулся к завершённому знакомству.
   const [restoredRest] = useState(() => (initial.onboarded && initial.current.kind === 'summary' ? (consultant?.restored?.items ?? []).filter((it) => !it.stepId) : []));
 
   // Работодатель: реплики паузы знакомства (под своим шагом) и обычный разговор помощника (после итога).
@@ -143,7 +143,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   useStickToBottom(feedRef);
   const mountedRef = useRef(false);
   useEffect(() => {
-    // Первый показ (в т.ч. перезагрузка) — сразу к текущему вопросу, дальше — плавно.
+    // Первый показ (в т.ч. перезагрузка) – сразу к текущему вопросу, дальше – плавно.
     const behavior = mountedRef.current ? 'smooth' : 'auto';
     const id = requestAnimationFrame(() => {
       mountedRef.current = true;
@@ -166,7 +166,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setPending(bubble ?? null);
     try {
       const v = await onboardingAct(body);
-      // Роль выбрана — страница /consultant перерисовывается под роль (данные кандидата или помощник
+      // Роль выбрана – страница /consultant перерисовывается под роль (данные кандидата или помощник
       // по подбору приходят с сервера); шаги на сервере, откроется с того же места; кука уже обновлена.
       const roleChosen = roleRef.current === 'pending' && v.role !== 'pending';
       roleRef.current = v.role;
@@ -174,7 +174,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         window.location.assign(CANDIDATE_FEED_PATH);
         return;
       }
-      // Кандидат ответил на вопрос-подсказку — сервер вернул ленту в разговор (service.ts backToChat).
+      // Кандидат ответил на вопрос-подсказку – сервер вернул ленту в разговор (service.ts backToChat).
       if (inConsultant && v.later) {
         softGo('/consultant');
         return;
@@ -194,7 +194,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
       setPending(null);
       setBusy(false);
     }
-    // docs/att — стабильные колбэки хуков
+    // docs/att – стабильные колбэки хуков
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -207,7 +207,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setError(null);
     try {
       // Кандидату сервер ставит знакомство на паузу и ведёт сюда же: лента станет свободным разговором
-      // (мягкое обновление, без перезагрузки — сцена с головой остаётся).
+      // (мягкое обновление, без перезагрузки – сцена с головой остаётся).
       softGo((await onboardingLater()).next);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не получилось. Повтори.');
@@ -248,19 +248,13 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   function submitDraft() {
     if (!canInput) return;
     const v = draft.trim();
-    // «пропустить» на любом необязательном шаге, «не знаю» там, где текст стал бы значением, — пропуск, как кнопкой.
-    if (v && looksLikeSkip(cur, v) && !matchStepText(cur, v) && !(cur.kind === 'chips' && sel.length) && att.ready.length === 0) {
-      setError(null);
-      setDraft('');
-      return skip();
-    }
     if (cur.kind === 'files') {
-      // Ни файла, ни ссылки, но есть текст — это вопрос, а не материалы.
+      // Ни файла, ни ссылки, но есть текст – это вопрос, а не материалы.
       if (v && att.ready.length === 0 && !att.uploading && extractUrls(v).length === 0 && toModel) return aside(v);
       return submitDocuments();
     }
     if (!v) return;
-    // Текст совпал с вариантом шага — ответ тем же путём, что клик.
+    // Текст совпал с вариантом шага – ответ тем же путём, что клик.
     const m = matchStepText(cur, v);
     if (m) {
       setError(null);
@@ -271,7 +265,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     if (looksLikeQuestion(v) && cur.id !== 'inn' && toModel) return aside(v);
     if (cur.kind === 'range') {
       const r = parseSalary(v, cur.range!);
-      // Есть цифры — это попытка суммы (подсказка об ошибке), без цифр — вопрос консультанту.
+      // Есть цифры – это попытка суммы (подсказка об ошибке), без цифр – вопрос консультанту.
       if ('error' in r) return toModel && !/\d/.test(v) ? aside(v) : setError(r.error);
       setError(null);
       setDraft('');
@@ -347,7 +341,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
 
   const employer = view.scenario === 'employer';
   const skippedReplies = (view.summary?.skipped ?? []).map((it) => ({ value: `goto:${it.stepId}`, label: `Ответить: ${it.label}` }));
-  // Порядок кандидата — server/agent/journey.ts: после знакомства первым идёт тест (дальше созвон, проект, ИИ-защита).
+  // Порядок кандидата – server/agent/journey.ts: после знакомства первым идёт тест (дальше созвон, проект, ИИ-защита).
   const nextSteps = employer
     ? [{ value: 'go:/employer', label: 'Открыть подборку' }, ...skippedReplies]
     : [
@@ -385,20 +379,20 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setThinking?.(thinking);
   }, [thinking, setThinking]);
 
-  // Внутри /consultant main#main уже есть (layout кабинета) — лента в div.
+  // Внутри /consultant main#main уже есть (layout кабинета) – лента в div.
   const Feed = inConsultant ? 'div' : 'main';
   return (
     <div className={inConsultant ? `${styles.shell} ${styles.inScene}` : styles.shell}>
       {inConsultant && !employer && !isSummary ? (
-        // Кандидату знакомство — таймлайн над чатом (владелец 11.10), та же полоска, что в разговоре (PausedFeed).
-        // До выбора роли паузы нет (сервер увёл бы на главную) — «Скрыть» не показываем.
+        // Кандидату знакомство – таймлайн над чатом (владелец 11.10), та же полоска, что в разговоре (PausedFeed).
+        // До выбора роли паузы нет (сервер увёл бы на главную) – «Скрыть» не показываем.
         <OnboardingStrip done={view.progress.done} total={view.progress.total} asking busy={busy} canHide={view.role !== 'pending'} onContinue={() => undefined} onHide={() => void later()} />
       ) : (
       <header className={styles.top}>
         <div className={styles.topRow}>
           {inConsultant ? (
             // Знакомство идёт в том же виде консультанта, что и разговор после него (владелец 11.10):
-            // ответы и превью «Как видит компания» — в карточке «Что я о тебе знаю» справа.
+            // ответы и превью «Как видит компания» – в карточке «Что я о тебе знаю» справа.
             <h1 className={styles.sceneTitle}>
               {view.scenario === 'employer' ? 'Помощник по подбору' : 'Карьерный консультант'}
               <span className={styles.title}>{isSummary ? 'Ведёт по платформе' : `Знакомство · шаг ${Math.min(view.progress.done + 1, view.progress.total)} из ${view.progress.total}`}</span>
@@ -416,7 +410,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             </nav>
           )}
           {!isSummary && (
-            <><span className={styles.saved}>сохранено {view.progress.done} из {view.progress.total}</span>
+            <><span className={styles.saved}>пройдено {view.progress.done} из {view.progress.total}</span>
             <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
               {inConsultant && !employer ? 'Вернуться в чат' : 'Настроить позже'}
             </Button></>
@@ -430,12 +424,12 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
       <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>
         {!inConsultant && (
           <VisuallyHidden>
-            <h1>Знакомство с помощником ФСП Карьеры</h1>
+            <h1>Знакомство с помощником MESHWORK</h1>
           </VisuallyHidden>
         )}
         {!inConsultant && <CompanionStage className={styles.stage} />}
         <Thread label="Переписка с помощником">
-          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>{inConsultant ? (employer ? 'Справа в «Что я знаю о компании» видно, что я сохраняю, а «Как видит кандидат» покажет, что увидит кандидат.' : 'Справа в «Что я о тебе знаю» видно, что я сохраняю, а «Как видит компания» покажет, что из этого увидит работодатель.') : 'В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит.'} Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
+          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>{inConsultant ? (employer ? 'В блоке «Что я знаю о компании» видно, что я сохраняю, а вкладка «Как видит кандидат» покажет, что увидит кандидат.' : 'В блоке «Что я о тебе знаю» видно, что я сохраняю, а вкладка «Как видит компания» покажет, что из этого увидит работодатель.') : 'В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит.'} Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
           {view.history.map((h) => (
             <HistoryPair
               key={h.stepId}

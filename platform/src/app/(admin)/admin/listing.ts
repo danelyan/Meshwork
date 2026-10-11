@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { AppError } from '@/server/errors';
 
-/** Параметры адреса страницы → объект для Zod-схемы списка (повторяющиеся ключи — первое значение). */
+/** Параметры адреса страницы → объект для Zod-схемы списка (повторяющиеся ключи – первое значение). */
 export function flatParams(sp: Record<string, string | string[] | undefined>): Record<string, string | undefined> {
   return Object.fromEntries(Object.entries(sp).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]));
 }

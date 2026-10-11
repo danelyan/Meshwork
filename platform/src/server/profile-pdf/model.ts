@@ -1,5 +1,5 @@
 // Стандартизированный PDF-профиль кандидата (R-C-03): чистая сборка «профиль → документ из секций».
-// Без БД и без PDF — так состав документа проверяется unit-тестами, а render.ts только рисует.
+// Без БД и без PDF – так состав документа проверяется unit-тестами, а render.ts только рисует.
 // В документ попадают только подтверждённые кандидатом утверждения (confirmed | edited), без цитат.
 import { specLabel, subcategoryLabel } from '@/lib/directions';
 import { gradeLabel } from '@/lib/grades';
@@ -20,7 +20,7 @@ export interface ProfileBasicsInput {
 }
 
 export interface ProfileStagesInput {
-  /** Последний завершённый квалифицирующий созвон с ИИ: итог и дата; null — не проводился. */
+  /** Последний завершённый квалифицирующий созвон с ИИ: итог и дата; null – не проводился. */
   call: { summary: string; evaluatedAt: string } | null;
   /** Проектные задания: сдано всего и проверено автопроверкой. */
   projects: { submitted: number; checked: number };
@@ -30,12 +30,12 @@ export interface ProfileStagesInput {
 
 export interface ProfileDocumentInput {
   profile: ProfileView;
-  /** Контакт самого кандидата (почта или Telegram) — PDF формирует владелец профиля. */
+  /** Контакт самого кандидата (почта или Telegram) – PDF формирует владелец профиля. */
   contact: string | null;
   basics: ProfileBasicsInput | null;
-  /** Подкатегория текущей категории (Subcategory.id); null — категория без подкатегории. */
+  /** Подкатегория текущей категории (Subcategory.id); null – категория без подкатегории. */
   subcategoryId: string | null;
-  /** Версия политики теста попытки, выдавшей категорию (TestAttempt.policyVersion); null — попытки в базе нет (демоданные). */
+  /** Версия политики теста попытки, выдавшей категорию (TestAttempt.policyVersion); null – попытки в базе нет (демоданные). */
   policyVersion: string | null;
   stages: ProfileStagesInput;
   generatedAt: Date;
@@ -99,7 +99,7 @@ function categorySection(input: ProfileDocumentInput): DocSection {
     { label: 'Подтверждена тестом', value: formatDate(category.confirmedAt) },
     { label: 'Политика теста', value: input.policyVersion ?? 'не сохранена: в базе нет попытки теста, выдавшей эту категорию (например, демоданные)' },
   ];
-  return { title: 'Категория', facts, note: 'Категория выдана адаптивным тестом на грейд; параметры заданий — экспертные оценки, на людях не калиброваны.' };
+  return { title: 'Категория', facts, note: 'Категория выдана адаптивным тестом на грейд; параметры заданий – экспертные оценки, на людях не калиброваны.' };
 }
 
 function basicsSection(input: ProfileDocumentInput): DocSection {
@@ -123,12 +123,12 @@ function basicsSection(input: ProfileDocumentInput): DocSection {
 }
 
 function claimsSection(claims: ProfileClaim[]): DocSection {
-  const items = LEVELS_TOP_DOWN.flatMap((level) => claims.filter((c) => c.level === level).map((c) => `${c.statement} — ${LEVEL_LABEL[c.level]}`));
+  const items = LEVELS_TOP_DOWN.flatMap((level) => claims.filter((c) => c.level === level).map((c) => `${c.statement} – ${LEVEL_LABEL[c.level]}`));
   return {
     title: 'Утверждения о навыках',
     items,
     empty: 'Подтверждённых утверждений пока нет.',
-    note: 'Уровень доказанности: «платформа» — проверено тестом или защитой на платформе; «третья сторона» — подтверждено человеком или сервисом; «есть ссылка на работу» — репозиторий, статья, публичный профиль; «со слов» — только из резюме или чата.',
+    note: 'Уровень доказанности: «платформа» – проверено тестом или защитой на платформе; «третья сторона» – подтверждено человеком или сервисом; «есть ссылка на работу» – репозиторий, статья, публичный профиль; «со слов» – только из резюме или чата.',
   };
 }
 
@@ -138,7 +138,7 @@ function fspSection(input: ProfileDocumentInput, fspClaims: ProfileClaim[]): Doc
     title: 'Достижения ФСП',
     facts: [{ label: 'Статус', value: FSP_LABEL[state] ?? state }],
     items: state === 'linked' ? fspClaims.map((c) => c.statement) : [],
-    note: 'ФСП ID и реестр достижений — симулятор команды на синтетических данных, не официальная интеграция ФСП.',
+    note: 'ФСП ID и реестр достижений – симулятор команды на синтетических данных, не официальная интеграция ФСП.',
   };
 }
 
@@ -151,11 +151,11 @@ function stagesSection(stages: ProfileStagesInput): DocSection {
       { label: 'Проектные задания', value: projects.submitted ? `сдано ${projects.submitted}, проверено автопроверкой ${projects.checked}` : 'не сдавались' },
       { label: 'Защита утверждений', value: defenses.completed ? `пройдено ${defenses.passed} из ${defenses.completed}` : 'не проводилась' },
     ],
-    note: 'Созвон, проект и защита — дополнительные сигналы о подтверждённости опыта; в категорию из теста они не входят.',
+    note: 'Созвон, проект и защита – дополнительные сигналы о подтверждённости опыта; в категорию из теста они не входят.',
   };
 }
 
-/** Документ PDF-профиля из данных кандидата. Чистая функция: одинаковый вход — одинаковый документ. */
+/** Документ PDF-профиля из данных кандидата. Чистая функция: одинаковый вход – одинаковый документ. */
 export function buildProfileDocument(input: ProfileDocumentInput): ProfileDocument {
   const shown = input.profile.claims.filter(isShown);
   const skillClaims = shown.filter((c) => c.sourceKind !== 'fsp');
@@ -169,6 +169,6 @@ export function buildProfileDocument(input: ProfileDocumentInput): ProfileDocume
     headline: [spec ? specLabel(spec) : 'Направление не выбрано', input.basics?.city].filter(Boolean).join(' · '),
     generatedAt,
     sections: [categorySection(input), basicsSection(input), claimsSection(skillClaims), fspSection(input, fspClaims), stagesSection(input.stages)],
-    footer: `Сформировано автоматически, MESHWORK, ${generatedAt}. Данные — из профиля кандидата на момент формирования; у каждого утверждения на платформе есть источник и уровень доказанности.`,
+    footer: `Сформировано автоматически, MESHWORK, ${generatedAt}. Данные – из профиля кандидата на момент формирования; у каждого утверждения на платформе есть источник и уровень доказанности.`,
   };
 }

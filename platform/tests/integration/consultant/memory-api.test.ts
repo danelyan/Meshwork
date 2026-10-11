@@ -46,7 +46,7 @@ describe('память консультанта (БД)', () => {
   beforeEach(() => prisma.consultantMemory.deleteMany());
   afterAll(() => prisma.$disconnect());
 
-  it('CRUD своих пунктов; чужой — 404; без входа — 401', async () => {
+  it('CRUD своих пунктов; чужой – 404; без входа – 401', async () => {
     const created = await add(jsonRequest('/x', 'POST', { text: '  Живёт\nв Казани ' }, A));
     expect(created.status).toBe(201);
     const { item } = await created.json();
@@ -75,7 +75,7 @@ describe('память консультанта (БД)', () => {
     expect((await add(jsonRequest('/x', 'POST', { text: 'Ещё один факт' }, A))).status).toBe(409);
   });
 
-  it('работодатель — своя память, отдельно от кандидата', async () => {
+  it('работодатель – своя память, отдельно от кандидата', async () => {
     const r = await add(jsonRequest('/x', 'POST', { text: 'Ищет бэкендеров в платёжную команду' }, EMP));
     expect(r.status).toBe(201);
     expect((await (await list(jsonRequest('/x', 'GET', undefined, A))).json()).items).toEqual([]);
@@ -91,17 +91,17 @@ describe('память консультанта (БД)', () => {
     const rows = await prisma.consultantMemory.findMany({ where: { candidateId: 'c-a', source: 'chat' } });
     expect(rows.map((r) => r.text).sort()).toEqual(['Ищет удалёнку', 'Лишний четвёртый факт', 'Хочет перейти в финтех']);
 
-    // нет согласия — модель не вызывается
+    // нет согласия – модель не вызывается
     const noConsent = fakeLlm(['Что-то']);
     expect(await rememberFromTurn({ owner: { candidateId: 'c-b' }, text: 'Я пишу на Python уже три года', llm: noConsent, dailyTokenBudget: 0 })).toEqual([]);
     expect(noConsent.calls).toBe(0);
-    // короткая реплика — тоже
+    // короткая реплика – тоже
     const short = fakeLlm(['Что-то']);
     expect(await rememberFromTurn({ owner: { candidateId: 'c-a' }, text: 'ок', llm: short, dailyTokenBudget: 0 })).toEqual([]);
     expect(short.calls).toBe(0);
   });
 
-  it('сбой модели — молча, ничего не сохранено', async () => {
+  it('сбой модели – молча, ничего не сохранено', async () => {
     const broken: LlmProvider = { name: 'x', model: 'x', supportsTools: true, supportsJsonSchema: true, complete: async () => Promise.reject(new Error('boom')) };
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     expect(await scheduleMemoryExtraction({ owner: { candidateId: 'c-a' }, text: 'Я пишу на Go и хочу в финтех', llm: broken, dailyTokenBudget: 0 })).toEqual([]);

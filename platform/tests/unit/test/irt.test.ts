@@ -15,7 +15,7 @@ describe('IRT 2PL', () => {
     expect(information(0.3, it)).toBeCloseTo(1.5 * 1.5 * 0.25, 9);
   });
 
-  it('без ответов — априорное: θ = 0, SE ≈ 1', () => {
+  it('без ответов – априорное: θ = 0, SE ≈ 1', () => {
     const est = estimateTheta([]);
     expect(est.theta).toBeCloseTo(0, 6);
     expect(est.se).toBeGreaterThan(0.95);
@@ -56,7 +56,7 @@ describe('правила теста', () => {
     const first = selectNext(pool, { shown: [], theta: 0.5, seed: 42 });
     expect(first).not.toBeNull();
     expect(selectNext(pool, { shown: [], theta: 0.5, seed: 42 })).toEqual(first);
-    // Около θ = 0,5 три лучших по информации — b, c, d; e (b = 2) и a (b = −1) не попадают в randomesque.
+    // Около θ = 0,5 три лучших по информации – b, c, d; e (b = 2) и a (b = −1) не попадают в randomesque.
     const picks = new Set(Array.from({ length: 50 }, (_, s) => selectNext(pool, { shown: [], theta: 0.5, seed: s })!.id));
     expect(picks.has('e')).toBe(false);
     expect(picks.has('a')).toBe(false);
@@ -69,11 +69,11 @@ describe('правила теста', () => {
   it('selectNext: доля одного утверждения ограничена', () => {
     const same: SelectableTemplate[] = Array.from({ length: 6 }, (_, i) => ({ id: `s${i}`, a: 1.2, b: 0, catalogIds: ['k'], grade: 'junior' }));
     const other: SelectableTemplate = { id: 'o', a: 0.5, b: 3, catalogIds: ['q'], grade: 'junior' };
-    const shown = same.slice(0, 4); // 4 из 10 = 40 % — лимит исчерпан
+    const shown = same.slice(0, 4); // 4 из 10 = 40 % – лимит исчерпан
     expect(selectNext([...same, other], { shown, theta: 0, seed: 1 })!.id).toBe('o');
   });
 
-  it('shouldStop: не раньше MIN, не позже MAX, между — по уверенности или SE', () => {
+  it('shouldStop: не раньше MIN, не позже MAX, между – по уверенности или SE', () => {
     const sure = estimateTheta(Array.from({ length: MIN_ITEMS }, () => ({ ...item(1.3, 0.4), correct: true })));
     expect(shouldStop(MIN_ITEMS - 1, sure, 'middle').stop).toBe(false);
     expect(shouldStop(MIN_ITEMS, sure, 'middle')).toEqual({ stop: true, reason: 'confident' });

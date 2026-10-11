@@ -9,7 +9,7 @@ export function buildCorpus(factsMd: string, docs: { docId: string; md: string }
 export function buildCorpusSource(factsMd: string, docs: { docId: string; md: string }[]): { source: string; docs: number; sections: number } {
   const corpus = buildCorpus(factsMd, docs);
   const source = [
-    '// Сгенерировано scripts/build-prompts.ts из agent/knowledge/docs/*.md и prompts/platform-facts.md — руками не править.',
+    '// Сгенерировано scripts/build-prompts.ts из agent/knowledge/docs/*.md и prompts/platform-facts.md – руками не править.',
     '// Файлы .md не читаются с диска в рантайме: в standalone-сборке Next.js их нет в бандле.',
     "import type { KnowledgeDoc } from './parse';",
     '',

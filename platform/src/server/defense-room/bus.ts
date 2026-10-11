@@ -2,7 +2,7 @@ import type { CallEvent, CallEventName } from './types';
 
 /**
  * Шина событий звонка в памяти процесса: маршруты пишут, SSE-подписчики читают.
- * Стенд — один инстанс Next.js (compose), поэтому межпроцессной шины нет; всё, что должно
+ * Стенд – один инстанс Next.js (compose), поэтому межпроцессной шины нет; всё, что должно
  * пережить перезапуск (транскрипт, участники, mute), лежит в БД, а SSE при подключении шлёт
  * снимок `snapshot`. Сигналы WebRTC эфемерны и идут только адресату (`to`).
  * Хранится на globalThis: в dev маршруты собираются отдельными модулями, а шина должна быть одна.
@@ -37,7 +37,7 @@ export function subscribe(sessionId: string, peer: PeerId, listener: Listener): 
   };
 }
 
-/** Событие всем подписчикам сессии; `signal` — только адресату. */
+/** Событие всем подписчикам сессии; `signal` – только адресату. */
 export function publish(sessionId: string, event: CallEvent): void {
   const set = store.get(sessionId);
   if (!set) return;
@@ -51,7 +51,7 @@ export function publish(sessionId: string, event: CallEvent): void {
   }
 }
 
-/** Подключён ли адресат (для сигналов: некуда слать — клиенту 409, он уйдёт в текст). */
+/** Подключён ли адресат (для сигналов: некуда слать – клиенту 409, он уйдёт в текст). */
 export function isConnected(sessionId: string, peer: PeerId): boolean {
   for (const sub of store.get(sessionId) ?? []) if (sub.peer === peer) return true;
   return false;

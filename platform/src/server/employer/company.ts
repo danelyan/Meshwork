@@ -47,7 +47,7 @@ const ContactField = z.string().trim().nullable().transform((v, ctx) => {
   return r.data;
 });
 
-/** PATCH /api/employer/company: частичная правка; неизвестные поля отвергаются, пустой запрос — тоже. */
+/** PATCH /api/employer/company: частичная правка; неизвестные поля отвергаются, пустой запрос – тоже. */
 export const CompanyPatch = z
   .strictObject({
     name: z.string().trim().min(2, 'Название не короче 2 символов').max(COMPANY_LIMITS.name, `Не длиннее ${COMPANY_LIMITS.name} символов`),

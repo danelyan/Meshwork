@@ -3,7 +3,7 @@ import { GRADE_LABEL } from '../../src/lib/grades';
 import type { DemoProfile } from './employer';
 
 /**
- * Резюме демо-кандидатов (решение владельца 11.10): цитата утверждения с уровнем self_reported — ДОСЛОВНАЯ
+ * Резюме демо-кандидатов (решение владельца 11.10): цитата утверждения с уровнем self_reported – ДОСЛОВНАЯ
  * строка резюме, а не выдуманный текст с несуществующим источником. Источник: `<candidateId>-resume.md#p1`.
  * Резюме персон этапов 4–8 написаны вручную (PERSONA_RESUMES); резюме пула (~90 человек) собирается из шапки
  * и строк по утверждениям (`generatedResume`) и воспроизводимо: тот же профиль даёт тот же текст.
@@ -36,7 +36,7 @@ export const PERSONA_RESUMES: Record<string, DemoResume> = {
       'fe.forms': 'Делала формы с проверкой полей, понятными ошибками и состоянием отправки.',
     };
     return resume('demo-tested', [
-      '# Ксения Андреева — Junior Frontend (React)', '',
+      '# Ксения Андреева – Junior Frontend (React)', '',
       'ksenia.andreeva@example.com · Казань · GitHub: demo-andreeva (вымышленный профиль)', '',
       '## О себе', 'Пришла из курсов, год делаю учебные и небольшие коммерческие проекты.',
     ], [
@@ -52,7 +52,7 @@ export const PERSONA_RESUMES: Record<string, DemoResume> = {
       'Искала причину ошибок по стектрейсу и логам и сводила её к минимальному воспроизведению.',
     );
     return resume('demo-invited', [
-      '# Марина Котова — Junior Backend (Node.js)', '',
+      '# Марина Котова – Junior Backend (Node.js)', '',
       'marina.kotova@example.com · Екатеринбург · GitHub: demo-kotova (вымышленный профиль)', '',
       '## О себе', 'Полтора года пишу серверную часть небольших сервисов на NestJS.',
     ], [
@@ -68,7 +68,7 @@ export const PERSONA_RESUMES: Record<string, DemoResume> = {
       'Находила причины падений по логам и стектрейсу и воспроизводила их в минимальном примере.',
     );
     return resume('demo-hired', [
-      '# Алёна Мироненко — Junior Backend (Node.js)', '',
+      '# Алёна Мироненко – Junior Backend (Node.js)', '',
       'alena.mironenko@example.com · Самара · GitHub: demo-mironenko (вымышленный профиль)', '',
       '## О себе', 'Закончила курс по бэкенду, два проекта с реальными пользователями.',
     ], [
@@ -84,7 +84,7 @@ export const PERSONA_RESUMES: Record<string, DemoResume> = {
       'Находил причину ошибки по стектрейсу и логам, сводил её к минимальному воспроизведению.',
     );
     return resume('demo-accepted', [
-      '# Роман Зайцев — Junior Backend (Node.js)', '',
+      '# Роман Зайцев – Junior Backend (Node.js)', '',
       '@roman_zaitsev_demo · Новосибирск · GitHub: demo-zaitsev (вымышленный профиль)', '',
       '## О себе', 'Год в небольшой студии, пишу сервисы на Node.js.',
     ], [
@@ -134,7 +134,7 @@ export function generatedResume(p: DemoProfile, statementOf: (catalogId: string)
   const lines: Record<string, string> = {};
   for (const [catalogId, level] of p.claims) if (level === 'self_reported') lines[catalogId] = resumeLine(p, statementOf(catalogId));
   return resume(p.id, [
-    `# ${name} — ${role}${grade}`, '',
+    `# ${name} – ${role}${grade}`, '',
     `${contact} · ${city} (вымышленный профиль)`,
   ], Object.values(lines), lines, `${p.stack.join(', ')}.`);
 }

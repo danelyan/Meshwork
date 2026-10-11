@@ -11,13 +11,13 @@ export const runtime = 'nodejs';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST /api/call/{id}/video?startMs= — сегмент видео с камеры кандидата (WebM, до 8 МБ): файл созвона рядом с аудио.
- * Видео не анализируется — хранится как материал созвона (согласие: пункт о камере).
+ * POST /api/call/{id}/video?startMs= – сегмент видео с камеры кандидата (WebM, до 8 МБ): файл созвона рядом с аудио.
+ * Видео не анализируется – хранится как материал созвона (согласие: пункт о камере).
  * Без действующего согласия на запись сегмент не сохраняется: 409 `call_recording_off`, как у аудио.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);
-  // Маршрут уровня session (GET доступен и работодателю); загрузка — только кандидату.
+  // Маршрут уровня session (GET доступен и работодателю); загрузка – только кандидату.
   if (!getSession(req)) throw errors.unauthorized();
   const candidateId = requireCandidate(req);
   const { id } = await params;
@@ -47,7 +47,7 @@ export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   return Response.json(await addVideo(candidateId, id, bytes, q.startMs), { status: 201 });
 });
 
-/** GET /api/call/{id}/video?segment=NNN-<startMs>.webm — кандидату всегда, работодателю после принятого приглашения. */
+/** GET /api/call/{id}/video?segment=NNN-<startMs>.webm – кандидату всегда, работодателю после принятого приглашения. */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   if (!getSession(req)) throw errors.unauthorized();
   const who = callPrincipal(req);

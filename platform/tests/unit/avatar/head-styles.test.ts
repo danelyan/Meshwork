@@ -4,7 +4,7 @@ import { DEFAULT_HEAD_STYLE, HEAD_STYLES, isHeadStyle, styleIndex } from '@/comp
 import { gridDensity, HEAD_MODEL, jawWeight, sphericalGrid } from '@/components/avatar/Head3D';
 
 describe('head-styles', () => {
-  it('стиль по умолчанию — «Плетение 6» (решение владельца 10.10), id уникальны', () => {
+  it('стиль по умолчанию – «Плетение 6» (решение владельца 10.10), id уникальны', () => {
     expect(DEFAULT_HEAD_STYLE).toBe('weave6');
     expect(new Set(HEAD_STYLES.map((s) => s.id)).size).toBe(HEAD_STYLES.length);
     expect(styleIndex('metal')).toBe(0);

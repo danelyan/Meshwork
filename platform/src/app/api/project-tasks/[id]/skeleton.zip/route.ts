@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** GET /api/project-tasks/:id/skeleton.zip — заготовка репозитория: starter, contract.md, видимые тесты, TASK.md (без скрытых тестов). */
+/** GET /api/project-tasks/:id/skeleton.zip – заготовка репозитория: starter, contract.md, видимые тесты, TASK.md (без скрытых тестов). */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   const candidateId = requireCandidate(req);
   const { id } = await params;

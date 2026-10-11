@@ -62,7 +62,7 @@ beforeEach(async () => {
 });
 
 describe('оригиналы загрузок: upload → download → delete', () => {
-  it('файл лежит по <candidateId>/<sha256>, имя пользователя в путь не попадает; повтор — без копии', async () => {
+  it('файл лежит по <candidateId>/<sha256>, имя пользователя в путь не попадает; повтор – без копии', async () => {
     const buf = resumePdf(['Ivan Petrov', 'Go']);
     const evil = '../../etc/passwd<script>.pdf';
     const res = await upload(buf, evil, cookieFor('cand-a'));
@@ -78,7 +78,7 @@ describe('оригиналы загрузок: upload → download → delete', 
     expect(readdirSync(join(dir, 'cand-a'))).toHaveLength(1);
   });
 
-  it('скачать может только владелец: байты те же, attachment с безопасным именем и nosniff; чужой — 404', async () => {
+  it('скачать может только владелец: байты те же, attachment с безопасным именем и nosniff; чужой – 404', async () => {
     const buf = resumePdf(['Резюме']);
     const { uploadId } = await (await upload(buf, 'Моё "резюме".pdf', cookieFor('cand-a'))).json();
 
@@ -97,7 +97,7 @@ describe('оригиналы загрузок: upload → download → delete', 
     expect((await downloadRoute(req('/api/uploads/nope/file', 'GET', cookieFor('cand-a')), params('nope'))).status).toBe(404);
   });
 
-  it('Markdown и CSV: принимаются, текст с ref по строкам, mime для скачивания — текстовый', async () => {
+  it('Markdown и CSV: принимаются, текст с ref по строкам, mime для скачивания – текстовый', async () => {
     const md = Buffer.from('# Иван\nBackend на Go, 3 года', 'utf8');
     const res = await upload(md, 'cv.md', cookieFor('cand-a'));
     expect(res.status).toBe(201);
@@ -115,7 +115,7 @@ describe('оригиналы загрузок: upload → download → delete', 
     expect(bin.status).toBe(415);
   });
 
-  it('старая запись без оригинала — 404 на скачивание; повторная загрузка дописывает файл', async () => {
+  it('старая запись без оригинала – 404 на скачивание; повторная загрузка дописывает файл', async () => {
     const buf = resumePdf(['Old']);
     const { uploadId } = await (await upload(buf, 'old.pdf', cookieFor('cand-a'))).json();
     await prisma.upload.update({ where: { id: uploadId }, data: { storageKey: null } });
@@ -125,7 +125,7 @@ describe('оригиналы загрузок: upload → download → delete', 
     expect((await downloadRoute(req(`/api/uploads/${uploadId}/file`, 'GET', cookieFor('cand-a')), params(uploadId))).status).toBe(200);
   });
 
-  it('удаление: чужой — 404; владелец — файл и запись удалены, черновики удалены, подтверждённые остались', async () => {
+  it('удаление: чужой – 404; владелец – файл и запись удалены, черновики удалены, подтверждённые остались', async () => {
     const { uploadId } = await (await upload(resumePdf(['Go', 'PostgreSQL']), 'cv.pdf', cookieFor('cand-a'))).json();
     const row = await prisma.upload.findUniqueOrThrow({ where: { id: uploadId } });
     const [draft, keep] = await proposeClaims('cand-a', [claim('be.lang-core', 'cv.pdf#p1:l1'), claim('be.framework', 'cv.pdf#p1:l2')]);
@@ -146,7 +146,7 @@ describe('оригиналы загрузок: upload → download → delete', 
     expect((await downloadRoute(req(`/api/uploads/${uploadId}/file`, 'GET', cookieFor('cand-a')), params(uploadId))).status).toBe(404);
   });
 
-  it('удаление ссылки: чужой — 404; черновики из неё удалены, исправленные остались, Source удалён', async () => {
+  it('удаление ссылки: чужой – 404; черновики из неё удалены, исправленные остались, Source удалён', async () => {
     const origin = 'https://example.com/cv';
     const src = await prisma.source.create({
       data: { candidateId: 'cand-a', kind: 'url', origin, snapshot: { lines: [{ ref: `${origin}#l1`, text: 'Go' }] } },

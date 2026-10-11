@@ -26,7 +26,7 @@ const summary: InterviewSummary = {
   blocks: ['intro', 'test'],
 };
 
-it('этапы: пройденные отмечены, текущий — «сейчас»', () => {
+it('этапы: пройденные отмечены, текущий – «сейчас»', () => {
   render(<Stages current="systems" />);
   const cur = screen.getByText('Системный дизайн').closest('div')!;
   expect(cur.getAttribute('aria-current')).toBe('step');
@@ -35,9 +35,9 @@ it('этапы: пройденные отмечены, текущий — «се
   expect(screen.getByText('Итоги').closest('div')!.getAttribute('aria-current')).toBeNull();
 });
 
-it('критерии: без вердикта — прочерки, с вердиктом — проценты и «не проверено» у пустой оси', () => {
+it('критерии: без вердикта – прочерки, с вердиктом – проценты и «не проверено» у пустой оси', () => {
   const { rerender } = render(<Criteria summary={null} />);
-  expect(screen.getAllByText('—')).toHaveLength(4);
+  expect(screen.getAllByText('–')).toHaveLength(4);
   rerender(<Criteria summary={summary} />);
   expect(screen.getByText('75%')).toBeTruthy();
   expect(screen.getByRole('img', { name: 'Системное мышление: не проверено' })).toBeTruthy();
@@ -56,7 +56,7 @@ it('итог: соответствие по интервью, не «грейд 
   expect(screen.getByRole('link', { name: /Открыть профиль/ }).getAttribute('href')).toBe('/profile');
 });
 
-it('страница /interview: без интервью — карточка со ссылкой «Пройти в консультанте», без старта на месте', async () => {
+it('страница /interview: без интервью – карточка со ссылкой «Пройти в консультанте», без старта на месте', async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => new Response(JSON.stringify({ consent: { given: true, version: 'v', text: [] }, calls: [], mode: 'off' }), { status: 200, headers: { 'content-type': 'application/json' } })),

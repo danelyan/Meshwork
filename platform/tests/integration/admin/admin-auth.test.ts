@@ -39,7 +39,7 @@ async function fullLogin(): Promise<{ cookie: string; secret: string }> {
   return { cookie: cookieFrom(res, ADMIN_COOKIE)!, secret: body.secret! };
 }
 
-/** Сотрудник с включённым TOTP и живой сессией — без прохода входа (для проверки прав). */
+/** Сотрудник с включённым TOTP и живой сессией – без прохода входа (для проверки прав). */
 async function sessionFor(role: 'moderator' | 'support') {
   const { staff } = await createStaff(null, { email: `${role}@example.ru`, name: role, role, password: PASS });
   await prisma.staffMember.update({ where: { id: staff.id }, data: { totpEnabledAt: new Date() } });
@@ -88,7 +88,7 @@ describe('вход персонала и гвард /api/admin', () => {
     expect(r3.status).toBe(401);
   });
 
-  it('без промежуточной куки шаг TOTP закрыт; неверный пароль и отключённый сотрудник — одинаковый 401', async () => {
+  it('без промежуточной куки шаг TOTP закрыт; неверный пароль и отключённый сотрудник – одинаковый 401', async () => {
     const o = await owner();
     const noPre = await totpPost(jsonRequest('/api/admin/auth/totp', 'POST', { code: '123456' }));
     expect(noPre.status).toBe(401);
@@ -111,7 +111,7 @@ describe('вход персонала и гвард /api/admin', () => {
     const cid = signUserSession({ userId: user.id, role: 'employer' });
     expect((await staffGet(jsonRequest('/api/admin/staff', 'GET', undefined, `cid=${cid}`))).status).toBe(401);
     expect((await staffGet(jsonRequest('/api/admin/staff', 'GET', undefined, `${ADMIN_COOKIE}=${cid}`))).status).toBe(401);
-    // Подписанная кука на несуществующую сессию — тоже 401.
+    // Подписанная кука на несуществующую сессию – тоже 401.
     expect((await staffGet(jsonRequest('/api/admin/staff', 'GET', undefined, `${ADMIN_COOKIE}=${signAdminToken('nosuchsession')}`))).status).toBe(401);
   });
 

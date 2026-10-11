@@ -7,7 +7,7 @@ import { getEnv } from '@/server/env';
 /**
  * Хранилище оригиналов файлов кандидата на диске: <UPLOAD_DIR>/<candidateId>/<sha256>.
  * Путь собирается только из серверных идентификаторов (id кандидата из сессии и sha256
- * содержимого) — имя файла от пользователя в путь не попадает. Один файл на (кандидат, sha256),
+ * содержимого) – имя файла от пользователя в путь не попадает. Один файл на (кандидат, sha256),
  * как и уникальный ключ Upload: повторная загрузка того же содержимого не плодит копий.
  */
 
@@ -23,7 +23,7 @@ export function storageKeyFor(candidateId: string, sha256: string): string {
   return `${candidateId}/${sha256}`;
 }
 
-/** Абсолютный путь по ключу; ключ чужой формы или выход за корень — ошибка. */
+/** Абсолютный путь по ключу; ключ чужой формы или выход за корень – ошибка. */
 export function pathForKey(key: string): string {
   const [cand, sha, ...rest] = key.split('/');
   if (rest.length || !cand || !sha || !ID_RE.test(cand) || !SHA_RE.test(sha)) throw new Error('bad storage key');
@@ -33,7 +33,7 @@ export function pathForKey(key: string): string {
   return p;
 }
 
-/** Сохранить байты (атомарно: временный файл + rename). Уже есть — не переписывать. */
+/** Сохранить байты (атомарно: временный файл + rename). Уже есть – не переписывать. */
 export async function saveOriginal(candidateId: string, sha256: string, buf: Buffer): Promise<string> {
   const key = storageKeyFor(candidateId, sha256);
   const path = pathForKey(key);

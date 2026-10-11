@@ -1,4 +1,4 @@
-// lane live-slots (ADR 0008): правила слотов — лимит 2–5, длительность, окно [now+2ч, now+14д], подстатус и no_show.
+// lane live-slots (ADR 0008): правила слотов – лимит 2–5, длительность, окно [now+2ч, now+14д], подстатус и no_show.
 import { formatMsk, isoToMskLocal, mskLocalToIso } from '@/lib/msk';
 import { canCancel, deriveSubStatus, isRoomOpen, validateProposal } from '@/server/live-defense/rules';
 
@@ -11,7 +11,7 @@ describe('validateProposal', () => {
     expect(s.map((x) => x.startsAt.toISOString())).toEqual([at(3), at(5)]);
     expect(s[0]!.endsAt.getTime() - s[0]!.startsAt.getTime()).toBe(45 * 60_000);
   });
-  it('лимит: 1 и 6 слотов — slot_count', () => {
+  it('лимит: 1 и 6 слотов – slot_count', () => {
     expect(() => validateProposal({ slots: [at(3)], durationMin: 30 }, now)).toThrow(expect.objectContaining({ code: 'slot_count' }));
     expect(() => validateProposal({ slots: [3, 4, 5, 6, 7, 8].map(at), durationMin: 30 }, now)).toThrow(expect.objectContaining({ code: 'slot_count' }));
     expect(validateProposal({ slots: [3, 4, 5, 6, 7].map(at), durationMin: 30 }, now)).toHaveLength(5);
@@ -19,12 +19,12 @@ describe('validateProposal', () => {
   it('длительность только 30/45', () => {
     expect(() => validateProposal({ slots: [at(3), at(4)], durationMin: 60 }, now)).toThrow(expect.objectContaining({ code: 'slot_duration' }));
   });
-  it('окно: раньше чем через 2 часа и позже 14 дней — slot_window; границы включены', () => {
+  it('окно: раньше чем через 2 часа и позже 14 дней – slot_window; границы включены', () => {
     expect(() => validateProposal({ slots: [at(1.9), at(4)], durationMin: 30 }, now)).toThrow(expect.objectContaining({ code: 'slot_window' }));
     expect(() => validateProposal({ slots: [at(3), at(14 * 24 + 1)], durationMin: 30 }, now)).toThrow(expect.objectContaining({ code: 'slot_window' }));
     expect(validateProposal({ slots: [at(2), at(14 * 24)], durationMin: 30 }, now)).toHaveLength(2);
   });
-  it('пересекающиеся слоты и мусор — 400', () => {
+  it('пересекающиеся слоты и мусор – 400', () => {
     expect(() => validateProposal({ slots: [at(3), at(3.5)], durationMin: 45 }, now)).toThrow(expect.objectContaining({ code: 'slot_overlap' }));
     expect(() => validateProposal({ slots: ['nope', at(4)], durationMin: 30 }, now)).toThrow(expect.objectContaining({ code: 'slot_invalid' }));
   });
@@ -36,7 +36,7 @@ describe('комната, отмена, подстатус', () => {
     expect(isRoomOpen(startsAt, new Date(startsAt.getTime() - 11 * 60_000))).toBe(false);
     expect(isRoomOpen(startsAt, new Date(startsAt.getTime() - 10 * 60_000))).toBe(true);
   });
-  it('отмена — не позднее чем за 1 час', () => {
+  it('отмена – не позднее чем за 1 час', () => {
     expect(canCancel(startsAt, new Date(startsAt.getTime() - 61 * 60_000))).toBe(true);
     expect(canCancel(startsAt, new Date(startsAt.getTime() - 59 * 60_000))).toBe(false);
   });

@@ -8,8 +8,8 @@ export const runtime = 'nodejs';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * GET /api/call/{id}/recording?segment=NNN.wav — аудио ответов кандидата одним WAV (или один сегмент).
- * Кандидату — всегда; работодателю — только после принятого приглашения (иначе 403).
+ * GET /api/call/{id}/recording?segment=NNN.wav – аудио ответов кандидата одним WAV (или один сегмент).
+ * Кандидату – всегда; работодателю – только после принятого приглашения (иначе 403).
  */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   if (!getSession(req)) throw errors.unauthorized();

@@ -18,7 +18,7 @@ function firstUserText(messages: ChatMessage[]): string {
   return messages.find((m) => m.role === 'user')?.content ?? '';
 }
 
-/** Интервьюер: сигнал — эвристика по длине ответа, тема и уровень — planNext (как запасной путь). */
+/** Интервьюер: сигнал – эвристика по длине ответа, тема и уровень – planNext (как запасной путь). */
 export function stubCallInterviewer(req: CompleteRequest): { kind: 'json'; json: unknown } | undefined {
   const raw = parseContextBlock<InterviewerPayload | ReviewPayload>(lastUserText(req.messages));
   if (!raw) return undefined;
@@ -59,14 +59,14 @@ const WHY_RE = /(потому что|поэтому|вместо|альтерн�
 const BOUNDARY_RE = /(не уверен|не знаю|проверил бы|предполагаю|думаю|скорее всего)/i;
 const DONE_RE = /(в итоге|результат|измерил|проверил|снизил|ускорил|выросл|упал)/i;
 
-/** Первое предложение ответа длиной ≥ 5 символов — дословная цитата (проходит checkQuote). */
+/** Первое предложение ответа длиной ≥ 5 символов – дословная цитата (проходит checkQuote). */
 function sentence(answer: string, re?: RegExp): string {
   const parts = answer.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.replace(/\s/g, '').length >= 5);
   const hit = re ? parts.find((s) => re.test(s)) : parts[0];
   return (hit ?? '').slice(0, 300);
 }
 
-/** Оценщик: баллы из признаков в тексте ответов — длина, «почему», граница, результат. */
+/** Оценщик: баллы из признаков в тексте ответов – длина, «почему», граница, результат. */
 export function stubCallEvaluator(req: CompleteRequest): { kind: 'json'; json: unknown } | undefined {
   const raw = parseContextBlock<EvaluatorPayload | DefenseEvaluatorPayload | OwnershipPayload>(firstUserText(req.messages));
   if (!raw) return undefined;

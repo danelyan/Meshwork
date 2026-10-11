@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
-/** Список демо-аккаунтов. Только при DEMO_LOGIN=true; иначе 404. `?next=` — только относительный путь (safeNext). */
+/** Список демо-аккаунтов. Только при DEMO_LOGIN=true; иначе 404. `?next=` – только относительный путь (safeNext). */
 export default async function DemoPage({ searchParams }: { searchParams: Search }) {
   if (!getEnv().DEMO_LOGIN) notFound();
   const raw = (await searchParams).next;

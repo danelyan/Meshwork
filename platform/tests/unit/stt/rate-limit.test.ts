@@ -23,7 +23,7 @@ const post = (bytes = 3200, headers: Record<string, string> = {}) =>
 const recognizer = () => vi.fn(async () => new Response(JSON.stringify({ result: 'привет' }), { status: 200 }));
 
 describe('/api/stt: лимит запросов на сессию', () => {
-  it('в пределах лимита все запросы проходят, следующий за минуту — 429 в формате ошибок, без запроса к распознаванию', async () => {
+  it('в пределах лимита все запросы проходят, следующий за минуту – 429 в формате ошибок, без запроса к распознаванию', async () => {
     const fetchMock = recognizer();
     vi.stubGlobal('fetch', fetchMock);
     for (let i = 0; i < STT_RATE.max; i++) expect((await POST(post())).status).toBe(200);
@@ -58,12 +58,12 @@ describe('/api/stt: лимит запросов на сессию', () => {
     expect((await POST(post())).status).toBe(200);
   });
 
-  it('обычная диктовка в лимит не упирается: запись до 30 с — это единицы запросов в минуту', () => {
+  it('обычная диктовка в лимит не упирается: запись до 30 с – это единицы запросов в минуту', () => {
     expect(STT_RATE.windowMs).toBe(60_000);
     expect(STT_RATE.max).toBeGreaterThanOrEqual(20);
   });
 
-  it('запрос с чужого сайта (Origin) — 403 до распознавания и без расхода лимита', async () => {
+  it('запрос с чужого сайта (Origin) – 403 до распознавания и без расхода лимита', async () => {
     const fetchMock = recognizer();
     vi.stubGlobal('fetch', fetchMock);
     for (let i = 0; i < STT_RATE.max + 5; i++) {

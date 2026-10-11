@@ -19,7 +19,7 @@ server.listen(config.port, () => {
 
 /**
  * Пользователи ФСП ID должны совпадать с участниками реестра и после рестарта, и после пересоздания
- * базы Keycloak. Keycloak стартует дольше API — сверка повторяется, пока он не ответит.
+ * базы Keycloak. Keycloak стартует дольше API – сверка повторяется, пока он не ответит.
  */
 async function syncIdentities(attempt = 1): Promise<void> {
   try {

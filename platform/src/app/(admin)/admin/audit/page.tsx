@@ -62,8 +62,8 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                 {r.actor && <div className={styles.mono}>{STAFF_ROLE_LABEL[r.actor.role]}</div>}
               </td>
               <td className={styles.mono}>{r.action}</td>
-              <td className={styles.mono}>{r.targetType ? <Link href={`/admin/audit?targetType=${encodeURIComponent(r.targetType)}&targetId=${encodeURIComponent(r.targetId ?? '')}`}>{`${r.targetType}:${r.targetId ?? ''}`}</Link> : '—'}</td>
-              <td>{r.reason ?? '—'}</td>
+              <td className={styles.mono}>{r.targetType ? <Link href={`/admin/audit?targetType=${encodeURIComponent(r.targetType)}&targetId=${encodeURIComponent(r.targetId ?? '')}`}>{`${r.targetType}:${r.targetId ?? ''}`}</Link> : '–'}</td>
+              <td>{r.reason ?? '–'}</td>
               <td>
                 {(short(r.before) || short(r.after)) ? (
                   <details className={styles.details}>
@@ -82,7 +82,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                     )}
                   </details>
                 ) : (
-                  '—'
+                  '–'
                 )}
               </td>
             </tr>

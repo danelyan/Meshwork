@@ -7,7 +7,7 @@ import { getEnv } from '@/server/env';
 
 import { sinceFor } from './period';
 
-/** Расходы и качество LLM из `AgentRun` по `purpose` и по дням (день — по Москве). Без ПДн: кандидаты — только id. */
+/** Расходы и качество LLM из `AgentRun` по `purpose` и по дням (день – по Москве). Без ПДн: кандидаты – только id. */
 export interface LlmPurposeRow {
   purpose: string;
   runs: number;
@@ -15,7 +15,7 @@ export interface LlmPurposeRow {
   outputTokens: number;
   p50Ms: number | null;
   p95Ms: number | null;
-  /** Доля невалидного JSON среди запросов со схемой; null — запросов со схемой не было. */
+  /** Доля невалидного JSON среди запросов со схемой; null – запросов со схемой не было. */
   invalidJsonShare: number | null;
   /** Сколько лишних попыток (attempts − 1) и доля неуспешных вызовов. */
   retries: number;
@@ -86,7 +86,7 @@ export async function llmByDay(days: number, now: Date = new Date()): Promise<Ll
     GROUP BY 1 ORDER BY 1`);
 }
 
-/** Кандидаты, израсходовавшие ≥ 80 % суточного бюджета за скользящие 24 часа. Бюджет 0 — лимит выключен, список пуст. */
+/** Кандидаты, израсходовавшие ≥ 80 % суточного бюджета за скользящие 24 часа. Бюджет 0 – лимит выключен, список пуст. */
 export async function nearCeiling(now: Date = new Date(), budget: number = getEnv().LLM_DAILY_TOKEN_BUDGET): Promise<NearCeilingRow[]> {
   if (budget <= 0) return [];
   const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);

@@ -82,7 +82,7 @@ describe('вход через Яндекс ID (callback, fetch замокан)',
     const user = await prisma.user.findUniqueOrThrow({ where: { id: s!.userId! }, include: { accounts: true } });
     expect(user).toMatchObject({ name: 'Иван Петров', email: 'ivan.p@yandex.ru', role: 'pending' });
     expect(user.accounts).toEqual([expect.objectContaining({ provider: 'yandex', providerAccountId: '1000123' })]);
-    // Обмен: PKCE verifier передан, токен в профиль — заголовком OAuth.
+    // Обмен: PKCE verifier передан, токен в профиль – заголовком OAuth.
     const tokenBody = new URLSearchParams(String(calls[0]!.init!.body));
     expect(tokenBody.get('grant_type')).toBe('authorization_code');
     expect(tokenBody.get('code_verifier')).toMatch(/^[A-Za-z0-9_-]{43,128}$/);

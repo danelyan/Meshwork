@@ -3,7 +3,7 @@ import { ModelError, type Model, type ModelRequest, type ModelResponse } from '.
 
 export type Reply = string | ModelError | Error | ModelResponse | ((req: ModelRequest) => Promise<ModelResponse>);
 
-/** Модель по сценарию: ответы по очереди; строка — текст с 100 токенами. Пишет все запросы. */
+/** Модель по сценарию: ответы по очереди; строка – текст с 100 токенами. Пишет все запросы. */
 export function fake(name: string, replies: Reply[] = []) {
   const requests: ModelRequest[] = [];
   const model: Model = {

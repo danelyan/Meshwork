@@ -1,5 +1,5 @@
 // Что работодатель видит о кандидате (R-E-07, R-C-13, R-C-16). Решает сервер:
-// до принятия приглашения — только публичная часть, контакты и имя скрыты.
+// до принятия приглашения – только публичная часть, контакты и имя скрыты.
 import { createHash } from 'node:crypto';
 
 import { maskContacts } from '../collector/mask';
@@ -34,7 +34,7 @@ export interface PublicClaim {
   /** Формулировка каталога, не текст кандидата: в правке кандидат мог написать что угодно. */
   statement: string;
   level: EvidenceLevel;
-  /** null — тип не раскрывается (со слов, платформа). */
+  /** null – тип не раскрывается (со слов, платформа). */
   sourceType: PublicSourceType | null;
 }
 
@@ -44,21 +44,21 @@ export interface CandidateCard {
   displayName: string;
   specialization: Specialization | null;
   /**
-   * Категория из теста. `withheld` — индекс честности high без подтверждения: в подборе и фильтрах категория не
+   * Категория из теста. `withheld` – индекс честности high без подтверждения: в подборе и фильтрах категория не
    * учитывается (ranking.ts applyIntegrity), label говорит об этом же, чтобы карточка не расходилась с объяснением.
    */
   category: { specialization: Specialization; grade: Grade; label: string; withheld?: true } | null;
   fsp: { state: FspState; hasAchievements: boolean };
   claims: PublicClaim[];
   /**
-   * null — контакты скрыты (приглашение не принято). После accepted: `contact` — способ связи
-   * кандидата (Candidate.contact), иначе почта аккаунта; null — связаться не через что
+   * null – контакты скрыты (приглашение не принято). После accepted: `contact` – способ связи
+   * кандидата (Candidate.contact), иначе почта аккаунта; null – связаться не через что
    * (интерфейс пишет NO_CANDIDATE_CONTACT из components/employer/labels.ts, а не пустую строку).
    */
   contacts: { name: string; contact: string | null } | null;
   /**
-   * lane resume-fields (R-C-01/02): стаж, роли и софт-скиллы видны и до принятия — они не раскрывают личность:
-   * роли без компаний и контактов (`cleanRole`), софт-скиллы — только метки словаря. Нет данных — поля нет.
+   * lane resume-fields (R-C-01/02): стаж, роли и софт-скиллы видны и до принятия – они не раскрывают личность:
+   * роли без компаний и контактов (`cleanRole`), софт-скиллы – только метки словаря. Нет данных – поля нет.
    */
   experience?: PublicExperience;
 }
@@ -71,7 +71,7 @@ export interface PublicExperience {
 
 const SOFT_LABELS = new Set(SOFT_SKILLS.map((s) => s.label));
 
-/** Публичная проекция стажа/ролей/софт-скиллов; null — показывать нечего. */
+/** Публичная проекция стажа/ролей/софт-скиллов; null – показывать нечего. */
 export function publicExperience(src: { experienceYears?: number | null; roles?: readonly string[]; softSkills?: readonly string[] } | null | undefined): PublicExperience | null {
   if (!src) return null;
   const years = typeof src.experienceYears === 'number' && src.experienceYears >= 0 ? Math.min(src.experienceYears, 60) : null;
@@ -105,7 +105,7 @@ export function pseudonym(candidateId: string): string {
   return `Кандидат #${createHash('sha256').update(`cand:${candidateId}`).digest('hex').slice(0, 6).toUpperCase()}`;
 }
 
-/** Служебный адрес онбординга (`user-…@users.invalid`) — не контакт. */
+/** Служебный адрес онбординга (`user-…@users.invalid`) – не контакт. */
 export function contactEmail(email: string): string | null {
   return email.endsWith('.invalid') ? null : email;
 }
@@ -117,7 +117,7 @@ export function candidateContact(src: { contact: string | null; email: string })
 
 /**
  * Способ связи компании в приглашении (ТЗ 2.2, E05): Company.contact, иначе почта отправителя, если она не
- * служебная. null — связаться не через что: createInvitation такое приглашение не отправляет
+ * служебная. null – связаться не через что: createInvitation такое приглашение не отправляет
  * (company_contact_required), а у уже отправленных интерфейс кандидата пишет NO_COMPANY_CONTACT.
  */
 export function companyInviteContact(src: { contact: string | null; senderEmail: string | null | undefined }): string | null {
@@ -149,7 +149,7 @@ export function toCandidateCard(src: CardSource, contactsVisible: boolean): Cand
 }
 
 /**
- * Одно утверждение каталога — один публичный пункт: из нескольких по одному catalogId
+ * Одно утверждение каталога – один публичный пункт: из нескольких по одному catalogId
  * остаётся самый высокий уровень по LEVEL_ORDER (платформа выше третьей стороны, решение 09.10).
  */
 export function dedupeClaims(
@@ -171,8 +171,8 @@ export function dedupeClaims(
 
 /**
  * Результат автопроверки сдачи для работодателя (R-C-16, R-E-07). До принятого приглашения цитаты рубрики,
- * пути файлов, заметка линтера и текст ошибки несут код кандидата с почтой, ссылками и никами — проходят
- * `maskContacts`. После принятия — как есть. Без этого `GET /api/employer/project-submissions` отдавал
+ * пути файлов, заметка линтера и текст ошибки несут код кандидата с почтой, ссылками и никами – проходят
+ * `maskContacts`. После принятия – как есть. Без этого `GET /api/employer/project-submissions` отдавал
  * необработанные `rubric.results[].evidence`, хотя подборка (`maskProjectBlock`) их маскирует.
  */
 export function maskSubmissionForEmployer<R extends { rubric: { results: { evidence: string; file?: string | null }[] }; lint: { note: string; details?: unknown } }>(

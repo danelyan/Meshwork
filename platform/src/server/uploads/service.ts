@@ -6,7 +6,7 @@ import { removeOriginal } from './storage';
 /**
  * Удаление материалов кандидата (файл или ссылка). Правило для утверждений из удаляемого
  * источника: неподтверждённые (`proposed`) удаляются вместе с ним; подтверждённые, исправленные
- * и отклонённые остаются — это уже решение человека (отклонённое ещё и не даёт предложить его снова).
+ * и отклонённые остаются – это уже решение человека (отклонённое ещё и не даёт предложить его снова).
  */
 export interface DeleteResult {
   deletedClaims: number;
@@ -28,8 +28,8 @@ export async function deleteUpload(candidateId: string, uploadId: string): Promi
     select: { id: true, filename: true, extracted: true, storageKey: true },
   });
   if (!u) throw errors.notFound('Файл не найден');
-  // sourceRef утверждений из файла — "<filename>#p1:l3". Другой файл с тем же именем
-  // (новая версия резюме) даёт те же ссылки — тогда черновики не трогаем, чтобы не снести чужие.
+  // sourceRef утверждений из файла – "<filename>#p1:l3". Другой файл с тем же именем
+  // (новая версия резюме) даёт те же ссылки – тогда черновики не трогаем, чтобы не снести чужие.
   const twin = await prisma.upload.count({ where: { candidateId, filename: u.filename, id: { not: u.id } } });
   const refs = lineRefs(u.extracted);
   const match = { candidateId, OR: [{ sourceRef: { startsWith: `${u.filename}#` } }, ...(refs.length ? [{ sourceRef: { in: refs } }] : [])] };
@@ -59,7 +59,7 @@ export async function deleteSource(candidateId: string, sourceId: string): Promi
   return prisma.$transaction(async (tx) => {
     const del = await tx.claim.deleteMany({ where: { ...match, status: 'proposed' } });
     const kept = await tx.claim.count({ where: { ...match, status: { in: ['confirmed', 'edited'] } } });
-    // Claim.source — onDelete: SetNull: оставшиеся утверждения теряют только ссылку на снимок.
+    // Claim.source – onDelete: SetNull: оставшиеся утверждения теряют только ссылку на снимок.
     await tx.source.delete({ where: { id: s.id } });
     return { deletedClaims: del.count, keptClaims: kept };
   });

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 const Body = z.object({ decision: z.enum(['upheld', 'dismissed']), reason: z.string().max(1000) });
 
 /**
- * Решение по жалобе `{ decision: upheld|dismissed, reason }`. Причина обязательна (400), повтор — 409. Под advisory-lock
+ * Решение по жалобе `{ decision: upheld|dismissed, reason }`. Причина обязательна (400), повтор – 409. Под advisory-lock
  * отправки приглашений: отклонённая жалоба сразу перестаёт снижать лимит и индекс доверия. Письмо кандидату об итоге.
  */
 export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {

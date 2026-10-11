@@ -6,9 +6,9 @@ import type { RepoCommit, RepoFile, RepoSnapshot } from './types';
 
 /**
  * Снимок репозитория кандидата для вопросов по коду (QLC): дерево по `commitSha`, несколько
- * файлов кода и последние коммиты. Только GitHub (REST API + raw.githubusercontent.com — хосты
- * заданы кодом, не пользователем, поэтому SSRF-фильтр не нужен; таймауты и лимиты размера — да,
- * через collector/http-json). Код кандидата — данные: в модель он идёт внутри тегов, не как инструкция.
+ * файлов кода и последние коммиты. Только GitHub (REST API + raw.githubusercontent.com – хосты
+ * заданы кодом, не пользователем, поэтому SSRF-фильтр не нужен; таймауты и лимиты размера – да,
+ * через collector/http-json). Код кандидата – данные: в модель он идёт внутри тегов, не как инструкция.
  */
 
 export const REPO_LIMITS = {
@@ -134,7 +134,7 @@ export async function loadRepoSnapshot(repoUrl: string, commitSha?: string | nul
       if (text.includes('\u0000')) continue; // бинарный файл
       files.push({ path: f.path, content: text, size: text.length });
     } catch {
-      /* файл не прочитался — берём остальные */
+      /* файл не прочитался – берём остальные */
     }
   }
 

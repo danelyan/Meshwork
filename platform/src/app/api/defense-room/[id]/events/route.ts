@@ -11,10 +11,10 @@ type Ctx = { params: Promise<{ id: string }> };
 const KEEPALIVE_MS = 20_000;
 
 /**
- * GET — SSE звонка защиты (EventSource), имена событий — как у лейна call: первым кадром `snapshot`,
+ * GET – SSE звонка защиты (EventSource), имена событий – как у лейна call: первым кадром `snapshot`,
  * дальше `utterance`, `ai_state`, `participant`, `mute`, `question`, `status`, `verdict`, `signal`
- * (сигналы WebRTC — только адресату). Каждые 20 с — комментарий-keepalive. Доступ — как у GET снимка.
- * Разрыв соединения клиентом — `request.signal` (docs Next.js: Route Handlers, streaming).
+ * (сигналы WebRTC – только адресату). Каждые 20 с – комментарий-keepalive. Доступ – как у GET снимка.
+ * Разрыв соединения клиентом – `request.signal` (docs Next.js: Route Handlers, streaming).
  */
 export const GET = withErrors(async (req: Request, ctx: Ctx) => {
   if (!getSession(req)) throw errors.unauthorized();

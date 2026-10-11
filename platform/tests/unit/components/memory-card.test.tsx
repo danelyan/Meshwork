@@ -41,7 +41,7 @@ describe('MemoryCard', () => {
     expect(screen.queryByRole('button', { name: 'Удалить: Ищу работу' })).toBeNull();
   });
 
-  it('«Как видит компания»: превью анонимной карточки — публичные ответы видны, личные нет', () => {
+  it('«Как видит компания»: превью анонимной карточки – публичные ответы видны, личные нет', () => {
     const withPublic: KnownFact[] = [
       ...facts,
       { id: 'step:specialization', source: 'onboarding', stepId: 'specialization', label: 'Направление', value: 'Backend', editable: true },
@@ -126,7 +126,7 @@ describe('MemoryCard', () => {
   it('employer title and empty state', () => {
     render(<MemoryCard facts={[]} role="employer" />);
     expect(screen.getByRole('button', { name: 'Что я знаю о компании' })).toBeTruthy();
-    // пустая память — заметки разговора, а не потеря профиля: есть ссылки на профиль компании и вакансии
+    // пустая память – заметки разговора, а не потеря профиля: есть ссылки на профиль компании и вакансии
     expect(screen.getByTestId('memory-empty').textContent).toContain('Заметок из разговора пока нет');
     expect(screen.getByRole('link', { name: 'профиле компании' }).getAttribute('href')).toBe('/employer/company');
   });

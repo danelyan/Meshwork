@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { Chat } from '@/components/Chat';
-import { CallProvider, useCallMode } from '@/components/call/CallContext';
 
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 
@@ -120,19 +119,19 @@ describe('Chat', () => {
     expect(body.conversationId).toBe('conv-old');
   });
 
-  it('ссылки распознаются прямо в тексте: отдельного поля нет, «Node.js» — не ссылка', async () => {
+  it('ссылки распознаются прямо в тексте: отдельного поля нет, «Node.js» – не ссылка', async () => {
     const fetchMock = vi.fn(async () => new Response(streamOf([frame({ type: 'done' })]), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     render(<Chat />);
     expect(screen.queryByLabelText(/Ссылки/)).toBeNull();
-    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'Пишу на Node.js, код — github.com/demo-ryabinin.' } });
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'Пишу на Node.js, код – github.com/demo-ryabinin.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(body.urls).toEqual(['https://github.com/demo-ryabinin']);
-    // композер очищается сразу, пузырь пользователя — в ленте
+    // композер очищается сразу, пузырь пользователя – в ленте
     expect((screen.getByLabelText('Сообщение') as HTMLTextAreaElement).value).toBe('');
-    expect(screen.getByText('Пишу на Node.js, код — github.com/demo-ryabinin.')).toBeDefined();
+    expect(screen.getByText('Пишу на Node.js, код – github.com/demo-ryabinin.')).toBeDefined();
   });
 
   it('дельты складываются в одну реплику, message с тем же id фиксирует текст, discard убирает показанное', async () => {
@@ -152,7 +151,7 @@ describe('Chat', () => {
     expect(screen.getAllByTestId('streaming-text')).toHaveLength(1);
   });
 
-  it('ошибка — реплика помощника с «Повторить», повтор шлёт то же сообщение', async () => {
+  it('ошибка – реплика помощника с «Повторить», повтор шлёт то же сообщение', async () => {
     const fetchMock = vi
       .fn()
       .mockImplementationOnce(async () => new Response(streamOf([frame({ type: 'error', code: 'internal', message: 'Сбой' }) + frame({ type: 'done' })]), { status: 200 }))
@@ -186,7 +185,7 @@ describe('Chat', () => {
     expect(screen.getByRole('list', { name: 'Приложенные файлы' }).textContent).toContain('cv.pdf');
   });
 
-  it('вставка файла из буфера и неверный тип — чип с ошибкой, без загрузки', () => {
+  it('вставка файла из буфера и неверный тип – чип с ошибкой, без загрузки', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     render(<Chat />);
@@ -247,7 +246,7 @@ describe('Chat', () => {
     });
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url === '/api/consultant/messages/stop') {
-        // Сервер останавливает ход: показанный кусок — message, затем done.
+        // Сервер останавливает ход: показанный кусок – message, затем done.
         ctl.enqueue(enc.encode(frame({ type: 'message', id: 'm1', text: 'Начало' }) + frame({ type: 'done' })));
         ctl.close();
         return new Response(JSON.stringify({ stopped: true }), { status: 200 });
@@ -280,7 +279,7 @@ describe('Chat', () => {
 });
 
 describe('Chat: общая лента с онбордингом', () => {
-  it('приветствие — реплика помощника с аватаром (лицо 6), ответ пользователя — пузырь; Enter отправляет', async () => {
+  it('приветствие – реплика помощника с аватаром (лицо 6), ответ пользователя – пузырь; Enter отправляет', async () => {
     const fetchMock = vi.fn(async () => new Response(streamOf([frame({ type: 'message', text: 'Принял' }) + frame({ type: 'done' })]), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     render(<Chat />);
@@ -294,7 +293,7 @@ describe('Chat: общая лента с онбордингом', () => {
     expect(screen.getByRole('list', { name: 'Переписка с консультантом' }).textContent).toContain('привет');
   });
 
-  it('вопрос агента с вариантами — чипы, выбор уходит ответом', async () => {
+  it('вопрос агента с вариантами – чипы, выбор уходит ответом', async () => {
     const ask = frame({ type: 'ask', question: 'Какой стек?', options: ['Go', 'Java'] }) + frame({ type: 'done' });
     const fetchMock = vi
       .fn()
@@ -312,7 +311,7 @@ describe('Chat: общая лента с онбордингом', () => {
 });
 
 describe('Chat: демо', () => {
-  it('в демо без модели одна честная пометка в шапке; без demo — нет', () => {
+  it('в демо без модели одна честная пометка в шапке; без demo – нет', () => {
     const { unmount } = render(<Chat demo={{ noLlm: true, resume: null }} />);
     expect(screen.getAllByText(/Демо-режим без языковой модели/)).toHaveLength(1);
     unmount();
@@ -369,45 +368,5 @@ describe('Chat: черновик', () => {
     first.unmount();
     render(<Chat />);
     expect((screen.getByLabelText('Сообщение') as HTMLTextAreaElement).value).toBe('');
-  });
-});
-
-describe('Chat: ход afterCall после завершённого созвона', () => {
-  function FinishCall() {
-    const call = useCallMode();
-    return (
-      <>
-        <button onClick={() => call?.start()}>открыть созвон</button>
-        <button
-          onClick={() => {
-            call?.markFinished();
-            call?.close();
-          }}
-        >
-          созвон завершён
-        </button>
-      </>
-    );
-  }
-  it('созвон завершён и панель закрыта → POST с afterCall без пузыря кандидата; повторно не шлётся', async () => {
-    vi.stubGlobal('EventSource', undefined);
-    const full = frame({ type: 'conversation', id: 'c1' }) + frame({ type: 'message', text: 'Созвон прошёл: индексы подтвердились.' }) + frame({ type: 'done' });
-    const fetchMock = vi.fn(async (url: string) => (url === '/api/consultant/messages' ? new Response(streamOf([full]), { status: 200 }) : Response.json({ consent: { given: true, version: 'v', text: [] }, calls: [] })));
-    vi.stubGlobal('fetch', fetchMock);
-    render(
-      <CallProvider>
-        <FinishCall />
-        <Chat />
-      </CallProvider>,
-    );
-    fireEvent.click(screen.getByText('открыть созвон'));
-    fireEvent.click(screen.getByText('созвон завершён'));
-    await waitFor(() => expect(screen.getByText('Созвон прошёл: индексы подтвердились.')).toBeDefined());
-    const turn = fetchMock.mock.calls.find((c) => c[0] === '/api/consultant/messages') as unknown as [string, RequestInit];
-    const body = JSON.parse(turn[1].body as string);
-    expect(body.afterCall).toBe(true);
-    expect(body.text).toBe('');
-    expect(fetchMock.mock.calls.filter((c) => c[0] === '/api/consultant/messages')).toHaveLength(1);
-    expect(screen.queryByTestId('chat-user-bubble')).toBeNull();
   });
 });

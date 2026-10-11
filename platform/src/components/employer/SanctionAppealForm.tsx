@@ -7,7 +7,7 @@ import { Button, Field, Notice } from '@/components/ui';
 import ui from '@/components/ui.module.css';
 import { postJson } from '@/lib/api';
 
-/** lane admin (E-08, фаза 2): «Оспорить» санкцию за жалобы — апелляция уходит модератору, итог придёт письмом. */
+/** lane admin (E-08, фаза 2): «Оспорить» санкцию за жалобы – апелляция уходит модератору, итог придёт письмом. */
 export function SanctionAppealForm({ open }: { open: { createdAt: string } | null }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);

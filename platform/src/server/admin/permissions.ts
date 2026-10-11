@@ -1,6 +1,6 @@
 /**
  * Права персонала (E-08, ADR 0009): единый каталог действий всех фаз 0–5 и матрица «роль → действия».
- * Одна таблица — один источник: гварды (`requireStaff`, `requirePageStaff`), меню (`nav.ts`) и тест матрицы
+ * Одна таблица – один источник: гварды (`requireStaff`, `requirePageStaff`), меню (`nav.ts`) и тест матрицы
  * (`tests/unit/admin/permissions.test.ts`, каждая пара «роль × действие»). Новое действие лейн добавляет сюда
  * и в тест одной строкой; роли персонала ровно три (решение владельца 11.10), `analyst` нет.
  *
@@ -18,19 +18,19 @@ export const STAFF_ROLE_LABEL: Record<StaffRoleName, string> = {
   support: 'Поддержка',
 };
 
-/** Каталог действий. Ключ — строка, которая пишется в журнал (`AdminAuditLog.action`). */
+/** Каталог действий. Ключ – строка, которая пишется в журнал (`AdminAuditLog.action`). */
 export const ACTIONS = [
-  // фаза 1 — обзор и поиск (чтение)
+  // фаза 1 – обзор и поиск (чтение)
   'view_dashboard',
   'view_users',
   'view_candidates',
   'view_companies',
   'view_vacancies',
   'view_invitations',
-  /** Раскрыть ФИО/почту/телефон: только через `revealPii` с причиной, каждое раскрытие — строка журнала. */
+  /** Раскрыть ФИО/почту/телефон: только через `revealPii` с причиной, каждое раскрытие – строка журнала. */
   'reveal_pii',
   'view_audit',
-  // фаза 2 — очереди модерации
+  // фаза 2 – очереди модерации
   'view_complaints',
   'resolve_complaint',
   'view_appeals',
@@ -41,7 +41,7 @@ export const ACTIONS = [
   'review_red_flag',
   'view_verification',
   'verify_company',
-  // фаза 3 — пользователи и компании
+  // фаза 3 – пользователи и компании
   'block_user',
   'unblock_user',
   'block_company',
@@ -53,11 +53,11 @@ export const ACTIONS = [
   'erase_account',
   'manage_demo',
   'manage_staff',
-  // фаза 4 — настройки и справочники
+  // фаза 4 – настройки и справочники
   'view_settings',
   'edit_settings',
   'edit_catalogs',
-  // фаза 5 — качество механик и отчёты (только owner)
+  // фаза 5 – качество механик и отчёты (только owner)
   'view_metrics',
   'export_csv',
 ] as const;
@@ -65,12 +65,12 @@ export type Action = (typeof ACTIONS)[number];
 
 /**
  * Матрица по таблице ролей эпика E-08:
- *  - owner — всё;
- *  - moderator — очереди, компании, вакансии, приглашения, псевдонимы кандидатов; решает жалобы, флаги,
+ *  - owner – всё;
+ *  - moderator – очереди, компании, вакансии, приглашения, псевдонимы кандидатов; решает жалобы, флаги,
  *    апелляции, верификацию; блокирует компании и скрывает вакансии и фейковые профили; ПДн не раскрывает;
- *  - support — карточки пользователей (ПДн через «Показать» с причиной); отвечает на возражения, сбрасывает
+ *  - support – карточки пользователей (ПДн через «Показать» с причиной); отвечает на возражения, сбрасывает
  *    кулдауны, разблокирует вход, запускает удаление по запросу.
- * Метрики, выгрузки, журнал, настройки, справочники, демо и персонал — только owner.
+ * Метрики, выгрузки, журнал, настройки, справочники, демо и персонал – только owner.
  */
 const MODERATOR: readonly Action[] = [
   'view_dashboard',
@@ -116,8 +116,8 @@ export function can(role: StaffRoleName, action: Action): boolean {
 
 /**
  * Демо-вход жюри (решение владельца 11.10): кнопка на /admin/login при DEMO_LOGIN входит сотрудником-owner
- * `DEMO_STAFF_EMAIL` без пароля и TOTP. Ему доступно только чтение — экраны `view_*` и обезличенная
- * выгрузка; любые изменения и раскрытие ПДн — 403, чтобы один проверяющий не менял стенд остальным.
+ * `DEMO_STAFF_EMAIL` без пароля и TOTP. Ему доступно только чтение – экраны `view_*` и обезличенная
+ * выгрузка; любые изменения и раскрытие ПДн – 403, чтобы один проверяющий не менял стенд остальным.
  */
 export const DEMO_STAFF_EMAIL = 'demo-owner@admin.demo';
 export const DEMO_STAFF_ACTIONS: ReadonlySet<Action> = new Set(ACTIONS.filter((a) => a.startsWith('view_') || a === 'export_csv'));
@@ -131,7 +131,7 @@ export function isStaffRole(x: string): x is StaffRoleName {
   return (STAFF_ROLES as readonly string[]).includes(x);
 }
 
-/** События входа и персонала — пишутся в журнал, но это не права. */
+/** События входа и персонала – пишутся в журнал, но это не права. */
 export const STAFF_EVENTS = [
   'staff.login',
   'staff.logout',

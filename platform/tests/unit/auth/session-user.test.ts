@@ -37,7 +37,7 @@ describe('session: кука аккаунта (u.…)', () => {
     expect(parseSession(c.replace('.c1.', '.c2.'), SECRET, NOW)).toBeNull();
   });
 
-  it('истёкшая, чужой секрет, неизвестная роль — null', () => {
+  it('истёкшая, чужой секрет, неизвестная роль – null', () => {
     const t = signUserSession({ userId: 'u1', role: 'employer', employerProfileId: 'e1' }, SECRET, NOW, 60);
     expect(parseSession(t, SECRET, NOW + 60)).toBeNull();
     expect(parseSession(t, 'y'.repeat(40), NOW)).toBeNull();
@@ -61,7 +61,7 @@ describe('session: guard-ы ролей', () => {
   const pend = `cid=${signUserSession({ userId: 'u3', role: 'pending' })}`;
   const legacy = `cid=${signSession('demo-a')}`;
 
-  it('requireCandidate: кандидат и старая кука — да; работодатель и pending — 403; нет входа — 401', () => {
+  it('requireCandidate: кандидат и старая кука – да; работодатель и pending – 403; нет входа – 401', () => {
     expect(requireCandidate(reqWith(cand))).toBe('c1');
     expect(requireCandidate(reqWith(legacy))).toBe('demo-a');
     expectError(() => requireCandidate(reqWith(emp)), 403);
@@ -77,7 +77,7 @@ describe('session: guard-ы ролей', () => {
     expectError(() => requireEmployer(reqWith()), 401);
   });
 
-  it('requireUser: любой аккаунт, включая pending; старая кука без аккаунта — 401', () => {
+  it('requireUser: любой аккаунт, включая pending; старая кука без аккаунта – 401', () => {
     expect(requireUser(reqWith(pend)).userId).toBe('u3');
     expect(requireUser(reqWith(emp)).role).toBe('employer');
     expectError(() => requireUser(reqWith(legacy)), 401);

@@ -15,7 +15,7 @@ export const GET = withErrors(async (req: Request) => {
   return Response.json(await loadConsultantSettings(candidateId));
 });
 
-/** Сохранить настройки целиком. Неизвестный id скилла или текст длиннее 500 символов — 400. */
+/** Сохранить настройки целиком. Неизвестный id скилла или текст длиннее 500 символов – 400. */
 export const PUT = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

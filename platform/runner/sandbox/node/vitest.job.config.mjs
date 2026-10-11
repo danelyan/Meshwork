@@ -1,6 +1,6 @@
 // PLATFORM-OWNED: фиксированный конфиг проверки. Конфиги кандидата (vitest/vite/postcss) не читаются:
 // runner передаёт --config на этот файл и --root на репозиторий (root только из конфига vitest 4 не
-// подхватывает); пути — через переменные окружения задания.
+// подхватывает); пути – через переменные окружения задания.
 const env = process.env;
 
 const config = {
@@ -25,7 +25,7 @@ const config = {
     passWithNoTests: false,
     setupFiles: [],
     globalSetup: [],
-    // default — человекочитаемый журнал (logTail, вывод console кандидата); json — машинный отчёт.
+    // default – человекочитаемый журнал (logTail, вывод console кандидата); json – машинный отчёт.
     reporters: ['default', 'json'],
     outputFile: { json: env.FSP_REPORT_FILE },
   },

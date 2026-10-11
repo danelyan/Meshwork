@@ -28,7 +28,7 @@ function rememberConsent() {
   try {
     window.localStorage.setItem(CONSENT_KEY, '1');
   } catch {
-    /* приватный режим — спросим ещё раз */
+    /* приватный режим – спросим ещё раз */
   }
 }
 
@@ -38,7 +38,7 @@ const mmss = (ms: number) => {
 };
 
 /**
- * Кнопка микрофона в композере: первый клик — объяснение, зачем микрофон и кто распознаёт;
+ * Кнопка микрофона в композере: первый клик – объяснение, зачем микрофон и кто распознаёт;
  * дальше запись (уровень сигнала кольцом, таймер), стоп → распознанный текст дописывается в поле
  * для правки. Сама не отправляет.
  */
@@ -89,7 +89,7 @@ export function VoiceButton({ value, onChange, disabled }: { value: string; onCh
         disabled={(disabled && !recording) || v.state === 'processing'}
         aria-pressed={recording}
         aria-label={recording ? 'Остановить запись' : 'Надиктовать голосом'}
-        title={recording ? 'Остановить запись' : `${MIC_HINT[press.mode]}. ${note} Правая кнопка мыши — настройки.`}
+        title={recording ? 'Остановить запись' : `${MIC_HINT[press.mode]}. ${note} Правая кнопка мыши – настройки.`}
         style={v.level !== null ? ({ '--level': v.level.toFixed(2) } as React.CSSProperties) : undefined}
         data-testid="voice-button"
       >

@@ -54,7 +54,7 @@ describe('E-08 фаза 3: действия над кандидатами, уд�
   });
   afterAll(() => prisma.$disconnect());
 
-  it('скрыть кандидата: выпадает из подборки, сам вернуть не может; вернуть — по его согласию Г4; журнал', async () => {
+  it('скрыть кандидата: выпадает из подборки, сам вернуть не может; вернуть – по его согласию Г4; журнал', async () => {
     const mod = await staffCookie('moderator');
     const userId = (await prisma.user.findUniqueOrThrow({ where: { candidateId: A.id } })).id;
     await grantConsents(userId, ['employer_visibility']);
@@ -80,7 +80,7 @@ describe('E-08 фаза 3: действия над кандидатами, уд�
     expect(rows[0]).toMatchObject({ targetType: 'candidate', targetId: A.id, actorId: mod.staffId, reason: 'Фейковый профиль по жалобе' });
   });
 
-  it('вернуть кандидата без согласия Г4 — остаётся скрыт (выбор самого кандидата); support не скрывает (403)', async () => {
+  it('вернуть кандидата без согласия Г4 – остаётся скрыт (выбор самого кандидата); support не скрывает (403)', async () => {
     const mod = await staffCookie('moderator');
     const sup = await staffCookie('support');
     await prisma.consent.deleteMany({ where: { kind: 'employer_visibility' } });
@@ -119,7 +119,7 @@ describe('E-08 фаза 3: действия над кандидатами, уд�
     expect(rows[0]).toMatchObject({ targetType: 'candidate', targetId: C, reason: 'Сбой стенда во время попытки', actorId: sup.staffId });
   });
 
-  it('сброс кулдауна: moderator — 403, без причины — 400, нет кандидата — 404', async () => {
+  it('сброс кулдауна: moderator – 403, без причины – 400, нет кандидата – 404', async () => {
     const mod = await staffCookie('moderator');
     const owner = await staffCookie('owner');
     expect((await reset(A.id, mod.cookie)).status).toBe(403);
@@ -149,7 +149,7 @@ describe('E-08 фаза 3: действия над кандидатами, уд�
     expect(dump).not.toContain('ivan.erase');
   });
 
-  it('удаление общего демо-аккаунта — отказ 403, журнал не пишется (откат вместе с удалением)', async () => {
+  it('удаление общего демо-аккаунта – отказ 403, журнал не пишется (откат вместе с удалением)', async () => {
     const owner = await staffCookie('owner');
     await prisma.user.update({ where: { id: DEMO_EMPLOYER.userId }, data: { isDemo: true } });
     const r = await erase(DEMO_EMPLOYER.userId, owner.cookie, { confirm: DEMO_EMPLOYER.userId, reason: 'Запрос субъекта ПДн' });

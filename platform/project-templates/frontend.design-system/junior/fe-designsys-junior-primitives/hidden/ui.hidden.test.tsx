@@ -94,7 +94,7 @@ describe('Badge', () => {
     expect(container.textContent).toBe('9');
   });
 
-  it('ноль показывается, пока нет hideZero; с hideZero и отрицательным — пусто', () => {
+  it('ноль показывается, пока нет hideZero; с hideZero и отрицательным – пусто', () => {
     const { container, rerender } = render(<Badge count={0} />);
     expect(container.textContent).toBe('0');
     rerender(<Badge count={0} hideZero />);
@@ -157,7 +157,7 @@ describe('TextField', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('hint описывает поле; пустая строка hint/error — как отсутствие', () => {
+  it('hint описывает поле; пустая строка hint/error – как отсутствие', () => {
     const { rerender } = render(<TextField label="Логин" hint="Только латиница" error="" value="" onChange={() => {}} />);
     const input = screen.getByLabelText('Логин');
     expect(describedBy(input)).toEqual(['Только латиница']);
@@ -175,7 +175,7 @@ describe('TextField', () => {
     expect(describedBy(input)).toEqual(['Рабочая почта', 'Неверный адрес']);
   });
 
-  it('только error: описание — одна ошибка; после исправления атрибуты исчезают', () => {
+  it('только error: описание – одна ошибка; после исправления атрибуты исчезают', () => {
     const { rerender } = render(<TextField label="Код" error="Слишком короткий" value="1" onChange={() => {}} />);
     expect(describedBy(screen.getByLabelText('Код'))).toEqual(['Слишком короткий']);
     rerender(<TextField label="Код" value="1234" onChange={() => {}} />);

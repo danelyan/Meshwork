@@ -1,8 +1,8 @@
 /**
- * Лицо и взгляд по 478 точкам MediaPipe Face Landmarker — чистые функции (тесты без камеры и WASM).
+ * Лицо и взгляд по 478 точкам MediaPipe Face Landmarker – чистые функции (тесты без камеры и WASM).
  * Только показ на экране собеседнику: в транскрипт, вердикт и работодателю не уходит (docs/competency-model.md § 4.1).
- * Грубая эвристика: поворот головы — нос относительно середины между висками; взгляд — зрачок относительно
- * уголков глаза. Калибровки на людях нет — это индикатор, не измерение.
+ * Грубая эвристика: поворот головы – нос относительно середины между висками; взгляд – зрачок относительно
+ * уголков глаза. Калибровки на людях нет – это индикатор, не измерение.
  */
 export interface Point {
   x: number;
@@ -33,7 +33,7 @@ export type GazeState = (typeof GAZE_STATES)[number];
 
 export const GAZE_LABEL: Record<GazeState, string> = { screen: 'взгляд на экран', away: 'взгляд в сторону', none: 'лица не видно' };
 
-/** ПРЕДЛОЖЕНИЕ: пороги «в сторону» — поворот головы и смещение зрачка; на людях не калиброваны. */
+/** ПРЕДЛОЖЕНИЕ: пороги «в сторону» – поворот головы и смещение зрачка; на людях не калиброваны. */
 export const GAZE_THRESHOLDS = { headYaw: 0.35, headPitch: 0.45, iris: 0.18, eyesClosed: 0.08 } as const;
 
 export interface FaceReading {
@@ -49,7 +49,7 @@ export interface FaceReading {
 
 const clamp1 = (v: number) => (Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
 
-/** Чтение лица из точек; меньше 478 точек — лица нет. */
+/** Чтение лица из точек; меньше 478 точек – лица нет. */
 export function readFace(landmarks: readonly Point[] | null | undefined): FaceReading | null {
   if (!landmarks || landmarks.length < 478) return null;
   const p = (i: number) => landmarks[i]!;
@@ -92,7 +92,7 @@ export function readFace(landmarks: readonly Point[] | null | undefined): FaceRe
 
 /**
  * Куда голове ИИ смотреть: цель −1…1, как у курсора (`trackPointer`: X вправо, Y вверх). Превью камеры
- * зеркальное, и «я сдвинулся влево» на экране — влево; X инвертируем, чтобы голова повернулась туда же.
+ * зеркальное, и «я сдвинулся влево» на экране – влево; X инвертируем, чтобы голова повернулась туда же.
  */
 export function lookTargetFrom(face: FaceReading, mirrored = true): [number, number] {
   const x = (face.center.x - 0.5) * 2;
@@ -111,7 +111,7 @@ export const INITIAL_GAZE: SettledGaze = { state: 'none', pending: null, pending
 
 /**
  * Сглаживание значка: «в сторону» и «нет лица» показываются, только если новое показание держится непрерывно
- * holdMs (моргание и потеря лица на кадр — не отвод взгляда); возврат «на экран» — сразу.
+ * holdMs (моргание и потеря лица на кадр – не отвод взгляда); возврат «на экран» – сразу.
  */
 export function settleGaze(prev: SettledGaze, next: GazeState, now: number, holdMs = 700): SettledGaze {
   if (next === prev.state) return prev.pending === null ? prev : { ...prev, pending: null };

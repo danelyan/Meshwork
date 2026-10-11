@@ -1,16 +1,16 @@
 import { randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from 'node:crypto';
 
 /**
- * Хэш пароля — scrypt из `node:crypto` (без новых зависимостей). Формат строки:
+ * Хэш пароля – scrypt из `node:crypto` (без новых зависимостей). Формат строки:
  * `scrypt$<N>$<r>$<p>$<salt base64url>$<hash base64url>`, параметры хранятся в записи,
  * чтобы их можно было поднять позже без сброса старых паролей.
- * N=2^15, r=8, p=1 — рекомендация OWASP для scrypt (≈32 МБ памяти на проверку).
+ * N=2^15, r=8, p=1 – рекомендация OWASP для scrypt (≈32 МБ памяти на проверку).
  */
 const N = 1 << 15;
 const R = 8;
 const P = 1;
 const KEYLEN = 32;
-// maxmem по умолчанию 32 МБ, а 128·N·r = ровно 32 МБ — даём запас.
+// maxmem по умолчанию 32 МБ, а 128·N·r = ровно 32 МБ – даём запас.
 const MAXMEM = 64 * 1024 * 1024;
 
 export const PASSWORD_MIN = 8;
@@ -28,7 +28,7 @@ export async function hashPassword(password: string): Promise<string> {
   return `scrypt$${N}$${R}$${P}$${salt.toString('base64url')}$${key.toString('base64url')}`;
 }
 
-/** Сверка с хэшем за постоянное время. Битая или чужая строка хэша — false, не исключение. */
+/** Сверка с хэшем за постоянное время. Битая или чужая строка хэша – false, не исключение. */
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const parts = stored.split('$');
   if (parts.length !== 6 || parts[0] !== 'scrypt') return false;

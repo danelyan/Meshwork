@@ -8,9 +8,9 @@ import type { SimSubcategory } from '@/server/validation/simulator';
 import styles from './Method.module.css';
 
 /**
- * Выбор подкатегории без перезагрузки: смена значения — мягкая навигация на тот же адрес с `?sub=`,
+ * Выбор подкатегории без перезагрузки: смена значения – мягкая навигация на тот же адрес с `?sub=`,
  * сервер пересчитывает графики и симуляцию, прокрутка и остальная страница остаются на месте
- * (router.replace со scroll: false; переход — React-транзиция, isPending показывает ожидание).
+ * (router.replace со scroll: false; переход – React-транзиция, isPending показывает ожидание).
  */
 export function SubcategoryPicker({ subcategories, selected }: { subcategories: SimSubcategory[]; selected: SimSubcategory | null }) {
   const router = useRouter();

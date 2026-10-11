@@ -142,7 +142,7 @@ describe('AccountMenu', () => {
     expect(screen.queryByRole('button', { name: /создать/ })).toBeNull();
   });
 
-  it('двойной клик по роли — один запрос', () => {
+  it('двойной клик по роли – один запрос', () => {
     vi.mocked(switchRoleApi).mockReturnValue(new Promise(() => undefined));
     openMenu(candidate);
     const btn = screen.getByRole('button', { name: 'Работодатель' });
@@ -151,7 +151,7 @@ describe('AccountMenu', () => {
     expect(switchRoleApi).toHaveBeenCalledTimes(1);
   });
 
-  it('ошибка API — текст ошибки, навигации нет', async () => {
+  it('ошибка API – текст ошибки, навигации нет', async () => {
     vi.mocked(switchRoleApi).mockRejectedValue(new ApiError('Слишком много переключений', 429, 'rate_limited'));
     openMenu(candidate);
     fireEvent.click(screen.getByRole('button', { name: 'Работодатель' }));

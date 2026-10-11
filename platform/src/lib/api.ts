@@ -33,7 +33,7 @@ export async function readError(res: Response): Promise<ApiError> {
     /* тело не JSON */
   }
   if (res.status === 401) message = 'Сессия закончилась. Войдите заново.';
-  // Кука подписана верно, но аккаунта уже нет (пересид/очистка в другом окне): сервер её стёр — на вход.
+  // Кука подписана верно, но аккаунта уже нет (пересид/очистка в другом окне): сервер её стёр – на вход.
   if (code === 'session_stale' && typeof window !== 'undefined') {
     const here = window.location.pathname + window.location.search;
     window.location.assign(`/auth?next=${encodeURIComponent(here)}`);
@@ -61,7 +61,7 @@ export interface DemoCandidate {
   name: string;
   specialization: Specialization | null;
   fspState: string;
-  /** Какой файл загрузить и какую ссылку вставить; null — подсказки нет. */
+  /** Какой файл загрузить и какую ссылку вставить; null – подсказки нет. */
   demoResume?: { fileName: string; link: string } | null;
 }
 
@@ -78,7 +78,7 @@ export interface DemoEmployer {
 }
 
 export const getDemoAccounts = () => request<{ candidates: DemoCandidate[]; employers?: DemoEmployer[]; personas?: DemoPersona[] }>('/api/demo/login');
-/** Новый демо-гость; `consent` — версия текста согласия с галки (без неё сервер отвечает 409/400). */
+/** Новый демо-гость; `consent` – версия текста согласия с галки (без неё сервер отвечает 409/400). */
 export const demoFreshLogin = (consent: string) => postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', { fresh: true, consent });
 export const demoEmployerLogin = (employerUserId: string) =>
   postJson<{ employer: { id: string; name: string }; next: string }>('/api/demo/login', { employerUserId });
@@ -95,12 +95,12 @@ export interface MeView {
   onboarded: boolean;
   /** Есть согласие на текущую версию текста. */
   consent: boolean;
-  /** Закрыто шагов знакомства из скольки; null — завершено или не посчитать. Пропуск считается закрытым. */
+  /** Закрыто шагов знакомства из скольки; null – завершено или не посчитать. Пропуск считается закрытым. */
   onboardingProgress?: { done: number; total: number } | null;
 }
 export const getMe = async () => (await request<{ user: MeView | null }>('/api/auth/me')).user;
 export const acceptConsent = (version: string) => postJson<{ version: string; acceptedAt: string }>('/api/auth/consent', { version });
-/** Переключить активную роль (ADR 0004); после ответа — полная навигация на `next`. */
+/** Переключить активную роль (ADR 0004); после ответа – полная навигация на `next`. */
 export const switchRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName?: string }) =>
   postJson<{ role: MeView['role']; next: string; created: boolean; changed: boolean }>('/api/auth/role/switch', body);
 export const completeOnboarding = () => postJson<{ onboarded: true; next: string }>('/api/auth/onboarding/complete', {});
@@ -116,12 +116,12 @@ export const listOnboardingHistoryApi = async () => {
   return Array.isArray(res.revisions) ? res.revisions : [];
 };
 export const onboardingAct = (body: OnboardingAction) => postJson<OnboardingView>('/api/onboarding', body);
-/** «Настроить позже»: онбординг не завершается, ответ — куда вести. */
+/** «Настроить позже»: онбординг не завершается, ответ – куда вести. */
 export const onboardingLater = () => postJson<{ next: string }>('/api/onboarding', { action: 'later' });
 
 export const getProfile = () => request<ProfileView>('/api/profile');
 
-/** GET /api/recommendations — target: `vacancy:<id>` | `category:<spec>:<grade>`; без него сервер берёт цель сам. */
+/** GET /api/recommendations – target: `vacancy:<id>` | `category:<spec>:<grade>`; без него сервер берёт цель сам. */
 export interface RecommendationsView {
   /** Цель, к которой посчитаны пробелы (переданная или выбранная сервером). */
   target?: string;
@@ -155,7 +155,7 @@ export function validateUploadFile(file: { name: string; size: number }): string
   return null;
 }
 
-/** Ответ POST /api/uploads (collector): краткая сводка разбора; оригинал хранится, скачать — uploadFileHref. */
+/** Ответ POST /api/uploads (collector): краткая сводка разбора; оригинал хранится, скачать – uploadFileHref. */
 export interface UploadResponse {
   uploadId: string;
   deduplicated: boolean;
@@ -180,7 +180,7 @@ export const deleteMaterial = (kind: 'file' | 'link', id: string) =>
 /** Ссылка на скачивание оригинала (GET /api/uploads/:id/file). */
 export const uploadFileHref = (id: string) => `/api/uploads/${encodeURIComponent(id)}/file`;
 
-/** Демо-резюме текущего демо-кандидата как File (GET /api/demo/resume) — для кнопки «Загрузить демо-резюме». */
+/** Демо-резюме текущего демо-кандидата как File (GET /api/demo/resume) – для кнопки «Загрузить демо-резюме». */
 export async function fetchDemoResume(fileName: string): Promise<File> {
   let res: Response;
   try {
@@ -218,11 +218,6 @@ export interface SendMessageInput {
   conversationId?: string;
   /** Свободный вопрос посреди онбординга: id текущего шага (консультант ответит коротко и вернёт к шагу). */
   onboardingStep?: string;
-  /** Первая реплика в пустом разговоре без сообщения кандидата. */
-  kickoff?: boolean;
-  /** Ход после завершённого созвона без сообщения кандидата: консультант подводит итог по <last_call>. */
-  afterCall?: boolean;
-  resend?: boolean;
 }
 
 /** Открывает SSE-поток ответа консультанта. Тело читает вызывающий (см. useConsultant). */
@@ -247,7 +242,7 @@ export async function openConsultantStream(input: SendMessageInput, signal: Abor
 
 /**
  * Кнопка «Стоп»: остановить активный ход консультанта. Сервер сохраняет показанный кусок реплики
- * и шлёт в поток `message` + `done`; ответ приходит после этого. Ошибки не бросает (стоп — best effort).
+ * и шлёт в поток `message` + `done`; ответ приходит после этого. Ошибки не бросает (стоп – best effort).
  */
 export async function stopConsultantTurn(conversationId: string): Promise<void> {
   try {
@@ -275,7 +270,7 @@ export interface DefenseStep {
 export const startDefenseApi = (claimId: string) =>
   postJson<{ sessionId: string; question: DefenseQuestion; resumed: boolean }>('/api/defense', { claimId });
 
-/** GET /api/defense/[sessionId] — вся сессия (для продолжения после перезагрузки). */
+/** GET /api/defense/[sessionId] – вся сессия (для продолжения после перезагрузки). */
 export const getDefenseSessionApi = (sessionId: string) =>
   request<DefenseSessionView>(`/api/defense/${encodeURIComponent(sessionId)}`);
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Выкладка симулятора на сервер: rsync каталога fsp-sim/ и docker compose up. Запускать из fsp-sim/:
 #   DEPLOY_HOST=deploy@203.0.113.10 bash scripts/deploy.sh
-# .env на сервере не трогается (его создаёт первый деплой из .env.example — значения заменить вручную).
+# .env на сервере не трогается (его создаёт первый деплой из .env.example – значения заменить вручную).
 set -euo pipefail
-: "${DEPLOY_HOST:?DEPLOY_HOST — user@host}"
+: "${DEPLOY_HOST:?DEPLOY_HOST – user@host}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/fsp/fsp-sim}"
 SSH_OPTS="${SSH_OPTS:-}"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,7 +20,7 @@ cd "$DEPLOY_PATH"
 if [ ! -f .env ]; then
   umask 077
   cp .env.example .env
-  echo "Создан .env из .env.example — задайте PUBLIC_URL и пароли, затем повторите деплой" >&2
+  echo "Создан .env из .env.example – задайте PUBLIC_URL и пароли, затем повторите деплой" >&2
   exit 3
 fi
 docker compose up -d --build --remove-orphans

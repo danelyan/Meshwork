@@ -2,7 +2,7 @@ import type { AgentEvent } from './types';
 
 /**
  * SSE-кадр: `data: <json AgentEvent>\n\n`. JSON не содержит перевода строки
- * (JSON.stringify экранирует \n), поэтому одно событие — ровно один кадр.
+ * (JSON.stringify экранирует \n), поэтому одно событие – ровно один кадр.
  * U+2028/U+2029 тоже экранируем: в JSON они допустимы, но некоторые парсеры
  * строк считают их концом строки.
  */
@@ -25,7 +25,7 @@ export function decodeSse(chunk: string): { events: AgentEvent[]; rest: string }
       try {
         events.push(JSON.parse(line.slice(5).trim()) as AgentEvent);
       } catch {
-        /* чужой кадр — пропускаем */
+        /* чужой кадр – пропускаем */
       }
     }
   }

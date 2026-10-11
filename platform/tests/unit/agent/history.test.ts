@@ -60,7 +60,7 @@ describe('buildHistory', () => {
     expect(buildHistory(rows).map((m) => m.content)).toEqual(['привет', '', 'раз', 'два', 'готово']);
   });
 
-  it('окно сдвигается к ближайшему user, чтобы не начинать с осиротевшего tool; старое — сводкой', () => {
+  it('окно сдвигается к ближайшему user, чтобы не начинать с осиротевшего tool; старое – сводкой', () => {
     const rows: Row[] = [];
     for (let i = 0; i < 15; i++) {
       rows.push(row('user', `вопрос ${i}`));
@@ -76,7 +76,7 @@ describe('buildHistory', () => {
     expect(h[h.length - 1]?.content).toBe('ответ 14');
   });
 
-  it('старые результаты инструментов режутся, последний ход — нет', () => {
+  it('старые результаты инструментов режутся, последний ход – нет', () => {
     const long = 'x'.repeat(5_000);
     const h = buildHistory(
       [
@@ -111,7 +111,7 @@ describe('fitHistory: бюджет контекста', () => {
     m('assistant', `ответ ${i}`),
   ];
 
-  it('влезает — возвращается как есть', () => {
+  it('влезает – возвращается как есть', () => {
     const h = [...turn(1, 100), m('user', 'ещё')];
     expect(fitHistory(h, 10_000)).toBe(h);
   });
@@ -128,7 +128,7 @@ describe('fitHistory: бюджет контекста', () => {
     for (const t of out.filter((x) => x.role === 'tool')) expect(callIds.has(t.toolCallId as string)).toBe(true);
   });
 
-  it('последний ход сам не влез — его результаты инструментов режутся, структура сохраняется', () => {
+  it('последний ход сам не влез – его результаты инструментов режутся, структура сохраняется', () => {
     const h = [m('user', 'прочитай'), m('assistant', '', { toolCalls: [{ id: 'a', name: 'read_upload', arguments: {} }] }), m('tool', 'y'.repeat(50_000), { toolCallId: 'a' })];
     const out = fitHistory(h, 10_000);
     expect(out.map((x) => x.role)).toEqual(['user', 'assistant', 'tool']);

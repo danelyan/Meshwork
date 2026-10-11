@@ -318,7 +318,7 @@ def test_concurrent_delete_vs_update_consistent(tmp_path):
     res = _race(path, 2, lambda cc, i: registry.delete(cc, "pen", 1, "d") if i == 0
                 else registry.update(cc, "pen", {"price_kop": 9}, 1, "u"))
     assert sum(isinstance(r, dict) for r in res) == 1, res
-    # проигравший: update после delete видит удалённую позицию (NotFound), delete после update — ConflictError
+    # проигравший: update после delete видит удалённую позицию (NotFound), delete после update – ConflictError
     assert sum(isinstance(r, (registry.ConflictError, registry.NotFoundError)) for r in res) == 1, res
     assert len(registry.history(c, "pen")) == 2
     c.close()

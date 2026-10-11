@@ -1,4 +1,4 @@
-// Время по МСК (ADR 0008: показываем по МСК, храним в UTC). МСК — постоянное UTC+3, без перехода на летнее время с 2014 г.
+// Время по МСК (ADR 0008: показываем по МСК, храним в UTC). МСК – постоянное UTC+3, без перехода на летнее время с 2014 г.
 const MSK_OFFSET_MS = 3 * 60 * 60 * 1000;
 
 /** «пн, 12.10 14:30 МСК». */
@@ -11,7 +11,7 @@ export function formatMsk(iso: string | Date | null | undefined): string {
   return `${date} ${time} МСК`;
 }
 
-/** Поле `datetime-local` («2026-10-12T14:30»), понятое как МСК → ISO UTC. null — не разобрано. */
+/** Поле `datetime-local` («2026-10-12T14:30»), понятое как МСК → ISO UTC. null – не разобрано. */
 export function mskLocalToIso(local: string): string | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local.trim());
   if (!m) return null;

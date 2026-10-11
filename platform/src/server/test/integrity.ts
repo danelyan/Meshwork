@@ -1,14 +1,14 @@
 // Индекс честности попытки теста на грейд (ADR-0002, дополнение 11.10). Чистые функции без БД.
 // Это сигнал, а не санкция: high ведёт к подтверждающему тесту, грейд автоматически не отнимается.
-// Все пороги — ПРЕДЛОЖЕНИЕ: на людях не откалиброваны (docs/decisions/0002-grade-test.md).
+// Все пороги – ПРЕДЛОЖЕНИЕ: на людях не откалиброваны (docs/decisions/0002-grade-test.md).
 import { normalizeNumber } from './answers';
 import { probCorrect, type ItemParams } from './irt';
 import type { AnswerFormat } from './types';
 
-/** v2 (11.10, решение владельца по симуляции eval/test/integrity.ts): overtime не группа для high, серия быстрых верных — high. */
+/** v2 (11.10, решение владельца по симуляции eval/test/integrity.ts): overtime не группа для high, серия быстрых верных – high. */
 export const INTEGRITY_VERSION = 'integrity-v2';
 
-/** Форматы, где ловушка «прибавь N к ответу» однозначна: ответ — число. */
+/** Форматы, где ловушка «прибавь N к ответу» однозначна: ответ – число. */
 export const CANARY_FORMATS: ReadonlySet<AnswerFormat> = new Set<AnswerFormat>(['number']);
 export const CANARY_SHIFT_MIN = 3;
 export const CANARY_SHIFT_MAX = 9;
@@ -22,7 +22,7 @@ export function canaryText(shift: number): string {
 // Время ответа: логнормальная модель (van der Linden & Guo, 2008)
 // ---------------------------------------------------------------------------
 
-/** Медиана времени на задание средней сложности при θ = b — доля лимита. ПРЕДЛОЖЕНИЕ. */
+/** Медиана времени на задание средней сложности при θ = b – доля лимита. ПРЕДЛОЖЕНИЕ. */
 export const RT_MEDIAN_SHARE = 0.35;
 /** Рост ln(время) на единицу (b − θ): трудное для кандидата задание дольше. ПРЕДЛОЖЕНИЕ. */
 export const RT_DIFFICULTY_SLOPE = 0.3;
@@ -34,7 +34,7 @@ export const FAST_SHARE = 0.1;
 export const HARD_MARGIN = 0.5;
 /** Лёгкое для кандидата: b < θ̂ − 1. */
 export const EASY_MARGIN = 1;
-/** Серия: столько верных ответов быстрее FAST_SHARE лимита своего задания (в попытке, не обязательно подряд) — high. */
+/** Серия: столько верных ответов быстрее FAST_SHARE лимита своего задания (в попытке, не обязательно подряд) – high. */
 export const FAST_SERIES_MIN = 4;
 
 /** Ожидаемая (медианная) длительность ответа, сек: ln T ~ N(β − τ, σ²), β из лимита и b, τ из θ. */
@@ -42,7 +42,7 @@ export function expectedSeconds(b: number, theta: number, timeLimitSec: number):
   return RT_MEDIAN_SHARE * timeLimitSec * Math.exp(RT_DIFFICULTY_SLOPE * (b - theta));
 }
 
-/** Стандартизованный остаток ln-времени: < 0 — быстрее ожидаемого. */
+/** Стандартизованный остаток ln-времени: < 0 – быстрее ожидаемого. */
 export function rtResidual(seconds: number, b: number, theta: number, timeLimitSec: number): number {
   return (Math.log(Math.max(seconds, 0.5)) - Math.log(expectedSeconds(b, theta, timeLimitSec))) / RT_SIGMA;
 }
@@ -74,9 +74,9 @@ export interface IntegrityReason {
 export interface ItemObservation extends ItemParams {
   index: number;
   correct: boolean;
-  /** answeredAt − askedAt, сек; null — нет времени. */
+  /** answeredAt − askedAt, сек; null – нет времени. */
   seconds: number | null;
-  /** Лимит, зафиксированный при показе; null — попытка до фиксации лимита (время не оценивается). */
+  /** Лимит, зафиксированный при показе; null – попытка до фиксации лимита (время не оценивается). */
   timeLimitSec: number | null;
   format: AnswerFormat;
   answer: string;
@@ -84,7 +84,7 @@ export interface ItemObservation extends ItemParams {
   canaryShift: number | null;
 }
 
-/** Флаги времени по заданию. overtime — сигнал, ответ не блокируется. */
+/** Флаги времени по заданию. overtime – сигнал, ответ не блокируется. */
 export function timeFlags(it: ItemObservation, theta: number): IntegrityReason[] {
   if (it.seconds === null || it.timeLimitSec === null || it.timeLimitSec <= 0) return [];
   const out: IntegrityReason[] = [];
@@ -103,7 +103,7 @@ export function timeFlags(it: ItemObservation, theta: number): IntegrityReason[]
 }
 
 /**
- * Серия быстрых верных ответов: ≥ FAST_SERIES_MIN верных быстрее 10 % лимита, трудность не важна — быстрые верные
+ * Серия быстрых верных ответов: ≥ FAST_SERIES_MIN верных быстрее 10 % лимита, трудность не важна – быстрые верные
  * ответы сами завышают θ̂, и fast_correct_hard у «слитых ключей» почти не срабатывает (симуляция лейна D, 11.10).
  */
 export function fastSeries(items: readonly ItemObservation[]): IntegrityReason[] {
@@ -120,10 +120,10 @@ export const LZ_CUT = -1.645;
 export const LZ_MIN_ITEMS = 7;
 
 /**
- * lz* — стандартизованная логарифмическая правдоподобность паттерна ответов с поправкой Снейдерса на оценённую θ.
+ * lz* – стандартизованная логарифмическая правдоподобность паттерна ответов с поправкой Снейдерса на оценённую θ.
  * 2PL: w_i = ln(P/(1−P)), r_i = P'/(P(1−P)) = a_i, c = Σ P'·w / Σ P'·r, w̃ = w − c·r.
- * lz* = (Σ (u − P)·w + c·r0) / sqrt(Σ P(1−P)·w̃²), r0 = −θ̂ — поправка априорного N(0, 1) (у ML r0 = 0).
- * θ̂ у нас EAP, а не MAP: поправка приближённая (инференс, отмечено в ADR). null — нечего считать (n = 0 или нулевая дисперсия).
+ * lz* = (Σ (u − P)·w + c·r0) / sqrt(Σ P(1−P)·w̃²), r0 = −θ̂ – поправка априорного N(0, 1) (у ML r0 = 0).
+ * θ̂ у нас EAP, а не MAP: поправка приближённая (инференс, отмечено в ADR). null – нечего считать (n = 0 или нулевая дисперсия).
  */
 export function personFitLzStar(responses: readonly (ItemParams & { correct: boolean })[], theta: number): number | null {
   if (responses.length === 0) return null;
@@ -179,14 +179,14 @@ export const EMPTY_SIGNALS: BrowserSignals = { tabHidden: 0, hiddenMs: 0, pastes
 export const TAB_AWAY_COUNT = 3;
 export const TAB_AWAY_MS = 60_000;
 
-/** Разбор Json из БД: неизвестное и мусор — нули. */
+/** Разбор Json из БД: неизвестное и мусор – нули. */
 export function parseSignals(raw: unknown): BrowserSignals {
   const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const n = (k: string) => (typeof o[k] === 'number' && Number.isFinite(o[k]) ? Math.max(0, o[k] as number) : 0);
   return { tabHidden: n('tabHidden'), hiddenMs: n('hiddenMs'), pastes: n('pastes'), pasteChars: n('pasteChars'), copies: n('copies'), extendedScreen: o.extendedScreen === true };
 }
 
-/** Флаги браузера и пометки (второй монитор — только пометка, не флаг). */
+/** Флаги браузера и пометки (второй монитор – только пометка, не флаг). */
 export function browserFlags(s: BrowserSignals): { reasons: IntegrityReason[]; notes: string[] } {
   const reasons: IntegrityReason[] = [];
   if (s.tabHidden >= TAB_AWAY_COUNT || s.hiddenMs >= TAB_AWAY_MS) {
@@ -210,13 +210,13 @@ export interface IntegrityIndex {
   version: string;
   notes: string[];
   lzStar: number | null;
-  /** Задания с флагами времени или ловушки — в подтверждающем решении не учитываются. */
+  /** Задания с флагами времени или ловушки – в подтверждающем решении не учитываются. */
   flaggedItems: number[];
 }
 
 /**
- * high — ловушка, ИЛИ серия быстрых верных, ИЛИ флаги из ≥ 2 разных групп без учёта overtime (overtime даёт только
- * medium: у честных он в 29–55 % попыток); любой иной флаг — medium; браузерные флаги — одна группа.
+ * high – ловушка, ИЛИ серия быстрых верных, ИЛИ флаги из ≥ 2 разных групп без учёта overtime (overtime даёт только
+ * medium: у честных он в 29–55 % попыток); любой иной флаг – medium; браузерные флаги – одна группа.
  */
 export function riskLevel(reasons: readonly IntegrityReason[]): IntegrityLevel {
   if (reasons.length === 0) return 'low';
@@ -257,7 +257,7 @@ export function canarySlots(rngInt: (min: number, max: number) => number, count:
 
 /**
  * Ставить ли ловушку на задание `index`: место из slots уже наступило, а ловушек поставлено меньше.
- * Задание без числового ответа ловушку не получает — она переносится на следующее числовое.
+ * Задание без числового ответа ловушку не получает – она переносится на следующее числовое.
  */
 export function wantsCanary(index: number, placed: number, slots: readonly number[], format: AnswerFormat): boolean {
   if (!CANARY_FORMATS.has(format)) return false;

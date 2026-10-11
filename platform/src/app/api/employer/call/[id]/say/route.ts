@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST `{ text }` — реплика работодателя в живой защите: попадает в транскрипт (role employer) и
+ * POST `{ text }` – реплика работодателя в живой защите: попадает в транскрипт (role employer) и
  * озвучивается кандидату вторым голосом TTS, если P2P-аудио не поднялось. Нужно подключиться (join).
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {

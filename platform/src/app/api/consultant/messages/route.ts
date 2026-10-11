@@ -15,7 +15,7 @@ import { getSession, requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** Комментарий SSE `: ping` — пока ход идёт (парсер lib/sse.ts строки без `data:` игнорирует). */
+/** Комментарий SSE `: ping` – пока ход идёт (парсер lib/sse.ts строки без `data:` игнорирует). */
 const HEARTBEAT_MS = 15_000;
 
 const Body = z
@@ -28,37 +28,35 @@ const Body = z
     onboardingStep: z.string().regex(/^[A-Za-z]{1,40}$/).optional(),
     /** Первая реплика в пустом разговоре без сообщения кандидата (loop.ts, KICKOFF_INSTRUCTION). */
     kickoff: z.boolean().optional(),
-    /** Ход после завершённого созвона без сообщения кандидата (loop.ts, AFTER_CALL_INSTRUCTION). */
-    afterCall: z.boolean().optional(),
     /**
      * Переотправить последнее сообщение кандидата: оно и всё после него (ответ, вызовы инструментов)
      * удаляются из истории, ход идёт заново с тем же текстом на прежней истории. Нужен conversationId.
      */
     resend: z.boolean().optional(),
   })
-  .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length || b.kickoff || b.afterCall || b.resend, {
+  .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length || b.kickoff || b.resend, {
     message: 'Нужен текст, вложение или ссылка',
     path: ['text'],
   });
 
 /**
  * Ход консультанта: POST → SSE-поток событий AgentEvent (`data: {...}\n\n`),
- * заканчивается `done`. Один ход на разговор одновременно — иначе 409 `busy`.
- * Паттерн ReadableStream в Route Handler — docs Next.js «Streaming».
+ * заканчивается `done`. Один ход на разговор одновременно – иначе 409 `busy`.
+ * Паттерн ReadableStream в Route Handler – docs Next.js «Streaming».
  *
  * Разрыв соединения (`request.signal`: F5, закрытие вкладки, потеря сети) ход НЕ прерывает:
  * реплика дописывается и сохраняется, после перезагрузки её покажет история (AI SDK
- * «chatbot-resume-streams»: disconnect ≠ stop). Lock держится до конца хода — повторная отправка
+ * «chatbot-resume-streams»: disconnect ≠ stop). Lock держится до конца хода – повторная отправка
  * получает 409 `busy`. Останавливает ход только `POST …/messages/stop` (реестр active-turns)
- * или таймаут хода. Пока ход идёт — `: ping` раз в 15 с (прокси не рвут «немое» соединение).
+ * или таймаут хода. Пока ход идёт – `: ping` раз в 15 с (прокси не рвут «немое» соединение).
  */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const body = Body.parse(await req.json().catch(() => ({})));
 
-  // Граница доверия: из онбординга в модель — только после согласия и выбора роли «специалист».
-  // Шаг берём сервером (клиент мог отстать); человек уже на итоге — обычный ход консультанта.
+  // Граница доверия: из онбординга в модель – только после согласия и выбора роли «специалист».
+  // Шаг берём сервером (клиент мог отстать); человек уже на итоге – обычный ход консультанта.
   let onboarding: OnboardingStepBrief | undefined;
   if (body.onboardingStep) {
     const userId = getSession(req)?.userId;
@@ -98,7 +96,7 @@ export const POST = withErrors(async (req: Request) => {
   const turn = new AbortController();
   const unregister = registerTurn(conversationId, turn);
   const signal = turn.signal;
-  // Клиент ушёл или стоп — нарезку реплики не ждать (сохранить и отдать message сразу).
+  // Клиент ушёл или стоп – нарезку реплики не ждать (сохранить и отдать message сразу).
   const pace = AbortSignal.any([req.signal, signal]);
   let closed = false;
   const stream = new ReadableStream<Uint8Array>({
@@ -126,13 +124,12 @@ export const POST = withErrors(async (req: Request) => {
             ...(body.urls ? { urls: body.urls } : {}),
             ...(onboarding ? { onboarding } : {}),
             ...(body.kickoff && !onboarding ? { kickoff: true } : {}),
-            ...(body.afterCall && !onboarding ? { afterCall: true } : {}),
           },
           emit,
           signal,
           { pace },
         );
-        // Память: факты из реплики — фоном, после завершённого хода (ответ уже отдан); в демо и на заглушке — нет.
+        // Память: факты из реплики – фоном, после завершённого хода (ответ уже отдан); в демо и на заглушке – нет.
         if (!signal.aborted && !body.resend && text.trim() && memoryExtractionEnabled()) {
           void scheduleMemoryExtraction({ owner: { candidateId }, text, llm: getLlm({ candidateId, conversationId }) });
         }

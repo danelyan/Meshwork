@@ -20,7 +20,7 @@ describe('docLabel', () => {
 });
 
 describe('причины отказа', () => {
-  it('дубли — не отказ, а объединение повторов', () => {
+  it('дубли – не отказ, а объединение повторов', () => {
     const r = ['duplicate', 'duplicate', 'duplicate'];
     expect(describeRejects(r)).toBe('');
     expect(claimsStepText(5, r)).toBe('нашёл 5, объединил 3 повтора одинаковых утверждений');

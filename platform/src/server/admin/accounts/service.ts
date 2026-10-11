@@ -12,8 +12,8 @@ import { getSetting, setDemoSetting } from '../settings';
 import { cooldownResetAt, isBlockedNow, isHiddenByModerator } from './state';
 
 /**
- * Действия фазы 3 E-08 над пользователями, компаниями и кандидатами. Каждое изменение — с причиной и строкой журнала
- * в той же транзакции. В журнал (`before`/`after`) идут id, флаги и сроки — без ФИО, почты и телефона.
+ * Действия фазы 3 E-08 над пользователями, компаниями и кандидатами. Каждое изменение – с причиной и строкой журнала
+ * в той же транзакции. В журнал (`before`/`after`) идут id, флаги и сроки – без ФИО, почты и телефона.
  */
 
 const BLOCK_SELECT = { blockedAt: true, blockedUntil: true, blockedReason: true, blockedById: true } as const;
@@ -37,7 +37,7 @@ export async function blockUser(actor: StaffContext, userId: string, input: { re
   return prisma.$transaction(async (tx) => {
     const before = await tx.user.findUnique({ where: { id: userId }, select: { id: true, role: true, isDemo: true, accounts: { select: { provider: true } }, ...BLOCK_SELECT } });
     if (!before) throw errors.notFound('Пользователь не найден');
-    // Общий демо-аккаунт сида — вход жюри на стенде; его блокировка сломала бы демонстрацию для всех.
+    // Общий демо-аккаунт сида – вход жюри на стенде; его блокировка сломала бы демонстрацию для всех.
     if (before.isDemo && !before.accounts.some((a) => a.provider === 'demo')) throw errors.conflict('Общий демо-аккаунт не блокируется');
     const after = await tx.user.update({ where: { id: userId }, data: { blockedAt: now, blockedUntil: until, blockedReason: reason, blockedById: actor.staffId }, select: BLOCK_SELECT });
     await audit({ actor, action: 'block_user', target: { type: 'user', id: userId }, reason, before: pickBlock(before), after }, tx);
@@ -45,7 +45,7 @@ export async function blockUser(actor: StaffContext, userId: string, input: { re
   });
 }
 
-/** Снять блокировку: `blockedUntil = now`. `blockedAt` остаётся эпохой отзыва — старые куки не оживают. */
+/** Снять блокировку: `blockedUntil = now`. `blockedAt` остаётся эпохой отзыва – старые куки не оживают. */
 export async function unblockUser(actor: StaffContext, userId: string, input: { reason: string | null | undefined }) {
   const reason = requireReason(input.reason);
   const now = new Date();
@@ -98,9 +98,9 @@ function pickBlock(x: { blockedAt: Date | null; blockedUntil: Date | null; block
 // ---------------------------------------------------------------------------
 
 /**
- * Скрыть — `hiddenFromEmployers = true` и строка `hide_candidate.hidden`: пока она последняя, сам кандидат профиль
- * не вернёт (`setPrivacy`, согласие Г4). Вернуть — строка `hide_candidate.shown` и видимость по выбору самого
- * кандидата: есть действующее согласие Г4 (или профиль без аккаунта, демо-пул) — виден, нет — остаётся скрыт.
+ * Скрыть – `hiddenFromEmployers = true` и строка `hide_candidate.hidden`: пока она последняя, сам кандидат профиль
+ * не вернёт (`setPrivacy`, согласие Г4). Вернуть – строка `hide_candidate.shown` и видимость по выбору самого
+ * кандидата: есть действующее согласие Г4 (или профиль без аккаунта, демо-пул) – виден, нет – остаётся скрыт.
  */
 export async function setCandidateHidden(actor: StaffContext, candidateId: string, input: { hidden: boolean; reason: string | null | undefined }) {
   const reason = requireReason(input.reason);
@@ -137,7 +137,7 @@ export async function cooldownState(candidateId: string) {
 }
 
 /**
- * Сброс — одна строка журнала `reset_cooldown`: `checkEligibility` не учитывает интервалы, начатые до неё
+ * Сброс – одна строка журнала `reset_cooldown`: `checkEligibility` не учитывает интервалы, начатые до неё
  * (смена грейда от подтверждения категории, пересдача от прошлой попытки). Категорию и попытки не трогает.
  */
 export async function resetCooldown(actor: StaffContext, candidateId: string, input: { reason: string | null | undefined }) {
@@ -154,8 +154,8 @@ export async function resetCooldown(actor: StaffContext, candidateId: string, in
 
 /**
  * Удаление через `eraseOwnAccount` (тот же код, что «Удалить аккаунт» у самого человека). Двойное подтверждение:
- * в UI — диалог, на сервере — `confirm` обязан совпасть с id. Журнал — в транзакции удаления: факт и id,
- * без ПДн. Общий демо-аккаунт сида и активный созвон — отказ из `eraseOwnAccount`.
+ * в UI – диалог, на сервере – `confirm` обязан совпасть с id. Журнал – в транзакции удаления: факт и id,
+ * без ПДн. Общий демо-аккаунт сида и активный созвон – отказ из `eraseOwnAccount`.
  */
 export async function eraseAccountByStaff(actor: StaffContext, userId: string, input: { confirm: string; reason: string | null | undefined }) {
   const reason = requireReason(input.reason);
@@ -196,7 +196,7 @@ export async function listDemo() {
   ]);
   return {
     showDemo,
-    // Имя — только у общих демо-персон сида (вымышленные). Гость мог ввести своё — показываем псевдоним.
+    // Имя – только у общих демо-персон сида (вымышленные). Гость мог ввести своё – показываем псевдоним.
     users: users.map((u) => {
       const guest = u.accounts.some((a) => a.provider === 'demo');
       return { id: u.id, role: u.role, kind: guest ? ('guest' as const) : ('shared' as const), label: guest ? `Гость ${u.id.slice(-6)}` : u.name, createdAt: u.createdAt, blocked: isBlockedNow(u) };
@@ -206,7 +206,7 @@ export async function listDemo() {
   };
 }
 
-/** Мусор e2e: вакансии `E2E …` демо-компаний и компании-маркеры, где все представители — гостевые аккаунты. */
+/** Мусор e2e: вакансии `E2E …` демо-компаний и компании-маркеры, где все представители – гостевые аккаунты. */
 export async function findJunk() {
   const [vacancies, companies] = await Promise.all([
     prisma.vacancy.findMany({ where: { title: { startsWith: E2E_VACANCY_PREFIX }, company: { isDemo: true } }, select: { id: true, title: true, company: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }),
@@ -226,7 +226,7 @@ export async function findJunk() {
 
 /**
  * Удалить мусор e2e. Удаляется только пересечение «что показали владельцу» (`vacancyIds`, `companyIds`) и «что
- * сейчас подходит под маркеры» — лишнего не заденет даже устаревший экран. Компании-маркеры уходят вместе с их
+ * сейчас подходит под маркеры» – лишнего не заденет даже устаревший экран. Компании-маркеры уходят вместе с их
  * гостевыми аккаунтами через `eraseOwnAccount` (каскад как у самоудаления).
  */
 export async function cleanupJunk(actor: StaffContext, input: { reason: string | null | undefined; vacancyIds: string[]; companyIds: string[] }) {

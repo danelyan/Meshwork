@@ -21,10 +21,10 @@ describe('seedDemoClaims (БД)', () => {
     await seedDemoClaims(prisma);
     for (const [id, d] of Object.entries(DEMO_RESUME_CLAIMS)) {
       const rows = await prisma.claim.findMany({ where: { candidateId: id }, select: { quote: true, sourceRef: true, catalogId: true, wording: true } });
-      // Формулировка для карточки — ручная, под цитату и в роде кандидата.
+      // Формулировка для карточки – ручная, под цитату и в роде кандидата.
       for (const r of rows) expect(r.wording).toBe(d.wording[r.catalogId]);
       expect(rows).toHaveLength(Object.keys(d.claims).length);
-      // Цитата — дословная строка резюме, источник — файл этого кандидата.
+      // Цитата – дословная строка резюме, источник – файл этого кандидата.
       const resume = readFileSync(join(process.cwd(), 'eval/demo', d.file.replace('.pdf', ''), 'resume.md'), 'utf8');
       for (const r of rows) {
         expect(resume).toContain(r.quote);

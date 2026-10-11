@@ -12,7 +12,7 @@ import { catalogFromFile } from '../../src/server/claims/catalog-file';
  * нет: повторный сид не затирает то, что появилось при работе на стенде. Все люди вымышлены.
  */
 export const DEMO_RESUME_CLAIMS: Record<string, { file: string; claims: Record<string, string>; wording: Record<string, string> }> = {
-  // Цитата — дословная строка резюме; утверждение без опоры в тексте (только «Git» в списке навыков) не заводим.
+  // Цитата – дословная строка резюме; утверждение без опоры в тексте (только «Git» в списке навыков) не заводим.
   'demo-frontend-mid': {
     file: 'demo-2.pdf',
     claims: {
@@ -22,7 +22,7 @@ export const DEMO_RESUME_CLAIMS: Record<string, { file: string; claims: Record<s
       'fe.responsive': 'Адаптивная вёрстка mobile-first на Flex и Grid.',
       'fe.css-layout': 'Адаптивная вёрстка mobile-first на Flex и Grid.',
     },
-    // Формулировка для карточки — в границах цитаты и в роде кандидатки (каталожная шире: «отмена запросов, гонки ответов»).
+    // Формулировка для карточки – в границах цитаты и в роде кандидатки (каталожная шире: «отмена запросов, гонки ответов»).
     wording: {
       'fe.components': 'Собирала интерфейсы на React из переиспользуемых компонентов',
       'fe.forms': 'Формы заявки с проверкой полей и показом ошибок',
@@ -48,7 +48,7 @@ export const DEMO_RESUME_CLAIMS: Record<string, { file: string; claims: Record<s
   },
 };
 
-/** Прежний сид писал выдуманные цитаты с источником cv-demo.pdf — такие неподтверждённые записи заменяем. */
+/** Прежний сид писал выдуманные цитаты с источником cv-demo.pdf – такие неподтверждённые записи заменяем. */
 const LEGACY_SOURCE = 'cv-demo.pdf#p1';
 
 export async function seedDemoClaims(prisma: PrismaClient): Promise<void> {

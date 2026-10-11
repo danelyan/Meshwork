@@ -5,7 +5,7 @@ import { createPublicKey, createSign, generateKeyPairSync, verify, type JsonWebK
  * ID-токену OIDC: подпись провайдера-мока и проверка подписи и claims на стороне клиента.
  */
 
-/** Ключ из JWKS провайдера (у Keycloak бывают и ключи шифрования `use: enc` — их пропускаем). */
+/** Ключ из JWKS провайдера (у Keycloak бывают и ключи шифрования `use: enc` – их пропускаем). */
 export interface Jwk extends JsonWebKey {
   kid?: string;
   kty: string;
@@ -41,7 +41,7 @@ export function signJwt(payload: Record<string, unknown>, key: SigningKey): stri
   return `${head}.${body}.${sig}`;
 }
 
-/** Причина отказа в проверке ID-токена — машинный код для логов и редиректа (без самого токена). */
+/** Причина отказа в проверке ID-токена – машинный код для логов и редиректа (без самого токена). */
 export type IdTokenError =
   | 'malformed'
   | 'alg'
@@ -93,7 +93,7 @@ function parsePart(part: string): Record<string, unknown> {
 /**
  * Проверка ID-токена по OIDC Core § 3.1.3.7: алгоритм только RS256 (никаких `none`/HS256),
  * ключ по `kid` из JWKS провайдера, подпись, `iss`, `aud` (и `azp` при нескольких аудиториях),
- * `exp`, `iat`, `nonce`. Любое нарушение — IdTokenInvalid с причиной.
+ * `exp`, `iat`, `nonce`. Любое нарушение – IdTokenInvalid с причиной.
  */
 export function verifyIdToken(token: string, jwks: Jwks, opts: VerifyOptions): IdTokenClaims {
   const now = opts.nowSec ?? Math.floor(Date.now() / 1000);

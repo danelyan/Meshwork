@@ -7,7 +7,7 @@ export function createApp(db: Db = createDb()) {
   void db;
   const app = express();
   app.use(express.json());
-  // TODO: /orders по контракту — идемпотентность, пагинация, версии
+  // TODO: /orders по контракту – идемпотентность, пагинация, версии
   app.use((_req, res) => {
     res.status(501).json({ error: 'not_implemented' });
   });

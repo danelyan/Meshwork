@@ -4,7 +4,7 @@ import { catalogFromFile, CATALOG_VERSION } from './catalog-file';
 
 /**
  * Загрузить каталог из prisma/seed/claims-catalog.json в ClaimCatalog (upsert по ID).
- * Записи, пропавшие из файла, не удаляются: на них ссылаются утверждения (каталог § 2.1 — deprecated, не стирать).
+ * Записи, пропавшие из файла, не удаляются: на них ссылаются утверждения (каталог § 2.1 – deprecated, не стирать).
  * statement и limits правит админка (/admin/catalog): у существующих записей сид их не перезаписывает,
  * остальные поля (нужные коду) обновляются как раньше.
  * Клиент передаётся параметром: сид (prisma/seed.ts) живёт со своим PrismaClient.

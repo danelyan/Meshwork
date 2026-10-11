@@ -21,7 +21,7 @@ describe('api/demo/login: новый пользователь и сброс он
   });
   afterAll(() => prisma.$disconnect());
 
-  it('fresh без галки согласия или со старой версией — пользователь не создаётся', async () => {
+  it('fresh без галки согласия или со старой версией – пользователь не создаётся', async () => {
     expect((await post({ fresh: true })).status).toBe(400);
     expect((await post({ fresh: true, consent: 'old-version' })).status).toBe(409);
     expect(await prisma.user.count()).toBe(0);

@@ -1,6 +1,6 @@
 // Второй пакет семейств engineering (решение владельца 11.10): 48 семейств, по 12 на подкатегорию.
 // 50 seed: детерминизм, ключ проходит проверку ответов, диапазоны параметров, уникальность id.
-// 500 seed: угадываемость — доля самого частого ответа ≤ 20 % и не меньше 8 разных ответов.
+// 500 seed: угадываемость – доля самого частого ответа ≤ 20 % и не меньше 8 разных ответов.
 import { checkAnswer, normalizeAnswer } from '@/server/test/answers';
 import { DATA_BANK2 } from '@/server/test/generators/engineering-bank2-data';
 import { DEVOPS_BANK2 } from '@/server/test/generators/engineering-bank2-devops';
@@ -59,7 +59,7 @@ describe('engineering bank2', () => {
         }
       });
 
-      it('500 seed: угадываемость — частота моды ≤ 20 %, разных ответов ≥ 8', () => {
+      it('500 seed: угадываемость – частота моды ≤ 20 %, разных ответов ≥ 8', () => {
         const freq = new Map<string, number>();
         for (const seed of SEEDS500) {
           const k = g.generate(seed).answerKey;

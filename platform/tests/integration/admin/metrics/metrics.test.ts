@@ -64,7 +64,7 @@ describe('метрики и выгрузка (owner)', () => {
     expect((await matchingGet(jsonRequest('/api/admin/metrics/matching', 'GET', undefined, cookie))).status).toBe(200);
   });
 
-  it('выгрузка CSV: обезличена, пишет строку журнала; неизвестный вид — 404', async () => {
+  it('выгрузка CSV: обезличена, пишет строку журнала; неизвестный вид – 404', async () => {
     const { cookie, staff } = await sessionFor('owner');
     await seedData();
     const res = await exportGet(jsonRequest('/api/admin/export/llm.csv?days=30', 'GET', undefined, cookie), file('llm.csv'));

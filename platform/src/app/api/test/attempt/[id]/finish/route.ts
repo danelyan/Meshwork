@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
-/** POST /api/test/attempt/[id]/finish — досрочно завершить: итог по данным ответам (без ответов — abandoned). */
+/** POST /api/test/attempt/[id]/finish – досрочно завершить: итог по данным ответам (без ответов – abandoned). */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

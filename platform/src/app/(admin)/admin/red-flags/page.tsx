@@ -23,7 +23,7 @@ export default async function RedFlagsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <h1 className={styles.title}>Красные флаги</h1>
-      <p className={styles.muted}>Флаг — повод посмотреть, не вердикт. Скрытая вакансия пропадает у кандидатов; предупреждение уходит письмом представителям компании.</p>
+      <p className={styles.muted}>Флаг – повод посмотреть, не вердикт. Скрытая вакансия пропадает у кандидатов; предупреждение уходит письмом представителям компании.</p>
       <nav className={m.tabs} aria-label="Статус">
         {STATUSES.map((s) => <Button key={s} href={`/admin/red-flags?status=${s}`} size="sm" variant={s === status ? 'primary' : 'ghost'}>{LABEL[s]}</Button>)}
       </nav>
@@ -31,7 +31,7 @@ export default async function RedFlagsPage({ searchParams }: { searchParams: Pro
         {items.map((r) => (
           <article key={r.id} className={m.item}>
             <div className={m.head}>
-              <strong>{r.targetType === 'vacancy' ? 'Вакансия' : 'Приглашение'}: {r.title ?? '—'} · {r.company?.name ?? '—'}</strong>
+              <strong>{r.targetType === 'vacancy' ? 'Вакансия' : 'Приглашение'}: {r.title ?? '–'} · {r.company?.name ?? '–'}</strong>
               <span className={styles.mono}>{fmt.format(new Date(r.createdAt))} · {r.salary}</span>
             </div>
             <div className={styles.row}>{r.flags.map((f) => <Tag key={f.code} title={f.reason}>{f.code} · {f.severity}</Tag>)}</div>

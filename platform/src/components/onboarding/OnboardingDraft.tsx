@@ -36,9 +36,9 @@ export function OnboardingDraft({ view, busy, onEdit }: { view: OnboardingView; 
   </section>;
 }
 
-/** «Как вижу я / Как видит компания» — общий переключатель черновика и карточки «Что я о тебе знаю». */
+/** «Как вижу я / Как видит компания» – общий переключатель черновика и карточки «Что я о тебе знаю». */
 export function ViewTabs({ employer, company, onChange, compact = false }: { employer: boolean; company: boolean; onChange: (company: boolean) => void; compact?: boolean }) {
-  // compact — узкая карточка «Что я о тебе знаю»: короткие подписи, полное название — в aria-label.
+  // compact – узкая карточка «Что я о тебе знаю»: короткие подписи, полное название – в aria-label.
   const other = employer ? 'Как видит кандидат' : 'Как видит компания';
   return <Segmented label="Вид черновика" compact={compact} value={company ? 'company' : 'mine'} onChange={(v) => onChange(v === 'company')} options={[
     { value: 'mine', label: compact ? 'Мой вид' : 'Как вижу я', ariaLabel: 'Как вижу я' },
@@ -46,7 +46,7 @@ export function ViewTabs({ employer, company, onChange, compact = false }: { emp
   ]} />;
 }
 
-/** Предпросмотр для другой стороны: кандидату — анонимная карточка (только публичные поля), работодателю — компания. */
+/** Предпросмотр для другой стороны: кандидату – анонимная карточка (только публичные поля), работодателю – компания. */
 export function CompanyPreview({ employer, answer }: { employer: boolean; answer: (id: string) => string | null | undefined }) {
   const fields = employer ? employerFields : candidateFields;
   return <div className={`${styles.draft} ${styles.companyCard}`}>

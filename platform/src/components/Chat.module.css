@@ -1,4 +1,4 @@
-/* Консультант: страница /consultant и продолжение ленты онбординга. Лента и поле ввода — components/chat. */
+/* Консультант: страница /consultant и продолжение ленты онбординга. Лента и поле ввода – components/chat. */
 .chat { display: flex; flex-direction: column; width: 100%; min-width: 0; margin: 0; height: var(--chat-h, calc(100svh - var(--landing-header-h) - 44px)); min-height: var(--chat-min-h, 480px); background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: var(--blur); --chat-avatar-size: 36px; --chat-avatar-bg: var(--ink); --chat-avatar-filter: brightness(0) invert(1); --chat-message-size: var(--fs-body); --chat-bubble-pad: 14px 16px; --chat-composer-pad: 12px 24px 20px; --chat-control-size: 48px; }
 /* продолжение ленты: тянется на остаток высоты ленты, чтобы поле ввода (margin-top: auto) стояло внизу */
 .embedded { flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }

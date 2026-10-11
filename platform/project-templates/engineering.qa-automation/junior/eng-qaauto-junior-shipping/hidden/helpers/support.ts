@@ -3,7 +3,7 @@ import type { Case, Order } from '../../src/types';
 
 export type ShippingFn = (order: Order) => number;
 
-/** Имена кейсов, на которых реализация не совпала с ожиданием (пустой массив — все прошли). */
+/** Имена кейсов, на которых реализация не совпала с ожиданием (пустой массив – все прошли). */
 export function runCases(impl: ShippingFn, cases: Case[]): string[] {
   const failed: string[] = [];
   for (const c of cases) {
@@ -17,7 +17,7 @@ export function runCases(impl: ShippingFn, cases: Case[]): string[] {
   return failed;
 }
 
-/** Описания нарушений формы таблицы (пустой массив — форма корректна). */
+/** Описания нарушений формы таблицы (пустой массив – форма корректна). */
 export function formProblems(cases: unknown): string[] {
   if (!Array.isArray(cases)) return ['cases не массив'];
   const problems: string[] = [];

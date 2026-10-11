@@ -13,10 +13,10 @@ export const runtime = 'nodejs';
 /** Доступна ли озвучка аватару: yandex / elevenlabs / off. */
 export const GET = withErrors(async () => Response.json({ mode: ttsMode(), maxChars: TTS_MAX_CHARS }));
 
-// Сырой текст до чистки может быть длиннее (markdown, ссылки) — режем после чистки.
+// Сырой текст до чистки может быть длиннее (markdown, ссылки) – режем после чистки.
 const Body = z.object({
   text: z.string().min(1).max(TTS_MAX_CHARS * 4),
-  /** `employer` — второй голос (TTS_VOICE_EMPLOYER): реплики работодателя в защите проекта. */
+  /** `employer` – второй голос (TTS_VOICE_EMPLOYER): реплики работодателя в защите проекта. */
   voice: z.enum(['companion', 'employer']).optional(),
   /** Реплика созвона: ElevenLabs берёт быструю модель ELEVENLABS_MODEL_CALL (пауза перед вопросом важнее качества). */
   realtime: z.boolean().optional(),
@@ -36,9 +36,9 @@ export const POST = withErrors(async (req: Request) => {
   if (!parsed.success) throw errors.badRequest('Нужен текст для озвучки');
   const text = cleanForSpeech(parsed.data.text);
   if (!text) throw errors.badRequest('Озвучивать нечего');
-  if (text.length > TTS_MAX_CHARS) throw errors.payloadTooLarge(`Для озвучки — не больше ${TTS_MAX_CHARS} знаков`);
+  if (text.length > TTS_MAX_CHARS) throw errors.payloadTooLarge(`Для озвучки – не больше ${TTS_MAX_CHARS} знаков`);
   const key = session.userId ?? session.candidateId ?? 'anon';
-  if (!ttsRateLimit(key, text.length)) throw errors.rateLimited('Слишком часто — озвучка передохнёт минуту');
+  if (!ttsRateLimit(key, text.length)) throw errors.rateLimited('Слишком часто – озвучка передохнёт минуту');
   const env = getEnv();
   const started = Date.now();
   const employer = parsed.data.voice === 'employer';

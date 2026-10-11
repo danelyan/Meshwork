@@ -1,6 +1,6 @@
 // Проекция выдачи подбора (employer/matching.ts) в карточку помощника. Граница доверия:
 // из MatchItem берутся только публичные поля; имя и контакты (candidate.contacts,
-// displayName после принятия) не копируются — вместо имени всегда псевдоним.
+// displayName после принятия) не копируются – вместо имени всегда псевдоним.
 import { z } from 'zod';
 
 import { SPECIALIZATIONS } from '@/lib/directions';
@@ -42,7 +42,7 @@ export function toCandidatesBlock(r: MatchResult): CandidatesBlock {
 const Level = z.enum(['self_reported', 'artifact', 'platform', 'third_party']);
 const SourceType = z.enum(['github', 'codeforces', 'stackoverflow', 'article', 'fsp']).nullable();
 
-/** Схема карточки: `.strict()` — лишнее поле (имя, почта, цитата) роняет проверку выхода инструмента. */
+/** Схема карточки: `.strict()` – лишнее поле (имя, почта, цитата) роняет проверку выхода инструмента. */
 export const AssistantCandidateSchema = z
   .object({
     candidateId: z.string(),

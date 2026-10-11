@@ -22,7 +22,7 @@ describe('booking api (visible)', () => {
     expect(res.body.id).toBe(created.body.id);
   });
 
-  it('пересечение слотов — 409', async () => {
+  it('пересечение слотов – 409', async () => {
     const app = createApp();
     await request(app).post('/appointments').send(body);
     const res = await request(app).post('/appointments').send({ ...body, clientName: 'Борис', startsAt: '2026-11-02T10:15:00Z' });

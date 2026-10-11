@@ -30,7 +30,7 @@ function make(replies: string[] | Parameters<typeof fake>[1], extra: Record<stri
 }
 
 describe('запрос', () => {
-  it('пустой userId или prompt — bad_request без вызова модели и без записи в аудит', async () => {
+  it('пустой userId или prompt – bad_request без вызова модели и без записи в аудит', async () => {
     const { guard, m } = make([]);
     expect(await code(guard.ask({ userId: ' ', prompt: 'привет' }))).toBe('bad_request');
     expect(await code(guard.ask({ userId: 'u1', prompt: '  \n ' }))).toBe('bad_request');
@@ -49,14 +49,14 @@ describe('запрос', () => {
 
 describe('маскирование ПДн', () => {
   it('email не уходит модели, в ответе подставляется обратно', async () => {
-    const { guard, m } = make(['Написал на [EMAIL_1] — ответим сегодня.']);
+    const { guard, m } = make(['Написал на [EMAIL_1] – ответим сегодня.']);
     const r = await guard.ask({ userId: 'u1', prompt: 'Свяжитесь с Ивановым: Ivan.Petrov@Example.com, срочно.' });
     expect(m.requests[0]!.prompt).toBe('Свяжитесь с Ивановым: [EMAIL_1], срочно.');
-    expect(r.text).toBe('Написал на Ivan.Petrov@Example.com — ответим сегодня.');
+    expect(r.text).toBe('Написал на Ivan.Petrov@Example.com – ответим сегодня.');
     expect(r.masked).toBe(1);
   });
 
-  it('нумерация по типам в порядке появления; одно значение — один плейсхолдер, email без учёта регистра', async () => {
+  it('нумерация по типам в порядке появления; одно значение – один плейсхолдер, email без учёта регистра', async () => {
     const { guard, m } = make(['[EMAIL_2] и [EMAIL_1] и [EMAIL_2]']);
     const r = await guard.ask({ userId: 'u1', prompt: 'a@x.ru, B@Y.ru, потом A@X.RU' });
     expect(m.requests[0]!.prompt).toBe('[EMAIL_1], [EMAIL_2], потом [EMAIL_1]');
@@ -64,7 +64,7 @@ describe('маскирование ПДн', () => {
     expect(r.masked).toBe(2);
   });
 
-  it('телефоны в разных записях; +7 и 8 с теми же цифрами — одно значение', async () => {
+  it('телефоны в разных записях; +7 и 8 с теми же цифрами – одно значение', async () => {
     const { guard, m } = make(['[PHONE_1]|[PHONE_2]']);
     const prompt = 'Звоните +7 (999) 123-45-67 или 8 999 123 45 67, запасной: 8-912-000-11-22.';
     const r = await guard.ask({ userId: 'u1', prompt });
@@ -115,7 +115,7 @@ describe('маскирование ПДн', () => {
 });
 
 describe('кэш', () => {
-  it('повтор — из кэша: cached, tokens 0, без вызова, бюджет не списан', async () => {
+  it('повтор – из кэша: cached, tokens 0, без вызова, бюджет не списан', async () => {
     const { guard, m } = make(['ответ']);
     const a = await guard.ask({ userId: 'u1', prompt: 'вопрос' });
     const b = await guard.ask({ userId: 'u1', prompt: 'вопрос' });
@@ -125,7 +125,7 @@ describe('кэш', () => {
     expect(guard.usage('u1').used).toBe(100);
   });
 
-  it('ключ — маскированный prompt: чужой ответ из кэша восстанавливается по таблице текущего запроса', async () => {
+  it('ключ – маскированный prompt: чужой ответ из кэша восстанавливается по таблице текущего запроса', async () => {
     const { guard, m } = make(['Отправлено на [EMAIL_1].']);
     const a = await guard.ask({ userId: 'alice', prompt: 'Отправь на alice@a.ru' });
     const b = await guard.ask({ userId: 'bob', prompt: 'Отправь на bob@b.ru' });
@@ -136,7 +136,7 @@ describe('кэш', () => {
     expect(guard.usage('bob').used).toBe(0);
   });
 
-  it('срок жизни: свежо при t - storedAt < ttl, дальше — новый вызов', async () => {
+  it('срок жизни: свежо при t - storedAt < ttl, дальше – новый вызов', async () => {
     const { guard, c, m } = make(['один', 'два', 'три'], { cacheTtlMs: 60_000 });
     await guard.ask({ userId: 'u1', prompt: 'q' });
     c.advance(59_999);
@@ -188,12 +188,12 @@ describe('бюджет', () => {
   // prompt из 40 символов, maxTokens 100: оценка = 10 + 100 = 110
   const P = (n: number) => `${'а'.repeat(39)}${n}`;
 
-  it('оценка до вызова: used + оценка > limit — budget_exceeded без вызова; равенство допустимо', async () => {
+  it('оценка до вызова: used + оценка > limit – budget_exceeded без вызова; равенство допустимо', async () => {
     const c = clock();
     const m = fake('primary', [{ text: 'a', tokens: 150 }, { text: 'b', tokens: 150 }, 'c']);
     const guard = createGuard({ primary: m.model, now: c.now, budget: { tokens: 260, periodMs: HOUR }, maxTokens: 100 });
     await guard.ask({ userId: 'u1', prompt: P(1) });
-    await guard.ask({ userId: 'u1', prompt: P(2) }); // 150 + 110 = 260 — ровно лимит
+    await guard.ask({ userId: 'u1', prompt: P(2) }); // 150 + 110 = 260 – ровно лимит
     expect(guard.usage('u1').used).toBe(300);
     expect(await code(guard.ask({ userId: 'u1', prompt: P(3) }))).toBe('budget_exceeded');
     expect(m.requests).toHaveLength(2);
@@ -249,7 +249,7 @@ describe('бюджет', () => {
 });
 
 describe('сбои моделей', () => {
-  it('timeout, rate_limit, server и неизвестная ошибка — переход к запасной; списывается её расход', async () => {
+  it('timeout, rate_limit, server и неизвестная ошибка – переход к запасной; списывается её расход', async () => {
     for (const err of [new ModelError('timeout'), new ModelError('rate_limit'), new ModelError('server'), new Error('сеть')]) {
       const c = clock();
       const primary = fake('p', [err]);
@@ -261,7 +261,7 @@ describe('сбои моделей', () => {
     }
   });
 
-  it('запасной нет или она тоже упала — unavailable, токены не списаны', async () => {
+  it('запасной нет или она тоже упала – unavailable, токены не списаны', async () => {
     const c = clock();
     const lone = createGuard({ primary: fake('p', [new ModelError('timeout')]).model, now: c.now, budget: BUDGET });
     expect(await code(lone.ask({ userId: 'u1', prompt: 'q' }))).toBe('unavailable');
@@ -275,7 +275,7 @@ describe('сбои моделей', () => {
     expect(both.usage('u1').used).toBe(0);
   });
 
-  it('bad_request и auth — model_rejected без перехода к запасной', async () => {
+  it('bad_request и auth – model_rejected без перехода к запасной', async () => {
     for (const kind of ['bad_request', 'auth'] as const) {
       const c = clock();
       const backup = fake('b', ['не должна вызываться']);

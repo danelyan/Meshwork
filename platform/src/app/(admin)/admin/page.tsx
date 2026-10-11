@@ -42,7 +42,7 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
         <Stat label="Кандидаты" value={d.candidates.total} hint={`с категорией ${d.candidates.categorized}`} />
         <Stat label="Без истории ФСП" value={pct(d.candidates.withoutFspShare)} hint={`${d.candidates.withoutFspHistory} кандидатов (${FSP_LABEL.not_linked} и др.)`} />
         <Stat label="Компании" value={d.companies.total} hint={`проверено ${d.companies.verified}, заблокировано ${d.companies.blocked}`} />
-        <Stat label="LLM за 24 часа" value={`${d.llm24h.tokens.toLocaleString('ru-RU')} ток.`} hint={`${d.llm24h.calls} вызовов; подробности — в метриках`} />
+        <Stat label="LLM за 24 часа" value={`${d.llm24h.tokens.toLocaleString('ru-RU')} ток.`} hint={`${d.llm24h.calls} вызовов; подробности – в метриках`} />
       </div>
 
       <Panel className={styles.section}>
@@ -110,7 +110,7 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
           Открытых жалоб: {d.moderation.openComplaints}
           {d.moderation.oldestComplaintHours !== null && `, самой старой ${d.moderation.oldestComplaintHours} ч`}.
         </p>
-        <p>Открытых возражений кандидатов: {d.moderation.openObjectionsTotal}. Срок ответа — 30 дней (152-ФЗ, ст. 16).</p>
+        <p>Открытых возражений кандидатов: {d.moderation.openObjectionsTotal}. Срок ответа – 30 дней (152-ФЗ, ст. 16).</p>
         <ul>
           {d.moderation.openObjections.map((o) => (
             <li key={o.id}>

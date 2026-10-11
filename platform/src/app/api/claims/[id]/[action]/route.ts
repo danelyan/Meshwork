@@ -26,8 +26,8 @@ function view(c: Claim) {
 }
 
 /**
- * POST /api/claims/:id/confirm | edit | reject — карточка «да / поправить / нет».
- * Только владелец: чужое и несуществующее → 404. edit: `{ statement }` — меняет только формулировку
+ * POST /api/claims/:id/confirm | edit | reject – карточка «да / поправить / нет».
+ * Только владелец: чужое и несуществующее → 404. edit: `{ statement }` – меняет только формулировку
  * (и показываемую кандидату `wording`, и `statement`).
  */
 export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id: string; action: string }> }) => {

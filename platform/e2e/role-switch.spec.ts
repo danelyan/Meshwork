@@ -8,7 +8,7 @@ test('E-05: кандидат становится работодателем н�
   await page.getByRole('checkbox', { name: /Согласен\(на\) на обработку персональных данных/ }).check();
   await page.getByRole('button', { name: 'Новый пользователь' }).click();
   await page.waitForURL('**/consultant');
-  // Первая роль — как в знакомстве (тот же API, что шаг «Ты здесь как кто?»).
+  // Первая роль – как в знакомстве (тот же API, что шаг «Ты здесь как кто?»).
   expect((await page.request.post('/api/auth/role', { data: { role: 'candidate' } })).ok()).toBe(true);
   // Новый аккаунт по умолчанию попадает в 11-шаговую регистрацию без шапки с переключателем: завершаем её тем же API.
   expect((await page.request.post('/api/auth/onboarding/complete')).ok()).toBe(true);
@@ -16,7 +16,7 @@ test('E-05: кандидат становится работодателем н�
 
   const header = page.getByRole('banner');
   const account = header.getByRole('button', { name: /Аккаунт, активная роль/ });
-  // После полной навигации кнопка видна до гидратации и клик теряется — повторяем, пока панель не откроется.
+  // После полной навигации кнопка видна до гидратации и клик теряется – повторяем, пока панель не откроется.
   const openAccount = () =>
     expect(async () => {
       if ((await account.getAttribute('aria-expanded')) !== 'true') await account.click();

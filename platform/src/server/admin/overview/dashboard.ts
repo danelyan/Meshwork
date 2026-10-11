@@ -10,7 +10,7 @@ import { DAY_MS } from './lib';
 
 /**
  * Дашборд `/admin` (E-08, фаза 1). Только сводные счётчики; подробные метрики качества и расход LLM по
- * `purpose` — фаза 5 (`/admin/metrics`). Агрегация в БД, строки не вытягиваются. Время дней — МСК.
+ * `purpose` – фаза 5 (`/admin/metrics`). Агрегация в БД, строки не вытягиваются. Время дней – МСК.
  */
 
 export const DASHBOARD_DAYS = 14;
@@ -23,7 +23,7 @@ export async function loadDashboard(now = new Date()) {
     prisma.$queryRaw<{ day: string; role: string; n: bigint }[]>(Prisma.sql`
       SELECT to_char(("createdAt" AT TIME ZONE 'Europe/Moscow')::date, 'YYYY-MM-DD') AS day, role::text AS role, count(*) AS n
       FROM "User" WHERE "createdAt" >= ${since} GROUP BY 1, 2 ORDER BY 1`),
-    // Текущая категория кандидата — последняя подтверждённая.
+    // Текущая категория кандидата – последняя подтверждённая.
     prisma.$queryRaw<{ specialization: string; grade: string; n: bigint }[]>(Prisma.sql`
       SELECT specialization::text AS specialization, grade::text AS grade, count(*) AS n FROM (
         SELECT DISTINCT ON ("candidateId") "candidateId", specialization, grade FROM "CandidateCategory" ORDER BY "candidateId", "confirmedAt" DESC
@@ -45,7 +45,7 @@ export async function loadDashboard(now = new Date()) {
   const sc = (s: string) => funnelRows.find((r) => r.status === s)?._count._all ?? 0;
   const sent = funnelRows.reduce((s, r) => s + r._count._all, 0);
   const accepted = sc('accepted') + sc('hired');
-  // «Нет истории ФСП» (R-FSP-03): не привязан, недоступен или без достижений — всё, кроме linked.
+  // «Нет истории ФСП» (R-FSP-03): не привязан, недоступен или без достижений – всё, кроме linked.
   const withoutFsp = fsp.filter((r) => r.fspState !== 'linked').reduce((s, r) => s + r._count._all, 0);
 
   return {

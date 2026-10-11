@@ -84,7 +84,7 @@ describe('collector/ocr: картинка', () => {
     const err = await extractFile(PNG, 'cv.png', 'image/png').catch((e: unknown) => e);
     expect(err).toBeInstanceOf(AppError);
     expect((err as AppError).status).toBe(422);
-    expect((err as AppError).message).toBe('Не удалось распознать текст на изображении — пришли PDF/DOCX или вставь текст');
+    expect((err as AppError).message).toBe('Не удалось распознать текст на изображении – пришли PDF/DOCX или вставь текст');
     expect(JSON.stringify((console.warn as unknown as ReturnType<typeof vi.fn>).mock.calls)).not.toContain('test-key');
     const direct = await recognizeText(PNG, 'image/png', 'cv.png').catch((e: unknown) => e);
     expect((direct as AppError).code).toBe('ocr_unavailable');
@@ -132,7 +132,7 @@ describe('collector/ocr: скан PDF', () => {
   });
 });
 
-/** PNG с IHDR заданного размера (тело не декодируется — проверяется только заголовок). */
+/** PNG с IHDR заданного размера (тело не декодируется – проверяется только заголовок). */
 function pngOf(width: number, height: number): Buffer {
   const ihdr = Buffer.alloc(25);
   ihdr.writeUInt32BE(13, 0);
@@ -149,7 +149,7 @@ function jpegOf(width: number, height: number): Buffer {
 }
 
 describe('collector/ocr: лимит 20 Мпикс до вызова Vision', () => {
-  it('imageSize читает заголовок PNG и JPEG, на непонятном заголовке — null', () => {
+  it('imageSize читает заголовок PNG и JPEG, на непонятном заголовке – null', () => {
     expect(imageSize(pngOf(1200, 1600))).toEqual({ width: 1200, height: 1600 });
     expect(imageSize(jpegOf(3000, 4000))).toEqual({ width: 3000, height: 4000 });
     expect(imageSize(PNG)).toBeNull();
@@ -172,7 +172,7 @@ describe('collector/ocr: лимит 20 Мпикс до вызова Vision', () 
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('ровно 20 Мпикс — уходит в Vision', async () => {
+  it('ровно 20 Мпикс – уходит в Vision', async () => {
     fetchMock.mockResolvedValueOnce(new Response(vision([['ok']]), { status: 200 }));
     const doc = await extractFile(pngOf(5000, 4000), 'ok.png', 'image/png');
     expect(doc.text).toContain('ok');

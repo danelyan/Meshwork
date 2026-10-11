@@ -45,7 +45,7 @@ async function seed() {
     await prisma.user.create({ data: { id: `u-${id}`, name: id, role: 'candidate', candidateId: id } });
   }
   for (const x of ['a', 'b', 'c']) {
-    // E05: без контакта компании (или почты отправителя) приглашение не уходит — фикстура задаёт контакт
+    // E05: без контакта компании (или почты отправителя) приглашение не уходит – фикстура задаёт контакт
     await prisma.company.create({ data: { id: `co-${x}`, name: NAMES[x]!, isDemo: false, contact: `hr-${x}@example.test` } });
     await prisma.user.create({ data: { id: `u-${x}`, name: `HR ${x}`, role: 'employer' } });
     await prisma.employerProfile.create({ data: { id: `p-${x}`, userId: `u-${x}`, companyId: `co-${x}` } });
@@ -92,11 +92,11 @@ describe('lane lifecycle: жизненный цикл приглашений и 
     // кандидату отдельного уведомления о закрытии нет
     const feedC = await notifications({ userId: 'u-c1', role: 'candidate', candidateId: 'c1', employerProfileId: null });
     expect(feedC.items.some((i) => i.text === HIRED_ELSEWHERE_REASON)).toBe(false);
-    // приглашения кандидата другим компаниям после найма — финальные, у A найм не тронут
+    // приглашения кандидата другим компаниям после найма – финальные, у A найм не тронут
     expect(await prisma.invitation.count({ where: { candidateId: 'c1', status: { in: ['sent', 'viewed', 'accepted'] } } })).toBe(0);
   });
 
-  it('пауза 14 дней: после отказа — 409 invite_cooldown с nextAt, через 14 дней — можно; после отзыва — тоже пауза', async () => {
+  it('пауза 14 дней: после отказа – 409 invite_cooldown с nextAt, через 14 дней – можно; после отзыва – тоже пауза', async () => {
     const { id } = await invite('a', 'c1');
     expect((await decline('c1', id)).status).toBe(200);
     const respondedAt = (await prisma.invitation.findUniqueOrThrow({ where: { id } })).respondedAt!;
@@ -105,7 +105,7 @@ describe('lane lifecycle: жизненный цикл приглашений и 
     expect((err as { details: { nextAt: string } }).details.nextAt).toBe(new Date(respondedAt.getTime() + INVITE_COOLDOWN_DAYS * DAY).toISOString());
     // другая компания пауза не касается
     await expect(invite('b', 'c1')).resolves.toMatchObject({ status: 'sent' });
-    // граница: 13 дней назад — ещё пауза, 14 дней и минута — уже нет
+    // граница: 13 дней назад – ещё пауза, 14 дней и минута – уже нет
     await prisma.invitation.update({ where: { id }, data: { respondedAt: new Date(Date.now() - 13 * DAY) } });
     expect(await errOf(invite('a', 'c1'))).toMatchObject({ code: 'invite_cooldown' });
     await prisma.invitation.update({ where: { id }, data: { respondedAt: new Date(Date.now() - INVITE_COOLDOWN_DAYS * DAY - 60_000) } });
@@ -129,13 +129,13 @@ describe('lane lifecycle: жизненный цикл приглашений и 
     for (const id of [s1, v2]) expect(await prisma.invitation.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: 'withdrawn', withdrawReason: VACANCY_CLOSED_REASON });
     expect(await status(a3)).toBe('accepted');
     expect(await prisma.application.findUniqueOrThrow({ where: { id: app.id } })).toMatchObject({ status: 'closed', closeReason: VACANCY_CLOSED_REASON });
-    // отзыв из-за закрытия вакансии — не отказ кандидату: пригласить снова можно сразу
+    // отзыв из-за закрытия вакансии – не отказ кандидату: пригласить снова можно сразу
     await expect(invite('a', 'c1')).resolves.toMatchObject({ status: 'sent' });
   });
 
   it('принятый самоотклик → приглашение accepted: раскрытие только после принятия, лимит не расходуется, дальше найм', async () => {
     const app = await createApplication('c1', 'vac-a', { disclosureVersion: V });
-    // до принятия — приглашения нет, компания видит только псевдоним
+    // до принятия – приглашения нет, компания видит только псевдоним
     expect(await prisma.invitation.count()).toBe(0);
     const before = await (await companyInvites(jsonRequest('/x', 'GET', undefined, emp('a')))).json();
     expect(before.invitations).toHaveLength(0);
@@ -161,7 +161,7 @@ describe('lane lifecycle: жизненный цикл приглашений и 
     expect((await disclosedInvitationIds([invitationId])).has(invitationId)).toBe(false);
   });
 
-  it('отклонённый отклик приглашения не создаёт; повторный ответ — 409', async () => {
+  it('отклонённый отклик приглашения не создаёт; повторный ответ – 409', async () => {
     const app = await createApplication('c1', 'vac-a', { disclosureVersion: V });
     const r = await answer(local(`/api/employer/applications/${app.id}`, 'PATCH', { action: 'decline' }, emp('a')), params(app.id));
     expect(r.status).toBe(200);

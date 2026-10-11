@@ -11,7 +11,7 @@ import { requirePageStaff } from '@/server/admin/session';
 import styles from '../admin.module.css';
 import { flatParams, withoutPage } from '../listing';
 
-/** Приглашения работодателей кандидатам; кандидат — под псевдонимом. Самоотклики — отдельным списком. */
+/** Приглашения работодателей кандидатам; кандидат – под псевдонимом. Самоотклики – отдельным списком. */
 export default async function AdminInvitationsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requirePageStaff('/admin/invitations', 'view_invitations');
   const raw = flatParams(await searchParams);

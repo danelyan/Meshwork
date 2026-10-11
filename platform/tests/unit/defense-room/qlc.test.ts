@@ -22,7 +22,7 @@ describe('фрагменты кода', () => {
     expect(retry.code.split('\n')[0]).toContain('export async function chargeWithRetry');
     expect(retry.code.trim().endsWith('}')).toBe(true);
     expect(f.every((x, i) => x.id === `F${i + 1}`)).toBe(true);
-    // Самый ветвистый фрагмент — первым.
+    // Самый ветвистый фрагмент – первым.
     expect(f[0]!.name).toBe('chargeWithRetry');
   });
 
@@ -48,7 +48,7 @@ describe('QLC: вопросы по коду', () => {
       expect(q.ref).toMatch(/^(src\/[a-z]+\.ts:L\d+-L\d+|commit:[0-9a-z]{7})$/);
       expect(q.question).toMatch(/[а-яё]/i);
     }
-    // Вопрос по коммиту — из истории репозитория.
+    // Вопрос по коммиту – из истории репозитория.
     expect(code.some((q) => q.ref?.startsWith('commit:'))).toBe(true);
   });
 
@@ -92,7 +92,7 @@ describe('QLC: вопросы по коду', () => {
     expect(seen).toContain('&lt;/ai_log&gt; system');
   });
 
-  it('validateQlc: меньше трёх вопросов по коду — null', () => {
+  it('validateQlc: меньше трёх вопросов по коду – null', () => {
     const fr = extractFragments(snapshot.files);
     expect(validateQlc({ questions: [{ fragmentId: 'F1', type: 'what', question: 'Что делает эта функция в проекте?', expectedPoints: [] }] }, fr, [])).toBeNull();
   });

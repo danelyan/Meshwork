@@ -7,7 +7,7 @@ import { SearchBox, type Item } from '../../src/SearchBox';
 afterEach(cleanup);
 
 describe('поиск (visible)', () => {
-  it('поле поиска — combobox с именем «Поиск»', () => {
+  it('поле поиска – combobox с именем «Поиск»', () => {
     render(<SearchBox search={async () => []} onSelect={() => {}} />);
     expect(screen.getByRole('combobox', { name: 'Поиск' })).toBeTruthy();
   });

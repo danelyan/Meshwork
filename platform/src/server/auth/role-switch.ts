@@ -7,10 +7,10 @@ import { type ActiveRole, type HeaderAccount, planRoleSwitch, swapRoleOnboarding
 import { type UserWithProfiles, createCandidateProfile, createEmployerProfile, withProfiles } from './users';
 
 /**
- * Переключение роли на одной учётке (ADR 0004). `User.role` — активная роль: с ней выпускается кука при
- * следующем входе. Вторая роль — второй профиль (Candidate или EmployerProfile + Company) на той же учётке,
- * создаётся при первом переходе; её знакомство идёт в ленте /consultant (согласие уже есть — не спрашиваем).
- * После вызова перевыпусти куку: `userSessionCookie(sessionInputFor(user))` — в ней id профиля только
+ * Переключение роли на одной учётке (ADR 0004). `User.role` – активная роль: с ней выпускается кука при
+ * следующем входе. Вторая роль – второй профиль (Candidate или EmployerProfile + Company) на той же учётке,
+ * создаётся при первом переходе; её знакомство идёт в ленте /consultant (согласие уже есть – не спрашиваем).
+ * После вызова перевыпусти куку: `userSessionCookie(sessionInputFor(user))` – в ней id профиля только
  * активной роли (`parseSession`).
  */
 
@@ -20,11 +20,11 @@ export interface RoleSwitchResult {
   user: UserWithProfiles;
   /** Профиль роли создан этим вызовом (запущено знакомство второй роли). */
   created: boolean;
-  /** Роль сменилась (false — уже была активна, вызов идемпотентен). */
+  /** Роль сменилась (false – уже была активна, вызов идемпотентен). */
   changed: boolean;
 }
 
-/** Аккаунт — общий демо из сида: `isDemo` без своего входа (у «Нового пользователя» с /demo есть вход `demo`). */
+/** Аккаунт – общий демо из сида: `isDemo` без своего входа (у «Нового пользователя» с /demo есть вход `demo`). */
 function isSharedDemo(user: { isDemo: boolean; accounts: { provider: string }[] }): boolean {
   return user.isDemo && !user.accounts.some((a) => a.provider === 'demo');
 }
@@ -59,7 +59,7 @@ async function saveOnboardingState(
 export async function switchRole(userId: string, request: RoleSwitchRequest): Promise<RoleSwitchResult> {
   return prisma.$transaction(async (tx) => {
     // Два одновременных перехода одной учётки (двойной клик, две вкладки) идут по очереди: иначе оба создали бы
-    // профиль. Блокировка строки аккаунта до конца транзакции; параметр — через шаблон, без интерполяции.
+    // профиль. Блокировка строки аккаунта до конца транзакции; параметр – через шаблон, без интерполяции.
     await tx.$queryRaw`SELECT 1 FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
     const user = await tx.user.findUnique({
       where: { id: userId },
@@ -89,7 +89,7 @@ export async function switchRole(userId: string, request: RoleSwitchRequest): Pr
       if (target === 'candidate') candidateId = await createCandidateProfile(tx, user);
       else await createEmployerProfile(tx, userId, companyName!.trim());
     }
-    // planRoleSwitch отказал pending раньше, здесь user.role — активная роль.
+    // planRoleSwitch отказал pending раньше, здесь user.role – активная роль.
     await saveOnboardingState(tx, userId, onboarding, user.role as ActiveRole, target, {
       fresh: plan.kind === 'create',
       doneRoles: plan.onboardedRoles,

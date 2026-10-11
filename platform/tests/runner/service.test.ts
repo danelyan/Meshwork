@@ -15,7 +15,7 @@ import { dirEntries, makeTarGz, paxRecord, type TarSpec } from '../helpers/tar';
 /**
  * Интеграция runner в локальном режиме (RUNNER_LOCAL=1, без Docker): настоящий HTTP-сервис,
  * настоящий vitest из runner/sandbox/node, лимиты процесса. На macOS сеть и запись режет
- * sandbox-exec — проверки сети и записи идут только там (на Linux их даёт контейнер).
+ * sandbox-exec – проверки сети и записи идут только там (на Linux их даёт контейнер).
  * Нужен `npm ci` в runner/sandbox/node. Запуск: npm run test:runner.
  */
 
@@ -67,7 +67,7 @@ const backendWith = (appJs: string, extra: TarSpec[] = []) =>
   );
 
 describe('runner service (local)', () => {
-  it('без токена — 401, /health открыт', async () => {
+  it('без токена – 401, /health открыт', async () => {
     expect((await fetch(`${base}/run/${'a'.repeat(32)}`)).status).toBe(401);
     const health = await (await fetch(`${base}/health`)).json();
     expect(health).toMatchObject({ ok: true, mode: 'local', configured: true });
@@ -129,7 +129,7 @@ export const createApp = real;
       { path: 'vitest.config.js', data: "export default { test: { include: ['**/*.test.js'] } };" },
       { path: 'tests/visible/notes.test.js', data: "import {it} from 'vitest'; it('visible fake', () => {});" },
     ];
-    // Заглушка: тесты платформы должны остаться красными, подделки — не запуститься.
+    // Заглушка: тесты платформы должны остаться красными, подделки – не запуститься.
     const stub = "export function createApp() { return (req, res) => { res.writeHead(501); res.end('{}'); }; }\n";
     const red = await runTarball(backendWith(stub, fakes));
     expect(red.status).toBe('done');

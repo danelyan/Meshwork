@@ -2,17 +2,17 @@ import { createGridGPU } from './grid-webgl.mjs';
 import { stabilizeHeightmap } from './grid-stability.mjs';
 import { rasterizeHeightfield } from './grid-heightfield.mjs';
 
-/* HeadGrid — голова карьерного консультанта, «выдавленная» из фоновой сетки.
+/* HeadGrid – голова карьерного консультанта, «выдавленная» из фоновой сетки.
  * V2: исходные модель и движения, WebGL2 вместо отрезков Canvas 2D.
  *
  *   const head = HeadGrid.create(canvas, data, { step: 46, relief: 1, angle: 0.5 });
- *   head.setStatus('speaking' | 'thinking' | 'idle');   // speaking — линии чуть темнеют, thinking — взгляд вверх
+ *   head.setStatus('speaking' | 'thinking' | 'idle');   // speaking – линии чуть темнеют, thinking – взгляд вверх
  *   head.setListening(true | false);                    // лёгкий наклон головы к собеседнику
  *   head.mouthFor('а');                                 // вызывать на каждый напечатанный/произнесённый символ
  *   head.setParams({ step: 32 });                       // шаг сетки в px, relief 0.3–1.6, angle 0–0.9 рад
  *   head.destroy();
  *
- * data — JSON { v:[x,y,z…], t:[i,j,k…], lip:[0|1|2…], mouthY } (consultant-head.json).
+ * data – JSON { v:[x,y,z…], t:[i,j,k…], lip:[0|1|2…], mouthY } (consultant-head.json).
  * Размер берётся из canvas.parentElement; курсор отслеживается по window.pointermove.
  */
 

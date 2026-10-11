@@ -16,21 +16,21 @@ const row = (o: Partial<{ kind: string; version: string; acceptedAt: Date; revok
 }) as { kind: 'ai_assessment'; version: string; acceptedAt: Date; revokedAt: Date | null; context: unknown };
 
 describe('активное согласие (ADR 0005)', () => {
-  it('нет строк — none; есть действующая текущей версии — active', () => {
+  it('нет строк – none; есть действующая текущей версии – active', () => {
     expect(consentState([], 'ai_assessment')).toBe('none');
     expect(consentState([row()], 'ai_assessment')).toBe('active');
   });
-  it('последняя без revokedAt; все отозваны — revoked', () => {
+  it('последняя без revokedAt; все отозваны – revoked', () => {
     const old = row({ acceptedAt: at('2026-10-01T00:00:00Z') });
     const fresh = row({ acceptedAt: at('2026-10-05T00:00:00Z') });
     expect(pickActive([old, fresh])).toBe(fresh);
     expect(pickActive([old, { ...fresh, revokedAt: at('2026-10-06T00:00:00Z') }])).toBe(old);
     expect(consentState([{ ...old, revokedAt: at('2026-10-06T00:00:00Z') }], 'ai_assessment')).toBe('revoked');
   });
-  it('действующая на прежнюю версию текста — outdated (спросить заново)', () => {
+  it('действующая на прежнюю версию текста – outdated (спросить заново)', () => {
     expect(consentState([row({ version: '2026-01-01-old' })], 'ai_assessment')).toBe('outdated');
   });
-  it('раскрытие — по приглашению, версия не переподтверждается', () => {
+  it('раскрытие – по приглашению, версия не переподтверждается', () => {
     const d = (inv: string, revoked: Date | null = null) => ({ ...row({ version: 'legacy-accepted-invitation', revokedAt: revoked, context: { invitationId: inv } }), kind: 'identity_disclosure' as const });
     const rows = [d('i1'), d('i2', at('2026-10-11T12:00:00Z'))];
     expect(consentState(rows, 'identity_disclosure', 'i1')).toBe('active');
@@ -46,13 +46,13 @@ describe('срок хранения записей и возражений', () 
   it('граница срока: now − N дней', () => {
     expect(retentionCutoff(at('2026-10-11T00:00:00Z'), 90).toISOString()).toBe('2026-07-13T00:00:00.000Z');
   });
-  it('срок ответа на возражение — 30 дней', () => {
+  it('срок ответа на возражение – 30 дней', () => {
     expect(objectionDueAt(at('2026-10-11T00:00:00Z')).toISOString()).toBe('2026-11-10T00:00:00.000Z');
   });
 });
 
 describe('тексты и версии', () => {
-  it('у каждого вида — текст, своя версия с пометкой draft и заглушка оператора там, где назван оператор', () => {
+  it('у каждого вида – текст, своя версия с пометкой draft и заглушка оператора там, где назван оператор', () => {
     const versions = CONSENT_KINDS.map((k) => CONSENT_TEXTS[k].version);
     expect(new Set(versions).size).toBe(CONSENT_KINDS.length);
     for (const k of CONSENT_KINDS) {
@@ -69,12 +69,12 @@ describe('тексты и версии', () => {
     expect(t).not.toMatch(/письм/);
     expect(CONSENT_TEXTS.pd_processing.revoke).toBe('erase');
   });
-  it('Г5 говорит, что полученные работодателем данные отозвать нельзя; Г3 — про возражение и 30 дней', () => {
+  it('Г5 говорит, что полученные работодателем данные отозвать нельзя; Г3 – про возражение и 30 дней', () => {
     expect(CONSENT_TEXTS.identity_disclosure.paragraphs.join(' ')).toContain('отозвать невозможно');
     expect(CONSENT_TEXTS.ai_assessment.paragraphs.join(' ')).toMatch(/Оспорить.*30 дней/);
     expect(CONSENT_TEXTS.call_recording.paragraphs.join(' ')).toContain('90 дней');
   });
-  it('галочки онбординга: кандидат Г3/Г4/Г6/Г7, работодатель — оферта и обязательство', () => {
+  it('галочки онбординга: кандидат Г3/Г4/Г6/Г7, работодатель – оферта и обязательство', () => {
     expect([...CANDIDATE_ONBOARDING_KINDS]).toEqual(['ai_assessment', 'employer_visibility', 'research', 'marketing']);
     expect([...EMPLOYER_ONBOARDING_KINDS]).toEqual(['employer_offer', 'employer_data_obligation']);
     expect(CONSENT_TEXTS.employer_offer.docUrl).toBe('/employer-terms');

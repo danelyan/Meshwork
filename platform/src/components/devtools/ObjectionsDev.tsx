@@ -11,7 +11,7 @@ import styles from './DevPanel.module.css';
 type Open = ObjectionView & { candidateId: string };
 
 /**
- * Ответ оператора на возражения против оценки (ст. 16, ADR 0005) — только в dev-панели (localhost).
+ * Ответ оператора на возражения против оценки (ст. 16, ADR 0005) – только в dev-панели (localhost).
  * Отдельного интерфейса оператора на стенде нет: это ограничение, записанное в ADR.
  */
 export function ObjectionsDev() {

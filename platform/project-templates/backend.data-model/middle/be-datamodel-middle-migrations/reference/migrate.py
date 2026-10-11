@@ -85,7 +85,7 @@ def current_version(conn):
 
 
 def _apply(conn, version, step):
-    """Один шаг в своей транзакции. True — применён, False — уже применён другим."""
+    """Один шаг в своей транзакции. True – применён, False – уже применён другим."""
     conn.execute("PRAGMA foreign_keys = OFF")
     try:
         conn.execute("BEGIN IMMEDIATE")

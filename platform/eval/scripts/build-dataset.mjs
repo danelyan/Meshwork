@@ -1,6 +1,6 @@
 // Сборка resumes/ и labels/ из размеченных исходников _src/resumes/*.md.
-// Разметка в исходнике:  [[catalogId|дословная цитата]]  — подтверждённое утверждение;
-//                        ((catalogId|текст|почему не утверждение))  — ловушка (notClaim).
+// Разметка в исходнике:  [[catalogId|дословная цитата]]  – подтверждённое утверждение;
+//                        ((catalogId|текст|почему не утверждение))  – ловушка (notClaim).
 // Метаданные первой строкой: <!--meta spec=backend grade=junior-->.
 // Запуск: node scripts/build-dataset.mjs  (без зависимостей)
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -12,7 +12,7 @@ const src = join(root, '_src', 'resumes');
 mkdirSync(join(root, 'resumes'), { recursive: true });
 mkdirSync(join(root, 'labels'), { recursive: true });
 
-// Сверка ID с каталогом (если файл найден): неизвестный ID — ошибка, кроме префикса none. (вне каталога).
+// Сверка ID с каталогом (если файл найден): неизвестный ID – ошибка, кроме префикса none. (вне каталога).
 const catalogPath = process.env.CLAIMS_CATALOG || join(root, '..', '..', '..', '..', 'docs', 'product', 'claims-catalog.md');
 let known = null;
 try {

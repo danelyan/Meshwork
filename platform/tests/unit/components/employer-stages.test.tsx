@@ -93,7 +93,7 @@ describe('карточка: ступени 1–3', () => {
     expect(items[2]).toMatch(/Деплой - не спрашивали/);
   });
 
-  it('проект: своя потребность — таблица критериев; чужая — только подкатегория и балл', () => {
+  it('проект: своя потребность – таблица критериев; чужая – только подкатегория и балл', () => {
     render1(BASE);
     const block = screen.getByRole('region', { name: 'Проект' });
     expect(within(block).getByText(/скрытые тесты 4 из 5 \(80%\)/)).toBeDefined();
@@ -184,7 +184,7 @@ describe('карточка: вопросы кандидату и комната 
     expect(JSON.parse(post[1].body as string)).toEqual({ candidateId: 'c1', text: 'Как хранится ключ?' });
   });
 
-  it('нет сессии защиты — кнопки нет; ошибка отправки показывается текстом сервера', async () => {
+  it('нет сессии защиты – кнопки нет; ошибка отправки показывается текстом сервера', async () => {
     stubFetch((url, init) =>
       init?.method === 'POST' ? { status: 429, body: { error: { code: 'rate_limited', message: 'В очереди уже 10 вопросов' } } } : { body: { questions: [] } },
     );

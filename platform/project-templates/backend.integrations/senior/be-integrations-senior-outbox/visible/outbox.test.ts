@@ -35,7 +35,7 @@ describe('outbox (visible)', () => {
     expect(box.enqueue({ id: 'e1', key: 'k', payload: {} })).toBe(false);
   });
 
-  it('500 — повтор через baseDelayMs', async () => {
+  it('500 – повтор через baseDelayMs', async () => {
     const { box, sent, advance } = setup([{ status: 500 }]);
     box.enqueue({ id: 'e1', key: 'k', payload: {} });
     await box.tick();

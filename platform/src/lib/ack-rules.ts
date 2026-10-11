@@ -2,7 +2,7 @@ import { isBackchannel } from './sentences';
 
 /**
  * Когда Кире стоит мгновенно отреагировать на фразу кандидата («Та-ак…», «Угу…»), пока идут STT + LLM + TTS.
- * Лишние поддакивания хуже тишины (uncanny valley), поэтому у «listen» вероятность ниже, а многие фразы — null.
+ * Лишние поддакивания хуже тишины (uncanny valley), поэтому у «listen» вероятность ниже, а многие фразы – null.
  */
 export interface AckDecision {
   kind: 'think' | 'listen' | null;

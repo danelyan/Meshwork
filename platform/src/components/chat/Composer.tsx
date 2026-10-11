@@ -26,7 +26,7 @@ export interface ComposerProps {
   disabled?: boolean;
   /** Сообщение отправляется: кнопка показывает спиннер, не меняя размера. */
   sending?: boolean;
-  /** Остановить ход: пока `sending`, на месте «Отправить» — кнопка «Стоп» того же размера. */
+  /** Остановить ход: пока `sending`, на месте «Отправить» – кнопка «Стоп» того же размера. */
   onStop?: () => void;
   multiline?: boolean;
   maxLength?: number;
@@ -43,19 +43,19 @@ export interface ComposerProps {
   allowEmpty?: boolean;
   /** Вложения: скрепка, чипы, drag-n-drop на всю ленту, вставка файла. */
   attachments?: ComposerAttachments;
-  /** Кнопка микрофона: надиктовать текст в поле (VoiceButton; режим — GET /api/stt). */
+  /** Кнопка микрофона: надиктовать текст в поле (VoiceButton; режим – GET /api/stt). */
   voice?: boolean;
-  /** Кнопка «Созвониться» (lane call): открыть режим звонка в сцене. Нет — кнопки нет. */
+  /** Кнопка «Созвониться» (lane call): открыть режим звонка в сцене. Нет – кнопки нет. */
   onCall?: () => void;
   /** Вид режима звонка: «interview» (после теста на грейд) меняет подсказку кнопки. */
   callKind?: 'qualifying' | 'interview' | 'defense';
-  /** Причина, по которой созвон пока недоступен (readiness): кнопка блокируется, причина — в title. */
+  /** Причина, по которой созвон пока недоступен (readiness): кнопка блокируется, причина – в title. */
   callBlocked?: string;
 }
 
 /**
- * Единый композер ленты (онбординг, консультант, помощник работодателя): текст (Enter —
- * отправить, Shift+Enter — перенос), скрепка и чипы вложений, drag-n-drop файла на всю
+ * Единый композер ленты (онбординг, консультант, помощник работодателя): текст (Enter –
+ * отправить, Shift+Enter – перенос), скрепка и чипы вложений, drag-n-drop файла на всю
  * ленту с подсветкой «брось сюда», вставка файла из буфера; ссылки пишутся прямо в тексте.
  * Поле растёт по содержимому до 180 px. docs/design-system.md, «Композер».
  */
@@ -99,7 +99,7 @@ export function Composer({
     const el = areaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    // Пустое поле — одна строка: длинный плейсхолдер на узком экране не раздувает высоту.
+    // Пустое поле – одна строка: длинный плейсхолдер на узком экране не раздувает высоту.
     if (value) el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   }, [value]);
 
@@ -178,7 +178,7 @@ export function Composer({
           maxLength={maxLength}
           inputMode={inputMode}
           autoComplete="off"
-          // Подсказка по клавишам — тултипом по наведению, поле ввода прижато к низу (владелец 11.10).
+          // Подсказка по клавишам – тултипом по наведению, поле ввода прижато к низу (владелец 11.10).
           title={typeof hint === 'string' ? hint : undefined}
           aria-describedby={hint ? hintId : undefined}
         />
@@ -226,7 +226,7 @@ export function Composer({
   );
 }
 
-/** Файл тащат над окном: подсветка «брось сюда» на всю ленту; drop — в onAdd. Без onAdd — выключено. */
+/** Файл тащат над окном: подсветка «брось сюда» на всю ленту; drop – в onAdd. Без onAdd – выключено. */
 function useWindowFileDrop(onAdd?: (files: File[]) => void): boolean {
   const [over, setOver] = useState(false);
   const cb = useRef(onAdd);
@@ -257,7 +257,7 @@ function useWindowFileDrop(onAdd?: (files: File[]) => void): boolean {
     };
     const drop = (e: DragEvent) => {
       if (!hasFiles(e)) return;
-      // Файл уже принят своей зоной (FilesCard в колонке) — в композер не добавлять.
+      // Файл уже принят своей зоной (FilesCard в колонке) – в композер не добавлять.
       const taken = e.defaultPrevented;
       e.preventDefault();
       depth = 0;

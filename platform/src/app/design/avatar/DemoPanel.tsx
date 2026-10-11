@@ -84,7 +84,7 @@ function Stage({ variant, speech, bus }: { variant: Variant; speech: PanelSpeech
         ? {
             role: 'group',
             tabIndex: 0,
-            'aria-label': 'Голова: перетащите мышью или стрелками, Home — сброс',
+            'aria-label': 'Голова: перетащите мышью или стрелками, Home – сброс',
             onPointerDown: onDown,
             onPointerMove: onMove,
             onPointerUp: onUp,

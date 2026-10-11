@@ -66,7 +66,7 @@ describe('кэш запросов', () => {
     expect(h.cache.peek('k')).toBe(done);
   });
 
-  it('структурное разделение: равные данные — прежняя ссылка и тишина у подписчиков', async () => {
+  it('структурное разделение: равные данные – прежняя ссылка и тишина у подписчиков', async () => {
     const h = makeHarness(1000);
     const listener = vi.fn();
     const p = h.cache.fetch('k');
@@ -227,7 +227,7 @@ describe('дашборд', () => {
     expect(c.snapshot()).toEqual(before);
   });
 
-  it('«Обновить всё»: один запрос на ключ; те же данные — без коммитов, изменённый ключ — по одному коммиту', async () => {
+  it('«Обновить всё»: один запрос на ключ; те же данные – без коммитов, изменённый ключ – по одному коммиту', async () => {
     const h = makeHarness();
     const c = counter();
     render(<Dashboard cache={h.cache} widgets={specs()} onWidgetRender={c.onWidgetRender} />);
@@ -254,7 +254,7 @@ describe('дашборд', () => {
     expect(valueOf('Пользователи')).toBe('21');
   });
 
-  it('повторное монтирование: свежие данные без запроса и без «Загрузки», устаревшие — с показом старого значения', async () => {
+  it('повторное монтирование: свежие данные без запроса и без «Загрузки», устаревшие – с показом старого значения', async () => {
     const h = makeHarness(1000);
     const first = render(<Dashboard cache={h.cache} widgets={specs()} />);
     await settle();

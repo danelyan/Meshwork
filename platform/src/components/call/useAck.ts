@@ -9,7 +9,7 @@ import type { CompanionVoice } from '../avatar/voice';
 
 /**
  * Мгновенная реакция Киры («Угу…», «Та-ак…») между концом фразы кандидата и первым звуком ответа (2-5 с на STT + LLM + TTS).
- * Клипы лежат в public/ack (manifest.json, генерирует scripts/gen-ack.mts); нет файлов — молча ничего не играем.
+ * Клипы лежат в public/ack (manifest.json, генерирует scripts/gen-ack.mts); нет файлов – молча ничего не играем.
  * Текст клипа в транскрипт не пишется: это не реплика.
  */
 export const ACK_COOLDOWN_MS = 7_000;
@@ -23,8 +23,7 @@ export interface UseAckOptions {
   /** Кандидат сейчас говорит (новая фраза отменяет «мягкий» клип). */
   userSpeaking: boolean;
   /** Подменяется в тестах. */
-  random?: () => number;  /** Клип из банка зазвучал (телеметрия: ackMs). */
-  onPlayed?: (kind: AckKind) => void;
+  random?: () => number;
 }
 
 export function useAck(opts: UseAckOptions) {
@@ -71,7 +70,6 @@ export function useAck(opts: UseAckOptions) {
       own.current = true;
       try {
         console.debug('[ack]', kind, file);
-        optsRef.current.onPlayed?.(kind);
         await voice.playClip(`${BASE}${file}`);
       } catch {
         /* клип не сыгран - не страшно */

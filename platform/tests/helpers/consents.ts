@@ -1,5 +1,5 @@
-// Согласия для тестовых фикстур (ADR 0005): тест, созвон и защита требуют Г3; поиск и приглашения — оферты
-// работодателя; контакты после accepted — раскрытия Г5 по приглашению.
+// Согласия для тестовых фикстур (ADR 0005): тест, созвон и защита требуют Г3; поиск и приглашения – оферты
+// работодателя; контакты после accepted – раскрытия Г5 по приглашению.
 import type { ConsentKind } from '@prisma/client';
 
 import { CONSENT_TEXTS } from '@/server/consent/texts';
@@ -28,12 +28,12 @@ export async function grantCandidateConsents(candidateIds: readonly string[], ki
   for (const id of candidateIds) await grantConsents(await userOfCandidate(id), kinds);
 }
 
-/** Оферта и обязательство по данным — работодателям (по userId). */
+/** Оферта и обязательство по данным – работодателям (по userId). */
 export async function grantEmployerConsents(userIds: readonly string[]): Promise<void> {
   for (const id of userIds) await grantConsents(id, ['employer_offer', 'employer_data_obligation']);
 }
 
-/** Раскрытие (Г5) по всем принятым приглашениям, у которых его ещё нет — как будто кандидат принял через API. */
+/** Раскрытие (Г5) по всем принятым приглашениям, у которых его ещё нет – как будто кандидат принял через API. */
 export async function discloseAccepted(): Promise<void> {
   const invs = await prisma.invitation.findMany({ where: { status: 'accepted' }, select: { id: true, candidateId: true } });
   for (const inv of invs) {

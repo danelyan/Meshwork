@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
-/** POST /api/test/attempt/[id]/confirm-junior — Middle не подтверждён, Junior по той же попытке — по согласию кандидата (R-C-08). */
+/** POST /api/test/attempt/[id]/confirm-junior – Middle не подтверждён, Junior по той же попытке – по согласию кандидата (R-C-08). */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);

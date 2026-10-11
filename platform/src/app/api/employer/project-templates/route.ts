@@ -5,7 +5,7 @@ import { requireEmployer } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/employer/project-templates?specialization=&grade= — базовые шаблоны проектов (контракт и скрытые тесты фиксированы). */
+/** GET /api/employer/project-templates?specialization=&grade= – базовые шаблоны проектов (контракт и скрытые тесты фиксированы). */
 export const GET = withErrors(async (req: Request) => {
   requireEmployer(req);
   const url = new URL(req.url);

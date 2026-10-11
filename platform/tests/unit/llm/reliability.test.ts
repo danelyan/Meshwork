@@ -30,7 +30,7 @@ describe('превышение контекста → LlmError context_length, �
     'Превышен лимит длины контекста',
   ])('распознаёт: %s', (msg) => expect(isContextLengthMessage(msg)).toBe(true));
 
-  it('обычная 400 — не контекст', () => expect(isContextLengthMessage('Invalid value for tool_choice')).toBe(false));
+  it('обычная 400 – не контекст', () => expect(isContextLengthMessage('Invalid value for tool_choice')).toBe(false));
 
   it('Yandex 400 с текстом о лимите токенов → context_length', async () => {
     const ff = fakeFetch([{ status: 400, body: { error: { message: 'Input tokens count exceeds the limit of 32768', type: 'invalid_request_error' } } }]);
@@ -61,7 +61,7 @@ describe('превышение контекста → LlmError context_length, �
 });
 
 describe('Retry-After и журнал без ПДн', () => {
-  it('Retry-After в секундах — из заголовков ошибки или её cause; с потолком', () => {
+  it('Retry-After в секундах – из заголовков ошибки или её cause; с потолком', () => {
     const apiErr = { status: 429, headers: new Headers({ 'retry-after': '2' }) };
     expect(retryAfterMs(apiErr)).toBe(2000);
     expect(retryAfterMs(new LlmError('rate_limited', 'x', 429, { cause: apiErr }))).toBe(2000);

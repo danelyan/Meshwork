@@ -8,8 +8,8 @@ export const runtime = 'nodejs';
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * GET /api/call/{id}/employer-audio — сегменты голоса работодателя в живой защите (ADR 0008 п. 3). Доступ как к записи
- * защиты: кандидату — своя; работодателю — только компании-владельцу живой защиты после принятого приглашения.
+ * GET /api/call/{id}/employer-audio – сегменты голоса работодателя в живой защите (ADR 0008 п. 3). Доступ как к записи
+ * защиты: кандидату – своя; работодателю – только компании-владельцу живой защиты после принятого приглашения.
  */
 export const GET = withErrors(async (req: Request, { params }: Ctx) => {
   const s = getSession(req);

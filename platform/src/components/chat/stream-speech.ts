@@ -6,15 +6,15 @@ import { MAX_TTS_PARTS } from '@/lib/tts-parts';
 import type { CompanionVoice } from '../avatar/voice';
 import { planRest } from '../call/useReplySpeech';
 
-/** Предложений озвучиваем прямо из потока, остаток — частями по приходу реплики целиком (лимит /api/tts — 20 в минуту). */
+/** Предложений озвучиваем прямо из потока, остаток – частями по приходу реплики целиком (лимит /api/tts – 20 в минуту). */
 const STREAM_SENTENCES = MAX_TTS_PARTS - 1;
 
 type SpeechEvent = { type: string; id?: string; text?: string };
 
 /**
  * Озвучка ответа чата по мере стриминга (решение владельца 11.10: голос стартует, как только текст появился).
- * Готовые предложения из дельт (`stableSentences` — уже не изменятся) уходят в очередь голоса сразу, реплика
- * целиком досказывает остаток (`planRest`). Ключ части — `${id}#…`: пузырь и «стоп» узнают реплику по префиксу.
+ * Готовые предложения из дельт (`stableSentences` – уже не изменятся) уходят в очередь голоса сразу, реплика
+ * целиком досказывает остаток (`planRest`). Ключ части – `${id}#…`: пузырь и «стоп» узнают реплику по префиксу.
  */
 export function createStreamSpeech(voice: () => CompanionVoice | null | undefined) {
   const streams = new Map<string, { text: string; spoken: string[] }>();

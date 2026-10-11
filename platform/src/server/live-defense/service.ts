@@ -21,7 +21,7 @@ export interface LiveSlotView {
   id: string;
   startsAt: string;
   endsAt: string;
-  /** false — время уже занято другим кандидатом этой компании или прошло. */
+  /** false – время уже занято другим кандидатом этой компании или прошло. */
   available: boolean;
 }
 
@@ -195,8 +195,8 @@ export interface ProposeInput {
 }
 
 /**
- * Предложить слоты по принятому приглашению своей компании. Чужое — 404, не accepted — 409.
- * Новое предложение заменяет старое; назначенную (ещё не прошедшую) защиту сначала отменяют — 409.
+ * Предложить слоты по принятому приглашению своей компании. Чужое – 404, не accepted – 409.
+ * Новое предложение заменяет старое; назначенную (ещё не прошедшую) защиту сначала отменяют – 409.
  */
 export async function proposeSlots(ctx: { companyId: string; userId: string }, invitationId: string, input: ProposeInput, now = new Date()): Promise<LiveDefenseView> {
   await assertEmployerConsents(ctx.userId);
@@ -215,7 +215,7 @@ export async function proposeSlots(ctx: { companyId: string; userId: string }, i
     if (slots.some((s) => busy.some((b) => overlaps(b, s)))) throw new AppError('slot_taken', 'Одно из времён уже занято защитой другого кандидата', 409);
     const prev = await tx.liveDefense.findUnique({ where: { activeKey: invitationId }, select: { id: true, status: true, startsAt: true } });
     if (prev) {
-      // Назначенная и ещё не прошедшая защита: перенос — через отмену (п. 6), чтобы кандидат увидел причину.
+      // Назначенная и ещё не прошедшая защита: перенос – через отмену (п. 6), чтобы кандидат увидел причину.
       if (prev.status === 'scheduled' && prev.startsAt && prev.startsAt.getTime() + LIVE_SLOT_RULES.noShowAfterMs > now.getTime()) {
         throw new AppError('live_defense_scheduled', 'Защита уже назначена - сначала отмените её с причиной', 409);
       }
@@ -287,8 +287,8 @@ export async function projectReadyByInvitation(invs: readonly { id: string; cand
 
 /**
  * Выбрать слот. Нужен действующий согласие на запись (`call_recording`, ADR 0005): без него 409
- * `recording_consent_required`; `recordingConsentVersion` в запросе — дать согласие тем же действием.
- * Слот уже занят другим кандидатом компании — 409 `slot_taken`.
+ * `recording_consent_required`; `recordingConsentVersion` в запросе – дать согласие тем же действием.
+ * Слот уже занят другим кандидатом компании – 409 `slot_taken`.
  */
 export async function chooseSlot(candidateId: string, invitationId: string, input: { slotId: string; recordingConsentVersion?: string }, now = new Date()): Promise<LiveDefenseView> {
   const { inv, live } = await candidateLive(candidateId, invitationId);
@@ -319,7 +319,7 @@ export async function chooseSlot(candidateId: string, invitationId: string, inpu
         data: { status: 'scheduled', chosenSlotId: slot.id, startsAt: slot.startsAt, endsAt: slot.endsAt, scheduledAt: now, noneFitAt: null, noneFitComment: null },
       });
       if (r.count === 0) throw new AppError('slot_already_chosen', 'Слот уже выбран или предложение отменено', 409);
-      // Уникальный индекс — вторая линия: даже вне блокировки одно время компании не забронировать дважды.
+      // Уникальный индекс – вторая линия: даже вне блокировки одно время компании не забронировать дважды.
       await tx.liveDefenseSlot.update({ where: { id: slot.id }, data: { bookedKey: bookedKey(companyId, slot.startsAt), bookedAt: now } });
       const when = `${formatMsk(slot.startsAt)}, ${live.durationMin} мин`;
       await addEvent(tx, live, 'employer', 'scheduled', 'Кандидат выбрал время живой защиты', when, now);
@@ -330,7 +330,7 @@ export async function chooseSlot(candidateId: string, invitationId: string, inpu
     throw e;
   }
 
-  // Сессия живой защиты (CallSession kind=defense, aiDefense=false) — существующий механизм ожидающей защиты.
+  // Сессия живой защиты (CallSession kind=defense, aiDefense=false) – существующий механизм ожидающей защиты.
   const submissionId = await pickSubmission(candidateId, companyId);
   if (submissionId) {
     const { callSessionId } = await requestProjectDefense(candidateId, submissionId);
@@ -414,10 +414,10 @@ export async function closeLiveDefensesOnHire(companyId: string, invitationId: s
 }
 
 /**
- * lane invite-cancel: работодатель отозвал приглашение — активное предложение слотов или назначенная защита
+ * lane invite-cancel: работодатель отозвал приглашение – активное предложение слотов или назначенная защита
  * закрываются (`cancelled`, причина «Приглашение отозвано»), слоты освобождаются. Ожидающая сессия живой защиты
  * (CallSession pending) отменяется, если на неё не ссылается активная защита другой компании (pending.ts: одна
- * ожидающая сессия на сабмит). Вызывается в транзакции отзыва — статус приглашения и защита меняются вместе.
+ * ожидающая сессия на сабмит). Вызывается в транзакции отзыва – статус приглашения и защита меняются вместе.
  */
 export async function closeLiveDefenseOnWithdraw(tx: Prisma.TransactionClient, invitationId: string, now = new Date()): Promise<void> {
   const live = await tx.liveDefense.findUnique({ where: { activeKey: invitationId }, select: { id: true, status: true, callSessionId: true } });
@@ -441,7 +441,7 @@ function roomNotOpen(startsAt: Date): AppError {
   return new AppError('room_not_open', `Комната откроется ${formatMsk(opens)} - за 10 минут до начала защиты`, 409, { opensAt: opens.toISOString(), startsAt: startsAt.toISOString() });
 }
 
-/** Сессия привязана к назначенной живой защите, а до начала больше 10 минут — 409 `room_not_open`. */
+/** Сессия привязана к назначенной живой защите, а до начала больше 10 минут – 409 `room_not_open`. */
 export async function assertLiveRoomOpen(callSessionIds: readonly string[], now = new Date()): Promise<void> {
   if (!callSessionIds.length) return;
   const rows = await prisma.liveDefense.findMany({ where: { callSessionId: { in: [...callSessionIds] }, status: 'scheduled', activeKey: { not: null } }, select: { startsAt: true } });

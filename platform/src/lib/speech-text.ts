@@ -1,6 +1,6 @@
 /**
  * Текст реплики компаньона → текст для синтеза речи. Общий для клиента (обрезка перед запросом)
- * и сервера (`/api/tts` чистит ещё раз — клиенту не доверяем). Markdown, ссылки и код вслух не читаем:
+ * и сервера (`/api/tts` чистит ещё раз – клиенту не доверяем). Markdown, ссылки и код вслух не читаем:
  * ссылка звучит как «ссылка», блок кода выпадает, маркеры списков и выделения снимаются.
  */
 export const TTS_MAX_CHARS = 1000;
@@ -32,7 +32,7 @@ export function cleanForSpeech(input: string): string {
         .trim(),
     )
     .filter(Boolean);
-  // Перевод строки без знака препинания в конце — пауза: ставим точку.
+  // Перевод строки без знака препинания в конце – пауза: ставим точку.
   const joined = lines.map((l, i) => (i < lines.length - 1 && !END.test(l) ? `${l}.` : l)).join(' ');
   return joined.replace(/[ \t]+/g, ' ').replace(/\s+([.,!?;:])/g, '$1').trim();
 }
@@ -48,7 +48,7 @@ export function truncateForSpeech(text: string, max = TTS_MAX_CHARS): string {
   return `${(space > 0 ? cut.slice(0, space) : cut).replace(/[,;:\s]+$/, '')}…`;
 }
 
-/** То, что реально уйдёт в синтез: чистка + обрезка. Пустая строка — озвучивать нечего. */
+/** То, что реально уйдёт в синтез: чистка + обрезка. Пустая строка – озвучивать нечего. */
 export function speechText(input: string, max = TTS_MAX_CHARS): string {
   return truncateForSpeech(cleanForSpeech(input), max);
 }

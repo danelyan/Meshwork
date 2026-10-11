@@ -28,7 +28,7 @@ const failing: LlmProvider = {
   },
 };
 
-const CONTRACT = "# Контракт\n\n`POST /appointments` → 201; ошибка — `{ error: 'validation' }`, 400.\n";
+const CONTRACT = "# Контракт\n\n`POST /appointments` → 201; ошибка – `{ error: 'validation' }`, 400.\n";
 
 /** Модель-«пересказчик»: дублирует контракт с ошибкой и пишет легенду с названием компании. */
 function echoingLlm(): LlmProvider {
@@ -56,7 +56,7 @@ function echoingLlm(): LlmProvider {
 describe('условие проекта (project_spec)', () => {
   const ctx = { ...CTX, template: { ...CTX.template, contractMd: CONTRACT } };
 
-  it('stub детерминирован и проходит схему; контракт приложен дословно; источник — fallback', async () => {
+  it('stub детерминирован и проходит схему; контракт приложен дословно; источник – fallback', async () => {
     const llm = createStubProvider();
     const a = await generateSpec(ctx, ['Клиника Плюс'], { llm });
     const b = await generateSpec(ctx, ['Клиника Плюс'], { llm });
@@ -76,7 +76,7 @@ describe('условие проекта (project_spec)', () => {
     expect(spec.contractMd).toBe(CONTRACT);
   });
 
-  it('модель недоступна — то же детерминированное условие, задание создаётся', async () => {
+  it('модель недоступна – то же детерминированное условие, задание создаётся', async () => {
     const spec = await generateSpec(ctx, [], { llm: failing });
     expect(spec).toEqual(fallbackSpec(ctx));
   });
@@ -114,14 +114,14 @@ describe('условие проекта (project_spec)', () => {
     }
   });
 
-  it('dropContractEcho: число — HTTP-код, только если оно код контракта или рядом со «статус/код/HTTP»', () => {
+  it('dropContractEcho: число – HTTP-код, только если оно код контракта или рядом со «статус/код/HTTP»', () => {
     const contract = 'POST /orders → 201; при ошибке 422 `validation_error`.';
     expect(
       dropContractEcho(['Отвечать быстрее 200 мс', 'Хранить до 500 записей', 'Вернуть 422 при плохом теле', 'HTTP 404 если нет', 'Код ответа 200 на успех', 'Логировать ошибки'], contract),
     ).toEqual(['Отвечать быстрее 200 мс', 'Хранить до 500 записей', 'Логировать ошибки']);
   });
 
-  it('фильтр выбросил все требования модели — в условии критерии рубрики', () => {
+  it('фильтр выбросил все требования модели – в условии критерии рубрики', () => {
     const spec = fallbackSpec(CTX, CONTRACT);
     const empty = { ...spec, requirements: [CONTRACT_REQUIREMENT] };
     const filled = fillRequirementsFromRubric(empty, [
@@ -129,7 +129,7 @@ describe('условие проекта (project_spec)', () => {
       { id: 'w1', text: 'Логи с кодом ошибки', source: 'wish' },
     ]);
     expect(filled.requirements).toEqual([CONTRACT_REQUIREMENT, '(критерий работодателя) Проектировал REST API', '(пожелание) Логи с кодом ошибки']);
-    // Свои требования остались — рубрику не подмешиваем.
+    // Свои требования остались – рубрику не подмешиваем.
     expect(fillRequirementsFromRubric(spec, [{ id: 'w1', text: 'Логи', source: 'wish' }])).toBe(spec);
   });
 });
@@ -146,8 +146,8 @@ describe('рубрика (project_rubric)', () => {
     expect((await composeRubric([], 'Покрыть тестами пагинацию', { llm: failing })).criteria).toEqual([{ id: 'wish:1', text: 'Покрыть тестами пагинацию', source: 'wish' }]);
   });
 
-  it('stub не выдумывает пожеланий: каждый критерий — фрагмент текста работодателя', async () => {
-    const wishes = 'Ответ всегда со ссылкой на пункт регламента; если ответа нет — честно сказать';
+  it('stub не выдумывает пожеланий: каждый критерий – фрагмент текста работодателя', async () => {
+    const wishes = 'Ответ всегда со ссылкой на пункт регламента; если ответа нет – честно сказать';
     const r = await composeRubric([], wishes, { llm: createStubProvider() });
     expect(r.criteria).toHaveLength(2);
     for (const c of r.criteria) expect(wishes).toContain(c.text);
@@ -166,7 +166,7 @@ describe('рубрика (project_rubric)', () => {
     { id: 'wish:2', text: 'Кэширование ответов', source: 'wish' as const },
   ];
 
-  it('stub-проверка: доказательство со ссылкой на файл; без совпадений — по тестам', async () => {
+  it('stub-проверка: доказательство со ссылкой на файл; без совпадений – по тестам', async () => {
     const out = await reviewRubric({ criteria, files, tests: { passed: 1, total: 4, score: 25 }, aiLog: '' }, { llm: createStubProvider() });
     expect(out.results.map((r) => [r.id, r.passed, r.file ?? null])).toEqual([
       ['wish:1', true, 'src/app.ts'],
@@ -175,7 +175,7 @@ describe('рубрика (project_rubric)', () => {
     expect(out.injectionSuspected).toBe(false);
   });
 
-  it('ссылка на несуществующий файл — флаг; инъекция в журнале — флаг; модель упала — not_evaluated', async () => {
+  it('ссылка на несуществующий файл – флаг; инъекция в журнале – флаг; модель упала – not_evaluated', async () => {
     const fake: LlmProvider = {
       ...failing,
       async complete() {
@@ -192,7 +192,7 @@ describe('рубрика (project_rubric)', () => {
 });
 
 describe('stub-runner и архивы', () => {
-  it('stub-runner: детерминированно по шаблону; reference — всё зелёное, starter — красное', async () => {
+  it('stub-runner: детерминированно по шаблону; reference – всё зелёное, starter – красное', async () => {
     const t = getTemplate('be-webapi-middle-orders')!;
     const r = createStubRunner();
     const base = { template: t, tarball: null, commitSha: 'a'.repeat(40) } as const;

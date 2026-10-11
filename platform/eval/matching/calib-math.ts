@@ -5,7 +5,7 @@ export interface Bin { lo: number; hi: number; n: number; meanScore: number | nu
 export interface Knot { x: number; p: number }
 
 const EPS = 1e-6;
-/** Границы вероятности в таблице: 0 % и 100 % на выборке в сотни пар — самоуверенность, показывать их нельзя. */
+/** Границы вероятности в таблице: 0 % и 100 % на выборке в сотни пар – самоуверенность, показывать их нельзя. */
 export const P_MIN = 0.02;
 export const P_MAX = 0.98;
 export const clip01 = (x: number) => Math.max(0, Math.min(1, x));
@@ -21,7 +21,7 @@ export function logLoss(ps: number[], ys: number[]): number {
   }, 0) / ps.length;
 }
 
-/** Кривая по `bins` равным интервалам [0;1]: последний включает 1. Прогноз — p (уже в [0;1]). */
+/** Кривая по `bins` равным интервалам [0;1]: последний включает 1. Прогноз – p (уже в [0;1]). */
 export function calibrationCurve(ps: number[], ys: number[], bins = 10): Bin[] {
   const out: { lo: number; hi: number; n: number; sp: number; sy: number }[] = Array.from({ length: bins }, (_, i) => ({ lo: i / bins, hi: (i + 1) / bins, n: 0, sp: 0, sy: 0 }));
   ps.forEach((p, i) => {
@@ -65,7 +65,7 @@ export function isotonicFit(pairs: Pair[], maxKnots = 14): Knot[] {
   return knots.map((k) => ({ x: Math.round(k.x * 1e4) / 1e4, p: Math.round(Math.min(P_MAX, Math.max(P_MIN, k.p)) * 1e4) / 1e4 }));
 }
 
-/** Кусочно-линейная интерполяция по узлам; вне узлов — крайнее значение. */
+/** Кусочно-линейная интерполяция по узлам; вне узлов – крайнее значение. */
 export function applyKnots(knots: readonly Knot[], score: number): number {
   if (!knots.length) return clip01(score);
   if (score <= knots[0]!.x) return knots[0]!.p;

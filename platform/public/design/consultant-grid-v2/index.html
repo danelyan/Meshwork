@@ -474,7 +474,7 @@ class Component extends DCLogic {
       this.mouthFor(ch); ci++;
       this.setState(s => ({ msgs: s.msgs.map(m => m.id === id ? { ...m, segs: m.segs.map((x, j) => j === si ? seg.slice(0, ci) : x) } : m) }));
       let delay = base * (0.7 + Math.random() * 0.6);
-      if (/[.,!?:;—-]/.test(ch)) delay += voice ? 200 : 110;
+      if (/[.,!?:;–-]/.test(ch)) delay += voice ? 200 : 110;
       if (ci >= seg.length) { si++; ci = 0; delay += voice ? 260 : 160; }
       if (si < segs.length) this.typeT = setTimeout(step, delay);
       else { this.setState(s => ({ status: 'idle', msgs: s.msgs.map(m => m.id === id ? { ...m, done: true } : m) })); }

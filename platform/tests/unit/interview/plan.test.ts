@@ -17,7 +17,7 @@ function run(signals: AnswerSignal[] | AnswerSignal, grade: 'junior' | 'middle' 
 }
 
 describe('план ИИнтервью: блоки по порядку, маршрут по уровню', () => {
-  it('первый вопрос — знакомство на уровне грейда', () => {
+  it('первый вопрос – знакомство на уровне грейда', () => {
     const p = planInterviewNext({ plan, turns: [], grade: 'middle', signal: null });
     expect(p.block).toBe('intro');
     expect(p.competency.id).toBe('common.context');
@@ -25,7 +25,7 @@ describe('план ИИнтервью: блоки по порядку, марш�
     expect(p.done).toBe(false);
   });
 
-  it('после знакомства — разбор теста с ядра подкатегории; сильные ответы углубляют ту же компетенцию', () => {
+  it('после знакомства – разбор теста с ядра подкатегории; сильные ответы углубляют ту же компетенцию', () => {
     const turns = run('strong');
     expect(turns[1]!.block).toBe('test');
     expect(turns[1]!.competencyId).toBe('backend.code');
@@ -79,7 +79,7 @@ describe('план ИИнтервью: блоки по порядку, марш�
     expect(stageOf([], false)).toBe('intro');
   });
 
-  it('шаблон вопроса — по фокусу компетенции на уровне, первый — с приветствием', () => {
+  it('шаблон вопроса – по фокусу компетенции на уровне, первый – с приветствием', () => {
     const c = plan.test[0]!;
     const q = templateInterviewQuestion(c, 'test', 2, true);
     expect(q).toMatch(/^Привет/);
@@ -89,7 +89,7 @@ describe('план ИИнтервью: блоки по порядку, марш�
   });
 });
 
-describe('подсказка «Уточнить вопрос» — клиентская, по фокусу компетенции', () => {
+describe('подсказка «Уточнить вопрос» – клиентская, по фокусу компетенции', () => {
   it('содержит название компетенции и фокус уровня, не является ответом', () => {
     const c = plan.test[0]!;
     const h = clarificationHint(c, 2);

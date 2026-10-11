@@ -3,16 +3,16 @@
 // nextStep (основная фаза + дозадавание), decide; параметры шаблонов из кода (экспертные).
 //
 // Две постановки метрик, обе считаются в одном прогоне на одних и тех же правилах:
-//   strict      — НАША строгая: истина — метка популяции («Junior сдаёт Junior»), популяции пересекаются и
-//                 заходят за пороги, решение — бинарное «подтверждён / нет», κ Коэна по бинарному решению.
-//   competitor  — В ПОСТАНОВКЕ КОНКУРЕНТОВ (Драфт, Рекрут 2, Скаут; docs/research у владельца): θ ~ N(0; 1),
-//                 истина — θ_true выше порога заявленного грейда; грейд — 4 класса (ниже Junior / J / M / S) по
+//   strict      – НАША строгая: истина – метка популяции («Junior сдаёт Junior»), популяции пересекаются и
+//                 заходят за пороги, решение – бинарное «подтверждён / нет», κ Коэна по бинарному решению.
+//   competitor  – В ПОСТАНОВКЕ КОНКУРЕНТОВ (Драфт, Рекрут 2, Скаут; docs/research у владельца): θ ~ N(0; 1),
+//                 истина – θ_true выше порога заявленного грейда; грейд – 4 класса (ниже Junior / J / M / S) по
 //                 старшему порогу с P(θ > порог) ≥ 0,5; взвешенный (квадратичный) κ; AUC по полосам истинной θ.
-//                 Заявка: истинный грейд в 50 %, на грейд выше / ниже — по 25 % (как «±1 грейд» у Скаута).
+//                 Заявка: истинный грейд в 50 %, на грейд выше / ниже – по 25 % (как «±1 грейд» у Скаута).
 // Ошибка параметров задания в генераторе ответов (ответы порождает 2PL, оценщик видит экспертные a, b):
-//   instance — b_экз = b + N(0; σ) на КАЖДЫЙ показ (σ = --noise, по умолчанию 0,2; наша прежняя модель);
-//   family   — b + N(0; 0,3), ln a + N(0; 0,15), фиксированные на семейство на весь прогон (как у Драфта и Скаута).
-// По умолчанию считаются обе модели ошибки; --error instance|family — одна.
+//   instance – b_экз = b + N(0; σ) на КАЖДЫЙ показ (σ = --noise, по умолчанию 0,2; наша прежняя модель);
+//   family   – b + N(0; 0,3), ln a + N(0; 0,15), фиксированные на семейство на весь прогон (как у Драфта и Скаута).
+// По умолчанию считаются обе модели ошибки; --error instance|family – одна.
 //
 // Запуск из platform/:
 //   npx tsx eval/test/run.ts                                   # все подкатегории, N = 600 на подкатегорию, обе постановки
@@ -23,7 +23,7 @@
 //
 // Честная граница: симуляция проверяет свойства механики ПРИ ЗАДАННЫХ параметрах заданий (a, b экспертные,
 // на людях не оценены), а не то, что задания измеряют умение. Ответы порождает логистическая модель той же
-// формы, что и оценщик (замкнутая проверка). Разомкнутая — персоны: eval/test/subcategory-personas.ts.
+// формы, что и оценщик (замкнутая проверка). Разомкнутая – персоны: eval/test/subcategory-personas.ts.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 import { SUBCATEGORIES } from '../../src/lib/directions';
@@ -77,17 +77,17 @@ const RULES: StopLimits = {
   ...(seArg !== undefined ? { seStop: seArg === 'none' ? null : Number(seArg) } : {}),
   ...(argStr('early') !== undefined ? { earlyStop: Number(argStr('early')) } : {}),
 };
-/** Эксперимент: --cut-select 0.4 — выбирать задание по информации в точке порога фазы, если |θ̂ − порог| < 0,4 (как у Драфта). */
+/** Эксперимент: --cut-select 0.4 – выбирать задание по информации в точке порога фазы, если |θ̂ − порог| < 0,4 (как у Драфта). */
 const CUT_SELECT = argNum('cut-select', 0);
 /**
  * Пересдача: после попытки кандидат видит разбор и ключи, поэтому в следующей попытке семейства, которые он уже видел,
- * решаются легче: P' = P + LEARN·(1 − P) (β-модель Скаута, по умолчанию 0,3; --learn 0 — без обучения).
- * --no-seen-before — не передавать движку прошлые семейства (как до v5): пересдача снова по тем же семействам.
+ * решаются легче: P' = P + LEARN·(1 − P) (β-модель Скаута, по умолчанию 0,3; --learn 0 – без обучения).
+ * --no-seen-before – не передавать движку прошлые семейства (как до v5): пересдача снова по тем же семействам.
  */
 const LEARN = argNum('learn', 0.3);
 const SEEN_BEFORE = !args.includes('--no-seen-before');
 /**
- * --retest-only: без утечки и пересдач (leak, retake*, bestOf3 — null). Ретест, точность и длина не меняются: их попытки
+ * --retest-only: без утечки и пересдач (leak, retake*, bestOf3 – null). Ретест, точность и длина не меняются: их попытки
  * идут раньше на том же rng. Для перебора лимитов длины (eval/test/length-sweep.ts).
  */
 const RETEST_ONLY = args.includes('--retest-only');
@@ -107,14 +107,14 @@ const VIRTUAL: { grade: Grade; b: number }[] = (argStr('virtual') ?? '')
 const VIRTUAL_A = argNum('virtual-a', 1.2);
 /**
  * Чувствительность к допущению об a (только для сравнения с конкурентами): --a-override 1.8 ставит всем семействам a = 1,8,
- * как Драфт приписывает заданиям с вводом ответа (у нас все задания — ввод). И в оценщике, и в генераторе ответов.
+ * как Драфт приписывает заданиям с вводом ответа (у нас все задания – ввод). И в оценщике, и в генераторе ответов.
  */
 const A_OVERRIDE = argStr('a-override') !== undefined ? Number(argStr('a-override')) : null;
 
 type ErrorModel = 'instance' | 'family';
 /** Лимит времени шаблона, сек (TaskGenerator.timeLimitSec). */
 const TIME_LIMIT = new Map(GENERATORS.map((g) => [g.id, g.timeLimitSec]));
-/** Класс грейда: 0 — ниже Junior, 1 — Junior, 2 — Middle, 3 — Senior. */
+/** Класс грейда: 0 – ниже Junior, 1 – Junior, 2 – Middle, 3 – Senior. */
 type GradeClass = 0 | 1 | 2 | 3;
 const CUTS = () => [GRADE_CUT.junior, GRADE_CUT.middle, GRADE_CUT.senior];
 const classOf = (theta: number): GradeClass => CUTS().filter((c) => theta > c).length as GradeClass;
@@ -127,8 +127,8 @@ function gauss(rng: Rng): number {
 }
 
 // Популяции строгой постановки [В]: θ_true ~ N(μ, σ) по группе (eval/test/run.ts до 10.10, ADR-0002 «Смена популяции
-// синтетики»). legacy — из головы до персон; persona — θ̂ персон под политикой v3 (новичок −0,9, Junior 0,3, Middle 0,8).
-// Senior (добавлен с тестом на подкатегорию) — N(1,6; 0,5) в обеих: середина Senior-семейств банка (b 1,0…1,7) +
+// синтетики»). legacy – из головы до персон; persona – θ̂ персон под политикой v3 (новичок −0,9, Junior 0,3, Middle 0,8).
+// Senior (добавлен с тестом на подкатегорию) – N(1,6; 0,5) в обеих: середина Senior-семейств банка (b 1,0…1,7) +
 // запас; персонами не подобран, это допущение.
 const POPS: Record<string, Record<'novice' | Grade, { mu: number; sd: number }>> = {
   legacy: { novice: { mu: -2.1, sd: 0.5 }, junior: { mu: -0.8, sd: 0.5 }, middle: { mu: 0.6, sd: 0.5 }, senior: { mu: 1.6, sd: 0.5 } },
@@ -141,7 +141,7 @@ interface Sim {
   claimed: Grade;
   /** Истина решения: должен ли быть подтверждён заявленный грейд. */
   truth: boolean;
-  /** Строгая постановка: группа популяции; конкурентная — null. */
+  /** Строгая постановка: группа популяции; конкурентная – null. */
   pop: 'novice' | Grade | null;
 }
 
@@ -157,7 +157,7 @@ interface Outcome {
   probed: boolean;
   /**
    * Ранняя остановка основной фазы: остановилась по уверенности (P ≥ early или ≤ 1 − early) или по SE до лимита max.
-   * У заявки Senior основная фаза — 4 Senior-задания (< min), поэтому ранней она не бывает.
+   * У заявки Senior основная фаза – 4 Senior-задания (< min), поэтому ранней она не бывает.
    */
   earlyStop: boolean;
   /** Сумма лимитов времени показанных заданий, мин (верхняя граница времени прохождения). */
@@ -186,7 +186,7 @@ function truePool(pool: SelectableTemplate[], model: ErrorModel, seed: number): 
 interface AttemptOpts {
   /** Знание трюка шаблона (утечка): +0,3 к P. */
   trick?: ReadonlySet<string>;
-  /** Семейства прошлых попыток кандидата — движку для ротации (если SEEN_BEFORE). */
+  /** Семейства прошлых попыток кандидата – движку для ротации (если SEEN_BEFORE). */
   seen?: ReadonlySet<string>;
   /** Семейства, по которым кандидат учился на разборе прошлой попытки: P' = P + LEARN·(1 − P). */
   learned?: ReadonlySet<string>;
@@ -237,7 +237,7 @@ function runAttempt(tp: TruePool, model: ErrorModel, sim: Sim, attemptSeed: numb
   const est = estimateTheta(responses);
   const cls = CUTS().filter((c) => probAbove(est, c) >= 0.5).length as GradeClass;
   const minutes = shown.reduce((m, t) => m + (TIME_LIMIT.get(t.id) ?? 180), 0) / 60;
-  // Причина остановки основной фазы — повтор shouldStop без исчерпания пула: 'confident' | 'precise' — ранняя.
+  // Причина остановки основной фазы – повтор shouldStop без исчерпания пула: 'confident' | 'precise' – ранняя.
   const ml = mainLength ?? responses.length;
   const mainReason = ml > 0 ? shouldStop(ml, estimateTheta(responses.slice(0, ml)), sim.claimed, false, RULES).reason : null;
   const earlyStop = ml < RULES.max && (mainReason === 'confident' || mainReason === 'precise');
@@ -267,7 +267,7 @@ function pearson(x: number[], y: number[]): number {
   return sxy / Math.sqrt(sxx * syy);
 }
 
-/** κ Коэна для k классов; weighted — квадратичные веса (κw). Бинарный случай — k = 2. */
+/** κ Коэна для k классов; weighted – квадратичные веса (κw). Бинарный случай – k = 2. */
 function kappa(a: number[], b: number[], k: number, weighted = false): number {
   const n = a.length;
   const obs = Array.from({ length: k }, () => new Array<number>(k).fill(0));
@@ -374,7 +374,7 @@ interface StrictMetrics extends CommonMetrics {
   /** Junior заявил Middle: ложный Middle и «Junior в 1 клик». */
   juniorClaimsMiddle: { falseMiddle: number | null; offeredJunior: number | null };
   leak: { falsePass: number | null; baseline: number | null };
-  /** Лучшая из 3 попыток (2-я и 3-я — с обучением по разбору) у тех, кто ниже заявленного: ложное подтверждение. */
+  /** Лучшая из 3 попыток (2-я и 3-я – с обучением по разбору) у тех, кто ниже заявленного: ложное подтверждение. */
   bestOf3FalsePass: number | null;
   /** 2-я попытка с обучением по разбору 1-й: ложное подтверждение и доля семейств, повторённых из 1-й. */
   retakeFalsePass: number | null;
@@ -397,7 +397,7 @@ interface CompetitorMetrics extends CommonMetrics {
 
 // --- сценарии ----------------------------------------------------------------------------------------------
 
-/** Строгая постановка: 6 сценариев поровну; истина — метка популяции. */
+/** Строгая постановка: 6 сценариев поровну; истина – метка популяции. */
 function strictSims(rng: Rng): Sim[] {
   const scen: ['novice' | Grade, Grade][] = [
     ['novice', 'junior'],
@@ -414,7 +414,7 @@ function strictSims(rng: Rng): Sim[] {
   });
 }
 
-/** Постановка конкурентов: θ ~ N(0; 1), заявка — истинный грейд ±1; истина — θ выше порога заявленного. */
+/** Постановка конкурентов: θ ~ N(0; 1), заявка – истинный грейд ±1; истина – θ выше порога заявленного. */
 function competitorSims(rng: Rng): Sim[] {
   return Array.from({ length: N }, () => {
     const thetaTrue = gauss(rng);
@@ -518,7 +518,7 @@ for (const sub of subs) {
   const tpRaw = poolFor(sub.specialization, sub.id);
   if (!tpRaw || tpRaw.legacy) continue;
   const subIndex = SUBCATEGORIES.indexOf(sub);
-  // --pool spec — эксперимент «общие компетенции»: пул попытки — все семейства направления (как у конкурентов), а не подкатегории.
+  // --pool spec – эксперимент «общие компетенции»: пул попытки – все семейства направления (как у конкурентов), а не подкатегории.
   const gens = argStr('pool') === 'spec' ? generatorsFor(sub.specialization) : tpRaw.generators;
   const pool: SelectableTemplate[] = gens.map((g) => ({ id: g.id, a: g.a, b: g.b, catalogIds: g.catalogIds, grade: g.grade }));
   if (A_OVERRIDE !== null) for (const t of pool) t.a = A_OVERRIDE;
@@ -581,7 +581,7 @@ const ROWS: { key: string; label: string; setting: 'strict' | 'competitor'; targ
   { key: 'competitor.minutes.mean', setting: 'competitor', label: 'Сумма лимитов времени, мин (верхняя граница)', target: 'показать', get: (m) => m.minutes.mean },
 ];
 
-const f = (x: number | null) => (x === null ? '—' : x.toFixed(3));
+const f = (x: number | null) => (x === null ? '–' : x.toFixed(3));
 const rulesLabel = `${RULES_NAME}: ${RULES.min}–${RULES.max} заданий, SE-стоп ${RULES.seStop === null ? 'выключен' : (RULES.seStop ?? 0.4)}, P_confirm ${CONFIRM}${PROBE ? ', с дозадаванием' : ', без дозадавания'}`;
 console.log(`# Валидация теста на грейд (синтетика): ${reports.length} подкатегорий, N = ${N} на подкатегорию и постановку, seed ${SEED}`);
 console.log(`Правила ${rulesLabel}; пороги J ${GRADE_CUT.junior} / M ${GRADE_CUT.middle} / S ${GRADE_CUT.senior}; строгая популяция ${POPULATION}.\n`);
@@ -598,7 +598,7 @@ for (const model of ERRORS) {
   }
   console.log('');
 }
-console.log(`## По подкатегориям (${ERRORS[0]}): строгая — точность / ложное подтв. / ретест; конкурентов — точность / ретест / κw грейда в ретесте / длина\n`);
+console.log(`## По подкатегориям (${ERRORS[0]}): строгая – точность / ложное подтв. / ретест; конкурентов – точность / ретест / κw грейда в ретесте / длина\n`);
 console.log('| Подкатегория | J/M/S | Строгая: точн. | ложн. подтв. | ретест | Конк.: точн. | ретест | κw ретеста | длина |\n|---|---|---|---|---|---|---|---|---|');
 for (const r of reports) {
   const s = r.byError[ERRORS[0]!]!.strict;
@@ -615,9 +615,9 @@ if (JSON_OUT) {
     policy: { version: RULES_NAME, rules: { ...RULES, seStop: RULES.seStop === undefined ? 0.4 : RULES.seStop }, confirmProb: CONFIRM, probe: PROBE, cuts: { junior: GRADE_CUT.junior, middle: GRADE_CUT.middle, senior: GRADE_CUT.senior } },
     config: { n: N, seed: SEED, population: POPULATION, errorModels: ERRORS, instanceNoise: NOISE, familyError: { b: FAMILY_B, lnA: FAMILY_A } },
     settings: {
-      strict: 'Наша строгая постановка: истина — метка популяции (популяции пересекаются и заходят за пороги), бинарное решение «подтверждён / нет», κ Коэна по бинарному решению.',
+      strict: 'Наша строгая постановка: истина – метка популяции (популяции пересекаются и заходят за пороги), бинарное решение «подтверждён / нет», κ Коэна по бинарному решению.',
       competitor:
-        'Постановка конкурентов: θ ~ N(0; 1), истина — θ_true выше порога заявленного грейда; заявка — истинный грейд ±1; грейд 4 класса по старшему порогу с P ≥ 0,5; κw квадратичный; AUC по полосам истинной θ.',
+        'Постановка конкурентов: θ ~ N(0; 1), истина – θ_true выше порога заявленного грейда; заявка – истинный грейд ±1; грейд 4 класса по старшему порогу с P ≥ 0,5; κw квадратичный; AUC по полосам истинной θ.',
     },
     rows: ROWS.map(({ key, label, setting, target }) => ({ key, label, setting, target })),
     summary,

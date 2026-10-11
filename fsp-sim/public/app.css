@@ -1,4 +1,4 @@
-/* Стартовая страница симулятора ФСП ID. Те же цвета — в теме входа keycloak/themes/fsp-id/login/resources/css/fsp-id.css. */
+/* Стартовая страница симулятора ФСП ID. Те же цвета – в теме входа keycloak/themes/fsp-id/login/resources/css/fsp-id.css. */
 :root {
   --bg: #f3f5f9; --panel: #fff; --ink: #121826; --muted: #5f6878; --faint: #8a93a3; --line: #e4e8ef; --line-strong: #cfd5df;
   --accent: #1f4fd8; --accent-dark: #173fb0; --accent-ink: #fff; --accent-soft: #edf2fe;

@@ -1,10 +1,10 @@
 import { prisma } from '@/server/db';
 import { getEnv } from '@/server/env';
 
-// GET route handler в Next.js 15 по умолчанию не кэшируется; явно — для ясности.
+// GET route handler в Next.js 15 по умолчанию не кэшируется; явно – для ясности.
 export const dynamic = 'force-dynamic';
 
-/** 200 — приложение и БД живы; 503 — БД недоступна. Секретов и конфигурации не раскрывает. */
+/** 200 – приложение и БД живы; 503 – БД недоступна. Секретов и конфигурации не раскрывает. */
 export async function GET() {
   let db: 'up' | 'down' = 'down';
   try {

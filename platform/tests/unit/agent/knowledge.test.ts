@@ -15,7 +15,7 @@ const facts = readFileSync(path.join(root, 'src/server/agent/prompts/platform-fa
 const kdir = path.join(root, 'src/server/agent/knowledge/docs');
 
 describe('база знаний: документы и корпус', () => {
-  it('corpus.ts собран из docs/*.md и platform-facts.md (источник правды — .md)', () => {
+  it('corpus.ts собран из docs/*.md и platform-facts.md (источник правды – .md)', () => {
     const docs = readdirSync(kdir)
       .filter((f) => f.endsWith('.md'))
       .sort()
@@ -23,7 +23,7 @@ describe('база знаний: документы и корпус', () => {
     expect(readFileSync(path.join(root, 'src/server/agent/knowledge/corpus.ts'), 'utf8')).toBe(buildCorpusSource(facts, docs).source);
   });
 
-  it('факты платформы — один из документов: пункт F<n> = секция F<n>, без дубля текста', () => {
+  it('факты платформы – один из документов: пункт F<n> = секция F<n>, без дубля текста', () => {
     const doc = parseFacts(facts);
     expect(doc.docId).toBe('platform-facts');
     expect(doc.sections.map((s) => s.sectionId)).toEqual(doc.sections.map((_, i) => `F${i + 1}`));
@@ -32,7 +32,7 @@ describe('база знаний: документы и корпус', () => {
     expect(KNOWLEDGE_DOCS[0]).toEqual(doc);
   });
 
-  it('документ: секции с id, комментарии не попадают, без id — ошибка', () => {
+  it('документ: секции с id, комментарии не попадают, без id – ошибка', () => {
     const d = parseDoc('x', '<!-- источник -->\n# Док\n\n## Раз {#one}\nтекст\nещё\n\n## Два {#two}\nдва\n');
     expect(d).toEqual({
       docId: 'x',
@@ -79,7 +79,7 @@ describe('лексический поиск', () => {
     expect(searchKnowledge('как поднять уровень до проверено платформой').map((h) => h.sectionId)).toContain('to-platform');
   });
 
-  it('пустой или бессмысленный запрос — пусто; текст секции ≤ 1200 символов', () => {
+  it('пустой или бессмысленный запрос – пусто; текст секции ≤ 1200 символов', () => {
     expect(searchKnowledge('и что как')).toEqual([]);
     expect(searchKnowledge('zzzqqq')).toEqual([]);
     for (const h of searchKnowledge('тест грейд категория уровень работодатель')) expect(h.text.length).toBeLessThanOrEqual(KNOWLEDGE_TEXT_MAX + 1);
@@ -108,7 +108,7 @@ describe('инструмент search_knowledge', () => {
     expect(Object.keys(out.sections[0]!).sort()).toEqual(['docId', 'sectionId', 'text', 'title']);
   });
 
-  it('ничего не нашлось — пустой список и подсказка сказать «не знаю»; короткий запрос — ошибка аргументов', async () => {
+  it('ничего не нашлось – пустой список и подсказка сказать «не знаю»; короткий запрос – ошибка аргументов', async () => {
     const r = await dispatchToolCall([searchKnowledgeTool], {}, { id: 'c1', name: 'search_knowledge', arguments: { query: 'zzzqqq' } });
     expect(r.output).toEqual({ sections: [], note: expect.stringMatching(/нет/) });
     const bad = await dispatchToolCall([searchKnowledgeTool], {}, { id: 'c2', name: 'search_knowledge', arguments: { query: 'a' } });

@@ -2,9 +2,9 @@ import { buildDoc } from './doc';
 import type { ExtractedDoc } from './types';
 
 /**
- * ФСП — ДЕМОНСТРАЦИОННЫЙ источник: API и схемы реестра ФСП не даны (CLAUDE.md п. 4,
- * research/09), модель достижений — наше предложение. Четыре состояния:
- * `not_linked | no_achievements | unavailable | linked`. Без ФСП — без штрафа (R-FSP-03).
+ * ФСП – ДЕМОНСТРАЦИОННЫЙ источник: API и схемы реестра ФСП не даны (CLAUDE.md п. 4,
+ * research/09), модель достижений – наше предложение. Четыре состояния:
+ * `not_linked | no_achievements | unavailable | linked`. Без ФСП – без штрафа (R-FSP-03).
  * Каждая строка и meta явно помечены «демонстрационные».
  */
 export type FspState = 'not_linked' | 'no_achievements' | 'unavailable' | 'linked';
@@ -17,9 +17,9 @@ export interface FspAchievement {
 }
 
 /**
- * Демо-достижения. Форматы соревнований и дисциплины — общеизвестные (Кубок и чемпионаты России,
+ * Демо-достижения. Форматы соревнований и дисциплины – общеизвестные (Кубок и чемпионаты России,
  * чемпионаты федеральных округов, региональные этапы; дисциплины спортивного программирования из ЕКП),
- * а места, роли и люди — выдуманные демо-данные, не выгрузка реестра ФСП.
+ * а места, роли и люди – выдуманные демо-данные, не выгрузка реестра ФСП.
  * Форма записи `FspAchievement` не меняется (её читают онбординг и ранжирование).
  */
 const DEMO_ACHIEVEMENTS: FspAchievement[] = [
@@ -34,7 +34,7 @@ const DEMO_ACHIEVEMENTS: FspAchievement[] = [
 /**
  * Демо-участники мока ФСП ID (`server/fsp-id/provider.ts`): `sub` из ID-токена → что вернёт демо-реестр.
  * Три состояния привязки для показа жюри: с достижениями, без истории, реестр недоступен.
- * Имена — условные, это не реальные люди.
+ * Имена – условные, это не реальные люди.
  */
 export interface FspDemoParticipant {
   sub: string;
@@ -75,7 +75,7 @@ export function fspDemoParticipant(sub: string): FspDemoParticipant | null {
 }
 
 /**
- * Ответ демо-реестра по `sub` из проверенного ID-токена. Неизвестный участник — привязан, но без
+ * Ответ демо-реестра по `sub` из проверенного ID-токена. Неизвестный участник – привязан, но без
  * записей (вход в ФСП ID есть, истории нет). В проде здесь будет HTTP-адаптер реестра.
  */
 export function fspRegistryLookup(sub: string): { state: Exclude<FspState, 'not_linked'>; achievements: FspAchievement[] } {
@@ -108,10 +108,10 @@ export function demoAchievements(key: string): FspAchievement[] {
 const DEMO_MARK = '(демонстрационные данные)';
 
 /**
- * Снимок источника ФСП. `subject` — `sub` участника, привязанного через ФСП ID (OIDC): тогда ключ —
- * он, достижения — из демо-реестра этого участника, а в meta — `fspSubject`/`fspName`. Без `subject` —
+ * Снимок источника ФСП. `subject` – `sub` участника, привязанного через ФСП ID (OIDC): тогда ключ –
+ * он, достижения – из демо-реестра этого участника, а в meta – `fspSubject`/`fspName`. Без `subject` –
  * прежнее поведение (детерминированный демо-набор по ключу, для демо-кандидатов из сида).
- * `subject.achievements` — уже полученные записи (из снимка привязки), иначе — демо-реестр по `sub`.
+ * `subject.achievements` – уже полученные записи (из снимка привязки), иначе – демо-реестр по `sub`.
  */
 export function fspDemoDoc(key: string, state: FspState, subject?: { sub: string; name?: string; achievements?: FspAchievement[]; via?: string }): ExtractedDoc {
   const p = `fsp:${subject?.sub ?? key}`;

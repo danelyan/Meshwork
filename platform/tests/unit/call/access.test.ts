@@ -23,7 +23,7 @@ beforeEach(() => {
   db.consent.findMany.mockResolvedValue([]);
 });
 
-/** Принятые приглашения компании; раскрытие (Г5, ADR 0005) — по `disclosed`. */
+/** Принятые приглашения компании; раскрытие (Г5, ADR 0005) – по `disclosed`. */
 const accepted = (n: number, disclosed = true) => {
   const invs = Array.from({ length: n }, (_, i) => ({ id: `inv-${i}`, candidateId: 'cand-1' }));
   db.invitation.findMany.mockResolvedValue(invs);
@@ -31,28 +31,28 @@ const accepted = (n: number, disclosed = true) => {
 };
 
 describe('гейт записи созвона для работодателя (R-C-16, ADR 0003 п. 4)', () => {
-  it('кандидату — свой созвон и запись всегда; чужой — 404', async () => {
+  it('кандидату – свой созвон и запись всегда; чужой – 404', async () => {
     await expect(resolveCallAccess({ role: 'candidate', candidateId: 'cand-1' }, call)).resolves.toEqual({ role: 'candidate', access: 'full', recording: true });
     await expect(resolveCallAccess({ role: 'candidate', candidateId: 'cand-2' }, call)).rejects.toMatchObject({ status: 404 });
   });
 
-  it('без принятого приглашения — только оценки, без записи', async () => {
+  it('без принятого приглашения – только оценки, без записи', async () => {
     accepted(0);
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'summary', recording: false });
     expect(db.invitation.findMany).toHaveBeenCalledWith({ where: { companyId: 'co-1', candidateId: { in: ['cand-1'] }, status: { in: ['accepted', 'hired'] } }, select: { id: true, candidateId: true } });
   });
 
-  it('accepted, но раскрытие отозвано (Г5) — снова только оценки', async () => {
+  it('accepted, но раскрытие отозвано (Г5) – снова только оценки', async () => {
     accepted(1, false);
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'summary', recording: false });
   });
 
-  it('после accepted — транскрипт и запись', async () => {
+  it('после accepted – транскрипт и запись', async () => {
     accepted(1);
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'full', recording: true });
   });
 
-  it('участник комнаты без раскрытия: пока созвон идёт — транскрипт без записи; после завершения — только оценки', async () => {
+  it('участник комнаты без раскрытия: пока созвон идёт – транскрипт без записи; после завершения – только оценки', async () => {
     accepted(0);
     db.callParticipant.count.mockResolvedValue(1);
     await expect(resolveCallAccess(employer, { ...call, status: 'active' })).resolves.toEqual({ role: 'employer', access: 'full', recording: false });
@@ -60,7 +60,7 @@ describe('гейт записи созвона для работодателя (
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'summary', recording: false });
   });
 
-  it('скрытый кандидат без accepted — 404', async () => {
+  it('скрытый кандидат без accepted – 404', async () => {
     accepted(0);
     db.candidate.findUnique.mockResolvedValue({ hiddenFromEmployers: true });
     await expect(resolveCallAccess(employer, call)).rejects.toMatchObject({ status: 404 });
@@ -85,7 +85,7 @@ describe('гейт записи созвона для работодателя (
     expect(json).not.toContain('Моя формулировка');
     expect(json).toContain('"total":6');
 
-    // SSE для summary-зрителя: вердикт уходит публичным, полный — только при full.
+    // SSE для summary-зрителя: вердикт уходит публичным, полный – только при full.
     const ev = { type: 'verdict' as const, verdict: v };
     const pub = JSON.stringify(eventForAccess(ev, 'summary'));
     expect(pub).not.toContain('дословно кандидат');

@@ -99,7 +99,7 @@ describe('dispatchToolCall', () => {
     expect((r.content.match(/<\/external_data>/g) ?? []).length).toBe(1);
   });
 
-  it('terminal-инструмент помечает конец хода; отменённый сигнал — не выполняет', async () => {
+  it('terminal-инструмент помечает конец хода; отменённый сигнал – не выполняет', async () => {
     expect((await dispatchToolCall(tools, ctx(), { id: '1', name: 'asker', arguments: {} })).terminal).toBe(true);
     const c = { ...ctx(), signal: AbortSignal.abort() };
     const r = await dispatchToolCall(tools, c, { id: '1', name: 'echo', arguments: { n: 1 } });

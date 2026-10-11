@@ -47,7 +47,7 @@ describe('банк генераторов', () => {
 /**
  * Реальное исполнение сгенерированного кода: console.log + фальшивые таймеры. Контекст с
  * microtaskMode 'afterEvaluate' (docs node:vm): микрозадачи контекста выполняются до возврата
- * runInContext, поэтому колбэк таймера запускается тоже внутри контекста — его микрозадачи
+ * runInContext, поэтому колбэк таймера запускается тоже внутри контекста – его микрозадачи
  * отрабатывают до следующего таймера, как в браузере.
  */
 function runJsFull(code: string): string[] {
@@ -88,7 +88,7 @@ describe('ключи code-output совпадают с исполнением в
     }
   });
   it('domEvents: модель фаз совпадает с jsdom-подобной реализацией', () => {
-    // Мини-реализация DOM Events Level 3: capture сверху вниз, bubble снизу вверх, на target — capture раньше.
+    // Мини-реализация DOM Events Level 3: capture сверху вниз, bubble снизу вверх, на target – capture раньше.
     for (const seed of SEEDS.slice(0, 60)) {
       const inst = domEvents.generate(seed);
       const js = inst.code!.split('\n\n')[1]!;

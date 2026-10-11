@@ -16,7 +16,7 @@
 .save:hover { background: var(--stage-ink); }
 .save:disabled { opacity: 0.6; cursor: default; }
 
-/* низкая колонка сцены (контейнер aside, AvatarScene.module.css): пояснение — в подсказку поля, поле ниже */
+/* низкая колонка сцены (контейнер aside, AvatarScene.module.css): пояснение – в подсказку поля, поле ниже */
 @container aside (height < 560px) {
   .wrap { gap: 8px; }
   .lead { display: none; }

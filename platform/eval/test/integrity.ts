@@ -9,8 +9,8 @@
 //   npx tsx eval/test/integrity.ts --sub backend.web-api --n 200 # одна подкатегория
 //   npx tsx eval/test/integrity.ts --sigma 0.4 --noise-tabs 0.4  # чувствительность к модели честного кандидата
 //
-// Честная граница: персоны — модели, не люди. Распределения времени, браузерного шума честных и поведение
-// читеров — наши допущения; пороги integrity.ts экспертные. Цифры показывают свойства правил ПРИ этих допущениях,
+// Честная граница: персоны – модели, не люди. Распределения времени, браузерного шума честных и поведение
+// читеров – наши допущения; пороги integrity.ts экспертные. Цифры показывают свойства правил ПРИ этих допущениях,
 // а не долю пойманных читеров в реальности.
 import { writeFileSync } from 'node:fs';
 
@@ -76,7 +76,7 @@ function poisson(rng: Rng, lambda: number): number {
 }
 const binomial = (rng: Rng, n: number, p: number) => Array.from({ length: n }, () => rng.next() < p).filter(Boolean).length;
 
-/** Популяции θ — те же, что `persona` в eval/test/run.ts (θ̂ персон под политикой v3; Senior — допущение). */
+/** Популяции θ – те же, что `persona` в eval/test/run.ts (θ̂ персон под политикой v3; Senior – допущение). */
 const POP: Record<'novice' | Grade, { mu: number; sd: number }> = {
   novice: { mu: -0.9, sd: 0.5 },
   junior: { mu: 0.3, sd: 0.4 },
@@ -98,7 +98,7 @@ interface ItemCtx {
   trueB: number;
   /** Задание с ловушкой. */
   canary: boolean;
-  /** Лимит времени этой попытки (для подтверждающей — 0,7). */
+  /** Лимит времени этой попытки (для подтверждающей – 0,7). */
   limit: number;
 }
 
@@ -157,7 +157,7 @@ function cheater(s: CheatSpec): Behavior {
       const copies = binomial(rng, n, s.copyRate);
       const pastes = binomial(rng, n, s.pasteRate);
       return {
-        // Каждое копирование условия — уход на вкладку нейросети.
+        // Каждое копирование условия – уход на вкладку нейросети.
         tabHidden: copies,
         hiddenMs: Array.from({ length: copies }, () => uniform(rng, 15, 40) * 1000).reduce((a, x) => a + x, 0),
         pastes,
@@ -174,11 +174,11 @@ interface Persona {
   label: string;
   kind: 'honest' | 'cheat';
   claimed: Grade;
-  /** Истинная θ человека (у читера — его собственный уровень, он нужен в подтверждающем тесте без помощи). */
+  /** Истинная θ человека (у читера – его собственный уровень, он нужен в подтверждающем тесте без помощи). */
   theta: (rng: Rng) => number;
   /** Поведение в основной попытке. */
   main: (rng: Rng) => Behavior;
-  /** Поведение читера в подтверждающем тесте: unaided — сам, repeat — снова с помощью. */
+  /** Поведение читера в подтверждающем тесте: unaided – сам, repeat – снова с помощью. */
   confirm: { unaided: (rng: Rng) => Behavior; repeat: (rng: Rng) => Behavior };
 }
 
@@ -336,7 +336,7 @@ interface Tally {
   high: number;
   /** Подтверждена или предложена оценка ниже (есть что выдавать). */
   grantable: number;
-  /** high при grantable — попытка уходит в needs_confirmation. */
+  /** high при grantable – попытка уходит в needs_confirmation. */
   blocking: number;
   /** Есть что выдавать, а индекс не high: категория выдана без проверки. */
   grantedUnchecked: number;
@@ -402,7 +402,7 @@ for (const sub of subs) {
 
 // --- вывод ---------------------------------------------------------------------------------------------
 
-const pct = (x: number, n: number) => (n ? `${((100 * x) / n).toFixed(1)} %` : '—');
+const pct = (x: number, n: number) => (n ? `${((100 * x) / n).toFixed(1)} %` : '–');
 const r1 = (x: number, n: number) => (n ? Math.round((1000 * x) / n) / 10 : null);
 console.log(`# Индекс честности на персонах: N = ${N} попыток на персону и подкатегорию, подкатегорий ${subs.length}, seed = ${SEED}, claim читеров = ${CLAIM_CHEAT}, σ времени = ${SIGMA}, шум честных: вкладка λ = ${NOISE_TABS}, вставка ${NOISE_PASTE}, копия ${NOISE_COPY}\n`);
 console.log('| Персона | Попыток | low | medium | high | high при условии «есть что выдавать» | Выдано без проверки | Подтв. тест: сам | Подтв. тест: снова с помощью | Итог: категория выдана (без проверки или после подтверждающего «сам») | Ловушка |');
@@ -410,7 +410,7 @@ console.log('|---|---|---|---|---|---|---|---|---|---|---|');
 for (const p of PERSONAS) {
   const t = byPersona.get(p.id)!;
   console.log(
-    `| ${p.label} | ${t.n} | ${pct(t.low, t.n)} | ${pct(t.medium, t.n)} | ${pct(t.high, t.n)} | ${pct(t.blocking, t.grantable)} | ${pct(t.grantedUnchecked, t.n)} | ${t.confirmUnaided.n ? `${pct(t.confirmUnaided.passed, t.confirmUnaided.n)} (n = ${t.confirmUnaided.n})` : '—'} | ${p.kind === 'cheat' && t.confirmRepeat.n ? `${pct(t.confirmRepeat.passed, t.confirmRepeat.n)} (n = ${t.confirmRepeat.n})` : '—'} | ${pct(t.grantedUnchecked + t.confirmUnaided.passed, t.n)} | ${pct(t.canaryHit, t.n)} |`,
+    `| ${p.label} | ${t.n} | ${pct(t.low, t.n)} | ${pct(t.medium, t.n)} | ${pct(t.high, t.n)} | ${pct(t.blocking, t.grantable)} | ${pct(t.grantedUnchecked, t.n)} | ${t.confirmUnaided.n ? `${pct(t.confirmUnaided.passed, t.confirmUnaided.n)} (n = ${t.confirmUnaided.n})` : '–'} | ${p.kind === 'cheat' && t.confirmRepeat.n ? `${pct(t.confirmRepeat.passed, t.confirmRepeat.n)} (n = ${t.confirmRepeat.n})` : '–'} | ${pct(t.grantedUnchecked + t.confirmUnaided.passed, t.n)} | ${pct(t.canaryHit, t.n)} |`,
   );
 }
 console.log('\nСочетания групп при high:');

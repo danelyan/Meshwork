@@ -9,7 +9,7 @@ import type { ProfileDetails } from '@/server/claims/profile-details';
 import { Notice, Panel } from '../ui';
 import styles from './ProfileForm.module.css';
 
-/** Отрасли — те же, что в шаге онбординга candidateIndustries (server/onboarding/scenario.ts). */
+/** Отрасли – те же, что в шаге онбординга candidateIndustries (server/onboarding/scenario.ts). */
 const INDUSTRIES = ['Финтех', 'E-commerce', 'Медиа', 'Госсектор', 'Промышленность', 'Образование', 'Медицина', 'Телеком'];
 const FORMATS = [['remote', 'Удалённо'], ['hybrid', 'Гибрид'], ['office', 'Офис']] as const;
 type Saver = (label: string, run: () => Promise<unknown>) => Promise<void>;
@@ -25,7 +25,7 @@ function skillMark(skill: string, claims: ProfileClaim[]): '●' | '◐' | '○'
 
 /**
  * Профиль кандидата формой, как в макете Astra v2 (кабинет, экран «Профиль»): Основное, Навыки, Условия.
- * Каждое поле сохраняется при выходе из него — тем же путём, что ответы Киры в онбординге и правки полей из резюме,
+ * Каждое поле сохраняется при выходе из него – тем же путём, что ответы Киры в онбординге и правки полей из резюме,
  * поэтому консультант и профиль видят одни данные. Категорию по-прежнему даёт только тест.
  */
 export function ProfileForm({ details, name, claims, onSaved }: { details: ProfileDetails | null; name: string; claims: ProfileClaim[]; onSaved: () => Promise<void> }) {

@@ -6,9 +6,9 @@ import { PAUSE_MARK_RE } from '@/server/onboarding/match';
 
 import { pauseStepOf } from '../restore';
 import { withAcceptedNames } from './names';
-import type { CandidatesBlock, CompanyDraft, EmployerAgentEvent, InvitationDraft, NeedDraft, ProjectTaskDraft } from './types';
+import type { CandidatesBlock, EmployerAgentEvent, InvitationDraft, NeedDraft } from './types';
 
-/** `stepId` + `paused` — реплика (и ответ на неё) из паузы знакомства: лента ставит их под шаг (как у кандидата, restore.ts). */
+/** `stepId` + `paused` – реплика (и ответ на неё) из паузы знакомства: лента ставит их под шаг (как у кандидата, restore.ts). */
 export type EmployerRestoredItem =
   | { id: string; role: 'user'; text: string; stepId?: string; paused?: true }
   | { id: string; role: 'agent'; event: EmployerAgentEvent; stepId?: string; paused?: true };
@@ -26,18 +26,10 @@ function parse(content: string): unknown {
   }
 }
 
-/** Результат инструмента-черновика = черновик + служебные флаги (`drafted`, `saved`); флаги в ленту не идут. */
-function draftOf<T>(out: Record<string, unknown>): T {
-  const draft = { ...out };
-  delete draft.drafted;
-  delete draft.saved;
-  return draft as T;
-}
-
 /**
  * Последний разговор работодателя для перезагрузки: реплики и карточки из результатов
- * инструментов (выдача, черновики) — те же данные, что видела модель, без имён и контактов (имя принявших добавляется отдельно, names.ts).
- * Статус приглашения в карточках — актуальный из БД (мог смениться после разговора).
+ * инструментов (выдача, черновики) – те же данные, что видела модель, без имён и контактов (имя принявших добавляется отдельно, names.ts).
+ * Статус приглашения в карточках – актуальный из БД (мог смениться после разговора).
  * Чужие разговоры не читаются: выборка по employerProfileId.
  */
 export async function loadLastEmployerChat(employerProfileId: string): Promise<EmployerRestoredChat> {
@@ -70,8 +62,6 @@ export async function loadLastEmployerChat(employerProfileId: string): Promise<E
       if (!name || !out || 'error' in out) continue;
       if (name === 'match_for_need' || name === 'search_candidates') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'candidates', block: out as unknown as CandidatesBlock }, ...tag });
       else if (name === 'draft_invitation') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'invitation_draft', draft: out as unknown as InvitationDraft }, ...tag });
-      else if (name === 'draft_company_profile') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'company_draft', draft: draftOf<CompanyDraft>(out) }, ...tag });
-      else if (name === 'create_project_task_draft') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'project_task_draft', draft: draftOf<ProjectTaskDraft>(out) }, ...tag });
       else if (name === 'create_need_draft') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'need_draft', draft: out as unknown as NeedDraft }, ...tag });
     }
   }
@@ -91,7 +81,7 @@ export async function loadLastEmployerChat(employerProfileId: string): Promise<E
       if (it.role !== 'agent' || it.event.type !== 'candidates') continue;
       const block = it.event.block;
       const fresh = { ...block, items: block.items.map((c) => ({ ...c, invitation: last.get(c.candidateId) ?? null })) };
-      // Имя принявших — только для ленты, не из истории модели (names.ts).
+      // Имя принявших – только для ленты, не из истории модели (names.ts).
       it.event = { type: 'candidates', block: await withAcceptedNames(companyId, fresh) };
     }
   }

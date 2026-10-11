@@ -104,7 +104,7 @@ async function writeSetting(
   resetSettingsCache();
 }
 
-/** Записать значение: валидация по схеме, причина обязательна, версия и журнал — в одной транзакции. */
+/** Записать значение: валидация по схеме, причина обязательна, версия и журнал – в одной транзакции. */
 export async function setSetting<K extends SettingKey>(key: K, value: unknown, actor: Actor, reason: string | null | undefined): Promise<void> {
   await writeSetting(key, value, actor, requireReason(reason), 'edit_settings');
 }
@@ -114,7 +114,7 @@ export async function setCatalogSetting<K extends SettingKey>(key: K, value: unk
   await writeSetting(key, value, actor, requireReason(reason), 'edit_catalogs.templates');
 }
 
-/** Переключатель показа демо-кандидатов в подборке (страница «Демо-данные»): то же, что setSetting, действие журнала — своё. */
+/** Переключатель показа демо-кандидатов в подборке (страница «Демо-данные»): то же, что setSetting, действие журнала – своё. */
 export async function setDemoSetting(value: boolean, actor: Actor, reason: string | null | undefined): Promise<void> {
   await writeSetting('matching.show_demo_candidates', value, actor, requireReason(reason), 'manage_demo.show_in_matching');
 }

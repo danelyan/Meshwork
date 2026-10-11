@@ -24,7 +24,7 @@ export interface DemoProfile {
   specialization: Spec | null;
   fspState: 'not_linked' | 'no_achievements' | 'unavailable' | 'linked';
   /** ДЕМО-категория (не из теста) или null. */
-  category: { specialization: Spec; grade: Grade } | null;
+  category: { specialization: Spec; grade: Grade; subcategoryId?: string } | null;
   /** ПРЕДЛОЖЕНИЕ агента (fullstack): дополнительные ДЕМО-категории в других направлениях (основная - category). */
   extraCategories?: { specialization: Spec; grade: Grade }[];
   /** Контакт для принятого приглашения; без него — производный от id. */

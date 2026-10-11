@@ -29,28 +29,28 @@ const BE_J_CLAIMS: DemoProfile['claims'] = [
 
 export const PERSONA_PROFILES: DemoProfile[] = [
   {
-    id: 'demo-tested', name: 'Демо: Ксения Андреева', specialization: 'frontend', fspState: 'no_achievements',
-    category: { specialization: 'frontend', grade: 'junior' }, contact: 'ksenia.andreeva@example.com', stack: ['HTML', 'CSS', 'JavaScript', 'React'],
+    id: 'demo-tested', name: 'Демо: Ксения Андреева', specialization: 'frontend', subcategoryId: 'frontend.ui-app', fspState: 'no_achievements',
+    category: { specialization: 'frontend', subcategoryId: 'frontend.ui-app', grade: 'junior' }, contact: 'ksenia.andreeva@example.com', stack: ['HTML', 'CSS', 'JavaScript', 'React'],
     claims: [['fe.html-semantic', 'artifact'], ['fe.css-layout', 'artifact'], ['fe.responsive', 'artifact'], ['fe.js-core', 'self_reported'],
       ['fe.components', 'self_reported'], ['fe.forms', 'self_reported'], ['common.git', 'artifact']],
   },
   {
-    id: 'demo-strong', name: 'Демо: Леонид Исаев', specialization: 'frontend', fspState: 'linked',
-    category: { specialization: 'frontend', grade: 'middle' }, contact: 'leonid.isaev@example.com', stack: ['TypeScript', 'React', 'Redux', 'Playwright'],
+    id: 'demo-strong', name: 'Демо: Леонид Исаев', specialization: 'frontend', subcategoryId: 'frontend.ui-app', fspState: 'linked',
+    category: { specialization: 'frontend', subcategoryId: 'frontend.ui-app', grade: 'middle' }, contact: 'leonid.isaev@example.com', stack: ['TypeScript', 'React', 'Redux', 'Playwright'],
     claims: [['fe.ts-typing', 'platform'], ['fe.state-mgmt', 'platform'], ['fe.server-state', 'artifact'], ['fe.web-perf', 'third_party'],
       ['fe.component-tests', 'artifact'], ['fe.a11y', 'platform'], ['fe.render-lifecycle', 'platform'], ['fe.api-client', 'artifact'], ['common.git', 'artifact']],
   },
   {
-    id: 'demo-invited', name: 'Демо: Марина Котова', specialization: 'backend', fspState: 'not_linked',
-    category: { specialization: 'backend', grade: 'junior' }, contact: 'marina.kotova@example.com', stack: ['Node.js', 'NestJS', 'PostgreSQL'], claims: BE_J_CLAIMS,
+    id: 'demo-invited', name: 'Демо: Марина Котова', specialization: 'backend', subcategoryId: 'backend.web-api', fspState: 'not_linked',
+    category: { specialization: 'backend', subcategoryId: 'backend.web-api', grade: 'junior' }, contact: 'marina.kotova@example.com', stack: ['Node.js', 'NestJS', 'PostgreSQL'], claims: BE_J_CLAIMS,
   },
   {
-    id: 'demo-hired', name: 'Демо: Алёна Мироненко', specialization: 'backend', fspState: 'linked',
-    category: { specialization: 'backend', grade: 'junior' }, contact: 'alena.mironenko@example.com', stack: ['Node.js', 'NestJS', 'PostgreSQL'], claims: BE_J_CLAIMS,
+    id: 'demo-hired', name: 'Демо: Алёна Мироненко', specialization: 'backend', subcategoryId: 'backend.web-api', fspState: 'linked',
+    category: { specialization: 'backend', subcategoryId: 'backend.web-api', grade: 'junior' }, contact: 'alena.mironenko@example.com', stack: ['Node.js', 'NestJS', 'PostgreSQL'], claims: BE_J_CLAIMS,
   },
   {
-    id: 'demo-accepted', name: 'Демо: Роман Зайцев', specialization: 'backend', fspState: 'linked',
-    category: { specialization: 'backend', grade: 'junior' }, contact: '@roman_zaitsev_demo', stack: ['Node.js', 'NestJS', 'Redis'], claims: BE_J_CLAIMS,
+    id: 'demo-accepted', name: 'Демо: Роман Зайцев', specialization: 'backend', subcategoryId: 'backend.web-api', fspState: 'linked',
+    category: { specialization: 'backend', subcategoryId: 'backend.web-api', grade: 'junior' }, contact: '@roman_zaitsev_demo', stack: ['Node.js', 'NestJS', 'Redis'], claims: BE_J_CLAIMS,
   },
 ];
 

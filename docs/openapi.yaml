@@ -81,9 +81,6 @@ tags:
     name: recommendations
     description: "Рекомендации: тест, пробелы, задания, вакансии"
   -
-    name: simulator
-    description: "Симулятор адаптивного теста для жюри: виртуальный кандидат, шаги движка, без БД и LLM"
-  -
     name: sources
     description: "Подключённые ссылки кандидата (GitHub, Codeforces, страницы): удаление"
   -
@@ -5597,84 +5594,6 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/simulator":
-    post:
-      operationId: postSimulator
-      tags:
-        - simulator
-      summary: "Прогнать виртуального кандидата через адаптивный тест"
-      description: "Боевой движок теста на грейд (выбор задания по информации Фишера, EAP-оценка θ, остановка и дозадавание по политике текущей версии) на виртуальном кандидате с заданной истинной θ. Режимы ответов: ideal (2PL по экспертным a, b), noise (шум b на показ), leak (трюк по 30 % семейств). Детерминированно по seed, без БД и LLM. Лимит частоты - 120 прогонов за 10 минут с адреса.\n\nВход не нужен."
-      security: []
-      requestBody:
-        required: true
-        description: "Виртуальный кандидат"
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                subcategoryId:
-                  type: string
-                  description: "Подкатегория с полным банком, например backend.web-api"
-                claimed:
-                  type: string
-                  enum:
-                    - junior
-                    - middle
-                    - senior
-                theta:
-                  type: number
-                  minimum: -3
-                  maximum: 3
-                  description: "Истинный уровень виртуального кандидата"
-                mode:
-                  type: string
-                  enum:
-                    - ideal
-                    - noise
-                    - leak
-                seed:
-                  type: integer
-                  description: "0..2147483647, по умолчанию 1"
-              required:
-                - subcategoryId
-                - claimed
-                - theta
-      responses:
-        "200":
-          description: "Шаги теста и итог"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-                description: "input, policyVersion, steps [{n, templateId, title, itemGrade, a, b, phase, pModel, correct, theta, se}], start, confirmed, offeredGrade, grade, pPass, theta, se, stopReason, length, correctCount, cuts"
-        "400":
-          description: "Не JSON, не прошла схема или у подкатегории нет теста"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "403":
-          description: "Чужой Origin"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "413":
-          description: "Тело больше 2 КБ"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "429":
-          description: "Слишком много прогонов"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/sources/{id}":
     delete:
       operationId: deleteSourcesId
@@ -5727,7 +5646,7 @@ paths:
       tags:
         - stt
       summary: "Режим голосового ввода"
-      description: "Какой распознаватель доступен композеру: yandex / browser / off.\n\nВход не нужен."
+      description: "Какой распознаватель доступен композеру: yandex / openai / browser / off.\n\nВход не нужен."
       security: []
       responses:
         "200":

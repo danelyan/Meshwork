@@ -23,14 +23,16 @@ beforeEach(() => {
 afterAll(() => vi.unstubAllGlobals());
 
 describe('главная', () => {
-  it('показывает шесть правил, ИИ-помощника и честное описание демореестра ФСП', () => {
+  it('показывает пять правил и ФСП ID под кнопкой начала', () => {
     render(<Landing data={DATA} signedIn={false} />);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.getByRole('heading', { level: 2, name: 'Сейчас нанимают' })).toBeDefined();
     expect(screen.getAllByRole('heading', { level: 3 }).map(h => h.textContent)).toEqual([
-      'Тест вместо резюме', 'Вилка всегда', 'Контакты после «да»', 'Достижения по ФСП ID', 'ИИ-помощник рядом', 'Навыки на практике',
+      'Тест вместо резюме', 'Вилка всегда', 'Контакты после «да»', 'ИИ-помощник рядом', 'Навыки на практике',
     ]);
-    expect(screen.getByText(/демонстрационный реестр/)).toBeDefined();
+    const hero = within(screen.getByRole('region', { name: /Твой код\. Твоя карьера\s*\./ }));
+    expect(hero.getByRole('list').textContent).toContain('ФСП ID и достижения · демореестр');
+    expect(screen.queryByRole('heading', { name: 'Достижения по ФСП ID' })).toBeNull();
     expect(screen.queryByText('Данные на этой странице - иллюстрация')).toBeNull();
   });
   it('сохраняет обе кнопки начала и вход существующего пользователя', () => {
@@ -38,6 +40,11 @@ describe('главная', () => {
     const starts = screen.getAllByRole('link', { name: /Приступим/ });
     expect(starts).toHaveLength(2);
     for (const link of starts) expect(link.getAttribute('href')).toBe('/auth');
+    for (const link of starts) {
+      const arrow = link.querySelector('svg path');
+      expect(arrow?.getAttribute('fill')).toBe('currentColor');
+      expect(arrow?.getAttribute('stroke')).toBeNull();
+    }
     expect(screen.getByRole('link', { name: /Уже есть аккаунт/ }).getAttribute('href')).toBe('/auth');
   });
   it('с сессией ведёт в кабинет', () => {

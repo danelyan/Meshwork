@@ -8,7 +8,7 @@ export function Start({ inverted = false, signedIn = false }: { inverted?: boole
     <Link href={signedIn ? '/consultant' : '/auth'} className={`${styles.start} ${inverted ? styles.inverted : ''}`}>
       Приступим
       <svg className={styles.arrow} viewBox="0 0 56 32" fill="none" aria-hidden="true">
-        <path d="M3 16h46M37 4l12 12-12 12" stroke="currentColor" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter" />
+        <path d="M3 13.5H42.9L35.2 5.8L38.7 2.3L52.4 16L38.7 29.7L35.2 26.2L42.9 18.5H3Z" fill="currentColor" />
       </svg>
     </Link>
   );

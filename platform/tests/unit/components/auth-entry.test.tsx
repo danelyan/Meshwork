@@ -66,7 +66,7 @@ it('creates a new demo profile only after consent; the role is asked in the AI c
   fireEvent.click(screen.getByRole('button',{name:'Новый демо-профиль'}));
   const enter=screen.getByRole('button',{name:'К ИИ-помощнику →'});
   expect((enter as HTMLButtonElement).disabled).toBe(true);
-  fireEvent.click(screen.getAllByRole('checkbox',{name:/Согласен/})[1]!);
+  fireEvent.click(screen.getByRole('checkbox',{name:/Согласен/}));
   fireEvent.click(enter);
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/consultant'));
   expect(demoFreshLogin).toHaveBeenCalledWith(CONSENT_VERSION);
@@ -77,6 +77,40 @@ it('respects the demo flag and disables unconfigured real login',()=>{
   flow(null,false);
   expect(screen.queryByRole('button',{name:'Новый демо-профиль'})).toBeNull();
   expect(screen.getByText('Войти через Яндекс ID').closest('a')?.getAttribute('href')).toBeNull();
+});
+
+it('shares one consent checkbox across registration, both SSO buttons and fresh demo', async () => {
+  render(<AuthEntryFlow yandexEnabled demoEnabled next="/profile" onClose={vi.fn()} navigate={navigate} />);
+  await screen.findByRole('button', { name: 'Анна →' });
+  fireEvent.click(screen.getByRole('button', { name: 'Регистрация' }));
+  fireEvent.change(screen.getByLabelText('Почта'), { target: { value: 'shared@example.test' } });
+  fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'shared-password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Новый демо-профиль' }));
+  const checkboxes = screen.getAllByRole('checkbox', { name: 'Согласен(на) на обработку персональных данных' });
+  expect(checkboxes).toHaveLength(1);
+  const register = screen.getByRole('button', { name: 'Получить код' }) as HTMLButtonElement;
+  const fresh = screen.getByRole('button', { name: 'К ИИ-помощнику →' }) as HTMLButtonElement;
+  const yandex = screen.getByText('Войти через Яндекс ID').closest('a')!;
+  const fsp = screen.getByText('Войти через ФСП ID').closest('a')!;
+  expect(register.disabled).toBe(true);
+  expect(fresh.disabled).toBe(true);
+  expect(yandex.getAttribute('href')).toBeNull();
+  expect(fsp.getAttribute('href')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Показать текст согласия' }));
+  expect(register.disabled).toBe(true);
+  expect(fresh.disabled).toBe(true);
+  fireEvent.click(checkboxes[0]!);
+  expect(register.disabled).toBe(false);
+  expect(fresh.disabled).toBe(false);
+  expect(new URL(yandex.getAttribute('href')!, 'http://localhost').searchParams.get('consent')).toBe(CONSENT_VERSION);
+  expect(new URL(fsp.getAttribute('href')!, 'http://localhost').searchParams.get('consent')).toBe(CONSENT_VERSION);
+  fireEvent.click(checkboxes[0]!);
+  expect(register.disabled).toBe(true);
+  expect(fresh.disabled).toBe(true);
+  expect(yandex.getAttribute('href')).toBeNull();
+  expect(fsp.getAttribute('href')).toBeNull();
+  fireEvent.click(fresh);
+  expect(demoFreshLogin).not.toHaveBeenCalled();
 });
 
 it('retries failed demo loading without blocking email login',async()=>{

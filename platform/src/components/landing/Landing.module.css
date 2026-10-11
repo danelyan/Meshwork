@@ -7,8 +7,9 @@
 .sechead span { font: 500 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 
 .why { padding-bottom: 96px; }
-.wgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; margin: 0; padding: 0; list-style: none; }
-.wgrid li { padding: 4px 28px 0 0; display: flex; flex-direction: column; gap: 12px; }
+.wgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); row-gap: 32px; margin: 0; padding: 0; list-style: none; }
+.wgrid li { grid-column: span 2; padding: 4px 28px 0 0; display: flex; flex-direction: column; gap: 12px; }
+.wgrid li:nth-last-child(-n + 2) { grid-column: span 3; }
 .wgrid li + li { padding-left: 28px; border-left: 1px solid var(--line); }
 .wgrid li:nth-child(3n + 1) { padding-left: 0; border-left: 0; }
 .wgrid b { font: 700 13px var(--mono); color: var(--blue); }
@@ -33,7 +34,8 @@
   .wgrid, .stats { grid-template-columns: 1fr 1fr; }
   .wgrid li:nth-child(odd) { padding-left: 0; border-left: 0; }
   .wgrid li:nth-child(even) { padding-left: 28px; border-left: 1px solid var(--line); }
-  .wgrid li { padding-bottom: 28px; }
+  .wgrid li:nth-child(n) { grid-column: auto; padding-bottom: 28px; }
+  .wgrid li:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .stats li:nth-child(odd) { border-left: 0; }
   .stats li:nth-child(n + 3) { border-top: 1px solid var(--line); }
   .stats li:last-child:nth-child(odd) { grid-column: 1 / -1; }

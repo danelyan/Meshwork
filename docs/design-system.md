@@ -491,3 +491,11 @@ Astra 02 uses `SceneSlots` to render the onboarding-owned header and profile dra
 ### Astra employer: exact glass surfaces (10.10.2026)
 
 Employer-scoped tokens copied from the employer HTML: `--employer-panel` (white, .72 opacity) for match stage, candidate and catalog cards; `--employer-ring` (burgundy, .08 opacity) for selected graph nodes/company center; `--employer-modal` (white, .82 opacity) for the invitation dialog. Existing role accent `--employer-accent` is #A3343F. Employer components use a 620px radial matching stage with a separate 380px candidate card, compact list rows, and a native modal invitation form. CandidateSilhouette is an anonymous SVG mark, never an invented personal photo. VacancySwitcher preserves the real server-ranked vacancy selection; CompanyProfile wraps the existing persisted edit form with a read-only profile view.
+
+### Entry and FSP note (11.10.2026)
+
+The FSP ID/achievement mention belongs to the short list immediately below the blue Приступим button. The list identifies the registry as a demo. It is removed from the benefit cards: five cards, three above two on desktop, two columns on medium screens and one on mobile. The arrow is one filled polygon, avoiding overlapping stroke caps at its tip.
+
+The entry modal has two email modes (sign-in and registration); password recovery is a lower text action with its existing email/code/new-password flow. One parent-controlled consent checkbox is shared by registration, external ID and fresh-demo creation. Existing email sign-in, verification and recovery do not ask for duplicate consent. A grey chevron immediately follows the consent label; expanding it does not toggle acceptance. The complete draft text and its link live in the disclosure.
+
+Federation details are used only for the concept's presumed operator, as explicitly confirmed by the owner. Sources are linked in docs/consent.md and on /consent. The consent version changes with the wording; recording consent remains separate and unchanged.

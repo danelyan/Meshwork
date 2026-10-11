@@ -48,3 +48,14 @@
 .consentText { display: grid; gap: 6px; color: var(--muted); }
 .consentText > summary { cursor: pointer; width: fit-content; text-decoration: underline; }
 .consentText p { margin: 0; }
+/* Compact consent disclosure: its button never toggles the checkbox. */
+.consentLabel { line-height: 1.5; }
+.consentLabel label { cursor: pointer; }
+.consentToggle { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; width: 28px; height: 28px; margin: -4px 0; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.consentToggle:hover { color: var(--ink); }
+.consentToggle svg { transition: transform .16s var(--ease); }
+.consentToggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+.consentText[hidden] { display: none; }
+.consentText { margin-left: 28px; line-height: 1.6; }
+.consentText a { width: fit-content; text-decoration: underline; text-underline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .consentToggle svg { transition: none; } }

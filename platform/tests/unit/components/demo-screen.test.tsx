@@ -68,7 +68,9 @@ it('«Новый пользователь»: без галки согласия 
   await screen.findByRole('button', { name: 'Войти как Анна' });
   const btn = screen.getByRole('button', { name: 'Новый пользователь' }) as HTMLButtonElement;
   expect(btn.disabled).toBe(true);
-  expect(screen.getByRole('link', { name: 'полный текст' }).getAttribute('href')).toBe('/consent');
+  fireEvent.click(screen.getByRole('button', { name: 'Показать текст согласия' }));
+  expect(screen.getByRole('link', { name: 'Полный текст согласия' }).getAttribute('href')).toBe('/consent');
+  expect(btn.disabled).toBe(true);
   fireEvent.click(screen.getByRole('checkbox', { name: /Согласен\(на\) на обработку персональных данных/ }));
   expect(btn.disabled).toBe(false);
   fireEvent.click(btn);

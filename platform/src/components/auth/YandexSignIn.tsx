@@ -13,13 +13,15 @@ import { ConsentCheck } from './ConsentCheck';
  * «Войти через ФСП ID» (/api/fsp-id/login) — только кандидату: ФСП ID есть у спортсменов; провайдер всегда
  * доступен (симулятор по env или встроенный мок). «Войти через Яндекс ID» (/api/auth/yandex) — если настроен.
  */
-export function YandexSignIn({ enabled, next, fsp = false }: { enabled: boolean; next: string | null; fsp?: boolean }) {
-  const [agreed, setAgreed] = useState(false);
+type SignInProps = { enabled: boolean; next: string | null; fsp?: boolean; agreed?: boolean };
+
+export function YandexSignIn(props: SignInProps) {
+  if (props.agreed === undefined) return <StandaloneSignIn {...props} />;
+  const { enabled, next, fsp = false, agreed } = props;
   const qs = new URLSearchParams({ consent: CONSENT_VERSION, ...(next ? { next } : {}) });
   const active = enabled && agreed;
   return (
     <>
-      <ConsentCheck checked={agreed} onChange={setAgreed} />
       {fsp && (
         <a href={agreed ? `/api/fsp-id/login?${qs.toString()}` : undefined} className={`${ui.btn} ${ui.primary} ${styles.yandex} ${styles.fsp}`} aria-disabled={agreed ? undefined : 'true'}>
           <svg className={styles.ya} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -42,4 +44,10 @@ export function YandexSignIn({ enabled, next, fsp = false }: { enabled: boolean;
       </a>
     </>
   );
+}
+
+/** Legacy standalone AuthScreen: its own parent owns consent, just like AuthEntryFlow. */
+function StandaloneSignIn(props: SignInProps) {
+  const [agreed, setAgreed] = useState(false);
+  return <><ConsentCheck checked={agreed} onChange={setAgreed} /><YandexSignIn {...props} agreed={agreed} /></>;
 }

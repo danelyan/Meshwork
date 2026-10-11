@@ -7,6 +7,8 @@ import type { OnboardingView } from '@/server/onboarding/types';
 // MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
+// MemoryCard uses the App Router for soft updates after editing onboarding facts.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 afterEach(cleanup);
 
 const base = { intro: false, introNote: '2 из 10', confirmed: 0, category: null, invitations: 0 };

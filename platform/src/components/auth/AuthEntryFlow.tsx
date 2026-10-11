@@ -71,12 +71,13 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
       <h2 id="auth-entry-title" className={styles.title}>Вход</h2>
       <p className={styles.lead}>Новый аккаунт? Кто ты - специалист или компания - спросит ИИ-помощник первым вопросом.</p>
       {error && <Notice tone="error">{error}</Notice>}
+      <ConsentCheck checked={agreed} onChange={setAgreed} />
       <div className={styles.methods}>
         <section className={styles.method} aria-label="Вход на платформу">
           <h3>Войти на платформу</h3>
-          <EmailAuth next={destination} navigate={navigate} />
+          <EmailAuth next={destination} navigate={navigate} agreed={agreed} />
           <p className={styles.or}>или</p>
-          <YandexSignIn enabled={yandexEnabled} next={destination} fsp />
+          <YandexSignIn enabled={yandexEnabled} next={destination} fsp agreed={agreed} />
           {!yandexEnabled && <p id="yandex-off" className={styles.hint}>Вход через Яндекс не настроен на этом стенде.</p>}
           <p className={styles.hint}>ФСП ID - вход спортсмена ФСП: аккаунт специалиста, достижения сразу попадут в профиль. Реестр ФСП на стенде - симулятор с синтетическими участниками.</p>
         </section>
@@ -101,8 +102,7 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
           </div>}
           <Button disabled={pending} onClick={() => setFresh(!fresh)} aria-expanded={fresh}>Новый демо-профиль</Button>
           {fresh && <>
-            <ConsentCheck checked={agreed} onChange={setAgreed} />
-            <Button variant="cta" loading={pending} disabled={!agreed} onClick={() => void enter(async () => { await demoFreshLogin(CONSENT_VERSION); return { next: '/consultant' }; }, '/consultant')}>К ИИ-помощнику →</Button>
+            <Button variant="cta" loading={pending} disabled={!agreed} onClick={() => { if (agreed) void enter(async () => { await demoFreshLogin(CONSENT_VERSION); return { next: '/consultant' }; }, '/consultant'); }}>К ИИ-помощнику →</Button>
           </>}
         </section>}
       </div>

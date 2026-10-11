@@ -1470,51 +1470,35 @@ Junior по b: cls-image-line (-0.9), cache-control (-0.8), debounce-count (-0.8
 Не проверено: защита проекта по коду (в демо-БД нет заданий проекта и сабмитов; runner не поднят) — только режим вопросов работодателя; production-сборка (SSE и шина); WebRTC. Не починено (вне сервера созвона): карточка и ранжирование работодателя читают только `kind=qualifying` и `defense` — вердикт ИИнтервью до работодателя не доходит (`server/employer/stages-load.ts`, ветка `else` принимает `interview` за защиту и отбрасывает).
 
 
-## Индекс честности и подтверждающий тест (11.10, `integrity-v2`)
+## Landing: company logos and FSP features (11.10.2026, Moscow)
 
-Команда: `cd platform && npx tsx eval/test/integrity.ts --n 1000 --json eval/test/integrity-results.json` (также `npm run eval:test-integrity`; seed 1). Прогон идёт через боевой код версии `integrity-v2` (пороги A + B + D по решению владельца): `assessAttempt` / `riskIndex` и `decideConfirm` из `src/server/test/`, а также `policy`, `irt`, `confirm`, без локальных копий правил; без БД и LLM. Сырые цифры и параметры - `platform/eval/test/integrity-results.json`. N = 1000 попыток на персону в каждой из 4 подкатегорий (`backend.web-api`, `frontend.ui-app`, `ai.llm-apps`, `engineering.devops`), всего 4000 на персону. Читеры заявляют Middle.
+Scope: monochrome star favicon (SVG, 64px PNG and 180px Apple icon), original company logos in the moving grid and carousel, colour on hover/keyboard focus, six platform feature cards. Removed fabricated salary/vacancy/match statistics together with the global illustration notice. Company sources: `docs/sources/company-logos.md`; meeting restriction: V42, 35:37–36:05. Logos are examples, not claims of partnership. FSP ID registry remains explicitly demonstrative.
 
-Персоны: честные Junior / Middle / Senior (θ из популяций `persona` в `eval/test/run.ts`, ответы по 2PL, время логнормально, медиана 40-60 % лимита, σ 0,5; шум браузера: уход со вкладки λ = 0,8, вставка 3 %, копирование 4 %, второй экран 15 %); «медленный честный» (медиана 80-100 % лимита); читеры - кандидат с θ ~ N(-0,9; 0,5), заявивший Middle: «копирует условие в нейросеть» (верно 95 %, медиана 32 с, копирует условие в 90 % заданий, вставляет ответ в 50 %, подчиняется каждой ловушке с вероятностью p), «нейросеть на втором устройстве» (верно 95 %, 45 с, без браузерных сигналов и ловушки), «слитые ключи» (верно 97 %, 6 с).
+Commands, sequentially from `platform/`:
 
-| Персона | low, % | medium, % | high, % | Попал в ловушку, % | Категория выдана без проверки (не high), % | Подтверждающий «сам» пройден, % | Подтверждающий «с помощью снова» пройден, % | Итого получил категорию, % |
-|---|---|---|---|---|---|---|---|---|
-| честный Junior | 38,6 | 60,1 | **1,3** | 0,8 | 84,7 | 100,0 (n = 43) | - | 85,8 |
-| честный Middle | 47,0 | 51,6 | **1,5** | 0,9 | 92,0 | 86,8 (n = 53) | - | 93,2 |
-| честный Senior | 60,7 | 38,5 | **0,9** | 0,6 | 89,0 | 95,2 (n = 21) | - | 89,5 |
-| медленный честный | 4,8 | 92,0 | **3,3** | 0,9 | 90,2 | 80,8 (n = 125) | - | 92,7 |
-| копирует условие, ловушка p = 0,3 | 0,0 | 50,9 | 49,1 | 46,5 | 50,9 | 23,3 (n = 1963) | 73,1 | 62,3 |
-| копирует условие, ловушка p = 0,6 | 0,0 | 20,7 | 79,3 | 78,3 | 20,7 | 24,6 (n = 3171) | 45,3 | 40,2 |
-| копирует условие, ловушка p = 0,9 | 0,0 | 3,6 | 96,4 | 96,2 | 3,6 | 26,4 (n = 3853) | 16,2 | 29,0 |
-| нейросеть на втором устройстве | 95,8 | 4,0 | **0,2** | 0,2 | 99,8 | n = 7, мало | - | 99,8 |
-| слитые ключи | 0,0 | 0,0 | 100,0 | 0,1 | 0,0 | 13,4 (n = 4000) | 1,5 | 13,4 |
+- `npm run typecheck`: passed.
+- `npm run lint`: passed, 0 errors; 2 existing unused-variable warnings in `eval/tools-matrix/run.ts`.
+- `npx vitest run tests/unit/app/home.test.tsx tests/unit/landing-graph.test.ts tests/unit/design-tokens.test.ts --maxWorkers=2`: 3 files, 64 tests passed.
+- Four consultant fixture files after the incoming scene changes: 29 targeted tests passed. Added App Router/aside-loader mocks; no production changes or timeout increases.
+- `npx tsx scripts/build-openapi.ts` and `npx tsx scripts/build-prompts.ts`: regenerated; no semantic changes. Knowledge/OpenAPI comparison: 2 files, 24 tests passed.
+- `npm run test:unit -- --maxWorkers=2`: 215 files, 3075 tests passed, 9 existing skipped (3084 total); 90.21 seconds, started 02:50:27 MSK. An earlier run found the four stale consultant fixture files and generated-file newline mismatches; repaired before the passing run. Sandbox prevented the first final-run subprocess from starting; rerun with normal host process permissions.
+- Integration: not run; TEST_DATABASE_URL is not set for this run. No API, schema or migration changes in this task.
 
-«Итого получил категорию» = выдана без проверки + прошёл подтверждающий «сам»; у честных - доля сохранённых категорий (остальные не прошли тест по ответам или подтверждающий), у читера - доля ложно выданных.
+Browser check through CUA: desktop hero logo becomes coloured on hover; keyboard focus reveals the original carousel card with a visible outline and coloured logo; mobile 390×844 viewport has no document overflow (client/scroll width 375px). Six feature cards stack in one column. Favicon metadata points to the three local assets. No live LLM called by checks.
 
-**Итог.** Цель «честные high ≤ 3 %» выполнена для обычных честных (0,9-1,5 %), у медленного честного 3,3 % - чуть выше цели. На v1 было 4,7-8,7 % и 12,6 % (главный вклад давал `overtime` вместе с браузерным флагом). «Слитые ключи» теперь 100 % high (на v1 - 0,4 %). Читер без помощи проходит подтверждающий в 23-26 % (на v1 - 52-58 %); честные 81-100 %, но n у них мал (21-125), потому что high у честных редок.
+Production: npm run build passed (Next.js 15.5.27, 25 static pages). Built server checked on localhost:3000 through CUA; 390px mobile width rechecked without document overflow. Screenshot: output/landing-companies-final.png (local artifact, not committed). Full Playwright journey not rerun for this landing-only change; production deploy and health are checked after push.
 
-**Что не закрыто.**
+## Restore concept carousel title (11.10.2026, Moscow)
 
-- **Слепая зона:** «нейросеть на втором устройстве» ловится в 0,2 % (low 95,8 %). Остаётся созвон (`testOwnership`), он на людях не измерен.
-- Ловушка работает ровно настолько, насколько нейросеть ей следует: high 49,1 / 79,3 / 96,4 % при p = 0,3 / 0,6 / 0,9. При p = 0,3 половина читеров (50,9 %) получает категорию без проверки: браузерные флаги сами дают только medium.
-- Читер «с помощью снова» в подтверждающем проходит 73,1 / 45,3 / 16,2 %: одна ловушка на подтверждающий тест при p = 0,3 пропускает почти всех.
-- Из читеров, вышедших на подтверждающий, 23-26 % проходят даже без помощи (причина не разбиралась).
+Owner requested the concept heading Сейчас нанимают. Changed only the heading and its accessible-name assertions; the original logo assets, links and company descriptions remain. Sequential checks: npm run typecheck passed; npm run lint passed (0 errors, 2 existing warnings); npm run test:unit -- --maxWorkers=2 passed (215 files, 3075 tests, 9 existing skipped, 86.48 seconds, 03:03:15 MSK); npm run build passed. Integration and the full account journey not rerun: copy-only change, no TEST_DATABASE_URL, API or schema edits.
 
-**Чувствительность** (high, %; честные Junior / Middle / Senior / медленный). Мягкий шум честных (`--sigma 0.4 --noise-tabs 0.4 --noise-paste 0.01 --noise-copy 0.02`): 0,9 / 0,9 / 0,6 / 1,6. Жёсткий (`--sigma 0.6 --noise-tabs 1.5`): 2,4 / 3,0 / 1,2 / 7,6. `--claim senior`: честные 1,3 / 1,5 / 0,9 / 3,3, читер high 29,2 / 54,2 / 75,0 % при p = 0,3 / 0,6 / 0,9 (причина разницы с Middle не разбиралась; возможно, в Senior-пуле меньше числовых заданий под ловушку - инференс).
 
-**Оговорки.** Персоны - модели, не люди; время, браузерный шум честных и поведение читеров - наши допущения, пороги `integrity.ts` экспертные. Вероятность подчинения нейросети скрытой строке (p) не измерена ни на одной реальной модели: диапазон 0,3-0,9 - перебор, а не оценка. Читер в подтверждающем тесте «с помощью снова» повторяет то же поведение, «сам» - отвечает по своей θ с человеческим временем. Неверные числовые ответы людей смоделированы как «промах на 1-2» (60 %) или случайное число; это определяет ложные попадания в ловушку. Подтверждающий тест у «второго устройства» не оценён (n = 7). Реальный телеметрический шум честных кандидатов не собирался.
+## Entry, consent and landing refinements (11.10.2026, Moscow)
 
-## Engineering: второй пакет семейств (bank2, 11.10.2026)
+FSP ID/achievements moved from the benefit cards to the list under Приступим; five benefit cards adapt to desktop/tablet/mobile. Arrow uses a single filled polygon with no overlapping stroke caps. Entry has one shared consent checkbox and an independent grey disclosure; recovery is below the two email modes. Registration dispatch, external ID links and fresh-demo creation remain gated; existing email sign-in, verification and password recovery do not require new acceptance. FSP details identify only the presumed operator of a concept, explicitly confirmed by the owner; consent remains a draft, version 2026-10-11-draft. Recording consent is unchanged.
 
-+48 семейств (по 3 Junior + 5 Middle + 4 Senior на подкатегорию; `generators/engineering-bank2-*.ts`). a, b — экспертные,
-не откалиброваны. Тест `tests/unit/test/engineering-bank2.test.ts`: 50 seed — детерминизм и приём ключа; 500 seed — доля
-самого частого ответа не выше 20 % и не менее 8 разных ответов у каждого семейства.
+Sequential checks from platform/: npm run typecheck passed; npm run lint passed (0 errors, 2 existing eval/tools-matrix warnings); targeted home/onboarding/design-tokens: 3 files, 98 tests passed; targeted email/auth-entry/auth-screen/demo-screen/design-tokens: 5 files, 80 passed; npm run test:unit -- --maxWorkers=2: 215 files, 3078 passed, 9 existing skipped (3087 total), 81.83 seconds, started 03:44:08 MSK. Two targeted runs initially caught an accessible-title whitespace assertion and the demo test's old disclosure link; corrected the assertions, then reran successfully.
 
-Сверено с документацией (Context7): Airflow — all_success при упавшем/upstream_failed родителе даёт upstream_failed, all_done
-ждёт завершения родителей в любом статусе; Prometheus — `for`: алерт pending, пока выражение возвращается, firing по
-истечении `for`, сброс при невыполнении (граница «не менее for» на кратных интервалу значениях — вывод агента); Terraform —
-индексы count и сдвиг при изменении списка; Kubernetes — PDB (minAvailable/maxUnavailable), ResourceQuota по requests
-и числу pods, drain не обходит PDB; Prometheus — классическая гистограмма = ряды `_bucket` (с `+Inf`), `_sum`, `_count`
-на сочетание меток; GitHub Actions — include с новым значением ключа добавляет отдельную комбинацию.
-**Не сверено, знание агента:** exclude по подмножеству ключей матрицы, `pytest -m`, depends_on_past/max_active_runs
-(модель бэкфилла), арифметика RPO/очередей/доступности (чистая математика), PDB: «разрешённых выселений за раунд =
-готовые − требуемые» при целых значениях, мгновенная eviction и готовность замены через заданное время — допущение условия.
+Integration not run: no TEST_DATABASE_URL for this run and no API/schema edits. Full Playwright jury journey not rerun; changed interaction paths are tested with mock email/ID/demo APIs, without real mail or LLM calls. No migrations or OpenAPI route changes.
+
+Production build: npm run build passed (Next.js 15.5.27). CUA checks on the built server: one native consent checkbox even with fresh-demo expanded; disclosure leaves it unchecked; password recovery and return-to-login render correctly. Mobile auth viewport 390x844: client/scroll width 390px, one checkbox, no horizontal overflow. Local screenshots output/auth-consent-final.png and output/fsp-note-arrow-final.png. Registration/recovery dispatch verified with mocked APIs; browser did not create an account, send mail or accept binding terms.

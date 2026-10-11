@@ -15,7 +15,6 @@ import {
 } from '@/lib/email-auth';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
-import { ConsentCheck } from './ConsentCheck';
 import styles from './AuthEntry.module.css';
 
 type Mode = 'login' | 'register' | 'forgot';
@@ -25,21 +24,19 @@ type Stage = 'form' | 'verify' | 'reset';
 const MODES: [Mode, string][] = [
   ['login', 'Войти'],
   ['register', 'Регистрация'],
-  ['forgot', 'Забыли пароль'],
 ];
 
 /**
- * Вход и регистрация по почте (R-D-04): вкладки «Войти» / «Регистрация» / «Забыли пароль»
+ * Вход и регистрация по почте (R-D-04): вкладки «Войти» / «Регистрация», ссылка сброса пароля
  * и шаг ввода 6-значного кода из письма. При локальной разработке сервер возвращает код
  * подтверждения (`devCode`) — он показывается здесь; на стенде кода в ответе нет, только письмо.
  */
-export function EmailAuth({ next, navigate }: { next: string | null; navigate: (path: string) => void }) {
+export function EmailAuth({ next, navigate, agreed }: { next: string | null; navigate: (path: string) => void; agreed: boolean }) {
   const [mode, setMode] = useState<Mode>('login');
   const [stage, setStage] = useState<Stage>('form');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
-  const [agreed, setAgreed] = useState(false);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -82,6 +79,7 @@ export function EmailAuth({ next, navigate }: { next: string | null; navigate: (
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (!canSubmit) return;
     const addr = email.trim();
     if (stage === 'verify') {
       return void run(async () => navigate((await verifyEmailCode({ email: addr, code, next })).next));
@@ -112,11 +110,11 @@ export function EmailAuth({ next, navigate }: { next: string | null; navigate: (
 
   return (
     <form className={styles.emailForm} onSubmit={submit} noValidate aria-label="Вход по почте">
-      <div className={styles.modes} role="group" aria-label="Способ">
+      {mode === 'forgot' ? <h4 className={styles.resetTitle}>Восстановление пароля</h4> : <div className={styles.modes} role="group" aria-label="Способ">
         {MODES.map(([m, label]) => (
           <Chip key={m} pressed={mode === m} onClick={() => switchMode(m)} disabled={pending}>{label}</Chip>
         ))}
-      </div>
+      </div>}
       {error && <Notice tone="error">{error}</Notice>}
       {info && <Notice>{info}</Notice>}
       {devCode && (
@@ -141,15 +139,14 @@ export function EmailAuth({ next, navigate }: { next: string | null; navigate: (
             value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
       )}
-      {mode === 'register' && stage === 'form' && <ConsentCheck checked={agreed} onChange={setAgreed} />}
       <Button type="submit" variant="cta" loading={pending} disabled={!canSubmit}>{submitLabel}</Button>
+      {mode === 'login' && stage === 'form' && <button type="button" className={styles.textAction} disabled={pending} onClick={() => switchMode('forgot')}>Забыли пароль?</button>}
+      {mode === 'forgot' && <button type="button" className={styles.textAction} disabled={pending} onClick={() => switchMode('login')}>Вернуться ко входу</button>}
       {codeStage && (
         <div className={styles.codeActions}>
-          {stage === 'verify' && (
-            <Button size="sm" disabled={pending} onClick={() => void run(async () => codeSent(await resendEmailCode({ email: email.trim() }), 'verify'))}>
+          <Button size="sm" disabled={pending} onClick={() => void run(async () => codeSent(stage === 'verify' ? await resendEmailCode({ email: email.trim() }) : await forgotPassword({ email: email.trim() }), stage))}>
               Прислать код ещё раз
-            </Button>
-          )}
+          </Button>
           <Button size="sm" disabled={pending} onClick={() => switchMode(mode)}>Изменить почту</Button>
         </div>
       )}

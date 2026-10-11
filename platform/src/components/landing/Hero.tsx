@@ -20,6 +20,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
           <li>можно загрузить резюме PDF</li>
           <li>ссылки на GitHub и профили</li>
           <li>категорию даёт только тест</li>
+          <li>ФСП ID и достижения · демореестр</li>
         </ul>
         <Link className={styles.entry} href={signedIn ? '/consultant' : '/auth'}>
           <b>{signedIn ? 'Ваш кабинет →' : 'Уже есть аккаунт? Войти →'}</b>

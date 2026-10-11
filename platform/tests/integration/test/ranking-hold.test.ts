@@ -112,7 +112,19 @@ describe('rankingHold: кандидат видит то же ограничен�
     });
     expect((await rankingHoldOf('rh-high'))?.attemptId).toBe('att-rh-high');
     // Последняя завершённая - проваленная подтверждающая, но разбор идёт по исходной: только её «объяснил сам» снимает ограничение.
-    expect((await loadTestReview('rh-high', 'backend', 'backend.web-api')).map((i) => i.templateId)).toEqual([TPL]);
+    const review = await loadTestReview('rh-high', 'backend', 'backend.web-api');
+    expect(review.map((i) => [i.templateId, i.attemptId])).toEqual([[TPL, 'att-rh-high']]);
+    // Созвон с вердиктом «объяснил сам» по исходной попытке снимает ограничение, даже если разобранные шаблоны есть и в
+    // подтверждающей попытке (по шаблонам созвон приписался бы ей): привязка идёт по attemptId из вердикта.
+    const call = await prisma.callSession.create({
+      data: {
+        candidateId: 'rh-high', kind: 'qualifying', status: 'finished', startedAt: new Date('2026-10-11T12:00:00Z'), finishedAt: new Date('2026-10-11T12:20:00Z'), policyVersion: 'v1',
+        verdictJson: { depthMap: [], evaluatedAt: '2026-10-11T12:20:00Z', summary: '', thresholdVersion: 'x', testOwnership: { status: 'explained', reason: '', attemptId: 'att-rh-high', items: [{ templateId: `${TPL}-conf`, title: 'T2', correct: true }] } },
+      },
+    });
+    expect(await rankingHoldOf('rh-high')).toBeNull();
+    await prisma.callSession.delete({ where: { id: call.id } });
+    expect((await rankingHoldOf('rh-high'))?.attemptId).toBe('att-rh-high');
     await prisma.testAttempt.deleteMany({ where: { id: 'att-rh-high-conf' } });
     await prisma.taskTemplate.deleteMany({ where: { id: `${TPL}-conf` } });
   });

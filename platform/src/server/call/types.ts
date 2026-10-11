@@ -141,6 +141,8 @@ export const OWNERSHIP_LABEL: Record<TestOwnershipStatus, string> = {
 
 export interface TestOwnership {
   status: TestOwnershipStatus;
+  /** Попытка, задания которой разбирали (с 11.10): привязка созвона к попытке идёт по ней, шаблоны — для старых вердиктов. */
+  attemptId?: string;
   /** Короткая причина от оценщика (≤ 240 символов). Работодателю до accepted не отдаётся. */
   reason: string;
   /** Какие задания разбирали: id шаблона, название и был ли ответ в тесте верным. */

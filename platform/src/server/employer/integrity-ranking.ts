@@ -38,6 +38,8 @@ export interface OwnershipCall {
   startedAt: Date;
   status: TestOwnershipStatus;
   templateIds: readonly string[];
+  /** id разобранной попытки из вердикта (call/test-review.ts, с 11.10); старые вердикты его не хранят. */
+  attemptId?: string | null;
 }
 
 /**
@@ -46,6 +48,12 @@ export interface OwnershipCall {
  * содержащая все разобранные шаблоны. Нет разобранных заданий — созвон ни к какой попытке не относится.
  */
 export function reviewedAttemptId(call: OwnershipCall, attempts: readonly AttemptRef[]): string | null {
+  // Вердикт знает разобранную попытку — она и есть ответ (подтверждающая попытка может повторять шаблоны исходной,
+  // и по шаблонам созвон приписался бы ей). Старые вердикты без attemptId — по шаблонам.
+  if (call.attemptId) {
+    const named = attempts.find((a) => a.id === call.attemptId && a.finishedAt !== null && a.finishedAt <= call.startedAt);
+    if (named) return named.id;
+  }
   if (call.templateIds.length === 0) return null;
   let best: AttemptRef | null = null;
   for (const a of attempts) {
@@ -68,13 +76,13 @@ export function ownershipForAttempt(attemptId: string, calls: readonly Ownership
 const isObject = (v: unknown): v is Record<string, unknown> => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 
 /** testOwnership из сырого вердикта созвона (CallVerdict): статус и id разобранных шаблонов. */
-export function parseOwnership(verdict: Prisma.JsonValue | null): { status: TestOwnershipStatus; templateIds: string[] } | null {
+export function parseOwnership(verdict: Prisma.JsonValue | null): { status: TestOwnershipStatus; templateIds: string[]; attemptId: string | null } | null {
   if (!isObject(verdict) || !isObject(verdict.testOwnership)) return null;
   const o = verdict.testOwnership;
   if (o.status !== 'explained' && o.status !== 'partial' && o.status !== 'failed' && o.status !== 'not_checked') return null;
   const items = Array.isArray(o.items) ? o.items : [];
   const templateIds = items.flatMap((i) => (isObject(i) && typeof i.templateId === 'string' ? [i.templateId] : []));
-  return { status: o.status, templateIds };
+  return { status: o.status, templateIds, attemptId: typeof o.attemptId === 'string' ? o.attemptId : null };
 }
 
 /**

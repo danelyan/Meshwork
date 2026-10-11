@@ -33,6 +33,12 @@ describe('привязка созвона к попытке', () => {
     expect(reviewedAttemptId({ startedAt: d('06T00:00:00'), status: 'explained', templateIds: ['t1'] }, [a1, a2])).toBe('a1');
   });
 
+  it('вердикт с id попытки привязывается к ней, даже если шаблоны есть и в более поздней попытке', () => {
+    expect(reviewedAttemptId({ startedAt: d('06T00:00:00'), status: 'explained', templateIds: ['t3'], attemptId: 'a1' }, [a1, a2])).toBe('a1');
+    // Незнакомый или ещё не завершённый id — по шаблонам.
+    expect(reviewedAttemptId({ startedAt: d('06T00:00:00'), status: 'explained', templateIds: ['t3'], attemptId: 'a9' }, [a1, a2])).toBe('a2');
+  });
+
   it('созвон до попытки, без разбора или с чужими заданиями — ни к какой попытке', () => {
     expect(reviewedAttemptId({ startedAt: d('04T00:00:00'), status: 'explained', templateIds: ['t4'] }, [a1, a2])).toBeNull();
     expect(reviewedAttemptId({ startedAt: d('06T00:00:00'), status: 'explained', templateIds: [] }, [a1, a2])).toBeNull();
@@ -51,7 +57,8 @@ describe('привязка созвона к попытке', () => {
   });
 
   it('parseOwnership: статус и шаблоны из сырого вердикта, мусор — null', () => {
-    expect(parseOwnership({ depthMap: [], testOwnership: { status: 'partial', reason: 'x', items: [{ templateId: 't1', title: 'A', correct: true }] } })).toEqual({ status: 'partial', templateIds: ['t1'] });
+    expect(parseOwnership({ depthMap: [], testOwnership: { status: 'partial', reason: 'x', items: [{ templateId: 't1', title: 'A', correct: true }] } })).toEqual({ status: 'partial', templateIds: ['t1'], attemptId: null });
+    expect(parseOwnership({ testOwnership: { status: 'explained', attemptId: 'a1', items: [] } })).toEqual({ status: 'explained', templateIds: [], attemptId: 'a1' });
     expect(parseOwnership({ depthMap: [] })).toBeNull();
     expect(parseOwnership({ testOwnership: { status: 'weird' } })).toBeNull();
     expect(parseOwnership(null)).toBeNull();

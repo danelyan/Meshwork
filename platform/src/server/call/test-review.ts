@@ -23,6 +23,8 @@ const CODE_CHARS = 600;
 
 /** Задание теста для разбора: условие коротко, ответ кандидата, верно ли, эталон (эталон — только модели). */
 export interface ReviewItem {
+  /** Попытка, из которой взято задание: вердикт хранит её id, чтобы разбор не приписали другой попытке с теми же шаблонами. */
+  attemptId?: string;
   templateId: string;
   title: string;
   catalogIds: string[];
@@ -116,7 +118,7 @@ export async function loadTestReview(candidateId: string, specialization: string
   return pickReviewItems(
     items.map((i) => ({ ...i, title: i.template.title, irtB: i.template.irtB, catalogIds: i.template.catalogIds })),
     attempt.grade as Grade,
-  );
+  ).map((r) => ({ ...r, attemptId: attempt.id }));
 }
 
 // ---------------------------------------------------------------------------
@@ -248,7 +250,9 @@ export interface OwnershipPayload {
   dialog: ReviewPayload['dialog'];
 }
 
-const NOT_CHECKED = (items: ReviewItem[], reason: string): TestOwnership => ({ status: 'not_checked', reason, items: items.map((i) => ({ templateId: i.templateId, title: i.title, correct: i.correct })) });
+/** id разобранной попытки — в вердикт: по нему employer/integrity-ranking.ts привязывает созвон, шаблоны — запасной путь для старых вердиктов. */
+const reviewedAttempt = (items: readonly ReviewItem[]): { attemptId?: string } => (items[0]?.attemptId ? { attemptId: items[0].attemptId } : {});
+const NOT_CHECKED = (items: ReviewItem[], reason: string): TestOwnership => ({ status: 'not_checked', reason, ...reviewedAttempt(items), items: items.map((i) => ({ templateId: i.templateId, title: i.title, correct: i.correct })) });
 
 /**
  * Один прогон оценщика (temperature 0). «Объяснил» без дословной цитаты кандидата понижается до «частично»:
@@ -283,7 +287,7 @@ export async function evaluateOwnership(items: readonly ReviewItem[], dialog: Re
     if (!parsed.success) return NOT_CHECKED(list, 'Оценщик вернул невалидный ответ.');
     let status: TestOwnershipStatus = parsed.data.status;
     if (status === 'explained' && !checkQuoteLoose(parsed.data.quote, answers).valid) status = 'partial';
-    return { status, reason: parsed.data.reason.trim().slice(0, 240), items: list.map((i) => ({ templateId: i.templateId, title: i.title, correct: i.correct })) };
+    return { status, reason: parsed.data.reason.trim().slice(0, 240), ...reviewedAttempt(list), items: list.map((i) => ({ templateId: i.templateId, title: i.title, correct: i.correct })) };
   } catch (err) {
     if (signal?.aborted) throw err;
     console.warn('[call] ownership evaluator failed:', err instanceof Error ? err.message : err);

@@ -1,0 +1,422 @@
+{
+ "at": "2026-10-11T20:08:50.333Z",
+ "stt": {
+  "clipSeconds": [
+   4.6,
+   4.3,
+   5.6,
+   5.1,
+   4.8
+  ],
+  "whisper-large-v3 (Selectel)": {
+   "latencyMs": {
+    "n": 15,
+    "p50": 1110,
+    "p95": 2321,
+    "max": 2321
+   },
+   "wer": 0.078,
+   "errors": 0,
+   "hyp": [
+    " Здравствуйте, меня зовут Алексей, я работаю бэкэнд-разработчиком уже 5 лет.",
+    " Основной стэк у меня питон и джанго, а ещё я немного писал на го.",
+    " На прошлом проекте я отвечал за миграцию базы данных и снизил время ответа почти вдвое.",
+    " Я хотел бы получить предложение с зарплатой от 200 тысяч рублей на руки».",
+    " Мне интересна удалённая работа, но в командировке я тоже готов выезжать."
+   ]
+  },
+  "yandex v1 sync": {
+   "latencyMs": {
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   "wer": null,
+   "errors": 15,
+   "errSample": 500,
+   "hyp": []
+  },
+  "coldAfter90s": {
+   "whisper": 2431.4457910000056,
+   "yandex": 7887.883750000008
+  }
+ },
+ "tts": {
+  "eleven multilingual_v2": {
+   "short": {
+    "chars": 50,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 3870,
+     "p95": 5199,
+     "max": 5199
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 4107,
+     "p95": 5412,
+     "max": 5412
+    },
+    "bytes": 48110,
+    "errors": 0
+   },
+   "medium": {
+    "chars": 165,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 1874,
+     "p95": 3487,
+     "max": 3487
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 2263,
+     "p95": 3761,
+     "max": 3761
+    },
+    "bytes": 162631,
+    "errors": 0
+   },
+   "long": {
+    "chars": 408,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 2440,
+     "p95": 4001,
+     "max": 4001
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 3946,
+     "p95": 5356,
+     "max": 5356
+    },
+    "bytes": 407137,
+    "errors": 0
+   }
+  },
+  "eleven flash_v2_5": {
+   "short": {
+    "chars": 50,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 218,
+     "p95": 425,
+     "max": 425
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 427,
+     "p95": 595,
+     "max": 595
+    },
+    "bytes": 56469,
+    "errors": 0
+   },
+   "medium": {
+    "chars": 165,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 242,
+     "p95": 247,
+     "max": 247
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 586,
+     "p95": 671,
+     "max": 671
+    },
+    "bytes": 206516,
+    "errors": 0
+   },
+   "long": {
+    "chars": 408,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 236,
+     "p95": 246,
+     "max": 246
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 906,
+     "p95": 923,
+     "max": 923
+    },
+    "bytes": 389165,
+    "errors": 0
+   }
+  },
+  "eleven turbo_v2_5": {
+   "short": {
+    "chars": 50,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 282,
+     "p95": 284,
+     "max": 284
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 318,
+     "p95": 345,
+     "max": 345
+    },
+    "bytes": 52707,
+    "errors": 0
+   },
+   "medium": {
+    "chars": 165,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 403,
+     "p95": 426,
+     "max": 426
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 549,
+     "p95": 661,
+     "max": 661
+    },
+    "bytes": 235356,
+    "errors": 0
+   },
+   "long": {
+    "chars": 408,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 417,
+     "p95": 894,
+     "max": 894
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 869,
+     "p95": 1462,
+     "max": 1462
+    },
+    "bytes": 433886,
+    "errors": 0
+   }
+  },
+  "eleven v4_turbo": {
+   "short": {
+    "chars": 50,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 420,
+     "p95": 797,
+     "max": 797
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 693,
+     "p95": 1117,
+     "max": 1117
+    },
+    "bytes": 51871,
+    "errors": 0
+   },
+   "medium": {
+    "chars": 165,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 247,
+     "p95": 366,
+     "max": 366
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 1471,
+     "p95": 1890,
+     "max": 1890
+    },
+    "bytes": 187708,
+    "errors": 0
+   },
+   "long": {
+    "chars": 408,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 286,
+     "p95": 396,
+     "max": 396
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 3460,
+     "p95": 3604,
+     "max": 3604
+    },
+    "bytes": 425527,
+    "errors": 0
+   }
+  },
+  "eleven v4 (.env ELEVENLABS_MODEL)": {
+   "short": {
+    "chars": 50,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 746,
+     "p95": 790,
+     "max": 790
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 1229,
+     "p95": 1271,
+     "max": 1271
+    },
+    "bytes": 51871,
+    "errors": 0
+   },
+   "medium": {
+    "chars": 165,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 803,
+     "p95": 883,
+     "max": 883
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 2948,
+     "p95": 3000,
+     "max": 3000
+    },
+    "bytes": 186454,
+    "errors": 0
+   },
+   "long": {
+    "chars": 408,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 1151,
+     "p95": 4528,
+     "max": 4528
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 6778,
+     "p95": 10183,
+     "max": 10183
+    },
+    "bytes": 426781,
+    "errors": 0
+   }
+  },
+  "yandex v1 marina mp3": {
+   "short": {
+    "chars": 50,
+    "ttfbMs": {
+     "n": 0,
+     "p50": null,
+     "p95": null,
+     "max": null
+    },
+    "totalMs": {
+     "n": 0,
+     "p50": null,
+     "p95": null,
+     "max": null
+    },
+    "bytes": 0,
+    "errors": 3,
+    "errSample": "500 {\"error_code\":\"INTERNAL_SERVER_ERROR\",\"error_message\":\"Internal Server Error\"}"
+   },
+   "medium": {
+    "chars": 165,
+    "ttfbMs": {
+     "n": 0,
+     "p50": null,
+     "p95": null,
+     "max": null
+    },
+    "totalMs": {
+     "n": 0,
+     "p50": null,
+     "p95": null,
+     "max": null
+    },
+    "bytes": 0,
+    "errors": 3,
+    "errSample": "500 {\"error_code\":\"INTERNAL_SERVER_ERROR\",\"error_message\":\"Internal Server Error\"}"
+   },
+   "long": {
+    "chars": 408,
+    "ttfbMs": {
+     "n": 0,
+     "p50": null,
+     "p95": null,
+     "max": null
+    },
+    "totalMs": {
+     "n": 0,
+     "p50": null,
+     "p95": null,
+     "max": null
+    },
+    "bytes": 0,
+    "errors": 3,
+    "errSample": "500 {\"error_code\":\"INTERNAL_SERVER_ERROR\",\"error_message\":\"Internal Server Error\"}"
+   }
+  },
+  "yandex v3 marina mp3": {
+   "short": {
+    "chars": 50,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 1376,
+     "p95": 4088,
+     "max": 4088
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 1393,
+     "p95": 4103,
+     "max": 4103
+    },
+    "bytes": 34961,
+    "errors": 0
+   },
+   "medium": {
+    "chars": 165,
+    "ttfbMs": {
+     "n": 3,
+     "p50": 1076,
+     "p95": 1086,
+     "max": 1086
+    },
+    "totalMs": {
+     "n": 3,
+     "p50": 1387,
+     "p95": 1425,
+     "max": 1425
+    },
+    "bytes": 130394,
+    "errors": 0
+   },
+   "long": {
+    "chars": 408,
+    "ttfbMs": {
+     "n": 0,
+     "p50": null,
+     "p95": null,
+     "max": null
+    },
+    "totalMs": {
+     "n": 0,
+     "p50": null,
+     "p95": null,
+     "max": null
+    },
+    "bytes": 0,
+    "errors": 3,
+    "errSample": "400 {\"error\":{\"grpcCode\":3,\"httpCode\":400,\"message\":\"Too long text, internal_id=6e8f5fa8-6459c46a-2c05804a-15279f80\\u0026request_id=f6015ace-4597-4b79-994d-84247a27"
+   }
+  }
+ }
+}

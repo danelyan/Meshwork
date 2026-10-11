@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import type { HeaderAccount } from '@/server/auth/role-plan';
+import { NavIcon } from './NavIcon';
 import { CANDIDATE_NAV, EMPLOYER_NAV, activeLinkHref, dashboardPath } from './nav';
 import { CandidateSidebarSummary } from '@/components/candidate/CandidateSidebarSummary';
 import { EmployerConsultantDock } from '@/components/employer/EmployerConsultantDock';
@@ -25,7 +26,7 @@ export function DashboardFrame({ account, children, employerSummary, bare = fals
     {!bare && <aside className={styles.sidebar} aria-label="Ваш кабинет">
       <nav className={styles.nav} aria-label="Разделы кабинета">
         {links.map(({ href, icon, label }) => <Link key={href} href={href} aria-current={href === active ? 'page' : undefined}>
-          <span aria-hidden="true">{icon}</span>{label}
+          <span aria-hidden="true"><NavIcon name={icon} /></span>{label}
         </Link>)}
       </nav>
       {isEmployer && <Link className={styles.create} href="/employer/needs/new">+ Новая вакансия</Link>}

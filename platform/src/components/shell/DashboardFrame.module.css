@@ -12,7 +12,8 @@
 .create:hover { background: var(--blue); color: var(--on-ink); }
 .nav { display: grid; gap: 2px; }
 .nav a { display: flex; gap: 12px; align-items: center; padding: 11px 14px; font-size: var(--fs); min-height: 44px; }
-.nav a span { width: 16px; text-align: center; }
+.nav a span { display: inline-flex; flex: none; width: 18px; height: 18px; }
+.nav a span svg { display: block; }
 .nav a:hover { background: var(--surface-hover); color: var(--ink); }
 .nav a[aria-current='page'] { background: var(--ink); color: var(--on-ink); font-weight: 600; }
 .note { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 14px; }

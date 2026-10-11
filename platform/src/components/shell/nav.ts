@@ -1,4 +1,5 @@
 import type { SessionRole } from '@/server/session';
+import type { NavIconName } from './NavIcon';
 
 export interface NavLink {
   href: string;
@@ -9,38 +10,38 @@ export interface NavLink {
 
 /** Раздел кабинета: единый источник для шапки и боковой панели (DashboardFrame). */
 export interface NavItem extends NavLink {
-  icon: string;
+  icon: NavIconName;
   /** Показывать и в шапке; сайдбар показывает все разделы. Подписи в обоих местах одни. */
   header?: boolean;
 }
 
 /** Кандидат: порядок по стадиям пути (знакомство, тест, навыки, проекты, приглашения), затем личное. */
 export const CANDIDATE_NAV: NavItem[] = [
-  { href: '/consultant', icon: '◆', label: 'Консультант', header: true },
-  { href: '/test', icon: '▷', label: 'Тест на грейд', header: true },
-  { href: '/skills', icon: '△', label: 'Навыки и грейд' },
+  { href: '/consultant', icon: 'consultant', label: 'Консультант', header: true },
+  { href: '/test', icon: 'test', label: 'Тест на грейд', header: true },
+  { href: '/skills', icon: 'skills', label: 'Навыки и грейд' },
   /** lane project: лента проектных заданий (ADR 0003, ступень 2) */
-  { href: '/projects', icon: '▤', label: 'Проекты', header: true },
-  { href: '/invitations', icon: '✉', label: 'Приглашения', header: true },
-  { href: '/career', icon: '◇', label: 'Вакансии' },
-  { href: '/companies', icon: '▣', label: 'Компании' },
-  { href: '/profile', icon: '○', label: 'Профиль', header: true },
-  { href: '/interview', icon: '▷', label: 'Созвон с ИИ' },
-  { href: '/saved', icon: '☆', label: 'Избранное' },
-  { href: '/settings', icon: '⚙', label: 'Настройки' },
+  { href: '/projects', icon: 'projects', label: 'Проекты', header: true },
+  { href: '/invitations', icon: 'invitations', label: 'Приглашения', header: true },
+  { href: '/career', icon: 'vacancies', label: 'Вакансии' },
+  { href: '/companies', icon: 'companies', label: 'Компании' },
+  { href: '/profile', icon: 'profile', label: 'Профиль', header: true },
+  { href: '/interview', icon: 'call', label: 'Созвон с ИИ' },
+  { href: '/saved', icon: 'saved', label: 'Избранное' },
+  { href: '/settings', icon: 'settings', label: 'Настройки' },
 ];
 
 export const EMPLOYER_NAV: NavItem[] = [
   // Помощник по подбору - дом работодателя, лента /consultant; первым (решение владельца 10.10).
-  { href: '/consultant', icon: '◆', label: 'ИИ-помощник', header: true },
-  { href: '/employer', icon: '◇', label: 'Подборка', exact: true, header: true },
-  { href: '/employer/search', icon: '⌕', label: 'Поиск по базе', header: true },
-  { href: '/employer/vacancies', icon: '▤', label: 'Вакансии', header: true },
-  { href: '/employer/saved', icon: '☆', label: 'Избранное' },
-  { href: '/employer/invitations', icon: '✉', label: 'Приглашения', header: true },
-  { href: '/employer/calls', icon: '▷', label: 'Собеседования', header: true },
+  { href: '/consultant', icon: 'consultant', label: 'ИИ-помощник', header: true },
+  { href: '/employer', icon: 'match', label: 'Подборка', exact: true, header: true },
+  { href: '/employer/search', icon: 'search', label: 'Поиск по базе', header: true },
+  { href: '/employer/vacancies', icon: 'vacancies', label: 'Вакансии', header: true },
+  { href: '/employer/saved', icon: 'saved', label: 'Избранное' },
+  { href: '/employer/invitations', icon: 'invitations', label: 'Приглашения', header: true },
+  { href: '/employer/calls', icon: 'call', label: 'Собеседования', header: true },
   // «Компания» - в сайдбаре и в меню аккаунта (AccountMenu).
-  { href: '/employer/company', icon: '○', label: 'Компания' },
+  { href: '/employer/company', icon: 'company', label: 'Компания' },
 ];
 
 /** Подмножество для шапки: те же подписи и порядок, что в сайдбаре. */

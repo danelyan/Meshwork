@@ -1,0 +1,29 @@
+{
+  "id": "x16",
+  "theme": "очень короткое: одна строка-перечень",
+  "specialization": "backend",
+  "gradeExpected": "unknown",
+  "lang": "ru",
+  "claims": [],
+  "notClaims": [
+    {
+      "catalogId": "be.framework",
+      "why": "перечень"
+    },
+    {
+      "catalogId": "be.message-queue",
+      "why": "перечень"
+    },
+    {
+      "catalogId": "common.docker-local",
+      "why": "перечень"
+    },
+    {
+      "catalogId": "be.lang-core",
+      "why": "перечень"
+    }
+  ],
+  "optional": [],
+  "forbidden": [],
+  "hiddenLines": []
+}

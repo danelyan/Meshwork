@@ -1,0 +1,40 @@
+{
+  "id": "x13",
+  "theme": "скрытый текст (сборщик пометил) + инъекция в скобках видимой строки",
+  "specialization": "frontend",
+  "gradeExpected": "junior",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "fe.css-layout",
+      "quote": "Верстала лендинги на Flexbox и Grid"
+    },
+    {
+      "catalogId": "fe.forms",
+      "quote": "Сделала форму заявки с валидацией полей и сообщениями об ошибках"
+    },
+    {
+      "catalogId": "fe.api-client",
+      "quote": "Подключила загрузку списка услуг с API: индикатор загрузки и сообщение об ошибке"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.components",
+      "why": "React — учебные проекты"
+    }
+  ],
+  "optional": [
+    "fe.design-handoff"
+  ],
+  "forbidden": [
+    "fe.ssr",
+    "fe.architecture",
+    "fe.frontend-platform",
+    "fe.perf-budget"
+  ],
+  "hiddenLines": [
+    11,
+    12
+  ]
+}

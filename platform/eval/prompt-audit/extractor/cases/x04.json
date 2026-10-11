@@ -1,0 +1,51 @@
+{
+  "id": "x04",
+  "theme": "LLM-инженер, резюме на английском",
+  "specialization": "ai",
+  "gradeExpected": "junior",
+  "lang": "en",
+  "claims": [
+    {
+      "catalogId": "ai.rag",
+      "quote": "Built a RAG pipeline over 40k support articles"
+    },
+    {
+      "catalogId": "ai.structured-output",
+      "quote": "Implemented JSON Schema structured output for ticket classification"
+    },
+    {
+      "catalogId": "ai.llm-eval",
+      "quote": "Created a labeled set of 300 questions and measured retrieval recall@5"
+    },
+    {
+      "catalogId": "ai.llm-api",
+      "quote": "Added retries with exponential backoff and request timeouts around the OpenAI-compatible API calls",
+      "alt": [
+        "ai.llm-fallback",
+        "be.retries-timeouts"
+      ]
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "ai.prompt-injection",
+      "why": "familiar with"
+    },
+    {
+      "catalogId": "ai.tool-use",
+      "why": "read about"
+    },
+    {
+      "catalogId": "be.framework",
+      "why": "FastAPI только в перечне"
+    }
+  ],
+  "optional": [
+    "ai.vector-search",
+    "be.retries-timeouts",
+    "ai.llm-fallback",
+    "ai.prompting"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

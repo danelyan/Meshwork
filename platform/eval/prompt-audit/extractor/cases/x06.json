@@ -1,0 +1,49 @@
+{
+  "id": "x06",
+  "theme": "QA automation",
+  "specialization": "engineering",
+  "gradeExpected": "middle",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "eng.ui-autotests",
+      "quote": "Автоматизировала 120 сквозных сценариев оформления заказа на Playwright + TypeScript",
+      "alt": [
+        "fe.e2e-tests"
+      ]
+    },
+    {
+      "catalogId": "eng.flaky-tests",
+      "quote": "Чинила нестабильные тесты"
+    },
+    {
+      "catalogId": "eng.test-design",
+      "quote": "Проектировала тест-кейсы по граничным значениям и классам эквивалентности"
+    },
+    {
+      "catalogId": "eng.test-isolation",
+      "quote": "Изолировала тесты через фикстуры"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "eng.contract-tests",
+      "why": "изучала на курсе"
+    },
+    {
+      "catalogId": "common.sql-queries",
+      "why": "SQL в перечне"
+    },
+    {
+      "catalogId": "eng.quality-platform",
+      "why": "не строила"
+    }
+  ],
+  "optional": [
+    "fe.e2e-tests",
+    "common.http",
+    "eng.test-strategy"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

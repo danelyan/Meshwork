@@ -1,0 +1,47 @@
+{
+  "id": "x19",
+  "theme": "Lead SRE",
+  "specialization": "engineering",
+  "gradeExpected": "senior",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "eng.slo",
+      "quote": "Ввела SLO для 20 сервисов и политику бюджета ошибок",
+      "alt": [
+        "eng.reliability-program"
+      ]
+    },
+    {
+      "catalogId": "eng.alerting",
+      "quote": "оставила алерты по симптомам"
+    },
+    {
+      "catalogId": "eng.incident-postmortem",
+      "quote": "Проводила разборы инцидентов: таймлайн, MTTD и MTTR, постмортемы"
+    },
+    {
+      "catalogId": "eng.capacity-planning",
+      "quote": "Посчитала ёмкость очереди платёжных событий"
+    },
+    {
+      "catalogId": "common.mentoring",
+      "quote": "Вырастила двух инженеров от джуна до самостоятельного дежурства"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "eng.iac",
+      "why": "Terraform в перечне"
+    },
+    {
+      "catalogId": "eng.k8s-resources",
+      "why": "перечень"
+    }
+  ],
+  "optional": [
+    "eng.reliability-program"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

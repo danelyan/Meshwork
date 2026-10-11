@@ -1,0 +1,57 @@
+{
+  "id": "x17",
+  "theme": "длинное резюме: несколько частей, факты в начале и в конце, повтор be.cache",
+  "specialization": "backend",
+  "gradeExpected": "middle",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "be.idempotency",
+      "quote": "Разработал идемпотентный приём заказов: ключ идемпотентности в заголовке и уникальный индекс в PostgreSQL"
+    },
+    {
+      "catalogId": "be.cache",
+      "quote": "Добавил кэш каталога в Redis с TTL 5 минут и инвалидацией по событию изменения цены"
+    },
+    {
+      "catalogId": "be.message-queue",
+      "quote": "Перевёл отправку уведомлений на Kafka: ручное подтверждение offset, повторная доставка и топик для ошибок (DLQ)"
+    },
+    {
+      "catalogId": "eng.ci-cd",
+      "quote": "Настроил GitLab CI/CD: сборка, тесты и выкладка на стейдж по коммиту в main",
+      "alt": [
+        "common.ci-basics"
+      ]
+    },
+    {
+      "catalogId": "common.code-review",
+      "quote": "Ревьюил по 10–15 merge request в неделю, находил ошибки в обработке транзакций и объяснял замечания"
+    },
+    {
+      "catalogId": "be.authz",
+      "quote": "Сделал проверку владельца заказа на каждом эндпоинте, закрыв IDOR, найденный пентестом"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.grpc",
+      "why": "читал, не применял"
+    },
+    {
+      "catalogId": "eng.k8s-resources",
+      "why": "перечень"
+    },
+    {
+      "catalogId": "be.transactions",
+      "why": "ревью, не своя работа"
+    }
+  ],
+  "optional": [
+    "common.ci-basics",
+    "be.sql-indexes",
+    "common.security-basics"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

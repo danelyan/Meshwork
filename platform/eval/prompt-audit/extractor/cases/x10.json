@@ -1,0 +1,67 @@
+{
+  "id": "x10",
+  "theme": "Senior backend на английском",
+  "specialization": "backend",
+  "gradeExpected": "senior",
+  "lang": "en",
+  "claims": [
+    {
+      "catalogId": "be.service-boundaries",
+      "quote": "split a monolith into 4 services along domain boundaries"
+    },
+    {
+      "catalogId": "be.distributed-consistency",
+      "quote": "Implemented the transactional outbox pattern with Debezium"
+    },
+    {
+      "catalogId": "be.idempotency",
+      "quote": "Introduced idempotency keys with a unique constraint for all POST payment endpoints"
+    },
+    {
+      "catalogId": "be.performance",
+      "quote": "Profiled the settlement job with async-profiler and cut p95 latency from 1.8 s to 240 ms"
+    },
+    {
+      "catalogId": "common.mentoring",
+      "quote": "Mentored 3 junior developers through onboarding to independent on-call"
+    },
+    {
+      "catalogId": "be.rest-design",
+      "quote": "Built REST APIs on Spring Boot with pagination, error codes and versioning"
+    },
+    {
+      "catalogId": "be.migrations",
+      "quote": "Wrote Flyway migrations with backward-compatible column renames and zero-downtime backfills"
+    },
+    {
+      "catalogId": "be.observability",
+      "quote": "Set up OpenTelemetry tracing and found a slow downstream call that caused timeouts",
+      "alt": [
+        "eng.observability"
+      ]
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.grpc",
+      "why": "basic knowledge"
+    },
+    {
+      "catalogId": "be.message-queue",
+      "why": "Kafka только в перечне"
+    },
+    {
+      "catalogId": "be.cache",
+      "why": "Redis только в перечне"
+    }
+  ],
+  "optional": [
+    "common.architecture-decisions",
+    "be.framework",
+    "be.system-design",
+    "eng.observability",
+    "common.debugging"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

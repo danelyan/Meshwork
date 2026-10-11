@@ -1,4 +1,4 @@
-// Интервьюер квалифицирующего созвона: следующий вопрос по Zod-схеме. Ничего не оценивает –
+// Интервьюер квалифицирующего созвона: следующий вопрос по Zod-схеме. Ничего не оценивает —
 // только сигнал маршрута (сильный/слабый ответ), уровень вопроса считает код (plan.ts).
 // Модель недоступна или вернула мусор → вопрос из шаблона: созвон не падает из-за LLM на середине.
 import { responseJsonSchema } from '../llm/schema';
@@ -18,7 +18,7 @@ export interface InterviewerInput {
   claimedGrade: Grade | null;
   topics: TopicSeed[];
   turns: PlanTurn[];
-  /** Сколько вопросов уже задано и лимиты – модели для `done`. */
+  /** Сколько вопросов уже задано и лимиты — модели для `done`. */
   limits: { minQuestions: number; maxQuestions: number };
   /** Дополнительный вопрос по теме с расхождением оценщика (status=inconclusive): тема и уровень заданы. */
   force?: { topic: string; level: QuestionLevel };
@@ -38,12 +38,16 @@ export interface InterviewerPayload {
     levelIfNone: number;
     /** Уровень первого вопроса новой темы. */
     startLevel: number;
+    /** Тема последнего вопроса и что с ней делать по сигналу (код: plan.ts, leaveRequired). */
+    currentTopic: string | null;
+    afterStrong: 'stay' | 'switch';
+    afterWeak: 'stay' | 'switch';
     /** Темы, по которым уже задано maxPerTopic вопросов: по ним больше не спрашивать. */
     closedTopics: string[];
     /** Ещё не спрошенные темы (по порядку приоритета) и сколько вопросов осталось. */
     unprobedTopics: string[];
     remainingQuestions: number;
-    /** true – следующий вопрос обязан открыть тему из unprobedTopics (иначе она останется непроверенной). */
+    /** true — следующий вопрос обязан открыть тему из unprobedTopics (иначе она останется непроверенной). */
     mustSwitch: boolean;
     /** Дополнительный вопрос: тема и уровень заданы кодом. */
     probeTopic?: string;
@@ -72,6 +76,9 @@ export function buildPayload(input: InterviewerInput): InterviewerPayload {
       levelIfWeak: last ? routeLevel(prev, 'weak') : base,
       levelIfNone: prev,
       startLevel: base,
+      currentTopic: last?.topic ?? null,
+      afterStrong: last && mustLeave(input, last.topic, 'strong') ? 'switch' : 'stay',
+      afterWeak: last && mustLeave(input, last.topic, 'weak') ? 'switch' : 'stay',
       closedTopics: input.force ? closed.filter((t) => t !== input.force!.topic) : closed,
       unprobedTopics: cov.unprobed,
       remainingQuestions: cov.remaining,
@@ -87,13 +94,13 @@ export function buildInterviewerMessages(input: InterviewerInput, correction?: s
   const n = input.turns.length + 1;
   const payload = buildPayload(input);
   const instruction = input.force
-    ? `Задай дополнительный вопрос №${n} по теме «${input.force.topic}» уровня ${input.force.level} (next.probeTopic): по ответам пока нельзя понять глубину. Спроси о другой стороне темы, чем раньше, не повторяя заданные вопросы. answerSignal – по последнему ответу.`
+    ? `Задай дополнительный вопрос №${n} по теме «${input.force.topic}» уровня ${input.force.level} (next.probeTopic): по ответам пока нельзя понять глубину. Спроси о другой стороне темы, чем раньше, не повторяя заданные вопросы. answerSignal — по последнему ответу.`
     : n === 1
       ? 'Задай первый вопрос: короткое приветствие и вопрос по первой теме уровня next.startLevel.'
-      : `Задай вопрос №${n}: сначала answerSignal по последнему ответу, затем вопрос нужного уровня (levelIfStrong / levelIfWeak / levelIfNone; новая тема – startLevel).${
-          payload.next.mustSwitch ? ` Обязательно перейди к новой теме – первой из next.unprobedTopics («${payload.next.unprobedTopics[0]}»), иначе она останется непроверенной.` : ''
+      : `Задай вопрос №${n}: сначала answerSignal по последнему ответу, затем вопрос нужного уровня (levelIfStrong / levelIfWeak / levelIfNone; новая тема — startLevel).${
+          payload.next.mustSwitch ? ` Обязательно перейди к новой теме — первой из next.unprobedTopics («${payload.next.unprobedTopics[0]}»), иначе она останется непроверенной.` : ''
         }`;
-  const msgs: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\n${instruction} Ответ – только JSON по схеме.` }];
+  const msgs: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\n${instruction} Ответ — только JSON по схеме.` }];
   if (correction) msgs.push({ role: 'user', content: correction });
   return msgs;
 }
@@ -104,16 +111,45 @@ export function profileTexts(topics: readonly TopicSeed[]): string[] {
 }
 
 const RETELL_CORRECTION =
-  'Вопрос повторяет формулировку из профиля кандидата (утверждение или факт резюме) – так нельзя: транскрипт читает слепой оценщик. Переформулируй вопрос о теме своими словами, не повторяя ни одной фразы профиля, и верни JSON заново.';
+  'Вопрос повторяет формулировку из профиля кандидата (утверждение или факт резюме) — так нельзя: транскрипт читает слепой оценщик. Переформулируй вопрос о теме своими словами, не повторяя ни одной фразы профиля, и верни JSON заново.';
 
 const DONT_KNOW_CORRECTION =
-  'Кандидат ответил «не знаю» – эта тема закрыта, по ней больше не спрашивай. Задай вопрос по другой теме (первая из next.unprobedTopics, если она есть) и верни JSON заново.';
+  'Кандидат ответил «не знаю» — эта тема закрыта, по ней больше не спрашивай. Задай вопрос по другой теме (первая из next.unprobedTopics, если она есть) и верни JSON заново.';
+
+const LEAVE_CORRECTION =
+  'По этой теме больше не спрашивай: next.afterStrong / next.afterWeak для твоего answerSignal — switch. Задай вопрос по другой теме (первая из next.unprobedTopics, если она есть; иначе тема, не из next.closedTopics) и верни JSON заново.';
 
 export interface NextCallQuestion {
   question: string;
   meta: AiUtteranceMeta;
   /** Модель считает, что вопросов достаточно (код соблюдает минимум). */
   done: boolean;
+}
+
+/**
+ * Остаться на теме последнего вопроса нельзя (правило routing промпта, теперь его держит код): по теме уже
+ * maxPerTopic вопросов, слабый ответ на базовом уровне или пройден уровень 3. Сигнал none (встречный вопрос,
+ * «повтори», шум) тему не закрывает. Есть куда уйти — иначе не требуем. Аудит промптов 12.10: после слабого
+ * ответа на уровне 1 модель в 3 из 4 прогонов оставалась на теме и задавала наводящий вопрос.
+ */
+export function mustLeave(input: InterviewerInput, topic: string, signal: AnswerSignal): boolean {
+  const last = input.turns[input.turns.length - 1];
+  if (input.force || !last || topic !== last.topic || signal === 'none') return false;
+  const onTopic = input.turns.filter((t) => t.topic === topic).length;
+  const leave = onTopic >= CALL_LIMITS.maxPerTopic || last.level === 3 || (signal === 'weak' && last.level === 1);
+  if (!leave) return false;
+  const count = (t: string) => input.turns.filter((x) => x.topic === t).length;
+  return input.topics.some((t) => t.topic !== topic && count(t.topic) < CALL_LIMITS.maxPerTopic);
+}
+
+/**
+ * Число из факта резюме или утверждения, произнесённое в вопросе («пайплайн на 30 сервисов»): n-граммы его не
+ * ловят, а слепой оценщик примет цифру за знание кандидата. Числа внутри слов (STM32, React18) не считаются.
+ */
+export function quotesProfileNumber(question: string, facts: readonly string[]): boolean {
+  const nums = (s: string) => s.match(/(?<![\p{L}\d])\d+(?:[.,]\d+)?(?![\p{L}\d])/gu) ?? [];
+  const inFacts = new Set(facts.flatMap(nums));
+  return nums(question).some((n) => inFacts.has(n));
 }
 
 /** Уровень и тема по ответу модели: уровень всегда считает код из сигнала, не модель. */
@@ -139,13 +175,18 @@ function callGate(input: InterviewerInput, stream: InterviewerStream, onMeta: (m
   return new QuestionGate({
     field: 'question',
     ready(f) {
-      if (typeof f.topic !== 'string') return 'wait';
       if (input.turns.length && typeof f.answerSignal !== 'string') return 'wait';
-      const known = input.topics.find((t) => t.topic === (f.topic as string).trim() || (typeof f.catalogId === 'string' && f.catalogId && t.catalogId === f.catalogId));
+      // Тема — по названию или по catalogId: DeepSeek на Yandex отдаёт ключи по алфавиту (answerSignal, catalogId,
+      // done, question, topic), topic приходит после вопроса, и без catalogId ворота ждали конца генерации на
+      // каждом ходу (аудит промптов 12.10). catalogId темы из плана однозначно задаёт тему.
+      const byId = typeof f.catalogId === 'string' && f.catalogId ? input.topics.find((t) => t.catalogId === f.catalogId) : undefined;
+      if (typeof f.topic !== 'string' && !byId) return 'wait';
+      const known = (typeof f.topic === 'string' ? input.topics.find((t) => t.topic === (f.topic as string).trim()) : undefined) ?? byId;
       const topic = known?.topic ?? (f.topic as string).trim();
       if (input.force && topic !== input.force.topic) return 'stop';
       if (!input.force && cov.mustSwitch && !cov.unprobed.includes(topic)) return 'stop';
       if (!input.force && last && saysDontKnow(last.answer) && topic === last.topic && input.topics.some((t) => t.topic !== last.topic)) return 'stop';
+      if (input.turns.length && mustLeave(input, topic, f.answerSignal as AnswerSignal)) return 'stop';
       // done меняет судьбу вопроса: при открытом покрытии «достаточно» по уже спрошенной теме → шаблон; без
       // покрытия и при closable «достаточно» → итог. Пока done не пришёл, в этих случаях ждём.
       const doneMatters = !input.force && (coverOpen ? !cov.unprobed.includes(topic) : stream.closable);
@@ -158,7 +199,7 @@ function callGate(input: InterviewerInput, stream: InterviewerStream, onMeta: (m
       onMeta({ topic, catalogId: known?.catalogId ?? null, level, routedBy: routed, ...(input.force ? { probe: 'inconclusive' as const } : {}) });
       return 'ok';
     },
-    textOk: (q) => /[а-яё]/i.test(q) && !retellsProfile(q, banned, titles),
+    textOk: (q) => /[а-яё]/i.test(q) && !retellsProfile(q, banned, titles) && !quotesProfileNumber(q, banned),
     lead: (first) => (asksForAnswer(lastAnswer) && !REFUSED_RE.test(first) ? REFUSAL_LINE : null),
     onSentence: stream.onSentence,
   });
@@ -172,8 +213,8 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
   const gate = stream ? callGate(input, stream, (m) => (streamMeta = m)) : null;
   let correction: string | undefined;
   try {
-    // Вторая попытка – только если модель пересказала профиль (n-грамма ≥ 4 слов из утверждения/резюме).
-    // В потоковом режиме – только пока ничего не прозвучало (gate.started).
+    // Вторая попытка — только если модель пересказала профиль (n-грамма ≥ 4 слов из утверждения/резюме).
+    // В потоковом режиме — только пока ничего не прозвучало (gate.started).
     for (let attempt = 0; attempt < 2 && !gate?.started; attempt++) {
       gate?.reset();
       const res = await llm.complete(
@@ -189,17 +230,17 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
         signal,
       );
       const parsed = CallInterviewerOutput.safeParse(res.kind === 'json' ? res.json : undefined);
-      // Вопрос по-русски: без кириллицы (мусор минимальной заглушки) – шаблон.
+      // Вопрос по-русски: без кириллицы (мусор минимальной заглушки) — шаблон.
       if (!parsed.success || !/[а-яё]/i.test(parsed.data.question)) break;
       const out = parsed.data;
       const routed: AnswerSignal | null = input.turns.length ? out.answerSignal : null;
-      // catalogId – только из плана: модель не может привязать тему к чужому утверждению.
+      // catalogId — только из плана: модель не может привязать тему к чужому утверждению.
       const known = input.topics.find((t) => t.topic === out.topic.trim() || (out.catalogId && t.catalogId === out.catalogId));
       const topic = known?.topic ?? out.topic.trim();
-      // Код держит тему: дополнительный вопрос – только по заданной теме; при правиле покрытия – только новая тема.
+      // Код держит тему: дополнительный вопрос — только по заданной теме; при правиле покрытия — только новая тема.
       if (input.force && topic !== input.force.topic) break;
       if (!input.force && cov.mustSwitch && !cov.unprobed.includes(topic)) break;
-      if (retellsProfile(out.question, banned, input.topics.map((t) => t.topic))) {
+      if (retellsProfile(out.question, banned, input.topics.map((t) => t.topic)) || quotesProfileNumber(out.question, banned)) {
         correction = RETELL_CORRECTION;
         continue;
       }
@@ -212,6 +253,13 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
         }
         break;
       }
+      if (mustLeave(input, topic, routed ?? 'none')) {
+        if (attempt === 0 && !correction) {
+          correction = LEAVE_CORRECTION;
+          continue;
+        }
+        break;
+      }
       // «Достаточно» не принимается, пока остались непроверенные темы и лимит не исчерпан (покрытие тем).
       const coverOpen = cov.unprobed.length > 0 && input.turns.length < input.limits.maxQuestions;
       if (!input.force && out.done && coverOpen && !cov.unprobed.includes(topic)) break;
@@ -220,7 +268,7 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
       const done = input.force || coverOpen ? false : out.done;
       const composed = gate?.compose(out.question, '');
       if (composed?.usedChosen) return { question: composed.text, meta, done };
-      if (gate?.started) break; // прозвучало не то, что вышло в итоге – собираем ниже из прозвучавшего
+      if (gate?.started) break; // прозвучало не то, что вышло в итоге — собираем ниже из прозвучавшего
       return { question: withRefusal(out.question.trim(), lastAnswer), meta, done };
     }
   } catch (err) {
@@ -229,7 +277,7 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
   }
   // Часть вопроса уже прозвучала: реплика = прозвучавшее (+ шаблон, если в нём ещё нет вопроса).
   if (gate?.started) {
-    // Вводная-отказ уже прозвучала (или не нужна) – к шаблону её не добавляем второй раз.
+    // Вводная-отказ уже прозвучала (или не нужна) — к шаблону её не добавляем второй раз.
     const fb = templateFallback(input, lastAnswer, false);
     const c = gate.compose(null, fb.question)!;
     console.warn('[call] interviewer stream cut:', c.cut ? 'heard question kept' : 'template appended');

@@ -1,0 +1,48 @@
+{
+  "id": "x12",
+  "theme": "противоречия и завышение: «Senior, 10 лет», а опыта 1 год",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "Писал CRUD-эндпоинты на Express.js для админки"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.service-boundaries",
+      "why": "присутствовал"
+    },
+    {
+      "catalogId": "be.data-scale",
+      "why": "наблюдал"
+    },
+    {
+      "catalogId": "be.distributed-consistency",
+      "why": "код писал коллега"
+    },
+    {
+      "catalogId": "be.system-design",
+      "why": "изучал"
+    },
+    {
+      "catalogId": "be.message-queue",
+      "why": "перечень"
+    },
+    {
+      "catalogId": "eng.iac",
+      "why": "перечень"
+    },
+    {
+      "catalogId": "eng.k8s-resources",
+      "why": "перечень"
+    }
+  ],
+  "optional": [
+    "be.rest-design"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

@@ -1,0 +1,32 @@
+{
+  "id": "x20",
+  "theme": "резюме таблицей Markdown",
+  "specialization": "backend",
+  "gradeExpected": "junior",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "Написал сервис на FastAPI с внедрением зависимостей и middleware"
+    },
+    {
+      "catalogId": "common.unit-tests",
+      "quote": "Покрыл бизнес-логику pytest-тестами с моками внешнего API"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.message-queue",
+      "why": "изучал"
+    },
+    {
+      "catalogId": "common.docker-local",
+      "why": "перечень"
+    }
+  ],
+  "optional": [
+    "be.observability"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

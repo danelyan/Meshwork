@@ -1,0 +1,45 @@
+{
+  "id": "x18",
+  "theme": "Middle frontend на английском",
+  "specialization": "frontend",
+  "gradeExpected": "middle",
+  "lang": "en",
+  "claims": [
+    {
+      "catalogId": "fe.ssr",
+      "quote": "Migrated the checkout from client-side rendering to Next.js SSR with streaming"
+    },
+    {
+      "catalogId": "fe.server-state",
+      "quote": "Introduced TanStack Query for server state"
+    },
+    {
+      "catalogId": "fe.a11y",
+      "quote": "Fixed keyboard navigation and ARIA labels in the custom dropdown"
+    },
+    {
+      "catalogId": "fe.render-perf",
+      "quote": "Virtualized the 10k-row orders table with react-window"
+    },
+    {
+      "catalogId": "fe.responsive",
+      "quote": "Built responsive landing pages mobile-first with media queries and srcset images"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "fe.state-mgmt",
+      "why": "did not design the store"
+    },
+    {
+      "catalogId": "fe.e2e-tests",
+      "why": "basics"
+    }
+  ],
+  "optional": [
+    "fe.web-perf",
+    "fe.ts-typing"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

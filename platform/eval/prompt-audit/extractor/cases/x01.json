@@ -1,0 +1,47 @@
+{
+  "id": "x01",
+  "theme": "mobile Android, нет направления в каталоге",
+  "specialization": "none",
+  "gradeExpected": "middle",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "common.ci-basics",
+      "quote": "Настроил GitHub Actions: сборка APK, unit-тесты и detekt на каждый pull request"
+    },
+    {
+      "catalogId": "common.unit-tests",
+      "quote": "Писал unit-тесты на ViewModel с MockK и Turbine"
+    },
+    {
+      "catalogId": "common.debugging",
+      "quote": "Нашёл причину ANR на старте по трассам Perfetto и логам Firebase Crashlytics"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.framework",
+      "why": "серверного кода нет"
+    },
+    {
+      "catalogId": "fe.ssr",
+      "why": "мобильное приложение, не веб"
+    },
+    {
+      "catalogId": "common.git",
+      "why": "Git только в перечне"
+    }
+  ],
+  "optional": [
+    "fe.components",
+    "fe.api-client",
+    "fe.design-handoff",
+    "fe.architecture",
+    "fe.browser-storage",
+    "fe.state-mgmt",
+    "eng.ci-cd",
+    "common.http"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

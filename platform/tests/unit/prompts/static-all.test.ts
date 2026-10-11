@@ -84,7 +84,6 @@ const shortName = (md: string) => md.replace('src/server/', '');
 /** Промпты без `<!-- version: … -->` в первой строке. Новые промпты обязаны иметь версию. */
 const KNOWN_NO_VERSION = new Set([
   'call/prompts/evaluator.md',
-  'call/prompts/interviewer.md',
   'claims/prompts/extractor.md',
   'defense-room/prompts/evaluator.md',
   'defense-room/prompts/interviewer.md',
@@ -96,8 +95,6 @@ const KNOWN_NO_VERSION = new Set([
 
 /** Ссылки `next.x` в промпте, которых нет в данных `<call_context>` (research/42 для созвона). */
 const KNOWN_DEAD_REFS = new Set([
-  // Созвон: уровень приходит как next.levelIfStrong/levelIfWeak/levelIfNone/startLevel, поля level нет.
-  'call/prompts/interviewer.md: next.level',
   // ИИнтервью: план лежит в next.ifStrong/ifWeak/ifNone.{block,…}, плоского next.block нет.
   'interview/prompts/interviewer.md: next.block',
 ]);
@@ -491,7 +488,7 @@ describe('ссылки промпта на данные <call_context>', () => {
   });
 
   // Реальные рассинхроны: падают, пока владелец промпта не поправит (тогда убрать запись из KNOWN_DEAD_REFS и fails).
-  it.fails('созвон: промпт не ссылается на несуществующий next.level (research/42)', () => {
+  it('созвон: промпт не ссылается на несуществующий next.level (research/42)', () => {
     expect(deadRefs(withPayload.find((p) => p.md === 'call/prompts/interviewer.md')!)).toEqual([]);
   });
   it.fails('ИИнтервью: промпт не ссылается на плоский next.block (план — в next.ifStrong/ifWeak/ifNone)', () => {

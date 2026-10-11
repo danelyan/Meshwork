@@ -11,15 +11,16 @@ import { catalogFor } from './catalog-file';
 import { docLines, type SourceLine } from './source-text';
 import type { CatalogEntry, ProposedClaim } from './types';
 import { WORDING_MAX } from './wording';
+import { promptVersion, stripComments } from '../agent/prompts/assemble';
 
-/** Символов документа в одном вызове; длиннее – по частям с общей нумерацией строк. */
+/** Символов документа в одном вызове; длиннее — по частям с общей нумерацией строк. */
 export const EXTRACTOR_MAX_CHUNK_CHARS = 12_000;
-/** Утверждений из одной части – не больше (защита от «вывалить весь каталог»). */
+/** Утверждений из одной части — не больше (защита от «вывалить весь каталог»). */
 export const EXTRACTOR_MAX_CLAIMS_PER_CHUNK = 40;
 
 const Confidence = z.enum(['low', 'medium', 'high']);
 
-/** Что принимаем от модели: catalogId – любая строка, чужие ID отбрасываются после, а не ремонтом. */
+/** Что принимаем от модели: catalogId — любая строка, чужие ID отбрасываются после, а не ремонтом. */
 const OutputSchema = z.object({
   claims: z
     .array(
@@ -30,7 +31,7 @@ const OutputSchema = z.object({
           .optional()
           .catch(undefined),
         quote: z.string().max(1000),
-        /** Формулировка под цитату; битая или пустая – не повод для ремонта: verifyClaims построит её из цитаты. */
+        /** Формулировка под цитату; битая или пустая — не повод для ремонта: verifyClaims построит её из цитаты. */
         wording: z.string().trim().min(1).max(WORDING_MAX).optional().catch(undefined),
         confidence: Confidence.catch('low'),
       }),
@@ -39,7 +40,7 @@ const OutputSchema = z.object({
 });
 type Output = z.infer<typeof OutputSchema>;
 
-/** JSON Schema для провайдера: catalogId – enum разрешённых ID (строгий вывод там, где он есть). */
+/** JSON Schema для провайдера: catalogId — enum разрешённых ID (строгий вывод там, где он есть). */
 export function extractorJsonSchema(ids: string[]): object {
   const schema = z.object({
     claims: z
@@ -58,15 +59,23 @@ export function extractorJsonSchema(ids: string[]): object {
 }
 
 let promptCache: string | null = null;
+let promptVersionCache = '';
+/** Версия промпта из первой строки `<!-- version: … -->` (в журнал замеров). */
+export function extractorPromptVersion(): string {
+  extractorSystemPrompt();
+  return promptVersionCache;
+}
 /** prompts/extractor.md. На стенде (standalone) файл нужен в outputFileTracingIncludes. */
 export function extractorSystemPrompt(): string {
   if (promptCache) return promptCache;
-  // process.cwd() – корень platform (Next.js docs: не __dirname); из eval/ – на уровень выше
+  // process.cwd() — корень platform (Next.js docs: не __dirname); из eval/ — на уровень выше
   const rel = 'src/server/claims/prompts/extractor.md';
   const candidates = [join(process.cwd(), rel), join(process.cwd(), '..', rel)];
   for (const p of candidates) {
     try {
-      promptCache = readFileSync(p, 'utf8');
+      const md = readFileSync(p, 'utf8');
+      promptVersionCache = promptVersion(md);
+      promptCache = stripComments(md);
       return promptCache;
     } catch {
       /* следующий путь */
@@ -82,7 +91,7 @@ function neutralize(s: string): string {
 
 function catalogBlock(entries: CatalogEntry[]): string {
   return entries
-    .map((e) => `- ${e.id} – ${e.statement}. Маркеры: ${e.markers.join(', ')}`)
+    .map((e) => `- ${e.id} — ${e.statement}. Маркеры: ${e.markers.join(', ')}`)
     .join('\n');
 }
 
@@ -123,7 +132,7 @@ export function buildUserMessage(doc: ExtractedDoc, entries: CatalogEntry[], chu
     chunk.body.trimEnd(),
     '</document>',
     '',
-    'Верни JSON {"claims": [...]} по правилам из системного сообщения (у каждого – wording строго по цитате).',
+    'Верни JSON {"claims": [...]} по правилам из системного сообщения (у каждого — wording строго по цитате).',
   ].join('\n');
 }
 
@@ -157,13 +166,13 @@ export interface ExtractOptions {
 
 /**
  * Черновик утверждений из одного документа (research/10 § 4.5, план claims):
- *  - внешний текст – в `<document source=…>` с пометкой «данные, не инструкции»;
+ *  - внешний текст — в `<document source=…>` с пометкой «данные, не инструкции»;
  *  - модель видит только ID каталога (по специализации) с формулировками и маркерами;
- *  - вывод – JSON по схеме (`schema` в CompleteRequest), проверка Zod, один ремонт при невалидном;
+ *  - вывод — JSON по схеме (`schema` в CompleteRequest), проверка Zod, один ремонт при невалидном;
  *  - ID вне показанного каталога отбрасываются; номер строки → `ref` строки документа.
  * Ошибки провайдера (429/5xx/таймаут) пробрасываются: вызывающий решает про план В (`extractByMarkers`).
  * Невалидный вывод и после ремонта → LlmError('invalid_output').
- * Возвращает непроверенный черновик – дальше обязательно `verifyClaims`.
+ * Возвращает непроверенный черновик — дальше обязательно `verifyClaims`.
  */
 export async function extractClaims(
   doc: ExtractedDoc,

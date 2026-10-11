@@ -1,0 +1,44 @@
+{
+  "id": "x09",
+  "theme": "embedded C, нет направления в каталоге",
+  "specialization": "none",
+  "gradeExpected": "middle",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "common.unit-tests",
+      "quote": "Покрыл модуль протокола модульными тестами на Unity и CMock"
+    },
+    {
+      "catalogId": "common.ci-basics",
+      "quote": "Настроил Jenkins: сборка прошивки, статический анализ cppcheck и тесты на каждый merge request",
+      "alt": [
+        "eng.ci-cd"
+      ]
+    },
+    {
+      "catalogId": "common.debugging",
+      "quote": "Нашёл причину зависания устройства по дампу HardFault и регистрам стека"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.linux-shell",
+      "why": "Yocto — знаком"
+    },
+    {
+      "catalogId": "be.lang-core",
+      "why": "не серверный код"
+    },
+    {
+      "catalogId": "common.git",
+      "why": "перечень"
+    }
+  ],
+  "optional": [
+    "be.concurrency",
+    "eng.ci-cd"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

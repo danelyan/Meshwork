@@ -1,0 +1,29 @@
+{
+  "id": "x02",
+  "theme": "mobile iOS, стажёр, мало фактов",
+  "specialization": "none",
+  "gradeExpected": "junior",
+  "lang": "ru",
+  "claims": [],
+  "notClaims": [
+    {
+      "catalogId": "fe.architecture",
+      "why": "VIPER — курс"
+    },
+    {
+      "catalogId": "fe.browser-storage",
+      "why": "Core Data по туториалу"
+    },
+    {
+      "catalogId": "common.git",
+      "why": "перечень"
+    }
+  ],
+  "optional": [
+    "fe.design-handoff",
+    "common.debugging",
+    "fe.components"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

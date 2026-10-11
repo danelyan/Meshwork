@@ -1,0 +1,72 @@
+{
+  "id": "x05",
+  "theme": "DevOps",
+  "specialization": "engineering",
+  "gradeExpected": "middle",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "eng.iac",
+      "quote": "Описал инфраструктуру в Terraform"
+    },
+    {
+      "catalogId": "eng.ci-cd",
+      "quote": "Перевёл 14 сервисов на GitLab CI/CD",
+      "alt": [
+        "common.ci-basics"
+      ]
+    },
+    {
+      "catalogId": "eng.dockerfile",
+      "quote": "Переписал Dockerfile сервисов на multi-stage сборку с кэшем слоёв",
+      "alt": [
+        "common.docker-local"
+      ]
+    },
+    {
+      "catalogId": "eng.k8s-probes",
+      "quote": "Настроил liveness и readiness пробы"
+    },
+    {
+      "catalogId": "eng.k8s-resources",
+      "quote": "Подобрал requests и limits по профилю потребления"
+    },
+    {
+      "catalogId": "eng.deploy-rollback",
+      "quote": "Откатывал неудачные релизы через helm rollback"
+    },
+    {
+      "catalogId": "eng.secrets",
+      "quote": "Перенёс секреты из .env в репозитории в Vault",
+      "alt": [
+        "be.config-secrets"
+      ]
+    },
+    {
+      "catalogId": "be.linux-shell",
+      "quote": "Администрировал Linux-серверы: systemd, сеть, разбор логов, права доступа"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "eng.slo",
+      "why": "знаком с концепцией"
+    },
+    {
+      "catalogId": "eng.alerting",
+      "why": "Prometheus только в перечне"
+    },
+    {
+      "catalogId": "eng.observability",
+      "why": "перечень"
+    }
+  ],
+  "optional": [
+    "common.ci-basics",
+    "common.docker-local",
+    "be.config-secrets",
+    "eng.capacity-planning"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

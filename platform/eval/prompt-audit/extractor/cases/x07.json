@@ -1,0 +1,55 @@
+{
+  "id": "x07",
+  "theme": "аналитик данных",
+  "specialization": "ai",
+  "gradeExpected": "junior",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "ai.bi-sql-analytics",
+      "quote": "Писала SQL-запросы для еженедельного отчёта",
+      "alt": [
+        "common.sql-queries"
+      ]
+    },
+    {
+      "catalogId": "ai.bi-dashboards",
+      "quote": "Собрала дашборд в DataLens по воронке подписки"
+    },
+    {
+      "catalogId": "ai.bi-metrics-design",
+      "quote": "Посчитала конверсию из пробного периода в платную подписку",
+      "alt": [
+        "ai.bi-data-quality"
+      ]
+    },
+    {
+      "catalogId": "ai.bi-experiment-reporting",
+      "quote": "Оформила итоги A/B-теста новой страницы оплаты",
+      "alt": [
+        "ai.ab-testing"
+      ]
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "ai.bi-data-modeling",
+      "why": "тема курса"
+    },
+    {
+      "catalogId": "ai.pandas-sql",
+      "why": "проекты курса"
+    },
+    {
+      "catalogId": "ai.ml-baseline",
+      "why": "нет"
+    }
+  ],
+  "optional": [
+    "ai.bi-data-quality",
+    "ai.ab-testing",
+    "common.sql-queries"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

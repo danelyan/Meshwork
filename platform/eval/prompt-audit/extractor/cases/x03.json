@@ -1,0 +1,57 @@
+{
+  "id": "x03",
+  "theme": "ML/DS",
+  "specialization": "ai",
+  "gradeExpected": "middle",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "ai.feature-pipeline",
+      "quote": "Построил пайплайн признаков в sklearn Pipeline"
+    },
+    {
+      "catalogId": "ai.data-leakage",
+      "quote": "Обнаружил утечку данных"
+    },
+    {
+      "catalogId": "ai.validation",
+      "quote": "Настроил валидацию по времени (TimeSeriesSplit) вместо случайного разбиения"
+    },
+    {
+      "catalogId": "ai.ml-baseline",
+      "quote": "Обучил CatBoost и сравнил с логистической регрессией и константным прогнозом"
+    },
+    {
+      "catalogId": "ai.ml-metrics",
+      "quote": "Выбрал метрику PR-AUC вместо accuracy из-за дисбаланса классов 1:30"
+    },
+    {
+      "catalogId": "ai.model-serving",
+      "quote": "Вывел модель в батч-скоринг через Airflow, прогон 2 млн заявок за ночь"
+    },
+    {
+      "catalogId": "ai.pandas-sql",
+      "quote": "Считал сегменты клиентов в pandas и SQL: группировки, пропуски, объединения таблиц"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "ai.model-versioning",
+      "why": "MLflow — читал документацию"
+    },
+    {
+      "catalogId": "ai.monitoring-drift",
+      "why": "интересуюсь"
+    },
+    {
+      "catalogId": "ai.ml-platform",
+      "why": "не строил"
+    }
+  ],
+  "optional": [
+    "eng.orchestration",
+    "common.sql-queries"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

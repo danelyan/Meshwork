@@ -1,0 +1,52 @@
+{
+  "id": "x11",
+  "theme": "скан после OCR: гомоглифы, 0 вместо o, переносы слов",
+  "specialization": "backend",
+  "gradeExpected": "middle",
+  "lang": "ru",
+  "claims": [
+    {
+      "catalogId": "be.framework",
+      "quote": "Разработал сервис расчёта тарифов на Djаngo REST Frаmework",
+      "alt": [
+        "be.rest-design"
+      ]
+    },
+    {
+      "catalogId": "be.sql-indexes",
+      "quote": "Оптимизировал медленные запросы: по EXPLAIN ANALYZE добавил"
+    },
+    {
+      "catalogId": "be.background-jobs",
+      "quote": "Вынес генерацию PDF-накладных в фоновые задачи Celery с расписанием"
+    },
+    {
+      "catalogId": "be.integration-tests",
+      "quote": "писал интеграционные тесты API с PostgreSQL в Docker (testcontainers)"
+    },
+    {
+      "catalogId": "be.external-integration",
+      "quote": "Интегрировал API службы доставки СДЭК: OAuth-токен, лимиты запросов,"
+    }
+  ],
+  "notClaims": [
+    {
+      "catalogId": "be.cache",
+      "why": "Redis в перечне"
+    },
+    {
+      "catalogId": "common.git",
+      "why": "перечень"
+    },
+    {
+      "catalogId": "be.linux-shell",
+      "why": "перечень"
+    }
+  ],
+  "optional": [
+    "be.rest-design",
+    "be.performance"
+  ],
+  "forbidden": [],
+  "hiddenLines": []
+}

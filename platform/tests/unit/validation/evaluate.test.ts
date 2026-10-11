@@ -70,7 +70,7 @@ describe('метрики', () => {
     expect(report.rows.map((r) => r.id)).toEqual(DEMO_VACANCIES.map((v) => v.id));
     for (const v of DEMO_VACANCIES) {
       const ranked = dropUncovered(
-        rankCandidates(evidence, { specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: [] }, catalog),
+        rankCandidates(evidence, { specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: [] }, catalog, { expandPool: true }),
       ).map((r) => r.candidateId);
       const row = report.rows.find((r) => r.id === v.id)!;
       expect(row.top.map((t) => t.candidateId)).toEqual(ranked.slice(0, 5));

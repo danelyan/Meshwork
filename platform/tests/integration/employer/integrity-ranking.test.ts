@@ -2,6 +2,7 @@
 // пока её не подтвердит созвон с разбором ЭТОЙ попытки («объяснил сам»). partial / нет созвона — понижение остаётся.
 import { GET as search } from '@/app/api/employer/search/route';
 import { GET as matches } from '@/app/api/employer/vacancies/[id]/matches/route';
+import { CATEGORY_WITHHELD_TEXT } from '@/server/employer/ranking';
 import { resetEnvCache } from '@/server/env';
 import { signUserSession } from '@/server/session';
 
@@ -44,14 +45,14 @@ async function makeCandidate(id: string, integrity: object, call?: 'explained' |
   }
 }
 
-type Item = { candidateId: string; categoryMatch: boolean; explanation: { category: string } };
-async function vacancyItems(): Promise<Item[]> {
-  const res = await matches(jsonRequest('/x', 'GET', undefined, EMP), params({ id: NEED }));
+type Item = { candidateId: string; categoryMatch: boolean; explanation: { category: string }; candidate: { category: { label: string; withheld?: true } | null } };
+async function vacancyItems(query = ''): Promise<Item[]> {
+  const res = await matches(jsonRequest(`/x?${query}`, 'GET', undefined, EMP), params({ id: NEED }));
   expect(res.status).toBe(200);
   return (await res.json()).items;
 }
-async function bankIds(): Promise<string[]> {
-  const res = await search(jsonRequest('/api/employer/search?specialization=backend&grade=junior&limit=50', 'GET', undefined, EMP));
+async function bankIds(query = ''): Promise<string[]> {
+  const res = await search(jsonRequest(`/api/employer/search?specialization=backend&grade=junior&limit=50&${query}`, 'GET', undefined, EMP));
   expect(res.status).toBe(200);
   return ((await res.json()).items as Item[]).map((i) => i.candidateId);
 }
@@ -76,21 +77,31 @@ describe('индекс честности в порядке выдачи (2a, Б
   });
   afterAll(() => prisma.$disconnect());
 
-  it('подборка: high без «объяснил сам» теряет категорию, с ним — сохраняет', async () => {
-    const by = new Map((await vacancyItems()).map((i) => [i.candidateId, i]));
-    expect(by.get('ir-low')?.categoryMatch).toBe(true);
-    expect(by.get('ir-call')?.categoryMatch).toBe(true);
+  it('подборка: high без «объяснил сам» теряет категорию (виден только в расширенном пуле, карточка помечена), с ним — сохраняет', async () => {
+    const main = new Map((await vacancyItems()).map((i) => [i.candidateId, i]));
+    expect(main.get('ir-low')?.categoryMatch).toBe(true);
+    expect(main.get('ir-call')?.categoryMatch).toBe(true);
+    expect(main.get('ir-call')?.candidate.category).toEqual({ specialization: 'backend', grade: 'junior', subcategoryId: 'backend.web-api', label: 'Backend · Junior' });
+    // основной режим — только учитываемые категории: не подтверждённый high в подборке отсутствует
+    expect(main.has('ir-high')).toBe(false);
+    expect(main.has('ir-partial')).toBe(false);
+    const by = new Map((await vacancyItems('pool=all')).map((i) => [i.candidateId, i]));
     for (const id of ['ir-high', 'ir-partial']) {
       expect(by.get(id)?.categoryMatch).toBe(false);
-      expect(by.get(id)?.explanation.category).toBe('категория из теста не учитывается до подтверждения на созвоне');
+      expect(by.get(id)?.explanation.category).toBe(CATEGORY_WITHHELD_TEXT);
+      // карточка говорит то же, что объяснение: категория есть, но не учитывается
+      expect(by.get(id)?.candidate.category).toMatchObject({ grade: 'junior', label: 'Backend · Junior (не учитывается до подтверждения)', withheld: true });
     }
+    expect(by.get('ir-call')?.candidate.category?.withheld).toBeUndefined();
   });
 
-  it('банк с фильтром категории: понижённые не проходят фильтр', async () => {
-    const ids = await bankIds();
-    expect(ids).toEqual(expect.arrayContaining(['ir-low', 'ir-call']));
-    expect(ids).not.toContain('ir-high');
-    expect(ids).not.toContain('ir-partial');
+  it('банк с фильтром категории: понижённые не проходят фильтр даже в расширенном пуле', async () => {
+    for (const q of ['', 'pool=all']) {
+      const ids = await bankIds(q);
+      expect(ids).toEqual(expect.arrayContaining(['ir-low', 'ir-call']));
+      expect(ids).not.toContain('ir-high');
+      expect(ids).not.toContain('ir-partial');
+    }
   });
 
   it('TEST_INTEGRITY_RANKING=false — порядок без индекса', async () => {

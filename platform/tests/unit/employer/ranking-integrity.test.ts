@@ -1,5 +1,5 @@
 // Параметр integrityPenalty (вариант 2 индекса честности, eval/matching/integrity.ts): выключен — порядок прежний.
-import { applyIntegrity, rankCandidates, scoreCandidate, type CandidateEvidence, type MatchTarget } from '@/server/employer/ranking';
+import { applyIntegrity, CATEGORY_WITHHELD_TEXT, rankCandidates, scoreCandidate, type CandidateEvidence, type MatchTarget } from '@/server/employer/ranking';
 
 import { fixtureCatalog } from '../../helpers/recommend-fixtures';
 
@@ -35,26 +35,31 @@ const pool = [
   cand('bare', [], { category: middle, testIntegrity: { level: 'high' } }),
   cand('medium', ['be.sql-indexes'], { category: middle, testIntegrity: { level: 'medium' } }),
 ];
-const ids = (opts?: Parameters<typeof rankCandidates>[4]) => rankCandidates(pool, target, catalog, {}, opts).map((r) => `${r.candidateId}:${r.score}`);
+// Расширенный пул: honest без категории; основной режим (только категории) проверяется отдельно ниже.
+const POOL = { expandPool: true } as const;
+const ids = (opts?: Parameters<typeof rankCandidates>[4]) => rankCandidates(pool, target, catalog, POOL, opts).map((r) => `${r.candidateId}:${r.score}`);
 const stripped = pool.map((c) => ({ ...c, testIntegrity: undefined }));
 
 describe('integrityPenalty в ранжировании', () => {
   it('выключен (нет опции) — порядок и баллы те же, что без индекса', () => {
-    expect(ids()).toEqual(rankCandidates(stripped, target, catalog).map((r) => `${r.candidateId}:${r.score}`));
+    expect(ids()).toEqual(rankCandidates(stripped, target, catalog, POOL).map((r) => `${r.candidateId}:${r.score}`));
     expect(ids({})).toEqual(ids());
     expect(ids()[0]).toMatch(/^cheat:/); // категория Middle сейчас поднимает его выше честного
   });
 
   it('2a drop_category: при high категория не учитывается, кандидат без покрытия выпадает', () => {
-    const r = rankCandidates(pool, target, catalog, {}, { integrityPenalty: { mode: 'drop_category' } });
+    const r = rankCandidates(pool, target, catalog, POOL, { integrityPenalty: { mode: 'drop_category' } });
     expect(r.map((x) => x.candidateId)).toEqual(['honest', 'medium', 'cheat']);
     const cheat = r.find((x) => x.candidateId === 'cheat')!;
     expect(cheat.categoryMatch).toBe(false);
     expect(cheat.boosts.category).toBe(0);
-    expect(cheat.explanation.category).toBe('категория из теста не учитывается до подтверждения на созвоне');
+    expect(cheat.explanation.category).toBe(CATEGORY_WITHHELD_TEXT);
     // фильтр по грейду категории: флагнутый не проходит, medium проходит
-    const f = rankCandidates(pool, target, catalog, { grade: 'middle' }, { integrityPenalty: { mode: 'drop_category' } });
+    const f = rankCandidates(pool, target, catalog, { ...POOL, grade: 'middle' }, { integrityPenalty: { mode: 'drop_category' } });
     expect(f.map((x) => x.candidateId)).toEqual(['medium']);
+    // основной режим (только подтверждённые категории): не учитываемая категория = категории нет, кандидат виден только в расширенном пуле
+    const main = rankCandidates(pool, target, catalog, {}, { integrityPenalty: { mode: 'drop_category' } });
+    expect(main.map((x) => x.candidateId)).toEqual(['medium']);
   });
 
   it('2b multiplier: балл high × factor, у medium и без индекса без изменений', () => {

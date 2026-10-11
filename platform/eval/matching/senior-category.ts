@@ -8,11 +8,14 @@
 // грейд генератора (Senior против Middle), категория теста скрыта. Меряем, поднимают ли веса S истинных Senior выше.
 import { DEMO_POOL_CATEGORIES } from '../../prisma/seed/pool-categories';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
-import { categoryNeeds, rankCandidates, type CandidateEvidence } from '../../src/server/employer/ranking';
+import { categoryNeeds, rankCandidates, type CandidateEvidence, type MatchFilters } from '../../src/server/employer/ranking';
 import { SUBCATEGORIES } from '../../src/lib/directions';
 import type { CatalogEntry } from '../../src/server/claims/types';
 
 import { generateSynthetic, SYN_SEED } from './synthetic';
+
+/** Профили здесь без категории теста — ранжируем в расширенном пуле (иначе основной режим их не показывает). */
+const EVAL_FILTERS: MatchFilters = { expandPool: true };
 
 const full = catalogFromFile();
 const after = new Map(full.map((e) => [e.id, e]));
@@ -29,7 +32,7 @@ function run(cat: Map<string, CatalogEntry>, label: string) {
     const pool = DEMO_POOL_CATEGORIES.filter((p) => p.subcategoryId === s.id && p.category?.grade !== 'junior');
     const ev: CandidateEvidence[] = pool.map((p) => ({ id: p.id, specialization: p.specialization, fspState: 'not_linked', category: null,
       claims: p.claims.map(([catalogId, level]) => ({ catalogId, level, statement: cat.get(catalogId)?.statement ?? catalogId, quote: '' })) }));
-    const r = rankCandidates(ev, { specialization: s.specialization, subcategoryId: s.id, grade: 'senior', needs: categoryNeeds(cat, s.specialization, 'senior'), stack: [] }, cat);
+    const r = rankCandidates(ev, { specialization: s.specialization, subcategoryId: s.id, grade: 'senior', needs: categoryNeeds(cat, s.specialization, 'senior'), stack: [] }, cat, EVAL_FILTERS);
     const score = new Map(r.map((x) => [x.candidateId, x.score]));
     const sen = pool.filter((p) => p.category?.grade === 'senior'), mid = pool.filter((p) => p.category?.grade === 'middle');
     for (const a of sen) for (const b of mid) { pairs++; const d = (score.get(a.id) ?? 0) - (score.get(b.id) ?? 0); wins += d > 0 ? 1 : d === 0 ? 0.5 : 0; }
@@ -49,7 +52,7 @@ function runSyn(cat: Map<string, CatalogEntry>, label: string) {
     const pool = syn.profiles.filter((p) => p.specialization === spec && (p.trueGrade === 'senior' || p.trueGrade === 'middle'));
     const ev: CandidateEvidence[] = pool.map((p) => ({ id: p.id, specialization: p.specialization, fspState: 'not_linked', category: null,
       claims: p.claims.map(([catalogId, level]) => ({ catalogId, level, statement: cat.get(catalogId)?.statement ?? catalogId, quote: '' })) }));
-    const r = rankCandidates(ev, { specialization: spec, grade: 'senior', needs: categoryNeeds(cat, spec, 'senior'), stack: [] }, cat);
+    const r = rankCandidates(ev, { specialization: spec, grade: 'senior', needs: categoryNeeds(cat, spec, 'senior'), stack: [] }, cat, EVAL_FILTERS);
     const score = new Map(r.map((x) => [x.candidateId, x.score]));
     const sen = pool.filter((p) => p.trueGrade === 'senior'), mid = pool.filter((p) => p.trueGrade === 'middle');
     let pairs = 0, wins = 0;
@@ -66,7 +69,7 @@ runSyn(after, 'после        ');
 function scoresOf(cat: Map<string, CatalogEntry>, spec: 'backend' | 'frontend' | 'ai' | 'engineering', pool: typeof syn.profiles) {
   const ev: CandidateEvidence[] = pool.map((p) => ({ id: p.id, specialization: p.specialization, fspState: 'not_linked', category: null,
     claims: p.claims.map(([catalogId, level]) => ({ catalogId, level, statement: cat.get(catalogId)?.statement ?? catalogId, quote: '' })) }));
-  const r = rankCandidates(ev, { specialization: spec, grade: 'senior', needs: categoryNeeds(cat, spec, 'senior'), stack: [] }, cat);
+  const r = rankCandidates(ev, { specialization: spec, grade: 'senior', needs: categoryNeeds(cat, spec, 'senior'), stack: [] }, cat, EVAL_FILTERS);
   return new Map(r.map((x) => [x.candidateId, x.score]));
 }
 let seed = 20261011;

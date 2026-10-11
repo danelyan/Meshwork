@@ -148,7 +148,7 @@ describe('балл: проект под ЭТУ потребность и тем�
   });
 
   it('ранжирование: кандидат с проектом под потребность выше такого же без проекта', () => {
-    const r = rankCandidates([cand('a'), cand('b', { projects: [project()] })], target, catalog);
+    const r = rankCandidates([cand('a'), cand('b', { projects: [project()] })], target, catalog, { expandPool: true });
     expect(r.map((x) => x.candidateId)).toEqual(['b', 'a']);
   });
 });
@@ -168,8 +168,8 @@ describe('защита: флаг — пометка, не штраф', () => {
     expect(rf.explanation.summary).toMatch(/защита: 3 из 8 \(флаг: сильный проект при слабой защите\)/);
     expect(rc.explanation.defense?.flags).toEqual([]);
     // Порядок определяют только прежние слагаемые: равный балл — по id, а не по флагу.
-    expect(rankCandidates([flagged, clean], target, catalog).map((x) => x.candidateId)).toEqual(['a', 'b']);
-    expect(rankCandidates([clean, flagged], target, catalog).map((x) => x.candidateId)).toEqual(['a', 'b']);
+    expect(rankCandidates([flagged, clean], target, catalog, { expandPool: true }).map((x) => x.candidateId)).toEqual(['a', 'b']);
+    expect(rankCandidates([clean, flagged], target, catalog, { expandPool: true }).map((x) => x.candidateId)).toEqual(['a', 'b']);
   });
 
   it('защита без ответов: оценки нет', () => {

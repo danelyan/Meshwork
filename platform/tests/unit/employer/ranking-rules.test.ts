@@ -13,6 +13,8 @@ import { fixtureCatalog } from '../../helpers/recommend-fixtures';
 const catalog = fixtureCatalog();
 const YEAR = 2026;
 const opts = { year: YEAR };
+/** Расширенный пул: тесты формулы ранжируют и кандидатов без категории (основной режим — ranking.test.ts). */
+const POOL = { expandPool: true } as const;
 const target: MatchTarget = {
   specialization: 'backend',
   grade: 'middle',
@@ -87,7 +89,7 @@ describe('вес достижений ФСП (R-M-02)', () => {
     const star = cand('star', [['be.idempotency', 'artifact']], { fspState: 'linked', fspAchievements: many });
     const solid = cand('solid', [['be.idempotency', 'artifact'], ['be.sql-indexes', 'artifact']]);
     const twin = cand('twin', [['be.idempotency', 'artifact']]);
-    expect(rankCandidates([star, solid, twin], target, catalog, {}, opts).map((r) => r.candidateId)).toEqual(['solid', 'star', 'twin']);
+    expect(rankCandidates([star, solid, twin], target, catalog, POOL, opts).map((r) => r.candidateId)).toEqual(['solid', 'star', 'twin']);
   });
 
   it('причина в объяснении: место, событие, год и вклад', () => {
@@ -121,7 +123,7 @@ describe('частичный зачёт близких технологий', ()
     const exact = cand('exact', [['be.message-queue', 'artifact']], {}, 'Kafka');
     const near = cand('near', [['be.message-queue', 'artifact']], {}, 'RabbitMQ');
     const none = cand('none', [['be.message-queue', 'artifact']], {}, 'Go');
-    const r = rankCandidates([near, none, exact], t, catalog, {}, opts);
+    const r = rankCandidates([near, none, exact], t, catalog, POOL, opts);
     expect(r.map((x) => x.candidateId)).toEqual(['exact', 'near', 'none']);
     expect(r[0]!.explanation.stackPartial).toBeUndefined();
   });
@@ -141,22 +143,24 @@ describe('подсказки ослабления (R-M-04)', () => {
     cand('jun', [], { category: { specialization: 'backend', grade: 'junior' } }),
   ];
 
+  // Пул почти целиком без категории: подсказки считаются в расширенном пуле, иначе первой шла бы «расширьте пул» (ranking.test.ts).
   it('снятие одной метки стека: «Ослабьте „Kafka“» и сколько добавится, лучшие первыми', () => {
-    const hints = relaxationHints(pool, target, catalog, { stack: ['Go', 'Kafka'] }, opts);
-    expect(hints[0]).toEqual({ kind: 'stack', label: 'Ослабьте «Kafka»', gain: 2, filters: { stack: ['Go'] } });
-    expect(hints.find((h) => h.label === 'Ослабьте «Go»')).toMatchObject({ gain: 1, filters: { stack: ['Kafka'] } });
+    const hints = relaxationHints(pool, target, catalog, { ...POOL, stack: ['Go', 'Kafka'] }, opts);
+    expect(hints[0]).toEqual({ kind: 'stack', label: 'Ослабьте «Kafka»', gain: 2, filters: { ...POOL, stack: ['Go'] } });
+    expect(hints.find((h) => h.label === 'Ослабьте «Go»')).toMatchObject({ gain: 1, filters: { ...POOL, stack: ['Kafka'] } });
     expect(hints.map((h) => h.gain)).toEqual([...hints.map((h) => h.gain)].sort((a, b) => b - a));
   });
 
-  it('грейд потребности на ступень ниже — кандидат с категорией Junior', () => {
-    const hints = relaxationHints(pool, target, catalog, {}, opts);
+  it('грейд потребности на ступень ниже — кандидат с категорией Junior; в основном режиме первой идёт «расширьте пул»', () => {
+    const hints = relaxationHints(pool, target, catalog, POOL, opts);
     expect(hints).toEqual([{ kind: 'vacancyGrade', label: 'Рассмотрите Junior вместо Middle', gain: 1, filters: null, grade: 'junior' }]);
+    expect(relaxationHints(pool, target, catalog, {}, opts)[0]).toMatchObject({ kind: 'expandPool', gain: 4, filters: { expandPool: true } });
   });
 
   it('ничего не добавляет — подсказок нет; текущая подборка не меняется', () => {
-    const before = rankCandidates(pool, { ...target, grade: 'junior' }, catalog, {}, opts);
-    expect(relaxationHints(pool, { ...target, grade: 'junior' }, catalog, {}, opts)).toEqual([]);
-    expect(rankCandidates(pool, { ...target, grade: 'junior' }, catalog, {}, opts)).toEqual(before);
+    const before = rankCandidates(pool, { ...target, grade: 'junior' }, catalog, POOL, opts);
+    expect(relaxationHints(pool, { ...target, grade: 'junior' }, catalog, POOL, opts)).toEqual([]);
+    expect(rankCandidates(pool, { ...target, grade: 'junior' }, catalog, POOL, opts)).toEqual(before);
   });
 
   it('вывод: ссылки на ту же подборку с новыми фильтрами, грейд — на правку потребности', () => {

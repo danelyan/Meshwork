@@ -44,10 +44,12 @@ describe('фильтры поиска и потребность: подкате�
   });
 
   it('passesFilters: без подкатегории или с другой — не проходит', () => {
-    expect(passesFilters(cand('ai.llm-apps'), { subcategory: 'ai.llm-apps' })).toBe(true);
-    expect(passesFilters(cand('ai.mlops'), { subcategory: 'ai.llm-apps' })).toBe(false);
-    expect(passesFilters(cand(null), { subcategory: 'ai.llm-apps' })).toBe(false);
-    expect(passesFilters(cand(null), { specialization: 'ai' })).toBe(true);
+    // профили здесь без категории из теста — проверяем в расширенном пуле (M05: в основном режиме их нет)
+    expect(passesFilters(cand('ai.llm-apps'), { subcategory: 'ai.llm-apps', expandPool: true })).toBe(true);
+    expect(passesFilters(cand('ai.mlops'), { subcategory: 'ai.llm-apps', expandPool: true })).toBe(false);
+    expect(passesFilters(cand(null), { subcategory: 'ai.llm-apps', expandPool: true })).toBe(false);
+    expect(passesFilters(cand(null), { specialization: 'ai' })).toBe(false);
+    expect(passesFilters(cand(null), { specialization: 'ai', expandPool: true })).toBe(true);
   });
 
   it('VacancyInput: подкатегория обязательна и проверяется по направлению', () => {

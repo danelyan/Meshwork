@@ -206,8 +206,9 @@ export function evaluate(raw: unknown, catalog = evalCatalog()): EvaluateReport 
   const rows: VacancyReport[] = data.vacancies.map((v) => {
     // Объект без прототипа: id вроде «toString» не должен находить методы Object.prototype.
     const rel: Record<string, number> = Object.assign(Object.create(null) as Record<string, number>, Object.hasOwn(data.relevance, v.id) ? data.relevance[v.id] : {});
+    // Расширенный пул: у чужих кандидатов категории может не быть, а проверяется формула ранжирования, не отбор по категории.
     const ranked = dropUncovered(
-      rankCandidates(evidence, { vacancyId: v.id, specialization: v.specialization, subcategoryId: v.subcategoryId ?? null, grade: v.grade, needs: v.needs, stack: v.stack ?? [] }, catalog),
+      rankCandidates(evidence, { vacancyId: v.id, specialization: v.specialization, subcategoryId: v.subcategoryId ?? null, grade: v.grade, needs: v.needs, stack: v.stack ?? [] }, catalog, { expandPool: true }),
     );
     const ids = ranked.map((x) => x.candidateId);
     const base = baselineRanking(evidence, v.specialization);

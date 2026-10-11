@@ -5,6 +5,9 @@
 // кодом, что и кабинет (src/server/employer/ranking.ts), и сравнивает с разметкой
 // labels.json (разметка агента, 3 уровня). Базовая линия — «больше подтверждённых
 // утверждений своей специализации выше», без учёта требований вакансии.
+// Замер идёт в режиме расширенного пула (EVAL_FILTERS: expandPool), как и до 11.10, когда кабинет показывал
+// кандидатов без категории всегда: часть профилей набора без категории, и без флага они выпали бы из выдачи,
+// а цифры results.json молча изменились бы. Основной режим кабинета (только категории) отдельно не измерен.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { DEMO_POOL, type DemoProfile } from '../../prisma/seed/employer';
 import { DEMO_VACANCIES } from '../../prisma/seed/recommend';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
-import { dropUncovered, rankCandidates, type CandidateEvidence } from '../../src/server/employer/ranking';
+import { dropUncovered, rankCandidates, type CandidateEvidence, type MatchFilters } from '../../src/server/employer/ranking';
 
 import { EXTRA_PROFILES } from './extra-profiles';
 import { bm25Rank } from './bm25';
@@ -48,6 +51,9 @@ function baseline(spec: string): string[] {
     .map((c) => c.id);
 }
 
+/** Расширенный пул: профили без категории участвуют в замере (см. шапку файла). */
+const EVAL_FILTERS: MatchFilters = { expandPool: true };
+
 interface Row { vacancy: string; p: number; pMax: number; ndcg: number; bP: number; bNdcg: number; top: string[] }
 const rows: Row[] = [];
 for (const v of DEMO_VACANCIES) {
@@ -57,7 +63,7 @@ for (const v of DEMO_VACANCIES) {
     grade: v.grade,
     needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })),
     stack: [],
-  }, catalog)).map((r) => r.candidateId);
+  }, catalog, EVAL_FILTERS)).map((r) => r.candidateId);
   const b = baseline(v.specialization);
   rows.push({
     vacancy: v.id,
@@ -108,7 +114,7 @@ function rankers(ps: EvalProfile[], seed: number): Record<MethodName, (v: EvalVa
   }));
   const docs = ps.map((p) => ({ id: p.id, text: p.text }));
   return {
-    ours: (v) => [dropUncovered(rankCandidates(ev, { specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: v.stack }, catalog)).map((r) => r.candidateId)],
+    ours: (v) => [dropUncovered(rankCandidates(ev, { specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: v.stack }, catalog, EVAL_FILTERS)).map((r) => r.candidateId)],
     baselineClaims: (v) => [[...ev].filter((c) => c.specialization === v.specialization).sort((a, b) => b.claims.length - a.claims.length || a.id.localeCompare(b.id)).map((c) => c.id)],
     bm25: (v) => [bm25Rank(docs, v.text).map((d) => d.id)],
     random: (_v, vi) => {

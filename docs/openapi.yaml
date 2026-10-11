@@ -2,7 +2,7 @@ openapi: "3.1.0"
 info:
   title: "ФСП Карьера - API платформы"
   version: "0.1.0"
-  description: "REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.\n\nВход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.\n\nВсе ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).\n\nСлужебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.\n\n### События SSE\n\nЗвонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).\n\nЭндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.\n\nВторой ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.\n\nПока ход идёт, сервер раз в 15 с шлёт комментарий `: ping` (строка без `data:`, клиент её пропускает). Разрыв соединения ход не прерывает: реплика дописывается и сохраняется в историю. Остановить ход — `POST /api/consultant/messages/stop`."
+  description: "REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.\n\nВход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.\n\nВсе ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).\n\nСлужебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.\n\n### События SSE\n\nЗвонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).\n\nЭндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.\n\nВторой ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`."
 servers:
   -
     url: "/"
@@ -45,9 +45,6 @@ tags:
     name: evaluate
     description: "Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД"
   -
-    name: expert
-    description: expert
-  -
     name: favorites
     description: favorites
   -
@@ -83,9 +80,6 @@ tags:
   -
     name: recommendations
     description: "Рекомендации: тест, пробелы, задания, вакансии"
-  -
-    name: simulator
-    description: "Симулятор адаптивного теста для жюри: виртуальный кандидат, шаги движка, без БД и LLM"
   -
     name: sources
     description: "Подключённые ссылки кандидата (GitHub, Codeforces, страницы): удаление"
@@ -2580,55 +2574,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/consultant/messages/stop":
-    post:
-      operationId: postConsultantMessagesStop
-      tags:
-        - consultant
-      summary: "Остановить ход консультанта"
-      description: "Кнопка «Стоп»: отменяет активный ход разговора (работу модели). Показанный кусок реплики сохраняется ответом ассистента и уходит в поток хода событием `message`, затем `done`; ответ приходит после этого (не дольше 5 с). Разрыв соединения ход не останавливает — только этот вызов или таймаут хода. Реестр ходов — в памяти процесса (стенд — один процесс приложения).\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                conversationId:
-                  type: string
-                  minLength: 1
-                  maxLength: 64
-              required:
-                - conversationId
-      responses:
-        "204":
-          description: "Ход остановлен. Активного хода нет (стоп идемпотентен)"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  stopped:
-                    type: boolean
-                required:
-                  - stopped
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          description: "Разговор не найден или чужой"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/consultant/settings":
     get:
       operationId: getConsultantSettings
@@ -3705,13 +3650,13 @@ paths:
       tags:
         - employer
       summary: "Профиль своей компании"
-      description: "профиль своей компании (R-E-01).\n\nНужна сессия работодателя (кука cid)."
+      description: "профиль своей компании (R-E-01). `inviteContact` — способ связи, который увидит кандидат в приглашении от этого представителя (Company.contact, иначе его почта); null — приглашения не отправятся.\n\nНужна сессия работодателя (кука cid)."
       security:
         -
           cookieAuth: []
       responses:
         "200":
-          description: "Название, описание, отрасль, ИНН и контакт компании"
+          description: "Название, описание, отрасль, ИНН и контакт компании; `inviteContact` — способ связи в приглашениях от этого представителя (контакт компании, иначе его почта), null — приглашения не отправятся (409 company_contact_required)"
           content:
             "application/json":
               schema:
@@ -3729,6 +3674,12 @@ paths:
                     type: string
                   contact:
                     type: string
+                  inviteContact:
+                    oneOf:
+                      -
+                        type: string
+                      -
+                        type: "null"
                 required:
                   - id
                   - name
@@ -3736,6 +3687,7 @@ paths:
                   - industry
                   - inn
                   - contact
+                  - inviteContact
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3759,7 +3711,7 @@ paths:
               $ref: "#/components/schemas/CompanyPatch"
       responses:
         "200":
-          description: "Профиль компании после правки"
+          description: "Профиль компании после правки, с `inviteContact`"
           content:
             "application/json":
               schema:
@@ -3777,6 +3729,12 @@ paths:
                     type: string
                   contact:
                     type: string
+                  inviteContact:
+                    oneOf:
+                      -
+                        type: string
+                      -
+                        type: "null"
                 required:
                   - id
                   - name
@@ -3784,6 +3742,7 @@ paths:
                   - industry
                   - inn
                   - contact
+                  - inviteContact
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -3878,7 +3837,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
         "409":
-          description: "Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)"
+          description: "Открытое приглашение этому кандидату уже есть, не приняты оферта и обязательство по данным (`consent_required`) или у компании нет способа связи (`company_contact_required`, `details.companyUrl`)"
           content:
             "application/json":
               schema:
@@ -4475,10 +4434,19 @@ paths:
             enum:
               - "1"
         -
+          name: pool
+          in: query
+          required: false
+          description: "`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)"
+          schema:
+            type: string
+            enum:
+              - all
+        -
           name: category
           in: query
           required: false
-          description: "`1` — только кандидаты с подтверждённой категорией"
+          description: "Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`"
           schema:
             type: string
             enum:
@@ -4810,10 +4778,19 @@ paths:
             enum:
               - "1"
         -
+          name: pool
+          in: query
+          required: false
+          description: "`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)"
+          schema:
+            type: string
+            enum:
+              - all
+        -
           name: category
           in: query
           required: false
-          description: "`1` — только кандидаты с подтверждённой категорией"
+          description: "Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`"
           schema:
             type: string
             enum:
@@ -5027,195 +5004,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/attempt/{id}":
-    get:
-      operationId: getExpertAttemptId
-      tags:
-        - expert
-      summary: "Попытка эксперта (только своя, по куке fsp_expert); после итога — разбор."
-      description: "попытка эксперта (только своя, по куке fsp_expert); после итога — разбор.\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Попытка эксперта (только своя, по куке fsp_expert); после итога — разбор."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/attempt/{id}/answer":
-    post:
-      operationId: postExpertAttemptIdAnswer
-      tags:
-        - expert
-      summary: "Ответ эксперта → следующее задание или итог с разбором (категория не пишется)."
-      description: "ответ эксперта → следующее задание или итог с разбором (категория не пишется).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                answer:
-                  type: string
-                  maxLength: 2000
-              required:
-                - answer
-      responses:
-        "200":
-          description: "Ответ эксперта → следующее задание или итог с разбором (категория не пишется)."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/attempt/{id}/finish":
-    post:
-      operationId: postExpertAttemptIdFinish
-      tags:
-        - expert
-      summary: "Досрочный итог попытки эксперта с разбором (категория не пишется)."
-      description: "досрочный итог попытки эксперта с разбором (категория не пишется).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Досрочный итог попытки эксперта с разбором (категория не пишется)."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/attempt/{id}/signal":
-    post:
-      operationId: postExpertAttemptIdSignal
-      tags:
-        - expert
-      summary: "Сигналы браузера к активной попытке эксперта (индекс честности)."
-      description: "сигналы браузера к активной попытке эксперта (индекс честности). Тело — JSON текстом (sendBeacon).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Сигналы браузера к активной попытке эксперта (индекс честности). Тело — JSON текстом (sendBeacon)."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/expert/start":
-    get:
-      operationId: getExpertStart
-      tags:
-        - expert
-      summary: "Направления и подкатегории, по которым тест эксперта доступен (банк заданий собран)."
-      description: "направления и подкатегории, по которым тест эксперта доступен (банк заданий собран). Флаг DEMO_LOGIN.\n\nВход не нужен."
-      security: []
-      responses:
-        "200":
-          description: "Направления и подкатегории, по которым тест эксперта доступен (банк заданий собран). Флаг DEMO_LOGIN."
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postExpertStart
-      tags:
-        - expert
-      summary: "Режим эксперта: новый одноразовый эксперт (без"
-      description: "режим эксперта: новый одноразовый эксперт (без регистрации, скрыт от работодателей) и попытка теста на грейд тем же сервисом, что у кандидата. Кука `fsp_expert` (path /api/expert). Лимиты: адрес клиента и суточный потолок (429). Флаг DEMO_LOGIN выключен → 404.\n\nВход не нужен."
-      security: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                specialization:
-                  type: string
-                  enum:
-                    - backend
-                    - frontend
-                    - ai
-                    - engineering
-                grade:
-                  type: string
-                  enum:
-                    - junior
-                    - middle
-                    - senior
-                subcategoryId:
-                  type: string
-                  minLength: 1
-                  maxLength: 64
-              required:
-                - specialization
-                - grade
-                - subcategoryId
-      responses:
-        "201":
-          description: "Создано. Режим эксперта: новый одноразовый эксперт (без"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/favorites":
@@ -6547,84 +6335,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/simulator":
-    post:
-      operationId: postSimulator
-      tags:
-        - simulator
-      summary: "Прогнать виртуального кандидата через адаптивный тест"
-      description: "Боевой движок теста на грейд (выбор задания по информации Фишера, EAP-оценка θ, остановка и дозадавание по политике текущей версии) на виртуальном кандидате с заданной истинной θ. Режимы ответов: ideal (2PL по экспертным a, b), noise (шум b на показ), leak (трюк по 30 % семейств). Детерминированно по seed, без БД и LLM. Лимит частоты - 120 прогонов за 10 минут с адреса.\n\nВход не нужен."
-      security: []
-      requestBody:
-        required: true
-        description: "Виртуальный кандидат"
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                subcategoryId:
-                  type: string
-                  description: "Подкатегория с полным банком, например backend.web-api"
-                claimed:
-                  type: string
-                  enum:
-                    - junior
-                    - middle
-                    - senior
-                theta:
-                  type: number
-                  minimum: -3
-                  maximum: 3
-                  description: "Истинный уровень виртуального кандидата"
-                mode:
-                  type: string
-                  enum:
-                    - ideal
-                    - noise
-                    - leak
-                seed:
-                  type: integer
-                  description: "0..2147483647, по умолчанию 1"
-              required:
-                - subcategoryId
-                - claimed
-                - theta
-      responses:
-        "200":
-          description: "Шаги теста и итог"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-                description: "input, policyVersion, steps [{n, templateId, title, itemGrade, a, b, phase, pModel, correct, theta, se}], start, confirmed, offeredGrade, grade, pPass, theta, se, stopReason, length, correctCount, cuts"
-        "400":
-          description: "Не JSON, не прошла схема или у подкатегории нет теста"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "403":
-          description: "Чужой Origin"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "413":
-          description: "Тело больше 2 КБ"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "429":
-          description: "Слишком много прогонов"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/sources/{id}":

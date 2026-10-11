@@ -108,8 +108,9 @@ function buildQueries(set: SynSet, mode: 'vacancy' | 'bank'): Query[] {
       return passesFilters(applyIntegrity(c, vr.opts), filters) ? scoreCandidate(c, target, catalog, vr.opts) : null;
     })),
   });
+  // Расширенный пул, как в кабинете до 11.10: профили без категории участвуют (иначе цифры § «Индекс честности в подборе» изменились бы молча).
   if (mode === 'vacancy') {
-    return set.vacancies.map((v) => mk(v.id, set.relevance[v.id]!, { specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: v.stack }, {}, true));
+    return set.vacancies.map((v) => mk(v.id, set.relevance[v.id]!, { specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: v.stack }, { expandPool: true }, true));
   }
   const out: Query[] = [];
   for (const spec of ['backend', 'frontend', 'engineering', 'ai'] as const) {
@@ -118,7 +119,7 @@ function buildQueries(set: SynSet, mode: 'vacancy' | 'bank'): Query[] {
       // Разметка банка: среди получивших категорию «spec × grade» — заслужил ли (латентный грейд не ниже). Остальные — 0:
       // фильтр их не выдаёт ни при одном варианте, идеальная выдача из них не строится.
       for (const p of ps) rel[p.id] = p.category?.specialization === spec && p.category.grade === grade && GRADE_RANK[p.trueGrade] >= GRADE_RANK[grade] ? 2 : 0;
-      out.push(mk(`bank-${spec}-${grade}`, rel, { specialization: spec, grade, needs: categoryNeeds(catalog, spec, grade), stack: [] }, { specialization: spec, grade }, false));
+      out.push(mk(`bank-${spec}-${grade}`, rel, { specialization: spec, grade, needs: categoryNeeds(catalog, spec, grade), stack: [] }, { specialization: spec, grade, expandPool: true }, false));
     }
   }
   return out;
@@ -280,7 +281,7 @@ const legacyEv: CandidateEvidence[] = [...DEMO_POOL, ...EXTRA_PROFILES].map((p) 
 }));
 const legacySame = VARIANTS.every((vr) => DEMO_VACANCIES.every((v) => {
   const t: MatchTarget = { specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: [] };
-  return dropUncovered(rankCandidates(legacyEv, t, catalog, {}, vr.opts)).map((r) => r.candidateId).join() === dropUncovered(rankCandidates(legacyEv, t, catalog)).map((r) => r.candidateId).join();
+  return dropUncovered(rankCandidates(legacyEv, t, catalog, { expandPool: true }, vr.opts)).map((r) => r.candidateId).join() === dropUncovered(rankCandidates(legacyEv, t, catalog, { expandPool: true })).map((r) => r.candidateId).join();
 }));
 
 const f = (x: number) => x.toFixed(3);

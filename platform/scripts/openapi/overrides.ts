@@ -74,7 +74,6 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
   health: 'Проверка живости',
-  simulator: 'Симулятор адаптивного теста для жюри: виртуальный кандидат, шаги движка, без БД и LLM',
   invitations: 'Приглашения глазами кандидата',
   objections: 'Возражения против автоматической оценки (ст. 16 152-ФЗ): тест, созвон, защита',
   onboarding: 'Онбординг: шаги, ответы, итог',
@@ -92,7 +91,6 @@ export const SSE_EVENTS_DOC = [
   'Звонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).',
   'Эндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.',
   'Второй ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.',
-  'Пока ход идёт, сервер раз в 15 с шлёт комментарий `: ping` (строка без `data:`, клиент её пропускает). Разрыв соединения ход не прерывает: реплика дописывается и сохраняется в историю. Остановить ход — `POST /api/consultant/messages/stop`.',
 ].join('\n\n');
 
 const ev = (type: string, props: Record<string, JsonSchema>, description: string, required: string[] = Object.keys(props)): JsonSchema =>
@@ -212,7 +210,8 @@ const FILTER_QUERY = [
   { name: 'grade', description: 'Грейд', schema: en('junior', 'middle') },
   { name: 'stack', description: 'Технологии через запятую, не больше 10', schema: str() },
   { name: 'fsp', description: '`1` — только с достижениями ФСП', schema: en('1') },
-  { name: 'category', description: '`1` — только кандидаты с подтверждённой категорией', schema: en('1') },
+  { name: 'pool', description: '`all` — расширить пул: включить кандидатов без категории из теста (по умолчанию выдача только с категорией; такие кандидаты помечены в объяснении)', schema: en('all') },
+  { name: 'category', description: 'Устарело: игнорируется — выдача и так только с категорией; расширение пула — `pool=all`', schema: en('1') },
   { name: 'limit', description: 'Размер выдачи; неверное значение заменяется значением по умолчанию', schema: int() },
 ];
 
@@ -280,31 +279,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
       free('k, candidates, vacancies, scored, mean {ours, baseline, precisionCeiling} | null, rows [{id, ours, baseline, top, baselineTop, …}], warnings'),
     ),
     errors: { 400: 'Не JSON, не прошла схема, неизвестный id каталога или разметка на несуществующих объектах', 403: 'Чужой Origin', 413: 'Тело больше 1 МБ', 429: 'Слишком много прогонов' },
-  },
-
-  'POST /api/simulator': {
-    role: 'public',
-    summary: 'Прогнать виртуального кандидата через адаптивный тест',
-    description:
-      'Боевой движок теста на грейд (выбор задания по информации Фишера, EAP-оценка θ, остановка и дозадавание по политике текущей версии) на виртуальном кандидате с заданной истинной θ. Режимы ответов: ideal (2PL по экспертным a, b), noise (шум b на показ), leak (трюк по 30 % семейств). Детерминированно по seed, без БД и LLM. Лимит частоты - 120 прогонов за 10 минут с адреса.',
-    body: {
-      description: 'Виртуальный кандидат',
-      schema: obj(
-        {
-          subcategoryId: str('Подкатегория с полным банком, например backend.web-api'),
-          claimed: en('junior', 'middle', 'senior'),
-          theta: { type: 'number', minimum: -3, maximum: 3, description: 'Истинный уровень виртуального кандидата' },
-          mode: en('ideal', 'noise', 'leak'),
-          seed: int('0..2147483647, по умолчанию 1'),
-        },
-        ['subcategoryId', 'claimed', 'theta'],
-      ),
-    },
-    success: JSON_OK(
-      'Шаги теста и итог',
-      free('input, policyVersion, steps [{n, templateId, title, itemGrade, a, b, phase, pModel, correct, theta, se}], start, confirmed, offeredGrade, grade, pPass, theta, se, stopReason, length, correctCount, cuts'),
-    ),
-    errors: { 400: 'Не JSON, не прошла схема или у подкатегории нет теста', 403: 'Чужой Origin', 413: 'Тело больше 2 КБ', 429: 'Слишком много прогонов' },
   },
 
   'GET /api/health': {
@@ -520,13 +494,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
     errors: { ...SSE_ERRORS, 403: 'Вопрос посреди онбординга без входа или не кандидатом' },
   },
 
-  'POST /api/consultant/messages/stop': {
-    summary: 'Остановить ход консультанта',
-    description: 'Кнопка «Стоп»: отменяет активный ход разговора (работу модели). Показанный кусок реплики сохраняется ответом ассистента и уходит в поток хода событием `message`, затем `done`; ответ приходит после этого (не дольше 5 с). Разрыв соединения ход не останавливает — только этот вызов или таймаут хода. Реестр ходов — в памяти процесса (стенд — один процесс приложения).',
-    success: { ...JSON_OK('Ход остановлен', obj({ stopped: bool() })), extra: [{ status: 204, description: 'Активного хода нет (стоп идемпотентен)' }] },
-    errors: { 404: 'Разговор не найден или чужой' },
-  },
-
   'POST /api/defense': {
     summary: 'Начать защиту утверждения',
     description: 'Начать (или продолжить активную) защиту утверждения: короткое интервью из 3–5 вопросов, оценщик по рубрике, порог и уровень решает код.',
@@ -598,7 +565,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     summary: 'Пригласить кандидата',
     description: 'Приглашение: описание задачи и зарплата обязательны, потребность — нет (R-E-05). Контакты кандидата до принятия скрыты.',
     success: { status: 201, description: 'Приглашение создано', schema: free('Созданное приглашение') },
-    errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)', 429: 'Суточный лимит приглашений исчерпан' },
+    errors: { 404: 'Кандидат скрыт или не существует, либо потребность чужая', 409: 'Открытое приглашение этому кандидату уже есть, не приняты оферта и обязательство по данным (`consent_required`) или у компании нет способа связи (`company_contact_required`, `details.companyUrl`)', 429: 'Суточный лимит приглашений исчерпан' },
   },
   'GET /api/employer/search': {
     summary: 'Поиск по базе кандидатов',
@@ -630,12 +597,12 @@ export const OVERRIDES: Record<string, OpOverride> = {
 
   'GET /api/employer/company': {
     summary: 'Профиль своей компании',
-    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+    success: JSON_OK('Название, описание, отрасль, ИНН и контакт компании; `inviteContact` — способ связи в приглашениях от этого представителя (контакт компании, иначе его почта), null — приглашения не отправятся (409 company_contact_required)', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
   },
   'PATCH /api/employer/company': {
     summary: 'Изменить профиль своей компании',
     description: 'Частичная правка: переданные поля заменяются, пустая строка стирает необязательное поле (название стереть нельзя). ИНН проверяется по контрольной сумме, контакт — почта или Telegram.',
-    success: JSON_OK('Профиль компании после правки', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str() })),
+    success: JSON_OK('Профиль компании после правки, с `inviteContact`', obj({ id: str(), name: str(), description: str(), industry: str(), inn: str(), contact: str(), inviteContact: nullable(str()) })),
   },
 
   'GET /api/invitations': {

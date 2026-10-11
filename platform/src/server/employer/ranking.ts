@@ -131,8 +131,12 @@ export interface MatchFilters {
   stack?: string[];
   /** Только с подтверждёнными достижениями ФСП. */
   fsp?: boolean;
-  /** Только с категорией из теста. */
-  categoryOnly?: boolean;
+  /**
+   * Расширить пул (M05, аудит 11.10): включить кандидатов без категории из теста — только по подтверждённым
+   * утверждениям или проекту. По умолчанию выдача строится только по подтверждённым категориям (ТЗ: работодатель
+   * выбирает из категоризированной базы); расширение — явный режим, такие кандидаты помечены в объяснении.
+   */
+  expandPool?: boolean;
   /** lane directions: подкатегория ("ai.llm-apps"); кандидаты без подкатегории или с другой не проходят (effectiveSubcategory). */
   subcategory?: string;
   /** ПРЕДЛОЖЕНИЕ агента: представление «Fullstack» (spec=fullstack) - есть категории и в backend, и в frontend; грейд - меньший из двух (fullstack.ts). Не сочетается с specialization/subcategory. */
@@ -190,6 +194,14 @@ export interface RankedCandidate {
 
 const PROVEN: ReadonlySet<EvidenceLevel> = new Set(['artifact', 'third_party', 'platform']);
 
+/** explanation.category без категории из теста: кандидат виден только в расширенном пуле (MatchFilters.expandPool). */
+export const CATEGORY_NONE_TEXT = 'без категории из теста - расширенный пул';
+/**
+ * explanation.category при индексе честности high без подтверждения (drop_category): категория в подборе не
+ * учитывается, кандидат виден только в расширенном пуле; подтверждение — подтверждающий тест или созвон с разбором попытки.
+ */
+export const CATEGORY_WITHHELD_TEXT = 'категория из теста не учитывается до подтверждения (подтверждающий тест или созвон с разбором) - расширенный пул';
+
 export function categoryLabel(c: { specialization: Specialization; grade: Grade }): string {
   return `${SPEC_LABEL[c.specialization]} · ${GRADE_LABEL[c.grade]}`;
 }
@@ -242,10 +254,12 @@ export function matchStack(claims: EvidenceClaim[], stack: readonly string[]): s
 }
 
 export function passesFilters(c: CandidateEvidence, f: MatchFilters): boolean {
+  // Основной режим — только подтверждённые категории; без категории (или с не учитываемой — applyIntegrity) кандидат
+  // попадает в выдачу только при явном расширении пула.
+  if (!f.expandPool && !c.category) return false;
   if (f.fullstack && !fullstackProfile(c)) return false; // грейд ниже проверяет общая строка: у fullstack-вида category.grade = меньший из двух
   if (f.specialization && effectiveSpecialization(c) !== f.specialization) return false;
   if (f.grade && c.category?.grade !== f.grade) return false;
-  if (f.categoryOnly && !c.category) return false;
   if (f.subcategory && effectiveSubcategory(c) !== f.subcategory) return false;
   if (f.fsp && c.fspState !== 'linked') return false;
   if (f.stack && f.stack.length > 0 && matchStack(c.claims, f.stack).length !== f.stack.length) return false;
@@ -283,7 +297,7 @@ export function scoreCandidate(
 
   let category = 0;
   let categoryMatch = false;
-  let categoryText = flagged && opts.integrityPenalty?.mode === 'drop_category' ? 'категория из теста не учитывается до подтверждения на созвоне' : 'тест не пройден - категории нет';
+  let categoryText = flagged && opts.integrityPenalty?.mode === 'drop_category' ? CATEGORY_WITHHELD_TEXT : CATEGORY_NONE_TEXT;
   if (c.category) {
     categoryText = `${categoryLabel(c.category)} (тест)`;
     if (c.category.specialization === target.specialization) {

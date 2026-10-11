@@ -109,8 +109,11 @@ describe('loadRankingIntegrity: пакетно по пулу', () => {
     }));
     const ev = withRankingIntegrity(pool, await loadRankingIntegrity(new Map(pool.map((c) => [c.id, c.category]))));
     const target = { specialization: 'backend' as const, grade: 'middle' as const, needs: [{ catalogId: 'be.idempotency', weight: 3 }, { catalogId: 'be.transactions', weight: 3 }], stack: [] };
+    // основной режим: не учитываемая категория — как будто теста не было, y в выдаче нет; в расширенном пуле — есть, без категории
     const on = rankCandidates(ev, target, catalog, {}, rankingIntegrityOptions(true));
-    expect(on.map((r) => [r.candidateId, r.categoryMatch])).toEqual([['x', true], ['y', false]]);
+    expect(on.map((r) => [r.candidateId, r.categoryMatch])).toEqual([['x', true]]);
+    const expanded = rankCandidates(ev, target, catalog, { expandPool: true }, rankingIntegrityOptions(true));
+    expect(expanded.map((r) => [r.candidateId, r.categoryMatch])).toEqual([['x', true], ['y', false]]);
     const off = rankCandidates(ev, target, catalog, {}, rankingIntegrityOptions(false));
     expect(off.map((r) => r.categoryMatch)).toEqual([true, true]);
   });

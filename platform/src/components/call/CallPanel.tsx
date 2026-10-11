@@ -308,7 +308,7 @@ export function CallPanel() {
             ))}
             <div className={styles.row}>
               <button type="button" className={styles.primary} onClick={() => void acceptConsent()}>
-                {interview ? 'Согласен, начать созвон' : 'Согласен, начать созвон'}
+                Согласиться и начать созвон
               </button>
               <button type="button" className={styles.ghost} onClick={mode?.close}>
                 Не сейчас

@@ -111,13 +111,13 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
 function SideScene({ label, aside, children }: { label: string; aside?: SceneAsideData; children: ReactNode }) {
   const call = useCallMode();
   const inCall = Boolean(call?.open);
-  // Тема — на <html> (components/shell/theme.ts), сцена следует ей через [data-scene]; созвон всегда тёмный
-  // ([data-call], tokens.css).
+  // Тема — на <html> (components/shell/theme.ts), сцена следует ей через [data-scene]; тёмная только панель звонка
+  // (data-call на sideStage, tokens.css); на корне data-in-call — режим звонка для раскладки и приглушения чата.
   const sceneRef = useRef<HTMLDivElement>(null);
   return (
-    <div ref={sceneRef} className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-call={inCall || undefined} data-scene>
+    <div ref={sceneRef} className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-in-call={inCall || undefined} data-scene>
       <PanelSplitter scene={sceneRef} />
-      <section className={styles.sideStage} aria-label={label}>
+      <section className={styles.sideStage} aria-label={label} data-call={inCall || undefined}>
         {inCall ? (
           <CallPanel />
         ) : (

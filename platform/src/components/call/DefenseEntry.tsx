@@ -62,7 +62,7 @@ export function DefenseEntry(props: { projectSubmissionId: string; label?: strin
           <p key={p}>{p}</p>
         ))}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Button onClick={() => void acceptConsent()}>Согласен, начать защиту</Button>
+          <Button onClick={() => void acceptConsent()}>Согласиться и начать защиту</Button>
           <Button variant="ghost" onClick={() => setConsent(null)}>
             Не сейчас
           </Button>

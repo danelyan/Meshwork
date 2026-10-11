@@ -106,7 +106,7 @@ describe('CallPanel — режим звонка в сцене консульта
     expect(screen.getByText('Созвон записывается.')).toBeTruthy();
     expect(screen.getByTestId('side-panel').hasAttribute('inert')).toBe(true);
 
-    fireEvent.click(screen.getByText('Согласен, начать созвон'));
+    fireEvent.click(screen.getByText('Согласиться и начать созвон'));
     expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
     expect(calls.find((c) => c.url === 'POST /api/call/consent')?.body).toEqual({ version: 'cv-1' });
     expect(screen.getByTestId('call-rec').textContent).toContain('Запись');

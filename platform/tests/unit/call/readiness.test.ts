@@ -30,7 +30,7 @@ describe('callReadiness: созвон только когда есть о чём
 
   it('interview: нет категории из теста — «после теста»', async () => {
     db.candidateCategory.count.mockResolvedValue(0);
-    expect(await callReadiness('c', 'interview', now)).toEqual({ ready: false, reason: 'ИИнтервью откроется после теста' });
+    expect(await callReadiness('c', 'interview', now)).toEqual({ ready: false, reason: 'Созвон с ИИ откроется после теста' });
     expect(db.candidateCategory.count.mock.calls[0]![0].where).toMatchObject({ source: 'test' });
   });
 

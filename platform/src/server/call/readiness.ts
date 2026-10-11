@@ -7,7 +7,7 @@ import type { CallKind } from './types';
 
 export const CALL_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 export const NOT_READY_QUALIFYING = 'Сначала расскажи о себе или загрузи резюме - будет о чём поговорить';
-export const NOT_READY_INTERVIEW = 'ИИнтервью откроется после теста';
+export const NOT_READY_INTERVIEW = 'Созвон с ИИ откроется после теста';
 
 export interface CallReadiness {
   ready: boolean;

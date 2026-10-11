@@ -85,7 +85,7 @@ const ACCEPTED: MatchItem = { ...BASE, candidate: { ...BASE.candidate, displayNa
 describe('карточка: ступени 1–3', () => {
   it('карта глубины: тема → подтверждено / не подтверждено / не спрашивали; цитат нет', () => {
     render1(BASE);
-    const block = screen.getByRole('region', { name: 'Созвон: карта глубины' });
+    const block = screen.getByRole('region', { name: 'Созвон с ИИ: карта глубины' });
     expect(within(block).getByText(/Подтверждено 1 из 3 тем/)).toBeDefined();
     const items = within(block).getAllByRole('listitem').map((li) => li.textContent ?? '');
     expect(items[0]).toMatch(/Идемпотентность - подтверждено.*оценка 7 из 8.*требование вакансии/);

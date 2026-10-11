@@ -262,7 +262,7 @@ export function CallPanel() {
   return (
     <section className={styles.panel} aria-label="Созвон с ИИ-интервьюером" data-testid="call-panel" data-phase={phase}>
       <header className={styles.top}>
-        <span className={styles.badge}>{interview ? 'ИИнтервью' : 'Квалифицирующий созвон'}</span>
+        <span className={styles.badge}>{'Созвон с ИИ'}</span>
         {(phase === 'live' || phase === 'finishing') && (
           <span className={styles.rec} role="status" data-testid="call-rec">
             <i className={styles.recDot} aria-hidden="true" />
@@ -301,14 +301,14 @@ export function CallPanel() {
 
         {phase === 'consent' && (
           <div className={styles.consent} data-testid="call-consent">
-            <b>{interview ? 'Перед ИИнтервью - согласие на запись' : 'Перед первым созвоном - согласие на запись'}</b>
+            <b>{interview ? 'Перед созвоном с ИИ - согласие на запись' : 'Перед первым созвоном - согласие на запись'}</b>
             {mode?.reason && <p className={styles.reason}>{mode.reason}</p>}
             {consentText.map((p) => (
               <p key={p}>{p}</p>
             ))}
             <div className={styles.row}>
               <button type="button" className={styles.primary} onClick={() => void acceptConsent()}>
-                {interview ? 'Согласен, начать ИИнтервью' : 'Согласен, начать созвон'}
+                {interview ? 'Согласен, начать созвон' : 'Согласен, начать созвон'}
               </button>
               <button type="button" className={styles.ghost} onClick={mode?.close}>
                 Не сейчас

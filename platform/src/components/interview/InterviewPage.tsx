@@ -319,7 +319,7 @@ export function InterviewPage() {
       </div>
 
       <div className={styles.shell}>
-        <main className={styles.chat} aria-label="ИИнтервью">
+        <main className={styles.chat} aria-label="Созвон с ИИ">
           <div className={styles.feed} ref={feed} aria-live="polite">
             {transcript.map((e) => (
               <div key={e.index} className={cx(styles.msg, e.role === 'ai' ? styles.ai : styles.me)}>
@@ -488,7 +488,7 @@ export function InterviewPage() {
                     После теста на грейд
                   </span>
                   <h1>
-                    Следующий шаг - И<i>И</i>нтервью
+                    Следующий шаг - Созвон с ИИ
                   </h1>
                 </div>
                 <p>

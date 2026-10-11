@@ -35,7 +35,7 @@ export function DepthMapSection() {
       {call?.verdict ? (
         <>
           <p className={styles.note}>
-            Квалифицирующий созвон {call.finishedAt ? fmt.format(new Date(call.finishedAt)) : ''} МСК. Оценка - медиана трёх прогонов отдельного оценщика по рубрике.
+            Созвон с ИИ {call.finishedAt ? fmt.format(new Date(call.finishedAt)) : ''} МСК. Оценка - медиана трёх прогонов отдельного оценщика по рубрике.
           </p>
           <DepthMap verdict={call.verdict as CallVerdict} />
           {call.hasRecording && (

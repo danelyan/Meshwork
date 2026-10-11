@@ -287,7 +287,7 @@ function CallOffer({ reason }: { reason: string }) {
     <div data-testid="call-offer">
       <QuickReplies
         label={reason}
-        items={[call?.kind === 'interview' ? { value: 'call', label: 'ИИнтервью', note: 'вопросы по блокам голосом, запись с согласия' } : { value: 'call', label: 'Созвониться', note: '4–6 тем из твоего профиля голосом, запись с согласия' }]}
+        items={[call?.kind === 'interview' ? { value: 'call', label: 'Созвониться', note: 'вопросы по блокам голосом, запись с согласия' } : { value: 'call', label: 'Созвониться', note: '4–6 тем из твоего профиля голосом, запись с согласия' }]}
         disabled={!call || call.readiness?.ready === false}
         onPick={() => call?.start(reason)}
       />

@@ -66,6 +66,6 @@ it('страница /interview: без интервью — карточка с
   render(<InterviewPage />);
   const link = await screen.findByText(/Пройти в консультанте/);
   expect(link.closest('a')?.getAttribute('href')).toBe('/consultant?call=1');
-  expect(screen.queryByText('Начать ИИнтервью')).toBeNull();
+  expect(screen.queryByText('Начать созвон с ИИ')).toBeNull();
   vi.unstubAllGlobals();
 });

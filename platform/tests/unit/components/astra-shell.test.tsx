@@ -35,7 +35,7 @@ it('sidebar: candidate order follows the journey stages, employer labels match t
   const view = render(<DashboardFrame account={account}><p>x</p></DashboardFrame>);
   const names = () => within(screen.getByRole('navigation', { name: 'Разделы кабинета' })).getAllByRole('link').map((a) => a.textContent?.replace(/^\S\s?/, ''));
   // Пункты шапки (header: true) в сайдбаре не повторяются.
-  expect(names()).toEqual(['Навыки и грейд', 'Вакансии', 'ИИнтервью', 'Избранное', 'Настройки']);
+  expect(names()).toEqual(['Навыки и грейд', 'Вакансии', 'Созвон с ИИ', 'Избранное', 'Настройки']);
   expect(screen.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');
   view.unmount();
   nav.pathname = '/employer/needs/n1';

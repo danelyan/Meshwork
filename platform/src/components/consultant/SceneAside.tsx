@@ -155,7 +155,7 @@ function StepBlockView({ block, market, docs, role }: { block: StepBlock; market
         </>
       );
     case 'call':
-      return <StepCard id="step-call" title="Квалифицирующий созвон" text="Короткий голосовой разговор по темам резюме. Итог - карта глубины, работодатель видит её до приглашения." href="/consultant?call=1" cta="Созвониться" />;
+      return <StepCard id="step-call" title="Созвон с ИИ" text="Короткий голосовой разговор по темам резюме. Итог - карта глубины, работодатель видит её до приглашения." href="/consultant?call=1" cta="Созвониться" />;
     case 'project': {
       const p = block.project;
       return <StepCard id="step-project" title="Лента заданий" text="Возьми проект из ленты, сдай репозиторий и дождись проверки." extra={p ? `${p.title}: ${PROJECT_STATUS[p.status]}` : undefined} href={p && p.status !== 'checked' ? `/projects/${p.taskId}` : '/projects'} cta={p && p.status !== 'checked' ? 'Открыть задание' : 'Открыть ленту заданий'} />;

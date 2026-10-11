@@ -9,11 +9,11 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 const OWNERSHIP_TEXT = { explained: 'объяснил сам', partial: 'объяснил частично', failed: 'не смог объяснить', not_checked: 'не проверялось' } as const;
 const PASS = (v: boolean | null) => (v === null ? 'не проверялось' : v ? 'прошёл' : 'не прошёл');
 
-/** «Созвон: карта глубины» (ступень 1): тема → подтверждено/нет. Цитат нет по построению данных. */
+/** «Созвон с ИИ: карта глубины» (ступень 1): тема → подтверждено/нет. Цитат нет по построению данных. */
 export function DepthMapBlock({ depth }: { depth: NonNullable<Explanation['depthMap']> }) {
   return (
-    <section className={styles.stage} aria-label="Созвон: карта глубины">
-      <h4 className={styles.stageTitle}>Созвон: карта глубины</h4>
+    <section className={styles.stage} aria-label="Созвон с ИИ: карта глубины">
+      <h4 className={styles.stageTitle}>Созвон с ИИ: карта глубины</h4>
       <p className={styles.meta}>
         Подтверждено {depth.confirmed} из {depth.topics.length} тем
         {depth.matchedNeed > 0 && `, из них требований вакансии - ${depth.matchedNeed}`}.

@@ -148,18 +148,18 @@ describe('CallPanel — режим звонка в сцене консульта
     expect(onCall).toHaveBeenCalledOnce();
   });
 
-  it('кнопка входа в композере: «Созвониться» до теста, «ИИнтервью» после', () => {
+  it('кнопка входа в композере: «Созвониться» и до теста, и после', () => {
     const { rerender } = render(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} />);
     expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('Созвониться');
     rerender(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callKind="interview" />);
-    expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('ИИнтервью');
+    expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('Созвониться');
   });
 
   it('созвон недоступен (readiness): кнопка disabled, причина в title; готовая — с подсказкой про смысл', () => {
-    const { rerender } = render(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callBlocked="ИИнтервью откроется после теста" />);
+    const { rerender } = render(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callBlocked="Созвон с ИИ откроется после теста" />);
     const btn = screen.getByTestId('call-button') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
-    expect(btn.title).toBe('ИИнтервью откроется после теста');
+    expect(btn.title).toBe('Созвон с ИИ откроется после теста');
     rerender(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} />);
     expect((screen.getByTestId('call-button') as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByTestId('call-button').title).toContain('проверено платформой');
@@ -192,7 +192,7 @@ describe('CallPanel — вид «ИИнтервью» (после теста н�
     fireEvent.click(screen.getByText('открыть'));
     expect(await screen.findByText('Расскажи, как ты проектировал схему данных?')).toBeTruthy();
     expect(calls.find((c) => c.url === 'POST /api/call/start')?.body).toEqual({ kind: 'interview' });
-    expect(screen.getByText('ИИнтервью')).toBeTruthy();
+    expect(screen.getByText('Созвон с ИИ')).toBeTruthy();
     expect(screen.getByTestId('call-block').textContent).toBe('Разбор теста');
     expect(screen.getByTestId('interview-progress').textContent).toContain('вопрос 1 из');
     expect(screen.getByTestId('interview-steps')).toBeTruthy();

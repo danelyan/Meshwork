@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { type DemoPersona } from '@/lib/api';
 
 import { ConsentCheck } from './auth/ConsentCheck';
-import { JuryPages, JuryRoute } from './demo/JuryRoute';
 import { PersonaChip, PersonaGroups, type PersonasState, useDemoPersonas } from './demo/DemoPersonas';
 import { Container } from './shell/Container';
 import { PageTitle } from './shell/PageTitle';
@@ -26,7 +25,7 @@ export const DEMO_FEATURES: { id: string; title: string; text: string; personas:
   },
   {
     id: 'calls', title: 'Созвоны с ИИ',
-    text: 'Квалификационный созвон по резюме и ИИнтервью: карта глубины по темам, подтверждённые утверждения получают отметку платформы. Разбор резюме устойчив к скрытым инструкциям.',
+    text: 'Созвон с ИИ по резюме и после теста: карта глубины по темам, подтверждённые утверждения получают отметку платформы. Разбор резюме устойчив к скрытым инструкциям.',
     personas: ['demo-frontend-mid', 'demo-strong', 'demo-injection'],
   },
   {
@@ -68,12 +67,6 @@ export function DemoScreen({ next = null }: { next?: string | null } = {}) {
       {state.error && <Notice tone="error">{state.error}</Notice>}
 
       <ConsentCheck checked={agreed} onChange={setAgreed} />
-
-      <JuryRoute state={state} agreed={agreed} />
-
-      <JuryPages />
-
-      <h2 className={styles.sectionTitle}>Возможности платформы</h2>
 
       <ul className={styles.features}>
         {DEMO_FEATURES.map((f, i) => (

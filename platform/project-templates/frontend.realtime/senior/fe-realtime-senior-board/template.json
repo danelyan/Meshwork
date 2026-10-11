@@ -1,0 +1,32 @@
+{
+  "id": "fe-realtime-senior-board",
+  "subcategoryId": "frontend.realtime",
+  "specialization": "frontend",
+  "grade": "senior",
+  "title": "Совместная доска: сходимость реплик при любом порядке доставки",
+  "summary": "Операции с метками Lamport, независимые поля (последний побеждает), надгробия, идемпотентность и осиротевшие операции; DESIGN.md с компромиссами",
+  "stack": [
+    "typescript",
+    "vitest"
+  ],
+  "catalogIds": [
+    "fe.realtime-client",
+    "fe.state-mgmt",
+    "fe.event-loop",
+    "common.unit-tests"
+  ],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": [
+    "contract.md",
+    "tests/visible/**",
+    ".platform-tests/**"
+  ]
+}

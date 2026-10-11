@@ -15,6 +15,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Корневой макет читает окружение (getEnv) уже при попытке пререндера, а .env в образ не попадает:
 # без обязательных переменных сборка падает. Заглушки действуют только в этой команде; страницы
 # рендерятся по запросу (шапка читает куки) и берут настоящее окружение контейнера.
+# Ресурсы MediaPipe (слежение за лицом в комнате звонка): npm-хуки prebuild здесь не срабатывают — вызываем явно.
+RUN node scripts/mediapipe-assets.mjs
 RUN npx prisma generate \
   && DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build \
      SESSION_SECRET=build-time-placeholder-not-a-secret-000 \

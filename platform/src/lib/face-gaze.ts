@@ -100,11 +100,23 @@ export function lookTargetFrom(face: FaceReading, mirrored = true): [number, num
   return [clamp1(mirrored ? -x : x), clamp1(y)];
 }
 
-/** Сглаженное состояние: «в сторону» и «нет лица» показываем не раньше, чем продержались holdMs (мигание — не отвод взгляда). */
-export function settleGaze(prev: { state: GazeState; since: number }, next: GazeState, now: number, holdMs = 700): { state: GazeState; since: number } {
-  if (next === prev.state) return prev;
-  if (next === 'screen') return { state: 'screen', since: now };
-  // Кандидат на смену: ждём holdMs непрерывного нового состояния.
-  if (prev.since > now - holdMs && prev.state !== 'screen') return prev;
-  return now - prev.since >= holdMs ? { state: next, since: now } : { ...prev, since: prev.since };
+export interface SettledGaze {
+  state: GazeState;
+  /** Новое показание, которое ещё не продержалось holdMs, и с какого момента оно держится. */
+  pending: GazeState | null;
+  pendingSince: number;
+}
+
+export const INITIAL_GAZE: SettledGaze = { state: 'none', pending: null, pendingSince: 0 };
+
+/**
+ * Сглаживание значка: «в сторону» и «нет лица» показываются, только если новое показание держится непрерывно
+ * holdMs (моргание и потеря лица на кадр — не отвод взгляда); возврат «на экран» — сразу.
+ */
+export function settleGaze(prev: SettledGaze, next: GazeState, now: number, holdMs = 700): SettledGaze {
+  if (next === prev.state) return prev.pending === null ? prev : { ...prev, pending: null };
+  if (next === 'screen') return { state: 'screen', pending: null, pendingSince: 0 };
+  if (prev.pending !== next) return { ...prev, pending: next, pendingSince: now };
+  if (now - prev.pendingSince >= holdMs) return { state: next, pending: null, pendingSince: 0 };
+  return prev;
 }

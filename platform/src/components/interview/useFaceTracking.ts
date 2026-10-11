@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { type FaceReading, type GazeState, lookTargetFrom, readFace, settleGaze } from '@/lib/face-gaze';
+import { type FaceReading, type GazeState, INITIAL_GAZE, lookTargetFrom, readFace, settleGaze } from '@/lib/face-gaze';
 
 import { clearLookTarget, setLookTarget } from '../avatar/look-target';
 
@@ -33,7 +33,7 @@ export function useFaceTracking(getVideo: () => HTMLVideoElement | null, enabled
     let alive = true;
     let lm: Landmarker | null = null;
     let timer: ReturnType<typeof setInterval> | null = null;
-    let settled = { state: 'none' as GazeState, since: Date.now() };
+    let settled = INITIAL_GAZE;
     let lastTs = -1;
     (async () => {
       try {

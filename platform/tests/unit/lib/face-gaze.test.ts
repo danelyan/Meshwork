@@ -1,4 +1,4 @@
-import { GAZE_THRESHOLDS, type GazeState, LM, type Point, lookTargetFrom, readFace, settleGaze } from '@/lib/face-gaze';
+import { GAZE_THRESHOLDS, INITIAL_GAZE, LM, type Point, type SettledGaze, lookTargetFrom, readFace, settleGaze } from '@/lib/face-gaze';
 
 /** Синтетическое лицо: центр (cx, cy), полуширина w, полувысота h; смещения носа и зрачков в долях. */
 function face(o: { cx?: number; cy?: number; w?: number; h?: number; noseDx?: number; noseDy?: number; irisDx?: number; irisDy?: number; eyeOpen?: number } = {}): Point[] {
@@ -49,8 +49,8 @@ describe('лицо и взгляд по точкам Face Landmarker (тольк
     expect(lookTargetFrom(r, false)[0]).toBeGreaterThan(0.3);
   });
 
-  it('сглаживание: «в сторону» показывается не раньше 700 мс, возврат «на экран» — сразу', () => {
-    let s: { state: GazeState; since: number } = { state: 'screen', since: 0 };
+  it('сглаживание: «в сторону» показывается после 700 мс непрерывно, моргание и потеря лица на кадр — нет; возврат — сразу', () => {
+    let s: SettledGaze = { state: 'screen', pending: null, pendingSince: 0 };
     s = settleGaze(s, 'away', 100);
     expect(s.state).toBe('screen');
     s = settleGaze(s, 'away', 800);
@@ -58,5 +58,17 @@ describe('лицо и взгляд по точкам Face Landmarker (тольк
     s = settleGaze(s, 'screen', 850);
     expect(s.state).toBe('screen');
     expect(settleGaze(s, 'screen', 900)).toBe(s);
+    // Моргнул (away на один кадр), вернулся, снова away: отсчёт начинается заново.
+    s = settleGaze(s, 'away', 1000);
+    s = settleGaze(s, 'screen', 1100);
+    s = settleGaze(s, 'away', 1200);
+    expect(settleGaze(s, 'away', 1850).state).toBe('screen');
+    expect(settleGaze(s, 'away', 1900).state).toBe('away');
+    // Чередование away/none не копит время друг друга.
+    s = settleGaze({ state: 'screen', pending: null, pendingSince: 0 }, 'none', 0);
+    s = settleGaze(s, 'away', 400);
+    expect(settleGaze(s, 'away', 900).state).toBe('screen');
+    expect(settleGaze(s, 'away', 1100).state).toBe('away');
+    expect(settleGaze(INITIAL_GAZE, 'none', 5).state).toBe('none');
   });
 });

@@ -5,7 +5,7 @@ vi.mock('@/server/recommend', async () => (await import('./mocks')).recommendMoc
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { runTurn } from '@/server/agent/loop';
+import { KICKOFF_INSTRUCTION, runTurn } from '@/server/agent/loop';
 import { CONSULTANT_PROMPT_VERSION } from '@/server/agent/prompt';
 import { tools } from '@/server/agent/tools';
 import type { AgentEvent } from '@/server/agent/types';
@@ -54,6 +54,21 @@ describe('runTurn (stub LLM, моки модулей)', () => {
     expect(rows.map((r) => r.role)).toEqual(['system', 'user', 'assistant']);
     expect(rows[0]?.content).toBe(`prompt:${CONSULTANT_PROMPT_VERSION}`);
     expect(await prisma.agentRun.count({ where: { candidateId: CAND, purpose: 'consultant' } })).toBe(1);
+  });
+
+  it('kickoff: первая реплика без сообщения кандидата, инструкция в модель, в БД только system и assistant', async () => {
+    let seen: string | undefined;
+    registerStubResponse('consultant', (req) => {
+      seen = req.messages.at(-1)?.content as string;
+      return { kind: 'text', text: 'Привет, Ирина! База сохранена, дальше - тест на грейд.' };
+    });
+    const conversationId = (await prisma.conversation.create({ data: { candidateId: CAND } })).id;
+    const events: AgentEvent[] = [];
+    await runTurn({ candidateId: CAND, conversationId, text: '', kickoff: true }, (e) => events.push(e));
+    expect(lastMessage(events)?.text).toMatch(/^Привет, Ирина/);
+    expect(seen).toBe(KICKOFF_INSTRUCTION);
+    const rows = await prisma.message.findMany({ where: { conversationId }, orderBy: { createdAt: 'asc' } });
+    expect(rows.map((r) => r.role)).toEqual(['system', 'assistant']);
   });
 
   it('С3: свободный вопрос → recommend_targets → событие recommendations → ответ', async () => {

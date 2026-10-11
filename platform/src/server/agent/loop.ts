@@ -1,5 +1,4 @@
 import { prisma, type Prisma } from '@/server/db';
-import { getSetting } from '@/server/admin/settings';
 import { getEnv } from '@/server/env';
 import { errors } from '@/server/errors';
 import { getLlm } from '@/server/llm/client';
@@ -25,9 +24,21 @@ import { preferencesBlock } from '@/server/consultant/skills';
 import { asideMark, pauseMark } from '@/server/onboarding/match';
 import { type OnboardingStepBrief, pendingOnboarding } from '@/server/onboarding/service';
 import { MAX_TOOL_CALLS_PER_TURN, type AgentEvent, type ToolContext, type TurnInput, type TurnOptions } from './types';
+import { CONTINUE_GREETING } from '@/lib/greeting';
 
 /** Ответ модели за ход — не длиннее (токены). */
 export const TURN_MAX_TOKENS = 1_200;
+/**
+ * Ход `kickoff` (первая реплика в пустом разговоре, решение владельца 11.10 «всегда говорит модель»):
+ * вместо сообщения кандидата модель получает эту инструкцию - в историю она не пишется.
+ */
+export const KICKOFF_INSTRUCTION =
+  '[Платформа, не сообщение кандидата: это начало разговора, кандидат только что закончил знакомство и ещё ничего не написал. ' +
+  'Поприветствуй по имени из <journey>, одной фразой скажи, что база профиля сохранена и теперь можно пойти глубже ' +
+  '(резюме, ссылки, вопрос «что подтянуть до следующего грейда»), и предложи СЛЕДУЮЩИЙ ШАГ из <journey>. ' +
+  'Два-три предложения, без списков, инструменты не вызывай, вопросов анкеты не задавай.]';
+/** Запасной текст kickoff: демо без модели и план В. */
+export const KICKOFF_CANNED = CONTINUE_GREETING;
 /** Текст ассистента, когда модель вернула пустой ответ. */
 export const EMPTY_REPLY = 'Не получилось сформулировать ответ. Спроси ещё раз или уточни, что нужно.';
 
@@ -49,7 +60,7 @@ export async function runTurn(
   if (!conv) throw errors.notFound('Разговор не найден');
 
   const now = opts.now ?? (() => new Date());
-  const budget = opts.dailyTokenBudget ?? (await getSetting('llm.dailyTokenBudget'));
+  const budget = opts.dailyTokenBudget ?? getEnv().LLM_DAILY_TOKEN_BUDGET;
   const demo = !opts.llm && isDemoMode();
   const llm =
     opts.llm ?? getLlm({ candidateId, conversationId, onQueue: (position) => emit({ type: 'queue', position }) });
@@ -66,7 +77,7 @@ export async function runTurn(
   const preferences = preferencesBlock(await settingsForTurn(candidateId));
 
   await ensurePromptVersion(conversationId);
-  await saveMessage(conversationId, { role: 'user', content: userContent(input, resume) });
+  if (!input.kickoff) await saveMessage(conversationId, { role: 'user', content: userContent(input, resume) });
 
   let pipeline: PipelineResult | undefined;
   if (input.uploadIds?.length || input.urls?.length) {
@@ -87,7 +98,7 @@ export async function runTurn(
   }
   if (demo) {
     // Демо без ключей: модели нет, ответ — шаблоны по данным платформы (не сбой, без «упрощённого режима»).
-    let text = await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
+    let text = input.kickoff ? KICKOFF_CANNED : await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
     if (resume && !(await remindedResume(conversationId))) text = `${text}\n${resumeLine()}`;
     await finishAndSave(conversationId, createReplyStream(emit, signal, undefined, opts.pace), text);
     return;
@@ -99,6 +110,7 @@ export async function runTurn(
     select: { role: true, content: true, toolCalls: true, toolCallId: true },
   });
   const messages: ChatMessage[] = buildHistory(rows);
+  if (input.kickoff) messages.push({ role: 'user', content: KICKOFF_INSTRUCTION });
   // Память о собеседнике (заметки — данные, не инструкции; consultant/memory.ts).
   const memory = await loadMemoryBlock({ candidateId });
   let calls = 0;
@@ -115,7 +127,7 @@ export async function runTurn(
       const req = {
         purpose: 'consultant' as const,
         system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume, memory, journey, preferences }),
-        messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
+        messages: withQuestionReminder(fitHistory(messages, historyChars), input.kickoff ? 'поприветствуй и предложи следующий шаг' : input.text),
         tools: specs,
         toolChoice: canCall ? ('auto' as const) : ('none' as const),
         maxTokens: TURN_MAX_TOKENS,
@@ -178,8 +190,9 @@ export async function runTurn(
 
 async function degrade(ctx: ToolContext, input: TurnInput, pipeline: PipelineResult | undefined, reason: FallbackReason) {
   ctx.emit({ type: 'step', text: FALLBACK_STEP[reason] });
-  const text =
-    input.onboarding && !pipeline
+  const text = input.kickoff
+    ? KICKOFF_CANNED
+    : input.onboarding && !pipeline
       ? asideCannedReply(input.onboarding)
       : await fallbackReply({ candidateId: ctx.candidateId, text: input.text, reason, ...(pipeline ? { pipeline } : {}) });
   await finishAndSave(ctx.conversationId, createReplyStream(ctx.emit, ctx.signal, undefined, ctx.pace), text);

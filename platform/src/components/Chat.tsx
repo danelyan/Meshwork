@@ -18,22 +18,14 @@ import { useAttachments } from './chat/attachments';
 import { useChatDraft } from './chat/draft';
 import { Composer } from './chat/Composer';
 import { useAsideRefresh } from './consultant/aside-refresh';
+import { CONTINUE_GREETING, GREETING } from '@/lib/greeting';
 import { materialsMessage, useMaterialsHandler } from './consultant/materials';
 import { applyAgentEvent } from './chat/stream-items';
-import { diffItems, telemetryOn, track, trackFrame, trackVirtual, turnEnd, turnEvent, turnStart } from './chat/telemetry';
-import { TelemetryMount } from './chat/TelemetryMount';
 import { AssistantRow, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
 import { scrollToEnd, useStickToBottom } from './chat/scroll';
 import { EventFeed, type FeedItem } from './EventFeed';
 import { Button, VisuallyHidden } from './ui';
 import ui from './ui.module.css';
-
-const GREETING =
-  'Пришли резюме или ссылки - прикрепи файл скрепкой, перетащи его в ленту или просто вставь ссылку на GitHub, Codeforces, статьи, портфолио. Я найду в них утверждения о твоих навыках, покажу цитаты и спрошу, всё ли верно. Категорию (специализацию и грейд) даёт только тест.';
-
-/** Приветствие после онбординга: та же лента, помощник становится консультантом. */
-const CONTINUE_GREETING =
-  'Дальше я - твой карьерный консультант. Пришли резюме или ссылки, спроси, что подтянуть до следующего грейда, - или выбери шаг ниже.';
 
 export interface ChatEmbedded {
   /** Подсказки следующих шагов — чипами под приветствием, пока не начат разговор. */
@@ -82,7 +74,14 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   const att = useAttachments();
   useChatDraft(initial?.conversationId, text, setText, att);
   const [busy, setBusy] = useState(false);
-  // Чипы под приветствием — после того, как оно допечатано (в онбординге оно печатается).
+  // Пустой разговор, состояние которого известно (initial с сервера): первую реплику говорит модель
+  // (ход kickoff, решение владельца 11.10). Запасной текст - только если ход не удался. Без initial
+  // (экран без восстановления, тесты) - текст как раньше.
+  const kickoff = initial !== undefined && initial.items.length === 0;
+  const kickRef = useRef(false);
+  const [kickFailed, setKickFailed] = useState(false);
+  const leadText = kickoff && !kickFailed ? null : embedded ? CONTINUE_GREETING : GREETING;
+  // Чипы под приветствием — после того, как оно допечатано (в онбординге оно печатается); при kickoff — после ответа модели.
   const [greetDone, setGreetDone] = useState(!embedded || (initial?.items.length ?? 0) > 0);
   const lastSent = useRef<{ message: string; uploadIds: string[]; urls: string[]; fileNames: string[] } | null>(null);
   const [simplified, setSimplified] = useState(false);
@@ -111,26 +110,12 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     if (embedded) scrollToEnd(endRef.current);
   }, [items.length, embedded]);
 
-  // Телеметрия (выключена — одна проверка флага): diff ленты по id, коммиты React за ход.
-  const prevItemsRef = useRef(items);
-  const reasonRef = useRef<string | undefined>(undefined);
-  const rendersRef = useRef(0);
-  useEffect(() => {
-    if (telemetryOn()) rendersRef.current++;
-  });
-  useEffect(() => {
-    if (telemetryOn()) diffItems(prevItemsRef.current, items, reasonRef.current);
-    prevItemsRef.current = items;
-  }, [items]);
-
   const pushEvent = useCallback((event: AgentEvent) => {
     if (event.type === 'conversation') {
       conversationRef.current = event.id;
       return;
     }
     if (event.type === 'done') return;
-    reasonRef.current = event.type;
-    if (event.type === 'discard') track({ k: 'flake', what: 'discard', id: event.id });
     // Завершённая реплика — авторитетный текст после дельт: её и озвучиваем (если включено).
     if (event.type === 'message') voiceRef.current?.speak(event.text, event.id);
     setItems((p) => applyAgentEvent(p, event, nextId));
@@ -138,30 +123,31 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   }, []);
 
   const send = useCallback(
-    async (message: string, uploadIds: string[], urls: string[], fileNames: string[]) => {
+    async (message: string, uploadIds: string[], urls: string[], fileNames: string[], opts: { kickoff?: boolean } = {}) => {
       setBusy(true);
-      lastSent.current = { message, uploadIds, urls, fileNames };
-      setItems((p) => [...p, { id: nextId(), role: 'user', text: message, files: fileNames }]);
+      if (!opts.kickoff) {
+        lastSent.current = { message, uploadIds, urls, fileNames };
+        setItems((p) => [...p, { id: nextId(), role: 'user', text: message, files: fileNames }]);
+      }
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       // Ход дошёл до `done` без `error` — упрощённый режим снимаем (консультант снова отвечает).
       let sawDone = false;
       let sawError = false;
-      rendersRef.current = 0;
-      reasonRef.current = 'send';
-      turnStart(conversationRef.current);
       const handle = (ev: AgentEvent) => {
-        turnEvent(ev.type);
         if (ev.type === 'done') sawDone = true;
         if (ev.type === 'error') sawError = true;
         pushEvent(ev);
       };
       try {
         await embedded?.beforeSend?.();
-        const stream = await openConsultantStream({ text: message, uploadIds, urls, conversationId: conversationRef.current }, ctrl.signal);
+        const stream = await openConsultantStream(
+          { text: message, uploadIds, urls, conversationId: conversationRef.current, ...(opts.kickoff ? { kickoff: true } : {}) },
+          ctrl.signal,
+        );
         const reader = stream.getReader();
         const decoder = new TextDecoder();
-        const parser = createSseParser(undefined, telemetryOn() ? { onFrame: trackFrame } : undefined);
+        const parser = createSseParser();
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -170,15 +156,19 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         for (const ev of parser.push(decoder.decode())) handle(ev);
         for (const ev of parser.flush()) handle(ev);
         if (sawDone && !sawError) setSimplified(false);
-        turnEnd(sawError ? 'error' : 'done', sawDone ? undefined : 'без done', rendersRef.current);
       } catch (e) {
-        if ((e as Error).name === 'AbortError') turnEnd('stop', 'abort', rendersRef.current);
-        else {
+        if ((e as Error).name === 'AbortError') {
+          /* стоп или размонтирование */
+        } else if (opts.kickoff) {
+          // Первая реплика не удалась: тихо показываем запасной текст, без ошибки в ленте.
+          setKickFailed(true);
+        } else {
           const code = (e as { code?: string }).code ?? 'network';
-          turnEnd('error', code, rendersRef.current);
           pushEvent({ type: 'error', code, message: e instanceof Error ? e.message : 'Что-то пошло не так.' });
         }
       } finally {
+        if (opts.kickoff && !sawError) setGreetDone(true);
+        else if (opts.kickoff) setKickFailed(true);
         // Обрыв/ошибка посреди дельт: реплику закрываем (каретка гаснет, появляется «Озвучить»).
         setItems((p) => (p.some((it) => it.role === 'agent' && it.streaming) ? p.map((it) => (it.role === 'agent' && it.streaming ? { ...it, streaming: false } : it)) : p));
         if (abortRef.current === ctrl) abortRef.current = null;
@@ -189,11 +179,16 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     [pushEvent, embedded, refreshAside],
   );
 
+  useEffect(() => {
+    if (!kickoff || kickRef.current) return;
+    kickRef.current = true;
+    void send('', [], [], [], { kickoff: true });
+  }, [kickoff, send]);
+
   // «Стоп»: сервер останавливает ход и отдаёт показанный кусок (`message` + `done`), затем — обрыв локального fetch.
   const stop = useCallback(async () => {
     const ctrl = abortRef.current;
     const id = conversationRef.current;
-    turnEnd('stop', 'кнопка «Стоп»');
     if (id) await stopConsultantTurn(id);
     ctrl?.abort();
   }, []);
@@ -278,7 +273,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   const suggestions = [...(embedded?.suggestions ?? []), ...demoChip];
   const greeting = (
     <AssistantRow key="greeting" testId="chat-greeting">
-      <Reply lines={[{ text: embedded ? CONTINUE_GREETING : GREETING }]} animate={Boolean(embedded) && items.length === 0} onDone={() => setGreetDone(true)} />
+      {leadText && <Reply lines={[{ text: leadText }]} animate={Boolean(embedded) && items.length === 0} onDone={() => setGreetDone(true)} />}
       {suggestions.length > 0 && !started && greetDone && (
         <QuickReplies
           label="Что дальше"
@@ -292,10 +287,6 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   // «Печатает» — пока в этом ходе не началась реплика (дальше её видно по стриму).
   const lastUser = items.findLastIndex((it) => it.role === 'user');
   const replying = items.slice(lastUser + 1).some((it) => it.role === 'agent' && it.event.type === 'message');
-  const typingShown = busy && !replying;
-  useEffect(() => {
-    trackVirtual('typing', 'typing', typingShown);
-  }, [typingShown]);
 
   return (
     <div ref={rootRef} className={[embedded ? styles.embedded : styles.chat, className].filter(Boolean).join(' ')}>
@@ -356,7 +347,6 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       </div>
       </div>
 
-      <TelemetryMount />
       <Composer
         label="Сообщение"
         value={text}

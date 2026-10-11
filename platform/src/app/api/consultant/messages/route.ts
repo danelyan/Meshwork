@@ -25,8 +25,10 @@ const Body = z
     urls: z.array(z.url().max(2_048)).max(10).optional(),
     /** Свободный вопрос посреди онбординга: id шага, на котором человек (сервер сверяет со своим). */
     onboardingStep: z.string().regex(/^[A-Za-z]{1,40}$/).optional(),
+    /** Первая реплика в пустом разговоре без сообщения кандидата (loop.ts, KICKOFF_INSTRUCTION). */
+    kickoff: z.boolean().optional(),
   })
-  .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length, {
+  .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length || b.kickoff, {
     message: 'Нужен текст, вложение или ссылка',
     path: ['text'],
   });
@@ -98,7 +100,15 @@ export const POST = withErrors(async (req: Request) => {
       try {
         emit({ type: 'conversation', id: conversationId });
         await runTurn(
-          { candidateId, conversationId, text: body.text, ...(body.uploadIds ? { uploadIds: body.uploadIds } : {}), ...(body.urls ? { urls: body.urls } : {}), ...(onboarding ? { onboarding } : {}) },
+          {
+            candidateId,
+            conversationId,
+            text: body.text,
+            ...(body.uploadIds ? { uploadIds: body.uploadIds } : {}),
+            ...(body.urls ? { urls: body.urls } : {}),
+            ...(onboarding ? { onboarding } : {}),
+            ...(body.kickoff && !onboarding ? { kickoff: true } : {}),
+          },
           emit,
           signal,
           { pace },

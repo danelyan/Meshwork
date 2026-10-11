@@ -63,6 +63,11 @@ export interface TurnInput {
   urls?: string[];
   /** Свободный вопрос посреди онбординга: шаг, к которому вернуть (server/onboarding/service.asideContext). */
   onboarding?: OnboardingStepBrief;
+  /**
+   * Первая реплика в пустом разговоре: сообщения кандидата нет (и не сохраняется), модель получает
+   * разовую инструкцию «поприветствуй и предложи следующий шаг из <journey>» (loop.ts, KICKOFF_INSTRUCTION).
+   */
+  kickoff?: boolean;
 }
 
 /** Зависимости хода, подменяемые в тестах (по умолчанию — getLlm и реестр tools/index). */

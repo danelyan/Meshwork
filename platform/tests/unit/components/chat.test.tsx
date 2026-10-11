@@ -30,6 +30,32 @@ describe('Chat', () => {
     render(<Chat embedded={{}} />);
     expect(screen.queryByRole('navigation', { name: 'Следующий шаг' })).toBeNull();
   });
+  it('пустой разговор с initial: первую реплику говорит модель (kickoff без пузыря кандидата), чипы - после неё', async () => {
+    const full = frame({ type: 'conversation', id: 'c1' }) + frame({ type: 'message', text: 'Привет, Ирина! Дальше - тест.' }) + frame({ type: 'done' });
+    const fetchMock = vi.fn(async () => new Response(streamOf([full]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Chat initial={{ conversationId: null, items: [] }} embedded={{ suggestions: [{ value: 'resume', label: 'Дополнить профиль' }] }} />);
+    await waitFor(() => expect(screen.getByText('Привет, Ирина! Дальше - тест.')).toBeDefined());
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body.kickoff).toBe(true);
+    expect(body.text).toBe('');
+    expect(screen.queryByText(/твой карьерный консультант|базу профиля сохранила/)).toBeNull();
+    expect(screen.getByTestId('chat-greeting').querySelector('[role="group"]')).not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it('kickoff не удался: запасной текст без ошибки в ленте', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":"x"}', { status: 500 })));
+    render(<Chat initial={{ conversationId: null, items: [] }} embedded={{}} />);
+    await waitFor(() => expect(screen.getByText(/базу профиля сохранила/)).toBeDefined());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+  it('без initial приветствие статичное, модель не вызывается', () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Chat />);
+    expect(screen.getByTestId('chat-greeting').textContent).toMatch(/Пришли резюме/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
   it('отправляет сообщение и рисует разрезанный по чанкам SSE-поток', async () => {
     const full = frame({ type: 'step', text: 'читаю резюме' }) + frame({ type: 'message', text: 'Готово, смотрите' }) + frame({ type: 'done' });
     const fetchMock = vi.fn(async () => new Response(streamOf([full.slice(0, 30), full.slice(30)]), { status: 200 }));

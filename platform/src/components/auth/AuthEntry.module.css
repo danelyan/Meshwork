@@ -34,7 +34,9 @@
 .resetTitle { margin: 0; font-size: var(--fs-md); font-weight: 600; }
 
 /* вход одним экраном: SSO в ряд, почта в аккордеоне */
-.sso { display: flex; gap: 8px; }
+.sso { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Подсказка входа в симулятор ФСП ID — отдельной строкой под кнопками, а не колонкой в их ряду (сжимала кнопку). */
+.sso > p { order: 1; flex-basis: 100%; margin: 0; }
 .sso > a { flex: 1; min-width: 0; min-height: 44px; margin: 0; padding: 0 10px; gap: 8px; font-size: var(--fs-sm); text-align: center; line-height: 1.2; }
 .sso > a svg { width: 18px; height: 18px; }
 .method h3 { margin: 0; }

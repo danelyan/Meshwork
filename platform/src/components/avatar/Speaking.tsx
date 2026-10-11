@@ -124,13 +124,13 @@ export function StateChip({ className }: { className?: string }) {
   );
 }
 
-/** Переключатель звука: «Без звука» пока озвучка идёт, «Озвучивать ответы» пока нет. */
+/** Переключатель «Озвучивать всегда»: подпись постоянная, состояние — aria-pressed (тёмная кнопка с галочкой = включено). */
 export function MuteToggle({ className }: { className?: string }) {
   const voice = useCompanionVoice();
   if (!voice || voice.available === false) return null;
   return (
-    <button type="button" data-voice-toggle className={cx(styles.mute, className)} aria-pressed={voice.enabled} onClick={voice.toggle}>
-      {voice.enabled ? 'Без звука' : 'Озвучивать ответы'}
+    <button type="button" data-voice-toggle className={cx(styles.mute, className)} aria-pressed={voice.enabled} title={voice.enabled ? 'Ответы Киры озвучиваются — нажми, чтобы выключить' : 'Нажми, чтобы ответы Киры озвучивались сами'} onClick={voice.toggle}>
+      {voice.enabled ? '✓ Озвучивать всегда' : 'Озвучивать всегда'}
     </button>
   );
 }

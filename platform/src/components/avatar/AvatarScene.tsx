@@ -20,6 +20,9 @@ import type { CallKind } from '@/server/call/types';
 
 import { CallProvider, useCallMode } from '../call/CallContext';
 import { HeadView } from './HeadView';
+// Голова сцены всегда основная (weave6, решение владельца 10.10): выбор вида по ПКМ в ленте сохраняется в
+// localStorage и раньше перекрывал её — случайный «Металл» выглядел как «другая голова» (11.10).
+import { DEFAULT_HEAD_STYLE } from './head-styles';
 import { PanelSplitter } from './PanelSplitter';
 import { MuteToggle, StateChip, StopButton, Subtitles } from './Speaking';
 import { CompanionVoiceProvider } from './voice';
@@ -55,7 +58,7 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
             {feed()}
           </div>
           <aside className={styles.portrait} aria-label={label}>
-            <HeadView />
+            <HeadView style={DEFAULT_HEAD_STYLE} />
             <span className={styles.badge}>{label}</span>
             <div className={styles.callTop}>
               <MuteToggle />
@@ -71,7 +74,7 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
         <div className={styles.inlineScene} data-testid="scene-inline">
           <div className={styles.dock}>
             <div className={styles.dockHead}>
-              <HeadView />
+              <HeadView style={DEFAULT_HEAD_STYLE} />
             </div>
             <div className={styles.dockInfo}>
               <span className={styles.dockName}>ИИ-консультант</span>
@@ -90,7 +93,7 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
       {variant === 'call' && (
         <div className={styles.callScene} data-testid="scene-call">
           <div className={styles.callHead}>
-            <HeadView />
+            <HeadView style={DEFAULT_HEAD_STYLE} />
             <span className={styles.badge}>{label}</span>
             <div className={styles.callTop}>
               <StateChip />
@@ -119,6 +122,7 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
   const inCall = Boolean(call?.open);
   // Тема — на <html> (components/shell/theme.ts), сцена следует ей через [data-scene]; тёмная только панель звонка
   // (data-call на sideStage, tokens.css); на корне data-in-call — режим звонка для раскладки и приглушения чата.
+  // Портрет вне созвона следует теме страницы (решение владельца 11.10): data-call на нём не ставить.
   const sceneRef = useRef<HTMLDivElement>(null);
   return (
     <div ref={sceneRef} className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-in-call={inCall || undefined} data-scene>
@@ -128,9 +132,9 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
           <CallPanel />
         ) : (
           <>
-            <div className={`${styles.sideHead}${aside?.stats?.length ? ` ${styles.withStats}` : ''}`} data-call>
+            <div className={`${styles.sideHead}${aside?.stats?.length ? ` ${styles.withStats}` : ''}`}>
               <div className={styles.headBox}>
-                <HeadView />
+                <HeadView style={DEFAULT_HEAD_STYLE} />
               </div>
               {aside?.stats?.length ? <SceneStats initial={aside} className={styles.sideStats} /> : null}
               <span className={styles.badge}>{label}</span>

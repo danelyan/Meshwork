@@ -95,3 +95,14 @@ export function dashboardPath(pathname: string): boolean {
   return pathname === '/employer' || pathname.startsWith('/employer/')
     || CANDIDATE_NAV.some(({ href }) => (pathname === href || pathname.startsWith(`${href}/`)));
 }
+
+/**
+ * Полоса разделов кабинета на узком экране прокручивается внутри себя. Возвращает `scrollLeft`, при котором пункт
+ * (`linkLeft`, `linkWidth` - в координатах содержимого полосы) стоит по центру видимой части; значение зажато
+ * в пределы прокрутки. Полоса помещается целиком - 0.
+ */
+export function navScrollToShow(nav: { clientWidth: number; scrollWidth: number }, linkLeft: number, linkWidth: number): number {
+  const max = nav.scrollWidth - nav.clientWidth;
+  if (max <= 0) return 0;
+  return Math.min(max, Math.max(0, Math.round(linkLeft - (nav.clientWidth - linkWidth) / 2)));
+}

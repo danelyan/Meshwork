@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { HeaderAccount } from '@/server/auth/role-plan';
 import { NavIcon } from './NavIcon';
-import { CANDIDATE_NAV, EMPLOYER_NAV, activeLinkHref, dashboardPath } from './nav';
+import { CANDIDATE_NAV, EMPLOYER_NAV, activeLinkHref, dashboardPath, navScrollToShow } from './nav';
 import { CandidateSidebarSummary } from '@/components/candidate/CandidateSidebarSummary';
 import { EmployerConsultantDock } from '@/components/employer/EmployerConsultantDock';
 import styles from './DashboardFrame.module.css';
@@ -43,6 +43,15 @@ function useCollapsed(): [boolean, () => void] {
 export function DashboardFrame({ account, children, employerSummary, bare = false }: { account?: HeaderAccount | null; children: ReactNode; employerSummary?: ReactNode; bare?: boolean }) {
   const pathname = usePathname();
   const [collapsed, toggle] = useCollapsed();
+  // Узкий экран: разделы кабинета - прокручиваемая полоса; активный раздел ставим в её видимую часть, иначе на
+  // «Профиле» или «Настройках» не видно, где ты. На широком экране меню вертикальное - прокручивать нечего.
+  useEffect(() => {
+    const link = document.querySelector<HTMLElement>('[data-dashboard] > aside nav a[aria-current="page"]');
+    const nav = link?.parentElement;
+    if (!link || !nav) return;
+    const left = link.getBoundingClientRect().left - nav.getBoundingClientRect().left + nav.scrollLeft;
+    nav.scrollLeft = navScrollToShow(nav, left, link.offsetWidth);
+  }, [pathname]);
   if (!account?.roles || !dashboardPath(pathname)) return children;
   const isEmployer = account.roles.role === 'employer';
   const links = isEmployer ? EMPLOYER_NAV : CANDIDATE_NAV;

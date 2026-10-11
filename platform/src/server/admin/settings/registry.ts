@@ -120,17 +120,19 @@ export const SETTINGS = {
   'llm.dailyTokenBudget': def({
     group: 'llm',
     title: 'LLM: суточный бюджет токенов на пользователя',
-    description: '0 - без лимита. По умолчанию берётся из env LLM_DAILY_TOKEN_BUDGET.',
+    // Решение владельца 11.10: модель работает в полную силу - лимита по умолчанию нет (env его больше не задаёт).
+    description: '0 - без лимита (по умолчанию). Задать лимит можно только здесь.',
     schema: z.number().int().min(0).max(100_000_000),
-    default: () => getEnv().LLM_DAILY_TOKEN_BUDGET,
+    default: () => 0,
     unit: 'токенов',
   }),
   'call.dailyLimit': def({
     group: 'llm',
     title: 'Созвоны: лимит в сутки на кандидата',
-    description: '0 - без лимита. По умолчанию из env CALL_DAILY_LIMIT. Демо-кандидаты освобождены.',
+    // Решение владельца 11.10: без лимита по умолчанию (env CALL_DAILY_LIMIT его больше не задаёт).
+    description: '0 - без лимита (по умолчанию). Задать лимит можно только здесь.',
     schema: z.number().int().min(0).max(1000),
-    default: () => getEnv().CALL_DAILY_LIMIT,
+    default: () => 0,
     unit: 'шт.',
   }),
   'call.recordingRetentionDays': def({

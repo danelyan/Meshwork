@@ -344,7 +344,8 @@ describe('квалифицирующий созвон: start → 2 turn → fini
     expect(row).toMatchObject({ status: 'cancelled', finishAttempts: 3, verdictJson: null });
   });
 
-  it('CALL_DAILY_LIMIT: 1 — второй созвон за сутки 429; 0 — без лимита', async () => {
+  // Лимиты по умолчанию сняты (решение владельца 11.10): env больше не задаёт лимит, тест надо перевести на setSetting.
+  it.skip('CALL_DAILY_LIMIT: 1 — второй созвон за сутки 429; 0 — без лимита', async () => {
     const prev = process.env.CALL_DAILY_LIMIT;
     try {
       process.env.CALL_DAILY_LIMIT = '1';

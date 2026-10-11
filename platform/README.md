@@ -84,11 +84,6 @@ Integration-тесты: перед прогоном `globalSetup` применя
 `LLM_PROVIDER=yandex` — `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`; при
 `openai-chat` — `OPENAI_CHAT_BASE_URL`, `OPENAI_CHAT_API_KEY`, `OPENAI_CHAT_MODEL`.
 
-Запасная модель — `LLM_FALLBACK_BASE_URL`, `LLM_FALLBACK_API_KEY`, `LLM_FALLBACK_MODEL` (задаются
-вместе), `LLM_FALLBACK_FOLDER_ID` (каталог Yandex AI Studio, иначе `YANDEX_FOLDER_ID`),
-`LLM_FALLBACK_NAME`, `LLM_FALLBACK_EXTRA_BODY`. Получает запрос, если основная не ответила после
-ретраев (5xx/429, таймаут, сеть); следующие 60 с запросы идут сразу в неё (`server/llm/client.ts`).
-
 Пароль на стенд: `SITE_PASSWORD` (или его SHA-256 в `SITE_PASSWORD_SHA256`, на стенде — в
 `docker-compose.prod.yml`) задан → публичный адрес пускает только после ввода пароля на
 `/site-access` (без логина; кука `site_access` на 30 дней, подписана `SESSION_SECRET`, смена пароля сбрасывает её у всех).

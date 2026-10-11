@@ -247,6 +247,26 @@ describe('админка: каждый маршрут под гвардом пе
     expect(ADMIN_PUBLIC_ROUTES.filter((r) => !existing.has(r))).toEqual([]);
   });
 
+  it('демо-вход — публичный bootstrap с CSRF, флагом и сессией только для чтения', () => {
+    const route = '/api/admin/auth/demo';
+    expect(ADMIN_PUBLIC_ROUTES).toContain(route);
+    const entry = adminRoutes.find((r) => r.route === route)!;
+    const code = stripComments(readFileSync(entry.file, 'utf8'));
+    const hs = handlers(code);
+    expect(hs.map(([method]) => method)).toEqual(['POST']);
+    const post = hs[0]![1];
+    expect(post).toMatch(/assertSameOrigin\(req\)/);
+    expect(post).toMatch(/await demoLogin\(req\)/);
+    expect(post.indexOf('assertSameOrigin(req)')).toBeLessThan(post.indexOf('demoLogin(req)'));
+    const staff = stripComments(readFileSync(join(SRC, 'server/admin/staff.ts'), 'utf8'));
+    expect(staff).toMatch(/if \(!getEnv\(\)\.DEMO_LOGIN\) throw errors\.forbidden/);
+    const session = stripComments(readFileSync(join(SRC, 'server/admin/session.ts'), 'utf8'));
+    expect(session).toMatch(/if \(ctx\.demo && !demoAllows\(req, action\)\) throw errors\.forbidden/);
+    expect(session).toMatch(/if \(action && !DEMO_STAFF_ACTIONS\.has\(action\)\) return false/);
+    expect(session).toMatch(/if \(req\.method === 'GET' \|\| req\.method === 'HEAD'\) return true/);
+    expect(session).toMatch(/return new URL\(req\.url\)\.pathname === '\/api\/admin\/auth\/logout'/);
+  });
+
   it.each(adminPages.filter((p) => !ADMIN_PUBLIC_ROUTES.includes(p.route)).map((p) => [p.route, p] as const))('страница %s — requirePageStaff со своим адресом', (route, { file }) => {
     const code = sourceWithLocalImports(file);
     const staticPrefix = route.split('/[')[0]!;

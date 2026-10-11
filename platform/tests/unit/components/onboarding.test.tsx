@@ -346,7 +346,7 @@ describe('появление реплики', () => {
 
   it('сначала «печатает», затем текст раскрывается по словам; чипы — только после реплики', () => {
     stubFetch();
-    render(<OnboardingChat initial={makeView({ options: OPTS, lead: '', question: 'Кто ты?' })} consentText={[]} />);
+    render(<OnboardingChat initial={makeView({ options: OPTS, lead: '', question: 'Кто ты?' }, { history: [], progress: { done: 0, total: 10 } })} consentText={[]} />);
     expect(screen.getAllByTestId('typing')).toHaveLength(1);
     expect(screen.queryByTestId('quick-replies')).toBeNull();
     act(() => vi.advanceTimersByTime(typingMs('Кто ты?'.length)));
@@ -361,7 +361,7 @@ describe('появление реплики', () => {
 
   it('тап по реплике показывает её целиком', () => {
     stubFetch();
-    render(<OnboardingChat initial={makeView({ options: OPTS, lead: '', question: 'Длинный вопрос про направление' })} consentText={[]} />);
+    render(<OnboardingChat initial={makeView({ options: OPTS, lead: '', question: 'Длинный вопрос про направление' }, { history: [], progress: { done: 0, total: 10 } })} consentText={[]} />);
     act(() => vi.advanceTimersByTime(typingMs('Длинный вопрос про направление'.length)));
     act(() => vi.advanceTimersByTime(200));
     expect(screen.queryByTestId('quick-replies')).toBeNull();
@@ -370,10 +370,18 @@ describe('появление реплики', () => {
     expect(screen.getByTestId('quick-replies')).toBeDefined();
   });
 
+  it('восстановленный шаг показывается сразу, чипы доступны без повторного печатания', () => {
+    stubFetch();
+    render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
+    expect(screen.queryByTestId('typing')).toBeNull();
+    expect(question()).toBe('В каком направлении работаешь?');
+    expect(screen.getByTestId('quick-replies')).toBeDefined();
+  });
+
   it('prefers-reduced-motion — без анимации', () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener() {}, removeEventListener() {} }));
     stubFetch();
-    render(<OnboardingChat initial={makeView({ options: OPTS })} consentText={[]} />);
+    render(<OnboardingChat initial={makeView({ options: OPTS }, { history: [], progress: { done: 0, total: 10 } })} consentText={[]} />);
     expect(screen.queryByTestId('typing')).toBeNull();
     expect(question()).toBe('В каком направлении работаешь?');
   });

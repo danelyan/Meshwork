@@ -283,7 +283,7 @@ export const ACTION_ACCESS = {
  */
 export const ADMIN_PAGE_PREFIX = '/admin';
 export const ADMIN_API_PREFIX = '/api/admin';
-export const ADMIN_PUBLIC_ROUTES: readonly string[] = ['/admin/login', '/api/admin/auth/login', '/api/admin/auth/totp'];
+export const ADMIN_PUBLIC_ROUTES: readonly string[] = ['/admin/login', '/api/admin/auth/login', '/api/admin/auth/totp', '/api/admin/auth/demo'];
 
 /** Маршрут админки (страница или API) — доступ решает гвард персонала, не PAGE_ACCESS/API_ACCESS. */
 export function isAdminRoute(path: string): boolean {

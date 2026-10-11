@@ -5,7 +5,7 @@ import { acceptedByRank, matchingFunnel, type RankBucket } from '@/server/admin/
 import { parseDays } from '@/server/admin/metrics/period';
 import { RECALIBRATION_RULES as R, testItemStats } from '@/server/admin/metrics/test-monitor';
 import { requirePageStaff } from '@/server/admin/session';
-import { getEnv } from '@/server/env';
+import { getSetting } from '@/server/admin/settings';
 
 import styles from '../admin.module.css';
 import m from './metrics.module.css';
@@ -27,8 +27,9 @@ const bar = (share: number | null, max = 20) => (
 export default async function AdminMetricsPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   await requirePageStaff('/admin/metrics', 'view_metrics');
   const days = parseDays((await searchParams).days);
-  const [items, funnel, byRank, byPurpose, byDay, ceiling] = await Promise.all([testItemStats(days), matchingFunnel(days), acceptedByRank(days), llmByPurpose(days), llmByDay(days), nearCeiling()]);
-  const budget = getEnv().LLM_DAILY_TOKEN_BUDGET;
+  // Бюджет - из настройки админки (по умолчанию 0 = без лимита), как в assertBudget.
+  const budget = await getSetting('llm.dailyTokenBudget');
+  const [items, funnel, byRank, byPurpose, byDay, ceiling] = await Promise.all([testItemStats(days), matchingFunnel(days), acceptedByRank(days), llmByPurpose(days), llmByDay(days), nearCeiling(new Date(), budget)]);
   const maxDay = Math.max(1, ...byDay.map((d) => d.inputTokens + d.outputTokens));
   const flagged = items.filter((i) => i.flags.length > 0);
 

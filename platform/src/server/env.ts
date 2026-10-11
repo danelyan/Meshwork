@@ -7,25 +7,6 @@ const optionalString = z
   .optional()
   .transform((v) => (v === undefined || v.trim() === '' ? undefined : v.trim()));
 
-/** Необязательный JSON-объект из строки (доп. поля тела запроса к модели). */
-const jsonObject = (name: string) =>
-  optionalString.pipe(
-    z
-      .string()
-      .optional()
-      .transform((s, ctx) => {
-        if (!s) return undefined;
-        try {
-          const v: unknown = JSON.parse(s);
-          if (v && typeof v === 'object' && !Array.isArray(v)) return v as Record<string, unknown>;
-        } catch {
-          /* ниже — ошибка конфигурации */
-        }
-        ctx.addIssue({ code: 'custom', message: `${name} должен быть JSON-объектом` });
-        return z.NEVER;
-      }),
-  );
-
 const intFrom = (def: number, min: number, max: number) =>
   z.coerce.number().int().min(min).max(max).default(def);
 
@@ -70,19 +51,22 @@ export const envSchema = z
     /** Стримить ответы чата (`stream: true`): реплики консультанта и помощника появляются по мере генерации. */
     OPENAI_CHAT_STREAM: z.stringbool().default(true),
     /** JSON-объект доп. полей тела запроса, напр. {"chat_template_kwargs":{"enable_thinking":false}} — выключить рассуждения Qwen3 на vLLM. */
-    OPENAI_CHAT_EXTRA_BODY: jsonObject('OPENAI_CHAT_EXTRA_BODY'),
-
-    /**
-     * Запасная модель, если основная (LLM_PROVIDER) не ответила: OpenAI-совместимый Chat Completions. Задаётся тройкой
-     * BASE_URL + API_KEY + MODEL; для Yandex AI Studio каталог модели — LLM_FALLBACK_FOLDER_ID (иначе YANDEX_FOLDER_ID).
-     * EXTRA_BODY — как OPENAI_CHAT_EXTRA_BODY, напр. {"reasoning_effort":"none"} для Qwen3.6 в Yandex.
-     */
-    LLM_FALLBACK_BASE_URL: optionalString.pipe(z.url().optional()),
-    LLM_FALLBACK_API_KEY: optionalString,
-    LLM_FALLBACK_MODEL: optionalString,
-    LLM_FALLBACK_FOLDER_ID: optionalString,
-    LLM_FALLBACK_NAME: optionalString,
-    LLM_FALLBACK_EXTRA_BODY: jsonObject('LLM_FALLBACK_EXTRA_BODY'),
+    OPENAI_CHAT_EXTRA_BODY: optionalString.pipe(
+      z
+        .string()
+        .optional()
+        .transform((s, ctx) => {
+          if (!s) return undefined;
+          try {
+            const v: unknown = JSON.parse(s);
+            if (v && typeof v === 'object' && !Array.isArray(v)) return v as Record<string, unknown>;
+          } catch {
+            /* ниже — ошибка конфигурации */
+          }
+          ctx.addIssue({ code: 'custom', message: 'OPENAI_CHAT_EXTRA_BODY должен быть JSON-объектом' });
+          return z.NEVER;
+        }),
+    ),
 
     /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
     STT_PROVIDER: z.enum(['auto', 'yandex', 'openai', 'browser', 'off']).default('auto'),
@@ -207,12 +191,6 @@ export const envSchema = z
     if (env.STT_PROVIDER === 'openai') {
       for (const key of ['STT_OPENAI_BASE_URL', 'STT_OPENAI_API_KEY'] as const) {
         if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен при STT_PROVIDER=openai` });
-      }
-    }
-    const fallbackKeys = ['LLM_FALLBACK_BASE_URL', 'LLM_FALLBACK_API_KEY', 'LLM_FALLBACK_MODEL'] as const;
-    if (fallbackKeys.some((k) => env[k])) {
-      for (const key of fallbackKeys) {
-        if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен, если задана запасная модель (LLM_FALLBACK_*)` });
       }
     }
     if (env.LLM_PROVIDER === 'yandex') need(['YANDEX_API_KEY', 'YANDEX_FOLDER_ID', 'YANDEX_MODEL'], 'yandex');

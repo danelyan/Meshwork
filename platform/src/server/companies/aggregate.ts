@@ -26,6 +26,8 @@ export interface CompanyCard {
   salaryMin: number;
   salaryMax: number;
   specializations: string[];
+  /** Первые вакансии (свежие сверху) для списка компаний. */
+  preview: { id: string; title: string; salaryFrom: number; salaryTo: number }[];
 }
 
 export interface CompanyDetail extends CompanyCard {
@@ -50,6 +52,7 @@ export function buildCatalog(rows: CompanyRow[]): CompanyCard[] {
       salaryMin: Math.min(...c.vacancies.map((v) => v.salaryFrom)),
       salaryMax: Math.max(...c.vacancies.map((v) => v.salaryTo)),
       specializations: [...new Set(c.vacancies.map((v) => v.specialization))],
+      preview: c.vacancies.slice(0, 3).map((v) => ({ id: v.id, title: v.title, salaryFrom: v.salaryFrom, salaryTo: v.salaryTo })),
     }))
     .sort((a, b) => b.vacancyCount - a.vacancyCount || a.name.localeCompare(b.name, 'ru'));
 }

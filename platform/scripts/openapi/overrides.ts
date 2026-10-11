@@ -61,7 +61,6 @@ export const ERROR_RESPONSES: Record<number, { name: string; description: string
 };
 
 export const TAG_DESCRIPTIONS: Record<string, string> = {
-  admin: 'Админка владельцев платформы (E-08, ADR 0009): вход персонала (пароль + TOTP), персонал, журнал; разделы фаз 1–5',
   auth: 'Вход, сессия, согласие на обработку ПДн, роль',
   call: 'Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события, сигналинг WebRTC',
   consents: 'Согласия (ADR 0005): список «Мои согласия», дать, отозвать; раскрытие — по приглашению',
@@ -614,6 +613,16 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Подборка с обоснованием (R-E-03, R-M-03); фильтры — query (R-M-04). Контакты скрыты до принятия приглашения (R-E-07).',
     success: JSON_OK('Ранжированные карточки с обоснованием', MATCHES),
     errors: { 404: 'Потребность не найдена или чужая', 409: 'Не приняты оферта или обязательство по данным (`consent_required`)' },
+  },
+  'GET /api/employer/vacancies/{id}/compare': {
+    summary: 'Сравнение двух кандидатов подборки («Почему A выше B»)',
+    query: [
+      { name: 'a', description: 'id первого кандидата', schema: str(), required: true },
+      { name: 'b', description: 'id второго кандидата', schema: str(), required: true },
+    ],
+    description: 'Разница итогового балла (в п. = балл × 100) по факторам формулы ранжирования: покрытие, категория, ФСП, стек, проект, темы созвона. Новых весов нет - берутся вклады из подборки (R-M-03).',
+    success: JSON_OK('Таблица факторов и строка «Разница … Преимущество: …»', free('Comparison: aScore, bScore, diff, factors[{key,label,a,b,diff}], advantage[], headline')),
+    errors: { 400: 'Не заданы два разных кандидата', 404: 'Потребность чужая или кандидата нет в подборке', 409: 'Не приняты оферта или обязательство по данным (`consent_required`)' },
   },
   'GET /api/employer/vacancies/{id}': {
     summary: 'Потребность компании', success: JSON_OK('Потребность компании', free('Потребность: поля VacancyInput, id, archived, даты')), errors: { 404: 'Потребность не найдена или чужая' } },

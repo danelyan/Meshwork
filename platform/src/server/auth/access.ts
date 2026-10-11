@@ -182,10 +182,6 @@ export const API_ACCESS = {
   '/api/consultant/memory/[id]': 'session',
   '/api/employer/assistant/messages': 'employer',
   '/api/employer/company': 'employer',
-  /** lane admin (E-08, фаза 2): запрос ручной верификации компании. */
-  '/api/employer/company/verification': 'employer',
-  /** lane admin (E-08, фаза 2): апелляция на санкцию за жалобы. */
-  '/api/employer/sanction-appeal': 'employer',
   '/api/employer/invitations': 'employer',
   '/api/employer/invitations/[id]/hire': 'employer',
   '/api/employer/invitations/[id]/live-defense': 'employer',
@@ -195,6 +191,7 @@ export const API_ACCESS = {
   '/api/employer/vacancies': 'employer',
   '/api/employer/vacancies/[id]': 'employer',
   '/api/employer/vacancies/[id]/matches': 'employer',
+  '/api/employer/vacancies/[id]/compare': 'employer',
   '/api/employer/vacancies/[id]/applications': 'employer',
   '/api/employer/applications/[id]': 'employer',
   // Звонок с аватаром (ADR 0003): ведёт кандидат; запись и события видят обе стороны по правилам server/call/access.ts.
@@ -268,22 +265,6 @@ export const ACTION_ACCESS = {
   // Пароль стенда (SITE_PASSWORD) — до входа.
   'app/site-access/actions.ts': 'public',
 } as const satisfies Record<string, PageLevel>;
-
-/**
- * Админка (E-08, docs/decisions/0009-admin-staff.md) — отдельный контур доступа: кука персонала `fsp_admin`,
- * не роль сессии `cid`. Таблицы выше её не описывают: всё под префиксами закрыто гвардом персонала
- * (`requirePageStaff` в каждой page.tsx, `requireStaff(req…)` в каждом обработчике — проверяет
- * `tests/unit/auth/access-coverage.test.ts`), открыты только шаги входа. Лейны админки таблицы не правят.
- */
-export const ADMIN_PAGE_PREFIX = '/admin';
-export const ADMIN_API_PREFIX = '/api/admin';
-export const ADMIN_PUBLIC_ROUTES: readonly string[] = ['/admin/login', '/api/admin/auth/login', '/api/admin/auth/totp'];
-
-/** Маршрут админки (страница или API) — доступ решает гвард персонала, не PAGE_ACCESS/API_ACCESS. */
-export function isAdminRoute(path: string): boolean {
-  const p = path.split(/[?#]/, 1)[0] ?? '';
-  return [ADMIN_PAGE_PREFIX, ADMIN_API_PREFIX].some((x) => p === x || p.startsWith(`${x}/`));
-}
 
 /** Роли, которым открыт уровень страницы. */
 const LEVEL_ROLES: Record<Exclude<PageLevel, 'public'>, readonly SessionRole[]> = {

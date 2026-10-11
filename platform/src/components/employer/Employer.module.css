@@ -273,3 +273,19 @@
 
 /* lane invite-cancel: причина отзыва приглашения */
 .textarea { padding: 8px 10px; border: 1px solid var(--border-input, var(--line)); background: var(--surface-input, transparent); color: var(--ink); font: var(--fs-sm) var(--font); width: 100%; min-height: 64px; resize: vertical; }
+
+/* Сравнение двух кандидатов подборки («Почему A выше B») */
+.resultItem { position: relative; }
+.resultItem .resultRow { padding-left: 44px; }
+.compareCheck { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 1; width: 18px; height: 18px; accent-color: var(--blue); cursor: pointer; }
+.compareBar { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 18px; border: 1px solid var(--line); background: var(--glass-strong); font: var(--fs-xs) var(--mono); }
+.compareBar span { margin-right: auto; }
+.compareDialog { width: min(720px, calc(100vw - 32px)); }
+.compareHeadline { margin: 0 0 16px; font-size: var(--fs); font-weight: 500; }
+.compareTable { width: 100%; border-collapse: collapse; font-size: var(--fs); }
+.compareTable caption { text-align: left; color: var(--muted); font: var(--fs-xs) var(--mono); padding-bottom: 8px; }
+.compareTable th, .compareTable td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+.compareTable th:first-child { text-align: left; font-weight: 400; }
+.compareTable thead th { color: var(--muted); font: var(--fs-xs) var(--mono); font-weight: 400; overflow-wrap: anywhere; }
+.compareTable tr[data-lead='true'] { box-shadow: inset 3px 0 0 var(--blue); background: var(--accent-fill); }
+.compareTable tfoot th, .compareTable tfoot td { font-weight: 600; border-bottom: 0; }

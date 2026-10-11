@@ -75,8 +75,7 @@ async function cloneFrom(baseId: string, opts: { claims?: number; fspState?: 'no
     },
   });
   if (base.profile) {
-    const { candidateId: _c, updatedAt: _u, ...p } = base.profile;
-    await prisma.candidateProfile.create({ data: { ...p, candidateId: id } });
+    await prisma.candidateProfile.create({ data: { ...base.profile, candidateId: id, updatedAt: undefined } });
   }
   for (const c of base.claims.slice(0, opts.claims ?? base.claims.length)) {
     await prisma.claim.create({

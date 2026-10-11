@@ -74,7 +74,6 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
   health: 'Проверка живости',
-  simulator: 'Симулятор адаптивного теста для жюри: виртуальный кандидат, шаги движка, без БД и LLM',
   invitations: 'Приглашения глазами кандидата',
   objections: 'Возражения против автоматической оценки (ст. 16 152-ФЗ): тест, созвон, защита',
   onboarding: 'Онбординг: шаги, ответы, итог',
@@ -190,7 +189,7 @@ const SESSION_USER = obj({
 });
 
 const FILTER_QUERY = [
-  { name: 'spec', description: 'Специализация', schema: en('backend', 'frontend') },
+  { name: 'spec', description: 'Специализация или fullstack (есть категории и в backend, и в frontend; грейд - меньший из двух)', schema: en('backend', 'frontend', 'ai', 'engineering', 'fullstack') },
   { name: 'grade', description: 'Грейд', schema: en('junior', 'middle') },
   { name: 'stack', description: 'Технологии через запятую, не больше 10', schema: str() },
   { name: 'fsp', description: '`1` — только с достижениями ФСП', schema: en('1') },
@@ -262,31 +261,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
       free('k, candidates, vacancies, scored, mean {ours, baseline, precisionCeiling} | null, rows [{id, ours, baseline, top, baselineTop, …}], warnings'),
     ),
     errors: { 400: 'Не JSON, не прошла схема, неизвестный id каталога или разметка на несуществующих объектах', 403: 'Чужой Origin', 413: 'Тело больше 1 МБ', 429: 'Слишком много прогонов' },
-  },
-
-  'POST /api/simulator': {
-    role: 'public',
-    summary: 'Прогнать виртуального кандидата через адаптивный тест',
-    description:
-      'Боевой движок теста на грейд (выбор задания по информации Фишера, EAP-оценка θ, остановка и дозадавание по политике текущей версии) на виртуальном кандидате с заданной истинной θ. Режимы ответов: ideal (2PL по экспертным a, b), noise (шум b на показ), leak (трюк по 30 % семейств). Детерминированно по seed, без БД и LLM. Лимит частоты - 120 прогонов за 10 минут с адреса.',
-    body: {
-      description: 'Виртуальный кандидат',
-      schema: obj(
-        {
-          subcategoryId: str('Подкатегория с полным банком, например backend.web-api'),
-          claimed: en('junior', 'middle', 'senior'),
-          theta: { type: 'number', minimum: -3, maximum: 3, description: 'Истинный уровень виртуального кандидата' },
-          mode: en('ideal', 'noise', 'leak'),
-          seed: int('0..2147483647, по умолчанию 1'),
-        },
-        ['subcategoryId', 'claimed', 'theta'],
-      ),
-    },
-    success: JSON_OK(
-      'Шаги теста и итог',
-      free('input, policyVersion, steps [{n, templateId, title, itemGrade, a, b, phase, pModel, correct, theta, se}], start, confirmed, offeredGrade, grade, pPass, theta, se, stopReason, length, correctCount, cuts'),
-    ),
-    errors: { 400: 'Не JSON, не прошла схема или у подкатегории нет теста', 403: 'Чужой Origin', 413: 'Тело больше 2 КБ', 429: 'Слишком много прогонов' },
   },
 
   'GET /api/health': {

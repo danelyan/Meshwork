@@ -25,6 +25,8 @@ export interface DemoProfile {
   fspState: 'not_linked' | 'no_achievements' | 'unavailable' | 'linked';
   /** ДЕМО-категория (не из теста) или null. */
   category: { specialization: Spec; grade: Grade } | null;
+  /** ПРЕДЛОЖЕНИЕ агента (fullstack): дополнительные ДЕМО-категории в других направлениях (основная - category). */
+  extraCategories?: { specialization: Spec; grade: Grade }[];
   /** Контакт для принятого приглашения; без него — производный от id. */
   contact?: string;
   /** Технологии — попадают в цитаты (по ним работает фильтр «стек»). */
@@ -143,6 +145,7 @@ export async function seedPoolProfiles(prisma: PrismaClient, profiles: DemoProfi
       });
     }
     if (p.category) await prisma.candidateCategory.create({ data: { candidateId: p.id, ...p.category } });
+    for (const c of p.extraCategories ?? []) await prisma.candidateCategory.create({ data: { candidateId: p.id, ...c } });
     await seedResumeFields(prisma, p.id, resume.text, resume.fileName);
   }
 }

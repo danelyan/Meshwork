@@ -3,6 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 import { SUBCATEGORIES } from '../../src/lib/directions';
 
 import { seedPoolProfiles, type DemoProfile } from './employer';
+import { DEMO_POOL_FULLSTACK } from './pool-backend';
 import { DEMO_POOL_CATEGORIES } from './pool-categories';
 
 /**
@@ -84,6 +85,7 @@ export async function seedDirections(prisma: PrismaClient): Promise<void> {
   }
   await seedPoolProfiles(prisma, DEMO_POOL_AI);
   await seedPoolProfiles(prisma, DEMO_POOL_CATEGORIES);
+  await seedPoolProfiles(prisma, DEMO_POOL_FULLSTACK); // ПРЕДЛОЖЕНИЕ агента: демо для представления «Fullstack»
   const backfilled = await backfillDemoSubcategories(prisma);
   console.log(`seed(directions): ${SUBCATEGORIES.length} subcategories, ${DEMO_POOL_AI.length} ai demo candidates, ${DEMO_POOL_CATEGORIES.length} category demo candidates, ${backfilled} demo rows got a subcategory`);
 }

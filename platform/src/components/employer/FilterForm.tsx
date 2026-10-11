@@ -9,7 +9,7 @@ export interface FilterFormProps { action: string; filters: MatchFilters; }
 /** Native GET controls keep filtered results bookmarkable and work without JavaScript. */
 export function FilterForm({ action, filters }: FilterFormProps) {
   return <form method="get" action={action} className={styles.searchFilters} aria-label="Фильтры подборки">
-    <div className={styles.filterLine}><span>Специализация</span><label><input type="radio" name="spec" value="" defaultChecked={!filters.specialization} /><span>Все</span></label>{SPECIALIZATIONS.map((specialization) => <label key={specialization}><input type="radio" name="spec" value={specialization} defaultChecked={filters.specialization === specialization} /><span>{SPEC_LABEL[specialization]}</span></label>)}</div>
+    <div className={styles.filterLine}><span>Специализация</span><label><input type="radio" name="spec" value="" defaultChecked={!filters.specialization && !filters.fullstack} /><span>Все</span></label>{SPECIALIZATIONS.map((specialization) => <label key={specialization}><input type="radio" name="spec" value={specialization} defaultChecked={filters.specialization === specialization} /><span>{SPEC_LABEL[specialization]}</span></label>)}<label><input type="radio" name="spec" value="fullstack" defaultChecked={filters.fullstack} /><span>Fullstack</span></label></div>
     <div className={styles.filterLine}><span>Грейд</span><label><input type="radio" name="grade" value="" defaultChecked={!filters.grade} /><span>Все</span></label>{GRADES.map((grade) => <label key={grade}><input type="radio" name="grade" value={grade} defaultChecked={filters.grade === grade} /><span>{GRADE_LABEL[grade]}</span></label>)}</div>
     <div className={styles.filterLine}><span>Стек</span><input name="stack" aria-label="Стек через запятую" placeholder="Например, React, SQL" className={ui.input} style={{ maxWidth: 360 }} defaultValue={filters.stack?.join(', ') ?? ''} /></div>
     <div className={styles.filterLine}><span>Подтверждено</span><label><input type="checkbox" name="fsp" value="1" defaultChecked={filters.fsp} /><span>Достижения ФСП</span></label><label><input type="checkbox" name="category" value="1" defaultChecked={filters.categoryOnly} /><span>Категория из теста</span></label></div>
@@ -19,6 +19,7 @@ export function FilterForm({ action, filters }: FilterFormProps) {
 }
 export function filtersLabel(f: MatchFilters): string {
   const parts: string[] = [];
+  if (f.fullstack) parts.push('Fullstack');
   if (f.specialization) parts.push(specLabel(f.specialization));
   if (f.subcategory) parts.push(subcategoryLabel(f.subcategory));
   if (f.grade) parts.push(GRADE_LABEL[f.grade]);

@@ -3909,12 +3909,15 @@ paths:
           name: spec
           in: query
           required: false
-          description: "Специализация"
+          description: "Специализация или fullstack (есть категории и в backend, и в frontend; грейд - меньший из двух)"
           schema:
             type: string
             enum:
               - backend
               - frontend
+              - ai
+              - engineering
+              - fullstack
         -
           name: grade
           in: query
@@ -4202,12 +4205,15 @@ paths:
           name: spec
           in: query
           required: false
-          description: "Специализация"
+          description: "Специализация или fullstack (есть категории и в backend, и в frontend; грейд - меньший из двух)"
           schema:
             type: string
             enum:
               - backend
               - frontend
+              - ai
+              - engineering
+              - fullstack
         -
           name: grade
           in: query

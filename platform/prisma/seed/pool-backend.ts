@@ -122,3 +122,18 @@ export const DEMO_POOL_BACKEND: DemoProfile[] = [
     claims: [['be.transactions', 'artifact'], ['be.nosql', 'third_party'], ['be.migrations', 'third_party'], ['be.idempotency', 'artifact'], ['be.sql-indexes', 'artifact'], ['be.service-boundaries', 'self_reported'], ['be.performance', 'self_reported'], ['common.code-review', 'artifact'], ['be.data-scale', 'third_party']],
   },
 ];
+
+/**
+ * ПРЕДЛОЖЕНИЕ агента: демо-fullstack для представления «Fullstack» в поиске работодателя (employer/fullstack.ts) -
+ * категории и в backend (Middle), и в frontend (Junior), чтобы фильтр не был пустым на стенде. ДЕМО: вымышленный человек.
+ * Вне DEMO_POOL_CATEGORIES: утверждения двух направлений, а там тест требует одно; засевается в seedDirections.
+ * Основная (последняя) категория - backend; frontend - extraCategories.
+ */
+export const DEMO_POOL_FULLSTACK: DemoProfile[] = [
+  {
+    id: 'demo-fullstack-m-1', name: 'Демо: Руслан Демидов', specialization: 'backend', subcategoryId: 'backend.web-api', fspState: 'no_achievements',
+    category: { specialization: 'backend', grade: 'middle' }, extraCategories: [{ specialization: 'frontend', grade: 'junior' }], contact: 'ruslan.demidov@example.com',
+    stack: ['TypeScript', 'Node.js', 'NestJS', 'React', 'PostgreSQL'],
+    claims: [['be.rest-design', 'artifact'], ['be.api-validation', 'artifact'], ['be.sql-schema', 'artifact'], ['be.authz', 'self_reported'], ['fe.components', 'artifact'], ['fe.forms', 'artifact'], ['fe.api-client', 'artifact'], ['fe.ts-typing', 'self_reported'], ['common.git', 'artifact']],
+  },
+];

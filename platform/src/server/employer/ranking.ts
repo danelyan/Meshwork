@@ -9,6 +9,7 @@ import { computeCoverage } from '../recommend/matcher';
 import { gradeWeight } from '../recommend/weights';
 import type { FspState, Grade, Specialization } from '../types';
 
+import { fullstackProfile } from './fullstack';
 import { fspWeight, type FspAchievementInput } from './fsp-weight';
 import { matchStackPartial, partialText, type PartialStackMatch } from './tech-proximity';
 import {
@@ -56,6 +57,8 @@ export interface CandidateEvidence {
    * подкатегория теста (категория = направление × подкатегория × грейд; null у категорий до теста на подкатегорию).
    */
   category: { specialization: Specialization; grade: Grade; subcategoryId?: string | null } | null;
+  /** ПРЕДЛОЖЕНИЕ агента (fullstack): ВСЕ подтверждённые категории кандидата (category - последняя из них). Нет поля - только category. */
+  categories?: { specialization: Specialization; grade: Grade; subcategoryId?: string | null }[];
   claims: EvidenceClaim[];
   /** lane directions: подкатегория из профиля (онбординг, R-T-05); уступает подкатегории категории из теста. */
   subcategoryId?: string | null;
@@ -106,7 +109,7 @@ export function integrityFlagged(c: CandidateEvidence, opts: RankOptions = {}): 
 
 /** drop_category: кандидат без категории из теста; в остальных случаях — как есть. */
 export function applyIntegrity(c: CandidateEvidence, opts: RankOptions = {}): CandidateEvidence {
-  return integrityFlagged(c, opts) && opts.integrityPenalty?.mode === 'drop_category' ? { ...c, category: null } : c;
+  return integrityFlagged(c, opts) && opts.integrityPenalty?.mode === 'drop_category' ? { ...c, category: null, categories: undefined } : c;
 }
 
 export interface MatchTarget {
@@ -132,6 +135,8 @@ export interface MatchFilters {
   categoryOnly?: boolean;
   /** lane directions: подкатегория ("ai.llm-apps"); кандидаты без подкатегории или с другой не проходят (effectiveSubcategory). */
   subcategory?: string;
+  /** ПРЕДЛОЖЕНИЕ агента: представление «Fullstack» (spec=fullstack) - есть категории и в backend, и в frontend; грейд - меньший из двух (fullstack.ts). Не сочетается с specialization/subcategory. */
+  fullstack?: boolean;
 }
 
 export interface Explanation {
@@ -237,6 +242,7 @@ export function matchStack(claims: EvidenceClaim[], stack: readonly string[]): s
 }
 
 export function passesFilters(c: CandidateEvidence, f: MatchFilters): boolean {
+  if (f.fullstack && !fullstackProfile(c)) return false; // грейд ниже проверяет общая строка: у fullstack-вида category.grade = меньший из двух
   if (f.specialization && effectiveSpecialization(c) !== f.specialization) return false;
   if (f.grade && c.category?.grade !== f.grade) return false;
   if (f.categoryOnly && !c.category) return false;

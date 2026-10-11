@@ -38,7 +38,9 @@ function Summary({ live, role }: { live: LiveDefenseView; role: 'candidate' | 'e
     </p>}
     {live.scheduled && (live.scheduled.roomHref
       ? <div className={styles.row}>{live.scheduled.roomOpen ? <Button size="sm" variant="primary" href={live.scheduled.roomHref}>{role === 'employer' ? 'Войти в комнату' : 'Перейти к защите'}</Button> : <Button size="sm" disabled>Комната ещё закрыта</Button>}</div>
-      : <p className={styles.fine}>У кандидата нет сданного проекта: вопросы по коду не подготовлены, комната появится после сдачи.</p>)}
+      : <p className={styles.fine}>{role === 'employer'
+        ? 'У кандидата нет сданного проекта: вопросы по коду не подготовлены, комната появится после сдачи.'
+        : 'Проект ещё не сдан: сдайте его в разделе «Проекты», тогда к защите подготовятся вопросы по коду и появится комната.'}</p>)}
     {live.noShow.length > 0 && <p className={styles.error}>Неявка: {live.noShow.map((a) => WHO[a]).join(' и ')} (опоздание больше 15 минут).</p>}
     {live.cancelled && <p className={styles.meta}>Отменил{live.cancelled.by === 'employer' ? 'а компания' : ' кандидат'}: {live.cancelled.reason}</p>}
     {live.noneFit && live.status === 'slots_proposed' && <p className={styles.meta}>Кандидату не подошли слоты: «{live.noneFit.comment}»</p>}

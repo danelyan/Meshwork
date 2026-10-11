@@ -1,4 +1,5 @@
 import { rm } from 'node:fs/promises';
+import type { Prisma } from '@prisma/client';
 import { resolve, sep } from 'node:path';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
@@ -14,8 +15,16 @@ export function ownedDirectory(root: string, id: string): string {
   return target;
 }
 
+export interface EraseOptions {
+  /**
+   * E-08 phase 3 (staff erasure on a data subject's request): runs inside the deletion transaction before the user row
+   * is removed, so the audit entry commits or rolls back together with the deletion.
+   */
+  inTransaction?: (tx: Prisma.TransactionClient) => Promise<void>;
+}
+
 /** Deletes both profiles belonging to the authenticated account, never a supplied candidate ID. */
-export async function eraseOwnAccount(userId: string): Promise<void> {
+export async function eraseOwnAccount(userId: string, opts: EraseOptions = {}): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: {
     isDemo: true, accounts: { select: { provider: true } }, candidateId: true,
     employerProfile: { select: { id: true, companyId: true } },
@@ -51,6 +60,7 @@ export async function eraseOwnAccount(userId: string): Promise<void> {
         await tx.company.deleteMany({ where: { id: employer.companyId } });
       }
     }
+    await opts.inTransaction?.(tx);
     await tx.user.delete({ where: { id: userId } });
   });
 }

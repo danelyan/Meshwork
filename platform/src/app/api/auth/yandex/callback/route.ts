@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { isBlockedNow } from '@/server/admin/accounts/state';
 import { homePathFor } from '@/server/auth/access';
 import { CONSENT_VERSION, ensureConsent } from '@/server/auth/consent';
 import { safeNext } from '@/server/auth/redirect';
@@ -61,6 +62,8 @@ export async function GET(req: Request) {
     return back('internal');
   }
 
+  // E-08 фаза 3: заблокированный аккаунт куку не получает (sessionInputFor бросил бы 403 JSON — здесь редирект).
+  if (isBlockedNow(user)) return back('account_blocked');
   const home = homePathFor(user.role);
   const target = needsOnboarding(user) ? home : (safeNext(saved.next) ?? home);
   const res = NextResponse.redirect(new URL(target, env.APP_URL), 303);

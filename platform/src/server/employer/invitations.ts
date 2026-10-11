@@ -4,6 +4,8 @@
 import type { InvitationStatus, Prisma } from '@prisma/client';
 import type { z } from 'zod';
 
+import { assertCompanyNotBlocked, isHiddenByModerator, notBlockedCandidateWhere } from '@/server/admin/accounts/state';
+
 import { assertEmployerConsents, consentRequired, disclosedInvitationIds, revokeDisclosureForInvitation, grantConsent, hasActiveConsent, revokeConsent, userIdForCandidate } from '../consent/service';
 import { consentVersion } from '../consent/texts';
 import { prisma } from '../db';
@@ -13,8 +15,6 @@ import { invitationAnswerMail, invitationMail, invitationWithdrawnMail } from '.
 import { closeLiveDefenseOnWithdraw, closeLiveDefensesOnHire, liveDefenseViews, projectReadyByInvitation, type LiveDefenseView } from '../live-defense/service';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
-
-import { queueInvitationRedFlags } from '../admin/moderation/red-flags';
 
 import { notifyAtsStatusChanged } from './ats-webhook';
 import { detectRedFlags, invitationSanction, type RedFlag } from './antifraud';
@@ -95,14 +95,7 @@ export interface CandidateInvitationView {
    * Компания и способ связи — до принятия (ТЗ 2.2: «кандидат видит условия до начала общения»).
    * contact: Company.contact, иначе почта отправителя; null — не указан (интерфейс пишет NO_COMPANY_CONTACT).
    */
-  company: {
-    name: string;
-    description: string | null;
-    contact: string | null;
-    trust?: { index: number; band: 'low' | 'medium' | 'high'; concept: true } | null;
-    /** lane admin (E-08, фаза 2): метка «компания проверена» модератором (ручная верификация, без API ФНС). */
-    verified?: boolean;
-  };
+  company: { name: string; description: string | null; contact: string | null; trust?: { index: number; band: 'low' | 'medium' | 'high'; concept: true } | null };
   /** Антифрод (R-X-01): красные флаги текста и вилки; пустой — ничего не найдено. Интерфейс пишет «Проверьте: …». */
   redFlags?: Pick<RedFlag, 'code' | 'severity' | 'candidateNote'>[];
   /** lane complaints: жалоба кандидата на это приглашение; null — не подавалась. */
@@ -144,7 +137,7 @@ export async function createInvitation(
   const sender = await prisma.employerProfile.findUnique({ where: { id: ctx.employerProfileId }, select: { userId: true } });
   if (!sender) throw errors.forbidden('Профиль работодателя не найден');
   await assertEmployerConsents(sender.userId);
-  const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false }, select: { id: true } });
+  const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false, AND: [notBlockedCandidateWhere()] }, select: { id: true } });
   if (!cand) throw errors.notFound('Кандидат не найден');
   if (input.vacancyId) {
     const v = await prisma.vacancy.findFirst({ where: { id: input.vacancyId, companyId: ctx.companyId, archivedAt: null }, select: { id: true } });
@@ -152,6 +145,7 @@ export async function createInvitation(
   }
   const created = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${ctx.companyId}`}))`;
+    await assertCompanyNotBlocked(tx, ctx.companyId); // E-08 фаза 3: блокировка модератором, тем же tx
     const open = await tx.invitation.findFirst({
       where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: OPEN } },
       select: { id: true },
@@ -200,8 +194,6 @@ export async function createInvitation(
       select: { id: true, status: true },
     });
   });
-  // lane admin (E-08, фаза 2): сработавшие красные флаги — в очередь модератора; сбой очереди отправку не роняет.
-  await queueInvitationRedFlags(created.id);
   // lane: email-auth — письмо кандидату, не задерживая ответ работодателю.
   void notifyInBackground('invitation', () => notifyCandidateInvited(created.id));
   void notifyInBackground('ats', () => notifyAtsStatusChanged(created.id));
@@ -328,7 +320,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       withdrawnAt: true,
       withdrawReason: true,
       complaint: { select: { reason: true, createdAt: true } },
-      company: { select: { id: true, name: true, description: true, contact: true, verifiedAt: true } },
+      company: { select: { id: true, name: true, description: true, contact: true } },
       employerProfile: { select: { user: { select: { email: true } } } },
       vacancy: {
         select: {
@@ -339,7 +331,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
           salaryTo: true,
           teamDescription: true,
           stack: true,
-          company: { select: { id: true, name: true, description: true, contact: true, verifiedAt: true } },
+          company: { select: { id: true, name: true, description: true, contact: true } },
         },
       },
     },
@@ -350,7 +342,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
   const live = await liveDefenseViews(rows.map((r) => r.id), 'candidate');
   const ready = await projectReadyByInvitation(rows.filter((r) => r.status === 'accepted').map((r) => ({ id: r.id, candidateId, companyId: (r.company ?? r.vacancy?.company)?.id ?? null })));
   return rows.map((r) => {
-    const co = r.company ?? r.vacancy?.company ?? { id: null, name: 'Компания', description: null, contact: null, verifiedAt: null };
+    const co = r.company ?? r.vacancy?.company ?? { id: null, name: 'Компания', description: null, contact: null };
     const senderEmail = r.employerProfile?.user.email;
     const t = co.id ? trusts.get(co.id) : undefined;
     const company = {
@@ -358,7 +350,6 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       description: co.description,
       contact: co.contact?.trim() || (senderEmail ? contactEmail(senderEmail) : null),
       trust: t ? { index: t.index, band: t.band, concept: t.concept } : null,
-      verified: !!co.verifiedAt,
     };
     const v = r.vacancy;
     const vacancy = v
@@ -587,6 +578,8 @@ export async function setCandidateContact(candidateId: string, contact: string |
 export async function setPrivacy(candidateId: string, hiddenFromEmployers: boolean) {
   // Показ работодателям — согласие Г4 (ADR 0005): переключатель даёт или отзывает его. Профиль без аккаунта
   // (демо-пул сида) согласий не хранит — у него меняется только флаг.
+  // E-08 фаза 3: профиль скрыт модератором (фейк, жалоба) — вернуть в поиск может только модератор.
+  if (!hiddenFromEmployers && (await isHiddenByModerator(candidateId))) throw errors.forbidden('Профиль скрыт модератором платформы. Чтобы вернуть его в поиск, напишите в поддержку.');
   const userId = await userIdForCandidate(candidateId);
   if (userId && !hiddenFromEmployers) await grantConsent(userId, { kind: 'employer_visibility', version: consentVersion('employer_visibility') });
   if (userId && hiddenFromEmployers && (await hasActiveConsent(userId, 'employer_visibility'))) await revokeConsent(userId, 'employer_visibility');

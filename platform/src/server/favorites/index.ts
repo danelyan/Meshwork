@@ -1,3 +1,4 @@
+import { notBlockedCandidateWhere } from '@/server/admin/accounts/state';
 import { assertEmployerConsents } from '@/server/consent/service';
 import { z } from 'zod';
 import { prisma } from '@/server/db';
@@ -66,7 +67,7 @@ export async function savedCandidateCards(owner: FavoriteOwner) {
   const ids = saved.map((row) => row.candidateId);
   if (!ids.length) return { cards: [], unavailable: 0 };
   const rows = await prisma.candidate.findMany({
-    where: { id: { in: ids }, hiddenFromEmployers: false, OR: [{ claims: { some: { status: { in: ['confirmed', 'edited'] } } } }, { categories: { some: {} } }] },
+    where: { id: { in: ids }, hiddenFromEmployers: false, AND: [notBlockedCandidateWhere()], OR: [{ claims: { some: { status: { in: ['confirmed', 'edited'] } } } }, { categories: { some: {} } }] },
     select: { id: true, name: true, email: true, contact: true, specialization: true, fspState: true,
       categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true } },
       claims: { where: { status: { in: ['confirmed', 'edited'] } }, select: { catalogId: true, statement: true, level: true, sourceKind: true }, orderBy: { id: 'asc' } },

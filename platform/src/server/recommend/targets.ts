@@ -1,4 +1,4 @@
-import { hiddenVacancyIds } from '../admin/moderation/red-flags';
+import { notBlockedVacancyWhere } from '../admin/accounts/state';
 import { prisma } from '../db';
 
 import { assertCandidate, loadCatalog, loadConfirmedIndex, parseNeeds } from './evidence';
@@ -12,8 +12,7 @@ import type { TargetRec } from './types';
 export async function recommendTargets(candidateId: string, limit: number): Promise<TargetRec[]> {
   await assertCandidate(candidateId);
   const [vacancies, catalog, index] = await Promise.all([
-    // lane admin (E-08, фаза 2): скрытые модератором вакансии не рекомендуются.
-    hiddenVacancyIds().then((hidden) => prisma.vacancy.findMany({ where: { archivedAt: null, ...(hidden.length ? { id: { notIn: hidden } } : {}) }, include: { company: true }, orderBy: { id: 'asc' } })),
+    prisma.vacancy.findMany({ where: { archivedAt: null, ...notBlockedVacancyWhere() }, include: { company: true }, orderBy: { id: 'asc' } }),
     loadCatalog(),
     loadConfirmedIndex(candidateId),
   ]);

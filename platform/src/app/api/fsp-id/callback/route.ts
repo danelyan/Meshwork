@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { isBlockedNow } from '@/server/admin/accounts/state';
 import { homePathFor } from '@/server/auth/access';
 import { CONSENT_VERSION, ensureConsent } from '@/server/auth/consent';
 import { safeNext } from '@/server/auth/redirect';
@@ -62,6 +63,8 @@ export async function GET(req: Request) {
     }
 
     let user = await upsertExternalUser({ provider: 'fsp', providerAccountId: who.fspId, name: who.name ?? 'Участник ФСП', email: null });
+    // E-08 фаза 3: заблокированный аккаунт не входит и не привязывает достижения.
+    if (isBlockedNow(user)) return redirect('/auth?error=account_blocked');
     await ensureConsent(user.id, saved!.consent);
     if (user.role === 'pending') user = await chooseRole(user.id, { role: 'candidate' });
     if (user.candidateId) {

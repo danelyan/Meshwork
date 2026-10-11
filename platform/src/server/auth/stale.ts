@@ -1,5 +1,7 @@
+import { isBlockedNow } from '@/server/admin/accounts/state';
+import { sessionVersionOf } from '@/server/auth/password-version';
 import { prisma } from '@/server/db';
-import { type SessionPrincipal, parseSession, passwordVersionOf, readCookie, SESSION_COOKIE } from '@/server/session';
+import { type SessionPrincipal, parseSession, readCookie, SESSION_COOKIE } from '@/server/session';
 
 /**
  * Подпись куки валидна, но аккаунта (формат `u.…`) или кандидата (старая демо-кука) уже нет в БД:
@@ -10,11 +12,18 @@ import { type SessionPrincipal, parseSession, passwordVersionOf, readCookie, SES
  */
 export async function sessionExists(p: SessionPrincipal): Promise<boolean> {
   if (p.userId) {
-    const user = await prisma.user.findUnique({ where: { id: p.userId }, select: { passwordHash: true, role: true } });
+    const user = await prisma.user.findUnique({ where: { id: p.userId }, select: { passwordHash: true, role: true, blockedAt: true, blockedUntil: true } });
     // Пароль сменили (сброс) — кука со старой версией пароля больше не действует; роль сменили — тоже.
-    return user !== null && user.role === p.role && passwordVersionOf(user.passwordHash) === (p.passwordVersion ?? '');
+    // E-08 фаза 3: заблокирован — сессия отклонена; блокировка меняет версию, так что и после разблокировки
+    // кука, выданная до блокировки, не оживает (`sessionVersionOf`).
+    if (!user || isBlockedNow(user)) return false;
+    return user.role === p.role && sessionVersionOf(user) === (p.passwordVersion ?? '');
   }
-  if (p.candidateId) return (await prisma.candidate.findUnique({ where: { id: p.candidateId }, select: { id: true } })) !== null;
+  if (p.candidateId) {
+    // Старая демо-кука без аккаунта: кандидат, чей аккаунт заблокирован, ею тоже не входит.
+    const c = await prisma.candidate.findUnique({ where: { id: p.candidateId }, select: { user: { select: { blockedAt: true, blockedUntil: true } } } });
+    return c !== null && !isBlockedNow(c.user);
+  }
   return false;
 }
 

@@ -37,10 +37,6 @@ export function publishCall(sessionId: string, event: CallEvent): void {
   }
 }
 
-export function callSubscriberCount(sessionId: string): number {
-  return channels.get(sessionId)?.size ?? 0;
-}
-
 /** SSE-кадр с именем события: `event: <type>\ndata: <json>\n\n` (U+2028/2029 экранированы). */
 export function encodeCallEvent(event: CallEvent): string {
   const json = JSON.stringify(event).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');

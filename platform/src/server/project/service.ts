@@ -10,7 +10,7 @@ import { githubHeaders } from '../collector/github';
 import { getText } from '../collector/http-json';
 import { maskContacts } from '../collector/mask';
 import { disclosedCandidateIds, hasAiAssessmentConsent } from '../consent/service';
-import { SUBCATEGORIES } from '../../lib/directions';
+import { SUBCATEGORIES, subcategoryLabel } from '../../lib/directions';
 import { prisma } from '../db';
 import { categoryLabel } from '../employer/ranking';
 import { createInvitation } from '../employer/invitations';
@@ -56,15 +56,6 @@ import {
 } from './templates';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Названия подкатегорий до слияния лейна directions (модель Subcategory); там — из БД. */
-export const SUBCATEGORY_TITLES: Record<string, string> = {
-  'backend.web-api': 'Веб-API',
-  'backend.integrations': 'Интеграции',
-  'frontend.ui-app': 'UI-приложение',
-  'ai.llm-apps': 'LLM-приложения',
-  'engineering.data-eng': 'Инженерия данных',
-};
 
 const SPEC_RU: Record<string, string> = { backend: 'Backend', frontend: 'Frontend', ai: 'AI', engineering: 'Engineering' };
 
@@ -118,7 +109,7 @@ export function templateView(t: LoadedTemplate): TemplateView {
     summary: m.summary,
     specialization: m.specialization,
     subcategoryId: m.subcategoryId,
-    subcategoryTitle: SUBCATEGORY_TITLES[m.subcategoryId] ?? m.subcategoryId,
+    subcategoryTitle: subcategoryLabel(m.subcategoryId),
     grade: m.grade,
     stack: m.stack,
     timeBudgetMin: m.timeBudgetMin,
@@ -326,7 +317,7 @@ function feedItem(
     specialization: t.specialization,
     specializationLabel: SPEC_RU[t.specialization] ?? t.specialization,
     subcategoryId: t.subcategoryId,
-    subcategoryTitle: t.subcategoryId ? (SUBCATEGORY_TITLES[t.subcategoryId] ?? t.subcategoryId) : null,
+    subcategoryTitle: t.subcategoryId ? subcategoryLabel(t.subcategoryId) : null,
     grade: t.grade,
     stack: tpl.manifest.stack,
     timeBudgetMin: tpl.manifest.timeBudgetMin,
@@ -571,11 +562,27 @@ export interface SubmitDeps {
   background?: boolean;
 }
 
+/** Сервис проверки не ответил (503 от runner) — сбой не по вине кандидата. Текст хранится в ProjectSubmission.error. */
+export const RUNNER_UNAVAILABLE_ERROR = 'Сервис проверки недоступен, попробуй позже.';
+/** Потолок всех сдач задания вместе с незасчитанными: пока сервис проверки лежит, сдачи не идут без конца. */
+export const MAX_SUBMISSION_ROWS_PER_TASK = MAX_SUBMISSIONS_PER_TASK * 3;
+
+/**
+ * Сдачи, которые идут в лимит MAX_SUBMISSIONS_PER_TASK: все, кроме упавших из-за недоступного сервиса проверки.
+ * Остальные причины failed (таймаут, архив, структура проекта, прочие сбои) по сохранённым данным от ошибок
+ * кандидата надёжно не отличить — они засчитываются, как раньше.
+ */
+export function countedSubmissions(prev: readonly { status: ProjectSubmissionStatus; error: string | null }[]): number {
+  return prev.filter((p) => !(p.status === 'failed' && p.error === RUNNER_UNAVAILABLE_ERROR)).length;
+}
+
 /** Предыдущая сдача не на проверке и лимит сдач не исчерпан; возвращает число прошлых сдач. */
 async function assertCanSubmit(tx: Prisma.TransactionClient, candidateId: string, taskId: string): Promise<number> {
-  const prev = await tx.projectSubmission.findMany({ where: { candidateId, projectTaskId: taskId }, select: { status: true } });
+  const prev = await tx.projectSubmission.findMany({ where: { candidateId, projectTaskId: taskId }, select: { status: true, error: true } });
   if (prev.some((p) => p.status === 'submitted' || p.status === 'running')) throw errors.conflict('Предыдущая сдача ещё проверяется');
-  if (prev.length >= MAX_SUBMISSIONS_PER_TASK) throw new AppError('rate_limited', `Не больше ${MAX_SUBMISSIONS_PER_TASK} сдач одного задания`, 429);
+  if (countedSubmissions(prev) >= MAX_SUBMISSIONS_PER_TASK || prev.length >= MAX_SUBMISSION_ROWS_PER_TASK) {
+    throw new AppError('rate_limited', `Не больше ${MAX_SUBMISSIONS_PER_TASK} сдач одного задания`, 429);
+  }
   return prev.length;
 }
 
@@ -663,14 +670,16 @@ export async function processSubmission(id: string): Promise<void> {
         ? await runner.resume(resumeJob)
         : await runner.run({ ...runInput, suite: 'hidden', onJob: async (jobId) => void (await prisma.projectSubmission.update({ where: { id }, data: { runnerJobId: jobId } })) });
     } catch (err) {
-      return fail(id, err instanceof AppError && err.status === 503 ? 'Сервис проверки недоступен, попробуй позже.' : 'Проверка не выполнилась.');
+      return fail(id, err instanceof AppError && err.status === 503 ? RUNNER_UNAVAILABLE_ERROR : 'Проверка не выполнилась.');
     }
     if (hidden.status === 'failed') return fail(id, FAIL_REASON_RU[hidden.reason ?? 'internal'] ?? FAIL_REASON_RU.internal!);
 
     let visible: RunOutcome | null = null;
     try {
       visible = await runner.run({ ...runInput, suite: 'visible' });
-    } catch {
+    } catch (err) {
+      // Видимые тесты — только обратная связь кандидату: их сбой сдачу не роняет, но в лог попадает.
+      console.warn('[project] visible tests run failed', id, err instanceof Error ? err.message : err);
       visible = null;
     }
 
@@ -686,9 +695,7 @@ export async function processSubmission(id: string): Promise<void> {
       tests,
       visibleTests: visible?.status === 'done' ? visible.tests : [],
       hiddenTests: hidden.tests,
-      lint: hidden.lint
-        ? { status: 'done', note: 'Статанализ runner', details: hidden.lint }
-        : { status: 'skipped', note: 'Статанализ в этой версии runner не выполняется (контракт runner: поле lint отсутствует).' },
+      lint: { status: 'skipped', note: 'Статанализ в этой версии runner не выполняется (контракт runner: поле lint отсутствует).' },
       rubric: review,
       platformOwnedViolations: violations,
       runner: { mode: runner.mode, durationMs: hidden.durationMs },

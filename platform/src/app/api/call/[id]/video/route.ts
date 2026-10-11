@@ -13,6 +13,7 @@ type Ctx = { params: Promise<{ id: string }> };
 /**
  * POST /api/call/{id}/video?startMs= — сегмент видео с камеры кандидата (WebM, до 8 МБ): файл созвона рядом с аудио.
  * Видео не анализируется — хранится как материал созвона (согласие: пункт о камере).
+ * Без действующего согласия на запись сегмент не сохраняется: 409 `call_recording_off`, как у аудио.
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);

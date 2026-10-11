@@ -13,7 +13,7 @@ import { publishCall } from './bus';
 import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from './consent';
 import { removeSegment } from '../consent/recordings';
 import { assertAiAssessmentConsent } from '../consent/service';
-import { CALL_DISCLAIMER, callDriver, questionTurns, type CallDriver, type DriverSession } from './drivers';
+import { CALL_DISCLAIMER, callDriver, callDriverKinds, questionTurns, type CallDriver, type DriverSession } from './drivers';
 import { assertCooldownPassed } from './readiness';
 import { CALL_LIMITS, CLOSING_LINE, closingWithRecap } from './plan';
 import { INTERRUPTED_MARK, UNHEARD_MARK, heardPrefix } from '../../lib/sentences';
@@ -197,7 +197,8 @@ export interface StartResult {
 export async function startCall(candidateId: string, body: StartCallBody, llm: LlmProvider): Promise<StartResult> {
   const driver = callDriver(body.kind);
   const projectSubmissionId = body.projectSubmissionId ?? null;
-  if (body.kind === 'qualifying' && projectSubmissionId) throw errors.badRequest('projectSubmissionId — только для защиты проекта');
+  // Сабмит проекта нужен только защите: у остальных видов чужой или несуществующий id упирался бы во внешний ключ (500).
+  if (body.kind !== 'defense' && projectSubmissionId) throw errors.badRequest('projectSubmissionId — только для защиты проекта');
   // Г3 (ADR 0005): созвон и защиту оценивает ИИ — без согласия на ИИ-оценку не начинаем.
   await assertAiAssessmentConsent(candidateId);
   // Г2: согласия на запись не было — спросить; отозвано — созвон идёт текстом без записи голоса (addAudio закрыт).
@@ -576,10 +577,16 @@ export async function getCallForViewer(who: CallPrincipal, sessionId: string): P
   return { view: await buildView(row as Row, access), access };
 }
 
-/** Созвоны кандидата, свежие первыми (профиль: карта глубины последнего завершённого). */
+/**
+ * Созвоны кандидата, свежие первыми (профиль: карта глубины последнего завершённого). Только виды с драйвером:
+ * строки защиты проекта (в том числе ожидающие, defense-room/pending.ts) отдаёт свой API defense-room, вид для них
+ * здесь не строится — иначе весь список (и блок согласия в GET /api/call) падал с 501.
+ */
 export async function listCalls(candidateId: string, kind?: CallKind): Promise<CallView[]> {
+  const kinds = callDriverKinds();
+  if (kind && !kinds.includes(kind)) return [];
   const rows = await prisma.callSession.findMany({
-    where: { candidateId, ...(kind ? { kind } : {}) },
+    where: { candidateId, kind: kind ?? { in: kinds } },
     orderBy: { startedAt: 'desc' },
     take: 10,
     select: rowSelect,

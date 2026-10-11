@@ -152,7 +152,7 @@ export interface TestOwnership {
 export interface CallVerdict {
   kind: CallKind;
   depthMap: DepthMapItem[];
-  /** Решения теста: объяснил сам / не смог (поле есть только у kind=qualifying после 11.10). */
+  /** Решения теста: объяснил сам / не смог (с 11.10; пишут qualifying и interview, если у кандидата есть попытка теста). */
   testOwnership?: TestOwnership;
   /** Сколько прогонов оценщика запускалось и сколько дали валидный ответ. */
   runs: number;
@@ -207,7 +207,6 @@ export const CALL_EVENT_TYPES = [
    */
   'utterance_delta',
 ] as const;
-export type CallEventType = (typeof CALL_EVENT_TYPES)[number];
 
 export type CallEvent =
   | { type: 'snapshot'; call: CallView }
@@ -223,8 +222,6 @@ export type CallEvent =
   /** afterIndex — index реплики кандидата, на которую отвечает ИИ; n — номер предложения с 0. */
   | { type: 'utterance_delta'; afterIndex: number; n: number; text: string };
 
-/** Кто смотрит созвон и что ему положено. */
-export type CallViewerRole = 'candidate' | 'employer';
 /** full — транскрипт, цитаты, запись; summary — только оценки по темам (до accepted-приглашения). */
 export type CallAccess = 'full' | 'summary';
 

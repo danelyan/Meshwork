@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { z } from 'zod';
 
-import { tag } from '../defense/prompt-utils';
+import { escapeData, tag } from '../defense/prompt-utils';
 import { responseJsonSchema } from '../llm/schema';
 import type { ChatMessage, LlmProvider } from '../llm/types';
 import { extractFragments, fragmentRef } from './fragments';
@@ -116,9 +116,14 @@ function commitRefs(snapshot: RepoSnapshot): CommitRef[] {
     }));
 }
 
+/** Значение атрибута тега: путь файла — данные из репозитория кандидата, кавычка и `<`/`>` не должны закрыть атрибут или тег. */
+function attr(text: string): string {
+  return escapeData(text).replace(/"/g, '&quot;');
+}
+
 export function buildQlcMessages(input: QlcInput, fragments: CodeFragment[], commits: CommitRef[]): ChatMessage[] {
   const frag = fragments
-    .map((f) => `<fragment id="${f.id}" ref="${fragmentRef(f)}" name="${f.name}">\n${tag('code', f.code.slice(0, QLC_LIMITS.fragmentChars))}\n</fragment>`)
+    .map((f) => `<fragment id="${f.id}" ref="${attr(fragmentRef(f))}" name="${attr(f.name)}">\n${tag('code', f.code.slice(0, QLC_LIMITS.fragmentChars))}\n</fragment>`)
     .join('\n');
   const com = commits.map((c) => `<commit id="${c.id}" sha="${c.sha}">\n${tag('message', c.message)}\n${c.patch ? tag('diff', c.patch) : ''}\n</commit>`).join('\n');
   const pr = input.projectResult;

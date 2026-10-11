@@ -46,13 +46,6 @@ export function blockDef(id: BlockId): BlockDef {
   return BLOCK_DEFS.find((b) => b.id === id)!;
 }
 
-/** Индикаторы по грейдам — единая шкала: уровень вопроса 1/2/3 = Junior/Middle/Senior. */
-export const GRADE_INDICATOR: Record<Grade, string> = {
-  junior: 'Воспроизводит и применяет по образцу: объясняет, что это и зачем, приводит пример из своей работы',
-  middle: 'Выбирает решение и объясняет «почему так»: называет альтернативы, знает цену и типовые ошибки, доводит до результата',
-  senior: 'Проектирует и предвидит: ограничения, компромиссы, что сломается при росте, как диагностировать по неполным данным',
-};
-
 export function levelForGrade(grade: Grade | null | undefined): QuestionLevel {
   return grade === 'senior' ? 3 : grade === 'middle' ? 2 : 1;
 }

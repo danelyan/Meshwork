@@ -812,7 +812,10 @@ export async function answerAttempt(candidateId: string, attemptId: string, rawA
   const own = responsesOf(answeredItems, byId);
   const combined = source ? [...source.clean, ...own] : own;
   const est = estimateTheta(combined);
-  await prisma.testItem.update({ where: { id: current.id }, data: { answer, correct, thetaAfter: est.theta, seAfter: est.se, answeredAt: now } });
+  // Два параллельных ответа на одно задание: записывается первый, второй получает 409 и следующее задание не
+  // создаёт (иначе оба дошли бы до pushNextItem с одним index — нарушение уникальности [attemptId, index], 500).
+  const written = await prisma.testItem.updateMany({ where: { id: current.id, correct: null }, data: { answer, correct, thetaAfter: est.theta, seAfter: est.se, answeredAt: now } });
+  if (written.count === 0) throw errors.conflict('Ответ на это задание уже принят.');
   const updated = await loadAttempt(candidateId, attemptId);
   if (source) {
     const shownIds = new Set(updated.items.map((i) => i.templateId));

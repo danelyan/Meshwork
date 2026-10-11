@@ -845,7 +845,7 @@ export const OVERRIDES: Record<string, OpOverride> = {
     query: [{ name: 'startMs', description: 'Смещение начала сегмента от начала созвона, мс' }],
     body: { contentType: 'video/webm', description: 'WebM с камеры (комната звонка), до 8 МБ (~60 с при 300 кбит/с)', schema: { type: 'string', format: 'binary' } },
     success: { status: 201, description: 'Сегмент сохранён файлом созвона; в БД — ничего. Видео не анализируется', schema: obj({ name: str('Имя сегмента NNN-<startMs>.webm'), startMs: { type: 'integer' } }) },
-    errors: { 409: 'Созвон завершён, лимит сегментов или параллельная загрузка', 413: 'Сегмент больше 8 МБ' },
+    errors: { 409: 'Созвон завершён, лимит сегментов, параллельная загрузка или нет согласия на запись (`call_recording_off`)', 413: 'Сегмент больше 8 МБ' },
   },
   'GET /api/call/{id}/video': {
     summary: 'Сегмент видео кандидата',

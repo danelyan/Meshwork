@@ -1,6 +1,6 @@
 // Драйверы видов созвона: что спрашивает ИИ и как оценивается результат. Общее (транскрипт, SSE,
-// запись, доступ, согласие) — в service.ts. Ступень 1 — qualifying (здесь); defense-room регистрирует
-// свой драйвер `registerCallDriver('defense', …)` — вопросы QLC по коду и очередь вопросов работодателя.
+// запись, доступ, согласие) — в service.ts. Ступень 1 — qualifying (здесь); ИИнтервью регистрирует свой драйвер
+// в interview/driver.ts. У защиты проекта (kind=defense) драйвера нет: её ведёт defense-room своим API.
 import type { Prisma } from '@prisma/client';
 
 import { PLATFORM_UPGRADABLE } from '../claims/levels';
@@ -223,6 +223,11 @@ const drivers = new Map<CallKind, CallDriver>([['qualifying', qualifying]]);
 
 export function registerCallDriver(driver: CallDriver): void {
   drivers.set(driver.kind, driver);
+}
+
+/** Виды созвона, для которых зарегистрирован драйвер (защита проекта идёт через defense-room, драйвера у неё нет). */
+export function callDriverKinds(): CallKind[] {
+  return [...drivers.keys()];
 }
 
 export function callDriver(kind: CallKind): CallDriver {

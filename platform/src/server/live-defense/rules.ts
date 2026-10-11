@@ -98,11 +98,3 @@ export function deriveSubStatus(d: DeriveInput, now: Date): { status: LiveDefens
   if (noShow.length) return { status: 'no_show', noShow };
   return { status: 'scheduled', noShow };
 }
-
-export const SUB_STATUS_LABEL: Record<LiveDefenseSubStatus, string> = {
-  slots_proposed: 'Слоты предложены',
-  scheduled: 'Защита назначена',
-  done: 'Защита прошла',
-  cancelled: 'Защита отменена',
-  no_show: 'Неявка',
-};

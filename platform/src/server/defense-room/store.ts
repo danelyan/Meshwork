@@ -38,7 +38,7 @@ export function asTranscript(json: unknown): TranscriptEntry[] {
   return Array.isArray(json) ? (json as TranscriptEntry[]) : [];
 }
 
-/** Дописать реплики в транскрипт под `FOR UPDATE` и разослать их подписчикам как `turn`. */
+/** Дописать реплики в транскрипт под `FOR UPDATE` и разослать их подписчикам как `utterance`. */
 export async function appendEntries(sessionId: string, entries: NewEntry[], opts: { done?: boolean } = {}): Promise<TranscriptEntry[]> {
   if (!entries.length) return [];
   const added = await prisma.$transaction(async (tx) => {

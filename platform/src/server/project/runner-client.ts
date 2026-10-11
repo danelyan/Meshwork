@@ -17,7 +17,6 @@ export interface RunOutcome {
   passed: number;
   total: number;
   durationMs?: number;
-  lint?: Record<string, unknown>;
 }
 
 export interface RunInput {
@@ -50,7 +49,6 @@ function fromRunResult(r: RunResult): RunOutcome {
     passed: r.summary.passed,
     total: r.summary.total,
     durationMs: r.durationMs,
-    lint: r.lint,
   };
 }
 

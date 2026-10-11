@@ -16,8 +16,6 @@ import { OWNERSHIP_LABEL, type TestOwnership, type TestOwnershipStatus, type Tra
 
 /** Сколько реплик ИИ добавляет этап: объяснить ход решения + один вопрос на изменение условия. */
 export const REVIEW_QUESTIONS = 2;
-/** Заданий в контексте: основное и запасное (если кандидат не помнит первое). */
-export const REVIEW_ITEMS = 2;
 const PROMPT_CHARS = 500;
 const CODE_CHARS = 600;
 

@@ -4,8 +4,8 @@ import path from 'node:path';
 /**
  * Промпты лежат в `src/server/defense/prompts/*.md` и читаются с диска от
  * process.cwd() (docs Next.js: читать файлы через process.cwd(), не __dirname).
- * Для `output: 'standalone'` интегратору нужно добавить их в трассировку:
- * `outputFileTracingIncludes: { '/api/defense/**': ['./src/server/defense/prompts/**'] }`.
+ * В `output: 'standalone'` они попадают через `outputFileTracingIncludes` в next.config.ts
+ * (`./src/server/**\/prompts/*.md`, как и промпты созвона).
  */
 const cache = new Map<string, string>();
 

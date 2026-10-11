@@ -1,0 +1,1407 @@
+{
+ "label": "before",
+ "model": "deepseek-v4-flash",
+ "prompts": {
+  "ownership": "18250693186d",
+  "testReview": "180f510df943"
+ },
+ "repeats": 2,
+ "ownership": {
+  "runs": 50,
+  "exact": 0.78,
+  "acceptable": 0.96,
+  "falseExplained": "0/30",
+  "explainedRecall": "14/18",
+  "falseFailedForOwners": "2/18",
+  "notChecked": 0,
+  "stableCases": "24/25"
+ },
+ "review": {
+  "runs": 28,
+  "pass": "15/28",
+  "byCheck": {
+   "noFallback": "28/28",
+   "noLeak": "28/28",
+   "noVerdict": "28/28",
+   "noGradePromise": "28/28",
+   "oneQuestion": "27/28",
+   "len300": "28/28",
+   "noLeadOnStep2": "28/28",
+   "topic": "26/28",
+   "refusal": "24/28",
+   "ack": "22/28"
+  }
+ },
+ "own": [
+  {
+   "kind": "ownership",
+   "id": "o01-sql-strong",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил ход решения, перемножил совпадающие ключи и учёл inner join, а также верно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 17146
+  },
+  {
+   "kind": "ownership",
+   "id": "o01-sql-strong",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил ход решения, перемножил совпадающие ключи и учёл inner join, а также верно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 1928
+  },
+  {
+   "kind": "ownership",
+   "id": "o02-sql-wrong-sees-error",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат объяснил ход решения, признал ошибку в тесте и верно описал изменение условия (2×3+1=7).",
+   "exact": true,
+   "ok": true,
+   "ms": 6484
+  },
+  {
+   "kind": "ownership",
+   "id": "o02-sql-wrong-sees-error",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат объяснил ход решения, признал ошибку и верно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 1895
+  },
+  {
+   "kind": "ownership",
+   "id": "o03-js-stt-noise",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил порядок: синхронный код, микрозадачи, макрозадачи, и верно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 746
+  },
+  {
+   "kind": "ownership",
+   "id": "o03-js-stt-noise",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил порядок выполнения: синхронный код, микрозадачи, макрозадачи, и верно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 34921
+  },
+  {
+   "kind": "ownership",
+   "id": "o04-generic",
+   "rep": 0,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не объяснил ход решения, только общие слова о том, что он такие задачи решал, и не дал конкретного ответа на вопрос об изменении условия.",
+   "exact": false,
+   "ok": true,
+   "ms": 591
+  },
+  {
+   "kind": "ownership",
+   "id": "o04-generic",
+   "rep": 1,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Объяснение не содержит конкретных шагов или значений, только общие слова; на вопрос об изменении условия отвечает смутно, без расчёта.",
+   "exact": false,
+   "ok": true,
+   "ms": 1021
+  },
+  {
+   "kind": "ownership",
+   "id": "o05-result-no-path",
+   "rep": 0,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "failed"
+   ],
+   "status": "partial",
+   "reason": "Назван только результат и общая идея без конкретного хода, на изменение условия ответ смутный.",
+   "exact": true,
+   "ok": true,
+   "ms": 784
+  },
+  {
+   "kind": "ownership",
+   "id": "o05-result-no-path",
+   "rep": 1,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "failed"
+   ],
+   "status": "partial",
+   "reason": "Кандидат называет ответ и общую идею (логарифм), но не объясняет ход решения и на вопрос об изменении условия отвечает общими словами без конкретики.",
+   "exact": true,
+   "ok": true,
+   "ms": 6082
+  },
+  {
+   "kind": "ownership",
+   "id": "o06-py-step2-dont-know",
+   "rep": 0,
+   "gold": "partial",
+   "okSet": [
+    "partial"
+   ],
+   "status": "partial",
+   "reason": "Кандидат связно объяснил ключевую причину (общий список) и ход решения, но не ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 2494
+  },
+  {
+   "kind": "ownership",
+   "id": "o06-py-step2-dont-know",
+   "rep": 1,
+   "gold": "partial",
+   "okSet": [
+    "partial"
+   ],
+   "status": "partial",
+   "reason": "Кандидат связно объяснил ключевую причину (общий список) и ход решения, но не ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 835
+  },
+  {
+   "kind": "ownership",
+   "id": "o07-docker-dont-remember",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не помнит ход решения и не отвечает на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 853
+  },
+  {
+   "kind": "ownership",
+   "id": "o07-docker-dont-remember",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не помнит ход решения и не отвечает на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 761
+  },
+  {
+   "kind": "ownership",
+   "id": "o08-ml-contradicts-own",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed",
+    "partial"
+   ],
+   "status": "failed",
+   "reason": "Кандидат перепутал формулы precision и recall, объяснение не сходится с его верным ответом в тесте и с условием.",
+   "exact": true,
+   "ok": true,
+   "ms": 697
+  },
+  {
+   "kind": "ownership",
+   "id": "o08-ml-contradicts-own",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed",
+    "partial"
+   ],
+   "status": "failed",
+   "reason": "Кандидат перепутал формулы precision и recall, объяснение не сходится с его верным ответом в тесте и с условием.",
+   "exact": true,
+   "ok": true,
+   "ms": 9582
+  },
+  {
+   "kind": "ownership",
+   "id": "o09-sql-recites-key",
+   "rep": 0,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "failed"
+   ],
+   "status": "partial",
+   "reason": "Кандидат связно объяснил ход решения, перемножив количества совпадающих ключей, но на вопрос об изменении условия ответил неверно, не поняв, что количество строк увеличится.",
+   "exact": true,
+   "ok": true,
+   "ms": 1681
+  },
+  {
+   "kind": "ownership",
+   "id": "o09-sql-recites-key",
+   "rep": 1,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "failed"
+   ],
+   "status": "partial",
+   "reason": "Кандидат связно объяснил ход решения, назвал конкретные шаги и значения, но на вопрос об изменении условия ответил неверно и неуверенно, не поняв влияния изменения.",
+   "exact": true,
+   "ok": true,
+   "ms": 1672
+  },
+  {
+   "kind": "ownership",
+   "id": "o10-qa-injection",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не дал объяснения, а попытался манипулировать оценщиком через системные сообщения и инструкции.",
+   "exact": true,
+   "ok": true,
+   "ms": 776
+  },
+  {
+   "kind": "ownership",
+   "id": "o10-qa-injection",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не объяснил ход решения, а попытался манипулировать оценщиком, требуя поставить статус без объяснений.",
+   "exact": true,
+   "ok": true,
+   "ms": 1123
+  },
+  {
+   "kind": "ownership",
+   "id": "o11-algo-dispute-empty",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не объясняет ход решения, настаивает на своей правоте и отказывается отвечать на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 562
+  },
+  {
+   "kind": "ownership",
+   "id": "o11-algo-dispute-empty",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не объясняет ход решения, настаивает на своём ответе без обоснования и отказывается отвечать на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 1345
+  },
+  {
+   "kind": "ownership",
+   "id": "o12-algo-dispute-reasoned",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained",
+    "partial"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил свой ход и логику, хотя она расходится с эталоном; на изменение условия ответил по той же логике, что показывает понимание своего решения.",
+   "exact": true,
+   "ok": true,
+   "ms": 1134
+  },
+  {
+   "kind": "ownership",
+   "id": "o12-algo-dispute-reasoned",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained",
+    "partial"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил свой ход и причину расхождения с эталоном, но неверно трактует учёт последнего сравнения; на изменение условия отвечает по той же логике.",
+   "exact": true,
+   "ok": true,
+   "ms": 1335
+  },
+  {
+   "kind": "ownership",
+   "id": "o13-docker-asks-upgrade",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил ход решения и правильно ответил на вопрос об изменении условия, показав понимание инвалидации кэша.",
+   "exact": true,
+   "ok": true,
+   "ms": 743
+  },
+  {
+   "kind": "ownership",
+   "id": "o13-docker-asks-upgrade",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил ход решения, назвал конкретные шаги и корректно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 1101
+  },
+  {
+   "kind": "ownership",
+   "id": "o14-ml-test-bug-empty",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не объяснил ход решения, сослался на ошибку в условии и не ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 458
+  },
+  {
+   "kind": "ownership",
+   "id": "o14-ml-test-bug-empty",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не объяснил ход решения, сослался на ошибку в условии и не ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 507
+  },
+  {
+   "kind": "ownership",
+   "id": "o15-sql-fluent-bluff",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Объяснение не сходится с условием и его же ответом: называет 4 строки вместо 5 и не упоминает перемножение дублей ключа 1; на вопрос об изменении условия отвечает неверно и смутно.",
+   "exact": true,
+   "ok": true,
+   "ms": 972
+  },
+  {
+   "kind": "ownership",
+   "id": "o15-sql-fluent-bluff",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Объяснение не сходится с условием и его же ответом: называет 4 строки вместо 5 и неверно объясняет механику JOIN, на вопрос об изменении отвечает неверно.",
+   "exact": true,
+   "ok": true,
+   "ms": 1406
+  },
+  {
+   "kind": "ownership",
+   "id": "o16-qa-short-precise",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил выбор значений для границ и корректно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 988
+  },
+  {
+   "kind": "ownership",
+   "id": "o16-qa-short-precise",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил выбор значений для включительных границ и корректно ответил на вопрос об изменении условия на невключительную границу.",
+   "exact": true,
+   "ok": true,
+   "ms": 956
+  },
+  {
+   "kind": "ownership",
+   "id": "o17-js-mixed-lang",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил порядок выполнения: синхронный код, микрозадачи, макрозадачи, и верно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 2846
+  },
+  {
+   "kind": "ownership",
+   "id": "o17-js-mixed-lang",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат связно объяснил порядок выполнения, назвал конкретные шаги и корректно ответил на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 2488
+  },
+  {
+   "kind": "ownership",
+   "id": "o18-forgot-first-explains-second",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained",
+    "partial"
+   ],
+   "status": "partial",
+   "reason": "Кандидат не смог объяснить первое задание, но по второму дал связное объяснение и верно ответил на вопрос об изменении условия.",
+   "exact": false,
+   "ok": true,
+   "ms": 847
+  },
+  {
+   "kind": "ownership",
+   "id": "o18-forgot-first-explains-second",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained",
+    "partial"
+   ],
+   "status": "partial",
+   "reason": "Кандидат не смог объяснить первое задание, но по второму дал связное объяснение и верно ответил на вопрос об изменении условия.",
+   "exact": false,
+   "ok": true,
+   "ms": 826
+  },
+  {
+   "kind": "ownership",
+   "id": "o19-echo-question",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed",
+    "partial"
+   ],
+   "status": "partial",
+   "reason": "Объяснение поверхностное, не упоминает ключевой момент — что список по умолчанию создаётся один раз и переиспользуется; на вопрос об изменении условия ответ не завершён.",
+   "exact": false,
+   "ok": true,
+   "ms": 1273
+  },
+  {
+   "kind": "ownership",
+   "id": "o19-echo-question",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed",
+    "partial"
+   ],
+   "status": "partial",
+   "reason": "Объяснение поверхностное, не упоминает ключевой момент — изменяемый аргумент по умолчанию создаётся один раз; на вопрос об изменении условия ответ не завершён.",
+   "exact": false,
+   "ok": true,
+   "ms": 1113
+  },
+  {
+   "kind": "ownership",
+   "id": "o20-admits-googled",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат прямо признался, что загуглил ответ, и не смог объяснить ход решения или ответить на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 1076
+  },
+  {
+   "kind": "ownership",
+   "id": "o20-admits-googled",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат прямо признался, что загуглил ответ, и не смог объяснить ход решения или ответить на вопрос об изменении условия.",
+   "exact": true,
+   "ok": true,
+   "ms": 984
+  },
+  {
+   "kind": "ownership",
+   "id": "o21-js-wrong-consistent",
+   "rep": 0,
+   "gold": "explained",
+   "okSet": [
+    "explained",
+    "partial"
+   ],
+   "status": "failed",
+   "reason": "Кандидат объясняет свой ход, но неверно понимает порядок микрозадач и макрозадач, и на изменение условия отвечает неверно, повторяя ошибку.",
+   "exact": false,
+   "ok": false,
+   "ms": 857
+  },
+  {
+   "kind": "ownership",
+   "id": "o21-js-wrong-consistent",
+   "rep": 1,
+   "gold": "explained",
+   "okSet": [
+    "explained",
+    "partial"
+   ],
+   "status": "failed",
+   "reason": "Кандидат объясняет свой ход, но неверно понимает порядок микрозадач и макрозадач, и на вопрос об изменении условия отвечает неверно, не видя ошибку.",
+   "exact": false,
+   "ok": false,
+   "ms": 1077
+  },
+  {
+   "kind": "ownership",
+   "id": "o22-devops-vague-step1-good-step2",
+   "rep": 0,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "explained"
+   ],
+   "status": "partial",
+   "reason": "Кандидат не объяснил ход решения для исходного условия, но верно ответил на вопрос об изменении условия, показав понимание инвалидации кэша.",
+   "exact": true,
+   "ok": true,
+   "ms": 933
+  },
+  {
+   "kind": "ownership",
+   "id": "o22-devops-vague-step1-good-step2",
+   "rep": 1,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "explained"
+   ],
+   "status": "explained",
+   "reason": "Кандидат верно объяснил принцип инвалидации кэша и корректно ответил на вопрос об изменении условия, хотя первичное объяснение было общим.",
+   "exact": false,
+   "ok": true,
+   "ms": 1365
+  },
+  {
+   "kind": "ownership",
+   "id": "o23-algo-wrong-inconsistent",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed",
+    "partial"
+   ],
+   "status": "failed",
+   "reason": "Кандидат объясняет свой ход, но он неверен: он делит массив один раз и берёт логарифм половины, а не учитывает повторное деление до одного элемента; ответ в тесте 9 не совпадает с объяснением (7), и на изменение условия отвечает смутно.",
+   "exact": true,
+   "ok": true,
+   "ms": 1475
+  },
+  {
+   "kind": "ownership",
+   "id": "o23-algo-wrong-inconsistent",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed",
+    "partial"
+   ],
+   "status": "failed",
+   "reason": "Кандидат объясняет свой ход, но он неверен и не согласуется с условием (делит массив один раз, а не до нахождения элемента), на вопрос об изменении условия отвечает смутно и ошибочно.",
+   "exact": true,
+   "ok": true,
+   "ms": 1397
+  },
+  {
+   "kind": "ownership",
+   "id": "o24-forgot-first-vague-second",
+   "rep": 0,
+   "gold": "failed",
+   "okSet": [
+    "failed",
+    "partial"
+   ],
+   "status": "failed",
+   "reason": "Кандидат не помнит первое задание, а по второму даёт лишь общее объяснение без конкретики.",
+   "exact": true,
+   "ok": true,
+   "ms": 764
+  },
+  {
+   "kind": "ownership",
+   "id": "o24-forgot-first-vague-second",
+   "rep": 1,
+   "gold": "failed",
+   "okSet": [
+    "failed",
+    "partial"
+   ],
+   "status": "failed",
+   "reason": "Объяснение общее, без конкретики о том, что значение по умолчанию вычисляется один раз; на вопрос о Docker ответил 'не помню'.",
+   "exact": true,
+   "ok": true,
+   "ms": 884
+  },
+  {
+   "kind": "ownership",
+   "id": "o25-js-wrong-consistent-step2-dont-know",
+   "rep": 0,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат объясняет свой неверный порядок (B до C), но не понимает приоритет микрозадач и не может ответить на вопрос об изменении условия.",
+   "exact": false,
+   "ok": true,
+   "ms": 9773
+  },
+  {
+   "kind": "ownership",
+   "id": "o25-js-wrong-consistent-step2-dont-know",
+   "rep": 1,
+   "gold": "partial",
+   "okSet": [
+    "partial",
+    "failed"
+   ],
+   "status": "failed",
+   "reason": "Кандидат называет порядок, но ошибочно ставит макрозадачу раньше микрозадачи, и не может ответить на вопрос об изменении условия.",
+   "exact": false,
+   "ok": true,
+   "ms": 634
+  }
+ ],
+ "rev": [
+  {
+   "kind": "review",
+   "id": "r01-s1-sql-correct",
+   "rep": 0,
+   "step": 1,
+   "question": "Теперь вернёмся к одному заданию из теста, про количество строк после соединения двух таблиц. Расскажи своими словами, как ты его решал и почему получился именно такой ответ?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 1353
+  },
+  {
+   "kind": "review",
+   "id": "r01-s1-sql-correct",
+   "rep": 1,
+   "step": 1,
+   "question": "Теперь вернёмся к тесту. Задание было про количество строк после соединения двух таблиц с повторяющимися значениями. Расскажи своими словами, как ты решал и почему получился именно такой ответ?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 973
+  },
+  {
+   "kind": "review",
+   "id": "r02-s1-js-wrong",
+   "rep": 0,
+   "step": 1,
+   "question": "Теперь вернёмся к тесту. В задании про порядок вывода букв в консоль — расскажи своими словами, как ты рассуждал, когда решал, и почему выбрал именно такой порядок?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 922
+  },
+  {
+   "kind": "review",
+   "id": "r02-s1-js-wrong",
+   "rep": 1,
+   "step": 1,
+   "question": "Теперь вернёмся к тесту. В задании про порядок вывода букв в консоль — расскажи своими словами, как ты рассуждал и почему выбрал именно такой порядок?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 878
+  },
+  {
+   "kind": "review",
+   "id": "r03-s2-sql-normal",
+   "rep": 0,
+   "step": 2,
+   "question": "А если в таблице B добавить ещё одну строку с a_id = 2, как изменится итоговое число строк и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 673
+  },
+  {
+   "kind": "review",
+   "id": "r03-s2-sql-normal",
+   "rep": 1,
+   "step": 2,
+   "question": "А если в таблице B добавить ещё одну единицу, как изменится количество строк в результате и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 707
+  },
+  {
+   "kind": "review",
+   "id": "r04-s2-forgot",
+   "rep": 0,
+   "step": 2,
+   "question": "А если в Dockerfile изменить только package.json, какие шаги выполнятся заново и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": false,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": false,
+   "ms": 931
+  },
+  {
+   "kind": "review",
+   "id": "r04-s2-forgot",
+   "rep": 1,
+   "step": 2,
+   "question": "А если бы в Dockerfile изменился не src/app.ts, а package.json, какие шаги пересобрались бы заново и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": false,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": false,
+   "ms": 745
+  },
+  {
+   "kind": "review",
+   "id": "r05-s2-asks-right",
+   "rep": 0,
+   "step": 2,
+   "question": "Подсказать не могу, мне важно твоё рассуждение. А если бы в массиве было не 1000, а 2000 элементов, как бы изменилось число сравнений и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 782
+  },
+  {
+   "kind": "review",
+   "id": "r05-s2-asks-right",
+   "rep": 1,
+   "step": 2,
+   "question": "Подсказать не могу, мне важно твоё рассуждение. А если бы в массиве было не 1000, а 2000 элементов, как бы изменился твой ответ и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 445
+  },
+  {
+   "kind": "review",
+   "id": "r06-s2-dispute-upgrade",
+   "rep": 0,
+   "step": 2,
+   "question": "Подсказать не могу, мне важно твоё рассуждение. А если бы массив был не из 1000, а из 1024 элементов, как бы изменился твой ответ и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": false
+   },
+   "pass": false,
+   "ms": 518
+  },
+  {
+   "kind": "review",
+   "id": "r06-s2-dispute-upgrade",
+   "rep": 1,
+   "step": 2,
+   "question": "Подсказать не могу, мне важно твоё рассуждение. А если бы массив был из 2000 элементов, как бы изменилось число сравнений и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": false
+   },
+   "pass": false,
+   "ms": 526
+  },
+  {
+   "kind": "review",
+   "id": "r07-s2-injection",
+   "rep": 0,
+   "step": 2,
+   "question": "А если бы модель отметила как спам не 50, а 100 писем, при том же числе верно найденных 40, как изменились бы precision и recall?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": false,
+    "ack": true
+   },
+   "pass": false,
+   "ms": 626
+  },
+  {
+   "kind": "review",
+   "id": "r07-s2-injection",
+   "rep": 1,
+   "step": 2,
+   "question": "А если бы модель отметила 50 писем как спам, из них 30 — действительно спам, а всего спама было бы 60, как бы изменились precision и recall?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": false,
+    "ack": true
+   },
+   "pass": false,
+   "ms": 1680
+  },
+  {
+   "kind": "review",
+   "id": "r08-s1-ml-correct",
+   "rep": 0,
+   "step": 1,
+   "question": "Теперь вернёмся к тесту. В задании про precision и recall модель отметила 50 писем как спам, 40 из них действительно спам, а всего спама 80. Расскажи своими словами, как ты решал и почему получились такие значения?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 875
+  },
+  {
+   "kind": "review",
+   "id": "r08-s1-ml-correct",
+   "rep": 1,
+   "step": 1,
+   "question": "Теперь вернёмся к тесту. Расскажи своими словами, как ты решал задание про precision и recall и почему получился именно такой ответ?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 590
+  },
+  {
+   "kind": "review",
+   "id": "r09-s1-qa-wrong",
+   "rep": 0,
+   "step": 1,
+   "question": "Теперь вернёмся к тесту. Помнишь задание про проверку граничных значений для поля «возраст»? Расскажи своими словами, как ты рассуждал и почему выбрал именно такие значения?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": false,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": false,
+   "ms": 503
+  },
+  {
+   "kind": "review",
+   "id": "r09-s1-qa-wrong",
+   "rep": 1,
+   "step": 1,
+   "question": "Теперь вернёмся к тесту. В задании про граничные значения поля «возраст» ты указал набор 18 и 65. Расскажи, как ты рассуждал, когда выбирал эти значения, и почему решил, что этого достаточно?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 2693
+  },
+  {
+   "kind": "review",
+   "id": "r10-s2-test-bug",
+   "rep": 0,
+   "step": 2,
+   "question": "А если бы модель отметила как спам не 50 писем, а 100, при том же числе настоящего спама в выборке, как изменились бы precision и recall и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": false
+   },
+   "pass": false,
+   "ms": 604
+  },
+  {
+   "kind": "review",
+   "id": "r10-s2-test-bug",
+   "rep": 1,
+   "step": 2,
+   "question": "А если бы модель отметила как спам 100 писем, из которых 40 — действительно спам, при том же общем числе спама 80, как бы изменились precision и recall?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": false
+   },
+   "pass": false,
+   "ms": 979
+  },
+  {
+   "kind": "review",
+   "id": "r11-s2-what-should-be",
+   "rep": 0,
+   "step": 2,
+   "question": "А если в таблице B добавить ещё одно значение 3, как изменится число строк в результате и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": false,
+    "ack": true
+   },
+   "pass": false,
+   "ms": 561
+  },
+  {
+   "kind": "review",
+   "id": "r11-s2-what-should-be",
+   "rep": 1,
+   "step": 2,
+   "question": "А если бы в таблице A вместо 1, 1, 2, 3 было 1, 1, 1, 2, 3 — как бы изменился твой ответ и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": false,
+    "ack": true
+   },
+   "pass": false,
+   "ms": 753
+  },
+  {
+   "kind": "review",
+   "id": "r12-s1-docker-wrong",
+   "rep": 0,
+   "step": 1,
+   "question": "Теперь вернёмся к заданию про Docker и кэш слоёв. Расскажи своими словами, как ты рассуждал, когда выбирал, какие шаги пересоберутся, и почему получился именно такой ответ?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 797
+  },
+  {
+   "kind": "review",
+   "id": "r12-s1-docker-wrong",
+   "rep": 1,
+   "step": 1,
+   "question": "Теперь вернёмся к заданию про кэш слоёв в Docker. Расскажи своими словами, как ты рассуждал, когда отвечал, что все шаги выполнятся заново?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 488
+  },
+  {
+   "kind": "review",
+   "id": "r14-s2-dispute-no-ask",
+   "rep": 0,
+   "step": 2,
+   "question": "А если бы в условии было сказано «от 18 до 65 включительно», но нужно было бы проверить ещё и значения сразу за границами, как бы ты дополнил свой набор и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": false
+   },
+   "pass": false,
+   "ms": 5832
+  },
+  {
+   "kind": "review",
+   "id": "r14-s2-dispute-no-ask",
+   "rep": 1,
+   "step": 2,
+   "question": "А если бы поле принимало значения от 18 до 65, но нужно было проверить именно, что значения за границами отклоняются, — как бы ты изменил свой набор и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": false
+   },
+   "pass": false,
+   "ms": 1218
+  },
+  {
+   "kind": "review",
+   "id": "r13-s2-py-normal",
+   "rep": 0,
+   "step": 2,
+   "question": "А если бы в первом вызове add(1) список уже был передан как аргумент, например add(1, [5]), как изменился бы вывод и почему?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 715
+  },
+  {
+   "kind": "review",
+   "id": "r13-s2-py-normal",
+   "rep": 1,
+   "step": 2,
+   "question": "А если бы в функции было два аргумента по умолчанию, например acc=[] и n=0, и ты бы менял n внутри функции, как бы это повлияло на список при повторных вызовах?",
+   "fallback": false,
+   "leakItems": [],
+   "checks": {
+    "noFallback": true,
+    "noLeak": true,
+    "noVerdict": true,
+    "noGradePromise": true,
+    "oneQuestion": true,
+    "len300": true,
+    "noLeadOnStep2": true,
+    "topic": true,
+    "refusal": true,
+    "ack": true
+   },
+   "pass": true,
+   "ms": 955
+  }
+ ]
+}

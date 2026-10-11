@@ -85,8 +85,6 @@ const shortName = (md: string) => md.replace('src/server/', '');
 const KNOWN_NO_VERSION = new Set([
   'call/prompts/evaluator.md',
   'call/prompts/interviewer.md',
-  'call/prompts/ownership.md',
-  'call/prompts/test-review.md',
   'claims/prompts/extractor.md',
   'defense-room/prompts/evaluator.md',
   'defense-room/prompts/interviewer.md',

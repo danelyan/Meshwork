@@ -1,0 +1,19 @@
+{
+  "id": "ai-mleng-middle-leakfree",
+  "subcategoryId": "ai.ml-engineering",
+  "specialization": "ai",
+  "grade": "middle",
+  "title": "Конвейер признаков без утечки и логистическая регрессия",
+  "summary": "Заполнение пропусков, стандартизация и one-hot, обученные только на train; логистическая регрессия на numpy градиентным спуском; сквозная функция с воспроизводимым разбиением и проверкой утечки",
+  "stack": ["python312", "pytest"],
+  "catalogIds": ["ai.feature-pipeline", "ai.data-leakage", "ai.ml-baseline"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

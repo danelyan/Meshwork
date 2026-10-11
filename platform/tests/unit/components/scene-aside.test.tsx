@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { AsideProvider } from '@/components/consultant/aside-refresh';
 import { SceneAside } from '@/components/consultant/SceneAside';
-import { AI_CONSENT_BLOCKER, HIDDEN_BLOCKER, type SceneAsideData, blockerNotes, candidateSteps, liveNote, promoteNow, stepBlocker, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
+import { AI_CONSENT_BLOCKER, HIDDEN_BLOCKER, type SceneAsideData, blockerNotes, callCooldownCopy, candidateSteps, cooldownNote, liveNote, retakeCopy, promoteNow, stepBlocker, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
 import type { OnboardingView } from '@/server/onboarding/types';
 import { liveStepCopy, pickLive } from '@/lib/live-step';
 
@@ -342,5 +342,32 @@ describe('живая защита: подстатусы', () => {
     expect(liveNote(steps, { status: 'scheduled', scheduledAt: at }).find((s) => s.id === 'live_defense')!.note).toMatch(/назначена: .*14:30 МСК/);
     expect(liveNote(steps, undefined)).toEqual(steps);
     expect(pickLive([{ status: 'done' }, { status: 'slots_proposed' }, { status: 'none' }])!.status).toBe('slots_proposed');
+  });
+});
+
+describe('кулдауны теста и созвона', () => {
+  const hint = { title: 'x', text: 'y' };
+  const base: SceneAsideData = { role: 'candidate', steps: candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0 }), docs: null, hint };
+  const now = new Date('2026-10-11T12:00:00Z');
+
+  it('тест: пересдача того же грейда через N дн., другой грейд — сейчас; нота шага', () => {
+    const c = retakeCopy({ grade: 'middle', nextAllowedAt: new Date('2026-10-20T10:00:00Z'), demo: false }, now);
+    expect(c.note).toBe('пересдача Middle через 9 дн.');
+    expect(c.blocker.text).toMatch(/^Пересдать Middle можно через 9 дн\. \(с .*МСК\)\. Другой грейд можно сдать уже сейчас\.$/);
+    expect(c.blocker.href).toBeUndefined();
+    expect(c.blocker.action).toBeUndefined();
+    expect(retakeCopy({ grade: 'junior', nextAllowedAt: new Date(now.getTime() + 30_000), demo: true }, now).note).toBe('пересдача Junior через 1 мин');
+    const steps = cooldownNote(base.steps, c);
+    expect(steps.find((s) => s.id === 'test')!.note).toBe('пересдача Middle через 9 дн.');
+    expect(cooldownNote(base.steps, undefined)).toEqual(base.steps);
+  });
+
+  it('созвон: «повторный созвон через N ч» — нота и блокер без кнопки', () => {
+    const c = callCooldownCopy('Повторный созвон - через 5 ч');
+    expect(c.note).toBe('повторный созвон через 5 ч');
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'call', blocker: c.blocker } }} />);
+    expect(screen.getByTestId('step-call-blocker').textContent).toBe('Повторный созвон - через 5 ч');
+    expect(screen.queryByRole('button', { name: 'Дать согласие' })).toBeNull();
+    expect(screen.getByTestId('step-call-cta').className).toMatch(/ctaSecondary/);
   });
 });

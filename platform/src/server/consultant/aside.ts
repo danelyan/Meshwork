@@ -4,6 +4,9 @@ import { prisma } from '../db';
 import { journeyState, type JourneyStep as JourneyKey } from '../agent/journey';
 import { listVacancies, loadEmployerContext } from '../employer';
 import { liveDefenseViews } from '../live-defense/service';
+import { cooldownReadiness } from '../call/readiness';
+import { retakeCooldown } from '../test/service';
+import { formatMsk } from '@/lib/msk';
 import { type LiveStepInfo, liveStepCopy, pickLive } from '@/lib/live-step';
 import type { OnboardingView } from '../onboarding/types';
 import { listMemory, MEMORY_LIMIT, type MemoryItem, type MemoryOwner, memoryPending } from './memory';
@@ -118,6 +121,48 @@ export function blockerNotes(steps: JourneyStep[], step: JourneyKey, f: { aiCons
     if (f.hidden && s.id === 'invites' && s.state !== 'done') return { ...s, note: 'профиль скрыт' };
     return s;
   });
+}
+
+/** Кулдаун шага: блокер без кнопки и короткая нота в пути. */
+export interface CooldownCopy {
+  stepId: 'test' | 'call';
+  blocker: StepBlocker;
+  note: string;
+}
+
+/** Тест: пересдача того же грейда закрыта интервалом (retake_too_soon); другой грейд открыт — так и пишем. */
+export function retakeCopy(c: { grade: string; nextAllowedAt: Date; demo: boolean }, now: Date = new Date()): CooldownCopy {
+  const ms = Math.max(0, c.nextAllowedAt.getTime() - now.getTime());
+  const wait = c.demo ? `${Math.max(1, Math.ceil(ms / 60_000))} мин` : `${Math.max(1, Math.ceil(ms / 86_400_000))} дн.`;
+  const g = GRADE[c.grade] ?? c.grade;
+  return {
+    stepId: 'test',
+    note: `пересдача ${g} через ${wait}`,
+    blocker: { text: `Пересдать ${g} можно через ${wait} (с ${formatMsk(c.nextAllowedAt)}). Другой грейд можно сдать уже сейчас.` },
+  };
+}
+
+/** Созвон: пауза после завершённого созвона (call/readiness.ts, cooldownText «Повторный созвон - через N ч»). */
+export function callCooldownCopy(reason: string): CooldownCopy {
+  return { stepId: 'call', note: reason.replace(/^Повторный созвон - через/, 'повторный созвон через'), blocker: { text: reason } };
+}
+
+async function loadCooldown(candidateId: string, step: JourneyKey, hasCategory: boolean): Promise<CooldownCopy | undefined> {
+  if (step === 'test' && !hasCategory) {
+    const c = await retakeCooldown(candidateId);
+    return c ? retakeCopy(c) : undefined;
+  }
+  if (step === 'call') {
+    const r = await cooldownReadiness(candidateId, 'qualifying');
+    return !r.ready && r.reason ? callCooldownCopy(r.reason) : undefined;
+  }
+  return undefined;
+}
+
+/** Нота шага с кулдауном в пути. */
+export function cooldownNote(steps: JourneyStep[], c: CooldownCopy | undefined): JourneyStep[] {
+  if (!c) return steps;
+  return steps.map((s) => (s.id === c.stepId && s.state !== 'done' ? { ...s, note: c.note } : s));
 }
 
 export interface StepBlock {
@@ -477,15 +522,17 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
   const demand = vacancies ? demandFor(vacancies, cand?.specialization) : undefined;
   const block = await loadStepBlock(candidateId, journey, invitations, demand);
   const facts = { aiConsent: journey.aiConsent, hidden: journey.hidden };
-  const blocker = stepBlocker(step, facts);
+  const cooldown = await loadCooldown(candidateId, step, journey.hasCategory);
+  // Согласие на ИИ важнее кулдауна: без него шаг не запустится и после паузы.
+  const blocker = stepBlocker(step, facts) ?? cooldown?.blocker;
   const stepBlock: StepBlock = blocker ? { ...block, blocker } : block;
   const intro = introDone(view);
   const hired = hiredInv ? { company: hiredInv.company?.name ?? hiredInv.vacancy?.company.name ?? 'компанию' } : null;
-  const steps = blockerNotes(liveNote(promoteNow(
+  const steps = blockerNotes(cooldownNote(liveNote(promoteNow(
     candidateSteps({ intro, introNote: introNote(view, intro, false, known.known?.filter((k) => k.source === 'onboarding').length ?? 0), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations }),
     journey.nextStep,
     journey.counts.acceptedInvitations > 0 && !journey.steps.project,
-  ), stepBlock.live), step, facts);
+  ), stepBlock.live), cooldown), step, facts);
   const market = vacancies && !cand?.specialization ? marketRows(vacancies, () => false) : undefined;
   const stats = candidateStats({ confirmed: profileClaims, category });
   // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).

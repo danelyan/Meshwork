@@ -50,10 +50,12 @@ import {
   CONFIRM_PROB,
   explainDecision,
   gradeLabel,
+  MAX_ITEMS,
+  MIN_ITEMS,
   nextStep,
   phasePool,
   POLICY_VERSION,
-  limitsFor,
+  rulesFor,
   selectNext,
   START_THETA,
   type AttemptPhase,
@@ -232,6 +234,25 @@ export async function checkEligibility(
   return { allowed: true, subcategoryId: sub };
 }
 
+/**
+ * Пересдача последнего грейда закрыта интервалом (то же правило, что retake_too_soon в checkEligibility):
+ * для «Твоего пути», когда категории нет. null — интервала нет или он снят поддержкой. Другой грейд интервалом не закрыт.
+ */
+export async function retakeCooldown(candidateId: string, now: Date = new Date()): Promise<{ grade: Grade; nextAllowedAt: Date; demo: boolean } | null> {
+  const [last, resetAt, iv] = await Promise.all([
+    prisma.testAttempt.findFirst({
+      where: { candidateId, kind: 'grade', status: { in: ['passed', 'not_confirmed', 'needs_confirmation'] }, finishedAt: { not: null } },
+      orderBy: { finishedAt: 'desc' },
+      select: { grade: true, finishedAt: true },
+    }),
+    cooldownResetAt(candidateId),
+    intervals(),
+  ]);
+  if (!last?.finishedAt || (resetAt !== null && last.finishedAt <= resetAt)) return null;
+  const next = new Date(last.finishedAt.getTime() + iv.retakeMs);
+  return now < next ? { grade: last.grade as Grade, nextAllowedAt: next, demo: iv.demo } : null;
+}
+
 // ---------------------------------------------------------------------------
 // Попытка
 // ---------------------------------------------------------------------------
@@ -296,7 +317,7 @@ function stepOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>): Ste
     shown.push(t);
     responses.push({ a: t.a, b: t.b, correct: it.correct });
   }
-  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade, probe: PROBE_VERSIONS.has(a.policyVersion) }, limitsFor(a.policyVersion, getEnv().TEST_ITEM_LIMITS));
+  return nextStep({ pool: [...byId.values()], shown, responses, grade: a.grade, probe: PROBE_VERSIONS.has(a.policyVersion) }, rulesFor(a.policyVersion));
 }
 
 async function poolMap(a: Pick<TestAttempt, 'specialization' | 'subcategoryId' | 'policyVersion'>): Promise<Map<string, SelectableTemplate & { generator: TaskGenerator }>> {
@@ -368,7 +389,7 @@ async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: Att
   let canaryShift: number | null = null;
   if (INTEGRITY_VERSIONS.has(attempt.policyVersion)) {
     const slotRng = createRng(deriveSeed(attempt.seed, 5000));
-    const slots = confirm ? canarySlots(slotRng.int, CONFIRM_CANARIES, 0, CONFIRM_MIN_ITEMS - 2) : canarySlots(slotRng.int, GRADE_CANARIES, 1, limitsFor(attempt.policyVersion, getEnv().TEST_ITEM_LIMITS).min - 2);
+    const slots = confirm ? canarySlots(slotRng.int, CONFIRM_CANARIES, 0, CONFIRM_MIN_ITEMS - 2) : canarySlots(slotRng.int, GRADE_CANARIES, 1, MIN_ITEMS - 2);
     const placed = attempt.items.filter((i) => i.canaryShift !== null).length;
     if (wantsCanary(index, placed, slots, generator.format)) canaryShift = createRng(deriveSeed(attempt.seed, 6000 + index)).int(CANARY_SHIFT_MIN, CANARY_SHIFT_MAX);
   }
@@ -607,7 +628,7 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     ? { phase: 'main' as const, maxItems: CONFIRM_MAX_ITEMS }
     : a.status === 'active'
       ? stepOf(a, byId)
-      : { phase: 'main' as const, maxItems: limitsFor(a.policyVersion, getEnv().TEST_ITEM_LIMITS).max };
+      : { phase: 'main' as const, maxItems: MAX_ITEMS };
   // Режим silent: категория выдана, но выдача работодателя её не учитывает - кандидату об этом говорят (ranking-hold.ts).
   const rankingHold = !confirm && a.status === 'passed' && (await rankingHoldOf(a.candidateId))?.attemptId === a.id;
   // Подтверждающая попытка показывается и после снятия ограничения: кандидат видит, чем подтвердил категорию.
@@ -629,7 +650,7 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     confirmsAttemptId: a.confirmsAttemptId,
     answered,
     phase: step.phase,
-    minItems: confirm ? CONFIRM_MIN_ITEMS : limitsFor(a.policyVersion, getEnv().TEST_ITEM_LIMITS).min,
+    minItems: confirm ? CONFIRM_MIN_ITEMS : MIN_ITEMS,
     maxItems: step.maxItems,
     startedAt: a.startedAt.toISOString(),
     expiresAt: a.expiresAt.toISOString(),

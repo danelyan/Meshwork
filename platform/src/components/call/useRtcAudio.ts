@@ -25,6 +25,9 @@ interface Peer {
   pc: RTCPeerConnection;
   makingOffer: boolean;
   ignoreOffer: boolean;
+  /** ICE-кандидаты, пришедшие раньше SDP: сигналы идут отдельными POST без гарантии порядка, а addIceCandidate
+   *  без remoteDescription отклоняется с InvalidStateError (MDN) — копим и добавляем после setRemoteDescription. */
+  pendingIce: RTCIceCandidateInit[];
   timer: ReturnType<typeof setTimeout> | null;
   audio: HTMLAudioElement;
 }
@@ -112,7 +115,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
       const pc = new RTCPeerConnection({ iceServers });
       const audio = new Audio();
       audio.autoplay = true;
-      const p: Peer = { pc, makingOffer: false, ignoreOffer: false, timer: null, audio };
+      const p: Peer = { pc, makingOffer: false, ignoreOffer: false, pendingIce: [], timer: null, audio };
       peers.current.set(peer, p);
       setState(peer, 'connecting');
       const arm = () => {
@@ -180,6 +183,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
           p.ignoreOffer = !polite && offerCollision;
           if (p.ignoreOffer) return;
           await pc.setRemoteDescription(d as RTCSessionDescriptionInit);
+          for (const c of p.pendingIce.splice(0)) await pc.addIceCandidate(c).catch(() => undefined);
           if (d.type === 'offer') {
             // Микрофон уже включён кликом — трек до ответа (sendrecv); иначе ответ recvonly, без запроса доступа.
             const stream = polite ? await (streamRef.current ?? Promise.resolve(null)) : await mic();
@@ -188,6 +192,10 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
             if (pc.localDescription) void send(from, { sdp: pc.localDescription.toJSON() });
           }
         } else if (payload.candidate) {
+          if (!pc.remoteDescription) {
+            p.pendingIce.push(payload.candidate as RTCIceCandidateInit);
+            return;
+          }
           try {
             await pc.addIceCandidate(payload.candidate as RTCIceCandidateInit);
           } catch (err) {

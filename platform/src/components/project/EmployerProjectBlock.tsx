@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
 import { ApiError } from '@/lib/api';
@@ -213,7 +214,7 @@ function AiDefenseBlock({ d, open }: { d: NonNullable<EmployerSubmissionView['ai
           ))}
         </>
       )}
-      <p className={emp.status}>{open ? <>Транскрипт и запись - в разделе <a href="/employer/calls">«Защиты»</a>.</> : 'Транскрипт и запись - после принятия приглашения.'}</p>
+      <p className={emp.status}>{open ? <>Транскрипт и запись - в разделе <Link href="/employer/calls">«Защиты»</Link>.</> : 'Транскрипт и запись - после принятия приглашения.'}</p>
     </section>
   );
 }

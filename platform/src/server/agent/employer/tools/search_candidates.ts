@@ -9,8 +9,8 @@ import { CandidatesBlockSchema, toCandidatesBlock } from '../cards';
 import { AGENT_RESULT_LIMIT, GradeSchema, SpecSchema, type EmployerTool } from './shared';
 
 const Input = z.object({
-  specialization: SpecSchema.optional().describe('backend или frontend'),
-  grade: GradeSchema.optional().describe('junior или middle'),
+  specialization: SpecSchema.optional().describe('backend, frontend, ai или engineering'),
+  grade: GradeSchema.optional().describe('junior, middle или senior'),
   stack: z.array(z.string().min(1).max(40)).max(10).optional().describe('Метки стека: Go, Kafka, React…'),
   fsp: z.boolean().optional().describe('Только с подтверждёнными достижениями ФСП'),
   expandPool: z.boolean().optional().describe('Расширить пул: включить кандидатов без категории из теста (по умолчанию только с категорией)'),

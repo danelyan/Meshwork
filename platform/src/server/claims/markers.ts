@@ -1,7 +1,7 @@
 // «План В» извлечения: словарь маркеров каталога, без LLM. Используют eval (предсказатель
 // catalog-keywords) и agent/fallback.ts при отказе провайдера. Детерминированно; каждая цитата —
 // дословный фрагмент строки источника, поэтому verifyClaims её пропускает.
-import type { Specialization } from '@/lib/directions';
+import { SPECIALIZATIONS, type Specialization } from '@/lib/directions';
 import type { ExtractedDoc } from '../collector/types';
 import { catalogFor } from './catalog-file';
 import { normalize } from './normalize';
@@ -76,20 +76,30 @@ function cleanQuote(s: string): string {
     .trim();
 }
 
-/** Специализация по документу: где больше маркеров и что в заголовке. null — не понятно. */
+/** Слова шапки (первые пять строк), по которым направление видно сразу. Текст нормализован: нижний регистр, ё → е. */
+const HEAD_HINT: Record<Specialization, RegExp> = {
+  backend: /backend|бэкенд|бекенд|back-end|java|golang|python|серверн/,
+  frontend: /frontend|фронтенд|front-end|верстальщик|react|vue|angular/,
+  ai: /machine learning|data scien|mlops|машинн\p{L}* обучен|нейросет|(?<![\p{L}\p{N}])(ai|ml|llm|nlp)(?![\p{L}\p{N}])/u,
+  engineering: /devops|data engineer|инженер\p{L}* данных|автотест|тестировщик|(?<![\p{L}\p{N}])(sre|qa|etl|dwh)(?![\p{L}\p{N}])/u,
+};
+
+/**
+ * Специализация по документу: где больше маркеров каталога и что в заголовке. Считаются все
+ * направления справочника; лидер один — он и ответ, ничья лидеров или ни одного маркера — null.
+ */
 export function guessSpecialization(doc: ExtractedDoc, catalog: CatalogEntry[]): Specialization | null {
   const text = normalize(doc.text || docLines(doc).map((l) => l.text).join('\n'));
   const head = normalize(docLines(doc).slice(0, 5).map((l) => l.text).join(' '));
-  let be = /backend|бэкенд|бекенд|back-end|java|golang|python|серверн/.test(head) ? 5 : 0;
-  let fe = /frontend|фронтенд|front-end|верстальщик|react|vue|angular/.test(head) ? 5 : 0;
+  const score = Object.fromEntries(SPECIALIZATIONS.map((s) => [s, HEAD_HINT[s].test(head) ? 5 : 0])) as Record<Specialization, number>;
   for (const c of compile(catalog)) {
-    if (c.entry.specialization === 'common') continue;
-    const n = c.res.filter((r) => r.re.test(text)).length;
-    if (c.entry.specialization === 'backend') be += n;
-    else fe += n;
+    const spec = c.entry.specialization;
+    if (spec === 'common') continue;
+    score[spec] += c.res.filter((r) => r.re.test(text)).length;
   }
-  if (be === fe) return null;
-  return be > fe ? 'backend' : 'frontend';
+  const [top, second] = SPECIALIZATIONS.map((s) => ({ spec: s, n: score[s] })).sort((a, b) => b.n - a.n);
+  if (!top || top.n === (second?.n ?? 0)) return null;
+  return top.spec;
 }
 
 export interface MarkerOptions {

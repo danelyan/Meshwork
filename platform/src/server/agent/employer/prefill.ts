@@ -1,9 +1,9 @@
 // Предзаполнение формы потребности из ссылки черновика помощника (create_need_draft → formHref).
 // Всё из query — недоверенное: значения режутся, требования — только из каталога своей специализации.
-import type { Specialization } from '@/lib/directions';
+import { isSpecialization, type Specialization } from '@/lib/directions';
 import type { CatalogEntry } from '@/server/claims/types';
 import { normalizeStack } from '@/server/employer/ranking';
-import type { Grade } from '@/lib/grades';
+import { isGrade, type Grade } from '@/lib/grades';
 
 export interface NeedPrefill {
   title: string;
@@ -27,8 +27,9 @@ const money = (v: string) => {
 /** null — ссылки черновика нет (обычная «Новая потребность»). */
 export function parseNeedPrefill(raw: Raw, catalog: Pick<CatalogEntry, 'id' | 'specialization'>[]): NeedPrefill | null {
   const spec = first(raw.spec);
-  if (spec !== 'backend' && spec !== 'frontend') return null;
-  const grade = first(raw.grade) === 'middle' ? 'middle' : 'junior';
+  if (!isSpecialization(spec)) return null;
+  const rawGrade = first(raw.grade);
+  const grade: Grade = isGrade(rawGrade) ? rawGrade : 'junior';
   const allowed = new Set(catalog.filter((e) => e.specialization === spec || e.specialization === 'common').map((e) => e.id));
   const needs = first(raw.needs)
     .split(',')

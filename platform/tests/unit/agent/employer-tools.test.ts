@@ -182,4 +182,34 @@ describe('черновик потребности из слов', () => {
     expect(parseNeedPrefill({ spec: 'hacker' }, [])).toBeNull();
     expect(parseNeedPrefill({ spec: 'backend', from: '-5', to: 'abc' }, [])?.salaryFrom).toBe(0);
   });
+
+  it('черновик для AI / ML, Engineering и Senior не теряется и не понижается до Junior', () => {
+    const catalog = [
+      { id: 'be.idempotency', specialization: 'backend' as const },
+      { id: 'ai.rag', specialization: 'ai' as const },
+      { id: 'eng.etl-pipeline', specialization: 'engineering' as const },
+      { id: 'common.git', specialization: 'common' as const },
+    ];
+    for (const [spec, own] of [['ai', 'ai.rag'], ['engineering', 'eng.etl-pipeline']] as const) {
+      const href = needFormHref({
+        title: 'Потребность', specialization: spec, grade: 'senior', stack: [], salaryFrom: 300_000, salaryTo: 400_000, teamDescription: null,
+        needs: [own, 'be.idempotency', 'common.git'].map((catalogId) => ({ catalogId, statement: '', weight: 2 })),
+      });
+      const p = parseNeedPrefill(Object.fromEntries(new URL(href, 'http://x').searchParams), catalog);
+      expect(p, spec).toMatchObject({ specialization: spec, grade: 'senior', salaryFrom: 300_000, salaryTo: 400_000 });
+      expect(p?.needs.map((n) => n.catalogId)).toEqual([own, 'common.git']);
+    }
+    expect(parseNeedPrefill({ spec: 'backend', grade: 'senior' }, [])?.grade).toBe('senior');
+    expect(parseNeedPrefill({ spec: 'backend', grade: 'lead' }, [])?.grade).toBe('junior');
+    expect(parseNeedPrefill({ spec: 'backend' }, [])?.grade).toBe('junior');
+  });
+
+  it('специализация из слов: AI / ML и Engineering; решает направление, названное первым', () => {
+    expect(parseSpecialization('Нужен ML-инженер: Python, PyTorch, сервис на backend-стеке')).toBe('ai');
+    expect(parseSpecialization('ищем разработчика LLM-приложений')).toBe('ai');
+    expect(parseSpecialization('Нужен DevOps: Kubernetes, CI для команд')).toBe('engineering');
+    expect(parseSpecialization('инженер данных, ETL на Airflow')).toBe('engineering');
+    expect(parseSpecialization('Нужен бэкенд на Go, знание ML приветствуется')).toBe('backend');
+    expect(parseSpecialization('вёрстка html-писем и email-рассылок')).toBeNull();
+  });
 });

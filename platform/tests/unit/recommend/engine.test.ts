@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { catalogFromFile } from '@/server/claims/catalog-file';
 import { buildIndex, creditFor, parseNeeds } from '@/server/recommend/evidence';
-import { computeGaps, reachFactor } from '@/server/recommend/gap-map';
+import { categoryNeeds, computeGaps, reachFactor } from '@/server/recommend/gap-map';
 import { computeCoverage, describeCoverage } from '@/server/recommend/matcher';
 import { rankTasks } from '@/server/recommend/tasks';
 import { decideGrade, inferSpecialization, middleSignature } from '@/server/recommend/test';
@@ -108,6 +108,28 @@ describe('gap-map', () => {
 
   it('несуществующий catalogId не попадает в результат', () => {
     expect(computeGaps(needs(['be.ghost', 3]), catalog, new Map(), null)).toEqual([]);
+  });
+});
+
+describe('categoryNeeds: все направления и грейды справочников', () => {
+  const real = new Map(catalogFromFile().map((e) => [e.id, e]));
+
+  it.each(['backend', 'frontend', 'ai', 'engineering'])('%s: junior, middle и senior дают потребности своего направления и общие', (spec) => {
+    for (const grade of ['junior', 'middle', 'senior']) {
+      const out = categoryNeeds(real, `${spec}:${grade}`);
+      expect(out.length, `${spec}:${grade}`).toBeGreaterThan(0);
+      for (const n of out) {
+        expect(['common', spec], n.catalogId).toContain(real.get(n.catalogId)!.specialization);
+        expect(n.weight).toBeGreaterThan(0);
+      }
+      expect(out.some((n) => real.get(n.catalogId)!.specialization === spec), `${spec}:${grade}`).toBe(true);
+    }
+  });
+
+  it('неизвестное направление или грейд - 400, а не пустой список', () => {
+    for (const id of ['mobile:junior', 'backend:lead', 'backend', '']) {
+      expect(() => categoryNeeds(real, id), id).toThrow(expect.objectContaining({ status: 400 }));
+    }
   });
 });
 
@@ -245,5 +267,20 @@ describe('правило теста', () => {
     expect(inferSpecialization(['fe.x'])).toBe('frontend');
     expect(inferSpecialization(['be.a', 'fe.x'])).toBeNull();
     expect(inferSpecialization([])).toBeNull();
+  });
+
+  it('специализация по утверждениям: AI и Engineering тоже считаются, общие - нет', () => {
+    expect(inferSpecialization(['ai.prompting', 'ai.rag', 'be.a'])).toBe('ai');
+    expect(inferSpecialization(['eng.ci', 'common.git'])).toBe('engineering');
+    expect(inferSpecialization(['ai.prompting', 'eng.ci'])).toBeNull();
+    expect(inferSpecialization(['common.git'])).toBeNull();
+    // префиксы сверены с каталогом: у каждого направления свой, других нет
+    const prefixes = new Map<string, Set<string>>();
+    for (const e of catalogFromFile()) {
+      const set = prefixes.get(e.specialization) ?? new Set<string>();
+      set.add(e.id.split('.')[0]!);
+      prefixes.set(e.specialization, set);
+    }
+    expect(Object.fromEntries([...prefixes].map(([k, v]) => [k, [...v]]))).toMatchObject({ backend: ['be'], frontend: ['fe'], ai: ['ai'], engineering: ['eng'] });
   });
 });

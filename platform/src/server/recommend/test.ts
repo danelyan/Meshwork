@@ -1,3 +1,4 @@
+import { SPECIALIZATIONS } from '../../lib/directions';
 import { getSetting } from '../admin/settings';
 import type { CatalogEntry } from '../claims/types';
 import { prisma } from '../db';
@@ -27,11 +28,21 @@ export function middleSignature(catalog: Map<string, CatalogEntry>, spec: Specia
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/** Префикс ID каталога → направление (prisma/seed/claims-catalog.json: be, fe, ai, eng; common — общие). */
+const ID_PREFIX: Record<Specialization, string> = { backend: 'be.', frontend: 'fe.', ai: 'ai.', engineering: 'eng.' };
+
+/** Направление, у которого больше всего заявленных утверждений; пусто или ничья лидеров — null. */
 export function inferSpecialization(catalogIds: string[]): Specialization | null {
-  const be = catalogIds.filter((id) => id.startsWith('be.')).length;
-  const fe = catalogIds.filter((id) => id.startsWith('fe.')).length;
-  if (be === fe) return null;
-  return be > fe ? 'backend' : 'frontend';
+  let best: Specialization | null = null;
+  let max = 0;
+  for (const spec of SPECIALIZATIONS) {
+    const n = catalogIds.filter((id) => id.startsWith(ID_PREFIX[spec])).length;
+    if (n > max) {
+      best = spec;
+      max = n;
+    } else if (n === max) best = null;
+  }
+  return best;
 }
 
 export interface TestDecision {

@@ -1,3 +1,5 @@
+import { isSpecialization, SPECIALIZATIONS } from '../../lib/directions';
+import { GRADES, isGrade } from '../../lib/grades';
 import type { CatalogEntry } from '../claims/types';
 import { errors } from '../errors';
 import { prisma } from '../db';
@@ -61,8 +63,9 @@ export function computeGaps(
 /** Потребности категории `<spec>:<grade>`: утверждения специализации и общие этого грейда. */
 export function categoryNeeds(catalog: Map<string, CatalogEntry>, id: string): Need[] {
   const [spec, grade] = id.split(':');
-  if ((spec !== 'backend' && spec !== 'frontend') || (grade !== 'junior' && grade !== 'middle')) {
-    throw errors.badRequest('Категория задаётся как backend:junior … frontend:middle');
+  // Все направления и грейды справочников: вес Senior берёт gradeWeight (колонка S каталога).
+  if (!isSpecialization(spec) || !isGrade(grade)) {
+    throw errors.badRequest(`Категория задаётся как <направление>:<грейд>: ${SPECIALIZATIONS.join(' | ')} и ${GRADES.join(' | ')}`);
   }
   const out: Need[] = [];
   for (const e of [...catalog.values()].sort((a, b) => a.id.localeCompare(b.id))) {

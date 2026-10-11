@@ -1,5 +1,6 @@
 import { catalogFromFile } from '@/server/claims/catalog-file';
 import { extractByMarkers, guessSpecialization, markerRegExp } from '@/server/claims/markers';
+import type { CatalogEntry } from '@/server/claims/types';
 import { verifyClaims } from '@/server/claims/verifier';
 
 import { doc } from './helpers';
@@ -44,6 +45,28 @@ describe('extractByMarkers (план В)', () => {
     expect(guessSpecialization(fe, catalog)).toBe('frontend');
     expect(extractByMarkers(fe, catalog).map((c) => c.catalogId)).toContain('fe.ssr');
     expect(extractByMarkers(fe, catalog, { specialization: 'backend' }).map((c) => c.catalogId)).not.toContain('fe.ssr');
+  });
+
+  it('специализация: AI / ML и Engineering считаются сами, а не как Frontend', () => {
+    const ai = doc(['# Олег — ML-инженер', '## Опыт', '- Собрал RAG-поиск по базе знаний: чанкинг, эмбеддинги, pgvector.', '- Настроил function calling и structured output с проверкой по JSON Schema.']);
+    expect(guessSpecialization(ai, catalog)).toBe('ai');
+    expect(extractByMarkers(ai, catalog).map((c) => c.catalogId).every((id) => /^(ai|common)\./.test(id))).toBe(true);
+    const eng = doc(['# Ира — инженер данных', '## Опыт', '- Построила ETL-пайплайн на Airflow: инкрементальная загрузка по watermark, дедупликация.', '- Спроектировала DWH: SCD2 и партиционирование.']);
+    expect(guessSpecialization(eng, catalog)).toBe('engineering');
+  });
+
+  it('специализация: лидер по числу маркеров среди четырёх направлений, ничья лидеров - null', () => {
+    const entry = (id: string, specialization: CatalogEntry['specialization'], markers: string[]): CatalogEntry => ({
+      id, specialization, statement: id, grades: ['middle'], weight: 2, proof: [], markers, limits: '',
+    });
+    const small = [entry('be.cache', 'backend', ['Redis', 'кэш']), entry('fe.ssr', 'frontend', ['SSR']), entry('ai.rag', 'ai', ['RAG']), entry('eng.etl', 'engineering', ['ETL'])];
+    // шапка (первые пять строк) без подсказок: решают только маркеры
+    const cv = (line: string) => doc(['Резюме', 'Иван Петров', 'Москва', 'О себе', 'Опыт', line]);
+    expect(guessSpecialization(cv('Собрал RAG-поиск'), small)).toBe('ai');
+    expect(guessSpecialization(cv('Построил ETL'), small)).toBe('engineering');
+    expect(guessSpecialization(cv('Построил ETL и RAG-поиск'), small)).toBeNull();
+    expect(guessSpecialization(cv('Redis как кэш, рядом ETL и RAG'), small)).toBe('backend');
+    expect(guessSpecialization(cv('Вёл проекты'), small)).toBeNull();
   });
 
   it('маркеры: граница слова и русские окончания', () => {

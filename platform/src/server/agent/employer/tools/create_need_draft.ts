@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { SPEC_ROLE } from '@/lib/directions';
+import { SPEC_LABEL, SPEC_ROLE, SPECIALIZATIONS } from '@/lib/directions';
 import { errors } from '@/server/errors';
 import { categoryNeeds, normalizeStack } from '@/server/employer/ranking';
 import { loadCatalog } from '@/server/recommend/evidence';
@@ -21,11 +21,23 @@ const STACK_WORDS = [
   'Spring', 'React', 'Vue', 'Angular', 'Next.js', 'Redux', 'Webpack', 'Vite', 'CSS', 'Jest', 'Playwright',
 ];
 
+/** Слова, по которым направление узнаётся в описании (нижний регистр). Порядок — как в справочнике направлений. */
+const SPEC_WORDS: [Specialization, RegExp][] = [
+  ['backend', /(бэкенд|бекенд|backend|back-end|серверн)/],
+  ['frontend', /(фронтенд|фронт|frontend|front-end|верстк|react|vue|angular)/],
+  ['ai', /(machine learning|data scien|mlops|llm|машинн\S* обучен|нейросет|\b(ai|ml|nlp)\b)/],
+  ['engineering', /(devops|data engineer|engineering|инженер\S* данных|дата[- ]инженер|автотест|тестировщик|\b(sre|qa|etl|dwh)\b)/],
+];
+
+/** Направление, названное в описании первым: «ML-инженер, сервис на backend-стеке» — AI, а не Backend. */
 export function parseSpecialization(text: string): Specialization | null {
   const t = text.toLowerCase();
-  if (/(бэкенд|бекенд|backend|back-end|серверн)/.test(t)) return 'backend';
-  if (/(фронтенд|фронт|frontend|front-end|верстк|react|vue|angular)/.test(t)) return 'frontend';
-  return null;
+  let best: { spec: Specialization; at: number } | null = null;
+  for (const [spec, re] of SPEC_WORDS) {
+    const at = t.search(re);
+    if (at !== -1 && (!best || at < best.at)) best = { spec, at };
+  }
+  return best?.spec ?? null;
 }
 
 export function parseGrade(text: string): Grade | null {
@@ -111,7 +123,7 @@ export const createNeedDraft: EmployerTool = {
   output: Output,
   async handler(ctx, input: z.infer<typeof Input>) {
     const spec = input.specialization ?? parseSpecialization(input.description);
-    if (!spec) throw errors.badRequest('Не понял специализацию - уточни у работодателя: Backend или Frontend');
+    if (!spec) throw errors.badRequest(`Специализация не распознана - уточни у работодателя: ${SPECIALIZATIONS.map((s) => SPEC_LABEL[s]).join(', ')}`);
     const grade = input.grade ?? parseGrade(input.description) ?? 'junior';
     const stack = normalizeStack(input.stack?.length ? input.stack : parseStack(input.description)).slice(0, 15);
     const sal = parseSalary(input.description);

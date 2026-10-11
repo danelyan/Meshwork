@@ -74,7 +74,7 @@ export function withCategory(
   catalog: Map<string, CatalogEntry>, index: EvidenceIndex,
 ): { reason: string; category: NonNullable<CareerVacancy['category']> | null } {
   const vacancyText = `Требования вакансии: ${describeCoverage(coverage, 'formal')}`;
-  // categoryNeeds знает только backend|frontend × junior|middle (как /api/recommendations)
+  // Блок категории на «Моей карте» пока только для backend|frontend × junior|middle; остальным - пояснение по вакансии.
   if (!(spec in SPEC_LABEL) || (grade !== 'junior' && grade !== 'middle')) return { reason: vacancyText, category: null };
   const full = computeCoverage(categoryNeeds(catalog, `${spec}:${grade}`), catalog, index);
   if (full.total === 0) return { reason: vacancyText, category: null };

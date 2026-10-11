@@ -1,3 +1,5 @@
+import { SPECIALIZATIONS } from '@/lib/directions';
+import { GRADES } from '@/lib/grades';
 import { prisma } from '@/server/db';
 import { withErrors } from '@/server/errors';
 import { gapMap } from '@/server/recommend/gap-map';
@@ -14,7 +16,7 @@ const Query = z.object({
   target: z
     .string()
     .max(100)
-    .regex(/^(vacancy:[A-Za-z0-9_-]{1,64}|category:(backend|frontend):(junior|middle))$/)
+    .regex(new RegExp(`^(vacancy:[A-Za-z0-9_-]{1,64}|category:(${SPECIALIZATIONS.join('|')}):(${GRADES.join('|')}))$`))
     .optional(),
   limit: z.coerce.number().int().min(1).max(20).default(5),
 });

@@ -85,6 +85,9 @@ model Candidate {
   agentRuns           AgentRun[]
   recommendations     Recommendation[]
   invitations         Invitation[]
+  /// lane apply / complaints
+  applications        Application[]
+  complaints          Complaint[]
   defenseSessions     DefenseSession[]
   /// lane project: взятые задания ленты и сабмиты проектов (ADR 0003, ступень 2)
   projectAssignments  ProjectAssignment[]
@@ -386,6 +389,8 @@ model Company {
   contact           String?
   /// lane call: вопросы компании кандидатам (очередь асинхронной дозащиты)
   employerQuestions EmployerQuestion[]
+  /// lane complaints: жалобы кандидатов на приглашения компании
+  complaints        Complaint[]
 }
 
 model Vacancy {
@@ -417,6 +422,8 @@ model Vacancy {
   projectTasks ProjectTask[]
   /// lane astra-favorites: private candidate bookmarks
   savedByUsers UserSavedVacancy[]
+  /// lane apply: самоотклики кандидатов (R-C-12)
+  applications Application[]
 
   @@index([specialization, grade])
 }
@@ -455,6 +462,8 @@ model Invitation {
   respondedAt       DateTime?
   /// lane hired: когда работодатель отметил найм (status = hired)
   hiredAt           DateTime?
+  /// lane complaints: жалоба кандидата на это приглашение (не больше одной)
+  complaint         Complaint?
 
   @@index([candidateId, status])
   @@index([companyId, createdAt])
@@ -1198,4 +1207,61 @@ model Subcategory {
   order          Int               @default(0)
 
   @@index([specialization, order])
+}
+
+/// lane apply: самоотклик кандидата на потребность (R-C-12, «желательно»). Дополняет обратную механику,
+/// не заменяет: контакты раскрываются только при accepted и согласии identity_disclosure (context.applicationId).
+enum ApplicationStatus {
+  sent
+  viewed
+  accepted
+  declined
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  vacancyId   String
+  vacancy     Vacancy           @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  status      ApplicationStatus @default(sent)
+  message     String?
+  createdAt   DateTime          @default(now())
+  viewedAt    DateTime?
+  respondedAt DateTime?
+
+  @@unique([vacancyId, candidateId])
+  @@index([vacancyId, status])
+  @@index([candidateId, createdAt])
+}
+
+/// lane complaints: жалоба кандидата на приглашение компании; санкции считает antifraud (лимит приглашений).
+enum ComplaintReason {
+  spam
+  salary_mismatch
+  offensive
+  fake_company
+  other
+}
+
+enum ComplaintStatus {
+  open
+  upheld
+  dismissed
+}
+
+model Complaint {
+  id           String          @id @default(cuid())
+  invitationId String          @unique
+  invitation   Invitation      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  candidateId  String
+  candidate    Candidate       @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  reason       ComplaintReason
+  comment      String?
+  status       ComplaintStatus @default(open)
+  createdAt    DateTime        @default(now())
+
+  @@index([companyId, createdAt])
 }

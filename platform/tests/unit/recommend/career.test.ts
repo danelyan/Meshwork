@@ -7,7 +7,7 @@ const cats = vi.hoisted(() => ({ findMany: vi.fn().mockResolvedValue([]) }));
 vi.mock('@/server/db', () => ({ prisma: { vacancy: db, candidateCategory: cats } }));
 vi.mock('@/server/recommend/evidence', async (original) => {
   const source = await original<typeof import('@/server/recommend/evidence')>();
-  return { ...source, assertCandidate: vi.fn().mockResolvedValue({ id: 'candidate' }), loadCatalog: vi.fn().mockResolvedValue(new Map([['sql', { id: 'sql', statement: 'SQL', adjacent: [] } as unknown as CatalogEntry]])), loadConfirmedIndex: vi.fn().mockResolvedValue(new Map()) };
+  return { ...source, assertCandidate: vi.fn().mockResolvedValue({ id: 'candidate' }), loadCatalog: vi.fn().mockResolvedValue(new Map([['sql', { id: 'sql', specialization: 'backend', statement: 'SQL', grades: ['middle'], weight: 1, adjacent: [] } as unknown as CatalogEntry]])), loadConfirmedIndex: vi.fn().mockResolvedValue(new Map()) };
 });
 
 const vacancy = (id: string) => ({ id, companyId: 'c', company: { name: 'Company' }, title: id, specialization: 'backend', grade: 'middle', salaryFrom: 100000, salaryTo: 200000, needs: [{ catalogId: 'sql', weight: 1 }], description: 'API development', teamDescription: null, stack: ['Python'] });
@@ -20,6 +20,8 @@ it('keeps saved vacancies with zero evidence and applies own saved IDs before li
   expect(result.targets).toHaveLength(1);
   expect(result.targets[0]).toMatchObject({ vacancyId: 'low-match', covered: 0, total: 1, matched: [], stack: ['Python'] });
   expect(result.targets[0]?.missing).toEqual([{ catalogId: 'sql', statement: 'SQL' }]);
+  expect(result.targets[0]?.category).toEqual({ id: 'backend:middle', label: 'Backend · Middle', covered: 0, total: 1, missing: [{ catalogId: 'sql', statement: 'SQL' }] });
+  expect(result.targets[0]?.reason).toBe('Требования вакансии: Закрываешь 0 из 1, не хватает: SQL. До полной категории Backend · Middle (0 из 1) не хватает: SQL');
 });
 
 it('preserves an empty favorites list instead of returning the entire catalogue', async () => {

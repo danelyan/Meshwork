@@ -40,9 +40,10 @@ export function computeGaps(
     const entry = catalog.get(need.catalogId);
     if (!entry || seen.has(need.catalogId)) continue; // несуществующий ID не выдумываем
     seen.add(need.catalogId);
-    const current = index.get(need.catalogId) ?? null;
+    // Та же оценка требования, что в совпадении с вакансией (matcher.computeCoverage):
+    // «закрыто» там ⇔ currentLevel ≠ null здесь. Смежность — половинный зачёт.
+    const { direct: current, credit } = creditFor(need.catalogId, index, catalog);
     if (current === 'platform') continue; // не пробел
-    const { credit } = creditFor(need.catalogId, index, catalog); // смежность — половинный зачёт
     const priority = need.weight * (1 - credit) * reachFactor(entry, provenGrade);
     gaps.push({
       id: entry.id,

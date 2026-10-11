@@ -158,7 +158,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
         {selected && <Panel className={styles.detail} aria-label="Выбранная вакансия">
           <div className={styles.resultBar}><Kicker>Ваше соответствие</Kicker><Button size="sm" disabled={saving} aria-label={saved.includes(selected.vacancyId) ? 'Убрать из избранного' : 'Сохранить вакансию'} aria-pressed={saved.includes(selected.vacancyId)} onClick={() => void toggleSave(selected.vacancyId)}>{saved.includes(selected.vacancyId) ? '★' : '☆'}</Button></div>
           <div className={styles.selectedCompany}><span>{selected.companyName.slice(0, 1)}</span><div><h2>{selected.companyName}</h2><p>{selected.title}</p></div></div>
-          <div className={styles.score}>{coveragePercent(selected)}<span>%</span><small>совпадение<br />по требованиям</small></div>
+          <div className={styles.score}>{coveragePercent(selected)}<span>%</span><small>совпадение<br />с требованиями вакансии</small></div>
           <p className={styles.meta}>{money.format(selected.salaryFrom)}–{money.format(selected.salaryTo)} ₽ / месяц</p>
           <div className={styles.actions}><Tag>{specLabel(selected.specialization)}</Tag><Tag>{selected.grade}</Tag></div>
           {selected.description && <p>{selected.description}</p>}
@@ -167,6 +167,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
           <p>{selected.reason}</p>
           {selected.matched.length > 0 && <div><h3>Что уже совпадает</h3><ul className={styles.requirements}>{selected.matched.map((item) => <li key={item.catalogId}>✓ {item.statement}<small className={styles.meta}> · {item.level === 'platform' ? 'проверено платформой' : item.level === 'third_party' ? 'внешний источник' : item.level === 'artifact' ? 'артефакт' : 'со слов'}</small></li>)}</ul></div>}
           <div><h3>Что усилить</h3>{selected.missing.length ? <ul className={styles.requirements}>{selected.missing.map((item) => <li key={item.catalogId}>{item.statement}</li>)}</ul> : <p>Все требования этой вакансии закрыты текущими утверждениями.</p>}</div>
+          {selected.category && selected.category.missing.length > 0 && <div><h3>До полной категории {selected.category.label}</h3><p className={styles.meta}>Вакансия требует меньше, чем вся категория. По категории закрыто {selected.category.covered} из {selected.category.total}; ниже - то, что на карте пробелов отмечено «Нет».</p><ul className={styles.requirements}>{selected.category.missing.slice(0, 5).map((item) => <li key={item.catalogId}>{item.statement}</li>)}</ul>{selected.category.missing.length > 5 && <p className={styles.meta}>и ещё {selected.category.missing.length - 5} - полный список на странице навыков.</p>}</div>}
           {detailError && <Notice tone="error">Не удалось загрузить рекомендации: {detailError}</Notice>}
           {details?.tasks?.length ? <div><h3>Как приблизиться к цели</h3><ul className={styles.requirements}>{details.tasks.map((task) => <li key={task.taskId}><span>{task.title}</span></li>)}</ul></div> : null}
           <details className={styles.vacancyDescription}><summary>Смотреть вакансию ↗</summary><h3>{selected.title}</h3><p>{selected.description || 'Компания пока не добавила описание.'}</p><p>{selected.teamDescription}</p><p>{selected.stack.join(', ')}</p></details>
@@ -176,7 +177,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
           <p className={styles.fine}>Совпадение по требованиям, а не вероятность найма.</p>
         </Panel>}
       </div>}
-      <Panel className={styles.nextStep}><div><Kicker>Следующий шаг</Kicker><p>{selected?.missing[0] ? `Подтяните: ${selected.missing[0].statement}. Это приблизит вас к выбранной вакансии.` : 'Подтвердите навыки и выберите следующий шаг вместе с консультантом.'}</p></div><Button href="/skills">Посмотреть требования ↗</Button></Panel>
+      <Panel className={styles.nextStep}><div><Kicker>Следующий шаг</Kicker><p>{selected?.missing[0] ? `Подтяните: ${selected.missing[0].statement}. Это приблизит вас к выбранной вакансии.` : selected?.category?.missing[0] ? `Требования вакансии закрыты. До полной категории ${selected.category.label} подтяните: ${selected.category.missing[0].statement}.` : 'Подтвердите навыки и выберите следующий шаг вместе с консультантом.'}</p></div><Button href="/skills">Посмотреть требования ↗</Button></Panel>
     </>}
   </div>;
 }

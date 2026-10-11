@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { specLabel } from '@/lib/directions';
+import { claimTopics } from '@/lib/claim-topics';
 import { shownWording } from '@/lib/claims-view';
 import { stripLimitsPrefix } from '@/lib/plural';
 import { useEffect, useState } from 'react';
@@ -25,6 +26,7 @@ function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?
   const [err, setErr] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const shown = shownWording(claim);
+  const topics = claim.wording && claim.status !== 'edited' && claim.statement !== shown ? claimTopics([{ statement: claim.statement, quote: claim.quote ?? '' }]) : '';
   const [statement, setStatement] = useState(shown);
   async function save() {
     if (!onEdit || !statement.trim()) return;
@@ -57,7 +59,7 @@ function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?
       {claim.quote && <p className={styles.quote}>«{claim.quote}»</p>}
       <div className={styles.meta}>
         <span>Источник: {claim.sourceRef || claim.sourceKind}</span>
-        {claim.wording && claim.status !== 'edited' && claim.statement !== shown && <span>Проверим на созвоне: {claim.statement}</span>}
+        {topics && <span>На созвоне спросим про: {topics}</span>}
         <span>Дата: {formatDate(claim.confirmedAt ?? claim.createdAt)}</span>
         {(claim.status === 'proposed' || claim.status === 'edited') && <span>{STATUS_NOTE[claim.status]}</span>}
       </div>

@@ -2,6 +2,7 @@
 // Грейд считает только код (IRT + генераторы), LLM не участвует: те же ответы → тот же итог.
 import type { Prisma, TestAttempt, TestItem } from '@prisma/client';
 
+import { getSetting } from '../admin/settings';
 import { cooldownResetAt } from '../admin/accounts/state';
 import { PLATFORM_UPGRADABLE } from '../claims/levels';
 import { prisma } from '../db';
@@ -9,7 +10,7 @@ import { getEnv } from '../env';
 import { assertAiAssessmentConsent } from '../consent/service';
 import { publicIntegrity } from '../employer/test-integrity';
 import { AppError, errors } from '../errors';
-import { GRADE_CHANGE_INTERVAL_DAYS } from '../recommend/weights';
+import { RETAKE_SAME_GRADE_DAYS } from '../recommend/weights';
 import type { Grade, Specialization } from '../types';
 
 import { checkAnswer, MAX_ANSWER_CHARS } from './answers';
@@ -97,7 +98,7 @@ const COMMON_IDS = new Set(COMMON_GENERATORS.map((g) => g.id));
  * (GRADE_CHANGE_INTERVAL_DAYS), пересдача того же грейда — через 14 дней.
  * В демо-режиме (TEST_DEMO_INTERVALS=true) — минуты, чтобы жюри увидело правило и повтор.
  */
-export const RETAKE_SAME_GRADE_DAYS = 14;
+export { RETAKE_SAME_GRADE_DAYS };
 export const DEMO_GRADE_CHANGE_MIN = 2;
 export const DEMO_RETAKE_MIN = 1;
 /** Незавершённая попытка живёт сутки: вкладку можно закрыть и вернуться (R-C-07). */
@@ -110,23 +111,28 @@ export interface Intervals {
   demo: boolean;
   gradeChangeMs: number;
   retakeMs: number;
+  /** Боевые интервалы в днях (настройки платформы test.*): в демо-режиме показываются в подписи «на проде». */
+  gradeChangeDays: number;
+  retakeDays: number;
 }
 
-export function intervals(demo: boolean = getEnv().TEST_DEMO_INTERVALS): Intervals {
+/** Интервалы смены грейда и пересдачи: дни из настроек платформы (умолчание - константы кода), в демо - минуты. */
+export async function intervals(demo: boolean = getEnv().TEST_DEMO_INTERVALS): Promise<Intervals> {
+  const [gradeChangeDays, retakeDays] = await Promise.all([getSetting('test.gradeChangeIntervalDays'), getSetting('test.retakeSameGradeDays')]);
   return demo
-    ? { demo, gradeChangeMs: DEMO_GRADE_CHANGE_MIN * MIN_MS, retakeMs: DEMO_RETAKE_MIN * MIN_MS }
-    : { demo, gradeChangeMs: GRADE_CHANGE_INTERVAL_DAYS * DAY_MS, retakeMs: RETAKE_SAME_GRADE_DAYS * DAY_MS };
+    ? { demo, gradeChangeMs: DEMO_GRADE_CHANGE_MIN * MIN_MS, retakeMs: DEMO_RETAKE_MIN * MIN_MS, gradeChangeDays, retakeDays }
+    : { demo, gradeChangeMs: gradeChangeDays * DAY_MS, retakeMs: retakeDays * DAY_MS, gradeChangeDays, retakeDays };
 }
 
 /** Через сколько можно пересдать тот же грейд: «1 мин» в демо-режиме, «14 дней» на проде (экран правил перед тестом). */
-export function describeRetake(iv: Intervals = intervals()): string {
-  return iv.demo ? `${DEMO_RETAKE_MIN} мин` : `${RETAKE_SAME_GRADE_DAYS} дней`;
+export function describeRetake(iv: Intervals): string {
+  return iv.demo ? `${DEMO_RETAKE_MIN} мин` : `${iv.retakeDays} дней`;
 }
 
-export function describeIntervals(iv: Intervals = intervals()): string {
+export function describeIntervals(iv: Intervals): string {
   return iv.demo
-    ? `Демо-режим: смена грейда - через ${DEMO_GRADE_CHANGE_MIN} мин, пересдача того же грейда - через ${DEMO_RETAKE_MIN} мин (на проде - ${GRADE_CHANGE_INTERVAL_DAYS} и ${RETAKE_SAME_GRADE_DAYS} дней).`
-    : `Смена грейда - не чаще раза в ${GRADE_CHANGE_INTERVAL_DAYS} дней, пересдача того же грейда - через ${RETAKE_SAME_GRADE_DAYS} дней.`;
+    ? `Демо-режим: смена грейда - через ${DEMO_GRADE_CHANGE_MIN} мин, пересдача того же грейда - через ${DEMO_RETAKE_MIN} мин (на проде - ${iv.gradeChangeDays} и ${iv.retakeDays} дней).`
+    : `Смена грейда - не чаще раза в ${iv.gradeChangeDays} дней, пересдача того же грейда - через ${iv.retakeDays} дней.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +203,7 @@ export async function checkEligibility(
   }
   const reason = unavailableReason(spec, sub);
   if (reason) return { allowed: false, code: 'no_test', reason, subcategoryId: sub };
-  const iv = intervals();
+  const iv = await intervals();
   const [category, lastSame, resetAt] = await Promise.all([
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' } }),
     prisma.testAttempt.findFirst({
@@ -349,7 +355,11 @@ async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: Att
   const confirm = attempt.kind === 'confirm';
   const seenBefore = confirm ? new Set<string>() : await seenInPreviousAttempts(attempt);
   const source = confirm ? await confirmSourceOf(attempt, byId) : null;
-  const selectFrom = source ? confirmSelectionPool(pool, source.templateIds, new Set(shown.map((t) => t.id))) : phasePool(pool, phase, attempt.grade);
+  // Шаблоны, снятые с публикации в админке (catalog.hiddenTaskTemplates), в новые задания не выдаются;
+  // уже показанные остаются в пуле выше - иначе оценка идущих попыток потеряла бы ответы.
+  const hidden = new Set(await getSetting('catalog.hiddenTaskTemplates'));
+  const candidates = hidden.size ? pool.filter((t) => !hidden.has(t.id)) : pool;
+  const selectFrom = source ? confirmSelectionPool(candidates, source.templateIds, new Set(shown.map((t) => t.id))) : phasePool(candidates, phase, attempt.grade);
   const next = selectNext(selectFrom, { shown, theta, seed: deriveSeed(attempt.seed, 1000 + index), seenBefore });
   if (!next) return null;
   const generator = byId.get(next.id)!.generator;
@@ -410,7 +420,7 @@ export async function startAttempt(
   const unprocessable = elig.code === 'no_test' || elig.code === 'subcategory_required';
   if (!elig.allowed) throw new AppError(elig.code!, elig.reason!, unprocessable ? 422 : 409, { nextAllowedAt: elig.nextAllowedAt });
 
-  const iv = intervals();
+  const iv = await intervals();
   const attempt = await prisma.testAttempt.create({
     data: {
       candidateId,

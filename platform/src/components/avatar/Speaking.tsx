@@ -9,7 +9,8 @@ import styles from './speaking.module.css';
 import { phraseAt, splitPhrases } from './phrases';
 import { type CompanionVoice, useCompanionVoice, type VoiceStatus } from './voice';
 
-export const STATE_LABEL: Record<VoiceStatus, string> = { idle: '', thinking: 'думает', loading: 'готовит голос', speaking: 'говорит' };
+/** В покое — «на связи»: микрофон в чате не слушает, «слушает» вводило в заблуждение (владелец 11.10). */
+export const STATE_LABEL: Record<VoiceStatus, string> = { idle: 'на связи', thinking: 'думает', loading: 'готовит голос', speaking: 'говорит' };
 
 /** Сколько символов субтитров помещается в две-три строки сцены. */
 const SUBTITLE_BUDGET = 110;
@@ -118,7 +119,7 @@ export function StateChip({ className }: { className?: string }) {
   const status = voice?.status ?? 'idle';
   return (
     <span className={cx(styles.chip, className)} data-status={status} role="status" aria-live="polite" data-testid="state-chip">
-      {STATE_LABEL[status] || 'слушает'}
+      {STATE_LABEL[status] || STATE_LABEL.idle}
     </span>
   );
 }

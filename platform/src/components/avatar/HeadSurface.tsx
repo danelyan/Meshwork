@@ -11,6 +11,9 @@ import type { CompanionVoice } from './voice';
 import { hasWebGL, resetWebGLCache } from './webgl';
 
 // three.js (~0.5 МБ) — только в браузере и только там, где есть аватар.
+/** Сколько раз пробовать включить WebGL самим, прежде чем оставить только кнопку. */
+const AUTO_RETRIES = 3;
+
 const Head3D = dynamic(() => import('./Head3D'), { ssr: false, loading: () => null });
 
 /**
@@ -50,11 +53,25 @@ export function HeadSurface({ voice, reduced, style, onLive }: { voice: Companio
     resetWebGLCache();
     setMode('mark');
   }, []);
-  const retry = () => {
+  const retry = useCallback(() => {
     resetWebGLCache();
     setMode('pending');
     setAttempt((a) => a + 1);
-  };
+  }, []);
+  // Контекст не дали (лимит ~16 на все вкладки Chrome): пробуем снова сами — через паузу и когда вкладка
+  // снова в фокусе, до AUTO_RETRIES раз; дальше остаётся кнопка «обновить».
+  useEffect(() => {
+    if (mode !== 'mark' || attempt >= AUTO_RETRIES) return;
+    const t = window.setTimeout(retry, 1_500 * (attempt + 1));
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') retry();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [mode, attempt, retry]);
   if (mode === 'gl') {
     return (
       <CanvasGuard key={attempt} onError={lost}>

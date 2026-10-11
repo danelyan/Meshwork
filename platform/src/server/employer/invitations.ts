@@ -4,6 +4,8 @@
 import type { InvitationStatus, Prisma } from '@prisma/client';
 import type { z } from 'zod';
 
+import { assertCompanyNotBlocked, isHiddenByModerator, notBlockedCandidateWhere } from '@/server/admin/accounts/state';
+
 import { assertEmployerConsents, consentRequired, disclosedInvitationIds, revokeDisclosureForInvitation, grantConsent, hasActiveConsent, revokeConsent, userIdForCandidate } from '../consent/service';
 import { consentVersion } from '../consent/texts';
 import { prisma } from '../db';
@@ -145,7 +147,7 @@ export async function createInvitation(
   const sender = await prisma.employerProfile.findUnique({ where: { id: ctx.employerProfileId }, select: { userId: true } });
   if (!sender) throw errors.forbidden('Профиль работодателя не найден');
   await assertEmployerConsents(sender.userId);
-  const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false }, select: { id: true } });
+  const cand = await prisma.candidate.findFirst({ where: { id: input.candidateId, hiddenFromEmployers: false, AND: [notBlockedCandidateWhere()] }, select: { id: true } });
   if (!cand) throw errors.notFound('Кандидат не найден');
   if (input.vacancyId) {
     const v = await prisma.vacancy.findFirst({ where: { id: input.vacancyId, companyId: ctx.companyId, archivedAt: null }, select: { id: true } });
@@ -153,6 +155,7 @@ export async function createInvitation(
   }
   const created = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${ctx.companyId}`}))`;
+    await assertCompanyNotBlocked(tx, ctx.companyId); // E-08 фаза 3: блокировка модератором, тем же tx
     const open = await tx.invitation.findFirst({
       where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: OPEN } },
       select: { id: true },
@@ -589,6 +592,8 @@ export async function setCandidateContact(candidateId: string, contact: string |
 export async function setPrivacy(candidateId: string, hiddenFromEmployers: boolean) {
   // Показ работодателям — согласие Г4 (ADR 0005): переключатель даёт или отзывает его. Профиль без аккаунта
   // (демо-пул сида) согласий не хранит — у него меняется только флаг.
+  // E-08 фаза 3: профиль скрыт модератором (фейк, жалоба) — вернуть в поиск может только модератор.
+  if (!hiddenFromEmployers && (await isHiddenByModerator(candidateId))) throw errors.forbidden('Профиль скрыт модератором платформы. Чтобы вернуть его в поиск, напишите в поддержку.');
   const userId = await userIdForCandidate(candidateId);
   if (userId && !hiddenFromEmployers) await grantConsent(userId, { kind: 'employer_visibility', version: consentVersion('employer_visibility') });
   if (userId && hiddenFromEmployers && (await hasActiveConsent(userId, 'employer_visibility'))) await revokeConsent(userId, 'employer_visibility');

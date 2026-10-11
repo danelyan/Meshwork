@@ -1,12 +1,14 @@
 import { ThreadSkeleton } from '@/components/chat/Thread';
-import { ConsultantScene } from '@/components/head/ConsultantScene';
 import styles from '@/components/Chat.module.css';
 
-/** Первая загрузка /consultant: скелет ленты вместо пустого экрана. */
+/**
+ * Первая загрузка /consultant: только скелет ленты. Старую сцену с головой первой версии здесь не
+ * рисуем (решение владельца 11.10): она мелькала до настоящей сцены.
+ */
 export default function Loading() {
   return (
-    <ConsultantScene pending><div className={styles.chat}>
+    <div className={styles.chat}>
       <ThreadSkeleton />
-    </div></ConsultantScene>
+    </div>
   );
 }

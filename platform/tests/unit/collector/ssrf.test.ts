@@ -264,6 +264,12 @@ describe('collector/url: ответ', () => {
     expect(err.code).toBe('unsupported_media_type');
   });
 
+  it('картинка по ссылке → 415 с просьбой прикрепить файлом (OCR по ссылкам не вызываем)', async () => {
+    const err = await errorOf(fetcher(() => htmlResponse('x', 200, { 'content-type': 'image/jpeg' }))('https://example.com/cv.jpg'));
+    expect(err.code).toBe('unsupported_media_type');
+    expect(err.message).toMatch(/прикрепи файлом JPG или PNG/);
+  });
+
   it('text/plain → строки с ref url#lN', async () => {
     const doc = await fetcher(() => htmlResponse('a\n\nb', 200, { 'content-type': 'text/plain' }))('https://example.com/x.txt');
     expect(doc.lines).toEqual([

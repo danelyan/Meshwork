@@ -3,6 +3,8 @@ export const LIMITS = {
   /** Файл резюме/документа. */
   fileMaxBytes: 5 * 1024 * 1024,
   pdfMaxPages: 20,
+  /** Картинка для Vision OCR: ≤ 20 Мпикс (ширина × высота) — дока Yandex Vision, «Требования к изображениям». */
+  ocrMaxPixels: 20_000_000,
   /** Разбор файла в worker_threads. */
   parseTimeoutMs: 15_000,
   parseMaxHeapMb: 384,

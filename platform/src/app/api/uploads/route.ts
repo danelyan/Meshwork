@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import type { Prisma } from '@prisma/client';
 
+import { getSetting } from '@/server/admin/settings';
 import { assertSameOrigin } from '@/server/auth/csrf';
 import { extractFile, type FileKind, fileMime } from '@/server/collector/files';
 import { LIMITS } from '@/server/collector/limits';
@@ -51,6 +52,18 @@ async function readFormData(req: Request): Promise<FormData> {
   }
 }
 
+/**
+ * Антиспам: не больше `uploads.dailyLimit` новых файлов за 24 ч (0 — без лимита; демо-кандидаты общие для жюри — без лимита).
+ * Каждая новая картинка/скан — платный вызов OCR; повтор того же файла (sha256) сюда не доходит.
+ */
+async function assertUploadQuota(candidateId: string, isDemo: boolean): Promise<void> {
+  const limit = await getSetting('uploads.dailyLimit');
+  if (limit <= 0 || isDemo) return;
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recent = await prisma.upload.count({ where: { candidateId, createdAt: { gte: dayAgo } } });
+  if (recent >= limit) throw errors.rateLimited(`Не больше ${limit} новых файлов в сутки — попробуй завтра или вставь текст в чат`);
+}
+
 function brief(doc: ExtractedDoc) {
   return {
     title: doc.title,
@@ -71,7 +84,7 @@ function brief(doc: ExtractedDoc) {
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);
-  const exists = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { id: true } });
+  const exists = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { id: true, isDemo: true } });
   if (!exists) throw errors.unauthorized();
 
   const form = await readFormData(req);
@@ -98,6 +111,7 @@ export const POST = withErrors(async (req: Request) => {
     return Response.json({ uploadId: prev.id, deduplicated: true, doc: brief(prev.extracted as unknown as ExtractedDoc) });
   }
 
+  await assertUploadQuota(candidateId, exists.isDemo);
   const doc = await extractFile(buf, file.name || 'file', file.type, { sourceKind });
   const storageKey = await saveOriginal(candidateId, sha256, buf);
   const data = {

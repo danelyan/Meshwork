@@ -33,6 +33,38 @@ export function imageMime(buf: Buffer): ImageMime | null {
   return null;
 }
 
+/**
+ * Ширина и высота из заголовка PNG (IHDR) или JPEG (маркер SOFn) — без декодирования картинки.
+ * null, если заголовок не разобран (тогда решает сам Vision).
+ */
+export function imageSize(buf: Buffer): { width: number; height: number } | null {
+  const mime = imageMime(buf);
+  if (mime === 'image/png') {
+    if (buf.length < 24 || buf.toString('latin1', 12, 16) !== 'IHDR') return null;
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  }
+  if (mime !== 'image/jpeg') return null;
+  let i = 2;
+  while (i + 4 <= buf.length) {
+    if (buf[i] !== 0xff) return null;
+    const marker = buf[i + 1]!;
+    if (marker === 0xff) {
+      i += 1;
+      continue;
+    }
+    // SOF0..SOF15, кроме DHT (C4), JPG (C8), DAC (CC)
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      if (i + 9 > buf.length) return null;
+      return { width: buf.readUInt16BE(i + 7), height: buf.readUInt16BE(i + 5) };
+    }
+    if (marker === 0xd9 || marker === 0xda) return null;
+    const len = buf.readUInt16BE(i + 2);
+    if (len < 2) return null;
+    i += 2 + len;
+  }
+  return null;
+}
+
 /** WebP / HEIC / GIF / BMP / TIFF — Vision OCR их не принимает (только JPEG, PNG, PDF). */
 function otherImage(buf: Buffer): boolean {
   const ascii = buf.subarray(0, 16).toString('latin1');
@@ -138,6 +170,19 @@ export async function extractFile(
   const base = { sourceKind: opts.sourceKind ?? 'resume', title: name, origin: opts.origin ?? name } as const;
 
   if (kind === 'image') {
+    // До платного вызова Vision: лимит 20 Мпикс по заголовку — понятная ошибка вместо отказа сервиса,
+    // и «бомба» (огромные размеры в заголовке маленького файла) не уходит в OCR.
+    const size = imageSize(buf);
+    if (size && (size.width === 0 || size.height === 0)) {
+      throw new AppError('unsupported_media_type', 'Изображение повреждено — сохрани его заново в JPG или PNG', 415);
+    }
+    if (size && size.width * size.height > LIMITS.ocrMaxPixels) {
+      throw new AppError(
+        'payload_too_large',
+        `Изображение ${size.width}×${size.height} больше 20 Мпикс — уменьши его или пришли PDF/DOCX`,
+        413,
+      );
+    }
     let lines: RawLine[];
     try {
       lines = await recognizeText(buf, imageMime(buf)!, name, { signal: opts.signal });

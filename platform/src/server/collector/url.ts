@@ -178,6 +178,10 @@ export function createUrlFetcher(deps: UrlFetcherDeps = {}) {
       const kind = contentKind(ct);
       if (!kind) {
         await res.discard();
+        // Картинки по ссылке в OCR не отправляем (платный вызов на чужой контент) — просим загрузить файлом.
+        if (/^image\//i.test(ct ?? '')) {
+          throw new AppError('unsupported_media_type', 'По ссылке картинка — сохрани её и прикрепи файлом JPG или PNG, текст распознаем', 415);
+        }
         throw new AppError('unsupported_media_type', 'По ссылке не страница, не текст и не PDF', 415);
       }
       const { buf, truncated } = await readLimited(res, maxBytes);

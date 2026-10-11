@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { docToResult } from '@/server/agent/tools/shared';
-import { detectFileKind, extractFile, fileMime, imageMime } from '@/server/collector/files';
+import { detectFileKind, extractFile, fileMime, imageMime, imageSize } from '@/server/collector/files';
 import { recognizeText, visionToLines } from '@/server/collector/ocr';
 import { resetEnvCache } from '@/server/env';
 import { AppError } from '@/server/errors';
@@ -129,5 +129,53 @@ describe('collector/ocr: скан PDF', () => {
     const doc = await extractFile(makePdf([[], []]), 'scan.pdf', 'application/pdf');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(doc.meta).toMatchObject({ empty: true, ocrFailed: true, ocrReason: 'multipage' });
+  });
+});
+
+/** PNG с IHDR заданного размера (тело не декодируется — проверяется только заголовок). */
+function pngOf(width: number, height: number): Buffer {
+  const ihdr = Buffer.alloc(25);
+  ihdr.writeUInt32BE(13, 0);
+  ihdr.write('IHDR', 4, 'latin1');
+  ihdr.writeUInt32BE(width, 8);
+  ihdr.writeUInt32BE(height, 12);
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), ihdr, Buffer.alloc(32)]);
+}
+/** JPEG: SOI, APP0 (длина 16), SOF0 с высотой и шириной. */
+function jpegOf(width: number, height: number): Buffer {
+  const app0 = Buffer.concat([Buffer.from([0xff, 0xe0, 0x00, 0x10]), Buffer.alloc(14)]);
+  const sof = Buffer.from([0xff, 0xc0, 0x00, 0x11, 0x08, height >> 8, height & 0xff, width >> 8, width & 0xff, 0x03]);
+  return Buffer.concat([Buffer.from([0xff, 0xd8]), app0, sof, Buffer.alloc(16)]);
+}
+
+describe('collector/ocr: лимит 20 Мпикс до вызова Vision', () => {
+  it('imageSize читает заголовок PNG и JPEG, на непонятном заголовке — null', () => {
+    expect(imageSize(pngOf(1200, 1600))).toEqual({ width: 1200, height: 1600 });
+    expect(imageSize(jpegOf(3000, 4000))).toEqual({ width: 3000, height: 4000 });
+    expect(imageSize(PNG)).toBeNull();
+    expect(imageSize(JPEG)).toBeNull();
+  });
+
+  it('больше 20 Мпикс (в т.ч. «бомба» с огромным заголовком) → 413 без запроса в Vision', async () => {
+    for (const buf of [pngOf(6000, 4000), pngOf(100_000, 100_000), jpegOf(65_000, 65_000)]) {
+      const err = await extractFile(buf, 'big.png', 'image/png').catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(AppError);
+      expect((err as AppError).status).toBe(413);
+      expect((err as AppError).message).toMatch(/20 Мпикс/);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('нулевой размер в заголовке → 415 без запроса в Vision', async () => {
+    const err = await extractFile(pngOf(0, 100), 'z.png', 'image/png').catch((e: unknown) => e);
+    expect((err as AppError).status).toBe(415);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('ровно 20 Мпикс — уходит в Vision', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(vision([['ok']]), { status: 200 }));
+    const doc = await extractFile(pngOf(5000, 4000), 'ok.png', 'image/png');
+    expect(doc.text).toContain('ok');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

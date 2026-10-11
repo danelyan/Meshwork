@@ -56,7 +56,7 @@ export interface SubcategoryDef {
 }
 
 /**
- * 17 подкатегорий карты research/25. Статус — по банку теста (см. SubcategoryDef.status): active ⇔ банк подкатегории
+ * 18 подкатегорий (17 карты research/25 + ai.bi-analytics, 11.10). Статус — по банку теста (см. SubcategoryDef.status): active ⇔ банк подкатегории
  * полон (bankComplete, 6 Junior + 4 Middle + 4 Senior); направление без разметки семейств — переходный режим,
  * статус по объявлению. Сверяет tests/unit/lib/directions.test.ts.
  */
@@ -76,6 +76,7 @@ export const SUBCATEGORIES: readonly SubcategoryDef[] = [
   { id: 'ai.ml-engineering', specialization: 'ai', title: 'ML-инженерия', description: 'Обучение и оценка модели, валидация без утечек, воспроизводимый пайплайн', status: 'active', order: 3 },
   { id: 'ai.mlops', specialization: 'ai', title: 'MLOps', description: 'Модель в сервисе: версии, мониторинг дрейфа, переобучение, откат', status: 'active', order: 4 },
   { id: 'ai.data-science', specialization: 'ai', title: 'Data Science', description: 'Аналитика и статистика: A/B, прогноз, интерпретация', status: 'active', order: 5 },
+  { id: 'ai.bi-analytics', specialization: 'ai', title: 'BI-аналитика', description: 'Метрики, SQL-витрины, дашборды, интерпретация для бизнеса', status: 'active', order: 6 },
 
   { id: 'engineering.data-eng', specialization: 'engineering', title: 'Data Engineering', description: 'ETL/ELT, качество данных, витрины, оркестрация', status: 'active', order: 1 },
   { id: 'engineering.devops', specialization: 'engineering', title: 'DevOps', description: 'CI/CD, Docker/K8s, IaC, наблюдаемость', status: 'active', order: 2 },

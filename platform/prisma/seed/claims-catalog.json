@@ -3,7 +3,7 @@
   "counts": {
     "backend": 36,
     "frontend": 31,
-    "ai": 24,
+    "ai": 31,
     "engineering": 31,
     "common": 13
   },
@@ -3939,7 +3939,8 @@
       "limits": "статистические выводы и дизайн эксперимента",
       "stack": null,
       "adjacent": [
-        "ai.ab-testing"
+        "ai.ab-testing",
+        "ai.bi-sql-analytics"
       ]
     },
     {
@@ -3977,7 +3978,8 @@
       "limits": "причинный вывод без рандомизации",
       "stack": null,
       "adjacent": [
-        "ai.pandas-sql"
+        "ai.pandas-sql",
+        "ai.bi-experiment-reporting"
       ]
     },
     {
@@ -4051,6 +4053,233 @@
         "ai.llm-api",
         "ai.pii-masking",
         "ai.llm-system-design"
+      ]
+    },
+    {
+      "id": "ai.bi-sql-analytics",
+      "specialization": "ai",
+      "statement": "Писал аналитические SQL-запросы для отчётов: агрегаты и HAVING, соединения, оконные функции, витрины под дашборды",
+      "grades": [
+        "junior",
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 3,
+        "senior": 2
+      },
+      "proof": [
+        "task:bi-sql-having",
+        "task:bi-sql-left-join",
+        "task:bi-window-frame",
+        "task:bi-join-fanout",
+        "interview:defend"
+      ],
+      "markers": [
+        "оконные функции",
+        "window functions",
+        "SQL-витрина",
+        "аналитические запросы",
+        "ClickHouse",
+        "BigQuery",
+        "SQL для аналитики"
+      ],
+      "limits": "качество модели данных и производительность запросов на больших объёмах",
+      "stack": null,
+      "adjacent": [
+        "ai.pandas-sql",
+        "ai.bi-data-modeling",
+        "ai.bi-metrics-design"
+      ]
+    },
+    {
+      "id": "ai.bi-metrics-design",
+      "specialization": "ai",
+      "statement": "Определял бизнес-метрики и считал их правильно: конверсия, retention, ARPU, LTV, CAC, атрибуция; выбирал метрику под вопрос",
+      "grades": [
+        "junior",
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3,
+        "senior": 3
+      },
+      "proof": [
+        "task:bi-arppu",
+        "task:bi-funnel-chain",
+        "task:bi-rolling-retention",
+        "task:bi-ltv-cac",
+        "task:bi-seasonal-adjust",
+        "task:bi-pvm-decomposition",
+        "task:bi-attribution",
+        "task:bi-ratio-of-sums",
+        "interview:defend"
+      ],
+      "markers": [
+        "метрики продукта",
+        "ARPU",
+        "LTV",
+        "retention",
+        "когортный анализ",
+        "unit-экономика",
+        "продуктовые метрики",
+        "воронка"
+      ],
+      "limits": "что метрики приняты бизнесом и меняли решения",
+      "stack": null,
+      "adjacent": [
+        "ai.bi-sql-analytics",
+        "ai.bi-dashboards",
+        "ai.bi-experiment-reporting",
+        "ai.bi-metric-governance"
+      ]
+    },
+    {
+      "id": "ai.bi-dashboards",
+      "specialization": "ai",
+      "statement": "Собирал дашборды и отчёты для бизнеса: план-факт, динамика, корректные агрегаты, читаемая подача для руководителя",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 3,
+        "middle": 2,
+        "senior": 2
+      },
+      "proof": [
+        "task:bi-mean-median-outlier",
+        "task:bi-ratio-of-sums",
+        "task:bi-plan-fact",
+        "task:bi-seasonal-adjust",
+        "interview:defend"
+      ],
+      "markers": [
+        "дашборд",
+        "Power BI",
+        "Tableau",
+        "Superset",
+        "DataLens",
+        "Metabase",
+        "Looker",
+        "Grafana",
+        "BI-отчёт"
+      ],
+      "limits": "что дашбордом реально пользовались и он менял решения",
+      "stack": null,
+      "adjacent": [
+        "ai.bi-metrics-design",
+        "ai.bi-data-quality"
+      ]
+    },
+    {
+      "id": "ai.bi-data-modeling",
+      "specialization": "ai",
+      "statement": "Проектировал модель данных для аналитики: факты и измерения, медленно меняющиеся измерения, гранулярность, защита от размножения строк при соединениях",
+      "grades": [
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": 2,
+        "senior": 3
+      },
+      "proof": [
+        "task:bi-join-fanout",
+        "task:bi-scd-asof",
+        "interview:defend"
+      ],
+      "markers": [
+        "звёздная схема",
+        "star schema",
+        "измерения и факты",
+        "SCD",
+        "гранулярность",
+        "dbt",
+        "витрины данных",
+        "data mart"
+      ],
+      "limits": "эксплуатацию хранилища и стоимость моделей на больших объёмах",
+      "stack": null,
+      "adjacent": [
+        "ai.bi-sql-analytics",
+        "ai.bi-data-quality"
+      ]
+    },
+    {
+      "id": "ai.bi-experiment-reporting",
+      "specialization": "ai",
+      "statement": "Оформлял результаты A/B-тестов для бизнеса: метрика успеха, значимость, доверительный интервал, честная интерпретация",
+      "grades": [
+        "middle",
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": 2,
+        "senior": 3
+      },
+      "proof": [
+        "task:bi-ab-ztest",
+        "interview:defend"
+      ],
+      "markers": [
+        "отчёт по A/B",
+        "результаты эксперимента",
+        "z-тест",
+        "p-value",
+        "доверительный интервал",
+        "статистическая значимость"
+      ],
+      "limits": "дизайн эксперимента и расчёт мощности",
+      "stack": null,
+      "adjacent": [
+        "ai.bi-metrics-design",
+        "ai.ab-testing"
+      ]
+    },
+    {
+      "id": "ai.bi-data-quality",
+      "specialization": "ai",
+      "statement": "Проверял качество данных в отчётах: дубли, пропуски, расхождения источника и витрины, нули в знаменателе",
+      "grades": [
+        "junior",
+        "middle"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": 2,
+        "middle": 3,
+        "senior": 3
+      },
+      "proof": [
+        "task:bi-dedupe-sum",
+        "task:bi-reconcile",
+        "interview:defend"
+      ],
+      "markers": [
+        "качество данных",
+        "data quality",
+        "сверка данных",
+        "дубли в данных",
+        "валидация данных",
+        "Great Expectations"
+      ],
+      "limits": "автоматизацию контроля качества и мониторинг в продакшене",
+      "stack": null,
+      "adjacent": [
+        "ai.bi-dashboards",
+        "ai.bi-data-modeling",
+        "ai.bi-metric-governance"
       ]
     },
     {
@@ -4535,6 +4764,37 @@
       "stack": null,
       "adjacent": [
         "common.code-review"
+      ]
+    },
+    {
+      "id": "ai.bi-metric-governance",
+      "specialization": "ai",
+      "statement": "Выстраивал единые определения метрик и слой метрик в компании: кто владеет определением, как согласуются расхождения между отчётами",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "единые определения метрик",
+        "semantic layer",
+        "слой метрик",
+        "метрики компании",
+        "data governance",
+        "каталог метрик"
+      ],
+      "limits": "что определения прижились в командах, без примеров разрешённых расхождений",
+      "stack": null,
+      "adjacent": [
+        "ai.bi-metrics-design",
+        "ai.bi-data-quality"
       ]
     }
   ]

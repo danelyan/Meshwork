@@ -4,14 +4,14 @@ import { passesFilters, type CandidateEvidence } from '@/server/employer/ranking
 import { parseFilters, VacancyInput } from '@/server/employer/schemas';
 
 describe('справочник направлений (ADR 0003, дополнение 10.10)', () => {
-  it('четыре направления, 17 подкатегорий карты, id вида направление.подкатегория, порядок без повторов', () => {
+  it('четыре направления, 18 подкатегорий, id вида направление.подкатегория, порядок без повторов', () => {
     expect(SPECIALIZATIONS).toEqual(['backend', 'frontend', 'ai', 'engineering']);
     for (const s of SPECIALIZATIONS) expect(SPEC_LABEL[s].length).toBeGreaterThan(1);
-    expect(SUBCATEGORIES).toHaveLength(17);
-    expect(new Set(SUBCATEGORIES.map((s) => s.id)).size).toBe(17);
+    expect(SUBCATEGORIES).toHaveLength(18);
+    expect(new Set(SUBCATEGORIES.map((s) => s.id)).size).toBe(18);
     for (const s of SUBCATEGORIES) expect(s.id.startsWith(`${s.specialization}.`)).toBe(true);
     expect(subcategoriesFor('backend').map((s) => s.id)).toEqual(['backend.web-api', 'backend.integrations', 'backend.highload', 'backend.data-model']);
-    expect(subcategoriesFor('ai')).toHaveLength(5);
+    expect(subcategoriesFor('ai')).toHaveLength(6);
     expect(subcategoriesFor('engineering')).toHaveLength(4);
   });
 

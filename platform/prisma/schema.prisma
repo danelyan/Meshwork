@@ -1000,12 +1000,16 @@ model CallSession {
   policyVersion       String
   /// Сколько раз запускался оценщик (finish): каждый запуск — 3–6 вызовов LLM, повторы после 503 ограничены
   finishAttempts      Int                @default(0)
+  /// kind=defense: ИИ-защита проекта до приглашения (ADR 0008 п. 1) — кандидат запускает сам, работодателей в комнате нет;
+  /// работодатель до accepted видит только вердикт под псевдонимом. false — живая защита (по приглашению / после accepted).
+  aiDefense           Boolean            @default(false)
 
   participants CallParticipant[]
   questions    EmployerQuestion[]
 
   @@index([candidateId, kind, status])
   @@index([projectSubmissionId])
+  @@index([projectSubmissionId, aiDefense, startedAt])
 }
 
 /// Участник созвона кроме кандидата (работодатель в комнате защиты, lane defense-room).

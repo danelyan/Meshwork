@@ -3,14 +3,14 @@ import { catalogFor, catalogFromFile, getCatalogMeta, CATALOG_VERSION } from '@/
 describe('каталог из prisma/seed/claims-catalog.json', () => {
   const cat = catalogFromFile();
 
-  it('135 записей: backend 36, frontend 31, ai 24, engineering 31, common 13; ID уникальны', () => {
-    expect(cat).toHaveLength(135);
-    expect(cat.filter((c) => c.specialization === 'ai')).toHaveLength(24);
+  it('142 записи: backend 36, frontend 31, ai 31, engineering 31, common 13; ID уникальны', () => {
+    expect(cat).toHaveLength(142);
+    expect(cat.filter((c) => c.specialization === 'ai')).toHaveLength(31);
     expect(cat.filter((c) => c.specialization === 'backend')).toHaveLength(36);
     expect(cat.filter((c) => c.specialization === 'frontend')).toHaveLength(31);
     expect(cat.filter((c) => c.specialization === 'common')).toHaveLength(13);
     expect(cat.filter((c) => c.specialization === 'engineering')).toHaveLength(31);
-    expect(new Set(cat.map((c) => c.id)).size).toBe(135);
+    expect(new Set(cat.map((c) => c.id)).size).toBe(142);
     expect(CATALOG_VERSION).toMatch(/^claims-catalog-/);
   });
 
@@ -52,9 +52,9 @@ describe('каталог из prisma/seed/claims-catalog.json', () => {
     const be = catalogFor(cat, 'backend');
     expect(be).toHaveLength(49);
     expect(be.some((c) => c.specialization === 'frontend')).toBe(false);
-    expect(catalogFor(cat, null)).toHaveLength(135);
+    expect(catalogFor(cat, null)).toHaveLength(142);
     expect(catalogFor(cat, 'engineering')).toHaveLength(44);
-    expect(catalogFor(cat, 'ai')).toHaveLength(37);
+    expect(catalogFor(cat, 'ai')).toHaveLength(44);
   });
 
   it('колонка S: у каждой таблицы весов есть senior; Senior-only записи без J/M; базовое у Senior легче, архитектура тяжелее', () => {

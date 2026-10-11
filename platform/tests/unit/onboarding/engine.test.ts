@@ -99,7 +99,7 @@ describe('сценарий онбординга', () => {
     expect(sub.required).toBe(true);
     expect(step('needSubcategory').required).toBe(true);
     const values = (typeof sub.options === 'function' ? sub.options(c) : []).map((o) => o.value);
-    expect(values).toEqual(['ai.llm-apps', 'ai.ai-integration', 'ai.ml-engineering', 'ai.mlops', 'ai.data-science']);
+    expect(values).toEqual(['ai.llm-apps', 'ai.ai-integration', 'ai.ml-engineering', 'ai.mlops', 'ai.data-science', 'ai.bi-analytics']);
     expect(() => validateAnswer(sub, 'backend.web-api', c)).toThrow(AnswerError);
     expect(validateAnswer(sub, 'ai.mlops', c)).toBe('ai.mlops');
     const emp = ctx({ needSpecialization: 'engineering' }, { role: 'employer' });

@@ -549,6 +549,37 @@
       "adjacent": [
         "common.code-review"
       ]
+    },
+    {
+      "id": "ai.bi-metric-governance",
+      "specialization": "ai",
+      "statement": "Выстраивал единые определения метрик и слой метрик в компании: кто владеет определением, как согласуются расхождения между отчётами",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "единые определения метрик",
+        "semantic layer",
+        "слой метрик",
+        "метрики компании",
+        "data governance",
+        "каталог метрик"
+      ],
+      "limits": "что определения прижились в командах, без примеров разрешённых расхождений",
+      "stack": null,
+      "adjacent": [
+        "ai.bi-metrics-design",
+        "ai.bi-data-quality"
+      ]
     }
   ],
   "commonWeightsEngineering": {

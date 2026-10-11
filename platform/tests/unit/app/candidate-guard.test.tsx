@@ -30,6 +30,7 @@ vi.mock('@/server/employer', () => ({
   getPrivacy: vi.fn(async () => ({ hiddenFromEmployers: false })),
   getCandidateContact: vi.fn(async () => ({ contact: null })),
 }));
+vi.mock('@/server/employer/applications', () => ({ listCandidateApplications: vi.fn(async () => []) }));
 vi.mock('@/components/Chat', () => ({ Chat: () => null }));
 vi.mock('@/components/ProfilePage', () => ({ ProfilePage: () => null }));
 vi.mock('@/components/TestPage', () => ({ TestPage: () => null }));

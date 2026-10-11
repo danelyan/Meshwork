@@ -91,8 +91,6 @@ export interface CompanyBody {
   industry: string | null;
   inn: string | null;
   contact: string | null;
-  /** Способ связи в приглашениях от этого представителя: контакт компании, иначе его почта; null — приглашения не отправятся (E05). */
-  inviteContact?: string | null;
 }
 /** Отказ валидации с текстами по полям (`validation_failed`, details = [{ path, message }]). */
 export class CompanyFieldsError extends ApiError {

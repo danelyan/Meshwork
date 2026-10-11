@@ -24,12 +24,7 @@ export interface TextCheckInput {
 }
 
 /** Пороги вилки, ₽ в месяц (предложение): ниже нижнего — вряд ли штатная ИТ-работа, выше верхнего — нереальное обещание. */
-export const SALARY_LIMITS: SalaryLimits = { minFrom: 25_000, maxTo: 1_000_000, maxRatio: 3 };
-export interface SalaryLimits {
-  minFrom: number;
-  maxTo: number;
-  maxRatio: number;
-}
+export const SALARY_LIMITS = { minFrom: 25_000, maxTo: 1_000_000, maxRatio: 3 } as const;
 /** Меньше слов — описание размытое. */
 export const MIN_WORDS = 8;
 
@@ -69,7 +64,7 @@ function sentences(text: string): string[] {
 }
 
 /** Красные флаги текста и вилки. Пустой массив — ничего подозрительного (это не гарантия добросовестности). */
-export function detectRedFlags(input: TextCheckInput, salaryLimits: SalaryLimits = SALARY_LIMITS): RedFlag[] {
+export function detectRedFlags(input: TextCheckInput): RedFlag[] {
   const text = input.texts
     .map((t) => (t ?? '').trim())
     .filter(Boolean)
@@ -85,11 +80,11 @@ export function detectRedFlags(input: TextCheckInput, salaryLimits: SalaryLimits
       reason: 'Не указана вилка зарплаты. Кандидаты не доверяют предложению без суммы.',
       candidateNote: 'Проверьте: в предложении нет вилки зарплаты.',
     });
-  } else if ((from > 0 && from < salaryLimits.minFrom) || to > salaryLimits.maxTo || (from > 0 && to > from * salaryLimits.maxRatio)) {
+  } else if ((from > 0 && from < SALARY_LIMITS.minFrom) || to > SALARY_LIMITS.maxTo || (from > 0 && to > from * SALARY_LIMITS.maxRatio)) {
     flags.push({
       code: 'salary_unrealistic',
       severity: 'medium',
-      reason: `Вилка выглядит нереальной (ориентиры: от ${salaryLimits.minFrom} до ${salaryLimits.maxTo} ₽, «до» не больше чем в ${salaryLimits.maxRatio} раза выше «от»). Уточните суммы.`,
+      reason: `Вилка выглядит нереальной (ориентиры: от ${SALARY_LIMITS.minFrom} до ${SALARY_LIMITS.maxTo} ₽, «до» не больше чем в ${SALARY_LIMITS.maxRatio} раза выше «от»). Уточните суммы.`,
       candidateNote: 'Проверьте: вилка зарплаты выглядит нереалистично.',
     });
   }
@@ -191,27 +186,14 @@ export interface CompanyTrust {
 /** Окно подсчёта жалоб, дней. */
 export const COMPLAINT_WINDOW_DAYS = 30;
 /** Пороги санкций. ПРЕДЛОЖЕНИЕ агента, не калибровано. */
-export const COMPLAINT_SANCTIONS: ComplaintSanctions = { reducedAt: 3, reducedLimit: 5, blockedAt: 5 };
-export interface ComplaintSanctions {
-  reducedAt: number;
-  reducedLimit: number;
-  blockedAt: number;
-}
+export const COMPLAINT_SANCTIONS = { reducedAt: 3, reducedLimit: 5, blockedAt: 5 } as const;
 /** Штраф индексу доверия за жалобу. ПРЕДЛОЖЕНИЕ агента, не калибровано. */
-export const COMPLAINT_TRUST_PENALTY: ComplaintTrustPenalty = { perComplaint: 10, max: 40 };
-export interface ComplaintTrustPenalty {
-  perComplaint: number;
-  max: number;
-}
+export const COMPLAINT_TRUST_PENALTY = { perComplaint: 10, max: 40 } as const;
 
 /** Окно подсчёта неявок работодателя, дней. */
 export const NO_SHOW_WINDOW_DAYS = 30;
 /** Штраф индексу доверия за неявку работодателя на назначенную защиту. ПРЕДЛОЖЕНИЕ агента, не калибровано. */
-export const NO_SHOW_TRUST_PENALTY: NoShowTrustPenalty = { perNoShow: 15, max: 30 };
-export interface NoShowTrustPenalty {
-  perNoShow: number;
-  max: number;
-}
+export const NO_SHOW_TRUST_PENALTY = { perNoShow: 15, max: 30 } as const;
 
 export interface InvitationSanction {
   /** none — обычный лимит; reduced — сниженный суточный лимит; blocked — отправка закрыта. */
@@ -222,37 +204,20 @@ export interface InvitationSanction {
 }
 
 /** Санкция по числу жалоб за окно: ≥ reducedAt — лимит не больше reducedLimit, ≥ blockedAt — блок отправки. */
-export function invitationSanction(complaints: number, baseLimit: number, sanctions: ComplaintSanctions = COMPLAINT_SANCTIONS): InvitationSanction {
-  if (complaints >= sanctions.blockedAt) return { level: 'blocked', complaints, limit: 0 };
-  if (complaints >= sanctions.reducedAt) return { level: 'reduced', complaints, limit: Math.min(baseLimit, sanctions.reducedLimit) };
+export function invitationSanction(complaints: number, baseLimit: number): InvitationSanction {
+  if (complaints >= COMPLAINT_SANCTIONS.blockedAt) return { level: 'blocked', complaints, limit: 0 };
+  if (complaints >= COMPLAINT_SANCTIONS.reducedAt) return { level: 'reduced', complaints, limit: Math.min(baseLimit, COMPLAINT_SANCTIONS.reducedLimit) };
   return { level: 'none', complaints, limit: baseLimit };
 }
 
 /** Начало окна подсчёта жалоб. */
-export function complaintWindowStart(now = new Date(), windowDays = COMPLAINT_WINDOW_DAYS): Date {
-  return new Date(now.getTime() - windowDays * DAY_MS);
+export function complaintWindowStart(now = new Date()): Date {
+  return new Date(now.getTime() - COMPLAINT_WINDOW_DAYS * DAY_MS);
 }
 
 /** Мало приглашений — долю отклонений не считаем: на малой выборке она случайна. */
 export const TRUST_MIN_INVITATIONS = 5;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-export interface TrustWeights {
-  profile: number;
-  inn: number;
-  age: number;
-  declines: number;
-}
-/** Максимум баллов по сигналам индекса доверия (сумма 100). Настройка employer.trustWeights перекрывает. */
-export const TRUST_WEIGHTS: TrustWeights = { profile: 35, inn: 25, age: 15, declines: 25 };
-
-/** Параметры индекса доверия из настроек платформы; не заданное — умолчания из кода. */
-export interface TrustConfig {
-  weights?: TrustWeights;
-  complaintPenalty?: ComplaintTrustPenalty;
-  noShowPenalty?: NoShowTrustPenalty;
-  complaintWindowDays?: number;
-}
 
 /**
  * Индекс доверия из уже имеющихся данных: заполненность профиля (35), ИНН с верной контрольной цифрой (25),
@@ -260,31 +225,27 @@ export interface TrustConfig {
  * минус штраф за жалобы кандидатов за 30 дней (COMPLAINT_TRUST_PENALTY) и за неявки на назначенные защиты
  * за 30 дней (NO_SHOW_TRUST_PENALTY: 15 за неявку, не больше 30), не ниже 0.
  */
-export function companyTrust(c: CompanyTrustInput, cfg: TrustConfig = {}): CompanyTrust {
-  const w = cfg.weights ?? TRUST_WEIGHTS;
-  const complaintPenalty = cfg.complaintPenalty ?? COMPLAINT_TRUST_PENALTY;
-  const noShowPenalty = cfg.noShowPenalty ?? NO_SHOW_TRUST_PENALTY;
-  const windowDays = cfg.complaintWindowDays ?? COMPLAINT_WINDOW_DAYS;
+export function companyTrust(c: CompanyTrustInput): CompanyTrust {
   const filled = [c.name.trim().length >= 2, !!c.description?.trim(), !!c.industry?.trim(), !!c.contact?.trim()].filter(Boolean).length;
   const ageDays = Math.max(0, ((c.now ?? new Date()).getTime() - c.createdAt.getTime()) / DAY_MS);
   const declineShare = c.invitationsSent >= TRUST_MIN_INVITATIONS ? c.invitationsDeclined / c.invitationsSent : null;
   const signals: TrustSignal[] = [
-    { code: 'profile', label: 'Профиль компании заполнен', earned: Math.round((filled / 4) * w.profile), points: w.profile },
-    { code: 'inn', label: 'ИНН указан и проходит проверку контрольной цифры (демо, реестр не сверяется)', earned: c.innValid ? w.inn : 0, points: w.inn },
-    { code: 'age', label: 'Возраст аккаунта', earned: Math.round(Math.min(1, ageDays / 30) * w.age), points: w.age },
+    { code: 'profile', label: 'Профиль компании заполнен', earned: Math.round((filled / 4) * 35), points: 35 },
+    { code: 'inn', label: 'ИНН указан и проходит проверку контрольной цифры (демо, реестр не сверяется)', earned: c.innValid ? 25 : 0, points: 25 },
+    { code: 'age', label: 'Возраст аккаунта', earned: Math.round(Math.min(1, ageDays / 30) * 15), points: 15 },
     {
       code: 'declines',
       label: 'Доля отклонённых приглашений',
-      earned: declineShare === null ? Math.floor(w.declines / 2) : Math.round((1 - Math.min(1, declineShare)) * w.declines),
-      points: w.declines,
+      earned: declineShare === null ? 12 : Math.round((1 - Math.min(1, declineShare)) * 25),
+      points: 25,
     },
   ];
   const complaints = Math.max(0, c.complaints ?? 0);
   if (complaints > 0) {
     signals.push({
       code: 'complaints',
-      label: `Жалобы кандидатов за ${windowDays} дней: ${complaints}`,
-      earned: -Math.min(complaintPenalty.max, complaints * complaintPenalty.perComplaint),
+      label: `Жалобы кандидатов за ${COMPLAINT_WINDOW_DAYS} дней: ${complaints}`,
+      earned: -Math.min(COMPLAINT_TRUST_PENALTY.max, complaints * COMPLAINT_TRUST_PENALTY.perComplaint),
       points: 0,
     });
   }
@@ -293,7 +254,7 @@ export function companyTrust(c: CompanyTrustInput, cfg: TrustConfig = {}): Compa
     signals.push({
       code: 'no_shows',
       label: `Неявки на назначенные защиты за ${NO_SHOW_WINDOW_DAYS} дней: ${noShows}`,
-      earned: -Math.min(noShowPenalty.max, noShows * noShowPenalty.perNoShow),
+      earned: -Math.min(NO_SHOW_TRUST_PENALTY.max, noShows * NO_SHOW_TRUST_PENALTY.perNoShow),
       points: 0,
     });
   }

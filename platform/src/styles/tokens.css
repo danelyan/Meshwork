@@ -132,6 +132,8 @@
   --fs-xl: 20px;  /* заголовок карточки, крупный лид */
   --fs-2xl: 24px; /* заголовок панели, вопрос, цифра статистики */
   --fs-3xl: 28px; /* крупная цифра, заголовок экрана */
+  --fs-landing-section: clamp(32px, 3.4vw, 52px);
+  --fs-landing-role: clamp(24px, 2.2vw, 32px);
 
   font-family: var(--font);
   color: var(--ink);

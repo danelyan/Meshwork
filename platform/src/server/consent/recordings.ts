@@ -7,7 +7,6 @@ import { resolve } from 'node:path';
 
 import { ownedDirectory } from '../auth/erase-account';
 import { prisma } from '../db';
-import { getSetting } from '../admin/settings';
 import { getEnv } from '../env';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -52,8 +51,7 @@ export function retentionCutoff(now: Date, days: number): Date {
 }
 
 /** Очистка по сроку хранения. Активные созвоны не трогает. Возвращает число очищенных созвонов. */
-export async function purgeExpiredRecordings(now = new Date(), days?: number): Promise<number> {
-  days ??= await getSetting('call.recordingRetentionDays');
+export async function purgeExpiredRecordings(now = new Date(), days = getEnv().CALL_RECORDING_RETENTION_DAYS): Promise<number> {
   const calls = await prisma.callSession.findMany({
     where: { OR: [{ audioPath: { not: null } }, { employerAudioPath: { not: null } }], status: { not: 'active' }, startedAt: { lt: retentionCutoff(now, days) } },
     select: { id: true },

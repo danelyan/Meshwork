@@ -157,7 +157,7 @@ export function ProfilePage() {
     setDetails(d?.employerPreview ? d : null);
   }
 
-  // ?print=1 — запасная печать страницы браузером, когда профиль загружен (основной PDF — файл /api/profile/pdf).
+  // ?print=1 (ссылка render_profile_pdf консультанта) — открыть печать, когда профиль загружен.
   useEffect(() => {
     if (!profile) return;
     if (new URLSearchParams(window.location.search).get('print') === '1') window.print();
@@ -194,7 +194,7 @@ export function ProfilePage() {
     <div className={styles.page}>
       <header className={styles.heading}>
         <div><Kicker>Ваш опыт и доказательства</Kicker><h1>Профиль<i>.</i></h1><p>У каждого факта есть источник: достижение, проверка платформой или ваши слова. Компании видят, откуда что взялось.</p></div>
-        <div className={`${styles.actions} ${styles.noPrint}`}><Button href="/consultant">↑ Обновить резюме</Button><a className={ui.btn} href="/api/profile/pdf" download="fsp-career-profile.pdf">↓ PDF-профиль</a></div>
+        <div className={`${styles.actions} ${styles.noPrint}`}><Button href="/consultant">↑ Обновить резюме</Button><Button onClick={() => window.print()}>↓ PDF-профиль</Button></div>
       </header>
       <aside className={styles.side} aria-label="Так вас видит компания">
         <ProfilePublicPreview details={details} />

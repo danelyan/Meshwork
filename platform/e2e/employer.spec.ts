@@ -1,15 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { expect, test, type Page } from '@playwright/test';
 
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-
-/** .env платформы для БД сида — как scripts/load-env.mjs, но без import.meta: Playwright грузит spec как CommonJS. */
-function loadPlatformEnv(): void {
-  if (process.env.DATABASE_URL) return;
-  const file = join(process.cwd(), '.env');
-  if (existsSync(file)) process.loadEnvFile(file);
-}
+import { loadPlatformEnv } from '../scripts/load-env.mjs';
 
 // R-E-03..R-E-07: вход работодателя через /demo → подборка по потребности → приглашение →
 // кандидат из пула принимает → работодатель видит контакты. Нужен сид (db:seed: auth, employer, recommend, claims).

@@ -255,8 +255,8 @@ function IntroScreen({
         <h1 className={styles.h1}>Тест на грейд<i>.</i></h1>
         <p className={`${ui.muted} ${styles.lead}`}>
           7–10 коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
-          (направление × грейд) даёт только этот тест; выбор грейда - за вами. Созвон с ИИ, проект и защита - дополнительные проверки опыта: они
-          подтверждают утверждения профиля и видны работодателю, но для категории не обязательны.
+          даёт только этот тест; выбор грейда - за вами. Результат - предварительная калибровка: грейд подтверждается на созвоне с ИИ-интервьюером, в проекте и
+          на защите.
         </p>
       </div>
 
@@ -571,30 +571,6 @@ function ResultScreen({
                 Пройти подтверждающий тест
               </Button>
             )}
-          </div>
-        )}
-        {r.integrity?.rankingHold && !needsConfirmation && (
-          <div className={styles.offer} data-testid="ranking-hold">
-            <p>
-              <b>Категория записана, но в подборках и поиске компаний пока не учитывается.</b> В этой попытке есть признаки, которые мы просим
-              подтвердить отдельно. Это не обвинение и не снятие грейда: категория в профиле остаётся. Подтвердить её можно двумя способами:
-              короткий подтверждающий тест из 6–8 новых заданий или созвон с ИИ с разбором заданий этой попытки. Не согласны с оценкой -
-              оспорьте её выше, ответит человек.
-            </p>
-            <div className={styles.actions}>
-              {r.integrity.confirmAttemptId ? (
-                <Button variant="cta" href={`/test?attempt=${encodeURIComponent(r.integrity.confirmAttemptId)}`} data-testid="confirm-open">
-                  Открыть подтверждающий тест
-                </Button>
-              ) : (
-                <Button variant="cta" onClick={() => void startConfirm()} loading={pending} data-testid="confirm-start">
-                  Пройти подтверждающий тест
-                </Button>
-              )}
-              <Button href="/interview" data-testid="ranking-hold-call">
-                Созвон с ИИ
-              </Button>
-            </div>
           </div>
         )}
         {r.juniorOffered && !needsConfirmation && (

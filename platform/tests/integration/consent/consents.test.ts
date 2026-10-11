@@ -43,8 +43,7 @@ const DATA = path.join(tmpdir(), `fsp-consent-${process.pid}`);
 async function seedPair() {
   await prisma.candidate.create({ data: { id: CAND, name: 'Анна Кандидатова', email: 'anna@example.test', specialization: 'backend', contact: '@anna' } });
   await prisma.user.create({ data: { id: 'u-cand', name: 'Анна', role: 'candidate', candidateId: CAND } });
-  // E05: приглашение уходит только при способе связи компании — фикстура задаёт контакт
-  await prisma.company.create({ data: { id: 'co-c', name: 'Компания', isDemo: false, contact: 'hr-c@example.test' } });
+  await prisma.company.create({ data: { id: 'co-c', name: 'Компания', isDemo: false } });
   await prisma.user.create({ data: { id: 'u-emp', name: 'HR', role: 'employer' } });
   await prisma.employerProfile.create({ data: { id: 'p-emp', userId: 'u-emp', companyId: 'co-c' } });
 }

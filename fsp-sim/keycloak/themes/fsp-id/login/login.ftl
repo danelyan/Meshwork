@@ -16,8 +16,7 @@
         ${msg("loginAccountTitle")}
     <#elseif section = "form">
         <div id="fsp-sim" class="fsp-sim">
-          <p class="fsp-sim__lead"><span class="fsp-sim__badge">${msg("fspSimLead")}</span></p>
-          <p class="fsp-sim__text">${msg("fspSimText")}</p>
+          <p class="fsp-sim__text"><span class="fsp-sim__badge">${msg("fspSimLead")}</span> ${msg("fspSimText")}</p>
           <div id="fsp-sim-quick" class="fsp-sim__quick" hidden>
             <p class="fsp-sim__title">${msg("fspSimQuick")}</p>
             <div id="fsp-sim-list" class="fsp-sim__list"></div>

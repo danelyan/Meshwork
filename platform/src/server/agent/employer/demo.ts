@@ -155,7 +155,6 @@ export function describeExplain(o: ExplainOut): string {
 }
 
 export function describeDraft(d: InvitationDraft): string {
-  if (d.blocked === 'no_company_contact') return `Сначала укажи способ связи компании (почту или Telegram) на странице «Компания»: кандидат видит его в приглашении ещё до ответа, без него отправка закрыта.`;
   if (d.blocked === 'open_invitation') return `${d.alias} ещё не ответил на прошлое приглашение компании - новое можно будет отправить после его ответа.`;
   if (d.blocked === 'daily_limit') return `Лимит исчерпан: ${d.limit.sent} из ${d.limit.limit} приглашений за сутки. Черновик сохранится в ленте - отправишь, когда освободится место.`;
   return `Черновик приглашения для ${d.alias} ниже: проверь текст и зарплату и нажми «Отправить приглашение» - отправляешь ты, не я. Осталось ${d.limit.left} из ${d.limit.limit} на сутки.`;

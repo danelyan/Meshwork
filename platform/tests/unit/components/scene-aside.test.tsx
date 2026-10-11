@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { SceneAside } from '@/components/consultant/SceneAside';
-import { type SceneAsideData, candidateSteps, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
+import { type SceneAsideData, candidateSteps, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
 import type { OnboardingView } from '@/server/onboarding/types';
 
 // MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
@@ -19,12 +19,12 @@ describe('journey steps', () => {
     expect(s.map((x) => x.id)).toEqual(['intro', 'test', 'call', 'project', 'ai_defense', 'invites', 'live_defense']);
     expect(s.map((x) => x.state)).toEqual(['done', 'now', 'next', 'next', 'next', 'next', 'next']);
   });
-  it('порядок: тест → созвон → проект → ИИ-защита; ИИ-защита без готовой функции остаётся «скоро»', () => {
+  it('порядок: тест → созвон → проект → ИИ-защита; ИИ-защита ждёт проверки проекта', () => {
     const cat = { specialization: 'backend', grade: 'middle' };
     const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: cat, call: true, project: true });
     expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'done', 'now', 'next', 'next']);
     expect(s[1]!.note).toBe('Backend · Middle');
-    expect(s[4]!.note).toBe('скоро');
+    expect(s[4]!.note).toBe('после проверки проекта');
     expect(hintFor('candidate', s, undefined).title).toBe('ИИ-защита проекта');
   });
   it('нет утверждений — шаг созвона просит приложить резюме или ссылки', () => {
@@ -128,6 +128,20 @@ describe('блок под текущий шаг', () => {
     render(<SceneAside data={{ ...base, stepBlock: { step: 'test' }, market: { total: 0, rows: [] } }} />);
     expect(screen.queryByTestId('aside-market')).toBeNull();
     expect(screen.getByTestId('aside-step-test')).toBeTruthy();
+  });
+  it('тест при выбранном направлении: спрос одной строкой в карточке шага, таблицы по всем направлениям нет', () => {
+    const vacancies = [{ specialization: 'backend', grade: 'junior' }, { specialization: 'backend', grade: 'middle' }, { specialization: 'backend', grade: 'middle' }, { specialization: 'frontend', grade: 'senior' }];
+    const demand = demandFor(vacancies, 'backend');
+    expect(demand).toEqual({ direction: 'Backend', total: 3, detail: 'Junior 1 · Middle 2' });
+    expect(demandFor(vacancies, 'ai')).toBeUndefined();
+    expect(demandFor(vacancies, null)).toBeUndefined();
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'test', demand }, market }} />);
+    expect(screen.queryByTestId('aside-market')).toBeNull();
+    expect(screen.getByTestId('step-test-extra').textContent).toBe('Сейчас в направлении Backend: 3 вакансии · Junior 1 · Middle 2');
+  });
+  it('с блоком шага подсказка под путём не дублируется', () => {
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'call' } }} />);
+    expect(screen.queryByTestId('aside-hint')).toBeNull();
   });
 
   it('счётчик приглашений в блоке', () => {

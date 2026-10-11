@@ -90,6 +90,11 @@ export interface StepBlock {
   project?: { taskId: string; title: string; status: 'submitted' | 'running' | 'checked' | 'failed' } | null;
   /** hired: компания, отметившая найм. */
   hired?: { company: string } | null;
+  /**
+   * test: спрос в направлении кандидата (из знакомства) - одна строка вместо таблицы по всем направлениям (владелец 11.10:
+   * «какой смысл … если у пользователя и так один определённый стек»). Направление не выбрано — таблица market помогает выбрать.
+   */
+  demand?: { direction: string; total: number; detail: string };
 }
 
 export interface SceneAsideData {
@@ -252,7 +257,7 @@ export function candidateSteps(f: CandidateFacts): JourneyStep[] {
       id: 'test',
       label: 'Тест на грейд',
       short: 'Тест',
-      note: f.category ? `${SPEC[f.category.specialization] ?? f.category.specialization} · ${GRADE[f.category.grade] ?? f.category.grade}` : 'категорию даёт только тест',
+      note: f.category ? `${SPEC[f.category.specialization] ?? f.category.specialization} · ${GRADE[f.category.grade] ?? f.category.grade}` : 'определит специализацию и грейд',
       href: '/test',
       done: f.category !== null,
     },
@@ -265,7 +270,7 @@ export function candidateSteps(f: CandidateFacts): JourneyStep[] {
       done: f.call === true,
     },
     { id: 'project', label: 'Проект из ленты', short: 'Проект', note: f.project ? 'проверен' : 'возьми проект и сдай репозиторий', href: '/projects', done: f.project === true },
-    { id: 'ai_defense', label: 'ИИ-защита проекта', short: 'ИИ-защита', note: f.aiDefense ? 'пройдена' : 'скоро', href: '/projects', done: f.aiDefense === true },
+    { id: 'ai_defense', label: 'ИИ-защита проекта', short: 'ИИ-защита', note: f.aiDefense ? 'пройдена' : 'после проверки проекта', href: '/projects', done: f.aiDefense === true },
     {
       id: 'invites',
       label: 'Приглашения',
@@ -304,8 +309,9 @@ export function employerSteps(f: EmployerFacts): JourneyStep[] {
 }
 
 // Кандидату знакомство — вопросы в чате, «паузы» нет (решение владельца 11.10); у работодателя пауза осталась.
-const introNote = (view: OnboardingView | undefined, done: boolean, paused = true) =>
-  done || !view ? 'пройдено' : `${view.progress.done} из ${view.progress.total}${paused && view.later ? ', на паузе' : ''}`;
+const introNote = (view: OnboardingView | undefined, done: boolean, paused = true, answers = 1) =>
+  // Пройдено без единого ответа (аккаунт без ленты, пропущенные вопросы): говорим это прямо, а не «пройдено» рядом с «Пока ничего».
+  done || !view ? (answers > 0 ? 'пройдено' : 'без ответов - расскажи о себе в чате') : `${view.progress.done} из ${view.progress.total}${paused && view.later ? ', на паузе' : ''}`;
 
 /** Подсказка по текущему шагу. Тексты — из существующих описаний экранов и шагов знакомства. */
 export function hintFor(role: 'candidate' | 'employer', steps: JourneyStep[], view: OnboardingView | undefined): { title: string; text: string } {
@@ -318,7 +324,7 @@ export function hintFor(role: 'candidate' | 'employer', steps: JourneyStep[], vi
     if (now?.id === 'test') return { title: 'Тест на грейд', text: 'Специализацию и грейд определяет только тест, а не резюме и не ответы в чате.' };
     if (now?.id === 'call') return { title: 'Созвон с ИИ', text: 'Короткий голосовой разговор по темам резюме: итог - карта глубины, работодатель видит её до приглашения. Нужны утверждения: приложи резюме или ссылки, подтверди карточки.' };
     if (now?.id === 'project') return { title: 'Проект из ленты', text: 'Возьми проект на странице «Проекты», сдай репозиторий и дождись проверки: результат увидит работодатель.' };
-    if (now?.id === 'ai_defense') return { title: 'ИИ-защита проекта', text: 'Скоро: ИИ задаст вопросы по коду и коммитам, работодатель до приглашения увидит только вердикт под псевдонимом.' };
+    if (now?.id === 'ai_defense') return { title: 'ИИ-защита проекта', text: 'ИИ задаст вопросы по коду и коммитам, работодатель до приглашения увидит только вердикт под псевдонимом.' };
     if (now?.id === 'live_defense') return { title: 'Живая защита', text: 'Приглашение принято: работодатель предложит слоты, ты выберешь время в разделе «Приглашения». Защита идёт с записью.' };
     const hired = steps.find((s) => s.id === 'hired');
     if (!now && hired) return { title: hired.label, text: 'Путь пройден: компания отметила найм. Профиль больше не показывается в поиске других работодателей.' };
@@ -356,9 +362,18 @@ async function loadLatestSubmissions(candidateId: string) {
   return { latest: latest ? view(latest) : null, checked: checked ? view(checked) : null };
 }
 
+/** Спрос в направлении кандидата: «4 вакансии · Junior 2 · Middle 2». Вакансий в направлении нет — undefined (строка не рисуется). */
+export function demandFor(vacancies: { specialization: string; grade: string }[], spec: string | null | undefined): StepBlock['demand'] {
+  if (!spec) return undefined;
+  const { total, rows } = marketRows(vacancies.filter((v) => v.specialization === spec), () => false);
+  if (total === 0) return undefined;
+  return { direction: SPEC[spec] ?? spec, total, detail: rows.map((r) => `${r.label.replace(/^.* · /, '')} ${r.count}`).join(' · ') };
+}
+
 /** Блок под текущий шаг: что нужно для отрисовки; проект — только там, где он нужен. */
-async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<typeof journeyState>>, invitations: number): Promise<StepBlock> {
+async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<typeof journeyState>>, invitations: number, demand?: StepBlock['demand']): Promise<StepBlock> {
   const step = journey.nextStep;
+  if (step === 'test') return demand ? { step, demand } : { step };
   if (step === 'project' || step === 'ai_defense') {
     const subs = await loadLatestSubmissions(candidateId);
     return { step, project: step === 'project' ? subs.latest : subs.checked ?? subs.latest };
@@ -370,28 +385,31 @@ async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<ty
 
 export async function loadCandidateAside(candidateId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {
   if (view && onboardingMode(view)) return onboardingAside('candidate', view, await knownWithMemory({ candidateId }, view));
-  const [profileClaims, category, invitations, hiredInv, known, journey] = await Promise.all([
+  const [profileClaims, category, invitations, hiredInv, known, journey, cand] = await Promise.all([
     prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } }),
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' }, select: { specialization: true, grade: true } }),
     prisma.invitation.count({ where: { candidateId } }),
     prisma.invitation.findFirst({ where: { candidateId, status: 'hired' }, orderBy: { hiredAt: 'desc' }, select: { company: { select: { name: true } }, vacancy: { select: { company: { select: { name: true } } } } } }),
     knownWithMemory({ candidateId }, view),
     journeyState(candidateId),
+    prisma.candidate.findUnique({ where: { id: candidateId }, select: { specialization: true } }),
   ]);
   const step = journey.nextStep;
-  // Блоки шага: файлы — на знакомстве, спрос компаний — на тесте; остальное — в stepBlock.
-  const [docs, vacancies, stepBlock] = await Promise.all([
+  // Блоки шага: файлы — на знакомстве, спрос компаний — на тесте (строка по направлению кандидата; таблица по всем — только
+  // пока направление не выбрано); остальное — в stepBlock.
+  const [docs, vacancies] = await Promise.all([
     step === 'onboarding' ? loadCandidateDocs(candidateId) : Promise.resolve(null),
     step === 'test' ? prisma.vacancy.findMany({ where: { archivedAt: null }, select: { specialization: true, grade: true } }) : Promise.resolve(null),
-    loadStepBlock(candidateId, journey, invitations),
   ]);
+  const demand = vacancies ? demandFor(vacancies, cand?.specialization) : undefined;
+  const stepBlock = await loadStepBlock(candidateId, journey, invitations, demand);
   const intro = introDone(view);
   const hired = hiredInv ? { company: hiredInv.company?.name ?? hiredInv.vacancy?.company.name ?? 'компанию' } : null;
   const steps = promoteNow(
-    candidateSteps({ intro, introNote: introNote(view, intro, false), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations }),
+    candidateSteps({ intro, introNote: introNote(view, intro, false, known.known?.filter((k) => k.source === 'onboarding').length ?? 0), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations }),
     journey.nextStep,
   );
-  const market = vacancies ? marketRows(vacancies, (spec, grade) => category?.specialization === spec && category.grade === grade) : undefined;
+  const market = vacancies && !cand?.specialization ? marketRows(vacancies, () => false) : undefined;
   const stats = candidateStats({ confirmed: profileClaims, category });
   // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).
   const fill = view?.later && view.current.kind !== 'summary' ? { stepId: view.current.id, label: view.current.label } : undefined;

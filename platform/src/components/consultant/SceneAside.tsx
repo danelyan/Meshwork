@@ -14,7 +14,7 @@ import styles from './SceneAside.module.css';
 const STATE_LABEL = { done: 'готово', now: 'сейчас', next: 'дальше' } as const;
 
 /** «Твой путь»: шаги с состоянием; текущий подсвечен, каждый — ссылка на раздел; под шагами — подсказка к текущему. Узкий экран — горизонтальная полоса. */
-function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint: SceneAsideData['hint'] }) {
+function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint?: SceneAsideData['hint'] }) {
   return (
     <nav className={styles.road} aria-label="Твой путь">
       <h2 className={styles.title}>Твой путь</h2>
@@ -38,9 +38,11 @@ function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint: SceneAsideData['
           </li>
         ))}
       </ol>
-      <p className={styles.hint} data-testid="aside-hint">
-        <span className={styles.hintTitle}>{hint.title}</span> <span className={styles.hintText}>{hint.text}</span>
-      </p>
+      {hint && (
+        <p className={styles.hint} data-testid="aside-hint">
+          <span className={styles.hintTitle}>{hint.title}</span> <span className={styles.hintText}>{hint.text}</span>
+        </p>
+      )}
     </nav>
   );
 }
@@ -96,7 +98,7 @@ function Market({ market, role }: { market: NonNullable<SceneAsideData['market']
             ))}
           </ul>
           <p className={styles.marketNote}>
-            {employer ? 'Категория у кандидата - только по тесту. Подсвечено то, что совпадает с твоими вакансиями.' : 'Активные вакансии компаний по категориям. Подсвечена твоя категория по тесту.'}
+            {employer ? 'Категория у кандидата - только по тесту. Подсвечено то, что совпадает с твоими вакансиями.' : 'Активные вакансии по категориям - по ним выбирай направление теста.'}
           </p>
         </>
       )}
@@ -130,6 +132,7 @@ const plural = (n: number, one: string, few: string, many: string) => {
   return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many;
 };
 const invitesWord = (n: number) => `${n} ${plural(n, 'приглашение', 'приглашения', 'приглашений')}`;
+const vacanciesWord = (n: number) => `${n} ${plural(n, 'вакансия', 'вакансии', 'вакансий')}`;
 const PROJECT_STATUS = { submitted: 'сдан, ждёт проверки', running: 'проверяется', checked: 'проверен', failed: 'проверка не прошла' } as const;
 
 /** Карточка шага: короткий текст и одна кнопка-ссылка. */
@@ -151,8 +154,15 @@ function StepBlockView({ block, market, docs, role }: { block: StepBlock; market
     case 'test':
       return (
         <>
-          {market && market.rows.length > 0 && <Market market={market} role={role} />}
-          <StepCard id="step-test" title="Тест на грейд" text="Категорию даёт только тест: после него компании найдут тебя в подборке." href="/test" cta="Начать тест" />
+          {!block.demand && market && market.rows.length > 0 && <Market market={market} role={role} />}
+          <StepCard
+            id="step-test"
+            title="Тест на грейд"
+            text="Компании ищут по категории, а её даёт только тест: после него ты попадёшь в подборку."
+            extra={block.demand ? `Сейчас в направлении ${block.demand.direction}: ${vacanciesWord(block.demand.total)} · ${block.demand.detail}` : undefined}
+            href="/test"
+            cta="Начать тест"
+          />
         </>
       );
     case 'call':
@@ -196,8 +206,8 @@ export function SceneAside({ data: initial, className }: { data: SceneAsideData;
     // внешний блок — контейнер размера (@container aside), внутренний — сетка: запрос не стилизует сам контейнер
     <div className={`${styles.box} ${className ?? ''}`} data-testid="scene-aside">
       <div className={styles.aside} data-role={data.role}>
-        <Roadmap steps={data.steps} hint={data.hint} />
-        <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} fill={data.fill} />
+        {/* путь → главное действие шага → память; подсказка под путём только без блока шага (иначе тот же текст трижды) */}
+        <Roadmap steps={data.steps} hint={data.stepBlock ? undefined : data.hint} />
         {data.stepBlock ? (
           <StepBlockView block={data.stepBlock} market={data.market} docs={data.docs} role={data.role} />
         ) : (
@@ -206,6 +216,7 @@ export function SceneAside({ data: initial, className }: { data: SceneAsideData;
             {data.docs && <Docs docs={data.docs} />}
           </>
         )}
+        <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} fill={data.fill} />
       </div>
     </div>
   );

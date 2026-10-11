@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 
 import { TelemetryMount } from '@/components/chat/TelemetryMount';
 
@@ -25,7 +25,7 @@ import { HeadView } from './HeadView';
 import { DEFAULT_HEAD_STYLE } from './head-styles';
 import { PanelSplitter } from './PanelSplitter';
 import { MuteToggle, StateChip, StopButton, Subtitles } from './Speaking';
-import { CompanionVoiceProvider } from './voice';
+import { CompanionVoiceProvider, useCompanionVoice } from './voice';
 import styles from './AvatarScene.module.css';
 
 export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
@@ -45,6 +45,16 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
  * `children` — готовая лента (слитая лента /consultant: онбординг + консультант, см.
  * components/consultant/ConsultantFeed); без них сцена рисует обычный `Chat`.
  */
+/** Открыли созвон, пока Кира читает ответ чата: озвучку обрываем, иначе она звучит поверх звонка. */
+function StopVoiceOnCall() {
+  const open = useCallMode()?.open ?? false;
+  const stop = useCompanionVoice()?.stop;
+  useEffect(() => {
+    if (open) stop?.();
+  }, [open, stop]);
+  return null;
+}
+
 export function AvatarScene({ variant, demo, initial, children, aside, label = 'ИИ-консультант', call = false, callKind, callOpen }: { variant: AvatarSceneVariant; label?: string; demo?: ChatDemoContext; initial?: RestoredChat; children?: ReactNode; aside?: SceneAsideData; call?: boolean; callKind?: CallKind; callOpen?: boolean }) {
   const feed = (className?: string) => children ?? <Chat demo={demo} initial={initial} className={className} />;
   const scene = (
@@ -52,6 +62,7 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
       <AsideProvider initial={aside}>
       {/* Телеметрия чата (docs/platform.md): без флага ничего не рисует; вне сцен — fixed не зависит от их раскладки. */}
       <TelemetryMount />
+      <StopVoiceOnCall />
       {variant === 'portrait' && (
         <div className={styles.portraitScene} data-testid="scene-portrait">
           <div className={styles.conversation}>

@@ -2327,3 +2327,11 @@ Job `Configure Yandex OAuth` выполнил обновление `.env`, пе�
 Дополнительно включён командный коммит `d5e6f7e5` с резервной LLM, без конфликтов дизайна. `npm run typecheck`, `npm run lint`, `npm run test:unit -- --maxWorkers=2 --testTimeout=30000`: passed; 304 файла, 5073 passed, 11 skipped, 5084 total, 145.12s (21:14:12 МСК).
 `npm run build` после включения резервной LLM: passed. Повторные e2e не запускались: последний merge меняет только серверную LLM, для проверенного stub резервный провайдер отключён; пять сценариев прошли на предыдущей сборке. Интеграционный набор отдельно не запускался (TEST_DATABASE_URL не задан).
 По прямому указанию владельца немедленно опубликовать: последний повтор полного набора после fd53fb68 не ожидается. Два обнаруженных нарушения токенов в новой mic.module.css исправлены удалением raw fallback, camera background также приведён к существующему токену. До этого 5073 unit passed и production build passed; пять e2e passed на предыдущем объединении.
+
+## Перенос графа работодателя в избранное — 11.10.2026, 23:29 МСК
+
+`node node_modules/vitest/vitest.mjs run --pool=threads --maxWorkers=2 --reporter=verbose --project unit --project components`: 336 файлов passed, 5388 тестов passed, 11 skipped, 5399 total; 124.02s. Пул threads и установленный Git Bash использованы для Windows; assertions не отключались. Подборка проверяется как список без графа; избранное — карта со сменой выбранного кандидата, масштабом, полным списком и удалением сохранённого кандидата; сравнение и приглашения сохранены.
+
+`node node_modules/typescript/bin/tsc --noEmit` и `node node_modules/eslint/bin/eslint.js .`: passed. OpenAPI и prompts пересобраны штатными скриптами; LF для генерируемых артефактов закреплён в `.gitattributes`. Интеграционный набор не запускался: `TEST_DATABASE_URL` не задан. Prisma-схема в изменении не менялась.
+
+Production-сборка: `node scripts/mediapipe-assets.mjs`, `node node_modules/prisma/build/index.js generate`, `node node_modules/next/dist/bin/next build` — passed, завершена до 23:35 МСК. Типы и lint выполнялись отдельно до сборки. Предупреждение autoprefixer в существующем admin.module.css не блокирует сборку. `curl.exe --resolve fsp2.ru:443:90.156.158.121 https://fsp2.ru/api/health`: ok=true, db=up (23:30 МСК, до публикации).

@@ -25,20 +25,20 @@ function candidate(id: string, rank: number): MatchItem {
 }
 
 describe('Astra employer cabinet', () => {
-  it('switches map/list and selects the corresponding real candidate for invitation', () => {
+  it('shows only the ranked list in matching and selects a candidate for invitation', () => {
     render(<MatchExplorer items={[candidate('one', 1), candidate('two', 2)]} vacancyId="vacancy" vacancyTitle="Backend" />);
-    expect(screen.getByRole('button', { name: /Карта/ }).getAttribute('aria-pressed')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: /Кандидат #two/ }));
+    expect(screen.queryByRole('button', { name: /Карта/ })).toBeNull();
+    expect(screen.queryByLabelText('Масштаб карты')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^2 Кандидат #two/ }));
     expect(screen.getByRole('button', { name: 'Пригласить: Кандидат #two' })).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Пригласить: Кандидат #one' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Список/ }));
-    expect(screen.getByRole('button', { name: /Список/ }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Пригласить: Кандидат #two' })).toBeDefined();
   });
 
-  it('zooms the map within limits while keeping the chosen candidate', () => {
-    render(<MatchExplorer items={[candidate('one', 1)]} vacancyId="vacancy" />);
-    expect(screen.getByLabelText('Масштаб карты').textContent).toBe('100%');
+  it('keeps the map, zoom and complete list in saved candidates', () => {
+    render(<SavedCandidates scope="employer-a" cards={[candidate('one', 1).candidate, candidate('two', 2).candidate]} unavailable={0} />);
+    expect(screen.getByRole('button', { name: /Карта/ }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: /^Кандидат #two/ }));
+    expect(screen.getByRole('button', { name: /^Кандидат #two/ }).getAttribute('aria-pressed')).toBe('true');
     const zoomIn = screen.getByRole('button', { name: 'Увеличить карту' });
     for (let i = 0; i < 3; i++) fireEvent.click(zoomIn);
     expect(screen.getByLabelText('Масштаб карты').textContent).toBe('130%');
@@ -47,7 +47,9 @@ describe('Astra employer cabinet', () => {
     for (let i = 0; i < 6; i++) fireEvent.click(zoomOut);
     expect(screen.getByLabelText('Масштаб карты').textContent).toBe('70%');
     expect(zoomOut).toHaveProperty('disabled', true);
-    expect(screen.getByRole('button', { name: 'Пригласить: Кандидат #one' })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /Список/ }));
+    expect(screen.queryByLabelText('Масштаб карты')).toBeNull();
+    expect(screen.getAllByRole('heading', { name: /Кандидат #/ })).toHaveLength(2);
   });
 
   it('saves through authenticated API and removes a persisted favorite from the list', async () => {

@@ -47,7 +47,6 @@ describe('подборка: сравнение «Почему A выше B»', (
     expect(screen.queryByText('Сравнить двоих')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Сравнить' }));
-    fireEvent.click(screen.getByRole('button', { name: /Список/ }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Сравнить: Кандидат b' }));
     fireEvent.click(screen.getByRole('button', { name: 'Сравнить двоих' }));
 

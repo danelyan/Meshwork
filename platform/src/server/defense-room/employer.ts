@@ -9,6 +9,7 @@ import { publish } from './bus';
 import { buildSnapshot, employerItem, ICE_SERVERS, resumeAi } from './session';
 import { appendEntries, asVerdict, isAiMuted, loadPlan, savePlan, tryLockPlan, unlockPlan } from './store';
 import type { CallSnapshot, DefenseFlag, TranscriptEntry } from './types';
+import { defenseVisibleTo } from './visibility';
 
 /**
  * Работодатель в защите проекта: подключиться к живой сессии, замьютить ИИ, сказать реплику,
@@ -219,7 +220,8 @@ export async function listEmployerCalls(ctx: EmployerContext): Promise<EmployerC
   const ids = [...(await disclosedCandidateIds(ctx.companyId, [...new Set(accepted.map((a) => a.candidateId))]))];
   if (!ids.length) return [];
   const rows = await prisma.callSession.findMany({
-    where: { candidateId: { in: ids }, kind: 'defense' },
+    // ADR 0008: ИИ-защиты и свои живые; живая защита по приглашению другой компании в список не попадает.
+    where: { candidateId: { in: ids }, kind: 'defense', AND: [defenseVisibleTo(ctx.companyId)] },
     orderBy: [{ startedAt: 'desc' }],
     take: 100,
     select: { id: true, candidateId: true, status: true, startedAt: true, finishedAt: true, verdictJson: true, projectSubmissionId: true },

@@ -31,6 +31,18 @@ export async function employerMayAccess(companyId: string, candidateId: string):
   return (await acceptedCandidateIds(companyId, [candidateId])).has(candidateId);
 }
 
+/**
+ * ADR 0008: живая защита проекта видна только компании вакансии, по чьей задаче сдан проект; чужой — 404, даже
+ * при собственном accepted. ИИ-защита и защита без сабмита (ответы на вопросы нескольких компаний, реплики чужих
+ * скрываются redactTranscript) — как раньше.
+ */
+async function liveDefenseVisible(companyId: string, s: { id: string; aiDefense: boolean }): Promise<boolean> {
+  if (s.aiDefense) return true;
+  const row = await prisma.callSession.findUnique({ where: { id: s.id }, select: { projectSubmission: { select: { projectTask: { select: { vacancy: { select: { companyId: true } } } } } } } });
+  const owner = row?.projectSubmission?.projectTask.vacancy.companyId;
+  return row?.projectSubmission == null || owner === companyId;
+}
+
 export async function resolveViewer(principal: SessionPrincipal | null, sessionId: string): Promise<{ viewer: Viewer; session: ViewedSession }> {
   if (!principal) throw errors.unauthorized();
   const s = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, kind: true, status: true, aiDefense: true } });
@@ -41,7 +53,7 @@ export async function resolveViewer(principal: SessionPrincipal | null, sessionI
   if (principal.userId && principal.employerProfileId) {
     await assertEmployerConsents(principal.userId); // ADR 0005: комната — данные кандидата, нужна оферта
     const ctx = await loadEmployerContext(principal.employerProfileId);
-    if (await employerMayAccess(ctx.companyId, s.candidateId)) {
+    if ((await employerMayAccess(ctx.companyId, s.candidateId)) && (await liveDefenseVisible(ctx.companyId, s))) {
       return {
         viewer: {
           role: 'employer',

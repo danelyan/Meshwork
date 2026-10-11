@@ -7,6 +7,7 @@ import { publicVerdict } from '../call/access';
 import type { CallVerdict } from '../call/types';
 import { prisma } from '../db';
 import type { DefenseRoomVerdict } from '../defense-room/types';
+import { defenseVisibleTo } from '../defense-room/visibility';
 import type { ResultJson, RubricFlag } from '../project/schemas';
 
 import {
@@ -24,8 +25,12 @@ export interface StageEvidence {
 
 const isObject = (v: unknown): v is Record<string, unknown> => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 
-/** Свидетельства созвонов и проектов кандидатов пула; кандидата без ступеней в карте нет. */
-export async function loadStageEvidence(candidateIds: string[]): Promise<Map<string, StageEvidence>> {
+/**
+ * Свидетельства созвонов и проектов кандидатов пула; кандидата без ступеней в карте нет.
+ * Защита — только видимая компании `companyId` (ADR 0008, defense-room/visibility.ts): ИИ-защита или своя живая.
+ * Чужая живая защита сюда не попадает вовсе, поэтому не влияет ни на карточку, ни на текст пояснения.
+ */
+export async function loadStageEvidence(candidateIds: string[], companyId: string | null = null): Promise<Map<string, StageEvidence>> {
   const out = new Map<string, StageEvidence>();
   if (candidateIds.length === 0) return out;
   const slot = (id: string): StageEvidence => {
@@ -34,15 +39,17 @@ export async function loadStageEvidence(candidateIds: string[]): Promise<Map<str
     return e;
   };
 
-  // Последний завершённый созвон каждого вида с вердиктом (distinct по кандидату и виду).
-  const calls = await prisma.callSession.findMany({
-    // Пустой вердикт (DB NULL или JSON null) не должен затенять более старый валидный: distinct берёт первую строку.
-    where: { candidateId: { in: candidateIds }, status: 'finished', NOT: { verdictJson: { equals: Prisma.AnyNull } } },
-    orderBy: [{ finishedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],
-    distinct: ['candidateId', 'kind'],
-    select: { candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true, aiDefense: true },
-  });
-  for (const c of calls) {
+  // Последний завершённый созвон каждого вида с вердиктом (distinct по кандидату и виду). Защиты — отдельным
+  // запросом с фильтром видимости: иначе distinct взял бы самую свежую защиту любого вида, в том числе чужую живую.
+  // Пустой вердикт (DB NULL или JSON null) не должен затенять более старый валидный: distinct берёт первую строку.
+  const finished = { candidateId: { in: candidateIds }, status: 'finished', NOT: { verdictJson: { equals: Prisma.AnyNull } } } satisfies Prisma.CallSessionWhereInput;
+  const order = [{ finishedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }] satisfies Prisma.CallSessionOrderByWithRelationInput[];
+  const select = { candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true, aiDefense: true } as const;
+  const [talks, defenses] = await Promise.all([
+    prisma.callSession.findMany({ where: { ...finished, kind: { in: ['qualifying', 'interview'] } }, orderBy: order, distinct: ['candidateId', 'kind'], select }),
+    prisma.callSession.findMany({ where: { ...finished, kind: 'defense', AND: [defenseVisibleTo(companyId)] }, orderBy: order, distinct: ['candidateId'], select }),
+  ]);
+  for (const c of [...talks, ...defenses]) {
     if (!isObject(c.verdictJson)) continue;
     if (c.kind === 'qualifying' || c.kind === 'interview') {
       // ИИнтервью (kind=interview, открывается после теста) строит ту же карту глубины, что и квалифицирующий созвон;

@@ -9,7 +9,6 @@ import { prisma } from '../db';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
-import { asFullstackEvidence, fullstackLabel, fullstackNeeds, fullstackProfile } from './fullstack';
 import { loadRankingIntegrity, rankingIntegrityOptions, withRankingIntegrity } from './integrity-ranking';
 import { dedupeClaims, toCandidateCard, type CandidateCard, type PublicClaim } from './privacy';
 import {
@@ -66,8 +65,9 @@ interface PoolRow {
 /**
  * Пул кандидатов: не скрытые настройкой приватности (R-C-13), с подтверждёнными
  * утверждениями или категорией. Черновики (`proposed`) и отклонённые не считаются.
+ * `companyId` — чья выдача: от него зависит, какие защиты видны (ADR 0008); null — только ИИ-защиты.
  */
-export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<PoolRow[]> {
+export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: string | null = null): Promise<PoolRow[]> {
   const rows = await prisma.candidate.findMany({
     where: {
       hiddenFromEmployers: false,
@@ -82,7 +82,7 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       subcategoryId: true,
       fspState: true,
       profile: { select: { experienceYears: true, roles: true, softSkills: true } },
-      categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], select: { specialization: true, grade: true, subcategoryId: true } },
+      categories: { orderBy: [{ confirmedAt: 'desc' }, { id: 'asc' }], take: 1, select: { specialization: true, grade: true, subcategoryId: true } },
       claims: {
         where: { status: { in: ['confirmed', 'edited'] } },
         select: { catalogId: true, level: true, statement: true, quote: true, sourceKind: true },
@@ -91,7 +91,8 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
     },
     orderBy: { id: 'asc' },
   });
-  const stages = await loadStageEvidence(rows.map((r) => r.id));
+  // Защита — только видимая этой компании (ADR 0008): ИИ-защита или своя живая; чужая живая не попадает в evidence.
+  const stages = await loadStageEvidence(rows.map((r) => r.id), companyId);
   const fsp = await loadFspAchievements(rows.filter((r) => r.fspState === 'linked').map((r) => r.id));
   return rows.map((r) => ({
     name: r.name,
@@ -103,7 +104,6 @@ export async function loadPool(catalog: Map<string, CatalogEntry>): Promise<Pool
       subcategoryId: r.subcategoryId,
       fspState: r.fspState,
       category: r.categories[0] ?? null,
-      categories: r.categories,
       claims: r.claims,
       ...(r.fspState === 'linked' ? { fspAchievements: fsp.get(r.id) ?? demoAchievements(r.id) } : {}),
       ...(stages.get(r.id)?.calls ? { calls: stages.get(r.id)!.calls } : {}),
@@ -183,16 +183,14 @@ async function run(
 ): Promise<{ total: number; items: MatchItem[]; hints?: RelaxHint[] }> {
   // lane hired: кандидат, нанятый другой компанией, уходит из выдачи до ранжирования (у нанявшей — остаётся).
   const hiredElsewhere = await hiredByOtherCompanies(companyId);
-  const pool = (await loadPool(catalog)).filter((p) => !hiredElsewhere.has(p.evidence.id));
+  const pool = (await loadPool(catalog, companyId)).filter((p) => !hiredElsewhere.has(p.evidence.id));
   const byId = new Map(pool.map((p) => [p.evidence.id, p]));
   // Вариант 2a (11.10): индекс честности всего пула до ранжирования; high без подтверждения тестом или созвоном —
   // категория не учитывается (ranking.ts integrityPenalty). Выключатель — TEST_INTEGRITY_RANKING.
   const opts = rankingIntegrityOptions();
-  const withIntegrity = opts.integrityPenalty
+  const evidence = opts.integrityPenalty
     ? withRankingIntegrity(pool.map((p) => p.evidence), await loadRankingIntegrity(new Map(pool.map((p) => [p.evidence.id, p.evidence.category]))))
     : pool.map((p) => p.evidence);
-  // ПРЕДЛОЖЕНИЕ агента (fullstack): та же формула, кандидат в виде «backend на меньшем из двух грейдов» (fullstack.ts).
-  const evidence = filters.fullstack ? withIntegrity.map(asFullstackEvidence) : withIntegrity;
   const all = rankCandidates(evidence, target, catalog, filters, opts);
   const ranked = requireCoverage ? dropUncovered(all) : all;
   const top = ranked.slice(0, limit);
@@ -217,11 +215,8 @@ async function run(
       accepted.has(r.candidateId),
     );
     // R-C-16: пояснения рубрики проекта до принятого приглашения проходят maskContacts.
-    let explanation =
+    const explanation =
       r.explanation.project && !accepted.has(r.candidateId) ? { ...r.explanation, project: maskProjectBlock(r.explanation.project) } : r.explanation;
-    // Fullstack: в карточке вместо «Backend · Middle (тест)» - обе стороны: «Fullstack: backend Middle + frontend Junior».
-    const fs = filters.fullstack ? fullstackProfile(p.evidence) : null;
-    if (fs) explanation = { ...explanation, category: `${fullstackLabel(fs)} (тест)` };
     return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null };
   });
   // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
@@ -254,13 +249,6 @@ export async function searchBank(companyId: string, filters: MatchFilters, limit
   const catalog = await loadCatalog();
   const cache = new Map<string, MatchTarget>();
   const targetFor = (c: CandidateEvidence): MatchTarget | null => {
-    if (filters.fullstack) {
-      // c уже в виде asFullstackEvidence: category.grade - меньший из двух; без категорий кандидат отфильтрован раньше.
-      const grade: Grade = filters.grade ?? c.category?.grade ?? 'junior';
-      const key = `fullstack:${grade}`;
-      if (!cache.has(key)) cache.set(key, { specialization: 'backend', subcategoryId: null, grade, needs: fullstackNeeds(catalog, grade), stack: filters.stack ?? [] });
-      return cache.get(key)!;
-    }
     const spec: Specialization | null = filters.specialization ?? effectiveSpecialization(c);
     if (!spec) return null;
     const grade: Grade = filters.grade ?? c.category?.grade ?? 'junior';

@@ -35,6 +35,7 @@ export function AdminLoginForm({ next }: { next: string }) {
   return (
     <Panel variant="strong" className={styles.card}>
       <Kicker>Админка платформы</Kicker>
+      <h1 className={styles.title}>{step.kind === 'password' ? 'Вход для персонала' : 'Второй фактор'}</h1>
       {step.kind === 'password' ? (
         <form
           className={styles.form}

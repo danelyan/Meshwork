@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DEFAULT_VAD, MicGate, type VadEvent } from '@/lib/vad';
 
+import { micDeviceConstraint } from '../call/devicePrefs';
 import { readVoiceMode, speechRecognitionCtor, toPcm16, type VoiceMode } from '../chat/voice';
 
 /**
@@ -88,7 +89,7 @@ export function useRoomMic(opts: RoomMicOptions) {
     if (!available) return;
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true, ...micDeviceConstraint() } });
     } catch {
       setError('Нет доступа к микрофону - разреши его в настройках браузера или отвечай текстом.');
       return;

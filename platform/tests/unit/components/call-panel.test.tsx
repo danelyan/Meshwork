@@ -155,6 +155,24 @@ describe('CallPanel — режим звонка в сцене консульта
     expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('Созвониться');
   });
 
+  it('голос доступен: согласие → проверка устройств → «Продолжить текстом» → старт без микрофона', async () => {
+    vi.stubGlobal('SpeechRecognition', class {});
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: vi.fn(async () => { throw Object.assign(new Error('x'), { name: 'NotAllowedError' }); }), enumerateDevices: vi.fn(async () => []) } });
+    try {
+      renderScene();
+      fireEvent.click(screen.getByText('открыть'));
+      fireEvent.click(await screen.findByText('Согласиться и начать созвон'));
+      expect(await screen.findByTestId('call-devices')).toBeTruthy();
+      expect(calls.some((c) => c.url === 'POST /api/call/start')).toBe(false);
+      fireEvent.click(await screen.findByTestId('call-devices-text'));
+      expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
+      expect(screen.queryByTestId('call-mic')).toBeNull();
+      expect(screen.getByTestId('call-text-mode')).toBeTruthy();
+    } finally {
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+    }
+  });
+
   it('созвон недоступен (readiness): кнопка disabled, причина в title; готовая — с подсказкой про смысл', () => {
     const { rerender } = render(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callBlocked="Созвон с ИИ откроется после теста" />);
     const btn = screen.getByTestId('call-button') as HTMLButtonElement;

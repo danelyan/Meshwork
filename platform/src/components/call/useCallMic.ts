@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { micDeviceConstraint } from './devicePrefs';
 import { readVoiceMode, speechRecognitionCtor, toPcm16, type VoiceMode } from '../chat/voice';
 
 /**
@@ -71,7 +72,7 @@ export function useCallMic(onDone: (r: MicResult) => void) {
     let stream: MediaStream | null = null;
     if (sup.canRecord) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, ...micDeviceConstraint() } });
       } catch {
         if (!sup.browserStt) {
           setError('Нет доступа к микрофону - разреши его в настройках браузера или ответь текстом.');

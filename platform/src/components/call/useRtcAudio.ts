@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { micDeviceConstraint } from './devicePrefs';
 import { signalApi } from '@/lib/defense-room-api';
 import type { SignalPayload } from '@/server/defense-room/types';
 
@@ -65,7 +66,7 @@ export function useRtcAudio(sessionId: string, role: 'candidate' | 'employer', i
 
   const mic = useCallback(() => {
     streamRef.current ??= navigator.mediaDevices
-      ?.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+      ?.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, ...micDeviceConstraint() } })
       .then((stream) => {
         setMicError(null);
         setMicOn(true);

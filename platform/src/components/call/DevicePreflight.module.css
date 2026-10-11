@@ -1,0 +1,16 @@
+.box { display: grid; gap: 12px; padding: 16px; font-size: var(--fs); line-height: 1.5; text-align: left; border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); background: var(--call-control, transparent); color: inherit; }
+.box b { font-size: var(--fs-md); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.state { display: flex; gap: 8px; align-items: center; font-size: var(--fs-sm); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; opacity: 0.4; flex: none; }
+.ok .dot { background: #2fa866; opacity: 1; }
+.bad .dot { background: var(--call-rec, #d33); opacity: 1; }
+.help { margin: 0; padding-left: 18px; font-size: var(--fs-sm); opacity: 0.85; }
+.meter { height: 8px; width: 100%; border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 100%; background: #2fa866; transform-origin: left; transform: scaleX(var(--level, 0)); transition: transform 0.08s linear; }
+.select { max-width: 100%; padding: 6px 8px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--avatar-stage-line, var(--line, currentColor)); }
+.select option { color: #111; }
+.preview { width: 160px; max-width: 100%; background: #000; transform: scaleX(-1); }
+.check { display: flex; gap: 8px; align-items: center; font-size: var(--fs-sm); }
+.note { margin: 0; font-size: var(--fs-sm); opacity: 0.8; }
+@media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }

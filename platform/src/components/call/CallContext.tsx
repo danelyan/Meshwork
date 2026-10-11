@@ -2,7 +2,7 @@
 
 import type { CallKind } from '@/server/call/types';
 
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { callApi } from '@/lib/call-api';
 
@@ -38,6 +38,9 @@ export function CallProvider({ children, kind = 'qualifying', initialOpen = fals
   }, []);
   const close = useCallback(() => setOpen(false), []);
   const [readiness, setReadiness] = useState<CallMode['readiness']>(null);
+  // Опрос читает готовность через ref: смена ready не перезапускает эффект (раньше null → false давала лишний GET сразу).
+  const readyRef = useRef<boolean | undefined>(undefined);
+  readyRef.current = readiness?.ready;
   // Готовность читаем с сервера: при монтировании, после закрытия панели и пока кнопка заблокирована (в чате
   // могли появиться утверждения о навыках). Сбой запроса кнопку не блокирует: старт всё равно проверит сервер.
   useEffect(() => {
@@ -50,13 +53,13 @@ export function CallProvider({ children, kind = 'qualifying', initialOpen = fals
         .catch(() => undefined);
     void load();
     const t = setInterval(() => {
-      if (readiness?.ready === false) void load();
+      if (readyRef.current === false && !document.hidden) void load();
     }, 20000);
     return () => {
       alive = false;
       clearInterval(t);
     };
-  }, [kind, open, readiness?.ready]);
+  }, [kind, open]);
   const value = useMemo(() => ({ kind, open, readiness, reason, start, close }), [kind, open, readiness, reason, start, close]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -149,6 +149,15 @@ export const envSchema = z
     CALL_RECORDING_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
     /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
     WEB_SEARCH: z.enum(['auto', 'off']).default('auto'),
+    /**
+     * OCR картинок и сканов PDF (Yandex Vision OCR, server/collector/ocr.ts). Не задан — yandex при OCR_API_KEY
+     * (ключ со scope yc.ai.vision.execute; YANDEX_API_KEY без него получает 403) и каталоге (OCR_FOLDER_ID, иначе
+     * YANDEX_FOLDER_ID), иначе off.
+     */
+    OCR_PROVIDER: optionalString.pipe(z.enum(['yandex', 'off']).optional()),
+    OCR_API_KEY: optionalString,
+    OCR_FOLDER_ID: optionalString,
+    OCR_URL: z.url().default('https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'),
 
     /** Вход через Яндекс ID (oauth.yandex.ru). Не заданы → кнопка входа неактивна, работает демо-вход. */
     YANDEX_CLIENT_ID: optionalString,

@@ -20,6 +20,10 @@ export const DocResultSchema = z.object({
   /** Скрытый текст найден (белый, мелкий, display:none …) — проигнорирован, в text его нет. */
   hiddenText: z.number().int(),
   injectionSuspect: z.boolean(),
+  /** Текст распознан OCR со скана или фото — возможны ошибки распознавания (буквы, цифры, порядок строк). */
+  ocr: z.boolean().optional(),
+  /** Скан без текстового слоя, распознать не удалось — текста нет, попроси PDF с текстом/DOCX или вставить текст. */
+  ocrFailed: z.boolean().optional(),
   sourceId: z.string().optional(),
 });
 export type DocResult = z.infer<typeof DocResultSchema>;
@@ -44,6 +48,8 @@ export function docToResult(doc: ExtractedDoc, sourceId?: string): DocResult {
     truncated: t.truncated || Boolean(doc.flags.truncated),
     hiddenText: doc.flags.hiddenText?.count ?? 0,
     injectionSuspect: Boolean(doc.flags.injectionSuspect),
+    ...(doc.meta?.ocr ? { ocr: true } : {}),
+    ...(doc.meta?.ocrFailed ? { ocrFailed: true } : {}),
     ...(sourceId ? { sourceId } : {}),
   };
 }

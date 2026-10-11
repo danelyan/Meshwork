@@ -2,22 +2,43 @@ import { AppError } from '../errors';
 import { buildDoc, type RawLine } from './doc';
 import { pdfPagesToLines } from './hidden-text';
 import { LIMITS } from './limits';
+import { recognizeText } from './ocr';
 import { parseInWorker } from './parse-worker';
 import type { ExtractedDoc, SourceKind } from './types';
 
-export type FileKind = 'pdf' | 'docx' | 'text';
+export type FileKind = 'pdf' | 'docx' | 'text' | 'image';
+
+/** Картинка, которую принимает Vision OCR (JPEG, PNG — по магическим байтам). */
+export type ImageMime = 'image/jpeg' | 'image/png';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 /** Текстовые форматы (решение владельца 10.10): резюме в Markdown, заметки, таблицы CSV. */
 const TEXT_EXT = /\.(md|markdown|txt|csv)$/i;
 
 /** Mime оригинала для хранения и скачивания (GET /api/uploads/:id/file). */
-export function fileMime(kind: FileKind, filename: string): string {
+export function fileMime(kind: FileKind, filename: string, buf?: Buffer): string {
   if (kind === 'pdf') return 'application/pdf';
+  if (kind === 'image') return (buf && imageMime(buf)) ?? (/\.png$/i.test(filename) ? 'image/png' : 'image/jpeg');
   if (kind === 'docx') return DOCX_MIME;
   if (/\.csv$/i.test(filename)) return 'text/csv';
   if (/\.(md|markdown)$/i.test(filename)) return 'text/markdown';
   return 'text/plain';
+}
+
+/** JPEG (`FF D8 FF`) или PNG (8-байтная сигнатура) по содержимому. */
+export function imageMime(buf: Buffer): ImageMime | null {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (buf.length >= 8 && png.every((b, i) => buf[i] === b)) return 'image/png';
+  return null;
+}
+
+/** WebP / HEIC / GIF / BMP / TIFF — Vision OCR их не принимает (только JPEG, PNG, PDF). */
+function otherImage(buf: Buffer): boolean {
+  const ascii = buf.subarray(0, 16).toString('latin1');
+  if (ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP') return true;
+  if (ascii.slice(4, 8) === 'ftyp' && /^(heic|heix|hevc|mif1|msf1|avif)/.test(ascii.slice(8, 12))) return true;
+  return ascii.startsWith('GIF8') || ascii.startsWith('BM') || ascii.startsWith('II*\0') || ascii.startsWith('MM\0*');
 }
 
 /**
@@ -27,6 +48,7 @@ export function fileMime(kind: FileKind, filename: string): string {
 export function detectFileKind(buf: Buffer, filename: string, mime: string): FileKind | null {
   const head = buf.subarray(0, 1024).toString('latin1');
   if (head.includes('%PDF-')) return 'pdf';
+  if (imageMime(buf)) return 'image';
   const isZip = buf.length >= 4 && buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
   if (isZip && (/\.docx$/i.test(filename) || mime === DOCX_MIME)) return 'docx';
   // текст — по расширению, но без NUL-байтов: бинарник с чужим расширением сюда не пройдёт
@@ -99,7 +121,7 @@ export async function extractFile(
   buf: Buffer,
   filename: string,
   mime: string,
-  opts: { sourceKind?: SourceKind; origin?: string } = {},
+  opts: { sourceKind?: SourceKind; origin?: string; signal?: AbortSignal } = {},
 ): Promise<ExtractedDoc> {
   if (buf.length === 0) throw new AppError('bad_request', 'Пустой файл', 400);
   if (buf.length > LIMITS.fileMaxBytes) {
@@ -107,7 +129,26 @@ export async function extractFile(
   }
   const name = safeFilename(filename);
   const kind = detectFileKind(buf, name, mime);
-  if (!kind) throw new AppError('unsupported_media_type', 'Поддерживаются PDF, DOCX, MD, TXT и CSV', 415);
+  if (!kind) {
+    if (otherImage(buf)) {
+      throw new AppError('unsupported_media_type', 'Этот формат изображения не поддерживается — сохрани его в JPG или PNG', 415);
+    }
+    throw new AppError('unsupported_media_type', 'Поддерживаются PDF, DOCX, MD, TXT, CSV, JPG и PNG', 415);
+  }
+  const base = { sourceKind: opts.sourceKind ?? 'resume', title: name, origin: opts.origin ?? name } as const;
+
+  if (kind === 'image') {
+    let lines: RawLine[];
+    try {
+      lines = await recognizeText(buf, imageMime(buf)!, name, { signal: opts.signal });
+    } catch (e) {
+      console.warn('ocr: картинка не распознана', e instanceof AppError ? e.code : 'error');
+      throw new AppError('ocr_failed', 'Не удалось распознать текст на изображении — пришли PDF/DOCX или вставь текст', 422);
+    }
+    const meta: Record<string, unknown> = { fileKind: kind, ocr: true };
+    if (lines.length === 0) meta.empty = true;
+    return buildDoc({ ...base, lines, meta });
+  }
 
   if (kind === 'text') {
     const lines = textLines(decodeText(buf), name, /\.(md|markdown)$/i.test(name));
@@ -137,9 +178,23 @@ export async function extractFile(
       .filter(Boolean)
       .map((text, i) => ({ ref: `${name}#p1:l${i + 1}`, text }));
   }
-  if (lines.length === 0) {
-    meta.empty = true; // скан без текстового слоя — OCR не делаем
+  if (lines.length === 0 && res.kind === 'pdf') {
+    // Скан без текстового слоя → OCR. Синхронный Vision принимает PDF только из одной страницы;
+    // многостраничный скан и сбой OCR — прежнее поведение (meta.empty) + meta.ocrFailed.
+    if (res.numPages === 1) {
+      try {
+        lines = await recognizeText(buf, 'application/pdf', name, { signal: opts.signal, page: 1 });
+        meta.ocr = true;
+      } catch (e) {
+        console.warn('ocr: скан PDF не распознан', e instanceof AppError ? e.code : 'error');
+        meta.ocrFailed = true;
+      }
+    } else {
+      meta.ocrFailed = true;
+      meta.ocrReason = 'multipage';
+    }
   }
+  if (lines.length === 0) meta.empty = true;
 
   return buildDoc({
     sourceKind: opts.sourceKind ?? 'resume',

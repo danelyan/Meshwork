@@ -354,7 +354,7 @@ export function CallPanel() {
               <li>Работодатель до принятого приглашения видит только оценки по темам; запись и транскрипт — после твоего «да».</li>
               <li>Аудио хранится 90 дней; согласие можно отозвать в настройках («Мои согласия»).</li>
             </ul>
-            <p className={styles.consentLinks}>
+            <div className={styles.consentLinks}>
               <details className={styles.consentFull}>
                 <summary>Полный текст согласия</summary>
                 {consentText.map((p) => (
@@ -362,7 +362,7 @@ export function CallPanel() {
                 ))}
               </details>
               <a href="/consent" target="_blank" rel="noreferrer">Условия обработки данных</a>
-            </p>
+            </div>
             <div className={styles.row}>
               <button type="button" className={styles.primary} onClick={() => void acceptConsent()}>
                 Согласиться и начать созвон

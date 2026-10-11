@@ -195,6 +195,7 @@ export const API_ACCESS = {
   '/api/employer/vacancies': 'employer',
   '/api/employer/vacancies/[id]': 'employer',
   '/api/employer/vacancies/[id]/matches': 'employer',
+  '/api/employer/vacancies/[id]/compare': 'employer',
   '/api/employer/vacancies/[id]/applications': 'employer',
   '/api/employer/applications/[id]': 'employer',
   // Звонок с аватаром (ADR 0003): ведёт кандидат; запись и события видят обе стороны по правилам server/call/access.ts.

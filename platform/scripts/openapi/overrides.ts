@@ -61,7 +61,6 @@ export const ERROR_RESPONSES: Record<number, { name: string; description: string
 };
 
 export const TAG_DESCRIPTIONS: Record<string, string> = {
-  admin: 'Админка владельцев платформы (E-08, ADR 0009): вход персонала (пароль + TOTP), персонал, журнал; разделы фаз 1–5',
   auth: 'Вход, сессия, согласие на обработку ПДн, роль',
   call: 'Созвон с ИИ-интервьюером (ADR 0003): квалифицирующий созвон, транскрипт, запись, карта глубины, SSE-события, сигналинг WebRTC',
   consents: 'Согласия (ADR 0005): список «Мои согласия», дать, отозвать; раскрытие — по приглашению',
@@ -746,6 +745,11 @@ export const OVERRIDES: Record<string, OpOverride> = {
     errors: { 409: 'Шаг недоступен в текущем состоянии' },
   },
 
+  'GET /api/profile/pdf': {
+    summary: 'Скачать PDF-профиль',
+    description: 'Стандартизированный PDF-профиль текущего кандидата, формируется сервером (pdfkit): категория из теста с датой и версией политики, основное из анкеты и резюме, подтверждённые утверждения с уровнем доказанности (без цитат), статус ФСП, ступени проверки. Всегда `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, без кеширования. Только свои данные.',
+    success: { description: 'PDF-файл профиля', contentType: 'application/pdf', schema: { type: 'string', format: 'binary' } },
+  },
   'GET /api/profile/privacy': {
     summary: 'Видимость кандидата для работодателей', success: JSON_OK('Видят ли кандидата работодатели (R-C-13)', obj({ hiddenFromEmployers: bool() })) },
   'POST /api/profile/privacy': { summary: 'Скрыть или показать себя работодателям', success: JSON_OK('Новое значение', obj({ hiddenFromEmployers: bool() })) },

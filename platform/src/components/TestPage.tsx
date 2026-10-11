@@ -168,7 +168,7 @@ function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
   );
 }
 
-function JuryResultPlate({ jury }: { jury: JuryResult }) {
+export function JuryResultPlate({ jury }: { jury: JuryResult }) {
   const LEVEL = { low: 'низкий', medium: 'средний', high: 'высокий' } as const;
   return (
     <JuryPlate>
@@ -337,14 +337,25 @@ function IntroScreen({
   );
 }
 
-function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onAnswer: (a: string) => Promise<void>; onFinish: () => Promise<void> }) {
+/** Экран задания. `apiBase` — префикс API сигналов: кандидат `/api/test` (по умолчанию), режим эксперта `/api/expert`. */
+export function ItemScreen({
+  attempt,
+  onAnswer,
+  onFinish,
+  apiBase,
+}: {
+  attempt: AttemptView;
+  onAnswer: (a: string) => Promise<void>;
+  onFinish: () => Promise<void>;
+  apiBase?: string;
+}) {
   const item = attempt.current!;
   const [answer, setAnswer] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fieldId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const signals = useIntegritySignals(attempt.id, item.index);
+  const signals = useIntegritySignals(attempt.id, item.index, true, apiBase);
 
   useEffect(() => {
     setAnswer('');

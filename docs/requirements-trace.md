@@ -102,7 +102,7 @@
 | R-N-06 OpenAPI | готово | `docs/openapi.yaml` (89 путей, 109 операций), `server/openapi/spec.generated.ts`, `/api-docs`, `GET /api/openapi` | `unit/openapi/openapi.test.ts` (каждый `route.ts` описан, у операции есть успех и ошибка, тела — из Zod, файл совпадает с генератором) | `/api-docs` |
 | R-N-07 152-ФЗ, роли, защита, пароли | частично | Роли: `server/auth/access.ts`; пароли: scrypt (`server/auth/password.ts`); CSRF: проверка Origin (`server/auth/csrf.ts`); лимиты входа: `server/auth/rate-limit.ts`; сессии отзываются при смене пароля; удаление аккаунта | `unit/auth/access-coverage.test.ts`, `integration/auth/email-auth.test.ts` (чужой Origin → 403, лимит → 429, смена пароля отзывает сессии), `integration/auth/account-erasure.test.ts` | Размещение данных в РФ и юридическое соответствие 152-ФЗ — не проверено. **в работе (лейн extras)**: автотест приватности |
 | R-N-08 Desktop-браузеры, независимость от ОС | не проверено | — | Сквозные тесты Playwright — только Chromium | Firefox и Safari не проверялись |
-| R-N-09 Десятки пользователей, приемлемое время | не проверено | — | Нагрузочного прогона подбора, профиля и поиска нет; ход консультанта на DeepSeek: p95 18,9 с, под нагрузкой 10 диалогов — 25,7 с ([validation-results.md](validation-results.md)) | Цель p95 ≤ 15 с не достигнута |
+| R-N-09 Десятки пользователей, приемлемое время | готово (подбор, поиск) | `platform/loadtest/run.mjs` | 11.10: 50 VU на стенде, 0 ошибок из 4 087, p95 подборки 337 мс, поиска 291 мс ([validation/load.md](validation/load.md); генератор в контейнере, сеть не входит). Ход консультанта на DeepSeek: p95 18,9 с ([validation-results.md](validation-results.md)) | LLM-ход: цель p95 ≤ 15 с не достигнута; stress выше 50 VU не искали |
 | R-N-10 Комментарии, код соответствует документации | частично | Короткие JSDoc в модулях; [modules.md](modules.md) | `unit/openapi/openapi.test.ts` и `unit/agent/prompts.test.ts` сверяют документы с кодом | Полное соответствие остальных документов коду не проверялось; часть документов устарела (например, [demo-script.md](demo-script.md) описывает прежний сценарий) |
 | R-N-11 Цвета ФСП | готово | `styles/tokens.css` (светлые токены «ФСП Карьера»), [design-system.md](design-system.md) | `unit/design-tokens.test.ts` | Соответствие брендбуку проверено глазами по [design-spec.md](design-spec.md), автоматически — только использование токенов |
 
@@ -166,7 +166,7 @@
 |---|---|---|
 | Слои `app/` – `server/` – Prisma/Postgres, OpenAPI, docker-compose, границы доверия, защита от инъекций и SSRF | `/api-docs`, [modules.md](modules.md), [platform.md](platform.md) | Vitest 1239 из 1239 (112 файлов), интеграция с PostgreSQL 260 из 260 (29 файлов), `tsc`, ESLint и `next build` без ошибок — прогон 10.10 в [validation-results.md](validation-results.md); 0 выполненных инъекций из 10 атак (только словарный режим); 33 из 33 SSRF-адресов отбиты |
 
-Граница: цифры тестов — на интеграционной сборке 10.10, до слияния сегодняшних лейнов; перед сдачей их нужно перемерить. Нагрузка не замерялась (R-N-09). «0 из 10 инъекций» словарный режим получает по построению; стойкость модели к инъекциям этим не доказана.
+Граница: автотесты на main `a5b12187` (11.10, 19:17 МСК): unit 4098 из 4098; integration 514 из 520 — 6 падений `/api/stt` только с настоящим ключом SpeechKit в локальном `.env`. Нагрузка — 50 VU без ошибок (R-N-09, `validation/load.md`). «0 из 10 инъекций» словарный режим получает по построению; стойкость модели к инъекциям этим не доказана.
 
 ### 5. Полнота и документация — 6 %
 

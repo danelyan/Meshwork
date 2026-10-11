@@ -430,25 +430,6 @@ model Company {
   employerQuestions EmployerQuestion[]
   /// lane complaints: жалобы кандидатов на приглашения компании
   complaints        Complaint[]
-
-  // lane: admin (E-08, ADR 0009) — верификация модератором (фаза 2) и блокировка (фаза 3).
-  // *ById — StaffMember.id без FK: сотрудника не удаляют (disabledAt), журнал хранит историю.
-  /// Метка «компания проверена»: когда и кто поставил; null — не проверена.
-  verifiedAt              DateTime?
-  verifiedById            String?
-  /// Причина/основание решения модератора (что сверено).
-  verificationNote        String?
-  /// Представитель запросил проверку (загрузил выписку или подтвердил домен почты).
-  verificationRequestedAt DateTime?
-  /// Основание: текст или id загрузки (Upload) с выпиской ЕГРЮЛ.
-  verificationEvidence    String?
-  /// Блокировка компании: не отправляет приглашения. blockedUntil null — бессрочно.
-  blockedAt               DateTime?
-  blockedUntil            DateTime?
-  blockedReason           String?
-  blockedById             String?
-  /// lane admin: апелляции компании на санкцию (фаза 2)
-  sanctionAppeals         SanctionAppeal[]
 }
 
 model Vacancy {
@@ -608,6 +589,8 @@ model User {
   consents           Consent[]
   /// lane onboarding: где человек остановился в онбординге
   onboarding         OnboardingState?
+  /// lane onboarding: журнал редакций ответов опроса (C05)
+  onboardingRevisions OnboardingAnswerRevision[]
   /// lane call: участие в созвонах (работодатель в комнате защиты)
   callParticipations CallParticipant[]
 
@@ -624,13 +607,6 @@ model User {
   /// lane astra-favorites: bookmarks are private to the account, not its company
   savedVacancies               UserSavedVacancy[]
   savedCandidates              UserSavedCandidate[]
-
-  // lane: admin (E-08, ADR 0009, фаза 3) — блокировка учётки. blockedUntil null — бессрочно.
-  blockedAt     DateTime?
-  blockedUntil  DateTime?
-  blockedReason String?
-  /// StaffMember.id без FK
-  blockedById   String?
 }
 
 // =============================================================================
@@ -742,19 +718,17 @@ enum ObjectionStatus {
 /// lane consent (ст. 16 152-ФЗ): возражение кандидата против автоматической оценки. Срок ответа — 30 дней.
 /// Работодателю не показывается.
 model AssessmentObjection {
-  id           String           @id @default(cuid())
-  candidateId  String
-  candidate    Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  subject      ObjectionSubject
+  id          String           @id @default(cuid())
+  candidateId String
+  candidate   Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  subject     ObjectionSubject
   /// Что оспаривается: TestAttempt/CandidateCategory (grade_test), CallSession (call), DefenseSession или CallSession kind=defense (defense)
-  subjectId    String
-  text         String
-  status       ObjectionStatus  @default(open)
-  answer       String?
-  createdAt    DateTime         @default(now())
-  answeredAt   DateTime?
-  /// lane admin (E-08, фаза 2): кто из персонала ответил (StaffMember.id без FK); null — ответ из dev-панели
-  answeredById String?
+  subjectId   String
+  text        String
+  status      ObjectionStatus  @default(open)
+  answer      String?
+  createdAt   DateTime         @default(now())
+  answeredAt  DateTime?
 
   @@index([candidateId, createdAt])
   @@index([status, createdAt])
@@ -822,6 +796,25 @@ model OnboardingState {
   meta      Json     @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// Журнал редакций ответов опроса (C05, аудит 11.10): каждая смена ответа - запись «было → стало».
+/// Текущие значения остаются в OnboardingState.answers; журнал только дополняется и удаляется вместе с аккаунтом.
+model OnboardingAnswerRevision {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Шаг опроса (StepDef.id)
+  stepId    String
+  /// Значение после изменения; NULL - ответ удалён (сброс)
+  value     Json?
+  /// Значение до изменения; NULL - ответа не было
+  previous  Json?
+  /// user - ответ человека; fsp - итог входа в ФСП ID; reset - сброс опроса
+  source    String   @default("user")
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // =============================================================================
@@ -1362,13 +1355,8 @@ model Complaint {
   comment      String?
   status       ComplaintStatus @default(open)
   createdAt    DateTime        @default(now())
-  /// lane admin (E-08, фаза 2): решение модератора — кто (StaffMember.id без FK), когда, причина
-  resolvedById String?
-  resolvedAt   DateTime?
-  resolution   String?
 
   @@index([companyId, createdAt])
-  @@index([status, createdAt])
 }
 
 // =============================================================================
@@ -1456,151 +1444,4 @@ model LiveDefenseEvent {
 
   @@index([candidateId, audience, createdAt])
   @@index([companyId, audience, createdAt])
-}
-
-// =============================================================================
-// lane: admin — админка владельцев платформы (E-08, docs/decisions/0009-admin-staff.md)
-// Схема всех фаз 0–5 заведена одной миграцией фазы 0; лейны фаз пишут только в свои модели/поля
-// (карта — docs/admin.md). Персонал — не UserRole (ADR 0001 не меняется).
-// =============================================================================
-
-enum StaffRole {
-  owner
-  moderator
-  support
-}
-
-/// Сотрудник платформы. Входит только через /admin/login (пароль + TOTP), заводится CLI scripts/admin-create.ts
-/// или владельцем в /admin/staff. Не удаляется: disabledAt.
-model StaffMember {
-  id            String         @id @default(cuid())
-  /// В нижнем регистре.
-  email         String         @unique
-  name          String
-  role          StaffRole
-  /// scrypt `scrypt$N$r$p$salt$hash` (server/auth/password.ts)
-  passwordHash  String
-  /// Секрет TOTP, зашифрован (server/admin/totp.ts: `enc1.…`); null — ещё не выдан.
-  totpSecret    String?
-  /// TOTP подтверждён первым верным кодом; до этого вход только через настройку TOTP.
-  totpEnabledAt DateTime?
-  /// Номер 30-секундного шага последнего принятого кода — повтор того же кода отклоняется (RFC 6238 §5.2).
-  totpLastStep  Int?
-  disabledAt    DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  sessions      AdminSession[]
-}
-
-/// Сессия персонала (кука fsp_admin хранит id сессии): отзыв — revokedAt (выход, смена роли, отключение, сброс 2FA).
-model AdminSession {
-  id        String      @id @default(cuid())
-  staffId   String
-  staff     StaffMember @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  createdAt DateTime    @default(now())
-  expiresAt DateTime
-  revokedAt DateTime?
-  ip        String?
-  userAgent String?
-
-  @@index([staffId, createdAt])
-}
-
-/// Журнал действий персонала. Только INSERT (server/admin/audit.ts); в коде нет update/delete этой модели.
-model AdminAuditLog {
-  id         String   @id @default(cuid())
-  /// StaffMember.id без FK; null — системное действие (CLI admin-create)
-  actorId    String?
-  /// Действие из каталога server/admin/permissions.ts или событие входа (staff.login, …)
-  action     String
-  /// user | candidate | company | vacancy | invitation | complaint | appeal | objection | red_flag | setting | staff | …
-  targetType String?
-  targetId   String?
-  reason     String?
-  before     Json?
-  after      Json?
-  ip         String?
-  createdAt  DateTime @default(now())
-
-  @@index([targetType, targetId])
-  @@index([actorId, createdAt])
-  @@index([createdAt])
-}
-
-enum SanctionAppealStatus {
-  open
-  upheld
-  rejected
-}
-
-/// Фаза 2: апелляция работодателя на санкцию (лимит приглашений из-за жалоб).
-model SanctionAppeal {
-  id           String               @id @default(cuid())
-  companyId    String
-  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  /// EmployerProfile.id автора
-  authorId     String?
-  text         String
-  status       SanctionAppealStatus @default(open)
-  /// StaffMember.id без FK
-  resolvedById String?
-  resolution   String?
-  createdAt    DateTime             @default(now())
-  resolvedAt   DateTime?
-
-  @@index([status, createdAt])
-  @@index([companyId, createdAt])
-}
-
-enum RedFlagTarget {
-  invitation
-  vacancy
-}
-
-enum RedFlagReviewStatus {
-  open
-  ok
-  hidden
-  warned
-}
-
-/// Фаза 2: очередь «посмотреть» по срабатываниям detectRedFlags.
-model RedFlagReview {
-  id           String              @id @default(cuid())
-  targetType   RedFlagTarget
-  targetId     String
-  /// Сработавшие флаги (как вернул detectRedFlags)
-  flags        Json
-  status       RedFlagReviewStatus @default(open)
-  /// StaffMember.id без FK
-  resolvedById String?
-  resolution   String?
-  createdAt    DateTime            @default(now())
-  resolvedAt   DateTime?
-
-  @@unique([targetType, targetId])
-  @@index([status, createdAt])
-}
-
-/// Фаза 4: продуктовые параметры без деплоя. Умолчания — в коде, строка БД перекрывает (getSetting()).
-model PlatformSetting {
-  key         String                   @id
-  value       Json
-  /// StaffMember.id без FK
-  updatedById String?
-  updatedAt   DateTime                 @updatedAt
-  versions    PlatformSettingVersion[]
-}
-
-/// Фаза 4: история значений для отката (каждое изменение — новая строка).
-model PlatformSettingVersion {
-  id          String          @id @default(cuid())
-  key         String
-  setting     PlatformSetting @relation(fields: [key], references: [key], onDelete: Cascade)
-  value       Json
-  updatedById String?
-  reason      String?
-  createdAt   DateTime        @default(now())
-
-  @@index([key, createdAt])
 }

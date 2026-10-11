@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { type ClaimAction, claimAction, confirmClaimsBatchApi, fetchDemoResume, openConsultantStream, stopConsultantTurn } from '@/lib/api';
+import { type ClaimAction, claimAction, confirmClaimsBatchApi, fetchDemoResume, openConsultantStream } from '@/lib/api';
 import { extractUrls } from '@/lib/links';
 import type { CardClaim } from '@/lib/claims-view';
 import { createSseParser } from '@/lib/sse';
@@ -128,14 +128,6 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       setItems((p) => [...p, { id: nextId(), role: 'user', text: message, files: fileNames }]);
       const ctrl = new AbortController();
       abortRef.current = ctrl;
-      // Ход дошёл до `done` без `error` — упрощённый режим снимаем (консультант снова отвечает).
-      let sawDone = false;
-      let sawError = false;
-      const handle = (ev: AgentEvent) => {
-        if (ev.type === 'done') sawDone = true;
-        if (ev.type === 'error') sawError = true;
-        pushEvent(ev);
-      };
       try {
         await embedded?.beforeSend?.();
         const stream = await openConsultantStream({ text: message, uploadIds, urls, conversationId: conversationRef.current }, ctrl.signal);
@@ -145,34 +137,22 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
-          for (const ev of parser.push(decoder.decode(value, { stream: true }))) handle(ev);
+          for (const ev of parser.push(decoder.decode(value, { stream: true }))) pushEvent(ev);
         }
-        for (const ev of parser.push(decoder.decode())) handle(ev);
-        for (const ev of parser.flush()) handle(ev);
-        if (sawDone && !sawError) setSimplified(false);
+        for (const ev of parser.push(decoder.decode())) pushEvent(ev);
+        for (const ev of parser.flush()) pushEvent(ev);
       } catch (e) {
         if ((e as Error).name !== 'AbortError') {
           const code = (e as { code?: string }).code ?? 'network';
           pushEvent({ type: 'error', code, message: e instanceof Error ? e.message : 'Что-то пошло не так.' });
         }
       } finally {
-        // Обрыв/ошибка посреди дельт: реплику закрываем (каретка гаснет, появляется «Озвучить»).
-        setItems((p) => (p.some((it) => it.role === 'agent' && it.streaming) ? p.map((it) => (it.role === 'agent' && it.streaming ? { ...it, streaming: false } : it)) : p));
-        if (abortRef.current === ctrl) abortRef.current = null;
         setBusy(false);
         refreshAside();
       }
     },
     [pushEvent, embedded, refreshAside],
   );
-
-  // «Стоп»: сервер останавливает ход и отдаёт показанный кусок (`message` + `done`), затем — обрыв локального fetch.
-  const stop = useCallback(async () => {
-    const ctrl = abortRef.current;
-    const id = conversationRef.current;
-    if (id) await stopConsultantTurn(id);
-    ctrl?.abort();
-  }, []);
 
   // Файлы и ссылки из правой колонки (FilesCard) — тем же ходом, что вложения композера.
   const busyRef = useRef(busy);
@@ -335,7 +315,6 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         onSubmit={() => void onSubmit()}
         placeholder="Напиши, прикрепи резюме или вставь ссылку"
         sending={busy}
-        onStop={() => void stop()}
         multiline
         voice
         onCall={callMode ? () => callMode.start() : undefined}

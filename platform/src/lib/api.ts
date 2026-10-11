@@ -118,6 +118,10 @@ export type OnboardingAction =
   | { action: 'skip'; stepId: string }
   | { action: 'goto'; stepId: string };
 export const getOnboarding = () => request<OnboardingView>('/api/onboarding');
+export const listOnboardingHistoryApi = async () => {
+  const res = await request<{ revisions?: import('@/server/onboarding/types').AnswerRevisionView[] }>('/api/onboarding/history');
+  return Array.isArray(res.revisions) ? res.revisions : [];
+};
 export const onboardingAct = (body: OnboardingAction) => postJson<OnboardingView>('/api/onboarding', body);
 /** «Настроить позже»: онбординг не завершается, ответ — куда вести. */
 export const onboardingLater = () => postJson<{ next: string }>('/api/onboarding', { action: 'later' });
@@ -241,23 +245,6 @@ export async function openConsultantStream(input: SendMessageInput, signal: Abor
   if (!res.ok) throw await readError(res);
   if (!res.body) throw new ApiError('Сервер не отдал поток ответа.', 502);
   return res.body;
-}
-
-/**
- * Кнопка «Стоп»: остановить активный ход консультанта. Сервер сохраняет показанный кусок реплики
- * и шлёт в поток `message` + `done`; ответ приходит после этого. Ошибки не бросает (стоп — best effort).
- */
-export async function stopConsultantTurn(conversationId: string): Promise<void> {
-  try {
-    await fetch('/api/consultant/messages/stop', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ conversationId }),
-    });
-  } catch {
-    /* сеть: локальный fetch всё равно оборвём */
-  }
 }
 
 // --- защита утверждения (лейн defense) ---

@@ -10,3 +10,6 @@
 .item strong { font-size: var(--fs); }
 .item span, .item time { font: var(--fs-xs)/1.5 var(--mono); color: var(--muted); }
 @media (max-width: 640px) { .panel { position: fixed; top: var(--landing-header-h); right: 16px; } }
+
+/* Движение: прочитанное уведомление гасится плавно */
+.item { transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease); }

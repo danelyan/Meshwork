@@ -394,3 +394,11 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --motion-slow: 260ms;
   --motion-ease: var(--ease);
 }
+
+/* Смена состояния интерактивных элементов (hover, focus, aria-pressed, disabled) плавная: цвет, фон, рамка,
+   тень, прозрачность. Модуль уточняет своим transition; prefers-reduced-motion выключает выше. */
+a, button, summary, input, select, textarea, [role='button'], [role='tab'] {
+  transition: color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
+}

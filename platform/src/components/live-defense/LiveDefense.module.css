@@ -17,3 +17,6 @@
 .meta { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
 .fine { margin: 0; color: var(--muted); font-size: var(--fs-xs); }
 .error { margin: 0; color: var(--blue); font-size: var(--fs-sm); }
+
+/* Движение: смена статуса защиты и доступности слота плавная */
+.sub, .slot { transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease); }

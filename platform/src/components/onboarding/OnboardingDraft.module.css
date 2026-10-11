@@ -21,3 +21,6 @@ button.row:hover { background: var(--surface-notice); }
 .identity h2 { font-size: var(--fs-lg); }
 .previewRows > div { padding: 12px 0; border-top: 1px solid var(--line); }
 .notice { border-top: 1px solid var(--line); padding-top: 14px; }
+
+/* Движение: подсветка текущей строки плавная */
+.row { transition: background-color var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast) var(--motion-ease); }

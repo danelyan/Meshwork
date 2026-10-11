@@ -50,3 +50,6 @@
 .cardHead { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
 .enter { justify-self: start; padding: 8px 16px; font-family: inherit; font-weight: 600; font-size: var(--fs-sm); color: var(--on-ink); background: var(--ink); border: 1px solid var(--ink); cursor: pointer; }
 .enter:disabled { cursor: default; opacity: .5; }
+
+/* Движение: стрелка строки персоны меняет цвет вместе со строкой */
+.go { transition: color var(--motion-fast) var(--motion-ease); }

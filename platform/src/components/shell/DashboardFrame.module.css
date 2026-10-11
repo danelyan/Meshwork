@@ -50,3 +50,9 @@
   .frame[data-consultant] .content { min-height: 0; height: 100%; overflow: hidden; }
   .frame[data-consultant] .content > main { height: 100%; min-height: 0; }
 }
+
+/* Появление экрана при переходе: содержимое страницы (ребёнок .content перемонтируется) мягко проявляется. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes pageIn { from { opacity: 0; } }
+  .content > * { animation: pageIn var(--motion-slow) var(--motion-ease); }
+}

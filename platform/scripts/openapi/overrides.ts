@@ -92,6 +92,7 @@ export const SSE_EVENTS_DOC = [
   'Звонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).',
   'Эндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.',
   'Второй ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.',
+  'Пока ход идёт, сервер раз в 15 с шлёт комментарий `: ping` (строка без `data:`, клиент её пропускает). Разрыв соединения ход не прерывает: реплика дописывается и сохраняется в историю. Остановить ход — `POST /api/consultant/messages/stop`.',
 ].join('\n\n');
 
 const ev = (type: string, props: Record<string, JsonSchema>, description: string, required: string[] = Object.keys(props)): JsonSchema =>
@@ -517,6 +518,13 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Ход консультанта: тело — текст, вложения (id из /api/uploads) и ссылки; ответ — поток событий `ConsultantEvent`, заканчивается `done`. Один ход на разговор одновременно. Первый ход с вложениями запускает конвейер: сборщик → извлекатель → проверяющий → черновики утверждений (события `step`, `claims`). Не больше 6 вызовов инструментов за ход. В теле должен быть текст, вложение или ссылка (иначе 400); `onboardingStep` — свободный вопрос посреди онбординга, нужен вход, согласие и роль кандидата.',
     success: { schema: { type: 'string', description: 'Кадры `data: <json>`; схема кадра — ConsultantEvent', 'x-event-schema': ref('ConsultantEvent') } },
     errors: { ...SSE_ERRORS, 403: 'Вопрос посреди онбординга без входа или не кандидатом' },
+  },
+
+  'POST /api/consultant/messages/stop': {
+    summary: 'Остановить ход консультанта',
+    description: 'Кнопка «Стоп»: отменяет активный ход разговора (работу модели). Показанный кусок реплики сохраняется ответом ассистента и уходит в поток хода событием `message`, затем `done`; ответ приходит после этого (не дольше 5 с). Разрыв соединения ход не останавливает — только этот вызов или таймаут хода. Реестр ходов — в памяти процесса (стенд — один процесс приложения).',
+    success: { ...JSON_OK('Ход остановлен', obj({ stopped: bool() })), extra: [{ status: 204, description: 'Активного хода нет (стоп идемпотентен)' }] },
+    errors: { 404: 'Разговор не найден или чужой' },
   },
 
   'POST /api/defense': {

@@ -351,6 +351,9 @@ describe('индекс честности и подтверждающий тес
   const at = (sec: number) => new Date(T0.getTime() + sec * 1000);
   beforeEach(() => {
     T0 = new Date();
+    // Подтверждающий тест живёт в режиме confirm; режим по умолчанию (silent) и слой жюри проверяются отдельными тестами ниже.
+    vi.stubEnv('TEST_INTEGRITY_ACTION', 'confirm');
+    resetEnvCache();
   });
 
   /** Пройти попытку сервисом со своим временем: answerFor(ключ, сдвиг ловушки) → ответ; stepSec — секунд на ответ. */
@@ -379,7 +382,7 @@ describe('индекс честности и подтверждающий тес
     expect(first.current?.timeLimitSec).toBeGreaterThan(0);
     const { v } = await playTimed(A, attemptId, 0, 70, (key) => key);
     expect(v.status).toBe('passed');
-    expect(v.result?.integrity?.level).not.toBe('high');
+    expect((await prisma.testAttempt.findUniqueOrThrow({ where: { id: attemptId } })).integrity).toMatchObject({ blocking: false });
     expect(v.result?.integrity?.needsConfirmation).toBe(false);
     expect(v.result?.items.every((i) => i.canary === null)).toBe(true);
     const items = await prisma.testItem.findMany({ where: { attemptId } });
@@ -398,7 +401,8 @@ describe('индекс честности и подтверждающий тес
     );
     expect(sig.status).toBe(200);
     const sig2 = await signalRoute(jsonRequest(`/api/test/attempt/${attemptId}/signal`, 'POST', { tabHidden: 2, hiddenMs: 5000 }, cookie(A)), ctx(attemptId));
-    expect(((await sig2.json()) as { signals: { tabHidden: number; pastes: number } }).signals).toMatchObject({ tabHidden: 4, pastes: 1, hiddenMs: 5000 });
+    // Без JURY_INSIGHTS счётчики кандидату не возвращаются.
+    expect(await sig2.json()).toEqual({ ok: true });
     expect((await signalRoute(jsonRequest(`/api/test/attempt/${attemptId}/signal`, 'POST', { tabHidden: -1 }, cookie(A)), ctx(attemptId))).status).toBe(400);
     expect((await signalRoute(jsonRequest(`/api/test/attempt/${attemptId}/signal`, 'POST', { tabHidden: 1 }, cookie(B)), ctx(attemptId))).status).toBe(404);
 
@@ -418,7 +422,7 @@ describe('индекс честности и подтверждающий тес
     expect(v.status).toBe('needs_confirmation');
     expect(v.result?.confirmed).toBe(false);
     expect(v.result?.juniorOffered).toBe(false);
-    expect(v.result?.integrity).toMatchObject({ level: 'high', needsConfirmation: true, confirmGrade: 'middle', confirmAttemptId: null, confirmedBy: null });
+    expect(v.result?.integrity).toEqual({ needsConfirmation: true, confirmGrade: 'middle', confirmAttemptId: null, confirmedBy: null });
     expect(JSON.stringify(v.result)).not.toContain('canary_hit');
     expect(v.result?.items.every((i) => i.canary === null)).toBe(true);
     expect(await prisma.candidateCategory.count({ where: { candidateId: A } })).toBe(0);
@@ -485,7 +489,54 @@ describe('индекс честности и подтверждающий тес
     const { attemptId } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
     const { v } = await playTimed(A, attemptId, 0, 4, shifted);
     expect(v.status).toBe('passed');
-    expect(v.result?.integrity?.level).toBe('high');
+    expect((await prisma.testAttempt.findUniqueOrThrow({ where: { id: attemptId } })).integrity).toMatchObject({ level: 'high', blocking: false });
     expect(await prisma.candidateCategory.count({ where: { candidateId: A, grade: 'middle' } })).toBe(1);
+  });
+
+  it('silent (по умолчанию): high не блокирует, кандидату об индексе ничего - ни уровня, ни причин, ни слоя жюри', async () => {
+    vi.unstubAllEnvs();
+    resetEnvCache();
+    const { attemptId } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
+    const { v } = await playTimed(A, attemptId, 0, 4, shifted);
+    expect(v.status).toBe('passed');
+    expect(await prisma.candidateCategory.count({ where: { candidateId: A, grade: 'middle' } })).toBe(1);
+    const stored = await prisma.testAttempt.findUniqueOrThrow({ where: { id: attemptId } });
+    expect(stored.integrity).toMatchObject({ level: 'high', blocking: false });
+    expect(v.result?.integrity).toBeNull();
+    expect(v.result?.jury).toBeUndefined();
+    const json = JSON.stringify(v);
+    for (const leak of ['canary_hit', 'reasons', 'canaryShift', '"level"', 'jury', 'подтверждающ']) expect(json).not.toContain(leak);
+  });
+
+  it('JURY_INSIGHTS: без флага в ответе нет сдвига ловушки и разбора; с флагом - есть, ключ не раскрыт', async () => {
+    const { attemptId } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
+    let v = await getAttempt(A, attemptId);
+    let sec = 0;
+    let withShift = 0;
+    const seen: AttemptView[] = [];
+    while (v.status === 'active') {
+      seen.push(v);
+      const it = await prisma.testItem.findFirstOrThrow({ where: { attemptId, correct: null } });
+      if (it.canaryShift !== null) withShift++;
+      sec += 4;
+      v = await answerAttempt(A, attemptId, shifted(it.answerKey.split('|')[0]!, it.canaryShift), at(sec));
+    }
+    expect(withShift).toBeGreaterThan(0);
+    expect(seen.every((x) => x.current?.jury === undefined)).toBe(true);
+    expect(JSON.stringify(seen)).not.toContain('canaryShift');
+
+    vi.stubEnv('JURY_INSIGHTS', 'true');
+    resetEnvCache();
+    const fin = await getAttempt(A, attemptId);
+    expect(fin.status).toBe('needs_confirmation');
+    expect(fin.result?.jury).toMatchObject({ level: 'high', candidateSees: 'ничего' });
+    expect(fin.result?.jury?.reasons.map((r) => r.code)).toContain('canary_hit');
+    expect(fin.result?.jury?.employerSees).toContain('ничего');
+    // Активная попытка с флагом: сдвиг в задании с ловушкой, null без неё; ключа в ответе нет.
+    const second = await startAttempt(B, 'backend', 'middle', T0, { seed: 1, subcategoryId: 'backend.web-api' });
+    const cur = (await getAttempt(B, second.attemptId)).current!;
+    const row = await prisma.testItem.findFirstOrThrow({ where: { attemptId: second.attemptId, correct: null } });
+    expect(cur.jury).toEqual({ canaryShift: row.canaryShift });
+    expect(JSON.stringify(cur)).not.toContain(row.answerKey.split('|')[0]! + '"');
   });
 });

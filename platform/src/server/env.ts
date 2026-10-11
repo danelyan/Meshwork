@@ -98,6 +98,17 @@ export const envSchema = z
      * false — индекс считается и пишется в попытку, но категорию не задерживает (ADR-0002, дополнение 11.10).
      */
     TEST_INTEGRITY: z.stringbool().default(true),
+    /**
+     * lane jury: что делает high при включённом TEST_INTEGRITY. silent (по умолчанию, решение владельца 11.10) -
+     * индекс считается и виден работодателю, кандидату ничего не раскрывается и категория не задерживается;
+     * confirm - high задерживает категорию до подтверждающего теста (ADR-0002).
+     */
+    TEST_INTEGRITY_ACTION: z.enum(['silent', 'confirm']).default('silent'),
+    /**
+     * lane jury: слой «только для жюри» - живые счётчики сигналов, сдвиг ловушки и разбор индекса на итоге.
+     * Как DEMO_LOGIN: на стенде true, на проде false. Проверяется на сервере, данные без флага не отдаются.
+     */
+    JURY_INSIGHTS: z.stringbool().default(false),
     /** lane runner: адрес сервиса автопроверки проектов (compose: http://runner:8090). Не задан — проверка проектов недоступна. */
     RUNNER_URL: optionalString.pipe(z.url().optional()),
     /**

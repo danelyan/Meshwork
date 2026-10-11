@@ -270,7 +270,7 @@ export type { AttemptSummary, AttemptView, EligibilityView, StartResult } from '
 export const startTestApi = (specialization: Specialization, grade: Grade, subcategoryId?: string | null) =>
   postJson<import('@/server/test/types').StartResult>('/api/test/start', { specialization, grade, subcategoryId: subcategoryId ?? undefined });
 export const testEligibilityApi = (specialization: Specialization, grade: Grade, subcategoryId?: string | null) =>
-  request<import('@/server/test/types').EligibilityView & { rules: string }>(
+  request<import('@/server/test/types').EligibilityView & { rules: string; retakeAfter?: string }>(
     `/api/test/start?specialization=${specialization}&grade=${grade}${subcategoryId ? `&subcategoryId=${encodeURIComponent(subcategoryId)}` : ''}`,
   );
 export const getTestAttemptApi = (id: string) => request<import('@/server/test/types').AttemptView>(`/api/test/attempt/${encodeURIComponent(id)}`);

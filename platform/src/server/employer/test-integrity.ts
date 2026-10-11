@@ -2,16 +2,10 @@
 // по заданию, числа, тексты). Ранжирование не использует. Индекс считает src/server/test/integrity.ts.
 import { prisma } from '../db';
 import type { Grade, Specialization } from '../types';
+import type { PublicIntegrityGroup, PublicTestIntegrity } from './test-integrity-label';
 
-export type PublicIntegrityGroup = 'time' | 'fit' | 'browser';
-
-export interface PublicTestIntegrity {
-  level: 'low' | 'medium' | 'high';
-  /** Группы замечаний: время / рисунок ответов / браузер. Ловушка наружу не называется. */
-  groups: PublicIntegrityGroup[];
-  /** Были замечания, категорию выдал подтверждающий тест. */
-  confirmedAgain: boolean;
-}
+export { integrityLabel } from './test-integrity-label';
+export type { PublicIntegrityGroup, PublicTestIntegrity } from './test-integrity-label';
 
 const GROUPS: ReadonlySet<string> = new Set<PublicIntegrityGroup>(['time', 'fit', 'browser']);
 

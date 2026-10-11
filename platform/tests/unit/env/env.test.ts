@@ -13,8 +13,15 @@ describe('env', () => {
       LLM_MAX_CONCURRENCY: 8,
       LLM_MAX_RETRIES: 2,
       DEMO_LOGIN: false,
+      JURY_INSIGHTS: false,
+      TEST_INTEGRITY_ACTION: 'silent',
       YANDEX_BASE_URL: 'https://ai.api.cloud.yandex.net/v1',
     });
+  });
+
+  it('слой жюри и режим индекса честности: флаги из строк, неизвестный режим - ошибка', () => {
+    expect(parseEnv({ ...valid, JURY_INSIGHTS: 'true', TEST_INTEGRITY_ACTION: 'confirm' })).toMatchObject({ JURY_INSIGHTS: true, TEST_INTEGRITY_ACTION: 'confirm' });
+    expect(() => parseEnv({ ...valid, TEST_INTEGRITY_ACTION: 'loud' })).toThrow(EnvError);
   });
 
   it('строки приводятся к числам и булевым, пустые строки — undefined', () => {

@@ -13,5 +13,6 @@ export {
   ensureTemplates,
   intervals,
   describeIntervals,
+  describeRetake,
   POLICY_VERSION,
 } from './service';

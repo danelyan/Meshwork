@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
+import { getEnv } from '@/server/env';
 import { recordSignals } from '@/server/test';
 
 export const dynamic = 'force-dynamic';
@@ -42,5 +43,6 @@ export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   }
   const body = Body.parse(raw);
   const signals = await recordSignals(candidateId, id, body);
-  return Response.json({ signals });
+  // Счётчики наружу только слою жюри: иначе кандидат видел бы, что именно считается.
+  return Response.json(getEnv().JURY_INSIGHTS ? { signals } : { ok: true });
 });

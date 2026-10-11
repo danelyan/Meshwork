@@ -6,6 +6,7 @@ import { PLATFORM_UPGRADABLE } from '../claims/levels';
 import { prisma } from '../db';
 import { getEnv } from '../env';
 import { assertAiAssessmentConsent } from '../consent/service';
+import { publicIntegrity } from '../employer/test-integrity';
 import { AppError, errors } from '../errors';
 import { GRADE_CHANGE_INTERVAL_DAYS } from '../recommend/weights';
 import type { Grade, Specialization } from '../types';
@@ -59,6 +60,7 @@ import {
   type SelectableTemplate,
   type Step,
 } from './policy';
+import { juryResult } from './jury';
 import { createRng, deriveSeed, randomSeed } from './rng';
 import type {
   AnsweredItemView,
@@ -69,6 +71,7 @@ import type {
   EligibilityView,
   IntegrityView,
   ItemView,
+  JuryResult,
   StartResult,
   TaskGenerator,
 } from './types';
@@ -112,6 +115,11 @@ export function intervals(demo: boolean = getEnv().TEST_DEMO_INTERVALS): Interva
   return demo
     ? { demo, gradeChangeMs: DEMO_GRADE_CHANGE_MIN * MIN_MS, retakeMs: DEMO_RETAKE_MIN * MIN_MS }
     : { demo, gradeChangeMs: GRADE_CHANGE_INTERVAL_DAYS * DAY_MS, retakeMs: RETAKE_SAME_GRADE_DAYS * DAY_MS };
+}
+
+/** Через сколько можно пересдать тот же грейд: «1 мин» в демо-режиме, «14 дней» на проде (экран правил перед тестом). */
+export function describeRetake(iv: Intervals = intervals()): string {
+  return iv.demo ? `${DEMO_RETAKE_MIN} мин` : `${RETAKE_SAME_GRADE_DAYS} дней`;
 }
 
 export function describeIntervals(iv: Intervals = intervals()): string {
@@ -230,6 +238,12 @@ export interface StoredIntegrity extends IntegrityIndex {
   /** Подтверждающая попытка, по которой выдана категория. */
   confirmedBy: string | null;
   computedAt: string;
+}
+
+/** Задерживает ли high категорию: TEST_INTEGRITY включён и режим confirm (silent - индекс только считается). */
+function integrityBlocks(): boolean {
+  const env = getEnv();
+  return env.TEST_INTEGRITY && env.TEST_INTEGRITY_ACTION === 'confirm';
 }
 
 function storedIntegrity(raw: Prisma.JsonValue | null): StoredIntegrity | null {
@@ -466,6 +480,8 @@ function itemView(it: TestItem, title: string, format: TaskGenerator['format'], 
     timeLimitSec: it.timeLimitSec ?? timeLimitSec,
     askedAt: it.askedAt.toISOString(),
     canary: withCanary && it.canaryShift !== null ? canaryText(it.canaryShift) : null,
+    // Слой жюри: сдвиг ловушки (ключ не раскрывается). Без флага поля нет вовсе.
+    ...(withCanary && getEnv().JURY_INSIGHTS ? { jury: { canaryShift: it.canaryShift ?? null } } : {}),
   };
 }
 
@@ -474,7 +490,7 @@ function explainResult(a: AttemptWithItems, d: Parameters<typeof explainDecision
   if (a.kind === 'confirm') {
     const base = `Подтверждающий тест: решено ${correct} из ${answered}. Уверенность по обеим попыткам (без отмеченных заданий), что уровень не ниже ${gradeLabel(a.grade)}: ${Math.round(d.pPass * 100)}% (нужно не меньше ${Math.round(CONFIRM_PROB * 100)}%).`;
     if (a.status === 'passed') return `${base} Грейд ${gradeLabel(a.grade)} подтверждён, категория выдана.`;
-    if (integrity?.blocking) return `${base} Порог пройден, но и в подтверждающем тесте есть признаки, которые не дают выдать категорию автоматически. Дальше — обычная пересдача по интервалам или разбор теста на созвоне.`;
+    if (integrity?.blocking && integrityBlocks()) return `${base} Порог пройден, но и в подтверждающем тесте есть признаки, которые не дают выдать категорию автоматически. Дальше — обычная пересдача по интервалам или разбор теста на созвоне.`;
     return `${base} Грейд ${gradeLabel(a.grade)} не подтверждён. Уже подтверждённая категория не снимается.`;
   }
   if (a.status === 'needs_confirmation') {
@@ -487,8 +503,9 @@ function explainResult(a: AttemptWithItems, d: Parameters<typeof explainDecision
 
 function integrityView(a: AttemptWithItems, integrity: StoredIntegrity | null, confirmAttemptId: string | null): IntegrityView | null {
   if (!integrity) return null;
+  // Режим silent: кандидату об индексе ничего (null), кроме попыток, уже ждущих подтверждающего теста.
+  if (!integrityBlocks() && a.status !== 'needs_confirmation' && !integrity.confirmedBy && confirmAttemptId === null) return null;
   return {
-    level: integrity.level,
     needsConfirmation: a.status === 'needs_confirmation' && !integrity.confirmedBy,
     confirmGrade: integrity.confirmGrade ?? null,
     confirmAttemptId,
@@ -540,6 +557,23 @@ function resultView(a: AttemptWithItems, byId: Map<string, SelectableTemplate & 
   };
 }
 
+/** Слой жюри на итоге (JURY_INSIGHTS): разбор индекса и что видят кандидат и работодатель. */
+async function juryOf(a: AttemptWithItems): Promise<JuryResult | null> {
+  const integrity = storedIntegrity(a.integrity);
+  if (!integrity) return null;
+  const issued = a.status === 'passed';
+  let employer = null;
+  if (issued) {
+    if (a.kind === 'confirm' && a.confirmsAttemptId) {
+      const src = await prisma.testAttempt.findUnique({ where: { id: a.confirmsAttemptId }, select: { integrity: true } });
+      employer = publicIntegrity(src?.integrity ?? null, true);
+    } else {
+      employer = publicIntegrity(a.integrity, Boolean(integrity.confirmedBy));
+    }
+  }
+  return juryResult(integrity, employer, issued);
+}
+
 async function view(a: AttemptWithItems): Promise<AttemptView> {
   const byId = await poolMap(a);
   const answered = a.items.filter((i) => i.correct !== null).length;
@@ -557,6 +591,8 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     !confirm && a.status === 'needs_confirmation'
       ? await prisma.testAttempt.findFirst({ where: { candidateId: a.candidateId, kind: 'confirm', confirmsAttemptId: a.id }, orderBy: { startedAt: 'desc' }, select: { id: true } })
       : null;
+  const result = resultView(a, byId, confirmAttempt?.id ?? null);
+  const jury = result && getEnv().JURY_INSIGHTS ? await juryOf(a) : null;
   return {
     id: a.id,
     specialization: a.specialization,
@@ -573,7 +609,7 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     startedAt: a.startedAt.toISOString(),
     expiresAt: a.expiresAt.toISOString(),
     current: current && g ? itemView(current, g.title, g.format, g.timeLimitSec) : null,
-    result: resultView(a, byId, confirmAttempt?.id ?? null),
+    result: result && jury ? { ...result, jury } : result,
   };
 }
 
@@ -645,7 +681,7 @@ async function finalize(a: AttemptWithItems, now: Date): Promise<AttemptWithItem
   const d = decide(responses, a.grade);
   const index: IntegrityIndex = assessAttempt(observationsOf(a.items, byId), d.theta, parseSignals(a.signals));
   const grantable = d.confirmed ? a.grade : d.juniorOffered ? d.offeredGrade : null;
-  const blocking = getEnv().TEST_INTEGRITY && INTEGRITY_VERSIONS.has(a.policyVersion) && index.level === 'high' && grantable !== null;
+  const blocking = integrityBlocks() && INTEGRITY_VERSIONS.has(a.policyVersion) && index.level === 'high' && grantable !== null;
   const integrity: StoredIntegrity = { ...index, blocking, confirmGrade: blocking ? grantable : null, confirmedBy: null, computedAt: now.toISOString() };
   const status = blocking ? 'needs_confirmation' : d.confirmed ? 'passed' : 'not_confirmed';
   const ops: Prisma.PrismaPromise<unknown>[] = [
@@ -680,7 +716,7 @@ async function finalizeConfirm(a: AttemptWithItems, now: Date): Promise<AttemptW
   if (!source) throw errors.notFound('Исходная попытка не найдена');
   const est = estimateTheta([...source.clean, ...own]);
   const index = assessAttempt(observationsOf(a.items, byId), est.theta, parseSignals(a.signals));
-  const d = decideConfirm(source.clean, own, a.grade, getEnv().TEST_INTEGRITY ? index.level : 'low');
+  const d = decideConfirm(source.clean, own, a.grade, integrityBlocks() ? index.level : 'low');
   const integrity: StoredIntegrity = { ...index, blocking: d.blockedByRisk, confirmGrade: null, confirmedBy: null, computedAt: now.toISOString() };
   const ops: Prisma.PrismaPromise<unknown>[] = [
     prisma.testAttempt.update({

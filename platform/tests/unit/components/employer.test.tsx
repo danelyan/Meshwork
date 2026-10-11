@@ -83,6 +83,8 @@ describe('кабинет работодателя: компоненты', () => 
     expect(screen.getByTestId('test-integrity').textContent).toMatch(/проверка честности - без замечаний/);
     rerender(<ol><CandidateMatchCard item={{ ...ITEM, testIntegrity: { level: 'medium', groups: ['time', 'browser'], confirmedAgain: false } }} vacancyId="v1" /></ol>);
     expect(screen.getByTestId('test-integrity').textContent).toMatch(/есть замечания \(время, браузер\)/);
+    rerender(<ol><CandidateMatchCard item={{ ...ITEM, testIntegrity: { level: 'high', groups: ['fit'], confirmedAgain: false } }} vacancyId="v1" /></ol>);
+    expect(screen.getByTestId('test-integrity').textContent).toMatch(/тест под сомнением \(рисунок ответов\) - проверьте на созвоне/);
     rerender(<ol><CandidateMatchCard item={{ ...ITEM, testIntegrity: { level: 'high', groups: ['fit'], confirmedAgain: true } }} vacancyId="v1" /></ol>);
     expect(screen.getByTestId('test-integrity').textContent).toMatch(/были замечания \(рисунок ответов\), подтверждён повторно/);
   });

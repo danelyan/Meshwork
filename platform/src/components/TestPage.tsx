@@ -23,7 +23,9 @@ import { formatDate } from '@/lib/labels';
 import { ObjectionButton } from './consent/ObjectionButton';
 import { useBareShell } from './shell/ShellFrame';
 import styles from './TestPage.module.css';
-import { useIntegritySignals } from './useIntegritySignals';
+import type { ItemView, JuryResult } from '@/server/test/types';
+
+import { useIntegritySignals, type SignalTotals } from './useIntegritySignals';
 import { Button, Chip, Field, Kicker, Notice, Panel, Tag } from './ui';
 import ui from './ui.module.css';
 
@@ -97,8 +99,99 @@ function ExampleTask() {
   </aside>;
 }
 
-const INTEGRITY_NOTICE =
-  'Мы отмечаем уход со вкладки, вставку и копирование — это не наказание, а повод для короткого подтверждающего теста.';
+const RULES_DURING = [
+  'Нельзя покидать вкладку с заданием и копировать текст',
+  'Нельзя пользоваться поисковиками и нейросетями',
+  'Не отвлекайтесь на звонки и уведомления — проверьте интернет и зарядку',
+];
+
+/** Экран правил перед стартом, как на hh.ru. Что именно и как проверяется - не раскрываем. */
+function RulesBlock({ retakeAfter }: { retakeAfter: string | undefined }) {
+  const after = [
+    'Если не получится — работодатель не увидит',
+    `Следующая попытка — через ${retakeAfter ?? 'установленный интервал'}`,
+    'Отключите расширения браузера — они могут помешать',
+  ];
+  return (
+    <Panel as="section" aria-label="Правила теста" className={styles.rulesPanel} data-testid="test-rules">
+      <div className={styles.ruleStep}>
+        <span className={styles.ruleNum} aria-hidden="true">1</span>
+        <div>
+          <h2 className={styles.ruleTitle}>Во время теста</h2>
+          <ul className={styles.ruleList}>{RULES_DURING.map((t) => <li key={t}>{t}</li>)}</ul>
+        </div>
+      </div>
+      <div className={styles.ruleStep}>
+        <span className={styles.ruleNum} aria-hidden="true">2</span>
+        <div>
+          <h2 className={styles.ruleTitle}>Что важно знать</h2>
+          <ul className={styles.ruleList}>{after.map((t) => <li key={t}>{t}</li>)}</ul>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/** Плашка «только для жюри» (JURY_INSIGHTS): пунктирная рамка, на проде не выводится. */
+function JuryPlate({ children }: { children: React.ReactNode }) {
+  return (
+    <aside className={styles.jury} data-testid="jury-plate" aria-label="Только для жюри">
+      <p className={styles.juryHead}>Только для жюри · на проде скрыто</p>
+      {children}
+    </aside>
+  );
+}
+
+function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [item.askedAt]);
+  const elapsed = Math.max(0, Math.floor((now - new Date(item.askedAt).getTime()) / 1000));
+  const share = Math.round((elapsed / item.timeLimitSec) * 100);
+  const shift = item.jury?.canaryShift ?? null;
+  return (
+    <JuryPlate>
+      <dl className={styles.juryGrid}>
+        <div><dt>Уходы со вкладки</dt><dd data-testid="jury-tab">{totals.tabHidden} · вне вкладки {Math.round(totals.hiddenMs / 1000)} с</dd></div>
+        <div><dt>Вставки / копирования</dt><dd data-testid="jury-paste">{totals.pastes} / {totals.copies}</dd></div>
+        <div><dt>Время на задании</dt><dd data-testid="jury-time">{elapsed} с из {item.timeLimitSec} с ({share}% лимита)</dd></div>
+        {totals.extendedScreen !== null && <div><dt>Второй экран</dt><dd>{totals.extendedScreen ? 'подключён (пометка)' : 'нет'}</dd></div>}
+      </dl>
+      {shift !== null && (
+        <p className={styles.juryNote} data-testid="jury-canary">
+          В условии скрыта ловушка для нейросети: ответ модели будет ключ + {shift}.
+        </p>
+      )}
+    </JuryPlate>
+  );
+}
+
+function JuryResultPlate({ jury }: { jury: JuryResult }) {
+  const LEVEL = { low: 'низкий', medium: 'средний', high: 'высокий' } as const;
+  return (
+    <JuryPlate>
+      <p data-testid="jury-level">Риск: <b>{LEVEL[jury.level]}</b>{jury.lzStar !== null ? ` · lz* = ${jury.lzStar.toFixed(2)}` : ''}</p>
+      {jury.reasons.length > 0 ? (
+        <ul className={styles.juryList} data-testid="jury-reasons">
+          {jury.reasons.map((r, i) => (
+            <li key={`${r.code}-${i}`}>
+              <b>{r.label}</b>
+              {r.item !== undefined ? ` (задание ${r.item})` : ''} — {r.detail}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className={ui.muted}>Признаков нет.</p>
+      )}
+      {jury.flaggedItems.length > 0 && <p>Отмеченные задания: {jury.flaggedItems.join(', ')}</p>}
+      {jury.notes.length > 0 && <p>{jury.notes.join('; ')}</p>}
+      <p data-testid="jury-sees">Кандидат видит: {jury.candidateSees}</p>
+      <p>Работодатель видит: {jury.employerSees}</p>
+    </JuryPlate>
+  );
+}
 
 function IntroScreen({
   onStart,
@@ -112,7 +205,7 @@ function IntroScreen({
   // Подкатегория теста: null — сервер берёт из профиля (если она этого направления) и возвращает в допуске.
   const [sub, setSub] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
-  const [elig, setElig] = useState<{ allowed: boolean; reason?: string; code?: string; rules: string } | null>(null);
+  const [elig, setElig] = useState<{ allowed: boolean; reason?: string; code?: string; rules: string; retakeAfter?: string } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -215,10 +308,11 @@ function IntroScreen({
         )}
       </Panel>
 
+      <RulesBlock retakeAfter={elig?.retakeAfter} />
+
       <ul className={styles.rules} aria-label="Правила">
         <li>Задание можно пропустить только ответом; назад вернуться нельзя.</li>
         <li>Таймер мягкий: превышение лимита не блокирует ответ, но учитывается.</li>
-        <li>{INTEGRITY_NOTICE}</li>
         <li>Неудачная попытка не снимает уже подтверждённую категорию.</li>
         {elig?.rules && <li>{elig.rules}</li>}
       </ul>
@@ -232,7 +326,7 @@ function IntroScreen({
 
       <div className={styles.actions}>
         <Button variant="cta" onClick={() => void start()} loading={pending} disabled={Boolean(elig && !elig.allowed)} data-testid="start">
-          Начать тест: {SPEC_LABEL[spec]}
+          Начать · {SPEC_LABEL[spec]}
           {sub ? ` · ${subcategoryLabel(sub)}` : ''} · {GRADE_LABEL[grade]}
         </Button>
         <Button href="/profile">В профиль</Button>
@@ -291,9 +385,7 @@ function ItemScreen({ attempt, onAnswer, onFinish }: { attempt: AttemptView; onA
         </div>
         <SoftTimer askedAt={item.askedAt} limitSec={item.timeLimitSec} />
       </div>
-      <p className={`${ui.muted} ${styles.integrityNote}`} data-testid="integrity-note">
-        {INTEGRITY_NOTICE}
-      </p>
+      {item.jury && <JuryLive item={item} totals={signals.totals} />}
       {probe && (
         <Notice data-testid="junior-probe">
           Ещё несколько заданий для точности.
@@ -483,6 +575,8 @@ function ResultScreen({
         )}
         {error && <Notice tone="error">{error}</Notice>}
       </Panel>
+
+      {r.jury && <JuryResultPlate jury={r.jury} />}
 
       <div className={styles.actions}>
         <Button variant="primary" href="/profile">

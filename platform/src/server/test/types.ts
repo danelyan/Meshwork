@@ -98,6 +98,8 @@ export interface ItemView {
    * в DOM рядом с условием так, чтобы человек её не видел, а копия условия её захватывала. В итоге попытки — всегда null.
    */
   canary: string | null;
+  /** Слой жюри (JURY_INSIGHTS): есть только при флаге. canaryShift - N из ловушки (ключ не раскрывается); null - у задания ловушки нет. */
+  jury?: { canaryShift: number | null };
 }
 
 export interface AnsweredItemView extends ItemView {
@@ -138,11 +140,27 @@ export interface AttemptResult {
   finishedAt: string;
   /** Индекс честности для кандидата (без причин — ловушку не раскрываем); null — попытка до adr-0002-v6. */
   integrity: IntegrityView | null;
+  /** Слой жюри (JURY_INSIGHTS): разбор индекса честности. Без флага поля нет в ответе. */
+  jury?: JuryResult;
 }
 
-/** Что видит кандидат об индексе честности. Причины (IntegrityIndex.reasons) наружу не отдаются. */
-export interface IntegrityView {
+/** Разбор индекса честности для жюри. Кандидату и на проде не отдаётся. */
+export interface JuryResult {
   level: 'low' | 'medium' | 'high';
+  reasons: { code: string; label: string; detail: string; item?: number }[];
+  /** Номера отмеченных заданий (с 1). */
+  flaggedItems: number[];
+  lzStar: number | null;
+  notes: string[];
+  candidateSees: string;
+  employerSees: string;
+}
+
+/**
+ * Что видит кандидат об индексе честности: только нужен ли подтверждающий тест (режим confirm).
+ * Уровня и причин здесь нет никогда - они только в JuryResult при JURY_INSIGHTS.
+ */
+export interface IntegrityView {
   /** Статус needs_confirmation и подтверждающий тест ещё не пройден. */
   needsConfirmation: boolean;
   /** Грейд, который подтверждает подтверждающий тест (заявленный или предложенный ниже). */

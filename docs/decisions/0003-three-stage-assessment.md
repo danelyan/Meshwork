@@ -65,7 +65,7 @@
   рубрика), submittedAt, checkedAt.
 - `Consent` — новая версия с пунктом записи (lane call), константа версии в одном месте.
 
-### API (все маршруты — в OpenAPI через `npm run build-openapi`; zod-схемы в `src/server/*/schemas.ts`)
+### API (все маршруты — в OpenAPI через `npx tsx scripts/build-openapi.ts`; zod-схемы в `src/server/*/schemas.ts`)
 
 - lane call: `POST /api/call/start {kind, projectSubmissionId?}` → `{sessionId, webrtc: {iceServers}}`;
   `POST /api/call/{id}/turn {text | audioRef}` → реплика ИИ `{text, audioUrl?, done}`;

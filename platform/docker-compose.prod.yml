@@ -13,7 +13,8 @@ services:
     ports: !reset []
     environment:
       # Пароль на сайт (страница /site-access, src/server/site-access.ts): здесь только SHA-256, сам пароль
-      # у владельца. Перед сдачей жюри строку удалить — иначе жюри не попадёт на стенд.
+      # у владельца. На время сдачи пароль оставлен (решение владельца 11.10 15:30, закрывает стенд от
+      # посторонних): жюри получает его в документе сдачи, см. ../docs/product-decisions.md и ../docs/deploy.md.
       SITE_PASSWORD_SHA256: "915da025c8fb4482b701d66c462e70eeb113529ce70d86baec7546d815be24a7"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]

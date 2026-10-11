@@ -58,7 +58,7 @@ reloads in development.
   new behavior gets a test, a bug fix gets a regression test that fails
   without the fix.
 - Domain rules (grading, matching, contact disclosure, invitations) are pure
-  functions in `src/domain/` (or the current domain module) with unit tests
+  functions in the module's folder `platform/src/server/<module>/` (there is no `src/domain/`) with unit tests
   covering normal, boundary and failure paths.
 - Route handlers: integration tests for status codes, Zod rejection of bad
   input, and authorization (another user's data must be refused).

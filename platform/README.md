@@ -89,11 +89,6 @@ Integration-тесты: перед прогоном `globalSetup` применя
 `LLM_FALLBACK_NAME`, `LLM_FALLBACK_EXTRA_BODY`. Получает запрос, если основная не ответила после
 ретраев (5xx/429, таймаут, сеть); следующие 60 с запросы идут сразу в неё (`server/llm/client.ts`).
 
-Модель для созвонов — `LLM_CALL_BASE_URL`, `LLM_CALL_API_KEY`, `LLM_CALL_MODEL` (задаются вместе),
-`LLM_CALL_FOLDER_ID`, `LLM_CALL_NAME`, `LLM_CALL_EXTRA_BODY` (формат как у `LLM_FALLBACK_*`). Не задана —
-созвоны идут на основной модели; задана — созвон (`getLlm({ purpose: 'call' })`) идёт на ней, а при её сбое
-запрос уходит на основную. Чат, консультант и подбор не затрагиваются.
-
 Пароль на стенд: `SITE_PASSWORD` (или его SHA-256 в `SITE_PASSWORD_SHA256`, на стенде — в
 `docker-compose.prod.yml`) задан → публичный адрес пускает только после ввода пароля на
 `/site-access` (без логина; кука `site_access` на 30 дней, подписана `SESSION_SECRET`, смена пароля сбрасывает её у всех).
@@ -222,7 +217,7 @@ npx vitest run --project integration tests/integration/auth/yandex-callback.test
   ленте `/consultant`. Метка роли и переключатель — в шапке (`shell/RoleSwitch`). На общих демо-аккаунтах
   из сида вторую роль не создать (403) — для показа берите «Новый пользователь» на `/demo`.
 - `/api/health` — 200 `{ ok, db, llm }`; 503, если БД недоступна.
-- `src/styles/tokens.css` — токены тёмной темы прототипа, JetBrains Mono из `public/assets/fonts`.
+- `src/styles/tokens.css` — токены тёмной темы прототипа. Шрифты подключает `src/app/layout.tsx` через `next/font`: JetBrains Mono — из `src/app/fonts`, Golos Text скачивается при сборке.
 
 ## LLM
 

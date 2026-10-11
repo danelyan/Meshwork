@@ -1,6 +1,6 @@
 # Карта модулей `platform/`
 
-Актуальность: **10 октября 2026 года** (МСК), main `05489a3`. Для людей и агентов: что делает каждый модуль, какие модели
+Актуальность: **11 октября 2026 года** (МСК), main `e255a1de`. Для людей и агентов: что делает каждый модуль, какие модели
 и маршруты ему принадлежат, какие переменные окружения читает и чего не делает. Архитектура целиком и поток по трём
 ступеням — [platform.md](platform.md), пути пользователей — [cjm.md](cjm.md), запуск — `platform/README.md`, стек —
 [stack.md](stack.md), дизайн-правила — [design-system.md](design-system.md). Зависимости — по импортам `src/server/*`.
@@ -14,9 +14,11 @@
 | Слой | Модули |
 |---|---|
 | Основа | `db.ts`, `env.ts`, `errors.ts`, `session.ts`, `types.ts`, `contact.ts`, `site-access.ts`, `llm`, `mail`, `auth`, `onboarding`, `directions` |
-| Профиль кандидата | `collector`, `uploads`, `claims`, `agent`, `consultant`, `recommend`, `defense` |
+| Профиль кандидата | `collector`, `uploads`, `claims`, `agent`, `consultant`, `resume-fields`, `consent`, `fsp-id`, `recommend`, `defense` |
 | Три ступени оценки | `test` → `call` → `project` + `runner` → `defense-room` (ADR 0003); `interview` — ИИнтервью по модели компетенций |
-| Работодатель | `employer`, `agent/employer` |
+| Работодатель | `employer`, `agent/employer`, `live-defense`, `favorites` (избранное обеих ролей) |
+| Для жюри | `expert`, `validation`, `mechanics` |
+| Персонал платформы | `admin` |
 | Сервисные | `stt`, `tts`, `demo`, `devtools`, `openapi` |
 
 ---
@@ -31,7 +33,8 @@
 - **Маршруты:** `GET /api/health` (`{ ok, db, llm, time }`, 503 при недоступной БД).
 - **Env:** `DATABASE_URL`, `SESSION_SECRET`, `APP_URL`, `NODE_ENV`, `DEMO_LOGIN`, `SITE_PASSWORD`, `SITE_PASSWORD_SHA256`.
 - **Ограничения:** лимиты попыток входа живут в памяти процесса (сбрасываются при рестарте). `SITE_PASSWORD_SHA256` задан в
-  `docker-compose.prod.yml` — пока строка не удалена, жюри не попадёт на стенд.
+  `docker-compose.prod.yml`: стенд закрыт паролем, он оставлен на время сдачи (решение владельца 11.10 15:30,
+  [product-decisions.md](product-decisions.md)), жюри получает пароль в документе сдачи.
 
 ### `llm`
 - **Назначение:** один интерфейс `complete()` над провайдерами `stub`, `openai-chat`, `yandex-responses`: семафор с очередью,
@@ -62,16 +65,20 @@
   устаревшие сессии.
 - **Модели:** `User`, `AuthAccount`, `EmployerProfile`, `Consent`, `AuthCode`.
 - **Маршруты:** `auth/register`, `auth/verify[/resend]`, `auth/login`, `auth/password/forgot|reset`, `auth/yandex[/callback]`,
-  `auth/consent`, `auth/role[/switch]`, `auth/me`, `auth/logout`, `auth/stale`, `auth/onboarding/complete`.
+  `auth/consent`, `auth/role[/switch]`, `auth/me`, `auth/logout`, `auth/stale`, `auth/onboarding/complete`,
+  `DELETE auth/account` (удаление аккаунта), `GET|POST /api/notifications` (уведомления и отметка прочитанного, `auth/notifications`).
 - **Env:** `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET`.
-- **Ограничения:** верификации компании работодателя нет (R-D-05 её не требует); токены Яндекса не хранятся; без ключей Яндекс ID
-  кнопка неактивна.
+- **Ограничения:** автоматической верификации компании работодателя нет (R-D-05 её не требует; ручная проверка модератором — модуль `admin`); токены Яндекса не хранятся; без ключей Яндекс ID
+  кнопка «Войти через Яндекс ID» в окне входа скрыта (`components/auth/AuthEntryFlow.tsx`, `hideWhenOff`). Вход через ФСП ID — модуль `fsp-id`.
 
 ### `onboarding`
 - **Назначение:** сценарий опроса в чате для обеих ролей, ИНН (контрольная сумма), согласие, завершение; кандидат выбирает
   **подкатегорию** — без неё тест на грейд не стартует.
-- **Модели:** `CandidateProfile`, `OnboardingState`, `Candidate` (специализация, подкатегория, контакт).
-- **Маршруты:** `POST /api/onboarding` (SSE).
+- **Модели:** `CandidateProfile`, `OnboardingState`, `Candidate` (специализация, подкатегория, контакт),
+  `OnboardingAnswerRevision` (журнал редакций ответов: шаг, было, стало, источник `user|fsp|reset`).
+- **Маршруты:** `GET /api/onboarding` (состояние: шаг, лента, прогресс), `POST /api/onboarding` (действие
+  `answer|skip|goto|later`); оба отвечают JSON, не SSE. `GET /api/onboarding/history` — журнал редакций своих ответов
+  (только кандидат).
 - **Env:** — (LLM по общим настройкам).
 - **Ограничения:** «найдено в реестре» для ИНН — демо-метка, запроса в ЕГРЮЛ нет; ФСП ID — имитация.
 
@@ -101,22 +108,24 @@
   контакта может пройти.
 
 ### `claims`
-- **Назначение:** закрытый каталог утверждений (120 записей: backend 33, frontend 28, ai 21, engineering 27, общих 11),
+- **Назначение:** закрытый каталог утверждений (142 записи: backend 36, frontend 31, ai 31, engineering 31, общих 13),
   извлекатель (LLM, JSON), проверяющий (код: id из каталога, дословная цитата ≥ 2 слов в видимом тексте, один id — одно
   утверждение), уровни доказанности по источнику (`levels.ts`), подтверждение, правка, отклонение.
 - **Модели:** `ClaimCatalog`, `Claim` (`proposed → confirmed|edited|rejected`, `level`, `sourceRef`).
-- **Маршруты:** `POST /api/claims/:id/{confirm|edit|reject}`, `POST /api/claims/confirm-batch`, `GET /api/profile`.
+- **Маршруты:** `POST /api/claims/:id/{confirm|edit|reject}`, `POST /api/claims/confirm-batch`, `GET /api/profile`,
+  `GET /api/profile/details` (`claims/profile-details`).
 - **Env:** —
 - **Ограничения:** не присваивает категорию; уровень `platform` из источников не выдаёт (только тест, защита, созвон);
   `third_party` сейчас не выдаётся (нет подтверждения владения). Каталог — черновик, разметил один агент.
 
 ### `agent` и `agent/employer`
-- **Назначение:** цикл хода консультанта (SSE), реестр из 18 инструментов (только чтение и предложение), детерминированный
+- **Назначение:** цикл хода консультанта (SSE), реестр из 21 инструмента (только чтение и предложение), детерминированный
   конвейер первого хода, блокировка хода (`pg_try_advisory_xact_lock`), суточный бюджет токенов, план Б. Отдельный цикл и
-  7 инструментов помощника работодателя.
+  9 инструментов помощника работодателя.
 - **Модели:** `Conversation`, `Message`, `EmployerConversation`, `EmployerMessage`.
 - **Маршруты:** `POST /api/consultant/messages` (SSE: `conversation`, `step`, `queue`, `claims`, `ask`, `recommendations`, `delta`,
-  `discard`, `message`, `error`, `done`), `GET /api/consultant/conversations[/:id]`, `POST /api/employer/assistant/messages` (SSE).
+  `discard`, `message`, `error`, `done`), `GET /api/consultant/conversations[/:id]`, `POST /api/consultant/messages/stop` (кнопка «Стоп»: отменить активный ход),
+  `POST /api/employer/assistant/messages` (SSE).
 - **Env:** `WEB_SEARCH` (`auto` \| `off`; Yandex Search API при ключах), `LLM_DAILY_TOKEN_BUDGET`.
 - **Ограничения:** нет инструментов записи в профиль, отклика и письма (проверяет `tests/unit/agent/tools.test.ts`); HTTP только
   через сборщик; помощник работодателя видит публичную карточку без имени, контактов и цитат даже после `accepted`;
@@ -126,9 +135,57 @@
 - **Назначение:** память консультанта «что я о тебе знаю» (заметки из разговора или добавленные человеком), настройки
   собеседника, навыки, подсказки боковой панели.
 - **Модели:** `ConsultantMemory`, `ConsultantSettings`.
-- **Маршруты:** `GET|POST /api/consultant/memory[/:id]`, `GET|POST /api/consultant/settings`, `GET /api/consultant/aside`.
+- **Маршруты:** `GET|POST /api/consultant/memory`, `PATCH|DELETE /api/consultant/memory/:id`,
+  `GET|PUT /api/consultant/settings`, `GET /api/consultant/aside`.
 - **Env:** —
 - **Ограничения:** запись в память идёт от имени человека или из его реплики; на профиль, категорию и подбор не влияет.
+
+### `resume-fields` — поля профиля из резюме
+- **Назначение:** поля профиля из загруженного резюме (R-C-01/02): ФИО, контакт, стаж, роли, гибкие навыки (`name`, `contact`,
+  `experienceYears`, `roles`, `softSkills`). Пустое поле профиля заполняется само (`applied`, пометка «из резюме»); заполненное
+  кандидатом не перетирается — остаётся предложение «в резюме указано иначе» (`suggested`), кандидат принимает, отклоняет или правит сам.
+- **Модели:** `ResumeField` (`ResumeFieldStatus`: `applied | suggested | dismissed`).
+- **Маршруты:** `GET|POST /api/profile/resume-fields`.
+- **Env:** —
+- **Ограничения:** модель не вызывает, разбор — правила в `resume-fields/parse.ts`; ФИО и контакт видит только кандидат, работодатель до
+  принятия приглашения их не видит (`employer/privacy.ts`).
+
+### `profile-pdf` — PDF-профиль кандидата
+- **Назначение:** стандартизированный PDF-профиль (R-C-03): категория из теста, основное, подтверждённые утверждения с уровнем
+  доказанности, ФСП, ступени проверки. Данные — те же загрузчики, что у экрана профиля; документ собирает `model.ts`, рисует
+  `render.ts` (pdfkit, шрифт DejaVu Sans из `public/assets/fonts`).
+- **Модели:** — (читает `Claim`, `CandidateCategory`, `CallSession`, `ProjectSubmission`, `DefenseSession`).
+- **Маршруты:** `GET /api/profile/pdf` (файл, `attachment`).
+- **Env:** —
+- **Ограничения:** только свой профиль (`candidateId` из сессии); работодателю PDF не отдаётся.
+
+### `consent` — согласия и возражения ([ADR 0005](decisions/0005-consents.md))
+- **Назначение:** выдача, отзыв и проверка согласий, список для кабинета (страница `/consent`); возражения против автоматической
+  оценки (ст. 16 152-ФЗ): кандидат оспаривает категорию из теста, оценку созвона или защиты; удаление аудио созвонов при отзыве
+  согласия на запись и по сроку хранения (`recordings.ts`).
+- **Модели:** `Consent` (`ConsentKind`: `pd_processing`, `call_recording`, `ai_assessment`, `employer_visibility`, `research`, `marketing`,
+  `identity_disclosure`, `employer_offer`, `employer_data_obligation`), `AssessmentObjection`.
+- **Маршруты:** `GET|POST /api/consents`, `DELETE /api/consents/:kind`, `GET|POST /api/objections`; отвечает на возражение поддержка
+  в админке (`/api/admin/objections`).
+- **Env:** `CALL_RECORDING_RETENTION_DAYS` (90; в админке — настройка `call.recordingRetentionDays`), `CALL_DATA_DIR`.
+- **Ограничения:** отзыв `pd_processing` — 409 `consent_revoke_is_erase` (отзыв = удаление аккаунта, `DELETE /api/auth/account`);
+  `marketing` хранится и ни на что не влияет (рассылок нет); срок ответа на возражение — 30 дней, работодатель возражений не видит;
+  при удалении аудио транскрипт и оценки остаются.
+
+### `fsp-id` — вход и привязка через ФСП ID (имитация)
+- **Назначение:** клиент OIDC (Authorization Code + PKCE S256, state, nonce; проверка ID-токена RS256 по JWKS на `node:crypto`,
+  `jwt.ts`): вход на платформу кнопкой «Войти через ФСП ID» и привязка ФСП ID к профилю в настройках кандидата; достижения
+  участника из реестра (`registry.ts`). Провайдер — либо симулятор ФСП ID команды на Keycloak (задан в env), либо встроенный мок
+  (`fsp-id/mock`) со страницей выбора демо-участника.
+- **Модели:** своих нет: `AuthAccount` (провайдер `fsp`), `Candidate.fspState`, `Source` (`kind = fsp`, `origin = "fsp:<sub>"`,
+  `ownershipVerified = true`, в снимке — достижения на момент привязки).
+- **Маршруты:** `GET /api/fsp-id/login`, `GET /api/fsp-id/link`, `GET /api/fsp-id/callback`;
+  `GET|POST /api/fsp-id/realms/fsp/protocol/openid-connect/auth` — authorization endpoint мока (404, когда настроен внешний провайдер).
+- **Env:** `FSP_OIDC_ISSUER`, `FSP_OIDC_CLIENT_SECRET` (нужны оба, иначе мок), `FSP_OIDC_CLIENT_ID` (`fsp-career`), `FSP_API_URL`
+  (API реестра симулятора, `GET /me/achievements`), `FSP_OIDC_DEMO_HINT` (подсказка у кнопок, только с симулятором), `APP_URL`.
+- **Ограничения:** это имитация: с настоящим ФСП ID и реестром ФСП интеграции нет, участники и достижения демонстрационные.
+  Уникальность «один ФСП ID — один кандидат» на стенде намеренно не введена (демо-участники общие). Мок держит ключ подписи и коды
+  в памяти процесса: после перезапуска ключ новый. Сбой реестра — состояние `unavailable`, без штрафа.
 
 ### `recommend`
 - **Назначение:** рекомендация теста (порог покрытия 0,25 для Middle), карта пробелов, задания из банка, вакансии «закрываешь
@@ -156,10 +213,12 @@
 - **Назначение:** адаптивный тест IRT 2PL (EAP по сетке, информация Фишера, randomesque 3). Генераторы заданий `be.*`, `fe.*`,
   `ai.*`, `eng.*` — 492 семейства: 26–27 на каждую из 17 исходных подкатегорий, 18 у `ai.bi-analytics`, 29 общих (минимум пула — 6 Junior + 4 Middle + 4 Senior). Пул попытки — семейства
   подкатегории (`poolFor`); заявка Senior идёт по Senior-пулу с дозадаванием Middle (до 4), заявка Middle и Junior — по всему пулу с
-  дозадаванием Junior (до 3). Пороги θ: Junior −0,7, Middle −0,1, Senior +0,8; подтверждение при P ≥ 0,8; версия политики `adr-0002-v4`.
+  дозадаванием Junior (до 3). Пороги θ: Junior −0,7, Middle −0,1, Senior +0,8; подтверждение при P ≥ 0,8; версия политики `adr-0002-v7` (`POLICY_VERSION` в `test/policy.ts`).
   Итог — `CandidateCategory` и подъём подтверждённых утверждений до `platform`.
 - **Модели:** `TaskTemplate`, `TestAttempt` (seed, θ, SE, P(pass), исход, `subcategoryId`, версия политики), `TestItem`, `CandidateCategory`.
-- **Маршруты:** `GET|POST /api/test/start`, `GET /api/test/attempts`, `GET /api/test/attempt/:id`, `POST …/answer|finish|confirm-junior`.
+- **Маршруты:** `GET|POST /api/test/start`, `GET /api/test/attempts`, `GET /api/test/attempt/:id`,
+  `POST …/answer|finish|confirm-junior|confirm-start|signal` (`confirm-start` — подтверждающий тест к попытке в статусе
+  `needs_confirmation`; `signal` — дельты сигналов браузера для индекса честности, только счётчики).
 - **Env:** `TEST_DEMO_INTERVALS` (интервалы пересдачи в минутах — только для показа); `TEST_INTEGRITY` (выключатель индекса честности), `TEST_INTEGRITY_ACTION=silent|confirm` (по умолчанию `silent`: high не задерживает категорию и кандидату не раскрывается), `JURY_INSIGHTS` (слой «только для жюри»: на стенде true, на проде false).
 - **Ограничения:** без LLM; параметры заданий `a`, `b` экспертные, на людях не оценены; подкатегория без полного банка — «тест пока
   недоступен»; смена грейда не чаще раза в 30 дней, пересдача того же — через 14 (предложение); принудительного понижения нет.
@@ -204,8 +263,9 @@
   `window.__fspCallLatency`; скрипт `eval/call/latency.ts`, цифры — `validation-results.md` («Задержка созвона 11.10»).
 - **Маршруты:** `GET /api/call`, `POST /api/call/consent`, `POST /api/call/start`, `GET /api/call/:id`, `POST …/turn|audio|finish`,
   `GET …/events` (SSE), `GET …/recording`, `POST …/signal`.
-- **Env:** `CALL_STREAMING` (`true`; `false` — вопрос целиком, как до 11.10), `CALL_DATA_DIR` (`./data`; том `app-data`), `CALL_DAILY_LIMIT` (5 за 24 ч на вид созвона, `0` — без лимита; демо-кандидаты не
-  ограничены; на стенде переменная не задана → 5 для обычных кандидатов), `STT_*`, `TTS_*`. `/turn` требует `text` (распознанный в `/audio`
+- **Env:** `CALL_STREAMING` (`true`; `false` — вопрос целиком, как до 11.10), `CALL_DATA_DIR` (`./data`; том `app-data`), `CALL_DAILY_LIMIT` (5 за 24 ч, `0` — без лимита; демо-кандидаты не
+  ограничены; `call/service.ts` читает лимит из настройки админки `call.dailyLimit` (по умолчанию — эта переменная) и считает
+  созвоны того же вида; защита проекта считает иначе, см. `defense-room`; на стенде переменная не задана → 5 для обычных кандидатов), `STT_*`, `TTS_*`. `/turn` требует `text` (распознанный в `/audio`
   или браузером): только `audioRef` — 400.
 - **Ограничения:** категорию не меняет; порог подтверждения темы — предложение, на людях не калиброван; сегмент аудио ≤ 3 МБ, ≤ 40
   сегментов; до `accepted` работодатель видит только публичный вердикт (оценки по темам без цитат), запись — только после `accepted`;
@@ -267,11 +327,14 @@
 - **Модели:** `DefenseRoomPlan`, `CallSession` (`kind = defense`), `CallParticipant`, `EmployerQuestion`.
 - **Маршруты:** `POST /api/defense-room/start`, `GET /api/defense-room/pending`, `GET|POST /api/defense-room/:id[/turn|finish]`,
   `GET …/events` (SSE), `POST /api/call/:id/signal`, `POST /api/employer/call/:id/{join|leave|mute-ai|say}`,
-  `GET|POST /api/employer/questions`, `GET /api/employer/calls`.
+  `GET|POST /api/employer/questions`, `GET /api/employer/calls`; ИИ-защита своей проверенной сдачи без приглашения (ADR 0008 п. 1,
+  `ai-defense.ts`) — `POST /api/defense-room/ai`, вердикт работодателю — `GET /api/employer/project-submissions/:id/ai-defense`.
 - **Env:** `CALL_DATA_DIR`, `GITHUB_TOKEN`, `TTS_VOICE_EMPLOYER` (голос реплик работодателя), `STT_*`, `TTS_*`.
 - **Ограничения:** флаги — `strong_project_weak_defense` (проект ≥ 0,8 по скрытым тестам, защита ниже порога),
   `short_defense` (< 3 ответов), `evaluator_disagreement`, `employer_questions_unanswered`, `no_project_result`; вердикта «фейк» нет;
-  ≤ 3 завершённых защит на сдачу (суточный лимит общий с созвонами, демо-кандидаты не ограничены; после закрывающей реплики ИИ молчит,
+  ≤ 3 завершённых защит на сдачу (суточный лимит: `defense-room/session.ts` считает за 24 ч все сессии кандидата любого вида, кроме `pending`, и берёт
+  порог прямо из `CALL_DAILY_LIMIT`, настройку админки `call.dailyLimit` не читает; `call/service.ts` считает только сессии
+  своего вида — модули считают по-разному; демо-кандидаты не ограничены; после закрывающей реплики ИИ молчит,
   реплики кандидата только пишутся в транскрипт), ответ ≤ 4000 знаков, в очереди ≤ 10 вопросов работодателя; **TURN нет**: аудио P2P через публичный
   STUN, за симметричным NAT не соединится — текстовый канал остаётся запасным; запись и контакты — после `accepted`; только GitHub-репозитории;
   оценщик на реальной модели не проверялся (валидация персонами — `docs/validation-stages.md`, дополняется).
@@ -282,11 +345,14 @@
 
 ### `employer`
 - **Назначение:** потребности (вакансии с требованиями из каталога, вилкой, командой), подбор и ранжирование (`ranking.ts`,
-  веса в `weights.ts`), поиск по базе, приглашения (`sent → viewed → accepted|declined`), приватность и псевдоним
+  веса в `weights.ts`), поиск по базе, приглашения (`sent → viewed → accepted|declined`; финальные `hired` — найм, `withdrawn` — отозвано работодателем,
+  `closed_hired` — закрыто наймом в другую компанию), самоотклики кандидата на вакансию (`applications.ts`, R-C-12), приватность и псевдоним
   «Кандидат #XXXXXX» (`privacy.ts`), компания.
-- **Модели:** `Company`, `Vacancy`, `Invitation`, `EmployerProfile`.
+- **Модели:** `Company`, `Vacancy`, `Invitation`, `EmployerProfile`, `Application` (самоотклик), `Complaint`.
 - **Маршруты:** `employer/vacancies[/:id[/matches]]`, `employer/search`, `employer/invitations`, `employer/company`,
-  `invitations[/:id]`, `profile/privacy`, `profile/contact`.
+  `invitations[/:id]`, `profile/privacy`, `profile/contact`; `employer/invitations/:id/{hire|withdraw}`, `invitations/:id/complaint`,
+  `employer/vacancies/:id/applications`, `employer/applications/:id` (ответ на самоотклик), `employer/company/verification`
+  (запрос ручной проверки компании), `employer/sanction-appeal`; кандидату — `career/vacancies[/:id/apply]`, `career/applications`.
 - **Env:** `ATS_WEBHOOK_URL`, `ATS_WEBHOOK_SECRET` (необязательные, см. «Антифрод и ATS» ниже).
 - **Ступени ADR 0003 в подборке** (`stages.ts`, `stages-load.ts`): `CandidateEvidence.calls/projects` грузятся пакетно (вердикт созвона —
   через `call/access.publicVerdict`, без цитат); `scoreCandidate` добавляет `PROJECT_BONUS_PER_SCORE` × балл за проверенный проект под
@@ -318,7 +384,90 @@
   `dismissed`/`upheld` выставляются только вручную в БД; ассистент работодателя и счётчик лимита в боковой панели показывают базовый
   лимит 20, отправка всё равно проверяется сервером.
 - **Ограничения:** без LLM; все веса и бонусы — предложения без калибровки; до `accepted` — псевдоним, категория, утверждения формулировкой каталога, отметка ФСП; лимит 20
-  приглашений в сутки на компанию и одно открытое приглашение компании кандидату (предложение); верификации компаний нет.
+  приглашений в сутки на компанию и одно открытое приглашение компании кандидату (предложение); компании по реестрам не сверяются — есть только ручная проверка модератором (`admin/moderation/verification.ts`, без API ФНС).
+
+### `live-defense` — назначение живой защиты через слоты ([ADR 0008](decisions/0008-two-defenses-and-live-call-slots.md))
+- **Назначение:** работодатель по принятому приглашению своей компании предлагает 2–5 слотов по 30 или 45 минут, кандидат выбирает
+  один (с действующим согласием на запись) или отвечает «ни один не подходит»; выбор создаёт или привязывает ожидающую сессию защиты
+  (`defense-room/pending.ts`). Правила слотов — чистые функции `rules.ts`.
+- **Модели:** `LiveDefense` (`slots_proposed | scheduled | done | cancelled | no_show`), `LiveDefenseSlot`, `LiveDefenseEvent`.
+- **Маршруты:** `POST /api/employer/invitations/:id/live-defense[/cancel]`, `POST /api/invitations/:id/live-defense/{choose|none-fit|cancel}`;
+  голос работодателя в живой защите — `POST /api/employer/call/:id/audio`, `GET /api/call/:id/employer-audio[/file]`.
+- **Env:** — (`APP_URL` для ссылок на комнату в письмах).
+- **Ограничения:** слот не раньше чем через 2 часа и не позже 14 дней; комната открывается за 10 минут до начала; опоздание больше
+  15 минут — `no_show`; отмена не позднее чем за 1 час (иначе 409 `cancel_too_late`); одно время компании не займут два кандидата
+  (advisory-lock компании и уникальный `bookedKey` слота, 409 `slot_taken`); без проверенного проекта кандидата — 409 `project_not_submitted`.
+
+### `favorites` — избранное
+- **Назначение:** закладки обеих ролей: кандидат сохраняет вакансии, работодатель — кандидатов. Вид закладки определяется ролью
+  аккаунта, а не телом запроса.
+- **Модели:** `UserSavedVacancy`, `UserSavedCandidate`.
+- **Маршруты:** `GET|PUT /api/favorites` (`{ kind: vacancy|candidate, targetId, saved }`). Страницы `(candidate)/saved`, `(employer)/employer/saved`.
+- **Env:** —
+- **Ограничения:** работодателю избранные кандидаты доступны после оферты и обязательства (ADR 0005, `assertEmployerConsents`);
+  без профиля своей роли — 403.
+
+### `companies` — каталог компаний для кандидата
+- **Назначение:** список компаний с открытыми (неархивными) вакансиями и карточка компании: название, отрасль, описание,
+  вакансии с вилкой. Сборка карточек — чистая функция `aggregate.ts`, запросы — `catalog.ts`.
+- **Модели:** — (читает `Company`, `Vacancy`).
+- **Маршруты:** API нет; страницы `(candidate)/companies` и `(candidate)/companies/[id]` читают сервис напрямую.
+- **Env:** —
+- **Ограничения:** контакт и ИНН компании не выбираются: инициатива у работодателя; компания без открытых вакансий не показывается.
+
+---
+
+## Для жюри
+
+### `expert` — режим эксперта
+- **Назначение:** страница `/expert`: жюри проходит настоящий тест на грейд без регистрации тем же сервисом, что у кандидата; грейд
+  никому не присваивается.
+- **Модели:** своих нет: одноразовые `Candidate` и `User` (`AuthAccount.provider = 'expert'`, почта `…@expert.invalid`), попытки — `TestAttempt`.
+- **Маршруты:** `GET|POST /api/expert/start`, `GET /api/expert/attempt/:id`, `POST …/answer|finish|signal`.
+- **Env:** `DEMO_LOGIN` (выключен — 404), `SESSION_SECRET` (подпись куки).
+- **Ограничения:** своя кука `fsp_expert` (path `/api/expert`), вместо `cid` её подставить нельзя — остальные API эксперту закрыты; в
+  подборку и поиск не попадает (`hiddenFromEmployers` и фильтр почты в `employer/matching.ts`); категорию после итога удаляет
+  `scrubExpertCategories`; лимиты: 20 новых экспертов с адреса за 10 минут, 300 за сутки на всех, срок жизни эксперта — сутки.
+
+### `validation` — страницы проверки для жюри
+- **Назначение:** данные публичных страниц: `/validation` (цифры из закоммиченных `eval/test/results.json` и `eval/matching/results.json`
+  и константы прогона персон, источник — [validation-results.md](validation-results.md)), `/method` (константы политики теста,
+  информационная функция банка подкатегории, агрегат симуляций), `/simulator` (виртуальный кандидат с заданной θ проходит боевой
+  движок теста шаг за шагом), `/evaluate` (наше ранжирование и базовая линия на наборе пользователя: P@k, nDCG@k, MRR).
+- **Модели:** —
+- **Маршруты:** `POST /api/evaluate`, `POST /api/simulator` (вход не нужен).
+- **Env:** —
+- **Ограничения:** без БД, LLM и сети, ничего не сохраняется; тело `/api/evaluate` ≤ 1 МБ, ≤ 50 вакансий, ≤ 1000 кандидатов, k ≤ 20;
+  лимит с адреса за 10 минут — 30 прогонов `evaluate` и 120 `simulator`. Кандидаты симулятора смоделированы, параметры заданий
+  экспертные и на людях не откалиброваны; режима «с угадыванием» в симуляторе нет.
+
+### `mechanics` — «Лаборатория вариантов»
+- **Назначение:** данные публичной страницы `/mechanics`: семейства генераторов теста по направлению и подкатегории, варианты одного
+  семейства по seed, справка про утечку заданий (`leak-figures.ts`, цифры из [validation-results.md](validation-results.md)).
+- **Модели:** —
+- **Маршруты:** — (серверная страница, параметры в query: `spec`, `sub`, `family`, `seed`).
+- **Env:** —
+- **Ограничения:** только чтение реестра генераторов, без БД и LLM; логику теста, банк и политику не меняет; скрытая строка-ловушка
+  для нейросети в публичный вывод не попадает; цифры про утечку на странице не пересчитываются.
+
+---
+
+## Персонал платформы
+
+### `admin` — админка владельцев платформы (E-08, [ADR 0009](decisions/0009-admin-staff.md), [admin.md](admin.md))
+- **Назначение:** вход персонала (почта и пароль, затем TOTP; `staff.ts`, `totp.ts`), три роли `owner | moderator | support` и матрица
+  прав (`permissions.ts`), журнал действий (`audit.ts`). Разделы: модерация (жалобы, апелляции на санкции, красные флаги, возражения,
+  ручная верификация компаний), пользователи, компании, кандидаты, вакансии, приглашения (блокировка, скрытие, удаление, раскрытие
+  ПДн с причиной), настройки без деплоя с версиями и откатом, справочники, метрики (тест, подбор, LLM) и выгрузки CSV, демо-данные.
+- **Модели:** `StaffMember`, `AdminSession`, `AdminAuditLog`, `SanctionAppeal`, `RedFlagReview`, `PlatformSetting`, `PlatformSettingVersion`.
+- **Маршруты:** `/api/admin/*`: `auth/{login|totp|logout|me|password}`, `dashboard`, `users`, `companies`, `candidates`, `vacancies`,
+  `invitations`, `applications`, `complaints`, `appeals`, `red-flags`, `objections`, `verification`, `settings[/:key[/rollback]]`,
+  `catalogs`, `metrics/{test|matching|llm}`, `export/:file`, `audit`, `staff`, `demo`. Страницы — `(admin)/admin/*`, вход — `/admin/login`.
+- **Env:** своих переменных в `env.ts` нет; кука подписывается `SESSION_SECRET`. Сотрудника создаёт `scripts/admin-create.ts`
+  (пароль из stdin или `ADMIN_PASSWORD`, не из аргументов).
+- **Ограничения:** персонал — не `UserRole`, своя кука `fsp_admin` (12 ч), каждый запрос сверяет сессию и сотрудника; журнал только
+  на вставку (в БД триггер `AdminAuditLog_immutable`); намеренно нет ручной установки категории или грейда, входа под пользователем,
+  показа паролей и токенов; секреты и `DEMO_LOGIN` в настройки не вынесены; лимиты входа — в памяти процесса.
 
 ---
 
@@ -346,9 +495,10 @@
 
 ## Страницы и клиентские компоненты
 
-Страницы: `(candidate)/{profile,test,defense,defense-room,invitations,projects}`, `(shared)/consultant` (чат и режим звонка
-`components/call/CallPanel`, `DepthMap` в профиле), `(employer)/employer/{,needs,search,invitations,calls,company,assistant}`, `onboarding`,
-`auth`, `consent`, `demo`, `site-access`, `design/*` (превью, не для пользователей), `api-docs` (Swagger UI).
+Страницы: `(candidate)/{profile,test,defense,defense-room,interview,invitations,projects,career,saved,settings,skills}`, `(shared)/consultant` (чат и режим звонка
+`components/call/CallPanel`, `DepthMap` в профиле), `(employer)/employer/{,needs,search,invitations,calls,company,assistant,saved,vacancies}`, `(admin)/admin/*`, `onboarding`,
+`auth`, `consent`, `demo`, `expert`, `validation`, `method`, `simulator`, `evaluate`, `mechanics`, `ai`, `privacy`, `terms`, `employer-terms`, `site-access`,
+`design/*` (превью, не для пользователей), `api-docs` (Swagger UI).
 
 ## Общие файлы: правила правки
 
@@ -391,8 +541,10 @@
   `RUNNER_URL`/`RUNNER_TOKEN` — stub-runner (`project/runner-client.ts`: адрес с `reference` — всё зелёное, `starter` — всё красное,
   `runner-fail` — сбой). Репозитории `https://github.com/fsp-demo/…` в защите — встроенные фикстуры.
 - **Профили без сети:** `COLLECTOR_FIXTURES=true` (`collector/fixtures.ts`).
-- **ФСП** — демонстрационный источник (`collector/fsp-demo.ts`: `not_linked | no_achievements | unavailable | linked`); вход через ФСП ID не подключён.
-- **Яндекс ID:** пусто `YANDEX_CLIENT_ID/SECRET` — кнопка неактивна, остаётся демо-вход (`DEMO_LOGIN=true`, `/demo`).
+- **ФСП** — демонстрационный источник (`collector/fsp-demo.ts`: `not_linked | no_achievements | unavailable | linked`). Вход и привязка
+  через ФСП ID (`server/fsp-id`, `/api/fsp-id/*`) работают с имитацией: при заданных `FSP_OIDC_ISSUER` и `FSP_OIDC_CLIENT_SECRET` — симулятор
+  ФСП ID команды на Keycloak, иначе встроенный мок с выбором демо-участника. С настоящим ФСП ID и реестром ФСП интеграции нет.
+- **Яндекс ID:** пусто `YANDEX_CLIENT_ID/SECRET` — кнопка в окне входа скрыта, остаётся демо-вход (`DEMO_LOGIN=true`, `/demo`).
 - **Голос:** без ключей SpeechKit ввод распознаёт браузер, озвучки нет.
 - **Тест:** `TEST_DEMO_INTERVALS=true` — интервалы пересдачи в минутах (стенд жюри); `JURY_INSIGHTS=true` — слой жюри над тестом (на проде не включать).
 - **Почта:** `SMTP_HOST/PORT` (Mailpit на стенде); `MAIL_PROVIDER=log` — только в лог.

@@ -3,9 +3,10 @@ import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
-// Три проекта (docs: vitest guide/projects):
+// Четыре проекта (docs: vitest guide/projects):
 //  - unit        — tests/unit/**/*.test.ts, Node, без БД;
 //  - components  — tests/unit/**/*.test.tsx, jsdom + Testing Library;
+//  - runner      — tests/runner/**/*.test.ts, Node, файлы последовательно (npm run test:runner);
 //  - integration — tests/integration/**, реальный Postgres (TEST_DATABASE_URL), файлы последовательно.
 export default defineConfig({
   plugins: [react()],

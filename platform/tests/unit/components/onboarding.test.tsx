@@ -209,26 +209,36 @@ it('итог: главная кнопка — «Пройти тест на гр�
   expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/auth/onboarding/complete');
 });
 
-it('итог кандидата: та же лента продолжается консультантом; первое сообщение сначала завершает знакомство', async () => {
+it('итог кандидата: знакомство завершается перед приветствием модели, затем та же лента принимает сообщение', async () => {
   const enc = new TextEncoder();
   const calls: string[] = [];
+  const turns: { text: string; kickoff?: boolean }[] = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => {
+    vi.fn(async (url: string, init?: RequestInit) => {
       calls.push(url);
       if (url === '/api/auth/onboarding/complete') return new Response(JSON.stringify({ onboarded: true, next: '/consultant' }), { status: 200, headers: { 'content-type': 'application/json' } });
-      const body = `data: ${JSON.stringify({ type: 'message', text: 'Начнём с резюме' })}\n\ndata: {"type":"done"}\n\n`;
+      const turn = JSON.parse(String(init?.body)) as { text: string; kickoff?: boolean };
+      turns.push(turn);
+      const body = `data: ${JSON.stringify({ type: 'message', text: turn.kickoff ? 'Приветствие модели' : 'Начнём с резюме' })}\n\ndata: {"type":"done"}\n\n`;
       return new Response(new ReadableStream({ start: (c) => (c.enqueue(enc.encode(body)), c.close()) }), { status: 200 });
     }),
   );
   render(<OnboardingChat initial={summaryView()} consentText={[]} consultant={{}} />);
-  expect(screen.getByText(/твой карьерный консультант/)).toBeDefined();
-  expect(screen.getByRole('button', { name: 'Открыть профиль' })).toBeDefined();
+  // Первую реплику теперь формирует модель, статического приветствия нет.
+  expect(screen.queryByText(/твой карьерный консультант/)).toBeNull();
+  expect(screen.getByLabelText('Сообщение')).toBeDefined();
+  await waitFor(() => expect(screen.getByText('Приветствие модели')).toBeDefined());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Отправить' })).toBeDefined());
+  expect(calls[0]).toBe('/api/auth/onboarding/complete');
+  expect(calls[1]).toMatch(/consultant/);
+  expect(turns[0]).toMatchObject({ text: '', kickoff: true });
   fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'Что подтянуть до middle?' } });
   fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
   await waitFor(() => expect(screen.getByText('Начнём с резюме')).toBeDefined());
-  expect(calls[0]).toBe('/api/auth/onboarding/complete');
-  expect(calls[1]).toMatch(/consultant/);
+  expect(calls[2]).toMatch(/consultant/);
+  expect(turns[1]).toMatchObject({ text: 'Что подтянуть до middle?' });
+  expect(calls.filter((url) => url === '/api/auth/onboarding/complete')).toHaveLength(1);
   expect(screen.queryByRole('button', { name: 'Открыть профиль' })).toBeNull();
 });
 

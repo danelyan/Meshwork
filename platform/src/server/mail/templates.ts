@@ -1,3 +1,4 @@
+import { formatMsk } from '@/lib/msk';
 import { getEnv } from '@/server/env';
 
 import type { MailMessage } from './index';
@@ -126,6 +127,40 @@ export function invitationAnswerMail(to: string, p: { accepted: boolean; vacancy
       ],
       action: { label: p.accepted ? 'Открыть контакты кандидата' : 'Посмотреть других кандидатов', href: cabinetUrl },
       accent: 'employer',
+    }),
+  };
+}
+
+/** lane live-slots (ADR 0008 п. 4): живая защита назначена — время по МСК и ссылка на комнату. */
+export function liveDefenseMail(
+  to: string,
+  p: { audience: 'candidate' | 'employer'; startsAt: Date; durationMin: number; companyName: string; vacancyTitle: string | null; roomUrl: string },
+): MailMessage {
+  const when = formatMsk(p.startsAt);
+  const subject = p.audience === 'candidate' ? `Живая защита с «${p.companyName}»: ${when}` : `Живая защита назначена: ${when}`;
+  const lead =
+    p.audience === 'candidate'
+      ? `Вы выбрали время живой защиты проекта с компанией «${p.companyName}». Защита записывается; комната откроется за 10 минут до начала.`
+      : `Кандидат выбрал время живой защиты${p.vacancyTitle ? ` по «${p.vacancyTitle}»` : ''}. Комната откроется за 10 минут до начала.`;
+  return {
+    kind: 'live_defense_scheduled',
+    to,
+    subject,
+    text: `${lead}\nВремя: ${when}, ${p.durationMin} мин.\nКомната: ${p.roomUrl}\nОтменить можно не позднее чем за 1 час, с причиной.${sign()}`,
+    html: html({
+      subject,
+      preheader: `${when}, ${p.durationMin} мин`,
+      kicker: 'Живая защита',
+      title: subject,
+      lead: [lead],
+      facts: [
+        { label: 'Время', value: when },
+        { label: 'Длительность', value: `${p.durationMin} мин` },
+        ...(p.vacancyTitle ? [{ label: 'Позиция', value: p.vacancyTitle }] : []),
+      ],
+      action: { label: 'Открыть комнату', href: p.roomUrl },
+      notes: ['Отменить можно не позднее чем за 1 час до начала, с причиной.'],
+      accent: p.audience,
     }),
   };
 }

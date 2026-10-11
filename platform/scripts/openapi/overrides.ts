@@ -74,7 +74,6 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
   health: 'Проверка живости',
-  simulator: 'Симулятор адаптивного теста для жюри: виртуальный кандидат, шаги движка, без БД и LLM',
   invitations: 'Приглашения глазами кандидата',
   objections: 'Возражения против автоматической оценки (ст. 16 152-ФЗ): тест, созвон, защита',
   onboarding: 'Онбординг: шаги, ответы, итог',
@@ -110,6 +109,23 @@ const COMMON_EVENTS = [
 ];
 
 export const COMPONENT_SCHEMAS: Record<string, JsonSchema> = {
+  LiveDefense: obj(
+    {
+      id: str(),
+      status: en('slots_proposed', 'scheduled', 'done', 'cancelled', 'no_show'),
+      durationMin: int('30 или 45'),
+      comment: nullable(str()),
+      createdAt: DT(),
+      slots: arr(obj({ id: str(), startsAt: DT('UTC; интерфейс показывает по МСК'), endsAt: DT(), available: bool('false — время занято другим кандидатом компании или прошло') })),
+      noneFit: nullable(obj({ at: DT(), comment: str() })),
+      scheduled: nullable(obj({ slotId: str(), startsAt: DT(), endsAt: DT(), roomOpensAt: DT('за 10 минут до начала'), roomOpen: bool(), callSessionId: nullable(str()), roomHref: nullable(str('/defense-room/:id кандидату, /employer/calls/:id работодателю')) })),
+      cancelled: nullable(obj({ at: DT(), by: en('candidate', 'employer'), reason: str() })),
+      noShow: arr(en('candidate', 'employer'), 'Опоздание больше 15 минут: кто не пришёл (вычисляется при чтении)'),
+      canCancel: bool('Отменить можно сейчас (не позднее чем за 1 час)'),
+    },
+    undefined,
+    'Живая защита по приглашению (ADR 0008): активное предложение слотов и подстатус',
+  ),
   ErrorBody: obj(
     { error: obj({ code: str('Машинный код ошибки'), message: str('Текст для человека'), details: { description: 'Подробности, например список полей при `validation_failed`' } }, ['code', 'message']) },
     ['error'],
@@ -190,7 +206,7 @@ const SESSION_USER = obj({
 });
 
 const FILTER_QUERY = [
-  { name: 'spec', description: 'Специализация или fullstack (есть категории и в backend, и в frontend; грейд - меньший из двух)', schema: en('backend', 'frontend', 'ai', 'engineering', 'fullstack') },
+  { name: 'spec', description: 'Специализация', schema: en('backend', 'frontend') },
   { name: 'grade', description: 'Грейд', schema: en('junior', 'middle') },
   { name: 'stack', description: 'Технологии через запятую, не больше 10', schema: str() },
   { name: 'fsp', description: '`1` — только с достижениями ФСП', schema: en('1') },
@@ -262,31 +278,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
       free('k, candidates, vacancies, scored, mean {ours, baseline, precisionCeiling} | null, rows [{id, ours, baseline, top, baselineTop, …}], warnings'),
     ),
     errors: { 400: 'Не JSON, не прошла схема, неизвестный id каталога или разметка на несуществующих объектах', 403: 'Чужой Origin', 413: 'Тело больше 1 МБ', 429: 'Слишком много прогонов' },
-  },
-
-  'POST /api/simulator': {
-    role: 'public',
-    summary: 'Прогнать виртуального кандидата через адаптивный тест',
-    description:
-      'Боевой движок теста на грейд (выбор задания по информации Фишера, EAP-оценка θ, остановка и дозадавание по политике текущей версии) на виртуальном кандидате с заданной истинной θ. Режимы ответов: ideal (2PL по экспертным a, b), noise (шум b на показ), leak (трюк по 30 % семейств). Детерминированно по seed, без БД и LLM. Лимит частоты - 120 прогонов за 10 минут с адреса.',
-    body: {
-      description: 'Виртуальный кандидат',
-      schema: obj(
-        {
-          subcategoryId: str('Подкатегория с полным банком, например backend.web-api'),
-          claimed: en('junior', 'middle', 'senior'),
-          theta: { type: 'number', minimum: -3, maximum: 3, description: 'Истинный уровень виртуального кандидата' },
-          mode: en('ideal', 'noise', 'leak'),
-          seed: int('0..2147483647, по умолчанию 1'),
-        },
-        ['subcategoryId', 'claimed', 'theta'],
-      ),
-    },
-    success: JSON_OK(
-      'Шаги теста и итог',
-      free('input, policyVersion, steps [{n, templateId, title, itemGrade, a, b, phase, pModel, correct, theta, se}], start, confirmed, offeredGrade, grade, pPass, theta, se, stopReason, length, correctCount, cuts'),
-    ),
-    errors: { 400: 'Не JSON, не прошла схема или у подкатегории нет теста', 403: 'Чужой Origin', 413: 'Тело больше 2 КБ', 429: 'Слишком много прогонов' },
   },
 
   'GET /api/health': {
@@ -623,6 +614,37 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Финальный этап пути кандидата: работодатель отмечает найм по своему принятому приглашению (accepted → hired, `hiredAt`). Повторная отметка идемпотентна. Нанятый кандидат не показывается в поиске и подборках других компаний.',
     success: JSON_OK('Приглашение со статусом hired', obj({ id: str(), status: en('hired'), hiredAt: str('Время отметки найма, ISO 8601') })),
     errors: { 404: 'Приглашение чужое или не существует', 409: 'Приглашение не в статусе accepted; не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)' },
+  },
+  // lane live-slots (ADR 0008): назначение живой защиты через слоты.
+  'POST /api/employer/invitations/{id}/live-defense': {
+    summary: 'Предложить слоты живой защиты',
+    description: 'Только по принятому приглашению своей компании: 2–5 слотов (ISO 8601, интерфейс вводит по МСК), 30 или 45 минут, не раньше чем через 2 часа и не позже 14 дней, комментарий до 300 знаков. Одно активное предложение на приглашение: новое заменяет старое. Кандидат получает уведомление.',
+    success: { status: 201, description: 'Предложение и подстатус живой защиты', schema: ref('LiveDefense') },
+    errors: { 400: 'Число слотов, длительность, окно времени или пересечение слотов (`slot_count`, `slot_duration`, `slot_window`, `slot_overlap`)', 404: 'Приглашение чужое или не существует', 409: 'Приглашение не принято (`invitation_not_accepted`); время занято защитой другого кандидата (`slot_taken`); защита уже назначена — сначала отмена (`live_defense_scheduled`)' },
+  },
+  'POST /api/employer/invitations/{id}/live-defense/cancel': {
+    summary: 'Отменить живую защиту (работодатель)',
+    description: 'С причиной; назначенную — не позднее чем за 1 час до начала. Время компании освобождается, кандидат получает уведомление.',
+    success: JSON_OK('Предложение со статусом cancelled', ref('LiveDefense')),
+    errors: { 404: 'Приглашение чужое или защита не назначалась', 409: 'Поздно отменять (`cancel_too_late`) или уже отменено (`not_scheduled`)' },
+  },
+  'POST /api/invitations/{id}/live-defense/choose': {
+    summary: 'Выбрать слот живой защиты',
+    description: 'Живая защита записывается (ADR 0008 п. 3): нужен действующее согласие на запись `call_recording` (ADR 0005). Без него — 409 `recording_consent_required` с `details: { version, paragraphs }`; с `recordingConsentVersion` согласие даётся тем же действием. Выбор создаёт или привязывает ожидающую сессию защиты (`CallSession kind=defense`), письма и уведомления — обеим сторонам.',
+    success: JSON_OK('Назначенная защита', ref('LiveDefense')),
+    errors: { 404: 'Приглашение чужое, предложения нет или слот не из него', 409: '`recording_consent_required`; время занято другим кандидатом компании (`slot_taken`); слот уже выбран или предложение отменено (`slot_already_chosen`); время прошло (`slot_past`)' },
+  },
+  'POST /api/invitations/{id}/live-defense/none-fit': {
+    summary: 'Ни один слот не подходит',
+    description: 'Комментарий, когда удобно; работодатель получает уведомление и предлагает новые слоты.',
+    success: JSON_OK('Предложение с отметкой noneFit', ref('LiveDefense')),
+    errors: { 404: 'Приглашение чужое или предложения нет', 409: 'Слот уже выбран или предложение отменено (`slot_already_chosen`)' },
+  },
+  'POST /api/invitations/{id}/live-defense/cancel': {
+    summary: 'Отменить живую защиту (кандидат)',
+    description: 'С причиной, не позднее чем за 1 час до начала.',
+    success: JSON_OK('Предложение со статусом cancelled', ref('LiveDefense')),
+    errors: { 404: 'Приглашение чужое или защита не назначалась', 409: '`cancel_too_late`; защита ещё не назначена или уже отменена (`not_scheduled`)' },
   },
   'POST /api/invitations/{id}': {
     summary: 'Принять или отклонить приглашение',

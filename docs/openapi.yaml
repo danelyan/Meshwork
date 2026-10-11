@@ -2653,6 +2653,45 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/defense-room/ai":
+    post:
+      operationId: postDefenseRoomAi
+      tags:
+        - defense-room
+      summary: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п."
+      description: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же комната `/defense-room/{sessionId}`, только вопросы по коду. Не чаще раза в сутки на сабмит (429 `ai_defense_limit`, демо-кандидатов не ограничивает); идущая возвращается (`resumed: true`). Нужно согласие на запись (403 `call_consent_required`). Работодатель до принятия приглашения видит только баллы и флаги.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/AiDefenseStartInput"
+      responses:
+        "200":
+          description: "POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "201":
+          description: "Создано. POST `{ projectSubmissionId }` — ИИ-защита своего проверенного сабмита без приглашения (ADR 0008 п. 1): та же"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/defense-room/pending":
     get:
       operationId: getDefenseRoomPending
@@ -3559,6 +3598,110 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/employer/invitations/{id}/live-defense":
+    post:
+      operationId: postEmployerInvitationsIdLiveDefense
+      tags:
+        - employer
+      summary: "Предложить слоты живой защиты"
+      description: "Только по принятому приглашению своей компании: 2–5 слотов (ISO 8601, интерфейс вводит по МСК), 30 или 45 минут, не раньше чем через 2 часа и не позже 14 дней, комментарий до 300 знаков. Одно активное предложение на приглашение: новое заменяет старое. Кандидат получает уведомление.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/LiveSlotsInput"
+      responses:
+        "201":
+          description: "Предложение и подстатус живой защиты"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/LiveDefense"
+        "400":
+          description: "Число слотов, длительность, окно времени или пересечение слотов (`slot_count`, `slot_duration`, `slot_window`, `slot_overlap`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Приглашение чужое или не существует"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Приглашение не принято (`invitation_not_accepted`); время занято защитой другого кандидата (`slot_taken`); защита уже назначена — сначала отмена (`live_defense_scheduled`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/invitations/{id}/live-defense/cancel":
+    post:
+      operationId: postEmployerInvitationsIdLiveDefenseCancel
+      tags:
+        - employer
+      summary: "Отменить живую защиту (работодатель)"
+      description: "С причиной; назначенную — не позднее чем за 1 час до начала. Время компании освобождается, кандидат получает уведомление.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/LiveCancelInput"
+      responses:
+        "200":
+          description: "Предложение со статусом cancelled"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/LiveDefense"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Приглашение чужое или защита не назначалась"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Поздно отменять (`cancel_too_late`) или уже отменено (`not_scheduled`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/employer/needs/{id}/project":
     get:
       operationId: getEmployerNeedsIdProject
@@ -3669,6 +3812,39 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/employer/project-submissions/{id}/ai-defense":
+    get:
+      operationId: getEmployerProjectSubmissionsIdAiDefense
+      tags:
+        - employer
+      summary: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п."
+      description: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п. 1). До принятого приглашения — псевдоним, баллы по рубрике A-02 и флаги; без транскрипта, записи и ссылки на репозиторий. После accepted с действующим раскрытием — ещё `sessionId`, `transcript`, `hasRecording` (запись — `/api/call/{sessionId}/recording`) и `repoUrl`. Сдача чужой вакансии или скрытого кандидата — 404.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "GET — вердикт ИИ-защиты сдачи (ADR 0008 п. 1). До принятого приглашения — псевдоним, баллы по рубрике A-02 и флаги;"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/project-submissions/{id}/invite-to-defense":
@@ -4749,13 +4925,13 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/invitations/{id}/complaint":
+  "/api/invitations/{id}/live-defense/cancel":
     post:
-      operationId: postInvitationsIdComplaint
+      operationId: postInvitationsIdLiveDefenseCancel
       tags:
         - invitations
-      summary: "(R-X-01)."
-      description: "POST /api/invitations/:id/complaint `{ reason: spam | salary_mismatch | offensive | fake_company | other, comment? }` (R-X-01). Жалоба кандидата на полученное приглашение: чужое — 404, повторная — 409, комментарий до 1000 символов. Статус приглашения не меняется; жалобы за 30 дней снижают лимит приглашений компании.\n\nНужна сессия кандидата (кука cid)."
+      summary: "Отменить живую защиту (кандидат)"
+      description: "С причиной, не позднее чем за 1 час до начала.\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -4771,15 +4947,14 @@ paths:
         content:
           "application/json":
             schema:
-              $ref: "#/components/schemas/ComplaintInput"
+              $ref: "#/components/schemas/LiveCancelInput"
       responses:
-        "201":
-          description: "Создано. (R-X-01)."
+        "200":
+          description: "Предложение со статусом cancelled"
           content:
             "application/json":
               schema:
-                type: object
-                additionalProperties: true
+                $ref: "#/components/schemas/LiveDefense"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4787,7 +4962,117 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          description: "Приглашение чужое или защита не назначалась"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "`cancel_too_late`; защита ещё не назначена или уже отменена (`not_scheduled`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/invitations/{id}/live-defense/choose":
+    post:
+      operationId: postInvitationsIdLiveDefenseChoose
+      tags:
+        - invitations
+      summary: "Выбрать слот живой защиты"
+      description: "Живая защита записывается (ADR 0008 п. 3): нужен действующее согласие на запись `call_recording` (ADR 0005). Без него — 409 `recording_consent_required` с `details: { version, paragraphs }`; с `recordingConsentVersion` согласие даётся тем же действием. Выбор создаёт или привязывает ожидающую сессию защиты (`CallSession kind=defense`), письма и уведомления — обеим сторонам.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/LiveChooseInput"
+      responses:
+        "200":
+          description: "Назначенная защита"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/LiveDefense"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Приглашение чужое, предложения нет или слот не из него"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "`recording_consent_required`; время занято другим кандидатом компании (`slot_taken`); слот уже выбран или предложение отменено (`slot_already_chosen`); время прошло (`slot_past`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/invitations/{id}/live-defense/none-fit":
+    post:
+      operationId: postInvitationsIdLiveDefenseNoneFit
+      tags:
+        - invitations
+      summary: "Ни один слот не подходит"
+      description: "Комментарий, когда удобно; работодатель получает уведомление и предлагает новые слоты.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/LiveNoneFitInput"
+      responses:
+        "200":
+          description: "Предложение с отметкой noneFit"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/LiveDefense"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Приглашение чужое или предложения нет"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Слот уже выбран или предложение отменено (`slot_already_chosen`)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/notifications":
@@ -5237,6 +5522,61 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/profile/resume-fields":
+    get:
+      operationId: getProfileResumeFields
+      tags:
+        - profile
+      summary: "Что в профиле взято из резюме и где резюме расходится с профилем (R-C-01/02)."
+      description: "что в профиле взято из резюме и где резюме расходится с профилем (R-C-01/02). Только кандидату.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      responses:
+        "200":
+          description: "Что в профиле взято из резюме и где резюме расходится с профилем (R-C-01/02). Только кандидату."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postProfileResumeFields
+      tags:
+        - profile
+      summary: "POST `{ action: 'accept' | 'dismiss', key }` — принять или отклонить «в резюме указано иначе»;"
+      description: "POST `{ action: 'accept' | 'dismiss', key }` — принять или отклонить «в резюме указано иначе»; `{ action: 'set', key: 'name' | 'experienceYears' | 'roles' | 'softSkills', value }` — поправить поле самому. Контакт правится через POST /api/profile/contact.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/ResumeFieldAction"
+      responses:
+        "200":
+          description: "POST `{ action: 'accept' | 'dismiss', key }` — принять или отклонить «в резюме указано иначе»;"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/project-submissions/{id}":
     get:
       operationId: getProjectSubmissionsId
@@ -5560,7 +5900,7 @@ paths:
       tags:
         - stt
       summary: "Режим голосового ввода"
-      description: "Какой распознаватель доступен композеру: yandex / browser / off.\n\nВход не нужен."
+      description: "Какой распознаватель доступен композеру: yandex / openai / browser / off.\n\nВход не нужен."
       security: []
       responses:
         "200":
@@ -6365,6 +6705,16 @@ components:
       name: cid
       description: "Подписанная сессионная кука платформы"
   schemas:
+    AiDefenseStartInput:
+      type: object
+      properties:
+        projectSubmissionId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z0-9_-]+$"
+      required:
+        - projectSubmissionId
     CallConsentBody:
       type: object
       properties:
@@ -6643,26 +6993,6 @@ components:
             - string
             - "null"
       additionalProperties: false
-    ComplaintInput:
-      type: object
-      properties:
-        reason:
-          type: string
-          enum:
-            - spam
-            - salary_mismatch
-            - offensive
-            - fake_company
-            - other
-        comment:
-          anyOf:
-            -
-              type: string
-              maxLength: 1000
-            -
-              type: "null"
-      required:
-        - reason
     ConsultantEvent:
       description: "Кадр SSE хода консультанта (`type` — различитель)"
       oneOf:
@@ -7180,6 +7510,215 @@ components:
         - message
         - salaryFrom
         - salaryTo
+    LiveCancelInput:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 300
+      required:
+        - reason
+    LiveChooseInput:
+      type: object
+      properties:
+        slotId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        recordingConsentVersion:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - slotId
+    LiveDefense:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+            - slots_proposed
+            - scheduled
+            - done
+            - cancelled
+            - no_show
+        durationMin:
+          type: integer
+          description: "30 или 45"
+        comment:
+          oneOf:
+            -
+              type: string
+            -
+              type: "null"
+        createdAt:
+          type: string
+          format: date-time
+        slots:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              startsAt:
+                type: string
+                description: "UTC; интерфейс показывает по МСК"
+                format: date-time
+              endsAt:
+                type: string
+                format: date-time
+              available:
+                type: boolean
+                description: "false — время занято другим кандидатом компании или прошло"
+            required:
+              - id
+              - startsAt
+              - endsAt
+              - available
+        noneFit:
+          oneOf:
+            -
+              type: object
+              properties:
+                at:
+                  type: string
+                  format: date-time
+                comment:
+                  type: string
+              required:
+                - at
+                - comment
+            -
+              type: "null"
+        scheduled:
+          oneOf:
+            -
+              type: object
+              properties:
+                slotId:
+                  type: string
+                startsAt:
+                  type: string
+                  format: date-time
+                endsAt:
+                  type: string
+                  format: date-time
+                roomOpensAt:
+                  type: string
+                  description: "за 10 минут до начала"
+                  format: date-time
+                roomOpen:
+                  type: boolean
+                callSessionId:
+                  oneOf:
+                    -
+                      type: string
+                    -
+                      type: "null"
+                roomHref:
+                  oneOf:
+                    -
+                      type: string
+                      description: "/defense-room/:id кандидату, /employer/calls/:id работодателю"
+                    -
+                      type: "null"
+              required:
+                - slotId
+                - startsAt
+                - endsAt
+                - roomOpensAt
+                - roomOpen
+                - callSessionId
+                - roomHref
+            -
+              type: "null"
+        cancelled:
+          oneOf:
+            -
+              type: object
+              properties:
+                at:
+                  type: string
+                  format: date-time
+                by:
+                  type: string
+                  enum:
+                    - candidate
+                    - employer
+                reason:
+                  type: string
+              required:
+                - at
+                - by
+                - reason
+            -
+              type: "null"
+        noShow:
+          type: array
+          items:
+            type: string
+            enum:
+              - candidate
+              - employer
+          description: "Опоздание больше 15 минут: кто не пришёл (вычисляется при чтении)"
+        canCancel:
+          type: boolean
+          description: "Отменить можно сейчас (не позднее чем за 1 час)"
+      required:
+        - id
+        - status
+        - durationMin
+        - comment
+        - createdAt
+        - slots
+        - noneFit
+        - scheduled
+        - cancelled
+        - noShow
+        - canCancel
+      description: "Живая защита по приглашению (ADR 0008): активное предложение слотов и подстатус"
+    LiveNoneFitInput:
+      type: object
+      properties:
+        comment:
+          type: string
+          minLength: 3
+          maxLength: 300
+      required:
+        - comment
+    LiveSlotsInput:
+      type: object
+      properties:
+        slots:
+          minItems: 2
+          maxItems: 5
+          type: array
+          items:
+            type: string
+            minLength: 10
+            maxLength: 40
+        durationMin:
+          anyOf:
+            -
+              type: number
+              const: 30
+            -
+              type: number
+              const: 45
+        comment:
+          anyOf:
+            -
+              type: string
+              maxLength: 300
+            -
+              type: "null"
+      required:
+        - slots
+        - durationMin
     MemoryBody:
       type: object
       properties:
@@ -7267,6 +7806,60 @@ components:
               maximum: 30
             -
               type: "null"
+    ResumeFieldAction:
+      oneOf:
+        -
+          type: object
+          properties:
+            action:
+              type: string
+              const: accept
+            key:
+              type: string
+              enum:
+                - name
+                - contact
+                - experienceYears
+                - roles
+                - softSkills
+          required:
+            - action
+            - key
+        -
+          type: object
+          properties:
+            action:
+              type: string
+              const: dismiss
+            key:
+              type: string
+              enum:
+                - name
+                - contact
+                - experienceYears
+                - roles
+                - softSkills
+          required:
+            - action
+            - key
+        -
+          type: object
+          properties:
+            action:
+              type: string
+              const: set
+            key:
+              type: string
+              enum:
+                - name
+                - experienceYears
+                - roles
+                - softSkills
+            value: {}
+          required:
+            - action
+            - key
+            - value
     SayInput:
       type: object
       properties:

@@ -499,6 +499,8 @@ model Invitation {
   hiredAt           DateTime?
   /// lane complaints: жалоба кандидата на это приглашение (не больше одной)
   complaint         Complaint?
+  /// lane live-slots: предложения слотов живой защиты (ADR 0008); активное — activeKey = id приглашения
+  liveDefenses      LiveDefense[]
 
   @@index([candidateId, status])
   @@index([companyId, createdAt])
@@ -1307,4 +1309,91 @@ model Complaint {
   createdAt    DateTime        @default(now())
 
   @@index([companyId, createdAt])
+}
+
+// =============================================================================
+// lane: live-slots — назначение живой защиты через слоты (ADR 0008, «Назначение живой защиты: слоты»).
+// Время хранится в UTC, показывается по МСК. done / no_show выводятся при чтении (server/live-defense/rules.ts).
+// =============================================================================
+
+enum LiveDefenseStatus {
+  slots_proposed
+  scheduled
+  done
+  cancelled
+  no_show
+}
+
+enum LiveDefenseActor {
+  candidate
+  employer
+}
+
+/// Предложение слотов живой защиты по принятому приглашению. Одно активное на приглашение (activeKey).
+model LiveDefense {
+  id               String            @id @default(cuid())
+  invitationId     String
+  invitation       Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  companyId        String
+  candidateId      String
+  /// = invitationId, пока предложение активно; null — заменено новым. Уникальность — одно активное на приглашение.
+  activeKey        String?           @unique
+  status           LiveDefenseStatus @default(slots_proposed)
+  /// 30 или 45 минут
+  durationMin      Int
+  comment          String?
+  proposedByUserId String?
+  createdAt        DateTime          @default(now())
+  supersededAt     DateTime?
+  /// Кандидат: «ни один не подходит»
+  noneFitAt        DateTime?
+  noneFitComment   String?
+  chosenSlotId     String?
+  startsAt         DateTime?
+  endsAt           DateTime?
+  scheduledAt      DateTime?
+  /// CallSession kind=defense, aiDefense=false (defense-room/pending.ts); null — у кандидата нет сданного проекта
+  callSessionId    String?
+  cancelledAt      DateTime?
+  cancelledBy      LiveDefenseActor?
+  cancelReason     String?
+
+  slots  LiveDefenseSlot[]
+  events LiveDefenseEvent[]
+
+  @@index([invitationId, createdAt])
+  @@index([companyId, status])
+  @@index([candidateId, status])
+  @@index([callSessionId])
+}
+
+model LiveDefenseSlot {
+  id            String      @id @default(cuid())
+  liveDefenseId String
+  liveDefense   LiveDefense @relation(fields: [liveDefenseId], references: [id], onDelete: Cascade)
+  startsAt      DateTime
+  endsAt        DateTime
+  /// "<companyId>|<startsAt ISO>", пока слот выбран: второй кандидат компании не займёт то же время (уникальный индекс).
+  bookedKey     String?     @unique
+  bookedAt      DateTime?
+
+  @@index([liveDefenseId])
+}
+
+/// Уведомление на платформе о живой защите (лента /api/notifications): кому — audience.
+model LiveDefenseEvent {
+  id            String           @id @default(cuid())
+  liveDefenseId String
+  liveDefense   LiveDefense      @relation(fields: [liveDefenseId], references: [id], onDelete: Cascade)
+  candidateId   String
+  companyId     String
+  audience      LiveDefenseActor
+  /// proposed | scheduled | none_fit | cancelled
+  kind          String
+  text          String
+  detail        String
+  createdAt     DateTime         @default(now())
+
+  @@index([candidateId, audience, createdAt])
+  @@index([companyId, audience, createdAt])
 }

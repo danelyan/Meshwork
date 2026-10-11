@@ -93,6 +93,8 @@ export const API_ACCESS = {
   '/api/favorites': 'account',
   '/api/notifications': 'account',
   '/api/career/vacancies': 'candidate',
+  '/api/career/vacancies/[id]/apply': 'candidate',
+  '/api/career/applications': 'candidate',
   // Вход, регистрация, пароль, Яндекс ID — до входа.
   '/api/auth/login': 'public',
   '/api/auth/logout': 'public',
@@ -149,7 +151,6 @@ export const API_ACCESS = {
   '/api/sources/[id]': 'candidate',
   '/api/invitations': 'candidate',
   '/api/invitations/[id]': 'candidate',
-  '/api/invitations/[id]/complaint': 'candidate',
   '/api/recommendations': 'candidate',
   '/api/consultant/messages': 'candidate',
   '/api/consultant/conversations': 'candidate',
@@ -166,6 +167,8 @@ export const API_ACCESS = {
   '/api/employer/vacancies': 'employer',
   '/api/employer/vacancies/[id]': 'employer',
   '/api/employer/vacancies/[id]/matches': 'employer',
+  '/api/employer/vacancies/[id]/applications': 'employer',
+  '/api/employer/applications/[id]': 'employer',
   // Звонок с аватаром (ADR 0003): ведёт кандидат; запись и события видят обе стороны по правилам server/call/access.ts.
   '/api/call': 'candidate',
   '/api/call/start': 'candidate',

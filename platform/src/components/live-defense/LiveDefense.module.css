@@ -1,0 +1,19 @@
+/* lane live-slots: блок живой защиты в карточке приглашения (ADR 0008). */
+.box { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); background: var(--glass); }
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.head h3 { margin: 0; font-size: var(--fs-sm); text-transform: uppercase; font-family: var(--mono); color: var(--muted); }
+.sub { display: inline-flex; padding: 6px 8px; border: 1px solid var(--ink); font: var(--fs-xs) var(--mono); text-transform: uppercase; }
+.sub[data-status='slots_proposed'] { border-color: var(--blue); color: var(--blue); }
+.sub[data-status='scheduled'] { background: var(--blue); border-color: var(--blue); color: var(--on-ink); }
+.sub[data-status='done'] { background: var(--ink); color: var(--on-ink); }
+.sub[data-status='cancelled'], .sub[data-status='no_show'] { border-color: var(--line); color: var(--muted); }
+.slots { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.slot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.slot label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.slot[data-available='false'] { color: var(--muted); text-decoration: line-through; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.input { min-width: 0; padding: 8px 10px; border: 1px solid var(--border-input, var(--line)); background: var(--surface-input, transparent); color: var(--ink); font: var(--fs-sm) var(--font); }
+.textarea { padding: 8px 10px; border: 1px solid var(--border-input, var(--line)); background: var(--surface-input, transparent); color: var(--ink); font: var(--fs-sm) var(--font); width: 100%; min-height: 64px; resize: vertical; }
+.meta { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+.fine { margin: 0; color: var(--muted); font-size: var(--fs-xs); }
+.error { margin: 0; color: var(--blue); font-size: var(--fs-sm); }

@@ -5,11 +5,11 @@ import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
 import type { SessionPrincipal } from '../session';
 import { employerMayAccess, redactSnapshot, resolveViewer, type Viewer } from './access';
+import { assertLiveRoomOpen } from '../live-defense/service';
 import { publish } from './bus';
 import { buildSnapshot, employerItem, ICE_SERVERS, resumeAi } from './session';
 import { appendEntries, asVerdict, isAiMuted, loadPlan, savePlan, tryLockPlan, unlockPlan } from './store';
 import type { CallSnapshot, DefenseFlag, TranscriptEntry } from './types';
-import { defenseVisibleTo } from './visibility';
 
 /**
  * Работодатель в защите проекта: подключиться к живой сессии, замьютить ИИ, сказать реплику,
@@ -39,6 +39,7 @@ export interface JoinResult {
 export async function joinCall(principal: SessionPrincipal | null, sessionId: string): Promise<JoinResult> {
   const { viewer, session } = await employerViewer(principal, sessionId);
   if (session.aiDefense) throw errors.conflict('Это ИИ-защита без работодателя - доступен транскрипт');
+  await assertLiveRoomOpen([sessionId]); // ADR 0008 п. 5: комната живой защиты — за 10 минут до начала
   if (session.status === 'pending') throw errors.conflict('Кандидат ещё не начал защиту');
   if (session.status !== 'active') throw errors.conflict('Защита уже завершена - доступен транскрипт');
   // check-then-create под FOR UPDATE строки сессии: два одновременных join разных компаний не пролезут оба.
@@ -220,8 +221,7 @@ export async function listEmployerCalls(ctx: EmployerContext): Promise<EmployerC
   const ids = [...(await disclosedCandidateIds(ctx.companyId, [...new Set(accepted.map((a) => a.candidateId))]))];
   if (!ids.length) return [];
   const rows = await prisma.callSession.findMany({
-    // ADR 0008: ИИ-защиты и свои живые; живая защита по приглашению другой компании в список не попадает.
-    where: { candidateId: { in: ids }, kind: 'defense', AND: [defenseVisibleTo(ctx.companyId)] },
+    where: { candidateId: { in: ids }, kind: 'defense' },
     orderBy: [{ startedAt: 'desc' }],
     take: 100,
     select: { id: true, candidateId: true, status: true, startedAt: true, finishedAt: true, verdictJson: true, projectSubmissionId: true },

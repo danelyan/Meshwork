@@ -1,6 +1,6 @@
 import { markNotificationsRead, notifications } from '@/server/auth/notifications';
 
-const db = vi.hoisted(() => ({ user: { findUnique: vi.fn(), updateMany: vi.fn() }, invitation: { findMany: vi.fn(), count: vi.fn() } }));
+const db = vi.hoisted(() => ({ user: { findUnique: vi.fn(), updateMany: vi.fn() }, invitation: { findMany: vi.fn(), count: vi.fn() }, liveDefenseEvent: { findMany: vi.fn(), count: vi.fn() }, employerProfile: { findUnique: vi.fn() } }));
 vi.mock('@/server/db', () => ({ prisma: db }));
 const candidate = { userId: 'user-c', role: 'candidate' as const, candidateId: 'candidate-c', employerProfileId: null };
 const employer = { userId: 'user-e', role: 'employer' as const, candidateId: null, employerProfileId: 'employer-e' };
@@ -12,6 +12,9 @@ beforeEach(() => {
   vi.setSystemTime(now);
   db.invitation.findMany.mockResolvedValue([]);
   db.invitation.count.mockResolvedValue(0);
+  db.liveDefenseEvent.findMany.mockResolvedValue([]);
+  db.liveDefenseEvent.count.mockResolvedValue(0);
+  db.employerProfile.findUnique.mockResolvedValue({ companyId: 'co-e' });
 });
 afterEach(() => vi.useRealTimers());
 
@@ -34,6 +37,18 @@ describe('notification role scopes and read watermarks', () => {
     const feed = await notifications(employer);
     expect(db.invitation.findMany.mock.calls[0]![0].where).toEqual({ employerProfileId: 'employer-e', respondedAt: { not: null, lte: now } });
     expect(feed.items[0]!).toMatchObject({ text: 'Кандидат принял приглашение', href: '/employer/invitations', unread: true });
+  });
+
+  it('lane live-slots: события живой защиты — только своей стороне, в общей ленте и счётчике', async () => {
+    const read = new Date('2026-10-10T12:00:00Z');
+    db.user.findUnique.mockResolvedValue({ role: 'employer', candidateNotificationsReadAt: null, employerNotificationsReadAt: read });
+    db.invitation.findMany.mockResolvedValue([{ id: 'i2', respondedAt: new Date('2026-10-10T11:00:00Z'), status: 'accepted', vacancy: null }]);
+    db.liveDefenseEvent.findMany.mockResolvedValue([{ id: 'e1', text: 'Кандидат выбрал время живой защиты', detail: 'пн 14:00', createdAt: new Date('2026-10-10T14:30:00Z') }]);
+    db.liveDefenseEvent.count.mockResolvedValue(1);
+    const feed = await notifications(employer);
+    expect(db.liveDefenseEvent.findMany.mock.calls[0]![0].where).toEqual({ companyId: 'co-e', audience: 'employer', createdAt: { lte: now } });
+    expect(feed.unread).toBe(1);
+    expect(feed.items.map((i) => i.id)).toEqual(['live-e1', 'i2']);
   });
 
   it('rejects missing or changed accounts before reading events', async () => {

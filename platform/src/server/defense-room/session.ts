@@ -9,6 +9,7 @@ import { prisma } from '../db';
 import { getEnv } from '../env';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
+import { assertLiveRoomOpen } from '../live-defense/service';
 import { publish } from './bus';
 import { decideFollowUp, neutralAck } from './interviewer';
 import { generateQlc, summarizeProjectResult } from './qlc';
@@ -133,6 +134,11 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
       })
     : null;
   if (submissionId && (!submission || submission.candidateId !== candidateId)) throw errors.notFound('Сабмит проекта не найден');
+  // Живая защита по слоту (ADR 0008 п. 5): ожидающая сессия, привязанная к назначенному времени, открывается за 10 минут до начала.
+  if (submissionId && input.ai !== true) {
+    const pendingIds = await prisma.callSession.findMany({ where: { candidateId, kind: 'defense', status: 'pending', projectSubmissionId: submissionId }, select: { id: true } });
+    await assertLiveRoomOpen(pendingIds.map((p) => p.id));
+  }
   // Защита — тоже созвон: то же отдельное согласие на запись, что у лейна call (ADR 0003, п. 4).
   // Г3 (ADR 0005): защиту оценивает ИИ. Г2: согласия на запись не было — спросить; отозвано — защита текстом.
   await assertAiAssessmentConsent(candidateId);

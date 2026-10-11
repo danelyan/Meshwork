@@ -61,7 +61,11 @@
 | Записи и транскрипты после `accepted` | есть: `server/call/access.ts`, `server/defense-room/access.ts` |
 | Пишется аудио обеих сторон | **нет**: `CallSession.audioPath` — только аудио кандидата |
 | ИИ-защита проекта без приглашения и вердикт под псевдонимом | **нет**, в работе |
-| Слоты, подстатус живой защиты, письма о назначении | **нет** |
+| Слоты, подстатус живой защиты, письма о назначении | есть (lane live-slots): `server/live-defense/`, модели `LiveDefense*` (миграция `20261011200000_live_defense_slots`); API `POST /api/employer/invitations/:id/live-defense[/cancel]`, `POST /api/invitations/:id/live-defense/{choose,none-fit,cancel}`; блок в `/employer/invitations` и `/invitations`; уведомления на платформе обеим сторонам и письмо обеим при выборе |
+| Комната открывается за 10 минут, `no_show` при опоздании >15 минут | есть: проверка в `startDefenseRoom` и `joinCall` (409 `room_not_open`); `done`/`no_show` вычисляются при чтении, без крона |
+| Кнопка «Назначить защиту» в карточке кандидата | **нет** — только в `/employer/invitations` |
+| Закрытие предложения при найме другой компанией | есть: `markInvitationHired` → `closeLiveDefensesOnHire`. Отмены приглашения работодателем в коде нет — правила нет и здесь |
+| Живая защита без сданного проекта | время назначается, но сессии защиты нет (`callSessionId = null`): вопросы по коду строятся только по сабмиту |
 | Найм `accepted → hired` | есть |
 
 ## Последствия

@@ -9,12 +9,12 @@ import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 import { deliverable, notifyInBackground, sendMail } from '../mail';
 import { invitationAnswerMail, invitationMail } from '../mail/templates';
+import { closeLiveDefensesOnHire, liveDefenseViews, type LiveDefenseView } from '../live-defense/service';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
 import { notifyAtsStatusChanged } from './ats-webhook';
-import { detectRedFlags, invitationSanction, type RedFlag } from './antifraud';
-import { countRecentComplaints } from './complaints';
+import { detectRedFlags, type RedFlag } from './antifraud';
 import { loadCompanyTrusts } from './company';
 import { loadPool } from './matching';
 import { contactEmail, toCandidateCard, type CandidateCard } from './privacy';
@@ -39,6 +39,8 @@ export interface EmployerInvitationView {
   hiredAt?: string | null;
   vacancy: { id: string; title: string } | null;
   candidate: CandidateCard;
+  /** lane live-slots (ADR 0008): активное предложение слотов живой защиты и его подстатус; null — не назначалась. */
+  liveDefense?: LiveDefenseView | null;
 }
 
 export interface CandidateInvitationView {
@@ -59,10 +61,10 @@ export interface CandidateInvitationView {
   company: { name: string; description: string | null; contact: string | null; trust?: { index: number; band: 'low' | 'medium' | 'high'; concept: true } | null };
   /** Антифрод (R-X-01): красные флаги текста и вилки; пустой — ничего не найдено. Интерфейс пишет «Проверьте: …». */
   redFlags?: Pick<RedFlag, 'code' | 'severity' | 'candidateNote'>[];
-  /** lane complaints: жалоба кандидата на это приглашение; null — не подавалась. */
-  complaint?: { reason: string; createdAt: string } | null;
   /** Принято и раскрытие имени и контактов действует (Г5, ADR 0005); false после отзыва — компания видит псевдоним. */
   disclosed?: boolean;
+  /** lane live-slots (ADR 0008): слоты живой защиты и подстатус; null — компания ещё не предлагала. */
+  liveDefense?: LiveDefenseView | null;
   vacancy: {
     title: string;
     specialization: Specialization;
@@ -81,9 +83,8 @@ export async function invitationsSentToday(companyId: string, now = new Date()):
 /**
  * Отправить приглашение. 404 — кандидата нет или он скрыт настройкой приватности;
  * 404 — чужая или архивная потребность; 409 — уже есть открытое приглашение этой
- * компании; 429 — лимит за сутки; 403 company_blocked — отправка закрыта из-за жалоб.
- * Лимит, жалобы и дубль проверяются под advisory-lock компании, чтобы параллельные
- * запросы не обошли счётчик. Жалобы кандидатов за 30 дней снижают лимит (antifraud.invitationSanction).
+ * компании; 429 — лимит за сутки. Лимит и дубль проверяются под advisory-lock
+ * компании, чтобы параллельные запросы не обошли счётчик.
  */
 export async function createInvitation(
   ctx: { companyId: string; employerProfileId: string },
@@ -107,21 +108,9 @@ export async function createInvitation(
       select: { id: true },
     });
     if (open) throw errors.conflict('Кандидат ещё не ответил на прошлое приглашение компании');
-    // lane complaints: санкция читается тем же tx под тем же lock — решение и вставка в одной транзакции.
-    const sanction = invitationSanction(await countRecentComplaints(tx, ctx.companyId), limit);
-    if (sanction.level === 'blocked') {
-      throw new AppError(
-        'company_blocked',
-        `Отправка приглашений приостановлена: ${sanction.complaints} жалоб кандидатов за 30 дней. Проверьте тексты и вилки приглашений.`,
-        403,
-        { complaints: sanction.complaints },
-      );
-    }
-    const effective = sanction.limit;
     const sent = await tx.invitation.count({ where: { companyId: ctx.companyId, createdAt: { gt: new Date(Date.now() - DAY_MS) } } });
-    if (sent >= effective) {
-      const why = sanction.level === 'reduced' ? ` (лимит снижен из-за ${sanction.complaints} жалоб кандидатов за 30 дней)` : '';
-      throw new AppError('rate_limited', `Лимит: не больше ${effective} приглашений от компании за сутки${why}`, 429, { limit: effective, sanction: sanction.level });
+    if (sent >= limit) {
+      throw new AppError('rate_limited', `Лимит: не больше ${limit} приглашений от компании за сутки`, 429, { limit });
     }
     return tx.invitation.create({
       data: {
@@ -206,7 +195,9 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
   // Имя и контакты — только по принятому приглашению с действующим раскрытием (Г5, ADR 0005): отзыв возвращает псевдоним.
   const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
   const accepted = new Set(rows.filter((r) => disclosed.has(r.id)).map((r) => r.candidateId));
+  const live = await liveDefenseViews(rows.map((r) => r.id), 'employer');
   return rows.map((r) => ({
+    liveDefense: live.get(r.id) ?? null,
     id: r.id,
     status: r.status,
     salaryFrom: r.salaryFrom,
@@ -252,7 +243,6 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       createdAt: true,
       respondedAt: true,
       hiredAt: true,
-      complaint: { select: { reason: true, createdAt: true } },
       company: { select: { id: true, name: true, description: true, contact: true } },
       employerProfile: { select: { user: { select: { email: true } } } },
       vacancy: {
@@ -272,6 +262,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
   });
   const trusts = await loadCompanyTrusts(rows.map((r) => (r.company ?? r.vacancy?.company)?.id).filter((id): id is string => !!id));
   const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
+  const live = await liveDefenseViews(rows.map((r) => r.id), 'candidate');
   return rows.map((r) => {
     const co = r.company ?? r.vacancy?.company ?? { id: null, name: 'Компания', description: null, contact: null };
     const senderEmail = r.employerProfile?.user.email;
@@ -302,7 +293,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
         salaryTo: r.salaryTo,
       }).map(({ code, severity, candidateNote }) => ({ code, severity, candidateNote })),
       disclosed: disclosed.has(r.id),
-      complaint: r.complaint ? { reason: r.complaint.reason, createdAt: r.complaint.createdAt.toISOString() } : null,
+      liveDefense: live.get(r.id) ?? null,
       vacancy,
     };
   });
@@ -357,6 +348,7 @@ export async function markInvitationHired(companyId: string, invitationId: strin
     if (again?.status === 'hired') return { id: invitationId, status: 'hired', hiredAt: (again.hiredAt ?? now).toISOString() };
     throw errors.conflict('Отметить найм можно только по принятому приглашению');
   }
+  await closeLiveDefensesOnHire(companyId, invitationId, now);
   void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
   return { id: invitationId, status: 'hired', hiredAt: now.toISOString() };
 }

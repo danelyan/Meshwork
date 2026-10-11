@@ -15,7 +15,7 @@ export async function requestProjectDefense(candidateId: string, projectSubmissi
     const sub = await tx.projectSubmission.findUnique({ where: { id: projectSubmissionId }, select: { candidateId: true } });
     if (!sub || sub.candidateId !== candidateId) throw errors.notFound('Сабмит проекта не найден');
     const open = await tx.callSession.findFirst({
-      where: { candidateId, kind: 'defense', projectSubmissionId, status: { in: ['pending', 'active'] } },
+      where: { candidateId, kind: 'defense', projectSubmissionId, aiDefense: false, status: { in: ['pending', 'active'] } },
       orderBy: { startedAt: 'desc' },
       select: { id: true },
     });

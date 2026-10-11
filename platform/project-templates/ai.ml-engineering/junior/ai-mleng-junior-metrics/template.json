@@ -1,0 +1,19 @@
+{
+  "id": "ai-mleng-junior-metrics",
+  "subcategoryId": "ai.ml-engineering",
+  "specialization": "ai",
+  "grade": "junior",
+  "title": "Метрики классификации и стратифицированное разбиение",
+  "summary": "Confusion matrix, precision/recall/F1 по классам и macro/micro, ROC AUC с учётом ничьих и воспроизводимый стратифицированный train/test split — на чистом Python",
+  "stack": ["python312", "pytest"],
+  "catalogIds": ["ai.ml-metrics", "ai.validation", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

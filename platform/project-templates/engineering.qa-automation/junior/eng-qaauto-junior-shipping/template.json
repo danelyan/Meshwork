@@ -1,0 +1,32 @@
+{
+  "id": "eng-qaauto-junior-shipping",
+  "subcategoryId": "engineering.qa-automation",
+  "specialization": "engineering",
+  "grade": "junior",
+  "title": "Тест-дизайн для расчёта стоимости доставки",
+  "summary": "Таблица проверок по спецификации: границы, классы эквивалентности, ошибки; качество измеряется тем, сколько заведомо сломанных реализаций (мутантов) она ловит",
+  "stack": [
+    "node20",
+    "typescript",
+    "vitest"
+  ],
+  "catalogIds": [
+    "eng.test-design",
+    "common.unit-tests",
+    "eng.test-strategy"
+  ],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 60,
+  "timeBudgetMin": 150,
+  "platformOwned": [
+    "contract.md",
+    "tests/visible/**",
+    ".platform-tests/**"
+  ]
+}

@@ -1,7 +1,7 @@
 import { prisma } from '../db';
 import { getEnv } from '../env';
 import { runPlanB } from './plan-b';
-import { createProvider } from './providers';
+import { createFallbackProvider, createProvider } from './providers';
 import { Semaphore } from './semaphore';
 import {
   LlmError,
@@ -39,7 +39,14 @@ export interface LlmClientOptions {
   recordRun?: (run: AgentRunRecord) => Promise<void> | void;
   /** Пауза перед ретраем, мс; по умолчанию 500 · 2^(n-1), для тестов — 0. */
   backoffMs?: (attempt: number) => number;
+  /** Запасная модель: получает запрос, если основная не ответила (после своих ретраев), и все запросы следующие FALLBACK_COOLDOWN_MS. */
+  fallback?: LlmProvider;
+  /** Часы для окна запасной модели; для тестов. */
+  now?: () => number;
 }
+
+/** Сколько после сбоя основной модели запросы идут сразу в запасную. */
+export const FALLBACK_COOLDOWN_MS = 60_000;
 
 export interface LlmClient {
   /** Провайдер-обёртка: тот же контракт LlmProvider + семафор, таймаут, ретрай, журнал. */
@@ -163,54 +170,61 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
     }
   }
 
+  // Основная модель упала — следующие FALLBACK_COOLDOWN_MS запросы сразу идут в запасную,
+  // чтобы каждый ход не ждал таймаут лежащего сервиса.
+  let primaryDownUntil = 0;
+  const now = opts.now ?? Date.now;
+
   async function complete(ctx: LlmCallContext, req: CompleteRequest, signal?: AbortSignal): Promise<CompleteResult> {
     const queuedAt = Date.now();
     const release = await semaphore.acquire({ onQueue: ctx.onQueue, signal });
     const queueWaitMs = Date.now() - queuedAt;
     const startedAt = Date.now();
     const timeoutMs = req.timeoutMs ?? opts.timeoutMs;
-    const planB = Boolean(req.tools?.length) && !provider.supportsTools;
     // Дельты — только для свободного текста: в плане В и по JSON-схеме модель пишет служебный JSON.
     // После неудачной попытки, успевшей что-то показать: есть onDiscard — показанное убирается и повтор стримит заново;
     // нет — повтор идёт без дельт, итог придёт событием message.
     let streamed = false;
-    const userDelta = planB || req.schema ? undefined : req.onDelta;
     // Сырой JSON по схеме (интервьюер созвона): поток уже ушёл кандидату — повтор дал бы другой текст.
-    const jsonDelta = planB || !req.schema ? undefined : req.onJsonDelta;
     let jsonStreamed = false;
     const { onDelta: _drop, onJsonDelta: _dropJson, onDiscard, ...bare } = req;
     void _drop;
     void _dropJson;
-    const reqFor = (): CompleteRequest => {
-      if (jsonDelta) {
-        return {
-          ...bare,
-          onJsonDelta: (t) => {
-            jsonStreamed = true;
-            jsonDelta(t);
-          },
-        };
-      }
-      return userDelta && !streamed
-        ? {
+
+    /** Попытки на одном провайдере: ретраи на 429/5xx; успех пишется в журнал, неудача — бросается наверх. */
+    async function run(p: LlmProvider): Promise<CompleteResult> {
+      const planB = Boolean(req.tools?.length) && !p.supportsTools;
+      const userDelta = planB || req.schema ? undefined : req.onDelta;
+      const jsonDelta = planB || !req.schema ? undefined : req.onJsonDelta;
+      const reqFor = (): CompleteRequest => {
+        if (jsonDelta) {
+          return {
             ...bare,
-            onDelta: (t) => {
-              streamed = true;
-              userDelta(t);
+            onJsonDelta: (t) => {
+              jsonStreamed = true;
+              jsonDelta(t);
             },
-          }
-        : bare;
-    };
-    let attempts = 0;
-    let lastErr: unknown;
-    try {
+          };
+        }
+        return userDelta && !streamed
+          ? {
+              ...bare,
+              onDelta: (t) => {
+                streamed = true;
+                userDelta(t);
+              },
+            }
+          : bare;
+      };
+      let attempts = 0;
+      let lastErr: unknown;
       while (attempts <= opts.maxRetries) {
         attempts++;
         try {
           // План В: разбор JSON-действия и один ремонт — внутри попытки (у каждого вызова свой таймаут).
           const result = planB
-            ? await runPlanB(bare, (r) => attemptWithTimeout(provider, r, timeoutMs, signal))
-            : await attemptWithTimeout(provider, reqFor(), timeoutMs, signal);
+            ? await runPlanB(bare, (r) => attemptWithTimeout(p, r, timeoutMs, signal))
+            : await attemptWithTimeout(p, reqFor(), timeoutMs, signal);
           await record({
             purpose: req.purpose,
             provider: result.provider,
@@ -243,8 +257,8 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
       }
       await record({
         purpose: req.purpose,
-        provider: provider.name,
-        model: provider.model,
+        provider: p.name,
+        model: p.model,
         latencyMs: Date.now() - startedAt,
         inputTokens: 0,
         outputTokens: 0,
@@ -264,6 +278,26 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
             errorStatus(lastErr),
             { cause: lastErr },
           );
+    }
+
+    try {
+      const { fallback } = opts;
+      if (!fallback) return await run(provider);
+      if (now() >= primaryDownUntil) {
+        try {
+          return await run(provider);
+        } catch (err) {
+          // Отмена вызывающим и уже ушедший кандидату JSON-поток — не повод звать запасную.
+          if (signal?.aborted || jsonStreamed) throw err;
+          primaryDownUntil = now() + FALLBACK_COOLDOWN_MS;
+          console.warn(`[llm] ${provider.name} недоступна (${errorText(err)}), запрос уходит в запасную ${fallback.name}`);
+          if (streamed && onDiscard) {
+            onDiscard();
+            streamed = false;
+          }
+        }
+      }
+      return await run(fallback);
     } finally {
       release();
     }
@@ -295,6 +329,7 @@ export function getLlmClient(): LlmClient {
   const env = getEnv();
   defaultClient = createLlmClient({
     provider: createProvider(env),
+    fallback: createFallbackProvider(env),
     maxConcurrency: env.LLM_MAX_CONCURRENCY,
     timeoutMs: env.LLM_TIMEOUT_MS,
     maxRetries: env.LLM_MAX_RETRIES,

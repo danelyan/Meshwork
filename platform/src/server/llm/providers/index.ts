@@ -45,6 +45,33 @@ export function createProvider(env: Env): LlmProvider {
   }
 }
 
+/**
+ * Запасная модель (LLM_FALLBACK_*): OpenAI-совместимый Chat Completions, получает запрос, если основная не ответила
+ * (client.ts). Для Yandex AI Studio каталог — LLM_FALLBACK_FOLDER_ID (облако модели может быть другим, чем у голоса и
+ * поиска), иначе YANDEX_FOLDER_ID. Без LLM_FALLBACK_BASE_URL запасной нет; при LLM_PROVIDER=stub не включается.
+ */
+export function createFallbackProvider(env: Env): LlmProvider | undefined {
+  if (env.LLM_PROVIDER === 'stub' || !env.LLM_FALLBACK_BASE_URL || !env.LLM_FALLBACK_API_KEY || !env.LLM_FALLBACK_MODEL) return undefined;
+  const baseUrl = env.LLM_FALLBACK_BASE_URL;
+  const apiKey = env.LLM_FALLBACK_API_KEY;
+  let model = env.LLM_FALLBACK_MODEL;
+  let headers: Record<string, string> | undefined;
+  const folderId = env.LLM_FALLBACK_FOLDER_ID ?? env.YANDEX_FOLDER_ID;
+  if (isYandexHost(baseUrl) && folderId) {
+    model = yandexModelUri(folderId, model);
+    headers = { Authorization: yandexAuthHeader(apiKey), 'OpenAI-Project': folderId };
+  }
+  return createOpenAiChatProvider({
+    baseUrl,
+    apiKey,
+    model,
+    name: env.LLM_FALLBACK_NAME ?? 'fallback',
+    stream: env.OPENAI_CHAT_STREAM,
+    extraBody: env.LLM_FALLBACK_EXTRA_BODY,
+    headers,
+  });
+}
+
 function isYandexHost(url: string): boolean {
   try {
     return new URL(url).hostname.endsWith('.yandex.net');

@@ -1,5 +1,5 @@
 import { parseEnv } from '@/server/env';
-import { clearStubResponses, createProvider } from '@/server/llm/providers';
+import { clearStubResponses, createFallbackProvider, createProvider } from '@/server/llm/providers';
 
 const base = { DATABASE_URL: 'postgresql://x@127.0.0.1:1/db', SESSION_SECRET: 's'.repeat(32) };
 
@@ -29,5 +29,22 @@ describe('env интеграции и createProvider', () => {
   it('yandex: YANDEX_SUPPORTS_TOOLS=false → провайдер без инструментов (план В)', () => {
     const p = createProvider(parseEnv({ ...base, LLM_PROVIDER: 'yandex', YANDEX_API_KEY: 'k', YANDEX_FOLDER_ID: 'f', YANDEX_MODEL: 'm', YANDEX_SUPPORTS_TOOLS: 'false' }));
     expect(p.supportsTools).toBe(false);
+  });
+
+  it('запасная модель: нет тройки LLM_FALLBACK_* или stub — нет запасной; неполная тройка — ошибка env', () => {
+    const openai = { ...base, LLM_PROVIDER: 'openai-chat', OPENAI_CHAT_BASE_URL: 'https://llm.example.test/v1', OPENAI_CHAT_API_KEY: 'k', OPENAI_CHAT_MODEL: 'm' };
+    const spare = { LLM_FALLBACK_BASE_URL: 'https://llm.api.cloud.yandex.net/v1', LLM_FALLBACK_API_KEY: 'k2', LLM_FALLBACK_MODEL: 'qwen3.6-35b-a3b' };
+    expect(createFallbackProvider(parseEnv(openai))).toBeUndefined();
+    expect(createFallbackProvider(parseEnv({ ...base, ...spare }))).toBeUndefined();
+    expect(() => parseEnv({ ...openai, LLM_FALLBACK_BASE_URL: spare.LLM_FALLBACK_BASE_URL })).toThrow(/LLM_FALLBACK_API_KEY/);
+  });
+
+  it('запасная модель на хосте Yandex: каталог из LLM_FALLBACK_FOLDER_ID, иначе YANDEX_FOLDER_ID', () => {
+    const openai = { ...base, LLM_PROVIDER: 'openai-chat', OPENAI_CHAT_BASE_URL: 'https://llm.example.test/v1', OPENAI_CHAT_API_KEY: 'k', OPENAI_CHAT_MODEL: 'm', YANDEX_FOLDER_ID: 'b1voice' };
+    const spare = { LLM_FALLBACK_BASE_URL: 'https://llm.api.cloud.yandex.net/v1', LLM_FALLBACK_API_KEY: 'k2', LLM_FALLBACK_MODEL: 'qwen3.6-35b-a3b' };
+    const own = createFallbackProvider(parseEnv({ ...openai, ...spare, LLM_FALLBACK_FOLDER_ID: 'b1qwen', LLM_FALLBACK_NAME: 'qwen-yandex', LLM_FALLBACK_EXTRA_BODY: '{"reasoning_effort":"none"}' }));
+    expect(own?.model).toBe('gpt://b1qwen/qwen3.6-35b-a3b');
+    expect(own?.name).toBe('qwen-yandex');
+    expect(createFallbackProvider(parseEnv({ ...openai, ...spare }))?.model).toBe('gpt://b1voice/qwen3.6-35b-a3b');
   });
 });

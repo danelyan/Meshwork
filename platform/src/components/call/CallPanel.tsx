@@ -51,6 +51,12 @@ export function CallPanel() {
   const voice = useCompanionVoice();
   const voiceRef = useRef(voice);
   voiceRef.current = voice;
+  // Созвон живёт внутри общего провайдера консультанта: пока панель открыта, синтез идёт быстрой моделью.
+  const setRealtime = voice?.setRealtime;
+  useEffect(() => {
+    setRealtime?.(true);
+    return () => setRealtime?.(false);
+  }, [setRealtime]);
   const [phase, setPhase] = useState<Phase>('loading');
   const [consentText, setConsentText] = useState<string[]>([]);
   const [consentVersion, setConsentVersion] = useState('');

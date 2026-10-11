@@ -18,6 +18,8 @@ const Body = z.object({
   text: z.string().min(1).max(TTS_MAX_CHARS * 4),
   /** `employer` — второй голос (TTS_VOICE_EMPLOYER): реплики работодателя в защите проекта. */
   voice: z.enum(['companion', 'employer']).optional(),
+  /** Реплика созвона: ElevenLabs берёт быструю модель ELEVENLABS_MODEL_CALL (пауза перед вопросом важнее качества). */
+  realtime: z.boolean().optional(),
 });
 
 /**
@@ -44,8 +46,9 @@ export const POST = withErrors(async (req: Request) => {
     const audio = await synthesizeElevenLabs(text, {
       apiKey: env.ELEVENLABS_API_KEY as string,
       voiceId: (employer ? env.ELEVENLABS_VOICE_EMPLOYER || env.ELEVENLABS_VOICE : env.ELEVENLABS_VOICE) as string,
-      model: env.ELEVENLABS_MODEL,
+      model: (parsed.data.realtime && env.ELEVENLABS_MODEL_CALL) || env.ELEVENLABS_MODEL,
       baseUrl: env.ELEVENLABS_BASE_URL,
+      proxyUrl: env.ELEVENLABS_PROXY_URL,
       speed: env.TTS_SPEED,
       signal: req.signal,
     });

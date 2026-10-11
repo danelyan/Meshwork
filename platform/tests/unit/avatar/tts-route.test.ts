@@ -1,5 +1,16 @@
 import { parseEnv } from '@/server/env';
 
+const undiciMock = vi.hoisted(() => ({ fetch: vi.fn(), agents: [] as string[] }));
+vi.mock('undici', async (orig) => ({
+  ...(await orig<typeof import('undici')>()),
+  fetch: undiciMock.fetch,
+  ProxyAgent: class {
+    constructor(readonly url: string) {
+      undiciMock.agents.push(url);
+    }
+  },
+}));
+
 let env = parseEnv({ DATABASE_URL: 'postgresql://x@localhost/db', SESSION_SECRET: 'x'.repeat(32), YANDEX_API_KEY: 'AQVNsecret', YANDEX_FOLDER_ID: 'b1g' });
 vi.mock('@/server/env', async (orig) => ({ ...(await orig<typeof import('@/server/env')>()), getEnv: () => env }));
 let session: object | null = { userId: 'u1', role: 'candidate', candidateId: 'c1' };
@@ -123,6 +134,21 @@ describe('/api/tts', () => {
       expect((await POST(postVoice())).status).toBe(503);
       vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 429 })));
       expect((await POST(postVoice())).status).toBe(429);
+    });
+
+    it('realtime → ELEVENLABS_MODEL_CALL; ELEVENLABS_PROXY_URL — запрос через ProxyAgent, глобальный fetch не трогается', async () => {
+      env = { ...elEnv(), ELEVENLABS_MODEL: 'eleven_v4', ELEVENLABS_MODEL_CALL: 'eleven_flash_v2_5', ELEVENLABS_PROXY_URL: 'http://u:p@proxy.test:3128' };
+      const globalFetch = okAudio();
+      vi.stubGlobal('fetch', globalFetch);
+      undiciMock.fetch.mockImplementation(async () => new Response(new Uint8Array([0x49, 0x44, 0x33]), { status: 200 }));
+      const body = (realtime?: boolean) => new Request('http://localhost/api/tts', { method: 'POST', body: JSON.stringify({ text: 'Привет', realtime }), headers: { 'content-type': 'application/json' } });
+      expect((await POST(body(true))).status).toBe(200);
+      expect((await POST(body())).status).toBe(200);
+      expect(globalFetch).not.toHaveBeenCalled();
+      const calls = undiciMock.fetch.mock.calls as unknown as [string, RequestInit & { dispatcher?: { url: string } }][];
+      expect(calls.map(([, init]) => JSON.parse(String(init.body)).model_id)).toEqual(['eleven_flash_v2_5', 'eleven_v4']);
+      expect(calls[0][1].dispatcher?.url).toBe('http://u:p@proxy.test:3128');
+      expect(undiciMock.agents).toEqual(['http://u:p@proxy.test:3128']);
     });
   });
 });

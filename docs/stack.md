@@ -78,10 +78,11 @@ Chat Completions: `LLM_PROVIDER=openai-chat`,
 провайдера и обработку данных нужно проверять по конфигурации стенда.
 
 Опционально для синтеза: `TTS_PROVIDER=elevenlabs` (ElevenLabs REST, mp3; `ELEVENLABS_API_KEY`,
-`ELEVENLABS_VOICE`, `ELEVENLABS_VOICE_EMPLOYER`, `ELEVENLABS_MODEL`, `ELEVENLABS_BASE_URL`). Только синтез,
+`ELEVENLABS_VOICE`, `ELEVENLABS_VOICE_EMPLOYER`, `ELEVENLABS_MODEL`, `ELEVENLABS_MODEL_CALL`, `ELEVENLABS_PROXY_URL`, `ELEVENLABS_BASE_URL`). Только синтез,
 распознавание остаётся SpeechKit. `auto` его не выбирает. Синтез отправляет текст реплик ИИ за рубеж (в нём
 могут быть данные кандидата), поэтому включение — решение команды. Со стенда в РФ `api.elevenlabs.io` отвечает 302
-на страницу гео-блокировки: нужен реверс-прокси вне РФ в `ELEVENLABS_BASE_URL`.
+на страницу гео-блокировки: запросы к ElevenLabs идут через HTTP-прокси вне РФ (`ELEVENLABS_PROXY_URL`), остальной
+трафик стенда — напрямую.
 
 ## Ограничения и уточнения
 

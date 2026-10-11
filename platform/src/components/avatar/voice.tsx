@@ -53,6 +53,8 @@ export interface CompanionVoice {
    * Не играет, если звук не разблокирован или сейчас звучит/грузится реплика; ошибки глотает. Резолвится по окончании клипа.
    */
   playClip: (url: string) => Promise<void>;
+  /** Идёт созвон: синтез просит быструю модель (realtime). Созвон внутри общего провайдера включает и выключает сам. */
+  setRealtime?: (realtime: boolean) => void;
 }
 
 export { COMPANION_SAY_EVENT };
@@ -80,7 +82,9 @@ interface Pending {
  * `data-voice-toggle` (переключатель «без звука») автоматику не запускает — решает сам переключатель.
  * Без флага (онбординг) озвучка включается только кнопкой.
  */
-export function CompanionVoiceProvider({ children, autoEnable = false }: { children: ReactNode; autoEnable?: boolean }) {
+export function CompanionVoiceProvider({ children, autoEnable = false, realtime = false }: { children: ReactNode; autoEnable?: boolean; realtime?: boolean }) {
+  // Созвон (защита, комната интервью): синтез с быстрой моделью — см. /api/tts `realtime`.
+  const realtimeRef = useRef(realtime);
   const [enabled, setEnabled] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -143,7 +147,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify(realtimeRef.current ? { text, realtime: true } : { text }),
         signal: ctrl.signal,
       });
       if (!res.ok) {
@@ -417,9 +421,12 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
   }, []);
 
   const status: VoiceStatus = playing ?? (clipping ? 'speaking' : thinking ? 'thinking' : 'idle');
+  const setRealtime = useCallback((on: boolean) => {
+    realtimeRef.current = on || realtime;
+  }, [realtime]);
   const value = useMemo<CompanionVoice>(
-    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, duck, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress, playClip }),
-    [enabled, status, available, notice, toggle, speak, replay, stop, duck, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress, playClip],
+    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, duck, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress, playClip, setRealtime }),
+    [enabled, status, available, notice, toggle, speak, replay, stop, duck, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress, playClip, setRealtime],
   );
   return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;
 }

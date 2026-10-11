@@ -15,7 +15,7 @@ export function useEmployerVoice() {
     if (!text) return;
     queue.current = queue.current.then(async () => {
       try {
-        const res = await fetch('/api/tts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, voice: 'employer' }) });
+        const res = await fetch('/api/tts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, voice: 'employer', realtime: true }) });
         if (!res.ok) return;
         const url = URL.createObjectURL(await res.blob());
         const audio = new Audio(url);

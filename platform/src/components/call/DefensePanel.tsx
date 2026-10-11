@@ -22,7 +22,7 @@ import { rtcLabel, useRtcAudio } from './useRtcAudio';
  */
 export function DefensePanel(props: { sessionId: string; initial: CallSnapshot; iceServers: RTCIceServer[] }) {
   return (
-    <CompanionVoiceProvider autoEnable>
+    <CompanionVoiceProvider autoEnable realtime>
       <Panel {...props} />
     </CompanionVoiceProvider>
   );

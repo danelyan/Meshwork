@@ -1,3 +1,5 @@
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
+
 import { type Env, getEnv } from '@/server/env';
 import { AppError } from '@/server/errors';
 import { yandexAuthHeader } from '@/server/llm/providers/yandex-responses';
@@ -68,8 +70,23 @@ export interface ElevenLabsOptions {
   baseUrl?: string;
   /** TTS_SPEED (0.5–2) зажимается в диапазон провайдера 0.7–1.2. */
   speed: number;
+  /** HTTP-прокси для этого запроса (ELEVENLABS_PROXY_URL); остальной трафик сервера идёт напрямую. */
+  proxyUrl?: string;
   signal?: AbortSignal;
   fetchImpl?: typeof fetch;
+}
+
+const proxyAgents = new Map<string, ProxyAgent>();
+
+/** fetch через прокси: undici-fetch с ProxyAgent того же пакета (агент на URL создаётся один раз). */
+function proxiedFetch(proxyUrl: string): typeof fetch {
+  let agent = proxyAgents.get(proxyUrl);
+  if (!agent) {
+    agent = new ProxyAgent(proxyUrl);
+    proxyAgents.set(proxyUrl, agent);
+  }
+  const dispatcher = agent;
+  return ((input: string, init?: RequestInit) => undiciFetch(input, { ...(init as object), dispatcher })) as unknown as typeof fetch;
 }
 
 /** Текст (уже очищенный) → mp3 ElevenLabs. `fetchImpl` подменяется в тестах. */
@@ -79,7 +96,7 @@ export async function synthesizeElevenLabs(text: string, opts: ElevenLabsOptions
   const timeout = AbortSignal.timeout(15_000);
   let res: Response;
   try {
-    res = await (opts.fetchImpl ?? fetch)(url, {
+    res = await (opts.fetchImpl ?? (opts.proxyUrl ? proxiedFetch(opts.proxyUrl) : fetch))(url, {
       method: 'POST',
       headers: { 'xi-api-key': opts.apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({

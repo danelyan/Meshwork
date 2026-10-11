@@ -47,7 +47,7 @@ export function useSpeech() {
       const ac = new AbortController();
       abort.current = ac;
       try {
-        const res = await fetch('/api/tts', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }), signal: ac.signal });
+        const res = await fetch('/api/tts', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, realtime: true }), signal: ac.signal });
         if (!res.ok || my !== gen.current) return;
         const blob = await res.blob();
         // Пока грузили — остановили или заказали другую реплику: этот звук не играет.

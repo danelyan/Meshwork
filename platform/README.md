@@ -87,8 +87,10 @@ Integration-тесты: перед прогоном `globalSetup` применя
 Озвучка: `TTS_PROVIDER=auto|yandex|elevenlabs|off`. `elevenlabs` включается только явно (`auto` его не
 выбирает) и требует `ELEVENLABS_API_KEY` и `ELEVENLABS_VOICE` (voice_id); необязательны
 `ELEVENLABS_VOICE_EMPLOYER` (иначе общий голос), `ELEVENLABS_MODEL` (по умолчанию `eleven_multilingual_v2`),
-`ELEVENLABS_BASE_URL` (по умолчанию `https://api.elevenlabs.io`; со стенда в РФ — реверс-прокси вне РФ, прямой
-адрес отдаёт 302 на гео-блокировку). Только синтез, mp3; текст реплик ИИ уходит за рубеж.
+`ELEVENLABS_MODEL_CALL` (модель для созвонов: защита, комната интервью, звонок в консультанте — запрос с
+`realtime: true`; иначе `ELEVENLABS_MODEL`), `ELEVENLABS_PROXY_URL` (HTTP-прокси только для запросов к ElevenLabs:
+со стенда в РФ прямой адрес отдаёт 302 на гео-блокировку), `ELEVENLABS_BASE_URL` (по умолчанию
+`https://api.elevenlabs.io`, для реверс-прокси). Только синтез, mp3; текст реплик ИИ уходит за рубеж.
 
 Запасная модель — `LLM_FALLBACK_BASE_URL`, `LLM_FALLBACK_API_KEY`, `LLM_FALLBACK_MODEL` (задаются
 вместе), `LLM_FALLBACK_FOLDER_ID` (каталог Yandex AI Studio, иначе `YANDEX_FOLDER_ID`),

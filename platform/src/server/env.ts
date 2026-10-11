@@ -120,6 +120,10 @@ export const envSchema = z
     /** Голос работодателя в защите проекта; без значения — ELEVENLABS_VOICE. */
     ELEVENLABS_VOICE_EMPLOYER: optionalString,
     ELEVENLABS_MODEL: z.string().min(1).default('eleven_multilingual_v2'),
+    /** Модель для созвонов (запрос с realtime: true): быстрее, напр. eleven_flash_v2_5; без значения — ELEVENLABS_MODEL. */
+    ELEVENLABS_MODEL_CALL: optionalString,
+    /** HTTP(S)-прокси только для запросов к ElevenLabs (http://user:pass@host:port): со стенда в РФ сервис отвечает 302 гео-блокировки. */
+    ELEVENLABS_PROXY_URL: optionalString.pipe(z.url().optional()),
     /** Со стенда в РФ api.elevenlabs.io отвечает 302 на страницу гео-блокировки — сюда ставится реверс-прокси вне РФ. */
     ELEVENLABS_BASE_URL: z.string().url().default('https://api.elevenlabs.io'),
     /** Голос SpeechKit v1 (marina, jane, omazh, ermil, zahar, filipp, madi_ru) и амплуа (neutral, friendly, good …). */

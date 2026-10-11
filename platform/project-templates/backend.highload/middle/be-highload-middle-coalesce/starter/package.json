@@ -1,0 +1,8 @@
+{
+  "name": "lookup-service",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "vitest run tests/visible" },
+  "dependencies": { "express": "5.2.1" },
+  "devDependencies": { "supertest": "7.3.1", "typescript": "5.9.3", "vitest": "4.1.11" }
+}

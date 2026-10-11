@@ -1,0 +1,8 @@
+{
+  "name": "cache-layer",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "vitest run tests/visible" },
+  "dependencies": {},
+  "devDependencies": { "typescript": "5.9.3", "vitest": "4.1.11" }
+}

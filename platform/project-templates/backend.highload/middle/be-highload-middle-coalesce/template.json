@@ -1,0 +1,20 @@
+{
+  "id": "be-highload-middle-coalesce",
+  "subcategoryId": "backend.highload",
+  "specialization": "backend",
+  "grade": "middle",
+  "title": "Объединение запросов к источнику: singleflight и батчинг",
+  "summary": "Singleflight по ключу, батчер с лимитом размера пачки и конкурентности, общая ошибка для всех ожидающих, HTTP-слой поверх батчера",
+  "stack": ["node20", "typescript", "express", "vitest", "supertest"],
+  "catalogIds": ["be.concurrency", "be.performance", "be.retries-timeouts", "be.error-handling"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

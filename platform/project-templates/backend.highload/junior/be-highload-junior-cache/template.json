@@ -1,0 +1,20 @@
+{
+  "id": "be-highload-junior-cache",
+  "subcategoryId": "backend.highload",
+  "specialization": "backend",
+  "grade": "junior",
+  "title": "Кеш перед медленным источником",
+  "summary": "TTL и LRU-вытеснение с фейковыми часами, счётчики hit/miss, инвалидация по ключу и префиксу, загрузчик cache-aside без кеширования ошибок",
+  "stack": ["node20", "typescript", "vitest"],
+  "catalogIds": ["be.cache", "be.performance", "common.algo-complexity", "common.unit-tests"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 60,
+  "timeBudgetMin": 150,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

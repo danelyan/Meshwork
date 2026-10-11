@@ -4018,6 +4018,47 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/telemetry":
+    post:
+      operationId: postCallIdTelemetry
+      tags:
+        - call
+      summary: "Водопад хода из браузера (конец речи → загрузка → первое"
+      description: "водопад хода из браузера (конец речи → загрузка → первое предложение → реплика → первый звук, ack). Дописывается в timing.client реплики ИИ; на оценку не влияет.\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/TelemetryBody"
+      responses:
+        "200":
+          description: "Водопад хода из браузера (конец речи → загрузка → первое"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/call/{id}/turn":
     post:
       operationId: postCallIdTurn
@@ -5083,6 +5124,8 @@ paths:
                   type: string
                   pattern: "^[A-Za-z]{1,40}$"
                 kickoff:
+                  type: boolean
+                afterCall:
                   type: boolean
                 resend:
                   type: boolean
@@ -11773,6 +11816,64 @@ components:
         commitSha:
           type: string
           pattern: "^[0-9a-f]{7,40}$"
+    TelemetryBody:
+      type: object
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        client:
+          type: object
+          properties:
+            uploadMs:
+              anyOf:
+                -
+                  type: integer
+                  minimum: 0
+                  maximum: 600000
+                -
+                  type: "null"
+            endToFirstDeltaMs:
+              anyOf:
+                -
+                  type: integer
+                  minimum: 0
+                  maximum: 600000
+                -
+                  type: "null"
+            endToReplyMs:
+              anyOf:
+                -
+                  type: integer
+                  minimum: 0
+                  maximum: 600000
+                -
+                  type: "null"
+            endToSoundMs:
+              type: integer
+              minimum: 0
+              maximum: 600000
+            streamed:
+              type: boolean
+            ackMs:
+              anyOf:
+                -
+                  type: integer
+                  minimum: 0
+                  maximum: 600000
+                -
+                  type: "null"
+          required:
+            - uploadMs
+            - endToFirstDeltaMs
+            - endToReplyMs
+            - endToSoundMs
+            - streamed
+            - ackMs
+      required:
+        - index
+        - client
     TurnBody:
       type: object
       properties:
@@ -11782,6 +11883,10 @@ components:
         audioRef:
           type: string
           pattern: "^\\d{3}\\.wav$"
+        sttMs:
+          type: integer
+          minimum: 0
+          maximum: 600000
       required:
         - text
     VacancyInput:
@@ -11806,11 +11911,11 @@ components:
             - senior
         salaryFrom:
           type: integer
-          minimum: 0
+          minimum: 1
           maximum: 10000000
         salaryTo:
           type: integer
-          minimum: 0
+          minimum: 1
           maximum: 10000000
         teamDescription:
           anyOf:

@@ -95,3 +95,21 @@ export const asideMark = (stepId: string) => `[онбординг: шаг ${step
  */
 export const PAUSE_MARK_RE = /^\[знакомство на паузе: шаг ([A-Za-z]{1,40})\]$/;
 export const pauseMark = (stepId: string) => `[знакомство на паузе: шаг ${stepId}]`;
+
+/** Явная просьба пропустить шаг: «пропустить», «пропусти», «skip», «дальше», «позже». */
+const SKIP_RE = /^(пропу(ст|щ)\p{L}*|скип|skip|next|дальше|далее|позже|потом|не сейчас|не хочу отвечать|без ответа)( (этот )?(вопрос|шаг))?( пожалуйста| плиз| pls| please)?$/u;
+/** Ответ-пустышка: «не знаю», «нет», «-». На текстовых шагах это не данные, а пропуск. */
+const EMPTY_RE = /^(не знаю|незнаю|хз|без понятия|не помню|затрудняюсь( ответить)?|нет|неа|никак|ничего|n\/?a|i don'?t know|i dont know|idk|no|none|-+)$/u;
+
+/**
+ * Текст — просьба пропустить шаг, а не ответ: явное «пропустить» на любом шаге, пустышка
+ * («не знаю», «нет») — только там, где текст стал бы значением (текст, чипы, зарплата):
+ * иначе «не знаю» в поле «Город» сохранится как город. На шагах с вариантами «не знаю» — вопрос
+ * консультанту (поможет выбрать), обязательный шаг текстом не пропускается.
+ */
+export function looksLikeSkip(step: { kind: StepKind; required?: boolean }, text: string): boolean {
+  if (step.required || step.kind === 'consent' || step.kind === 'consents' || step.kind === 'role' || step.kind === 'summary') return false;
+  const t = text.toLowerCase().replace(/ё/g, 'е').replace(/[«»"'`!.,;:()]+$/g, '').replace(/\s+/g, ' ').trim();
+  if (SKIP_RE.test(t)) return true;
+  return (step.kind === 'text' || step.kind === 'chips' || step.kind === 'range' || step.kind === 'files') && EMPTY_RE.test(t);
+}

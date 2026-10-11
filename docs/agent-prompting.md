@@ -81,7 +81,7 @@ Anthropic. Вживую ни один провайдер не проверен: 
 
 Повод: консультант выдумал правило «при цели „Смотрю рынок“ приглашения не приходят» –
 в промптах не было ни одного утверждения о том, как устроена платформа, и модель
-достраивала механику из общих знаний. Разбор и практики – research/16 (личный ресёрч владельца).
+достраивала механику из общих знаний.
 
 - **Один источник фактов** – `platform/src/server/agent/prompts/platform-facts.md`: блок
   `<platform_facts>`, пункты F1…F14 «что платформа делает / чего нет / от чего что зависит».
@@ -115,7 +115,7 @@ Anthropic. Вживую ни один провайдер не проверен: 
 - **Онбординг-реплики:** тон «коротко, тепло, уверенно» с опорой на факты (компании сами
   ищут по подтверждённым навыкам), без обещаний и без объяснения, к чему приведёт ответ;
   3 примера; правила сформулированы позитивно.
-- **Проверка** – 20 ловушек research/16 § 6 на живой модели через тот же код агента:
+- **Проверка** – 20 контрольных вопросов на живой модели через тот же код агента:
   `npx tsx eval/prompt-traps/run.ts --label <метка>` (README в начале `run.ts`), цифры до/после –
   `docs/validation-results.md`, «Ловушки промптов». Температуру (0.3) не меняли: замера на
   ловушках по температуре не было.
@@ -144,11 +144,11 @@ Anthropic. Вживую ни один провайдер не проверен: 
   (консультант – F1, F4, F5, F7, F8, F10–F13, F15; работодатель – F1–F8, F10, F12, F13).
   F9, F14 (и у консультанта F2, F3, F6) живут только в базе. Два примера, дублировавшие
   факты, убраны, добавлен пример ответа через `search_knowledge`.
-- **`web_search`** (`agent/web-search/`) – Yandex Search API v2 (research/18), у обоих агентов.
+- **`web_search`** (`agent/web-search/`) – Yandex Search API v2, у обоих агентов.
   Подтверждено документацией (aistudio.yandex.ru/docs/ru/search-api, WebSearch/search): POST
   `searchapi.api.cloud.yandex.net/v2/web/search`, тело `query{searchType, queryText ≤ 400}`,
   `folderId`, `responseFormat: FORMAT_XML`, `groupSpec` (int64 строкой), `maxPassages`;
-  ответ `{rawData}`. Подтверждено пробой (research/18): `Authorization: Api-Key`, форма XML.
+  ответ `{rawData}`. Подтверждено пробой: `Authorization: Api-Key`, форма XML.
   Подтверждено Context7 (Node 24 globals): `AbortSignal.timeout(ms)`, `AbortSignal.any([...])`.
   Инференс: что сигнал fetch прерывает и чтение тела ответа (по спецификации fetch; тестом –
   только прерывание запроса).
@@ -207,5 +207,5 @@ Anthropic. Вживую ни один провайдер не проверен: 
 cd platform
 set -a; . ./.env.bench; set +a     # YANDEX_API_KEY, YANDEX_FOLDER_ID (+ ключи Cloud.ru и модель DeepSeek – по README)
 npx tsx eval/llm-bench/run.ts --smoke --models alice      # tools, json_schema, round-trip – 1 минута
-bash eval/llm-bench/protocol.sh                            # весь протокол research/12 § 6.2, ~2 часа
+bash eval/llm-bench/protocol.sh                            # весь протокол проверки моделей, ~2 часа
 ```

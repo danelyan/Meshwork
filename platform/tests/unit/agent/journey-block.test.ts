@@ -43,3 +43,18 @@ describe('блок <journey> в системном промпте', () => {
     expect(sys).not.toContain('## Путь кандидата');
   });
 });
+
+
+describe('блок <last_call> в системном промпте', () => {
+  const lastCall = { kind: 'qualifying' as const, finishedAt: '2026-10-11T11:50:00Z', minutesAgo: 10, summary: 'Подтверждено тем: 1 из 1.', topics: ['Индексы — подтверждено (вопросов 2, до уровня 3)'], testOwnership: null, interview: null, dialog: [{ q: 'Что такое индекс?', a: 'B-дерево' }] };
+  it('после <journey> идёт сводка созвона с диалогом', () => {
+    const sys = buildSystem({ ...base, journey: journeyPromptBlock({ ...state, steps: { ...state.steps, call: true }, lastCall }) });
+    expect(sys.indexOf('</journey>')).toBeLessThan(sys.indexOf('<last_call>'));
+    expect(sys).toContain('Кира: Что такое индекс? → Кандидат: B-дерево');
+    expect(sys).toContain('Итог: Подтверждено тем: 1 из 1.');
+  });
+  it('без созвона блока нет', () => {
+    expect(journeyPromptBlock({ ...state, lastCall: null })).not.toContain('<last_call>');
+    expect(journeyPromptBlock(state)).not.toContain('<last_call>');
+  });
+});

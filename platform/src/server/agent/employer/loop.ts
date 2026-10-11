@@ -1,6 +1,6 @@
 import { loadMemoryBlock } from '@/server/consultant/memory';
 import { prisma } from '@/server/db';
-import { loadEmployerContext } from '@/server/employer';
+import { listVacancies, loadEmployerContext } from '@/server/employer';
 import { getSetting } from '@/server/admin/settings';
 import { errors } from '@/server/errors';
 import { getLlm } from '@/server/llm/client';
@@ -48,12 +48,25 @@ export function employerPauseNote(step: OnboardingStepBrief): string {
   return `Знакомство работодателя не закончено и стоит на паузе (остановился на шаге «${step.question}»). Отвечай на вопросы как обычно. Если в этом разговоре ты ещё не напоминал – в конце ответа одной фразой предложи продолжить знакомство здесь же, в ленте: кнопка «${EMPLOYER_RESUME_BUTTON}» вверху. Ссылок на другие страницы не давай. Уже напоминал – не повторяй.`;
 }
 
-export function buildEmployerSystem(args: { now: Date; companyName: string; toolsExhausted: boolean; paused?: OnboardingStepBrief | null; memory?: string | null }): string {
+export function buildEmployerSystem(args: { now: Date; companyName: string; toolsExhausted: boolean; paused?: OnboardingStepBrief | null; memory?: string | null; pageNote?: string | null }): string {
   const parts = [EMPLOYER_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК). Компания работодателя: ${args.companyName}.`, EXTERNAL_NOTE];
   if (args.memory) parts.push(args.memory);
+  if (args.pageNote) parts.push(args.pageNote);
   if (args.paused) parts.push(employerPauseNote(args.paused));
   if (args.toolsExhausted) parts.push('Лимит вызовов инструментов на этот ход исчерпан – ответь работодателю текстом по тому, что уже есть.');
   return parts.join('\n\n');
+}
+
+/**
+ * Контекст страницы (плавающий чат). Вакансия подтягивается только из своей компании: чужой или
+ * несуществующий id молча игнорируется. Идёт в системный блок хода, а не в историю: так он всегда
+ * актуален для текущей страницы и не раздувает сохранённые реплики (проще, чем хранить и чистить).
+ */
+export async function employerPageNote(companyId: string, page: EmployerTurnInput['page']): Promise<string | null> {
+  if (!page) return null;
+  const v = page.vacancyId ? (await listVacancies(companyId)).find((x) => x.id === page.vacancyId) : undefined;
+  if (v) return `## Страница работодателя\nРаботодатель пишет со страницы вакансии «${v.title}» (vacancyId ${v.id}${v.archived ? ', в архиве' : ''}). Подбор и проектное задание делай по ней без переспроса.`;
+  return '## Страница работодателя\nРаботодатель пишет с экрана подборки или компании, конкретная вакансия не выбрана.';
 }
 
 /**
@@ -89,7 +102,7 @@ export async function runEmployerTurn(
   if (signal?.aborted) return;
 
   if (demo) {
-    await scripted(ctx, registry, input.text, paused);
+    await scripted(ctx, registry, input.text, paused, input.page);
     return;
   }
 
@@ -101,6 +114,7 @@ export async function runEmployerTurn(
   const messages: ChatMessage[] = buildHistory(rows);
   const specs = toolSpecs(registry);
   const memory = await loadMemoryBlock({ employerProfileId });
+  const pageNote = await employerPageNote(emp.companyId, input.page);
   let calls = 0;
   let historyChars = HISTORY_TOTAL_MAX_CHARS;
   const reply = createReplyStream(emit, signal);
@@ -115,7 +129,7 @@ export async function runEmployerTurn(
         res = await llm.complete(
           {
             purpose: 'employer_assistant',
-            system: buildEmployerSystem({ now: now(), companyName: emp.companyName, toolsExhausted: !canCall, paused, memory }),
+            system: buildEmployerSystem({ now: now(), companyName: emp.companyName, toolsExhausted: !canCall, paused, memory, pageNote }),
             messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
             tools: specs,
             toolChoice: canCall ? 'auto' : 'none',
@@ -165,7 +179,7 @@ export async function runEmployerTurn(
     if (signal?.aborted || (err instanceof LlmError && err.code === 'aborted')) return;
     if (err instanceof BudgetExceededError || err instanceof LlmError) {
       emit({ type: 'step', text: EMPLOYER_FALLBACK_STEP });
-      await scripted(ctx, registry, input.text, paused);
+      await scripted(ctx, registry, input.text, paused, input.page);
       return;
     }
     throw err;
@@ -175,8 +189,8 @@ export async function runEmployerTurn(
 /** Напоминание без модели (демо, план В): знакомство на паузе - один раз за разговор, как resumeLine кандидата. */
 export const EMPLOYER_RESUME_MARK = 'Знакомство ещё не закончено';
 
-async function scripted(ctx: EmployerToolContext, registry: EmployerTool[], text: string, paused: OnboardingStepBrief | null) {
-  let reply = await runScriptedTurn(ctx, registry, text);
+async function scripted(ctx: EmployerToolContext, registry: EmployerTool[], text: string, paused: OnboardingStepBrief | null, page?: EmployerTurnInput['page']) {
+  let reply = await runScriptedTurn(ctx, registry, text, page);
   if (!reply) return;
   if (paused) {
     const reminded = await prisma.employerMessage.count({ where: { conversationId: ctx.conversationId, role: 'assistant', content: { contains: EMPLOYER_RESUME_MARK } } });

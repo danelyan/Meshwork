@@ -1,5 +1,4 @@
 // Второй пакет семейств engineering.devops (+3 Junior, +5 Middle, +4 Senior; решение владельца 11.10).
-// Пробелы по разбору конкурентов (research/competitors/test-banks.md): IaC и наблюдаемость.
 // Параметры a, b – экспертные, не откалиброваны. Семантика Terraform (count против for_each), PDB, ResourceQuota,
 // правило for у алертов Prometheus и матрицы GitHub Actions – по общему знанию; сверка с документацией не
 // проводилась (помечено в docs/validation-results.md).

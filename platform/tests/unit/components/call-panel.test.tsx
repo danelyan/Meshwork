@@ -148,7 +148,7 @@ describe('CallPanel – режим звонка в сцене консульта
     expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
     expect(screen.getByTestId('call-text-mode').textContent).toContain('аудио не сохраняется');
     const rec = screen.getByTestId('call-rec');
-    expect(rec.textContent).toMatch(/^\d+:\d\d$/);
+    expect(rec.textContent).toMatch(/^\d+:\d\d \/ 15:00$/);
     expect(rec.textContent).not.toContain('Запись');
     expect(rec.querySelector('i')).toBeNull();
   });
@@ -169,7 +169,7 @@ describe('CallPanel – режим звонка в сцене консульта
     expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('Созвониться');
   });
 
-  it('голос доступен: согласие → проверка устройств → «Продолжить текстом» → старт без микрофона', async () => {
+  it('созвон строго голосом: без микрофона нет «Продолжить текстом» - только «Повторить»; созвон не стартует', async () => {
     vi.stubGlobal('SpeechRecognition', class {});
     const audio = installFakeAudio();
     audio.getUserMedia.mockImplementation(async () => {
@@ -181,10 +181,11 @@ describe('CallPanel – режим звонка в сцене консульта
       fireEvent.click(await screen.findByText('Согласиться и начать созвон'));
       expect(await screen.findByTestId('call-devices')).toBeTruthy();
       expect(calls.some((c) => c.url === 'POST /api/call/start')).toBe(false);
-      fireEvent.click(await screen.findByTestId('call-devices-text'));
-      expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
-      expect(screen.queryByTestId('call-mic')).toBeNull();
-      expect(screen.getByTestId('call-text-mode')).toBeTruthy();
+      await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('denied'));
+      expect(screen.queryByTestId('call-devices-text')).toBeNull();
+      expect(screen.getByTestId('call-devices-retry')).toBeTruthy();
+      expect(screen.queryByTestId('call-devices-go')).toBeNull();
+      expect(calls.some((c) => c.url === 'POST /api/call/start')).toBe(false);
     } finally {
       Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
     }
@@ -194,7 +195,7 @@ describe('CallPanel – режим звонка в сцене консульта
     document.body.dataset.stt = 'yandex';
     const audio = installFakeAudio();
     routes['GET /api/call'] = () => ({ consent: { given: true, version: 'cv-1', text: [] }, calls: [] });
-    routes['POST /api/call/call-1/audio'] = () => ({ audioRef: 'a-1', text: 'B-дерево' });
+    routes['POST /api/call/call-1/audio'] = () => new Response(JSON.stringify({ audioRef: 'a-1', text: 'B-дерево' }), { status: 201, headers: { 'content-type': 'application/json', 'server-timing': 'stt;dur=812' } });
     try {
       renderScene();
       fireEvent.click(screen.getByText('открыть'));
@@ -214,7 +215,8 @@ describe('CallPanel – режим звонка в сцене консульта
       expect(screen.getByTestId('call-talk-state').textContent).toBe('Вы говорите');
       await act(async () => audio.feed(0.001, 8));
       expect(await screen.findByText('Почему именно B-дерево?')).toBeTruthy();
-      expect(calls.find((c) => c.url === 'POST /api/call/call-1/turn')?.body).toEqual({ text: 'B-дерево', audioRef: 'a-1' });
+      // Телеметрия: STT сервера (Server-Timing ответа /audio) уходит с ходом и ложится в реплику кандидата.
+      expect(calls.find((c) => c.url === 'POST /api/call/call-1/turn')?.body).toEqual({ text: 'B-дерево', audioRef: 'a-1', sttMs: 812 });
 
       fireEvent.click(screen.getByTestId('call-mic'));
       expect(screen.getByTestId('call-mic').textContent).toContain('Микрофон выкл');

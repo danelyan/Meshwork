@@ -2,7 +2,7 @@
 import '../interview/driver';
 
 export * from './types';
-export { startCall, submitTurn, finishCall, interruptAi, addVideo, getVideo, getCallForViewer, listCalls, latestQualifyingVerdict, addAudio, getRecording, buildView, awaitingAnswer, transcriptOf, ICE_SERVERS } from './service';
+export { startCall, submitTurn, finishCall, interruptAi, recordTurnTelemetry, addVideo, getVideo, getCallForViewer, listCalls, latestQualifyingVerdict, addAudio, getRecording, buildView, awaitingAnswer, transcriptOf, ICE_SERVERS } from './service';
 export { callDriver, registerCallDriver, questionTurns, CALL_DISCLAIMER, type CallDriver, type DriverSession, type DriverQuestion } from './drivers';
 export { subscribeCall, publishCall, encodeCallEvent } from './bus';
 export { resolveCallAccess, hasAcceptedInvitation, publicVerdict, eventForAccess, type CallPrincipal, type ResolvedAccess } from './access';

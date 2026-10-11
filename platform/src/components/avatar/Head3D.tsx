@@ -51,7 +51,7 @@ import { DEFAULT_MOUTH_LOOK, type MouthLook, mouthLookIndex } from './mouth-look
 import type { VoiceStatus } from './voice';
 
 /**
- * Серебристая голова-сетка компаньона на тёмном фоне (брендбук ФСП, docs/research/assets-19).
+ * Серебристая голова-сетка компаньона на тёмном фоне.
  * Основная голова – модель владельца с ригом рта `public/avatar/head-mouth.glb` (без текстур, см.
  * README рядом): металл MeshStandardMaterial + сетка в фрагментном шейдере по положению вершины
  * (как ткань на референсе), рот – морфы JawOpen/LipRound/LipWide и полость/зубы/язык (`_mouth_part`).

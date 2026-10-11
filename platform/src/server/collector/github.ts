@@ -8,7 +8,7 @@ import type { ExtractedDoc } from './types';
 /**
  * GitHub REST: профиль, топ-6 своих репозиториев (не форков) по звёздам и свежести,
  * языки, README первых трёх. GITHUB_TOKEN необязателен (60 → 5000 запросов/ч).
- * Это «артефакт», не доказательство авторства (research/10 § 3).
+ * Это «артефакт», не доказательство авторства.
  */
 export const GITHUB_API = 'https://api.github.com';
 export const GITHUB_TOP_REPOS = 6;

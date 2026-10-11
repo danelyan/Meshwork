@@ -30,7 +30,7 @@ import { Button, VisuallyHidden } from './ui';
 import ui from './ui.module.css';
 
 export interface ChatEmbedded {
-  /** Подсказки следующих шагов – чипами под приветствием, пока не начат разговор. */
+  /** Подсказки следующих шагов — чипами под приветствием, пока не начат разговор. */
   suggestions?: QuickReply[];
   onSuggestion?: (value: string) => void;
   /** Подсказка, которая остаётся над полем ввода и после начала разговора (анкета кандидата: «Дополнить профиль»). */
@@ -49,17 +49,17 @@ interface ChatProps {
   demo?: ChatDemoContext;
   initial?: RestoredChat;
   embedded?: ChatEmbedded;
-  /** Класс корня – сцена может задать размер ленты (экран-видеозвонок). */
+  /** Класс корня — сцена может задать размер ленты (экран-видеозвонок). */
   className?: string;
 }
 
 /**
- * Карьерный консультант. Самостоятельно – страница /consultant; `embedded` – продолжение ленты
- * онбординга (без заголовка страницы, приветствие с подсказками). Лента – примитивы components/chat.
- * Голос и аватар компаньона: на странице – свои; во встроенном режиме – от онбординга (тот же провайдер).
+ * Карьерный консультант. Самостоятельно — страница /consultant; `embedded` — продолжение ленты
+ * онбординга (без заголовка страницы, приветствие с подсказками). Лента — примитивы components/chat.
+ * Голос и аватар компаньона: на странице — свои; во встроенном режиме — от онбординга (тот же провайдер).
  */
 export function Chat(props: ChatProps) {
-  // Свой провайдер голоса – только если снаружи его нет (сцены /design/consultant-* держат провайдер сами).
+  // Свой провайдер голоса — только если снаружи его нет (сцены /design/consultant-* держат провайдер сами).
   const outer = useCompanionVoice();
   if (props.embedded || outer) return <ChatBody {...props} />;
   return (
@@ -84,7 +84,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   const kickRef = useRef(false);
   const [kickFailed, setKickFailed] = useState(false);
   const leadText = kickoff && !kickFailed ? null : embedded ? CONTINUE_GREETING : GREETING;
-  // Чипы под приветствием – после того, как оно допечатано (в онбординге оно печатается); при kickoff – после ответа модели.
+  // Чипы под приветствием — после того, как оно допечатано (в онбординге оно печатается); при kickoff — после ответа модели.
   const [greetDone, setGreetDone] = useState(!embedded || (initial?.items.length ?? 0) > 0);
   const lastSent = useRef<{ message: string; uploadIds: string[]; urls: string[]; fileNames: string[] } | null>(null);
   const [simplified, setSimplified] = useState(false);
@@ -114,7 +114,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     if (embedded) scrollToEnd(endRef.current);
   }, [items.length, embedded]);
 
-  // Телеметрия (выключена – одна проверка флага): diff ленты по id, коммиты React за ход.
+  // Телеметрия (выключена — одна проверка флага): diff ленты по id, коммиты React за ход.
   const prevItemsRef = useRef(items);
   const reasonRef = useRef<string | undefined>(undefined);
   const rendersRef = useRef(0);
@@ -134,22 +134,22 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     if (event.type === 'done') return;
     reasonRef.current = event.type;
     if (event.type === 'discard') track({ k: 'flake', what: 'discard', id: event.id });
-    // Озвучка по мере стриминга: готовые предложения из дельт сразу, остаток – по реплике целиком.
+    // Озвучка по мере стриминга: готовые предложения из дельт сразу, остаток — по реплике целиком.
     speechRef.current(event);
     setItems((p) => applyAgentEvent(p, event, nextId));
     if (event.type === 'error' && SIMPLIFIED_CODES.has(event.code)) setSimplified(true);
   }, []);
 
   const send = useCallback(
-    async (message: string, uploadIds: string[], urls: string[], fileNames: string[], opts: { kickoff?: boolean; resend?: boolean } = {}) => {
+    async (message: string, uploadIds: string[], urls: string[], fileNames: string[], opts: { kickoff?: boolean; afterCall?: boolean; resend?: boolean } = {}) => {
       setBusy(true);
-      if (!opts.kickoff) {
+      if (!opts.kickoff && !opts.afterCall) {
         lastSent.current = { message, uploadIds, urls, fileNames };
         setItems((p) => [...p, { id: nextId(), role: 'user', text: message, files: fileNames }]);
       }
       const ctrl = new AbortController();
       abortRef.current = ctrl;
-      // Ход дошёл до `done` без `error` – упрощённый режим снимаем (консультант снова отвечает).
+      // Ход дошёл до `done` без `error` — упрощённый режим снимаем (консультант снова отвечает).
       let sawDone = false;
       let sawError = false;
       rendersRef.current = 0;
@@ -164,7 +164,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       try {
         await embedded?.beforeSend?.();
         const stream = await openConsultantStream(
-          { text: message, uploadIds, urls, conversationId: conversationRef.current, ...(opts.kickoff ? { kickoff: true } : {}), ...(opts.resend ? { resend: true } : {}) },
+          { text: message, uploadIds, urls, conversationId: conversationRef.current, ...(opts.kickoff ? { kickoff: true } : {}), ...(opts.afterCall ? { afterCall: true } : {}), ...(opts.resend ? { resend: true } : {}) },
           ctrl.signal,
         );
         const reader = stream.getReader();
@@ -210,7 +210,18 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     void send('', [], [], [], { kickoff: true });
   }, [kickoff, send]);
 
-  // «Стоп»: сервер останавливает ход и отдаёт показанный кусок (`message` + `done`), затем – обрыв локального fetch.
+  // Созвон завершён и панель закрыта («Вернуться в чат»): консультант сам подводит итог по <last_call>
+  // (ход afterCall без сообщения кандидата; владелец 12.10 «единая точка - окно консультанта»).
+  const afterCallDone = useRef<number | null>(null);
+  const callFinishedAt = callMode?.finishedAt ?? null;
+  const callOpen = callMode?.open ?? false;
+  useEffect(() => {
+    if (callOpen || callFinishedAt === null || afterCallDone.current === callFinishedAt) return;
+    afterCallDone.current = callFinishedAt;
+    void send('', [], [], [], { afterCall: true });
+  }, [callOpen, callFinishedAt, send]);
+
+  // «Стоп»: сервер останавливает ход и отдаёт показанный кусок (`message` + `done`), затем — обрыв локального fetch.
   const stop = useCallback(async () => {
     const ctrl = abortRef.current;
     const id = conversationRef.current;
@@ -219,7 +230,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     ctrl?.abort();
   }, []);
 
-  // Файлы и ссылки из правой колонки (FilesCard) – тем же ходом, что вложения композера.
+  // Файлы и ссылки из правой колонки (FilesCard) — тем же ходом, что вложения композера.
   const busyRef = useRef(busy);
   busyRef.current = busy;
   useMaterialsHandler((m) => {
@@ -320,7 +331,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       )}
     </AssistantRow>
   );
-  // «Печатает» – пока в этом ходе не началась реплика (дальше её видно по стриму).
+  // «Печатает» — пока в этом ходе не началась реплика (дальше её видно по стриму).
   const lastUser = items.findLastIndex((it) => it.role === 'user');
   const replying = items.slice(lastUser + 1).some((it) => it.role === 'agent' && it.event.type === 'message');
   const typingShown = busy && !replying;

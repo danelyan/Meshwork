@@ -29,21 +29,21 @@ export interface FallbackInput {
 const GRADE_RU: Record<string, string> = GRADE_LABEL;
 const SPEC_RU: Record<string, string> = SPEC_LABEL;
 
-/** Что прочитал / нашёл / отбросил – общая часть ответа после конвейера (план В и демо-режим). */
+/** Что прочитала / нашла / отбросила — общая часть ответа после конвейера (план В и демо-режим). Кира говорит о себе в женском роде (prompts/consultant.md <role>). */
 export function pipelineParts(p: PipelineResult): string[] {
   const parts: string[] = [];
-  if (p.docs.length) parts.push(`Прочитал: ${p.docs.map((d) => d.label).join(', ')}.`);
+  if (p.docs.length) parts.push(`Прочитала: ${p.docs.map((d) => d.label).join(', ')}.`);
   if (p.failed.length) parts.push(`Не удалось прочитать: ${p.failed.join(', ')}.`);
   if (p.hiddenText > 0) parts.push('В документе найден скрытый текст - он проигнорирован.');
   if (p.injectionSuspect) parts.push('В присланных данных есть похожее на инструкции для модели - проигнорировано.');
   if (p.proposed.length) {
     parts.push(
-      `Нашёл ${countOf(p.proposed.length, FORMS.claim)}${p.rejected ? `, ${p.rejected} отбросил (${p.rejectSummary || 'нет цитаты в источнике'})` : ''}${p.merged ? `, объединил ${countOf(p.merged, FORMS.repeat)} из разных источников` : ''}. Посмотри карточки: «да» переводит утверждение в профиль, «поправить» меняет формулировку, «нет» убирает.`,
+      `Нашла ${countOf(p.proposed.length, FORMS.claim)}${p.rejected ? `, ${p.rejected} отбросила (${p.rejectSummary || 'нет цитаты в источнике'})` : ''}${p.merged ? `, объединила ${countOf(p.merged, FORMS.repeat)} из разных источников` : ''}. Посмотри карточки: «да» переводит утверждение в профиль, «поправить» меняет формулировку, «нет» убирает.`,
     );
   } else if (p.alreadyKnown > 0) {
     parts.push(`Новых утверждений нет: ${p.alreadyKnown} уже в твоём профиле.`);
   } else if (p.docs.length) {
-    parts.push('Утверждений из каталога с дословной цитатой не нашёл. Напиши, что делал, своими словами - подберу формулировки из каталога.');
+    parts.push('Утверждений из каталога с дословной цитатой не нашла. Опиши свою работу своими словами - подберу формулировки из каталога.');
   }
   return parts;
 }
@@ -66,7 +66,7 @@ export async function targetsParts(candidateId: string, limit = 3): Promise<stri
   );
 }
 
-/** Шаблонный ответ по сценарию. Рекомендации – только из кода (recommend_*), если модуль отвечает. */
+/** Шаблонный ответ по сценарию. Рекомендации — только из кода (recommend_*), если модуль отвечает. */
 export async function fallbackReply(input: FallbackInput): Promise<string> {
   const p = input.pipeline;
   const parts: string[] = p ? pipelineParts(p) : [];

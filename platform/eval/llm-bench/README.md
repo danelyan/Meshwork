@@ -1,6 +1,6 @@
 # llm-bench: замер LLM-провайдеров
 
-Протокол – `research/12-russian-llms.md` § 6.2. Скрипт сравнивает модели на одном
+Скрипт сравнивает модели на одном
 сценарии консультанта и пишет цифры для ADR о выборе LLM (Q-33) и слайда
 «валидация». Сеть и ключи нужны только здесь; юнит-тесты провайдеров идут на
 фикстурах без сети.
@@ -48,7 +48,7 @@ few-shot примеров промпта извлекателя – из мет�
 | `alice` – Alice AI LLM, Yandex Responses API | `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`; опц. `BENCH_ALICE_MODEL` (по умолчанию `aliceai-llm`), `YANDEX_BASE_URL` | Ключ API сервисного аккаунта (`Api-Key`) или IAM-токен `t1.…` (`Bearer`). Роли `ai.languageModels.user` (и `ai.assistants.editor` для Responses API – по странице аутентификации AI Studio) |
 | `giga` – GigaChat 3.5 Ultra, Cloud.ru Foundation Models | `CLOUDRU_API_KEY`, `BENCH_GIGA_MODEL`; опц. `CLOUDRU_BASE_URL` (по умолчанию `https://foundation-models.api.cloud.ru/v1`) | Точный id модели взять из каталога Cloud.ru – в скрипт не зашит, чтобы не выдумывать |
 | `deepseek` – DeepSeek V4 Flash, Yandex OpenAI-совместимый Chat Completions | `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `BENCH_DEEPSEEK_MODEL` | Имя модели из каталога AI Studio (`gpt://<folder>/<имя>` собирается сам). Модель не российская; в Yandex Cloud её допускает решение владельца от 09.10 |
-| цены | `BENCH_<ALICE\|GIGA\|DEEPSEEK>_PRICE_IN`, `…_PRICE_OUT` – $ за 1M токенов | По умолчанию Alice 4,10/9,84, DeepSeek 2,46/4,10 (research/12 § 2); для GigaChat цены нет → «н/д» |
+| цены | `BENCH_<ALICE\|GIGA\|DEEPSEEK>_PRICE_IN`, `…_PRICE_OUT` – $ за 1M токенов | По умолчанию Alice 4,10/9,84, DeepSeek 2,46/4,10; для GigaChat цены нет → «н/д» |
 
 Пример `.env.bench`:
 

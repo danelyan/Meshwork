@@ -142,7 +142,7 @@ export async function leadFor(
     const input = {
       name: firstName(ctx.facts.name),
       role: ctx.facts.role === 'pending' ? (ctx.answers.role ?? 'pending') : ctx.facts.role,
-      step: { eyebrow: step.eyebrow, question: step.question },
+      step: { eyebrow: step.eyebrow, question: step.question, ...(step.sub ? { sub: step.sub } : {}) },
       previous: prev ? { question: prev.step.question, answer: maskContacts(prev.label ?? 'пропущено').text } : null,
     };
     const res = await llm.complete(

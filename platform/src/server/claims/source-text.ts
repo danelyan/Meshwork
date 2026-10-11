@@ -74,7 +74,7 @@ export function findQuote(idx: IndexedDoc, normQuote: string): QuoteMatch[] {
       if (s === -1) break;
       from = s + 1;
       const e = s + normQuote.length - 1;
-      // границы слов: «Писал на Java» не совпадает с «Писал на JavaScript» (research/10 § 4.5, [23])
+      // границы слов: «Писал на Java» не совпадает с «Писал на JavaScript»
       if (WORD.test(n.text[s - 1] ?? '') && WORD.test(normQuote[0] ?? '')) continue;
       if (WORD.test(n.text[e + 1] ?? '') && WORD.test(normQuote[normQuote.length - 1] ?? '')) continue;
       const os = n.map[s] as number;

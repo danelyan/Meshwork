@@ -145,6 +145,9 @@ function JuryPlate({ children }: { children: React.ReactNode }) {
   );
 }
 
+const PHASE_LABEL: Record<string, string> = { main: 'основная', junior_probe: 'зонд: подтверждаем junior', middle_probe: 'зонд: проверяем middle' };
+const fmtTheta = (v: number) => (v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2));
+
 function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -154,6 +157,7 @@ function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
   const elapsed = Math.max(0, Math.floor((now - new Date(item.askedAt).getTime()) / 1000));
   const share = Math.round((elapsed / item.timeLimitSec) * 100);
   const shift = item.jury?.canaryShift ?? null;
+  const j = item.jury;
   return (
     <JuryPlate>
       <dl className={styles.juryGrid}>
@@ -162,6 +166,19 @@ function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
         <div><dt>Время на задании</dt><dd data-testid="jury-time">{elapsed} с из {item.timeLimitSec} с ({share}% лимита)</dd></div>
         {totals.extendedScreen !== null && <div><dt>Второй экран</dt><dd>{totals.extendedScreen ? 'подключён (пометка)' : 'нет'}</dd></div>}
       </dl>
+      {j && j.itemB !== undefined && (
+        <dl className={styles.juryGrid} data-testid="jury-adaptive">
+          <div><dt>Оценка уровня θ̂</dt><dd>{j.theta != null && j.se != null ? `${fmtTheta(j.theta)} ± ${j.se.toFixed(2)}` : 'ответов ещё нет (старт от 0)'}{j.answered ? ` · ответов ${j.answered}` : ''}</dd></div>
+          <div><dt>Задание</dt><dd>сложность b = {fmtTheta(j.itemB)}{j.itemA !== undefined ? `, различимость a = ${j.itemA.toFixed(2)}` : ''}{j.itemGrade ? ` · шаблон ${j.itemGrade}` : ''}</dd></div>
+          {j.pCorrect !== undefined && <div><dt>Шанс верного ответа при θ̂</dt><dd>{Math.round(j.pCorrect * 100)} %</dd></div>}
+          {j.phase && <div><dt>Фаза</dt><dd>{PHASE_LABEL[j.phase]}</dd></div>}
+        </dl>
+      )}
+      {j && j.itemB !== undefined && (
+        <p className={styles.juryNote}>
+          Почему это задание: из банка выбрано то, что даёт больше всего информации о θ̂ (2PL IRT), с учётом уже показанных и ранее виденных шаблонов. Верный ответ сдвинет θ̂ вверх и следующее будет труднее, ошибка — легче; тест остановится, когда ошибка оценки станет мала или кончится лимит заданий.
+        </p>
+      )}
       {shift !== null && (
         <p className={styles.juryNote} data-testid="jury-canary">
           В условии скрыта ловушка для нейросети: ответ модели будет ключ + {shift}.
@@ -616,7 +633,7 @@ function ResultScreen({
                   Пройти подтверждающий тест
                 </Button>
               )}
-              <Button href="/interview" data-testid="ranking-hold-call">
+              <Button href="/consultant?call=1" data-testid="ranking-hold-call">
                 Созвон с ИИ
               </Button>
             </div>

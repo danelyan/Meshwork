@@ -8,8 +8,6 @@ a salary. Product docs are in Russian; start from `docs/README.md`.
 
 - `platform/` is the product: Next.js 15 App Router, TypeScript strict, Prisma 6 / PostgreSQL 16, Zod 4,
   Vitest, Playwright. Only it is submitted and deployed. Module map: `docs/modules.md`.
-- `site/` is a static design reference (Karina's mockup). Do not write product code there; port screens
-  into `platform/` instead.
 - Stack is fixed in `docs/stack.md`. A new dependency, framework or service is a stack change: ask the
   team first and update `docs/stack.md` in the same change.
 

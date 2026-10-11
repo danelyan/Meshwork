@@ -135,4 +135,12 @@ describe('сборка промпта', () => {
     expect(promptVersion('<!-- version: consultant-v4 -->\n…')).toBe('consultant-v4');
     expect(() => promptVersion('без версии')).toThrow();
   });
+
+  it('employer-v10: инструменты профиля компании и проектного задания, правило про страницу', () => {
+    expect(EMPLOYER_PROMPT_VERSION).toBe('employer-v10');
+    expect(EMPLOYER_PROMPT).toContain('draft_company_profile');
+    expect(EMPLOYER_PROMPT).toContain('create_project_task_draft');
+    expect(EMPLOYER_PROMPT).toContain('Страница работодателя');
+    expect(EMPLOYER_PROMPT).toMatch(/без переспроса/);
+  });
 });

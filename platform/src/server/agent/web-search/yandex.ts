@@ -1,9 +1,9 @@
-// Yandex Search API v2, web search, синхронный режим (research/18).
+// Yandex Search API v2, web search, синхронный режим.
 // Подтверждено документацией (aistudio.yandex.ru/docs/ru/search-api/api-ref/WebSearch/search):
 // POST https://searchapi.api.cloud.yandex.net/v2/web/search; тело query{searchType, queryText ≤ 400},
 // folderId, responseFormat FORMAT_XML, groupSpec{groupMode, groupsOnPage 1–100, docsInGroup 1–3}
 // (int64 – строкой), maxPassages 1–5, l10n; ответ {rawData} – XML в bytes (в JSON – base64).
-// Подтверждено пробой 09.10 (research/18): заголовок `Authorization: Api-Key …`, форма XML
+// Подтверждено пробой 09.10: заголовок `Authorization: Api-Key …`, форма XML
 // <yandexsearch><response><results><grouping><group><doc> с url, title, passages/passage, <hlword>.
 export const SEARCH_ENDPOINT = 'https://searchapi.api.cloud.yandex.net/v2/web/search';
 export const SEARCH_TIMEOUT_MS = 5_000;

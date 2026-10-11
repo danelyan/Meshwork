@@ -1,4 +1,4 @@
-// Интервьюер квалифицирующего созвона: следующий вопрос по Zod-схеме. Ничего не оценивает —
+// Интервьюер квалифицирующего созвона: следующий вопрос по Zod-схеме. Ничего не оценивает –
 // только сигнал маршрута (сильный/слабый ответ), уровень вопроса считает код (plan.ts).
 // Модель недоступна или вернула мусор → вопрос из шаблона: созвон не падает из-за LLM на середине.
 import { responseJsonSchema } from '../llm/schema';
@@ -18,7 +18,7 @@ export interface InterviewerInput {
   claimedGrade: Grade | null;
   topics: TopicSeed[];
   turns: PlanTurn[];
-  /** Сколько вопросов уже задано и лимиты — модели для `done`. */
+  /** Сколько вопросов уже задано и лимиты – модели для `done`. */
   limits: { minQuestions: number; maxQuestions: number };
   /** Дополнительный вопрос по теме с расхождением оценщика (status=inconclusive): тема и уровень заданы. */
   force?: { topic: string; level: QuestionLevel };
@@ -47,7 +47,7 @@ export interface InterviewerPayload {
     /** Ещё не спрошенные темы (по порядку приоритета) и сколько вопросов осталось. */
     unprobedTopics: string[];
     remainingQuestions: number;
-    /** true — следующий вопрос обязан открыть тему из unprobedTopics (иначе она останется непроверенной). */
+    /** true – следующий вопрос обязан открыть тему из unprobedTopics (иначе она останется непроверенной). */
     mustSwitch: boolean;
     /** Дополнительный вопрос: тема и уровень заданы кодом. */
     probeTopic?: string;
@@ -94,13 +94,13 @@ export function buildInterviewerMessages(input: InterviewerInput, correction?: s
   const n = input.turns.length + 1;
   const payload = buildPayload(input);
   const instruction = input.force
-    ? `Задай дополнительный вопрос №${n} по теме «${input.force.topic}» уровня ${input.force.level} (next.probeTopic): по ответам пока нельзя понять глубину. Спроси о другой стороне темы, чем раньше, не повторяя заданные вопросы. answerSignal — по последнему ответу.`
+    ? `Задай дополнительный вопрос №${n} по теме «${input.force.topic}» уровня ${input.force.level} (next.probeTopic): по ответам пока нельзя понять глубину. Спроси о другой стороне темы, чем раньше, не повторяя заданные вопросы. answerSignal – по последнему ответу.`
     : n === 1
       ? 'Задай первый вопрос: короткое приветствие и вопрос по первой теме уровня next.startLevel.'
-      : `Задай вопрос №${n}: сначала answerSignal по последнему ответу, затем вопрос нужного уровня (levelIfStrong / levelIfWeak / levelIfNone; новая тема — startLevel).${
-          payload.next.mustSwitch ? ` Обязательно перейди к новой теме — первой из next.unprobedTopics («${payload.next.unprobedTopics[0]}»), иначе она останется непроверенной.` : ''
+      : `Задай вопрос №${n}: сначала answerSignal по последнему ответу, затем вопрос нужного уровня (levelIfStrong / levelIfWeak / levelIfNone; новая тема – startLevel).${
+          payload.next.mustSwitch ? ` Обязательно перейди к новой теме – первой из next.unprobedTopics («${payload.next.unprobedTopics[0]}»), иначе она останется непроверенной.` : ''
         }`;
-  const msgs: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\n${instruction} Ответ — только JSON по схеме.` }];
+  const msgs: ChatMessage[] = [{ role: 'user', content: `${contextBlock(payload)}\n\n${instruction} Ответ – только JSON по схеме.` }];
   if (correction) msgs.push({ role: 'user', content: correction });
   return msgs;
 }
@@ -111,10 +111,10 @@ export function profileTexts(topics: readonly TopicSeed[]): string[] {
 }
 
 const RETELL_CORRECTION =
-  'Вопрос повторяет формулировку из профиля кандидата (утверждение или факт резюме) — так нельзя: транскрипт читает слепой оценщик. Переформулируй вопрос о теме своими словами, не повторяя ни одной фразы профиля, и верни JSON заново.';
+  'Вопрос повторяет формулировку из профиля кандидата (утверждение или факт резюме) – так нельзя: транскрипт читает слепой оценщик. Переформулируй вопрос о теме своими словами, не повторяя ни одной фразы профиля, и верни JSON заново.';
 
 const DONT_KNOW_CORRECTION =
-  'Кандидат ответил «не знаю» — эта тема закрыта, по ней больше не спрашивай. Задай вопрос по другой теме (первая из next.unprobedTopics, если она есть) и верни JSON заново.';
+  'Кандидат ответил «не знаю» – эта тема закрыта, по ней больше не спрашивай. Задай вопрос по другой теме (первая из next.unprobedTopics, если она есть) и верни JSON заново.';
 
 const LEAVE_CORRECTION =
   'По этой теме больше не спрашивай: next.afterStrong / next.afterWeak для твоего answerSignal — switch. Задай вопрос по другой теме (первая из next.unprobedTopics, если она есть; иначе тема, не из next.closedTopics) и верни JSON заново.';
@@ -213,8 +213,8 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
   const gate = stream ? callGate(input, stream, (m) => (streamMeta = m)) : null;
   let correction: string | undefined;
   try {
-    // Вторая попытка — только если модель пересказала профиль (n-грамма ≥ 4 слов из утверждения/резюме).
-    // В потоковом режиме — только пока ничего не прозвучало (gate.started).
+    // Вторая попытка – только если модель пересказала профиль (n-грамма ≥ 4 слов из утверждения/резюме).
+    // В потоковом режиме – только пока ничего не прозвучало (gate.started).
     for (let attempt = 0; attempt < 2 && !gate?.started; attempt++) {
       gate?.reset();
       const res = await llm.complete(
@@ -230,14 +230,14 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
         signal,
       );
       const parsed = CallInterviewerOutput.safeParse(res.kind === 'json' ? res.json : undefined);
-      // Вопрос по-русски: без кириллицы (мусор минимальной заглушки) — шаблон.
+      // Вопрос по-русски: без кириллицы (мусор минимальной заглушки) – шаблон.
       if (!parsed.success || !/[а-яё]/i.test(parsed.data.question)) break;
       const out = parsed.data;
       const routed: AnswerSignal | null = input.turns.length ? out.answerSignal : null;
-      // catalogId — только из плана: модель не может привязать тему к чужому утверждению.
+      // catalogId – только из плана: модель не может привязать тему к чужому утверждению.
       const known = input.topics.find((t) => t.topic === out.topic.trim() || (out.catalogId && t.catalogId === out.catalogId));
       const topic = known?.topic ?? out.topic.trim();
-      // Код держит тему: дополнительный вопрос — только по заданной теме; при правиле покрытия — только новая тема.
+      // Код держит тему: дополнительный вопрос – только по заданной теме; при правиле покрытия – только новая тема.
       if (input.force && topic !== input.force.topic) break;
       if (!input.force && cov.mustSwitch && !cov.unprobed.includes(topic)) break;
       if (retellsProfile(out.question, banned, input.topics.map((t) => t.topic)) || quotesProfileNumber(out.question, banned)) {
@@ -268,7 +268,7 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
       const done = input.force || coverOpen ? false : out.done;
       const composed = gate?.compose(out.question, '');
       if (composed?.usedChosen) return { question: composed.text, meta, done };
-      if (gate?.started) break; // прозвучало не то, что вышло в итоге — собираем ниже из прозвучавшего
+      if (gate?.started) break; // прозвучало не то, что вышло в итоге – собираем ниже из прозвучавшего
       return { question: withRefusal(out.question.trim(), lastAnswer), meta, done };
     }
   } catch (err) {
@@ -277,7 +277,7 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
   }
   // Часть вопроса уже прозвучала: реплика = прозвучавшее (+ шаблон, если в нём ещё нет вопроса).
   if (gate?.started) {
-    // Вводная-отказ уже прозвучала (или не нужна) — к шаблону её не добавляем второй раз.
+    // Вводная-отказ уже прозвучала (или не нужна) – к шаблону её не добавляем второй раз.
     const fb = templateFallback(input, lastAnswer, false);
     const c = gate.compose(null, fb.question)!;
     console.warn('[call] interviewer stream cut:', c.cut ? 'heard question kept' : 'template appended');

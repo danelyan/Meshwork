@@ -11,7 +11,7 @@ const ptserif = PT_Serif({ subsets: ['latin', 'cyrillic'], weight: ['400', '700'
 export const metadata: Metadata = { title: 'Шрифты заголовков - превью', robots: { index: false } };
 
 const VARIANTS = {
-  mono: { label: 'JetBrains Mono', note: 'как в мокапе Карины; текущий выбор', font: null, weight: 700, tracking: '-0.045em' },
+  mono: { label: 'JetBrains Mono', note: 'текущий выбор', font: null, weight: 700, tracking: '-0.045em' },
   playfair: { label: 'Playfair Display', note: 'газетная антиква, контрастная', font: playfair, weight: 800, tracking: '-0.01em' },
   oswald: { label: 'Oswald', note: 'узкая гротескная, плакатная', font: oswald, weight: 600, tracking: '0.005em' },
   ptserif: { label: 'PT Serif', note: 'спокойная книжная антиква', font: ptserif, weight: 700, tracking: '-0.005em' },

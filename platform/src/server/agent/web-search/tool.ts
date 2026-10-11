@@ -7,7 +7,7 @@ import type { AgentTool, ToolContext } from '../types';
 import { checkQuery, companyTerms, nameTerms, originTerms } from './pii';
 import { searchWeb, SNIPPET_MAX } from './yandex';
 
-/** Лимиты вызовов (research/18): за ход и за разговор. Попытки с отказом тоже считаются. */
+/** Лимиты вызовов : за ход и за разговор. Попытки с отказом тоже считаются. */
 export const WEB_SEARCH_PER_TURN = 2;
 export const WEB_SEARCH_PER_CONVERSATION = 10;
 export const WEB_QUERY_MAX = 200;

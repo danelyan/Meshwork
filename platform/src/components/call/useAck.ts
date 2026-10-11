@@ -23,7 +23,8 @@ export interface UseAckOptions {
   /** Кандидат сейчас говорит (новая фраза отменяет «мягкий» клип). */
   userSpeaking: boolean;
   /** Подменяется в тестах. */
-  random?: () => number;
+  random?: () => number;  /** Клип из банка зазвучал (телеметрия: ackMs). */
+  onPlayed?: (kind: AckKind) => void;
 }
 
 export function useAck(opts: UseAckOptions) {
@@ -70,6 +71,7 @@ export function useAck(opts: UseAckOptions) {
       own.current = true;
       try {
         console.debug('[ack]', kind, file);
+        optsRef.current.onPlayed?.(kind);
         await voice.playClip(`${BASE}${file}`);
       } catch {
         /* клип не сыгран - не страшно */

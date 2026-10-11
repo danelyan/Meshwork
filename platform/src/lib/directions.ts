@@ -1,6 +1,6 @@
 // Справочник направлений и подкатегорий (ADR 0003, дополнение 10.10; R-T-05). Один источник для кода,
 // UI и сида таблицы Subcategory (prisma/seed/directions.ts). Чистый модуль без серверных импортов –
-// его читают и клиентские компоненты. Карта – ресёрч владельца research/25 (§ 3 – описания, § 4 – что к сдаче).
+// его читают и клиентские компоненты. Карта – ресёрч владельца (§ 3 – описания, § 4 – что к сдаче).
 
 /** Порядок направлений в UI и сводках. Совпадает с enum Specialization (prisma/schema.prisma). */
 export const SPECIALIZATIONS = ['backend', 'frontend', 'ai', 'engineering'] as const;
@@ -56,7 +56,7 @@ export interface SubcategoryDef {
 }
 
 /**
- * 18 подкатегорий (17 карты research/25 + ai.bi-analytics, 11.10). Статус – по банку теста (см. SubcategoryDef.status): active ⇔ банк подкатегории
+ * 18 подкатегорий. Статус – по банку теста (см. SubcategoryDef.status): active ⇔ банк подкатегории
  * полон (bankComplete, 6 Junior + 4 Middle + 4 Senior); направление без разметки семейств – переходный режим,
  * статус по объявлению. Сверяет tests/unit/lib/directions.test.ts.
  */

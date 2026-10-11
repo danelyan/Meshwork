@@ -30,12 +30,10 @@ function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined
 
 /** Вход в ИИнтервью: консультант с сразу открытым режимом созвона. */
 export const CONSULTANT_CALL_HREF = '/consultant?call=1';
-/** Старая комната звонка (components/interview/InterviewRoom): перебивание голосом теперь есть в созвоне с Кирой, с заставки не ведём. */
-export const ROOM_HREF = '/interview/room';
 
 const QUESTION_BLOCKS = BLOCK_DEFS.filter((b) => b.questions.max > 0);
 
-/** Ход этапов: пройденные, текущий, будущие (мокап: ✓ / номер / «сейчас»). */
+/** Ход этапов: пройденные, текущий, будущие (интерфейс: ✓ / номер / «сейчас»). */
 export function Stages({ current }: { current: BlockId }) {
   const idx = BLOCK_DEFS.findIndex((b) => b.id === current);
   return (
@@ -73,7 +71,7 @@ export function Criteria({ summary }: { summary: InterviewSummary | null }) {
   );
 }
 
-/** Итоговая карточка (мокап: «Middle подтверждён · итог 84/100» → у нас соответствие по интервью, без вердикта о грейде). */
+/** Итоговая карточка (интерфейс: «Middle подтверждён · итог 84/100» → у нас соответствие по интервью, без вердикта о грейде). */
 export function ResultCard({ summary, disclaimer }: { summary: InterviewSummary; disclaimer: string }) {
   const probed = summary.competencies.filter((c) => c.status !== 'not_probed');
   const label = (s: InterviewSummary['competencies'][number]) =>

@@ -21,7 +21,7 @@ import { listVideoSegments, readVideoSegment, saveVideoSegment, type VideoSegmen
 import type { InterruptBody } from './schemas';
 import { REVIEW_QUESTIONS, reviewState } from './test-review';
 import { MAX_UTTERANCE_CHARS, type StartCallBody } from './schemas';
-import type { CallKind, CallStatus, CallVerdict, CallView, QuestionLevel, TranscriptEntry, TurnResult } from './types';
+import type { CallKind, CallStatus, CallVerdict, CallView, ClientTurnTiming, QuestionLevel, TranscriptEntry, TurnResult } from './types';
 
 /** Публичный STUN для WebRTC (defense-room; ADR 0003: P2P, сигналинг через наш API). */
 export const ICE_SERVERS = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }] as const;
@@ -267,7 +267,7 @@ export interface TurnTiming {
 export async function submitTurn(
   candidateId: string,
   sessionId: string,
-  input: { text?: string; audioRef?: string },
+  input: { text?: string; audioRef?: string; sttMs?: number },
   llm: LlmProvider,
   obs?: { timing?: TurnTiming },
 ): Promise<TurnResult> {
@@ -288,7 +288,12 @@ export async function submitTurn(
     // Ждём ответа на вопрос ИИ; если ИИ не успел ответить на прошлую реплику (сбой) – реплика дописывается,
     // и вопрос генерируется заново. После закрывающей реплики (без meta) отвечать некому.
     if (!awaitingAnswer(t) && t[t.length - 1]?.role !== 'candidate') throw errors.conflict('Ответ на этот вопрос уже принят');
-    const e = entry(t, cur.startedAt, { role: 'candidate', text, ...(input.audioRef ? { audioRef: input.audioRef } : {}) });
+    const e = entry(t, cur.startedAt, {
+      role: 'candidate',
+      text,
+      ...(input.audioRef ? { audioRef: input.audioRef } : {}),
+      ...(input.audioRef && input.sttMs !== undefined ? { timing: { sttMs: input.sttMs } } : {}),
+    });
     const next = [...t, e];
     const upd = (await tx.callSession.update({
       where: { id: sessionId },
@@ -390,7 +395,7 @@ export async function submitTurn(
     if (cur.status !== 'active') throw errors.conflict('Созвон уже завершён');
     // Пока ИИ думал, мог вступить работодатель – вопрос всё равно добавляется после его реплики.
     if (awaitingAnswer(t)) throw errors.conflict('Следующий вопрос уже задан');
-    const e = entry(t, cur.startedAt, { role: 'ai', text: aiText, ...(meta ? { meta } : {}) });
+    const e = entry(t, cur.startedAt, { role: 'ai', text: aiText, ...(meta ? { meta } : {}), timing: { ...timing } });
     await tx.callSession.update({ where: { id: sessionId }, data: { transcriptJson: [...t, e] as unknown as Prisma.InputJsonValue } });
     return e;
   });
@@ -602,6 +607,26 @@ export async function latestQualifyingVerdict(candidateId: string): Promise<Call
     select: { verdictJson: true },
   });
   return (row?.verdictJson as unknown as CallVerdict | null) ?? null;
+}
+
+/**
+ * Телеметрия хода из браузера (POST /api/call/{id}/telemetry): водопад «конец речи → первый звук» дописывается
+ * в `timing.client` реплики ИИ с этим index. Повтор — перезаписывает. Созвон может быть уже завершён: замер
+ * последней реплики приходит после finish.
+ */
+export async function recordTurnTelemetry(candidateId: string, sessionId: string, body: { index: number; client: ClientTurnTiming }): Promise<TranscriptEntry> {
+  await loadOwn(candidateId, sessionId);
+  return prisma.$transaction(async (tx) => {
+    const cur = await lockCall(tx, sessionId);
+    const t = transcriptOf(cur);
+    const i = t.findIndex((e) => e.index === body.index && e.role === 'ai');
+    if (i < 0) throw errors.notFound('Реплика ИИ не найдена');
+    const e: TranscriptEntry = { ...t[i]!, timing: { ...(t[i]!.timing ?? {}), client: body.client } };
+    const next = [...t.slice(0, i), e, ...t.slice(i + 1)];
+    await tx.callSession.update({ where: { id: sessionId }, data: { transcriptJson: next as unknown as Prisma.InputJsonValue } });
+    console.info('[call] client timing', JSON.stringify({ sessionId, index: body.index, ...body.client }));
+    return e;
+  });
 }
 
 // ---------------------------------------------------------------------------

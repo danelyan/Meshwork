@@ -1,5 +1,4 @@
 // Второй пакет семейств engineering.data-eng (+3 Junior, +5 Middle, +4 Senior; решение владельца 11.10).
-// Пробел по разбору конкурентов (research/competitors/test-banks.md): оркестрация – DAG, зависимости, повторы.
 // Параметры a, b – экспертные, не откалиброваны. Поведение trigger_rule и depends_on_past описано по общей модели
 // Airflow; сверка с документацией не проводилась (помечено в docs/validation-results.md).
 import { fam, hhmm, listKey, randomDag, table } from './engineering-bank2-util';

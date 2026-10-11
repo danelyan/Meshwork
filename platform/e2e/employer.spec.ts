@@ -14,7 +14,6 @@ const VACANCY_URL = '**/employer/needs/demo-vac-be-m-1';
 
 // Тест создаёт потребность «E2E …» в той же БД, что и dev-сервер (DATABASE_URL из .env), - убираем за собой,
 // иначе мусор виден на «Моей карте» и в подборке. Заодно подчищаем хвосты упавших прогонов.
-// Резерв, если afterAll не отработал: node scripts/clean-e2e-vacancies.mjs --apply
 test.afterAll(async () => {
   const envFile = resolve(__dirname, '../.env');
   if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);

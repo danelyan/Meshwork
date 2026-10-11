@@ -29,6 +29,8 @@ export interface QualifyingEvidence {
   /** Решения теста (связь теста и созвона, 11.10): сигнал для работодателя, в балл ранжирования не входит. */
   testOwnership?: TestOwnershipStatus;
   evaluatedAt: string;
+  /** Созвон-источник: по нему работодатель после принятого приглашения открывает транскрипт и запись. */
+  callId?: string;
 }
 
 /** Результат ступени 3 (последняя завершённая защита проекта). Баллы и флаги; цитат нет. */
@@ -150,6 +152,8 @@ export interface DepthBlock {
   matchedNeed: number;
   /** «Решения теста»: объяснил сам / частично / не смог объяснить; нет – не проверялось. */
   testOwnership?: TestOwnershipStatus;
+  /** Созвон, по которому карта: после принятого приглашения работодатель открывает транскрипт и запись (GET /api/call/{id}). */
+  callId?: string;
 }
 
 export interface ProjectOwnBlock {
@@ -192,6 +196,7 @@ export function buildDepthBlock(q: QualifyingEvidence, needIds: ReadonlySet<stri
     confirmed: topics.filter((d) => d.confirmed).length,
     matchedNeed: new Set(topics.filter((d) => d.confirmed && d.forNeed).map((d) => d.catalogId)).size,
     ...(q.testOwnership ? { testOwnership: q.testOwnership } : {}),
+    ...(q.callId ? { callId: q.callId } : {}),
   };
 }
 

@@ -608,6 +608,8 @@ export interface OnboardingStepBrief {
   question: string;
   /** Пояснение под вопросом (зачем спрашиваем). */
   sub?: string;
+  /** Обязательный шаг: кнопки «Пропустить вопрос» нет. */
+  required?: boolean;
   /** Доступные варианты с пояснением из сценария: «Ищу работу (хочу приглашения от компаний)». */
   options: string[];
 }
@@ -618,6 +620,7 @@ function briefOf(step: StepDef, ctx: StepContext): OnboardingStepBrief | null {
     stepId: step.id,
     question: step.question,
     ...(step.sub ? { sub: step.sub } : {}),
+    ...(step.required ? { required: true } : {}),
     options: optionsOf(step, ctx)
       .filter((o) => !o.disabled)
       .map((o) => (o.note ? `${o.label} (${o.note})` : o.label)),

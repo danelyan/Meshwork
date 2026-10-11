@@ -7,7 +7,7 @@ import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 import { checkInn } from '@/server/onboarding/inn';
-import { asideToModel, looksLikeQuestion, matchStepText } from '@/server/onboarding/match';
+import { asideToModel, looksLikeQuestion, looksLikeSkip, matchStepText } from '@/server/onboarding/match';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { CompanionStage } from '../avatar/CompanionStage';
@@ -248,6 +248,12 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   function submitDraft() {
     if (!canInput) return;
     const v = draft.trim();
+    // «пропустить» на любом необязательном шаге, «не знаю» там, где текст стал бы значением, — пропуск, как кнопкой.
+    if (v && looksLikeSkip(cur, v) && !matchStepText(cur, v) && !(cur.kind === 'chips' && sel.length) && att.ready.length === 0) {
+      setError(null);
+      setDraft('');
+      return skip();
+    }
     if (cur.kind === 'files') {
       // Ни файла, ни ссылки, но есть текст – это вопрос, а не материалы.
       if (v && att.ready.length === 0 && !att.uploading && extractUrls(v).length === 0 && toModel) return aside(v);

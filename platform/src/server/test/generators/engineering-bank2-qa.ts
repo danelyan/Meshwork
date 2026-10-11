@@ -1,5 +1,4 @@
 // Второй пакет семейств engineering.qa-automation (+3 Junior, +5 Middle, +4 Senior; решение владельца 11.10).
-// Пробел по разбору конкурентов (research/competitors/test-banks.md): автотесты API (проверки ответа) на Junior.
 // Параметры a, b – экспертные, не откалиброваны. Выбор тестов по маркерам pytest (-m) и правила rerun – по общему
 // знанию; сверка с документацией не проводилась (помечено в docs/validation-results.md).
 import { fam, listKey, num, randomDag } from './engineering-bank2-util';

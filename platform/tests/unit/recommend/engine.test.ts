@@ -223,7 +223,7 @@ describe('правило теста', () => {
     expect(be).not.toContain('common.git'); // M < J
   });
 
-  it('пороги 0.25 (решение владельца 09.10, research/13) / 0.15', () => {
+  it('пороги 0.25 (решение владельца 09.10) / 0.15', () => {
     expect(decideGrade(sig, take(0.7)).grade).toBe('middle');
     expect(decideGrade(sig, take(0.3)).grade).toBe('middle');
     const mid = decideGrade(sig, take(0.2));

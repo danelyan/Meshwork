@@ -30,7 +30,7 @@ export const employerAudioListApi = (id: string) => request<{ segments: { name: 
 export const employerAudioFileUrl = (id: string, segment: string) => `/api/call/${enc(id)}/employer-audio/file?segment=${encodeURIComponent(segment)}`;
 export const leaveCallApi = (id: string) => postJson<{ left: boolean }>(`/api/employer/call/${enc(id)}/leave`, {});
 export const muteAiApi = (id: string, muted: boolean) => postJson<{ muted: boolean; aiText: string | null }>(`/api/employer/call/${enc(id)}/mute-ai`, { muted });
-export const sayApi = (id: string, text: string) => postJson<{ entry: TranscriptEntry }>(`/api/employer/call/${enc(id)}/say`, { text });
+export const sayApi = (id: string, text: string) => postJson<{ entry: TranscriptEntry; notice: TranscriptEntry | null }>(`/api/employer/call/${enc(id)}/say`, { text });
 export const askQuestionApi = (candidateId: string, text: string) => postJson<{ id: string }>('/api/employer/questions', { candidateId, text });
 
 export const signalApi = (id: string, body: { to?: string; sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit | null }) =>

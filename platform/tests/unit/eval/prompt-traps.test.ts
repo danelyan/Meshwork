@@ -14,7 +14,7 @@ describe('eval/prompt-traps: проверки', () => {
     expect(affirms('Нет, не скроет', /скро\p{L}*/u)).toBe(false);
   });
 
-  it('20 ловушек research/16 + 3 компаньона + онбординг-вариант и контроль; границы на месте', () => {
+  it('20 контрольных вопросов + 3 компаньона + онбординг-вариант и контроль; границы на месте', () => {
     const numbered = new Set(CASES.map((c) => c.id.slice(0, 2)).filter((x) => /^\d\d$/.test(x)));
     expect(numbered.size).toBe(23);
     expect(CASES.filter((c) => c.boundary).map((c) => c.id.slice(0, 2)).sort()).toEqual(['10', '11', '14', '21', '22', '23', 'k4', 'w1', 'w2', 'w3']);

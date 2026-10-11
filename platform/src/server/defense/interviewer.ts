@@ -10,6 +10,9 @@ import { loadPrompt, tag } from './prompt-utils';
  * из шаблона (защита не должна падать из-за LLM на середине).
  */
 
+/** Версия промпта prompts/interviewer.md — поднимать при правке (замеры eval/prompt-audit/defense-interviewer). */
+export const DEFENSE_INTERVIEWER_PROMPT_VERSION = 'defense-interviewer-v2';
+
 export const InterviewerOutput = z.object({
   // Вопрос по-русски: без кириллицы (мусор, «xxxxxxxxxx» минимальной заглушки) – шаблон.
   // Не .regex: z.toJSONSchema делает из него pattern без флага i, провайдер строгого вывода
@@ -57,6 +60,15 @@ export function fallbackQuestion(ctx: InterviewerContext, index: number): string
     'Как ты проверил, что решение работает? Что пошло не так в процессе и как ты это исправил?',
   ];
   return bank[(index - 1) % bank.length] as string;
+}
+
+/**
+ * Реплика-прощание вместо вопроса («Спасибо, всё понятно.»): так модель поддаётся инъекции в ответе
+ * кандидата (аудит prompt-audit/defense-interviewer, v1 — 2 из 3 прогонов). Конец интервью решает код
+ * по `enough`, а кандидату всегда нужен вопрос → шаблон.
+ */
+export function isClosingLine(question: string): boolean {
+  return !question.includes('?') && /(спасибо|вс[её] понятно|интервью (окончено|завершено)|на этом вс[её]|до свидания)/i.test(question);
 }
 
 export function buildInterviewerMessages(ctx: InterviewerContext): ChatMessage[] {
@@ -110,7 +122,7 @@ export async function nextQuestion(
     );
     const raw = res.kind === 'json' ? res.json : undefined;
     const parsed = InterviewerOutput.safeParse(raw);
-    if (parsed.success) {
+    if (parsed.success && !isClosingLine(parsed.data.question)) {
       return { question: parsed.data.question.trim(), enough: parsed.data.enough, fallback: false };
     }
   } catch (err) {

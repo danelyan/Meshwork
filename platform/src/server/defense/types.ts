@@ -48,13 +48,13 @@ export interface DefenseVerdict {
   /** Объяснение для кандидата: что засчитано и что подтянуть. */
   explanation: string;
   criteria: CriterionResult[];
-  /** Источник подтверждения — всегда interview. */
+  /** Источник подтверждения – всегда interview. */
   source: 'interview';
   evaluatedAt: string;
   levelBefore: string;
   /** Уровень после вердикта: platform при passed, иначе без изменений. */
   levelAfter: string;
-  /** Версия порога — чтобы пересчитать после калибровки. */
+  /** Версия порога – чтобы пересчитать после калибровки. */
   thresholdVersion: string;
   /** Версия промпта оценщика (EVALUATOR_PROMPT_VERSION); в вердиктах до 11.10 нет. */
   promptVersion?: string;
@@ -68,7 +68,7 @@ export interface DefenseSessionView {
   claimId: string;
   claimStatement: string;
   status: DefenseSessionStatus;
-  /** Ждёт ли сессия ответа кандидата (иначе — вердикт или повтор оценки). */
+  /** Ждёт ли сессия ответа кандидата (иначе – вердикт или повтор оценки). */
   awaitingAnswer: boolean;
   turns: { index: number; question: string; answer: string | null }[];
   verdict: DefenseVerdict | null;

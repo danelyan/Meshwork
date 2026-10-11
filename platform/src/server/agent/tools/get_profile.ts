@@ -31,7 +31,7 @@ const Output = z.object({
   summary: z.object({ confirmed: z.number().int(), proposed: z.number().int(), rejected: z.number().int() }),
 });
 
-/** Состояние профиля – каждый ход отсюда, не из истории чата (ТЗ § 4.1, research/10 § 4.7). */
+/** Состояние профиля – каждый ход отсюда, не из истории чата . */
 export const getProfileTool: AgentTool<Record<string, never>, z.infer<typeof Output>> = {
   name: 'get_profile',
   description:

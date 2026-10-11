@@ -28,13 +28,15 @@ const Body = z
     onboardingStep: z.string().regex(/^[A-Za-z]{1,40}$/).optional(),
     /** Первая реплика в пустом разговоре без сообщения кандидата (loop.ts, KICKOFF_INSTRUCTION). */
     kickoff: z.boolean().optional(),
+    /** Ход после завершённого созвона без сообщения кандидата (loop.ts, AFTER_CALL_INSTRUCTION). */
+    afterCall: z.boolean().optional(),
     /**
      * Переотправить последнее сообщение кандидата: оно и всё после него (ответ, вызовы инструментов)
      * удаляются из истории, ход идёт заново с тем же текстом на прежней истории. Нужен conversationId.
      */
     resend: z.boolean().optional(),
   })
-  .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length || b.kickoff || b.resend, {
+  .refine((b) => b.text.trim().length > 0 || b.uploadIds?.length || b.urls?.length || b.kickoff || b.afterCall || b.resend, {
     message: 'Нужен текст, вложение или ссылка',
     path: ['text'],
   });
@@ -124,6 +126,7 @@ export const POST = withErrors(async (req: Request) => {
             ...(body.urls ? { urls: body.urls } : {}),
             ...(onboarding ? { onboarding } : {}),
             ...(body.kickoff && !onboarding ? { kickoff: true } : {}),
+            ...(body.afterCall && !onboarding ? { afterCall: true } : {}),
           },
           emit,
           signal,

@@ -265,6 +265,48 @@ describe('защита: уточнение, затем вмешательств�
   });
 });
 
+describe('защита: роль ИИ при живом работодателе', () => {
+  beforeEach(async () => {
+    await resetDb();
+    resetBus();
+    clearStubResponses();
+    await seed();
+  });
+
+  it('реплика работодателя — ИИ уступает слово (мьют), личный вопрос — ремарка Киры, ответ на него не в оценке', async () => {
+    const { sessionId } = await (await startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE))).json();
+    await joinRoute(post('/x', { recordingConsent: true }, EMP_A), params(sessionId));
+    const said = await (await sayRoute(post('/x', { text: 'А почему не очередь с повтором?' }, EMP_A), params(sessionId))).json();
+    expect(said.notice).toBeNull();
+    // Кандидат отвечает работодателю — ИИ не перебивает «Вернёмся к вопросу».
+    const t1 = await (await turnRoute(post('/x', { text: 'Очередь дольше для клиента.' }, CAND_COOKIE), params(sessionId))).json();
+    expect(t1).toEqual({ text: null, muted: true, done: false });
+
+    const personal = await (await sayRoute(post('/x', { text: 'Кстати, есть ли у вас дети?' }, EMP_A), params(sessionId))).json();
+    expect(personal.notice).toMatchObject({ role: 'ai', defense: { kind: 'notice', companyId: 'co-a' } });
+    expect(personal.notice.text).toMatch(/семья и дети не связан с работой/);
+    await turnRoute(post('/x', { text: 'Двое, младшему три года.' }, CAND_COOKIE), params(sessionId));
+    const un = await (await muteRoute(post('/x', { muted: false }, EMP_A), params(sessionId))).json();
+    expect(un.aiText).toMatch(/Вернёмся к вопросу/);
+
+    let payload = '';
+    registerStubResponse('call_evaluator', (req) => {
+      payload = req.messages[0]!.content;
+      return { json: { items: [] } };
+    });
+    await finishRoute(post('/x', {}, CAND_COOKIE), params(sessionId));
+    expect(payload).toContain('Очередь дольше для клиента.');
+    expect(payload).not.toContain('младшему');
+  });
+
+  it('вопрос в очередь на защищённую тему не принимается: Кира не зачитает его вслух', async () => {
+    const r = await askRoute(post('/api/employer/questions', { candidateId: CAND, text: 'Сколько вам лет и планируете ли детей?' }, EMP_A));
+    expect(r.status).toBe(400);
+    expect((await r.json()).error).toMatchObject({ code: 'question_not_job_related' });
+    expect(await prisma.employerQuestion.count()).toBe(0);
+  });
+});
+
 describe('защита: доступ, лимиты, гонки', () => {
   beforeEach(async () => {
     await resetDb();

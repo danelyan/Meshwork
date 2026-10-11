@@ -43,10 +43,9 @@ it('joins the relief and background into a single manifold sheet without duplica
   expect([...edges.values()].filter(n => n === 1)).toHaveLength(2*(5+6));
 });
 
-it('keeps the accepted v1 document byte-for-byte intact', () => {
-  const baseline = JSON.parse(readFileSync('design-baselines/consultant-grid-v1/manifest.json', 'utf8'));
-  const file = 'public/design/consultant-grid-v1/index.html';
-  expect(createHash('sha256').update(readFileSync(file)).digest('hex')).toBe(baseline.hashes[file]);
+it('keeps the consultant grid reference asset byte-for-byte intact', () => {
+  const reference = JSON.parse(readFileSync('tests/fixtures/avatar/consultant-grid.json', 'utf8'));
+  expect(createHash('sha256').update(readFileSync(reference.file)).digest('hex')).toBe(reference.sha256);
 });
 
 it('stabilizes a newly covered lip cell without a one-frame pop or overshoot', () => {

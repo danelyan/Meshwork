@@ -264,7 +264,7 @@ function LengthBlock({ sweep, bank, itemLimits }: { sweep: LengthSweep | null; b
               <tr>
                 <th>Лимиты</th>
                 <th className={styles.num}>κ ретеста, строгая (мин.)</th>
-                <th className={styles.num}>κ ретеста, конкурентов</th>
+                <th className={styles.num}>κ ретеста, нормальная популяция</th>
                 <th className={styles.num}>Совпадение решения</th>
                 <th className={styles.num}>Длина, заданий</th>
                 <th className={styles.num}>Ранние остановки</th>
@@ -384,7 +384,7 @@ export function ValidationView({
             </li>
           </ul>
           <div className={styles.links}>
-            <Button href="/interview" size="sm">
+            <Button href="/consultant?call=1" size="sm">
               Созвон с ИИ-интервьюером
             </Button>
             <Button href="/projects" size="sm">

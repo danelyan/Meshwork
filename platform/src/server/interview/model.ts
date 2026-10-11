@@ -5,7 +5,7 @@ import type { Specialization } from '../../lib/directions';
 import type { Grade } from '../../lib/grades';
 import type { QuestionLevel } from '../call/types';
 
-/** Оси результата — четыре критерия мокапа (design-spec § 11). grade_fit не спрашивается, считается кодом. */
+/** Оси результата – четыре критерия интерфейса. grade_fit не спрашивается, считается кодом. */
 export const AXES = ['technical', 'systems', 'communication', 'grade_fit'] as const;
 export type Axis = (typeof AXES)[number];
 /** Оси, по которым задаются вопросы (компетенция принадлежит одной из них). */
@@ -21,7 +21,7 @@ export const AXIS_LABEL: Record<Axis, string> = {
 /** ПРЕДЛОЖЕНИЕ: веса осей в итоге 0–100; экспертные, на людях не калиброваны. */
 export const AXIS_WEIGHTS: Record<Axis, number> = { technical: 0.4, systems: 0.25, communication: 0.15, grade_fit: 0.2 };
 
-/** Блоки интервью по порядку (мокап: Знакомство, Разбор теста, Системный дизайн, Работа в команде, Итоги). */
+/** Блоки интервью по порядку (интерфейс: Знакомство, Разбор теста, Системный дизайн, Работа в команде, Итоги). */
 export const BLOCKS = ['intro', 'test', 'systems', 'team', 'summary'] as const;
 export type BlockId = (typeof BLOCKS)[number];
 

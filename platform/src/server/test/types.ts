@@ -1,5 +1,6 @@
 // Типы теста на грейд (E-03, ADR-0002).
 import type { Grade, Specialization } from '../types';
+import type { AttemptPhase } from './policy';
 
 /**
  * Общая компетенция между подкатегориями (ADR 0003, дополнение 11.10). Не путать с утверждениями каталога common.*:
@@ -99,7 +100,24 @@ export interface ItemView {
    */
   canary: string | null;
   /** Слой жюри (JURY_INSIGHTS): есть только при флаге. canaryShift - N из ловушки (ключ не раскрывается); null - у задания ловушки нет. */
-  jury?: { canaryShift: number | null };
+  jury?: JuryLiveView;
+}
+
+/** Слой жюри на текущем задании (JURY_INSIGHTS): адаптивная механика без ключа ответа. */
+export interface JuryLiveView {
+  /** N из ловушки для нейросети; null - у задания ловушки нет. */
+  canaryShift: number | null;
+  /** Оценка уровня θ̂ и её ошибка перед этим заданием (после последнего ответа); null - ответов ещё нет. */
+  theta?: number | null;
+  se?: number | null;
+  /** Параметры IRT задания: сложность b, различающая способность a; грейд шаблона. */
+  itemB?: number;
+  itemA?: number;
+  itemGrade?: Grade;
+  /** Вероятность верного ответа при θ̂ (2PL). */
+  pCorrect?: number;
+  phase?: AttemptPhase;
+  answered?: number;
 }
 
 export interface AnsweredItemView extends ItemView {

@@ -12,7 +12,7 @@
 включают ИИ-помощника и связь ФСП ID с явной пометкой демореестра.
 Фавикон: звёздочка ФСП на прозрачном фоне, SVG 128×128, `/assets/favicon.svg`. Тёмный знак для светлой системной темы, светлый для тёмной (`prefers-color-scheme`), тонкий контрастный контур для нестандартных тем браузера. PNG 64×64 сохраняет прозрачность и тёмный знак со светлым контуром. Версия URL обновляется при замене, чтобы обойти кеш значка вкладки.
 
-Правила кода для `platform/`. Визуал и размеры из мокапа - в [design-spec.md](design-spec.md) (спека Карины, источник визуала); здесь - как это собрано в коде и что обязательно. Расхождение спеки и этого документа - находка: чинить здесь, спеку не править молча.
+Правила кода для `platform/`. Страницы и состояния описаны в [спецификации интерфейса](design-spec.md); здесь закреплены токены, компоненты и обязательные правила разработки.
 
 Обязательное правило (решение владельца 09.10): новые экраны собираются из `platform/src/components/ui`; цвета только через токены `platform/src/styles/tokens.css`; новый токен или компонент сначала описывается в этом документе. Правило продублировано в `AGENTS.md` и `.claude/skills/fullstack-dev/SKILL.md`; сырые цвета ловит тест `platform/tests/unit/design-tokens.test.ts`.
 
@@ -256,7 +256,7 @@
 «Повторить», «Уточнить», «Пропустить», «Завершить» (`--call-end`). Справа 360 px светлая панель `--glass`:
 транскрипт (ИИ – чёрный квадрат и пузырь `--glass-strong` с меткой блока `--blue`, кандидат – синий
 пузырь), этапы (пять блоков модели компетенций) и четыре критерия с полосками `--ink` на `--meter-off`.
-Стартовая карточка и карточка итога (рамка `--blue` 1.5 px) – из мокапа `interview.html`; итог формулируется
+Стартовая карточка и карточка итога (рамка `--blue` 1.5 px); итог формулируется
 «соответствует грейду по интервью», не «грейд подтверждён». ≤ 1000 px – одна колонка, ≤ 640 px – плитки в столбик.
 Микрофон открыт всё время (детектор речи `lib/vad.ts`), реплики ИИ озвучиваются по предложениям – кандидат
 перебивает голосом ([competency-model.md § 4.1](competency-model.md)).
@@ -348,80 +348,8 @@
 
 ## 10. Как добавить
 
-### Тестовый экран сетчатого консультанта
-
-Эксперимент v2 доступен отдельной страницей `/design/consultant-grid-v2`;
-одобренный v1 сохранён в `design-baselines/consultant-grid-v1` и
-`public/design/consultant-grid-v1`. Кнопки на существующем `Button` переключают
-страницы «Сохранённый v1» и «Тест v2». Начальные настройки сохранённого вида:
-42 px / 1.25 / 0.18. В v2 WebGL рисует невидимую поверхность в буфер глубины,
-затем только линии и узлы сетки; нет заливки головы, материала или отдельного
-треугольного каркаса. Модель, поза и речевая анимация – из исходного экспорта.
-
-Вариант `/design/consultant-grid-v3` меняет расположение колонок:
-чат слева, голова справа. Только canvas отражается по горизонтали, подписи и
-кнопки читаются обычно. Координаты курсора учитывают отражение для взгляда и
-подсветки. На узком экране голова остаётся над чатом. Панель настроек справа
-свёрнута при открытии v3, настройки и переключение версий доступны как раньше.
-Начальный вид v3: 42 px / 1.25 / 0.18. Изменения трёх регуляторов сохраняются
-в localStorage этого браузера после проверки схемой; при следующем открытии
-восстанавливаются. «Твой сохранённый вид» возвращает начальные параметры.
-
-`/design/consultant-grid-preview` показывает предоставленный 10 октября экспорт
-`consultant-handoff` в отдельном документе iframe: его собственные шрифты,
-вёрстка и Canvas 2D остаются эталоном 1:1. Это изолированный дизайн-мокап,
-сценарный чат с вымышленным профилем, а не рабочий консультант.
-`ConsultantGridPreview` использует существующие `Button`, `Field`, `Kicker`,
-`Notice` и токены для сворачиваемой панели над макетом. Регулировки:
-шаг сетки 16–80 px (46 по умолчанию), выпуклость 0.3–1.6 (1), угол 0–0.9 (0.5).
-Сброс восстанавливает экспорт; изменения применяются без перезапуска чата.
-Исходная палитра внутри импортированного HTML сохраняется буквально.
-На 360 px адаптируются только шапка, бейджи и поле ввода, чтобы убрать
-переполнение исходного экспорта. Новые UI-примитивы и цвета не нужны.
-
 Новый токен: строка в таблице выше -> `tokens.css` -> использование. Новый компонент: строка в каталоге (назначение, пропсы, пример) -> файл в `components/ui` + экспорт в `index.ts` -> тест в `tests/unit/components/ui/`. Проверка: `npm run typecheck && npm run lint && npx vitest run --project components --project unit`.
 
-Восстановление от 9 октября: мобильный граф держит длинные счётчики вакансий отдельной строкой под названием компании; фон чата – общая статичная сетка. Блок статистики автоматически размещает все показатели, а последний нечётный на узком экране занимает всю строку.
-
-## Консультант: цифровой собеседник
-
-`ConsultantScene` (`components/head/ConsultantScene.tsx`) размещает ленту слева, область давления лица справа на больших экранах. `ConsultantHead` использует модель из ветки `codex/interactive-head` только как источник глубины для одной натянутой сетки на весь фон. Видны только линии, словно человек прижал лицо к сетке с обратной стороны. У сетки одинаковый шаг 24 px, цвет и толщина по всему экрану; нет отдельного контура, заливки, плотности или контраста головы. Линии `--ink` на `--paper`. Canvas фиксирован на весь viewport за содержимым, чтобы длинные чаты не создавали огромный GPU-буфер. Плавные волны двигают всю поверхность, включая фон вокруг лица; давление лица меняется при дыхании, повороте за мышью и процедурном моргании. Существующий `Button` размера `sm` в правом нижнем углу останавливает и включает всю анимацию. Canvas декоративный, кнопка остаётся доступной клавиатуре. На экранах до 1050 px canvas скрыт и GLB не загружается. При reduced-motion остаётся неподвижная сетка без кнопки включения движения. При скрытой вкладке и невидимом портрете анимация останавливается. При отсутствии WebGL остаётся статичная фоновая сетка без отдельной фотографии головы. Загрузчик страницы резервирует раскладку без повторной загрузки модели.
-
-Стрелка «Приступим» - SVG 56×32 с квадратными концами и толщиной 5; на телефоне 46×28. В интерфейсных текстах длинные тире заменены обычным дефисом с пробелами; пользовательский текст и цитаты источников не переписываются.
-
-### Consultant portrait restoration, 9 October
-The consultant uses the separate Neuron wire material (mode 4) from codex/interactive-head over the original static landing grid. The canvas stays within the right portrait column, uses a transparent background and cannot paint over the chat or the page grid. No new colors or components are introduced. This supersedes the full-page deforming grid described above.
-
-### Glass consultant portrait, 9 October
-The user selected the glass material (mode 5) from codex/interactive-head. The local transparent canvas renders back and front glass surfaces and refracts a texture of the existing static 48px grid, using only paper, ink and blue tokens. The surrounding background and layout remain the same.
-
-### Local liquid-metal portrait
-The latest local selection is soft pearlescent metal: diffuse light, broad satin
-reflections and a subtle blue pearl sheen derived from the existing tokens.
-Extend only the lower neck
-downwards; a smooth alpha fade dissolves its base into the existing page grid.
-No smoke particles or overlay are used. Face pose, scale and tracking stay fixed.
-Small shoulder hints extend the existing bust base on each side; their outer
-and lower silhouette remains translucent and fades out before the mesh edge.
-
-The consultant conversation adopts the supplied consultant-handoff styling:
-a square glass panel with a separately scrolling feed, 36px dark assistant
-mark, 16px messages, bordered quick actions and a fixed composer within the
-panel. The title includes the mono subtitle and links to the existing profile
-and test routes (the export's map/interview routes do not exist in the app).
-Existing tokens and chat/UI primitives are reused; embedded onboarding retains
-its current appearance. The accepted chrome portrait stays on the right.
-
-The user selected the face1.png reference in place of the curtain experiment.
-Use smooth geometry normals and silver studio
-reflections, without glass transmission or a projected page grid on the face.
-Normal-map relief and baked lattice markings are disabled in metallic mode. Forehead geometry repair keeps the broad shape smooth. The portrait camera
-leaves clearance at both yaw limits; thin ears render from both sides.
-The user requested publication on 10 October; the pearlescent variant replaces
-the earlier glass material on the consultant page.
-
-### Animated glass consultant, 9 October
-The glass portrait may blink and deform at the neck while its shoulder base stays fixed. Mouth movement uses Blender facial morphs. Speech controls use existing small Buttons, with a labelled demo recording started by the user, no autoplay or microphone. The static page grid and left chat layout remain unchanged; reduced-motion stops the decorative animation.
 # Основной консультант: утверждённая сеточная голова
 
 `ConsultantHead` использует тот же зеркальный WebGL2-рендерер и настройки
@@ -433,12 +361,6 @@ The glass portrait may blink and deform at the neck while its shoulder base stay
 На широком экране разговор занимает 44%, сеточная голова – 56% ширины;
 правая область идёт от шапки до низа окна и до правого края без отступов
 и ограничения 740px. Единственная сетка здесь – поверхность WebGL2.
-# Граф главной: исходный мокап
-
-Декоративный граф в hero сохраняет положение узлов и анимацию связей из
-`site/index.html`. С 11 октября используются те же восемь реальных логотипов,
-что и в ленте ИТ-компаний. Вымышленные проценты соответствия удалены.
-Граф скрыт от скринридера; доступные названия и ссылки находятся в ленте.
 # Голова консультанта
 
 Правая колонка консультанта показывает `HeadView` с фиксированным `weave6`
@@ -454,16 +376,8 @@ The glass portrait may blink and deform at the neck while its shoulder base stay
 Навыки, грейд и опыт в окне не спрашиваются: новый профиль продолжает
 знакомство с помощником. `Button`, `Field`, `Kicker`, `Meter`, `Notice` –
 существующие примитивы; квадратные карточки и цвета только из токенов.
-`--auth-backdrop` – затемнение за окном; `--auth-shadow` – тень исходного мокапа.
+`--auth-backdrop` – затемнение за окном; `--auth-shadow` – тень диалога.
 # Astra: кабинеты и навигация, 10 октября 2026
-
-Новый визуальный источник: предоставленный пользователем архив
-«ФСП Карьера – мокап дизайна (2).zip», `export/astra` (пять экранов).
-Сохраняются Golos Text, JetBrains Mono, светлая сетка, квадратные
-полупрозрачные панели, чёрные активные элементы и синий акцент из токенов.
-Шаг сетки в референсе и приложении 46px, включая светлую сцену консультанта.
-Данные и действия подключаются к существующим API, без переноса демонстрационных
-профилей и процентов как реальных данных. Действующие этапы оценки сохраняются.
 
 `DashboardFrame` оформляет кабинеты: боковая навигация на
 десктопе, горизонтальная навигация на мобильном, активный пункт через aria-current.
@@ -495,7 +409,7 @@ The glass portrait may blink and deform at the neck while its shoulder base stay
 
 Продуктовые отличия от исходного HTML сохраняются осознанно: один аккаунт с
 переключением роли вместо двух независимых регистраций; существующие созвон,
-проектное задание и защита не заменяются сценарным интервью из мокапа.
+проектное задание и защита не заменяются сценарным интервью.
 ФСП ID, реестр достижений и поиск компании по ИНН не объявляются настоящими
 интеграциями. Черновик грейда не становится подтверждённой категорией.
 
@@ -587,8 +501,6 @@ Reduced motion: при `prefers-reduced-motion` Motion отключает transf
 
 Переходы состояний (11.10.2026, МСК): в `tokens.css` один общий `transition` для `a`, `button`, `summary`, полей формы, `[role='button']` и `[role='tab']` – цвет, фон, рамка, тень и прозрачность за `--motion-fast` по `--motion-ease`. Модулю не нужно повторять его для hover/focus/aria-pressed у кнопок и ссылок; свой `transition` пишется только для не-кнопочных элементов со состоянием (строка списка, бейдж статуса, карточка-label) или чтобы отключить общий. Появление экрана: `DashboardFrame` проявляет прямого ребёнка `.content` (содержимое `page.tsx`, оно перемонтируется при переходе) за `--motion-slow` через opacity, внутри `prefers-reduced-motion: no-preference`; рамка кабинета и шапка не перерисовываются.
 # Главная landing-astra (11.10.2026, МСК)
-
-Новый визуальный источник владельца: `Downloads/ФСП Карьера – мокап дизайна (3)/export/landing-astra`. Переносится в `platform/src/components/landing`, без шаблонного рантайма `support.js`. Локальное переопределение `--font: var(--mono)` действует только внутри главной: JetBrains Mono для всех элементов экспорта. Кабинеты сохраняют свою типографику.
 
 Размеры главной: `--fs-landing-section: clamp(32px, 3.4vw, 52px)` и `--fs-landing-role: clamp(24px, 2.2vw, 32px)`; только секционные заголовки и подписи ролей лендинга.
 

@@ -41,7 +41,7 @@ export function whyLevel(level: EvidenceLevel, sourceKind: string): string {
     case 'artifact':
       return 'Источник - публичный артефакт (репозиторий, страница, профиль без подтверждённого владения): работа видна, но кто её сделал и понимает ли - не проверено.';
     case 'platform':
-      return 'Платформа проверила сама: задание из банка или защита утверждения в чате.';
+      return 'Платформа проверила сама: тест на грейд, созвон с ИИ или защита утверждения.';
     case 'third_party':
       return 'Подтверждено третьей стороной при подтверждённом владении аккаунтом (например, реестр ФСП).';
   }
@@ -64,7 +64,7 @@ export function waysUp(level: EvidenceLevel, proof: string[]): z.infer<typeof Wa
   }
   if (PLATFORM_UPGRADABLE.has(level)) {
     const task = proof.find((p) => p.startsWith('task:'));
-    if (task) ways.push({ toLevel: 'platform', kind: 'task', how: 'Решить задание из банка платформы на это утверждение.', taskId: task });
+    if (task) ways.push({ toLevel: 'platform', kind: 'task', how: 'Задание из банка платформы на эту тему - для практики. Решение платформа пока не принимает и не проверяет, поэтому уровень сейчас поднимает защита утверждения или созвон с ИИ.', taskId: task });
     if (proof.includes('interview:defend')) ways.push({ toLevel: 'platform', kind: 'interview', how: 'Пройти защиту утверждения: 3–5 вопросов в чате о том, как и почему это сделано.' });
   }
   return ways;

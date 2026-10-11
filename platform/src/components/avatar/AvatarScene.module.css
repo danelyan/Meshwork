@@ -97,7 +97,6 @@
 .splitter::after { content: ''; position: absolute; inset: 0 3px; background: transparent; transition: background 150ms var(--ease); }
 .splitter:hover::after, .splitter:focus-visible::after { background: var(--blue); }
 .splitter:focus-visible { outline: none; }
-.sideScene[data-in-call] .splitter { display: none; }
 @media (max-width: 1050px) { .splitter { display: none; } }
 /* Созвон: панель звонка на всю высоту справа, колонка «Твой путь»/карточки прячется – иначе карточка согласия налезает на неё. */
 .sideScene.withAside[data-in-call] { grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; }

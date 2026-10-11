@@ -1,5 +1,4 @@
 // Расширение банка ai.ai-integration: +3 Junior, +5 Middle, +4 Senior (решение владельца 11.10).
-// Закрывает пробел «наблюдаемость LLM-вызовов» (docs/research/competitors/test-banks.md): логи, трейсы, SLO, атрибуция затрат.
 import { family, fx, sum } from './ai-bank2-util';
 import { num, table } from './ai-util';
 

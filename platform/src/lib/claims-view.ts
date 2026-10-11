@@ -75,8 +75,7 @@ export function normalizeRecommendation(raw: unknown, index: number): CardRecomm
       title: str(r.title) || 'Задание',
       meta: [str(r.family), r.grade ? gradeLabel(str(r.grade)) : ''].filter(Boolean).join(' · ') || undefined,
       reason: str(r.reason) || undefined,
-      href: `/projects/${encodeURIComponent(r.taskId)}`,
-      cta: 'Открыть задание',
+      // Задание банка — тема для практики: своей страницы у него нет (/projects/:id — задания компаний), ссылки не даём.
     };
   }
   if (typeof r.vacancyId === 'string') {

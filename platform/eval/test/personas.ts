@@ -15,7 +15,7 @@
 //   npx tsx eval/test/personas.ts --sub engineering.devops      # --sub – синоним --subcategory
 //
 // Честная граница: это симуляция моделей знаний персон агентом, не живые люди. Матрицы знаний –
-// наша гипотеза (легенды: fsp/docs/research/22-persona-calibration.md владельца), a и b – экспертные.
+// наша гипотеза, a и b – экспертные.
 // В отличие от run.ts, вероятность ответа зависит не от θ, а от профиля знаний: так видно, что
 // порог пропускает «узкий» профиль, которого синтетика по θ не видит.
 import { generatorsFor } from '../../src/server/test/generators';
@@ -96,7 +96,7 @@ const PERSONAS: Persona[] = [
   // из ADR – новичок (N), пограничный новичок (NB), Junior (J), Junior с одной слабой темой (JW), Middle (M),
   // Middle с одной слабой темой (MW), Senior (S), идеальный Junior (I, контроль), пограничный Junior (JB, без цели). Пул попытки – 14 семейств
   // подкатегории (поле sub). Колонки – ENG_SUB: 6 Junior | 4 Middle | 4 Senior. Легенды – гипотеза агента
-  // по research/25 § 3.4, не люди. «Слабая тема» – одно семейство своего грейда целиком не решено.
+  // по § 3.4, не люди. «Слабая тема» – одно семейство своего грейда целиком не решено.
   { id: 'DN', spec: 'engineering', sub: 'engineering.data-eng', truth: 'below', legend: 'Excel-аналитик, курсы SQL 3 мес.', knows: eng('data-eng', [Y, H, X, X, X, X, X, X, X, X, X, X, X, X]) },
   { id: 'DNB', spec: 'engineering', sub: 'engineering.data-eng', truth: 'below', legend: 'аналитик, 6 мес. SQL-отчётов', knows: eng('data-eng', [Y, Y, H, H, X, X, H, X, X, X, X, X, X, X]) },
   { id: 'DJ', spec: 'engineering', sub: 'engineering.data-eng', truth: 'junior', legend: 'Junior data-инженер, 1 год ETL на SQL', knows: eng('data-eng', [Y, Y, Y, Y, Y, H, H, X, X, X, X, X, X, X]) },

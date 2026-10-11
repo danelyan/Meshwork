@@ -211,6 +211,7 @@ export const API_ACCESS = {
   '/api/call/[id]/events': 'session',
   '/api/call/[id]/recording': 'session',
   '/api/call/[id]/video': 'session',
+  '/api/call/[id]/telemetry': 'candidate',
   '/api/call/[id]/employer-audio': 'session',
   '/api/call/[id]/employer-audio/file': 'session',
   '/api/call/[id]/signal': 'session',

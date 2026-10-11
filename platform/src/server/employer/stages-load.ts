@@ -44,7 +44,7 @@ export async function loadStageEvidence(candidateIds: string[], companyId: strin
   // Пустой вердикт (DB NULL или JSON null) не должен затенять более старый валидный: distinct берёт первую строку.
   const finished = { candidateId: { in: candidateIds }, status: 'finished', NOT: { verdictJson: { equals: Prisma.AnyNull } } } satisfies Prisma.CallSessionWhereInput;
   const order = [{ finishedAt: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }] satisfies Prisma.CallSessionOrderByWithRelationInput[];
-  const select = { candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true, aiDefense: true } as const;
+  const select = { id: true, candidateId: true, kind: true, projectSubmissionId: true, verdictJson: true, aiDefense: true } as const;
   const [talks, defenses] = await Promise.all([
     prisma.callSession.findMany({ where: { ...finished, kind: { in: ['qualifying', 'interview'] } }, orderBy: order, distinct: ['candidateId', 'kind'], select }),
     prisma.callSession.findMany({ where: { ...finished, kind: 'defense', AND: [defenseVisibleTo(companyId)] }, orderBy: order, distinct: ['candidateId'], select }),
@@ -58,7 +58,7 @@ export async function loadStageEvidence(candidateIds: string[], companyId: strin
       if (!Array.isArray(v.depthMap)) continue;
       const prev = slot(c.candidateId).calls?.qualifying;
       if (prev && prev.evaluatedAt >= (v.evaluatedAt ?? '')) continue;
-      slot(c.candidateId).calls = { ...slot(c.candidateId).calls, qualifying: summarizeQualifying(publicVerdict(v)) };
+      slot(c.candidateId).calls = { ...slot(c.candidateId).calls, qualifying: { ...summarizeQualifying(publicVerdict(v)), callId: c.id } };
     } else {
       const v = c.verdictJson as unknown as DefenseRoomVerdict;
       if (!Array.isArray(v.flags)) continue;

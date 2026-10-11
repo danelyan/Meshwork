@@ -15,7 +15,7 @@ describe('шаблоны проектов на диске', () => {
     }
   });
 
-  it('исходные четырнадцать шаблонов (research/25 § 4 + Senior на активные подкатегории + учебные Junior runner) на месте', () => {
+  it('исходные четырнадцать шаблонов на месте', () => {
     expect(all.map((t) => `${t.manifest.subcategoryId}/${t.manifest.grade}/${t.manifest.id}`)).toEqual(expect.arrayContaining([
       'ai.llm-apps/middle/ai-llmapps-middle-rag',
       'ai.llm-apps/senior/ai-llmapps-senior-gateway',

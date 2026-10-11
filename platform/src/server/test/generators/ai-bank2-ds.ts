@@ -1,5 +1,4 @@
 // Расширение банка ai.data-science: +3 Junior, +5 Middle, +4 Senior (решение владельца 11.10).
-// Закрывает пробелы «прогноз» и «интерпретация» (docs/research/competitors/test-banks.md): скользящее среднее,
 // сезонный наив, экспоненциальное сглаживание, бэктест, r², доверительный интервал, стандартизация, CUPED, Holm.
 import { family, fx, sum } from './ai-bank2-util';
 import { table } from './ai-util';

@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { Chat } from '@/components/Chat';
+import { CallProvider, useCallMode } from '@/components/call/CallContext';
 
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 
@@ -368,5 +369,45 @@ describe('Chat: черновик', () => {
     first.unmount();
     render(<Chat />);
     expect((screen.getByLabelText('Сообщение') as HTMLTextAreaElement).value).toBe('');
+  });
+});
+
+describe('Chat: ход afterCall после завершённого созвона', () => {
+  function FinishCall() {
+    const call = useCallMode();
+    return (
+      <>
+        <button onClick={() => call?.start()}>открыть созвон</button>
+        <button
+          onClick={() => {
+            call?.markFinished();
+            call?.close();
+          }}
+        >
+          созвон завершён
+        </button>
+      </>
+    );
+  }
+  it('созвон завершён и панель закрыта → POST с afterCall без пузыря кандидата; повторно не шлётся', async () => {
+    vi.stubGlobal('EventSource', undefined);
+    const full = frame({ type: 'conversation', id: 'c1' }) + frame({ type: 'message', text: 'Созвон прошёл: индексы подтвердились.' }) + frame({ type: 'done' });
+    const fetchMock = vi.fn(async (url: string) => (url === '/api/consultant/messages' ? new Response(streamOf([full]), { status: 200 }) : Response.json({ consent: { given: true, version: 'v', text: [] }, calls: [] })));
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <CallProvider>
+        <FinishCall />
+        <Chat />
+      </CallProvider>,
+    );
+    fireEvent.click(screen.getByText('открыть созвон'));
+    fireEvent.click(screen.getByText('созвон завершён'));
+    await waitFor(() => expect(screen.getByText('Созвон прошёл: индексы подтвердились.')).toBeDefined());
+    const turn = fetchMock.mock.calls.find((c) => c[0] === '/api/consultant/messages') as unknown as [string, RequestInit];
+    const body = JSON.parse(turn[1].body as string);
+    expect(body.afterCall).toBe(true);
+    expect(body.text).toBe('');
+    expect(fetchMock.mock.calls.filter((c) => c[0] === '/api/consultant/messages')).toHaveLength(1);
+    expect(screen.queryByTestId('chat-user-bubble')).toBeNull();
   });
 });

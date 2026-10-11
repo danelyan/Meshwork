@@ -26,8 +26,9 @@ export const VacancyInput = z
     title: z.string().trim().min(3, 'Не короче 3 символов').max(120),
     specialization: SpecializationSchema,
     grade: GradeSchema,
-    salaryFrom: z.number().int().min(0).max(10_000_000),
-    salaryTo: z.number().int().min(0).max(10_000_000),
+    /** R-D-01: вилка обязательна и ненулевая — принятый отклик копирует её в приглашение без ввода работодателя. */
+    salaryFrom: z.number().int().min(1, 'Укажи зарплату «от»').max(10_000_000),
+    salaryTo: z.number().int().min(1, 'Укажи зарплату «до»').max(10_000_000),
     teamDescription: optText(2000),
     description: optText(2000),
     stack: z.array(z.string().max(40)).max(15).default([]).transform(normalizeStack),

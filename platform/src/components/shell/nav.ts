@@ -26,7 +26,8 @@ export const CANDIDATE_NAV: NavItem[] = [
   { href: '/career', icon: 'vacancies', label: 'Вакансии' },
   { href: '/companies', icon: 'companies', label: 'Компании' },
   { href: '/profile', icon: 'profile', label: 'Профиль', header: true },
-  { href: '/interview', icon: 'call', label: 'Созвон с ИИ' },
+  // Созвон с ИИ живёт в окне консультанта (единая точка, решение владельца 12.10): пункт открывает его сразу в режиме созвона.
+  { href: '/consultant?call=1', icon: 'call', label: 'Созвон с ИИ' },
   { href: '/saved', icon: 'saved', label: 'Избранное' },
   { href: '/settings', icon: 'settings', label: 'Настройки' },
 ];

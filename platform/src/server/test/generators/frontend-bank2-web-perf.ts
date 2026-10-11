@@ -1,5 +1,4 @@
 // Расширенный банк frontend.web-perf: +3 Junior, +5 Middle, +4 Senior (решение владельца 11.10).
-// Закрывает пробел «SSR и гидрация ниже Senior» (docs/research/competitors/test-banks.md).
 // Ключ считает код генератора по модели из условия; a, b – ПРЕДЛОЖЕНИЕ.
 import { createRng } from '../rng';
 import type { TaskInstance } from '../types';

@@ -1,22 +1,22 @@
-// Созвон кандидата с ИИ (lane call, ADR 0003). Ступень 1 – квалифицирующий созвон (kind=qualifying);
-// ступень 3 – защита проекта (kind=defense, lane defense-room) на тех же моделях, событиях и транскрипте.
+// Созвон кандидата с ИИ (lane call, ADR 0003). Ступень 1 — квалифицирующий созвон (kind=qualifying);
+// ступень 3 — защита проекта (kind=defense, lane defense-room) на тех же моделях, событиях и транскрипте.
 import type { Score } from '../defense/types';
 import type { InterviewSummary } from '../interview/types';
 import type { BlockId } from '../interview/model';
 
-// interview – ИИнтервью по модели компетенций (docs/competency-model.md, server/interview).
+// interview — ИИнтервью по модели компетенций (docs/competency-model.md, server/interview).
 export const CALL_KINDS = ['qualifying', 'defense', 'interview'] as const;
 export type CallKind = (typeof CALL_KINDS)[number];
 
-// pending – только kind=defense: приглашение на защиту проекта, кандидат ещё не начал (lane project).
+// pending — только kind=defense: приглашение на защиту проекта, кандидат ещё не начал (lane project).
 export const CALL_STATUSES = ['active', 'finished', 'cancelled', 'pending'] as const;
 export type CallStatus = (typeof CALL_STATUSES)[number];
 
-/** Кто говорит в созвоне. employer – живой работодатель в комнате защиты (defense-room). */
+/** Кто говорит в созвоне. employer — живой работодатель в комнате защиты (defense-room). */
 export const SPEAKER_ROLES = ['ai', 'candidate', 'employer'] as const;
 export type SpeakerRole = (typeof SPEAKER_ROLES)[number];
 
-/** Уровень вопроса: 1 – базовый, 2 – рабочий, 3 – глубокий (граница темы). */
+/** Уровень вопроса: 1 — базовый, 2 — рабочий, 3 — глубокий (граница темы). */
 export type QuestionLevel = 1 | 2 | 3;
 
 /** Сигнал маршрутизации интервьюера по последнему ответу. Не оценка: оценщик его не видит. */
@@ -30,7 +30,7 @@ export interface AiUtteranceMeta {
   level: QuestionLevel;
   /** Сигнал по предыдущему ответу кандидата, по которому выбран уровень этого вопроса. */
   routedBy: AnswerSignal | null;
-  /** true – вопрос из шаблона: модель не ответила валидно. */
+  /** true — вопрос из шаблона: модель не ответила валидно. */
   fallback?: boolean;
   /** Вопрос из очереди работодателя (defense-room). */
   employerQuestionId?: string;
@@ -41,19 +41,57 @@ export interface AiUtteranceMeta {
   block?: BlockId;
   /**
    * Кандидат перебил реплику (POST /api/call/{id}/interrupt): в `text` остался услышанный префикс с пометкой,
-   * `tail` – недосказанное (в историю не входит, интервьюер может к нему вернуться). Разбиение – lib/sentences.ts.
+   * `tail` — недосказанное (в историю не входит, интервьюер может к нему вернуться). Разбиение — lib/sentences.ts.
    */
   interrupted?: { heardSentences: number; totalSentences: number; tail: string };
-  /** Этап «разбор решённого задания теста»: шаг 1 – объяснить ход решения, шаг 2 – изменить условие. */
+  /** Этап «разбор решённого задания теста»: шаг 1 — объяснить ход решения, шаг 2 — изменить условие. */
   testReview?: { step: 1 | 2; templateId: string };
   /**
    * Потоковый режим (CALL_STREAMING): начало вопроса уже прозвучало, а ответ модели потом не прошёл проверки
-   * или оборвался – реплика собрана из прозвучавшего (+ вопрос из шаблона). Для разбора, на оценку не влияет.
+   * или оборвался — реплика собрана из прозвучавшего (+ вопрос из шаблона). Для разбора, на оценку не влияет.
    */
   streamCut?: boolean;
 }
 
-/** Одна реплика транскрипта (CallSession.transcriptJson – массив таких). */
+/**
+ * Телеметрия хода в браузере (useReplySpeech → POST /api/call/{id}/telemetry): водопад от конца речи кандидата
+ * до первого звука ответа. Хранится в `timing.client` реплики ИИ; на оценку не влияет.
+ */
+export interface ClientTurnTiming {
+  /** Конец речи (стоп детектора / отправка текста) → сегмент загружен и распознан (/audio), мс; null — текстом. */
+  uploadMs: number | null;
+  /** → первое предложение из потока (SSE), мс; null — потока не было. */
+  endToFirstDeltaMs: number | null;
+  /** → реплика целиком (ответ /turn), мс. */
+  endToReplyMs: number | null;
+  /** → первый звук ответа Киры, мс. */
+  endToSoundMs: number;
+  /** Первый звук был из потока. */
+  streamed: boolean;
+  /** → мгновенный ack («Угу…») из банка, мс; null — не играл. */
+  ackMs: number | null;
+}
+
+/**
+ * Тайминг реплики (телеметрия созвона, 11.10): у реплики кандидата — распознавание сегмента на сервере,
+ * у реплики ИИ — генерация и водопад из браузера. В вердикт и оценщику не передаётся.
+ */
+export interface EntryTiming {
+  /** role=candidate: STT сегмента на сервере, мс (из Server-Timing /audio, присылает клиент в /turn). */
+  sttMs?: number;
+  /** role=ai: генерация реплики целиком, мс. */
+  llmMs?: number;
+  /** role=ai: до первого предложения потока, мс; null — не стримилось. */
+  firstSentenceMs?: number | null;
+  /** role=ai: предложений ушло потоком. */
+  sentences?: number;
+  /** role=ai: потоковый режим (CALL_STREAMING). */
+  streaming?: boolean;
+  /** role=ai: водопад из браузера. */
+  client?: ClientTurnTiming;
+}
+
+/** Одна реплика транскрипта (CallSession.transcriptJson — массив таких). */
 export interface TranscriptEntry {
   /** 0-based порядковый номер реплики в созвоне. */
   index: number;
@@ -69,6 +107,8 @@ export interface TranscriptEntry {
   userId?: string;
   /** Только у role=ai. */
   meta?: AiUtteranceMeta;
+  /** Телеметрия хода (EntryTiming); у реплик до 11.10 поля нет. */
+  timing?: EntryTiming;
 }
 
 /** Баллы рубрики A-02 по одной теме (после проверки цитат кодом). */
@@ -81,10 +121,10 @@ export interface TopicScores {
 
 /**
  * Статус темы в карте глубины:
- * - confirmed / not_confirmed – прогоны оценщика согласны (≥ 75 % прогонов дали то же решение порога, что медиана);
- * - inconclusive – прогоны разошлись в решении порога даже после дополнительного вопроса: «не определено»,
+ * - confirmed / not_confirmed — прогоны оценщика согласны (≥ 75 % прогонов дали то же решение порога, что медиана);
+ * - inconclusive — прогоны разошлись в решении порога даже после дополнительного вопроса: «не определено»,
  *   утверждение не поднимается до platform;
- * - not_probed – тема заявлена (или выбрана платформой), но вопросов по ней не было: «не проверено».
+ * - not_probed — тема заявлена (или выбрана платформой), но вопросов по ней не было: «не проверено».
  */
 export const DEPTH_STATUSES = ['confirmed', 'not_confirmed', 'inconclusive', 'not_probed'] as const;
 export type DepthStatus = (typeof DEPTH_STATUSES)[number];
@@ -102,9 +142,9 @@ export interface DepthMapItem {
   probed: number;
   /** Самый глубокий уровень вопроса по теме (1–3). */
   maxLevel: QuestionLevel;
-  /** Порог рубрики пройден и прогоны согласны (status=confirmed). Для inconclusive/not_probed – false. */
+  /** Порог рубрики пройден и прогоны согласны (status=confirmed). Для inconclusive/not_probed — false. */
   confirmed: boolean;
-  /** Статус темы; в вердиктах до 10.10 поля нет – читать через depthStatus(). */
+  /** Статус темы; в вердиктах до 10.10 поля нет — читать через depthStatus(). */
   status: DepthStatus;
   /** Сколько прогонов оценщика дали то же решение порога, что медиана (из скольких). */
   agreement?: { same: number; of: number };
@@ -113,20 +153,20 @@ export interface DepthMapItem {
   /** Медиана трёх прогонов оценщика по каждому критерию. */
   scores: TopicScores;
   total: number;
-  /** Дословная цитата кандидата, на которую опирается оценка (пусто – опоры нет). */
+  /** Дословная цитата кандидата, на которую опирается оценка (пусто — опоры нет). */
   quote: string;
-  /** Баллы каждого прогона – для валидации повторяемости. */
+  /** Баллы каждого прогона — для валидации повторяемости. */
   runs: TopicScores[];
 }
 
-/** Статус строки карты глубины; старые вердикты без status – по confirmed. */
+/** Статус строки карты глубины; старые вердикты без status — по confirmed. */
 export function depthStatus(d: Pick<DepthMapItem, 'confirmed'> & { status?: DepthStatus }): DepthStatus {
   return d.status ?? (d.confirmed ? 'confirmed' : 'not_confirmed');
 }
 
 /**
  * Связь теста и созвона (11.10): объяснил ли кандидат ход решения заданий, которые решал в тесте.
- * Только сигнал: в ранжирование и категорию не входит. not_checked – этапа не было (нет попытки теста
+ * Только сигнал: в ранжирование и категорию не входит. not_checked — этапа не было (нет попытки теста
  * или кандидат завершил созвон раньше) либо оценка недоступна.
  */
 export const TEST_OWNERSHIP_STATUSES = ['explained', 'partial', 'failed', 'not_checked'] as const;
@@ -141,7 +181,7 @@ export const OWNERSHIP_LABEL: Record<TestOwnershipStatus, string> = {
 
 export interface TestOwnership {
   status: TestOwnershipStatus;
-  /** Попытка, задания которой разбирали (с 11.10): привязка созвона к попытке идёт по ней, шаблоны – для старых вердиктов. */
+  /** Попытка, задания которой разбирали (с 11.10): привязка созвона к попытке идёт по ней, шаблоны — для старых вердиктов. */
   attemptId?: string;
   /** Короткая причина от оценщика (≤ 240 символов). Работодателю до accepted не отдаётся. */
   reason: string;
@@ -166,18 +206,18 @@ export interface CallVerdict {
   disclaimer: string;
   /**
    * Промежуточная оценка (созвон ещё active): темы с расхождением прогонов получают дополнительный
-   * вопрос – `pendingProbes` (темы по порядку), после ответов finish досчитывает только их.
+   * вопрос — `pendingProbes` (темы по порядку), после ответов finish досчитывает только их.
    * Клиентам промежуточный вердикт не отдаётся (service.buildView).
    */
   interim?: boolean;
   pendingProbes?: string[];
-  /** kind=interview: оси, соответствие грейду, итог и компетенции (без цитат – можно отдавать при access=summary). */
+  /** kind=interview: оси, соответствие грейду, итог и компетенции (без цитат — можно отдавать при access=summary). */
   interview?: InterviewSummary;
 }
 
 /**
- * События SSE `GET /api/call/{id}/events`. Кадр – `event: <type>\ndata: <json>\n\n`.
- * defense-room переиспользует тот же enum: participant / mute / question / signal – его события.
+ * События SSE `GET /api/call/{id}/events`. Кадр — `event: <type>\ndata: <json>\n\n`.
+ * defense-room переиспользует тот же enum: participant / mute / question / signal — его события.
  */
 export const CALL_EVENT_TYPES = [
   /** Первый кадр: состояние созвона, как GET /api/call/{id} для этой роли. */
@@ -196,7 +236,7 @@ export const CALL_EVENT_TYPES = [
   'question',
   /** Готов вердикт оценщика. */
   'verdict',
-  /** Сигналинг WebRTC (sdp / ice) – defense-room. */
+  /** Сигналинг WebRTC (sdp / ice) — defense-room. */
   'signal',
   /** Ошибка на сервере (оценщик недоступен и т. п.). */
   'error',
@@ -219,10 +259,10 @@ export type CallEvent =
   | { type: 'verdict'; verdict: CallVerdict | PublicCallVerdict }
   | { type: 'signal'; from: string; to?: string; payload: unknown }
   | { type: 'error'; code: string; message: string }
-  /** afterIndex – index реплики кандидата, на которую отвечает ИИ; n – номер предложения с 0. */
+  /** afterIndex — index реплики кандидата, на которую отвечает ИИ; n — номер предложения с 0. */
   | { type: 'utterance_delta'; afterIndex: number; n: number; text: string };
 
-/** full – транскрипт, цитаты, запись; summary – только оценки по темам (до accepted-приглашения). */
+/** full — транскрипт, цитаты, запись; summary — только оценки по темам (до accepted-приглашения). */
 export type CallAccess = 'full' | 'summary';
 
 /** Вердикт для работодателя без доступа к записи: темы и баллы, без цитат кандидата. */
@@ -252,7 +292,7 @@ export interface CallView {
   hasRecording: boolean;
   /** Сегменты видео с камеры (комната звонка), только при доступе к записи; `GET /api/call/{id}/video?segment=`. */
   videoSegments: { name: string; startMs: number }[];
-  /** Сколько ответов кандидата и лимиты – для UI («вопрос 3 из 4–6»). */
+  /** Сколько ответов кандидата и лимиты — для UI («вопрос 3 из 4–6»). */
   progress: { answered: number; minQuestions: number; maxQuestions: number; canFinish: boolean; awaitingAnswer: boolean };
   participants: { userId: string; role: 'employer'; joinedAt: string; leftAt: string | null; aiMuted: boolean }[];
   policyVersion: string;
@@ -263,11 +303,11 @@ export interface CallView {
 export interface TurnResult {
   /** Реплика кандидата, как записана. */
   candidate: TranscriptEntry;
-  /** Реплика ИИ (null – ИИ замьючен работодателем или созвон закончен). */
+  /** Реплика ИИ (null — ИИ замьючен работодателем или созвон закончен). */
   ai: TranscriptEntry | null;
   text: string | null;
   /** TTS делает клиент через /api/tts; поле зарезервировано контрактом. */
   audioUrl?: string;
-  /** true – вопросов достаточно, следующий шаг – finish. */
+  /** true — вопросов достаточно, следующий шаг — finish. */
   done: boolean;
 }

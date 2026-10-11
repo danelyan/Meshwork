@@ -8,6 +8,7 @@ import { employerMayAccess, redactSnapshot, resolveViewer, type Viewer } from '.
 import { assertLiveRoomOpen } from '../live-defense/service';
 import { publish } from './bus';
 import { EMPLOYER_RECORDING_NOTICE_VERSION } from './employer-audio';
+import { ethicsNotice, rejectMessage, sensitiveTopics } from './ethics';
 import { buildSnapshot, employerItem, ICE_SERVERS, resumeAi } from './session';
 import { appendEntries, asVerdict, isAiMuted, loadPlan, savePlan, tryLockPlan, unlockPlan } from './store';
 import type { CallSnapshot, DefenseFlag, TranscriptEntry } from './types';
@@ -107,15 +108,28 @@ export async function muteAi(principal: SessionPrincipal | null, sessionId: stri
   return { muted, aiText: resumed?.text ?? null };
 }
 
-/** Реплика работодателя в транскрипт; кандидат слышит её вторым голосом TTS (или вживую, если поднялось P2P-аудио). */
-export async function employerSay(principal: SessionPrincipal | null, sessionId: string, rawText: string): Promise<{ entry: TranscriptEntry }> {
+/**
+ * Реплика работодателя в транскрипт; кандидат слышит её вторым голосом TTS (или вживую, если поднялось P2P-аудио).
+ * Работодатель взял слово — ИИ уступает (мьют его строки участника): иначе после первого же ответа кандидата
+ * Кира перебила бы разговор «Вернёмся к вопросу». Вернуть ИИ — «ИИ говорит» или выход из комнаты.
+ * Реплика на защищённую тему (ethics.ts) не блокируется, но Кира сразу делает ремарку — даже при мьюте.
+ */
+export async function employerSay(principal: SessionPrincipal | null, sessionId: string, rawText: string): Promise<{ entry: TranscriptEntry; notice: TranscriptEntry | null }> {
   const { viewer, session } = await employerViewer(principal, sessionId);
-  await requireJoined(viewer, sessionId, session.status);
+  const p = await requireJoined(viewer, sessionId, session.status);
   const text = rawText.trim();
   if (!text) throw errors.badRequest('Пустая реплика');
   if (text.length > EMPLOYER_QUESTION_LIMITS.maxSayChars) throw errors.payloadTooLarge(`Реплика длиннее ${EMPLOYER_QUESTION_LIMITS.maxSayChars} символов`);
-  const [entry] = await appendEntries(sessionId, [{ role: 'employer', text, userId: viewer.userId, defense: { speaker: viewer.companyName, companyId: viewer.companyId } }]);
-  return { entry: entry! };
+  const topics = sensitiveTopics(text);
+  const [entry, notice] = await appendEntries(sessionId, [
+    { role: 'employer', text, userId: viewer.userId, defense: { speaker: viewer.companyName, companyId: viewer.companyId } },
+    ...(topics.length ? [{ role: 'ai' as const, text: ethicsNotice(topics), defense: { kind: 'notice' as const, companyId: viewer.companyId } }] : []),
+  ]);
+  if (!p.aiMuted) {
+    await prisma.callParticipant.update({ where: { id: p.id }, data: { aiMuted: true } });
+    publish(sessionId, { type: 'mute', aiMuted: true, userId: viewer.userId });
+  }
+  return { entry: entry!, notice: notice ?? null };
 }
 
 // ---------------------------------------------------------------------------
@@ -139,6 +153,9 @@ export async function createEmployerQuestion(
   if (!(await employerMayAccess(ctx.companyId, input.candidateId))) throw errors.notFound('Кандидат не найден');
   const text = input.text.trim();
   if (text.length < EMPLOYER_QUESTION_LIMITS.minChars) throw errors.badRequest('Вопрос слишком короткий');
+  // Вопрос из очереди зачитывает Кира от имени компании: вопрос на защищённую тему в очередь не встаёт.
+  const topics = sensitiveTopics(text);
+  if (topics.length) throw new AppError('question_not_job_related', rejectMessage(topics), 400);
   const queued = await prisma.employerQuestion.count({ where: { companyId: ctx.companyId, candidateId: input.candidateId, status: { in: ['queued', 'asked'] } } });
   if (queued >= EMPLOYER_QUESTION_LIMITS.maxQueuedPerCandidate) {
     throw errors.rateLimited(`В очереди уже ${queued} вопросов этому кандидату - дождись ответов`);

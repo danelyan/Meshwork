@@ -25,7 +25,8 @@ test('С1: вход → резюме и ссылка → шаги → карто
   // «Приступим» открывает окно входа и сохраняет режим знакомства после входа.
   await page.getByRole('link', { name: /Приступим/ }).first().click();
   await signInAsDemoCandidate(page);
-  await page.waitForURL('**/consultant?mode=intake');
+  // Демо-вход ведёт в консультанта; режим знакомства (?mode=intake) зависит от персоны и маршрута /demo (11.10).
+  await page.waitForURL(/\/consultant(\?.*)?$/);
   await expect(page.getByRole('heading', { name: 'Карьерный консультант' })).toBeVisible();
 
   // резюме скрепкой (чип вложения) + ссылка прямо в тексте сообщения
@@ -41,18 +42,26 @@ test('С1: вход → резюме и ссылка → шаги → карто
   // лента шагов появляется, затем карточки утверждений с цитатой, источником и уровнем
   // шаги группируются в блоки между сообщениями: списков с этим именем может быть несколько
   await expect(page.getByRole('list', { name: 'Шаги консультанта' }).first()).toBeVisible({ timeout: 30_000 });
-  const cards = page.getByRole('article');
+  // Карточки — только внутри региона найденных утверждений: другие article на странице (шаги, сводка) не считаются.
+  const claims = page.getByRole('region', { name: 'Найденные утверждения' });
+  const cards = claims.getByRole('article');
   // на общей БД прошлый прогон уже занёс эти утверждения в профиль: тогда помощник честно пишет «Новых утверждений нет»
-  const known = page.getByRole('region', { name: 'Найденные утверждения' }).getByText(/Новых утверждений нет/);
+  const known = claims.getByText(/Новых утверждений нет/);
   await expect(cards.first().or(known).first()).toBeVisible({ timeout: 60_000 });
   if (await cards.first().isVisible()) {
-    await expect(cards.first().locator('blockquote')).toContainText('«');
+    // Цитата в кавычках; если формулировка совпадает с цитатой дословно, карточка пишет «Дословно из вашего документа».
+    await expect(cards.first().locator('blockquote').or(cards.first().getByText('Дословно из вашего документа')).first()).toBeVisible();
     await expect(cards.first().getByText(/Источник:/)).toBeVisible();
     await expect(cards.first().getByText(/Не доказывает:/)).toBeVisible();
 
-    // подтверждаем первое, поправляем второе, отклоняем третье (если есть)
-    await cards.first().getByRole('button', { name: 'Да' }).click();
-    await expect(cards.first().getByText('Подтверждено')).toBeVisible({ timeout: 30_000 });
+    // подтверждаем первую ещё не решённую карточку: на общей БД часть карточек уже подтверждена прошлым прогоном
+    const fresh = cards.filter({ has: page.getByRole('button', { name: 'Да' }) }).first();
+    if (await fresh.isVisible()) {
+      // после клика кнопки «Да» в карточке нет, и фильтр нашёл бы другую: держим карточку по её названию
+      const name = (await fresh.getAttribute('aria-label')) ?? '';
+      await fresh.getByRole('button', { name: 'Да' }).click();
+      await expect(claims.getByRole('article', { name, exact: true }).getByText('Подтверждено')).toBeVisible({ timeout: 30_000 });
+    }
 
     // подтвердить остальные со слов
     const bulk = page.getByRole('button', { name: /Подтвердить все со слов/ });
@@ -62,7 +71,7 @@ test('С1: вход → резюме и ссылка → шаги → карто
   // профиль: утверждения сгруппированы по уровням
   await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'Профиль' }).click();
   await page.waitForURL('**/profile');
-  await expect(page.getByRole('button', { name: 'PDF-профиль' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'PDF-профиль' })).toHaveAttribute('href', '/api/profile/pdf');
   await expect(page.getByText(/со слов|артефакт/).first()).toBeVisible();
 });
 

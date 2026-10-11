@@ -6,7 +6,7 @@ import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from '../call/conse
 import { assertAiAssessmentConsent, hasAiAssessmentConsent } from '../consent/service';
 import { CALL_LIMITS } from '../call/plan';
 import { prisma } from '../db';
-import { getEnv } from '../env';
+import { getSetting } from '../admin/settings';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
 import { assertLiveRoomOpen } from '../live-defense/service';
@@ -161,7 +161,8 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   if (active) return { sessionId: active.id, resumed: true, webrtc: { iceServers: ICE_SERVERS }, snapshot: await buildSnapshot(active.id) };
 
   // Общий суточный лимит с созвонами лейна call: защита и квалифицирующий созвон считаются вместе.
-  const dailyLimit = getEnv().CALL_DAILY_LIMIT;
+  // Настройка админки, как в call/service.ts (решение владельца 11.10: по умолчанию 0 — без лимита).
+  const dailyLimit = await getSetting('call.dailyLimit');
   // Демо-кандидаты общие для жюри и команды — лимит на них не действует (как в call/service.ts).
   const demo = dailyLimit > 0 && (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { isDemo: true } }))?.isDemo === true;
   if (dailyLimit > 0 && !demo) {

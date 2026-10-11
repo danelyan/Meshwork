@@ -25,6 +25,7 @@ export async function listCompanyCards(): Promise<CompanyCard[]> {
 export async function getCompanyDetail(id: string): Promise<CompanyDetail | null> {
   const row = await prisma.company.findUnique({ where: { id }, select: SELECT });
   if (!row || !row.vacancies.length) return null;
-  const [card] = buildCatalog([row as CompanyRow]);
+  const card = buildCatalog([row as CompanyRow])[0];
+  if (!card) return null;
   return { ...card, fullDescription: row.description, vacancies: (row as CompanyRow).vacancies };
 }

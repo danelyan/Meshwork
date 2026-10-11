@@ -146,9 +146,11 @@ class Lifecycle(unittest.TestCase):
         burst(eng, "a", 0, 10)
         eng.evaluate()
         clock.t += 119
+        burst(eng, "a", 0, 10)  # ошибки продолжаются: короткое окно (60 с) должно по-прежнему гореть
         eng.evaluate()
         self.assertEqual(eng.state("Burn", "a"), "pending")
         clock.t += 1
+        burst(eng, "a", 0, 10)
         eng.evaluate()
         self.assertEqual(eng.state("Burn", "a"), "firing")
         self.assertEqual(eng.alerts()[0]["since"], 1120)
@@ -220,10 +222,12 @@ class Silences(unittest.TestCase):
         self.assertEqual({x["service"]: x["silenced"] for x in eng.alerts()}, {"a": True, "b": False})
         clock.t += 299
         burst(eng, "a", 0, 5)
+        burst(eng, "b", 0, 5)
         eng.evaluate()
         self.assertEqual(len(sent), 1)
         clock.t += 1
         burst(eng, "a", 0, 5)
+        burst(eng, "b", 0, 5)
         eng.evaluate()
         self.assertEqual([n["labels"]["service"] for n in sent], ["b", "a"])
         self.assertFalse(eng.alerts()[0]["silenced"])
@@ -266,7 +270,7 @@ class Silences(unittest.TestCase):
         eng2, clock2, sent2 = make()
         burst(eng2, "a", 0, 10)
         eng2.evaluate()
-        eng2.add_silence({"alertname": "Burn"}, 50)
+        eng2.add_silence({"alertname": "Burn"}, 750)  # действует до 1750, evaluate в 1700 - под молчанием
         clock2.t += 700
         eng2.evaluate()
         self.assertEqual(types(sent2), ["firing"])  # resolved под молчанием не отправлен и не досылается

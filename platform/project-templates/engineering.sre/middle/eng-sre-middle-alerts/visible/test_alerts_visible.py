@@ -53,6 +53,7 @@ class AlertsVisible(unittest.TestCase):
         eng.evaluate()
         self.assertEqual(eng.state("Burn", "api"), "pending")
         clock.t += 120
+        burst(eng, "api", 0, 10)  # ошибки продолжаются: короткое окно (60 с) должно по-прежнему гореть
         eng.evaluate()
         self.assertEqual(eng.state("Burn", "api"), "firing")
         clock.t += 700

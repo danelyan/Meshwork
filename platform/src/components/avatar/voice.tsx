@@ -31,6 +31,8 @@ export interface CompanionVoice {
   /** Озвучить по клику (повтор сообщения, тест) — независимо от переключателя. */
   replay: (text: string, key?: string) => void;
   stop: () => void;
+  /** Приглушить (on) или вернуть громкость текущей реплики линейной рампой, не останавливая её (duck вместо kill). */
+  duck: (on: boolean, gain?: number, rampMs?: number) => void;
   setThinking: (thinking: boolean) => void;
   /** Текущая громкость (RMS 0…1) звучащей реплики; 0 — тишина. */
   getLevel: () => number;
@@ -46,11 +48,6 @@ export interface CompanionVoice {
   speakingKey: string | null;
   /** Прогресс воспроизведения звучащей реплики 0…1 (по часам AudioContext); 0 — тишина или загрузка. */
   getProgress: () => number;
-  /**
-   * Короткий клип (ack «Угу…») по URL: играет через тот же граф (рот аватара двигается), не трогает очередь реплик.
-   * Не играет, если звук не разблокирован или сейчас звучит/грузится реплика; ошибки глотает. Резолвится по окончании клипа.
-   */
-  playClip: (url: string) => Promise<void>;
 }
 
 export { COMPANION_SAY_EVENT };
@@ -91,6 +88,8 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
   const availableRef = useRef<boolean | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  /** Громкость выхода: источники → analyser → gain → destination (analyser видит полный сигнал — lipsync не глохнет при duck). */
+  const gainRef = useRef<GainNode | null>(null);
   const bufRef = useRef<Float32Array<ArrayBuffer> | null>(null);
   const freqRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const lipRef = useRef<LipSync | null>(null);
@@ -100,9 +99,6 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
   const runningRef = useRef(false);
   const startedAtRef = useRef(0);
   const durationRef = useRef(0);
-  const clipSrcRef = useRef<AudioBufferSourceNode | null>(null);
-  const clipCacheRef = useRef(new Map<string, Promise<AudioBuffer | null>>());
-  const [clipping, setClipping] = useState(false);
 
   /** Создать/разбудить AudioContext. Только синхронно из жеста пользователя (политика автозапуска). */
   const unlock = useCallback((): boolean => {
@@ -116,7 +112,13 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
       const ctx = new Ctor();
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 1024;
-      analyser.connect(ctx.destination);
+      // Без GainNode (усечённые реализации, подделки в тестах) — прямой выход, duck не действует.
+      if (typeof ctx.createGain === 'function') {
+        const gain = ctx.createGain();
+        analyser.connect(gain);
+        gain.connect(ctx.destination);
+        gainRef.current = gain;
+      } else analyser.connect(ctx.destination);
       ctxRef.current = ctx;
       analyserRef.current = analyser;
       bufRef.current = new Float32Array(analyser.fftSize);
@@ -197,37 +199,50 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
     }
   }, []);
 
+  /** Рампа громкости: снять запланированное, закрепить текущее значение (рампа идёт от предыдущего события), рампа к target. */
+  const rampGain = useCallback((target: number, rampMs: number) => {
+    const ctx = ctxRef.current;
+    const g = gainRef.current?.gain;
+    if (!ctx || !g) return;
+    const now = ctx.currentTime;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    if (rampMs > 0) g.linearRampToValueAtTime(target, now + rampMs / 1000);
+    else g.setValueAtTime(target, now);
+  }, []);
+
+  const duck = useCallback(
+    (on: boolean, gain = 0.12, rampMs = on ? 120 : 250) => {
+      rampGain(on ? gain : 1, rampMs);
+    },
+    [rampGain],
+  );
+
   const enqueue = useCallback(
     (raw: string, key?: string) => {
       const text = speechText(raw);
       if (!text || availableRef.current === false) return;
-      try {
-        clipSrcRef.current?.stop(); // ack «Угу…» не должен накладываться на ответ
-      } catch {
-        /* уже остановлен */
-      }
+      if (!runningRef.current) rampGain(1, 0); // новая реплика — полная громкость
       queueRef.current.push({ ...fetchAudio(text), text: raw, key });
       void pump();
     },
-    [fetchAudio, pump],
+    [fetchAudio, pump, rampGain],
   );
 
   const stop = useCallback(() => {
+    rampGain(1, 0);
     for (const p of queueRef.current) p.ctrl.abort();
     queueRef.current = [];
     const src = sourceRef.current;
     sourceRef.current = null;
-    const clip = clipSrcRef.current;
-    clipSrcRef.current = null;
-    for (const s of [src, clip]) {
-      if (!s) continue;
+    if (src) {
       try {
-        s.stop();
+        src.stop();
       } catch {
         /* уже остановлен */
       }
     }
-  }, []);
+  }, [rampGain]);
 
   const checkAvailable = useCallback(async () => {
     if (availableRef.current !== null) return availableRef.current;
@@ -293,7 +308,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
   const getLevel = useCallback(() => {
     const analyser = analyserRef.current;
     const buf = bufRef.current;
-    if (!analyser || !buf || !(sourceRef.current || clipSrcRef.current)) return 0;
+    if (!analyser || !buf || !sourceRef.current) return 0;
     analyser.getFloatTimeDomainData(buf);
     return rms(buf);
   }, []);
@@ -303,7 +318,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
     const analyser = analyserRef.current;
     const freq = freqRef.current;
     const lip = lipRef.current;
-    if (!analyser || !freq || !lip || !(sourceRef.current || clipSrcRef.current)) return null;
+    if (!analyser || !freq || !lip || !sourceRef.current) return null;
     const now = performance.now();
     if (now - lipAtRef.current >= 8) {
       const dt = lipAtRef.current ? Math.min((now - lipAtRef.current) / 1000, 0.1) : 1 / 60;
@@ -350,45 +365,10 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
     [stop],
   );
 
-  const playClip = useCallback(async (url: string): Promise<void> => {
-    const ctx = ctxRef.current;
-    const analyser = analyserRef.current;
-    if (!ctx || !analyser || ctx.state !== 'running' || !enabledRef.current) return;
-    if (queueRef.current.length > 0 || sourceRef.current || clipSrcRef.current) return;
-    let p = clipCacheRef.current.get(url);
-    if (!p) {
-      p = (async () => {
-        const res = await fetch(url);
-        if (!res.ok) return null;
-        return ctx.decodeAudioData(await res.arrayBuffer());
-      })().catch(() => null);
-      clipCacheRef.current.set(url, p);
-    }
-    const buffer = await p;
-    // За время загрузки могла зазвучать реплика или клип — тогда молчим.
-    if (!buffer || ctxRef.current !== ctx || queueRef.current.length > 0 || sourceRef.current || clipSrcRef.current) return;
-    await new Promise<void>((resolve) => {
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.connect(analyser);
-      src.onended = () => resolve();
-      clipSrcRef.current = src;
-      lipRef.current?.reset();
-      setClipping(true);
-      try {
-        src.start();
-      } catch {
-        resolve();
-      }
-    });
-    clipSrcRef.current = null;
-    setClipping(false);
-  }, []);
-
-  const status: VoiceStatus = playing ?? (clipping ? 'speaking' : thinking ? 'thinking' : 'idle');
+  const status: VoiceStatus = playing ?? (thinking ? 'thinking' : 'idle');
   const value = useMemo<CompanionVoice>(
-    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress, playClip }),
-    [enabled, status, available, notice, toggle, speak, replay, stop, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress, playClip],
+    () => ({ enabled, status, available, notice, toggle, speak, replay, stop, duck, setThinking: setThinkingState, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress }),
+    [enabled, status, available, notice, toggle, speak, replay, stop, duck, getLevel, getMouth, getViseme, getFeatures, speakingText, speakingKey, getProgress],
   );
   return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;
 }

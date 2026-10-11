@@ -112,3 +112,14 @@ export function isBackchannel(text: string): boolean {
   if (!t || t.length > BACKCHANNEL_MAX_CHARS) return false;
   return BACKCHANNEL.has(t) || t.split(' ').every((w) => BACKCHANNEL.has(w));
 }
+
+/** Жёсткое перебивание: команда замолчать, а не ответ — перебивает Киру всегда и не уходит ходом. */
+const HARD_INTERRUPT = new Set(['стоп', 'стой', 'стойте', 'подожди', 'подождите', 'погоди', 'погодите', 'хватит', 'не надо', 'не нужно', 'секунду', 'минуту', 'помолчи', 'тише', 'перестань']);
+
+export function isHardInterrupt(text: string): boolean {
+  const t = text.toLowerCase().replace(/ё/g, 'е').replace(/[^\p{L}\p{N}\s]+/gu, ' ').replace(/\s+/g, ' ').trim();
+  if (!t) return false;
+  if (HARD_INTERRUPT.has(t)) return true;
+  const [a = '', b] = t.split(' ');
+  return HARD_INTERRUPT.has(a) || (b !== undefined && HARD_INTERRUPT.has(`${a} ${b}`));
+}

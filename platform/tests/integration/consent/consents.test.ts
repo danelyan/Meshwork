@@ -194,6 +194,8 @@ describe('согласия (ADR 0005)', () => {
     expect(ok.status).toBe(200);
     expect(await contactsSeenByEmployer()).toEqual({ name: 'Анна Кандидатова', contact: '@anna' });
     await prisma.callSession.create({ data: { id: 'def-1', candidateId: CAND, kind: 'defense', status: 'finished', policyVersion: 'v' } });
+    // ADR 0008: живая защита доступна только компании, чьи вопросы в ней отвечены.
+    await prisma.employerQuestion.create({ data: { companyId: 'co-c', candidateId: CAND, text: 'Как проверяли API?', answeredInCallSessionId: 'def-1', status: 'answered' } });
     const ctx = await loadEmployerContext('p-emp');
     expect((await listEmployerCalls(ctx)).map((c) => c.candidateName)).toEqual(['Анна Кандидатова']);
     const d = await prisma.consent.findFirstOrThrow({ where: { userId: 'u-cand', kind: 'identity_disclosure' } });

@@ -1,0 +1,19 @@
+{
+  "id": "eng-devops-middle-ci-runner",
+  "subcategoryId": "engineering.devops",
+  "specialization": "engineering",
+  "grade": "middle",
+  "title": "Исполнитель CI-пайплайна: DAG шагов, параллелизм, кеш",
+  "summary": "Планирование и запуск шагов пайплайна по графу зависимостей: топосортировка, лимит параллелизма, повторы, кеш по входам, пропуск зависимых при падении, отчёт",
+  "stack": ["python312", "pytest"],
+  "catalogIds": ["eng.ci-cd", "common.ci-basics", "eng.orchestration"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "eng-devops-junior-deploycfg",
+  "subcategoryId": "engineering.devops",
+  "specialization": "engineering",
+  "grade": "junior",
+  "title": "Валидатор конфигурации деплоя: секреты, ресурсы, понятные ошибки",
+  "summary": "Проверка JSON-конфига выкладки сервиса: обязательные поля и типы, образ с тегом, секреты только по ссылке, лимиты ресурсов; список ошибок с путями",
+  "stack": ["python312", "json", "pytest"],
+  "catalogIds": ["eng.secrets", "eng.k8s-resources", "common.ci-basics"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 60,
+  "timeBudgetMin": 150,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

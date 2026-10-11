@@ -1,0 +1,19 @@
+{
+  "id": "be-datamodel-senior-audit",
+  "subcategoryId": "backend.data-model",
+  "specialization": "backend",
+  "grade": "senior",
+  "title": "Версионируемые записи: аудит, оптимистичная блокировка, состояние на дату",
+  "summary": "Каталог позиций поверх SQLite: мягкое удаление и восстановление, оптимистичная блокировка по версии под конкурентными записями, неизменяемый журнал изменений, откат к версии, запрос «состояние на дату»; DESIGN.md",
+  "stack": ["python312", "sqlite3", "pytest"],
+  "catalogIds": ["be.sql-schema", "be.transactions", "be.concurrency", "common.sql-queries"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

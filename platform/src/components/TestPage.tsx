@@ -389,6 +389,21 @@ export function ItemScreen({
     }
   }
 
+  /** Досрочное завершение: сбой API показываем там же, где ошибку отправки ответа, иначе нажатие выглядит как ничего. */
+  async function finish() {
+    if (pending) return;
+    if (!window.confirm('Завершить тест сейчас? Итог будет посчитан по уже данным ответам.')) return;
+    setPending(true);
+    setError(null);
+    try {
+      await onFinish();
+    } catch (err) {
+      setError(errorText(err, 'Не удалось завершить тест.'));
+    } finally {
+      setPending(false);
+    }
+  }
+
   const numbered = item.format === 'line';
   const probe = attempt.phase === 'junior_probe' || attempt.phase === 'middle_probe';
   return (
@@ -454,12 +469,7 @@ export function ItemScreen({
             <Button type="submit" variant="primary" loading={pending} disabled={!answer.trim()} data-testid="submit">
               Ответить
             </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                if (window.confirm('Завершить тест сейчас? Итог будет посчитан по уже данным ответам.')) void onFinish();
-              }}
-            >
+            <Button size="sm" disabled={pending} onClick={() => void finish()}>
               Завершить досрочно
             </Button>
           </div>

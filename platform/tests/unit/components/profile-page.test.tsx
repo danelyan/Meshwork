@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { ProfilePage } from '@/components/ProfilePage';
 
@@ -55,6 +55,24 @@ describe('ProfilePage: у блоков один дом', () => {
     expect(fetcher).toHaveBeenCalledWith('/api/claims/c1/edit', expect.objectContaining({ method: 'POST', body: JSON.stringify({ statement: 'Разработал API для заказов' }) }));
     expect(screen.queryByLabelText('Уточните формулировку')).toBeNull();
     expect(screen.queryByText(/профиль виден только вам/)).toBeNull();
+  });
+
+  it('после успешного «Да» элемент не остаётся занятым: «Сохранить формулировку» доступна без перезагрузки', async () => {
+    let confirmed = false;
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url === '/api/claims/c1/confirm') confirmed = true;
+      const body = url === '/api/profile'
+        ? { candidate: { id: 'x', name: 'Тест', specialization: null, fspState: 'not_linked' }, category: null, claims: [claim(confirmed ? 'confirmed' : 'proposed')], byLevel: {} }
+        : url.startsWith('/api/test') ? { attempts: [] } : { targets: [], gaps: [], tasks: [], calls: [] };
+      return { ok: true, status: 200, json: async () => body };
+    }));
+    render(<ProfilePage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Да' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Да' })).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить формулировку' }));
+    const save = screen.getByRole('button', { name: 'Сохранить формулировку' }) as HTMLButtonElement;
+    await waitFor(() => expect(save.disabled).toBe(false));
+    expect(save.getAttribute('aria-busy')).toBeNull();
   });
 });
 

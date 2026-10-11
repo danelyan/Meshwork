@@ -178,6 +178,26 @@ describe('TestPage', () => {
     expect(input.value).toBe('');
   });
 
+  it('«Завершить досрочно»: сбой API виден пользователю, задание остаётся на экране', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/test/attempt/att1/finish') {
+          return { ok: false, status: 500, json: async () => ({ error: { code: 'internal', message: 'Сервис временно недоступен.' } }) };
+        }
+        const body = url.startsWith('/api/test/start?') ? { allowed: true, rules: 'r' } : url === '/api/test/attempt/att1' ? active(2) : { test: null };
+        return { ok: true, status: 200, json: async () => body };
+      }),
+    );
+    search = 'attempt=att1';
+    render(<TestPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Завершить досрочно' }));
+    expect((await screen.findByText('Сервис временно недоступен.')).textContent).toBeTruthy();
+    expect(screen.getByTestId('progress').textContent).toContain('Задание 3');
+    expect((screen.getByRole('button', { name: 'Завершить досрочно' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it('фаза дозадавания Junior: подпись прогресса и нейтральная плашка без промежуточного итога', async () => {
     stubFetch((url) => (url === '/api/test/attempt/att1' ? { ...active(10), phase: 'junior_probe', maxItems: 13 } : {}));
     search = 'attempt=att1';

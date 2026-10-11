@@ -20,7 +20,6 @@ import styles from './CallPanel.module.css';
 import { useCallMode } from './CallContext';
 import { DepthMap } from './DepthMap';
 import { DevicePreflight } from './DevicePreflight';
-import { useAck } from './useAck';
 import { TALK_LABEL, useCallTalk } from './useCallTalk';
 import { useReplySpeech } from './useReplySpeech';
 import { ObjectionButton } from '../consent/ObjectionButton';
@@ -159,7 +158,7 @@ export function CallPanel() {
     active: phase === 'live' && !textOnly,
     voice,
     busy,
-    onPhrase: async ({ pcm, browserText }, decide) => {
+    onPhrase: async ({ pcm, browserText }) => {
       if (!id) return false;
       markSpeechEnd();
       let audioRef: string | undefined;
@@ -175,11 +174,8 @@ export function CallPanel() {
       }
       // Шум без слов — не ответ: молча слушаем дальше.
       if (!text.trim()) return false;
-      // Семантический фильтр (lib/interrupt.ts): поддакивание поверх Киры и команда «стоп» — не ход.
-      const d = decide(text);
-      if (d === 'ignore' || d === 'hard') return false;
-      if (busyRef.current || d === 'queue') {
-        // Кира ещё думает или готовит озвучку: договорённое уходит следующим ходом, ответ звучит целиком.
+      if (busyRef.current) {
+        // Кира ещё думает: договорённое уходит следующим ходом.
         const p = pending.current;
         pending.current = { text: p ? `${p.text} ${text}` : text, ...((p?.audioRef ?? audioRef) ? { audioRef: p?.audioRef ?? audioRef } : {}) };
         return true;
@@ -187,9 +183,13 @@ export function CallPanel() {
       await sendRef.current({ text, ...(audioRef ? { audioRef } : {}) });
       return true;
     },
+    onResume: () => {
+      const ai = lastAiRef.current;
+      if (busyRef.current || !ai || !id) return;
+      replays.current += 1;
+      voiceRef.current?.speak(ai.text, `call-${id}-${ai.index}-again${replays.current}`);
+    },
   });
-  const ack = useAck({ voice, enabled: phase === 'live' && !textOnly, userSpeaking: talk.state === 'user' });
-  const onAckTurn = ack.onTurn;
   const hushed = talk.hushed;
   const unhush = talk.unhush;
   useEffect(() => {
@@ -252,7 +252,6 @@ export function CallPanel() {
       setBusy(true);
       setError(null);
       voiceRef.current?.stop();
-      if (input.text) onAckTurn(input.text);
       try {
         const r = await callApi.turn(id, input);
         setTranscript((t) => merge(t, [r.candidate, r.ai]));
@@ -263,14 +262,13 @@ export function CallPanel() {
         setBusy(false);
       }
     },
-    [id, markSpeechEnd, unhush, onAckTurn],
+    [id, markSpeechEnd, unhush],
   );
   sendRef.current = send;
 
   const finish = async () => {
     if (!id) return;
     talk.stop();
-    ack.cancel();
     pending.current = null;
     voiceRef.current?.stop();
     // Последний сегмент видео дописываем, пока созвон ещё активен (после finish сервер видео не примет).
@@ -322,21 +320,13 @@ export function CallPanel() {
   const startedAt = call ? new Date(call.startedAt).getTime() : now;
   const canFinish = answered > 0 && !busy;
   const canAnswer = Boolean(last && last.role === 'ai' && last.meta) && !closing && phase === 'live';
-  // Фраза, сказанная пока Кира думала, уходит, когда ответ пришёл и прозвучал (send() останавливает озвучку).
-  // Пауза — чтобы озвучка ответа успела начаться (статус loading), прежде чем решить, что Кира молчит.
-  const voiceStatus = voice?.status;
+  // Фраза, сказанная пока Кира думала, уходит, как только ответ пришёл.
   useEffect(() => {
     if (busy || !canAnswer || !pending.current) return;
-    if (voiceStatus === 'speaking' || voiceStatus === 'loading') return;
-    const t = setTimeout(() => {
-      const s = voiceRef.current?.status;
-      if (s === 'speaking' || s === 'loading' || !pending.current) return;
-      const p = pending.current;
-      pending.current = null;
-      void send(p);
-    }, 150);
-    return () => clearTimeout(t);
-  }, [busy, canAnswer, send, voiceStatus]);
+    const p = pending.current;
+    pending.current = null;
+    void send(p);
+  }, [busy, canAnswer, send]);
   const progress = call?.progress;
   const summary = interview ? summaryOf(call?.verdict) : null;
   const stage = phase === 'done' ? 'summary' : stageOf(turnsOf(transcript), closing);
@@ -358,8 +348,9 @@ export function CallPanel() {
         <span className={styles.badge}>{'Созвон с ИИ'}</span>
         {(phase === 'live' || phase === 'finishing') && (
           <span className={styles.rec} role="status" data-testid="call-rec">
-            <i className={styles.recDot} aria-hidden="true" />
-            Запись {mmss(now - startedAt)}
+            {/* Текстовый режим: аудио не сохраняется (подсказка ниже) - только таймер, без точки и слова «Запись». */}
+            {!textOnly && <i className={styles.recDot} aria-hidden="true" />}
+            {textOnly ? mmss(now - startedAt) : `Запись ${mmss(now - startedAt)}`}
           </span>
         )}
         {phase === 'live' && interview && (

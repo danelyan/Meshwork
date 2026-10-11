@@ -58,7 +58,11 @@ export function useIntegritySignals(attemptId: string, itemIndex: number, enable
     const d = acc.current;
     if (hiddenSince.current !== null) {
       const now = Date.now();
-      d.hiddenMs += Math.max(0, now - hiddenSince.current);
+      const away = Math.max(0, now - hiddenSince.current);
+      d.hiddenMs += away;
+      // Локальный счётчик (плашка жюри) пополняем тем же куском, что уходит серверу: иначе при возврате на вкладку
+      // в него попадал только остаток с последней отправки.
+      if (away) bump((t) => ({ hiddenMs: t.hiddenMs + away }));
       hiddenSince.current = now;
     }
     const screenObj = typeof screen !== 'undefined' ? (screen as Screen & { isExtended?: boolean }) : undefined;

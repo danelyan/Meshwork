@@ -1,9 +1,9 @@
 'use client';
 
 
-import { demoLogout } from '@/lib/api';
+import { logout } from '@/lib/api';
 
-/** «Выйти»: гасит сессию и обновляет серверные компоненты (шапка в лэйауте перечитывает куку). */
+/** «Выйти»: гасит сессию (POST /api/auth/logout, с проверкой Origin) и обновляет серверные компоненты (шапка в лэйауте перечитывает куку). */
 export function LogoutButton({ className }: { className?: string }) {
   return (
     <button
@@ -11,7 +11,7 @@ export function LogoutButton({ className }: { className?: string }) {
       className={className}
       onClick={async () => {
         try {
-          await demoLogout();
+          await logout();
         } finally {
           window.location.assign('/');
         }

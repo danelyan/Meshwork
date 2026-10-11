@@ -5,7 +5,7 @@ import { HeaderBar } from '@/components/shell/HeaderBar';
 
 const nav = vi.hoisted(() => ({ pathname: '/' }));
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname, useRouter: () => ({ refresh: () => undefined }) }));
-vi.mock('@/lib/api', () => ({ demoLogout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
+vi.mock('@/lib/api', () => ({ logout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
 
 afterEach(cleanup);
 

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Popover } from '@/components/ui/Reveal';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
-import { demoLogout, switchRoleApi } from '@/lib/api';
+import { logout as logoutApi, switchRoleApi } from '@/lib/api';
 import type { ActiveRole, HeaderAccount } from '@/server/auth/role-plan';
 
 import styles from './shell.module.css';
@@ -122,9 +122,10 @@ export function AccountMenu({ account, navigate = fullNavigation }: { account: H
     void go({ role: 'employer', companyName: name });
   };
 
+  // Выход - POST /api/auth/logout (с проверкой Origin), а не демо-маршрут DELETE /api/demo/login.
   const logout = async () => {
     try {
-      await demoLogout();
+      await logoutApi();
     } finally {
       window.location.assign('/');
     }

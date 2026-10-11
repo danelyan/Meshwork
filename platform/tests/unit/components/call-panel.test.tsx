@@ -141,6 +141,18 @@ describe('CallPanel — режим звонка в сцене консульта
     expect(screen.queryByTestId('call-consent')).toBeNull();
   });
 
+  it('текстовый режим (запись голоса отозвана): таймер без слова «Запись» и без точки записи', async () => {
+    routes['GET /api/call'] = () => ({ consent: { given: false, mode: 'text', version: 'cv-1', text: [] }, calls: [] });
+    renderScene();
+    fireEvent.click(screen.getByText('открыть'));
+    expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
+    expect(screen.getByTestId('call-text-mode').textContent).toContain('аудио не сохраняется');
+    const rec = screen.getByTestId('call-rec');
+    expect(rec.textContent).toMatch(/^\d+:\d\d$/);
+    expect(rec.textContent).not.toContain('Запись');
+    expect(rec.querySelector('i')).toBeNull();
+  });
+
   it('кнопка «Созвониться» в композере — только когда передан onCall', () => {
     const onCall = vi.fn();
     const { rerender } = render(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} />);

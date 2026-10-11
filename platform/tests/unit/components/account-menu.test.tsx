@@ -1,12 +1,13 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { AccountMenu, initialsOf } from '@/components/shell/AccountMenu';
-import { ApiError, demoLogout, switchRoleApi } from '@/lib/api';
+import { LogoutButton } from '@/components/shell/LogoutButton';
+import { ApiError, logout, switchRoleApi } from '@/lib/api';
 import type { HeaderAccount, RoleMenu } from '@/server/auth/role-plan';
 
 const nav = vi.hoisted(() => ({ pathname: '/consultant' }));
 vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }));
-vi.mock('@/lib/api', async (orig) => ({ ...(await orig<typeof import('@/lib/api')>()), switchRoleApi: vi.fn(), demoLogout: vi.fn() }));
+vi.mock('@/lib/api', async (orig) => ({ ...(await orig<typeof import('@/lib/api')>()), switchRoleApi: vi.fn(), logout: vi.fn() }));
 
 const navigate = vi.fn();
 const user = { userName: 'Иван Петров', userEmail: 'ivan@example.ru' };
@@ -25,7 +26,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   nav.pathname = '/consultant';
   vi.mocked(switchRoleApi).mockResolvedValue({ role: 'employer', next: '/consultant', created: false, changed: true });
-  vi.mocked(demoLogout).mockResolvedValue({ ok: true });
+  vi.mocked(logout).mockResolvedValue({ ok: true });
 });
 afterEach(cleanup);
 
@@ -158,13 +159,29 @@ describe('AccountMenu', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('«Выйти» вызывает demoLogout и ведёт на главную', async () => {
+  it('«Выйти» выходит через POST /api/auth/logout (не демо-маршрут) и ведёт на главную', async () => {
     const assign = vi.fn();
+    const fetcher = vi.fn();
     vi.stubGlobal('location', { ...window.location, assign });
+    vi.stubGlobal('fetch', fetcher);
     openMenu(candidate);
     fireEvent.click(screen.getByRole('button', { name: 'Выйти' }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/'));
-    expect(demoLogout).toHaveBeenCalledTimes(1);
+    expect(logout).toHaveBeenCalledTimes(1);
+    expect(fetcher).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('кнопка «Выйти» в шапке гостя (LogoutButton) выходит тем же маршрутом', async () => {
+    const assign = vi.fn();
+    const fetcher = vi.fn();
+    vi.stubGlobal('location', { ...window.location, assign });
+    vi.stubGlobal('fetch', fetcher);
+    render(<LogoutButton />);
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти' }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/'));
+    expect(logout).toHaveBeenCalledTimes(1);
+    expect(fetcher).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 
@@ -176,7 +193,7 @@ describe('AccountMenu', () => {
     expect(screen.getByText('ivan@example.ru')).toBeDefined();
     expect(screen.queryByRole('group', { name: 'Роль' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Выйти' }));
-    expect(demoLogout).toHaveBeenCalled();
+    expect(logout).toHaveBeenCalled();
   });
 
   it('компания работодателя видна и из роли кандидата', () => {

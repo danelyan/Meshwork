@@ -14,6 +14,10 @@ import ui from '../ui.module.css';
 import { FLAG_RU, GRADE_RU, SUBMISSION_STATUS, hours } from './labels';
 import styles from './Project.module.css';
 import { RubricTable } from './SubmissionResult';
+import { POLL_MAX_MS } from './useSubmissionPolling';
+
+/** Интервал опроса списка сдач у работодателя. */
+const SUBS_POLL_MS = 4000;
 
 export interface EmployerProjectBlockProps {
   vacancyId: string;
@@ -53,12 +57,28 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
     if (task) void load();
   }, [task, load]);
 
+  // Опрос, пока есть сдачи на проверке. После ошибки сети — повтор с бэкоффом (×2 до POLL_MAX_MS), на успехе снова
+  // SUBS_POLL_MS. Раньше эффект зависел от `subs`: первая ошибка список не меняла, и опрос вставал (как было в useSubmissionPolling).
+  const [poll, setPoll] = useState({ delay: SUBS_POLL_MS, attempt: 0 });
   const running = subs.some((s) => s.status === 'submitted' || s.status === 'running');
   useEffect(() => {
     if (!running) return;
-    const t = setTimeout(load, 4000);
-    return () => clearTimeout(t);
-  }, [running, subs, load]);
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const fresh = (await listProjectSubmissionsApi(vacancyId)).items;
+        if (cancelled) return;
+        setPoll({ delay: SUBS_POLL_MS, attempt: 0 });
+        setSubs(fresh);
+      } catch {
+        if (!cancelled) setPoll((p) => ({ delay: Math.min(p.delay * 2, POLL_MAX_MS), attempt: p.attempt + 1 }));
+      }
+    }, poll.delay);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [running, poll, vacancyId]);
 
   async function save(e: FormEvent) {
     e.preventDefault();

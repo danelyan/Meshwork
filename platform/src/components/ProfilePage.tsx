@@ -46,6 +46,8 @@ function ClaimItem({ claim, onDecide, onEdit }: { claim: ProfileClaim; onDecide?
       await onDecide(claim.id, action);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Не удалось сохранить.');
+    } finally {
+      // Элемент после «Да» остаётся на экране: без сброса «Сохранить формулировку» крутится до перезагрузки.
       setBusy(false);
     }
   }

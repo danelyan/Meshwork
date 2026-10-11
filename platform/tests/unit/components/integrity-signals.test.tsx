@@ -39,6 +39,23 @@ describe('useIntegritySignals', () => {
     expect(sent().at(-1)).toMatchObject({ tabHidden: 0, hiddenMs: 3000 });
   });
 
+  it('долгий уход: локальный счётчик времени вне вкладки совпадает с суммой, ушедшей серверу', () => {
+    const { result } = renderHook(() => useIntegritySignals('att1', 0));
+    act(() => setVisibility('hidden'));
+    // Две плановые отправки (10 и 20 с) застают вкладку скрытой, возврат - на 25-й секунде.
+    act(() => {
+      vi.advanceTimersByTime(25_000);
+    });
+    expect(result.current.totals.hiddenMs).toBe(20_000);
+    act(() => setVisibility('visible'));
+    expect(result.current.totals).toMatchObject({ tabHidden: 1, hiddenMs: 25_000 });
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(sent().reduce((sum, b) => sum + Number(b.hiddenMs), 0)).toBe(25_000);
+    expect(result.current.totals.hiddenMs).toBe(25_000);
+  });
+
   it('копит вставки и копирования и шлёт дельты раз в 10 с; пустые дельты не шлёт', () => {
     const { result } = renderHook(() => useIntegritySignals('att1', 0));
     act(() => {

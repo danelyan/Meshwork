@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Реестр ФСП и ФСП ID — симулятор для жюри</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <div class="brand">Реестр ФСП и ФСП ID <span class="badge badge-sim">симулятор</span></div>
+    <nav class="top-nav">
+      <a href="#try">1. Ответы API</a>
+      <a href="#edit">2. Правка реестра</a>
+      <a href="#platform">3. Платформа</a>
+      <a href="/docs">Swagger</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <h1>Откуда платформа берёт спортивные достижения</h1>
+    <p class="lead">«ФСП Карьера» подтверждает достижения кандидата по реестру Федерации спортивного программирования: участник входит через <b>ФСП ID</b>, и платформа читает его записи из <b>реестра</b>. Настоящего API реестра участникам хакатона не дают, поэтому команда собрала его модель. На этой странице её можно потрогать: посмотреть ответы, изменить данные и убедиться, что платформа читает их отсюда, а не показывает заготовленный пример.</p>
+    <div class="warn"><b>Это не сервис Федерации спортивного программирования.</b> Контракт API — предложение команды, все люди и результаты вымышлены (<span id="stats-line">синтетический набор</span>), совпадения имён случайны. Каждый ответ помечен <code>meta.simulator: true</code> и заголовком <code>X-FSP-Simulator: true</code>.</div>
+    <ol class="steps">
+      <li><a href="#try"><b>Нажмите кнопку</b> — увидите настоящий запрос к API и ответ.</a></li>
+      <li><a href="#edit"><b>Измените реестр</b> — заведите участника, внесите ему достижение.</a></li>
+      <li><a href="#platform"><b>Войдите этим участником на платформе</b> — достижение появится в профиле.</a></li>
+    </ol>
+  </section>
+
+  <section id="try">
+    <h2><span class="num">1</span> Нажмите — и увидите ответ API</h2>
+    <p>Каждая кнопка выполняет настоящие запросы из вашего браузера: сначала получает токен в ФСП ID, затем обращается к реестру. Ниже появятся все шаги — адрес, код ответа и JSON.</p>
+    <p class="who">Запросы идут от имени участника <b id="who-name">…</b> <span class="muted" id="who-id"></span>. Другого можно выбрать в <a href="#edit">разделе 2</a>.</p>
+    <div class="scenarios" id="scenarios"></div>
+    <div class="result" id="result" hidden>
+      <div class="result-head"><h3 id="result-title"></h3><p id="result-summary" class="summary"></p></div>
+      <div id="result-steps"></div>
+    </div>
+  </section>
+
+  <section id="edit">
+    <h2><span class="num">2</span> Измените реестр своими руками</h2>
+    <p>Заведите участника, поправьте ему имя или регион, внесите достижение или разряд, удалите запись. Правка сразу попадает в реестр и в ФСП ID: кнопки из раздела 1 покажут её в ответах API, а созданным участником можно войти на платформе.</p>
+    <p class="muted">В настоящем реестре так нельзя: записи вносит федерация по протоколам соревнований. Здесь правка открыта всем, без входа — чтобы проверку можно было сделать за минуту. Записи, внесённые вручную, помечены.</p>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Поиск: фамилия, номер ФСП ID или логин" aria-label="Поиск участника">
+      <button type="button" class="btn btn-primary" id="new-athlete">+ Новый участник</button>
+      <button type="button" class="btn" id="reset">Вернуть исходные данные</button>
+    </div>
+    <p class="muted" id="changes-line"></p>
+    <div class="editor">
+      <div class="list" id="list" aria-label="Участники реестра"></div>
+      <div class="card" id="card"><p class="muted">Загрузка…</p></div>
+    </div>
+  </section>
+
+  <section id="platform">
+    <h2><span class="num">3</span> Проверьте на платформе</h2>
+    <p>Платформа читает реестр в момент входа через ФСП ID. Поэтому после правки в разделе 2 войдите на платформе этим участником — и увидите свои изменения.</p>
+    <ol class="howto">
+      <li>Откройте платформу: <a id="platform-link" href="https://fsp2.ru" target="_blank" rel="noopener">fsp2.ru</a> → «Войти» → «ФСП ID».</li>
+      <li>На странице входа ФСП ID введите логин <code id="login-user">…</code> и пароль <code id="login-pass">…</code> <span class="muted">(пароль у всех участников симулятора общий).</span></li>
+      <li>В «Настройках» платформы, в блоке «ФСП ID», будут записи этого участника — те же, что в ответе <code>/me/achievements</code>.</li>
+      <li>Изменили реестр ещё раз — войдите через ФСП ID заново: платформа сохраняет снимок записей на момент входа.</li>
+    </ol>
+  </section>
+
+  <details class="dev" id="dev">
+    <summary>Для разработчиков: подключение, токены, модель доступа</summary>
+    <h3>Ссылки</h3>
+    <ul>
+      <li><a href="/docs">Swagger UI</a> · <a href="/openapi.json">openapi.json</a> · <a href="/api/v1/health">health</a></li>
+      <li>ФСП ID (Keycloak): <a id="dev-discovery" href="#">OIDC discovery</a> · <a id="dev-account" href="#">кабинет спортсмена</a></li>
+      <li>Открытые данные: <a href="/api/v1/events?per_page=5">соревнования</a> · <a href="/api/v1/disciplines">дисциплины</a> · <a href="/api/v1/regions">регионы</a> · <a href="/api/v1/partners">партнёры</a></li>
+    </ul>
+    <h3>Подключение приложения (OpenID Connect)</h3>
+    <table class="kv" id="dev-oidc"></table>
+    <p class="muted">Секрет клиента <code>fsp-career</code> задаётся в окружении стенда и здесь не публикуется. Открытые демо-клиенты: <code>fsp-partner-demo</code> (партнёр, <code>client_credentials</code>) и <code>fsp-athlete-demo</code> (токен спортсмена по демо-паролю — только для кнопок этой страницы).</p>
+    <h3>Примеры</h3>
+    <pre id="dev-curl"></pre>
+    <h3>Модель доступа</h3>
+    <ul>
+      <li><b>Открыто:</b> справочники, соревнования, протоколы (фамилия с инициалами и регион, как в публикуемых протоколах), проверка записи по идентификатору.</li>
+      <li><b>Спортсмен</b> (токен пользователя с <code>fsp_id</code>): свой профиль, достижения, разряды, согласия партнёрам.</li>
+      <li><b>Партнёр</b> (<code>client_credentials</code>, роль <code>partner</code>): только спортсмены, давшие согласие именно этому клиенту, по областям <code>profile</code>, <code>achievements</code>, <code>ranks</code>. Без согласия — <code>403 consent_required</code>.</li>
+      <li><b>Песочница</b> (<code>/api/v1/sandbox/*</code>, без токена): ручные правки этой страницы. В настоящем реестре таких маршрутов нет.</li>
+      <li>Реестр не хранит личную роль в команде, ссылку на проект и стек: это сообщает сам кандидат, и платформа помечает это как его слова.</li>
+    </ul>
+  </details>
+</main>
+
+<footer class="wrap foot">Команда «ФСП Карьера», ЛЦТ 2026. Симулятор для демонстрации интеграции; к Федерации спортивного программирования отношения не имеет.</footer>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<noscript><p class="wrap warn">Кнопки и правка реестра работают на JavaScript. Без него доступны <a href="/docs">Swagger UI</a> и <a href="/api/v1/events">открытые данные</a>.</p></noscript>
+<script src="/assets/app.js"></script>
+</body>
+</html>

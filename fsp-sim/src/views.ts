@@ -4,11 +4,12 @@ import type { Athlete, Rank, Result } from './types.js';
 /** Представления записей для ответов API: что и кому показывается. */
 
 export function displayName(a: Athlete): string {
-  return `${a.last_name} ${a.first_name[0]}. ${a.middle_name[0]}.`;
+  const initials = [a.first_name, a.middle_name].filter(Boolean).map((n) => `${n[0]}.`);
+  return [a.last_name, ...initials].join(' ');
 }
 
 export function fullName(a: Athlete): string {
-  return `${a.last_name} ${a.first_name} ${a.middle_name}`;
+  return [a.last_name, a.first_name, a.middle_name].filter(Boolean).join(' ');
 }
 
 const RANK_WEIGHT: Record<Rank['rank'], number> = {

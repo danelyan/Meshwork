@@ -28,6 +28,9 @@ export interface Reply {
   html?: string;
   /** Сырой JSON без конверта (OpenAPI). */
   raw?: unknown;
+  /** Готовое тело с указанным типом (статические файлы стартовой страницы). */
+  body?: string;
+  contentType?: string;
   headers?: Record<string, string>;
 }
 
@@ -101,7 +104,7 @@ const BASE_HEADERS = {
   'cache-control': 'no-store',
   'access-control-allow-origin': '*',
   'access-control-allow-headers': 'authorization, content-type',
-  'access-control-allow-methods': 'GET, PUT, DELETE, OPTIONS',
+  'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
 };
 
 function writeJson(res: http.ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) {
@@ -133,6 +136,9 @@ export function createHttpServer(router: Router, log: (line: string) => void = (
       if (reply.html !== undefined) {
         res.writeHead(status, { ...BASE_HEADERS, 'content-type': 'text/html; charset=utf-8', ...reply.headers });
         res.end(reply.html);
+      } else if (reply.body !== undefined) {
+        res.writeHead(status, { ...BASE_HEADERS, 'content-type': reply.contentType ?? 'text/plain; charset=utf-8', ...reply.headers });
+        res.end(reply.body);
       } else if (reply.raw !== undefined) {
         writeJson(res, status, reply.raw, reply.headers);
       } else if (status === 204) {

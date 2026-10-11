@@ -58,6 +58,33 @@ CAREER_TOKEN=$(curl -s "$TOKEN_URL" -d grant_type=client_credentials -d client_i
 echo "athletes (fsp-career): $(curl -s "$API/athletes?per_page=1" -H "Authorization: Bearer $CAREER_TOKEN" | field 'd["meta"]["total"]')"
 expect "FSP-10001 achievements for fsp-career" 200 "$API/athletes/FSP-10001/achievements" -H "Authorization: Bearer $CAREER_TOKEN"
 expect "garbage token" 401 "$API/me" -H "Authorization: Bearer not-a-jwt"
+# Песочница стенда: участник, созданный вручную, входит через ФСП ID, его достижение видно в API;
+# после удаления войти им нельзя. За собой проверка всё убирает.
+expect "start page script" 200 "$PUBLIC_URL/assets/app.js"
+NEW="$(curl -s -X POST "$API/sandbox/athletes" -H 'content-type: application/json' \
+  -d '{"last_name":"Проверкин","first_name":"Смок","birth_year":2000,"region_code":"77","disciplines":["product"]}')"
+NEW_ID="$(printf '%s' "$NEW" | field 'd.get("data",{}).get("athlete",{}).get("fsp_id","")')"
+NEW_LOGIN="$(printf '%s' "$NEW" | field 'd.get("data",{}).get("login",{}).get("username","")')"
+if [ -z "$NEW_ID" ]; then
+  echo "sandbox create athlete: FAIL ($(printf '%s' "$NEW" | field 'd.get("error",{}).get("code")'))"; FAILED=1
+else
+  echo "sandbox create athlete: $NEW_ID ($NEW_LOGIN)"
+  expect "sandbox add achievement" 201 -X POST "$API/sandbox/athletes/$NEW_ID/achievements" -H 'content-type: application/json' \
+    -d '{"event":{"name":"Проверочный хакатон стенда","discipline":"product","kind":"hackathon","date":"2026-10-01","entrants_total":10},"place":1}'
+  demo_token() { curl -s "$TOKEN_URL" -d grant_type=password -d client_id=fsp-athlete-demo -d "username=$NEW_LOGIN" --data-urlencode "password=$PASSWORD" | field 'd.get("access_token","")'; }
+  NEW_TOKEN="$(demo_token)"
+  if [ -n "$NEW_TOKEN" ]; then
+    echo "sandbox athlete token (fsp-athlete-demo): ok"
+    MINE="$(curl -s "$API/me/achievements" -H "Authorization: Bearer $NEW_TOKEN" | field '[a["event_name"] for a in d.get("data",[])]')"
+    echo "sandbox me/achievements: $MINE"
+    [ "$MINE" = "['Проверочный хакатон стенда']" ] || { echo "sandbox me/achievements: не та запись — FAIL"; FAILED=1; }
+  else
+    echo "sandbox athlete token: FAIL"; FAILED=1
+  fi
+  expect "sandbox delete athlete" 204 -X DELETE "$API/sandbox/athletes/$NEW_ID"
+  [ -z "$(demo_token)" ] && echo "deleted athlete cannot sign in: ok" || { echo "deleted athlete still signs in — FAIL"; FAILED=1; }
+  echo "sandbox changes after cleanup: $(curl -s "$API/sandbox/meta" | field 'd["data"]["changes"]["manual_athletes"], d["data"]["changes"]["manual_achievements"]')"
+fi
 curl -s -I "$API/disciplines" | grep -qi '^x-fsp-simulator: true' && echo "simulator header: ok" || { echo "simulator header: отсутствует — FAIL"; FAILED=1; }
 if [ "$FAILED" -ne 0 ]; then echo "smoke: FAIL"; exit 1; fi
 echo "smoke: OK"

@@ -9,6 +9,10 @@ import type { Dataset } from '../types.js';
 
 export const REALM_NAME = 'fsp-id';
 export const API_AUDIENCE = 'fsp-api';
+/** Публичный клиент стенда: токен спортсмена по общему демо-паролю, чтобы показать ответ API в один клик. */
+export const ATHLETE_DEMO_CLIENT = 'fsp-athlete-demo';
+/** Сервисный аккаунт API реестра: заводит и удаляет пользователей ФСП ID вслед за правками песочницы. */
+export const REGISTRY_ADMIN_CLIENT = 'fsp-registry-admin';
 
 const fspIdMapper = {
   name: 'fsp_id',
@@ -197,6 +201,38 @@ export function buildRealm(dataset: Dataset): Record<string, unknown> {
         protocolMappers: [audienceMapper],
       },
       {
+        clientId: ATHLETE_DEMO_CLIENT,
+        name: 'Демо-вход спортсмена (стенд)',
+        description: 'Публичный клиент только с password grant: кнопки стенда получают токен спортсмена по общему демо-паролю. В настоящем ФСП ID такого клиента быть не должно.',
+        enabled: true,
+        protocol: 'openid-connect',
+        publicClient: true,
+        standardFlowEnabled: false,
+        implicitFlowEnabled: false,
+        directAccessGrantsEnabled: true,
+        serviceAccountsEnabled: false,
+        fullScopeAllowed: true,
+        redirectUris: [],
+        webOrigins: [],
+        protocolMappers: [fspIdMapper, regionMapper, audienceMapper],
+      },
+      {
+        clientId: REGISTRY_ADMIN_CLIENT,
+        name: 'API реестра: управление пользователями стенда',
+        description: 'Только client_credentials. Сервисный аккаунт с ролью manage-users: API реестра заводит пользователя ФСП ID для участника, созданного в песочнице.',
+        enabled: true,
+        protocol: 'openid-connect',
+        publicClient: false,
+        secret: '${FSP_REGISTRY_ADMIN_SECRET:fsp-registry-admin-secret}',
+        standardFlowEnabled: false,
+        implicitFlowEnabled: false,
+        directAccessGrantsEnabled: false,
+        serviceAccountsEnabled: true,
+        fullScopeAllowed: true,
+        redirectUris: [],
+        webOrigins: [],
+      },
+      {
         clientId: API_AUDIENCE,
         name: 'Реестр ФСП (API)',
         description: 'Ресурс: audience токенов, которые принимает API реестра. Сам не выдаёт токены.',
@@ -215,6 +251,12 @@ export function buildRealm(dataset: Dataset): Record<string, unknown> {
       ...users,
       { username: 'service-account-fsp-career', enabled: true, serviceAccountClientId: 'fsp-career', realmRoles: ['partner'] },
       { username: 'service-account-fsp-partner-demo', enabled: true, serviceAccountClientId: 'fsp-partner-demo', realmRoles: ['partner'] },
+      {
+        username: `service-account-${REGISTRY_ADMIN_CLIENT}`,
+        enabled: true,
+        serviceAccountClientId: REGISTRY_ADMIN_CLIENT,
+        clientRoles: { 'realm-management': ['manage-users', 'view-realm'] },
+      },
     ],
     components: {
       'org.keycloak.userprofile.UserProfileProvider': [

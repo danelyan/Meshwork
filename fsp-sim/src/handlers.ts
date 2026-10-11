@@ -4,8 +4,10 @@ import { authenticate, requireAthlete, type Principal, type Verifier } from './a
 import type { Config } from './config.js';
 import type { Registry } from './data.js';
 import { ApiError, readJson, type Ctx, type Router } from './http.js';
-import { renderLanding, renderSwagger } from './landing.js';
+import type { IdentityAdmin } from './idp.js';
+import { loadStartPage, renderSwagger } from './landing.js';
 import { buildOpenApi } from './openapi.js';
+import { registerSandboxRoutes } from './sandbox.js';
 import { CONSENT_SCOPES, type ConsentScope } from './types.js';
 import { athleteCard, athleteProfile, resultView, teamView } from './views.js';
 
@@ -45,8 +47,9 @@ function paginate<T>(items: T[], q: { page: number; per_page: number }) {
 
 const FSP_ID = /^FSP-\d{5}$/;
 
-export function registerRoutes(router: Router, deps: { registry: Registry; verify: Verifier; config: Config }): void {
+export function registerRoutes(router: Router, deps: { registry: Registry; verify: Verifier; config: Config; idp: IdentityAdmin }): void {
   const { registry: reg, verify, config } = deps;
+  const page = loadStartPage(config.publicDir);
   const auth = (ctx: Ctx) => authenticate(ctx, verify);
 
   /** Проверка доступа партнёра или самого спортсмена к записи спортсмена. */
@@ -63,7 +66,9 @@ export function registerRoutes(router: Router, deps: { registry: Registry; verif
     return athlete;
   };
 
-  router.add('GET', '/', () => ({ html: renderLanding(reg, config) }));
+  router.add('GET', '/', () => ({ html: page.html }));
+  router.add('GET', '/assets/app.css', () => ({ body: page.css, contentType: 'text/css; charset=utf-8' }));
+  router.add('GET', '/assets/app.js', () => ({ body: page.js, contentType: 'text/javascript; charset=utf-8' }));
   router.add('GET', '/docs', () => ({ html: renderSwagger(config) }));
   router.add('GET', '/openapi.json', () => ({ raw: buildOpenApi(config) }));
 
@@ -227,4 +232,6 @@ export function registerRoutes(router: Router, deps: { registry: Registry; verif
     const a = athleteAccess(p, ctx.params['fsp_id']!, 'ranks');
     return { data: reg.ranksOf(a.fsp_id) };
   });
+
+  registerSandboxRoutes(router, { registry: reg, idp: deps.idp, config });
 }

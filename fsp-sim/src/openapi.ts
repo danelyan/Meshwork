@@ -59,7 +59,9 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
         'Все спортсмены, команды, соревнования, протоколы и разряды синтетические (детерминированный генератор). Каждый ответ помечен `meta.simulator=true` и заголовком `X-FSP-Simulator: true`.',
         '',
         'Доступ: публичные справочники и протоколы — без токена; `/me/*` — токен спортсмена (вход через ФСП ID, claim `fsp_id`, роль `athlete`);',
-        '`/athletes/*` — токен сервисного аккаунта партнёра (`client_credentials`, роль `partner`) **в пределах согласий спортсмена** (`profile`, `achievements`, `ranks`). Согласия спортсмен меняет в `/me/consents`; они живут в памяти и сбрасываются при рестарте.',
+        '`/athletes/*` — токен сервисного аккаунта партнёра (`client_credentials`, роль `partner`) **в пределах согласий спортсмена** (`profile`, `achievements`, `ranks`). Согласия спортсмен меняет в `/me/consents`.',
+        '',
+        '`/sandbox/*` — **песочница стенда**: ручная правка реестра без токена (участники, достижения, разряды). Она есть только в симуляторе, чтобы проверяющий мог изменить данные и увидеть их в ответах API и на платформе.',
         '',
         `Discovery OIDC: ${config.issuer}/.well-known/openid-configuration`,
       ].join('\n'),
@@ -73,6 +75,7 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
       { name: 'Проверка', description: 'Проверка записи о достижении по идентификатору' },
       { name: 'Спортсмен', description: 'Собственный профиль, достижения, разряды и согласия' },
       { name: 'Партнёр', description: 'Чтение реестра партнёром в пределах согласий' },
+      { name: 'Песочница стенда', description: 'Ручная правка реестра без токена: участники, достижения, разряды, возврат к исходному набору. Есть только в симуляторе — в настоящем реестре записи вносит федерация по протоколам. Участник, созданный здесь, получает пользователя ФСП ID и может войти на платформе.' },
       { name: 'Служебное' },
     ],
     paths: {
@@ -175,6 +178,53 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
       '/athletes/{fsp_id}/ranks': {
         get: { tags: ['Партнёр'], operationId: 'getAthleteRanks', summary: 'Разряды спортсмена (согласие ranks)', security: partnerSec, parameters: [fspIdParam], responses: { 200: ok(envelope(list('Rank'))), 403: errorResponse('Нет согласия') } },
       },
+      '/sandbox/meta': {
+        get: { tags: ['Песочница стенда'], operationId: 'sandboxMeta', summary: 'Настройки стартовой страницы: адреса, демо-клиенты, справочники, пределы и сводка правок', security: [], responses: { 200: ok(envelope({ type: 'object' })) } },
+      },
+      '/sandbox/athletes': {
+        get: {
+          tags: ['Песочница стенда'], operationId: 'sandboxListAthletes', summary: 'Все участники реестра (сначала добавленные вручную)', security: [],
+          parameters: [{ name: 'q', in: 'query', schema: { type: 'string' }, description: 'Часть ФИО, номера ФСП ID или логина' }, { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } }, { name: 'per_page', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 } }],
+          responses: { 200: ok(envelope(list('SandboxAthleteRow'), pageMeta)) },
+        },
+        post: {
+          tags: ['Песочница стенда'], operationId: 'sandboxCreateAthlete', summary: 'Завести участника: номер FSP-2xxxx и пользователь ФСП ID с общим демо-паролем', security: [],
+          requestBody: { required: true, content: { 'application/json': { schema: ref('SandboxAthleteInput') } } },
+          responses: { 201: ok(envelope(ref('SandboxAthleteCard')), 'Создан'), 400: errorResponse('Неверные поля'), 409: errorResponse('Достигнут предел ручных записей: `limit_reached`'), 503: errorResponse('ФСП ID недоступен, реестр не изменён') },
+        },
+      },
+      '/sandbox/athletes/{fsp_id}': {
+        get: { tags: ['Песочница стенда'], operationId: 'sandboxGetAthlete', summary: 'Карточка участника: данные, логин ФСП ID, достижения, разряды, согласия', security: [], parameters: [fspIdParam], responses: { 200: ok(envelope(ref('SandboxAthleteCard'))), 404: errorResponse('Нет такого участника') } },
+        patch: {
+          tags: ['Песочница стенда'], operationId: 'sandboxUpdateAthlete', summary: 'Изменить данные участника (в реестре и в ФСП ID)', security: [], parameters: [fspIdParam],
+          requestBody: { required: true, content: { 'application/json': { schema: ref('SandboxAthleteInput') } } },
+          responses: { 200: ok(envelope(ref('SandboxAthleteCard'))), 400: errorResponse('Неверные поля'), 404: errorResponse('Нет такого участника') },
+        },
+        delete: { tags: ['Песочница стенда'], operationId: 'sandboxDeleteAthlete', summary: 'Удалить участника с достижениями, разрядами, согласиями и пользователем ФСП ID', security: [], parameters: [fspIdParam], responses: { 204: { description: 'Удалён' }, 404: errorResponse('Нет такого участника') } },
+      },
+      '/sandbox/athletes/{fsp_id}/achievements': {
+        post: {
+          tags: ['Песочница стенда'], operationId: 'sandboxAddAchievement', summary: 'Внести достижение: по существующему соревнованию (`event_id`) или по новому (`event`)', security: [], parameters: [fspIdParam],
+          requestBody: { required: true, content: { 'application/json': { schema: ref('SandboxAchievementInput'), example: { event: { name: 'Хакатон ЛЦТ 2026', discipline: 'product', kind: 'hackathon', date: '2026-10-11', entrants_total: 40 }, place: 1, team_name: 'Команда стенда' } } } },
+          responses: { 201: ok(envelope(ref('Achievement')), 'Внесено'), 400: errorResponse('Неверные поля'), 404: errorResponse('Нет участника или соревнования'), 409: errorResponse('Запись об этом соревновании уже есть или достигнут предел') },
+        },
+      },
+      '/sandbox/achievements/{id}': {
+        delete: { tags: ['Песочница стенда'], operationId: 'sandboxDeleteAchievement', summary: 'Удалить запись о достижении', security: [], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 204: { description: 'Удалена' }, 404: errorResponse('Нет такой записи') } },
+      },
+      '/sandbox/athletes/{fsp_id}/ranks': {
+        post: {
+          tags: ['Песочница стенда'], operationId: 'sandboxAddRank', summary: 'Присвоить разряд', security: [], parameters: [fspIdParam],
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['discipline', 'rank', 'assigned_on'], properties: { discipline: { type: 'string', enum: disciplineEnum }, rank: { type: 'string', enum: rankEnum }, assigned_on: { type: 'string', format: 'date' } } } } } },
+          responses: { 201: ok(envelope(ref('Rank')), 'Внесён'), 400: errorResponse('Неверные поля'), 404: errorResponse('Нет такого участника') },
+        },
+      },
+      '/sandbox/ranks/{id}': {
+        delete: { tags: ['Песочница стенда'], operationId: 'sandboxDeleteRank', summary: 'Удалить разряд', security: [], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 204: { description: 'Удалён' }, 404: errorResponse('Нет такого разряда') } },
+      },
+      '/sandbox/reset': {
+        post: { tags: ['Песочница стенда'], operationId: 'sandboxReset', summary: 'Отменить все ручные правки: вернуть исходный набор и пользователей ФСП ID', security: [], responses: { 200: ok(envelope({ type: 'object' })), 503: errorResponse('ФСП ID недоступен, реестр не изменён') } },
+      },
     },
     components: {
       securitySchemes: {
@@ -238,9 +288,36 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
             status: { type: 'string', enum: ['ranked', 'disqualified'] }, entrants_total: { type: 'integer' }, points: { type: 'number' }, criteria_scores: { type: ['array', 'null'], items: { type: 'number' } },
             regulation: { type: 'object', properties: { code: { type: 'string' }, version: { type: 'string' } } }, verified: { type: 'boolean', const: true }, verified_at: { type: 'string', format: 'date-time' },
             protocol_url: { type: 'string' }, checksum: { type: 'string', description: 'SHA-256 ключевых полей' },
+            manual: { type: 'boolean', description: 'Запись внесена вручную через песочницу стенда; у записей из набора поля нет' },
           },
         },
-        Rank: { type: 'object', properties: { rank_id: { type: 'string' }, fsp_id: { type: 'string' }, discipline: { type: 'string', enum: disciplineEnum }, rank: { type: 'string', enum: rankEnum }, order_no: { type: 'string' }, assigned_on: { type: 'string', format: 'date' }, valid_until: { type: ['string', 'null'], format: 'date' }, basis_achievement_id: { type: 'string' } } },
+        Rank: { type: 'object', properties: { rank_id: { type: 'string' }, fsp_id: { type: 'string' }, discipline: { type: 'string', enum: disciplineEnum }, rank: { type: 'string', enum: rankEnum }, order_no: { type: 'string' }, assigned_on: { type: 'string', format: 'date' }, valid_until: { type: ['string', 'null'], format: 'date' }, basis_achievement_id: { type: ['string', 'null'] }, manual: { type: 'boolean', description: 'Внесён вручную через песочницу стенда' } } },
+        SandboxAthleteInput: {
+          type: 'object',
+          description: 'При создании обязательны все поля, кроме middle_name и sex; при изменении — любое подмножество.',
+          properties: {
+            last_name: { type: 'string', maxLength: 40, description: 'Буквы, пробел, дефис, апостроф' },
+            first_name: { type: 'string', maxLength: 40 },
+            middle_name: { type: 'string', maxLength: 40 },
+            sex: { type: 'string', enum: ['m', 'f'] },
+            birth_year: { type: 'integer', minimum: 1950, maximum: 2015 },
+            region_code: { type: 'string', pattern: '^[0-9]{2}$', description: 'Код из /regions' },
+            disciplines: { type: 'array', minItems: 1, items: { type: 'string', enum: disciplineEnum } },
+          },
+        },
+        SandboxAthleteRow: { type: 'object', properties: { fsp_id: { type: 'string' }, full_name: { type: 'string' }, username: { type: 'string' }, region: { type: ['object', 'null'] }, disciplines: { type: 'array', items: { type: 'string' } }, achievements_total: { type: 'integer' }, ranks_total: { type: 'integer' }, manual: { type: 'boolean' } } },
+        SandboxAthleteCard: { type: 'object', properties: { athlete: { type: 'object' }, login: { type: 'object', properties: { username: { type: 'string' }, password: { type: 'string', description: 'Общий демо-пароль симулятора' } } }, achievements: list('Achievement'), ranks: list('Rank'), consents: list('Consent') } },
+        SandboxAchievementInput: {
+          type: 'object',
+          description: 'Ровно одно из `event_id` и `event`. При `status: disqualified` место не указывается.',
+          properties: {
+            event_id: { type: 'string', description: 'Соревнование из /events' },
+            event: { type: 'object', required: ['name', 'discipline', 'date', 'entrants_total'], properties: { name: { type: 'string', minLength: 3, maxLength: 160 }, discipline: { type: 'string', enum: disciplineEnum }, kind: { type: 'string', enum: kindEnum, default: 'hackathon' }, date: { type: 'string', format: 'date' }, entrants_total: { type: 'integer', minimum: 1, maximum: 5000 } } },
+            place: { type: ['integer', 'null'], minimum: 1 },
+            status: { type: 'string', enum: ['ranked', 'disqualified'], default: 'ranked' },
+            team_name: { type: 'string', maxLength: 60 },
+          },
+        },
         Consent: { type: 'object', properties: { fsp_id: { type: 'string' }, client_id: { type: 'string' }, scopes: { type: 'array', items: { type: 'string', enum: ['profile', 'achievements', 'ranks'] } }, granted_at: { type: 'string', format: 'date-time' }, partner: { type: ['string', 'null'] } } },
         Verification: { type: 'object', properties: { valid: { type: 'boolean' }, achievement_id: { type: 'string' }, checksum: { type: 'string' }, fsp_id: { type: 'string' }, athlete: { type: ['string', 'null'] }, event: { type: 'object' }, entrant_type: { type: 'string' }, team_name: { type: ['string', 'null'] }, place: { type: ['integer', 'null'] }, status: { type: 'string' }, entrants_total: { type: 'integer' }, verified_at: { type: 'string' }, protocol_url: { type: 'string' }, reason: { type: 'string' } } },
       },

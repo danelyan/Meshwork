@@ -53,7 +53,7 @@ describe('генератор набора данных', () => {
     }
     for (const r of ds.ranks) {
       expect(athletes.has(r.fsp_id)).toBe(true);
-      expect(achievements.has(r.basis_achievement_id)).toBe(true);
+      expect(achievements.has(r.basis_achievement_id!)).toBe(true);
     }
     for (const c of ds.consents) {
       expect(athletes.has(c.fsp_id)).toBe(true);
@@ -100,7 +100,7 @@ describe('генератор набора данных', () => {
 describe('реалм Keycloak', () => {
   const realm = buildRealm(ds) as { users: Array<Record<string, unknown>>; clients: Array<Record<string, unknown>> };
 
-  it('пользователь на каждого спортсмена с атрибутом fsp_id и ролью athlete, плюс два сервисных аккаунта', () => {
+  it('пользователь на каждого спортсмена с атрибутом fsp_id и ролью athlete, плюс сервисные аккаунты', () => {
     const users = realm.users.filter((u) => !u['serviceAccountClientId']);
     expect(users).toHaveLength(ds.athletes.length);
     for (const [i, u] of users.entries()) {
@@ -109,8 +109,12 @@ describe('реалм Keycloak', () => {
       expect(u['username']).toBe(ds.athletes[i]!.username);
     }
     const sa = realm.users.filter((u) => u['serviceAccountClientId']);
-    expect(sa.map((u) => u['serviceAccountClientId']).sort()).toEqual(['fsp-career', 'fsp-partner-demo']);
-    for (const u of sa) expect(u['realmRoles']).toEqual(['partner']);
+    expect(sa.map((u) => u['serviceAccountClientId']).sort()).toEqual(['fsp-career', 'fsp-partner-demo', 'fsp-registry-admin']);
+    for (const u of sa.filter((x) => x['serviceAccountClientId'] !== 'fsp-registry-admin')) expect(u['realmRoles']).toEqual(['partner']);
+    // Сервисный аккаунт API реестра управляет пользователями, но в реестр как партнёр не ходит.
+    const admin = sa.find((x) => x['serviceAccountClientId'] === 'fsp-registry-admin')!;
+    expect(admin['clientRoles']).toEqual({ 'realm-management': ['manage-users', 'view-realm'] });
+    expect(admin['realmRoles']).toBeUndefined();
   });
 
   it('клиенты: fsp-career с PKCE и audience fsp-api, партнёр только client_credentials, fsp-api bearer-only', () => {
@@ -127,10 +131,25 @@ describe('реалм Keycloak', () => {
     expect(byId.get('fsp-api')!['bearerOnly']).toBe(true);
   });
 
+  it('клиенты стенда: публичный fsp-athlete-demo только с password grant и теми же claims, fsp-registry-admin только client_credentials', () => {
+    const byId = new Map(realm.clients.map((c) => [c['clientId'], c]));
+    const demo = byId.get('fsp-athlete-demo')!;
+    expect(demo['publicClient']).toBe(true);
+    expect(demo['directAccessGrantsEnabled']).toBe(true);
+    expect(demo['standardFlowEnabled']).toBe(false);
+    expect(demo['redirectUris']).toEqual([]);
+    expect((demo['protocolMappers'] as Array<{ name: string }>).map((m) => m.name)).toEqual(['fsp_id', 'region_code', 'fsp-api-audience']);
+    const admin = byId.get('fsp-registry-admin')!;
+    expect(admin['publicClient']).toBe(false);
+    expect(admin['serviceAccountsEnabled']).toBe(true);
+    expect(admin['standardFlowEnabled']).toBe(false);
+    expect(admin['directAccessGrantsEnabled']).toBe(false);
+  });
+
   it('плейсхолдеры ${…} только у секретов и пароля — иначе Keycloak подставит переменные окружения в текст', () => {
     const text = JSON.stringify(realm);
     const placeholders = [...text.matchAll(/\$\{([A-Z_]+)(?::[^}]*)?\}/g)].map((m) => m[1]);
-    expect(new Set(placeholders)).toEqual(new Set(['FSP_DEMO_PASSWORD', 'FSP_CAREER_CLIENT_SECRET', 'FSP_PARTNER_DEMO_SECRET']));
+    expect(new Set(placeholders)).toEqual(new Set(['FSP_DEMO_PASSWORD', 'FSP_CAREER_CLIENT_SECRET', 'FSP_PARTNER_DEMO_SECRET', 'FSP_REGISTRY_ADMIN_SECRET']));
     expect(text.replace(/\$\{[A-Z_]+(?::[^}]*)?\}/g, '')).not.toContain('${');
   });
 });

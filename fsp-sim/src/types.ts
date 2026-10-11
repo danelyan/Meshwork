@@ -55,6 +55,8 @@ export interface Athlete {
   /** Логин и почта пользователя ФСП ID (Keycloak); почта — example.com, писем никто не получает. */
   username: string;
   email: string;
+  /** Запись внесена вручную через песочницу стенда (а не генератором набора). */
+  manual?: true;
 }
 
 export interface Team {
@@ -84,6 +86,7 @@ export interface Event {
   entrants_total: number;
   participants_total: number;
   protocol_url: string;
+  manual?: true;
 }
 
 export interface Result {
@@ -124,6 +127,7 @@ export interface Achievement {
   protocol_url: string;
   /** SHA-256 ключевых полей; контрольная сумма, не подпись. */
   checksum: string;
+  manual?: true;
 }
 
 export interface Rank {
@@ -134,7 +138,9 @@ export interface Rank {
   order_no: string;
   assigned_on: string;
   valid_until: string | null;
-  basis_achievement_id: string;
+  /** У разряда, внесённого вручную, основания в реестре нет. */
+  basis_achievement_id: string | null;
+  manual?: true;
 }
 
 export interface Partner {
@@ -169,3 +175,15 @@ export interface Dataset {
 
 export const CONSENT_SCOPES = ['profile', 'achievements', 'ranks'] as const;
 export type ConsentScope = (typeof CONSENT_SCOPES)[number];
+
+export const DISCIPLINE_CODES = ['product', 'algorithmic', 'infosec', 'robotics', 'drones'] as const satisfies readonly DisciplineCode[];
+export const EVENT_KINDS = ['championship', 'cup_qualifier', 'cup_final', 'junior_championship', 'regional_championship', 'hackathon'] as const satisfies readonly EventKind[];
+export const RANK_NAMES = [
+  'МС',
+  'КМС',
+  'I спортивный разряд',
+  'II спортивный разряд',
+  'III спортивный разряд',
+  'I юношеский разряд',
+  'II юношеский разряд',
+] as const satisfies readonly RankName[];

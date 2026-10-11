@@ -144,6 +144,81 @@
       ]
     },
     {
+      "clientId": "fsp-athlete-demo",
+      "name": "Демо-вход спортсмена (стенд)",
+      "description": "Публичный клиент только с password grant: кнопки стенда получают токен спортсмена по общему демо-паролю. В настоящем ФСП ID такого клиента быть не должно.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocolMappers": [
+        {
+          "name": "fsp_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "fsp_id",
+            "claim.name": "fsp_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "region_code",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "region_code",
+            "claim.name": "region_code",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "fsp-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "fsp-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "fsp-registry-admin",
+      "name": "API реестра: управление пользователями стенда",
+      "description": "Только client_credentials. Сервисный аккаунт с ролью manage-users: API реестра заводит пользователя ФСП ID для участника, созданного в песочнице.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${FSP_REGISTRY_ADMIN_SECRET:fsp-registry-admin-secret}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "redirectUris": [],
+      "webOrigins": []
+    },
+    {
       "clientId": "fsp-api",
       "name": "Реестр ФСП (API)",
       "description": "Ресурс: audience токенов, которые принимает API реестра. Сам не выдаёт токены.",
@@ -3414,6 +3489,17 @@
       "realmRoles": [
         "partner"
       ]
+    },
+    {
+      "username": "service-account-fsp-registry-admin",
+      "enabled": true,
+      "serviceAccountClientId": "fsp-registry-admin",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-realm"
+        ]
+      }
     }
   ],
   "components": {

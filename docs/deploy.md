@@ -102,8 +102,9 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | Создан | 10 октября 2026 года скриптом [`fsp-sim/scripts/selectel-server.sh`](../fsp-sim/scripts/selectel-server.sh) через API Selectel (диск из образа → сервер → группа безопасности на порту → плавающий адрес) |
 | Подготовка | [`fsp-sim/scripts/bootstrap-server.sh`](../fsp-sim/scripts/bootstrap-server.sh) от root: Docker Engine, пользователь `deploy`, `/opt/fsp/fsp-sim`, swap 2 ГБ, ufw |
 | Деплой | Вручную: `DEPLOY_HOST=deploy@111.88.114.206 SSH_OPTS='-i ~/.ssh/fsp-id' bash scripts/deploy.sh` из `fsp-sim/` — rsync каталога и `docker compose up -d --build`, затем проверка health. GitHub Actions этот каталог не выкладывает |
-| `.env` | `/opt/fsp/fsp-sim/.env` (600): `PUBLIC_URL`, `REDIRECT_FROM`, пароли администратора Keycloak и базы, `FSP_CAREER_CLIENT_SECRET` (сгенерированы на сервере, в репозитории нет); `FSP_PARTNER_DEMO_SECRET` и `FSP_DEMO_PASSWORD` — значения по умолчанию из `.env.example` (публичные демо-данные) |
-| Обновить реалм | Импорт идёт только в пустую базу: `docker compose down -v && docker compose up -d --build` на сервере (сбросит сессии) |
+| `.env` | `/opt/fsp/fsp-sim/.env` (600): `PUBLIC_URL`, `REDIRECT_FROM`, пароли администратора Keycloak и базы, `FSP_CAREER_CLIENT_SECRET`, `FSP_REGISTRY_ADMIN_SECRET` (сгенерированы на сервере, в репозитории нет); `FSP_PARTNER_DEMO_SECRET` и `FSP_DEMO_PASSWORD` — значения по умолчанию из `.env.example` (публичные демо-данные) |
+| Обновить реалм | Импорт идёт только в пустую базу. Пересоздать только базу Keycloak, не трогая том с сертификатами: `docker compose rm -sf keycloak db && docker volume rm fsp-sim_db-data && docker compose up -d --build` (сбросит сессии ФСП ID). Пользователей-спортсменов API сверяет с реестром сам при старте |
+| Данные | Тома Docker: `db-data` — база Keycloak, `api-state` — ручные правки песочницы стартовой страницы, `caddy-data` — сертификаты. Резервных копий нет |
 | Журналы | `docker compose logs -f keycloak`, `docker compose logs -f api` в `/opt/fsp/fsp-sim` |
 
 Issuer токенов привязан к `PUBLIC_URL`: при смене домена симулятора вместе с `PUBLIC_URL` меняются `FSP_OIDC_ISSUER` и `FSP_API_URL` в `.env` стенда, иначе вход и привязка ФСП ID на стенде перестают работать.

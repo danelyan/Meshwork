@@ -8,6 +8,7 @@ import { Registry } from '../src/data.js';
 import { buildDataset } from '../src/generator/build.js';
 import { registerRoutes } from '../src/handlers.js';
 import { ApiError, createHttpServer, Router } from '../src/http.js';
+import type { IdentityAdmin } from '../src/idp.js';
 
 /** Подменный проверяющий токенов: `athlete:FSP-10001`, `partner:fsp-career`, иначе 401. */
 const verify: Verifier = async (token) => {
@@ -21,7 +22,8 @@ const dataset = buildDataset();
 const registry = new Registry(dataset);
 const config = loadConfig({ PUBLIC_URL: 'http://sim.test', KC_INTERNAL_URL: 'http://127.0.0.1:1/auth' });
 const router = new Router();
-registerRoutes(router, { registry, verify, config });
+const idp: IdentityAdmin = { upsertUser: async () => {}, deleteUser: async () => {}, reconcile: async () => ({ created: 0, updated: 0, deleted: 0 }) };
+registerRoutes(router, { registry, verify, config, idp });
 const server = createHttpServer(router);
 let base = '';
 

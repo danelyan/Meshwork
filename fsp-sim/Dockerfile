@@ -12,9 +12,14 @@ RUN apk add --no-cache tini
 WORKDIR /app
 COPY --from=build /build/dist/server.mjs ./server.mjs
 COPY data ./data
+COPY public ./public
+# Правки песочницы стенда: том compose монтируется сюда и наследует владельца каталога.
+RUN mkdir -p /app/state && chown node:node /app/state
 ENV NODE_ENV=production \
     PORT=8080 \
-    FSP_DATA_FILE=/app/data/dataset.json
+    FSP_DATA_FILE=/app/data/dataset.json \
+    FSP_PUBLIC_DIR=/app/public \
+    FSP_STATE_FILE=/app/state/registry.json
 USER node
 EXPOSE 8080
 ENTRYPOINT ["/sbin/tini", "--"]

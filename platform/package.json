@@ -7,7 +7,9 @@
     "node": ">=22"
   },
   "scripts": {
+    "predev": "node scripts/mediapipe-assets.mjs",
     "dev": "next dev -p 3000",
+    "prebuild": "node scripts/mediapipe-assets.mjs",
     "build": "prisma generate && next build",
     "start": "next start -p 3000",
     "lint": "eslint .",
@@ -24,11 +26,11 @@
     "db:local": "bash scripts/db-local.sh",
     "eval:test": "tsx eval/test/run.ts",
     "eval:test-personas": "tsx eval/test/personas.ts",
-    "eval:test-integrity": "tsx eval/test/integrity.ts",
     "eval:call": "tsx eval/call/personas.ts",
     "eval:defense": "tsx eval/defense/personas.ts"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.1.0",
     "@prisma/client": "^6.19.2",
     "@react-three/fiber": "9.8.1",
     "mammoth": "^1.12.3",

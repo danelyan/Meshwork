@@ -9,3 +9,5 @@ playwright-report/
 .env
 .env.local
 data/
+# ресурсы MediaPipe (scripts/mediapipe-assets.mjs), не в репозитории
+public/mediapipe/

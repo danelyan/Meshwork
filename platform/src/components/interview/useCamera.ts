@@ -149,5 +149,8 @@ export function useCamera(opts: { getCallId: () => string | null; getStartedAt: 
     [stop],
   );
 
-  return { supported, state, error, segments, start, stop, attach };
+  /** Элемент превью — источник кадров для слежения за лицом. */
+  const getVideo = useCallback(() => video.current, []);
+
+  return { supported, state, error, segments, start, stop, attach, getVideo };
 }

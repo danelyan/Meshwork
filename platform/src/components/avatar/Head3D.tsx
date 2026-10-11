@@ -44,6 +44,7 @@ import {
   trackPointer,
   trackPose,
 } from './head-motion';
+import { getLookTarget } from './look-target';
 import { mouthOpen, smoothLevel } from './level';
 import { CLOSED, type MouthShape, smoothShape } from './lipsync';
 import { DEFAULT_MOUTH_LOOK, type MouthLook, mouthLookIndex } from './mouth-looks';
@@ -733,9 +734,11 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
       // как у Карины: время идёт только пока кадр рисуется (скрытая вкладка/вне экрана — пауза)
       const tr = track.current;
       if (motion) tr.time += step;
-      const goal = trackPose(tr.pointer[0], tr.pointer[1]);
+      // Лицо собеседника с камеры (комната звонка) важнее курсора: голова поворачивается за человеком.
+      const look = getLookTarget() ?? tr.pointer;
+      const goal = trackPose(look[0], look[1]);
       tr.pose = [easeToward(tr.pose[0], goal[0], step), easeToward(tr.pose[1], goal[1], step)];
-      tr.gaze = [easeToward(tr.gaze[0], tr.pointer[0], step, 9), easeToward(tr.gaze[1], tr.pointer[1], step, 9)];
+      tr.gaze = [easeToward(tr.gaze[0], look[0], step, 9), easeToward(tr.gaze[1], look[1], step, 9)];
       const idle = headMotion(tr.time);
       uniforms.face.value = [motion * idle.blink, smile, 0, 0];
       const neck = neckPose({ pose: tr.pose, time: tr.time, thinking: motion > 0 && thinkingNow, level: motion * level.current });

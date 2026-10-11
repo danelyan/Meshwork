@@ -33,6 +33,9 @@ export interface InviteBody {
   /** Вилка, ₽ в месяц; salaryTo ≥ salaryFrom. */
   salaryFrom: number;
   salaryTo: number;
+  /** Позиция в подборке/поиске на момент отправки (1..1000) и откуда отправлено — только для метрики админки. */
+  matchRank?: number | null;
+  matchSource?: 'matching' | 'search' | 'favorites' | 'assistant' | 'other' | null;
 }
 export const inviteApi = (body: InviteBody) => postJson<{ id: string; status: string }>('/api/employer/invitations', body);
 

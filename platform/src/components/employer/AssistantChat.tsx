@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { openEmployerAssistantStream } from '@/lib/employer-api';
@@ -280,13 +279,7 @@ function InvitationDraftRow({ draft }: { draft: InvitationDraft }) {
           {draft.vacancyTitle ? ` · «${draft.vacancyTitle}»` : ''} · осталось {draft.limit.left} из {draft.limit.limit} на сутки
         </p>
         {draft.blocked ? (
-          <Notice>
-            {draft.blocked === 'daily_limit'
-              ? 'Лимит приглашений на сутки исчерпан.'
-              : draft.blocked === 'no_company_contact'
-                ? <>Укажите способ связи компании на странице <Link href="/employer/company">«Компания»</Link>: без него приглашения не отправляются.</>
-                : 'Кандидат ещё не ответил на прошлое приглашение компании.'}
-          </Notice>
+          <Notice>{draft.blocked === 'daily_limit' ? 'Лимит приглашений на сутки исчерпан.' : 'Кандидат ещё не ответил на прошлое приглашение компании.'}</Notice>
         ) : (
           <InviteForm
             candidateId={draft.candidateId}
@@ -295,6 +288,7 @@ function InvitationDraftRow({ draft }: { draft: InvitationDraft }) {
             defaultSalaryFrom={draft.salaryFrom ?? undefined}
             defaultSalaryTo={draft.salaryTo ?? undefined}
             initialMessage={draft.message}
+            matchSource="assistant"
             defaultOpen
           />
         )}

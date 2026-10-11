@@ -54,6 +54,10 @@ export const VacancyPatch = z.object({ archived: z.boolean() });
  * Приглашение (R-E-05, ТЗ 2.2): описание и вилка «от–до» в ₽ обязательны, потребность — нет.
  * Способ связи компании берётся из Company.contact, в теле не передаётся.
  */
+/** lane admin (E-08, фаза 5): откуда работодатель отправил приглашение — для метрики «доля принятых из топ-N». */
+export const MATCH_SOURCES = ['matching', 'search', 'favorites', 'assistant', 'other'] as const;
+export type MatchSource = (typeof MATCH_SOURCES)[number];
+
 export const InvitationInput = z
   .object({
     candidateId: z.string().min(1).max(64),
@@ -61,6 +65,9 @@ export const InvitationInput = z
     message: z.string().trim().min(10, 'Опиши задачу хотя бы в 10 символах').max(2000),
     salaryFrom: z.number().int().min(1, 'Укажи зарплату «от»').max(10_000_000),
     salaryTo: z.number().int().min(1, 'Укажи зарплату «до»').max(10_000_000),
+    /** Позиция кандидата в подборке/поиске на момент отправки (1 = первый). Подсказка клиента: только для метрики, решений по ней нет. */
+    matchRank: z.number().int().min(1).max(1000).nullish(),
+    matchSource: z.enum(MATCH_SOURCES).nullish(),
   })
   .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Зарплата «до» меньше «от»', path: ['salaryTo'] });
 
@@ -100,9 +107,7 @@ export function parseFilters(raw: Raw): { filters: MatchFilters; limit: number }
   if (grade.success) filters.grade = grade.data;
   if (stack.length) filters.stack = stack;
   if (first(raw.fsp) === '1') filters.fsp = true;
-  // pool=all — явное расширение пула кандидатами без категории (M05). Прежний category=1 («только с категорией»)
-  // совпадает с режимом по умолчанию и принимается как no-op, чтобы старые ссылки не ломались.
-  if (first(raw.pool) === 'all' || first(raw.untested) === '1') filters.expandPool = true; // untested=1 — синоним из main 11.10
+  if (first(raw.untested) === '1') filters.includeUntested = true; // по умолчанию только с категорией по тесту
   // Подкатегория — только из справочника и только вместе со своим направлением (иначе отбрасывается).
   const sub = getSubcategory(first(raw.sub));
   if (sub && !fullstack && (!filters.specialization || filters.specialization === sub.specialization)) {
@@ -127,6 +132,6 @@ export function filtersToQuery(f: MatchFilters): string {
   if (f.grade) p.set('grade', f.grade);
   if (f.stack?.length) p.set('stack', f.stack.join(','));
   if (f.fsp) p.set('fsp', '1');
-  if (f.expandPool) p.set('pool', 'all');
+  if (f.includeUntested) p.set('untested', '1');
   return p.toString();
 }

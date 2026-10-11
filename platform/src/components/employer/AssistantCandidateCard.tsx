@@ -65,7 +65,7 @@ export function AssistantCandidateCard({ c, vacancyId, defaultSalary }: { c: Ass
           Приглашение: <span className={styles.status}>{INVITATION_STATUS_LABEL[c.invitation!]}</span>
         </p>
       ) : (
-        <InviteForm candidateId={c.candidateId} candidateName={c.alias} vacancyId={vacancyId} defaultSalaryFrom={defaultSalary?.from} defaultSalaryTo={defaultSalary?.to} />
+        <InviteForm candidateId={c.candidateId} candidateName={c.alias} vacancyId={vacancyId} defaultSalaryFrom={defaultSalary?.from} defaultSalaryTo={defaultSalary?.to} matchRank={c.rank} matchSource="assistant" />
       )}
     </li>
   );

@@ -1,4 +1,3 @@
-import { GRADE_LABEL } from '@/lib/grades';
 import { specLabel } from '@/lib/directions';
 import { LevelBadge } from '@/components/LevelBadge';
 import type { MatchItem } from '@/server/employer/matching';
@@ -22,6 +21,8 @@ export interface CandidateMatchCardProps {
   defaultSalary?: { from: number; to: number };
   favoriteScope?: string;
   compact?: boolean;
+  /** lane admin (E-08): откуда показана карточка — уходит в приглашение вместе с item.rank. */
+  matchSource?: 'matching' | 'search';
 }
 
 /** Карточка кандидата в подборке: публичная часть (R-E-07) + обоснование (R-M-03) + приглашение. */
@@ -45,7 +46,7 @@ export function ExperienceLine({ experience }: { experience?: PublicExperience }
   return parts.length ? <p className={styles.meta} data-testid="candidate-experience">{parts.join(' · ')}</p> : null;
 }
 
-export function CandidateMatchCard({ item, vacancyId, defaultSalary, favoriteScope, compact }: CandidateMatchCardProps) {
+export function CandidateMatchCard({ item, vacancyId, defaultSalary, favoriteScope, compact, matchSource = 'matching' }: CandidateMatchCardProps) {
   const c = item.candidate;
   const ex = item.explanation;
   const typeByStatement = new Map(c.claims.map((cl) => [cl.statement, cl.sourceType]));
@@ -53,10 +54,10 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary, favoriteSco
   if (compact) return <li className={styles.compactCard} aria-labelledby={`cand-${c.id}`}>
     <div className={styles.identity}><CandidateSilhouette /><div><h3 id={`cand-${c.id}`}>{c.displayName}</h3><p>{c.category?.label ?? (c.specialization ? specLabel(c.specialization) : 'Без категории')}</p><ExperienceLine experience={c.experience} /></div>{favoriteScope && <SaveCandidateButton scope={favoriteScope} candidateId={c.id} compact />}</div>
     <div className={styles.coverage}><strong>{item.total ? Math.round(item.covered / item.total * 100) : 0}<span>%</span></strong><p>покрытие требований вакансии<br />{item.covered} из {item.total} требований</p></div>
-    <div className={styles.reasonBox}><h4>Почему на этом месте</h4><dl><div><dt>Покрытие требований</dt><dd>{item.covered}/{item.total}</dd></div><div><dt>Артефакты и выше</dt><dd>{ex.proven.length}</dd></div><div><dt>Категория</dt><dd>{c.category?.label ?? 'не определена'}</dd></div>{item.gradeConfidence != null && c.category && <div data-testid="grade-confidence"><dt>Уверенность теста в грейде</dt><dd>{Math.round(item.gradeConfidence * 100)} %</dd></div>}<div><dt>Достижения ФСП</dt><dd>{c.fsp.hasAchievements ? 'есть' : 'не подтверждены'}</dd></div></dl><TestIntegrityLine integrity={item.testIntegrity} ownership={ex.depthMap?.testOwnership} /><p className={styles.meta} data-testid="assessment-disclaimer">{ASSESSMENT_DISCLAIMER}</p></div>
+    <div className={styles.reasonBox}><h4>Почему на этом месте</h4><dl><div><dt>Покрытие требований</dt><dd>{item.covered}/{item.total}</dd></div><div><dt>Артефакты и выше</dt><dd>{ex.proven.length}</dd></div><div><dt>Категория</dt><dd>{c.category?.label ?? 'не определена'}</dd></div><div><dt>Достижения ФСП</dt><dd>{c.fsp.hasAchievements ? 'есть' : 'не подтверждены'}</dd></div></dl><TestIntegrityLine integrity={item.testIntegrity} ownership={ex.depthMap?.testOwnership} /><p className={styles.meta} data-testid="assessment-disclaimer">{ASSESSMENT_DISCLAIMER}</p></div>
     <div className={styles.skillSection}><span className={styles.status}>Закрытые требования</span><div className={styles.skillChips}>{ex.covered.map((claim) => <span key={claim.statement}>{claim.statement}</span>)}</div>{ex.missing.length > 0 && <><span className={styles.status}>Не хватает</span><div className={styles.skillChips} data-missing="true">{ex.missing.map((statement) => <span key={statement}>{statement}</span>)}</div></>}</div>
     <details className={styles.evidenceDetails}><summary>Доказательства и этапы оценки</summary><p className={styles.text}>{ex.summary}</p><p className={styles.meta}>{ex.category}. {ex.fsp}. {ex.subcategory}</p>{ex.depthMap && <DepthMapBlock depth={ex.depthMap} />}{ex.project && <ProjectBlock project={ex.project} />}{ex.defense && <DefenseBlock defense={ex.defense} />}<div className={styles.claims}>{c.claims.map((claim) => <span key={claim.catalogId} className={styles.claim}><LevelBadge level={claim.level} />{claim.statement}<SourceType type={claim.sourceType} /></span>)}</div></details>
-    {c.contacts ? <><div className={styles.contacts}><strong>{c.contacts.name}</strong><span>{c.contacts.contact ?? NO_CANDIDATE_CONTACT}</span></div>{item.defenseRoom && <Button href={`/employer/calls/${item.defenseRoom.sessionId}`}>Комната защиты →</Button>}<CandidateQuestions candidateId={c.id} /></> : open ? <div className={styles.sentBox}>Приглашение {INVITATION_STATUS_LABEL[item.invitation!.status]}<Button href="/employer/invitations" size="sm">Статусы →</Button></div> : <InviteForm candidateId={c.id} candidateName={c.displayName} vacancyId={vacancyId} defaultSalaryFrom={defaultSalary?.from} defaultSalaryTo={defaultSalary?.to} />}
+    {c.contacts ? <><div className={styles.contacts}><strong>{c.contacts.name}</strong><span>{c.contacts.contact ?? NO_CANDIDATE_CONTACT}</span></div>{item.defenseRoom && <Button href={`/employer/calls/${item.defenseRoom.sessionId}`}>Комната защиты →</Button>}<CandidateQuestions candidateId={c.id} /></> : open ? <div className={styles.sentBox}>Приглашение {INVITATION_STATUS_LABEL[item.invitation!.status]}<Button href="/employer/invitations" size="sm">Статусы →</Button></div> : <InviteForm candidateId={c.id} candidateName={c.displayName} vacancyId={vacancyId} defaultSalaryFrom={defaultSalary?.from} defaultSalaryTo={defaultSalary?.to} matchRank={item.rank} matchSource={matchSource} />}
   </li>;
   return (
     <Panel as="li" className={styles.card} aria-labelledby={`cand-${c.id}`}>
@@ -105,11 +106,6 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary, favoriteSco
       <p className={styles.meta}>
         ФСП: {ex.fsp}. Категория: {ex.category}.{ex.subcategory && ` Подкатегория: ${ex.subcategory}.`}{ex.stackMatched.length > 0 && ` Стек в подтверждённых цитатах: ${ex.stackMatched.join(', ')}.`}
       </p>
-      {item.gradeConfidence != null && c.category && (
-        <p className={styles.meta} data-testid="grade-confidence-line">
-          Вероятность, что уровень не ниже {GRADE_LABEL[c.category.grade]}: {Math.round(item.gradeConfidence * 100)} %. Это уверенность теста в грейде, а не вероятность найма.
-        </p>
-      )}
       <TestIntegrityLine integrity={item.testIntegrity} ownership={ex.depthMap?.testOwnership} />
       {ex.depthMap && <DepthMapBlock depth={ex.depthMap} />}
       {ex.project && <ProjectBlock project={ex.project} />}
@@ -151,7 +147,7 @@ export function CandidateMatchCard({ item, vacancyId, defaultSalary, favoriteSco
           Приглашение: <span className={styles.status}>{INVITATION_STATUS_LABEL[item.invitation!.status]}</span>
         </p>
       ) : (
-        !c.contacts && <InviteForm candidateId={c.id} candidateName={c.displayName} vacancyId={vacancyId} defaultSalaryFrom={defaultSalary?.from} defaultSalaryTo={defaultSalary?.to} />
+        !c.contacts && <InviteForm candidateId={c.id} candidateName={c.displayName} vacancyId={vacancyId} defaultSalaryFrom={defaultSalary?.from} defaultSalaryTo={defaultSalary?.to} matchRank={item.rank} matchSource={matchSource} />
       )}
     </Panel>
   );

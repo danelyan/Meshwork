@@ -1543,8 +1543,8 @@ paths:
       operationId: getAdminMetricsMatching
       tags:
         - admin
-      summary: "Воронка приглашений по категориям за период (`?days=`)."
-      description: "Воронка приглашений по категориям за период (`?days=`). Только owner.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      summary: "Воронка приглашений по категориям за период (`?days=`) и доля принятых по рангу в подборке (`byRank`: ≤ 3, ≤ 10, > 10, без ранга)."
+      description: "Воронка приглашений по категориям за период (`?days=`) и доля принятых по рангу в подборке (`byRank`: ≤ 3, ≤ 10, > 10, без ранга). Только owner.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
       security:
         -
           adminCookieAuth: []
@@ -1557,7 +1557,7 @@ paths:
             type: string
       responses:
         "200":
-          description: "Воронка приглашений по категориям за период (`?days=`). Только owner."
+          description: "Воронка приглашений по категориям за период (`?days=`) и доля принятых по рангу в подборке (`byRank`: ≤ 3, ≤ 10, > 10, без ранга). Только owner."
           content:
             "application/json":
               schema:
@@ -10953,6 +10953,26 @@ components:
           type: integer
           minimum: 1
           maximum: 10000000
+        matchRank:
+          anyOf:
+            -
+              type: integer
+              minimum: 1
+              maximum: 1000
+            -
+              type: "null"
+        matchSource:
+          anyOf:
+            -
+              type: string
+              enum:
+                - matching
+                - search
+                - favorites
+                - assistant
+                - other
+            -
+              type: "null"
       required:
         - candidateId
         - message

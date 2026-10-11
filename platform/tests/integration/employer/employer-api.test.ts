@@ -267,6 +267,17 @@ describe('кабинет работодателя (БД)', () => {
     expect((await sendInvite('nope')).status).toBe(404);
   });
 
+  it('ранг в подборке (E-08, метрика): сохраняется matchRank/matchSource; вне 1..1000 или чужой источник — 400; без ранга — null', async () => {
+    expect((await sendInvite(PAY.id, EMP, { matchRank: 0 })).status).toBe(400);
+    expect((await sendInvite(PAY.id, EMP, { matchRank: 1001 })).status).toBe(400);
+    expect((await sendInvite(PAY.id, EMP, { matchRank: 2.5 })).status).toBe(400);
+    expect((await sendInvite(PAY.id, EMP, { matchSource: 'hack' })).status).toBe(400);
+    const ranked = await (await sendInvite(PAY.id, EMP, { matchRank: 2, matchSource: 'matching' })).json();
+    expect(await prisma.invitation.findUniqueOrThrow({ where: { id: ranked.id }, select: { matchRank: true, matchSource: true } })).toEqual({ matchRank: 2, matchSource: 'matching' });
+    const plain = await (await sendInvite('demo-pool-be-j-1')).json();
+    expect(await prisma.invitation.findUniqueOrThrow({ where: { id: plain.id }, select: { matchRank: true, matchSource: true } })).toEqual({ matchRank: null, matchSource: null });
+  });
+
   it('лимит приглашений компании за сутки — 429', async () => {
     const ctx = { companyId: DEMO_EMPLOYER.companyId, employerProfileId: DEMO_EMPLOYER.profileId };
     const ids = DEMO_POOL.slice(0, 3).map((p) => p.id);

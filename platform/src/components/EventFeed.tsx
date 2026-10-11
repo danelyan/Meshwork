@@ -141,7 +141,7 @@ function ClaimsBlock({
       <div className={styles.cardsHead}>
         <h3 className={styles.cardsTitle}>
           {claims.length > 0 ? (
-            `Нашёл утверждений: ${claims.length}. Это про тебя?`
+            `Нашла утверждений: ${claims.length}. Это про тебя?`
           ) : event.alreadyKnown ? (
             <>
               Новых утверждений нет: {event.alreadyKnown} уже в твоём профиле. <Link href="/profile">Открыть профиль</Link>

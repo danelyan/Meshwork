@@ -78,7 +78,8 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   // Пустой разговор, состояние которого известно (initial с сервера): первую реплику говорит модель
   // (ход kickoff, решение владельца 11.10). Запасной текст - только если ход не удался. Без initial
   // (экран без восстановления, тесты) - текст как раньше.
-  const kickoff = initial !== undefined && initial.items.length === 0;
+  // Разговора на сервере ещё нет (или он пуст): восстановленный блок карточек из профиля - не переписка.
+  const kickoff = initial !== undefined && (initial.conversationId == null || initial.items.length === 0);
   const kickRef = useRef(false);
   const [kickFailed, setKickFailed] = useState(false);
   const leadText = kickoff && !kickFailed ? null : embedded ? CONTINUE_GREETING : GREETING;

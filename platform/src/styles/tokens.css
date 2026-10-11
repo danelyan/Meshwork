@@ -232,6 +232,7 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   --call-control-hover: rgba(255, 255, 255, 0.16);
   --call-end: #d93a32;
   --call-rec: #ff4d43;
+  --call-ready: #2fa866;
 }
 
 /*

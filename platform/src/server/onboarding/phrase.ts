@@ -38,7 +38,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
   }
   // Первая реплика чата — приветствие и сразу к делу (согласие уже взято при регистрации).
   if (step.id === 'role' && prev === null) {
-    return `Привет${name ? `, ${name}` : ''}! Я ${COMPANION_NAME}, помощница MESHWORK. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут - и настроим всё под тебя; любой вопрос можно пропустить.`;
+    return `Привет${name ? `, ${name}` : ''}! Я ${COMPANION_NAME}, помощница ФСП Карьеры. Здесь не рассылают резюме: компании сами ищут специалистов по проверенным навыкам. Пара минут - и настроим всё под тебя; любой вопрос можно пропустить.`;
   }
   if (step.kind === 'summary') {
     return ctx.answers.role === 'employer' || ctx.facts.role === 'employer'
@@ -142,7 +142,7 @@ export async function leadFor(
     const input = {
       name: firstName(ctx.facts.name),
       role: ctx.facts.role === 'pending' ? (ctx.answers.role ?? 'pending') : ctx.facts.role,
-      step: { eyebrow: step.eyebrow, question: step.question },
+      step: { eyebrow: step.eyebrow, question: step.question, ...(step.sub ? { sub: step.sub } : {}) },
       previous: prev ? { question: prev.step.question, answer: maskContacts(prev.label ?? 'пропущено').text } : null,
     };
     const res = await llm.complete(

@@ -7,7 +7,7 @@ import type { EmployerRestoredChat, EmployerRestoredItem } from '@/server/agent/
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 import { checkInn } from '@/server/onboarding/inn';
-import { asideToModel, looksLikeQuestion, matchStepText } from '@/server/onboarding/match';
+import { asideToModel, looksLikeQuestion, looksLikeSkip, matchStepText } from '@/server/onboarding/match';
 import type { OnboardingView, StepView } from '@/server/onboarding/types';
 
 import { CompanionStage } from '../avatar/CompanionStage';
@@ -67,7 +67,7 @@ const extraOf = (s: StepView) => (s.kind === 'chips' ? multiOf(s).filter((v) => 
 const draftOf = (s: StepView) => (s.kind === 'text' && typeof s.value === 'string' ? s.value : '');
 
 /**
- * Онбординг — лента-чат помощника MESHWORK (E-02, решение владельца 09.10): реплика появляется
+ * Онбординг — лента-чат помощника ФСП Карьеры (E-02, решение владельца 09.10): реплика появляется
  * с «печатает», варианты — чипами под ней, ответ становится пузырём справа, текст — полем внизу.
  * Без «Далее» и счётчика шагов: прогресс — тонкая полоса. После итога та же лента продолжается
  * карьерным консультантом (Chat embedded). Логика шагов — на сервере; клиент показывает OnboardingView.
@@ -248,6 +248,12 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   function submitDraft() {
     if (!canInput) return;
     const v = draft.trim();
+    // «пропустить» на любом необязательном шаге, «не знаю» там, где текст стал бы значением, — пропуск, как кнопкой.
+    if (v && looksLikeSkip(cur, v) && !matchStepText(cur, v) && !(cur.kind === 'chips' && sel.length) && att.ready.length === 0) {
+      setError(null);
+      setDraft('');
+      return skip();
+    }
     if (cur.kind === 'files') {
       // Ни файла, ни ссылки, но есть текст — это вопрос, а не материалы.
       if (v && att.ready.length === 0 && !att.uploading && extractUrls(v).length === 0 && toModel) return aside(v);
@@ -410,7 +416,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             </nav>
           )}
           {!isSummary && (
-            <><span className={styles.saved}>пройдено {view.progress.done} из {view.progress.total}</span>
+            <><span className={styles.saved}>сохранено {view.progress.done} из {view.progress.total}</span>
             <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
               {inConsultant && !employer ? 'Вернуться в чат' : 'Настроить позже'}
             </Button></>
@@ -424,12 +430,12 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
       <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>
         {!inConsultant && (
           <VisuallyHidden>
-            <h1>Знакомство с помощником MESHWORK</h1>
+            <h1>Знакомство с помощником ФСП Карьеры</h1>
           </VisuallyHidden>
         )}
         {!inConsultant && <CompanionStage className={styles.stage} />}
         <Thread label="Переписка с помощником">
-          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>{inConsultant ? (employer ? 'В блоке «Что я знаю о компании» видно, что я сохраняю, а вкладка «Как видит кандидат» покажет, что увидит кандидат.' : 'В блоке «Что я о тебе знаю» видно, что я сохраняю, а вкладка «Как видит компания» покажет, что из этого увидит работодатель.') : 'В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит.'} Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
+          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>{inConsultant ? (employer ? 'Справа в «Что я знаю о компании» видно, что я сохраняю, а «Как видит кандидат» покажет, что увидит кандидат.' : 'Справа в «Что я о тебе знаю» видно, что я сохраняю, а «Как видит компания» покажет, что из этого увидит работодатель.') : 'В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит.'} Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
           {view.history.map((h) => (
             <HistoryPair
               key={h.stepId}

@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   // Нативные/тяжёлые серверные пакеты — без бандлинга, через require Node.js
   // (docs: next.config.js/serverExternalPackages).
-  serverExternalPackages: ['unpdf', 'mammoth'],
+  serverExternalPackages: ['unpdf', 'mammoth', 'pdfkit'],
   poweredByHeader: false,
   // Второй локальный dev-сервер из той же папки — со своим каталогом сборки, иначе общий .next ломает оба
   // (docs: next.config.js/distDir). По умолчанию .next.

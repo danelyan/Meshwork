@@ -62,7 +62,7 @@ test('С1: вход → резюме и ссылка → шаги → карто
   // профиль: утверждения сгруппированы по уровням
   await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'Профиль' }).click();
   await page.waitForURL('**/profile');
-  await expect(page.getByRole('button', { name: 'PDF-профиль' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'PDF-профиль' })).toHaveAttribute('href', '/api/profile/pdf');
   await expect(page.getByText(/со слов|артефакт/).first()).toBeVisible();
 });
 

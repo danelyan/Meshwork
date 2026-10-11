@@ -170,11 +170,6 @@ export function getSession(req: Request): SessionPrincipal | null {
   return parseSession(readCookie(req, SESSION_COOKIE));
 }
 
-/** candidateId из подписанной куки или null. */
-export function getCandidateId(req: Request): string | null {
-  return getSession(req)?.candidateId ?? null;
-}
-
 /**
  * Кандидат по активной роли: 401 — нет сессии; 403 — активна другая роль (работодатель, pending) или нет
  * профиля кандидата. Чистая функция (тесты без запроса). Старая демо-кука (userId = null) — кандидат.

@@ -196,17 +196,17 @@
 
 Где используются сейчас: `Button` - шапка («Выйти»), `ProfilePage` («К консультанту», «Печать / PDF», «На страницу входа»); `Notice` - `ProfilePage` (ошибка загрузки). Остальное - в списке «к переводу».
 
-Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Uploader`, `Recommendations`, `onboarding/OnboardingChat` (онбординг — лента помощника на весь экран, см. «Лента чата»); вход по почте — `auth/EmailAuth` (вкладки на `Chip`, поля `Field`, `Notice`, `Button`); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `AssistantChat`, `AssistantCandidateCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `IncomingInvitations`, `PrivacyToggle`, `RefinementHistory`, стили `Employer.module.css`). Шапка, подвал и колонка страницы — оболочка `components/shell` (см. «Оболочка»). Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
+Составные компоненты экранов (не примитивы): `LevelBadge` (знак + текст + рамка по уровню доказанности), `ClaimCard`, `EventFeed`, `Chat`, `DefenseDialog`, `Recommendations`, `onboarding/OnboardingChat` (онбординг — лента помощника на весь экран, см. «Лента чата»); вход по почте — `auth/EmailAuth` (вкладки на `Chip`, поля `Field`, `Notice`, `Button`); кабинет работодателя — `components/employer/*` (`CandidateMatchCard`, `AssistantChat`, `AssistantCandidateCard`, `VacancyForm`, `FilterForm`, `InviteForm`, `RefinementHistory`, стили `Employer.module.css`). Шапка, подвал и колонка страницы — оболочка `components/shell` (см. «Оболочка»). Строятся из примитивов; общий кусок, повторившийся в двух экранах, выносится в `components/ui` через этот документ.
 
 ### К переводу на примитивы
 
 Экраны меняют параллельные лейны, поэтому не переведены (при ближайшей правке экрана - переводить, ничего не ломая в виде):
 
-- `Chat`, `EventFeed`, `ClaimCard`, `DefenseDialog`, `Uploader`, `Recommendations`: кнопки `ui.btn…` -> `Button`, поля -> `Field`, уведомления -> `Notice`.
+- `Chat`, `EventFeed`, `ClaimCard`, `DefenseDialog`, `Recommendations`: кнопки `ui.btn…` -> `Button`, поля -> `Field`, уведомления -> `Notice`.
 - `ProfilePage`: кнопки решения по утверждениям (`ClaimItem`), `Panel`, `Meter`, `Avatar`, `Kicker`, спиннер загрузки - пока `ui.*` классами.
 - `LevelBadge`: на `Tag` (`tone` по уровню).
-- `LoginForm` и главная - лейн landing2.
-- Сырые цвета в модулях (allowlist теста): ClaimCard 1, DefenseDialog 3, LoginForm 1, ProfilePage 3, Uploader 1 строк. Заменять токенами и уменьшать allowlist; увеличивать нельзя.
+- Главная - лейн landing2.
+- Сырые цвета в модулях (allowlist теста): ClaimCard 1, DefenseDialog 3, ProfilePage 3 строк. Заменять токенами и уменьшать allowlist; увеличивать нельзя.
 
 ### Лента чата
 
@@ -266,11 +266,11 @@
 Шапка, подвал и колонка страницы - один набор на весь сайт, `components/shell/`. Страница про них ничего не знает.
 
 - `app/layout.tsx` подключает `ShellFrame` один раз: ссылка «К содержимому», `SiteHeader`, страница, `SiteFooter`. Своих `Header` в `layout.tsx` групп нет.
-- `SiteHeader` (серверный) читает сессию и отдаёт клиентскому `HeaderBar` ссылки роли из `shell/nav.ts`: кандидат - Консультант / Профиль / Тест / Приглашения, работодатель - Потребности / Поиск по базе / Приглашения. Гость видит «Войти»; на главной (`/`) гостю добавляются якоря «Компании / Почему мы», всем - «№ 01 · осень 2026». Вошедший видит «Выйти» и плашку «Онбординг не завершён» (`OnboardingBanner`). Ссылки роли менять только в `nav.ts`.
+- `SiteHeader` (серверный) читает сессию и отдаёт клиентскому `HeaderBar` ссылки роли из `shell/nav.ts`: кандидат - Консультант / Профиль / Тест / Приглашения, работодатель - Потребности / Поиск по базе / Приглашения. Гость видит «Войти»; на главной (`/`) шапку оболочки заменяет шапка лендинга (`ShellFrame` её прячет). Вошедший видит «Выйти» и плашку «Онбординг не завершён» (`OnboardingBanner`). Ссылки роли менять только в `nav.ts`.
 - Метка активной роли и переключатель (`shell/RoleSwitch`, ADR 0004): `Tag` с ролью («Кандидат» / «Работодатель · <компания>») и `Button size="sm"` — «Режим работодателя/кандидата», если второй профиль есть, иначе «Стать работодателем/кандидатом» с шагом подтверждения (работодателю — `Field` с названием компании, ошибка через `error`); Escape и «Отмена» закрывают шаг и возвращают фокус на кнопку; у метки — префикс `VisuallyHidden` «Активная роль:». Данные — `roleMenuFor` в `SiteHeader`; после ответа API — полная навигация (`window.location.assign`), а не `router.refresh()`: дом обеих ролей один адрес `/consultant`, и клиентское состояние ленты прежней роли должно сброситься. Ролевые цвета (`data-role`) — не здесь, лейн `roleui`.
 - Лэйаут не перерисовывается при клиентской навигации (Next.js 15), поэтому после входа и выхода нужен `router.refresh()`; экраны входа и `LogoutButton` его вызывают. Новый способ войти/выйти обязан делать то же.
 - Исключения: `/onboarding` без шапки и подвала (у чата своя полоса с `Brand` и «Настроить позже», список `BARE_PATHS` в `ShellFrame`); тест в процессе скрывает оболочку через `useBareShell(active)`. Другие страницы-исключения - добавить путь в `BARE_PATHS` или вызвать хук.
-- Клиентские файлы импортируют конкретные модули (`shell/Brand`, `shell/ShellFrame`), не `shell/index.ts`: иначе `SiteHeader` (`next/headers`) попадёт в клиентский бандл.
+- Модули оболочки импортируются по конкретным путям (`shell/Brand`, `shell/ShellFrame`); общего `shell/index.ts` нет: через него `SiteHeader` (`next/headers`) попадал бы в клиентский бандл.
 - `Container size="text|default|wide"` - колонка 720 / 960 / 1120 px с полями `--page-pad`; `PageTitle` - кикер + h1 + лид. `Brand` - знак и «/карьера», везде один.
 
 Как добавить страницу: создать `app/<путь>/page.tsx` с корнем `<main id="main">`, внутри `Container` и `PageTitle`. Шапка и подвал появятся сами; ссылку в навигацию - в `shell/nav.ts`. Ошибку API и пустое состояние показывать через `Notice` (`tone="error"` / по умолчанию), а не сырым `ui.notice`.

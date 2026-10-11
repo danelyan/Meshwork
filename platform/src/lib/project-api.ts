@@ -1,5 +1,5 @@
 // Клиентские вызовы ступени 2 «проект под работодателя» (ADR 0003): лента, сдача, задание потребности.
-import type { CandidateSubmissionView, EmployerSubmissionView, EmployerTaskView, TemplateView } from '@/server/project/service';
+import type { CandidateSubmissionView, EmployerSubmissionView, EmployerTaskView } from '@/server/project/service';
 
 import { postJson, request } from './api';
 
@@ -11,8 +11,6 @@ export const submitProjectApi = (taskId: string, body: { repoUrl: string; aiLogT
 
 export const getSubmissionApi = (id: string) => request<CandidateSubmissionView>(`/api/project-submissions/${encodeURIComponent(id)}`);
 
-export const getNeedProjectApi = (needId: string) => request<{ task: EmployerTaskView | null }>(`/api/employer/needs/${encodeURIComponent(needId)}/project`);
-
 export interface NeedProjectBody {
   templateId?: string;
   requiredCatalogIds: string[];
@@ -21,9 +19,6 @@ export interface NeedProjectBody {
 }
 
 export const saveNeedProjectApi = (needId: string, body: NeedProjectBody) => postJson<EmployerTaskView>(`/api/employer/needs/${encodeURIComponent(needId)}/project`, body);
-
-export const listTemplatesApi = (specialization?: string) =>
-  request<{ templates: TemplateView[] }>(`/api/employer/project-templates${specialization ? `?specialization=${encodeURIComponent(specialization)}` : ''}`);
 
 export const listProjectSubmissionsApi = (needId: string) =>
   request<{ task: EmployerTaskView | null; items: EmployerSubmissionView[] }>(`/api/employer/project-submissions?needId=${encodeURIComponent(needId)}`);

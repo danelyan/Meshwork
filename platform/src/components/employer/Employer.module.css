@@ -20,7 +20,6 @@
 .more { cursor: pointer; min-height: 36px; display: flex; align-items: center; }
 .claim > [data-level] { flex: none; white-space: nowrap; }
 .claim { display: inline-flex; gap: 8px; align-items: flex-start; font-size: var(--fs-sm); max-width: 100%; overflow-wrap: anywhere; }
-.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; }
 .checks { display: flex; flex-wrap: wrap; gap: 16px; grid-column: 1 / -1; font-size: var(--fs); }
 .checks label { display: inline-flex; gap: 8px; align-items: center; min-height: 36px; }
 .history { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--fs-sm); }
@@ -58,7 +57,6 @@
 .mapCenter::after { content: ''; position: absolute; top: 100%; left: 50%; width: 1px; height: 30px; background: var(--blue); }
 .mapCenter > span { font-size: 34px; line-height: 1; }
 .mapCenter small { font-family: var(--mono); font-size: var(--fs-xs); color: var(--on-ink-soft); }
-.mapNodes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; position: relative; border-top: 1px solid var(--blue); padding-top: 18px; }
 .mapNode { position: relative; display: grid; gap: 8px; padding: 18px 12px; background: var(--glass-strong); border: 1px solid var(--border-input); text-align: left; min-width: 0; overflow-wrap: anywhere; transition: border-color .15s, background .15s; }
 .mapNode::before { content: ''; position: absolute; left: 50%; bottom: 100%; width: 1px; height: 18px; background: var(--blue); }
 .mapNode[aria-pressed='true'] { border-color: var(--blue); outline: 1px solid var(--blue); background: var(--surface-input); }
@@ -72,7 +70,6 @@
 .resultRow[aria-pressed='true'] { box-shadow: inset 3px 0 0 var(--blue); background: var(--glass-strong); }
 .resultRow strong { display: block; font-size: var(--fs); overflow-wrap: anywhere; }
 .resultRow small { display: block; margin-top: 5px; color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
-.mapNote { padding: 16px 18px; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
 .saveButton { justify-self: start; min-height: 38px; padding: 6px 10px; background: transparent; border: 1px solid var(--line); font-family: var(--mono); font-size: var(--fs-sm); }
 .saveButton[aria-pressed='true'] { color: var(--blue); border-color: var(--blue); }
 .timeline { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 16px; margin: 12px 0; }
@@ -99,12 +96,11 @@
 
 @media (max-width: 640px) {
   .page { padding: 24px 16px 48px; }
-  .grid, .row, .filters { grid-template-columns: minmax(0, 1fr); }
+  .grid, .row { grid-template-columns: minmax(0, 1fr); }
   .head h1 { font-size: 36px; }
   .tabs button { padding: 12px 10px; }
   .explorerBar { flex-wrap: wrap; }
   .selectedCandidate .card, .vacancyCard { padding: 18px; }
-  .mapNodes { grid-template-columns: minmax(0, 1fr); }
   .timeline { gap: 8px; }
   .timeline > div { font-size: var(--fs-xs); }
 }

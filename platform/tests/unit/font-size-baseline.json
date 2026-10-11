@@ -1,9 +1,7 @@
 {
-  "components/AuthScreen.module.css": 2,
   "components/Chat.module.css": 2,
   "components/DefenseDialog.module.css": 1,
-  "components/LoginForm.module.css": 7,
-  "components/ProfilePage.module.css": 8,
+  "components/ProfilePage.module.css": 6,
   "components/TestPage.module.css": 15,
   "components/auth/AuthEntry.module.css": 2,
   "components/call/CallPanel.module.css": 1,

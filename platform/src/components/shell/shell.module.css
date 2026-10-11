@@ -16,16 +16,7 @@
 .frame:has([data-dashboard]) .avatar, .consultant .avatar { border-radius: 0; width: 36px; height: 36px; }
 .frame:has([data-dashboard]) .accountRole, .consultant .accountRole { color: var(--ink); }
 .employerBadge { margin-left: 16px; padding: 5px 8px; border: 1px solid var(--employer-accent); color: var(--employer-accent); font: var(--fs-xs) var(--mono); white-space: nowrap; }
-.roleSwitch { margin-left: auto; margin-right: auto; position: relative; }
-.roleSwitchButtons { display: flex; gap: 0; border: 1px solid var(--line); background: var(--glass); }
-.roleSwitchButtons button { border: 0; background: transparent; color: var(--muted); min-height: 40px; padding: 8px 16px; font: var(--fs) var(--font); cursor: pointer; white-space: nowrap; }
-.roleSwitchButtons button[data-role='candidate'][aria-pressed='true'] { color: var(--on-ink); background: var(--candidate-accent); font-weight: 600; }
-.roleSwitchButtons button[data-role='employer'][aria-pressed='true'] { color: var(--on-ink); background: var(--employer-accent); font-weight: 600; }
-.roleSwitchPanel { position: absolute; top: calc(100% + 12px); width: min(360px, calc(100vw - 32px)); left: 50%; transform: translateX(-50%); background: var(--paper); border: 1px solid var(--line); box-shadow: var(--landing-shadow-md); z-index: 30; }
-.demoRoleLink { color: var(--blue); font-weight: 600; text-decoration: underline; }
-.roleSwitch + .action { margin-left: 0; }
 @media (max-width: 1100px) { .employerBadge { display: none; } }
-@media (max-width: 720px) { .roleSwitch { order: 3; width: 100%; } .roleSwitchButtons { justify-content: center; } .roleSwitch + .action { margin-left: auto; } }
 .frame:has([data-dashboard]) .container { max-width: none; padding-top: 32px; }
 @media (max-width: 640px) { .frame:has([data-dashboard]), .consultant { --page-pad: 16px; } }
 
@@ -40,10 +31,11 @@
 /* Созвон (тёмная сцена при любой теме) заходит под полупрозрачную шапку и серит её — тогда шапка сплошная.
    Тёмная тема страницы шапку не трогает: её стекло и рамка — смысловые токены (tokens.css, data-theme на <html>). */
 .frame:has([data-call]) .header { background: var(--paper); }
-.brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: var(--fs-xl); }
-.brand:hover { color: var(--blue); }
-.brand img { height: 34px; width: auto; display: block; filter: var(--logo-filter); }
-.brand span { font-weight: 500; font-size: var(--fs-md); color: var(--muted); }
+.brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 18px; }
+.wordmark { font: 700 var(--fs-2xl)/1 var(--mono); letter-spacing: -.02em; }
+.wordmark span { color: var(--candidate-accent); }
+.federation { display: flex; align-items: center; padding-left: 18px; border-left: 1px solid var(--border-input); min-height: 32px; }
+.federation img { height: 28px; width: auto; display: block; filter: var(--logo-filter); }
 .nav { display: flex; gap: 4px; margin-left: 56px; align-items: center; min-width: 0; }
 .nav a { padding: 12px 18px; font-weight: 500; font-size: var(--fs-md); color: var(--muted); white-space: nowrap; }
 .nav a:hover { color: var(--ink); background: var(--surface-hover); }
@@ -148,20 +140,10 @@
 .pageTitle h1 { margin: 0; font-size: clamp(36px, 5vw, 64px); line-height: 0.98; letter-spacing: -0.05em; } /* fs-ok: заголовок экрана, fluid clamp */
 .pageTitle p { margin: 0; font-size: var(--fs-lg); line-height: 1.55; color: var(--text-soft); }
 
-/* Шесть ссылок работодателя + «Для жюри», уведомления, тема и аккаунт не помещаются уже на 1440px:
-   меню сжимается и прокручивается, а не уезжает под кнопки справа (правая часть не сжимается). */
-.nav { overflow-x: auto; scrollbar-width: none; }
-.nav::-webkit-scrollbar { display: none; }
-.action { flex: none; }
-@media (max-width: 1500px) {
-  .employerBadge { display: none; }
-  .nav { margin-left: 32px; }
-  .nav a { padding: 12px 12px; }
-  .accountRole { max-width: 120px; }
-}
-/* < 1150px: якоря главной прячем (как было на лендинге) */
 @media (max-width: 1150px) {
-  .anchors { display: none; }
+  /* Пять ссылок работодателя и метка роли не помещаются: ссылки прокручиваются, метка роли не сжимается. */
+  .nav { overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
 }
 @media (max-width: 960px) {
   .nav { margin-left: 20px; }
@@ -178,8 +160,13 @@
   .header { gap: 8px; }
   .accountBtn { height: 44px; padding-right: 8px; }
   .accountRole { font-size: var(--fs); }
-  .brand img { height: 30px; }
-  .brand span { display: none; }
+  .brand { gap: 10px; }
+  .wordmark { font-size: var(--fs-lg); }
+  .federation { padding-left: 10px; }
+  .federation img { height: 22px; }
+  .frame:has([data-dashboard]) .accountRole { display: none; }
+  .frame:has([data-dashboard]) .action { gap: 0; }
+  .frame:has([data-dashboard]) .jury { font-size: var(--fs-xs); padding: 0 6px; }
   .login { height: 44px; padding: 0 12px; font-size: var(--fs); }
   .jury { height: 44px; padding: 0 10px; font-size: var(--fs); }
   .juryHint { display: none; }

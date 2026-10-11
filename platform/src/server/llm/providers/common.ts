@@ -1,5 +1,5 @@
 import { parseJsonLoose, stripThinking } from '../json-output';
-import type { CompleteRequest, CompleteResult, ToolCall } from '../types';
+import type { CompleteRequest, CompleteResult } from '../types';
 
 export type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -26,10 +26,6 @@ export function textOrJson(
     return { kind: 'text', text };
   }
   return { kind: 'text', text: stripThinking(text) };
-}
-
-export function toolCallsResult(calls: ToolCall[]): Pick<CompleteResult, 'kind' | 'toolCalls'> {
-  return { kind: 'tool_calls', toolCalls: calls };
 }
 
 /** Имя инструмента из toolCalls предыдущих assistant-сообщений по id вызова. */

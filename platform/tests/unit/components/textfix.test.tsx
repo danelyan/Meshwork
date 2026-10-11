@@ -2,7 +2,6 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 import { ClaimCard } from '@/components/ClaimCard';
 import { EventFeed, type FeedItem, rejectNotesOf } from '@/components/EventFeed';
-import { LoginForm } from '@/components/LoginForm';
 import { ProfilePage } from '@/components/ProfilePage';
 import type { AgentEvent } from '@/server/agent/types';
 
@@ -47,21 +46,6 @@ describe('«Подтвердить все»: итог', () => {
     render(<EventFeed items={items} onClaimAction={async () => {}} onConfirmAll={async (cs) => cs.length} />);
     fireEvent.click(screen.getByText(/Подтвердить все со слов \(2\)/));
     await waitFor(() => expect(screen.getByText('Подтверждено: 2.')).toBeDefined());
-  });
-});
-
-describe('LoginForm: демо-резюме', () => {
-  it('нет ссылки → без «ссылка:»; есть → показана', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ candidates: [
-      { id: 'a', name: 'А', specialization: 'backend', fspState: 'x', demoResume: { fileName: 'demo-1.pdf', link: 'https://github.com/demo-ryabinin' } },
-      { id: 'b', name: 'Б', specialization: null, fspState: 'x', demoResume: { fileName: 'demo-2.pdf', link: '' } },
-      { id: 'c', name: 'В', specialization: null, fspState: 'x', demoResume: null },
-    ] }) })));
-    render(<LoginForm />);
-    await screen.findByText('А');
-    const hints = Array.from(document.querySelectorAll('code')).map((x) => x.textContent);
-    expect(hints).toEqual(['eval/pdf/demo-1.pdf', 'https://github.com/demo-ryabinin', 'eval/pdf/demo-2.pdf']);
-    expect((document.body.textContent ?? '').match(/ссылка:/g)).toHaveLength(1);
   });
 });
 

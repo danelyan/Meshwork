@@ -2,12 +2,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 import { CandidateMatchCard } from '@/components/employer/CandidateMatchCard';
 import { FilterForm } from '@/components/employer/FilterForm';
-import { IncomingInvitations } from '@/components/employer/IncomingInvitations';
 import { InviteContactProvider } from '@/components/employer/InviteContactContext';
 import { InviteForm, NO_COMPANY_CONTACT_NOTICE } from '@/components/employer/InviteForm';
 import { VacancyForm, type CatalogOption } from '@/components/employer/VacancyForm';
 import type { MatchItem } from '@/server/employer/matching';
-import type { CandidateInvitationView } from '@/server/employer/invitations';
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -209,48 +207,6 @@ describe('кабинет работодателя: компоненты', () => 
     const body = JSON.parse((fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(body).toMatchObject({ title: 'Backend', subcategoryId: 'backend.integrations', salaryFrom: 200000, salaryTo: 250000, stack: ['Go', 'Kafka'] });
     expect(body.needs.map((n: { catalogId: string }) => n.catalogId).sort()).toEqual(['be.orm', 'common.git']);
-  });
-});
-
-describe('входящие приглашения кандидата', () => {
-  const INV: CandidateInvitationView = {
-    id: 'i1',
-    status: 'viewed',
-    salaryFrom: 230000,
-    salaryTo: 260000,
-    message: 'Платёжная команда',
-    createdAt: '2026-10-09T08:00:00.000Z',
-    respondedAt: null,
-    company: { name: 'Северный Поток', description: null, contact: '@northstream_hr' },
-    vacancy: { title: 'Backend платежей', specialization: 'backend', grade: 'middle', salaryFrom: 200000, salaryTo: 280000, teamDescription: 'Переводы', stack: ['Go'] },
-  };
-
-  it('пусто — честное пустое состояние', () => {
-    render(<IncomingInvitations invitations={[]} />);
-    expect(screen.getByRole('status').textContent).toMatch(/Приглашений пока нет/);
-  });
-
-  it('до принятия видны компания, описание, вилка и способ связи; принять — POST и статус «принято»', async () => {
-    const fetchFn = stubFetch({ id: 'i1', status: 'accepted' });
-    render(<IncomingInvitations invitations={[INV]} />);
-    expect(screen.getByRole('heading', { name: 'Backend платежей' })).toBeDefined();
-    expect(screen.getByText('Северный Поток')).toBeDefined();
-    expect(screen.getByText('Платёжная команда')).toBeDefined();
-    expect(screen.getByText('230 000 - 260 000 ₽ в месяц')).toBeDefined();
-    expect(screen.getByText('Связь с компанией: @northstream_hr')).toBeDefined();
-    // Г5: без отдельной галочки раскрытия принять нельзя (ADR 0005).
-    expect((screen.getByRole('button', { name: 'Принять' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: 'Принять' }));
-    expect(await screen.findByText('принято')).toBeDefined();
-    expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/invitations/i1');
-    expect(JSON.parse((fetchFn.mock.calls[0] as unknown as [string, { body: string }])[1].body)).toMatchObject({ action: 'accept', disclosureVersion: expect.any(String) });
-    expect(screen.queryByRole('button', { name: 'Отклонить' })).toBeNull();
-  });
-
-  it('компания без способа связи — явный текст', () => {
-    render(<IncomingInvitations invitations={[{ ...INV, company: { ...INV.company, contact: null } }]} />);
-    expect(screen.getByText('Связь с компанией: Компания не указала способ связи')).toBeDefined();
   });
 });
 

@@ -11,12 +11,6 @@ export function formatMsk(iso: string | Date | null | undefined): string {
   return `${date} ${time} МСК`;
 }
 
-/** Только время «14:30». */
-export function formatMskTime(iso: string | Date): string {
-  const d = typeof iso === 'string' ? new Date(iso) : iso;
-  return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
-}
-
 /** Поле `datetime-local` («2026-10-12T14:30»), понятое как МСК → ISO UTC. null — не разобрано. */
 export function mskLocalToIso(local: string): string | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local.trim());

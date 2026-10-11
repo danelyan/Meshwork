@@ -16,7 +16,7 @@
 .danger { border-color: var(--danger-border); color: var(--danger-text); }
 .small { padding: 0 14px; font-size: var(--fs-sm); min-height: 36px; }
 
-/* чипы: .chip (кнопка-фильтр 40px), .chip[aria-pressed='true'] / .chipOn - чёрный */
+/* чипы: .chip (кнопка-фильтр 40px), .chip[aria-pressed='true'] - чёрный */
 .chip {
   display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px;
   border: 1px solid var(--border-faint); background: var(--surface-ghost); color: var(--ink);
@@ -24,7 +24,7 @@
   transition: background 0.2s var(--ease), color 0.2s var(--ease);
 }
 .chip:hover:not(:disabled) { border-color: var(--ink); }
-.chip[aria-pressed='true'], .chipOn { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.chip[aria-pressed='true'] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
 
 /* теги: .tag (моно-метка), модификаторы .outline (контур), .solid (синяя заливка); .red - прежнее имя, = контур с пунктиром */
 .tag {
@@ -47,8 +47,7 @@
 .label { display: block; font-family: var(--mono); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px; }
 .hint { font-size: var(--fs-sm); color: var(--muted); }
 
-/* стекло: .panel - карточка/панель; .glass - то же без внутренних отступов (шапки, полосы) */
-.glass { background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); }
+/* стекло: .panel - карточка/панель */
 .panel { background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-radius: 0; padding: 20px; }
 
 /* кикер и вторичный текст */

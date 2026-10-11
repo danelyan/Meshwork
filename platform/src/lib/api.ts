@@ -65,9 +65,7 @@ export interface DemoCandidate {
   demoResume?: { fileName: string; link: string } | null;
 }
 
-export const getDemoCandidates = async () => (await request<{ candidates: DemoCandidate[] }>('/api/demo/login')).candidates;
 export const demoLogin = (candidateId: string) => postJson<{ candidate: { id: string; name: string }; next?: string }>('/api/demo/login', { candidateId });
-export const demoLogout = () => request<{ ok: true }>('/api/demo/login', { method: 'DELETE' });
 
 // --- lane auth: вход, роль, согласие (docs/decisions/0001-auth-yandex-id.md) ---
 
@@ -82,8 +80,6 @@ export interface DemoEmployer {
 export const getDemoAccounts = () => request<{ candidates: DemoCandidate[]; employers?: DemoEmployer[]; personas?: DemoPersona[] }>('/api/demo/login');
 /** Новый демо-гость; `consent` — версия текста согласия с галки (без неё сервер отвечает 409/400). */
 export const demoFreshLogin = (consent: string) => postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', { fresh: true, consent });
-export const demoRestartOnboarding = (key: { restartUserId: string } | { restartCandidateId: string }) =>
-  postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', key);
 export const demoEmployerLogin = (employerUserId: string) =>
   postJson<{ employer: { id: string; name: string }; next: string }>('/api/demo/login', { employerUserId });
 export const logout = () => postJson<{ ok: true }>('/api/auth/logout', {});
@@ -103,13 +99,10 @@ export interface MeView {
   onboardingProgress?: { done: number; total: number } | null;
 }
 export const getMe = async () => (await request<{ user: MeView | null }>('/api/auth/me')).user;
-export const getConsentVersion = async () => (await request<{ version: string }>('/api/auth/consent')).version;
 export const acceptConsent = (version: string) => postJson<{ version: string; acceptedAt: string }>('/api/auth/consent', { version });
 /** Переключить активную роль (ADR 0004); после ответа — полная навигация на `next`. */
 export const switchRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName?: string }) =>
   postJson<{ role: MeView['role']; next: string; created: boolean; changed: boolean }>('/api/auth/role/switch', body);
-export const chooseRoleApi = (body: { role: 'candidate' } | { role: 'employer'; companyName: string }) =>
-  postJson<{ role: MeView['role']; candidateId: string | null; employerProfileId: string | null }>('/api/auth/role', body);
 export const completeOnboarding = () => postJson<{ onboarded: true; next: string }>('/api/auth/onboarding/complete', {});
 
 // --- lane onboarding: онбординг-чат (app/api/onboarding/route.ts) ---

@@ -54,12 +54,6 @@ export function navFor(role: SessionRole | null): NavItem[] {
   return [];
 }
 
-/** Якоря главной: показываются гостю только на «/». */
-export const HOME_ANCHORS: NavLink[] = [
-  { href: '#companies', label: 'Компании' },
-  { href: '#why', label: 'Почему мы' },
-];
-
 /** Ссылки роли; гость и `pending` (роль ещё не выбрана) — без ссылок. */
 export function linksFor(role: SessionRole | null): NavLink[] {
   if (role === 'candidate') return CANDIDATE_LINKS;

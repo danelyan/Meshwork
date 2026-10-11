@@ -169,13 +169,6 @@ export function parsePlanB(res: CompleteResult, req: CompleteRequest): PlanBPars
   };
 }
 
-/** Синхронный перевод без ремонта; невалидный ответ → LlmError('invalid_output'). */
-export function fromPlanBResult(res: CompleteResult, req: CompleteRequest): CompleteResult {
-  const p = parsePlanB(res, req);
-  if (!p.ok) throw new LlmError('invalid_output', `План В: ${p.error}`);
-  return { ...strip(res), ...p.result };
-}
-
 /**
  * Полный цикл плана В: запрос → разбор → при ошибке один ремонт → разбор → провал.
  * `call` — одна попытка у провайдера (client передаёт вызов с таймаутом).

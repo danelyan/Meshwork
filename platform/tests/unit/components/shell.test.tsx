@@ -16,7 +16,7 @@ vi.mock('next/navigation', () => ({
 const page = vi.hoisted(() => ({ session: null as unknown }));
 vi.mock('@/server/auth/page', () => ({ getPageSession: async () => page.session }));
 vi.mock('@/components/candidate/CandidateSidebarSummary', () => ({ CandidateSidebarSummary: () => null }));
-vi.mock('@/lib/api', () => ({ demoLogout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
+vi.mock('@/lib/api', () => ({ logout: vi.fn(), getMe: () => Promise.resolve({ onboarded: true }), switchRoleApi: vi.fn() }));
 // Меню роли (ADR 0004) читает БД — в тестах шапки подставляем готовое.
 const menu = vi.hoisted(() => ({ value: null as unknown }));
 vi.mock('@/server/auth/role-switch', () => ({ headerAccountFor: async () => menu.value }));
@@ -34,10 +34,11 @@ async function renderHeader(session: SessionPrincipal | null, pathname: string, 
 afterEach(cleanup);
 
 describe('SiteHeader', () => {
-  it('гость на главной: якоря, «Войти» → /auth, без даты выпуска и «Выйти»', async () => {
+  it('гость на главной: своих якорей у шапки нет (на «/» её прячет ShellFrame, якоря — в LandingChrome), «Войти» → /auth', async () => {
     const h = await renderHeader(null, '/');
-    expect(h.getByRole('link', { name: 'Компании' }).getAttribute('href')).toBe('#companies');
-    expect(h.getByRole('link', { name: 'Почему мы' }).getAttribute('href')).toBe('#why');
+    expect(h.queryByRole('navigation')).toBeNull();
+    expect(h.queryByRole('link', { name: 'Компании' })).toBeNull();
+    expect(h.queryByRole('link', { name: 'Почему мы' })).toBeNull();
     expect(h.queryByText('№ 01 · осень 2026')).toBeNull();
     expect(h.getByRole('link', { name: 'Войти' }).getAttribute('href')).toBe('/auth');
     expect(h.queryByRole('button', { name: 'Выйти' })).toBeNull();

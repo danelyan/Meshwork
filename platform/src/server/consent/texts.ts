@@ -17,8 +17,6 @@ export const CONSENT_KINDS = [
 ] as const;
 export type ConsentKindName = (typeof CONSENT_KINDS)[number];
 
-export const isConsentKind = (v: unknown): v is ConsentKindName => typeof v === 'string' && (CONSENT_KINDS as readonly string[]).includes(v);
-
 /** Заглушка оператора (решение владельца 11.10): реквизиты подставит команда. */
 export const OPERATOR = '[Оператор: наименование, ИНН, адрес]';
 

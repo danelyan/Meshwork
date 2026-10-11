@@ -1,22 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
 
 import styles from '../AuthScreen.module.css';
 import ui from '../ui.module.css';
-import { ConsentCheck } from './ConsentCheck';
 
 /**
  * Кнопки внешнего входа под одной галкой согласия: версия текста уходит в старт входа.
  * «Войти через ФСП ID» (/api/fsp-id/login) — только кандидату: ФСП ID есть у спортсменов; провайдер всегда
  * доступен (симулятор по env или встроенный мок). «Войти через Яндекс ID» (/api/auth/yandex) — если настроен.
  */
-type SignInProps = { enabled: boolean; next: string | null; fsp?: boolean; fspHint?: string | null; agreed?: boolean; hideWhenOff?: boolean };
+type SignInProps = { enabled: boolean; next: string | null; fsp?: boolean; fspHint?: string | null; agreed: boolean; hideWhenOff?: boolean };
 
 export function YandexSignIn(props: SignInProps) {
-  if (props.agreed === undefined) return <StandaloneSignIn {...props} />;
   const { enabled, next, fsp = false, fspHint = null, agreed, hideWhenOff = false } = props;
   const qs = new URLSearchParams({ consent: CONSENT_VERSION, ...(next ? { next } : {}) });
   const active = enabled && agreed;
@@ -46,10 +42,4 @@ export function YandexSignIn(props: SignInProps) {
       </a>}
     </>
   );
-}
-
-/** Legacy standalone AuthScreen: its own parent owns consent, just like AuthEntryFlow. */
-function StandaloneSignIn(props: SignInProps) {
-  const [agreed, setAgreed] = useState(false);
-  return <><ConsentCheck checked={agreed} onChange={setAgreed} /><YandexSignIn {...props} agreed={agreed} /></>;
 }

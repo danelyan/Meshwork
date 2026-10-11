@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import type { HeaderAccount } from '@/server/auth/role-plan';
 import { JURY_HINT, JURY_HOME, isJuryPath } from '@/components/demo/jury';
 
-import { HOME_ANCHORS, dashboardPath, activeLinkHref, navFor, type NavLink } from './nav';
+import { dashboardPath, activeLinkHref, navFor, type NavLink } from './nav';
 import { LogoutButton } from './LogoutButton';
 import { Brand } from './Brand';
 import { OnboardingBanner } from './OnboardingBanner';
@@ -17,12 +17,11 @@ import { Notifications } from './Notifications';
 import styles from './shell.module.css';
 
 /**
- * Шапка: знак слева, навигация роли (гостю на главной — якоря), справа меню аккаунта (`account`, ADR 0004:
+ * Шапка: знак слева, навигация роли (на «/» шапку прячет ShellFrame, якоря главной — в LandingChrome), справа меню аккаунта (`account`, ADR 0004:
  * роли, профиль компании, «Выйти») или «Войти». Сессия без учётки в БД (старая демо-кука) — просто «Выйти».
  */
 export function HeaderBar({ signedIn, links, account = null, jury = false }: { signedIn: boolean; links: NavLink[]; account?: HeaderAccount | null; jury?: boolean }) {
   const pathname = usePathname();
-  const home = pathname === '/';
   const hasSidebar = Boolean(account?.roles) && dashboardPath(pathname);
   const role = account?.roles?.role ?? null;
   const active = activeLinkHref(pathname, links, navFor(role));
@@ -31,7 +30,7 @@ export function HeaderBar({ signedIn, links, account = null, jury = false }: { s
       <header className={styles.header}>
         <Brand />
         {role === 'employer' && <span className={styles.employerBadge}>для работодателей</span>}
-        {!hasSidebar && (links.length > 0 ? (
+        {!hasSidebar && links.length > 0 && (
           <nav className={styles.nav} aria-label="Основная навигация">
             {links.map((l) => (
               <Link key={l.href} href={l.href} aria-current={l.href === active ? 'page' : undefined}>
@@ -39,17 +38,7 @@ export function HeaderBar({ signedIn, links, account = null, jury = false }: { s
               </Link>
             ))}
           </nav>
-        ) : (
-          home && (
-            <nav className={`${styles.nav} ${styles.anchors}`} aria-label="Разделы страницы">
-              {HOME_ANCHORS.map((a) => (
-                <a key={a.href} href={a.href}>
-                  {a.label}
-                </a>
-              ))}
-            </nav>
-          )
-        ))}
+        )}
         <div className={styles.action}>
           {jury && (
             <span className={styles.juryWrap}>

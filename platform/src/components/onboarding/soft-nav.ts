@@ -14,9 +14,7 @@ export function useSoftGo(): (path: string) => void {
   const [, startTransition] = useTransition();
   return useCallback(
     (path: string) => {
-      const query = new URLSearchParams(window.location.search);
-      const leavingIntake = query.get('mode') === 'intake' || query.get('edit') === 'profile';
-      if (path === window.location.pathname && !leavingIntake) startTransition(() => router.refresh());
+      if (path === window.location.pathname) startTransition(() => router.refresh());
       else window.location.assign(path);
     },
     [router],

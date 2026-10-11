@@ -20,17 +20,18 @@ function fixture(onboardedAt: Date | null = null) {
 }
 beforeEach(() => { vi.resetAllMocks(); mocks.consent.mockResolvedValue(true); mocks.lead.mockResolvedValue('Продолжим знакомство.'); });
 
-it('first candidate answer and skip advance without automatically pausing', async () => {
+it('candidate answer and skip return the feed to chat; the next question is opened by the candidate', async () => {
   const user = fixture();
   await answerStep('u1', 'experience', 'oneToThree');
-  expect(await getView('u1')).toMatchObject({ current: { id: 'experienceSummary' }, later: false, onboarded: false });
+  expect(await getView('u1')).toMatchObject({ current: { id: 'experienceSummary' }, later: true, onboarded: false });
+  await gotoStep('u1', 'experienceSummary');
   await skipStep('u1', 'experienceSummary');
-  expect(await getView('u1')).toMatchObject({ current: { id: 'candidateIndustries' }, later: false });
+  expect(await getView('u1')).toMatchObject({ current: { id: 'candidateIndustries' }, later: true });
   expect(user.onboarding.answers.experience).toBe('oneToThree');
   expect(user.onboardedAt).toBeNull();
 });
 
-it('explicit later stays paused; opening one field afterwards returns to chat after answering', async () => {
+it('explicit later stays paused; opening a field resumes it', async () => {
   const user = fixture();
   user.onboarding.stepId = 'goal';
   expect(await finishLater('u1')).toEqual({ next: '/consultant' });
@@ -39,10 +40,6 @@ it('explicit later stays paused; opening one field afterwards returns to chat af
   expect(await getView('u1')).toMatchObject({ later: false });
   await answerStep('u1', 'experience', 'underOne');
   expect(await getView('u1')).toMatchObject({ current: { id: 'experienceSummary' }, later: true, onboarded: false });
-  await gotoStep('u1', 'experienceSummary');
-  await skipStep('u1', 'experienceSummary');
-  expect(await getView('u1')).toMatchObject({ current: { id: 'candidateIndustries' }, later: false });
-  expect(user.onboarding.meta).not.toHaveProperty('manualProfileEdit');
 });
 
 it('private self-reports save only to the owner onboarding JSON, never profile, claims or category', async () => {

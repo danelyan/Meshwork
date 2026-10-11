@@ -30,8 +30,8 @@ const ids = (c: StepContext) => visibleSteps(c).map((s) => s.id);
 const step = (id: string) => findStep(id)!;
 
 describe('сценарий онбординга', () => {
-  it('первичное знакомство идёт от цели и опыта к грейду, материалам и условиям; ФСП в конце', () => {
-    expect(CANDIDATE_STEPS.map((s) => s.id)).toEqual(['candidateConsents', 'goal', 'specialization', 'subcategory', 'experience', 'experienceSummary', 'candidateIndustries', 'grade', 'stack', 'documents', 'formats', 'city', 'salary', 'candidateContact', 'fspParticipation', 'fsp']);
+  it('порядок шагов кандидата: цель, документы, ФСП, направление, опыт (приватный), грейд, условия', () => {
+    expect(CANDIDATE_STEPS.map((s) => s.id)).toEqual(['candidateConsents', 'goal', 'documents', 'fsp', 'specialization', 'subcategory', 'experience', 'experienceSummary', 'candidateIndustries', 'grade', 'stack', 'formats', 'city', 'salary', 'candidateContact', 'fspParticipation']);
   });
 
   it('новые self-report поля приватны, необязательны и ограничены; произвольного грейда нет', () => {
@@ -119,8 +119,8 @@ describe('движок: переходы, пропуски, восстановл
 
   it('следующий — первый незакрытый после текущего; пропуск закрывает шаг', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
-    expect(nextOpen(c, [], 'goal').id).toBe('specialization');
-    expect(nextOpen(c, ['specialization'], 'goal').id).toBe('experience');
+    expect(nextOpen(c, [], 'goal').id).toBe('documents');
+    expect(nextOpen(c, ['documents'], 'goal').id).toBe('fsp');
   });
 
   it('из итога вернулись к пропущенному и ответили — снова итог', () => {
@@ -136,17 +136,17 @@ describe('движок: переходы, пропуски, восстановл
 
   it('незакрытый шаг раньше текущего не теряется (пропуск через goto)', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
-    // Последний шаг ответили, но прежний незакрытый вопрос не потерялся.
-    expect(nextOpen(c, [], 'fsp').id).toBe('specialization');
+    // Последний шаг ответили, а documents открыт - после последнего ведём к нему, а не на итог.
+    expect(nextOpen(c, [], 'fspParticipation').id).toBe('documents');
   });
 
   it('восстановление: сохранённый шаг продолжается после перезагрузки; закрытый фактом — пропускается', () => {
     const c = ctx({ goal: 'job_search' }, { consent: true, role: 'candidate' });
     expect(currentStep(c, { stepId: 'grade', answers: c.answers, skipped: [] }).id).toBe('grade');
-    expect(currentStep(c, { stepId: 'consent', answers: c.answers, skipped: [] }).id).toBe('specialization');
-    expect(currentStep(c, { stepId: 'city', answers: c.answers, skipped: [] }).id).toBe('specialization'); // city не виден
+    expect(currentStep(c, { stepId: 'consent', answers: c.answers, skipped: [] }).id).toBe('documents');
+    expect(currentStep(c, { stepId: 'city', answers: c.answers, skipped: [] }).id).toBe('documents'); // city не виден
     // итог, когда есть открытые шаги, не показываем
-    expect(currentStep(c, { stepId: 'summary', answers: c.answers, skipped: [] }).id).toBe('specialization');
+    expect(currentStep(c, { stepId: 'summary', answers: c.answers, skipped: [] }).id).toBe('documents');
   });
 
   it('прогресс: пока роль не выбрана — по длине сценария кандидата; пропуск считается пройденным', () => {

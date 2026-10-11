@@ -50,8 +50,6 @@ const CABINET = { candidate: '/consultant', employer: '/employer' } as const;
 type Meta = {
   vacancies?: Partial<Record<Grade, string>>;
   later?: boolean;
-  /** Candidate opened one field from a paused/completed profile, rather than continuous first intake. */
-  manualProfileEdit?: boolean;
   doneRoles?: ('candidate' | 'employer')[];
   /** Шаг, пауза и итог неактивной роли (ADR 0004, `swapRoleOnboarding`); правки meta здесь его сохраняют. */
   byRole?: Record<string, unknown>;
@@ -485,12 +483,13 @@ export async function recordFspLink(userId: string): Promise<void> {
 }
 
 /**
- * First candidate intake advances continuously. A field opened from a paused or
- * completed profile returns to chat after its required dependent steps. Explicit
- * «Настроить позже» remains a pause; the employer flow is unchanged.
+ * Знакомство кандидата - вопросы-подсказки в чате консультанта, без отдельного режима (решение владельца 11.10):
+ * после ответа или пропуска лента возвращается в разговор; следующий вопрос кандидат открывает сам
+ * («Дополнить профиль» в чате или в «Что я о тебе знаю»). Обязательный шаг (подкатегория после
+ * направления) и итог идут сразу. Работодатель проходит шаги подряд, как раньше: из них собирается вакансия.
  */
 function backToChat(l: Loaded, next: StepDef): boolean {
-  return l.ctx.facts.role === 'candidate' && l.ctx.facts.consent && l.meta.manualProfileEdit === true && !next.required && next.kind !== 'summary';
+  return l.ctx.facts.role === 'candidate' && l.ctx.facts.consent && l.user.onboardedAt === null && !next.required && next.kind !== 'summary';
 }
 
 export async function skipStep(userId: string, stepId: string): Promise<MutationResult> {
@@ -509,19 +508,13 @@ export async function gotoStep(userId: string, stepId: string): Promise<Mutation
   const l = await load(userId);
   const step = stepOr409(l, stepId);
   if (step.kind !== 'summary' && step.doneBy?.(l.ctx)) throw errors.conflict('Этот шаг уже пройден');
-  // The paused feed resumes the current step; a different field is a one-field edit.
-  const continuing = l.ctx.facts.role === 'candidate' && l.user.onboardedAt === null && l.meta.later === true && step.id === l.state.stepId;
-  const manual = !continuing && l.ctx.facts.role === 'candidate' && (l.user.onboardedAt !== null || l.meta.later === true);
-  const meta = manual ? { ...resumed(l.meta), manualProfileEdit: true } : l.meta.later ? { ...resumed(l.meta) } : undefined;
-  if (continuing && meta) delete meta.manualProfileEdit;
-  await save(userId, { stepId: step.id, ...(meta ? { meta } : {}) });
+  await save(userId, { stepId: step.id, ...(l.meta.later ? { meta: resumed(l.meta) } : {}) });
   return { sessionChanged: false };
 }
 
 /** Пауза знакомства имеет смысл у кандидата и работодателя с незавершённым онбордингом (до выбора роли — нет). */
 function isPaused(l: Loaded): boolean {
-  return l.meta.later === true && (l.ctx.facts.role === 'candidate' || l.ctx.facts.role === 'employer') &&
-    (l.user.onboardedAt === null || (l.ctx.facts.role === 'candidate' && l.meta.manualProfileEdit === true));
+  return l.meta.later === true && (l.ctx.facts.role === 'candidate' || l.ctx.facts.role === 'employer') && l.user.onboardedAt === null;
 }
 
 /** Роль, у которой «Настроить позже» — пауза в ленте /consultant, а не уход со страницы. */

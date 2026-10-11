@@ -19,19 +19,6 @@ test('E-02: /demo → галка согласия → «Новый пользо�
   await expect(question).toContainText(/Ты здесь как кто/);
   await expect(question).not.toContainText(/\b[Вв]ы\b|ваш/);
   await expect(page.getByRole('list', { name: 'Переписка с помощником' })).toBeVisible();
-  await page.getByRole('button', { name: /Я специалист/ }).click();
-  await expect(question).toContainText('Зачем ты здесь?', { timeout: 30_000 });
-  await expect(page.getByTestId('candidate-intake-scene')).toBeVisible();
-  await expect(page.getByRole('complementary', { name: 'Черновик знакомства' })).toBeVisible();
-  await expect(page.getByText('Кого ищут компании', { exact: true })).toHaveCount(0);
-  await expect(page.getByText('Перетащи резюме сюда', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: /Ищу работу/ }).click();
-  await expect(question).toContainText('В каком направлении работаешь?', { timeout: 30_000 });
-  await page.reload();
-  await expect(question).toContainText('В каком направлении работаешь?', { timeout: 30_000 });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByRole('button', { name: /Черновик профиля/ })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('E-02: у существующего демо-аккаунта «пройти онбординг заново» открывает чат', async ({ page }) => {

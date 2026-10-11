@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { typingMs } from '@/components/chat/motion';
 import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
@@ -10,11 +10,10 @@ const refresh = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
 // Вход и переходы — полная навигация (window.location.assign), см. DemoScreen.enter.
 beforeEach(() => {
-  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, pathname: '/consultant', search: '', assign: push } });
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, pathname: '/consultant', assign: push } });
   refresh.mockReset();
 });
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
-vi.mock('@/components/avatar/HeadView', () => ({ HeadView: () => <div data-testid="head-view" /> }));
 
 afterEach(() => {
   cleanup();
@@ -54,109 +53,6 @@ const OPTS = [
   { value: 'frontend', label: 'Frontend' },
   { value: 'mobile', label: 'Mobile', note: 'скоро', disabled: true },
 ];
-
-describe('starter intake', () => {
-  it('requires choosing the account role before offering to postpone intake', () => {
-    stubFetch();
-    render(<OnboardingChat variant="intake" initial={makeView({ id: 'role', kind: 'role', required: true }, { role: 'pending' })} consentText={[]} />);
-    expect(screen.queryByRole('button', { name: 'Настроить позже' })).toBeNull();
-  });
-  it('shows one head, a grouped private draft and the current question without ordinary consultant side cards', () => {
-    stubFetch();
-    render(<OnboardingChat variant="intake" initial={makeView({ options: OPTS })} consentText={[]} consultant={{}} />);
-    expect(screen.getAllByTestId('head-view')).toHaveLength(1);
-    expect(document.querySelector('main')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Настроить позже' })).toBeTruthy();
-    const draft = screen.getByRole('region', { name: 'Черновик профиля' });
-    expect(within(draft).getByRole('region', { name: 'Навыки и опыт' })).toBeTruthy();
-    expect(within(draft).getByRole('region', { name: 'Условия работы' })).toBeTruthy();
-    expect(within(draft).getByRole('region', { name: 'Контакты' })).toBeTruthy();
-    expect(question()).toBe('В каком направлении работаешь?');
-    expect(screen.queryByText('Кого ищут компании')).toBeNull();
-    expect(screen.queryByText('Как мне работать')).toBeNull();
-    expect(screen.queryByLabelText('Выбрать резюме')).toBeNull();
-  });
-
-  it('draft edits retain actual step IDs; company preview hides contact, experience and assumed grade', async () => {
-    const history = [
-      { stepId: 'grade', label: 'Грейд', lead: '', question: '', answer: 'Senior (моя оценка)', editable: true },
-      { stepId: 'experienceSummary', label: 'Опыт', lead: '', question: '', answer: 'Закрытый проект и мой вклад', editable: true },
-      { stepId: 'candidateIndustries', label: 'Отрасли', lead: '', question: '', answer: 'Частная отрасль', editable: true },
-      { stepId: 'candidateContact', label: 'Контакт', lead: '', question: '', answer: 'private@example.test', editable: true },
-      { stepId: 'stack', label: 'Стек', lead: '', question: '', answer: 'TypeScript', editable: true },
-      { stepId: 'specialization', label: 'Направление', lead: '', question: '', answer: 'Backend', editable: true },
-      { stepId: 'salary', label: 'Зарплата', lead: '', question: '', answer: '200 000 рублей', editable: true },
-    ];
-    const fetchFn = stubFetch(makeView({ id: 'experienceSummary', kind: 'text', question: 'Расскажи о вкладе' }, { history }));
-    render(<OnboardingChat variant="intake" initial={makeView({ options: OPTS }, { history })} consentText={[]} />);
-    const draft = screen.getByRole('region', { name: 'Черновик профиля' });
-    fireEvent.click(within(draft).getByRole('button', { name: 'Изменить: Роль, задачи и вклад' }));
-    await waitFor(() => expect(question()).toBe('Расскажи о вкладе'));
-    expect(sent(fetchFn)).toEqual({ action: 'goto', stepId: 'experienceSummary' });
-    fireEvent.click(within(draft).getByRole('button', { name: 'Как видит компания' }));
-    expect(within(draft).queryByText('private@example.test')).toBeNull();
-    expect(within(draft).queryByText('Senior (моя оценка)')).toBeNull();
-    expect(within(draft).queryByText('Закрытый проект и мой вклад')).toBeNull();
-    expect(within(draft).queryByText('Частная отрасль')).toBeNull();
-    expect(within(draft).queryByText('TypeScript')).toBeNull();
-    expect(within(draft).queryByText('200 000 рублей')).toBeNull();
-    expect(within(draft).getAllByText('Backend').length).toBeGreaterThan(0);
-  });
-
-  it('materials keep a compact file picker and existing composer attachments', () => {
-    stubFetch();
-    render(<OnboardingChat variant="intake" initial={makeView({ id: 'documents', kind: 'files', question: 'Есть резюме?' })} consentText={[]} />);
-    expect(screen.getByLabelText('Выбрать резюме')).toBeTruthy();
-    expect(screen.getByText('Прикрепить резюме или файл')).toBeTruthy();
-    expect(screen.queryByText('Перетащи резюме сюда')).toBeNull();
-    expect(screen.getByTestId('composer')).toBeTruthy();
-  });
-
-  it('finishes intake before refreshing the outer scene, without mounting embedded main chat', async () => {
-    const fetchFn = stubFetch({ onboarded: true, next: '/consultant' });
-    render(<OnboardingChat variant="intake" initial={summaryView()} consentText={[]} consultant={{}} />);
-    expect(screen.queryByTestId('chat-greeting')).toBeNull();
-    expect(screen.queryByLabelText('Сообщение')).toBeNull();
-    expect(screen.getByText('Предполагаемый грейд: Middle')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Перейти к консультанту' }));
-    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-    expect((fetchFn.mock.calls[0] as unknown as [string])[0]).toBe('/api/auth/onboarding/complete');
-    expect(push).not.toHaveBeenCalled();
-  });
-
-  it('explicit postponement refreshes the root scene without completing the profile', async () => {
-    const fetchFn = stubFetch({ next: '/consultant' });
-    render(<OnboardingChat variant="intake" initial={makeView({ options: OPTS })} consentText={[]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));
-    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-    expect(sent(fetchFn)).toEqual({ action: 'later' });
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-    expect(push).not.toHaveBeenCalled();
-  });
-
-  it('leaves the explicit intake query when postponing, instead of reopening the same intake', async () => {
-    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, search: '?mode=intake', assign: push } });
-    stubFetch({ next: '/consultant' });
-    render(<OnboardingChat variant="intake" initial={makeView({ options: OPTS })} consentText={[]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить позже' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/consultant'));
-    expect(refresh).not.toHaveBeenCalled();
-  });
-
-  it('a completion failure keeps the intake summary editable and allows retry', async () => {
-    const fetchFn = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { code: 'internal', message: 'Не удалось сохранить' } }), { status: 500 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ onboarded: true, next: '/consultant' }), { status: 200 }));
-    vi.stubGlobal('fetch', fetchFn);
-    render(<OnboardingChat variant="intake" initial={summaryView()} consentText={[]} consultant={{}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Перейти к консультанту' }));
-    expect((await screen.findByRole('alert')).textContent).toContain('Не удалось сохранить');
-    expect(refresh).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Ответить: Стек' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Перейти к консультанту' }));
-    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-  });
-});
 
 it('лента: реплика и вопрос помощника, прошлые ответы пузырями, тонкий прогресс без «1 / 10» и без «Далее»', () => {
   stubFetch();

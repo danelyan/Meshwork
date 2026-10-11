@@ -32,7 +32,6 @@ import { parseSalary, salaryText } from './salary';
 import { StepControls } from './StepControls';
 import { OnboardingStrip } from './OnboardingStrip';
 import { OnboardingDraft, fieldVisibility } from './OnboardingDraft';
-import { IntakeScene } from './IntakeScene';
 
 export interface OnboardingChatProps {
   initial: OnboardingView;
@@ -49,10 +48,8 @@ export interface OnboardingChatProps {
    * `consultant` — лента внутри /consultant (решение владельца 10.10: онбординг и консультант —
    * одна страница): без своей шапки сайта и аватара (голова — в ConsultantScene), заголовок
    * консультанта. `page` — отдельная /onboarding (аккаунт без роли, работодатель).
-   * `intake` — начальное знакомство с живым черновиком и одной головой;
-   * завершение обновляет внешнюю сцену, без встроенного основного чата.
    */
-  variant?: 'page' | 'consultant' | 'intake';
+  variant?: 'page' | 'consultant';
 }
 
 /** Адрес ленты кандидата: онбординг и консультация — на одной странице. */
@@ -87,8 +84,7 @@ export function OnboardingChat(props: OnboardingChatProps) {
 }
 
 function OnboardingChatBody({ initial, consentText, consultant, employerAssistant, variant = 'page' }: OnboardingChatProps) {
-  const intake = variant === 'intake';
-  const inConsultant = variant !== 'page';
+  const inConsultant = variant === 'consultant';
   const [view, setView] = useState(initial);
   // Шаг знакомства сменился (ответ, пропуск, возврат) — «Твой путь» и «Подсказка» в колонке перечитываются.
   const refreshAside = useAsideRefresh();
@@ -231,9 +227,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     setError(null);
     try {
       const next = await ensureOnboarded();
-      const destination = target ?? next ?? view.laterTarget;
-      if (intake) softGo(destination);
-      else go(destination);
+      go(target ?? next ?? view.laterTarget);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не получилось завершить. Повтори.');
       setBusy(false);
@@ -350,7 +344,6 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
   const nextSteps = employer
     ? [{ value: 'go:/employer', label: 'Открыть подборку' }, ...skippedReplies]
     : [
-        ...(intake ? [{ value: 'go:/consultant', label: 'Перейти к консультанту' }] : []),
         { value: `go:${view.test.href}`, label: view.test.ready ? 'Пройти тест на грейд →' : 'Тест на грейд (скоро) - в профиль' },
         { value: 'go:/profile', label: 'Открыть профиль' },
         ...skippedReplies,
@@ -359,8 +352,8 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
     if (v.startsWith('goto:')) void act({ action: 'goto', stepId: v.slice(5) });
     else void finish(v.slice(3));
   };
-  const consultantMode = !intake && isSummary && ready && !employer && consultant !== undefined;
-  const assistantMode = !intake && isSummary && ready && employer && employerAssistant !== undefined;
+  const consultantMode = isSummary && ready && !employer && consultant !== undefined;
+  const assistantMode = isSummary && ready && employer && employerAssistant !== undefined;
 
   const inn = cur.id === 'inn' && draft.trim() ? checkInn(draft) : null;
   const composerHint = inn?.ok ? 'Контрольная сумма сходится · реестр ФНС - демо, не подключён' : cur.kind === 'chips' && canType ? 'Enter - добавить своё' : undefined;
@@ -387,12 +380,9 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
 
   // Внутри /consultant main#main уже есть (layout кабинета) — лента в div.
   const Feed = inConsultant ? 'div' : 'main';
-  const stepLabel = isSummary ? 'Профиль собран' : `Шаг ${Math.min(view.progress.done + 1, view.progress.total)} из ${view.progress.total} · ${cur.label}`;
-  const progress = <div className={styles.segments} role="progressbar" aria-valuenow={isSummary ? view.progress.total : view.progress.done} aria-valuemin={0} aria-valuemax={view.progress.total} aria-label={`Пройдено ${view.progress.done} из ${view.progress.total}`}>{Array.from({ length: view.progress.total }, (_, i) => <i key={i} data-done={isSummary || i < view.progress.done || undefined} />)}</div>;
-  const header = intake ? <header className={styles.intakeHeader}>
-    <div className={styles.topRow}><h1 className={styles.sceneTitle}>Знакомство<span className={styles.title}>{stepLabel}</span></h1><span className={styles.saved}>сохранено {view.progress.done} из {view.progress.total}</span>{!isSummary && view.role !== 'pending' && <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">Настроить позже</Button>}</div>
-    {progress}
-  </header> : inConsultant && !employer && !isSummary ? (
+  return (
+    <div className={inConsultant ? `${styles.shell} ${styles.inScene}` : styles.shell}>
+      {inConsultant && !employer && !isSummary ? (
         // Кандидату знакомство — таймлайн над чатом (владелец 11.10), та же полоска, что в разговоре (PausedFeed).
         // До выбора роли паузы нет (сервер увёл бы на главную) — «Скрыть» не показываем.
         <OnboardingStrip done={view.progress.done} total={view.progress.total} asking busy={busy} canHide={view.role !== 'pending'} onContinue={() => undefined} onHide={() => void later()} />
@@ -425,11 +415,11 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             </Button></>
           )}
         </div>
-        {progress}
+        <div className={styles.segments} role="progressbar" aria-valuenow={isSummary ? view.progress.total : view.progress.done} aria-valuemin={0} aria-valuemax={view.progress.total} aria-label={`Пройдено ${view.progress.done} из ${view.progress.total}`}>{Array.from({ length: view.progress.total }, (_, i) => <i key={i} data-done={isSummary || i < view.progress.done || undefined} />)}</div>
       </header>
-      );
-  const profileDraft = <OnboardingDraft view={view} busy={busy || asides.asking} compact={intake} onEdit={(stepId) => void act({ action: 'goto', stepId })} />;
-  const feed = (
+      )}
+      {!isSummary && !inConsultant && <OnboardingDraft view={view} busy={busy || asides.asking} onEdit={(stepId) => void act({ action: 'goto', stepId })} />}
+
       <Feed id={inConsultant ? undefined : 'main'} ref={feedRef as RefObject<HTMLDivElement>} className={styles.feed} aria-busy={busy}>
         {!inConsultant && (
           <VisuallyHidden>
@@ -438,7 +428,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
         )}
         {!inConsultant && <CompanionStage className={styles.stage} />}
         <Thread label="Переписка с помощником">
-          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>{inConsultant && !intake ? (employer ? 'Справа в «Что я знаю о компании» видно, что я сохраняю, а «Как видит кандидат» покажет, что увидит кандидат.' : 'Справа в «Что я о тебе знаю» видно, что я сохраняю, а «Как видит компания» покажет, что из этого увидит работодатель.') : 'В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит.'} Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
+          {!isSummary && <AstraRow><div className={styles.intro}><p>Ты зарегистрирован. Дальше - короткое знакомство: я задам несколько вопросов и соберу из ответов твой профиль.</p><p>{inConsultant ? (employer ? 'Справа в «Что я знаю о компании» видно, что я сохраняю, а «Как видит кандидат» покажет, что увидит кандидат.' : 'Справа в «Что я о тебе знаю» видно, что я сохраняю, а «Как видит компания» покажет, что из этого увидит работодатель.') : 'В панели «Черновик профиля» видно, что именно я сохраняю и кто это увидит.'} Ответы можно изменить, необязательные вопросы - пропустить.</p></div></AstraRow>}
           {view.history.map((h) => (
             <HistoryPair
               key={h.stepId}
@@ -505,8 +495,8 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           {ready && !busy && !asides.asking && !isSummary && (
             <AssistantRow mark={false} testId="ob-controls">
               {cur.kind === 'files' && <div className={styles.documentControls}>
-                <label className={intake ? styles.inlineFiles : styles.dropZone} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); att.add(Array.from(event.dataTransfer.files)); }}>
-                  {intake ? <strong>Прикрепить резюме или файл</strong> : <><span aria-hidden="true">PDF</span><strong>Перетащи резюме сюда</strong><small>или нажми, чтобы выбрать файл</small></>}<small>{ATTACH_LIMITS}</small>
+                <label className={styles.dropZone} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); att.add(Array.from(event.dataTransfer.files)); }}>
+                  <span aria-hidden="true">PDF</span><strong>Перетащи резюме сюда</strong><small>или нажми, чтобы выбрать файл</small><small>{ATTACH_LIMITS}</small>
                   <input type="file" multiple accept={ATTACH_ACCEPT} aria-label="Выбрать резюме" onChange={(event) => { att.add(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
                 </label>
                 {consultant?.demo?.resume && <Button size="sm" onClick={async () => { try { att.add([await fetchDemoResume(consultant.demo!.resume!.fileName)]); } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось загрузить демо-резюме.'); } }}>Загрузить демо-резюме</Button>}
@@ -523,11 +513,10 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             </AssistantRow>
           )}
 
-          {ready && isSummary && view.summary && (intake || (employer ? !employerAssistant : !consultant)) && (
+          {ready && isSummary && view.summary && (employer ? !employerAssistant : !consultant) && (
             <AssistantRow mark={false} testId="ob-summary">
               {!employer && (
                 <div className={styles.routes} role="group" aria-label="Что дальше">
-                  {intake && <Button onClick={() => void finish('/consultant')} disabled={busy} data-testid="ob-to-consultant">Перейти к консультанту</Button>}
                   <Button variant="cta" onClick={() => void finish(view.test.href)} disabled={busy} data-testid="ob-test-cta">{view.test.ready ? 'Пройти тест на грейд →' : 'Тест на грейд (скоро) - в профиль'}</Button>
                   <Button onClick={() => void finish('/profile')} disabled={busy}>Открыть профиль</Button>
                 </div>
@@ -600,9 +589,8 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
           />
         )}
       </Feed>
+    </div>
   );
-  if (intake) return <IntakeScene header={header} draft={profileDraft} stepLabel={stepLabel} busy={thinking}><div className={`${styles.shell} ${styles.inScene} ${styles.intakeFeed}`}>{feed}</div></IntakeScene>;
-  return <div className={inConsultant ? `${styles.shell} ${styles.inScene}` : styles.shell}>{header}{!isSummary && !inConsultant && profileDraft}{feed}</div>;
 }
 
 /** Ответ консультанта на свободный вопрос уже пошёл в ленту (дальше видно по стриму, «печатает» не нужно). */

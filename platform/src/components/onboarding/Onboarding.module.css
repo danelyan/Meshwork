@@ -101,22 +101,3 @@
 .intro p + p { margin-top: 10px; color: var(--muted); font-size: 14px; }
 .questionCard { box-shadow: var(--landing-shadow-sm); }
 @media (max-width: 680px) { .saved { display: none; } .segments { padding-inline: 16px; } .inScene .sceneTitle { padding-left: 0; border: 0; } }
-/* Starter intake keeps only the questionnaire in the left column; IntakeScene owns the head. */
-.intakeFeed { min-height: 100%; --feed-min-h: 100%; }
-.intakeFeed .feed { padding: 22px 24px 0; gap: 18px; }
-.intakeHeader { background: var(--glass); border-bottom: 1px solid var(--glass-border); backdrop-filter: var(--blur); }
-.intakeHeader .topRow { min-height: 64px; padding-inline: 28px; }
-.intakeHeader .sceneTitle { flex: 1; font-size: 16px; white-space: normal; gap: 5px; }
-.intakeHeader .title { font: 500 10px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .05em; }
-.intakeHeader .segments { padding: 0 28px 12px; }
-.inlineFiles { position: relative; display: grid; align-content: center; gap: 5px; min-height: 60px; padding: 10px 14px; border: 1px solid var(--border-faint); background: var(--glass); cursor: pointer; }
-.inlineFiles strong { font-size: 13px; font-weight: 500; }
-.inlineFiles small { font: 10px/1.5 var(--mono); color: var(--muted); }
-.inlineFiles input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
-.inlineFiles:focus-within { outline: 2px solid var(--blue); outline-offset: 3px; }
-@media (max-width: 680px) {
-  .intakeFeed .feed { padding: 16px 14px 0; }
-  .intakeHeader .topRow { padding: 12px 16px; gap: 10px; }
-  .intakeHeader .segments { padding-inline: 16px; }
-  .intakeHeader .topRow > button { padding-inline: 10px; font-size: 11px; }
-}

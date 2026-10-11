@@ -93,8 +93,8 @@ describe('Свободный вопрос посреди онбординга', 
     await act(cookie, { action: 'answer', stepId: 'goal', value: 'job_search' });
     const r = await ask(cookie, { text: 'что такое ФСП?', onboardingStep: 'goal' });
     const user = await prisma.message.findFirstOrThrow({ where: { conversationId: r.conversationId!, role: 'user' } });
-    expect(user.content).toContain('[онбординг: шаг specialization]');
-    expect(textOf(r.events)).toContain('В каком направлении работаешь?');
+    expect(user.content).toContain('[онбординг: шаг documents]');
+    expect(textOf(r.events)).toContain('Пришли резюме или ссылки');
   });
 
   it('с моделью: в контексте хода — шаг онбординга и варианты, правило коротко вернуть к шагу', async () => {
@@ -124,19 +124,18 @@ describe('Свободный вопрос посреди онбординга', 
     registerStubResponse('consultant', () => ({ text: 'План такой.' }));
     const turn = await ask(cookie, { text: 'Что подтянуть до мидла?' });
     const user = await prisma.message.findFirstOrThrow({ where: { conversationId: turn.conversationId!, role: 'user' } });
-    expect(user.content).toBe('Что подтянуть до мидла?\n[знакомство на паузе: шаг specialization]');
+    expect(user.content).toBe('Что подтянуть до мидла?\n[знакомство на паузе: шаг documents]');
     const restored = await loadLastChat(candidateId);
     expect(restored.items.filter((it) => it.stepId)).toEqual([
-      expect.objectContaining({ role: 'user', text: 'Что подтянуть до мидла?', stepId: 'specialization', paused: true }),
-      expect.objectContaining({ role: 'agent', stepId: 'specialization', paused: true }),
+      expect.objectContaining({ role: 'user', text: 'Что подтянуть до мидла?', stepId: 'documents', paused: true }),
+      expect.objectContaining({ role: 'agent', stepId: 'documents', paused: true }),
     ]);
   });
 
   it('онбординг брошен («Настроить позже»): обычный ход консультанта получает напоминание продолжить здесь же', async () => {
     const { cookie, candidateId } = await asCandidate('u1');
     await act(cookie, { action: 'answer', stepId: 'goal', value: 'job_search' });
-    await act(cookie, { action: 'later' });
-    expect(await pendingOnboarding(candidateId)).toMatchObject({ stepId: 'specialization' });
+    expect(await pendingOnboarding(candidateId)).toMatchObject({ stepId: 'documents' });
     const systems: string[] = [];
     registerStubResponse('consultant', (req) => {
       systems.push(req.system ?? '');
@@ -173,7 +172,6 @@ describe('Свободный вопрос посреди онбординга', 
   it('ход шага «Документы» помечен как онбординговый: напоминания «знакомство не закончено» нет', async () => {
     const { cookie, candidateId } = await asCandidate('u1');
     await act(cookie, { action: 'answer', stepId: 'goal', value: 'job_search' });
-    await act(cookie, { action: 'goto', stepId: 'documents' });
     const step = (await asideContext('u1')).step!;
     expect(step.stepId).toBe('documents');
     const conv = await prisma.conversation.create({ data: { candidateId } });

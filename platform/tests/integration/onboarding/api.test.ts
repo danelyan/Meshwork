@@ -137,15 +137,15 @@ describe('API онбординга', () => {
     expect(later.json.next).toBe('/consultant');
     expect((await prisma.user.findUniqueOrThrow({ where: { id: 'u1' } })).onboardedAt).toBeNull();
     const v = await view(c);
-    expect(v.current.id).toBe('specialization');
+    expect(v.current.id).toBe('documents');
     expect(v.history.map((h) => h.stepId)).toEqual(['role', 'candidateConsents', 'goal']);
     expect(v.history[2]).toMatchObject({ answer: 'Ищу работу', editable: true });
   });
 
   it('«настроить позже» у кандидата — пауза в ленте /consultant: переживает перезагрузку, снимается возвратом к шагу', async () => {
     const c = await asCandidate('u1');
-    // First intake advances continuously; only an explicit pause switches to chat.
-    expect((await view(c)).later).toBe(false);
+    // Роль выбрана — кандидат сразу в разговоре, вопросы анкеты — подсказками в чате (решение владельца 11.10).
+    expect((await view(c)).later).toBe(true);
     await act(c, { action: 'later' });
     const paused = await view(c);
     expect(paused.later).toBe(true);
@@ -154,33 +154,18 @@ describe('API онбординга', () => {
     const back = await act(c, { action: 'goto', stepId: 'goal' });
     expect(back.json.later).toBe(false);
     expect(back.json.current.id).toBe('goal');
-    // Resuming the current step continues the full questionnaire, including later skips.
+    // Кандидату вопрос — подсказка в чате (решение владельца 11.10): после ответа лента снова разговор,
+    // следующий вопрос не открывается сам.
     const answered = await act(c, { action: 'answer', stepId: 'goal', value: 'job_search' });
-    expect(answered.json.later).toBe(false);
-    expect(answered.json.current.id).toBe('specialization');
+    expect(answered.json.later).toBe(true);
+    expect(answered.json.current.id).toBe('documents');
     const skipped = await act(c, { action: 'skip', stepId: 'documents' });
-    expect(skipped.json.later).toBe(false);
+    expect(skipped.json.later).toBe(true);
     // Обязательный шаг идёт сразу за своим: после направления — подкатегория, без возврата в чат.
     await act(c, { action: 'goto', stepId: 'specialization' });
     const spec = await act(c, { action: 'answer', stepId: 'specialization', value: 'backend' });
     expect(spec.json.current.id).toBe('subcategory');
     expect(spec.json.later).toBe(false);
-  });
-
-  it('открытие другого поля после паузы остаётся отдельной правкой с возвратом в чат', async () => {
-    const c = await asCandidate('u1');
-    await act(c, { action: 'later' });
-    const edit = await act(c, { action: 'goto', stepId: 'experience' });
-    expect(edit.json.later).toBe(false);
-    const answered = await act(c, { action: 'answer', stepId: 'experience', value: 'oneToThree' });
-    expect(answered.json.later).toBe(true);
-    expect(answered.json.current.id).toBe('experienceSummary');
-    // Now the feed's resume opens that exact saved step and removes the one-field flag.
-    await act(c, { action: 'goto', stepId: 'experienceSummary' });
-    const resumed = await act(c, { action: 'skip', stepId: 'experienceSummary' });
-    expect(resumed.json.later).toBe(false);
-    expect(resumed.json.current.id).toBe('candidateIndustries');
-    expect((await prisma.onboardingState.findUniqueOrThrow({ where: { userId: 'u1' } })).meta).not.toHaveProperty('manualProfileEdit');
   });
 
   it('«настроить позже» до роли — на главную', async () => {

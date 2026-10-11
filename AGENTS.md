@@ -16,7 +16,9 @@ a salary. Product docs are in Russian; start from `docs/README.md`.
 ## Deploy and deadline
 
 - IMPORTANT: a push to `main` that touches `platform/**` deploys to https://fsp2.ru (the stand the jury
-  uses). CI runs no tests, only the deploy and `GET /api/health`. Verify locally before pushing.
+  uses). The deploy workflow runs no tests, only the deploy and `GET /api/health`; a separate `checks`
+  workflow runs typecheck, lint, unit and integration tests but does not gate the deploy. Verify locally
+  before pushing.
 - Submission closes 11 October 2026, 23:59 Moscow time; commits after that are not accepted. Before the
   final push run the `release-check` skill. Use Moscow time (`TZ=Europe/Moscow date`) in docs and logs.
 

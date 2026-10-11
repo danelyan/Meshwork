@@ -67,6 +67,8 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 
 Если сборка упала, прежние контейнеры продолжают работать, а запуск в Actions красный.
 
+Проверки кода (типы, lint, unit и integration-тесты) идут отдельным workflow [`checks.yml`](../.github/workflows/checks.yml) на push в `main` и `lane/**` и на pull request. Деплой его не ждёт: красный запуск `Checks` на коммите виден в Actions и в истории коммитов, но стенд при этом уже обновлён. Поэтому локальная проверка перед push (`npm run typecheck && npm run lint && npm run test:unit`) остаётся обязательной.
+
 Настройки репозитория (Settings → Secrets and variables → Actions):
 
 | Имя | Вид | Значение |

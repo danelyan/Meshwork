@@ -1,0 +1,102 @@
+# Проверки кода: типы, lint, unit и integration-тесты. Отдельный workflow от деплоя (deploy.yml):
+# деплой стенда его не ждёт, но красный запуск на коммите в master виден в Actions и в истории коммитов.
+# Полный прогон перед push всё равно делается локально (AGENTS.md).
+name: Checks
+
+on:
+  push:
+    branches: [master, 'lane/**']
+    paths:
+      - platform/**
+      - .github/workflows/checks.yml
+  pull_request:
+    paths:
+      - platform/**
+      - .github/workflows/checks.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: platform
+
+jobs:
+  unit:
+    name: Typecheck, lint, unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and component tests
+        run: npm run test:unit
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: fsp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Тесты никогда не зовут настоящую модель и почту: stub-провайдер и почтовый журнал.
+      DATABASE_URL: postgresql://postgres:test@localhost:5432/fsp_test
+      TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/fsp_test
+      SESSION_SECRET: ci-only-session-secret-0123456789abcdef0123456789
+      LLM_PROVIDER: stub
+      MAIL_PROVIDER: log
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Prisma client
+        run: npx prisma generate
+
+      - name: Integration tests
+        run: npm run test:integration

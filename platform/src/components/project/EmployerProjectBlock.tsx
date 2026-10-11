@@ -273,15 +273,25 @@ function SubmissionCard({ s, salaryFrom, salaryTo, onInvited }: { s: EmployerSub
         {s.candidate.category && <Tag tone="solid">{s.candidate.category}</Tag>}
         <span>{new Date(s.submittedAt).toLocaleString('ru-RU')}</span>
         {s.late && <Tag>сдано после срока</Tag>}
-        {s.repoUrl ? <a href={s.repoUrl}>{s.repoUrl}</a> : <span>репозиторий — после принятия приглашения</span>}
+        {s.kind === 'approach' ? <Tag>подход без кода</Tag> : s.repoUrl ? <a href={s.repoUrl}>{s.repoUrl}</a> : <span>репозиторий — после принятия приглашения</span>}
       </div>
       {s.error && <Notice tone="error">{s.error}</Notice>}
+      {s.kind === 'approach' && s.approachText && (
+        <details className={styles.details} open>
+          <summary>Подход кандидата</summary>
+          <p className={styles.prose}>{s.approachText}</p>
+        </details>
+      )}
       {r && (
         <>
-          <div>
-            <span className={styles.scoreBig}>{r.tests.score}</span> / 100 — скрытые тесты {r.tests.passed} из {r.tests.total}
-            {r.runner.mode === 'stub' && <span className={emp.status}> · демо-проверка без песочницы</span>}
-          </div>
+          {r.kind === 'approach' ? (
+            <p className={emp.status}>Сдача подходом: автотестов и балла нет, ниже — оценка по вашим критериям.</p>
+          ) : (
+            <div>
+              <span className={styles.scoreBig}>{r.tests.score}</span> / 100 — скрытые тесты {r.tests.passed} из {r.tests.total}
+              {r.runner.mode === 'stub' && <span className={emp.status}> · демо-проверка без песочницы</span>}
+            </div>
+          )}
           {r.platformOwnedViolations.length > 0 && <p className={styles.flag}>Изменены файлы платформы: {r.platformOwnedViolations.map((v) => `${v.path} (${v.reason === 'missing' ? 'удалён' : 'изменён'})`).join(', ')}</p>}
           {r.rubric.injectionSuspected && <p className={styles.flag}>{FLAG_RU.possible_prompt_injection}</p>}
           <RubricTable results={r.rubric.results} />

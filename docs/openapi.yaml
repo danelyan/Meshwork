@@ -9211,8 +9211,8 @@ paths:
       operationId: postProjectTasksIdSubmissions
       tags:
         - project-tasks
-      summary: "POST `{ repoUrl, aiLogText, commitSha?"
-      description: "POST `{ repoUrl, aiLogText, commitSha? }` — сдать проект: публичный репозиторий GitHub (без commitSha — HEAD ветки по умолчанию), журнал работы с ИИ. Проверка идёт в фоне: submitted → running → checked | failed (GET /api/project-submissions/:id).\n\nНужна сессия кандидата (кука cid)."
+      summary: "POST `{ kind?: 'code' | 'approach', repoUrl?, approachText?, aiLogText, commitSha?"
+      description: "POST `{ kind?: 'code' | 'approach', repoUrl?, approachText?, aiLogText, commitSha? }` — сдать проект. `code` (по умолчанию): публичный репозиторий GitHub (без commitSha — HEAD ветки по умолчанию), автотесты и рубрика. `approach` — текст подхода к решению (200–8000 символов) без кода: только рубрика по критериям работодателя, без балла и без защиты по коду (ТЗ: «решить её или предложить подход»). Проверка идёт в фоне: submitted → running → checked | failed (GET /api/project-submissions/:id).\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -9231,7 +9231,7 @@ paths:
               $ref: "#/components/schemas/SubmissionInput"
       responses:
         "202":
-          description: "POST `{ repoUrl, aiLogText, commitSha? }` — сдать проект: публичный репозиторий GitHub (без commitSha — HEAD ветки по"
+          description: "POST `{ kind?: 'code' | 'approach', repoUrl?, approachText?, aiLogText, commitSha? }` — сдать проект. `code` (по умолчанию):"
           content:
             "application/json":
               schema:
@@ -11653,10 +11653,19 @@ components:
     SubmissionInput:
       type: object
       properties:
+        kind:
+          default: code
+          type: string
+          enum:
+            - code
+            - approach
         repoUrl:
           type: string
           minLength: 10
           maxLength: 300
+        approachText:
+          type: string
+          maxLength: 8000
         aiLogText:
           default: ""
           type: string
@@ -11664,8 +11673,6 @@ components:
         commitSha:
           type: string
           pattern: "^[0-9a-f]{7,40}$"
-      required:
-        - repoUrl
     TurnBody:
       type: object
       properties:

@@ -514,6 +514,9 @@ export interface CandidateSubmissionView {
   id: string;
   taskId: string;
   status: ProjectSubmissionStatus;
+  /** code — репозиторий; approach — текст подхода (repoUrl пустой). */
+  kind: 'code' | 'approach';
+  approachText: string | null;
   repoUrl: string;
   commitSha: string | null;
   submittedAt: string;
@@ -523,7 +526,7 @@ export interface CandidateSubmissionView {
   result: Omit<ResultJson, 'hiddenTests'> | null;
 }
 
-function candidateSubmissionView(s: { id: string; projectTaskId: string; status: ProjectSubmissionStatus; repoUrl: string; commitSha: string | null; submittedAt: Date; checkedAt: Date | null; error: string | null; resultJson: Prisma.JsonValue | null }): CandidateSubmissionView {
+function candidateSubmissionView(s: { id: string; projectTaskId: string; status: ProjectSubmissionStatus; kind: 'code' | 'approach'; approachText: string | null; repoUrl: string; commitSha: string | null; submittedAt: Date; checkedAt: Date | null; error: string | null; resultJson: Prisma.JsonValue | null }): CandidateSubmissionView {
   const r = s.resultJson as ResultJson | null;
   let result: CandidateSubmissionView['result'] = null;
   if (r) {
@@ -535,6 +538,8 @@ function candidateSubmissionView(s: { id: string; projectTaskId: string; status:
     id: s.id,
     taskId: s.projectTaskId,
     status: s.status,
+    kind: s.kind,
+    approachText: s.approachText,
     repoUrl: s.repoUrl,
     commitSha: s.commitSha,
     submittedAt: s.submittedAt.toISOString(),
@@ -590,7 +595,22 @@ export async function submitProject(candidateId: string, taskId: string, input: 
   await loadAccessibleTask(candidateId, taskId);
   const assignment = await prisma.projectAssignment.findUnique({ where: { projectTaskId_candidateId: { projectTaskId: taskId, candidateId } } });
   if (!assignment) throw errors.conflict('Сначала возьми задание');
-  const repo = parseGithubRepoUrl(input.repoUrl);
+  // Сдача подходом (ТЗ: «решить её или предложить подход»): без репозитория и автотестов, только рубрика.
+  if (input.kind === 'approach') {
+    const approachText = input.approachText!.trim();
+    await assertCanSubmit(prisma, candidateId, taskId);
+    const sub = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`project-submit:${candidateId}:${taskId}`}))`;
+      await assertCanSubmit(tx, candidateId, taskId);
+      const late = assignment.expiresAt.getTime() < Date.now();
+      const created = await tx.projectSubmission.create({ data: { projectTaskId: taskId, candidateId, kind: 'approach', approachText, repoUrl: '', commitSha: null, aiLogText: input.aiLogText, late } });
+      await tx.projectAssignment.update({ where: { id: assignment.id }, data: { status: 'submitted' } });
+      return created;
+    });
+    if (deps.background !== false) void processSubmission(sub.id);
+    return candidateSubmissionView(sub);
+  }
+  const repo = parseGithubRepoUrl(input.repoUrl ?? '');
   if (!repo) throw new AppError('bad_request', 'Нужна ссылка на публичный репозиторий GitHub: https://github.com/<владелец>/<репозиторий>', 400);
   const repoUrl = `https://github.com/${repo.owner}/${repo.repo}`;
   const runner = getProjectRunner();
@@ -641,6 +661,7 @@ export async function processSubmission(id: string): Promise<void> {
     if (!sub || sub.status === 'checked' || sub.status === 'failed') return;
     const tpl = getTemplate(sub.projectTask.templateId);
     if (!tpl) return fail(id, 'Шаблон задания недоступен.');
+    if (sub.kind === 'approach') return await processApproach(sub.id, sub.candidateId, sub.approachText ?? '', sub.aiLogText ?? '', sub.projectTask.rubricJson);
     const resumeJob = sub.status === 'running' ? sub.runnerJobId : null;
     // Сабмиты lane project всегда с commitSha; null — запись не из этого модуля (схема допускает).
     const commitSha = sub.commitSha;
@@ -712,6 +733,31 @@ export async function processSubmission(id: string): Promise<void> {
   }
 }
 
+/**
+ * Проверка сдачи подходом: автотестов нет (tests 0/0, балла нет), только рубрика по тексту подхода — с тем же
+ * согласием на оценку ИИ (Г3), что и у кода. Результат сравним с кодовой сдачей по критериям работодателя, не по баллу.
+ */
+async function processApproach(id: string, candidateId: string, approachText: string, aiLog: string, rubricJson: Prisma.JsonValue): Promise<void> {
+  await prisma.projectSubmission.update({ where: { id }, data: { status: 'running' } });
+  const tests = { passed: 0, total: 0, score: 0 };
+  const rubricDef = RubricJson.safeParse(rubricJson);
+  const criteria = rubricDef.success ? rubricDef.data.criteria : [];
+  const review = (await hasAiAssessmentConsent(candidateId))
+    ? await reviewRubric({ criteria, files: null, tests, aiLog, approach: approachText })
+    : { source: 'fallback' as const, results: criteria.map((c) => ({ ...c, passed: null, evidence: 'Не оценено: нет согласия кандидата на оценку ИИ.', flag: 'not_evaluated' as const })), injectionSuspected: false };
+  const result: ResultJson = {
+    kind: 'approach',
+    tests,
+    visibleTests: [],
+    hiddenTests: [],
+    lint: { status: 'skipped', note: 'Сдача подходом: автотесты не запускаются, оценка — по критериям работодателя.' },
+    rubric: review,
+    platformOwnedViolations: [],
+    runner: { mode: 'stub' },
+  };
+  await prisma.projectSubmission.update({ where: { id }, data: { status: 'checked', resultJson: result as unknown as Prisma.InputJsonValue, checkedAt: new Date(), error: null } });
+}
+
 /** Сабмит «застрял» (рестарт приложения посреди проверки) — продолжить в фоне. */
 function resumeIfStale(s: { id: string; status: ProjectSubmissionStatus; submittedAt: Date }): void {
   if ((s.status === 'submitted' || s.status === 'running') && !inFlight.has(s.id) && Date.now() - s.submittedAt.getTime() > 60_000) {
@@ -737,6 +783,9 @@ export interface EmployerSubmissionView {
   checkedAt: string | null;
   error: string | null;
   candidate: { id: string; displayName: string; category: string | null };
+  /** code — репозиторий; approach — текст подхода (контакты в нём замаскированы). */
+  kind: 'code' | 'approach';
+  approachText: string | null;
   /** Ссылка на репозиторий раскрывает личность (логин GitHub) — только после принятого приглашения. */
   repoUrl: string | null;
   commitSha: string | null;
@@ -780,7 +829,9 @@ export async function listEmployerSubmissions(companyId: string, vacancyId: stri
           displayName: open ? s.candidate.name : pseudonym(s.candidateId),
           category: cat ? categoryLabel(cat as { specialization: Specialization; grade: CategoryGrade }) : null,
         },
-        repoUrl: open ? s.repoUrl : null,
+        kind: s.kind,
+        approachText: s.approachText ? maskContacts(s.approachText).text : null,
+        repoUrl: open && s.kind === 'code' ? s.repoUrl : null,
         commitSha: open ? s.commitSha : null,
         aiLogText: maskContacts(s.aiLogText ?? '').text,
         result: safe.result,
@@ -813,6 +864,8 @@ export async function inviteToDefense(
     matchSource: 'other', // из проверенной сдачи задания: ранга подборки нет
   });
   await prisma.projectSubmission.update({ where: { id: s.id }, data: { defenseInvitationId: inv.id } });
+  // Сдача подходом: кода для защиты нет — обычное приглашение с вилкой, созвон-защита не создаётся.
+  if (s.kind === 'approach') return { invitationId: inv.id, callSessionId: null };
   const { callSessionId } = await getDefenseHook().requestDefense({ submissionId: s.id, candidateId: s.candidateId, invitationId: inv.id, companyId: ctx.companyId });
   return { invitationId: inv.id, callSessionId };
 }

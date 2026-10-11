@@ -48,7 +48,13 @@ export interface ReviewInput {
   files: Map<string, Uint8Array> | null;
   tests: { passed: number; total: number; score: number };
   aiLog: string;
+  /** Сдача подходом: вместо кода — текст решения; он подаётся модели как единственный файл ПОДХОД.md. */
+  approach?: string;
 }
+
+export const APPROACH_FILE = 'ПОДХОД.md';
+const APPROACH_NOTE =
+  'Кандидат сдал не код, а текст подхода к решению (файл ПОДХОД.md). Оценивай описанный подход: критерий пройден, если подход явно его закрывает — конкретным шагом, структурой, проверкой или ограничением; evidence — короткий пересказ этого места, file — ПОДХОД.md. Общие слова без конкретики — passed: false.';
 
 export interface ReviewOutput {
   source: 'llm' | 'fallback';
@@ -58,7 +64,8 @@ export interface ReviewOutput {
 
 export async function reviewRubric(input: ReviewInput, deps: { llm?: LlmProvider } = {}): Promise<ReviewOutput> {
   if (!input.criteria.length) return { source: 'fallback', results: [], injectionSuspected: false };
-  const digest = input.files ? repoDigest(input.files) : { files: [], tree: [] };
+  const files = input.approach != null ? new Map([[APPROACH_FILE, new TextEncoder().encode(input.approach)]]) : input.files;
+  const digest = files ? repoDigest(files) : { files: [], tree: [] };
   const aiLog = input.aiLog.slice(0, 6_000);
   const injectionSuspected = detectInjection(aiLog) || digest.files.some((f) => detectInjection(f.text));
   const ctx: EvaluateContext = {
@@ -77,7 +84,7 @@ export async function reviewRubric(input: ReviewInput, deps: { llm?: LlmProvider
       llm,
       {
         purpose: 'project_rubric',
-        system: EVAL_SYSTEM,
+        system: input.approach != null ? `${EVAL_SYSTEM}\n${APPROACH_NOTE}` : EVAL_SYSTEM,
         messages: [{ role: 'user', content: `${contextBlock(ctx)}\n\nОцени каждый критерий.` }],
         schema: schemaSpec('project_rubric_verdict', RubricVerdictOut),
         maxTokens: 2500,
@@ -99,7 +106,7 @@ export async function reviewRubric(input: ReviewInput, deps: { llm?: LlmProvider
     const evidence = r.evidence.trim();
     const out: RubricResult = { ...c, passed: r.passed, evidence: evidence || '—', file: r.file ?? null };
     if (r.passed && !evidence) out.flag = 'no_evidence';
-    else if (r.file && input.files && !tree.has(r.file)) out.flag = 'evidence_unverified';
+    else if (r.file && files && !tree.has(r.file)) out.flag = 'evidence_unverified';
     else if (injectionSuspected && r.passed) out.flag = 'possible_prompt_injection';
     return out;
   });

@@ -6,7 +6,7 @@ import { postJson, request } from './api';
 export const takeProjectApi = (taskId: string) =>
   postJson<{ taskId: string; expiresAt: string; active: number; maxActive: number }>(`/api/project-tasks/${encodeURIComponent(taskId)}/take`, {});
 
-export const submitProjectApi = (taskId: string, body: { repoUrl: string; aiLogText: string; commitSha?: string }) =>
+export const submitProjectApi = (taskId: string, body: { kind?: 'code' | 'approach'; repoUrl?: string; approachText?: string; aiLogText: string; commitSha?: string }) =>
   postJson<CandidateSubmissionView>(`/api/project-tasks/${encodeURIComponent(taskId)}/submissions`, body);
 
 export const getSubmissionApi = (id: string) => request<CandidateSubmissionView>(`/api/project-submissions/${encodeURIComponent(id)}`);

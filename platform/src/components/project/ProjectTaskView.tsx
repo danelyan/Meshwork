@@ -22,7 +22,9 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
   const router = useRouter();
   const [subs, setSubs] = useSubmissionPolling(task.submissions);
   const pending = subs.find((s) => s.status === 'submitted' || s.status === 'running');
+  const [kind, setKind] = useState<'code' | 'approach'>('code');
   const [repoUrl, setRepoUrl] = useState('');
+  const [approach, setApproach] = useState('');
   const [aiLog, setAiLog] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,15 +45,19 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!/^https:\/\/(www\.)?github\.com\/[^/\s]+\/[^/\s]+\/?$/.test(repoUrl.trim())) {
+    if (kind === 'code' && !/^https:\/\/(www\.)?github\.com\/[^/\s]+\/[^/\s]+\/?$/.test(repoUrl.trim())) {
       setRepoErr('Ссылка вида https://github.com/<владелец>/<репозиторий>');
+      return;
+    }
+    if (kind === 'approach' && approach.trim().length < 200) {
+      setRepoErr('Опиши подход хотя бы в 200 символах: что сделаешь, в каком порядке, какие ограничения учтёшь');
       return;
     }
     setRepoErr(null);
     setBusy(true);
     setError(null);
     try {
-      const created = await submitProjectApi(task.id, { repoUrl: repoUrl.trim(), aiLogText: aiLog });
+      const created = await submitProjectApi(task.id, kind === 'code' ? { kind, repoUrl: repoUrl.trim(), aiLogText: aiLog } : { kind, approachText: approach.trim(), aiLogText: aiLog });
       setSubs((list) => [created, ...list]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось сдать проект');
@@ -121,9 +127,24 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
       {task.my.taken && (
         <Panel as="form" className={emp.form} onSubmit={submit} aria-label="Сдать проект">
           <h2 className={emp.sectionTitle}>Сдать проект</h2>
-          <Field label="Репозиторий на GitHub" hint="Только публичный репозиторий: приватный без токена не скачать (GitHub ответит «не найден»). Проверяется последний коммит ветки по умолчанию." error={repoErr ?? undefined}>
-            <input className={ui.input} value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} placeholder="https://github.com/login/booking-api" inputMode="url" />
-          </Field>
+          <fieldset className={styles.kindSwitch}>
+            <legend className={emp.status}>Формат сдачи</legend>
+            <label className={styles.kindOption}>
+              <input type="radio" name="kind" value="code" checked={kind === 'code'} onChange={() => setKind('code')} /> Код в репозитории — автотесты дают балл, работодатель может позвать на защиту
+            </label>
+            <label className={styles.kindOption}>
+              <input type="radio" name="kind" value="approach" checked={kind === 'approach'} onChange={() => setKind('approach')} /> Подход к решению текстом — без кода и балла, только критерии работодателя
+            </label>
+          </fieldset>
+          {kind === 'code' ? (
+            <Field label="Репозиторий на GitHub" hint="Только публичный репозиторий: приватный без токена не скачать (GitHub ответит «не найден»). Проверяется последний коммит ветки по умолчанию." error={repoErr ?? undefined}>
+              <input className={ui.input} value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} placeholder="https://github.com/login/booking-api" inputMode="url" />
+            </Field>
+          ) : (
+            <Field label="Подход к решению" hint="Что сделаешь и в каком порядке, какие структуры данных и проверки, какие ограничения и риски учтёшь, что оставишь за рамками. 200–8000 символов. Работодатель увидит текст, контакты в нём скроются." error={repoErr ?? undefined}>
+              <textarea className={`${ui.input} ${styles.textarea}`} value={approach} maxLength={8000} onChange={(e) => setApproach(e.target.value)} />
+            </Field>
+          )}
           <Field label="Журнал работы с ИИ" hint="Какие ассистенты, что спрашивал, что принял и что переписал сам. Это не штраф: на защите спросят про решения, а не про то, кто набирал код.">
             <textarea className={`${ui.input} ${styles.textarea}`} value={aiLog} maxLength={20000} onChange={(e) => setAiLog(e.target.value)} />
           </Field>
@@ -145,15 +166,25 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
                   {SUBMISSION_STATUS[s.status]}
                 </span>
                 <span className={emp.rank}>
-                  {s.commitSha ? `${s.commitSha.slice(0, 7)} · ` : ''}{new Date(s.submittedAt).toLocaleString('ru-RU')}
+                  {s.kind === 'approach' ? 'подход · ' : s.commitSha ? `${s.commitSha.slice(0, 7)} · ` : ''}{new Date(s.submittedAt).toLocaleString('ru-RU')}
                 </span>
               </div>
               {s.error && <Notice tone="error">{s.error}</Notice>}
+              {s.kind === 'approach' && s.approachText && (
+                <details className={styles.details}>
+                  <summary>Текст подхода</summary>
+                  <p className={styles.prose}>{s.approachText}</p>
+                </details>
+              )}
               {s.result && (
                 <>
-                  <div>
-                    <span className={styles.scoreBig}>{s.result.tests.score}</span> / 100 — скрытые тесты: {s.result.tests.passed} из {s.result.tests.total}
-                  </div>
+                  {s.result.kind === 'approach' ? (
+                    <p className={emp.status}>Сдача подходом: автотестов нет, оценка — по критериям работодателя.</p>
+                  ) : (
+                    <div>
+                      <span className={styles.scoreBig}>{s.result.tests.score}</span> / 100 — скрытые тесты: {s.result.tests.passed} из {s.result.tests.total}
+                    </div>
+                  )}
                   {s.result.visibleTests.length > 0 && (
                     <ul className={styles.bullets} aria-label="Видимые тесты">
                       {s.result.visibleTests.map((t) => (
@@ -170,7 +201,7 @@ export function ProjectTaskView({ task }: { task: CandidateTaskView }) {
                   <RubricTable results={s.result.rubric.results} />
                 </>
               )}
-              {s.status === 'checked' && (
+              {s.status === 'checked' && s.kind === 'code' && (
                 <div className={styles.aiDefense}>
                   <p className={emp.status}>
                     ИИ задаст вопросы по твоему коду и коммитам. Работодатели до приглашения увидят только баллы и флаги - без транскрипта, записи и ссылки на репозиторий. Не чаще раза в сутки.

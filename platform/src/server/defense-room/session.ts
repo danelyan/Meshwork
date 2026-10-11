@@ -135,10 +135,12 @@ export async function startDefenseRoom(candidateId: string, input: StartInput, l
   const submission = submissionId
     ? await prisma.projectSubmission.findUnique({
         where: { id: submissionId },
-        select: { id: true, candidateId: true, repoUrl: true, commitSha: true, aiLogText: true, resultJson: true, projectTask: { select: { vacancy: { select: { companyId: true } } } } },
+        select: { id: true, candidateId: true, kind: true, repoUrl: true, commitSha: true, aiLogText: true, resultJson: true, projectTask: { select: { vacancy: { select: { companyId: true } } } } },
       })
     : null;
   if (submissionId && (!submission || submission.candidateId !== candidateId)) throw errors.notFound('Сабмит проекта не найден');
+  // Защита — разбор кода и коммитов; у сдачи подходом кода нет.
+  if (submission?.kind === 'approach') throw errors.conflict('Защита проводится по сдаче с кодом: подход без репозитория не защищается');
   // Живая защита по слоту (ADR 0008 п. 5): ожидающая сессия, привязанная к назначенному времени, открывается за 10 минут до начала.
   if (submissionId && input.ai !== true) {
     const pendingIds = await prisma.callSession.findMany({ where: { candidateId, kind: 'defense', status: 'pending', projectSubmissionId: submissionId }, select: { id: true } });

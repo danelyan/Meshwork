@@ -1138,6 +1138,12 @@ enum ProjectTaskVisibility {
   invited
 }
 
+/// Формат сдачи (ТЗ: «решить задачу или предложить подход к решению»): код в репозитории или текст подхода.
+enum ProjectSubmissionKind {
+  code
+  approach
+}
+
 enum ProjectSubmissionStatus {
   submitted
   running
@@ -1223,6 +1229,10 @@ model ProjectSubmission {
   projectTask         ProjectTask             @relation(fields: [projectTaskId], references: [id], onDelete: Cascade)
   candidateId         String
   candidate           Candidate               @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  /// code — репозиторий и автотесты; approach — текст подхода, только рубрика (без балла автотестов, без защиты по коду).
+  kind                ProjectSubmissionKind   @default(code)
+  /// Текст подхода (kind = approach); у сдачи кодом null. repoUrl при approach — пустая строка.
+  approachText        String?
   repoUrl             String
   commitSha           String?
   aiLogText           String?

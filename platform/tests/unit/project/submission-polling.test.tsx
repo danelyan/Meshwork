@@ -11,6 +11,8 @@ const sub = (status: CandidateSubmissionView['status']): CandidateSubmissionView
   id: 's1',
   taskId: 't1',
   status,
+  kind: 'code',
+  approachText: null,
   repoUrl: 'https://github.com/a/b',
   commitSha: null,
   submittedAt: '2026-10-10T00:00:00.000Z',

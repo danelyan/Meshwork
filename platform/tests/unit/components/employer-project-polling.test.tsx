@@ -30,6 +30,8 @@ const task = {
 const sub = (status: EmployerSubmissionView['status']): EmployerSubmissionView => ({
   id: 's1',
   status,
+  kind: 'code',
+  approachText: null,
   submittedAt: '2026-10-10T00:00:00.000Z',
   late: false,
   checkedAt: null,

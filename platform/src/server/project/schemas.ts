@@ -86,6 +86,8 @@ export interface TestOutcome {
 }
 
 export interface ResultJson {
+  /** approach — сдача подходом: автотестов нет (tests 0/0), оценка только рубрикой. Нет поля — код. */
+  kind?: 'code' | 'approach';
   tests: { passed: number; total: number; score: number };
   /** Видимые тесты — кандидату можно показать имена и статус. */
   visibleTests: TestOutcome[];
@@ -119,17 +121,33 @@ export const ProjectTaskInput = z.object({
 });
 export type ProjectTaskInput = z.infer<typeof ProjectTaskInput>;
 
-export const SubmissionInput = z.object({
-  repoUrl: z.string().trim().min(10).max(300),
-  aiLogText: z.string().trim().max(AI_LOG_MAX).default(''),
-  /** Не задан — последний коммит ветки по умолчанию на момент сдачи. */
-  commitSha: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[0-9a-f]{7,40}$/, 'commitSha: 7–40 hex')
-    .optional(),
-});
+export const APPROACH_MIN = 200;
+export const APPROACH_MAX = 8_000;
+
+/**
+ * Сдача: кодом (`kind: 'code'`, по умолчанию — репозиторий GitHub, автотесты и рубрика) или подходом
+ * (`kind: 'approach'` — текст решения без кода; оценивается только рубрикой, ТЗ: «решить её или предложить подход»).
+ */
+export const SubmissionInput = z
+  .object({
+    kind: z.enum(['code', 'approach']).default('code'),
+    repoUrl: z.string().trim().min(10).max(300).optional(),
+    approachText: z.string().trim().max(APPROACH_MAX).optional(),
+    aiLogText: z.string().trim().max(AI_LOG_MAX).default(''),
+    /** Не задан — последний коммит ветки по умолчанию на момент сдачи. */
+    commitSha: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^[0-9a-f]{7,40}$/, 'commitSha: 7–40 hex')
+      .optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.kind === 'code' && !v.repoUrl) ctx.addIssue({ code: 'custom', path: ['repoUrl'], message: 'Нужна ссылка на репозиторий GitHub' });
+    if (v.kind === 'approach' && (v.approachText ?? '').length < APPROACH_MIN) {
+      ctx.addIssue({ code: 'custom', path: ['approachText'], message: `Опиши подход хотя бы в ${APPROACH_MIN} символах: что сделаешь, в каком порядке, какие ограничения учтёшь` });
+    }
+  });
 export type SubmissionInput = z.infer<typeof SubmissionInput>;
 
 export const InviteToDefenseInput = z

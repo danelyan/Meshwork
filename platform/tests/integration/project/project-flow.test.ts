@@ -349,6 +349,44 @@ describe('проект под работодателя: лента и сдача
     const after = await (await feed(jsonRequest('/x', 'GET', undefined, cand('p-fe')))).json();
     expect(after.items.find((i: { id: string }) => i.id === t.id)?.invited).toBe(true);
   });
+  it('сдача подходом (ТЗ: «решить или предложить подход»): без кода и балла, рубрика по тексту; работодатель видит текст без контактов; защиты нет', async () => {
+    await makeCandidate('p-appr', 'backend', 'junior');
+    await take(jsonRequest('/x', 'POST', undefined, cand('p-appr')), params({ id: taskId }));
+    const short = await submit(jsonRequest('/x', 'POST', { kind: 'approach', approachText: 'Сделаю API.' }, cand('p-appr')), params({ id: taskId }));
+    expect(short.status).toBe(400);
+    const text =
+      'Подход: сначала опишу модель слота и записи, затем валидацию входа по контракту с понятными сообщениями об ошибках на русском. ' +
+      'Пересечение интервалов проверю в отдельном модуле сравнением границ с учётом частичного наложения и покрою его юнит-тестами. ' +
+      'Отмена меняет статус, а не удаляет запись; список на день фильтруется по менеджеру. Идемпотентность и REST-коды возьму из контракта. ' +
+      'Связь со мной: me@example.test';
+    const res = await submit(jsonRequest('/x', 'POST', { kind: 'approach', approachText: text, aiLogText: '' }, cand('p-appr')), params({ id: taskId }));
+    expect(res.status).toBe(202);
+    const sub = await res.json();
+    expect(sub.kind).toBe('approach');
+    expect(sub.repoUrl).toBe('');
+    expect(sub.commitSha).toBeNull();
+    const done = await waitChecked(sub.id, cand('p-appr'));
+    expect(done.status).toBe('checked');
+    expect(done.result.kind).toBe('approach');
+    expect(done.result.tests).toEqual({ passed: 0, total: 0, score: 0 });
+    expect(done.result.visibleTests).toEqual([]);
+    expect(done.result.rubric.results).toHaveLength(4);
+    // работодатель: формат, текст подхода без контактов, репозитория нет
+    const list = await (await employerSubs(jsonRequest(`/x?needId=${NEED}`, 'GET', undefined, EMP))).json();
+    const item = list.items.find((i: { id: string }) => i.id === sub.id);
+    expect(item.kind).toBe('approach');
+    expect(item.approachText).toContain('Пересечение интервалов');
+    expect(item.approachText).not.toContain('me@example.test');
+    expect(item.repoUrl).toBeNull();
+    expect(item.result.hiddenTests).toEqual([]);
+    // приглашение по сдаче подходом — обычное, созвон-защита не создаётся
+    const before = defenseCalls.length;
+    const inv = await inviteDefense(jsonRequest('/x', 'POST', { message: 'Понравился подход, обсудим детали на созвоне', salaryFrom: 100000, salaryTo: 130000 }, EMP), params({ id: sub.id }));
+    expect(inv.status).toBe(201);
+    expect((await inv.json()).callSessionId).toBeNull();
+    expect(defenseCalls.length).toBe(before);
+    await expect(startDefenseRoom('p-appr', { mode: 'project', projectSubmissionId: sub.id, ai: true }, getLlm())).rejects.toThrow(/по сдаче с кодом/);
+  });
 });
 
 /** Имена файлов из central directory zip. */

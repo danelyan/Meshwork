@@ -1,61 +1,94 @@
-// Цифры теста на грейд для /validation. Закоммиченного results-файла у eval/test нет (скрипты печатают
-// таблицы в консоль), поэтому числа вынесены сюда — ЕДИНСТВЕННЫЙ источник для страницы.
-// Источник чисел: docs/validation-results.md, раздел «Тест на грейд (ADR 0002) — персоны и θ-синтетика,
-// параметры заданий экспертные» (политика adr-0002-v3, 10.10.2026): подразделы «Результаты по персонам»,
-// «Чувствительность: θ-синтетика» и архивная таблица «Популяция синтетики: старая и по персонам» (AUC).
-// Перепрогнали eval — обновите этот файл и раздел docs в одном коммите.
+// Цифры теста на грейд для /validation. Политика adr-0002-v7 (11.10.2026).
+// SYNTHETIC читается из закоммиченного eval/test/results.json (пишет `eval/test/run.ts --json`): среднее по подкатегориям,
+// модель ошибки «экземпляр» (σ = 0,2). PERSONAS — константы из прогона `eval/test/subcategory-personas.ts` (см. ниже):
+// у него нет JSON-вывода, поэтому после перепрогона обновляйте их вместе с разделом docs/validation-results.md.
 
-export const GRADE_TEST_DOC = 'docs/validation-results.md, раздел «Тест на грейд (ADR 0002) — персоны и θ-синтетика»';
-export const GRADE_TEST_POLICY = 'Снимок политики adr-0002-v3 (10.10; действующая — adr-0002-v7, её цифры — в docs/validation-results.md, «Версии политики теста на грейд»): порог Junior −0,7, Middle −0,1, порог подтверждения 0,8, 7–10 заданий + дозадавание до 3 Junior';
+import raw from '../../../eval/test/results.json';
 
-/** Персоны: вымышленные кандидаты с моделью знаний, заданной агентом; seed 1, N = 4000 попыток на персону. */
+export const GRADE_TEST_DOC = 'docs/validation-results.md, раздел «Версии политики теста на грейд» и § «Повторяемость на втором банке»';
+export const GRADE_TEST_POLICY = 'adr-0002-v7 (11.10): порог Junior −0,7, Middle −0,1, Senior +0,8, порог подтверждения 0,8, 7–10 заданий + дозадавание, пул — подкатегория (26–27 семейств)';
+
+/**
+ * Персоны: профили знаний по семействам подкатегории (не легенды людей), одни и те же на каждой подкатегории.
+ * Источник: `npx tsx eval/test/subcategory-personas.ts --spec <backend|frontend|ai|engineering> --n 1000 --seed 1`
+ * (11.10, adr-0002-v7), 18 подкатегорий; в строках — среднее по подкатегориям, в скобках минимум и максимум.
+ */
 export interface PersonaRow {
   id: string;
   legend: string;
-  truth: 'ниже Junior' | 'Junior' | 'Middle';
-  /** Заявил Junior → подтверждён Junior. */
-  pJunior: number;
+  truth: 'ниже Junior' | 'Junior' | 'Middle' | 'Senior';
+  /** Заявил Junior → подтверждён Junior: среднее, минимум, максимум по подкатегориям. */
+  pJunior: [number, number, number];
   /** Заявил Middle → подтверждён Middle. */
-  pMiddle: number;
+  pMiddle: [number, number, number];
 }
 
 export const PERSONAS: PersonaRow[] = [
-  { id: 'B1', legend: 'логист, кода не писала', truth: 'ниже Junior', pJunior: 0.0, pMiddle: 0.0 },
-  { id: 'B2', legend: 'курсы Python 3 мес.', truth: 'ниже Junior', pJunior: 0.12, pMiddle: 0.0 },
-  { id: 'F3', legend: 'верстальщик без JS', truth: 'ниже Junior', pJunior: 0.01, pMiddle: 0.0 },
-  { id: 'B3', legend: 'уверенный Junior, Django', truth: 'Junior', pJunior: 0.94, pMiddle: 0.22 },
-  { id: 'B4', legend: 'слабый узкий Junior, платежи', truth: 'Junior', pJunior: 0.98, pMiddle: 0.46 },
-  { id: 'F1', legend: 'пограничный Junior/Middle, React', truth: 'Junior', pJunior: 0.97, pMiddle: 0.43 },
-  { id: 'B5', legend: 'Middle, Java/Spring, Kafka', truth: 'Middle', pJunior: 1.0, pMiddle: 1.0 },
-  { id: 'F2', legend: 'Middle с перекосом в вёрстку', truth: 'Middle', pJunior: 0.99, pMiddle: 0.42 },
+  { id: 'N0', legend: 'новичок: решает половину простых тем наугад', truth: 'ниже Junior', pJunior: [0, 0, 0], pMiddle: [0, 0, 0] },
+  { id: 'N1', legend: 'пограничный новичок: уверенно только базовые темы', truth: 'ниже Junior', pJunior: [0.062, 0.02, 0.2], pMiddle: [0, 0, 0] },
+  { id: 'J', legend: 'Junior: уверенно Junior-темы, Middle-темы наполовину', truth: 'Junior', pJunior: [0.991, 0.97, 1], pMiddle: [0.057, 0.01, 0.15] },
+  { id: 'M', legend: 'Middle: Junior-темы все, Middle-темы почти все', truth: 'Middle', pJunior: [1, 1, 1], pMiddle: [0.991, 0.93, 1] },
+  { id: 'S', legend: 'Senior: все темы Junior и Middle, почти все Senior', truth: 'Senior', pJunior: [1, 1, 1], pMiddle: [1, 1, 1] },
 ];
 
-/** θ-синтетика: N = 2000 на специализацию, seed 1, текущая механика. Доли — от 0 до 1. */
+/** θ-синтетика: N = 2000 на подкатегорию, seed 1, текущая механика (дозадавание включено). Доли — от 0 до 1. */
 export interface SyntheticRow {
-  population: 'persona' | 'legacy';
-  specialization: 'backend' | 'frontend';
+  setting: 'strict' | 'competitor';
+  label: string;
+  /** Подкатегорий в усреднении. */
+  subcategories: number;
   falseConfirm: number;
   falseReject: number;
   /** Совпадение исхода двух попыток с разными вариантами заданий (test-retest). */
   retest: number;
-  /** κ Коэна двух попыток; посчитан без дозадавания (--no-probe). */
+  /** κ Коэна двух попыток по бинарному решению. */
   kappa: number;
   /** Средняя длина теста, заданий. */
   length: number;
-  /** Ложное подтверждение, если кандидат знает трюк по 30 % шаблонов (атака утечкой). */
-  leak30: number;
-  /** Ложное подтверждение при «лучшей из 3 попыток» без интервала. */
-  bestOf3: number;
-  /** AUC θ̂ Middle против Junior и Junior против новичка (архивная таблица без дозадавания). */
+  /** Ложное подтверждение, если кандидат знает трюк по 30 % шаблонов; в постановке конкурентов не считается. */
+  leak30: number | null;
+  /** AUC θ̂ Middle против Junior и Junior против новичка (в постановке конкурентов Junior/новичок не считается). */
   aucMiddleJunior: number;
-  aucJuniorNovice: number;
+  aucJuniorNovice: number | null;
 }
 
+type SummaryEntry = { mean: number };
+const instance = raw.summary.instance as unknown as Record<string, SummaryEntry>;
+const m = (key: string): number => {
+  const e = instance[key];
+  if (!e) throw new Error(`results.json: нет ${key}`);
+  return e.mean;
+};
+const subs = raw.subcategories as unknown as { byError: { instance: { strict: { auc: { juniorVsNovice: number } } } } }[];
+const aucJuniorNovice = Math.round((subs.reduce((a, x) => a + x.byError.instance.strict.auc.juniorVsNovice, 0) / subs.length) * 1000) / 1000;
+
 export const SYNTHETIC: SyntheticRow[] = [
-  { population: 'persona', specialization: 'backend', falseConfirm: 0.32, falseReject: 0.243, retest: 0.707, kappa: 0.42, length: 8.91, leak30: 0.562, bestOf3: 0.569, aucMiddleJunior: 0.707, aucJuniorNovice: 0.865 },
-  { population: 'persona', specialization: 'frontend', falseConfirm: 0.319, falseReject: 0.248, retest: 0.697, kappa: 0.4, length: 8.89, leak30: 0.522, bestOf3: 0.588, aucMiddleJunior: 0.686, aucJuniorNovice: 0.86 },
-  { population: 'legacy', specialization: 'backend', falseConfirm: 0.032, falseReject: 0.579, retest: 0.815, kappa: 0.48, length: 9.26, leak30: 0.121, bestOf3: 0.071, aucMiddleJunior: 0.897, aucJuniorNovice: 0.85 },
-  { population: 'legacy', specialization: 'frontend', falseConfirm: 0.04, falseReject: 0.591, retest: 0.82, kappa: 0.45, length: 9.08, leak30: 0.099, bestOf3: 0.081, aucMiddleJunior: 0.891, aucJuniorNovice: 0.849 },
+  {
+    setting: 'strict',
+    label: 'Строгая: истина — метка популяции',
+    subcategories: subs.length,
+    falseConfirm: m('strict.falsePass'),
+    falseReject: m('strict.falseFail'),
+    retest: m('strict.retest.decisionAgreement'),
+    kappa: m('strict.retest.kappaBinary'),
+    length: m('strict.length.mean'),
+    leak30: m('strict.leak.falsePass'),
+    aucMiddleJunior: m('strict.auc.middleVsJunior'),
+    aucJuniorNovice,
+  },
+  {
+    setting: 'competitor',
+    label: 'Постановка конкурентов: θ ~ N(0; 1)',
+    subcategories: subs.length,
+    falseConfirm: m('competitor.falsePass'),
+    falseReject: m('competitor.falseFail'),
+    retest: m('competitor.retest.decisionAgreement'),
+    kappa: m('competitor.retest.kappaBinary'),
+    length: m('competitor.length.mean'),
+    leak30: null,
+    aucMiddleJunior: m('competitor.aucByBand.middleVsJunior'),
+    aucJuniorNovice: null,
+  },
 ];
 
 /** Цели из плана проверки (docs/validation-plan.md) — подпись столбцов. */
@@ -68,10 +101,11 @@ export const TARGETS = {
   length: '7–10 + до 3',
 } as const;
 
-/** Команды воспроизведения из platform/ (без LLM, без БД, ~15 с). */
+/** Команды воспроизведения из platform/ (без LLM, без БД; run.ts ≈ 3 мин, персоны ≈ 1 мин на направление). */
 export const GRADE_TEST_COMMANDS = [
-  'npm run eval:test-personas -- --n 4000 --seed 1',
-  'npx tsx eval/test/personas.ts --n 4000 --seed 1 --no-probe',
-  'npx tsx eval/test/run.ts --n 2000 --seed 1',
-  'npx tsx eval/test/run.ts --n 2000 --seed 1 --population legacy',
+  'npx tsx eval/test/run.ts --n 2000 --json eval/test/results.json',
+  'npx tsx eval/test/subcategory-personas.ts --spec backend --n 1000 --seed 1',
+  'npx tsx eval/test/subcategory-personas.ts --spec frontend --n 1000 --seed 1',
+  'npx tsx eval/test/subcategory-personas.ts --spec ai --n 1000 --seed 1',
+  'npx tsx eval/test/subcategory-personas.ts --spec engineering --n 1000 --seed 1',
 ];

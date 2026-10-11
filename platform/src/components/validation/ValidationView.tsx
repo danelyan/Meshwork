@@ -1,7 +1,7 @@
 import { Container } from '@/components/shell/Container';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { Button, Panel } from '@/components/ui';
-import { PERSONA_NOTE, type PersonaRow, type SyntheticRow } from '@/server/validation/grade-test-figures';
+import type { PersonaRow, SyntheticRow } from '@/server/validation/grade-test-figures';
 import type { MatchingExtended, MatchingResults } from '@/server/validation/matching-results';
 
 import { JuryBackLink } from '@/components/demo/JuryRoute';
@@ -93,7 +93,8 @@ function ExtendedBlock({ title, ext }: { title: string; ext: MatchingExtended })
 /** Страница /validation: цифры теста на грейд и подбора, оговорки до цифр, команды воспроизведения. */
 export function ValidationView({ grade, matching, juryLink = false }: { grade: GradeTestData; matching: MatchingResults; juryLink?: boolean }) {
   const s = matching.summary;
-  const persona = grade.synthetic.filter((r) => r.population === 'persona');
+  const persona = grade.synthetic.filter((r) => r.setting === 'strict');
+  const cell = ([mean, lo, hi]: [number, number, number]) => `${dec(mean, 2)} (${dec(lo, 2)}–${dec(hi, 2)})`;
   const range = (xs: number[], f: (x: number) => string) => {
     const lo = Math.min(...xs);
     const hi = Math.max(...xs);
@@ -140,15 +141,14 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
           <ul className={styles.list}>
             <li>
               <b>Тест не защищён от нейросети в соседнем окне.</b> Задание с числовым ответом решает любая современная модель, и мы не измеряли, насколько
-              это ломает категорию. Поэтому категория из теста — результат короткого адаптивного теста, а не доказательство умения на практике.
+              это ломает категорию. Поэтому тест — предварительная калибровка грейда, а не доказательство умения.
             </li>
             <li>
               <b>Защищает он от слива ответов:</b> уникальные экземпляры каждого задания (генераторы) и ротация заданий между попытками. Подсмотренный у
               знакомого ответ не подходит к вашему экземпляру; от модели это не защищает.
             </li>
             <li>
-              <b>Опыт дополнительно подтверждают три шага вне теста:</b> созвон с ИИ-интервьюером, проект на скрытых тестах и защита по собственному коду. Они
-              необязательны и категорию не меняют: она остаётся за тестом.
+              <b>Умение подтверждают три шага вне теста:</b> созвон с ИИ-интервьюером, проект на скрытых тестах и защита по собственному коду.
             </li>
           </ul>
           <div className={styles.links}>
@@ -163,7 +163,9 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
 
         <section className={styles.section} aria-labelledby="grade">
           <h2 id="grade">Тест на грейд</h2>
-          <p className={styles.soft}>Политика {grade.policy}. Источник чисел — {grade.doc}.</p>
+          <p className={styles.soft}>
+            Политика {grade.policy}. Заголовочные числа — строгая постановка, среднее по подкатегориям. Источник — eval/test/results.json и {grade.doc}.
+          </p>
           <div className={styles.stats}>
             <Stat value={range(persona.map((r) => r.retest), pct)} label={`совпадение исхода двух попыток (цель ${grade.targets.retest})`} />
             <Stat value={range(persona.map((r) => r.kappa), dec)} label={`κ Коэна, test-retest (цель ${grade.targets.kappa})`} />
@@ -171,14 +173,15 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
             <Stat value={range(persona.map((r) => r.length), (x) => x.toFixed(1).replace('.', ','))} label={`заданий в среднем (${grade.targets.length})`} />
           </div>
           <p className={styles.soft}>
-            Цели по повторяемости и разделению <b>не достигнуты</b>: короткий тест (SE оценки ≈ 0,45) не даёт 90 % совпадения. Повторяемость при тех же
-            ответах — 100 % по построению (seed → задания, код → проверка).
+            Цели по повторяемости, разделению и ложному подтверждению в строгой постановке <b>не достигнуты</b>: тест на 8–9 заданий не даёт 90 %
+            совпадения двух попыток, а популяции Junior и Middle пересекаются. В постановке конкурентов ложное подтверждение укладывается в 10 %, но
+            ретест и AUC тоже ниже целей. Повторяемость при тех же ответах — 100 % по построению (seed → задания, код → проверка).
           </p>
 
-          <h3>Персоны по подкатегориям: вымышленные кандидаты, модель знаний задана агентом</h3>
+          <h3>Персоны: вымышленные кандидаты, модель знаний задана агентом</h3>
           <p className={styles.soft}>
-            Seed 1, 1000 попыток на персону и заявленный грейд в каждой из 18 подкатегорий, боевой движок теста без LLM и БД; в таблице — среднее по
-            подкатегориям.
+            Профили знаний по семействам подкатегории, не легенды людей. Seed 1, 1000 попыток на персону и заявленный грейд, {grade.personas.length} профилей ×
+            18 подкатегорий, боевой движок теста без LLM и БД. В ячейках среднее по подкатегориям и (минимум–максимум).
           </p>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
@@ -188,7 +191,6 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
                   <th>Уровень по легенде</th>
                   <th className={styles.num}>Заявил Junior: подтверждён</th>
                   <th className={styles.num}>Заявил Middle: подтверждён</th>
-                  <th className={styles.num}>Заявил Senior: подтверждён</th>
                 </tr>
               </thead>
               <tbody>
@@ -198,57 +200,63 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
                       {p.id} — {p.legend}
                     </td>
                     <td>{p.truth}</td>
-                    <td className={styles.num}>{dec(p.pJunior, 2)}</td>
-                    <td className={styles.num}>{dec(p.pMiddle, 2)}</td>
-                    <td className={styles.num}>{dec(p.pSenior, 2)}</td>
+                    <td className={styles.num}>{cell(p.pJunior)}</td>
+                    <td className={styles.num}>{cell(p.pMiddle)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className={styles.soft}>{PERSONA_NOTE}</p>
-
-          <h3>θ-синтетика: 2000 кандидатов на подкатегорию, среднее по специализации</h3>
           <p className={styles.soft}>
-            Две популяции: persona — подобрана по персонам, legacy — исходные допущения. Какая ближе к людям, неизвестно без живой разметки.
+            Новички не должны получать Junior чаще 10 %: пограничный новичок N1 получает его в среднем в 6 % случаев, на худшей подкатегории — в 20 %
+            (цель не достигнута). Junior, заявивший Middle, ложно подтверждается в среднем в 6 % случаев, на худшей — в 15 %. Уверенные Middle и Senior
+            проходят почти всегда.
+          </p>
+
+          <h3>θ-синтетика: 2000 кандидатов на подкатегорию</h3>
+          <p className={styles.soft}>
+            Две постановки метрик: строгая — истина это метка популяции, и популяции пересекаются; конкурентов — истина это θ выше порога заявленного
+            грейда. Среднее по {grade.synthetic[0]?.subcategories} подкатегориям, модель ошибки «экземпляр». Какая постановка ближе к людям, неизвестно без
+            живой разметки.
           </p>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Популяция</th>
+                  <th>Постановка</th>
                   <th className={styles.num}>Ложное подтв. ({grade.targets.falseConfirm})</th>
                   <th className={styles.num}>Ложный отказ ({grade.targets.falseReject})</th>
                   <th className={styles.num}>Test-retest ({grade.targets.retest})</th>
                   <th className={styles.num}>κ* ({grade.targets.kappa})</th>
                   <th className={styles.num}>AUC M/J ({grade.targets.auc})</th>
+                  <th className={styles.num}>AUC J/новичок</th>
                   <th className={styles.num}>Длина</th>
                   <th className={styles.num}>Утечка трюка 30 %</th>
                 </tr>
               </thead>
               <tbody>
                 {grade.synthetic.map((r) => (
-                  <tr key={`${r.population}-${r.specialization}`}>
-                    <td>
-                      {r.population}, {r.specialization}
-                    </td>
+                  <tr key={r.setting}>
+<td>{r.label}</td>
                     <td className={`${styles.num} ${r.falseConfirm > 0.1 ? styles.miss : ''}`}>{pct(r.falseConfirm)}</td>
                     <td className={`${styles.num} ${r.falseReject > 0.2 ? styles.miss : ''}`}>{pct(r.falseReject)}</td>
                     <td className={styles.num}>{pct(r.retest)}</td>
                     <td className={styles.num}>{dec(r.kappa, 2)}</td>
                     <td className={styles.num}>{dec(r.aucMiddleJunior)}</td>
+                    <td className={styles.num}>{r.aucJuniorNovice === null ? '—' : dec(r.aucJuniorNovice)}</td>
                     <td className={styles.num}>{r.length.toFixed(2).replace('.', ',')}</td>
-                    <td className={styles.num}>{pct(r.leak30)}</td>
+                    <td className={styles.num}>{r.leak30 === null ? '—' : pct(r.leak30)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           <p className={styles.soft}>
-            * κ и AUC посчитаны на текущей механике с дозадаванием (политика v7). «Утечка трюка» — атака: кандидат заранее знает решение 30 % шаблонов;
-            ложное подтверждение растёт, защита держится на разных экземплярах заданий и ротации семейств между попытками.
+            «Утечка трюка» — атака: кандидат заранее знает решение 30 % шаблонов; ложное подтверждение растёт, защита держится на разных экземплярах
+            заданий и ротации семейств между попытками. Прочерк — метрика в этой постановке не считается. Пересдача после разбора и лучшая из 3 попыток —
+            в docs/validation-results.md, «Версии политики теста на грейд».
           </p>
-          <h3>Как повторить (из platform/, ≈ 50 с полный прогон, без сети и БД)</h3>
+          <h3>Как повторить (из platform/, без сети и LLM; run.ts ≈ 3 мин, персоны ≈ 1 мин на направление)</h3>
           <pre className={styles.code}>{grade.commands.join('\n')}</pre>
         </section>
 

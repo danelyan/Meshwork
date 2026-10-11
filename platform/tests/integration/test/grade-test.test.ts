@@ -616,7 +616,11 @@ describe('индекс честности и подтверждающий тес
     const second = await startAttempt(B, 'backend', 'middle', T0, { seed: 1, subcategoryId: 'backend.web-api' });
     const cur = (await getAttempt(B, second.attemptId)).current!;
     const row = await prisma.testItem.findFirstOrThrow({ where: { attemptId: second.attemptId, correct: null } });
-    expect(cur.jury).toEqual({ canaryShift: row.canaryShift });
+    expect(cur.jury).toMatchObject({ canaryShift: row.canaryShift, phase: 'main' });
+    // адаптивный слой: параметры задания и шанс верного, ключа ответа нет
+    expect(typeof cur.jury?.itemB).toBe('number');
+    expect(cur.jury?.pCorrect).toBeGreaterThan(0);
+    expect(JSON.stringify(cur.jury)).not.toContain('answerKey');
     expect(JSON.stringify(cur)).not.toContain(row.answerKey.split('|')[0]! + '"');
   });
 });

@@ -44,7 +44,7 @@ import {
   type IntegrityIndex,
   type ItemObservation,
 } from './integrity';
-import { estimateTheta, type Response } from './irt';
+import { estimateTheta, probCorrect, type Response } from './irt';
 import {
   decide,
   CONFIRM_PROB,
@@ -75,6 +75,7 @@ import type {
   JuryResult,
   StartResult,
   TaskGenerator,
+  JuryLiveView,
 } from './types';
 
 /** Версия политики и правила остановки по версии — policy.ts (POLICY_VERSION, rulesFor). */
@@ -503,7 +504,7 @@ export async function startConfirmAttempt(candidateId: string, sourceAttemptId: 
   return { attemptId: attempt.id, resumed: false };
 }
 
-function itemView(it: TestItem, title: string, format: TaskGenerator['format'], timeLimitSec: number, withCanary = true): ItemView {
+function itemView(it: TestItem, title: string, format: TaskGenerator['format'], timeLimitSec: number, withCanary = true, juryExtra: Omit<JuryLiveView, 'canaryShift'> = {}): ItemView {
   return {
     index: it.index,
     templateId: it.templateId,
@@ -516,7 +517,23 @@ function itemView(it: TestItem, title: string, format: TaskGenerator['format'], 
     askedAt: it.askedAt.toISOString(),
     canary: withCanary && it.canaryShift !== null ? canaryText(it.canaryShift) : null,
     // Слой жюри: сдвиг ловушки (ключ не раскрывается). Без флага поля нет вовсе.
-    ...(withCanary && getEnv().JURY_INSIGHTS ? { jury: { canaryShift: it.canaryShift ?? null } } : {}),
+    ...(withCanary && getEnv().JURY_INSIGHTS ? { jury: { canaryShift: it.canaryShift ?? null, ...juryExtra } } : {}),
+  };
+}
+
+/** Слой жюри на текущем задании: θ̂/SE после последнего ответа, параметры задания и шанс верного ответа. Ключ не раскрывается. */
+function juryLiveOf(a: AttemptWithItems, byId: Map<string, SelectableTemplate>, current: TestItem, phase: AttemptPhase): Omit<JuryLiveView, 'canaryShift'> {
+  const answered = a.items.filter((i) => i.correct !== null).sort((x, y) => x.index - y.index);
+  const last = answered.at(-1);
+  const theta = last?.thetaAfter ?? null;
+  const se = last?.seAfter ?? null;
+  const t = byId.get(current.templateId);
+  return {
+    theta,
+    se,
+    ...(t ? { itemB: t.b, itemA: t.a, itemGrade: t.grade, pCorrect: probCorrect(theta ?? 0, { a: t.a, b: t.b }) } : {}),
+    phase,
+    answered: answered.length,
   };
 }
 
@@ -652,7 +669,7 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     maxItems: step.maxItems,
     startedAt: a.startedAt.toISOString(),
     expiresAt: a.expiresAt.toISOString(),
-    current: current && g ? itemView(current, g.title, g.format, g.timeLimitSec) : null,
+    current: current && g ? itemView(current, g.title, g.format, g.timeLimitSec, true, juryLiveOf(a, byId, current, step.phase)) : null,
     result: result && jury ? { ...result, jury } : result,
   };
 }

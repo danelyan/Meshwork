@@ -108,7 +108,7 @@ const RULES_DURING = [
   'Не отвлекайтесь на звонки и уведомления — проверьте интернет и зарядку',
 ];
 
-/** Экран правил перед стартом, как на крупных площадках. Что именно и как проверяется - не раскрываем. */
+/** Экран правил перед стартом, как на hh.ru. Что именно и как проверяется - не раскрываем. */
 function RulesBlock({ retakeAfter }: { retakeAfter: string | undefined }) {
   const after = [
     'Если не получится — работодатель не увидит',
@@ -145,6 +145,9 @@ function JuryPlate({ children }: { children: React.ReactNode }) {
   );
 }
 
+const PHASE_LABEL: Record<string, string> = { main: 'основная', junior_probe: 'зонд: подтверждаем junior', middle_probe: 'зонд: проверяем middle' };
+const fmtTheta = (v: number) => (v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2));
+
 function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -154,6 +157,7 @@ function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
   const elapsed = Math.max(0, Math.floor((now - new Date(item.askedAt).getTime()) / 1000));
   const share = Math.round((elapsed / item.timeLimitSec) * 100);
   const shift = item.jury?.canaryShift ?? null;
+  const j = item.jury;
   return (
     <JuryPlate>
       <dl className={styles.juryGrid}>
@@ -162,6 +166,19 @@ function JuryLive({ item, totals }: { item: ItemView; totals: SignalTotals }) {
         <div><dt>Время на задании</dt><dd data-testid="jury-time">{elapsed} с из {item.timeLimitSec} с ({share}% лимита)</dd></div>
         {totals.extendedScreen !== null && <div><dt>Второй экран</dt><dd>{totals.extendedScreen ? 'подключён (пометка)' : 'нет'}</dd></div>}
       </dl>
+      {j && j.itemB !== undefined && (
+        <dl className={styles.juryGrid} data-testid="jury-adaptive">
+          <div><dt>Оценка уровня θ̂</dt><dd>{j.theta != null && j.se != null ? `${fmtTheta(j.theta)} ± ${j.se.toFixed(2)}` : 'ответов ещё нет (старт от 0)'}{j.answered ? ` · ответов ${j.answered}` : ''}</dd></div>
+          <div><dt>Задание</dt><dd>сложность b = {fmtTheta(j.itemB)}{j.itemA !== undefined ? `, различимость a = ${j.itemA.toFixed(2)}` : ''}{j.itemGrade ? ` · шаблон ${j.itemGrade}` : ''}</dd></div>
+          {j.pCorrect !== undefined && <div><dt>Шанс верного ответа при θ̂</dt><dd>{Math.round(j.pCorrect * 100)} %</dd></div>}
+          {j.phase && <div><dt>Фаза</dt><dd>{PHASE_LABEL[j.phase]}</dd></div>}
+        </dl>
+      )}
+      {j && j.itemB !== undefined && (
+        <p className={styles.juryNote}>
+          Почему это задание: из банка выбрано то, что даёт больше всего информации о θ̂ (2PL IRT), с учётом уже показанных и ранее виденных шаблонов. Верный ответ сдвинет θ̂ вверх и следующее будет труднее, ошибка — легче; тест остановится, когда ошибка оценки станет мала или кончится лимит заданий.
+        </p>
+      )}
       {shift !== null && (
         <p className={styles.juryNote} data-testid="jury-canary">
           В условии скрыта ловушка для нейросети: ответ модели будет ключ + {shift}.
@@ -263,8 +280,8 @@ function IntroScreen({
         <h1 className={styles.h1}>Тест на грейд<i>.</i></h1>
         <p className={`${ui.muted} ${styles.lead}`}>
           {formatItemRange(itemLimits)} коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
-          (направление × грейд) даёт только этот тест: успешная попытка записывает её в профиль; выбор грейда - за вами. Созвон с ИИ, проект и
-          защита категорию не меняют: они подтверждают отдельные утверждения профиля и видны работодателю.
+          (направление × грейд) даёт только этот тест; выбор грейда - за вами. Созвон с ИИ, проект и защита - дополнительные проверки опыта: они
+          подтверждают утверждения профиля и видны работодателю, но для категории не обязательны.
         </p>
       </div>
 
@@ -321,7 +338,7 @@ function IntroScreen({
       <ul className={styles.rules} aria-label="Правила">
         <li>Задание можно пропустить только ответом; назад вернуться нельзя.</li>
         <li>Таймер мягкий: превышение лимита не блокирует ответ, но учитывается.</li>
-        <li>Неудачная попытка не снимает уже записанную категорию.</li>
+        <li>Неудачная попытка не снимает уже подтверждённую категорию.</li>
         {elig?.rules && <li>{elig.rules}</li>}
       </ul>
 
@@ -339,7 +356,7 @@ function IntroScreen({
         </Button>
         <Button href="/profile">В профиль</Button>
       </div>
-      <Panel className={styles.afterTest}><Kicker>Что произойдёт после</Kicker><h2>Результат станет частью профиля.</h2><p>Успешная попытка запишет категорию в профиль; если результат понадобится подтвердить, экран итога предложит короткий подтверждающий тест. Если не получится, текущая категория сохранится, а рекомендации помогут подготовиться к следующей попытке.</p><p>Созвон с ИИ, проект и защита категорию не меняют: они подтверждают отдельные утверждения профиля.</p><p>Сложность заданий - экспертная оценка: на людях банк заданий не калибровался. <Link href="/validation">Что и как проверялось</Link></p></Panel>
+      <Panel className={styles.afterTest}><Kicker>Что произойдёт после</Kicker><h2>Результат станет частью профиля.</h2><p>Успешный тест подтвердит категорию. Если не получится, текущая категория сохранится, а рекомендации помогут подготовиться к следующей попытке.</p><p>Диалог с консультантом, проект и защита остаются отдельными этапами проверки опыта.</p></Panel>
       </div><aside className={styles.introAside}>
         <Panel className={styles.historyCard}><h2>История</h2>{history.length ? <ol>{history.slice(0, 5).map((attempt) => <li key={attempt.id}><small>{formatDate(attempt.startedAt)}</small><b>{SPEC_LABEL[attempt.specialization]} · {GRADE_LABEL[attempt.grade]}</b><span>{attempt.status === 'passed' ? 'Подтверждён' : attempt.status === 'active' ? 'Не завершён' : attempt.status === 'abandoned' ? 'Попытка не засчитана' : 'Грейд не подтверждён'} · {attempt.correct} из {attempt.answered}</span><Button size="sm" href={`/test?attempt=${encodeURIComponent(attempt.id)}`}>Открыть попытку →</Button></li>)}</ol> : <p>Завершённых попыток пока нет.</p>}</Panel>
         <Button href="/consultant" className={styles.consultantLink}>Кира · Разберём пробелы перед тестом ↗</Button>

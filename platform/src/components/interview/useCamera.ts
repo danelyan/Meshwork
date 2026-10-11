@@ -13,7 +13,12 @@ export type CameraState = 'off' | 'starting' | 'on' | 'denied';
  * на `POST /api/call/{id}/video?startMs=`. По умолчанию выключена; включается кнопкой после согласия (пункт о камере).
  * Никакого анализа видео на клиенте нет: только запись как материал созвона.
  */
-export function useCamera(opts: { getCallId: () => string | null; getStartedAt: () => number | null }) {
+export function useCamera(opts: {
+  getCallId: () => string | null;
+  getStartedAt: () => number | null;
+  /** Подсказка при отказе в доступе (по умолчанию — про интервью); созвон в любом случае идёт без видео. */
+  deniedText?: string;
+}) {
   const [state, setState] = useState<CameraState>('off');
   const [error, setError] = useState<string | null>(null);
   const [segments, setSegments] = useState(0);
@@ -128,7 +133,7 @@ export function useCamera(opts: { getCallId: () => string | null; getStartedAt: 
       setState('on');
       recordSegment();
     } catch {
-      setError('Нет доступа к камере - разреши её в настройках браузера. Интервью идёт и без камеры.');
+      setError(optsRef.current.deniedText ?? 'Нет доступа к камере - разреши её в настройках браузера. Интервью идёт и без камеры.');
       setState('denied');
     }
   }, [supported, recordSegment]);

@@ -18,8 +18,13 @@ export type MicCheck = 'unsupported' | 'asking' | 'granted' | 'denied' | 'nodevi
 export interface DevicePreflightProps {
   /** Показывать опциональную проверку камеры (комната с камерой). */
   withCamera?: boolean;
-  /** Всё в порядке (или человек сам решил продолжить): начинаем созвон голосом. */
-  onReady: () => void;
+  /**
+   * Галочка камеры не только проверяет её, но и включает в созвоне (созвон с Кирой): выбор уходит в onReady.
+   * Без флага — как в комнате интервью: только проверка, камера включается в комнате отдельно.
+   */
+  cameraJoinsCall?: boolean;
+  /** Всё в порядке (или человек сам решил продолжить): начинаем созвон голосом. camera — включить камеру в созвоне. */
+  onReady: (opts?: { camera: boolean }) => void;
   /** Без микрофона: созвон текстом. */
   onTextOnly: () => void;
   onCancel?: () => void;
@@ -49,7 +54,7 @@ export function mediaSupported(): boolean {
   return typeof navigator.mediaDevices?.getUserMedia === 'function';
 }
 
-export function DevicePreflight({ withCamera, onReady, onTextOnly, onCancel, primaryClass, ghostClass }: DevicePreflightProps) {
+export function DevicePreflight({ withCamera, cameraJoinsCall, onReady, onTextOnly, onCancel, primaryClass, ghostClass }: DevicePreflightProps) {
   const [mic, setMic] = useState<MicCheck>(() => (mediaSupported() ? 'asking' : 'unsupported'));
   const [level, setLevel] = useState(0);
   const [devices, setDevices] = useState<{ id: string; label: string }[]>([]);
@@ -220,7 +225,8 @@ export function DevicePreflight({ withCamera, onReady, onTextOnly, onCancel, pri
     stopCam();
     void playSilentUnlock();
     if (textOnly) onTextOnly();
-    else onReady();
+    // Камера по умолчанию выключена: включаем, только если галочку поставили и браузер не отказал.
+    else onReady({ camera: Boolean(withCamera && cameraJoinsCall && wantCam && cam !== 'denied') });
   };
 
   const granted = mic === 'granted';
@@ -292,10 +298,16 @@ export function DevicePreflight({ withCamera, onReady, onTextOnly, onCancel, pri
         <div className={styles.row}>
           <label className={styles.check}>
             <input type="checkbox" checked={wantCam} onChange={(e) => setWantCam(e.target.checked)} data-testid="call-devices-camera" />
-            Проверить камеру (по умолчанию выключена, включается в комнате отдельно)
+            {cameraJoinsCall
+              ? 'Включить камеру в созвоне (по умолчанию выключена; видео записывается вместе с аудио)'
+              : 'Проверить камеру (по умолчанию выключена, включается в комнате отдельно)'}
           </label>
           {cam === 'starting' && <span className={styles.note}>Ждём разрешения камеры…</span>}
-          {cam === 'denied' && <span className={styles.note}>Камера недоступна или запрещена - можно продолжить без неё.</span>}
+          {cam === 'denied' && (
+            <span className={styles.note} data-testid="call-devices-camera-denied">
+              {cameraJoinsCall ? 'Камера недоступна или запрещена - созвон пойдёт без видео.' : 'Камера недоступна или запрещена - можно продолжить без неё.'}
+            </span>
+          )}
           {wantCam && cam === 'on' && <video ref={video} className={styles.preview} autoPlay muted playsInline aria-label="Превью камеры" />}
         </div>
       )}

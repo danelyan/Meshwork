@@ -635,8 +635,17 @@ export async function addAudio(candidateId: string, sessionId: string, pcm: Uint
 export async function addVideo(candidateId: string, sessionId: string, bytes: Uint8Array, startMs: number): Promise<VideoSegment> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
+  // Видео — часть записи созвона (Г2, пункт о камере): без действующего согласия не сохраняем, как и аудио.
+  const recordingOn = async () => (await callRecordingMode(candidateId)) === 'audio';
+  if (!(await recordingOn())) throw new AppError('call_recording_off', 'Запись созвона отключена в «Моих согласиях» - видео не сохраняется', 409);
   const seg = await saveVideoSegment(sessionId, bytes, startMs);
+  // audioPath помечает «у созвона есть файлы»: по нему работают очистка по сроку и отзыв Г2 (каталог calls/<id> целиком).
   if (!row.audioPath) await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: callAudioDir(sessionId).rel } });
+  // Гонка с отзывом Г2 (как в addAudio): отзыв пришёлся между проверкой и записью — убираем свой сегмент сами.
+  if (!(await recordingOn())) {
+    await removeSegment(sessionId, `video/${seg.name}`);
+    throw new AppError('call_recording_off', 'Запись созвона отключена в «Моих согласиях» - видео не сохраняется', 409);
+  }
   return seg;
 }
 

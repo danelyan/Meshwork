@@ -170,6 +170,40 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(gum.mock.calls[0]![0].video).toBeUndefined();
   });
 
+  it('cameraJoinsCall: без галочки onReady({ camera: false }); с галочкой и разрешением — camera: true', async () => {
+    gum.mockImplementation(async () => fakeStream().stream);
+    const p = props();
+    const { unmount } = render(<DevicePreflight {...p} withCamera cameraJoinsCall />);
+    expect(screen.getByText(/Включить камеру в созвоне/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
+    fireEvent.click(screen.getByTestId('call-devices-go'));
+    expect(p.onReady).toHaveBeenCalledWith({ camera: false });
+    unmount();
+
+    const p2 = props();
+    render(<DevicePreflight {...p2} withCamera cameraJoinsCall />);
+    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
+    fireEvent.click(screen.getByTestId('call-devices-camera'));
+    await waitFor(() => expect(gum.mock.calls.some((c) => c[0].video)).toBe(true));
+    await act(async () => undefined);
+    fireEvent.click(screen.getByTestId('call-devices-go'));
+    expect(p2.onReady).toHaveBeenCalledWith({ camera: true });
+  });
+
+  it('cameraJoinsCall: камера запрещена (NotAllowedError) — подсказка «без видео», onReady({ camera: false })', async () => {
+    gum.mockImplementation(async (c: MediaStreamConstraints) => {
+      if (c.video) throw Object.assign(new Error('x'), { name: 'NotAllowedError' });
+      return fakeStream().stream;
+    });
+    const p = props();
+    render(<DevicePreflight {...p} withCamera cameraJoinsCall />);
+    await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
+    fireEvent.click(screen.getByTestId('call-devices-camera'));
+    expect((await screen.findByTestId('call-devices-camera-denied')).textContent).toContain('без видео');
+    fireEvent.click(screen.getByTestId('call-devices-go'));
+    expect(p.onReady).toHaveBeenCalledWith({ camera: false });
+  });
+
   it('размонтирование закрывает поток микрофона', async () => {
     const { stream, track: t } = fakeStream();
     gum.mockResolvedValue(stream);

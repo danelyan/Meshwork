@@ -1,0 +1,93 @@
+# Симулятор ФСП: ФСП ID (Keycloak 26 + PostgreSQL) и API реестра за Caddy. Настройки — .env (.env.example).
+#   docker compose up -d --build        затем ${PUBLIC_URL}/ (стартовая), /docs, /auth/admin/
+# Реалм импортируется только при первом старте (пустая база). Обновить данные реалма:
+#   docker compose down -v && docker compose up -d --build   (согласия и сессии сбросятся)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:?в .env нужен KC_DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      # Снаружи Keycloak виден как ${PUBLIC_URL}/auth (Caddy), внутри слушает HTTP с тем же префиксом.
+      KC_HOSTNAME: ${PUBLIC_URL:?в .env нужен PUBLIC_URL}/auth
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?в .env нужен KC_BOOTSTRAP_ADMIN_PASSWORD}
+      JAVA_OPTS_KC_HEAP: "-Xms128m -Xmx640m"
+      # Плейсхолдеры ${…} в keycloak/fsp-id-realm.json
+      FSP_CAREER_CLIENT_SECRET: ${FSP_CAREER_CLIENT_SECRET:-fsp-career-demo-secret}
+      FSP_PARTNER_DEMO_SECRET: ${FSP_PARTNER_DEMO_SECRET:-fsp-partner-demo-secret}
+      FSP_DEMO_PASSWORD: ${FSP_DEMO_PASSWORD:-fsp-demo-2026}
+    volumes:
+      - ./keycloak/fsp-id-realm.json:/opt/keycloak/data/import/fsp-id-realm.json:ro
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      # В образе нет curl: запрос к management-порту через /dev/tcp bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 60s
+    restart: unless-stopped
+
+  api:
+    build: .
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL}
+      KC_INTERNAL_URL: http://keycloak:8080/auth
+      KC_REALM: fsp-id
+      FSP_DEMO_PASSWORD: ${FSP_DEMO_PASSWORD:-fsp-demo-2026}
+      FSP_PARTNER_DEMO_SECRET: ${FSP_PARTNER_DEMO_SECRET:-fsp-partner-demo-secret}
+    depends_on:
+      keycloak: { condition: service_started }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/v1/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.11-alpine
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+      - "8088:8088"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api: { condition: service_started }
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

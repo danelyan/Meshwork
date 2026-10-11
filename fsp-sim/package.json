@@ -1,0 +1,29 @@
+{
+  "name": "fsp-sim",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Симулятор ФСП ID (Keycloak) и API реестра достижений ФСП на синтетических данных. Не является интеграцией с ФСП.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "generate": "tsx scripts/generate.ts",
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/server.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run test"
+  },
+  "dependencies": {
+    "jose": "^6.1.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.0"
+  }
+}

@@ -90,6 +90,23 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | Резервная копия базы | `dc exec db pg_dump -U fsp fsp > backup.sql` |
 | Место на диске | `df -h /` и `docker system df`. Кеш сборки урезается до 3 ГБ после каждого деплоя и раз в полчаса (`/etc/cron.d/fsp-docker-prune`) |
 
+## Симулятор ФСП: второй сервер
+
+[`fsp-sim/`](../fsp-sim/README.md) (ФСП ID на Keycloak и API реестра) живёт на отдельном сервере того же проекта Selectel, чтобы Keycloak не делил 4 ГБ со стендом жюри.
+
+| | |
+| --- | --- |
+| Адрес | https://111-88-114-206.sslip.io, проверка — `/api/v1/health`; домен `sslip.io` указывает на адрес сервера без DNS-настроек |
+| Сервер | `fsp-id`, `PRC50.2-4096`, сетевой диск 30 ГБ `basicssd`, Ubuntu 24.04, зона `ru-7a`, сеть `fsp-net`, группа безопасности `fsp-stand` (22, 80, 443), плавающий адрес 111.88.114.206 |
+| Создан | 10 октября 2026 года скриптом [`fsp-sim/scripts/selectel-server.sh`](../fsp-sim/scripts/selectel-server.sh) через API Selectel (диск из образа → сервер → группа безопасности на порту → плавающий адрес) |
+| Подготовка | [`fsp-sim/scripts/bootstrap-server.sh`](../fsp-sim/scripts/bootstrap-server.sh) от root: Docker Engine, пользователь `deploy`, `/opt/fsp/fsp-sim`, swap 2 ГБ, ufw |
+| Деплой | Вручную: `DEPLOY_HOST=deploy@111.88.114.206 SSH_OPTS='-i ~/.ssh/fsp-id' bash scripts/deploy.sh` из `fsp-sim/` — rsync каталога и `docker compose up -d --build`, затем проверка health. GitHub Actions этот каталог не выкладывает |
+| `.env` | `/opt/fsp/fsp-sim/.env` (600): `PUBLIC_URL`, пароли администратора Keycloak и базы, `FSP_CAREER_CLIENT_SECRET` (сгенерированы на сервере, в репозитории нет); `FSP_PARTNER_DEMO_SECRET` и `FSP_DEMO_PASSWORD` — значения по умолчанию из `.env.example` (публичные демо-данные) |
+| Обновить реалм | Импорт идёт только в пустую базу: `docker compose down -v && docker compose up -d --build` на сервере (сбросит сессии) |
+| Журналы | `docker compose logs -f keycloak`, `docker compose logs -f api` в `/opt/fsp/fsp-sim` |
+
+Сервер оплачивается почасово с того же баланса, что и стенд.
+
 ## Ограничения
 
 - Сеть `runner-net` задана с `com.docker.network.bridge.gateway_mode_ipv4: isolated` — нужен Docker Engine ≥ 28 (проверено на 29.8; что сделает движок старше 28 — отклонит опцию или молча проигнорирует, оставив мост с адресом на хосте, — не проверено). Проверить: `docker version --format '{{.Server.Version}}'`.

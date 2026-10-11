@@ -1,0 +1,11 @@
+# Вход симулятора: /auth/* → Keycloak (ФСП ID), остальное → API реестра.
+# PUBLIC_URL=https://<домен> — Caddy сам получает сертификат; http://localhost:8088 — локально без HTTPS.
+{$PUBLIC_URL} {
+	encode zstd gzip
+	handle /auth/* {
+		reverse_proxy keycloak:8080
+	}
+	handle {
+		reverse_proxy api:8080
+	}
+}

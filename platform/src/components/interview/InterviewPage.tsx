@@ -30,7 +30,7 @@ function merge(list: TranscriptEntry[], add: (TranscriptEntry | null | undefined
 
 /** Вход в ИИнтервью: консультант с сразу открытым режимом созвона. */
 export const CONSULTANT_CALL_HREF = '/consultant?call=1';
-/** Комната звонка с перебиванием голосом (components/interview/InterviewRoom). */
+/** Старая комната звонка (components/interview/InterviewRoom): перебивание голосом теперь есть в созвоне с Кирой, с заставки не ведём. */
 export const ROOM_HREF = '/interview/room';
 
 const QUESTION_BLOCKS = BLOCK_DEFS.filter((b) => b.questions.max > 0);
@@ -142,6 +142,12 @@ export function InterviewPage() {
   const id = call?.id ?? null;
   const summary = summaryOf(call?.verdict);
 
+  // Без интервью страница не нужна: созвон идёт в консультанте (решение владельца 10.10 и 11.10) —
+  // сразу туда; карточка ниже остаётся на мгновение загрузки и для браузеров без JS-перехода.
+  useEffect(() => {
+    if (phase !== 'intro' || process.env.NODE_ENV === 'test') return;
+    window.location.replace(CONSULTANT_CALL_HREF);
+  }, [phase]);
   // Открытие: прошлые интервью и согласие; активное — продолжаем сразу, иначе стартовая карточка.
   useEffect(() => {
     let alive = true;
@@ -494,7 +500,7 @@ export function InterviewPage() {
                 <p>
                   ИИ-интервьюер пройдёт с тобой четыре блока: знакомство, разбор профильных компетенций, системный дизайн и работу в команде. Итог -
                   профиль компетенций в кабинете и подтверждённые утверждения в профиле. Категорию интервью не меняет. Интервью проходит в консультанте,
-                  в режиме созвона с Кирой; здесь остаётся результат и история.
+                  в режиме созвона с Кирой - переходим туда; здесь остаётся результат и история.
                 </p>
                 <div className={styles.rules}>
                   <div>
@@ -510,8 +516,8 @@ export function InterviewPage() {
                     <span>как удобнее</span>
                   </div>
                   <div>
-                    <b>без камеры</b>
-                    <span>только ответы</span>
+                    <b>камера</b>
+                    <span>по желанию</span>
                   </div>
                 </div>
                 {error && (
@@ -522,9 +528,6 @@ export function InterviewPage() {
                 <a className={styles.go} href={CONSULTANT_CALL_HREF}>
                   Пройти в консультанте <span aria-hidden="true">→</span>
                 </a>
-                <Button variant="ghost" href={ROOM_HREF}>
-                  Открыть комнату звонка (можно перебивать ИИ)
-                </Button>
               </>
             )}
           </div>

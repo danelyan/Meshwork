@@ -133,7 +133,7 @@ describe('шаблоны писем', () => {
     const token = (name: string): string | undefined => {
       const v = new RegExp(`--${name}:\\s*([^;]+);`).exec(css)?.[1]?.trim().toLowerCase();
       const ref = v && /^var\(--([\w-]+)\)$/.exec(v);
-      return ref ? token(ref[1]) : v;
+      return ref?.[1] ? token(ref[1]) : v;
     };
     expect(token('ink')).toBe(MAIL_COLORS.ink);
     expect(token('paper')).toBe(MAIL_COLORS.paper);

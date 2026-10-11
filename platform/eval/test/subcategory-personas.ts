@@ -35,6 +35,7 @@ import { GRADES, type Grade } from '../../src/lib/grades';
 import { poolFor } from '../../src/server/test/generators';
 import { estimateTheta, type Response } from '../../src/server/test/irt';
 import {
+  CONFIRM_PROB,
   decide,
   GRADE_CUT,
   nextStep,
@@ -77,6 +78,7 @@ const SET_ARG = new Map<string, [number | null, number | null]>(
 );
 const A_MIDDLE = argStr('a-middle') !== undefined ? Number(argStr('a-middle')) : null;
 /** Правила остановки: --rules <версия политики> (по умолчанию текущая), поверх — --min / --max / --early (эксперименты). */
+const CONFIRM = argStr('confirm') !== undefined ? Number(argStr('confirm')) : CONFIRM_PROB;
 const RULES_NAME = argStr('rules') ?? POLICY_VERSION;
 const RULES: StopLimits = {
   ...rulesFor(RULES_NAME),
@@ -174,7 +176,7 @@ function runAttempt(pool: readonly SelectableTemplate[], knows: Map<string, numb
     if (step.stop) break;
     phase = step.phase;
   }
-  const d = decide(responses, claimed);
+  const d = decide(responses, claimed, CONFIRM);
   return { confirmed: d.confirmed, offered: d.juniorOffered ? d.offeredGrade : null, length: responses.length, probed };
 }
 

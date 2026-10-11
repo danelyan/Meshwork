@@ -2,6 +2,7 @@
 // (кандидат с high опускается: 2a — категория не учитывается, 2b — балл × factor). Без БД и сети.
 //   npx tsx eval/matching/integrity.ts            # таблицы + ключ integrityRanking в eval/matching/results.json
 //   npx tsx eval/matching/integrity.ts --no-write [--reps 1000]
+//   npx tsx eval/matching/integrity.ts --call     # 1 vs 2a vs 2a + снятие созвоном → ключ integrityRankingCall
 // Уровни индекса — жребий по долям из симуляции теста (eval/test/integrity-results.json), не из живых людей.
 // Набор профилей фиксирован (seed); в каждом повторе перетягивается индекс (и, для «малого пула», подвыборка профилей).
 // Метрики по запросу усредняются по повторам, затем бутстреп по запросам, как в run.ts.
@@ -40,9 +41,25 @@ const THIN_POOL = 60;
 const catalog = new Map(catalogFromFile().map((e) => [e.id, e]));
 const simulation = JSON.parse(readFileSync(join(here, '../test/integrity-results.json'), 'utf8')) as Parameters<typeof integrityRatesFromSimulation>[0];
 
-const VARIANTS: { name: string; label: string; opts: RankOptions }[] = [
+/**
+ * Снятие понижения созвоном (режим --call, решение владельца 11.10): у кандидата с high созвон с разбором теста случился с
+ * вероятностью share и дал «объяснил сам» с вероятностью honest / cheat. Чисел из живых данных нет (validation-results.md:
+ * «Точность оценщика „решил сам“ на людях и на подсказках нейросети не измерена») — сценарии-допущения.
+ */
+interface Lift { share: number; honest: number; cheat: number }
+interface Variant { name: string; label: string; opts: RankOptions; lift?: Lift }
+const CALL_MODE = process.argv.includes('--call');
+const DROP: RankOptions = { integrityPenalty: { mode: 'drop_category' } };
+const VARIANTS: Variant[] = CALL_MODE ? [
   { name: 'v1', label: '1: только метка', opts: {} },
-  { name: 'v2a', label: '2a: категория не учитывается', opts: { integrityPenalty: { mode: 'drop_category' } } },
+  { name: 'v2a', label: '2a: без созвона', opts: DROP },
+  { name: 'v2a-call-0.8-0.2', label: '2a + созвон у всех, 0,8/0,2', opts: DROP, lift: { share: 1, honest: 0.8, cheat: 0.2 } },
+  { name: 'v2a-call-0.9-0.1', label: '2a + созвон у всех, 0,9/0,1', opts: DROP, lift: { share: 1, honest: 0.9, cheat: 0.1 } },
+  { name: 'v2a-call50-0.8-0.2', label: '2a + созвон у половины, 0,8/0,2', opts: DROP, lift: { share: 0.5, honest: 0.8, cheat: 0.2 } },
+  { name: 'v2a-call50-0.9-0.1', label: '2a + созвон у половины, 0,9/0,1', opts: DROP, lift: { share: 0.5, honest: 0.9, cheat: 0.1 } },
+] : [
+  { name: 'v1', label: '1: только метка', opts: {} },
+  { name: 'v2a', label: '2a: категория не учитывается', opts: DROP },
   { name: 'v2b-0.85', label: '2b: балл × 0,85', opts: { integrityPenalty: { mode: 'multiplier', factor: 0.85 } } },
   { name: 'v2b-0.7', label: '2b: балл × 0,7', opts: { integrityPenalty: { mode: 'multiplier', factor: 0.7 } } },
   { name: 'v2b-0.5', label: '2b: балл × 0,5', opts: { integrityPenalty: { mode: 'multiplier', factor: 0.5 } } },
@@ -63,10 +80,10 @@ const SCENARIOS: Scenario[] = [
   { id: 'honestHard', label: 'списанных 10 %, честные с жёстким шумом (high 2,4 / 3,0 / 1,2 %)', fakedShare: 0.1, trapP: 0.6, honestHigh: { junior: 2.4, middle: 3.0, senior: 1.2 } },
 ];
 
-const toEvidence = (p: SynProfile, level?: IntegrityLevel): CandidateEvidence => ({
+const toEvidence = (p: SynProfile, level?: IntegrityLevel, explained = false): CandidateEvidence => ({
   id: p.id, specialization: p.specialization, fspState: p.fspState, category: p.category,
   claims: p.claims.map(([catalogId, level]) => ({ catalogId, level, statement: catalog.get(catalogId)?.statement ?? catalogId, quote: p.stack.join(', ') })),
-  ...(level ? { testIntegrity: { level } } : {}),
+  ...(level ? { testIntegrity: { level, ...(explained ? { ownershipExplained: true } : {}) } } : {}),
 });
 
 /** Запрос работодателя с предрасчитанными баллами: без флага и с флагом high (по вариантам). */
@@ -144,6 +161,14 @@ function evaluate(set: SynSet, queries: Query[], rates: IntegrityRates, thin: { 
       const chosen = new Set([...sample(ps.map((_p, i) => i).filter((i) => !isFaked[i]), thin.base), ...sample(ps.map((_p, i) => i).filter((i) => isFaked[i]), thin.faked)]);
       inc = (i) => chosen.has(i);
     }
+    // Снятие понижения созвоном: свой жребий на повтор и вариант (только у вариантов с lift).
+    const lifted = VARIANTS.map((vr, k) => {
+      const set = new Set<number>();
+      if (!vr.lift) return set;
+      const rnd = mulberry32(SYN_SEED + 131 * (rep + 1) + 7 * k);
+      ps.forEach((_p, i) => { const a = rnd(), b = rnd(); if (high(i) && a < vr.lift!.share && b < (isFaked[i] ? vr.lift!.cheat : vr.lift!.honest)) set.add(i); });
+      return set;
+    });
     const honestHigh = ps.map((_p, i) => i).filter((i) => inc(i) && high(i) && !isFaked[i]);
     honestHighN += honestHigh.length;
     honestCatN += ps.filter((p, i) => inc(i) && p.category && !isFaked[i]).length;
@@ -152,10 +177,10 @@ function evaluate(set: SynSet, queries: Query[], rates: IntegrityRates, thin: { 
     queries.forEach((q, qi) => {
       const rel: Record<string, number> = thin ? Object.fromEntries(Object.entries(q.rel).filter(([id]) => inc(idx.get(id)!))) : q.rel;
       VARIANTS.forEach((vr, k) => {
-        const ids = order(q, k, high, inc);
+        const ids = order(q, k, (i) => high(i) && !lifted[k]!.has(i), inc);
         // Сверка быстрого пути с боевым rankCandidates на первом повторе.
         if (rep === 0) {
-          const ev = ps.filter((_p, i) => inc(i)).map((p) => toEvidence(p, levels.get(p.id)));
+          const ev = ps.map((p, i) => [p, i] as const).filter(([, i]) => inc(i)).map(([p, i]) => toEvidence(p, levels.get(p.id), lifted[k]!.has(i)));
           const ranked = rankCandidates(ev, q.target, catalog, q.filters, vr.opts);
           const ref = (q.requireCoverage ? dropUncovered(ranked) : ranked).map((r) => r.candidateId);
           if (ref.join() !== ids.join()) throw new Error(`быстрый путь расходится с rankCandidates: ${q.id} ${vr.name}`);
@@ -210,7 +235,7 @@ function costPerFalseHigh(set: SynSet, queries: Query[]) {
     return new Set((q.requireCoverage ? dropUncovered(out) : out).slice(0, 10).map((r) => r.candidateId));
   };
   const base = queries.map((q) => top(q, 0, -1));
-  return Object.fromEntries(VARIANTS.slice(1).map((vr) => {
+  return Object.fromEntries(VARIANTS.slice(1).filter((vr) => !vr.lift).map((vr) => {
     const k = VARIANTS.indexOf(vr);
     let inTop10 = 0, slots = 0, relSlots = 0, lost = 0, lostRel = 0;
     for (const i of honest) {
@@ -289,10 +314,11 @@ for (const r of out) {
 if (!process.argv.includes('--no-write')) {
   const path = join(here, 'results.json');
   const prev = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
-  prev.integrityRanking = {
+  prev[CALL_MODE ? 'integrityRankingCall' : 'integrityRanking'] = {
     note: 'Индекс честности в подборе (11.10): вариант 1 — только метка; 2a — при high категория из теста не учитывается; 2b — балл × factor. Уровни индекса — жребий по долям симуляции теста (eval/test/integrity-results.json, персоны, не люди); reps повторов жребия (и подвыборки для пула 60), метрики по запросу усреднены по повторам, интервалы — бутстреп по запросам, 1000 повторов, 95 %. Банк: разметка «категория фильтра и латентный грейд не ниже» (2), иначе 0. Скрипт eval/matching/integrity.ts.',
+    ...(CALL_MODE ? { callNote: 'Режим --call: 2a + снятие понижения созвоном «объяснил сам»; доля созвона и доли «объяснил сам» у честных/списавших — допущения (не измерены).' } : {}),
     seed: SYN_SEED, reps: REPS, thinPool: THIN_POOL, legacySmallSetUnchanged: legacySame, scenarios: out,
   };
   writeFileSync(path, `${JSON.stringify(prev, null, 2)}\n`);
-  console.log('\nзаписано: eval/matching/results.json (ключ integrityRanking)');
+  console.log(`\nзаписано: eval/matching/results.json (ключ ${CALL_MODE ? 'integrityRankingCall' : 'integrityRanking'})`);
 }

@@ -9,6 +9,7 @@ import { prisma } from '../db';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
+import { loadRankingIntegrity, rankingIntegrityOptions, withRankingIntegrity } from './integrity-ranking';
 import { dedupeClaims, toCandidateCard, type CandidateCard, type PublicClaim } from './privacy';
 import {
   categoryNeeds,
@@ -37,7 +38,7 @@ export interface MatchItem extends RankedCandidate {
    * (до этого страница комнаты отвечает 404); нет сессии — поля нет.
    */
   defenseRoom?: DefenseRoomLink | null;
-  /** Проверка честности попытки, давшей категорию (только уровень и группы); нет попытки или индекса — null. Ранжирование не использует. */
+  /** Проверка честности попытки, давшей категорию (только уровень и группы); нет попытки или индекса — null. Порядок меняет не эта метка, а integrity-ranking.ts (2a). */
   testIntegrity?: PublicTestIntegrity | null;
 }
 
@@ -167,7 +168,13 @@ async function run(
 ): Promise<{ total: number; items: MatchItem[]; hints?: RelaxHint[] }> {
   const pool = await loadPool(catalog);
   const byId = new Map(pool.map((p) => [p.evidence.id, p]));
-  const all = rankCandidates(pool.map((p) => p.evidence), target, catalog, filters);
+  // Вариант 2a (11.10): индекс честности всего пула до ранжирования; high без подтверждения тестом или созвоном —
+  // категория не учитывается (ranking.ts integrityPenalty). Выключатель — TEST_INTEGRITY_RANKING.
+  const opts = rankingIntegrityOptions();
+  const evidence = opts.integrityPenalty
+    ? withRankingIntegrity(pool.map((p) => p.evidence), await loadRankingIntegrity(new Map(pool.map((p) => [p.evidence.id, p.evidence.category]))))
+    : pool.map((p) => p.evidence);
+  const all = rankCandidates(evidence, target, catalog, filters, opts);
   const ranked = requireCoverage ? dropUncovered(all) : all;
   const top = ranked.slice(0, limit);
   const ids = top.map((r) => r.candidateId);
@@ -195,7 +202,7 @@ async function run(
     return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null };
   });
   // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
-  const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(pool.map((p) => p.evidence), target, catalog, filters) : undefined;
+  const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(evidence, target, catalog, filters, opts) : undefined;
   return { total: ranked.length, items, ...(hints ? { hints } : {}) };
 }
 

@@ -51,7 +51,7 @@ describe('integrityPenalty в ранжировании', () => {
     const cheat = r.find((x) => x.candidateId === 'cheat')!;
     expect(cheat.categoryMatch).toBe(false);
     expect(cheat.boosts.category).toBe(0);
-    expect(cheat.explanation.category).toContain('не учтена');
+    expect(cheat.explanation.category).toBe('категория из теста не учитывается до подтверждения на созвоне');
     // фильтр по грейду категории: флагнутый не проходит, medium проходит
     const f = rankCandidates(pool, target, catalog, { grade: 'middle' }, { integrityPenalty: { mode: 'drop_category' } });
     expect(f.map((x) => x.candidateId)).toEqual(['medium']);

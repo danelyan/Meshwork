@@ -72,16 +72,22 @@ export interface CandidateEvidence {
    * Индекс честности попытки, давшей категорию (форма PublicTestIntegrity из test-integrity.ts). На порядок влияет только
    * при RankOptions.integrityPenalty; без него — метка для работодателя, и только.
    */
-  testIntegrity?: { level: 'low' | 'medium' | 'high'; confirmedAgain?: boolean } | null;
+  testIntegrity?: {
+    level: 'low' | 'medium' | 'high';
+    confirmedAgain?: boolean;
+    /** Созвон разобрал задания именно этой попытки и кандидат «объяснил сам» (integrity-ranking.ts) — понижение снято. */
+    ownershipExplained?: boolean;
+  } | null;
 }
 
 /**
- * Вариант 2 из оценки «индекс честности в подборе» (eval/matching/integrity.ts, 11.10). ВЫКЛЮЧЕН по умолчанию.
- * Действует на кандидата с категорией и индексом high, если категорию не выдал подтверждающий тест (confirmedAgain).
+ * Вариант 2 из оценки «индекс честности в подборе» (eval/matching/integrity.ts, 11.10). В чистой функции по умолчанию
+ * выключен; кабинет (matching.ts) включает drop_category через rankingIntegrityOptions (env TEST_INTEGRITY_RANKING).
+ * Действует на кандидата с категорией и индексом high, если категорию не подтвердил подтверждающий тест (confirmedAgain)
+ * и созвон с разбором этой попытки не дал «объяснил сам» (ownershipExplained).
  * - drop_category: категория из теста не учитывается — как будто теста не было (фильтры, база, множитель, специализация);
  * - multiplier: итоговый положительный балл × factor (0 < factor ≤ 1).
- * Чтобы включить в кабинете: в matching.ts `run` загрузить loadTestIntegrity для всего пула ДО rankCandidates (сейчас —
- * только для выданного топа, после ранжирования), положить уровень в evidence.testIntegrity и передать opts.
+ * Индекс для всего пула грузит integrity-ranking.ts (loadRankingIntegrity) до rankCandidates.
  */
 export type IntegrityPenalty = { mode: 'drop_category' } | { mode: 'multiplier'; factor: number };
 
@@ -92,9 +98,10 @@ export interface RankOptions {
   integrityPenalty?: IntegrityPenalty;
 }
 
-/** Индекс high у категории, не перепроверенной подтверждающим тестом, при включённом integrityPenalty. */
+/** Индекс high у категории, не подтверждённой ни подтверждающим тестом, ни созвоном, при включённом integrityPenalty. */
 export function integrityFlagged(c: CandidateEvidence, opts: RankOptions = {}): boolean {
-  return Boolean(opts.integrityPenalty && c.category && c.testIntegrity?.level === 'high' && !c.testIntegrity.confirmedAgain);
+  const t = c.testIntegrity;
+  return Boolean(opts.integrityPenalty && c.category && t?.level === 'high' && !t.confirmedAgain && !t.ownershipExplained);
 }
 
 /** drop_category: кандидат без категории из теста; в остальных случаях — как есть. */
@@ -270,7 +277,7 @@ export function scoreCandidate(
 
   let category = 0;
   let categoryMatch = false;
-  let categoryText = flagged && opts.integrityPenalty?.mode === 'drop_category' ? 'категория из теста не учтена: замечания к честности теста' : 'тест не пройден - категории нет';
+  let categoryText = flagged && opts.integrityPenalty?.mode === 'drop_category' ? 'категория из теста не учитывается до подтверждения на созвоне' : 'тест не пройден - категории нет';
   if (c.category) {
     categoryText = `${categoryLabel(c.category)} (тест)`;
     if (c.category.specialization === target.specialization) {

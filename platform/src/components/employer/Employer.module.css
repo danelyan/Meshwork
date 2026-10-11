@@ -262,3 +262,8 @@
 .sidebarQuota strong { font-size: 28px; letter-spacing: -.04em; }
 .sidebarQuota strong span { color: var(--muted); font-size: 14px; font-weight: 400; }
 .sidebarQuota p { font: 10px/1.6 var(--mono); color: var(--muted); margin: 0; }
+
+/* Тёмная тема: --employer-panel/--modal/--ring остаются белыми полупрозрачными (блок [data-role='employer'] в tokens.css), поэтому в тёмной подменяем фон смысловыми токенами */
+:global(:root[data-theme='dark']) :is(.vacancyCard, .explorerOverview, .selectedCandidate, .companyPreview, .companyProfile, .candidateRow, .searchFilters, .templateCard) { background: var(--glass); }
+:global(:root[data-theme='dark']) :is(.invitationDialog, .consultantDock) { background: linear-gradient(var(--glass-strong), var(--glass-strong)), var(--paper); }
+:global(:root[data-theme='dark']) :is(.mapCenter, .mapNode[aria-pressed='true'] .silhouette) { box-shadow: 0 0 0 8px var(--surface-quote), var(--landing-shadow-sm); }

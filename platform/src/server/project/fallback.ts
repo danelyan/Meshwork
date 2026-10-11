@@ -75,12 +75,7 @@ const CODE_CONTEXT = /(?:статус|код|http|ответ)\S*\s*[:=—-]?\s*(
  */
 export function dropContractEcho(items: string[], contractMd: string): string[] {
   const idents = new Set<string>();
-  // Только идентификаторы (латиница/цифры): контракт в обратных кавычках может выделять и русское слово
-  // (« `и` »), и тогда отброшенным оказалось бы любое требование на русском.
-  for (const m of contractMd.matchAll(/`([^`\n]{3,80})`/g)) {
-    const id = m[1]!.trim();
-    if (id.length >= 3 && /[A-Za-z0-9_]/.test(id)) idents.add(id);
-  }
+  for (const m of contractMd.matchAll(/`([^`\n]{3,80})`/g)) idents.add(m[1]!.trim());
   for (const m of contractMd.matchAll(/['"]([a-z][a-z0-9_]{2,40})['"]/g)) idents.add(m[1]!);
   const contractCodes = new Set([...contractMd.matchAll(CODE_NUM)].map((m) => m[1]!));
   return items.filter((r) => {

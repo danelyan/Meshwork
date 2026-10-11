@@ -140,10 +140,16 @@
 .pageTitle h1 { margin: 0; font-size: clamp(36px, 5vw, 64px); line-height: 0.98; letter-spacing: -0.05em; } /* fs-ok: заголовок экрана, fluid clamp */
 .pageTitle p { margin: 0; font-size: var(--fs-lg); line-height: 1.55; color: var(--text-soft); }
 
-@media (max-width: 1150px) {
-  /* Пять ссылок работодателя и метка роли не помещаются: ссылки прокручиваются, метка роли не сжимается. */
-  .nav { overflow-x: auto; scrollbar-width: none; }
-  .nav::-webkit-scrollbar { display: none; }
+/* Шесть ссылок работодателя + «Для жюри», уведомления, тема и аккаунт не помещаются уже на 1440px:
+   меню сжимается и прокручивается, а не уезжает под кнопки справа (правая часть не сжимается). */
+.nav { overflow-x: auto; scrollbar-width: none; }
+.nav::-webkit-scrollbar { display: none; }
+.action { flex: none; }
+@media (max-width: 1500px) {
+  .employerBadge { display: none; }
+  .nav { margin-left: 32px; }
+  .nav a { padding: 12px 12px; }
+  .accountRole { max-width: 120px; }
 }
 @media (max-width: 960px) {
   .nav { margin-left: 20px; }

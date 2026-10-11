@@ -133,7 +133,7 @@ describe('ClaimCard: формулировка под цитату', () => {
   it('формулировка совпадает с цитатой — цитата не дублируется', () => {
     render(<ClaimCard claim={{ ...api, wording: 'Получала данные с API через fetch, показывала состояния загрузки и ошибки' }} onAction={async () => {}} />);
     expect(screen.queryByText(/^«/)).toBeNull();
-    expect(screen.getByText('Дословно из вашего документа')).toBeDefined();
+    expect(screen.getByText('Дословно из твоего документа')).toBeDefined();
   });
 });
 

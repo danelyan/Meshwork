@@ -4,7 +4,6 @@ import { loadPlatformEnv } from '../scripts/load-env.mjs';
 
 import { seedAuth } from './seed/auth';
 import { seedClaims } from './seed/claims';
-import { seedContent } from './seed/content';
 import { seedDemoClaims } from './seed/demo-claims';
 import { seedDemoPersonas } from './seed/demo-personas';
 import { seedDirections } from './seed/directions';
@@ -75,8 +74,6 @@ async function main() {
   await seedDirections(prisma);
   // Курированные демо-персоны по этапам пути (окно входа, /demo): после каталога, компаний и demo-claims.
   await seedDemoPersonas(prisma);
-  // Контент работодательской стороны: 10 компаний, вакансии всех направлений, проектное задание у каждой, логины, активность.
-  await seedContent(prisma);
 }
 
 main()

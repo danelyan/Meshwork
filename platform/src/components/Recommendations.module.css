@@ -1,6 +1,10 @@
-.recs { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); list-style: none; margin: 0; padding: 0; }
-.rec { display: grid; gap: 6px; align-content: start; }
-.recTitle { font-weight: 500; line-height: 1.5; margin: 0; }
+.recs { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); list-style: none; margin: 0; padding: 0; max-width: 680px; }
+.rec { display: grid; gap: 8px; align-content: start; justify-items: start; }
+.kind { justify-self: start; }
+.recTitle { font-size: var(--fs-md); font-weight: 500; line-height: 1.4; margin: 0; }
 .recMeta { font-size: var(--fs-sm); color: var(--accent-soft); }
-.recReason { font-size: var(--fs); color: var(--text-soft); line-height: 1.7; margin: 0; }
-.missing { margin: 0; padding-left: 18px; font-size: var(--fs-sm); color: var(--muted); }
+.recReason { font-size: var(--fs); color: var(--text-soft); line-height: 1.6; margin: 0; }
+.missingBox { display: grid; gap: 4px; }
+.missingLabel { font: 500 var(--fs-xs) var(--mono); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.missing { margin: 0; padding-left: 18px; font-size: var(--fs-sm); color: var(--text-soft); line-height: 1.5; display: grid; gap: 2px; }
+.cta { margin-top: 4px; text-decoration: none; }

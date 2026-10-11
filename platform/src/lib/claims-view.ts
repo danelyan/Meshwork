@@ -53,8 +53,17 @@ export interface CardRecommendation {
   meta?: string;
   reason?: string;
   missing?: string[];
+  /** Подпись над списком `missing` (видимая). */
+  missingLabel?: string;
   href?: string;
+  /** Текст действия по `href`. */
+  cta?: string;
 }
+
+const GRADE_LABEL: Record<string, string> = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
+const gradeLabel = (g: string) => GRADE_LABEL[g.toLowerCase()] ?? g;
+/** Хвост причины рекомендации теста (server/recommend/test.ts) — отдельным списком, а не одной строкой. */
+const LACK_RE = /\s*Для Middle не хватает заявленных:\s*(.+?)\.?\s*$/u;
 
 export function normalizeRecommendation(raw: unknown, index: number): CardRecommendation | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -64,8 +73,10 @@ export function normalizeRecommendation(raw: unknown, index: number): CardRecomm
       key: `task-${r.taskId}`,
       kind: 'task',
       title: str(r.title) || 'Задание',
-      meta: [str(r.family), str(r.grade)].filter(Boolean).join(' · ') || undefined,
+      meta: [str(r.family), r.grade ? gradeLabel(str(r.grade)) : ''].filter(Boolean).join(' · ') || undefined,
       reason: str(r.reason) || undefined,
+      href: `/projects/${encodeURIComponent(r.taskId)}`,
+      cta: 'Открыть задание',
     };
   }
   if (typeof r.vacancyId === 'string') {
@@ -80,15 +91,26 @@ export function normalizeRecommendation(raw: unknown, index: number): CardRecomm
       meta: covered || undefined,
       reason: str(r.reason) || undefined,
       missing,
+      missingLabel: missing.length ? 'Не хватает' : undefined,
+      href: '/career',
+      cta: 'К вакансиям',
     };
   }
   if (typeof r.specialization === 'string' && typeof r.grade === 'string' && 'allowed' in r) {
+    const full = str(r.reason);
+    const lack = full.match(LACK_RE);
+    const allowed = r.allowed !== false;
     return {
       key: `test-${index}`,
       kind: 'test',
-      title: `Тест: ${specLabel(str(r.specialization))}, ${str(r.grade)}`,
-      reason: str(r.reason) || undefined,
-      meta: r.allowed === false ? 'сейчас недоступен' : undefined,
+      title: `Тест: ${specLabel(str(r.specialization))} · ${gradeLabel(str(r.grade))}`,
+      reason: (lack ? full.slice(0, lack.index) : full).trim() || undefined,
+      meta: allowed ? undefined : 'сейчас недоступен',
+      missing: lack ? lack[1]!.split(/;\s*/u).filter(Boolean) : undefined,
+      missingLabel: lack ? 'Для Middle не хватает заявленных' : undefined,
+      ...(allowed
+        ? { href: `/test?${new URLSearchParams({ specialization: str(r.specialization), grade: str(r.grade).toLowerCase() })}`, cta: 'Начать тест' }
+        : {}),
     };
   }
   if (typeof r.catalogId === 'string' && typeof r.statement === 'string') {

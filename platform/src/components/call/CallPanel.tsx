@@ -20,6 +20,7 @@ import styles from './CallPanel.module.css';
 import { useCallMode } from './CallContext';
 import { DepthMap } from './DepthMap';
 import { DevicePreflight } from './DevicePreflight';
+import { useAck } from './useAck';
 import { TALK_LABEL, useCallTalk } from './useCallTalk';
 import { useReplySpeech } from './useReplySpeech';
 import { ObjectionButton } from '../consent/ObjectionButton';
@@ -187,6 +188,8 @@ export function CallPanel() {
       return true;
     },
   });
+  const ack = useAck({ voice, enabled: phase === 'live' && !textOnly, userSpeaking: talk.state === 'user' });
+  const onAckTurn = ack.onTurn;
   const hushed = talk.hushed;
   const unhush = talk.unhush;
   useEffect(() => {
@@ -249,6 +252,7 @@ export function CallPanel() {
       setBusy(true);
       setError(null);
       voiceRef.current?.stop();
+      if (input.text) onAckTurn(input.text);
       try {
         const r = await callApi.turn(id, input);
         setTranscript((t) => merge(t, [r.candidate, r.ai]));
@@ -259,13 +263,14 @@ export function CallPanel() {
         setBusy(false);
       }
     },
-    [id, markSpeechEnd, unhush],
+    [id, markSpeechEnd, unhush, onAckTurn],
   );
   sendRef.current = send;
 
   const finish = async () => {
     if (!id) return;
     talk.stop();
+    ack.cancel();
     pending.current = null;
     voiceRef.current?.stop();
     // Последний сегмент видео дописываем, пока созвон ещё активен (после finish сервер видео не примет).

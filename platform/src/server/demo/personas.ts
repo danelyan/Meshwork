@@ -55,21 +55,6 @@ export const EMPLOYER_PERSONAS: DemoPersona[] = [
     sees: 'Вакансии и подборка кандидатов с обоснованием и вилкой; приглашений ещё нет.' },
   { id: 'demo-employer-granit', kind: 'employer', stage: null, badge: 'Приглашения и найм', name: 'Олег Ермаков · Гранит Софт',
     sees: 'Уже пригласил троих: ждёт ответа, получил контакты и отметил найм.' },
-  // Семь компаний из seed/content/companies.ts: кабинет с вакансиями разных направлений и проектным заданием у каждой.
-  { id: 'demo-employer-yasen-retail', kind: 'employer', stage: null, badge: 'Ритейл', name: 'Дарья Снегирёва · Ясень Ритейл',
-    sees: 'Четыре команды ищут людей в разных направлениях: от бэкенда под распродажи до аналитики продаж.' },
-  { id: 'demo-employer-vektor-logistics', kind: 'employer', stage: null, badge: 'Логистика', name: 'Игорь Талызин · Вектор Логистика',
-    sees: 'Интеграции с партнёрами, схема данных, SRE и прогноз спроса: вакансии на стыке бэкенда и данных.' },
-  { id: 'demo-employer-neyron-lab', kind: 'employer', stage: null, badge: 'ИИ', name: 'Полина Градова · Нейрон Лаб',
-    sees: 'Роли вокруг LLM, ML-инженерии и MLOps от junior до senior; у каждой — проектное задание.' },
-  { id: 'demo-employer-atlas-cloud', kind: 'employer', stage: null, badge: 'Облако', name: 'Сергей Орлов · Атлас Облако',
-    sees: 'Инфраструктурные роли: выкатки, надёжность, высоконагруженный бэкенд панели управления.' },
-  { id: 'demo-employer-medline-digital', kind: 'employer', stage: null, badge: 'Медтех', name: 'Анна Лебедева · Медлайн Диджитал',
-    sees: 'Доступные интерфейсы, API записи к врачу и автотесты: роли, где цена ошибки высокая.' },
-  { id: 'demo-employer-gorodum', kind: 'employer', stage: null, badge: 'Образование', name: 'Марат Юсупов · ГородУм',
-    sees: 'Интерфейс ученика, схема данных курсов и аналитика обучения: три команды, три направления.' },
-  { id: 'demo-employer-pulse-games', kind: 'employer', stage: null, badge: 'Игры', name: 'Кирилл Жаров · Пульс Геймс',
-    sees: 'Реалтайм-клиенты, нагруженные игровые серверы и автотесты: вакансии от junior до senior.' },
 ];
 
 /** Доп. сценарий для /demo: проверка защиты разбора резюме от скрытых инструкций (не этап пути). */

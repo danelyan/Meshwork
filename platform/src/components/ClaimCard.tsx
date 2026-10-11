@@ -72,7 +72,7 @@ export function ClaimCard({ claim, group, onAction, busy = false }: ClaimCardPro
         </blockquote>
       )}
       <div className={styles.meta}>
-        {sameAsQuote && <span>Дословно из вашего документа</span>}
+        {sameAsQuote && <span>Дословно из твоего документа</span>}
         {claim.sourceRef && <span>Источник: {claim.sourceRef}</span>}
         {topics && (
           <span className={styles.catalog}>

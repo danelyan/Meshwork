@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { normalizeRecommendation } from '@/lib/claims-view';
 
 import styles from './Recommendations.module.css';
@@ -12,16 +14,24 @@ export function Recommendations({ items }: { items: unknown[] }) {
     <ul className={styles.recs} aria-label="Рекомендации">
       {recs.map((r) => (
         <li key={r.key} className={`${ui.panel} ${styles.rec}`}>
-          <span className={`${ui.tag} ${ui.outline}`}>{KIND_LABEL[r.kind]}</span>
-          <h3 className={styles.recTitle} style={{ fontSize: 'var(--fs-md)' }}>{r.title}</h3>
+          <span className={`${ui.tag} ${ui.outline} ${styles.kind}`}>{KIND_LABEL[r.kind]}</span>
+          <h3 className={styles.recTitle}>{r.title}</h3>
           {r.meta && <span className={styles.recMeta}>{r.meta}</span>}
           {r.reason && <p className={styles.recReason}>{r.reason}</p>}
           {r.missing && r.missing.length > 0 && (
-            <ul className={styles.missing} aria-label="Чего не хватает">
-              {r.missing.map((m) => (
-                <li key={m}>{m}</li>
-              ))}
-            </ul>
+            <div className={styles.missingBox}>
+              {r.missingLabel && <span className={styles.missingLabel}>{r.missingLabel}</span>}
+              <ul className={styles.missing} aria-label={r.missingLabel ?? 'Чего не хватает'}>
+                {r.missing.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {r.href && r.cta && (
+            <Link href={r.href} className={`${ui.btn} ${styles.cta}`}>
+              {r.cta}
+            </Link>
           )}
         </li>
       ))}

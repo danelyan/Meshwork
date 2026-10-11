@@ -99,13 +99,15 @@ describe('POST /api/consultant/messages (SSE)', () => {
     expect(await prisma.message.count({ where: { role: 'user' } })).toBe(2);
   });
 
-  it('разрыв соединения: AbortSignal останавливает ход, lock освобождается', async () => {
+  // Разрыв соединения ход не прерывает (route.ts: disconnect ≠ stop): клиенту после разрыва ничего не пишется,
+  // реплика дописывается и сохраняется, lock освобождается по окончании хода. Останавливает ход только stop-маршрут.
+  it('разрыв соединения: ход не прерывается, реплика сохраняется, lock освобождается после хода', async () => {
     const conv = await prisma.conversation.create({ data: { candidateId: CAND } });
     const ctrl = new AbortController();
     const req = new Request('http://localhost/api/consultant/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie: cookie(CAND) },
-      body: JSON.stringify({ conversationId: conv.id, text: '[[delay 3000]] [[reply поздно]]' }),
+      body: JSON.stringify({ conversationId: conv.id, text: '[[delay 500]] [[reply поздно]]' }),
       signal: ctrl.signal,
     });
     const res = await POST(req);
@@ -120,9 +122,10 @@ describe('POST /api/consultant/messages (SSE)', () => {
       if (done) break;
       text += new TextDecoder().decode(value);
     }
-    const { events } = decodeSse(text);
-    expect(events.find((e) => e.type === 'message')).toBeUndefined();
-    expect(events.at(-1)).toEqual({ type: 'done' });
+    // Поток закрылся, когда ход закончился; ушедшему клиенту реплика не отправлялась.
+    expect(decodeSse(text).events.find((e) => e.type === 'message')).toBeUndefined();
+    const saved = await prisma.message.findFirst({ where: { conversationId: conv.id, role: 'assistant' }, orderBy: { createdAt: 'desc' }, select: { content: true } });
+    expect(saved?.content).toContain('поздно');
     const again = await POST(jsonRequest('/api/consultant/messages', 'POST', { conversationId: conv.id, text: '[[reply ок]]' }, cookie(CAND)));
     expect(again.status).toBe(200);
     await readAll(again);

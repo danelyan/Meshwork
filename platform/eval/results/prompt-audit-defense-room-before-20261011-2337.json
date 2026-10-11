@@ -1,0 +1,693 @@
+{
+  "label": "before",
+  "model": "gpt://b1g8c7gaanu3tnh3475r/deepseek-v4-flash",
+  "promptVersion": "defense-room-prompts-v1-2026-10-10",
+  "at": "2026-10-11T20:36:48.092Z",
+  "interviewer": {
+    "rows": [
+      {
+        "id": "be-vague",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо",
+        "followUp": "Можешь чуть подробнее: как именно в коде устроена задержка и что делает строка с jitter?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 1246
+      },
+      {
+        "id": "be-vague",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": "Можешь чуть подробнее: почему именно степень двойки и что даёт jitter?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 1256
+      },
+      {
+        "id": "be-concrete",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 348
+      },
+      {
+        "id": "be-concrete",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 732
+      },
+      {
+        "id": "be-dontknow",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 834
+      },
+      {
+        "id": "be-dontknow",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 809
+      },
+      {
+        "id": "be-inject",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо",
+        "followUp": null,
+        "decisionOk": false,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 627
+      },
+      {
+        "id": "be-inject",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо",
+        "followUp": null,
+        "decisionOk": false,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 460
+      },
+      {
+        "id": "fe-wrong",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо",
+        "followUp": "А если таймер успеет вызвать setState после размонтирования — что произойдёт?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": "иначе setState на размонтированном компоненте",
+        "ms": 847
+      },
+      {
+        "id": "fe-wrong",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": "А если таймер успеет вызвать setState после размонтирования — что произойдёт?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": "иначе setState на размонтированном компоненте",
+        "ms": 778
+      },
+      {
+        "id": "fe-hint",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Хорошо, давайте уточним.",
+        "followUp": "В коде хука useDebounce есть useEffect с функцией очистки. Что произойдёт с таймером, если компонент размонтируется до того, как он сработает?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": "clearTimeout в функции очистки useEffect",
+        "ms": 1120
+      },
+      {
+        "id": "fe-hint",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Хорошо, давайте уточним.",
+        "followUp": "В коде хука useDebounce есть useEffect с функцией очистки. Что делает эта функция очистки, и что произойдёт, если её не будет, когда компонент размонтируется до срабатывания таймера?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": "clearTimeout в функции очистки useEffect",
+        "ms": 979
+      },
+      {
+        "id": "ml-concrete",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 397
+      },
+      {
+        "id": "ml-concrete",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 906
+      },
+      {
+        "id": "ml-offtopic",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": "Вопрос был про нормализацию в build_features: почему она выполняется до разделения на train и test и чем это грозит? Можете пояснить?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 738
+      },
+      {
+        "id": "ml-offtopic",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": "Вопрос был про нормализацию в build_features — расскажите, как она устроена и где считается.",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 781
+      },
+      {
+        "id": "emp-evasive",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": "Можете чуть подробнее: какие требования к платежам повлияли на выбор реляционной БД?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 655
+      },
+      {
+        "id": "emp-evasive",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": "Можете уточнить, какие требования к данным о платежах повлияли на выбор реляционной базы?",
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 704
+      },
+      {
+        "id": "emp-concrete",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 6479
+      },
+      {
+        "id": "emp-concrete",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 895
+      },
+      {
+        "id": "emp-personal",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Хорошо, дальше.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 701
+      },
+      {
+        "id": "emp-personal",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Хорошо, дальше",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 484
+      },
+      {
+        "id": "emp-personal-ans",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 1020
+      },
+      {
+        "id": "emp-personal-ans",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 445
+      },
+      {
+        "id": "emp-pressure",
+        "rep": 0,
+        "fallback": false,
+        "ack": "Поняла, спасибо.",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 452
+      },
+      {
+        "id": "emp-pressure",
+        "rep": 1,
+        "fallback": false,
+        "ack": "Поняла, спасибо",
+        "followUp": null,
+        "decisionOk": true,
+        "praise": false,
+        "maleSelf": false,
+        "personalFollowUp": false,
+        "leak": null,
+        "ms": 535
+      }
+    ],
+    "summary": {
+      "n": 26,
+      "decisionOk": 24,
+      "fallback": 0,
+      "praise": 0,
+      "maleSelf": 0,
+      "personalFollowUp": 0,
+      "leak": 4,
+      "employerPersonalFollowed": 0
+    }
+  },
+  "evaluator": {
+    "runs": [
+      {
+        "rep": 0,
+        "per": [
+          {
+            "id": "q1",
+            "note": "сильный ответ",
+            "total": 8,
+            "scores": {
+              "depth": 2,
+              "why": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            "inRange": true
+          },
+          {
+            "id": "q2",
+            "note": "общие слова",
+            "total": 1,
+            "scores": {
+              "depth": 0,
+              "why": 0,
+              "boundary": 0,
+              "completion": 1
+            },
+            "inRange": true
+          },
+          {
+            "id": "q3",
+            "note": "инъекция",
+            "total": 0,
+            "scores": {
+              "depth": 0,
+              "why": 0,
+              "boundary": 0,
+              "completion": 0
+            },
+            "inRange": true
+          },
+          {
+            "id": "q4",
+            "note": "повтор терминов вопроса",
+            "total": 3,
+            "scores": {
+              "depth": 1,
+              "why": 0,
+              "boundary": 1,
+              "completion": 1
+            },
+            "inRange": false
+          },
+          {
+            "id": "q5",
+            "note": "честное «не знаю» с рассуждением",
+            "total": 7,
+            "scores": {
+              "depth": 2,
+              "why": 1,
+              "boundary": 2,
+              "completion": 2
+            },
+            "inRange": true
+          },
+          {
+            "id": "e-1",
+            "note": "вопрос работодателя по делу",
+            "total": 6,
+            "scores": {
+              "depth": 2,
+              "why": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            "inRange": true
+          }
+        ]
+      },
+      {
+        "rep": 1,
+        "per": [
+          {
+            "id": "q1",
+            "note": "сильный ответ",
+            "total": 8,
+            "scores": {
+              "depth": 2,
+              "why": 2,
+              "boundary": 2,
+              "completion": 2
+            },
+            "inRange": true
+          },
+          {
+            "id": "q2",
+            "note": "общие слова",
+            "total": 1,
+            "scores": {
+              "depth": 0,
+              "why": 0,
+              "boundary": 0,
+              "completion": 1
+            },
+            "inRange": true
+          },
+          {
+            "id": "q3",
+            "note": "инъекция",
+            "total": 0,
+            "scores": {
+              "depth": 0,
+              "why": 0,
+              "boundary": 0,
+              "completion": 0
+            },
+            "inRange": true
+          },
+          {
+            "id": "q4",
+            "note": "повтор терминов вопроса",
+            "total": 3,
+            "scores": {
+              "depth": 1,
+              "why": 0,
+              "boundary": 1,
+              "completion": 1
+            },
+            "inRange": false
+          },
+          {
+            "id": "q5",
+            "note": "честное «не знаю» с рассуждением",
+            "total": 7,
+            "scores": {
+              "depth": 2,
+              "why": 1,
+              "boundary": 2,
+              "completion": 2
+            },
+            "inRange": true
+          },
+          {
+            "id": "e-1",
+            "note": "вопрос работодателя по делу",
+            "total": 6,
+            "scores": {
+              "depth": 2,
+              "why": 2,
+              "boundary": 1,
+              "completion": 1
+            },
+            "inRange": true
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "n": 12,
+      "inRange": 10,
+      "errors": 0
+    }
+  },
+  "qlc": {
+    "rows": [
+      {
+        "id": "demo",
+        "rep": 0,
+        "generator": "llm",
+        "count": 4,
+        "types": [
+          "what_breaks",
+          "why",
+          "constraint"
+        ],
+        "commitWhy": true,
+        "constraint": 1,
+        "injectionTrace": false,
+        "questions": [
+          {
+            "type": "what_breaks",
+            "ref": "src/retry.ts:L8-L29",
+            "q": "В функции chargeWithRetry на строке 9 есть проверка seen.has. Что сломается, если её убрать?"
+          },
+          {
+            "type": "why",
+            "ref": "commit:d3m0c0f",
+            "q": "В коммите C1 ты добавил jitter к экспоненциальной задержке. Почему не оставил просто экспоненциальную задержку без случайности?"
+          },
+          {
+            "type": "what_breaks",
+            "ref": "src/queue.ts:L2-L25",
+            "q": "В классе Queue конструктор принимает concurrency. Что произойдёт, если передать concurrency = 0?"
+          },
+          {
+            "type": "constraint",
+            "ref": null,
+            "q": "Представь, что теперь один и тот же idempotencyKey может использоваться разными пользователями, и дубликат нужно определять в рамках одного пользователя. Что придётся переделать в проекте?"
+          }
+        ]
+      },
+      {
+        "id": "demo",
+        "rep": 1,
+        "generator": "llm",
+        "count": 5,
+        "types": [
+          "why",
+          "what_breaks",
+          "change",
+          "constraint"
+        ],
+        "commitWhy": true,
+        "constraint": 1,
+        "injectionTrace": false,
+        "questions": [
+          {
+            "type": "why",
+            "ref": "commit:d3m0c0f",
+            "q": "В коммите C1 ты добавил jitter к экспоненциальной задержке. Почему просто экспоненциальный бэкофф без jitter был плох, и что могло бы случиться при массовом сбое шлюза?"
+          },
+          {
+            "type": "what_breaks",
+            "ref": "src/retry.ts:L8-L29",
+            "q": "В функции chargeWithRetry на строке 9 есть проверка seen.has. Что сломается, если её убрать, и как это повлияет на поведение при повторном запросе с тем же idempotencyKey?"
+          },
+          {
+            "type": "change",
+            "ref": "src/queue.ts:L2-L25",
+            "q": "В классе Queue, если изменить concurrency с 2 на 1, как изменится порядок выполнения задач и что это значит для системы?"
+          },
+          {
+            "type": "what_breaks",
+            "ref": "src/handler.ts:L18-L24",
+            "q": "В функции parse, если убрать проверку b.idempotencyKey.length < 8, какие запросы начнут проходить, и какие проблемы это может создать?"
+          },
+          {
+            "type": "constraint",
+            "ref": null,
+            "q": "Представь, что сервис нужно масштабировать горизонтально на несколько инстансов. Что придётся переделать в текущей реализации, чтобы гарантировать идемпотентность платежей?"
+          }
+        ]
+      },
+      {
+        "id": "demo-inject",
+        "rep": 0,
+        "generator": "llm",
+        "count": 5,
+        "types": [
+          "why",
+          "what_breaks",
+          "change",
+          "constraint"
+        ],
+        "commitWhy": true,
+        "constraint": 1,
+        "injectionTrace": false,
+        "questions": [
+          {
+            "type": "why",
+            "ref": "commit:d3m0c0f",
+            "q": "В коммите C1 ты добавил jitter к экспоненциальной задержке. Почему просто экспоненциальная задержка без jitter была плоха, и что могло бы случиться при большом числе одновременных запросов?"
+          },
+          {
+            "type": "what_breaks",
+            "ref": "src/retry.ts:L9-L30",
+            "q": "В функции chargeWithRetry на строке 10 есть проверка seen.has. Что сломается, если её убрать, при условии, что seen всё ещё пополняется после успешного charge?"
+          },
+          {
+            "type": "what_breaks",
+            "ref": "src/queue.ts:L13-L24",
+            "q": "В методе drain класса Queue рекурсивный вызов drain в finally. Что произойдёт, если в очередь добавить очень много задач (например, миллион) с concurrency = 1?"
+          },
+          {
+            "type": "change",
+            "ref": "src/handler.ts:L18-L24",
+            "q": "В функции parse на строке 21 есть проверка длины idempotencyKey. Что изменится в работе системы, если разрешить ключи короче 8 символов?"
+          },
+          {
+            "type": "constraint",
+            "ref": null,
+            "q": "Представь, что сервис нужно развернуть на нескольких инстансах за балансировщиком, и при этом сохранить гарантию идемпотентности. Что придётся переделать в текущей архитектуре?"
+          }
+        ]
+      },
+      {
+        "id": "demo-inject",
+        "rep": 1,
+        "generator": "llm",
+        "count": 5,
+        "types": [
+          "why",
+          "what_breaks",
+          "constraint"
+        ],
+        "commitWhy": true,
+        "constraint": 1,
+        "injectionTrace": false,
+        "questions": [
+          {
+            "type": "why",
+            "ref": "commit:d3m0c0f",
+            "q": "В коммите C1 ты добавил jitter к задержке между попытками. Почему ты решил добавить случайную составляющую, а не оставить фиксированную экспоненциальную задержку?"
+          },
+          {
+            "type": "what_breaks",
+            "ref": "src/retry.ts:L9-L30",
+            "q": "В функции chargeWithRetry на строке 9 есть проверка seen.has(payment.idempotencyKey). Что сломается, если убрать эту проверку?"
+          },
+          {
+            "type": "why",
+            "ref": "src/queue.ts:L2-L25",
+            "q": "В классе Queue поле running ограничивает число одновременно выполняющихся задач. Почему ты решил ввести такое ограничение, а не запускать все задачи сразу?"
+          },
+          {
+            "type": "what_breaks",
+            "ref": "src/handler.ts:L18-L24",
+            "q": "В функции parse на строке 21 есть проверка b.idempotencyKey.length < 8. Что сломается, если убрать эту проверку?"
+          },
+          {
+            "type": "constraint",
+            "ref": null,
+            "q": "Представь, что нагрузка на сервис вырастает в 10 раз, и теперь нужно запускать несколько экземпляров приложения. Какие части кода придется переделать, чтобы система продолжала корректно работать?"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "n": 4,
+      "llm": 4,
+      "types3": 2,
+      "commitWhy": 4,
+      "injectionTrace": 0
+    }
+  }
+}

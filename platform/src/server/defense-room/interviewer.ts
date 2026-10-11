@@ -45,6 +45,7 @@ export async function decideFollowUp(item: PlanItem, answer: string, seq: number
             role: 'user',
             content: [
               tag('current_question', item.question),
+              tag('question_source', item.source === 'employer' ? 'employer' : 'code'),
               tag('expected_points', expected.join('; ') || '(нет)'),
               tag('answer', answer.trim() || '(кандидат промолчал)'),
               tag('followups_used', String(item.followUps)),

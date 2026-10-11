@@ -24,7 +24,8 @@ export interface AiUtteranceMeta {
 export interface DefenseEntryExt {
   /** Пункт плана, к которому относится реплика ИИ. */
   itemId?: string;
-  kind?: 'question' | 'followup' | 'return' | 'closing' | 'greeting';
+  /** notice — ремарка Киры (этика) после реплики работодателя: не вопрос плана, ответ на неё оценщику не идёт. */
+  kind?: 'question' | 'followup' | 'return' | 'closing' | 'greeting' | 'notice';
   /**
    * Компания, чья это реплика (живая реплика работодателя или вопрос из её очереди). Другим
    * компаниям реплика отдаётся скрытой (access.ts redactEntry): кандидат может общаться с несколькими.

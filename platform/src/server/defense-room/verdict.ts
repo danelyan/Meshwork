@@ -76,7 +76,15 @@ export function itemTurns(transcript: TranscriptEntry[]): ItemTurns[] {
   let askedItem: string | null = null;
   let askedTopic = '';
   let lastGroup: ItemTurns | null = null;
+  // После ремарки Киры о личном вопросе работодателя ответ кандидата оценщику не отдаётся (личные данные).
+  let personal = false;
   for (const e of transcript) {
+    if (e.role === 'employer') personal = false;
+    if (e.role === 'ai' && e.defense?.kind === 'notice') {
+      personal = true;
+      continue;
+    }
+    if (e.role === 'candidate' && personal) continue;
     if (e.role === 'candidate') {
       if (asked.length) {
         const id = askedItem ?? `t${groups.length + 1}`;
@@ -94,6 +102,7 @@ export function itemTurns(transcript: TranscriptEntry[]): ItemTurns[] {
       }
       asked = [];
     } else if (e.role === 'ai' && e.defense?.kind !== 'closing') {
+      personal = false;
       asked.push(e.text);
       askedItem = e.defense?.itemId ?? askedItem;
       askedTopic = e.meta?.topic ?? askedTopic;

@@ -22,7 +22,7 @@ export const CANDIDATE_NAV: NavItem[] = [
   /** lane project: лента проектных заданий (ADR 0003, ступень 2) */
   { href: '/projects', icon: '▤', label: 'Проекты', header: true },
   { href: '/invitations', icon: '✉', label: 'Приглашения', header: true },
-  { href: '/career', icon: '◇', label: 'Моя карта' },
+  { href: '/career', icon: '◇', label: 'Вакансии' },
   { href: '/profile', icon: '○', label: 'Профиль', header: true },
   { href: '/interview', icon: '▷', label: 'ИИнтервью' },
   { href: '/saved', icon: '☆', label: 'Избранное' },
@@ -68,7 +68,7 @@ export function linksFor(role: SessionRole | null): NavLink[] {
 
 /**
  * Подразделы без своей вкладки подсвечивают ближайшую (первую присутствующую в списке): в шапке нет «Навыков»,
- * «Моей карты», «Избранного» - они ведут к «Профилю» / «Поиску по базе»; «Компания» вкладки в шапке не имеет.
+ * «Вакансий», «Избранного» - они ведут к «Профилю» / «Поиску по базе»; «Компания» вкладки в шапке не имеет.
  */
 const TAB_ALIASES: Record<string, string[]> = {
   '/career': ['/profile'], '/skills': ['/profile'], '/saved': ['/profile'], '/settings': ['/profile'],
@@ -82,7 +82,7 @@ const under = (pathname: string, href: string) => pathname === href || pathname.
 /**
  * `href` вкладки, активной на маршруте: прямое совпадение (самое длинное), иначе псевдоним подраздела.
  * `sections` — все разделы роли (сайдбар): у раздела со своим пунктом псевдонима нет, иначе шапка и сайдбар
- * подсвечивали бы разное («Профиль» и «Моя карта» на одном экране).
+ * подсвечивали бы разное («Профиль» и «Вакансии» на одном экране).
  */
 export function activeLinkHref(pathname: string, links: NavLink[], sections: NavLink[] = []): string | undefined {
   const direct = links

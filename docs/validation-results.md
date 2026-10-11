@@ -1841,3 +1841,45 @@ Pulled origin/main through e3fd0e8 before editing and installed its locked depen
 ## Consent placement in sign-in (11.10.2026, Moscow)
 
 The single shared consent now follows the password field and precedes submission in the email form. `npx vitest run --project components tests/unit/components/auth-entry.test.tsx tests/unit/components/email-auth.test.tsx`: 16 passed. Regression checks order in login/registration and the existing tests verify shared gating across registration, SSO and fresh demo. `npm run typecheck`: passed; `npm run lint`: 0 errors, 2 existing warnings; `npm run test:unit -- --maxWorkers=2`: 223 files, 3136 passed, 9 existing skipped (81.51s, 15:35:07 MSK). `npm run build`: passed, 25 static pages. Initial sandbox test launch could not initialize the bundler; unrestricted targeted run passed. Integration and full Playwright journey not rerun for this presentation-only move; no API or schema change. React composition/controlled state verified through official React docs via Context7. Windows CIM uptime access unavailable; checks ran sequentially.
+
+## BI-аналитика (11.10)
+
+Новая подкатегория `ai.bi-analytics` («Метрики, SQL-витрины, дашборды, интерпретация для бизнеса», активна): банк
+`platform/src/server/test/generators/ai-bi.ts`, **18 семейств = 8 Junior + 5 Middle + 5 Senior** (минимум 6 + 4 + 4
+выполнен). Темы: ARPU/ARPPU, сквозная конверсия воронки, SQL (HAVING, LEFT JOIN, оконные рамки, размножение строк при
+JOIN), среднее и медиана при выбросе, конверсия периода как отношение сумм, план-факт, дубли загрузки, rolling
+retention, LTV/CAC, z-статистика A/B; Senior - очистка от сезонности, SCD2 с привязкой на дату заказа, разложение
+выручки на цену/объём/структуру, атрибуция по позициям касаний, построчная сверка источника и витрины.
+В каталог добавлены 7 утверждений `ai.bi-*` (6 + Senior-only `ai.bi-metric-governance`, доказывается собеседованием);
+каталог 142 записи (было 135).
+
+Персоны (`npx tsx eval/test/subcategory-personas.ts --n 300 --seed 2 --sub ai.bi-analytics`, правила adr-0002-v7):
+
+| Персона | P(Junior) | P(Middle) | P(Senior) |
+|---|---|---|---|
+| N1 пограничный новичок | 0.00 | 0.00 | 0.00 |
+| J Junior | 0.94 | 0.01 | 0.00 |
+| Jw Junior с одной слабой темой | 1.00 | 0.08 | 0.00 |
+| M Middle | 1.00 | 0.99 | 0.00 |
+| Mw Middle с одной слабой темой | 1.00 | 1.00 | 0.00 |
+| S Senior | 1.00 | 1.00 | 1.00 |
+
+Все цели ADR выполнены; на seed 1 и 3 картина та же (J 0.95-0.96, ложных подтверждений нет). Слабое место прежнее:
+«Senior → Middle в 1 клик» у Middle, заявившего Senior, 0.60-0.66.
+
+Оговорки. Банк меньше остальных подкатегорий ai (18 против 26-27), параметры a, b экспертные, без калибровки на людях.
+Чтобы персоны проходили цели, пришлось поднять b: Junior -0.9…-0.45, Middle 0.3…0.7, Senior 1.2…1.6 (при нижнем
+b Junior было 0.49-0.77). Профили персон рассчитаны на 6/4/4 семейств, у остальных строк «лишние» семейства берут значение
+последней клетки, поэтому цифры сопоставимы с другими подкатегориями лишь приблизительно.
+
+## Главная landing-astra (11.10.2026, 17:47 МСК)
+
+Перенесён экспорт `ФСП Карьера — мокап дизайна (3)/export/landing-astra` в React-компоненты продукта. Шаблонный runtime `support.js` не переносился. Фильтры и источники доказательств интерактивны; вход использует существующий AuthEntry. ФСП в шапке, под стрелкой и в подвале ведёт на официальный сайт. Данные ленты компаний вымышленные и подписаны как демонстрационные; ФСП ID и реестр остаются симуляторами.
+
+Release-check: `git fetch origin` и `git merge --ff-only origin/main` выполнены, включены командные изменения по `7d9c69e6` без конфликтов. Время проверено через PowerShell `TimeZoneInfo` (17:41 МСК, до срока сдачи); Git Bash `TZ=Europe/Moscow date` на Windows некорректно показал GMT. `uptime` в Git Bash отсутствует; тяжёлые проверки шли последовательно.
+
+`npx tsx scripts/build-openapi.ts`: 115 путей, 142 операции; `npx tsx scripts/build-prompts.ts`: успешно, семантических изменений сгенерированных файлов нет. `npm run typecheck`: passed. `npm run lint`: 0 ошибок, 2 прежних предупреждения eval/tools-matrix. `npm run test:unit -- --maxWorkers=2` с Git Bash в начале PATH: 260 файлов passed, 4547 passed, 9 существующих skipped, 4556 всего; 131.07s, старт 17:35:34 МСК. Первый запуск выявил уже исправленные командой пропуски API_ACCESS/интервью-каталога и неверный системный bash.exe; после обновления main и PATH все проверки прошли, тесты не ослаблялись. `npm run build`: passed, Next.js 15.5.27, 29 статических страниц.
+
+Ручная проверка production-сборки на localhost:3220 через IAB: композиция первого экрана сверена с оригиналом на localhost:3210; шапка, моноширинный шрифт, граф, карточки, мобильная компоновка проверены. Frontend Junior: 2 компании, 100-260k; выбор «Есть в проекте» меняет объяснение; «Приступим» открывает AuthEntry; 3 ссылки ФСП ведут на https://fsp-russia.ru/. На 390px ширина документа 375px, на 360px 345px (15px занимает полоса прокрутки), переполнения нет.
+
+`npm run test:integration`: not run, TEST_DATABASE_URL не задан. Полный сценарий с загрузкой резюме, тестом и отправкой приглашения не повторён для изменения главной: локальная проверка запущена с временным секретом и фиктивным адресом БД, без доступа к данным и настоящей модели. API/Prisma-схема в этом изменении не менялись. Проверка деплоя и публичной страницы выполняется после пуша.

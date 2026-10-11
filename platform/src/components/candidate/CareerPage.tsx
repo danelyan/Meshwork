@@ -111,8 +111,8 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
   if (savedOnly && data && !error) return <SavedVacancies vacancies={filtered} categories={categories} saving={saving} error={storageError} onRemove={(id) => void toggleSave(id)} />;
   return <div className={styles.page}>
     <header className={styles.heading}>
-      <h1>{savedOnly ? 'Избранное' : <>Найдите своё<br />место на карте</>}<i>.</i></h1>
-      <p>{savedOnly ? 'Сохранённые вакансии вашего аккаунта. Вернитесь к интересным предложениям с любого устройства.' : 'Смотрите, каким вакансиям соответствует ваш опыт и какие навыки помогут приблизиться к цели.'}</p>
+      <h1>{savedOnly ? 'Избранное' : 'Вакансии'}<i>.</i></h1>
+      <p>{savedOnly ? 'Сохранённые вакансии вашего аккаунта. Вернитесь к интересным предложениям с любого устройства.' : 'Открытые вакансии компаний: на карте соответствия или списком. Откликнитесь сами или посмотрите, какие навыки приблизят вас к цели.'}</p>
     </header>
     {error ? <Notice tone="error">{error} <Button size="sm" onClick={() => setRevision((n) => n + 1)}>Повторить</Button></Notice> : !data ? <p role="status">Загружаем вакансии…</p> : <>
       <form className={styles.search} onSubmit={(event) => { event.preventDefault(); setSelectedId(null); }}>
@@ -133,11 +133,11 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
       {storageError && <Notice tone="error">{storageError}</Notice>}
       {requestedMissing && <Notice>Вакансия по ссылке недоступна в текущем каталоге. Возможно, она закрыта. <Button size="sm" onClick={() => setSelectedId(null)}>Выбрать другую вакансию</Button></Notice>}
       {truncated && <Notice>Показаны первые 200 активных вакансий. В избранном сохранённые предложения загружаются отдельно.</Notice>}
-      <div className={styles.resultBar}><span role="status">Вакансий: {filtered.length}</span><Button size="sm" aria-pressed={onlySaved} onClick={() => setOnlySaved(!onlySaved)}>☆ Сохранённое</Button></div>
+      <div className={styles.resultBar}><span role="status">Вакансий: {filtered.length}</span><span className={styles.viewBar}><div className={styles.viewSwitch} aria-label="Вид вакансий"><Button size="sm" aria-pressed={mode === 'map'} onClick={() => setMode('map')}>Карта</Button><Button size="sm" aria-pressed={mode === 'list'} onClick={() => setMode('list')}>Список</Button></div><Button size="sm" aria-pressed={onlySaved} onClick={() => setOnlySaved(!onlySaved)}>☆ Сохранённое</Button></span></div>
       {!filtered.length ? <Panel className={styles.empty}>
         <h2>{savedOnly && !filterCount ? 'Пока ничего не сохранено' : 'Подходящих вакансий пока нет'}</h2>
-        <p>{filterCount ? 'Попробуйте другое название или сбросьте фильтры.' : savedOnly ? 'Добавьте вакансии в избранное из карты соответствия.' : 'Подтвердите карточки опыта у консультанта. Подбор учитывает реальные требования вакансий и утверждения вашего профиля.'}</p>
-        <Button href={savedOnly ? '/career' : '/consultant'}>{savedOnly ? 'Открыть карту' : 'К консультанту'}</Button>{filterCount > 0 && <Button onClick={() => setFilters(EMPTY)}>Сбросить фильтры</Button>}
+        <p>{filterCount ? 'Попробуйте другое название или сбросьте фильтры.' : savedOnly ? 'Добавьте вакансии в избранное из раздела «Вакансии».' : 'Подтвердите карточки опыта у консультанта. Подбор учитывает реальные требования вакансий и утверждения вашего профиля.'}</p>
+        <Button href={savedOnly ? '/career' : '/consultant'}>{savedOnly ? 'Открыть вакансии' : 'К консультанту'}</Button>{filterCount > 0 && <Button onClick={() => setFilters(EMPTY)}>Сбросить фильтры</Button>}
       </Panel> : <div className={styles.workspace}>
         <section className={styles.mapPanel} aria-label="Карта соответствия вакансиям">
           {mode === 'map' ? <>
@@ -156,7 +156,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
               </div>
             </div>
           </> : <ul className={styles.vacancyList}>{filtered.map((target) => <li key={target.vacancyId}><button className={`${styles.vacancyRow} ${selected?.vacancyId === target.vacancyId ? styles.activeRow : ''}`} onClick={() => setSelectedId(target.vacancyId)} aria-pressed={selected?.vacancyId === target.vacancyId}><span className={styles.letter}>{target.companyName.slice(0, 1)}</span><span><b>{target.companyName}</b><span>{target.title}</span><small>{money.format(target.salaryFrom)}–{money.format(target.salaryTo)} ₽ · {specLabel(target.specialization)}</small></span><strong>{coveragePercent(target)}%</strong></button></li>)}</ul>}
-          <div className={styles.mapControls}><div className={styles.viewSwitch} aria-label="Вид вакансий"><Button size="sm" aria-pressed={mode === 'map'} onClick={() => setMode('map')}>Карта</Button><Button size="sm" aria-pressed={mode === 'list'} onClick={() => setMode('list')}>Список</Button></div>{mode === 'map' && <><Button size="sm" aria-label="Уменьшить карту" disabled={zoom <= .8} onClick={() => setZoom((z) => Math.max(.8, z - .1))}>−</Button><Button size="sm" aria-label="Увеличить карту" disabled={zoom >= 1.5} onClick={() => setZoom((z) => Math.min(1.5, z + .1))}>+</Button><Button size="sm" aria-label="Приостановить анимацию" aria-pressed={!moving} onClick={() => setMoving(!moving)}>{moving ? 'Ⅱ' : '▶'}</Button><span className={styles.mapLegend}><i />Ваши связи</span></>}</div>
+          <div className={styles.mapControls}>{mode === 'map' && <><Button size="sm" aria-label="Уменьшить карту" disabled={zoom <= .8} onClick={() => setZoom((z) => Math.max(.8, z - .1))}>−</Button><Button size="sm" aria-label="Увеличить карту" disabled={zoom >= 1.5} onClick={() => setZoom((z) => Math.min(1.5, z + .1))}>+</Button><Button size="sm" aria-label="Приостановить анимацию" aria-pressed={!moving} onClick={() => setMoving(!moving)}>{moving ? 'Ⅱ' : '▶'}</Button><span className={styles.mapLegend}><i />Ваши связи</span></>}</div>
         </section>
         {selected && <Panel className={styles.detail} aria-label="Выбранная вакансия">
           <div className={styles.resultBar}><Kicker>Ваше соответствие</Kicker><Button size="sm" disabled={saving} aria-label={saved.includes(selected.vacancyId) ? 'Убрать из избранного' : 'Сохранить вакансию'} aria-pressed={saved.includes(selected.vacancyId)} onClick={() => void toggleSave(selected.vacancyId)}>{saved.includes(selected.vacancyId) ? '★' : '☆'}</Button></div>
@@ -171,7 +171,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
           <p>{selected.reason}</p>
           {selected.matched.length > 0 && <div><h3>Что уже совпадает</h3><ul className={styles.requirements}>{selected.matched.map((item) => <li key={item.catalogId}>✓ {item.statement}<small className={styles.meta}> · {isLevel(item.level) ? LEVEL_LABEL[item.level] : 'со слов'}</small></li>)}</ul></div>}
           <div><h3>Что усилить</h3>{selected.missing.length ? <ul className={styles.requirements}>{selected.missing.map((item) => <li key={item.catalogId}>{item.statement}</li>)}</ul> : <p>Все требования этой вакансии закрыты текущими утверждениями.</p>}</div>
-          {selected.category && selected.category.missing.length > 0 && <div><h3>До полной категории {selected.category.label}</h3><p className={styles.meta}>Вакансия требует меньше, чем вся категория. По категории закрыто {selected.category.covered} из {selected.category.total}; ниже - то, что на карте пробелов отмечено «Нет».</p><ul className={styles.requirements}>{selected.category.missing.slice(0, 5).map((item) => <li key={item.catalogId}>{item.statement}</li>)}</ul>{selected.category.missing.length > 5 && <p className={styles.meta}>и ещё {selected.category.missing.length - 5} - полный список на странице навыков.</p>}</div>}
+          {selected.category && selected.category.missing.length > 0 && <div><h3>Что ещё усилит профиль для категории {selected.category.label}</h3><p className={styles.meta}>Вакансия требует меньше, чем вся категория; вот что в ней пока не подтверждено.</p><ul className={styles.requirements}>{selected.category.missing.slice(0, 5).map((item) => <li key={item.catalogId}>{item.statement}</li>)}</ul>{selected.category.missing.length > 5 && <p className={styles.meta}>и ещё {selected.category.missing.length - 5} - полный список на «Навыках и грейде».</p>}</div>}
           {detailError && <Notice tone="error">Не удалось загрузить рекомендации: {detailError}</Notice>}
           {details?.tasks?.length ? <div><h3>Как приблизиться к цели</h3><ul className={styles.requirements}>{details.tasks.map((task) => <li key={task.taskId}><span>{task.title}</span></li>)}</ul></div> : null}
           <details className={styles.vacancyDescription}><summary>Смотреть вакансию ↗</summary><h3>{selected.title}</h3><p>{selected.description || 'Компания пока не добавила описание.'}</p><p>{selected.teamDescription}</p><p>{selected.stack.join(', ')}</p></details>
@@ -181,7 +181,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
           <p className={styles.fine}>Совпадение по требованиям, а не вероятность найма.</p>
         </Panel>}
       </div>}
-      <Panel className={styles.nextStep}><div><Kicker>Следующий шаг</Kicker><p>{selected?.missing[0] ? `Подтяните: ${selected.missing[0].statement}. Это приблизит вас к выбранной вакансии.` : selected?.category?.missing[0] ? `Требования вакансии закрыты. До полной категории ${selected.category.label} подтяните: ${selected.category.missing[0].statement}.` : 'Подтвердите навыки и выберите следующий шаг вместе с консультантом.'}</p></div><Button href="/skills">Посмотреть требования ↗</Button></Panel>
+      <Panel className={styles.nextStep}><div><Kicker>Следующий шаг</Kicker><p>{selected?.missing[0] ? `Подтяните: ${selected.missing[0].statement}. Это приблизит вас к выбранной вакансии.` : selected?.category?.missing[0] ? `Требования вакансии закрыты. Чтобы усилить профиль для категории ${selected.category.label}, подтяните: ${selected.category.missing[0].statement}.` : 'Подтвердите навыки и выберите следующий шаг вместе с консультантом.'}</p></div><Button href="/skills">Посмотреть требования ↗</Button></Panel>
     </>}
   </div>;
 }

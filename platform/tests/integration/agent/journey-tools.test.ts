@@ -54,7 +54,7 @@ describe('инструменты «ведёт по платформе»', () => 
     await prisma.user.create({ data: { name: 'К', role: 'candidate', candidateId: CAND } });
     const r = await call('get_onboarding_status');
     expect(r.ok).toBe(true);
-    expect(r.json).toMatchObject({ nextStep: 'onboarding', steps: { onboarding: false, test: false } });
+    expect(r.json).toMatchObject({ nextStep: 'onboarding', steps: { onboarding: false, test: false, call: false, project: false, ai_defense: false }, counts: { sources: 0 } });
   });
 
   it('get_onboarding_status: приватный опыт читается только из своей анкеты, маскируется и не становится доказательством', async () => {

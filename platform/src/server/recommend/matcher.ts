@@ -73,8 +73,9 @@ export function computeCoverage(needs: Need[], catalog: Map<string, CatalogEntry
 }
 
 /** «закрываешь k из n, не хватает: …» — только формулировки каталога. */
-export function describeCoverage(r: CoverageResult, subject: 'candidate' | 'you' = 'you'): string {
-  const verb = subject === 'you' ? 'закрываешь' : 'закрыто';
+export function describeCoverage(r: CoverageResult, subject: 'candidate' | 'you' | 'formal' = 'you'): string {
+  // 'formal' - обращение на «вы» (кабинет кандидата, /career); 'you' - на «ты» (консультант, лента)
+  const verb = subject === 'you' ? 'закрываешь' : subject === 'formal' ? 'закрываете' : 'закрыто';
   let text = `${verb[0]!.toUpperCase()}${verb.slice(1)} ${r.covered} из ${r.total}`;
   if (r.missing.length > 0) text += `, не хватает: ${r.missing.map((m) => m.statement).join('; ')}`;
   if (r.adjacent.length > 0) {

@@ -21,7 +21,7 @@ it('keeps saved vacancies with zero evidence and applies own saved IDs before li
   expect(result.targets[0]).toMatchObject({ vacancyId: 'low-match', covered: 0, total: 1, matched: [], stack: ['Python'] });
   expect(result.targets[0]?.missing).toEqual([{ catalogId: 'sql', statement: 'SQL' }]);
   expect(result.targets[0]?.category).toEqual({ id: 'backend:middle', label: 'Backend · Middle', covered: 0, total: 1, missing: [{ catalogId: 'sql', statement: 'SQL' }] });
-  expect(result.targets[0]?.reason).toBe('Требования вакансии: Закрываешь 0 из 1, не хватает: SQL. До полной категории Backend · Middle (0 из 1) не хватает: SQL');
+  expect(result.targets[0]?.reason).toBe('Требования вакансии: Закрываете 0 из 1, не хватает: SQL. Что ещё усилит профиль для категории Backend · Middle: SQL - полный список на «Навыках и грейде»');
 });
 
 it('preserves an empty favorites list instead of returning the entire catalogue', async () => {

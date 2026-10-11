@@ -240,7 +240,7 @@ export function ProfilePage() {
       <details className={styles.extraEvidence}><summary>История проверок</summary><TestHistory attempts={attempts} /></details>
       <div className={`${styles.noPrint} ${styles.homeLinks}`}>
         <Link href="/skills">Карта глубины и пробелы → Навыки и грейд</Link>
-        <Link href="/career">Подходящие вакансии → Моя карта</Link>
+        <Link href="/career">Подходящие вакансии → Вакансии</Link>
       </div>
       <div className={`${styles.visibility} ${styles.noPrint}`}>
         <h2>Что видят компании</h2>

@@ -68,7 +68,7 @@ export function withCategory(
   coverage: ReturnType<typeof computeCoverage>,
   catalog: Map<string, CatalogEntry>, index: EvidenceIndex,
 ): { reason: string; category: NonNullable<CareerVacancy['category']> | null } {
-  const vacancyText = `Требования вакансии: ${describeCoverage(coverage)}`;
+  const vacancyText = `Требования вакансии: ${describeCoverage(coverage, 'formal')}`;
   // categoryNeeds знает только backend|frontend × junior|middle (как /api/recommendations)
   if (!(spec in SPEC_LABEL) || (grade !== 'junior' && grade !== 'middle')) return { reason: vacancyText, category: null };
   const full = computeCoverage(categoryNeeds(catalog, `${spec}:${grade}`), catalog, index);
@@ -78,5 +78,5 @@ export function withCategory(
   if (full.missing.length === 0) return { reason: `${vacancyText}. Категория ${label} закрыта полностью`, category };
   const shown = full.missing.slice(0, MISSING_SHOWN).map((m) => m.statement).join('; ');
   const rest = full.missing.length > MISSING_SHOWN ? ` и ещё ${full.missing.length - MISSING_SHOWN}` : '';
-  return { reason: `${vacancyText}. До полной категории ${label} (${full.covered} из ${full.total}) не хватает: ${shown}${rest}`, category };
+  return { reason: `${vacancyText}. Что ещё усилит профиль для категории ${label}: ${shown}${rest} - полный список на «Навыках и грейде»`, category };
 }

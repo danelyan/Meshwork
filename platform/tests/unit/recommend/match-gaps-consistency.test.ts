@@ -57,7 +57,7 @@ it('demo-accepted: 6 из 6 по вакансии, но до полной кат
   // ни одно требование вакансии не попало в «не хватает» категории
   for (const n of vacancyNeeds) expect(missing).not.toContain(n.catalogId);
   expect(category).toMatchObject({ id: 'backend:junior', label: 'Backend · Junior', covered: 7, total: 11 });
-  expect(reason).toMatch(/^Требования вакансии: Закрываешь 6 из 6\. До полной категории Backend · Junior \(7 из 11\) не хватает: .+ и ещё 1$/);
+  expect(reason).toMatch(/^Требования вакансии: Закрываете 6 из 6\. Что ещё усилит профиль для категории Backend · Junior: .+ и ещё 1 - полный список на «Навыках и грейде»$/);
   // «Нет» на карте пробелов категории = ровно category.missing
   const noRows = computeGaps(categoryNeeds(catalog, 'backend:junior'), catalog, demoAccepted, 'junior').filter((g) => g.currentLevel === null);
   expect(noRows.map((g) => g.catalogId).sort()).toEqual(missing);
@@ -84,5 +84,5 @@ it('для вакансии и для категории: закрытое в с
 
 it('категории нет в каталоге (senior) - пояснение только по вакансии, без выдуманных пробелов', () => {
   const coverage = computeCoverage(vacancyNeeds, catalog, demoAccepted);
-  expect(withCategory('backend', 'senior', coverage, catalog, demoAccepted)).toEqual({ reason: 'Требования вакансии: Закрываешь 6 из 6', category: null });
+  expect(withCategory('backend', 'senior', coverage, catalog, demoAccepted)).toEqual({ reason: 'Требования вакансии: Закрываете 6 из 6', category: null });
 });

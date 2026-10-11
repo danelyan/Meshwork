@@ -193,3 +193,4 @@
 .privacyFields dt { margin: 0; }.privacyFields dd { margin: 0; text-align: right; color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
 
 .gapCta { display: grid; gap: 6px; }
+.viewBar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }

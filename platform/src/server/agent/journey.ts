@@ -25,7 +25,7 @@ export const STEP_HINT: Record<JourneyStep, string> = {
   test: 'Категории нет: предложи тест на грейд (get_test_status / recommend_test, экран /test) — категорию даёт только он. Это первый шаг после знакомства.',
   call: 'Тест пройден, квалифицирующего созвона не было: предложи созвон голосом (suggest_call; кнопка «Созвониться» в /consultant) — карта глубины по темам резюме, работодатель увидит её до приглашения. Утверждения из резюме и ссылок подтверждаются тут же, в консультации.',
   project: 'Созвон пройден, проверенного проекта нет: предложи взять проект из ленты на экране /projects (отдельного инструмента нет — дай ссылку), сдать репозиторий и дождаться проверки.',
-  ai_defense: 'Проект проверен: следующий шаг — ИИ-защита проекта до приглашения. Она скоро появится, кнопки пока нет: скажи честно, что защита «скоро», ничего не обещай по срокам и предложи пока подождать приглашения.',
+  ai_defense: 'Проект проверен: следующий шаг — ИИ-защита проекта до приглашения. Кнопка «Защитить проект с ИИ» — под проверенной сдачей на странице задания /projects/:id (ссылка из ленты /projects; инструмента нет — дай ссылку). ИИ задаёт вопросы по коду и коммитам, нужна запись с согласием; не чаще раза в сутки на сдачу. Работодатель до приглашения увидит только баллы по рубрике и флаги — без транскрипта, записи и ссылки на репозиторий.',
   waiting: 'Все шаги, доступные сейчас, пройдены: приглашений пока нет. Скажи, что работодатели находят профиль сами; предложи усилить его (get_gap_map, recommend_tasks) или спроси, чем помочь, одним вопросом.',
   invitations: 'Есть входящее приглашение без ответа: предложи разобрать его (get_invitations → explain_invitation). Принять или отклонить — кнопка кандидата.',
   live_defense: 'Приглашение принято: дальше живая защита проекта с работодателем (обязательна для найма, идёт с записью). Время назначает работодатель слотами; кандидат выбирает слот в /invitations. Инструмента нет — дай ссылку на экран.',
@@ -65,7 +65,7 @@ export async function journeyState(candidateId: string): Promise<JourneyState> {
     prisma.projectSubmission.count({ where: { candidateId, status: 'checked', resultJson: { not: Prisma.DbNull } } }),
     // ИИ-защита до приглашения (lane/ai-defense): завершённая защита сабмита, на который работодатель не звал.
     // Пока таких сессий нет, запрос даёт 0, шаг не пройден.
-    prisma.callSession.count({ where: { candidateId, kind: 'defense', status: 'finished', projectSubmissionId: { not: null }, projectSubmission: { defenseInvitationId: null } } }),
+    prisma.callSession.count({ where: { candidateId, kind: 'defense', aiDefense: true, status: 'finished' } }), // ADR 0008 п. 1: CallSession.aiDefense
     prisma.invitation.count({ where: { candidateId, status: { in: ['sent', 'viewed'] } } }),
     prisma.invitation.count({ where: { candidateId, status: 'accepted' } }),
     prisma.invitation.findFirst({ where: { candidateId, status: 'hired' }, orderBy: { hiredAt: 'desc' }, select: { hiredAt: true, company: { select: { name: true } }, vacancy: { select: { company: { select: { name: true } } } } } }),

@@ -37,6 +37,7 @@ const verdict: DefenseRoomVerdict = {
       runs: [6, 6, 5],
       agreement: { same: 3, of: 3 },
       answers: 2,
+      quote: 'меня зовут Иван',
     },
   ],
   passed: true,

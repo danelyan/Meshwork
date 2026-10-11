@@ -108,13 +108,14 @@ describe('journeyState: порядок шагов (ADR 0008)', () => {
     expect(await next()).toBe('ai_defense');
   });
 
-  it('ИИ-защита: без таких сессий шаг не пройден, подсказка «скоро»; запрос — защита сабмита без приглашения', async () => {
+  it('ИИ-защита: без таких сессий шаг не пройден, подсказка ведёт к кнопке; запрос — сессии с признаком aiDefense', async () => {
     Object.assign(w, { category: true, qualifying: 1, checkedProjects: 1, aiDefense: 0 });
     const s = await journeyState('c1');
     expect(s.nextStep).toBe('ai_defense');
     expect(s.steps.ai_defense).toBe(false);
-    expect(stepHint(s)).toMatch(/скоро/i);
-    expect(seen.call[1]).toMatchObject({ kind: 'defense', status: 'finished', projectSubmission: { defenseInvitationId: null } });
+    expect(stepHint(s)).toMatch(/Защитить проект с ИИ/);
+    expect(stepHint(s)).not.toMatch(/скоро/i);
+    expect(seen.call[1]).toMatchObject({ kind: 'defense', aiDefense: true, status: 'finished' });
   });
 
   it('ИИ-защита пройдена → ждать приглашение', async () => {

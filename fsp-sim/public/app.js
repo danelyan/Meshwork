@@ -33,8 +33,12 @@
     t.textContent = text;
     t.classList.toggle('is-error', Boolean(isError));
     t.hidden = false;
+    t.classList.remove('is-leaving');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { t.hidden = true; }, isError ? 7000 : 3500);
+    toastTimer = setTimeout(() => {
+      t.classList.add('is-leaving');
+      toastTimer = setTimeout(() => { t.hidden = true; t.classList.remove('is-leaving'); }, 200);
+    }, isError ? 7000 : 3500);
   }
 
   async function request(method, url, opts = {}) {
@@ -66,10 +70,32 @@
   const hasConsent = () => Boolean(state.card?.consents.some((x) => x.client_id === state.meta.partner_demo.client_id));
   const platformHost = () => state.meta.platform_url.replace(/^https?:\/\//, '');
 
-  async function copy(text) {
-    try { await navigator.clipboard.writeText(text); toast(`Скопировано: ${text}`); }
-    catch { toast('Не удалось скопировать — выделите текст вручную', true); }
+  async function copy(text, btn) {
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'скопировано ✓';
+      btn.classList.add('is-done');
+      setTimeout(() => { btn.textContent = 'копировать'; btn.classList.remove('is-done'); }, 1500);
+    } catch { toast('Не удалось скопировать — выделите текст вручную', true); }
   }
+
+  /** Плавное появление содержимого карточки — только при смене участника, не после каждой правки. */
+  let cardTimer = 0;
+  function animateCard() {
+    const card = $('card');
+    card.classList.remove('is-entering');
+    void card.offsetWidth;
+    card.classList.add('is-entering');
+    clearTimeout(cardTimer);
+    cardTimer = setTimeout(() => card.classList.remove('is-entering'), 700);
+  }
+
+  /** Раскрытие блока: анимация только когда открыл пользователь, а не при перерисовке открытого. */
+  const moreToggle = (key) => (ev) => {
+    const open = ev.target.open;
+    if (open && !state[key]) ev.target.classList.add('is-opening');
+    state[key] = open;
+  };
 
   // --- Ответы API: сценарии ---------------------------------------------------------------
 
@@ -281,6 +307,7 @@
     if (changed) { state.adding = false; state.showAll = false; state.fresh = null; }
     state.card = body.data;
     renderCard();
+    if (changed) animateCard();
     renderWho();
     markCurrent();
     if (!keepScroll && window.matchMedia('(max-width: 900px)').matches) $('card').scrollIntoView({ block: 'start' });
@@ -371,6 +398,7 @@
     $('card').replaceChildren(
       h('div', { class: 'card-head' }, h('div', {}, h('h3', {}, 'Новый участник'), h('p', {}, 'Получит номер ФСП ID и логин для входа. Имя — любое вымышленное.'))),
       h('div', { class: 'block' }, form));
+    animateCard();
     form.querySelector('input').focus();
   }
 
@@ -409,7 +437,7 @@
   function signInBox(c) {
     const m = state.meta;
     const cred = (label, value) => h('span', { class: 'cred' }, label, h('code', {}, value),
-      h('button', { type: 'button', class: 'copy', 'aria-label': `Скопировать: ${label.toLowerCase()}`, onclick: () => copy(value) }, 'копировать'));
+      h('button', { type: 'button', class: 'copy', 'aria-label': `Скопировать: ${label.toLowerCase()}`, onclick: (ev) => copy(value, ev.currentTarget) }, 'копировать'));
     return h('div', { class: 'signin' },
       h('div', { class: 'creds' }, cred('Логин', c.login.username), cred('Пароль', c.login.password)),
       h('a', { class: 'btn btn-primary', href: `${m.platform_url}/auth`, target: '_blank', rel: 'noopener' }, `Войти на ${platformHost()} ↗`),
@@ -422,11 +450,12 @@
     const freshAt = list.findIndex((x) => x.achievement_id === state.fresh);
     const shown = state.showAll || freshAt >= SHOWN_ROWS ? list : list.slice(0, SHOWN_ROWS);
     const rows = list.length
-      ? h('ul', { class: 'rows' }, shown.map((x) => h('li', { class: x.achievement_id === state.fresh ? 'fresh' : null },
+      ? h('ul', { class: 'rows' }, shown.map((x) => h('li', { class: x.achievement_id === state.fresh ? `fresh${state.freshNew ? ' is-new' : ''}` : null },
           h('div', { class: 'what' }, x.event_name, x.manual ? h('span', { class: 'badge badge-manual' }, 'вручную') : null,
             h('small', {}, `${x.date} · ${placeText(x)}${x.team_name ? ` · «${x.team_name}»` : ''}`)),
           h('button', { type: 'button', class: 'icon-btn', title: 'Удалить запись', 'aria-label': `Удалить запись «${x.event_name}»`, onclick: action(() => sandbox('DELETE', `/achievements/${encodeURIComponent(x.achievement_id)}`), 'Запись удалена из реестра') }, '×'))))
       : state.adding ? null : h('p', { class: 'empty-note' }, 'Записей нет. На платформе у участника будет «достижений пока нет».');
+    state.freshNew = false;
     const more = list.length > shown.length
       ? h('button', { type: 'button', class: 'link-btn rows-more', onclick: () => { state.showAll = true; renderCard(); } }, `Показать все ${list.length}`)
       : null;
@@ -434,6 +463,7 @@
     const add = h('form', { class: 'add', hidden: !state.adding, onsubmit: action(async (ev) => {
       const body = await sandbox('POST', `/athletes/${id}/achievements`, readAchievement(ev.target));
       state.fresh = body.data.achievement_id;
+      state.freshNew = true;
       state.adding = false;
     }, 'Достижение внесено. Войдите этим участником на платформе.') },
       h('div', { class: 'form' }, eventControls(),
@@ -470,7 +500,7 @@
         field('Дисциплина', h('select', { name: 'discipline' }, m.disciplines.map((d) => option(d.code, d.short_name, d.code === c.athlete.disciplines[0])))),
         field('Дата присвоения', h('input', { name: 'assigned_on', type: 'date', min: '2000-01-01', max: today, value: today })),
         h('div', { class: 'actions wide' }, h('button', { class: 'btn btn-primary' }, 'Присвоить разряд'))));
-    return h('details', { class: 'more', open: state.ranksOpen, ontoggle: (ev) => { state.ranksOpen = ev.target.open; } },
+    return h('details', { class: 'more', open: state.ranksOpen, ontoggle: moreToggle('ranksOpen') },
       h('summary', {}, 'Разряды', count(c.ranks.length)),
       h('div', { class: 'more-body' }, rows, add));
   }
@@ -490,7 +520,7 @@
         if (rest[0]) await selectAthlete(rest[0].fsp_id, true);
         return false;
       }) }, 'Удалить участника'));
-    return h('details', { class: 'more', open: state.profileOpen, ontoggle: (ev) => { state.profileOpen = ev.target.open; } },
+    return h('details', { class: 'more', open: state.profileOpen, ontoggle: moreToggle('profileOpen') },
       h('summary', {}, 'Данные участника'),
       h('div', { class: 'more-body' }, form, remove));
   }

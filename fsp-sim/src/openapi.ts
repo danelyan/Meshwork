@@ -65,7 +65,7 @@ export function buildOpenApi(config: Config): Record<string, unknown> {
         '',
         `Discovery OIDC: ${config.issuer}/.well-known/openid-configuration`,
       ].join('\n'),
-      contact: { name: 'Команда ФСП Карьера (ЛЦТ 2026)' },
+      contact: { name: 'Команда Workai (ЛЦТ 2026)' },
       license: { name: 'MIT' },
     },
     servers: [{ url: `${config.publicUrl}/api/v1` }],

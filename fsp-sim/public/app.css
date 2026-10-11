@@ -7,6 +7,7 @@
   --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
   --shadow: 0 1px 2px rgba(18, 24, 38, .04), 0 2px 8px rgba(18, 24, 38, .04);
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -214,4 +215,61 @@ details.more > summary:hover { background: var(--hover); border-radius: var(--r-
   .dev > summary { padding: 16px 14px; }
   .dev-body { padding: 0 14px 18px; }
   pre { font-size: 12px; }
+}
+
+/* --- анимации ---------------------------------------------------------------------------- */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { 0% { transform: translateY(-50%) scale(.6); } 60% { transform: translateY(-50%) scale(1.15); } 100% { transform: translateY(-50%) scale(1); } }
+@keyframes flash { from { background: #c9ecd7; } to { background: var(--ok-soft); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* Первый экран и панели появляются по очереди. */
+.hero > *, main > .panel { animation: rise .55s var(--ease) backwards; }
+.hero .lead { animation-delay: .06s; }
+.hero .disclaimer { animation-delay: .12s; }
+#check { animation-delay: .18s; }
+#api { animation-delay: .26s; }
+#dev { animation-delay: .32s; }
+
+/* Отклик элементов управления. */
+a, .top-nav a, .link-btn, .copy, .icon-btn { transition: color .15s, background-color .15s; }
+.btn { transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s, transform .1s; }
+.btn:active:not(:disabled), .scenario:active:not(:disabled) { transform: translateY(1px); }
+input, select { transition: border-color .15s, box-shadow .15s; }
+.list button { transition: background-color .15s, box-shadow .2s; }
+.scenario { transition: border-color .15s, background-color .2s, box-shadow .2s, transform .1s, opacity .2s; }
+.copy.is-done { color: var(--ok); background: var(--ok-soft); }
+
+/* Шаги: цвет меняется плавно, отметка ✓ появляется с отскоком. */
+.stepper li { transition: background-color .35s, border-color .35s; }
+.stepper li::before { transition: background-color .35s, border-color .35s, color .35s; }
+.stepper li.done::before { animation: pop .45s var(--ease); }
+
+/* Карточка участника при смене участника и раскрывающиеся блоки. */
+.card.is-entering > * { animation: rise .4s var(--ease) backwards; }
+.card.is-entering > :nth-child(2) { animation-delay: .04s; }
+.card.is-entering > :nth-child(3) { animation-delay: .08s; }
+.card.is-entering > :nth-child(4) { animation-delay: .12s; }
+.card.is-entering > :nth-child(5) { animation-delay: .16s; }
+.block > .add:not([hidden]) { animation: rise .3s var(--ease); }
+details.more.is-opening[open] > .more-body, .dev[open] > .dev-body { animation: rise .3s var(--ease); }
+.dev > summary::after { transition: transform .15s; }
+.rows li { transition: background-color .2s; }
+.rows li.is-new { animation: flash 1.6s var(--ease), rise .35s var(--ease); }
+
+/* Ответы API: запросы появляются по одному, ожидание пульсирует. */
+.result > h3, .result > .summary, .result-empty { animation: fade .3s var(--ease); }
+.summary { transition: background-color .3s, border-color .3s, color .3s; }
+.step { animation: rise .3s var(--ease) backwards; }
+.badge-wait { animation: pulse 1s ease-in-out infinite; }
+.step > summary { transition: background-color .15s; }
+
+.toast { animation: toast-in .25s var(--ease); transition: opacity .2s, transform .2s; }
+.toast.is-leaving { opacity: 0; transform: translate(-50%, 8px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  html { scroll-behavior: auto; }
 }

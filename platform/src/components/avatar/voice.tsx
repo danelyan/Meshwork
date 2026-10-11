@@ -265,7 +265,7 @@ export function CompanionVoiceProvider({ children, autoEnable = false }: { child
     try {
       const res = await fetch('/api/tts');
       const body = (await res.json()) as { mode?: string };
-      availableRef.current = body.mode === 'yandex';
+      availableRef.current = (body.mode === 'yandex' || body.mode === 'elevenlabs');
     } catch {
       availableRef.current = false;
     }

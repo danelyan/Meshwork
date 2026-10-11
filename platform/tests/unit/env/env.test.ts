@@ -73,4 +73,12 @@ describe('env', () => {
       parseEnv({ ...valid, LLM_PROVIDER: 'openai-chat', OPENAI_CHAT_BASE_URL: 'not a url', OPENAI_CHAT_API_KEY: 'k', OPENAI_CHAT_MODEL: 'm' }),
     ).toThrow(EnvError);
   });
+
+  it('TTS_PROVIDER=elevenlabs требует ключ и голос; значения по умолчанию', () => {
+    expect(() => parseEnv({ ...valid, TTS_PROVIDER: 'elevenlabs' })).toThrow(EnvError);
+    expect(() => parseEnv({ ...valid, TTS_PROVIDER: 'elevenlabs', ELEVENLABS_API_KEY: 'k' })).toThrow(/ELEVENLABS_VOICE/);
+    const env = parseEnv({ ...valid, TTS_PROVIDER: 'elevenlabs', ELEVENLABS_API_KEY: 'k', ELEVENLABS_VOICE: 'v' });
+    expect(env).toMatchObject({ ELEVENLABS_MODEL: 'eleven_multilingual_v2', ELEVENLABS_BASE_URL: 'https://api.elevenlabs.io' });
+    expect(parseEnv({ ...valid, ELEVENLABS_API_KEY: 'k' }).TTS_PROVIDER).toBe('auto');
+  });
 });

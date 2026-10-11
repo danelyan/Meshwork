@@ -6,11 +6,13 @@ import { yandexAuthHeader } from '@/server/llm/providers/yandex-responses';
  * Озвучка ответов компаньона (3D-аватар в чате). Режим — env TTS_PROVIDER:
  *  - yandex — SpeechKit, REST v1 `tts:synthesize` (form-urlencoded: text, lang, voice, emotion, speed, format;
  *    лимит SpeechKit — 5000 знаков, у нас 1000);
+
+ *  - elevenlabs — ElevenLabs REST `text-to-speech/{voice}/stream` (mp3), только по явному TTS_PROVIDER=elevenlabs;
  *  - off — кнопки озвучки нет;
  *  - auto (по умолчанию) — yandex при YANDEX_API_KEY + YANDEX_FOLDER_ID, иначе off.
  * Аудио не хранится и не пишется в журнал: ответ SpeechKit сразу уходит клиенту.
  */
-export type TtsMode = 'yandex' | 'off';
+export type TtsMode = 'yandex' | 'elevenlabs' | 'off';
 
 export const TTS_URL = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize';
 
@@ -18,6 +20,7 @@ export const TTS_CONTENT_TYPE = { mp3: 'audio/mpeg', oggopus: 'audio/ogg; codecs
 
 export function ttsMode(env: Env = getEnv()): TtsMode {
   if (env.TTS_PROVIDER === 'off') return 'off';
+  if (env.TTS_PROVIDER === 'elevenlabs') return env.ELEVENLABS_API_KEY && env.ELEVENLABS_VOICE ? 'elevenlabs' : 'off';
   return env.YANDEX_API_KEY && env.YANDEX_FOLDER_ID ? 'yandex' : 'off';
 }
 
@@ -46,6 +49,45 @@ export async function synthesizeYandex(text: string, opts: SynthesizeOptions): P
       method: 'POST',
       headers: { Authorization: auth, 'content-type': 'application/x-www-form-urlencoded' },
       body: form,
+      signal: opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout,
+    });
+  } catch {
+    throw new AppError('tts_unavailable', 'Озвучка сейчас недоступна', 503);
+  }
+  if (!res.ok) {
+    const limited = res.status === 429;
+    throw new AppError(limited ? 'rate_limited' : 'tts_unavailable', 'Озвучка сейчас недоступна', limited ? 429 : 503);
+  }
+  return res.arrayBuffer();
+}
+
+export interface ElevenLabsOptions {
+  apiKey: string;
+  voiceId: string;
+  model?: string;
+  baseUrl?: string;
+  /** TTS_SPEED (0.5–2) зажимается в диапазон провайдера 0.7–1.2. */
+  speed: number;
+  signal?: AbortSignal;
+  fetchImpl?: typeof fetch;
+}
+
+/** Текст (уже очищенный) → mp3 ElevenLabs. `fetchImpl` подменяется в тестах. */
+export async function synthesizeElevenLabs(text: string, opts: ElevenLabsOptions): Promise<ArrayBuffer> {
+  const base = (opts.baseUrl ?? 'https://api.elevenlabs.io').replace(/\/+$/, '');
+  const url = `${base}/v1/text-to-speech/${encodeURIComponent(opts.voiceId)}/stream?output_format=mp3_44100_128`;
+  const timeout = AbortSignal.timeout(15_000);
+  let res: Response;
+  try {
+    res = await (opts.fetchImpl ?? fetch)(url, {
+      method: 'POST',
+      headers: { 'xi-api-key': opts.apiKey, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        model_id: opts.model || 'eleven_multilingual_v2',
+        voice_settings: { speed: Math.min(1.2, Math.max(0.7, opts.speed)) },
+      }),
+      redirect: 'manual', // 302 на страницу гео-блокировки — это отказ, а не аудио
       signal: opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout,
     });
   } catch {

@@ -84,10 +84,21 @@ Integration-тесты: перед прогоном `globalSetup` применя
 `LLM_PROVIDER=yandex` — `YANDEX_API_KEY`, `YANDEX_FOLDER_ID`, `YANDEX_MODEL`; при
 `openai-chat` — `OPENAI_CHAT_BASE_URL`, `OPENAI_CHAT_API_KEY`, `OPENAI_CHAT_MODEL`.
 
+Озвучка: `TTS_PROVIDER=auto|yandex|elevenlabs|off`. `elevenlabs` включается только явно (`auto` его не
+выбирает) и требует `ELEVENLABS_API_KEY` и `ELEVENLABS_VOICE` (voice_id); необязательны
+`ELEVENLABS_VOICE_EMPLOYER` (иначе общий голос), `ELEVENLABS_MODEL` (по умолчанию `eleven_multilingual_v2`),
+`ELEVENLABS_BASE_URL` (по умолчанию `https://api.elevenlabs.io`; со стенда в РФ — реверс-прокси вне РФ, прямой
+адрес отдаёт 302 на гео-блокировку). Только синтез, mp3; текст реплик ИИ уходит за рубеж.
+
 Запасная модель — `LLM_FALLBACK_BASE_URL`, `LLM_FALLBACK_API_KEY`, `LLM_FALLBACK_MODEL` (задаются
 вместе), `LLM_FALLBACK_FOLDER_ID` (каталог Yandex AI Studio, иначе `YANDEX_FOLDER_ID`),
 `LLM_FALLBACK_NAME`, `LLM_FALLBACK_EXTRA_BODY`. Получает запрос, если основная не ответила после
 ретраев (5xx/429, таймаут, сеть); следующие 60 с запросы идут сразу в неё (`server/llm/client.ts`).
+
+Модель для созвонов — `LLM_CALL_BASE_URL`, `LLM_CALL_API_KEY`, `LLM_CALL_MODEL` (задаются вместе),
+`LLM_CALL_FOLDER_ID`, `LLM_CALL_NAME`, `LLM_CALL_EXTRA_BODY` (формат как у `LLM_FALLBACK_*`). Не задана —
+созвоны идут на основной модели; задана — созвон (`getLlm({ purpose: 'call' })`) идёт на ней, а при её сбое
+запрос уходит на основную. Чат, консультант и подбор не затрагиваются.
 
 Пароль на стенд: `SITE_PASSWORD` (или его SHA-256 в `SITE_PASSWORD_SHA256`, на стенде — в
 `docker-compose.prod.yml`) задан → публичный адрес пускает только после ввода пароля на

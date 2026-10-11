@@ -93,6 +93,18 @@ export const envSchema = z
     LLM_FALLBACK_NAME: optionalString,
     LLM_FALLBACK_EXTRA_BODY: jsonObject('LLM_FALLBACK_EXTRA_BODY'),
 
+    /**
+     * Отдельная модель для созвонов (getLlm({ purpose: 'call' })): те же правила, что у LLM_FALLBACK_* (тройка BASE_URL +
+     * API_KEY + MODEL, FOLDER_ID для Yandex AI Studio). Не задана — созвоны идут на основной модели; при её сбое запрос
+     * уходит на основную (LLM_PROVIDER).
+     */
+    LLM_CALL_BASE_URL: optionalString.pipe(z.url().optional()),
+    LLM_CALL_API_KEY: optionalString,
+    LLM_CALL_MODEL: optionalString,
+    LLM_CALL_FOLDER_ID: optionalString,
+    LLM_CALL_NAME: optionalString,
+    LLM_CALL_EXTRA_BODY: jsonObject('LLM_CALL_EXTRA_BODY'),
+
     /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
     STT_PROVIDER: z.enum(['auto', 'yandex', 'openai', 'browser', 'off']).default('auto'),
     /** STT_PROVIDER=openai: OpenAI-совместимый /audio/transcriptions (vLLM whisper в Selectel). Базовый URL с /v1, ключ сервиса — Bearer. */
@@ -100,7 +112,16 @@ export const envSchema = z
     STT_OPENAI_API_KEY: optionalString,
     STT_OPENAI_MODEL: z.string().min(1).default('whisper-large-v3'),
     /** Озвучка ответов компаньона (аватар): yandex (SpeechKit v1, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), off; auto — yandex при ключах, иначе off. */
-    TTS_PROVIDER: z.enum(['auto', 'yandex', 'off']).default('auto'),
+    TTS_PROVIDER: z.enum(['auto', 'yandex', 'elevenlabs', 'off']).default('auto'),
+    /** TTS_PROVIDER=elevenlabs: только синтез, REST с сервера. `auto` его не выбирает. Текст реплик ИИ уходит за рубеж. */
+    ELEVENLABS_API_KEY: optionalString,
+    /** voice_id ElevenLabs (не имя; `GET /v1/voices`). Не проходит в TTS_VOICE: там имена SpeechKit. */
+    ELEVENLABS_VOICE: optionalString,
+    /** Голос работодателя в защите проекта; без значения — ELEVENLABS_VOICE. */
+    ELEVENLABS_VOICE_EMPLOYER: optionalString,
+    ELEVENLABS_MODEL: z.string().min(1).default('eleven_multilingual_v2'),
+    /** Со стенда в РФ api.elevenlabs.io отвечает 302 на страницу гео-блокировки — сюда ставится реверс-прокси вне РФ. */
+    ELEVENLABS_BASE_URL: z.string().url().default('https://api.elevenlabs.io'),
     /** Голос SpeechKit v1 (marina, jane, omazh, ermil, zahar, filipp, madi_ru) и амплуа (neutral, friendly, good …). */
     TTS_VOICE: z.string().regex(/^[a-z_]{2,32}$/).default('marina'),
     /** Второй голос — реплики работодателя в защите проекта (ADR 0003), чтобы кандидат отличал его от ИИ. */
@@ -222,10 +243,21 @@ export const envSchema = z
         if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен при STT_PROVIDER=openai` });
       }
     }
+    if (env.TTS_PROVIDER === 'elevenlabs') {
+      for (const key of ['ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE'] as const) {
+        if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен при TTS_PROVIDER=elevenlabs` });
+      }
+    }
     const fallbackKeys = ['LLM_FALLBACK_BASE_URL', 'LLM_FALLBACK_API_KEY', 'LLM_FALLBACK_MODEL'] as const;
     if (fallbackKeys.some((k) => env[k])) {
       for (const key of fallbackKeys) {
         if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен, если задана запасная модель (LLM_FALLBACK_*)` });
+      }
+    }
+    const callKeys = ['LLM_CALL_BASE_URL', 'LLM_CALL_API_KEY', 'LLM_CALL_MODEL'] as const;
+    if (callKeys.some((k) => env[k])) {
+      for (const key of callKeys) {
+        if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен, если задана модель созвонов (LLM_CALL_*)` });
       }
     }
     if (env.LLM_PROVIDER === 'yandex') need(['YANDEX_API_KEY', 'YANDEX_FOLDER_ID', 'YANDEX_MODEL'], 'yandex');

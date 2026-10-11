@@ -21,7 +21,7 @@ export function useSpeech() {
     let alive = true;
     fetch('/api/tts', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((j: { mode?: string } | null) => alive && setAvailable(j?.mode === 'yandex'))
+      .then((j: { mode?: string } | null) => alive && setAvailable((j?.mode === 'yandex' || j?.mode === 'elevenlabs')))
       .catch(() => alive && setAvailable(false));
     return () => {
       alive = false;

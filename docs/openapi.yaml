@@ -10050,12 +10050,12 @@ paths:
       operationId: getTts
       tags:
         - tts
-      summary: "Доступна ли озвучка аватару: yandex / off."
-      description: "Доступна ли озвучка аватару: yandex / off.\n\nВход не нужен."
+      summary: "Доступна ли озвучка аватару: yandex / elevenlabs / off."
+      description: "Доступна ли озвучка аватару: yandex / elevenlabs / off.\n\nВход не нужен."
       security: []
       responses:
         "200":
-          description: "Доступна ли озвучка аватару: yandex / off."
+          description: "Доступна ли озвучка аватару: yandex / elevenlabs / off."
           content:
             "application/json":
               schema:

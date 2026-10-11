@@ -83,4 +83,46 @@ describe('/api/tts', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 429 })));
     expect((await POST(post('привет'))).status).toBe(429);
   });
+
+  describe('ElevenLabs', () => {
+    const elEnv = () => parseEnv({ DATABASE_URL: 'postgresql://x@localhost/db', SESSION_SECRET: 'x'.repeat(32), TTS_PROVIDER: 'elevenlabs', ELEVENLABS_API_KEY: 'xi-secret', ELEVENLABS_VOICE: 'voiceA', ELEVENLABS_VOICE_EMPLOYER: 'voiceB', TTS_SPEED: '2' });
+    const postVoice = (voice?: string) => new Request('http://localhost/api/tts', { method: 'POST', body: JSON.stringify({ text: 'Привет', voice }), headers: { 'content-type': 'application/json' } });
+
+    it('режим включается только явно: auto с ключами Yandex и ElevenLabs остаётся yandex', () => {
+      expect(ttsMode(elEnv())).toBe('elevenlabs');
+      const auto = parseEnv({ DATABASE_URL: 'postgresql://x@l/db', SESSION_SECRET: 'x'.repeat(32), ELEVENLABS_API_KEY: 'k', ELEVENLABS_VOICE: 'v' });
+      expect(ttsMode(auto)).toBe('off');
+      expect(ttsMode({ ...auto, YANDEX_API_KEY: 'a', YANDEX_FOLDER_ID: 'b' })).toBe('yandex');
+    });
+
+    it('POST: URL, xi-api-key, зажатый speed, модель, audio/mpeg; голос работодателя', async () => {
+      env = elEnv();
+      const fetchMock = okAudio();
+      vi.stubGlobal('fetch', fetchMock);
+      expect(await (await GET()).json()).toEqual({ mode: 'elevenlabs', maxChars: 1000 });
+      const res = await POST(postVoice());
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toBe('audio/mpeg');
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('https://api.elevenlabs.io/v1/text-to-speech/voiceA/stream?output_format=mp3_44100_128');
+      expect((init.headers as Record<string, string>)['xi-api-key']).toBe('xi-secret');
+      expect(JSON.parse(String(init.body))).toEqual({ text: 'Привет', model_id: 'eleven_multilingual_v2', voice_settings: { speed: 1.2 } });
+      await POST(postVoice('employer'));
+      expect((fetchMock.mock.calls[1] as unknown as [string])[0]).toContain('/text-to-speech/voiceB/stream');
+    });
+
+    it('ELEVENLABS_BASE_URL (прокси) и скорость снизу; 302 гео-блокировки и сбой — 503', async () => {
+      env = { ...elEnv(), ELEVENLABS_BASE_URL: 'https://proxy.example.com/', TTS_SPEED: 0.5, ELEVENLABS_VOICE_EMPLOYER: undefined };
+      const fetchMock = okAudio();
+      vi.stubGlobal('fetch', fetchMock);
+      await POST(postVoice('employer'));
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('https://proxy.example.com/v1/text-to-speech/voiceA/stream?output_format=mp3_44100_128');
+      expect(JSON.parse(String(init.body)).voice_settings.speed).toBe(0.7);
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 302, headers: { location: 'https://elevenlabs.io/blocked' } })));
+      expect((await POST(postVoice())).status).toBe(503);
+      vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 429 })));
+      expect((await POST(postVoice())).status).toBe(429);
+    });
+  });
 });

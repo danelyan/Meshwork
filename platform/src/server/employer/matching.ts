@@ -25,6 +25,7 @@ import {
   type MatchFilters,
   type MatchTarget,
   type RankedCandidate,
+  withTestedDefault,
 } from './ranking';
 import type { FspAchievementInput } from './fsp-weight';
 import { relaxationHints, type RelaxHint } from './relax';
@@ -205,7 +206,8 @@ async function run(
     : pool.map((p) => p.evidence);
   // ПРЕДЛОЖЕНИЕ агента (fullstack): та же формула, кандидат в виде «backend на меньшем из двух грейдов» (fullstack.ts).
   const evidence = filters.fullstack ? withIntegrity.map(asFullstackEvidence) : withIntegrity;
-  const all = rankCandidates(evidence, target, catalog, filters, opts);
+  const resolved = withTestedDefault(filters);
+  const all = rankCandidates(evidence, target, catalog, resolved, opts);
   const ranked = requireCoverage ? dropUncovered(all) : all;
   const top = ranked.slice(0, limit);
   const ids = top.map((r) => r.candidateId);
@@ -237,7 +239,7 @@ async function run(
     return { ...r, explanation, rank: i + 1, candidate, invitation: invites.get(r.candidateId) ?? null, defenseRoom: rooms.get(r.candidateId) ?? null, testIntegrity: integrity.get(r.candidateId) ?? null };
   });
   // R-M-04: подсказки ослабления — только для подборки под потребность (одна цель на всех).
-  const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(evidence, target, catalog, filters, opts) : undefined;
+  const hints = requireCoverage && typeof target !== 'function' ? relaxationHints(evidence, target, catalog, resolved, opts) : undefined;
   return { total: ranked.length, items, ...(hints ? { hints } : {}) };
 }
 

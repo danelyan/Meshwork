@@ -46,9 +46,21 @@ export interface SseParser<E = AgentEvent> {
   flush(): E[];
 }
 
+export interface SseParserOptions {
+  /** Каждый завершённый кадр (телеметрия чата): тип события (`invalid` — мусор), длина в символах, heartbeat `: ping`. */
+  onFrame?: (type: string, bytes: number, heartbeat: boolean) => void;
+}
+
 /** `types` — допустимые типы событий (по умолчанию консультанта; помощник работодателя передаёт свои). */
-export function createSseParser<E = AgentEvent>(types: ReadonlySet<string> = EVENT_TYPES): SseParser<E> {
+export function createSseParser<E = AgentEvent>(types: ReadonlySet<string> = EVENT_TYPES, opts: SseParserOptions = {}): SseParser<E> {
   let buffer = '';
+  const { onFrame } = opts;
+  const parseFrame = (frame: string): E | null => {
+    const data = frameData(frame);
+    const event = data === null ? null : parseAgentEvent(data, types);
+    if (onFrame) onFrame(event ? (event as { type: string }).type : data === null ? 'comment' : 'invalid', frame.length, data === null && frame.trimStart().startsWith(':'));
+    return event as E | null;
+  };
 
   function drain(final: boolean): E[] {
     const out: E[] = [];
@@ -57,14 +69,12 @@ export function createSseParser<E = AgentEvent>(types: ReadonlySet<string> = EVE
     while ((idx = buffer.indexOf('\n\n')) !== -1) {
       const frame = buffer.slice(0, idx);
       buffer = buffer.slice(idx + 2);
-      const data = frameData(frame);
-      const event = data === null ? null : parseAgentEvent(data, types);
-      if (event) out.push(event as E);
+      const event = parseFrame(frame);
+      if (event) out.push(event);
     }
     if (final && buffer.trim()) {
-      const data = frameData(buffer);
-      const event = data === null ? null : parseAgentEvent(data, types);
-      if (event) out.push(event as E);
+      const event = parseFrame(buffer);
+      if (event) out.push(event);
       buffer = '';
     }
     return out;

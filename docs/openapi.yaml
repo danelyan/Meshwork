@@ -2,7 +2,7 @@ openapi: "3.1.0"
 info:
   title: "ФСП Карьера - API платформы"
   version: "0.1.0"
-  description: "REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.\n\nВход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.\n\nВсе ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).\n\nСлужебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.\n\n### События SSE\n\nЗвонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).\n\nЭндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.\n\nВторой ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`."
+  description: "REST API платформы подбора ИТ-специалистов (ТЗ ФСП, R-N-06). Файл сгенерирован из кода (`platform/scripts/build-openapi.ts`), руками не править.\n\nВход — подписанная кука `cid` (HttpOnly, SameSite=Lax); выставляется входом через Яндекс ID, демо-входом или сбросом на онбординг. Изменяющие запросы проверяются на Origin (CSRF): чужой Origin → 403.\n\nВсе ошибки имеют единый формат `{ error: { code, message, details? } }` и HTTP-статус; `code` — машинный код (`validation_failed`, `unauthorized`, `session_stale`, `busy` …).\n\nСлужебные маршруты `/api/dev/*` (только для разработки) в спецификацию не входят.\n\n### События SSE\n\nЗвонок защиты проекта `GET /api/defense-room/{id}/events` — EventSource с именованными событиями лейна call: `snapshot`, `status`, `utterance`, `ai_state`, `participant`, `mute`, `question`, `verdict`, `signal`, `error` (кадр `event: <имя>` + `data: <json>`; первым приходит `snapshot`, реплики дедуплицируются по `entry.index`, сигналы WebRTC — только адресату).\n\nЭндпоинты `POST /api/consultant/messages` и `POST /api/employer/assistant/messages` отвечают потоком `text/event-stream`. Один кадр — `data: <json>` и пустая строка; тип события — поле `type`. Реплика приходит стримом: `delta* → message → done`; `message` — итог реплики, авторитетный. Схемы кадров — `ConsultantEvent` и `EmployerEvent`.\n\nВторой ход в том же разговоре, пока идёт первый, получает 409 с кодом `busy` до начала потока. Ошибка посреди хода приходит событием `error`, поток всё равно заканчивается `done`.\n\nПока ход идёт, сервер раз в 15 с шлёт комментарий `: ping` (строка без `data:`, клиент её пропускает). Разрыв соединения ход не прерывает: реплика дописывается и сохраняется в историю. Остановить ход — `POST /api/consultant/messages/stop`."
 servers:
   -
     url: "/"
@@ -5085,6 +5085,55 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           description: "Ход в этом разговоре уже идёт (`busy`) или не выполнено условие хода; до начала потока"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/consultant/messages/stop":
+    post:
+      operationId: postConsultantMessagesStop
+      tags:
+        - consultant
+      summary: "Остановить ход консультанта"
+      description: "Кнопка «Стоп»: отменяет активный ход разговора (работу модели). Показанный кусок реплики сохраняется ответом ассистента и уходит в поток хода событием `message`, затем `done`; ответ приходит после этого (не дольше 5 с). Разрыв соединения ход не останавливает — только этот вызов или таймаут хода. Реестр ходов — в памяти процесса (стенд — один процесс приложения).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                conversationId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+              required:
+                - conversationId
+      responses:
+        "204":
+          description: "Ход остановлен. Активного хода нет (стоп идемпотентен)"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  stopped:
+                    type: boolean
+                required:
+                  - stopped
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Разговор не найден или чужой"
           content:
             "application/json":
               schema:

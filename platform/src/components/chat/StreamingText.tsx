@@ -5,11 +5,13 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { VisuallyHidden } from '../ui';
 
 import { prefersReducedMotion } from './motion';
+import { createStreamSampler, type StreamSampler, telemetryOn, track } from './telemetry';
 import { type RevealMode, stepReveal, visibleCut } from './smooth-text';
 import styles from './thread.module.css';
 
 /** Сколько свежий кусок проявляется (= анимация `.fresh` в thread.module.css). */
 const FRESH_MS = 450;
+let revealSeq = 0;
 
 interface Mark {
   len: number;
@@ -48,6 +50,9 @@ export function useSmoothReveal(text: string, { animate, streaming = false, pace
   const [shown, setShown] = useState(on ? 0 : text.length);
   const streamingRef = useRef(streaming);
   streamingRef.current = streaming;
+  // Телеметрия: сэмплер заводится лениво, только когда флаг включён (иначе — одна проверка за кадр).
+  const samplerRef = useRef<StreamSampler | null>(null);
+  const startRef = useRef(0);
 
   useEffect(() => {
     if (!on) {
@@ -64,6 +69,17 @@ export function useSmoothReveal(text: string, { animate, streaming = false, pace
       const mode: RevealMode = paced ? 'paced' : streamingRef.current ? 'streaming' : 'settling';
       posRef.current = stepReveal(posRef.current, text.length, dt, mode);
       const cut = visibleCut(text, posRef.current, !streamingRef.current);
+      if (telemetryOn()) {
+        if (!samplerRef.current) {
+          samplerRef.current = createStreamSampler(`r${++revealSeq}`);
+          startRef.current = now;
+        }
+        samplerRef.current.tick(text.length, cut, now);
+        if (cut >= text.length && !streamingRef.current) {
+          samplerRef.current.flush(text.length, cut, now);
+          track({ k: 'anim', what: 'reveal done', ms: Math.round(now - startRef.current), id: `${text.length} зн` });
+        }
+      }
       setShown((prev) => {
         if (cut > prev) {
           const keep: Mark[] = [];

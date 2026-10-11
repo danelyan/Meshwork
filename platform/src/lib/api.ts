@@ -118,10 +118,6 @@ export type OnboardingAction =
   | { action: 'skip'; stepId: string }
   | { action: 'goto'; stepId: string };
 export const getOnboarding = () => request<OnboardingView>('/api/onboarding');
-export const listOnboardingHistoryApi = async () => {
-  const res = await request<{ revisions?: import('@/server/onboarding/types').AnswerRevisionView[] }>('/api/onboarding/history');
-  return Array.isArray(res.revisions) ? res.revisions : [];
-};
 export const onboardingAct = (body: OnboardingAction) => postJson<OnboardingView>('/api/onboarding', body);
 /** «Настроить позже»: онбординг не завершается, ответ — куда вести. */
 export const onboardingLater = () => postJson<{ next: string }>('/api/onboarding', { action: 'later' });

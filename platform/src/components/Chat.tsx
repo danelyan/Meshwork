@@ -20,6 +20,8 @@ import { Composer } from './chat/Composer';
 import { useAsideRefresh } from './consultant/aside-refresh';
 import { materialsMessage, useMaterialsHandler } from './consultant/materials';
 import { applyAgentEvent } from './chat/stream-items';
+import { diffItems, telemetryOn, track, trackFrame, trackVirtual, turnEnd, turnEvent, turnStart } from './chat/telemetry';
+import { TelemetryMount } from './chat/TelemetryMount';
 import { AssistantRow, QuickReplies, type QuickReply, Reply, Typing } from './chat/Thread';
 import { scrollToEnd, useStickToBottom } from './chat/scroll';
 import { EventFeed, type FeedItem } from './EventFeed';
@@ -109,12 +111,26 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     if (embedded) scrollToEnd(endRef.current);
   }, [items.length, embedded]);
 
+  // Телеметрия (выключена — одна проверка флага): diff ленты по id, коммиты React за ход.
+  const prevItemsRef = useRef(items);
+  const reasonRef = useRef<string | undefined>(undefined);
+  const rendersRef = useRef(0);
+  useEffect(() => {
+    if (telemetryOn()) rendersRef.current++;
+  });
+  useEffect(() => {
+    if (telemetryOn()) diffItems(prevItemsRef.current, items, reasonRef.current);
+    prevItemsRef.current = items;
+  }, [items]);
+
   const pushEvent = useCallback((event: AgentEvent) => {
     if (event.type === 'conversation') {
       conversationRef.current = event.id;
       return;
     }
     if (event.type === 'done') return;
+    reasonRef.current = event.type;
+    if (event.type === 'discard') track({ k: 'flake', what: 'discard', id: event.id });
     // Завершённая реплика — авторитетный текст после дельт: её и озвучиваем (если включено).
     if (event.type === 'message') voiceRef.current?.speak(event.text, event.id);
     setItems((p) => applyAgentEvent(p, event, nextId));
@@ -131,7 +147,11 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       // Ход дошёл до `done` без `error` — упрощённый режим снимаем (консультант снова отвечает).
       let sawDone = false;
       let sawError = false;
+      rendersRef.current = 0;
+      reasonRef.current = 'send';
+      turnStart(conversationRef.current);
       const handle = (ev: AgentEvent) => {
+        turnEvent(ev.type);
         if (ev.type === 'done') sawDone = true;
         if (ev.type === 'error') sawError = true;
         pushEvent(ev);
@@ -141,7 +161,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         const stream = await openConsultantStream({ text: message, uploadIds, urls, conversationId: conversationRef.current }, ctrl.signal);
         const reader = stream.getReader();
         const decoder = new TextDecoder();
-        const parser = createSseParser();
+        const parser = createSseParser(undefined, telemetryOn() ? { onFrame: trackFrame } : undefined);
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -150,9 +170,12 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
         for (const ev of parser.push(decoder.decode())) handle(ev);
         for (const ev of parser.flush()) handle(ev);
         if (sawDone && !sawError) setSimplified(false);
+        turnEnd(sawError ? 'error' : 'done', sawDone ? undefined : 'без done', rendersRef.current);
       } catch (e) {
-        if ((e as Error).name !== 'AbortError') {
+        if ((e as Error).name === 'AbortError') turnEnd('stop', 'abort', rendersRef.current);
+        else {
           const code = (e as { code?: string }).code ?? 'network';
+          turnEnd('error', code, rendersRef.current);
           pushEvent({ type: 'error', code, message: e instanceof Error ? e.message : 'Что-то пошло не так.' });
         }
       } finally {
@@ -170,6 +193,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   const stop = useCallback(async () => {
     const ctrl = abortRef.current;
     const id = conversationRef.current;
+    turnEnd('stop', 'кнопка «Стоп»');
     if (id) await stopConsultantTurn(id);
     ctrl?.abort();
   }, []);
@@ -268,6 +292,10 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   // «Печатает» — пока в этом ходе не началась реплика (дальше её видно по стриму).
   const lastUser = items.findLastIndex((it) => it.role === 'user');
   const replying = items.slice(lastUser + 1).some((it) => it.role === 'agent' && it.event.type === 'message');
+  const typingShown = busy && !replying;
+  useEffect(() => {
+    trackVirtual('typing', 'typing', typingShown);
+  }, [typingShown]);
 
   return (
     <div ref={rootRef} className={[embedded ? styles.embedded : styles.chat, className].filter(Boolean).join(' ')}>
@@ -328,6 +356,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
       </div>
       </div>
 
+      <TelemetryMount />
       <Composer
         label="Сообщение"
         value={text}

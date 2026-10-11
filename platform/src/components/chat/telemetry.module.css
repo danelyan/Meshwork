@@ -1,0 +1,96 @@
+/* Панель телеметрии чата — инструмент отладки, не для жюри (docs/platform.md, «Телеметрия чата»).
+   position: fixed — в ленту не встраивается и layout-shift в ней не порождает. */
+.dock {
+  position: fixed; right: 16px; bottom: 160px; z-index: 899;
+  display: flex; justify-content: flex-end;
+  font-family: var(--mono); font-size: var(--fs-xs); color: var(--ink);
+  pointer-events: none;
+}
+.dock > * { pointer-events: auto; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 12px; height: 32px; padding: 0 14px;
+  font: inherit; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-soft);
+  background: var(--glass-strong); border: 1px solid var(--border-soft);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  cursor: pointer; font-variant-numeric: tabular-nums;
+  transition: border-color 0.2s var(--ease);
+}
+.chip:hover { border-color: var(--ink); }
+.chip:focus-visible, .panel button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.panel {
+  width: min(460px, calc(100vw - 32px)); height: 40vh; min-height: 280px; resize: vertical; overflow: hidden;
+  display: grid; grid-template-rows: auto auto auto 1fr;
+  background: var(--glass-strong); border: 1px solid var(--border-soft);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  box-shadow: 0 18px 60px rgba(17, 17, 17, 0.12);
+  animation: rise 0.24s var(--ease);
+}
+
+.head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 12px; border-bottom: 1px solid var(--border-faint);
+}
+.title { display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); font-weight: 600; }
+.actions { display: inline-flex; gap: 2px; }
+.actions button, .tabs button, .filter {
+  font: inherit; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+  background: none; border: 1px solid transparent; padding: 3px 7px; cursor: pointer;
+  transition: color 0.16s var(--ease), border-color 0.16s var(--ease), background 0.16s var(--ease);
+}
+.actions button:hover, .tabs button:hover, .filter:hover { color: var(--ink); }
+.actions button[aria-pressed='true'] { color: var(--ink); border-color: var(--border-soft); }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot[data-live] { background: var(--blue); animation: pulse 1.2s var(--ease) infinite; }
+
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px 12px; margin: 0;
+  padding: 10px 12px; border-bottom: 1px solid var(--border-faint); font-variant-numeric: tabular-nums;
+}
+.stat { display: grid; gap: 2px; min-width: 0; }
+.stat dt { text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-size: 10px; }
+.stat dd { margin: 0; color: var(--ink); font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bad { color: var(--danger-text) !important; }
+
+.tabs { display: flex; gap: 2px; padding: 6px 8px 0; }
+.tabs button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--ink); }
+
+.filters { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--border-faint); }
+.filter { border-color: var(--border-faint); font-size: 10px; }
+.filter[aria-pressed='false'] { opacity: 0.45; text-decoration: line-through; }
+
+.log { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+.row {
+  display: grid; grid-template-columns: 64px 72px 1fr; gap: 8px; align-items: baseline;
+  padding: 3px 12px; line-height: 1.45; font-variant-numeric: tabular-nums;
+  animation: enter 0.22s var(--ease);
+}
+.row[data-flake] { background: color-mix(in srgb, var(--danger-text) 8%, transparent); }
+.time { color: var(--muted); text-align: right; }
+.tag { text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.text { color: var(--text-soft); word-break: break-word; }
+.empty { padding: 16px 12px; color: var(--muted); }
+
+/* Цвет метки — смысл события, без неона: синий — поток, тёмный — ход, оранжевый — вёрстка, красный — флейк. */
+.tag[data-k='turn'] { color: var(--ink); font-weight: 600; }
+.tag[data-k='sse'], .tag[data-k='stream'] { color: var(--blue); }
+.tag[data-k='layout'], .tag[data-k='longtask'] { color: var(--jury); }
+.tag[data-k='flake'] { color: var(--danger-text); font-weight: 600; }
+.row[data-k='flake'] { background: color-mix(in srgb, var(--danger-text) 8%, transparent); }
+.row[data-k='flake'] .text { color: var(--danger-text); }
+
+@keyframes enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 50% { opacity: 0.35; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .panel, .row, .dot[data-live] { animation: none; }
+}
+
+@media (max-width: 560px) {
+  .dock { bottom: 168px; right: 8px; left: 8px; }
+  .panel { width: 100%; }
+  .chip { gap: 8px; padding: 0 10px; }
+}

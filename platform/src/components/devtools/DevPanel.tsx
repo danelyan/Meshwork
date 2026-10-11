@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { COMPANION_SAY_EVENT } from '@/components/avatar/events';
+import { initTelemetry, setTelemetryEnabled, TELEMETRY_EVENT, telemetryOn } from '@/components/chat/telemetry';
 import { setTheme, useTheme } from '@/components/shell/theme';
 import { Button, Kicker } from '@/components/ui';
 import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
@@ -64,6 +65,14 @@ export function DevPanel() {
   const [accounts, setAccounts] = useState<Accounts | null>(null);
   const [alsoProfile, setAlsoProfile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [telemetry, setTelemetry] = useState(false);
+  useEffect(() => {
+    initTelemetry();
+    setTelemetry(telemetryOn());
+    const sync = () => setTelemetry(telemetryOn());
+    window.addEventListener(TELEMETRY_EVENT, sync);
+    return () => window.removeEventListener(TELEMETRY_EVENT, sync);
+  }, []);
   const [busy, setBusy] = useState<Action | null>(null);
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -196,6 +205,11 @@ export function DevPanel() {
               тёмная
             </Button>
           </div>
+
+          <label className={styles.check}>
+            <input type="checkbox" checked={telemetry} onChange={(e) => setTelemetryEnabled(e.target.checked)} />
+            Телеметрия чата (панель на /consultant)
+          </label>
 
           {confirmDelete ? (
             <div className={styles.confirm} role="alertdialog" aria-label="Подтверждение удаления">

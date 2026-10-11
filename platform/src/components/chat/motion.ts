@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { telemetryOn, track } from './telemetry';
+
 /** Пользователь просит без анимации или среды без matchMedia (тесты, старые браузеры) — показываем сразу. */
 export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
@@ -20,6 +22,14 @@ export type ReplyPhase = 'typing' | 'writing' | 'done';
 export function useReplyPhase(total: number, animate: boolean) {
   const [phase, setPhase] = useState<ReplyPhase>(animate ? 'typing' : 'done');
   const doneRef = useRef(phase === 'done');
+  // Телеметрия: длительность каждой фазы (typing → writing → done), только у анимированных реплик.
+  const phaseAt = useRef(0);
+  useEffect(() => {
+    if (!animate || !telemetryOn()) return;
+    const t = performance.now();
+    track({ k: 'anim', what: `phase ${phase}`, ms: phaseAt.current ? Math.round(t - phaseAt.current) : undefined });
+    phaseAt.current = t;
+  }, [phase, animate]);
   useEffect(() => {
     if (phase !== 'typing') return;
     // matchMedia нельзя читать в рендере: сервер и первый клиентский рендер должны совпасть (гидрация).

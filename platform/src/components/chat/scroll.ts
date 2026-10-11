@@ -2,6 +2,8 @@
 
 import { type RefObject, useEffect } from 'react';
 
+import { telemetryOn, track } from './telemetry';
+
 /** Насколько близко к низу (px) считаем, что человек «внизу ленты». */
 const NEAR = 200;
 
@@ -39,16 +41,26 @@ export function useStickToBottom(ref: RefObject<HTMLElement | null>, enabled = t
     const target = pane ?? window;
     let stick = true;
     let lastHeight = el.scrollHeight;
+    let lastAuto = 0;
     const onScroll = () => {
+      const was = stick;
       stick = pane
         ? pane.scrollHeight - (pane.scrollTop + pane.clientHeight) < NEAR
         : doc.scrollHeight - (doc.scrollTop + window.innerHeight) < NEAR;
+      if (was !== stick && telemetryOn()) track({ k: 'scroll', what: stick ? 'back' : 'away' });
     };
     const ro = new ResizeObserver(() => {
       const h = el.scrollHeight;
       const grew = h > lastHeight;
       lastHeight = h;
-      if (grew && stick) target.scrollTo({ top: pane?.scrollHeight ?? doc.scrollHeight, behavior: 'smooth' });
+      if (grew && stick) {
+        target.scrollTo({ top: pane?.scrollHeight ?? doc.scrollHeight, behavior: 'smooth' });
+        // Автоскролл срабатывает на каждый рост ленты — в телеметрию не чаще раза в 500 мс.
+        if (telemetryOn() && performance.now() - lastAuto > 500) {
+          lastAuto = performance.now();
+          track({ k: 'scroll', what: 'auto' });
+        }
+      }
     });
     ro.observe(el);
     target.addEventListener('scroll', onScroll, { passive: true });

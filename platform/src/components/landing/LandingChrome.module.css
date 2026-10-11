@@ -1,0 +1,18 @@
+.header { position: sticky; top: 0; z-index: 20; min-height: 96px; display: flex; align-items: center; gap: 24px; padding: 0 var(--page-pad); background: var(--glass); backdrop-filter: var(--blur); border-bottom: 1px solid var(--glass-border); }
+.brand { display: flex; gap: 18px; align-items: center; flex: none; white-space: nowrap; }
+.brand > a:first-child { font: 700 24px/1 var(--mono); letter-spacing: -.02em; }
+.brand span { color: var(--candidate-accent); }
+.brand i { width: 1px; height: 32px; background: var(--border-input); }
+.brand img { height: 28px; width: auto; display: block; filter: var(--logo-filter); }
+.nav { display: flex; gap: 4px; align-items: center; margin-left: 24px; }
+.nav a { padding: 12px 16px; font-size: 15px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.nav a:hover { color: var(--ink); background: var(--surface-hover); }
+.enter { margin-left: auto; min-height: 48px; display: flex; align-items: center; padding: 0 22px; background: var(--ink); color: var(--on-ink); font-size: 15px; font-weight: 600; white-space: nowrap; }
+.enter:hover { background: var(--candidate-accent); }
+.footer { padding: 22px var(--page-pad); display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; font: 500 11px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--glass); backdrop-filter: var(--blur); border-top: 1px solid var(--glass-border); }
+.footer nav { display: flex; gap: 16px; flex-wrap: wrap; }
+.footer a { text-decoration: underline; text-underline-offset: 3px; }
+.footer a:hover { color: var(--ink); }
+.footer small { flex-basis: 100%; font: inherit; text-transform: none; letter-spacing: 0; }
+@media(max-width:1150px) { .nav { display: none; } }
+@media(max-width:640px) { .header { min-height: 76px; gap: 12px; padding: 12px 20px; } .brand { gap: 10px; } .brand > a:first-child { font-size: 18px; } .brand img { height: 22px; max-width: 75px; } .brand i { height: 24px; } .enter { padding: 0 12px; font-size: 12px; min-height: 44px; } .footer { padding: 24px 20px; line-height: 1.6; } }

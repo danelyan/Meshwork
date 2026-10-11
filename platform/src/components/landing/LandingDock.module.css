@@ -1,0 +1,7 @@
+.dock { position: fixed; left: 50%; bottom: 20px; z-index: 30; transform: translateX(-50%); display: flex; align-items: center; gap: 20px; padding: 10px 10px 10px 24px; background: var(--glass-strong); backdrop-filter: var(--blur); border: 1px solid var(--glass-border); box-shadow: var(--landing-shadow-md); max-width: calc(100% - 24px); font-size: 15px; animation: arrive .3s ease-out; }
+.dock > span { overflow: hidden; text-overflow: ellipsis; font-weight: 600; white-space: nowrap; }
+.dock a { min-height: 48px; padding: 0 20px; display: flex; align-items: center; gap: 12px; background: var(--candidate-accent); color: var(--on-ink); font-weight: 700; white-space: nowrap; }
+.dock a:hover { background: var(--ink); }
+@keyframes arrive { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
+@media(max-width:640px) { .dock { padding: 8px; gap: 10px; font-size: 12px; } .dock a { padding: 0 16px; } .dock > span { display: none; } }
+@media(prefers-reduced-motion:reduce) { .dock { animation: none; } }

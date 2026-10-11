@@ -573,3 +573,12 @@ Initial candidate onboarding renders this scene automatically; a completed or pa
 Примитивы в `components/ui`: `MotionProvider` (LazyMotion `domAnimation` + `MotionConfig reducedMotion="user"`, подключён один раз в `ShellFrame`), `Reveal` (AnimatePresence + `m.div`, props уходят на div) и `Popover` (Reveal с пресетом popover). Использовать `m.*` из `motion/react-m`, не `motion.*`: провайдер стоит в режиме `strict`. Применено: меню аккаунта, уведомления.
 
 Reduced motion: при `prefers-reduced-motion` Motion отключает transform- и layout-анимации, остаётся только плавность opacity. Для CSS-анимаций действует прежнее правило: оборачивать в `@media (prefers-reduced-motion: no-preference)`. Анимировать только появление и исчезновение блоков, не раскладку страницы.
+# Главная landing-astra (11.10.2026, МСК)
+
+Новый визуальный источник владельца: `Downloads/ФСП Карьера — мокап дизайна (3)/export/landing-astra`. Переносится в `platform/src/components/landing`, без шаблонного рантайма `support.js`. Локальное переопределение `--font: var(--mono)` действует только внутри главной: JetBrains Mono для всех элементов экспорта. Кабинеты сохраняют свою типографику.
+
+Размеры главной: `--fs-landing-section: clamp(32px, 3.4vw, 52px)` и `--fs-landing-role: clamp(24px, 2.2vw, 32px)`; только секционные заголовки и подписи ролей лендинга.
+
+Компоненты главной: `LandingSections` (интерактивные уровни доказанности, маршрут, две панели Киры, блок работодателя); `HiringShowcase` (демонстрационная лента, выбор направления/грейда и вычисляемое число подходящих компаний); `LandingChrome` (MESHWORK, отдельная внешняя ссылка ФСП, навигация и подвал); `LandingDock` (контекстная нижняя панель). Все цвета из существующих смысловых токенов; кандидат `--candidate-accent`, работодатель `--employer-accent`, поверхности `--glass*`, текст `--text-soft/--text-dim`. Размеры заголовков главной соответствуют экспорту; лендинг исключён из общего ограничения размеров шрифта.
+
+Данные примеров остаются демонстрационными. Фильтры ленты не меняют профиль пользователя и не публикуют вакансии. CTA используют действующий `AuthEntry` и маршруты продукта; ссылки ФСП ведут на `https://fsp-russia.ru/`.

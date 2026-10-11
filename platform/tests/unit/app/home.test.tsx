@@ -23,15 +23,18 @@ beforeEach(() => {
 afterAll(() => vi.unstubAllGlobals());
 
 describe('главная', () => {
-  it('показывает пять правил и ФСП ID под кнопкой начала', () => {
+  it('показывает разделы нового макета и пять правил', () => {
     render(<Landing data={DATA} signedIn={false} />);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole('heading', { level: 2, name: 'Сейчас нанимают' })).toBeDefined();
-    expect(screen.getAllByRole('heading', { level: 3 }).map(h => h.textContent)).toEqual([
-      'Тест вместо резюме', 'Вилка всегда', 'Контакты после «да»', 'ИИ-помощник рядом', 'Навыки на практике',
+    for (const title of ['Сейчас нанимают.', 'За каждым навыком есть доказательство.', 'От первого разговора до предложения.', 'ИИ поможет обеим сторонам.', 'Ищи под задачу. Выбирай по доказательствам.', 'Почему это работает.', 'Покажи, что умеешь.']) {
+      expect(screen.getByRole('heading', { level: 2, name: new RegExp(`^${title.replaceAll('.', '\\s*\\.')}$`) })).toBeDefined();
+    }
+    const why = within(screen.getByRole('region', { name: /^Почему это работает\s*\.$/ }));
+    expect(why.getAllByRole('heading', { level: 3 }).map(h => h.textContent)).toEqual([
+      'Навыки с источниками', 'Категория по тесту', 'Практика дополняет профиль', 'Зарплатная вилка заранее', 'Контакты после принятия',
     ]);
     const hero = within(screen.getByRole('region', { name: /Твой код\. Твоя карьера\s*\./ }));
-    expect(hero.getByRole('list').textContent).toContain('ФСП ID и достижения · демореестр');
+    expect(hero.getByRole('list').textContent).toContain('ФСП ID и достижения');
     expect(screen.queryByRole('heading', { name: 'Достижения по ФСП ID' })).toBeNull();
     expect(screen.queryByText('Данные на этой странице - иллюстрация')).toBeNull();
   });
@@ -39,7 +42,7 @@ describe('главная', () => {
     render(<Landing data={DATA} signedIn={false} />);
     const starts = screen.getAllByRole('link', { name: /Приступим/ });
     expect(starts).toHaveLength(2);
-    for (const link of starts) expect(link.getAttribute('href')).toBe('/auth?next=%2Fconsultant%3Fmode%3Dintake');
+    for (const link of starts) expect(link.getAttribute('href')).toBe('/auth?next=%2Fconsultant');
     for (const link of starts) {
       const arrow = link.querySelector('svg path');
       expect(arrow?.getAttribute('fill')).toBe('currentColor');
@@ -47,18 +50,21 @@ describe('главная', () => {
     }
     expect(screen.getByRole('link', { name: /Уже есть аккаунт/ }).getAttribute('href')).toBe('/auth');
   });
-  it('с сессией открывает знакомство, сохраняя отдельный вход в кабинет', () => {
+  it('с сессией открывает кабинет без отдельного стартового знакомства', () => {
     render(<Landing data={DATA} signedIn />);
-    expect(screen.getByRole('link', { name: /Ваш кабинет/ }).getAttribute('href')).toBe('/consultant');
-    for (const link of screen.getAllByRole('link', { name: /Приступим/ })) expect(link.getAttribute('href')).toBe('/consultant?mode=intake');
+    const cabinet = screen.getAllByRole('link', { name: 'В кабинет' });
+    expect(cabinet).toHaveLength(2);
+    for (const link of cabinet) expect(link.getAttribute('href')).toBe('/consultant');
+    expect(screen.getByRole('link', { name: /Приступим/ }).getAttribute('href')).toBe('/consultant');
   });
-  it('компании ведут к публичному источнику и не выдаются за участников платформы', () => {
+  it('подборка явно демонстрационная и ведёт в существующий вход', () => {
     render(<Landing data={DATA} signedIn={false} />);
-    const section = within(screen.getByRole('region', { name: 'Сейчас нанимают' }));
-    expect(section.getByRole('link', { name: /Команда А/ }).getAttribute('href')).toBe('https://yandex.ru/jobs/');
-    expect(section.getByText('Команда Б')).toBeDefined();
+    const section = within(screen.getByRole('region', { name: /^Сейчас нанимают\s*\.$/ }));
+    expect(section.getByText('Демо-подборка · вымышленные компании и вакансии')).toBeDefined();
+    expect(section.getByRole('link', { name: /Аврора Лабс/ }).getAttribute('href')).toBe('/auth?next=%2Fconsultant');
+    expect(section.queryByText('Команда А')).toBeNull();
     expect(screen.queryByRole('list', { name: 'Платформа в цифрах' })).toBeNull();
-    expect(section.queryByText(/на платформе|ваканси|до \d+k/i)).toBeNull();
+    expect(section.getByRole('status').textContent).toBe('4 компании ищут Backend Middle');
   });
   it('граф показывает эти же логотипы без выдуманного процента соответствия', () => {
     const { container } = render(<Landing data={DATA} signedIn={false} />);
@@ -67,17 +73,28 @@ describe('главная', () => {
     expect(graph?.textContent).not.toMatch(/\d+%/);
     expect(graph?.querySelectorAll('img[src^="/assets/companies/"]').length).toBe(8);
   });
-  it('пустая лента не создаёт вымышленных компаний', () => {
+  it('данные публичных примеров не превращаются в фиктивную живую ленту', () => {
     render(<Landing data={{ companies: [] }} signedIn={false} />);
-    expect(screen.getByText('Компании скоро появятся.')).toBeDefined();
+    expect(screen.getByText('Демо-подборка · вымышленные компании и вакансии')).toBeDefined();
     expect(screen.queryByText(/1240|86%/)).toBeNull();
   });
   it('дубли каретки скрыты от ассистивных технологий', () => {
     const { container } = render(<Landing data={SHOWCASE} signedIn={false} />);
-    expect(container.querySelectorAll('[data-tile]')).toHaveLength(16);
-    const duplicates = [...container.querySelectorAll('[data-tile][aria-hidden="true"]')];
-    expect(duplicates).toHaveLength(8);
+    const section = screen.getByRole('region', { name: /^Сейчас нанимают\s*\.$/ });
+    const cards = section.querySelectorAll('a[data-match]');
+    expect(cards).toHaveLength(18);
+    const duplicates = [...container.querySelectorAll('#companies [aria-hidden="true"] a')];
+    expect(duplicates).toHaveLength(9);
     for (const duplicate of duplicates) expect(duplicate.getAttribute('tabindex')).toBe('-1');
+    expect(within(section).getAllByRole('link')).toHaveLength(9);
+  });
+  it('знаки ФСП в шапке, под стрелкой и в подвале ведут на официальный сайт', () => {
+    render(<Landing data={DATA} signedIn={false} />);
+    for (const name of ['ФСП, официальный сайт', 'ФСП ID и достижения', 'ФСП']) {
+      const link = screen.getByRole('link', { name });
+      expect(link.getAttribute('href')).toBe('https://fsp-russia.ru/');
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    }
   });
 });
 
@@ -94,11 +111,12 @@ describe('публичные логотипы', () => {
 });
 
 describe('страница /', () => {
-  it('гость видит компании без обращения к БД и без вымышленных показателей', async () => {
+  it('гость видит помеченную демо-подборку без обращения к БД', async () => {
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
-    const section = within(screen.getByRole('region', { name: 'Сейчас нанимают' }));
-    for (const company of SHOWCASE.companies) expect(section.getAllByText(company.name).length).toBeGreaterThan(0);
+    const section = within(screen.getByRole('region', { name: /^Сейчас нанимают\s*\.$/ }));
+    expect(section.getAllByRole('link')).toHaveLength(9);
+    expect(section.getByText('Демо-подборка · вымышленные компании и вакансии')).toBeDefined();
     expect(screen.queryByText('Данные на этой странице - иллюстрация')).toBeNull();
     expect(dbCalls.n).toBe(0);
   });
@@ -106,7 +124,7 @@ describe('страница /', () => {
     cookieValue.value = signSession('cand1');
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
-    expect(screen.getByRole('link', { name: /Ваш кабинет/ })).toBeDefined();
+    expect(screen.getAllByRole('link', { name: 'В кабинет' })).toHaveLength(2);
   });
   it('работодатель и аккаунт без роли тоже видят кабинет, а не вход', async () => {
     for (const session of [
@@ -117,7 +135,9 @@ describe('страница /', () => {
       cookieValue.value = session;
       const { default: HomePage } = await import('@/app/page');
       render(await HomePage());
-      expect(screen.getByRole('link', { name: /Ваш кабинет/ })).toBeDefined();
+      const links = screen.getAllByRole('link', { name: 'В кабинет' });
+      expect(links).toHaveLength(2);
+      for (const link of links) expect(link.getAttribute('href')).toBe('/consultant');
     }
     expect(dbCalls.n).toBe(0);
   });
@@ -125,6 +145,6 @@ describe('страница /', () => {
     cookieValue.value = 'cand1.9999999999.forged';
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
-    expect(screen.queryByRole('link', { name: /Ваш кабинет/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'В кабинет' })).toBeNull();
   });
 });

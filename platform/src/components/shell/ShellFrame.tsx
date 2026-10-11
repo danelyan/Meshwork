@@ -36,7 +36,7 @@ export function ShellFrame({ header, footer, children, account, employerSummary 
   // тёмная тема только на /consultant: атрибут на <html> снимается при уходе со страницы
   useThemeRoot(pathname);
   const [bareByPage, setBareByPage] = useState(false);
-  const bare = bareByPage || BARE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const bare = bareByPage || pathname === '/' || pathname === '/auth' || BARE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const setter = useMemo(() => setBareByPage, []);
   return (
     <MotionProvider>

@@ -3,6 +3,8 @@ import { PageTitle } from '@/components/shell/PageTitle';
 import { Button, Panel } from '@/components/ui';
 import type { PersonaRow, SyntheticRow } from '@/server/validation/grade-test-figures';
 import type { MatchingExtended, MatchingResults } from '@/server/validation/matching-results';
+import type { BankWidth, LengthSweep } from '@/server/validation/length-sweep';
+import { DEFAULT_ITEM_LIMITS, formatItemRange, type ItemLimits } from '@/lib/test-limits';
 
 import { JuryBackLink } from '@/components/demo/JuryRoute';
 
@@ -42,8 +44,6 @@ function AblationBlock({ ab }: { ab: NonNullable<MatchingResults['ablation']> })
         {ab.vacancies} вакансий × {ab.profiles} профилей. Сигнал выключаем по одному, остальная формула прежняя; Δ — разница с полной формулой
         (минус — сигнал помогает), в скобках 95 % интервал (парный бутстреп по вакансиям). Разметку сделал один генератор, а не независимые эксперты, —
         цифры показывают вклад в этом наборе, а не в жизни.
-        {ab.rows.some((r) => r.signal === 'project' && r.measured) &&
-          ' Проекты и созвоны в наборе смоделированы (у ~30 % и ~40 % профилей, с шумом ~10 %): это допущения, а не живые данные, поэтому их строки показывают механику, а не доказанный эффект.'}
       </p>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
@@ -66,113 +66,6 @@ function AblationBlock({ ab }: { ab: NonNullable<MatchingResults['ablation']> })
                 <td className={styles.num}>{!r.measured ? 'нет данных' : r.dNdcg10 ? `${sign(r.dNdcg10.mean)} (${sign(r.dNdcg10.lo)}; ${sign(r.dNdcg10.hi)})` : '—'}</td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
-}
-
-function CalibrationBlock({ cal }: { cal: NonNullable<MatchingResults['calibration']> }) {
-  const r = cal.relevant;
-  return (
-    <>
-      <h3>Калибровка: балл подбора и вероятность</h3>
-      <p className={styles.soft}>
-        Сам балл формулы — не вероятность: в бине «0,4–0,5» подходят ~90 % профилей, в бине «0,0–0,1» — 13 %. Мы пересчитываем балл в вероятность
-        «кандидат релевантен» (изотоническая регрессия, кусочно-линейная таблица в коде). Разметка здесь синтетическая ({cal.profiles} профилей ×{' '}
-        {cal.vacancies} вакансий, {cal.pairsShown} показанных пар, скрытая истина генератора), а не исходы реальных приглашений: цифры показывают,
-        что механика работает, а не что вероятности верны в жизни. Таблица пересчитывается по исходам приглашений (eval/matching/outcomes.ts).
-      </p>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr><th>Бин балла</th><th className={styles.num}>Средний балл</th><th className={styles.num}>Доля релевантных</th><th className={styles.num}>n</th></tr>
-          </thead>
-          <tbody>
-            {r.curveBefore.map((b) => (
-              <tr key={b.lo}>
-                <td>{dec(b.lo)}–{dec(b.hi)}</td>
-                <td className={styles.num}>{b.meanScore === null ? '—' : dec(b.meanScore)}</td>
-                <td className={styles.num}>{b.share === null ? '—' : pct(b.share)}</td>
-                <td className={styles.num}>{b.n}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr><th>Цель</th><th className={styles.num}>Brier до</th><th className={styles.num}>Brier после (кросс-проверка)</th><th className={styles.num}>ECE до</th><th className={styles.num}>ECE после</th></tr>
-          </thead>
-          <tbody>
-            {([['Релевантен (≥ 1)', cal.relevant], ['Сильный (= 2)', cal.strong]] as const).map(([label, b]) => (
-              <tr key={label}>
-                <td>{label}</td>
-                <td className={styles.num}>{dec(b.holdout.brierBefore)}</td>
-                <td className={styles.num}>{dec(b.holdout.brierAfter)}</td>
-                <td className={styles.num}>{dec(b.before.ece)}</td>
-                <td className={styles.num}>{dec(b.afterInSample.ece)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className={styles.soft}>
-        Brier после: калибровка подобрана на половине вакансий, оценена на другой (и наоборот). ECE после — на всех парах, без отложенной выборки,
-        поэтому оптимистична. Для цели «сильный» выигрыша на отложенной половине нет — показываем вероятность только для «релевантен».
-      </p>
-    </>
-  );
-}
-
-/** Слепая разметка: два ИИ-размечающих разных моделей, κ и ours/BM25/базовая линия на A, B и консенсусе. */
-function BlindBlock({ bl }: { bl: NonNullable<MatchingResults['blind']> }) {
-  const sign = (x: number) => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(x).toFixed(3).replace('.', ',')}`;
-  const iv = (x: { mean: number; lo: number; hi: number }) => `${dec(x.mean)} (${dec(x.lo)}; ${dec(x.hi)})`;
-  const sets = [
-    ['Разметка A', bl.sets.a],
-    ['Разметка B', bl.sets.b],
-    ['Консенсус A и B', bl.sets.consensus],
-    ...(bl.sets.generator ? [['Генератор (для сравнения)', bl.sets.generator] as const] : []),
-  ] as const;
-  return (
-    <>
-      <h3>Независимая разметка (слепая)</h3>
-      <p className={styles.soft}>
-        Оговорка: размечали два ИИ-агента разных моделей ({bl.labelers.a} и {bl.labelers.b}), не люди. {bl.vacancies} вакансий × {bl.pool} кандидатов
-        ({bl.pairs} пар) — первые места объединённой выдачи нашего подбора и BM25. Размечающие видели только текст вакансии и профиля, без скрытой истины
-        генератора и без баллов; кандидаты вне пула считаются нерелевантными. Согласие A и B — взвешенная κ Коэна {dec(bl.kappa.ab)}; с разметкой
-        генератора: A {dec(bl.kappa.aVsGenerator)}, B {dec(bl.kappa.bVsGenerator)}. Интервалы — бутстреп по {bl.vacancies} вакансиям, поэтому широкие.
-      </p>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Разметка</th>
-              <th>Метод</th>
-              <th className={styles.num}>P@5</th>
-              <th className={styles.num}>nDCG@10</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sets.flatMap(([title, set]) => [
-              ...Object.entries(set.methods).map(([m, x]) => (
-                <tr key={`${title}-${m}`}>
-                  <td>{title}</td>
-                  <td>{METHOD_LABEL[m] ?? m}</td>
-                  <td className={styles.num}>{iv(x.p5)}</td>
-                  <td className={styles.num}>{iv(x.ndcg10)}</td>
-                </tr>
-              )),
-              <tr key={`${title}-delta`}>
-                <td>{title}</td>
-                <td>Наш − BM25</td>
-                <td className={styles.num}>{`${sign(set.deltaOursMinusBm25.p5.mean)} (${sign(set.deltaOursMinusBm25.p5.lo)}; ${sign(set.deltaOursMinusBm25.p5.hi)})`}</td>
-                <td className={styles.num}>{`${sign(set.deltaOursMinusBm25.ndcg10.mean)} (${sign(set.deltaOursMinusBm25.ndcg10.lo)}; ${sign(set.deltaOursMinusBm25.ndcg10.hi)})`}</td>
-              </tr>,
-            ])}
           </tbody>
         </table>
       </div>
@@ -240,7 +133,88 @@ function ExtendedBlock({ title, ext }: { title: string; ext: MatchingExtended })
 }
 
 /** Страница /validation: цифры теста на грейд и подбора, оговорки до цифр, команды воспроизведения. */
-export function ValidationView({ grade, matching, juryLink = false }: { grade: GradeTestData; matching: MatchingResults; juryLink?: boolean }) {
+/** «Длина теста и надёжность»: перебор лимитов длины (ретест κ) и ширина банка по подкатегориям. */
+function LengthBlock({ sweep, bank, itemLimits }: { sweep: LengthSweep | null; bank: BankWidth | null; itemLimits: ItemLimits }) {
+  if (!sweep && !bank) return null;
+  const opt = (x: number | null, f: (v: number) => string) => (x === null ? '—' : f(x));
+  const len = (x: number) => x.toFixed(1).replace('.', ',');
+  const short = bank ? bank.rows.filter((r) => bank.maxes.some((m) => (r.shortBy[String(m)] ?? 0) > 0 || (r.shortByRetest[String(m)] ?? 0) > 0)) : [];
+  return (
+    <>
+      <h3 id="length">Длина теста и надёжность</h3>
+      <p className={styles.soft}>
+        Сейчас основная фаза — {formatItemRange(itemLimits)} заданий (+ дозадавание до 3). Длиннее тест — выше повторяемость, но жюри и кандидаты
+        проходят его сами. Ниже — тот же движок с другими лимитами длины, остальное без изменений
+        {sweep ? `: seed ${sweep.config.seed}, ${sweep.config.n} кандидатов на подкатегорию, модель ошибки «экземпляр»` : ''}. Ранняя остановка —
+        основная фаза кончилась по уверенному решению раньше лимита.
+      </p>
+      {sweep && (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Лимиты</th>
+                <th className={styles.num}>κ ретеста, строгая (мин.)</th>
+                <th className={styles.num}>κ ретеста, конкурентов</th>
+                <th className={styles.num}>Совпадение решения</th>
+                <th className={styles.num}>Длина, заданий</th>
+                <th className={styles.num}>Ранние остановки</th>
+                <th className={styles.num}>Ложное подтв. (конк.)</th>
+                <th className={styles.num}>Минут (верхняя граница)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sweep.variants.map((v) => (
+                <tr key={`${v.min}-${v.max}`}>
+                  <td>
+                    {v.min}–{v.max}
+                    {v.current ? ' (сейчас)' : ''}
+                  </td>
+                  <td className={styles.num}>
+                    {opt(v.strict.kappa, (x) => dec(x))} ({opt(v.strict.kappaMin, (x) => dec(x))})
+                  </td>
+                  <td className={styles.num}>{opt(v.competitor.kappa, (x) => dec(x))}</td>
+                  <td className={styles.num}>{opt(v.strict.agreement, pct)}</td>
+                  <td className={styles.num}>{opt(v.strict.lengthMean, len)}</td>
+                  <td className={styles.num}>{opt(v.strict.earlyStopShare, pct)}</td>
+                  <td className={styles.num}>{opt(v.competitor.falsePass, pct)}</td>
+                  <td className={styles.num}>{opt(v.strict.minutesMean, len)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {bank && (
+        <p className={styles.soft}>
+          Ширина банка: в попытке Junior/Middle достижимо {Math.min(...bank.rows.filter((r) => r.reachable > 0).map((r) => r.reachable))}–
+          {Math.max(...bank.rows.map((r) => r.reachable))} заданий без повторов (свои семейства подкатегории + общие в пределах 30 %), этого хватает на
+          любой вариант выше вместе с дозадаванием во всех {bank.rows.length} подкатегориях.{' '}
+          {short.length > 0
+            ? `Две попытки подряд без единого повторного семейства не помещаются в: ${short
+                .map((r) => `${r.title} (${r.reachable}; при ${bank.maxes.filter((m) => (r.shortByRetest[String(m)] ?? 0) > 0).map((m) => `${m} — не хватает ${r.shortByRetest[String(m)]}`).join(', ')})`)
+                .join('; ')}. Это не блокирует тест: ротация между попытками мягкая, растёт только доля повторённых семейств.`
+            : 'Две попытки подряд без повторов помещаются везде.'}
+        </p>
+      )}
+    </>
+  );
+}
+
+export function ValidationView({
+  grade,
+  matching,
+  juryLink = false,
+  length,
+  itemLimits = DEFAULT_ITEM_LIMITS,
+}: {
+  grade: GradeTestData;
+  matching: MatchingResults;
+  juryLink?: boolean;
+  /** Блок «Длина теста и надёжность» (results.json: lengthSweep, bankWidth); не передан — блока нет. */
+  length?: { sweep: LengthSweep | null; bank: BankWidth | null };
+  itemLimits?: ItemLimits;
+}) {
   const s = matching.summary;
   const persona = grade.synthetic.filter((r) => r.setting === 'strict');
   const cell = ([mean, lo, hi]: [number, number, number]) => `${dec(mean, 2)} (${dec(lo, 2)}–${dec(hi, 2)})`;
@@ -405,6 +379,7 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
             заданий и ротации семейств между попытками. Прочерк — метрика в этой постановке не считается. Пересдача после разбора и лучшая из 3 попыток —
             в docs/validation-results.md, «Версии политики теста на грейд».
           </p>
+          {length && <LengthBlock sweep={length.sweep} bank={length.bank} itemLimits={itemLimits} />}
           <h3>Как повторить (из platform/, без сети и LLM; run.ts ≈ 3 мин, персоны ≈ 1 мин на направление)</h3>
           <pre className={styles.code}>{grade.commands.join('\n')}</pre>
         </section>
@@ -454,10 +429,8 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
           {matching.legacyExtended && <ExtendedBlock title="Тот же набор: BM25, случайный порядок, интервалы" ext={matching.legacyExtended} />}
           {matching.extended && <ExtendedBlock title="Расширенная синтетика" ext={matching.extended} />}
           {matching.ablation && <AblationBlock ab={matching.ablation} />}
-          {matching.calibration && <CalibrationBlock cal={matching.calibration} />}
-          {matching.blind && <BlindBlock bl={matching.blind} />}
           <h3>Как повторить (из platform/, без БД и сети)</h3>
-          <pre className={styles.code}>{'npx tsx eval/matching/run.ts --no-write\nnpx tsx eval/matching/ablation.ts --no-write\nnpx tsx eval/matching/blind-eval.ts --no-write\nnpx tsx eval/matching/calibration.ts --no-write'}</pre>
+          <pre className={styles.code}>{'npx tsx eval/matching/run.ts --no-write\nnpx tsx eval/matching/ablation.ts --no-write'}</pre>
           <p className={styles.soft}>
             Свой набор вакансий, кандидатов и разметки можно прогнать через то же ранжирование прямо на сайте — страница «Проверить на своих данных» (/evaluate)
             или POST /api/evaluate.

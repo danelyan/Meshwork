@@ -24,7 +24,7 @@
 // Честная граница: симуляция проверяет свойства механики ПРИ ЗАДАННЫХ параметрах заданий (a, b экспертные,
 // на людях не оценены), а не то, что задания измеряют умение. Ответы порождает логистическая модель той же
 // формы, что и оценщик (замкнутая проверка). Разомкнутая — персоны: eval/test/subcategory-personas.ts.
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 import { SUBCATEGORIES } from '../../src/lib/directions';
 import { GRADES, type Grade } from '../../src/lib/grades';
@@ -86,6 +86,11 @@ const CUT_SELECT = argNum('cut-select', 0);
  */
 const LEARN = argNum('learn', 0.3);
 const SEEN_BEFORE = !args.includes('--no-seen-before');
+/**
+ * --retest-only: без утечки и пересдач (leak, retake*, bestOf3 — null). Ретест, точность и длина не меняются: их попытки
+ * идут раньше на том же rng. Для перебора лимитов длины (eval/test/length-sweep.ts).
+ */
+const RETEST_ONLY = args.includes('--retest-only');
 if (argStr('junior-cut') !== undefined) GRADE_CUT.junior = Number(argStr('junior-cut'));
 /**
  * Эксперимент «что даст пополнение банка»: --virtual "junior:-0.2,-0.1;middle:0,0.2;senior:0.9" добавляет в пул КАЖДОЙ
@@ -150,6 +155,11 @@ interface Outcome {
   length: number;
   shown: string[];
   probed: boolean;
+  /**
+   * Ранняя остановка основной фазы: остановилась по уверенности (P ≥ early или ≤ 1 − early) или по SE до лимита max.
+   * У заявки Senior основная фаза — 4 Senior-задания (< min), поэтому ранней она не бывает.
+   */
+  earlyStop: boolean;
   /** Сумма лимитов времени показанных заданий, мин (верхняя граница времени прохождения). */
   minutes: number;
 }
@@ -191,6 +201,7 @@ function runAttempt(tp: TruePool, model: ErrorModel, sim: Sim, attemptSeed: numb
   const responses: Response[] = [];
   let phase: AttemptPhase = 'main';
   let probed = false;
+  let mainLength: number | null = null;
   for (let index = 0; index < pool.length; index++) {
     const theta = responses.length ? estimateTheta(responses).theta : START_THETA[sim.claimed];
     const cut = GRADE_CUT[phase === 'junior_probe' ? 'junior' : phase === 'middle_probe' ? 'middle' : sim.claimed];
@@ -210,11 +221,15 @@ function runAttempt(tp: TruePool, model: ErrorModel, sim: Sim, attemptSeed: numb
     if (learned.has(next.id)) p += LEARN * (1 - p);
     responses.push({ a: next.a, b: next.b, correct: rng.next() < p });
     if (!PROBE) {
-      if (shouldStop(responses.length, estimateTheta(responses), sim.claimed, shown.length >= pool.length, RULES).stop) break;
+      if (shouldStop(responses.length, estimateTheta(responses), sim.claimed, shown.length >= pool.length, RULES).stop) {
+        mainLength = responses.length;
+        break;
+      }
       continue;
     }
     const step = nextStep({ pool, shown, responses, grade: sim.claimed }, RULES);
     if (step.phase !== 'main') probed = true;
+    if (mainLength === null && step.mainLength !== null) mainLength = step.mainLength;
     if (step.stop) break;
     phase = step.phase;
   }
@@ -222,7 +237,11 @@ function runAttempt(tp: TruePool, model: ErrorModel, sim: Sim, attemptSeed: numb
   const est = estimateTheta(responses);
   const cls = CUTS().filter((c) => probAbove(est, c) >= 0.5).length as GradeClass;
   const minutes = shown.reduce((m, t) => m + (TIME_LIMIT.get(t.id) ?? 180), 0) / 60;
-  return { theta: d.theta, pPass: d.pPass, confirmed: d.confirmed, offered: d.juniorOffered, cls, length: responses.length, shown: shown.map((s) => s.id), probed, minutes };
+  // Причина остановки основной фазы — повтор shouldStop без исчерпания пула: 'confident' | 'precise' — ранняя.
+  const ml = mainLength ?? responses.length;
+  const mainReason = ml > 0 ? shouldStop(ml, estimateTheta(responses.slice(0, ml)), sim.claimed, false, RULES).reason : null;
+  const earlyStop = ml < RULES.max && (mainReason === 'confident' || mainReason === 'precise');
+  return { theta: d.theta, pPass: d.pPass, confirmed: d.confirmed, offered: d.juniorOffered, cls, length: responses.length, shown: shown.map((s) => s.id), probed, earlyStop, minutes };
 }
 
 // --- метрики ---------------------------------------------------------------------------------------------
@@ -301,6 +320,8 @@ interface CommonMetrics {
   /** Сумма лимитов времени показанных заданий, мин: среднее и 90-й перцентиль. */
   minutes: { mean: number | null; p90: number | null };
   probedShare: number | null;
+  /** Доля попыток, где основная фаза остановилась рано (по уверенности или SE до max); все заявки, включая Senior. */
+  earlyStopShare: number | null;
   maxExposure: number | null;
 }
 
@@ -342,6 +363,7 @@ function common(sims: Sim[], first: Outcome[], second: Outcome[], pool: Selectab
     },
     minutes: { mean: r3(mean(first.map((o) => o.minutes))), p90: r3(quantile(first.map((o) => o.minutes), 0.9)) },
     probedShare: r3(share(first.map((o) => o.probed))),
+    earlyStopShare: r3(share(first.map((o) => o.earlyStop))),
     maxExposure: r3(Math.max(...exposure)),
   };
 }
@@ -413,6 +435,21 @@ function runStrict(tp: TruePool, model: ErrorModel, subIndex: number): StrictMet
   const thetaOf = (pop: Sim['pop']) => first.filter((_, i) => sims[i]!.pop === pop).map((o) => o.theta);
   const jcmIdx = sims.map((_, i) => i).filter((i) => sims[i]!.pop === 'junior' && sims[i]!.claimed === 'middle');
   const below = sims.map((_, i) => i).filter((i) => !sims[i]!.truth);
+  if (RETEST_ONLY) {
+    return {
+      ...base,
+      auc: {
+        juniorVsNovice: r3(auc(thetaOf('junior'), thetaOf('novice'))),
+        middleVsJunior: r3(auc(thetaOf('middle'), thetaOf('junior'))),
+        seniorVsMiddle: r3(auc(thetaOf('senior'), thetaOf('middle'))),
+      },
+      juniorClaimsMiddle: { falseMiddle: r3(share(jcmIdx.map((i) => first[i]!.confirmed))), offeredJunior: r3(share(jcmIdx.map((i) => first[i]!.offered))) },
+      leak: { falsePass: null, baseline: base.falsePass },
+      bestOf3FalsePass: null,
+      retakeFalsePass: null,
+      retakeOverlap: null,
+    };
+  }
   const trick = new Set(createRng(SEED + 5 + subIndex).sample(tp.pool.map((p) => p.id), Math.round(tp.pool.length * 0.3)));
   const leaked = below.map((i) => runAttempt(tp, model, sims[i]!, deriveSeed(SEED + 300_000, i), rng, { trick }));
   // Пересдачи ниже порога: 2-я и 3-я попытки с обучением по разбору прошлых (LEARN) и ротацией семейств (SEEN_BEFORE).
@@ -519,6 +556,7 @@ const ROWS: { key: string; label: string; setting: 'strict' | 'competitor'; targ
   { key: 'strict.retakeOverlap', setting: 'strict', label: 'Пересдача: доля семейств, повторённых из 1-й попытки', target: 'показать', get: (m) => m.retakeOverlap },
   { key: 'strict.bestOf3FalsePass', setting: 'strict', label: 'Лучшая из 3 попыток с обучением: ложное подтверждение', target: 'показать', get: (m) => m.bestOf3FalsePass },
   { key: 'strict.length.mean', setting: 'strict', label: 'Средняя длина, заданий', target: 'показать', get: (m) => m.length.mean },
+  { key: 'strict.earlyStopShare', setting: 'strict', label: 'Доля ранних остановок основной фазы', target: 'показать', get: (m) => m.earlyStopShare },
   { key: 'strict.minutes.mean', setting: 'strict', label: 'Сумма лимитов времени, мин (верхняя граница)', target: 'показать', get: (m) => m.minutes.mean },
   { key: 'competitor.accuracy', setting: 'competitor', label: 'Точность решения против «θ выше порога»', target: '≥ 0,85', get: (m) => m.accuracy },
   { key: 'competitor.falsePass', setting: 'competitor', label: 'Ложное подтверждение (θ ниже порога)', target: '≤ 0,10', get: (m) => m.falsePass },
@@ -539,6 +577,7 @@ const ROWS: { key: string; label: string; setting: 'strict' | 'competitor'; targ
   { key: 'competitor.length.mean', setting: 'competitor', label: 'Средняя длина, заданий', target: 'показать', get: (m) => m.length.mean },
   { key: 'competitor.length.p90', setting: 'competitor', label: 'Длина, 90-й перцентиль', target: 'показать', get: (m) => m.length.p90 },
   { key: 'competitor.retest.familyOverlap', setting: 'competitor', label: 'Ретест: доля семейств 1-й попытки во 2-й', target: 'показать', get: (m) => m.retest.familyOverlap },
+  { key: 'competitor.earlyStopShare', setting: 'competitor', label: 'Доля ранних остановок основной фазы', target: 'показать', get: (m) => m.earlyStopShare },
   { key: 'competitor.minutes.mean', setting: 'competitor', label: 'Сумма лимитов времени, мин (верхняя граница)', target: 'показать', get: (m) => m.minutes.mean },
 ];
 
@@ -584,6 +623,11 @@ if (JSON_OUT) {
     summary,
     subcategories: reports,
   };
+  // Блоки других скриптов (length-sweep.ts, bank-width.ts) в том же файле не затираются.
+  if (existsSync(JSON_OUT)) {
+    const prev = JSON.parse(readFileSync(JSON_OUT, 'utf8')) as Record<string, unknown>;
+    for (const k of ['lengthSweep', 'bankWidth']) if (prev[k] !== undefined) (out as Record<string, unknown>)[k] = prev[k];
+  }
   writeFileSync(JSON_OUT, `${JSON.stringify(out, null, 2)}\n`);
   console.log(`JSON: ${JSON_OUT}`);
 }

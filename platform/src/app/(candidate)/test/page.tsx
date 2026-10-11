@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 
 import { TestPage } from '@/components/TestPage';
 import { requirePageCandidate } from '@/server/auth/page';
+import { activeItemLimits } from '@/server/test/limits';
 
 export const metadata: Metadata = { title: 'Тест на грейд - ФСП Карьера' };
 
@@ -17,7 +18,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   await requirePageCandidate(q ? `/test?${q}` : '/test');
   return (
     <Suspense fallback={null}>
-      <TestPage />
+      <TestPage itemLimits={activeItemLimits()} />
     </Suspense>
   );
 }

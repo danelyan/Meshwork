@@ -5,8 +5,12 @@
 
 import raw from '../../../eval/test/results.json';
 
+import { DEFAULT_ITEM_LIMITS, formatItemRange } from '@/lib/test-limits';
+
+import { parseLengthBlock } from './length-sweep';
+
 export const GRADE_TEST_DOC = 'docs/validation-results.md, раздел «Версии политики теста на грейд» и § «Повторяемость на втором банке»';
-export const GRADE_TEST_POLICY = 'adr-0002-v7 (11.10): порог Junior −0,7, Middle −0,1, Senior +0,8, порог подтверждения 0,8, 7–10 заданий + дозадавание, пул — подкатегория (26–27 семейств)';
+export const GRADE_TEST_POLICY = `adr-0002-v7 (11.10): порог Junior −0,7, Middle −0,1, Senior +0,8, порог подтверждения 0,8, ${formatItemRange(DEFAULT_ITEM_LIMITS)} заданий + дозадавание, пул — подкатегория (26–27 семейств)`;
 
 /**
  * Персоны: профили знаний по семействам подкатегории (не легенды людей), одни и те же на каждой подкатегории.
@@ -98,7 +102,7 @@ export const TARGETS = {
   retest: '≥ 90 %',
   kappa: '≥ 0,70',
   auc: '≥ 0,90',
-  length: '7–10 + до 3',
+  length: `${formatItemRange(DEFAULT_ITEM_LIMITS)} + до 3`,
 } as const;
 
 /** Команды воспроизведения из platform/ (без LLM, без БД; run.ts ≈ 3 мин, персоны ≈ 1 мин на направление). */
@@ -108,4 +112,9 @@ export const GRADE_TEST_COMMANDS = [
   'npx tsx eval/test/subcategory-personas.ts --spec frontend --n 1000 --seed 1',
   'npx tsx eval/test/subcategory-personas.ts --spec ai --n 1000 --seed 1',
   'npx tsx eval/test/subcategory-personas.ts --spec engineering --n 1000 --seed 1',
+  'npx tsx eval/test/length-sweep.ts   # лимиты длины 7–10 … 12–16, ≈ 4 мин',
+  'npx tsx eval/test/bank-width.ts',
 ];
+
+/** «Длина теста и надёжность»: lengthSweep и bankWidth из results.json (eval/test/length-sweep.ts, bank-width.ts). */
+export const LENGTH_BLOCK = parseLengthBlock(raw);

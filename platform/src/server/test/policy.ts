@@ -6,6 +6,7 @@ import type { Grade, Specialization } from '../types';
 import { estimateTheta, information, probAbove, type Response, type ThetaEstimate } from './irt';
 import { createRng } from './rng';
 import { GRADE_LABEL, lowerGrade } from '@/lib/grades';
+import { DEFAULT_ITEM_LIMITS, type ItemLimits } from '@/lib/test-limits';
 
 /**
  * Порог Senior (ADR 0003, дополнение 10.10 16:15; ADR-0002 «Senior и пул по подкатегориям»): ПРЕДЛОЖЕНИЕ +0,8.
@@ -32,9 +33,13 @@ export const GRADE_CUT: Record<Grade, number> = { junior: -0.7, middle: -0.1, se
 /** Грейд подтверждён, если P(θ > порог) ≥ 0,8. */
 export const CONFIRM_PROB = 0.8;
 
-/** Остановка: не раньше MIN, не позже MAX заданий; между ними — если решение уже уверенное. */
-export const MIN_ITEMS = 7;
-export const MAX_ITEMS = 10;
+/**
+ * Остановка: не раньше MIN, не позже MAX заданий; между ними — если решение уже уверенное. Дефолт — lib/test-limits.ts
+ * (его же читает страница теста); на стенде переопределяется TEST_ITEM_LIMITS (activeItemLimits в limits.ts).
+ * 7–10 не подняты (11.10): длиннее 7–10 ретест κ растёт, но не до 0,47 при средней длине ≤ 12 — eval/test/length-sweep.ts.
+ */
+export const MIN_ITEMS = DEFAULT_ITEM_LIMITS.min;
+export const MAX_ITEMS = DEFAULT_ITEM_LIMITS.max;
 /** Уверенность для ранней остановки: P(θ > порог) ≥ 0,9 или ≤ 0,1. */
 export const EARLY_STOP_PROB = 0.9;
 /** Или точность достаточна: SE(θ) ≤ 0,4. */
@@ -45,6 +50,32 @@ export const RANDOMESQUE = 3;
 /** Доля заданий одного утверждения в попытке ≤ 40 % (blueprint каталога § 7). */
 export const MAX_SHARE_PER_CATALOG = 0.4;
 
+/**
+ * Доля общих семейств (TaskGenerator.shared) в попытке ≤ 30 % (ADR 0003, дополнение 11.10, ПРЕДЛОЖЕНИЕ): тест остаётся
+ * про подкатегорию. Правило префиксное — общее задание можно показать, только если после него в каждом префиксе попытки
+ * общих не больше floor(MAX_COMMON_SHARE × длина): первое общее — не раньше 4-го задания, при 10 — не больше 3. Так
+ * доля соблюдена при любой длине (ранняя остановка, дозадавание, подтверждающий тест). В фазах дозадавания общих нет.
+ */
+export const MAX_COMMON_SHARE = 0.3;
+
+/** Можно ли показать ещё одно общее задание после `shown`. */
+export function commonAllowed(shown: readonly SelectableTemplate[]): boolean {
+  const used = shown.filter((t) => t.common).length;
+  return used + 1 <= Math.floor(MAX_COMMON_SHARE * (shown.length + 1));
+}
+
+/**
+ * Сколько заданий реально достижимо из пула при префиксном лимите общих: все свои + столько общих, сколько допускает
+ * MAX_COMMON_SHARE (общие ставятся в конец — так их помещается больше всего). Для остановки по исчерпанию пула.
+ */
+export function reachableSize(pool: readonly SelectableTemplate[]): number {
+  const own = pool.filter((t) => !t.common).length;
+  const common = pool.length - own;
+  let used = 0;
+  while (used < common && used + 1 <= Math.floor(MAX_COMMON_SHARE * (own + used + 1))) used++;
+  return own + used;
+}
+
 export interface SelectableTemplate {
   id: string;
   a: number;
@@ -53,6 +84,8 @@ export interface SelectableTemplate {
   grade: Grade;
   /** Сколько раз шаблон показан за всё время (экспозиция). */
   exposure?: number;
+  /** Общее семейство (TaskGenerator.shared): доля в попытке ≤ MAX_COMMON_SHARE. */
+  common?: boolean;
 }
 
 export interface SelectionState {
@@ -78,12 +111,14 @@ export const SEEN_BEFORE_WEIGHT = 0.5;
  * один по seed. При равной информации предпочитается менее экспонированный.
  */
 export function selectNext(pool: readonly SelectableTemplate[], state: SelectionState): SelectableTemplate | null {
+  // Лимит доли общих — жёсткий (не ослабляется фолбэком по утверждениям ниже).
+  const allowed = commonAllowed(state.shown) ? pool : pool.filter((t) => !t.common);
   const shownIds = new Set(state.shown.map((t) => t.id));
   const counts = new Map<string, number>();
   for (const t of state.shown) for (const c of t.catalogIds) counts.set(c, (counts.get(c) ?? 0) + 1);
   const limit = Math.max(1, Math.floor(MAX_ITEMS * MAX_SHARE_PER_CATALOG));
-  const eligible = pool.filter((t) => !shownIds.has(t.id) && t.catalogIds.every((c) => (counts.get(c) ?? 0) < limit));
-  const candidates = eligible.length > 0 ? eligible : pool.filter((t) => !shownIds.has(t.id));
+  const eligible = allowed.filter((t) => !shownIds.has(t.id) && t.catalogIds.every((c) => (counts.get(c) ?? 0) < limit));
+  const candidates = eligible.length > 0 ? eligible : allowed.filter((t) => !shownIds.has(t.id));
   if (candidates.length === 0) return null;
   const ranked = candidates
     .map((t) => ({ t, info: information(state.theta, t) * (state.seenBefore?.has(t.id) ? SEEN_BEFORE_WEIGHT : 1) }))
@@ -144,17 +179,33 @@ export function shouldStop(
  * v5 (11.10): ротация семейств между попытками кандидата — шаблоны прошлых попыток того же пула ранжируются с весом
  * SEEN_BEFORE_WEIGHT (selectNext, seenBefore). Правила остановки — как v4: классификационная остановка уже
  * доминирует (SE ≤ 0,4 за 10 заданий не достигается, замер eval/test/run.ts --se-stop none — без изменений).
+ * v6 (11.10): индекс честности (integrity.ts) — ловушки для нейросети на 2 числовых заданиях, лимит времени
+ * фиксируется при показе; при high и подтверждённом грейде — needs_confirmation и подтверждающий тест (confirm.ts).
+ * Правила остановки основной фазы — как v5.
+ * v7 (11.10): общие компетенции в пуле подкатегории (ADR 0003, дополнение 11.10) — пул = свои семейства + общие по
+ * generators/common-map.ts, доля общих ≤ MAX_COMMON_SHARE, в дозадавании общих нет. Правила остановки — как v6.
  */
-export const POLICY_VERSION = 'adr-0002-v5';
+export const POLICY_VERSION = 'adr-0002-v7';
 
 /** Правила остановки основной фазы по версии политики; неизвестная версия (v1–v3) — как v4 (7–10, SE ≤ 0,4). */
 export const RULES_BY_VERSION: Readonly<Record<string, StopLimits>> = {
   'adr-0002-v4': { min: MIN_ITEMS, max: MAX_ITEMS },
   'adr-0002-v5': { min: MIN_ITEMS, max: MAX_ITEMS },
+  'adr-0002-v6': { min: MIN_ITEMS, max: MAX_ITEMS },
+  'adr-0002-v7': { min: MIN_ITEMS, max: MAX_ITEMS },
 };
 
 export function rulesFor(version: string): StopLimits {
   return RULES_BY_VERSION[version] ?? RULES_BY_VERSION['adr-0002-v4']!;
+}
+
+/**
+ * Правила остановки попытки с учётом переопределения длины (TEST_ITEM_LIMITS): override действует только на текущую
+ * версию политики (POLICY_VERSION) — старые версии доигрываются по своим правилам. Чистая функция: env читает вызывающий.
+ */
+export function limitsFor(version: string, override: ItemLimits | null | undefined): StopLimits {
+  const base = rulesFor(version);
+  return override && version === POLICY_VERSION ? { ...base, min: override.min, max: override.max } : base;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,6 +227,14 @@ export const JUNIOR_PROBE_MAX = 3;
  * не хватало: P(Middle) 0,78…0,79 < CONFIRM_PROB, и «Middle в 1 клик» не предлагался (tests/unit/test/senior-policy).
  */
 export const MIDDLE_PROBE_MAX = 4;
+/**
+ * Длина основной фазы Senior — не больше 4 заданий (как при Senior-пуле из 4 семейств, ADR 0003, дополнение 16:15),
+ * а не «до исчерпания Senior-пула». При расширении банка (11.10, ~8 Senior-семейств на подкатегорию) фаза шла бы все 8:
+ * Senior с неверными Senior-ответами уходил в P(Middle) ≤ 0,2 и не получал ни дозадавания Middle, ни «Middle в 1 клик».
+ * Больший Senior-пул теперь работает на ротацию: 4 задания выбираются randomesque из всех Senior-семейств.
+ * Junior и Middle от размера пула не зависят: их основная фаза — MIN_ITEMS…MAX_ITEMS, дозадавание — JUNIOR_PROBE_MAX.
+ */
+export const SENIOR_MAIN_MAX = 4;
 const PROBE_MAX: Record<'junior' | 'middle', number> = { junior: JUNIOR_PROBE_MAX, middle: MIDDLE_PROBE_MAX };
 /** Общий потолок заданий попытки: основная фаза + дозадавание (Senior: 4 + 4 — меньше). */
 export const MAX_ITEMS_TOTAL = MAX_ITEMS + JUNIOR_PROBE_MAX;
@@ -269,8 +328,9 @@ export function mainPool<T extends SelectableTemplate>(pool: readonly T[], grade
  * mainPool заявленного грейда. `grade` не передан — основная фаза без ограничения (как до Senior).
  */
 export function phasePool<T extends SelectableTemplate>(pool: readonly T[], phase: AttemptPhase, grade?: Grade): readonly T[] {
-  if (phase === 'junior_probe') return pool.filter((t) => t.grade === 'junior');
-  if (phase === 'middle_probe') return pool.filter((t) => t.grade === 'middle');
+  // Дозадавание уточняет грейд ниже по своей подкатегории — общих семейств в нём нет (ADR 0003, дополнение 11.10).
+  if (phase === 'junior_probe') return pool.filter((t) => t.grade === 'junior' && !t.common);
+  if (phase === 'middle_probe') return pool.filter((t) => t.grade === 'middle' && !t.common);
   return mainPool(pool, grade);
 }
 
@@ -294,9 +354,12 @@ export function nextStep(input: StepInput, limits: StopLimits = { min: MIN_ITEMS
   const n = responses.length;
   const pg = probeGrade(grade);
   const phase = PHASE_OF[pg];
-  const juniorTotal = pool.filter((t) => t.grade === pg).length;
-  const juniorShown = (k: number) => shown.slice(0, k).filter((t) => t.grade === pg).length;
-  const mainSize = mainPool(pool, grade).length;
+  // Дозадавание — только свои семейства (phasePool); общие того же грейда из основной фазы их не расходуют.
+  const juniorTotal = pool.filter((t) => t.grade === pg && !t.common).length;
+  const juniorShown = (k: number) => shown.slice(0, k).filter((t) => t.grade === pg && !t.common).length;
+  // Исчерпание основной фазы — по достижимому числу заданий: общие сверх MAX_COMMON_SHARE не выдать.
+  // У заявки Senior — не больше SENIOR_MAIN_MAX, сколько бы Senior-семейств ни было в пуле.
+  const mainSize = Math.min(reachableSize(mainPool(pool, grade)), grade === 'senior' ? SENIOR_MAIN_MAX : Infinity);
   // Потолок основной фазы для прогресса: у заявки Senior — размер Senior-пула (4), а не MAX_ITEMS.
   const mainMax = Math.min(limits.max, mainSize);
 

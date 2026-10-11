@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 
 import { EvaluateScreen } from '@/components/validation/EvaluateScreen';
 import { ValidationView } from '@/components/validation/ValidationView';
-import { GRADE_TEST_COMMANDS, GRADE_TEST_DOC, GRADE_TEST_POLICY, PERSONAS, SYNTHETIC, TARGETS } from '@/server/validation/grade-test-figures';
+import { GRADE_TEST_COMMANDS, GRADE_TEST_DOC, GRADE_TEST_POLICY, LENGTH_BLOCK, PERSONAS, SYNTHETIC, TARGETS } from '@/server/validation/grade-test-figures';
 import type { EvaluateReport } from '@/server/validation/evaluate';
 import { EVAL_LIMITS } from '@/server/validation/evaluate';
 import { parseMatchingResults } from '@/server/validation/matching-results';
@@ -40,6 +40,18 @@ describe('ValidationView', () => {
     cleanup();
     render(<ValidationView grade={grade} matching={matching} />);
     expect(screen.queryByText('Расширенная синтетика')).toBeNull();
+  });
+
+  it('«Длина теста и надёжность»: перебор лимитов и ширина банка из results.json; без данных блока нет', () => {
+    render(<ValidationView grade={grade} matching={matching} length={LENGTH_BLOCK} itemLimits={{ min: 9, max: 12 }} />);
+    expect(screen.getByText('Длина теста и надёжность')).toBeDefined();
+    expect(screen.getByText(/Сейчас основная фаза — 9–12 заданий/)).toBeDefined();
+    expect(screen.getByText(/7–10 \(сейчас\)/)).toBeDefined();
+    expect(screen.getByText('12–16')).toBeDefined();
+    expect(screen.getByText(/Ширина банка/)).toBeDefined();
+    cleanup();
+    render(<ValidationView grade={grade} matching={matching} />);
+    expect(screen.queryByText('Длина теста и надёжность')).toBeNull();
   });
 });
 

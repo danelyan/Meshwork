@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 
 import { ValidationView } from '@/components/validation/ValidationView';
 import { getEnv } from '@/server/env';
-import { GRADE_TEST_COMMANDS, GRADE_TEST_DOC, GRADE_TEST_POLICY, PERSONAS, SYNTHETIC, TARGETS } from '@/server/validation/grade-test-figures';
+import { activeItemLimits } from '@/server/test/limits';
+import { GRADE_TEST_COMMANDS, GRADE_TEST_DOC, GRADE_TEST_POLICY, LENGTH_BLOCK, PERSONAS, SYNTHETIC, TARGETS } from '@/server/validation/grade-test-figures';
 import { matchingResults } from '@/server/validation/matching-results';
 
 export const metadata: Metadata = { title: 'Валидация - ФСП Карьера' };
@@ -12,6 +13,8 @@ export default function ValidationPage() {
   return (
     <ValidationView
       grade={{ doc: GRADE_TEST_DOC, policy: GRADE_TEST_POLICY, personas: PERSONAS, synthetic: SYNTHETIC, targets: TARGETS, commands: GRADE_TEST_COMMANDS }}
+      length={LENGTH_BLOCK}
+      itemLimits={activeItemLimits()}
       matching={matchingResults()}
       juryLink={getEnv().DEMO_LOGIN}
     />

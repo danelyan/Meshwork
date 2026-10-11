@@ -455,7 +455,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             </div>
           </AstraRow>
 
-          <AsideRows items={curAsides} locked={asides.asking} />
+          <AsideRows items={curAsides} locked={asides.asking} onResend={!busy && convId ? () => asides.resend(cur.id) : undefined} />
           <EmployerAsideRows items={empAsides[cur.id]} />
           {asides.asking && !replyingIn(curAsides) && (
             <AssistantRow>

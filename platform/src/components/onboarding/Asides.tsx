@@ -65,13 +65,24 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
   );
 
   const ask = useCallback(
-    async (stepId: string, text: string) => {
+    async (stepId: string, text: string, opts: { resend?: boolean } = {}) => {
+      // Переотправка: срезать ленту шага с последнего вопроса кандидата; сервер срежет историю (route `resend`).
+      if (opts.resend) {
+        setByStep((p) => {
+          const list = p[stepId] ?? [];
+          const i = list.findLastIndex((it) => it.role === 'user');
+          return i < 0 ? p : { ...p, [stepId]: list.slice(0, i) };
+        });
+      }
       push(stepId, { id: nextId(), role: 'user', text });
       setAsking(true);
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       try {
-        const stream = await openConsultantStream({ text, onboardingStep: stepId, ...(conversation.current ? { conversationId: conversation.current } : {}) }, ctrl.signal);
+        const stream = await openConsultantStream(
+          { text, onboardingStep: stepId, ...(conversation.current ? { conversationId: conversation.current } : {}), ...(opts.resend ? { resend: true } : {}) },
+          ctrl.signal,
+        );
         const reader = stream.getReader();
         const decoder = new TextDecoder();
         const parser = createSseParser();
@@ -103,13 +114,23 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
     [push],
   );
 
-  return { byStep, asking, ask, local };
+  /** «Переотправить» последний вопрос кандидата на этом шаге (только если разговор уже есть на сервере). */
+  const resend = useCallback(
+    (stepId: string) => {
+      const last = (byStep[stepId] ?? []).findLast((it) => it.role === 'user');
+      if (!last || asking || !conversation.current) return;
+      void ask(stepId, last.text, { resend: true });
+    },
+    [ask, asking, byStep, conversation],
+  );
+
+  return { byStep, asking, ask, local, resend };
 }
 
 export type Asides = ReturnType<typeof useAsides>;
 
 /** Реплики свободных вопросов одного шага. */
-export function AsideRows({ items, locked }: { items: FeedItem[] | undefined; locked: boolean }) {
+export function AsideRows({ items, locked, onResend }: { items: FeedItem[] | undefined; locked: boolean; onResend?: () => void }) {
   if (!items?.length) return null;
-  return <FeedRows items={items} locked={locked} />;
+  return <FeedRows items={items} locked={locked} onResend={onResend} />;
 }

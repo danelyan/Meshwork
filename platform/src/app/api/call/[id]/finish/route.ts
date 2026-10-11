@@ -19,5 +19,5 @@ export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const { id } = await params;
-  return Response.json(await finishCall(candidateId, id, getLlm({ candidateId })));
+  return Response.json(await finishCall(candidateId, id, getLlm({ candidateId, purpose: 'call' })));
 });

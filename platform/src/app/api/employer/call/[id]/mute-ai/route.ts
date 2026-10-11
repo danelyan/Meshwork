@@ -18,5 +18,5 @@ export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   requireEmployer(req);
   const { id } = await ctx.params;
   const body = MuteAiInput.parse(await req.json().catch(() => ({})));
-  return Response.json(await muteAi(getSession(req), id, body.muted, getLlm()));
+  return Response.json(await muteAi(getSession(req), id, body.muted, getLlm({ purpose: 'call' })));
 });

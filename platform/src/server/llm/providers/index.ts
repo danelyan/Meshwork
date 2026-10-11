@@ -51,12 +51,43 @@ export function createProvider(env: Env): LlmProvider {
  * поиска), иначе YANDEX_FOLDER_ID. Без LLM_FALLBACK_BASE_URL запасной нет; при LLM_PROVIDER=stub не включается.
  */
 export function createFallbackProvider(env: Env): LlmProvider | undefined {
-  if (env.LLM_PROVIDER === 'stub' || !env.LLM_FALLBACK_BASE_URL || !env.LLM_FALLBACK_API_KEY || !env.LLM_FALLBACK_MODEL) return undefined;
-  const baseUrl = env.LLM_FALLBACK_BASE_URL;
-  const apiKey = env.LLM_FALLBACK_API_KEY;
-  let model = env.LLM_FALLBACK_MODEL;
+  if (env.LLM_PROVIDER === 'stub') return undefined;
+  return createSecondaryProvider(
+    { baseUrl: env.LLM_FALLBACK_BASE_URL, apiKey: env.LLM_FALLBACK_API_KEY, model: env.LLM_FALLBACK_MODEL, folderId: env.LLM_FALLBACK_FOLDER_ID, name: env.LLM_FALLBACK_NAME, extraBody: env.LLM_FALLBACK_EXTRA_BODY },
+    'fallback',
+    env,
+  );
+}
+
+/**
+ * Модель для созвонов (LLM_CALL_*): та же схема, что у запасной. Без LLM_CALL_BASE_URL/API_KEY/MODEL — undefined
+ * (созвоны идут на основной); при LLM_PROVIDER=stub не включается.
+ */
+export function createCallProvider(env: Env): LlmProvider | undefined {
+  if (env.LLM_PROVIDER === 'stub') return undefined;
+  return createSecondaryProvider(
+    { baseUrl: env.LLM_CALL_BASE_URL, apiKey: env.LLM_CALL_API_KEY, model: env.LLM_CALL_MODEL, folderId: env.LLM_CALL_FOLDER_ID, name: env.LLM_CALL_NAME, extraBody: env.LLM_CALL_EXTRA_BODY },
+    'call',
+    env,
+  );
+}
+
+interface SecondaryProviderConfig {
+  baseUrl?: string;
+  apiKey?: string;
+  model?: string;
+  folderId?: string;
+  name?: string;
+  extraBody?: Env['LLM_FALLBACK_EXTRA_BODY'];
+}
+
+/** OpenAI-совместимый провайдер из тройки BASE_URL/API_KEY/MODEL; на хосте Yandex — Api-Key, URI модели и каталог. */
+function createSecondaryProvider(cfg: SecondaryProviderConfig, defaultName: string, env: Env): LlmProvider | undefined {
+  if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) return undefined;
+  const { baseUrl, apiKey } = cfg;
+  let model = cfg.model;
   let headers: Record<string, string> | undefined;
-  const folderId = env.LLM_FALLBACK_FOLDER_ID ?? env.YANDEX_FOLDER_ID;
+  const folderId = cfg.folderId ?? env.YANDEX_FOLDER_ID;
   if (isYandexHost(baseUrl) && folderId) {
     model = yandexModelUri(folderId, model);
     headers = { Authorization: yandexAuthHeader(apiKey), 'OpenAI-Project': folderId };
@@ -65,9 +96,9 @@ export function createFallbackProvider(env: Env): LlmProvider | undefined {
     baseUrl,
     apiKey,
     model,
-    name: env.LLM_FALLBACK_NAME ?? 'fallback',
+    name: cfg.name ?? defaultName,
     stream: env.OPENAI_CHAT_STREAM,
-    extraBody: env.LLM_FALLBACK_EXTRA_BODY,
+    extraBody: cfg.extraBody,
     headers,
   });
 }

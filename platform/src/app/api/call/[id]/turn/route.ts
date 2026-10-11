@@ -21,7 +21,7 @@ export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   const { id } = await params;
   const body = TurnBody.parse(await req.json().catch(() => ({})));
   const obs: { timing?: TurnTiming } = {};
-  const result = await submitTurn(candidateId, id, body, getLlm({ candidateId }), obs);
+  const result = await submitTurn(candidateId, id, body, getLlm({ candidateId, purpose: 'call' }), obs);
   // Замер хода (лейн call-speed): видно в DevTools → Timing и в eval/call/latency.ts.
   const t = obs.timing;
   const timing = t ? [`llm;dur=${t.llmMs}`, ...(t.firstSentenceMs !== null ? [`first;dur=${t.firstSentenceMs}`] : [])].join(', ') : '';

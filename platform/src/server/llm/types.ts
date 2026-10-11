@@ -136,6 +136,8 @@ export class LlmError extends Error {
 export interface LlmCallContext {
   candidateId?: string;
   conversationId?: string;
+  /** 'call' — созвон: берётся отдельная модель LLM_CALL_* (если задана), иначе основная. */
+  purpose?: 'call';
   /** 1 — следующий на очереди. Вызывается при постановке и при каждом сдвиге. */
   onQueue?: (position: number) => void;
 }

@@ -16,6 +16,6 @@ export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const body = StartCallBody.parse(await req.json().catch(() => ({})));
-  const result = await startCall(candidateId, body, getLlm({ candidateId }));
+  const result = await startCall(candidateId, body, getLlm({ candidateId, purpose: 'call' }));
   return Response.json(result, { status: result.resumed ? 200 : 201 });
 });

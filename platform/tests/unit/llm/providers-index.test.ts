@@ -1,5 +1,5 @@
 import { parseEnv } from '@/server/env';
-import { clearStubResponses, createFallbackProvider, createProvider } from '@/server/llm/providers';
+import { clearStubResponses, createCallProvider, createFallbackProvider, createProvider } from '@/server/llm/providers';
 
 const base = { DATABASE_URL: 'postgresql://x@127.0.0.1:1/db', SESSION_SECRET: 's'.repeat(32) };
 
@@ -46,5 +46,20 @@ describe('env интеграции и createProvider', () => {
     expect(own?.model).toBe('gpt://b1qwen/qwen3.6-35b-a3b');
     expect(own?.name).toBe('qwen-yandex');
     expect(createFallbackProvider(parseEnv({ ...openai, ...spare }))?.model).toBe('gpt://b1voice/qwen3.6-35b-a3b');
+  });
+
+  it('модель созвонов: не задана или stub — нет; неполная тройка — ошибка; Yandex — URI из LLM_CALL_FOLDER_ID, имя по умолчанию call', () => {
+    const openai = { ...base, LLM_PROVIDER: 'openai-chat', OPENAI_CHAT_BASE_URL: 'https://llm.example.test/v1', OPENAI_CHAT_API_KEY: 'k', OPENAI_CHAT_MODEL: 'm', YANDEX_FOLDER_ID: 'b1voice' };
+    const call = { LLM_CALL_BASE_URL: 'https://llm.api.cloud.yandex.net/v1', LLM_CALL_API_KEY: 'k3', LLM_CALL_MODEL: 'qwen3.6-35b-a3b' };
+    expect(createCallProvider(parseEnv(openai))).toBeUndefined();
+    expect(createCallProvider(parseEnv({ ...base, ...call }))).toBeUndefined();
+    expect(() => parseEnv({ ...openai, LLM_CALL_BASE_URL: call.LLM_CALL_BASE_URL })).toThrow(/LLM_CALL_API_KEY/);
+    expect(() => parseEnv({ ...openai, ...call, LLM_CALL_EXTRA_BODY: 'не json' })).toThrow(/LLM_CALL_EXTRA_BODY/);
+    const own = createCallProvider(parseEnv({ ...openai, ...call, LLM_CALL_FOLDER_ID: 'b1call', LLM_CALL_NAME: 'qwen-call' }));
+    expect(own?.model).toBe('gpt://b1call/qwen3.6-35b-a3b');
+    expect(own?.name).toBe('qwen-call');
+    const dflt = createCallProvider(parseEnv({ ...openai, ...call }));
+    expect(dflt?.name).toBe('call');
+    expect(dflt?.model).toBe('gpt://b1voice/qwen3.6-35b-a3b');
   });
 });

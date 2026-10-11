@@ -13,5 +13,5 @@ export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);
   requireEmployer(req);
   const { id } = await ctx.params;
-  return Response.json(await leaveCall(getSession(req), id, getLlm()));
+  return Response.json(await leaveCall(getSession(req), id, getLlm({ purpose: 'call' })));
 });

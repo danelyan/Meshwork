@@ -1,7 +1,7 @@
 import { prisma } from '../db';
 import { getEnv } from '../env';
 import { runPlanB } from './plan-b';
-import { createFallbackProvider, createProvider } from './providers';
+import { createCallProvider, createFallbackProvider, createProvider } from './providers';
 import { Semaphore } from './semaphore';
 import {
   LlmError,
@@ -340,15 +340,40 @@ export function getLlmClient(): LlmClient {
   return defaultClient;
 }
 
+let callClient: LlmClient | undefined;
+
+/**
+ * Клиент созвонов: модель LLM_CALL_* с запасной = основная (LLM_PROVIDER); те же семафор, таймаут, ретраи и журнал.
+ * LLM_CALL_* не задан — тот же клиент, что у getLlmClient().
+ */
+export function getCallLlmClient(): LlmClient {
+  if (callClient) return callClient;
+  const env = getEnv();
+  const callProvider = createCallProvider(env);
+  if (!callProvider) return getLlmClient();
+  callClient = createLlmClient({
+    provider: callProvider,
+    fallback: createProvider(env),
+    maxConcurrency: env.LLM_MAX_CONCURRENCY,
+    timeoutMs: env.LLM_TIMEOUT_MS,
+    maxRetries: env.LLM_MAX_RETRIES,
+    recordRun: async (run) => {
+      await prisma.agentRun.create({ data: run });
+    },
+  });
+  return callClient;
+}
+
 /**
  * Главная точка входа для лейнов: `const llm = getLlm({ candidateId, conversationId, onQueue })`.
  * Возвращает LlmProvider — тот же интерфейс, что у сырых провайдеров.
  */
 export function getLlm(ctx?: LlmCallContext): LlmProvider {
-  return getLlmClient().forContext(ctx);
+  return (ctx?.purpose === 'call' ? getCallLlmClient() : getLlmClient()).forContext(ctx);
 }
 
 /** Только для тестов. */
 export function resetLlmClient(): void {
   defaultClient = undefined;
+  callClient = undefined;
 }

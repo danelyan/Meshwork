@@ -119,6 +119,7 @@
   --fs: 14px;
   --fs-md: 15px;
   --fs-lg: 17px;
+  --fs-body: 16px; /* текст сообщений чата и полей ввода; база body (меньше 16 - iOS увеличивает страницу при фокусе поля) */
   --fs-xl: 20px;  /* заголовок карточки, крупный лид */
   --fs-2xl: 24px; /* заголовок панели, вопрос, цифра статистики */
   --fs-3xl: 28px; /* крупная цифра, заголовок экрана */
@@ -132,6 +133,7 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
+  font-size: var(--fs-body);
   min-height: 100vh;
   background-color: var(--paper);
   background-image: var(--glow), linear-gradient(var(--landing-grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--landing-grid-line) 1px, transparent 1px);

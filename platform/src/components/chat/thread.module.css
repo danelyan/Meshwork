@@ -143,7 +143,7 @@ button.send[aria-busy='true'] > span { border-color: var(--on-ink-soft); border-
 .assistant { gap: 12px; }
 .composer { box-shadow: none; }
 .composerBox { gap: 8px; padding: 6px; }
-.composerBox textarea { min-height: var(--chat-control-size, 44px); font-size: 16px; } /* fs-ok: 16px - минимум против автозума iOS при фокусе */
+.composerBox textarea { min-height: var(--chat-control-size, 44px); font-size: var(--fs-body); } /* не меньше 16px: иначе iOS увеличивает страницу при фокусе */
 .inlineAction { align-self: center; flex: none; }
 .inlineAction button { font: var(--fs-xs) var(--mono); text-decoration: none; padding: 10px 4px; }
 @media (max-width: 680px) {

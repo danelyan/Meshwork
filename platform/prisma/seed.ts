@@ -4,6 +4,7 @@ import { loadPlatformEnv } from '../scripts/load-env.mjs';
 
 import { seedAuth } from './seed/auth';
 import { seedClaims } from './seed/claims';
+import { seedDemoClaims } from './seed/demo-claims';
 import { seedDirections } from './seed/directions';
 import { seedEmployer } from './seed/employer';
 import { seedEmployerPool } from './seed/employer-pool';
@@ -59,6 +60,8 @@ async function main() {
   // Порядок важен: recommend ссылается на каталог утверждений.
   await seedClaims(prisma);
   await seedRecommend(prisma);
+  // Утверждения demo-frontend-mid и demo-injection: иначе созвон закрыт call-gate.
+  await seedDemoClaims(prisma);
   await seedTest(prisma);
   // После recommend: демо-работодатель ссылается на засеянную компанию.
   await seedAuth(prisma);

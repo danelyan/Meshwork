@@ -1,7 +1,7 @@
 // Связь теста и созвона (11.10): текстовый тест от нейросети защитить нельзя (docs/research/competitors/anti-ai.md,
 // раздел 5), поэтому в конце квалифицирующего созвона интервьюер просит объяснить 1–2 задания, которые кандидат
 // решал в тесте. Выбор заданий и состояние этапа — чистые функции; чтение попытки из БД — loadTestReview.
-// Результат — сигнал testOwnership в вердикте (не штраф в ранжировании, не меняет категорию).
+// Результат — сигнал testOwnership в вердикте (не меняет категорию; «объяснил сам» снимает понижение категории при индексе high — employer/integrity-ranking.ts).
 import { checkQuoteLoose } from '../defense/evaluator';
 import { prisma } from '../db';
 import { responseJsonSchema } from '../llm/schema';

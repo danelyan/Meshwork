@@ -1,5 +1,5 @@
 // Проверка честности теста для работодателя: только уровень и короткие группы причин, без деталей (время ответа
-// по заданию, числа, тексты). Ранжирование не использует. Индекс считает src/server/test/integrity.ts.
+// по заданию, числа, тексты). Ранжирование — через integrity-ranking.ts (вариант 2a). Индекс считает src/server/test/integrity.ts.
 import { prisma } from '../db';
 import type { Grade, Specialization } from '../types';
 import type { PublicIntegrityGroup, PublicTestIntegrity } from './test-integrity-label';

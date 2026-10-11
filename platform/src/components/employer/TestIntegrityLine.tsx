@@ -6,14 +6,14 @@ const OWNERSHIP_TEXT = { explained: 'объяснил сам', partial: 'объ�
 
 export const integrityText = integrityLabel;
 
-/** «Тест: проверка честности - …» + сигнал созвона «решения теста», если он есть. Сигнал, в ранжирование не входит. */
+/** «Тест: проверка честности - …» + сигнал созвона «решения теста», если он есть. При high без подтверждения категория не учитывается в ранжировании (TEST_INTEGRITY_RANKING). */
 export function TestIntegrityLine({ integrity, ownership }: { integrity: PublicTestIntegrity | null | undefined; ownership?: keyof typeof OWNERSHIP_TEXT | 'not_checked' }) {
   const text = integrityText(integrity);
   if (!text) return null;
   return (
     <p className={styles.meta} data-testid="test-integrity" data-level={integrity!.level}>
       Тест: проверка честности - {text}.
-      {ownership && ownership !== 'not_checked' && ` На созвоне решения теста: ${OWNERSHIP_TEXT[ownership]}.`} Сигнал, в оценку не входит.
+      {ownership && ownership !== 'not_checked' && ` На созвоне решения теста: ${OWNERSHIP_TEXT[ownership]}.`}{integrity!.level === 'high' && !integrity!.confirmedAgain && ownership !== 'explained' ? ' Пока не подтверждено, категория из теста в выдаче не учитывается.' : ' Сигнал, в оценку не входит.'}
     </p>
   );
 }

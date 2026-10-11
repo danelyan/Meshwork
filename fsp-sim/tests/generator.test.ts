@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -98,7 +99,19 @@ describe('генератор набора данных', () => {
 });
 
 describe('реалм Keycloak', () => {
-  const realm = buildRealm(ds) as { users: Array<Record<string, unknown>>; clients: Array<Record<string, unknown>> };
+  const realm = buildRealm(ds) as { users: Array<Record<string, unknown>>; clients: Array<Record<string, unknown>>; loginTheme: string };
+
+  it('тема входа реалма лежит в репозитории: форма Keycloak цела, участники берутся у API реестра, пароль в тему не зашит', () => {
+    const dir = resolve(dirname(REALM_PATH), 'themes', realm.loginTheme, 'login');
+    const read = (name: string) => readFileSync(resolve(dir, name), 'utf8');
+    expect(read('theme.properties')).toMatch(/^parent=keycloak\.v2$/m);
+    const ftl = read('login.ftl');
+    for (const part of ['action="${url.loginAction}"', 'name="username"', 'name="password"', 'name="credentialId"', 'js/fsp-demo.js']) expect(ftl).toContain(part);
+    const js = read('resources/js/fsp-demo.js');
+    expect(js).toContain('/api/v1/sandbox');
+    for (const file of ['login.ftl', 'footer.ftl', 'resources/js/fsp-demo.js', 'messages/messages_ru.properties']) expect(read(file)).not.toContain('fsp-demo-2026');
+    expect(read('messages/messages_ru.properties')).toMatch(/^fspSimFooter=Это не сервис Федерации/m);
+  });
 
   it('пользователь на каждого спортсмена с атрибутом fsp_id и ролью athlete, плюс сервисные аккаунты', () => {
     const users = realm.users.filter((u) => !u['serviceAccountClientId']);

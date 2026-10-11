@@ -43,6 +43,7 @@ services:
       FSP_REGISTRY_ADMIN_SECRET: ${FSP_REGISTRY_ADMIN_SECRET:-fsp-registry-admin-secret}
     volumes:
       - ./keycloak/fsp-id-realm.json:/opt/keycloak/data/import/fsp-id-realm.json:ro
+      - ./keycloak/themes/fsp-id:/opt/keycloak/themes/fsp-id:ro
     depends_on:
       db: { condition: service_healthy }
     healthcheck:

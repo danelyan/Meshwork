@@ -129,6 +129,8 @@ export function buildRealm(dataset: Dataset): Record<string, unknown> {
     realm: REALM_NAME,
     displayName: 'ФСП ID (симулятор)',
     displayNameHtml: '<b>ФСП ID</b> · симулятор для ЛЦТ 2026',
+    // Страницы входа с пояснением для жюри: keycloak/themes/fsp-id (монтируется в контейнер Keycloak).
+    loginTheme: 'fsp-id',
     enabled: true,
     sslRequired: 'external',
     registrationAllowed: false,
@@ -146,7 +148,8 @@ export function buildRealm(dataset: Dataset): Record<string, unknown> {
     ssoSessionIdleTimeout: 1800,
     ssoSessionMaxLifespan: 36000,
     internationalizationEnabled: true,
-    supportedLocales: ['ru', 'en'],
+    // Только русский: пояснения темы входа написаны для жюри по-русски, язык браузера на них не влияет.
+    supportedLocales: ['ru'],
     defaultLocale: 'ru',
     roles: {
       realm: [

@@ -2,6 +2,7 @@
   "realm": "fsp-id",
   "displayName": "ФСП ID (симулятор)",
   "displayNameHtml": "<b>ФСП ID</b> · симулятор для ЛЦТ 2026",
+  "loginTheme": "fsp-id",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
@@ -20,8 +21,7 @@
   "ssoSessionMaxLifespan": 36000,
   "internationalizationEnabled": true,
   "supportedLocales": [
-    "ru",
-    "en"
+    "ru"
   ],
   "defaultLocale": "ru",
   "roles": {

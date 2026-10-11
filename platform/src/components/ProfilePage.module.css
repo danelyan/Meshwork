@@ -90,15 +90,15 @@
 @media (min-width: 1051px) { .page { grid-template-areas: 'heading side' 'main side'; } }
 /* Правая колонка по макету Astra v2: недостающие поля чипами, неподтверждённая категория, карточка Киры с одной подсказкой. */
 .missingChips { display: flex; flex-wrap: wrap; gap: 6px; }
-.missingChips span { font: 11px var(--mono); padding: 4px 8px; border: 1px solid var(--border-soft); color: var(--text-soft, var(--muted)); }
-.unconfirmed { justify-self: start; font: 11px var(--mono); padding: 4px 8px; border: 1px dashed var(--blue); color: var(--blue); background: var(--accent-fill); }
+.missingChips span { font: var(--fs-xs) var(--mono); padding: 4px 8px; border: 1px solid var(--border-soft); color: var(--text-soft, var(--muted)); }
+.unconfirmed { justify-self: start; font: var(--fs-xs) var(--mono); padding: 4px 8px; border: 1px dashed var(--blue); color: var(--blue); background: var(--accent-fill); }
 .kiraCard { display: grid; gap: 12px; padding: 18px; background: var(--ink); color: var(--on-ink); }
-.kiraCard p { margin: 0; font-size: 15px; line-height: 1.45; }
+.kiraCard p { margin: 0; font-size: var(--fs-md); line-height: 1.45; }
 .kiraHead { display: flex; gap: 10px; align-items: center; }
 .kiraHead div { display: grid; gap: 2px; }
-.kiraHead small { font: 11px var(--mono); color: var(--on-ink-soft); }
+.kiraHead small { font: var(--fs-xs) var(--mono); color: var(--on-ink-soft); }
 .kiraAvatar { width: 36px; height: 36px; display: grid; place-items: center; background: var(--blue); color: var(--on-ink); font-weight: 700; }
 .kiraActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.kiraActions button { min-height: 40px; border: 1px solid var(--on-ink-soft); background: transparent; color: var(--on-ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.kiraActions button { min-height: 40px; border: 1px solid var(--on-ink-soft); background: transparent; color: var(--on-ink); font: inherit; font-size: var(--fs); font-weight: 600; cursor: pointer; }
 .kiraActions .kiraYes { background: var(--blue); border-color: var(--blue); }
-.kiraLink { font: 12px var(--mono); color: var(--on-ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+.kiraLink { font: var(--fs-sm) var(--mono); color: var(--on-ink-soft); text-decoration: underline; text-underline-offset: 3px; }

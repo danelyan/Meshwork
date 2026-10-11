@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { errors, withErrors } from '@/server/errors';
 import { assertExpertEnabled, expertView, requireExpert } from '@/server/expert';
 import { answerAttempt } from '@/server/test';
@@ -14,6 +15,7 @@ const Body = z.object({ answer: z.string().max(MAX_ANSWER_CHARS * 4) });
 
 /** POST /api/expert/attempt/[id]/answer {answer} — ответ эксперта → следующее задание или итог с разбором (категория не пишется). */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
+  assertSameOrigin(req);
   assertExpertEnabled();
   const candidateId = await requireExpert(req);
   const { id } = await ctx.params;

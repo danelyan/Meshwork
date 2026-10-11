@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import type { Prisma } from '@prisma/client';
 
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { extractFile, type FileKind, fileMime } from '@/server/collector/files';
 import { LIMITS } from '@/server/collector/limits';
 import type { ExtractedDoc } from '@/server/collector/types';
@@ -68,6 +69,7 @@ function brief(doc: ExtractedDoc) {
  * успешного разбора. Повтор того же файла (sha256) у того же кандидата — прежняя запись, без копии.
  */
 export const POST = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const exists = await prisma.candidate.findUnique({ where: { id: candidateId }, select: { id: true } });
   if (!exists) throw errors.unauthorized();

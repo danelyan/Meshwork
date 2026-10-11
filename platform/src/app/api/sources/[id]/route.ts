@@ -1,3 +1,4 @@
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
 import { deleteSource } from '@/server/uploads/service';
@@ -10,6 +11,7 @@ export const dynamic = 'force-dynamic';
  * Чужое и несуществующее → 404.
  */
 export const DELETE = withErrors(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const { id } = await ctx.params;
   if (!id || id.length > 64) throw errors.notFound('Ссылка не найдена');

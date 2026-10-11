@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { errors, withErrors } from '@/server/errors';
 import { assertExpertEnabled, requireExpert } from '@/server/expert';
 import { recordSignals } from '@/server/test';
@@ -24,6 +25,7 @@ const Body = z.object({
 
 /** POST /api/expert/attempt/[id]/signal — сигналы браузера к активной попытке эксперта (индекс честности). Тело — JSON текстом (sendBeacon). */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
+  assertSameOrigin(req);
   assertExpertEnabled();
   const candidateId = await requireExpert(req);
   const { id } = await ctx.params;

@@ -5,6 +5,7 @@ import { registerTurn } from '@/server/agent/active-turns';
 import { acquireConversationLock, LOCK_MAX_HOLD_MS } from '@/server/agent/lock';
 import { runTurn } from '@/server/agent/loop';
 import type { AgentEvent } from '@/server/agent/types';
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { memoryExtractionEnabled, scheduleMemoryExtraction } from '@/server/consultant/memory';
 import { prisma } from '@/server/db';
 import { getLlm } from '@/server/llm/client';
@@ -50,6 +51,7 @@ const Body = z
  * или таймаут хода. Пока ход идёт — `: ping` раз в 15 с (прокси не рвут «немое» соединение).
  */
 export const POST = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const body = Body.parse(await req.json().catch(() => ({})));
 

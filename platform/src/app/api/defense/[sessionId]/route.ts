@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { answerDefense, DEFENSE_LIMITS, getDefenseSession } from '@/server/defense';
 import { errors, withErrors } from '@/server/errors';
 import { getLlm } from '@/server/llm';
@@ -23,6 +24,7 @@ export const GET = withErrors(async (req: Request, ctx: Ctx) => {
 
 /** POST /api/defense/[sessionId] {answer} — ответ на текущий вопрос → следующий вопрос или вердикт. */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const { sessionId } = await ctx.params;
   if (!SessionId.safeParse(sessionId).success) throw errors.notFound('Сессия защиты не найдена');

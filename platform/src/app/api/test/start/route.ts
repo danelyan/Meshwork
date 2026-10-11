@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { SPECIALIZATIONS } from '@/lib/directions';
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
 import { checkEligibility, describeIntervals, describeRetake, intervals, startAttempt } from '@/server/test';
@@ -20,6 +21,7 @@ const Body = z.object({
  * Без подкатегории направления — 422 subcategory_required; подкатегория без банка заданий — 422 no_test. R-C-05, R-C-06, R-C-09.
  */
 export const POST = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const body = Body.parse(await req.json().catch(() => ({})));
   const result = await startAttempt(candidateId, body.specialization, body.grade, new Date(), { subcategoryId: body.subcategoryId ?? undefined });

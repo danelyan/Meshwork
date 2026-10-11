@@ -1,3 +1,4 @@
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { addMemory, listMemory, MEMORY_LIMIT, MemoryBody, memoryOwnerOf } from '@/server/consultant/memory';
 import { errors, withErrors } from '@/server/errors';
 import { getSession } from '@/server/session';
@@ -13,6 +14,7 @@ export const GET = withErrors(async (req: Request) => {
 
 /** Добавить заметку вручную (source user). Лимит или дубль — 409. */
 export const POST = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   const s = getSession(req); if (!s) throw errors.unauthorized();
   const body = MemoryBody.parse(await req.json().catch(() => ({})));
   const item = await addMemory(memoryOwnerOf(s), body.text, 'user');

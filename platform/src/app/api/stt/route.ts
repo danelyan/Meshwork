@@ -1,6 +1,7 @@
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { errors, withErrors } from '@/server/errors';
 import { getSession } from '@/server/session';
-import { STT_MAX_BYTES, STT_SAMPLE_RATE, recognizeServer, sttMode } from '@/server/stt';
+import { STT_MAX_BYTES, STT_SAMPLE_RATE, recognizeServer, sttMode, sttRateLimit } from '@/server/stt';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -10,14 +11,18 @@ export const GET = withErrors(async () => Response.json({ mode: sttMode(), sampl
 
 /**
  * Голос → текст через Yandex SpeechKit или OpenAI-совместимый whisper (STT_PROVIDER). Тело — LPCM 16 бит моно 16 кГц (`audio/l16`), до 1 МБ (≈ 30 с).
- * Только для вошедших. Аудио не сохраняется: читаем поток в память, отдаём SpeechKit, забываем.
+ * Только для вошедших, лимит запросов на сессию (STT_RATE). Аудио не сохраняется: читаем поток в память, отдаём SpeechKit, забываем.
  */
 export const POST = withErrors(async (req: Request) => {
-  if (!getSession(req)) throw errors.unauthorized();
+  assertSameOrigin(req);
+  const session = getSession(req);
+  if (!session) throw errors.unauthorized();
   if (sttMode() === 'browser' || sttMode() === 'off') throw errors.badRequest('Серверное распознавание выключено');
   const declared = Number(req.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > STT_MAX_BYTES) throw errors.payloadTooLarge('Запись длиннее 30 секунд - скажи короче');
   if (!req.body) throw errors.badRequest('Пустая запись');
+  const key = session.userId ?? session.candidateId ?? 'anon';
+  if (!sttRateLimit(key)) throw errors.rateLimited('Слишком часто - распознавание передохнёт минуту, напиши текстом');
   const reader = req.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;

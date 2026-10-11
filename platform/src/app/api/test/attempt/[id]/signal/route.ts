@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
 import { getEnv } from '@/server/env';
@@ -30,6 +31,7 @@ const Body = z.object({
  * Тело читается текстом и разбирается как JSON: так принимается и navigator.sendBeacon (Content-Type text/plain).
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const { id } = await ctx.params;
   if (!ID_RE.test(id)) throw errors.notFound('Попытка не найдена');

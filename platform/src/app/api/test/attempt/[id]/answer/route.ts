@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
 import { answerAttempt } from '@/server/test';
@@ -14,6 +15,7 @@ const Body = z.object({ answer: z.string().max(MAX_ANSWER_CHARS * 4) });
 
 /** POST /api/test/attempt/[id]/answer {answer} — ответ на текущее задание → следующее задание или итог. */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const { id } = await ctx.params;
   if (!ID_RE.test(id)) throw errors.notFound('Попытка не найдена');

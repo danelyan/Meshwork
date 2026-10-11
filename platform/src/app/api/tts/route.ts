@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { TTS_MAX_CHARS, cleanForSpeech } from '@/lib/speech-text';
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { getEnv } from '@/server/env';
 import { errors, withErrors } from '@/server/errors';
 import { getSession } from '@/server/session';
@@ -24,6 +25,7 @@ const Body = z.object({
  * после чистки markdown, лимит запросов на сессию. Аудио не хранится: ответ SpeechKit сразу уходит клиенту.
  */
 export const POST = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   const session = getSession(req);
   if (!session) throw errors.unauthorized();
   if (ttsMode() !== 'yandex') throw errors.badRequest('Озвучка выключена');

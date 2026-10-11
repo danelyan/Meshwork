@@ -1,3 +1,4 @@
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
 import { startConfirmAttempt } from '@/server/test';
@@ -14,6 +15,7 @@ const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
  * 409: confirm_not_needed, already_confirmed, confirm_used, active_attempt.
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const { id } = await ctx.params;
   if (!ID_RE.test(id)) throw errors.notFound('Попытка не найдена');

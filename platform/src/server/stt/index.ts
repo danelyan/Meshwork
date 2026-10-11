@@ -121,3 +121,31 @@ export async function recognizeServer(audio: Uint8Array, signal?: AbortSignal, e
   }
   return recognizeYandex(audio, { apiKey: env.YANDEX_API_KEY as string, folderId: env.YANDEX_FOLDER_ID, signal });
 }
+
+/**
+ * Лимит запросов распознавания на сессию: скользящее окно в памяти процесса (один инстанс на стенде), как у
+ * озвучки (`ttsRateLimit`). Запись — до 30 с, диктовка в чате и в защите даёт единицы запросов в минуту; 30 в минуту —
+ * только цикл на клиенте. Защищает платный сервис распознавания, не замена квоте облака.
+ */
+export const STT_RATE = { windowMs: 60_000, max: 30 };
+
+const hits = new Map<string, number[]>();
+
+export function sttRateLimit(key: string, now = Date.now(), rate = STT_RATE): boolean {
+  const recent = (hits.get(key) ?? []).filter((at) => now - at < rate.windowMs);
+  if (recent.length >= rate.max) {
+    hits.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  hits.set(key, recent);
+  if (hits.size > 5000) {
+    for (const [k, v] of hits) if (!v.some((at) => now - at < rate.windowMs)) hits.delete(k);
+  }
+  return true;
+}
+
+/** Только для тестов. */
+export function resetSttRateLimit(): void {
+  hits.clear();
+}

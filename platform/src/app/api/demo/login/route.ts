@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { ensureConsent } from '@/server/auth/consent';
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { ensureConsents } from '@/server/consent/service';
 import { DEMO_EMPLOYER_CONSENTS, SHARED_DEMO_USER, createFreshDemoUser, ensureDemoCandidateUser, resetDemoOnboarding, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
@@ -62,6 +63,7 @@ const LoginBody = z.union([
  * аккаунт создаётся при первом входе. Не-демо — 404.
  */
 export const POST = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   assertEnabled();
   const body = LoginBody.parse(await req.json().catch(() => ({})));
   if ('fresh' in body) {

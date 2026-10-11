@@ -1,6 +1,7 @@
 import type { Claim } from '@prisma/client';
 import { z } from 'zod';
 
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { confirmClaim, editClaim, rejectClaim } from '@/server/claims';
 import { errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
@@ -30,6 +31,7 @@ function view(c: Claim) {
  * (и показываемую кандидату `wording`, и `statement`).
  */
 export const POST = withErrors(async (req: Request, ctx: { params: Promise<{ id: string; action: string }> }) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const { id, action } = await ctx.params;
   let claim: Claim;

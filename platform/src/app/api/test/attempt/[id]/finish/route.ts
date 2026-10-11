@@ -1,3 +1,4 @@
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
 import { finishAttempt } from '@/server/test';
@@ -10,6 +11,7 @@ const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** POST /api/test/attempt/[id]/finish — досрочно завершить: итог по данным ответам (без ответов — abandoned). */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const { id } = await ctx.params;
   if (!ID_RE.test(id)) throw errors.notFound('Попытка не найдена');

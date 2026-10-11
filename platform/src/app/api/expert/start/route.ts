@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { getSubcategory, SPECIALIZATIONS, subcategoriesFor } from '@/lib/directions';
 import { GRADES } from '@/lib/grades';
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { AppError, withErrors } from '@/server/errors';
 import { assertExpertEnabled, createExpert, deleteExpert, expertCookie } from '@/server/expert';
 import { startAttempt } from '@/server/test';
@@ -32,6 +33,7 @@ export const GET = withErrors(async () => {
  * (path /api/expert). Лимиты: адрес клиента и суточный потолок (429). Флаг DEMO_LOGIN выключен → 404.
  */
 export const POST = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   assertExpertEnabled();
   const body = Body.parse(await req.json().catch(() => ({})));
   // Проверка до создания записи: на неверный выбор эксперт не заводится.

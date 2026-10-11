@@ -1,3 +1,4 @@
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { loadConsultantSettings, saveConsultantSettings } from '@/server/consultant/settings';
 import { SettingsInput } from '@/server/consultant/skills';
 import { withErrors } from '@/server/errors';
@@ -16,6 +17,7 @@ export const GET = withErrors(async (req: Request) => {
 
 /** Сохранить настройки целиком. Неизвестный id скилла или текст длиннее 500 символов — 400. */
 export const PUT = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const body = SettingsInput.parse(await req.json().catch(() => ({})));
   return Response.json(await saveConsultantSettings(candidateId, body));

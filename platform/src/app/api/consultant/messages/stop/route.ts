@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { stopTurn } from '@/server/agent/active-turns';
+import { assertSameOrigin } from '@/server/auth/csrf';
 import { prisma } from '@/server/db';
 import { errors, withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
@@ -17,6 +18,7 @@ const Body = z.object({ conversationId: z.string().min(1).max(64) });
  * Чужой разговор — 404; активного хода нет — 204 (стоп идемпотентен).
  */
 export const POST = withErrors(async (req: Request) => {
+  assertSameOrigin(req);
   const candidateId = requireCandidate(req);
   const body = Body.parse(await req.json().catch(() => ({})));
   const conv = await prisma.conversation.findFirst({ where: { id: body.conversationId, candidateId }, select: { id: true } });

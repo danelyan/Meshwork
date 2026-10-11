@@ -20,10 +20,9 @@ import styles from './CallPanel.module.css';
 import { useCallMode } from './CallContext';
 import { DepthMap } from './DepthMap';
 import { DevicePreflight } from './DevicePreflight';
-import { useCallMic } from './useCallMic';
+import { TALK_LABEL, useCallTalk } from './useCallTalk';
 import { useReplySpeech } from './useReplySpeech';
 import { ObjectionButton } from '../consent/ObjectionButton';
-import { useCamera } from '../interview/useCamera';
 
 type Phase = 'loading' | 'consent' | 'devices' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
 
@@ -67,10 +66,6 @@ export function CallPanel() {
   const devicesDone = useRef(false);
   /** Микрофон вообще не нужен (голос выключен на сервере или нет поддержки) - проверку пропускаем. */
   const micUnneeded = useRef(false);
-  /** Камера в созвоне: выбор со шага проверки устройств (по умолчанию выключена) — включается, когда созвон пошёл. */
-  const wantCamera = useRef(false);
-  /** Согласие на запись действует (Г2): без него видео не пишем, кнопки камеры нет (сервер тоже отвергает). */
-  const [recordingConsent, setRecordingConsent] = useState(true);
   const [draft, setDraft] = useState('');
   const [closing, setClosing] = useState(false);
   /** Идут дополнительные вопросы по темам, где оценщик не определился. */
@@ -126,7 +121,6 @@ export function CallPanel() {
           return setPhase('done');
         }
         if (list.consent.mode === 'text') {
-          setRecordingConsent(false);
           textOnlyRef.current = true;
           setTextOnly(true);
           setTyping(true);
@@ -148,28 +142,75 @@ export function CallPanel() {
   const reply = useReplySpeech(voice, id);
   const onDelta = reply.onDelta;
   const markSpeechEnd = reply.markSpeechEnd;
+
+  // Свободный разговор: микрофон открыт весь созвон, фразы режет детектор речи (useCallTalk).
+  const busyRef = useRef(false);
+  busyRef.current = busy;
+  const sendRef = useRef<(input: { text?: string; audioRef?: string }) => Promise<void>>(async () => {});
+  const pending = useRef<{ text: string; audioRef?: string } | null>(null);
+  const talk = useCallTalk({
+    active: phase === 'live' && !textOnly,
+    voice,
+    busy,
+    onPhrase: async ({ pcm, browserText }) => {
+      if (!id) return false;
+      markSpeechEnd();
+      let audioRef: string | undefined;
+      let text = browserText ?? '';
+      if (pcm) {
+        try {
+          const a = await callApi.audio(id, pcm);
+          audioRef = a.audioRef;
+          if (!text) text = a.text ?? '';
+        } catch (e) {
+          if (!text) setError(e instanceof Error ? e.message : 'Запись не сохранилась - ответь текстом');
+        }
+      }
+      // Шум без слов — не ответ: молча слушаем дальше.
+      if (!text.trim()) return false;
+      if (busyRef.current) {
+        // Кира ещё думает: договорённое уходит следующим ходом.
+        const p = pending.current;
+        pending.current = { text: p ? `${p.text} ${text}` : text, ...((p?.audioRef ?? audioRef) ? { audioRef: p?.audioRef ?? audioRef } : {}) };
+        return true;
+      }
+      await sendRef.current({ text, ...(audioRef ? { audioRef } : {}) });
+      return true;
+    },
+    onResume: () => {
+      const ai = lastAiRef.current;
+      if (busyRef.current || !ai || !id) return;
+      replays.current += 1;
+      voiceRef.current?.speak(ai.text, `call-${id}-${ai.index}-again${replays.current}`);
+    },
+  });
+  const hushed = talk.hushed;
+  const unhush = talk.unhush;
   useEffect(() => {
     if (!id) return;
     return subscribeCallEvents(id, (ev) => {
-      if (ev.type === 'utterance_delta') onDelta(ev.afterIndex, ev.n, ev.text);
+      if (ev.type === 'utterance_delta' && !hushed()) onDelta(ev.afterIndex, ev.n, ev.text);
       if (ev.type === 'utterance') setTranscript((t) => merge(t, [ev.entry]));
       if (ev.type === 'snapshot' && ev.call.transcript) {
         const tr = ev.call.transcript;
         setTranscript((t) => merge(t, tr));
       }
     });
-  }, [id, onDelta]);
+  }, [id, onDelta, hushed]);
 
   // Новая реплика ИИ — озвучить один раз (ключ = созвон + номер реплики), по предложениям (useReplySpeech).
   const speakEntry = reply.speakEntry;
   const lastAi = [...transcript].reverse().find((e) => e.role === 'ai');
+  const lastAiRef = useRef(lastAi);
+  lastAiRef.current = lastAi;
   useEffect(() => {
     if (!lastAi || !id) return;
     const key = `call-${id}-${lastAi.index}`;
     if (spoken.current.has(key)) return;
     spoken.current.add(key);
+    if (hushed()) return; // кандидат перебил — ответ виден текстом, но не звучит поверх него
     speakEntry(lastAi);
-  }, [lastAi, id, speakEntry]);
+  }, [lastAi, id, speakEntry, hushed]);
 
   useEffect(() => {
     voice?.setThinking(busy);
@@ -181,26 +222,11 @@ export function CallPanel() {
     return () => clearInterval(t);
   }, [phase]);
 
-  // Камера кандидата (созвон с Кирой): тот же хук и тот же маршрут POST /api/call/{id}/video, что в комнате интервью.
-  const callRef = useRef(call);
-  callRef.current = call;
-  const cameraAllowed = kind === 'qualifying' && recordingConsent;
-  const camera = useCamera({
-    getCallId: () => callRef.current?.id ?? null,
-    getStartedAt: () => (callRef.current ? Date.parse(callRef.current.startedAt) : null),
-    deniedText: 'Нет доступа к камере - разреши её в настройках браузера. Созвон идёт без видео.',
-  });
-  const startCamera = camera.start;
-  useEffect(() => {
-    if (phase !== 'live' || !id || !wantCamera.current || !cameraAllowed) return;
-    wantCamera.current = false;
-    void startCamera();
-  }, [phase, id, cameraAllowed, startCamera]);
-
   const send = useCallback(
     async (input: { text?: string; audioRef?: string }) => {
       if (!id) return;
       if (!input.audioRef) markSpeechEnd(); // текстом: конец «речи» — отправка
+      unhush();
       setBusy(true);
       setError(null);
       voiceRef.current?.stop();
@@ -214,39 +240,15 @@ export function CallPanel() {
         setBusy(false);
       }
     },
-    [id, markSpeechEnd],
+    [id, markSpeechEnd, unhush],
   );
-
-  const mic = useCallMic(async ({ pcm, browserText }) => {
-    if (!id) return;
-    markSpeechEnd();
-    let audioRef: string | undefined;
-    let text = browserText ?? '';
-    if (pcm) {
-      try {
-        const a = await callApi.audio(id, pcm);
-        audioRef = a.audioRef;
-        if (!text) text = a.text ?? '';
-      } catch (e) {
-        if (!text) {
-          setError(e instanceof Error ? e.message : 'Запись не сохранилась - ответь текстом');
-          return;
-        }
-      }
-    }
-    if (!text.trim()) {
-      setError('Не расслышал ответ - скажи ещё раз или ответь текстом.');
-      return;
-    }
-    await send({ text, ...(audioRef ? { audioRef } : {}) });
-  });
+  sendRef.current = send;
 
   const finish = async () => {
     if (!id) return;
-    mic.stop();
+    talk.stop();
+    pending.current = null;
     voiceRef.current?.stop();
-    // Последний сегмент видео дописываем, пока созвон ещё активен (после finish сервер видео не примет).
-    await camera.stop();
     setPhase('finishing');
     setError(null);
     try {
@@ -277,9 +279,9 @@ export function CallPanel() {
     }
   };
 
-  micUnneeded.current = mic.ready && !mic.available;
+  micUnneeded.current = talk.ready && !talk.available;
   // Голос выключен на сервере / нет поддержки (стало известно уже на шаге проверки) - проверять нечего.
-  const micIdle = mic.ready && !mic.available;
+  const micIdle = talk.ready && !talk.available;
   useEffect(() => {
     if (phase === 'devices' && micIdle) {
       devicesDone.current = true;
@@ -292,7 +294,15 @@ export function CallPanel() {
   const answered = transcript.filter((e) => e.role === 'candidate').length;
   const lastCandidate = [...transcript].reverse().find((e) => e.role === 'candidate');
   const startedAt = call ? new Date(call.startedAt).getTime() : now;
-  const canFinish = answered > 0 && !busy && mic.state === 'idle';
+  const canFinish = answered > 0 && !busy;
+  const canAnswer = Boolean(last && last.role === 'ai' && last.meta) && !closing && phase === 'live';
+  // Фраза, сказанная пока Кира думала, уходит, как только ответ пришёл.
+  useEffect(() => {
+    if (busy || !canAnswer || !pending.current) return;
+    const p = pending.current;
+    pending.current = null;
+    void send(p);
+  }, [busy, canAnswer, send]);
   const progress = call?.progress;
   const summary = interview ? summaryOf(call?.verdict) : null;
   const stage = phase === 'done' ? 'summary' : stageOf(turnsOf(transcript), closing);
@@ -339,9 +349,6 @@ export function CallPanel() {
 
       <div className={styles.head}>
         <HeadView />
-        {(camera.state === 'on' || camera.state === 'starting') && (phase === 'live' || phase === 'finishing') && (
-          <video ref={camera.attach} className={styles.selfView} muted playsInline autoPlay aria-label="Ваша камера" data-testid="call-camera-preview" />
-        )}
       </div>
 
       <div className={styles.body}>
@@ -353,12 +360,9 @@ export function CallPanel() {
 
         {phase === 'devices' && (
           <DevicePreflight
-            withCamera={cameraAllowed}
-            cameraJoinsCall
             primaryClass={styles.primary}
             ghostClass={styles.ghost}
-            onReady={(o) => {
-              wantCamera.current = Boolean(o?.camera);
+            onReady={() => {
               devicesDone.current = true;
               void begin();
             }}
@@ -428,16 +432,16 @@ export function CallPanel() {
                 </div>
               </details>
             )}
-            {mic.state === 'recording' && mic.interim ? (
-              <p className={styles.mine}>{mic.interim}</p>
+            {talk.available && !textOnly && phase === 'live' && (
+              <p className={styles.hint} role="status" data-testid="call-talk-state" data-state={talk.state}>
+                {TALK_LABEL[talk.state]}
+              </p>
+            )}
+            {talk.state === 'user' && talk.interim ? (
+              <p className={styles.mine}>{talk.interim}</p>
             ) : lastCandidate && !awaiting && busy ? (
               <p className={styles.mine}>{lastCandidate.text}</p>
             ) : null}
-            {camera.error && (
-              <p className={styles.hint} role="status" data-testid="call-camera-error">
-                {camera.error}
-              </p>
-            )}
             {extra && !closing && <p className={styles.hint}>Ещё вопрос: по одной из тем ответы пока не дают однозначной оценки.</p>}
             {closing && <p className={styles.hint}>Вопросы закончились - нажми «Завершить».</p>}
             {phase === 'finishing' && (
@@ -502,9 +506,9 @@ export function CallPanel() {
             {textWhy === 'consent' ? 'Запись голоса отключена в «Моих согласиях» - созвон идёт текстом, аудио не сохраняется.' : 'Созвон идёт текстом: микрофон не проверен или недоступен. Голос можно включить, начав созвон заново.'}
           </p>
         )}
-        {(error || mic.error) && (
+        {(error || talk.error) && (
           <p className={styles.error} role="alert">
-            {error ?? mic.error}
+            {error ?? talk.error}
             {/consent|согласи/i.test(error ?? '') && (
               <>
                 {' '}
@@ -558,39 +562,25 @@ export function CallPanel() {
             </div>
           )}
           <div className={styles.bar}>
-            {mic.available && !textOnly && (
+            {talk.available && !textOnly && (
               <button
                 type="button"
-                className={cx(styles.ctl, styles.mic, mic.state === 'recording' && styles.recording)}
-                onClick={() => (mic.state === 'recording' ? mic.stop() : void mic.start())}
-                disabled={(!awaiting && mic.state !== 'recording') || mic.state === 'processing' || phase === 'finishing'}
-                aria-pressed={mic.state === 'recording'}
-                aria-label={mic.state === 'recording' ? 'Закончить ответ' : 'Ответить голосом'}
-                style={{ '--level': mic.level.toFixed(2) } as React.CSSProperties}
+                className={cx(styles.ctl, styles.mic, talk.state === 'user' && styles.recording)}
+                onClick={() => talk.setMuted(!talk.muted)}
+                disabled={phase === 'finishing'}
+                aria-pressed={!talk.muted}
+                aria-label={talk.muted ? 'Включить микрофон' : 'Выключить микрофон'}
+                style={{ '--level': talk.level.toFixed(2) } as React.CSSProperties}
                 data-testid="call-mic"
               >
-                {mic.state === 'processing' ? <Spinner /> : <MicIcon />}
-                <span>{mic.state === 'recording' ? `Готово ${mmss(mic.elapsed)}` : 'Ответить'}</span>
+                <MicIcon />
+                <span>{talk.muted ? 'Микрофон выкл' : 'Микрофон вкл'}</span>
               </button>
             )}
             <button type="button" className={cx(styles.ctl, typing && styles.ctlOn)} onClick={() => setTyping((v) => !v)} aria-pressed={typing}>
               <KeyboardIcon />
               <span>Текстом</span>
             </button>
-            {cameraAllowed && camera.supported && (
-              <button
-                type="button"
-                className={cx(styles.ctl, camera.state === 'on' && styles.ctlOn)}
-                onClick={() => void (camera.state === 'on' ? camera.stop() : camera.start())}
-                disabled={camera.state === 'starting' || phase !== 'live'}
-                aria-pressed={camera.state === 'on'}
-                title="Видео записывается вместе с аудио созвона; никакая модель его не анализирует"
-                data-testid="call-camera"
-              >
-                <CameraIcon />
-                <span>{camera.state === 'on' ? 'Камера вкл' : 'Камера'}</span>
-              </button>
-            )}
             <button type="button" className={cx(styles.ctl, styles.end)} onClick={() => void finish()} disabled={!canFinish || phase === 'finishing'} data-testid="call-finish">
               <EndIcon />
               <span>Завершить</span>
@@ -615,14 +605,6 @@ function KeyboardIcon() {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <rect x="3" y="6" width="18" height="12" />
       <path d="M7 10h1M11 10h1M15 10h1M7 14h10" strokeLinecap="square" />
-    </svg>
-  );
-}
-function CameraIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <rect x="3" y="7" width="12" height="10" />
-      <path d="M15 11l6-3v8l-6-3z" strokeLinejoin="round" />
     </svg>
   );
 }

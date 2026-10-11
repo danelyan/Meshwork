@@ -30,6 +30,8 @@ export interface RoomMicOptions {
   /** Детектор подтвердил речь кандидата (перебивание решает вызывающий). */
   onSpeechStart: () => void;
   onUtterance: (u: RoomUtterance) => void | Promise<void>;
+  /** Потолок фразы, мс: дольше — фраза закрывается и уходит как есть (лимит STT). По умолчанию — только MAX_PHRASE_MS детектора. */
+  maxPhraseMs?: number;
 }
 
 interface RecognitionLike {
@@ -67,11 +69,16 @@ export function useRoomMic(opts: RoomMicOptions) {
   optsRef.current = opts;
   const mutedRef = useRef(false);
   const stopRef = useRef<() => void>(() => {});
+  /** Поколение запуска: stop() во время ожидания getUserMedia отменяет запуск — поток не остаётся открытым. */
+  const genRef = useRef(0);
   const levelRef = useRef(0);
 
   useEffect(() => {
     setServer(readVoiceMode());
-    return () => stopRef.current();
+    return () => {
+      genRef.current += 1;
+      stopRef.current();
+    };
   }, []);
 
   const canRecord = typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function' && Boolean(audioCtor());
@@ -85,6 +92,7 @@ export function useRoomMic(opts: RoomMicOptions) {
 
   const start = useCallback(async () => {
     stopRef.current();
+    const gen = ++genRef.current;
     setError(null);
     if (!available) return;
     let stream: MediaStream;
@@ -94,13 +102,20 @@ export function useRoomMic(opts: RoomMicOptions) {
       setError('Нет доступа к микрофону - разреши его в настройках браузера или отвечай текстом.');
       return;
     }
+    if (gen !== genRef.current) {
+      stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
     const ctx = new (audioCtor()!)();
+    // Контекст, созданный не в обработчике клика, браузер может оставить suspended (autoplay policy, MDN) — будим.
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
     const source = ctx.createMediaStreamSource(stream);
     // ScriptProcessorNode устарел, но работает везде без отдельного модуля worklet (как в useCallMic).
     const proc = ctx.createScriptProcessor(BUFFER, 1, 1);
     const gate = new MicGate<Float32Array>({ ...DEFAULT_VAD, frameMs: (BUFFER / ctx.sampleRate) * 1000 });
     let phrase: Float32Array[] = [];
     let phraseStartedAt = 0;
+    let phraseSamples = 0;
     let finals = '';
     let finalsAt = 0;
     let rec: RecognitionLike | null = null;
@@ -167,6 +182,7 @@ export function useRoomMic(opts: RoomMicOptions) {
     const onEvent = (ev: VadEvent, send: Float32Array[]) => {
       if (ev.kind === 'speech_start') {
         phrase = send;
+        phraseSamples = send.reduce((n, f) => n + f.length, 0);
         phraseStartedAt = Date.now();
         finals = '';
         setState('speaking');
@@ -198,7 +214,18 @@ export function useRoomMic(opts: RoomMicOptions) {
       const frame = new Float32Array(input);
       const r = gate.step(frame, rms, optsRef.current.isPlaying());
       if (r.event) onEvent(r.event, r.send);
-      else if (r.send.length) phrase.push(...r.send);
+      else if (r.send.length) {
+        phrase.push(...r.send);
+        phraseSamples += r.send.reduce((n, f) => n + f.length, 0);
+        const max = optsRef.current.maxPhraseMs;
+        // Длиннее лимита распознавания: отправить сказанное, продолжение станет следующей фразой.
+        if (max && phraseSamples >= (max / 1000) * ctx.sampleRate && gate.forceEnd()) {
+          const frames = phrase;
+          phrase = [];
+          phraseSamples = 0;
+          void finishPhrase(frames, phraseStartedAt);
+        }
+      }
     };
     source.connect(proc);
     proc.connect(ctx.destination);
@@ -230,7 +257,10 @@ export function useRoomMic(opts: RoomMicOptions) {
     };
   }, [available, browserStt]);
 
-  const stop = useCallback(() => stopRef.current(), []);
+  const stop = useCallback(() => {
+    genRef.current += 1;
+    stopRef.current();
+  }, []);
 
   return { ready: server !== null, available, mode: server, state, muted, setMuted, level, interim, error, start, stop, clearError: () => setError(null) };
 }

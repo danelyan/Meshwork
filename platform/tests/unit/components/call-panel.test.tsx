@@ -5,6 +5,8 @@ import { Composer } from '@/components/chat/Composer';
 import { useCallMode } from '@/components/call/CallContext';
 import type { CallView, TranscriptEntry } from '@/server/call/types';
 
+import { installFakeAudio } from './call-fake-audio';
+
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 vi.mock('@/components/avatar/HeadView', () => ({ HeadView: () => <div data-testid="head-view" /> }));
 
@@ -38,7 +40,7 @@ beforeEach(() => {
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
       const key = `${init?.method ?? 'GET'} ${url.split('?')[0]}`;
-      calls.push({ url: key, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      calls.push({ url: key, body: typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body });
       const h = routes[key];
       if (!h) return new Response(JSON.stringify({ mode: 'off' }), { status: 200 });
       const out = h(url, init);
@@ -157,7 +159,10 @@ describe('CallPanel — режим звонка в сцене консульта
 
   it('голос доступен: согласие → проверка устройств → «Продолжить текстом» → старт без микрофона', async () => {
     vi.stubGlobal('SpeechRecognition', class {});
-    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: vi.fn(async () => { throw Object.assign(new Error('x'), { name: 'NotAllowedError' }); }), enumerateDevices: vi.fn(async () => []) } });
+    const audio = installFakeAudio();
+    audio.getUserMedia.mockImplementation(async () => {
+      throw Object.assign(new Error('x'), { name: 'NotAllowedError' });
+    });
     try {
       renderScene();
       fireEvent.click(screen.getByText('открыть'));
@@ -170,6 +175,48 @@ describe('CallPanel — режим звонка в сцене консульта
       expect(screen.getByTestId('call-text-mode')).toBeTruthy();
     } finally {
       Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+    }
+  });
+
+  it('свободный разговор: без «Ответить» — микрофон открыт, фраза по детектору речи уходит в STT и ход; mute закрывает микрофон', async () => {
+    document.body.dataset.stt = 'yandex';
+    const audio = installFakeAudio();
+    routes['GET /api/call'] = () => ({ consent: { given: true, version: 'cv-1', text: [] }, calls: [] });
+    routes['POST /api/call/call-1/audio'] = () => ({ audioRef: 'a-1', text: 'B-дерево' });
+    try {
+      renderScene();
+      fireEvent.click(screen.getByText('открыть'));
+      fireEvent.click(await screen.findByTestId('call-devices-go'));
+      expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
+      expect(screen.queryByText('Ответить')).toBeNull();
+      expect(screen.queryByLabelText('Ответить голосом')).toBeNull();
+      expect(screen.getByTestId('call-mic').textContent).toContain('Микрофон вкл');
+      await waitFor(() => expect(screen.getByTestId('call-talk-state').textContent).toBe('Слушаю'));
+      expect(audio.openTracks()).toBe(1);
+
+      // Настоящий детектор (lib/vad): 128-мс кадры — тишина, ~1 с речи, тишина дольше hangover.
+      await act(async () => {
+        audio.feed(0.001, 5);
+        audio.feed(0.3, 8);
+      });
+      expect(screen.getByTestId('call-talk-state').textContent).toBe('Вы говорите');
+      await act(async () => audio.feed(0.001, 8));
+      expect(await screen.findByText('Почему именно B-дерево?')).toBeTruthy();
+      expect(calls.find((c) => c.url === 'POST /api/call/call-1/turn')?.body).toEqual({ text: 'B-дерево', audioRef: 'a-1' });
+
+      fireEvent.click(screen.getByTestId('call-mic'));
+      expect(screen.getByTestId('call-mic').textContent).toContain('Микрофон выкл');
+      expect(screen.getByTestId('call-talk-state').textContent).toBe('Микрофон выключен');
+      await waitFor(() => expect(audio.openTracks()).toBe(0));
+      expect(audio.openContexts()).toBe(0);
+
+      await waitFor(() => expect((screen.getByTestId('call-finish') as HTMLButtonElement).disabled).toBe(false));
+      fireEvent.click(screen.getByTestId('call-finish'));
+      expect(await screen.findByTestId('depth-map')).toBeTruthy();
+      expect(audio.openTracks()).toBe(0);
+    } finally {
+      audio.restore();
+      delete document.body.dataset.stt;
     }
   });
 

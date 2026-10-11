@@ -22,10 +22,10 @@ test('С1: вход → резюме и ссылка → шаги → карто
   test.setTimeout(150_000);
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Твой код.');
-  // «Приступим» открывает окно входа поверх главной; демо-профиль выбирается в окне
+  // «Приступим» открывает окно входа и сохраняет режим знакомства после входа.
   await page.getByRole('link', { name: /Приступим/ }).first().click();
   await signInAsDemoCandidate(page);
-  await page.waitForURL('**/consultant');
+  await page.waitForURL('**/consultant?mode=intake');
   await expect(page.getByRole('heading', { name: 'Карьерный консультант' })).toBeVisible();
 
   // резюме скрепкой (чип вложения) + ссылка прямо в тексте сообщения
@@ -70,10 +70,19 @@ test('С1: файл больше 5 МБ отклоняется сообщени�
   await page.goto('/auth');
   await signInAsDemoCandidate(page);
   await page.waitForURL('**/consultant');
-  await page.getByTestId('composer').locator('input[type=file]').setInputFiles({
+  const uploadRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/uploads') uploadRequests.push(request.url());
+  });
+  const oversized = {
     name: 'big.pdf',
     mimeType: 'application/pdf',
     buffer: Buffer.alloc(5 * 1024 * 1024 + 1),
-  });
-  await expect(page.getByText(/больше 5 МБ/)).toBeVisible();
+  };
+  // Как в С1 выше: input присутствует в SSR до подключения обработчика onChange.
+  await expect(async () => {
+    await page.getByTestId('composer').locator('input[type=file]').setInputFiles(oversized);
+    await expect(page.getByText(/больше 5 МБ/)).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 10_000 });
+  expect(uploadRequests).toEqual([]);
 });

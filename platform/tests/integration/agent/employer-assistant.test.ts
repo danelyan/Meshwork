@@ -67,6 +67,12 @@ describe('помощник работодателя (БД)', () => {
     await seedRecommend(prisma);
     await seedAuth(prisma);
     await seedEmployer(prisma);
+    // Демо-цитаты иногда совпадают с публичной формулировкой каталога. Отделяем
+    // приватный текст источника, чтобы проверка ловила утечку, а не название навыка.
+    const claims = await prisma.claim.findMany({ select: { id: true, quote: true } });
+    for (const claim of claims) {
+      await prisma.claim.update({ where: { id: claim.id }, data: { quote: `Private fixture quote ${claim.id}: ${claim.quote}` } });
+    }
     await prisma.candidate.updateMany({ data: { hiddenFromEmployers: false } });
   });
   afterAll(async () => {

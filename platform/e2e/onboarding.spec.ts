@@ -24,6 +24,7 @@ test('E-02: /demo → галка согласия → «Новый пользо�
 // Персона этапа 2 «Павел Нестеров»: знакомство начато, часть ответов уже сохранена, продолжение - в ленте чата.
 test('E-02: персона «Знакомство» с /demo открывает ленту знакомства с сохранёнными ответами', async ({ page }) => {
   await page.goto('/demo');
+  await page.getByText('Все профили по этапам пути').click();
   await page.getByRole('button', { name: 'Войти как Павел Нестеров' }).first().click();
   await page.waitForURL('**/consultant');
   await expect(page.getByRole('list', { name: 'Переписка с помощником' })).toBeVisible({ timeout: 30_000 });

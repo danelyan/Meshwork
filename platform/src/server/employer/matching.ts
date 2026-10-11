@@ -2,18 +2,19 @@
 // Загрузка из БД + чистое ранжирование (ranking.ts) + проекция приватности (privacy.ts).
 import type { InvitationStatus } from '@prisma/client';
 
+import { notBlockedCandidateWhere } from '@/server/admin/accounts/state';
+import { getSetting } from '@/server/admin/settings';
+
 import type { CatalogEntry } from '../claims/types';
 import { demoAchievements } from '../collector/fsp-demo';
 import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
-import { errors } from '../errors';
 import { NOT_EXPERT_CANDIDATE } from '../expert/marker';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
 import { asFullstackEvidence, fullstackLabel, fullstackNeeds, fullstackProfile } from './fullstack';
 import { loadRankingIntegrity, rankingIntegrityOptions, withRankingIntegrity } from './integrity-ranking';
-import { compareCandidates, type Comparison } from './compare';
 import { dedupeClaims, toCandidateCard, type CandidateCard, type PublicClaim } from './privacy';
 import {
   categoryNeeds,
@@ -73,11 +74,15 @@ interface PoolRow {
  * `companyId` — чья выдача: от него зависит, какие защиты видны (ADR 0008); null — только ИИ-защиты.
  */
 export async function loadPool(catalog: Map<string, CatalogEntry>, companyId: string | null = null): Promise<PoolRow[]> {
+  const showDemo = await getSetting('matching.show_demo_candidates');
   const rows = await prisma.candidate.findMany({
     where: {
       hiddenFromEmployers: false,
       // Режим эксперта (server/expert): одноразовые эксперты жюри в поиск и подборку не попадают никогда.
       ...NOT_EXPERT_CANDIDATE,
+      // E-08 фаза 3: аккаунт заблокирован модератором — не в выдаче; демо — по переключателю админки.
+      AND: [notBlockedCandidateWhere()],
+      ...(showDemo ? {} : { isDemo: false }),
       OR: [{ claims: { some: { status: { in: ['confirmed', 'edited'] } } } }, { categories: { some: {} } }],
     },
     select: {
@@ -281,17 +286,4 @@ export async function searchBank(companyId: string, filters: MatchFilters, limit
   };
   const r = await run(companyId, catalog, targetFor, filters, limit);
   return { vacancy: null, filters, ...r };
-}
-
-/**
- * «Почему A выше B»: оба кандидата берутся из полной подборки под свою потребность (тот же ранжир и вклады,
- * без новых весов). Кого-то нет в подборке (скрыт, нанят другой компанией, нет покрытия) - 404.
- */
-export async function compareForVacancy(companyId: string, vacancyId: string, aId: string, bId: string): Promise<Comparison> {
-  if (aId === bId) throw errors.badRequest('Выберите двух разных кандидатов');
-  const r = await matchForVacancy(companyId, vacancyId, {}, Number.MAX_SAFE_INTEGER);
-  const a = r.items.find((i) => i.candidateId === aId);
-  const b = r.items.find((i) => i.candidateId === bId);
-  if (!a || !b) throw errors.notFound('Кандидата нет в подборке');
-  return compareCandidates(a, b);
 }

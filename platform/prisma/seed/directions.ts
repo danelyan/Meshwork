@@ -80,8 +80,9 @@ async function backfillDemoSubcategories(prisma: PrismaClient): Promise<number> 
 
 export async function seedDirections(prisma: PrismaClient): Promise<void> {
   for (const s of SUBCATEGORIES) {
-    const { id, ...data } = s;
-    await prisma.subcategory.upsert({ where: { id }, update: data, create: s });
+    // status и order правит админка (/admin/catalog): повторный сид их не перезаписывает, только создаёт недостающее.
+    const update = { specialization: s.specialization, title: s.title, description: s.description };
+    await prisma.subcategory.upsert({ where: { id: s.id }, update, create: s });
   }
   await seedPoolProfiles(prisma, DEMO_POOL_AI);
   await seedPoolProfiles(prisma, DEMO_POOL_CATEGORIES);

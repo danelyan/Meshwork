@@ -55,6 +55,8 @@
   /* шапка кабинета над панелью не липнет: липкое внутри панели прижимается к её верху */
   --landing-header-h: 0px; }
 .sidePanel { --feed-min-h: 100%; }
+/* чат занимает ровно высоту колонки: расчёт от окна (100svh) не знает про шапку кабинета, и поле ввода закрывало низ ленты */
+.sidePanel { --chat-h: 100%; --chat-min-h: 0px; }
 .sidePanel.sidePanel h1 { font-size: var(--fs-xl); white-space: nowrap; }
 .sideScene[data-call] .sidePanel > :not(.callPause) { opacity: 0.35; filter: grayscale(1); }
 .callPause { position: sticky; top: 0; z-index: 2; margin: 0 -16px; padding: 10px 16px; font: 500 var(--fs-xs) var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); background: var(--paper); border-bottom: 1px solid var(--line); }
@@ -69,7 +71,7 @@
   /* созвон: сцене нужна высота под голову, текст реплики и панель управления */
   .sideScene[data-call] { --stage-h: max(88svh, 520px); }
   /* липкая шапка ленты прижимается под липкой головой */
-  .sidePanel { order: 2; --landing-header-h: calc(var(--page-header-h) + var(--stage-h)); --feed-min-h: calc(100svh - var(--page-header-h) - var(--stage-h)); overflow: visible; border-right: 0; border-top: 1px solid var(--line); }
+  .sidePanel { order: 2; --landing-header-h: calc(var(--page-header-h) + var(--stage-h)); --feed-min-h: calc(100svh - var(--page-header-h) - var(--stage-h)); --chat-h: initial; --chat-min-h: initial; overflow: visible; border-right: 0; border-top: 1px solid var(--line); }
 }
 /* низкое окно (телефон в ландшафте, открытая клавиатура): голова ниже, субтитры уходят, ввод остаётся виден */
 @media (max-width: 1050px) and (max-height: 560px) {

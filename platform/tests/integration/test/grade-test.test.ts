@@ -557,6 +557,24 @@ describe('индекс честности и подтверждающий тес
     expect((await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(A)), ctx(src))).status).toBe(409);
   });
 
+  it('silent: брошенная подтверждающая попытка не показывается как текущая - экран снова предлагает подтверждающий тест', async () => {
+    vi.unstubAllEnvs();
+    resetEnvCache();
+    const { attemptId: src } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
+    const fast = await playTimed(A, src, 0, 4, shifted);
+    expect(fast.v.result?.integrity?.rankingHold).toBe(true);
+    const started = await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(A)), ctx(src));
+    const { attemptId: conf } = (await started.json()) as { attemptId: string };
+    expect((await getAttempt(A, src)).result?.integrity?.confirmAttemptId).toBe(conf);
+    // Завершил без ответов - abandoned: ссылки на неё нет, новая подтверждающая попытка разрешена.
+    const fin = await finishRoute(jsonRequest(`/api/test/attempt/${conf}/finish`, 'POST', {}, cookie(A)), ctx(conf));
+    expect(((await fin.json()) as AttemptView).status).toBe('abandoned');
+    expect((await getAttempt(A, src)).result?.integrity).toMatchObject({ confirmAttemptId: null, confirmedBy: null, rankingHold: true });
+    const again = await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(A)), ctx(src));
+    expect(again.status).toBe(201);
+    expect(((await again.json()) as { attemptId: string }).attemptId).not.toBe(conf);
+  });
+
   it('silent, TEST_INTEGRITY_RANKING=false: выдача категорию учитывает - уведомления нет, подтверждающий тест не нужен', async () => {
     vi.unstubAllEnvs();
     vi.stubEnv('TEST_INTEGRITY_RANKING', 'false');

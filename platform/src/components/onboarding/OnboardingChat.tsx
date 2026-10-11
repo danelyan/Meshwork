@@ -410,7 +410,7 @@ function OnboardingChatBody({ initial, consentText, consultant, employerAssistan
             </nav>
           )}
           {!isSummary && (
-            <><span className={styles.saved}>сохранено {view.progress.done} из {view.progress.total}</span>
+            <><span className={styles.saved}>пройдено {view.progress.done} из {view.progress.total}</span>
             <Button size="sm" onClick={() => void later()} disabled={busy} title="Ответы сохранены - продолжишь с этого места">
               {inConsultant && !employer ? 'Вернуться в чат' : 'Настроить позже'}
             </Button></>

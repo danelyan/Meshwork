@@ -129,8 +129,6 @@ def run(pipeline: dict, executor, files=None, cache=None, max_parallel: int = 1)
                         started.append(i)
                         waiting.remove(i)
                         progressed = True
-                        if ok and step.get("cache", True):
-                            pass
                     # иначе ждёт слот
         if not running:
             break

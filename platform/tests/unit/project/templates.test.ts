@@ -6,8 +6,17 @@ import { checkPlatformOwned, countTests, getTemplates, ownedFileHashes, PLATFORM
 describe('шаблоны проектов на диске', () => {
   const all = getTemplates();
 
-  it('четырнадцать шаблонов: 7 Junior/Middle (research/25 § 4) + Senior на каждую активную подкатегорию + два учебных Junior-шаблона runner', () => {
-    expect(all.map((t) => `${t.manifest.subcategoryId}/${t.manifest.grade}/${t.manifest.id}`)).toEqual([
+  it('id шаблонов уникальны и по конвенции <спец>-<подкат>-<грейд>-<тема>, грейд в id совпадает с манифестом', () => {
+    const ids = all.map((t) => t.manifest.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const t of all) {
+      expect(t.manifest.id).toMatch(/^(ai|be|fe|eng)-[a-z]+-(junior|middle|senior)-[a-z0-9-]+$/);
+      expect(t.manifest.id.split('-')[2], t.manifest.id).toBe(t.manifest.grade);
+    }
+  });
+
+  it('исходные четырнадцать шаблонов (research/25 § 4 + Senior на активные подкатегории + учебные Junior runner) на месте', () => {
+    expect(all.map((t) => `${t.manifest.subcategoryId}/${t.manifest.grade}/${t.manifest.id}`)).toEqual(expect.arrayContaining([
       'ai.llm-apps/middle/ai-llmapps-middle-rag',
       'ai.llm-apps/senior/ai-llmapps-senior-gateway',
       'backend.integrations/middle/be-integrations-middle-delivery',
@@ -22,7 +31,7 @@ describe('шаблоны проектов на диске', () => {
       'frontend.ui-app/junior/fe-uiapp-junior-widget',
       'frontend.ui-app/middle/fe-uiapp-middle-tasks',
       'frontend.ui-app/senior/fe-uiapp-senior-search',
-    ]);
+    ]));
   });
 
   it('Senior: бюджет 6–8 ч, контракт требует DESIGN.md с компромиссами', () => {

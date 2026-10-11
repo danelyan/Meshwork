@@ -4,7 +4,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { Landing } from '@/components/landing/Landing';
 import { SHOWCASE } from '@/components/landing/showcase';
 import type { LandingData } from '@/components/landing/types';
-import { signSession } from '@/server/session';
+import { signSession, signUserSession } from '@/server/session';
 
 const cookieValue = vi.hoisted(() => ({ value: undefined as string | undefined }));
 vi.mock('next/headers', () => ({ cookies: async () => ({ get: (name: string) => name === 'cid' && cookieValue.value ? { name, value: cookieValue.value } : undefined }) }));
@@ -39,7 +39,7 @@ describe('главная', () => {
     render(<Landing data={DATA} signedIn={false} />);
     const starts = screen.getAllByRole('link', { name: /Приступим/ });
     expect(starts).toHaveLength(2);
-    for (const link of starts) expect(link.getAttribute('href')).toBe('/auth?next=%2Fconsultant%3Fmode%3Dintake');
+    for (const link of starts) expect(link.getAttribute('href')).toBe('/auth');
     for (const link of starts) {
       const arrow = link.querySelector('svg path');
       expect(arrow?.getAttribute('fill')).toBe('currentColor');
@@ -47,10 +47,10 @@ describe('главная', () => {
     }
     expect(screen.getByRole('link', { name: /Уже есть аккаунт/ }).getAttribute('href')).toBe('/auth');
   });
-  it('с сессией открывает знакомство, сохраняя отдельный вход в кабинет', () => {
+  it('с сессией ведёт в кабинет', () => {
     render(<Landing data={DATA} signedIn />);
     expect(screen.getByRole('link', { name: /Ваш кабинет/ }).getAttribute('href')).toBe('/consultant');
-    for (const link of screen.getAllByRole('link', { name: /Приступим/ })) expect(link.getAttribute('href')).toBe('/consultant?mode=intake');
+    for (const link of screen.getAllByRole('link', { name: /Приступим/ })) expect(link.getAttribute('href')).toBe('/consultant');
   });
   it('компании ведут к публичному источнику и не выдаются за участников платформы', () => {
     render(<Landing data={DATA} signedIn={false} />);
@@ -107,6 +107,19 @@ describe('страница /', () => {
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
     expect(screen.getByRole('link', { name: /Ваш кабинет/ })).toBeDefined();
+  });
+  it('работодатель и аккаунт без роли тоже видят кабинет, а не вход', async () => {
+    for (const session of [
+      signUserSession({ userId: 'user1', role: 'employer', employerProfileId: 'emp1' }),
+      signUserSession({ userId: 'user2', role: 'pending' }),
+    ]) {
+      cleanup();
+      cookieValue.value = session;
+      const { default: HomePage } = await import('@/app/page');
+      render(await HomePage());
+      expect(screen.getByRole('link', { name: /Ваш кабинет/ })).toBeDefined();
+    }
+    expect(dbCalls.n).toBe(0);
   });
   it('поддельная сессия остаётся гостевой', async () => {
     cookieValue.value = 'cand1.9999999999.forged';

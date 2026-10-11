@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 
 import { Landing } from '@/components/landing/Landing';
 import { SHOWCASE } from '@/components/landing/showcase';
-import { getPageSession } from '@/server/auth/page';
+import { SESSION_COOKIE, parseSession } from '@/server/session';
 
 export const metadata: Metadata = {
   title: 'ФСП Карьера - твой код, твоя карьера',
@@ -10,9 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  // Та же проверка, что у шапки: verifySession видит только кандидата, и работодатель или аккаунт без роли
-  // получали на главной гостевые «Приступим» и «Войти», открывавшие модалку входа поверх входа.
-  const signedIn = (await getPageSession()) !== null;
+  // parseSession, а не verifySession: та видит только кандидата, и работодатель или аккаунт без роли получали
+  // гостевые «Приступим» и «Войти» (модалка входа поверх входа). Без БД: протухшую куку отсеет гвард /consultant.
+  const signedIn = parseSession((await cookies()).get(SESSION_COOKIE)?.value) !== null;
   // Публичные примеры ИТ-компаний; чужие вакансии не импортируются.
   return <Landing data={SHOWCASE} signedIn={signedIn} />;
 }

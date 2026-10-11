@@ -1,0 +1,7 @@
+# Generated artifacts are compared byte-for-byte with their source generators.
+docs/openapi.yaml text eol=lf
+platform/src/server/agent/prompt.ts text eol=lf
+platform/src/server/agent/employer/prompt.ts text eol=lf
+platform/src/server/onboarding/prompt.ts text eol=lf
+platform/src/server/agent/knowledge/corpus.ts text eol=lf
+platform/src/server/openapi/spec.generated.ts text eol=lf

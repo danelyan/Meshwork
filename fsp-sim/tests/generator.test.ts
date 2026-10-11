@@ -106,10 +106,10 @@ describe('реалм Keycloak', () => {
     const read = (name: string) => readFileSync(resolve(dir, name), 'utf8');
     expect(read('theme.properties')).toMatch(/^parent=keycloak\.v2$/m);
     const ftl = read('login.ftl');
-    for (const part of ['action="${url.loginAction}"', 'name="username"', 'name="password"', 'name="credentialId"', 'js/fsp-demo.js']) expect(ftl).toContain(part);
-    const js = read('resources/js/fsp-demo.js');
+    for (const part of ['action="${url.loginAction}"', 'name="username"', 'name="password"', 'name="credentialId"', 'js/quick-login.js']) expect(ftl).toContain(part);
+    const js = read('resources/js/quick-login.js');
     expect(js).toContain('/api/v1/sandbox');
-    for (const file of ['login.ftl', 'footer.ftl', 'resources/js/fsp-demo.js', 'messages/messages_ru.properties']) expect(read(file)).not.toContain('fsp-demo-2026');
+    for (const file of ['login.ftl', 'footer.ftl', 'resources/js/quick-login.js', 'messages/messages_ru.properties']) expect(read(file)).not.toContain('fsp-demo-2026');
     expect(read('messages/messages_ru.properties')).toMatch(/^fspSimFooter=Это не сервис Федерации/m);
   });
 

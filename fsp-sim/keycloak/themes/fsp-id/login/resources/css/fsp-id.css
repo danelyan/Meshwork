@@ -1,0 +1,58 @@
+/* Вид страниц входа симулятора ФСП ID: те же цвета, что на главной странице симулятора (public/app.css). */
+:root {
+  --fsp-bg: #f3f5f9; --fsp-ink: #121826; --fsp-muted: #5f6878; --fsp-line: #e4e8ef; --fsp-line-strong: #cfd5df;
+  --fsp-accent: #1f4fd8; --fsp-accent-dark: #173fb0; --fsp-accent-soft: #edf2fe; --fsp-bad: #b42318;
+  --fsp-warn: #8a5a00; --fsp-warn-soft: #fff6dc; --fsp-warn-line: #f0cf7a;
+  --keycloak-card-top-color: var(--fsp-accent);
+  --pf-v5-global--primary-color--100: var(--fsp-accent);
+  --pf-v5-global--primary-color--200: var(--fsp-accent-dark);
+  --pf-v5-global--link--Color: var(--fsp-accent);
+  --pf-v5-global--link--Color--hover: var(--fsp-accent-dark);
+  --pf-v5-global--FontFamily--text: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pf-v5-global--FontFamily--heading: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.login-pf body { background: var(--fsp-bg); color: var(--fsp-ink); -webkit-font-smoothing: antialiased; }
+[hidden] { display: none !important; }
+
+.pf-v5-c-login__container { grid-template-columns: minmax(0, 28rem); justify-content: center; }
+.pf-v5-c-login__header { padding-bottom: 12px; }
+#kc-header-wrapper { color: var(--fsp-ink) !important; font-size: 18px; letter-spacing: 0; text-transform: none; font-weight: 400; }
+#kc-header-wrapper b { font-weight: 700; }
+
+.pf-v5-c-login__main { border: 1px solid var(--fsp-line); border-radius: 16px; box-shadow: 0 1px 2px rgba(18, 24, 38, .04), 0 8px 24px rgba(18, 24, 38, .06); overflow: hidden; }
+.pf-v5-c-login__main-header { border-top-width: 4px; padding-bottom: 0; }
+.pf-v5-c-login__main-header-utilities { display: none; }
+#kc-page-title { font-size: 24px; line-height: 1.25; font-weight: 700; letter-spacing: -.01em; }
+.pf-v5-c-form__label-text { font-weight: 600; font-size: 14px; }
+
+/* Поля: одна рамка со скруглением вместо линии снизу у PatternFly; синяя при фокусе, красная при ошибке. */
+.pf-v5-c-form-control { border-radius: 10px; }
+.pf-v5-c-form-control::before { border: 1px solid var(--fsp-line-strong) !important; border-radius: 10px; }
+.pf-v5-c-form-control::after { border: 0 !important; }
+.pf-v5-c-form-control:focus-within::before { border: 2px solid var(--fsp-accent) !important; }
+.pf-v5-c-form-control.pf-m-error::before { border-color: var(--fsp-bad) !important; }
+.pf-v5-c-form-control > input { min-height: 44px; padding-inline: 12px; font-size: 16px; }
+.pf-v5-c-input-group .pf-v5-c-form-control, .pf-v5-c-input-group .pf-v5-c-form-control::before { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control { border-radius: 0 10px 10px 0; background: #fff; color: var(--fsp-muted); }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control::after { border: 1px solid var(--fsp-line-strong) !important; border-left: 0 !important; border-radius: 0 10px 10px 0; }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control:hover { color: var(--fsp-ink); }
+
+.pf-v5-c-button.pf-m-primary { border-radius: 10px; min-height: 46px; font-weight: 600; font-size: 16px; }
+
+.fsp-sim { margin: 4px 0 20px; }
+.fsp-sim p { margin: 0; }
+.fsp-sim__badge { display: inline-block; vertical-align: 1px; margin-right: 4px; background: var(--fsp-warn-soft); color: var(--fsp-warn); border: 1px solid var(--fsp-warn-line); border-radius: 999px; padding: 0 8px; font-size: 11px; line-height: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.fsp-sim__text { color: var(--fsp-muted); font-size: 14.5px; line-height: 1.5; }
+.fsp-sim__quick { margin-top: 18px; }
+.fsp-sim__title { font-weight: 600; font-size: 14px; margin-bottom: 8px !important; }
+.fsp-sim__list { display: grid; gap: 6px; }
+.fsp-sim__athlete { display: block; width: 100%; text-align: left; font: inherit; color: var(--fsp-ink); background: #fff; border: 1px solid var(--fsp-line-strong); border-radius: 12px; padding: 9px 14px; cursor: pointer; transition: border-color .12s, background-color .12s; }
+.fsp-sim__athlete:hover, .fsp-sim__athlete:focus-visible { border-color: var(--fsp-accent); background: var(--fsp-accent-soft); outline: none; box-shadow: 0 0 0 3px var(--fsp-accent-soft); }
+.fsp-sim__athlete:disabled { opacity: .55; cursor: progress; }
+.fsp-sim__athlete b { display: block; font-weight: 600; font-size: 15px; }
+.fsp-sim__athlete span { display: block; color: var(--fsp-muted); font-size: 13px; }
+.fsp-sim__note { color: var(--fsp-muted); font-size: 13px; line-height: 1.45; margin-top: 8px !important; }
+.fsp-sim__divider { display: flex; align-items: center; gap: 12px; color: var(--fsp-muted); font-size: 13px; margin-top: 20px !important; }
+.fsp-sim__divider::before, .fsp-sim__divider::after { content: ""; flex: 1; border-top: 1px solid var(--fsp-line); }
+.fsp-sim__footer { color: var(--fsp-muted); font-size: 12.5px; line-height: 1.45; text-align: center; margin: 0; padding: 0 12px 16px; }

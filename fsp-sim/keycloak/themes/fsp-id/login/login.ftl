@@ -5,7 +5,7 @@
 <#import "passkeys.ftl" as passkeys>
 <#--
   Страница входа симулятора ФСП ID. Основа — login.ftl темы keycloak.v2 (Keycloak 26.5); добавлен блок
-  для жюри: что это за страница и вход выбранным участником в одно нажатие (resources/js/fsp-demo.js
+  для жюри: что это за страница и вход выбранным участником в одно нажатие (resources/js/quick-login.js
   берёт участников и общий демо-пароль у API реестра на том же адресе). Флажок «Запомнить меня» убран:
   платформа каждый раз просит войти заново.
 -->
@@ -47,7 +47,7 @@
             </div>
         </div>
         <@passkeys.conditionalUIData />
-        <script type="module" src="${url.resourcesPath}/js/fsp-demo.js"></script>
+        <script type="module" src="${url.resourcesPath}/js/quick-login.js"></script>
     <#elseif section = "socialProviders" >
         <#if realm.password && social.providers?? && social.providers?has_content>
             <@identityProviders.show social=social/>

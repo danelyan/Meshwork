@@ -46,11 +46,6 @@ export interface AiUtteranceMeta {
   interrupted?: { heardSentences: number; totalSentences: number; tail: string };
   /** Этап «разбор решённого задания теста»: шаг 1 — объяснить ход решения, шаг 2 — изменить условие. */
   testReview?: { step: 1 | 2; templateId: string };
-  /**
-   * Потоковый режим (CALL_STREAMING): начало вопроса уже прозвучало, а ответ модели потом не прошёл проверки
-   * или оборвался — реплика собрана из прозвучавшего (+ вопрос из шаблона). Для разбора, на оценку не влияет.
-   */
-  streamCut?: boolean;
 }
 
 /** Одна реплика транскрипта (CallSession.transcriptJson — массив таких). */
@@ -198,12 +193,6 @@ export const CALL_EVENT_TYPES = [
   'signal',
   /** Ошибка на сервере (оценщик недоступен и т. п.). */
   'error',
-  /**
-   * Готово очередное предложение следующей реплики ИИ (CALL_STREAMING): клиент может озвучить его до прихода
-   * реплики целиком. Итоговая реплика всё равно придёт `utterance` и начнётся с этих предложений.
-   * Клиенты, которые его не слушают, работают как раньше.
-   */
-  'utterance_delta',
 ] as const;
 export type CallEventType = (typeof CALL_EVENT_TYPES)[number];
 
@@ -217,9 +206,7 @@ export type CallEvent =
   | { type: 'question'; questionId: string; status: 'queued' | 'asked' | 'answered' }
   | { type: 'verdict'; verdict: CallVerdict | PublicCallVerdict }
   | { type: 'signal'; from: string; to?: string; payload: unknown }
-  | { type: 'error'; code: string; message: string }
-  /** afterIndex — index реплики кандидата, на которую отвечает ИИ; n — номер предложения с 0. */
-  | { type: 'utterance_delta'; afterIndex: number; n: number; text: string };
+  | { type: 'error'; code: string; message: string };
 
 /** Кто смотрит созвон и что ему положено. */
 export type CallViewerRole = 'candidate' | 'employer';

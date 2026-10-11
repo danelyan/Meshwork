@@ -158,7 +158,7 @@ Playwright шёл на Chromium 1228, а проект требует 1248: шт�
 | +4…+6 семейств на подкатегорию у порогов (виртуальные, a = 1,2) | точность +0,6…+1,2 п.п., ретест ±0,5 | ±1 п.п. | банк сам по себе метрик не двигает; даёт покрытие тем и ротацию |
 
 **Сравнение с конкурентами в сопоставимой постановке** (их цифры — из их отчётов, код не запускался; разбор — у владельца,
-`docs/research/competitors/validation-deep-dive.md` и `test-banks.md`):
+`docs/research/competitors/topics/validation.md` и `topics/test-banks.md`):
 
 | | Мы (v5) | Драфт | Рекрут 2 | Скаут |
 |---|---|---|---|---|
@@ -1457,7 +1457,7 @@ Junior по b: cls-image-line (-0.9), cache-control (-0.8), debounce-count (-0.8
 
 ## Связь теста и созвона (11.10)
 
-Текстовый тест от нейросети защитить нельзя ([anti-ai.md](research/competitors/anti-ai.md), раздел 5), поэтому созвон проверяет, что кандидат сам решал задания: ИИ-интервьюер в конце просит объяснить ход решения одного задания из последней попытки теста и задаёт вопрос на изменение условия, отдельный оценщик ставит сигнал `testOwnership` (объяснил / частично / не смог / не проверялось). Это сигнал, а не штраф: в ранжирование и категорию он не входит. Проверено только юнит-тестами (выбор заданий, отсутствие попытки, схема итога, понижение «объяснил» без цитаты) и на stub; **персоны созвона с живой моделью не перепрогнаны** (машина перегружена), поэтому влияние этапа на оценки тем и длину созвона не измерено: по построению этап не попадает в пары вопрос-ответ слепого оценщика и добавляет 2 реплики. Точность оценщика «решил сам» на людях и на подсказках нейросети не измерена.
+Текстовый тест от нейросети защитить нельзя ([anti-ai.md](research/competitors/topics/anti-ai.md), раздел 5), поэтому созвон проверяет, что кандидат сам решал задания: ИИ-интервьюер в конце просит объяснить ход решения одного задания из последней попытки теста и задаёт вопрос на изменение условия, отдельный оценщик ставит сигнал `testOwnership` (объяснил / частично / не смог / не проверялось). Это сигнал, а не штраф: в ранжирование и категорию он не входит. Проверено только юнит-тестами (выбор заданий, отсутствие попытки, схема итога, понижение «объяснил» без цитаты) и на stub; **персоны созвона с живой моделью не перепрогнаны** (машина перегружена), поэтому влияние этапа на оценки тем и длину созвона не измерено: по построению этап не попадает в пары вопрос-ответ слепого оценщика и добавляет 2 реплики. Точность оценщика «решил сам» на людях и на подсказках нейросети не измерена.
 
 ## Отладка созвона 11.10
 
@@ -1714,23 +1714,3 @@ Production: npm run build passed (Next.js 15.5.27, 25 static pages). Built serve
 
 Owner requested the concept heading Сейчас нанимают. Changed only the heading and its accessible-name assertions; the original logo assets, links and company descriptions remain. Sequential checks: npm run typecheck passed; npm run lint passed (0 errors, 2 existing warnings); npm run test:unit -- --maxWorkers=2 passed (215 files, 3075 tests, 9 existing skipped, 86.48 seconds, 03:03:15 MSK); npm run build passed. Integration and the full account journey not rerun: copy-only change, no TEST_DATABASE_URL, API or schema edits.
 
-
-## Entry, consent and landing refinements (11.10.2026, Moscow)
-
-FSP ID/achievements moved from the benefit cards to the list under Приступим; five benefit cards adapt to desktop/tablet/mobile. Arrow uses a single filled polygon with no overlapping stroke caps. Entry has one shared consent checkbox and an independent grey disclosure; recovery is below the two email modes. Registration dispatch, external ID links and fresh-demo creation remain gated; existing email sign-in, verification and password recovery do not require new acceptance. FSP details identify only the presumed operator of a concept, explicitly confirmed by the owner; consent remains a draft, version 2026-10-11-draft. Recording consent is unchanged.
-
-Sequential checks from platform/: npm run typecheck passed; npm run lint passed (0 errors, 2 existing eval/tools-matrix warnings); targeted home/onboarding/design-tokens: 3 files, 98 tests passed; targeted email/auth-entry/auth-screen/demo-screen/design-tokens: 5 files, 80 passed; npm run test:unit -- --maxWorkers=2: 215 files, 3078 passed, 9 existing skipped (3087 total), 81.83 seconds, started 03:44:08 MSK. Two targeted runs initially caught an accessible-title whitespace assertion and the demo test's old disclosure link; corrected the assertions, then reran successfully.
-
-Integration not run: no TEST_DATABASE_URL for this run and no API/schema edits. Full Playwright jury journey not rerun; changed interaction paths are tested with mock email/ID/demo APIs, without real mail or LLM calls. No migrations or OpenAPI route changes.
-
-Production build: npm run build passed (Next.js 15.5.27). CUA checks on the built server: one native consent checkbox even with fresh-demo expanded; disclosure leaves it unchecked; password recovery and return-to-login render correctly. Mobile auth viewport 390x844: client/scroll width 390px, one checkbox, no horizontal overflow. Local screenshots output/auth-consent-final.png and output/fsp-note-arrow-final.png. Registration/recovery dispatch verified with mocked APIs; browser did not create an account, send mail or accept binding terms.
-
-## Focused candidate intake (11.10.2026, Moscow)
-
-Starting acquaintance on /consultant now has its own question feed, live grouped draft and existing animated portrait, with a full-width progress roadmap. Market/instruction/stat/call panels and the permanent resume drop area are absent from this scene. The existing consultant is opened after completion or explicit pause; its Знакомство link opens mode=intake without resetting answers. New private self-reports cover experience, role/project contribution (1000 characters) and industries (12 entries, 60 characters each), stored in OnboardingState JSON. They do not create Claim or Category records or employer filters. Contacts in the agent's intake context are masked and the tool result is untrusted. Completed older accounts are not forced through the new fields. Continuing the paused current question resumes the sequence; editing a different or completed-profile field retains one-field return to chat.
-
-Sequential final checks from platform/: npm run typecheck passed; npm run lint passed (0 errors, 2 existing eval/tools-matrix warnings); npm run test:unit -- --maxWorkers=2 passed (217 files, 3107 passed, 9 existing skipped, 3116 total; 78.09 seconds, 04:18:31 MSK); npm run test:integration passed (44 files, 418 tests; 129.20 seconds, 04:15:43 MSK) against a separate astra_intake_test database. First full integration run caught four old step-order expectations and an upstream outdated grammatical-form assertion in defense-room; these were repaired before the green rerun. npm run build passed (Next.js 15.5.27, 25 static pages). No schema migration or API route contract changes; generated-contract tests passed.
-
-npx playwright test e2e/onboarding.spec.ts -g "с выбора роли": 1 passed (34.0 seconds) on the production build with the stub model and separate test DB. Checks cover fresh synthetic role selection, continuous goal-to-specialization transition, reload persistence, absence of market/drop-zone cards, and 390px mobile overflow. The first attempt could not launch because Chromium was missing; installed the official Playwright browser and reran. Full jury Playwright journey not rerun in this task.
-
-CUA on the local built server: synthetic Тест визуального макета account, goal saved immediately and next question displayed; another tab restored the saved state, mobile draft toggle expanded/collapsed and selecting Backend advanced to required subcategory. Mobile viewport 390x844: document client/scroll width 375px (vertical scrollbar), no horizontal overflow. Screenshots output/intake-desktop-final.png and output/intake-mobile-final.png are local artifacts, not committed. No real model or outbound mail used.

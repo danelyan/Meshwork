@@ -32,9 +32,9 @@
 - **Модели:** —
 - **Маршруты:** `GET /api/health` (`{ ok, db, llm, time }`, 503 при недоступной БД).
 - **Env:** `DATABASE_URL`, `SESSION_SECRET`, `APP_URL`, `NODE_ENV`, `DEMO_LOGIN`, `SITE_PASSWORD`, `SITE_PASSWORD_SHA256`.
-- **Ограничения:** лимиты попыток входа живут в памяти процесса (сбрасываются при рестарте). `SITE_PASSWORD_SHA256` задан в
-  `docker-compose.prod.yml`: стенд закрыт паролем, он оставлен на время сдачи (решение владельца 11.10 15:30,
-  [product-decisions.md](product-decisions.md)), жюри получает пароль в документе сдачи.
+- **Ограничения:** лимиты попыток входа живут в памяти процесса (сбрасываются при рестарте). Пароль стенда (`SITE_PASSWORD` /
+  `SITE_PASSWORD_SHA256`) на стенде не задан: стенд открыт жюри без пароля (решение владельца 11.10 23:40,
+  [product-decisions.md](product-decisions.md)); механизм в коде остался.
 
 ### `llm`
 - **Назначение:** один интерфейс `complete()` над провайдерами `stub`, `openai-chat`, `yandex-responses`: семафор с очередью,

@@ -1,4 +1,4 @@
-# platform — ФСП Карьера: карьерный консультант (E-01)
+# platform — MESHWORK: карьерный консультант (E-01)
 
 Next.js 15 (App Router) + TypeScript strict + Prisma 6 / PostgreSQL 16 + Zod 4.
 Стек — `../docs/stack.md`. Карта модулей, маршрутов и общих файлов — [`../docs/modules.md`](../docs/modules.md).
@@ -102,8 +102,8 @@ Integration-тесты: перед прогоном `globalSetup` применя
 созвоны идут на основной модели; задана — созвон (`getLlm({ purpose: 'call' })`) идёт на ней, а при её сбое
 запрос уходит на основную. Чат, консультант и подбор не затрагиваются.
 
-Пароль на стенд: `SITE_PASSWORD` (или его SHA-256 в `SITE_PASSWORD_SHA256`, на стенде — в
-`docker-compose.prod.yml`) задан → публичный адрес пускает только после ввода пароля на
+Пароль на стенд: `SITE_PASSWORD` (или его SHA-256 в `SITE_PASSWORD_SHA256`, его можно держать в
+`docker-compose.prod.yml`; на стенде сейчас не задан) задан → публичный адрес пускает только после ввода пароля на
 `/site-access` (без логина; кука `site_access` на 30 дней, подписана `SESSION_SECRET`, смена пароля сбрасывает её у всех).
 Проверка — `src/middleware.ts` + `src/server/site-access.ts`. Не закрываются localhost/127.0.0.1/[::1],
 `/api/health` (CI, healthcheck) и статика; API без куки отвечает 401 `site_locked`. Пусто — стенд открыт.
@@ -113,7 +113,7 @@ Integration-тесты: перед прогоном `globalSetup` применя
 | Переменная | По умолчанию | Смысл |
 |---|---|---|
 | `MAIL_PROVIDER` | `smtp` | `smtp` — боевой режим: письма на реальные ящики через SMTP-провайдера (локально — Mailpit, веб-ящик :8025); `log` — только локально и в тестах: письмо в лог сервера и журнал в памяти, без сети (тесты ставят `log` в `vitest.config.mts`) |
-| `MAIL_FROM` | `ФСП Карьера <no-reply@fsp-career.local>` | отправитель |
+| `MAIL_FROM` | `MESHWORK <no-reply@meshwork.local>` | отправитель |
 | `SMTP_HOST`, `SMTP_PORT` | `localhost`, `1025` | SMTP-сервер (в compose — `mailpit:1025`) |
 | `SMTP_SECURE` | `false` | `true` — TLS с первого байта (порт 465); STARTTLS не поддерживается |
 | `SMTP_USER`, `SMTP_PASSWORD` | пусто | AUTH PLAIN; пусто — без авторизации (Mailpit) |
@@ -314,22 +314,12 @@ const res = await llm.complete({ purpose: 'consultant', system, messages, tools 
 `POST /api/employer/assistant/messages` `{conversationId?, text}` → SSE
 `EmployerAgentEvent` (`server/agent/employer/types.ts`): `conversation`, `step`,
 `queue`, `ask`, `candidates` (карточки выдачи), `invitation_draft`, `need_draft`,
-`company_draft`, `project_task_draft` (**в работе 11.10 вечер, не в main**), `message`, `delta`, `discard`, `error`, `done`. Только роль employer (401/403), один ход на разговор
+`message`, `error`, `done`. Только роль employer (401/403), один ход на разговор
 (409). Разговоры — свои таблицы `EmployerConversation` / `EmployerMessage`
 (миграция `202610091500_employer_agent`), purpose `employer_assistant` в `AgentRun`.
 Страница — `/employer/assistant`; после онбординга работодателя та же лента
 продолжается помощником. Демо без модели (`LLM_STUB_DEMO=true`) и план В —
 скриптовый ход на тех же инструментах (`employer/demo.ts`).
-
-Инструменты (11, `server/agent/employer/tools/index.ts`; все читают или готовят черновик, действие делает человек кнопкой):
-`get_employer_context`, `match_for_need`, `search_candidates`, `explain_candidate`, `draft_invitation`,
-`create_need_draft`, `draft_company_profile` (черновик -> `company_draft`, применяется через
-`PATCH /api/employer/company`), `create_project_task_draft` (черновик -> `project_task_draft`, формируется через
-`POST /api/employer/needs/:id/project`), `search_knowledge`, `web_search`, `ask_user`. `draft_company_profile` и `create_project_task_draft` - **в работе 11.10 вечер, не в main**.
-
-Тело запроса принимает необязательное `page {path, vacancyId?}` - экран, с которого пишет работодатель
-(плавающая панель `components/employer/AssistantDrawer.tsx`, **в работе, не в main**); промпт `employer-v10`
-учитывает его (в main - `employer-v9`).
 
 ## Контракты и заглушки лейнов
 

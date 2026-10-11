@@ -11,11 +11,9 @@ services:
   app:
     # Без порта на хосте: приложение доступно только через Caddy.
     ports: !reset []
-    environment:
-      # Пароль на сайт (страница /site-access, src/server/site-access.ts): здесь только SHA-256, сам пароль
-      # у владельца. На время сдачи пароль оставлен (решение владельца 11.10 15:30, закрывает стенд от
-      # посторонних): жюри получает его в документе сдачи, см. ../docs/product-decisions.md и ../docs/deploy.md.
-      SITE_PASSWORD_SHA256: "915da025c8fb4482b701d66c462e70eeb113529ce70d86baec7546d815be24a7"
+    # Пароль на сайт (страница /site-access, src/server/site-access.ts) снят 11.10 23:40 решением владельца:
+    # стенд открыт жюри без пароля. Вернуть — SITE_PASSWORD_SHA256 (SHA-256 пароля, сам пароль не в Git)
+    # в environment здесь или SITE_PASSWORD в .env сервера; см. ../docs/deploy.md и ../docs/product-decisions.md.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
       interval: 10s

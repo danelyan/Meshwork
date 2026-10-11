@@ -1,0 +1,20 @@
+{
+  "id": "fe-webperf-senior-dashboard",
+  "subcategoryId": "frontend.web-perf",
+  "specialization": "frontend",
+  "grade": "senior",
+  "title": "Дашборд: бюджет рендеров, кэш и дедупликация запросов",
+  "summary": "Кэш запросов со сроком жизни, дедупликацией и защитой от устаревших ответов, виджеты с подпиской на свой ключ и бюджетом рендеров; DESIGN.md с компромиссами",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.render-perf", "fe.server-state", "fe.state-mgmt", "fe.web-perf"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}
